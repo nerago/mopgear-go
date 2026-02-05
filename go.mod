@@ -1,3 +1,3 @@
-module paladin_gearing_go/m/v2
+module paladin_gearing_go
 
 go 1.25.5
