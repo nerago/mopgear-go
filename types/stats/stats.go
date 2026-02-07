@@ -73,7 +73,7 @@ func StatBlock_of2(statA StatType, valueA uint32, statB StatType, valueB uint32)
 	return block
 }
 
-func StatBlock_add(a, b *StatBlock) StatBlock {
+func StatBlock_add(a, b StatBlock) StatBlock {
 	result := StatBlock{}
 	for i := range a {
 		result[i] = a[i] + b[i]
@@ -81,18 +81,18 @@ func StatBlock_add(a, b *StatBlock) StatBlock {
 	return result
 }
 
-func (block *StatBlock) Add(other *StatBlock) StatBlock {
+func (block StatBlock) Add(other StatBlock) StatBlock {
 	return StatBlock_add(block, other)
 }
 
-func (block *StatBlock) WithChange(stat StatType, value uint32) StatBlock {
-	var result StatBlock = *block
+func (block StatBlock) WithChange(stat StatType, value uint32) StatBlock {
+	var result StatBlock = block
 	result[stat] = value
 	return result
 }
 
-func (block *StatBlock) WithChange2(statA StatType, valueA uint32, statB StatType, valueB uint32) StatBlock {
-	var result StatBlock = *block
+func (block StatBlock) WithChange2(statA StatType, valueA uint32, statB StatType, valueB uint32) StatBlock {
+	var result StatBlock = block
 	if statA == statB {
 		panic("expected different stats")
 	}
@@ -101,7 +101,7 @@ func (block *StatBlock) WithChange2(statA StatType, valueA uint32, statB StatTyp
 	return result
 }
 
-func (block *StatBlock) IsEmpty() bool {
+func (block StatBlock) IsEmpty() bool {
 	for i := range block {
 		if block[i] != 0 {
 			return false
@@ -110,7 +110,7 @@ func (block *StatBlock) IsEmpty() bool {
 	return true
 }
 
-func (block *StatBlock) hasSingleStat() bool {
+func (block StatBlock) HasSingleStat() bool {
 	countNonZero := 0
 	for i := range block {
 		if block[i] != 0 {
@@ -131,23 +131,23 @@ func StatBlock_equals(a, b *StatBlock) bool {
 
 // TODO toString stuff?
 
-func (block *StatBlock) Get(stat StatType) uint32 {
+func (block StatBlock) Get(stat StatType) uint32 {
 	return block[stat]
 }
 
-func (block *StatBlock) Hit() uint32 {
+func (block StatBlock) Hit() uint32 {
 	return block[Stat_Hit]
 }
 
-func (block *StatBlock) Expertise() uint32 {
+func (block StatBlock) Expertise() uint32 {
 	return block[Stat_Expertise]
 }
 
-func (block *StatBlock) Spirit() uint32 {
+func (block StatBlock) Spirit() uint32 {
 	return block[Stat_Spirit]
 }
 
-func (block *StatBlock) PrimaryStat() common.PrimaryStatType {
+func (block StatBlock) PrimaryStat() common.PrimaryStatType {
 	str := block[Stat_Strength] != 0
 	agi := block[Stat_Agility] != 0
 	itl := block[Stat_Intellect] != 0
@@ -177,23 +177,15 @@ func (block *StatBlock) PrimaryStat() common.PrimaryStatType {
 }
 
 type ReforgeRecipe struct {
-	from, to StatType
+	From, To StatType
 }
 
 var ReforgeRecipe_empty ReforgeRecipe = ReforgeRecipe{-1, -1}
 
 func (reforge *ReforgeRecipe) IsEmpty() bool {
-	return reforge.from == -1 || reforge.to == -1
-}
-
-func (reforge *ReforgeRecipe) From() StatType {
-	return reforge.from
-}
-
-func (reforge *ReforgeRecipe) To() StatType {
-	return reforge.to
+	return reforge.From == -1 || reforge.To == -1
 }
 
 func (reforge *ReforgeRecipe) Str() string {
-	return fmt.Sprintf("(%s -> %s)", reforge.from.Name(), reforge.to.Name())
+	return fmt.Sprintf("(%s -> %s)", reforge.From.Name(), reforge.To.Name())
 }

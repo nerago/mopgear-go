@@ -6,7 +6,7 @@ import (
 )
 
 type SolvableItem struct {
-	itemId     int64
+	itemId     int32
 	itemLevel  int16
 	slot       SlotItem
 	reforge    ReforgeRecipe

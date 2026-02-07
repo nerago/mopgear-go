@@ -11,7 +11,7 @@ const HIGH_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL = 3
 const MAX_UPGRADE_LEVEL = 2
 
 type ItemRef struct {
-	itemId        int64
+	itemId        int32
 	itemLevel     int16
 	itemLevelBase int16
 }
@@ -43,7 +43,7 @@ type FullItem struct {
 
 	// stats for different purposes
 	statBase    stats.StatBlock // constant stats post reforge
-	statEnchant stats.StatBlock // stats added from gems, enchant (or trinket model)
+	statEnchant stats.StatBlock // stats added from gems, enchant, or trinket model
 	totalCap    stats.StatBlock // constant total stats as they contribute to caps
 	totalRated  stats.StatBlock // averaged variable total stats for rating purposes
 }
@@ -63,10 +63,10 @@ func (item *FullItem) ChangeForReforge(changedStat stats.StatBlock, reforge stat
 		totalRated = changedStat
 		totalCap = changedStat
 	} else if item.slot.AddEnchantToCap() {
-		totalRated = changedStat.Add(&item.statEnchant)
+		totalRated = changedStat.Add(item.statEnchant)
 		totalCap = totalRated
 	} else {
-		totalRated = changedStat.Add(&item.statEnchant)
+		totalRated = changedStat.Add(item.statEnchant)
 		totalCap = changedStat
 	}
 
@@ -81,6 +81,10 @@ func (item *FullItem) FullName() string {
 	} else {
 		return item.baseName + " " + item.reforge.Str()
 	}
+}
+
+func (item *FullItem) StatBase() stats.StatBlock {
+	return item.statBase
 }
 
 func (item *FullItem) IsEmpty() bool {
