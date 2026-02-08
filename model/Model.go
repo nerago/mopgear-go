@@ -2,7 +2,8 @@ package model
 
 import (
 	. "paladin_gearing_go/types/common"
-	. "paladin_gearing_go/types/stats"
+	// . "paladin_gearing_go/types/stats"
+	. "paladin_gearing_go/model/ratings"
 )
 
 type Model struct {

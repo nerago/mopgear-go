@@ -85,6 +85,22 @@ func (block StatBlock) Add(other StatBlock) StatBlock {
 	return StatBlock_add(block, other)
 }
 
+func (block StatBlock) MultiplyForTotalSum(other StatBlock) uint64 {
+	var result uint64 = 0
+	for i := range block {
+		result += uint64(block[i]) * uint64(other[i])
+	}
+	return result
+}
+
+func (block StatBlock) MultiplyScalar(factor uint32) StatBlock {
+	result := StatBlock{}
+	for i := range block {
+		result[i] = block[i] * factor
+	}
+	return result
+}
+
 func (block StatBlock) WithChange(stat StatType, value uint32) StatBlock {
 	var result StatBlock = block
 	result[stat] = value
