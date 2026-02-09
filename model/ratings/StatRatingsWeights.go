@@ -12,7 +12,7 @@ type StatRatingsWeights struct {
 	weight StatBlock
 }
 
-func (rating StatRatingsWeights) CalcRating(block StatBlock) uint64 {
+func (rating StatRatingsWeights) CalcRating(block *StatBlock) uint64 {
 	return rating.weight.MultiplyForTotalSum(block)
 }
 
@@ -32,7 +32,7 @@ func StatRatingsWeights_mix(weightA StatRatingsWeights, multiplyA uint32, weight
 }
 
 func StatRatingsWeights_readFile(filename string) StatRatingsWeights {
-	bytes, err := os.ReadFile()
+	bytes, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}

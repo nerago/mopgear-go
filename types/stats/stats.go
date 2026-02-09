@@ -20,6 +20,7 @@ const (
 	Stat_Dodge     = 9
 	Stat_Parry     = 10
 	Stat_Mastery   = 11
+	Stat_Invalid   = -1
 )
 
 func (stat StatType) Name() string {
@@ -85,7 +86,13 @@ func (block StatBlock) Add(other StatBlock) StatBlock {
 	return StatBlock_add(block, other)
 }
 
-func (block StatBlock) MultiplyForTotalSum(other StatBlock) uint64 {
+func (block *StatBlock) Increment_Mutating(other *StatBlock) {
+	for i := range block {
+		block[i] += other[i]
+	}
+}
+
+func (block StatBlock) MultiplyForTotalSum(other *StatBlock) uint64 {
 	var result uint64 = 0
 	for i := range block {
 		result += uint64(block[i]) * uint64(other[i])

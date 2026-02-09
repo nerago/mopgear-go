@@ -1,19 +1,17 @@
 package items
 
-import . "paladin_gearing_go/types/common"
+// import . "paladin_gearing_go/types/common"
 
 type SkinnyItem struct {
-	slot SlotEquip
-	a    uint32
-	b    uint32
-	c    uint32
+	A      uint32
+	B      uint32
+	Exists bool // just for zero value in collections
 }
 
 type SkinnyEquipMap [16]SkinnyItem
 
 type SkinnyItemSet struct {
 	items [16]SkinnyItem
-	a     uint32
-	b     uint32
-	c     uint32
+	A     uint32
+	B     uint32
 }

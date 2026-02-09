@@ -1,10 +1,10 @@
 package loaders
 
 type EquippedItem struct {
-	itemId        int32
-	gemChoice     []int32
-	enchantChoice int32
-	randomSuffix  int32
-	upgradeStep   int16
-	reforging     int16
+	ItemId        uint32
+	GemChoice     []uint32
+	EnchantChoice uint32
+	RandomSuffix  int32
+	UpgradeStep   int16
+	Reforging     uint16
 }

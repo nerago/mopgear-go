@@ -1,6 +1,7 @@
 package items
 
 import (
+	"iter"
 	"paladin_gearing_go/types/common"
 	"paladin_gearing_go/types/stats"
 )
@@ -11,16 +12,16 @@ const HIGH_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL = 3
 const MAX_UPGRADE_LEVEL = 2
 
 type ItemRef struct {
-	itemId        int32
-	itemLevel     int16
-	itemLevelBase int16
+	ItemId        uint32
+	ItemLevel     uint16
+	ItemLevelBase uint16
 }
 
-func (item *ItemRef) UpgradeLevel() int16 {
+func (item *ItemRef) UpgradeLevel() uint16 {
 	if item.itemLevelBase < LOW_HIGH_MOP_ITEM_LEVELS_THRESHOLD {
-		return (item.itemLevel - item.itemLevelBase) / LOW_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL
+		return (item.ItemLevel - item.ItemLevelBase) / LOW_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL
 	} else {
-		return (item.itemLevel - item.itemLevelBase) / HIGH_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL
+		return (item.ItemLevel - item.ItemLevelBase) / HIGH_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL
 	}
 }
 
@@ -96,14 +97,25 @@ func (item *FullItem) Equals(other *FullItem) bool {
 		item.statBase == other.statBase && item.statEnchant == other.statEnchant
 }
 
-type FullEquipMap [16]FullItem
+type FullEquipMap [16]*FullItem
 
-func (equipMap *FullEquipMap) Get(slot common.SlotEquip) FullItem {
+func (equipMap *FullEquipMap) Get(slot common.SlotEquip) *FullItem {
 	return equipMap[slot]
+}
+
+func (equipMap *FullEquipMap) AllItems() iter.Seq[*FullItem] {
+	return func(yield func(*FullItem) bool) {
+		for _, item := range equipMap {
+			if !yield(item) {
+				return
+			}
+		}
+	}
 }
 
 type FullItemSet struct {
 	items      FullEquipMap
 	totalCap   stats.StatBlock
 	totalRated stats.StatBlock
+	rating     uint64
 }
