@@ -69,15 +69,27 @@ func addItem(itemObj map[string]any) {
 	slot := mapSlot(itemType, weaponType, handType)
 
 	armorType := convertArmorType(getIntOrDefault(itemObj, "armorType", -1))
-	socketSlots := convertSockets(itemObj["gemSockets"].([]any))
-	socketBonus := convertStatsFromFlat(itemObj["socketBonus"].([]any))
+
+	var socketSlots []SocketType
+	if itemObj["gemSockets"] != nil {
+		socketSlots = convertSockets(itemObj["gemSockets"].([]any))
+	}
+
+	var socketBonus StatBlock
+	if itemObj["socketBonus"] != nil {
+		socketBonus = convertStatsFromFlat(itemObj["socketBonus"].([]any))
+	}
 
 	scalingOptions := itemObj["scalingOptions"].(map[string]any)
 	baseItemLevel := getUInt16OrPanic(scalingOptions["0"].(map[string]any), "ilvl")
 	for _, entry := range scalingOptions {
 		scaleEntry := entry.(map[string]any)
 		itemLevel := getUInt16OrPanic(scaleEntry, "ilvl")
-		scaleStats := convertStatsFromMap(scaleEntry)
+
+		var scaleStats StatBlock
+		if scaleEntry["stats"] != nil {
+			scaleStats = convertStatsFromMap(scaleEntry["stats"].(map[string]any))
+		}
 
 		itemRef := ItemRef{
 			ItemId:        itemId,
@@ -92,7 +104,7 @@ func addItem(itemObj map[string]any) {
 func convertStatsFromFlat(input []any) StatBlock {
 	block := StatBlock{}
 	for indexNum, value := range input {
-		stat := simBlockIndexToStat(indexNum)
+		stat := simBlockIndexToStatNoThrow(indexNum)
 		if stat != Stat_Invalid {
 			block[stat] = uint32(value.(float64))
 		}
@@ -108,7 +120,7 @@ func convertStatsFromMap(input map[string]any) StatBlock {
 			panic(err)
 		}
 
-		stat := simBlockIndexToStat(indexNum)
+		stat := simBlockIndexToStatThrows(indexNum)
 		if stat != Stat_Invalid {
 			block[stat] = uint32(value.(float64))
 		}
@@ -116,7 +128,7 @@ func convertStatsFromMap(input map[string]any) StatBlock {
 	return block
 }
 
-func simBlockIndexToStat(num int) StatType {
+func simBlockIndexToStatThrows(num int) StatType {
 	// this may be a one-to-one for now, rather not rely on it
 	switch num {
 	case 0:
@@ -143,10 +155,42 @@ func simBlockIndexToStat(num int) StatType {
 		return Stat_Parry
 	case 11:
 		return Stat_Mastery
-	case 15, 16:
+	case 14, 15, 16, 17, 18, 20:
 		return Stat_Invalid
 	default:
 		panic("unknown stat index " + fmt.Sprint(num))
+	}
+}
+
+func simBlockIndexToStatNoThrow(num int) StatType {
+	// this may be a one-to-one for now, rather not rely on it
+	switch num {
+	case 0:
+		return Stat_Strength
+	case 1:
+		return Stat_Agility
+	case 3:
+		return Stat_Intellect
+	case 2:
+		return Stat_Stamina
+	case 4:
+		return Stat_Spirit
+	case 5:
+		return Stat_Hit
+	case 6:
+		return Stat_Crit
+	case 7:
+		return Stat_Haste
+	case 8:
+		return Stat_Expertise
+	case 9:
+		return Stat_Dodge
+	case 10:
+		return Stat_Parry
+	case 11:
+		return Stat_Mastery
+	default:
+		return Stat_Invalid
 	}
 }
 
@@ -163,12 +207,51 @@ func convertSocket(num any) SocketType {
 	return SocketType(num.(float64))
 }
 
-func convertArmorType(i int32) ArmorType {
-	panic("unimplemented")
+func convertArmorType(num int32) ArmorType {
+	return ArmorType(num)
 }
 
 func mapSlot(itemType, weaponType, handType int32) SlotItem {
-	panic("unimplemented")
+	switch itemType {
+	case 1:
+		return Item_Head
+	case 2:
+		return Item_Neck
+	case 3:
+		return Item_Shoulder
+	case 4:
+		return Item_Back
+	case 5:
+		return Item_Chest
+	case 6:
+		return Item_Wrist
+	case 7:
+		return Item_Hand
+	case 8:
+		return Item_Belt
+	case 9:
+		return Item_Leg
+	case 10:
+		return Item_Foot
+	case 11:
+		return Item_Ring
+	case 12:
+		return Item_Trinket
+	case 13, 14:
+		switch handType {
+		case 1, 2:
+			return Item_Weapon1H
+		case 0, 4:
+			return Item_Weapon2H
+		case 3:
+			return Item_Offhand
+		default:
+			panic("unknown weapon")
+		}
+
+	default:
+		panic("unknown slot")
+	}
 }
 
 func convertReforge(reforgeArray []any) {
@@ -182,10 +265,10 @@ func addReforge(reforgeObj map[string]any) {
 	id := getUInt16OrPanic(reforgeObj, "id")
 
 	from := getAnyIntOrPanic(reforgeObj, "fromStat")
-	fromStat := simBlockIndexToStat(from)
+	fromStat := simBlockIndexToStatThrows(from)
 
 	to := getAnyIntOrPanic(reforgeObj, "toStat")
-	toStat := simBlockIndexToStat(to)
+	toStat := simBlockIndexToStatThrows(to)
 
 	reforge := ReforgeRecipe{From: fromStat, To: toStat}
 	reforgeById[id] = reforge

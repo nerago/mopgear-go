@@ -5,20 +5,20 @@ import (
 	. "paladin_gearing_go/util"
 )
 
-func addGem0(lookup map[int32]GemInfo, id int32) {
-	lookup[id] = GemInfo{id, StatBlock_empty}
+func addGem0(lookup map[uint32]GemInfo, id uint32) {
+	lookup[id] = GemInfo{Id: id, Stats: StatBlock_empty}
 }
 
-func addGem1(lookup map[int32]GemInfo, id int32, stat StatType, value uint32) {
-	lookup[id] = GemInfo{id, StatBlock_of(stat, value)}
+func addGem1(lookup map[uint32]GemInfo, id uint32, stat StatType, value uint32) {
+	lookup[id] = GemInfo{Id: id, Stats: StatBlock_of(stat, value)}
 }
 
-func addGem2(lookup map[int32]GemInfo, id int32, statA StatType, valueA uint32, statB StatType, valueB uint32) {
-	lookup[id] = GemInfo{id, StatBlock_of2(statA, valueA, statB, valueB)}
+func addGem2(lookup map[uint32]GemInfo, id uint32, statA StatType, valueA uint32, statB StatType, valueB uint32) {
+	lookup[id] = GemInfo{Id: id, Stats: StatBlock_of2(statA, valueA, statB, valueB)}
 }
 
-func addGemBlock(lookup map[int32]GemInfo, id int32, block StatBlock) {
-	lookup[id] = GemInfo{id, block}
+func addGemBlock(lookup map[uint32]GemInfo, id uint32, block StatBlock) {
+	lookup[id] = GemInfo{Id: id, Stats: block}
 }
 
 var standardGems = makeStandardGems()
@@ -27,8 +27,8 @@ var metaGems = makeMetaGems()
 var shaGems = makeShaGems()
 var allGems = CombineMaps(standardGems, engineerGems, metaGems, shaGems)
 
-func makeStandardGems() map[int32]GemInfo {
-	lookup := make(map[int32]GemInfo)
+func makeStandardGems() map[uint32]GemInfo {
+	lookup := make(map[uint32]GemInfo)
 	addGem2(lookup, 76537, Stat_Strength, 60, Stat_Haste, 120)
 	addGem1(lookup, 76570, Stat_Hit, 320)
 	addGem2(lookup, 76576, Stat_Hit, 160, Stat_Haste, 160)
@@ -61,8 +61,8 @@ func makeStandardGems() map[int32]GemInfo {
 	return lookup
 }
 
-func makeEngineerGems() map[int32]GemInfo {
-	lookup := make(map[int32]GemInfo)
+func makeEngineerGems() map[uint32]GemInfo {
+	lookup := make(map[uint32]GemInfo)
 	addGem1(lookup, 77541, Stat_Crit, 600)
 	addGem1(lookup, 77542, Stat_Haste, 600)
 	addGem1(lookup, 77543, Stat_Expertise, 600)
@@ -72,8 +72,8 @@ func makeEngineerGems() map[int32]GemInfo {
 	return lookup
 }
 
-func makeMetaGems() map[int32]GemInfo {
-	lookup := make(map[int32]GemInfo)
+func makeMetaGems() map[uint32]GemInfo {
+	lookup := make(map[uint32]GemInfo)
 	addGem1(lookup, 76885, Stat_Intellect, 216)
 	addGem1(lookup, 76886, Stat_Strength, 216)
 	addGem1(lookup, 76895, Stat_Stamina, 324)
@@ -82,13 +82,13 @@ func makeMetaGems() map[int32]GemInfo {
 	return lookup
 }
 
-func makeShaGems() map[int32]GemInfo {
-	lookup := make(map[int32]GemInfo)
+func makeShaGems() map[uint32]GemInfo {
+	lookup := make(map[uint32]GemInfo)
 	addGem1(lookup, 89881, Stat_Strength, 500)
 	return lookup
 }
 
-func GemData_ById(id int32) GemInfo {
+func GemData_ById(id uint32) GemInfo {
 	gem, found := allGems[id]
 	if !found {
 		panic("unknown gem " + string(id))

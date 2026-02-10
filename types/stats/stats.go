@@ -7,19 +7,19 @@ import (
 type StatType int8
 
 const (
-	Stat_Strength  = 0
-	Stat_Agility   = 1
-	Stat_Stamina   = 2
-	Stat_Intellect = 3
-	Stat_Spirit    = 4
-	Stat_Hit       = 5
-	Stat_Crit      = 6
-	Stat_Haste     = 7
-	Stat_Expertise = 8
-	Stat_Dodge     = 9
-	Stat_Parry     = 10
-	Stat_Mastery   = 11
-	Stat_Invalid   = -1
+	Stat_Strength  StatType = 0
+	Stat_Agility   StatType = 1
+	Stat_Stamina   StatType = 2
+	Stat_Intellect StatType = 3
+	Stat_Spirit    StatType = 4
+	Stat_Hit       StatType = 5
+	Stat_Crit      StatType = 6
+	Stat_Haste     StatType = 7
+	Stat_Expertise StatType = 8
+	Stat_Dodge     StatType = 9
+	Stat_Parry     StatType = 10
+	Stat_Mastery   StatType = 11
+	Stat_Invalid   StatType = -1
 )
 
 func (stat StatType) Name() string {

@@ -32,8 +32,8 @@ func readEquipped(itemObject map[string]any) EquippedItem {
 
 	gems := make([]uint32, 0)
 	if itemObject["gems"] != nil {
-		for _, num := range itemObject["gems"].([]float64) {
-			gems = append(gems, uint32(num))
+		for _, num := range itemObject["gems"].([]any) {
+			gems = append(gems, uint32(num.(float64)))
 		}
 	}
 

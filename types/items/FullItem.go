@@ -40,8 +40,8 @@ type FullItem struct {
 
 	// specific item instance choices
 	Reforge       stats.ReforgeRecipe
-	GemChoice     []int32
-	EnchantChoice int32
+	GemChoice     []uint32
+	EnchantChoice uint32
 	RandomSuffix  int32
 
 	// stats for different purposes
@@ -60,23 +60,38 @@ func FullItem_FromWowSim(ref ItemRef, slot common.SlotItem, baseName string, sta
 		statBase, stats.StatBlock_empty, statBase, statBase}
 }
 
-func (item *FullItem) ChangeForReforge(changedStat stats.StatBlock, reforge stats.ReforgeRecipe) FullItem {
-	var totalRated, totalCap stats.StatBlock
-	if item.StatEnchant.IsEmpty() {
-		totalRated = changedStat
-		totalCap = changedStat
-	} else if item.Slot.AddEnchantToCap() {
-		totalRated = changedStat.Add(&item.StatEnchant)
-		totalCap = totalRated
-	} else {
-		totalRated = changedStat.Add(&item.StatEnchant)
-		totalCap = changedStat
-	}
+func (item *FullItem) ChangedForReforge(changedStat stats.StatBlock, reforge stats.ReforgeRecipe) *FullItem {
+	newItem := item.ChangedBaseStats(changedStat)
+	newItem.Reforge = reforge
+	return newItem
+}
 
-	return FullItem{item.Ref, item.Slot, item.BaseName, item.ArmorType, item.PrimaryStat,
+func derivedStatFields(slot common.SlotItem, statBase, statEnchant stats.StatBlock) (stats.StatBlock, stats.StatBlock) {
+	if statEnchant.IsEmpty() {
+		return statBase, statBase
+	} else if slot.AddEnchantToCap() {
+		sum := stats.StatBlock_Add_NoPointer(statBase, statEnchant)
+		return sum, sum
+	} else {
+		sum := stats.StatBlock_Add_NoPointer(statBase, statEnchant)
+		return statBase, sum
+	}
+}
+
+func (item *FullItem) ChangedBaseStats(changedBase stats.StatBlock) *FullItem {
+	totalCap, totalRated := derivedStatFields(item.Slot, changedBase, item.StatEnchant)
+	return &FullItem{item.Ref, item.Slot, item.BaseName, item.ArmorType, item.PrimaryStat,
 		item.SocketSlots, item.SocketBonus, item.Phase,
-		reforge, item.GemChoice, item.EnchantChoice, item.RandomSuffix,
-		changedStat, item.StatEnchant, totalCap, totalRated}
+		item.Reforge, item.GemChoice, item.EnchantChoice, item.RandomSuffix,
+		changedBase, item.StatEnchant, totalCap, totalRated}
+}
+
+func (item *FullItem) ChangedEnchantStats(changedEnchant stats.StatBlock) *FullItem {
+	totalCap, totalRated := derivedStatFields(item.Slot, item.StatBase, changedEnchant)
+	return &FullItem{item.Ref, item.Slot, item.BaseName, item.ArmorType, item.PrimaryStat,
+		item.SocketSlots, item.SocketBonus, item.Phase,
+		item.Reforge, item.GemChoice, item.EnchantChoice, item.RandomSuffix,
+		item.StatBase, changedEnchant, totalCap, totalRated}
 }
 
 func (item *FullItem) FullName() string {

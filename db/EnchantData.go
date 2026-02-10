@@ -1,13 +1,14 @@
 package db
 
 import (
+	"fmt"
 	. "paladin_gearing_go/types/stats"
 )
 
 var enchants = makeEnchants()
 
-func makeEnchants() map[int32]GemInfo {
-	lookup := make(map[int32]GemInfo)
+func makeEnchants() map[uint32]GemInfo {
+	lookup := make(map[uint32]GemInfo)
 	addGem0(lookup, 4099)
 	addGem1(lookup, 4411, Stat_Mastery, 170)
 	addGem1(lookup, 4412, Stat_Dodge, 170)
@@ -50,10 +51,10 @@ func makeEnchants() map[int32]GemInfo {
 	return lookup
 }
 
-func EnchantData_ById(id int32) GemInfo {
+func EnchantData_ById(id uint32) GemInfo {
 	gem, found := enchants[id]
 	if !found {
-		panic("unknown enchant " + string(id))
+		panic("unknown enchant " + fmt.Sprint(id))
 	}
 	return gem
 }

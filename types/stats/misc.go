@@ -1,6 +1,6 @@
 package stats
 
 type GemInfo struct {
-	Id    int32
+	Id    uint32
 	Stats StatBlock
 }
