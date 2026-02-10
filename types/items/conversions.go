@@ -69,8 +69,9 @@ func (item *FullItem) String() string {
 	build.WriteString("\" id=")
 	build.WriteString(strconv.FormatUint(uint64(item.ItemId()), 10))
 
-	build.WriteString(" lvl= ")
+	build.WriteString(" lvl=")
 	build.WriteString(strconv.FormatUint(uint64(item.Ref.ItemLevel), 10))
+	build.WriteRune(' ')
 
 	build.WriteString(item.StatBase.String())
 
@@ -87,6 +88,6 @@ func (item *FullItem) String() string {
 		}
 	}
 
-	build.WriteString("}")
+	build.WriteString(" }")
 	return build.String()
 }

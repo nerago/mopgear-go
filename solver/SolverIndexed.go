@@ -12,9 +12,25 @@ import (
 
 var int_one = big.NewInt(1)
 
-func SolverIndexed_RunFull(itemOptions *SolvableOptionsMap, model *Model) SolvableItemSet {
-	slotSizes := slotSizes(itemOptions)
+func SolverIndexed_RunSkipping(itemOptions *SolvableOptionsMap, model *Model) SolvableItemSet {
 	max := itemOptions.TotalCombinationCount()
+	targetCombination := big.NewInt(1000000)
+
+	skip := big.NewInt(0)
+	skip.Div(max, targetCombination)
+
+	fmt.Printf("SOLVE SKIP %d %d %d\n", max, targetCombination, skip)
+
+	return mainLoop(itemOptions, max, skip, model)
+}
+
+func SolverIndexed_RunFull(itemOptions *SolvableOptionsMap, model *Model) SolvableItemSet {
+	max := itemOptions.TotalCombinationCount()
+	return mainLoop(itemOptions, max, int_one, model)
+}
+
+func mainLoop(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *Model) SolvableItemSet {
+	slotSizes := slotSizes(itemOptions)
 	index := big.NewInt(0)
 	best := BestCollector1[SolvableItemSet]{}
 
@@ -26,13 +42,13 @@ func SolverIndexed_RunFull(itemOptions *SolvableOptionsMap, model *Model) Solvab
 			rating := model.CalcRatingSolve(set)
 			best.Add(set, rating)
 		}
-		index.Add(index, int_one)
+		index.Add(index, skip)
 	}
 
 	return best.GetBest()
 }
 
-func trackProgress(index *big.Int, max *big.Int) {
+func trackProgress(index, max *big.Int) {
 	startTime := time.Now()
 	for true {
 		time.Sleep(time.Second * 5)
@@ -45,7 +61,7 @@ func trackProgress(index *big.Int, max *big.Int) {
 			timeTaken := time.Since(startTime)
 			totalEstimate := time.Duration(float64(timeTaken) / percent)
 			estimateRemain := totalEstimate - timeTaken
-			fmt.Printf("%d $.1f%% %s\n", index, percent*100, estimateRemain.String())
+			fmt.Printf("%d %.1f%% %s\n", index, percent*100, estimateRemain.String())
 		}
 	}
 }

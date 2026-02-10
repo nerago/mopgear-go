@@ -6,6 +6,7 @@ import (
 	. "paladin_gearing_go/setup"
 	. "paladin_gearing_go/solver"
 	. "paladin_gearing_go/types/items"
+	. "paladin_gearing_go/util"
 )
 
 const (
@@ -13,8 +14,9 @@ const (
 )
 
 func main() {
+	printer := PrintRecorder{}
 	model := Model_PallyProtMitigation()
-	itemOptions := OptionsSetup_FromGearFile(gearFile, &model)
+	itemOptions := OptionsSetup_FromGearFile(gearFile, &model, &printer)
 
 	fullSet := Solver(&itemOptions, &model)
 
@@ -23,7 +25,7 @@ func main() {
 
 func reportSet(fullSet FullItemSet, model *Model) {
 	rating := model.CalcRatingFull(&fullSet)
-	fmt.Printf("SET OUTPUT rating %,d\n", rating)
+	fmt.Printf("SET OUTPUT rating %d\n", rating)
 	fmt.Printf("RATED %s\n", fullSet.TotalRated.String())
 	fmt.Printf("CAP %s\n", fullSet.TotalCap.String())
 	printEquipMap(&fullSet.Items)

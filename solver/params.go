@@ -12,6 +12,7 @@ import (
 
 func Solver(itemOptions *FullOptionsMap, model *Model) FullItemSet {
 	solveOptions := SolvableOptionsMap_of(itemOptions)
-	solvedSet := SolverIndexed_RunFull(&solveOptions, model)
+	// solvedSet := SolverIndexed_RunFull(&solveOptions, model)
+	solvedSet := SolverIndexed_RunSkipping(&solveOptions, model)
 	return FullItemSet_FromSolved(solvedSet, itemOptions)
 }

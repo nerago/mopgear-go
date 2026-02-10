@@ -8,17 +8,19 @@ import (
 	. "paladin_gearing_go/types/common"
 	. "paladin_gearing_go/types/items"
 	. "paladin_gearing_go/types/stats"
+	. "paladin_gearing_go/util"
 )
 
-func OptionsSetup_FromGearFile(filename string, model *Model) FullOptionsMap {
+func OptionsSetup_FromGearFile(filename string, model *Model, printer *PrintRecorder) FullOptionsMap {
 	equipped := GearFileReader_Read(filename)
-	return convertToOptions(equipped, model)
+	return convertToOptions(equipped, model, printer)
 }
 
-func convertToOptions(equipped []EquippedItem, model *Model) FullOptionsMap {
+func convertToOptions(equipped []EquippedItem, model *Model, printer *PrintRecorder) FullOptionsMap {
 	optionMap := FullOptionsMap{}
 	for _, item := range equipped {
-		baseItem := loadItem(item, model)
+		baseItem := loadItem(item)
+		printer.Println(baseItem.String())
 		optionList := Reforger_allOptions(baseItem, &model.ReforgeRules)
 		addToSlot(&optionMap, baseItem.Slot, optionList)
 	}
@@ -80,7 +82,7 @@ func addToSlot(optionMap *FullOptionsMap, slotItem SlotItem, optionList []FullIt
 	}
 }
 
-func loadItem(equipItem EquippedItem, model *Model) *FullItem {
+func loadItem(equipItem EquippedItem) *FullItem {
 	storedItem := WowSimDB_ByIdAndUpgrade(equipItem.ItemId, equipItem.UpgradeStep)
 	if storedItem == nil && equipItem.UpgradeStep > 0 {
 		storedItem = WowSimDB_ByIdAndUpgrade(equipItem.ItemId, 0)
