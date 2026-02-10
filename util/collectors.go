@@ -13,7 +13,7 @@ func (collect *BestCollector1[T]) GetBest() T {
 	return *collect.BestObject
 }
 
-func (collect *BestCollector1[T]) Add(object *T, value uint64) {
+func (collect *BestCollector1[T]) Offer(object *T, value uint64) {
 	if value > collect.BestValue {
 		collect.BestObject = object
 		collect.BestValue = value
@@ -21,5 +21,5 @@ func (collect *BestCollector1[T]) Add(object *T, value uint64) {
 }
 
 func (collect *BestCollector1[T]) CombineOther(other BestCollector1[T]) {
-	collect.Add(other.BestObject, other.BestValue)
+	collect.Offer(other.BestObject, other.BestValue)
 }

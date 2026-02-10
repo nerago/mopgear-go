@@ -30,7 +30,7 @@ func SolverIndexed_RunFull(itemOptions *SolvableOptionsMap, model *Model) Solvab
 }
 
 func mainLoop(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *Model) SolvableItemSet {
-	return mainLoop_multiThread(itemOptions, max, skip, model)
+	return mainLoop_multiThread2(itemOptions, max, skip, model)
 	// return mainLoop_singleThread(itemOptions, max, skip, model)
 }
 
@@ -68,6 +68,71 @@ func mainLoop_multiThread(itemOptions *SolvableOptionsMap, max, skip *big.Int, m
 	return best.GetBest()
 }
 
+func indexSplits(max, skip *big.Int) []*big.Int {
+	// totalSteps := big.NewInt(0).Div(max, skip)
+	// eachThreadSteps := big.NewInt(0).Div(totalSteps, big.NewInt(threadCount))
+	// eachThreadIndexRange := big.NewInt(0).Mul(eachThreadSteps, skip)
+
+	indexPerThread := big.NewInt(0)
+	indexPerThread.Div(max, skip)
+	indexPerThread.Div(indexPerThread, big.NewInt(threadCount))
+	indexPerThread.Mul(indexPerThread, skip)
+
+	// indexPerThread := big.NewInt(0)
+	// indexPerThread.Div(max, big.NewInt(threadCount))
+
+	splitArray := make([]*big.Int, 0)
+	start := big.NewInt(0)
+	for range threadCount {
+		splitArray = append(splitArray, start)
+		start = big.NewInt(0).Add(start, indexPerThread)
+	}
+	splitArray = append(splitArray, max)
+
+	return splitArray
+}
+
+func mainLoop_multiThread2(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *Model) SolvableItemSet {
+	resultChannel := make(chan BestCollector1[SolvableItemSet], threadCount)
+
+	// thread to track progress
+	// go trackProgress(index, max)
+
+	// start up workers
+	splits := indexSplits(max, skip)
+	for i := range threadCount {
+		go workerThreadRange(itemOptions, model, splits[i], splits[i+1], skip, resultChannel)
+	}
+
+	// combine each thread's best result
+	best := BestCollector1[SolvableItemSet]{}
+	for range threadCount {
+		threadResult := <-resultChannel
+		best.CombineOther(threadResult)
+	}
+	return best.GetBest()
+}
+
+func workerThreadRange(itemOptions *SolvableOptionsMap, model *Model, start, max, skip *big.Int, resultChannel chan BestCollector1[SolvableItemSet]) {
+	best := BestCollector1[SolvableItemSet]{}
+	slotSizes := slotSizes(itemOptions)
+
+	var index big.Int
+	index.Set(start)
+
+	for index.Cmp(max) < 0 {
+		set := makeSet(itemOptions, &slotSizes, &index)
+		if model.CheckSet(set) {
+			rating := model.CalcRatingSolve(set)
+			best.Offer(set, rating)
+		}
+
+		index.Add(&index, skip)
+	}
+
+	resultChannel <- best
+}
+
 func workerThread(itemOptions *SolvableOptionsMap, model *Model, indexChannel <-chan *big.Int, resultChannel chan<- BestCollector1[SolvableItemSet]) {
 	best := BestCollector1[SolvableItemSet]{}
 	slotSizes := slotSizes(itemOptions)
@@ -76,7 +141,7 @@ func workerThread(itemOptions *SolvableOptionsMap, model *Model, indexChannel <-
 		set := makeSet(itemOptions, &slotSizes, index)
 		if model.CheckSet(set) {
 			rating := model.CalcRatingSolve(set)
-			best.Add(set, rating)
+			best.Offer(set, rating)
 		}
 	}
 
@@ -94,7 +159,7 @@ func mainLoop_singleThread(itemOptions *SolvableOptionsMap, max, skip *big.Int, 
 		set := makeSet(itemOptions, &slotSizes, index)
 		if model.CheckSet(set) {
 			rating := model.CalcRatingSolve(set)
-			best.Add(set, rating)
+			best.Offer(set, rating)
 		}
 		index.Add(index, skip)
 	}
