@@ -2,7 +2,6 @@ package solver
 
 import (
 	"fmt"
-	"iter"
 	"math/big"
 	. "paladin_gearing_go/model"
 	. "paladin_gearing_go/types/items"
@@ -26,10 +25,65 @@ func SolverIndexed_RunSkipping(itemOptions *SolvableOptionsMap, model *Model) So
 
 func SolverIndexed_RunFull(itemOptions *SolvableOptionsMap, model *Model) SolvableItemSet {
 	max := itemOptions.TotalCombinationCount()
+	fmt.Printf("SOLVE FULL %d\n", max)
 	return mainLoop(itemOptions, max, int_one, model)
 }
 
 func mainLoop(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *Model) SolvableItemSet {
+	return mainLoop_multiThread(itemOptions, max, skip, model)
+	// return mainLoop_singleThread(itemOptions, max, skip, model)
+}
+
+const threadCount = 12
+
+func mainLoop_multiThread(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *Model) SolvableItemSet {
+	indexChannel := make(chan *big.Int, 128)
+	resultChannel := make(chan BestCollector1[SolvableItemSet], threadCount)
+	index := big.NewInt(0)
+
+	// thread to track progress
+	go trackProgress(index, max)
+
+	// start up workers
+	for range threadCount {
+		go workerThread(itemOptions, model, indexChannel, resultChannel)
+	}
+
+	// generate indexes on main thread
+	for index.Cmp(max) < 0 {
+		indexChannel <- index
+
+		nextIndex := big.NewInt(0)
+		nextIndex.Add(index, skip)
+		index = nextIndex
+	}
+	close(indexChannel)
+
+	// combine each thread's best result
+	best := BestCollector1[SolvableItemSet]{}
+	for range threadCount {
+		threadResult := <-resultChannel
+		best.CombineOther(threadResult)
+	}
+	return best.GetBest()
+}
+
+func workerThread(itemOptions *SolvableOptionsMap, model *Model, indexChannel <-chan *big.Int, resultChannel chan<- BestCollector1[SolvableItemSet]) {
+	best := BestCollector1[SolvableItemSet]{}
+	slotSizes := slotSizes(itemOptions)
+
+	for index := range indexChannel {
+		set := makeSet(itemOptions, &slotSizes, index)
+		if model.CheckSet(set) {
+			rating := model.CalcRatingSolve(set)
+			best.Add(set, rating)
+		}
+	}
+
+	resultChannel <- best
+}
+
+func mainLoop_singleThread(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *Model) SolvableItemSet {
 	slotSizes := slotSizes(itemOptions)
 	index := big.NewInt(0)
 	best := BestCollector1[SolvableItemSet]{}
@@ -50,7 +104,7 @@ func mainLoop(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *Model)
 
 func trackProgress(index, max *big.Int) {
 	startTime := time.Now()
-	for true {
+	for {
 		time.Sleep(time.Second * 5)
 
 		var ratio big.Rat
@@ -90,21 +144,4 @@ func makeSet(itemOptions *SolvableOptionsMap, slotSizes *[16]*big.Int, mainIndex
 	}
 
 	return SolvableItemSet_Of(equip)
-}
-
-func seq_SolverIndexed_RunFull(itemOptions *SolvableOptionsMap, model *Model) {
-	// combos := itemOptions.TotalCombinationCount()
-	// indexSeq = makeIndexSeq(combos, int_one)
-}
-
-func makeIndexSeq(max *big.Int, skip *big.Int) iter.Seq[*big.Int] {
-	return func(yield func(*big.Int) bool) {
-		value := big.NewInt(0)
-		for value.Cmp(max) < 0 {
-			if !yield(value) {
-				return
-			}
-			value.Add(value, int_one)
-		}
-	}
 }

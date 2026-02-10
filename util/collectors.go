@@ -19,3 +19,7 @@ func (collect *BestCollector1[T]) Add(object *T, value uint64) {
 		collect.BestValue = value
 	}
 }
+
+func (collect *BestCollector1[T]) CombineOther(other BestCollector1[T]) {
+	collect.Add(other.BestObject, other.BestValue)
+}

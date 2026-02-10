@@ -7,6 +7,7 @@ import (
 	. "paladin_gearing_go/solver"
 	. "paladin_gearing_go/types/items"
 	. "paladin_gearing_go/util"
+	"time"
 )
 
 const (
@@ -14,13 +15,17 @@ const (
 )
 
 func main() {
+	startTime := time.Now()
+
 	printer := PrintRecorder{}
 	model := Model_PallyProtMitigation()
 	itemOptions := OptionsSetup_FromGearFile(gearFile, &model, &printer)
 
 	fullSet := Solver(&itemOptions, &model)
-
 	reportSet(fullSet, &model)
+
+	timeTaken := time.Since(startTime)
+	fmt.Println("Duration = " + timeTaken.String())
 }
 
 func reportSet(fullSet FullItemSet, model *Model) {
