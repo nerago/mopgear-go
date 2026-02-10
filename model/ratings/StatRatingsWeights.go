@@ -25,21 +25,19 @@ func validate(block StatBlock) {
 	}
 }
 
-func StatRatingsWeights_mix(weightA StatRatingsWeights, multiplyA uint32, weightB StatRatingsWeights, multiplyB uint32) StatRatingsWeights {
+func StatRatingsWeights_Mix(weightA StatRatingsWeights, multiplyA uint32, weightB StatRatingsWeights, multiplyB uint32) StatRatingsWeights {
 	combined := StatBlock_Add_NoPointer(weightA.weight.MultiplyScalar(multiplyA), weightB.weight.MultiplyScalar(multiplyB))
 	validate(combined)
 	return StatRatingsWeights{combined}
 }
 
-func StatRatingsWeights_readFile(filename string) StatRatingsWeights {
+func StatRatingsWeights_ReadFile(filename string, includeHit, includeExpertise, includeSpirit bool) StatRatingsWeights {
 	bytes, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
 
 	fullStr := string(bytes)
-	// fullStr := strings.CutSuffix(fullStr, ")")
-	// fullStr := strings.CutSuffix(fullStr, " ")
 
 	block := StatBlock{}
 	for part := range strings.SplitSeq(fullStr, ",") {
@@ -72,6 +70,16 @@ func StatRatingsWeights_readFile(filename string) StatRatingsWeights {
 				addNum(&block, Stat_Parry, value)
 			}
 		}
+	}
+
+	if !includeExpertise {
+		block[Stat_Expertise] = 0
+	}
+	if !includeHit {
+		block[Stat_Hit] = 0
+	}
+	if !includeSpirit {
+		block[Stat_Spirit] = 0
 	}
 
 	validate(block)

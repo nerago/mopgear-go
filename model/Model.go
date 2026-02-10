@@ -32,7 +32,8 @@ func (model *Model) CalcRatingFull(itemSet *FullItemSet) uint64 {
 func Model_PallyProtMitigation() Model {
 	return Model{
 		Spec_PaladinProtMitigation,
-		StatRatingsWeights_readFile("C:\\Users\\nicholas\\Dropbox\\prog\\paladin_gearing\\src\\main\\resources\\weight\\PaladinProtMitigation.txt"),
+		StatRatingsWeights_ReadFile("C:\\Users\\nicholas\\Dropbox\\prog\\paladin_gearing\\src\\main\\resources\\weight\\PaladinProtMitigation.txt",
+			false, true, false),
 		StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules_tank,
 		EnchantChoice_ForSpec(Spec_PaladinProtMitigation),

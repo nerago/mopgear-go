@@ -14,7 +14,7 @@ var int_one = big.NewInt(1)
 
 func SolverIndexed_RunSkipping(itemOptions *SolvableOptionsMap, model *Model) SolvableItemSet {
 	max := itemOptions.TotalCombinationCount()
-	targetCombination := big.NewInt(1000000)
+	targetCombination := big.NewInt(10000000)
 
 	skip := big.NewInt(0)
 	skip.Div(max, targetCombination)
