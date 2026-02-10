@@ -6,7 +6,7 @@ import (
 )
 
 type SolvableItem struct {
-	ItemId int32
+	ItemId uint32
 	// ItemLevel  int16
 	// Slot       SlotItem
 	// Reforge    ReforgeRecipe
@@ -17,17 +17,6 @@ type SolvableItem struct {
 
 func (item *SolvableItem) IsEmpty() bool {
 	return item.ItemId == 0
-}
-
-func SolvableItem_Of(item FullItem) SolvableItem {
-	return SolvableItem{
-		item.ref.itemId,
-		// item.ref.itemLevel,
-		// item.slot,
-		// item.reforge,
-		// item.gemChoice,
-		item.totalCap,
-		item.totalRated}
 }
 
 type SolvableEquipMap [16]*SolvableItem

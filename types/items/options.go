@@ -40,20 +40,6 @@ func (optionsMap *FullOptionsMap) AllItems() iter.Seq[FullItem] {
 
 type SolvableOptionsMap [16][]SolvableItem
 
-func SolvableOptionsMap_of(fullMap *FullOptionsMap) SolvableOptionsMap {
-	result := SolvableOptionsMap{}
-	for slot := range fullMap {
-		fullArray := fullMap[slot]
-		solveArray := make([]SolvableItem, 0, len(fullArray))
-		for _, item := range fullArray {
-			solveItem := SolvableItem_Of(item)
-			solveArray = append(solveArray, solveItem)
-		}
-		result[slot] = solveArray
-	}
-	return result
-}
-
 func (optionsMap SolvableOptionsMap) Get(slot common.SlotEquip) []SolvableItem {
 	return optionsMap[slot]
 }

@@ -22,6 +22,43 @@ const (
 	Item_Offhand  SlotItem = 14 // also 23
 )
 
+func (slot SlotItem) Name() string {
+	switch slot {
+	case Item_Back:
+		return "Back"
+	case Item_Belt:
+		return "Belt"
+	case Item_Chest:
+		return "Chest"
+	case Item_Foot:
+		return "Foot"
+	case Item_Hand:
+		return "Hand"
+	case Item_Head:
+		return "Head"
+	case Item_Leg:
+		return "Leg"
+	case Item_Neck:
+		return "Neck"
+	case Item_Offhand:
+		return "Offhand"
+	case Item_Ring:
+		return "Ring"
+	case Item_Shoulder:
+		return "Shoulder"
+	case Item_Trinket:
+		return "Trinket"
+	case Item_Weapon1H:
+		return "Weapon1H"
+	case Item_Weapon2H:
+		return "Weapon2H"
+	case Item_Wrist:
+		return "Wrist"
+	default:
+		panic("unexpected common.SlotItem")
+	}
+}
+
 type SlotEquip int8
 
 const (

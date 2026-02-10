@@ -8,21 +8,25 @@ import (
 )
 
 type Model struct {
-	spec             SpecType
-	statRatings      StatRatings
-	statRequirements StatRequirements
-	reforgeRules     ReforgeRules
-	enchantChoice    EnchantChoice
-	gemChoice        GemChoice
+	Spec             SpecType
+	StatRatings      StatRatings
+	StatRequirements StatRequirements
+	ReforgeRules     ReforgeRules
+	EnchantChoice    EnchantChoice
+	GemChoice        GemChoice
 	// setBonus         SetBonus
 }
 
 func (model *Model) CheckSet(itemSet *SolvableItemSet) bool {
-	return model.statRequirements.CheckSet(&itemSet.TotalCap)
+	return model.StatRequirements.CheckSet(&itemSet.TotalCap)
 }
 
-func (model *Model) CalcRating(itemSet *SolvableItemSet) uint64 {
-	return model.statRatings.CalcRating(&itemSet.TotalRated)
+func (model *Model) CalcRatingSolve(itemSet *SolvableItemSet) uint64 {
+	return model.StatRatings.CalcRating(&itemSet.TotalRated)
+}
+
+func (model *Model) CalcRatingFull(itemSet *FullItemSet) uint64 {
+	return model.StatRatings.CalcRating(&itemSet.TotalRated)
 }
 
 func Model_PallyProtMitigation() Model {

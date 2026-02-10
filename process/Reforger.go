@@ -13,13 +13,13 @@ func Reforger_allOptions(baseItem *FullItem, rules *ReforgeRules) []FullItem {
 	sourceArray := rules.Source()
 
 	for _, source := range sourceArray {
-		originalValue := baseItem.StatBase().Get(source)
+		originalValue := baseItem.StatBase.Get(source)
 		if originalValue != 0 {
 			reforgeQuantity := (originalValue * 4) / 10
 			remainQuantity := originalValue - reforgeQuantity
 
 			for _, target := range targetArray {
-				if baseItem.StatBase().Get(target) == 0 {
+				if baseItem.StatBase.Get(target) == 0 {
 					modified := makeModified(baseItem, source, target, reforgeQuantity, remainQuantity)
 					outputItems = append(outputItems, modified)
 				}
@@ -41,12 +41,12 @@ func Reforger_singlePreset(baseItem *FullItem, recipe *ReforgeRecipe) FullItem {
 		panic("expected different stats")
 	}
 
-	originalValue := baseItem.StatBase().Get(source)
+	originalValue := baseItem.StatBase.Get(source)
 	if originalValue == 0 {
 		panic("expected item to have source stat")
 	}
 
-	if baseItem.StatBase().Get(target) != 0 {
+	if baseItem.StatBase.Get(target) != 0 {
 		panic("expected item to have zero target stat")
 	}
 
@@ -57,6 +57,6 @@ func Reforger_singlePreset(baseItem *FullItem, recipe *ReforgeRecipe) FullItem {
 
 func makeModified(baseItem *FullItem, source, target StatType, reforgeQuantity, remainQuantity uint32) FullItem {
 	return baseItem.ChangeForReforge(
-		baseItem.StatBase().WithChange2(source, remainQuantity, target, reforgeQuantity),
+		baseItem.StatBase.WithChange2(source, remainQuantity, target, reforgeQuantity),
 		ReforgeRecipe{From: source, To: target})
 }

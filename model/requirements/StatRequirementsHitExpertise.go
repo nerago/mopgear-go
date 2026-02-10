@@ -1,7 +1,6 @@
 package requirements
 
 import (
-	. "paladin_gearing_go/model"
 	. "paladin_gearing_go/types/items"
 	. "paladin_gearing_go/types/stats"
 )
@@ -21,19 +20,19 @@ const (
 	DEFAULT_CAP_ALLOW_EXCEED uint32 = 400
 )
 
-func StatRequirementsHitExpertise_RetWideCap() StatRequirements {
+func StatRequirementsHitExpertise_RetWideCap() StatRequirementsHitExpertise {
 	return StatRequirementsHitExpertise{
 		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED*5,
 		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED*5}
 }
 
-func StatRequirementsHitExpertise_ProtFullExpertise() StatRequirements {
+func StatRequirementsHitExpertise_ProtFullExpertise() StatRequirementsHitExpertise {
 	return StatRequirementsHitExpertise{
 		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED,
 		TARGET_RATING_TANK, TARGET_RATING_TANK + DEFAULT_CAP_ALLOW_EXCEED}
 }
 
-func StatRequirementsHitExpertise_ProtFlexibleParry() StatRequirements {
+func StatRequirementsHitExpertise_ProtFlexibleParry() StatRequirementsHitExpertise {
 	return StatRequirementsHitExpertise{
 		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED*2, // TODO why so high?
 		TARGET_RATING_MELEE, TARGET_RATING_TANK}

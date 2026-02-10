@@ -17,39 +17,41 @@ type ItemRef struct {
 	ItemLevelBase uint16
 }
 
-func (item *ItemRef) UpgradeLevel() uint16 {
-	if item.itemLevelBase < LOW_HIGH_MOP_ITEM_LEVELS_THRESHOLD {
-		return (item.ItemLevel - item.ItemLevelBase) / LOW_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL
+func (ref ItemRef) UpgradeLevel() int16 {
+	if ref.ItemLevel < ref.ItemLevelBase {
+		return -1
+	} else if ref.ItemLevelBase < LOW_HIGH_MOP_ITEM_LEVELS_THRESHOLD {
+		return int16((ref.ItemLevel - ref.ItemLevelBase) / LOW_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL)
 	} else {
-		return (item.ItemLevel - item.ItemLevelBase) / HIGH_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL
+		return int16((ref.ItemLevel - ref.ItemLevelBase) / HIGH_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL)
 	}
 }
 
 type FullItem struct {
 	// generally fixed from imports
-	ref         ItemRef
-	slot        common.SlotItem
-	baseName    string
-	armorType   common.ArmorType
-	primaryStat common.PrimaryStatType
-	socketSlots []common.SocketType
-	socketBonus stats.StatBlock
-	phase       int8
+	Ref         ItemRef
+	Slot        common.SlotItem
+	BaseName    string
+	ArmorType   common.ArmorType
+	PrimaryStat common.PrimaryStatType
+	SocketSlots []common.SocketType
+	SocketBonus stats.StatBlock
+	Phase       int8
 
 	// specific item instance choices
-	reforge       stats.ReforgeRecipe
-	gemChoice     []int32
-	enchantChoice int32
-	randomSuffix  int32
+	Reforge       stats.ReforgeRecipe
+	GemChoice     []int32
+	EnchantChoice int32
+	RandomSuffix  int32
 
 	// stats for different purposes
-	statBase    stats.StatBlock // constant stats post reforge
-	statEnchant stats.StatBlock // stats added from gems, enchant, or trinket model
-	totalCap    stats.StatBlock // constant total stats as they contribute to caps
-	totalRated  stats.StatBlock // averaged variable total stats for rating purposes
+	StatBase    stats.StatBlock // constant stats post reforge
+	StatEnchant stats.StatBlock // stats added from gems, enchant, or trinket model
+	TotalCap    stats.StatBlock // constant total stats as they contribute to caps
+	TotalRated  stats.StatBlock // averaged variable total stats for rating purposes
 }
 
-func FullItemData_fromWowSim(ref ItemRef, slot common.SlotItem, baseName string, statBase stats.StatBlock,
+func FullItem_FromWowSim(ref ItemRef, slot common.SlotItem, baseName string, statBase stats.StatBlock,
 	armorType common.ArmorType, socketSlots []common.SocketType,
 	socketBonus stats.StatBlock, phase int8) FullItem {
 	return FullItem{ref, slot, baseName, armorType, statBase.PrimaryStat(),
@@ -60,41 +62,42 @@ func FullItemData_fromWowSim(ref ItemRef, slot common.SlotItem, baseName string,
 
 func (item *FullItem) ChangeForReforge(changedStat stats.StatBlock, reforge stats.ReforgeRecipe) FullItem {
 	var totalRated, totalCap stats.StatBlock
-	if item.statEnchant.IsEmpty() {
+	if item.StatEnchant.IsEmpty() {
 		totalRated = changedStat
 		totalCap = changedStat
-	} else if item.slot.AddEnchantToCap() {
-		totalRated = changedStat.Add(item.statEnchant)
+	} else if item.Slot.AddEnchantToCap() {
+		totalRated = changedStat.Add(&item.StatEnchant)
 		totalCap = totalRated
 	} else {
-		totalRated = changedStat.Add(item.statEnchant)
+		totalRated = changedStat.Add(&item.StatEnchant)
 		totalCap = changedStat
 	}
 
-	return FullItem{item.ref, item.slot, item.baseName, item.armorType, item.primaryStat, item.socketSlots, item.socketBonus, item.phase,
-		reforge, item.gemChoice, item.enchantChoice, item.randomSuffix,
-		changedStat, item.statEnchant, totalCap, totalRated}
+	return FullItem{item.Ref, item.Slot, item.BaseName, item.ArmorType, item.PrimaryStat,
+		item.SocketSlots, item.SocketBonus, item.Phase,
+		reforge, item.GemChoice, item.EnchantChoice, item.RandomSuffix,
+		changedStat, item.StatEnchant, totalCap, totalRated}
 }
 
 func (item *FullItem) FullName() string {
-	if item.reforge.IsEmpty() {
-		return item.baseName
+	if item.Reforge.IsEmpty() {
+		return item.BaseName
 	} else {
-		return item.baseName + " " + item.reforge.Str()
+		return item.BaseName + " " + item.Reforge.Str()
 	}
 }
 
-func (item *FullItem) StatBase() stats.StatBlock {
-	return item.statBase
+func (item *FullItem) ItemId() uint32 {
+	return item.Ref.ItemId
 }
 
 func (item *FullItem) IsEmpty() bool {
-	return item.ref.itemId == 0
+	return item.Ref.ItemId == 0
 }
 
 func (item *FullItem) Equals(other *FullItem) bool {
-	return item.ref.itemId == other.ref.itemId && item.ref.itemLevel == other.ref.itemLevel && item.slot == other.slot &&
-		item.statBase == other.statBase && item.statEnchant == other.statEnchant
+	return item.Ref.ItemId == other.Ref.ItemId && item.Ref.ItemLevel == other.Ref.ItemLevel && item.Slot == other.Slot &&
+		item.StatBase == other.StatBase && item.StatEnchant == other.StatEnchant
 }
 
 type FullEquipMap [16]*FullItem
@@ -114,8 +117,7 @@ func (equipMap *FullEquipMap) AllItems() iter.Seq[*FullItem] {
 }
 
 type FullItemSet struct {
-	items      FullEquipMap
-	totalCap   stats.StatBlock
-	totalRated stats.StatBlock
-	rating     uint64
+	Items      FullEquipMap
+	TotalCap   stats.StatBlock
+	TotalRated stats.StatBlock
 }

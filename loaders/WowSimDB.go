@@ -10,6 +10,7 @@ import (
 	"strconv"
 )
 
+var loaded = false
 var itemsById map[uint32][]FullItem = make(map[uint32][]FullItem)
 var itemsByRef map[ItemRef]FullItem = make(map[ItemRef]FullItem)
 var reforgeById map[uint16]ReforgeRecipe = make(map[uint16]ReforgeRecipe)
@@ -28,6 +29,23 @@ func WowSimDB_Read() {
 
 	convertItems(inputObject["items"].([]any))
 	convertReforge(inputObject["reforgeStats"].([]any))
+
+	loaded = true
+}
+
+func WowSimDB_ByIdAndUpgrade(itemId uint32, upgradeLevel int16) *FullItem {
+	if !loaded {
+		WowSimDB_Read()
+	}
+
+	known := itemsById[itemId]
+	for _, item := range known {
+		if item.Ref.UpgradeLevel() == upgradeLevel {
+			return &item
+		}
+	}
+
+	return nil
 }
 
 func convertItems(itemArray []any) {
@@ -65,7 +83,7 @@ func addItem(itemObj map[string]any) {
 			ItemId:        itemId,
 			ItemLevel:     itemLevel,
 			ItemLevelBase: baseItemLevel}
-		item := FullItemData_fromWowSim(itemRef, slot, name, scaleStats, armorType, socketSlots, socketBonus, phase)
+		item := FullItem_FromWowSim(itemRef, slot, name, scaleStats, armorType, socketSlots, socketBonus, phase)
 		itemsById[itemId] = append(itemsById[itemId], item)
 		itemsByRef[itemRef] = item
 	}

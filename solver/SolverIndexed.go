@@ -23,7 +23,7 @@ func SolverIndexed_RunFull(itemOptions *SolvableOptionsMap, model *Model) Solvab
 	for index.Cmp(max) < 0 {
 		set := makeSet(itemOptions, &slotSizes, index)
 		if model.CheckSet(set) {
-			rating := model.CalcRating(set)
+			rating := model.CalcRatingSolve(set)
 			best.Add(set, rating)
 		}
 		index.Add(index, int_one)
@@ -55,6 +55,7 @@ func slotSizes(itemOptions *SolvableOptionsMap) [16]*big.Int {
 	for i, array := range itemOptions {
 		slotSizes[i] = big.NewInt(int64(len(array)))
 	}
+	return slotSizes
 }
 
 func makeSet(itemOptions *SolvableOptionsMap, slotSizes *[16]*big.Int, mainIndex *big.Int) *SolvableItemSet {
