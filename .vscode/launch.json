@@ -8,8 +8,9 @@
             "name": "Launch file",
             "type": "go",
             "request": "launch",
-            "mode": "debug",
-            "program": "main/test.go"
+            "mode": "auto",
+            "program": "main/test.go",
+            "buildFlags": "-pgo=auto"
         }
 
     ]

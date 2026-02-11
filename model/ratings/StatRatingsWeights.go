@@ -12,6 +12,10 @@ type StatRatingsWeights struct {
 	weight StatBlock
 }
 
+func (rating StatRatingsWeights) Weights() any {
+	return rating.weight.String()
+}
+
 func (rating StatRatingsWeights) CalcRating(block *StatBlock) uint64 {
 	return rating.weight.MultiplyForTotalSum(block)
 }

@@ -13,14 +13,26 @@ var int_one = big.NewInt(1)
 
 func SolverIndexed_RunSkipping(itemOptions *SolvableOptionsMap, model *Model) SolvableItemSet {
 	max := itemOptions.TotalCombinationCount()
-	targetCombination := big.NewInt(10000000)
+	targetCombination := big.NewInt(100000000)
 
 	skip := big.NewInt(0)
 	skip.Div(max, targetCombination)
+	skip = nextPrime(skip)
 
 	fmt.Printf("SOLVE SKIP %d %d %d\n", max, targetCombination, skip)
 
 	return mainLoop(itemOptions, max, skip, model)
+}
+
+func nextPrime(skip *big.Int) *big.Int {
+	if skip.Cmp(int_one) <= 0 {
+		return int_one
+	}
+
+	for !skip.ProbablyPrime(100) {
+		skip.Add(skip, int_one)
+	}
+	return skip
 }
 
 func SolverIndexed_RunFull(itemOptions *SolvableOptionsMap, model *Model) SolvableItemSet {
@@ -30,6 +42,7 @@ func SolverIndexed_RunFull(itemOptions *SolvableOptionsMap, model *Model) Solvab
 }
 
 func mainLoop(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *Model) SolvableItemSet {
+	// return mainLoop_multiThread(itemOptions, max, skip, model)
 	return mainLoop_multiThread2(itemOptions, max, skip, model)
 	// return mainLoop_singleThread(itemOptions, max, skip, model)
 }
@@ -69,17 +82,10 @@ func mainLoop_multiThread(itemOptions *SolvableOptionsMap, max, skip *big.Int, m
 }
 
 func indexSplits(max, skip *big.Int) []*big.Int {
-	// totalSteps := big.NewInt(0).Div(max, skip)
-	// eachThreadSteps := big.NewInt(0).Div(totalSteps, big.NewInt(threadCount))
-	// eachThreadIndexRange := big.NewInt(0).Mul(eachThreadSteps, skip)
-
 	indexPerThread := big.NewInt(0)
 	indexPerThread.Div(max, skip)
 	indexPerThread.Div(indexPerThread, big.NewInt(threadCount))
 	indexPerThread.Mul(indexPerThread, skip)
-
-	// indexPerThread := big.NewInt(0)
-	// indexPerThread.Div(max, big.NewInt(threadCount))
 
 	splitArray := make([]*big.Int, 0)
 	start := big.NewInt(0)
@@ -120,6 +126,8 @@ func workerThreadRange(itemOptions *SolvableOptionsMap, model *Model, start, max
 	var index big.Int
 	index.Set(start)
 
+	fmt.Printf("WORKER %020d-%020d\n", start, max)
+
 	for index.Cmp(max) < 0 {
 		set := makeSet(itemOptions, &slotSizes, &index)
 		if model.CheckSet(set) {
@@ -150,18 +158,20 @@ func workerThread(itemOptions *SolvableOptionsMap, model *Model, indexChannel <-
 
 func mainLoop_singleThread(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *Model) SolvableItemSet {
 	slotSizes := slotSizes(itemOptions)
-	index := big.NewInt(0)
+
+	var index big.Int
+	index.Set(big.NewInt(0))
 	best := BestCollector1[SolvableItemSet]{}
 
-	go trackProgress(index, max)
+	go trackProgress(&index, max)
 
 	for index.Cmp(max) < 0 {
-		set := makeSet(itemOptions, &slotSizes, index)
+		set := makeSet(itemOptions, &slotSizes, &index)
 		if model.CheckSet(set) {
 			rating := model.CalcRatingSolve(set)
 			best.Offer(set, rating)
 		}
-		index.Add(index, skip)
+		index.Add(&index, skip)
 	}
 
 	return best.GetBest()

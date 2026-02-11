@@ -14,5 +14,6 @@ func Solver(itemOptions *FullOptionsMap, model *Model) FullItemSet {
 	solveOptions := SolvableOptionsMap_of(itemOptions)
 	// solvedSet := SolverIndexed_RunFull(&solveOptions, model)
 	solvedSet := SolverIndexed_RunSkipping(&solveOptions, model)
+	solvedSet = Tweaker_Run(solvedSet, &solveOptions, model)
 	return FullItemSet_FromSolved(solvedSet, itemOptions)
 }

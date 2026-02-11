@@ -29,6 +29,10 @@ func (model *Model) CalcRatingFull(itemSet *FullItemSet) uint64 {
 	return model.StatRatings.CalcRating(&itemSet.TotalRated)
 }
 
+func (model *Model) CalcRatingFullItem(item FullItem) uint64 {
+	return model.StatRatings.CalcRating(&item.TotalRated)
+}
+
 func Model_PallyProtMitigation() Model {
 	return Model{
 		Spec_PaladinProtMitigation,
