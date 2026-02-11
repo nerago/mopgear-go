@@ -11,6 +11,8 @@ import (
 	// . "paladin_gearing_go/types/common"
 	"fmt"
 	"time"
+	// "os"
+	// "runtime/pprof"
 )
 
 const (
@@ -20,6 +22,20 @@ const (
 func main() {
 	startTime := time.Now()
 
+	// f, err := os.Create("profile.out")
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// pprof.StartCPUProfile(f)
+	// defer pprof.StopCPUProfile()
+
+	core()
+
+	timeTaken := time.Since(startTime)
+	fmt.Println("Duration = " + timeTaken.String())
+}
+
+func core() {
 	printer := PrintRecorder{}
 	model := Model_PallyProtMitigation()
 	itemOptions := OptionsSetup_FromGearFile(gearFile, &model, &printer)
@@ -28,9 +44,6 @@ func main() {
 
 	fullSet := Solver(&itemOptions, &model)
 	reportSet(fullSet, &model)
-
-	timeTaken := time.Since(startTime)
-	fmt.Println("Duration = " + timeTaken.String())
 }
 
 // func slotRating(itemArray []FullItem, model *Model) {
