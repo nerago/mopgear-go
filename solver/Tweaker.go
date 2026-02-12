@@ -21,7 +21,9 @@ func Tweaker_Run(initialSet SolvableItemSet, solvableOptionsMap *SolvableOptions
 				replaceMap := best.BestObject.Items
 				replaceMap[slot] = &replace
 				possibleSet := SolvableItemSet_Of(replaceMap)
-				best.Offer(possibleSet, model.CalcRatingSolve(possibleSet))
+				if model.CheckSet(&possibleSet) {
+					best.Offer(&possibleSet, model.CalcRatingSolve(&possibleSet))
+				}
 			}
 		}
 	}

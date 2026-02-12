@@ -22,16 +22,16 @@ func (item *SolvableItem) IsEmpty() bool {
 type SolvableEquipMap [16]*SolvableItem
 
 type SolvableItemSet struct {
-	Items      *SolvableEquipMap
+	Items      SolvableEquipMap
 	TotalCap   StatBlock
 	TotalRated StatBlock
 }
 
-func SolvableItemSet_Of(equipMap *SolvableEquipMap) *SolvableItemSet {
+func SolvableItemSet_Of(equipMap SolvableEquipMap) SolvableItemSet {
 	result := SolvableItemSet{equipMap, StatBlock{}, StatBlock{}}
 	for _, item := range equipMap {
 		result.TotalCap.Increment_Mutating(&item.TotalCap)
 		result.TotalRated.Increment_Mutating(&item.TotalRated)
 	}
-	return &result
+	return result
 }

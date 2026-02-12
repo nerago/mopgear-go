@@ -34,10 +34,14 @@ func (model *Model) CalcRatingFullItem(item FullItem) uint64 {
 }
 
 func Model_PallyProtMitigation() Model {
+	const weightMitiFile = "C:\\Users\\nicholas\\Dropbox\\prog\\paladin_gearing\\src\\main\\resources\\weight\\PaladinProtMitigation.txt"
+	const weightDpsFile = "C:\\Users\\nicholas\\Dropbox\\prog\\paladin_gearing\\src\\main\\resources\\weight\\PaladinProtDps.txt"
+	weightMiti := StatRatingsWeights_ReadFile(weightMitiFile, false, true, false)
+	weightDps := StatRatingsWeights_ReadFile(weightDpsFile, false, true, false)
+	weight := StatRatingsWeights_Mix(weightMiti, 121, weightDps, 41)
 	return Model{
 		Spec_PaladinProtMitigation,
-		StatRatingsWeights_ReadFile("C:\\Users\\nicholas\\Dropbox\\prog\\paladin_gearing\\src\\main\\resources\\weight\\PaladinProtMitigation.txt",
-			false, true, false),
+		weight,
 		StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules_tank,
 		EnchantChoice_ForSpec(Spec_PaladinProtMitigation),

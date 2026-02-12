@@ -146,9 +146,9 @@ func workerThreadRangeBig(itemOptions *SolvableOptionsMap, model *Model, start, 
 
 	for index.Cmp(max) < 0 {
 		set := makeSetBig(itemOptions, &slotSizes, &index)
-		if model.CheckSet(set) {
-			rating := model.CalcRatingSolve(set)
-			best.Offer(set, rating)
+		if model.CheckSet(&set) {
+			rating := model.CalcRatingSolve(&set)
+			best.Offer(&set, rating)
 		}
 
 		index.Add(&index, skip)
@@ -168,9 +168,9 @@ func workerThreadRangeInt(itemOptions *SolvableOptionsMap, model *Model, start, 
 
 	for index < max {
 		set := makeSetInt(itemOptions, index)
-		if model.CheckSet(set) {
-			rating := model.CalcRatingSolve(set)
-			best.Offer(set, rating)
+		if model.CheckSet(&set) {
+			rating := model.CalcRatingSolve(&set)
+			best.Offer(&set, rating)
 		}
 
 		index += skip
@@ -186,9 +186,9 @@ func workerThread(itemOptions *SolvableOptionsMap, model *Model, indexChannel <-
 
 	for index := range indexChannel {
 		set := makeSetBig(itemOptions, &slotSizes, index)
-		if model.CheckSet(set) {
-			rating := model.CalcRatingSolve(set)
-			best.Offer(set, rating)
+		if model.CheckSet(&set) {
+			rating := model.CalcRatingSolve(&set)
+			best.Offer(&set, rating)
 		}
 	}
 
@@ -203,9 +203,9 @@ func mainLoop_singleThread_int(itemOptions *SolvableOptionsMap, max, skip uint64
 
 	for index < max {
 		set := makeSetInt(itemOptions, index)
-		if model.CheckSet(set) {
-			rating := model.CalcRatingSolve(set)
-			best.Offer(set, rating)
+		if model.CheckSet(&set) {
+			rating := model.CalcRatingSolve(&set)
+			best.Offer(&set, rating)
 		}
 		index += skip
 	}
@@ -224,9 +224,9 @@ func mainLoop_singleThread_big(itemOptions *SolvableOptionsMap, max, skip *big.I
 
 	for index.Cmp(max) < 0 {
 		set := makeSetBig(itemOptions, &slotSizes, &index)
-		if model.CheckSet(set) {
-			rating := model.CalcRatingSolve(set)
-			best.Offer(set, rating)
+		if model.CheckSet(&set) {
+			rating := model.CalcRatingSolve(&set)
+			best.Offer(&set, rating)
 		}
 		index.Add(&index, skip)
 	}
@@ -323,7 +323,7 @@ func slotSizesBig(itemOptions *SolvableOptionsMap) [16]*big.Int {
 	return slotSizes
 }
 
-func makeSetBig(itemOptions *SolvableOptionsMap, slotSizes *[16]*big.Int, mainIndex *big.Int) *SolvableItemSet {
+func makeSetBig(itemOptions *SolvableOptionsMap, slotSizes *[16]*big.Int, mainIndex *big.Int) SolvableItemSet {
 	equip := SolvableEquipMap{}
 
 	currIndex := big.NewInt(0)
@@ -339,10 +339,10 @@ func makeSetBig(itemOptions *SolvableOptionsMap, slotSizes *[16]*big.Int, mainIn
 		equip[slot] = &array[slotIndex]
 	}
 
-	return SolvableItemSet_Of(&equip)
+	return SolvableItemSet_Of(equip)
 }
 
-func makeSetInt(itemOptions *SolvableOptionsMap, mainIndex uint64) *SolvableItemSet {
+func makeSetInt(itemOptions *SolvableOptionsMap, mainIndex uint64) SolvableItemSet {
 	equip := SolvableEquipMap{}
 
 	currIndex := mainIndex
@@ -356,5 +356,5 @@ func makeSetInt(itemOptions *SolvableOptionsMap, mainIndex uint64) *SolvableItem
 		equip[slot] = &array[slotIndex]
 	}
 
-	return SolvableItemSet_Of(&equip)
+	return SolvableItemSet_Of(equip)
 }
