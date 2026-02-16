@@ -33,9 +33,10 @@ func (model *Model) CalcRatingFullItem(item FullItem) uint64 {
 	return model.StatRatings.CalcRating(&item.TotalRated)
 }
 
+const weightMitiFile = "C:\\Users\\nicholas\\Dropbox\\prog\\paladin_gearing\\src\\main\\resources\\weight\\PaladinProtMitigation.txt"
+const weightDpsFile = "C:\\Users\\nicholas\\Dropbox\\prog\\paladin_gearing\\src\\main\\resources\\weight\\PaladinProtDps.txt"
+
 func Model_PallyProtMitigation() Model {
-	const weightMitiFile = "C:\\Users\\nicholas\\Dropbox\\prog\\paladin_gearing\\src\\main\\resources\\weight\\PaladinProtMitigation.txt"
-	const weightDpsFile = "C:\\Users\\nicholas\\Dropbox\\prog\\paladin_gearing\\src\\main\\resources\\weight\\PaladinProtDps.txt"
 	weightMiti := StatRatingsWeights_ReadFile(weightMitiFile, false, true, false)
 	weightDps := StatRatingsWeights_ReadFile(weightDpsFile, false, true, false)
 	weight := StatRatingsWeights_Mix(weightMiti, 121, weightDps, 41)
@@ -46,4 +47,17 @@ func Model_PallyProtMitigation() Model {
 		ReforgeRules_tank,
 		EnchantChoice_ForSpec(Spec_PaladinProtMitigation),
 		GemChoice_ForSpec(Spec_PaladinProtMitigation)}
+}
+
+func Model_PallyProtDps() Model {
+	weightMiti := StatRatingsWeights_ReadFile(weightMitiFile, false, true, false)
+	weightDps := StatRatingsWeights_ReadFile(weightDpsFile, false, true, false)
+	weight := StatRatingsWeights_Mix(weightMiti, 15, weightDps, 185)
+	return Model{
+		Spec_PaladinProtDps,
+		weight,
+		StatRequirementsHitExpertise_ProtFlexibleParry(),
+		ReforgeRules_tank,
+		EnchantChoice_ForSpec(Spec_PaladinProtDps),
+		GemChoice_ForSpec(Spec_PaladinProtDps)}
 }

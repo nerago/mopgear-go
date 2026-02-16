@@ -48,6 +48,8 @@ func mainLoop(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *Model)
 	// 	return mainLoop_multiThread_big(itemOptions, max, skip, model)
 	// }
 
+	// TODO consider partitioning some slots until under limit
+
 	if max.IsUint64() && skip.IsUint64() {
 		return mainLoop_singleThread_int(itemOptions, max.Uint64(), skip.Uint64(), model)
 	} else {
