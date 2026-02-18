@@ -23,3 +23,12 @@ func (collect *BestCollector1[T]) Offer(object *T, value uint64) {
 func (collect *BestCollector1[T]) CombineOther(other BestCollector1[T]) {
 	collect.Offer(other.BestObject, other.BestValue)
 }
+
+func BestCollector1_OfChannel[T any](channel <-chan BestCollector1[T], expectNum int) T {
+	best := BestCollector1[T]{}
+	for range expectNum {
+		threadResult := <-channel
+		best.CombineOther(threadResult)
+	}
+	return best.GetBest()
+}

@@ -1,13 +1,16 @@
-package solver
+package indexed
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	. "paladin_gearing_go/model"
 	. "paladin_gearing_go/types/items"
-	. "paladin_gearing_go/util"
+	"paladin_gearing_go/util"
 	"time"
 )
+
+const threadCount = 12
 
 var int_one = big.NewInt(1)
 
@@ -17,22 +20,11 @@ func SolverIndexed_RunSkipping(itemOptions *SolvableOptionsMap, model *Model) So
 
 	skip := big.NewInt(0)
 	skip.Div(max, targetCombination)
-	skip = nextPrime(skip)
+	skip = util.NextPrime(skip)
 
 	fmt.Printf("SOLVE SKIP %d %d %d\n", max, targetCombination, skip)
 
 	return mainLoop(itemOptions, max, skip, model)
-}
-
-func nextPrime(skip *big.Int) *big.Int {
-	if skip.Cmp(int_one) <= 0 {
-		return int_one
-	}
-
-	for !skip.ProbablyPrime(100) {
-		skip.Add(skip, int_one)
-	}
-	return skip
 }
 
 func SolverIndexed_RunFull(itemOptions *SolvableOptionsMap, model *Model) SolvableItemSet {
@@ -56,8 +48,6 @@ func mainLoop(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *Model)
 		return mainLoop_singleThread_big(itemOptions, max, skip, model)
 	}
 }
-
-const threadCount = 12
 
 func indexSplitsBig(max, skip *big.Int) []*big.Int {
 	indexPerThread := big.NewInt(0)
@@ -93,11 +83,13 @@ func indexSplitsInt(max, skip uint64) []uint64 {
 }
 
 func mainLoop_multiThread_big(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *Model) SolvableItemSet {
-	resultChannel := make(chan BestCollector1[SolvableItemSet], threadCount)
-
-	// thread to track progress
+	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
 	counters := [threadCount]uint64{}
-	go trackProgressBigThreaded(&counters, skip, max)
+
+	// track progress with cancel
+	ctx, cancel := context.WithCancel(context.Background())
+	go trackProgressBigThreaded(&counters, skip, max, ctx)
+	defer cancel()
 
 	// start up workers
 	splits := indexSplitsBig(max, skip)
@@ -106,20 +98,17 @@ func mainLoop_multiThread_big(itemOptions *SolvableOptionsMap, max, skip *big.In
 	}
 
 	// combine each thread's best result
-	best := BestCollector1[SolvableItemSet]{}
-	for range threadCount {
-		threadResult := <-resultChannel
-		best.CombineOther(threadResult)
-	}
-	return best.GetBest()
+	return util.BestCollector1_OfChannel(resultChannel, threadCount)
 }
 
 func mainLoop_multiThread_int(itemOptions *SolvableOptionsMap, max, skip uint64, model *Model) SolvableItemSet {
-	resultChannel := make(chan BestCollector1[SolvableItemSet], threadCount)
-
-	// thread to track progress
+	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
 	counters := [threadCount]uint64{}
-	go trackProgressIntThreaded(&counters, skip, max)
+
+	// track progress with cancel
+	ctx, cancel := context.WithCancel(context.Background())
+	go trackProgressIntThreaded(&counters, skip, max, ctx)
+	defer cancel()
 
 	// start up workers
 	splits := indexSplitsInt(max, skip)
@@ -128,17 +117,12 @@ func mainLoop_multiThread_int(itemOptions *SolvableOptionsMap, max, skip uint64,
 	}
 
 	// combine each thread's best result
-	best := BestCollector1[SolvableItemSet]{}
-	for range threadCount {
-		threadResult := <-resultChannel
-		best.CombineOther(threadResult)
-	}
-	return best.GetBest()
+	return util.BestCollector1_OfChannel(resultChannel, threadCount)
 }
 
 func workerThreadRangeBig(itemOptions *SolvableOptionsMap, model *Model, start, max, skip *big.Int,
-	resultChannel chan BestCollector1[SolvableItemSet], counter *uint64) {
-	best := BestCollector1[SolvableItemSet]{}
+	resultChannel chan<- util.BestCollector1[SolvableItemSet], doneCounter *uint64) {
+	best := util.BestCollector1[SolvableItemSet]{}
 	slotSizes := slotSizesBig(itemOptions)
 
 	var index big.Int
@@ -154,15 +138,15 @@ func workerThreadRangeBig(itemOptions *SolvableOptionsMap, model *Model, start, 
 		}
 
 		index.Add(&index, skip)
-		(*counter)++
+		(*doneCounter)++
 	}
 
 	resultChannel <- best
 }
 
 func workerThreadRangeInt(itemOptions *SolvableOptionsMap, model *Model, start, max, skip uint64,
-	resultChannel chan BestCollector1[SolvableItemSet], counter *uint64) {
-	best := BestCollector1[SolvableItemSet]{}
+	resultChannel chan<- util.BestCollector1[SolvableItemSet], doneCounter *uint64) {
+	best := util.BestCollector1[SolvableItemSet]{}
 
 	index := start
 
@@ -176,14 +160,14 @@ func workerThreadRangeInt(itemOptions *SolvableOptionsMap, model *Model, start, 
 		}
 
 		index += skip
-		(*counter)++
+		(*doneCounter)++
 	}
 
 	resultChannel <- best
 }
 
-func workerThread(itemOptions *SolvableOptionsMap, model *Model, indexChannel <-chan *big.Int, resultChannel chan<- BestCollector1[SolvableItemSet]) {
-	best := BestCollector1[SolvableItemSet]{}
+func workerThread(itemOptions *SolvableOptionsMap, model *Model, indexChannel <-chan *big.Int, resultChannel chan<- util.BestCollector1[SolvableItemSet]) {
+	best := util.BestCollector1[SolvableItemSet]{}
 	slotSizes := slotSizesBig(itemOptions)
 
 	for index := range indexChannel {
@@ -199,7 +183,7 @@ func workerThread(itemOptions *SolvableOptionsMap, model *Model, indexChannel <-
 
 func mainLoop_singleThread_int(itemOptions *SolvableOptionsMap, max, skip uint64, model *Model) SolvableItemSet {
 	var index uint64 = 0
-	best := BestCollector1[SolvableItemSet]{}
+	best := util.BestCollector1[SolvableItemSet]{}
 
 	go trackProgressInt(index, max)
 
@@ -220,7 +204,7 @@ func mainLoop_singleThread_big(itemOptions *SolvableOptionsMap, max, skip *big.I
 
 	var index big.Int
 	index.Set(big.NewInt(0))
-	best := BestCollector1[SolvableItemSet]{}
+	best := util.BestCollector1[SolvableItemSet]{}
 
 	go trackProgressBig(&index, max)
 
@@ -252,10 +236,15 @@ func trackProgressInt(index, max uint64) {
 	}
 }
 
-func trackProgressIntThreaded(threadCounters *[12]uint64, skip, max uint64) {
+func trackProgressIntThreaded(threadCounters *[12]uint64, skip, max uint64, ctx context.Context) {
 	startTime := time.Now()
 	for {
-		time.Sleep(time.Second * 5)
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			time.Sleep(time.Second * 5)
+		}
 
 		var totalCount uint64 = 0
 		for _, value := range threadCounters {
@@ -292,10 +281,15 @@ func trackProgressBig(index, max *big.Int) {
 	}
 }
 
-func trackProgressBigThreaded(threadCounters *[12]uint64, skip, max *big.Int) {
+func trackProgressBigThreaded(threadCounters *[12]uint64, skip, max *big.Int, ctx context.Context) {
 	startTime := time.Now()
 	for {
-		time.Sleep(time.Second * 5)
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			time.Sleep(time.Second * 5)
+		}
 
 		var totalCount uint64 = 0
 		for _, value := range threadCounters {

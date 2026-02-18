@@ -124,8 +124,10 @@ func (equipMap *FullEquipMap) Get(slot common.SlotEquip) *FullItem {
 func (equipMap *FullEquipMap) AllItems() iter.Seq[*FullItem] {
 	return func(yield func(*FullItem) bool) {
 		for _, item := range equipMap {
-			if !yield(item) {
-				return
+			if !item.IsEmpty() {
+				if !yield(item) {
+					return
+				}
 			}
 		}
 	}

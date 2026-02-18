@@ -1,7 +1,7 @@
 package items
 
 import (
-	// . "paladin_gearing_go/types/common"
+	. "paladin_gearing_go/types/common"
 	. "paladin_gearing_go/types/stats"
 )
 
@@ -21,6 +21,12 @@ func (item *SolvableItem) IsEmpty() bool {
 
 type SolvableEquipMap [16]*SolvableItem
 
+func (equipMap SolvableEquipMap) WithAdditional(slot SlotEquip, item *SolvableItem) SolvableEquipMap {
+	var result SolvableEquipMap = equipMap
+	result[slot] = item
+	return result
+}
+
 type SolvableItemSet struct {
 	Items      SolvableEquipMap
 	TotalCap   StatBlock
@@ -34,4 +40,34 @@ func SolvableItemSet_Of(equipMap SolvableEquipMap) SolvableItemSet {
 		result.TotalRated.Increment_Mutating(&item.TotalRated)
 	}
 	return result
+}
+
+func SolvableItemSet_SingleItem(slot SlotEquip, item *SolvableItem) SolvableItemSet {
+	equip := SolvableEquipMap{}
+	equip[slot] = item
+	return SolvableItemSet{
+		Items:      equip,
+		TotalCap:   item.TotalCap,
+		TotalRated: item.TotalRated}
+}
+
+func (set *SolvableItemSet) AddItem_Mutating(slot SlotEquip, item *SolvableItem) {
+	if set.Items[slot] != nil {
+		panic("slot not empty")
+	}
+
+	set.Items[slot] = item
+	set.TotalCap.Increment_Mutating(&item.TotalCap)
+	set.TotalRated.Increment_Mutating(&item.TotalRated)
+}
+
+func (set *SolvableItemSet) AddItem_CreateNew(slot SlotEquip, item *SolvableItem) SolvableItemSet {
+	if set.Items[slot] != nil {
+		panic("slot not empty")
+	}
+
+	return SolvableItemSet{
+		Items:      set.Items.WithAdditional(slot, item),
+		TotalCap:   StatBlock_Add(&set.TotalCap, &item.TotalCap),
+		TotalRated: StatBlock_Add(&set.TotalRated, &item.TotalRated)}
 }

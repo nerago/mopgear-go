@@ -2,6 +2,7 @@ package solver
 
 import (
 	. "paladin_gearing_go/model"
+	"paladin_gearing_go/solver/indexed"
 	. "paladin_gearing_go/types/items"
 )
 
@@ -13,7 +14,7 @@ import (
 func Solver(itemOptions *FullOptionsMap, model *Model) FullItemSet {
 	solveOptions := SolvableOptionsMap_of(itemOptions)
 	// solvedSet := SolverIndexed_RunFull(&solveOptions, model)
-	solvedSet := SolverIndexed_RunSkipping(&solveOptions, model)
+	solvedSet := indexed.SolverIndexed_RunSkipping(&solveOptions, model)
 	solvedSet = Tweaker_Run(solvedSet, &solveOptions, model)
 	return FullItemSet_FromSolved(solvedSet, itemOptions)
 }
