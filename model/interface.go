@@ -7,7 +7,8 @@ import (
 
 type StatRequirements interface {
 	CheckSet(block *StatBlock) bool
-	ToSkinny(item *SolvableItem) *SkinnyItem
+	CheckSetSkinny(set *SkinnyItemSet) bool
+	ToSkinny(item *SolvableItem) SkinnyItem
 	SkinnyMatch(skinny *SkinnyItem, item *SolvableItem) bool
 }
 

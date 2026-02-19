@@ -2,6 +2,7 @@ package solver
 
 import (
 	. "paladin_gearing_go/model"
+	"paladin_gearing_go/solver/build"
 	"paladin_gearing_go/solver/indexed"
 	. "paladin_gearing_go/types/items"
 )
@@ -11,10 +12,24 @@ import (
 // 	itemOptions SolvableOptionsMap
 // }
 
+const targetCount = 10000000
+
 func Solver(itemOptions *FullOptionsMap, model *Model) FullItemSet {
 	solveOptions := SolvableOptionsMap_of(itemOptions)
-	// solvedSet := SolverIndexed_RunFull(&solveOptions, model)
-	solvedSet := indexed.SolverIndexed_RunSkipping(&solveOptions, model)
+
+	var solvedSet SolvableItemSet
+	mode := 2
+	switch mode {
+	case 1:
+		solvedSet = indexed.SolverIndexed_RunFull(&solveOptions, model)
+	case 2:
+		solvedSet = indexed.SolverIndexed_RunSkipping(&solveOptions, model, targetCount)
+	case 3:
+		solvedSet = build.SolverChannelBuildFull_Run(&solveOptions, model)
+	case 4:
+		solvedSet = build.SolverChannelBuildPrime_Run(&solveOptions, model, targetCount)
+	}
+
 	solvedSet = Tweaker_Run(solvedSet, &solveOptions, model)
 	return FullItemSet_FromSolved(solvedSet, itemOptions)
 }

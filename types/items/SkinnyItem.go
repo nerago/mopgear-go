@@ -11,7 +11,7 @@ type SkinnyItem struct {
 type SkinnyEquipMap [16]SkinnyItem
 
 type SkinnyItemSet struct {
-	items [16]SkinnyItem
+	Items SkinnyEquipMap
 	A     uint32
 	B     uint32
 }

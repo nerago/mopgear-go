@@ -105,3 +105,27 @@ func stepPrimeChannel(itemOptions *SolvableOptionsMap, slot SlotEquip, indexIncr
 	}()
 	return output
 }
+
+// func validatePrimeLooping() {
+// 	for arraySize := 1; arraySize <= 300; arraySize++ {
+// 		primes := util.SmallPrimes(arraySize)
+// 		for _, indexIncrement := range primes {
+// 			checkPrimeSize(arraySize, indexIncrement)
+// 		}
+// 	}
+// }
+
+// func checkPrimeSize(arraySize, indexIncrement int) {
+// 	array := make([]bool, arraySize)
+// 	index := 0
+// 	for range 2000 {
+// 		array[index] = true
+// 		index = (index + indexIncrement) % arraySize
+// 	}
+// 	for _, val := range array {
+// 		if !val {
+// 			panic("missing true in " + strconv.Itoa(arraySize) + " " + strconv.Itoa(indexIncrement))
+// 		}
+// 	}
+// 	fmt.Printf("ok %d %d\n", arraySize, indexIncrement)
+// }

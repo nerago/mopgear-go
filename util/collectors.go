@@ -1,8 +1,21 @@
 package util
 
+import (
+	"cmp"
+	"math"
+	"slices"
+)
+
+// ///////////////////////////////////////////////////////////
 type BestCollector1[T any] struct {
 	BestObject *T
 	BestValue  uint64
+}
+
+func (collect *BestCollector1[T]) CheckValidOrPanic() {
+	if collect.BestObject == nil {
+		panic("no best found")
+	}
 }
 
 func (collect *BestCollector1[T]) GetBest() T {
@@ -31,4 +44,146 @@ func BestCollector1_OfChannel[T any](channel <-chan BestCollector1[T], expectNum
 		best.CombineOther(threadResult)
 	}
 	return best.GetBest()
+}
+
+// ///////////////////////////////////////////////////////////
+type internalEntry[T any] struct {
+	object *T
+	value  uint64
+}
+
+type CollectorN[T any] interface {
+	Offer(object *T, value uint64)
+	// Merge_Mutating(other *CollectorN[T])
+	ResultsFlat() []T
+	ResultsPointers() []*T
+}
+
+type LowestCollectorN[T any] struct {
+	array       []internalEntry[T]
+	worst       uint64
+	size, limit int
+}
+
+func LowestCollector_ForN[T any](limit int) LowestCollectorN[T] {
+	return LowestCollectorN[T]{make([]internalEntry[T], 0, limit), math.MaxUint64, 0, limit}
+}
+
+func (collect *LowestCollectorN[T]) sortContent() {
+	slices.SortFunc(collect.array, func(a, b internalEntry[T]) int {
+		return cmp.Compare(b.value, a.value)
+	})
+}
+
+func (collect *LowestCollectorN[T]) Offer(object *T, value uint64) {
+	if collect.size < collect.limit {
+		entry := internalEntry[T]{object, value}
+		collect.array = append(collect.array, entry)
+		collect.sortContent()
+		collect.worst = collect.array[0].value
+		collect.size++
+	} else if value < collect.worst {
+		entry := internalEntry[T]{object, value}
+		collect.array[0] = entry
+		collect.sortContent()
+		collect.worst = collect.array[0].value
+	}
+}
+
+func (collect *LowestCollectorN[T]) Merge_Mutating(other *LowestCollectorN[T]) {
+	if other.size > 0 {
+		collect.array = slices.Concat(collect.array, other.array)
+		collect.sortContent()
+
+		arrayTotal := len(collect.array)
+		if arrayTotal > collect.limit {
+			collect.array = collect.array[arrayTotal-collect.limit : arrayTotal]
+			collect.size = collect.limit
+		} else {
+			collect.size = arrayTotal
+		}
+
+		collect.worst = collect.array[0].value
+	}
+}
+
+func (collect *LowestCollectorN[T]) ResultsFlat() []T {
+	result := make([]T, 0, collect.size)
+	for _, entry := range collect.array {
+		result = append(result, *entry.object)
+	}
+	return result
+}
+
+func (collect *LowestCollectorN[T]) ResultsPointers() []*T {
+	result := make([]*T, 0, collect.size)
+	for _, entry := range collect.array {
+		result = append(result, entry.object)
+	}
+	return result
+}
+
+// ///////////////////////////////////////////////////////////
+type HighestCollectorN[T any] struct {
+	array       []internalEntry[T]
+	worst       uint64
+	size, limit int
+}
+
+func HighestCollector_ForN[T any](limit int) HighestCollectorN[T] {
+	return HighestCollectorN[T]{make([]internalEntry[T], 0, limit), 0, 0, limit}
+}
+
+func (collect *HighestCollectorN[T]) sortContent() {
+	slices.SortFunc(collect.array, func(a, b internalEntry[T]) int {
+		return cmp.Compare(a.value, b.value)
+	})
+}
+
+func (collect *HighestCollectorN[T]) Offer(object *T, value uint64) {
+	if collect.size < collect.limit {
+		entry := internalEntry[T]{object, value}
+		collect.array = append(collect.array, entry)
+		collect.sortContent()
+		collect.worst = collect.array[0].value
+		collect.size++
+	} else if value > collect.worst {
+		entry := internalEntry[T]{object, value}
+		collect.array[0] = entry
+		collect.sortContent()
+		collect.worst = collect.array[0].value
+	}
+}
+
+func (collect *HighestCollectorN[T]) Merge_Mutating(other *HighestCollectorN[T]) {
+	if other.size > 0 {
+		collect.array = slices.Concat(collect.array, other.array)
+		collect.sortContent()
+
+		arrayTotal := len(collect.array)
+		if arrayTotal > collect.limit {
+			collect.array = collect.array[arrayTotal-collect.limit : arrayTotal]
+			collect.size = collect.limit
+		} else {
+			collect.size = arrayTotal
+		}
+
+		collect.worst = collect.array[0].value
+	}
+}
+
+func (collect *HighestCollectorN[T]) ResultsFlat() []T {
+	result := make([]T, 0, collect.size)
+	for _, entry := range collect.array {
+		result = append(result, *entry.object)
+	}
+	return result
+}
+
+func (collect *HighestCollectorN[T]) ResultsPointers() []*T {
+	result := make([]*T, 0, collect.size)
+	for _, entry := range collect.array {
+		result = append(result, entry.object)
+	}
+	return result
 }

@@ -1,0 +1,177 @@
+package phased
+
+import (
+	"math/big"
+	"paladin_gearing_go/model"
+	. "paladin_gearing_go/model"
+	"paladin_gearing_go/solver/solve_util"
+	. "paladin_gearing_go/types/common"
+	. "paladin_gearing_go/types/items"
+	"paladin_gearing_go/util"
+)
+
+const threadCount = 6 // per thread type
+const bufferSize = 256
+
+func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount int64) SolvableItemSet {
+	skinnyOptions := toSkinnyOptions(itemOptions, model)
+
+	max := skinnyOptions.TotalCombinationCount()
+	targetCombination := big.NewInt(int64(targetCount))
+	skip := util.ChooseSkip(max, targetCombination)
+	if max.IsUint64() && skip.IsUint64() {
+		skinnyComboChannel := makeSkinnyCombosMultiThread(&skinnyOptions, model, max.Uint64(), skip.Uint64())
+		// TODO consider filterBestCapsOnly like java
+		return findBestSolvedMultiThread(itemOptions, model, skinnyComboChannel)
+	} else {
+		panic("too many combos for int")
+	}
+}
+
+func toSkinnyOptions(itemOptions *SolvableOptionsMap, model *Model) SkinnyOptionsMap {
+	skinnyOptions := SkinnyOptionsMap{}
+	for slot, slotOptions := range itemOptions {
+		uniqueMap := make(map[SkinnyItem]bool, len(slotOptions))
+
+		for _, item := range slotOptions {
+			skinny := model.StatRequirements.ToSkinny(&item)
+			uniqueMap[skinny] = true
+		}
+
+		uniqueSet := toKeys(uniqueMap)
+		skinnyOptions[slot] = uniqueSet
+	}
+	return skinnyOptions
+}
+
+func toKeys(uniqueMap map[SkinnyItem]bool) []SkinnyItem {
+	keys := make([]SkinnyItem, 0, len(uniqueMap))
+	for item := range uniqueMap {
+		keys = append(keys, item)
+	}
+	return keys
+}
+
+func makeSkinnyCombosMultiThread(itemOptions *SkinnyOptionsMap, model *Model, max, skip uint64) <-chan SkinnyItemSet {
+	skinnyCombos := make(chan SkinnyItemSet, bufferSize)
+	counters := [threadCount]uint64{}
+
+	// track progress with cancel
+	// ctx, cancel := context.WithCancel(context.Background())
+	// go trackProgressIntThreaded(&counters, skip, max, ctx)
+	// defer cancel()
+
+	// start up workers
+	splits := solve_util.IndexSplitsInt(max, skip, threadCount)
+	for i := range threadCount {
+		go createWorkerRangeInt(itemOptions, model, splits[i], splits[i+1], skip, skinnyCombos, &counters[i])
+	}
+
+	return skinnyCombos
+}
+
+func createWorkerRangeInt(itemOptions *SkinnyOptionsMap, model *model.Model, start, max, skip uint64, skinnyCombos chan<- SkinnyItemSet, doneCounter *uint64) {
+	index := start
+	for index < max {
+		set := makeSkinnySetInt(itemOptions, index)
+		if model.CheckSetSkinny(&set) {
+			skinnyCombos <- set
+		}
+
+		index += skip
+		(*doneCounter)++
+	}
+
+	// TODO if we had a channel each thread then could close here?
+}
+
+func makeSkinnySetInt(itemOptions *SkinnyOptionsMap, mainIndex uint64) SkinnyItemSet {
+	equip := SkinnyEquipMap{}
+	var a, b uint32
+
+	currIndex := mainIndex
+
+	for slot, array := range itemOptions {
+		size := uint64(len(array))
+
+		slotIndex := currIndex % size
+		currIndex /= size
+
+		item := array[slotIndex]
+		equip[slot] = item
+		a += item.A
+		b += item.B
+	}
+
+	return SkinnyItemSet{Items: equip, A: a, B: b}
+}
+
+func findBestSolvedMultiThread(itemOptions *SolvableOptionsMap, model *Model, skinnyComboChannel <-chan SkinnyItemSet) SolvableItemSet {
+	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
+
+	// track progress with cancel
+	// ctx, cancel := context.WithCancel(context.Background())
+	// go trackProgressIntThreaded(&counters, skip, max, ctx)
+	// defer cancel()
+
+	for range threadCount {
+		go findBestSolvedWorker(itemOptions, model, skinnyComboChannel, resultChannel)
+	}
+
+	return util.BestCollector1_OfChannel(resultChannel, threadCount)
+}
+
+func findBestSolvedWorker(itemOptions *SolvableOptionsMap, model *Model, skinnyComboChannel <-chan SkinnyItemSet, resultChannel chan util.BestCollector1[SolvableItemSet]) {
+	best := util.BestCollector1[SolvableItemSet]{}
+	for skinnySet := range skinnyComboChannel {
+		solveSet := makeFromSkinny(itemOptions, model, &skinnySet)
+
+		// assert still matches requirement, should be redundant
+		if !model.CheckSet(&solveSet) {
+			panic("inconsistent cap calcuations")
+		}
+
+		rating := model.CalcRatingSolve(&solveSet)
+		best.Offer(&solveSet, rating)
+	}
+	resultChannel <- best
+}
+
+func makeFromSkinny(itemOptions *SolvableOptionsMap, model *Model, skinnySet *SkinnyItemSet) SolvableItemSet {
+	chosen := SolvableItemSet{}
+	for slot := Equip_Head; slot <= Equip_Offhand; slot++ {
+		skinny := &skinnySet.Items[slot]
+		options := itemOptions[slot]
+
+		best := util.BestCollector1[SolvableItem]{}
+		for _, item := range options {
+			if model.StatRequirements.SkinnyMatch(skinny, &item) {
+				rating := model.CalcRatingSolveItem(&item)
+				best.Offer(&item, rating)
+			}
+		}
+
+		best.CheckValidOrPanic()
+		chosen.AddItem_Mutating(slot, best.BestObject)
+	}
+	return chosen
+}
+
+// func mainLoop_multiThread_int(itemOptions *SolvableOptionsMap, max, skip uint64, model *model.Model) SolvableItemSet {
+// 	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
+// 	counters := [threadCount]uint64{}
+
+// 	// track progress with cancel
+// 	ctx, cancel := context.WithCancel(context.Background())
+// 	go trackProgressIntThreaded(&counters, skip, max, ctx)
+// 	defer cancel()
+
+// 	// start up workers
+// 	splits := indexSplitsInt(max, skip)
+// 	for i := range threadCount {
+// 		go workerThreadRangeInt(itemOptions, model, splits[i], splits[i+1], skip, resultChannel, &counters[i])
+// 	}
+
+// 	// combine each thread's best result
+// 	return util.BestCollector1_OfChannel(resultChannel, threadCount)
+// }

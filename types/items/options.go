@@ -40,15 +40,26 @@ func (optionsMap *FullOptionsMap) AllItems() iter.Seq[FullItem] {
 
 type SolvableOptionsMap [16][]SolvableItem
 
-func (optionsMap SolvableOptionsMap) Get(slot common.SlotEquip) []SolvableItem {
+func (optionsMap *SolvableOptionsMap) Get(slot common.SlotEquip) []SolvableItem {
 	return optionsMap[slot]
 }
 
-func (optionsMap SolvableOptionsMap) Has(slot common.SlotEquip) bool {
+func (optionsMap *SolvableOptionsMap) Has(slot common.SlotEquip) bool {
 	return len(optionsMap[slot]) > 0
 }
 
-func (optionsMap SolvableOptionsMap) TotalCombinationCount() *big.Int {
+func (optionsMap *SolvableOptionsMap) TotalCombinationCount() *big.Int {
+	total := big.NewInt(1)
+	for _, slotArray := range optionsMap {
+		slotSize := int64(len(slotArray))
+		total.Mul(total, big.NewInt(slotSize))
+	}
+	return total
+}
+
+type SkinnyOptionsMap [16][]SkinnyItem
+
+func (optionsMap *SkinnyOptionsMap) TotalCombinationCount() *big.Int {
 	total := big.NewInt(1)
 	for _, slotArray := range optionsMap {
 		slotSize := int64(len(slotArray))

@@ -35,8 +35,8 @@ func main() {
 }
 
 func core() {
-	// model, itemOptions := setupPallyMitigation()
-	itemOptions, model := setupPallyDps()
+	itemOptions, model := setupPallyMitigation()
+	// itemOptions, model := setupPallyDps()
 
 	// slotRating(itemOptions[Equip_Chest], &model)
 	basicReforge(&itemOptions, &model)

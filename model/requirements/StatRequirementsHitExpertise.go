@@ -41,12 +41,17 @@ func StatRequirementsHitExpertise_ProtFlexibleParry() StatRequirementsHitExperti
 func (inst StatRequirementsHitExpertise) CheckSet(block *StatBlock) bool {
 	hit := block.Hit()
 	exp := block.Expertise()
-	return inst.hitMin <= hit && hit <= inst.hitMax &&
-		inst.expMin <= exp && exp <= inst.expMax
+	return inst.hitMin <= hit && hit <= inst.hitMax && inst.expMin <= exp && exp <= inst.expMax
 }
 
-func (inst StatRequirementsHitExpertise) ToSkinny(item *SolvableItem) *SkinnyItem {
-	return &SkinnyItem{A: item.TotalCap.Hit(), B: item.TotalCap.Expertise(), Exists: true}
+func (inst StatRequirementsHitExpertise) CheckSetSkinny(set *SkinnyItemSet) bool {
+	hit := set.A
+	exp := set.B
+	return inst.hitMin <= hit && hit <= inst.hitMax && inst.expMin <= exp && exp <= inst.expMax
+}
+
+func (inst StatRequirementsHitExpertise) ToSkinny(item *SolvableItem) SkinnyItem {
+	return SkinnyItem{A: item.TotalCap.Hit(), B: item.TotalCap.Expertise(), Exists: true}
 }
 
 func (inst StatRequirementsHitExpertise) SkinnyMatch(skinny *SkinnyItem, item *SolvableItem) bool {

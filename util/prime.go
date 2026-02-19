@@ -4,6 +4,7 @@ import (
 	"math/big"
 )
 
+var int_zero = big.NewInt(0)
 var int_one = big.NewInt(1)
 
 func NextPrime(skip *big.Int) *big.Int {
@@ -13,6 +14,21 @@ func NextPrime(skip *big.Int) *big.Int {
 
 	for !skip.ProbablyPrime(100) {
 		skip.Add(skip, int_one)
+	}
+	return skip
+}
+
+func ChooseSkip(actualCombos, targetRunSize *big.Int) *big.Int {
+	if actualCombos.Cmp(int_zero) == 0 || targetRunSize.Cmp(int_zero) == 0 {
+		panic("unexpected zero")
+	}
+
+	skip := big.NewInt(0)
+	if actualCombos.Cmp(targetRunSize) > 0 {
+		skip.Div(actualCombos, targetRunSize)
+		skip = NextPrime(skip)
+	} else {
+		skip = int_one
 	}
 	return skip
 }
@@ -29,11 +45,14 @@ func SmallPrimes(greaterThan int) [16]int {
 	for _, value := range smallPrimeArray {
 		if value > greaterThan {
 			result[resultIndex] = value
-			if resultIndex == 15 {
+			resultIndex++
+			if resultIndex == 16 {
 				break
 			}
-			resultIndex++
 		}
+	}
+	if resultIndex < 16 {
+		panic("not enough primes")
 	}
 	return result
 }
