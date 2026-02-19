@@ -38,6 +38,6 @@ func trackProgressBig(index, max *big.Int) {
 		ratio.SetFrac(index, max)
 		percent, _ := ratio.Float64()
 
-		printProgressBig(startTime, percent, index)
+		util.PrintProgressBig(startTime, percent, index)
 	}
 }

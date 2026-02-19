@@ -68,6 +68,6 @@ func trackProgressIntThreaded(threadCounters *[12]uint64, skip, max uint64, ctx 
 
 		percent := float64(index) / float64(max)
 
-		printProgressInt(startTime, percent, index)
+		util.PrintProgressInt(startTime, percent, index)
 	}
 }

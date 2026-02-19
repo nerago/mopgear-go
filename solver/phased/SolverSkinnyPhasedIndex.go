@@ -1,6 +1,7 @@
 package phased
 
 import (
+	"fmt"
 	"math/big"
 	"paladin_gearing_go/model"
 	. "paladin_gearing_go/model"
@@ -8,17 +9,21 @@ import (
 	. "paladin_gearing_go/types/common"
 	. "paladin_gearing_go/types/items"
 	"paladin_gearing_go/util"
+	"time"
 )
 
 const threadCount = 6 // per thread type
 const bufferSize = 256
 
-func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount int64) SolvableItemSet {
+func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64) SolvableItemSet {
 	skinnyOptions := toSkinnyOptions(itemOptions, model)
 
 	max := skinnyOptions.TotalCombinationCount()
 	targetCombination := big.NewInt(int64(targetCount))
 	skip := util.ChooseSkip(max, targetCombination)
+
+	fmt.Printf("SOLVE PHASED %d %d %d\n", max, targetCombination, skip)
+
 	if max.IsUint64() && skip.IsUint64() {
 		skinnyComboChannel := makeSkinnyCombosMultiThread(&skinnyOptions, model, max.Uint64(), skip.Uint64())
 		// TODO consider filterBestCapsOnly like java
@@ -54,23 +59,47 @@ func toKeys(uniqueMap map[SkinnyItem]bool) []SkinnyItem {
 
 func makeSkinnyCombosMultiThread(itemOptions *SkinnyOptionsMap, model *Model, max, skip uint64) <-chan SkinnyItemSet {
 	skinnyCombos := make(chan SkinnyItemSet, bufferSize)
+	doneSignal := make(chan any, bufferSize)
 	counters := [threadCount]uint64{}
 
-	// track progress with cancel
-	// ctx, cancel := context.WithCancel(context.Background())
-	// go trackProgressIntThreaded(&counters, skip, max, ctx)
-	// defer cancel()
+	// track progress
+	go trackProgressIntThreaded(&counters, max/skip, skinnyCombos, doneSignal)
 
 	// start up workers
 	splits := solve_util.IndexSplitsInt(max, skip, threadCount)
 	for i := range threadCount {
-		go createWorkerRangeInt(itemOptions, model, splits[i], splits[i+1], skip, skinnyCombos, &counters[i])
+		go createWorkerRangeInt(itemOptions, model, splits[i], splits[i+1], skip, skinnyCombos, doneSignal, &counters[i])
 	}
 
 	return skinnyCombos
 }
 
-func createWorkerRangeInt(itemOptions *SkinnyOptionsMap, model *model.Model, start, max, skip uint64, skinnyCombos chan<- SkinnyItemSet, doneCounter *uint64) {
+func trackProgressIntThreaded(threadCounters *[threadCount]uint64, expectedTotal uint64, skinnyCombos chan<- SkinnyItemSet, doneSignal <-chan any) {
+	startTime := time.Now()
+	remaining := threadCount
+	for {
+		select {
+		case <-time.After(time.Second * 5):
+			var totalCount uint64 = 0
+			for _, value := range threadCounters {
+				totalCount += value
+			}
+			percent := float64(totalCount) / float64(expectedTotal)
+
+			util.PrintProgressInt(startTime, percent, totalCount)
+
+		case <-doneSignal:
+			remaining--
+			if remaining == 0 {
+				close(skinnyCombos)
+				return
+			}
+		}
+	}
+}
+
+func createWorkerRangeInt(itemOptions *SkinnyOptionsMap, model *model.Model, start, max, skip uint64,
+	skinnyCombos chan<- SkinnyItemSet, doneSignal chan<- any, progressCounter *uint64) {
 	index := start
 	for index < max {
 		set := makeSkinnySetInt(itemOptions, index)
@@ -79,10 +108,10 @@ func createWorkerRangeInt(itemOptions *SkinnyOptionsMap, model *model.Model, sta
 		}
 
 		index += skip
-		(*doneCounter)++
+		(*progressCounter)++
 	}
 
-	// TODO if we had a channel each thread then could close here?
+	doneSignal <- true
 }
 
 func makeSkinnySetInt(itemOptions *SkinnyOptionsMap, mainIndex uint64) SkinnyItemSet {
@@ -156,22 +185,3 @@ func makeFromSkinny(itemOptions *SolvableOptionsMap, model *Model, skinnySet *Sk
 	}
 	return chosen
 }
-
-// func mainLoop_multiThread_int(itemOptions *SolvableOptionsMap, max, skip uint64, model *model.Model) SolvableItemSet {
-// 	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
-// 	counters := [threadCount]uint64{}
-
-// 	// track progress with cancel
-// 	ctx, cancel := context.WithCancel(context.Background())
-// 	go trackProgressIntThreaded(&counters, skip, max, ctx)
-// 	defer cancel()
-
-// 	// start up workers
-// 	splits := indexSplitsInt(max, skip)
-// 	for i := range threadCount {
-// 		go workerThreadRangeInt(itemOptions, model, splits[i], splits[i+1], skip, resultChannel, &counters[i])
-// 	}
-
-// 	// combine each thread's best result
-// 	return util.BestCollector1_OfChannel(resultChannel, threadCount)
-// }

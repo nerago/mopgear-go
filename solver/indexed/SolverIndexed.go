@@ -6,14 +6,13 @@ import (
 	"paladin_gearing_go/model"
 	. "paladin_gearing_go/types/items"
 	"paladin_gearing_go/util"
-	"time"
 )
 
 const threadCount = 12
 
 var int_one = big.NewInt(1)
 
-func SolverIndexed_RunSkipping(itemOptions *SolvableOptionsMap, model *model.Model, targetCount int) SolvableItemSet {
+func SolverIndexed_RunSkipping(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64) SolvableItemSet {
 	max := itemOptions.TotalCombinationCount()
 	targetCombination := big.NewInt(int64(targetCount))
 	skip := util.ChooseSkip(max, targetCombination)
@@ -87,22 +86,4 @@ func makeSetInt(itemOptions *SolvableOptionsMap, mainIndex uint64) SolvableItemS
 	}
 
 	return SolvableItemSet_Of(equip)
-}
-
-func printProgressBig(startTime time.Time, percent float64, index *big.Int) {
-	if percent > 0 {
-		timeTaken := time.Since(startTime)
-		totalEstimate := time.Duration(float64(timeTaken) / percent)
-		estimateRemain := totalEstimate - timeTaken
-		fmt.Printf("%d %.1f%% %s\n", index, percent*100, estimateRemain.String())
-	}
-}
-
-func printProgressInt(startTime time.Time, percent float64, index uint64) {
-	if percent > 0 {
-		timeTaken := time.Since(startTime)
-		totalEstimate := time.Duration(float64(timeTaken) / percent)
-		estimateRemain := totalEstimate - timeTaken
-		fmt.Printf("%d %.1f%% %s\n", index, percent*100, estimateRemain.String())
-	}
 }

@@ -74,6 +74,6 @@ func trackProgressBigThreaded(threadCounters *[12]uint64, skip, max *big.Int, ct
 		ratio.SetFrac(index, max)
 		percent, _ := ratio.Float64()
 
-		printProgressBig(startTime, percent, index)
+		util.PrintProgressBig(startTime, percent, index)
 	}
 }

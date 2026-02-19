@@ -1,20 +1,22 @@
 package build
 
 import (
+	"fmt"
 	. "paladin_gearing_go/model"
 	. "paladin_gearing_go/types/common"
 	. "paladin_gearing_go/types/items"
 	"paladin_gearing_go/util"
 )
 
-func SolverChannelBuildPrime_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount int64) SolvableItemSet {
+func SolverChannelBuildPrime_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64) SolvableItemSet {
+	fmt.Printf("SOLVE PRIME %d\n", targetCount)
 	setChannel := primeSetsChannel(itemOptions)
 	return evaluateBestLimitedCount(setChannel, model, targetCount)
 }
 
-func evaluateBestLimitedCount(setChannel <-chan SolvableItemSet, model *Model, targetCount int64) SolvableItemSet {
+func evaluateBestLimitedCount(setChannel <-chan SolvableItemSet, model *Model, targetCount uint64) SolvableItemSet {
 	resultChannel := make(chan util.BestCollector1[SolvableItemSet], evaluateThreadCount)
-	eachThreadCount := targetCount / int64(evaluateThreadCount)
+	eachThreadCount := targetCount / evaluateThreadCount
 	counters := [evaluateThreadCount]uint64{}
 
 	// track progress with cancel
@@ -30,7 +32,7 @@ func evaluateBestLimitedCount(setChannel <-chan SolvableItemSet, model *Model, t
 	return util.BestCollector1_OfChannel(resultChannel, evaluateThreadCount)
 }
 
-func evaluateWorkerLimitedCount(setChannel <-chan SolvableItemSet, resultChannel chan util.BestCollector1[SolvableItemSet], model *Model, eachThreadCount int64, doneCounter *uint64) {
+func evaluateWorkerLimitedCount(setChannel <-chan SolvableItemSet, resultChannel chan util.BestCollector1[SolvableItemSet], model *Model, eachThreadCount uint64, doneCounter *uint64) {
 	best := util.BestCollector1[SolvableItemSet]{}
 	for range eachThreadCount {
 		itemSet := <-setChannel

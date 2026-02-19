@@ -23,7 +23,7 @@ func slotRating(itemArray []FullItem, model *Model) {
 
 	best := BestCollector1[FullItem]{}
 	for _, item := range itemArray {
-		rate := model.CalcRatingFullItem(item)
+		rate := model.CalcRatingFullItem(&item)
 		fmt.Println(item.String())
 		fmt.Printf("%d\n\n", rate)
 		best.Offer(&item, rate)
