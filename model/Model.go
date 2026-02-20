@@ -69,3 +69,14 @@ func Model_PallyProtDps() Model {
 		EnchantChoice_ForSpec(Spec_PaladinProtDps),
 		GemChoice_ForSpec(Spec_PaladinProtDps)}
 }
+
+func Model_Testing() Model {
+	weight := StatRatingsWeights_ReadFile(weightDpsFile, false, true, false)
+	return Model{
+		Spec_PaladinProtDps,
+		weight,
+		StatRequirementsHitExpertise_None(),
+		ReforgeRules_tank,
+		EnchantChoice_ForSpec(Spec_PaladinProtDps),
+		GemChoice_ForSpec(Spec_PaladinProtDps)}
+}

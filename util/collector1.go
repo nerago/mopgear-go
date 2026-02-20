@@ -13,11 +13,13 @@ func (collect *BestCollector1[T]) CheckValidOrPanic() {
 }
 
 func (collect *BestCollector1[T]) GetBest() T {
-	if collect.BestObject == nil {
-		panic("no best found")
-	}
-
+	collect.CheckValidOrPanic()
 	return *collect.BestObject
+}
+
+func (collect *BestCollector1[T]) GetBestPointer() *T {
+	collect.CheckValidOrPanic()
+	return collect.BestObject
 }
 
 func (collect *BestCollector1[T]) Offer(object *T, value uint64) {

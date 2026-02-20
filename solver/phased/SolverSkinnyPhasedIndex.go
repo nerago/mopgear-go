@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	threadCount = 6 // per thread type
-	bufferSize  = 256
-	filterSize  = 10000
+	threadCount  = 6 // per thread type
+	bufferSize   = 256
+	filterTarget = 10000
 )
 
 func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64) SolvableItemSet {
@@ -101,8 +101,7 @@ func trackProgressIntThreaded(threadCounters *[threadCount]uint64, expectedTotal
 	}
 }
 
-func createWorkerRangeInt(itemOptions *SkinnyOptionsMap, model *model.Model, start, max, skip uint64,
-	skinnyCombos chan<- SkinnyItemSet, doneSignal chan<- any, progressCounter *uint64) {
+func createWorkerRangeInt(itemOptions *SkinnyOptionsMap, model *model.Model, start, max, skip uint64, skinnyCombos chan<- SkinnyItemSet, doneSignal chan<- any, progressCounter *uint64) {
 	index := start
 	for index < max {
 		set := makeSkinnySetInt(itemOptions, index)
@@ -141,11 +140,6 @@ func makeSkinnySetInt(itemOptions *SkinnyOptionsMap, mainIndex uint64) SkinnyIte
 func findBestSolvedMultiThread(itemOptions *SolvableOptionsMap, model *Model, skinnyComboChannel <-chan SkinnyItemSet) SolvableItemSet {
 	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
 
-	// track progress with cancel
-	// ctx, cancel := context.WithCancel(context.Background())
-	// go trackProgressIntThreaded(&counters, skip, max, ctx)
-	// defer cancel()
-
 	for range threadCount {
 		go findBestSolvedWorker(itemOptions, model, skinnyComboChannel, resultChannel)
 	}
@@ -183,13 +177,24 @@ func makeFromSkinny(itemOptions *SolvableOptionsMap, model *Model, skinnySet *Sk
 			}
 		}
 
-		best.CheckValidOrPanic()
-		chosen.AddItem_Mutating(slot, best.BestObject)
+		chosen.AddItem_Mutating(slot, best.GetBestPointer())
 	}
 	return chosen
 }
 
 func filterLowHitCombos(inputChannel <-chan SkinnyItemSet) <-chan SkinnyItemSet {
+	return util.Channel_TransformAll_Multi(threadCount, inputChannel, func(inputChannel <-chan SkinnyItemSet, outputChannel chan<- SkinnyItemSet) {
+		valueHeap := util.LowestNIntHeap_For(filterTarget)
+		for itemSet := range inputChannel {
+			rating := uint64(itemSet.A + itemSet.B)
+			if valueHeap.Offer(rating) {
+				outputChannel <- itemSet
+			}
+		}
+	})
+}
+
+func filterLowHitCombos0(inputChannel <-chan SkinnyItemSet) <-chan SkinnyItemSet {
 	collectedChannel := make(chan util.LowestCollectorN[SkinnyItemSet])
 	for range threadCount {
 		go filterWorker(inputChannel, collectedChannel)
@@ -207,7 +212,7 @@ func filterLowHitCombos(inputChannel <-chan SkinnyItemSet) <-chan SkinnyItemSet 
 }
 
 func filterWorker(inputChannel <-chan SkinnyItemSet, collectedChannel chan<- util.LowestCollectorN[SkinnyItemSet]) {
-	best := util.LowestCollector_ForN[SkinnyItemSet](filterSize)
+	best := util.LowestCollector_ForN[SkinnyItemSet](filterTarget)
 	for itemSet := range inputChannel {
 		rating := itemSet.A + itemSet.B
 		best.Offer(&itemSet, uint64(rating))

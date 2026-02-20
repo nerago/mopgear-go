@@ -13,13 +13,18 @@ const threadCount = 12
 var int_one = big.NewInt(1)
 
 func SolverIndexed_RunSkipping(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64) SolvableItemSet {
+	max, skip := initSkipValues(itemOptions, targetCount)
+
+	fmt.Printf("SOLVE SKIP %d %d %d\n", max, targetCount, skip)
+
+	return mainLoop(itemOptions, max, skip, model)
+}
+
+func initSkipValues(itemOptions *SolvableOptionsMap, targetCount uint64) (*big.Int, *big.Int) {
 	max := itemOptions.TotalCombinationCount()
 	targetCombination := big.NewInt(int64(targetCount))
 	skip := util.ChooseSkip(max, targetCombination)
-
-	fmt.Printf("SOLVE SKIP %d %d %d\n", max, targetCombination, skip)
-
-	return mainLoop(itemOptions, max, skip, model)
+	return max, skip
 }
 
 func SolverIndexed_RunFull(itemOptions *SolvableOptionsMap, model *model.Model) SolvableItemSet {
@@ -29,13 +34,12 @@ func SolverIndexed_RunFull(itemOptions *SolvableOptionsMap, model *model.Model) 
 }
 
 func mainLoop(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *model.Model) SolvableItemSet {
-	if max.IsUint64() && skip.IsUint64() {
-		return mainLoop_multiThread_int(itemOptions, max.Uint64(), skip.Uint64(), model)
-	} else {
-		return mainLoop_multiThread_big(itemOptions, max, skip, model)
-	}
-
 	// TODO consider partitioning some slots until under limit
+	if max.IsUint64() && skip.IsUint64() {
+		return mainLoop_multiThread_int(itemOptions, max.Uint64(), skip.Uint64(), model, emptyPeekFunc)
+	} else {
+		return mainLoop_multiThread_big(itemOptions, max, skip, model, emptyPeekFunc)
+	}
 
 	// if max.IsUint64() && skip.IsUint64() {
 	// 	return mainLoop_singleThread_int(itemOptions, max.Uint64(), skip.Uint64(), model)
@@ -47,7 +51,9 @@ func mainLoop(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *model.
 func slotSizesBig(itemOptions *SolvableOptionsMap) [16]*big.Int {
 	slotSizes := [16]*big.Int{}
 	for i, array := range itemOptions {
-		slotSizes[i] = big.NewInt(int64(len(array)))
+		if len(array) > 0 {
+			slotSizes[i] = big.NewInt(int64(len(array)))
+		}
 	}
 	return slotSizes
 }
@@ -61,11 +67,12 @@ func makeSetBig(itemOptions *SolvableOptionsMap, slotSizes *[16]*big.Int, mainIn
 
 	for slot, array := range itemOptions {
 		size := slotSizes[slot]
+		if size != nil {
+			currIndex.DivMod(currIndex, size, mod)
+			slotIndex := mod.Int64()
 
-		currIndex.DivMod(currIndex, size, mod)
-		slotIndex := mod.Int64()
-
-		equip[slot] = &array[slotIndex]
+			equip[slot] = &array[slotIndex]
+		}
 	}
 
 	return SolvableItemSet_Of(equip)
@@ -78,12 +85,16 @@ func makeSetInt(itemOptions *SolvableOptionsMap, mainIndex uint64) SolvableItemS
 
 	for slot, array := range itemOptions {
 		size := uint64(len(array))
+		if size > 0 {
+			slotIndex := currIndex % size
+			currIndex /= size
 
-		slotIndex := currIndex % size
-		currIndex /= size
-
-		equip[slot] = &array[slotIndex]
+			equip[slot] = &array[slotIndex]
+		}
 	}
 
 	return SolvableItemSet_Of(equip)
+}
+
+func emptyPeekFunc(*SolvableItemSet) {
 }

@@ -49,7 +49,7 @@ func (stat StatType) Name() string {
 	case Stat_Mastery:
 		return "master"
 	default:
-		panic("unknown stat " + string(stat))
+		panic("unknown stat")
 	}
 }
 

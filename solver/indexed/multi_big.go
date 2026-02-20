@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func mainLoop_multiThread_big(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *model.Model) SolvableItemSet {
+func mainLoop_multiThread_big(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *model.Model, peekFunc func(*SolvableItemSet)) SolvableItemSet {
 	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
 	counters := [threadCount]uint64{}
 
@@ -22,15 +22,14 @@ func mainLoop_multiThread_big(itemOptions *SolvableOptionsMap, max, skip *big.In
 	// start up workers
 	splits := solve_util.IndexSplitsBig(max, skip, threadCount)
 	for i := range threadCount {
-		go workerThreadRangeBig(itemOptions, model, splits[i], splits[i+1], skip, resultChannel, &counters[i])
+		go workerThreadRangeBig(itemOptions, model, splits[i], splits[i+1], skip, resultChannel, &counters[i], peekFunc)
 	}
 
 	// combine each thread's best result
 	return util.BestCollector1_OfChannel(resultChannel, threadCount)
 }
 
-func workerThreadRangeBig(itemOptions *SolvableOptionsMap, model *model.Model, start, max, skip *big.Int,
-	resultChannel chan<- util.BestCollector1[SolvableItemSet], doneCounter *uint64) {
+func workerThreadRangeBig(itemOptions *SolvableOptionsMap, model *model.Model, start, max, skip *big.Int, resultChannel chan<- util.BestCollector1[SolvableItemSet], doneCounter *uint64, peekFunc func(*SolvableItemSet)) {
 	best := util.BestCollector1[SolvableItemSet]{}
 	slotSizes := slotSizesBig(itemOptions)
 
@@ -41,6 +40,9 @@ func workerThreadRangeBig(itemOptions *SolvableOptionsMap, model *model.Model, s
 
 	for index.Cmp(max) < 0 {
 		set := makeSetBig(itemOptions, &slotSizes, &index)
+		if peekFunc != nil {
+			peekFunc(&set)
+		}
 		if model.CheckSet(&set) {
 			rating := model.CalcRatingSolve(&set)
 			best.Offer(&set, rating)

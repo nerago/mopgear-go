@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func mainLoop_singleThread_int(itemOptions *SolvableOptionsMap, max, skip uint64, model *model.Model) SolvableItemSet {
+func mainLoop_singleThread_int(itemOptions *SolvableOptionsMap, max, skip uint64, model *model.Model, peekFunc func(*SolvableItemSet)) SolvableItemSet {
 	var index uint64 = 0
 	best := util.BestCollector1[SolvableItemSet]{}
 
@@ -15,6 +15,9 @@ func mainLoop_singleThread_int(itemOptions *SolvableOptionsMap, max, skip uint64
 
 	for index < max {
 		set := makeSetInt(itemOptions, index)
+		if peekFunc != nil {
+			peekFunc(&set)
+		}
 		if model.CheckSet(&set) {
 			rating := model.CalcRatingSolve(&set)
 			best.Offer(&set, rating)

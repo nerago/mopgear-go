@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func mainLoop_singleThread_big(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *model.Model) SolvableItemSet {
+func mainLoop_singleThread_big(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *model.Model, peekFunc func(*SolvableItemSet)) SolvableItemSet {
 	slotSizes := slotSizesBig(itemOptions)
 
 	var index big.Int
@@ -19,6 +19,9 @@ func mainLoop_singleThread_big(itemOptions *SolvableOptionsMap, max, skip *big.I
 
 	for index.Cmp(max) < 0 {
 		set := makeSetBig(itemOptions, &slotSizes, &index)
+		if peekFunc != nil {
+			peekFunc(&set)
+		}
 		if model.CheckSet(&set) {
 			rating := model.CalcRatingSolve(&set)
 			best.Offer(&set, rating)

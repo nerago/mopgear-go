@@ -36,8 +36,10 @@ type SolvableItemSet struct {
 func SolvableItemSet_Of(equipMap SolvableEquipMap) SolvableItemSet {
 	result := SolvableItemSet{equipMap, StatBlock{}, StatBlock{}}
 	for _, item := range equipMap {
-		result.TotalCap.Increment_Mutating(&item.TotalCap)
-		result.TotalRated.Increment_Mutating(&item.TotalRated)
+		if item != nil {
+			result.TotalCap.Increment_Mutating(&item.TotalCap)
+			result.TotalRated.Increment_Mutating(&item.TotalRated)
+		}
 	}
 	return result
 }

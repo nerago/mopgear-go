@@ -26,7 +26,7 @@ func Channel_Filter_Single[T any](inputChannel <-chan T, predicate func(T) bool)
 	return outputChannel
 }
 
-func Channel_Map_Multi[T any, R any](inputChannel <-chan T, mapper func(T) R, threadCount int) <-chan R {
+func Channel_Map_Multi[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T) R) <-chan R {
 	outputChannel := make(chan R, bufferSize)
 	doneChannel := make(chan any, threadCount)
 	for range threadCount {
@@ -46,7 +46,7 @@ func Channel_Map_Multi[T any, R any](inputChannel <-chan T, mapper func(T) R, th
 	return outputChannel
 }
 
-func Channel_Filter_Multi[T any](inputChannel <-chan T, predicate func(T) bool, threadCount int) <-chan T {
+func Channel_Filter_Multi[T any](threadCount int, inputChannel <-chan T, predicate func(T) bool) <-chan T {
 	outputChannel := make(chan T, bufferSize)
 	doneChannel := make(chan any, threadCount)
 	for range threadCount {
@@ -68,7 +68,7 @@ func Channel_Filter_Multi[T any](inputChannel <-chan T, predicate func(T) bool, 
 	return outputChannel
 }
 
-func Channel_Transform_Multi[T any, R any](inputChannel <-chan T, transform func(T, chan<- R), threadCount int) <-chan R {
+func Channel_TransformEach_Multi[T any, R any](threadCount int, inputChannel <-chan T, transform func(T, chan<- R)) <-chan R {
 	outputChannel := make(chan R, bufferSize)
 	doneChannel := make(chan any, threadCount)
 	for range threadCount {
@@ -76,6 +76,24 @@ func Channel_Transform_Multi[T any, R any](inputChannel <-chan T, transform func
 			for value := range inputChannel {
 				transform(value, outputChannel)
 			}
+			doneChannel <- true
+		}()
+	}
+	go func() {
+		for range threadCount {
+			_ = <-doneChannel
+		}
+		close(outputChannel)
+	}()
+	return outputChannel
+}
+
+func Channel_TransformAll_Multi[T any, R any](threadCount int, inputChannel <-chan T, transformAll func(<-chan T, chan<- R)) <-chan R {
+	outputChannel := make(chan R, bufferSize)
+	doneChannel := make(chan any, threadCount)
+	for range threadCount {
+		go func() {
+			transformAll(inputChannel, outputChannel)
 			doneChannel <- true
 		}()
 	}

@@ -19,7 +19,7 @@ func Solver(itemOptions *FullOptionsMap, model *Model) FullItemSet {
 	solveOptions := SolvableOptionsMap_of(itemOptions)
 
 	var solvedSet SolvableItemSet
-	mode := 5
+	mode := 2
 	switch mode {
 	case 1:
 		solvedSet = indexed.SolverIndexed_RunFull(&solveOptions, model)
@@ -33,6 +33,6 @@ func Solver(itemOptions *FullOptionsMap, model *Model) FullItemSet {
 		solvedSet = phased.SolverSkinnyPhasedIndex_Run(&solveOptions, model, targetCount)
 	}
 
-	solvedSet = Tweaker_Run(solvedSet, &solveOptions, model)
+	// solvedSet = Tweaker_Run(solvedSet, &solveOptions, model)
 	return FullItemSet_FromSolved(solvedSet, itemOptions)
 }

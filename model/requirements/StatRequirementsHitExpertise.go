@@ -1,6 +1,7 @@
 package requirements
 
 import (
+	"math"
 	. "paladin_gearing_go/types/items"
 	. "paladin_gearing_go/types/stats"
 )
@@ -36,6 +37,10 @@ func StatRequirementsHitExpertise_ProtFlexibleParry() StatRequirementsHitExperti
 	return StatRequirementsHitExpertise{
 		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED*2, // TODO why so high?
 		TARGET_RATING_MELEE, TARGET_RATING_TANK}
+}
+
+func StatRequirementsHitExpertise_None() StatRequirementsHitExpertise {
+	return StatRequirementsHitExpertise{0, math.MaxUint32, 0, math.MaxUint32}
 }
 
 func (inst StatRequirementsHitExpertise) CheckSet(block *StatBlock) bool {

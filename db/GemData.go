@@ -3,6 +3,7 @@ package db
 import (
 	. "paladin_gearing_go/types/stats"
 	. "paladin_gearing_go/util"
+	"strconv"
 )
 
 func addGem0(lookup map[uint32]GemInfo, id uint32) {
@@ -91,7 +92,7 @@ func makeShaGems() map[uint32]GemInfo {
 func GemData_ById(id uint32) GemInfo {
 	gem, found := allGems[id]
 	if !found {
-		panic("unknown gem " + string(id))
+		panic("unknown gem " + strconv.Itoa(int(id)))
 	}
 	return gem
 }
