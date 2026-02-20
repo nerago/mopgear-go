@@ -12,8 +12,11 @@ import (
 	"time"
 )
 
-const threadCount = 6 // per thread type
-const bufferSize = 256
+const (
+	threadCount = 6 // per thread type
+	bufferSize  = 256
+	filterSize  = 10000
+)
 
 func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64) SolvableItemSet {
 	skinnyOptions := toSkinnyOptions(itemOptions, model)
@@ -26,7 +29,7 @@ func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, 
 
 	if max.IsUint64() && skip.IsUint64() {
 		skinnyComboChannel := makeSkinnyCombosMultiThread(&skinnyOptions, model, max.Uint64(), skip.Uint64())
-		// TODO consider filterBestCapsOnly like java
+		skinnyComboChannel = filterLowHitCombos(skinnyComboChannel)
 		return findBestSolvedMultiThread(itemOptions, model, skinnyComboChannel)
 	} else {
 		panic("too many combos for int")
@@ -184,4 +187,30 @@ func makeFromSkinny(itemOptions *SolvableOptionsMap, model *Model, skinnySet *Sk
 		chosen.AddItem_Mutating(slot, best.BestObject)
 	}
 	return chosen
+}
+
+func filterLowHitCombos(inputChannel <-chan SkinnyItemSet) <-chan SkinnyItemSet {
+	collectedChannel := make(chan util.LowestCollectorN[SkinnyItemSet])
+	for range threadCount {
+		go filterWorker(inputChannel, collectedChannel)
+	}
+	bestArray := util.LowestCollectorN_OfChannel(collectedChannel, threadCount)
+
+	outputChannel := make(chan SkinnyItemSet)
+	go func() {
+		for _, item := range bestArray {
+			outputChannel <- item
+		}
+		close(outputChannel)
+	}()
+	return outputChannel
+}
+
+func filterWorker(inputChannel <-chan SkinnyItemSet, collectedChannel chan<- util.LowestCollectorN[SkinnyItemSet]) {
+	best := util.LowestCollector_ForN[SkinnyItemSet](filterSize)
+	for itemSet := range inputChannel {
+		rating := itemSet.A + itemSet.B
+		best.Offer(&itemSet, uint64(rating))
+	}
+	collectedChannel <- best
 }

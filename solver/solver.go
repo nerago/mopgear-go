@@ -13,7 +13,7 @@ import (
 // 	itemOptions SolvableOptionsMap
 // }
 
-const targetCount uint64 = 10000000
+const targetCount uint64 = 100_000_000
 
 func Solver(itemOptions *FullOptionsMap, model *Model) FullItemSet {
 	solveOptions := SolvableOptionsMap_of(itemOptions)
