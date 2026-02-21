@@ -47,8 +47,9 @@ func evaluateWorkerLimitedCount(setChannel <-chan SolvableItemSet, resultChannel
 
 func primeSetsChannel(itemOptions *SolvableOptionsMap) <-chan SolvableItemSet {
 	var stageChannel <-chan SolvableItemSet
-	maxSlot := maxSlotOptionSize(itemOptions)
-	primeIncrements := util.SmallPrimes(maxSlot)
+	// maxSlot := maxSlotOptionSize(itemOptions)
+	// primeIncrements := util.SmallPrimes(maxSlot)
+	primeIncrements := []int{1, 1, 1, 3}
 	for slot := Equip_Head; slot <= Equip_Offhand; slot++ {
 		if len(itemOptions[slot]) > 0 {
 			if stageChannel == nil {
@@ -76,8 +77,8 @@ func initialEndlessPrimeChannel(itemOptions *SolvableOptionsMap, slot SlotEquip,
 	slotOptions := itemOptions[slot]
 	optionsSize := len(slotOptions)
 	go func() {
-		index := 0
 		for {
+			index := 0
 			item := &slotOptions[index]
 
 			set := SolvableItemSet_SingleItem(slot, item)
@@ -103,7 +104,6 @@ func stepPrimeChannel(itemOptions *SolvableOptionsMap, slot SlotEquip, indexIncr
 
 			index = (index + indexIncrement) % optionsSize
 		}
-		close(output)
 	}()
 	return output
 }

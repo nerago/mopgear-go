@@ -64,6 +64,20 @@ func (optionsMap *SolvableOptionsMap) TotalCombinationCount() *big.Int {
 	return total
 }
 
+func (optionsMap *SolvableOptionsMap) AllItemSeq() iter.Seq[*SolvableItem] {
+	return func(yield func(*SolvableItem) bool) {
+		for _, slotArray := range optionsMap {
+			for _, item := range slotArray {
+				if !item.IsEmpty() {
+					if !yield(&item) {
+						return
+					}
+				}
+			}
+		}
+	}
+}
+
 type SkinnyOptionsMap [16][]SkinnyItem
 
 func (optionsMap *SkinnyOptionsMap) TotalCombinationCount() *big.Int {

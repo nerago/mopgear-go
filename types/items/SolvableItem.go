@@ -1,6 +1,7 @@
 package items
 
 import (
+	"iter"
 	. "paladin_gearing_go/types/common"
 	. "paladin_gearing_go/types/stats"
 )
@@ -25,6 +26,18 @@ func (equipMap SolvableEquipMap) WithAdditional(slot SlotEquip, item *SolvableIt
 	var result SolvableEquipMap = equipMap
 	result[slot] = item
 	return result
+}
+
+func (equipMap SolvableEquipMap) AllItemSeq() iter.Seq[*SolvableItem] {
+	return func(yield func(*SolvableItem) bool) {
+		for _, item := range equipMap {
+			if item != nil {
+				if !yield(item) {
+					return
+				}
+			}
+		}
+	}
 }
 
 type SolvableItemSet struct {
