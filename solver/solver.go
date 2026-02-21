@@ -19,7 +19,7 @@ func Solver(itemOptions *FullOptionsMap, model *Model) FullItemSet {
 	solveOptions := SolvableOptionsMap_of(itemOptions)
 
 	var solvedSet SolvableItemSet
-	mode := 2
+	mode := 5
 	switch mode {
 	case 1:
 		solvedSet = indexed.SolverIndexed_RunFull(&solveOptions, model)
@@ -30,6 +30,8 @@ func Solver(itemOptions *FullOptionsMap, model *Model) FullItemSet {
 	case 4:
 		solvedSet = build.SolverChannelBuildPeriodic_Run(&solveOptions, model, targetCount)
 	case 5:
+		solvedSet = build.SolverBuildPeriodic_Run(&solveOptions, model, targetCount)
+	case 6:
 		solvedSet = phased.SolverSkinnyPhasedIndex_Run(&solveOptions, model, targetCount)
 	}
 

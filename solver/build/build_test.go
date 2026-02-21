@@ -17,7 +17,40 @@ import (
 // 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 // }
 
-func TestPeriodicStandardRun(t *testing.T) {
+func TestPeriodicLiteStandardRun(t *testing.T) {
+	const targetCount = utiltest.TargetCountStandard
+
+	peekRecord := utiltest.PeekTestRecorder{}
+	options, model := utiltest.MakeTestOptions()
+
+	evaluatePeriodic(options, model, targetCount, peekRecord.Add)
+
+	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
+}
+
+func TestPeriodicLiteMinimalRun(t *testing.T) {
+	const targetCount = utiltest.TargetCountMinimal
+
+	peekRecord := utiltest.PeekTestRecorder{}
+	options, model := utiltest.MakeTestOptions()
+
+	evaluatePeriodic(options, model, targetCount, peekRecord.Add)
+
+	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
+}
+
+func TestPeriodicLiteFullRun(t *testing.T) {
+	const targetCount = utiltest.TargetCountFull
+
+	peekRecord := utiltest.PeekTestRecorder{}
+	options, model := utiltest.MakeTestOptions()
+
+	evaluatePeriodic(options, model, targetCount, peekRecord.Add)
+
+	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
+}
+
+func TestPeriodicChannelStandardRun(t *testing.T) {
 	const targetCount = utiltest.TargetCountStandard
 
 	peekRecord := utiltest.PeekTestRecorder{}
@@ -29,7 +62,7 @@ func TestPeriodicStandardRun(t *testing.T) {
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
 
-func TestPeriodicMinimalRun(t *testing.T) {
+func TestPeriodicChannelMinimalRun(t *testing.T) {
 	const targetCount = utiltest.TargetCountMinimal
 
 	peekRecord := utiltest.PeekTestRecorder{}
@@ -41,7 +74,7 @@ func TestPeriodicMinimalRun(t *testing.T) {
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
 
-func TestPeriodicFullRun(t *testing.T) {
+func TestPeriodicChannelFullRun(t *testing.T) {
 	const targetCount = utiltest.TargetCountFull
 
 	peekRecord := utiltest.PeekTestRecorder{}

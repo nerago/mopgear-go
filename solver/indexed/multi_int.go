@@ -2,7 +2,6 @@ package indexed
 
 import (
 	"context"
-	"fmt"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/solver/solve_util"
 	. "paladin_gearing_go/types/items"
