@@ -17,37 +17,37 @@ import (
 // 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 // }
 
-func TestPrimeStandardRun(t *testing.T) {
+func TestPeriodicStandardRun(t *testing.T) {
 	const targetCount = utiltest.TargetCountStandard
 
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, _ := utiltest.MakeTestOptions()
 
-	setChannel := primeSetsChannel(options)
+	setChannel := periodicSetsChannel(options)
 	loopNSets(setChannel, &peekRecord, targetCount)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
 
-func TestPrimeMinimalRun(t *testing.T) {
+func TestPeriodicMinimalRun(t *testing.T) {
 	const targetCount = utiltest.TargetCountMinimal
 
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, _ := utiltest.MakeTestOptions()
 
-	setChannel := primeSetsChannel(options)
+	setChannel := periodicSetsChannel(options)
 	loopNSets(setChannel, &peekRecord, targetCount)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
 
-func TestPrimeFullRun(t *testing.T) {
+func TestPeriodicFullRun(t *testing.T) {
 	const targetCount = utiltest.TargetCountFull
 
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, _ := utiltest.MakeTestOptions()
 
-	setChannel := primeSetsChannel(options)
+	setChannel := periodicSetsChannel(options)
 	loopNSets(setChannel, &peekRecord, targetCount)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)

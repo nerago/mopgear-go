@@ -9,7 +9,7 @@ import (
 
 const (
 	bufferSize          = 32
-	evaluateThreadCount = 8
+	evaluateThreadCount = 6
 )
 
 func SolverChannelBuildFull_Run(itemOptions *SolvableOptionsMap, model *Model) SolvableItemSet {

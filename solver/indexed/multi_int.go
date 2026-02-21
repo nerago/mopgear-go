@@ -2,6 +2,7 @@ package indexed
 
 import (
 	"context"
+	"fmt"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/solver/solve_util"
 	. "paladin_gearing_go/types/items"
@@ -55,18 +56,17 @@ func trackProgressIntThreaded(threadCounters *[12]uint64, skip, max uint64, ctx 
 		select {
 		case <-ctx.Done():
 			return
-		default:
-			time.Sleep(time.Second * 5)
+		case <-time.After(time.Second * 5):
+			var totalCount uint64 = 0
+			for _, value := range threadCounters {
+				totalCount += value
+			}
+			// fmt.Printf(">%d\n", totalCount)
+			index := totalCount * skip
+
+			percent := float64(index) / float64(max)
+
+			util.PrintProgressInt(startTime, percent, index)
 		}
-
-		var totalCount uint64 = 0
-		for _, value := range threadCounters {
-			totalCount += value
-		}
-		index := totalCount * skip
-
-		percent := float64(index) / float64(max)
-
-		util.PrintProgressInt(startTime, percent, index)
 	}
 }

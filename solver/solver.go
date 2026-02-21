@@ -28,7 +28,7 @@ func Solver(itemOptions *FullOptionsMap, model *Model) FullItemSet {
 	case 3:
 		solvedSet = build.SolverChannelBuildFull_Run(&solveOptions, model)
 	case 4:
-		solvedSet = build.SolverChannelBuildPrime_Run(&solveOptions, model, targetCount)
+		solvedSet = build.SolverChannelBuildPeriodic_Run(&solveOptions, model, targetCount)
 	case 5:
 		solvedSet = phased.SolverSkinnyPhasedIndex_Run(&solveOptions, model, targetCount)
 	}
