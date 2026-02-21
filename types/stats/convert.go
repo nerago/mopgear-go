@@ -1,13 +1,12 @@
 package stats
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
 
 func (reforge *ReforgeRecipe) Str() string {
-	return fmt.Sprintf("(%s->%s)", reforge.From.Name(), reforge.To.Name())
+	return "(" + reforge.From.Name() + "->" + reforge.To.Name() + ")"
 }
 
 func (block *StatBlock) String() string {

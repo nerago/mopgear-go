@@ -18,6 +18,10 @@ func PrintRecorder_HoldAll() PrintRecorder {
 	return PrintRecorder{true, nil}
 }
 
+func (print *PrintRecorder) Println0() {
+	print.Println("")
+}
+
 func (print *PrintRecorder) Println(str string) {
 	if print.holdOutput {
 		print.lines = append(print.lines, str)

@@ -1,6 +1,8 @@
 package common
 
-import "fmt"
+import (
+	"strconv"
+)
 
 type SlotItem int8
 
@@ -116,7 +118,7 @@ func (slot SlotItem) ToSlotEquipOptions() []SlotEquip {
 	case Item_Offhand:
 		return []SlotEquip{Equip_Offhand}
 	default:
-		panic("unknown slot " + fmt.Sprint(slot))
+		panic("unknown slot " + strconv.Itoa(int(slot)))
 	}
 }
 

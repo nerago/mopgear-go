@@ -2,7 +2,6 @@ package build
 
 import (
 	"context"
-	"fmt"
 	. "paladin_gearing_go/model"
 	. "paladin_gearing_go/types/common"
 	. "paladin_gearing_go/types/items"
@@ -11,10 +10,10 @@ import (
 	"time"
 )
 
-func SolverChannelBuildPeriodic_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64) SolvableItemSet {
-	fmt.Printf("SOLVE PERIODIC %d\n", targetCount)
+func SolverChannelBuildPeriodic_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64, printer *util.PrintRecorder) SolvableItemSet {
+	printer.Printf("SOLVE PERIODIC %d\n", targetCount)
 	setChannel := periodicSetsChannel(itemOptions)
-	return evaluateBestLimitedCount(setChannel, model, targetCount)
+	return evaluateBestLimitedCount(setChannel, model, targetCount, defaultEvaluateThreadCount)
 }
 
 func periodicSetsChannel(itemOptions *SolvableOptionsMap) <-chan SolvableItemSet {
@@ -34,6 +33,36 @@ func periodicSetsChannel(itemOptions *SolvableOptionsMap) <-chan SolvableItemSet
 
 func makeSlotIndexBags(itemOptions *SolvableOptionsMap) [16][]int {
 	result := [16][]int{}
+
+	biggestSlot := 0
+	for _, slotOptions := range itemOptions {
+		if len(slotOptions) > biggestSlot {
+			biggestSlot = len(slotOptions)
+		}
+	}
+	primeArray := util.SmallPrimes(biggestSlot)
+	primeIndex := 0
+
+	for slot, slotOptions := range itemOptions {
+		slotSize := len(slotOptions)
+
+		if slotSize == 1 {
+			result[slot] = []int{0}
+			// fmt.Printf("period %d = one\n", slot)
+		} else if slotSize > 0 {
+			period := primeArray[primeIndex]
+			primeIndex++
+
+			result[slot] = makeSlotBagCycling(slotSize, period)
+
+			// fmt.Printf("period %d = %d cycle period %d\n", slot, slotSize, period)
+		}
+	}
+	return result
+}
+
+func makeSlotIndexBags0(itemOptions *SolvableOptionsMap) [16][]int {
+	result := [16][]int{}
 	usedPeriods := make([]int, 0, 16)
 	for slot, slotOptions := range itemOptions {
 		slotSize := len(slotOptions)
@@ -42,12 +71,12 @@ func makeSlotIndexBags(itemOptions *SolvableOptionsMap) [16][]int {
 			if !slices.Contains(usedPeriods, slotSize) {
 				slotBag = makeSlotBagBasic(slotSize)
 				usedPeriods = append(usedPeriods, slotSize)
-				fmt.Printf("period %d = %d basic\n", slot, slotSize)
+				// fmt.Printf("period %d = %d basic\n", slot, slotSize)
 			} else {
 				period := choosePeriod(slotSize, &usedPeriods)
 				slotBag = makeSlotBagCycling(slotSize, period)
 				usedPeriods = append(usedPeriods, period)
-				fmt.Printf("period %d = %d cycle period %d\n", slot, slotSize, period)
+				// fmt.Printf("period %d = %d cycle period %d\n", slot, slotSize, period)
 			}
 
 			result[slot] = slotBag
@@ -122,22 +151,22 @@ func stepPeriodicChannel(itemOptions *SolvableOptionsMap, slot SlotEquip, indexB
 	return output
 }
 
-func evaluateBestLimitedCount(setChannel <-chan SolvableItemSet, model *Model, targetCount uint64) SolvableItemSet {
-	resultChannel := make(chan util.BestCollector1[SolvableItemSet], evaluateThreadCount)
-	eachThreadCount := targetCount / evaluateThreadCount
-	counters := [evaluateThreadCount]uint64{}
+func evaluateBestLimitedCount(setChannel <-chan SolvableItemSet, model *Model, targetCount uint64, threadCount int) SolvableItemSet {
+	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
+	eachThreadCount := targetCount / uint64(threadCount)
+	counters := make([]uint64, threadCount)
 
 	// track progress with cancel
 	ctx, cancel := context.WithCancel(context.Background())
 	go trackProgressIntThreaded(&counters, targetCount, ctx)
 	defer cancel()
 
-	for i := range evaluateThreadCount {
+	for i := range threadCount {
 		go evaluateWorkerLimitedCount(setChannel, resultChannel, model, eachThreadCount, &counters[i])
 	}
 
 	// combine each thread's best result
-	return util.BestCollector1_OfChannel(resultChannel, evaluateThreadCount)
+	return util.BestCollector1_OfChannel(resultChannel, threadCount)
 }
 
 func evaluateWorkerLimitedCount(setChannel <-chan SolvableItemSet, resultChannel chan util.BestCollector1[SolvableItemSet], model *Model, eachThreadCount uint64, doneCounter *uint64) {
@@ -153,7 +182,7 @@ func evaluateWorkerLimitedCount(setChannel <-chan SolvableItemSet, resultChannel
 	resultChannel <- best
 }
 
-func trackProgressIntThreaded(threadCounters *[evaluateThreadCount]uint64, targetCount uint64, ctx context.Context) {
+func trackProgressIntThreaded(threadCounters *[]uint64, targetCount uint64, ctx context.Context) {
 	startTime := time.Now()
 	for {
 		select {
@@ -161,7 +190,7 @@ func trackProgressIntThreaded(threadCounters *[evaluateThreadCount]uint64, targe
 			return
 		case <-time.After(time.Second * 5):
 			var totalCount uint64 = 0
-			for _, value := range threadCounters {
+			for _, value := range *threadCounters {
 				totalCount += value
 			}
 			percent := float64(totalCount) / float64(targetCount)

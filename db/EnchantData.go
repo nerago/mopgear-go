@@ -1,8 +1,8 @@
 package db
 
 import (
-	"fmt"
 	. "paladin_gearing_go/types/stats"
+	"strconv"
 )
 
 var enchants = makeEnchants()
@@ -54,7 +54,7 @@ func makeEnchants() map[uint32]GemInfo {
 func EnchantData_ById(id uint32) GemInfo {
 	gem, found := enchants[id]
 	if !found {
-		panic("unknown enchant " + fmt.Sprint(id))
+		panic("unknown enchant " + strconv.Itoa(int(id)))
 	}
 	return gem
 }

@@ -2,7 +2,6 @@ package loaders
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	. "paladin_gearing_go/types/common"
 	. "paladin_gearing_go/types/items"
@@ -64,9 +63,8 @@ func addItem(itemObj map[string]any) {
 		return
 	}
 
-	weaponType := getIntOrDefault(itemObj, "weaponType", 0)
 	handType := getIntOrDefault(itemObj, "handType", 0)
-	slot := mapSlot(itemType, weaponType, handType)
+	slot := mapSlot(itemType, handType)
 
 	armorType := convertArmorType(getIntOrDefault(itemObj, "armorType", -1))
 
@@ -158,7 +156,7 @@ func simBlockIndexToStatThrows(num int) StatType {
 	case 14, 15, 16, 17, 18, 20:
 		return Stat_Invalid
 	default:
-		panic("unknown stat index " + fmt.Sprint(num))
+		panic("unknown stat index " + strconv.Itoa(num))
 	}
 }
 
@@ -211,7 +209,7 @@ func convertArmorType(num int32) ArmorType {
 	return ArmorType(num)
 }
 
-func mapSlot(itemType, weaponType, handType int32) SlotItem {
+func mapSlot(itemType, handType int32) SlotItem {
 	switch itemType {
 	case 1:
 		return Item_Head

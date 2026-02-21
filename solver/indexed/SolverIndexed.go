@@ -1,7 +1,6 @@
 package indexed
 
 import (
-	"fmt"
 	"math/big"
 	"paladin_gearing_go/model"
 	. "paladin_gearing_go/types/items"
@@ -12,10 +11,10 @@ const threadCount = 12
 
 var int_one = big.NewInt(1)
 
-func SolverIndexed_RunSkipping(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64) SolvableItemSet {
+func SolverIndexed_RunSkipping(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, printer *util.PrintRecorder) SolvableItemSet {
 	max, skip := initSkipValues(itemOptions, targetCount)
 
-	fmt.Printf("SOLVE SKIP %d %d %d\n", max, targetCount, skip)
+	printer.Printf("SOLVE SKIP %d %d %d\n", max, targetCount, skip)
 
 	return mainLoop(itemOptions, max, skip, model)
 }
@@ -27,9 +26,9 @@ func initSkipValues(itemOptions *SolvableOptionsMap, targetCount uint64) (*big.I
 	return max, skip
 }
 
-func SolverIndexed_RunFull(itemOptions *SolvableOptionsMap, model *model.Model) SolvableItemSet {
+func SolverIndexed_RunFull(itemOptions *SolvableOptionsMap, model *model.Model, printer *util.PrintRecorder) SolvableItemSet {
 	max := itemOptions.TotalCombinationCount()
-	fmt.Printf("SOLVE FULL %d\n", max)
+	printer.Printf("SOLVE FULL %d\n", max)
 	return mainLoop(itemOptions, max, int_one, model)
 }
 

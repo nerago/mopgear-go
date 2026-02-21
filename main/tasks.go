@@ -2,50 +2,47 @@ package main
 
 import (
 	. "paladin_gearing_go/model"
-	// . "paladin_gearing_go/model"
-	// . "paladin_gearing_go/setup"
-	"fmt"
 	. "paladin_gearing_go/solver"
 	. "paladin_gearing_go/types/items"
 	. "paladin_gearing_go/util"
 )
 
-func basicReforge(itemOptions *FullOptionsMap, model *Model) {
-	fullSet := Solver(itemOptions, model)
-	reportSet(fullSet, model)
+func basicReforge(itemOptions *FullOptionsMap, model *Model, printer *PrintRecorder) {
+	fullSet := Solver(itemOptions, model, printer)
+	reportSet(fullSet, model, printer)
 }
 
-func slotRating(itemArray []FullItem, model *Model) {
-	// fmt.Println()
-	// fmt.Println("RATINGS")
-	// fmt.Println(model.StatRatings.(StatRatingsWeights).Weights())
-	// fmt.Println()
+func slotRating(itemArray []FullItem, model *Model, printer *PrintRecorder) {
+	// printer.Println()
+	// printer.Println("RATINGS")
+	// printer.Println(model.StatRatings.(StatRatingsWeights).Weights())
+	// printer.Println()
 
 	best := BestCollector1[FullItem]{}
 	for _, item := range itemArray {
 		rate := model.CalcRatingFullItem(&item)
-		fmt.Println(item.String())
-		fmt.Printf("%d\n\n", rate)
+		printer.Println(item.String())
+		printer.Printf("%d\n\n", rate)
 		best.Offer(&item, rate)
 	}
 
-	fmt.Println()
-	fmt.Println("BEST")
-	fmt.Println(best.BestObject.String())
+	printer.Println0()
+	printer.Println("BEST")
+	printer.Println(best.BestObject.String())
 }
 
-func reportSet(fullSet FullItemSet, model *Model) {
+func reportSet(fullSet FullItemSet, model *Model, printer *PrintRecorder) {
 	rating := model.CalcRatingFull(&fullSet)
-	fmt.Printf("SET OUTPUT rating %d\n", rating)
-	fmt.Printf("RATED %s\n", fullSet.TotalRated.String())
-	fmt.Printf("CAP %s\n", fullSet.TotalCap.String())
-	printEquipMap(&fullSet.Items)
+	printer.Printf("SET OUTPUT rating %d\n", rating)
+	printer.Printf("RATED %s\n", fullSet.TotalRated.String())
+	printer.Printf("CAP %s\n", fullSet.TotalCap.String())
+	printEquipMap(&fullSet.Items, printer)
 	// TODO set bonus
 }
 
-func printEquipMap(fullEquipMap *FullEquipMap) {
+func printEquipMap(fullEquipMap *FullEquipMap, printer *PrintRecorder) {
 	for _, item := range fullEquipMap {
-		fmt.Println(item.String())
+		printer.Println(item.String())
 	}
 }
 

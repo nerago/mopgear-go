@@ -8,30 +8,30 @@ import (
 )
 
 const (
-	bufferSize          = 32
-	evaluateThreadCount = 6
+	bufferSize                 = 32
+	defaultEvaluateThreadCount = 6
 )
 
 func SolverChannelBuildFull_Run(itemOptions *SolvableOptionsMap, model *Model) SolvableItemSet {
 	setChannel := allSetsChannel(itemOptions)
-	return evaluateBestAllInput(setChannel, model)
+	return evaluateBestAllInput(setChannel, model, defaultEvaluateThreadCount)
 }
 
-func evaluateBestAllInput(setChannel <-chan SolvableItemSet, model *Model) SolvableItemSet {
-	resultChannel := make(chan util.BestCollector1[SolvableItemSet], evaluateThreadCount)
-	counters := [evaluateThreadCount]uint64{}
+func evaluateBestAllInput(setChannel <-chan SolvableItemSet, model *Model, threadCount int) SolvableItemSet {
+	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
+	counters := make([]uint64, threadCount)
 
 	// track progress with cancel
 	// ctx, cancel := context.WithCancel(context.Background())
 	// go trackProgressIntThreaded(&counters, skip, max, ctx)
 	// defer cancel()
 
-	for i := range evaluateThreadCount {
+	for i := range threadCount {
 		go evaluateAllInputWorker(setChannel, resultChannel, model, &counters[i])
 	}
 
 	// combine each thread's best result
-	return util.BestCollector1_OfChannel(resultChannel, evaluateThreadCount)
+	return util.BestCollector1_OfChannel(resultChannel, threadCount)
 }
 
 func evaluateAllInputWorker(setChannel <-chan SolvableItemSet, resultChannel chan util.BestCollector1[SolvableItemSet], model *Model, doneCounter *uint64) {

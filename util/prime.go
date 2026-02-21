@@ -39,11 +39,11 @@ var smallPrimeArray []int = []int{3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 4
 
 // size is to line up with item set size
 // could be more optimal but shouldn't be used in inner loops
-func SmallPrimes(greaterThan int) [16]int {
+func SmallPrimes(atLeast int) [16]int {
 	result := [16]int{}
 	resultIndex := 0
 	for _, value := range smallPrimeArray {
-		if value > greaterThan {
+		if value >= atLeast {
 			result[resultIndex] = value
 			resultIndex++
 			if resultIndex == 16 {

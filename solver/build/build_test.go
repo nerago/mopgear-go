@@ -17,13 +17,15 @@ import (
 // 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 // }
 
+const testingThreadCount = 1
+
 func TestPeriodicLiteStandardRun(t *testing.T) {
 	const targetCount = utiltest.TargetCountStandard
 
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluatePeriodic(options, model, targetCount, peekRecord.Add)
+	evaluatePeriodic(options, model, targetCount, testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
@@ -34,7 +36,7 @@ func TestPeriodicLiteMinimalRun(t *testing.T) {
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluatePeriodic(options, model, targetCount, peekRecord.Add)
+	evaluatePeriodic(options, model, targetCount, testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
@@ -45,7 +47,7 @@ func TestPeriodicLiteFullRun(t *testing.T) {
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluatePeriodic(options, model, targetCount, peekRecord.Add)
+	evaluatePeriodic(options, model, targetCount, testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }

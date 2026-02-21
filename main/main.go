@@ -1,19 +1,19 @@
 package main
 
 import (
-	"fmt"
+	"os"
 	. "paladin_gearing_go/model"
 	. "paladin_gearing_go/setup"
 	. "paladin_gearing_go/types/items"
 	. "paladin_gearing_go/util"
+	"runtime/pprof"
 	"time"
-	// "os"
-	// "runtime/pprof"
 )
 
 const (
-	gearFileMiti = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\gear-prot-defence.json`
-	gearFileDps  = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\gear-prot-dps.json`
+	gearFileMiti    = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\gear-prot-defence.json`
+	gearFileDps     = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\gear-prot-dps.json`
+	enableProfiling = false
 )
 
 var printer = PrintRecorder{}
@@ -21,17 +21,19 @@ var printer = PrintRecorder{}
 func main() {
 	startTime := time.Now()
 
-	// f, err := os.Create("profile.out")
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// pprof.StartCPUProfile(f)
-	// defer pprof.StopCPUProfile()
+	if enableProfiling {
+		f, err := os.Create("profile.out")
+		if err != nil {
+			panic(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 
 	core()
 
 	timeTaken := time.Since(startTime)
-	fmt.Println("Duration = " + timeTaken.String())
+	printer.Println("Duration = " + timeTaken.String())
 }
 
 func core() {
@@ -39,7 +41,7 @@ func core() {
 	// itemOptions, model := setupPallyDps()
 
 	// slotRating(itemOptions[Equip_Chest], &model)
-	basicReforge(&itemOptions, &model)
+	basicReforge(&itemOptions, &model, &printer)
 }
 
 func setupPallyMitigation() (FullOptionsMap, Model) {

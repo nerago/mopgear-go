@@ -1,7 +1,6 @@
 package phased
 
 import (
-	"fmt"
 	"math/big"
 	"paladin_gearing_go/model"
 	. "paladin_gearing_go/model"
@@ -18,14 +17,14 @@ const (
 	filterTarget = 10000
 )
 
-func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64) SolvableItemSet {
+func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64, printer *util.PrintRecorder) SolvableItemSet {
 	skinnyOptions := toSkinnyOptions(itemOptions, model)
 
 	max := skinnyOptions.TotalCombinationCount()
 	targetCombination := big.NewInt(int64(targetCount))
 	skip := util.ChooseSkip(max, targetCombination)
 
-	fmt.Printf("SOLVE PHASED %d %d %d\n", max, targetCombination, skip)
+	printer.Printf("SOLVE PHASED %d %d %d\n", max, targetCombination, skip)
 
 	if max.IsUint64() && skip.IsUint64() {
 		skinnyComboChannel := makeSkinnyCombosMultiThread(&skinnyOptions, model, max.Uint64(), skip.Uint64())

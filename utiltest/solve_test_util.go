@@ -11,7 +11,7 @@ import (
 
 const (
 	TargetCountStandard = 13 // initially matches one from indexed_test
-	TargetCountMinimal = 13  // worst slot has 5 options, should be able to try them all asap
+	TargetCountMinimal = 5  // worst slot has 5 options, should be able to try them all asap
 	TargetCountFull = 40
 
 	// TargetCountStandard = 8 // ends up with skip of 5, doesn't cycle shoulders properly since that matches a options size
@@ -68,7 +68,8 @@ func VerifyRecord(t *testing.T, peekRecord *PeekTestRecorder, options *items.Sol
 	}
 
 	verifyAllItemsTried(t, peekRecord, options)
-	verifySetsAllUnique(t, peekRecord)
+	verifyUniqueCheckValid(t, options)
+	verifySetsAllUnique(t, peekRecord.Seen)
 }
 
 func verifyAllItemsTried(t *testing.T, peekRecord *PeekTestRecorder, options *items.SolvableOptionsMap) {
@@ -86,13 +87,42 @@ func verifyAllItemsTried(t *testing.T, peekRecord *PeekTestRecorder, options *it
 	}
 }
 
-func verifySetsAllUnique(t *testing.T, peekRecord *PeekTestRecorder) {
-	for a := range peekRecord.Seen {
-		for b := a + 1; b < len(peekRecord.Seen); b++ {
-			if peekRecord.Seen[a] == peekRecord.Seen[b] {
+func verifyUniqueCheckValid(t *testing.T, options *items.SolvableOptionsMap) {
+	// test the test
+	allSets := make([]items.SolvableItemSet, 0)
+	allSets = recurAdd(allSets, options, 0, items.SolvableEquipMap{})
+	verifySetsAllUnique(t, allSets)
+}
+
+func recurAdd(allSets []items.SolvableItemSet, options *items.SolvableOptionsMap, slot int, equip items.SolvableEquipMap) []items.SolvableItemSet {
+	if slot >= len(options) {
+		set := items.SolvableItemSet_Of(equip)
+		return append(allSets, set)
+	} else if len(options[slot]) > 0 {
+		for _, item := range options[slot] {
+			equip[slot] = &item
+			allSets = recurAdd(allSets, options, slot + 1, equip)
+		}
+		return allSets
+	} else {
+		return recurAdd(allSets, options, slot + 1, equip)
+	}
+}
+
+func verifySetsAllUnique(t *testing.T, seen []items.SolvableItemSet) {
+	duplicateCount := 0
+	for a := range seen {
+		innerLoop: for b := a + 1; b < len(seen); b++ {
+			if seen[a] == seen[b] {
 				// t.Fatalf("duplicate sets %d %d", a, b)
 				t.Logf("duplicate sets %d %d", a, b)
+				duplicateCount++
+				break innerLoop
 			}
 		}
+	}
+
+	if duplicateCount > len(seen) / 10 {
+		t.Fatalf("duplicates %f%%", float64(duplicateCount) / float64(len(seen)) * 100.0)
 	}
 }
