@@ -2,7 +2,7 @@ package db
 
 import (
 	. "paladin_gearing_go/types/stats"
-	. "paladin_gearing_go/util"
+	"paladin_gearing_go/util"
 	"strconv"
 )
 
@@ -26,7 +26,7 @@ var standardGems = makeStandardGems()
 var engineerGems = makeEngineerGems()
 var metaGems = makeMetaGems()
 var shaGems = makeShaGems()
-var allGems = CombineMaps(standardGems, engineerGems, metaGems, shaGems)
+var allGems = util.CombineMaps(standardGems, engineerGems, metaGems, shaGems)
 
 func makeStandardGems() map[uint32]GemInfo {
 	lookup := make(map[uint32]GemInfo)

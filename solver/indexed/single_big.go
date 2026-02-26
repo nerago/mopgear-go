@@ -5,7 +5,6 @@ import (
 	"paladin_gearing_go/model"
 	. "paladin_gearing_go/types/items"
 	"paladin_gearing_go/util"
-	"time"
 )
 
 func mainLoop_singleThread_big(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *model.Model, peekFunc func(*SolvableItemSet)) SolvableItemSet {
@@ -15,7 +14,7 @@ func mainLoop_singleThread_big(itemOptions *SolvableOptionsMap, max, skip *big.I
 	index.Set(big.NewInt(0))
 	best := util.BestCollector1[SolvableItemSet]{}
 
-	go trackProgressBig(&index, max)
+	go util.TrackProgressBig(&index, max)
 
 	for index.Cmp(max) < 0 {
 		set := makeSetBig(itemOptions, &slotSizes, &index)
@@ -30,17 +29,4 @@ func mainLoop_singleThread_big(itemOptions *SolvableOptionsMap, max, skip *big.I
 	}
 
 	return best.GetBest()
-}
-
-func trackProgressBig(index, max *big.Int) {
-	startTime := time.Now()
-	for {
-		time.Sleep(time.Second * 5)
-
-		var ratio big.Rat
-		ratio.SetFrac(index, max)
-		percent, _ := ratio.Float64()
-
-		util.PrintProgressBig(startTime, percent, index)
-	}
 }

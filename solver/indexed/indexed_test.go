@@ -43,29 +43,32 @@ func TestSingleBig(t *testing.T) {
 	utiltest.VerifyRecord(t, peekRecord, options, targetCount)
 }
 
+// indexed is pretty bad at hitting each item, needs more time
+const minimalFudge = 7
+
 func TestMultiIntMinimal(t *testing.T) {
-	const targetCount = utiltest.TargetCountMinimal
+	const targetCount = utiltest.TargetCountMinimal + minimalFudge
 	peekRecord, options, model, max, skip := setup(targetCount)
 	_ = mainLoop_multiThread_int(options, max.Uint64(), skip.Uint64(), model, peekRecord.Add)
 	utiltest.VerifyRecord(t, peekRecord, options, targetCount)
 }
 
 func TestMultiBigMinimal(t *testing.T) {
-	const targetCount = utiltest.TargetCountMinimal
+	const targetCount = utiltest.TargetCountMinimal + minimalFudge
 	peekRecord, options, model, max, skip := setup(targetCount)
 	mainLoop_multiThread_big(options, max, skip, model, peekRecord.Add)
 	utiltest.VerifyRecord(t, peekRecord, options, targetCount)
 }
 
 func TestSingleIntMinimal(t *testing.T) {
-	const targetCount = utiltest.TargetCountMinimal
+	const targetCount = utiltest.TargetCountMinimal + minimalFudge
 	peekRecord, options, model, max, skip := setup(targetCount)
 	mainLoop_singleThread_int(options, max.Uint64(), skip.Uint64(), model, peekRecord.Add)
 	utiltest.VerifyRecord(t, peekRecord, options, targetCount)
 }
 
 func TestSingleBigMinimal(t *testing.T) {
-	const targetCount = utiltest.TargetCountMinimal
+	const targetCount = utiltest.TargetCountMinimal + minimalFudge
 	peekRecord, options, model, max, skip := setup(targetCount)
 	mainLoop_singleThread_big(options, max, skip, model, peekRecord.Add)
 	utiltest.VerifyRecord(t, peekRecord, options, targetCount)

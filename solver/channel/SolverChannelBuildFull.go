@@ -1,6 +1,7 @@
-package build
+package channel
 
 import (
+	"context"
 	. "paladin_gearing_go/model"
 	. "paladin_gearing_go/types/common"
 	. "paladin_gearing_go/types/items"
@@ -13,18 +14,19 @@ const (
 )
 
 func SolverChannelBuildFull_Run(itemOptions *SolvableOptionsMap, model *Model) SolvableItemSet {
+	total := itemOptions.TotalCombinationCount().Uint64()
 	setChannel := allSetsChannel(itemOptions)
-	return evaluateBestAllInput(setChannel, model, defaultEvaluateThreadCount)
+	return evaluateBestAllInput(setChannel, model, defaultEvaluateThreadCount, total)
 }
 
-func evaluateBestAllInput(setChannel <-chan SolvableItemSet, model *Model, threadCount int) SolvableItemSet {
+func evaluateBestAllInput(setChannel <-chan SolvableItemSet, model *Model, threadCount int, total uint64) SolvableItemSet {
 	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
 	counters := make([]uint64, threadCount)
 
 	// track progress with cancel
-	// ctx, cancel := context.WithCancel(context.Background())
-	// go trackProgressIntThreaded(&counters, skip, max, ctx)
-	// defer cancel()
+	ctx, cancel := context.WithCancel(context.Background())
+	go util.TrackProgressIntThreaded(&counters, total, ctx)
+	defer cancel()
 
 	for i := range threadCount {
 		go evaluateAllInputWorker(setChannel, resultChannel, model, &counters[i])

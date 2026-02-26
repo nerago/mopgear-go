@@ -12,11 +12,11 @@ func Tweaker_Run(initialSet SolvableItemSet, solvableOptionsMap *SolvableOptions
 
 	for slot, slotOptions := range solvableOptionsMap {
 		existing := best.BestObject.Items[slot]
-		if existing.IsEmpty() && slotOptions != nil {
+		if existing == nil && slotOptions != nil {
 			panic("unexpected empty slot")
-		} else if !existing.IsEmpty() && slotOptions == nil {
+		} else if existing != nil && slotOptions == nil {
 			panic("unexpected filled slot")
-		} else if !existing.IsEmpty() {
+		} else if existing != nil {
 			for _, replace := range slotOptions {
 				replaceMap := best.BestObject.Items
 				replaceMap[slot] = &replace
@@ -28,5 +28,5 @@ func Tweaker_Run(initialSet SolvableItemSet, solvableOptionsMap *SolvableOptions
 		}
 	}
 
-	return *best.BestObject
+	return best.GetBest()
 }

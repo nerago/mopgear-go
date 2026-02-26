@@ -1,21 +1,9 @@
 package build
 
 import (
-	"paladin_gearing_go/types/items"
 	"paladin_gearing_go/utiltest"
 	"testing"
 )
-
-// func TestAll(t *testing.T) {
-// 	peekRecord := utiltest.PeekTestRecorder{}
-// 	options, _ := utiltest.MakeTestOptions()
-
-// 	for itemSet := range allSetsChannel(options) {
-// 		peekRecord.Add(&itemSet)
-// 	}
-
-// 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
-// }
 
 const testingThreadCount = 1
 
@@ -52,48 +40,70 @@ func TestPeriodicLiteFullRun(t *testing.T) {
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
 
-func TestPeriodicChannelStandardRun(t *testing.T) {
+// //////////////////////////////////////////////////
+func TestRandomStandardRun(t *testing.T) {
 	const targetCount = utiltest.TargetCountStandard
 
 	peekRecord := utiltest.PeekTestRecorder{}
-	options, _ := utiltest.MakeTestOptions()
+	options, model := utiltest.MakeTestOptions()
 
-	setChannel := periodicSetsChannel(options)
-	loopNSets(setChannel, &peekRecord, targetCount)
+	evaluateRandom(options, model, targetCount, testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
 
-func TestPeriodicChannelMinimalRun(t *testing.T) {
+func TestRandomMinimalRun(t *testing.T) {
 	const targetCount = utiltest.TargetCountMinimal
 
 	peekRecord := utiltest.PeekTestRecorder{}
-	options, _ := utiltest.MakeTestOptions()
+	options, model := utiltest.MakeTestOptions()
 
-	setChannel := periodicSetsChannel(options)
-	loopNSets(setChannel, &peekRecord, targetCount)
+	evaluateRandom(options, model, targetCount, testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
 
-func TestPeriodicChannelFullRun(t *testing.T) {
+func TestRandomFullRun(t *testing.T) {
 	const targetCount = utiltest.TargetCountFull
 
 	peekRecord := utiltest.PeekTestRecorder{}
-	options, _ := utiltest.MakeTestOptions()
+	options, model := utiltest.MakeTestOptions()
 
-	setChannel := periodicSetsChannel(options)
-	loopNSets(setChannel, &peekRecord, targetCount)
+	evaluateRandom(options, model, targetCount, testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
 
-func loopNSets(setChannel <-chan items.SolvableItemSet, peekRecord *utiltest.PeekTestRecorder, iterCount int) {
-	for range iterCount {
-		itemSet, ok := <-setChannel
-		if !ok {
-			panic("empty channel")
-		}
-		peekRecord.Add(&itemSet)
-	}
+// //////////////////////////////////////////////////
+func TestOverflowStandardRun(t *testing.T) {
+	const targetCount = utiltest.TargetCountStandard
+
+	peekRecord := utiltest.PeekTestRecorder{}
+	options, model := utiltest.MakeTestOptions()
+
+	evaluateOverflow(options, model, targetCount, testingThreadCount, peekRecord.Add)
+
+	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
+}
+
+func TestOverflowMinimalRun(t *testing.T) {
+	const targetCount = utiltest.TargetCountMinimal + 2 // NOTE fudge factor otherwise doesn't hit
+
+	peekRecord := utiltest.PeekTestRecorder{}
+	options, model := utiltest.MakeTestOptions()
+
+	evaluateOverflow(options, model, targetCount, testingThreadCount, peekRecord.Add)
+
+	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
+}
+
+func TestOverflowFullRun(t *testing.T) {
+	const targetCount = utiltest.TargetCountFull
+
+	peekRecord := utiltest.PeekTestRecorder{}
+	options, model := utiltest.MakeTestOptions()
+
+	evaluateOverflow(options, model, targetCount, testingThreadCount, peekRecord.Add)
+
+	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }

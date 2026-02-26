@@ -1,6 +1,7 @@
 package phased
 
 import (
+	"context"
 	"math/big"
 	"paladin_gearing_go/model"
 	. "paladin_gearing_go/model"
@@ -8,7 +9,6 @@ import (
 	. "paladin_gearing_go/types/common"
 	. "paladin_gearing_go/types/items"
 	"paladin_gearing_go/util"
-	"time"
 )
 
 const (
@@ -22,7 +22,7 @@ func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, 
 
 	max := skinnyOptions.TotalCombinationCount()
 	targetCombination := big.NewInt(int64(targetCount))
-	skip := util.ChooseSkip(max, targetCombination)
+	skip := util.ChooseSkip_NextPrimeFromRatio(max, targetCombination)
 
 	printer.Printf("SOLVE PHASED %d %d %d\n", max, targetCombination, skip)
 
@@ -60,47 +60,21 @@ func toKeys(uniqueMap map[SkinnyItem]bool) []SkinnyItem {
 }
 
 func makeSkinnyCombosMultiThread(itemOptions *SkinnyOptionsMap, model *Model, max, skip uint64) <-chan SkinnyItemSet {
-	skinnyCombos := make(chan SkinnyItemSet, bufferSize)
-	doneSignal := make(chan any, bufferSize)
-	counters := [threadCount]uint64{}
+	counters := make([]uint64, threadCount)
 
 	// track progress
-	go trackProgressIntThreaded(&counters, max/skip, skinnyCombos, doneSignal)
+	ctx, cancel := context.WithCancel(context.Background())
+	go util.TrackProgressIntThreaded(&counters, max/skip, ctx)
 
 	// start up workers
 	splits := solve_util.IndexSplitsInt(max, skip, threadCount)
-	for i := range threadCount {
-		go createWorkerRangeInt(itemOptions, model, splits[i], splits[i+1], skip, skinnyCombos, doneSignal, &counters[i])
-	}
+	return util.Channel_GenerateAll_Multi(threadCount, func(threadNum int, skinnyCombos chan<- SkinnyItemSet) {
+		createWorkerRangeInt(itemOptions, model, splits[threadNum], splits[threadNum+1], skip, skinnyCombos, &counters[threadNum])
+	}, cancel)
 
-	return skinnyCombos
 }
 
-func trackProgressIntThreaded(threadCounters *[threadCount]uint64, expectedTotal uint64, skinnyCombos chan<- SkinnyItemSet, doneSignal <-chan any) {
-	startTime := time.Now()
-	remaining := threadCount
-	for {
-		select {
-		case <-time.After(time.Second * 5):
-			var totalCount uint64 = 0
-			for _, value := range threadCounters {
-				totalCount += value
-			}
-			percent := float64(totalCount) / float64(expectedTotal)
-
-			util.PrintProgressInt(startTime, percent, totalCount)
-
-		case <-doneSignal:
-			remaining--
-			if remaining == 0 {
-				close(skinnyCombos)
-				return
-			}
-		}
-	}
-}
-
-func createWorkerRangeInt(itemOptions *SkinnyOptionsMap, model *model.Model, start, max, skip uint64, skinnyCombos chan<- SkinnyItemSet, doneSignal chan<- any, progressCounter *uint64) {
+func createWorkerRangeInt(itemOptions *SkinnyOptionsMap, model *model.Model, start, max, skip uint64, skinnyCombos chan<- SkinnyItemSet, progressCounter *uint64) {
 	index := start
 	for index < max {
 		set := makeSkinnySetInt(itemOptions, index)
@@ -111,8 +85,6 @@ func createWorkerRangeInt(itemOptions *SkinnyOptionsMap, model *model.Model, sta
 		index += skip
 		(*progressCounter)++
 	}
-
-	doneSignal <- true
 }
 
 func makeSkinnySetInt(itemOptions *SkinnyOptionsMap, mainIndex uint64) SkinnyItemSet {

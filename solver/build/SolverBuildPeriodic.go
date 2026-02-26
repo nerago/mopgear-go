@@ -3,8 +3,13 @@ package build
 import (
 	"context"
 	"paladin_gearing_go/model"
+	"paladin_gearing_go/solver/channel"
 	. "paladin_gearing_go/types/items"
 	"paladin_gearing_go/util"
+)
+
+const (
+	defaultEvaluateThreadCount = 6
 )
 
 func SolverBuildPeriodic_Run(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, printer *util.PrintRecorder) SolvableItemSet {
@@ -14,13 +19,13 @@ func SolverBuildPeriodic_Run(itemOptions *SolvableOptionsMap, model *model.Model
 
 func evaluatePeriodic(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, threadCount int, peekFunc func(*SolvableItemSet)) SolvableItemSet {
 	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
-	eachThreadCount := targetCount / uint64(threadCount)
+	eachThreadCount := max(targetCount/uint64(threadCount), 1)
 	counters := make([]uint64, threadCount)
-	slotIndexBags := makeSlotIndexBags(itemOptions)
+	slotIndexBags := channel.MakeSlotIndexBags(itemOptions)
 
 	// track progress with cancel
 	ctx, cancel := context.WithCancel(context.Background())
-	go trackProgressIntThreaded(&counters, targetCount, ctx)
+	go util.TrackProgressIntThreaded(&counters, targetCount, ctx)
 	defer cancel()
 
 	for threadNum := range threadCount {
@@ -31,19 +36,24 @@ func evaluatePeriodic(itemOptions *SolvableOptionsMap, model *model.Model, targe
 	return util.BestCollector1_OfChannel(resultChannel, threadCount)
 }
 
-func evaluatePeriodicWorker(resultChannel chan util.BestCollector1[SolvableItemSet], model *model.Model, eachThreadCount uint64, itemOptions *SolvableOptionsMap, slotIndexBags *[16][]int, offset uint64, processedCounter *uint64, peekFunc func(*SolvableItemSet)) {
+func evaluatePeriodicWorker(resultChannel chan util.BestCollector1[SolvableItemSet], model *model.Model, eachThreadCount uint64, itemOptions *SolvableOptionsMap, slotIndexBags *[16][]int, threadNum uint64, processedCounter *uint64, peekFunc func(*SolvableItemSet)) {
 	best := util.BestCollector1[SolvableItemSet]{}
 
+	// by starting with last index we try to avoid a first round where they move in sync for most of the bag before diverging
+	// then index offset by thread is trying to calculate where previous worker would have left off
 	indexes := [16]uint64{}
 	for i := range indexes {
-		if len(slotIndexBags[i]) > 0 {
-			indexes[i] = (offset * eachThreadCount) % uint64(len(slotIndexBags[i]))
+		slotLen := uint64(len(slotIndexBags[i]))
+		if slotLen > 0 {
+			indexes[i] = (slotLen - 1 + (threadNum * eachThreadCount)) % slotLen
+			// indexes[i] = ((offset * eachThreadCount)) % slotLen
+			// indexes[i] = 0
 		}
 	}
 
 	for range eachThreadCount {
 		// fmt.Printf("build %d\n", x)
-		itemSet := makeSetFromArrays(itemOptions, &indexes, slotIndexBags)
+		itemSet := makeSetFromArraysBagged(itemOptions, &indexes, slotIndexBags)
 		if peekFunc != nil {
 			peekFunc(&itemSet)
 		}
@@ -57,7 +67,7 @@ func evaluatePeriodicWorker(resultChannel chan util.BestCollector1[SolvableItemS
 	resultChannel <- best
 }
 
-func makeSetFromArrays(slotOptions *SolvableOptionsMap, slotIndexes *[16]uint64, slotIndexBags *[16][]int) SolvableItemSet {
+func makeSetFromArraysBagged(slotOptions *SolvableOptionsMap, slotIndexes *[16]uint64, slotIndexBags *[16][]int) SolvableItemSet {
 	equip := SolvableEquipMap{}
 	for slot, options := range slotOptions {
 		bag := slotIndexBags[slot]
@@ -65,7 +75,7 @@ func makeSetFromArrays(slotOptions *SolvableOptionsMap, slotIndexes *[16]uint64,
 		if bagSize == 1 {
 			equip[slot] = &options[0]
 			// fmt.Printf("make slot=%d one\n", slot)
-		} else if bagSize > 0 {
+		} else if bagSize > 1 {
 			outerIndex := slotIndexes[slot]
 			innerIndex := bag[outerIndex]
 			// fmt.Printf("make slot=%d outer=%d inner=%d\n", slot, outerIndex, innerIndex)

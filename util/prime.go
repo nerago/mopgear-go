@@ -4,31 +4,45 @@ import (
 	"math/big"
 )
 
-var int_zero = big.NewInt(0)
-var int_one = big.NewInt(1)
+var Int_Zero = big.NewInt(0)
+var Int_One = big.NewInt(1)
 
-func NextPrime(skip *big.Int) *big.Int {
-	if skip.Cmp(int_one) <= 0 {
-		return int_one
+func PrimeNextGreaterOrEqual(skip *big.Int) *big.Int {
+	if skip.Cmp(Int_One) < 0 {
+		skip.Set(Int_One)
+		return skip
 	}
 
 	for !skip.ProbablyPrime(100) {
-		skip.Add(skip, int_one)
+		skip.Add(skip, Int_One)
 	}
 	return skip
 }
 
-func ChooseSkip(actualCombos, targetRunSize *big.Int) *big.Int {
-	if actualCombos.Cmp(int_zero) == 0 || targetRunSize.Cmp(int_zero) == 0 {
+func PrimeNextGreater(skip *big.Int) *big.Int {
+	if skip.Cmp(Int_One) < 0 {
+		skip.Set(Int_One)
+		return skip
+	}
+
+	skip.Add(skip, Int_One)
+	for !skip.ProbablyPrime(100) {
+		skip.Add(skip, Int_One)
+	}
+	return skip
+}
+
+func ChooseSkip_NextPrimeFromRatio(actualCombos, targetRunSize *big.Int) *big.Int {
+	if actualCombos.Cmp(Int_Zero) == 0 || targetRunSize.Cmp(Int_Zero) == 0 {
 		panic("unexpected zero")
 	}
 
 	skip := big.NewInt(0)
 	if actualCombos.Cmp(targetRunSize) > 0 {
 		skip.Div(actualCombos, targetRunSize)
-		skip = NextPrime(skip)
+		skip = PrimeNextGreaterOrEqual(skip)
 	} else {
-		skip = int_one
+		skip = Int_One
 	}
 	return skip
 }

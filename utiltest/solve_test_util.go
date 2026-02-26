@@ -21,8 +21,8 @@ func MakeTestOptions() (*items.SolvableOptionsMap, *model.Model) {
 	options := items.SolvableOptionsMap{}
 	options[common.Equip_Head] = []items.SolvableItem{testItem(100, 11)}
 	options[common.Equip_Neck] = []items.SolvableItem{testItem(200, 22), testItem(201, 23)}
-	options[common.Equip_Shoulder] = []items.SolvableItem{testItem(301, 31), testItem(302, 32), testItem(303, 33), testItem(304, 32), testItem(305, 31)}
-	options[common.Equip_Back] = []items.SolvableItem{testItem(401, 44), testItem(402, 43), testItem(403, 42), testItem(404, 41)}
+	options[common.Equip_Shoulder] = []items.SolvableItem{testItem(300, 31), testItem(301, 32), testItem(302, 33), testItem(303, 32), testItem(304, 31)}
+	options[common.Equip_Back] = []items.SolvableItem{testItem(400, 44), testItem(401, 43), testItem(402, 42), testItem(403, 41)}
 	model := model.Model_Testing()
 	return &options, &model
 }

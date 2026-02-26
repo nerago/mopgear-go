@@ -22,7 +22,7 @@ func SolverIndexed_RunSkipping(itemOptions *SolvableOptionsMap, model *model.Mod
 func initSkipValues(itemOptions *SolvableOptionsMap, targetCount uint64) (*big.Int, *big.Int) {
 	max := itemOptions.TotalCombinationCount()
 	targetCombination := big.NewInt(int64(targetCount))
-	skip := util.ChooseSkip(max, targetCombination)
+	skip := util.ChooseSkip_NextPrimeFromRatio(max, targetCombination)
 	return max, skip
 }
 
@@ -89,6 +89,7 @@ func makeSetInt(itemOptions *SolvableOptionsMap, mainIndex uint64) SolvableItemS
 			currIndex /= size
 
 			equip[slot] = &array[slotIndex]
+			
 		}
 	}
 

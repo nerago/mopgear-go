@@ -1,13 +1,13 @@
-package build
+package channel
 
 import (
 	"context"
+	"math/rand"
 	. "paladin_gearing_go/model"
 	. "paladin_gearing_go/types/common"
 	. "paladin_gearing_go/types/items"
 	"paladin_gearing_go/util"
 	"slices"
-	"time"
 )
 
 func SolverChannelBuildPeriodic_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64, printer *util.PrintRecorder) SolvableItemSet {
@@ -18,7 +18,7 @@ func SolverChannelBuildPeriodic_Run(itemOptions *SolvableOptionsMap, model *Mode
 
 func periodicSetsChannel(itemOptions *SolvableOptionsMap) <-chan SolvableItemSet {
 	var stageChannel <-chan SolvableItemSet
-	slotIndexBags := makeSlotIndexBags(itemOptions)
+	slotIndexBags := MakeSlotIndexBags(itemOptions)
 	for slot := Equip_Head; slot <= Equip_Offhand; slot++ {
 		if len(itemOptions[slot]) > 0 {
 			if stageChannel == nil {
@@ -31,8 +31,9 @@ func periodicSetsChannel(itemOptions *SolvableOptionsMap) <-chan SolvableItemSet
 	return stageChannel
 }
 
-func makeSlotIndexBags(itemOptions *SolvableOptionsMap) [16][]int {
+func MakeSlotIndexBags(itemOptions *SolvableOptionsMap) [16][]int {
 	result := [16][]int{}
+	rng := rand.New(rand.NewSource(0))
 
 	biggestSlot := 0
 	for _, slotOptions := range itemOptions {
@@ -49,11 +50,11 @@ func makeSlotIndexBags(itemOptions *SolvableOptionsMap) [16][]int {
 		if slotSize == 1 {
 			result[slot] = []int{0}
 			// fmt.Printf("period %d = one\n", slot)
-		} else if slotSize > 0 {
+		} else if slotSize > 1 {
 			period := primeArray[primeIndex]
 			primeIndex++
 
-			result[slot] = makeSlotBagCycling(slotSize, period)
+			result[slot] = makeSlotBagCycling(slotSize, period, rng)
 
 			// fmt.Printf("period %d = %d cycle period %d\n", slot, slotSize, period)
 		}
@@ -61,29 +62,29 @@ func makeSlotIndexBags(itemOptions *SolvableOptionsMap) [16][]int {
 	return result
 }
 
-func makeSlotIndexBags0(itemOptions *SolvableOptionsMap) [16][]int {
-	result := [16][]int{}
-	usedPeriods := make([]int, 0, 16)
-	for slot, slotOptions := range itemOptions {
-		slotSize := len(slotOptions)
-		if slotSize > 0 {
-			var slotBag []int
-			if !slices.Contains(usedPeriods, slotSize) {
-				slotBag = makeSlotBagBasic(slotSize)
-				usedPeriods = append(usedPeriods, slotSize)
-				// fmt.Printf("period %d = %d basic\n", slot, slotSize)
-			} else {
-				period := choosePeriod(slotSize, &usedPeriods)
-				slotBag = makeSlotBagCycling(slotSize, period)
-				usedPeriods = append(usedPeriods, period)
-				// fmt.Printf("period %d = %d cycle period %d\n", slot, slotSize, period)
-			}
+// func makeSlotIndexBags0(itemOptions *SolvableOptionsMap) [16][]int {
+// 	result := [16][]int{}
+// 	usedPeriods := make([]int, 0, 16)
+// 	for slot, slotOptions := range itemOptions {
+// 		slotSize := len(slotOptions)
+// 		if slotSize > 0 {
+// 			var slotBag []int
+// 			if !slices.Contains(usedPeriods, slotSize) {
+// 				slotBag = makeSlotBagBasic(slotSize)
+// 				usedPeriods = append(usedPeriods, slotSize)
+// 				// fmt.Printf("period %d = %d basic\n", slot, slotSize)
+// 			} else {
+// 				period := choosePeriod(slotSize, &usedPeriods)
+// 				slotBag = makeSlotBagCycling(slotSize, period)
+// 				usedPeriods = append(usedPeriods, period)
+// 				// fmt.Printf("period %d = %d cycle period %d\n", slot, slotSize, period)
+// 			}
 
-			result[slot] = slotBag
-		}
-	}
-	return result
-}
+// 			result[slot] = slotBag
+// 		}
+// 	}
+// 	return result
+// }
 
 func choosePeriod(slotSize int, usedPeriods *[]int) int {
 	// start with 3 since 2 could make extra elements too statistially significant
@@ -98,20 +99,17 @@ func choosePeriod(slotSize int, usedPeriods *[]int) int {
 	panic("didn't find valid period")
 }
 
-func makeSlotBagBasic(slotSize int) []int {
-	bag := make([]int, slotSize)
-	for i := range slotSize {
-		bag[i] = i
-	}
-	return bag
-
-}
-func makeSlotBagCycling(slotSize, period int) []int {
+func makeSlotBagCycling(slotSize, period int, rng *rand.Rand) []int {
 	bag := make([]int, period)
 	for i := range period {
 		bag[i] = i % slotSize
 	}
+	shuffle(&bag, rng)
 	return bag
+}
+
+func shuffle(array *[]int, rng *rand.Rand) {
+	rng.Shuffle(len(*array), func (a, b int) { (*array)[a], (*array)[b] = (*array)[b], (*array)[a] } )
 }
 
 func makeNextChannel() chan SolvableItemSet {
@@ -158,7 +156,7 @@ func evaluateBestLimitedCount(setChannel <-chan SolvableItemSet, model *Model, t
 
 	// track progress with cancel
 	ctx, cancel := context.WithCancel(context.Background())
-	go trackProgressIntThreaded(&counters, targetCount, ctx)
+	go util.TrackProgressIntThreaded(&counters, targetCount, ctx)
 	defer cancel()
 
 	for i := range threadCount {
@@ -180,21 +178,4 @@ func evaluateWorkerLimitedCount(setChannel <-chan SolvableItemSet, resultChannel
 		(*doneCounter)++
 	}
 	resultChannel <- best
-}
-
-func trackProgressIntThreaded(threadCounters *[]uint64, targetCount uint64, ctx context.Context) {
-	startTime := time.Now()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(time.Second * 5):
-			var totalCount uint64 = 0
-			for _, value := range *threadCounters {
-				totalCount += value
-			}
-			percent := float64(totalCount) / float64(targetCount)
-			util.PrintProgressInt(startTime, percent, totalCount)
-		}
-	}
 }

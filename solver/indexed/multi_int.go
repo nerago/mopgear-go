@@ -6,16 +6,15 @@ import (
 	"paladin_gearing_go/solver/solve_util"
 	. "paladin_gearing_go/types/items"
 	"paladin_gearing_go/util"
-	"time"
 )
 
 func mainLoop_multiThread_int(itemOptions *SolvableOptionsMap, max, skip uint64, model *model.Model, peekFunc func(*SolvableItemSet)) SolvableItemSet {
 	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
-	counters := [threadCount]uint64{}
+	counters := make([]uint64, threadCount)
 
 	// track progress with cancel
 	ctx, cancel := context.WithCancel(context.Background())
-	go trackProgressIntThreaded(&counters, skip, max, ctx)
+	go util.TrackProgressIntThreaded(&counters, max/skip, ctx)
 	defer cancel()
 
 	// start up workers
@@ -47,25 +46,4 @@ func workerThreadRangeInt(itemOptions *SolvableOptionsMap, model *model.Model, s
 	}
 
 	resultChannel <- best
-}
-
-func trackProgressIntThreaded(threadCounters *[12]uint64, skip, max uint64, ctx context.Context) {
-	startTime := time.Now()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(time.Second * 5):
-			var totalCount uint64 = 0
-			for _, value := range threadCounters {
-				totalCount += value
-			}
-			// fmt.Printf(">%d\n", totalCount)
-			index := totalCount * skip
-
-			percent := float64(index) / float64(max)
-
-			util.PrintProgressInt(startTime, percent, index)
-		}
-	}
 }

@@ -105,3 +105,22 @@ func Channel_TransformAll_Multi[T any, R any](threadCount int, inputChannel <-ch
 	}()
 	return outputChannel
 }
+
+func Channel_GenerateAll_Multi[R any](threadCount int, generateSubGroup func(int, chan<- R), after func()) <-chan R {
+	outputChannel := make(chan R, bufferSize)
+	doneChannel := make(chan any, threadCount)
+	for threadNum := range threadCount {
+		go func() {
+			generateSubGroup(threadNum, outputChannel)
+			doneChannel <- true
+		}()
+	}
+	go func() {
+		for range threadCount {
+			_ = <-doneChannel
+		}
+		close(outputChannel)
+		after()
+	}()
+	return outputChannel
+}
