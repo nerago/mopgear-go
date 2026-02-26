@@ -3,21 +3,17 @@ package items
 import (
 	"iter"
 	"math/big"
-	"paladin_gearing_go/types/common"
+	. "paladin_gearing_go/stats"
 )
 
 type FullOptionsMap [16][]FullItem
 
-func (optionsMap FullOptionsMap) Get(slot common.SlotEquip) []FullItem {
+func (optionsMap *FullOptionsMap) Get(slot SlotEquip) []FullItem {
 	return optionsMap[slot]
 }
 
-func (optionsMap FullOptionsMap) Has(slot common.SlotEquip) bool {
+func (optionsMap *FullOptionsMap) Has(slot SlotEquip) bool {
 	return len(optionsMap[slot]) > 0
-}
-
-func (optionsMap *FullOptionsMap) Put(slot common.SlotEquip, items []FullItem) {
-	optionsMap[slot] = items
 }
 
 func (optionsMap *FullOptionsMap) MapSlots(mapper func([]FullItem) []FullItem) {
@@ -38,13 +34,68 @@ func (optionsMap *FullOptionsMap) AllItems() iter.Seq[FullItem] {
 	}
 }
 
+func (optionsMap *FullOptionsMap) FillSlot_ExpectedEmpty(slotItem SlotItem, optionList []FullItem) {
+	var slotEquip SlotEquip
+	switch slotItem {
+	case Item_Back:
+		slotEquip = Equip_Back
+	case Item_Belt:
+		slotEquip = Equip_Belt
+	case Item_Chest:
+		slotEquip = Equip_Chest
+	case Item_Foot:
+		slotEquip = Equip_Foot
+	case Item_Hand:
+		slotEquip = Equip_Hand
+	case Item_Head:
+		slotEquip = Equip_Head
+	case Item_Leg:
+		slotEquip = Equip_Leg
+	case Item_Neck:
+		slotEquip = Equip_Neck
+	case Item_Offhand:
+		slotEquip = Equip_Offhand
+	case Item_Shoulder:
+		slotEquip = Equip_Shoulder
+	case Item_Wrist:
+		slotEquip = Equip_Wrist
+	case Item_Weapon1H:
+		slotEquip = Equip_Weapon
+	case Item_Weapon2H:
+		slotEquip = Equip_Weapon
+
+	case Item_Ring:
+		if optionsMap[Equip_Ring1] == nil {
+			slotEquip = Equip_Ring1
+		} else {
+			slotEquip = Equip_Ring2
+		}
+
+	case Item_Trinket:
+		if optionsMap[Equip_Trinket1] == nil {
+			slotEquip = Equip_Trinket1
+		} else {
+			slotEquip = Equip_Trinket2
+		}
+
+	default:
+		panic("unexpected SlotItem")
+	}
+
+	if optionsMap[slotEquip] == nil {
+		optionsMap[slotEquip] = optionList
+	} else {
+		panic("duplicate item")
+	}
+}
+
 type SolvableOptionsMap [16][]SolvableItem
 
-func (optionsMap *SolvableOptionsMap) Get(slot common.SlotEquip) []SolvableItem {
+func (optionsMap *SolvableOptionsMap) Get(slot SlotEquip) []SolvableItem {
 	return optionsMap[slot]
 }
 
-func (optionsMap *SolvableOptionsMap) Has(slot common.SlotEquip) bool {
+func (optionsMap *SolvableOptionsMap) Has(slot SlotEquip) bool {
 	return len(optionsMap[slot]) > 0
 }
 

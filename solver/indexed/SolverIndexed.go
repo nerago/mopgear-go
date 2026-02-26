@@ -2,8 +2,8 @@ package indexed
 
 import (
 	"math/big"
+	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model"
-	. "paladin_gearing_go/types/items"
 	"paladin_gearing_go/util"
 )
 
@@ -89,7 +89,6 @@ func makeSetInt(itemOptions *SolvableOptionsMap, mainIndex uint64) SolvableItemS
 			currIndex /= size
 
 			equip[slot] = &array[slotIndex]
-			
 		}
 	}
 

@@ -3,7 +3,7 @@ package ratings
 import (
 	"math"
 	"os"
-	. "paladin_gearing_go/types/stats"
+	. "paladin_gearing_go/stats"
 	"strconv"
 	"strings"
 )

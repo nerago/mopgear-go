@@ -1,7 +1,7 @@
 package db
 
 import (
-	. "paladin_gearing_go/types/stats"
+	. "paladin_gearing_go/stats"
 	"strconv"
 )
 

@@ -1,11 +1,10 @@
-package loaders
+package db
 
 import (
 	"encoding/json"
 	"os"
-	. "paladin_gearing_go/types/common"
-	. "paladin_gearing_go/types/items"
-	. "paladin_gearing_go/types/stats"
+	. "paladin_gearing_go/items"
+	. "paladin_gearing_go/stats"
 	"strconv"
 )
 

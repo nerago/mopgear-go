@@ -1,4 +1,4 @@
-package common
+package stats
 
 import (
 	"strconv"
@@ -144,34 +144,3 @@ func (slot SlotItem) AddEnchantToCap() bool {
 func (slot SlotItem) PossibleBlacksmith() bool {
 	return slot == Item_Wrist || slot == Item_Hand || slot == Item_Belt
 }
-
-type ArmorType int8
-
-const (
-	Armor_None    ArmorType = -1
-	Armor_Cloth   ArmorType = 1
-	Armor_Leather ArmorType = 2
-	Armor_Mail    ArmorType = 3
-	Armor_Plate   ArmorType = 4
-)
-
-type SocketType int8
-
-const (
-	Socket_Meta        SocketType = 1
-	Socket_Red         SocketType = 2
-	Socket_Blue        SocketType = 3
-	Socket_Yellow      SocketType = 4
-	Socket_General     SocketType = 8
-	Socket_Engineering SocketType = 9
-	Socket_Sha         SocketType = 10
-)
-
-type PrimaryStatType int8
-
-const (
-	PrimaryStat_None      PrimaryStatType = iota
-	PrimaryStat_Strength                  = iota
-	PrimaryStat_Agility                   = iota
-	PrimaryStat_Intellect                 = iota
-)

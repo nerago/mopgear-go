@@ -1,7 +1,7 @@
 package model
 
 import (
-	. "paladin_gearing_go/types/stats"
+	. "paladin_gearing_go/stats"
 )
 
 type ReforgeRules struct {

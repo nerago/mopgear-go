@@ -1,4 +1,4 @@
-package common
+package stats
 
 type SpecType int32
 

@@ -3,8 +3,8 @@ package build
 import (
 	"context"
 	"math/big"
+	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model"
-	. "paladin_gearing_go/types/items"
 	"paladin_gearing_go/util"
 )
 
@@ -41,7 +41,7 @@ func chooseSkip_PrimeAndIsntSlotSize(itemOptions *SolvableOptionsMap, targetCoun
 	} else if !skip.IsUint64() {
 		panic("big num not handled")
 	}
-	
+
 	for isASlotSize(itemOptions, skip.Uint64()) {
 		skip = util.PrimeNextGreater(skip)
 	}

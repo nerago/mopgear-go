@@ -2,8 +2,7 @@ package items
 
 import (
 	"iter"
-	"paladin_gearing_go/types/common"
-	"paladin_gearing_go/types/stats"
+	"paladin_gearing_go/stats"
 )
 
 const LOW_HIGH_MOP_ITEM_LEVELS_THRESHOLD = 522
@@ -30,17 +29,17 @@ func (ref ItemRef) UpgradeLevel() int16 {
 type FullItem struct {
 	// generally fixed from imports
 	Ref         ItemRef
-	Slot        common.SlotItem
+	Slot        stats.SlotItem
 	BaseName    string
-	ArmorType   common.ArmorType
-	PrimaryStat common.PrimaryStatType
-	SocketSlots []common.SocketType
+	ArmorType   stats.ArmorType
+	PrimaryStat stats.PrimaryStatType
+	SocketSlots []stats.SocketType
 	SocketBonus stats.StatBlock
 	Phase       int8
 
 	// specific item instance choices
 	Reforge       stats.ReforgeRecipe
-	GemChoice     []uint32
+	GemChoice     []stats.GemInfo
 	EnchantChoice uint32
 	RandomSuffix  int32
 
@@ -51,8 +50,8 @@ type FullItem struct {
 	TotalRated  stats.StatBlock // averaged variable total stats for rating purposes
 }
 
-func FullItem_FromWowSim(ref ItemRef, slot common.SlotItem, baseName string, statBase stats.StatBlock,
-	armorType common.ArmorType, socketSlots []common.SocketType,
+func FullItem_FromWowSim(ref ItemRef, slot stats.SlotItem, baseName string, statBase stats.StatBlock,
+	armorType stats.ArmorType, socketSlots []stats.SocketType,
 	socketBonus stats.StatBlock, phase int8) FullItem {
 	return FullItem{ref, slot, baseName, armorType, statBase.PrimaryStat(),
 		socketSlots, socketBonus, phase,
@@ -66,7 +65,7 @@ func (item *FullItem) ChangedForReforge(changedStat stats.StatBlock, reforge sta
 	return newItem
 }
 
-func derivedStatFields(slot common.SlotItem, statBase, statEnchant stats.StatBlock) (stats.StatBlock, stats.StatBlock) {
+func derivedStatFields(slot stats.SlotItem, statBase, statEnchant stats.StatBlock) (stats.StatBlock, stats.StatBlock) {
 	if statEnchant.IsEmpty() {
 		return statBase, statBase
 	} else if slot.AddEnchantToCap() {
@@ -117,7 +116,7 @@ func (item *FullItem) Equals(other *FullItem) bool {
 
 type FullEquipMap [16]*FullItem
 
-func (equipMap *FullEquipMap) Get(slot common.SlotEquip) *FullItem {
+func (equipMap *FullEquipMap) Get(slot stats.SlotEquip) *FullItem {
 	return equipMap[slot]
 }
 

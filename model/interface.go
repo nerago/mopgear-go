@@ -1,8 +1,8 @@
 package model
 
 import (
-	. "paladin_gearing_go/types/items"
-	. "paladin_gearing_go/types/stats"
+	. "paladin_gearing_go/items"
+	. "paladin_gearing_go/stats"
 )
 
 type StatRequirements interface {

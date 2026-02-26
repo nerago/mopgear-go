@@ -1,10 +1,10 @@
 package model
 
 import (
+	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/model/ratings"
 	. "paladin_gearing_go/model/requirements"
-	. "paladin_gearing_go/types/common"
-	. "paladin_gearing_go/types/items"
+	. "paladin_gearing_go/stats"
 )
 
 type Model struct {

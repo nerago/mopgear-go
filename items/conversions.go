@@ -1,7 +1,6 @@
 package items
 
 import (
-	. "paladin_gearing_go/db"
 	"strconv"
 	"strings"
 )
@@ -82,8 +81,7 @@ func (item *FullItem) String() string {
 
 	if len(item.GemChoice) > 0 {
 		build.WriteString(" GEMS ")
-		for _, gemId := range item.GemChoice {
-			gem := GemData_ById(gemId)
+		for _, gem := range item.GemChoice {
 			build.WriteString(gem.Stats.String())
 		}
 	}

@@ -1,38 +1,37 @@
 package utiltest
 
 import (
+	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
-	"paladin_gearing_go/types/common"
-	"paladin_gearing_go/types/items"
-	"paladin_gearing_go/types/stats"
+	"paladin_gearing_go/stats"
 	"sync"
 	"testing"
 )
 
 const (
 	TargetCountStandard = 13 // initially matches one from indexed_test
-	TargetCountMinimal = 5  // worst slot has 5 options, should be able to try them all asap
-	TargetCountFull = 40
+	TargetCountMinimal  = 5  // worst slot has 5 options, should be able to try them all asap
+	TargetCountFull     = 40
 
 	// TargetCountStandard = 8 // ends up with skip of 5, doesn't cycle shoulders properly since that matches a options size
 )
 
 func MakeTestOptions() (*items.SolvableOptionsMap, *model.Model) {
 	options := items.SolvableOptionsMap{}
-	options[common.Equip_Head] = []items.SolvableItem{testItem(100, 11)}
-	options[common.Equip_Neck] = []items.SolvableItem{testItem(200, 22), testItem(201, 23)}
-	options[common.Equip_Shoulder] = []items.SolvableItem{testItem(300, 31), testItem(301, 32), testItem(302, 33), testItem(303, 32), testItem(304, 31)}
-	options[common.Equip_Back] = []items.SolvableItem{testItem(400, 44), testItem(401, 43), testItem(402, 42), testItem(403, 41)}
+	options[stats.Equip_Head] = []items.SolvableItem{testItem(100, 11)}
+	options[stats.Equip_Neck] = []items.SolvableItem{testItem(200, 22), testItem(201, 23)}
+	options[stats.Equip_Shoulder] = []items.SolvableItem{testItem(300, 31), testItem(301, 32), testItem(302, 33), testItem(303, 32), testItem(304, 31)}
+	options[stats.Equip_Back] = []items.SolvableItem{testItem(400, 44), testItem(401, 43), testItem(402, 42), testItem(403, 41)}
 	model := model.Model_Testing()
 	return &options, &model
 }
 
 func MakeTestExpectedBest() items.SolvableEquipMap {
 	equip := items.SolvableEquipMap{}
-	equip[common.Equip_Head] = testItemPointer(100, 11)
-	equip[common.Equip_Neck] = testItemPointer(201, 23)
-	equip[common.Equip_Shoulder] = testItemPointer(303, 33)
-	equip[common.Equip_Back] = testItemPointer(401, 44)
+	equip[stats.Equip_Head] = testItemPointer(100, 11)
+	equip[stats.Equip_Neck] = testItemPointer(201, 23)
+	equip[stats.Equip_Shoulder] = testItemPointer(303, 33)
+	equip[stats.Equip_Back] = testItemPointer(401, 44)
 	return equip
 }
 
@@ -101,18 +100,19 @@ func recurAdd(allSets []items.SolvableItemSet, options *items.SolvableOptionsMap
 	} else if len(options[slot]) > 0 {
 		for _, item := range options[slot] {
 			equip[slot] = &item
-			allSets = recurAdd(allSets, options, slot + 1, equip)
+			allSets = recurAdd(allSets, options, slot+1, equip)
 		}
 		return allSets
 	} else {
-		return recurAdd(allSets, options, slot + 1, equip)
+		return recurAdd(allSets, options, slot+1, equip)
 	}
 }
 
 func verifySetsAllUnique(t *testing.T, seen []items.SolvableItemSet) {
 	duplicateCount := 0
 	for a := range seen {
-		innerLoop: for b := a + 1; b < len(seen); b++ {
+	innerLoop:
+		for b := a + 1; b < len(seen); b++ {
 			if seen[a] == seen[b] {
 				// t.Fatalf("duplicate sets %d %d", a, b)
 				t.Logf("duplicate sets %d %d", a, b)
@@ -122,7 +122,7 @@ func verifySetsAllUnique(t *testing.T, seen []items.SolvableItemSet) {
 		}
 	}
 
-	if duplicateCount > len(seen) / 10 {
-		t.Fatalf("duplicates %f%%", float64(duplicateCount) / float64(len(seen)) * 100.0)
+	if duplicateCount > len(seen)/10 {
+		t.Fatalf("duplicates %f%%", float64(duplicateCount)/float64(len(seen))*100.0)
 	}
 }

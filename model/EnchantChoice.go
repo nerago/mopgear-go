@@ -2,8 +2,7 @@ package model
 
 import (
 	. "paladin_gearing_go/db"
-	. "paladin_gearing_go/types/common"
-	. "paladin_gearing_go/types/stats"
+	. "paladin_gearing_go/stats"
 )
 
 type EnchantChoice map[SlotItem]GemInfo

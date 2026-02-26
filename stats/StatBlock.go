@@ -1,58 +1,5 @@
 package stats
 
-import (
-	"paladin_gearing_go/types/common"
-)
-
-type StatType int8
-
-const (
-	Stat_Strength  StatType = 0
-	Stat_Agility   StatType = 1
-	Stat_Stamina   StatType = 2
-	Stat_Intellect StatType = 3
-	Stat_Spirit    StatType = 4
-	Stat_Hit       StatType = 5
-	Stat_Crit      StatType = 6
-	Stat_Haste     StatType = 7
-	Stat_Expertise StatType = 8
-	Stat_Dodge     StatType = 9
-	Stat_Parry     StatType = 10
-	Stat_Mastery   StatType = 11
-	Stat_Invalid   StatType = -1
-)
-
-func (stat StatType) Name() string {
-	switch stat {
-	case Stat_Strength:
-		return "str"
-	case Stat_Agility:
-		return "agi"
-	case Stat_Stamina:
-		return "stam"
-	case Stat_Intellect:
-		return "int"
-	case Stat_Spirit:
-		return "spi"
-	case Stat_Hit:
-		return "hit"
-	case Stat_Crit:
-		return "crit"
-	case Stat_Haste:
-		return "haste"
-	case Stat_Expertise:
-		return "expert"
-	case Stat_Dodge:
-		return "dodge"
-	case Stat_Parry:
-		return "parry"
-	case Stat_Mastery:
-		return "master"
-	default:
-		panic("unknown stat")
-	}
-}
-
 type StatBlock [12]uint32
 
 var StatBlock_empty = StatBlock{}
@@ -177,7 +124,7 @@ func (block *StatBlock) Spirit() uint32 {
 	return block[Stat_Spirit]
 }
 
-func (block *StatBlock) PrimaryStat() common.PrimaryStatType {
+func (block *StatBlock) PrimaryStat() PrimaryStatType {
 	str := block[Stat_Strength] != 0
 	agi := block[Stat_Agility] != 0
 	itl := block[Stat_Intellect] != 0
@@ -196,22 +143,12 @@ func (block *StatBlock) PrimaryStat() common.PrimaryStatType {
 	if primaryCount > 1 {
 		panic("conflicting primary stats")
 	} else if primaryCount == 0 {
-		return common.PrimaryStat_None
+		return PrimaryStat_None
 	} else if str {
-		return common.PrimaryStat_Strength
+		return PrimaryStat_Strength
 	} else if agi {
-		return common.PrimaryStat_Agility
+		return PrimaryStat_Agility
 	} else {
-		return common.PrimaryStat_Intellect
+		return PrimaryStat_Intellect
 	}
-}
-
-type ReforgeRecipe struct {
-	From, To StatType
-}
-
-var ReforgeRecipe_empty ReforgeRecipe = ReforgeRecipe{-1, -1}
-
-func (reforge *ReforgeRecipe) IsEmpty() bool {
-	return reforge.From == -1 || reforge.To == -1
 }

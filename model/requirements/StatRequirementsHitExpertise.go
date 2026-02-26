@@ -2,8 +2,8 @@ package requirements
 
 import (
 	"math"
-	. "paladin_gearing_go/types/items"
-	. "paladin_gearing_go/types/stats"
+	. "paladin_gearing_go/items"
+	. "paladin_gearing_go/stats"
 )
 
 type StatRequirementsHitExpertise struct {

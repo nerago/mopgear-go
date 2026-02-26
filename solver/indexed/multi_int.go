@@ -2,9 +2,9 @@ package indexed
 
 import (
 	"context"
+	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/solver/solve_util"
-	. "paladin_gearing_go/types/items"
 	"paladin_gearing_go/util"
 )
 

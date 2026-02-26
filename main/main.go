@@ -2,9 +2,9 @@ package main
 
 import (
 	"os"
+	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/model"
 	. "paladin_gearing_go/setup"
-	. "paladin_gearing_go/types/items"
 	. "paladin_gearing_go/util"
 	"runtime/pprof"
 	"time"

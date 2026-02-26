@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-const testingThreadCount = 1
+const testingThreadCount = 2
 
 func TestPeriodicLiteStandardRun(t *testing.T) {
 	const targetCount = utiltest.TargetCountStandard
@@ -87,7 +87,7 @@ func TestOverflowStandardRun(t *testing.T) {
 }
 
 func TestOverflowMinimalRun(t *testing.T) {
-	const targetCount = utiltest.TargetCountMinimal + 2 // NOTE fudge factor otherwise doesn't hit
+	const targetCount = utiltest.TargetCountMinimal + 3 // NOTE fudge factor otherwise doesn't hit
 
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()

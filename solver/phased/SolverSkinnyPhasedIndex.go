@@ -3,11 +3,10 @@ package phased
 import (
 	"context"
 	"math/big"
-	"paladin_gearing_go/model"
+	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/model"
 	"paladin_gearing_go/solver/solve_util"
-	. "paladin_gearing_go/types/common"
-	. "paladin_gearing_go/types/items"
+	. "paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
 
@@ -74,7 +73,7 @@ func makeSkinnyCombosMultiThread(itemOptions *SkinnyOptionsMap, model *Model, ma
 
 }
 
-func createWorkerRangeInt(itemOptions *SkinnyOptionsMap, model *model.Model, start, max, skip uint64, skinnyCombos chan<- SkinnyItemSet, progressCounter *uint64) {
+func createWorkerRangeInt(itemOptions *SkinnyOptionsMap, model *Model, start, max, skip uint64, skinnyCombos chan<- SkinnyItemSet, progressCounter *uint64) {
 	index := start
 	for index < max {
 		set := makeSkinnySetInt(itemOptions, index)

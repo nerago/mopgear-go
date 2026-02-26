@@ -2,8 +2,7 @@ package items
 
 import (
 	"iter"
-	. "paladin_gearing_go/types/common"
-	. "paladin_gearing_go/types/stats"
+	. "paladin_gearing_go/stats"
 )
 
 type SolvableItem struct {

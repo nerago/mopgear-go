@@ -1,12 +1,12 @@
-package process
+package tools
 
 import (
+	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/model"
-	. "paladin_gearing_go/types/items"
-	. "paladin_gearing_go/types/stats"
+	. "paladin_gearing_go/stats"
 )
 
-func Reforger_allOptions(baseItem *FullItem, rules *ReforgeRules) []FullItem {
+func Reforger_AllOptions(baseItem *FullItem, rules *ReforgeRules) []FullItem {
 	outputItems := []FullItem{*baseItem}
 
 	targetArray := rules.Target()
@@ -30,7 +30,7 @@ func Reforger_allOptions(baseItem *FullItem, rules *ReforgeRules) []FullItem {
 	return outputItems
 }
 
-func Reforger_singlePreset(baseItem *FullItem, recipe *ReforgeRecipe) FullItem {
+func Reforger_SinglePreset(baseItem *FullItem, recipe *ReforgeRecipe) FullItem {
 	if recipe.IsEmpty() {
 		return *baseItem
 	}

@@ -3,9 +3,9 @@ package channel
 import (
 	"context"
 	"math/rand"
+	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/model"
-	. "paladin_gearing_go/types/common"
-	. "paladin_gearing_go/types/items"
+	. "paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
 )
@@ -109,7 +109,7 @@ func makeSlotBagCycling(slotSize, period int, rng *rand.Rand) []int {
 }
 
 func shuffle(array *[]int, rng *rand.Rand) {
-	rng.Shuffle(len(*array), func (a, b int) { (*array)[a], (*array)[b] = (*array)[b], (*array)[a] } )
+	rng.Shuffle(len(*array), func(a, b int) { (*array)[a], (*array)[b] = (*array)[b], (*array)[a] })
 }
 
 func makeNextChannel() chan SolvableItemSet {
