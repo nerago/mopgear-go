@@ -22,7 +22,7 @@ func Solver(itemOptions *items.FullOptionsMap, model *model.Model, printer *util
 	solveOptions := items.SolvableOptionsMap_of(itemOptions)
 
 	var solvedSet items.SolvableItemSet
-	mode := 2
+	mode := 6
 	switch mode {
 	// case 1:
 	// 	solvedSet = indexed.SolverIndexed_RunFull(&solveOptions, model, printer)

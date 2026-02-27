@@ -3,16 +3,33 @@
 	"tasks": [
 		{
 			"type": "go",
-			"label": "go: build workspace",
+			"label": "go: build optimised",
 			"command": "build",
 			"args": [
-				"./..."
+				"-o", "main/_main_optimised.exe",
+				"-v",
+				"-pgo=./main/default.pgo",
+				"./main"
 			],
+			"presentation": {
+				"reveal": "silent"
+			},
 			"problemMatcher": [
 				"$go"
 			],
-			"group": "build",
-			"detail": "cd ${workspaceFolder}; go build ./..."
+			"group": {
+				"kind": "build",
+			}
+		},
+
+		{
+			"type": "shell",
+			"label": "clean optimised",
+			"command": "rm main/_main_optimised.exe",
+			"presentation": {
+				"reveal": "silent"
+			},
+			"hide": true
 		}
 	]
 }

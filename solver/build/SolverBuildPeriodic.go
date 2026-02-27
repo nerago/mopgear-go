@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	defaultEvaluateThreadCount = 6
+	defaultEvaluateThreadCount = 12
 )
 
 func SolverBuildPeriodic_Run(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, printer *util.PrintRecorder) SolvableItemSet {

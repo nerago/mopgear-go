@@ -13,7 +13,7 @@ import (
 const (
 	gearFileMiti    = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\gear-prot-defence.json`
 	gearFileDps     = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\gear-prot-dps.json`
-	enableProfiling = false
+	enableProfiling = true
 )
 
 var printer = PrintRecorder{}
@@ -22,7 +22,7 @@ func main() {
 	startTime := time.Now()
 
 	if enableProfiling {
-		f, err := os.Create("profile.out")
+		f, err := os.Create("default.pgo")
 		if err != nil {
 			panic(err)
 		}

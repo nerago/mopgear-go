@@ -16,6 +16,8 @@ func TrackProgressInt(index *uint64, max uint64) {
 
 		PrintProgressInt(startTime, percent, *index)
 	}
+
+	// TODO never stops
 }
 
 func TrackProgressBig(index, max *big.Int) {
@@ -29,6 +31,8 @@ func TrackProgressBig(index, max *big.Int) {
 
 		PrintProgressBig(startTime, percent, index)
 	}
+
+	// TODO never stops
 }
 
 func TrackProgressIntThreaded(threadCounters *[]uint64, targetCount uint64, ctx context.Context) {
