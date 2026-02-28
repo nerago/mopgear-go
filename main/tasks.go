@@ -9,7 +9,13 @@ import (
 )
 
 func basicReforge(itemOptions *FullOptionsMap, model *Model, printer *PrintRecorder) {
-	output := Solver(itemOptions, model, false)
+	output := Solver(SolveInput{
+		ItemOptions: itemOptions, 
+		Model: model, 
+		PhasedAcceptable: false, 
+		TrackProgress: true, 
+		LongRun: true, 
+		Printer: nil})
 	output.Report(printer)
 }
 

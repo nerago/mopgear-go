@@ -10,12 +10,12 @@ type PrintRecorder struct {
 	lines      []string
 }
 
-func PrintRecorder_AutoOutput() PrintRecorder {
-	return PrintRecorder{}
+func PrintRecorder_AutoOutput() *PrintRecorder {
+	return &PrintRecorder{}
 }
 
-func PrintRecorder_HoldAll() PrintRecorder {
-	return PrintRecorder{true, nil}
+func PrintRecorder_HoldAll() *PrintRecorder {
+	return &PrintRecorder{true, nil}
 }
 
 func (print *PrintRecorder) Println0() {
@@ -41,7 +41,11 @@ func (print *PrintRecorder) Printf(format string, a ...any) {
 
 func (print *PrintRecorder) OutputNow() {
 	for _, line := range print.lines {
-		fmt.Println(line)
+		if line[len(line)-1] == '\n' {
+			fmt.Print(line)
+		} else {
+			fmt.Println(line)
+		}
 	}
 }
 

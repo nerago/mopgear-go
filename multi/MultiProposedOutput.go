@@ -10,9 +10,10 @@ import (
 )
 
 type MultiProposedOutput struct {
-	id      string
-	outputs []solver.SolveOutput
-	combo   commonCombo
+	Id             string
+	TotalRatingSum uint64
+	Outputs        []solver.SolveOutput
+	Combo          commonCombo
 }
 
 func makeUUID() string {
@@ -24,26 +25,43 @@ func (job *MultiSetJob) makeProposedChannel(comboChannel <-chan commonCombo) <-c
 }
 
 func (job *MultiSetJob) subSolveCombo(combo commonCombo, outputChannel chan<- MultiProposedOutput) {
+	var totalRatingSum uint64
 	allGood := true
 	output := make([]solver.SolveOutput, len(job.params))
+
 	for paramIndex, param := range job.params {
 		if param.IncludeInFirstPass {
-			output[paramIndex] = job.firstPassSolveCombo(combo, param, &allGood)
+			result := job.firstPassSolveCombo(combo, param, &allGood)
+			totalRatingSum += result.ResultRating * param.ratingMultiply
+			output[paramIndex] = result
 		}
 	}
+
 	for paramIndex, param := range job.params {
 		if !param.IncludeInFirstPass {
-			output[paramIndex] = job.secondPassSolveCombo(combo, output, param, &allGood)
+			result := job.secondPassSolveCombo(combo, output, param, &allGood)
+			totalRatingSum += result.ResultRating * param.ratingMultiply
+			output[paramIndex] = result
 		}
 	}
+
 	if allGood {
-		outputChannel <- MultiProposedOutput{makeUUID(), output, combo}
+		proposed := MultiProposedOutput{makeUUID(), totalRatingSum, output, combo}
+		if job.multiSetFilter == nil || job.multiSetFilter(proposed) {
+			outputChannel <- proposed
+		}
 	}
 }
 
 func (job *MultiSetJob) firstPassSolveCombo(combo commonCombo, param MultiSetParam, allGood *bool) solver.SolveOutput {
 	options := buildOptionsGivenCombo(param.itemOptions, combo)
-	result := solver.Solver(&options, &param.Model, param.PhasedAcceptable)
+	result := solver.Solver(solver.SolveInput{
+		ItemOptions:      &options,
+		Model:            &param.Model,
+		PhasedAcceptable: param.PhasedAcceptable,
+		TrackProgress:    false,
+		LongRun:          false})
+
 	if !result.Success {
 		job.printer.Println("UNEXPECTED SOLVE FAILURE FOR " + param.Label)
 		*allGood = false
@@ -64,7 +82,12 @@ func (job *MultiSetJob) secondPassSolveCombo(baseCombo commonCombo, otherOutputL
 	}
 
 	options := buildOptionsGivenCombo(param.itemOptions, restrictedCombo)
-	result := solver.Solver(&options, &param.Model, param.PhasedAcceptable)
+	result := solver.Solver(solver.SolveInput{
+		ItemOptions:      &options,
+		Model:            &param.Model,
+		PhasedAcceptable: param.PhasedAcceptable,
+		TrackProgress:    false,
+		LongRun:          false})
 	if !result.Success {
 		job.printer.Println("UNEXPECTED SOLVE FAILURE FOR " + param.Label)
 		*allGood = false

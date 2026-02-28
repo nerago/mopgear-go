@@ -155,3 +155,16 @@ func (collect *HighestCollectorN[T]) Merge_Mutating(other *HighestCollectorN[T])
 		collect.worst = collect.array[0].value
 	}
 }
+
+func HighestCollectorN_OfChannel[T any](channel <-chan HighestCollectorN[T], expectNum int) []T {
+	var best *HighestCollectorN[T] = nil
+	for range expectNum {
+		threadResult := <-channel
+		if best == nil {
+			best = &threadResult
+		} else {
+			best.Merge_Mutating(&threadResult)
+		}
+	}
+	return best.ResultsFlat()
+}

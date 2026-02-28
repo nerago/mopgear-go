@@ -51,6 +51,7 @@ func makeCommonWorker(commonOptions commonComboOptions, loopCount uint64, thread
 			combo[itemId] = options[index]
 		}
 		comboChannel <- combo
+		*doneCounter++
 	}
 }
 

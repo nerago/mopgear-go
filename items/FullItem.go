@@ -102,9 +102,9 @@ func (item *FullItem) ItemId() uint32 {
 	return item.Ref.ItemId
 }
 
-func (item *FullItem) IsEmpty() bool {
-	return item.Ref.ItemId == 0
-}
+// func (item *FullItem) IsEmpty() bool {
+// 	return item.Ref.ItemId == 0
+// }
 
 func (item *FullItem) Equals(other *FullItem) bool {
 	return item.Ref.ItemId == other.Ref.ItemId && item.Ref.ItemLevel == other.Ref.ItemLevel && item.Slot == other.Slot &&
@@ -120,7 +120,7 @@ func (equipMap *FullEquipMap) Get(slot SlotEquip) *FullItem {
 func (equipMap *FullEquipMap) AllItemSeq() iter.Seq[*FullItem] {
 	return func(yield func(*FullItem) bool) {
 		for _, item := range equipMap {
-			if !item.IsEmpty() {
+			if item != nil {
 				if !yield(item) {
 					return
 				}

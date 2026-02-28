@@ -81,7 +81,7 @@ func TestOverflowStandardRun(t *testing.T) {
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluateOverflow(options, model, targetCount, testingThreadCount, peekRecord.Add)
+	evaluateOverflow(options, model, targetCount, true, testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
@@ -92,7 +92,7 @@ func TestOverflowMinimalRun(t *testing.T) {
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluateOverflow(options, model, targetCount, testingThreadCount, peekRecord.Add)
+	evaluateOverflow(options, model, targetCount, true, testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
@@ -103,7 +103,7 @@ func TestOverflowFullRun(t *testing.T) {
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluateOverflow(options, model, targetCount, testingThreadCount, peekRecord.Add)
+	evaluateOverflow(options, model, targetCount, true, testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }

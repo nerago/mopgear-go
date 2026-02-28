@@ -15,25 +15,24 @@ func (job *MultiSetJob) prepareInitial() {
 	job.bagsGear = loaders.BagsFileReader_Read()
 
 	job.printer.Println("PREPARING STARTING GEAR")
-	for _, param := range job.params {
-		param.prepareStartingGear()
+	for i := range job.params {
+		job.params[i].prepareStartingGear()
 	}
 
 	job.printer.Println("PREPARING EXTRA ITEMS")
-	for _, param := range job.params {
-		param.prepareExtraItems()
+	for i := range job.params {
+		job.params[i].prepareExtraItems()
 	}
 
 	job.printer.Println("RESTRICTING ANY FIXED SLOTS")
-	for _, param := range job.params {
-		param.restrictFixed()
+	for i := range job.params {
+		job.params[i].restrictFixed()
 	}
 
 	job.validateMultiSetAlignItemSlots()
 
-	for _, param := range job.params {
-		job.printer.Printf("BASELINE for %s\n", param.Label)
-		param.runBaseline()
+	for i := range job.params {
+		job.params[i].runBaseline()
 	}
 
 	job.prepareRatingMultipliers()
@@ -80,10 +79,10 @@ func (param *MultiSetParam) extraFromOtherSpec(itemId uint32) bool {
 
 	options = util.RemoveDuplicatesFunc(options, (*items.FullItem).Equals)
 
-	if len(options) > 1 {
-		panic("expected multiple options")
-	} else if len(options) == 1 {
-		param.itemOptions.AddOneOption(options[0])
+	// NOTE these may not copy with the model's reforge preferences etc
+
+	if len(options) > 0 {
+		param.itemOptions.AddSeveralOptions(options[0].Slot, options)
 		param.job.printer.Printf("OPTION from other spec %s\n", options[0].String())
 		return true
 	} else {
@@ -145,8 +144,15 @@ func (job *MultiSetJob) validateMultiSetAlignItemSlots() {
 }
 
 func (param *MultiSetParam) runBaseline() {
-	param.baselineResult = solver.Solver(&param.itemOptions, &param.Model, param.PhasedAcceptable)
-	param.job.printer.AppendOther(&param.baselineResult.Printer)
+	param.job.printer.Printf("BASELINE for %s\n", param.Label)
+	param.baselineResult = solver.Solver(solver.SolveInput{
+		ItemOptions: &param.itemOptions, 
+		Model: &param.Model, 
+		PhasedAcceptable: param.PhasedAcceptable, 
+		TrackProgress: true,
+		LongRun: false,
+		Printer: &param.job.printer})
+
 	if !param.baselineResult.Success {
 		panic("failed to find baseline for " + param.Label)
 	}
@@ -176,5 +182,5 @@ func (param *MultiSetParam) prepareRatingMultiplier() {
 	multiplyRatingsBy := targetForThis / baselineRating
 	param.ratingMultiply = uint64(math.Round(multiplyRatingsBy))
 
-	param.job.printer.Printf("MULTIPLIERS %d base=%d mult=%d value=%d", param.Label, param.baselineResult.ResultRating, param.ratingMultiply, uint64(math.Round(baselineRating*float64(param.ratingMultiply))))
+	param.job.printer.Printf("MULTIPLIERS %s base=%d mult=%d value=%d\n", param.Label, param.baselineResult.ResultRating, param.ratingMultiply, uint64(math.Round(baselineRating*float64(param.ratingMultiply))))
 }

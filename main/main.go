@@ -39,11 +39,13 @@ func main() {
 }
 
 func core() {
-	itemOptions, model := setupPallyMitigation()
+	// itemOptions, model := setupPallyMitigation()
 	// itemOptions, model := setupPallyDps()
 
 	// slotRating(itemOptions[Equip_Chest], &model)
-	basicReforge(&itemOptions, &model, &printer)
+	// basicReforge(&itemOptions, &model, &printer)
+
+	PaladinMultiRun()
 }
 
 func setupPallyMitigation() (FullOptionsMap, Model) {

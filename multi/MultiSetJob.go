@@ -9,6 +9,7 @@ import (
 const (
 	generateThreadCount = 6
 	solveThreadCount = 6
+	evaluateThreadCount = 6
 )
 
 type MultiSetJob struct {
@@ -20,8 +21,8 @@ type MultiSetJob struct {
 }
 
 func (job *MultiSetJob) AddSetParam(param MultiSetParam) {
+	param.init(job)
 	job.params = append(job.params, param)
-	param.job = job
 }
 
 func (job *MultiSetJob) AddFixedForge(itemId uint32, reforge stats.ReforgeRecipe) {

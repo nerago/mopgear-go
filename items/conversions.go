@@ -20,12 +20,14 @@ func SolvableOptionsMap_of(fullMap *FullOptionsMap) SolvableOptionsMap {
 	result := SolvableOptionsMap{}
 	for slot := range fullMap {
 		fullArray := fullMap[slot]
-		solveArray := make([]SolvableItem, 0, len(fullArray))
-		for _, item := range fullArray {
-			solveItem := SolvableItem_Of(item)
-			solveArray = append(solveArray, solveItem)
+		if len(fullArray) > 0 {
+			solveArray := make([]SolvableItem, 0, len(fullArray))
+			for _, item := range fullArray {
+				solveItem := SolvableItem_Of(item)
+				solveArray = append(solveArray, solveItem)
+			}
+			result[slot] = solveArray
 		}
-		result[slot] = solveArray
 	}
 	return result
 }
@@ -33,7 +35,7 @@ func SolvableOptionsMap_of(fullMap *FullOptionsMap) SolvableOptionsMap {
 func FullItemSet_FromSolved(solvedSet SolvableItemSet, optionsMap *FullOptionsMap) FullItemSet {
 	fullMap := FullEquipMap{}
 	for slot, solveItem := range solvedSet.Items {
-		if !solveItem.IsEmpty() {
+		if solveItem != nil {
 			fullItem := findMatch(optionsMap[slot], solveItem)
 			fullMap[slot] = fullItem
 		}

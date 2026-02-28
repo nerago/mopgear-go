@@ -15,7 +15,7 @@ const (
 	filterTarget = 10000
 )
 
-func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64, printer *util.PrintRecorder) util.Optional[SolvableItemSet] {
+func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64, trackProgress bool, printer *util.PrintRecorder) util.Optional[SolvableItemSet] {
 	skinnyOptions := toSkinnyOptions(itemOptions, model)
 
 	max := skinnyOptions.TotalCombinationCount()
@@ -25,7 +25,7 @@ func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, 
 	printer.Printf("SOLVE PHASED %d %d %d\n", max, targetCombination, skip)
 
 	if max.IsUint64() && skip.IsUint64() {
-		skinnyComboChannel := makeSkinnyCombosMultiThread(&skinnyOptions, model, max.Uint64(), skip.Uint64())
+		skinnyComboChannel := makeSkinnyCombosMultiThread(&skinnyOptions, model, max.Uint64(), skip.Uint64(), trackProgress)
 		skinnyComboChannel = filterLowHitCombos(skinnyComboChannel)
 		return findBestSolvedMultiThread(itemOptions, model, skinnyComboChannel)
 	} else {
@@ -57,12 +57,16 @@ func toKeys(uniqueMap map[SkinnyItem]bool) []SkinnyItem {
 	return keys
 }
 
-func makeSkinnyCombosMultiThread(itemOptions *SkinnyOptionsMap, model *Model, max, skip uint64) <-chan SkinnyItemSet {
+func makeSkinnyCombosMultiThread(itemOptions *SkinnyOptionsMap, model *Model, max, skip uint64, trackProgress bool) <-chan SkinnyItemSet {
 	counters := make([]uint64, threadCount)
 
 	// track progress
-	ctx, cancel := context.WithCancel(context.Background())
-	go util.TrackProgressIntThreaded(ctx, &counters, max/skip)
+	var cancel context.CancelFunc
+	if trackProgress {
+		var ctx context.Context
+		ctx, cancel = context.WithCancel(context.Background())
+		go util.TrackProgressIntThreaded(ctx, &counters, max/skip)
+	} 
 
 	// start up workers
 	splits := solve_util.IndexSplitsInt(max, skip, threadCount)

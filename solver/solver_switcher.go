@@ -4,8 +4,6 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/solver/build"
-	"paladin_gearing_go/solver/channel"
-	"paladin_gearing_go/solver/indexed"
 	"paladin_gearing_go/solver/phased"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
@@ -16,40 +14,63 @@ import (
 // 	itemOptions SolvableOptionsMap
 // }
 
-const targetCount uint64 = 100_000_000
+const (
+	targetCountQuick uint64 = 100_000
+	targetCountLong  uint64 = 100_000_000
+)
 
-func Solver(itemOptions *items.FullOptionsMap, model *model.Model, phasedAcceptable bool) SolveOutput {
-	printer := util.PrintRecorder_HoldAll()
-	solveOptions := items.SolvableOptionsMap_of(itemOptions)
+type SolveInput struct {
+	ItemOptions      *items.FullOptionsMap
+	Model            *model.Model
+	PhasedAcceptable bool
+	TrackProgress    bool
+	LongRun          bool
+	Printer          *util.PrintRecorder
+}
+
+func Solver(input SolveInput) SolveOutput {
+	printer := input.Printer
+	if printer == nil {
+		printer = util.PrintRecorder_HoldAll()
+	}
+	
+	solveOptions := items.SolvableOptionsMap_of(input.ItemOptions)
+	model := input.Model
 
 	var mode int
-	if phasedAcceptable {
+	if input.PhasedAcceptable {
 		mode = 8
 	} else {
 		mode = 6
 	}
 
+	var targetCount uint64
+	if input.LongRun {
+		targetCount = targetCountLong
+	} else {
+		targetCount = targetCountQuick
+	}
+
 	// TODO run types and size multipliers
-	// TODO trackprogress parameter
 
 	var solvedSet util.Optional[items.SolvableItemSet]
 	switch mode {
 	// case 1:
 	// 	solvedSet = indexed.SolverIndexed_RunFull(&solveOptions, model, printer)
-	case 2:
-		solvedSet = indexed.SolverIndexed_RunSkipping(&solveOptions, model, targetCount, &printer)
+	// case 2:
+	// 	solvedSet = indexed.SolverIndexed_RunSkipping(&solveOptions, model, targetCount, &printer)
 	// case 3:
 	// 	solvedSet = channel.SolverChannelBuildFull_Run(&solveOptions, model)
-	case 4:
-		solvedSet = channel.SolverChannelBuildPeriodic_Run(&solveOptions, model, targetCount, &printer)
-	case 5:
-		solvedSet = build.SolverBuildPeriodic_Run(&solveOptions, model, targetCount, &printer)
+	// case 4:
+	// 	solvedSet = channel.SolverChannelBuildPeriodic_Run(&solveOptions, model, targetCount, &printer)
+	// case 5:
+	// 	solvedSet = build.SolverBuildPeriodic_Run(&solveOptions, model, targetCount, &printer)
 	case 6:
-		solvedSet = build.SolverBuildOverflow_Run(&solveOptions, model, targetCount, &printer)
-	case 7:
-		solvedSet = build.SolverBuildRandom_Run(&solveOptions, model, targetCount, &printer)
+		solvedSet = build.SolverBuildOverflow_Run(&solveOptions, model, targetCount, input.TrackProgress, printer)
+	// case 7:
+	// 	solvedSet = build.SolverBuildRandom_Run(&solveOptions, model, targetCount, &printer)
 	case 8:
-		solvedSet = phased.SolverSkinnyPhasedIndex_Run(&solveOptions, model, targetCount, &printer)
+		solvedSet = phased.SolverSkinnyPhasedIndex_Run(&solveOptions, model, targetCount, input.TrackProgress, printer)
 	}
 
 	// TODO bury tweaker into find best checks
@@ -59,7 +80,7 @@ func Solver(itemOptions *items.FullOptionsMap, model *model.Model, phasedAccepta
 
 	return util.Optional_MapAsValueOrEmpty(solvedSet,
 		func(set items.SolvableItemSet) SolveOutput {
-			return SolveOutput{true, set, items.FullItemSet_FromSolved(set, itemOptions), model.CalcRatingSolve(&set), printer}
+			return SolveOutput{true, set, items.FullItemSet_FromSolved(set, input.ItemOptions), model.CalcRatingSolve(&set), printer}
 		},
 		func() SolveOutput {
 			return SolveOutput{Success: false, ResultRating: 0, Printer: printer}
@@ -72,11 +93,11 @@ type SolveOutput struct {
 	SolvedSet    items.SolvableItemSet
 	FullSet      items.FullItemSet
 	ResultRating uint64
-	Printer      util.PrintRecorder
+	Printer      *util.PrintRecorder
 }
 
 func (output *SolveOutput) Report(printer *util.PrintRecorder) {
-	printer.AppendOther(&output.Printer)
+	printer.AppendOther(output.Printer)
 	if output.Success {
 		fullSet := output.FullSet
 		rating := output.ResultRating
@@ -92,6 +113,8 @@ func (output *SolveOutput) Report(printer *util.PrintRecorder) {
 
 func printEquipMap(fullEquipMap *items.FullEquipMap, printer *util.PrintRecorder) {
 	for _, item := range fullEquipMap {
-		printer.Println(item.String())
+		if item != nil {
+			printer.Println(item.String())
+		}
 	}
 }

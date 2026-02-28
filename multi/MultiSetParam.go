@@ -42,6 +42,11 @@ type MultiSetParam struct {
 	// suppressSlotCheck
 }
 
+func (param *MultiSetParam) init(job *MultiSetJob) {
+	param.job = job
+	param.seenInSolutions = &seenMap{content: make(map[uint32]uint32)}
+}
+
 func (param *MultiSetParam) AddExtraItems(extraItemIds []uint32) *MultiSetParam {
 	param.extraItems = append(param.extraItems, extraItemIds...)
 	return param
