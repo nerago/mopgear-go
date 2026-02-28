@@ -9,6 +9,15 @@ type GemChoice map[SocketType]GemInfo
 
 // TODO alternate gems stuff for hit etc
 
+func (gems GemChoice) GetChoice(socket SocketType) *GemInfo {
+	info, ok := gems[socket]
+	if ok {
+		return &info
+	} else {
+		return nil
+	}
+}
+
 func GemChoice_ForSpec(spec SpecType) map[SocketType]GemInfo {
 	result := make(map[SocketType]GemInfo)
 	switch spec {

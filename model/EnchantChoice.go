@@ -2,10 +2,20 @@ package model
 
 import (
 	. "paladin_gearing_go/db"
+	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/stats"
 )
 
 type EnchantChoice map[SlotItem]GemInfo
+
+func (enchant EnchantChoice) GetChoice(slot SlotItem) *GemInfo {
+	info, ok := enchant[slot]
+	if ok {
+		return &info
+	} else {
+		return nil
+	}
+}
 
 func EnchantChoice_ForSpec(spec SpecType) map[SlotItem]GemInfo {
 	result := make(map[SlotItem]GemInfo)

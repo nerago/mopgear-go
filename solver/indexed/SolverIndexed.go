@@ -11,7 +11,7 @@ const threadCount = 12
 
 var int_one = big.NewInt(1)
 
-func SolverIndexed_RunSkipping(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, printer *util.PrintRecorder) SolvableItemSet {
+func SolverIndexed_RunSkipping(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, printer *util.PrintRecorder) util.Optional[SolvableItemSet] {
 	max, skip := initSkipValues(itemOptions, targetCount)
 
 	printer.Printf("SOLVE SKIP %d %d %d\n", max, targetCount, skip)
@@ -26,13 +26,13 @@ func initSkipValues(itemOptions *SolvableOptionsMap, targetCount uint64) (*big.I
 	return max, skip
 }
 
-func SolverIndexed_RunFull(itemOptions *SolvableOptionsMap, model *model.Model, printer *util.PrintRecorder) SolvableItemSet {
+func SolverIndexed_RunFull(itemOptions *SolvableOptionsMap, model *model.Model, printer *util.PrintRecorder) util.Optional[SolvableItemSet] {
 	max := itemOptions.TotalCombinationCount()
 	printer.Printf("SOLVE FULL %d\n", max)
 	return mainLoop(itemOptions, max, int_one, model)
 }
 
-func mainLoop(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *model.Model) SolvableItemSet {
+func mainLoop(itemOptions *SolvableOptionsMap, max, skip *big.Int, model *model.Model) util.Optional[SolvableItemSet] {
 	// TODO consider partitioning some slots until under limit
 	if max.IsUint64() && skip.IsUint64() {
 		return mainLoop_multiThread_int(itemOptions, max.Uint64(), skip.Uint64(), model, emptyPeekFunc)

@@ -41,8 +41,9 @@ func (model *Model) CalcRatingSolveItem(item *SolvableItem) uint64 {
 	return model.StatRatings.CalcRating(&item.TotalRated)
 }
 
-const weightMitiFile = "C:\\Users\\nicholas\\Dropbox\\prog\\paladin_gearing\\src\\main\\resources\\weight\\PaladinProtMitigation.txt"
-const weightDpsFile = "C:\\Users\\nicholas\\Dropbox\\prog\\paladin_gearing\\src\\main\\resources\\weight\\PaladinProtDps.txt"
+const weightMitiFile = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\src\main\resources\weight\PaladinProtMitigation.txt`
+const weightDpsFile = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\src\main\resources\weight\PaladinProtDps.txt`
+const weightRetFile = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\src\main\resources\weight\PaladinRet.txt`
 
 func Model_PallyProtMitigation() Model {
 	weightMiti := StatRatingsWeights_ReadFile(weightMitiFile, false, true, false)
@@ -68,6 +69,17 @@ func Model_PallyProtDps() Model {
 		ReforgeRules_tank,
 		EnchantChoice_ForSpec(Spec_PaladinProtDps),
 		GemChoice_ForSpec(Spec_PaladinProtDps)}
+}
+
+func Model_PallyRet() Model {
+	weight := StatRatingsWeights_ReadFile(weightRetFile, false, false, false)
+	return Model{
+		Spec_PaladinRet,
+		weight,
+		StatRequirementsHitExpertise_RetWideCap(),
+		ReforgeRules_melee,
+		EnchantChoice_ForSpec(Spec_PaladinRet),
+		GemChoice_ForSpec(Spec_PaladinRet)}
 }
 
 func Model_Testing() Model {

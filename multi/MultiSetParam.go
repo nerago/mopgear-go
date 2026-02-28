@@ -3,7 +3,7 @@ package multi
 import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
-	"paladin_gearing_go/stats"
+	"paladin_gearing_go/solver"
 	"sync"
 )
 
@@ -12,22 +12,24 @@ type MultiSetParam struct {
 	Label    string
 	GearFile string
 	Model    model.Model
+	job      *MultiSetJob
 
 	// solve settings
-	IncludeInFirstPaas   bool
+	IncludeInFirstPass   bool
 	RequestRatingPercent float64
 	PhasedAcceptable     bool
-	ratingMultiply       uint64 // derived
 
 	// extra item settings
-	ExtraUpgradeLevel int
+	ExtraUpgradeLevel int16
 	extraItems        []uint32
-	fixedSlots        map[stats.SlotEquip]uint32
+	fixedSlots        map[items.SlotEquip]uint32
 
 	// working data
 	exactEquippedGear items.FullEquipMap
 	itemOptions       items.FullOptionsMap
-	seenInSolutions   seenMap
+	seenInSolutions   *seenMap
+	baselineResult    solver.SolveOutput
+	ratingMultiply    uint64 // derived
 
 	// stuff not ported
 	// boolean upgradeCurrentItems;
@@ -37,6 +39,7 @@ type MultiSetParam struct {
 	// List<Integer> removeItems;
 	// double optimalRating;
 	// FullItemSet optimalBaselineSet;
+	// suppressSlotCheck
 }
 
 func (param *MultiSetParam) AddExtraItems(extraItemIds []uint32) *MultiSetParam {
@@ -49,9 +52,9 @@ func (param *MultiSetParam) AddExtraItem(extraItemId uint32) *MultiSetParam {
 	return param
 }
 
-func (param *MultiSetParam) AddFixedSlot(slot stats.SlotEquip, itemId uint32) *MultiSetParam {
+func (param *MultiSetParam) AddFixedSlot(slot items.SlotEquip, itemId uint32) *MultiSetParam {
 	if param.fixedSlots == nil {
-		param.fixedSlots = make(map[stats.SlotEquip]uint32)
+		param.fixedSlots = make(map[items.SlotEquip]uint32)
 	}
 	param.fixedSlots[slot] = itemId
 	return param
@@ -63,7 +66,7 @@ type seenMap struct {
 	// or could use sync.Map
 }
 
-func (seen *seenMap) Add(itemSet items.FullItemSet) {
+func (seen *seenMap) Add(itemSet *items.FullItemSet) {
 	seen.mutex.Lock()
 	for item := range itemSet.Items.AllItemSeq() {
 		seen.content[item.ItemId()]++

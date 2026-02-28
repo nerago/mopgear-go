@@ -18,20 +18,20 @@ const (
 
 func MakeTestOptions() (*items.SolvableOptionsMap, *model.Model) {
 	options := items.SolvableOptionsMap{}
-	options[stats.Equip_Head] = []items.SolvableItem{testItem(100, 11)}
-	options[stats.Equip_Neck] = []items.SolvableItem{testItem(200, 22), testItem(201, 23)}
-	options[stats.Equip_Shoulder] = []items.SolvableItem{testItem(300, 31), testItem(301, 32), testItem(302, 33), testItem(303, 32), testItem(304, 31)}
-	options[stats.Equip_Back] = []items.SolvableItem{testItem(400, 44), testItem(401, 43), testItem(402, 42), testItem(403, 41)}
+	options[items.Equip_Head] = []items.SolvableItem{testItem(100, 11)}
+	options[items.Equip_Neck] = []items.SolvableItem{testItem(200, 22), testItem(201, 23)}
+	options[items.Equip_Shoulder] = []items.SolvableItem{testItem(300, 31), testItem(301, 32), testItem(302, 33), testItem(303, 32), testItem(304, 31)}
+	options[items.Equip_Back] = []items.SolvableItem{testItem(400, 44), testItem(401, 43), testItem(402, 42), testItem(403, 41)}
 	model := model.Model_Testing()
 	return &options, &model
 }
 
 func MakeTestExpectedBest() items.SolvableEquipMap {
 	equip := items.SolvableEquipMap{}
-	equip[stats.Equip_Head] = testItemPointer(100, 11)
-	equip[stats.Equip_Neck] = testItemPointer(201, 23)
-	equip[stats.Equip_Shoulder] = testItemPointer(303, 33)
-	equip[stats.Equip_Back] = testItemPointer(401, 44)
+	equip[items.Equip_Head] = testItemPointer(100, 11)
+	equip[items.Equip_Neck] = testItemPointer(201, 23)
+	equip[items.Equip_Shoulder] = testItemPointer(303, 33)
+	equip[items.Equip_Back] = testItemPointer(401, 44)
 	return equip
 }
 

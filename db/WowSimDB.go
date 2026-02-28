@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	. "paladin_gearing_go/items"
+	"paladin_gearing_go/stats"
 	. "paladin_gearing_go/stats"
 	"strconv"
 )
@@ -44,6 +45,14 @@ func WowSimDB_ByIdAndUpgrade(itemId uint32, upgradeLevel int16) *FullItem {
 	}
 
 	return nil
+}
+
+func WowSimDB_ReforgeById(reforgeId uint16) stats.ReforgeRecipe {
+	recipe, ok := reforgeById[reforgeId]
+	if !ok {
+		panic("reforge not found")
+	}
+	return recipe
 }
 
 func convertItems(itemArray []any) {

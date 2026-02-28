@@ -29,7 +29,7 @@ func (ref ItemRef) UpgradeLevel() int16 {
 type FullItem struct {
 	// generally fixed from imports
 	Ref         ItemRef
-	Slot        stats.SlotItem
+	Slot        SlotItem
 	BaseName    string
 	ArmorType   stats.ArmorType
 	PrimaryStat stats.PrimaryStatType
@@ -50,22 +50,21 @@ type FullItem struct {
 	TotalRated  stats.StatBlock // averaged variable total stats for rating purposes
 }
 
-func FullItem_FromWowSim(ref ItemRef, slot stats.SlotItem, baseName string, statBase stats.StatBlock,
-	armorType stats.ArmorType, socketSlots []stats.SocketType,
-	socketBonus stats.StatBlock, phase int8) FullItem {
+func FullItem_FromWowSim(ref ItemRef, slot SlotItem, baseName string, statBase stats.StatBlock, armorType stats.ArmorType, socketSlots []stats.SocketType, socketBonus stats.StatBlock, phase int8) FullItem {
 	return FullItem{ref, slot, baseName, armorType, statBase.PrimaryStat(),
 		socketSlots, socketBonus, phase,
 		stats.ReforgeRecipe_empty, nil, 0, 0,
 		statBase, stats.StatBlock_empty, statBase, statBase}
 }
 
-func (item *FullItem) ChangedForReforge(changedStat stats.StatBlock, reforge stats.ReforgeRecipe) *FullItem {
-	newItem := item.ChangedBaseStats(changedStat)
+func (item *FullItem) CopyChangedForReforge(changedStat stats.StatBlock, reforge stats.ReforgeRecipe) *FullItem {
+	newItem := *item
+	newItem.ChangeBaseStats(changedStat)
 	newItem.Reforge = reforge
-	return newItem
+	return &newItem
 }
 
-func derivedStatFields(slot stats.SlotItem, statBase, statEnchant stats.StatBlock) (stats.StatBlock, stats.StatBlock) {
+func derivedStatFields(slot SlotItem, statBase, statEnchant stats.StatBlock) (stats.StatBlock, stats.StatBlock) {
 	if statEnchant.IsEmpty() {
 		return statBase, statBase
 	} else if slot.AddEnchantToCap() {
@@ -77,20 +76,18 @@ func derivedStatFields(slot stats.SlotItem, statBase, statEnchant stats.StatBloc
 	}
 }
 
-func (item *FullItem) ChangedBaseStats(changedBase stats.StatBlock) *FullItem {
+func (item *FullItem) ChangeBaseStats(changedBase stats.StatBlock) {
 	totalCap, totalRated := derivedStatFields(item.Slot, changedBase, item.StatEnchant)
-	return &FullItem{item.Ref, item.Slot, item.BaseName, item.ArmorType, item.PrimaryStat,
-		item.SocketSlots, item.SocketBonus, item.Phase,
-		item.Reforge, item.GemChoice, item.EnchantChoice, item.RandomSuffix,
-		changedBase, item.StatEnchant, totalCap, totalRated}
+	item.StatBase = changedBase
+	item.TotalCap = totalCap
+	item.TotalRated = totalRated
 }
 
-func (item *FullItem) ChangedEnchantStats(changedEnchant stats.StatBlock) *FullItem {
+func (item *FullItem) ChangeEnchantStats(changedEnchant stats.StatBlock) {
 	totalCap, totalRated := derivedStatFields(item.Slot, item.StatBase, changedEnchant)
-	return &FullItem{item.Ref, item.Slot, item.BaseName, item.ArmorType, item.PrimaryStat,
-		item.SocketSlots, item.SocketBonus, item.Phase,
-		item.Reforge, item.GemChoice, item.EnchantChoice, item.RandomSuffix,
-		item.StatBase, changedEnchant, totalCap, totalRated}
+	item.StatEnchant = changedEnchant
+	item.TotalCap = totalCap
+	item.TotalRated = totalRated
 }
 
 func (item *FullItem) FullName() string {
@@ -116,7 +113,7 @@ func (item *FullItem) Equals(other *FullItem) bool {
 
 type FullEquipMap [16]*FullItem
 
-func (equipMap *FullEquipMap) Get(slot stats.SlotEquip) *FullItem {
+func (equipMap *FullEquipMap) Get(slot SlotEquip) *FullItem {
 	return equipMap[slot]
 }
 

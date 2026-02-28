@@ -12,7 +12,7 @@ type StatRatingsWeights struct {
 	weight StatBlock
 }
 
-func (rating StatRatingsWeights) Weights() any {
+func (rating StatRatingsWeights) Weights() string {
 	return rating.weight.String()
 }
 

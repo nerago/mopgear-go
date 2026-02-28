@@ -5,12 +5,11 @@ import (
 	"math/rand"
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/model"
-	. "paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
 )
 
-func SolverChannelBuildPeriodic_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64, printer *util.PrintRecorder) SolvableItemSet {
+func SolverChannelBuildPeriodic_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64, printer *util.PrintRecorder) util.Optional[SolvableItemSet] {
 	printer.Printf("SOLVE PERIODIC %d\n", targetCount)
 	setChannel := periodicSetsChannel(itemOptions)
 	return evaluateBestLimitedCount(setChannel, model, targetCount, defaultEvaluateThreadCount)
@@ -149,14 +148,14 @@ func stepPeriodicChannel(itemOptions *SolvableOptionsMap, slot SlotEquip, indexB
 	return output
 }
 
-func evaluateBestLimitedCount(setChannel <-chan SolvableItemSet, model *Model, targetCount uint64, threadCount int) SolvableItemSet {
+func evaluateBestLimitedCount(setChannel <-chan SolvableItemSet, model *Model, targetCount uint64, threadCount int) util.Optional[SolvableItemSet] {
 	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
 	eachThreadCount := targetCount / uint64(threadCount)
 	counters := make([]uint64, threadCount)
 
 	// track progress with cancel
 	ctx, cancel := context.WithCancel(context.Background())
-	go util.TrackProgressIntThreaded(&counters, targetCount, ctx)
+	go util.TrackProgressIntThreaded(ctx, &counters, targetCount)
 	defer cancel()
 
 	for i := range threadCount {

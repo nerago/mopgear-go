@@ -6,7 +6,6 @@ import (
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/model"
 	"paladin_gearing_go/solver/solve_util"
-	. "paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
 
@@ -16,7 +15,7 @@ const (
 	filterTarget = 10000
 )
 
-func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64, printer *util.PrintRecorder) SolvableItemSet {
+func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64, printer *util.PrintRecorder) util.Optional[SolvableItemSet] {
 	skinnyOptions := toSkinnyOptions(itemOptions, model)
 
 	max := skinnyOptions.TotalCombinationCount()
@@ -63,7 +62,7 @@ func makeSkinnyCombosMultiThread(itemOptions *SkinnyOptionsMap, model *Model, ma
 
 	// track progress
 	ctx, cancel := context.WithCancel(context.Background())
-	go util.TrackProgressIntThreaded(&counters, max/skip, ctx)
+	go util.TrackProgressIntThreaded(ctx, &counters, max/skip)
 
 	// start up workers
 	splits := solve_util.IndexSplitsInt(max, skip, threadCount)
@@ -107,7 +106,7 @@ func makeSkinnySetInt(itemOptions *SkinnyOptionsMap, mainIndex uint64) SkinnyIte
 	return SkinnyItemSet{Items: equip, A: a, B: b}
 }
 
-func findBestSolvedMultiThread(itemOptions *SolvableOptionsMap, model *Model, skinnyComboChannel <-chan SkinnyItemSet) SolvableItemSet {
+func findBestSolvedMultiThread(itemOptions *SolvableOptionsMap, model *Model, skinnyComboChannel <-chan SkinnyItemSet) util.Optional[SolvableItemSet] {
 	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
 
 	for range threadCount {

@@ -21,7 +21,7 @@ func Reforger_AllOptions(baseItem *FullItem, rules *ReforgeRules) []FullItem {
 			for _, target := range targetArray {
 				if baseItem.StatBase.Get(target) == 0 {
 					modified := makeModified(baseItem, source, target, reforgeQuantity, remainQuantity)
-					outputItems = append(outputItems, modified)
+					outputItems = append(outputItems, *modified)
 				}
 			}
 		}
@@ -30,9 +30,9 @@ func Reforger_AllOptions(baseItem *FullItem, rules *ReforgeRules) []FullItem {
 	return outputItems
 }
 
-func Reforger_SinglePreset(baseItem *FullItem, recipe *ReforgeRecipe) FullItem {
+func Reforger_SinglePreset(baseItem *FullItem, recipe *ReforgeRecipe) *FullItem {
 	if recipe.IsEmpty() {
-		return *baseItem
+		return baseItem
 	}
 
 	source := recipe.From
@@ -55,8 +55,8 @@ func Reforger_SinglePreset(baseItem *FullItem, recipe *ReforgeRecipe) FullItem {
 	return makeModified(baseItem, source, target, reforgeQuantity, remainQuantity)
 }
 
-func makeModified(baseItem *FullItem, source, target StatType, reforgeQuantity, remainQuantity uint32) FullItem {
-	return *baseItem.ChangedForReforge(
+func makeModified(baseItem *FullItem, source, target StatType, reforgeQuantity, remainQuantity uint32) *FullItem {
+	return baseItem.CopyChangedForReforge(
 		baseItem.StatBase.WithChange2(source, remainQuantity, target, reforgeQuantity),
 		ReforgeRecipe{From: source, To: target})
 }

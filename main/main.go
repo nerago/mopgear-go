@@ -11,9 +11,11 @@ import (
 )
 
 const (
-	gearFileMiti    = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\gear-prot-defence.json`
-	gearFileDps     = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\gear-prot-dps.json`
-	enableProfiling = true
+	gearFileProtMitigation = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\gear-prot-defence.json`
+	gearFileProtDps        = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\gear-prot-dps.json`
+	gearFileRet            = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\gear-ret.json`
+	bagsFile               = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\bags-gear-bags.json`
+	enableProfiling        = true
 )
 
 var printer = PrintRecorder{}
@@ -46,10 +48,10 @@ func core() {
 
 func setupPallyMitigation() (FullOptionsMap, Model) {
 	model := Model_PallyProtMitigation()
-	return OptionsSetup_FromGearFile(gearFileMiti, &model, &printer), model
+	return OptionsSetup_FromGearFile(gearFileProtMitigation, &model, &printer), model
 }
 
 func setupPallyDps() (FullOptionsMap, Model) {
 	model := Model_PallyProtDps()
-	return OptionsSetup_FromGearFile(gearFileDps, &model, &printer), model
+	return OptionsSetup_FromGearFile(gearFileProtDps, &model, &printer), model
 }

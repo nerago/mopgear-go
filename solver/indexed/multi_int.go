@@ -8,13 +8,13 @@ import (
 	"paladin_gearing_go/util"
 )
 
-func mainLoop_multiThread_int(itemOptions *SolvableOptionsMap, max, skip uint64, model *model.Model, peekFunc func(*SolvableItemSet)) SolvableItemSet {
+func mainLoop_multiThread_int(itemOptions *SolvableOptionsMap, max, skip uint64, model *model.Model, peekFunc func(*SolvableItemSet)) util.Optional[SolvableItemSet] {
 	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
 	counters := make([]uint64, threadCount)
 
 	// track progress with cancel
 	ctx, cancel := context.WithCancel(context.Background())
-	go util.TrackProgressIntThreaded(&counters, max/skip, ctx)
+	go util.TrackProgressIntThreaded(ctx, &counters, max/skip)
 	defer cancel()
 
 	// start up workers

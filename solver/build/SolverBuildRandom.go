@@ -8,19 +8,19 @@ import (
 	"paladin_gearing_go/util"
 )
 
-func SolverBuildRandom_Run(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, printer *util.PrintRecorder) SolvableItemSet {
+func SolverBuildRandom_Run(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, printer *util.PrintRecorder) util.Optional[SolvableItemSet] {
 	printer.Printf("SOLVE RANDOM %d\n", targetCount)
 	return evaluateRandom(itemOptions, model, targetCount, defaultEvaluateThreadCount, emptyPeekFunc)
 }
 
-func evaluateRandom(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, threadCount int, peekFunc func(*SolvableItemSet)) SolvableItemSet {
+func evaluateRandom(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, threadCount int, peekFunc func(*SolvableItemSet)) util.Optional[SolvableItemSet] {
 	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
 	eachThreadCount := targetCount / uint64(threadCount)
 	counters := make([]uint64, threadCount)
 
 	// track progress with cancel
 	ctx, cancel := context.WithCancel(context.Background())
-	go util.TrackProgressIntThreaded(&counters, targetCount, ctx)
+	go util.TrackProgressIntThreaded(ctx, &counters, targetCount)
 	defer cancel()
 
 	for threadNum := range threadCount {

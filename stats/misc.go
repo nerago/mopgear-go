@@ -12,7 +12,7 @@ type ReforgeRecipe struct {
 var ReforgeRecipe_empty ReforgeRecipe = ReforgeRecipe{-1, -1}
 
 func (reforge *ReforgeRecipe) IsEmpty() bool {
-	return reforge.From == -1 || reforge.To == -1
+	return reforge.From < 0 || reforge.To < 0
 }
 
 type ArmorType int8

@@ -28,5 +28,5 @@ func Tweaker_Run(initialSet SolvableItemSet, solvableOptionsMap *SolvableOptions
 		}
 	}
 
-	return best.GetBest()
+	return best.GetBestOrPanic()
 }

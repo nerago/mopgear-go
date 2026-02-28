@@ -1,7 +1,5 @@
 package items
 
-// import . "paladin_gearing_go/types/common"
-
 type SkinnyItem struct {
 	A      uint32
 	B      uint32

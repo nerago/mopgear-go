@@ -3,7 +3,6 @@ package items
 import (
 	"iter"
 	"math/big"
-	. "paladin_gearing_go/stats"
 )
 
 type FullOptionsMap [16][]FullItem
@@ -16,21 +15,74 @@ func (optionsMap *FullOptionsMap) Has(slot SlotEquip) bool {
 	return len(optionsMap[slot]) > 0
 }
 
+func (optionsMap *FullOptionsMap) IncludesItemId(itemId uint32) bool {
+	for _, slotArray := range optionsMap {
+		for _, item := range slotArray {
+			if item.ItemId() == itemId {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (optionsMap *FullOptionsMap) MapSlots(mapper func([]FullItem) []FullItem) {
 	for i := range optionsMap {
 		optionsMap[i] = mapper(optionsMap[i])
 	}
 }
 
-func (optionsMap *FullOptionsMap) AllItems() iter.Seq[FullItem] {
+func (optionsMap *FullOptionsMap) MapSlot(slot SlotEquip, mapper func([]FullItem) []FullItem) {
+	optionsMap[slot] = mapper(optionsMap[slot])
+}
+
+func (optionsMap FullOptionsMap) FindItemId(itemId uint32) iter.Seq[FullItem] {
 	return func(yield func(FullItem) bool) {
 		for _, slotArray := range optionsMap {
 			for _, item := range slotArray {
-				if !yield(item) {
+				if item.ItemId() == itemId {
+					if !yield(item) {
+						return
+					}
+				}
+			}
+		}
+	}
+}
+
+func (optionsMap *FullOptionsMap) AllItems() iter.Seq[*FullItem] {
+	return func(yield func(*FullItem) bool) {
+		for _, slotArray := range optionsMap {
+			for _, item := range slotArray {
+				if !yield(&item) {
 					return
 				}
 			}
 		}
+	}
+}
+
+func (optionsMap *FullOptionsMap) AllItemsWithSlot() iter.Seq2[SlotEquip, *FullItem] {
+	return func(yield func(SlotEquip, *FullItem) bool) {
+		for slot, slotArray := range optionsMap {
+			for _, item := range slotArray {
+				if !yield(SlotEquip(slot), &item) {
+					return
+				}
+			}
+		}
+	}
+}
+
+func (optionsMap FullOptionsMap) AddOneOption(item FullItem) {
+	for slotEquip := range item.Slot.ToSlotEquipOptions() {
+		optionsMap[slotEquip] = append(optionsMap[slotEquip], item)
+	}
+}
+
+func (optionsMap FullOptionsMap) AddSeveralOptions(slot SlotItem, options []FullItem) {
+	for slotEquip := range slot.ToSlotEquipOptions() {
+		optionsMap[slotEquip] = append(optionsMap[slotEquip], options...)
 	}
 }
 
@@ -84,6 +136,61 @@ func (optionsMap *FullOptionsMap) FillSlot_ExpectedEmpty(slotItem SlotItem, opti
 
 	if optionsMap[slotEquip] == nil {
 		optionsMap[slotEquip] = optionList
+	} else {
+		panic("duplicate item")
+	}
+}
+
+func (equipMap *FullEquipMap) FillSlot_ExpectedEmpty(slotItem SlotItem, item *FullItem) {
+	var slotEquip SlotEquip
+	switch slotItem {
+	case Item_Back:
+		slotEquip = Equip_Back
+	case Item_Belt:
+		slotEquip = Equip_Belt
+	case Item_Chest:
+		slotEquip = Equip_Chest
+	case Item_Foot:
+		slotEquip = Equip_Foot
+	case Item_Hand:
+		slotEquip = Equip_Hand
+	case Item_Head:
+		slotEquip = Equip_Head
+	case Item_Leg:
+		slotEquip = Equip_Leg
+	case Item_Neck:
+		slotEquip = Equip_Neck
+	case Item_Offhand:
+		slotEquip = Equip_Offhand
+	case Item_Shoulder:
+		slotEquip = Equip_Shoulder
+	case Item_Wrist:
+		slotEquip = Equip_Wrist
+	case Item_Weapon1H:
+		slotEquip = Equip_Weapon
+	case Item_Weapon2H:
+		slotEquip = Equip_Weapon
+
+	case Item_Ring:
+		if equipMap[Equip_Ring1] == nil {
+			slotEquip = Equip_Ring1
+		} else {
+			slotEquip = Equip_Ring2
+		}
+
+	case Item_Trinket:
+		if equipMap[Equip_Trinket1] == nil {
+			slotEquip = Equip_Trinket1
+		} else {
+			slotEquip = Equip_Trinket2
+		}
+
+	default:
+		panic("unexpected SlotItem")
+	}
+
+	if equipMap[slotEquip] == nil {
+		equipMap[slotEquip] = item
 	} else {
 		panic("duplicate item")
 	}
