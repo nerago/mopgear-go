@@ -32,6 +32,15 @@ func (collect *BestCollector1[T]) Offer(object *T, value uint64) {
 	}
 }
 
+func (collect *BestCollector1[T]) OfferWithResult(object *T, value uint64) bool {
+	if value > collect.BestValue {
+		collect.BestObject = object
+		collect.BestValue = value
+		return true
+	}
+	return false
+}
+
 func (collect *BestCollector1[T]) CombineOther(other BestCollector1[T]) {
 	collect.Offer(other.BestObject, other.BestValue)
 }

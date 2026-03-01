@@ -11,7 +11,7 @@ func (job *MultiSetJob) evalutateTopN(proposedChannel <-chan MultiProposedOutput
 }
 
 func evalutateTopNWorker(proposedChannel <-chan MultiProposedOutput, bestChannel chan<- util.HighestCollectorN[MultiProposedOutput], topCount int) {
-	best := util.HighestCollector_ForN[MultiProposedOutput](topCount, func(a, b *MultiProposedOutput) bool {return a.Equals(b)})
+	best := util.HighestCollector_ForN(topCount, func(a, b *MultiProposedOutput) bool { return a.Equals(b) })
 	for proposed := range proposedChannel {
 		best.Offer(&proposed, proposed.TotalRatingSum)
 	}

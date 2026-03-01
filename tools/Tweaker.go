@@ -17,9 +17,9 @@ func Tweaker_Run(initialSet SolvableItemSet, solvableOptionsMap *SolvableOptions
 		} else if existing != nil && slotOptions == nil {
 			panic("unexpected filled slot")
 		} else if existing != nil {
-			for _, replace := range slotOptions {
+			for i := range slotOptions {
 				replaceMap := best.BestObject.Items
-				replaceMap[slot] = &replace
+				replaceMap[slot] = &slotOptions[i]
 				possibleSet := SolvableItemSet_Of(replaceMap)
 				if model.CheckSet(&possibleSet) {
 					best.Offer(&possibleSet, model.CalcRatingSolve(&possibleSet))

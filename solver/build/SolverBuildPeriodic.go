@@ -74,11 +74,9 @@ func makeSetFromArraysBagged(slotOptions *SolvableOptionsMap, slotIndexes *[16]u
 		bagSize := len(bag)
 		if bagSize == 1 {
 			equip[slot] = &options[0]
-			// fmt.Printf("make slot=%d one\n", slot)
 		} else if bagSize > 1 {
 			outerIndex := slotIndexes[slot]
 			innerIndex := bag[outerIndex]
-			// fmt.Printf("make slot=%d outer=%d inner=%d\n", slot, outerIndex, innerIndex)
 			slotIndexes[slot] = (outerIndex + 1) % uint64(bagSize)
 
 			equip[slot] = &options[innerIndex]

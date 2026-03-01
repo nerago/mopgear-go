@@ -226,10 +226,8 @@ func (optionsMap *SolvableOptionsMap) AllItemSeq() iter.Seq[*SolvableItem] {
 	return func(yield func(*SolvableItem) bool) {
 		for _, slotArray := range optionsMap {
 			for _, item := range slotArray {
-				if !item.IsEmpty() {
-					if !yield(&item) {
-						return
-					}
+				if !yield(&item) {
+					return
 				}
 			}
 		}

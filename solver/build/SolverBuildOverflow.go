@@ -3,8 +3,10 @@ package build
 import (
 	"context"
 	"math/big"
+	"paladin_gearing_go/items"
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
 
@@ -66,15 +68,18 @@ func evaluateOverflowWorker(resultChannel chan util.BestCollector1[SolvableItemS
 	slotSizes := makeSlotSizes(itemOptions)
 	advanceArrays(&indexes, &slotSizes, skip*threadNum*eachThreadCount)
 
+	itemSet := new(SolvableItemSet)
 	for range eachThreadCount {
-		itemSet := makeSetFromArraysDirect(itemOptions, &indexes)
+		makeSetFromArraysDirect(itemOptions, &indexes, itemSet)
 		advanceArrays(&indexes, &slotSizes, skip)
 		if peekFunc != nil {
-			peekFunc(&itemSet)
+			peekFunc(itemSet)
 		}
-		if model.CheckSet(&itemSet) {
-			rating := model.CalcRatingSolve(&itemSet)
-			best.Offer(&itemSet, rating)
+		if model.CheckSet(itemSet) {
+			rating := model.CalcRatingSolve(itemSet)
+			if best.OfferWithResult(itemSet, rating) {
+				itemSet = new(SolvableItemSet)
+			}
 		}
 		(*processedCounter)++
 	}
@@ -82,15 +87,20 @@ func evaluateOverflowWorker(resultChannel chan util.BestCollector1[SolvableItemS
 	resultChannel <- best
 }
 
-func makeSetFromArraysDirect(slotOptions *SolvableOptionsMap, slotIndexes *[16]uint64) SolvableItemSet {
-	equip := SolvableEquipMap{}
-	for slot, options := range slotOptions {
-		if options != nil {
+func makeSetFromArraysDirect(slotOptions *SolvableOptionsMap, slotIndexes *[16]uint64, itemSet *SolvableItemSet) {
+	itemSet.Items = items.SolvableEquipMap{}
+	itemSet.TotalCap = stats.StatBlock{}
+	itemSet.TotalRated = stats.StatBlock{}
+	for slot := range slotOptions {
+		if slotOptions[slot] != nil {
 			index := slotIndexes[slot]
-			equip[slot] = &options[index]
+			item := &slotOptions[slot][index]
+
+			itemSet.Items[slot] = item
+			itemSet.TotalCap.Increment_Mutating(&item.TotalCap)
+			itemSet.TotalRated.Increment_Mutating(&item.TotalRated)
 		}
 	}
-	return SolvableItemSet_Of(equip)
 }
 
 func advanceArrays(indexes *[16]uint64, sizes *[16]uint64, skip uint64) {
