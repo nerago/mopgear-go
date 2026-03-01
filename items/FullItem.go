@@ -117,6 +117,21 @@ func (equipMap *FullEquipMap) Get(slot SlotEquip) *FullItem {
 	return equipMap[slot]
 }
 
+func (equipMap *FullEquipMap) Equals(other *FullEquipMap) bool {
+	for slot := range equipMap {
+		a := equipMap[slot]
+		b := other[slot]
+		if a != nil && b != nil {
+			if !a.Equals(b) {
+				return false
+			}
+		} else if a != nil || b != nil {
+			return false
+		}
+	}
+	return true
+}
+
 func (equipMap *FullEquipMap) AllItemSeq() iter.Seq[*FullItem] {
 	return func(yield func(*FullItem) bool) {
 		for _, item := range equipMap {
@@ -133,4 +148,8 @@ type FullItemSet struct {
 	Items      FullEquipMap
 	TotalCap   stats.StatBlock
 	TotalRated stats.StatBlock
+}
+
+func (itemSet *FullItemSet) Equals(other FullItemSet) bool {
+	return itemSet.Items.Equals(&other.Items)
 }

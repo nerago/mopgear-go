@@ -33,7 +33,7 @@ func Solver(input SolveInput) SolveOutput {
 	if printer == nil {
 		printer = util.PrintRecorder_HoldAll()
 	}
-	
+
 	solveOptions := items.SolvableOptionsMap_of(input.ItemOptions)
 	model := input.Model
 
@@ -94,6 +94,10 @@ type SolveOutput struct {
 	FullSet      items.FullItemSet
 	ResultRating uint64
 	Printer      *util.PrintRecorder
+}
+
+func (output *SolveOutput) Equals(b *SolveOutput) bool {
+	return output.Success == b.Success && output.ResultRating == b.ResultRating && output.FullSet.Equals(b.FullSet)
 }
 
 func (output *SolveOutput) Report(printer *util.PrintRecorder) {

@@ -160,5 +160,5 @@ func PaladinMultiRun() {
 	ret.AddFixedSlot(items.Equip_Ring2, 95513) // scaled tyrant normal
 	job.AddSetParam(ret)
 
-	job.SuggestCulls(100)
+	job.SuggestCulls(5000, 10)
 }

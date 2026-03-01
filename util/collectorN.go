@@ -26,20 +26,25 @@ type CollectorN[T any] interface {
 
 type LowestCollectorN[T any] struct {
 	collectorNInternal[T]
+	equals func(a, b *T) bool
 }
 
-func LowestCollector_ForN[T any](limit int) LowestCollectorN[T] {
+func LowestCollector_ForN[T any](limit int, equals func(a, b *T) bool) LowestCollectorN[T] {
 	return LowestCollectorN[T]{
 		collectorNInternal[T]{
 			array: make([]internalEntry[T], 0, limit),
 			worst: math.MaxUint64,
 			size:  0,
-			limit: limit}}
+			limit: limit},
+		equals}
 }
 
 func (collect *LowestCollectorN[T]) sortContent() {
 	slices.SortFunc(collect.array, func(a, b internalEntry[T]) int {
 		return cmp.Compare(b.value, a.value)
+	})
+	collect.array = slices.CompactFunc(collect.array, func(a, b internalEntry[T]) bool {
+		return a.value == b.value && collect.equals(a.object, b.object)
 	})
 }
 
@@ -107,20 +112,25 @@ func LowestCollectorN_OfChannel[T any](channel <-chan LowestCollectorN[T], expec
 // ///////////////////////////////////////////////////////////
 type HighestCollectorN[T any] struct {
 	collectorNInternal[T]
+	equals func(a, b *T) bool
 }
 
-func HighestCollector_ForN[T any](limit int) HighestCollectorN[T] {
+func HighestCollector_ForN[T any](limit int, equals func(a, b *T) bool) HighestCollectorN[T] {
 	return HighestCollectorN[T]{
 		collectorNInternal[T]{
 			array: make([]internalEntry[T], 0, limit),
 			worst: 0,
 			size:  0,
-			limit: limit}}
+			limit: limit},
+		equals}
 }
 
 func (collect *HighestCollectorN[T]) sortContent() {
 	slices.SortFunc(collect.array, func(a, b internalEntry[T]) int {
 		return cmp.Compare(a.value, b.value)
+	})
+	collect.array = slices.CompactFunc(collect.array, func(a, b internalEntry[T]) bool {
+		return a.value == b.value && collect.equals(a.object, b.object)
 	})
 }
 

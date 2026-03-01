@@ -161,9 +161,9 @@ func (param *MultiSetParam) runBaseline() {
 
 func (job *MultiSetJob) prepareRatingMultipliers() {
 	var totalPercent float64
-	for _, param := range job.params {
-		param.prepareRatingMultiplier()
-		totalPercent += param.RequestRatingPercent
+	for i := range job.params {
+		job.params[i].prepareRatingMultiplier()
+		totalPercent += job.params[i].RequestRatingPercent
 	}
 
 	if totalPercent < 0.99 || totalPercent > 1.01 {

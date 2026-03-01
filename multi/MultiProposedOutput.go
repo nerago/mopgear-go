@@ -16,22 +16,43 @@ type MultiProposedOutput struct {
 	Combo          commonCombo
 }
 
+func (proposed *MultiProposedOutput) Equals(other *MultiProposedOutput) bool {
+	if proposed.TotalRatingSum != other.TotalRatingSum {
+		return false
+	}
+
+	for i := range proposed.Outputs {
+		if !proposed.Outputs[i].Equals(&other.Outputs[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func makeUUID() string {
 	return uuid.NewString()
 }
 
 func (job *MultiSetJob) makeProposedChannel(comboChannel <-chan commonCombo) <-chan MultiProposedOutput {
-	return util.Channel_TransformEach_Multi(solveThreadCount, comboChannel, job.subSolveCombo)
+	return util.Channel_TransformEach_Multi(solveThreadCount, comboChannel, func(combo commonCombo, outputChannel chan<- MultiProposedOutput) {
+		proposed := job.subSolveCombo(combo)
+		if proposed != nil {
+			outputChannel <- *proposed
+		}
+	})
 }
 
-func (job *MultiSetJob) subSolveCombo(combo commonCombo, outputChannel chan<- MultiProposedOutput) {
+func (job *MultiSetJob) subSolveCombo(combo commonCombo) *MultiProposedOutput {
 	var totalRatingSum uint64
-	allGood := true
 	output := make([]solver.SolveOutput, len(job.params))
 
 	for paramIndex, param := range job.params {
 		if param.IncludeInFirstPass {
-			result := job.firstPassSolveCombo(combo, param, &allGood)
+			result := job.firstPassSolveCombo(combo, param)
+			if !result.Success {
+				// job.printer.Println("UNEXPECTED SOLVE FAILURE FOR " + param.Label)
+				return nil
+			}
 			totalRatingSum += result.ResultRating * param.ratingMultiply
 			output[paramIndex] = result
 		}
@@ -39,38 +60,35 @@ func (job *MultiSetJob) subSolveCombo(combo commonCombo, outputChannel chan<- Mu
 
 	for paramIndex, param := range job.params {
 		if !param.IncludeInFirstPass {
-			result := job.secondPassSolveCombo(combo, output, param, &allGood)
+			result := job.secondPassSolveCombo(combo, output, param)
+			if !result.Success {
+				// job.printer.Println("UNEXPECTED SOLVE FAILURE FOR " + param.Label)
+				return nil
+			}
 			totalRatingSum += result.ResultRating * param.ratingMultiply
 			output[paramIndex] = result
 		}
 	}
 
-	if allGood {
-		proposed := MultiProposedOutput{makeUUID(), totalRatingSum, output, combo}
-		if job.multiSetFilter == nil || job.multiSetFilter(proposed) {
-			outputChannel <- proposed
-		}
+	proposed := MultiProposedOutput{makeUUID(), totalRatingSum, output, combo}
+	if job.multiSetFilter != nil && !job.multiSetFilter(proposed) {
+		return nil
 	}
+	return &proposed
+
 }
 
-func (job *MultiSetJob) firstPassSolveCombo(combo commonCombo, param MultiSetParam, allGood *bool) solver.SolveOutput {
+func (job *MultiSetJob) firstPassSolveCombo(combo commonCombo, param MultiSetParam) solver.SolveOutput {
 	options := buildOptionsGivenCombo(param.itemOptions, combo)
-	result := solver.Solver(solver.SolveInput{
+	return solver.Solver(solver.SolveInput{
 		ItemOptions:      &options,
 		Model:            &param.Model,
 		PhasedAcceptable: param.PhasedAcceptable,
 		TrackProgress:    false,
 		LongRun:          false})
-
-	if !result.Success {
-		job.printer.Println("UNEXPECTED SOLVE FAILURE FOR " + param.Label)
-		*allGood = false
-	}
-	return result
-	// param.seenInSolutions.Add(&param.baselineResult.FullSet) or only on best ones?
 }
 
-func (job *MultiSetJob) secondPassSolveCombo(baseCombo commonCombo, otherOutputList []solver.SolveOutput, param MultiSetParam, allGood *bool) solver.SolveOutput {
+func (job *MultiSetJob) secondPassSolveCombo(baseCombo commonCombo, otherOutputList []solver.SolveOutput, param MultiSetParam) solver.SolveOutput {
 	// extend combo limitations further based on items chosen for other sets
 	restrictedCombo := maps.Clone(baseCombo)
 	for _, otherOutput := range otherOutputList {
@@ -82,17 +100,12 @@ func (job *MultiSetJob) secondPassSolveCombo(baseCombo commonCombo, otherOutputL
 	}
 
 	options := buildOptionsGivenCombo(param.itemOptions, restrictedCombo)
-	result := solver.Solver(solver.SolveInput{
+	return solver.Solver(solver.SolveInput{
 		ItemOptions:      &options,
 		Model:            &param.Model,
 		PhasedAcceptable: param.PhasedAcceptable,
 		TrackProgress:    false,
 		LongRun:          false})
-	if !result.Success {
-		job.printer.Println("UNEXPECTED SOLVE FAILURE FOR " + param.Label)
-		*allGood = false
-	}
-	return result
 }
 
 func buildOptionsGivenCombo(allOptions items.FullOptionsMap, combo commonCombo) items.FullOptionsMap {

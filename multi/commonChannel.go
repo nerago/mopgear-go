@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-const bufferSize = 16
+// const bufferSize = 256
 const additionalSetCount = 10
 
 type commonComboOptions map[uint32][]items.FullItem
@@ -24,15 +24,16 @@ func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targ
 	go util.TrackProgressIntThreaded(ctx, &counters, targetCount)
 
 	var waitGroup sync.WaitGroup
-	comboChannel := make(chan commonCombo, bufferSize)
+	comboChannel := make(chan commonCombo)
+	// comboChannel := make(chan commonCombo, bufferSize)
 	for threadNum := range generateThreadCount {
 		waitGroup.Go(func() {
 			makeCommonWorker(commonOptions, eachThreadCount, threadNum, &counters[threadNum], comboChannel)
 		})
 	}
 
-	waitGroup.Go(func() { makeBaselineWorker(job.params, commonOptions, comboChannel) })
-	waitGroup.Go(func() { makeEquippedWorker(job.params, commonOptions, comboChannel) })
+	// waitGroup.Go(func() { makeBaselineWorker(job.params, commonOptions, comboChannel) })
+	// waitGroup.Go(func() { makeEquippedWorker(job.params, commonOptions, comboChannel) })
 
 	go func() {
 		waitGroup.Wait()
@@ -45,14 +46,19 @@ func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targ
 func makeCommonWorker(commonOptions commonComboOptions, loopCount uint64, threadNum int, doneCounter *uint64, comboChannel chan<- commonCombo) {
 	rng := rand.New(rand.NewSource(int64(threadNum)))
 	for range loopCount {
-		combo := make(commonCombo)
-		for itemId, options := range commonOptions {
-			index := rng.Intn(len(options))
-			combo[itemId] = options[index]
-		}
+		combo := makeRandomCombo(commonOptions, rng)
 		comboChannel <- combo
 		*doneCounter++
 	}
+}
+
+func makeRandomCombo(commonOptions commonComboOptions, rng *rand.Rand) commonCombo {
+	combo := make(commonCombo)
+	for itemId, options := range commonOptions {
+		index := rng.Intn(len(options))
+		combo[itemId] = options[index]
+	}
+	return combo
 }
 
 func makeBaselineWorker(params []MultiSetParam, commonOptions commonComboOptions, comboChannel chan<- commonCombo) {
@@ -66,14 +72,7 @@ func makeBaselineWorker(params []MultiSetParam, commonOptions commonComboOptions
 				combo[item.ItemId()] = *item
 			}
 
-			// extras randomly from options
-			for itemId, options := range commonOptions {
-				_, alreadySet := combo[itemId]
-				if !alreadySet {
-					index := rng.Intn(len(options))
-					combo[itemId] = options[index]
-				}
-			}
+			fillOutRemainingOptions(commonOptions, combo, rng)
 
 			comboChannel <- combo
 		}
@@ -81,7 +80,7 @@ func makeBaselineWorker(params []MultiSetParam, commonOptions commonComboOptions
 }
 
 func makeEquippedWorker(params []MultiSetParam, commonOptions commonComboOptions, comboChannel chan<- commonCombo) {
-	rng := rand.New(rand.NewSource(0xBA5E))
+	rng := rand.New(rand.NewSource(0xE819))
 	for _, param := range params {
 		for range additionalSetCount {
 			combo := make(commonCombo)
@@ -91,16 +90,19 @@ func makeEquippedWorker(params []MultiSetParam, commonOptions commonComboOptions
 				combo[item.ItemId()] = *item
 			}
 
-			// extras randomly from options
-			for itemId, options := range commonOptions {
-				_, alreadySet := combo[itemId]
-				if !alreadySet {
-					index := rng.Intn(len(options))
-					combo[itemId] = options[index]
-				}
-			}
+			fillOutRemainingOptions(commonOptions, combo, rng)
 
 			comboChannel <- combo
+		}
+	}
+}
+
+func fillOutRemainingOptions(commonOptions commonComboOptions, combo commonCombo, rng *rand.Rand) {
+	for itemId, options := range commonOptions {
+		_, alreadySet := combo[itemId]
+		if !alreadySet {
+			index := rng.Intn(len(options))
+			combo[itemId] = options[index]
 		}
 	}
 }

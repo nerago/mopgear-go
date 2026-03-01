@@ -66,7 +66,7 @@ func makeSkinnyCombosMultiThread(itemOptions *SkinnyOptionsMap, model *Model, ma
 		var ctx context.Context
 		ctx, cancel = context.WithCancel(context.Background())
 		go util.TrackProgressIntThreaded(ctx, &counters, max/skip)
-	} 
+	}
 
 	// start up workers
 	splits := solve_util.IndexSplitsInt(max, skip, threadCount)
@@ -185,7 +185,7 @@ func filterLowHitCombos0(inputChannel <-chan SkinnyItemSet) <-chan SkinnyItemSet
 }
 
 func filterWorker(inputChannel <-chan SkinnyItemSet, collectedChannel chan<- util.LowestCollectorN[SkinnyItemSet]) {
-	best := util.LowestCollector_ForN[SkinnyItemSet](filterTarget)
+	best := util.LowestCollector_ForN(filterTarget, func(a, b *SkinnyItemSet) bool { return *a == *b })
 	for itemSet := range inputChannel {
 		rating := itemSet.A + itemSet.B
 		best.Offer(&itemSet, uint64(rating))

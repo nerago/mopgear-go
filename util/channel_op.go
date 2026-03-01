@@ -2,10 +2,15 @@ package util
 
 import "sync"
 
-const bufferSize = 128
+// const bufferSize = 128
+
+func makeOutputChannel[R any]() chan R {
+	// return make(chan R, bufferSize)
+	return make(chan R)
+}
 
 func Channel_Map_Single[T any, R any](inputChannel <-chan T, mapper func(T) R) <-chan R {
-	outputChannel := make(chan R, bufferSize)
+	outputChannel := makeOutputChannel[R]()
 	go func() {
 		for value := range inputChannel {
 			outputChannel <- mapper(value)
@@ -16,7 +21,7 @@ func Channel_Map_Single[T any, R any](inputChannel <-chan T, mapper func(T) R) <
 }
 
 func Channel_Filter_Single[T any](inputChannel <-chan T, predicate func(T) bool) <-chan T {
-	outputChannel := make(chan T, bufferSize)
+	outputChannel := makeOutputChannel[T]()
 	go func() {
 		for value := range inputChannel {
 			if predicate(value) {
@@ -30,7 +35,7 @@ func Channel_Filter_Single[T any](inputChannel <-chan T, predicate func(T) bool)
 
 func Channel_Map_Multi[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T) R) <-chan R {
 	var waitGroup sync.WaitGroup
-	outputChannel := make(chan R, bufferSize)
+	outputChannel := makeOutputChannel[R]()
 	for range threadCount {
 		waitGroup.Go(func() {
 			for value := range inputChannel {
@@ -47,7 +52,7 @@ func Channel_Map_Multi[T any, R any](threadCount int, inputChannel <-chan T, map
 
 func Channel_Filter_Multi[T any](threadCount int, inputChannel <-chan T, predicate func(T) bool) <-chan T {
 	var waitGroup sync.WaitGroup
-	outputChannel := make(chan T, bufferSize)
+	outputChannel := makeOutputChannel[T]()
 	for range threadCount {
 		waitGroup.Go(func() {
 			for value := range inputChannel {
@@ -66,7 +71,7 @@ func Channel_Filter_Multi[T any](threadCount int, inputChannel <-chan T, predica
 
 func Channel_TransformEach_Multi[T any, R any](threadCount int, inputChannel <-chan T, transform func(T, chan<- R)) <-chan R {
 	var waitGroup sync.WaitGroup
-	outputChannel := make(chan R, bufferSize)
+	outputChannel := makeOutputChannel[R]()
 	for range threadCount {
 		waitGroup.Go(func() {
 			for value := range inputChannel {
@@ -83,7 +88,7 @@ func Channel_TransformEach_Multi[T any, R any](threadCount int, inputChannel <-c
 
 func Channel_TransformAll_Multi[T any, R any](threadCount int, inputChannel <-chan T, transformAll func(<-chan T, chan<- R)) <-chan R {
 	var waitGroup sync.WaitGroup
-	outputChannel := make(chan R, bufferSize)
+	outputChannel := makeOutputChannel[R]()
 	for range threadCount {
 		waitGroup.Go(func() {
 			transformAll(inputChannel, outputChannel)
@@ -98,7 +103,7 @@ func Channel_TransformAll_Multi[T any, R any](threadCount int, inputChannel <-ch
 
 func Channel_GenerateAll_Multi[R any](threadCount int, generateSubGroup func(int, chan<- R), after func()) <-chan R {
 	var waitGroup sync.WaitGroup
-	outputChannel := make(chan R, bufferSize)
+	outputChannel := makeOutputChannel[R]()
 	for threadNum := range threadCount {
 		waitGroup.Go(func() {
 			generateSubGroup(threadNum, outputChannel)
