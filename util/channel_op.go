@@ -116,3 +116,59 @@ func Channel_GenerateAll_Multi[R any](threadCount int, generateSubGroup func(int
 	}()
 	return outputChannel
 }
+
+func Channel_IterateEach_Multi[T any, R any](threadCount int, inputSlice []T, transform func(T, chan<- R)) <-chan R {
+	var waitGroup sync.WaitGroup
+	outputChannel := makeOutputChannel[R]()
+
+	inputLength := len(inputSlice)
+	splits := indexSplitsInt(inputLength, threadCount)
+
+	for threadNum := range threadCount {
+		waitGroup.Go(func() {
+			start := splits[threadNum]
+			end := splits[threadNum+1]
+			for index := start; index < end; index++ {
+				transform(inputSlice[index], outputChannel)
+			}
+		})
+	}
+	go func() {
+		waitGroup.Wait()
+		close(outputChannel)
+	}()
+	return outputChannel
+}
+
+func Void_IterateEach_Multi_Blocking[T any](threadCount int, inputSlice []T, process func(T)) {
+	var waitGroup sync.WaitGroup
+
+	inputLength := len(inputSlice)
+	splits := indexSplitsInt(inputLength, threadCount)
+
+	for threadNum := range threadCount {
+		waitGroup.Go(func() {
+			start := splits[threadNum]
+			end := splits[threadNum+1]
+			for index := start; index < end; index++ {
+				process(inputSlice[index])
+			}
+		})
+	}
+
+	waitGroup.Wait()
+}
+
+func indexSplitsInt(sliceLength int, threadCount int) []int {
+	indexPerThread := sliceLength / threadCount
+
+	splitArray := make([]int, 0, threadCount+1)
+	start := 0
+	for range threadCount {
+		splitArray = append(splitArray, start)
+		start += indexPerThread
+	}
+	splitArray = append(splitArray, sliceLength)
+
+	return splitArray
+}

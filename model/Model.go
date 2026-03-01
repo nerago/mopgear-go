@@ -48,7 +48,7 @@ const weightRetFile = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\src\main\r
 func Model_PallyProtMitigation() Model {
 	weightMiti := StatRatingsWeights_ReadFile(weightMitiFile, false, true, false)
 	weightDps := StatRatingsWeights_ReadFile(weightDpsFile, false, true, false)
-	weight := StatRatingsWeights_Mix(weightMiti, 121, weightDps, 41)
+	weight := StatRatingsWeights_Mix(weightMiti, 95, weightDps, 34)
 	return Model{
 		Spec_PaladinProtMitigation,
 		weight,
@@ -61,7 +61,7 @@ func Model_PallyProtMitigation() Model {
 func Model_PallyProtDps() Model {
 	weightMiti := StatRatingsWeights_ReadFile(weightMitiFile, false, true, false)
 	weightDps := StatRatingsWeights_ReadFile(weightDpsFile, false, true, false)
-	weight := StatRatingsWeights_Mix(weightMiti, 15, weightDps, 185)
+	weight := StatRatingsWeights_Mix(weightMiti, 32, weightDps, 146)
 	return Model{
 		Spec_PaladinProtDps,
 		weight,

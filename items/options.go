@@ -36,7 +36,7 @@ func (optionsMap *FullOptionsMap) MapSlot(slot SlotEquip, mapper func([]FullItem
 	optionsMap[slot] = mapper(optionsMap[slot])
 }
 
-func (optionsMap FullOptionsMap) FindItemId(itemId uint32) iter.Seq[FullItem] {
+func (optionsMap *FullOptionsMap) FindItemId(itemId uint32) iter.Seq[FullItem] {
 	return func(yield func(FullItem) bool) {
 		for _, slotArray := range optionsMap {
 			for _, item := range slotArray {
@@ -74,14 +74,14 @@ func (optionsMap *FullOptionsMap) AllItemsWithSlot() iter.Seq2[SlotEquip, *FullI
 	}
 }
 
-func (optionsMap FullOptionsMap) AddOneOption(item FullItem) {
-	for slotEquip := range item.Slot.ToSlotEquipOptions() {
+func (optionsMap *FullOptionsMap) AddOneOption(item FullItem) {
+	for _, slotEquip := range item.Slot.ToSlotEquipOptions() {
 		optionsMap[slotEquip] = append(optionsMap[slotEquip], item)
 	}
 }
 
-func (optionsMap FullOptionsMap) AddSeveralOptions(slot SlotItem, options []FullItem) {
-	for slotEquip := range slot.ToSlotEquipOptions() {
+func (optionsMap *FullOptionsMap) AddSeveralOptions(slot SlotItem, options []FullItem) {
+	for _, slotEquip := range slot.ToSlotEquipOptions() {
 		optionsMap[slotEquip] = append(optionsMap[slotEquip], options...)
 	}
 }

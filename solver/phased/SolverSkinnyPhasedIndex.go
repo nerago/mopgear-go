@@ -66,6 +66,8 @@ func makeSkinnyCombosMultiThread(itemOptions *SkinnyOptionsMap, model *Model, ma
 		var ctx context.Context
 		ctx, cancel = context.WithCancel(context.Background())
 		go util.TrackProgressIntThreaded(ctx, &counters, max/skip)
+	} else {
+		cancel = emptyFunc
 	}
 
 	// start up workers
@@ -98,13 +100,15 @@ func makeSkinnySetInt(itemOptions *SkinnyOptionsMap, mainIndex uint64) SkinnyIte
 	for slot, array := range itemOptions {
 		size := uint64(len(array))
 
-		slotIndex := currIndex % size
-		currIndex /= size
+		if size > 0 {
+			slotIndex := currIndex % size
+			currIndex /= size
 
-		item := array[slotIndex]
-		equip[slot] = item
-		a += item.A
-		b += item.B
+			item := array[slotIndex]
+			equip[slot] = item
+			a += item.A
+			b += item.B
+		}
 	}
 
 	return SkinnyItemSet{Items: equip, A: a, B: b}
@@ -156,6 +160,7 @@ func makeFromSkinny(itemOptions *SolvableOptionsMap, model *Model, skinnySet *Sk
 }
 
 func filterLowHitCombos(inputChannel <-chan SkinnyItemSet) <-chan SkinnyItemSet {
+	// TODO do we need to worry about duplicates?
 	return util.Channel_TransformAll_Multi(threadCount, inputChannel, func(inputChannel <-chan SkinnyItemSet, outputChannel chan<- SkinnyItemSet) {
 		valueHeap := util.LowestNIntHeap_For(filterTarget)
 		for itemSet := range inputChannel {
@@ -174,6 +179,7 @@ func filterLowHitCombos0(inputChannel <-chan SkinnyItemSet) <-chan SkinnyItemSet
 	}
 	bestArray := util.LowestCollectorN_OfChannel(collectedChannel, threadCount)
 
+	// util.Channel_IterateEach_Multi()
 	outputChannel := make(chan SkinnyItemSet)
 	go func() {
 		for _, item := range bestArray {
@@ -192,3 +198,5 @@ func filterWorker(inputChannel <-chan SkinnyItemSet, collectedChannel chan<- uti
 	}
 	collectedChannel <- best
 }
+
+func emptyFunc() {}

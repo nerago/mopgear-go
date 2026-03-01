@@ -108,7 +108,7 @@ func (slot SlotItem) ToSlotEquipOptions() []SlotEquip {
 	case Item_Foot:
 		return []SlotEquip{Equip_Foot}
 	case Item_Ring:
-		return []SlotEquip{Equip_Ring1, Equip_Ring1}
+		return []SlotEquip{Equip_Ring1, Equip_Ring2}
 	case Item_Trinket:
 		return []SlotEquip{Equip_Trinket1, Equip_Trinket2}
 	case Item_Weapon2H:

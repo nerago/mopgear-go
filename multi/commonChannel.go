@@ -12,7 +12,6 @@ import (
 // const bufferSize = 256
 const additionalSetCount = 10
 
-type commonComboOptions map[uint32][]items.FullItem
 type commonCombo map[uint32]items.FullItem
 
 func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targetCount uint64) <-chan commonCombo {

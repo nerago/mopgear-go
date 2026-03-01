@@ -46,7 +46,8 @@ func (job *MultiSetJob) subSolveCombo(combo commonCombo) *MultiProposedOutput {
 	var totalRatingSum uint64
 	output := make([]solver.SolveOutput, len(job.params))
 
-	for paramIndex, param := range job.params {
+	for paramIndex := range job.params {
+		param := &job.params[paramIndex]
 		if param.IncludeInFirstPass {
 			result := job.firstPassSolveCombo(combo, param)
 			if !result.Success {
@@ -58,7 +59,8 @@ func (job *MultiSetJob) subSolveCombo(combo commonCombo) *MultiProposedOutput {
 		}
 	}
 
-	for paramIndex, param := range job.params {
+	for paramIndex := range job.params {
+		param := &job.params[paramIndex]
 		if !param.IncludeInFirstPass {
 			result := job.secondPassSolveCombo(combo, output, param)
 			if !result.Success {
@@ -78,7 +80,7 @@ func (job *MultiSetJob) subSolveCombo(combo commonCombo) *MultiProposedOutput {
 
 }
 
-func (job *MultiSetJob) firstPassSolveCombo(combo commonCombo, param MultiSetParam) solver.SolveOutput {
+func (job *MultiSetJob) firstPassSolveCombo(combo commonCombo, param *MultiSetParam) solver.SolveOutput {
 	options := buildOptionsGivenCombo(param.itemOptions, combo)
 	return solver.Solver(solver.SolveInput{
 		ItemOptions:      &options,
@@ -88,7 +90,7 @@ func (job *MultiSetJob) firstPassSolveCombo(combo commonCombo, param MultiSetPar
 		LongRun:          false})
 }
 
-func (job *MultiSetJob) secondPassSolveCombo(baseCombo commonCombo, otherOutputList []solver.SolveOutput, param MultiSetParam) solver.SolveOutput {
+func (job *MultiSetJob) secondPassSolveCombo(baseCombo commonCombo, otherOutputList []solver.SolveOutput, param *MultiSetParam) solver.SolveOutput {
 	// extend combo limitations further based on items chosen for other sets
 	restrictedCombo := maps.Clone(baseCombo)
 	for _, otherOutput := range otherOutputList {

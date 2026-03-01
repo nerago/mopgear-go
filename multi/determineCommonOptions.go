@@ -3,12 +3,16 @@ package multi
 import (
 	"iter"
 	"log"
+	"maps"
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/solver"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"strconv"
 	"strings"
 )
+
+type commonComboOptions map[uint32][]items.FullItem
 
 func (job *MultiSetJob) determineCommon() commonComboOptions {
 	commonOptions, seenIn := searchParamOptions(job.params)
@@ -110,4 +114,27 @@ func printCommons(seenIn map[uint32][]string, commonOptions commonComboOptions, 
 
 		printer.Printf("COMMON %d %s %d => %s\n", itemId, item.FullName(), item.Ref.ItemLevel, seenText)
 	}
+}
+
+func (job *MultiSetJob) revisedComboActuallyUsed(outputs []solver.SolveOutput, initialCombo commonCombo, printer *util.PrintRecorder) commonCombo {
+	grouped := make(map[uint32][]*items.FullItem)
+	for index := range outputs {
+		for item := range outputs[index].FullSet.Items.AllItemSeq() {
+			grouped[item.ItemId()] = append(grouped[item.ItemId()], item)
+		}
+	}
+
+	revisedCombo := maps.Clone(initialCombo)
+	for itemId := range revisedCombo {
+		groupArray, hasGroup := grouped[itemId]
+		_, hasFixedForge := job.fixedForge[itemId]
+
+		shouldRemove := !hasGroup || len(groupArray) < 2
+		if shouldRemove && hasFixedForge {
+			printer.Printf("WOULD REMOVE COMMON BUT HAS fixedForge %d\n", itemId)
+		} else if (shouldRemove) {
+			delete(revisedCombo, itemId)
+		}
+	}
+	return revisedCombo
 }

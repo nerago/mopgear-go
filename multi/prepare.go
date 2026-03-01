@@ -131,8 +131,8 @@ func (param *MultiSetParam) restrictFixed() {
 
 func (job *MultiSetJob) validateMultiSetAlignItemSlots() {
 	seen := make(map[uint32]items.SlotEquip)
-	for _, param := range job.params {
-		for slot, item := range param.itemOptions.AllItemsWithSlot() {
+	for paramIndex := range job.params {
+		for slot, item := range job.params[paramIndex].itemOptions.AllItemsWithSlot() {
 			seenSlot, found := seen[item.ItemId()]
 			if found && seenSlot != slot {
 				panic("duplicate in non-matching slot " + item.String())
@@ -146,12 +146,12 @@ func (job *MultiSetJob) validateMultiSetAlignItemSlots() {
 func (param *MultiSetParam) runBaseline() {
 	param.job.printer.Printf("BASELINE for %s\n", param.Label)
 	param.baselineResult = solver.Solver(solver.SolveInput{
-		ItemOptions: &param.itemOptions, 
-		Model: &param.Model, 
-		PhasedAcceptable: param.PhasedAcceptable, 
-		TrackProgress: true,
-		LongRun: false,
-		Printer: &param.job.printer})
+		ItemOptions:      &param.itemOptions,
+		Model:            &param.Model,
+		PhasedAcceptable: param.PhasedAcceptable,
+		TrackProgress:    true,
+		LongRun:          false,
+		Printer:          &param.job.printer})
 
 	if !param.baselineResult.Success {
 		panic("failed to find baseline for " + param.Label)

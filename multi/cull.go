@@ -1,9 +1,9 @@
 package multi
 
 import (
-	"math/rand"
+	"cmp"
 	"paladin_gearing_go/util"
-	"sync"
+	"slices"
 )
 
 func (job *MultiSetJob) SuggestCulls(targetCount uint64, topCapture int) {
@@ -12,7 +12,7 @@ func (job *MultiSetJob) SuggestCulls(targetCount uint64, topCapture int) {
 	comboChannel := job.makeCommonChannel(commonOptions, targetCount)
 	proposedChannel := job.makeProposedChannel(comboChannel)
 	bestOutputs := job.evalutateTopN(proposedChannel, topCapture)
-	// bestOutputs := job.combinedPipeline(commonOptions, targetCount, topCapture)
+
 	for _, best := range bestOutputs {
 		job.printer.Printf("::::::::: MULTI RATING %d ::::::::\n", best.TotalRatingSum)
 		for i, out := range best.Outputs {
@@ -20,26 +20,60 @@ func (job *MultiSetJob) SuggestCulls(targetCount uint64, topCapture int) {
 			out.Report(&job.printer)
 		}
 	}
+
+	job.cullingMakeRevisions(bestOutputs)
+	job.cullingReport()
 }
 
-func (job *MultiSetJob) combinedPipeline(commonOptions commonComboOptions, targetCount uint64, topCapture int) []MultiProposedOutput {
-	eachThreadCount := max(targetCount/generateThreadCount, 1)
-	bestChannel := make(chan util.HighestCollectorN[MultiProposedOutput])
+func (job *MultiSetJob) cullingMakeRevisions(proposedList []MultiProposedOutput) {
+	job.printer.Printf("MAKE REVISIONS FOR %d\n", len(proposedList))
+	util.Void_IterateEach_Multi_Blocking(generateThreadCount, proposedList, func(prior MultiProposedOutput) {
+		printer := util.PrintRecorder_HoldAll()
+		revisedCommon := job.revisedComboActuallyUsed(prior.Outputs, prior.Combo, printer)
+		for i := range prior.Outputs {
+			draft := &prior.Outputs[i]
+			param := &job.params[i]
 
-	var waitGroup sync.WaitGroup
-	for threadNum := range generateThreadCount {
-		waitGroup.Go(func() {
-			best := util.HighestCollector_ForN(topCapture, func(a, b *MultiProposedOutput) bool { return a.Equals(b) })
-			rng := rand.New(rand.NewSource(int64(threadNum)))
-			for range eachThreadCount {
-				combo := makeRandomCombo(commonOptions, rng)
-				proposed := job.subSolveCombo(combo)
-				if proposed != nil {
-					best.Offer(proposed, proposed.TotalRatingSum)
-				}
+			param.seenInSolutions.Add(&draft.FullSet)
+
+			revised := job.makeRevised(param, revisedCommon)
+			for _, newOutput := range revised {
+				param.seenInSolutions.Add(&newOutput.FullSet)
 			}
-			bestChannel <- best
-		})
+		}
+		job.printer.AppendOther(printer)
+	})
+}
+
+func (job *MultiSetJob) cullingReport() {
+	for paramIndex := range job.params {
+		job.params[paramIndex].cullingReport()
 	}
-	return util.HighestCollectorN_OfChannel(bestChannel, generateThreadCount)
+}
+
+func (param *MultiSetParam) cullingReport() {
+	type extraInfoStruct struct {
+		itemId uint32
+		count  uint32
+	}
+
+	extraInfo := make([]extraInfoStruct, 0, len(param.extraItems))
+	for _, itemId := range param.extraItems {
+		seenCount := param.seenInSolutions.content[itemId]
+		info := extraInfoStruct{itemId: itemId, count: seenCount}
+		extraInfo = append(extraInfo, info)
+	}
+
+	slices.SortFunc(extraInfo, func(a, b extraInfoStruct) int {
+		return cmp.Or(cmp.Compare(b.count, a.count), cmp.Compare(a.itemId, b.itemId))
+	})
+
+	param.job.printer.Printf("EXTRAS USED %s\n", param.Label)
+	for _, info := range extraInfo {
+		if info.count == 0 {
+			param.job.printer.Printf("%d 0 NONE\n", info.itemId)
+		} else {
+			param.job.printer.Printf("%d 0 NONE\n", info.itemId)
+		}
+	}
 }
