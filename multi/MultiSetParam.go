@@ -37,8 +37,6 @@ type MultiSetParam struct {
 	// double worstCommonPenalty;
 	// Map<Integer, Integer> duplicatedItems;
 	// List<Integer> removeItems;
-	// double optimalRating;
-	// FullItemSet optimalBaselineSet;
 	// suppressSlotCheck
 }
 
@@ -68,7 +66,6 @@ func (param *MultiSetParam) AddFixedSlot(slot items.SlotEquip, itemId uint32) *M
 type seenMap struct {
 	content map[uint32]uint32
 	mutex   sync.Mutex
-	// or could use sync.Map
 }
 
 func (seen *seenMap) Add(itemSet *items.FullItemSet) {

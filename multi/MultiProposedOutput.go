@@ -87,7 +87,7 @@ func (job *MultiSetJob) firstPassSolveCombo(combo commonCombo, param *MultiSetPa
 		Model:               &param.Model,
 		PhasedAcceptable:    param.PhasedAcceptable,
 		EnableTrackProgress: false,
-		LongRun:             false})
+		SolveSize:           solver.SolveSize_PerItem})
 }
 
 func (job *MultiSetJob) secondPassSolveCombo(baseCombo commonCombo, otherOutputList []solver.SolveOutput, param *MultiSetParam) solver.SolveOutput {
@@ -107,7 +107,7 @@ func (job *MultiSetJob) secondPassSolveCombo(baseCombo commonCombo, otherOutputL
 		Model:               &param.Model,
 		PhasedAcceptable:    param.PhasedAcceptable,
 		EnableTrackProgress: false,
-		LongRun:             false})
+		SolveSize:           solver.SolveSize_PerItem})
 }
 
 func buildOptionsGivenCombo(allOptions items.FullOptionsMap, combo commonCombo) items.FullOptionsMap {

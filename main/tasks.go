@@ -4,6 +4,7 @@ import (
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/model"
 	"paladin_gearing_go/model/ratings"
+	"paladin_gearing_go/solver"
 	. "paladin_gearing_go/solver"
 	. "paladin_gearing_go/util"
 )
@@ -14,7 +15,7 @@ func basicReforge(itemOptions *FullOptionsMap, model *Model, printer *PrintRecor
 		Model:               model,
 		PhasedAcceptable:    false,
 		EnableTrackProgress: true,
-		LongRun:             true,
+		SolveSize:           solver.SolveSize_Long,
 		Printer:             nil})
 	output.Report(printer)
 }

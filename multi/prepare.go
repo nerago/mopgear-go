@@ -149,7 +149,7 @@ func (param *MultiSetParam) runBaseline() {
 		Model:               &param.Model,
 		PhasedAcceptable:    param.PhasedAcceptable,
 		EnableTrackProgress: true,
-		LongRun:             false,
+		SolveSize:           solver.SolveSize_Medium,
 		Printer:             &param.job.printer})
 
 	if !param.baselineResult.Success {

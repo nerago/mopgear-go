@@ -9,14 +9,12 @@ import (
 	"paladin_gearing_go/util"
 )
 
-// type SolveInput struct {
-// 	model       Model
-// 	itemOptions SolvableOptionsMap
-// }
+type SolveSize uint64
 
 const (
-	targetCountQuick uint64 = 100_000
-	targetCountLong  uint64 = 100_000_000
+	SolveSize_PerItem SolveSize = 100_000
+	SolveSize_Medium  SolveSize = 20_100_000
+	SolveSize_Long    SolveSize = 100_000_000
 )
 
 type SolveInput struct {
@@ -25,7 +23,7 @@ type SolveInput struct {
 	PhasedAcceptable    bool
 	EnableTrackProgress bool
 	OuterTrackProgress  *util.TrackProgress
-	LongRun             bool
+	SolveSize           SolveSize
 	Printer             *util.PrintRecorder
 }
 
@@ -55,14 +53,7 @@ func Solver(input SolveInput) SolveOutput {
 		mode = 6
 	}
 
-	var targetCount uint64
-	if input.LongRun {
-		targetCount = targetCountLong
-	} else {
-		targetCount = targetCountQuick
-	}
-
-	// TODO run types and size multipliers
+	var targetCount uint64 = uint64(input.SolveSize)
 
 	var solvedSet util.Optional[items.SolvableItemSet]
 	switch mode {
@@ -91,16 +82,17 @@ func Solver(input SolveInput) SolveOutput {
 
 	return util.Optional_MapAsValueOrEmpty(solvedSet,
 		func(set items.SolvableItemSet) SolveOutput {
-			return SolveOutput{true, set, items.FullItemSet_FromSolved(set, input.ItemOptions), model.CalcRatingSolve(&set), printer}
+			return SolveOutput{true, &input, set, items.FullItemSet_FromSolved(set, input.ItemOptions), model.CalcRatingSolve(&set), printer}
 		},
 		func() SolveOutput {
-			return SolveOutput{Success: false, ResultRating: 0, Printer: printer}
+			return SolveOutput{Success: false, Input: &input, ResultRating: 0, Printer: printer}
 		},
 	)
 }
 
 type SolveOutput struct {
 	Success      bool
+	Input        *SolveInput
 	SolvedSet    items.SolvableItemSet
 	FullSet      items.FullItemSet
 	ResultRating uint64

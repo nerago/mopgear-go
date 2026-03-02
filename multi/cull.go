@@ -82,7 +82,7 @@ func (param *MultiSetParam) cullingReport() {
 	}
 
 	slices.SortFunc(extraInfo, func(a, b extraInfoStruct) int {
-		return cmp.Or(cmp.Compare(b.count, a.count), cmp.Compare(a.itemId, b.itemId))
+		return cmp.Or(cmp.Compare(a.count, b.count), cmp.Compare(a.itemId, b.itemId))
 	})
 
 	param.job.printer.Printf("EXTRAS USED %s\n", param.Label)
