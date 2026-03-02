@@ -1,7 +1,6 @@
 package build
 
 import (
-	"context"
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/solver/channel"
@@ -12,21 +11,18 @@ const (
 	defaultEvaluateThreadCount = 12
 )
 
-func SolverBuildPeriodic_Run(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, printer *util.PrintRecorder) util.Optional[SolvableItemSet] {
+func SolverBuildPeriodic_Run(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, trackProgress *util.TrackProgress, printer *util.PrintRecorder) util.Optional[SolvableItemSet] {
 	printer.Printf("SOLVE PERIODIC2 %d\n", targetCount)
-	return evaluatePeriodic(itemOptions, model, targetCount, defaultEvaluateThreadCount, emptyPeekFunc)
+	return evaluatePeriodic(itemOptions, model, targetCount, trackProgress, defaultEvaluateThreadCount, emptyPeekFunc)
 }
 
-func evaluatePeriodic(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, threadCount int, peekFunc func(*SolvableItemSet)) util.Optional[SolvableItemSet] {
+func evaluatePeriodic(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, trackProgress *util.TrackProgress, threadCount int, peekFunc func(*SolvableItemSet)) util.Optional[SolvableItemSet] {
 	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
 	eachThreadCount := max(targetCount/uint64(threadCount), 1)
 	counters := make([]uint64, threadCount)
 	slotIndexBags := channel.MakeSlotIndexBags(itemOptions)
 
-	// track progress with cancel
-	ctx, cancel := context.WithCancel(context.Background())
-	go util.TrackProgressIntThreaded(ctx, &counters, targetCount)
-	defer cancel()
+	trackProgress.RunFromArray(&counters, targetCount)
 
 	for threadNum := range threadCount {
 		go evaluatePeriodicWorker(resultChannel, model, eachThreadCount, itemOptions, &slotIndexBags, uint64(threadNum), &counters[threadNum], peekFunc)

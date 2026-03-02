@@ -15,7 +15,7 @@ import (
 type commonComboOptions map[uint32][]items.FullItem
 
 func (job *MultiSetJob) determineCommon() commonComboOptions {
-	commonOptions, seenIn := searchParamOptions(job.params)
+	commonOptions, seenIn := searchParamOptions(&job.params)
 
 	applyFixedForges(job.fixedForge, &commonOptions, &job.printer)
 
@@ -26,11 +26,12 @@ func (job *MultiSetJob) determineCommon() commonComboOptions {
 	return commonOptions
 }
 
-func searchParamOptions(params []MultiSetParam) (commonComboOptions, map[uint32][]string) {
+func searchParamOptions(params *[]MultiSetParam) (commonComboOptions, map[uint32][]string) {
 	commonOptions := make(commonComboOptions)
 	seenIn := make(map[uint32][]string)
 
-	for _, param := range params {
+	for paramIndex := range *params {
+		param := &(*params)[paramIndex]
 		if param.IncludeInFirstPass {
 			grouped := groupById(param.itemOptions.AllItems())
 			for itemId, options := range grouped {
@@ -132,7 +133,7 @@ func (job *MultiSetJob) revisedComboActuallyUsed(outputs []solver.SolveOutput, i
 		shouldRemove := !hasGroup || len(groupArray) < 2
 		if shouldRemove && hasFixedForge {
 			printer.Printf("WOULD REMOVE COMMON BUT HAS fixedForge %d\n", itemId)
-		} else if (shouldRemove) {
+		} else if shouldRemove {
 			delete(revisedCombo, itemId)
 		}
 	}

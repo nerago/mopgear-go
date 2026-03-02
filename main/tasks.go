@@ -10,12 +10,12 @@ import (
 
 func basicReforge(itemOptions *FullOptionsMap, model *Model, printer *PrintRecorder) {
 	output := Solver(SolveInput{
-		ItemOptions: itemOptions, 
-		Model: model, 
-		PhasedAcceptable: false, 
-		TrackProgress: true, 
-		LongRun: true, 
-		Printer: nil})
+		ItemOptions:         itemOptions,
+		Model:               model,
+		PhasedAcceptable:    false,
+		EnableTrackProgress: true,
+		LongRun:             true,
+		Printer:             nil})
 	output.Report(printer)
 }
 

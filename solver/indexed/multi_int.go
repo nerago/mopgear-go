@@ -1,21 +1,17 @@
 package indexed
 
 import (
-	"context"
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/solver/solve_util"
 	"paladin_gearing_go/util"
 )
 
-func mainLoop_multiThread_int(itemOptions *SolvableOptionsMap, max, skip uint64, model *model.Model, peekFunc func(*SolvableItemSet)) util.Optional[SolvableItemSet] {
+func mainLoop_multiThread_int(itemOptions *SolvableOptionsMap, max, skip uint64, trackProgress *util.TrackProgress, model *model.Model, peekFunc func(*SolvableItemSet)) util.Optional[SolvableItemSet] {
 	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
 	counters := make([]uint64, threadCount)
 
-	// track progress with cancel
-	ctx, cancel := context.WithCancel(context.Background())
-	go util.TrackProgressIntThreaded(ctx, &counters, max/skip)
-	defer cancel()
+	trackProgress.RunFromArray(&counters, max/skip)
 
 	// start up workers
 	splits := solve_util.IndexSplitsInt(max, skip, threadCount)

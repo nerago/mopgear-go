@@ -1,6 +1,7 @@
 package build
 
 import (
+	"paladin_gearing_go/util"
 	"paladin_gearing_go/utiltest"
 	"testing"
 )
@@ -13,7 +14,7 @@ func TestPeriodicLiteStandardRun(t *testing.T) {
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluatePeriodic(options, model, targetCount, testingThreadCount, peekRecord.Add)
+	evaluatePeriodic(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
@@ -24,7 +25,7 @@ func TestPeriodicLiteMinimalRun(t *testing.T) {
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluatePeriodic(options, model, targetCount, testingThreadCount, peekRecord.Add)
+	evaluatePeriodic(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
@@ -35,7 +36,7 @@ func TestPeriodicLiteFullRun(t *testing.T) {
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluatePeriodic(options, model, targetCount, testingThreadCount, peekRecord.Add)
+	evaluatePeriodic(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
@@ -47,7 +48,7 @@ func TestRandomStandardRun(t *testing.T) {
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluateRandom(options, model, targetCount, testingThreadCount, peekRecord.Add)
+	evaluateRandom(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
@@ -58,7 +59,7 @@ func TestRandomMinimalRun(t *testing.T) {
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluateRandom(options, model, targetCount, testingThreadCount, peekRecord.Add)
+	evaluateRandom(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
@@ -69,7 +70,7 @@ func TestRandomFullRun(t *testing.T) {
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluateRandom(options, model, targetCount, testingThreadCount, peekRecord.Add)
+	evaluateRandom(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
@@ -81,7 +82,7 @@ func TestOverflowStandardRun(t *testing.T) {
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluateOverflow(options, model, targetCount, true, testingThreadCount, peekRecord.Add)
+	evaluateOverflow(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
@@ -92,7 +93,7 @@ func TestOverflowMinimalRun(t *testing.T) {
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluateOverflow(options, model, targetCount, true, testingThreadCount, peekRecord.Add)
+	evaluateOverflow(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
@@ -103,7 +104,7 @@ func TestOverflowFullRun(t *testing.T) {
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluateOverflow(options, model, targetCount, true, testingThreadCount, peekRecord.Add)
+	evaluateOverflow(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }

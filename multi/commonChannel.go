@@ -1,7 +1,6 @@
 package multi
 
 import (
-	"context"
 	"math/big"
 	"math/rand"
 	"paladin_gearing_go/items"
@@ -9,35 +8,32 @@ import (
 	"sync"
 )
 
-// const bufferSize = 256
-const additionalSetCount = 10
+const additionalSetEach uint64 = 64
+const additionalThreads uint64 = 2
 
 type commonCombo map[uint32]items.FullItem
 
-func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targetCount uint64) <-chan commonCombo {
-	eachThreadCount := max(targetCount/generateThreadCount, 1)
-	counters := make([]uint64, generateThreadCount)
-	// comboCount := combinationCount(commonOptions)
+func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targetCount uint64, trackProgress *util.TrackProgress) <-chan commonCombo {
+	counters := make([]uint64, generateThreadCount+additionalThreads)
+	additionalCount := additionalSetEach * additionalThreads
+	eachThreadCount := max((targetCount-additionalCount)/generateThreadCount, 1)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	go util.TrackProgressIntThreaded(ctx, &counters, targetCount)
+	trackProgress.RunFromArray(&counters, targetCount)
 
 	var waitGroup sync.WaitGroup
 	comboChannel := make(chan commonCombo)
-	// comboChannel := make(chan commonCombo, bufferSize)
+	waitGroup.Go(func() { makeBaselineWorker(&job.params, commonOptions, comboChannel) })
+	waitGroup.Go(func() { makeEquippedWorker(&job.params, commonOptions, comboChannel) })
+
 	for threadNum := range generateThreadCount {
 		waitGroup.Go(func() {
 			makeCommonWorker(commonOptions, eachThreadCount, threadNum, &counters[threadNum], comboChannel)
 		})
 	}
 
-	// waitGroup.Go(func() { makeBaselineWorker(job.params, commonOptions, comboChannel) })
-	// waitGroup.Go(func() { makeEquippedWorker(job.params, commonOptions, comboChannel) })
-
 	go func() {
 		waitGroup.Wait()
 		close(comboChannel)
-		cancel()
 	}()
 	return comboChannel
 }
@@ -60,13 +56,14 @@ func makeRandomCombo(commonOptions commonComboOptions, rng *rand.Rand) commonCom
 	return combo
 }
 
-func makeBaselineWorker(params []MultiSetParam, commonOptions commonComboOptions, comboChannel chan<- commonCombo) {
+func makeBaselineWorker(params *[]MultiSetParam, commonOptions commonComboOptions, comboChannel chan<- commonCombo) {
 	rng := rand.New(rand.NewSource(0xBA5E))
-	for _, param := range params {
-		for range additionalSetCount {
+	for paramIndex := range *params {
+		param := &(*params)[paramIndex]
+		for range additionalSetEach {
 			combo := make(commonCombo)
 
-			// copy what items in baseline set
+			// copy what items are in baseline set
 			for item := range param.baselineResult.FullSet.Items.AllItemSeq() {
 				combo[item.ItemId()] = *item
 			}
@@ -78,13 +75,14 @@ func makeBaselineWorker(params []MultiSetParam, commonOptions commonComboOptions
 	}
 }
 
-func makeEquippedWorker(params []MultiSetParam, commonOptions commonComboOptions, comboChannel chan<- commonCombo) {
+func makeEquippedWorker(params *[]MultiSetParam, commonOptions commonComboOptions, comboChannel chan<- commonCombo) {
 	rng := rand.New(rand.NewSource(0xE819))
-	for _, param := range params {
-		for range additionalSetCount {
+	for paramIndex := range *params {
+		param := &(*params)[paramIndex]
+		for range additionalSetEach {
 			combo := make(commonCombo)
 
-			// copy what items in equipped set
+			// copy what items are in equipped set
 			for item := range param.exactEquippedGear.AllItemSeq() {
 				combo[item.ItemId()] = *item
 			}

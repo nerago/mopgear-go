@@ -1,27 +1,23 @@
 package build
 
 import (
-	"context"
 	"math/rand"
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/util"
 )
 
-func SolverBuildRandom_Run(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, printer *util.PrintRecorder) util.Optional[SolvableItemSet] {
+func SolverBuildRandom_Run(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, trackProgress *util.TrackProgress, printer *util.PrintRecorder) util.Optional[SolvableItemSet] {
 	printer.Printf("SOLVE RANDOM %d\n", targetCount)
-	return evaluateRandom(itemOptions, model, targetCount, defaultEvaluateThreadCount, emptyPeekFunc)
+	return evaluateRandom(itemOptions, model, targetCount, trackProgress, defaultEvaluateThreadCount, emptyPeekFunc)
 }
 
-func evaluateRandom(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, threadCount int, peekFunc func(*SolvableItemSet)) util.Optional[SolvableItemSet] {
+func evaluateRandom(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, trackProgress *util.TrackProgress, threadCount int, peekFunc func(*SolvableItemSet)) util.Optional[SolvableItemSet] {
 	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
 	eachThreadCount := targetCount / uint64(threadCount)
 	counters := make([]uint64, threadCount)
 
-	// track progress with cancel
-	ctx, cancel := context.WithCancel(context.Background())
-	go util.TrackProgressIntThreaded(ctx, &counters, targetCount)
-	defer cancel()
+	trackProgress.RunFromArray(&counters, targetCount)
 
 	for threadNum := range threadCount {
 		go evaluateRandomWorker(resultChannel, model, eachThreadCount, itemOptions, uint64(threadNum), &counters[threadNum], peekFunc)

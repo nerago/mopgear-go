@@ -1,7 +1,6 @@
 package phased
 
 import (
-	"context"
 	"math/big"
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/model"
@@ -15,7 +14,7 @@ const (
 	filterTarget = 10000
 )
 
-func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64, trackProgress bool, printer *util.PrintRecorder) util.Optional[SolvableItemSet] {
+func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64, trackProgress *util.TrackProgress, printer *util.PrintRecorder) util.Optional[SolvableItemSet] {
 	skinnyOptions := toSkinnyOptions(itemOptions, model)
 
 	max := skinnyOptions.TotalCombinationCount()
@@ -57,24 +56,16 @@ func toKeys(uniqueMap map[SkinnyItem]bool) []SkinnyItem {
 	return keys
 }
 
-func makeSkinnyCombosMultiThread(itemOptions *SkinnyOptionsMap, model *Model, max, skip uint64, trackProgress bool) <-chan SkinnyItemSet {
+func makeSkinnyCombosMultiThread(itemOptions *SkinnyOptionsMap, model *Model, max, skip uint64, trackProgress *util.TrackProgress) <-chan SkinnyItemSet {
 	counters := make([]uint64, threadCount)
 
-	// track progress
-	var cancel context.CancelFunc
-	if trackProgress {
-		var ctx context.Context
-		ctx, cancel = context.WithCancel(context.Background())
-		go util.TrackProgressIntThreaded(ctx, &counters, max/skip)
-	} else {
-		cancel = emptyFunc
-	}
+	trackProgress.RunFromArray(&counters, max/skip)
 
 	// start up workers
 	splits := solve_util.IndexSplitsInt(max, skip, threadCount)
 	return util.Channel_GenerateAll_Multi(threadCount, func(threadNum int, skinnyCombos chan<- SkinnyItemSet) {
 		createWorkerRangeInt(itemOptions, model, splits[threadNum], splits[threadNum+1], skip, skinnyCombos, &counters[threadNum])
-	}, cancel)
+	}, emptyFunc)
 
 }
 
@@ -144,17 +135,19 @@ func makeFromSkinny(itemOptions *SolvableOptionsMap, model *Model, skinnySet *Sk
 	chosen := SolvableItemSet{}
 	for slot := Equip_Head; slot <= Equip_Offhand; slot++ {
 		skinny := &skinnySet.Items[slot]
-		options := itemOptions[slot]
+		if skinny.Exists {
+			options := itemOptions[slot]
 
-		best := util.BestCollector1[SolvableItem]{}
-		for _, item := range options {
-			if model.StatRequirements.SkinnyMatch(skinny, &item) {
-				rating := model.CalcRatingSolveItem(&item)
-				best.Offer(&item, rating)
+			best := util.BestCollector1[SolvableItem]{}
+			for _, item := range options {
+				if model.StatRequirements.SkinnyMatch(skinny, &item) {
+					rating := model.CalcRatingSolveItem(&item)
+					best.Offer(&item, rating)
+				}
 			}
-		}
 
-		chosen.AddItem_Mutating(slot, best.GetBestPointer())
+			chosen.AddItem_Mutating(slot, best.GetBestPointerOrPanic())
+		}
 	}
 	return chosen
 }

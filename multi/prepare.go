@@ -50,7 +50,6 @@ func (param *MultiSetParam) prepareExtraItems() {
 	for _, itemId := range param.extraItems {
 		param.includeExtra(itemId)
 	}
-	// TODO fixed slots
 }
 
 func (param *MultiSetParam) includeExtra(itemId uint32) {
@@ -146,16 +145,17 @@ func (job *MultiSetJob) validateMultiSetAlignItemSlots() {
 func (param *MultiSetParam) runBaseline() {
 	param.job.printer.Printf("BASELINE for %s\n", param.Label)
 	param.baselineResult = solver.Solver(solver.SolveInput{
-		ItemOptions:      &param.itemOptions,
-		Model:            &param.Model,
-		PhasedAcceptable: param.PhasedAcceptable,
-		TrackProgress:    true,
-		LongRun:          false,
-		Printer:          &param.job.printer})
+		ItemOptions:         &param.itemOptions,
+		Model:               &param.Model,
+		PhasedAcceptable:    param.PhasedAcceptable,
+		EnableTrackProgress: true,
+		LongRun:             false,
+		Printer:             &param.job.printer})
 
 	if !param.baselineResult.Success {
 		panic("failed to find baseline for " + param.Label)
 	}
+	param.baselineResult.Report(&param.job.printer)
 	param.seenInSolutions.Add(&param.baselineResult.FullSet)
 }
 

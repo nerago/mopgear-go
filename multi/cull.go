@@ -7,11 +7,7 @@ import (
 )
 
 func (job *MultiSetJob) SuggestCulls(targetCount uint64, topCapture int) {
-	job.prepareInitial()
-	commonOptions := job.determineCommon()
-	comboChannel := job.makeCommonChannel(commonOptions, targetCount)
-	proposedChannel := job.makeProposedChannel(comboChannel)
-	bestOutputs := job.evalutateTopN(proposedChannel, topCapture)
+	bestOutputs := job.runForTopN(targetCount, topCapture)
 
 	for _, best := range bestOutputs {
 		job.printer.Printf("::::::::: MULTI RATING %d ::::::::\n", best.TotalRatingSum)
@@ -25,8 +21,28 @@ func (job *MultiSetJob) SuggestCulls(targetCount uint64, topCapture int) {
 	job.cullingReport()
 }
 
+func (job *MultiSetJob) runForTopN(targetCount uint64, topCapture int) []MultiProposedOutput {
+	job.prepareInitial()
+	commonOptions := job.determineCommon()
+
+	trackProgress := util.TrackProgress_Start()
+
+	comboChannel := job.makeCommonChannel(commonOptions, targetCount, trackProgress)
+	proposedChannel := job.makeProposedChannel(comboChannel)
+	bestOutputs := job.evalutateTopN(proposedChannel, topCapture)
+
+	trackProgress.Stop()
+	return bestOutputs
+}
+
 func (job *MultiSetJob) cullingMakeRevisions(proposedList []MultiProposedOutput) {
 	job.printer.Printf("MAKE REVISIONS FOR %d\n", len(proposedList))
+
+	expectedSets := len(proposedList) * len(job.params) * revisedExtraSetsExpectedEach
+	trackProgress := util.TrackProgress_Start()
+	trackProgress.RunOuterTracking(expectedSets)
+	defer trackProgress.Stop()
+
 	util.Void_IterateEach_Multi_Blocking(generateThreadCount, proposedList, func(prior MultiProposedOutput) {
 		printer := util.PrintRecorder_HoldAll()
 		revisedCommon := job.revisedComboActuallyUsed(prior.Outputs, prior.Combo, printer)
@@ -36,7 +52,7 @@ func (job *MultiSetJob) cullingMakeRevisions(proposedList []MultiProposedOutput)
 
 			param.seenInSolutions.Add(&draft.FullSet)
 
-			revised := job.makeRevised(param, revisedCommon)
+			revised := job.makeRevised(param, revisedCommon, trackProgress)
 			for _, newOutput := range revised {
 				param.seenInSolutions.Add(&newOutput.FullSet)
 			}
@@ -59,6 +75,7 @@ func (param *MultiSetParam) cullingReport() {
 
 	extraInfo := make([]extraInfoStruct, 0, len(param.extraItems))
 	for _, itemId := range param.extraItems {
+		// TODO also include equipped?
 		seenCount := param.seenInSolutions.content[itemId]
 		info := extraInfoStruct{itemId: itemId, count: seenCount}
 		extraInfo = append(extraInfo, info)
@@ -73,7 +90,7 @@ func (param *MultiSetParam) cullingReport() {
 		if info.count == 0 {
 			param.job.printer.Printf("%d 0 NONE\n", info.itemId)
 		} else {
-			param.job.printer.Printf("%d 0 NONE\n", info.itemId)
+			param.job.printer.Printf("%d %d\n", info.itemId, info.count)
 		}
 	}
 }

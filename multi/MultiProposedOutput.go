@@ -83,11 +83,11 @@ func (job *MultiSetJob) subSolveCombo(combo commonCombo) *MultiProposedOutput {
 func (job *MultiSetJob) firstPassSolveCombo(combo commonCombo, param *MultiSetParam) solver.SolveOutput {
 	options := buildOptionsGivenCombo(param.itemOptions, combo)
 	return solver.Solver(solver.SolveInput{
-		ItemOptions:      &options,
-		Model:            &param.Model,
-		PhasedAcceptable: param.PhasedAcceptable,
-		TrackProgress:    false,
-		LongRun:          false})
+		ItemOptions:         &options,
+		Model:               &param.Model,
+		PhasedAcceptable:    param.PhasedAcceptable,
+		EnableTrackProgress: false,
+		LongRun:             false})
 }
 
 func (job *MultiSetJob) secondPassSolveCombo(baseCombo commonCombo, otherOutputList []solver.SolveOutput, param *MultiSetParam) solver.SolveOutput {
@@ -103,11 +103,11 @@ func (job *MultiSetJob) secondPassSolveCombo(baseCombo commonCombo, otherOutputL
 
 	options := buildOptionsGivenCombo(param.itemOptions, restrictedCombo)
 	return solver.Solver(solver.SolveInput{
-		ItemOptions:      &options,
-		Model:            &param.Model,
-		PhasedAcceptable: param.PhasedAcceptable,
-		TrackProgress:    false,
-		LongRun:          false})
+		ItemOptions:         &options,
+		Model:               &param.Model,
+		PhasedAcceptable:    param.PhasedAcceptable,
+		EnableTrackProgress: false,
+		LongRun:             false})
 }
 
 func buildOptionsGivenCombo(allOptions items.FullOptionsMap, combo commonCombo) items.FullOptionsMap {

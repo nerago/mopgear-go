@@ -20,18 +20,29 @@ const (
 )
 
 type SolveInput struct {
-	ItemOptions      *items.FullOptionsMap
-	Model            *model.Model
-	PhasedAcceptable bool
-	TrackProgress    bool
-	LongRun          bool
-	Printer          *util.PrintRecorder
+	ItemOptions         *items.FullOptionsMap
+	Model               *model.Model
+	PhasedAcceptable    bool
+	EnableTrackProgress bool
+	OuterTrackProgress  *util.TrackProgress
+	LongRun             bool
+	Printer             *util.PrintRecorder
 }
 
 func Solver(input SolveInput) SolveOutput {
 	printer := input.Printer
 	if printer == nil {
 		printer = util.PrintRecorder_HoldAll()
+	}
+
+	var trackProgress *util.TrackProgress
+	if input.OuterTrackProgress != nil {
+		trackProgress = input.OuterTrackProgress.MakeNested()
+	} else if input.EnableTrackProgress {
+		trackProgress = util.TrackProgress_Start()
+		defer trackProgress.Stop()
+	} else {
+		trackProgress = util.TrackProgress_Nop()
 	}
 
 	solveOptions := items.SolvableOptionsMap_of(input.ItemOptions)
@@ -66,11 +77,11 @@ func Solver(input SolveInput) SolveOutput {
 	// case 5:
 	// 	solvedSet = build.SolverBuildPeriodic_Run(&solveOptions, model, targetCount, &printer)
 	case 6:
-		solvedSet = build.SolverBuildOverflow_Run(&solveOptions, model, targetCount, input.TrackProgress, printer)
+		solvedSet = build.SolverBuildOverflow_Run(&solveOptions, model, targetCount, trackProgress, printer)
 	// case 7:
 	// 	solvedSet = build.SolverBuildRandom_Run(&solveOptions, model, targetCount, &printer)
 	case 8:
-		solvedSet = phased.SolverSkinnyPhasedIndex_Run(&solveOptions, model, targetCount, input.TrackProgress, printer)
+		solvedSet = phased.SolverSkinnyPhasedIndex_Run(&solveOptions, model, targetCount, trackProgress, printer)
 	}
 
 	// TODO bury tweaker into find best checks
