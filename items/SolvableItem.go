@@ -80,8 +80,10 @@ func (set *SolvableItemSet) AddItem_CreateNew(slot SlotEquip, item *SolvableItem
 		panic("slot not empty")
 	}
 
-	return SolvableItemSet{
-		Items:      set.Items.WithAdditional(slot, item),
-		TotalCap:   StatBlock_Add(&set.TotalCap, &item.TotalCap),
-		TotalRated: StatBlock_Add(&set.TotalRated, &item.TotalRated)}
+	result := SolvableItemSet{}
+	result.Items = set.Items
+	result.Items[slot] = item
+	StatBlock_Add_Into(&set.TotalCap, &item.TotalCap, &result.TotalCap)
+	StatBlock_Add_Into(&set.TotalRated, &item.TotalRated, &result.TotalRated)
+	return result
 }

@@ -78,10 +78,13 @@ func makeItemLevelToRandomAmount() map[uint16]uint32 {
 
 func addDetailFromEquip(item *items.FullItem, equipItem loaders.EquippedItem) {
 	if equipItem.RandomSuffix == -336 {
+		item.RandomSuffix = equipItem.RandomSuffix
+
 		stat := stats.Stat_Crit
 		amount := itemLevelToRandomAmount[item.Ref.ItemLevel]
-		item.ChangeBaseStats(item.StatBase.WithChange(stat, amount))
-		item.RandomSuffix = equipItem.RandomSuffix
+
+		item.StatBase[stat] = amount
+		item.ChangeDerivedStatFields()
 	} else if equipItem.RandomSuffix != 0 {
 		panic("unknown random suffix")
 	}
@@ -127,7 +130,8 @@ func calcGemsAndEnchants(item *items.FullItem, equipItem loaders.EquippedItem) {
 		total.Increment_Mutating(&item.SocketBonus)
 	}
 
-	item.ChangeEnchantStats(total)
+	item.StatEnchant = total
+	item.ChangeDerivedStatFields()
 }
 
 func addDetailUsingDefaults(item *items.FullItem, model *model.Model) {
@@ -169,5 +173,6 @@ func addDetailUsingDefaults(item *items.FullItem, model *model.Model) {
 		total.Increment_Mutating(&item.SocketBonus)
 	}
 
-	item.ChangeEnchantStats(total)
+	item.StatEnchant = total
+	item.ChangeDerivedStatFields()
 }

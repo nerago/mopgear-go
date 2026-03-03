@@ -30,7 +30,14 @@ func validate(block StatBlock) {
 }
 
 func StatRatingsWeights_Mix(weightA StatRatingsWeights, multiplyA uint32, weightB StatRatingsWeights, multiplyB uint32) StatRatingsWeights {
-	combined := StatBlock_Add_NoPointer(weightA.weight.MultiplyScalar(multiplyA), weightB.weight.MultiplyScalar(multiplyB))
+	scaleA := StatBlock{}
+	weightA.weight.MultiplyScalar(multiplyA, &scaleA)
+	scaleB := StatBlock{}
+	weightB.weight.MultiplyScalar(multiplyB, &scaleB)
+
+	combined := StatBlock{}
+	StatBlock_Add_Into(&scaleA, &scaleB, &combined)
+
 	validate(combined)
 	return StatRatingsWeights{combined}
 }

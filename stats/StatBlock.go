@@ -20,33 +20,29 @@ func StatBlock_of2(statA StatType, valueA uint32, statB StatType, valueB uint32)
 	return block
 }
 
-// func StatBlock_Add_NoPointer(a, b StatBlock) StatBlock {
-// 	result := StatBlock{}
-// 	for i := range a {
-// 		result[i] = a[i] + b[i]
-// 	}
-// 	return result
-// }
-
 func StatBlock_Add_Into(a, b, out *StatBlock) {
-	for i := range a {
-		out[i] = a[i] + b[i]
-	}
+	statBlock_Add_Into(a, b, out)
 }
+func statBlock_Add_Into(a, b, out *StatBlock)
 
-// func (block *StatBlock) Add(other *StatBlock) StatBlock {
-// 	return StatBlock_Add(block, other)
+// FALLBACK
+// func statBlock_Add_Into(a, b, out *StatBlock) {
+// 	for i := range a {
+// 		out[i] = a[i] + b[i]
+// 	}
 // }
 
 func (block *StatBlock) Increment_Mutating(other *StatBlock) {
 	statBlock_Increment_Mutating(block, other)
 }
+func statBlock_Increment_Mutating(block *StatBlock, other *StatBlock)
 
-func statBlock_Increment_Mutating(block *StatBlock, other *StatBlock) {
-	for i := range block {
-		block[i] += other[i]
-	}
-}
+// FALLBACK
+// func statBlock_Increment_Mutating(block *StatBlock, other *StatBlock) {
+// 	for i := range block {
+// 		block[i] += other[i]
+// 	}
+// }
 
 func (block *StatBlock) MultiplyForTotalSum(other *StatBlock) uint64 {
 	var result uint64 = 0
@@ -56,28 +52,10 @@ func (block *StatBlock) MultiplyForTotalSum(other *StatBlock) uint64 {
 	return result
 }
 
-func (block *StatBlock) MultiplyScalar(factor uint32) StatBlock {
-	result := StatBlock{}
+func (block *StatBlock) MultiplyScalar(factor uint32, out *StatBlock) {
 	for i := range block {
-		result[i] = block[i] * factor
+		out[i] = block[i] * factor
 	}
-	return result
-}
-
-func (block *StatBlock) WithChange(stat StatType, value uint32) StatBlock {
-	var result StatBlock = *block
-	result[stat] = value
-	return result
-}
-
-func (block *StatBlock) WithChange2(statA StatType, valueA uint32, statB StatType, valueB uint32) StatBlock {
-	var result StatBlock = *block
-	if statA == statB {
-		panic("expected different stats")
-	}
-	result[statA] = valueA
-	result[statB] = valueB
-	return result
 }
 
 func (block *StatBlock) IsEmpty() bool {

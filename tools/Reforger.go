@@ -57,7 +57,10 @@ func Reforger_SinglePreset(baseItem *FullItem, recipe *ReforgeRecipe) *FullItem 
 }
 
 func makeModified(baseItem *FullItem, source, target StatType, reforgeQuantity, remainQuantity uint32) *FullItem {
-	return baseItem.CopyChangedForReforge(
-		baseItem.StatBase.WithChange2(source, remainQuantity, target, reforgeQuantity),
-		ReforgeRecipe{From: source, To: target})
+	newItem := *baseItem
+	newItem.StatBase[source] = remainQuantity
+	newItem.StatBase[target] = reforgeQuantity
+	newItem.ChangeDerivedStatFields()
+	newItem.Reforge = ReforgeRecipe{From: source, To: target}
+	return &newItem
 }

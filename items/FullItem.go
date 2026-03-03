@@ -57,37 +57,13 @@ func FullItem_FromWowSim(ref ItemRef, slot SlotItem, baseName string, statBase s
 		statBase, stats.StatBlock_empty, statBase, statBase}
 }
 
-func (item *FullItem) CopyChangedForReforge(changedStat stats.StatBlock, reforge stats.ReforgeRecipe) *FullItem {
-	newItem := *item
-	newItem.ChangeBaseStats(changedStat)
-	newItem.Reforge = reforge
-	return &newItem
-}
-
-func derivedStatFields(slot SlotItem, statBase, statEnchant stats.StatBlock) (stats.StatBlock, stats.StatBlock) {
-	if statEnchant.IsEmpty() {
-		return statBase, statBase
-	} else if slot.AddEnchantToCap() {
-		sum := stats.StatBlock_Add_NoPointer(statBase, statEnchant)
-		return sum, sum
+func (item *FullItem) ChangeDerivedStatFields() {
+	stats.StatBlock_Add_Into(&item.StatBase, &item.StatEnchant, &item.TotalRated)
+	if item.Slot.AddEnchantToCap() {
+		item.TotalCap = item.TotalRated
 	} else {
-		sum := stats.StatBlock_Add_NoPointer(statBase, statEnchant)
-		return statBase, sum
+		item.TotalCap = item.StatBase
 	}
-}
-
-func (item *FullItem) ChangeBaseStats(changedBase stats.StatBlock) {
-	totalCap, totalRated := derivedStatFields(item.Slot, changedBase, item.StatEnchant)
-	item.StatBase = changedBase
-	item.TotalCap = totalCap
-	item.TotalRated = totalRated
-}
-
-func (item *FullItem) ChangeEnchantStats(changedEnchant stats.StatBlock) {
-	totalCap, totalRated := derivedStatFields(item.Slot, item.StatBase, changedEnchant)
-	item.StatEnchant = changedEnchant
-	item.TotalCap = totalCap
-	item.TotalRated = totalRated
 }
 
 func (item *FullItem) FullName() string {
