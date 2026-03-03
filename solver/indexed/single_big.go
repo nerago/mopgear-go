@@ -10,14 +10,13 @@ import (
 func mainLoop_singleThread_big(itemOptions *items.SolvableOptionsMap, max, skip *big.Int, trackProgress *util.TrackProgress, model *model.Model, peekFunc func(*items.SolvableItemSet)) util.Optional[items.SolvableItemSet] {
 	slotSizes := slotSizesBig(itemOptions)
 
-	var index big.Int
-	index.Set(big.NewInt(0))
+	index := big.NewInt(0)
 	best := util.BestCollector1[items.SolvableItemSet]{}
 
-	trackProgress.RunFromBigInt(&index, max)
+	trackProgress.RunFromBigInt(index, max)
 
 	for index.Cmp(max) < 0 {
-		set := makeSetBig(itemOptions, &slotSizes, &index)
+		set := makeSetBig(itemOptions, &slotSizes, index)
 		if peekFunc != nil {
 			peekFunc(&set)
 		}
@@ -25,7 +24,7 @@ func mainLoop_singleThread_big(itemOptions *items.SolvableOptionsMap, max, skip 
 			rating := model.CalcRatingSolve(&set)
 			best.Offer(&set, rating)
 		}
-		index.Add(&index, skip)
+		index.Add(index, skip)
 	}
 
 	return best.GetBestOptional()

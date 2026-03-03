@@ -4,6 +4,7 @@ import (
 	"iter"
 	"log"
 	"maps"
+	"math/big"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/stats"
@@ -13,6 +14,22 @@ import (
 )
 
 type commonComboOptions map[uint32][]items.FullItem
+
+func (optionsMap *commonComboOptions) TotalCombinationCount() *big.Int {
+	valueCount := 0
+	total := big.NewInt(1)
+	for _, slotArray := range *optionsMap {
+		slotSize := int64(len(slotArray))
+		if slotSize > 0 {
+			total.Mul(total, big.NewInt(slotSize))
+			valueCount++
+		}
+	}
+	if valueCount == 0 {
+		panic("empty options")
+	}
+	return total
+}
 
 func (job *MultiSetJob) determineCommon() commonComboOptions {
 	commonOptions, seenIn := searchParamOptions(&job.params)

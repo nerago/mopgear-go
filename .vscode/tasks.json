@@ -6,9 +6,9 @@
 			"label": "go: build optimised",
 			"command": "build",
 			"args": [
-				"-o", "main/_main_optimised.exe",
+				"-o", "main.exe",
 				"-v",
-				"-pgo=./main/default.pgo",
+				"-pgo=./main.pgo",
 				"./main"
 			],
 			"presentation": {
@@ -25,7 +25,7 @@
 		{
 			"type": "shell",
 			"label": "clean optimised",
-			"command": "rm main/_main_optimised.exe",
+			"command": "rm main.exe",
 			"presentation": {
 				"reveal": "silent"
 			},

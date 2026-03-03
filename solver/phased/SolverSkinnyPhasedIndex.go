@@ -83,6 +83,28 @@ func createWorkerRangeInt(itemOptions *SkinnyOptionsMap, model *Model, start, ma
 }
 
 func makeSkinnySetInt(itemOptions *SkinnyOptionsMap, mainIndex uint64) SkinnyItemSet {
+	set := SkinnyItemSet{}
+
+	currIndex := mainIndex
+
+	for slot, array := range itemOptions {
+		size := uint64(len(array))
+
+		if size > 0 {
+			slotIndex := currIndex % size
+			currIndex /= size
+
+			item := array[slotIndex]
+			set.Items[slot] = item
+			set.A += item.A
+			set.B += item.B
+		}
+	}
+
+	return set
+}
+
+func makeSkinnySetInt0(itemOptions *SkinnyOptionsMap, mainIndex uint64) SkinnyItemSet {
 	equip := SkinnyEquipMap{}
 	var a, b uint32
 

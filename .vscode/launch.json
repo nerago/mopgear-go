@@ -14,7 +14,7 @@
             "type": "go",
             "request": "launch",
             "mode": "exec",
-            "program": "main/_main_optimised.exe",
+            "program": "main.exe",
             "preLaunchTask": "go: build optimised",
             "postDebugTask": "clean optimised"
         },

@@ -22,14 +22,11 @@ func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targ
 
 	var waitGroup sync.WaitGroup
 	comboChannel := make(chan commonCombo)
-	waitGroup.Go(func() { makeBaselineWorker(&job.params, commonOptions, comboChannel) })
-	waitGroup.Go(func() { makeEquippedWorker(&job.params, commonOptions, comboChannel) })
+	waitGroup.Go(func() { makeBaselineWorker(&job.params, commonOptions, &counters[0], comboChannel) })
+	waitGroup.Go(func() { makeEquippedWorker(&job.params, commonOptions, &counters[1], comboChannel) })
 
-	for threadNum := range generateThreadCount {
-		waitGroup.Go(func() {
-			makeCommonWorker(commonOptions, eachThreadCount, threadNum, &counters[threadNum], comboChannel)
-		})
-	}
+	makeRandomThreads(&waitGroup, commonOptions, generateThreadCount/2, eachThreadCount, counters[2:2+generateThreadCount/2], comboChannel)
+	makeOverflowThreads(&waitGroup, commonOptions, generateThreadCount/2, eachThreadCount, counters[2+generateThreadCount/2:], comboChannel)
 
 	go func() {
 		waitGroup.Wait()
@@ -38,25 +35,7 @@ func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targ
 	return comboChannel
 }
 
-func makeCommonWorker(commonOptions commonComboOptions, loopCount uint64, threadNum int, doneCounter *uint64, comboChannel chan<- commonCombo) {
-	rng := rand.New(rand.NewSource(int64(threadNum)))
-	for range loopCount {
-		combo := makeRandomCombo(commonOptions, rng)
-		comboChannel <- combo
-		*doneCounter++
-	}
-}
-
-func makeRandomCombo(commonOptions commonComboOptions, rng *rand.Rand) commonCombo {
-	combo := make(commonCombo)
-	for itemId, options := range commonOptions {
-		index := rng.Intn(len(options))
-		combo[itemId] = options[index]
-	}
-	return combo
-}
-
-func makeBaselineWorker(params *[]MultiSetParam, commonOptions commonComboOptions, comboChannel chan<- commonCombo) {
+func makeBaselineWorker(params *[]MultiSetParam, commonOptions commonComboOptions, doneCounter *uint64, comboChannel chan<- commonCombo) {
 	rng := rand.New(rand.NewSource(0xBA5E))
 	for paramIndex := range *params {
 		param := &(*params)[paramIndex]
@@ -71,11 +50,12 @@ func makeBaselineWorker(params *[]MultiSetParam, commonOptions commonComboOption
 			fillOutRemainingOptions(commonOptions, combo, rng)
 
 			comboChannel <- combo
+			*doneCounter++
 		}
 	}
 }
 
-func makeEquippedWorker(params *[]MultiSetParam, commonOptions commonComboOptions, comboChannel chan<- commonCombo) {
+func makeEquippedWorker(params *[]MultiSetParam, commonOptions commonComboOptions, doneCounter *uint64, comboChannel chan<- commonCombo) {
 	rng := rand.New(rand.NewSource(0xE819))
 	for paramIndex := range *params {
 		param := &(*params)[paramIndex]
@@ -90,6 +70,7 @@ func makeEquippedWorker(params *[]MultiSetParam, commonOptions commonComboOption
 			fillOutRemainingOptions(commonOptions, combo, rng)
 
 			comboChannel <- combo
+			*doneCounter++
 		}
 	}
 }

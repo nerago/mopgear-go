@@ -19,11 +19,12 @@ func evaluateOverflow(itemOptions *SolvableOptionsMap, model *model.Model, targe
 	eachThreadCount := max(targetCount/uint64(threadCount), 1)
 	skip := chooseSkip_PrimeAndIsntSlotSize(itemOptions, targetCount)
 	counters := make([]uint64, threadCount)
+	slotSizes := makeSlotSizes(itemOptions)
 
 	trackProgress.RunFromArray(&counters, targetCount)
 
 	for threadNum := range threadCount {
-		go evaluateOverflowWorker(resultChannel, model, eachThreadCount, itemOptions, skip, uint64(threadNum), &counters[threadNum], peekFunc)
+		go evaluateOverflowWorker(resultChannel, model, eachThreadCount, itemOptions, &slotSizes, skip, uint64(threadNum), &counters[threadNum], peekFunc)
 	}
 
 	// combine each thread's best result
@@ -55,17 +56,16 @@ func isASlotSize(itemOptions *SolvableOptionsMap, skip uint64) bool {
 	return false
 }
 
-func evaluateOverflowWorker(resultChannel chan util.BestCollector1[SolvableItemSet], model *model.Model, eachThreadCount uint64, itemOptions *SolvableOptionsMap, skip uint64, threadNum uint64, processedCounter *uint64, peekFunc func(*SolvableItemSet)) {
+func evaluateOverflowWorker(resultChannel chan util.BestCollector1[SolvableItemSet], model *model.Model, eachThreadCount uint64, itemOptions *SolvableOptionsMap, slotSizes *[16]uint32, skip uint64, threadNum uint64, processedCounter *uint64, peekFunc func(*SolvableItemSet)) {
 	best := util.BestCollector1[SolvableItemSet]{}
 
-	indexes := [16]uint64{}
-	slotSizes := makeSlotSizes(itemOptions)
-	advanceArrays(&indexes, &slotSizes, skip*threadNum*eachThreadCount)
+	indexes := [16]uint32{}
+	advanceArrays(&indexes, slotSizes, skip*threadNum*eachThreadCount)
 
 	itemSet := new(SolvableItemSet)
 	for range eachThreadCount {
 		makeSetFromArraysDirect(itemOptions, &indexes, itemSet)
-		advanceArrays(&indexes, &slotSizes, skip)
+		advanceArrays(&indexes, slotSizes, skip)
 		if peekFunc != nil {
 			peekFunc(itemSet)
 		}
@@ -81,7 +81,7 @@ func evaluateOverflowWorker(resultChannel chan util.BestCollector1[SolvableItemS
 	resultChannel <- best
 }
 
-func makeSetFromArraysDirect(slotOptions *SolvableOptionsMap, slotIndexes *[16]uint64, itemSet *SolvableItemSet) {
+func makeSetFromArraysDirect(slotOptions *SolvableOptionsMap, slotIndexes *[16]uint32, itemSet *SolvableItemSet) {
 	itemSet.Items = items.SolvableEquipMap{}
 	itemSet.TotalCap = stats.StatBlock{}
 	itemSet.TotalRated = stats.StatBlock{}
@@ -97,13 +97,13 @@ func makeSetFromArraysDirect(slotOptions *SolvableOptionsMap, slotIndexes *[16]u
 	}
 }
 
-func advanceArrays(indexes *[16]uint64, sizes *[16]uint64, skip uint64) {
+func advanceArrays(indexes *[16]uint32, sizes *[16]uint32, skip uint64) {
 	for slot := range indexes {
-		slotSize := sizes[slot]
+		slotSize := uint64(sizes[slot])
 		if slotSize > 1 {
 			// TODO this still has issues if skip==slotSize, or a factor thereof
-			value := indexes[slot] + skip
-			indexes[slot] = value % slotSize
+			value := uint64(indexes[slot]) + skip
+			indexes[slot] = uint32(value % slotSize)
 			skip = value / slotSize
 			if skip == 0 {
 				return
@@ -112,10 +112,10 @@ func advanceArrays(indexes *[16]uint64, sizes *[16]uint64, skip uint64) {
 	}
 }
 
-func makeSlotSizes(itemOptions *SolvableOptionsMap) [16]uint64 {
-	slotSizes := [16]uint64{}
+func makeSlotSizes(itemOptions *SolvableOptionsMap) [16]uint32 {
+	slotSizes := [16]uint32{}
 	for slot, options := range itemOptions {
-		slotSizes[slot] = uint64(len(options))
+		slotSizes[slot] = uint32(len(options))
 	}
 	return slotSizes
 }

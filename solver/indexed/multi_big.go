@@ -29,13 +29,11 @@ func workerThreadRangeBig(itemOptions *SolvableOptionsMap, model *model.Model, s
 	best := util.BestCollector1[SolvableItemSet]{}
 	slotSizes := slotSizesBig(itemOptions)
 
-	var index big.Int
+	index := big.NewInt(0)
 	index.Set(start)
 
-	// fmt.Printf("WORKER %020d-%020d\n", start, max)
-
 	for index.Cmp(max) < 0 {
-		set := makeSetBig(itemOptions, &slotSizes, &index)
+		set := makeSetBig(itemOptions, &slotSizes, index)
 		if peekFunc != nil {
 			peekFunc(&set)
 		}
@@ -44,8 +42,8 @@ func workerThreadRangeBig(itemOptions *SolvableOptionsMap, model *model.Model, s
 			best.Offer(&set, rating)
 		}
 
-		index.Add(&index, skip)
-		(*doneCounter)++
+		index.Add(index, skip)
+		*doneCounter++
 	}
 
 	resultChannel <- best

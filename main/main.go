@@ -24,7 +24,7 @@ func main() {
 	startTime := time.Now()
 
 	if enableProfiling {
-		f, err := os.Create("default.pgo")
+		f, err := os.Create("main.pgo")
 		if err != nil {
 			panic(err)
 		}

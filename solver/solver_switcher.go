@@ -13,7 +13,7 @@ type SolveSize uint64
 
 const (
 	SolveSize_PerItem SolveSize = 100_000
-	SolveSize_Medium  SolveSize = 20_100_000
+	SolveSize_Medium  SolveSize = 20_000_000
 	SolveSize_Long    SolveSize = 100_000_000
 )
 
