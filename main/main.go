@@ -21,6 +21,33 @@ const (
 var printer = PrintRecorder{}
 
 func main() {
+	// a := stats.StatBlock{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+	// b := stats.StatBlock{7, 7, 7, 7, 7, 9, 9, 9, 9, 11, 11, 11}
+	// fmt.Println(a)
+	// fmt.Println(b)
+	// stats.StatBlock_Increment_Reference(&a, &b)
+	// fmt.Println(a)
+	// fmt.Println(b)
+	// fmt.Println()
+
+	// a = stats.StatBlock{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+	// b = stats.StatBlock{7, 7, 7, 7, 7, 9, 9, 9, 9, 11, 11, 11}
+	// fmt.Println(a)
+	// fmt.Println(b)
+	// stats.StatBlock_Increment_Assem(&a, &b)
+	// fmt.Println(a)
+	// fmt.Println(b)
+	// fmt.Println()
+
+	// a = stats.StatBlock{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+	// b = stats.StatBlock{7, 7, 7, 7, 7, 9, 9, 9, 9, 11, 11, 11}
+	// fmt.Println(a)
+	// fmt.Println(b)
+	// stats.StatBlock_Increment_Assem_Vec(&a, &b)
+	// fmt.Println(a)
+	// fmt.Println(b)
+	// fmt.Println()
+
 	startTime := time.Now()
 
 	if enableProfiling {

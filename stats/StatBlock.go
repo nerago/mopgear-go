@@ -20,27 +20,29 @@ func StatBlock_of2(statA StatType, valueA uint32, statB StatType, valueB uint32)
 	return block
 }
 
-func StatBlock_Add_NoPointer(a, b StatBlock) StatBlock {
-	result := StatBlock{}
+// func StatBlock_Add_NoPointer(a, b StatBlock) StatBlock {
+// 	result := StatBlock{}
+// 	for i := range a {
+// 		result[i] = a[i] + b[i]
+// 	}
+// 	return result
+// }
+
+func StatBlock_Add_Into(a, b, out *StatBlock) {
 	for i := range a {
-		result[i] = a[i] + b[i]
+		out[i] = a[i] + b[i]
 	}
-	return result
 }
 
-func StatBlock_Add(a, b *StatBlock) StatBlock {
-	result := StatBlock{}
-	for i := range a {
-		result[i] = a[i] + b[i]
-	}
-	return result
-}
-
-func (block *StatBlock) Add(other *StatBlock) StatBlock {
-	return StatBlock_Add(block, other)
-}
+// func (block *StatBlock) Add(other *StatBlock) StatBlock {
+// 	return StatBlock_Add(block, other)
+// }
 
 func (block *StatBlock) Increment_Mutating(other *StatBlock) {
+	statBlock_Increment_Mutating(block, other)
+}
+
+func statBlock_Increment_Mutating(block *StatBlock, other *StatBlock) {
 	for i := range block {
 		block[i] += other[i]
 	}
