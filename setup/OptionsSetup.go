@@ -98,12 +98,12 @@ func calcGemsAndEnchants(item *items.FullItem, equipItem loaders.EquippedItem) {
 		return
 	}
 
-	total := stats.StatBlock{}
+	item.StatEnchant = stats.StatBlock{}
 
 	if equipItem.EnchantChoice != 0 {
 		// TODO enchant validation
-		enchantValue := db.EnchantData_ById(equipItem.EnchantChoice)
-		total.Increment_Mutating(&enchantValue.Stats)
+		enchantInfo := db.EnchantData_ById(equipItem.EnchantChoice)
+		stats.StatBlock_Increment_Mutating(&item.StatEnchant, &enchantInfo.Stats)
 		item.EnchantChoice = equipItem.EnchantChoice
 	}
 
@@ -117,7 +117,7 @@ func calcGemsAndEnchants(item *items.FullItem, equipItem loaders.EquippedItem) {
 	for index, gemId := range equipItem.GemChoice {
 		gemInfo := db.GemData_ById(gemId)
 		gemChoice = append(gemChoice, gemInfo)
-		total.Increment_Mutating(&gemInfo.Stats)
+		stats.StatBlock_Increment_Mutating(&item.StatEnchant, &gemInfo.Stats)
 
 		socket := item.SocketSlots[index]
 		if !socket.SocketMatch(&gemInfo.Stats) {
@@ -127,10 +127,9 @@ func calcGemsAndEnchants(item *items.FullItem, equipItem loaders.EquippedItem) {
 	item.GemChoice = gemChoice
 
 	if socketBonusMet {
-		total.Increment_Mutating(&item.SocketBonus)
+		stats.StatBlock_Increment_Mutating(&item.StatEnchant, &item.SocketBonus)
 	}
 
-	item.StatEnchant = total
 	item.ChangeDerivedStatFields()
 }
 
@@ -142,12 +141,12 @@ func addDetailUsingDefaults(item *items.FullItem, model *model.Model) {
 		return
 	}
 
-	total := stats.StatBlock{}
+	item.StatEnchant = stats.StatBlock{}
 
-	enchantChoice := model.EnchantChoice.GetChoice(item.Slot)
-	if enchantChoice != nil {
-		total.Increment_Mutating(&enchantChoice.Stats)
-		item.EnchantChoice = enchantChoice.Id
+	enchantInfo := model.EnchantChoice.GetChoice(item.Slot)
+	if enchantInfo != nil {
+		stats.StatBlock_Increment_Mutating(&item.StatEnchant, &enchantInfo.Stats)
+		item.EnchantChoice = enchantInfo.Id
 	}
 
 	// TODO blacksmith status in params
@@ -161,7 +160,7 @@ func addDetailUsingDefaults(item *items.FullItem, model *model.Model) {
 		// NOTE unique engineering gems not checked
 		gemInfo := model.GemChoice.GetChoice(socketType)
 		gemChoice = append(gemChoice, *gemInfo)
-		total.Increment_Mutating(&gemInfo.Stats)
+		stats.StatBlock_Increment_Mutating(&item.StatEnchant, &gemInfo.Stats)
 
 		if !socketType.SocketMatch(&gemInfo.Stats) {
 			socketBonusMet = false
@@ -170,9 +169,8 @@ func addDetailUsingDefaults(item *items.FullItem, model *model.Model) {
 	item.GemChoice = gemChoice
 
 	if socketBonusMet {
-		total.Increment_Mutating(&item.SocketBonus)
+		stats.StatBlock_Increment_Mutating(&item.StatEnchant, &item.SocketBonus)
 	}
 
-	item.StatEnchant = total
 	item.ChangeDerivedStatFields()
 }

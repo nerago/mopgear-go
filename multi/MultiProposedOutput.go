@@ -112,20 +112,22 @@ func (job *MultiSetJob) secondPassSolveCombo(baseCombo commonCombo, otherOutputL
 
 func buildOptionsGivenCombo(allOptions items.FullOptionsMap, combo commonCombo) items.FullOptionsMap {
 	selectedOptions := items.FullOptionsMap{}
+	choicesAdded := make(map[uint32]bool)
 	for slot, slotOptions := range allOptions {
-		selectedOptions[slot] = buildOptionsGivenCombo_Slot(slotOptions, combo)
+		selectedOptions[slot] = buildOptionsGivenCombo_Slot(slotOptions, combo, choicesAdded)
 	}
 	return selectedOptions
 }
 
-func buildOptionsGivenCombo_Slot(slotOptions []items.FullItem, combo commonCombo) []items.FullItem {
+func buildOptionsGivenCombo_Slot(slotOptions []items.FullItem, combo commonCombo, choicesAdded map[uint32]bool) []items.FullItem {
 	selectedItems := make([]items.FullItem, 0, len(slotOptions))
-	choicesAdded := make(map[uint32]bool)
-	for _, item := range slotOptions {
+	clear(choicesAdded)
+	for i := range slotOptions {
+		item := &slotOptions[i]
 		itemId := item.ItemId()
 		chosenVersion, hasChoice := combo[itemId]
 		if !hasChoice {
-			selectedItems = append(selectedItems, item)
+			selectedItems = append(selectedItems, *item)
 		} else if !choicesAdded[itemId] {
 			selectedItems = append(selectedItems, chosenVersion)
 			choicesAdded[itemId] = true

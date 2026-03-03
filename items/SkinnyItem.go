@@ -13,3 +13,9 @@ type SkinnyItemSet struct {
 	A     uint32
 	B     uint32
 }
+
+func (set *SkinnyItemSet) Clear() {
+	set.Items = SkinnyEquipMap{}
+	set.A = 0
+	set.B = 0
+}

@@ -15,8 +15,8 @@
             "request": "launch",
             "mode": "exec",
             "program": "main.exe",
-            "preLaunchTask": "go: build optimised",
-            "postDebugTask": "clean optimised"
+            "preLaunchTask": "go: build optimised"
+            // "postDebugTask": "clean optimised"
         },
 
         {

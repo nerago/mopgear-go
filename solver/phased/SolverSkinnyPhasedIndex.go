@@ -14,6 +14,9 @@ const (
 	filterTarget = 10000
 )
 
+// var skinnyPool = sync.Pool{New: func() any { return new(SkinnyItemSet) }}
+// var solvablePool = sync.Pool{New: func() any { return new(SolvableItemSet) }}
+
 func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, targetCount uint64, trackProgress *util.TrackProgress, printer *util.PrintRecorder) util.Optional[SolvableItemSet] {
 	skinnyOptions := toSkinnyOptions(itemOptions, model)
 
@@ -24,9 +27,7 @@ func SolverSkinnyPhasedIndex_Run(itemOptions *SolvableOptionsMap, model *Model, 
 	printer.Printf("SOLVE PHASED %d %d %d\n", max, targetCombination, skip)
 
 	if max.IsUint64() && skip.IsUint64() {
-		skinnyComboChannel := makeSkinnyCombosMultiThread(&skinnyOptions, model, max.Uint64(), skip.Uint64(), trackProgress)
-		skinnyComboChannel = filterLowHitCombos(skinnyComboChannel)
-		return findBestSolvedMultiThread(itemOptions, model, skinnyComboChannel)
+		return makeSkinnyCombosMultiThread(&skinnyOptions, itemOptions, model, max.Uint64(), skip.Uint64(), trackProgress)
 	} else {
 		panic("too many combos for int")
 	}
@@ -56,38 +57,62 @@ func toKeys(uniqueMap map[SkinnyItem]bool) []SkinnyItem {
 	return keys
 }
 
-func makeSkinnyCombosMultiThread(itemOptions *SkinnyOptionsMap, model *Model, max, skip uint64, trackProgress *util.TrackProgress) <-chan SkinnyItemSet {
+func makeSkinnyCombosMultiThread(skinnyOptions *SkinnyOptionsMap, itemOptions *SolvableOptionsMap, model *Model, max, skip uint64, trackProgress *util.TrackProgress) util.Optional[SolvableItemSet] {
 	counters := make([]uint64, threadCount)
 
 	trackProgress.RunFromArray(&counters, max/skip)
 
 	// start up workers
 	splits := solve_util.IndexSplitsInt(max, skip, threadCount)
-	return util.Channel_GenerateAll_Multi(threadCount, func(threadNum int, skinnyCombos chan<- SkinnyItemSet) {
-		createWorkerRangeInt(itemOptions, model, splits[threadNum], splits[threadNum+1], skip, skinnyCombos, &counters[threadNum])
-	}, emptyFunc)
+	resultChannel := util.Channel_GenerateAll_Multi(threadCount, func(threadNum int, resultChannel chan<- util.BestCollector1[SolvableItemSet]) {
+		createWorkerRangeInt(skinnyOptions, itemOptions, model, splits[threadNum], splits[threadNum+1], skip, resultChannel, &counters[threadNum])
+	}, nil)
 
+	return util.BestCollector1_OfChannel(resultChannel, threadCount)
 }
 
-func createWorkerRangeInt(itemOptions *SkinnyOptionsMap, model *Model, start, max, skip uint64, skinnyCombos chan<- SkinnyItemSet, progressCounter *uint64) {
+func createWorkerRangeInt(skinnyOptions *SkinnyOptionsMap, itemOptions *SolvableOptionsMap, model *Model, start, max, skip uint64, resultChannel chan<- util.BestCollector1[SolvableItemSet], progressCounter *uint64) {
+	valueHeap := util.LowestNIntHeap_For(filterTarget)
+	best := util.BestCollector1[SolvableItemSet]{}
+
+	skinnySet := new(SkinnyItemSet)
+	solveSet := new(SolvableItemSet)
+
 	index := start
 	for index < max {
-		set := makeSkinnySetInt(itemOptions, index)
-		if model.CheckSetSkinny(&set) {
-			skinnyCombos <- set
+		makeSkinnySetInt(skinnyOptions, index, skinnySet)
+		index += skip
+
+		if model.CheckSetSkinny(skinnySet) {
+			skinnyRating := uint64(skinnySet.A + skinnySet.B)
+			if valueHeap.Offer(skinnyRating) {
+				makeFromSkinny(itemOptions, model, skinnySet, solveSet)
+
+				// assert still matches requirement, should be redundant
+				if !model.CheckSet(solveSet) {
+					panic("inconsistent cap calcuations")
+				}
+
+				solveRating := model.CalcRatingSolve(solveSet)
+				if best.OfferWithResult(solveSet, solveRating) {
+					solveSet = new(SolvableItemSet)
+				}
+			}
 		}
 
-		index += skip
-		(*progressCounter)++
+		*progressCounter++
 	}
+
+	resultChannel <- best
 }
 
-func makeSkinnySetInt(itemOptions *SkinnyOptionsMap, mainIndex uint64) SkinnyItemSet {
-	set := SkinnyItemSet{}
+func makeSkinnySetInt(itemOptions *SkinnyOptionsMap, mainIndex uint64, set *SkinnyItemSet) {
+	set.Clear()
 
 	currIndex := mainIndex
 
-	for slot, array := range itemOptions {
+	for slot := range itemOptions {
+		array := itemOptions[slot]
 		size := uint64(len(array))
 
 		if size > 0 {
@@ -100,118 +125,26 @@ func makeSkinnySetInt(itemOptions *SkinnyOptionsMap, mainIndex uint64) SkinnyIte
 			set.B += item.B
 		}
 	}
-
-	return set
 }
 
-func makeSkinnySetInt0(itemOptions *SkinnyOptionsMap, mainIndex uint64) SkinnyItemSet {
-	equip := SkinnyEquipMap{}
-	var a, b uint32
+func makeFromSkinny(itemOptions *SolvableOptionsMap, model *Model, skinnySet *SkinnyItemSet, chosen *SolvableItemSet) {
+	chosen.Clear()
 
-	currIndex := mainIndex
-
-	for slot, array := range itemOptions {
-		size := uint64(len(array))
-
-		if size > 0 {
-			slotIndex := currIndex % size
-			currIndex /= size
-
-			item := array[slotIndex]
-			equip[slot] = item
-			a += item.A
-			b += item.B
-		}
-	}
-
-	return SkinnyItemSet{Items: equip, A: a, B: b}
-}
-
-func findBestSolvedMultiThread(itemOptions *SolvableOptionsMap, model *Model, skinnyComboChannel <-chan SkinnyItemSet) util.Optional[SolvableItemSet] {
-	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
-
-	for range threadCount {
-		go findBestSolvedWorker(itemOptions, model, skinnyComboChannel, resultChannel)
-	}
-
-	return util.BestCollector1_OfChannel(resultChannel, threadCount)
-}
-
-func findBestSolvedWorker(itemOptions *SolvableOptionsMap, model *Model, skinnyComboChannel <-chan SkinnyItemSet, resultChannel chan util.BestCollector1[SolvableItemSet]) {
-	best := util.BestCollector1[SolvableItemSet]{}
-	for skinnySet := range skinnyComboChannel {
-		solveSet := makeFromSkinny(itemOptions, model, &skinnySet)
-
-		// assert still matches requirement, should be redundant
-		if !model.CheckSet(&solveSet) {
-			panic("inconsistent cap calcuations")
-		}
-
-		rating := model.CalcRatingSolve(&solveSet)
-		best.Offer(&solveSet, rating)
-	}
-	resultChannel <- best
-}
-
-func makeFromSkinny(itemOptions *SolvableOptionsMap, model *Model, skinnySet *SkinnyItemSet) SolvableItemSet {
-	chosen := SolvableItemSet{}
 	for slot := Equip_Head; slot <= Equip_Offhand; slot++ {
 		skinny := &skinnySet.Items[slot]
 		if skinny.Exists {
 			options := itemOptions[slot]
 
 			best := util.BestCollector1[SolvableItem]{}
-			for _, item := range options {
-				if model.StatRequirements.SkinnyMatch(skinny, &item) {
-					rating := model.CalcRatingSolveItem(&item)
-					best.Offer(&item, rating)
+			for i := range len(options) {
+				item := &options[i]
+				if model.StatRequirements.SkinnyMatch(skinny, item) {
+					rating := model.CalcRatingSolveItem(item)
+					best.Offer(item, rating)
 				}
 			}
 
 			chosen.AddItem_Mutating(slot, best.GetBestPointerOrPanic())
 		}
 	}
-	return chosen
 }
-
-func filterLowHitCombos(inputChannel <-chan SkinnyItemSet) <-chan SkinnyItemSet {
-	// TODO do we need to worry about duplicates?
-	return util.Channel_TransformAll_Multi(threadCount, inputChannel, func(inputChannel <-chan SkinnyItemSet, outputChannel chan<- SkinnyItemSet) {
-		valueHeap := util.LowestNIntHeap_For(filterTarget)
-		for itemSet := range inputChannel {
-			rating := uint64(itemSet.A + itemSet.B)
-			if valueHeap.Offer(rating) {
-				outputChannel <- itemSet
-			}
-		}
-	})
-}
-
-func filterLowHitCombos0(inputChannel <-chan SkinnyItemSet) <-chan SkinnyItemSet {
-	collectedChannel := make(chan util.LowestCollectorN[SkinnyItemSet])
-	for range threadCount {
-		go filterWorker(inputChannel, collectedChannel)
-	}
-	bestArray := util.LowestCollectorN_OfChannel(collectedChannel, threadCount)
-
-	// util.Channel_IterateEach_Multi()
-	outputChannel := make(chan SkinnyItemSet)
-	go func() {
-		for _, item := range bestArray {
-			outputChannel <- item
-		}
-		close(outputChannel)
-	}()
-	return outputChannel
-}
-
-func filterWorker(inputChannel <-chan SkinnyItemSet, collectedChannel chan<- util.LowestCollectorN[SkinnyItemSet]) {
-	best := util.LowestCollector_ForN(filterTarget, func(a, b *SkinnyItemSet) bool { return *a == *b })
-	for itemSet := range inputChannel {
-		rating := itemSet.A + itemSet.B
-		best.Offer(&itemSet, uint64(rating))
-	}
-	collectedChannel <- best
-}
-
-func emptyFunc() {}

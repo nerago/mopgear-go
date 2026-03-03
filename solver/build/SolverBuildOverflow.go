@@ -2,7 +2,6 @@ package build
 
 import (
 	"math/big"
-	"paladin_gearing_go/items"
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/stats"
@@ -64,8 +63,8 @@ func evaluateOverflowWorker(resultChannel chan util.BestCollector1[SolvableItemS
 
 	itemSet := new(SolvableItemSet)
 	for range eachThreadCount {
-		makeSetFromArraysDirect(itemOptions, &indexes, itemSet)
-		advanceArrays(&indexes, slotSizes, skip)
+		makeSetFromArraysAndAdvance(itemOptions, &indexes, itemSet, skip)
+		// advanceArrays(&indexes, slotSizes, skip)
 		if peekFunc != nil {
 			peekFunc(itemSet)
 		}
@@ -81,21 +80,40 @@ func evaluateOverflowWorker(resultChannel chan util.BestCollector1[SolvableItemS
 	resultChannel <- best
 }
 
-func makeSetFromArraysDirect(slotOptions *SolvableOptionsMap, slotIndexes *[16]uint32, itemSet *SolvableItemSet) {
-	itemSet.Items = items.SolvableEquipMap{}
-	itemSet.TotalCap = stats.StatBlock{}
-	itemSet.TotalRated = stats.StatBlock{}
+func makeSetFromArraysAndAdvance(slotOptions *SolvableOptionsMap, slotIndexes *[16]uint32, itemSet *SolvableItemSet, skip uint64) {
+	itemSet.Clear()
 	for slot := range slotOptions {
-		if slotOptions[slot] != nil {
+		slotSize := uint64(len(slotOptions[slot]))
+		if slotSize > 0 {
 			index := slotIndexes[slot]
 			item := &slotOptions[slot][index]
 
 			itemSet.Items[slot] = item
-			itemSet.TotalCap.Increment_Mutating(&item.TotalCap)
-			itemSet.TotalRated.Increment_Mutating(&item.TotalRated)
+			stats.StatBlock_Increment_Mutating(&itemSet.TotalCap, &item.TotalCap)
+			stats.StatBlock_Increment_Mutating(&itemSet.TotalRated, &item.TotalRated)
+
+			if slotSize > 1 && skip > 0 {
+				value := uint64(slotIndexes[slot]) + skip
+				slotIndexes[slot] = uint32(value % slotSize)
+				skip = value / slotSize
+			}
 		}
 	}
 }
+
+// func makeSetFromArraysDirect(slotOptions *SolvableOptionsMap, slotIndexes *[16]uint32, itemSet *SolvableItemSet) {
+// 	itemSet.Clear()
+// 	for slot := range slotOptions {
+// 		if slotOptions[slot] != nil {
+// 			index := slotIndexes[slot]
+// 			item := &slotOptions[slot][index]
+
+// 			itemSet.Items[slot] = item
+// 			stats.StatBlock_Increment_Mutating(&itemSet.TotalCap, &item.TotalCap)
+// 			stats.StatBlock_Increment_Mutating(&itemSet.TotalRated, &item.TotalRated)
+// 		}
+// 	}
+// }
 
 func advanceArrays(indexes *[16]uint32, sizes *[16]uint32, skip uint64) {
 	for slot := range indexes {

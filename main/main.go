@@ -6,6 +6,7 @@ import (
 	. "paladin_gearing_go/model"
 	. "paladin_gearing_go/setup"
 	. "paladin_gearing_go/util"
+	"runtime"
 	"runtime/pprof"
 	"time"
 )
@@ -55,6 +56,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		defer f.Close()
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
 	}
@@ -63,6 +65,18 @@ func main() {
 
 	timeTaken := time.Since(startTime)
 	printer.Println("Duration = " + timeTaken.String())
+
+	if enableProfiling {
+		f, err := os.Create("main-memory.pgo")
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+		runtime.GC()
+		if err := pprof.Lookup("allocs").WriteTo(f, 0); err != nil {
+            panic(err)
+        }
+	}
 }
 
 func core() {

@@ -49,8 +49,8 @@ func SolvableItemSet_Of(equipMap SolvableEquipMap) SolvableItemSet {
 	result := SolvableItemSet{equipMap, StatBlock{}, StatBlock{}}
 	for _, item := range equipMap {
 		if item != nil {
-			result.TotalCap.Increment_Mutating(&item.TotalCap)
-			result.TotalRated.Increment_Mutating(&item.TotalRated)
+			StatBlock_Increment_Mutating(&result.TotalCap, &item.TotalCap)
+			StatBlock_Increment_Mutating(&result.TotalRated, &item.TotalRated)
 		}
 	}
 	return result
@@ -65,14 +65,20 @@ func SolvableItemSet_SingleItem(slot SlotEquip, item *SolvableItem) SolvableItem
 		TotalRated: item.TotalRated}
 }
 
+func (set *SolvableItemSet) Clear() {
+	set.Items = SolvableEquipMap{}
+	set.TotalCap = StatBlock{}
+	set.TotalRated = StatBlock{}
+}
+
 func (set *SolvableItemSet) AddItem_Mutating(slot SlotEquip, item *SolvableItem) {
 	if set.Items[slot] != nil {
 		panic("slot not empty")
 	}
 
 	set.Items[slot] = item
-	set.TotalCap.Increment_Mutating(&item.TotalCap)
-	set.TotalRated.Increment_Mutating(&item.TotalRated)
+	StatBlock_Increment_Mutating(&set.TotalCap, &item.TotalCap)
+	StatBlock_Increment_Mutating(&set.TotalRated, &item.TotalRated)
 }
 
 func (set *SolvableItemSet) AddItem_CreateNew(slot SlotEquip, item *SolvableItem) SolvableItemSet {

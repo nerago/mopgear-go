@@ -1,6 +1,6 @@
 #include "textflag.h"
 
-TEXT ·statBlock_Increment_Mutating(SB), NOSPLIT|NOFRAME, $0-16
+TEXT ·StatBlock_Increment_Mutating(SB), NOSPLIT|NOFRAME, $0-16
     MOVQ    block+0(FP), AX
     MOVQ    other+8(FP), BX
  
@@ -15,7 +15,7 @@ TEXT ·statBlock_Increment_Mutating(SB), NOSPLIT|NOFRAME, $0-16
 	RET
 
 // active version
-TEXT ·statBlock_Add_Into(SB), NOSPLIT|NOFRAME, $0-24
+TEXT ·StatBlock_Add_Into(SB), NOSPLIT|NOFRAME, $0-24
     MOVQ    a+0(FP),  AX
     MOVQ    b+8(FP),  BX
     MOVQ    c+16(FP), CX

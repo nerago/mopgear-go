@@ -20,27 +20,21 @@ func StatBlock_of2(statA StatType, valueA uint32, statB StatType, valueB uint32)
 	return block
 }
 
-func StatBlock_Add_Into(a, b, out *StatBlock) {
-	statBlock_Add_Into(a, b, out)
-}
-func statBlock_Add_Into(a, b, out *StatBlock)
+func StatBlock_Add_Into(a, b, out *StatBlock)
 
 // FALLBACK
-// func statBlock_Add_Into(a, b, out *StatBlock) {
+// func StatBlock_Add_Into(a, b, out *StatBlock) {
 // 	for i := range a {
 // 		out[i] = a[i] + b[i]
 // 	}
 // }
 
-func (block *StatBlock) Increment_Mutating(other *StatBlock) {
-	statBlock_Increment_Mutating(block, other)
-}
-func statBlock_Increment_Mutating(block *StatBlock, other *StatBlock)
+func StatBlock_Increment_Mutating(mutate *StatBlock, other *StatBlock)
 
 // FALLBACK
-// func statBlock_Increment_Mutating(block *StatBlock, other *StatBlock) {
+// func StatBlock_Increment_Mutating(mutate *StatBlock, other *StatBlock) {
 // 	for i := range block {
-// 		block[i] += other[i]
+// 		mutate[i] += other[i]
 // 	}
 // }
 

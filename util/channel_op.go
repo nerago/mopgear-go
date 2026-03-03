@@ -112,7 +112,9 @@ func Channel_GenerateAll_Multi[R any](threadCount int, generateSubGroup func(int
 	go func() {
 		waitGroup.Wait()
 		close(outputChannel)
-		after()
+		if after != nil {
+			after()
+		}
 	}()
 	return outputChannel
 }
