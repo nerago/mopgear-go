@@ -1,0 +1,125 @@
+syntax = "proto3";
+package proto;
+
+option go_package = "./proto";
+
+import "common.proto";
+// DO NOT REMOVE THE COMMENTS
+// BEGIN GENERATED
+// MageTalents message.
+message MageTalents {
+    bool presence_of_mind = 1;
+    bool blazing_speed = 2;
+    bool ice_floes = 3;
+    bool temporal_shield = 4;
+    bool flameglow = 5;
+    bool ice_barrier = 6;
+    bool ring_of_frost = 7;
+    bool ice_ward = 8;
+    bool frostjaw = 9;
+    bool greater_invisibility = 10;
+    bool cauterize = 11;
+    bool cold_snap = 12;
+    bool nether_tempest = 13;
+    bool living_bomb = 14;
+    bool frost_bomb = 15;
+    bool invocation = 16;
+    bool rune_of_power = 17;
+    bool incanters_ward = 18;
+}
+
+enum MageMajorGlyph {
+    MageMajorGlyphNone = 0;
+    GlyphOfArcaneExplosion = 42736;
+    GlyphOfBlink = 42737;
+    GlyphOfEvocation = 42738;
+    GlyphOfCombustion = 42739;
+    GlyphOfFrostNova = 42741;
+    GlyphOfIceBlock = 42744;
+    GlyphOfSplittingIce = 42745;
+    GlyphOfConeOfCold = 42746;
+    GlyphOfRapidDisplacement = 42748;
+    GlyphOfManaGem = 42749;
+    GlyphOfPolymorph = 42752;
+    GlyphOfIcyVeins = 42753;
+    GlyphOfSpellsteal = 42754;
+    GlyphOfFrostfireBolt = 44684;
+    GlyphOfRemoveCurse = 44920;
+    GlyphOfArcanePower = 44955;
+    GlyphOfWaterElemental = 45736;
+    GlyphOfSlow = 45737;
+    GlyphOfDeepFreeze = 45740;
+    GlyphOfCounterspell = 50045;
+    GlyphOfInfernoBlast = 63539;
+    GlyphOfArmors = 69773;
+}
+
+enum MageMinorGlyph {
+    MageMinorGlyphNone = 0;
+    GlyphOfLooseMana = 42735;
+    GlyphOfMomentum = 42743;
+    GlyphOfCrittermorph = 42751;
+    GlyphOfThePorcupine = 43339;
+    GlyphOfConjureFamiliar = 43359;
+    GlyphOfTheMonkey = 43360;
+    GlyphOfThePenguin = 43361;
+    GlyphOfTheBearCub = 43362;
+    GlyphOfArcaneLanguage = 43364;
+    GlyphOfIllusion = 45738;
+    GlyphOfMirrorImage = 45739;
+    GlyphOfRapidTeleportation = 63416;
+    GlyphOfDiscreetMagic = 92727;
+    GlyphOfTheUnboundElemental = 104104;
+    GlyphOfEvaporation = 104105;
+    GlyphOfCondensation = 104106;
+}
+
+// END GENERATED
+
+enum MageArmor{
+	MageArmorNone = 0;
+	MageArmorMageArmor = 1; // Mage Armor
+	MageArmorFrostArmor = 2; // Ice Armor
+	MageArmorMoltenArmor = 3; // Molten Armor
+}
+message MageOptions {
+	MageArmor default_mage_armor = 1;
+}
+
+message ArcaneMage {
+	message Rotation {
+	}
+
+	message Options {
+		MageOptions class_options = 1;
+	}
+	Options options = 1;
+}
+
+message FireMage {
+	message Rotation {
+		// Minimum Combustion threshold to cast Combustion at during lust
+		int32 combust_always_send = 1;
+		int32 combust_bloodlust = 2;
+		int32 combust_post_alter = 3;
+		int32 combust_no_alter = 4;
+		int32 combust_end_of_combat = 5;
+	}
+
+	message Options {
+		MageOptions class_options = 1;
+	}
+	Options options = 1;
+}
+
+message FrostMage {
+	message Rotation {
+	}
+
+	message Options {
+		MageOptions class_options = 1;
+		// Chance for water elemental to disobey, doing nothing rather than cast.
+		double water_elemental_disobey_chance = 2;
+	}
+	Options options = 1;
+}

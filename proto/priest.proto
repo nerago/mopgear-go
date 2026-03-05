@@ -1,0 +1,125 @@
+syntax = "proto3";
+package proto;
+
+option go_package = "./proto";
+
+import "common.proto";
+// DO NOT REMOVE THE COMMENTS
+// BEGIN GENERATED
+// PriestTalents message.
+message PriestTalents {
+    bool void_tendrils = 1;
+    bool psyfiend = 2;
+    bool dominate_mind = 3;
+    bool body_and_soul = 4;
+    bool angelic_feather = 5;
+    bool phantasm = 6;
+    bool from_darkness_comes_light = 7;
+    bool mindbender = 8;
+    bool solace_and_insanity = 9;
+    bool desperate_prayer = 10;
+    bool spectral_guise = 11;
+    bool angelic_bulwark = 12;
+    bool twist_of_fate = 13;
+    bool power_infusion = 14;
+    bool divine_insight = 15;
+    bool cascade = 16;
+    bool divine_star = 17;
+    bool halo = 18;
+}
+
+enum PriestMajorGlyph {
+    PriestMajorGlyphNone = 0;
+    GlyphOfCircleOfHealing = 42396;
+    GlyphOfPurify = 42397;
+    GlyphOfFade = 42398;
+    GlyphOfFearWard = 42399;
+    GlyphOfInnerSanctum = 42400;
+    GlyphOfHolyNova = 42401;
+    GlyphOfInnerFire = 42402;
+    GlyphOfDeepWells = 42403;
+    GlyphOfMassDispel = 42404;
+    GlyphOfPsychicHorror = 42405;
+    GlyphOfHolyFire = 42406;
+    GlyphOfWeakenedSoul = 42407;
+    GlyphOfPowerWordShield = 42408;
+    GlyphOfSpiritOfRedemption = 42409;
+    GlyphOfPsychicScream = 42410;
+    GlyphOfRenew = 42411;
+    GlyphOfScourgeImprisonment = 42412;
+    GlyphOfMindBlast = 42414;
+    GlyphOfDispelMagic = 42415;
+    GlyphOfSmite = 42416;
+    GlyphOfPrayerOfMending = 42417;
+    GlyphOfLevitate = 43370;
+    GlyphOfReflectiveShield = 43372;
+    GlyphOfDispersion = 45753;
+    GlyphOfLeapOfFaith = 45755;
+    GlyphOfPenance = 45756;
+    GlyphOfFocusedMending = 45757;
+    GlyphOfMindSpike = 45758;
+    GlyphOfBindingHeal = 45760;
+    GlyphOfMindFlay = 79513;
+    GlyphOfShadowWordDeath = 79514;
+    GlyphOfVampiricEmbrace = 79515;
+    GlyphOfLightspring = 87875;
+    GlyphOfLightwell = 87902;
+}
+
+enum PriestMinorGlyph {
+    PriestMinorGlyphNone = 0;
+    GlyphOfShadowRavens = 43342;
+    GlyphOfBorrowedTime = 43371;
+    GlyphOfShackleUndead = 43373;
+    GlyphOfDarkArchangel = 43374;
+    GlyphOfShadow = 77101;
+    GlyphOfTheHeavens = 79538;
+    GlyphOfConfession = 86541;
+    GlyphOfHolyResurrection = 87276;
+    GlyphOfTheValkyr = 87277;
+    GlyphOfShadowyFriends = 87392;
+    GlyphOfAngels = 104109;
+    GlyphOfTheSha = 104120;
+    GlyphOfShiftedAppearances = 104121;
+    GlyphOfInspiredHymns = 104122;
+}
+
+// END GENERATED
+
+message PriestOptions {
+	enum Armor {
+		NoArmor = 0;
+		InnerFire = 1;
+	}
+	Armor armor = 1;
+	bool use_shadowfiend = 2;
+}
+
+message DisciplinePriest {
+	message Rotation {}
+
+	message Options {
+		PriestOptions class_options = 1;
+		UnitReference power_infusion_target = 2;
+	}
+	Options options = 3;
+}
+
+message HolyPriest {
+	message Rotation {}
+
+	message Options {
+		PriestOptions class_options = 1;
+	}
+	Options options = 3;
+}
+
+message ShadowPriest {
+	message Rotation {}
+
+	message Options {
+		PriestOptions class_options = 1;
+		UnitReference power_infusion_target = 2;
+	}
+	Options options = 3;
+}

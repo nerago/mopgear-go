@@ -1,0 +1,4 @@
+// Set color variables which control the site theme.
+.arcane-mage-sim-ui {
+	@include theme-color($mage, 0.95, '/mop/assets/img/mage_background.jpg');
+}

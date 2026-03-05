@@ -1,0 +1,178 @@
+package marksmanship
+
+import (
+	"time"
+
+	"github.com/wowsims/mop/sim/core"
+	"github.com/wowsims/mop/sim/hunter"
+)
+
+func (mm *MarksmanshipHunter) ApplySpecialization() {
+	mm.SteadyFocusAura()
+	mm.PiercingShotsAura()
+	mm.MasterMarksmanAura()
+
+	//Careful Aim
+	caCritMod := mm.AddDynamicMod(core.SpellModConfig{
+		Kind:       core.SpellMod_BonusCrit_Percent,
+		ClassMask:  hunter.HunterSpellAimedShot | hunter.HunterSpellSteadyShot,
+		FloatValue: 75,
+	})
+
+	mm.RegisterResetEffect(func(sim *core.Simulation) {
+		caCritMod.Activate()
+		sim.RegisterExecutePhaseCallback(func(sim *core.Simulation, isExecute int32) {
+			caCritMod.Deactivate()
+		})
+	})
+
+	bombardmentAura := core.BlockPrepull(mm.RegisterAura(core.Aura{
+		Label:    "Bombardment",
+		ActionID: core.ActionID{SpellID: 35110},
+		Duration: time.Second * 6,
+	})).AttachSpellMod(core.SpellModConfig{
+		Kind:       core.SpellMod_DamageDone_Pct,
+		ClassMask:  hunter.HunterSpellMultiShot,
+		FloatValue: 0.6,
+	}).AttachSpellMod(core.SpellModConfig{
+		Kind:      core.SpellMod_PowerCost_Flat,
+		ClassMask: hunter.HunterSpellMultiShot,
+		IntValue:  -20,
+	})
+
+	mm.MakeProcTriggerAura(core.ProcTrigger{
+		Name:           "Bombardment Trigger",
+		Callback:       core.CallbackOnSpellHitDealt,
+		ClassSpellMask: hunter.HunterSpellMultiShot,
+		Outcome:        core.OutcomeCrit,
+
+		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
+			bombardmentAura.Activate(sim)
+		},
+	})
+}
+
+func (mm *MarksmanshipHunter) MasterMarksmanAura() {
+	var counter *core.Aura
+	mm.readySetAimAura = core.BlockPrepull(mm.RegisterAura(core.Aura{
+		Label:    "Ready, Set, Aim...",
+		ActionID: core.ActionID{SpellID: 82925},
+		Duration: time.Second * 8,
+		OnCastComplete: func(aura *core.Aura, sim *core.Simulation, spell *core.Spell) {
+			if spell.Matches(hunter.HunterSpellAimedShot) && spell.CurCast.Cost == 0 {
+				aura.Deactivate(sim) // Consume effect
+			}
+		},
+	}))
+
+	counter = mm.RegisterAura(core.Aura{
+		Label:     "Master Marksman",
+		Duration:  time.Second * 30,
+		ActionID:  core.ActionID{SpellID: 34487},
+		MaxStacks: 2,
+	})
+
+	mm.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Master Marksman Internal",
+		Callback:           core.CallbackOnCastComplete,
+		ClassSpellMask:     hunter.HunterSpellSteadyShot,
+		ProcChance:         0.5,
+		TriggerImmediately: true,
+
+		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
+			if counter.GetStacks() == 2 {
+				mm.readySetAimAura.Activate(sim)
+				counter.Deactivate(sim)
+			} else {
+				if !counter.IsActive() {
+					counter.Activate(sim)
+				}
+				counter.AddStack(sim)
+			}
+		},
+	})
+}
+func (mm *MarksmanshipHunter) SteadyFocusAura() {
+	attackspeedMultiplier := core.TernaryFloat64(mm.CouldHaveSetBonus(hunter.YaungolSlayersBattlegear, 4), 1.25, 1.15)
+	mm.steadyFocusAura = core.BlockPrepull(mm.RegisterAura(core.Aura{
+		Label:    "Steady Focus",
+		ActionID: core.ActionID{SpellID: 53224, Tag: 1},
+		Duration: time.Second * 20,
+
+		OnGain: func(aura *core.Aura, sim *core.Simulation) {
+			aura.Unit.MultiplyRangedSpeed(sim, attackspeedMultiplier)
+		},
+		OnExpire: func(aura *core.Aura, sim *core.Simulation) {
+			aura.Unit.MultiplyRangedSpeed(sim, 1/attackspeedMultiplier)
+		},
+	}))
+
+	core.MakePermanent(mm.RegisterAura(core.Aura{
+		Label:     "Steady Focus Counter",
+		ActionID:  core.ActionID{SpellID: 53224, Tag: 2},
+		MaxStacks: 2,
+		OnApplyEffects: func(aura *core.Aura, sim *core.Simulation, target *core.Unit, spell *core.Spell) {
+			if spell.ProcMask.Matches(core.ProcMaskRangedAuto) || spell.ActionID.SpellID == 0 || !spell.Flags.Matches(core.SpellFlagAPL) {
+				return
+			}
+
+			if !spell.Matches(hunter.HunterSpellSteadyShot) {
+				aura.SetStacks(sim, 1)
+			} else {
+				if aura.GetStacks() == 2 {
+					mm.steadyFocusAura.Activate(sim)
+					aura.SetStacks(sim, 1)
+				} else {
+					aura.SetStacks(sim, 2)
+				}
+			}
+		},
+	}))
+}
+
+func (mm *MarksmanshipHunter) PiercingShotsAura() {
+	psSpell := mm.RegisterSpell(core.SpellConfig{
+		ActionID:    core.ActionID{SpellID: 53238},
+		SpellSchool: core.SpellSchoolPhysical,
+		ProcMask:    core.ProcMaskEmpty,
+		Flags:       core.SpellFlagNoOnCastComplete | core.SpellFlagIgnoreModifiers | core.SpellFlagPassiveSpell,
+
+		DamageMultiplier: 1,
+		ThreatMultiplier: 1,
+
+		Dot: core.DotConfig{
+			Aura: core.Aura{
+				Label:    "PiercingShots",
+				Duration: time.Second * 8,
+			},
+			NumberOfTicks: 8,
+			TickLength:    time.Second * 1,
+			OnTick: func(sim *core.Simulation, target *core.Unit, dot *core.Dot) {
+				// Specifically account for bleed modifiers, since it still affects the spell, but we're ignoring all modifiers.
+				dot.SnapshotAttackerMultiplier = target.PseudoStats.PeriodicPhysicalDamageTakenMultiplier
+				dot.CalcAndDealPeriodicSnapshotDamage(sim, target, dot.OutcomeTick)
+			},
+		},
+
+		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
+			spell.Dot(target).Apply(sim)
+			spell.CalcAndDealOutcome(sim, target, spell.OutcomeAlwaysHitNoHitCounter)
+		},
+	})
+
+	mm.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Piercing Shots Talent",
+		Callback:           core.CallbackOnSpellHitDealt,
+		ClassSpellMask:     hunter.HunterSpellAimedShot | hunter.HunterSpellSteadyShot | hunter.HunterSpellChimeraShot,
+		Outcome:            core.OutcomeCrit,
+		TriggerImmediately: true,
+
+		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
+			dot := psSpell.Dot(result.Target)
+			newDamage := result.Damage * 0.3
+
+			dot.SnapshotBaseDamage = (dot.OutstandingDmg() + newDamage) / float64(dot.BaseTickCount+core.TernaryInt32(dot.IsActive(), 1, 0))
+			psSpell.Cast(sim, result.Target)
+		},
+	})
+}

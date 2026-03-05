@@ -1,0 +1,16 @@
+package frost
+
+import (
+	"github.com/wowsims/mop/sim/core"
+	"github.com/wowsims/mop/sim/mage"
+)
+
+func (frost *FrostMage) registerHotfixes() {
+	// 2025-09-22 - Frostbolt/Frostfire bolt damage increased by 15%
+	// 2025-11-13 - Frostbolt/Frostfire bolt damage decreased to 5% (was 15%)
+	frost.AddStaticMod(core.SpellModConfig{
+		ClassMask:  mage.MageSpellFrostbolt | mage.MageSpellFrostfireBolt | mage.MageSpellIceLance,
+		Kind:       core.SpellMod_DamageDone_Pct,
+		FloatValue: 0.05,
+	})
+}
