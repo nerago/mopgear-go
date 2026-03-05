@@ -20,12 +20,12 @@ func PaladinMultiRun() {
 	protDps.AddExtraItems([]uint32{
 		86957, // heroic bladed tempest ring
 		95140, // shado assault band
-		86946, // ruby signet heroic
+		//                                86946, // ruby signet heroic
 		95513, // scaled tyrant normal
 
 		87015, // heroic clawfeet
 		86979, // heroic impaling treads
-		94726, // cloudbreaker belt
+		96373, // cloudbreaker belt heroic
 		87024, // null greathelm
 		94942, // hydra bloodcloak
 
@@ -37,24 +37,25 @@ func PaladinMultiRun() {
 		96533, // rein-binders fists heroic
 
 		95910, // ret tier15 chest celestial
-		95281, // ret tier15 gloves normal
-		95914, // ret tier15 shoulder celestial
+		//      95281, // ret tier15 gloves normal
+		//      95914, // ret tier15 shoulder celestial
 
-		96667, // prot tier15 leg heroic
-		96668, // prot tier15 shoulder heroic
+		//      96667, // prot tier15 leg heroic
+		//      96668, // prot tier15 shoulder heroic
 
 		95142, // striker's battletags
 		95205, // terra-cotta neck
-		87036, // soulgrasp heroic
+		//      87036, // soulgrasp heroic
 		94776, // primal turtle amulet
 
 		96182, // ultimate prot of the emperor thunder
 
-		87145, // defiled earth
-		89934, // soul bracer
+		//      87145, // defiled earth
+		//      89934, // soul bracer
 		94820, // caustic spike bracers
+		96394, // frozen warlord bracer heroic
 
-		96376, // worldbreaker weapon})
+		96376, // worldbreaker weapon
 	})
 	protDps.AddFixedSlot(items.Equip_Ring2, 95513) // scaled tyrant normal
 	job.AddSetParam(protDps)
@@ -72,19 +73,19 @@ func PaladinMultiRun() {
 		87015, // heroic clawfeet
 
 		86957, // heroic bladed tempest ring
-		86946, // ruby signet heroic
+		//      86946, // ruby signet heroic
 		95140, // shado assault band
 		95513, // scaled tyrant normal
 
-		94726, // cloudbreaker belt
-		86955, // heroic overwhelm assault belt
+		96373, // cloudbreaker belt heroic
+		//      86955, // heroic overwhelm assault belt
 
 		87026, // heroic peacock cloak
-		86325, // daybreak
+		//      86325, // daybreak
 		94942, // hydra bloodcloak
 
 		95535, // normal lightning legs
-		94773, // centripetal shoulders normal
+		//      94773, // centripetal shoulders normal
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
 
@@ -96,14 +97,15 @@ func PaladinMultiRun() {
 
 		95142, // striker's battletags
 		95205, // terra-cotta neck
-		95178, // lootraptor amulet
-		94776, // primal turtle amulet
+		//      95178, // lootraptor amulet
+		//      94776, // primal turtle amulet
 
 		96182, // ultimate prot of the emperor thunder
 
 		87145, // defiled earth
-		89934, // soul bracer
+		//      89934, // soul bracer
 		94820, // caustic spike bracers
+		96394, // frozen warlord bracer heroic
 
 		96376, // worldbreaker weapon
 	})
@@ -119,7 +121,7 @@ func PaladinMultiRun() {
 		PhasedAcceptable:     false,
 		ExtraUpgradeLevel:    2}
 	ret.AddExtraItems([]uint32{
-		87026, // heroic peacock cloak
+		//      87026, // heroic peacock cloak
 		94942, // hydra bloodcloak
 
 		95140, // shado assault band
@@ -129,33 +131,34 @@ func PaladinMultiRun() {
 		87015, // heroic clawfeet
 		86979, // heroic impaling treads
 		87024, // null greathelm
-		86955, // heroic overwhelm assault belt
-		94726, // cloudbreaker belt
+		//      86955, // heroic overwhelm assault belt
+		96373, // cloudbreaker belt heroic
 
 		95535, // normal lightning legs
-		94773, // centripetal shoulders normal
+		//      94773, // centripetal shoulders normal
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
 
 		85340, // ret tier14 legs
-		// ret tier14 head [would need to regem, AVOID]
+		//                        87101, // ret tier14 head [would need to regem, AVOID]
 		85339, // ret tier14 shoulder
 		85343, // ret tier14 chest
 		87100, // ret tier14 hands
 
-		95910, // ret tier15 chest celestial
+		//      95910, // ret tier15 chest celestial
 		95281, // ret tier15 gloves normal
-		// ret tier15 celestial (don't have yet)
-		// ret tier15 celestial (don't have yet)
+		//      95912, // ret tier15 celestial leg/head (don't have yet)
+		//      95913, // ret tier15 celestial leg/head (don't have yet)
 		95914, // ret tier15 shoulder celestial
 
 		95142, // striker's battletags
 		95205, // terra-cotta neck
 		94776, // primal turtle amulet
 
-		87145, // defiled earth
-		89934, // soul bracer
+		//      87145, // defiled earth
+		//      89934, // soul bracer
 		94820, // caustic spike bracers
+		96394, // frozen warlord bracer heroic
 	})
 	ret.AddFixedSlot(items.Equip_Ring2, 95513) // scaled tyrant normal
 	job.AddSetParam(ret)

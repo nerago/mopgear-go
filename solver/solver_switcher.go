@@ -109,10 +109,10 @@ func (output *SolveOutput) Report(printer *util.PrintRecorder) {
 		fullSet := output.FullSet
 		rating := output.ResultRating
 		printer.Printf("SET OUTPUT rating %d\n", rating)
+		printer.Printf("BONUS %.2f\n", float64(output.Input.Model.SetBonus.CalcAndMultiply(&fullSet.Items, 1000))/1000.0)
 		printer.Printf("RATED %s\n", fullSet.TotalRated.String())
 		printer.Printf("CAP %s\n", fullSet.TotalCap.String())
 		printEquipMap(&fullSet.Items, printer)
-		// TODO set bonus
 	} else {
 		printer.Printf("SET SOLVE FAILED\n")
 	}

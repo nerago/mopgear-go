@@ -83,10 +83,11 @@ func evaluateOverflowWorker(resultChannel chan util.BestCollector1[SolvableItemS
 func makeSetFromArraysAndAdvance(slotOptions *SolvableOptionsMap, slotIndexes *[16]uint32, itemSet *SolvableItemSet, skip uint64) {
 	itemSet.Clear()
 	for slot := range slotOptions {
-		slotSize := uint64(len(slotOptions[slot]))
+		options := slotOptions[slot]
+		slotSize := uint64(len(options))
 		if slotSize > 0 {
 			index := slotIndexes[slot]
-			item := &slotOptions[slot][index]
+			item := &options[index]
 
 			itemSet.Items[slot] = item
 			stats.StatBlock_Increment_Mutating(&itemSet.TotalCap, &item.TotalCap)

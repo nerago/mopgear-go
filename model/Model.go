@@ -14,7 +14,7 @@ type Model struct {
 	ReforgeRules     ReforgeRules
 	EnchantChoice    EnchantChoice
 	GemChoice        GemChoice
-	// setBonus         SetBonus
+	SetBonus         SetBonus
 }
 
 func (model *Model) CheckSet(itemSet *SolvableItemSet) bool {
@@ -26,11 +26,15 @@ func (model *Model) CheckSetSkinny(itemSet *SkinnyItemSet) bool {
 }
 
 func (model *Model) CalcRatingSolve(itemSet *SolvableItemSet) uint64 {
-	return model.StatRatings.CalcRating(&itemSet.TotalRated)
+	rating := model.StatRatings.CalcRating(&itemSet.TotalRated)
+	rating = model.SetBonus.CalcAndMultiplySolve(&itemSet.Items, rating)
+	return rating
 }
 
 func (model *Model) CalcRatingFull(itemSet *FullItemSet) uint64 {
-	return model.StatRatings.CalcRating(&itemSet.TotalRated)
+	rating := model.StatRatings.CalcRating(&itemSet.TotalRated)
+	rating = model.SetBonus.CalcAndMultiply(&itemSet.Items, rating)
+	return rating
 }
 
 func (model *Model) CalcRatingFullItem(item *FullItem) uint64 {
@@ -55,7 +59,8 @@ func Model_PallyProtMitigation() Model {
 		StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules_tank,
 		EnchantChoice_ForSpec(Spec_PaladinProtMitigation),
-		GemChoice_ForSpec(Spec_PaladinProtMitigation)}
+		GemChoice_ForSpec(Spec_PaladinProtMitigation),
+		SetBonus_Named("Plate of the Lightning Emperor Prot Mitigation")}
 }
 
 func Model_PallyProtDps() Model {
@@ -68,7 +73,8 @@ func Model_PallyProtDps() Model {
 		StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules_tank,
 		EnchantChoice_ForSpec(Spec_PaladinProtDps),
-		GemChoice_ForSpec(Spec_PaladinProtDps)}
+		GemChoice_ForSpec(Spec_PaladinProtDps),
+		SetBonus_Named("Plate of the Lightning Emperor Prot Damage")}
 }
 
 func Model_PallyRet() Model {
@@ -79,7 +85,8 @@ func Model_PallyRet() Model {
 		StatRequirementsHitExpertise_RetWideCap(),
 		ReforgeRules_melee,
 		EnchantChoice_ForSpec(Spec_PaladinRet),
-		GemChoice_ForSpec(Spec_PaladinRet)}
+		GemChoice_ForSpec(Spec_PaladinRet),
+		SetBonus_ForSpec(Spec_PaladinRet)}
 }
 
 func Model_Testing() Model {
@@ -90,5 +97,6 @@ func Model_Testing() Model {
 		StatRequirementsHitExpertise_None(),
 		ReforgeRules_tank,
 		EnchantChoice_ForSpec(Spec_PaladinProtDps),
-		GemChoice_ForSpec(Spec_PaladinProtDps)}
+		GemChoice_ForSpec(Spec_PaladinProtDps),
+		SetBonus_Empty()}
 }

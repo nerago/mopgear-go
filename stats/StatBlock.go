@@ -80,8 +80,6 @@ func StatBlock_equals(a, b *StatBlock) bool {
 	return true
 }
 
-// TODO toString stuff?
-
 func (block *StatBlock) Get(stat StatType) uint32 {
 	return block[stat]
 }
