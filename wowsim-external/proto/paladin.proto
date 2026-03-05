@@ -1,0 +1,126 @@
+syntax = "proto3";
+package proto;
+
+option go_package = "./proto";
+// DO NOT REMOVE THE COMMENTS
+// BEGIN GENERATED
+// PaladinTalents message.
+message PaladinTalents {
+    bool speed_of_light = 1;
+    bool long_arm_of_the_law = 2;
+    bool pursuit_of_justice = 3;
+    bool fist_of_justice = 4;
+    bool repentance = 5;
+    bool evil_is_a_point_of_view = 6;
+    bool selfless_healer = 7;
+    bool eternal_flame = 8;
+    bool sacred_shield = 9;
+    bool hand_of_purity = 10;
+    bool unbreakable_spirit = 11;
+    bool clemency = 12;
+    bool holy_avenger = 13;
+    bool sanctified_wrath = 14;
+    bool divine_purpose = 15;
+    bool holy_prism = 16;
+    bool lights_hammer = 17;
+    bool execution_sentence = 18;
+}
+
+enum PaladinMajorGlyph {
+    PaladinMajorGlyphNone = 0;
+    GlyphOfDoubleJeopardy = 41092;
+    GlyphOfDevotionAura = 41094;
+    GlyphOfHolyWrath = 41095;
+    GlyphOfDivineProtection = 41096;
+    GlyphOfTemplarsVerdict = 41097;
+    GlyphOfAvengingWrath = 41098;
+    GlyphOfConsecration = 41099;
+    GlyphOfFocusedShield = 41101;
+    GlyphOfBurdenOfGuilt = 41102;
+    GlyphOfBlindingLight = 41103;
+    GlyphOfFinalWrath = 41104;
+    GlyphOfWordOfGlory = 41105;
+    GlyphOfIllumination = 41106;
+    GlyphOfHarshWords = 41107;
+    GlyphOfDivinity = 41108;
+    GlyphOfLightOfDawn = 41109;
+    GlyphOfBlessedLife = 41110;
+    GlyphOfFlashOfLight = 43367;
+    GlyphOfDenounce = 43867;
+    GlyphOfDazingShield = 43868;
+    GlyphOfImmediateTruth = 43869;
+    GlyphOfBeaconOfLight = 45741;
+    GlyphOfHammerOfTheRighteous = 45742;
+    GlyphOfDivineStorm = 45743;
+    GlyphOfTheAlabasterShield = 45744;
+    GlyphOfDivinePlea = 45745;
+    GlyphOfHolyShock = 45746;
+    GlyphOfInquisition = 45747;
+    GlyphOfProtectorOfTheInnocent = 66918;
+    GlyphOfTheBattleHealer = 81956;
+    GlyphOfMassExorcism = 83107;
+    GlyphOfDivineShield = 104050;
+    GlyphOfHandOfSacrifice = 104051;
+}
+
+enum PaladinMinorGlyph {
+    PaladinMinorGlyphNone = 0;
+    GlyphOfTheLuminousCharger = 41100;
+    GlyphOfTheMountedKing = 43340;
+    GlyphOfContemplation = 43365;
+    GlyphOfWingedVengeance = 43366;
+    GlyphOfSealOfBlood = 43368;
+    GlyphOfFireFromTheHeavens = 43369;
+    GlyphOfFocusedWrath = 80581;
+    GlyphOfTheFallingAvenger = 80584;
+    GlyphOfTheRighteousRetreat = 80585;
+    GlyphOfBladedJudgment = 80586;
+    GlyphOfTheExorcist = 104107;
+    GlyphOfPillarOfLight = 104108;
+}
+
+// END GENERATED
+
+enum Blessings {
+	BlessingUnknown = 0;
+	BlessingOfKings = 1;
+	BlessingOfMight = 2;
+}
+
+enum PaladinSeal {
+	Truth = 0;
+	Justice = 1;
+	Insight = 2;
+	Righteousness = 3;
+}
+
+message PaladinOptions {
+	PaladinSeal seal = 2;
+}
+
+message RetributionPaladin {
+	message Rotation {}
+
+	message Options {
+		PaladinOptions class_options = 1;
+	}
+	Options options = 3;
+}
+
+message ProtectionPaladin {
+	message Rotation {}
+
+	message Options {
+		PaladinOptions class_options = 1;
+	}
+	Options options = 3;
+}
+
+message HolyPaladin {
+	message Rotation {}
+
+	message Options {
+		PaladinOptions class_options = 2;
+	}
+	Options options = 3;
+}

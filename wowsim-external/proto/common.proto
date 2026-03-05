@@ -1,0 +1,873 @@
+syntax = "proto3";
+package proto;
+
+option go_package = "./proto";
+
+import "google/protobuf/descriptor.proto";
+
+// protobuf does not directly support constants for versioning purposes, but we
+// can emulate the functionality of a CURRENT_VERSION_NUMBER constant by
+// defining it as a custom option for a ProtoVersion message whose only purpose
+// is to house the value of this option. While a bit hacky, this allows us to
+// increment the version number directly in the proto files, rather than needing
+// to separately increment two constants in the front-end and back-end code.
+extend google.protobuf.MessageOptions {
+	int32 current_version_number = 50000;
+}
+
+message ProtoVersion {
+	// This should be incremented by 1 whenever proto files are changed in a
+	// way that will break any saved browser data or old sim links. If you
+	// are incrementing this value, then it is assumed that you are also
+	// implementing the required conversion code within the
+	// updateProtoVersion() method of any affected classes in the UI (or
+	// adding this method if it does not exist yet). Likewise, any affected
+	// protos need to define an api_version field so that the UI code knows
+	// to up-convert these protos to the new format whenever api_version is
+	// missing (0) or lower than current_version_number.
+	option (current_version_number) = 2;
+
+	// The actual field value is only used within unit tests.
+	int32 saved_version_number = 1;
+}
+
+enum ItemLevelState {
+    Base = 0;
+    ChallengeMode = -1;
+    UpgradeStepOne = 1;
+    UpgradeStepTwo = 2;
+    UpgradeStepThree = 3;
+    UpgradeStepFour = 4;
+}
+
+message ScalingItemProperties {
+    int32 rand_prop_points = 1;
+    double weapon_damage_min = 2;
+    double weapon_damage_max = 3;
+    map<int32, double> stats = 4; // for compactness
+	int32 ilvl = 6;
+}
+
+enum Spec {
+	SpecUnknown = 0;
+
+	SpecBloodDeathKnight = 1;
+	SpecFrostDeathKnight = 2;
+	SpecUnholyDeathKnight = 3;
+
+	SpecBalanceDruid = 4;
+	SpecFeralDruid = 5;
+	SpecGuardianDruid = 31;
+	SpecRestorationDruid = 6;
+
+	SpecBeastMasteryHunter = 7;
+	SpecMarksmanshipHunter = 8;
+	SpecSurvivalHunter = 9;
+
+	SpecArcaneMage = 10;
+	SpecFireMage = 11;
+	SpecFrostMage = 12;
+
+	SpecHolyPaladin = 13;
+	SpecProtectionPaladin = 14;
+	SpecRetributionPaladin = 15;
+
+	SpecDisciplinePriest = 16;
+	SpecHolyPriest = 17;
+	SpecShadowPriest = 18;
+
+	SpecAssassinationRogue = 19;
+	SpecCombatRogue = 20;
+	SpecSubtletyRogue = 21;
+
+	SpecElementalShaman = 22;
+	SpecEnhancementShaman = 23;
+	SpecRestorationShaman = 24;
+
+	SpecAfflictionWarlock = 25;
+	SpecDemonologyWarlock = 26;
+	SpecDestructionWarlock = 27;
+
+	SpecArmsWarrior = 28;
+	SpecFuryWarrior = 29;
+	SpecProtectionWarrior = 30;
+
+	SpecBrewmasterMonk = 32;
+	SpecMistweaverMonk = 33;
+	SpecWindwalkerMonk = 34;
+}
+
+enum Race {
+	RaceUnknown = 0;
+	RaceBloodElf = 1;
+	RaceDraenei = 2;
+	RaceDwarf = 3;
+	RaceGnome = 4;
+	RaceHuman = 5;
+	RaceNightElf = 6;
+	RaceOrc = 7;
+	RaceTauren = 8;
+	RaceTroll = 9;
+	RaceUndead = 10;
+	RaceWorgen = 11;
+	RaceGoblin = 12;
+	RaceAlliancePandaren = 13;
+	RaceHordePandaren = 14;
+}
+
+enum Faction {
+	Unknown = 0;
+	Alliance = 1;
+	Horde = 2;
+}
+
+// Should aways be in order of dbc class file to properly match class masks
+// Found at https://wago.tools/db2/ChrClasses?build=5.5.0.61217&sort%5BID%5D=asc
+enum Class {
+	ClassUnknown = 0;
+	ClassWarrior = 1;
+	ClassPaladin = 2;
+	ClassHunter = 3;
+	ClassRogue = 4;
+	ClassPriest = 5;
+	ClassDeathKnight = 6;
+	ClassShaman = 7;
+	ClassMage = 8;
+	ClassWarlock = 9;
+	ClassMonk = 10;
+	ClassDruid = 11;
+	ClassExtra1 = 12;
+	ClassExtra2 = 13;
+	ClassExtra3 = 14;
+	ClassExtra4 = 15;
+	ClassExtra5 = 16;
+	ClassExtra6 = 17;
+}
+
+enum Profession {
+	ProfessionUnknown = 0;
+	Alchemy = 1;
+	Blacksmithing = 2;
+	Enchanting = 3;
+	Engineering = 4;
+	Herbalism = 5;
+	Inscription = 6;
+	Jewelcrafting = 7;
+	Leatherworking = 8;
+	Mining = 9;
+	Skinning = 10;
+	Tailoring = 11;
+	Archeology = 12;
+}
+
+// General rules for Stats vs. PseudoStats at the proto level:
+//	- Define a property as a Stat if and only if it needs to be present in
+//	  one or more stats arrays embedded in the database files, local storage
+//	  data, or sim links. This generally means that the property is a BASIC
+//	  attribute that is directly found on items or enchants and parsed from
+//	  tooltips during database generation. Alternatively, if the stat is
+//	  required for reconstructing a target NPC from saved Encounter
+//	  settings, then it also belongs in the Stat enum.
+//
+//	- If the above criterion is not satisfied, then the best practice is to
+//	  define the property as a PseudoStat rather than a Stat. For example,
+//	  the various school-specific versions of Hit, Crit, and Haste are all
+//	  defined as PseudoStats from Cataclysm onwards, since only the generic
+//	  Ratings need to be parsed from item data and stored in the sim
+//	  database.
+//
+//	- Note that the above rules apply only for the proto messages used for
+//	  saving and loading data in the browser. It is perfectly okay to define
+//	  additional Stats in the back-end code for convenience or performance
+//	  reasons, such as for automatically propagating linear stat
+//	  dependencies when dynamic stat changes occur in a sim iteration. For
+//	  example, the SpellHit PseudoStat mentioned above is actually modeled
+//	  as a proper Stat in the back-end code so that it can benefit from the
+//	  StatDependency tooling, but is converted to a PseudoStat when writing
+//	  UnitStats protos for character stats and stat weights requests. This
+//	  keeps the item database compact while still giving the UI access to
+//	  calculated tertiary stats like SpellHit, MeleeCrit, RangedHaste, etc.
+//
+//	- When adding new Stats or PseudoStats, make the units for each property
+//	  explicit in the name to avoid confusion. For example, append "Rating"
+//	  to the end of the field name for properties that are represented in
+//	  Rating units (regardless of how they are stored in-game), and append
+//	  "Chance" to the end of the field name for properties that represent
+//	  probabilities (between 0 and 1).
+//
+// Keep in sync with sim/core/stats/stats.go. As mentioned above, it is okay for
+// the Go Stats array to be larger than the size of the Stat enum proto, but the
+// shared indices between the two must exactly match.
+//
+// NextIndex: 22;
+enum Stat {
+	// Primary attributes ("main stat")
+	StatStrength = 0;
+	StatAgility = 1;
+	StatStamina = 2;
+	StatIntellect = 3;
+
+	// Reforge-able secondary stats
+	StatSpirit = 4;
+	StatHitRating = 5;
+	StatCritRating = 6;
+	StatHasteRating = 7;
+	StatExpertiseRating = 8;
+	StatDodgeRating = 9;
+	StatParryRating = 10;
+	StatMasteryRating = 11;
+
+	// Non-reforge-able secondary stats found on gear
+	StatAttackPower = 12;
+	StatRangedAttackPower = 13;
+	StatSpellPower = 14;
+	StatPvpResilienceRating = 15;
+	StatPvpPowerRating = 16;
+	StatArmor = 17; // "white armor" that fully scales with all multipliers
+	StatBonusArmor = 18; // "green armor" that does not scale
+
+	// Composite stats that are built up from the above gear stats + buffs.
+	// These still belong in the Stat enum because they can be present on
+	// some enchants and because the base values need to be stored for NPCs.
+	StatHealth = 19;
+	StatMana = 20;
+	StatMP5 = 21;
+
+	// DO NOT add new stats here without discussing it first; new stats come
+	// with a performance penalty.
+
+	// Checklist for making breaking changes to the Stat enum (deleting
+	// stats, re-ordering stats, changing the interpretation of stat values,
+	// etc.):
+	// (1) Make the desired change in the enum above.
+	// (2) Mirror the change in sim/core/stats/stats.go .
+	// (3) Update any required code in sim/core for proper sim behavior.
+	// (4) If the total number of stats changed, then change the size of the
+	//     Stats array type defined in tools/database/wowhead_tooltips.go .
+	// (5) Run "make items" so that the sim database reflects the stats
+	//     change. At this point, you should see no changes in DPS results
+	//     when running "make test", if the only changes made were indexing
+	//     or bookkeeping adjustments. However, saved browser settings and
+	//     old sim links will be broken on the UI side.
+	// (6) Increment the current_version_number option in the ProtoVersion
+	//     message at the top of this file.
+	// (7) Add a new entry to the ProtoConversionMap within the
+	//     migrateStatsArray() method of ui/core/proto_utils/stats.ts . If
+	//     the migration function for the new version works properly, then
+	//     you should see that stats arrays embedded in local storage data
+	//     and old links are automatically converted to new arrays that are
+	//     compatible with the new stats interpretation.
+}
+
+// Not all pseudostats are included here; just the ones we want to pass
+// between the UI and backend. It's also OK to include things here which aren't
+// in the PseudoStats struct.
+//
+// NextIndex: 16;
+enum PseudoStat {
+	PseudoStatMainHandDps = 0;
+	PseudoStatOffHandDps = 1;
+	PseudoStatRangedDps = 2;
+
+	// Final buffed values including DR, represented as percentages (0-100)
+	PseudoStatDodgePercent = 3;
+	PseudoStatParryPercent = 4;
+	PseudoStatBlockPercent = 5;
+
+	// Net impact of all multiplicative Haste buffs (Bloodlust etc.)
+	PseudoStatMeleeSpeedMultiplier = 6;
+	PseudoStatRangedSpeedMultiplier = 7;
+	PseudoStatCastSpeedMultiplier = 8;
+
+	// Final buffed Haste values after combining the above multipliers with
+	// Haste Rating from gear. Expressed in percentage units (0-100).
+	PseudoStatMeleeHastePercent = 9;
+	PseudoStatRangedHastePercent = 10;
+	PseudoStatSpellHastePercent = 11;
+
+	// School-specific fully buffed Hit/Crit stats, also in percentage
+	// units. These are modeled as proper Stats in the back-end due to stat
+	// dependencies, but do not need to be stored in any database files.
+	PseudoStatPhysicalHitPercent = 12;
+	PseudoStatSpellHitPercent = 13;
+	PseudoStatPhysicalCritPercent = 14;
+	PseudoStatSpellCritPercent = 15;
+}
+
+message UnitStats {
+	// Proto version at the time these stats were saved. If you make any
+	// breaking changes to the size, ordering, or interpretation of the
+	// stats or pseudoStats arrays, then make sure to increment the
+	// current_version_number option in the ProtoVersion message at the top
+	// of this file, and also add a new entry to the data conversion map
+	// within the migrateStatsArray() method of ui/core/proto_utils/stats.ts
+	// A "breaking change" here is defined as anything that will break saved
+	// browser data or old sim links; the version need not be incremented if
+	// you simply append a new rarely-used PseudoStat to the end of the
+	// array, for example.
+	int32 api_version = 3;
+
+	repeated double stats = 1;
+	repeated double pseudo_stats = 2;
+}
+
+message ReforgeStat {
+	int32 id = 1;
+	Stat fromStat = 2;
+	Stat toStat = 3;
+	double multiplier = 4;
+}
+
+enum ItemType {
+	ItemTypeUnknown = 0;
+	ItemTypeHead = 1;
+	ItemTypeNeck = 2;
+	ItemTypeShoulder = 3;
+	ItemTypeBack = 4;
+	ItemTypeChest = 5;
+	ItemTypeWrist = 6;
+	ItemTypeHands = 7;
+	ItemTypeWaist = 8;
+	ItemTypeLegs = 9;
+	ItemTypeFeet = 10;
+	ItemTypeFinger = 11;
+	ItemTypeTrinket = 12;
+	ItemTypeWeapon = 13;
+	ItemTypeRanged = 14;
+}
+
+enum ArmorType {
+	ArmorTypeUnknown = 0;
+	ArmorTypeCloth = 1;
+	ArmorTypeLeather = 2;
+	ArmorTypeMail = 3;
+	ArmorTypePlate = 4;
+}
+
+enum WeaponType {
+	WeaponTypeUnknown = 0;
+	WeaponTypeAxe = 1;
+	WeaponTypeDagger = 2;
+	WeaponTypeFist = 3;
+	WeaponTypeMace = 4;
+	WeaponTypeOffHand = 5;
+	WeaponTypePolearm = 6;
+	WeaponTypeShield = 7;
+	WeaponTypeStaff = 8;
+	WeaponTypeSword = 9;
+}
+
+enum HandType {
+	HandTypeUnknown = 0;
+	HandTypeMainHand = 1;
+	HandTypeOneHand = 2;
+	HandTypeOffHand = 3;
+	HandTypeTwoHand = 4;
+}
+
+enum RangedWeaponType {
+	RangedWeaponTypeUnknown = 0;
+	RangedWeaponTypeBow = 1;
+	RangedWeaponTypeCrossbow = 2;
+	RangedWeaponTypeGun = 3;
+	RangedWeaponTypeThrown = 5;
+	RangedWeaponTypeWand = 6;
+}
+
+// All slots on the gear menu where a single item can be worn.
+enum ItemSlot {
+	ItemSlotHead = 0;
+	ItemSlotNeck = 1;
+	ItemSlotShoulder = 2;
+	ItemSlotBack = 3;
+	ItemSlotChest = 4;
+	ItemSlotWrist = 5;
+	ItemSlotHands = 6;
+	ItemSlotWaist = 7;
+	ItemSlotLegs = 8;
+	ItemSlotFeet = 9;
+	ItemSlotFinger1 = 10;
+	ItemSlotFinger2 = 11;
+	ItemSlotTrinket1 = 12;
+	ItemSlotTrinket2 = 13;
+	ItemSlotMainHand = 14; // can be 1h or 2h
+	ItemSlotOffHand = 15;
+}
+
+enum ItemQuality {
+	ItemQualityJunk = 0;
+	ItemQualityCommon = 1;
+	ItemQualityUncommon = 2;
+	ItemQualityRare = 3;
+	ItemQualityEpic = 4;
+	ItemQualityLegendary = 5;
+	ItemQualityArtifact = 6;
+	ItemQualityHeirloom = 7;
+}
+
+enum GemColor {
+	GemColorUnknown = 0;
+	GemColorMeta = 1;
+	GemColorRed = 2;
+	GemColorBlue = 3;
+	GemColorYellow = 4;
+	GemColorGreen = 5;
+	GemColorOrange = 6;
+	GemColorPurple = 7;
+	GemColorPrismatic = 8;
+	GemColorCogwheel = 9;
+	GemColorShaTouched = 10;
+}
+
+enum SpellSchool {
+	SpellSchoolPhysical = 0;
+	SpellSchoolArcane = 1;
+	SpellSchoolFire = 2;
+	SpellSchoolFrost = 3;
+	SpellSchoolHoly = 4;
+	SpellSchoolNature = 5;
+	SpellSchoolShadow = 6;
+}
+
+enum TristateEffect {
+	TristateEffectMissing = 0;
+	TristateEffectRegular = 1;
+	TristateEffectImproved = 2;
+}
+
+// Buffs that affect the entire raid.
+// Reindexed to Mists of Pandaria raid buffs.
+// Next index: 36
+message RaidBuffs {
+	// +10% Attack Power
+	bool horn_of_winter           = 1;  // Death Knights
+	bool trueshot_aura            = 2;  // Hunters
+	bool battle_shout             = 3;  // Warriors
+
+	// +10% Melee and Ranged Attack Speed
+	bool unholy_aura              = 5;  // Frost/Unholy DKs
+	bool cackling_howl            = 6;  // Hyena Pets
+	bool serpents_swiftness       = 7;  // Serpent Pets
+	bool swiftblades_cunning      = 8;  // Rogues
+	bool unleashed_rage           = 9;  // Enhancement Shamans
+
+	// +10% Spell Power
+	bool still_water              = 10; // Exotic Water Strider Pets
+	bool arcane_brilliance        = 11; // Mages
+	bool burning_wrath            = 12; // Shamans
+	bool dark_intent              = 13; // Warlocks
+
+	// +5% Spell Haste
+	bool moonkin_aura             = 14; // Balance Druids
+	bool mind_quickening          = 15; // Sporebat Pets
+	bool shadow_form              = 16; // Shadow Priests
+	bool elemental_oath           = 17; // Elemental Shamans
+
+	// +5% Critical Strike Chance
+	bool leader_of_the_pack       = 18; // Feral/Guardian Druids
+	bool terrifying_roar          = 19; // Devilsaur Pets
+	bool furious_howl             = 20; // Wolf Pets
+	bool legacy_of_the_white_tiger= 21; // Windwalker Monks
+
+	// +3000 Mastery Rating
+	bool roar_of_courage          = 22; // Cat Pets
+	bool spirit_beast_blessing    = 23; // Spirit Beast Pets
+	bool blessing_of_might        = 24; // Paladins
+	bool grace_of_air             = 25; // Shamans
+
+	// +5% Strength, Agility, Intellect
+	bool mark_of_the_wild         = 26; // Druids
+	bool embrace_of_the_shale_spider = 27; // Shale Spider Pets
+	bool legacy_of_the_emperor    = 28; // Monks
+	bool blessing_of_kings        = 29; // Paladins
+
+	// +10% Stamina
+	bool qiraji_fortitude         = 30; // Silithid Pets
+	bool power_word_fortitude     = 31; // Priests
+	bool commanding_shout         = 4;  // Warriors
+
+	// Major Haste
+	bool bloodlust                = 32;
+
+	// Raid Cooldowns
+	int32 mana_tide_totem_count   = 33;
+	int32 stormlash_totem_count = 34;
+	int32 skull_banner_count = 35;
+  }
+
+// Buffs that affect a single party.
+message PartyBuffs {
+}
+
+// These are usually individual actions taken by other Characters.
+message IndividualBuffs {
+	// Only used in individual sims
+	// as the class that provides these would cast them in raid sim
+
+	// Major Mana Replenishment
+	// How many of each of these buffs the player will be receiving.
+	int32 innervate_count = 10;
+	int32 hymn_of_hope_count = 7;
+
+	// Other Buffs
+	int32 unholy_frenzy_count = 12;
+	bool tricks_of_the_trade = 101;
+	int32 devotion_aura_count = 23;
+	int32 pain_suppression_count = 24;
+	int32 vigilance_count = 25;
+	int32 guardian_spirit_count = 26;
+	int32 rallying_cry_count = 102;
+	int32 shattering_throw_count = 103;
+}
+
+message Debuffs {
+
+	// –10% Physical damage dealt for 30s
+	// Physical‐damage‐dealt sources:
+	// Scarlet Fever, Thrash, Demoralizing Roar, Demoralizing Screech, Keg Smash,
+	//   Hammer of the Righteous, Earth Shock, Curse of Enfeeblement, Thunder Clap
+	bool weakened_blows = 1;
+
+	// +4% Physical damage taken for 30s
+	// Gore, Stampede, Acid Spit, Ravage, Judgments of the Bold, Colossus Smash
+	bool physical_vulnerability = 2;
+
+	// –4% Armor for 30s, stacks 3 times
+	// Faerie Fire, Tear Armor, Dust Cloud, Expose Armor, Sunder Armor
+	bool weakened_armor = 3;
+
+	//Healing reduction
+	//Widow Venom, Monstrous Bite, Rising Sun Kick, Wound Poison, Mortal Strike, Wild Strike
+	bool mortal_wounds = 4;
+
+	// Spell‐damage‐taken sources:
+	bool fire_breath              = 5;
+	bool lightning_breath         = 6;
+	bool master_poisoner          = 7;
+	bool curse_of_elements        = 8;
+
+	// Casting‐speed‐reduction sources:
+	bool necrotic_strike          = 9;
+	bool lava_breath              = 10;
+	bool spore_cloud              = 11;
+	bool slow                     = 12;
+	bool mind_numbing_poison      = 13;
+	bool curse_of_enfeeblement	  = 14;
+  }
+
+message ConsumesSpec {
+	int32 prepot_id = 1;
+	int32 pot_id = 2;
+	int32 flask_id = 3;
+	int32 battle_elixir_id = 4;
+	int32 guardian_elixir_id = 5;
+	int32 food_id = 6;
+	int32 explosive_id = 7;
+	int32 conjured_id = 9;
+}
+
+enum MobType {
+	MobTypeUnknown = 0;
+	MobTypeBeast = 1;
+	MobTypeDemon = 2;
+	MobTypeDragonkin = 3;
+	MobTypeElemental = 4;
+	MobTypeGiant = 5;
+	MobTypeHumanoid = 6;
+	MobTypeMechanical = 7;
+	MobTypeUndead = 8;
+}
+
+enum InputType {
+	Bool = 0;
+	Number = 1;
+	Enum = 2;
+}
+
+message TargetInput {
+	InputType input_type = 1;
+	string label = 2;
+	string tooltip = 5;
+
+	bool bool_value = 3;
+	double number_value = 4;
+
+	int32 enum_value = 6;
+	repeated string enum_options = 7;
+}
+
+message Target {
+        // The in-game NPC ID.
+        int32 id = 14;
+        string name = 15;
+
+        int32 level = 4;
+        MobType mob_type = 3;
+        repeated double stats = 5;
+
+        // Auto attack parameters.
+        double min_base_damage = 7;
+        double damage_spread = 19; // replaces tight_enemy_damage
+        double swing_speed = 8;
+        bool dual_wield = 9;
+        bool dual_wield_penalty = 10;
+        bool parry_haste = 12;
+        bool suppress_dodge = 16; // Sunwell Radiance
+        SpellSchool spell_school = 13; // Allows elemental attacks.
+
+        // Index in Raid.tanks indicating the player tanking this mob at the
+        // start of each pull.
+        // -1 or invalid index indicates not being tanked.
+        int32 tank_index = 6;
+
+        // Used in tank swap AIs.
+        int32 second_tank_index = 100;
+
+        // Used in dynamic target AIs.
+        bool disabled_at_start = 101;
+
+        // Custom Target AI parameters
+        repeated TargetInput target_inputs = 18;
+}
+
+message Encounter {
+	// Proto version at the time these encounter settings were saved. If you
+	// make any changes to this proto that will break saved browser data or
+	// old sim links, then make sure to increment the current_version_number
+	// option within the ProtoVersion message at the top of this file, and
+	// also modify the updateProtoVersion() method of ui/core/encounter.ts .
+	int32 api_version = 9;
+
+	double duration = 1;
+
+	// Variation in the duration
+	double duration_variation = 2;
+
+	// The ratio of the encounter duration, between 0 and 1, for which the targets
+	// will be in execute range (<= 20%) for the purposes of Warrior Execute, Mage Molten
+	// Fury, etc.
+	double execute_proportion_20 = 3;
+
+	// Key for Affliction warlock Drain Soul
+	double execute_proportion_25 = 7;
+
+	// Same as execute_proportion but for 35%.
+	double execute_proportion_35 = 4;
+
+	// Same as execute_proportion but for 45%.
+	double execute_proportion_45 = 10;
+
+	// Same as execute_proportion but for > 90%.
+	double execute_proportion_90 = 8;
+
+	// If set, will use the targets health value instead of a duration for fight length.
+	bool use_health = 5;
+
+	// If type != Simple or Custom, then this may be empty.
+	repeated Target targets = 6;
+
+}
+
+message PresetTarget {
+	string path = 1;
+	Target target = 2;
+}
+message PresetEncounter {
+	string path = 1;
+	repeated PresetTarget targets = 2;
+}
+
+message ItemRandomSuffix {
+	int32 id = 1;
+	string name = 2;
+	repeated double stats = 3;
+}
+
+message ItemSpec {
+	int32 id = 2;
+	int32 random_suffix = 6;
+	int32 enchant = 3;
+	repeated int32 gems = 4;
+	int32 reforging = 5; //reforging id
+	ItemLevelState upgrade_step = 7;
+	bool challenge_mode = 8;
+	int32 tinker = 9;
+}
+
+
+message EquipmentSpec {
+	repeated ItemSpec items = 1;
+}
+
+enum ConsumableType {
+	ConsumableTypeUnknown = 0;
+	ConsumableTypePotion = 1;
+	ConsumableTypeFlask = 2;
+	ConsumableTypeFood = 3;
+	ConsumableTypeScroll = 4;
+	ConsumableTypeExplosive = 5;
+	ConsumableTypeBattleElixir = 6;
+	ConsumableTypeGuardianElixir = 7;
+}
+
+
+
+
+// Extra enum for describing which items are eligible for an enchant, when
+// ItemType alone is not enough.
+enum EnchantType {
+	EnchantTypeNormal = 0;
+	EnchantTypeTwoHand = 1;
+	EnchantTypeShield = 2;
+	EnchantTypeKit = 3;
+	EnchantTypeStaff = 4;
+	EnchantTypeOffHand = 5;
+}
+
+message UnitReference {
+	enum Type {
+		Unknown = 0;
+		Player = 1;
+		Target = 2;
+		Pet = 3;
+		Self = 4;
+		CurrentTarget = 5;
+		AllPlayers = 6;
+		AllTargets = 7;
+		PreviousTarget = 8;
+		NextTarget = 9;
+	}
+
+	// The type of unit being referenced.
+	Type type = 2;
+
+	// Index of the player/target/pet/etc depending on value of type.
+	int32 index = 3;
+
+	// Reference to the owner, only used iff this is a pet.
+	UnitReference owner = 4;
+}
+
+// ID for actions that aren't spells or items.
+enum OtherAction {
+	OtherActionNone = 0;
+	OtherActionWait = 1;
+	OtherActionManaRegen = 2;
+	OtherActionEnergyRegen = 5;
+	OtherActionFocusRegen = 6;
+	OtherActionManaGain = 10; // For threat generated from mana gains.
+	OtherActionRageGain = 11; // For threat generated from rage gains.
+	OtherActionAttack = 3; // A white hit, can be main hand or off hand.
+	OtherActionShoot = 4; // Default shoot action using a wand/bow/gun.
+	OtherActionPet = 7; // Represents a grouping of all pet actions. Only used by the UI.
+	OtherActionRefund = 8; // Refund of a resource like Energy or Rage, when the ability didn't land.
+	OtherActionDamageTaken = 9; // Indicates damage taken; used for rage gen.
+	OtherActionHealingModel = 12; // Indicates healing received from healing model.
+	OtherActionBloodRuneGain = 13; // Indicates healing received from healing model.
+	OtherActionFrostRuneGain  = 14; // Indicates healing received from healing model.
+	OtherActionUnholyRuneGain  = 15; // Indicates healing received from healing model.
+	OtherActionDeathRuneGain  = 16; // Indicates healing received from healing model.
+	OtherActionPotion = 17; // Used by APL to generically refer to either the prepull or combat potion.
+	OtherActionSolarEnergyGain = 18; // For balance druid solar energy
+	OtherActionLunarEnergyGain = 19; // For balance druid lunar energy
+	OtherActionMove = 20; // Used by movement to be able to show it in timeline
+	OtherActionPrepull = 21; // Indicated prepull specific action
+	OtherActionEncounterStart = 22; // Indicated resources gained or lost at the start of an encounter
+	OtherActionDamageAmplifier = 23; // Indicated damage done % amplifiers configured in the APL
+}
+
+message ActionID {
+	// Identifies this action.
+	oneof raw_id {
+		int32 spell_id = 1;
+		int32 item_id = 2;
+		OtherAction other_id = 3;
+	}
+
+	// Distinguishes between different versions of the same action.
+	// Currently the only use for this is Shaman Lightning Overload.
+	int32 tag = 4;
+}
+
+message Glyphs {
+	int32 major1 = 1;
+	int32 major2 = 2;
+	int32 major3 = 3;
+	int32 minor1 = 4;
+	int32 minor2 = 5;
+	int32 minor3 = 6;
+}
+
+// Custom options for a particular cooldown.
+message Cooldown {
+	// Identifies the cooldown to which these settings will apply.
+	ActionID id = 1;
+
+	// Fixed times at which to use this cooldown. Each value corresponds to a usage,
+	// e.g. first value is the first usage, second value is the second usage.
+	// Any usages after the specified timings will occur as soon as possible, subject
+	// to the ShouldActivate() condition.
+	repeated double timings = 2;
+}
+
+message Cooldowns {
+	repeated Cooldown cooldowns = 1;
+
+	// % HP threshold, below which defensive cooldowns can be used.
+	double hp_percent_for_defensives = 2;
+}
+
+message HealingModel {
+	// Healing per second to apply.
+	double hps = 1;
+	// How often healing is applied.
+	double cadence_seconds = 2;
+	// Variation in the cadence.
+	double cadence_variation = 4;
+	// Fraction of each heal to model as an absorb shield.
+	double absorb_frac = 5;
+	// TMI burst window bin size
+	int32 burst_window = 3;
+}
+
+message CustomRotation {
+	repeated CustomSpell spells = 1;
+}
+
+message CustomSpell {
+	// This should usually be a spec-specific enum value.
+	int32 spell = 1;
+
+	// Desired cast rate for this spell. Not used by most custom rotations, this is
+	// primarily for healers.
+	double casts_per_minute = 2;
+}
+
+message ItemSwap {
+	repeated ItemSpec items = 1;
+	UnitStats prepull_bonus_stats = 2;
+}
+
+message Duration {
+	double ms = 1;
+}
+
+enum RotationType {
+	UnknownType = 0;
+	SingleTarget = 1;
+	Aoe = 3;
+	Custom = 2;
+}
+
+message UUID {
+	string value = 1;
+}
+
+// Values are expected to be in increasing order of severity
+enum LogLevel {
+	Information = 0;
+	Warning = 1;
+	Error = 2;
+
+	Undefined = -1;
+}
