@@ -55,6 +55,14 @@ func WowSimDB_ReforgeById(reforgeId uint16) stats.ReforgeRecipe {
 	return recipe
 }
 
+func WowSimDB_ReforgeToId(recipe stats.ReforgeRecipe) uint16 {
+	id, ok := reforgeByObj[recipe]
+	if !ok {
+		panic("reforge not found")
+	}
+	return id
+}
+
 func convertItems(itemArray []any) {
 	for _, element := range itemArray {
 		itemObj := element.(map[string]any)

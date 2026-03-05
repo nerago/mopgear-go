@@ -5,14 +5,13 @@ go 1.25.0
 toolchain go1.25.4
 
 require (
-	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/spf13/cobra v1.7.0
 	github.com/tailscale/hujson v0.0.0-20221223112325-20486734a56a
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
 	golang.org/x/text v0.24.0
-	google.golang.org/protobuf v1.36.10
+	google.golang.org/protobuf v1.36.11
 	modernc.org/sqlite v1.37.0
 )
 
