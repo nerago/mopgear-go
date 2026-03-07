@@ -9,6 +9,7 @@
 				"-o", "main.exe",
 				"-v",
 				"-pgo=./main.pgo",
+				"-tags=with_db",
 				"./nerago-gearing/main"
 			],
 			"presentation": {

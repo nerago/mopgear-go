@@ -164,5 +164,7 @@ func PaladinMultiRun() {
 	job.AddSetParam(ret)
 
 	// job.SuggestCulls(500, 10)
-	job.SuggestCulls(5000, 10)
+	// job.SuggestCulls(5000, 10)
+
+	job.FindTopAndPassToSim(5000, 10)
 }

@@ -6,14 +6,15 @@ import (
 	"os"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
-	mystat "paladin_gearing_go/stats"
+	gear_stat "paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 
 	"github.com/google/uuid"
-	"github.com/wowsims/mop/sim/core"
-	"github.com/wowsims/mop/sim/core/proto"
-	theirstat "github.com/wowsims/mop/sim/core/stats"
-	"google.golang.org/protobuf/encoding/protojson"
+	wowsim_sim "github.com/wowsims/mop/sim"
+	wowsim_core "github.com/wowsims/mop/sim/core"
+	wowsim_proto "github.com/wowsims/mop/sim/core/proto"
+	wowsim_stat "github.com/wowsims/mop/sim/core/stats"
+	wowsim_protojson "google.golang.org/protobuf/encoding/protojson"
 )
 
 type WowSim_RunSize int32
@@ -28,7 +29,7 @@ type SimResultStats struct {
 	DPS, TPS, DTPS, HPS, TMI, DEATH float64
 }
 
-func WowSim_Execute(runSize WowSim_RunSize, spec mystat.SpecType, equipMap *items.FullEquipMap, bonusStats *mystat.StatBlock) SimResultStats {
+func WowSim_Execute(runSize WowSim_RunSize, spec gear_stat.SpecType, equipMap *items.FullEquipMap, bonusStats *gear_stat.StatBlock) SimResultStats {
 	verbose := true
 	infile := exampleFileFor(spec)
 	input := loadExampleFile(infile)
@@ -36,26 +37,28 @@ func WowSim_Execute(runSize WowSim_RunSize, spec mystat.SpecType, equipMap *item
 	updateGear(input, equipMap)
 	updateBonus(input, bonusStats)
 
-	reporter := make(chan *proto.ProgressMetrics, 10)
+	reporter := make(chan *wowsim_proto.ProgressMetrics, 10)
 	id := uuid.NewString()
-	core.RunRaidSimConcurrentAsync(input, reporter, "gearing-"+id)
+
+	wowsim_sim.RegisterAll()
+	wowsim_core.RunRaidSimConcurrentAsync(input, reporter, "gearing-"+id)
 
 	finalResult := fetchResult(reporter, verbose)
-	printResult(finalResult)
+	// printResult(finalResult)
 	return convertResult(finalResult)
 }
 
-func updateGear(input *proto.RaidSimRequest, equipMap *items.FullEquipMap) {
+func updateGear(input *wowsim_proto.RaidSimRequest, equipMap *items.FullEquipMap) {
 	if equipMap == nil {
 		return
 	}
 
-	itemSpecArray := make([]*proto.ItemSpec, 0, 16)
+	itemSpecArray := make([]*wowsim_proto.ItemSpec, 0, 16)
 
 	for item := range equipMap.AllItemSeq() {
-		spec := proto.ItemSpec{}
+		spec := wowsim_proto.ItemSpec{}
 		spec.Id = int32(item.Ref.ItemId)
-		spec.UpgradeStep = proto.ItemLevelState(item.Ref.UpgradeLevel())
+		spec.UpgradeStep = wowsim_proto.ItemLevelState(item.Ref.UpgradeLevel())
 		if !item.Reforge.IsEmpty() {
 			spec.Reforging = int32(db.WowSimDB_ReforgeToId(item.Reforge))
 		}
@@ -83,15 +86,15 @@ func updateGear(input *proto.RaidSimRequest, equipMap *items.FullEquipMap) {
 	input.Raid.Parties[0].Players[0].Equipment.Items = itemSpecArray
 }
 
-func updateBonus(input *proto.RaidSimRequest, bonusStats *mystat.StatBlock) {
+func updateBonus(input *wowsim_proto.RaidSimRequest, bonusStats *gear_stat.StatBlock) {
 	if bonusStats == nil {
 		return
 	}
 
-	unitStats := proto.UnitStats{}
+	unitStats := wowsim_proto.UnitStats{}
 
 	for index := range bonusStats {
-		stat := mystat.StatType(index)
+		stat := gear_stat.StatType(index)
 		theirIndex := mapStat(stat)
 		unitStats.Stats[theirIndex] = float64(bonusStats[stat])
 	}
@@ -99,53 +102,51 @@ func updateBonus(input *proto.RaidSimRequest, bonusStats *mystat.StatBlock) {
 	input.Raid.Parties[0].Players[0].BonusStats = &unitStats
 }
 
-func mapStat(stat mystat.StatType) theirstat.Stat {
+func mapStat(stat gear_stat.StatType) wowsim_stat.Stat {
 	switch stat {
-	case mystat.Stat_Strength:
-		return theirstat.Strength
-	case mystat.Stat_Agility:
-		return theirstat.Agility
-	case mystat.Stat_Stamina:
-		return theirstat.Stamina
-	case mystat.Stat_Intellect:
-		return theirstat.Intellect
-	case mystat.Stat_Spirit:
-		return theirstat.Spirit
-	case mystat.Stat_Hit:
-		return theirstat.HitRating
-	case mystat.Stat_Crit:
-		return theirstat.CritRating
-	case mystat.Stat_Haste:
-		return theirstat.HasteRating
-	case mystat.Stat_Expertise:
-		return theirstat.ExpertiseRating
-	case mystat.Stat_Dodge:
-		return theirstat.DodgeRating
-	case mystat.Stat_Parry:
-		return theirstat.ParryRating
-	case mystat.Stat_Mastery:
-		return theirstat.MasteryRating
+	case gear_stat.Stat_Strength:
+		return wowsim_stat.Strength
+	case gear_stat.Stat_Agility:
+		return wowsim_stat.Agility
+	case gear_stat.Stat_Stamina:
+		return wowsim_stat.Stamina
+	case gear_stat.Stat_Intellect:
+		return wowsim_stat.Intellect
+	case gear_stat.Stat_Spirit:
+		return wowsim_stat.Spirit
+	case gear_stat.Stat_Hit:
+		return wowsim_stat.HitRating
+	case gear_stat.Stat_Crit:
+		return wowsim_stat.CritRating
+	case gear_stat.Stat_Haste:
+		return wowsim_stat.HasteRating
+	case gear_stat.Stat_Expertise:
+		return wowsim_stat.ExpertiseRating
+	case gear_stat.Stat_Dodge:
+		return wowsim_stat.DodgeRating
+	case gear_stat.Stat_Parry:
+		return wowsim_stat.ParryRating
+	case gear_stat.Stat_Mastery:
+		return wowsim_stat.MasteryRating
 	default:
 		panic("unknown that")
 	}
 }
 
-func fetchResult(reporter chan *proto.ProgressMetrics, verbose bool) *proto.RaidSimResult {
-	var finalResult *proto.RaidSimResult
+func fetchResult(reporter chan *wowsim_proto.ProgressMetrics, verbose bool) *wowsim_proto.RaidSimResult {
 	for v := range reporter {
 		if v.FinalRaidResult != nil {
-			finalResult = v.FinalRaidResult
-			break
+			return v.FinalRaidResult
 		}
 		if verbose {
 			fmt.Printf("Sim Progress: %d / %d\n", v.CompletedIterations, v.TotalIterations)
 		}
 	}
-	return finalResult
+	panic("no final result")
 }
 
-func printResult(finalResult *proto.RaidSimResult) {
-	output, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(finalResult)
+func printResult(finalResult *wowsim_proto.RaidSimResult) {
+	output, err := wowsim_protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(finalResult)
 	if err != nil {
 		log.Fatalf("failed to marshal final results: %s", err)
 	}
@@ -153,32 +154,38 @@ func printResult(finalResult *proto.RaidSimResult) {
 	fmt.Print(string(output))
 }
 
-func convertResult(finalResult *proto.RaidSimResult) SimResultStats {
-	playerMetrics := finalResult.RaidMetrics.Parties[0].Players[0]
-	return SimResultStats{DPS: playerMetrics.Dps.Avg, TPS: playerMetrics.Threat.Avg, DTPS: playerMetrics.Dtps.Avg, TMI: playerMetrics.Tmi.Avg, HPS: playerMetrics.Hps.Avg, DEATH: playerMetrics.ChanceOfDeath}
+func convertResult(finalResult *wowsim_proto.RaidSimResult) SimResultStats {
+	if finalResult.Error != nil {
+		panic("sim fail = " + finalResult.Error.Message)
+	} else if finalResult != nil && finalResult.RaidMetrics != nil && finalResult.RaidMetrics.Parties != nil && finalResult.RaidMetrics.Parties[0] != nil && finalResult.RaidMetrics.Parties[0].Players != nil && finalResult.RaidMetrics.Parties[0].Players[0] != nil {
+		playerMetrics := finalResult.RaidMetrics.Parties[0].Players[0]
+		return SimResultStats{DPS: playerMetrics.Dps.Avg, TPS: playerMetrics.Threat.Avg, DTPS: playerMetrics.Dtps.Avg, TMI: playerMetrics.Tmi.Avg, HPS: playerMetrics.Hps.Avg, DEATH: playerMetrics.ChanceOfDeath}
+	} else {
+		panic("incomplete sim result")
+	}
 }
 
-func loadExampleFile(infile string) *proto.RaidSimRequest {
+func loadExampleFile(infile string) *wowsim_proto.RaidSimRequest {
 	data, err := os.ReadFile(infile)
 	if err != nil {
 		log.Fatalf("failed to load input json file %q: %v", infile, err)
 	}
 
-	input := &proto.RaidSimRequest{}
-	err = protojson.UnmarshalOptions{DiscardUnknown: true}.Unmarshal(data, input)
+	input := &wowsim_proto.RaidSimRequest{}
+	err = wowsim_protojson.UnmarshalOptions{DiscardUnknown: true}.Unmarshal(data, input)
 	if err != nil {
 		log.Fatalf("failed to load input json file: %s", err)
 	}
 	return input
 }
 
-func exampleFileFor(spec mystat.SpecType) string {
+func exampleFileFor(spec gear_stat.SpecType) string {
 	switch spec {
-	case mystat.Spec_PaladinProtDps:
+	case gear_stat.Spec_PaladinProtDps:
 		return "C:\\Users\\nicholas\\Dropbox\\prog\\wow-sim-mop\\example-prot-dps.json"
-	case mystat.Spec_PaladinProtMitigation:
+	case gear_stat.Spec_PaladinProtMitigation:
 		return "C:\\Users\\nicholas\\Dropbox\\prog\\wow-sim-mop\\example-prot-miti.json"
-	case mystat.Spec_PaladinRet:
+	case gear_stat.Spec_PaladinRet:
 		return "C:\\Users\\nicholas\\Dropbox\\prog\\wow-sim-mop\\example-ret.json"
 	default:
 		panic("spec not supported")
