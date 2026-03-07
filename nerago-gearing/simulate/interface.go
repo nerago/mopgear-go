@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
 	mystat "paladin_gearing_go/stats"
+	"paladin_gearing_go/util"
 
 	"github.com/google/uuid"
 	"github.com/wowsims/mop/sim/core"
@@ -23,11 +24,11 @@ const (
 	SlowAccurate WowSim_RunSize = 500000
 )
 
-type WowSim_ResultStats struct {
+type SimResultStats struct {
 	DPS, TPS, DTPS, HPS, TMI, DEATH float64
 }
 
-func WowSim_Execute(runSize WowSim_RunSize, spec mystat.SpecType, equipMap *items.FullEquipMap, bonusStats *mystat.StatBlock) WowSim_ResultStats {
+func WowSim_Execute(runSize WowSim_RunSize, spec mystat.SpecType, equipMap *items.FullEquipMap, bonusStats *mystat.StatBlock) SimResultStats {
 	verbose := true
 	infile := exampleFileFor(spec)
 	input := loadExampleFile(infile)
@@ -152,9 +153,9 @@ func printResult(finalResult *proto.RaidSimResult) {
 	fmt.Print(string(output))
 }
 
-func convertResult(finalResult *proto.RaidSimResult) WowSim_ResultStats {
+func convertResult(finalResult *proto.RaidSimResult) SimResultStats {
 	playerMetrics := finalResult.RaidMetrics.Parties[0].Players[0]
-	return WowSim_ResultStats{DPS: playerMetrics.Dps.Avg, TPS: playerMetrics.Threat.Avg, DTPS: playerMetrics.Dtps.Avg, TMI: playerMetrics.Tmi.Avg, HPS: playerMetrics.Hps.Avg, DEATH: playerMetrics.ChanceOfDeath}
+	return SimResultStats{DPS: playerMetrics.Dps.Avg, TPS: playerMetrics.Threat.Avg, DTPS: playerMetrics.Dtps.Avg, TMI: playerMetrics.Tmi.Avg, HPS: playerMetrics.Hps.Avg, DEATH: playerMetrics.ChanceOfDeath}
 }
 
 func loadExampleFile(infile string) *proto.RaidSimRequest {
@@ -182,4 +183,13 @@ func exampleFileFor(spec mystat.SpecType) string {
 	default:
 		panic("spec not supported")
 	}
+}
+
+func (stats SimResultStats) Print(printer *util.PrintRecorder) {
+	printer.Printf("DPS\t%.2f\n", stats.DPS)
+	printer.Printf("TPS\t%.2f\n", stats.TPS)
+	printer.Printf("DTPS\t%.2f\n", stats.DTPS)
+	printer.Printf("HPS\t%.2f\n", stats.HPS)
+	printer.Printf("TMI\t%.2f\n", stats.TMI)
+	printer.Printf("DEATH\t%.2f\n", stats.DEATH*100)
 }

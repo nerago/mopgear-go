@@ -8,17 +8,19 @@ import (
 
 func (job *MultiSetJob) SuggestCulls(targetCount uint64, topCapture int) {
 	bestOutputs := job.runForTopN(targetCount, topCapture)
+	job.listInitialOutputs(bestOutputs)
+	job.cullingMakeRevisions(bestOutputs)
+	job.cullingReport()
+}
 
+func (job *MultiSetJob) listInitialOutputs(bestOutputs []MultiProposedOutput) {
 	for _, best := range bestOutputs {
-		job.printer.Printf("::::::::: MULTI RATING %d ::::::::\n", best.TotalRatingSum)
+		job.printer.Printf("::::::::: MULTI RATING %d :::::::: %s ::::::::\n", best.TotalRatingSum, best.Id)
 		for i, out := range best.Outputs {
 			job.printer.Println(job.params[i].Label)
 			out.Report(&job.printer)
 		}
 	}
-
-	job.cullingMakeRevisions(bestOutputs)
-	job.cullingReport()
 }
 
 func (job *MultiSetJob) runForTopN(targetCount uint64, topCapture int) []MultiProposedOutput {

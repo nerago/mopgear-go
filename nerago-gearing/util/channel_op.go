@@ -174,3 +174,11 @@ func indexSplitsInt(sliceLength int, threadCount int) []int {
 
 	return splitArray
 }
+
+func Channel_Collect[T any](inputChannel <-chan T) []T {
+	slice := make([]T, 0)
+	for item := range inputChannel {
+		slice = append(slice, item)
+	}
+	return slice
+}

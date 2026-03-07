@@ -7,6 +7,8 @@ import (
 	"paladin_gearing_go/solver/phased"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
+
+	"github.com/google/uuid"
 )
 
 type SolveSize uint64
@@ -82,7 +84,7 @@ func Solver(input SolveInput) SolveOutput {
 
 	return util.Optional_MapAsValueOrEmpty(solvedSet,
 		func(set items.SolvableItemSet) SolveOutput {
-			return SolveOutput{true, &input, set, items.FullItemSet_FromSolved(set, input.ItemOptions), model.CalcRatingSolve(&set), printer}
+			return SolveOutput{true, uuid.NewString(), &input, set, items.FullItemSet_FromSolved(set, input.ItemOptions), model.CalcRatingSolve(&set), printer}
 		},
 		func() SolveOutput {
 			return SolveOutput{Success: false, Input: &input, ResultRating: 0, Printer: printer}
@@ -92,6 +94,7 @@ func Solver(input SolveInput) SolveOutput {
 
 type SolveOutput struct {
 	Success      bool
+	OutputId     string
 	Input        *SolveInput
 	SolvedSet    items.SolvableItemSet
 	FullSet      items.FullItemSet
@@ -108,6 +111,7 @@ func (output *SolveOutput) Report(printer *util.PrintRecorder) {
 	if output.Success {
 		fullSet := output.FullSet
 		rating := output.ResultRating
+		printer.Println(output.OutputId)
 		printer.Printf("SET OUTPUT rating %d\n", rating)
 		printer.Printf("BONUS %.2f\n", float64(output.Input.Model.SetBonus.CalcAndMultiply(&fullSet.Items, 1000))/1000.0)
 		printer.Printf("RATED %s\n", fullSet.TotalRated.String())

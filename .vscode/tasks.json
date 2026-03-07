@@ -9,7 +9,7 @@
 				"-o", "main.exe",
 				"-v",
 				"-pgo=./main.pgo",
-				"./main"
+				"./nerago-gearing/main"
 			],
 			"presentation": {
 				"reveal": "silent"
