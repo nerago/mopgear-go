@@ -37,7 +37,7 @@ func MakeTestExpectedBest() items.SolvableEquipMap {
 
 func testItem(id, statValue uint32) items.SolvableItem {
 	block := stats.StatBlock_of(stats.Stat_Crit, statValue)
-	return items.SolvableItem{ItemId: id, TotalCap: block, TotalRated: block}
+	return items.SolvableItem_ForTest(id, block)
 }
 
 func testItemPointer(id, statValue uint32) *items.SolvableItem {

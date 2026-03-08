@@ -4,7 +4,6 @@ import (
 	"math/big"
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model"
-	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
 
@@ -89,9 +88,7 @@ func makeSetFromArraysAndAdvance(slotOptions *SolvableOptionsMap, slotIndexes *[
 			index := slotIndexes[slot]
 			item := &options[index]
 
-			itemSet.Items[slot] = item
-			stats.StatBlock_Increment_Mutating(&itemSet.TotalCap, &item.TotalCap)
-			stats.StatBlock_Increment_Mutating(&itemSet.TotalRated, &item.TotalRated)
+			itemSet.AddItem_Mutating(SlotEquip(slot), item)
 
 			if slotSize > 1 && skip > 0 {
 				value := uint64(slotIndexes[slot]) + skip
@@ -101,20 +98,6 @@ func makeSetFromArraysAndAdvance(slotOptions *SolvableOptionsMap, slotIndexes *[
 		}
 	}
 }
-
-// func makeSetFromArraysDirect(slotOptions *SolvableOptionsMap, slotIndexes *[16]uint32, itemSet *SolvableItemSet) {
-// 	itemSet.Clear()
-// 	for slot := range slotOptions {
-// 		if slotOptions[slot] != nil {
-// 			index := slotIndexes[slot]
-// 			item := &slotOptions[slot][index]
-
-// 			itemSet.Items[slot] = item
-// 			stats.StatBlock_Increment_Mutating(&itemSet.TotalCap, &item.TotalCap)
-// 			stats.StatBlock_Increment_Mutating(&itemSet.TotalRated, &item.TotalRated)
-// 		}
-// 	}
-// }
 
 func advanceArrays(indexes *[16]uint32, sizes *[16]uint32, skip uint64) {
 	for slot := range indexes {

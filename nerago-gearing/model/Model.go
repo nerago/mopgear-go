@@ -18,7 +18,7 @@ type Model struct {
 }
 
 func (model *Model) CheckSet(itemSet *SolvableItemSet) bool {
-	return model.StatRequirements.CheckSet(&itemSet.TotalCap)
+	return model.StatRequirements.CheckSet(itemSet.TotalCap())
 }
 
 func (model *Model) CheckSetSkinny(itemSet *SkinnyItemSet) bool {
@@ -26,23 +26,23 @@ func (model *Model) CheckSetSkinny(itemSet *SkinnyItemSet) bool {
 }
 
 func (model *Model) CalcRatingSolve(itemSet *SolvableItemSet) uint64 {
-	rating := model.StatRatings.CalcRating(&itemSet.TotalRated)
+	rating := model.StatRatings.CalcRating(itemSet.TotalRated())
 	rating = model.SetBonus.CalcAndMultiplySolve(&itemSet.Items, rating)
 	return rating
 }
 
 func (model *Model) CalcRatingFull(itemSet *FullItemSet) uint64 {
-	rating := model.StatRatings.CalcRating(&itemSet.TotalRated)
+	rating := model.StatRatings.CalcRating(itemSet.TotalRated())
 	rating = model.SetBonus.CalcAndMultiply(&itemSet.Items, rating)
 	return rating
 }
 
 func (model *Model) CalcRatingFullItem(item *FullItem) uint64 {
-	return model.StatRatings.CalcRating(&item.TotalRated)
+	return model.StatRatings.CalcRating(item.TotalRated())
 }
 
 func (model *Model) CalcRatingSolveItem(item *SolvableItem) uint64 {
-	return model.StatRatings.CalcRating(&item.TotalRated)
+	return model.StatRatings.CalcRating(item.TotalRated())
 }
 
 const weightMitiFile = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\src\main\resources\weight\PaladinProtMitigation.txt`

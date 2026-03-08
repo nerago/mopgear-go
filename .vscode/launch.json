@@ -7,7 +7,7 @@
             "request": "launch",
             "mode": "debug",
             "program": "./nerago-gearing/main",
-            "buildFlags": "-tags=with_db",
+            "buildFlags": "-tags=with_db,statslite",
         },
 
         {

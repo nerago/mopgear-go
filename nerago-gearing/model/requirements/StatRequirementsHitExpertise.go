@@ -56,9 +56,9 @@ func (inst StatRequirementsHitExpertise) CheckSetSkinny(set *SkinnyItemSet) bool
 }
 
 func (inst StatRequirementsHitExpertise) ToSkinny(item *SolvableItem) SkinnyItem {
-	return SkinnyItem{A: item.TotalCap.Hit(), B: item.TotalCap.Expertise(), Exists: true}
+	return SkinnyItem{A: item.TotalCap().Hit(), B: item.TotalCap().Expertise(), Exists: true}
 }
 
 func (inst StatRequirementsHitExpertise) SkinnyMatch(skinny *SkinnyItem, item *SolvableItem) bool {
-	return skinny.A == item.TotalCap.Hit() && skinny.B == item.TotalCap.Expertise()
+	return skinny.A == item.TotalCap().Hit() && skinny.B == item.TotalCap().Expertise()
 }

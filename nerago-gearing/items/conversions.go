@@ -5,17 +5,6 @@ import (
 	"strings"
 )
 
-func SolvableItem_Of(item FullItem) SolvableItem {
-	return SolvableItem{
-		item.Ref.ItemId,
-		// item.ref.itemLevel,
-		// item.slot,
-		// item.reforge,
-		// item.gemChoice,
-		item.TotalCap,
-		item.TotalRated}
-}
-
 func SolvableOptionsMap_of(fullMap *FullOptionsMap) SolvableOptionsMap {
 	result := SolvableOptionsMap{}
 	for slot := range fullMap {
@@ -32,17 +21,6 @@ func SolvableOptionsMap_of(fullMap *FullOptionsMap) SolvableOptionsMap {
 	return result
 }
 
-func FullItemSet_FromSolved(solvedSet SolvableItemSet, optionsMap *FullOptionsMap) FullItemSet {
-	fullMap := FullEquipMap{}
-	for slot, solveItem := range solvedSet.Items {
-		if solveItem != nil {
-			fullItem := findMatch(optionsMap[slot], solveItem)
-			fullMap[slot] = fullItem
-		}
-	}
-	return FullItemSet{Items: fullMap, TotalCap: solvedSet.TotalCap, TotalRated: solvedSet.TotalRated}
-}
-
 func findMatch(fullItem []FullItem, solveItem *SolvableItem) *FullItem {
 	for _, item := range fullItem {
 		if isMatch(&item, solveItem) {
@@ -50,13 +28,6 @@ func findMatch(fullItem []FullItem, solveItem *SolvableItem) *FullItem {
 		}
 	}
 	panic("match not found")
-}
-
-func isMatch(fullItem *FullItem, solveItem *SolvableItem) bool {
-	// TODO is it okay to not check item level
-	return fullItem.ItemId() == solveItem.ItemId &&
-		fullItem.TotalCap == solveItem.TotalCap &&
-		fullItem.TotalRated == solveItem.TotalRated
 }
 
 func (item *FullItem) String() string {
