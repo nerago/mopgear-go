@@ -30,7 +30,7 @@ func testSim() {
 		EnableTrackProgress: true,
 		SolveSize:           solver.SolveSize_Medium,
 		Printer:             nil})
-	resultStats := simulate.WowSim_Execute(simulate.QuickDirty, model.Spec, &output.FullSet.Items, nil)
+	resultStats := simulate.WowSim_Execute(simulate.RunSize_QuickDirty, model.Spec, &output.FullSet.Items, nil)
 	resultStats.Print(printer)
 }
 

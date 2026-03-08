@@ -4,6 +4,7 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/multi"
+	"paladin_gearing_go/simulate"
 )
 
 func PaladinMultiRun() {
@@ -58,7 +59,6 @@ func PaladinMultiRun() {
 		96376, // worldbreaker weapon
 	})
 	protDps.AddFixedSlot(items.Equip_Ring2, 95513) // scaled tyrant normal
-	job.AddSetParam(protDps)
 
 	protMitigation := multi.MultiSetParam{
 		Label:                "Prot-Mitigation",
@@ -110,7 +110,6 @@ func PaladinMultiRun() {
 		96376, // worldbreaker weapon
 	})
 	protMitigation.AddFixedSlot(items.Equip_Ring2, 95513) // scaled tyrant normal
-	job.AddSetParam(protMitigation)
 
 	ret := multi.MultiSetParam{
 		Label:                "Ret",
@@ -161,10 +160,13 @@ func PaladinMultiRun() {
 		96394, // frozen warlord bracer heroic
 	})
 	ret.AddFixedSlot(items.Equip_Ring2, 95513) // scaled tyrant normal
+
 	job.AddSetParam(ret)
+	job.AddSetParam(protDps)
+	job.AddSetParam(protMitigation)
 
 	// job.SuggestCulls(500, 10)
 	// job.SuggestCulls(5000, 10)
 
-	job.FindTopAndPassToSim(5000, 10)
+	job.FindTopAndPassToSim(50000, 30, simulate.RunSize_Medium)
 }

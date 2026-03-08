@@ -19,9 +19,9 @@ import (
 type WowSim_RunSize int32
 
 const (
-	QuickDirty   WowSim_RunSize = 20000
-	Medium       WowSim_RunSize = 100000
-	SlowAccurate WowSim_RunSize = 500000
+	RunSize_QuickDirty   WowSim_RunSize = 20000
+	RunSize_Medium       WowSim_RunSize = 100000
+	RunSize_SlowAccurate WowSim_RunSize = 500000
 )
 
 func WowSim_Execute(runSize WowSim_RunSize, spec gear_stat.SpecType, equipMap *items.FullEquipMap, bonusStats *gear_stat.StatBlock) SimResultStats {

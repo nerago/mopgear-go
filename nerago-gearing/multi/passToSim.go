@@ -10,9 +10,7 @@ import (
 	"strings"
 )
 
-const sim_runSize = simulate.SlowAccurate
-
-func (job *MultiSetJob) FindTopAndPassToSim(targetCount uint64, topCapture int) {
+func (job *MultiSetJob) FindTopAndPassToSim(targetCount uint64, topCapture int, runSize simulate.WowSim_RunSize) {
 	job.printer.Printf("@@@@@@@@@@ FIND TOP %d %d @@@@@@@@@@\n", targetCount, topCapture)
 	bestOutputs := job.runForTopN(targetCount, topCapture)
 	job.listInitialOutputs(bestOutputs)
@@ -20,7 +18,7 @@ func (job *MultiSetJob) FindTopAndPassToSim(targetCount uint64, topCapture int) 
 	proposalList := job.prepareRevisionsForSim(bestOutputs)
 
 	simList := job.prepareSimList(proposalList)
-	job.runSims(simList)
+	job.runSims(simList, runSize)
 
 	simResult := job.linkSimResults(proposalList, simList)
 	job.reportSimResults(simResult)
@@ -136,11 +134,11 @@ func (job *MultiSetJob) prepareSimList(proposalList []MultiProposedOutput) []sim
 	return jobList
 }
 
-func (job *MultiSetJob) runSims(jobList []simulateJob) {
+func (job *MultiSetJob) runSims(jobList []simulateJob, runSize simulate.WowSim_RunSize) {
 	job.printer.Printf("@@@@@@@@@@ RUN SIM JOBS %d @@@@@@@@@@\n", len(jobList))
 
 	util.Void_IterateEach_Multi_BlockingTracked(evaluateThreadCount, jobList, func(sim *simulateJob) {
-		result := simulate.WowSim_Execute(sim_runSize, sim.spec, &sim.equip, nil)
+		result := simulate.WowSim_Execute(runSize, sim.spec, &sim.equip, nil)
 		sim.result = &result
 	})
 }
