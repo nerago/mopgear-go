@@ -7,7 +7,6 @@ import (
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
 	gear_stat "paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
 
 	"github.com/google/uuid"
 	wowsim_sim "github.com/wowsims/mop/sim"
@@ -25,12 +24,8 @@ const (
 	SlowAccurate WowSim_RunSize = 500000
 )
 
-type SimResultStats struct {
-	DPS, TPS, DTPS, HPS, TMI, DEATH float64
-}
-
 func WowSim_Execute(runSize WowSim_RunSize, spec gear_stat.SpecType, equipMap *items.FullEquipMap, bonusStats *gear_stat.StatBlock) SimResultStats {
-	verbose := true
+	verbose := false
 	infile := exampleFileFor(spec)
 	input := loadExampleFile(infile)
 
@@ -190,13 +185,4 @@ func exampleFileFor(spec gear_stat.SpecType) string {
 	default:
 		panic("spec not supported")
 	}
-}
-
-func (stats SimResultStats) Print(printer *util.PrintRecorder) {
-	printer.Printf("DPS\t%.2f\n", stats.DPS)
-	printer.Printf("TPS\t%.2f\n", stats.TPS)
-	printer.Printf("DTPS\t%.2f\n", stats.DTPS)
-	printer.Printf("HPS\t%.2f\n", stats.HPS)
-	printer.Printf("TMI\t%.2f\n", stats.TMI)
-	printer.Printf("DEATH\t%.2f\n", stats.DEATH*100)
 }

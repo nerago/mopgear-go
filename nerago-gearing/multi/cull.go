@@ -45,7 +45,7 @@ func (job *MultiSetJob) cullingMakeRevisions(proposedList []MultiProposedOutput)
 	trackProgress.RunOuterTracking(expectedSets)
 	defer trackProgress.Stop()
 
-	util.Void_IterateEach_Multi_Blocking(generateThreadCount, proposedList, func(prior MultiProposedOutput) {
+	util.Void_IterateEach_Multi_Blocking(generateThreadCount, proposedList, func(prior *MultiProposedOutput) {
 		printer := util.PrintRecorder_HoldAll()
 		revisedCommon := job.revisedComboActuallyUsed(prior.Outputs, prior.Combo, printer)
 		for i := range prior.Outputs {

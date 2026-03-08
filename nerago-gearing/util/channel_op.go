@@ -119,7 +119,7 @@ func Channel_GenerateAll_Multi[R any](threadCount int, generateSubGroup func(int
 	return outputChannel
 }
 
-func Channel_IterateEach_Multi[T any, R any](threadCount int, inputSlice []T, transform func(T, chan<- R)) <-chan R {
+func Channel_IterateEach_Multi[T any, R any](threadCount int, inputSlice []T, transform func(*T, chan<- R)) <-chan R {
 	var waitGroup sync.WaitGroup
 	outputChannel := makeOutputChannel[R]()
 
@@ -131,7 +131,7 @@ func Channel_IterateEach_Multi[T any, R any](threadCount int, inputSlice []T, tr
 			start := splits[threadNum]
 			end := splits[threadNum+1]
 			for index := start; index < end; index++ {
-				transform(inputSlice[index], outputChannel)
+				transform(&inputSlice[index], outputChannel)
 			}
 		})
 	}
@@ -142,7 +142,7 @@ func Channel_IterateEach_Multi[T any, R any](threadCount int, inputSlice []T, tr
 	return outputChannel
 }
 
-func Void_IterateEach_Multi_Blocking[T any](threadCount int, inputSlice []T, process func(T)) {
+func Void_IterateEach_Multi_Blocking[T any](threadCount int, inputSlice []T, process func(*T)) {
 	var waitGroup sync.WaitGroup
 
 	inputLength := len(inputSlice)
@@ -153,7 +153,32 @@ func Void_IterateEach_Multi_Blocking[T any](threadCount int, inputSlice []T, pro
 			start := splits[threadNum]
 			end := splits[threadNum+1]
 			for index := start; index < end; index++ {
-				process(inputSlice[index])
+				process(&inputSlice[index])
+			}
+		})
+	}
+
+	waitGroup.Wait()
+}
+
+func Void_IterateEach_Multi_BlockingTracked[T any](threadCount int, inputSlice []T, process func(*T)) {
+	var waitGroup sync.WaitGroup
+
+	inputLength := len(inputSlice)
+	splits := indexSplitsInt(inputLength, threadCount)
+
+	counts := make([]uint64, threadCount)
+	trackProgress := TrackProgress_Start()
+	trackProgress.RunFromArray(&counts, uint64(inputLength))
+	defer trackProgress.Stop()
+
+	for threadNum := range threadCount {
+		waitGroup.Go(func() {
+			start := splits[threadNum]
+			end := splits[threadNum+1]
+			for index := start; index < end; index++ {
+				process(&inputSlice[index])
+				counts[threadNum]++
 			}
 		})
 	}

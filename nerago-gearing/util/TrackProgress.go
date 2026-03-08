@@ -12,9 +12,10 @@ type TrackProgress struct {
 	active bool
 	nested bool
 
-	startTime time.Time
-	ctx       context.Context
-	cancel    context.CancelFunc
+	startTime   time.Time
+	lastPercent float64
+	ctx         context.Context
+	cancel      context.CancelFunc
 
 	nestedChildList    []*TrackProgress
 	nestedProgressFunc func() float64
@@ -58,7 +59,10 @@ func (track *TrackProgress) run(getProgress func() (float64, uint64)) {
 					return
 				case <-time.After(time.Second * 5):
 					percent, index := getProgress()
-					PrintProgressInt(track.startTime, percent, index)
+					if percent != track.lastPercent {
+						PrintProgressInt(track.startTime, percent, index)
+						track.lastPercent = percent
+					}
 				}
 			}
 		}()
@@ -81,7 +85,10 @@ func (track *TrackProgress) RunFromBigInt(current *big.Int, targetCount *big.Int
 					var ratio big.Rat
 					ratio.SetFrac(current, targetCount)
 					percent, _ := ratio.Float64()
-					PrintProgressBig(track.startTime, percent, current)
+					if percent != track.lastPercent {
+						PrintProgressBig(track.startTime, percent, current)
+						track.lastPercent = percent
+					}
 				}
 			}
 		}()
@@ -132,7 +139,10 @@ func (track *TrackProgress) RunOuterTracking(expectedChildCount int) {
 						}
 					}
 				}
-				PrintProgressBasic(track.startTime, overallPercent)
+				if overallPercent != track.lastPercent {
+					PrintProgressBasic(track.startTime, overallPercent)
+					track.lastPercent = overallPercent
+				}
 			}
 		}
 	}()

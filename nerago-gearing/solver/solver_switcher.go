@@ -107,7 +107,10 @@ func (output *SolveOutput) Equals(b *SolveOutput) bool {
 }
 
 func (output *SolveOutput) Report(printer *util.PrintRecorder) {
-	printer.AppendOther(output.Printer)
+	if printer != output.Printer {
+		printer.AppendOther(output.Printer)
+	}
+
 	if output.Success {
 		fullSet := output.FullSet
 		rating := output.ResultRating

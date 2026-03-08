@@ -1,13 +1,19 @@
 package main
 
 import (
+	"io"
+	"log"
 	"os"
+	"os/exec"
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/model"
 	. "paladin_gearing_go/setup"
+	"paladin_gearing_go/util"
 	. "paladin_gearing_go/util"
 	"runtime"
 	"runtime/pprof"
+	"strconv"
+	"syscall"
 	"time"
 )
 
@@ -19,10 +25,15 @@ const (
 	enableProfiling        = true
 )
 
-var printer = PrintRecorder{}
+var printer *util.PrintRecorder
 
 func main() {
-	startTime := time.Now()
+	lowerPriority()
+
+	printer = PrintRecorder_CreateLogFile()
+	defer printer.Close()
+
+	log.SetOutput(io.Discard) // ignore wowsim's internal progress logs
 
 	if enableProfiling {
 		f, err := os.Create("main.pgo")
@@ -33,6 +44,8 @@ func main() {
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
 	}
+
+	startTime := time.Now()
 
 	core()
 
@@ -47,8 +60,8 @@ func main() {
 		defer f.Close()
 		runtime.GC()
 		if err := pprof.Lookup("allocs").WriteTo(f, 0); err != nil {
-            panic(err)
-        }
+			panic(err)
+		}
 	}
 }
 
@@ -65,10 +78,20 @@ func core() {
 
 func setupPallyMitigation() (FullOptionsMap, Model) {
 	model := Model_PallyProtMitigation()
-	return OptionsSetup_FromGearFile(gearFileProtMitigation, &model, &printer), model
+	return OptionsSetup_FromGearFile(gearFileProtMitigation, &model, printer), model
 }
 
 func setupPallyDps() (FullOptionsMap, Model) {
 	model := Model_PallyProtDps()
-	return OptionsSetup_FromGearFile(gearFileProtDps, &model, &printer), model
+	return OptionsSetup_FromGearFile(gearFileProtDps, &model, printer), model
+}
+
+func lowerPriority() {
+	// NOTE go command mangles the double quote in priority if allowed to build command line
+	pid := strconv.Itoa(os.Getpid())
+	cmd := exec.Command(`C:\Windows\System32\wbem\wmic.exe`)
+	cmd.SysProcAttr = &syscall.SysProcAttr{CmdLine: `C:\\Windows\\System32\\wbem\\wmic.exe process where ProcessId=` + pid + ` CALL setpriority "below normal"`}
+	if err := cmd.Run(); err != nil {
+		panic(err)
+	}
 }

@@ -2,13 +2,35 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "Build Gearing Optimised",
 			"type": "go",
-			"label": "go: build optimised",
 			"command": "build",
 			"args": [
 				"-o", "main.exe",
 				"-v",
 				"-pgo=./main.pgo",
+				"-tags=with_db",
+				"./nerago-gearing/main"
+			],
+			"presentation": {
+				"reveal": "silent"
+			},
+			"problemMatcher": [
+				"$go"
+			],
+			"group": {
+				"kind": "build",
+			}
+		},
+
+		{
+			"label": "Build Gearing Debug",
+			"type": "go",
+			"command": "build",
+			"args": [
+				"-o", "main.exe",
+				"-v",
+				"-pgo=off",
 				"-tags=with_db",
 				"./nerago-gearing/main"
 			],

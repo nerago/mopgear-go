@@ -31,7 +31,7 @@ func testSim() {
 		SolveSize:           solver.SolveSize_Medium,
 		Printer:             nil})
 	resultStats := simulate.WowSim_Execute(simulate.QuickDirty, model.Spec, &output.FullSet.Items, nil)
-	resultStats.Print(&printer)
+	resultStats.Print(printer)
 }
 
 func slotRating(itemArray []FullItem, model *Model, printer *PrintRecorder) {

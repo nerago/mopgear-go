@@ -11,13 +11,14 @@ import (
 func RemoveDuplicatesFunc[T any](slice []T, equals func(a, b *T) bool) []T {
 	result := make([]T, 0, len(slice))
 outer:
-	for _, a := range slice {
-		for _, b := range result {
-			if equals(&a, &b) {
+	for outerIndex := range slice {
+		next := &slice[outerIndex]
+		for checkIndex := range result {
+			if equals(next, &result[checkIndex]) {
 				continue outer
 			}
 		}
-		result = append(result, a)
+		result = append(result, *next)
 	}
 	return result
 }
@@ -25,14 +26,15 @@ outer:
 func RemoveDuplicatesFuncNotify[T any](slice []T, equals func(a, b *T) bool, removedNotify func(x *T)) []T {
 	result := make([]T, 0, len(slice))
 outer:
-	for _, a := range slice {
-		for _, b := range result {
-			if equals(&a, &b) {
-				removedNotify(&b)
+	for outerIndex := range slice {
+		next := &slice[outerIndex]
+		for checkIndex := range result {
+			if equals(next, &result[checkIndex]) {
+				removedNotify(next)
 				continue outer
 			}
 		}
-		result = append(result, a)
+		result = append(result, *next)
 	}
 	return result
 }

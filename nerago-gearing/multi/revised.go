@@ -8,7 +8,7 @@ import (
 const revisedExtraSetsExpectedEach = 2
 
 func (job *MultiSetJob) makeRevised(param *MultiSetParam, filteredCombo commonCombo, outerTrackProgress *util.TrackProgress) []solver.SolveOutput {
-	extraOutputs := make([]solver.SolveOutput, 0)
+	extraOutputs := make([]solver.SolveOutput, 0, 3)
 
 	revisedOutput := job.revisedSolveCombo(filteredCombo, param, param.PhasedAcceptable, outerTrackProgress)
 	if revisedOutput.Success {

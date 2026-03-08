@@ -2,21 +2,21 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Package Debug",
+            "name": "Launch Gearing Debug",
             "type": "go",
             "request": "launch",
-            "mode": "auto",
-            "program": "main"
+            "mode": "debug",
+            "program": "./nerago-gearing/main",
+            "buildFlags": "-tags=with_db",
         },
 
         {
-            "name": "Launch Package Optimised",
+            "name": "Launch Gearing Optimised",
             "type": "go",
             "request": "launch",
             "mode": "exec",
             "program": "main.exe",
-            "preLaunchTask": "go: build optimised"
-            // "postDebugTask": "clean optimised"
+            "preLaunchTask": "Build Gearing Optimised"
         },
 
         {

@@ -69,6 +69,16 @@ func groupById(itemSeq iter.Seq[*items.FullItem]) map[uint32][]items.FullItem {
 	return grouped
 }
 
+func groupByIdMapped[T any](inputList []T, mapper func(T) iter.Seq[*items.FullItem]) map[uint32][]items.FullItem {
+	grouped := make(map[uint32][]items.FullItem)
+	for i := range inputList {
+		for item := range mapper(inputList[i]) {
+			grouped[item.ItemId()] = append(grouped[item.ItemId()], *item)
+		}
+	}
+	return grouped
+}
+
 func filterCommonForges(prior []items.FullItem, newOptions []items.FullItem) []items.FullItem {
 	if prior == nil {
 		return newOptions
