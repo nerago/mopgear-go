@@ -58,10 +58,6 @@ func FullItemSet_FromSolved(solvedSet SolvableItemSet, optionsMap *FullOptionsMa
 	return FullItemSet{Items: fullMap, totalCap: solvedSet.totalCap, totalRated: solvedSet.totalRated}
 }
 
-func (itemSet *FullItemSet) Equals(other FullItemSet) bool {
-	return itemSet.Items.Equals(&other.Items)
-}
-
 func (itemSet *FullItemSet) PrintStats(printer *util.PrintRecorder) {
 	printer.Printf("RATED %s\n", itemSet.totalRated.String())
 	printer.Printf("CAP %s\n", itemSet.totalCap.String())

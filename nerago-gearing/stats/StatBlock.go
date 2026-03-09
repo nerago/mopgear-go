@@ -38,6 +38,15 @@ func StatBlock_Increment_Mutating(mutate *StatBlock, other *StatBlock)
 // 	}
 // }
 
+func StatBlock_Equals_Assem(a, b *StatBlock) bool
+
+func StatBlock_Equals_Ptr(a, b *StatBlock) (ret bool) {
+	return a == b
+}
+func StatBlock_Equals_Ref(a, b *StatBlock) (ret bool) {
+	return *a == *b
+}
+
 func (block *StatBlock) MultiplyForTotalSum(other *StatBlock) uint64 {
 	var result uint64 = 0
 	for i := range block {

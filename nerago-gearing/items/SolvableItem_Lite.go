@@ -60,19 +60,11 @@ func (set *SolvableItemSet) Clear() {
 }
 
 func (set *SolvableItemSet) AddItem_Mutating(slot SlotEquip, item *SolvableItem) {
-	if set.Items[slot] != nil {
-		panic("slot not empty")
-	}
-
 	set.Items[slot] = item
 	StatBlock_Increment_Mutating(&set.total, &item.total)
 }
 
 func (set *SolvableItemSet) AddItem_CreateNew(slot SlotEquip, item *SolvableItem) SolvableItemSet {
-	if set.Items[slot] != nil {
-		panic("slot not empty")
-	}
-
 	result := SolvableItemSet{}
 	result.Items = set.Items
 	result.Items[slot] = item

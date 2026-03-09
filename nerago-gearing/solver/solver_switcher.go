@@ -16,7 +16,7 @@ type SolveSize uint64
 const (
 	SolveSize_PerItem SolveSize = 100_000
 	SolveSize_Medium  SolveSize = 20_000_000
-	SolveSize_Long    SolveSize = 100_000_000
+	SolveSize_Long    SolveSize = 1_000_000_000
 )
 
 type SolveInput struct {

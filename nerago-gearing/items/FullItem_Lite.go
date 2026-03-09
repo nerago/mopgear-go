@@ -51,10 +51,6 @@ func FullItemSet_FromSolved(solvedSet SolvableItemSet, optionsMap *FullOptionsMa
 	return FullItemSet{Items: fullMap, total: solvedSet.total}
 }
 
-func (itemSet *FullItemSet) Equals(other FullItemSet) bool {
-	return itemSet.Items.Equals(&other.Items)
-}
-
 func (itemSet *FullItemSet) PrintStats(printer *util.PrintRecorder) {
 	printer.Printf("STATS %s\n", itemSet.total.String())
 }

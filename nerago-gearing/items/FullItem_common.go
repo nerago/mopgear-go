@@ -46,3 +46,7 @@ func (item *FullItem) Equals(other *FullItem) bool {
 	return item.Ref.ItemId == other.Ref.ItemId && item.Ref.ItemLevel == other.Ref.ItemLevel && item.Slot == other.Slot &&
 		item.StatBase == other.StatBase && item.StatEnchant == other.StatEnchant
 }
+
+func (itemSet *FullItemSet) Equals(other FullItemSet) bool {
+	return itemSet.Items.Equals(&other.Items)
+}
