@@ -72,16 +72,16 @@ func (set *SolvableItemSet) AddItem_CreateNew(slot SlotEquip, item *SolvableItem
 	return result
 }
 
-func (item *SolvableItemSet) TotalCap() *StatBlock {
-	return &item.total
+func (set *SolvableItemSet) TotalCap() *StatBlock {
+	return &set.total
 }
 
-func (item *SolvableItemSet) TotalRated() *StatBlock {
-	return &item.total
+func (set *SolvableItemSet) TotalRated() *StatBlock {
+	return &set.total
 }
 
 func isMatch(fullItem *FullItem, solveItem *SolvableItem) bool {
 	// TODO is it okay to not check item level
 	return fullItem.ItemId() == solveItem.ItemId &&
-		fullItem.total == solveItem.total
+		StatBlock_Equals(&fullItem.total, &solveItem.total)
 }

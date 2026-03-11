@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+const outputPath = `C:\Users\nicholas\Dropbox\prog\paladin_gearing_go\output\`
+
 type PrintRecorder struct {
 	holdOutput bool
 	lines      []string
@@ -14,8 +16,8 @@ type PrintRecorder struct {
 }
 
 func PrintRecorder_CreateLogFile() *PrintRecorder {
-	timeStr := strings.Replace(time.Now().Format(time.RFC3339), ":", "-", -1)
-	logName := "output-" + timeStr + ".log"
+	timeStr := strings.ReplaceAll(time.Now().Format(time.RFC3339), ":", "-")
+	logName := outputPath + "output-" + timeStr + ".log"
 	file, err := os.Create(logName)
 	if err != nil {
 		panic("error creating log")
@@ -74,4 +76,13 @@ func (print *PrintRecorder) AppendOther(other *PrintRecorder) {
 
 func (print *PrintRecorder) Close() {
 	print.writer.Close()
+
+	// delete if empty
+	logName := print.writer.Name()
+	info, err := os.Stat(logName)
+	if err == nil {
+		if info.Size() == 0 {
+			os.Remove(logName)
+		}
+	}
 }

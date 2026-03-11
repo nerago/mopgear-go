@@ -44,7 +44,7 @@ func (item *fullItem_common) IsEmpty() bool {
 
 func (item *FullItem) Equals(other *FullItem) bool {
 	return item.Ref.ItemId == other.Ref.ItemId && item.Ref.ItemLevel == other.Ref.ItemLevel && item.Slot == other.Slot &&
-		item.StatBase == other.StatBase && item.StatEnchant == other.StatEnchant
+		stats.StatBlock_Equals(&item.StatBase, &other.StatBase) && stats.StatBlock_Equals(&item.StatEnchant, &other.StatEnchant)
 }
 
 func (itemSet *FullItemSet) Equals(other FullItemSet) bool {

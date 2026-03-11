@@ -55,10 +55,10 @@ func (itemSet *FullItemSet) PrintStats(printer *util.PrintRecorder) {
 	printer.Printf("STATS %s\n", itemSet.total.String())
 }
 
-func (item *FullItemSet) TotalCap() *StatBlock {
-	return &item.total
+func (itemSet *FullItemSet) TotalCap() *StatBlock {
+	return &itemSet.total
 }
 
-func (item *FullItemSet) TotalRated() *StatBlock {
-	return &item.total
+func (itemSet *FullItemSet) TotalRated() *StatBlock {
+	return &itemSet.total
 }

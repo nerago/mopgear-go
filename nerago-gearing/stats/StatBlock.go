@@ -38,13 +38,16 @@ func StatBlock_Increment_Mutating(mutate *StatBlock, other *StatBlock)
 // 	}
 // }
 
-func StatBlock_Equals_Assem(a, b *StatBlock) bool
+func StatBlock_Equals2(a, b *StatBlock) bool
 
-func StatBlock_Equals_Ptr(a, b *StatBlock) (ret bool) {
-	return a == b
-}
-func StatBlock_Equals_Ref(a, b *StatBlock) (ret bool) {
-	return *a == *b
+// FALLBACK
+// no better performance
+// func StatBlock_Equals(a, b *StatBlock) (ret bool) {
+// 	return *a == *b
+// }
+
+func StatBlock_Equals(a, b *StatBlock) (ret bool) {
+	return StatBlock_Equals2(a,b)
 }
 
 func (block *StatBlock) MultiplyForTotalSum(other *StatBlock) uint64 {
@@ -78,15 +81,6 @@ func (block *StatBlock) HasSingleStat() bool {
 		}
 	}
 	return countNonZero == 1
-}
-
-func StatBlock_equals(a, b *StatBlock) bool {
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
 }
 
 func (block *StatBlock) Get(stat StatType) uint32 {

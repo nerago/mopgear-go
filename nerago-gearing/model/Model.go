@@ -8,13 +8,17 @@ import (
 )
 
 type Model struct {
-	Spec             SpecType
-	StatRatings      StatRatings
-	StatRequirements StatRequirements
-	ReforgeRules     ReforgeRules
-	EnchantChoice    EnchantChoice
-	GemChoice        GemChoice
-	SetBonus         SetBonus
+	// StatRequirements StatRequirements
+	// StatRatings      StatRatings
+	StatRequirements StatRequirementsHitExpertise
+	StatRatings      StatRatingsWeights
+
+	Spec SpecType
+
+	ReforgeRules  ReforgeRules
+	EnchantChoice EnchantChoice
+	GemChoice     GemChoice
+	SetBonus      SetBonus
 }
 
 func (model *Model) CheckSet(itemSet *SolvableItemSet) bool {
@@ -54,13 +58,13 @@ func Model_PallyProtMitigation() Model {
 	weightDps := StatRatingsWeights_ReadFile(weightDpsFile, false, true, false)
 	weight := StatRatingsWeights_Mix(weightMiti, 95, weightDps, 34)
 	return Model{
-		Spec_PaladinProtMitigation,
-		weight,
-		StatRequirementsHitExpertise_ProtFlexibleParry(),
-		ReforgeRules_tank,
-		EnchantChoice_ForSpec(Spec_PaladinProtMitigation),
-		GemChoice_ForSpec(Spec_PaladinProtMitigation),
-		SetBonus_Named("Plate of the Lightning Emperor Prot Mitigation")}
+		Spec:             Spec_PaladinProtMitigation,
+		StatRatings:      weight,
+		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
+		ReforgeRules:     ReforgeRules_tank,
+		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtMitigation),
+		GemChoice:        GemChoice_ForSpec(Spec_PaladinProtMitigation),
+		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Mitigation")}
 }
 
 func Model_PallyProtDps() Model {
@@ -68,35 +72,35 @@ func Model_PallyProtDps() Model {
 	weightDps := StatRatingsWeights_ReadFile(weightDpsFile, false, true, false)
 	weight := StatRatingsWeights_Mix(weightMiti, 32, weightDps, 146)
 	return Model{
-		Spec_PaladinProtDps,
-		weight,
-		StatRequirementsHitExpertise_ProtFlexibleParry(),
-		ReforgeRules_tank,
-		EnchantChoice_ForSpec(Spec_PaladinProtDps),
-		GemChoice_ForSpec(Spec_PaladinProtDps),
-		SetBonus_Named("Plate of the Lightning Emperor Prot Damage")}
+		Spec:             Spec_PaladinProtDps,
+		StatRatings:      weight,
+		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
+		ReforgeRules:     ReforgeRules_tank,
+		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtDps),
+		GemChoice:        GemChoice_ForSpec(Spec_PaladinProtDps),
+		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Damage")}
 }
 
 func Model_PallyRet() Model {
 	weight := StatRatingsWeights_ReadFile(weightRetFile, false, false, false)
 	return Model{
-		Spec_PaladinRet,
-		weight,
-		StatRequirementsHitExpertise_RetWideCap(),
-		ReforgeRules_melee,
-		EnchantChoice_ForSpec(Spec_PaladinRet),
-		GemChoice_ForSpec(Spec_PaladinRet),
-		SetBonus_ForSpec(Spec_PaladinRet)}
+		Spec:             Spec_PaladinRet,
+		StatRatings:      weight,
+		StatRequirements: StatRequirementsHitExpertise_RetWideCap(),
+		ReforgeRules:     ReforgeRules_melee,
+		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinRet),
+		GemChoice:        GemChoice_ForSpec(Spec_PaladinRet),
+		SetBonus:         SetBonus_ForSpec(Spec_PaladinRet)}
 }
 
 func Model_Testing() Model {
 	weight := StatRatingsWeights_ReadFile(weightDpsFile, false, true, false)
 	return Model{
-		Spec_PaladinProtDps,
-		weight,
-		StatRequirementsHitExpertise_None(),
-		ReforgeRules_tank,
-		EnchantChoice_ForSpec(Spec_PaladinProtDps),
-		GemChoice_ForSpec(Spec_PaladinProtDps),
-		SetBonus_Empty()}
+		Spec:             Spec_PaladinProtDps,
+		StatRatings:      weight,
+		StatRequirements: StatRequirementsHitExpertise_None(),
+		ReforgeRules:     ReforgeRules_tank,
+		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtDps),
+		GemChoice:        GemChoice_ForSpec(Spec_PaladinProtDps),
+		SetBonus:         SetBonus_Empty()}
 }

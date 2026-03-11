@@ -67,9 +67,10 @@ func SolvableItemSet_SingleItem(slot SlotEquip, item *SolvableItem) SolvableItem
 }
 
 func (set *SolvableItemSet) Clear() {
-	set.Items = SolvableEquipMap{}
-	set.totalCap = StatBlock{}
-	set.totalRated = StatBlock{}
+	*set = SolvableItemSet{}
+	// set.Items = SolvableEquipMap{}
+	// set.totalCap = StatBlock{}
+	// set.totalRated = StatBlock{}
 }
 
 func (set *SolvableItemSet) AddItem_Mutating(slot SlotEquip, item *SolvableItem) {
@@ -87,17 +88,17 @@ func (set *SolvableItemSet) AddItem_CreateNew(slot SlotEquip, item *SolvableItem
 	return result
 }
 
-func (item *SolvableItemSet) TotalCap() *StatBlock {
-	return &item.totalCap
+func (set *SolvableItemSet) TotalCap() *StatBlock {
+	return &set.totalCap
 }
 
-func (item *SolvableItemSet) TotalRated() *StatBlock {
-	return &item.totalRated
+func (set *SolvableItemSet) TotalRated() *StatBlock {
+	return &set.totalRated
 }
 
 func isMatch(fullItem *FullItem, solveItem *SolvableItem) bool {
 	// TODO is it okay to not check item level
 	return fullItem.ItemId() == solveItem.ItemId &&
-		fullItem.totalCap == solveItem.totalCap &&
-		fullItem.totalRated == solveItem.totalRated
+		StatBlock_Equals(&fullItem.totalCap, &solveItem.totalCap) &&
+		StatBlock_Equals(&fullItem.totalRated, &solveItem.totalRated)
 }

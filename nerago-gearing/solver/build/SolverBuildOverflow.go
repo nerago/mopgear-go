@@ -22,7 +22,7 @@ func evaluateOverflow(itemOptions *SolvableOptionsMap, model *model.Model, targe
 	trackProgress.RunFromArray(&counters, targetCount)
 
 	for threadNum := range threadCount {
-		go evaluateOverflowWorker(resultChannel, model, eachThreadCount, itemOptions, &slotSizes, skip, uint64(threadNum), &counters[threadNum], peekFunc)
+		go evaluateOverflowWorker(resultChannel, model, eachThreadCount, *itemOptions, &slotSizes, skip, uint64(threadNum), &counters[threadNum], peekFunc)
 	}
 
 	// combine each thread's best result
@@ -54,43 +54,44 @@ func isASlotSize(itemOptions *SolvableOptionsMap, skip uint64) bool {
 	return false
 }
 
-func evaluateOverflowWorker(resultChannel chan util.BestCollector1[SolvableItemSet], model *model.Model, eachThreadCount uint64, itemOptions *SolvableOptionsMap, slotSizes *[16]uint32, skip uint64, threadNum uint64, processedCounter *uint64, peekFunc func(*SolvableItemSet)) {
+func evaluateOverflowWorker(resultChannel chan util.BestCollector1[SolvableItemSet], model *model.Model, eachThreadCount uint64, itemOptions SolvableOptionsMap, slotSizes *[16]uint32, skip uint64, threadNum uint64, processedCounter *uint64, peekFunc func(*SolvableItemSet)) {
 	best := util.BestCollector1[SolvableItemSet]{}
 
 	indexes := [16]uint32{}
 	advanceArrays(&indexes, slotSizes, skip*threadNum*eachThreadCount)
 
 	itemSet := new(SolvableItemSet)
+	best.BestObject = new(SolvableItemSet)
 	for range eachThreadCount {
 		makeSetFromArraysAndAdvance(itemOptions, &indexes, itemSet, skip)
-		// advanceArrays(&indexes, slotSizes, skip)
 		if peekFunc != nil {
 			peekFunc(itemSet)
 		}
 		if model.CheckSet(itemSet) {
 			rating := model.CalcRatingSolve(itemSet)
-			if best.OfferWithResult(itemSet, rating) {
-				itemSet = new(SolvableItemSet)
-			}
+			best.OfferAndSwap(&itemSet, rating)
 		}
-		(*processedCounter)++
+		*processedCounter++
 	}
 
 	resultChannel <- best
 }
 
-func makeSetFromArraysAndAdvance(slotOptions *SolvableOptionsMap, slotIndexes *[16]uint32, itemSet *SolvableItemSet, skip uint64) {
+func makeSetFromArraysAndAdvance(slotOptions SolvableOptionsMap, slotIndexes *[16]uint32, itemSet *SolvableItemSet, skip uint64) {
 	itemSet.Clear()
 	for slot := range slotOptions {
 		options := slotOptions[slot]
 		slotSize := uint64(len(options))
-		if slotSize > 0 {
+		if slotSize == 1 {
+			item := &options[0]
+			itemSet.AddItem_Mutating(SlotEquip(slot), item)
+		} else if slotSize > 1 {
 			index := slotIndexes[slot]
 			item := &options[index]
 
 			itemSet.AddItem_Mutating(SlotEquip(slot), item)
 
-			if slotSize > 1 && skip > 0 {
+			if skip > 0 {
 				value := uint64(slotIndexes[slot]) + skip
 				slotIndexes[slot] = uint32(value % slotSize)
 				skip = value / slotSize

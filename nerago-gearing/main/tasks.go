@@ -3,7 +3,6 @@ package main
 import (
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/model"
-	"paladin_gearing_go/model/ratings"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver"
 	. "paladin_gearing_go/solver"
@@ -36,7 +35,8 @@ func testSim() {
 
 func slotRating(itemArray []FullItem, model *Model, printer *PrintRecorder) {
 	printer.Println("RATINGS")
-	printer.Println(model.StatRatings.(ratings.StatRatingsWeights).Weights())
+	// printer.Println(model.StatRatings.(ratings.StatRatingsWeights).Weights())
+	printer.Println(model.StatRatings.Weights())
 	printer.Println0()
 
 	best := BestCollector1[FullItem]{}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -70,10 +69,10 @@ func main() {
 
 func core() {
 	// itemOptions, model := setupPallyMitigation()
-	// itemOptions, model := setupPallyDps()
+	itemOptions, model := setupPallyDps()
 
 	// slotRating(itemOptions[Equip_Chest], &model)
-	// basicReforge(&itemOptions, &model, printer)
+	basicReforge(&itemOptions, &model, printer)
 
 	// PaladinMultiRun()
 	// testSim()
@@ -88,53 +87,53 @@ func core() {
 	// fmt.Println(stats.StatBlock_Equals_Assem(&a, &c))
 	// fmt.Println(stats.StatBlock_Equals_Assem(&a, &d))
 
-	a := stats.StatBlock{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
-	c := stats.StatBlock{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
-	fmt.Println(stats.StatBlock_Equals_Assem(&a, &c))
-	fmt.Println(StringFull(&a))
-	fmt.Println(StringFull(&c))
-	fmt.Println()
-	fmt.Println()
+	// a := stats.StatBlock{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+	// c := stats.StatBlock{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+	// fmt.Println(stats.StatBlock_Equals(&a, &c))
+	// fmt.Println(StringFull(&a))
+	// fmt.Println(StringFull(&c))
+	// fmt.Println()
+	// fmt.Println()
 
-	a = stats.StatBlock{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
-	c = stats.StatBlock{1, 2, 666, 4, 5, 6, 7, 8, 9, 10, 11, 12}
-	fmt.Println(stats.StatBlock_Equals_Assem(&a, &c))
-	fmt.Println(StringFull(&a))
-	fmt.Println(StringFull(&c))
-	fmt.Println()
-	fmt.Println()
+	// a = stats.StatBlock{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+	// c = stats.StatBlock{1, 2, 666, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+	// fmt.Println(stats.StatBlock_Equals(&a, &c))
+	// fmt.Println(StringFull(&a))
+	// fmt.Println(StringFull(&c))
+	// fmt.Println()
+	// fmt.Println()
 
-	a = stats.StatBlock{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
-	c = stats.StatBlock{1, 2, 3, 4, 665, 6, 7, 8, 9, 10, 11, 12}
-	fmt.Println(stats.StatBlock_Equals_Assem(&a, &c))
-	fmt.Println(StringFull(&a))
-	fmt.Println(StringFull(&c))
-	fmt.Println()
-	fmt.Println()
+	// a = stats.StatBlock{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+	// c = stats.StatBlock{1, 2, 3, 4, 665, 6, 7, 8, 9, 10, 11, 12}
+	// fmt.Println(stats.StatBlock_Equals(&a, &c))
+	// fmt.Println(StringFull(&a))
+	// fmt.Println(StringFull(&c))
+	// fmt.Println()
+	// fmt.Println()
 
-	a = stats.StatBlock{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
-	c = stats.StatBlock{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 664}
-	fmt.Println(stats.StatBlock_Equals_Assem(&a, &c))
-	fmt.Println(StringFull(&a))
-	fmt.Println(StringFull(&c))
-	fmt.Println()
-	fmt.Println()
+	// a = stats.StatBlock{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+	// c = stats.StatBlock{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 664}
+	// fmt.Println(stats.StatBlock_Equals(&a, &c))
+	// fmt.Println(StringFull(&a))
+	// fmt.Println(StringFull(&c))
+	// fmt.Println()
+	// fmt.Println()
 
-	a = stats.StatBlock{5, 5, 4, 55674, 1123, 88, 123, 44, 4, 1, 0, 10}
-	c = stats.StatBlock{5, 5, 4, 55674, 1123, 88, 123, 44, 4, 1, 0, 10}
-	fmt.Println(stats.StatBlock_Equals_Assem(&a, &c))
-	fmt.Println(StringFull(&a))
-	fmt.Println(StringFull(&c))
-	fmt.Println()
-	fmt.Println()
+	// a = stats.StatBlock{5, 5, 4, 55674, 1123, 88, 123, 44, 4, 1, 0, 10}
+	// c = stats.StatBlock{5, 5, 4, 55674, 1123, 88, 123, 44, 4, 1, 0, 10}
+	// fmt.Println(stats.StatBlock_Equals(&a, &c))
+	// fmt.Println(StringFull(&a))
+	// fmt.Println(StringFull(&c))
+	// fmt.Println()
+	// fmt.Println()
 }
 
 func StringFull(block *stats.StatBlock) string {
 	build := strings.Builder{}
 	build.WriteString("{")
 	for _, value := range block {
-			build.WriteString(strconv.FormatUint(uint64(value), 10))
-			build.WriteString(" ")
+		build.WriteString(strconv.FormatUint(uint64(value), 10))
+		build.WriteString(" ")
 	}
 
 	build.WriteString("}")
