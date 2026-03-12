@@ -30,35 +30,47 @@ func findMatch(fullItem []FullItem, solveItem *SolvableItem) *FullItem {
 	panic("match not found")
 }
 
-func (item *FullItem) String() string {
+func (item *FullItem) CreateString() string {
 	build := strings.Builder{}
+	item.AppendString(&build)
+	return build.String()
+}
+
+func (item *FullItem) CreateFullName() string {
+	build := strings.Builder{}
+	item.AppendFullName(&build)
+	return build.String()
+}
+
+func (item *FullItem) AppendString(build *strings.Builder) {
+	var buff [10]byte
+
 	build.WriteString("{ ")
 	build.WriteString(item.Slot.Name())
 
 	build.WriteString(" \"")
-	build.WriteString(item.FullName())
+	item.AppendFullName(build)
 
 	build.WriteString("\" id=")
-	build.WriteString(strconv.FormatUint(uint64(item.ItemId()), 10))
+	build.Write(strconv.AppendUint(buff[:0], uint64(item.ItemId()), 10))
 
 	build.WriteString(" lvl=")
-	build.WriteString(strconv.FormatUint(uint64(item.Ref.ItemLevel), 10))
+	build.Write(strconv.AppendUint(buff[:0], uint64(item.Ref.ItemLevel), 10))
 	build.WriteRune(' ')
 
-	build.WriteString(item.StatBase.String())
+	item.StatBase.AppendString(build)
 
 	if !item.StatEnchant.IsEmpty() {
 		build.WriteString(" ENCHANT ")
-		build.WriteString(item.StatEnchant.String())
+		item.StatEnchant.AppendString(build)
 	}
 
 	if len(item.GemChoice) > 0 {
 		build.WriteString(" GEMS ")
 		for _, gem := range item.GemChoice {
-			build.WriteString(gem.Stats.String())
+			gem.Stats.AppendString(build)
 		}
 	}
 
 	build.WriteString(" }")
-	return build.String()
 }

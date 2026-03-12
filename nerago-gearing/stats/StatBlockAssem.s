@@ -1,7 +1,7 @@
 #include "textflag.h"
 
 TEXT ·StatBlock_Increment_Mutating(SB), NOSPLIT|NOFRAME, $0-16
-    MOVQ  block+0(FP), AX
+    MOVQ mutate+0(FP), AX
     MOVQ  other+8(FP), BX
  
     VMOVDQU      (AX), Y0
@@ -18,7 +18,7 @@ TEXT ·StatBlock_Increment_Mutating(SB), NOSPLIT|NOFRAME, $0-16
 TEXT ·StatBlock_Add_Into(SB), NOSPLIT|NOFRAME, $0-24
     MOVQ      a+0(FP), AX
     MOVQ      b+8(FP), BX
-    MOVQ     c+16(FP), CX
+    MOVQ   out+16(FP), CX
  
     VMOVDQU      (AX), Y0
     VPADDD       (BX), Y0, Y0
@@ -30,7 +30,7 @@ TEXT ·StatBlock_Add_Into(SB), NOSPLIT|NOFRAME, $0-24
 
 	RET
 
-TEXT ·StatBlock_Equals2(SB), NOSPLIT|NOFRAME, $0-24
+TEXT ·StatBlock_Equals(SB), NOSPLIT|NOFRAME, $0-24
     MOVQ          a+0(FP), AX
     MOVQ          b+8(FP), BX
     

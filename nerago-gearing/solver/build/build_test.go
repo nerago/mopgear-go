@@ -8,39 +8,6 @@ import (
 
 const testingThreadCount = 2
 
-func TestPeriodicLiteStandardRun(t *testing.T) {
-	const targetCount = utiltest.TargetCountStandard
-
-	peekRecord := utiltest.PeekTestRecorder{}
-	options, model := utiltest.MakeTestOptions()
-
-	evaluatePeriodic(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
-
-	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
-}
-
-func TestPeriodicLiteMinimalRun(t *testing.T) {
-	const targetCount = utiltest.TargetCountMinimal
-
-	peekRecord := utiltest.PeekTestRecorder{}
-	options, model := utiltest.MakeTestOptions()
-
-	evaluatePeriodic(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
-
-	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
-}
-
-func TestPeriodicLiteFullRun(t *testing.T) {
-	const targetCount = utiltest.TargetCountFull
-
-	peekRecord := utiltest.PeekTestRecorder{}
-	options, model := utiltest.MakeTestOptions()
-
-	evaluatePeriodic(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
-
-	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
-}
-
 // //////////////////////////////////////////////////
 func TestRandomStandardRun(t *testing.T) {
 	const targetCount = utiltest.TargetCountStandard
@@ -82,7 +49,7 @@ func TestOverflowStandardRun(t *testing.T) {
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluateOverflow(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
+	evaluateOverflow2(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
@@ -93,7 +60,7 @@ func TestOverflowMinimalRun(t *testing.T) {
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluateOverflow(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
+	evaluateOverflow2(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
 }
@@ -104,7 +71,18 @@ func TestOverflowFullRun(t *testing.T) {
 	peekRecord := utiltest.PeekTestRecorder{}
 	options, model := utiltest.MakeTestOptions()
 
-	evaluateOverflow(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
+	evaluateOverflow2(options, model, targetCount, util.TrackProgress_Nop(), testingThreadCount, peekRecord.Add)
 
 	utiltest.VerifyRecord(t, &peekRecord, options, targetCount)
+}
+
+// //////////////////////////////////////////////////
+func TestFullFullRun(t *testing.T) {
+	peekRecord := utiltest.PeekTestRecorder{}
+	options, model := utiltest.MakeTestOptions()
+
+	evaluateFull(options, model, util.TrackProgress_Nop(), util.PrintRecorder_HoldAll(), peekRecord.Add)
+
+	targetCount := options.TotalCombinationCountAsInt()
+	utiltest.VerifyRecord(t, &peekRecord, options, int(targetCount))
 }

@@ -44,11 +44,11 @@ func Reforger_SinglePreset(baseItem *FullItem, recipe *ReforgeRecipe) *FullItem 
 
 	originalValue := baseItem.StatBase.Get(source)
 	if originalValue == 0 {
-		log.Panicf("expected item to have source stat %s on %s", source.Name(), baseItem.String())
+		log.Panicf("expected item to have source stat %s on %s", source.Name(), baseItem.CreateString())
 	}
 
 	if baseItem.StatBase.Get(target) != 0 {
-		log.Panicf("expected item to have zero target stat %s on %s", target.Name(), baseItem.String())
+		log.Panicf("expected item to have zero target stat %s on %s", target.Name(), baseItem.CreateString())
 	}
 
 	reforgeQuantity := (originalValue * 4) / 10

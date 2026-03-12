@@ -1,5 +1,10 @@
 package stats
 
+import (
+	"strconv"
+	"strings"
+)
+
 type StatBlock [12]uint32
 
 var StatBlock_empty = StatBlock{}
@@ -38,17 +43,13 @@ func StatBlock_Increment_Mutating(mutate *StatBlock, other *StatBlock)
 // 	}
 // }
 
-func StatBlock_Equals2(a, b *StatBlock) bool
+func StatBlock_Equals(a, b *StatBlock) bool
 
 // FALLBACK
 // no better performance
 // func StatBlock_Equals(a, b *StatBlock) (ret bool) {
 // 	return *a == *b
 // }
-
-func StatBlock_Equals(a, b *StatBlock) (ret bool) {
-	return StatBlock_Equals2(a,b)
-}
 
 func (block *StatBlock) MultiplyForTotalSum(other *StatBlock) uint64 {
 	var result uint64 = 0
@@ -126,4 +127,36 @@ func (block *StatBlock) PrimaryStat() PrimaryStatType {
 	} else {
 		return PrimaryStat_Intellect
 	}
+}
+
+func (block *StatBlock) CreateString() string {
+	build := strings.Builder{}
+	block.AppendString(&build)
+	return build.String()
+}
+
+func (block *StatBlock) AppendString(build *strings.Builder) {
+	var buff [20]byte
+	first := true
+
+	build.WriteString("{")
+
+	for i, value := range block {
+		if value != 0 {
+			var stat StatType = StatType(i)
+			name := stat.Name()
+
+			if first {
+				first = false
+			} else {
+				build.WriteRune(' ')
+			}
+
+			build.WriteString(name)
+			build.WriteRune('=')
+			build.Write(strconv.AppendUint(buff[:0], uint64(value), 10))
+		}
+	}
+
+	build.WriteString("}")
 }

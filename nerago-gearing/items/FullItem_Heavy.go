@@ -59,8 +59,8 @@ func FullItemSet_FromSolved(solvedSet SolvableItemSet, optionsMap *FullOptionsMa
 }
 
 func (itemSet *FullItemSet) PrintStats(printer *util.PrintRecorder) {
-	printer.Printf("RATED %s\n", itemSet.totalRated.String())
-	printer.Printf("CAP %s\n", itemSet.totalCap.String())
+	printer.Printf("RATED %s\n", itemSet.totalRated.CreateString())
+	printer.Printf("CAP %s\n", itemSet.totalCap.CreateString())
 }
 
 func (itemSet *FullItemSet) TotalCap() *StatBlock {

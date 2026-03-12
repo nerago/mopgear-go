@@ -27,14 +27,14 @@ func OptionsSetup_FromEquipped(equipped []loaders.EquippedItem, model *model.Mod
 func OptionsSetup_FromEquipped_Single(equipItem loaders.EquippedItem, model *model.Model, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
 	item := loadItemBasic(equipItem.ItemId, equipItem.UpgradeStep, printer)
 	addDetailFromEquip(&item, equipItem)
-	printer.Println(item.String())
+	printer.Println(item.CreateString())
 	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
 }
 
 func OptionsSetup_FromIdOnlyUseAllDefaults(itemId uint32, upgradeLevel int16, model *model.Model, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
 	item := loadItemBasic(itemId, upgradeLevel, printer)
 	addDetailUsingDefaults(&item, model)
-	printer.Println(item.String())
+	printer.Println(item.CreateString())
 	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
 }
 
@@ -49,7 +49,7 @@ func OptionsSetup_ExactEquippedOnly(equipped []loaders.EquippedItem, model *mode
 			item = *tools.Reforger_SinglePreset(&item, &reforge)
 		}
 
-		printer.Println(item.String())
+		printer.Println(item.CreateString())
 		resultMap.FillSlot_ExpectedEmpty(item.Slot, &item)
 	}
 	return resultMap

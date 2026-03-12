@@ -52,7 +52,7 @@ func FullItemSet_FromSolved(solvedSet SolvableItemSet, optionsMap *FullOptionsMa
 }
 
 func (itemSet *FullItemSet) PrintStats(printer *util.PrintRecorder) {
-	printer.Printf("STATS %s\n", itemSet.total.String())
+	printer.Printf("STATS %s\n", itemSet.total.CreateString())
 }
 
 func (itemSet *FullItemSet) TotalCap() *StatBlock {

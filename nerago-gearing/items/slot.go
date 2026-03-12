@@ -83,6 +83,9 @@ const (
 	Equip_Trinket2 SlotEquip = iota
 	Equip_Weapon   SlotEquip = iota
 	Equip_Offhand  SlotEquip = iota
+
+	Equip_Iter_First = Equip_Head
+	Equip_Iter_Last  = Equip_Offhand
 )
 
 func (slot SlotItem) ToSlotEquipOptions() []SlotEquip {

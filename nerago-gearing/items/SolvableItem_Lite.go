@@ -8,14 +8,14 @@ import (
 
 // /////////////////////////////////////////////////////////////
 type SolvableItem struct {
-	ItemId uint32
 	total  StatBlock
+	ItemId uint32
 }
 
 func SolvableItem_Of(item FullItem) SolvableItem {
 	return SolvableItem{
-		item.Ref.ItemId,
-		item.total}
+		ItemId: item.Ref.ItemId,
+		total: item.total}
 }
 
 func (item *SolvableItem) IsEmpty() bool {
@@ -59,6 +59,10 @@ func (set *SolvableItemSet) Clear() {
 	set.total = StatBlock{}
 }
 
+func (set *SolvableItemSet) ClearTotals() {
+	set.total = StatBlock{}
+}
+
 func (set *SolvableItemSet) AddItem_Mutating(slot SlotEquip, item *SolvableItem) {
 	set.Items[slot] = item
 	StatBlock_Increment_Mutating(&set.total, &item.total)
@@ -81,7 +85,6 @@ func (set *SolvableItemSet) TotalRated() *StatBlock {
 }
 
 func isMatch(fullItem *FullItem, solveItem *SolvableItem) bool {
-	// TODO is it okay to not check item level
 	return fullItem.ItemId() == solveItem.ItemId &&
 		StatBlock_Equals(&fullItem.total, &solveItem.total)
 }

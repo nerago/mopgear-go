@@ -1,5 +1,7 @@
 package stats
 
+import "strings"
+
 type GemInfo struct {
 	Id    uint32
 	Stats StatBlock
@@ -13,6 +15,14 @@ var ReforgeRecipe_empty ReforgeRecipe = ReforgeRecipe{-1, -1}
 
 func (reforge *ReforgeRecipe) IsEmpty() bool {
 	return reforge.From < 0 || reforge.To < 0
+}
+
+func (reforge *ReforgeRecipe) AppendString(builder *strings.Builder) {
+	builder.WriteRune('(')
+	builder.WriteString(reforge.From.Name())
+	builder.WriteString("->")
+	builder.WriteString(reforge.To.Name())
+	builder.WriteRune(')')
 }
 
 type ArmorType int8

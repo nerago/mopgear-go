@@ -36,20 +36,20 @@ func testSim() {
 func slotRating(itemArray []FullItem, model *Model, printer *PrintRecorder) {
 	printer.Println("RATINGS")
 	// printer.Println(model.StatRatings.(ratings.StatRatingsWeights).Weights())
-	printer.Println(model.StatRatings.Weights())
+	printer.Println(model.StatRatings.Weights().CreateString())
 	printer.Println0()
 
 	best := BestCollector1[FullItem]{}
 	for _, item := range itemArray {
 		rate := model.CalcRatingFullItem(&item)
-		printer.Println(item.String())
+		printer.Println(item.CreateString())
 		printer.Printf("%d\n\n", rate)
 		best.Offer(&item, rate)
 	}
 
 	printer.Println0()
 	printer.Println("BEST")
-	printer.Println(best.BestObject.String())
+	printer.Println(best.BestObject.CreateString())
 }
 
 func UNUSED(x ...interface{}) {}

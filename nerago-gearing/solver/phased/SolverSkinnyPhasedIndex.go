@@ -130,7 +130,7 @@ func makeSkinnySetInt(itemOptions *SkinnyOptionsMap, mainIndex uint64, set *Skin
 func makeFromSkinny(itemOptions *SolvableOptionsMap, model *Model, skinnySet *SkinnyItemSet, chosen *SolvableItemSet) {
 	chosen.Clear()
 
-	for slot := Equip_Head; slot <= Equip_Offhand; slot++ {
+	for slot := Equip_Iter_First; slot <= Equip_Iter_Last; slot++ {
 		skinny := &skinnySet.Items[slot]
 		if skinny.Exists {
 			options := itemOptions[slot]

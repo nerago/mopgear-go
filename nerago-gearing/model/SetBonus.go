@@ -178,6 +178,7 @@ type setInfo struct {
 }
 
 const (
+	// TODO powers of 2?
 	defaultBonus = 1025
 	denominator  = 1000
 

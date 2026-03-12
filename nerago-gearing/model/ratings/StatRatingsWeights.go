@@ -12,8 +12,8 @@ type StatRatingsWeights struct {
 	weight StatBlock
 }
 
-func (rating StatRatingsWeights) Weights() string {
-	return rating.weight.String()
+func (rating StatRatingsWeights) Weights() *StatBlock {
+	return &rating.weight
 }
 
 func (rating StatRatingsWeights) CalcRating(block *StatBlock) uint64 {

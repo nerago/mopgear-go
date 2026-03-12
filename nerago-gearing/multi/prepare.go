@@ -82,7 +82,7 @@ func (param *MultiSetParam) extraFromOtherSpec(itemId uint32) bool {
 
 	if len(options) > 0 {
 		param.itemOptions.AddSeveralOptions(options[0].Slot, options)
-		param.job.printer.Printf("OPTION from other spec %s\n", options[0].String())
+		param.job.printer.Printf("OPTION from other spec %s\n", options[0].CreateString())
 		return true
 	} else {
 		return false
@@ -97,7 +97,7 @@ func (param *MultiSetParam) extraFromBags(itemId uint32) bool {
 
 			options, baseItem := setup.OptionsSetup_FromEquipped_Single(equipped, &param.Model, &param.job.printer)
 			param.itemOptions.AddSeveralOptions(baseItem.Slot, options)
-			param.job.printer.Printf("OPTION from bags %s\n", baseItem.String())
+			param.job.printer.Printf("OPTION from bags %s\n", baseItem.CreateString())
 			return true
 		}
 	}
@@ -107,7 +107,7 @@ func (param *MultiSetParam) extraFromBags(itemId uint32) bool {
 func (param *MultiSetParam) extraLoadAndGenerate(itemId uint32) {
 	options, baseItem := setup.OptionsSetup_FromIdOnlyUseAllDefaults(itemId, param.ExtraUpgradeLevel, &param.Model, &param.job.printer)
 	param.itemOptions.AddSeveralOptions(baseItem.Slot, options)
-	param.job.printer.Printf("OPTION %s\n", baseItem.String())
+	param.job.printer.Printf("OPTION %s\n", baseItem.CreateString())
 }
 
 func (param *MultiSetParam) restrictFixed() {
@@ -134,7 +134,7 @@ func (job *MultiSetJob) validateMultiSetAlignItemSlots() {
 		for slot, item := range job.params[paramIndex].itemOptions.AllItemsWithSlot() {
 			seenSlot, found := seen[item.ItemId()]
 			if found && seenSlot != slot {
-				panic("duplicate in non-matching slot " + item.String())
+				panic("duplicate in non-matching slot " + item.CreateString())
 			} else if !found {
 				seen[item.ItemId()] = slot
 			}

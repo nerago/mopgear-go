@@ -45,46 +45,27 @@ func Solver(input SolveInput) SolveOutput {
 		trackProgress = util.TrackProgress_Nop()
 	}
 
+	targetCount := uint64(input.SolveSize)
 	solveOptions := items.SolvableOptionsMap_of(input.ItemOptions)
-	model := input.Model
-
-	var mode int
-	if input.PhasedAcceptable {
-		mode = 8
-	} else {
-		mode = 6
-	}
-
-	var targetCount uint64 = uint64(input.SolveSize)
+	combinationCount := solveOptions.TotalCombinationCount()
 
 	var solvedSet util.Optional[items.SolvableItemSet]
-	switch mode {
-	// case 1:
-	// 	solvedSet = indexed.SolverIndexed_RunFull(&solveOptions, model, printer)
-	// case 2:
-	// 	solvedSet = indexed.SolverIndexed_RunSkipping(&solveOptions, model, targetCount, &printer)
-	// case 3:
-	// 	solvedSet = channel.SolverChannelBuildFull_Run(&solveOptions, model)
-	// case 4:
-	// 	solvedSet = channel.SolverChannelBuildPeriodic_Run(&solveOptions, model, targetCount, &printer)
-	// case 5:
-	// 	solvedSet = build.SolverBuildPeriodic_Run(&solveOptions, model, targetCount, &printer)
-	case 6:
-		solvedSet = build.SolverBuildOverflow_Run(&solveOptions, model, targetCount, trackProgress, printer)
-	// case 7:
-	// 	solvedSet = build.SolverBuildRandom_Run(&solveOptions, model, targetCount, &printer)
-	case 8:
-		solvedSet = phased.SolverSkinnyPhasedIndex_Run(&solveOptions, model, targetCount, trackProgress, printer)
+	if combinationCount.IsUint64() && combinationCount.Uint64() < targetCount {
+		solvedSet = build.SolverBuildFull_Run(&solveOptions, input.Model, trackProgress, printer)
+	} else if input.PhasedAcceptable {
+		solvedSet = phased.SolverSkinnyPhasedIndex_Run(&solveOptions, input.Model, targetCount, trackProgress, printer)
+	} else {
+		solvedSet = build.SolverBuildOverflow2_Run(&solveOptions, input.Model, targetCount, trackProgress, printer)
 	}
 
 	// TODO bury tweaker into find best checks
 	solvedSet.MapInPlace(func(set items.SolvableItemSet) items.SolvableItemSet {
-		return tools.Tweaker_Run(set, &solveOptions, model)
+		return tools.Tweaker_Run(set, &solveOptions, input.Model)
 	})
 
 	return util.Optional_MapAsValueOrEmpty(solvedSet,
 		func(set items.SolvableItemSet) SolveOutput {
-			return SolveOutput{true, uuid.NewString(), &input, set, items.FullItemSet_FromSolved(set, input.ItemOptions), model.CalcRatingSolve(&set), printer}
+			return SolveOutput{true, uuid.NewString(), &input, set, items.FullItemSet_FromSolved(set, input.ItemOptions), input.Model.CalcRatingSolve(&set), printer}
 		},
 		func() SolveOutput {
 			return SolveOutput{Success: false, Input: &input, ResultRating: 0, Printer: printer}
@@ -127,7 +108,7 @@ func (output *SolveOutput) Report(printer *util.PrintRecorder) {
 func printEquipMap(fullEquipMap *items.FullEquipMap, printer *util.PrintRecorder) {
 	for _, item := range fullEquipMap {
 		if item != nil {
-			printer.Println(item.String())
+			printer.Println(item.CreateString())
 		}
 	}
 }

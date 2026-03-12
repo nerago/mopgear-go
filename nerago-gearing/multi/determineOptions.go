@@ -101,7 +101,7 @@ func applyFixedForges(fixedForge map[uint32]stats.ReforgeRecipe, commonOptions *
 		if ok {
 			choice := onlyMatchingForge(options, reforge, itemId)
 			(*commonOptions)[itemId] = []items.FullItem{choice}
-			printer.Printf("FIXED %s\n", choice.String())
+			printer.Printf("FIXED %s\n", choice.CreateString())
 		} else {
 			log.Panicf("fixed forge not seen in set options for item %d", itemId)
 		}
@@ -140,7 +140,7 @@ func printCommons(seenIn map[uint32][]string, commonOptions commonComboOptions, 
 		whereSeen := seenIn[itemId]
 		seenText := strings.Join(whereSeen, " ")
 
-		printer.Printf("COMMON %d %s %d => %s\n", itemId, item.FullName(), item.Ref.ItemLevel, seenText)
+		printer.Printf("COMMON %d %s %d => %s\n", itemId, item.CreateFullName(), item.Ref.ItemLevel, seenText)
 	}
 }
 

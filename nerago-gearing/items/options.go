@@ -222,6 +222,14 @@ func (optionsMap *SolvableOptionsMap) TotalCombinationCount() *big.Int {
 	return total
 }
 
+func (optionsMap *SolvableOptionsMap) TotalCombinationCountAsInt() uint64 {
+	combo := optionsMap.TotalCombinationCount()
+	if !combo.IsUint64() {
+		panic("too big for 64 bit int")
+	}
+	return combo.Uint64()
+}
+
 func (optionsMap *SolvableOptionsMap) AllItemSeq() iter.Seq[*SolvableItem] {
 	return func(yield func(*SolvableItem) bool) {
 		for _, slotArray := range optionsMap {

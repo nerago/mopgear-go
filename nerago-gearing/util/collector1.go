@@ -12,6 +12,10 @@ func (collect *BestCollector1[T]) CheckValidOrPanic() {
 	}
 }
 
+func (collect *BestCollector1[T]) HasBest() bool {
+	return collect.BestObject != nil
+}
+
 func (collect *BestCollector1[T]) GetBestOrPanic() T {
 	collect.CheckValidOrPanic()
 	return *collect.BestObject

@@ -90,7 +90,7 @@ func checkNoConflicts(outputSet []solver.SolveOutput, printer *util.PrintRecorde
 			if !found {
 				itemById[item.ItemId()] = item
 			} else if !existing.Equals(item) {
-				printer.Printf("!! CONFLICT %s\n!!          %s\n", item.String(), existing.String())
+				printer.Printf("!! CONFLICT %s\n!!          %s\n", item.CreateString(), existing.CreateString())
 				return false
 			}
 		}
