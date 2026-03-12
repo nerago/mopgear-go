@@ -55,6 +55,3 @@ func (equipMap SolvableEquipMap) AllItemSeq() iter.Seq[*SolvableItem] {
 		}
 	}
 }
-
-// //////////////////////////////////////////////////////
-type SkinnyEquipMap [16]SkinnyItem

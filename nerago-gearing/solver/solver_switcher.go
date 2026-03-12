@@ -49,28 +49,32 @@ func Solver(input SolveInput) SolveOutput {
 	solveOptions := items.SolvableOptionsMap_of(input.ItemOptions)
 	combinationCount := solveOptions.TotalCombinationCount()
 
-	var solvedSet util.Optional[items.SolvableItemSet]
+	var solvedResult util.Optional[items.SolvableItemSet]
 	if combinationCount.IsUint64() && combinationCount.Uint64() < targetCount {
-		solvedSet = build.SolverBuildFull_Run(&solveOptions, input.Model, trackProgress, printer)
+		solvedResult = build.SolverBuildFull_Run(&solveOptions, input.Model, trackProgress, printer)
 	} else if input.PhasedAcceptable {
-		solvedSet = phased.SolverSkinnyPhasedIndex_Run(&solveOptions, input.Model, targetCount, trackProgress, printer)
+		solvedResult = phased.SolverSkinnyPhasedIndex_Run(&solveOptions, input.Model, targetCount, trackProgress, printer)
 	} else {
-		solvedSet = build.SolverBuildOverflow2_Run(&solveOptions, input.Model, targetCount, trackProgress, printer)
+		solvedResult = build.SolverBuildOverflow2_Run(&solveOptions, input.Model, targetCount, trackProgress, printer)
 	}
 
-	// TODO bury tweaker into find best checks
-	solvedSet.MapInPlace(func(set items.SolvableItemSet) items.SolvableItemSet {
-		return tools.Tweaker_Run(set, &solveOptions, input.Model)
-	})
+	if solvedResult.IsEmpty() {
+		return SolveOutput{Success: false, Input: &input, ResultRating: 0, Printer: printer}
+	}
 
-	return util.Optional_MapAsValueOrEmpty(solvedSet,
-		func(set items.SolvableItemSet) SolveOutput {
-			return SolveOutput{true, uuid.NewString(), &input, set, items.FullItemSet_FromSolved(set, input.ItemOptions), input.Model.CalcRatingSolve(&set), printer}
-		},
-		func() SolveOutput {
-			return SolveOutput{Success: false, Input: &input, ResultRating: 0, Printer: printer}
-		},
-	)
+	solvedSet := solvedResult.GetOrPanic()
+
+	// TODO bury tweaker into find best checks
+	solvedSet = tools.Tweaker_Run(solvedSet, &solveOptions, input.Model)
+
+	return SolveOutput{
+		true, 
+		uuid.NewString(), 
+		&input, 
+		solvedSet, 
+		items.FullItemSet_FromSolved(solvedSet, input.ItemOptions), 
+		input.Model.CalcRatingSolve(&solvedSet), 
+		printer}
 }
 
 type SolveOutput struct {

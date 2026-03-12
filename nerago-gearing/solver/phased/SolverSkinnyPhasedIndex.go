@@ -77,6 +77,7 @@ func createWorkerRangeInt(skinnyOptions *SkinnyOptionsMap, itemOptions *Solvable
 
 	skinnySet := new(SkinnyItemSet)
 	solveSet := new(SolvableItemSet)
+	best.BestObject = new(SolvableItemSet)
 
 	index := start
 	for index < max {
@@ -89,14 +90,12 @@ func createWorkerRangeInt(skinnyOptions *SkinnyOptionsMap, itemOptions *Solvable
 				makeFromSkinny(itemOptions, model, skinnySet, solveSet)
 
 				// assert still matches requirement, should be redundant
-				if !model.CheckSet(solveSet) {
-					panic("inconsistent cap calcuations")
-				}
+				// if !model.CheckSet(solveSet) {
+				// 	panic("inconsistent cap calcuations")
+				// }
 
 				solveRating := model.CalcRatingSolve(solveSet)
-				if best.OfferWithResult(solveSet, solveRating) {
-					solveSet = new(SolvableItemSet)
-				}
+				best.OfferAndSwap(&solveSet, solveRating)
 			}
 		}
 
@@ -107,7 +106,7 @@ func createWorkerRangeInt(skinnyOptions *SkinnyOptionsMap, itemOptions *Solvable
 }
 
 func makeSkinnySetInt(itemOptions *SkinnyOptionsMap, mainIndex uint64, set *SkinnyItemSet) {
-	set.Clear()
+	set.ClearTotals()
 
 	currIndex := mainIndex
 
@@ -116,6 +115,7 @@ func makeSkinnySetInt(itemOptions *SkinnyOptionsMap, mainIndex uint64, set *Skin
 		size := uint64(len(array))
 
 		if size > 0 {
+			// TODO use overflow techniques instead?
 			slotIndex := currIndex % size
 			currIndex /= size
 
@@ -128,7 +128,7 @@ func makeSkinnySetInt(itemOptions *SkinnyOptionsMap, mainIndex uint64, set *Skin
 }
 
 func makeFromSkinny(itemOptions *SolvableOptionsMap, model *Model, skinnySet *SkinnyItemSet, chosen *SolvableItemSet) {
-	chosen.Clear()
+	chosen.ClearTotals()
 
 	for slot := Equip_Iter_First; slot <= Equip_Iter_Last; slot++ {
 		skinny := &skinnySet.Items[slot]
