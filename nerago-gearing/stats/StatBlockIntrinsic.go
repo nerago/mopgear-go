@@ -37,18 +37,20 @@ func go_StatBlock_AddAndSubtract_Into(add1, add2, subtract, out *StatBlock) {
 
 func StatBlock_MultiplyForTotalSum(a, b *StatBlock) float32
 
-// func (block *StatBlock) MultiplyForTotalSum(other *StatBlock) uint64 {
-// 	var result uint64 = 0
-// 	for i := range block {
-// 		result += uint64(block[i]) * uint64(other[i])
-// 	}
-// 	return result
-// }
-
 func go_StatBlock_MultiplyForTotalSum(a, b *StatBlock) float32 {
 	var result float32 = 0
 	for i := range a {
 		result += float32(a[i]) * float32(b[i])
+	}
+	return result
+}
+
+func StatBlock_MultiplyForTotalSum_Int(a, b *StatBlock) uint64
+
+func go_StatBlock_MultiplyForTotalSum_Int(a, b *StatBlock) uint64 {
+	var result uint64 = 0
+	for i := range a {
+		result += uint64(a[i]) * uint64(b[i])
 	}
 	return result
 }

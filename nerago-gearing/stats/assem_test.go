@@ -131,6 +131,52 @@ func TestMultiplySum2(test *testing.T) {
 
 func TestMultiplySum(test *testing.T) {
 	for range checkLoops {
+		a0 := randBlockLimited(0x70000000)
+		b0 := randBlockLimited(0x70000000)
+		// a0 := randBlockLimited(100)
+		// b0 := randBlockLimited(100)
+
+		a1 := a0
+		a2 := a0
+		b1 := b0
+		b2 := b0
+
+		test.Logf("%s\n%s", a1.CreateStringCSV(), b1.CreateStringCSV())
+		assertFloatNearEqual(test, go_StatBlock_MultiplyForTotalSum(&a1, &b1), StatBlock_MultiplyForTotalSum(&a2, &b2))
+
+		assertEquals(test, &a0, &a1, "should be unchanged")
+		assertEquals(test, &a0, &a2, "should be unchanged")
+		assertEquals(test, &b0, &b1, "should be unchanged")
+		assertEquals(test, &b0, &b2, "should be unchanged")
+	}
+}
+
+func TestMultiplySum0Int(test *testing.T) {
+	a := StatBlock{1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	b := StatBlock{3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+	assertIntEqual(test, 13, go_StatBlock_MultiplyForTotalSum_Int(&a, &b))
+	assertIntEqual(test, 13, StatBlock_MultiplyForTotalSum_Int(&a, &b))
+}
+
+func TestMultiplySum1Int(test *testing.T) {
+	a := StatBlock{1, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0}
+	b := StatBlock{3, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0}
+
+	assertIntEqual(test, 19, go_StatBlock_MultiplyForTotalSum_Int(&a, &b))
+	assertIntEqual(test, 19, StatBlock_MultiplyForTotalSum_Int(&a, &b))
+}
+
+func TestMultiplySum2Int(test *testing.T) {
+	a := StatBlock{1, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0}
+	b := StatBlock{3, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0}
+
+	assertIntEqual(test, 38, go_StatBlock_MultiplyForTotalSum_Int(&a, &b))
+	assertIntEqual(test, 38, StatBlock_MultiplyForTotalSum_Int(&a, &b))
+}
+
+func TestMultiplySumInt(test *testing.T) {
+	for range checkLoops {
 		// a0 := randBlockLimited(0x70000000)
 		// b0 := randBlockLimited(0x70000000)
 		a0 := randBlockLimited(100)
@@ -142,7 +188,7 @@ func TestMultiplySum(test *testing.T) {
 		b2 := b0
 
 		test.Logf("%s\n%s", a1.CreateStringCSV(), b1.CreateStringCSV())
-		assertFloatEqual(test, go_StatBlock_MultiplyForTotalSum(&a1, &b1), StatBlock_MultiplyForTotalSum(&a2, &b2))
+		assertIntEqual(test, go_StatBlock_MultiplyForTotalSum_Int(&a1, &b1), StatBlock_MultiplyForTotalSum_Int(&a2, &b2))
 
 		assertEquals(test, &a0, &a1, "should be unchanged")
 		assertEquals(test, &a0, &a2, "should be unchanged")
@@ -166,6 +212,28 @@ func assertBoolEqual(test *testing.T, a, b bool) {
 func assertFloatEqual(test *testing.T, a, b float32) {
 	if a != b {
 		test.Fatalf("FAIL expect=%f actual=%f", a, b)
+	}
+}
+
+func assertFloatNearEqual(test *testing.T, a, b float32) {
+	diff := a - b
+	if diff == 0.0 {
+		return
+	}
+
+	if a != 0 {
+		relative := diff / a
+		if relative >= -0.000001 && relative <= 0.000001 {
+			return
+		}
+	}
+
+	test.Fatalf("FAIL expect=%f actual=%f", a, b)
+}
+
+func assertIntEqual(test *testing.T, a, b uint64) {
+	if a != b {
+		test.Fatalf("FAIL expect=%d actual=%d", a, b)
 	}
 }
 
