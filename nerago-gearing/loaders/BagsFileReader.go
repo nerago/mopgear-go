@@ -3,14 +3,13 @@ package loaders
 import (
 	"encoding/json"
 	"os"
+	"paladin_gearing_go/files"
 )
-
-const bagsFilename = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\bags-gear-bags.json`
 
 func BagsFileReader_Read() []EquippedItem {
 	equippedItems := make([]EquippedItem, 0)
 
-	allBytes, err := os.ReadFile(bagsFilename)
+	allBytes, err := os.ReadFile(files.BagsFilename)
 	if err != nil {
 		panic(err)
 	}

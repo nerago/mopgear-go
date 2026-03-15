@@ -3,6 +3,7 @@ package db
 import (
 	"encoding/json"
 	"os"
+	"paladin_gearing_go/files"
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
 	. "paladin_gearing_go/stats"
@@ -16,8 +17,7 @@ var reforgeById map[uint16]ReforgeRecipe = make(map[uint16]ReforgeRecipe)
 var reforgeByObj map[ReforgeRecipe]uint16 = make(map[ReforgeRecipe]uint16)
 
 func WowSimDB_Read() {
-	filename := `C:\Users\nicholas\Dropbox\prog\paladin_gearing\src\main\resources\wowsimdb.json`
-
+	filename := files.WowSimDB
 	allBytes, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)

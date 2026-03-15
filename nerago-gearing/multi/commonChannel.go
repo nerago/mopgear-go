@@ -16,7 +16,15 @@ type commonCombo map[uint32]items.FullItem
 func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targetCount uint64, trackProgress *util.TrackProgress) <-chan commonCombo {
 	counters := make([]uint64, generateThreadCount+additionalThreads)
 	additionalCount := additionalSetEach * additionalThreads
-	eachThreadCount := max((targetCount-additionalCount)/generateThreadCount, 1)
+
+	var eachThreadCount uint64
+	if targetCount > additionalCount {
+		eachThreadCount = max((targetCount-additionalCount)/generateThreadCount, 1)
+	} else {
+		eachThreadCount = additionalSetEach
+	}
+
+	job.printer.Printf("MAKE COMMON %d %d %d\n", targetCount, additionalCount, eachThreadCount)
 
 	trackProgress.RunFromArray(&counters, targetCount)
 

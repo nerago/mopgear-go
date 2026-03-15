@@ -34,11 +34,11 @@ func (optionsMap *commonComboOptions) TotalCombinationCount() *big.Int {
 func (job *MultiSetJob) determineCommon() commonComboOptions {
 	commonOptions, seenIn := searchParamOptions(&job.params)
 
-	applyFixedForges(job.fixedForge, &commonOptions, &job.printer)
+	applyFixedForges(job.fixedForge, &commonOptions, job.printer)
 
 	removeSingleSetItems(seenIn, &commonOptions, job.fixedForge)
 
-	printCommons(seenIn, commonOptions, &job.printer)
+	printCommons(seenIn, commonOptions, job.printer)
 
 	return commonOptions
 }

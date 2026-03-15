@@ -3,11 +3,10 @@ package util
 import (
 	"fmt"
 	"os"
+	"paladin_gearing_go/files"
 	"strings"
 	"time"
 )
-
-const outputPath = `C:\Users\nicholas\Dropbox\prog\paladin_gearing_go\output\`
 
 type PrintRecorder struct {
 	holdOutput bool
@@ -17,7 +16,7 @@ type PrintRecorder struct {
 
 func PrintRecorder_CreateLogFile() *PrintRecorder {
 	timeStr := strings.ReplaceAll(time.Now().Format(time.RFC3339), ":", "-")
-	logName := outputPath + "output-" + timeStr + ".log"
+	logName := files.LogOutputPath + "output-" + timeStr + ".log"
 	file, err := os.Create(logName)
 	if err != nil {
 		panic("error creating log")

@@ -122,30 +122,42 @@ func (track *TrackProgress) RunFromArray(array *[]uint64, targetCount uint64) {
 }
 
 func (track *TrackProgress) RunOuterTracking(expectedChildCount int) {
-	track.nestedChildList = make([]*TrackProgress, 0, expectedChildCount)
-	go func() {
-		for {
-			select {
-			case <-track.ctx.Done():
-				return
-			case <-time.After(time.Second * 5):
-				var overallPercent float64 = 0
-				for _, nested := range track.nestedChildList {
-					if nested != nil {
-						childFunc := nested.nestedProgressFunc
-						if childFunc != nil {
-							childRaw := childFunc()
-							overallPercent += childRaw / float64(expectedChildCount)
-						}
+	if track.active {
+		track.nestedChildList = make([]*TrackProgress, 0, expectedChildCount)
+		go func() {
+			for {
+				select {
+				case <-track.ctx.Done():
+					return
+				case <-time.After(time.Second * 5):
+					percent := track.sumNestedProgress(expectedChildCount)
+					if percent != track.lastPercent {
+						PrintProgressBasic(track.startTime, percent)
+						track.lastPercent = percent
 					}
 				}
-				if overallPercent != track.lastPercent {
-					PrintProgressBasic(track.startTime, overallPercent)
-					track.lastPercent = overallPercent
-				}
+			}
+		}()
+	} else if track.nested {
+		track.nestedChildList = make([]*TrackProgress, 0, expectedChildCount)
+		track.nestedProgressFunc = func() float64 {
+			return track.sumNestedProgress(expectedChildCount)
+		}
+	}
+}
+
+func (track *TrackProgress) sumNestedProgress(expectedChildCount int) float64 {
+	var overallPercent float64 = 0
+	for _, nested := range track.nestedChildList {
+		if nested != nil {
+			childFunc := nested.nestedProgressFunc
+			if childFunc != nil {
+				childRaw := childFunc()
+				overallPercent += childRaw / float64(expectedChildCount)
 			}
 		}
-	}()
+	}
+	return overallPercent
 }
 
 func PrintProgressBasic(startTime time.Time, percent float64) {

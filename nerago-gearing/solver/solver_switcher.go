@@ -3,6 +3,7 @@ package solver
 import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
+	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/build"
 	"paladin_gearing_go/solver/phased"
 	"paladin_gearing_go/tools"
@@ -68,12 +69,12 @@ func Solver(input SolveInput) SolveOutput {
 	solvedSet = tools.Tweaker_Run(solvedSet, &solveOptions, input.Model)
 
 	return SolveOutput{
-		true, 
-		uuid.NewString(), 
-		&input, 
-		solvedSet, 
-		items.FullItemSet_FromSolved(solvedSet, input.ItemOptions), 
-		input.Model.CalcRatingSolve(&solvedSet), 
+		true,
+		uuid.NewString(),
+		&input,
+		solvedSet,
+		items.FullItemSet_FromSolved(solvedSet, input.ItemOptions),
+		input.Model.CalcRatingSolve(&solvedSet),
 		printer}
 }
 
@@ -104,6 +105,7 @@ func (output *SolveOutput) Report(printer *util.PrintRecorder) {
 		printer.Printf("BONUS %.2f\n", float64(output.Input.Model.SetBonus.CalcAndMultiply(&fullSet.Items, 1000))/1000.0)
 		fullSet.PrintStats(printer)
 		printEquipMap(&fullSet.Items, printer)
+		simulate.WowSimJson_Write(&output.FullSet.Items, output.Input.Model, printer)
 	} else {
 		printer.Printf("SET SOLVE FAILED\n")
 	}

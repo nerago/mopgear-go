@@ -11,25 +11,28 @@ import (
 )
 
 func (job *MultiSetJob) FindTopAndPassToSim(targetCount uint64, topCapture int, runSize simulate.WowSim_RunSize) {
+	topTracker := util.TrackProgress_Start()
+	topTracker.RunOuterTracking(3)
+	defer topTracker.Stop()
+
 	job.printer.Printf("@@@@@@@@@@ FIND TOP %d %d @@@@@@@@@@\n", targetCount, topCapture)
-	bestOutputs := job.runForTopN(targetCount, topCapture)
+	bestOutputs := job.runForTopN(targetCount, topCapture, topTracker.MakeNested())
 	job.listInitialOutputs(bestOutputs)
 
-	proposalList := job.prepareRevisionsForSim(bestOutputs)
+	proposalList := job.prepareRevisionsForSim(bestOutputs, topTracker.MakeNested())
 
 	simList := job.prepareSimList(proposalList)
-	job.runSims(simList, runSize)
+	job.runSims(simList, runSize, topTracker.MakeNested())
 
 	simResult := job.linkSimResults(proposalList, simList)
 	job.reportSimResults(simResult)
 	job.reportAsCsv(simResult)
 }
 
-func (job *MultiSetJob) prepareRevisionsForSim(proposedList []MultiProposedOutput) []MultiProposedOutput {
+func (job *MultiSetJob) prepareRevisionsForSim(proposedList []MultiProposedOutput, trackProgress *util.TrackProgress) []MultiProposedOutput {
 	job.printer.Printf("@@@@@@@@@@ MAKE REVISIONS FOR %d @@@@@@@@@@\n", len(proposedList))
 
 	expectedSets := len(proposedList) * len(job.params) * revisedExtraSetsExpectedEach
-	trackProgress := util.TrackProgress_Start()
 	trackProgress.RunOuterTracking(expectedSets)
 	defer trackProgress.Stop()
 
@@ -134,10 +137,10 @@ func (job *MultiSetJob) prepareSimList(proposalList []MultiProposedOutput) []sim
 	return jobList
 }
 
-func (job *MultiSetJob) runSims(jobList []simulateJob, runSize simulate.WowSim_RunSize) {
+func (job *MultiSetJob) runSims(jobList []simulateJob, runSize simulate.WowSim_RunSize, trackProgress *util.TrackProgress) {
 	job.printer.Printf("@@@@@@@@@@ RUN SIM JOBS %d @@@@@@@@@@\n", len(jobList))
 
-	util.Void_IterateEach_Multi_BlockingTracked(evaluateThreadCount, jobList, func(sim *simulateJob) {
+	util.Void_IterateEach_Multi_BlockingTracked(trackProgress, evaluateThreadCount, jobList, func(sim *simulateJob) {
 		result := simulate.WowSim_Execute(runSize, sim.spec, &sim.equip, nil)
 		sim.result = &result
 	})
@@ -176,11 +179,9 @@ func (job *MultiSetJob) reportSimResults(resultList []simulateResult) {
 			job.printer.Printf("--- %s\n", param.Label)
 
 			output := result.proposed.Outputs[specIndex]
-			output.Report(&job.printer)
-
-			// TODO AsWowSimJson
-
-			specResult.Print(&job.printer)
+			output.Report(job.printer)
+			job.printer.Println0()
+			specResult.Print(job.printer)
 		}
 	}
 }

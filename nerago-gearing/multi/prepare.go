@@ -42,8 +42,8 @@ func (param *MultiSetParam) prepareStartingGear() {
 	param.job.printer.Println(param.Label)
 
 	equipped := loaders.GearFileReader_Read(param.GearFile)
-	param.exactEquippedGear = setup.OptionsSetup_ExactEquippedOnly(equipped, &param.Model, &param.job.printer)
-	param.itemOptions = setup.OptionsSetup_FromEquipped(equipped, &param.Model, &param.job.printer)
+	param.exactEquippedGear = setup.OptionsSetup_ExactEquippedOnly(equipped, &param.Model, param.job.printer)
+	param.itemOptions = setup.OptionsSetup_FromEquipped(equipped, &param.Model, param.job.printer)
 }
 
 func (param *MultiSetParam) prepareExtraItems() {
@@ -95,7 +95,7 @@ func (param *MultiSetParam) extraFromBags(itemId uint32) bool {
 			// bags file doesn't have upgrade steps
 			equipped.UpgradeStep = param.ExtraUpgradeLevel
 
-			options, baseItem := setup.OptionsSetup_FromEquipped_Single(equipped, &param.Model, &param.job.printer)
+			options, baseItem := setup.OptionsSetup_FromEquipped_Single(equipped, &param.Model, param.job.printer)
 			param.itemOptions.AddSeveralOptions(baseItem.Slot, options)
 			param.job.printer.Printf("OPTION from bags %s\n", baseItem.CreateString())
 			return true
@@ -105,7 +105,7 @@ func (param *MultiSetParam) extraFromBags(itemId uint32) bool {
 }
 
 func (param *MultiSetParam) extraLoadAndGenerate(itemId uint32) {
-	options, baseItem := setup.OptionsSetup_FromIdOnlyUseAllDefaults(itemId, param.ExtraUpgradeLevel, &param.Model, &param.job.printer)
+	options, baseItem := setup.OptionsSetup_FromIdOnlyUseAllDefaults(itemId, param.ExtraUpgradeLevel, &param.Model, param.job.printer)
 	param.itemOptions.AddSeveralOptions(baseItem.Slot, options)
 	param.job.printer.Printf("OPTION %s\n", baseItem.CreateString())
 }
@@ -125,6 +125,15 @@ func (param *MultiSetParam) restrictFixed() {
 		if !param.itemOptions.Has(slot) {
 			panic("restricting slot leaves slot empty")
 		}
+
+		paired := slot.PairedSlot()
+		if paired != -1 {
+			param.itemOptions.MapSlot(paired, func(options []items.FullItem) []items.FullItem {
+				return util.FilterSlice(options, func(x *items.FullItem) bool {
+					return x.ItemId() != itemId
+				})
+			})
+		}
 	}
 }
 
@@ -133,7 +142,7 @@ func (job *MultiSetJob) validateMultiSetAlignItemSlots() {
 	for paramIndex := range job.params {
 		for slot, item := range job.params[paramIndex].itemOptions.AllItemsWithSlot() {
 			seenSlot, found := seen[item.ItemId()]
-			if found && seenSlot != slot {
+			if found && seenSlot != slot && !slices.Contains(job.suppressSlotCheck, item.ItemId()) {
 				panic("duplicate in non-matching slot " + item.CreateString())
 			} else if !found {
 				seen[item.ItemId()] = slot
@@ -150,12 +159,12 @@ func (param *MultiSetParam) runBaseline() {
 		PhasedAcceptable:    param.PhasedAcceptable,
 		EnableTrackProgress: true,
 		SolveSize:           solver.SolveSize_Medium,
-		Printer:             &param.job.printer})
+		Printer:             param.job.printer})
 
 	if !param.baselineResult.Success {
 		panic("failed to find baseline for " + param.Label)
 	}
-	param.baselineResult.Report(&param.job.printer)
+	param.baselineResult.Report(param.job.printer)
 	param.seenInSolutions.Add(&param.baselineResult.FullSet)
 }
 

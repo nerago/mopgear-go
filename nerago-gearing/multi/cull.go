@@ -7,7 +7,7 @@ import (
 )
 
 func (job *MultiSetJob) SuggestCulls(targetCount uint64, topCapture int) {
-	bestOutputs := job.runForTopN(targetCount, topCapture)
+	bestOutputs := job.runForTopN(targetCount, topCapture, util.TrackProgress_Start())
 	job.listInitialOutputs(bestOutputs)
 	job.cullingMakeRevisions(bestOutputs)
 	job.cullingReport()
@@ -18,16 +18,14 @@ func (job *MultiSetJob) listInitialOutputs(bestOutputs []MultiProposedOutput) {
 		job.printer.Printf("::::::::: MULTI RATING %d :::::::: %s ::::::::\n", best.TotalRatingSum, best.Id)
 		for i, out := range best.Outputs {
 			job.printer.Println(job.params[i].Label)
-			out.Report(&job.printer)
+			out.Report(job.printer)
 		}
 	}
 }
 
-func (job *MultiSetJob) runForTopN(targetCount uint64, topCapture int) []MultiProposedOutput {
+func (job *MultiSetJob) runForTopN(targetCount uint64, topCapture int, trackProgress *util.TrackProgress) []MultiProposedOutput {
 	job.prepareInitial()
 	commonOptions := job.determineCommon()
-
-	trackProgress := util.TrackProgress_Start()
 
 	comboChannel := job.makeCommonChannel(commonOptions, targetCount, trackProgress)
 	proposedChannel := job.makeProposedChannel(comboChannel)

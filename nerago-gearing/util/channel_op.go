@@ -161,16 +161,14 @@ func Void_IterateEach_Multi_Blocking[T any](threadCount int, inputSlice []T, pro
 	waitGroup.Wait()
 }
 
-func Void_IterateEach_Multi_BlockingTracked[T any](threadCount int, inputSlice []T, process func(*T)) {
+func Void_IterateEach_Multi_BlockingTracked[T any](trackProgress *TrackProgress, threadCount int, inputSlice []T, process func(*T)) {
 	var waitGroup sync.WaitGroup
 
 	inputLength := len(inputSlice)
 	splits := indexSplitsInt(inputLength, threadCount)
 
 	counts := make([]uint64, threadCount)
-	trackProgress := TrackProgress_Start()
 	trackProgress.RunFromArray(&counts, uint64(inputLength))
-	defer trackProgress.Stop()
 
 	for threadNum := range threadCount {
 		waitGroup.Go(func() {
@@ -184,6 +182,7 @@ func Void_IterateEach_Multi_BlockingTracked[T any](threadCount int, inputSlice [
 	}
 
 	waitGroup.Wait()
+	trackProgress.Stop()
 }
 
 func indexSplitsInt(sliceLength int, threadCount int) []int {

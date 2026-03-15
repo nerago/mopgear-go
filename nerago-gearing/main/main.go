@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"paladin_gearing_go/files"
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/model"
 	. "paladin_gearing_go/setup"
@@ -18,12 +19,7 @@ import (
 )
 
 const (
-	profileDir = `C:\Users\nicholas\Dropbox\prog\paladin_gearing_go\`
-	gearFileProtMitigation = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\gear-prot-defence.json`
-	gearFileProtDps        = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\gear-prot-dps.json`
-	gearFileRet            = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\gear-ret.json`
-	bagsFile               = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\bags-gear-bags.json`
-	enableProfiling        = true
+	enableProfiling = true
 )
 
 var printer *util.PrintRecorder
@@ -37,7 +33,7 @@ func main() {
 	log.SetOutput(io.Discard) // ignore wowsim's internal progress logs
 
 	if enableProfiling {
-		f, err := os.Create(profileDir + "main.pgo")
+		f, err := os.Create(files.ProfileDir + "main.pgo")
 		if err != nil {
 			panic(err)
 		}
@@ -48,13 +44,13 @@ func main() {
 
 	startTime := time.Now()
 
-	core()
+	core(printer)
 
 	timeTaken := time.Since(startTime)
 	printer.Println("Duration = " + timeTaken.String())
 
 	if enableProfiling {
-		f, err := os.Create(profileDir + "main-memory.pgo")
+		f, err := os.Create(files.ProfileDir + "main-memory.pgo")
 		if err != nil {
 			panic(err)
 		}
@@ -66,25 +62,25 @@ func main() {
 	}
 }
 
-func core() {
+func core(printer *PrintRecorder) {
 	// itemOptions, model := setupPallyMitigation()
-	itemOptions, model := setupPallyDps()
+	// itemOptions, model := setupPallyDps()
 
-	// slotRating(itemOptions[Equip_Chest], &model)
-	basicReforge(&itemOptions, &model, printer)
+	// slotRating(itemOptions[Equip_Chest], &model, printer)
+	// basicReforge(&itemOptions, &model, printer)
 
-	// PaladinMultiRun()
-	// testSim()
+	PaladinMultiRun(printer)
+	// testSim(printer)
 }
 
 func setupPallyMitigation() (FullOptionsMap, Model) {
 	model := Model_PallyProtMitigation()
-	return OptionsSetup_FromGearFile(gearFileProtMitigation, &model, printer), model
+	return OptionsSetup_FromGearFile(files.GearFileProtMitigation, &model, printer), model
 }
 
 func setupPallyDps() (FullOptionsMap, Model) {
 	model := Model_PallyProtDps()
-	return OptionsSetup_FromGearFile(gearFileProtDps, &model, printer), model
+	return OptionsSetup_FromGearFile(files.GearFileProtDps, &model, printer), model
 }
 
 func lowerPriority() {

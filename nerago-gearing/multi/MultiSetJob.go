@@ -8,16 +8,21 @@ import (
 
 const (
 	generateThreadCount = 6
-	solveThreadCount = 6
+	solveThreadCount    = 6
 	evaluateThreadCount = 6
 )
 
 type MultiSetJob struct {
-	printer        util.PrintRecorder
-	params         []MultiSetParam
-	fixedForge     map[uint32]stats.ReforgeRecipe
-	bagsGear       []loaders.EquippedItem
-	multiSetFilter func(MultiProposedOutput) bool
+	printer           *util.PrintRecorder
+	params            []MultiSetParam
+	fixedForge        map[uint32]stats.ReforgeRecipe
+	bagsGear          []loaders.EquippedItem
+	multiSetFilter    func(MultiProposedOutput) bool
+	suppressSlotCheck []uint32
+}
+
+func MultiSetJob_Create(printer *util.PrintRecorder) MultiSetJob {
+	return MultiSetJob{printer: printer}
 }
 
 func (job *MultiSetJob) AddSetParam(param MultiSetParam) {
@@ -34,4 +39,8 @@ func (job *MultiSetJob) AddFixedForge(itemId uint32, reforge stats.ReforgeRecipe
 
 func (job *MultiSetJob) SetMultiSetFilter(filter func(MultiProposedOutput) bool) {
 	job.multiSetFilter = filter
+}
+
+func (job *MultiSetJob) AddSuppressSlotCheck(itemId uint32) {
+	job.suppressSlotCheck = append(job.suppressSlotCheck, itemId)
 }

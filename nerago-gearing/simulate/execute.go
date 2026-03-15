@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"paladin_gearing_go/db"
+	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
 	gear_stat "paladin_gearing_go/stats"
 
@@ -26,7 +27,7 @@ const (
 
 func WowSim_Execute(runSize WowSim_RunSize, spec gear_stat.SpecType, equipMap *items.FullEquipMap, bonusStats *gear_stat.StatBlock) SimResultStats {
 	verbose := false
-	infile := exampleFileFor(spec)
+	infile := files.SimFileFor(spec)
 	input := loadExampleFile(infile)
 
 	updateGear(input, equipMap)
@@ -172,17 +173,4 @@ func loadExampleFile(infile string) *wowsim_proto.RaidSimRequest {
 		log.Fatalf("failed to load input json file: %s", err)
 	}
 	return input
-}
-
-func exampleFileFor(spec gear_stat.SpecType) string {
-	switch spec {
-	case gear_stat.Spec_PaladinProtDps:
-		return "C:\\Users\\nicholas\\Dropbox\\prog\\wow-sim-mop\\example-prot-dps.json"
-	case gear_stat.Spec_PaladinProtMitigation:
-		return "C:\\Users\\nicholas\\Dropbox\\prog\\wow-sim-mop\\example-prot-miti.json"
-	case gear_stat.Spec_PaladinRet:
-		return "C:\\Users\\nicholas\\Dropbox\\prog\\wow-sim-mop\\example-ret.json"
-	default:
-		panic("spec not supported")
-	}
 }

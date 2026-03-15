@@ -1,6 +1,7 @@
 package model
 
 import (
+	"paladin_gearing_go/files"
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/model/ratings"
 	. "paladin_gearing_go/model/requirements"
@@ -49,13 +50,9 @@ func (model *Model) CalcRatingSolveItem(item *SolvableItem) uint64 {
 	return model.StatRatings.CalcRating(item.TotalRated())
 }
 
-const weightMitiFile = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\src\main\resources\weight\PaladinProtMitigation.txt`
-const weightDpsFile = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\src\main\resources\weight\PaladinProtDps.txt`
-const weightRetFile = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\src\main\resources\weight\PaladinRet.txt`
-
 func Model_PallyProtMitigation() Model {
-	weightMiti := StatRatingsWeights_ReadFile(weightMitiFile, false, true, false)
-	weightDps := StatRatingsWeights_ReadFile(weightDpsFile, false, true, false)
+	weightMiti := StatRatingsWeights_ReadFile(files.WeightMitiFile, false, true, false)
+	weightDps := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
 	weight := StatRatingsWeights_Mix(weightMiti, 95, weightDps, 34)
 	return Model{
 		Spec:             Spec_PaladinProtMitigation,
@@ -68,8 +65,8 @@ func Model_PallyProtMitigation() Model {
 }
 
 func Model_PallyProtDps() Model {
-	weightMiti := StatRatingsWeights_ReadFile(weightMitiFile, false, true, false)
-	weightDps := StatRatingsWeights_ReadFile(weightDpsFile, false, true, false)
+	weightMiti := StatRatingsWeights_ReadFile(files.WeightMitiFile, false, true, false)
+	weightDps := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
 	weight := StatRatingsWeights_Mix(weightMiti, 32, weightDps, 146)
 	return Model{
 		Spec:             Spec_PaladinProtDps,
@@ -82,7 +79,7 @@ func Model_PallyProtDps() Model {
 }
 
 func Model_PallyRet() Model {
-	weight := StatRatingsWeights_ReadFile(weightRetFile, false, false, false)
+	weight := StatRatingsWeights_ReadFile(files.WeightRetFile, false, false, false)
 	return Model{
 		Spec:             Spec_PaladinRet,
 		StatRatings:      weight,
@@ -94,7 +91,7 @@ func Model_PallyRet() Model {
 }
 
 func Model_Testing() Model {
-	weight := StatRatingsWeights_ReadFile(weightDpsFile, false, true, false)
+	weight := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
 	return Model{
 		Spec:             Spec_PaladinProtDps,
 		StatRatings:      weight,
