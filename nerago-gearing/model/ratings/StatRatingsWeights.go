@@ -17,7 +17,11 @@ func (rating StatRatingsWeights) Weights() *StatBlock {
 }
 
 func (rating StatRatingsWeights) CalcRating(block *StatBlock) uint64 {
-	return rating.weight.MultiplyForTotalSum(block)
+	return uint64(StatBlock_MultiplyForTotalSum(&rating.weight, block))
+}
+
+func (rating StatRatingsWeights) CalcRatingF(block *StatBlock) float32 {
+	return StatBlock_MultiplyForTotalSum(&rating.weight, block)
 }
 
 func validate(block StatBlock) {

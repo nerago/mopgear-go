@@ -30,6 +30,25 @@ TEXT ·StatBlock_Add_Into(SB), NOSPLIT|NOFRAME, $0-24
 
 	RET
 
+// active version
+TEXT ·StatBlock_AddAndSubtract_Into(SB), NOSPLIT|NOFRAME, $0-32
+    MOVQ        add1+0(FP), AX
+    MOVQ        add2+8(FP), BX
+    MOVQ   subtract+16(FP), CX
+    MOVQ        out+24(FP), DX
+ 
+    VMOVDQU           (AX), Y0
+    VPADDD            (BX), Y0, Y0
+    VPSUBD            (CX), Y0, Y0
+    VMOVDQU             Y0, (DX)
+
+    VMOVDQU         32(AX), X1
+    VPADDD          32(BX), X1, X1
+    VPSUBD          32(CX), X1, X1
+    VMOVDQU             X1, 32(DX)
+
+	RET
+
 TEXT ·StatBlock_Equals(SB), NOSPLIT|NOFRAME, $0-24
     MOVQ          a+0(FP), AX
     MOVQ          b+8(FP), BX
@@ -49,5 +68,31 @@ TEXT ·StatBlock_Equals(SB), NOSPLIT|NOFRAME, $0-24
     ANDL               CX, DX      // equality is all bits sets
     SUBL      $0xFFFFFFFF, DX      
     SETEQ          ret+16(FP)
+
+    RET
+
+TEXT ·StatBlock_MultiplyForTotalSum(SB), NOSPLIT|NOFRAME, $0-20
+    MOVQ          a+0(FP), AX
+    MOVQ          b+8(FP), BX
+
+    // first 8 values load and convert to float32
+    VCVTDQ2PS        (AX), Y1
+    VCVTDQ2PS        (BX), Y2 
+    // next 4 values load and convert to float32
+    VCVTDQ2PS      32(AX), X3
+    VCVTDQ2PS      32(BX), X4
+
+    // main dot products
+    // immediate value means read all inputs, write into lowest item in output only
+    VDPPS           $0xF1, Y1, Y2, Y5
+    VDPPS           $0xF1, X3, X4, X6
+
+    // add subtotals 
+    VADDSS             X5, X6, X0 // add X6, Y5(low half)
+    VEXTRACTF128       $1, Y5, X7 // grab Y5(top half)
+    VADDSS             X0, X7, X0 // add Y5(top half)
+
+    // result
+    MOVSS              X0, ret+16(FP)
 
     RET

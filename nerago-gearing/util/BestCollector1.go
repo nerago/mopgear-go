@@ -60,7 +60,10 @@ func (collect *BestCollector1[T]) OfferAndSwap(pointer **T, value uint64) {
 }
 
 func (collect *BestCollector1[T]) CombineOther(other BestCollector1[T]) {
-	collect.Offer(other.BestObject, other.BestValue)
+	if other.BestObject != nil && other.BestValue > collect.BestValue {
+		collect.BestObject = other.BestObject
+		collect.BestValue = other.BestValue
+	}
 }
 
 func BestCollector1_OfChannel[T any](channel <-chan BestCollector1[T], expectNum int) Optional[T] {

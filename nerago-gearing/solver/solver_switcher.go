@@ -66,7 +66,7 @@ func Solver(input SolveInput) SolveOutput {
 	solvedSet := solvedResult.GetOrPanic()
 
 	// TODO bury tweaker into find best checks
-	solvedSet = tools.Tweaker_Run(solvedSet, &solveOptions, input.Model)
+	solvedSet = tools.Tweaker_Run(&solvedSet, &solveOptions, input.Model)
 
 	return SolveOutput{
 		true,
@@ -102,7 +102,8 @@ func (output *SolveOutput) Report(printer *util.PrintRecorder) {
 		rating := output.ResultRating
 		printer.Println(output.OutputId)
 		printer.Printf("SET OUTPUT rating %d\n", rating)
-		printer.Printf("BONUS %.2f\n", float64(output.Input.Model.SetBonus.CalcAndMultiply(&fullSet.Items, 1000))/1000.0)
+		// printer.Printf("BONUS %.2f\n", float64(output.Input.Model.SetBonus.CalcAndMultiply(&fullSet.Items, 1000))/1000.0)
+		printer.Printf("BONUS %.2f\n", output.Input.Model.SetBonus.CalcAndMultiplyF(&fullSet.Items, 1.0))
 		fullSet.PrintStats(printer)
 		printEquipMap(&fullSet.Items, printer)
 		simulate.WowSimJson_Write(&output.FullSet.Items, output.Input.Model, printer)

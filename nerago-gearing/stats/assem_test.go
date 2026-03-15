@@ -1,0 +1,186 @@
+package stats
+
+import (
+	"math/rand/v2"
+	"testing"
+)
+
+const checkLoops = 100
+
+func TestIncrementMutating(test *testing.T) {
+	for range checkLoops {
+		a0 := randBlock()
+		b0 := randBlock()
+
+		a1 := a0
+		a2 := a0
+		b1 := b0
+		b2 := b0
+
+		go_StatBlock_Increment_Mutating(&a1, &b1)
+		StatBlock_Increment_Mutating(&a2, &b2)
+
+		assertEquals(test, &a1, &a2, "should be same result")
+		assertEquals(test, &b0, &b1, "should be unchanged")
+		assertEquals(test, &b0, &b2, "should be unchanged")
+	}
+}
+
+func TestAddInto(test *testing.T) {
+	for range checkLoops {
+		a0 := randBlock()
+		b0 := randBlock()
+
+		a1 := a0
+		a2 := a0
+		b1 := b0
+		b2 := b0
+
+		var r1, r2 StatBlock
+
+		go_StatBlock_Add_Into(&a1, &b1, &r1)
+		StatBlock_Add_Into(&a2, &b2, &r2)
+
+		assertEquals(test, &r1, &r2, "should be same result")
+		assertEquals(test, &a0, &a1, "should be unchanged")
+		assertEquals(test, &a0, &a2, "should be unchanged")
+		assertEquals(test, &b0, &b1, "should be unchanged")
+		assertEquals(test, &b0, &b2, "should be unchanged")
+	}
+}
+
+func TestAddAndSubtractInto(test *testing.T) {
+	for range checkLoops {
+		a0 := randBlock()
+		b0 := randBlock()
+		c0 := randBlock()
+
+		a1 := a0
+		a2 := a0
+		b1 := b0
+		b2 := b0
+		c1 := c0
+		c2 := c0
+
+		var r1, r2 StatBlock
+
+		go_StatBlock_AddAndSubtract_Into(&a1, &b1, &c1, &r1)
+		StatBlock_AddAndSubtract_Into(&a2, &b2, &c2, &r2)
+
+		assertEquals(test, &r1, &r2, "should be same result")
+		assertEquals(test, &a0, &a1, "should be unchanged")
+		assertEquals(test, &a0, &a2, "should be unchanged")
+		assertEquals(test, &b0, &b1, "should be unchanged")
+		assertEquals(test, &b0, &b2, "should be unchanged")
+		assertEquals(test, &c0, &c1, "should be unchanged")
+		assertEquals(test, &c0, &c2, "should be unchanged")
+	}
+}
+
+func TestEquals(test *testing.T) {
+	check := func(x, y *StatBlock) {
+		assertBoolEqual(test, go_StatBlock_Equals(x, y), StatBlock_Equals(x, y))
+	}
+
+	for range checkLoops {
+		a0 := randBlock()
+		b0 := randBlock()
+		c0 := b0
+
+		a1 := a0
+		b1 := b0
+		c1 := c0
+
+		check(&a1, &a1)
+		check(&a1, &b1)
+		check(&a1, &c1)
+		check(&b1, &b1)
+		check(&b1, &c1)
+		check(&c1, &c1)
+
+		assertEquals(test, &a0, &a1, "should be unchanged")
+		assertEquals(test, &b0, &b1, "should be unchanged")
+		assertEquals(test, &b0, &c0, "should be unchanged")
+		assertEquals(test, &b0, &c1, "should be unchanged")
+	}
+}
+
+func TestMultiplySum0(test *testing.T) {
+	a := StatBlock{1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	b := StatBlock{3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+	assertFloatEqual(test, 13, go_StatBlock_MultiplyForTotalSum(&a, &b))
+	assertFloatEqual(test, 13, StatBlock_MultiplyForTotalSum(&a, &b))
+}
+
+func TestMultiplySum1(test *testing.T) {
+	a := StatBlock{1, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0}
+	b := StatBlock{3, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0}
+
+	assertFloatEqual(test, 19, go_StatBlock_MultiplyForTotalSum(&a, &b))
+	assertFloatEqual(test, 19, StatBlock_MultiplyForTotalSum(&a, &b))
+}
+
+func TestMultiplySum2(test *testing.T) {
+	a := StatBlock{1, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0}
+	b := StatBlock{3, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0}
+
+	assertFloatEqual(test, 38, go_StatBlock_MultiplyForTotalSum(&a, &b))
+	assertFloatEqual(test, 38, StatBlock_MultiplyForTotalSum(&a, &b))
+}
+
+func TestMultiplySum(test *testing.T) {
+	for range checkLoops {
+		// a0 := randBlockLimited(0x70000000)
+		// b0 := randBlockLimited(0x70000000)
+		a0 := randBlockLimited(100)
+		b0 := randBlockLimited(100)
+
+		a1 := a0
+		a2 := a0
+		b1 := b0
+		b2 := b0
+
+		test.Logf("%s\n%s", a1.CreateStringCSV(), b1.CreateStringCSV())
+		assertFloatEqual(test, go_StatBlock_MultiplyForTotalSum(&a1, &b1), StatBlock_MultiplyForTotalSum(&a2, &b2))
+
+		assertEquals(test, &a0, &a1, "should be unchanged")
+		assertEquals(test, &a0, &a2, "should be unchanged")
+		assertEquals(test, &b0, &b1, "should be unchanged")
+		assertEquals(test, &b0, &b2, "should be unchanged")
+	}
+}
+
+func assertEquals(test *testing.T, a, b *StatBlock, failMessage string) {
+	if *a != *b {
+		test.Fatalf("FAIL expect=%s actual=%s message=%s", a.CreateString(), b.CreateString(), failMessage)
+	}
+}
+
+func assertBoolEqual(test *testing.T, a, b bool) {
+	if a != b {
+		test.Fatalf("FAIL unequal bools")
+	}
+}
+
+func assertFloatEqual(test *testing.T, a, b float32) {
+	if a != b {
+		test.Fatalf("FAIL expect=%f actual=%f", a, b)
+	}
+}
+
+func randBlock() StatBlock {
+	block := StatBlock{}
+	for i := range block {
+		block[i] = rand.Uint32()
+	}
+	return block
+}
+
+func randBlockLimited(max uint32) StatBlock {
+	block := StatBlock{}
+	for i := range block {
+		block[i] = rand.Uint32N(max)
+	}
+	return block
+}

@@ -63,13 +63,13 @@ func main() {
 }
 
 func core(printer *PrintRecorder) {
-	// itemOptions, model := setupPallyMitigation()
+	itemOptions, model := setupPallyMitigation()
 	// itemOptions, model := setupPallyDps()
 
 	// slotRating(itemOptions[Equip_Chest], &model, printer)
-	// basicReforge(&itemOptions, &model, printer)
+	basicReforge(&itemOptions, &model, printer)
 
-	PaladinMultiRun(printer)
+	// PaladinMultiRun(printer)
 	// testSim(printer)
 }
 

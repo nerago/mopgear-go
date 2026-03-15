@@ -1,6 +1,8 @@
 package items
 
-import "iter"
+import (
+	"iter"
+)
 
 type FullEquipMap [16]*FullItem
 
@@ -42,6 +44,19 @@ func (equipMap SolvableEquipMap) WithAdditional(slot SlotEquip, item *SolvableIt
 	var result SolvableEquipMap = equipMap
 	result[slot] = item
 	return result
+}
+
+func (equipMap *SolvableEquipMap) ReplaceItem_Into(slot SlotEquip, item *SolvableItem, dest *SolvableEquipMap) {
+	// for i := Equip_Iter_First; i < slot; i++ {
+	// 	dest[i] = equipMap[i]
+	// }
+	// dest[slot] = item
+	// for i := slot + 1; i <= Equip_Iter_Last; i++ {
+	// 	dest[i] = equipMap[i]
+	// }
+
+	*dest = *equipMap
+	dest[slot] = item
 }
 
 func (equipMap SolvableEquipMap) AllItemSeq() iter.Seq[*SolvableItem] {

@@ -25,40 +25,6 @@ func StatBlock_of2(statA StatType, valueA uint32, statB StatType, valueB uint32)
 	return block
 }
 
-func StatBlock_Add_Into(a, b, out *StatBlock)
-
-// FALLBACK
-// func StatBlock_Add_Into(a, b, out *StatBlock) {
-// 	for i := range a {
-// 		out[i] = a[i] + b[i]
-// 	}
-// }
-
-func StatBlock_Increment_Mutating(mutate *StatBlock, other *StatBlock)
-
-// FALLBACK
-// func StatBlock_Increment_Mutating(mutate *StatBlock, other *StatBlock) {
-// 	for i := range block {
-// 		mutate[i] += other[i]
-// 	}
-// }
-
-func StatBlock_Equals(a, b *StatBlock) bool
-
-// FALLBACK
-// no better performance
-// func StatBlock_Equals(a, b *StatBlock) (ret bool) {
-// 	return *a == *b
-// }
-
-func (block *StatBlock) MultiplyForTotalSum(other *StatBlock) uint64 {
-	var result uint64 = 0
-	for i := range block {
-		result += uint64(block[i]) * uint64(other[i])
-	}
-	return result
-}
-
 func (block *StatBlock) MultiplyScalar(factor uint32, out *StatBlock) {
 	for i := range block {
 		out[i] = block[i] * factor
@@ -132,6 +98,18 @@ func (block *StatBlock) PrimaryStat() PrimaryStatType {
 func (block *StatBlock) CreateString() string {
 	build := strings.Builder{}
 	block.AppendString(&build)
+	return build.String()
+}
+
+func (block *StatBlock) CreateStringCSV() string {
+	var buff [20]byte
+	build := strings.Builder{}
+	for _, value := range block {
+		if build.Len() > 0 {
+			build.WriteRune(',')
+		}
+		build.Write(strconv.AppendUint(buff[:0], uint64(value), 10))
+	}
 	return build.String()
 }
 

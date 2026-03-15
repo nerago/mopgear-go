@@ -32,12 +32,12 @@ func (item *SolvableItem) TotalRated() *StatBlock {
 
 // /////////////////////////////////////////////////////////////
 type SolvableItemSet struct {
-	Items SolvableEquipMap
 	total StatBlock
+	Items SolvableEquipMap
 }
 
 func SolvableItemSet_Of(equipMap SolvableEquipMap) SolvableItemSet {
-	result := SolvableItemSet{equipMap, StatBlock{}}
+	result := SolvableItemSet{Items: equipMap, total: StatBlock{}}
 	for _, item := range equipMap {
 		if item != nil {
 			StatBlock_Increment_Mutating(&result.total, &item.total)
@@ -68,12 +68,17 @@ func (set *SolvableItemSet) AddItem_Mutating(slot SlotEquip, item *SolvableItem)
 	StatBlock_Increment_Mutating(&set.total, &item.total)
 }
 
-func (set *SolvableItemSet) AddItem_CreateNew(slot SlotEquip, item *SolvableItem) SolvableItemSet {
-	result := SolvableItemSet{}
-	result.Items = set.Items
-	result.Items[slot] = item
+func (set *SolvableItemSet) AddItem_CreateNew(slot SlotEquip, item *SolvableItem) *SolvableItemSet {
+	result := new(SolvableItemSet)
+	set.Items.ReplaceItem_Into(slot, item, &result.Items)
 	StatBlock_Add_Into(&set.total, &item.total, &result.total)
 	return result
+}
+
+func (set *SolvableItemSet) ReplaceItem_Into(slot SlotEquip, item *SolvableItem, dest *SolvableItemSet) {
+	oldItem := set.Items[slot]
+	set.Items.ReplaceItem_Into(slot, item, &dest.Items)
+	StatBlock_AddAndSubtract_Into(&set.total, &item.total, &oldItem.total, &dest.total)
 }
 
 func (set *SolvableItemSet) TotalCap() *StatBlock {

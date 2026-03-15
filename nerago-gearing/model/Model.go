@@ -22,6 +22,7 @@ type Model struct {
 	SetBonus      SetBonus
 }
 
+//////////// requirements
 func (model *Model) CheckSet(itemSet *SolvableItemSet) bool {
 	return model.StatRequirements.CheckSet(itemSet.TotalCap())
 }
@@ -30,26 +31,51 @@ func (model *Model) CheckSetSkinny(itemSet *SkinnyItemSet) bool {
 	return model.StatRequirements.CheckSetSkinny(itemSet)
 }
 
+//////////// ratings by int
+// func (model *Model) CalcRatingSolve(itemSet *SolvableItemSet) uint64 {
+// 	rating := model.StatRatings.CalcRating(itemSet.TotalRated())
+// 	rating = model.SetBonus.CalcAndMultiplySolve(&itemSet.Items, rating)
+// 	return rating
+// }
+
+// func (model *Model) CalcRatingFull(itemSet *FullItemSet) uint64 {
+// 	rating := model.StatRatings.CalcRating(itemSet.TotalRated())
+// 	rating = model.SetBonus.CalcAndMultiply(&itemSet.Items, rating)
+// 	return rating
+// }
+
+// func (model *Model) CalcRatingFullItem(item *FullItem) uint64 {
+// 	return model.StatRatings.CalcRating(item.TotalRated())
+// }
+
+// func (model *Model) CalcRatingSolveItem(item *SolvableItem) uint64 {
+// 	return model.StatRatings.CalcRating(item.TotalRated())
+// }
+
+//////////// ratings by float
 func (model *Model) CalcRatingSolve(itemSet *SolvableItemSet) uint64 {
-	rating := model.StatRatings.CalcRating(itemSet.TotalRated())
-	rating = model.SetBonus.CalcAndMultiplySolve(&itemSet.Items, rating)
-	return rating
+	rating := model.StatRatings.CalcRatingF(itemSet.TotalRated())
+	rating = model.SetBonus.CalcAndMultiplySolveF(&itemSet.Items, rating)
+	return uint64(rating)
 }
 
 func (model *Model) CalcRatingFull(itemSet *FullItemSet) uint64 {
-	rating := model.StatRatings.CalcRating(itemSet.TotalRated())
-	rating = model.SetBonus.CalcAndMultiply(&itemSet.Items, rating)
-	return rating
+	rating := model.StatRatings.CalcRatingF(itemSet.TotalRated())
+	rating = model.SetBonus.CalcAndMultiplyF(&itemSet.Items, rating)
+	return uint64(rating)
 }
 
 func (model *Model) CalcRatingFullItem(item *FullItem) uint64 {
-	return model.StatRatings.CalcRating(item.TotalRated())
+	rating := model.StatRatings.CalcRatingF(item.TotalRated())
+	return uint64(rating)
 }
 
 func (model *Model) CalcRatingSolveItem(item *SolvableItem) uint64 {
-	return model.StatRatings.CalcRating(item.TotalRated())
+	rating := model.StatRatings.CalcRatingF(item.TotalRated())
+	return uint64(rating)
 }
 
+//////////// standard model builders
 func Model_PallyProtMitigation() Model {
 	weightMiti := StatRatingsWeights_ReadFile(files.WeightMitiFile, false, true, false)
 	weightDps := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)

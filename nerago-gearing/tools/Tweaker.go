@@ -6,11 +6,13 @@ import (
 	. "paladin_gearing_go/util"
 )
 
-func Tweaker_Run(initialSet SolvableItemSet, solvableOptionsMap *SolvableOptionsMap, model *Model) SolvableItemSet {
+func Tweaker_Run(initialSet *SolvableItemSet, solvableOptionsMap *SolvableOptionsMap, model *Model) SolvableItemSet {
 	best := BestCollector1[SolvableItemSet]{}
-	best.Offer(&initialSet, model.CalcRatingSolve(&initialSet))
+	best.Offer(initialSet, model.CalcRatingSolve(initialSet))
 
-	for slot, slotOptions := range solvableOptionsMap {
+	possibleSet := new(SolvableItemSet)
+	for slot := Equip_Iter_First; slot <= Equip_Iter_Last; slot++ {
+		slotOptions := solvableOptionsMap[slot]
 		existing := best.BestObject.Items[slot]
 		if existing == nil && slotOptions != nil {
 			panic("unexpected empty slot")
@@ -18,11 +20,11 @@ func Tweaker_Run(initialSet SolvableItemSet, solvableOptionsMap *SolvableOptions
 			panic("unexpected filled slot")
 		} else if existing != nil {
 			for i := range slotOptions {
-				replaceMap := best.BestObject.Items
-				replaceMap[slot] = &slotOptions[i]
-				possibleSet := SolvableItemSet_Of(replaceMap)
-				if model.CheckSet(&possibleSet) {
-					best.Offer(&possibleSet, model.CalcRatingSolve(&possibleSet))
+				replaceItem := &slotOptions[i]
+				best.BestObject.ReplaceItem_Into(slot, replaceItem, possibleSet)
+
+				if model.CheckSet(possibleSet) {
+					best.OfferAndSwap(&possibleSet, model.CalcRatingSolve(possibleSet))
 				}
 			}
 		}
