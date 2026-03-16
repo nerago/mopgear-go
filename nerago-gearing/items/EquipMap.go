@@ -79,6 +79,15 @@ func (equipMap *SolvableEquipMap) Get(slot SlotEquip) *SolvableItem {
 	return equipMap[slot]
 }
 
+func (equipMap *SolvableEquipMap) GetAsId(slot SlotEquip) uint32 {
+	item := equipMap[slot]
+	if item != nil {
+		return item.itemId
+	} else {
+		return 0
+	}
+}
+
 func (equipMap SolvableEquipMap) GetGeneric(slot SlotEquip) IItem {
 	return equipMap[slot]
 }

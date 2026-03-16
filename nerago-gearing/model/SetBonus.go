@@ -66,7 +66,7 @@ func (sets *SetBonus) initMap() {
 var g_setBonusSlots = [5]SlotEquip{Equip_Head, Equip_Shoulder, Equip_Chest, Equip_Hand, Equip_Leg}
 
 func (sets *SetBonus) CalcBonus(equip *FullEquipMap) float32 {
-	return calcBonusFuncy(func(slot SlotEquip) uint32 {
+	return calcBonusFuncUnrollAlways(func(slot SlotEquip) uint32 {
 		item := equip[slot]
 		if item != nil {
 			return item.ItemId()
@@ -123,8 +123,8 @@ func (sets *SetBonus) CalcBonus0(equip *FullEquipMap) float32 {
 	return bonusValueEach(sets.activeSets, &counts)
 }
 
-func (sets *SetBonus) CalcBonusSolveUseFunc(equip *SolvableEquipMap) float32 {
-	return calcBonusFuncy(func(slot SlotEquip) uint32 {
+func (sets *SetBonus) CalcBonusSolveUseFuncLoopy(equip *SolvableEquipMap) float32 {
+	return calcBonusFuncLoopy(func(slot SlotEquip) uint32 {
 		item := equip[slot]
 		if item != nil {
 			return item.ItemId()
@@ -134,8 +134,73 @@ func (sets *SetBonus) CalcBonusSolveUseFunc(equip *SolvableEquipMap) float32 {
 	}, sets.activeSets, sets.itemToSet)
 }
 
+func (sets *SetBonus) CalcBonusSolveUseFuncLoopy_Member(equip *SolvableEquipMap) float32 {
+	return calcBonusFuncLoopy(equip.GetAsId, sets.activeSets, sets.itemToSet)
+}
+
+func (sets *SetBonus) CalcBonusSolveUseFuncUnrollAlways(equip *SolvableEquipMap) float32 {
+	return calcBonusFuncUnrollAlways(func(slot SlotEquip) uint32 {
+		item := equip[slot]
+		if item != nil {
+			return item.ItemId()
+		} else {
+			return 0
+		}
+	}, sets.activeSets, sets.itemToSet)
+}
+func (sets *SetBonus) CalcBonusSolveUseFuncUnrollAndSwitch(equip *SolvableEquipMap) float32 {
+	return calcBonusFuncUnrollAndSwitch(func(slot SlotEquip) uint32 {
+		item := equip[slot]
+		if item != nil {
+			return item.ItemId()
+		} else {
+			return 0
+		}
+	}, sets.activeSets, sets.itemToSet)
+}
+func (sets *SetBonus) CalcBonusSolveUseFuncUnrollAndSwitchBranchy(equip *SolvableEquipMap) float32 {
+	return calcBonusFuncUnrollAndSwitchBranchy(func(slot SlotEquip) uint32 {
+		item := equip[slot]
+		if item != nil {
+			return item.ItemId()
+		} else {
+			return 0
+		}
+	}, sets.activeSets, sets.itemToSet)
+}
+func CalcBonusSolveUseFuncLoopyGenericTypeParam[Item IItem, Map IEquipMapArrays[Item]](sets *SetBonus, equip Map) float32 {
+	return calcBonusFuncLoopy(func(slot SlotEquip) uint32 {
+		var item IItem = equip[slot]
+		if item != nil {
+			return item.ItemId()
+		} else {
+			return 0
+		}
+	}, sets.activeSets, sets.itemToSet)
+}
+func CalcBonusSolveUseFuncLoopyGenericInterface(sets *SetBonus, equip IEquipMap) float32 {
+	return calcBonusFuncLoopy(func(slot SlotEquip) uint32 {
+		item := equip.GetGeneric(slot)
+		if item != nil {
+			return item.ItemId()
+		} else {
+			return 0
+		}
+	}, sets.activeSets, sets.itemToSet)
+}
+func (sets *SetBonus) CalcBonusSolveUseFuncUnrollAndSwitchGeneric(equip IEquipMap) float32 {
+	return calcBonusFuncUnrollAndSwitch(func(slot SlotEquip) uint32 {
+		item := equip.GetGeneric(slot)
+		if item != nil {
+			return item.ItemId()
+		} else {
+			return 0
+		}
+	}, sets.activeSets, sets.itemToSet)
+}
+
 // inline valid
-func calcBonusFuncy(slotToItemId func(SlotEquip) uint32, activeSets []setInfo, itemToSet []int8) float32 {
+func calcBonusFuncLoopy(slotToItemId func(SlotEquip) uint32, activeSets []setInfo, itemToSet []int8) float32 {
 	var counts [10]uint8
 	for _, slot := range g_setBonusSlots {
 		itemId := slotToItemId(slot)
@@ -149,6 +214,91 @@ func calcBonusFuncy(slotToItemId func(SlotEquip) uint32, activeSets []setInfo, i
 		value *= set.bonuses[count]
 	}
 	return value
+}
+
+func calcBonusFuncUnrollAlways(slotToItemId func(SlotEquip) uint32, activeSets []setInfo, itemToSet []int8) float32 {
+	var counts [10]uint8
+	counts[itemToSet[slotToItemId(Equip_Head)]]++
+	counts[itemToSet[slotToItemId(Equip_Shoulder)]]++
+	counts[itemToSet[slotToItemId(Equip_Chest)]]++
+	counts[itemToSet[slotToItemId(Equip_Hand)]]++
+	counts[itemToSet[slotToItemId(Equip_Leg)]]++
+
+	var value float32 = 1.0
+	for index, set := range activeSets {
+		value *= set.bonuses[counts[index+1]]
+	}
+	return value
+}
+
+func calcBonusFuncUnrollAndSwitch(slotToItemId func(SlotEquip) uint32, activeSets []setInfo, itemToSet []int8) float32 {
+	numSets := len(activeSets)
+	switch numSets {
+	case 0:
+		return 1
+	case 1:
+		var counts [2]uint8
+		counts[itemToSet[slotToItemId(Equip_Head)]]++
+		counts[itemToSet[slotToItemId(Equip_Shoulder)]]++
+		counts[itemToSet[slotToItemId(Equip_Chest)]]++
+		counts[itemToSet[slotToItemId(Equip_Hand)]]++
+		counts[itemToSet[slotToItemId(Equip_Leg)]]++
+		return activeSets[0].bonuses[counts[1]]
+
+	default:
+		var counts [10]uint8
+		counts[itemToSet[slotToItemId(Equip_Head)]]++
+		counts[itemToSet[slotToItemId(Equip_Shoulder)]]++
+		counts[itemToSet[slotToItemId(Equip_Chest)]]++
+		counts[itemToSet[slotToItemId(Equip_Hand)]]++
+		counts[itemToSet[slotToItemId(Equip_Leg)]]++
+
+		var value float32 = 1.0
+		for index, set := range activeSets {
+			value *= set.bonuses[counts[index+1]]
+		}
+		return value
+	}
+}
+
+func calcBonusFuncUnrollAndSwitchBranchy(slotToItemId func(SlotEquip) uint32, activeSets []setInfo, itemToSet []int8) float32 {
+	numSets := len(activeSets)
+	switch numSets {
+	case 0:
+		return 1
+	case 1:
+		var count uint8
+		if itemToSet[slotToItemId(Equip_Head)] != 0 {
+			count++
+		}
+		if itemToSet[slotToItemId(Equip_Shoulder)] != 0 {
+			count++
+		}
+		if itemToSet[slotToItemId(Equip_Chest)] != 0 {
+			count++
+		}
+		if itemToSet[slotToItemId(Equip_Hand)] != 0 {
+			count++
+		}
+		if itemToSet[slotToItemId(Equip_Leg)] != 0 {
+			count++
+		}
+		return activeSets[0].bonuses[count]
+
+	default:
+		var counts [10]uint8
+		counts[itemToSet[slotToItemId(Equip_Head)]]++
+		counts[itemToSet[slotToItemId(Equip_Shoulder)]]++
+		counts[itemToSet[slotToItemId(Equip_Chest)]]++
+		counts[itemToSet[slotToItemId(Equip_Hand)]]++
+		counts[itemToSet[slotToItemId(Equip_Leg)]]++
+
+		var value float32 = 1.0
+		for index, set := range activeSets {
+			value *= set.bonuses[counts[index+1]]
+		}
+		return value
+	}
 }
 
 func (sets *SetBonus) CalcBonusGenericInterfaceLoopySomeInlined(equip IEquipMap) float32 {

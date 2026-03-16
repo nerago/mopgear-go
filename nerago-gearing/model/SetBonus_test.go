@@ -35,7 +35,7 @@ func makeSetBonuses() (SetBonus, SetBonus, SetBonus) {
 	return SetBonus_Empty(), SetBonus_Named("White Tiger Plate"), SetBonus_ForSpec(stats.Spec_PaladinRet)
 }
 
-func BenchmarkCalcBonusSolveUseFunc(test *testing.B) {
+func BenchmarkCalcBonusSolveUseFuncLoopy(test *testing.B) {
 	a, b, c := makeSetBonuses()
 	var v float32
 
@@ -43,9 +43,108 @@ func BenchmarkCalcBonusSolveUseFunc(test *testing.B) {
 
 	for test.Loop() {
 		equip := equipFetch.next()
-		v += a.CalcBonusSolveUseFunc(equip)
-		v += b.CalcBonusSolveUseFunc(equip)
-		v += c.CalcBonusSolveUseFunc(equip)
+		v += a.CalcBonusSolveUseFuncLoopy(equip)
+		v += b.CalcBonusSolveUseFuncLoopy(equip)
+		v += c.CalcBonusSolveUseFuncLoopy(equip)
+	}
+	resultFloat = v
+}
+func BenchmarkCalcBonusSolveUseFuncLoopy_Member(test *testing.B) {
+	a, b, c := makeSetBonuses()
+	var v float32
+
+	equipFetch := makeEquipFetch()
+
+	for test.Loop() {
+		equip := equipFetch.next()
+		v += a.CalcBonusSolveUseFuncLoopy_Member(equip)
+		v += b.CalcBonusSolveUseFuncLoopy_Member(equip)
+		v += c.CalcBonusSolveUseFuncLoopy_Member(equip)
+	}
+	resultFloat = v
+}
+func BenchmarkCalcBonusSolveUseFuncUnrollAlways(test *testing.B) {
+	a, b, c := makeSetBonuses()
+	var v float32
+
+	equipFetch := makeEquipFetch()
+
+	for test.Loop() {
+		equip := equipFetch.next()
+		v += a.CalcBonusSolveUseFuncUnrollAlways(equip)
+		v += b.CalcBonusSolveUseFuncUnrollAlways(equip)
+		v += c.CalcBonusSolveUseFuncUnrollAlways(equip)
+	}
+	resultFloat = v
+}
+func BenchmarkCalcBonusSolveUseFuncUnrollAndSwitch(test *testing.B) {
+	a, b, c := makeSetBonuses()
+	var v float32
+
+	equipFetch := makeEquipFetch()
+
+	for test.Loop() {
+		equip := equipFetch.next()
+		v += a.CalcBonusSolveUseFuncUnrollAndSwitch(equip)
+		v += b.CalcBonusSolveUseFuncUnrollAndSwitch(equip)
+		v += c.CalcBonusSolveUseFuncUnrollAndSwitch(equip)
+	}
+	resultFloat = v
+}
+func BenchmarkCalcBonusSolveUseFuncUnrollAndSwitchBranchy(test *testing.B) {
+	a, b, c := makeSetBonuses()
+	var v float32
+
+	equipFetch := makeEquipFetch()
+
+	for test.Loop() {
+		equip := equipFetch.next()
+		v += a.CalcBonusSolveUseFuncUnrollAndSwitchBranchy(equip)
+		v += b.CalcBonusSolveUseFuncUnrollAndSwitchBranchy(equip)
+		v += c.CalcBonusSolveUseFuncUnrollAndSwitchBranchy(equip)
+	}
+	resultFloat = v
+}
+
+func BenchmarkCalcBonusSolveUseFuncLoopyGenericTypeParam(test *testing.B) {
+	a, b, c := makeSetBonuses()
+	var v float32
+
+	equipFetch := makeEquipFetch()
+
+	for test.Loop() {
+		equip := equipFetch.next()
+		v += CalcBonusSolveUseFuncLoopyGenericTypeParam(&a, *equip)
+		v += CalcBonusSolveUseFuncLoopyGenericTypeParam(&b, *equip)
+		v += CalcBonusSolveUseFuncLoopyGenericTypeParam(&c, *equip)
+	}
+	resultFloat = v
+}
+func BenchmarkCalcBonusSolveUseFuncLoopyGenericInterface(test *testing.B) {
+	a, b, c := makeSetBonuses()
+	var v float32
+
+	equipFetch := makeEquipFetch()
+
+	for test.Loop() {
+		equip := equipFetch.next()
+		v += CalcBonusSolveUseFuncLoopyGenericInterface(&a, equip)
+		v += CalcBonusSolveUseFuncLoopyGenericInterface(&b, equip)
+		v += CalcBonusSolveUseFuncLoopyGenericInterface(&c, equip)
+	}
+	resultFloat = v
+}
+func BenchmarkCalcBonusSolveUseFuncUnrollAndSwitchGeneric(test *testing.B) {
+	a, b, c := makeSetBonuses()
+	var v float32
+
+	equipFetch := makeEquipFetch()
+
+	for test.Loop() {
+		equip := equipFetch.next()
+		v += a.CalcBonusSolveUseFuncUnrollAndSwitchGeneric(equip)
+		v += b.CalcBonusSolveUseFuncUnrollAndSwitchGeneric(equip)
+		v += c.CalcBonusSolveUseFuncUnrollAndSwitchGeneric(equip)
 	}
 	resultFloat = v
 }
