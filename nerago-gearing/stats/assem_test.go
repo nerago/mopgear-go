@@ -26,6 +26,22 @@ func TestIncrementMutating(test *testing.T) {
 	}
 }
 
+func BenchmarkIncrementMutatingGo(test *testing.B) {
+	a := randBlockLimited(100)
+	b := randBlockLimited(100)
+	for test.Loop() {
+		go_StatBlock_Increment_Mutating(&a, &b)
+	}
+}
+
+func BenchmarkIncrementMutatingAssem(test *testing.B) {
+	a := randBlockLimited(100)
+	b := randBlockLimited(100)
+	for test.Loop() {
+		StatBlock_Increment_Mutating(&a, &b)
+	}
+}
+
 func TestAddInto(test *testing.T) {
 	for range checkLoops {
 		a0 := randBlock()
@@ -46,6 +62,24 @@ func TestAddInto(test *testing.T) {
 		assertEquals(test, &a0, &a2, "should be unchanged")
 		assertEquals(test, &b0, &b1, "should be unchanged")
 		assertEquals(test, &b0, &b2, "should be unchanged")
+	}
+}
+
+func BenchmarkAddIntoGo(test *testing.B) {
+	a := randBlockLimited(100)
+	b := randBlockLimited(100)
+	c := randBlockLimited(100)
+	for test.Loop() {
+		go_StatBlock_Add_Into(&a, &b, &c)
+	}
+}
+
+func BenchmarkAddIntoAssem(test *testing.B) {
+	a := randBlockLimited(100)
+	b := randBlockLimited(100)
+	c := randBlockLimited(100)
+	for test.Loop() {
+		StatBlock_Add_Into(&a, &b, &c)
 	}
 }
 
@@ -77,6 +111,26 @@ func TestAddAndSubtractInto(test *testing.T) {
 	}
 }
 
+func BenchmarkAddSubtractIntoGo(test *testing.B) {
+	a := randBlockLimited(100)
+	b := randBlockLimited(100)
+	c := randBlockLimited(100)
+	d := randBlockLimited(100)
+	for test.Loop() {
+		go_StatBlock_AddAndSubtract_Into(&a, &b, &c, &d)
+	}
+}
+
+func BenchmarkAddSubtractIntoAssem(test *testing.B) {
+	a := randBlockLimited(100)
+	b := randBlockLimited(100)
+	c := randBlockLimited(100)
+	d := randBlockLimited(100)
+	for test.Loop() {
+		StatBlock_AddAndSubtract_Into(&a, &b, &c, &d)
+	}
+}
+
 func TestEquals(test *testing.T) {
 	check := func(x, y *StatBlock) {
 		assertBoolEqual(test, go_StatBlock_Equals(x, y), StatBlock_Equals(x, y))
@@ -103,6 +157,38 @@ func TestEquals(test *testing.T) {
 		assertEquals(test, &b0, &c0, "should be unchanged")
 		assertEquals(test, &b0, &c1, "should be unchanged")
 	}
+}
+
+func BenchmarkEqualsGo(test *testing.B) {
+	a := randBlockLimited(100)
+	b := randBlockLimited(100)
+	c := a
+	var r uint64
+	for test.Loop() {
+		if go_StatBlock_Equals(&a, &b) {
+			r++
+		}
+		if go_StatBlock_Equals(&a, &c) {
+			r++
+		}
+	}
+	resultInt = r
+}
+
+func BenchmarkEqualsAssem(test *testing.B) {
+	a := randBlockLimited(100)
+	b := randBlockLimited(100)
+	c := a
+	var r uint64
+	for test.Loop() {
+		if StatBlock_Equals(&a, &b) {
+			r++
+		}
+		if StatBlock_Equals(&a, &c) {
+			r++
+		}
+	}
+	resultInt = r
 }
 
 func TestMultiplySum0(test *testing.T) {
@@ -195,6 +281,49 @@ func TestMultiplySumInt(test *testing.T) {
 		assertEquals(test, &b0, &b1, "should be unchanged")
 		assertEquals(test, &b0, &b2, "should be unchanged")
 	}
+}
+
+var resultFloat float32
+var resultInt uint64
+
+func BenchmarkMultiplysGoFloat(test *testing.B) {
+	a := randBlockLimited(100)
+	b := randBlockLimited(100)
+	var t float32
+	for test.Loop() {
+		t += go_StatBlock_MultiplyForTotalSum(&a, &b)
+	}
+	resultFloat = t
+}
+
+func BenchmarkMultiplysAssemFloat(test *testing.B) {
+	a := randBlockLimited(100)
+	b := randBlockLimited(100)
+	var t float32
+	for test.Loop() {
+		t += StatBlock_MultiplyForTotalSum(&a, &b)
+	}
+	resultFloat = t
+}
+
+func BenchmarkMultiplysGoInt(test *testing.B) {
+	a := randBlockLimited(100)
+	b := randBlockLimited(100)
+	var t uint64
+	for test.Loop() {
+		t += go_StatBlock_MultiplyForTotalSum_Int(&a, &b)
+	}
+	resultInt = t
+}
+
+func BenchmarkMultiplysAssemInt(test *testing.B) {
+	a := randBlockLimited(100)
+	b := randBlockLimited(100)
+	var t uint64
+	for test.Loop() {
+		t += StatBlock_MultiplyForTotalSum_Int(&a, &b)
+	}
+	resultInt = t
 }
 
 func assertEquals(test *testing.T, a, b *StatBlock, failMessage string) {
