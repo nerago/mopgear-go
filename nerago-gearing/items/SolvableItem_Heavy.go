@@ -10,27 +10,31 @@ import (
 type SolvableItem struct {
 	totalCap   StatBlock
 	totalRated StatBlock
-	ItemId     uint32
+	itemId     uint32
 	// TODO try with precalculated ratings from model
 	// TODO try with set bonus info
 }
 
 func SolvableItem_Of(item FullItem) SolvableItem {
 	return SolvableItem{
-		ItemId:     item.Ref.ItemId,
+		itemId:     item.Ref.ItemId,
 		totalCap:   item.totalCap,
 		totalRated: item.totalRated}
 }
 
 func SolvableItem_ForTest(itemid uint32, block StatBlock) SolvableItem {
 	return SolvableItem{
-		ItemId:     itemid,
+		itemId:     itemid,
 		totalCap:   block,
 		totalRated: block}
 }
 
+func (item *SolvableItem) ItemId() uint32 {
+	return item.itemId
+}
+
 func (item *SolvableItem) IsEmpty() bool {
-	return item.ItemId == 0
+	return item.itemId == 0
 }
 
 func (item *SolvableItem) TotalCap() *StatBlock {
@@ -45,11 +49,11 @@ func (item *SolvableItem) TotalRated() *StatBlock {
 type SolvableItemSet struct {
 	totalCap   StatBlock
 	totalRated StatBlock
-	Items      SolvableEquipMap
+	items      SolvableEquipMap
 }
 
 func SolvableItemSet_Of(equipMap SolvableEquipMap) SolvableItemSet {
-	result := SolvableItemSet{Items: equipMap, totalCap: StatBlock{}, totalRated: StatBlock{}}
+	result := SolvableItemSet{items: equipMap, totalCap: StatBlock{}, totalRated: StatBlock{}}
 	for _, item := range equipMap {
 		if item != nil {
 			StatBlock_Increment_Mutating(&result.totalCap, &item.totalCap)
@@ -63,9 +67,17 @@ func SolvableItemSet_SingleItem(slot SlotEquip, item *SolvableItem) SolvableItem
 	equip := SolvableEquipMap{}
 	equip[slot] = item
 	return SolvableItemSet{
-		Items:      equip,
+		items:      equip,
 		totalCap:   item.totalCap,
 		totalRated: item.totalRated}
+}
+
+func (set *SolvableItemSet) Items() *SolvableEquipMap {
+	return &set.items
+}
+
+func (set *SolvableItemSet) ItemsGeneric() IEquipMap {
+	return &set.items
 }
 
 func (set *SolvableItemSet) Clear() {
@@ -81,28 +93,28 @@ func (set *SolvableItemSet) ClearTotals() {
 }
 
 func (set *SolvableItemSet) AddItem_Mutating(slot SlotEquip, item *SolvableItem) {
-	set.Items[slot] = item
+	set.items[slot] = item
 	StatBlock_Increment_Mutating(&set.totalCap, &item.totalCap)
 	StatBlock_Increment_Mutating(&set.totalRated, &item.totalRated)
 }
 
 func (set *SolvableItemSet) AddItem_CreateNew(slot SlotEquip, item *SolvableItem) *SolvableItemSet {
 	result := new(SolvableItemSet)
-	set.Items.ReplaceItem_Into(slot, item, &result.Items)
+	set.items.ReplaceItem_Into(slot, item, &result.items)
 	StatBlock_Add_Into(&set.totalCap, &item.totalCap, &result.totalCap)
 	StatBlock_Add_Into(&set.totalRated, &item.totalRated, &result.totalRated)
 	return result
 }
 
 func (set *SolvableItemSet) AddItem_Into(slot SlotEquip, item *SolvableItem, dest *SolvableItemSet) {
-	set.Items.ReplaceItem_Into(slot, item, &dest.Items)
+	set.items.ReplaceItem_Into(slot, item, &dest.items)
 	StatBlock_Add_Into(&set.totalCap, &item.totalCap, &dest.totalCap)
 	StatBlock_Add_Into(&set.totalRated, &item.totalRated, &dest.totalRated)
 }
 
 func (set *SolvableItemSet) ReplaceItem_Into(slot SlotEquip, item *SolvableItem, dest *SolvableItemSet) {
-	oldItem := set.Items[slot] // assumed to be non-nil
-	set.Items.ReplaceItem_Into(slot, item, &dest.Items)
+	oldItem := set.items[slot] // assumed to be non-nil
+	set.items.ReplaceItem_Into(slot, item, &dest.items)
 	StatBlock_AddAndSubtract_Into(&set.totalCap, &item.totalCap, &oldItem.totalCap, &dest.totalCap)
 	StatBlock_AddAndSubtract_Into(&set.totalRated, &item.totalRated, &oldItem.totalRated, &dest.totalRated)
 }
@@ -116,7 +128,7 @@ func (set *SolvableItemSet) TotalRated() *StatBlock {
 }
 
 func isMatch(fullItem *FullItem, solveItem *SolvableItem) bool {
-	return fullItem.ItemId() == solveItem.ItemId &&
+	return fullItem.ItemId() == solveItem.itemId &&
 		StatBlock_Equals(&fullItem.totalCap, &solveItem.totalCap) &&
 		StatBlock_Equals(&fullItem.totalRated, &solveItem.totalRated)
 }

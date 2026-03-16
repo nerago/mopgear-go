@@ -35,9 +35,9 @@ func go_StatBlock_AddAndSubtract_Into(add1, add2, subtract, out *StatBlock) {
 	}
 }
 
-func StatBlock_MultiplyForTotalSum(a, b *StatBlock) float32
+func StatBlock_MultiplyForTotalSum_Float(a, b *StatBlock) float32
 
-func go_StatBlock_MultiplyForTotalSum(a, b *StatBlock) float32 {
+func go_StatBlock_MultiplyForTotalSum_Float(a, b *StatBlock) float32 {
 	var result float32 = 0
 	for i := range a {
 		result += float32(a[i]) * float32(b[i])

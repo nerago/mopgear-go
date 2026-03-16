@@ -70,7 +70,7 @@ type seenMap struct {
 
 func (seen *seenMap) Add(itemSet *items.FullItemSet) {
 	seen.mutex.Lock()
-	for item := range itemSet.Items.AllItemSeq() {
+	for item := range itemSet.Items().AllItemSeq() {
 		seen.content[item.ItemId()]++
 	}
 	seen.mutex.Unlock()

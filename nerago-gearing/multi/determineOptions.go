@@ -147,7 +147,7 @@ func printCommons(seenIn map[uint32][]string, commonOptions commonComboOptions, 
 func (job *MultiSetJob) revisedComboActuallyUsed(outputs []solver.SolveOutput, initialCombo commonCombo, printer *util.PrintRecorder) commonCombo {
 	grouped := make(map[uint32][]*items.FullItem)
 	for index := range outputs {
-		for item := range outputs[index].FullSet.Items.AllItemSeq() {
+		for item := range outputs[index].FullSet.Items().AllItemSeq() {
 			grouped[item.ItemId()] = append(grouped[item.ItemId()], item)
 		}
 	}

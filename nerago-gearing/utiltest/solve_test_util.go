@@ -74,13 +74,13 @@ func VerifyRecord(t *testing.T, peekRecord *PeekTestRecorder, options *items.Sol
 func verifyAllItemsTried(t *testing.T, peekRecord *PeekTestRecorder, options *items.SolvableOptionsMap) {
 	seenCounts := make(map[uint32]int)
 	for _, itemSet := range peekRecord.Seen {
-		for item := range itemSet.Items.AllItemSeq() {
-			seenCounts[item.ItemId]++
+		for item := range itemSet.Items().AllItemSeq() {
+			seenCounts[item.ItemId()]++
 		}
 	}
 
 	for item := range options.AllItemSeq() {
-		if seenCounts[item.ItemId] == 0 {
+		if seenCounts[item.ItemId()] == 0 {
 			t.Fatalf("never tried item %d", item.ItemId)
 		}
 	}

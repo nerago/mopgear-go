@@ -71,7 +71,7 @@ TEXT ·StatBlock_Equals(SB), NOSPLIT|NOFRAME, $0-24
 
     RET
 
-TEXT ·StatBlock_MultiplyForTotalSum(SB), NOSPLIT|NOFRAME, $0-20
+TEXT ·StatBlock_MultiplyForTotalSum_Float(SB), NOSPLIT|NOFRAME, $0-20
     MOVQ          a+0(FP), AX
     MOVQ          b+8(FP), BX
 

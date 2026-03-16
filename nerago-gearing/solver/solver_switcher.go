@@ -103,10 +103,10 @@ func (output *SolveOutput) Report(printer *util.PrintRecorder) {
 		printer.Println(output.OutputId)
 		printer.Printf("SET OUTPUT rating %d\n", rating)
 		// printer.Printf("BONUS %.2f\n", float64(output.Input.Model.SetBonus.CalcAndMultiply(&fullSet.Items, 1000))/1000.0)
-		printer.Printf("BONUS %.2f\n", output.Input.Model.SetBonus.CalcAndMultiplyF(&fullSet.Items, 1.0))
+		printer.Printf("BONUS %.2f\n", output.Input.Model.SetBonus.CalcBonus(fullSet.Items()))
 		fullSet.PrintStats(printer)
-		printEquipMap(&fullSet.Items, printer)
-		simulate.WowSimJson_Write(&output.FullSet.Items, output.Input.Model, printer)
+		printEquipMap(fullSet.Items(), printer)
+		simulate.WowSimJson_Write(output.FullSet.Items(), output.Input.Model, printer)
 	} else {
 		printer.Printf("SET SOLVE FAILED\n")
 	}

@@ -13,7 +13,7 @@ func Tweaker_Run(initialSet *SolvableItemSet, solvableOptionsMap *SolvableOption
 	possibleSet := new(SolvableItemSet)
 	for slot := Equip_Iter_First; slot <= Equip_Iter_Last; slot++ {
 		slotOptions := solvableOptionsMap[slot]
-		existing := best.BestObject.Items[slot]
+		existing := best.BestObject.Items().Get(slot)
 		if existing == nil && slotOptions != nil {
 			panic("unexpected empty slot")
 		} else if existing != nil && slotOptions == nil {

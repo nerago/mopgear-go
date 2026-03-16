@@ -97,7 +97,7 @@ func (job *MultiSetJob) secondPassSolveCombo(baseCombo commonCombo, otherOutputL
 	restrictedCombo := maps.Clone(baseCombo)
 	for _, otherOutput := range otherOutputList {
 		if otherOutput.Success {
-			for item := range otherOutput.FullSet.Items.AllItemSeq() {
+			for item := range otherOutput.FullSet.Items().AllItemSeq() {
 				restrictedCombo[item.ItemId()] = *item
 			}
 		}

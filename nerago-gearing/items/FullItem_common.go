@@ -49,5 +49,5 @@ func (item *FullItem) Equals(other *FullItem) bool {
 }
 
 func (itemSet *FullItemSet) Equals(other FullItemSet) bool {
-	return itemSet.Items.Equals(&other.Items)
+	return itemSet.items.Equals(&other.items)
 }

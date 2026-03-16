@@ -51,7 +51,7 @@ func makeBaselineWorker(params *[]MultiSetParam, commonOptions commonComboOption
 			combo := make(commonCombo)
 
 			// copy what items are in baseline set
-			for item := range param.baselineResult.FullSet.Items.AllItemSeq() {
+			for item := range param.baselineResult.FullSet.Items().AllItemSeq() {
 				combo[item.ItemId()] = *item
 			}
 

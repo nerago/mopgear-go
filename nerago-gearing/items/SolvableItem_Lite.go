@@ -9,17 +9,21 @@ import (
 // /////////////////////////////////////////////////////////////
 type SolvableItem struct {
 	total  StatBlock
-	ItemId uint32
+	itemId uint32
 }
 
 func SolvableItem_Of(item FullItem) SolvableItem {
 	return SolvableItem{
-		ItemId: item.Ref.ItemId,
+		itemId: item.Ref.ItemId,
 		total: item.total}
 }
 
+func (item *SolvableItem) ItemId() uint32 {
+	return item.itemId
+}
+
 func (item *SolvableItem) IsEmpty() bool {
-	return item.ItemId == 0
+	return item.itemId == 0
 }
 
 func (item *SolvableItem) TotalCap() *StatBlock {
@@ -33,11 +37,11 @@ func (item *SolvableItem) TotalRated() *StatBlock {
 // /////////////////////////////////////////////////////////////
 type SolvableItemSet struct {
 	total StatBlock
-	Items SolvableEquipMap
+	items SolvableEquipMap
 }
 
 func SolvableItemSet_Of(equipMap SolvableEquipMap) SolvableItemSet {
-	result := SolvableItemSet{Items: equipMap, total: StatBlock{}}
+	result := SolvableItemSet{items: equipMap, total: StatBlock{}}
 	for _, item := range equipMap {
 		if item != nil {
 			StatBlock_Increment_Mutating(&result.total, &item.total)
@@ -50,12 +54,20 @@ func SolvableItemSet_SingleItem(slot SlotEquip, item *SolvableItem) SolvableItem
 	equip := SolvableEquipMap{}
 	equip[slot] = item
 	return SolvableItemSet{
-		Items: equip,
+		items: equip,
 		total: item.total}
 }
 
+func (set *SolvableItemSet) Items() *SolvableEquipMap {
+	return &set.items
+}
+
+func (set *SolvableItemSet) ItemsGeneric() IEquipMap {
+	return &set.items
+}
+
 func (set *SolvableItemSet) Clear() {
-	set.Items = SolvableEquipMap{}
+	set.items = SolvableEquipMap{}
 	set.total = StatBlock{}
 }
 
@@ -64,20 +76,20 @@ func (set *SolvableItemSet) ClearTotals() {
 }
 
 func (set *SolvableItemSet) AddItem_Mutating(slot SlotEquip, item *SolvableItem) {
-	set.Items[slot] = item
+	set.items[slot] = item
 	StatBlock_Increment_Mutating(&set.total, &item.total)
 }
 
 func (set *SolvableItemSet) AddItem_CreateNew(slot SlotEquip, item *SolvableItem) *SolvableItemSet {
 	result := new(SolvableItemSet)
-	set.Items.ReplaceItem_Into(slot, item, &result.Items)
+	set.items.ReplaceItem_Into(slot, item, &result.items)
 	StatBlock_Add_Into(&set.total, &item.total, &result.total)
 	return result
 }
 
 func (set *SolvableItemSet) ReplaceItem_Into(slot SlotEquip, item *SolvableItem, dest *SolvableItemSet) {
-	oldItem := set.Items[slot]
-	set.Items.ReplaceItem_Into(slot, item, &dest.Items)
+	oldItem := set.items[slot]
+	set.items.ReplaceItem_Into(slot, item, &dest.items)
 	StatBlock_AddAndSubtract_Into(&set.total, &item.total, &oldItem.total, &dest.total)
 }
 
@@ -90,6 +102,6 @@ func (set *SolvableItemSet) TotalRated() *StatBlock {
 }
 
 func isMatch(fullItem *FullItem, solveItem *SolvableItem) bool {
-	return fullItem.ItemId() == solveItem.ItemId &&
+	return fullItem.ItemId() == solveItem.itemId &&
 		StatBlock_Equals(&fullItem.total, &solveItem.total)
 }

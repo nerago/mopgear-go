@@ -36,19 +36,19 @@ func (item *FullItem) TotalRated() *StatBlock {
 
 // /////////////////////////////////////////////////////////////
 type FullItemSet struct {
-	Items FullEquipMap
+	items FullEquipMap
 	total StatBlock
 }
 
 func FullItemSet_FromSolved(solvedSet SolvableItemSet, optionsMap *FullOptionsMap) FullItemSet {
 	fullMap := FullEquipMap{}
-	for slot, solveItem := range solvedSet.Items {
+	for slot, solveItem := range solvedSet.items {
 		if solveItem != nil {
 			fullItem := findMatch(optionsMap[slot], solveItem)
 			fullMap[slot] = fullItem
 		}
 	}
-	return FullItemSet{Items: fullMap, total: solvedSet.total}
+	return FullItemSet{items: fullMap, total: solvedSet.total}
 }
 
 func (itemSet *FullItemSet) PrintStats(printer *util.PrintRecorder) {
@@ -61,4 +61,12 @@ func (itemSet *FullItemSet) TotalCap() *StatBlock {
 
 func (itemSet *FullItemSet) TotalRated() *StatBlock {
 	return &itemSet.total
+}
+
+func (itemSet *FullItemSet) Items() *FullEquipMap {
+	return &itemSet.items
+}
+
+func (itemSet *FullItemSet) ItemsGeneric() IEquipMap {
+	return &itemSet.items
 }

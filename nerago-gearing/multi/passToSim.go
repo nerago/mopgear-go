@@ -88,7 +88,7 @@ func (job *MultiSetJob) prepareRevisionsForSim(proposedList []MultiProposedOutpu
 func checkNoConflicts(outputSet []solver.SolveOutput, printer *util.PrintRecorder) bool {
 	itemById := make(map[uint32]*items.FullItem)
 	for outputIndex := range outputSet {
-		for item := range outputSet[outputIndex].FullSet.Items.AllItemSeq() {
+		for item := range outputSet[outputIndex].FullSet.Items().AllItemSeq() {
 			existing, found := itemById[item.ItemId()]
 			if !found {
 				itemById[item.ItemId()] = item
@@ -127,7 +127,7 @@ func (job *MultiSetJob) prepareSimList(proposalList []MultiProposedOutput) []sim
 	jobList := make([]simulateJob, 0)
 	for _, proposal := range proposalList {
 		for _, output := range proposal.Outputs {
-			job := simulateJob{output.Input.Model.Spec, output.FullSet.Items, nil}
+			job := simulateJob{output.Input.Model.Spec, *output.FullSet.Items(), nil}
 			jobList = append(jobList, job)
 		}
 	}
@@ -161,7 +161,7 @@ func linkSimResult(proposal MultiProposedOutput, jobList []simulateJob) simulate
 		output := &proposal.Outputs[outIndex]
 		for jobIndex := range jobList {
 			job := &jobList[jobIndex]
-			if output.FullSet.Items.Equals(&job.equip) && output.Input.Model.Spec == job.spec {
+			if output.FullSet.Items().Equals(&job.equip) && output.Input.Model.Spec == job.spec {
 				result.result[outIndex] = *job.result
 				break
 			}
