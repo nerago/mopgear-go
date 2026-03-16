@@ -23,6 +23,16 @@ func FullItem_FromWowSim(ref ItemRef, slot SlotItem, baseName string, statBase S
 		statBase, statBase}
 }
 
+func FullItem_ForTest(itemId uint32, slot SlotItem, statBase StatBlock) FullItem {
+	return FullItem{
+		fullItem_common{ItemRef{itemId, 400, 400},
+			slot, slot.Name(), Armor_None, statBase.PrimaryStat(),
+			nil, StatBlock_empty, 0,
+			ReforgeRecipe_empty, nil, 0, 0,
+			statBase, StatBlock_empty},
+		statBase, statBase}
+}
+
 func (item *FullItem) ChangeDerivedStatFields() {
 	StatBlock_Add_Into(&item.StatBase, &item.StatEnchant, &item.totalRated)
 	if item.Slot.AddEnchantToCap() {

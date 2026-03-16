@@ -7,9 +7,22 @@ import (
 
 type SetBonus struct {
 	activeSets []setInfo
-	// itemToSet  map[uint32]int8
 	itemToSet  []int8
 }
+
+const (
+	defaultBonus = 1025
+	denominator  = 1000
+
+	white_tiger_battlegear_2      = 1032
+	white_tiger_battlegear_4      = 1024
+	white_tiger_battlegear_4_tank = 1035 // gives 2% to dps, a bit more overall
+
+	plate_lightning_bonus_2_miti  = 1013 // 1.3% bonus applies to death chance only, from sim
+	plate_lightning_bonus_4_miti  = 1050 // compromise number, it's situational after all
+	plate_lightning_bonus_4_dps   = 1027 // sim result for horridon h10, might not always apply
+	plate_lightning_bonus_4_death = 1250 // actual result of sim for horridon h10
+)
 
 func SetBonus_Named(names ...string) SetBonus {
 	sets := SetBonus{}
@@ -36,7 +49,9 @@ func SetBonus_ForSpec(spec SpecType) SetBonus {
 }
 
 func SetBonus_Empty() SetBonus {
-	return SetBonus{}
+	sets := SetBonus{}
+	sets.initMap()
+	return sets
 }
 
 func (sets *SetBonus) initMap() {
@@ -46,127 +61,248 @@ func (sets *SetBonus) initMap() {
 			sets.itemToSet[itemId] = int8(index + 1)
 		}
 	}
-
-	// sets.itemToSet = make(map[uint32]int)
-	// for index, info := range sets.activeSets {
-	// 	for _, itemId := range info.items {
-	// 		sets.itemToSet[itemId] = index
-	// 	}
-	// }
 }
 
-func (sets *SetBonus) CalcAndMultiply(itemSet *FullEquipMap, value uint64) uint64 {
-	size := len(sets.activeSets)
-	switch size {
-	case 0:
-		return value
-	case 1:
-		var count uint8 = 0
-		addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Head])
-		addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Shoulder])
-		addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Chest])
-		addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Hand])
-		addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Leg])
-		return bonusValue(&sets.activeSets[0], count, value)
-	default:
-		counts := make([]uint8, size)
-		addIfInEachSet(&counts, sets.itemToSet, itemSet[Equip_Head])
-		addIfInEachSet(&counts, sets.itemToSet, itemSet[Equip_Shoulder])
-		addIfInEachSet(&counts, sets.itemToSet, itemSet[Equip_Chest])
-		addIfInEachSet(&counts, sets.itemToSet, itemSet[Equip_Hand])
-		addIfInEachSet(&counts, sets.itemToSet, itemSet[Equip_Leg])
-		return bonusValueEach(&sets.activeSets, &counts, value)
+var g_setBonusSlots = [5]SlotEquip{Equip_Head, Equip_Shoulder, Equip_Chest, Equip_Hand, Equip_Leg}
+
+func (sets *SetBonus) CalcBonus(equip *FullEquipMap) float32 {
+	return calcBonusFuncy(func(slot SlotEquip) uint32 {
+		item := equip[slot]
+		if item != nil {
+			return item.ItemId()
+		} else {
+			return 0
+		}
+	}, sets.activeSets, sets.itemToSet)
+}
+
+func (sets *SetBonus) CalcBonus1(equip FullEquipMap) float32 {
+	var counts [10]uint8
+	for _, slot := range g_setBonusSlots {
+		item := equip[slot]
+		if item != nil {
+			itemId := item.ItemId()
+			entry := sets.itemToSet[itemId]
+			counts[entry]++
+		}
+	}
+	var value float32 = 1.0
+	for index := range sets.activeSets {
+		count := counts[index+1]
+		value *= sets.activeSets[index].bonuses[count]
+	}
+	return value
+}
+
+func (sets *SetBonus) CalcBonus1B(equip FullEquipMap) float32 {
+	var counts [10]uint8
+	for _, slot := range g_setBonusSlots {
+		item := equip[slot]
+		if item != nil {
+			itemId := item.ItemId()
+			entry := sets.itemToSet[itemId]
+			counts[entry]++
+		}
+	}
+
+	var value float32 = 1.0
+	for index := range sets.activeSets {
+		count := counts[index+1]
+		value *= sets.activeSets[index].bonuses[count]
+	}
+	return value
+}
+
+func (sets *SetBonus) CalcBonus0(equip *FullEquipMap) float32 {
+	var counts [10]uint8
+	addIfInEachSet(&counts, sets.itemToSet, equip[Equip_Head])
+	addIfInEachSet(&counts, sets.itemToSet, equip[Equip_Shoulder])
+	addIfInEachSet(&counts, sets.itemToSet, equip[Equip_Chest])
+	addIfInEachSet(&counts, sets.itemToSet, equip[Equip_Hand])
+	addIfInEachSet(&counts, sets.itemToSet, equip[Equip_Leg])
+	return bonusValueEach(sets.activeSets, &counts)
+}
+
+func (sets *SetBonus) CalcBonusSolveUseFunc(equip *SolvableEquipMap) float32 {
+	return calcBonusFuncy(func(slot SlotEquip) uint32 {
+		item := equip[slot]
+		if item != nil {
+			return item.ItemId()
+		} else {
+			return 0
+		}
+	}, sets.activeSets, sets.itemToSet)
+}
+
+// inline valid
+func calcBonusFuncy(slotToItemId func(SlotEquip) uint32, activeSets []setInfo, itemToSet []int8) float32 {
+	var counts [10]uint8
+	for _, slot := range g_setBonusSlots {
+		itemId := slotToItemId(slot)
+		entry := itemToSet[itemId]
+		counts[entry]++
+	}
+
+	var value float32 = 1.0
+	for index, set := range activeSets {
+		count := counts[index+1]
+		value *= set.bonuses[count]
+	}
+	return value
+}
+
+func (sets *SetBonus) CalcBonusGenericInterfaceLoopySomeInlined(equip IEquipMap) float32 {
+	var counts [10]uint8
+	for _, slot := range g_setBonusSlots {
+		item := equip.GetGeneric(slot)
+		if item != nil {
+			itemId := item.ItemId()
+			entry := sets.itemToSet[itemId]
+			counts[entry]++
+		}
+	}
+
+	var value float32 = 1.0
+	for index := range sets.activeSets {
+		count := counts[index+1]
+		value *= sets.activeSets[index].bonuses[count]
+	}
+	return value
+}
+
+func (sets *SetBonus) CalcBonusSolveDirectValueBasedLoopy_Inlinable(equip SolvableEquipMap) float32 {
+	var counts [10]uint8
+	for _, slot := range g_setBonusSlots {
+		item := equip[slot]
+		if item != nil {
+			itemId := item.ItemId()
+			entry := sets.itemToSet[itemId]
+			counts[entry]++
+		}
+	}
+	return bonusValueEach(sets.activeSets, &counts)
+}
+
+func (sets *SetBonus) CalcBonusSolveUnrollAndSpecial0(equip *SolvableEquipMap) float32 {
+	numSets := len(sets.activeSets)
+	if numSets == 0 {
+		return 1
+	} else {
+		var counts [10]uint8
+		addIfInEachSetSolve(&counts, sets.itemToSet, equip[Equip_Head])
+		addIfInEachSetSolve(&counts, sets.itemToSet, equip[Equip_Shoulder])
+		addIfInEachSetSolve(&counts, sets.itemToSet, equip[Equip_Chest])
+		addIfInEachSetSolve(&counts, sets.itemToSet, equip[Equip_Hand])
+		addIfInEachSetSolve(&counts, sets.itemToSet, equip[Equip_Leg])
+		return bonusValueEach(sets.activeSets, &counts)
 	}
 }
 
-func (sets *SetBonus) CalcAndMultiplySolve(itemSet *SolvableEquipMap, value uint64) uint64 {
-	size := len(sets.activeSets)
-	switch size {
+func (sets *SetBonus) CalcBonusSolveDirectUnrollAndSwitch(equip *SolvableEquipMap) float32 {
+	numSets := len(sets.activeSets)
+	switch numSets {
 	case 0:
-		return value
+		return 1
 	case 1:
-		var count uint8 = 0
-		addIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Head])
-		addIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Shoulder])
-		addIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Chest])
-		addIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Hand])
-		addIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Leg])
-		return bonusValue(&sets.activeSets[0], count, value)
+		var count uint8
+		addIfInAnySetSolve(&count, sets.itemToSet, equip[Equip_Head])
+		addIfInAnySetSolve(&count, sets.itemToSet, equip[Equip_Shoulder])
+		addIfInAnySetSolve(&count, sets.itemToSet, equip[Equip_Chest])
+		addIfInAnySetSolve(&count, sets.itemToSet, equip[Equip_Hand])
+		addIfInAnySetSolve(&count, sets.itemToSet, equip[Equip_Leg])
+		return bonusValue(&sets.activeSets[0], count)
 	default:
-		counts := make([]uint8, size)
-		addIfInEachSetSolve(&counts, sets.itemToSet, itemSet[Equip_Head])
-		addIfInEachSetSolve(&counts, sets.itemToSet, itemSet[Equip_Shoulder])
-		addIfInEachSetSolve(&counts, sets.itemToSet, itemSet[Equip_Chest])
-		addIfInEachSetSolve(&counts, sets.itemToSet, itemSet[Equip_Hand])
-		addIfInEachSetSolve(&counts, sets.itemToSet, itemSet[Equip_Leg])
-		return bonusValueEach(&sets.activeSets, &counts, value)
+		var counts [10]uint8
+		addIfInEachSetSolve(&counts, sets.itemToSet, equip[Equip_Head])
+		addIfInEachSetSolve(&counts, sets.itemToSet, equip[Equip_Shoulder])
+		addIfInEachSetSolve(&counts, sets.itemToSet, equip[Equip_Chest])
+		addIfInEachSetSolve(&counts, sets.itemToSet, equip[Equip_Hand])
+		addIfInEachSetSolve(&counts, sets.itemToSet, equip[Equip_Leg])
+		return bonusValueEach(sets.activeSets, &counts)
 	}
 }
 
-func (sets *SetBonus) CalcAndMultiplyF(itemSet *FullEquipMap, value float32) float32 {
-	size := len(sets.activeSets)
-	switch size {
-	case 0:
-		return value
-	case 1:
-		var count uint8 = 0
-		addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Head])
-		addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Shoulder])
-		addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Chest])
-		addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Hand])
-		addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Leg])
-		return bonusValueF(&sets.activeSets[0], count, value)
-	default:
-		counts := make([]uint8, size)
-		addIfInEachSet(&counts, sets.itemToSet, itemSet[Equip_Head])
-		addIfInEachSet(&counts, sets.itemToSet, itemSet[Equip_Shoulder])
-		addIfInEachSet(&counts, sets.itemToSet, itemSet[Equip_Chest])
-		addIfInEachSet(&counts, sets.itemToSet, itemSet[Equip_Hand])
-		addIfInEachSet(&counts, sets.itemToSet, itemSet[Equip_Leg])
-		return bonusValueEachF(&sets.activeSets, &counts, value)
-	}
+func (sets *SetBonus) CalcBonusSolveDirectUnroll(equip *SolvableEquipMap) float32 {
+	var counts [10]uint8
+	addIfInEachSetSolve(&counts, sets.itemToSet, equip[Equip_Head])
+	addIfInEachSetSolve(&counts, sets.itemToSet, equip[Equip_Shoulder])
+	addIfInEachSetSolve(&counts, sets.itemToSet, equip[Equip_Chest])
+	addIfInEachSetSolve(&counts, sets.itemToSet, equip[Equip_Hand])
+	addIfInEachSetSolve(&counts, sets.itemToSet, equip[Equip_Leg])
+	return bonusValueEach(sets.activeSets, &counts)
 }
 
-func (sets *SetBonus) CalcAndMultiplySolveF(itemSet *SolvableEquipMap, value float32) float32 {
-	size := len(sets.activeSets)
-	switch size {
-	case 0:
-		return value
-	case 1:
-		var count uint8 = 0
-		addIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Head])
-		addIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Shoulder])
-		addIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Chest])
-		addIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Hand])
-		addIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Leg])
-		return bonusValueF(&sets.activeSets[0], count, value)
-	default:
-		counts := make([]uint8, size)
-		addIfInEachSetSolve(&counts, sets.itemToSet, itemSet[Equip_Head])
-		addIfInEachSetSolve(&counts, sets.itemToSet, itemSet[Equip_Shoulder])
-		addIfInEachSetSolve(&counts, sets.itemToSet, itemSet[Equip_Chest])
-		addIfInEachSetSolve(&counts, sets.itemToSet, itemSet[Equip_Hand])
-		addIfInEachSetSolve(&counts, sets.itemToSet, itemSet[Equip_Leg])
-		return bonusValueEachF(&sets.activeSets, &counts, value)
-	}
+func (sets *SetBonus) CalcBonusGenericInterfaceGettersUnroll(equip IEquipMap) float32 {
+	var counts [10]uint8
+	addIfInEachSetGeneric(&counts, sets.itemToSet, equip.GetGeneric(Equip_Head))
+	addIfInEachSetGeneric(&counts, sets.itemToSet, equip.GetGeneric(Equip_Shoulder))
+	addIfInEachSetGeneric(&counts, sets.itemToSet, equip.GetGeneric(Equip_Chest))
+	addIfInEachSetGeneric(&counts, sets.itemToSet, equip.GetGeneric(Equip_Hand))
+	addIfInEachSetGeneric(&counts, sets.itemToSet, equip.GetGeneric(Equip_Leg))
+	return bonusValueEach(sets.activeSets, &counts)
 }
 
+func CalcBonusGenericTypeParamGettersUnroll[EquipMap IEquipMap](sets *SetBonus, equip EquipMap) float32 {
+	var counts [10]uint8
+	addIfInEachSetGeneric(&counts, sets.itemToSet, equip.GetGeneric(Equip_Head))
+	addIfInEachSetGeneric(&counts, sets.itemToSet, equip.GetGeneric(Equip_Shoulder))
+	addIfInEachSetGeneric(&counts, sets.itemToSet, equip.GetGeneric(Equip_Chest))
+	addIfInEachSetGeneric(&counts, sets.itemToSet, equip.GetGeneric(Equip_Hand))
+	addIfInEachSetGeneric(&counts, sets.itemToSet, equip.GetGeneric(Equip_Leg))
+	return bonusValueEach(sets.activeSets, &counts)
+}
+
+func CalcBonusGenericTypeParamArrayUnroll[Item IItem, Map IEquipMapArrays[Item]](sets *SetBonus, equip *Map) float32 {
+	var counts [10]uint8
+	addIfInEachSetGeneric(&counts, sets.itemToSet, (*equip)[Equip_Head])
+	addIfInEachSetGeneric(&counts, sets.itemToSet, (*equip)[Equip_Shoulder])
+	addIfInEachSetGeneric(&counts, sets.itemToSet, (*equip)[Equip_Chest])
+	addIfInEachSetGeneric(&counts, sets.itemToSet, (*equip)[Equip_Hand])
+	addIfInEachSetGeneric(&counts, sets.itemToSet, (*equip)[Equip_Leg])
+	return bonusValueEach(sets.activeSets, &counts)
+}
+
+func (sets *SetBonus) CalcBonusGenericInterfaceGettersLoopy(equip IEquipMap) float32 {
+	var counts [10]uint8
+	for _, slot := range g_setBonusSlots {
+		addIfInEachSetGeneric(&counts, sets.itemToSet, equip.GetGeneric(slot))
+	}
+	return bonusValueEach(sets.activeSets, &counts)
+}
+
+func CalcBonusGenericTypeParamGettersLoopy[EquipMap IEquipMap](sets *SetBonus, equip EquipMap) float32 {
+	var counts [10]uint8
+	for _, slot := range g_setBonusSlots {
+		addIfInEachSetGeneric(&counts, sets.itemToSet, equip.GetGeneric(slot))
+	}
+	return bonusValueEach(sets.activeSets, &counts)
+}
+
+func CalcBonusGenericTypeParamArrayLoopy[Item IItem, Map IEquipMapArrays[Item]](sets *SetBonus, equip Map) float32 {
+	var counts [10]uint8
+	for _, slot := range g_setBonusSlots {
+		addIfInEachSetGeneric(&counts, sets.itemToSet, equip[slot])
+	}
+	return bonusValueEach(sets.activeSets, &counts)
+}
+
+// ######### CountInAnySet #########
 func (sets *SetBonus) CountInAnySet(itemSet *FullEquipMap) uint8 {
 	size := len(sets.activeSets)
-	switch size {
-	case 0:
+	if size == 0 {
 		return 0
-	default:
-		var count uint8 = 0
-		addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Head])
-		addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Shoulder])
-		addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Chest])
-		addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Hand])
-		addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Leg])
-		return count
 	}
+
+	var count uint8 = 0
+	addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Head])
+	addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Shoulder])
+	addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Chest])
+	addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Hand])
+	addIfInAnySet(&count, sets.itemToSet, itemSet[Equip_Leg])
+	return count
 }
 
+// ######### addIfInAnySet #########
 func addIfInAnySet(count *uint8, itemToSet []int8, item *FullItem) {
 	if item != nil {
 		entry := itemToSet[item.ItemId()]
@@ -176,104 +312,82 @@ func addIfInAnySet(count *uint8, itemToSet []int8, item *FullItem) {
 	}
 }
 
-func addIfInEachSet(counts *[]uint8, itemToSet []int8, item *FullItem) {
-	if item != nil {
-		entry := itemToSet[item.ItemId()]
-		if entry != 0 {
-			(*counts)[entry - 1]++
-		}
-	}
-}
-
 func addIfInAnySetSolve(count *uint8, itemToSet []int8, item *SolvableItem) {
 	if item != nil {
-		entry := itemToSet[item.ItemId]
+		entry := itemToSet[item.ItemId()]
 		if entry != 0 {
 			*count++
 		}
 	}
 }
 
-func addIfInEachSetSolve(counts *[]uint8, itemToSet []int8, item *SolvableItem) {
+// func addIfInAnySetGeneric(count *uint8, itemToSet []int8, item IItem) {
+// 	if item != nil {
+// 		entry := itemToSet[item.ItemId()]
+// 		if entry != 0 {
+// 			*count++
+// 		}
+// 	}
+// }
+
+// ######### addIfInEachSet #########
+func addIfInEachSet(counts *[10]uint8, itemToSet []int8, item *FullItem) {
 	if item != nil {
-		entry := itemToSet[item.ItemId]
-		if entry != 0 {
-			(*counts)[entry - 1]++
-		}
+		entry := itemToSet[item.ItemId()]
+		counts[entry]++
 	}
 }
 
-func bonusValue(setInfo *setInfo, count uint8, value uint64) uint64 {
-	if count >= 4 {
-		return value * setInfo.bonus2 * setInfo.bonus4 / (denominator * denominator)
-	} else if count >= 2 {
-		return value * setInfo.bonus2 / denominator
-	} else {
-		return value
+func addIfInEachSetSolve(counts *[10]uint8, itemToSet []int8, item *SolvableItem) {
+	if item != nil {
+		entry := itemToSet[item.ItemId()]
+		counts[entry]++
 	}
 }
 
-func bonusValueF(setInfo *setInfo, count uint8, value float32) float32 {
-	if count >= 4 {
-		return value * setInfo.bonus2F * setInfo.bonus4F
-	} else if count >= 2 {
-		return value * setInfo.bonus2F
-	} else {
-		return value
+func addIfInEachSetGeneric(counts *[10]uint8, itemToSet []int8, item IItem) {
+	if item != nil {
+		entry := itemToSet[item.ItemId()]
+		counts[entry]++
 	}
 }
 
-func bonusValueEach(sets *[]setInfo, counts *[]uint8, value uint64) uint64 {
-	for index, count := range *counts {
-		setInfo := &(*sets)[index]
-		if count >= 4 {
-			return value * setInfo.bonus2 * setInfo.bonus4 / (denominator * denominator)
-		} else if count >= 2 {
-			value = value * setInfo.bonus2 / denominator
-		}
+// ######### bonusValues #########
+func bonusValue(setInfo *setInfo, count uint8) float32 {
+	return setInfo.bonuses[count]
+}
+
+func bonusValueEach(sets []setInfo, counts *[10]uint8) float32 {
+	var value float32 = 1.0
+	for index := range sets {
+		count := counts[index+1]
+		value *= sets[index].bonuses[count]
 	}
 	return value
 }
 
-func bonusValueEachF(sets *[]setInfo, counts *[]uint8, value float32) float32 {
-	for index, count := range *counts {
-		setInfo := &(*sets)[index]
-		if count >= 4 {
-			return value * setInfo.bonus2F * setInfo.bonus4F
-		} else if count >= 2 {
-			value = value * setInfo.bonus2F
-		}
-	}
-	return value
-}
-
+// ######### set data #########
 type setInfo struct {
-	spec    SpecType
-	name    string
-	bonus2  uint64
-	bonus4  uint64
-	bonus2F float32
-	bonus4F float32
+	spec SpecType
+	name string
+	// bonus2F  float32
+	// bonus24F float32
+	bonuses [6]float32
 	items   []uint32
 }
 
 func setInfoMake(spec SpecType, name string, bonus2 uint64, bonus4 uint64, items []uint32) setInfo {
-	return setInfo{spec, name, bonus2, bonus4, float32(bonus2) / float32(denominator), float32(bonus4) / float32(denominator), items}
+	return setInfo{spec,
+		name,
+		[6]float32{
+			1.0,
+			1.0,
+			float32(bonus2) / float32(denominator),
+			float32(bonus2) / float32(denominator),
+			float32(bonus2) / float32(denominator) * float32(bonus4) / float32(denominator),
+			float32(bonus2) / float32(denominator) * float32(bonus4) / float32(denominator)},
+		items}
 }
-
-const (
-	defaultBonus = 1050
-	denominator  = 1024
-
-	white_tiger_battlegear_2      = 1057
-	white_tiger_battlegear_4      = 1049
-	white_tiger_battlegear_4_tank = 1060 // gives 2% to dps, a bit more overall
-
-	plate_lightning_bonus_2_miti  = 1037 // 1.3% bonus applies to death chance only, from sim
-	plate_lightning_bonus_4_miti  = 1075 // compromise number, it's situational after all
-	plate_lightning_bonus_4_dps   = 1052 // sim result for horridon h10, might not always apply
-	plate_lightning_bonus_4_death = 1280 // actual result of sim for horridon h10
-)
 
 var g_setData = buildSets()
 
