@@ -103,7 +103,7 @@ func (output *SolveOutput) Report(printer *util.PrintRecorder) {
 		printer.Println(output.OutputId)
 		printer.Printf("SET OUTPUT rating %d\n", rating)
 		// printer.Printf("BONUS %.2f\n", float64(output.Input.Model.SetBonus.CalcAndMultiply(&fullSet.Items, 1000))/1000.0)
-		printer.Printf("BONUS %.2f\n", output.Input.Model.SetBonus.CalcBonus(fullSet.Items()))
+		printer.Printf("BONUS %.2f\n", output.Input.Model.SetBonus.CalcBonusFull(fullSet.Items()))
 		fullSet.PrintStats(printer)
 		printEquipMap(fullSet.Items(), printer)
 		simulate.WowSimJson_Write(output.FullSet.Items(), output.Input.Model, printer)

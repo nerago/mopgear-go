@@ -35,38 +35,42 @@ func (model *Model) CheckSetSkinny(itemSet *SkinnyItemSet) bool {
 // ////////// set ratings
 func (model *Model) CalcRatingSolve(itemSet *SolvableItemSet) uint64 {
 	baseRating := model.StatRatings.CalcRatingFloat(itemSet.TotalRated())
-	setRating := model.SetBonus.CalcBonusSolveUnrollAndSpecial0(itemSet.Items())
-	return multiplyRatings(baseRating, setRating)
+	setRating := model.SetBonus.CalcBonusSolve(itemSet.Items())
+	return uint64(baseRating * setRating)
 }
 
 func (model *Model) CalcRatingFull(itemSet *FullItemSet) uint64 {
 	baseRating := model.StatRatings.CalcRatingFloat(itemSet.TotalRated())
-	setRating := model.SetBonus.CalcBonus(itemSet.Items())
-	return multiplyRatings(baseRating, setRating)
+	setRating := model.SetBonus.CalcBonusFull(itemSet.Items())
+	return uint64(baseRating * setRating)
 }
 
 func (model *Model) CalcRatingGenericSet(itemSet IItemSet) uint64 {
 	baseRating := model.StatRatings.CalcRatingFloat(itemSet.TotalRated())
-	setRating := model.SetBonus.CalcBonusGenericInterfaceLoopySomeInlined(itemSet.ItemsGeneric())
-	return multiplyRatings(baseRating, setRating)
+	setRating := model.SetBonus.CalcBonusGeneric(itemSet.ItemsGeneric())
+	return uint64(baseRating * setRating)
 }
 
-func multiplyRatings(baseRating float32, setRating float32) uint64 {
-	return uint64(baseRating * setRating)
+// combined?
+func (model *Model) CheckAndRate(itemSet *SolvableItemSet) uint64 {
+	if model.StatRequirements.CheckSet(itemSet.TotalCap()) {
+		baseRating := model.StatRatings.CalcRatingFloat(itemSet.TotalRated())
+		setRating := model.SetBonus.CalcBonusSolve(itemSet.Items())
+		return uint64(baseRating * setRating)
+	} else {
+		return 0
+	}
 }
 
 // ////////// items ratings
 func (model *Model) CalcRatingFullItem(item *FullItem) uint64 {
-	rating := model.StatRatings.CalcRatingInt(item.TotalRated())
-	return rating
+	return model.StatRatings.CalcRatingInt(item.TotalRated())
 }
 
 func (model *Model) CalcRatingSolveItem(item *SolvableItem) uint64 {
-	rating := model.StatRatings.CalcRatingInt(item.TotalRated())
-	return rating
+	return model.StatRatings.CalcRatingInt(item.TotalRated())
 }
 
 func (model *Model) CalcRatingGenericItem(item IItem) uint64 {
-	rating := model.StatRatings.CalcRatingInt(item.TotalRated())
-	return rating
+	return model.StatRatings.CalcRatingInt(item.TotalRated())
 }

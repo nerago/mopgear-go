@@ -10,6 +10,15 @@ func (equipMap *FullEquipMap) Get(slot SlotEquip) *FullItem {
 	return equipMap[slot]
 }
 
+func (equipMap *FullEquipMap) GetAsId(slot SlotEquip) uint32 {
+	item := equipMap[slot]
+	if item != nil {
+		return item.Ref.ItemId
+	} else {
+		return 0
+	}
+}
+
 func (equipMap *FullEquipMap) GetGeneric(slot SlotEquip) IItem {
 	return equipMap[slot]
 }

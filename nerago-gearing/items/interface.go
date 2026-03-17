@@ -13,12 +13,12 @@ type IHasStats interface {
 type IItem interface {
 	ItemId() uint32
 	IsEmpty() bool
-
 	IHasStats
 }
 
 type IEquipMap interface {
 	GetGeneric(SlotEquip) IItem
+	GetAsId(SlotEquip) uint32
 	AllItemSeqGeneric() iter.Seq[IItem]
 }
 
@@ -35,11 +35,6 @@ type IEquipMapArrays[Item IItem] interface {
 type IEquipMapArraysLazy interface {
 	FullEquipMap | SolvableEquipMap
 }
-
-// type IEquipMapArrays interface {
-// 	IEquipMap
-// 	[16]IItem
-// }
 
 type IItemSetArrays[Item IItem, EquipMap IEquipMapArrays[Item]] interface {
 	IItemSet
