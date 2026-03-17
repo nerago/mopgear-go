@@ -196,6 +196,7 @@ func incrementIfInAnySet(count *uint8, itemToSet []int8, item IItem) {
 		if entry != 0 {
 			*count++
 		}
+		// TODO test with count += entry
 	}
 }
 
