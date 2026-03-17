@@ -1,13 +1,17 @@
 package model
 
 import (
+	"fmt"
 	. "paladin_gearing_go/items"
+	"paladin_gearing_go/model/modelassem"
 	. "paladin_gearing_go/stats"
 )
 
 type SetBonus struct {
-	activeSets []setInfo
-	itemToSet  []int8
+	activeSets           []setInfo
+	activeSetsFlatBonus  [][6]float32
+	activeSetsFlatBonus2 []float32
+	itemToSet            []int8
 }
 
 const (
@@ -59,6 +63,12 @@ func (sets *SetBonus) initMap() {
 	for index, info := range sets.activeSets {
 		for _, itemId := range info.items {
 			sets.itemToSet[itemId] = int8(index + 1)
+		}
+
+		sets.activeSetsFlatBonus = append(sets.activeSetsFlatBonus, info.bonuses)
+
+		for _, bonus := range info.bonuses {
+			sets.activeSetsFlatBonus2 = append(sets.activeSetsFlatBonus2, bonus)
 		}
 	}
 }
@@ -123,6 +133,16 @@ func (sets *SetBonus) CalcBonusSolve(equip *SolvableEquipMap) float32 {
 
 func (sets *SetBonus) CalcBonusGeneric(equip IEquipMap) float32 {
 	return calcBonusFromFunc(equip.GetAsId, sets.activeSets, sets.itemToSet)
+}
+
+func (sets *SetBonus) CalcBonusSolveUseAssem(equip *SolvableEquipMap) float32 {
+	// var foo [16]*items.SolvableItem = *equip
+	// var bar *[16]*items.SolvableItem = equip
+	// return modelassem.CalcBonusSolveAssem(&foo, sets.itemToSet, sets.activeSetsFlatBonus)
+	fmt.Println("before")
+	r := modelassem.CalcBonusSolveAssem(equip, sets.itemToSet, sets.activeSetsFlatBonus2)
+	fmt.Println("after")
+	return r
 }
 
 func calcBonusFromFunc(getAsId func(SlotEquip) uint32, activeSets []setInfo, itemToSet []int8) float32 {

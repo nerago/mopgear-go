@@ -65,6 +65,21 @@ func BenchmarkCalcBonusGeneric(test *testing.B) {
 	resultFloat = v
 }
 
+func BenchmarkCalcBonusSolveUseAssem(test *testing.B) {
+	a, b, c := makeSetBonuses()
+	var v float32
+
+	equipFetch := makeEquipFetch()
+
+	for test.Loop() {
+		equip := equipFetch.next()
+		v += a.CalcBonusSolveUseAssem(equip)
+		v += b.CalcBonusSolveUseAssem(equip)
+		v += c.CalcBonusSolveUseAssem(equip)
+	}
+	resultFloat = v
+}
+
 var g_setBonusSlots = [5]SlotEquip{Equip_Head, Equip_Shoulder, Equip_Chest, Equip_Hand, Equip_Leg}
 
 func makeEquipForBonus(numInSet int) *SolvableEquipMap {

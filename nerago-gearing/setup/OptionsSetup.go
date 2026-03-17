@@ -59,7 +59,7 @@ func loadItemBasic(itemId uint32, upgradeLevel int16, printer *util.PrintRecorde
 	storedItem := db.WowSimDB_ByIdAndUpgrade(itemId, upgradeLevel)
 	if storedItem == nil && upgradeLevel > 0 {
 		storedItem = db.WowSimDB_ByIdAndUpgrade(itemId, 0)
-		printer.Printf("NOT FOUND at specified upgrade %d = %s\n", upgradeLevel, storedItem)
+		printer.Printf("NOT FOUND at specified upgrade %d = %s\n", upgradeLevel, storedItem.CreateString())
 	}
 	return *storedItem
 }

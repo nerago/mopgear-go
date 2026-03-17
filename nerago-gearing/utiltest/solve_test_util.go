@@ -81,7 +81,7 @@ func verifyAllItemsTried(t *testing.T, peekRecord *PeekTestRecorder, options *it
 
 	for item := range options.AllItemSeq() {
 		if seenCounts[item.ItemId()] == 0 {
-			t.Fatalf("never tried item %d", item.ItemId)
+			t.Fatalf("never tried item %d", item.ItemId())
 		}
 	}
 }

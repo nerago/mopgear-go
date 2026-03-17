@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"paladin_gearing_go/files"
 	. "paladin_gearing_go/items"
+	"paladin_gearing_go/model"
 	. "paladin_gearing_go/model"
 	. "paladin_gearing_go/setup"
 	"paladin_gearing_go/util"
@@ -25,6 +26,10 @@ const (
 var printer *util.PrintRecorder
 
 func main() {
+	model.MainModel()
+}
+
+func main0() {
 	lowerPriority()
 
 	printer = PrintRecorder_CreateLogFile()

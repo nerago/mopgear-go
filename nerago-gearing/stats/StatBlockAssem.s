@@ -49,7 +49,7 @@ TEXT ·StatBlock_AddAndSubtract_Into(SB), NOSPLIT|NOFRAME, $0-32
 
 	RET
 
-TEXT ·StatBlock_Equals(SB), NOSPLIT|NOFRAME, $0-24
+TEXT ·StatBlock_Equals(SB), NOSPLIT|NOFRAME, $0-17
     MOVQ          a+0(FP), AX
     MOVQ          b+8(FP), BX
     

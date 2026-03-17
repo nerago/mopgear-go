@@ -15,7 +15,13 @@ type SolvableItem struct {
 func SolvableItem_Of(item FullItem) SolvableItem {
 	return SolvableItem{
 		itemId: item.Ref.ItemId,
-		total: item.total}
+		total:  item.total}
+}
+
+func SolvableItem_ForTest(itemid uint32, block StatBlock) SolvableItem {
+	return SolvableItem{
+		itemId: itemid,
+		total:  block}
 }
 
 func (item *SolvableItem) ItemId() uint32 {
