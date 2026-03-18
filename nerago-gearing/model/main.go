@@ -9,8 +9,9 @@ import (
 
 func MainModel() {
 	bonus := SetBonus_Named("White Tiger Plate")
-	equip := _makeEquipForBonus(3)
+	equip := _makeEquipForBonus(0)
 	v := bonus.CalcBonusSolveUseAssem(equip)
+	// v := bonus.CalcBonusSolve(equip)
 	fmt.Printf("result = %f", v)
 }
 

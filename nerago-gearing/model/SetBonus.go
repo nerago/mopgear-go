@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model/modelassem"
 	. "paladin_gearing_go/stats"
@@ -136,13 +135,7 @@ func (sets *SetBonus) CalcBonusGeneric(equip IEquipMap) float32 {
 }
 
 func (sets *SetBonus) CalcBonusSolveUseAssem(equip *SolvableEquipMap) float32 {
-	// var foo [16]*items.SolvableItem = *equip
-	// var bar *[16]*items.SolvableItem = equip
-	// return modelassem.CalcBonusSolveAssem(&foo, sets.itemToSet, sets.activeSetsFlatBonus)
-	fmt.Println("before")
-	r := modelassem.CalcBonusSolveAssem(equip, sets.itemToSet, sets.activeSetsFlatBonus2)
-	fmt.Println("after")
-	return r
+	return modelassem.CalcBonusSolveAssem(equip, sets.itemToSet, sets.activeSetsFlatBonus2)
 }
 
 func calcBonusFromFunc(getAsId func(SlotEquip) uint32, activeSets []setInfo, itemToSet []int8) float32 {

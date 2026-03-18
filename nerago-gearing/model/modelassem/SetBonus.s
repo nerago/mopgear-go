@@ -26,6 +26,9 @@ TEXT ·CalcBonusSolveAssem(SB), NOSPLIT, $16-60
     MOVQ		             equip+0(FP), AX 				// equip pointer
 	MOVQ	        itemToSet_base+8(FP), DX                // itemToSet pointer
 
+	MOVQ                              $0, (SP)              // zero out counts array on stack
+	MOVQ                              $0, 8(SP)
+
 equip_head:
     MOVQ          const_Equip_Head*8(AX), BX             	// BX = equip[Equip_Head]
 	TESTQ                             BX, BX             	// BX != nil
@@ -93,6 +96,9 @@ TEXT ·CalcBonusSolveAssemAssumeNonNull(SB), NOSPLIT, $16-60
     MOVQ		             equip+0(FP), AX 				// equip pointer
 	MOVQ	        itemToSet_base+8(FP), DX                // itemToSet pointer
 
+	MOVQ                              $0, (SP)              // zero out counts array on stack
+	MOVQ                              $0, 8(SP)
+
     MOVQ          const_Equip_Head*8(AX), BX             	// BX = equip[Equip_Head]
 	MOVL         SolvableItem_itemId(BX), SI				// SI = item.itemId
 	MOVBLZX                   (DX)(SI*1), DI             	// DI entry = itemToSet_base[itemId]
@@ -151,6 +157,9 @@ TEXT ·CalcBonusSolveAssemAssumeNonNullWithCases(SB), NOSPLIT, $16-60
 	JEQ                                   single_checks
 
 multi_checks:
+	MOVQ                              $0, (SP)              // zero out counts array on stack
+	MOVQ                              $0, 8(SP)
+	
     MOVQ          const_Equip_Head*8(AX), BX             	// BX = equip[Equip_Head]
 	MOVL         SolvableItem_itemId(BX), SI				// SI = item.itemId
 	MOVBLZX                   (DX)(SI*1), DI             	// DI entry = itemToSet_base[itemId]

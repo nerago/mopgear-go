@@ -1,6 +1,8 @@
 package model
 
 import (
+	"fmt"
+	"math/rand/v2"
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/stats"
 	"testing"
@@ -25,6 +27,24 @@ func makeEquipFetch() loopedFetch {
 	fetch := loopedFetch{}
 	for i := range 6 {
 		fetch.add(makeEquipForBonus(i))
+	}
+	return fetch
+}
+
+func makeEquipFetch2(a, b *SetBonus) loopedFetch {
+	allInfo := []setInfo{}
+	allInfo = append(allInfo, a.activeSets...)
+	allInfo = append(allInfo, b.activeSets...)
+
+	fetch := loopedFetch{}
+	for index1 := range allInfo {
+		for index2 := index1 + 1; index2 < len(allInfo); index2++ {
+			for x := range 6 {
+				for y := range 6 {
+					fetch.add(makeEquipForBonus2(&allInfo[index1], &allInfo[index2], x, y))
+				}
+			}
+		}
 	}
 	return fetch
 }
@@ -80,6 +100,38 @@ func BenchmarkCalcBonusSolveUseAssem(test *testing.B) {
 	resultFloat = v
 }
 
+func TestCalcBonusCompared(test *testing.T) {
+	a, b, c := makeSetBonuses()
+
+	equipFetch := makeEquipFetch2(&b, &c)
+
+	sets := []*SetBonus{&a, &b, &c}
+
+	impls := []func(*SetBonus, *SolvableEquipMap) float32{
+		(*SetBonus).CalcBonusSolve,
+		(*SetBonus).CalcBonusSolveUseAssem,
+		func(s *SetBonus, e *SolvableEquipMap) float32 { return s.CalcBonusGeneric(e) }}
+
+	for range 100 {
+		equip := equipFetch.next()
+
+		for t, set := range sets {
+			var expect float32
+			for i, call := range impls {
+				val := call(set, equip)
+				fmt.Printf("set=%d func=%d %f\n", t, i, val)
+				if i == 0 {
+					expect = val
+				} else if val != expect {
+					test.Fatalf("mismatched results")
+				} else {
+					test.Log("ok")
+				}
+			}
+		}
+	}
+}
+
 var g_setBonusSlots = [5]SlotEquip{Equip_Head, Equip_Shoulder, Equip_Chest, Equip_Hand, Equip_Leg}
 
 func makeEquipForBonus(numInSet int) *SolvableEquipMap {
@@ -89,13 +141,37 @@ func makeEquipForBonus(numInSet int) *SolvableEquipMap {
 	}
 
 	setItems := []uint32{86659, 86660, 86661, 86662, 86663}
-	// numInSet := rand.IntN(6)
 	for i := range numInSet {
 		slot := g_setBonusSlots[i]
 		equip[slot] = makeItemForBonus(setItems[i])
 	}
 
 	return &equip
+}
+
+func makeEquipForBonus2(a, b *setInfo, x, y int) *SolvableEquipMap {
+	equip := SolvableEquipMap{}
+	for slot := range equip {
+		equip[slot] = makeItem()
+	}
+
+	for _, slot := range g_setBonusSlots {
+		if x > 0 {
+			id := randChoice(a.items)
+			equip[slot] = makeItemForBonus(id)
+			x--
+		} else if y > 0 {
+			id := randChoice(b.items)
+			equip[slot] = makeItemForBonus(id)
+			y--
+		}
+	}
+
+	return &equip
+}
+
+func randChoice(slice []uint32) uint32 {
+	return slice[rand.IntN(len(slice))]
 }
 
 func makeItemForBonus(id uint32) *SolvableItem {
