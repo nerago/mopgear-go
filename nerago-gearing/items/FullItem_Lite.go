@@ -1,5 +1,3 @@
-//go:build statslite
-
 package items
 
 import (
