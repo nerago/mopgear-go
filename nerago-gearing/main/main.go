@@ -6,12 +6,10 @@ import (
 	"os"
 	"os/exec"
 	"paladin_gearing_go/files"
-	. "paladin_gearing_go/items"
+	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
-	. "paladin_gearing_go/model"
-	. "paladin_gearing_go/setup"
+	"paladin_gearing_go/setup"
 	"paladin_gearing_go/util"
-	. "paladin_gearing_go/util"
 	"runtime"
 	"runtime/pprof"
 	"strconv"
@@ -26,13 +24,9 @@ const (
 var printer *util.PrintRecorder
 
 func main() {
-	model.MainModel()
-}
-
-func main0() {
 	lowerPriority()
 
-	printer = PrintRecorder_CreateLogFile()
+	printer = util.PrintRecorder_CreateLogFile()
 	defer printer.Close()
 
 	log.SetOutput(io.Discard) // ignore wowsim's internal progress logs
@@ -67,25 +61,25 @@ func main0() {
 	}
 }
 
-func core(printer *PrintRecorder) {
-	itemOptions, model := setupPallyMitigation()
+func core(printer *util.PrintRecorder) {
+	// itemOptions, model := setupPallyMitigation()
 	// itemOptions, model := setupPallyDps()
 
 	// slotRating(itemOptions[Equip_Chest], &model, printer)
-	basicReforge(&itemOptions, &model, printer)
+	// basicReforge(&itemOptions, &model, printer)
 
-	// PaladinMultiRun(printer)
+	PaladinMultiRun(printer)
 	// testSim(printer)
 }
 
-func setupPallyMitigation() (FullOptionsMap, Model) {
-	model := Model_PallyProtMitigation()
-	return OptionsSetup_FromGearFile(files.GearFileProtMitigation, &model, printer), model
+func setupPallyMitigation() (items.FullOptionsMap, model.Model) {
+	model := model.Model_PallyProtMitigation()
+	return setup.OptionsSetup_FromGearFile(files.GearFileProtMitigation, &model, printer), model
 }
 
-func setupPallyDps() (FullOptionsMap, Model) {
-	model := Model_PallyProtDps()
-	return OptionsSetup_FromGearFile(files.GearFileProtDps, &model, printer), model
+func setupPallyDps() (items.FullOptionsMap, model.Model) {
+	model := model.Model_PallyProtDps()
+	return setup.OptionsSetup_FromGearFile(files.GearFileProtDps, &model, printer), model
 }
 
 func lowerPriority() {

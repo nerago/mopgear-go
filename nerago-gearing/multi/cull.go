@@ -7,9 +7,13 @@ import (
 )
 
 func (job *MultiSetJob) SuggestCulls(targetCount uint64, topCapture int) {
-	bestOutputs := job.runForTopN(targetCount, topCapture, util.TrackProgress_Start())
+	topTracker := util.TrackProgress_Start()
+	topTracker.RunOuterTracking(2)
+	defer topTracker.Stop()
+
+	bestOutputs := job.runForTopN(targetCount, topCapture, topTracker.MakeNested())
 	job.listInitialOutputs(bestOutputs)
-	job.cullingMakeRevisions(bestOutputs)
+	job.cullingMakeRevisions(bestOutputs, topTracker.MakeNested())
 	job.cullingReport()
 }
 
@@ -35,11 +39,10 @@ func (job *MultiSetJob) runForTopN(targetCount uint64, topCapture int, trackProg
 	return bestOutputs
 }
 
-func (job *MultiSetJob) cullingMakeRevisions(proposedList []MultiProposedOutput) {
+func (job *MultiSetJob) cullingMakeRevisions(proposedList []MultiProposedOutput, trackProgress *util.TrackProgress) {
 	job.printer.Printf("MAKE REVISIONS FOR %d\n", len(proposedList))
 
 	expectedSets := len(proposedList) * len(job.params) * revisedExtraSetsExpectedEach
-	trackProgress := util.TrackProgress_Start()
 	trackProgress.RunOuterTracking(expectedSets)
 	defer trackProgress.Stop()
 
@@ -85,6 +88,7 @@ func (param *MultiSetParam) cullingReport() {
 		return cmp.Or(cmp.Compare(a.count, b.count), cmp.Compare(a.itemId, b.itemId))
 	})
 
+	// TODO is there concurrent goroutines updating?
 	param.job.printer.Printf("EXTRAS USED %s\n", param.Label)
 	for _, info := range extraInfo {
 		if info.count == 0 {

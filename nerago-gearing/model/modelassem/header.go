@@ -46,6 +46,8 @@ type SolvableItem items.SolvableItem
 // 	}
 // }
 
-func CalcBonusSolveAssem(equip *items.SolvableEquipMap, itemToSet []int8, activeSets []float32) float32
+func CalcBonusSolveAssem(equip *items.SolvableEquipMap, itemToSet []uint8, activeSets []float32) float32
 
-func CalcBonusSolveAssemAssumeNonNull(equip *items.SolvableEquipMap, itemToSet []int8, activeSets []float32) float32
+func CalcBonusSolveAssemAssumeNonNull(equip *items.SolvableEquipMap, itemToSet []uint8, activeSets []float32) float32
+
+func CalcBonusSolveAssemAssumeNonNullWithCases(equip *items.SolvableEquipMap, itemToSet []uint8, activeSets []float32) float32
