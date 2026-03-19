@@ -3,6 +3,7 @@ package loaders
 import (
 	"encoding/json"
 	"os"
+	"paladin_gearing_go/items"
 )
 
 func GearFileReader_Read(filename string) []EquippedItem {
@@ -28,7 +29,7 @@ func GearFileReader_Read(filename string) []EquippedItem {
 }
 
 func readEquipped(itemObject map[string]any) EquippedItem {
-	itemId := uint32(itemObject["id"].(float64))
+	itemId := items.ItemId(uint32(itemObject["id"].(float64)))
 
 	gems := make([]uint32, 0)
 	if itemObject["gems"] != nil {

@@ -52,7 +52,7 @@ func (param *MultiSetParam) prepareExtraItems() {
 	}
 }
 
-func (param *MultiSetParam) includeExtra(itemId uint32) {
+func (param *MultiSetParam) includeExtra(itemId items.ItemId) {
 	if param.itemOptions.IncludesItemId(itemId) {
 		param.job.printer.Printf("EXTRA already included %d\n", itemId)
 		return
@@ -69,7 +69,7 @@ func (param *MultiSetParam) includeExtra(itemId uint32) {
 	param.extraLoadAndGenerate(itemId)
 }
 
-func (param *MultiSetParam) extraFromOtherSpec(itemId uint32) bool {
+func (param *MultiSetParam) extraFromOtherSpec(itemId items.ItemId) bool {
 	options := make([]items.FullItem, 0)
 	for _, otherParam := range param.job.params {
 		more := otherParam.itemOptions.FindItemId(itemId)
@@ -89,7 +89,7 @@ func (param *MultiSetParam) extraFromOtherSpec(itemId uint32) bool {
 	}
 }
 
-func (param *MultiSetParam) extraFromBags(itemId uint32) bool {
+func (param *MultiSetParam) extraFromBags(itemId items.ItemId) bool {
 	for _, equipped := range param.job.bagsGear {
 		if equipped.ItemId == itemId {
 			// bags file doesn't have upgrade steps
@@ -104,7 +104,7 @@ func (param *MultiSetParam) extraFromBags(itemId uint32) bool {
 	return false
 }
 
-func (param *MultiSetParam) extraLoadAndGenerate(itemId uint32) {
+func (param *MultiSetParam) extraLoadAndGenerate(itemId items.ItemId) {
 	options, baseItem := setup.OptionsSetup_FromIdOnlyUseAllDefaults(itemId, param.ExtraUpgradeLevel, &param.Model, param.job.printer)
 	param.itemOptions.AddSeveralOptions(baseItem.Slot, options)
 	param.job.printer.Printf("OPTION %s\n", baseItem.CreateString())
@@ -138,7 +138,7 @@ func (param *MultiSetParam) restrictFixed() {
 }
 
 func (job *MultiSetJob) validateMultiSetAlignItemSlots() {
-	seen := make(map[uint32]items.SlotEquip)
+	seen := make(map[items.ItemId]items.SlotEquip)
 	for paramIndex := range job.params {
 		for slot, item := range job.params[paramIndex].itemOptions.AllItemsWithSlot() {
 			seenSlot, found := seen[item.ItemId()]

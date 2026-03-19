@@ -15,7 +15,7 @@ func (optionsMap *FullOptionsMap) Has(slot SlotEquip) bool {
 	return len(optionsMap[slot]) > 0
 }
 
-func (optionsMap *FullOptionsMap) IncludesItemId(itemId uint32) bool {
+func (optionsMap *FullOptionsMap) IncludesItemId(itemId ItemId) bool {
 	for _, slotArray := range optionsMap {
 		for _, item := range slotArray {
 			if item.ItemId() == itemId {
@@ -36,7 +36,7 @@ func (optionsMap *FullOptionsMap) MapSlot(slot SlotEquip, mapper func([]FullItem
 	optionsMap[slot] = mapper(optionsMap[slot])
 }
 
-func (optionsMap *FullOptionsMap) FindItemId(itemId uint32) iter.Seq[FullItem] {
+func (optionsMap *FullOptionsMap) FindItemId(itemId ItemId) iter.Seq[FullItem] {
 	return func(yield func(FullItem) bool) {
 		for _, slotArray := range optionsMap {
 			for _, item := range slotArray {

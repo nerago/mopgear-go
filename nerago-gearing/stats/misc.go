@@ -35,6 +35,10 @@ const (
 	Armor_Plate   ArmorType = 4
 )
 
+func (armor ArmorType) Matches(test ArmorType) bool {
+	return armor == test || armor == Armor_None || test == Armor_None
+}
+
 type SocketType int8
 
 const (
@@ -70,3 +74,24 @@ const (
 	PrimaryStat_Agility                   = iota
 	PrimaryStat_Intellect                 = iota
 )
+
+type Difficulty int8
+
+const (
+	Difficulty_Celestial Difficulty = iota
+	Difficulty_Normal               = iota
+	Difficulty_Heroic               = iota
+)
+
+func (difficulty Difficulty) ExpectedItemLevel() uint16 {
+	switch difficulty {
+	case Difficulty_Celestial:
+		return 502
+	case Difficulty_Normal:
+		return 522
+	case Difficulty_Heroic:
+		return 535
+	default:
+		panic("unknown Difficulty")
+	}
+}

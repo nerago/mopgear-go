@@ -35,7 +35,7 @@ func (item *fullItem_common) AppendFullName(build *strings.Builder) {
 	}
 }
 
-func (item *fullItem_common) ItemId() uint32 {
+func (item *fullItem_common) ItemId() ItemId {
 	return item.Ref.ItemId
 }
 

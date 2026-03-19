@@ -11,14 +11,14 @@ type IHasStats interface {
 }
 
 type IItem interface {
-	ItemId() uint32
+	ItemId() ItemId
 	IsEmpty() bool
 	IHasStats
 }
 
 type IEquipMap interface {
 	GetGeneric(SlotEquip) IItem
-	GetAsId(SlotEquip) uint32
+	GetAsId(SlotEquip) ItemId
 	AllItemSeqGeneric() iter.Seq[IItem]
 }
 

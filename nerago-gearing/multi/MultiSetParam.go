@@ -21,8 +21,8 @@ type MultiSetParam struct {
 
 	// extra item settings
 	ExtraUpgradeLevel int16
-	extraItems        []uint32
-	fixedSlots        map[items.SlotEquip]uint32
+	extraItems        []items.ItemId
+	fixedSlots        map[items.SlotEquip]items.ItemId
 
 	// working data
 	exactEquippedGear items.FullEquipMap
@@ -42,29 +42,29 @@ type MultiSetParam struct {
 
 func (param *MultiSetParam) init(job *MultiSetJob) {
 	param.job = job
-	param.seenInSolutions = &seenMap{content: make(map[uint32]uint32)}
+	param.seenInSolutions = &seenMap{content: make(map[items.ItemId]uint32)}
 }
 
-func (param *MultiSetParam) AddExtraItems(extraItemIds []uint32) *MultiSetParam {
+func (param *MultiSetParam) AddExtraItems(extraItemIds []items.ItemId) *MultiSetParam {
 	param.extraItems = append(param.extraItems, extraItemIds...)
 	return param
 }
 
-func (param *MultiSetParam) AddExtraItem(extraItemId uint32) *MultiSetParam {
+func (param *MultiSetParam) AddExtraItem(extraItemId items.ItemId) *MultiSetParam {
 	param.extraItems = append(param.extraItems, extraItemId)
 	return param
 }
 
-func (param *MultiSetParam) AddFixedSlot(slot items.SlotEquip, itemId uint32) *MultiSetParam {
+func (param *MultiSetParam) AddFixedSlot(slot items.SlotEquip, itemId items.ItemId) *MultiSetParam {
 	if param.fixedSlots == nil {
-		param.fixedSlots = make(map[items.SlotEquip]uint32)
+		param.fixedSlots = make(map[items.SlotEquip]items.ItemId)
 	}
 	param.fixedSlots[slot] = itemId
 	return param
 }
 
 type seenMap struct {
-	content map[uint32]uint32
+	content map[items.ItemId]uint32
 	mutex   sync.Mutex
 }
 

@@ -2,8 +2,10 @@ package db
 
 import (
 	"encoding/json"
+	"iter"
 	"os"
 	"paladin_gearing_go/files"
+	"paladin_gearing_go/items"
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
 	. "paladin_gearing_go/stats"
@@ -11,7 +13,7 @@ import (
 )
 
 var loaded = false
-var itemsById map[uint32][]FullItem = make(map[uint32][]FullItem)
+var itemsById map[items.ItemId][]FullItem = make(map[items.ItemId][]FullItem)
 var itemsByRef map[ItemRef]FullItem = make(map[ItemRef]FullItem)
 var reforgeById map[uint16]ReforgeRecipe = make(map[uint16]ReforgeRecipe)
 var reforgeByObj map[ReforgeRecipe]uint16 = make(map[ReforgeRecipe]uint16)
@@ -32,7 +34,7 @@ func WowSimDB_Read() {
 	loaded = true
 }
 
-func WowSimDB_ByIdAndUpgrade(itemId uint32, upgradeLevel int16) *FullItem {
+func WowSimDB_ByIdAndUpgrade(itemId items.ItemId, upgradeLevel int16) *FullItem {
 	if !loaded {
 		WowSimDB_Read()
 	}
@@ -45,6 +47,18 @@ func WowSimDB_ByIdAndUpgrade(itemId uint32, upgradeLevel int16) *FullItem {
 	}
 
 	return nil
+}
+
+func WowSimDB_AllItems() iter.Seq[*FullItem] {
+	return func(yield func(*FullItem) bool) {
+		for _, subList := range itemsById {
+			for i := range subList {
+				if !yield(&subList[i]) {
+					return
+				}
+			}
+		}
+	}
 }
 
 func WowSimDB_ReforgeById(reforgeId uint16) stats.ReforgeRecipe {
@@ -71,7 +85,7 @@ func convertItems(itemArray []any) {
 }
 
 func addItem(itemObj map[string]any) {
-	itemId := getUInt32OrPanic(itemObj, "id")
+	itemId := ItemId(getUInt32OrPanic(itemObj, "id"))
 	name := itemObj["name"].(string)
 	phase := int8(getIntOrDefault(itemObj, "phase", -1))
 	itemType := getIntOrDefault(itemObj, "type", -1)

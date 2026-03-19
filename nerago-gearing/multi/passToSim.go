@@ -48,7 +48,10 @@ func (job *MultiSetJob) prepareRevisionsForSim(proposedList []MultiProposedOutpu
 			draft := &prior.Outputs[i]
 			param := &job.params[i]
 
-			specOptions := job.makeRevised(param, revisedCommon, trackProgress)
+			printer.Println("DRAFT")
+			draft.Report(printer)
+
+			specOptions := job.makeRevised(param, revisedCommon, trackProgress, printer)
 			for _, newOutput := range specOptions {
 				param.seenInSolutions.Add(&newOutput.FullSet)
 			}
@@ -72,7 +75,11 @@ func (job *MultiSetJob) prepareRevisionsForSim(proposedList []MultiProposedOutpu
 			}
 			if checkNoConflicts(outputSet, printer) {
 				proposed := MultiProposedOutput{makeUUID(), totalRatingSum, outputSet, revisedCommon}
-				printer.Printf("&&& NEW PROPOSAL %s\n", proposed.Id)
+				componentIds := ""
+				for _, set := range outputSet {
+					componentIds = componentIds + set.OutputId + " "
+				}
+				printer.Printf("&&& NEW PROPOSAL %s => %s\n", proposed.Id, componentIds)
 				downstream <- proposed
 			}
 		}
@@ -86,14 +93,14 @@ func (job *MultiSetJob) prepareRevisionsForSim(proposedList []MultiProposedOutpu
 }
 
 func checkNoConflicts(outputSet []solver.SolveOutput, printer *util.PrintRecorder) bool {
-	itemById := make(map[uint32]*items.FullItem)
+	itemById := make(map[items.ItemId]*items.FullItem)
 	for outputIndex := range outputSet {
 		for item := range outputSet[outputIndex].FullSet.Items().AllItemSeq() {
 			existing, found := itemById[item.ItemId()]
 			if !found {
 				itemById[item.ItemId()] = item
 			} else if !existing.Equals(item) {
-				printer.Printf("!! CONFLICT %s\n!!          %s\n", item.CreateString(), existing.CreateString())
+				// printer.Printf("!! CONFLICT %s\n!!          %s\n", item.CreateString(), existing.CreateString())
 				return false
 			}
 		}
@@ -107,7 +114,7 @@ func (job *MultiSetJob) existingGearAsProposal() MultiProposedOutput {
 		param := &job.params[paramIndex]
 		proposal.Outputs = append(proposal.Outputs, param.baselineResult)
 		proposal.TotalRatingSum += param.baselineResult.ResultRating
-		proposal.Combo = job.revisedComboActuallyUsed(proposal.Outputs, make(commonCombo), util.PrintRecorder_HoldAll())
+		proposal.Combo = job.revisedComboActuallyUsed(proposal.Outputs, make(CommonCombo), util.PrintRecorder_HoldAll())
 	}
 	return proposal
 }

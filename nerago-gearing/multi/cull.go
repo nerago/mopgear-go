@@ -2,6 +2,7 @@ package multi
 
 import (
 	"cmp"
+	"paladin_gearing_go/items"
 	"paladin_gearing_go/util"
 	"slices"
 )
@@ -55,7 +56,7 @@ func (job *MultiSetJob) cullingMakeRevisions(proposedList []MultiProposedOutput,
 
 			param.seenInSolutions.Add(&draft.FullSet)
 
-			revised := job.makeRevised(param, revisedCommon, trackProgress)
+			revised := job.makeRevised(param, revisedCommon, trackProgress, printer)
 			for _, newOutput := range revised {
 				param.seenInSolutions.Add(&newOutput.FullSet)
 			}
@@ -72,7 +73,7 @@ func (job *MultiSetJob) cullingReport() {
 
 func (param *MultiSetParam) cullingReport() {
 	type extraInfoStruct struct {
-		itemId uint32
+		itemId items.ItemId
 		count  uint32
 	}
 

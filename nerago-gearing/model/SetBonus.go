@@ -1,6 +1,7 @@
 package model
 
 import (
+	"iter"
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model/modelassem"
 	. "paladin_gearing_go/stats"
@@ -194,7 +195,7 @@ func (sets *SetBonus) CalcBonusSolveAssemAssumeNonNullWithCases(equip *SolvableE
 	return modelassem.CalcBonusSolveAssemAssumeNonNullWithCases(equip, sets.itemToSet, sets.activeFlatBonuses)
 }
 
-func calcBonusFromFunc(getAsId func(SlotEquip) uint32, activeSets []setInfo, itemToSet []uint8) float32 {
+func calcBonusFromFunc(getAsId func(SlotEquip) ItemId, activeSets []setInfo, itemToSet []uint8) float32 {
 	numSets := len(activeSets)
 	switch numSets {
 	case 0:
@@ -369,4 +370,17 @@ func buildSets() []setInfo {
 	sets = append(sets, setInfoMake(Spec_DruidTree, "Vestments of the Haunted Forest", defaultBonus, defaultBonus, []uint32{95240, 95241, 95242, 95243, 95244, 95840, 95841, 95842, 95843, 95844, 96584, 96585, 96586, 96587, 96588}))
 	sets = append(sets, setInfoMake(Spec_DruidTree, "Vestments of the Shattered Vale", defaultBonus, defaultBonus, []uint32{99012, 99013, 99014, 99015, 99016, 99171, 99172, 99173, 99178, 99185, 99429, 99430, 99431, 99435, 99436, 99581, 99582, 99583, 99637, 99638}))
 	return sets
+}
+
+// ########################### utility lookups ###########################
+func (sets *SetBonus) AllSetItemIds() iter.Seq[ItemId] {
+	return func(yield func(ItemId) bool) {
+		for i := range sets.activeSets {
+			for _, id := range sets.activeSets[i].items {
+				if !yield(ItemId(id)) {
+					return
+				}
+			}
+		}
+	}
 }

@@ -13,9 +13,9 @@ import (
 	"strings"
 )
 
-type commonComboOptions map[uint32][]items.FullItem
+type CommonComboOptions map[items.ItemId][]items.FullItem
 
-func (optionsMap *commonComboOptions) TotalCombinationCount() *big.Int {
+func (optionsMap *CommonComboOptions) TotalCombinationCount() *big.Int {
 	valueCount := 0
 	total := big.NewInt(1)
 	for _, slotArray := range *optionsMap {
@@ -31,7 +31,7 @@ func (optionsMap *commonComboOptions) TotalCombinationCount() *big.Int {
 	return total
 }
 
-func (job *MultiSetJob) determineCommon() commonComboOptions {
+func (job *MultiSetJob) determineCommon() CommonComboOptions {
 	commonOptions, seenIn := searchParamOptions(&job.params)
 
 	applyFixedForges(job.fixedForge, &commonOptions, job.printer)
@@ -43,9 +43,9 @@ func (job *MultiSetJob) determineCommon() commonComboOptions {
 	return commonOptions
 }
 
-func searchParamOptions(params *[]MultiSetParam) (commonComboOptions, map[uint32][]string) {
-	commonOptions := make(commonComboOptions)
-	seenIn := make(map[uint32][]string)
+func searchParamOptions(params *[]MultiSetParam) (CommonComboOptions, map[items.ItemId][]string) {
+	commonOptions := make(CommonComboOptions)
+	seenIn := make(map[items.ItemId][]string)
 
 	for paramIndex := range *params {
 		param := &(*params)[paramIndex]
@@ -61,16 +61,16 @@ func searchParamOptions(params *[]MultiSetParam) (commonComboOptions, map[uint32
 	return commonOptions, seenIn
 }
 
-func groupById(itemSeq iter.Seq[*items.FullItem]) map[uint32][]items.FullItem {
-	grouped := make(map[uint32][]items.FullItem)
+func groupById(itemSeq iter.Seq[*items.FullItem]) map[items.ItemId][]items.FullItem {
+	grouped := make(map[items.ItemId][]items.FullItem)
 	for item := range itemSeq {
 		grouped[item.ItemId()] = append(grouped[item.ItemId()], *item)
 	}
 	return grouped
 }
 
-func groupByIdMapped[T any](inputList []T, mapper func(T) iter.Seq[*items.FullItem]) map[uint32][]items.FullItem {
-	grouped := make(map[uint32][]items.FullItem)
+func groupByIdMapped[T any](inputList []T, mapper func(T) iter.Seq[*items.FullItem]) map[items.ItemId][]items.FullItem {
+	grouped := make(map[items.ItemId][]items.FullItem)
 	for i := range inputList {
 		for item := range mapper(inputList[i]) {
 			grouped[item.ItemId()] = append(grouped[item.ItemId()], *item)
@@ -95,7 +95,7 @@ func filterCommonForges(prior []items.FullItem, newOptions []items.FullItem) []i
 	return result
 }
 
-func applyFixedForges(fixedForge map[uint32]stats.ReforgeRecipe, commonOptions *commonComboOptions, printer *util.PrintRecorder) {
+func applyFixedForges(fixedForge map[items.ItemId]stats.ReforgeRecipe, commonOptions *CommonComboOptions, printer *util.PrintRecorder) {
 	for itemId, reforge := range fixedForge {
 		options, ok := (*commonOptions)[itemId]
 		if ok {
@@ -108,7 +108,7 @@ func applyFixedForges(fixedForge map[uint32]stats.ReforgeRecipe, commonOptions *
 	}
 }
 
-func onlyMatchingForge(options []items.FullItem, reforge stats.ReforgeRecipe, itemId uint32) items.FullItem {
+func onlyMatchingForge(options []items.FullItem, reforge stats.ReforgeRecipe, itemId items.ItemId) items.FullItem {
 	for _, item := range options {
 		if item.Reforge == reforge {
 			return item
@@ -117,7 +117,7 @@ func onlyMatchingForge(options []items.FullItem, reforge stats.ReforgeRecipe, it
 	panic("fixed forge selection not available for item " + strconv.Itoa(int(itemId)))
 }
 
-func removeSingleSetItems(seenIn map[uint32][]string, commonOptions *commonComboOptions, fixedForge map[uint32]stats.ReforgeRecipe) {
+func removeSingleSetItems(seenIn map[items.ItemId][]string, commonOptions *CommonComboOptions, fixedForge map[items.ItemId]stats.ReforgeRecipe) {
 	for itemId, whereSeen := range seenIn {
 		_, isFixed := fixedForge[itemId]
 		if isFixed {
@@ -130,7 +130,7 @@ func removeSingleSetItems(seenIn map[uint32][]string, commonOptions *commonCombo
 	}
 }
 
-func printCommons(seenIn map[uint32][]string, commonOptions commonComboOptions, printer *util.PrintRecorder) {
+func printCommons(seenIn map[items.ItemId][]string, commonOptions CommonComboOptions, printer *util.PrintRecorder) {
 	for itemId, options := range commonOptions {
 		if len(options) == 0 {
 			log.Panicf("no common forge for %d", itemId)
@@ -144,8 +144,23 @@ func printCommons(seenIn map[uint32][]string, commonOptions commonComboOptions, 
 	}
 }
 
-func (job *MultiSetJob) revisedComboActuallyUsed(outputs []solver.SolveOutput, initialCombo commonCombo, printer *util.PrintRecorder) commonCombo {
-	grouped := make(map[uint32][]*items.FullItem)
+func printChosenCombo(combo CommonCombo, printer *util.PrintRecorder) {
+	for _, item := range combo {
+		printer.Printf("COMMON %s\n", item.CreateString)
+	}
+	for _, item := range combo {
+		if item.Reforge.IsEmpty() {
+			printer.Printf("common[%d] = stats.ReforgeRecipe_empty\n", item.ItemId())
+		} else {
+			printer.Printf("common[%d] = stats.ReforgeRecipe{From: stats.%s, To: stats.%s}\n", item.ItemId(), item.Reforge.From.EnumName(), item.Reforge.To.EnumName())
+		}
+	}
+}
+
+func (job *MultiSetJob) revisedComboActuallyUsed(outputs []solver.SolveOutput, initialCombo CommonCombo, printer *util.PrintRecorder) CommonCombo {
+	printer.Printf("REVISED COMMON")
+
+	grouped := make(map[items.ItemId][]*items.FullItem)
 	for index := range outputs {
 		for item := range outputs[index].FullSet.Items().AllItemSeq() {
 			grouped[item.ItemId()] = append(grouped[item.ItemId()], item)
@@ -164,5 +179,9 @@ func (job *MultiSetJob) revisedComboActuallyUsed(outputs []solver.SolveOutput, i
 			delete(revisedCombo, itemId)
 		}
 	}
+
+	// TODO consider prining all current items, not just those in common
+	printChosenCombo(revisedCombo, printer)
+
 	return revisedCombo
 }

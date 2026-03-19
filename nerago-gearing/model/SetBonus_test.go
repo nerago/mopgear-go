@@ -234,6 +234,6 @@ func randChoice(slice []uint32) uint32 {
 }
 
 func makeItemForBonus(id uint32) *SolvableItem {
-	item := SolvableItem_ForTest(id, randStatBlock())
+	item := SolvableItem_ForTest(ItemId(id), randStatBlock())
 	return &item
 }

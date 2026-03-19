@@ -20,7 +20,7 @@ func FullItem_FromWowSim(ref ItemRef, slot SlotItem, baseName string, statBase S
 		statBase}
 }
 
-func FullItem_ForTest(itemId uint32, slot SlotItem, statBase StatBlock) FullItem {
+func FullItem_ForTest(itemId ItemId, slot SlotItem, statBase StatBlock) FullItem {
 	return FullItem{
 		fullItem_common{ItemRef{itemId, 400, 400},
 			slot, slot.Name(), Armor_None, statBase.PrimaryStat(),

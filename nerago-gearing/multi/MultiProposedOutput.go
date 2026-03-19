@@ -13,7 +13,7 @@ type MultiProposedOutput struct {
 	Id             string
 	TotalRatingSum uint64
 	Outputs        []solver.SolveOutput
-	Combo          commonCombo
+	Combo          CommonCombo
 }
 
 func (proposed *MultiProposedOutput) Equals(other *MultiProposedOutput) bool {
@@ -33,8 +33,8 @@ func makeUUID() string {
 	return uuid.NewString()
 }
 
-func (job *MultiSetJob) makeProposedChannel(comboChannel <-chan commonCombo) <-chan MultiProposedOutput {
-	return util.Channel_TransformEach_Multi(solveThreadCount, comboChannel, func(combo commonCombo, outputChannel chan<- MultiProposedOutput) {
+func (job *MultiSetJob) makeProposedChannel(comboChannel <-chan CommonCombo) <-chan MultiProposedOutput {
+	return util.Channel_TransformEach_Multi(solveThreadCount, comboChannel, func(combo CommonCombo, outputChannel chan<- MultiProposedOutput) {
 		proposed := job.subSolveCombo(combo)
 		if proposed != nil {
 			outputChannel <- *proposed
@@ -42,7 +42,7 @@ func (job *MultiSetJob) makeProposedChannel(comboChannel <-chan commonCombo) <-c
 	})
 }
 
-func (job *MultiSetJob) subSolveCombo(combo commonCombo) *MultiProposedOutput {
+func (job *MultiSetJob) subSolveCombo(combo CommonCombo) *MultiProposedOutput {
 	var totalRatingSum uint64
 	output := make([]solver.SolveOutput, len(job.params))
 
@@ -82,7 +82,7 @@ func (job *MultiSetJob) subSolveCombo(combo commonCombo) *MultiProposedOutput {
 
 }
 
-func (job *MultiSetJob) firstPassSolveCombo(combo commonCombo, param *MultiSetParam) solver.SolveOutput {
+func (job *MultiSetJob) firstPassSolveCombo(combo CommonCombo, param *MultiSetParam) solver.SolveOutput {
 	options := buildOptionsGivenCombo(param.itemOptions, combo)
 	return solver.Solver(solver.SolveInput{
 		ItemOptions:         &options,
@@ -92,7 +92,7 @@ func (job *MultiSetJob) firstPassSolveCombo(combo commonCombo, param *MultiSetPa
 		SolveSize:           solver.SolveSize_PerItem})
 }
 
-func (job *MultiSetJob) secondPassSolveCombo(baseCombo commonCombo, otherOutputList []solver.SolveOutput, param *MultiSetParam) solver.SolveOutput {
+func (job *MultiSetJob) secondPassSolveCombo(baseCombo CommonCombo, otherOutputList []solver.SolveOutput, param *MultiSetParam) solver.SolveOutput {
 	// extend combo limitations further based on items chosen for other sets
 	restrictedCombo := maps.Clone(baseCombo)
 	for _, otherOutput := range otherOutputList {
@@ -112,16 +112,16 @@ func (job *MultiSetJob) secondPassSolveCombo(baseCombo commonCombo, otherOutputL
 		SolveSize:           solver.SolveSize_PerItem})
 }
 
-func buildOptionsGivenCombo(allOptions items.FullOptionsMap, combo commonCombo) items.FullOptionsMap {
+func buildOptionsGivenCombo(allOptions items.FullOptionsMap, combo CommonCombo) items.FullOptionsMap {
 	selectedOptions := items.FullOptionsMap{}
-	choicesAdded := make(map[uint32]bool)
+	choicesAdded := make(map[items.ItemId]bool)
 	for slot, slotOptions := range allOptions {
 		selectedOptions[slot] = buildOptionsGivenCombo_Slot(slotOptions, combo, choicesAdded)
 	}
 	return selectedOptions
 }
 
-func buildOptionsGivenCombo_Slot(slotOptions []items.FullItem, combo commonCombo, choicesAdded map[uint32]bool) []items.FullItem {
+func buildOptionsGivenCombo_Slot(slotOptions []items.FullItem, combo CommonCombo, choicesAdded map[items.ItemId]bool) []items.FullItem {
 	selectedItems := make([]items.FullItem, 0, len(slotOptions))
 	clear(choicesAdded)
 	for i := range slotOptions {

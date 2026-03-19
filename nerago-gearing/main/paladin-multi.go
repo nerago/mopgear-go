@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/multi"
+	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/util"
 )
 
@@ -19,7 +20,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		RequestRatingPercent: 0.02,
 		PhasedAcceptable:     false,
 		ExtraUpgradeLevel:    2}
-	ret.AddExtraItems([]uint32{
+	ret.AddExtraItems([]items.ItemId{
 		// 87026, // heroic peacock cloak
 		94942, // hydra bloodcloak
 		96769, // doomcloak
@@ -69,7 +70,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		RequestRatingPercent: 0.45,
 		PhasedAcceptable:     false,
 		ExtraUpgradeLevel:    2}
-	protDps.AddExtraItems([]uint32{
+	protDps.AddExtraItems([]items.ItemId{
 		86957, // heroic bladed tempest ring
 		95140, // shado assault band
 		// 86946, // ruby signet heroic
@@ -122,7 +123,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		RequestRatingPercent: 0.53,
 		PhasedAcceptable:     false,
 		ExtraUpgradeLevel:    2}
-	protMitigation.AddExtraItems([]uint32{
+	protMitigation.AddExtraItems([]items.ItemId{
 		86979, // heroic impaling treads
 		// 87015, // heroic clawfeet
 
@@ -183,7 +184,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.SuggestCulls(100, 2)
 	// job.SuggestCulls(500, 10)
 	//job.SuggestCulls(5000, 10)
-	job.SuggestCulls(10000, 100)
+	// job.SuggestCulls(10000, 100)
 
-	// job.FindTopAndPassToSim(150000, 50, simulate.RunSize_Medium)
+	job.FindTopAndPassToSim(150000, 50, simulate.RunSize_Medium)
 }

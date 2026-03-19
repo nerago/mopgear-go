@@ -37,7 +37,7 @@ func MakeTestExpectedBest() items.SolvableEquipMap {
 
 func testItem(id, statValue uint32) items.SolvableItem {
 	block := stats.StatBlock_of(stats.Stat_Crit, statValue)
-	return items.SolvableItem_ForTest(id, block)
+	return items.SolvableItem_ForTest(items.ItemId(id), block)
 }
 
 func testItemPointer(id, statValue uint32) *items.SolvableItem {
@@ -72,7 +72,7 @@ func VerifyRecord(t *testing.T, peekRecord *PeekTestRecorder, options *items.Sol
 }
 
 func verifyAllItemsTried(t *testing.T, peekRecord *PeekTestRecorder, options *items.SolvableOptionsMap) {
-	seenCounts := make(map[uint32]int)
+	seenCounts := make(map[items.ItemId]int)
 	for _, itemSet := range peekRecord.Seen {
 		for item := range itemSet.Items().AllItemSeq() {
 			seenCounts[item.ItemId()]++

@@ -7,7 +7,7 @@ import (
 // /////////////////////////////////////////////////////////////
 type SolvableItem struct {
 	total  StatBlock
-	itemId uint32
+	itemId ItemId
 }
 
 func SolvableItem_Of(item FullItem) SolvableItem {
@@ -16,13 +16,13 @@ func SolvableItem_Of(item FullItem) SolvableItem {
 		total:  item.total}
 }
 
-func SolvableItem_ForTest(itemid uint32, block StatBlock) SolvableItem {
+func SolvableItem_ForTest(itemid ItemId, block StatBlock) SolvableItem {
 	return SolvableItem{
 		itemId: itemid,
 		total:  block}
 }
 
-func (item *SolvableItem) ItemId() uint32 {
+func (item *SolvableItem) ItemId() ItemId {
 	return item.itemId
 }
 

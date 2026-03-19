@@ -10,7 +10,7 @@ func (equipMap *FullEquipMap) Get(slot SlotEquip) *FullItem {
 	return equipMap[slot]
 }
 
-func (equipMap *FullEquipMap) GetAsId(slot SlotEquip) uint32 {
+func (equipMap *FullEquipMap) GetAsId(slot SlotEquip) ItemId {
 	item := equipMap[slot]
 	if item != nil {
 		return item.Ref.ItemId
@@ -88,7 +88,7 @@ func (equipMap *SolvableEquipMap) Get(slot SlotEquip) *SolvableItem {
 	return equipMap[slot]
 }
 
-func (equipMap *SolvableEquipMap) GetAsId(slot SlotEquip) uint32 {
+func (equipMap *SolvableEquipMap) GetAsId(slot SlotEquip) ItemId {
 	item := equipMap[slot]
 	if item != nil {
 		return item.itemId

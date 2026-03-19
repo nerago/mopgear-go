@@ -5,8 +5,10 @@ const LOW_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL = 4
 const HIGH_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL = 3
 const MAX_UPGRADE_LEVEL = 2
 
+type ItemId uint32
+
 type ItemRef struct {
-	ItemId        uint32
+	ItemId        ItemId
 	ItemLevel     uint16
 	ItemLevelBase uint16
 }

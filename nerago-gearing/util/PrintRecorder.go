@@ -5,6 +5,7 @@ import (
 	"os"
 	"paladin_gearing_go/files"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -12,6 +13,7 @@ type PrintRecorder struct {
 	holdOutput bool
 	lines      []string
 	writer     *os.File
+	mutex      sync.Mutex
 }
 
 func PrintRecorder_CreateLogFile() *PrintRecorder {
@@ -21,11 +23,11 @@ func PrintRecorder_CreateLogFile() *PrintRecorder {
 	if err != nil {
 		panic("error creating log")
 	}
-	return &PrintRecorder{false, nil, file}
+	return &PrintRecorder{false, nil, file, sync.Mutex{}}
 }
 
 func PrintRecorder_HoldAll() *PrintRecorder {
-	return &PrintRecorder{true, nil, nil}
+	return &PrintRecorder{true, nil, nil, sync.Mutex{}}
 }
 
 func (print *PrintRecorder) Println0() {
@@ -33,6 +35,8 @@ func (print *PrintRecorder) Println0() {
 }
 
 func (print *PrintRecorder) Println(str string) {
+	print.mutex.Lock()
+
 	if print.holdOutput {
 		print.lines = append(print.lines, str)
 	} else {
@@ -40,9 +44,13 @@ func (print *PrintRecorder) Println(str string) {
 		print.writer.WriteString("\n")
 		fmt.Println(str)
 	}
+	
+	print.mutex.Unlock()
 }
 
 func (print *PrintRecorder) Printf(format string, a ...any) {
+	print.mutex.Lock()
+
 	str := fmt.Sprintf(format, a...)
 	if print.holdOutput {
 		print.lines = append(print.lines, str)
@@ -50,12 +58,16 @@ func (print *PrintRecorder) Printf(format string, a ...any) {
 		print.writer.WriteString(str)
 		fmt.Print(str)
 	}
+
+	print.mutex.Unlock()
 }
 
 func (print *PrintRecorder) AppendOther(other *PrintRecorder) {
 	if !other.holdOutput {
 		panic("can't append printer that wasn't holding output")
 	}
+
+	print.mutex.Lock()
 
 	if print.holdOutput {
 		print.lines = append(print.lines, other.lines...)
@@ -71,9 +83,13 @@ func (print *PrintRecorder) AppendOther(other *PrintRecorder) {
 			}
 		}
 	}
+
+	print.mutex.Unlock()
 }
 
 func (print *PrintRecorder) Close() {
+	print.mutex.Lock()
+
 	print.writer.Close()
 
 	// delete if empty
@@ -84,4 +100,6 @@ func (print *PrintRecorder) Close() {
 			os.Remove(logName)
 		}
 	}
+
+	print.mutex.Unlock()
 }

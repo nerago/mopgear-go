@@ -40,7 +40,7 @@ func makeSet() *items.SolvableItemSet {
 
 func makeItem() *items.SolvableItem {
 	id := rand.Uint32N(10000)
-	item := items.SolvableItem_ForTest(id, randStatBlock())
+	item := items.SolvableItem_ForTest(items.ItemId(id), randStatBlock())
 	return &item
 }
 

@@ -11,9 +11,9 @@ import (
 const additionalSetEach uint64 = 64
 const additionalThreads uint64 = 2
 
-type commonCombo map[uint32]items.FullItem
+type CommonCombo map[items.ItemId]items.FullItem
 
-func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targetCount uint64, trackProgress *util.TrackProgress) <-chan commonCombo {
+func (job *MultiSetJob) makeCommonChannel(commonOptions CommonComboOptions, targetCount uint64, trackProgress *util.TrackProgress) <-chan CommonCombo {
 	counters := make([]uint64, generateThreadCount+additionalThreads)
 	additionalCount := additionalSetEach * additionalThreads
 
@@ -29,7 +29,7 @@ func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targ
 	trackProgress.RunFromArray(&counters, targetCount)
 
 	var waitGroup sync.WaitGroup
-	comboChannel := make(chan commonCombo)
+	comboChannel := make(chan CommonCombo)
 	waitGroup.Go(func() { makeBaselineWorker(&job.params, commonOptions, &counters[0], comboChannel) })
 	waitGroup.Go(func() { makeEquippedWorker(&job.params, commonOptions, &counters[1], comboChannel) })
 
@@ -43,12 +43,12 @@ func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targ
 	return comboChannel
 }
 
-func makeBaselineWorker(params *[]MultiSetParam, commonOptions commonComboOptions, doneCounter *uint64, comboChannel chan<- commonCombo) {
+func makeBaselineWorker(params *[]MultiSetParam, commonOptions CommonComboOptions, doneCounter *uint64, comboChannel chan<- CommonCombo) {
 	rng := rand.New(rand.NewSource(0xBA5E))
 	for paramIndex := range *params {
 		param := &(*params)[paramIndex]
 		for range additionalSetEach {
-			combo := make(commonCombo)
+			combo := make(CommonCombo)
 
 			// copy what items are in baseline set
 			for item := range param.baselineResult.FullSet.Items().AllItemSeq() {
@@ -63,12 +63,12 @@ func makeBaselineWorker(params *[]MultiSetParam, commonOptions commonComboOption
 	}
 }
 
-func makeEquippedWorker(params *[]MultiSetParam, commonOptions commonComboOptions, doneCounter *uint64, comboChannel chan<- commonCombo) {
+func makeEquippedWorker(params *[]MultiSetParam, commonOptions CommonComboOptions, doneCounter *uint64, comboChannel chan<- CommonCombo) {
 	rng := rand.New(rand.NewSource(0xE819))
 	for paramIndex := range *params {
 		param := &(*params)[paramIndex]
 		for range additionalSetEach {
-			combo := make(commonCombo)
+			combo := make(CommonCombo)
 
 			// copy what items are in equipped set
 			for item := range param.exactEquippedGear.AllItemSeq() {
@@ -83,7 +83,7 @@ func makeEquippedWorker(params *[]MultiSetParam, commonOptions commonComboOption
 	}
 }
 
-func fillOutRemainingOptions(commonOptions commonComboOptions, combo commonCombo, rng *rand.Rand) {
+func fillOutRemainingOptions(commonOptions CommonComboOptions, combo CommonCombo, rng *rand.Rand) {
 	for itemId, options := range commonOptions {
 		_, alreadySet := combo[itemId]
 		if !alreadySet {
@@ -93,7 +93,7 @@ func fillOutRemainingOptions(commonOptions commonComboOptions, combo commonCombo
 	}
 }
 
-func combinationCount(options commonComboOptions) *big.Int {
+func combinationCount(options CommonComboOptions) *big.Int {
 	valueCount := 0
 	total := big.NewInt(1)
 	for _, slotArray := range options {

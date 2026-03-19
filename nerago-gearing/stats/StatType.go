@@ -48,3 +48,34 @@ func (stat StatType) Name() string {
 		panic("unknown stat")
 	}
 }
+
+func (stat StatType) EnumName() string {
+	switch stat {
+	case Stat_Strength:
+		return "Stat_Strength"
+	case Stat_Agility:
+		return "Stat_Agility"
+	case Stat_Stamina:
+		return "Stat_Stamina"
+	case Stat_Intellect:
+		return "Stat_Intellect"
+	case Stat_Spirit:
+		return "Stat_Spirit"
+	case Stat_Hit:
+		return "Stat_Hit"
+	case Stat_Crit:
+		return "Stat_Crit"
+	case Stat_Haste:
+		return "Stat_Haste"
+	case Stat_Expertise:
+		return "Stat_Expertise"
+	case Stat_Dodge:
+		return "Stat_Dodge"
+	case Stat_Parry:
+		return "Stat_Parry"
+	case Stat_Mastery:
+		return "Stat_Mastery"
+	default:
+		panic("unknown stat")
+	}
+}
