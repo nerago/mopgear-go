@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -19,6 +20,8 @@ type TrackProgress struct {
 
 	nestedChildList    []*TrackProgress
 	nestedProgressFunc func() float64
+
+	mutex sync.RWMutex
 }
 
 func TrackProgress_Start() *TrackProgress {
@@ -34,23 +37,34 @@ func TrackProgress_Nop() *TrackProgress {
 }
 
 func (track *TrackProgress) MakeNested() *TrackProgress {
+	track.mutex.Lock()
+
 	nested := new(TrackProgress)
 	nested.nested = true
 	track.nestedChildList = append(track.nestedChildList, nested)
+
+	track.mutex.Unlock()
 	return nested
 }
 
 func (track *TrackProgress) Stop() {
+	track.mutex.Lock()
+
 	if track.active {
 		track.active = false
 		track.cancel()
 	} else if track.nested {
 		track.nested = false
+		track.nestedChildList = nil
 		track.nestedProgressFunc = func() float64 { return 1.0 }
 	}
+
+	track.mutex.Unlock()
 }
 
 func (track *TrackProgress) run(getProgress func() (float64, uint64)) {
+	track.mutex.Lock()
+
 	if track.active {
 		go func() {
 			for {
@@ -72,9 +86,13 @@ func (track *TrackProgress) run(getProgress func() (float64, uint64)) {
 			return percent
 		}
 	}
+
+	track.mutex.Unlock()
 }
 
 func (track *TrackProgress) RunFromBigInt(current *big.Int, targetCount *big.Int) {
+	track.mutex.Lock()
+
 	if track.active {
 		go func() {
 			for {
@@ -100,6 +118,8 @@ func (track *TrackProgress) RunFromBigInt(current *big.Int, targetCount *big.Int
 			return percent
 		}
 	}
+
+	track.mutex.Unlock()
 }
 
 func (track *TrackProgress) RunFromInt(current *uint64, targetCount uint64) {
@@ -122,6 +142,8 @@ func (track *TrackProgress) RunFromArray(array *[]uint64, targetCount uint64) {
 }
 
 func (track *TrackProgress) RunOuterTracking(expectedChildCount int) {
+	track.mutex.Lock()
+
 	if track.active {
 		track.nestedChildList = make([]*TrackProgress, 0, expectedChildCount)
 		go func() {
@@ -144,9 +166,13 @@ func (track *TrackProgress) RunOuterTracking(expectedChildCount int) {
 			return track.sumNestedProgress(expectedChildCount)
 		}
 	}
+	
+	track.mutex.Unlock()
 }
 
 func (track *TrackProgress) sumNestedProgress(expectedChildCount int) float64 {
+	track.mutex.RLock()
+
 	var overallPercent float64 = 0
 	for _, nested := range track.nestedChildList {
 		if nested != nil {
@@ -157,6 +183,9 @@ func (track *TrackProgress) sumNestedProgress(expectedChildCount int) float64 {
 			}
 		}
 	}
+
+	track.mutex.RUnlock()
+
 	return overallPercent
 }
 

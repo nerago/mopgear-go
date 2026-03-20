@@ -95,9 +95,9 @@ func (param *MultiSetParam) extraFromBags(itemId items.ItemId) bool {
 			// bags file doesn't have upgrade steps
 			equipped.UpgradeStep = param.ExtraUpgradeLevel
 
-			options, baseItem := setup.OptionsSetup_FromEquipped_Single(equipped, &param.Model, param.job.printer)
-			param.itemOptions.AddSeveralOptions(baseItem.Slot, options)
-			param.job.printer.Printf("OPTION from bags %s\n", baseItem.CreateString())
+			options, example := setup.OptionsSetup_Single_FromEquipped(equipped, &param.Model, param.job.printer)
+			param.itemOptions.AddSeveralOptions(example.Slot, options)
+			param.job.printer.Printf("OPTION from bags %s\n", example.CreateString())
 			return true
 		}
 	}
@@ -105,9 +105,9 @@ func (param *MultiSetParam) extraFromBags(itemId items.ItemId) bool {
 }
 
 func (param *MultiSetParam) extraLoadAndGenerate(itemId items.ItemId) {
-	options, baseItem := setup.OptionsSetup_FromIdOnlyUseAllDefaults(itemId, param.ExtraUpgradeLevel, &param.Model, param.job.printer)
-	param.itemOptions.AddSeveralOptions(baseItem.Slot, options)
-	param.job.printer.Printf("OPTION %s\n", baseItem.CreateString())
+	options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, param.ExtraUpgradeLevel, &param.Model, param.job.printer)
+	param.itemOptions.AddSeveralOptions(example.Slot, options)
+	param.job.printer.Printf("OPTION %s\n", example.CreateString())
 }
 
 func (param *MultiSetParam) restrictFixed() {

@@ -18,23 +18,22 @@ func OptionsSetup_FromGearFile(filename string, model *model.Model, printer *uti
 func OptionsSetup_FromEquipped(equipped []loaders.EquippedItem, model *model.Model, printer *util.PrintRecorder) items.FullOptionsMap {
 	optionMap := items.FullOptionsMap{}
 	for _, equipItem := range equipped {
-		optionList, baseItem := OptionsSetup_FromEquipped_Single(equipItem, model, printer)
+		optionList, baseItem := OptionsSetup_Single_FromEquipped(equipItem, model, printer)
 		optionMap.FillSlot_ExpectedEmpty(baseItem.Slot, optionList)
 	}
 	return optionMap
 }
 
-func OptionsSetup_FromEquipped_Single(equipItem loaders.EquippedItem, model *model.Model, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
+func OptionsSetup_Single_FromEquipped(equipItem loaders.EquippedItem, model *model.Model, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
 	item := loadItemBasic(equipItem.ItemId, equipItem.UpgradeStep, printer)
 	addDetailFromEquip(&item, equipItem)
 	printer.Println(item.CreateString())
 	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
 }
 
-func OptionsSetup_FromIdOnlyUseAllDefaults(itemId items.ItemId, upgradeLevel int16, model *model.Model, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
+func OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId items.ItemId, upgradeLevel int16, model *model.Model, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
 	item := loadItemBasic(itemId, upgradeLevel, printer)
 	addDetailUsingDefaults(&item, model)
-	printer.Println(item.CreateString())
 	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
 }
 
@@ -56,12 +55,7 @@ func OptionsSetup_ExactEquippedOnly(equipped []loaders.EquippedItem, model *mode
 }
 
 func loadItemBasic(itemId items.ItemId, upgradeLevel int16, printer *util.PrintRecorder) items.FullItem {
-	storedItem := db.WowSimDB_ByIdAndUpgrade(itemId, upgradeLevel)
-	if storedItem == nil && upgradeLevel > 0 {
-		storedItem = db.WowSimDB_ByIdAndUpgrade(itemId, 0)
-		printer.Printf("NOT FOUND at specified upgrade %d = %s\n", upgradeLevel, storedItem.CreateString())
-	}
-	return *storedItem
+	return *db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemId, upgradeLevel, printer)
 }
 
 var itemLevelToRandomAmount = makeItemLevelToRandomAmount()

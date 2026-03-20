@@ -3,6 +3,7 @@ package items
 import (
 	"iter"
 	"math/big"
+	"slices"
 )
 
 type FullOptionsMap [16][]FullItem
@@ -21,6 +22,15 @@ func (optionsMap *FullOptionsMap) IncludesItemId(itemId ItemId) bool {
 			if item.ItemId() == itemId {
 				return true
 			}
+		}
+	}
+	return false
+}
+
+func (optionsMap *FullOptionsMap) IncludesItemIdInSlot(itemId ItemId, slot SlotEquip) bool {
+	for _, item := range optionsMap[slot] {
+		if item.ItemId() == itemId {
+			return true
 		}
 	}
 	return false
@@ -194,6 +204,14 @@ func (equipMap *FullEquipMap) FillSlot_ExpectedEmpty(slotItem SlotItem, item *Fu
 	} else {
 		panic("duplicate item")
 	}
+}
+
+func (optionsMap *FullOptionsMap) Clone() FullOptionsMap {
+	result := FullOptionsMap{}
+	for slot, content := range optionsMap {
+		result[slot] = slices.Clone(content)
+	}
+	return result
 }
 
 type SolvableOptionsMap [16][]SolvableItem

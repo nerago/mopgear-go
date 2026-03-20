@@ -88,6 +88,45 @@ const (
 	Equip_Iter_Last  = Equip_Offhand
 )
 
+func (slot SlotEquip) Name() string {
+	switch slot {
+	case Equip_Back:
+		return "Back"
+	case Equip_Belt:
+		return "Belt"
+	case Equip_Chest:
+		return "Chest"
+	case Equip_Foot:
+		return "Foot"
+	case Equip_Hand:
+		return "Hand"
+	case Equip_Head:
+		return "Head"
+	case Equip_Leg:
+		return "Leg"
+	case Equip_Neck:
+		return "Neck"
+	case Equip_Offhand:
+		return "Offhand"
+	case Equip_Ring1:
+		return "Ring1"
+	case Equip_Ring2:
+		return "Ring2"
+	case Equip_Shoulder:
+		return "Shoulder"
+	case Equip_Trinket1:
+		return "Trinket1"
+	case Equip_Trinket2:
+		return "Trinket2"
+	case Equip_Weapon:
+		return "Weapon"
+	case Equip_Wrist:
+		return "Wrist"
+	default:
+		panic("unexpected common.SlotItem")
+	}
+}
+
 func (slot SlotItem) ToSlotEquipOptions() []SlotEquip {
 	switch slot {
 	case Item_Head:

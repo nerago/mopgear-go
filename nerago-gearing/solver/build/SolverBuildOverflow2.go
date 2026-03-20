@@ -65,6 +65,7 @@ func makeSetFromArraysAndAdvance2(slotOptions SolvableOptionsMap, slotIndexes *[
 			index++
 			if index < slotSize {
 				slotIndexes[slot] = index
+				slot++
 				break
 			} else {
 				slotIndexes[slot] = 0

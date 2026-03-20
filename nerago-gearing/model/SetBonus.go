@@ -5,6 +5,7 @@ import (
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model/modelassem"
 	. "paladin_gearing_go/stats"
+	"slices"
 )
 
 type SetBonus struct {
@@ -383,4 +384,13 @@ func (sets *SetBonus) AllSetItemIds() iter.Seq[ItemId] {
 			}
 		}
 	}
+}
+
+func SetBonus_IsAnyKnownItem(itemId ItemId) bool {
+	for _, info := range g_setData {
+		if slices.Contains(info.items, uint32(itemId)) {
+			return true
+		}
+	}
+	return false
 }

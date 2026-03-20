@@ -64,9 +64,10 @@ func Solver(input SolveInput) SolveOutput {
 	}
 
 	solvedSet := solvedResult.GetOrPanic()
+	solvedSet.DebugValidate()
 
-	// TODO bury tweaker into find best checks
 	solvedSet = tools.Tweaker_Run(&solvedSet, &solveOptions, input.Model)
+	solvedSet.DebugValidate()
 
 	return SolveOutput{
 		true,
@@ -101,15 +102,21 @@ func (output *SolveOutput) Report(printer *util.PrintRecorder) {
 		fullSet := output.FullSet
 		rating := output.ResultRating
 		printer.Println(output.OutputId)
-		printer.Printf("SET OUTPUT rating %d\n", rating)
-		// printer.Printf("BONUS %.2f\n", float64(output.Input.Model.SetBonus.CalcAndMultiply(&fullSet.Items, 1000))/1000.0)
-		printer.Printf("BONUS %.2f\n", output.Input.Model.SetBonus.CalcBonusFull(fullSet.Items()))
-		fullSet.PrintStats(printer)
-		printEquipMap(fullSet.Items(), printer)
-		simulate.WowSimJson_Write(output.FullSet.Items(), output.Input.Model, printer)
+		reportSet(printer, fullSet, rating, output.Input.Model)
 	} else {
 		printer.Printf("SET SOLVE FAILED\n")
 	}
+}
+
+func reportSet(printer *util.PrintRecorder, fullSet items.FullItemSet, rating uint64, model *model.Model) {
+	printer.Printf("SET OUTPUT rating %d\n", rating)
+	printer.Printf("BONUS %.2f\n", model.SetBonus.CalcBonusFull(fullSet.Items()))
+	fullSet.PrintStats(printer)
+	printEquipMap(fullSet.Items(), printer)
+
+	simulate.WowSimJson_Write(fullSet.Items(), model, printer)
+
+	fullSet.DebugValidate()
 }
 
 func printEquipMap(fullEquipMap *items.FullEquipMap, printer *util.PrintRecorder) {

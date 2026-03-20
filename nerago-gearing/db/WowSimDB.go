@@ -9,6 +9,7 @@ import (
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
 	. "paladin_gearing_go/stats"
+	"paladin_gearing_go/util"
 	"strconv"
 )
 
@@ -47,6 +48,15 @@ func WowSimDB_ByIdAndUpgrade(itemId items.ItemId, upgradeLevel int16) *FullItem 
 	}
 
 	return nil
+}
+
+func WowSimDB_ByIdAndUpgrade_AllowFallback(itemId items.ItemId, upgradeLevel int16, printer *util.PrintRecorder) *FullItem {
+	storedItem := WowSimDB_ByIdAndUpgrade(itemId, upgradeLevel)
+	if storedItem == nil && upgradeLevel > 0 {
+		storedItem = WowSimDB_ByIdAndUpgrade(itemId, 0)
+		printer.Printf("NOT FOUND at specified upgrade %d = %s\n", upgradeLevel, storedItem.CreateString())
+	}
+	return storedItem
 }
 
 func WowSimDB_AllItems() iter.Seq[*FullItem] {

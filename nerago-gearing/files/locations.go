@@ -4,6 +4,7 @@ import "paladin_gearing_go/stats"
 
 const (
 	WowSimDB = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\src\main\resources\wowsimdb.json`
+	BossLookup = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\src\main\resources\bosslookup.tsv`
 
 	LogOutputPath = `C:\Users\nicholas\Dropbox\prog\paladin_gearing_go\output\`
 	ProfileDir    = `C:\Users\nicholas\Dropbox\prog\paladin_gearing_go\`
