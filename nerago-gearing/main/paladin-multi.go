@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/multi"
+	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/util"
 )
 
@@ -98,7 +99,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		// 96667, // prot tier15 leg heroic
 		// 96668, // prot tier15 shoulder heroic
-        // 95290, // prot tier15 chest normal
+		// 95290, // prot tier15 chest normal
 
 		95142, // striker's battletags
 		95205, // terra-cotta neck
@@ -152,7 +153,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		// 95914, // ret tier15 shoulder celestial
 
 		95291, // prot tier15 hand normal
-        95290, // prot tier15 chest normal
+		95290, // prot tier15 chest normal
 		95292, // prot tier15 head normal
 		96667, // prot tier15 leg heroic
 		96668, // prot tier15 shoulder heroic
@@ -185,7 +186,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.SuggestCulls(500, 10)
 	//job.SuggestCulls(5000, 10)
 	// job.SuggestCulls(10000, 100)
-	job.SuggestCulls(25000, 150)
+	// job.SuggestCulls(25000, 150)
 
-	// job.FindTopAndPassToSim(150000, 50, simulate.RunSize_Medium)
+	// job.FindTopAndPassToSim(50, 2, simulate.RunSize_Medium)
+	job.FindTopAndPassToSim(150000, 50, simulate.RunSize_Medium)
 }

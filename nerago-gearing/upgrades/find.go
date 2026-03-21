@@ -27,11 +27,11 @@ const (
 type upgradeItemTask struct {
 	item *items.FullItem
 	slot items.SlotEquip
+	mode upgradeMode
 }
 
 type upgradeItemResult struct {
-	item   *items.FullItem
-	slot   items.SlotEquip
+	upgradeItemTask
 	factor float64
 	boss   string
 }
@@ -83,23 +83,23 @@ func FindUpgrades_AllRaid_Run() {
 	printer := util.PrintRecorder_CreateLogFile()
 	printer.Println("[[[[[[[[[[[[[[[[[[[[ PALLY PROT DPS normal UPGRADES ]]]]]]]]]]]]]]]]]]]]")
 	optionsDps := setup.OptionsSetup_FromGearFile(files.GearFileProtDps, &modelDps, printer)
-	outputMap[Upgrade_Dps_Normal] = findUpgrade(&optionsDps, upgradeNormal, &modelDps, printer, tracker.MakeNested())
+	outputMap[Upgrade_Dps_Normal] = findUpgrade(&optionsDps, upgradeNormal, &modelDps, printer, tracker.MakeNested(), Upgrade_Dps_Normal)
 	printer.Close()
 
 	printer = util.PrintRecorder_CreateLogFile()
 	printer.Println("[[[[[[[[[[[[[[[[[[[[ PALLY PROT DPS heroic UPGRADES ]]]]]]]]]]]]]]]]]]]]")
-	outputMap[Upgrade_Dps_Heroic] = findUpgrade(&optionsDps, upgradeHeroic, &modelDps, printer, tracker.MakeNested())
+	outputMap[Upgrade_Dps_Heroic] = findUpgrade(&optionsDps, upgradeHeroic, &modelDps, printer, tracker.MakeNested(), Upgrade_Dps_Heroic)
 	printer.Close()
 
 	printer = util.PrintRecorder_CreateLogFile()
 	printer.Println("[[[[[[[[[[[[[[[[[[[[ PALLY PROT MITIGATION normal UPGRADES ]]]]]]]]]]]]]]]]]]]]")
 	optionsMitigation := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigation, &modelMitigation, printer)
-	outputMap[Upgrade_Miti_Normal] = findUpgrade(&optionsMitigation, upgradeNormal, &modelDps, printer, tracker.MakeNested())
+	outputMap[Upgrade_Miti_Normal] = findUpgrade(&optionsMitigation, upgradeNormal, &modelDps, printer, tracker.MakeNested(), Upgrade_Miti_Normal)
 	printer.Close()
 
 	printer = util.PrintRecorder_CreateLogFile()
 	printer.Println("[[[[[[[[[[[[[[[[[[[[ PALLY PROT MITIGATION heroic UPGRADES ]]]]]]]]]]]]]]]]]]]]")
-	outputMap[Upgrade_Miti_Heroic] = findUpgrade(&optionsMitigation, upgradeHeroic, &modelDps, printer, tracker.MakeNested())
+	outputMap[Upgrade_Miti_Heroic] = findUpgrade(&optionsMitigation, upgradeHeroic, &modelDps, printer, tracker.MakeNested(), Upgrade_Miti_Heroic)
 	printer.Close()
 
 	printer = util.PrintRecorder_CreateLogFile()
@@ -108,91 +108,10 @@ func FindUpgrades_AllRaid_Run() {
 
 }
 
-func findUpgrade(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress) []upgradeItemResult {
-	extraItems = upgradeExtraItems(extraItems, printer)
-	checkDuplicates(extraItems)
-	extraTasks := makeExtraTasks(extraItems, baseItems, printer)
-
-	tracker.RunOuterTracking(len(extraTasks) + 1)
-	defer tracker.Stop()
-
-	printer.Println("FINDING BASELINE")
-	baseRating := findBase(baseItems, model, printer, tracker)
-
-	printer.Println("TRYING ITEMS")
-	resultList := util.Channel_IterateEach_Multi_AsSlice(upgradeEachThreads, extraTasks,
-		func(task *upgradeItemTask, resultChannel chan<- upgradeItemResult) {
-			resultChannel <- findExtraResults(task, baseItems, baseRating, model, printer, tracker)
-		})
-	reportBasicResults(resultList, printer)
-	return resultList
-}
-
-func makeExtraTasks(extraItems []*items.FullItem, baseItems *items.FullOptionsMap, printer *util.PrintRecorder) []upgradeItemTask {
-	taskList := make([]upgradeItemTask, 0, len(extraItems))
-	for _, extra := range extraItems {
-		for _, slot := range extra.Slot.ToSlotEquipOptions() {
-			if canPerformSpecifiedUpgrade(extra, slot, baseItems, printer) {
-				taskList = append(taskList, upgradeItemTask{extra, slot})
-			}
-		}
-	}
-	return taskList
-}
-
-func canPerformSpecifiedUpgrade(extra *items.FullItem, slot items.SlotEquip, baseItems *items.FullOptionsMap, printer *util.PrintRecorder) bool {
-	if slices.Contains(ignoredItems, extra.ItemId()) {
-		return false
-	}
-
-	if !baseItems.Has(slot) {
-		printer.Println("SLOT NOT USED IN CURRENT SET " + extra.CreateString())
-		return false
-	}
-
-	if slot == items.Equip_Weapon {
-		currentWeapon := baseItems.Get(items.Equip_Weapon)[0]
-		if extra.Slot != currentWeapon.Slot {
-			printer.Println("WRONG WEAPON TYPE " + extra.CreateString())
-			return false
-		}
-	}
-
-	if baseItems.IncludesItemIdInSlot(extra.ItemId(), slot) {
-		printer.Println("SAME ITEM " + extra.CreateString())
-		return false
-	}
-
-	paired := slot.PairedSlot()
-	if paired != -1 && baseItems.IncludesItemIdInSlot(extra.ItemId(), paired) {
-		printer.Println("SAME ITEM ID IN OTHER SLOT " + extra.CreateString())
-		return false
-	}
-
-	return true
-}
-
-func findBase(baseItems *items.FullOptionsMap, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress) float64 {
-	output := solver.Solver(solver.SolveInput{
-		ItemOptions:        baseItems,
-		Model:              model,
-		PhasedAcceptable:   false,
-		OuterTrackProgress: tracker,
-		Printer:            printer,
-		SolveSize:          baseSolveSize})
-
-	if !output.Success {
-		panic("couldn't find valid baseline set")
-	}
-
-	printer.Printf("\n%s\nBASE RATING    = %d\n\n", output.SolvedSet.TotalRated().CreateString(), output.ResultRating)
-	return float64(output.ResultRating)
-}
-
 func findExtraResults(extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *model.Model, parentPrinter *util.PrintRecorder, outerTracker *util.TrackProgress) upgradeItemResult {
 	printer := util.PrintRecorder_HoldAll()
 
-	item := extraTask.item // this "item" is from ItemFinder and is just a basic DB object, not usable as is
+	item := extraTask.item // this "item" is from ItemFinder and is just a basic DB object
 	slot := extraTask.slot
 	printer.Println("OFFER " + item.CreateString())
 	printer.Println("REPLACING " + baseItems.Get(slot)[0].CreateString())
@@ -225,7 +144,7 @@ func findExtraResults(extraTask *upgradeItemTask, baseItems *items.FullOptionsMa
 	parentPrinter.AppendOther(printer)
 
 	boss := db.BossItemData_BossForItem(extraTask.item)
-	return upgradeItemResult{extraTask.item, extraTask.slot, factor, boss}
+	return upgradeItemResult{*extraTask, factor, boss}
 }
 
 func upgradeExtraItems(extraItems []*items.FullItem, printer *util.PrintRecorder) []*items.FullItem {
@@ -249,70 +168,6 @@ func checkDuplicates(extraItems []*items.FullItem) {
 	}
 }
 
-func reportBasicResults(resultList []upgradeItemResult, printer *util.PrintRecorder) {
-	reportBasicByBoss(resultList, printer)
-	reportBasicBySlot(resultList, printer)
-	reportBasicOverallRank(resultList, printer)
-}
-
-func reportBasicByBoss(resultList []upgradeItemResult, printer *util.PrintRecorder) {
-	rankedByBoss := make(map[string]*util.RankedCollection[upgradeItemResult])
-	for _, result := range resultList {
-		rank := rankedByBoss[result.boss]
-		if rank == nil {
-			rank = new(util.RankedCollection[upgradeItemResult])
-			rankedByBoss[result.boss] = rank
-		}
-		rank.Add(result, result.factor)
-	}
-
-	printer.Println("RANKING UPGRADE BY BOSS")
-	for _, bossName := range db.BossItemData_NamesInOrder {
-		rank := rankedByBoss[bossName]
-		if rank != nil {
-			printer.Println(bossName)
-			for result := range rank.OrderedResult() {
-				printer.Printf("%10s \t%d \t%35s \t%6s%%\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.percentStr())
-			}
-			printer.Println0()
-		}
-	}
-}
-
-func reportBasicBySlot(resultList []upgradeItemResult, printer *util.PrintRecorder) {
-	rankedBySlot := make(map[items.SlotEquip]*util.RankedCollection[upgradeItemResult])
-	for _, result := range resultList {
-		rank := rankedBySlot[result.slot]
-		if rank == nil {
-			rank = new(util.RankedCollection[upgradeItemResult])
-			rankedBySlot[result.slot] = rank
-		}
-		rank.Add(result, result.factor)
-	}
-
-	printer.Println("RANKING UPGRADE BY SLOT")
-	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
-		rank := rankedBySlot[slot]
-		if rank != nil {
-			printer.Println("RANKING " + slot.Name())
-			for result := range rank.OrderedResult() {
-				printer.Printf("  %d \t%35s \t%6s%%\t %s\n", result.item.Ref.ItemLevel, result.item.BaseName, result.percentStr(), result.boss)
-			}
-		}
-	}
-}
-
-func reportBasicOverallRank(resultList []upgradeItemResult, printer *util.PrintRecorder) {
-	ranked := util.RankedCollection[upgradeItemResult]{}
-	for _, result := range resultList {
-		ranked.Add(result, result.factor)
-	}
-
-	printer.Println("RANKING OVERALL PERCENT UPGRADE")
-	for result := range ranked.OrderedResult() {
-		printer.Printf("%10s \t%d \t%35s \t%6s%%\t %s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.percentStr(), result.boss)
-	}
-}
 
 type reportForItem struct {
 	item   *items.FullItem
