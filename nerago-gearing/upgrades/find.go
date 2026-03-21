@@ -47,19 +47,19 @@ func (result upgradeItemResult) percentStr() string {
 	percent := result.percent()
 	str := strconv.FormatFloat(percent, 'f', 2, 64)
 	if percent < 0 {
-		return str
+		return str + "%"
 	} else {
-		return "+" + str
+		return "+" + str + "%"
 	}
 }
 
 const (
 	upgradeEachThreads = 4
 	targetUpgradeLevel = 2
-	// baseSolveSize      = solver.SolveSize_Long
-	// itemSolveSize      = solver.SolveSize_Medium
-	baseSolveSize = solver.SolveSize_Medium
-	itemSolveSize = solver.SolveSize_PerItem
+	baseSolveSize      = solver.SolveSize_Long
+	itemSolveSize      = solver.SolveSize_Medium
+	// baseSolveSize = solver.SolveSize_Medium
+	// itemSolveSize = solver.SolveSize_PerItem
 )
 
 var ignoredItems = []items.ItemId{
@@ -219,10 +219,10 @@ func reportTabulatedResults(outputMap map[upgradeMode][]upgradeItemResult, print
 			}
 			slices.SortFunc(reportList, func(a, b reportForItem) int { return cmp.Compare(a.BestRating(), b.BestRating()) })
 
-			printer.Printf("%10s%5s%35s%10s%10s%10s%10s\n", "slot", "ilvl", "name", "DPS_norm", "MIT_norm", "DPS_hero", "MIT_hero")
+			printer.Printf("%10s%5s%45s%10s%10s%10s%10s\n", "slot", "ilvl", "name", "DPS_norm", "MIT_norm", "DPS_hero", "MIT_hero")
 
 			for _, report := range reportList {
-				printer.Printf("%10s%5d%35s%10s%10s%10s%10s\n", report.item.Slot.Name(), report.item.Ref.ItemLevel, report.item.BaseName,
+				printer.Printf("%10s%5d%45s%10s%10s%10s%10s\n", report.item.Slot.Name(), report.item.Ref.ItemLevel, report.item.BaseName,
 					report.byMode[Upgrade_Dps_Normal].percentStr(), report.byMode[Upgrade_Miti_Normal].percentStr(),
 					report.byMode[Upgrade_Dps_Heroic].percentStr(), report.byMode[Upgrade_Miti_Heroic].percentStr())
 			}

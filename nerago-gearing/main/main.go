@@ -9,6 +9,7 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/setup"
+	"paladin_gearing_go/upgrades"
 	"paladin_gearing_go/util"
 	"runtime"
 	"runtime/pprof"
@@ -68,9 +69,9 @@ func core(printer *util.PrintRecorder) {
 	// slotRating(itemOptions[Equip_Chest], &model, printer)
 	// basicReforge(&itemOptions, &model, printer)
 
-	PaladinMultiRun(printer)
+	// PaladinMultiRun(printer)
 	// testSim(printer)
-	// upgrades.FindUpgrades_AllRaid_Run()
+	upgrades.FindUpgrades_AllRaid_Run()
 }
 
 func setupPallyMitigation() (items.FullOptionsMap, model.Model) {

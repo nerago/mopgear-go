@@ -10,6 +10,10 @@ func (equipMap *FullEquipMap) Get(slot SlotEquip) *FullItem {
 	return equipMap[slot]
 }
 
+func (equipMap *FullEquipMap) Has(slot SlotEquip) bool {
+	return equipMap[slot] != nil
+}
+
 func (equipMap *FullEquipMap) GetAsId(slot SlotEquip) ItemId {
 	item := equipMap[slot]
 	if item != nil {
@@ -86,6 +90,10 @@ func (equipMap *SolvableEquipMap) ReplaceItem_Into(slot SlotEquip, item *Solvabl
 
 func (equipMap *SolvableEquipMap) Get(slot SlotEquip) *SolvableItem {
 	return equipMap[slot]
+}
+
+func (equipMap *SolvableEquipMap) Has(slot SlotEquip) bool {
+	return equipMap[slot] != nil
 }
 
 func (equipMap *SolvableEquipMap) GetAsId(slot SlotEquip) ItemId {

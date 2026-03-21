@@ -36,6 +36,15 @@ func (optionsMap *FullOptionsMap) IncludesItemIdInSlot(itemId ItemId, slot SlotE
 	return false
 }
 
+func (optionsMap *FullOptionsMap) IncludesItemNameInSlot(itemName string, slot SlotEquip) bool {
+	for _, item := range optionsMap[slot] {
+		if item.BaseName == itemName {
+			return true
+		}
+	}
+	return false
+}
+
 func (optionsMap *FullOptionsMap) MapSlots(mapper func([]FullItem) []FullItem) {
 	for i := range optionsMap {
 		optionsMap[i] = mapper(optionsMap[i])

@@ -69,12 +69,16 @@ func Solver(input SolveInput) SolveOutput {
 	solvedSet = tools.Tweaker_Run(&solvedSet, &solveOptions, input.Model)
 	solvedSet.DebugValidate()
 
+	fullItem := items.FullItemSet_FromSolved(solvedSet, input.ItemOptions)
+	fullItem.DebugValidate()
+	fullItem.ValidateItemRules()
+
 	return SolveOutput{
 		true,
 		uuid.NewString(),
 		&input,
 		solvedSet,
-		items.FullItemSet_FromSolved(solvedSet, input.ItemOptions),
+		fullItem,
 		input.Model.CalcRatingSolve(&solvedSet),
 		printer}
 }

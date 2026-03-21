@@ -61,11 +61,14 @@ func canPerformSpecifiedUpgrade(extra *items.FullItem, slot items.SlotEquip, bas
 	if baseItems.IncludesItemIdInSlot(extra.ItemId(), slot) {
 		printer.Println("SAME ITEM " + extra.CreateString())
 		return false
-	}
+	} 
 
 	paired := slot.PairedSlot()
 	if paired != -1 && baseItems.IncludesItemIdInSlot(extra.ItemId(), paired) {
 		printer.Println("SAME ITEM ID IN OTHER SLOT " + extra.CreateString())
+		return false
+	} else if paired != -1 && baseItems.IncludesItemNameInSlot(extra.BaseName, paired) {
+		printer.Println("SAME ITEM NAME IN OTHER SLOT (unique equipped) " + extra.CreateString())
 		return false
 	}
 

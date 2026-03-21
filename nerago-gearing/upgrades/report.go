@@ -8,8 +8,12 @@ import (
 
 func reportBasicResults(resultList []upgradeItemResult, printer *util.PrintRecorder) {
 	reportBasicByBoss(resultList, printer)
+	printer.Println0()
 	reportBasicBySlot(resultList, printer)
+	printer.Println0()
 	reportBasicOverallRank(resultList, printer)
+	printer.Println0()
+	printer.Println0()
 }
 
 func reportBasicByBoss(resultList []upgradeItemResult, printer *util.PrintRecorder) {
@@ -29,7 +33,7 @@ func reportBasicByBoss(resultList []upgradeItemResult, printer *util.PrintRecord
 		if rank != nil {
 			printer.Println(bossName)
 			for result := range rank.OrderedResult() {
-				printer.Printf("%10s \t%d \t%35s \t%6s%%\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.percentStr())
+				printer.Printf("%10s \t%d \t%45s \t%6s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.percentStr())
 			}
 			printer.Println0()
 		}
@@ -53,7 +57,7 @@ func reportBasicBySlot(resultList []upgradeItemResult, printer *util.PrintRecord
 		if rank != nil {
 			printer.Println("RANKING " + slot.Name())
 			for result := range rank.OrderedResult() {
-				printer.Printf("  %d \t%35s \t%6s%%\t %s\n", result.item.Ref.ItemLevel, result.item.BaseName, result.percentStr(), result.boss)
+				printer.Printf("  %d \t%45s \t%6s\t %s\n", result.item.Ref.ItemLevel, result.item.BaseName, result.percentStr(), result.boss)
 			}
 		}
 	}
@@ -67,6 +71,6 @@ func reportBasicOverallRank(resultList []upgradeItemResult, printer *util.PrintR
 
 	printer.Println("RANKING OVERALL PERCENT UPGRADE")
 	for result := range ranked.OrderedResult() {
-		printer.Printf("%10s \t%d \t%35s \t%6s%%\t %s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.percentStr(), result.boss)
+		printer.Printf("%10s \t%d \t%45s \t%6s\t %s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.percentStr(), result.boss)
 	}
 }
