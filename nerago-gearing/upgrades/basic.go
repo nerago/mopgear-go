@@ -1,14 +1,16 @@
 package upgrades
 
 import (
+	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
+	"paladin_gearing_go/setup"
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/util"
 	"slices"
 )
 
-func findUpgrade(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, mode upgradeMode) []upgradeItemResult {
+func findUpgrade(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, mode upgradeMode) ([]upgradeItemResult, *items.FullItemSet) {
 	extraItems = upgradeExtraItems(extraItems, printer)
 	checkDuplicates(extraItems)
 	extraTasks := makeExtraTasks(extraItems, baseItems, printer, mode)
@@ -17,7 +19,7 @@ func findUpgrade(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, 
 	defer tracker.Stop()
 
 	printer.Println("FINDING BASELINE")
-	baseRating := findBase(baseItems, model, printer, tracker)
+	baseRating, baseSet := findBase(baseItems, model, printer, tracker)
 
 	printer.Println("TRYING ITEMS")
 	resultList := util.Channel_IterateEach_Multi_AsSlice(upgradeEachThreads, extraTasks,
@@ -25,15 +27,37 @@ func findUpgrade(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, 
 			resultChannel <- findExtraResults(task, baseItems, baseRating, model, printer, tracker)
 		})
 	reportBasicResults(resultList, printer)
-	return resultList
+	return resultList, baseSet
+}
+
+func upgradeExtraItems(extraItems []*items.FullItem, printer *util.PrintRecorder) []*items.FullItem {
+	result := make([]*items.FullItem, 0, len(extraItems))
+	for _, item := range extraItems {
+		replace := db.WowSimDB_ByIdAndUpgrade_AllowFallback(item.ItemId(), targetUpgradeLevel, printer)
+		result = append(result, replace)
+	}
+	return result
+}
+
+func checkDuplicates(extraItems []*items.FullItem) {
+	byName := make(map[string]*items.FullItem)
+	for _, item := range extraItems {
+		_, alreadySeen := byName[item.BaseName]
+		if alreadySeen {
+			panic("duplicate item for " + item.BaseName)
+		} else {
+			byName[item.BaseName] = item
+		}
+	}
 }
 
 func makeExtraTasks(extraItems []*items.FullItem, baseItems *items.FullOptionsMap, printer *util.PrintRecorder, mode upgradeMode) []upgradeItemTask {
 	taskList := make([]upgradeItemTask, 0, len(extraItems))
 	for _, extra := range extraItems {
+		boss := db.BossItemData_BossForItem(extra)
 		for _, slot := range extra.Slot.ToSlotEquipOptions() {
 			if canPerformSpecifiedUpgrade(extra, slot, baseItems, printer) {
-				taskList = append(taskList, upgradeItemTask{extra, slot, mode})
+				taskList = append(taskList, upgradeItemTask{extra, slot, mode, boss})
 			}
 		}
 	}
@@ -61,7 +85,7 @@ func canPerformSpecifiedUpgrade(extra *items.FullItem, slot items.SlotEquip, bas
 	if baseItems.IncludesItemIdInSlot(extra.ItemId(), slot) {
 		printer.Println("SAME ITEM " + extra.CreateString())
 		return false
-	} 
+	}
 
 	paired := slot.PairedSlot()
 	if paired != -1 && baseItems.IncludesItemIdInSlot(extra.ItemId(), paired) {
@@ -75,7 +99,7 @@ func canPerformSpecifiedUpgrade(extra *items.FullItem, slot items.SlotEquip, bas
 	return true
 }
 
-func findBase(baseItems *items.FullOptionsMap, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress) float64 {
+func findBase(baseItems *items.FullOptionsMap, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress) (float64, *items.FullItemSet) {
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions:        baseItems,
 		Model:              model,
@@ -89,5 +113,46 @@ func findBase(baseItems *items.FullOptionsMap, model *model.Model, printer *util
 	}
 
 	printer.Printf("\n%s\nBASE RATING    = %d\n\n", output.SolvedSet.TotalRated().CreateString(), output.ResultRating)
-	return float64(output.ResultRating)
+	return float64(output.ResultRating), &output.FullSet
+}
+
+func findExtraResults(extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *model.Model, parentPrinter *util.PrintRecorder, outerTracker *util.TrackProgress) upgradeItemResult {
+	printer := util.PrintRecorder_HoldAll()
+
+	item := extraTask.item // this "item" is from ItemFinder and is just a basic DB object
+	slot := extraTask.slot
+	printer.Println("OFFER " + item.CreateString())
+	printer.Println("REPLACING " + baseItems.Get(slot)[0].CreateString())
+
+	// TODO consider loading from bags etc
+	newOptions, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(item.ItemId(), item.Ref.UpgradeLevel(), model, printer)
+	jobItems := baseItems.Clone()
+	jobItems[slot] = newOptions
+
+	output := solver.Solver(solver.SolveInput{
+		ItemOptions:        &jobItems,
+		Model:              model,
+		PhasedAcceptable:   false,
+		OuterTrackProgress: outerTracker,
+		Printer:            printer,
+		SolveSize:          itemSolveSize})
+
+	var factor float64
+	var itemSet *items.FullItemSet
+	if output.Success {
+		printer.Printf("SET STATS %s\n", output.SolvedSet.TotalRated().CreateString())
+
+		factor = float64(output.ResultRating) / baseRating
+		printer.Printf("UPGRADE RATING = %d FACTOR = %1.3f\n", output.ResultRating, factor)
+
+		itemSet = &output.FullSet
+	} else {
+		factor = 0
+		printer.Println("UPGRADE SET NOT FOUND")
+	}
+
+	printer.Println0()
+	parentPrinter.AppendOther(printer)
+
+	return upgradeItemResult{*extraTask, itemSet, factor}
 }

@@ -79,9 +79,14 @@ func (set *SolvableItemSet) ClearTotals() {
 	set.total = StatBlock{}
 }
 
-func (set *SolvableItemSet) AddItem_Mutating(slot SlotEquip, item *SolvableItem) {
+// obsolete, use AddItem_DeferCalc and SolvableItemSet_RecalculateTotal
+// func (set *SolvableItemSet) AddItem_Mutating(slot SlotEquip, item *SolvableItem) {
+// 	set.items[slot] = item
+// 	StatBlock_Increment_Mutating(&set.total, &item.total)
+// }
+
+func (set *SolvableItemSet) AddItem_DeferCalc(slot SlotEquip, item *SolvableItem) {
 	set.items[slot] = item
-	StatBlock_Increment_Mutating(&set.total, &item.total)
 }
 
 func (set *SolvableItemSet) AddItem_CreateNew(slot SlotEquip, item *SolvableItem) *SolvableItemSet {

@@ -146,7 +146,7 @@ func printCommons(seenIn map[items.ItemId][]string, commonOptions CommonComboOpt
 
 func printChosenCombo(combo CommonCombo, printer *util.PrintRecorder) {
 	for _, item := range combo {
-		printer.Printf("COMMON %s\n", item.CreateString)
+		printer.Printf("COMMON %s\n", item.CreateString())
 	}
 	for _, item := range combo {
 		if item.Reforge.IsEmpty() {

@@ -1,6 +1,7 @@
 package build
 
 import (
+	"paladin_gearing_go/items"
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/util"
@@ -35,7 +36,8 @@ func evaluateOverflow2Worker(resultChannel chan util.BestCollector1[SolvableItem
 	itemSet := new(SolvableItemSet)
 	best.BestObject = new(SolvableItemSet)
 	for range eachThreadCount {
-		makeSetFromArraysAndAdvance2(itemOptions, &indexes, itemSet)
+		// makeSetFromArraysAndAdvance3(&itemOptions, &indexes, itemSet)
+		items.MakeSetFromArraysAndAdvance4(&itemOptions, &indexes, itemSet)
 		peekFunc(itemSet)
 		if model.CheckSet(itemSet) {
 			rating := model.CalcRatingSolve(itemSet)
@@ -47,7 +49,7 @@ func evaluateOverflow2Worker(resultChannel chan util.BestCollector1[SolvableItem
 	resultChannel <- best
 }
 
-func makeSetFromArraysAndAdvance2(slotOptions SolvableOptionsMap, slotIndexes *[16]uint32, itemSet *SolvableItemSet) {
+func makeSetFromArraysAndAdvance3(slotOptions *SolvableOptionsMap, slotIndexes *[16]uint32, itemSet *SolvableItemSet) {
 	itemSet.ClearTotals()
 
 	slot := Equip_Iter_First
@@ -56,11 +58,11 @@ func makeSetFromArraysAndAdvance2(slotOptions SolvableOptionsMap, slotIndexes *[
 		slotSize := uint32(len(options))
 		if slotSize == 1 {
 			item := &options[0]
-			itemSet.AddItem_Mutating(slot, item)
+			itemSet.AddItem_DeferCalc(slot, item)
 		} else if slotSize > 1 {
 			index := slotIndexes[slot]
 			item := &options[index]
-			itemSet.AddItem_Mutating(slot, item)
+			itemSet.AddItem_DeferCalc(slot, item)
 
 			index++
 			if index < slotSize {
@@ -78,13 +80,15 @@ func makeSetFromArraysAndAdvance2(slotOptions SolvableOptionsMap, slotIndexes *[
 		slotSize := uint32(len(options))
 		if slotSize == 1 {
 			item := &options[0]
-			itemSet.AddItem_Mutating(slot, item)
+			itemSet.AddItem_DeferCalc(slot, item)
 		} else if slotSize > 1 {
 			index := slotIndexes[slot]
 			item := &options[index]
-			itemSet.AddItem_Mutating(slot, item)
+			itemSet.AddItem_DeferCalc(slot, item)
 		}
 	}
+
+	items.SolvableItemSet_RecalculateTotal(itemSet)
 }
 
 func advanceArraysInitial(indexes *[16]uint32, slotOptions SolvableOptionsMap, skip uint64) {

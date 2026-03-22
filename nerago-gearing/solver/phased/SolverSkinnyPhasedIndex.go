@@ -2,6 +2,7 @@ package phased
 
 import (
 	"math/big"
+	"paladin_gearing_go/items"
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/model"
 	"paladin_gearing_go/solver/solve_util"
@@ -144,7 +145,9 @@ func makeFromSkinny(itemOptions *SolvableOptionsMap, model *Model, skinnySet *Sk
 				}
 			}
 
-			chosen.AddItem_Mutating(slot, best.GetBestPointerOrPanic())
+			chosen.AddItem_DeferCalc(slot, best.GetBestPointerOrPanic())
 		}
 	}
+
+	items.SolvableItemSet_RecalculateTotal(chosen)
 }
