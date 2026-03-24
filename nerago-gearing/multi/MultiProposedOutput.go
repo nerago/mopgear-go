@@ -4,7 +4,7 @@ import (
 	"maps"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/solver"
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 
 	"github.com/google/uuid"
 )
@@ -34,7 +34,7 @@ func makeUUID() string {
 }
 
 func (job *MultiSetJob) makeProposedChannel(comboChannel <-chan CommonCombo) <-chan MultiProposedOutput {
-	return util.Channel_TransformEach_Multi(solveThreadCount, comboChannel, func(combo CommonCombo, outputChannel chan<- MultiProposedOutput) {
+	return channel_op.TransformEach_ChannelToChannel(solveThreadCount, comboChannel, func(combo CommonCombo, outputChannel chan<- MultiProposedOutput) {
 		proposed := job.subSolveCombo(combo)
 		if proposed != nil {
 			outputChannel <- *proposed

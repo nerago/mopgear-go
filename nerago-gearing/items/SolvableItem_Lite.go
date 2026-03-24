@@ -46,11 +46,7 @@ type SolvableItemSet struct {
 
 func SolvableItemSet_Of(equipMap SolvableEquipMap) SolvableItemSet {
 	result := SolvableItemSet{items: equipMap, total: StatBlock{}}
-	for _, item := range equipMap {
-		if item != nil {
-			StatBlock_Increment_Mutating(&result.total, &item.total)
-		}
-	}
+	SolvableItemSet_RecalculateTotal(&result)
 	return result
 }
 
@@ -89,10 +85,17 @@ func (set *SolvableItemSet) AddItem_DeferCalc(slot SlotEquip, item *SolvableItem
 	set.items[slot] = item
 }
 
-func (set *SolvableItemSet) AddItem_CreateNew(slot SlotEquip, item *SolvableItem) *SolvableItemSet {
+// obsolete
+// func (set *SolvableItemSet) AddItem_CreateNew(slot SlotEquip, item *SolvableItem) *SolvableItemSet {
+// 	result := new(SolvableItemSet)
+// 	set.items.ReplaceItem_Into(slot, item, &result.items)
+// 	StatBlock_Add_Into(&set.total, &item.total, &result.total)
+// 	return result
+// }
+
+func (set *SolvableItemSet) AddItem_CreateNew_DeferCalc(slot SlotEquip, item *SolvableItem) *SolvableItemSet {
 	result := new(SolvableItemSet)
 	set.items.ReplaceItem_Into(slot, item, &result.items)
-	StatBlock_Add_Into(&set.total, &item.total, &result.total)
 	return result
 }
 

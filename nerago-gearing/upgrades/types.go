@@ -16,10 +16,25 @@ type upgradeMode int8
 
 const (
 	Upgrade_Miti_Normal upgradeMode = iota
-	Upgrade_Miti_Heroic             = iota
-	Upgrade_Dps_Normal              = iota
-	Upgrade_Dps_Heroic              = iota
+	Upgrade_Miti_Heroic upgradeMode = iota
+	Upgrade_Dps_Normal  upgradeMode = iota
+	Upgrade_Dps_Heroic  upgradeMode = iota
 )
+
+func (up upgradeMode) Name() string {
+	switch up {
+	case Upgrade_Miti_Normal:
+		return "mit_norm"
+	case Upgrade_Miti_Heroic:
+		return "mit_hero"
+	case Upgrade_Dps_Normal:
+		return "dps_norm"
+	case Upgrade_Dps_Heroic:
+		return "dps_hero"
+	default:
+		panic("unknown")
+	}
+}
 
 type upgradeItemTask struct {
 	item *items.FullItem
@@ -40,41 +55,58 @@ func (task upgradeItemTask) Mode() upgradeMode {
 	return task.mode
 }
 
+func (task upgradeItemTask) ModeIsDamage() bool {
+	return task.mode == Upgrade_Dps_Normal || task.mode == Upgrade_Dps_Heroic
+}
+
 func (task upgradeItemTask) Boss() string {
 	return task.boss
 }
 
 type upgradeItemResult struct {
 	upgradeItemTask
+	success bool
 	itemSet *items.FullItemSet
 	factor  float64
 }
 
-func (result upgradeItemResult) percent() float64 {
+func (result upgradeItemResult) ranking() float64 {
+	return result.increase()
+}
+
+func (result upgradeItemResult) increase() float64 {
 	return factorToIncrease(result.factor)
 }
 
-func (result upgradeItemResult) percentStr() string {
-	if result.factor == 0 {
+func (result upgradeItemResult) increaseStr() string {
+	if result.factor == 0 || result.factor == -1 {
 		return ""
 	}
-	percent := result.percent()
-	return formatPercent(percent)
+	percent := result.increase()
+	return formatIncrease(percent)
 }
 
 func factorToIncrease(factor float64) float64 {
 	return (factor - 1.0) * 100
 }
 
-func ratioToIncrease(newValue float64, base float64, higherIsGood bool) float64 {
-	if higherIsGood {
-		return factorToIncrease(newValue / base)
+func ratioToIncrease(sim, baseSim *simulate.SimResultStats, part simulate.SimResultType) float64 {
+	newValue := sim.Get(part)
+	baseValue := baseSim.Get(part)
+	if part == simulate.Result_DEATH {
+		return baseValue - newValue
+	} else if part.IsHighGood() {
+		return factorToIncrease(newValue / baseValue)
 	} else {
-		return factorToIncrease(base / newValue)
+		return factorToIncrease(baseValue / newValue)
 	}
 }
 
-func formatPercent(percent float64) string {
+func formatIncrease(percent float64) string {
+	if percent <= -1 {
+		return ""
+	}
+
 	str := strconv.FormatFloat(percent, 'f', 2, 64)
 	if percent < 0 {
 		return str + "%"
@@ -86,32 +118,30 @@ func formatPercent(percent float64) string {
 type upgradeItemResultWithSim struct {
 	upgradeItemResult
 	baseSim simulate.SimResultStats
-	sim simulate.SimResultStats
+	sim     simulate.SimResultStats
 }
 
 func (result upgradeItemResultWithSim) percentSim() float64 {
-	if result.mode == Upgrade_Dps_Normal || result.mode == Upgrade_Dps_Heroic {
-		return ratioToIncrease(result.sim.DPS, result.baseSim.DPS, simulate.Result_DPS.IsHighGood())
+	if result.ModeIsDamage() {
+		return ratioToIncrease(&result.sim, &result.baseSim, simulate.Result_DPS)
 	} else {
-		// TODO represent these comparisons in more detail
-		checkParts := []simulate.SimResultType {simulate.Result_DPS, simulate.Result_DTPS, simulate.Result_TMI, simulate.Result_DEATH}
+		checkParts := []simulate.SimResultType{simulate.Result_DPS, simulate.Result_DTPS, simulate.Result_TMI, simulate.Result_DEATH}
 		var total float64
 		for _, part := range checkParts {
-			// TODO special handling death
-			total += ratioToIncrease(result.sim.Get(part), result.baseSim.Get(part), part.IsHighGood())
+			total += ratioToIncrease(&result.sim, &result.baseSim, part)
 		}
 		return total / float64(len(checkParts))
 	}
 }
 
 func (result upgradeItemResultWithSim) percentStrSim() string {
-	return formatPercent(result.percentSim())
+	return formatIncrease(result.percentSim())
 }
 
-func (result upgradeItemResultWithSim) percentStrSimBreakdown() simulate.SimResultStats {
+func (result upgradeItemResultWithSim) increaseSimBreakdown() simulate.SimResultStats {
 	sim := simulate.SimResultStats{}
 	for _, resultType := range simulate.SimResultTypeList {
-		sim.Set(resultType, ratioToIncrease(result.sim.Get(resultType), result.baseSim.Get(resultType), resultType.IsHighGood()))
+		sim.Set(resultType, ratioToIncrease(&result.sim, &result.baseSim, resultType))
 	}
 	return sim
 }
@@ -119,8 +149,12 @@ func (result upgradeItemResultWithSim) percentStrSimBreakdown() simulate.SimResu
 func (result upgradeItemResultWithSim) bestOfSimResults() float64 {
 	var best float64 = -1.0
 	for _, resultType := range simulate.SimResultTypeList {
-		increase := ratioToIncrease(result.sim.Get(resultType), result.baseSim.Get(resultType), resultType.IsHighGood())
+		increase := ratioToIncrease(&result.sim, &result.baseSim, resultType)
 		best = math.Max(best, increase)
 	}
 	return best
+}
+
+func (result upgradeItemResultWithSim) ranking() float64 {
+	return result.percentSim()
 }

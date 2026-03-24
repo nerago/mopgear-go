@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 	"strconv"
 	"strings"
 )
@@ -36,7 +37,7 @@ func (job *MultiSetJob) prepareRevisionsForSim(proposedList []MultiProposedOutpu
 	trackProgress.RunOuterTracking(expectedSets)
 	defer trackProgress.Stop()
 
-	proposalChannel := util.Channel_IterateEach_Multi(generateThreadCount, proposedList, func(prior *MultiProposedOutput, downstream chan<- MultiProposedOutput) {
+	allProposals := channel_op.IterateEach_SliceToSlice(generateThreadCount, proposedList, func(prior *MultiProposedOutput, downstream chan<- MultiProposedOutput) {
 		printer := util.PrintRecorder_HoldAll()
 		printer.Printf(">>> PREP REVISIONS %s\n", prior.Id)
 
@@ -87,7 +88,6 @@ func (job *MultiSetJob) prepareRevisionsForSim(proposedList []MultiProposedOutpu
 		job.printer.AppendOther(printer)
 	})
 
-	allProposals := util.Channel_Collect(proposalChannel)
 	allProposals = append(allProposals, job.existingGearAsProposal())
 	return allProposals
 }
@@ -146,9 +146,10 @@ func (job *MultiSetJob) prepareSimList(proposalList []MultiProposedOutput) []sim
 
 func (job *MultiSetJob) runSims(jobList []simulateJob, runSize simulate.WowSim_RunSize, trackProgress *util.TrackProgress) {
 	job.printer.Printf("@@@@@@@@@@ RUN SIM JOBS %d @@@@@@@@@@\n", len(jobList))
+	trackProgress.RunOuterTracking(len(jobList))
 
-	util.Void_IterateEach_Multi_BlockingTracked(trackProgress, evaluateThreadCount, jobList, func(sim *simulateJob) {
-		result := simulate.WowSim_Execute(runSize, sim.spec, &sim.equip, nil)
+	channel_op.IterateEach_Blocking_Void(evaluateThreadCount, jobList, func(sim *simulateJob) {
+		result := simulate.WowSim_Execute(runSize, sim.spec, &sim.equip, nil, trackProgress.MakeNested())
 		sim.result = &result
 	})
 }

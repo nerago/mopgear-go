@@ -1,4 +1,4 @@
-package utiltest
+package util_test
 
 import (
 	"paladin_gearing_go/items"

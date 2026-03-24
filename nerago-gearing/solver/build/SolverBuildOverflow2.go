@@ -5,6 +5,7 @@ import (
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_rank"
 )
 
 func SolverBuildOverflow2_Run(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, trackProgress *util.TrackProgress, printer *util.PrintRecorder) util.Optional[SolvableItemSet] {
@@ -13,7 +14,7 @@ func SolverBuildOverflow2_Run(itemOptions *SolvableOptionsMap, model *model.Mode
 }
 
 func evaluateOverflow2(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, trackProgress *util.TrackProgress, threadCount int, peekFunc func(*SolvableItemSet)) util.Optional[SolvableItemSet] {
-	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
+	resultChannel := make(chan util_rank.BestCollector1[SolvableItemSet], threadCount)
 	eachThreadCount := max(targetCount/uint64(threadCount), 1)
 	counters := make([]uint64, threadCount)
 
@@ -24,11 +25,11 @@ func evaluateOverflow2(itemOptions *SolvableOptionsMap, model *model.Model, targ
 	}
 
 	// combine each thread's best result
-	return util.BestCollector1_OfChannel(resultChannel, threadCount)
+	return util_rank.BestCollector1_OfChannel(resultChannel, threadCount)
 }
 
-func evaluateOverflow2Worker(resultChannel chan util.BestCollector1[SolvableItemSet], model *model.Model, eachThreadCount uint64, itemOptions SolvableOptionsMap, threadNum uint64, processedCounter *uint64, peekFunc func(*SolvableItemSet)) {
-	best := util.BestCollector1[SolvableItemSet]{}
+func evaluateOverflow2Worker(resultChannel chan util_rank.BestCollector1[SolvableItemSet], model *model.Model, eachThreadCount uint64, itemOptions SolvableOptionsMap, threadNum uint64, processedCounter *uint64, peekFunc func(*SolvableItemSet)) {
+	best := util_rank.BestCollector1[SolvableItemSet]{}
 
 	indexes := [16]uint32{}
 	advanceArraysInitial(&indexes, itemOptions, threadNum*eachThreadCount)
@@ -36,8 +37,8 @@ func evaluateOverflow2Worker(resultChannel chan util.BestCollector1[SolvableItem
 	itemSet := new(SolvableItemSet)
 	best.BestObject = new(SolvableItemSet)
 	for range eachThreadCount {
-		// makeSetFromArraysAndAdvance3(&itemOptions, &indexes, itemSet)
-		items.MakeSetFromArraysAndAdvance4(&itemOptions, &indexes, itemSet)
+		makeSetFromArraysAndAdvance3(&itemOptions, &indexes, itemSet)
+		// items.MakeSetFromArraysAndAdvance4(&itemOptions, &indexes, itemSet)
 		peekFunc(itemSet)
 		if model.CheckSet(itemSet) {
 			rating := model.CalcRatingSolve(itemSet)

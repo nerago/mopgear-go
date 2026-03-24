@@ -1,39 +1,15 @@
-package util
+package channel_op
 
-import "sync"
-
-// const bufferSize = 128
+import (
+	"paladin_gearing_go/util"
+	"sync"
+)
 
 func makeOutputChannel[R any]() chan R {
-	// return make(chan R, bufferSize)
 	return make(chan R)
 }
 
-func Channel_Map_Single[T any, R any](inputChannel <-chan T, mapper func(T) R) <-chan R {
-	outputChannel := makeOutputChannel[R]()
-	go func() {
-		for value := range inputChannel {
-			outputChannel <- mapper(value)
-		}
-		close(outputChannel)
-	}()
-	return outputChannel
-}
-
-func Channel_Filter_Single[T any](inputChannel <-chan T, predicate func(T) bool) <-chan T {
-	outputChannel := makeOutputChannel[T]()
-	go func() {
-		for value := range inputChannel {
-			if predicate(value) {
-				outputChannel <- value
-			}
-		}
-		close(outputChannel)
-	}()
-	return outputChannel
-}
-
-func Channel_Map_Multi[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T) R) <-chan R {
+func Map_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T) R) <-chan R {
 	var waitGroup sync.WaitGroup
 	outputChannel := makeOutputChannel[R]()
 	for range threadCount {
@@ -50,7 +26,7 @@ func Channel_Map_Multi[T any, R any](threadCount int, inputChannel <-chan T, map
 	return outputChannel
 }
 
-func Channel_Filter_Multi[T any](threadCount int, inputChannel <-chan T, predicate func(T) bool) <-chan T {
+func Filter_ChannelToChannel[T any](threadCount int, inputChannel <-chan T, predicate func(T) bool) <-chan T {
 	var waitGroup sync.WaitGroup
 	outputChannel := makeOutputChannel[T]()
 	for range threadCount {
@@ -69,7 +45,7 @@ func Channel_Filter_Multi[T any](threadCount int, inputChannel <-chan T, predica
 	return outputChannel
 }
 
-func Channel_TransformEach_Multi[T any, R any](threadCount int, inputChannel <-chan T, transform func(T, chan<- R)) <-chan R {
+func TransformEach_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, transform func(T, chan<- R)) <-chan R {
 	var waitGroup sync.WaitGroup
 	outputChannel := makeOutputChannel[R]()
 	for range threadCount {
@@ -86,7 +62,7 @@ func Channel_TransformEach_Multi[T any, R any](threadCount int, inputChannel <-c
 	return outputChannel
 }
 
-func Channel_TransformAll_Multi[T any, R any](threadCount int, inputChannel <-chan T, transformAll func(<-chan T, chan<- R)) <-chan R {
+func TransformAll_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, transformAll func(<-chan T, chan<- R)) <-chan R {
 	var waitGroup sync.WaitGroup
 	outputChannel := makeOutputChannel[R]()
 	for range threadCount {
@@ -101,7 +77,7 @@ func Channel_TransformAll_Multi[T any, R any](threadCount int, inputChannel <-ch
 	return outputChannel
 }
 
-func Channel_GenerateAll_Multi[R any](threadCount int, generateSubGroup func(int, chan<- R), after func()) <-chan R {
+func GenerateAll_ToChannel[R any](threadCount int, generateSubGroup func(int, chan<- R), after func()) <-chan R {
 	var waitGroup sync.WaitGroup
 	outputChannel := makeOutputChannel[R]()
 	for threadNum := range threadCount {
@@ -119,7 +95,7 @@ func Channel_GenerateAll_Multi[R any](threadCount int, generateSubGroup func(int
 	return outputChannel
 }
 
-func Channel_IterateEach_Multi[T any, R any](threadCount int, inputSlice []T, transform func(*T, chan<- R)) <-chan R {
+func IterateEach_SliceToChannel[T any, R any](threadCount int, inputSlice []T, transform func(*T, chan<- R)) <-chan R {
 	var waitGroup sync.WaitGroup
 	outputChannel := makeOutputChannel[R]()
 
@@ -142,7 +118,7 @@ func Channel_IterateEach_Multi[T any, R any](threadCount int, inputSlice []T, tr
 	return outputChannel
 }
 
-func Channel_IterateEach_Multi_AsSlice[T any, R any](threadCount int, inputSlice []T, transform func(*T, chan<- R)) []R {
+func IterateEach_SliceToSlice[T any, R any](threadCount int, inputSlice []T, transform func(*T, chan<- R)) []R {
 	var waitGroup sync.WaitGroup
 
 	inputLength := len(inputSlice)
@@ -171,7 +147,7 @@ func Channel_IterateEach_Multi_AsSlice[T any, R any](threadCount int, inputSlice
 	return outputSlice
 }
 
-func Void_IterateEach_Multi_Blocking[T any](threadCount int, inputSlice []T, process func(*T)) {
+func IterateEach_Blocking_Void[T any](threadCount int, inputSlice []T, process func(*T)) {
 	var waitGroup sync.WaitGroup
 
 	inputLength := len(inputSlice)
@@ -190,7 +166,7 @@ func Void_IterateEach_Multi_Blocking[T any](threadCount int, inputSlice []T, pro
 	waitGroup.Wait()
 }
 
-func Void_IterateEach_Multi_BlockingTracked[T any](trackProgress *TrackProgress, threadCount int, inputSlice []T, process func(*T)) {
+func IterateEach_BlockingTracked_Void[T any](trackProgress *util.TrackProgress, threadCount int, inputSlice []T, process func(*T)) {
 	var waitGroup sync.WaitGroup
 
 	inputLength := len(inputSlice)
@@ -226,12 +202,4 @@ func indexSplitsInt(sliceLength int, threadCount int) []int {
 	splitArray = append(splitArray, sliceLength)
 
 	return splitArray
-}
-
-func Channel_Collect[T any](inputChannel <-chan T) []T {
-	slice := make([]T, 0)
-	for item := range inputChannel {
-		slice = append(slice, item)
-	}
-	return slice
 }

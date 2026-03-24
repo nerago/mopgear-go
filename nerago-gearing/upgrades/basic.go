@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 	"slices"
 )
 
@@ -22,9 +23,9 @@ func findUpgrade(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, 
 	baseRating, baseSet := findBase(baseItems, model, printer, tracker)
 
 	printer.Println("TRYING ITEMS")
-	resultList := util.Channel_IterateEach_Multi_AsSlice(upgradeEachThreads, extraTasks,
+	resultList := channel_op.IterateEach_SliceToSlice(upgradeEachThreads, extraTasks,
 		func(task *upgradeItemTask, resultChannel chan<- upgradeItemResult) {
-			resultChannel <- findExtraResults(task, baseItems, baseRating, model, printer, tracker)
+			resultChannel <- performUpgradeTask(task, baseItems, baseRating, model, printer, tracker)
 		})
 	reportBasicResults(resultList, printer)
 	return resultList, baseSet
@@ -116,7 +117,7 @@ func findBase(baseItems *items.FullOptionsMap, model *model.Model, printer *util
 	return float64(output.ResultRating), &output.FullSet
 }
 
-func findExtraResults(extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *model.Model, parentPrinter *util.PrintRecorder, outerTracker *util.TrackProgress) upgradeItemResult {
+func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *model.Model, parentPrinter *util.PrintRecorder, outerTracker *util.TrackProgress) upgradeItemResult {
 	printer := util.PrintRecorder_HoldAll()
 
 	item := extraTask.item // this "item" is from ItemFinder and is just a basic DB object
@@ -137,22 +138,22 @@ func findExtraResults(extraTask *upgradeItemTask, baseItems *items.FullOptionsMa
 		Printer:            printer,
 		SolveSize:          itemSolveSize})
 
-	var factor float64
-	var itemSet *items.FullItemSet
+	var result upgradeItemResult
 	if output.Success {
 		printer.Printf("SET STATS %s\n", output.SolvedSet.TotalRated().CreateString())
+		output.Report(printer) // verbose
 
-		factor = float64(output.ResultRating) / baseRating
+		factor := float64(output.ResultRating) / baseRating
 		printer.Printf("UPGRADE RATING = %d FACTOR = %1.3f\n", output.ResultRating, factor)
 
-		itemSet = &output.FullSet
+		result = upgradeItemResult{upgradeItemTask: *extraTask, success: true, itemSet: &output.FullSet, factor: factor}
 	} else {
-		factor = 0
 		printer.Println("UPGRADE SET NOT FOUND")
+		result = upgradeItemResult{upgradeItemTask: *extraTask, success: false, factor: -1.0}
 	}
 
 	printer.Println0()
 	parentPrinter.AppendOther(printer)
 
-	return upgradeItemResult{*extraTask, itemSet, factor}
+	return result
 }

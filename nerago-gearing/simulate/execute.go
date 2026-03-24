@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
 	gear_stat "paladin_gearing_go/stats"
+	"paladin_gearing_go/util"
 
 	"github.com/google/uuid"
 	wowsim_sim "github.com/wowsims/mop/sim"
@@ -25,8 +26,7 @@ const (
 	RunSize_SlowAccurate WowSim_RunSize = 500000
 )
 
-func WowSim_Execute(runSize WowSim_RunSize, spec gear_stat.SpecType, equipMap *items.FullEquipMap, bonusStats *gear_stat.StatBlock) SimResultStats {
-	verbose := false
+func WowSim_Execute(runSize WowSim_RunSize, spec gear_stat.SpecType, equipMap *items.FullEquipMap, bonusStats *gear_stat.StatBlock, tracker *util.TrackProgress) SimResultStats {
 	infile := files.SimFileFor(spec)
 	input := loadExampleFile(infile)
 
@@ -39,8 +39,7 @@ func WowSim_Execute(runSize WowSim_RunSize, spec gear_stat.SpecType, equipMap *i
 	wowsim_sim.RegisterAll()
 	wowsim_core.RunRaidSimConcurrentAsync(input, reporter, "gearing-"+id)
 
-	finalResult := fetchResult(reporter, verbose)
-	// printResult(finalResult)
+	finalResult := waitForResult(reporter, tracker)
 	return convertResult(finalResult)
 }
 
@@ -129,13 +128,22 @@ func mapStat(stat gear_stat.StatType) wowsim_stat.Stat {
 	}
 }
 
-func fetchResult(reporter chan *wowsim_proto.ProgressMetrics, verbose bool) *wowsim_proto.RaidSimResult {
-	for v := range reporter {
-		if v.FinalRaidResult != nil {
-			return v.FinalRaidResult
+func waitForResult(reporter chan *wowsim_proto.ProgressMetrics, tracker *util.TrackProgress) *wowsim_proto.RaidSimResult {
+	if tracker != nil {
+		push := tracker.PrepareForPush()
+		for v := range reporter {
+			if v.FinalRaidResult != nil {
+				tracker.Stop()
+				return v.FinalRaidResult
+			}
+			progress := float64(v.CompletedIterations) / float64(v.TotalIterations)
+			push(progress)
 		}
-		if verbose {
-			fmt.Printf("Sim Progress: %d / %d\n", v.CompletedIterations, v.TotalIterations)
+	} else {
+		for v := range reporter {
+			if v.FinalRaidResult != nil {
+				return v.FinalRaidResult
+			}
 		}
 	}
 	panic("no final result")

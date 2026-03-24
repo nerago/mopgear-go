@@ -51,16 +51,34 @@ func (stats SimResultStats) Print(printer *util.PrintRecorder) {
 	printer.Printf("DEATH\t%.2f\n", stats.DEATH*100)
 }
 
-func (stats SimResultStats) CompactString() {
+func (stats SimResultStats) CompactStringSignedPercent() string {
 	var build strings.Builder
 	var buff [20]byte
 	build.WriteString("dps=")
-	build.Write(strconv.AppendFloat(buff[:0], stats.DPS, 'f', 0, 64))
-	build.Write(strconv.AppendFloat(buff[:0], stats.TPS, 'f', 0, 64))
-	build.Write(strconv.AppendFloat(buff[:0], stats.DTPS, 'f', 0, 64))
-	build.Write(strconv.AppendFloat(buff[:0], stats.HPS, 'f', 0, 64))
-	build.Write(strconv.AppendFloat(buff[:0], stats.TMI, 'f', 0, 64))
-	build.Write(strconv.AppendFloat(buff[:0], stats.DEATH*100, 'f', 0, 64))
+	appendFloatSigned(stats.DPS, &build, &buff)
+	build.WriteString("dtps=")
+	appendFloatSigned(stats.DTPS, &build, &buff)
+	build.WriteString("tmi=")
+	appendFloatSigned(stats.TMI, &build, &buff)
+	build.WriteString("death=")
+	appendFloatSigned(stats.DEATH*100, &build, &buff)
+	return build.String()
+}
+
+func appendFloatSigned(value float64, build *strings.Builder, buff *[20]byte) {
+	padSize := 6
+	if value > 0 {
+		build.WriteRune('+')
+		padSize--
+	}
+
+	buffSlice := strconv.AppendFloat(buff[:0], value, 'f', 1, 64)
+	build.Write(buffSlice)
+
+	padSize -= len(buffSlice)
+	for range padSize {
+		build.WriteRune(' ')
+	}
 }
 
 func (stats SimResultStats) IsEmpty() bool {

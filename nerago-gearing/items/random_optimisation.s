@@ -90,6 +90,90 @@ result_false:
 
 
 
+TEXT ·FullItemSet_Equals_Assem2(SB), NOSPLIT|NOFRAME, $0-17
+    MOVQ        a+0(FP), R8
+    MOVQ        b+8(FP), R9
+
+    // should be Nop if offset still zero
+    LEAQ        FullItemSet_items(R8), R8
+    LEAQ        FullItemSet_items(R9), R9
+
+    // index 0
+    XORL        SI, SI
+
+item_loop:
+    MOVQ        (R8)(SI*8), AX
+    MOVQ        (R9)(SI*8), BX
+
+    // null checks
+    TESTQ       AX, AX
+    JEQ         first_null
+    TESTQ       BX, BX
+    JEQ         result_false
+
+    MOVL        FullItem_fullItem_common+fullItem_common_Ref+ItemRef_ItemId(AX), DI
+    CMPL        FullItem_fullItem_common+fullItem_common_Ref+ItemRef_ItemId(BX), DI
+    JNE         result_false
+
+    MOVW        FullItem_fullItem_common+fullItem_common_Ref+ItemRef_ItemLevel(AX), DI
+    CMPW        FullItem_fullItem_common+fullItem_common_Ref+ItemRef_ItemLevel(BX), DI
+    JNE         result_false
+    
+    MOVBLZX     FullItem_fullItem_common+fullItem_common_Slot(AX), DI
+    CMPB        FullItem_fullItem_common+fullItem_common_Slot(BX), DI
+    JNE         result_false
+
+    LEAQ        FullItem_fullItem_common+fullItem_common_StatBase(AX), CX
+    LEAQ        FullItem_fullItem_common+fullItem_common_StatBase(BX), DX
+
+    // stat block equals
+    VMOVDQU          (CX), Y0
+    VPCMPEQD         (DX), Y0, Y2  // 256 bits, 32 bit units, 8 blocks of 32, all set to ones/zeros
+    VMOVDQU        32(CX), X1
+    VPCMPEQD       32(DX), X1, X3  // 128 bits, 32 bit units, 4 blocks of 32, all set to ones/zeros
+    VPMOVMSKB          Y2, CX      // extract top bit from each byte -> 32 bits worth
+    VPMOVMSKB          X3, DX      // extract top bit from each byte -> 16 bits worth
+    ORQ       $0xFFFF0000, DX      // extend to 32 bits too
+    ANDL               AX, DX      // equality is all bits sets
+    SUBL      $0xFFFFFFFF, DX    
+    JNE         result_false
+
+    LEAQ        FullItem_fullItem_common+fullItem_common_StatEnchant(AX), CX
+    LEAQ        FullItem_fullItem_common+fullItem_common_StatEnchant(BX), DX
+
+    // stat block equals
+    VMOVDQU          (CX), Y0
+    VPCMPEQD         (DX), Y0, Y2  // 256 bits, 32 bit units, 8 blocks of 32, all set to ones/zeros
+    VMOVDQU        32(CX), X1
+    VPCMPEQD       32(DX), X1, X3  // 128 bits, 32 bit units, 4 blocks of 32, all set to ones/zeros
+    VPMOVMSKB          Y2, CX      // extract top bit from each byte -> 32 bits worth
+    VPMOVMSKB          X3, DX      // extract top bit from each byte -> 16 bits worth
+    ORQ       $0xFFFF0000, DX      // extend to 32 bits too
+    ANDL               AX, DX      // equality is all bits sets
+    SUBL      $0xFFFFFFFF, DX    
+    JNE         result_false
+
+loop_next:
+    INCL        SI
+    CMPL        SI, $16
+    JEQ         result_true
+    JMP         item_loop
+
+first_null:
+    TESTQ       BX, BX
+    JNE         result_false
+    JMP         loop_next
+
+result_true:
+    MOVL         $1, AX
+    RET
+
+result_false:
+    MOVL         $0, AX
+    RET
+
+
+
 TEXT ·SolvableItemSet_AddItem_Mutating(SB), NOSPLIT|NOFRAME, $0-17
     MOVQ        set+0(FP), AX
     MOVBLZX     slot+8(FP), DI

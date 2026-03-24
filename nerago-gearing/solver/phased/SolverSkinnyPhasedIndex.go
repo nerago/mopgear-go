@@ -7,6 +7,8 @@ import (
 	. "paladin_gearing_go/model"
 	"paladin_gearing_go/solver/solve_util"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
+	"paladin_gearing_go/util/util_rank"
 )
 
 const (
@@ -65,16 +67,16 @@ func makeSkinnyCombosMultiThread(skinnyOptions *SkinnyOptionsMap, itemOptions *S
 
 	// start up workers
 	splits := solve_util.IndexSplitsInt(max, skip, threadCount)
-	resultChannel := util.Channel_GenerateAll_Multi(threadCount, func(threadNum int, resultChannel chan<- util.BestCollector1[SolvableItemSet]) {
+	resultChannel := channel_op.GenerateAll_ToChannel(threadCount, func(threadNum int, resultChannel chan<- util_rank.BestCollector1[SolvableItemSet]) {
 		createWorkerRangeInt(skinnyOptions, itemOptions, model, splits[threadNum], splits[threadNum+1], skip, resultChannel, &counters[threadNum])
 	}, nil)
 
-	return util.BestCollector1_OfChannel(resultChannel, threadCount)
+	return util_rank.BestCollector1_OfChannel(resultChannel, threadCount)
 }
 
-func createWorkerRangeInt(skinnyOptions *SkinnyOptionsMap, itemOptions *SolvableOptionsMap, model *Model, start, max, skip uint64, resultChannel chan<- util.BestCollector1[SolvableItemSet], progressCounter *uint64) {
-	valueHeap := util.LowestNIntHeap_For(filterTarget)
-	best := util.BestCollector1[SolvableItemSet]{}
+func createWorkerRangeInt(skinnyOptions *SkinnyOptionsMap, itemOptions *SolvableOptionsMap, model *Model, start, max, skip uint64, resultChannel chan<- util_rank.BestCollector1[SolvableItemSet], progressCounter *uint64) {
+	valueHeap := util_rank.LowestNIntHeap_For(filterTarget)
+	best := util_rank.BestCollector1[SolvableItemSet]{}
 
 	skinnySet := new(SkinnyItemSet)
 	solveSet := new(SolvableItemSet)
@@ -136,7 +138,7 @@ func makeFromSkinny(itemOptions *SolvableOptionsMap, model *Model, skinnySet *Sk
 		if skinny.Exists {
 			options := itemOptions[slot]
 
-			best := util.BestCollector1[SolvableItem]{}
+			best := util_rank.BestCollector1[SolvableItem]{}
 			for i := range len(options) {
 				item := &options[i]
 				if model.StatRequirements.SkinnyMatch(skinny, item) {

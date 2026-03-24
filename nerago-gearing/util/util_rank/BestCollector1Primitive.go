@@ -1,4 +1,6 @@
-package util
+package util_rank
+
+import "paladin_gearing_go/util"
 
 ///////////////////////////////////////////////////////////
 type BestCollector1Primitive[T any] struct {
@@ -22,11 +24,11 @@ func (collect *BestCollector1Primitive[T]) GetBestOrPanic() T {
 	return collect.BestObject
 }
 
-func (collect *BestCollector1Primitive[T]) GetBestOptional() Optional[T] {
+func (collect *BestCollector1Primitive[T]) GetBestOptional() util.Optional[T] {
 	if collect.hasValue {
-		return Optional_OfValue(collect.BestObject)
+		return util.Optional_OfValue(collect.BestObject)
 	} else {
-		return Optional_Empty[T]()
+		return util.Optional_Empty[T]()
 	}
 }
 

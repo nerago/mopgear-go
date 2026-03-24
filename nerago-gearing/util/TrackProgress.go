@@ -141,6 +141,39 @@ func (track *TrackProgress) RunFromArray(array *[]uint64, targetCount uint64) {
 	})
 }
 
+func (track *TrackProgress) PrepareForPush() func(float64) {
+	var latestPercent float64
+
+	track.mutex.Lock()
+
+	if track.active {
+		go func() {
+			for {
+				select {
+				case <-track.ctx.Done():
+					return
+				case <-time.After(time.Second * 5):
+					percent := latestPercent
+					if percent != track.lastPercent {
+						PrintProgressBasic(track.startTime, percent)
+						track.lastPercent = percent
+					}
+				}
+			}
+		}()
+	} else if track.nested {
+		track.nestedProgressFunc = func() float64 {
+			return latestPercent
+		}
+	}
+
+	track.mutex.Unlock()
+
+	return func(p float64) {
+		latestPercent = p
+	}
+}
+
 func (track *TrackProgress) RunOuterTracking(expectedChildCount int) {
 	track.mutex.Lock()
 
@@ -166,7 +199,7 @@ func (track *TrackProgress) RunOuterTracking(expectedChildCount int) {
 			return track.sumNestedProgress(expectedChildCount)
 		}
 	}
-	
+
 	track.mutex.Unlock()
 }
 

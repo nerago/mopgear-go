@@ -5,6 +5,7 @@ import (
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_rank"
 )
 
 func SolverBuildRandom_Run(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, trackProgress *util.TrackProgress, printer *util.PrintRecorder) util.Optional[SolvableItemSet] {
@@ -13,7 +14,7 @@ func SolverBuildRandom_Run(itemOptions *SolvableOptionsMap, model *model.Model, 
 }
 
 func evaluateRandom(itemOptions *SolvableOptionsMap, model *model.Model, targetCount uint64, trackProgress *util.TrackProgress, threadCount int, peekFunc func(*SolvableItemSet)) util.Optional[SolvableItemSet] {
-	resultChannel := make(chan util.BestCollector1[SolvableItemSet], threadCount)
+	resultChannel := make(chan util_rank.BestCollector1[SolvableItemSet], threadCount)
 	eachThreadCount := targetCount / uint64(threadCount)
 	counters := make([]uint64, threadCount)
 
@@ -24,11 +25,11 @@ func evaluateRandom(itemOptions *SolvableOptionsMap, model *model.Model, targetC
 	}
 
 	// combine each thread's best result
-	return util.BestCollector1_OfChannel(resultChannel, threadCount)
+	return util_rank.BestCollector1_OfChannel(resultChannel, threadCount)
 }
 
-func evaluateRandomWorker(resultChannel chan util.BestCollector1[SolvableItemSet], model *model.Model, eachThreadCount uint64, itemOptions *SolvableOptionsMap, threadNum uint64, processedCounter *uint64, peekFunc func(*SolvableItemSet)) {
-	best := util.BestCollector1[SolvableItemSet]{}
+func evaluateRandomWorker(resultChannel chan util_rank.BestCollector1[SolvableItemSet], model *model.Model, eachThreadCount uint64, itemOptions *SolvableOptionsMap, threadNum uint64, processedCounter *uint64, peekFunc func(*SolvableItemSet)) {
+	best := util_rank.BestCollector1[SolvableItemSet]{}
 	rng := rand.New(rand.NewSource(int64(threadNum)))
 
 	for range eachThreadCount {

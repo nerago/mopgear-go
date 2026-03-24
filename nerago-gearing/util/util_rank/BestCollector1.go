@@ -1,4 +1,6 @@
-package util
+package util_rank
+
+import "paladin_gearing_go/util"
 
 ///////////////////////////////////////////////////////////
 type BestCollector1[T any] struct {
@@ -30,8 +32,8 @@ func (collect *BestCollector1[T]) GetBestPointerOrPanic() *T {
 	return collect.BestObject
 }
 
-func (collect *BestCollector1[T]) GetBestOptional() Optional[T] {
-	return Optional_OfPointer(collect.BestObject)
+func (collect *BestCollector1[T]) GetBestOptional() util.Optional[T] {
+	return util.Optional_OfPointer(collect.BestObject)
 }
 
 func (collect *BestCollector1[T]) Offer(object *T, value uint64) {
@@ -66,7 +68,7 @@ func (collect *BestCollector1[T]) CombineOther(other BestCollector1[T]) {
 	}
 }
 
-func BestCollector1_OfChannel[T any](channel <-chan BestCollector1[T], expectNum int) Optional[T] {
+func BestCollector1_OfChannel[T any](channel <-chan BestCollector1[T], expectNum int) util.Optional[T] {
 	best := BestCollector1[T]{}
 	for range expectNum {
 		threadResult := <-channel

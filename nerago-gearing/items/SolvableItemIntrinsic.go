@@ -9,15 +9,19 @@ func MakeSetFromArraysAndAdvance4(slotOptions *SolvableOptionsMap, slotIndexes *
 func go_SolvableItemSet_RecalculateTotal(set *SolvableItemSet) {
 	set.ClearTotals()
 	for _, item := range set.items {
-		stats.StatBlock_Increment_Mutating(&set.total, &item.total)
+		if item != nil {
+			stats.StatBlock_Increment_Mutating(&set.total, &item.total)
+		}
 	}
 }
 
 func go2_SolvableItemSet_RecalculateTotal(set *SolvableItemSet) {
 	set.total = stats.StatBlock{}
 	for _, item := range set.items {
-		for i := range set.total {
-			set.total[i] += item.total[i]
+		if item != nil {
+			for i := range set.total {
+				set.total[i] += item.total[i]
+			}
 		}
 	}
 }
