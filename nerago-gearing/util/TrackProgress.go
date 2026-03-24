@@ -13,10 +13,12 @@ type TrackProgress struct {
 	active bool
 	nested bool
 
-	startTime   time.Time
 	lastPercent float64
-	ctx         context.Context
-	cancel      context.CancelFunc
+	startTime   time.Time
+	ringBuffer  RingBuffer[progressSnapshot]
+
+	ctx    context.Context
+	cancel context.CancelFunc
 
 	nestedChildList    []*TrackProgress
 	nestedProgressFunc func() float64
@@ -24,11 +26,17 @@ type TrackProgress struct {
 	mutex sync.RWMutex
 }
 
+type progressSnapshot struct {
+	when    time.Time
+	percent float64
+}
+
 func TrackProgress_Start() *TrackProgress {
 	track := new(TrackProgress)
 	track.active = true
-	track.startTime = time.Now()
 	track.ctx, track.cancel = context.WithCancel(context.Background())
+	track.startTime = time.Now()
+	track.ringBuffer = RingBuffer_Create(10, progressSnapshot{track.startTime, 0.0})
 	return track
 }
 
@@ -62,7 +70,7 @@ func (track *TrackProgress) Stop() {
 	track.mutex.Unlock()
 }
 
-func (track *TrackProgress) run(getProgress func() (float64, uint64)) {
+func (track *TrackProgress) run(getProgress func() float64) {
 	track.mutex.Lock()
 
 	if track.active {
@@ -72,135 +80,63 @@ func (track *TrackProgress) run(getProgress func() (float64, uint64)) {
 				case <-track.ctx.Done():
 					return
 				case <-time.After(time.Second * 5):
-					percent, index := getProgress()
-					if percent != track.lastPercent {
-						PrintProgressInt(track.startTime, percent, index)
-						track.lastPercent = percent
-					}
+					percent := getProgress()
+					track.printProgress(percent)
 				}
 			}
 		}()
 	} else if track.nested {
-		track.nestedProgressFunc = func() float64 {
-			percent, _ := getProgress()
-			return percent
-		}
+		track.nestedProgressFunc = getProgress
 	}
 
 	track.mutex.Unlock()
 }
 
 func (track *TrackProgress) RunFromBigInt(current *big.Int, targetCount *big.Int) {
-	track.mutex.Lock()
-
-	if track.active {
-		go func() {
-			for {
-				select {
-				case <-track.ctx.Done():
-					return
-				case <-time.After(time.Second * 5):
-					var ratio big.Rat
-					ratio.SetFrac(current, targetCount)
-					percent, _ := ratio.Float64()
-					if percent != track.lastPercent {
-						PrintProgressBig(track.startTime, percent, current)
-						track.lastPercent = percent
-					}
-				}
-			}
-		}()
-	} else if track.nested {
-		track.nestedProgressFunc = func() float64 {
-			var ratio big.Rat
-			ratio.SetFrac(current, targetCount)
-			percent, _ := ratio.Float64()
-			return percent
-		}
-	}
-
-	track.mutex.Unlock()
+	track.run(func() float64 {
+		var ratio big.Rat
+		ratio.SetFrac(current, targetCount)
+		percent, _ := ratio.Float64()
+		return percent
+	})
 }
 
 func (track *TrackProgress) RunFromInt(current *uint64, targetCount uint64) {
-	track.run(func() (float64, uint64) {
+	track.run(func() float64 {
 		percent := float64(*current) / float64(targetCount)
-		return percent, *current
+		return percent
 	})
 }
 
 func (track *TrackProgress) RunFromArray(array *[]uint64, targetCount uint64) {
-	track.run(func() (float64, uint64) {
+	track.run(func() float64 {
 		var current uint64
 		for _, value := range *array {
 			current += value
 		}
 
 		percent := float64(current) / float64(targetCount)
-		return percent, current
+		return percent
 	})
 }
 
 func (track *TrackProgress) PrepareForPush() func(float64) {
-	var latestPercent float64
+	var latest float64
 
-	track.mutex.Lock()
+	track.run(func() float64 {
+		return latest
+	})
 
-	if track.active {
-		go func() {
-			for {
-				select {
-				case <-track.ctx.Done():
-					return
-				case <-time.After(time.Second * 5):
-					percent := latestPercent
-					if percent != track.lastPercent {
-						PrintProgressBasic(track.startTime, percent)
-						track.lastPercent = percent
-					}
-				}
-			}
-		}()
-	} else if track.nested {
-		track.nestedProgressFunc = func() float64 {
-			return latestPercent
-		}
-	}
-
-	track.mutex.Unlock()
-
-	return func(p float64) {
-		latestPercent = p
+	return func(v float64) {
+		latest = v
 	}
 }
 
 func (track *TrackProgress) RunOuterTracking(expectedChildCount int) {
-	track.mutex.Lock()
-
-	if track.active {
-		track.nestedChildList = make([]*TrackProgress, 0, expectedChildCount)
-		go func() {
-			for {
-				select {
-				case <-track.ctx.Done():
-					return
-				case <-time.After(time.Second * 5):
-					percent := track.sumNestedProgress(expectedChildCount)
-					if percent != track.lastPercent {
-						PrintProgressBasic(track.startTime, percent)
-						track.lastPercent = percent
-					}
-				}
-			}
-		}()
-	} else if track.nested {
-		track.nestedChildList = make([]*TrackProgress, 0, expectedChildCount)
-		track.nestedProgressFunc = func() float64 {
-			return track.sumNestedProgress(expectedChildCount)
-		}
-	}
-
-	track.mutex.Unlock()
+	track.nestedChildList = make([]*TrackProgress, 0, expectedChildCount)
+	track.run(func() float64 {
+		return track.sumNestedProgress(expectedChildCount)
+	})
 }
 
 func (track *TrackProgress) sumNestedProgress(expectedChildCount int) float64 {
@@ -222,32 +158,35 @@ func (track *TrackProgress) sumNestedProgress(expectedChildCount int) float64 {
 	return overallPercent
 }
 
-func PrintProgressBasic(startTime time.Time, percent float64) {
+func (track *TrackProgress) printProgress(percent float64) {
 	if percent > 0 {
-		estimateRemain := estimateRemain(startTime, percent)
-		fmt.Printf("%5.2f%% %s\n", percent*100, estimateRemain)
+		if percent != track.lastPercent {
+			now := time.Now()
+
+			estimateRemain := track.estimateRemain(now, percent)
+			track.ringBuffer.Write(progressSnapshot{now, percent})
+
+			fmt.Printf("%5.2f%% %s\n", percent*100, estimateRemain)
+			track.lastPercent = percent
+		}
 	}
 }
 
-func PrintProgressInt(startTime time.Time, percent float64, index uint64) {
-	if percent > 0 {
-		estimateRemain := estimateRemain(startTime, percent)
-		fmt.Printf("%d %4.1f%% %s\n", index, percent*100, estimateRemain)
-	}
-}
+func (track *TrackProgress) estimateRemain(now time.Time, percent float64) string {
+	ref := track.ringBuffer.ReadOldest()
+	timeTakenSinceRef := now.Sub(ref.when)
+	percentIncreaseSinceRef := percent - ref.percent
+	totalEstimateRef := float64(timeTakenSinceRef) / percentIncreaseSinceRef
 
-func PrintProgressBig(startTime time.Time, percent float64, index *big.Int) {
-	if percent > 0 {
-		estimateRemain := estimateRemain(startTime, percent)
-		fmt.Printf("%d %4.1f%% %s\n", index, percent*100, estimateRemain)
-	}
-}
+	// timeTakenSinceStart := now.Sub(track.startTime)
+	// totalEstimateStart := float64(timeTakenSinceStart) / percent
 
-func estimateRemain(startTime time.Time, percent float64) string {
-	timeTaken := time.Since(startTime)
-	totalEstimate := time.Duration(float64(timeTaken) / percent)
-	estimateRemain := totalEstimate - timeTaken
-	return compactDurationString(estimateRemain)
+	// totalEstimate := (totalEstimateRef + totalEstimateStart) / 2
+	// estimateRemain := totalEstimate - timeTakenSinceStart
+
+	estimateRemain := (1 - percent) * totalEstimateRef
+
+	return compactDurationString(time.Duration(estimateRemain))
 }
 
 func compactDurationString(duration time.Duration) string {

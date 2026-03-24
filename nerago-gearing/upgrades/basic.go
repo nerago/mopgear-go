@@ -146,7 +146,9 @@ func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptions
 		factor := float64(output.ResultRating) / baseRating
 		printer.Printf("UPGRADE RATING = %d FACTOR = %1.3f\n", output.ResultRating, factor)
 
-		result = upgradeItemResult{upgradeItemTask: *extraTask, success: true, itemSet: &output.FullSet, factor: factor}
+		setBonus := model.SetBonus.CountInAnySet(output.FullSet.Items())
+
+		result = upgradeItemResult{upgradeItemTask: *extraTask, success: true, itemSet: &output.FullSet, factor: factor, setBonus: setBonus}
 	} else {
 		printer.Println("UPGRADE SET NOT FOUND")
 		result = upgradeItemResult{upgradeItemTask: *extraTask, success: false, factor: -1.0}

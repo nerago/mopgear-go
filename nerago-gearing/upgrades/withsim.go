@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
+	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/setup"
@@ -20,32 +21,67 @@ const (
 	runSizeBase = simulate.RunSize_Medium
 )
 
-func FindUpgrades_Sim_Run() {
+func FindUpgrades_Sim_PaladinMiti_Run() {
+	mode := Upgrade_Miti_Heroic
+	model := model.Model_PallyProtMitigation()
+	gearFile := files.GearFileProtMitigation
+	upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
+	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Heroic)
+	substituteItems := []items.ItemId{
+		95291, // prot tier15 hand normal
+		95290, // prot tier15 chest normal
+		95292, // prot tier15 head normal
+		96667, // prot tier15 leg heroic
+		96668, // prot tier15 shoulder heroic
+		96657, // ret tier15 legs heroic
+		96769, // doomcloak
+		96394, // frozen warlord bracer heroic
+		96373, // cloudbreaker belt heroic
+		96478, // treads of the blind heroic
+		95142, // striker's battletags
+		95205, // terra-cotta neck
+		95178, // lootraptor amulet
+		96533, // rein-binders fists heroic
+		86957, // heroic bladed tempest ring
+		86955, // heroic overwhelm assault belt
+		95535, // normal lightning legs
+		87015, // heroic clawfeet
+		96481, // durumu tentacle heroic
+		95513, // scaled tyrant normal
+		95140, // shado assault band
+	}
+	FindUpgrades_Sim_Run(mode, &model, gearFile, upgradeItems, substituteItems)
+}
+
+func FindUpgrades_Sim_Run(mode upgradeMode, model *model.Model, gearFile string, upgradeItems []*items.FullItem, substituteItems []items.ItemId) {
 	tracker := util.TrackProgress_Start()
 	tracker.RunOuterTracking(2)
 	defer tracker.Stop()
 
-	mode := Upgrade_Miti_Heroic
-	//modelMitigation := model.Model_PallyProtMitigation()
-	modelDps := model.Model_PallyProtMitigation()
-
-	//upgradeNormal := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
-	upgradeHeroic := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Heroic)
-
 	printer := util.PrintRecorder_CreateLogFile()
-	printer.Println("[[[[[[[[[[[[[[[[[[[[ PALLY PROT DPS heroic UPGRADES SIMULATE ]]]]]]]]]]]]]]]]]]]]")
-	optionsDps := setup.OptionsSetup_FromGearFile(files.GearFileProtDps, &modelDps, printer)
+	optionsMap := setup.OptionsSetup_FromGearFile(gearFile, model, printer)
 
-	initialResult, baseSet := findUpgrade(&optionsDps, upgradeHeroic, &modelDps, printer, tracker.MakeNested(), mode)
+	addSubstituteItems(&optionsMap, substituteItems, model, printer)
 
-	baseSim := simulate.WowSim_Execute(runSize, modelDps.Spec, baseSet.Items(), nil, nil)
+	initialResult, baseSet := findUpgrade(&optionsMap, upgradeItems, model, printer, tracker.MakeNested(), mode)
+
+	baseSim := simulate.WowSim_Execute(runSize, model.Spec, baseSet.Items(), nil, nil)
 	printer.Println("SIM *BASELINE*")
 	baseSim.Print(printer)
 
-	// baseSim := simulate.WowSim_Execute(runSize, modelDps.Spec, baseSet.Items(), nil, tracker.MakeNested())
-	simResult := simEachInitialResult(initialResult, &modelDps, &baseSim, tracker.MakeNested(), printer)
+	simResult := simEachInitialResult(initialResult, model, &baseSim, tracker.MakeNested(), printer)
 
 	reportBasicResultsSim(simResult, printer)
+}
+
+func addSubstituteItems(optionsMap *items.FullOptionsMap, substituteItems []items.ItemId, model *model.Model, printer *util.PrintRecorder) {
+	for _, itemId := range substituteItems {
+		if !optionsMap.IncludesItemId(itemId) {
+			options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, model, printer)
+			optionsMap.AddSeveralOptions(example.Slot, options)
+			printer.Println("SUBSTITUTE " + example.CreateString())
+		}
+	}
 }
 
 func simEachInitialResult(inputList []upgradeItemResult, model *model.Model, baseSim *simulate.SimResultStats, tracker *util.TrackProgress, printer *util.PrintRecorder) []upgradeItemResultWithSim {

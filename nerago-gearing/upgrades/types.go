@@ -65,9 +65,10 @@ func (task upgradeItemTask) Boss() string {
 
 type upgradeItemResult struct {
 	upgradeItemTask
-	success bool
-	itemSet *items.FullItemSet
-	factor  float64
+	success  bool
+	itemSet  *items.FullItemSet
+	setBonus uint8
+	factor   float64
 }
 
 func (result upgradeItemResult) ranking() float64 {

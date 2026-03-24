@@ -77,7 +77,7 @@ func TransformAll_ChannelToChannel[T any, R any](threadCount int, inputChannel <
 	return outputChannel
 }
 
-func GenerateAll_ToChannel[R any](threadCount int, generateSubGroup func(int, chan<- R), after func()) <-chan R {
+func GenerateAll_ToChannel[R any](threadCount int, generateSubGroup func(int, chan<- R)) <-chan R {
 	var waitGroup sync.WaitGroup
 	outputChannel := makeOutputChannel[R]()
 	for threadNum := range threadCount {
@@ -88,9 +88,6 @@ func GenerateAll_ToChannel[R any](threadCount int, generateSubGroup func(int, ch
 	go func() {
 		waitGroup.Wait()
 		close(outputChannel)
-		if after != nil {
-			after()
-		}
 	}()
 	return outputChannel
 }

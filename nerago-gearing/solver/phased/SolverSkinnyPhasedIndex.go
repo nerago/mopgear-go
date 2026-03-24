@@ -69,7 +69,7 @@ func makeSkinnyCombosMultiThread(skinnyOptions *SkinnyOptionsMap, itemOptions *S
 	splits := solve_util.IndexSplitsInt(max, skip, threadCount)
 	resultChannel := channel_op.GenerateAll_ToChannel(threadCount, func(threadNum int, resultChannel chan<- util_rank.BestCollector1[SolvableItemSet]) {
 		createWorkerRangeInt(skinnyOptions, itemOptions, model, splits[threadNum], splits[threadNum+1], skip, resultChannel, &counters[threadNum])
-	}, nil)
+	})
 
 	return util_rank.BestCollector1_OfChannel(resultChannel, threadCount)
 }
