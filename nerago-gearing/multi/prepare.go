@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/solver"
+	"paladin_gearing_go/upgrades"
 	"paladin_gearing_go/util"
 	"slices"
 )
@@ -50,6 +51,12 @@ func (param *MultiSetParam) prepareExtraItems() {
 	for _, itemId := range param.extraItems {
 		param.includeExtra(itemId)
 	}
+
+	if param.extraFromBags {
+		for _, item := range param.job.bagsGear {
+			param.tryAddExtraFromBags(&item)
+		}
+	}
 }
 
 func (param *MultiSetParam) includeExtra(itemId items.ItemId) {
@@ -58,18 +65,18 @@ func (param *MultiSetParam) includeExtra(itemId items.ItemId) {
 		return
 	}
 
-	if param.extraFromOtherSpec(itemId) {
+	if param.copyExtraFromOtherSpec(itemId) {
 		return
 	}
 
-	if param.extraFromBags(itemId) {
+	if param.copyExtraFromBags(itemId) {
 		return
 	}
 
 	param.extraLoadAndGenerate(itemId)
 }
 
-func (param *MultiSetParam) extraFromOtherSpec(itemId items.ItemId) bool {
+func (param *MultiSetParam) copyExtraFromOtherSpec(itemId items.ItemId) bool {
 	options := make([]items.FullItem, 0)
 	for _, otherParam := range param.job.params {
 		more := otherParam.itemOptions.FindItemId(itemId)
@@ -89,19 +96,32 @@ func (param *MultiSetParam) extraFromOtherSpec(itemId items.ItemId) bool {
 	}
 }
 
-func (param *MultiSetParam) extraFromBags(itemId items.ItemId) bool {
-	for _, equipped := range param.job.bagsGear {
-		if equipped.ItemId == itemId {
-			// bags file doesn't have upgrade steps
-			equipped.UpgradeStep = param.ExtraUpgradeLevel
+func (param *MultiSetParam) copyExtraFromBags(itemId items.ItemId) bool {
+	equipped := param.job.bagsGear.GetWithItemId(itemId)
+	if equipped != nil {
+		// bags file doesn't have upgrade steps
+		equipped.UpgradeStep = param.ExtraUpgradeLevel
 
-			options, example := setup.OptionsSetup_Single_FromEquipped(equipped, &param.Model, param.job.printer)
-			param.itemOptions.AddSeveralOptions(example.Slot, options)
-			param.job.printer.Printf("OPTION from bags %s\n", example.CreateString())
-			return true
-		}
+		options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &param.Model, param.job.printer)
+		param.itemOptions.AddSeveralOptions(example.Slot, options)
+		param.job.printer.Printf("OPTION from bags %s\n", example.CreateString())
+		return true
 	}
 	return false
+}
+
+func (param *MultiSetParam) tryAddExtraFromBags(equipped *loaders.EquippedItem) {
+	// bags file doesn't have upgrade steps
+	equipped.UpgradeStep = param.ExtraUpgradeLevel
+
+	options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &param.Model, param.job.printer)
+
+	for _, slot := range example.Slot.ToSlotEquipOptions() {
+		if upgrades.CouldAddUpgradeToSet(&param.itemOptions, slot, param.job.printer, example) {
+			param.job.printer.Printf("ADDITIONAL EXTRA OPTION from bags %s\n", example.CreateString())
+			param.itemOptions.AddSeveralOptionsSpecific(slot, options)
+		}
+	}
 }
 
 func (param *MultiSetParam) extraLoadAndGenerate(itemId items.ItemId) {

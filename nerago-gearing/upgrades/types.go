@@ -104,6 +104,10 @@ func ratioToIncrease(sim, baseSim *simulate.SimResultStats, part simulate.SimRes
 }
 
 func formatIncrease(percent float64) string {
+	if math.IsNaN(percent) {
+		panic("should not be NaN")
+	}
+
 	if percent <= -1 {
 		return ""
 	}
@@ -136,6 +140,10 @@ func (result upgradeItemResultWithSim) percentSim() float64 {
 }
 
 func (result upgradeItemResultWithSim) percentStrSim() string {
+	if result.sim.IsEmpty() {
+		return ""
+	}
+	
 	return formatIncrease(result.percentSim())
 }
 

@@ -21,6 +21,7 @@ import (
 type WowSim_RunSize int32
 
 const (
+	RunSize_TestOnly   WowSim_RunSize = 100
 	RunSize_QuickDirty   WowSim_RunSize = 20000
 	RunSize_Medium       WowSim_RunSize = 100000
 	RunSize_SlowAccurate WowSim_RunSize = 500000
@@ -32,6 +33,7 @@ func WowSim_Execute(runSize WowSim_RunSize, spec gear_stat.SpecType, equipMap *i
 
 	updateGear(input, equipMap)
 	updateBonus(input, bonusStats)
+	input.SimOptions.Iterations = int32(runSize)
 
 	reporter := make(chan *wowsim_proto.ProgressMetrics, 10)
 	id := uuid.NewString()

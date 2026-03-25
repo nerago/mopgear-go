@@ -105,6 +105,10 @@ func (optionsMap *FullOptionsMap) AddSeveralOptions(slot SlotItem, options []Ful
 	}
 }
 
+func (optionsMap *FullOptionsMap) AddSeveralOptionsSpecific(slotEquip SlotEquip, options []FullItem) {
+	optionsMap[slotEquip] = append(optionsMap[slotEquip], options...)
+}
+
 func (optionsMap *FullOptionsMap) FillSlot_ExpectedEmpty(slotItem SlotItem, optionList []FullItem) {
 	var slotEquip SlotEquip
 	switch slotItem {

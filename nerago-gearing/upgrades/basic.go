@@ -3,6 +3,7 @@ package upgrades
 import (
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/solver"
@@ -12,7 +13,7 @@ import (
 )
 
 func findUpgrade(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, mode upgradeMode) ([]upgradeItemResult, *items.FullItemSet) {
-	extraItems = upgradeExtraItems(extraItems, printer)
+	extraItems = setupUpgradeLevel(extraItems, printer)
 	checkDuplicates(extraItems)
 	extraTasks := makeExtraTasks(extraItems, baseItems, printer, mode)
 
@@ -31,7 +32,7 @@ func findUpgrade(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, 
 	return resultList, baseSet
 }
 
-func upgradeExtraItems(extraItems []*items.FullItem, printer *util.PrintRecorder) []*items.FullItem {
+func setupUpgradeLevel(extraItems []*items.FullItem, printer *util.PrintRecorder) []*items.FullItem {
 	result := make([]*items.FullItem, 0, len(extraItems))
 	for _, item := range extraItems {
 		replace := db.WowSimDB_ByIdAndUpgrade_AllowFallback(item.ItemId(), targetUpgradeLevel, printer)
@@ -53,11 +54,13 @@ func checkDuplicates(extraItems []*items.FullItem) {
 }
 
 func makeExtraTasks(extraItems []*items.FullItem, baseItems *items.FullOptionsMap, printer *util.PrintRecorder, mode upgradeMode) []upgradeItemTask {
+	bagsFile := loaders.BagsFileReader_Read()
+
 	taskList := make([]upgradeItemTask, 0, len(extraItems))
 	for _, extra := range extraItems {
 		boss := db.BossItemData_BossForItem(extra)
 		for _, slot := range extra.Slot.ToSlotEquipOptions() {
-			if canPerformSpecifiedUpgrade(extra, slot, baseItems, printer) {
+			if canPerformSpecifiedUpgrade(extra, slot, baseItems, bagsFile, printer) {
 				taskList = append(taskList, upgradeItemTask{extra, slot, mode, boss})
 			}
 		}
@@ -65,11 +68,24 @@ func makeExtraTasks(extraItems []*items.FullItem, baseItems *items.FullOptionsMa
 	return taskList
 }
 
-func canPerformSpecifiedUpgrade(extra *items.FullItem, slot items.SlotEquip, baseItems *items.FullOptionsMap, printer *util.PrintRecorder) bool {
+func canPerformSpecifiedUpgrade(extra *items.FullItem, slot items.SlotEquip, baseItems *items.FullOptionsMap, bagsFile loaders.EquippedArray, printer *util.PrintRecorder) bool {
 	if slices.Contains(ignoredItems, extra.ItemId()) {
 		return false
 	}
 
+	if !CouldAddUpgradeToSet(baseItems, slot, printer, extra) {
+		return false
+	}
+
+	if bagsFile.HasAnyWithItemId(extra.ItemId()) {
+		printer.Println("ALREADY AVAILABLE IN BAG " + extra.CreateString())
+		return false
+	}
+
+	return true
+}
+
+func CouldAddUpgradeToSet(baseItems *items.FullOptionsMap, slot items.SlotEquip, printer *util.PrintRecorder, extra *items.FullItem) bool {
 	if !baseItems.Has(slot) {
 		printer.Println("SLOT NOT USED IN CURRENT SET " + extra.CreateString())
 		return false

@@ -9,6 +9,7 @@ import (
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/setup"
+	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -18,13 +19,23 @@ import (
 const (
 	upgradeEachThreads = 4
 	targetUpgradeLevel = 2
+
 	baseSolveSize      = solver.SolveSize_Long
 	itemSolveSize      = solver.SolveSize_Medium
 	// baseSolveSize = solver.SolveSize_Medium
 	// itemSolveSize = solver.SolveSize_PerItem
+
+	simThreads = 4
+	simRunSize  = simulate.RunSize_Medium
+	simRunSizeBase = simulate.RunSize_SlowAccurate
+	// simRunSize  = simulate.RunSize_QuickDirty
+	// simRunSizeBase = simulate.RunSize_Medium
+	// simRunSize     = simulate.RunSize_TestOnly
+	// simRunSizeBase = simulate.RunSize_TestOnly
 )
 
-func FindUpgrades_AllRaid_Run() {
+// possible entry point
+func FindUpgrades_Paladin_AllRaid_Run() {
 	tracker := util.TrackProgress_Start()
 	tracker.RunOuterTracking(4)
 	defer tracker.Stop()
@@ -62,7 +73,60 @@ func FindUpgrades_AllRaid_Run() {
 	printer = util.PrintRecorder_CreateLogFile()
 	reportTabulatedResults(outputMap, printer)
 	printer.Close()
+}
 
+// possible entry point
+func FindUpgrades_Paladin_Sim_AllRaid_Run() {
+	tracker := util.TrackProgress_Start()
+	tracker.RunOuterTracking(4)
+	defer tracker.Stop()
+
+	modelMitigation := model.Model_PallyProtMitigation()
+	modelDps := model.Model_PallyProtMitigation()
+
+	upgradeNormal := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
+	upgradeHeroic := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Heroic)
+
+	outputMap := make(map[upgradeMode][]upgradeItemResultWithSim)
+
+	printer := util.PrintRecorder_CreateLogFile()
+	printer.Println("[[[[[[[[[[[[[[[[[[[[ PALLY PROT DPS normal UPGRADES ]]]]]]]]]]]]]]]]]]]]")
+	optionsDps := setup.OptionsSetup_FromGearFile(files.GearFileProtDps, &modelDps, printer)
+	outputMap[Upgrade_Dps_Normal] = findUpgradeAndSim(&optionsDps, upgradeNormal, &modelDps, printer, tracker.MakeNested(), Upgrade_Dps_Normal)
+	printer.Close()
+
+	printer = util.PrintRecorder_CreateLogFile()
+	printer.Println("[[[[[[[[[[[[[[[[[[[[ PALLY PROT DPS heroic UPGRADES ]]]]]]]]]]]]]]]]]]]]")
+	outputMap[Upgrade_Dps_Heroic] = findUpgradeAndSim(&optionsDps, upgradeHeroic, &modelDps, printer, tracker.MakeNested(), Upgrade_Dps_Heroic)
+	printer.Close()
+
+	printer = util.PrintRecorder_CreateLogFile()
+	printer.Println("[[[[[[[[[[[[[[[[[[[[ PALLY PROT MITIGATION normal UPGRADES ]]]]]]]]]]]]]]]]]]]]")
+	optionsMitigation := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigation, &modelMitigation, printer)
+	outputMap[Upgrade_Miti_Normal] = findUpgradeAndSim(&optionsMitigation, upgradeNormal, &modelDps, printer, tracker.MakeNested(), Upgrade_Miti_Normal)
+	printer.Close()
+
+	printer = util.PrintRecorder_CreateLogFile()
+	printer.Println("[[[[[[[[[[[[[[[[[[[[ PALLY PROT MITIGATION heroic UPGRADES ]]]]]]]]]]]]]]]]]]]]")
+	outputMap[Upgrade_Miti_Heroic] = findUpgradeAndSim(&optionsMitigation, upgradeHeroic, &modelDps, printer, tracker.MakeNested(), Upgrade_Miti_Heroic)
+	printer.Close()
+
+	printer = util.PrintRecorder_CreateLogFile()
+	reportTabulatedSimResults(outputMap, printer)
+	printer.Close()
+}
+
+func findUpgradeAndSim(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, mode upgradeMode) []upgradeItemResultWithSim {
+	tracker.RunOuterTracking(2)
+	defer tracker.Stop()
+
+	initialList, baseSet := findUpgrade(baseItems, extraItems, model, printer, tracker.MakeNested(), mode)
+
+	baseSim := simulate.WowSim_Execute(simRunSize, model.Spec, baseSet.Items(), nil, nil)
+	printer.Println("SIM *BASELINE*")
+	baseSim.Print(printer)
+
+	return simEachInitialResult(initialList, model, &baseSim, tracker.MakeNested(), printer)
 }
 
 type reportForItem struct {

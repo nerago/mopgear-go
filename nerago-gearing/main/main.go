@@ -71,8 +71,10 @@ func core(printer *util.PrintRecorder) {
 
 	// PaladinMultiRun(printer)
 	// testSim(printer)
-	// upgrades.FindUpgrades_AllRaid_Run()
-	upgrades.FindUpgrades_Sim_PaladinMiti_Run()
+	// upgrades.FindUpgrades_Paladin_AllRaid_Run()
+	upgrades.FindUpgrades_Paladin_Sim_AllRaid_Run()
+	// findUpgrades_Sim_PaladinMiti_Run()
+	// findUpgrades_Sim_PaladinDps_Run()
 }
 
 func setupPallyMitigation() (items.FullOptionsMap, model.Model) {

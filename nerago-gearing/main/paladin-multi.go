@@ -60,6 +60,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94820, // caustic spike bracers
 		96394, // frozen warlord bracer heroic
 	})
+	ret.AddBagsExtra()
 	ret.AddFixedSlot(items.Equip_Ring2, 95513) // scaled tyrant normal
 
 	protDps := multi.MultiSetParam{
@@ -114,6 +115,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		96376, // worldbreaker weapon
 	})
+	protDps.AddBagsExtra()
 	protDps.AddFixedSlot(items.Equip_Ring2, 95513) // scaled tyrant normal
 
 	protMitigation := multi.MultiSetParam{
@@ -171,6 +173,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		96376, // worldbreaker weapon
 	})
+	protMitigation.AddBagsExtra()
 	protMitigation.AddFixedSlot(items.Equip_Ring1, 96481) // durumu
 
 	job.AddSetParam(ret)

@@ -22,6 +22,7 @@ type MultiSetParam struct {
 	// extra item settings
 	ExtraUpgradeLevel int16
 	extraItems        []items.ItemId
+	extraFromBags     bool
 	fixedSlots        map[items.SlotEquip]items.ItemId
 
 	// working data
@@ -48,6 +49,10 @@ func (param *MultiSetParam) init(job *MultiSetJob) {
 func (param *MultiSetParam) AddExtraItems(extraItemIds []items.ItemId) *MultiSetParam {
 	param.extraItems = append(param.extraItems, extraItemIds...)
 	return param
+}
+
+func (param *MultiSetParam) AddBagsExtra() {
+	param.extraFromBags = true
 }
 
 func (param *MultiSetParam) AddExtraItem(extraItemId items.ItemId) *MultiSetParam {

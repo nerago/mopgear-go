@@ -147,6 +147,7 @@ func (job *MultiSetJob) prepareSimList(proposalList []MultiProposedOutput) []sim
 func (job *MultiSetJob) runSims(jobList []simulateJob, runSize simulate.WowSim_RunSize, trackProgress *util.TrackProgress) {
 	job.printer.Printf("@@@@@@@@@@ RUN SIM JOBS %d @@@@@@@@@@\n", len(jobList))
 	trackProgress.RunOuterTracking(len(jobList))
+	defer trackProgress.Stop()
 
 	channel_op.IterateEach_Blocking_Void(evaluateThreadCount, jobList, func(sim *simulateJob) {
 		result := simulate.WowSim_Execute(runSize, sim.spec, &sim.equip, nil, trackProgress.MakeNested())

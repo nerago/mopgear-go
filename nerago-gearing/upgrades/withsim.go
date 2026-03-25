@@ -3,56 +3,16 @@ package upgrades
 import (
 	"cmp"
 	"paladin_gearing_go/db"
-	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
-	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
 	"slices"
 )
 
-const (
-	simThreads  = 4
-	runSize     = simulate.RunSize_QuickDirty
-	runSizeBase = simulate.RunSize_Medium
-)
-
-func FindUpgrades_Sim_PaladinMiti_Run() {
-	mode := Upgrade_Miti_Heroic
-	model := model.Model_PallyProtMitigation()
-	gearFile := files.GearFileProtMitigation
-	upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
-	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Heroic)
-	substituteItems := []items.ItemId{
-		95291, // prot tier15 hand normal
-		95290, // prot tier15 chest normal
-		95292, // prot tier15 head normal
-		96667, // prot tier15 leg heroic
-		96668, // prot tier15 shoulder heroic
-		96657, // ret tier15 legs heroic
-		96769, // doomcloak
-		96394, // frozen warlord bracer heroic
-		96373, // cloudbreaker belt heroic
-		96478, // treads of the blind heroic
-		95142, // striker's battletags
-		95205, // terra-cotta neck
-		95178, // lootraptor amulet
-		96533, // rein-binders fists heroic
-		86957, // heroic bladed tempest ring
-		86955, // heroic overwhelm assault belt
-		95535, // normal lightning legs
-		87015, // heroic clawfeet
-		96481, // durumu tentacle heroic
-		95513, // scaled tyrant normal
-		95140, // shado assault band
-	}
-	FindUpgrades_Sim_Run(mode, &model, gearFile, upgradeItems, substituteItems)
-}
-
+// possible entry point
 func FindUpgrades_Sim_Run(mode upgradeMode, model *model.Model, gearFile string, upgradeItems []*items.FullItem, substituteItems []items.ItemId) {
 	tracker := util.TrackProgress_Start()
 	tracker.RunOuterTracking(2)
@@ -65,7 +25,7 @@ func FindUpgrades_Sim_Run(mode upgradeMode, model *model.Model, gearFile string,
 
 	initialResult, baseSet := findUpgrade(&optionsMap, upgradeItems, model, printer, tracker.MakeNested(), mode)
 
-	baseSim := simulate.WowSim_Execute(runSize, model.Spec, baseSet.Items(), nil, nil)
+	baseSim := simulate.WowSim_Execute(simRunSize, model.Spec, baseSet.Items(), nil, nil)
 	printer.Println("SIM *BASELINE*")
 	baseSim.Print(printer)
 
@@ -86,9 +46,11 @@ func addSubstituteItems(optionsMap *items.FullOptionsMap, substituteItems []item
 
 func simEachInitialResult(inputList []upgradeItemResult, model *model.Model, baseSim *simulate.SimResultStats, tracker *util.TrackProgress, printer *util.PrintRecorder) []upgradeItemResultWithSim {
 	tracker.RunOuterTracking(len(inputList))
+	defer tracker.Stop()
+
 	return channel_op.IterateEach_SliceToSlice(simThreads, inputList, func(input *upgradeItemResult, resultChannel chan<- upgradeItemResultWithSim) {
 		if input.success {
-			simResult := simulate.WowSim_Execute(runSize, model.Spec, input.itemSet.Items(), nil, tracker.MakeNested())
+			simResult := simulate.WowSim_Execute(simRunSize, model.Spec, input.itemSet.Items(), nil, tracker.MakeNested())
 
 			printer.Println("SIM " + input.item.BaseName)
 			simResult.Print(printer)
@@ -113,24 +75,25 @@ func reportTabulatedSimResults(outputMap map[upgradeMode][]upgradeItemResultWith
 			}
 			slices.SortFunc(reportList, func(a, b *reportForItemWithSim) int { return cmp.Compare(a.BestRating(), b.BestRating()) })
 
-			printer.Printf("%10s%5s%45s%10s%10s%10s%10s%10s%10s%10s%10s%s\n",
+			printer.Printf("%10s%5s%45s%10s%10s%10s%10s%10s%10s%10s%10s   %10s%s\n",
 				"slot", "ilvl", "name",
 				"DPS_norm", "sim_d_n",
 				"DPS_hero", "sim_d_h",
 				"MIT_norm", "sim_m_n",
 				"MIT_hero", "sim_m_h",
+				"best_sim",
 				"sim_detailed")
 
 			for _, report := range reportList {
-				_, bestSimIncrease, mode := bestSimOf(report)
+				_, bestSimIncrease, bestMode := bestSimOf(report)
 
-				printer.Printf("%10s%5d%45s%10s%10s%10s%10s%10s%10s%10s%10s\t\t%8s%s\n",
+				printer.Printf("%10s%5d%45s%10s%10s%10s%10s%10s%10s%10s%10s   %10s%s\n",
 					report.item.Slot.Name(), report.item.Ref.ItemLevel, report.item.BaseName,
 					report.byMode[Upgrade_Dps_Normal].increaseStr(), report.byMode[Upgrade_Dps_Normal].percentStrSim(),
 					report.byMode[Upgrade_Dps_Heroic].increaseStr(), report.byMode[Upgrade_Dps_Heroic].percentStrSim(),
 					report.byMode[Upgrade_Miti_Normal].increaseStr(), report.byMode[Upgrade_Miti_Normal].percentStrSim(),
 					report.byMode[Upgrade_Miti_Heroic].increaseStr(), report.byMode[Upgrade_Miti_Heroic].percentStrSim(),
-					mode.Name(), bestSimIncrease.CompactStringSignedPercent())
+					bestMode.Name(), bestSimIncrease.CompactStringSignedPercent())
 			}
 
 			printer.Println0()
@@ -143,10 +106,11 @@ func bestSimOf(report *reportForItemWithSim) (simulate.SimResultStats, simulate.
 	var bestIncrease simulate.SimResultStats
 	var bestMode upgradeMode
 	best := -1.0
-	for _, report := range report.byMode {
+	for mode, report := range report.byMode {
 		value := report.bestOfSimResults()
 		if value > best {
 			best = value
+			bestMode = mode
 			bestSim = report.sim
 			bestIncrease = report.increaseSimBreakdown()
 		}

@@ -44,7 +44,7 @@ func (print *PrintRecorder) Println(str string) {
 		print.writer.WriteString("\n")
 		fmt.Println(str)
 	}
-	
+
 	print.mutex.Unlock()
 }
 
@@ -67,6 +67,7 @@ func (print *PrintRecorder) AppendOther(other *PrintRecorder) {
 		panic("can't append printer that wasn't holding output")
 	}
 
+	other.mutex.Lock()
 	print.mutex.Lock()
 
 	if print.holdOutput {
@@ -85,6 +86,7 @@ func (print *PrintRecorder) AppendOther(other *PrintRecorder) {
 	}
 
 	print.mutex.Unlock()
+	other.mutex.Unlock()
 }
 
 func (print *PrintRecorder) Close() {

@@ -17,7 +17,7 @@ type MultiSetJob struct {
 	printer           *util.PrintRecorder
 	params            []MultiSetParam
 	fixedForge        map[items.ItemId]stats.ReforgeRecipe
-	bagsGear          []loaders.EquippedItem
+	bagsGear          loaders.EquippedArray
 	multiSetFilter    func(MultiProposedOutput) bool
 	suppressSlotCheck []items.ItemId
 }

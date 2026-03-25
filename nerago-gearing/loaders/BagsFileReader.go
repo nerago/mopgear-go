@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"os"
 	"paladin_gearing_go/files"
+	"paladin_gearing_go/items"
 )
 
-func BagsFileReader_Read() []EquippedItem {
-	equippedItems := make([]EquippedItem, 0)
+func BagsFileReader_Read() EquippedArray {
+	equippedItems := make(EquippedArray, 0)
 
 	allBytes, err := os.ReadFile(files.BagsFilename)
 	if err != nil {
@@ -25,4 +26,24 @@ func BagsFileReader_Read() []EquippedItem {
 	}
 
 	return equippedItems
+}
+
+type EquippedArray []EquippedItem
+
+func (equippedArray *EquippedArray) HasAnyWithItemId(itemId items.ItemId) bool {
+	for _, item := range *equippedArray {
+		if item.ItemId == itemId {
+			return true
+		}
+	}
+	return false
+}
+
+func (equippedArray *EquippedArray) GetWithItemId(itemId items.ItemId) *EquippedItem {
+	for _, item := range *equippedArray {
+		if item.ItemId == itemId {
+			return &item
+		}
+	}
+	return nil
 }
