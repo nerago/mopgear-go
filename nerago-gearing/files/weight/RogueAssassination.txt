@@ -1,0 +1,1 @@
+( Pawn: v1: "Assassination WoWSims Weights": Class=Rogue,Agility=1.000,HitRating=0.460,CritRating=0.370,HasteRating=0.350,ExpertiseRating=0.420,MasteryRating=0.410,MeleeDps=1.370 )

@@ -1,0 +1,1 @@
+( Pawn: v1: "Fire WoWSims Weights": Class=Mage,Intellect=1.370,HitRating=1.200,CritRating=1.050,HasteRating=0.620,MasteryRating=0.790,SpellDamage=1.000 )

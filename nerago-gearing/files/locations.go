@@ -3,25 +3,25 @@ package files
 import "paladin_gearing_go/stats"
 
 const (
-	WowSimDB = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\src\main\resources\wowsimdb.json`
-	BossLookup = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\src\main\resources\bosslookup.tsv`
+	WowSimDB   = `wowsim-external\assets\database\db.json`
+	BossLookup = `nerago-gearing\files\bosslookup.tsv`
 
-	LogOutputPath = `C:\Users\nicholas\Dropbox\prog\paladin_gearing_go\output\`
-	ProfileDir    = `C:\Users\nicholas\Dropbox\prog\paladin_gearing_go\`
+	LogOutputPath = `output\`
+	ProfileDir    = `profile\`
 
-	WeightMitiFile = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\src\main\resources\weight\PaladinProtMitigation.txt`
-	WeightDpsFile  = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\src\main\resources\weight\PaladinProtDps.txt`
-	WeightRetFile  = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\src\main\resources\weight\PaladinRet.txt`
+	WeightMitiFile = `nerago-gearing\files\weight\PaladinProtMitigation.txt`
+	WeightDpsFile  = `nerago-gearing\files\weight\PaladinProtDps.txt`
+	WeightRetFile  = `nerago-gearing\files\weight\PaladinRet.txt`
 
-	BagsFilename = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\bags-gear-bags.json`
+	BagsFilename = `nerago-gearing\files\gear\bags-gear.json`
 
-	GearFileProtMitigation = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\gear-prot-defence.json`
-	GearFileProtDps        = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\gear-prot-dps.json`
-	GearFileRet            = `C:\Users\nicholas\Dropbox\prog\paladin_gearing\gear-ret.json`
+	GearFileProtMitigation = `nerago-gearing\files\gear\gear-prot-defence.json`
+	GearFileProtDps        = `nerago-gearing\files\gear\gear-prot-dps.json`
+	GearFileRet            = `nerago-gearing\files\gear\gear-ret.json`
 
-	SimProtMitigation = "C:\\Users\\nicholas\\Dropbox\\prog\\wow-sim-mop\\example-prot-miti.json"
-	SimProtDps        = "C:\\Users\\nicholas\\Dropbox\\prog\\wow-sim-mop\\example-prot-dps.json"
-	SimRet            = "C:\\Users\\nicholas\\Dropbox\\prog\\wow-sim-mop\\example-ret.json"
+	SimProtMitigation = `nerago-gearing\files\cli\example-prot-miti.json`
+	SimProtDps        = `nerago-gearing\files\cli\example-prot-dps.json`
+	SimRet            = `nerago-gearing\files\cli\example-ret.json`
 )
 
 func SimFileFor(spec stats.SpecType) string {

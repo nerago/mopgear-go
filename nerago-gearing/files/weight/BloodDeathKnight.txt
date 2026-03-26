@@ -1,0 +1,1 @@
+( Pawn: v1: "Blood WoWSims Weights": Class=Death Knight,Strength=1.000,Stamina=1.540,HitRating=1.110,CritRating=0.640,HasteRating=0.560,ExpertiseRating=1.010,DodgeRating=0.500,ParryRating=0.650,MasteryRating=0.190,Ap=0.290,Armor=0.790,Armor2=0.790,MeleeDps=1.760 )

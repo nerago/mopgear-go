@@ -1,0 +1,1 @@
+( Pawn: v1: "Enhancement WoWSims Weights": Class=Shaman,Agility=1.000,Intellect=0.040,HitRating=0.970,CritRating=0.410,HasteRating=0.420,ExpertiseRating=0.970,MasteryRating=0.460,Ap=0.400,MeleeDps=0.880 )

@@ -1,0 +1,1 @@
+( Pawn: v1: "Destruction WoWSims Weights": Class=Warlock,Intellect=1.209,CritRating=0.440,HasteRating=0.362,MasteryRating=0.419,SpellDamage=1.000 )

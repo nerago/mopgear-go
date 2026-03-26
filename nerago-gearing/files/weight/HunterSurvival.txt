@@ -1,0 +1,1 @@
+( Pawn: v1: "Survival WoWSims Weights": Class=Hunter,Agility=1.000,HitRating=0.590,CritRating=0.290,HasteRating=0.250,ExpertiseRating=0.570,MasteryRating=0.210,RangedDps=0.620 )

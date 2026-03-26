@@ -8,7 +8,7 @@
 			"args": [
 				"-o", "main.exe",
 				"-v",
-				"-pgo=./main.pgo",
+				"-pgo=./profile/main.pgo",
 				"-tags=with_db",
 				"./nerago-gearing/main"
 			],

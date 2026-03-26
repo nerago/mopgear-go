@@ -1,0 +1,1 @@
+( Pawn: v1: "Elemental WoWSims Weights": Class=Shaman,Intellect=1.000,Spirit=1.100,HitRating=1.100,CritRating=0.370,HasteRating=0.470,MasteryRating=0.440,SpellDamage=0.820 )

@@ -1,0 +1,1 @@
+( Pawn: v1: "Arms WoWSims Weights": Class=Warrior,Strength=1.000,HitRating=1.400,CritRating=0.590,HasteRating=0.320,ExpertiseRating=1.200,MasteryRating=0.390,Ap=0.450,MeleeDps=3.710 )

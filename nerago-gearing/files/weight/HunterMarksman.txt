@@ -1,0 +1,1 @@
+( Pawn: v1: "Marksmanship WoWSims Weights": Class=Hunter,Agility=1.000,HitRating=0.630,CritRating=0.400,HasteRating=0.350,ExpertiseRating=0.590,MasteryRating=0.290,RangedDps=0.620 )

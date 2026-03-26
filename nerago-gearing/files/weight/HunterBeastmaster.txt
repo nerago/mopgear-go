@@ -1,0 +1,1 @@
+( Pawn: v1: "Beast Mastery WoWSims Weights": Class=Hunter,Agility=1.000,HitRating=0.630,CritRating=0.280,HasteRating=0.270,ExpertiseRating=0.590,MasteryRating=0.250,RangedDps=0.630 )

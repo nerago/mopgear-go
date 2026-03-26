@@ -1,0 +1,1 @@
+( Pawn: v1: "Protection WoWSims Weights": Class=Warrior,Strength=1.000,Stamina=1.070,HitRating=1.780,CritRating=0.700,HasteRating=0.110,ExpertiseRating=1.770,DodgeRating=0.820,ParryRating=0.820,MasteryRating=0.190,Ap=0.330,Armor=0.550,Armor2=0.550,MeleeDps=0.960 )

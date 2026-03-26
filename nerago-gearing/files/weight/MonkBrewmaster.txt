@@ -1,0 +1,1 @@
+( Pawn: v1: "Brewmaster WoWSims Weights": Class=Monk,Agility=1.000,Stamina=0.810,HitRating=1.280,CritRating=0.670,HasteRating=0.420,ExpertiseRating=0.960,DodgeRating=0.200,ParryRating=0.230,MasteryRating=0.650,Ap=0.240,Armor=0.410,Armor2=0.410,MeleeDps=1.500 )

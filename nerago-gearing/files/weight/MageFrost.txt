@@ -1,0 +1,1 @@
+( Pawn: v1: "Frost WoWSims Weights": Class=Mage,Intellect=1.000,HitRating=1.150,CritRating=0.490,HasteRating=0.510,MasteryRating=0.440,SpellDamage=0.980 )

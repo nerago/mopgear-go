@@ -1,0 +1,1 @@
+( Pawn: v1: "Guardian WoWSims Weights": Class=Druid,Strength=0.060,Agility=1.000,Stamina=1.560,HitRating=1.560,CritRating=1.190,HasteRating=0.430,ExpertiseRating=1.550,DodgeRating=0.440,MasteryRating=0.690,Ap=0.060,Armor=1.580,Armor2=0.360,Health=0.070,MeleeDps=0.210 )

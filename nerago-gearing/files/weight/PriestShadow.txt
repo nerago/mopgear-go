@@ -1,0 +1,1 @@
+( Pawn: v1: "Shadow WoWSims Weights": Class=Priest,Intellect=1.000,Spirit=0.900,HitRating=0.850,CritRating=0.460,HasteRating=0.490,MasteryRating=0.440,SpellDamage=0.980 )
