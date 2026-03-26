@@ -94,22 +94,25 @@ func factorToIncrease(factor float64) float64 {
 func ratioToIncrease(sim, baseSim *simulate.SimResultStats, part simulate.SimResultType) float64 {
 	newValue := sim.Get(part)
 	baseValue := baseSim.Get(part)
+
+	var result float64
 	if part == simulate.Result_DEATH {
-		return baseValue - newValue
+		result = baseValue - newValue
 	} else if part.IsHighGood() {
-		return factorToIncrease(newValue / baseValue)
+		result = factorToIncrease(newValue / baseValue)
 	} else {
-		return factorToIncrease(baseValue / newValue)
+		result = factorToIncrease(baseValue / newValue)
 	}
+
+	if math.IsNaN(result) {
+		panic("unexpected NaN")
+	}
+	return result
 }
 
 func formatIncrease(percent float64) string {
 	if math.IsNaN(percent) {
-		panic("should not be NaN")
-	}
-
-	if percent <= -1 {
-		return ""
+		panic("unexpected NaN")
 	}
 
 	str := strconv.FormatFloat(percent, 'f', 2, 64)
@@ -127,6 +130,10 @@ type upgradeItemResultWithSim struct {
 }
 
 func (result upgradeItemResultWithSim) percentSim() float64 {
+	if result.sim.IsEmpty() {
+		return -1.0
+	}
+
 	if result.ModeIsDamage() {
 		return ratioToIncrease(&result.sim, &result.baseSim, simulate.Result_DPS)
 	} else {
@@ -143,11 +150,15 @@ func (result upgradeItemResultWithSim) percentStrSim() string {
 	if result.sim.IsEmpty() {
 		return ""
 	}
-	
+
 	return formatIncrease(result.percentSim())
 }
 
 func (result upgradeItemResultWithSim) increaseSimBreakdown() simulate.SimResultStats {
+	if result.sim.IsEmpty() {
+		panic("empty sim shouldn't get called here")
+	}
+
 	sim := simulate.SimResultStats{}
 	for _, resultType := range simulate.SimResultTypeList {
 		sim.Set(resultType, ratioToIncrease(&result.sim, &result.baseSim, resultType))
@@ -157,9 +168,11 @@ func (result upgradeItemResultWithSim) increaseSimBreakdown() simulate.SimResult
 
 func (result upgradeItemResultWithSim) bestOfSimResults() float64 {
 	var best float64 = -1.0
-	for _, resultType := range simulate.SimResultTypeList {
-		increase := ratioToIncrease(&result.sim, &result.baseSim, resultType)
-		best = math.Max(best, increase)
+	if !result.sim.IsEmpty() {
+		for _, resultType := range simulate.SimResultTypeList {
+			increase := ratioToIncrease(&result.sim, &result.baseSim, resultType)
+			best = math.Max(best, increase) // TODO use nan friendly?
+		}
 	}
 	return best
 }

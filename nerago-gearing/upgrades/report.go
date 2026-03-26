@@ -86,8 +86,12 @@ func reportBasicByBossSim(resultList []upgradeItemResultWithSim, printer *util.P
 		if rank != nil {
 			printer.Println("BOSS " + bossName)
 			for result := range rank.OrderedResult() {
-				printer.Printf("%10s%4d%45s%4d%8s%8s\t\t%s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.setBonus,
-					result.increaseStr(), result.percentStrSim(), result.increaseSimBreakdown().CompactStringSignedPercent())
+				if result.sim.IsEmpty() {
+					printer.Printf("%10s%4d%45s%4d%8s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.setBonus, result.increaseStr())
+				} else {
+					printer.Printf("%10s%4d%45s%4d%8s%8s\t\t%s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.setBonus, result.increaseStr(),
+						result.percentStrSim(), result.increaseSimBreakdown().CompactStringSignedPercent())
+				}
 			}
 			printer.Println0()
 		}
@@ -103,8 +107,12 @@ func reportBasicBySlotSim(resultList []upgradeItemResultWithSim, printer *util.P
 		if rank != nil {
 			printer.Println("RANKING " + slot.Name())
 			for result := range rank.OrderedResult() {
-				printer.Printf("%10s%4d%45s%25s%4d%8s%8s\t\t%s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.boss, result.setBonus,
-					result.increaseStr(), result.percentStrSim(), result.increaseSimBreakdown().CompactStringSignedPercent())
+				if result.sim.IsEmpty() {
+					printer.Printf("%10s%4d%45s%25s%4d%8s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.boss, result.setBonus, result.increaseStr())
+				} else {
+					printer.Printf("%10s%4d%45s%25s%4d%8s%8s\t\t%s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.boss, result.setBonus, result.increaseStr(),
+						result.percentStrSim(), result.increaseSimBreakdown().CompactStringSignedPercent())
+				}
 			}
 			printer.Println0()
 		}
@@ -119,8 +127,12 @@ func reportBasicOverallRankSim(resultList []upgradeItemResultWithSim, printer *u
 
 	printer.Println("RANKING OVERALL PERCENT UPGRADE")
 	for result := range ranked.OrderedResult() {
-		printer.Printf("%10s%4d%45s%25s%4d%8s%8s\t\t%s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.boss, result.setBonus,
-			result.increaseStr(), result.percentStrSim(), result.increaseSimBreakdown().CompactStringSignedPercent())
+		if result.sim.IsEmpty() {
+			printer.Printf("%10s%4d%45s%25s%4d%8s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.boss, result.setBonus, result.increaseStr())
+		} else {
+			printer.Printf("%10s%4d%45s%25s%4d%8s%8s\t\t%s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.boss, result.setBonus, result.increaseStr(),
+				result.percentStrSim(), result.increaseSimBreakdown().CompactStringSignedPercent())
+		}
 	}
 }
 

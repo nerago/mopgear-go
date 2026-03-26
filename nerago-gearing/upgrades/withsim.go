@@ -75,7 +75,7 @@ func reportTabulatedSimResults(outputMap map[upgradeMode][]upgradeItemResultWith
 			}
 			slices.SortFunc(reportList, func(a, b *reportForItemWithSim) int { return cmp.Compare(a.BestRating(), b.BestRating()) })
 
-			printer.Printf("%10s%5s%45s%10s%10s%10s%10s%10s%10s%10s%10s   %10s%s\n",
+			printer.Printf("%10s%5s%45s%10s%10s%10s%10s%10s%10s%10s%10s  %10s  %s\n",
 				"slot", "ilvl", "name",
 				"DPS_norm", "sim_d_n",
 				"DPS_hero", "sim_d_h",
@@ -87,13 +87,19 @@ func reportTabulatedSimResults(outputMap map[upgradeMode][]upgradeItemResultWith
 			for _, report := range reportList {
 				_, bestSimIncrease, bestMode := bestSimOf(report)
 
-				printer.Printf("%10s%5d%45s%10s%10s%10s%10s%10s%10s%10s%10s   %10s%s\n",
+				var modeName, simDetail string = "", ""
+				if !bestSimIncrease.IsEmpty() {
+					modeName = bestMode.Name()
+					simDetail = bestSimIncrease.CompactStringSignedPercent()
+				}
+
+				printer.Printf("%10s%5d%45s%10s%10s%10s%10s%10s%10s%10s%10s  %10s  %s\n",
 					report.item.Slot.Name(), report.item.Ref.ItemLevel, report.item.BaseName,
 					report.byMode[Upgrade_Dps_Normal].increaseStr(), report.byMode[Upgrade_Dps_Normal].percentStrSim(),
 					report.byMode[Upgrade_Dps_Heroic].increaseStr(), report.byMode[Upgrade_Dps_Heroic].percentStrSim(),
 					report.byMode[Upgrade_Miti_Normal].increaseStr(), report.byMode[Upgrade_Miti_Normal].percentStrSim(),
 					report.byMode[Upgrade_Miti_Heroic].increaseStr(), report.byMode[Upgrade_Miti_Heroic].percentStrSim(),
-					bestMode.Name(), bestSimIncrease.CompactStringSignedPercent())
+					modeName, simDetail)
 			}
 
 			printer.Println0()
@@ -106,13 +112,13 @@ func bestSimOf(report *reportForItemWithSim) (simulate.SimResultStats, simulate.
 	var bestIncrease simulate.SimResultStats
 	var bestMode upgradeMode
 	best := -1.0
-	for mode, report := range report.byMode {
-		value := report.bestOfSimResults()
+	for mode, result := range report.byMode {
+		value := result.bestOfSimResults()
 		if value > best {
 			best = value
 			bestMode = mode
-			bestSim = report.sim
-			bestIncrease = report.increaseSimBreakdown()
+			bestSim = result.sim
+			bestIncrease = result.increaseSimBreakdown()
 		}
 	}
 	return bestSim, bestIncrease, bestMode

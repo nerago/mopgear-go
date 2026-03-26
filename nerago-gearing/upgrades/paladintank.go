@@ -20,16 +20,25 @@ const (
 	upgradeEachThreads = 4
 	targetUpgradeLevel = 2
 
-	baseSolveSize      = solver.SolveSize_Long
-	itemSolveSize      = solver.SolveSize_Medium
-	// baseSolveSize = solver.SolveSize_Medium
-	// itemSolveSize = solver.SolveSize_PerItem
 
 	simThreads = 4
-	simRunSize  = simulate.RunSize_Medium
-	simRunSizeBase = simulate.RunSize_SlowAccurate
+	// simRunSize     = simulate.RunSize_Medium
+	// simRunSizeBase = simulate.RunSize_SlowAccurate
 	// simRunSize  = simulate.RunSize_QuickDirty
 	// simRunSizeBase = simulate.RunSize_Medium
+
+	baseSolveSize = solver.SolveSize_Long
+	itemSolveSize = solver.SolveSize_Medium
+	simRunSize  = simulate.RunSize_QuickDirty
+	simRunSizeBase = simulate.RunSize_Medium
+	
+	// baseSolveSize = solver.SolveSize_Long
+	// itemSolveSize = solver.SolveSize_Medium
+	// simRunSize  = simulate.RunSize_Medium
+	// simRunSizeBase = simulate.RunSize_Medium
+
+	// baseSolveSize = solver.SolveSize_Medium
+	// itemSolveSize = solver.SolveSize_PerItem
 	// simRunSize     = simulate.RunSize_TestOnly
 	// simRunSizeBase = simulate.RunSize_TestOnly
 )
@@ -62,12 +71,12 @@ func FindUpgrades_Paladin_AllRaid_Run() {
 	printer = util.PrintRecorder_CreateLogFile()
 	printer.Println("[[[[[[[[[[[[[[[[[[[[ PALLY PROT MITIGATION normal UPGRADES ]]]]]]]]]]]]]]]]]]]]")
 	optionsMitigation := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigation, &modelMitigation, printer)
-	outputMap[Upgrade_Miti_Normal], _ = findUpgrade(&optionsMitigation, upgradeNormal, &modelDps, printer, tracker.MakeNested(), Upgrade_Miti_Normal)
+	outputMap[Upgrade_Miti_Normal], _ = findUpgrade(&optionsMitigation, upgradeNormal, &modelMitigation, printer, tracker.MakeNested(), Upgrade_Miti_Normal)
 	printer.Close()
 
 	printer = util.PrintRecorder_CreateLogFile()
 	printer.Println("[[[[[[[[[[[[[[[[[[[[ PALLY PROT MITIGATION heroic UPGRADES ]]]]]]]]]]]]]]]]]]]]")
-	outputMap[Upgrade_Miti_Heroic], _ = findUpgrade(&optionsMitigation, upgradeHeroic, &modelDps, printer, tracker.MakeNested(), Upgrade_Miti_Heroic)
+	outputMap[Upgrade_Miti_Heroic], _ = findUpgrade(&optionsMitigation, upgradeHeroic, &modelMitigation, printer, tracker.MakeNested(), Upgrade_Miti_Heroic)
 	printer.Close()
 
 	printer = util.PrintRecorder_CreateLogFile()
@@ -87,11 +96,59 @@ func FindUpgrades_Paladin_Sim_AllRaid_Run() {
 	upgradeNormal := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
 	upgradeHeroic := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Heroic)
 
+	substituteItemsDps := []items.ItemId{
+		87026, // heroic peacock cloak
+		96394, // frozen warlord bracer heroic
+		95281, // ret tier15 gloves normal
+		95205, // terra-cotta neck
+		96481, // durumu tentacle heroic
+		95910, // ret tier15 chest celestial
+		86955, // heroic overwhelm assault belt
+		86957, // heroic bladed tempest ring
+		87015, // heroic clawfeet
+		95140, // shado assault band
+		86979, // heroic impaling treads
+		96373, // cloudbreaker belt heroic
+		96468, // talonrender chest heroic
+		94776, // primal turtle amulet
+		96533, // rein-binders fists heroic
+		94820, // caustic spike bracers
+		94942, // hydra bloodcloak
+		87024, // null greathelm
+		94773, // centripetal shoulders normal
+		95513, // scaled tyrant normal
+		95535, // normal lightning legs
+	}
+	substituteItemsMiti := []items.ItemId{
+		95291, // prot tier15 hand normal
+		95290, // prot tier15 chest normal
+		95292, // prot tier15 head normal
+		96667, // prot tier15 leg heroic
+		96668, // prot tier15 shoulder heroic
+		96657, // ret tier15 legs heroic
+		96769, // doomcloak
+		96394, // frozen warlord bracer heroic
+		96373, // cloudbreaker belt heroic
+		96478, // treads of the blind heroic
+		95142, // striker's battletags
+		95205, // terra-cotta neck
+		95178, // lootraptor amulet
+		96533, // rein-binders fists heroic
+		86957, // heroic bladed tempest ring
+		86955, // heroic overwhelm assault belt
+		95535, // normal lightning legs
+		87015, // heroic clawfeet
+		96481, // durumu tentacle heroic
+		95513, // scaled tyrant normal
+		95140, // shado assault band
+	}
+
 	outputMap := make(map[upgradeMode][]upgradeItemResultWithSim)
 
 	printer := util.PrintRecorder_CreateLogFile()
 	printer.Println("[[[[[[[[[[[[[[[[[[[[ PALLY PROT DPS normal UPGRADES ]]]]]]]]]]]]]]]]]]]]")
 	optionsDps := setup.OptionsSetup_FromGearFile(files.GearFileProtDps, &modelDps, printer)
+	addSubstituteItems(&optionsDps, substituteItemsDps, &modelDps, printer)
 	outputMap[Upgrade_Dps_Normal] = findUpgradeAndSim(&optionsDps, upgradeNormal, &modelDps, printer, tracker.MakeNested(), Upgrade_Dps_Normal)
 	printer.Close()
 
@@ -103,12 +160,13 @@ func FindUpgrades_Paladin_Sim_AllRaid_Run() {
 	printer = util.PrintRecorder_CreateLogFile()
 	printer.Println("[[[[[[[[[[[[[[[[[[[[ PALLY PROT MITIGATION normal UPGRADES ]]]]]]]]]]]]]]]]]]]]")
 	optionsMitigation := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigation, &modelMitigation, printer)
-	outputMap[Upgrade_Miti_Normal] = findUpgradeAndSim(&optionsMitigation, upgradeNormal, &modelDps, printer, tracker.MakeNested(), Upgrade_Miti_Normal)
+	addSubstituteItems(&optionsMitigation, substituteItemsMiti, &modelMitigation, printer)
+	outputMap[Upgrade_Miti_Normal] = findUpgradeAndSim(&optionsMitigation, upgradeNormal, &modelMitigation, printer, tracker.MakeNested(), Upgrade_Miti_Normal)
 	printer.Close()
 
 	printer = util.PrintRecorder_CreateLogFile()
 	printer.Println("[[[[[[[[[[[[[[[[[[[[ PALLY PROT MITIGATION heroic UPGRADES ]]]]]]]]]]]]]]]]]]]]")
-	outputMap[Upgrade_Miti_Heroic] = findUpgradeAndSim(&optionsMitigation, upgradeHeroic, &modelDps, printer, tracker.MakeNested(), Upgrade_Miti_Heroic)
+	outputMap[Upgrade_Miti_Heroic] = findUpgradeAndSim(&optionsMitigation, upgradeHeroic, &modelMitigation, printer, tracker.MakeNested(), Upgrade_Miti_Heroic)
 	printer.Close()
 
 	printer = util.PrintRecorder_CreateLogFile()
@@ -126,7 +184,9 @@ func findUpgradeAndSim(baseItems *items.FullOptionsMap, extraItems []*items.Full
 	printer.Println("SIM *BASELINE*")
 	baseSim.Print(printer)
 
-	return simEachInitialResult(initialList, model, &baseSim, tracker.MakeNested(), printer)
+	simResults := simEachInitialResult(initialList, model, &baseSim, tracker.MakeNested(), printer)
+	reportBasicResultsSim(simResults, printer)
+	return simResults
 }
 
 type reportForItem struct {
