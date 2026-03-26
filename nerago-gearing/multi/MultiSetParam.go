@@ -28,6 +28,7 @@ type MultiSetParam struct {
 	// working data
 	exactEquippedGear items.FullEquipMap
 	itemOptions       items.FullOptionsMap
+	addedFromBags     []items.ItemId
 	seenInSolutions   *seenMap
 	baselineResult    solver.SolveOutput
 	ratingMultiply    uint64 // derived

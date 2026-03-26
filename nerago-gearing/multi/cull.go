@@ -69,6 +69,7 @@ func (job *MultiSetJob) cullingMakeRevisions(proposedList []MultiProposedOutput,
 func (job *MultiSetJob) cullingReport() {
 	for paramIndex := range job.params {
 		job.params[paramIndex].cullingReport()
+		job.params[paramIndex].cullingReportBags()
 	}
 }
 
@@ -97,6 +98,15 @@ func (param *MultiSetParam) cullingReport() {
 			param.job.printer.Printf("%d 0 NONE\n", info.itemId)
 		} else {
 			param.job.printer.Printf("%d %d\n", info.itemId, info.count)
+		}
+	}
+}
+
+func (param MultiSetParam) cullingReportBags() {
+	for _, itemId := range param.addedFromBags {
+		seenCount := param.seenInSolutions.content[itemId]
+		if seenCount > 0 {
+			param.job.printer.Printf("BAGS SUGGESTION %d %d!!!!!!!!!\n", itemId, seenCount)
 		}
 	}
 }

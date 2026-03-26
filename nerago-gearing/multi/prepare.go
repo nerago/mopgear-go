@@ -2,6 +2,7 @@ package multi
 
 import (
 	"math"
+	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/setup"
@@ -111,16 +112,26 @@ func (param *MultiSetParam) copyExtraFromBags(itemId items.ItemId) bool {
 }
 
 func (param *MultiSetParam) tryAddExtraFromBags(equipped *loaders.EquippedItem) {
-	// bags file doesn't have upgrade steps
-	equipped.UpgradeStep = param.ExtraUpgradeLevel
+	if db.WowSimDB_HasItemId(equipped.ItemId) {
+		// bags file doesn't have upgrade steps
+		equipped.UpgradeStep = param.ExtraUpgradeLevel
 
-	options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &param.Model, param.job.printer)
+		options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &param.Model, param.job.printer)
 
-	for _, slot := range example.Slot.ToSlotEquipOptions() {
-		if upgrades.CouldAddUpgradeToSet(&param.itemOptions, slot, param.job.printer, example) {
-			param.job.printer.Printf("ADDITIONAL EXTRA OPTION from bags %s\n", example.CreateString())
-			param.itemOptions.AddSeveralOptionsSpecific(slot, options)
+		added := false
+		for _, slot := range example.Slot.ToSlotEquipOptions() {
+			if upgrades.CouldAddUpgradeToSet(&param.itemOptions, slot, param.job.printer, example) {
+				param.job.printer.Printf("ADDITIONAL EXTRA OPTION from bags %s\n", example.CreateString())
+				param.itemOptions.AddSeveralOptionsSpecific(slot, options)
+				added = true
+			}
 		}
+
+		if added {
+			param.addedFromBags = append(param.addedFromBags, equipped.ItemId)
+		}
+	} else {
+		param.job.printer.Printf("UNKNOWN itemid IN bags %d\n", equipped.ItemId)
 	}
 }
 

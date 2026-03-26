@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
@@ -28,6 +29,8 @@ func main() {
 
 	printer = util.PrintRecorder_CreateLogFile()
 	defer printer.Close()
+
+	db.WowSimDB_Read()
 
 	log.SetOutput(io.Discard) // ignore wowsim's internal progress logs
 
@@ -68,10 +71,10 @@ func core(printer *util.PrintRecorder) {
 	// slotRating(itemOptions[Equip_Chest], &model, printer)
 	// basicReforge(&itemOptions, &model, printer)
 
-	// PaladinMultiRun(printer)
+	PaladinMultiRun(printer)
 	// testSim(printer)
 	// findUpgrades_Sim_PaladinMiti_Run()
-	findUpgrades_Paladin_Sim_AllRaid_Run()
+	// findUpgrades_Paladin_Sim_AllRaid_Run()
 }
 
 func setupPallyMitigation() (items.FullOptionsMap, model.Model) {

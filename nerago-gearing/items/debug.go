@@ -16,6 +16,10 @@ func (set *SolvableItemSet) DebugValidate() {
 	if !StatBlock_Equals(&recalcTotal, &previousTotal) {
 		panic("totals don't match\n" + recalcTotal.CreateString() + "\n" + previousTotal.CreateString())
 	}
+
+	if previousTotal.IsEmpty() {
+		panic("set has no stats")
+	}
 }
 
 func (set *FullItemSet) DebugValidate() {

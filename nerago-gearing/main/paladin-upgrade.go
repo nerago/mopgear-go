@@ -111,7 +111,7 @@ func findUpgrades_Paladin_Sim_AllRaid_Run() {
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
 				IgnoredItems:        ignoredItems,
 				SolveSize:           itemSolveSize,
-				PositiveResultsOnly: true,
+				// PositiveResultsOnly: true,
 			},
 			SimSize: simRunSize,
 		},

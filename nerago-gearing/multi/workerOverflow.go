@@ -88,14 +88,18 @@ func chooseSkip_PrimeAndIsntSlotSize(commonOptions CommonComboOptions, targetCou
 func isFactorOfSlotSize(commonOptions CommonComboOptions, skip *big.Int) bool {
 	mod := big.NewInt(0)
 	for _, options := range commonOptions {
-		slotSize := big.NewInt(int64(len(options)))
+		slotSizePrim := int64(len(options))
+		if slotSizePrim <= 1 {
+			continue // 0 or 1 is normal
+		}
 
-		if slotSize.Cmp(skip) == 0 {
+		slotSizeBig := big.NewInt(slotSizePrim)
+		if slotSizeBig.Cmp(skip) == 0 {
 			return true
-		} else if slotSize.Cmp(skip) > 0 {
-			mod.Mod(slotSize, skip)
+		} else if slotSizeBig.Cmp(skip) > 0 {
+			mod.Mod(slotSizeBig, skip)
 		} else {
-			mod.Mod(skip, slotSize)
+			mod.Mod(skip, slotSizeBig)
 		}
 
 		if mod.Cmp(util.Int_Zero) == 0 {

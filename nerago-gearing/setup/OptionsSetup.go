@@ -27,7 +27,7 @@ func OptionsSetup_FromEquipped(equipped []loaders.EquippedItem, model *model.Mod
 func OptionsSetup_Single_FromEquipped(equipItem loaders.EquippedItem, model *model.Model, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
 	item := loadItemBasic(equipItem.ItemId, equipItem.UpgradeStep, printer)
 	addDetailFromEquip(&item, equipItem)
-	printer.Println(item.CreateString())
+	// printer.Println(item.CreateString())
 	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
 }
 

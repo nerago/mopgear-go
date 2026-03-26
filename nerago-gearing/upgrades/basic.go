@@ -109,6 +109,14 @@ func CouldAddUpgradeToSet(baseItems *items.FullOptionsMap, slot items.SlotEquip,
 		}
 	}
 
+	if slot == items.Equip_Offhand {
+		currentWeapon := baseItems.Get(items.Equip_Weapon)[0]
+		if currentWeapon.Slot == items.Item_Weapon2H {
+			printer.Println("INVALID OFFHAND WITH 2H WEAPON " + extra.CreateString())
+			return false
+		}
+	}
+
 	if baseItems.IncludesItemIdInSlot(extra.ItemId(), slot) {
 		printer.Println("SAME ITEM " + extra.CreateString())
 		return false
