@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/model"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
@@ -13,17 +14,12 @@ import (
 )
 
 func FindUpgrades_AllRaid_Run(input *FindUpgrades_MultiSpec) {
-	tracker := util.TrackProgress_Start()
-	tracker.RunOuterTracking(2 * len(input.Specs))
-	defer tracker.Stop()
-
-	outputMap := make(map[reportGroup][]upgradeItemResult, len(input.Specs)*2)
-	groups := make([]reportGroup, 0, len(input.Specs)*2)
-
-	for _, spec := range input.Specs {
-		processSpec(&input.Basic, &spec, stats.Difficulty_Normal, outputMap, &groups, tracker)
-		processSpec(&input.Basic, &spec, stats.Difficulty_Heroic, outputMap, &groups, tracker)
+	find := func(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal) []upgradeItemResult {
+		result, _ := findUpgrade(&input.Basic, baseItems, extraItems, model, printer, tracker, goal)
+		return result
 	}
+
+	outputMap, groups := findUpgrades_AllRaid(input.Specs, find)
 
 	printer := util.PrintRecorder_CreateLogFile()
 	reportTabulatedResults(outputMap, groups, printer)
@@ -31,39 +27,35 @@ func FindUpgrades_AllRaid_Run(input *FindUpgrades_MultiSpec) {
 }
 
 func FindUpgrades_Sim_AllRaid_Run(input *FindUpgrades_MultiSpec_Sim) {
-	tracker := util.TrackProgress_Start()
-	tracker.RunOuterTracking(2 * len(input.Specs))
-	defer tracker.Stop()
-
-	outputMap := make(map[reportGroup][]upgradeItemResultWithSim)
-	groups := make([]reportGroup, 0, len(input.Specs)*2)
-
-	for _, spec := range input.Specs {
-		processSpecSim(&input.Sim, &spec, stats.Difficulty_Normal, outputMap, &groups, tracker)
-		processSpecSim(&input.Sim, &spec, stats.Difficulty_Heroic, outputMap, &groups, tracker)
+	find := func(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal) []upgradeItemResultWithSim {
+		return findUpgradeAndSim(&input.Sim, baseItems, extraItems, model, printer, tracker, goal)
 	}
+
+	outputMap, groups := findUpgrades_AllRaid(input.Specs, find)
 
 	printer := util.PrintRecorder_CreateLogFile()
 	reportTabulatedSimResults(outputMap, groups, printer)
 	printer.Close()
 }
 
-func processSpec(input *FindUpgrades_BasicInputs, spec *FindUpgrades_Spec, difficulty stats.Difficulty, outputMap map[reportGroup][]upgradeItemResult, groups *[]reportGroup, tracker *util.TrackProgress) {
-	printer := util.PrintRecorder_CreateLogFile()
-	printer.Println("[[[[[[[[[[[[[[[[[[[[ " + spec.Label + " " + difficulty.Name() + " UPGRADES ]]]]]]]]]]]]]]]]]]]]")
+func findUpgrades_AllRaid[T any](specs []FindUpgrades_Spec, find func(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal) []T) (map[reportGroup][]T, []reportGroup) {
+	tracker := util.TrackProgress_Start()
+	tracker.RunOuterTracking(2 * len(specs))
+	defer tracker.Stop()
 
-	options := setup.OptionsSetup_FromGearFile(spec.GearFile, &spec.Model, printer)
-	upgradeItems := spec.ItemFinder(difficulty)
+	outputMap := make(map[reportGroup][]T)
+	groups := make([]reportGroup, 0, len(specs)*2)
 
-	group := reportGroup{spec.Label, difficulty}
-	*groups = append(*groups, group)
+	for _, spec := range specs {
+		processSpec(find, &spec, stats.Difficulty_Normal, outputMap, &groups, tracker)
+		processSpec(find, &spec, stats.Difficulty_Heroic, outputMap, &groups, tracker)
+	}
 
-	outputMap[group], _ = findUpgrade(input, &options, upgradeItems, &spec.Model, printer, tracker.MakeNested(), spec.Goal)
-
-	printer.Close()
+	return outputMap, groups
 }
 
-func processSpecSim(input *FindUpgrades_SimInputs, spec *FindUpgrades_Spec, difficulty stats.Difficulty, outputMap map[reportGroup][]upgradeItemResultWithSim, groups *[]reportGroup, tracker *util.TrackProgress) {
+func processSpec[T any](find func(*items.FullOptionsMap, []*items.FullItem, *model.Model, *util.PrintRecorder, *util.TrackProgress, UpgradeGoal) []T,
+	spec *FindUpgrades_Spec, difficulty stats.Difficulty, outputMap map[reportGroup][]T, groups *[]reportGroup, tracker *util.TrackProgress) {
 	printer := util.PrintRecorder_CreateLogFile()
 	printer.Println("[[[[[[[[[[[[[[[[[[[[ " + spec.Label + " " + difficulty.Name() + " UPGRADES ]]]]]]]]]]]]]]]]]]]]")
 
@@ -73,7 +65,7 @@ func processSpecSim(input *FindUpgrades_SimInputs, spec *FindUpgrades_Spec, diff
 	group := reportGroup{spec.Label, difficulty}
 	*groups = append(*groups, group)
 
-	outputMap[group] = findUpgradeAndSim(input, &options, upgradeItems, &spec.Model, printer, tracker.MakeNested(), spec.Goal)
+	outputMap[group] = find(&options, upgradeItems, &spec.Model, printer, tracker.MakeNested(), spec.Goal)
 
 	printer.Close()
 }
