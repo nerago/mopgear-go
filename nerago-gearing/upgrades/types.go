@@ -4,42 +4,23 @@ import (
 	"math"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/simulate"
+	"paladin_gearing_go/stats"
 	"strconv"
 )
 
-var ignoredItems = []items.ItemId{
-	63207, // org port cloak
-	84661, // fishing pole
-	90042} // straw hat
-
-type upgradeMode int8
-
 const (
-	Upgrade_Miti_Normal upgradeMode = iota
-	Upgrade_Miti_Heroic upgradeMode = iota
-	Upgrade_Dps_Normal  upgradeMode = iota
-	Upgrade_Dps_Heroic  upgradeMode = iota
+	c_upgradeEachThreads = 4
+	c_simThreads         = 4
+	c_targetUpgradeLevel = 2
+	c_baseSolveScale     = 4
 )
 
-func (up upgradeMode) Name() string {
-	switch up {
-	case Upgrade_Miti_Normal:
-		return "mit_norm"
-	case Upgrade_Miti_Heroic:
-		return "mit_hero"
-	case Upgrade_Dps_Normal:
-		return "dps_norm"
-	case Upgrade_Dps_Heroic:
-		return "dps_hero"
-	default:
-		panic("unknown")
-	}
-}
+// ################## upgradeItemTask ##################
 
 type upgradeItemTask struct {
 	item *items.FullItem
 	slot items.SlotEquip
-	mode upgradeMode
+	goal UpgradeGoal
 	boss string
 }
 
@@ -51,17 +32,15 @@ func (task upgradeItemTask) Slot() items.SlotEquip {
 	return task.slot
 }
 
-func (task upgradeItemTask) Mode() upgradeMode {
-	return task.mode
-}
-
-func (task upgradeItemTask) ModeIsDamage() bool {
-	return task.mode == Upgrade_Dps_Normal || task.mode == Upgrade_Dps_Heroic
+func (task upgradeItemTask) Goal() UpgradeGoal {
+	return task.goal
 }
 
 func (task upgradeItemTask) Boss() string {
 	return task.boss
 }
+
+// ################## upgradeItemResult ##################
 
 type upgradeItemResult struct {
 	upgradeItemTask
@@ -123,6 +102,8 @@ func formatIncrease(percent float64) string {
 	}
 }
 
+// ################## upgradeItemResultWithSim ##################
+
 type upgradeItemResultWithSim struct {
 	upgradeItemResult
 	baseSim simulate.SimResultStats
@@ -131,18 +112,23 @@ type upgradeItemResultWithSim struct {
 
 func (result upgradeItemResultWithSim) percentSim() float64 {
 	if result.sim.IsEmpty() {
-		return -1.0
+		return -100.0
 	}
 
-	if result.ModeIsDamage() {
+	switch result.goal {
+	case UpgradeGoal_Dps:
 		return ratioToIncrease(&result.sim, &result.baseSim, simulate.Result_DPS)
-	} else {
+	case UpgradeGoal_Healing:
+		return ratioToIncrease(&result.sim, &result.baseSim, simulate.Result_HPS)
+	case UpgradeGoal_Mitigation:
 		checkParts := []simulate.SimResultType{simulate.Result_DPS, simulate.Result_DTPS, simulate.Result_TMI, simulate.Result_DEATH}
 		var total float64
 		for _, part := range checkParts {
 			total += ratioToIncrease(&result.sim, &result.baseSim, part)
 		}
 		return total / float64(len(checkParts))
+	default:
+		panic("unknown goal")
 	}
 }
 
@@ -167,7 +153,7 @@ func (result upgradeItemResultWithSim) increaseSimBreakdown() simulate.SimResult
 }
 
 func (result upgradeItemResultWithSim) bestOfSimResults() float64 {
-	var best float64 = -1.0
+	var best float64 = -100.0
 	if !result.sim.IsEmpty() {
 		for _, resultType := range simulate.SimResultTypeList {
 			increase := ratioToIncrease(&result.sim, &result.baseSim, resultType)
@@ -179,4 +165,82 @@ func (result upgradeItemResultWithSim) bestOfSimResults() float64 {
 
 func (result upgradeItemResultWithSim) ranking() float64 {
 	return result.percentSim()
+}
+
+// ################## reportGroup ##################
+
+type reportGroup struct {
+	specLabel  string
+	difficulty stats.Difficulty
+}
+
+func (group reportGroup) String() string {
+	return group.specLabel + "-" + group.difficulty.Name()
+}
+
+// ################## reportForItem ##################
+
+type reportForItem struct {
+	item    *items.FullItem
+	grouped map[reportGroup]upgradeItemResult
+}
+
+func makeReportForItem(mapSize int) func(*items.FullItem) *reportForItem {
+	return func(item *items.FullItem) *reportForItem {
+		report := new(reportForItem)
+		report.item = item
+		report.grouped = make(map[reportGroup]upgradeItemResult, mapSize)
+		return report
+	}
+}
+
+func (report *reportForItem) Add(mode reportGroup, result upgradeItemResult) {
+	report.grouped[mode] = result
+}
+
+func (report *reportForItem) BestRating() float64 {
+	var best float64 = -100.0
+	for _, item := range report.grouped {
+		best = math.Max(best, item.factor)
+	}
+	return best
+}
+
+// ################## reportForItemWithSim ##################
+
+type reportForItemWithSim struct {
+	item    *items.FullItem
+	grouped map[reportGroup]upgradeItemResultWithSim
+}
+
+func makeReportSimForItem(mapSize int) func(*items.FullItem) *reportForItemWithSim {
+	return func(item *items.FullItem) *reportForItemWithSim {
+		report := new(reportForItemWithSim)
+		report.item = item
+		report.grouped = make(map[reportGroup]upgradeItemResultWithSim, mapSize)
+		return report
+	}
+}
+
+func (report *reportForItemWithSim) Add(mode reportGroup, result upgradeItemResultWithSim) {
+	report.grouped[mode] = result
+}
+
+func (report *reportForItemWithSim) BestRating() float64 {
+	var best float64 = -100.0
+	for _, item := range report.grouped {
+		best = math.Max(best, math.Max(item.percentSim(), item.increase()))
+	}
+	return best
+}
+
+// ################## reportable ##################
+
+type reportable interface {
+	Boss() string
+	Item() *items.FullItem
+}
+
+type reportForItemAddable[T reportable] interface {
+	Add(mode reportGroup, result T)
 }

@@ -1,6 +1,9 @@
 package util
 
-import "maps"
+import (
+	"maps"
+	"slices"
+)
 
 func CombineMaps[K comparable, V any](parts ...map[K]V) map[K]V {
 	result := make(map[K]V)
@@ -8,4 +11,9 @@ func CombineMaps[K comparable, V any](parts ...map[K]V) map[K]V {
 		maps.Copy(result, each)
 	}
 	return result
+}
+
+func KeysToSlice[K comparable, V any](m map[K]V) []K {
+	slice := make([]K, 0, len(m))
+	return slices.AppendSeq(slice, maps.Keys(m))
 }

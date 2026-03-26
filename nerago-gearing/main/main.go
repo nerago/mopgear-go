@@ -9,7 +9,6 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/setup"
-	"paladin_gearing_go/upgrades"
 	"paladin_gearing_go/util"
 	"runtime"
 	"runtime/pprof"
@@ -71,10 +70,8 @@ func core(printer *util.PrintRecorder) {
 
 	// PaladinMultiRun(printer)
 	// testSim(printer)
-	// upgrades.FindUpgrades_Paladin_AllRaid_Run()
-	upgrades.FindUpgrades_Paladin_Sim_AllRaid_Run()
 	// findUpgrades_Sim_PaladinMiti_Run()
-	// findUpgrades_Sim_PaladinDps_Run()
+	findUpgrades_Paladin_Sim_AllRaid_Run()
 }
 
 func setupPallyMitigation() (items.FullOptionsMap, model.Model) {

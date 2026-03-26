@@ -95,3 +95,16 @@ func (difficulty Difficulty) ExpectedItemLevel() uint16 {
 		panic("unknown Difficulty")
 	}
 }
+
+func (difficulty Difficulty) Name() string {
+	switch difficulty {
+	case Difficulty_Celestial:
+		return "Celestial"
+	case Difficulty_Normal:
+		return "Normal"
+	case Difficulty_Heroic:
+		return "Heroic"
+	default:
+		panic("unknown Difficulty")
+	}
+}
