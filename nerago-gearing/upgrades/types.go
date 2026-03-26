@@ -24,6 +24,13 @@ type upgradeItemTask struct {
 	boss string
 }
 
+func (task upgradeItemTask) Equals(other upgradeItemTask) bool {
+	return task.item.Equals(other.item) &&
+		task.slot == other.slot &&
+		task.goal == other.goal &&
+		task.boss == other.boss
+}
+
 func (task upgradeItemTask) Item() *items.FullItem {
 	return task.item
 }
@@ -48,6 +55,14 @@ type upgradeItemResult struct {
 	itemSet  *items.FullItemSet
 	setBonus uint8
 	factor   float64
+}
+
+func (result upgradeItemResult) Equals(other upgradeItemResult) bool {
+	return result.upgradeItemTask.Equals(other.upgradeItemTask) &&
+		result.success == other.success &&
+		result.itemSet.Equals(other.itemSet) &&
+		result.setBonus == other.setBonus &&
+		result.factor == other.factor
 }
 
 func (result upgradeItemResult) ranking() float64 {
@@ -108,6 +123,11 @@ type upgradeItemResultWithSim struct {
 	upgradeItemResult
 	baseSim simulate.SimResultStats
 	sim     simulate.SimResultStats
+}
+
+func (result upgradeItemResultWithSim) Equals(other upgradeItemResultWithSim) bool {
+	return result.upgradeItemResult.Equals(other.upgradeItemResult) &&
+		result.baseSim == other.baseSim && result.sim == other.sim
 }
 
 func (result upgradeItemResultWithSim) percentSim() float64 {
@@ -174,31 +194,33 @@ type reportGroup struct {
 	difficulty stats.Difficulty
 }
 
-func (group reportGroup) String() string {
-	return group.specLabel + "-" + group.difficulty.Name()
-}
+// ################## reportForItemBasic ##################
 
-// ################## reportForItem ##################
-
-type reportForItem struct {
+type reportForItemBasic struct {
 	item    *items.FullItem
-	grouped map[reportGroup]upgradeItemResult
+	slot    items.SlotEquip
+	grouped map[string]upgradeItemResult
 }
 
-func makeReportForItem(mapSize int) func(*items.FullItem) *reportForItem {
-	return func(item *items.FullItem) *reportForItem {
-		report := new(reportForItem)
+func makeReportForItem(mapSize int) func(*items.FullItem, items.SlotEquip) *reportForItemBasic {
+	return func(item *items.FullItem, slot items.SlotEquip) *reportForItemBasic {
+		report := new(reportForItemBasic)
 		report.item = item
-		report.grouped = make(map[reportGroup]upgradeItemResult, mapSize)
+		report.slot = slot
+		report.grouped = make(map[string]upgradeItemResult, mapSize)
 		return report
 	}
 }
 
-func (report *reportForItem) Add(mode reportGroup, result upgradeItemResult) {
-	report.grouped[mode] = result
+func (report *reportForItemBasic) Add(group reportGroup, result upgradeItemResult) {
+	old, exists := report.grouped[group.specLabel]
+	if exists && !old.Equals(result) {
+		panic("duplicate group entry for spec with " + result.item.CreateString())
+	}
+	report.grouped[group.specLabel] = result
 }
 
-func (report *reportForItem) BestRating() float64 {
+func (report *reportForItemBasic) BestRating() float64 {
 	var best float64 = -100.0
 	for _, item := range report.grouped {
 		best = math.Max(best, item.factor)
@@ -210,20 +232,26 @@ func (report *reportForItem) BestRating() float64 {
 
 type reportForItemWithSim struct {
 	item    *items.FullItem
-	grouped map[reportGroup]upgradeItemResultWithSim
+	slot    items.SlotEquip
+	grouped map[string]upgradeItemResultWithSim
 }
 
-func makeReportSimForItem(mapSize int) func(*items.FullItem) *reportForItemWithSim {
-	return func(item *items.FullItem) *reportForItemWithSim {
+func makeReportSimForItem(mapSize int) func(*items.FullItem, items.SlotEquip) *reportForItemWithSim {
+	return func(item *items.FullItem, slot items.SlotEquip) *reportForItemWithSim {
 		report := new(reportForItemWithSim)
 		report.item = item
-		report.grouped = make(map[reportGroup]upgradeItemResultWithSim, mapSize)
+		report.slot = slot
+		report.grouped = make(map[string]upgradeItemResultWithSim, mapSize)
 		return report
 	}
 }
 
-func (report *reportForItemWithSim) Add(mode reportGroup, result upgradeItemResultWithSim) {
-	report.grouped[mode] = result
+func (report *reportForItemWithSim) Add(group reportGroup, result upgradeItemResultWithSim) {
+	old, exists := report.grouped[group.specLabel]
+	if exists && !old.Equals(result) {
+		panic("duplicate group entry for spec with " + result.item.CreateString())
+	}
+	report.grouped[group.specLabel] = result
 }
 
 func (report *reportForItemWithSim) BestRating() float64 {
@@ -239,8 +267,14 @@ func (report *reportForItemWithSim) BestRating() float64 {
 type reportable interface {
 	Boss() string
 	Item() *items.FullItem
+	Slot() items.SlotEquip
 }
 
 type reportForItemAddable[T reportable] interface {
-	Add(mode reportGroup, result T)
+	Add(group reportGroup, result T)
+}
+
+type reportItemRef struct {
+	itemId items.ItemId
+	slot   items.SlotEquip
 }

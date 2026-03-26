@@ -94,7 +94,7 @@ type SolveOutput struct {
 }
 
 func (output *SolveOutput) Equals(b *SolveOutput) bool {
-	return output.Success == b.Success && output.ResultRating == b.ResultRating && output.FullSet.Equals(b.FullSet)
+	return output.Success == b.Success && output.ResultRating == b.ResultRating && output.FullSet.Equals(&b.FullSet)
 }
 
 func (output *SolveOutput) Report(printer *util.PrintRecorder) {

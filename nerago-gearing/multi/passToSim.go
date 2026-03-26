@@ -61,7 +61,7 @@ func (job *MultiSetJob) prepareRevisionsForSim(proposedList []MultiProposedOutpu
 			specOptions = append(specOptions, *draft)
 
 			specOptions = util.RemoveDuplicatesFuncNotify(specOptions, func(a, b *solver.SolveOutput) bool {
-				return a.FullSet.Equals(b.FullSet)
+				return a.FullSet.Equals(&b.FullSet)
 			}, func(removed *solver.SolveOutput) {
 				printer.Printf("removed duplicate output %s\n", removed.OutputId)
 			})

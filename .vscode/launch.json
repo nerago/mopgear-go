@@ -7,6 +7,7 @@
             "request": "launch",
             "mode": "debug",
             "program": "./nerago-gearing/main",
+            "cwd": "${workspaceFolder}",
             "buildFlags": "-tags=with_db",
         },
 
@@ -16,6 +17,7 @@
             "request": "launch",
             "mode": "exec",
             "program": "main.exe",
+            "cwd": "${workspaceFolder}",
             "preLaunchTask": "Build Gearing Optimised"
         },
 

@@ -48,7 +48,7 @@ func (item *FullItem) Equals(other *FullItem) bool {
 		stats.StatBlock_Equals(&item.StatBase, &other.StatBase) && stats.StatBlock_Equals(&item.StatEnchant, &other.StatEnchant)
 }
 
-func (itemSet *FullItemSet) Equals(other FullItemSet) bool {
+func (itemSet *FullItemSet) Equals(other *FullItemSet) bool {
 	return itemSet.items.Equals(&other.items)
 }
 

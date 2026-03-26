@@ -12,6 +12,10 @@ func (tab *TabulateOutput) SetColumnSpacing(spacing int) {
 	tab.spacing = spacing
 }
 
+func (tab *TabulateOutput) ColumnCount() int {
+	return len(tab.alignRight)
+}
+
 func (tab *TabulateOutput) AddColumnHeader(header string, alignRight bool) {
 	if len(tab.data) == 0 {
 		tab.data = append(tab.data, make([]string, 0))

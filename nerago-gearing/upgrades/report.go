@@ -7,7 +7,11 @@ import (
 	"paladin_gearing_go/util/util_rank"
 )
 
-func reportBasicResults(resultList []upgradeItemResult, printer *util.PrintRecorder) {
+func reportBasicResults(resultList []upgradeItemResult, printer *util.PrintRecorder, positiveResultsOnly bool) {
+	if positiveResultsOnly {
+		resultList = filterPositive(resultList, positiveResultsOnly)
+	}
+
 	reportBasicByBoss(resultList, printer)
 	printer.Println0()
 	reportBasicBySlot(resultList, printer)
@@ -67,7 +71,11 @@ func reportBasicOverallRank(resultList []upgradeItemResult, printer *util.PrintR
 	}
 }
 
-func reportBasicResultsSim(resultList []upgradeItemResultWithSim, printer *util.PrintRecorder) {
+func reportBasicResultsSim(resultList []upgradeItemResultWithSim, printer *util.PrintRecorder, positiveResultsOnly bool) {
+	if positiveResultsOnly {
+		resultList = filterPositiveSim(resultList, positiveResultsOnly)
+	}
+
 	reportBasicByBossSim(resultList, printer)
 	printer.Println0()
 	reportBasicBySlotSim(resultList, printer)
@@ -160,4 +168,24 @@ func groupBySlot[T reportableRanked](resultList []T) map[items.SlotEquip]*util_r
 		rank.Add(result, result.ranking())
 	}
 	return rankedBySlot
+}
+
+func filterPositive(input []upgradeItemResult, positiveResultsOnly bool) []upgradeItemResult {
+	output := make([]upgradeItemResult, 0, len(input))
+	for _, item := range input {
+		if item.increase() > 0.0 {
+			output = append(output, item)
+		}
+	}
+	return output
+}
+
+func filterPositiveSim(input []upgradeItemResultWithSim, positiveResultsOnly bool) []upgradeItemResultWithSim {
+	output := make([]upgradeItemResultWithSim, 0, len(input))
+	for _, item := range input {
+		if item.increase() > 0.0 || item.percentSim() > 0.0 {
+			output = append(output, item)
+		}
+	}
+	return output
 }

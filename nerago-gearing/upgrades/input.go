@@ -30,23 +30,24 @@ func (up UpgradeGoal) Name() string {
 }
 
 type FindUpgrades_BasicInputs struct {
-	IncludeRaden bool // TODO unused
-	IgnoredItems []items.ItemId
-	SolveSize    solver.SolveSize
+	IncludeRaden        bool // TODO unused
+	PositiveResultsOnly bool
+	IgnoredItems        []items.ItemId
+	SolveSize           solver.SolveSize
 }
 
 type FindUpgrades_SimInputs struct {
-	Basic   FindUpgrades_BasicInputs
+	FindUpgrades_BasicInputs
 	SimSize simulate.WowSim_RunSize
 }
 
 type FindUpgrades_MultiSpec struct {
-	Basic FindUpgrades_BasicInputs
+	FindUpgrades_BasicInputs
 	Specs []FindUpgrades_Spec
 }
 
 type FindUpgrades_MultiSpec_Sim struct {
-	Sim   FindUpgrades_SimInputs
+	FindUpgrades_SimInputs
 	Specs []FindUpgrades_Spec
 }
 

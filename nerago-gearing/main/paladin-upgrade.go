@@ -18,11 +18,11 @@ const (
 	// itemSolveSize  = solver.SolveSize_Medium
 	// simRunSize     = simulate.RunSize_QuickDirty
 
-	// itemSolveSize = solver.SolveSize_Medium
-	// simRunSize  = simulate.RunSize_Medium
+	itemSolveSize = solver.SolveSize_Medium
+	simRunSize  = simulate.RunSize_Medium
 
-	itemSolveSize = solver.SolveSize_PerItem
-	simRunSize    = simulate.RunSize_TestOnly
+	// itemSolveSize = solver.SolveSize_PerItem
+	// simRunSize    = simulate.RunSize_TestOnly
 )
 
 var substituteItemsDps = []items.ItemId{
@@ -84,7 +84,7 @@ func findUpgrades_Sim_PaladinDps_Run() {
 	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
 	upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Heroic)
 	input := upgrades.FindUpgrades_SimInputs{
-		Basic: upgrades.FindUpgrades_BasicInputs{
+		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
 			IgnoredItems: ignoredItems,
 			SolveSize:    itemSolveSize},
 		SimSize: simRunSize}
@@ -98,7 +98,7 @@ func findUpgrades_Sim_PaladinMiti_Run() {
 	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
 	upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Heroic)
 	input := upgrades.FindUpgrades_SimInputs{
-		Basic: upgrades.FindUpgrades_BasicInputs{
+		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
 			IgnoredItems: ignoredItems,
 			SolveSize:    itemSolveSize},
 		SimSize: simRunSize}
@@ -107,11 +107,14 @@ func findUpgrades_Sim_PaladinMiti_Run() {
 
 func findUpgrades_Paladin_Sim_AllRaid_Run() {
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
-		Sim: upgrades.FindUpgrades_SimInputs{
-			Basic: upgrades.FindUpgrades_BasicInputs{
-				IgnoredItems: ignoredItems,
-				SolveSize:    itemSolveSize},
-			SimSize: simRunSize},
+		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{
+			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
+				IgnoredItems:        ignoredItems,
+				SolveSize:           itemSolveSize,
+				PositiveResultsOnly: true,
+			},
+			SimSize: simRunSize,
+		},
 		Specs: []upgrades.FindUpgrades_Spec{
 			{
 				Label:           "dps",

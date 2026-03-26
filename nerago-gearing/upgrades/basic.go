@@ -28,7 +28,7 @@ func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMa
 		func(task *upgradeItemTask, resultChannel chan<- upgradeItemResult) {
 			resultChannel <- performUpgradeTask(input, task, baseItems, baseRating, model, printer, tracker)
 		})
-	reportBasicResults(resultList, printer)
+	reportBasicResults(resultList, printer, input.PositiveResultsOnly)
 	return resultList, baseSet
 }
 

@@ -173,20 +173,27 @@ func (track *TrackProgress) printProgress(percent float64) {
 }
 
 func (track *TrackProgress) estimateRemain(now time.Time, percent float64) string {
-	ref := track.ringBuffer.ReadOldest()
-	timeTakenSinceRef := now.Sub(ref.when)
+	est1 := track.estimateRemainFromRef(now, percent, track.ringBuffer.ReadOldest())
+	est2 := track.estimateRemainFromRef(now, percent, track.ringBuffer.ReadNewest())
+	est3 := track.estimateRemainFromStart(now, percent)
+
+	averageRemain := (est1 + est2 + est3) / 3
+	return compactDurationString(averageRemain)
+}
+
+func (track *TrackProgress) estimateRemainFromRef(now time.Time, percent float64, ref progressSnapshot) time.Duration {
+	timeTakenSinceRef := float64(now.Sub(ref.when))
 	percentIncreaseSinceRef := percent - ref.percent
-	totalEstimateRef := float64(timeTakenSinceRef) / percentIncreaseSinceRef
-
-	// timeTakenSinceStart := now.Sub(track.startTime)
-	// totalEstimateStart := float64(timeTakenSinceStart) / percent
-
-	// totalEstimate := (totalEstimateRef + totalEstimateStart) / 2
-	// estimateRemain := totalEstimate - timeTakenSinceStart
-
+	totalEstimateRef := timeTakenSinceRef / percentIncreaseSinceRef
 	estimateRemain := (1 - percent) * totalEstimateRef
+	return time.Duration(estimateRemain)
+}
 
-	return compactDurationString(time.Duration(estimateRemain))
+func (track *TrackProgress) estimateRemainFromStart(now time.Time, percent float64) time.Duration {
+	timeTakenSince := float64(now.Sub(track.startTime))
+	totalEstimate := timeTakenSince / percent
+	estimateRemain := totalEstimate - timeTakenSince
+	return time.Duration(estimateRemain)
 }
 
 func compactDurationString(duration time.Duration) string {

@@ -21,17 +21,17 @@ func FindUpgrades_Sim_Run(input *FindUpgrades_SimInputs, goal UpgradeGoal, model
 }
 
 func findUpgradeAndSim(input *FindUpgrades_SimInputs, baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal) []upgradeItemResultWithSim {
-	tracker.RunOuterTracking(2)
+	tracker.RunOuterTracking(3)
 	defer tracker.Stop()
 
-	initialList, baseSet := findUpgrade(&input.Basic, baseItems, extraItems, model, printer, tracker.MakeNested(), goal)
+	initialList, baseSet := findUpgrade(&input.FindUpgrades_BasicInputs, baseItems, extraItems, model, printer, tracker.MakeNested(), goal)
 
-	baseSim := simulate.WowSim_Execute(input.SimSize, model.Spec, baseSet.Items(), nil, nil)
+	baseSim := simulate.WowSim_Execute(input.SimSize, model.Spec, baseSet.Items(), nil, tracker.MakeNested())
 	printer.Println("SIM *BASELINE*")
 	baseSim.Print(printer)
 
 	simResults := simEachInitialResult(input, initialList, model, &baseSim, tracker.MakeNested(), printer)
-	reportBasicResultsSim(simResults, printer)
+	reportBasicResultsSim(simResults, printer, input.PositiveResultsOnly)
 	return simResults
 }
 
