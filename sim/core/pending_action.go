@@ -82,19 +82,16 @@ func (pa *PendingAction) removeFromChain() {
 	pa.linkNext = nil
 }
 
-func (pa *PendingAction) clearChain() {
-	next := pa
-	for next != nil {
-		curr := next
-		next = next.linkNext
-		curr.linkPrev = nil
-		curr.linkNext = nil
-	}
-}
-
 func (pa *PendingAction) insertSpecifiedBeforeReceiver(add *PendingAction) {
 	add.linkPrev = pa.linkPrev
 	add.linkPrev.linkNext = add
 	add.linkNext = pa
 	pa.linkPrev = add
+}
+
+func (pa *PendingAction) insertSpecifiedAfterReceiver(add *PendingAction) {
+	add.linkNext = pa.linkNext
+	add.linkNext.linkPrev = add
+	add.linkPrev = pa
+	pa.linkNext = add
 }

@@ -427,7 +427,6 @@ func (sim *Simulation) reset() {
 		sim.Duration += time.Duration(sim.RandomFloat("sim duration")*float64(variation)) - sim.DurationVariation
 	}
 
-	sim.pendingActionsChain.clearChain()
 	sim.pendingActionsChain = makeSentinelPendingAction()
 
 	sim.executePhase = 0
@@ -501,7 +500,6 @@ func (sim *Simulation) Cleanup() {
 		sim.Duration = sim.CurrentTime
 	}
 
-	// existing code doesn't seem to care that it disposes sentinel action either?
 	pa := sim.pendingActionsChain
 	for pa != nil {
 		next := pa.linkNext
@@ -535,7 +533,7 @@ func (sim *Simulation) runPendingActions() {
 }
 
 func (sim *Simulation) Step() bool {
-	pa := sim.pendingActionsChain.linkPrev
+	pa := sim.pendingActionsChain.linkNext
 
 	if pa.NextActionAt >= sim.minWeaponAttackTime && sim.minWeaponAttackTime <= sim.minTaskTime {
 		if sim.minWeaponAttackTime > sim.endOfCombatDuration || sim.Encounter.DamageTaken > sim.endOfCombatDamage {
@@ -661,19 +659,22 @@ func (sim *Simulation) nextExecutePhase() {
 }
 
 // TODO another hotspot nasty reordering stuff
-func (sim *Simulation) AddPendingAction(pa *PendingAction) {
-	pa.consumed = false
+func (sim *Simulation) AddPendingAction(add *PendingAction) {
+	add.consumed = false
 
-	// start next after sentinal, loop until we hit it again
-	for curr := sim.pendingActionsChain.linkNext; curr != sim.pendingActionsChain; curr = curr.linkNext {
-		if curr.NextActionAt < pa.NextActionAt || (curr.NextActionAt == pa.NextActionAt && curr.Priority >= pa.Priority) {
-			curr.insertSpecifiedBeforeReceiver(pa)
+	// start next after sentinal, we should always find something
+	curr := sim.pendingActionsChain.linkNext
+	for {
+		if add.NextActionAt < curr.NextActionAt || (add.NextActionAt == curr.NextActionAt && add.Priority > curr.Priority) {
+			curr.insertSpecifiedBeforeReceiver(add)
+			// curr.insertSpecifiedAfterReceiver(add)
 			return
 		}
+		curr = curr.linkNext
 	}
 
-	// insert before sentinel as at the end
-	sim.pendingActionsChain.insertSpecifiedBeforeReceiver(pa)
+	// insert after sentinel as the next action
+	// sim.pendingActionsChain.insertSpecifiedAfterReceiver(add)
 }
 
 // Use this for any "fire and forget" delayed actions where your code does not
