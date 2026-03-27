@@ -35,11 +35,12 @@ type Simulation struct {
 	testRands map[string]Rand
 
 	// Current Simulation State
-	pendingActions    []*PendingAction
-	pendingActionPool *sync.Pool
-	CurrentTime       time.Duration // duration that has elapsed in the sim since starting
-	Duration          time.Duration // Duration of current iteration
-	NeedsInput        bool          // Sim is in interactive mode and needs input
+	// pendingActions    []*PendingAction
+	pendingActionsChain *PendingAction // always points to the sentinel action
+	pendingActionPool   *sync.Pool
+	CurrentTime         time.Duration // duration that has elapsed in the sim since starting
+	Duration            time.Duration // Duration of current iteration
+	NeedsInput          bool          // Sim is in interactive mode and needs input
 
 	ProgressReport func(*proto.ProgressMetrics)
 	Signals        simsignals.Signals
@@ -401,14 +402,17 @@ func (sim *Simulation) runOnce(firstIteration bool) {
 	sim.Cleanup()
 }
 
-var (
-	sentinelPendingAction = &PendingAction{
+func makeSentinelPendingAction() *PendingAction {
+	sentinelPendingAction := &PendingAction{
 		NextActionAt: NeverExpires,
 		OnAction: func(sim *Simulation) {
 			panic("running sentinel pending action")
 		},
 	}
-)
+	sentinelPendingAction.linkNext = sentinelPendingAction
+	sentinelPendingAction.linkPrev = sentinelPendingAction
+	return sentinelPendingAction
+}
 
 // Reset will set sim back and erase all current state.
 // This is automatically called before every 'Run'.
@@ -423,8 +427,8 @@ func (sim *Simulation) reset() {
 		sim.Duration += time.Duration(sim.RandomFloat("sim duration")*float64(variation)) - sim.DurationVariation
 	}
 
-	sim.pendingActions = sim.pendingActions[:0]
-	sim.pendingActions = append(sim.pendingActions, sentinelPendingAction)
+	sim.pendingActionsChain.clearChain()
+	sim.pendingActionsChain = makeSentinelPendingAction()
 
 	sim.executePhase = 0
 	sim.nextExecutePhase()
@@ -497,12 +501,18 @@ func (sim *Simulation) Cleanup() {
 		sim.Duration = sim.CurrentTime
 	}
 
-	for _, pa := range sim.pendingActions {
+	// existing code doesn't seem to care that it disposes sentinel action either?
+	pa := sim.pendingActionsChain
+	for pa != nil {
+		next := pa.linkNext
+
 		if pa.CleanUp != nil {
 			pa.CleanUp(sim)
 		}
 
 		pa.dispose(sim)
+
+		pa = next
 	}
 
 	sim.Raid.doneIteration(sim)
@@ -525,8 +535,7 @@ func (sim *Simulation) runPendingActions() {
 }
 
 func (sim *Simulation) Step() bool {
-	last := len(sim.pendingActions) - 1
-	pa := sim.pendingActions[last]
+	pa := sim.pendingActionsChain.linkPrev
 
 	if pa.NextActionAt >= sim.minWeaponAttackTime && sim.minWeaponAttackTime <= sim.minTaskTime {
 		if sim.minWeaponAttackTime > sim.endOfCombatDuration || sim.Encounter.DamageTaken > sim.endOfCombatDamage {
@@ -544,7 +553,7 @@ func (sim *Simulation) Step() bool {
 		return false
 	}
 
-	sim.pendingActions = sim.pendingActions[:last]
+	pa.removeFromChain()
 	pa.consumed = true
 
 	if pa.cancelled {
@@ -651,29 +660,20 @@ func (sim *Simulation) nextExecutePhase() {
 	}
 }
 
+// TODO another hotspot nasty reordering stuff
 func (sim *Simulation) AddPendingAction(pa *PendingAction) {
-	//if pa.NextActionAt < sim.CurrentTime {
-	//	panic(fmt.Sprintf("Cant add action in the past: %s", pa.NextActionAt))
-	//}
 	pa.consumed = false
-	for index, v := range sim.pendingActions[1:] {
-		if v.NextActionAt < pa.NextActionAt || (v.NextActionAt == pa.NextActionAt && v.Priority >= pa.Priority) {
-			//if sim.Log != nil {
-			//	sim.Log("Adding action at index %d for time %s", index - len(sim.pendingActions), pa.NextActionAt)
-			//	for i := index; i < len(sim.pendingActions); i++ {
-			//		sim.Log("Upcoming action at %s", sim.pendingActions[i].NextActionAt)
-			//	}
-			//}
-			sim.pendingActions = append(sim.pendingActions, pa)
-			copy(sim.pendingActions[index+2:], sim.pendingActions[index+1:])
-			sim.pendingActions[index+1] = pa
+
+	// start next after sentinal, loop until we hit it again
+	for curr := sim.pendingActionsChain.linkNext; curr != sim.pendingActionsChain; curr = curr.linkNext {
+		if curr.NextActionAt < pa.NextActionAt || (curr.NextActionAt == pa.NextActionAt && curr.Priority >= pa.Priority) {
+			curr.insertSpecifiedBeforeReceiver(pa)
 			return
 		}
 	}
-	//if sim.Log != nil {
-	//	sim.Log("Adding action at end for time %s", pa.NextActionAt)
-	//}
-	sim.pendingActions = append(sim.pendingActions, pa)
+
+	// insert before sentinel as at the end
+	sim.pendingActionsChain.insertSpecifiedBeforeReceiver(pa)
 }
 
 // Use this for any "fire and forget" delayed actions where your code does not
