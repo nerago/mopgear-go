@@ -20,7 +20,7 @@ func basicReforge(itemOptions *items.FullOptionsMap, model *model.Model, printer
 	output.Report(printer)
 }
 
-func testSim() {
+func testSim(printer *util.PrintRecorder) {
 	itemOptions, model := setupPallyMitigation()
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions:         &itemOptions,
@@ -28,7 +28,7 @@ func testSim() {
 		PhasedAcceptable:    false,
 		EnableTrackProgress: true,
 		SolveSize:           solver.SolveSize_Medium,
-		Printer:             nil})
+		Printer:             printer})
 	resultStats := simulate.WowSim_Execute(simulate.RunSize_QuickDirty, model.Spec, output.FullSet.Items(), &model, nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
 }

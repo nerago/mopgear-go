@@ -500,17 +500,12 @@ func (sim *Simulation) Cleanup() {
 		sim.Duration = sim.CurrentTime
 	}
 
-	pa := sim.pendingActionsChain
-	for pa != nil {
-		next := pa.linkNext
-
+	for pa := sim.pendingActionsChain; pa != sim.pendingActionsChain; pa = pa.linkNext {
 		if pa.CleanUp != nil {
 			pa.CleanUp(sim)
 		}
 
 		pa.dispose(sim)
-
-		pa = next
 	}
 
 	sim.Raid.doneIteration(sim)

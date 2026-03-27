@@ -74,8 +74,8 @@ func core(printer *util.PrintRecorder) {
 	// slotRating(itemOptions[Equip_Chest], &model, printer)
 	// basicReforge(&itemOptions, &model, printer)
 
-	PaladinMultiRun(printer)
-	// testSim(printer)
+	// PaladinMultiRun(printer)
+	testSim(printer)
 	// findUpgrades_Sim_PaladinMiti_Run()
 	// findUpgrades_Paladin_Sim_AllRaid_Run()
 }

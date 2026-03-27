@@ -61,7 +61,6 @@ func (pa *PendingAction) Cancel(sim *Simulation) {
 }
 
 func (pa *PendingAction) dispose(sim *Simulation) {
-	pa.removeFromChain()
 	if pa.canPool && pa.consumed {
 		sim.pendingActionPool.Put(pa)
 	}
