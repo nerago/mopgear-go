@@ -1,7 +1,6 @@
 package core
 
 import (
-	"slices"
 	"time"
 )
 
@@ -38,6 +37,8 @@ type PendingAction struct {
 	cancelled bool
 	consumed  bool
 	canPool   bool // Flags the PA as safe to use in shared object pools.
+
+	linkPrev, linkNext *PendingAction
 }
 
 func (pa *PendingAction) IsConsumed() bool {
@@ -56,13 +57,44 @@ func (pa *PendingAction) Cancel(sim *Simulation) {
 
 	pa.cancelled = true
 
-	if i := slices.Index(sim.pendingActions, pa); i != -1 {
-		sim.pendingActions = append(sim.pendingActions[:i], sim.pendingActions[i+1:]...)
-	}
+	pa.removeFromChain()
 }
 
 func (pa *PendingAction) dispose(sim *Simulation) {
+	pa.removeFromChain()
 	if pa.canPool && pa.consumed {
 		sim.pendingActionPool.Put(pa)
 	}
+}
+
+func (pa *PendingAction) removeFromChain() {
+	// TODO we shouldn't need nil guards if everyone is well behaved since a valid entry should always have them set
+	// pa.linkPrev.linkNext = pa.linkNext
+	// pa.linkNext.linkPrev = pa.linkPrev
+
+	if pa.linkPrev != nil {
+		pa.linkPrev.linkNext = pa.linkNext
+	}
+	if pa.linkNext != nil {
+		pa.linkNext.linkPrev = pa.linkPrev
+	}
+	pa.linkPrev = nil
+	pa.linkNext = nil
+}
+
+func (pa *PendingAction) clearChain() {
+	next := pa
+	for next != nil {
+		curr := next
+		next = next.linkNext
+		curr.linkPrev = nil
+		curr.linkNext = nil
+	}
+}
+
+func (pa *PendingAction) insertSpecifiedBeforeReceiver(add *PendingAction) {
+	add.linkPrev = pa.linkPrev
+	add.linkPrev.linkNext = add
+	add.linkNext = pa
+	pa.linkPrev = add
 }
