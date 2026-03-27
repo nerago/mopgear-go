@@ -95,6 +95,15 @@ func canPerformSpecifiedUpgrade(input *FindUpgrades_BasicInputs, extra *items.Fu
 	return true
 }
 
+func CouldAddUpgradeToSet_ItemSlot(baseItems *items.FullOptionsMap, slot items.SlotItem, printer *util.PrintRecorder, extra *items.FullItem) bool {
+	for _, slotEquip := range slot.ToSlotEquipOptions() {
+		if CouldAddUpgradeToSet(baseItems, slotEquip, printer, extra) {
+			return true
+		}
+	}
+	return false
+}
+
 func CouldAddUpgradeToSet(baseItems *items.FullOptionsMap, slot items.SlotEquip, printer *util.PrintRecorder, extra *items.FullItem) bool {
 	if !baseItems.Has(slot) {
 		printer.Println("SLOT NOT USED IN CURRENT SET " + extra.CreateString())

@@ -16,6 +16,8 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/wowsims/mop/sim"
 )
 
 const (
@@ -31,6 +33,7 @@ func main() {
 	defer printer.Close()
 
 	db.WowSimDB_Read()
+	sim.RegisterAll()
 
 	log.SetOutput(io.Discard) // ignore wowsim's internal progress logs
 
@@ -79,12 +82,12 @@ func core(printer *util.PrintRecorder) {
 
 func setupPallyMitigation() (items.FullOptionsMap, model.Model) {
 	model := model.Model_PallyProtMitigation()
-	return setup.OptionsSetup_FromGearFile(files.GearFileProtMitigation, &model, printer), model
+	return setup.OptionsSetup_FromGearFile(files.GearFileProtMitigation, &model, setup.MissingEnchant_Panic, printer), model
 }
 
 func setupPallyDps() (items.FullOptionsMap, model.Model) {
 	model := model.Model_PallyProtDps()
-	return setup.OptionsSetup_FromGearFile(files.GearFileProtDps, &model, printer), model
+	return setup.OptionsSetup_FromGearFile(files.GearFileProtDps, &model, setup.MissingEnchant_Panic, printer), model
 }
 
 func lowerPriority() {

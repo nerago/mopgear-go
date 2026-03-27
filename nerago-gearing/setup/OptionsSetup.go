@@ -10,24 +10,31 @@ import (
 	"paladin_gearing_go/util"
 )
 
-func OptionsSetup_FromGearFile(filename string, model *model.Model, printer *util.PrintRecorder) items.FullOptionsMap {
+type MissingEnchantMode int8
+
+const (
+	MissingEnchant_Ignore MissingEnchantMode = iota
+	MissingEnchant_Fix    MissingEnchantMode = iota
+	MissingEnchant_Panic  MissingEnchantMode = iota
+)
+
+func OptionsSetup_FromGearFile(filename string, model *model.Model, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) items.FullOptionsMap {
 	equipped := loaders.GearFileReader_Read(filename)
-	return OptionsSetup_FromEquipped(equipped, model, printer)
+	return OptionsSetup_FromEquipped(equipped, model, missingEnchant, printer)
 }
 
-func OptionsSetup_FromEquipped(equipped []loaders.EquippedItem, model *model.Model, printer *util.PrintRecorder) items.FullOptionsMap {
+func OptionsSetup_FromEquipped(equipped []loaders.EquippedItem, model *model.Model, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) items.FullOptionsMap {
 	optionMap := items.FullOptionsMap{}
 	for _, equipItem := range equipped {
-		optionList, baseItem := OptionsSetup_Single_FromEquipped(equipItem, model, printer)
+		optionList, baseItem := OptionsSetup_Single_FromEquipped(equipItem, model, missingEnchant, printer)
 		optionMap.FillSlot_ExpectedEmpty(baseItem.Slot, optionList)
 	}
 	return optionMap
 }
 
-func OptionsSetup_Single_FromEquipped(equipItem loaders.EquippedItem, model *model.Model, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
+func OptionsSetup_Single_FromEquipped(equipItem loaders.EquippedItem, model *model.Model, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
 	item := loadItemBasic(equipItem.ItemId, equipItem.UpgradeStep, printer)
-	addDetailFromEquip(&item, equipItem)
-	// printer.Println(item.CreateString())
+	addDetailFromEquip(&item, equipItem, model, missingEnchant, printer)
 	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
 }
 
@@ -41,7 +48,7 @@ func OptionsSetup_ExactEquippedOnly(equipped []loaders.EquippedItem, model *mode
 	resultMap := items.FullEquipMap{}
 	for _, equipItem := range equipped {
 		item := loadItemBasic(equipItem.ItemId, equipItem.UpgradeStep, printer)
-		addDetailFromEquip(&item, equipItem)
+		addDetailFromEquip(&item, equipItem, model, MissingEnchant_Ignore, printer)
 
 		if equipItem.Reforging != 0 {
 			reforge := db.WowSimDB_ReforgeById(equipItem.Reforging)
@@ -70,7 +77,7 @@ func makeItemLevelToRandomAmount() map[uint16]uint32 {
 	return lookup
 }
 
-func addDetailFromEquip(item *items.FullItem, equipItem loaders.EquippedItem) {
+func addDetailFromEquip(item *items.FullItem, equipItem loaders.EquippedItem, model *model.Model, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) {
 	if equipItem.RandomSuffix == -336 {
 		item.RandomSuffix = equipItem.RandomSuffix
 
@@ -83,48 +90,7 @@ func addDetailFromEquip(item *items.FullItem, equipItem loaders.EquippedItem) {
 		panic("unknown random suffix")
 	}
 
-	calcGemsAndEnchants(item, equipItem)
-}
-
-func calcGemsAndEnchants(item *items.FullItem, equipItem loaders.EquippedItem) {
-	// TODO trinket modelling
-	if item.Slot == items.Item_Trinket {
-		return
-	}
-
-	item.StatEnchant = stats.StatBlock{}
-
-	if equipItem.EnchantChoice != 0 {
-		// TODO enchant validation
-		enchantInfo := db.EnchantData_ById(equipItem.EnchantChoice)
-		stats.StatBlock_Increment_Mutating(&item.StatEnchant, &enchantInfo.Stats)
-		item.EnchantChoice = equipItem.EnchantChoice
-	}
-
-	// TODO blacksmith status in params
-	if item.Slot.PossibleBlacksmith() {
-		item.SocketSlots = append(item.SocketSlots, stats.Socket_General)
-	}
-
-	socketBonusMet := true
-	gemChoice := make([]stats.GemInfo, 0)
-	for index, gemId := range equipItem.GemChoice {
-		gemInfo := db.GemData_ById(gemId)
-		gemChoice = append(gemChoice, gemInfo)
-		stats.StatBlock_Increment_Mutating(&item.StatEnchant, &gemInfo.Stats)
-
-		socket := item.SocketSlots[index]
-		if !socket.SocketMatch(&gemInfo.Stats) {
-			socketBonusMet = false
-		}
-	}
-	item.GemChoice = gemChoice
-
-	if socketBonusMet {
-		stats.StatBlock_Increment_Mutating(&item.StatEnchant, &item.SocketBonus)
-	}
-
-	item.ChangeDerivedStatFields()
+	processGemsAndEnchants(item, equipItem, model, missingEnchant, printer)
 }
 
 func addDetailUsingDefaults(item *items.FullItem, model *model.Model) {
@@ -143,28 +109,99 @@ func addDetailUsingDefaults(item *items.FullItem, model *model.Model) {
 		item.EnchantChoice = enchantInfo.Id
 	}
 
-	// TODO blacksmith status in params
-	if item.Slot.PossibleBlacksmith() {
-		item.SocketSlots = append(item.SocketSlots, stats.Socket_General)
+	addBlacksmithSocket(item, model)
+
+	addDefaultGems(item, model)
+
+	item.ChangeDerivedStatFields()
+}
+
+func processGemsAndEnchants(item *items.FullItem, equipItem loaders.EquippedItem, model *model.Model, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) {
+	if item.Slot == items.Item_Trinket {
+		return
 	}
 
+	item.StatEnchant = stats.StatBlock{}
+
+	if equipItem.EnchantChoice != 0 {
+		enchantInfo := db.EnchantData_ById(equipItem.EnchantChoice)
+		stats.StatBlock_Increment_Mutating(&item.StatEnchant, &enchantInfo.Stats)
+		item.EnchantChoice = equipItem.EnchantChoice
+	} else if item.Slot.CanEnchant() && missingEnchant == MissingEnchant_Panic {
+		panic("missing enchant on " + item.CreateString())
+	} else if enchantInfo := model.EnchantChoice.GetChoice(item.Slot); enchantInfo != nil && missingEnchant == MissingEnchant_Fix {
+		before := item.CreateString()
+		stats.StatBlock_Increment_Mutating(&item.StatEnchant, &enchantInfo.Stats)
+		item.EnchantChoice = enchantInfo.Id
+		printer.Println("Add missing enchant " + before + " ==> " + item.CreateString())
+	} else if item.Slot.CanEnchant() && missingEnchant == MissingEnchant_Fix {
+		panic("no enchant choice for " + item.Slot.Name())
+	}
+
+	addBlacksmithSocket(item, model)
+
+	if len(equipItem.GemChoice) == len(item.SocketSlots) {
+		addSpecifiedGems(item, equipItem)
+	} else if len(equipItem.GemChoice) == 0 {
+		switch missingEnchant {
+		case MissingEnchant_Fix:
+			before := item.CreateString()
+			addDefaultGems(item, model)
+			printer.Println("Add missing gems " + before + " ==> " + item.CreateString())
+		case MissingEnchant_Panic:
+			panic("missing gems on " + item.CreateString())
+		}
+	} else {
+		panic("mismatch in gem array lengths on " + item.CreateString())
+	}
+
+	item.ChangeDerivedStatFields()
+}
+
+func addDefaultGems(item *items.FullItem, model *model.Model) {
 	socketBonusMet := true
-	gemChoice := make([]stats.GemInfo, 0)
+	item.GemChoice = make([]stats.GemInfo, 0, len(item.SocketSlots))
+
 	for _, socketType := range item.SocketSlots {
 		// NOTE unique engineering gems not checked
 		gemInfo := model.GemChoice.GetChoice(socketType)
-		gemChoice = append(gemChoice, *gemInfo)
+		item.GemChoice = append(item.GemChoice, *gemInfo)
 		stats.StatBlock_Increment_Mutating(&item.StatEnchant, &gemInfo.Stats)
 
 		if !socketType.SocketMatch(&gemInfo.Stats) {
 			socketBonusMet = false
 		}
 	}
-	item.GemChoice = gemChoice
 
 	if socketBonusMet {
 		stats.StatBlock_Increment_Mutating(&item.StatEnchant, &item.SocketBonus)
 	}
+}
 
-	item.ChangeDerivedStatFields()
+func addSpecifiedGems(item *items.FullItem, equipItem loaders.EquippedItem) {
+	socketBonusMet := true
+	item.GemChoice = make([]stats.GemInfo, 0, len(item.SocketSlots))
+
+	for index, socketType := range item.SocketSlots {
+		gemId := equipItem.GemChoice[index]
+		gemInfo := db.GemData_ById(gemId)
+		item.GemChoice = append(item.GemChoice, gemInfo)
+		stats.StatBlock_Increment_Mutating(&item.StatEnchant, &gemInfo.Stats)
+
+		if !socketType.SocketMatch(&gemInfo.Stats) {
+			socketBonusMet = false
+		}
+	}
+
+	if socketBonusMet {
+		stats.StatBlock_Increment_Mutating(&item.StatEnchant, &item.SocketBonus)
+	}
+}
+
+func addBlacksmithSocket(item *items.FullItem, model *model.Model) {
+	if item.Slot.AlwaysBlacksmith() || (item.Slot.PossibleBlacksmith() && model.IsBlacksmith) {
+		if len(item.SocketSlots) == 0 || item.SocketSlots[len(item.SocketSlots)-1] != stats.Socket_General {
+			item.SocketSlots = append(item.SocketSlots, stats.Socket_General)
+		}
+	}
 }

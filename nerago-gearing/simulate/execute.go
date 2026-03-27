@@ -7,11 +7,11 @@ import (
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/model"
 	gear_stat "paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 
 	"github.com/google/uuid"
-	wowsim_sim "github.com/wowsims/mop/sim"
 	wowsim_core "github.com/wowsims/mop/sim/core"
 	wowsim_proto "github.com/wowsims/mop/sim/core/proto"
 	wowsim_stat "github.com/wowsims/mop/sim/core/stats"
@@ -21,31 +21,30 @@ import (
 type WowSim_RunSize int32
 
 const (
-	RunSize_TestOnly   WowSim_RunSize = 100
+	RunSize_TestOnly     WowSim_RunSize = 100
 	RunSize_QuickDirty   WowSim_RunSize = 20000
 	RunSize_Medium       WowSim_RunSize = 100000
 	RunSize_SlowAccurate WowSim_RunSize = 500000
 )
 
-func WowSim_Execute(runSize WowSim_RunSize, spec gear_stat.SpecType, equipMap *items.FullEquipMap, bonusStats *gear_stat.StatBlock, tracker *util.TrackProgress) SimResultStats {
+func WowSim_Execute(runSize WowSim_RunSize, spec gear_stat.SpecType, equipMap *items.FullEquipMap, model *model.Model, bonusStats *gear_stat.StatBlock, tracker *util.TrackProgress) SimResultStats {
 	infile := files.SimFileFor(spec)
 	input := loadExampleFile(infile)
 
-	updateGear(input, equipMap)
+	updateGear(input, equipMap, model)
 	updateBonus(input, bonusStats)
 	input.SimOptions.Iterations = int32(runSize)
 
 	reporter := make(chan *wowsim_proto.ProgressMetrics, 10)
 	id := uuid.NewString()
 
-	wowsim_sim.RegisterAll()
 	wowsim_core.RunRaidSimConcurrentAsync(input, reporter, "gearing-"+id)
 
 	finalResult := waitForResult(reporter, tracker)
 	return convertResult(finalResult)
 }
 
-func updateGear(input *wowsim_proto.RaidSimRequest, equipMap *items.FullEquipMap) {
+func updateGear(input *wowsim_proto.RaidSimRequest, equipMap *items.FullEquipMap, model *model.Model) {
 	if equipMap == nil {
 		return
 	}
@@ -73,7 +72,7 @@ func updateGear(input *wowsim_proto.RaidSimRequest, equipMap *items.FullEquipMap
 			spec.RandomSuffix = item.RandomSuffix
 		}
 
-		if item.Slot == items.Item_Hand {
+		if item.Slot == items.Item_Hand && model.IsEngineer {
 			spec.Tinker = 4898
 		}
 

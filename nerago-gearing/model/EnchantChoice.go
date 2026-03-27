@@ -29,6 +29,7 @@ func EnchantChoice_ForSpec(spec SpecType) map[SlotItem]GemInfo {
 		result[Item_Hand] = EnchantData_ById(4433)
 		result[Item_Leg] = EnchantData_ById(4824)
 		result[Item_Foot] = EnchantData_ById(4429)
+		result[Item_Weapon1H] = EnchantData_ById(4444)
 		result[Item_Offhand] = EnchantData_ById(4993)
 
 	case Spec_PaladinRet:
@@ -39,9 +40,17 @@ func EnchantChoice_ForSpec(spec SpecType) map[SlotItem]GemInfo {
 		result[Item_Hand] = EnchantData_ById(4432)
 		result[Item_Leg] = EnchantData_ById(4823)
 		result[Item_Foot] = EnchantData_ById(4429)
-		fallthrough
+		result[Item_Weapon2H] = EnchantData_ById(4444)
 
 	case Spec_PaladinProtDps:
+		result[Item_Shoulder] = EnchantData_ById(4803)
+		result[Item_Back] = EnchantData_ById(4424)
+		result[Item_Chest] = EnchantData_ById(4419)
+		result[Item_Wrist] = EnchantData_ById(4415)
+		result[Item_Hand] = EnchantData_ById(4432)
+		result[Item_Leg] = EnchantData_ById(4823)
+		result[Item_Foot] = EnchantData_ById(4429)
+		result[Item_Weapon1H] = EnchantData_ById(4444)
 		result[Item_Offhand] = EnchantData_ById(4993)
 
 	default:

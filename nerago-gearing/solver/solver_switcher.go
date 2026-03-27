@@ -57,13 +57,25 @@ func Solver(input SolveInput) SolveOutput {
 		solvedResult = phased.SolverSkinnyPhasedIndex_Run(&solveOptions, input.Model, targetCount, trackProgress, printer)
 	} else {
 		solvedResult = build.SolverBuildOverflow2_Run(&solveOptions, input.Model, targetCount, trackProgress, printer)
+		if solvedResult.IsEmpty() {
+			printer.Println("Initial Failure with Overflow, trying with phased!!")
+			solvedResult = phased.SolverSkinnyPhasedIndex_Run(&solveOptions, input.Model, targetCount, trackProgress, printer)
+		}
 	}
 
+	var solvedSet items.SolvableItemSet
 	if solvedResult.IsEmpty() {
-		return SolveOutput{Success: false, Input: &input, ResultRating: 0, Printer: printer}
+		fallbackSet, failureSummary := diagnoseFailure(&solveOptions, input.Model)
+		if fallbackSet.IsEmpty() {
+			return SolveOutput{Success: false, OutputId: uuid.NewString(), Input: &input, ResultRating: 0, FailureSummary: failureSummary, Printer: printer}
+		} else {
+			printer.Println("USING FALLBACK CAPPED SET!!")
+			solvedSet = fallbackSet.GetOrPanic()
+		}
+	} else {
+		solvedSet = solvedResult.GetOrPanic()
 	}
 
-	solvedSet := solvedResult.GetOrPanic()
 	solvedSet.DebugValidate()
 
 	solvedSet = tools.Tweaker_Run(&solvedSet, &solveOptions, input.Model)
@@ -74,23 +86,24 @@ func Solver(input SolveInput) SolveOutput {
 	fullItem.ValidateItemRules()
 
 	return SolveOutput{
-		true,
-		uuid.NewString(),
-		&input,
-		solvedSet,
-		fullItem,
-		input.Model.CalcRatingSolve(&solvedSet),
-		printer}
+		Success:      true,
+		OutputId:     uuid.NewString(),
+		Input:        &input,
+		SolvedSet:    solvedSet,
+		FullSet:      fullItem,
+		ResultRating: input.Model.CalcRatingSolve(&solvedSet),
+		Printer:      printer}
 }
 
 type SolveOutput struct {
-	Success      bool
-	OutputId     string
-	Input        *SolveInput
-	SolvedSet    items.SolvableItemSet
-	FullSet      items.FullItemSet
-	ResultRating uint64
-	Printer      *util.PrintRecorder
+	Success        bool
+	OutputId       string
+	Input          *SolveInput
+	SolvedSet      items.SolvableItemSet
+	FullSet        items.FullItemSet
+	ResultRating   uint64
+	FailureSummary string
+	Printer        *util.PrintRecorder
 }
 
 func (output *SolveOutput) Equals(b *SolveOutput) bool {

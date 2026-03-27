@@ -2,6 +2,7 @@ package multi
 
 import (
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/model"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/stats"
@@ -122,6 +123,7 @@ func (job *MultiSetJob) existingGearAsProposal() MultiProposedOutput {
 type simulateJob struct {
 	spec   stats.SpecType
 	equip  items.FullEquipMap
+	model  *model.Model
 	result *simulate.SimResultStats
 }
 
@@ -134,7 +136,7 @@ func (job *MultiSetJob) prepareSimList(proposalList []MultiProposedOutput) []sim
 	jobList := make([]simulateJob, 0)
 	for _, proposal := range proposalList {
 		for _, output := range proposal.Outputs {
-			job := simulateJob{output.Input.Model.Spec, *output.FullSet.Items(), nil}
+			job := simulateJob{output.Input.Model.Spec, *output.FullSet.Items(), output.Input.Model, nil}
 			jobList = append(jobList, job)
 		}
 	}
@@ -150,7 +152,7 @@ func (job *MultiSetJob) runSims(jobList []simulateJob, runSize simulate.WowSim_R
 	defer trackProgress.Stop()
 
 	channel_op.IterateEach_Blocking_Void(evaluateThreadCount, jobList, func(sim *simulateJob) {
-		result := simulate.WowSim_Execute(runSize, sim.spec, &sim.equip, nil, trackProgress.MakeNested())
+		result := simulate.WowSim_Execute(runSize, sim.spec, &sim.equip, sim.model, nil, trackProgress.MakeNested())
 		sim.result = &result
 	})
 }

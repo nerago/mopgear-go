@@ -51,8 +51,7 @@ func (job *MultiSetJob) subSolveCombo(combo CommonCombo) *MultiProposedOutput {
 		if param.IncludeInFirstPass {
 			result := job.firstPassSolveCombo(combo, param)
 			if !result.Success {
-				job.printer.Println("UNEXPECTED SOLVE FAILURE FOR " + param.Label)
-				// TODO make sure to update tracker
+				job.printer.Println("UNEXPECTED SOLVE FAILURE FOR " + param.Label + " " + result.FailureSummary)
 				return nil
 			}
 			totalRatingSum += result.ResultRating * param.ratingMultiply
@@ -65,8 +64,7 @@ func (job *MultiSetJob) subSolveCombo(combo CommonCombo) *MultiProposedOutput {
 		if !param.IncludeInFirstPass {
 			result := job.secondPassSolveCombo(combo, output, param)
 			if !result.Success {
-				job.printer.Println("UNEXPECTED SOLVE FAILURE FOR " + param.Label)
-				// TODO make sure to update tracker
+				job.printer.Println("UNEXPECTED SOLVE FAILURE FOR " + param.Label + " " + result.FailureSummary)
 				return nil
 			}
 			totalRatingSum += result.ResultRating * param.ratingMultiply

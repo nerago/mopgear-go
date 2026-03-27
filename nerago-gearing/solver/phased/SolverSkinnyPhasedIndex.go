@@ -80,7 +80,7 @@ func createWorkerRangeInt(skinnyOptions *SkinnyOptionsMap, itemOptions *Solvable
 
 	skinnySet := new(SkinnyItemSet)
 	solveSet := new(SolvableItemSet)
-	best.BestObject = new(SolvableItemSet)
+	best.BestObject = new(SolvableItemSet) 
 
 	index := start
 	for index < max {
@@ -93,9 +93,9 @@ func createWorkerRangeInt(skinnyOptions *SkinnyOptionsMap, itemOptions *Solvable
 				makeFromSkinny(itemOptions, model, skinnySet, solveSet)
 
 				// assert still matches requirement, should be redundant
-				// if !model.CheckSet(solveSet) {
-				// 	panic("inconsistent cap calcuations")
-				// }
+				if !model.CheckSet(solveSet) {
+					panic("inconsistent cap calcuations")
+				}
 
 				solveRating := model.CalcRatingSolve(solveSet)
 				best.OfferAndSwap(&solveSet, solveRating)
@@ -138,7 +138,7 @@ func makeFromSkinny(itemOptions *SolvableOptionsMap, model *Model, skinnySet *Sk
 		if skinny.Exists {
 			options := itemOptions[slot]
 
-			best := util_rank.BestCollector1[SolvableItem]{}
+			best := util_rank.BestCollector1[SolvableItem]{} // allow for zero rating
 			for i := range len(options) {
 				item := &options[i]
 				if model.StatRequirements.SkinnyMatch(skinny, item) {

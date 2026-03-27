@@ -9,7 +9,7 @@ import (
 
 func reportBasicResults(resultList []upgradeItemResult, printer *util.PrintRecorder, positiveResultsOnly bool) {
 	if positiveResultsOnly {
-		resultList = filterPositive(resultList, positiveResultsOnly)
+		resultList = filterPositive(resultList)
 	}
 
 	reportBasicByBoss(resultList, printer)
@@ -73,7 +73,7 @@ func reportBasicOverallRank(resultList []upgradeItemResult, printer *util.PrintR
 
 func reportBasicResultsSim(resultList []upgradeItemResultWithSim, printer *util.PrintRecorder, positiveResultsOnly bool) {
 	if positiveResultsOnly {
-		resultList = filterPositiveSim(resultList, positiveResultsOnly)
+		resultList = filterPositiveSim(resultList)
 	}
 
 	reportBasicByBossSim(resultList, printer)
@@ -170,7 +170,7 @@ func groupBySlot[T reportableRanked](resultList []T) map[items.SlotEquip]*util_r
 	return rankedBySlot
 }
 
-func filterPositive(input []upgradeItemResult, positiveResultsOnly bool) []upgradeItemResult {
+func filterPositive(input []upgradeItemResult) []upgradeItemResult {
 	output := make([]upgradeItemResult, 0, len(input))
 	for _, item := range input {
 		if item.increase() > 0.0 {
@@ -180,7 +180,7 @@ func filterPositive(input []upgradeItemResult, positiveResultsOnly bool) []upgra
 	return output
 }
 
-func filterPositiveSim(input []upgradeItemResultWithSim, positiveResultsOnly bool) []upgradeItemResultWithSim {
+func filterPositiveSim(input []upgradeItemResultWithSim) []upgradeItemResultWithSim {
 	output := make([]upgradeItemResultWithSim, 0, len(input))
 	for _, item := range input {
 		if item.increase() > 0.0 || item.percentSim() > 0.0 {

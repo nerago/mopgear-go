@@ -45,7 +45,7 @@ func (param *MultiSetParam) prepareStartingGear() {
 
 	equipped := loaders.GearFileReader_Read(param.GearFile)
 	param.exactEquippedGear = setup.OptionsSetup_ExactEquippedOnly(equipped, &param.Model, param.job.printer)
-	param.itemOptions = setup.OptionsSetup_FromEquipped(equipped, &param.Model, param.job.printer)
+	param.itemOptions = setup.OptionsSetup_FromEquipped(equipped, &param.Model, setup.MissingEnchant_Panic, param.job.printer)
 }
 
 func (param *MultiSetParam) prepareExtraItems() {
@@ -103,7 +103,7 @@ func (param *MultiSetParam) copyExtraFromBags(itemId items.ItemId) bool {
 		// bags file doesn't have upgrade steps
 		equipped.UpgradeStep = param.ExtraUpgradeLevel
 
-		options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &param.Model, param.job.printer)
+		options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &param.Model, setup.MissingEnchant_Fix, param.job.printer)
 		param.itemOptions.AddSeveralOptions(example.Slot, options)
 		param.job.printer.Printf("OPTION from bags %s\n", example.CreateString())
 		return true
@@ -113,10 +113,16 @@ func (param *MultiSetParam) copyExtraFromBags(itemId items.ItemId) bool {
 
 func (param *MultiSetParam) tryAddExtraFromBags(equipped *loaders.EquippedItem) {
 	if db.WowSimDB_HasItemId(equipped.ItemId) {
+		// bail early before considering full item stats/enchants/etc that might not fit spec
+		basicVersion := db.WowSimDB_ByIdAndUpgrade(equipped.ItemId, 0)
+		if !upgrades.CouldAddUpgradeToSet_ItemSlot(&param.itemOptions, basicVersion.Slot, param.job.printer, basicVersion) {
+			return
+		}
+
 		// bags file doesn't have upgrade steps
 		equipped.UpgradeStep = param.ExtraUpgradeLevel
 
-		options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &param.Model, param.job.printer)
+		options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &param.Model, setup.MissingEnchant_Fix, param.job.printer)
 
 		added := false
 		for _, slot := range example.Slot.ToSlotEquipOptions() {

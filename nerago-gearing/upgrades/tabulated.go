@@ -59,7 +59,7 @@ func processSpec[T any](find func(*items.FullOptionsMap, []*items.FullItem, *mod
 	printer := util.PrintRecorder_CreateLogFile()
 	printer.Println("[[[[[[[[[[[[[[[[[[[[ " + spec.Label + " " + difficulty.Name() + " UPGRADES ]]]]]]]]]]]]]]]]]]]]")
 
-	options := setup.OptionsSetup_FromGearFile(spec.GearFile, &spec.Model, printer)
+	options := setup.OptionsSetup_FromGearFile(spec.GearFile, &spec.Model, setup.MissingEnchant_Panic, printer)
 	upgradeItems := spec.ItemFinder(difficulty)
 
 	group := reportGroup{spec.Label, difficulty}

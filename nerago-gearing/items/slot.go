@@ -1,9 +1,5 @@
 package items
 
-import (
-	"strconv"
-)
-
 type SlotItem int8
 
 const (
@@ -58,6 +54,33 @@ func (slot SlotItem) Name() string {
 		return "Wrist"
 	default:
 		panic("unexpected common.SlotItem")
+	}
+}
+
+func (slot SlotItem) CanEnchant() bool {
+	switch slot {
+	case Item_Shoulder:
+		return true
+	case Item_Back:
+		return true
+	case Item_Chest:
+		return true
+	case Item_Wrist:
+		return true
+	case Item_Hand:
+		return true
+	case Item_Leg:
+		return true
+	case Item_Foot:
+		return true
+	case Item_Weapon2H:
+		return true
+	case Item_Weapon1H:
+		return true
+	case Item_Offhand:
+		return true
+	default:
+		return false
 	}
 }
 
@@ -127,41 +150,30 @@ func (slot SlotEquip) Name() string {
 	}
 }
 
+var equipOptionsMap [20][]SlotEquip = makeToSlotEquipOptions()
+
+func makeToSlotEquipOptions() [20][]SlotEquip {
+	var opts [20][]SlotEquip
+	opts[Item_Head] = []SlotEquip{Equip_Head}
+	opts[Item_Neck] = []SlotEquip{Equip_Neck}
+	opts[Item_Shoulder] = []SlotEquip{Equip_Shoulder}
+	opts[Item_Back] = []SlotEquip{Equip_Back}
+	opts[Item_Chest] = []SlotEquip{Equip_Chest}
+	opts[Item_Wrist] = []SlotEquip{Equip_Wrist}
+	opts[Item_Hand] = []SlotEquip{Equip_Hand}
+	opts[Item_Belt] = []SlotEquip{Equip_Belt}
+	opts[Item_Leg] = []SlotEquip{Equip_Leg}
+	opts[Item_Foot] = []SlotEquip{Equip_Foot}
+	opts[Item_Ring] = []SlotEquip{Equip_Ring1, Equip_Ring2}
+	opts[Item_Trinket] = []SlotEquip{Equip_Trinket1, Equip_Trinket2}
+	opts[Item_Weapon2H] = []SlotEquip{Equip_Weapon}
+	opts[Item_Weapon1H] = []SlotEquip{Equip_Weapon}
+	opts[Item_Offhand] = []SlotEquip{Equip_Offhand}
+	return opts
+}
+
 func (slot SlotItem) ToSlotEquipOptions() []SlotEquip {
-	switch slot {
-	case Item_Head:
-		return []SlotEquip{Equip_Head}
-	case Item_Neck:
-		return []SlotEquip{Equip_Neck}
-	case Item_Shoulder:
-		return []SlotEquip{Equip_Shoulder}
-	case Item_Back:
-		return []SlotEquip{Equip_Back}
-	case Item_Chest:
-		return []SlotEquip{Equip_Chest}
-	case Item_Wrist:
-		return []SlotEquip{Equip_Wrist}
-	case Item_Hand:
-		return []SlotEquip{Equip_Hand}
-	case Item_Belt:
-		return []SlotEquip{Equip_Belt}
-	case Item_Leg:
-		return []SlotEquip{Equip_Leg}
-	case Item_Foot:
-		return []SlotEquip{Equip_Foot}
-	case Item_Ring:
-		return []SlotEquip{Equip_Ring1, Equip_Ring2}
-	case Item_Trinket:
-		return []SlotEquip{Equip_Trinket1, Equip_Trinket2}
-	case Item_Weapon2H:
-		return []SlotEquip{Equip_Weapon}
-	case Item_Weapon1H:
-		return []SlotEquip{Equip_Weapon}
-	case Item_Offhand:
-		return []SlotEquip{Equip_Offhand}
-	default:
-		panic("unknown slot " + strconv.Itoa(int(slot)))
-	}
+	return equipOptionsMap[slot]
 }
 
 func (slot SlotEquip) PairedSlot() SlotEquip {
@@ -184,5 +196,9 @@ func (slot SlotItem) AddEnchantToCap() bool {
 }
 
 func (slot SlotItem) PossibleBlacksmith() bool {
-	return slot == Item_Wrist || slot == Item_Hand || slot == Item_Belt
+	return slot == Item_Wrist || slot == Item_Hand
+}
+
+func (slot SlotItem) AlwaysBlacksmith() bool {
+	return slot == Item_Belt
 }

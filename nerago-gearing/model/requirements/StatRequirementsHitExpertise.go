@@ -62,3 +62,23 @@ func (inst StatRequirementsHitExpertise) ToSkinny(item *SolvableItem) SkinnyItem
 func (inst StatRequirementsHitExpertise) SkinnyMatch(skinny *SkinnyItem, item *SolvableItem) bool {
 	return skinny.A == item.TotalCap().Hit() && skinny.B == item.TotalCap().Expertise()
 }
+
+func (inst *StatRequirementsHitExpertise) IsLow(stat StatType, value uint32) bool {
+	switch stat {
+	case Stat_Hit:
+		return value < inst.hitMin
+	case Stat_Expertise:
+		return value < inst.expMin
+	default: return false
+	}
+}
+
+func (inst *StatRequirementsHitExpertise) IsHigh(stat StatType, value uint32) bool {
+	switch stat {
+	case Stat_Hit:
+		return value > inst.hitMax
+	case Stat_Expertise:
+		return value > inst.expMax
+	default: return false
+	}
+}

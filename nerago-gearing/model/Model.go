@@ -21,6 +21,9 @@ type Model struct {
 	EnchantChoice EnchantChoice
 	GemChoice     GemChoice
 	SetBonus      SetBonus
+
+	IsBlacksmith bool
+	IsEngineer   bool
 }
 
 // ////////// requirements
@@ -49,17 +52,6 @@ func (model *Model) CalcRatingGenericSet(itemSet IItemSet) uint64 {
 	baseRating := model.StatRatings.CalcRatingFloat(itemSet.TotalRated())
 	setRating := model.SetBonus.CalcBonusGeneric(itemSet.ItemsGeneric())
 	return uint64(baseRating * setRating)
-}
-
-// combined?
-func (model *Model) CheckAndRate(itemSet *SolvableItemSet) uint64 {
-	if model.StatRequirements.CheckSet(itemSet.TotalCap()) {
-		baseRating := model.StatRatings.CalcRatingFloat(itemSet.TotalRated())
-		setRating := model.SetBonus.CalcBonusSolve(itemSet.Items())
-		return uint64(baseRating * setRating)
-	} else {
-		return 0
-	}
 }
 
 // ////////// items ratings

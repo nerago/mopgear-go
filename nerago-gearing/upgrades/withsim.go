@@ -12,7 +12,7 @@ import (
 // possible entry point
 func FindUpgrades_Sim_Run(input *FindUpgrades_SimInputs, goal UpgradeGoal, model *model.Model, gearFile string, upgradeItems []*items.FullItem, substituteItems []items.ItemId) {
 	printer := util.PrintRecorder_CreateLogFile()
-	optionsMap := setup.OptionsSetup_FromGearFile(gearFile, model, printer)
+	optionsMap := setup.OptionsSetup_FromGearFile(gearFile, model, setup.MissingEnchant_Panic, printer)
 	addSubstituteItems(&optionsMap, substituteItems, model, printer)
 
 	tracker := util.TrackProgress_Start()
@@ -26,7 +26,7 @@ func findUpgradeAndSim(input *FindUpgrades_SimInputs, baseItems *items.FullOptio
 
 	initialList, baseSet := findUpgrade(&input.FindUpgrades_BasicInputs, baseItems, extraItems, model, printer, tracker.MakeNested(), goal)
 
-	baseSim := simulate.WowSim_Execute(input.SimSize, model.Spec, baseSet.Items(), nil, tracker.MakeNested())
+	baseSim := simulate.WowSim_Execute(input.SimSize, model.Spec, baseSet.Items(), model, nil, tracker.MakeNested())
 	printer.Println("SIM *BASELINE*")
 	baseSim.Print(printer)
 
@@ -41,7 +41,7 @@ func simEachInitialResult(input *FindUpgrades_SimInputs, inputList []upgradeItem
 
 	return channel_op.IterateEach_SliceToSlice(c_simThreads, inputList, func(initial *upgradeItemResult, resultChannel chan<- upgradeItemResultWithSim) {
 		if initial.success {
-			simResult := simulate.WowSim_Execute(input.SimSize, model.Spec, initial.itemSet.Items(), nil, tracker.MakeNested())
+			simResult := simulate.WowSim_Execute(input.SimSize, model.Spec, initial.itemSet.Items(), model, nil, tracker.MakeNested())
 
 			printer.Println("SIM " + initial.item.BaseName)
 			simResult.Print(printer)

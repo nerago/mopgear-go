@@ -19,7 +19,10 @@ func Model_PallyProtMitigation() Model {
 		ReforgeRules:     ReforgeRules_tank,
 		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtMitigation),
 		GemChoice:        GemChoice_ForSpec(Spec_PaladinProtMitigation),
-		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Mitigation")}
+		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Mitigation"),
+		IsBlacksmith:     true,
+		IsEngineer:       true,
+	}
 }
 
 func Model_PallyProtDps() Model {
@@ -33,7 +36,10 @@ func Model_PallyProtDps() Model {
 		ReforgeRules:     ReforgeRules_tank,
 		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtDps),
 		GemChoice:        GemChoice_ForSpec(Spec_PaladinProtDps),
-		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Damage")}
+		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Damage"),
+		IsBlacksmith:     true,
+		IsEngineer:       true,
+	}
 }
 
 func Model_PallyRet() Model {
@@ -45,7 +51,10 @@ func Model_PallyRet() Model {
 		ReforgeRules:     ReforgeRules_melee,
 		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinRet),
 		GemChoice:        GemChoice_ForSpec(Spec_PaladinRet),
-		SetBonus:         SetBonus_ForSpec(Spec_PaladinRet)}
+		SetBonus:         SetBonus_ForSpec(Spec_PaladinRet),
+		IsBlacksmith:     true,
+		IsEngineer:       true,
+	}
 }
 
 func Model_Testing() Model {
@@ -57,5 +66,8 @@ func Model_Testing() Model {
 		ReforgeRules:     ReforgeRules_tank,
 		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtDps),
 		GemChoice:        GemChoice_ForSpec(Spec_PaladinProtDps),
-		SetBonus:         SetBonus_Empty()}
+		SetBonus:         SetBonus_Empty(),
+		IsBlacksmith:     false,
+		IsEngineer:       false,
+	}
 }

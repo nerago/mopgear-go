@@ -18,6 +18,11 @@ const (
 	Stat_Invalid   StatType = -1
 )
 
+var StatType_List = []StatType{
+	Stat_Strength, Stat_Agility, Stat_Stamina, Stat_Intellect,
+	Stat_Spirit, Stat_Hit, Stat_Crit, Stat_Haste,
+	Stat_Expertise, Stat_Dodge, Stat_Parry, Stat_Mastery}
+
 func (stat StatType) Name() string {
 	switch stat {
 	case Stat_Strength:

@@ -29,7 +29,7 @@ func testSim() {
 		EnableTrackProgress: true,
 		SolveSize:           solver.SolveSize_Medium,
 		Printer:             nil})
-	resultStats := simulate.WowSim_Execute(simulate.RunSize_QuickDirty, model.Spec, output.FullSet.Items(), nil, util.TrackProgress_Start())
+	resultStats := simulate.WowSim_Execute(simulate.RunSize_QuickDirty, model.Spec, output.FullSet.Items(), &model, nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
 }
 
@@ -51,5 +51,3 @@ func slotRating(itemArray []items.FullItem, model *model.Model, printer *util.Pr
 	printer.Println("BEST")
 	printer.Println(best.BestObject.CreateString())
 }
-
-func UNUSED(x ...interface{}) {}

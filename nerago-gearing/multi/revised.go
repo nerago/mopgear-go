@@ -20,7 +20,7 @@ func (job *MultiSetJob) makeRevised(param *MultiSetParam, filteredCombo CommonCo
 	phasedOutput := job.revisedSolveCombo(filteredCombo, param, true, outerTrackProgress)
 	if phasedOutput.Success {
 		printer.Println("PHASED")
-		revisedOutput.Report(printer)
+		phasedOutput.Report(printer)
 		extraOutputs = append(extraOutputs, phasedOutput)
 	}
 
