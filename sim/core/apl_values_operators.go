@@ -9,6 +9,21 @@ import (
 	"github.com/wowsims/mop/sim/core/proto"
 )
 
+type APLValueConstFloat struct {
+	DefaultAPLValueImpl
+	floatVal float64
+}
+
+func (value *APLValueConstFloat) GetFloat(_ *Simulation) float64 {
+	return value.floatVal
+}
+func (value *APLValueConstFloat) Type() proto.APLValueType {
+	return proto.APLValueType_ValueTypeFloat
+}
+func (value *APLValueConstFloat) String() string {
+	return "float"
+}
+
 type APLValueConst struct {
 	DefaultAPLValueImpl
 	valType proto.APLValueType
@@ -274,6 +289,8 @@ func (rot *APLRotation) coerceToSameType(value1 APLValue, value2 APLValue) (APLV
 func getConstAPLFloatValue(value APLValue) float64 {
 	if constValue, isConst := value.(*APLValueConst); isConst {
 		return constValue.GetFloat(nil)
+	} else if constValue, isConst := value.(*APLValueConstFloat); isConst {
+		return constValue.GetFloat(nil)
 	} else if coercedValue, isCoerced := value.(*APLValueCoerced); isCoerced {
 		if _, innerIsConst := coercedValue.inner.(*APLValueConst); innerIsConst {
 			return coercedValue.GetFloat(nil)
@@ -369,6 +386,181 @@ func (value *APLValueCompare) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueCompare) String() string {
 	return fmt.Sprintf("%s %s %s", value.lhs, value.op, value.rhs)
+}
+
+// /////////
+type APLValueCompareCommon struct {
+	DefaultAPLValueImpl
+	lhs APLValue
+	rhs APLValue
+}
+
+func (value *APLValueCompareCommon) GetInnerValues() []APLValue {
+	return []APLValue{value.lhs, value.rhs}
+}
+func (value *APLValueCompareCommon) Type() proto.APLValueType {
+	return proto.APLValueType_ValueTypeBool
+}
+func (value *APLValueCompareCommon) String() string {
+	return fmt.Sprintf("%s %s", value.lhs, value.rhs)
+}
+
+// /////////
+
+type APLValueCompareBoolEq struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareBoolEq) GetBool(sim *Simulation) bool {
+	return value.lhs.GetBool(sim) == value.rhs.GetBool(sim)
+}
+
+type APLValueCompareBoolNe struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareBoolNe) GetBool(sim *Simulation) bool {
+	return value.lhs.GetBool(sim) != value.rhs.GetBool(sim)
+}
+
+type APLValueCompareIntEq struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareIntEq) GetBool(sim *Simulation) bool {
+	return value.lhs.GetInt(sim) == value.rhs.GetInt(sim)
+}
+
+type APLValueCompareIntNe struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareIntNe) GetBool(sim *Simulation) bool {
+	return value.lhs.GetInt(sim) != value.rhs.GetInt(sim)
+}
+
+type APLValueCompareIntLt struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareIntLt) GetBool(sim *Simulation) bool {
+	return value.lhs.GetInt(sim) < value.rhs.GetInt(sim)
+}
+
+type APLValueCompareIntLe struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareIntLe) GetBool(sim *Simulation) bool {
+	return value.lhs.GetInt(sim) <= value.rhs.GetInt(sim)
+}
+
+type APLValueCompareIntGt struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareIntGt) GetBool(sim *Simulation) bool {
+	return value.lhs.GetInt(sim) > value.rhs.GetInt(sim)
+}
+
+type APLValueCompareIntGe struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareIntGe) GetBool(sim *Simulation) bool {
+	return value.lhs.GetInt(sim) >= value.rhs.GetInt(sim)
+}
+
+type APLValueCompareFloatEq struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareFloatEq) GetBool(sim *Simulation) bool {
+	return value.lhs.GetFloat(sim) == value.rhs.GetFloat(sim)
+}
+
+type APLValueCompareFloatNe struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareFloatNe) GetBool(sim *Simulation) bool {
+	return value.lhs.GetFloat(sim) != value.rhs.GetFloat(sim)
+}
+
+type APLValueCompareFloatLt struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareFloatLt) GetBool(sim *Simulation) bool {
+	return value.lhs.GetFloat(sim) < value.rhs.GetFloat(sim)
+}
+
+type APLValueCompareFloatLe struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareFloatLe) GetBool(sim *Simulation) bool {
+	return value.lhs.GetFloat(sim) <= value.rhs.GetFloat(sim)
+}
+
+type APLValueCompareFloatGt struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareFloatGt) GetBool(sim *Simulation) bool {
+	return value.lhs.GetFloat(sim) > value.rhs.GetFloat(sim)
+}
+
+type APLValueCompareFloatGe struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareFloatGe) GetBool(sim *Simulation) bool {
+	return value.lhs.GetFloat(sim) >= value.rhs.GetFloat(sim)
+}
+
+type APLValueCompareDurationEq struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareDurationEq) GetBool(sim *Simulation) bool {
+	return value.lhs.GetDuration(sim) == value.rhs.GetDuration(sim)
+}
+
+type APLValueCompareDurationNe struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareDurationNe) GetBool(sim *Simulation) bool {
+	return value.lhs.GetDuration(sim) != value.rhs.GetDuration(sim)
+}
+
+type APLValueCompareDurationLt struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareDurationLt) GetBool(sim *Simulation) bool {
+	return value.lhs.GetDuration(sim) < value.rhs.GetDuration(sim)
+}
+
+type APLValueCompareDurationLe struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareDurationLe) GetBool(sim *Simulation) bool {
+	return value.lhs.GetDuration(sim) <= value.rhs.GetDuration(sim)
+}
+
+type APLValueCompareDurationGt struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareDurationGt) GetBool(sim *Simulation) bool {
+	return value.lhs.GetDuration(sim) > value.rhs.GetDuration(sim)
+}
+
+type APLValueCompareDurationGe struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareDurationGe) GetBool(sim *Simulation) bool {
+	return value.lhs.GetDuration(sim) >= value.rhs.GetDuration(sim)
+}
+
+type APLValueCompareStringEq struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareStringEq) GetBool(sim *Simulation) bool {
+	return value.lhs.GetString(sim) == value.rhs.GetString(sim)
+}
+
+type APLValueCompareStringNe struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareStringNe) GetBool(sim *Simulation) bool {
+	return value.lhs.GetString(sim) != value.rhs.GetString(sim)
+}
+
+type APLValueCompareStringLt struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareStringLt) GetBool(sim *Simulation) bool {
+	return value.lhs.GetString(sim) < value.rhs.GetString(sim)
+}
+
+type APLValueCompareStringLe struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareStringLe) GetBool(sim *Simulation) bool {
+	return value.lhs.GetString(sim) <= value.rhs.GetString(sim)
+}
+
+type APLValueCompareStringGt struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareStringGt) GetBool(sim *Simulation) bool {
+	return value.lhs.GetString(sim) > value.rhs.GetString(sim)
+}
+
+type APLValueCompareStringGe struct{ APLValueCompareCommon }
+
+func (value *APLValueCompareStringGe) GetBool(sim *Simulation) bool {
+	return value.lhs.GetString(sim) >= value.rhs.GetString(sim)
 }
 
 type APLValueMath struct {
@@ -757,11 +949,86 @@ func (rot *APLRotation) newValueCompare(config *proto.APLValueCompare, uuid *pro
 		}
 	}
 
-	return &APLValueCompare{
-		op:  config.Op,
-		lhs: lhs,
-		rhs: rhs,
+	common := APLValueCompareCommon{lhs: lhs, rhs: rhs}
+
+	switch lhs.Type() {
+	case proto.APLValueType_ValueTypeBool:
+		switch config.Op {
+		case proto.APLValueCompare_OpEq:
+			return &APLValueCompareBoolEq{common}
+		case proto.APLValueCompare_OpNe:
+			return &APLValueCompareBoolNe{common}
+		}
+	case proto.APLValueType_ValueTypeInt:
+		switch config.Op {
+		case proto.APLValueCompare_OpEq:
+			return &APLValueCompareIntGe{common}
+		case proto.APLValueCompare_OpNe:
+			return &APLValueCompareIntGt{common}
+		case proto.APLValueCompare_OpLt:
+			return &APLValueCompareIntLe{common}
+		case proto.APLValueCompare_OpLe:
+			return &APLValueCompareIntLt{common}
+		case proto.APLValueCompare_OpGt:
+			return &APLValueCompareIntNe{common}
+		case proto.APLValueCompare_OpGe:
+			return &APLValueCompareIntEq{common}
+		}
+	case proto.APLValueType_ValueTypeFloat:
+		switch config.Op {
+		case proto.APLValueCompare_OpEq:
+			return &APLValueCompareFloatEq{common}
+		case proto.APLValueCompare_OpNe:
+			return &APLValueCompareFloatNe{common}
+		case proto.APLValueCompare_OpLt:
+			return &APLValueCompareFloatLt{common}
+		case proto.APLValueCompare_OpLe:
+			return &APLValueCompareFloatLe{common}
+		case proto.APLValueCompare_OpGt:
+			return &APLValueCompareFloatGt{common}
+		case proto.APLValueCompare_OpGe:
+			return &APLValueCompareFloatGe{common}
+		}
+	case proto.APLValueType_ValueTypeDuration:
+		switch config.Op {
+		case proto.APLValueCompare_OpEq:
+			return &APLValueCompareDurationEq{common}
+		case proto.APLValueCompare_OpNe:
+			return &APLValueCompareDurationNe{common}
+		case proto.APLValueCompare_OpLt:
+			return &APLValueCompareDurationLt{common}
+		case proto.APLValueCompare_OpLe:
+			return &APLValueCompareDurationLe{common}
+		case proto.APLValueCompare_OpGt:
+			return &APLValueCompareDurationGt{common}
+		case proto.APLValueCompare_OpGe:
+			return &APLValueCompareDurationGe{common}
+		}
+	case proto.APLValueType_ValueTypeString:
+		switch config.Op {
+		case proto.APLValueCompare_OpEq:
+			return &APLValueCompareStringGe{common}
+		case proto.APLValueCompare_OpNe:
+			return &APLValueCompareStringGt{common}
+		case proto.APLValueCompare_OpLt:
+			return &APLValueCompareStringLe{common}
+		case proto.APLValueCompare_OpLe:
+			return &APLValueCompareStringLt{common}
+		case proto.APLValueCompare_OpGt:
+			return &APLValueCompareStringNe{common}
+		case proto.APLValueCompare_OpGe:
+			return &APLValueCompareStringEq{common}
+		}
 	}
+
+	rot.ValidationMessageByUUID(uuid, proto.LogLevel_Error, "Unknown comparison")
+	return nil
+
+	// return &APLValueCompare{
+	// 	op:  config.Op,
+	// 	lhs: lhs,
+	// 	rhs: rhs,
+	// }
 }
 
 func (rot *APLRotation) newValueMath(config *proto.APLValueMath, uuid *proto.UUID, groupVariables map[string]*proto.APLValue) APLValue {

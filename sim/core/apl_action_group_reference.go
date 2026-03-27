@@ -258,6 +258,12 @@ func (action *APLActionGroupReference) replacePlaceholders(value APLValue, varia
 					lhs:                 lhs,
 					rhs:                 rhs,
 				}
+			case *APLValueCompareCommon:
+				panic("TODO")
+			case *APLValueCompareDurationGt:
+				panic("TODO")
+			case *APLValueCompareFloatLe:
+				panic("TODO")
 			case *APLValueMath:
 				// Re-coerce the types after replacement to ensure compatibility
 				lhs, rhs := newInnerValues[0], newInnerValues[1]
