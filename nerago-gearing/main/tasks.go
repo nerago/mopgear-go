@@ -29,7 +29,8 @@ func testSim(printer *util.PrintRecorder) {
 		EnableTrackProgress: true,
 		SolveSize:           solver.SolveSize_Medium,
 		Printer:             printer})
-	resultStats := simulate.WowSim_Execute(simulate.RunSize_QuickDirty, model.Spec, output.FullSet.Items(), &model, nil, util.TrackProgress_Start())
+	printer.Println("Running sim")
+	resultStats := simulate.WowSim_Execute(simulate.RunSize_SlowAccurate, model.Spec, output.FullSet.Items(), &model, nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
 }
 
