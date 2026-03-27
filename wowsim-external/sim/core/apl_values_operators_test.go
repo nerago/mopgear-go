@@ -57,6 +57,8 @@ func BenchmarkAPLValueMath_GetFloat(b *testing.B) {
 	}
 }
 
+var countYes int
+
 func BenchmarkAPLValueCompare_GetBool(b *testing.B) {
 	sim := &Simulation{}
 
@@ -82,8 +84,126 @@ func BenchmarkAPLValueCompare_GetBool(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_ = compare.GetBool(sim)
+	for b.Loop() {
+		if compare.GetBool(sim) {
+			countYes++
+		}
+	}
+}
+
+func BenchmarkAPLValueCompare_GetBool_APLValueConstFloat(b *testing.B) {
+	sim := &Simulation{}
+
+	lhsConst := &APLValueConstFloat{
+		DefaultAPLValueImpl: DefaultAPLValueImpl{},
+		floatVal:            36.0,
+	}
+
+	rhsConst := &APLValueConstFloat{
+		DefaultAPLValueImpl: DefaultAPLValueImpl{},
+		floatVal:            30.0,
+	}
+
+	compare := &APLValueCompare{
+		DefaultAPLValueImpl: DefaultAPLValueImpl{},
+		op:                  proto.APLValueCompare_OpGt,
+		lhs:                 lhsConst,
+		rhs:                 rhsConst,
+		// lhsType:             proto.APLValueType_ValueTypeFloat,
+		// rhsType:             proto.APLValueType_ValueTypeFloat,
+	}
+
+	b.ResetTimer()
+	for b.Loop() {
+		if compare.GetBool(sim) {
+			countYes++
+		}
+	}
+}
+func BenchmarkAPLValueCompare_GetBool_FloatGT(b *testing.B) {
+	sim := &Simulation{}
+
+	lhsConst := &APLValueConstFloat{
+		DefaultAPLValueImpl: DefaultAPLValueImpl{},
+		floatVal:            36.0,
+	}
+
+	rhsConst := &APLValueConstFloat{
+		DefaultAPLValueImpl: DefaultAPLValueImpl{},
+		floatVal:            30.0,
+	}
+
+	compare := &APLValueCompareFloatGT{
+		APLValueCompareCommon: APLValueCompareCommon{
+			DefaultAPLValueImpl: DefaultAPLValueImpl{},
+			lhs:                 lhsConst,
+			rhs:                 rhsConst,
+		},
+	}
+
+	b.ResetTimer()
+	for b.Loop() {
+		if compare.GetBool(sim) {
+			countYes++
+		}
+	}
+}
+func BenchmarkAPLValueCompare_GetBool_Float(b *testing.B) {
+	sim := &Simulation{}
+
+	lhsConst := &APLValueConstFloat{
+		DefaultAPLValueImpl: DefaultAPLValueImpl{},
+		floatVal:            36.0,
+	}
+
+	rhsConst := &APLValueConstFloat{
+		DefaultAPLValueImpl: DefaultAPLValueImpl{},
+		floatVal:            30.0,
+	}
+
+	compare := &APLValueCompareFloat{
+		APLValueCompareCommon: APLValueCompareCommon{
+			DefaultAPLValueImpl: DefaultAPLValueImpl{},
+			lhs:                 lhsConst,
+			rhs:                 rhsConst,
+		},
+		op: proto.APLValueCompare_OpGt,
+	}
+
+	b.ResetTimer()
+	for b.Loop() {
+		if compare.GetBool(sim) {
+			countYes++
+		}
+	}
+}
+
+func BenchmarkAPLValueCompare_GetBool_GT(b *testing.B) {
+	sim := &Simulation{}
+
+	lhsConst := &APLValueConstFloat{
+		DefaultAPLValueImpl: DefaultAPLValueImpl{},
+		floatVal:            36.0,
+	}
+
+	rhsConst := &APLValueConstFloat{
+		DefaultAPLValueImpl: DefaultAPLValueImpl{},
+		floatVal:            30.0,
+	}
+
+	compare := &APLValueCompareGT{
+		APLValueCompareCommon: APLValueCompareCommon{
+			DefaultAPLValueImpl: DefaultAPLValueImpl{},
+			lhs:                 lhsConst,
+			rhs:                 rhsConst,
+		},
+	}
+
+	b.ResetTimer()
+	for b.Loop() {
+		if compare.GetBool(sim) {
+			countYes++
+		}
 	}
 }
 
