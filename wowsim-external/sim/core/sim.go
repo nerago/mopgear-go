@@ -502,7 +502,7 @@ func (sim *Simulation) Cleanup() {
 		sim.Duration = sim.CurrentTime
 	}
 
-	for pa := sim.pendingActionsChain; pa != sim.pendingActionsChain; pa = pa.linkNext {
+	for pa := sim.pendingActionsChain.linkNext; pa != sim.pendingActionsChain; pa = pa.linkNext {
 		if pa.CleanUp != nil {
 			pa.CleanUp(sim)
 		}

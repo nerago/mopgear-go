@@ -70,10 +70,6 @@ func (pa *PendingAction) dispose(sim *Simulation) {
 }
 
 func (pa *PendingAction) removeFromChain() {
-	// TODO we shouldn't need nil guards if everyone is well behaved since a valid entry should always have them set
-	// pa.linkPrev.linkNext = pa.linkNext
-	// pa.linkNext.linkPrev = pa.linkPrev
-
 	if pa.linkPrev != nil {
 		pa.linkPrev.linkNext = pa.linkNext
 	}
@@ -89,11 +85,4 @@ func (pa *PendingAction) insertSpecifiedBeforeReceiver(add *PendingAction) {
 	add.linkPrev.linkNext = add
 	add.linkNext = pa
 	pa.linkPrev = add
-}
-
-func (pa *PendingAction) insertSpecifiedAfterReceiver(add *PendingAction) {
-	add.linkNext = pa.linkNext
-	add.linkNext.linkPrev = add
-	add.linkPrev = pa
-	pa.linkNext = add
 }
