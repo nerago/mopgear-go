@@ -498,11 +498,16 @@ func (sim *Simulation) Cleanup() {
 	}
 
 	sentinel := &sim.pendingActionChain
-	for pa := sentinel.nextLink; pa != sentinel; pa = pa.nextLink {
+	for pa := sentinel.nextLink; pa != sentinel; {
 		if pa.CleanUp != nil {
 			pa.CleanUp(sim)
 		}
 		pa.dispose(sim)
+
+		next := pa.nextLink
+		pa.nextLink = nil
+		pa.prevLink = nil
+		pa = next
 	}
 
 	sim.Raid.doneIteration(sim)
