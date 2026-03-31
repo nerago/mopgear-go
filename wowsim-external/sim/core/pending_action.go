@@ -4,7 +4,6 @@
 package core
 
 import (
-	"slices"
 	"time"
 )
 
@@ -70,88 +69,8 @@ func (pa *PendingAction) dispose(sim *Simulation) {
 	}
 }
 
-// type PendingActionQueue interface {
-// 	add(add *PendingAction)
-// 	getNext() *PendingAction
-// 	popNext()
-// 	cancel(*PendingAction)
-// 	reset()
-// 	cleanup(*Simulation)
-// }
-
-// type PendingActionQueue PendingActionQueueSingle
-
 type PendingActionQueue struct {
-	PendingActionQueueSingle
-}
-
-type PendingActionQueueSingle struct {
-	first *PendingAction
-}
-
-func (queue *PendingActionQueueSingle) add(add *PendingAction) {
-	curr := queue.first
-	if add.NextActionAt < curr.NextActionAt || (add.NextActionAt == curr.NextActionAt && add.Priority > curr.Priority) {
-		queue.first = add
-		add.nextLink = curr
-		return
-	}
-
-	prev := curr
-	curr = curr.nextLink
-	for curr != nil {
-		if add.NextActionAt < curr.NextActionAt || (add.NextActionAt == curr.NextActionAt && add.Priority > curr.Priority) {
-			prev.nextLink = add
-			add.nextLink = curr
-			return
-		}
-		prev = curr
-		curr = curr.nextLink
-	}
-}
-
-func (queue *PendingActionQueueSingle) getNext() *PendingAction {
-	return queue.first
-}
-
-func (queue *PendingActionQueueSingle) popNext() {
-	next := queue.first
-	queue.first = next.nextLink
-	next.nextLink = nil
-}
-
-func (queue *PendingActionQueueSingle) cancel(pa *PendingAction) {
-	if pa == queue.first {
-		queue.first = pa.nextLink
-		pa.nextLink = nil
-	} else {
-		for curr := queue.first; curr != nil; curr = curr.nextLink {
-			if curr.nextLink == pa {
-				curr.nextLink = pa.nextLink
-				pa.nextLink = nil
-				return
-			}
-		}
-	}
-}
-
-func (queue *PendingActionQueueSingle) reset() {
-	queue.first = &PendingAction{
-		NextActionAt: NeverExpires,
-		OnAction: func(sim *Simulation) {
-			panic("running sentinel pending action")
-		},
-	}
-}
-
-func (queue *PendingActionQueueSingle) cleanup(sim *Simulation) {
-	for pa := queue.first; pa != nil; pa = pa.nextLink {
-		if pa.CleanUp != nil {
-			pa.CleanUp(sim)
-		}
-
-		pa.dispose(sim)
-	}
+	PendingActionQueueDouble
 }
 
 type PendingActionQueueDouble struct {
@@ -178,7 +97,7 @@ func (queue *PendingActionQueueDouble) getNext() *PendingAction {
 }
 
 func (queue *PendingActionQueueDouble) popNext() {
-	pa := queue.chain
+	pa := queue.chain.nextLink
 	pa.prevLink.nextLink = pa.nextLink
 	pa.nextLink.prevLink = pa.prevLink
 	pa.prevLink = nil
@@ -209,82 +128,7 @@ func (queue *PendingActionQueueDouble) reset() {
 }
 
 func (queue *PendingActionQueueDouble) cleanup(sim *Simulation) {
-	for pa := queue.chain; pa != queue.chain; pa = pa.nextLink {
-		if pa.CleanUp != nil {
-			pa.CleanUp(sim)
-		}
-
-		pa.dispose(sim)
-	}
-}
-
-type PendingActionQueueArray struct {
-	pendingActions []*PendingAction
-}
-
-func (queue *PendingActionQueueArray) addAlternate(pa *PendingAction) {
-	index := len(queue.pendingActions) - 1
-	v := queue.pendingActions[index]
-	if v.NextActionAt >= pa.NextActionAt || (v.NextActionAt == pa.NextActionAt && v.Priority < pa.Priority) {
-		queue.pendingActions = append(queue.pendingActions, pa)
-		return
-	}
-
-	index--
-	for index >= 1 {
-		v := queue.pendingActions[index]
-		if v.NextActionAt >= pa.NextActionAt || (v.NextActionAt == pa.NextActionAt && v.Priority < pa.Priority) {
-			queue.pendingActions = append(queue.pendingActions, nil)
-			copy(queue.pendingActions[index+1:], queue.pendingActions[index:])
-			queue.pendingActions[index] = pa
-			return
-		}
-	}
-
-	panic("shouldn't get here")
-}
-
-func (queue *PendingActionQueueArray) add(pa *PendingAction) {
-	for index, v := range queue.pendingActions[1:] {
-		if v.NextActionAt < pa.NextActionAt || (v.NextActionAt == pa.NextActionAt && v.Priority >= pa.Priority) {
-			queue.pendingActions = append(queue.pendingActions, pa)
-			copy(queue.pendingActions[index+2:], queue.pendingActions[index+1:])
-			queue.pendingActions[index+1] = pa
-			return
-		}
-	}
-	queue.pendingActions = append(queue.pendingActions, pa)
-}
-
-func (queue *PendingActionQueueArray) getNext() *PendingAction {
-	last := len(queue.pendingActions) - 1
-	return queue.pendingActions[last]
-}
-
-func (queue *PendingActionQueueArray) popNext() {
-	last := len(queue.pendingActions) - 1
-	queue.pendingActions = queue.pendingActions[:last]
-}
-
-func (queue *PendingActionQueueArray) cancel(pa *PendingAction) {
-	if i := slices.Index(queue.pendingActions, pa); i != -1 {
-		queue.pendingActions = append(queue.pendingActions[:i], queue.pendingActions[i+1:]...)
-	}
-}
-
-func (queue *PendingActionQueueArray) reset() {
-	sentinelPendingAction := &PendingAction{
-		NextActionAt: NeverExpires,
-		OnAction: func(sim *Simulation) {
-			panic("running sentinel pending action")
-		},
-	}
-	queue.pendingActions = queue.pendingActions[:0]
-	queue.pendingActions = append(queue.pendingActions, sentinelPendingAction)
-}
-
-func (queue *PendingActionQueueArray) cleanup(sim *Simulation) {
-	for _, pa := range queue.pendingActions {
+	for pa := queue.chain.nextLink; pa != queue.chain; pa = pa.nextLink {
 		if pa.CleanUp != nil {
 			pa.CleanUp(sim)
 		}
