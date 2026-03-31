@@ -38,11 +38,12 @@ type Simulation struct {
 	testRands map[string]Rand
 
 	// Current Simulation State
-	pendingActionChain *PendingAction
-	pendingActionPool  *sync.Pool
-	CurrentTime        time.Duration // duration that has elapsed in the sim since starting
-	Duration           time.Duration // Duration of current iteration
-	NeedsInput         bool          // Sim is in interactive mode and needs input
+	pendingActionSentinelSecret PendingAction
+	pendingActionChainPtr       *PendingAction
+	pendingActionPool           *sync.Pool
+	CurrentTime                 time.Duration // duration that has elapsed in the sim since starting
+	Duration                    time.Duration // Duration of current iteration
+	NeedsInput                  bool          // Sim is in interactive mode and needs input
 
 	ProgressReport func(*proto.ProgressMetrics)
 	Signals        simsignals.Signals
@@ -417,12 +418,51 @@ func (sim *Simulation) reset() {
 		sim.Duration += time.Duration(sim.RandomFloat("sim duration")*float64(variation)) - sim.DurationVariation
 	}
 
-	sentinel := &PendingAction{NextActionAt: NeverExpires, OnAction: func(sim *Simulation) {
+	// sim.pendingActionSentinelSecret = PendingAction{NextActionAt: NeverExpires, OnAction: func(sim *Simulation) {
+	// 	panic("running sentinel pending action")
+	// }}
+	// sim.pendingActionChainPtr = &sim.pendingActionSentinelSecret
+
+	// sim.pendingActionChainPtr = &PendingAction{NextActionAt: NeverExpires, OnAction: func(sim *Simulation) {
+	// 	panic("running sentinel pending action")
+	// }}
+
+	// sim.pendingActionChainPtr = new(PendingAction)
+	// sim.pendingActionChainPtr.NextActionAt = NeverExpires
+	// sim.pendingActionChainPtr.OnAction = func(sim *Simulation) {
+	// 	panic("running sentinel pending action")
+	// }
+
+	// OKOK
+	// temp := PendingAction{}
+	// temp.NextActionAt = NeverExpires
+	// temp.OnAction = func(sim *Simulation) {
+	// 	panic("running sentinel pending action")
+	// }
+	// sim.pendingActionChainPtr = &temp
+
+	// temp := PendingAction{}
+	// temp.NextActionAt = NeverExpires
+	// temp.OnAction = func(sim *Simulation) {
+	// 	panic("running sentinel pending action")
+	// }
+	// sim.pendingActionSentinelSecret = temp
+	// sim.pendingActionChainPtr = &sim.pendingActionSentinelSecret
+	sim.pendingActionSentinelSecret = PendingAction{}
+	sim.pendingActionSentinelSecret.NextActionAt = NeverExpires
+	sim.pendingActionSentinelSecret.OnAction = func(sim *Simulation) {
 		panic("running sentinel pending action")
-	}}
-	sentinel.prevLink = sentinel
-	sentinel.nextLink = sentinel
-	sim.pendingActionChain = sentinel
+	}
+	// var temp PendingAction = sim.pendingActionSentinelSecret
+	// sim.pendingActionChainPtr = &temp
+	sim.pendingActionChainPtr = &sim.pendingActionSentinelSecret
+
+	sim.pendingActionChainPtr.prevLink = sim.pendingActionChainPtr
+	sim.pendingActionChainPtr.nextLink = sim.pendingActionChainPtr
+	// sim.pendingActionSentinel.dumpChain("INITIAL RESET")
+
+	// IS the problem something doesn't like us reusing a sentinal instance?
+	// maybe we clone sim instances or something?
 
 	sim.executePhase = 0
 	sim.nextExecutePhase()
@@ -495,13 +535,29 @@ func (sim *Simulation) Cleanup() {
 		sim.Duration = sim.CurrentTime
 	}
 
-	chain := sim.pendingActionChain
-	for pa := chain.nextLink; pa != chain; pa = pa.nextLink {
+	// sim.pendingActionSentinel.dumpChain("BEFORE CLEANUP")
+
+	pa := sim.pendingActionChainPtr
+	for pa != nil {
+		next := pa.nextLink
+
 		if pa.CleanUp != nil {
 			pa.CleanUp(sim)
 		}
 		pa.dispose(sim)
+
+		pa.nextLink = nil
+		pa.prevLink = nil
+		pa = next
 	}
+	// for pa := chain.nextLink; pa != chain; pa = pa.nextLink {
+	// 	if pa.CleanUp != nil {
+	// 		pa.CleanUp(sim)
+	// 	}
+	// 	pa.dispose(sim)
+	// }
+
+	// sim.pendingActionSentinel.dumpChain("AFTER CLEANUP")
 
 	sim.Raid.doneIteration(sim)
 	sim.Encounter.doneIteration(sim)
@@ -523,7 +579,9 @@ func (sim *Simulation) runPendingActions() {
 }
 
 func (sim *Simulation) Step() bool {
-	pa := sim.pendingActionChain.nextLink
+	// sim.pendingActionSentinel.dumpChain("BEFORE STEP")
+
+	pa := sim.pendingActionChainPtr.nextLink
 
 	if pa.NextActionAt >= sim.minWeaponAttackTime && sim.minWeaponAttackTime <= sim.minTaskTime {
 		if sim.minWeaponAttackTime > sim.endOfCombatDuration || sim.Encounter.DamageTaken > sim.endOfCombatDamage {
@@ -541,10 +599,18 @@ func (sim *Simulation) Step() bool {
 		return false
 	}
 
+	// sim.pendingActionSentinel.dumpChain("BEFORE POP")
+
 	pa.prevLink.nextLink = pa.nextLink
 	pa.nextLink.prevLink = pa.prevLink
 	pa.prevLink = nil
 	pa.nextLink = nil
+
+	if pa == sim.pendingActionChainPtr {
+		panic("sentinal run unsupported")
+	}
+
+	// sim.pendingActionSentinel.dumpChain("AFTER POP")
 
 	pa.consumed = true
 
@@ -656,13 +722,35 @@ func (sim *Simulation) nextExecutePhase() {
 func (sim *Simulation) AddPendingAction(add *PendingAction) {
 	add.consumed = false
 
-	curr := sim.pendingActionChain.nextLink
+	// sim.pendingActionSentinel.dumpChain("BEFORE ADD")
+
+	curr := sim.pendingActionChainPtr.nextLink
 	for {
 		if add.NextActionAt < curr.NextActionAt || (add.NextActionAt == curr.NextActionAt && add.Priority > curr.Priority) {
+			if add == sim.pendingActionChainPtr {
+				panic("sentinal must never be readded specifically")
+			}
+
+			// if curr == sim.pendingActionChain && (curr.nextLink != sim.pendingActionChain || curr.prevLink != sim.pendingActionChain) {
+			// 	panic("sentinal is curr but not self linked")
+			// }
+
+			// if we're adding to the sentinal
+			// if curr == sim.pendingActionChain {
+			// 	sentinal := curr
+			// 	add.prevLink = sentinal
+			// 	sentinal.nextLink = add
+			// 	add.nextLink = sentinal
+			// 	sentinal.prevLink = add
+			// }
+
 			add.prevLink = curr.prevLink
 			add.prevLink.nextLink = add
 			add.nextLink = curr
 			curr.prevLink = add
+
+			// sim.pendingActionSentinel.dumpChain("AFTER ADD")
+
 			return
 		}
 		curr = curr.nextLink
@@ -681,6 +769,8 @@ func (sim *Simulation) GetConsumedPendingActionFromPool() *PendingAction {
 	pa.OnAction = nil
 	pa.CleanUp = nil
 	pa.cancelled = false
+	pa.nextLink = nil
+	pa.prevLink = nil
 	return pa
 }
 
