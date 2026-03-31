@@ -60,51 +60,6 @@ func (pa *PendingAction) Cancel(sim *Simulation) {
 
 	pa.cancelled = true
 
-	sim.pendingActionQueue.cancel(pa)
-}
-
-func (pa *PendingAction) dispose(sim *Simulation) {
-	if pa.canPool && pa.consumed {
-		sim.pendingActionPool.Put(pa)
-	}
-}
-
-type PendingActionQueue struct {
-	PendingActionQueueDouble
-}
-
-type PendingActionQueueDouble struct {
-	chain *PendingAction
-}
-
-func (queue *PendingActionQueueDouble) add(add *PendingAction) {
-	// start next after sentinal, we should always find something
-	curr := queue.chain.nextLink
-	for {
-		if add.NextActionAt < curr.NextActionAt || (add.NextActionAt == curr.NextActionAt && add.Priority > curr.Priority) {
-			add.prevLink = curr.prevLink
-			add.prevLink.nextLink = add
-			add.nextLink = curr
-			curr.prevLink = add
-			return
-		}
-		curr = curr.nextLink
-	}
-}
-
-func (queue *PendingActionQueueDouble) getNext() *PendingAction {
-	return queue.chain.nextLink
-}
-
-func (queue *PendingActionQueueDouble) popNext() {
-	pa := queue.chain.nextLink
-	pa.prevLink.nextLink = pa.nextLink
-	pa.nextLink.prevLink = pa.prevLink
-	pa.prevLink = nil
-	pa.nextLink = nil
-}
-
-func (queue *PendingActionQueueDouble) cancel(pa *PendingAction) {
 	if pa.prevLink != nil {
 		pa.prevLink.nextLink = pa.nextLink
 	}
@@ -115,24 +70,12 @@ func (queue *PendingActionQueueDouble) cancel(pa *PendingAction) {
 	pa.nextLink = nil
 }
 
-func (queue *PendingActionQueueDouble) reset() {
-	sentinel := &PendingAction{
-		NextActionAt: NeverExpires,
-		OnAction: func(sim *Simulation) {
-			panic("running sentinel pending action")
-		},
+func (pa *PendingAction) dispose(sim *Simulation) {
+	if pa.canPool && pa.consumed {
+		sim.pendingActionPool.Put(pa)
 	}
-	sentinel.prevLink = sentinel
-	sentinel.nextLink = sentinel
-	queue.chain = sentinel
 }
 
-func (queue *PendingActionQueueDouble) cleanup(sim *Simulation) {
-	for pa := queue.chain.nextLink; pa != queue.chain; pa = pa.nextLink {
-		if pa.CleanUp != nil {
-			pa.CleanUp(sim)
-		}
-
-		pa.dispose(sim)
-	}
+type PendingActionQueue struct {
+	chain *PendingAction
 }

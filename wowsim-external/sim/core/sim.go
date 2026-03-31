@@ -417,8 +417,12 @@ func (sim *Simulation) reset() {
 		sim.Duration += time.Duration(sim.RandomFloat("sim duration")*float64(variation)) - sim.DurationVariation
 	}
 
-	// sim.pendingActionQueue = new(PendingActionQueueSingle)
-	sim.pendingActionQueue.reset()
+	sentinel := &PendingAction{NextActionAt: NeverExpires, OnAction: func(sim *Simulation) {
+		panic("running sentinel pending action")
+	}}
+	sentinel.prevLink = sentinel
+	sentinel.nextLink = sentinel
+	sim.pendingActionQueue.chain = sentinel
 
 	sim.executePhase = 0
 	sim.nextExecutePhase()
@@ -491,7 +495,13 @@ func (sim *Simulation) Cleanup() {
 		sim.Duration = sim.CurrentTime
 	}
 
-	sim.pendingActionQueue.cleanup(sim)
+	chain := sim.pendingActionQueue.chain
+	for pa := chain.nextLink; pa != chain; pa = pa.nextLink {
+		if pa.CleanUp != nil {
+			pa.CleanUp(sim)
+		}
+		pa.dispose(sim)
+	}
 
 	sim.Raid.doneIteration(sim)
 	sim.Encounter.doneIteration(sim)
@@ -513,7 +523,7 @@ func (sim *Simulation) runPendingActions() {
 }
 
 func (sim *Simulation) Step() bool {
-	pa := sim.pendingActionQueue.getNext()
+	pa := sim.pendingActionQueue.chain.nextLink
 
 	if pa.NextActionAt >= sim.minWeaponAttackTime && sim.minWeaponAttackTime <= sim.minTaskTime {
 		if sim.minWeaponAttackTime > sim.endOfCombatDuration || sim.Encounter.DamageTaken > sim.endOfCombatDamage {
@@ -531,7 +541,13 @@ func (sim *Simulation) Step() bool {
 		return false
 	}
 
-	sim.pendingActionQueue.popNext()
+	{
+		pa := sim.pendingActionQueue.chain.nextLink
+		pa.prevLink.nextLink = pa.nextLink
+		pa.nextLink.prevLink = pa.prevLink
+		pa.prevLink = nil
+		pa.nextLink = nil
+	}
 	pa.consumed = true
 
 	if pa.cancelled {
@@ -642,7 +658,17 @@ func (sim *Simulation) nextExecutePhase() {
 func (sim *Simulation) AddPendingAction(add *PendingAction) {
 	add.consumed = false
 
-	sim.pendingActionQueue.add(add)
+	curr := sim.pendingActionQueue.chain.nextLink
+	for {
+		if add.NextActionAt < curr.NextActionAt || (add.NextActionAt == curr.NextActionAt && add.Priority > curr.Priority) {
+			add.prevLink = curr.prevLink
+			add.prevLink.nextLink = add
+			add.nextLink = curr
+			curr.prevLink = add
+			return
+		}
+		curr = curr.nextLink
+	}
 }
 
 // Use this for any "fire and forget" delayed actions where your code does not
