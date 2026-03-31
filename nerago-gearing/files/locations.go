@@ -22,6 +22,8 @@ const (
 	SimProtMitigation = `nerago-gearing\files\cli\example-prot-miti.json`
 	SimProtDps        = `nerago-gearing\files\cli\example-prot-dps.json`
 	SimRet            = `nerago-gearing\files\cli\example-ret.json`
+
+	PaladinProtRotation = `wowsim-external\ui\paladin\protection\apls\horridon.apl.json`
 )
 
 func SimFileFor(spec stats.SpecType) string {
