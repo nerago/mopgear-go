@@ -60,10 +60,6 @@ func (pa *PendingAction) Cancel(sim *Simulation) {
 
 	pa.cancelled = true
 
-	if pa == sim.pendingActionChainPtr {
-		panic("sentinal cancel unsupported")
-	}
-
 	if pa.prevLink != nil {
 		pa.prevLink.nextLink = pa.nextLink
 	}
@@ -72,22 +68,10 @@ func (pa *PendingAction) Cancel(sim *Simulation) {
 	}
 	pa.prevLink = nil
 	pa.nextLink = nil
-
-	// sim.pendingActionSentinel.dumpChain("AFTER CANCEL")
 }
 
 func (pa *PendingAction) dispose(sim *Simulation) {
 	if pa.canPool && pa.consumed {
 		sim.pendingActionPool.Put(pa)
 	}
-}
-
-func (pa *PendingAction) dumpChain(when string) {
-	// fmt.Println("PENDING ACTION CHAIN DUMP")
-	// fmt.Printf("%p at=%d pri=%d prev=%p next=%p\n", pa, pa.NextActionAt, pa.Priority, pa.prevLink, pa.nextLink)
-	// x := pa.nextLink
-	// for x != pa {
-	// 	fmt.Printf("%p at=%d pri=%d prev=%p next=%p\n", x, x.NextActionAt, x.Priority, x.prevLink, x.nextLink)
-	// 	x = x.nextLink
-	// }
 }
