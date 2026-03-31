@@ -75,7 +75,3 @@ func (pa *PendingAction) dispose(sim *Simulation) {
 		sim.pendingActionPool.Put(pa)
 	}
 }
-
-type PendingActionQueue struct {
-	chain *PendingAction
-}

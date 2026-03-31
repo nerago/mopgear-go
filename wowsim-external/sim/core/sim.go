@@ -38,7 +38,7 @@ type Simulation struct {
 	testRands map[string]Rand
 
 	// Current Simulation State
-	pendingActionQueue PendingActionQueue
+	pendingActionChain *PendingAction
 	pendingActionPool  *sync.Pool
 	CurrentTime        time.Duration // duration that has elapsed in the sim since starting
 	Duration           time.Duration // Duration of current iteration
@@ -422,7 +422,7 @@ func (sim *Simulation) reset() {
 	}}
 	sentinel.prevLink = sentinel
 	sentinel.nextLink = sentinel
-	sim.pendingActionQueue.chain = sentinel
+	sim.pendingActionChain = sentinel
 
 	sim.executePhase = 0
 	sim.nextExecutePhase()
@@ -495,7 +495,7 @@ func (sim *Simulation) Cleanup() {
 		sim.Duration = sim.CurrentTime
 	}
 
-	chain := sim.pendingActionQueue.chain
+	chain := sim.pendingActionChain
 	for pa := chain.nextLink; pa != chain; pa = pa.nextLink {
 		if pa.CleanUp != nil {
 			pa.CleanUp(sim)
@@ -523,7 +523,7 @@ func (sim *Simulation) runPendingActions() {
 }
 
 func (sim *Simulation) Step() bool {
-	pa := sim.pendingActionQueue.chain.nextLink
+	pa := sim.pendingActionChain.nextLink
 
 	if pa.NextActionAt >= sim.minWeaponAttackTime && sim.minWeaponAttackTime <= sim.minTaskTime {
 		if sim.minWeaponAttackTime > sim.endOfCombatDuration || sim.Encounter.DamageTaken > sim.endOfCombatDamage {
@@ -541,13 +541,11 @@ func (sim *Simulation) Step() bool {
 		return false
 	}
 
-	{
-		pa := sim.pendingActionQueue.chain.nextLink
-		pa.prevLink.nextLink = pa.nextLink
-		pa.nextLink.prevLink = pa.prevLink
-		pa.prevLink = nil
-		pa.nextLink = nil
-	}
+	pa.prevLink.nextLink = pa.nextLink
+	pa.nextLink.prevLink = pa.prevLink
+	pa.prevLink = nil
+	pa.nextLink = nil
+
 	pa.consumed = true
 
 	if pa.cancelled {
@@ -658,7 +656,7 @@ func (sim *Simulation) nextExecutePhase() {
 func (sim *Simulation) AddPendingAction(add *PendingAction) {
 	add.consumed = false
 
-	curr := sim.pendingActionQueue.chain.nextLink
+	curr := sim.pendingActionChain.nextLink
 	for {
 		if add.NextActionAt < curr.NextActionAt || (add.NextActionAt == curr.NextActionAt && add.Priority > curr.Priority) {
 			add.prevLink = curr.prevLink
