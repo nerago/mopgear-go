@@ -205,3 +205,39 @@ func addBlacksmithSocket(item *items.FullItem, model *model.Model) {
 		}
 	}
 }
+
+func UpgradeExistingToLevel2(optionsMap *items.FullOptionsMap, targetUpgrade int8, model *model.Model, printer *util.PrintRecorder) {
+	printer.Println("$$$$ UPGRADE EXISTING ITEMS $$$$")
+	optionsMap.MapEachItem(func(currItem *items.FullItem) items.FullItem {
+		if currItem.Ref.UpgradeLevel >= targetUpgrade {
+			return *currItem
+		} else {
+			return upgradeItemTo2(currItem, targetUpgrade, model, printer)
+		}
+	})
+	printer.Println("$$$$")
+}
+
+func upgradeItemTo2(currItem *items.FullItem, targetUpgrade int8, model *model.Model, printer *util.PrintRecorder) items.FullItem {
+	upgradeItem := db.WowSimDB_ByIdAndUpgrade(currItem.ItemId(), targetUpgrade)
+	if upgradeItem == nil {
+		printer.Println("$ CAN'T UPGRADE " + currItem.CreateString())
+		return *currItem
+	} else {
+		copyDetails(currItem, upgradeItem, model)
+		printer.Println("$ UPGRADE IN  << " + currItem.CreateString())
+		printer.Println("$ UPGRADE OUT >> " + upgradeItem.CreateString())
+		// panic("upgrade TODO")
+		return *upgradeItem
+	}
+}
+
+func copyDetails(currItem *items.FullItem, upgradeItem *items.FullItem, model *model.Model) {
+	upgradeItem.Reforge = currItem.Reforge
+	upgradeItem.GemChoice = currItem.GemChoice
+	upgradeItem.EnchantChoice = currItem.EnchantChoice
+	upgradeItem.RandomSuffix = currItem.RandomSuffix
+	upgradeItem.StatEnchant = currItem.StatEnchant
+	addBlacksmithSocket(upgradeItem, model)
+	upgradeItem.ChangeDerivedStatFields()
+}

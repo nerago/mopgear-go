@@ -48,6 +48,11 @@ func (item *FullItem) Equals(other *FullItem) bool {
 		stats.StatBlock_Equals(&item.StatBase, &other.StatBase) && stats.StatBlock_Equals(&item.StatEnchant, &other.StatEnchant)
 }
 
+func (item *FullItem) EqualsExceptEnchant(other *FullItem) bool {
+	return item.Ref.ItemId == other.Ref.ItemId && item.Ref.ItemLevel == other.Ref.ItemLevel && item.Slot == other.Slot &&
+		stats.StatBlock_Equals(&item.StatBase, &other.StatBase)
+}
+
 func (itemSet *FullItemSet) Equals(other *FullItemSet) bool {
 	return itemSet.items.Equals(&other.items)
 }

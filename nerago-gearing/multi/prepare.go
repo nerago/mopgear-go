@@ -46,6 +46,9 @@ func (param *MultiSetParam) prepareStartingGear() {
 	equipped := loaders.GearFileReader_Read(param.GearFile)
 	param.exactEquippedGear = setup.OptionsSetup_ExactEquippedOnly(equipped, &param.Model, param.job.printer)
 	param.itemOptions = setup.OptionsSetup_FromEquipped(equipped, &param.Model, setup.MissingEnchant_Panic, param.job.printer)
+
+	
+	setup.UpgradeExistingToLevel2(&param.itemOptions, param.ForceUpgradeExistingItems, &param.Model, param.job.printer)
 }
 
 func (param *MultiSetParam) prepareExtraItems() {

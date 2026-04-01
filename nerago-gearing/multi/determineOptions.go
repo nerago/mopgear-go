@@ -87,7 +87,7 @@ func filterCommonForges(prior []items.FullItem, newOptions []items.FullItem) []i
 	result := make([]items.FullItem, 0, len(prior))
 	for _, one := range prior {
 		for _, two := range newOptions {
-			if one.Equals(&two) {
+			if one.EqualsExceptEnchant(&two) { // essentially just choose first one
 				result = append(result, one)
 			}
 		}

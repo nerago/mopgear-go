@@ -3,6 +3,7 @@ package items
 import (
 	"iter"
 	"math/big"
+	"paladin_gearing_go/util"
 	"slices"
 )
 
@@ -53,6 +54,12 @@ func (optionsMap *FullOptionsMap) MapSlots(mapper func([]FullItem) []FullItem) {
 
 func (optionsMap *FullOptionsMap) MapSlot(slot SlotEquip, mapper func([]FullItem) []FullItem) {
 	optionsMap[slot] = mapper(optionsMap[slot])
+}
+
+func (optionsMap *FullOptionsMap) MapEachItem(mapper func(*FullItem) FullItem) {
+	for i := range optionsMap {
+		optionsMap[i] = util.MapSliceAsNew(optionsMap[i], mapper)
+	}
 }
 
 func (optionsMap *FullOptionsMap) FindItemId(itemId ItemId) iter.Seq[FullItem] {

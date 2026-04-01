@@ -58,6 +58,14 @@ func RemoveDuplicatesComparable[T comparable](slice []T) []T {
 	return slice[:index]
 }
 
+func MapSliceAsNew[T any](slice []T, mapper func(x *T) T) []T {
+	result := make([]T, len(slice))
+	for i := range slice {
+		result[i] = mapper(&slice[i])
+	}
+	return result
+}
+
 func FilterSliceAsNew[T any](slice []T, filter func(x *T) bool) []T {
 	result := make([]T, 0, len(slice))
 	for _, item := range slice {

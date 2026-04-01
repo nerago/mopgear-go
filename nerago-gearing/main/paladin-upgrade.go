@@ -130,14 +130,14 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 				Goal:            upgrades.UpgradeGoal_Dps,
 				Model:           model.Model_PallyProtDps(),
 				GearFile:        files.GearFileProtDps,
-				ItemFinder:      loaders.ItemFinder_ThroneStrengthPlateTank,
+				ItemFinder:      loaders.ItemFinder_CelestialCloak,
 				SubstituteItems: substituteItemsDps},
 			{
 				Label:           "mit",
 				Goal:            upgrades.UpgradeGoal_Mitigation,
 				Model:           model.Model_PallyProtMitigation(),
 				GearFile:        files.GearFileProtMitigation,
-				ItemFinder:      loaders.ItemFinder_ThroneStrengthPlateTank,
+				ItemFinder:      loaders.ItemFinder_CelestialCloak,
 				SubstituteItems: substituteItemsMiti},
 		}}
 	upgrades.FindUpgrades_Sim_AllRaid_Run(&input, printer)

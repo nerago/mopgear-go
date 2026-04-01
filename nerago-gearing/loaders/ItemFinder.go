@@ -31,6 +31,14 @@ func ItemFinder_ThroneStrengthPlateTank(difficulty stats.Difficulty) []*items.Fu
 		trinketsForDifficulty(g_strengthTrinkets, difficulty))
 }
 
+func ItemFinder_CelestialCloak(difficulty stats.Difficulty) []*items.FullItem  {
+	return []*items.FullItem {
+		db.WowSimDB_ByIdAndUpgrade(98147, 0),
+		db.WowSimDB_ByIdAndUpgrade(98335, 0),
+		db.WowSimDB_ByIdAndUpgrade(98146, 0),
+	}
+}
+
 func throneClassGearSet(specType stats.SpecType, difficulty stats.Difficulty) []*items.FullItem {
 	result := make([]*items.FullItem, 0)
 	specBonus := model.SetBonus_ForSpec(specType)

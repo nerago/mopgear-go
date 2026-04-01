@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
+	"paladin_gearing_go/util/util_rank"
 	"slices"
 )
 
@@ -48,7 +49,12 @@ func (job *MultiSetJob) cullingMakeRevisions(proposedList []MultiProposedOutput,
 	trackProgress.RunOuterTracking(expectedSets)
 	defer trackProgress.Stop()
 
-	channel_op.IterateEach_Blocking_Void(generateThreadCount, proposedList, func(prior *MultiProposedOutput) {
+	type bestOption struct {
+		specIndex int
+		set *items.FullItemSet
+	}
+
+	optionChannel := channel_op.IterateEach_SliceToChannel(generateThreadCount, proposedList, func(prior *MultiProposedOutput, downstream chan<- bestOption) {
 		printer := util.PrintRecorder_HoldAll()
 		revisedCommon := job.revisedComboActuallyUsed(prior.Outputs, prior.Combo, printer)
 		for i := range prior.Outputs {
@@ -56,14 +62,29 @@ func (job *MultiSetJob) cullingMakeRevisions(proposedList []MultiProposedOutput,
 			param := &job.params[i]
 
 			param.seenInSolutions.Add(&draft.FullSet)
+			downstream <- bestOption{i, &draft.FullSet}
 
 			revised := job.makeRevised(param, revisedCommon, trackProgress, printer)
 			for _, newOutput := range revised {
 				param.seenInSolutions.Add(&newOutput.FullSet)
+				downstream <- bestOption{i, &draft.FullSet}
 			}
 		}
 		job.printer.AppendOther(printer)
 	})
+
+	bestList := []util_rank.BestCollector1[items.FullItemSet]{}
+	for range job.params {
+		bestList = append(bestList, util_rank.BestCollector1[items.FullItemSet]{})
+	}
+	for option := range optionChannel {
+		rate := job.params[option.specIndex].Model.CalcRatingFull(option.set)
+		bestList[option.specIndex].Offer(option.set, rate)
+	}
+	for i, best := range bestList {
+		set := best.GetBestOrPanic()
+		job.params[i].seenInSolutions.Add1000(&set)
+	}
 }
 
 func (job *MultiSetJob) cullingReport() {
@@ -87,11 +108,17 @@ func (param *MultiSetParam) cullingReport() {
 		extraInfo = append(extraInfo, info)
 	}
 
+	for item := range param.exactEquippedGear.AllItemSeq() {
+		itemId := item.ItemId()
+		seenCount := param.seenInSolutions.content[itemId]
+		info := extraInfoStruct{itemId: itemId, count: seenCount}
+		extraInfo = append(extraInfo, info)
+	}
+
 	slices.SortFunc(extraInfo, func(a, b extraInfoStruct) int {
 		return cmp.Or(cmp.Compare(a.count, b.count), cmp.Compare(a.itemId, b.itemId))
 	})
 
-	// TODO is there concurrent goroutines updating?
 	param.job.printer.Printf("EXTRAS USED %s\n", param.Label)
 	for _, info := range extraInfo {
 		if info.count == 0 {
