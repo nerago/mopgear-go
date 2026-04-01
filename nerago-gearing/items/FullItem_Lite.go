@@ -22,7 +22,7 @@ func FullItem_FromWowSim(ref ItemRef, slot SlotItem, baseName string, statBase S
 
 func FullItem_ForTest(itemId ItemId, slot SlotItem, statBase StatBlock) FullItem {
 	return FullItem{
-		fullItem_common{ItemRef{itemId, 400, 400},
+		fullItem_common{ItemRef_Make(itemId, 400, 404),
 			slot, slot.Name(), Armor_None, statBase.PrimaryStat(),
 			nil, StatBlock_empty, 0,
 			ReforgeRecipe_empty, nil, 0, 0,

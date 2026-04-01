@@ -20,7 +20,7 @@ type MultiSetParam struct {
 	PhasedAcceptable     bool
 
 	// extra item settings
-	ExtraUpgradeLevel int16
+	ExtraUpgradeLevel int8
 	extraItems        []items.ItemId
 	extraFromBags     bool
 	fixedSlots        map[items.SlotEquip]items.ItemId

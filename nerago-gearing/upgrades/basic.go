@@ -169,7 +169,7 @@ func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemT
 	printer.Println("REPLACING " + baseItems.Get(slot)[0].CreateString())
 
 	// TODO consider loading from bags etc
-	newOptions, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(item.ItemId(), item.Ref.UpgradeLevel(), model, printer)
+	newOptions, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(item.ItemId(), item.Ref.UpgradeLevel, model, printer)
 	jobItems := baseItems.Clone()
 	jobItems[slot] = newOptions
 

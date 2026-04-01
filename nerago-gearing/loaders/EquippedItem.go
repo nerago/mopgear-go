@@ -7,6 +7,6 @@ type EquippedItem struct {
 	GemChoice     []uint32
 	EnchantChoice uint32
 	RandomSuffix  int32
-	UpgradeStep   int16
+	UpgradeStep   int8
 	Reforging     uint16
 }

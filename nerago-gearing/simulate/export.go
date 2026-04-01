@@ -49,7 +49,7 @@ func makeItemObject(item *items.FullItem, model *model.Model) map[string]any {
 	object := make(map[string]any)
 
 	object["id"] = item.ItemId()
-	object["upgrade_step"] = item.Ref.UpgradeLevel()
+	object["upgrade_step"] = item.Ref.UpgradeLevel
 	if !item.Reforge.IsEmpty() {
 		reforgeId := db.WowSimDB_ReforgeToId(item.Reforge)
 		object["reforging"] = reforgeId

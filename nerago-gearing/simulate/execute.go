@@ -78,7 +78,7 @@ func updateGear(input *wowsim_proto.RaidSimRequest, equipMap *items.FullEquipMap
 	for item := range equipMap.AllItemSeq() {
 		spec := wowsim_proto.ItemSpec{}
 		spec.Id = int32(item.Ref.ItemId)
-		spec.UpgradeStep = wowsim_proto.ItemLevelState(item.Ref.UpgradeLevel())
+		spec.UpgradeStep = wowsim_proto.ItemLevelState(item.Ref.UpgradeLevel)
 		if !item.Reforge.IsEmpty() {
 			spec.Reforging = int32(db.WowSimDB_ReforgeToId(item.Reforge))
 		}

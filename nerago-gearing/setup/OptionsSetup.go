@@ -38,7 +38,7 @@ func OptionsSetup_Single_FromEquipped(equipItem loaders.EquippedItem, model *mod
 	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
 }
 
-func OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId items.ItemId, upgradeLevel int16, model *model.Model, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
+func OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId items.ItemId, upgradeLevel int8, model *model.Model, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
 	item := loadItemBasic(itemId, upgradeLevel, printer)
 	addDetailUsingDefaults(&item, model)
 	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
@@ -61,7 +61,7 @@ func OptionsSetup_ExactEquippedOnly(equipped []loaders.EquippedItem, model *mode
 	return resultMap
 }
 
-func loadItemBasic(itemId items.ItemId, upgradeLevel int16, printer *util.PrintRecorder) items.FullItem {
+func loadItemBasic(itemId items.ItemId, upgradeLevel int8, printer *util.PrintRecorder) items.FullItem {
 	return *db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemId, upgradeLevel, printer)
 }
 

@@ -98,7 +98,7 @@ func selectAppropriateDifficultyItem(itemList []*items.FullItem, difficulty stat
 
 func matchesGenericGearCriteria(item *items.FullItem, armor stats.ArmorType, primary stats.PrimaryStatType) bool {
 	return item.Phase == 3 &&
-		item.Ref.UpgradeLevel() == 0 &&
+		item.Ref.UpgradeLevel == 0 &&
 		!strings.Contains(item.BaseName, "Gladiator") &&
 		(item.ArmorType.Matches(armor) || item.Slot == items.Item_Back) &&
 		item.Slot != items.Item_Trinket &&

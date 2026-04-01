@@ -43,9 +43,9 @@ func readEquipped(itemObject map[string]any) EquippedItem {
 		enchant = uint32(itemObject["enchant"].(float64))
 	}
 
-	var upgradeStep int16
+	var upgradeStep int8
 	if itemObject["upgrade_step"] != nil {
-		upgradeStep = int16(itemObject["upgrade_step"].(float64))
+		upgradeStep = int8(itemObject["upgrade_step"].(float64))
 	}
 
 	var reforging uint16

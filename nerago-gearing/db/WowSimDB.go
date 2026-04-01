@@ -10,6 +10,7 @@ import (
 	"paladin_gearing_go/stats"
 	. "paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_rank"
 	"strconv"
 )
 
@@ -40,10 +41,10 @@ func WowSimDB_HasItemId(itemId items.ItemId) bool {
 	return found
 }
 
-func WowSimDB_ByIdAndUpgrade(itemId items.ItemId, upgradeLevel int16) *FullItem {
+func WowSimDB_ByIdAndUpgrade(itemId items.ItemId, upgradeLevel int8) *FullItem {
 	known := itemsById[itemId]
 	for _, item := range known {
-		if item.Ref.UpgradeLevel() == upgradeLevel {
+		if item.Ref.UpgradeLevel == upgradeLevel {
 			return &item
 		}
 	}
@@ -51,7 +52,16 @@ func WowSimDB_ByIdAndUpgrade(itemId items.ItemId, upgradeLevel int16) *FullItem 
 	return nil
 }
 
-func WowSimDB_ByIdAndUpgrade_AllowFallback(itemId items.ItemId, upgradeLevel int16, printer *util.PrintRecorder) *FullItem {
+func WowSimDB_ByIdFindMaxUpgrade(itemId items.ItemId) *FullItem {
+	best := util_rank.BestCollector1[FullItem]{}
+	known := itemsById[itemId]
+	for _, item := range known {
+		best.Offer(&item, uint64(item.Ref.ItemLevel))
+	}
+	return best.GetBestPointerOrPanic()
+}
+
+func WowSimDB_ByIdAndUpgrade_AllowFallback(itemId items.ItemId, upgradeLevel int8, printer *util.PrintRecorder) *FullItem {
 	storedItem := WowSimDB_ByIdAndUpgrade(itemId, upgradeLevel)
 
 	if storedItem == nil && upgradeLevel > 0 {
@@ -129,7 +139,7 @@ func addItem(itemObj map[string]any) {
 
 	scalingOptions := itemObj["scalingOptions"].(map[string]any)
 	baseItemLevel := getUInt16OrPanic(scalingOptions["0"].(map[string]any), "ilvl")
-	for _, entry := range scalingOptions {
+	for scaleGroup, entry := range scalingOptions {
 		scaleEntry := entry.(map[string]any)
 		itemLevel := getUInt16OrPanic(scaleEntry, "ilvl")
 
@@ -138,10 +148,12 @@ func addItem(itemObj map[string]any) {
 			scaleStats = convertStatsFromMap(scaleEntry["stats"].(map[string]any))
 		}
 
-		itemRef := ItemRef{
-			ItemId:        itemId,
-			ItemLevel:     itemLevel,
-			ItemLevelBase: baseItemLevel}
+		var itemRef ItemRef
+		if scaleGroup == "-1" {
+			itemRef = ItemRef_Challenge(itemId, itemLevel)
+		} else {
+			itemRef = ItemRef_Make(itemId, itemLevel, baseItemLevel)
+		}
 		item := FullItem_FromWowSim(itemRef, slot, name, scaleStats, armorType, socketSlots, socketBonus, phase)
 		itemsById[itemId] = append(itemsById[itemId], item)
 		itemsByRef[itemRef] = item

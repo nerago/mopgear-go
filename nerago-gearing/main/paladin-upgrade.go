@@ -1,6 +1,7 @@
 package main
 
 import (
+	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
@@ -140,4 +141,31 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 				SubstituteItems: substituteItemsMiti},
 		}}
 	upgrades.FindUpgrades_Sim_AllRaid_Run(&input, printer)
+}
+
+func findNeededUpgradeLevel(printer *util.PrintRecorder) {
+// db.WowSimDB_ByIdFindMaxUpgrade(94942)
+db.WowSimDB_ByIdFindMaxUpgrade(87024)
+
+	itemOptions1, _ := setupPallyMitigation()
+	itemOptions2, _ := setupPallyDps()
+
+	found := map[items.ItemId]*items.FullItem{}
+	for item := range itemOptions1.AllItems() {
+		found[item.ItemId()] = item
+	}
+	for item := range itemOptions2.AllItems() {
+		found[item.ItemId()] = item
+	}
+
+	printer.Println("NEED UPGRADE")
+	for itemId, oldItem := range found {
+		bestVersion := db.WowSimDB_ByIdFindMaxUpgrade(itemId)
+		if bestVersion.Ref.ItemLevel > oldItem.Ref.ItemLevel {
+			printer.Printf("%d (%d) -> %d (%d) ==> %s\n",
+				oldItem.Ref.ItemLevel, oldItem.Ref.UpgradeLevel,
+				bestVersion.Ref.ItemLevel, bestVersion.Ref.UpgradeLevel,
+				bestVersion.CreateString())
+		}
+	}
 }
