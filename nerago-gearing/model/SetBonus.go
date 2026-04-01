@@ -5,7 +5,6 @@ import (
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model/modelassem"
 	. "paladin_gearing_go/stats"
-	"slices"
 )
 
 type SetBonus struct {
@@ -292,6 +291,7 @@ func setInfoMake(spec SpecType, name string, bonus2 uint64, bonus4 uint64, items
 }
 
 var g_setData = buildSets()
+var g_itemSetLookup = buildItemLookup(g_setData)
 
 func buildSets() []setInfo {
 	sets := make([]setInfo, 0)
@@ -373,6 +373,16 @@ func buildSets() []setInfo {
 	return sets
 }
 
+func buildItemLookup(setData []setInfo) map[ItemId]*setInfo {
+	lookup := make(map[ItemId]*setInfo, len(setData)*15)
+	for _, info := range setData {
+		for _, itemId := range info.items {
+			lookup[ItemId(itemId)] = &info
+		}
+	}
+	return lookup
+}
+
 // ########################### utility lookups ###########################
 func (sets *SetBonus) AllSetItemIds() iter.Seq[ItemId] {
 	return func(yield func(ItemId) bool) {
@@ -387,10 +397,6 @@ func (sets *SetBonus) AllSetItemIds() iter.Seq[ItemId] {
 }
 
 func SetBonus_IsAnyKnownItem(itemId ItemId) bool {
-	for _, info := range g_setData {
-		if slices.Contains(info.items, uint32(itemId)) {
-			return true
-		}
-	}
-	return false
+	_, found := g_itemSetLookup[itemId]
+	return found
 }

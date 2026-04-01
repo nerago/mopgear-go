@@ -154,7 +154,7 @@ func (param *MultiSetParam) restrictFixed() {
 		}
 
 		param.itemOptions.MapSlot(slot, func(options []items.FullItem) []items.FullItem {
-			return util.FilterSlice(options, func(x *items.FullItem) bool {
+			return util.FilterSliceAsNew(options, func(x *items.FullItem) bool {
 				return x.ItemId() == itemId
 			})
 		})
@@ -166,7 +166,7 @@ func (param *MultiSetParam) restrictFixed() {
 		paired := slot.PairedSlot()
 		if paired != -1 {
 			param.itemOptions.MapSlot(paired, func(options []items.FullItem) []items.FullItem {
-				return util.FilterSlice(options, func(x *items.FullItem) bool {
+				return util.FilterSliceAsNew(options, func(x *items.FullItem) bool {
 					return x.ItemId() != itemId
 				})
 			})

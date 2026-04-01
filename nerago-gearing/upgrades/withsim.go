@@ -10,8 +10,7 @@ import (
 )
 
 // possible entry point
-func FindUpgrades_Sim_Run(input *FindUpgrades_SimInputs, goal UpgradeGoal, model *model.Model, gearFile string, upgradeItems []*items.FullItem, substituteItems []items.ItemId) {
-	printer := util.PrintRecorder_CreateLogFile()
+func FindUpgrades_Sim_Run(input *FindUpgrades_SimInputs, goal UpgradeGoal, model *model.Model, gearFile string, upgradeItems []*items.FullItem, substituteItems []items.ItemId, printer *util.PrintRecorder) {
 	optionsMap := setup.OptionsSetup_FromGearFile(gearFile, model, setup.MissingEnchant_Panic, printer)
 	addSubstituteItems(&optionsMap, substituteItems, model, printer)
 

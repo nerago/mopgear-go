@@ -58,7 +58,7 @@ func RemoveDuplicatesComparable[T comparable](slice []T) []T {
 	return slice[:index]
 }
 
-func FilterSlice[T any](slice []T, filter func(x *T) bool) []T {
+func FilterSliceAsNew[T any](slice []T, filter func(x *T) bool) []T {
 	result := make([]T, 0, len(slice))
 	for _, item := range slice {
 		if filter(&item) {
@@ -66,6 +66,29 @@ func FilterSlice[T any](slice []T, filter func(x *T) bool) []T {
 		}
 	}
 	return result
+}
+
+func FilterSliceInPlace[T any](slice []T, filter func(x *T) bool) []T {
+	readIndex := 0
+	for readIndex < len(slice) {
+		if !filter(&slice[readIndex]) {
+			goto change_part
+		}
+		readIndex++
+	}
+	return slice
+
+change_part:
+	writeIndex := readIndex
+	readIndex++
+	for readIndex < len(slice) {
+		if filter(&slice[readIndex]) {
+			slice[writeIndex] = slice[readIndex]
+			writeIndex++
+		}
+		readIndex++
+	}
+	return slice[:writeIndex]
 }
 
 func PermuteAll[T any](sliceOfSlices [][]T) iter.Seq[[]T] {

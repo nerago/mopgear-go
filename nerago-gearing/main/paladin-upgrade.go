@@ -9,6 +9,7 @@ import (
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/upgrades"
+	"paladin_gearing_go/util"
 )
 
 const (
@@ -19,7 +20,7 @@ const (
 	// simRunSize     = simulate.RunSize_QuickDirty
 
 	itemSolveSize = solver.SolveSize_Medium
-	simRunSize  = simulate.RunSize_Medium
+	simRunSize    = simulate.RunSize_Medium
 
 	// itemSolveSize = solver.SolveSize_PerItem
 	// simRunSize    = simulate.RunSize_TestOnly
@@ -47,6 +48,8 @@ var substituteItemsDps = []items.ItemId{
 	94773, // centripetal shoulders normal
 	95513, // scaled tyrant normal
 	95535, // normal lightning legs
+	96182, // ultimate prot of the emperor thunder normal
+	94945, // greatshield of the gloaming normal
 }
 var substituteItemsMiti = []items.ItemId{
 	95291, // prot tier15 hand normal
@@ -70,6 +73,8 @@ var substituteItemsMiti = []items.ItemId{
 	96481, // durumu tentacle heroic
 	95513, // scaled tyrant normal
 	95140, // shado assault band
+	96182, // ultimate prot of the emperor thunder normal
+	94945, // greatshield of the gloaming normal
 }
 
 var ignoredItems = []items.ItemId{
@@ -77,40 +82,43 @@ var ignoredItems = []items.ItemId{
 	84661, // fishing pole
 	90042} // straw hat
 
-func findUpgrades_Sim_PaladinDps_Run() {
+func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
 	goal := upgrades.UpgradeGoal_Dps
 	model := model.Model_PallyProtDps()
 	gearFile := files.GearFileProtDps
 	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
-	upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Heroic)
+	upgradeItems := loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic)
 	input := upgrades.FindUpgrades_SimInputs{
 		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
+			IncludeRaden: false,
 			IgnoredItems: ignoredItems,
 			SolveSize:    itemSolveSize},
 		SimSize: simRunSize}
-	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsDps)
+	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsDps, printer)
 }
 
-func findUpgrades_Sim_PaladinMiti_Run() {
+func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 	goal := upgrades.UpgradeGoal_Mitigation
 	model := model.Model_PallyProtMitigation()
 	gearFile := files.GearFileProtMitigation
 	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
-	upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Heroic)
+	upgradeItems := loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic)
 	input := upgrades.FindUpgrades_SimInputs{
 		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
+			IncludeRaden: false,
 			IgnoredItems: ignoredItems,
 			SolveSize:    itemSolveSize},
 		SimSize: simRunSize}
-	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsMiti)
+	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsMiti, printer)
 }
 
-func findUpgrades_Paladin_Sim_AllRaid_Run() {
+func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
-				IgnoredItems:        ignoredItems,
-				SolveSize:           itemSolveSize,
+				IncludeRaden: false,
+				IgnoredItems: ignoredItems,
+				SolveSize:    itemSolveSize,
 				// PositiveResultsOnly: true,
 			},
 			SimSize: simRunSize,
@@ -121,15 +129,15 @@ func findUpgrades_Paladin_Sim_AllRaid_Run() {
 				Goal:            upgrades.UpgradeGoal_Dps,
 				Model:           model.Model_PallyProtDps(),
 				GearFile:        files.GearFileProtDps,
-				ItemFinder:      loaders.ItemFinder_ThroneProtMinusRaden,
+				ItemFinder:      loaders.ItemFinder_ThroneStrengthPlateTank,
 				SubstituteItems: substituteItemsDps},
 			{
 				Label:           "mit",
 				Goal:            upgrades.UpgradeGoal_Mitigation,
 				Model:           model.Model_PallyProtMitigation(),
 				GearFile:        files.GearFileProtMitigation,
-				ItemFinder:      loaders.ItemFinder_ThroneProtMinusRaden,
+				ItemFinder:      loaders.ItemFinder_ThroneStrengthPlateTank,
 				SubstituteItems: substituteItemsMiti},
 		}}
-	upgrades.FindUpgrades_Sim_AllRaid_Run(&input)
+	upgrades.FindUpgrades_Sim_AllRaid_Run(&input, printer)
 }
