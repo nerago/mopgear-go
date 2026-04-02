@@ -30,7 +30,9 @@ func (up UpgradeGoal) Name() string {
 }
 
 type FindUpgrades_BasicInputs struct {
-	IncludeRaden        bool // TODO unused
+	IncludeNormal       bool
+	IncludeHeroic       bool
+	IncludeRaden        bool
 	PositiveResultsOnly bool
 	IgnoredItems        []items.ItemId
 	SolveSize           solver.SolveSize

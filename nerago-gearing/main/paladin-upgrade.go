@@ -28,7 +28,6 @@ const (
 )
 
 var substituteItemsDps = []items.ItemId{
-	87026, // heroic peacock cloak
 	96394, // frozen warlord bracer heroic
 	95281, // ret tier15 gloves normal
 	95205, // terra-cotta neck
@@ -44,13 +43,16 @@ var substituteItemsDps = []items.ItemId{
 	94776, // primal turtle amulet
 	96533, // rein-binders fists heroic
 	94820, // caustic spike bracers
-	94942, // hydra bloodcloak
 	87024, // null greathelm
 	94773, // centripetal shoulders normal
 	95513, // scaled tyrant normal
 	95535, // normal lightning legs
 	96182, // ultimate prot of the emperor thunder normal
 	94945, // greatshield of the gloaming normal
+	95778, // golden golem celestial [would need gem, acceptable]
+	96376, // worldbreaker weapon
+	86387, // kilrak weapon
+	98147, // pre-legend strength dps
 }
 var substituteItemsMiti = []items.ItemId{
 	95291, // prot tier15 hand normal
@@ -59,7 +61,6 @@ var substituteItemsMiti = []items.ItemId{
 	96667, // prot tier15 leg heroic
 	96668, // prot tier15 shoulder heroic
 	96657, // ret tier15 legs heroic
-	96769, // doomcloak
 	96394, // frozen warlord bracer heroic
 	96373, // cloudbreaker belt heroic
 	96478, // treads of the blind heroic
@@ -76,6 +77,11 @@ var substituteItemsMiti = []items.ItemId{
 	95140, // shado assault band
 	96182, // ultimate prot of the emperor thunder normal
 	94945, // greatshield of the gloaming normal
+	96428, // shell-coated wrists
+	96447, // rot-proof greatplate
+	96376, // worldbreaker weapon
+	86387, // kilrak weapon
+	98146, // pre-legend strength tank
 }
 
 var ignoredItems = []items.ItemId{
@@ -91,9 +97,11 @@ func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
 	upgradeItems := loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic)
 	input := upgrades.FindUpgrades_SimInputs{
 		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
-			IncludeRaden: false,
-			IgnoredItems: ignoredItems,
-			SolveSize:    itemSolveSize},
+			IncludeNormal: true,
+			IncludeHeroic: true,
+			IncludeRaden:  false,
+			IgnoredItems:  ignoredItems,
+			SolveSize:     itemSolveSize},
 		SimSize: simRunSize}
 	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsDps, printer)
 }
@@ -106,9 +114,11 @@ func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 	upgradeItems := loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic)
 	input := upgrades.FindUpgrades_SimInputs{
 		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
-			IncludeRaden: false,
-			IgnoredItems: ignoredItems,
-			SolveSize:    itemSolveSize},
+			IncludeNormal: true,
+			IncludeHeroic: true,
+			IncludeRaden:  false,
+			IgnoredItems:  ignoredItems,
+			SolveSize:     itemSolveSize},
 		SimSize: simRunSize}
 	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsMiti, printer)
 }
@@ -117,9 +127,11 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
-				IncludeRaden: false,
-				IgnoredItems: ignoredItems,
-				SolveSize:    itemSolveSize,
+				IncludeNormal: false,
+				IncludeHeroic: true,
+				IncludeRaden:  false,
+				IgnoredItems:  ignoredItems,
+				SolveSize:     itemSolveSize,
 				// PositiveResultsOnly: true,
 			},
 			SimSize: simRunSize,
@@ -130,22 +142,22 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 				Goal:            upgrades.UpgradeGoal_Dps,
 				Model:           model.Model_PallyProtDps(),
 				GearFile:        files.GearFileProtDps,
-				ItemFinder:      loaders.ItemFinder_CelestialCloak,
+				ItemFinder:      loaders.ItemFinder_ThroneStrengthPlateTank,
 				SubstituteItems: substituteItemsDps},
 			{
 				Label:           "mit",
 				Goal:            upgrades.UpgradeGoal_Mitigation,
 				Model:           model.Model_PallyProtMitigation(),
 				GearFile:        files.GearFileProtMitigation,
-				ItemFinder:      loaders.ItemFinder_CelestialCloak,
+				ItemFinder:      loaders.ItemFinder_ThroneStrengthPlateTank,
 				SubstituteItems: substituteItemsMiti},
 		}}
 	upgrades.FindUpgrades_Sim_AllRaid_Run(&input, printer)
 }
 
 func findNeededUpgradeLevel(printer *util.PrintRecorder) {
-// db.WowSimDB_ByIdFindMaxUpgrade(94942)
-db.WowSimDB_ByIdFindMaxUpgrade(87024)
+	// db.WowSimDB_ByIdFindMaxUpgrade(94942)
+	db.WowSimDB_ByIdFindMaxUpgrade(87024)
 
 	itemOptions1, _ := setupPallyMitigation()
 	itemOptions2, _ := setupPallyDps()

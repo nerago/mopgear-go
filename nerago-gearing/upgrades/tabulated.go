@@ -36,16 +36,28 @@ func FindUpgrades_Sim_AllRaid_Run(input *FindUpgrades_MultiSpec_Sim, printer *ut
 }
 
 func findUpgrades_AllRaid[T any](input *FindUpgrades_BasicInputs, specs []FindUpgrades_Spec, find func(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal) []T) (map[reportGroup][]T, []reportGroup) {
+	outerCount := 0
+	if input.IncludeNormal {
+		outerCount += len(specs)
+	}
+	if input.IncludeHeroic {
+		outerCount += len(specs)
+	}
+
 	tracker := util.TrackProgress_Start()
-	tracker.RunOuterTracking(2 * len(specs))
+	tracker.RunOuterTracking(outerCount)
 	defer tracker.Stop()
 
 	outputMap := make(map[reportGroup][]T)
 	groups := make([]reportGroup, 0, len(specs)*2)
 
 	for _, spec := range specs {
-		processSpec(find, input, &spec, stats.Difficulty_Normal, outputMap, &groups, tracker)
-		processSpec(find, input, &spec, stats.Difficulty_Heroic, outputMap, &groups, tracker)
+		if input.IncludeNormal {
+			processSpec(find, input, &spec, stats.Difficulty_Normal, outputMap, &groups, tracker)
+		}
+		if input.IncludeHeroic {
+			processSpec(find, input, &spec, stats.Difficulty_Heroic, outputMap, &groups, tracker)
+		}
 	}
 
 	return outputMap, groups

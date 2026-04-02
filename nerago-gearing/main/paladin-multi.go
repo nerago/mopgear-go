@@ -23,9 +23,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		// ForceUpgradeExistingItems: 2,
 	}
 	ret.AddExtraItems([]items.ItemId{
-		// 87026, // heroic peacock cloak
-		// 94942, // hydra bloodcloak
-		// 96769, // doomcloak
 		98147, // pre-legend strength dps
 
 		95140, // shado assault band
@@ -40,18 +37,17 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94726, // cloudbreaker belt normal
 		96373, // cloudbreaker belt heroic
 
-		// 95535, // normal lightning legs
+		95535, // normal lightning legs
 		94773, // centripetal shoulders normal
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
 		// 95098, // Sightblinder Shoulderguards
 		// 95778, // golden golem celestial [would need gem, but otherwise good]
 
-		// 85340, // ret tier14 legs
-		//    87101, // ret tier14 head [would need to regem, AVOID]
-		// 85339, // ret tier14 shoulder
-		// 85343, // ret tier14 chest
-		// 87100, // ret tier14 hands
+		85343, // white tiger battleplate t14
+		96447, // rot-proof greatplate
+		87100, // White Tiger Gauntlets
+		// 87101, // White Tiger Helmet [wrong gem]
 
 		95910, // ret tier15 chest celestial
 		95281, // ret tier15 gloves normal
@@ -63,7 +59,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95205, // terra-cotta neck
 		94776, // primal turtle amulet
 
-		// 89934, // bonded soul
 		87145, // defiled earth
 		// 94820, // caustic spike bracers
 		96394, // frozen warlord bracer heroic
@@ -93,31 +88,28 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96373, // cloudbreaker belt heroic
 		87024, // null greathelm
 
-		// 94942, // hydra bloodcloak
-		// 96769, // doomcloak
-		// 87026, // heroic peacock cloak
 		98147, // pre-legend strength dps
-		// 98146, // pre-legend strength tank
+
+		96428, // shell-coated wrists
+		96447, // rot-proof greatplate
 
 		// 86955, // heroic overwhelm assault belt
 		95535, // normal lightning legs
 		94773, // centripetal shoulders normal
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
-		// 96478, // treads of the blind heroic
+		96478, // treads of the blind heroic
 		95153, // Tyrant King Battleplate
-		95778, // golden golem celestial
-
-		// 85343, // White Tiger Battleplate 504
+		95778, // golden golem celestial [would need gem, acceptable]
 
 		// 95912, // ret tier15 celestial head (don't have yet)
-		// 95910, // ret tier15 chest celestial
+		95910, // ret tier15 chest celestial
 		// 95281, // ret tier15 gloves normal
-		96657, // ret tier15 legs heroic
-		96658, // ret tier15 shoulder heroic
+		// 96657, // ret tier15 legs heroic
+		// 96658, // ret tier15 shoulder heroic
 
-		// 95291, // prot tier15 hand normal
 		// 95290, // prot tier15 chest normal
+		// 95291, // prot tier15 hand normal
 		// 95292, // prot tier15 head normal
 		// 96667, // prot tier15 leg heroic
 		// 96668, // prot tier15 shoulder heroic
@@ -127,20 +119,19 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		// 87036, // soulgrasp heroic
 		94776, // primal turtle amulet
 
-		96182, // ultimate prot of the emperor thunder normal
-		// 94945, // greatshield of the gloaming normal
-
-		89934, // bonded soul
-		// 87145, // defiled earth
-		// 94820, // caustic spike bracers
+		87145, // defiled earth
+		94820, // caustic spike bracers
 		96394, // frozen warlord bracer heroic
 
 		96376, // worldbreaker weapon
+		94527, // ji-kun trinket ==== TODO allow ignore trinkets
 	})
 	// protDps.AddBagsExtra()
 	protDps.AddFixedSlot(items.Equip_Ring2, 95513)   // scaled tyrant normal
 	protDps.AddFixedSlot(items.Equip_Offhand, 96182) // ultimate prot of the emperor thunder normal
 	protDps.AddFixedSlot(items.Equip_Back, 98147)    // pre-legend strength dps
+	protDps.AddFixedSlot(items.Equip_Trinket1, 96398)
+	// TODO semi fixed slot used for certain percent of tries exactly, e..g ji-kun trinket. might need to cull topN separately
 
 	protMitigation := multi.MultiSetParam{
 		Label:                     "Prot-Mitigation",
@@ -153,23 +144,17 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		ForceUpgradeExistingItems: 2,
 	}
 	protMitigation.AddExtraItems([]items.ItemId{
-		86979, // heroic impaling treads
+		// 86979, // heroic impaling treads
 		// 87015, // heroic clawfeet
 
 		86957, // heroic bladed tempest ring
-		// 86946, // ruby signet heroic
 		95140, // shado assault band
 		95513, // scaled tyrant normal
 		96481, // durumu tentacle heroic
 
-		// 94726, // cloudbreaker belt normal
 		96373, // cloudbreaker belt heroic
 		// 86955, // heroic overwhelm assault belt
 
-		// 87026, // heroic peacock cloak
-		// 94942, // hydra bloodcloak
-		// 96769, // doomcloak
-		// 98147, // pre-legend strength dps
 		98146, // pre-legend strength tank
 
 		95535, // normal lightning legs
@@ -178,10 +163,13 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96533, // rein-binders fists heroic
 		96478, // treads of the blind heroic
 
+		96428, // shell-coated wrists
+		96447, // rot-proof greatplate
+
 		// 95910, // ret tier15 chest celestial
-		95281, // ret tier15 gloves normal
+		// 95281, // ret tier15 gloves normal
 		96657, // ret tier15 legs heroic
-		96658, // ret tier15 shoulder heroic
+		// 96658, // ret tier15 shoulder heroic
 
 		95291, // prot tier15 hand normal
 		95290, // prot tier15 chest normal
@@ -193,9 +181,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95205, // terra-cotta neck
 		95178, // lootraptor amulet
 		// 94776, // primal turtle amulet
-
-		// 96182, // ultimate prot of the emperor thunder normal
-		// 94945, // greatshield of the gloaming normal
 
 		87145, // defiled earth
 		// 94820, // caustic spike bracers
@@ -218,8 +203,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	job.AddSuppressSlotCheck(95140) // Band of the Shado-Pan Assault
 	job.AddSuppressSlotCheck(96481) // Durumu's Severed Tentacle
 
-	// job.AddSuppressSlotCheck(94529) // Gaze of the Twins
-	// job.AddSuppressSlotCheck(94527) // Ji-Kun's Rising Winds
+	job.AddSuppressSlotCheck(94529) // Gaze of the Twins
+	job.AddSuppressSlotCheck(94527) // Ji-Kun's Rising Winds
 
 	// job.SuggestCulls(100, 2)
 	// job.SuggestCulls(500, 10)
@@ -228,7 +213,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.SuggestCulls(25000, 150)
 
 	// job.FindTopAndPassToSim(50, 2, simulate.RunSize_Medium)
-	// job.FindTopAndPassToSim(150000, 50, simulate.RunSize_Medium)
-	job.FindTopAndPassToSim(75000, 20, simulate.RunSize_Medium)
+	job.FindTopAndPassToSim(150000, 50, simulate.RunSize_Medium)
+	// job.FindTopAndPassToSim(75000, 20, simulate.RunSize_Medium)
 	// job.FindTopAndPassToSim(150000, 25, simulate.RunSize_Medium)
 }

@@ -193,6 +193,7 @@ func (job *MultiSetJob) reportSimResults(resultList []simulateResult) {
 			output.Report(job.printer)
 			job.printer.Println0()
 			specResult.Print(job.printer)
+			// TODO common stuff
 		}
 	}
 }
