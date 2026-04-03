@@ -2,7 +2,7 @@ package items
 
 import (
 	"paladin_gearing_go/stats"
-	"strings"
+	"paladin_gearing_go/util"
 )
 
 type fullItem_common struct {
@@ -27,7 +27,7 @@ type fullItem_common struct {
 	StatEnchant stats.StatBlock // stats added from gems, enchant, or trinket model
 }
 
-func (item *fullItem_common) AppendFullName(build *strings.Builder) {
+func (item *fullItem_common) AppendFullName(build *util.StringBuild2) {
 	build.WriteString(item.BaseName)
 	if !item.Reforge.IsEmpty() {
 		build.WriteRune(' ')

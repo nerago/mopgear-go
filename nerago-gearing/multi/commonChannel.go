@@ -10,8 +10,35 @@ import (
 	"sync"
 )
 
-const additionalSetEach uint64 = 64
+const additionalSetEach uint64 = 32
 const additionalThreads uint64 = 2
+
+type comboType int8
+
+const (
+	comboType_random             comboType = iota
+	comboType_overflow           comboType = iota
+	comboType_baselineAndFillOut comboType = iota
+	comboType_equippedAndFillOut comboType = iota
+	comboType_equippedExact      comboType = iota
+)
+
+func (comboType comboType) name() string {
+	switch comboType {
+	case comboType_random:
+		return "random"
+	case comboType_overflow:
+		return "overflow"
+	case comboType_baselineAndFillOut:
+		return "baseline and fillout"
+	case comboType_equippedAndFillOut:
+		return "equipped and fillout"
+	case comboType_equippedExact:
+		return "equipped exact"
+	default:
+		return "unknown"
+	}
+}
 
 type commonComboEntry struct {
 	Item      *items.FullItem
@@ -21,12 +48,16 @@ type commonComboEntry struct {
 type commonCombo struct {
 	entryMap     map[items.ItemId]commonComboEntry
 	allowChoices map[items.ItemId]bool
+	comboType    comboType
+	revised      bool
 }
 
-func CommonCombo_Make(len int) commonCombo {
+func commonCombo_Make(len int, comboType comboType) commonCombo {
 	return commonCombo{
 		make(map[items.ItemId]commonComboEntry, len),
 		make(map[items.ItemId]bool, len),
+		comboType,
+		false,
 	}
 }
 
@@ -55,10 +86,31 @@ func (combo *commonCombo) getValues(itemId items.ItemId) (bool, bool, *items.Ful
 	}
 }
 
+func (combo *commonCombo) logString() string {
+	build := util.StringBuild2{}
+	build.WriteString(combo.comboType.name())
+	if combo.revised {
+		build.WriteString(" REVISED")
+	}
+	for itemId, allow := range combo.allowChoices {
+		build.WriteRune(' ')
+		build.WriteUint32(uint32(itemId))
+		if allow {
+			build.WriteString("=true")
+		} else {
+			build.WriteString("=false")
+		}
+		build.WriteRune(' ')
+	}
+	return build.String()
+}
+
 func (combo *commonCombo) clone() commonCombo {
 	return commonCombo{
 		maps.Clone(combo.entryMap),
 		maps.Clone(combo.allowChoices),
+		combo.comboType,
+		true,
 	}
 }
 
@@ -79,8 +131,8 @@ func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targ
 
 	var waitGroup sync.WaitGroup
 	comboChannel := make(chan commonCombo)
-	waitGroup.Go(func() { makeBaselineWorker(&job.params, commonOptions, &counters[0], comboChannel) })
-	waitGroup.Go(func() { makeEquippedWorker(&job.params, commonOptions, &counters[1], comboChannel) })
+	// waitGroup.Go(func() { makeBaselineWorker(job.params, commonOptions, &counters[0], comboChannel) })
+	// waitGroup.Go(func() { makeEquippedWorker(job.params, commonOptions, &counters[1], comboChannel) })
 
 	makeRandomThreads(&waitGroup, commonOptions, generateThreadCount/2, eachThreadCount, counters[2:2+generateThreadCount/2], comboChannel)
 	makeOverflowThreads(&waitGroup, commonOptions, generateThreadCount/2, eachThreadCount, counters[2+generateThreadCount/2:], comboChannel)
@@ -97,19 +149,19 @@ func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targ
 	}
 }
 
-func makeBaselineWorker(params *[]MultiSetParam, commonOptions commonComboOptions, doneCounter *uint64, comboChannel chan<- commonCombo) {
+func makeBaselineWorker(params []MultiSetParam, commonOptions commonComboOptions, doneCounter *uint64, comboChannel chan<- commonCombo) {
 	rng := rand.New(rand.NewSource(0xBA5E))
-	for paramIndex := range *params {
-		param := &(*params)[paramIndex]
+	for paramIndex := range params {
+		param := &params[paramIndex]
 		for range additionalSetEach {
-			combo := CommonCombo_Make(len(commonOptions) + len(param.baselineResult.FullSet.Items()))
+			combo := commonCombo_Make(len(commonOptions)+len(param.baselineResult.FullSet.Items()), comboType_baselineAndFillOut)
 
 			// copy what items are in baseline set
 			for item := range param.baselineResult.FullSet.Items().AllItemSeq() {
 				combo.addItem(item.ItemId(), item)
 			}
 
-			fillOutRemainingOptions(commonOptions, combo, rng)
+			fillOutRemainingOptions(commonOptions, &combo, rng)
 
 			comboChannel <- combo
 			*doneCounter++
@@ -117,19 +169,19 @@ func makeBaselineWorker(params *[]MultiSetParam, commonOptions commonComboOption
 	}
 }
 
-func makeEquippedWorker(params *[]MultiSetParam, commonOptions commonComboOptions, doneCounter *uint64, comboChannel chan<- commonCombo) {
+func makeEquippedWorker(params []MultiSetParam, commonOptions commonComboOptions, doneCounter *uint64, comboChannel chan<- commonCombo) {
 	rng := rand.New(rand.NewSource(0xE819))
-	for paramIndex := range *params {
-		param := &(*params)[paramIndex]
+	for paramIndex := range params {
+		param := &params[paramIndex]
 		for range additionalSetEach {
-			combo := CommonCombo_Make(len(commonOptions) + len(param.exactEquippedGear))
+			combo := commonCombo_Make(len(commonOptions)+len(param.exactEquippedGear), comboType_equippedAndFillOut)
 
 			// copy what items are in equipped set
 			for item := range param.exactEquippedGear.AllItemSeq() {
 				combo.addItem(item.ItemId(), item)
 			}
 
-			fillOutRemainingOptions(commonOptions, combo, rng)
+			fillOutRemainingOptions(commonOptions, &combo, rng)
 
 			comboChannel <- combo
 			*doneCounter++
@@ -137,7 +189,7 @@ func makeEquippedWorker(params *[]MultiSetParam, commonOptions commonComboOption
 	}
 }
 
-func fillOutRemainingOptions(commonOptions commonComboOptions, combo commonCombo, rng *rand.Rand) {
+func fillOutRemainingOptions(commonOptions commonComboOptions, combo *commonCombo, rng *rand.Rand) {
 	for itemId, options := range commonOptions {
 		if !combo.hasItem(itemId) {
 			index := rng.Intn(len(options))

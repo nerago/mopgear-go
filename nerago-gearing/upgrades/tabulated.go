@@ -3,6 +3,7 @@ package upgrades
 import (
 	"cmp"
 	"paladin_gearing_go/db"
+	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/model"
@@ -65,7 +66,7 @@ func findUpgrades_AllRaid[T any](input *FindUpgrades_BasicInputs, specs []FindUp
 
 func processSpec[T any](find func(*items.FullOptionsMap, []*items.FullItem, *model.Model, *util.PrintRecorder, *util.TrackProgress, UpgradeGoal) []T,
 	input *FindUpgrades_BasicInputs, spec *FindUpgrades_Spec, difficulty stats.Difficulty, outputMap map[reportGroup][]T, groups *[]reportGroup, tracker *util.TrackProgress) {
-	printer := util.PrintRecorder_CreateLogFile()
+	printer := util.PrintRecorder_CreateLogFile(files.LogOutputPath)
 	printer.Println("[[[[[[[[[[[[[[[[[[[[ " + spec.Label + " " + difficulty.Name() + " UPGRADES ]]]]]]]]]]]]]]]]]]]]")
 
 	options := setup.OptionsSetup_FromGearFile(spec.GearFile, &spec.Model, setup.MissingEnchant_Panic, printer)

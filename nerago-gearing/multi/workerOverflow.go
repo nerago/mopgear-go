@@ -31,7 +31,7 @@ func evaluateOverflowWorker(commonOptions commonComboOptions, loopCount uint64, 
 }
 
 func makeComboAndAdvance(commonOptions commonComboOptions, slotIndexes map[items.ItemId]uint32, skip *big.Int) commonCombo {
-	combo := CommonCombo_Make(len(commonOptions))
+	combo := commonCombo_Make(len(commonOptions), comboType_overflow)
 
 	remainingSkip := big.NewInt(0).Set(skip)
 	temp := big.NewInt(0)

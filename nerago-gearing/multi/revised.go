@@ -7,17 +7,17 @@ import (
 
 const revisedExtraSetsExpectedEach = 2
 
-func (job *MultiSetJob) makeRevised(param *MultiSetParam, filteredCombo commonCombo, outerTrackProgress *util.TrackProgress, printer *util.PrintRecorder) []singleProposed {
+func (job *MultiSetJob) makeRevised(param *MultiSetParam, revisedCommon *commonCombo, outerTrackProgress *util.TrackProgress, printer *util.PrintRecorder) []singleProposed {
 	extraOutputs := make([]singleProposed, 0, 3)
 
-	revisedOutput := job.revisedSolveCombo(filteredCombo, param, param.PhasedAcceptable, outerTrackProgress)
+	revisedOutput := job.revisedSolveCombo(revisedCommon, param, param.PhasedAcceptable, outerTrackProgress)
 	if revisedOutput.Success {
 		printer.Println("REVISED")
 		revisedOutput.Report(printer)
 		extraOutputs = append(extraOutputs, SingleProposed_FromOutput(&revisedOutput))
 	}
 
-	phasedOutput := job.revisedSolveCombo(filteredCombo, param, true, outerTrackProgress)
+	phasedOutput := job.revisedSolveCombo(revisedCommon, param, true, outerTrackProgress)
 	if phasedOutput.Success {
 		printer.Println("PHASED")
 		phasedOutput.Report(printer)
@@ -29,7 +29,7 @@ func (job *MultiSetJob) makeRevised(param *MultiSetParam, filteredCombo commonCo
 	return extraOutputs
 }
 
-func (job *MultiSetJob) revisedSolveCombo(combo commonCombo, param *MultiSetParam, phased bool, outerTrackProgress *util.TrackProgress) solver.SolveOutput {
+func (job *MultiSetJob) revisedSolveCombo(combo *commonCombo, param *MultiSetParam, phased bool, outerTrackProgress *util.TrackProgress) solver.SolveOutput {
 	options := buildOptionsGivenCombo(param.itemOptions, combo)
 	return solver.Solver(solver.SolveInput{
 		ItemOptions:        &options,

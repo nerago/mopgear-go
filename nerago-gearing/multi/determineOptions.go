@@ -157,7 +157,8 @@ func printCommons(seenIn map[items.ItemId][]string, commonOptions commonComboOpt
 	}
 }
 
-func printChosenCombo(combo commonCombo, printer *util.PrintRecorder) {
+func printChosenCombo(combo *commonCombo, printer *util.PrintRecorder) {
+	printer.Println("COMMON_COMBO " + combo.logString())
 	for itemId, entry := range combo.entryMap {
 		if entry.Forbidden {
 			printer.Printf("COMMON %d forbidden\n", itemId)
@@ -177,8 +178,8 @@ func printChosenCombo(combo commonCombo, printer *util.PrintRecorder) {
 	}
 }
 
-func (job *MultiSetJob) revisedComboActuallyUsed(outputs []singleProposed, initialCombo commonCombo, printer *util.PrintRecorder) commonCombo {
-	printer.Printf("REVISED COMMON")
+func (job *MultiSetJob) revisedComboActuallyUsed(outputs []singleProposed, initialCombo *commonCombo, printer *util.PrintRecorder) commonCombo {
+	printer.Println("REVISED COMMON")
 
 	grouped := make(map[items.ItemId][]*items.FullItem)
 	for index := range outputs {
@@ -201,7 +202,27 @@ func (job *MultiSetJob) revisedComboActuallyUsed(outputs []singleProposed, initi
 	}
 
 	// TODO consider prining all current items, not just those in common
-	printChosenCombo(revisedCombo, printer)
+	printChosenCombo(&revisedCombo, printer)
 
 	return revisedCombo
+}
+
+func (job *MultiSetJob) determineComboFromScratch(outputs []singleProposed, comboType comboType) commonCombo {
+	combo := commonCombo_Make(0, comboType)
+	itemSeen := make(map[items.ItemId]*items.FullItem)
+
+	for index := range outputs {
+		for item := range outputs[index].fullSet.Items().AllItemSeq() {
+			previousVersion, hasPrevious := itemSeen[item.ItemId()]
+			if hasPrevious && previousVersion.Equals(item) {
+				combo.addItem(item.ItemId(), item)
+			} else if hasPrevious {
+				panic("inconsisent version of item " + item.CreateString())
+			} else {
+				itemSeen[item.ItemId()] = item
+			}
+		}
+	}
+
+	return combo
 }

@@ -29,7 +29,7 @@ var printer *util.PrintRecorder
 func main() {
 	lowerPriority()
 
-	printer = util.PrintRecorder_CreateLogFile()
+	printer = util.PrintRecorder_CreateLogFile(files.LogOutputPath)
 	defer printer.Close()
 
 	db.WowSimDB_Read()

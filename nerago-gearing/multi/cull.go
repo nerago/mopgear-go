@@ -45,15 +45,19 @@ func (job *MultiSetJob) cullingMakeRevisions(proposedList []multiProposedOutput,
 	optionChannel := channel_op.IterateEach_SliceToChannel(generateThreadCount, proposedList, func(prior *multiProposedOutput, downstream chan<- bestOption) {
 		printer := util.PrintRecorder_HoldAll()
 		printer.Printf(">>> PREP REVISIONS %s\n", prior.id)
-		revisedCommon := job.revisedComboActuallyUsed(prior.parts, prior.combo, printer)
+		revisedCommon := job.revisedComboActuallyUsed(prior.parts, &prior.combo, printer)
 		for i := range prior.parts {
 			draft := &prior.parts[i]
 			param := &job.params[i]
 
+			printer.Printf("== %s\n", param.Label)
+			printer.Println("DRAFT")
+			draft.Report(printer)
+
 			param.seenInSolutions.Add(&draft.fullSet)
 			downstream <- bestOption{i, &draft.fullSet}
 
-			revised := job.makeRevised(param, revisedCommon, trackProgress, printer)
+			revised := job.makeRevised(param, &revisedCommon, trackProgress, printer)
 			for _, newOutput := range revised {
 				param.seenInSolutions.Add(&newOutput.fullSet)
 				downstream <- bestOption{i, &draft.fullSet}
@@ -91,19 +95,24 @@ func (param *MultiSetParam) cullingReport() {
 		count  uint32
 	}
 
+	added := make(map[items.ItemId]bool)
+
 	extraInfo := make([]extraInfoStruct, 0, len(param.extraItems))
 	for _, itemId := range param.extraItems {
-		// TODO also include equipped?
 		seenCount := param.seenInSolutions.content[itemId]
 		info := extraInfoStruct{itemId: itemId, count: seenCount}
 		extraInfo = append(extraInfo, info)
+		added[itemId] = true
 	}
 
 	for item := range param.exactEquippedGear.AllItemSeq() {
 		itemId := item.ItemId()
-		seenCount := param.seenInSolutions.content[itemId]
-		info := extraInfoStruct{itemId: itemId, count: seenCount}
-		extraInfo = append(extraInfo, info)
+		if !added[itemId] {
+			seenCount := param.seenInSolutions.content[itemId]
+			info := extraInfoStruct{itemId: itemId, count: seenCount}
+			extraInfo = append(extraInfo, info)
+			added[itemId] = true
+		}
 	}
 
 	slices.SortFunc(extraInfo, func(a, b extraInfoStruct) int {
@@ -112,10 +121,11 @@ func (param *MultiSetParam) cullingReport() {
 
 	param.job.printer.Printf("EXTRAS USED %s\n", param.Label)
 	for _, info := range extraInfo {
+		item := param.itemOptions.FindItemIdFirst(info.itemId)
 		if info.count == 0 {
-			param.job.printer.Printf("%d 0 NONE\n", info.itemId)
+			param.job.printer.Printf("%5d 0 NONE // %s; %s\n", info.itemId, item.Slot.Name(), item.BaseName)
 		} else {
-			param.job.printer.Printf("%d %d\n", info.itemId, info.count)
+			param.job.printer.Printf("%5d %6d // %s; %s\n", info.itemId, info.count, item.Slot.Name(), item.BaseName)
 		}
 	}
 }
@@ -124,7 +134,8 @@ func (param MultiSetParam) cullingReportBags() {
 	for _, itemId := range param.addedFromBags {
 		seenCount := param.seenInSolutions.content[itemId]
 		if seenCount > 0 {
-			param.job.printer.Printf("BAGS SUGGESTION %d %d!!!!!!!!!\n", itemId, seenCount)
+			item := param.itemOptions.FindItemIdFirst(itemId)
+			param.job.printer.Printf("BAGS SUGGESTION %d %d %s; %s !!!\n", itemId, seenCount, item.Slot.Name(), item.BaseName)
 		}
 	}
 }

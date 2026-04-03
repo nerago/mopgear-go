@@ -1,6 +1,6 @@
 package stats
 
-import "strings"
+import "paladin_gearing_go/util"
 
 type GemInfo struct {
 	Id    uint32
@@ -17,7 +17,7 @@ func (reforge *ReforgeRecipe) IsEmpty() bool {
 	return reforge.From < 0 || reforge.To < 0
 }
 
-func (reforge *ReforgeRecipe) AppendString(builder *strings.Builder) {
+func (reforge *ReforgeRecipe) AppendString(builder *util.StringBuild2) {
 	builder.WriteRune('(')
 	builder.WriteString(reforge.From.Name())
 	builder.WriteString("->")

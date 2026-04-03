@@ -1,7 +1,5 @@
 package util
 
-import "strings"
-
 type TabulateOutput struct {
 	data       [][]string
 	spacing    int
@@ -45,7 +43,7 @@ func (tab *TabulateOutput) columnSizes() []int {
 
 func (tab *TabulateOutput) Write(printer *PrintRecorder) {
 	sizes := tab.columnSizes()
-	var builder strings.Builder
+	var builder StringBuild2
 	for _, line := range tab.data {
 		for col := range len(line) {
 			size := sizes[col]
@@ -58,7 +56,7 @@ func (tab *TabulateOutput) Write(printer *PrintRecorder) {
 	}
 }
 
-func writeStringAligned(str string, size int, isRight bool, builder *strings.Builder) {
+func writeStringAligned(str string, size int, isRight bool, builder *StringBuild2) {
 	if isRight {
 		writeSpaces(builder, size-len(str))
 		builder.WriteString(str)
@@ -68,7 +66,7 @@ func writeStringAligned(str string, size int, isRight bool, builder *strings.Bui
 	}
 }
 
-func writeSpaces(builder *strings.Builder, repeat int) {
+func writeSpaces(builder *StringBuild2, repeat int) {
 	for range repeat {
 		builder.WriteRune(' ')
 	}

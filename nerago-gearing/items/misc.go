@@ -1,11 +1,17 @@
 package items
 
+import "strconv"
+
 const LOW_HIGH_MOP_ITEM_LEVELS_THRESHOLD = 522
 const LOW_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL = 4
 const HIGH_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL = 3
 const MAX_UPGRADE_LEVEL = 2
 
 type ItemId uint32
+
+func (id ItemId) String() string {
+	return strconv.FormatUint(uint64(id), 10)
+}
 
 type ItemRef struct {
 	ItemId       ItemId

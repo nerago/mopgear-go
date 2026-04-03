@@ -23,7 +23,7 @@ func makeRandomWorker(commonOptions commonComboOptions, loopCount uint64, thread
 }
 
 func makeRandomCombo(commonOptions commonComboOptions, rng *rand.Rand) commonCombo {
-	combo := CommonCombo_Make(len(commonOptions))
+	combo := commonCombo_Make(len(commonOptions), comboType_random)
 	for itemId, options := range commonOptions {
 		index := rng.Intn(len(options))
 		choice := &options[index]

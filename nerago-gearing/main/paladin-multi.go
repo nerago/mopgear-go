@@ -215,7 +215,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddSuppressSlotCheck(94527) // Ji-Kun's Rising Winds
 
 	// job.SuggestCulls(100, 2)
-	job.SuggestCulls(500, 10)
+	job.SuggestCulls(1000, 40)
 	//job.SuggestCulls(5000, 10)
 	// job.SuggestCulls(10000, 100)
 	// job.SuggestCulls(25000, 150)

@@ -3,7 +3,6 @@ package util
 import (
 	"fmt"
 	"os"
-	"paladin_gearing_go/files"
 	"strings"
 	"sync"
 	"time"
@@ -11,14 +10,14 @@ import (
 
 type PrintRecorder struct {
 	holdOutput bool
-	lines      []string
-	writer     *os.File
+	builder    StringBuild2
+	file       *os.File
 	mutex      sync.Mutex
 }
 
-func PrintRecorder_CreateLogFile() *PrintRecorder {
+func PrintRecorder_CreateLogFile(path string) *PrintRecorder {
 	timeStr := strings.ReplaceAll(time.Now().Format(time.RFC3339), ":", "-")
-	logName := files.LogOutputPath + "output-" + timeStr + ".log"
+	logName := path + "output-" + timeStr + ".log"
 	file, err := os.Create(logName)
 	if err != nil {
 		panic("error creating log")
@@ -30,33 +29,57 @@ func PrintRecorder_HoldAll() *PrintRecorder {
 	return &PrintRecorder{true, nil, nil, sync.Mutex{}}
 }
 
+var _newline = []byte{'\n'}
+
+func (print *PrintRecorder) outputNewline() {
+	print.file.Write(_newline)
+	os.Stdout.Write(_newline)
+}
+
+func (print *PrintRecorder) outputBytes(bytes []byte) {
+	print.file.Write(bytes)
+	os.Stdout.Write(bytes)
+}
+
+func (print *PrintRecorder) outputString(str string) {
+	print.file.WriteString(str)
+	os.Stdout.WriteString(str)
+}
+
 func (print *PrintRecorder) Println0() {
-	print.Println("")
+	print.mutex.Lock()
+
+	if print.holdOutput {
+		print.builder.WriteRune('\n')
+	} else {
+		print.outputNewline()
+	}
+
+	print.mutex.Unlock()
 }
 
 func (print *PrintRecorder) Println(str string) {
 	print.mutex.Lock()
 
 	if print.holdOutput {
-		print.lines = append(print.lines, str)
+		print.builder.WriteString(str)
+		print.builder.WriteRune('\n')
 	} else {
-		print.writer.WriteString(str)
-		print.writer.WriteString("\n")
-		fmt.Println(str)
+		print.outputString(str)
+		print.outputNewline()
 	}
 
 	print.mutex.Unlock()
 }
 
-func (print *PrintRecorder) Printf(format string, a ...any) {
+func (print *PrintRecorder) Printf(format string, args ...any) {
 	print.mutex.Lock()
 
-	str := fmt.Sprintf(format, a...)
+	str := fmt.Sprintf(format, args...)
 	if print.holdOutput {
-		print.lines = append(print.lines, str)
+		print.builder.WriteString(str)
 	} else {
-		print.writer.WriteString(str)
-		fmt.Print(str)
+		print.outputString(str)
 	}
 
 	print.mutex.Unlock()
@@ -71,18 +94,9 @@ func (print *PrintRecorder) AppendOther(other *PrintRecorder) {
 	print.mutex.Lock()
 
 	if print.holdOutput {
-		print.lines = append(print.lines, other.lines...)
+		print.builder.WriteBuilder(other.builder)
 	} else {
-		for _, line := range other.lines {
-			if len(line) > 0 && line[len(line)-1] == '\n' {
-				print.writer.WriteString(line)
-				fmt.Print(line)
-			} else {
-				print.writer.WriteString(line)
-				print.writer.WriteString("\n")
-				fmt.Println(line)
-			}
-		}
+		print.outputBytes(other.builder)
 	}
 
 	print.mutex.Unlock()
@@ -92,10 +106,10 @@ func (print *PrintRecorder) AppendOther(other *PrintRecorder) {
 func (print *PrintRecorder) Close() {
 	print.mutex.Lock()
 
-	print.writer.Close()
+	print.file.Close()
 
 	// delete if empty
-	logName := print.writer.Name()
+	logName := print.file.Name()
 	info, err := os.Stat(logName)
 	if err == nil {
 		if info.Size() == 0 {

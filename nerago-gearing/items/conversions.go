@@ -1,8 +1,7 @@
 package items
 
 import (
-	"strconv"
-	"strings"
+	"paladin_gearing_go/util"
 )
 
 func SolvableOptionsMap_of(fullMap *FullOptionsMap) SolvableOptionsMap {
@@ -31,20 +30,18 @@ func findMatch(fullItem []FullItem, solveItem *SolvableItem) *FullItem {
 }
 
 func (item *FullItem) CreateString() string {
-	build := strings.Builder{}
+	build := util.StringBuild2{}
 	item.AppendString(&build)
 	return build.String()
 }
 
 func (item *FullItem) CreateFullName() string {
-	build := strings.Builder{}
+	build := util.StringBuild2{}
 	item.AppendFullName(&build)
 	return build.String()
 }
 
-func (item *FullItem) AppendString(build *strings.Builder) {
-	var buff [10]byte
-
+func (item *FullItem) AppendString(build *util.StringBuild2) {
 	build.WriteString("{ ")
 	build.WriteString(item.Slot.Name())
 
@@ -52,10 +49,10 @@ func (item *FullItem) AppendString(build *strings.Builder) {
 	item.AppendFullName(build)
 
 	build.WriteString("\" id=")
-	build.Write(strconv.AppendUint(buff[:0], uint64(item.ItemId()), 10))
+	build.WriteUint32(uint32(item.ItemId()))
 
 	build.WriteString(" lvl=")
-	build.Write(strconv.AppendUint(buff[:0], uint64(item.Ref.ItemLevel), 10))
+	build.WriteUint16(item.Ref.ItemLevel)
 	build.WriteRune(' ')
 
 	item.StatBase.AppendString(build)

@@ -1,8 +1,7 @@
 package stats
 
 import (
-	"strconv"
-	"strings"
+	"paladin_gearing_go/util"
 )
 
 type StatBlock [12]uint32
@@ -96,25 +95,23 @@ func (block *StatBlock) PrimaryStat() PrimaryStatType {
 }
 
 func (block *StatBlock) CreateString() string {
-	build := strings.Builder{}
+	build := util.StringBuild2{}
 	block.AppendString(&build)
 	return build.String()
 }
 
 func (block *StatBlock) CreateStringCSV() string {
-	var buff [20]byte
-	build := strings.Builder{}
+	build := util.StringBuild2{}
 	for _, value := range block {
 		if build.Len() > 0 {
 			build.WriteRune(',')
 		}
-		build.Write(strconv.AppendUint(buff[:0], uint64(value), 10))
+		build.WriteUint32(value)
 	}
 	return build.String()
 }
 
-func (block *StatBlock) AppendString(build *strings.Builder) {
-	var buff [20]byte
+func (block *StatBlock) AppendString(build *util.StringBuild2) {
 	first := true
 
 	build.WriteString("{")
@@ -132,7 +129,7 @@ func (block *StatBlock) AppendString(build *strings.Builder) {
 
 			build.WriteString(name)
 			build.WriteRune('=')
-			build.Write(strconv.AppendUint(buff[:0], uint64(value), 10))
+			build.WriteUint32(value)
 		}
 	}
 

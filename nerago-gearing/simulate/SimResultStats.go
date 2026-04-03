@@ -2,8 +2,6 @@ package simulate
 
 import (
 	"paladin_gearing_go/util"
-	"strconv"
-	"strings"
 )
 
 type SimResultType int8
@@ -52,33 +50,26 @@ func (stats SimResultStats) Print(printer *util.PrintRecorder) {
 }
 
 func (stats SimResultStats) CompactStringSignedPercent() string {
-	var build strings.Builder
-	var buff [20]byte
+	var build util.StringBuild2
 	build.WriteString("dps=")
-	appendFloatSigned(stats.DPS, &build, &buff)
+	appendFloatSigned(stats.DPS, &build)
 	build.WriteString("dtps=")
-	appendFloatSigned(stats.DTPS, &build, &buff)
+	appendFloatSigned(stats.DTPS, &build)
 	build.WriteString("tmi=")
-	appendFloatSigned(stats.TMI, &build, &buff)
+	appendFloatSigned(stats.TMI, &build)
 	build.WriteString("death=")
-	appendFloatSigned(stats.DEATH*100, &build, &buff)
+	appendFloatSigned(stats.DEATH*100, &build)
 	return build.String()
 }
 
-func appendFloatSigned(value float64, build *strings.Builder, buff *[20]byte) {
+func appendFloatSigned(value float64, build *util.StringBuild2) {
 	padSize := 6
 	if value > 0 {
 		build.WriteRune('+')
 		padSize--
 	}
 
-	buffSlice := strconv.AppendFloat(buff[:0], value, 'f', 1, 64)
-	build.Write(buffSlice)
-
-	padSize -= len(buffSlice)
-	for range padSize {
-		build.WriteRune(' ')
-	}
+	build.WriteFloat64_RightPadded(value, padSize)
 }
 
 func (stats SimResultStats) IsEmpty() bool {

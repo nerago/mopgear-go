@@ -1,0 +1,65 @@
+package util
+
+import (
+	"strconv"
+	"unicode/utf8"
+	"unsafe"
+)
+
+type StringBuild2 []byte
+
+func (sb *StringBuild2) Reset() {
+	*sb = nil
+}
+
+func (sb *StringBuild2) String() string {
+	return unsafe.String(unsafe.SliceData(*sb), len(*sb))
+}
+
+func (sb *StringBuild2) Len() int {
+	return len(*sb)
+}
+
+func (sb *StringBuild2) WriteBuilder(other StringBuild2) {
+	*sb = append(*sb, other...)
+}
+
+func (sb *StringBuild2) WriteString(value string) {
+	*sb = append(*sb, value...)
+}
+
+func (sb *StringBuild2) WriteRune(value rune) {
+	*sb = utf8.AppendRune(*sb, value)
+}
+
+func (sb *StringBuild2) WriteUint64(value uint64) {
+	*sb = strconv.AppendUint(*sb, value, 10)
+}
+
+func (sb *StringBuild2) WriteUint32(value uint32) {
+	*sb = strconv.AppendUint(*sb, uint64(value), 10)
+}
+
+func (sb *StringBuild2) WriteUint16(value uint16) {
+	*sb = strconv.AppendUint(*sb, uint64(value), 10)
+}
+
+func (sb *StringBuild2) WriteFloat64(value float64) {
+	*sb = strconv.AppendFloat(*sb, value, 'f', 1, 64)
+}
+
+func (sb *StringBuild2) WriteFloat32(value float32) {
+	*sb = strconv.AppendFloat(*sb, float64(value), 'f', 1, 32)
+}
+
+func (sb *StringBuild2) WriteFloat64_RightPadded(value float64, pad int) {
+	oldSize := len(*sb)
+	*sb = strconv.AppendFloat(*sb, value, 'f', 1, 64)
+	written := len(*sb) - oldSize
+
+	remainingPad := pad - written
+	for remainingPad > 0 {
+		*sb = append(*sb, ' ')
+		remainingPad--
+	}
+}

@@ -7,7 +7,6 @@ import (
 	"paladin_gearing_go/util/util_rank"
 )
 
-// on main path despite in cull file
 func (job *MultiSetJob) runForTopN(targetCount uint64, topCapture uint64, trackProgress *util.TrackProgress) []multiProposedOutput {
 	job.prepareInitial()
 	commonOptions := job.determineCommon()
@@ -21,6 +20,8 @@ func (job *MultiSetJob) runForTopN(targetCount uint64, topCapture uint64, trackP
 }
 
 func (job *MultiSetJob) evalutateTopN(proposedChannel <-chan multiProposedOutput, topCount uint64) []multiProposedOutput {
+	// TODO make sure we have some of each combotype
+
 	if len(job.specificAllowRates) == 0 {
 		job.printer.Printf("COLLECTING TOP %d\n", topCount)
 		bestChannel := channel_op.TransformAll_ChannelToChannel(evaluateThreadCount, proposedChannel, func(_ int, proposedChannel <-chan multiProposedOutput, bestChannel chan<- util_rank.HighestCollectorN[multiProposedOutput]) {

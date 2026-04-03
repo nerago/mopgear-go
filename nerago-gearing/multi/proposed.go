@@ -44,9 +44,6 @@ func (single *singleProposed) Equals(b *singleProposed) bool {
 }
 
 func (single *singleProposed) Report(printer *util.PrintRecorder) {
-	if !single.exists {
-		panic("report on missing set")
-	}
 	printer.Println(single.outputId)
 	solver.ReportSet(printer, single.fullSet, single.resultRating, single.model)
 }
@@ -66,14 +63,14 @@ func (proposed *multiProposedOutput) Equals(other *multiProposedOutput) bool {
 
 func (job *MultiSetJob) makeProposedChannel(comboChannel <-chan commonCombo) <-chan multiProposedOutput {
 	return channel_op.TransformEach_ChannelToChannel(solveThreadCount, comboChannel, func(combo commonCombo, outputChannel chan<- multiProposedOutput) {
-		proposed := job.subSolveCombo(combo)
+		proposed := job.subSolveCombo(&combo)
 		if proposed != nil {
 			outputChannel <- *proposed
 		}
 	})
 }
 
-func (job *MultiSetJob) subSolveCombo(combo commonCombo) *multiProposedOutput {
+func (job *MultiSetJob) subSolveCombo(combo *commonCombo) *multiProposedOutput {
 	var totalRatingSum uint64
 	output := make([]singleProposed, len(job.params))
 
@@ -103,7 +100,7 @@ func (job *MultiSetJob) subSolveCombo(combo commonCombo) *multiProposedOutput {
 		}
 	}
 
-	proposed := multiProposedOutput{uuid.NewString(), totalRatingSum, output, combo}
+	proposed := multiProposedOutput{uuid.NewString(), totalRatingSum, output, *combo}
 	if job.multiSetFilter != nil && !job.multiSetFilter(proposed) {
 		return nil
 	}
@@ -111,7 +108,7 @@ func (job *MultiSetJob) subSolveCombo(combo commonCombo) *multiProposedOutput {
 
 }
 
-func (job *MultiSetJob) firstPassSolveCombo(combo commonCombo, param *MultiSetParam) solver.SolveOutput {
+func (job *MultiSetJob) firstPassSolveCombo(combo *commonCombo, param *MultiSetParam) solver.SolveOutput {
 	options := buildOptionsGivenCombo(param.itemOptions, combo)
 	return solver.Solver(solver.SolveInput{
 		ItemOptions:         &options,
@@ -121,7 +118,7 @@ func (job *MultiSetJob) firstPassSolveCombo(combo commonCombo, param *MultiSetPa
 		SolveSize:           solver.SolveSize_PerItem})
 }
 
-func (job *MultiSetJob) secondPassSolveCombo(baseCombo commonCombo, otherOutputList []singleProposed, param *MultiSetParam) solver.SolveOutput {
+func (job *MultiSetJob) secondPassSolveCombo(baseCombo *commonCombo, otherOutputList []singleProposed, param *MultiSetParam) solver.SolveOutput {
 	// extend combo limitations further based on items chosen for other sets
 	restrictedCombo := baseCombo.clone()
 	for _, otherOutput := range otherOutputList {
@@ -132,7 +129,7 @@ func (job *MultiSetJob) secondPassSolveCombo(baseCombo commonCombo, otherOutputL
 		}
 	}
 
-	options := buildOptionsGivenCombo(param.itemOptions, restrictedCombo)
+	options := buildOptionsGivenCombo(param.itemOptions, &restrictedCombo)
 	return solver.Solver(solver.SolveInput{
 		ItemOptions:         &options,
 		Model:               &param.Model,
@@ -141,7 +138,7 @@ func (job *MultiSetJob) secondPassSolveCombo(baseCombo commonCombo, otherOutputL
 		SolveSize:           solver.SolveSize_PerItem})
 }
 
-func buildOptionsGivenCombo(allOptions items.FullOptionsMap, combo commonCombo) items.FullOptionsMap {
+func buildOptionsGivenCombo(allOptions items.FullOptionsMap, combo *commonCombo) items.FullOptionsMap {
 	selectedOptions := items.FullOptionsMap{}
 	itemIdSeen := make(map[items.ItemId]bool)
 	for slot, slotOptions := range allOptions {
@@ -150,7 +147,7 @@ func buildOptionsGivenCombo(allOptions items.FullOptionsMap, combo commonCombo) 
 	return selectedOptions
 }
 
-func buildOptionsGivenCombo_Slot(slotOptions []items.FullItem, combo commonCombo, itemIdSeen map[items.ItemId]bool) []items.FullItem {
+func buildOptionsGivenCombo_Slot(slotOptions []items.FullItem, combo *commonCombo, itemIdSeen map[items.ItemId]bool) []items.FullItem {
 	selectedItems := make([]items.FullItem, 0, len(slotOptions))
 	clear(itemIdSeen)
 	for i := range slotOptions {

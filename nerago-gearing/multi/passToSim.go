@@ -8,7 +8,6 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
 	"strconv"
-	"strings"
 
 	"github.com/google/uuid"
 )
@@ -43,7 +42,7 @@ func (job *MultiSetJob) prepareRevisionsForSim(proposedList []multiProposedOutpu
 		printer := util.PrintRecorder_HoldAll()
 		printer.Printf(">>> PREP REVISIONS %s\n", prior.id)
 
-		revisedCommon := job.revisedComboActuallyUsed(prior.parts, prior.combo, printer)
+		revisedCommon := job.revisedComboActuallyUsed(prior.parts, &prior.combo, printer)
 
 		revisedOptionArrays := make([][]singleProposed, len(prior.parts))
 
@@ -51,10 +50,11 @@ func (job *MultiSetJob) prepareRevisionsForSim(proposedList []multiProposedOutpu
 			draft := &prior.parts[i]
 			param := &job.params[i]
 
+			printer.Printf("== %s\n", param.Label)
 			printer.Println("DRAFT")
 			draft.Report(printer)
 
-			specOptions := job.makeRevised(param, revisedCommon, trackProgress, printer)
+			specOptions := job.makeRevised(param, &revisedCommon, trackProgress, printer)
 			for _, newOutput := range specOptions {
 				param.seenInSolutions.Add(&newOutput.fullSet)
 			}
@@ -76,7 +76,7 @@ func (job *MultiSetJob) prepareRevisionsForSim(proposedList []multiProposedOutpu
 			for _, output := range outputSet {
 				totalRatingSum += output.resultRating
 			}
-			if checkNoConflicts(outputSet, printer) {
+			if checkNoConflicts(outputSet) {
 				proposed := multiProposedOutput{uuid.NewString(), totalRatingSum, outputSet, revisedCommon}
 				componentIds := ""
 				for _, set := range outputSet {
@@ -97,7 +97,7 @@ func (job *MultiSetJob) prepareRevisionsForSim(proposedList []multiProposedOutpu
 	return allProposals
 }
 
-func checkNoConflicts(outputSet []singleProposed, printer *util.PrintRecorder) bool {
+func checkNoConflicts(outputSet []singleProposed) bool {
 	itemById := make(map[items.ItemId]*items.FullItem)
 	for outputIndex := range outputSet {
 		for item := range outputSet[outputIndex].fullSet.Items().AllItemSeq() {
@@ -120,8 +120,8 @@ func (job *MultiSetJob) existingGearAsProposal() multiProposedOutput {
 		single := SingleProposed_FromEquip(param.exactEquippedGear, param)
 		proposal.parts = append(proposal.parts, single)
 		proposal.totalRatingSum += single.resultRating
-		proposal.combo = job.revisedComboActuallyUsed(proposal.parts, CommonCombo_Make(0), util.PrintRecorder_HoldAll())
 	}
+	proposal.combo = job.determineComboFromScratch(proposal.parts, comboType_equippedExact)
 	return proposal
 }
 
@@ -190,7 +190,7 @@ func (job *MultiSetJob) reportSimResults(resultList []simulateResult) {
 	job.printer.Println("@@@@@@@@@@@@@@@@ RESULTS @@@@@@@@@@@@@@@@")
 	for _, result := range resultList {
 		job.printer.Printf("&&&&&&&&&&&&& %s\n", result.proposed.id)
-		printChosenCombo(result.proposed.combo, job.printer)
+		printChosenCombo(&result.proposed.combo, job.printer)
 		for specIndex, specResult := range result.result {
 			param := job.params[specIndex]
 			job.printer.Printf("---------------- %s ----------------\n", param.Label)
@@ -208,7 +208,7 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateResult) {
 	job.printer.Println("@@@@@@@@@@@@@@@@ SPREADSHEET COPY @@@@@@@@@@@@@@@@")
 
 	const linesPerSpec = 7
-	lines := make([]strings.Builder, 1+len(job.params)*linesPerSpec)
+	lines := make([]util.StringBuild2, 1+len(job.params)*linesPerSpec)
 
 	for _, simResult := range simResultList {
 		lineIndex := 0
