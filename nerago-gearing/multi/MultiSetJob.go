@@ -14,12 +14,12 @@ const (
 )
 
 type MultiSetJob struct {
-	printer           *util.PrintRecorder
-	params            []MultiSetParam
-	fixedForge        map[items.ItemId]stats.ReforgeRecipe
-	bagsGear          loaders.EquippedArray
-	multiSetFilter    func(MultiProposedOutput) bool
-	suppressSlotCheck []items.ItemId
+	printer            *util.PrintRecorder
+	params             []MultiSetParam
+	fixedForge         map[items.ItemId]stats.ReforgeRecipe
+	specificAllowRates map[items.ItemId]float32
+	bagsGear           loaders.EquippedArray
+	multiSetFilter     func(multiProposedOutput) bool
 }
 
 func MultiSetJob_Create(printer *util.PrintRecorder) MultiSetJob {
@@ -38,10 +38,13 @@ func (job *MultiSetJob) AddFixedForge(itemId items.ItemId, reforge stats.Reforge
 	job.fixedForge[itemId] = reforge
 }
 
-func (job *MultiSetJob) SetMultiSetFilter(filter func(MultiProposedOutput) bool) {
+func (job *MultiSetJob) SetMultiSetFilter(filter func(multiProposedOutput) bool) {
 	job.multiSetFilter = filter
 }
 
-func (job *MultiSetJob) AddSuppressSlotCheck(itemId items.ItemId) {
-	job.suppressSlotCheck = append(job.suppressSlotCheck, itemId)
+func (job *MultiSetJob) AddSpecificAllowRate(itemId items.ItemId, proportion float32) {
+	if job.specificAllowRates == nil {
+		job.specificAllowRates = make(map[items.ItemId]float32)
+	}
+	job.specificAllowRates[itemId] = proportion
 }

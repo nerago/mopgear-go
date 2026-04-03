@@ -4,15 +4,16 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/simulate"
-	"paladin_gearing_go/solver"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
 	"strconv"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
-func (job *MultiSetJob) FindTopAndPassToSim(targetCount uint64, topCapture int, runSize simulate.WowSim_RunSize) {
+func (job *MultiSetJob) FindTopAndPassToSim(targetCount uint64, topCapture uint64, runSize simulate.WowSim_RunSize) {
 	topTracker := util.TrackProgress_Start()
 	topTracker.RunOuterTracking(3)
 	defer topTracker.Stop()
@@ -31,23 +32,23 @@ func (job *MultiSetJob) FindTopAndPassToSim(targetCount uint64, topCapture int, 
 	job.reportAsCsv(simResult)
 }
 
-func (job *MultiSetJob) prepareRevisionsForSim(proposedList []MultiProposedOutput, trackProgress *util.TrackProgress) []MultiProposedOutput {
+func (job *MultiSetJob) prepareRevisionsForSim(proposedList []multiProposedOutput, trackProgress *util.TrackProgress) []multiProposedOutput {
 	job.printer.Printf("@@@@@@@@@@ MAKE REVISIONS FOR %d @@@@@@@@@@\n", len(proposedList))
 
 	expectedSets := len(proposedList) * len(job.params) * revisedExtraSetsExpectedEach
 	trackProgress.RunOuterTracking(expectedSets)
 	defer trackProgress.Stop()
 
-	allProposals := channel_op.IterateEach_SliceToSlice(generateThreadCount, proposedList, func(prior *MultiProposedOutput, downstream chan<- MultiProposedOutput) {
+	allProposals := channel_op.IterateEach_SliceToSlice(generateThreadCount, proposedList, func(prior *multiProposedOutput, downstream chan<- multiProposedOutput) {
 		printer := util.PrintRecorder_HoldAll()
-		printer.Printf(">>> PREP REVISIONS %s\n", prior.Id)
+		printer.Printf(">>> PREP REVISIONS %s\n", prior.id)
 
-		revisedCommon := job.revisedComboActuallyUsed(prior.Outputs, prior.Combo, printer)
+		revisedCommon := job.revisedComboActuallyUsed(prior.parts, prior.combo, printer)
 
-		revisedOptionArrays := make([][]solver.SolveOutput, len(prior.Outputs))
+		revisedOptionArrays := make([][]singleProposed, len(prior.parts))
 
-		for i := range prior.Outputs {
-			draft := &prior.Outputs[i]
+		for i := range prior.parts {
+			draft := &prior.parts[i]
 			param := &job.params[i]
 
 			printer.Println("DRAFT")
@@ -55,16 +56,16 @@ func (job *MultiSetJob) prepareRevisionsForSim(proposedList []MultiProposedOutpu
 
 			specOptions := job.makeRevised(param, revisedCommon, trackProgress, printer)
 			for _, newOutput := range specOptions {
-				param.seenInSolutions.Add(&newOutput.FullSet)
+				param.seenInSolutions.Add(&newOutput.fullSet)
 			}
 
-			param.seenInSolutions.Add(&draft.FullSet)
+			param.seenInSolutions.Add(&draft.fullSet)
 			specOptions = append(specOptions, *draft)
 
-			specOptions = util.RemoveDuplicatesFuncNotify(specOptions, func(a, b *solver.SolveOutput) bool {
-				return a.FullSet.Equals(&b.FullSet)
-			}, func(removed *solver.SolveOutput) {
-				printer.Printf("removed duplicate output %s\n", removed.OutputId)
+			specOptions = util.RemoveDuplicatesFuncNotify(specOptions, func(a, b *singleProposed) bool {
+				return a.fullSet.Equals(&b.fullSet)
+			}, func(removed *singleProposed) {
+				printer.Printf("removed duplicate output %s\n", removed.outputId)
 			})
 
 			revisedOptionArrays[i] = specOptions
@@ -73,18 +74,21 @@ func (job *MultiSetJob) prepareRevisionsForSim(proposedList []MultiProposedOutpu
 		for outputSet := range util.PermuteAll(revisedOptionArrays) {
 			var totalRatingSum uint64
 			for _, output := range outputSet {
-				totalRatingSum += output.ResultRating
+				totalRatingSum += output.resultRating
 			}
 			if checkNoConflicts(outputSet, printer) {
-				proposed := MultiProposedOutput{makeUUID(), totalRatingSum, outputSet, revisedCommon}
+				proposed := multiProposedOutput{uuid.NewString(), totalRatingSum, outputSet, revisedCommon}
 				componentIds := ""
 				for _, set := range outputSet {
-					componentIds = componentIds + set.OutputId + " "
+					componentIds = componentIds + set.outputId + " "
 				}
-				printer.Printf("&&& NEW PROPOSAL %s => %s\n", proposed.Id, componentIds)
+				printer.Printf("&&& NEW PROPOSAL %s => %s\n", proposed.id, componentIds)
 				downstream <- proposed
 			}
 		}
+
+		printer.Println0()
+		printer.Println0()
 
 		job.printer.AppendOther(printer)
 	})
@@ -93,10 +97,10 @@ func (job *MultiSetJob) prepareRevisionsForSim(proposedList []MultiProposedOutpu
 	return allProposals
 }
 
-func checkNoConflicts(outputSet []solver.SolveOutput, printer *util.PrintRecorder) bool {
+func checkNoConflicts(outputSet []singleProposed, printer *util.PrintRecorder) bool {
 	itemById := make(map[items.ItemId]*items.FullItem)
 	for outputIndex := range outputSet {
-		for item := range outputSet[outputIndex].FullSet.Items().AllItemSeq() {
+		for item := range outputSet[outputIndex].fullSet.Items().AllItemSeq() {
 			existing, found := itemById[item.ItemId()]
 			if !found {
 				itemById[item.ItemId()] = item
@@ -109,13 +113,14 @@ func checkNoConflicts(outputSet []solver.SolveOutput, printer *util.PrintRecorde
 	return true
 }
 
-func (job *MultiSetJob) existingGearAsProposal() MultiProposedOutput {
-	proposal := MultiProposedOutput{Id: makeUUID()}
+func (job *MultiSetJob) existingGearAsProposal() multiProposedOutput {
+	proposal := multiProposedOutput{id: uuid.NewString()}
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
-		proposal.Outputs = append(proposal.Outputs, param.baselineResult)
-		proposal.TotalRatingSum += param.baselineResult.ResultRating
-		proposal.Combo = job.revisedComboActuallyUsed(proposal.Outputs, make(CommonCombo), util.PrintRecorder_HoldAll())
+		single := SingleProposed_FromEquip(param.exactEquippedGear, param)
+		proposal.parts = append(proposal.parts, single)
+		proposal.totalRatingSum += single.resultRating
+		proposal.combo = job.revisedComboActuallyUsed(proposal.parts, CommonCombo_Make(0), util.PrintRecorder_HoldAll())
 	}
 	return proposal
 }
@@ -128,15 +133,15 @@ type simulateJob struct {
 }
 
 type simulateResult struct {
-	proposed MultiProposedOutput
+	proposed multiProposedOutput
 	result   []simulate.SimResultStats
 }
 
-func (job *MultiSetJob) prepareSimList(proposalList []MultiProposedOutput) []simulateJob {
+func (job *MultiSetJob) prepareSimList(proposalList []multiProposedOutput) []simulateJob {
 	jobList := make([]simulateJob, 0)
 	for _, proposal := range proposalList {
-		for _, output := range proposal.Outputs {
-			job := simulateJob{output.Input.Model.Spec, *output.FullSet.Items(), output.Input.Model, nil}
+		for _, output := range proposal.parts {
+			job := simulateJob{output.spec, *output.fullSet.Items(), output.model, nil}
 			jobList = append(jobList, job)
 		}
 	}
@@ -157,7 +162,7 @@ func (job *MultiSetJob) runSims(jobList []simulateJob, runSize simulate.WowSim_R
 	})
 }
 
-func (job *MultiSetJob) linkSimResults(proposalList []MultiProposedOutput, jobList []simulateJob) []simulateResult {
+func (job *MultiSetJob) linkSimResults(proposalList []multiProposedOutput, jobList []simulateJob) []simulateResult {
 	resultList := make([]simulateResult, 0, len(proposalList))
 	for _, proposal := range proposalList {
 		result := linkSimResult(proposal, jobList)
@@ -166,13 +171,13 @@ func (job *MultiSetJob) linkSimResults(proposalList []MultiProposedOutput, jobLi
 	return resultList
 }
 
-func linkSimResult(proposal MultiProposedOutput, jobList []simulateJob) simulateResult {
-	result := simulateResult{proposal, make([]simulate.SimResultStats, len(proposal.Outputs))}
-	for outIndex := range proposal.Outputs {
-		output := &proposal.Outputs[outIndex]
+func linkSimResult(proposal multiProposedOutput, jobList []simulateJob) simulateResult {
+	result := simulateResult{proposal, make([]simulate.SimResultStats, len(proposal.parts))}
+	for outIndex := range proposal.parts {
+		output := &proposal.parts[outIndex]
 		for jobIndex := range jobList {
 			job := &jobList[jobIndex]
-			if output.FullSet.Items().Equals(&job.equip) && output.Input.Model.Spec == job.spec {
+			if output.fullSet.Items().Equals(&job.equip) && output.spec == job.spec {
 				result.result[outIndex] = *job.result
 				break
 			}
@@ -184,16 +189,17 @@ func linkSimResult(proposal MultiProposedOutput, jobList []simulateJob) simulate
 func (job *MultiSetJob) reportSimResults(resultList []simulateResult) {
 	job.printer.Println("@@@@@@@@@@@@@@@@ RESULTS @@@@@@@@@@@@@@@@")
 	for _, result := range resultList {
-		job.printer.Printf("&&&&&&&&&&&&& %s\n", result.proposed.Id)
+		job.printer.Printf("&&&&&&&&&&&&& %s\n", result.proposed.id)
+		printChosenCombo(result.proposed.combo, job.printer)
 		for specIndex, specResult := range result.result {
 			param := job.params[specIndex]
-			job.printer.Printf("--- %s\n", param.Label)
+			job.printer.Printf("---------------- %s ----------------\n", param.Label)
 
-			output := result.proposed.Outputs[specIndex]
+			output := result.proposed.parts[specIndex]
 			output.Report(job.printer)
-			job.printer.Println0()
 			specResult.Print(job.printer)
-			// TODO common stuff
+			job.printer.Println0()
+			job.printer.Println0()
 		}
 	}
 }
@@ -206,7 +212,7 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateResult) {
 
 	for _, simResult := range simResultList {
 		lineIndex := 0
-		lines[lineIndex].WriteString(simResult.proposed.Id + ",")
+		lines[lineIndex].WriteString(simResult.proposed.id + ",")
 		lineIndex++
 
 		for _, resultStat := range simResult.result {

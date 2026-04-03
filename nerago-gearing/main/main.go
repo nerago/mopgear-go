@@ -48,11 +48,13 @@ func main() {
 	}
 
 	startTime := time.Now()
+	printer.Println("Started at " + startTime.Format(time.RFC1123))
 
 	core(printer)
 
 	timeTaken := time.Since(startTime)
 	printer.Println("Duration = " + timeTaken.String())
+	printer.Println("Finished at " + time.Now().Format(time.RFC1123))
 
 	if enableProfiling {
 		f, err := os.Create(files.ProfileDir + "main-memory.pgo")
@@ -74,10 +76,10 @@ func core(printer *util.PrintRecorder) {
 	// slotRating(itemOptions[Equip_Chest], &model, printer)
 	// basicReforge(&itemOptions, &model, printer)
 
-	// PaladinMultiRun(printer)
+	PaladinMultiRun(printer)
 	// testSim(printer)
 	// findUpgrades_Sim_PaladinMiti_Run(printer)
-	findUpgrades_Paladin_Sim_AllRaid_Run(printer)
+	// findUpgrades_Paladin_Sim_AllRaid_Run(printer)
 	// findNeededUpgradeLevel(printer)
 }
 

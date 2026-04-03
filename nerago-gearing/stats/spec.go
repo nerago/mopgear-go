@@ -1,6 +1,6 @@
 package stats
 
-type SpecType int32
+type SpecType int8
 
 const (
 	Spec_PaladinProtMitigation SpecType = iota

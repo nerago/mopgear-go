@@ -47,7 +47,6 @@ func (param *MultiSetParam) prepareStartingGear() {
 	param.exactEquippedGear = setup.OptionsSetup_ExactEquippedOnly(equipped, &param.Model, param.job.printer)
 	param.itemOptions = setup.OptionsSetup_FromEquipped(equipped, &param.Model, setup.MissingEnchant_Panic, param.job.printer)
 
-	
 	setup.UpgradeExistingToLevel2(&param.itemOptions, param.ForceUpgradeExistingItems, &param.Model, param.job.printer)
 }
 
@@ -151,6 +150,7 @@ func (param *MultiSetParam) extraLoadAndGenerate(itemId items.ItemId) {
 }
 
 func (param *MultiSetParam) restrictFixed() {
+	// actual fixed slot stuff
 	for slot, itemId := range param.fixedSlots {
 		if !param.itemOptions.Has(slot) {
 			panic("restricting slot but already empty")
@@ -175,20 +175,56 @@ func (param *MultiSetParam) restrictFixed() {
 			})
 		}
 	}
+
+	// include rates slots: validate makes sense, but doesn't do anything with them
+	// TODO consider more automatic handling
+	// for slot, rule := range param.includeRateSlots {
+	// 	if !param.itemOptions.IncludesItemIdInSlot(rule.itemId, slot) {
+	// 		panic("includes rate rule but item missing " + strconv.FormatUint(uint64(rule.itemId), 10))
+	// 	}
+
+	// 	slotByItem := param.itemOptions.SlotGroupedByItemId(slot)
+	// 	if len(slotByItem) < 2 {
+	// 		panic("includes rate rule has no alternate items")
+	// 	}
+
+	// 	paired := slot.PairedSlot()
+	// 	if paired != -1 && param.itemOptions.IncludesItemIdInSlot(rule.itemId, paired) {
+	// 		panic("includes rate rule but item still allowed in paired slot " + strconv.FormatUint(uint64(rule.itemId), 10))
+	// 	}
+	// }
 }
 
 func (job *MultiSetJob) validateMultiSetAlignItemSlots() {
-	seen := make(map[items.ItemId]items.SlotEquip)
+	// TODO can't remember what this was in aid of, not needed anymore?
+	// maybe was in order of a warning that things might be bad downstream or explode permutations
+
+	// NEW VERSION check within set, make things easier for solvers
 	for paramIndex := range job.params {
-		for slot, item := range job.params[paramIndex].itemOptions.AllItemsWithSlot() {
+		param := &job.params[paramIndex]
+		seen := make(map[items.ItemId]items.SlotEquip)
+		for slot, item := range param.itemOptions.AllItemsWithSlot() {
 			seenSlot, found := seen[item.ItemId()]
-			if found && seenSlot != slot && !slices.Contains(job.suppressSlotCheck, item.ItemId()) {
-				panic("duplicate in non-matching slot " + item.CreateString())
+			if found && seenSlot != slot {
+				panic("duplicate item in different slots " + item.CreateString() + " in set " + param.Label)
 			} else if !found {
 				seen[item.ItemId()] = slot
 			}
 		}
 	}
+
+	// OLD VERSION checked across all sets
+	// seen := make(map[items.ItemId]items.SlotEquip)
+	// for paramIndex := range job.params {
+	// 	for slot, item := range job.params[paramIndex].itemOptions.AllItemsWithSlot() {
+	// 		seenSlot, found := seen[item.ItemId()]
+	// 		if found && seenSlot != slot && !slices.Contains(job.suppressSlotCheck, item.ItemId()) {
+	// 			panic("duplicate in non-matching slot " + item.CreateString())
+	// 		} else if !found {
+	// 			seen[item.ItemId()] = slot
+	// 		}
+	// 	}
+	// }
 }
 
 func (param *MultiSetParam) runBaseline() {

@@ -1,6 +1,7 @@
 package items
 
 import (
+	"paladin_gearing_go/stats"
 	. "paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
@@ -57,6 +58,16 @@ func FullItemSet_FromSolved(solvedSet SolvableItemSet, optionsMap *FullOptionsMa
 		}
 	}
 	return FullItemSet{items: fullMap, total: solvedSet.total}
+}
+
+func FullItemSet_FromMap(equipMap FullEquipMap) FullItemSet {
+	itemSet := FullItemSet{equipMap, StatBlock{}}
+	for _, item := range equipMap {
+		if item != nil {
+			stats.StatBlock_Increment_Mutating(&itemSet.total, &item.total)
+		}
+	}
+	return itemSet
 }
 
 func (itemSet *FullItemSet) PrintStats(printer *util.PrintRecorder) {

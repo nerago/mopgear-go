@@ -3,19 +3,17 @@ package multi
 import (
 	"iter"
 	"log"
-	"maps"
 	"math/big"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/solver"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"strconv"
 	"strings"
 )
 
-type CommonComboOptions map[items.ItemId][]items.FullItem
+type commonComboOptions map[items.ItemId][]items.FullItem
 
-func (optionsMap *CommonComboOptions) TotalCombinationCount() *big.Int {
+func (optionsMap *commonComboOptions) TotalCombinationCount() *big.Int {
 	valueCount := 0
 	total := big.NewInt(1)
 	for _, slotArray := range *optionsMap {
@@ -31,20 +29,21 @@ func (optionsMap *CommonComboOptions) TotalCombinationCount() *big.Int {
 	return total
 }
 
-func (job *MultiSetJob) determineCommon() CommonComboOptions {
+func (job *MultiSetJob) determineCommon() commonComboOptions {
 	commonOptions, seenIn := searchParamOptions(&job.params)
 
 	applyFixedForges(job.fixedForge, &commonOptions, job.printer)
+	checkItemRates(job.specificAllowRates, &commonOptions)
 
-	removeSingleSetItems(seenIn, &commonOptions, job.fixedForge)
+	removeSingleSetItems(seenIn, &commonOptions, job.fixedForge, job.specificAllowRates)
 
 	printCommons(seenIn, commonOptions, job.printer)
 
 	return commonOptions
 }
 
-func searchParamOptions(params *[]MultiSetParam) (CommonComboOptions, map[items.ItemId][]string) {
-	commonOptions := make(CommonComboOptions)
+func searchParamOptions(params *[]MultiSetParam) (commonComboOptions, map[items.ItemId][]string) {
+	commonOptions := make(commonComboOptions)
 	seenIn := make(map[items.ItemId][]string)
 
 	for paramIndex := range *params {
@@ -95,7 +94,7 @@ func filterCommonForges(prior []items.FullItem, newOptions []items.FullItem) []i
 	return result
 }
 
-func applyFixedForges(fixedForge map[items.ItemId]stats.ReforgeRecipe, commonOptions *CommonComboOptions, printer *util.PrintRecorder) {
+func applyFixedForges(fixedForge map[items.ItemId]stats.ReforgeRecipe, commonOptions *commonComboOptions, printer *util.PrintRecorder) {
 	for itemId, reforge := range fixedForge {
 		options, ok := (*commonOptions)[itemId]
 		if ok {
@@ -104,6 +103,15 @@ func applyFixedForges(fixedForge map[items.ItemId]stats.ReforgeRecipe, commonOpt
 			printer.Printf("FIXED %s\n", choice.CreateString())
 		} else {
 			log.Panicf("fixed forge not seen in set options for item %d", itemId)
+		}
+	}
+}
+
+func checkItemRates(allowRates map[items.ItemId]float32, commonOptions *commonComboOptions) {
+	for itemId := range allowRates {
+		_, ok := (*commonOptions)[itemId]
+		if !ok {
+			log.Panicf("item rate not seen in set options %d", itemId)
 		}
 	}
 }
@@ -117,10 +125,15 @@ func onlyMatchingForge(options []items.FullItem, reforge stats.ReforgeRecipe, it
 	panic("fixed forge selection not available for item " + strconv.Itoa(int(itemId)))
 }
 
-func removeSingleSetItems(seenIn map[items.ItemId][]string, commonOptions *CommonComboOptions, fixedForge map[items.ItemId]stats.ReforgeRecipe) {
+func removeSingleSetItems(seenIn map[items.ItemId][]string, commonOptions *commonComboOptions, fixedForge map[items.ItemId]stats.ReforgeRecipe, specificRates map[items.ItemId]float32) {
 	for itemId, whereSeen := range seenIn {
 		_, isFixed := fixedForge[itemId]
 		if isFixed {
+			continue
+		}
+
+		_, isSpecific := specificRates[itemId]
+		if isSpecific {
 			continue
 		}
 
@@ -130,7 +143,7 @@ func removeSingleSetItems(seenIn map[items.ItemId][]string, commonOptions *Commo
 	}
 }
 
-func printCommons(seenIn map[items.ItemId][]string, commonOptions CommonComboOptions, printer *util.PrintRecorder) {
+func printCommons(seenIn map[items.ItemId][]string, commonOptions commonComboOptions, printer *util.PrintRecorder) {
 	for itemId, options := range commonOptions {
 		if len(options) == 0 {
 			log.Panicf("no common forge for %d", itemId)
@@ -144,31 +157,38 @@ func printCommons(seenIn map[items.ItemId][]string, commonOptions CommonComboOpt
 	}
 }
 
-func printChosenCombo(combo CommonCombo, printer *util.PrintRecorder) {
-	for _, item := range combo {
-		printer.Printf("COMMON %s\n", item.CreateString())
-	}
-	for _, item := range combo {
-		if item.Reforge.IsEmpty() {
-			printer.Printf("common[%d] = stats.ReforgeRecipe_empty\n", item.ItemId())
+func printChosenCombo(combo commonCombo, printer *util.PrintRecorder) {
+	for itemId, entry := range combo.entryMap {
+		if entry.Forbidden {
+			printer.Printf("COMMON %d forbidden\n", itemId)
 		} else {
-			printer.Printf("common[%d] = stats.ReforgeRecipe{From: stats.%s, To: stats.%s}\n", item.ItemId(), item.Reforge.From.EnumName(), item.Reforge.To.EnumName())
+			printer.Printf("COMMON %s\n", entry.Item.CreateString())
+		}
+	}
+	for _, entry := range combo.entryMap {
+		if !entry.Forbidden {
+			item := entry.Item
+			if item.Reforge.IsEmpty() {
+				printer.Printf("common[%d] = stats.ReforgeRecipe_empty\n", item.ItemId())
+			} else {
+				printer.Printf("common[%d] = stats.ReforgeRecipe{From: stats.%s, To: stats.%s}\n", item.ItemId(), item.Reforge.From.EnumName(), item.Reforge.To.EnumName())
+			}
 		}
 	}
 }
 
-func (job *MultiSetJob) revisedComboActuallyUsed(outputs []solver.SolveOutput, initialCombo CommonCombo, printer *util.PrintRecorder) CommonCombo {
+func (job *MultiSetJob) revisedComboActuallyUsed(outputs []singleProposed, initialCombo commonCombo, printer *util.PrintRecorder) commonCombo {
 	printer.Printf("REVISED COMMON")
 
 	grouped := make(map[items.ItemId][]*items.FullItem)
 	for index := range outputs {
-		for item := range outputs[index].FullSet.Items().AllItemSeq() {
+		for item := range outputs[index].fullSet.Items().AllItemSeq() {
 			grouped[item.ItemId()] = append(grouped[item.ItemId()], item)
 		}
 	}
 
-	revisedCombo := maps.Clone(initialCombo)
-	for itemId := range revisedCombo {
+	revisedCombo := initialCombo.clone()
+	for itemId := range revisedCombo.entryMap {
 		groupArray, hasGroup := grouped[itemId]
 		_, hasFixedForge := job.fixedForge[itemId]
 
@@ -176,7 +196,7 @@ func (job *MultiSetJob) revisedComboActuallyUsed(outputs []solver.SolveOutput, i
 		if shouldRemove && hasFixedForge {
 			printer.Printf("WOULD REMOVE COMMON BUT HAS fixedForge %d\n", itemId)
 		} else if shouldRemove {
-			delete(revisedCombo, itemId)
+			delete(revisedCombo.entryMap, itemId)
 		}
 	}
 

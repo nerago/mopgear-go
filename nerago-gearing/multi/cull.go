@@ -9,7 +9,7 @@ import (
 	"slices"
 )
 
-func (job *MultiSetJob) SuggestCulls(targetCount uint64, topCapture int) {
+func (job *MultiSetJob) SuggestCulls(targetCount uint64, topCapture uint64) {
 	topTracker := util.TrackProgress_Start()
 	topTracker.RunOuterTracking(2)
 	defer topTracker.Stop()
@@ -20,29 +20,17 @@ func (job *MultiSetJob) SuggestCulls(targetCount uint64, topCapture int) {
 	job.cullingReport()
 }
 
-func (job *MultiSetJob) listInitialOutputs(bestOutputs []MultiProposedOutput) {
+func (job *MultiSetJob) listInitialOutputs(bestOutputs []multiProposedOutput) {
 	for _, best := range bestOutputs {
-		job.printer.Printf("::::::::: MULTI RATING %d :::::::: %s ::::::::\n", best.TotalRatingSum, best.Id)
-		for i, out := range best.Outputs {
+		job.printer.Printf("::::::::: MULTI RATING %d :::::::: %s ::::::::\n", best.totalRatingSum, best.id)
+		for i, out := range best.parts {
 			job.printer.Println(job.params[i].Label)
 			out.Report(job.printer)
 		}
 	}
 }
 
-func (job *MultiSetJob) runForTopN(targetCount uint64, topCapture int, trackProgress *util.TrackProgress) []MultiProposedOutput {
-	job.prepareInitial()
-	commonOptions := job.determineCommon()
-
-	comboChannel := job.makeCommonChannel(commonOptions, targetCount, trackProgress)
-	proposedChannel := job.makeProposedChannel(comboChannel)
-	bestOutputs := job.evalutateTopN(proposedChannel, topCapture)
-
-	trackProgress.Stop()
-	return bestOutputs
-}
-
-func (job *MultiSetJob) cullingMakeRevisions(proposedList []MultiProposedOutput, trackProgress *util.TrackProgress) {
+func (job *MultiSetJob) cullingMakeRevisions(proposedList []multiProposedOutput, trackProgress *util.TrackProgress) {
 	job.printer.Printf("MAKE REVISIONS FOR %d\n", len(proposedList))
 
 	expectedSets := len(proposedList) * len(job.params) * revisedExtraSetsExpectedEach
@@ -51,25 +39,28 @@ func (job *MultiSetJob) cullingMakeRevisions(proposedList []MultiProposedOutput,
 
 	type bestOption struct {
 		specIndex int
-		set *items.FullItemSet
+		set       *items.FullItemSet
 	}
 
-	optionChannel := channel_op.IterateEach_SliceToChannel(generateThreadCount, proposedList, func(prior *MultiProposedOutput, downstream chan<- bestOption) {
+	optionChannel := channel_op.IterateEach_SliceToChannel(generateThreadCount, proposedList, func(prior *multiProposedOutput, downstream chan<- bestOption) {
 		printer := util.PrintRecorder_HoldAll()
-		revisedCommon := job.revisedComboActuallyUsed(prior.Outputs, prior.Combo, printer)
-		for i := range prior.Outputs {
-			draft := &prior.Outputs[i]
+		printer.Printf(">>> PREP REVISIONS %s\n", prior.id)
+		revisedCommon := job.revisedComboActuallyUsed(prior.parts, prior.combo, printer)
+		for i := range prior.parts {
+			draft := &prior.parts[i]
 			param := &job.params[i]
 
-			param.seenInSolutions.Add(&draft.FullSet)
-			downstream <- bestOption{i, &draft.FullSet}
+			param.seenInSolutions.Add(&draft.fullSet)
+			downstream <- bestOption{i, &draft.fullSet}
 
 			revised := job.makeRevised(param, revisedCommon, trackProgress, printer)
 			for _, newOutput := range revised {
-				param.seenInSolutions.Add(&newOutput.FullSet)
-				downstream <- bestOption{i, &draft.FullSet}
+				param.seenInSolutions.Add(&newOutput.fullSet)
+				downstream <- bestOption{i, &draft.fullSet}
 			}
 		}
+		printer.Println0()
+		printer.Println0()
 		job.printer.AppendOther(printer)
 	})
 

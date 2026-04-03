@@ -37,6 +37,14 @@ func (optionsMap *FullOptionsMap) IncludesItemIdInSlot(itemId ItemId, slot SlotE
 	return false
 }
 
+func (optionsMap *FullOptionsMap) SlotGroupedByItemId(slot SlotEquip) map[ItemId][]*FullItem {
+	grouped := make(map[ItemId][]*FullItem)
+	for _, item := range optionsMap[slot] {
+		grouped[item.ItemId()] = append(grouped[item.ItemId()], &item)
+	}
+	return grouped
+}
+
 func (optionsMap *FullOptionsMap) IncludesItemNameInSlot(itemName string, slot SlotEquip) bool {
 	for _, item := range optionsMap[slot] {
 		if item.BaseName == itemName {

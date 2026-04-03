@@ -62,12 +62,12 @@ func TransformEach_ChannelToChannel[T any, R any](threadCount int, inputChannel 
 	return outputChannel
 }
 
-func TransformAll_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, transformAll func(<-chan T, chan<- R)) <-chan R {
+func TransformAll_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, transformAll func(int, <-chan T, chan<- R)) <-chan R {
 	var waitGroup sync.WaitGroup
 	outputChannel := makeOutputChannel[R]()
-	for range threadCount {
+	for threadNum := range threadCount {
 		waitGroup.Go(func() {
-			transformAll(inputChannel, outputChannel)
+			transformAll(threadNum, inputChannel, outputChannel)
 		})
 	}
 	go func() {

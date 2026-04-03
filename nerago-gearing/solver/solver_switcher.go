@@ -119,13 +119,13 @@ func (output *SolveOutput) Report(printer *util.PrintRecorder) {
 		fullSet := output.FullSet
 		rating := output.ResultRating
 		printer.Println(output.OutputId)
-		reportSet(printer, fullSet, rating, output.Input.Model)
+		ReportSet(printer, fullSet, rating, output.Input.Model)
 	} else {
 		printer.Printf("SET SOLVE FAILED\n")
 	}
 }
 
-func reportSet(printer *util.PrintRecorder, fullSet items.FullItemSet, rating uint64, model *model.Model) {
+func ReportSet(printer *util.PrintRecorder, fullSet items.FullItemSet, rating uint64, model *model.Model) {
 	printer.Printf("SET OUTPUT rating %d\n", rating)
 	printer.Printf("BONUS %.2f\n", model.SetBonus.CalcBonusFull(fullSet.Items()))
 	fullSet.PrintStats(printer)

@@ -14,7 +14,7 @@ type internalEntry[T any] struct {
 type collectorNInternal[T any] struct {
 	array       []internalEntry[T]
 	worst       uint64
-	size, limit int
+	size, limit uint64
 }
 
 type CollectorN[T any] interface {
@@ -29,7 +29,7 @@ type LowestCollectorN[T any] struct {
 	equals func(a, b *T) bool
 }
 
-func LowestCollector_ForN[T any](limit int, equals func(a, b *T) bool) LowestCollectorN[T] {
+func LowestCollector_ForN[T any](limit uint64, equals func(a, b *T) bool) LowestCollectorN[T] {
 	return LowestCollectorN[T]{
 		collectorNInternal[T]{
 			array: make([]internalEntry[T], 0, limit),
@@ -68,7 +68,7 @@ func (collect *LowestCollectorN[T]) Merge_Mutating(other *LowestCollectorN[T]) {
 		collect.array = append(collect.array, other.array...)
 		collect.sortContent()
 
-		arrayTotal := len(collect.array)
+		arrayTotal := uint64(len(collect.array))
 		if arrayTotal > collect.limit {
 			collect.array = collect.array[arrayTotal-collect.limit : arrayTotal]
 			collect.size = collect.limit
@@ -115,7 +115,7 @@ type HighestCollectorN[T any] struct {
 	equals func(a, b *T) bool
 }
 
-func HighestCollector_ForN[T any](limit int, equals func(a, b *T) bool) HighestCollectorN[T] {
+func HighestCollector_ForN[T any](limit uint64, equals func(a, b *T) bool) HighestCollectorN[T] {
 	return HighestCollectorN[T]{
 		collectorNInternal[T]{
 			array: make([]internalEntry[T], 0, limit),
@@ -132,6 +132,7 @@ func (collect *HighestCollectorN[T]) sortContent() {
 	collect.array = slices.CompactFunc(collect.array, func(a, b internalEntry[T]) bool {
 		return a.value == b.value && collect.equals(a.object, b.object)
 	})
+	// TODO consider util.RemoveDuplicatesFunc()
 }
 
 func (collect *HighestCollectorN[T]) Offer(object *T, value uint64) {
@@ -154,7 +155,7 @@ func (collect *HighestCollectorN[T]) Merge_Mutating(other *HighestCollectorN[T])
 		collect.array = append(collect.array, other.array...)
 		collect.sortContent()
 
-		arrayTotal := len(collect.array)
+		arrayTotal := uint64(len(collect.array))
 		if arrayTotal > collect.limit {
 			collect.array = collect.array[arrayTotal-collect.limit : arrayTotal]
 			collect.size = collect.limit

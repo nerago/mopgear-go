@@ -1,19 +1,68 @@
 package multi
 
 import (
+	"maps"
 	"math/big"
 	"math/rand"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 	"sync"
 )
 
 const additionalSetEach uint64 = 64
 const additionalThreads uint64 = 2
 
-type CommonCombo map[items.ItemId]items.FullItem
+type commonComboEntry struct {
+	Item      *items.FullItem
+	Forbidden bool
+}
 
-func (job *MultiSetJob) makeCommonChannel(commonOptions CommonComboOptions, targetCount uint64, trackProgress *util.TrackProgress) <-chan CommonCombo {
+type commonCombo struct {
+	entryMap     map[items.ItemId]commonComboEntry
+	allowChoices map[items.ItemId]bool
+}
+
+func CommonCombo_Make(len int) commonCombo {
+	return commonCombo{
+		make(map[items.ItemId]commonComboEntry, len),
+		make(map[items.ItemId]bool, len),
+	}
+}
+
+func (combo *commonCombo) addItem(itemId items.ItemId, item *items.FullItem) {
+	combo.entryMap[itemId] = commonComboEntry{Item: item}
+}
+
+func (combo *commonCombo) hasItem(itemId items.ItemId) bool {
+	_, has := combo.entryMap[itemId]
+	return has
+}
+
+func (combo *commonCombo) setAllow(itemId items.ItemId, allow bool) {
+	combo.allowChoices[itemId] = allow
+	if !allow {
+		combo.entryMap[itemId] = commonComboEntry{Forbidden: true}
+	}
+}
+
+func (combo *commonCombo) getValues(itemId items.ItemId) (bool, bool, *items.FullItem) {
+	entry, hasEntry := combo.entryMap[itemId]
+	if hasEntry {
+		return true, !entry.Forbidden, entry.Item
+	} else {
+		return false, false, nil
+	}
+}
+
+func (combo *commonCombo) clone() commonCombo {
+	return commonCombo{
+		maps.Clone(combo.entryMap),
+		maps.Clone(combo.allowChoices),
+	}
+}
+
+func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targetCount uint64, trackProgress *util.TrackProgress) <-chan commonCombo {
 	counters := make([]uint64, generateThreadCount+additionalThreads)
 	additionalCount := additionalSetEach * additionalThreads
 
@@ -24,12 +73,12 @@ func (job *MultiSetJob) makeCommonChannel(commonOptions CommonComboOptions, targ
 		eachThreadCount = additionalSetEach
 	}
 
-	job.printer.Printf("MAKE COMMON %d %d %d\n", targetCount, additionalCount, eachThreadCount)
+	job.printer.Printf("MAKE COMMON total=%d additional=%d eachThread=%d\n", targetCount, additionalCount, eachThreadCount)
 
 	trackProgress.RunFromArray(&counters, targetCount)
 
 	var waitGroup sync.WaitGroup
-	comboChannel := make(chan CommonCombo)
+	comboChannel := make(chan commonCombo)
 	waitGroup.Go(func() { makeBaselineWorker(&job.params, commonOptions, &counters[0], comboChannel) })
 	waitGroup.Go(func() { makeEquippedWorker(&job.params, commonOptions, &counters[1], comboChannel) })
 
@@ -40,19 +89,24 @@ func (job *MultiSetJob) makeCommonChannel(commonOptions CommonComboOptions, targ
 		waitGroup.Wait()
 		close(comboChannel)
 	}()
-	return comboChannel
+
+	if len(job.specificAllowRates) > 0 {
+		return applyAllowRate(job.specificAllowRates, comboChannel)
+	} else {
+		return comboChannel
+	}
 }
 
-func makeBaselineWorker(params *[]MultiSetParam, commonOptions CommonComboOptions, doneCounter *uint64, comboChannel chan<- CommonCombo) {
+func makeBaselineWorker(params *[]MultiSetParam, commonOptions commonComboOptions, doneCounter *uint64, comboChannel chan<- commonCombo) {
 	rng := rand.New(rand.NewSource(0xBA5E))
 	for paramIndex := range *params {
 		param := &(*params)[paramIndex]
 		for range additionalSetEach {
-			combo := make(CommonCombo)
+			combo := CommonCombo_Make(len(commonOptions) + len(param.baselineResult.FullSet.Items()))
 
 			// copy what items are in baseline set
 			for item := range param.baselineResult.FullSet.Items().AllItemSeq() {
-				combo[item.ItemId()] = *item
+				combo.addItem(item.ItemId(), item)
 			}
 
 			fillOutRemainingOptions(commonOptions, combo, rng)
@@ -63,16 +117,16 @@ func makeBaselineWorker(params *[]MultiSetParam, commonOptions CommonComboOption
 	}
 }
 
-func makeEquippedWorker(params *[]MultiSetParam, commonOptions CommonComboOptions, doneCounter *uint64, comboChannel chan<- CommonCombo) {
+func makeEquippedWorker(params *[]MultiSetParam, commonOptions commonComboOptions, doneCounter *uint64, comboChannel chan<- commonCombo) {
 	rng := rand.New(rand.NewSource(0xE819))
 	for paramIndex := range *params {
 		param := &(*params)[paramIndex]
 		for range additionalSetEach {
-			combo := make(CommonCombo)
+			combo := CommonCombo_Make(len(commonOptions) + len(param.exactEquippedGear))
 
 			// copy what items are in equipped set
 			for item := range param.exactEquippedGear.AllItemSeq() {
-				combo[item.ItemId()] = *item
+				combo.addItem(item.ItemId(), item)
 			}
 
 			fillOutRemainingOptions(commonOptions, combo, rng)
@@ -83,17 +137,16 @@ func makeEquippedWorker(params *[]MultiSetParam, commonOptions CommonComboOption
 	}
 }
 
-func fillOutRemainingOptions(commonOptions CommonComboOptions, combo CommonCombo, rng *rand.Rand) {
+func fillOutRemainingOptions(commonOptions commonComboOptions, combo commonCombo, rng *rand.Rand) {
 	for itemId, options := range commonOptions {
-		_, alreadySet := combo[itemId]
-		if !alreadySet {
+		if !combo.hasItem(itemId) {
 			index := rng.Intn(len(options))
-			combo[itemId] = options[index]
+			combo.addItem(itemId, &options[index])
 		}
 	}
 }
 
-func combinationCount(options CommonComboOptions) *big.Int {
+func combinationCount(options commonComboOptions) *big.Int {
 	valueCount := 0
 	total := big.NewInt(1)
 	for _, slotArray := range options {
@@ -107,4 +160,34 @@ func combinationCount(options CommonComboOptions) *big.Int {
 		panic("empty options")
 	}
 	return total
+}
+
+func applyAllowRate(specificAllowRates map[items.ItemId]float32, comboChannel chan commonCombo) <-chan commonCombo {
+	if len(specificAllowRates) == 1 {
+		itemId, rate := util.MapFirstEntry(specificAllowRates)
+		return channel_op.TransformAll_ChannelToChannel(generateThreadCount, comboChannel,
+			func(threadNum int, inChan <-chan commonCombo, outChan chan<- commonCombo) {
+				rng := rand.New(rand.NewSource(int64(threadNum)))
+				for combo := range inChan {
+					applyAllowEntry(itemId, rate, &combo, rng)
+					outChan <- combo
+				}
+			})
+	} else {
+		return channel_op.TransformAll_ChannelToChannel(generateThreadCount, comboChannel,
+			func(threadNum int, inChan <-chan commonCombo, outChan chan<- commonCombo) {
+				rng := rand.New(rand.NewSource(int64(threadNum)))
+				for combo := range inChan {
+					for itemId, rate := range specificAllowRates {
+						applyAllowEntry(itemId, rate, &combo, rng)
+					}
+					outChan <- combo
+				}
+			})
+	}
+}
+
+func applyAllowEntry(itemId items.ItemId, rate float32, combo *commonCombo, rng *rand.Rand) {
+	allow := rng.Float32() < rate
+	combo.setAllow(itemId, allow)
 }
