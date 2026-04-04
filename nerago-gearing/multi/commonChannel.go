@@ -131,8 +131,8 @@ func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targ
 
 	var waitGroup sync.WaitGroup
 	comboChannel := make(chan commonCombo)
-	// waitGroup.Go(func() { makeBaselineWorker(job.params, commonOptions, &counters[0], comboChannel) })
-	// waitGroup.Go(func() { makeEquippedWorker(job.params, commonOptions, &counters[1], comboChannel) })
+	waitGroup.Go(func() { makeBaselineWorker(job.params, commonOptions, &counters[0], comboChannel) })
+	waitGroup.Go(func() { makeEquippedWorker(job.params, commonOptions, &counters[1], comboChannel) })
 
 	makeRandomThreads(&waitGroup, commonOptions, generateThreadCount/2, eachThreadCount, counters[2:2+generateThreadCount/2], comboChannel)
 	makeOverflowThreads(&waitGroup, commonOptions, generateThreadCount/2, eachThreadCount, counters[2+generateThreadCount/2:], comboChannel)
@@ -215,6 +215,7 @@ func combinationCount(options commonComboOptions) *big.Int {
 }
 
 func applyAllowRate(specificAllowRates map[items.ItemId]float32, comboChannel chan commonCombo) <-chan commonCombo {
+	// TODO consider special handling if it came from an equipped set etc
 	if len(specificAllowRates) == 1 {
 		itemId, rate := util.MapFirstEntry(specificAllowRates)
 		return channel_op.TransformAll_ChannelToChannel(generateThreadCount, comboChannel,

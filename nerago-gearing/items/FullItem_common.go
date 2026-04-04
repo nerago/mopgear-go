@@ -69,6 +69,12 @@ func (itemSet *FullItemSet) ValidateItemRules() {
 
 	checkPairedSlotNoDuplicate(itemSet.items.Get(Equip_Ring1), itemSet.items.Get(Equip_Ring2))
 	checkPairedSlotNoDuplicate(itemSet.items.Get(Equip_Trinket1), itemSet.items.Get(Equip_Trinket2))
+
+	for slot := Equip_Head; slot <= Equip_Weapon; slot++ {
+		if !itemSet.items.Has(slot) {
+			panic("unexpected empty slot " + slot.Name())
+		}
+	}
 }
 
 func checkPairedSlotNoDuplicate(a, b *FullItem) {

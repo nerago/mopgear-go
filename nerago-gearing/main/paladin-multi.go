@@ -27,28 +27,28 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95140, // shado assault band
 		86957, // heroic bladed tempest ring
 		95513, // scaled tyrant normal
-		94462, // pvp ring
+		// 94462, // pvp ring REMOVE1
 		96481, // durumu tentacle heroic
 
 		87015, // heroic clawfeet
 		86979, // heroic impaling treads
 		87024, // null greathelm
-		86955, // heroic overwhelm assault belt
+		// 86955, // heroic overwhelm assault belt REMOVE1
 		94726, // cloudbreaker belt normal
 		96373, // cloudbreaker belt heroic
 		96478, // treads of the blind heroic
 
-		95535, // normal lightning legs
+		// 95535, // normal lightning legs REMOVE1
 		94773, // centripetal shoulders normal
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
-		95098, // Sightblinder Shoulderguards
+		// 95098, // Sightblinder Shoulderguards REMOVE1
 		// 95778, // golden golem celestial [would need gem, but otherwise good]
 
 		85343, // white tiger battleplate t14
 		96447, // rot-proof greatplate
 		87100, // White Tiger Gauntlets
-		// 87101, // White Tiger Helmet [wrong gem]
+		87101, // White Tiger Helmet [wrong gem]
 		// 95292, // prot tier15 head normal [wrong gem] // TODO meta gem model
 
 		95910, // ret tier15 chest celestial
@@ -60,6 +60,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95142, // striker's battletags
 		95205, // terra-cotta neck
 		94776, // primal turtle amulet
+		95178, // lootraptor amulet
 
 		87145, // defiled earth
 		94820, // caustic spike bracers
@@ -82,7 +83,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		ForceUpgradeExistingItems: 2,
 	}
 	protDps.AddExtraItems([]items.ItemId{
-		86957, // heroic bladed tempest ring
+		86957, // heroic bladed tempest ring REMOVE1
 		95140, // shado assault band
 		95513, // scaled tyrant normal
 		96481, // durumu tentacle heroic
@@ -95,33 +96,33 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		98147, // pre-legend strength dps
 
-		96428, // shell-coated wrists
-		96447, // rot-proof greatplate
+		96428, // shell-coated wrists  REMOVE1
+		// 96447, // rot-proof greatplate REMOVE1
 
-		86955, // heroic overwhelm assault belt
+		// 86955, // heroic overwhelm assault belt REMOVE1
 		95535, // normal lightning legs
 		94773, // centripetal shoulders normal
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
 		96478, // treads of the blind heroic
 		95153, // Tyrant King Battleplate
-		95778, // golden golem celestial [would need gem, acceptable]
+		// 95778, // crown golden golem celestial [would need gem, acceptable]
 
-		// 95912, // ret tier15 celestial head (don't have yet)
+		95912, // ret tier15 celestial head (don't have yet)
 		95910, // ret tier15 chest celestial
 		95281, // ret tier15 gloves normal
 		96657, // ret tier15 legs heroic
 		96658, // ret tier15 shoulder heroic
 
-		95290, // prot tier15 chest normal
-		95291, // prot tier15 hand normal
-		95292, // prot tier15 head normal
+		// 95290, // prot tier15 chest normal
+		// 95291, // prot tier15 hand normal
+		// 95292, // prot tier15 head normal [defensive gem, avoid]
 		96667, // prot tier15 leg heroic
 		96668, // prot tier15 shoulder heroic
 
 		95142, // striker's battletags
 		95205, // terra-cotta neck
-		87036, // soulgrasp heroic
+		// 87036, // soulgrasp heroic REMOVE1
 		94776, // primal turtle amulet
 
 		87145, // defiled earth
@@ -153,7 +154,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	}
 	protMitigation.AddExtraItems([]items.ItemId{
 		86979, // heroic impaling treads
-		87015, // heroic clawfeet
+		// 87015, // heroic clawfeet
+		96478, // treads of the blind heroic
 
 		86957, // heroic bladed tempest ring
 		95140, // shado assault band
@@ -161,23 +163,22 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96481, // durumu tentacle heroic
 
 		96373, // cloudbreaker belt heroic
-		86955, // heroic overwhelm assault belt
+		// 86955, // heroic overwhelm assault belt REMOVE1
 
 		98146, // pre-legend strength tank
 
-		95535, // normal lightning legs
-		94773, // centripetal shoulders normal
+		// 95535, // normal lightning legs
+		// 94773, // centripetal shoulders normal
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
-		96478, // treads of the blind heroic
 
 		96428, // shell-coated wrists
 		96447, // rot-proof greatplate
 
-		95910, // ret tier15 chest celestial   OFF
-		95281, // ret tier15 gloves normal    OFF
-		96657, // ret tier15 legs heroic   ALLOW
-		96658, // ret tier15 shoulder heroic  OFF
+		// 95910, // ret tier15 chest celestial   REMOVE12
+		95281, // ret tier15 gloves normal    REMOVE12
+		96657, // ret tier15 legs heroic   REMOVE1
+		96658, // ret tier15 shoulder heroic  REMOVE1
 
 		95291, // prot tier15 hand normal
 		95290, // prot tier15 chest normal
@@ -188,7 +189,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95142, // striker's battletags
 		95205, // terra-cotta neck
 		95178, // lootraptor amulet
-		94776, // primal turtle amulet
+		// 94776, // primal turtle amulet
 
 		87145, // defiled earth
 		94820, // caustic spike bracers
@@ -209,16 +210,17 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddSuppressSlotCheck(95140) // Band of the Shado-Pan Assault
 	// job.AddSuppressSlotCheck(96481) // Durumu's Severed Tentacle
 
-	job.AddSpecificAllowRate(94527, 0.25) // ji-kun trinket
+	job.AddSpecificAllowRate(94527, 0.30) // ji-kun trinket
 
 	// job.AddSuppressSlotCheck(94529) // Gaze of the Twins
 	// job.AddSuppressSlotCheck(94527) // Ji-Kun's Rising Winds
 
 	// job.SuggestCulls(100, 2)
-	job.SuggestCulls(1000, 40)
+	// job.SuggestCulls(1000, 40)
 	//job.SuggestCulls(5000, 10)
 	// job.SuggestCulls(10000, 100)
 	// job.SuggestCulls(25000, 150)
+	job.SuggestCulls(150000, 200)
 
 	// job.FindTopAndPassToSim(50, 2, simulate.RunSize_Medium)
 	// job.FindTopAndPassToSim(150000, 50, simulate.RunSize_Medium)

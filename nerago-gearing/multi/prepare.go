@@ -51,6 +51,8 @@ func (param *MultiSetParam) prepareStartingGear() {
 }
 
 func (param *MultiSetParam) prepareExtraItems() {
+	param.job.printer.Println(param.Label)
+
 	for _, itemId := range param.extraItems {
 		param.includeExtra(itemId)
 	}
@@ -121,6 +123,10 @@ func (param *MultiSetParam) tryAddExtraFromBags(equipped *loaders.EquippedItem) 
 			return
 		}
 
+		if param.copyExtraFromOtherSpec(equipped.ItemId) {
+			return
+		}
+
 		// bags file doesn't have upgrade steps
 		equipped.UpgradeStep = param.ExtraUpgradeLevel
 
@@ -150,6 +156,8 @@ func (param *MultiSetParam) extraLoadAndGenerate(itemId items.ItemId) {
 }
 
 func (param *MultiSetParam) restrictFixed() {
+	param.job.printer.Println(param.Label)
+
 	// actual fixed slot stuff
 	for slot, itemId := range param.fixedSlots {
 		if !param.itemOptions.Has(slot) {

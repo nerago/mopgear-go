@@ -88,6 +88,8 @@ func filterCommonForges(prior []items.FullItem, newOptions []items.FullItem) []i
 		for _, two := range newOptions {
 			if one.EqualsExceptEnchant(&two) { // essentially just choose first one
 				result = append(result, one)
+			} else if one.Ref.ItemId == two.Ref.ItemId && one.Ref.ItemLevel != two.Ref.ItemLevel {
+				panic("inconsistent item levels " + one.CreateString() + " and " + two.CreateString())
 			}
 		}
 	}
