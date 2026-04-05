@@ -7,16 +7,16 @@ import (
 	"sync"
 )
 
-func makeOverflowThreads(waitGroup *sync.WaitGroup, commonOptions commonComboOptions, threadCount uint64, eachThreadCount uint64, counters []uint64, comboChannel chan<- commonCombo) {
+func makeOverflowThreads(waitGroup *sync.WaitGroup, commonOptions commonComboOptions, threadCount uint64, eachThreadCount uint64, comboChannel chan<- commonCombo) {
 	skip := chooseSkip_PrimeAndIsntSlotSize(commonOptions, threadCount*eachThreadCount)
 	for threadNum := range threadCount {
 		waitGroup.Go(func() {
-			evaluateOverflowWorker(commonOptions, eachThreadCount, threadNum, skip, &counters[threadNum], comboChannel)
+			evaluateOverflowWorker(commonOptions, eachThreadCount, threadNum, skip, comboChannel)
 		})
 	}
 }
 
-func evaluateOverflowWorker(commonOptions commonComboOptions, loopCount uint64, threadNum uint64, skip *big.Int, doneCounter *uint64, comboChannel chan<- commonCombo) {
+func evaluateOverflowWorker(commonOptions commonComboOptions, loopCount uint64, threadNum uint64, skip *big.Int, comboChannel chan<- commonCombo) {
 	indexes := make(map[items.ItemId]uint32, len(commonOptions))
 
 	initialSkip := big.NewInt(int64(threadNum * loopCount))
@@ -26,7 +26,6 @@ func evaluateOverflowWorker(commonOptions commonComboOptions, loopCount uint64, 
 	for range loopCount {
 		combo := makeComboAndAdvance(commonOptions, indexes, skip)
 		comboChannel <- combo
-		*doneCounter++
 	}
 }
 

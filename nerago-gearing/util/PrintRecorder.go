@@ -48,18 +48,18 @@ func (print *PrintRecorder) outputString(str string) {
 
 func (print *PrintRecorder) Println0() {
 	print.mutex.Lock()
+	defer print.mutex.Unlock()
 
 	if print.holdOutput {
 		print.builder.WriteRune('\n')
 	} else {
 		print.outputNewline()
 	}
-
-	print.mutex.Unlock()
 }
 
 func (print *PrintRecorder) Println(str string) {
 	print.mutex.Lock()
+	defer print.mutex.Unlock()
 
 	if print.holdOutput {
 		print.builder.WriteString(str)
@@ -68,12 +68,11 @@ func (print *PrintRecorder) Println(str string) {
 		print.outputString(str)
 		print.outputNewline()
 	}
-
-	print.mutex.Unlock()
 }
 
 func (print *PrintRecorder) Printf(format string, args ...any) {
 	print.mutex.Lock()
+	defer print.mutex.Unlock()
 
 	str := fmt.Sprintf(format, args...)
 	if print.holdOutput {
@@ -81,8 +80,6 @@ func (print *PrintRecorder) Printf(format string, args ...any) {
 	} else {
 		print.outputString(str)
 	}
-
-	print.mutex.Unlock()
 }
 
 func (print *PrintRecorder) AppendOther(other *PrintRecorder) {
@@ -91,31 +88,28 @@ func (print *PrintRecorder) AppendOther(other *PrintRecorder) {
 	}
 
 	other.mutex.Lock()
+	defer other.mutex.Unlock()
 	print.mutex.Lock()
+	defer print.mutex.Unlock()
 
 	if print.holdOutput {
 		print.builder.WriteBuilder(other.builder)
 	} else {
 		print.outputBytes(other.builder)
 	}
-
-	print.mutex.Unlock()
-	other.mutex.Unlock()
 }
 
 func (print *PrintRecorder) Close() {
 	print.mutex.Lock()
+	defer print.mutex.Unlock()
 
 	print.file.Close()
+	deleteIfEmpty(print.file.Name())
+}
 
-	// delete if empty
-	logName := print.file.Name()
+func deleteIfEmpty(logName string) {
 	info, err := os.Stat(logName)
-	if err == nil {
-		if info.Size() == 0 {
-			os.Remove(logName)
-		}
+	if err == nil && info.Size() == 0 {
+		os.Remove(logName)
 	}
-
-	print.mutex.Unlock()
 }

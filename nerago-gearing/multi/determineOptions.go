@@ -181,7 +181,7 @@ func printChosenCombo(combo *commonCombo, printer *util.PrintRecorder) {
 }
 
 func (job *MultiSetJob) revisedComboActuallyUsed(outputs []singleProposed, initialCombo *commonCombo, printer *util.PrintRecorder) commonCombo {
-	printer.Println("REVISED COMMON")
+	printer.Println("MAKING REVISED commonCombo")
 
 	grouped := make(map[items.ItemId][]*items.FullItem)
 	for index := range outputs {
@@ -194,10 +194,13 @@ func (job *MultiSetJob) revisedComboActuallyUsed(outputs []singleProposed, initi
 	for itemId := range revisedCombo.entryMap {
 		groupArray, hasGroup := grouped[itemId]
 		_, hasFixedForge := job.fixedForge[itemId]
+		_, hasSpecificRate := job.specificAllowRates[itemId]
 
 		shouldRemove := !hasGroup || len(groupArray) < 2
 		if shouldRemove && hasFixedForge {
 			printer.Printf("WOULD REMOVE COMMON BUT HAS fixedForge %d\n", itemId)
+		} else if shouldRemove && hasSpecificRate {
+			printer.Printf("WOULD REMOVE COMMON BUT HAS specificRate %d\n", itemId)
 		} else if shouldRemove {
 			delete(revisedCombo.entryMap, itemId)
 		}

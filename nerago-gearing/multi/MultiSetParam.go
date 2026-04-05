@@ -77,16 +77,18 @@ type seenMap struct {
 
 func (seen *seenMap) Add(itemSet *items.FullItemSet) {
 	seen.mutex.Lock()
+	defer seen.mutex.Unlock()
+
 	for item := range itemSet.Items().AllItemSeq() {
 		seen.content[item.ItemId()]++
 	}
-	seen.mutex.Unlock()
 }
 
 func (seen *seenMap) Add1000(itemSet *items.FullItemSet) {
 	seen.mutex.Lock()
+	defer seen.mutex.Unlock()
+
 	for item := range itemSet.Items().AllItemSeq() {
 		seen.content[item.ItemId()] += 1000
 	}
-	seen.mutex.Unlock()
 }

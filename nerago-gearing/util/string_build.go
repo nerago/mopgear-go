@@ -1,6 +1,7 @@
 package util
 
 import (
+	"slices"
 	"strconv"
 	"unicode/utf8"
 	"unsafe"
@@ -53,6 +54,8 @@ func (sb *StringBuild2) WriteFloat32(value float32) {
 }
 
 func (sb *StringBuild2) WriteFloat64_RightPadded(value float64, pad int) {
+	*sb = slices.Grow(*sb, pad)
+
 	oldSize := len(*sb)
 	*sb = strconv.AppendFloat(*sb, value, 'f', 1, 64)
 	written := len(*sb) - oldSize

@@ -46,17 +46,22 @@ func TrackProgress_Nop() *TrackProgress {
 
 func (track *TrackProgress) MakeNested() *TrackProgress {
 	track.mutex.Lock()
+	defer track.mutex.Unlock()
 
 	nested := new(TrackProgress)
 	nested.nested = true
 	track.nestedChildList = append(track.nestedChildList, nested)
 
-	track.mutex.Unlock()
 	return nested
+}
+
+func oneFunc() float64 {
+	return 1.0
 }
 
 func (track *TrackProgress) Stop() {
 	track.mutex.Lock()
+	defer track.mutex.Unlock()
 
 	if track.active {
 		track.active = false
@@ -64,14 +69,13 @@ func (track *TrackProgress) Stop() {
 	} else if track.nested {
 		track.nested = false
 		track.nestedChildList = nil
-		track.nestedProgressFunc = func() float64 { return 1.0 }
+		track.nestedProgressFunc = oneFunc
 	}
-
-	track.mutex.Unlock()
 }
 
 func (track *TrackProgress) run(getProgress func() float64) {
 	track.mutex.Lock()
+	defer track.mutex.Unlock()
 
 	if track.active {
 		go func() {
@@ -88,8 +92,6 @@ func (track *TrackProgress) run(getProgress func() float64) {
 	} else if track.nested {
 		track.nestedProgressFunc = getProgress
 	}
-
-	track.mutex.Unlock()
 }
 
 func (track *TrackProgress) RunFromBigInt(current *big.Int, targetCount *big.Int) {
@@ -141,6 +143,7 @@ func (track *TrackProgress) RunOuterTracking(expectedChildCount int) {
 
 func (track *TrackProgress) sumNestedProgress(expectedChildCount int) float64 {
 	track.mutex.RLock()
+	defer track.mutex.RUnlock()
 
 	var overallPercent float64 = 0
 	for _, nested := range track.nestedChildList {
@@ -152,8 +155,6 @@ func (track *TrackProgress) sumNestedProgress(expectedChildCount int) float64 {
 			}
 		}
 	}
-
-	track.mutex.RUnlock()
 
 	return overallPercent
 }

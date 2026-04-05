@@ -11,8 +11,8 @@ func (job *MultiSetJob) runForTopN(targetCount uint64, topCapture uint64, trackP
 	job.prepareInitial()
 	commonOptions := job.determineCommon()
 
-	comboChannel := job.makeCommonChannel(commonOptions, targetCount, trackProgress)
-	proposedChannel := job.makeProposedChannel(comboChannel)
+	comboChannel, comboCount := job.makeCommonChannel(commonOptions, targetCount)
+	proposedChannel := job.makeProposedChannel(comboChannel, comboCount, trackProgress)
 	bestOutputs := job.evalutateTopN(proposedChannel, topCapture)
 
 	trackProgress.Stop()
@@ -75,6 +75,9 @@ func splitHighCollector_make(specificAllowRates map[items.ItemId]float32, topCou
 	}
 
 	for _, count := range splitCount {
+		if count <= 0 {
+			panic("unexpected zero")
+		}
 		collector.highCollectors = append(collector.highCollectors, util_rank.HighestCollector_ForN(count, (*multiProposedOutput).Equals))
 	}
 

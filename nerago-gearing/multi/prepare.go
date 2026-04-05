@@ -241,8 +241,8 @@ func (param *MultiSetParam) runBaseline() {
 		ItemOptions:         &param.itemOptions,
 		Model:               &param.Model,
 		PhasedAcceptable:    param.PhasedAcceptable,
-		EnableTrackProgress: true,
-		SolveSize:           solver.SolveSize_Medium,
+		EnableTrackProgress: true, // TODO integrate tracker?
+		SolveSize:           param.job.solveSizeRevised,
 		Printer:             param.job.printer})
 
 	if !param.baselineResult.Success {

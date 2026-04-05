@@ -5,11 +5,13 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/multi"
+	"paladin_gearing_go/simulate"
+	"paladin_gearing_go/solver"
 	"paladin_gearing_go/util"
 )
 
 func PaladinMultiRun(printer *util.PrintRecorder) {
-	job := multi.MultiSetJob_Create(printer)
+	job := multi.MultiSetJob_Create(printer, solver.SolveSize_PerItem, solver.SolveSize_Medium)
 
 	ret := multi.MultiSetParam{
 		Label:                "Ret",
@@ -60,10 +62,10 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95142, // striker's battletags
 		95205, // terra-cotta neck
 		94776, // primal turtle amulet
-		95178, // lootraptor amulet
+		// 95178, // lootraptor amulet OFF
 
-		87145, // defiled earth
-		94820, // caustic spike bracers
+		// 87145, // defiled earth OFF
+		// 94820, // caustic spike bracers OFF
 		96394, // frozen warlord bracer heroic
 	})
 	// ret.AddBagsExtra()
@@ -96,7 +98,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		98147, // pre-legend strength dps
 
-		96428, // shell-coated wrists  REMOVE1
+		// 96428, // shell-coated wrists  REMOVE12
 		// 96447, // rot-proof greatplate REMOVE1
 
 		// 86955, // heroic overwhelm assault belt REMOVE1
@@ -104,13 +106,13 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94773, // centripetal shoulders normal
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
-		96478, // treads of the blind heroic
+		// 96478, // treads of the blind heroic
 		95153, // Tyrant King Battleplate
 		// 95778, // crown golden golem celestial [would need gem, acceptable]
 
 		95912, // ret tier15 celestial head (don't have yet)
 		95910, // ret tier15 chest celestial
-		95281, // ret tier15 gloves normal
+		// 95281, // ret tier15 gloves normal
 		96657, // ret tier15 legs heroic
 		96658, // ret tier15 shoulder heroic
 
@@ -125,7 +127,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		// 87036, // soulgrasp heroic REMOVE1
 		94776, // primal turtle amulet
 
-		87145, // defiled earth
+		// 87145, // defiled earth REMOVE1
 		94820, // caustic spike bracers
 		96394, // frozen warlord bracer heroic
 
@@ -157,7 +159,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		// 87015, // heroic clawfeet
 		96478, // treads of the blind heroic
 
-		86957, // heroic bladed tempest ring
+		// 86957, // heroic bladed tempest ring
 		95140, // shado assault band
 		95513, // scaled tyrant normal
 		96481, // durumu tentacle heroic
@@ -172,11 +174,11 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
 
-		96428, // shell-coated wrists
+		// 96428, // shell-coated wrists REMOVE1
 		96447, // rot-proof greatplate
 
 		// 95910, // ret tier15 chest celestial   REMOVE12
-		95281, // ret tier15 gloves normal    REMOVE12
+		95281, // ret tier15 gloves normal    REMOVE123
 		96657, // ret tier15 legs heroic   REMOVE1
 		96658, // ret tier15 shoulder heroic  REMOVE1
 
@@ -192,7 +194,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		// 94776, // primal turtle amulet
 
 		87145, // defiled earth
-		94820, // caustic spike bracers
+		// 94820, // caustic spike bracers
 		96394, // frozen warlord bracer heroic
 
 		96376, // worldbreaker weapon
@@ -220,10 +222,10 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	//job.SuggestCulls(5000, 10)
 	// job.SuggestCulls(10000, 100)
 	// job.SuggestCulls(25000, 150)
-	job.SuggestCulls(150000, 200)
+	// job.SuggestCulls(150000, 200)
 
-	// job.FindTopAndPassToSim(50, 2, simulate.RunSize_Medium)
-	// job.FindTopAndPassToSim(150000, 50, simulate.RunSize_Medium)
+	// job.FindTopAndPassToSim(100, 10, simulate.RunSize_Medium)
 	// job.FindTopAndPassToSim(75000, 20, simulate.RunSize_Medium)
 	// job.FindTopAndPassToSim(150000, 25, simulate.RunSize_Medium)
+	job.FindTopAndPassToSim(500000, 100, simulate.RunSize_Medium)
 }

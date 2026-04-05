@@ -55,8 +55,9 @@ func (record *PeekTestRecorder) Len() int {
 }
 func (record *PeekTestRecorder) Add(item *items.SolvableItemSet) {
 	record.mutex.Lock()
+	defer record.mutex.Unlock()
+
 	record.Seen = append(record.Seen, *item)
-	record.mutex.Unlock()
 }
 
 // test all individual item options are covered in a reasonable percent

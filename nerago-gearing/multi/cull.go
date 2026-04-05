@@ -50,6 +50,7 @@ func (job *MultiSetJob) cullingMakeRevisions(proposedList []multiProposedOutput,
 			draft := &prior.parts[i]
 			param := &job.params[i]
 
+			// TODO refactor common parts with prepareRevisionsForSim better
 			printer.Printf("== %s\n", param.Label)
 			printer.Println("DRAFT")
 			draft.Report(printer)

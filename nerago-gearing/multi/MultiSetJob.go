@@ -3,6 +3,7 @@ package multi
 import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
+	"paladin_gearing_go/solver"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
@@ -20,10 +21,16 @@ type MultiSetJob struct {
 	specificAllowRates map[items.ItemId]float32
 	bagsGear           loaders.EquippedArray
 	multiSetFilter     func(multiProposedOutput) bool
+	solveSizeProposal  solver.SolveSize
+	solveSizeRevised   solver.SolveSize
 }
 
-func MultiSetJob_Create(printer *util.PrintRecorder) MultiSetJob {
-	return MultiSetJob{printer: printer}
+func MultiSetJob_Create(printer *util.PrintRecorder, solveSizeProposal solver.SolveSize, solveSizeRevised solver.SolveSize) MultiSetJob {
+	return MultiSetJob{
+		printer:           printer,
+		solveSizeProposal: solveSizeProposal,
+		solveSizeRevised:  solveSizeRevised,
+	}
 }
 
 func (job *MultiSetJob) AddSetParam(param MultiSetParam) {

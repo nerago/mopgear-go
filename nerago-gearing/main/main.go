@@ -38,13 +38,16 @@ func main() {
 	log.SetOutput(io.Discard) // ignore wowsim's internal progress logs
 
 	if enableProfiling {
-		f, err := os.Create(files.ProfileDir + "main.pgo")
+		f, err := os.Create(files.ProfileDir + "main-new.pgo")
 		if err != nil {
 			panic(err)
 		}
-		defer f.Close()
 		pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
+		defer func() {
+			pprof.StopCPUProfile()
+			f.Close()
+			os.Rename(f.Name(), files.ProfileDir+"main.pgo")
+		}()
 	}
 
 	startTime := time.Now()

@@ -61,23 +61,26 @@ func (proposed *multiProposedOutput) Equals(other *multiProposedOutput) bool {
 	return true
 }
 
-func (job *MultiSetJob) makeProposedChannel(comboChannel <-chan commonCombo) <-chan multiProposedOutput {
+func (job *MultiSetJob) makeProposedChannel(comboChannel <-chan commonCombo, comboCount uint64, trackProgress *util.TrackProgress) <-chan multiProposedOutput {
+	trackProgress.RunOuterTracking(int(comboCount))
 	return channel_op.TransformEach_ChannelToChannel(solveThreadCount, comboChannel, func(combo commonCombo, outputChannel chan<- multiProposedOutput) {
-		proposed := job.subSolveCombo(&combo)
+		proposed := job.subSolveCombo(&combo, trackProgress.MakeNested())
 		if proposed != nil {
 			outputChannel <- *proposed
 		}
 	})
 }
 
-func (job *MultiSetJob) subSolveCombo(combo *commonCombo) *multiProposedOutput {
+func (job *MultiSetJob) subSolveCombo(combo *commonCombo, trackProgress *util.TrackProgress) *multiProposedOutput {
 	var totalRatingSum uint64
 	output := make([]singleProposed, len(job.params))
+	trackProgress.RunOuterTracking(len(job.params))
+	defer trackProgress.Stop()
 
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
 		if param.IncludeInFirstPass {
-			result := job.firstPassSolveCombo(combo, param)
+			result := job.firstPassSolveCombo(combo, param, trackProgress.MakeNested())
 			if !result.Success {
 				job.printer.Println("UNEXPECTED SOLVE FAILURE FOR " + param.Label + " " + result.FailureSummary)
 				return nil
@@ -90,7 +93,7 @@ func (job *MultiSetJob) subSolveCombo(combo *commonCombo) *multiProposedOutput {
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
 		if !param.IncludeInFirstPass {
-			result := job.secondPassSolveCombo(combo, output, param)
+			result := job.secondPassSolveCombo(combo, output, param, trackProgress.MakeNested())
 			if !result.Success {
 				job.printer.Println("UNEXPECTED SOLVE FAILURE FOR " + param.Label + " " + result.FailureSummary)
 				return nil
@@ -108,17 +111,17 @@ func (job *MultiSetJob) subSolveCombo(combo *commonCombo) *multiProposedOutput {
 
 }
 
-func (job *MultiSetJob) firstPassSolveCombo(combo *commonCombo, param *MultiSetParam) solver.SolveOutput {
+func (job *MultiSetJob) firstPassSolveCombo(combo *commonCombo, param *MultiSetParam, tracker *util.TrackProgress) solver.SolveOutput {
 	options := buildOptionsGivenCombo(param.itemOptions, combo)
 	return solver.Solver(solver.SolveInput{
-		ItemOptions:         &options,
-		Model:               &param.Model,
-		PhasedAcceptable:    param.PhasedAcceptable,
-		EnableTrackProgress: false,
-		SolveSize:           solver.SolveSize_PerItem})
+		ItemOptions:        &options,
+		Model:              &param.Model,
+		PhasedAcceptable:   param.PhasedAcceptable,
+		OuterTrackProgress: tracker,
+		SolveSize:          job.solveSizeProposal})
 }
 
-func (job *MultiSetJob) secondPassSolveCombo(baseCombo *commonCombo, otherOutputList []singleProposed, param *MultiSetParam) solver.SolveOutput {
+func (job *MultiSetJob) secondPassSolveCombo(baseCombo *commonCombo, otherOutputList []singleProposed, param *MultiSetParam, tracker *util.TrackProgress) solver.SolveOutput {
 	// extend combo limitations further based on items chosen for other sets
 	restrictedCombo := baseCombo.clone()
 	for _, otherOutput := range otherOutputList {
@@ -131,11 +134,11 @@ func (job *MultiSetJob) secondPassSolveCombo(baseCombo *commonCombo, otherOutput
 
 	options := buildOptionsGivenCombo(param.itemOptions, &restrictedCombo)
 	return solver.Solver(solver.SolveInput{
-		ItemOptions:         &options,
-		Model:               &param.Model,
-		PhasedAcceptable:    param.PhasedAcceptable,
-		EnableTrackProgress: false,
-		SolveSize:           solver.SolveSize_PerItem})
+		ItemOptions:        &options,
+		Model:              &param.Model,
+		PhasedAcceptable:   param.PhasedAcceptable,
+		OuterTrackProgress: tracker,
+		SolveSize:          job.solveSizeProposal})
 }
 
 func buildOptionsGivenCombo(allOptions items.FullOptionsMap, combo *commonCombo) items.FullOptionsMap {

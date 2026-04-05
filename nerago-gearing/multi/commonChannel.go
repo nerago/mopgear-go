@@ -10,8 +10,11 @@ import (
 	"sync"
 )
 
-const additionalSetEach uint64 = 32
-const additionalThreads uint64 = 2
+const (
+	additionalSetEach     uint64 = 32
+	additionalThreads     uint64 = 2
+	defaultThreadSetCount        = 8
+)
 
 type comboType int8
 
@@ -114,42 +117,41 @@ func (combo *commonCombo) clone() commonCombo {
 	}
 }
 
-func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targetCount uint64, trackProgress *util.TrackProgress) <-chan commonCombo {
-	counters := make([]uint64, generateThreadCount+additionalThreads)
-	additionalCount := additionalSetEach * additionalThreads
+func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targetCount uint64) (<-chan commonCombo, uint64) {
+	additionalCount := additionalSetEach * additionalThreads * uint64(len(job.params))
 
+	var calculatedEachThreadCount int64 = (int64(targetCount) - int64(additionalCount)) / generateThreadCount
 	var eachThreadCount uint64
-	if targetCount > additionalCount {
-		eachThreadCount = max((targetCount-additionalCount)/generateThreadCount, 1)
+	if calculatedEachThreadCount > defaultThreadSetCount {
+		eachThreadCount = uint64(calculatedEachThreadCount)
 	} else {
-		eachThreadCount = additionalSetEach
+		eachThreadCount = defaultThreadSetCount
 	}
+	actualExpectedCount := eachThreadCount*((generateThreadCount/2)*2) + additionalCount
 
 	job.printer.Printf("MAKE COMMON total=%d additional=%d eachThread=%d\n", targetCount, additionalCount, eachThreadCount)
 
-	trackProgress.RunFromArray(&counters, targetCount)
-
 	var waitGroup sync.WaitGroup
 	comboChannel := make(chan commonCombo)
-	waitGroup.Go(func() { makeBaselineWorker(job.params, commonOptions, &counters[0], comboChannel) })
-	waitGroup.Go(func() { makeEquippedWorker(job.params, commonOptions, &counters[1], comboChannel) })
+	waitGroup.Go(func() { makeBaselineWorker(job.params, commonOptions, comboChannel) })
+	waitGroup.Go(func() { makeEquippedWorker(job.params, commonOptions, comboChannel) })
 
-	makeRandomThreads(&waitGroup, commonOptions, generateThreadCount/2, eachThreadCount, counters[2:2+generateThreadCount/2], comboChannel)
-	makeOverflowThreads(&waitGroup, commonOptions, generateThreadCount/2, eachThreadCount, counters[2+generateThreadCount/2:], comboChannel)
+	makeRandomThreads(&waitGroup, commonOptions, generateThreadCount/2, eachThreadCount, comboChannel)
+	makeOverflowThreads(&waitGroup, commonOptions, generateThreadCount/2, eachThreadCount, comboChannel)
 
 	go func() {
 		waitGroup.Wait()
 		close(comboChannel)
 	}()
 
+	var resultChannel <-chan commonCombo = comboChannel
 	if len(job.specificAllowRates) > 0 {
-		return applyAllowRate(job.specificAllowRates, comboChannel)
-	} else {
-		return comboChannel
+		resultChannel = applyAllowRate(job.specificAllowRates, comboChannel)
 	}
+	return resultChannel, actualExpectedCount
 }
 
-func makeBaselineWorker(params []MultiSetParam, commonOptions commonComboOptions, doneCounter *uint64, comboChannel chan<- commonCombo) {
+func makeBaselineWorker(params []MultiSetParam, commonOptions commonComboOptions, comboChannel chan<- commonCombo) {
 	rng := rand.New(rand.NewSource(0xBA5E))
 	for paramIndex := range params {
 		param := &params[paramIndex]
@@ -164,12 +166,11 @@ func makeBaselineWorker(params []MultiSetParam, commonOptions commonComboOptions
 			fillOutRemainingOptions(commonOptions, &combo, rng)
 
 			comboChannel <- combo
-			*doneCounter++
 		}
 	}
 }
 
-func makeEquippedWorker(params []MultiSetParam, commonOptions commonComboOptions, doneCounter *uint64, comboChannel chan<- commonCombo) {
+func makeEquippedWorker(params []MultiSetParam, commonOptions commonComboOptions, comboChannel chan<- commonCombo) {
 	rng := rand.New(rand.NewSource(0xE819))
 	for paramIndex := range params {
 		param := &params[paramIndex]
@@ -184,7 +185,6 @@ func makeEquippedWorker(params []MultiSetParam, commonOptions commonComboOptions
 			fillOutRemainingOptions(commonOptions, &combo, rng)
 
 			comboChannel <- combo
-			*doneCounter++
 		}
 	}
 }

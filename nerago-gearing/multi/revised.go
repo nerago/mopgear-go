@@ -36,5 +36,5 @@ func (job *MultiSetJob) revisedSolveCombo(combo *commonCombo, param *MultiSetPar
 		Model:              &param.Model,
 		PhasedAcceptable:   phased,
 		OuterTrackProgress: outerTrackProgress,
-		SolveSize:          solver.SolveSize_Medium})
+		SolveSize:          job.solveSizeRevised})
 }
