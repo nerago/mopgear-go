@@ -2,11 +2,16 @@ package model
 
 import (
 	. "paladin_gearing_go/stats"
+	"slices"
 )
 
 type ReforgeRules struct {
 	source []StatType
 	target []StatType
+}
+
+func (rules *ReforgeRules) Equals(other *ReforgeRules) bool {
+	return slices.Equal(rules.source, other.source) && slices.Equal(rules.target, other.target)
 }
 
 func (rules *ReforgeRules) Source() []StatType {

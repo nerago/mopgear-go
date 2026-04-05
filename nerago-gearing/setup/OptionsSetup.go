@@ -109,7 +109,7 @@ func addDetailUsingDefaults(item *items.FullItem, model *model.Model) {
 		item.EnchantChoice = enchantInfo.Id
 	}
 
-	addBlacksmithSocket(item, model)
+	addBlacksmithSocket(item, model.Professions)
 
 	addDefaultGems(item, model)
 
@@ -138,7 +138,7 @@ func processGemsAndEnchants(item *items.FullItem, equipItem loaders.EquippedItem
 		panic("no enchant choice for " + item.Slot.Name())
 	}
 
-	addBlacksmithSocket(item, model)
+	addBlacksmithSocket(item, model.Professions)
 
 	if len(equipItem.GemChoice) == len(item.SocketSlots) {
 		addSpecifiedGems(item, equipItem)
@@ -198,8 +198,8 @@ func addSpecifiedGems(item *items.FullItem, equipItem loaders.EquippedItem) {
 	}
 }
 
-func addBlacksmithSocket(item *items.FullItem, model *model.Model) {
-	if item.Slot.AlwaysBlacksmith() || (item.Slot.PossibleBlacksmith() && model.IsBlacksmith) {
+func addBlacksmithSocket(item *items.FullItem, professions model.ProfessionInfo) {
+	if item.Slot.AlwaysBlacksmith() || (item.Slot.PossibleBlacksmith() && professions.IsBlacksmith) {
 		if len(item.SocketSlots) == 0 || item.SocketSlots[len(item.SocketSlots)-1] != stats.Socket_General {
 			item.SocketSlots = append(item.SocketSlots, stats.Socket_General)
 		}
@@ -224,7 +224,7 @@ func upgradeItemTo2(currItem *items.FullItem, targetUpgrade int8, model *model.M
 		printer.Println("$ CAN'T UPGRADE " + currItem.CreateString())
 		return *currItem
 	} else {
-		copyDetails(currItem, upgradeItem, model)
+		copyDetails(currItem, upgradeItem, model.Professions)
 		printer.Println("$ UPGRADE IN  << " + currItem.CreateString())
 		printer.Println("$ UPGRADE OUT >> " + upgradeItem.CreateString())
 		// panic("upgrade TODO")
@@ -232,12 +232,12 @@ func upgradeItemTo2(currItem *items.FullItem, targetUpgrade int8, model *model.M
 	}
 }
 
-func copyDetails(currItem *items.FullItem, upgradeItem *items.FullItem, model *model.Model) {
+func copyDetails(currItem *items.FullItem, upgradeItem *items.FullItem, professions model.ProfessionInfo) {
 	upgradeItem.Reforge = currItem.Reforge
 	upgradeItem.GemChoice = currItem.GemChoice
 	upgradeItem.EnchantChoice = currItem.EnchantChoice
 	upgradeItem.RandomSuffix = currItem.RandomSuffix
 	upgradeItem.StatEnchant = currItem.StatEnchant
-	addBlacksmithSocket(upgradeItem, model)
+	addBlacksmithSocket(upgradeItem, professions)
 	upgradeItem.ChangeDerivedStatFields()
 }

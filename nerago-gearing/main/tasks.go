@@ -39,7 +39,7 @@ func testSimA(printer *util.PrintRecorder) {
 		SolveSize:           solver.SolveSize_Medium,
 		Printer:             printer})
 	printer.Println("Running sim")
-	resultStats := simulate.WowSim_Execute(simulate.RunSize_QuickDirty, model.Spec, output.FullSet.Items(), &model, nil, util.TrackProgress_Start())
+	resultStats := simulate.WowSim_Execute(simulate.RunSize_QuickDirty, model.Spec, output.FullSet.Items(), model.Professions, nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
 }
 func testSimB(printer *util.PrintRecorder) {
@@ -53,7 +53,7 @@ func testSimB(printer *util.PrintRecorder) {
 		SolveSize:           solver.SolveSize_Medium,
 		Printer:             printer})
 	printer.Println("Running sim")
-	resultStats := simulate.WowSim_Execute(simulate.RunSize_QuickDirty, model.Spec, output.FullSet.Items(), &model, nil, util.TrackProgress_Start())
+	resultStats := simulate.WowSim_Execute(simulate.RunSize_QuickDirty, model.Spec, output.FullSet.Items(), model.Professions, nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
 }
 

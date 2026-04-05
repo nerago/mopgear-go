@@ -5,6 +5,7 @@ import (
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model/modelassem"
 	. "paladin_gearing_go/stats"
+	"slices"
 )
 
 type SetBonus struct {
@@ -68,6 +69,10 @@ func (sets *SetBonus) initMap() {
 			sets.activeFlatBonuses = append(sets.activeFlatBonuses, bonus)
 		}
 	}
+}
+
+func (sets *SetBonus) Equals(other *SetBonus) bool {
+	return slices.EqualFunc(sets.activeSets, other.activeSets, setInfo.Equals)
 }
 
 // ########################### CalcBonus ###########################
@@ -288,6 +293,10 @@ func setInfoMake(spec SpecType, name string, bonus2 uint64, bonus4 uint64, items
 			float32(bonus2) / float32(denominator) * float32(bonus4) / float32(denominator),
 			float32(bonus2) / float32(denominator) * float32(bonus4) / float32(denominator)},
 		items}
+}
+
+func (set setInfo) Equals(other setInfo) bool {
+	return set.spec == other.spec && set.name == other.name
 }
 
 var g_setData = buildSets()

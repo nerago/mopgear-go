@@ -1,11 +1,16 @@
 package model
 
 import (
+	"maps"
 	. "paladin_gearing_go/db"
 	. "paladin_gearing_go/stats"
 )
 
 type GemChoice map[SocketType]GemInfo
+
+func (gems GemChoice) Equals(other GemChoice) bool {
+	return maps.Equal(gems, other)
+}
 
 // TODO alternate gems stuff for hit etc
 

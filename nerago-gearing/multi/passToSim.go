@@ -39,63 +39,67 @@ func (job *MultiSetJob) prepareRevisionsForSim(proposedList []multiProposedOutpu
 	defer trackProgress.Stop()
 
 	allProposals := channel_op.IterateEach_SliceToSlice(generateThreadCount, proposedList, func(prior *multiProposedOutput, downstream chan<- multiProposedOutput) {
-		printer := util.PrintRecorder_HoldAll()
-		printer.Printf(">>> PREP REVISIONS %s\n", prior.id)
-
-		revisedCommon := job.revisedComboActuallyUsed(prior.parts, &prior.combo, printer)
-
-		revisedOptionArrays := make([][]singleProposed, len(prior.parts))
-
-		for i := range prior.parts {
-			draft := &prior.parts[i]
-			param := &job.params[i]
-
-			// TODO refactor common parts with cullingMakeRevisions better
-			printer.Printf("== %s\n", param.Label)
-			printer.Println("DRAFT")
-			draft.Report(printer)
-
-			specOptions := job.makeRevised(param, &revisedCommon, trackProgress, printer)
-			for _, newOutput := range specOptions {
-				param.seenInSolutions.Add(&newOutput.fullSet)
-			}
-
-			param.seenInSolutions.Add(&draft.fullSet)
-			specOptions = append(specOptions, *draft)
-
-			specOptions = util.RemoveDuplicatesFuncNotify(specOptions, func(a, b *singleProposed) bool {
-				return a.fullSet.Equals(&b.fullSet)
-			}, func(removed *singleProposed) {
-				printer.Printf("removed duplicate output %s\n", removed.outputId)
-			})
-
-			revisedOptionArrays[i] = specOptions
-		}
-
-		for outputSet := range util.PermuteAll(revisedOptionArrays) {
-			var totalRatingSum uint64
-			for _, output := range outputSet {
-				totalRatingSum += output.resultRating
-			}
-			if checkNoConflicts(outputSet) {
-				proposed := multiProposedOutput{uuid.NewString(), totalRatingSum, outputSet, revisedCommon}
-				componentIds := ""
-				for _, set := range outputSet {
-					componentIds = componentIds + set.outputId + " "
-				}
-				printer.Printf("&&& NEW PROPOSAL %s => %s\n", proposed.id, componentIds)
-				downstream <- proposed
-			}
-		}
-
-		printer.Println0()
-		printer.Println0()
-
-		job.printer.AppendOther(printer)
+		job.prepareOneRevisionForSim(prior, trackProgress, downstream)
 	})
 
 	allProposals = append(allProposals, job.existingGearAsProposal())
 	return allProposals
+}
+
+func (job *MultiSetJob) prepareOneRevisionForSim(prior *multiProposedOutput, trackProgress *util.TrackProgress, downstream chan<- multiProposedOutput) {
+	printer := util.PrintRecorder_HoldAll()
+	printer.Printf(">>> PREP REVISIONS %s\n", prior.id)
+
+	revisedCommon := job.revisedComboActuallyUsed(prior.parts, &prior.combo, printer)
+
+	revisedOptionArrays := make([][]singleProposed, len(prior.parts))
+
+	for i := range prior.parts {
+		draft := &prior.parts[i]
+		param := &job.params[i]
+
+		// TODO refactor common parts with cullingMakeRevisions better
+		printer.Printf("== %s\n", param.Label)
+		printer.Println("DRAFT")
+		draft.Report(printer)
+
+		specOptions := job.makeRevised(param, &revisedCommon, trackProgress, printer)
+		for _, newOutput := range specOptions {
+			param.seenInSolutions.Add(&newOutput.fullSet)
+		}
+
+		param.seenInSolutions.Add(&draft.fullSet)
+		specOptions = append(specOptions, *draft)
+
+		specOptions = util.RemoveDuplicatesFuncNotify(specOptions, func(a, b *singleProposed) bool {
+			return a.fullSet.Equals(&b.fullSet)
+		}, func(removed *singleProposed) {
+			printer.Printf("removed duplicate output %s\n", removed.outputId)
+		})
+
+		revisedOptionArrays[i] = specOptions
+	}
+
+	for outputSet := range util.PermuteAll(revisedOptionArrays) {
+		var totalRatingSum uint64
+		for _, output := range outputSet {
+			totalRatingSum += output.resultRating
+		}
+		if checkNoConflicts(outputSet) {
+			proposed := multiProposedOutput{uuid.NewString(), totalRatingSum, outputSet, revisedCommon}
+			componentIds := ""
+			for _, set := range outputSet {
+				componentIds = componentIds + set.outputId + " "
+			}
+			printer.Printf("&&& NEW PROPOSAL %s => %s\n", proposed.id, componentIds)
+			downstream <- proposed
+		}
+	}
+
+	printer.Println0()
+	printer.Println0()
+
+	job.printer.AppendOther(printer)
 }
 
 func checkNoConflicts(outputSet []singleProposed) bool {
@@ -127,10 +131,14 @@ func (job *MultiSetJob) existingGearAsProposal() multiProposedOutput {
 }
 
 type simulateJob struct {
-	spec   stats.SpecType
-	equip  items.FullEquipMap
-	model  *model.Model
-	result *simulate.SimResultStats
+	spec        stats.SpecType
+	equip       items.FullEquipMap
+	professions model.ProfessionInfo
+	result      *simulate.SimResultStats
+}
+
+func (simJob *simulateJob) Equals(other *simulateJob) bool {
+	return simJob.spec == other.spec && simJob.equip.Equals(&other.equip) && simJob.professions == other.professions
 }
 
 type simulateResult struct {
@@ -142,12 +150,12 @@ func (job *MultiSetJob) prepareSimList(proposalList []multiProposedOutput) []sim
 	jobList := make([]simulateJob, 0)
 	for _, proposal := range proposalList {
 		for _, output := range proposal.parts {
-			job := simulateJob{output.spec, *output.fullSet.Items(), output.model, nil}
+			job := simulateJob{output.spec, *output.fullSet.Items(), output.model.Professions, nil}
 			jobList = append(jobList, job)
 		}
 	}
 
-	jobList = util.RemoveDuplicatesComparable(jobList)
+	jobList = util.RemoveDuplicatesFunc(jobList, (*simulateJob).Equals)
 
 	return jobList
 }
@@ -158,7 +166,7 @@ func (job *MultiSetJob) runSims(jobList []simulateJob, runSize simulate.WowSim_R
 	defer trackProgress.Stop()
 
 	channel_op.IterateEach_Blocking_Void(evaluateThreadCount, jobList, func(sim *simulateJob) {
-		result := simulate.WowSim_Execute(runSize, sim.spec, &sim.equip, sim.model, nil, trackProgress.MakeNested())
+		result := simulate.WowSim_Execute(runSize, sim.spec, &sim.equip, sim.professions, nil, trackProgress.MakeNested())
 		sim.result = &result
 	})
 }

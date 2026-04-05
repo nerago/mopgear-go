@@ -20,8 +20,10 @@ func Model_PallyProtMitigation() Model {
 		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtMitigation),
 		GemChoice:        GemChoice_ForSpec(Spec_PaladinProtMitigation),
 		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Mitigation"),
-		IsBlacksmith:     true,
-		IsEngineer:       true,
+		Professions: ProfessionInfo{
+			IsBlacksmith: true,
+			IsEngineer:   true,
+		},
 	}
 }
 
@@ -37,8 +39,10 @@ func Model_PallyProtMitigation_NoSet() Model {
 		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtMitigation),
 		GemChoice:        GemChoice_ForSpec(Spec_PaladinProtMitigation),
 		SetBonus:         SetBonus_Empty(),
-		IsBlacksmith:     true,
-		IsEngineer:       true,
+		Professions: ProfessionInfo{
+			IsBlacksmith: true,
+			IsEngineer:   true,
+		},
 	}
 }
 
@@ -54,8 +58,10 @@ func Model_PallyProtDps() Model {
 		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtDps),
 		GemChoice:        GemChoice_ForSpec(Spec_PaladinProtDps),
 		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Damage"),
-		IsBlacksmith:     true,
-		IsEngineer:       true,
+		Professions: ProfessionInfo{
+			IsBlacksmith: true,
+			IsEngineer:   true,
+		},
 	}
 }
 
@@ -69,8 +75,10 @@ func Model_PallyRet() Model {
 		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinRet),
 		GemChoice:        GemChoice_ForSpec(Spec_PaladinRet),
 		SetBonus:         SetBonus_ForSpec(Spec_PaladinRet),
-		IsBlacksmith:     true,
-		IsEngineer:       true,
+		Professions: ProfessionInfo{
+			IsBlacksmith: true,
+			IsEngineer:   true,
+		},
 	}
 }
 
@@ -84,7 +92,9 @@ func Model_Testing() Model {
 		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtDps),
 		GemChoice:        GemChoice_ForSpec(Spec_PaladinProtDps),
 		SetBonus:         SetBonus_Empty(),
-		IsBlacksmith:     false,
-		IsEngineer:       false,
+		Professions: ProfessionInfo{
+			IsBlacksmith: true,
+			IsEngineer:   true,
+		},
 	}
 }

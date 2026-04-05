@@ -21,9 +21,18 @@ type Model struct {
 	EnchantChoice EnchantChoice
 	GemChoice     GemChoice
 	SetBonus      SetBonus
+	Professions   ProfessionInfo
+}
 
-	IsBlacksmith bool
-	IsEngineer   bool
+func (model *Model) Equals(other *Model) bool {
+	return model.StatRequirements == other.StatRequirements &&
+		model.StatRatings == other.StatRatings &&
+		model.Spec == other.Spec &&
+		model.ReforgeRules.Equals(&other.ReforgeRules) &&
+		model.EnchantChoice.Equals(other.EnchantChoice) &&
+		model.GemChoice.Equals(other.GemChoice) &&
+		model.SetBonus.Equals(&other.SetBonus) &&
+		model.Professions == other.Professions
 }
 
 // ////////// requirements
@@ -65,4 +74,10 @@ func (model *Model) CalcRatingSolveItem(item *SolvableItem) uint64 {
 
 func (model *Model) CalcRatingGenericItem(item IItem) uint64 {
 	return model.StatRatings.CalcRatingInt(item.TotalRated())
+}
+
+// ////////// ProfessionInfo
+type ProfessionInfo struct {
+	IsBlacksmith bool
+	IsEngineer   bool
 }

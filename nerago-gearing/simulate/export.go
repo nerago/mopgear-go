@@ -22,7 +22,7 @@ func WowSimJson_Write(equip *items.FullEquipMap, model *model.Model, printer *ut
 
 	itemArray := make([]any, 0, 16)
 	for item := range equip.AllItemSeq() {
-		itemArray = append(itemArray, makeItemObject(item, model))
+		itemArray = append(itemArray, makeItemObject(item, model.Professions))
 	}
 
 	// gear data, wowsim friendly
@@ -45,7 +45,7 @@ func WowSimJson_Write(equip *items.FullEquipMap, model *model.Model, printer *ut
 	printer.Println(asText)
 }
 
-func makeItemObject(item *items.FullItem, model *model.Model) map[string]any {
+func makeItemObject(item *items.FullItem, profession model.ProfessionInfo) map[string]any {
 	object := make(map[string]any)
 
 	object["id"] = item.ItemId()
@@ -76,7 +76,7 @@ func makeItemObject(item *items.FullItem, model *model.Model) map[string]any {
 		object["random_suffix"] = item.RandomSuffix
 	}
 
-	if item.Slot == items.Item_Hand && model.IsEngineer {
+	if item.Slot == items.Item_Hand && profession.IsEngineer {
 		object["tinker"] = 4898
 	}
 

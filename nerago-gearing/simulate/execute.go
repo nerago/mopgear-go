@@ -30,12 +30,12 @@ const (
 	RunSize_SlowAccurate WowSim_RunSize = 500000
 )
 
-func WowSim_Execute(runSize WowSim_RunSize, spec gear_stat.SpecType, equipMap *items.FullEquipMap, model *model.Model, bonusStats *gear_stat.StatBlock, tracker *util.TrackProgress) SimResultStats {
+func WowSim_Execute(runSize WowSim_RunSize, spec gear_stat.SpecType, equipMap *items.FullEquipMap, profession model.ProfessionInfo, bonusStats *gear_stat.StatBlock, tracker *util.TrackProgress) SimResultStats {
 	infile := files.SimFileFor(spec)
 	var input wowsim_proto.RaidSimRequest
 	loadAnyProtoFile(&input, infile)
 
-	updateGear(&input, equipMap, model)
+	updateGear(&input, equipMap, profession)
 	updateBonus(&input, bonusStats)
 	updateRotation(&input, spec)
 	updateHealRate(&input, spec)
@@ -53,7 +53,7 @@ func WowSim_Execute(runSize WowSim_RunSize, spec gear_stat.SpecType, equipMap *i
 }
 
 func updateHealRate(input *wowsim_proto.RaidSimRequest, spec gear_stat.SpecType) {
-	if spec == gear_stat.Spec_PaladinProtDps {
+	if spec == gear_stat.Spec_PaladinProtDps || spec == gear_stat.Spec_PaladinRet {
 		// old Horridon model:
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 45000
 	} else {
@@ -65,20 +65,22 @@ func updateHealRate(input *wowsim_proto.RaidSimRequest, spec gear_stat.SpecType)
 			target.MinBaseDamage *= 0.3
 		}
 	}
-
 }
 
 func updateRotation(input *wowsim_proto.RaidSimRequest, spec gear_stat.SpecType) {
-	if spec == gear_stat.Spec_PaladinProtDps || spec == gear_stat.Spec_PaladinProtMitigation {
-		var rotation wowsim_proto.APLRotation
+	var rotation wowsim_proto.APLRotation
+	switch spec {
+	case gear_stat.Spec_PaladinProtDps, gear_stat.Spec_PaladinProtMitigation:
 		loadAnyProtoFile(&rotation, files.PaladinProtRotation)
-		input.Raid.Parties[0].Players[0].Rotation = &rotation
-	} else {
+	case gear_stat.Spec_PaladinRet:
+		loadAnyProtoFile(&rotation, files.PaladinRetRotation)
+	default:
 		panic("don't know rotation")
 	}
+	input.Raid.Parties[0].Players[0].Rotation = &rotation
 }
 
-func updateGear(input *wowsim_proto.RaidSimRequest, equipMap *items.FullEquipMap, model *model.Model) {
+func updateGear(input *wowsim_proto.RaidSimRequest, equipMap *items.FullEquipMap, professions model.ProfessionInfo) {
 	if equipMap == nil {
 		return
 	}
@@ -106,7 +108,7 @@ func updateGear(input *wowsim_proto.RaidSimRequest, equipMap *items.FullEquipMap
 			spec.RandomSuffix = item.RandomSuffix
 		}
 
-		if item.Slot == items.Item_Hand && model.IsEngineer {
+		if item.Slot == items.Item_Hand && professions.IsEngineer {
 			spec.Tinker = 4898
 		}
 

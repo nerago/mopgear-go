@@ -1,12 +1,17 @@
 package model
 
 import (
+	"maps"
 	. "paladin_gearing_go/db"
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/stats"
 )
 
 type EnchantChoice map[SlotItem]GemInfo
+
+func (enchant EnchantChoice) Equals(other EnchantChoice) bool {
+	return maps.Equal(enchant, other)
+}
 
 func (enchant EnchantChoice) GetChoice(slot SlotItem) *GemInfo {
 	info, ok := enchant[slot]

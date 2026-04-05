@@ -24,6 +24,7 @@ const (
 	SimRet            = `nerago-gearing\files\cli\example-ret.json`
 
 	PaladinProtRotation = `wowsim-external\ui\paladin\protection\apls\horridon.apl.json`
+	PaladinRetRotation  = `wowsim-external\ui\paladin\retribution\apls\default.apl.json`
 )
 
 func SimFileFor(spec stats.SpecType) string {
@@ -40,6 +41,7 @@ func SimFileFor(spec stats.SpecType) string {
 }
 
 func GearFileFor(spec stats.SpecType) string {
+	// TODO add set/noset versions somehow
 	switch spec {
 	case stats.Spec_PaladinProtDps:
 		return GearFileProtDps
