@@ -10,6 +10,8 @@ import (
 	"paladin_gearing_go/model"
 	gear_stat "paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"slices"
+	"strings"
 
 	"github.com/google/uuid"
 	wowsim_core "github.com/wowsims/mop/sim/core"
@@ -35,8 +37,8 @@ func WowSim_Execute(runSize WowSim_RunSize, spec gear_stat.SpecType, equipMap *i
 
 	updateGear(&input, equipMap, model)
 	updateBonus(&input, bonusStats)
-	// updateRotation(&input, spec)
-	// updateHealRate(&input, spec)
+	updateRotation(&input, spec)
+	updateHealRate(&input, spec)
 	input.SimOptions.Iterations = int32(runSize)
 
 	reporter := make(chan *wowsim_proto.ProgressMetrics, 10)
@@ -51,13 +53,19 @@ func WowSim_Execute(runSize WowSim_RunSize, spec gear_stat.SpecType, equipMap *i
 }
 
 func updateHealRate(input *wowsim_proto.RaidSimRequest, spec gear_stat.SpecType) {
-	var healRate float64
 	if spec == gear_stat.Spec_PaladinProtDps {
-		healRate = 45000
+		// old Horridon model:
+		input.Raid.Parties[0].Players[0].HealingModel.Hps = 45000
 	} else {
-		healRate = 5000
+		// Dark Animus Model:
+		input.Raid.Parties[0].Players[0].HealingModel.Hps = 170000
+
+		for _, target := range input.Encounter.Targets {
+			target.SwingSpeed = 0.1
+			target.MinBaseDamage *= 0.3
+		}
 	}
-	input.Raid.Parties[0].Players[0].HealingModel.Hps = healRate
+
 }
 
 func updateRotation(input *wowsim_proto.RaidSimRequest, spec gear_stat.SpecType) {
@@ -65,6 +73,8 @@ func updateRotation(input *wowsim_proto.RaidSimRequest, spec gear_stat.SpecType)
 		var rotation wowsim_proto.APLRotation
 		loadAnyProtoFile(&rotation, files.PaladinProtRotation)
 		input.Raid.Parties[0].Players[0].Rotation = &rotation
+	} else {
+		panic("don't know rotation")
 	}
 }
 
@@ -112,6 +122,7 @@ func updateBonus(input *wowsim_proto.RaidSimRequest, bonusStats *gear_stat.StatB
 	}
 
 	unitStats := wowsim_proto.UnitStats{}
+	unitStats.Stats = make([]float64, 12)
 
 	for index := range bonusStats {
 		stat := gear_stat.StatType(index)
@@ -188,9 +199,59 @@ func convertResult(finalResult *wowsim_proto.RaidSimResult) SimResultStats {
 		panic("sim fail = " + finalResult.Error.Message)
 	} else if finalResult != nil && finalResult.RaidMetrics != nil && finalResult.RaidMetrics.Parties != nil && finalResult.RaidMetrics.Parties[0] != nil && finalResult.RaidMetrics.Parties[0].Players != nil && finalResult.RaidMetrics.Parties[0].Players[0] != nil {
 		playerMetrics := finalResult.RaidMetrics.Parties[0].Players[0]
+		// parseLogs(finalResult.Logs)
+		// readMetrics(playerMetrics)
 		return SimResultStats{DPS: playerMetrics.Dps.Avg, TPS: playerMetrics.Threat.Avg, DTPS: playerMetrics.Dtps.Avg, TMI: playerMetrics.Tmi.Avg, HPS: playerMetrics.Hps.Avg, DEATH: playerMetrics.ChanceOfDeath}
 	} else {
 		panic("incomplete sim result")
+	}
+}
+
+func readMetrics(unitMetrics *wowsim_proto.UnitMetrics) {
+	spellLookup := make(map[int32]string)
+	spellLookup[35395] = "Crusader Strike"
+	spellLookup[138248] = "Unknown Holy Power"
+	spellLookup[498] = "Divine Protection"
+	spellLookup[53600] = "Shield Of The Righteous"
+	spellLookup[105427] = "Judgment"
+	spellLookup[98057] = "Avenger's Shield"
+	spellLookup[105809] = "Holy Avenger"
+
+	totalGain := 0.0
+	for _, res := range unitMetrics.Resources {
+		if res.Type == wowsim_proto.ResourceType_ResourceTypeGenericResource {
+			switch res.Id.RawId.(type) {
+			case *wowsim_proto.ActionID_SpellId:
+				if res.Gain > 0 {
+					totalGain += res.Gain
+				}
+			}
+		}
+	}
+
+	for _, res := range unitMetrics.Resources {
+		if res.Type == wowsim_proto.ResourceType_ResourceTypeGenericResource {
+			switch id := res.Id.RawId.(type) {
+			case *wowsim_proto.ActionID_SpellId:
+				if res.Gain > 0 {
+					fmt.Printf("res +%6.0f spell %6d %s\t%f\n", res.Gain, id.SpellId, spellLookup[id.SpellId], res.Gain/totalGain)
+				}
+			case *wowsim_proto.ActionID_OtherId:
+				fmt.Printf("res other %d\n", id.OtherId)
+			case *wowsim_proto.ActionID_ItemId:
+				fmt.Printf("res item %d\n", id.ItemId)
+			}
+		}
+	}
+}
+
+func parseLogs(logText string) {
+	for line := range strings.SplitSeq(logText, "\n") {
+		if strings.Contains(line, "Gained") && strings.Contains(line, "SecondaryResourceTypeHolyPower ") {
+			fmt.Println(line)
+		} else if strings.Contains(line, "498") {
+			// fmt.Println(line)
+		}
 	}
 }
 
@@ -204,4 +265,82 @@ func loadAnyProtoFile[T proto.Message](object T, filename string) {
 	if err != nil {
 		log.Fatalf("failed to load input json file: %s", err)
 	}
+}
+
+func addSelfWordOfGlory(rotation *wowsim_proto.APLRotation) {
+	// Improves
+
+	actionCastWord := wowsim_proto.APLListItem{
+		Action: &wowsim_proto.APLAction{
+			Action: &wowsim_proto.APLAction_CastSpell{
+				CastSpell: &wowsim_proto.APLActionCastSpell{
+					SpellId: &wowsim_proto.ActionID{
+						RawId: &wowsim_proto.ActionID_SpellId{
+							SpellId: 85673,
+						},
+					},
+				},
+			},
+			Condition: &wowsim_proto.APLValue{
+				Value: &wowsim_proto.APLValue_And{
+					And: &wowsim_proto.APLValueAnd{
+						Vals: []*wowsim_proto.APLValue{
+							{
+								Value: &wowsim_proto.APLValue_Cmp{
+									Cmp: &wowsim_proto.APLValueCompare{
+										Lhs: &wowsim_proto.APLValue{
+											Value: &wowsim_proto.APLValue_CurrentHealthPercent{
+												CurrentHealthPercent: &wowsim_proto.APLValueCurrentHealthPercent{
+													SourceUnit: &wowsim_proto.UnitReference{
+														Type: wowsim_proto.UnitReference_Self,
+													},
+												},
+											},
+										},
+										Op: wowsim_proto.APLValueCompare_OpLt,
+										Rhs: &wowsim_proto.APLValue{
+											Value: &wowsim_proto.APLValue_Const{
+												Const: &wowsim_proto.APLValueConst{
+													Val: "50%",
+												},
+											},
+										},
+									},
+								},
+							},
+							{
+								Value: &wowsim_proto.APLValue_Cmp{
+									Cmp: &wowsim_proto.APLValueCompare{
+										Lhs: &wowsim_proto.APLValue{
+											Value: &wowsim_proto.APLValue_CurrentGenericResource{
+												CurrentGenericResource: &wowsim_proto.APLValueCurrentGenericResource{},
+											},
+										},
+										Op: wowsim_proto.APLValueCompare_OpGe,
+										Rhs: &wowsim_proto.APLValue{
+											Value: &wowsim_proto.APLValue_Const{
+												Const: &wowsim_proto.APLValueConst{
+													Val: "3",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	shieldRighteousIndex := slices.IndexFunc(rotation.PriorityList, func(item *wowsim_proto.APLListItem) bool {
+		if castSpell := item.Action.Action.(*wowsim_proto.APLAction_CastSpell); castSpell != nil {
+			if spellId := castSpell.CastSpell.SpellId.RawId.(*wowsim_proto.ActionID_SpellId); spellId != nil {
+				return spellId.SpellId == 53600
+			}
+		}
+		return false
+	})
+	rotation.PriorityList = slices.Insert(rotation.PriorityList, shieldRighteousIndex, &actionCastWord)
 }

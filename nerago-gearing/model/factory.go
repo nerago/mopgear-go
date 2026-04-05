@@ -25,6 +25,23 @@ func Model_PallyProtMitigation() Model {
 	}
 }
 
+func Model_PallyProtMitigation_NoSet() Model {
+	weightMiti := StatRatingsWeights_ReadFile(files.WeightMitiFile, false, true, false)
+	weightDps := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
+	weight := StatRatingsWeights_Mix(weightMiti, 95, weightDps, 34)
+	return Model{
+		Spec:             Spec_PaladinProtMitigation,
+		StatRatings:      weight,
+		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
+		ReforgeRules:     ReforgeRules_tank,
+		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtMitigation),
+		GemChoice:        GemChoice_ForSpec(Spec_PaladinProtMitigation),
+		SetBonus:         SetBonus_Empty(),
+		IsBlacksmith:     true,
+		IsEngineer:       true,
+	}
+}
+
 func Model_PallyProtDps() Model {
 	weightMiti := StatRatingsWeights_ReadFile(files.WeightMitiFile, false, true, false)
 	weightDps := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)

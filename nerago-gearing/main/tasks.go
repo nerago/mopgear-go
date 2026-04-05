@@ -1,8 +1,10 @@
 package main
 
 import (
+	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
+	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/util"
@@ -21,7 +23,14 @@ func basicReforge(itemOptions *items.FullOptionsMap, model *model.Model, printer
 }
 
 func testSim(printer *util.PrintRecorder) {
-	itemOptions, model := setupPallyMitigation()
+	testSimA(printer)
+	testSimB(printer)
+}
+func testSimA(printer *util.PrintRecorder) {
+	model := model.Model_PallyProtDps()
+	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtDps, &model, setup.MissingEnchant_Panic, printer)
+	// itemOptionsMit := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigation, &model, setup.MissingEnchant_Panic, printer)
+	// itemOptions[items.Equip_Trinket2] = itemOptionsMit[items.Equip_Trinket2]
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions:         &itemOptions,
 		Model:               &model,
@@ -30,7 +39,21 @@ func testSim(printer *util.PrintRecorder) {
 		SolveSize:           solver.SolveSize_Medium,
 		Printer:             printer})
 	printer.Println("Running sim")
-	resultStats := simulate.WowSim_Execute(simulate.RunSize_SlowAccurate, model.Spec, output.FullSet.Items(), &model, nil, util.TrackProgress_Start())
+	resultStats := simulate.WowSim_Execute(simulate.RunSize_QuickDirty, model.Spec, output.FullSet.Items(), &model, nil, util.TrackProgress_Start())
+	resultStats.Print(printer)
+}
+func testSimB(printer *util.PrintRecorder) {
+	model := model.Model_PallyProtMitigation()
+	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigation, &model, setup.MissingEnchant_Panic, printer)
+	output := solver.Solver(solver.SolveInput{
+		ItemOptions:         &itemOptions,
+		Model:               &model,
+		PhasedAcceptable:    false,
+		EnableTrackProgress: true,
+		SolveSize:           solver.SolveSize_Medium,
+		Printer:             printer})
+	printer.Println("Running sim")
+	resultStats := simulate.WowSim_Execute(simulate.RunSize_QuickDirty, model.Spec, output.FullSet.Items(), &model, nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
 }
 
@@ -54,7 +77,7 @@ func slotRating(itemArray []items.FullItem, model *model.Model, printer *util.Pr
 }
 
 // &&&&&&&&&&&&& ffb430ce-e65b-4ae7-97be-4658d37bce7a
-// COMMON_COMBO overflow REVISED 94527=false 
+// COMMON_COMBO overflow REVISED 94527=false
 // COMMON { Foot "Impaling Treads" id=86979 lvl=517 {str=1025 stam=1657 hit=614 haste=742} ENCHANT {hit=60 haste=320 master=140} GEMS {haste=320} }
 // COMMON { Ring "Band of the Scaled Tyrant (hit->master)" id=95513 lvl=536 {str=909 stam=1484 hit=329 haste=653 master=218} ENCHANT {haste=220 expert=160} GEMS {haste=160 expert=160} }
 // COMMON { Trinket "Spark of Zandalar (haste->master)" id=96398 lvl=549 {haste=1133 master=754} }
