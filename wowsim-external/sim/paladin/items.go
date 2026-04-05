@@ -242,7 +242,7 @@ var ItemSetPlateOfTheLightningEmperor = core.NewItemSet(core.ItemSet{
 		// You gain 1 Holy Power for each 20% of your health taken as damage while Divine Protection is active.
 		4: func(agent core.Agent, setBonusAura *core.Aura) {
 			paladin := agent.(PaladinAgent).GetPaladin()
-			hpGainMetrics := core.ActionID{SpellID: 138248}
+			divineProtectionId := core.ActionID{SpellID: 498}
 
 			setBonusAura.AttachProcTrigger(core.ProcTrigger{
 				Callback:           core.CallbackOnSpellHitTaken,
@@ -253,11 +253,42 @@ var ItemSetPlateOfTheLightningEmperor = core.NewItemSet(core.ItemSet{
 					if paladin.DivineProtectionAura.IsActive() {
 						hpGain := float64(math.Floor(result.PostOutcomeDamage / paladin.MaxHealth() * 5))
 						if hpGain > 0 {
-							paladin.HolyPower.Gain(sim, hpGain, hpGainMetrics)
+							paladin.HolyPower.Gain(sim, hpGain, divineProtectionId)
 						}
 					}
 				},
 			}).ExposeToAPL(138244)
+
+			// paladin.OnSpellRegistered(func(spell *core.Spell) {
+			// 	if !spell.Matches(SpellMaskDivineProtection) {
+			// 		return
+			// 	}
+
+			// 	cumulativeTakenDuringAura := 0.0
+			// 	previousHolyPowerGain := 0.0
+
+			// 	paladin.DivineProtectionAura.ApplyOnGain(func(aura *core.Aura, sim *core.Simulation) {
+			// 		cumulativeTakenDuringAura = 0.0
+			// 		previousHolyPowerGain = 0.0
+			// 	}).AttachProcTrigger(core.ProcTrigger{
+			// 		Callback:           core.CallbackOnSpellHitTaken,
+			// 		Outcome:            core.OutcomeLanded,
+			// 		RequireDamageDealt: true,
+
+			// 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
+			// 			if paladin.DivineProtectionAura.IsActive() && setBonusAura.IsActive() {
+			// 				cumulativeTakenDuringAura += result.PostOutcomeDamage
+
+			// 				totalPowerGain := float64(math.Floor(cumulativeTakenDuringAura / paladin.MaxHealth() * 5))
+			// 				powerGainNow := totalPowerGain - previousHolyPowerGain
+			// 				if powerGainNow > 0 {
+			// 					paladin.HolyPower.Gain(sim, powerGainNow, divineProtectionId)
+			// 				}
+			// 				previousHolyPowerGain = totalPowerGain
+			// 			}
+			// 		},
+			// 	})
+			// })
 		},
 	},
 })
