@@ -48,6 +48,14 @@ func (stats SimResultStats) Print(printer *util.PrintRecorder) {
 	printer.Printf("TMI\t%.2f\n", stats.TMI)
 	printer.Printf("DEATH\t%.2f\n", stats.DEATH*100)
 }
+func (stats SimResultStats) PrintNumsOnly(printer *util.PrintRecorder) {
+	printer.Printf("%.2f\n", stats.DPS)
+	printer.Printf("%.2f\n", stats.TPS)
+	printer.Printf("%.2f\n", stats.DTPS)
+	printer.Printf("%.2f\n", stats.HPS)
+	printer.Printf("%.2f\n", stats.TMI)
+	printer.Printf("%.2f\n", stats.DEATH*100)
+}
 
 func (stats SimResultStats) CompactStringSignedPercent() string {
 	var build util.StringBuild2

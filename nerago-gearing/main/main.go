@@ -79,16 +79,22 @@ func core(printer *util.PrintRecorder) {
 	// slotRating(itemOptions[Equip_Chest], &model, printer)
 	// basicReforge(&itemOptions, &model, printer)
 
-	PaladinMultiRun(printer)
+	// PaladinMultiRun(printer)
 	// testSim(printer)
 	// findUpgrades_Sim_PaladinMiti_Run(printer)
 	// findUpgrades_Paladin_Sim_AllRaid_Run(printer)
 	// findNeededUpgradeLevel(printer)
+	trinketSims(printer)
 }
 
-func setupPallyMitigation() (items.FullOptionsMap, model.Model) {
+func setupPallyMitigationSet() (items.FullOptionsMap, model.Model) {
 	model := model.Model_PallyProtMitigation()
-	return setup.OptionsSetup_FromGearFile(files.GearFileProtMitigation, &model, setup.MissingEnchant_Panic, printer), model
+	return setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationSet, &model, setup.MissingEnchant_Panic, printer), model
+}
+
+func setupPallyMitigationNoSet() (items.FullOptionsMap, model.Model) {
+	model := model.Model_PallyProtMitigation()
+	return setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationNoSet, &model, setup.MissingEnchant_Panic, printer), model
 }
 
 func setupPallyDps() (items.FullOptionsMap, model.Model) {

@@ -15,9 +15,10 @@ const (
 
 	BagsFilename = `nerago-gearing\files\gear\bags-gear.json`
 
-	GearFileProtMitigation = `nerago-gearing\files\gear\gear-prot-defence.json`
-	GearFileProtDps        = `nerago-gearing\files\gear\gear-prot-dps.json`
-	GearFileRet            = `nerago-gearing\files\gear\gear-ret.json`
+	GearFileProtMitigationSet   = `nerago-gearing\files\gear\gear-prot-miti-set.json`
+	GearFileProtMitigationNoSet = `nerago-gearing\files\gear\gear-prot-miti-noset.json`
+	GearFileProtDps             = `nerago-gearing\files\gear\gear-prot-dps.json`
+	GearFileRet                 = `nerago-gearing\files\gear\gear-ret.json`
 
 	SimProtMitigation = `nerago-gearing\files\cli\example-prot-miti.json`
 	SimProtDps        = `nerago-gearing\files\cli\example-prot-dps.json`
@@ -45,8 +46,6 @@ func GearFileFor(spec stats.SpecType) string {
 	switch spec {
 	case stats.Spec_PaladinProtDps:
 		return GearFileProtDps
-	case stats.Spec_PaladinProtMitigation:
-		return GearFileProtMitigation
 	case stats.Spec_PaladinRet:
 		return GearFileRet
 	default:

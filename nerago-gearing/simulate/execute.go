@@ -58,12 +58,20 @@ func updateHealRate(input *wowsim_proto.RaidSimRequest, spec gear_stat.SpecType)
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 45000
 	} else {
 		// Dark Animus Model:
-		input.Raid.Parties[0].Players[0].HealingModel.Hps = 170000
+
+		// that is a bit high, with 2 mobs rate i just hit for 0.468675/s (40 events in 18.747s)
+		// this would imply rate of 0.05, ten times too high
+		// for _, target := range input.Encounter.Targets {
+		// 	target.SwingSpeed = 0.1
+		// 	target.MinBaseDamage *= 0.3
+		// }
+		// input.Raid.Parties[0].Players[0].HealingModel.Hps = 170000
 
 		for _, target := range input.Encounter.Targets {
-			target.SwingSpeed = 0.1
-			target.MinBaseDamage *= 0.3
+			target.SwingSpeed = 0.5
+			target.MinBaseDamage *= 1.3
 		}
+		input.Raid.Parties[0].Players[0].HealingModel.Hps = 220000
 	}
 }
 
