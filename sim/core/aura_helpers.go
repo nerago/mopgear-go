@@ -70,6 +70,8 @@ func (procAura *Aura) AttachProcTriggerCallback(unit *Unit, config ProcTrigger) 
 
 	handler := config.Handler
 
+	// TODO next hotspot
+
 	applyHandler := func(sim *Simulation, spell *Spell, result *SpellResult) {
 		if config.TriggerImmediately {
 			handler(sim, spell, result)
