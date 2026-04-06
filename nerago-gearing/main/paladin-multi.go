@@ -242,7 +242,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		// 95535, // normal lightning legs REMOVE1
 		// 94773, // centripetal shoulders normal REMOVE1
-		// 96468, // talonrender chest heroic
+		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
 		// 96428, // shell-coated wrists REMOVE12
 		96447, // rot-proof greatplate
@@ -260,7 +260,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		95142, // striker's battletags
 		95205, // terra-cotta neck
-		// 95178, // lootraptor amulet REMOVE1
+		95178, // lootraptor amulet
 		// 94776, // primal turtle amulet REMOVE1
 
 		87145, // defiled earth

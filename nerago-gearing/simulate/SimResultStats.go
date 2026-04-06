@@ -52,24 +52,37 @@ func (stats SimResultStats) Print(printer *util.PrintRecorder) {
 func (stats SimResultStats) CompactStringSignedPercent() string {
 	var build util.StringBuild2
 	build.WriteString("dps=")
-	appendFloatSigned(stats.DPS, &build)
+	appendFloatSignedPercent(stats.DPS, &build)
 	build.WriteString("dtps=")
-	appendFloatSigned(stats.DTPS, &build)
+	appendFloatSignedPercent(stats.DTPS, &build)
 	build.WriteString("tmi=")
-	appendFloatSigned(stats.TMI, &build)
+	appendFloatSignedPercent(stats.TMI, &build)
 	build.WriteString("death=")
-	appendFloatSigned(stats.DEATH*100, &build)
+	appendFloatSignedPercent(stats.DEATH*100, &build)
 	return build.String()
 }
 
-func appendFloatSigned(value float64, build *util.StringBuild2) {
+func appendFloatSignedPercent(value float64, build *util.StringBuild2) {
 	padSize := 6
 	if value > 0 {
 		build.WriteRune('+')
 		padSize--
 	}
 
-	build.WriteFloat64_RightPadded(value, padSize)
+	build.WriteFloat64_RightPadded(value, 1, padSize)
+}
+
+func (stats SimResultStats) CompactStringGeneral() string {
+	var build util.StringBuild2
+	build.WriteString("dps=")
+	build.WriteFloat64_RightPadded(stats.DPS, 0, 6)
+	build.WriteString(" dtps=")
+	build.WriteFloat64_RightPadded(stats.DTPS, 0, 6)
+	build.WriteString(" tmi=")
+	build.WriteFloat64_RightPadded(stats.TMI, 0, 6)
+	build.WriteString(" death=")
+	build.WriteFloat64(stats.DEATH*100, 1)
+	return build.String()
 }
 
 func (stats SimResultStats) IsEmpty() bool {

@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/solver"
 	"sync"
+	"sync/atomic"
 )
 
 type MultiSetParam struct {
@@ -12,7 +13,6 @@ type MultiSetParam struct {
 	Label    string
 	GearFile string
 	Model    model.Model
-	job      *MultiSetJob
 
 	// solve settings
 	IncludeInFirstPass   bool
@@ -26,14 +26,6 @@ type MultiSetParam struct {
 	extraFromBags             bool
 	fixedSlots                map[items.SlotEquip]items.ItemId
 
-	// working data
-	exactEquippedGear items.FullEquipMap
-	itemOptions       items.FullOptionsMap
-	addedFromBags     []items.ItemId
-	seenInSolutions   *seenMap
-	baselineResult    solver.SolveOutput
-	ratingMultiply    uint64 // derived
-
 	// stuff not ported
 	// boolean upgradeCurrentItems;
 	// boolean challengeScale;
@@ -43,8 +35,25 @@ type MultiSetParam struct {
 	// suppressSlotCheck
 }
 
-func (param *MultiSetParam) init(job *MultiSetJob) {
-	param.job = job
+type multiSetParamInternal struct {
+	MultiSetParam
+
+	job *MultiSetJob
+
+	// working data
+	exactEquippedGear items.FullEquipMap
+	itemOptions       items.FullOptionsMap
+	addedFromBags     []items.ItemId
+	seenInSolutions   *seenMap
+	baselineResult    solver.SolveOutput
+	ratingMultiply    uint64 // derived
+
+	//debug
+	solveFailCount    atomic.Uint64
+	solveSuccessCount atomic.Uint64
+}
+
+func (param *multiSetParamInternal) init() {
 	param.seenInSolutions = &seenMap{content: make(map[items.ItemId]uint32)}
 }
 

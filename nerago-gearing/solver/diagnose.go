@@ -17,6 +17,7 @@ func diagnoseFailure(optionsMap *items.SolvableOptionsMap, model *model.Model) (
 		return accepatable, ""
 	} else {
 		message := discoverCommonProblem(proposedList, &model.StatRequirements)
+		setsAtLimits(optionsMap)
 		return util.Optional_Empty[items.SolvableItemSet](), message
 	}
 }

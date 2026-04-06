@@ -45,19 +45,19 @@ func (sb *StringBuild2) WriteUint16(value uint16) {
 	*sb = strconv.AppendUint(*sb, uint64(value), 10)
 }
 
-func (sb *StringBuild2) WriteFloat64(value float64) {
-	*sb = strconv.AppendFloat(*sb, value, 'f', 1, 64)
+func (sb *StringBuild2) WriteFloat64(value float64, decimalPlaces int) {
+	*sb = strconv.AppendFloat(*sb, value, 'f', decimalPlaces, 64)
 }
 
-func (sb *StringBuild2) WriteFloat32(value float32) {
-	*sb = strconv.AppendFloat(*sb, float64(value), 'f', 1, 32)
+func (sb *StringBuild2) WriteFloat32(value float32, decimalPlaces int) {
+	*sb = strconv.AppendFloat(*sb, float64(value), 'f', decimalPlaces, 32)
 }
 
-func (sb *StringBuild2) WriteFloat64_RightPadded(value float64, pad int) {
+func (sb *StringBuild2) WriteFloat64_RightPadded(value float64, decimalPlaces int, pad int) {
 	*sb = slices.Grow(*sb, pad)
 
 	oldSize := len(*sb)
-	*sb = strconv.AppendFloat(*sb, value, 'f', 1, 64)
+	*sb = strconv.AppendFloat(*sb, value, 'f', decimalPlaces, 64)
 	written := len(*sb) - oldSize
 
 	remainingPad := pad - written

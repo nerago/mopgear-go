@@ -35,7 +35,7 @@ func StatRequirementsHitExpertise_ProtFullExpertise() StatRequirementsHitExperti
 
 func StatRequirementsHitExpertise_ProtFlexibleParry() StatRequirementsHitExpertise {
 	return StatRequirementsHitExpertise{
-		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED*2, // TODO why so high?
+		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED*4,
 		TARGET_RATING_MELEE, TARGET_RATING_TANK}
 }
 

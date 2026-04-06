@@ -167,6 +167,7 @@ func (job *MultiSetJob) runSims(jobList []simulateJob, runSize simulate.WowSim_R
 
 	channel_op.IterateEach_Blocking_Void(evaluateThreadCount, jobList, func(sim *simulateJob) {
 		result := simulate.WowSim_Execute(runSize, sim.spec, &sim.equip, sim.professions, nil, trackProgress.MakeNested())
+		job.printer.Printf("sim %22s %s\n", sim.spec.Name(), result.CompactStringGeneral())
 		sim.result = &result
 	})
 }
@@ -201,7 +202,7 @@ func (job *MultiSetJob) reportSimResults(resultList []simulateResult) {
 		job.printer.Printf("&&&&&&&&&&&&& %s\n", result.proposed.id)
 		printChosenCombo(&result.proposed.combo, job.printer)
 		for specIndex, specResult := range result.result {
-			param := job.params[specIndex]
+			param := &job.params[specIndex]
 			job.printer.Printf("---------------- %s ----------------\n", param.Label)
 			output := result.proposed.parts[specIndex]
 			output.Report(job.printer)

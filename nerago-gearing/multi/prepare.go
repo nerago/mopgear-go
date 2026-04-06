@@ -40,7 +40,7 @@ func (job *MultiSetJob) prepareInitial() {
 	job.prepareRatingMultipliers()
 }
 
-func (param *MultiSetParam) prepareStartingGear() {
+func (param *multiSetParamInternal) prepareStartingGear() {
 	param.job.printer.Println(param.Label)
 
 	equipped := loaders.GearFileReader_Read(param.GearFile)
@@ -50,7 +50,7 @@ func (param *MultiSetParam) prepareStartingGear() {
 	setup.UpgradeExistingToLevel2(&param.itemOptions, param.ForceUpgradeExistingItems, &param.Model, param.job.printer)
 }
 
-func (param *MultiSetParam) prepareExtraItems() {
+func (param *multiSetParamInternal) prepareExtraItems() {
 	param.job.printer.Println(param.Label)
 
 	for _, itemId := range param.extraItems {
@@ -64,7 +64,7 @@ func (param *MultiSetParam) prepareExtraItems() {
 	}
 }
 
-func (param *MultiSetParam) includeExtra(itemId items.ItemId) {
+func (param *multiSetParamInternal) includeExtra(itemId items.ItemId) {
 	if param.itemOptions.IncludesItemId(itemId) {
 		param.job.printer.Printf("EXTRA already included %d\n", itemId)
 		return
@@ -81,10 +81,10 @@ func (param *MultiSetParam) includeExtra(itemId items.ItemId) {
 	param.extraLoadAndGenerate(itemId)
 }
 
-func (param *MultiSetParam) copyExtraFromOtherSpec(itemId items.ItemId) bool {
+func (param *multiSetParamInternal) copyExtraFromOtherSpec(itemId items.ItemId) bool {
 	options := make([]items.FullItem, 0)
-	for _, otherParam := range param.job.params {
-		more := otherParam.itemOptions.FindItemId(itemId)
+	for otherIndex := range param.job.params {
+		more := param.job.params[otherIndex].itemOptions.FindItemId(itemId)
 		options = slices.AppendSeq(options, more)
 	}
 
@@ -101,7 +101,7 @@ func (param *MultiSetParam) copyExtraFromOtherSpec(itemId items.ItemId) bool {
 	}
 }
 
-func (param *MultiSetParam) copyExtraFromBags(itemId items.ItemId) bool {
+func (param *multiSetParamInternal) copyExtraFromBags(itemId items.ItemId) bool {
 	equipped := param.job.bagsGear.GetWithItemId(itemId)
 	if equipped != nil {
 		// bags file doesn't have upgrade steps
@@ -115,7 +115,7 @@ func (param *MultiSetParam) copyExtraFromBags(itemId items.ItemId) bool {
 	return false
 }
 
-func (param *MultiSetParam) tryAddExtraFromBags(equipped *loaders.EquippedItem) {
+func (param *multiSetParamInternal) tryAddExtraFromBags(equipped *loaders.EquippedItem) {
 	if db.WowSimDB_HasItemId(equipped.ItemId) {
 		// bail early before considering full item stats/enchants/etc that might not fit spec
 		basicVersion := db.WowSimDB_ByIdAndUpgrade(equipped.ItemId, 0)
@@ -149,13 +149,13 @@ func (param *MultiSetParam) tryAddExtraFromBags(equipped *loaders.EquippedItem) 
 	}
 }
 
-func (param *MultiSetParam) extraLoadAndGenerate(itemId items.ItemId) {
+func (param *multiSetParamInternal) extraLoadAndGenerate(itemId items.ItemId) {
 	options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, param.ExtraUpgradeLevel, &param.Model, param.job.printer)
 	param.itemOptions.AddSeveralOptions(example.Slot, options)
 	param.job.printer.Printf("OPTION %s\n", example.CreateString())
 }
 
-func (param *MultiSetParam) restrictFixed() {
+func (param *multiSetParamInternal) restrictFixed() {
 	param.job.printer.Println(param.Label)
 
 	// actual fixed slot stuff
@@ -235,7 +235,7 @@ func (job *MultiSetJob) validateMultiSetAlignItemSlots() {
 	// }
 }
 
-func (param *MultiSetParam) runBaseline() {
+func (param *multiSetParamInternal) runBaseline() {
 	param.job.printer.Printf("BASELINE for %s\n", param.Label)
 	param.baselineResult = solver.Solver(solver.SolveInput{
 		ItemOptions:         &param.itemOptions,
@@ -264,7 +264,7 @@ func (job *MultiSetJob) prepareRatingMultipliers() {
 	}
 }
 
-func (param *MultiSetParam) prepareRatingMultiplier() {
+func (param *multiSetParamInternal) prepareRatingMultiplier() {
 	var targetCombined float64 = 1000000000000000000.0
 	baselineRating := float64(param.baselineResult.ResultRating)
 	if baselineRating > targetCombined/100.0 {

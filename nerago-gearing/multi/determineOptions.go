@@ -42,7 +42,7 @@ func (job *MultiSetJob) determineCommon() commonComboOptions {
 	return commonOptions
 }
 
-func searchParamOptions(params *[]MultiSetParam) (commonComboOptions, map[items.ItemId][]string) {
+func searchParamOptions(params *[]multiSetParamInternal) (commonComboOptions, map[items.ItemId][]string) {
 	commonOptions := make(commonComboOptions)
 	seenIn := make(map[items.ItemId][]string)
 

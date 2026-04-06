@@ -7,7 +7,7 @@ import (
 
 const revisedExtraSetsExpectedEach = 2
 
-func (job *MultiSetJob) makeRevised(param *MultiSetParam, revisedCommon *commonCombo, outerTrackProgress *util.TrackProgress, printer *util.PrintRecorder) []singleProposed {
+func (job *MultiSetJob) makeRevised(param *multiSetParamInternal, revisedCommon *commonCombo, outerTrackProgress *util.TrackProgress, printer *util.PrintRecorder) []singleProposed {
 	extraOutputs := make([]singleProposed, 0, 3)
 
 	revisedOutput := job.revisedSolveCombo(revisedCommon, param, param.PhasedAcceptable, outerTrackProgress)
@@ -29,7 +29,7 @@ func (job *MultiSetJob) makeRevised(param *MultiSetParam, revisedCommon *commonC
 	return extraOutputs
 }
 
-func (job *MultiSetJob) revisedSolveCombo(combo *commonCombo, param *MultiSetParam, phased bool, outerTrackProgress *util.TrackProgress) solver.SolveOutput {
+func (job *MultiSetJob) revisedSolveCombo(combo *commonCombo, param *multiSetParamInternal, phased bool, outerTrackProgress *util.TrackProgress) solver.SolveOutput {
 	options := buildOptionsGivenCombo(param.itemOptions, combo)
 	return solver.Solver(solver.SolveInput{
 		ItemOptions:        &options,

@@ -28,3 +28,58 @@ const (
 	Spec_DeathKnightDps        SpecType = iota
 	Spec_DeathKnightBlood      SpecType = iota
 )
+
+func (spec SpecType) Name() any {
+	switch spec {
+	case Spec_PaladinProtMitigation:
+		return "PaladinProtMitigation"
+	case Spec_PaladinProtDps:
+		return "PaladinProtDps"
+	case Spec_PaladinRet:
+		return "PaladinRet"
+	case Spec_PaladinHoly:
+		return "PaladinHoly"
+	case Spec_WarriorProt:
+		return "WarriorProt"
+	case Spec_WarriorArms:
+		return "WarriorArms"
+	case Spec_DruidBear:
+		return "DruidBear"
+	case Spec_DruidTree:
+		return "DruidTree"
+	case Spec_DruidBoom:
+		return "DruidBoom"
+	case Spec_DruidFeral:
+		return "DruidFeral"
+	case Spec_MageFrost:
+		return "MageFrost"
+	case Spec_PriestShadow:
+		return "PriestShadow"
+	case Spec_PriestHoly:
+		return "PriestHoly"
+	case Spec_Rogue:
+		return "Rogue"
+	case Spec_Warlock:
+		return "Warlock"
+	case Spec_ShamanRestoration:
+		return "ShamanRestoration"
+	case Spec_ShamanElemental:
+		return "ShamanElemental"
+	case Spec_ShamanEnhance:
+		return "ShamanEnhance"
+	case Spec_Hunter:
+		return "Hunter"
+	case Spec_MonkBrewmaster:
+		return "MonkBrewmaster"
+	case Spec_MonkMistweaver:
+		return "MonkMistweaver"
+	case Spec_MonkDps:
+		return "MonkDps"
+	case Spec_DeathKnightDps:
+		return "DeathKnightDps"
+	case Spec_DeathKnightBlood:
+		return "DeathKnightBlood"
+	default:
+		return "unknown"
+	}
+}

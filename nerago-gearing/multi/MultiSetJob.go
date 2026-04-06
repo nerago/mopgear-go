@@ -16,7 +16,7 @@ const (
 
 type MultiSetJob struct {
 	printer            *util.PrintRecorder
-	params             []MultiSetParam
+	params             []multiSetParamInternal
 	fixedForge         map[items.ItemId]stats.ReforgeRecipe
 	specificAllowRates map[items.ItemId]float32
 	bagsGear           loaders.EquippedArray
@@ -34,8 +34,8 @@ func MultiSetJob_Create(printer *util.PrintRecorder, solveSizeProposal solver.So
 }
 
 func (job *MultiSetJob) AddSetParam(param MultiSetParam) {
-	param.init(job)
-	job.params = append(job.params, param)
+	job.params = append(job.params, multiSetParamInternal{MultiSetParam: param, job: job})
+	job.params[len(job.params)-1].init()
 }
 
 func (job *MultiSetJob) AddFixedForge(itemId items.ItemId, reforge stats.ReforgeRecipe) {

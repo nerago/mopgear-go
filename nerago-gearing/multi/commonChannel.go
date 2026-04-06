@@ -151,7 +151,7 @@ func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targ
 	return resultChannel, actualExpectedCount
 }
 
-func makeBaselineWorker(params []MultiSetParam, commonOptions commonComboOptions, comboChannel chan<- commonCombo) {
+func makeBaselineWorker(params []multiSetParamInternal, commonOptions commonComboOptions, comboChannel chan<- commonCombo) {
 	rng := rand.New(rand.NewSource(0xBA5E))
 	for paramIndex := range params {
 		param := &params[paramIndex]
@@ -170,7 +170,7 @@ func makeBaselineWorker(params []MultiSetParam, commonOptions commonComboOptions
 	}
 }
 
-func makeEquippedWorker(params []MultiSetParam, commonOptions commonComboOptions, comboChannel chan<- commonCombo) {
+func makeEquippedWorker(params []multiSetParamInternal, commonOptions commonComboOptions, comboChannel chan<- commonCombo) {
 	rng := rand.New(rand.NewSource(0xE819))
 	for paramIndex := range params {
 		param := &params[paramIndex]

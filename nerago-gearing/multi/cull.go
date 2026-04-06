@@ -90,7 +90,7 @@ func (job *MultiSetJob) cullingReport() {
 	}
 }
 
-func (param *MultiSetParam) cullingReport() {
+func (param *multiSetParamInternal) cullingReport() {
 	type extraInfoStruct struct {
 		itemId items.ItemId
 		count  uint32
@@ -131,7 +131,7 @@ func (param *MultiSetParam) cullingReport() {
 	}
 }
 
-func (param MultiSetParam) cullingReportBags() {
+func (param *multiSetParamInternal) cullingReportBags() {
 	for _, itemId := range param.addedFromBags {
 		seenCount := param.seenInSolutions.content[itemId]
 		if seenCount > 0 {
