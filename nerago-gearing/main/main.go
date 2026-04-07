@@ -82,9 +82,9 @@ func core(printer *util.PrintRecorder) {
 	// PaladinMultiRun(printer)
 	// testSim(printer)
 	// findUpgrades_Sim_PaladinMiti_Run(printer)
-	// findUpgrades_Paladin_Sim_AllRaid_Run(printer)
+	findUpgrades_Paladin_Sim_AllRaid_Run(printer)
 	// findNeededUpgradeLevel(printer)
-	trinketSims(printer)
+	// trinketSims(printer)
 }
 
 func setupPallyMitigationSet() (items.FullOptionsMap, model.Model) {

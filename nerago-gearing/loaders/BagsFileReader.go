@@ -5,6 +5,7 @@ import (
 	"os"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/util"
 )
 
 func BagsFileReader_Read() EquippedArray {
@@ -25,6 +26,17 @@ func BagsFileReader_Read() EquippedArray {
 		equippedItems = append(equippedItems, equip)
 	}
 
+	return equippedItems
+}
+
+func BagsFile_PlusPaladinGear_Read() EquippedArray {
+	equippedItems := BagsFileReader_Read()
+	gearFiles := []string{files.GearFileProtMitigationSet, files.GearFileProtMitigationNoSet, files.GearFileProtDps, files.GearFileRet}
+	for _, filename := range gearFiles {
+		gear := GearFileReader_Read(filename)
+		equippedItems = append(equippedItems, gear...)
+	}
+	util.RemoveDuplicatesFunc(equippedItems, (*EquippedItem).Equals)
 	return equippedItems
 }
 

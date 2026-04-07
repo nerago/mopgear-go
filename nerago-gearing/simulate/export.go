@@ -11,7 +11,7 @@ import (
 )
 
 func WowSimJson_Write(equip *items.FullEquipMap, model *model.Model, printer *util.PrintRecorder) {
-	inputFile := files.GearFileFor(model.Spec)
+	inputFile := files.GearFileFor(model.Spec, true)
 	allBytes, err := os.ReadFile(inputFile)
 	if err != nil {
 		panic(err)

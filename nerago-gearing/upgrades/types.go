@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
+	"paladin_gearing_go/util"
 	"strconv"
 )
 
@@ -18,10 +19,15 @@ const (
 // ################## upgradeItemTask ##################
 
 type upgradeItemTask struct {
-	item *items.FullItem
-	slot items.SlotEquip
-	goal UpgradeGoal
-	boss string
+	item       *items.FullItem
+	slot       items.SlotEquip
+	goal       UpgradeGoal
+	boss       string
+	canUpgrade CanUpgradeResult
+}
+
+func (task upgradeItemTask) actuallyAttemptUpgrade() bool {
+	return task.canUpgrade == CanUpgrade_Yes || task.canUpgrade == CanUpgrade_AvailableInBags
 }
 
 func (task upgradeItemTask) Equals(other upgradeItemTask) bool {
@@ -57,10 +63,14 @@ type upgradeItemResult struct {
 	factor   float64
 }
 
+func upgradeItemResult_OfFailure(task *upgradeItemTask) upgradeItemResult {
+	return upgradeItemResult{upgradeItemTask: *task, success: false, factor: -1}
+}
+
 func (result upgradeItemResult) Equals(other upgradeItemResult) bool {
 	return result.upgradeItemTask.Equals(other.upgradeItemTask) &&
 		result.success == other.success &&
-		result.itemSet.Equals(other.itemSet) &&
+		result.itemSet.EqualsAllowNil(other.itemSet) &&
 		result.setBonus == other.setBonus &&
 		result.factor == other.factor
 }
@@ -75,10 +85,17 @@ func (result upgradeItemResult) increase() float64 {
 
 func (result upgradeItemResult) increaseStr() string {
 	if result.factor == 0 || result.factor == -1 {
+		if result.canUpgrade != CanUpgrade_Yes {
+			return result.canUpgrade.Text()
+		}
 		return ""
 	}
 	percent := result.increase()
-	return formatIncrease(percent)
+	str := formatIncrease(percent)
+	if result.canUpgrade == CanUpgrade_AvailableInBags {
+		str = "* " + str
+	}
+	return str
 }
 
 func factorToIncrease(factor float64) float64 {
@@ -154,6 +171,9 @@ func (result upgradeItemResultWithSim) percentSim() float64 {
 
 func (result upgradeItemResultWithSim) percentStrSim() string {
 	if result.sim.IsEmpty() {
+		if result.canUpgrade != CanUpgrade_Yes {
+			return result.canUpgrade.Text()
+		}
 		return ""
 	}
 
@@ -177,7 +197,7 @@ func (result upgradeItemResultWithSim) bestOfSimResults() float64 {
 	if !result.sim.IsEmpty() {
 		for _, resultType := range simulate.SimResultTypeList {
 			increase := ratioToIncrease(&result.sim, &result.baseSim, resultType)
-			best = math.Max(best, increase) // TODO use nan friendly?
+			best = util.MaxIgnoreNaN(best, increase)
 		}
 	}
 	return best
@@ -223,7 +243,7 @@ func (report *reportForItemBasic) Add(group reportGroup, result upgradeItemResul
 func (report *reportForItemBasic) BestRating() float64 {
 	var best float64 = -100.0
 	for _, item := range report.grouped {
-		best = math.Max(best, item.factor)
+		best = util.MaxIgnoreNaN(best, item.factor)
 	}
 	return best
 }
@@ -257,7 +277,15 @@ func (report *reportForItemWithSim) Add(group reportGroup, result upgradeItemRes
 func (report *reportForItemWithSim) BestRating() float64 {
 	var best float64 = -100.0
 	for _, item := range report.grouped {
-		best = math.Max(best, math.Max(item.percentSim(), item.increase()))
+		best = util.MaxIgnoreNaN3(best, item.percentSim(), item.increase())
+	}
+	return best
+}
+
+func (report *reportForItemWithSim) BestRating_NoWeight() float64 {
+	var best float64 = -100.0
+	for _, item := range report.grouped {
+		best = util.MaxIgnoreNaN(best, item.percentSim())
 	}
 	return best
 }

@@ -57,6 +57,16 @@ func (itemSet *FullItemSet) Equals(other *FullItemSet) bool {
 	return itemSet.items.Equals(&other.items)
 }
 
+func (itemSet *FullItemSet) EqualsAllowNil(other *FullItemSet) bool {
+	if itemSet != nil && other != nil {
+		return itemSet.items.Equals(&other.items)
+	} else if itemSet == nil && other == nil {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (itemSet *FullItemSet) ValidateItemRules() {
 	weapon := itemSet.items.Get(Equip_Weapon)
 	if weapon == nil {

@@ -28,11 +28,13 @@ func ItemFinder_ThroneStrengthPlateTank(difficulty stats.Difficulty) []*items.Fu
 		throneClassGearSet(stats.Spec_PaladinRet, difficulty),
 		throneGearGeneric(stats.Armor_Plate, stats.PrimaryStat_Strength, difficulty),
 		trinketsForDifficulty(g_tankTrinkets, difficulty),
-		trinketsForDifficulty(g_strengthTrinkets, difficulty))
+		trinketsForDifficulty(g_strengthTrinkets, difficulty),
+		[]*items.FullItem{db.WowSimDB_ByIdAndUpgrade(96436, 0)}, // Tortos' Discarded Shell; int/haste shield
+	)
 }
 
-func ItemFinder_CelestialCloak(difficulty stats.Difficulty) []*items.FullItem  {
-	return []*items.FullItem {
+func ItemFinder_CelestialCloak(difficulty stats.Difficulty) []*items.FullItem {
+	return []*items.FullItem{
 		db.WowSimDB_ByIdAndUpgrade(98147, 0),
 		db.WowSimDB_ByIdAndUpgrade(98335, 0),
 		db.WowSimDB_ByIdAndUpgrade(98146, 0),

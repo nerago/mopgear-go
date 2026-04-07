@@ -30,11 +30,19 @@ func reportBasicByBoss(resultList []upgradeItemResult, printer *util.PrintRecord
 		if rank != nil {
 			printer.Println(bossName)
 			for result := range rank.OrderedResult() {
-				printer.Printf("%10s \t%d \t%45s \t%6s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.increaseStr())
+				printer.Printf("%10s \t%d \t%45s \t%6s\t %s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.increaseStr(), makeNote(result))
 			}
 			printer.Println0()
 		}
 	}
+}
+
+func makeNote(result upgradeItemResult) any {
+	return result.canUpgrade.Text()
+}
+
+func makeNoteSim(result upgradeItemResultWithSim) any {
+	return result.canUpgrade.Text()
 }
 
 type reportableRanked interface {
@@ -53,7 +61,7 @@ func reportBasicBySlot(resultList []upgradeItemResult, printer *util.PrintRecord
 		if rank != nil {
 			printer.Println("RANKING " + slot.Name())
 			for result := range rank.OrderedResult() {
-				printer.Printf("  %d \t%45s \t%6s\t %s\n", result.item.Ref.ItemLevel, result.item.BaseName, result.increaseStr(), result.boss)
+				printer.Printf("  %d \t%45s \t%6s\t %s\t %s\n", result.item.Ref.ItemLevel, result.item.BaseName, result.increaseStr(), result.boss, makeNote(result))
 			}
 		}
 	}
@@ -67,7 +75,7 @@ func reportBasicOverallRank(resultList []upgradeItemResult, printer *util.PrintR
 
 	printer.Println("RANKING OVERALL PERCENT UPGRADE")
 	for result := range ranked.OrderedResult() {
-		printer.Printf("%10s \t%d \t%45s \t%6s\t %s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.increaseStr(), result.boss)
+		printer.Printf("%10s \t%d \t%45s \t%6s\t %s\t %s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.increaseStr(), result.boss, makeNote(result))
 	}
 }
 
@@ -95,10 +103,10 @@ func reportBasicByBossSim(resultList []upgradeItemResultWithSim, printer *util.P
 			printer.Println("BOSS " + bossName)
 			for result := range rank.OrderedResult() {
 				if result.sim.IsEmpty() {
-					printer.Printf("%10s%4d%45s%4d%8s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.setBonus, result.increaseStr())
+					printer.Printf("%10s %4d %45s %4d %8s %s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.setBonus, result.increaseStr(), makeNoteSim(result))
 				} else {
-					printer.Printf("%10s%4d%45s%4d%8s%8s\t\t%s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.setBonus, result.increaseStr(),
-						result.percentStrSim(), result.increaseSimBreakdown().CompactStringSignedPercent())
+					printer.Printf("%10s %4d %45s %4d %8s %8s %s %s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.setBonus, result.increaseStr(),
+						result.percentStrSim(), result.increaseSimBreakdown().CompactStringSignedPercent(), makeNoteSim(result))
 				}
 			}
 			printer.Println0()
@@ -116,10 +124,10 @@ func reportBasicBySlotSim(resultList []upgradeItemResultWithSim, printer *util.P
 			printer.Println("RANKING " + slot.Name())
 			for result := range rank.OrderedResult() {
 				if result.sim.IsEmpty() {
-					printer.Printf("%10s%4d%45s%25s%4d%8s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.boss, result.setBonus, result.increaseStr())
+					printer.Printf("%10s %4d %45s %25s %4d %8s %s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.boss, result.setBonus, result.increaseStr(), makeNoteSim(result))
 				} else {
-					printer.Printf("%10s%4d%45s%25s%4d%8s%8s\t\t%s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.boss, result.setBonus, result.increaseStr(),
-						result.percentStrSim(), result.increaseSimBreakdown().CompactStringSignedPercent())
+					printer.Printf("%10s %4d %45s %25s %4d %8s %8s %s %s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.boss, result.setBonus, result.increaseStr(),
+						result.percentStrSim(), result.increaseSimBreakdown().CompactStringSignedPercent(), makeNoteSim(result))
 				}
 			}
 			printer.Println0()
@@ -136,10 +144,10 @@ func reportBasicOverallRankSim(resultList []upgradeItemResultWithSim, printer *u
 	printer.Println("RANKING OVERALL PERCENT UPGRADE")
 	for result := range ranked.OrderedResult() {
 		if result.sim.IsEmpty() {
-			printer.Printf("%10s%4d%45s%25s%4d%8s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.boss, result.setBonus, result.increaseStr())
+			printer.Printf("%10s %4d %45s %25s %4d %8s %s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.boss, result.setBonus, result.increaseStr(), makeNoteSim(result))
 		} else {
-			printer.Printf("%10s%4d%45s%25s%4d%8s%8s\t\t%s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.boss, result.setBonus, result.increaseStr(),
-				result.percentStrSim(), result.increaseSimBreakdown().CompactStringSignedPercent())
+			printer.Printf("%10s %4d %45s %25s %4d %8s %8s %s %s\n", result.slot.Name(), result.item.Ref.ItemLevel, result.item.BaseName, result.boss, result.setBonus, result.increaseStr(),
+				result.percentStrSim(), result.increaseSimBreakdown().CompactStringSignedPercent(), makeNoteSim(result))
 		}
 	}
 }

@@ -8,13 +8,14 @@ type GemInfo struct {
 }
 
 type ReforgeRecipe struct {
+	hasValue bool
 	From, To StatType
 }
 
-var ReforgeRecipe_empty ReforgeRecipe = ReforgeRecipe{-1, -1}
+var ReforgeRecipe_empty ReforgeRecipe = ReforgeRecipe{}
 
 func (reforge *ReforgeRecipe) IsEmpty() bool {
-	return reforge.From < 0 || reforge.To < 0
+	return !reforge.hasValue
 }
 
 func (reforge *ReforgeRecipe) AppendString(builder *util.StringBuild2) {

@@ -8,7 +8,8 @@ import (
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
-	gear_stat "paladin_gearing_go/stats"
+	"paladin_gearing_go/stats"
+	"paladin_gearing_go/stats/extern_stats"
 	"paladin_gearing_go/util"
 	"slices"
 	"strings"
@@ -16,7 +17,6 @@ import (
 	"github.com/google/uuid"
 	wowsim_core "github.com/wowsims/mop/sim/core"
 	wowsim_proto "github.com/wowsims/mop/sim/core/proto"
-	wowsim_stat "github.com/wowsims/mop/sim/core/stats"
 	wowsim_protojson "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -30,7 +30,7 @@ const (
 	RunSize_SlowAccurate WowSim_RunSize = 500000
 )
 
-func WowSim_Execute(runSize WowSim_RunSize, spec gear_stat.SpecType, equipMap *items.FullEquipMap, profession model.ProfessionInfo, bonusStats *gear_stat.StatBlock, tracker *util.TrackProgress) SimResultStats {
+func WowSim_Execute(runSize WowSim_RunSize, spec stats.SpecType, equipMap *items.FullEquipMap, profession model.ProfessionInfo, bonusStats *stats.StatBlock, tracker *util.TrackProgress) SimResultStats {
 	infile := files.SimFileFor(spec)
 	var input wowsim_proto.RaidSimRequest
 	loadAnyProtoFile(&input, infile)
@@ -52,8 +52,8 @@ func WowSim_Execute(runSize WowSim_RunSize, spec gear_stat.SpecType, equipMap *i
 	return convertResult(finalResult)
 }
 
-func updateHealRate(input *wowsim_proto.RaidSimRequest, spec gear_stat.SpecType) {
-	if spec == gear_stat.Spec_PaladinProtDps || spec == gear_stat.Spec_PaladinRet {
+func updateHealRate(input *wowsim_proto.RaidSimRequest, spec stats.SpecType) {
+	if spec == stats.Spec_PaladinProtDps || spec == stats.Spec_PaladinRet {
 		// old Horridon model:
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 45000
 	} else {
@@ -75,12 +75,12 @@ func updateHealRate(input *wowsim_proto.RaidSimRequest, spec gear_stat.SpecType)
 	}
 }
 
-func updateRotation(input *wowsim_proto.RaidSimRequest, spec gear_stat.SpecType) {
+func updateRotation(input *wowsim_proto.RaidSimRequest, spec stats.SpecType) {
 	var rotation wowsim_proto.APLRotation
 	switch spec {
-	case gear_stat.Spec_PaladinProtDps, gear_stat.Spec_PaladinProtMitigation:
+	case stats.Spec_PaladinProtDps, stats.Spec_PaladinProtMitigation:
 		loadAnyProtoFile(&rotation, files.PaladinProtRotation)
-	case gear_stat.Spec_PaladinRet:
+	case stats.Spec_PaladinRet:
 		loadAnyProtoFile(&rotation, files.PaladinRetRotation)
 	default:
 		panic("don't know rotation")
@@ -126,52 +126,13 @@ func updateGear(input *wowsim_proto.RaidSimRequest, equipMap *items.FullEquipMap
 	input.Raid.Parties[0].Players[0].Equipment.Items = itemSpecArray
 }
 
-func updateBonus(input *wowsim_proto.RaidSimRequest, bonusStats *gear_stat.StatBlock) {
+func updateBonus(input *wowsim_proto.RaidSimRequest, bonusStats *stats.StatBlock) {
 	if bonusStats == nil {
 		return
 	}
 
-	unitStats := wowsim_proto.UnitStats{}
-	unitStats.Stats = make([]float64, 12)
-
-	for index := range bonusStats {
-		stat := gear_stat.StatType(index)
-		theirIndex := mapStat(stat)
-		unitStats.Stats[theirIndex] = float64(bonusStats[stat])
-	}
-
-	input.Raid.Parties[0].Players[0].BonusStats = &unitStats
-}
-
-func mapStat(stat gear_stat.StatType) wowsim_stat.Stat {
-	switch stat {
-	case gear_stat.Stat_Strength:
-		return wowsim_stat.Strength
-	case gear_stat.Stat_Agility:
-		return wowsim_stat.Agility
-	case gear_stat.Stat_Stamina:
-		return wowsim_stat.Stamina
-	case gear_stat.Stat_Intellect:
-		return wowsim_stat.Intellect
-	case gear_stat.Stat_Spirit:
-		return wowsim_stat.Spirit
-	case gear_stat.Stat_Hit:
-		return wowsim_stat.HitRating
-	case gear_stat.Stat_Crit:
-		return wowsim_stat.CritRating
-	case gear_stat.Stat_Haste:
-		return wowsim_stat.HasteRating
-	case gear_stat.Stat_Expertise:
-		return wowsim_stat.ExpertiseRating
-	case gear_stat.Stat_Dodge:
-		return wowsim_stat.DodgeRating
-	case gear_stat.Stat_Parry:
-		return wowsim_stat.ParryRating
-	case gear_stat.Stat_Mastery:
-		return wowsim_stat.MasteryRating
-	default:
-		panic("unknown that")
-	}
+	unitStats := extern_stats.GearStatBlockToUnitStats(bonusStats)
+	input.Raid.Parties[0].Players[0].BonusStats = unitStats
 }
 
 func waitForResult(reporter chan *wowsim_proto.ProgressMetrics, tracker *util.TrackProgress) *wowsim_proto.RaidSimResult {

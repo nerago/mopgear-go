@@ -46,6 +46,8 @@ func simEachInitialResult(input *FindUpgrades_SimInputs, inputList []upgradeItem
 			simResult.Print(printer)
 
 			resultChannel <- upgradeItemResultWithSim{*initial, *baseSim, simResult}
+		} else {
+			resultChannel <- upgradeItemResultWithSim{upgradeItemResult: *initial}
 		}
 	})
 }

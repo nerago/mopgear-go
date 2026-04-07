@@ -54,14 +54,16 @@ func checkDuplicates(extraItems []*items.FullItem) {
 }
 
 func makeExtraTasks(input *FindUpgrades_BasicInputs, extraItems []*items.FullItem, baseItems *items.FullOptionsMap, printer *util.PrintRecorder, goal UpgradeGoal) []upgradeItemTask {
-	bagsFile := loaders.BagsFileReader_Read()
+	bagsFile := loaders.BagsFile_PlusPaladinGear_Read()
 
 	taskList := make([]upgradeItemTask, 0, len(extraItems))
 	for _, extra := range extraItems {
 		boss := db.BossItemData_BossForItem(extra)
 		for _, slot := range extra.Slot.ToSlotEquipOptions() {
-			if canPerformSpecifiedUpgrade(input, extra, slot, baseItems, bagsFile, printer) {
-				taskList = append(taskList, upgradeItemTask{extra, slot, goal, boss})
+			canUpgrade := canPerformSpecifiedUpgrade(input, extra, slot, baseItems, bagsFile, printer)
+			switch canUpgrade {
+			case CanUpgrade_Yes, CanUpgrade_Equipped, CanUpgrade_Equipped_Similar, CanUpgrade_AvailableInBags:
+				taskList = append(taskList, upgradeItemTask{item: extra, slot: slot, goal: goal, boss: boss, canUpgrade: canUpgrade})
 			}
 		}
 	}
@@ -78,43 +80,70 @@ func addSubstituteItems(optionsMap *items.FullOptionsMap, substituteItems []item
 	}
 }
 
-func canPerformSpecifiedUpgrade(input *FindUpgrades_BasicInputs, extra *items.FullItem, slot items.SlotEquip, baseItems *items.FullOptionsMap, bagsFile loaders.EquippedArray, printer *util.PrintRecorder) bool {
+type CanUpgradeResult int8
+
+const (
+	CanUpgrade_Yes              CanUpgradeResult = iota
+	CanUpgrade_Equipped         CanUpgradeResult = iota
+	CanUpgrade_Equipped_Similar CanUpgradeResult = iota
+	CanUpgrade_AvailableInBags  CanUpgradeResult = iota
+	CanUpgrade_InvalidAlways    CanUpgradeResult = iota
+)
+
+func (can CanUpgradeResult) Text() string {
+	switch can {
+	case CanUpgrade_Equipped:
+		return "equipped"
+	case CanUpgrade_Equipped_Similar:
+		return "equipped similar"
+	case CanUpgrade_AvailableInBags:
+		return "available in bags"
+	case CanUpgrade_InvalidAlways:
+		return "invalid"
+	default:
+		return ""
+	}
+}
+
+func canPerformSpecifiedUpgrade(input *FindUpgrades_BasicInputs, extra *items.FullItem, slot items.SlotEquip, baseItems *items.FullOptionsMap, bagsFile loaders.EquippedArray, printer *util.PrintRecorder) CanUpgradeResult {
 	if slices.Contains(input.IgnoredItems, extra.ItemId()) {
-		return false
+		return CanUpgrade_InvalidAlways
 	}
 
-	if !CouldAddUpgradeToSet(baseItems, slot, printer, extra) {
-		return false
+	if result := CouldAddUpgradeToSet(baseItems, slot, printer, extra); result != CanUpgrade_Yes {
+		return result
 	}
 
 	if bagsFile.HasAnyWithItemId(extra.ItemId()) {
 		printer.Println("ALREADY AVAILABLE IN BAG " + extra.CreateString())
-		return false
+		return CanUpgrade_AvailableInBags
 	}
 
-	return true
+	return CanUpgrade_Yes
 }
 
-func CouldAddUpgradeToSet_ItemSlot(baseItems *items.FullOptionsMap, slot items.SlotItem, printer *util.PrintRecorder, extra *items.FullItem) bool {
+func CouldAddUpgradeToSet_ItemSlot(baseItems *items.FullOptionsMap, slot items.SlotItem, printer *util.PrintRecorder, extra *items.FullItem) CanUpgradeResult {
+	result := CanUpgrade_InvalidAlways
 	for _, slotEquip := range slot.ToSlotEquipOptions() {
-		if CouldAddUpgradeToSet(baseItems, slotEquip, printer, extra) {
-			return true
+		result = CouldAddUpgradeToSet(baseItems, slotEquip, printer, extra)
+		if result == CanUpgrade_Yes {
+			return result
 		}
 	}
-	return false
+	return result
 }
 
-func CouldAddUpgradeToSet(baseItems *items.FullOptionsMap, slot items.SlotEquip, printer *util.PrintRecorder, extra *items.FullItem) bool {
+func CouldAddUpgradeToSet(baseItems *items.FullOptionsMap, slot items.SlotEquip, printer *util.PrintRecorder, extra *items.FullItem) CanUpgradeResult {
 	if !baseItems.Has(slot) {
 		printer.Println("SLOT NOT USED IN CURRENT SET " + extra.CreateString())
-		return false
+		return CanUpgrade_InvalidAlways
 	}
 
 	if slot == items.Equip_Weapon {
 		currentWeapon := baseItems.Get(items.Equip_Weapon)[0]
 		if extra.Slot != currentWeapon.Slot {
 			printer.Println("WRONG WEAPON TYPE " + extra.CreateString())
-			return false
+			return CanUpgrade_InvalidAlways
 		}
 	}
 
@@ -122,25 +151,25 @@ func CouldAddUpgradeToSet(baseItems *items.FullOptionsMap, slot items.SlotEquip,
 		currentWeapon := baseItems.Get(items.Equip_Weapon)[0]
 		if currentWeapon.Slot == items.Item_Weapon2H {
 			printer.Println("INVALID OFFHAND WITH 2H WEAPON " + extra.CreateString())
-			return false
+			return CanUpgrade_InvalidAlways
 		}
 	}
 
 	if baseItems.IncludesItemIdInSlot(extra.ItemId(), slot) {
 		printer.Println("SAME ITEM " + extra.CreateString())
-		return false
+		return CanUpgrade_Equipped
 	}
 
 	paired := slot.PairedSlot()
 	if paired != -1 && baseItems.IncludesItemIdInSlot(extra.ItemId(), paired) {
 		printer.Println("SAME ITEM ID IN OTHER SLOT " + extra.CreateString())
-		return false
+		return CanUpgrade_Equipped
 	} else if paired != -1 && baseItems.IncludesItemNameInSlot(extra.BaseName, paired) {
 		printer.Println("SAME ITEM NAME IN OTHER SLOT (unique equipped) " + extra.CreateString())
-		return false
+		return CanUpgrade_Equipped_Similar
 	}
 
-	return true
+	return CanUpgrade_Yes
 }
 
 func findBase(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress) (float64, *items.FullItemSet) {
@@ -161,6 +190,11 @@ func findBase(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, 
 }
 
 func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *model.Model, parentPrinter *util.PrintRecorder, outerTracker *util.TrackProgress) upgradeItemResult {
+	if !extraTask.actuallyAttemptUpgrade() {
+		parentPrinter.Println("SKIPPING " + extraTask.item.BaseName)
+		return upgradeItemResult_OfFailure(extraTask)
+	}
+
 	printer := util.PrintRecorder_HoldAll()
 
 	item := extraTask.item // this "item" is from ItemFinder and is just a basic DB object
@@ -194,7 +228,7 @@ func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemT
 		result = upgradeItemResult{upgradeItemTask: *extraTask, success: true, itemSet: &output.FullSet, factor: factor, setBonus: setBonus}
 	} else {
 		printer.Println("UPGRADE SET NOT FOUND")
-		result = upgradeItemResult{upgradeItemTask: *extraTask, success: false}
+		return upgradeItemResult_OfFailure(extraTask)
 	}
 
 	printer.Println0()

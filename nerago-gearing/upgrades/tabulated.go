@@ -33,7 +33,8 @@ func FindUpgrades_Sim_AllRaid_Run(input *FindUpgrades_MultiSpec_Sim, printer *ut
 
 	outputMap, _ := findUpgrades_AllRaid(&input.FindUpgrades_BasicInputs, input.Specs, find)
 
-	reportTabulatedSimResults(outputMap, input.Specs, printer, input.PositiveResultsOnly)
+	reportTabulatedSimResults_All(outputMap, input.Specs, printer, input.PositiveResultsOnly)
+	reportTabulatedSimResults_Boss(outputMap, input.Specs, printer, input.PositiveResultsOnly)
 }
 
 func findUpgrades_AllRaid[T any](input *FindUpgrades_BasicInputs, specs []FindUpgrades_Spec, find func(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal) []T) (map[reportGroup][]T, []reportGroup) {
@@ -106,6 +107,23 @@ func groupByBossAndItem[T reportable, R reportForItemAddable[T]](outputMap map[r
 	return byBossThenItem
 }
 
+func groupByItem[T reportable, R reportForItemAddable[T]](outputMap map[reportGroup][]T, makeGroup func(*items.FullItem, items.SlotEquip) R) map[reportItemRef]R {
+	byItem := make(map[reportItemRef]R)
+	for mode, resultList := range outputMap {
+		for _, result := range resultList {
+			ref := reportItemRef{result.Item().ItemId(), result.Slot()}
+			report, exists := byItem[ref]
+			if !exists {
+				report = makeGroup(result.Item(), result.Slot())
+				byItem[ref] = report
+			}
+
+			report.Add(mode, result)
+		}
+	}
+	return byItem
+}
+
 func reportTabulatedResults(outputMap map[reportGroup][]upgradeItemResult, specs []FindUpgrades_Spec, printer *util.PrintRecorder, positiveResultsOnly bool) {
 	byBossThenItem := groupByBossAndItem(outputMap, makeReportForItem(len(specs)))
 
@@ -150,7 +168,15 @@ func reportTabulatedResults(outputMap map[reportGroup][]upgradeItemResult, specs
 	}
 }
 
-func reportTabulatedSimResults(outputMap map[reportGroup][]upgradeItemResultWithSim, specs []FindUpgrades_Spec, printer *util.PrintRecorder, positiveResultsOnly bool) {
+func reportTabulatedSimResults_All(outputMap map[reportGroup][]upgradeItemResultWithSim, specs []FindUpgrades_Spec, printer *util.PrintRecorder, positiveResultsOnly bool) {
+	itemMap := groupByItem(outputMap, makeReportSimForItem(len(specs)))
+	printer.Println("MULTISPEC RANKING ALL")
+	reportTabledSimResultItemMap(itemMap, positiveResultsOnly, specs, printer)
+	printer.Println("MULTISPEC RANKING ALL - sim percents only")
+	reportTabledSimResultItemMap_NoWeight(itemMap, positiveResultsOnly, specs, printer)
+}
+
+func reportTabulatedSimResults_Boss(outputMap map[reportGroup][]upgradeItemResultWithSim, specs []FindUpgrades_Spec, printer *util.PrintRecorder, positiveResultsOnly bool) {
 	byBossThenItem := groupByBossAndItem(outputMap, makeReportSimForItem(len(specs)))
 
 	printer.Println("MULTISPEC RANKING BY BOSS")
@@ -158,52 +184,103 @@ func reportTabulatedSimResults(outputMap map[reportGroup][]upgradeItemResultWith
 		itemMap := byBossThenItem[bossName]
 		if itemMap != nil {
 			printer.Println(bossName)
-
-			reportList := make([]*reportForItemWithSim, 0, len(itemMap))
-			for _, report := range itemMap {
-				if !positiveResultsOnly || report.BestRating() > 0 {
-					reportList = append(reportList, report)
-				}
-			}
-			slices.SortFunc(reportList, func(a, b *reportForItemWithSim) int { return cmp.Compare(a.BestRating(), b.BestRating()) })
-
-			var tab util.TabulateOutput
-			tab.SetColumnSpacing(2)
-			tab.AddColumnHeader("slot", true)
-			tab.AddColumnHeader("ilvl", false)
-			tab.AddColumnHeader("name", false)
-			for _, spec := range specs {
-				tab.AddColumnHeader(spec.Label, true)
-				tab.AddColumnHeader("sim", true)
-			}
-			tab.AddColumnHeader("best_sim", true)
-			tab.AddColumnHeader("sim_detailed", false)
-
-			for _, report := range reportList {
-				row := make([]string, 0, tab.ColumnCount())
-				row = append(row, report.slot.Name())
-				row = append(row, strconv.FormatUint(uint64(report.item.Ref.ItemLevel), 10))
-				row = append(row, report.item.BaseName)
-
-				for _, spec := range specs {
-					groupContent := report.grouped[spec.Label]
-					row = append(row, groupContent.increaseStr())
-					row = append(row, groupContent.percentStrSim())
-				}
-
-				bestSimIncrease, bestGroup := bestSimOf(report)
-				if !bestSimIncrease.IsEmpty() {
-					row = append(row, bestGroup)
-					row = append(row, bestSimIncrease.CompactStringSignedPercent())
-				}
-
-				tab.AddRow(row)
-			}
-
-			tab.Write(printer)
-			printer.Println0()
+			reportTabledSimResultItemMap(itemMap, positiveResultsOnly, specs, printer)
 		}
 	}
+}
+
+func reportTabledSimResultItemMap(itemMap map[reportItemRef]*reportForItemWithSim, positiveResultsOnly bool, specs []FindUpgrades_Spec, printer *util.PrintRecorder) {
+	reportList := make([]*reportForItemWithSim, 0, len(itemMap))
+	for _, report := range itemMap {
+		if !positiveResultsOnly || report.BestRating() > 0 {
+			reportList = append(reportList, report)
+		}
+	}
+	slices.SortFunc(reportList, func(a, b *reportForItemWithSim) int { 
+		return cmp.Compare(a.BestRating(), b.BestRating()) 
+	})
+
+	var tab util.TabulateOutput
+	tab.SetColumnSpacing(2)
+	tab.AddColumnHeader("slot", true)
+	tab.AddColumnHeader("ilvl", false)
+	tab.AddColumnHeader("name", false)
+	for _, spec := range specs {
+		tab.AddColumnHeader(spec.Label, true)
+		tab.AddColumnHeader("sim", true)
+	}
+	tab.AddColumnHeader("best_sim", true)
+	tab.AddColumnHeader("sim_detailed", false)
+
+	for _, report := range reportList {
+		row := make([]string, 0, tab.ColumnCount())
+		row = append(row, report.slot.Name())
+		row = append(row, strconv.FormatUint(uint64(report.item.Ref.ItemLevel), 10))
+		row = append(row, report.item.BaseName)
+
+		for _, spec := range specs {
+			groupContent := report.grouped[spec.Label]
+			row = append(row, groupContent.increaseStr())
+			row = append(row, groupContent.percentStrSim())
+		}
+
+		bestSimIncrease, bestGroup := bestSimOf(report)
+		if !bestSimIncrease.IsEmpty() {
+			row = append(row, bestGroup)
+			row = append(row, bestSimIncrease.CompactStringSignedPercent())
+		}
+
+		tab.AddRow(row)
+	}
+
+	tab.Write(printer)
+	printer.Println0()
+}
+
+func reportTabledSimResultItemMap_NoWeight(itemMap map[reportItemRef]*reportForItemWithSim, positiveResultsOnly bool, specs []FindUpgrades_Spec, printer *util.PrintRecorder) {
+	reportList := make([]*reportForItemWithSim, 0, len(itemMap))
+	for _, report := range itemMap {
+		if !positiveResultsOnly || report.BestRating() > 0 {
+			reportList = append(reportList, report)
+		}
+	}
+	slices.SortFunc(reportList, func(a, b *reportForItemWithSim) int {
+		return cmp.Compare(a.BestRating_NoWeight(), b.BestRating_NoWeight())
+	})
+
+	var tab util.TabulateOutput
+	tab.SetColumnSpacing(2)
+	tab.AddColumnHeader("slot", true)
+	tab.AddColumnHeader("ilvl", false)
+	tab.AddColumnHeader("name", false)
+	for _, spec := range specs {
+		tab.AddColumnHeader(spec.Label, true)
+	}
+	tab.AddColumnHeader("best_sim", true)
+	tab.AddColumnHeader("sim_detailed", false)
+
+	for _, report := range reportList {
+		row := make([]string, 0, tab.ColumnCount())
+		row = append(row, report.slot.Name())
+		row = append(row, strconv.FormatUint(uint64(report.item.Ref.ItemLevel), 10))
+		row = append(row, report.item.BaseName)
+
+		for _, spec := range specs {
+			groupContent := report.grouped[spec.Label]
+			row = append(row, groupContent.percentStrSim())
+		}
+
+		bestSimIncrease, bestGroup := bestSimOf(report)
+		if !bestSimIncrease.IsEmpty() {
+			row = append(row, bestGroup)
+			row = append(row, bestSimIncrease.CompactStringSignedPercent())
+		}
+
+		tab.AddRow(row)
+	}
+
+	tab.Write(printer)
+	printer.Println0()
 }
 
 func bestSimOf(report *reportForItemWithSim) (simulate.SimResultStats, string) {

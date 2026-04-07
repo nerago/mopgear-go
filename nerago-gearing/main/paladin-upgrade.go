@@ -19,11 +19,11 @@ const (
 	// itemSolveSize  = solver.SolveSize_Medium
 	// simRunSize     = simulate.RunSize_QuickDirty
 
-	itemSolveSize = solver.SolveSize_Medium
-	simRunSize    = simulate.RunSize_Medium
+	// itemSolveSize = solver.SolveSize_Medium
+	// simRunSize    = simulate.RunSize_Medium
 
-	// itemSolveSize = solver.SolveSize_PerItem
-	// simRunSize    = simulate.RunSize_TestOnly
+	itemSolveSize = solver.SolveSize_PerItem
+	simRunSize    = simulate.RunSize_TestOnly
 )
 
 var substituteItemsDps = []items.ItemId{
@@ -50,8 +50,20 @@ var substituteItemsDps = []items.ItemId{
 	94945, // greatshield of the gloaming normal
 	95778, // golden golem celestial [would need gem, acceptable]
 	96376, // worldbreaker weapon
+	96534, // qon's scimitar
 	86387, // kilrak weapon
 	98147, // pre-legend strength dps
+	98146, // pre-legend strength tank
+	96478, // treads of the blind heroic
+	95153, // Tyrant King Battleplate
+	95912, // ret tier15 celestial head [would need gem, acceptable]
+	95292, // prot tier15 head normal
+	96657, // ret tier15 legs heroic
+	96658, // ret tier15 shoulder heroic
+	95142, // striker's battletags
+	94776, // primal turtle amulet
+	94527, // ji-kun trinket [not sure about trinkets here]
+	94529, // gaze of the twins [not sure about trinkets here]
 }
 var substituteItemsMiti = []items.ItemId{
 	95291, // prot tier15 hand normal
@@ -60,12 +72,15 @@ var substituteItemsMiti = []items.ItemId{
 	96667, // prot tier15 leg heroic
 	96668, // prot tier15 shoulder heroic
 	96657, // ret tier15 legs heroic
+	96658, // ret tier15 shoulder heroic
+	95281, // ret tier15 gloves normal
 	96394, // frozen warlord bracer heroic
 	96373, // cloudbreaker belt heroic
 	96478, // treads of the blind heroic
 	95142, // striker's battletags
 	95205, // terra-cotta neck
 	95178, // lootraptor amulet
+	96468, // talonrender chest heroic
 	96533, // rein-binders fists heroic
 	86957, // heroic bladed tempest ring
 	86955, // heroic overwhelm assault belt
@@ -79,8 +94,12 @@ var substituteItemsMiti = []items.ItemId{
 	96428, // shell-coated wrists
 	96447, // rot-proof greatplate
 	96376, // worldbreaker weapon
+	96534, // qon's scimitar
 	86387, // kilrak weapon
 	98146, // pre-legend strength tank
+	98147, // pre-legend strength dps
+	94776, // primal turtle amulet
+	94820, // caustic spike bracers
 }
 
 var ignoredItems = []items.ItemId{
@@ -126,7 +145,7 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
-				IncludeNormal: false,
+				IncludeNormal: true,
 				IncludeHeroic: true,
 				IncludeRaden:  false,
 				IgnoredItems:  ignoredItems,

@@ -41,9 +41,11 @@ func SimFileFor(spec stats.SpecType) string {
 	}
 }
 
-func GearFileFor(spec stats.SpecType) string {
+func GearFileFor(spec stats.SpecType, fuzzyOkay bool) string {
 	// TODO add set/noset versions somehow
 	switch spec {
+	case stats.Spec_PaladinProtMitigation:
+		return GearFileProtMitigationSet
 	case stats.Spec_PaladinProtDps:
 		return GearFileProtDps
 	case stats.Spec_PaladinRet:

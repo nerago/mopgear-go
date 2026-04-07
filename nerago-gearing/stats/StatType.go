@@ -1,6 +1,6 @@
 package stats
 
-type StatType int8
+type StatType uint8
 
 const (
 	Stat_Strength  StatType = 0
@@ -15,7 +15,6 @@ const (
 	Stat_Dodge     StatType = 9
 	Stat_Parry     StatType = 10
 	Stat_Mastery   StatType = 11
-	Stat_Invalid   StatType = -1
 )
 
 var StatType_List = []StatType{

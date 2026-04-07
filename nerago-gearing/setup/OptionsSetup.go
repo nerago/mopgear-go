@@ -6,8 +6,11 @@ import (
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/stats"
+	"paladin_gearing_go/stats/extern_stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
+
+	"github.com/wowsims/mop/sim/core"
 )
 
 type MissingEnchantMode int8
@@ -78,8 +81,15 @@ func makeItemLevelToRandomAmount() map[uint16]uint32 {
 }
 
 func addDetailFromEquip(item *items.FullItem, equipItem loaders.EquippedItem, model *model.Model, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) {
+
 	if equipItem.RandomSuffix == -336 {
 		item.RandomSuffix = equipItem.RandomSuffix
+
+		// TODO finish
+		suffixInfo := core.RandomSuffixesByID[equipItem.RandomSuffix]
+		extern_stats.SimStatsToGearStatBlock(suffixInfo.Stats)
+		// simulate.RunSize_SlowAccurate
+		// suffixInfo.Stats
 
 		stat := stats.Stat_Crit
 		amount := itemLevelToRandomAmount[item.Ref.ItemLevel]

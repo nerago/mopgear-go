@@ -6,19 +6,18 @@ import (
 	"os"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
-	. "paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
-	. "paladin_gearing_go/stats"
+	"paladin_gearing_go/stats/extern_stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_rank"
 	"strconv"
 )
 
 var loaded = false
-var itemsById map[items.ItemId][]FullItem = make(map[items.ItemId][]FullItem)
-var itemsByRef map[ItemRef]FullItem = make(map[ItemRef]FullItem)
-var reforgeById map[uint16]ReforgeRecipe = make(map[uint16]ReforgeRecipe)
-var reforgeByObj map[ReforgeRecipe]uint16 = make(map[ReforgeRecipe]uint16)
+var itemsById map[items.ItemId][]items.FullItem = make(map[items.ItemId][]items.FullItem)
+var itemsByRef map[items.ItemRef]items.FullItem = make(map[items.ItemRef]items.FullItem)
+var reforgeById map[uint16]stats.ReforgeRecipe = make(map[uint16]stats.ReforgeRecipe)
+var reforgeByObj map[stats.ReforgeRecipe]uint16 = make(map[stats.ReforgeRecipe]uint16)
 
 func WowSimDB_Read() {
 	filename := files.WowSimDB
@@ -41,7 +40,7 @@ func WowSimDB_HasItemId(itemId items.ItemId) bool {
 	return found
 }
 
-func WowSimDB_ByIdAndUpgrade(itemId items.ItemId, upgradeLevel int8) *FullItem {
+func WowSimDB_ByIdAndUpgrade(itemId items.ItemId, upgradeLevel int8) *items.FullItem {
 	known := itemsById[itemId]
 	for _, item := range known {
 		if item.Ref.UpgradeLevel == upgradeLevel {
@@ -52,8 +51,8 @@ func WowSimDB_ByIdAndUpgrade(itemId items.ItemId, upgradeLevel int8) *FullItem {
 	return nil
 }
 
-func WowSimDB_ByIdFindMaxUpgrade(itemId items.ItemId) *FullItem {
-	best := util_rank.BestCollector1[FullItem]{}
+func WowSimDB_ByIdFindMaxUpgrade(itemId items.ItemId) *items.FullItem {
+	best := util_rank.BestCollector1[items.FullItem]{}
 	known := itemsById[itemId]
 	for _, item := range known {
 		best.Offer(&item, uint64(item.Ref.ItemLevel))
@@ -61,7 +60,7 @@ func WowSimDB_ByIdFindMaxUpgrade(itemId items.ItemId) *FullItem {
 	return best.GetBestPointerOrPanic()
 }
 
-func WowSimDB_ByIdAndUpgrade_AllowFallback(itemId items.ItemId, upgradeLevel int8, printer *util.PrintRecorder) *FullItem {
+func WowSimDB_ByIdAndUpgrade_AllowFallback(itemId items.ItemId, upgradeLevel int8, printer *util.PrintRecorder) *items.FullItem {
 	storedItem := WowSimDB_ByIdAndUpgrade(itemId, upgradeLevel)
 
 	if storedItem == nil && upgradeLevel > 0 {
@@ -78,8 +77,8 @@ func WowSimDB_ByIdAndUpgrade_AllowFallback(itemId items.ItemId, upgradeLevel int
 	return storedItem
 }
 
-func WowSimDB_AllItems() iter.Seq[*FullItem] {
-	return func(yield func(*FullItem) bool) {
+func WowSimDB_AllItems() iter.Seq[*items.FullItem] {
+	return func(yield func(*items.FullItem) bool) {
 		for _, subList := range itemsById {
 			for i := range subList {
 				if !yield(&subList[i]) {
@@ -114,7 +113,7 @@ func convertItems(itemArray []any) {
 }
 
 func addItem(itemObj map[string]any) {
-	itemId := ItemId(getUInt32OrPanic(itemObj, "id"))
+	itemId := items.ItemId(getUInt32OrPanic(itemObj, "id"))
 	name := itemObj["name"].(string)
 	phase := int8(getIntOrDefault(itemObj, "phase", -1))
 	itemType := getIntOrDefault(itemObj, "type", -1)
@@ -123,18 +122,18 @@ func addItem(itemObj map[string]any) {
 	}
 
 	handType := getIntOrDefault(itemObj, "handType", 0)
-	slot := mapSlot(itemType, handType)
+	slot := extern_stats.MapSlotToGear(itemType, handType)
 
 	armorType := convertArmorType(getIntOrDefault(itemObj, "armorType", -1))
 
-	var socketSlots []SocketType
+	var socketSlots []stats.SocketType
 	if itemObj["gemSockets"] != nil {
 		socketSlots = convertSockets(itemObj["gemSockets"].([]any))
 	}
 
-	var socketBonus StatBlock
+	var socketBonus stats.StatBlock
 	if itemObj["socketBonus"] != nil {
-		socketBonus = convertStatsFromFlat(itemObj["socketBonus"].([]any))
+		socketBonus = extern_stats.SimJsonArrayToGearStatBlock(itemObj["socketBonus"].([]any))
 	}
 
 	scalingOptions := itemObj["scalingOptions"].(map[string]any)
@@ -143,118 +142,25 @@ func addItem(itemObj map[string]any) {
 		scaleEntry := entry.(map[string]any)
 		itemLevel := getUInt16OrPanic(scaleEntry, "ilvl")
 
-		var scaleStats StatBlock
+		var scaleStats stats.StatBlock
 		if scaleEntry["stats"] != nil {
-			scaleStats = convertStatsFromMap(scaleEntry["stats"].(map[string]any))
+			scaleStats = extern_stats.SimJsonMapToGearStatBlock(scaleEntry["stats"].(map[string]any))
 		}
 
-		var itemRef ItemRef
+		var itemRef items.ItemRef
 		if scaleGroup == "-1" {
-			itemRef = ItemRef_Challenge(itemId, itemLevel)
+			itemRef = items.ItemRef_Challenge(itemId, itemLevel)
 		} else {
-			itemRef = ItemRef_Make(itemId, itemLevel, baseItemLevel)
+			itemRef = items.ItemRef_Make(itemId, itemLevel, baseItemLevel)
 		}
-		item := FullItem_FromWowSim(itemRef, slot, name, scaleStats, armorType, socketSlots, socketBonus, phase)
+		item := items.FullItem_FromWowSim(itemRef, slot, name, scaleStats, armorType, socketSlots, socketBonus, phase)
 		itemsById[itemId] = append(itemsById[itemId], item)
 		itemsByRef[itemRef] = item
 	}
 }
 
-func convertStatsFromFlat(input []any) StatBlock {
-	block := StatBlock{}
-	for indexNum, value := range input {
-		stat := simBlockIndexToStatNoThrow(indexNum)
-		if stat != Stat_Invalid {
-			block[stat] = uint32(value.(float64))
-		}
-	}
-	return block
-}
-
-func convertStatsFromMap(input map[string]any) StatBlock {
-	block := StatBlock{}
-	for indexStr, value := range input {
-		indexNum, err := strconv.Atoi(indexStr)
-		if err != nil {
-			panic(err)
-		}
-
-		stat := simBlockIndexToStatThrows(indexNum)
-		if stat != Stat_Invalid {
-			block[stat] = uint32(value.(float64))
-		}
-	}
-	return block
-}
-
-func simBlockIndexToStatThrows(num int) StatType {
-	// this may be a one-to-one for now, rather not rely on it
-	switch num {
-	case 0:
-		return Stat_Strength
-	case 1:
-		return Stat_Agility
-	case 3:
-		return Stat_Intellect
-	case 2:
-		return Stat_Stamina
-	case 4:
-		return Stat_Spirit
-	case 5:
-		return Stat_Hit
-	case 6:
-		return Stat_Crit
-	case 7:
-		return Stat_Haste
-	case 8:
-		return Stat_Expertise
-	case 9:
-		return Stat_Dodge
-	case 10:
-		return Stat_Parry
-	case 11:
-		return Stat_Mastery
-	case 14, 15, 16, 17, 18, 20:
-		return Stat_Invalid
-	default:
-		panic("unknown stat index " + strconv.Itoa(num))
-	}
-}
-
-func simBlockIndexToStatNoThrow(num int) StatType {
-	// this may be a one-to-one for now, rather not rely on it
-	switch num {
-	case 0:
-		return Stat_Strength
-	case 1:
-		return Stat_Agility
-	case 3:
-		return Stat_Intellect
-	case 2:
-		return Stat_Stamina
-	case 4:
-		return Stat_Spirit
-	case 5:
-		return Stat_Hit
-	case 6:
-		return Stat_Crit
-	case 7:
-		return Stat_Haste
-	case 8:
-		return Stat_Expertise
-	case 9:
-		return Stat_Dodge
-	case 10:
-		return Stat_Parry
-	case 11:
-		return Stat_Mastery
-	default:
-		return Stat_Invalid
-	}
-}
-
-func convertSockets(jsonSockets []any) []SocketType {
-	gemSockets := make([]SocketType, 0, len(jsonSockets))
+func convertSockets(jsonSockets []any) []stats.SocketType {
+	gemSockets := make([]stats.SocketType, 0, len(jsonSockets))
 	for _, num := range jsonSockets {
 		sock := convertSocket(num)
 		gemSockets = append(gemSockets, sock)
@@ -262,55 +168,12 @@ func convertSockets(jsonSockets []any) []SocketType {
 	return gemSockets
 }
 
-func convertSocket(num any) SocketType {
-	return SocketType(num.(float64))
+func convertSocket(num any) stats.SocketType {
+	return stats.SocketType(num.(float64))
 }
 
-func convertArmorType(num int32) ArmorType {
-	return ArmorType(num)
-}
-
-func mapSlot(itemType, handType int32) SlotItem {
-	switch itemType {
-	case 1:
-		return Item_Head
-	case 2:
-		return Item_Neck
-	case 3:
-		return Item_Shoulder
-	case 4:
-		return Item_Back
-	case 5:
-		return Item_Chest
-	case 6:
-		return Item_Wrist
-	case 7:
-		return Item_Hand
-	case 8:
-		return Item_Belt
-	case 9:
-		return Item_Leg
-	case 10:
-		return Item_Foot
-	case 11:
-		return Item_Ring
-	case 12:
-		return Item_Trinket
-	case 13, 14:
-		switch handType {
-		case 1, 2:
-			return Item_Weapon1H
-		case 0, 4:
-			return Item_Weapon2H
-		case 3:
-			return Item_Offhand
-		default:
-			panic("unknown weapon")
-		}
-
-	default:
-		panic("unknown slot")
-	}
+func convertArmorType(num int32) stats.ArmorType {
+	return stats.ArmorType(num)
 }
 
 func convertReforge(reforgeArray []any) {
@@ -324,12 +187,12 @@ func addReforge(reforgeObj map[string]any) {
 	id := getUInt16OrPanic(reforgeObj, "id")
 
 	from := getAnyIntOrPanic(reforgeObj, "fromStat")
-	fromStat := simBlockIndexToStatThrows(from)
+	fromStat := extern_stats.SimStatIndexToGearStatThrows(from)
 
 	to := getAnyIntOrPanic(reforgeObj, "toStat")
-	toStat := simBlockIndexToStatThrows(to)
+	toStat := extern_stats.SimStatIndexToGearStatThrows(to)
 
-	reforge := ReforgeRecipe{From: fromStat, To: toStat}
+	reforge := stats.ReforgeRecipe{From: fromStat, To: toStat}
 	reforgeById[id] = reforge
 	reforgeByObj[reforge] = id
 }
