@@ -27,6 +27,15 @@ func (equipMap *FullEquipMap) GetGeneric(slot SlotEquip) IItem {
 	return equipMap[slot]
 }
 
+func (equipMap *FullEquipMap) IncludesItemId(itemId ItemId) bool {
+	for _, item := range equipMap {
+		if item != nil && item.ItemId() == itemId {
+			return true
+		}
+	}
+	return false
+}
+
 func (equipMap *FullEquipMap) Equals(other *FullEquipMap) bool {
 	for slot := range equipMap {
 		a := equipMap[slot]

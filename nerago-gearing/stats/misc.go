@@ -14,6 +14,14 @@ type ReforgeRecipe struct {
 
 var ReforgeRecipe_empty ReforgeRecipe = ReforgeRecipe{}
 
+func ReforgeRecipe_of(from, to StatType) ReforgeRecipe {
+	return ReforgeRecipe{hasValue: true, From: from, To: to}
+}
+
+func ReforgeRecipe_of_pointer(from, to StatType) *ReforgeRecipe {
+	return &ReforgeRecipe{hasValue: true, From: from, To: to}
+}
+
 func (reforge *ReforgeRecipe) IsEmpty() bool {
 	return !reforge.hasValue
 }

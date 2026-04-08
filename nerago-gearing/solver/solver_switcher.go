@@ -125,13 +125,13 @@ func (output *SolveOutput) Report(printer *util.PrintRecorder) {
 	}
 }
 
-func ReportSet(printer *util.PrintRecorder, fullSet items.FullItemSet, rating uint64, model *model.Model) {
+func ReportSet(printer *util.PrintRecorder, fullSet items.FullItemSet, rating uint64, modelObj *model.Model) {
 	printer.Printf("SET rating %d\n", rating)
-	printer.Printf("BONUS %.2f\n", model.SetBonus.CalcBonusFull(fullSet.Items()))
+	printer.Printf("BONUS %s\n", model.AllBonusesText(fullSet.Items()))
 	fullSet.PrintStats(printer)
 	printEquipMap(fullSet.Items(), printer)
 
-	simulate.WowSimJson_Write(fullSet.Items(), model, printer)
+	simulate.WowSimJson_Write(fullSet.Items(), modelObj, printer)
 
 	fullSet.DebugValidate()
 }

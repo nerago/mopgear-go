@@ -5,6 +5,7 @@ import (
 	. "paladin_gearing_go/items"
 	"paladin_gearing_go/model/modelassem"
 	. "paladin_gearing_go/stats"
+	"paladin_gearing_go/util"
 	"slices"
 )
 
@@ -408,4 +409,26 @@ func (sets *SetBonus) AllSetItemIds() iter.Seq[ItemId] {
 func SetBonus_IsAnyKnownItem(itemId ItemId) bool {
 	_, found := g_itemSetLookup[itemId]
 	return found
+}
+
+// ########################### utility lookups ###########################
+func AllBonusesText(equipMap *FullEquipMap) string {
+	counts := make(map[string]uint32)
+	for item := range equipMap.AllItemSeq() {
+		set, found := g_itemSetLookup[item.ItemId()]
+		if found {
+			counts[set.name]++
+		}
+	}
+
+	build := util.StringBuild2{}
+	for name, num := range counts {
+		if build.Len() > 0 {
+			build.WriteString(", ")
+		}
+		build.WriteString(name)
+		build.WriteString(" => ")
+		build.WriteUint32(num)
+	}
+	return build.String()
 }

@@ -164,8 +164,8 @@ func CouldAddUpgradeToSet(baseItems *items.FullOptionsMap, slot items.SlotEquip,
 	if paired != -1 && baseItems.IncludesItemIdInSlot(extra.ItemId(), paired) {
 		printer.Println("SAME ITEM ID IN OTHER SLOT " + extra.CreateString())
 		return CanUpgrade_Equipped
-	} else if paired != -1 && baseItems.IncludesItemNameInSlot(extra.BaseName, paired) {
-		printer.Println("SAME ITEM NAME IN OTHER SLOT (unique equipped) " + extra.CreateString())
+	} else if paired != -1 && baseItems.IncludesUniqueEquippedViolationInSlot(extra.BaseName, paired) {
+		printer.Println("RELATED ITEM NAME IN OTHER SLOT (unique equipped) " + extra.CreateString())
 		return CanUpgrade_Equipped_Similar
 	}
 

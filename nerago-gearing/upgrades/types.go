@@ -102,25 +102,6 @@ func factorToIncrease(factor float64) float64 {
 	return (factor - 1.0) * 100
 }
 
-func ratioToIncrease(sim, baseSim *simulate.SimResultStats, part simulate.SimResultType) float64 {
-	newValue := sim.Get(part)
-	baseValue := baseSim.Get(part)
-
-	var result float64
-	if part == simulate.Result_DEATH {
-		result = baseValue - newValue
-	} else if part.IsHighGood() {
-		result = factorToIncrease(newValue / baseValue)
-	} else {
-		result = factorToIncrease(baseValue / newValue)
-	}
-
-	if math.IsNaN(result) {
-		panic("unexpected NaN")
-	}
-	return result
-}
-
 func formatIncrease(percent float64) string {
 	if math.IsNaN(percent) {
 		panic("unexpected NaN")
@@ -154,16 +135,11 @@ func (result upgradeItemResultWithSim) percentSim() float64 {
 
 	switch result.goal {
 	case UpgradeGoal_Dps:
-		return ratioToIncrease(&result.sim, &result.baseSim, simulate.Result_DPS)
+		return result.sim.IncreaseOf(&result.baseSim, simulate.Result_DPS)
 	case UpgradeGoal_Healing:
-		return ratioToIncrease(&result.sim, &result.baseSim, simulate.Result_HPS)
+		return result.sim.IncreaseOf(&result.baseSim, simulate.Result_HPS)
 	case UpgradeGoal_Mitigation:
-		checkParts := []simulate.SimResultType{simulate.Result_DPS, simulate.Result_DTPS, simulate.Result_TMI, simulate.Result_DEATH}
-		var total float64
-		for _, part := range checkParts {
-			total += ratioToIncrease(&result.sim, &result.baseSim, part)
-		}
-		return total / float64(len(checkParts))
+		return result.sim.IncreaseMitigation(&result.baseSim)
 	default:
 		panic("unknown goal")
 	}
@@ -180,25 +156,29 @@ func (result upgradeItemResultWithSim) percentStrSim() string {
 	return formatIncrease(result.percentSim())
 }
 
-func (result upgradeItemResultWithSim) increaseSimBreakdown() simulate.SimResultStats {
+func (result upgradeItemResultWithSim) percentStrSim_OnlyShown() string {
 	if result.sim.IsEmpty() {
-		panic("empty sim shouldn't get called here")
+		if result.canUpgrade != CanUpgrade_Yes {
+			return result.canUpgrade.Text()
+		}
+		return ""
 	}
 
-	sim := simulate.SimResultStats{}
-	for _, resultType := range simulate.SimResultTypeList {
-		sim.Set(resultType, ratioToIncrease(&result.sim, &result.baseSim, resultType))
+	str := formatIncrease(result.percentSim())
+	if result.canUpgrade == CanUpgrade_AvailableInBags {
+		str = "* " + str
 	}
-	return sim
+	return str
+}
+
+func (result upgradeItemResultWithSim) increaseSimBreakdown() simulate.SimResultStats {
+	return result.sim.IncreaseSimBreakdown(&result.baseSim)
 }
 
 func (result upgradeItemResultWithSim) bestOfSimResults() float64 {
 	var best float64 = -100.0
 	if !result.sim.IsEmpty() {
-		for _, resultType := range simulate.SimResultTypeList {
-			increase := ratioToIncrease(&result.sim, &result.baseSim, resultType)
-			best = util.MaxIgnoreNaN(best, increase)
-		}
+		best = result.sim.BestIncrease(&result.baseSim)
 	}
 	return best
 }

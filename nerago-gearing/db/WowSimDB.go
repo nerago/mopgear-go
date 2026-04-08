@@ -192,7 +192,7 @@ func addReforge(reforgeObj map[string]any) {
 	to := getAnyIntOrPanic(reforgeObj, "toStat")
 	toStat := extern_stats.SimStatIndexToGearStatThrows(to)
 
-	reforge := stats.ReforgeRecipe{From: fromStat, To: toStat}
+	reforge := stats.ReforgeRecipe_of(fromStat, toStat)
 	reforgeById[id] = reforge
 	reforgeByObj[reforge] = id
 }

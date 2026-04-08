@@ -61,6 +61,6 @@ func makeModified(baseItem *FullItem, source, target StatType, reforgeQuantity, 
 	newItem.StatBase[source] = remainQuantity
 	newItem.StatBase[target] = reforgeQuantity
 	newItem.ChangeDerivedStatFields()
-	newItem.Reforge = ReforgeRecipe{From: source, To: target}
+	newItem.Reforge = ReforgeRecipe_of(source, target)
 	return &newItem
 }

@@ -19,11 +19,11 @@ const (
 	// itemSolveSize  = solver.SolveSize_Medium
 	// simRunSize     = simulate.RunSize_QuickDirty
 
-	// itemSolveSize = solver.SolveSize_Medium
-	// simRunSize    = simulate.RunSize_Medium
+	itemSolveSize = solver.SolveSize_Medium
+	simRunSize    = simulate.RunSize_Medium
 
-	itemSolveSize = solver.SolveSize_PerItem
-	simRunSize    = simulate.RunSize_TestOnly
+	// itemSolveSize = solver.SolveSize_PerItem
+	// simRunSize    = simulate.RunSize_TestOnly
 )
 
 var substituteItemsDps = []items.ItemId{
@@ -100,6 +100,8 @@ var substituteItemsMiti = []items.ItemId{
 	98147, // pre-legend strength dps
 	94776, // primal turtle amulet
 	94820, // caustic spike bracers
+
+	95141, // shado assault loop
 }
 
 var ignoredItems = []items.ItemId{

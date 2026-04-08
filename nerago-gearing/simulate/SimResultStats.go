@@ -1,6 +1,7 @@
 package simulate
 
 import (
+	"math"
 	"paladin_gearing_go/util"
 )
 
@@ -133,4 +134,57 @@ func (stats *SimResultStats) Set(types SimResultType, value float64) {
 	default:
 		panic("unknown value")
 	}
+}
+
+func (stats *SimResultStats) IncreaseSimBreakdown(baseSim *SimResultStats) SimResultStats {
+	if stats.IsEmpty() || baseSim.IsEmpty() {
+		panic("empty sim shouldn't get called here")
+	}
+
+	increase := SimResultStats{}
+	for _, resultType := range SimResultTypeList {
+		increase.Set(resultType, ratioToIncrease(stats, baseSim, resultType))
+	}
+	return increase
+}
+
+func ratioToIncrease(sim, baseSim *SimResultStats, part SimResultType) float64 {
+	newValue := sim.Get(part)
+	baseValue := baseSim.Get(part)
+
+	var result float64
+	if part == Result_DEATH {
+		result = baseValue - newValue
+	} else if part.IsHighGood() {
+		result = (newValue/baseValue - 1.0) * 100
+	} else {
+		result = (baseValue/newValue - 1.0) * 100
+	}
+
+	if math.IsNaN(result) {
+		panic("unexpected NaN")
+	}
+	return result
+}
+
+func (stats *SimResultStats) IncreaseOf(baseSim *SimResultStats, part SimResultType) float64 {
+	return ratioToIncrease(stats, baseSim, part)
+}
+
+func (stats *SimResultStats) IncreaseMitigation(baseSim *SimResultStats) float64 {
+	checkParts := []SimResultType{Result_DPS, Result_DTPS, Result_TMI, Result_DEATH}
+	var total float64
+	for _, part := range checkParts {
+		total += ratioToIncrease(stats, baseSim, part)
+	}
+	return total / float64(len(checkParts))
+}
+
+func (stats *SimResultStats) BestIncrease(baseSim *SimResultStats) float64 {
+	best := -100.0
+	for _, resultType := range SimResultTypeList {
+		increase := ratioToIncrease(stats, baseSim, resultType)
+		best = util.MaxIgnoreNaN(best, increase)
+	}
+	return best
 }

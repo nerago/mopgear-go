@@ -253,6 +253,7 @@ func reportTabledSimResultItemMap_NoWeight(itemMap map[reportItemRef]*reportForI
 	tab.AddColumnHeader("slot", true)
 	tab.AddColumnHeader("ilvl", false)
 	tab.AddColumnHeader("name", false)
+	tab.AddColumnHeader("boss", false)
 	for _, spec := range specs {
 		tab.AddColumnHeader(spec.Label, true)
 	}
@@ -264,6 +265,7 @@ func reportTabledSimResultItemMap_NoWeight(itemMap map[reportItemRef]*reportForI
 		row = append(row, report.slot.Name())
 		row = append(row, strconv.FormatUint(uint64(report.item.Ref.ItemLevel), 10))
 		row = append(row, report.item.BaseName)
+		row = append(row, db.BossItemData_BossForItem(report.item))
 
 		for _, spec := range specs {
 			groupContent := report.grouped[spec.Label]

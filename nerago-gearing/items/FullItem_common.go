@@ -91,7 +91,7 @@ func checkPairedSlotNoDuplicate(a, b *FullItem) {
 	if a != nil && b != nil {
 		if a.ItemId() == b.ItemId() {
 			panic("duplicate item " + a.CreateString())
-		} else if a.BaseName == b.BaseName {
+		} else if UniqueEquipViolation(a.BaseName, b.BaseName) {
 			panic("unique equipped violation:\n" + a.CreateString() + "\n" + b.CreateString())
 		}
 	}

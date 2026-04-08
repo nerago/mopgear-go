@@ -27,6 +27,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		98147, // pre-legend strength dps
 
 		95140, // shado assault band
+		95141, // shado assault loop
 		86957, // heroic bladed tempest ring
 		95513, // scaled tyrant normal
 		// 94462, // pvp ring REMOVE12
@@ -89,6 +90,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protDps.AddExtraItems([]items.ItemId{
 		86957, // heroic bladed tempest ring
 		95140, // shado assault band
+		95141, // shado assault loop
 		95513, // scaled tyrant normal
 		96481, // durumu tentacle heroic
 
@@ -165,6 +167,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		// 86957, // heroic bladed tempest ring REMOVE1
 		95140, // shado assault band
+		95141, // shado assault loop
 		95513, // scaled tyrant normal
 		96481, // durumu tentacle heroic
 
@@ -179,7 +182,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
 
-		// 96428, // shell-coated wrists REMOVE1
+		96428, // shell-coated wrists UPGRADE LIKED
 		96447, // rot-proof greatplate
 
 		// 95910, // ret tier15 chest celestial
@@ -232,6 +235,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		// 86957, // heroic bladed tempest ring REMOVE1
 		95140, // shado assault band
+		95141, // shado assault loop
 		95513, // scaled tyrant normal
 		96481, // durumu tentacle heroic
 

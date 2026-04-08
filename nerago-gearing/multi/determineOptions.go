@@ -174,7 +174,7 @@ func printChosenCombo(combo *commonCombo, printer *util.PrintRecorder) {
 			if item.Reforge.IsEmpty() {
 				printer.Printf("common[%d] = stats.ReforgeRecipe_empty\n", item.ItemId())
 			} else {
-				printer.Printf("common[%d] = stats.ReforgeRecipe{From: stats.%s, To: stats.%s}\n", item.ItemId(), item.Reforge.From.EnumName(), item.Reforge.To.EnumName())
+				printer.Printf("common[%d] = stats.ReforgeRecipe_of(stats.%s, stats.%s)\n", item.ItemId(), item.Reforge.From.EnumName(), item.Reforge.To.EnumName())
 			}
 		}
 	}

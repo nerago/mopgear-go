@@ -4,6 +4,7 @@ type TabulateOutput struct {
 	data       [][]string
 	spacing    int
 	alignRight []bool
+	// rowBuild   []string
 }
 
 func (tab *TabulateOutput) SetColumnSpacing(spacing int) {
@@ -25,6 +26,19 @@ func (tab *TabulateOutput) AddColumnHeader(header string, alignRight bool) {
 func (tab *TabulateOutput) AddRow(row []string) {
 	tab.data = append(tab.data, row)
 }
+
+// func (tab *TabulateOutput) BeginRow() {
+// 	tab.rowBuild = make([]string, 0, tab.ColumnCount())
+// }
+
+// func (tab *TabulateOutput) CurrentRowAddValue(value string) {
+// 	tab.rowBuild = append(tab.rowBuild, value)
+// }
+
+// func (tab *TabulateOutput) FinishRow() {
+// 	tab.AddRow(tab.rowBuild)
+// 	tab.rowBuild = nil
+// }
 
 func (tab *TabulateOutput) columnSizes() []int {
 	sizes := make([]int, 0, 20)
