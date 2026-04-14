@@ -94,6 +94,7 @@ func (action *APLActionGroupReference) Finalize(rot *APLRotation) {
 	for _, groupAction := range action.group.actions {
 		// Check condition for placeholders
 		if groupAction.condition != nil {
+			// groupAction.condition = optimizeLogic(groupAction.condition, rot)
 			action.scanForPlaceholders(groupAction.condition, placeholders)
 		}
 		// Check action implementation for placeholders
@@ -325,4 +326,49 @@ func (action *APLActionGroupReference) replaceActionPlaceholders(actionImpl APLA
 
 	// This is a simplified approach - in practice, you'd need to handle each action type specifically
 	// For now, we'll rely on the value replacement in the main flow
+}
+
+func optimizeLogic(value APLValue, rot *APLRotation) APLValue {
+	switch v := value.(type) {
+	case *APLValueConst:
+		if v.valType == proto.APLValueType_ValueTypeFloat && v.boolVal == false && v.durationVal == 0 && v.intVal == 0 && v.stringVal == "" {
+			return &APLValueConstFloat{floatVal: v.floatVal}
+		}
+
+	case *APLValueCompare:
+		replace, convertOk := makeSpecificCompare(v.lhs, v.rhs, v.op)
+		if convertOk {
+			return replace
+		}
+
+	case *APLValueAnd:
+		// NOTE newValueAnd already handles much of this, just call stacks implied that might not always apply?
+		// i don't check for nils and consts like that do anyway
+		if len(v.vals) == 0 {
+			return &APLValueConst{valType: proto.APLValueType_ValueTypeBool, boolVal: true}
+		} else if len(v.vals) == 1 {
+			return optimizeLogic(v.vals[0], rot)
+		} else if len(v.vals) == 2 {
+			replace, foundReplace := makeBetween(v, rot)
+			if foundReplace {
+				return replace
+			}
+		}
+
+	case *APLValueOr:
+		if len(v.vals) == 0 {
+			return &APLValueConst{valType: proto.APLValueType_ValueTypeBool, boolVal: false}
+		} else if len(v.vals) == 1 {
+			return optimizeLogic(v.vals[0], rot)
+		}
+
+		// case *APLValueNot:
+		// 	return &APLValueNot{
+		// 		DefaultAPLValueImpl: v.DefaultAPLValueImpl,
+		// 		val:                 newInnerValues[0],
+		// 	}
+
+	}
+
+	return value
 }
