@@ -128,7 +128,7 @@ func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
 
 func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 	goal := upgrades.UpgradeGoal_Mitigation
-	model := model.Model_PallyProtMitigation()
+	model := model.Model_PallyProtMitigation_WithSet()
 	gearFile := files.GearFileProtMitigationSet
 	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
 	upgradeItems := loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic)
@@ -168,7 +168,7 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 			{
 				Label:           "mit_set",
 				Goal:            upgrades.UpgradeGoal_Mitigation,
-				Model:           model.Model_PallyProtMitigation(),
+				Model:           model.Model_PallyProtMitigation_WithSet(),
 				GearFile:        files.GearFileProtMitigationSet,
 				ItemFinder:      loaders.ItemFinder_ThroneStrengthPlateTank,
 				SubstituteItems: substituteItemsMiti,

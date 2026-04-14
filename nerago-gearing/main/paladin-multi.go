@@ -221,7 +221,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protMitigationSet := multi.MultiSetParam{
 		Label:                     "Prot-Mitigation-WithSet",
 		GearFile:                  files.GearFileProtMitigationSet,
-		Model:                     model.Model_PallyProtMitigation(),
+		Model:                     model.Model_PallyProtMitigation_WithSet(),
 		IncludeInFirstPass:        true,
 		RequestRatingPercent:      0.40,
 		PhasedAcceptable:          false,

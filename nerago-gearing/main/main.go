@@ -84,17 +84,18 @@ func core(printer *util.PrintRecorder) {
 	// findUpgrades_Sim_PaladinMiti_Run(printer)
 	// findUpgrades_Paladin_Sim_AllRaid_Run(printer)
 	// findNeededUpgradeLevel(printer)
-	findSimpleUpgrade_ForceEach(printer)
+	// findSimpleUpgrade_ForceEach(printer)
+	findMitigationWithCapicitance(printer)
 	// trinketSims(printer)
 }
 
 func setupPallyMitigationSet() (items.FullOptionsMap, model.Model) {
-	model := model.Model_PallyProtMitigation()
+	model := model.Model_PallyProtMitigation_WithSet()
 	return setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationSet, &model, setup.MissingEnchant_Panic, printer), model
 }
 
 func setupPallyMitigationNoSet() (items.FullOptionsMap, model.Model) {
-	model := model.Model_PallyProtMitigation()
+	model := model.Model_PallyProtMitigation_WithSet()
 	return setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationNoSet, &model, setup.MissingEnchant_Panic, printer), model
 }
 

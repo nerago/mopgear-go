@@ -7,6 +7,21 @@ type GemInfo struct {
 	Stats StatBlock
 }
 
+func (gem *GemInfo) Name() string {
+	switch gem.Id {
+	case 95344:
+		return "Indomitable (Tank)"
+	case 95345:
+		return "Courageous (Heal)"
+	case 95346:
+		return "Capacitive (Melee)"
+	case 95347:
+		return "Sinister (Caster)"
+	default:
+		return ""
+	}
+}
+
 type ReforgeRecipe struct {
 	hasValue bool
 	From, To StatType

@@ -10,7 +10,7 @@ import (
 var resultInt uint64
 
 func BenchmarkCalcSetGeneric(test *testing.B) {
-	model := Model_PallyProtMitigation()
+	model := Model_PallyProtMitigation_WithSet()
 	set := makeSet()
 	var v uint64
 	for test.Loop() {
@@ -20,7 +20,7 @@ func BenchmarkCalcSetGeneric(test *testing.B) {
 }
 
 func BenchmarkCalcSetSpecific(test *testing.B) {
-	model := Model_PallyProtMitigation()
+	model := Model_PallyProtMitigation_WithSet()
 	set := makeSet()
 	var v uint64
 	for test.Loop() {
