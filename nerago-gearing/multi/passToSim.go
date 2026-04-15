@@ -132,13 +132,14 @@ func (job *MultiSetJob) existingGearAsProposal() multiProposedOutput {
 
 type simulateJob struct {
 	spec        stats.SpecType
+	fight       stats.WowSim_Fight
 	equip       items.FullEquipMap
 	professions model.ProfessionInfo
 	result      *simulate.SimResultStats
 }
 
 func (simJob *simulateJob) Equals(other *simulateJob) bool {
-	return simJob.spec == other.spec && simJob.equip.Equals(&other.equip) && simJob.professions == other.professions
+	return simJob.spec == other.spec && simJob.fight == other.fight && simJob.equip.Equals(&other.equip) && simJob.professions == other.professions
 }
 
 type simulateResult struct {
@@ -150,7 +151,7 @@ func (job *MultiSetJob) prepareSimList(proposalList []multiProposedOutput) []sim
 	jobList := make([]simulateJob, 0)
 	for _, proposal := range proposalList {
 		for _, output := range proposal.parts {
-			job := simulateJob{output.spec, *output.fullSet.Items(), output.model.Professions, nil}
+			job := simulateJob{output.spec, output.model.SimulateAs, *output.fullSet.Items(), output.model.Professions, nil}
 			jobList = append(jobList, job)
 		}
 	}
@@ -166,8 +167,8 @@ func (job *MultiSetJob) runSims(jobList []simulateJob, runSize simulate.WowSim_R
 	defer trackProgress.Stop()
 
 	channel_op.IterateEach_Blocking_Void(evaluateThreadCount, jobList, func(sim *simulateJob) {
-		result := simulate.WowSim_Execute(runSize, sim.spec, &sim.equip, sim.professions, nil, trackProgress.MakeNested())
-		job.printer.Printf("sim %22s %s\n", sim.spec.Name(), result.CompactStringGeneral())
+		result := simulate.WowSim_Execute_SelectFight(runSize, sim.spec, sim.fight, &sim.equip, sim.professions, nil, trackProgress.MakeNested())
+		job.printer.Printf("sim %22s fight=%d %s\n", sim.spec.Name(), sim.fight, result.CompactStringGeneral())
 		sim.result = &result
 	})
 }
@@ -187,7 +188,7 @@ func linkSimResult(proposal multiProposedOutput, jobList []simulateJob) simulate
 		output := &proposal.parts[outIndex]
 		for jobIndex := range jobList {
 			job := &jobList[jobIndex]
-			if output.fullSet.Items().Equals(&job.equip) && output.spec == job.spec {
+			if output.fullSet.Items().Equals(&job.equip) && output.spec == job.spec && output.model.SimulateAs == job.fight {
 				result.result[outIndex] = *job.result
 				break
 			}

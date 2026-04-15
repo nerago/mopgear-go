@@ -4,16 +4,16 @@ import (
 	"paladin_gearing_go/files"
 	. "paladin_gearing_go/model/ratings"
 	. "paladin_gearing_go/model/requirements"
+	"paladin_gearing_go/stats"
 	. "paladin_gearing_go/stats"
 )
 
 // ////////// standard model builders
 func Model_PallyProtMitigation_WithSet() Model {
-	weightMiti := StatRatingsWeights_ReadFile(files.WeightMitiFile, false, true, false)
-	weightDps := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
-	weight := StatRatingsWeights_Mix(weightMiti, 95, weightDps, 34)
+	weight := StatRatingsWeights_ReadFile(files.WeightMitiWithSetFile, false, true, false)
 	return Model{
 		Spec:             Spec_PaladinProtMitigation,
+		SimulateAs:       stats.Fight_Horridon_LowHeal,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:     ReforgeRules_tank,
@@ -28,11 +28,10 @@ func Model_PallyProtMitigation_WithSet() Model {
 }
 
 func Model_PallyProtMitigation_NoSet() Model {
-	weightMiti := StatRatingsWeights_ReadFile(files.WeightMitiFile, false, true, false)
-	weightDps := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
-	weight := StatRatingsWeights_Mix(weightMiti, 95, weightDps, 34)
+	weight := StatRatingsWeights_ReadFile(files.WeightMitiNoSetFile, false, true, false)
 	return Model{
 		Spec:             Spec_PaladinProtMitigation,
+		SimulateAs:       stats.Fight_Animus,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:     ReforgeRules_tank,
@@ -47,17 +46,17 @@ func Model_PallyProtMitigation_NoSet() Model {
 }
 
 func Model_PallyProtCompromise() Model {
-	weightMiti := StatRatingsWeights_ReadFile(files.WeightMitiFile, false, true, false)
+	weightMiti := StatRatingsWeights_ReadFile(files.WeightMitiNoSetFile, false, true, false)
 	weightDps := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
-	weight := StatRatingsWeights_Mix(weightMiti, 80, weightDps, 90)
-	                                          // 51 dps 107
+	weight := StatRatingsWeights_Mix(weightMiti, 62, weightDps, 51)
 	return Model{
 		Spec:             Spec_PaladinProtMitigation,
+		SimulateAs:       stats.Fight_Animus,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:     ReforgeRules_tank,
-		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtMitigation),
-		GemChoice:        GemChoice_ForSpec(Spec_PaladinProtMitigation),
+		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtDps),
+		GemChoice:        GemChoice_ForSpec(Spec_PaladinProtDps),
 		SetBonus:         SetBonus_Empty(),
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
@@ -67,11 +66,10 @@ func Model_PallyProtCompromise() Model {
 }
 
 func Model_PallyProtDps() Model {
-	weightMiti := StatRatingsWeights_ReadFile(files.WeightMitiFile, false, true, false)
-	weightDps := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
-	weight := StatRatingsWeights_Mix(weightMiti, 32, weightDps, 146)
+	weight := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
 	return Model{
 		Spec:             Spec_PaladinProtDps,
+		SimulateAs:       stats.Fight_Horridon_HighHeal,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:     ReforgeRules_tank,
@@ -89,6 +87,7 @@ func Model_PallyRet() Model {
 	weight := StatRatingsWeights_ReadFile(files.WeightRetFile, false, false, false)
 	return Model{
 		Spec:             Spec_PaladinRet,
+		SimulateAs:       stats.Fight_Horridon_HighHeal,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_RetWideCap(),
 		ReforgeRules:     ReforgeRules_melee,
@@ -106,6 +105,7 @@ func Model_Testing() Model {
 	weight := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
 	return Model{
 		Spec:             Spec_PaladinProtDps,
+		SimulateAs:       stats.Fight_Horridon_HighHeal,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_None(),
 		ReforgeRules:     ReforgeRules_tank,

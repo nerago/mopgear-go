@@ -31,6 +31,16 @@ const (
 )
 
 func WowSim_Execute(runSize WowSim_RunSize, spec stats.SpecType, equipMap *items.FullEquipMap, profession model.ProfessionInfo, bonusStats *stats.StatBlock, tracker *util.TrackProgress) SimResultStats {
+	var fight stats.WowSim_Fight
+	if spec == stats.Spec_PaladinProtMitigation {
+		fight = stats.Fight_Animus
+	} else {
+		fight = stats.Fight_Horridon_HighHeal
+	}
+	return WowSim_Execute_SelectFight(runSize, spec, fight, equipMap, profession, bonusStats, tracker)
+}
+
+func WowSim_Execute_SelectFight(runSize WowSim_RunSize, spec stats.SpecType, fight stats.WowSim_Fight, equipMap *items.FullEquipMap, profession model.ProfessionInfo, bonusStats *stats.StatBlock, tracker *util.TrackProgress) SimResultStats {
 	infile := files.SimFileFor(spec)
 	var input wowsim_proto.RaidSimRequest
 	loadAnyProtoFile(&input, infile)
@@ -38,8 +48,9 @@ func WowSim_Execute(runSize WowSim_RunSize, spec stats.SpecType, equipMap *items
 	updateGear(&input, equipMap, profession)
 	updateBonus(&input, bonusStats)
 	updateRotation(&input, spec)
-	updateHealRate(&input, spec)
+	updateFight(&input, fight)
 	input.SimOptions.Iterations = int32(runSize)
+	input.SimOptions.RandomSeed = 0
 
 	reporter := make(chan *wowsim_proto.ProgressMetrics, 10)
 
@@ -52,26 +63,23 @@ func WowSim_Execute(runSize WowSim_RunSize, spec stats.SpecType, equipMap *items
 	return convertResult(finalResult)
 }
 
-func updateHealRate(input *wowsim_proto.RaidSimRequest, spec stats.SpecType) {
-	if spec == stats.Spec_PaladinProtDps || spec == stats.Spec_PaladinRet {
-		// old Horridon model:
+func updateFight(input *wowsim_proto.RaidSimRequest, fight stats.WowSim_Fight) {
+	switch fight {
+	case stats.Fight_Horridon_HighHeal:
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 45000
-	} else {
-		// Dark Animus Model:
-
-		// that is a bit high, with 2 mobs rate i just hit for 0.468675/s (40 events in 18.747s)
-		// this would imply rate of 0.05, ten times too high
-		// for _, target := range input.Encounter.Targets {
-		// 	target.SwingSpeed = 0.1
-		// 	target.MinBaseDamage *= 0.3
-		// }
-		// input.Raid.Parties[0].Players[0].HealingModel.Hps = 170000
-
+	case stats.Fight_Horridon_LowHeal:
+		input.Raid.Parties[0].Players[0].HealingModel.Hps = 0
+		for _, target := range input.Encounter.Targets {
+			target.MinBaseDamage *= 2.0
+		}
+	case stats.Fight_Animus:
 		for _, target := range input.Encounter.Targets {
 			target.SwingSpeed = 0.5
 			target.MinBaseDamage *= 1.3
 		}
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 220000
+	default:
+		panic("unknown fight")
 	}
 }
 

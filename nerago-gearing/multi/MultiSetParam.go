@@ -24,6 +24,7 @@ type MultiSetParam struct {
 	ForceUpgradeExistingItems int8
 	extraItems                []items.ItemId
 	extraFromBags             bool
+	blockedItems              []items.ItemId
 	fixedSlots                map[items.SlotEquip]items.ItemId
 
 	// stuff not ported
@@ -68,6 +69,11 @@ func (param *MultiSetParam) AddBagsExtra() {
 
 func (param *MultiSetParam) AddExtraItem(extraItemId items.ItemId) *MultiSetParam {
 	param.extraItems = append(param.extraItems, extraItemId)
+	return param
+}
+
+func (param *MultiSetParam) BlockItem(itemId items.ItemId) *MultiSetParam {
+	param.blockedItems = append(param.blockedItems, itemId)
 	return param
 }
 

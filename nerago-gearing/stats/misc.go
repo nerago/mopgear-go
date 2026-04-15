@@ -132,3 +132,12 @@ func (difficulty Difficulty) Name() string {
 		panic("unknown Difficulty")
 	}
 }
+
+type WowSim_Fight int8
+
+const (
+	Fight_Unknown           WowSim_Fight = iota
+	Fight_Horridon_HighHeal WowSim_Fight = iota
+	Fight_Horridon_LowHeal  WowSim_Fight = iota
+	Fight_Animus            WowSim_Fight = iota
+)

@@ -17,6 +17,7 @@ type Model struct {
 	StatRatings      StatRatingsWeights
 
 	Spec          SpecType
+	SimulateAs    WowSim_Fight
 	ReforgeRules  ReforgeRules
 	EnchantChoice EnchantChoice
 	GemChoice     GemChoice

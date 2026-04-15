@@ -127,8 +127,8 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 }
 
 func findMitigationWithCapicitance(printer *util.PrintRecorder) {
-	simSize := simulate.RunSize_SlowAccurate
-	// simSize := simulate.RunSize_Medium
+	// simSize := simulate.RunSize_SlowAccurate
+	simSize := simulate.RunSize_Medium
 	// simSize := simulate.RunSize_QuickDirty
 
 	solveSize := solver.SolveSize_Long
@@ -165,14 +165,20 @@ func findMitigationWithCapicitance(printer *util.PrintRecorder) {
 			if len(example.GemChoice) == 0 {
 				panic("dunno")
 			}
-			switch example.GemChoice[0].Id {
-			case 95344, 95346:
-				for i := range opts {
-					opts[i].GemChoice[0] = db.GemData_ById(95346)
-				}
+			// switch example.GemChoice[0].Id {
+			// case 95344, 95346:
+			// 	for i := range opts {
+			// 		opts[i].GemChoice[0] = db.GemData_ById(95346)
+			// 	}
 
-			default:
-				panic("unexpected meta")
+			// default:
+			// 	panic("unexpected meta")
+			// }
+
+			if len(equip.GemChoice) == 0 {
+				printer.Printf("(head) %s none\n", example.BaseName)
+			} else {
+				printer.Printf("(head) %s %d\n", example.BaseName, equip.GemChoice[0])
 			}
 		}
 

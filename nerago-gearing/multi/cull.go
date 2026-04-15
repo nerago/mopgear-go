@@ -122,6 +122,10 @@ func (param *multiSetParamInternal) cullingReport() {
 
 	param.job.printer.Printf("EXTRAS USED %s\n", param.Label)
 	for _, info := range extraInfo {
+		if slices.Contains(param.blockedItems, info.itemId) {
+			param.job.printer.Printf("%5d BLOCKED!\n", info.itemId)
+			continue
+		}
 		item := param.itemOptions.FindItemIdFirst(info.itemId)
 		if info.count == 0 {
 			param.job.printer.Printf("%5d 0 NONE // %s; %s\n", info.itemId, item.Slot.Name(), item.BaseName)
