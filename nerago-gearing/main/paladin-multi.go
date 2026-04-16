@@ -223,6 +223,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protCompromise.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
 	protCompromise.AddFixedSlot(items.Equip_Trinket2, 94529) // gaze of the twins
 	blockHelmetsWithoutCapacitance(&protCompromise)
+	protCompromise.BlockItem(96793) // Fortitude of the Zandalari
 	job.AddSetParam(protCompromise)
 
 	protMitigationNoSet := multi.MultiSetParam{
@@ -367,7 +368,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	// job.AddSuppressSlotCheck(94529) // Gaze of the Twins
 	// job.AddSuppressSlotCheck(94527) // Ji-Kun's Rising Winds
-	// job.AddSpecificAllowRate(94527, 0.20) // ji-kun trinket  ADDMEBACKADDMEBACKADDMEBACKADDMEBACKADDMEBACKADDMEBACK
+	job.AddSpecificAllowRate(94527, 0.20) // ji-kun trinket  
 
 	// job.SuggestCulls(100, 10)
 	// job.SuggestCulls(1000, 40)
@@ -381,9 +382,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.FindTopAndPassToSim(10, 1, false, simulate.RunSize_QuickDirty)
 	// job.FindTopAndPassToSim(100, 10, true, simulate.RunSize_QuickDirty)
 	// job.FindTopAndPassToSim(100, 10, true, simulate.RunSize_Medium)
-	// job.FindTopAndPassToSim(75000, 20, true, simulate.RunSize_Medium)
+	job.FindTopAndPassToSim(75000, 30, true, simulate.RunSize_Medium)
 	// job.FindTopAndPassToSim(150000, 50, true, simulate.RunSize_Medium)
-	job.FindTopAndPassToSim(500000, 75, true, simulate.RunSize_Medium)
+	// job.FindTopAndPassToSim(500000, 75, true, simulate.RunSize_Medium)
 }
 
 func blockHelmetsWithoutCapacitance(param *multi.MultiSetParam) {
