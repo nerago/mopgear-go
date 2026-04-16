@@ -95,6 +95,17 @@ func (optionsMap *FullOptionsMap) FindItemIdFirst(itemId ItemId) FullItem {
 	panic("no such item")
 }
 
+func (optionsMap *FullOptionsMap) FindItemIdFirstOptional(itemId ItemId) (FullItem, bool) {
+	for _, slotArray := range optionsMap {
+		for _, item := range slotArray {
+			if item.ItemId() == itemId {
+				return item, true
+			}
+		}
+	}
+	return FullItem{}, false
+}
+
 func (optionsMap *FullOptionsMap) AllItems() iter.Seq[*FullItem] {
 	return func(yield func(*FullItem) bool) {
 		for _, slotArray := range optionsMap {

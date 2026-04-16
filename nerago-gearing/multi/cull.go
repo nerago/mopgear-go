@@ -126,11 +126,15 @@ func (param *multiSetParamInternal) cullingReport() {
 			param.job.printer.Printf("%5d BLOCKED!\n", info.itemId)
 			continue
 		}
-		item := param.itemOptions.FindItemIdFirst(info.itemId)
-		if info.count == 0 {
-			param.job.printer.Printf("%5d 0 NONE // %s; %s\n", info.itemId, item.Slot.Name(), item.BaseName)
+		item, itemFound := param.itemOptions.FindItemIdFirstOptional(info.itemId)
+		if itemFound {
+			if info.count == 0 {
+				param.job.printer.Printf("%5d 0 NONE // %s; %s\n", info.itemId, item.Slot.Name(), item.BaseName)
+			} else {
+				param.job.printer.Printf("%5d %6d // %s; %s\n", info.itemId, info.count, item.Slot.Name(), item.BaseName)
+			}
 		} else {
-			param.job.printer.Printf("%5d %6d // %s; %s\n", info.itemId, info.count, item.Slot.Name(), item.BaseName)
+			param.job.printer.Printf("%5d %d MISSING IN OPTIONS\n", info.itemId, info.count)
 		}
 	}
 }
@@ -139,8 +143,12 @@ func (param *multiSetParamInternal) cullingReportBags() {
 	for _, itemId := range param.addedFromBags {
 		seenCount := param.seenInSolutions.content[itemId]
 		if seenCount > 0 {
-			item := param.itemOptions.FindItemIdFirst(itemId)
-			param.job.printer.Printf("BAGS SUGGESTION %d %d %s; %s !!!\n", itemId, seenCount, item.Slot.Name(), item.BaseName)
+			item, itemFound := param.itemOptions.FindItemIdFirstOptional(itemId)
+			if itemFound {
+				param.job.printer.Printf("BAGS SUGGESTION %d %d %s; %s !!\n", itemId, seenCount, item.Slot.Name(), item.BaseName)
+			} else {
+				param.job.printer.Printf("BAGS SUGGESTION %d %d BUT missing options?!?!?!?!\n", itemId, seenCount)
+			}
 		}
 	}
 }

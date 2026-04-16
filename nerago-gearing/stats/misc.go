@@ -7,6 +7,17 @@ type GemInfo struct {
 	Stats StatBlock
 }
 
+func (gem *GemInfo) AppendString(build *util.StringBuild2) {
+	name := gem.Name()
+	if name != "" {
+		build.WriteRune('{')
+		build.WriteString(name)
+		build.WriteRune('}')
+	} else {
+		gem.Stats.AppendString(build)
+	}
+}
+
 func (gem *GemInfo) Name() string {
 	switch gem.Id {
 	case 95344:

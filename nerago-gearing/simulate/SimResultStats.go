@@ -34,6 +34,24 @@ func (types SimResultType) IsHighGood() bool {
 		panic("unknown value")
 	}
 }
+func (types SimResultType) String() string {
+	switch types {
+	case Result_DPS:
+		return "DPS"
+	case Result_TPS:
+		return "TPS"
+	case Result_DTPS:
+		return "DTPS"
+	case Result_HPS:
+		return "HPS"
+	case Result_TMI:
+		return "TMI"
+	case Result_DEATH:
+		return "DEATH"
+	default:
+		panic("unknown value")
+	}
+}
 
 var SimResultTypeList = []SimResultType{Result_DPS, Result_TPS, Result_DTPS, Result_HPS, Result_TMI, Result_DEATH}
 

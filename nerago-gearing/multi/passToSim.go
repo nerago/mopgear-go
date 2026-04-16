@@ -7,12 +7,11 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
-	"strconv"
 
 	"github.com/google/uuid"
 )
 
-func (job *MultiSetJob) FindTopAndPassToSim(targetCount uint64, topCapture uint64, runSize simulate.WowSim_RunSize) {
+func (job *MultiSetJob) FindTopAndPassToSim(targetCount uint64, topCapture uint64, addRevisions bool, runSize simulate.WowSim_RunSize) {
 	topTracker := util.TrackProgress_Start()
 	topTracker.RunOuterTracking(3)
 	defer topTracker.Stop()
@@ -21,7 +20,12 @@ func (job *MultiSetJob) FindTopAndPassToSim(targetCount uint64, topCapture uint6
 	bestOutputs := job.runForTopN(targetCount, topCapture, topTracker.MakeNested())
 	job.listInitialOutputs(bestOutputs)
 
-	proposalList := job.prepareRevisionsForSim(bestOutputs, topTracker.MakeNested())
+	var proposalList []multiProposedOutput
+	if addRevisions {
+		proposalList = job.prepareRevisionsForSim(bestOutputs, topTracker.MakeNested())
+	} else {
+		proposalList = bestOutputs
+	}
 
 	simList := job.prepareSimList(proposalList)
 	job.runSims(simList, runSize, topTracker.MakeNested())
@@ -217,25 +221,36 @@ func (job *MultiSetJob) reportSimResults(resultList []simulateResult) {
 func (job *MultiSetJob) reportAsCsv(simResultList []simulateResult) {
 	job.printer.Println("@@@@@@@@@@@@@@@@ SPREADSHEET COPY @@@@@@@@@@@@@@@@")
 
-	const linesPerSpec = 7
-	lines := make([]util.StringBuild2, 1+len(job.params)*linesPerSpec)
+	outputTypes := []simulate.SimResultType{simulate.Result_DPS, simulate.Result_DTPS, simulate.Result_TMI, simulate.Result_DEATH}
 
-	for _, simResult := range simResultList {
-		lineIndex := 0
-		lines[lineIndex].WriteString(simResult.proposed.id + ",")
-		lineIndex++
-
-		for _, resultStat := range simResult.result {
-			for _, resultType := range simulate.SimResultTypeList {
-				value := resultStat.Get(resultType)
-				valueStr := strconv.FormatFloat(value, 'f', -1, 64)
-				lines[lineIndex].WriteString(valueStr + ",")
-				lineIndex++
-			}
+	csv := util.CSVOutputByColumn{}
+	csv.InitRows(len(job.params)*len(outputTypes) + 1)
+	csv.AddString("id")
+	for paramIndex := range job.params {
+		param := &job.params[paramIndex]
+		for _, resultType := range outputTypes {
+			csv.AddToBuilder(func(b *util.StringBuild2) {
+				b.WriteString(resultType.String())
+				b.WriteString(" (")
+				b.WriteString(param.Label)
+				b.WriteRune(')')
+			})
 		}
 	}
+	csv.FinishColumn()
 
-	for _, line := range lines {
-		job.printer.Println(line.String())
+	for _, simResult := range simResultList {
+		csv.AddString(simResult.proposed.id)
+
+		for _, resultStat := range simResult.result {
+			for _, resultType := range outputTypes {
+				value := resultStat.Get(resultType)
+				csv.AddFloat64(value, -1)
+			}
+		}
+
+		csv.FinishColumn()
 	}
+
+	csv.Write(job.printer)
 }

@@ -65,7 +65,7 @@ func (item *FullItem) AppendString(build *util.StringBuild2) {
 	if len(item.GemChoice) > 0 {
 		build.WriteString(" GEMS ")
 		for _, gem := range item.GemChoice {
-			gem.Stats.AppendString(build)
+			gem.AppendString(build)
 		}
 	}
 

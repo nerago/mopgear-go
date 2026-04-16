@@ -70,6 +70,19 @@ func (print *PrintRecorder) Println(str string) {
 	}
 }
 
+func (print *PrintRecorder) PrintlnFromBuild(strBuild StringBuild2) {
+	print.mutex.Lock()
+	defer print.mutex.Unlock()
+
+	if print.holdOutput {
+		print.builder.WriteBuilder(strBuild)
+		print.builder.WriteRune('\n')
+	} else {
+		print.outputString(strBuild.String())
+		print.outputNewline()
+	}
+}
+
 func (print *PrintRecorder) Printf(format string, args ...any) {
 	print.mutex.Lock()
 	defer print.mutex.Unlock()

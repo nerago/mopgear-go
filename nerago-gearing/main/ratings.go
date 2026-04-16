@@ -10,7 +10,6 @@ import (
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
-	"strconv"
 )
 
 func generateRatingsDataFromSims(printer *util.PrintRecorder) {
@@ -49,35 +48,34 @@ func generateRatingsDataFromSims(printer *util.PrintRecorder) {
 	tracker.RunOuterTracking(len(statCheckList) + 1)
 	defer tracker.Stop()
 
-	csv := util.CSVOutput{}
+	csv := util.CSVOutputByColumn{}
 
 	simBase := simulate.WowSim_Execute_SelectFight(simSpeed, spec, fight, &currentEquip, modelEquipOnly.Professions, &baseStat, tracker.MakeNested())
-	valuesBase := make([]string, 0, 7)
-	valuesBase = append(valuesBase, "base")
-	valuesBase = simResultToStringList(simBase, valuesBase)
-	csv.AddItem(valuesBase)
+	csv.AddString("base")
+	simResultAddToCSV(simBase, &csv)
+	csv.FinishColumn()
 
 	for _, statCheck := range statCheckList {
 		bonusStat := baseStat
 		bonusStat[statCheck] += statAdd
 		simResult := simulate.WowSim_Execute_SelectFight(simSpeed, spec, fight, &currentEquip, modelEquipOnly.Professions, &bonusStat, tracker.MakeNested())
-		values := make([]string, 0, 7)
-		values = append(values, statCheck.Name())
-		values = simResultToStringList(simResult, values)
-		csv.AddItem(values)
+
+		csv.AddString(statCheck.Name())
+		simResultAddToCSV(simResult, &csv)
+		csv.FinishColumn()
 	}
+
 	csv.Write(printer)
 }
 
-func simResultToStringList(simResult simulate.SimResultStats, values []string) []string {
+func simResultAddToCSV(simResult simulate.SimResultStats, csv *util.CSVOutputByColumn) {
 	for _, simType := range simulate.SimResultTypeList {
 		num := simResult.Get(simType)
 		if simType == simulate.Result_DEATH {
 			num *= 100
 		}
-		values = append(values, strconv.FormatFloat(num, 'f', 2, 64))
+		csv.AddFloat64(num, 2)
 	}
-	return values
 }
 
 func relativeRatingsCompromise(printer *util.PrintRecorder) {
@@ -96,15 +94,15 @@ func relativeRatingsCompromise(printer *util.PrintRecorder) {
 	rateA2 := modelDps.CalcRatingFull(&itemSetMitiNoSet)
 	printer.Printf("A %d %d\n", rateA1, rateA2)
 	multA1 := uint64(math.Round(float64(targetCombined) * targetRatio / float64(rateA1)))
-	multA2 := uint64(math.Round(float64(targetCombined) * (1-targetRatio) / float64(rateA2)))
+	multA2 := uint64(math.Round(float64(targetCombined) * (1 - targetRatio) / float64(rateA2)))
 	printer.Printf("* %d %d\n", multA1, multA2)
-	printer.Printf("? %f %f\n", float64(multA1 * rateA1) / float64(targetCombined), float64(multA2* rateA2) / float64(targetCombined))
+	printer.Printf("? %f %f\n", float64(multA1*rateA1)/float64(targetCombined), float64(multA2*rateA2)/float64(targetCombined))
 
 	rateB1 := modelMitiNoSet.CalcRatingFull(&itemSetDps)
 	rateB2 := modelDps.CalcRatingFull(&itemSetDps)
 	printer.Printf("B %d %d\n", rateB1, rateB2)
 	multB1 := uint64(math.Round(float64(targetCombined) * targetRatio / float64(rateB1)))
-	multB2 := uint64(math.Round(float64(targetCombined) * (1-targetRatio) / float64(rateB2)))
+	multB2 := uint64(math.Round(float64(targetCombined) * (1 - targetRatio) / float64(rateB2)))
 	printer.Printf("* %d %d\n", multB1, multB2)
-	printer.Printf("? %f %f\n", float64(multB1 * rateB1) / float64(targetCombined), float64(multB2* rateB2) / float64(targetCombined))
+	printer.Printf("? %f %f\n", float64(multB1*rateB1)/float64(targetCombined), float64(multB2*rateB2)/float64(targetCombined))
 }
