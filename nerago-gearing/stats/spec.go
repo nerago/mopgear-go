@@ -4,6 +4,7 @@ type SpecType int8
 
 const (
 	Spec_PaladinProtMitigation SpecType = iota
+	Spec_PaladinProtCompromise SpecType = iota
 	Spec_PaladinProtDps        SpecType = iota
 	Spec_PaladinRet            SpecType = iota
 	Spec_PaladinHoly           SpecType = iota
@@ -33,6 +34,8 @@ func (spec SpecType) Name() any {
 	switch spec {
 	case Spec_PaladinProtMitigation:
 		return "PaladinProtMitigation"
+	case Spec_PaladinProtCompromise:
+		return "PaladinProtCompromise"
 	case Spec_PaladinProtDps:
 		return "PaladinProtDps"
 	case Spec_PaladinRet:

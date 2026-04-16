@@ -10,15 +10,16 @@ import (
 
 // ////////// standard model builders
 func Model_PallyProtMitigation_WithSet() Model {
+	spec := Spec_PaladinProtMitigation
 	weight := StatRatingsWeights_ReadFile(files.WeightMitiWithSetFile, false, true, false)
 	return Model{
-		Spec:             Spec_PaladinProtMitigation,
+		Spec:             spec,
 		SimulateAs:       stats.Fight_Horridon_LowHeal,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:     ReforgeRules_tank,
-		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtMitigation),
-		GemChoice:        GemChoice_ForSpec(Spec_PaladinProtMitigation),
+		EnchantChoice:    EnchantChoice_ForSpec(spec),
+		GemChoice:        GemChoice_ForSpec(spec),
 		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Mitigation"),
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
@@ -28,15 +29,16 @@ func Model_PallyProtMitigation_WithSet() Model {
 }
 
 func Model_PallyProtMitigation_NoSet() Model {
+	spec := Spec_PaladinProtMitigation
 	weight := StatRatingsWeights_ReadFile(files.WeightMitiNoSetFile, false, true, false)
 	return Model{
-		Spec:             Spec_PaladinProtMitigation,
+		Spec:             spec,
 		SimulateAs:       stats.Fight_Animus,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:     ReforgeRules_tank,
-		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtMitigation),
-		GemChoice:        GemChoice_ForSpec(Spec_PaladinProtMitigation),
+		EnchantChoice:    EnchantChoice_ForSpec(spec),
+		GemChoice:        GemChoice_ForSpec(spec),
 		SetBonus:         SetBonus_Empty(),
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
@@ -46,17 +48,18 @@ func Model_PallyProtMitigation_NoSet() Model {
 }
 
 func Model_PallyProtCompromise() Model {
+	spec := Spec_PaladinProtCompromise
 	weightMiti := StatRatingsWeights_ReadFile(files.WeightMitiNoSetFile, false, true, false)
 	weightDps := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
 	weight := StatRatingsWeights_Mix(weightMiti, 62, weightDps, 51)
 	return Model{
-		Spec:             Spec_PaladinProtMitigation,
+		Spec:             spec,
 		SimulateAs:       stats.Fight_Animus,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:     ReforgeRules_tank,
-		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtDps),
-		GemChoice:        GemChoice_ForSpec(Spec_PaladinProtDps),
+		EnchantChoice:    EnchantChoice_ForSpec(spec),
+		GemChoice:        GemChoice_ForSpec(spec),
 		SetBonus:         SetBonus_Empty(),
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
@@ -66,15 +69,16 @@ func Model_PallyProtCompromise() Model {
 }
 
 func Model_PallyProtDps() Model {
+	spec := Spec_PaladinProtDps
 	weight := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
 	return Model{
-		Spec:             Spec_PaladinProtDps,
+		Spec:             spec,
 		SimulateAs:       stats.Fight_Horridon_HighHeal,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:     ReforgeRules_tank,
-		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtDps),
-		GemChoice:        GemChoice_ForSpec(Spec_PaladinProtDps),
+		EnchantChoice:    EnchantChoice_ForSpec(spec),
+		GemChoice:        GemChoice_ForSpec(spec),
 		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Damage"),
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,

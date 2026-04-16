@@ -32,7 +32,7 @@ const (
 
 func WowSim_Execute(runSize WowSim_RunSize, spec stats.SpecType, equipMap *items.FullEquipMap, profession model.ProfessionInfo, bonusStats *stats.StatBlock, tracker *util.TrackProgress) SimResultStats {
 	var fight stats.WowSim_Fight
-	if spec == stats.Spec_PaladinProtMitigation {
+	if spec == stats.Spec_PaladinProtMitigation || spec == stats.Spec_PaladinProtCompromise {
 		fight = stats.Fight_Animus
 	} else {
 		fight = stats.Fight_Horridon_HighHeal
@@ -86,7 +86,7 @@ func updateFight(input *wowsim_proto.RaidSimRequest, fight stats.WowSim_Fight) {
 func updateRotation(input *wowsim_proto.RaidSimRequest, spec stats.SpecType) {
 	var rotation wowsim_proto.APLRotation
 	switch spec {
-	case stats.Spec_PaladinProtDps, stats.Spec_PaladinProtMitigation:
+	case stats.Spec_PaladinProtDps, stats.Spec_PaladinProtMitigation, stats.Spec_PaladinProtCompromise:
 		loadAnyProtoFile(&rotation, files.PaladinProtRotation)
 	case stats.Spec_PaladinRet:
 		loadAnyProtoFile(&rotation, files.PaladinRetRotation)

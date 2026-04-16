@@ -36,7 +36,7 @@ func GemChoice_ForSpec(spec SpecType) map[SocketType]GemInfo {
 		result[Socket_Engineering] = GemData_ById(77542)
 		result[Socket_Sha] = GemData_ById(89881)
 
-	case Spec_PaladinProtDps, Spec_PaladinRet:
+	case Spec_PaladinProtDps, Spec_PaladinProtCompromise, Spec_PaladinRet:
 		result[Socket_Red] = GemData_ById(76667)
 		result[Socket_Blue] = GemData_ById(76588)
 		result[Socket_Yellow] = GemData_ById(76699)

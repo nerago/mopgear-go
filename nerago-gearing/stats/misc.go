@@ -21,13 +21,13 @@ func (gem *GemInfo) AppendString(build *util.StringBuild2) {
 func (gem *GemInfo) Name() string {
 	switch gem.Id {
 	case 95344:
-		return "Indomitable (Tank)"
+		return "Indomitable"
 	case 95345:
-		return "Courageous (Heal)"
+		return "Courageous"
 	case 95346:
-		return "Capacitive (Melee)"
+		return "Capacitive"
 	case 95347:
-		return "Sinister (Caster)"
+		return "Sinister"
 	default:
 		return ""
 	}

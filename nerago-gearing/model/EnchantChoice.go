@@ -47,7 +47,7 @@ func EnchantChoice_ForSpec(spec SpecType) map[SlotItem]GemInfo {
 		result[Item_Foot] = EnchantData_ById(4429)
 		result[Item_Weapon2H] = EnchantData_ById(4444)
 
-	case Spec_PaladinProtDps:
+	case Spec_PaladinProtDps, Spec_PaladinProtCompromise:
 		result[Item_Shoulder] = EnchantData_ById(4803)
 		result[Item_Back] = EnchantData_ById(4424)
 		result[Item_Chest] = EnchantData_ById(4419)

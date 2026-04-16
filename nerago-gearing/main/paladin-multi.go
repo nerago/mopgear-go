@@ -379,11 +379,11 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// TODO block helmets not working somehow
 
 	// job.FindTopAndPassToSim(10, 1, false, simulate.RunSize_QuickDirty)
-	job.FindTopAndPassToSim(100, 10, true, simulate.RunSize_QuickDirty)
+	// job.FindTopAndPassToSim(100, 10, true, simulate.RunSize_QuickDirty)
 	// job.FindTopAndPassToSim(100, 10, true, simulate.RunSize_Medium)
 	// job.FindTopAndPassToSim(75000, 20, true, simulate.RunSize_Medium)
 	// job.FindTopAndPassToSim(150000, 50, true, simulate.RunSize_Medium)
-	// job.FindTopAndPassToSim(500000, 75, true, simulate.RunSize_Medium)
+	job.FindTopAndPassToSim(500000, 75, true, simulate.RunSize_Medium)
 }
 
 func blockHelmetsWithoutCapacitance(param *multi.MultiSetParam) {

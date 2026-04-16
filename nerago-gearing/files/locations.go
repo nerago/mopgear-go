@@ -9,15 +9,16 @@ const (
 	LogOutputPath = `output\`
 	ProfileDir    = `profile\`
 
-	WeightMitiNoSetFile = `nerago-gearing\files\weight\PaladinProtMitigationNoSet.txt`
+	WeightMitiNoSetFile   = `nerago-gearing\files\weight\PaladinProtMitigationNoSet.txt`
 	WeightMitiWithSetFile = `nerago-gearing\files\weight\PaladinProtMitigationWithSet.txt`
-	WeightDpsFile  = `nerago-gearing\files\weight\PaladinProtDps.txt`
-	WeightRetFile  = `nerago-gearing\files\weight\PaladinRet.txt`
+	WeightDpsFile         = `nerago-gearing\files\weight\PaladinProtDps.txt`
+	WeightRetFile         = `nerago-gearing\files\weight\PaladinRet.txt`
 
 	BagsFilename = `nerago-gearing\files\gear\bags-gear.json`
 
 	GearFileProtMitigationSet   = `nerago-gearing\files\gear\gear-prot-miti-set.json`
 	GearFileProtMitigationNoSet = `nerago-gearing\files\gear\gear-prot-miti-noset.json`
+	GearFileProtCompromise      = `nerago-gearing\files\gear\gear-prot-compromise.json`
 	GearFileProtDps             = `nerago-gearing\files\gear\gear-prot-dps.json`
 	GearFileRet                 = `nerago-gearing\files\gear\gear-ret.json`
 
@@ -31,7 +32,7 @@ const (
 
 func SimFileFor(spec stats.SpecType) string {
 	switch spec {
-	case stats.Spec_PaladinProtDps:
+	case stats.Spec_PaladinProtDps, stats.Spec_PaladinProtCompromise:
 		return SimProtDps
 	case stats.Spec_PaladinProtMitigation:
 		return SimProtMitigation
@@ -43,10 +44,11 @@ func SimFileFor(spec stats.SpecType) string {
 }
 
 func GearFileFor(spec stats.SpecType, fuzzyOkay bool) string {
-	// TODO add set/noset versions somehow
 	switch spec {
 	case stats.Spec_PaladinProtMitigation:
-		return GearFileProtMitigationSet
+		return GearFileProtMitigationNoSet
+	case stats.Spec_PaladinProtCompromise:
+		return GearFileProtCompromise
 	case stats.Spec_PaladinProtDps:
 		return GearFileProtDps
 	case stats.Spec_PaladinRet:
