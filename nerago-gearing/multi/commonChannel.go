@@ -43,9 +43,19 @@ func (comboType comboType) name() string {
 	}
 }
 
+type forceItemMode int8
+
+const (
+	Force_Unknown             forceItemMode = iota
+	Force_Optional            forceItemMode = iota
+	Force_Forbidden           forceItemMode = iota
+	Force_FixedWhereAvailable forceItemMode = iota
+	Force_RequiredAlways      forceItemMode = iota
+)
+
 type commonComboEntry struct {
 	Item      *items.FullItem
-	Forbidden bool
+	forceMode forceItemMode
 }
 
 type commonCombo struct {
@@ -73,19 +83,25 @@ func (combo *commonCombo) hasItem(itemId items.ItemId) bool {
 	return has
 }
 
-func (combo *commonCombo) setAllow(itemId items.ItemId, allow bool) {
-	combo.allowChoices[itemId] = allow
-	if !allow {
-		combo.entryMap[itemId] = commonComboEntry{Forbidden: true}
+func (combo *commonCombo) setAllow(itemId items.ItemId, choiceAlternate bool, force forceItemMode) {
+	combo.allowChoices[itemId] = choiceAlternate
+	if existing, inMap := combo.entryMap[itemId]; inMap {
+		existing.forceMode = force
+		combo.entryMap[itemId] = existing
+	} else if force != Force_Forbidden {
+		panic("trying to set allow/force for item not yet included in combo")
 	}
 }
 
-func (combo *commonCombo) getValues(itemId items.ItemId) (bool, bool, *items.FullItem) {
+func (combo *commonCombo) getAnySpecifications(itemId items.ItemId) (forceMode forceItemMode, item *items.FullItem) {
 	entry, hasEntry := combo.entryMap[itemId]
 	if hasEntry {
-		return true, !entry.Forbidden, entry.Item
+		if entry.forceMode == Force_Unknown {
+			panic("force not set")
+		}
+		return entry.forceMode, entry.Item
 	} else {
-		return false, false, nil
+		return Force_Unknown, nil
 	}
 }
 
@@ -214,15 +230,15 @@ func combinationCount(options commonComboOptions) *big.Int {
 	return total
 }
 
-func applyAllowRate(specificAllowRates map[items.ItemId]float32, comboChannel chan commonCombo) <-chan commonCombo {
+func applyAllowRate(specificAllowRates map[items.ItemId]specificAllowEntry, comboChannel chan commonCombo) <-chan commonCombo {
 	// TODO consider special handling if it came from an equipped set etc
 	if len(specificAllowRates) == 1 {
-		itemId, rate := util.MapFirstEntry(specificAllowRates)
+		itemId, entry := util.MapFirstEntry(specificAllowRates)
 		return channel_op.TransformAll_ChannelToChannel(generateThreadCount, comboChannel,
 			func(threadNum int, inChan <-chan commonCombo, outChan chan<- commonCombo) {
 				rng := rand.New(rand.NewSource(int64(threadNum)))
 				for combo := range inChan {
-					applyAllowEntry(itemId, rate, &combo, rng)
+					applyAllowEntry(itemId, entry, &combo, rng)
 					outChan <- combo
 				}
 			})
@@ -231,8 +247,8 @@ func applyAllowRate(specificAllowRates map[items.ItemId]float32, comboChannel ch
 			func(threadNum int, inChan <-chan commonCombo, outChan chan<- commonCombo) {
 				rng := rand.New(rand.NewSource(int64(threadNum)))
 				for combo := range inChan {
-					for itemId, rate := range specificAllowRates {
-						applyAllowEntry(itemId, rate, &combo, rng)
+					for itemId, entry := range specificAllowRates {
+						applyAllowEntry(itemId, entry, &combo, rng)
 					}
 					outChan <- combo
 				}
@@ -240,7 +256,11 @@ func applyAllowRate(specificAllowRates map[items.ItemId]float32, comboChannel ch
 	}
 }
 
-func applyAllowEntry(itemId items.ItemId, rate float32, combo *commonCombo, rng *rand.Rand) {
-	allow := rng.Float32() < rate
-	combo.setAllow(itemId, allow)
+func applyAllowEntry(itemId items.ItemId, entry specificAllowEntry, combo *commonCombo, rng *rand.Rand) {
+	choiceAlternate := rng.Float32() < entry.proportion
+	if choiceAlternate {
+		combo.setAllow(itemId, true, entry.modeOn)
+	} else {
+		combo.setAllow(itemId, false, entry.modeOff)
+	}
 }

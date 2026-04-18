@@ -348,46 +348,86 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 
 func trinketSims(printer *util.PrintRecorder) {
 	itemIds := []items.ItemId{
-		94519, // crit->master
-		87063, // none
-		95779, // none
-		95811, // none
-		96793, // none
-		87172, // none
-		94529, // none
-		94527, // exp->haste
-		94507, // (could have)
-		94508, // (could have)
+		94519, // crit->master prim rage
+		87063, // none vial dragon
+		95779, // none vial sang
+		95811, // none soul celesial
+		96793, // none fort zand
+		87172, // none darkmist
+		94529, // none gaze twins
+		94527, // exp->haste ji-kun
+		// 94507, // (could have)
+		// 94508, // (could have)
 	}
 
-	model := model.Model_PallyProtMitigation_WithSet()
-	// model := model.Model_PallyProtMitigation_NoSet()
-	// file := files.GearFileProtMitigationNoSet
-	// file := files.GearFileProtMitigationSet
-	file := files.GearFileProtDps
-	// options := setup.OptionsSetup_FromGearFile(file, &model, setup.MissingEnchant_Panic, printer)
-	equipped := loaders.GearFileReader_Read(file)
-	equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, printer)
+	type group struct {
+		label string
+		model model.Model
+		file  string
+	}
 
-	for _, itemId := range itemIds {
-		item := db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemId, 2, printer)
-		switch itemId {
-		case 94519:
-			item = tools.Reforger_SinglePreset(item, stats.ReforgeRecipe_of_pointer(stats.Stat_Crit, stats.Stat_Mastery))
-		case 94527:
-			item = tools.Reforger_SinglePreset(item, stats.ReforgeRecipe_of_pointer(stats.Stat_Expertise, stats.Stat_Haste))
+	groups := []group{
+		{
+			"with_set",
+			model.Model_PallyProtMitigation_WithSet(),
+			files.GearFileProtMitigationSet,
+		}, {
+			"no_set",
+			model.Model_PallyProtMitigation_NoSet(),
+			files.GearFileProtMitigationNoSet,
+		}, {
+			"compromise",
+			model.Model_PallyProtCompromise(),
+			files.GearFileProtCompromise,
+		}, {
+			"dps",
+			model.Model_PallyProtDps(),
+			files.GearFileProtDps,
+		},
+	}
+
+	csv := util.CSVOutputByColumn{}
+	csv.InitRows(8)
+	csv.AddStringMany("set", "item")
+	for _, statType := range simulate.SimResultTypeList {
+		csv.AddString(statType.String())
+	}
+	csv.FinishColumn()
+
+	for _, group := range groups {
+		model := group.model
+		file := group.file
+
+		equipped := loaders.GearFileReader_Read(file)
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, printer)
+
+		for _, itemId := range itemIds {
+			item := db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemId, 2, printer)
+			switch itemId {
+			case 94519:
+				item = tools.Reforger_SinglePreset(item, stats.ReforgeRecipe_of_pointer(stats.Stat_Crit, stats.Stat_Mastery))
+			case 94527:
+				item = tools.Reforger_SinglePreset(item, stats.ReforgeRecipe_of_pointer(stats.Stat_Expertise, stats.Stat_Haste))
+			}
+
+			printer.Println(group.label + " " + item.BaseName)
+			csv.AddStringMany(group.label, item.BaseName)
+
+			var newEquip items.FullEquipMap = equipMap
+			newEquip[items.Equip_Trinket2] = item
+			// fullSet := items.FullItemSet_FromMap(newEquip)
+
+			resultStats := simulate.WowSim_Execute_SelectFight(simulate.RunSize_Medium, model.Spec, stats.Fight_Animus, &newEquip, model.Professions, nil, util.TrackProgress_Nop())
+			resultStats.Print(printer)
+			for _, statType := range simulate.SimResultTypeList {
+				csv.AddFloat64(resultStats.GetFriendly(statType), 2)
+			}
+
+			csv.FinishColumn()
 		}
-
-		// opts, item := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
-		printer.Println(item.BaseName)
-
-		var newEquip items.FullEquipMap = equipMap
-		newEquip[items.Equip_Trinket2] = item
-		// fullSet := items.FullItemSet_FromMap(newEquip)
-
-		resultStats := simulate.WowSim_Execute(simulate.RunSize_Medium, model.Spec, &newEquip, model.Professions, nil, util.TrackProgress_Nop())
-		resultStats.PrintNumsOnly(printer)
 	}
+
+	csv.Write(printer)
 }
 
 func addGearFileToCommon(common map[items.ItemId]stats.ReforgeRecipe, gearFile string, model *model.Model, printer *util.PrintRecorder) {

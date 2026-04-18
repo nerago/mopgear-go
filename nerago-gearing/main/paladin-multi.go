@@ -142,7 +142,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
-		96436, // tortos shell heroic [[[[[TODO force include]]]]]
+		96436, // tortos shell heroic
 	})
 	// protDps.AddBagsExtra()                         // TODO allow ignore trinkets
 	protDps.AddFixedSlot(items.Equip_Ring2, 96500) // scaled tyrant heroic
@@ -286,7 +286,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
-		96436, // tortos shell heroic
 	})
 	// protMitigationNoSet.AddBagsExtra()
 	protMitigationNoSet.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
@@ -351,7 +350,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
-		96436, // tortos shell heroic
 	})
 	// protMitigationWithSet.AddBagsExtra()
 	protMitigationWithSet.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
@@ -368,7 +366,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	// job.AddSuppressSlotCheck(94529) // Gaze of the Twins
 	// job.AddSuppressSlotCheck(94527) // Ji-Kun's Rising Winds
-	job.AddSpecificAllowRate(94527, 0.20) // ji-kun trinket  
+	job.AddSpecificAllowRate(94527, multi.Force_Forbidden, multi.Force_Optional, 0.20)           // ji-kun trinket
+	job.AddSpecificAllowRate(96436, multi.Force_Optional, multi.Force_FixedWhereAvailable, 0.40) // tortos shell heroic
 
 	// job.SuggestCulls(100, 10)
 	// job.SuggestCulls(1000, 40)
@@ -382,7 +381,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.FindTopAndPassToSim(10, 1, false, simulate.RunSize_QuickDirty)
 	// job.FindTopAndPassToSim(100, 10, true, simulate.RunSize_QuickDirty)
 	// job.FindTopAndPassToSim(100, 10, true, simulate.RunSize_Medium)
-	job.FindTopAndPassToSim(75000, 30, true, simulate.RunSize_Medium)
+	job.FindTopAndPassToSim(5000, 30, false, simulate.RunSize_QuickDirty)
+	// job.FindTopAndPassToSim(75000, 30, true, simulate.RunSize_Medium)
 	// job.FindTopAndPassToSim(150000, 50, true, simulate.RunSize_Medium)
 	// job.FindTopAndPassToSim(500000, 75, true, simulate.RunSize_Medium)
 }

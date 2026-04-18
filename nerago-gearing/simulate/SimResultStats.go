@@ -135,6 +135,25 @@ func (stats SimResultStats) Get(types SimResultType) float64 {
 	}
 }
 
+func (stats SimResultStats) GetFriendly(types SimResultType) float64 {
+	switch types {
+	case Result_DPS:
+		return stats.DPS
+	case Result_TPS:
+		return stats.TPS
+	case Result_DTPS:
+		return stats.DTPS
+	case Result_HPS:
+		return stats.HPS
+	case Result_TMI:
+		return stats.TMI
+	case Result_DEATH:
+		return stats.DEATH * 100
+	default:
+		panic("unknown value")
+	}
+}
+
 func (stats *SimResultStats) Set(types SimResultType, value float64) {
 	switch types {
 	case Result_DPS:

@@ -159,20 +159,31 @@ func buildOptionsGivenCombo(allOptions items.FullOptionsMap, combo *commonCombo)
 }
 
 func buildOptionsGivenCombo_Slot(slotOptions []items.FullItem, combo *commonCombo, itemIdSeen map[items.ItemId]bool) []items.FullItem {
-	selectedItems := make([]items.FullItem, 0, len(slotOptions))
 	clear(itemIdSeen)
+	selectedItems := make([]items.FullItem, 0, len(slotOptions))
+
 	for i := range slotOptions {
 		item := &slotOptions[i]
 		itemId := item.ItemId()
-		hasRestriction, isAllowed, specifiedItem := combo.getValues(itemId)
-		if !hasRestriction {
+		forceMode, specifiedItem := combo.getAnySpecifications(itemId)
+		if forceMode == Force_Unknown {
 			selectedItems = append(selectedItems, *item)
 		} else if !itemIdSeen[itemId] {
-			if isAllowed {
+			switch forceMode {
+			case Force_Optional, Force_FixedWhereAvailable, Force_RequiredAlways:
 				selectedItems = append(selectedItems, *specifiedItem)
+			default:
+				panic("unexpected force value")
 			}
 			itemIdSeen[itemId] = true
 		}
 	}
+
+	for itemId, entry := range combo.entryMap {
+		if entry.forceMode == Force_RequiredAlways && !itemIdSeen[itemId] {
+			panic("never saw forced item " + entry.Item.CreateString())
+		}
+	}
+
 	return selectedItems
 }

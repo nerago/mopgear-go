@@ -17,7 +17,7 @@ import (
 
 func FindUpgrades_AllRaid_Run(input *FindUpgrades_MultiSpec, printer *util.PrintRecorder) {
 	find := func(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal) []upgradeItemResult {
-		result, _ := findUpgrade(&input.FindUpgrades_BasicInputs, baseItems, extraItems, model, printer, tracker, goal)
+		result, _ := findUpgrade(&input.FindUpgrades_BasicInputs, baseItems, extraItems, model, printer, tracker, goal, false)
 		return result
 	}
 

@@ -45,7 +45,7 @@ func evalutateTopNWorker(proposedChannel <-chan multiProposedOutput, bestChannel
 	bestChannel <- best
 }
 
-func evalutateTopNSplitWorker(proposedChannel <-chan multiProposedOutput, bestChannel chan<- splitHighCollector, topCount uint64, specificAllowRates map[items.ItemId]float32) {
+func evalutateTopNSplitWorker(proposedChannel <-chan multiProposedOutput, bestChannel chan<- splitHighCollector, topCount uint64, specificAllowRates map[items.ItemId]specificAllowEntry) {
 	best := splitHighCollector_make(specificAllowRates, topCount)
 	for proposed := range proposedChannel {
 		best.Offer(&proposed)
@@ -58,11 +58,12 @@ type splitHighCollector struct {
 	highCollectors []util_rank.HighestCollectorN[multiProposedOutput]
 }
 
-func splitHighCollector_make(specificAllowRates map[items.ItemId]float32, topCount uint64) splitHighCollector {
+func splitHighCollector_make(specificAllowRates map[items.ItemId]specificAllowEntry, topCount uint64) splitHighCollector {
 	collector := splitHighCollector{}
 
 	splitCount := []uint64{topCount}
-	for itemId, percent := range specificAllowRates {
+	for itemId, entry := range specificAllowRates {
+		percent := entry.proportion
 		nextSplitCount := make([]uint64, 0, len(splitCount)*2)
 		for _, count := range splitCount {
 			trueCount := uint64(float32(count) * percent)

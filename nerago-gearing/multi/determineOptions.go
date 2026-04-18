@@ -109,7 +109,7 @@ func applyFixedForges(fixedForge map[items.ItemId]stats.ReforgeRecipe, commonOpt
 	}
 }
 
-func checkItemRates(allowRates map[items.ItemId]float32, commonOptions *commonComboOptions) {
+func checkItemRates(allowRates map[items.ItemId]specificAllowEntry, commonOptions *commonComboOptions) {
 	for itemId := range allowRates {
 		_, ok := (*commonOptions)[itemId]
 		if !ok {
@@ -127,7 +127,7 @@ func onlyMatchingForge(options []items.FullItem, reforge stats.ReforgeRecipe, it
 	panic("fixed forge selection not available for item " + strconv.Itoa(int(itemId)))
 }
 
-func removeSingleSetItems(seenIn map[items.ItemId][]string, commonOptions *commonComboOptions, fixedForge map[items.ItemId]stats.ReforgeRecipe, specificRates map[items.ItemId]float32) {
+func removeSingleSetItems(seenIn map[items.ItemId][]string, commonOptions *commonComboOptions, fixedForge map[items.ItemId]stats.ReforgeRecipe, specificRates map[items.ItemId]specificAllowEntry) {
 	for itemId, whereSeen := range seenIn {
 		_, isFixed := fixedForge[itemId]
 		if isFixed {
@@ -162,14 +162,14 @@ func printCommons(seenIn map[items.ItemId][]string, commonOptions commonComboOpt
 func printChosenCombo(combo *commonCombo, printer *util.PrintRecorder) {
 	printer.Println("COMMON_COMBO " + combo.logString())
 	for itemId, entry := range combo.entryMap {
-		if entry.Forbidden {
+		if entry.forceMode == Force_Forbidden {
 			printer.Printf("COMMON %d forbidden\n", itemId)
 		} else {
 			printer.Printf("COMMON %s\n", entry.Item.CreateString())
 		}
 	}
 	for _, entry := range combo.entryMap {
-		if !entry.Forbidden {
+		if entry.forceMode != Force_Forbidden {
 			item := entry.Item
 			if item.Reforge.IsEmpty() {
 				printer.Printf("common[%d] = stats.ReforgeRecipe_empty\n", item.ItemId())

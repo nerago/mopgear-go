@@ -31,6 +31,12 @@ func (csv *CSVOutputByColumn) AddString(value string) {
 	csv.currRow++
 }
 
+func (csv *CSVOutputByColumn) AddStringMany(valueSlice ...string) {
+	for _, value := range valueSlice {
+		csv.AddString(value)
+	}
+}
+
 func (csv *CSVOutputByColumn) AddToBuilder(apply func(b *StringBuild2)) {
 	csv.verifyAdd()
 	build := &csv.builds[csv.currRow]

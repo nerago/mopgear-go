@@ -1,6 +1,7 @@
 package main
 
 import (
+	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
@@ -36,6 +37,8 @@ var substituteItemsDps = []items.ItemId{
 	86957, // heroic bladed tempest ring
 	87015, // heroic clawfeet
 	95140, // shado assault band
+	95141, // shado assault loop
+	96500, // scaled tyrant heroic
 	86979, // heroic impaling treads
 	96373, // cloudbreaker belt heroic
 	96468, // talonrender chest heroic
@@ -44,11 +47,11 @@ var substituteItemsDps = []items.ItemId{
 	94820, // caustic spike bracers
 	87024, // null greathelm
 	94773, // centripetal shoulders normal
-	95513, // scaled tyrant normal
 	95535, // normal lightning legs
 	96182, // ultimate prot of the emperor thunder normal
 	94945, // greatshield of the gloaming normal
-	95778, // golden golem celestial [would need gem, acceptable]
+	96436, // tortos shell heroic
+	95778, // golden golem celestial [would need gem]
 	96376, // worldbreaker weapon
 	96534, // qon's scimitar
 	86387, // kilrak weapon
@@ -56,7 +59,7 @@ var substituteItemsDps = []items.ItemId{
 	98146, // pre-legend strength tank
 	96478, // treads of the blind heroic
 	95153, // Tyrant King Battleplate
-	95912, // ret tier15 celestial head [would need gem, acceptable]
+	95282, // ret tier15 normal head
 	95292, // prot tier15 head normal
 	96657, // ret tier15 legs heroic
 	96658, // ret tier15 shoulder heroic
@@ -87,10 +90,12 @@ var substituteItemsMiti = []items.ItemId{
 	95535, // normal lightning legs
 	87015, // heroic clawfeet
 	96481, // durumu tentacle heroic
-	95513, // scaled tyrant normal
 	95140, // shado assault band
+	95141, // shado assault loop
+	96500, // scaled tyrant heroic
 	96182, // ultimate prot of the emperor thunder normal
 	94945, // greatshield of the gloaming normal
+	96436, // tortos shell heroic
 	96428, // shell-coated wrists
 	96447, // rot-proof greatplate
 	96376, // worldbreaker weapon
@@ -131,7 +136,8 @@ func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 	model := model.Model_PallyProtMitigation_WithSet()
 	gearFile := files.GearFileProtMitigationSet
 	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
-	upgradeItems := loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic)
+	// upgradeItems := loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic)
+	upgradeItems := []*items.FullItem{db.WowSimDB_ByIdAndUpgrade_AllowFallback(96436, 2, printer)} // tortos shell heroic
 	input := upgrades.FindUpgrades_SimInputs{
 		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
 			IncludeNormal: true,

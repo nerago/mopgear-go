@@ -26,8 +26,12 @@ type upgradeItemTask struct {
 	canUpgrade CanUpgradeResult
 }
 
-func (task upgradeItemTask) actuallyAttemptUpgrade() bool {
-	return task.canUpgrade == CanUpgrade_Yes || task.canUpgrade == CanUpgrade_AvailableInBags
+func (task upgradeItemTask) actuallyAttemptUpgrade(forceIncludeMost bool) bool {
+	if forceIncludeMost {
+		return task.canUpgrade != CanUpgrade_InvalidAlways
+	} else {
+		return task.canUpgrade == CanUpgrade_Yes || task.canUpgrade == CanUpgrade_AvailableInBags
+	}
 }
 
 func (task upgradeItemTask) Equals(other upgradeItemTask) bool {

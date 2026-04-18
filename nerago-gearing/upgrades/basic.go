@@ -12,7 +12,7 @@ import (
 	"slices"
 )
 
-func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal) ([]upgradeItemResult, *items.FullItemSet) {
+func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal, forceIncludeMost bool) ([]upgradeItemResult, *items.FullItemSet) {
 	extraItems = setupUpgradeLevel(extraItems, printer)
 	checkDuplicates(extraItems)
 	extraTasks := makeExtraTasks(input, extraItems, baseItems, printer, goal)
@@ -22,11 +22,12 @@ func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMa
 
 	printer.Println("FINDING BASELINE")
 	baseRating, baseSet := findBase(input, baseItems, model, printer, tracker)
+	solver.ReportSet(printer, *baseSet, model.CalcRatingFull(baseSet), model)
 
 	printer.Println("TRYING ITEMS")
 	resultList := channel_op.IterateEach_SliceToSlice(c_upgradeEachThreads, extraTasks,
 		func(task *upgradeItemTask, resultChannel chan<- upgradeItemResult) {
-			resultChannel <- performUpgradeTask(input, task, baseItems, baseRating, model, printer, tracker)
+			resultChannel <- performUpgradeTask(input, task, baseItems, baseRating, model, printer, tracker, forceIncludeMost)
 		})
 	reportBasicResults(resultList, printer, input.PositiveResultsOnly)
 	return resultList, baseSet
@@ -189,8 +190,8 @@ func findBase(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, 
 	return float64(output.ResultRating), &output.FullSet
 }
 
-func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *model.Model, parentPrinter *util.PrintRecorder, outerTracker *util.TrackProgress) upgradeItemResult {
-	if !extraTask.actuallyAttemptUpgrade() {
+func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *model.Model, parentPrinter *util.PrintRecorder, outerTracker *util.TrackProgress, forceIncludeMost bool) upgradeItemResult {
+	if !extraTask.actuallyAttemptUpgrade(forceIncludeMost) {
 		parentPrinter.Println("SKIPPING " + extraTask.item.BaseName)
 		return upgradeItemResult_OfFailure(extraTask)
 	}
