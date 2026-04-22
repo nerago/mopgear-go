@@ -914,3 +914,7 @@ func (spell *Spell) RefreshCharge(sim *Simulation) {
 
 	spell.charges++
 }
+
+func (spell *Spell) EqualForAPL(other *Spell) bool {
+	return spell.ActionID == other.ActionID
+}

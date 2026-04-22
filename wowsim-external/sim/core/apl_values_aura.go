@@ -48,6 +48,12 @@ func (value *APLValueAuraIsActive) GetBool(sim *Simulation) bool {
 func (value *APLValueAuraIsActive) String() string {
 	return fmt.Sprintf("Aura Active(%s)", value.aura.String())
 }
+func (value *APLValueAuraIsActive) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueAuraIsActive); isType {
+		return value.aura.EqualForAPL(&otherValue.aura) && value.reactionTime == otherValue.reactionTime && value.includeReactionTime == otherValue.includeReactionTime
+	}
+	return false
+}
 
 type APLValueAuraIsInactive struct {
 	DefaultAPLValueImpl
@@ -84,6 +90,12 @@ func (value *APLValueAuraIsInactive) GetBool(sim *Simulation) bool {
 func (value *APLValueAuraIsInactive) String() string {
 	return fmt.Sprintf("Aura Inactive(%s)", value.aura.String())
 }
+func (value *APLValueAuraIsInactive) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueAuraIsInactive); isType {
+		return value.aura.EqualForAPL(&otherValue.aura) && value.reactionTime == otherValue.reactionTime && value.includeReactionTime == otherValue.includeReactionTime
+	}
+	return false
+}
 
 type APLValueAuraRemainingTime struct {
 	DefaultAPLValueImpl
@@ -111,6 +123,12 @@ func (value *APLValueAuraRemainingTime) GetDuration(sim *Simulation) time.Durati
 }
 func (value *APLValueAuraRemainingTime) String() string {
 	return fmt.Sprintf("Aura Remaining Time(%s)", value.aura.String())
+}
+func (value *APLValueAuraRemainingTime) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueAuraRemainingTime); isType {
+		return value.aura.EqualForAPL(&otherValue.aura)
+	}
+	return false
 }
 
 type APLValueAuraNumStacks struct {
@@ -170,6 +188,12 @@ func (value *APLValueAuraNumStacks) GetInt(sim *Simulation) int32 {
 func (value *APLValueAuraNumStacks) String() string {
 	return fmt.Sprintf("Aura Num Stacks(%s)", value.aura.String())
 }
+func (value *APLValueAuraNumStacks) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueAuraNumStacks); isType {
+		return value.aura.EqualForAPL(&otherValue.aura) && value.reactionTime == otherValue.reactionTime && value.includeReactionTime == otherValue.includeReactionTime
+	}
+	return false
+}
 
 type APLValueAuraInternalCooldown struct {
 	DefaultAPLValueImpl
@@ -196,6 +220,12 @@ func (value *APLValueAuraInternalCooldown) GetDuration(sim *Simulation) time.Dur
 }
 func (value *APLValueAuraInternalCooldown) String() string {
 	return fmt.Sprintf("Aura Remaining ICD(%s)", value.aura.String())
+}
+func (value *APLValueAuraInternalCooldown) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueAuraInternalCooldown); isType {
+		return value.aura.EqualForAPL(&otherValue.aura)
+	}
+	return false
 }
 
 type APLValueAuraICDIsReady struct {
@@ -231,6 +261,12 @@ func (value *APLValueAuraICDIsReady) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueAuraICDIsReady) String() string {
 	return fmt.Sprintf("Aura ICD Is Ready(%s)", value.aura.String())
+}
+func (value *APLValueAuraICDIsReady) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueAuraICDIsReady); isType {
+		return value.aura.EqualForAPL(&otherValue.aura) && value.reactionTime == otherValue.reactionTime && value.includeReactionTime == otherValue.includeReactionTime
+	}
+	return false
 }
 
 type APLValueAuraShouldRefresh struct {
@@ -269,4 +305,10 @@ func (value *APLValueAuraShouldRefresh) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueAuraShouldRefresh) String() string {
 	return fmt.Sprintf("Should Refresh Aura(%s)", value.aura.String())
+}
+func (value *APLValueAuraShouldRefresh) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueAuraShouldRefresh); isType {
+		return value.aura.EqualForAPL(&otherValue.aura) && value.maxOverlap.Equals(otherValue.maxOverlap)
+	}
+	return false
 }

@@ -25,3 +25,9 @@ func (value *APLValueAutoTimeToNext) GetDuration(sim *Simulation) time.Duration 
 func (value *APLValueAutoTimeToNext) String() string {
 	return "Auto Time To Next"
 }
+func (value *APLValueAutoTimeToNext) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueAutoTimeToNext); isType {
+		return value.unit.EqualForAPL(otherValue.unit)
+	}
+	return false
+}

@@ -2,6 +2,7 @@ package core
 
 import (
 	"reflect"
+	"slices"
 	"time"
 
 	"github.com/wowsims/mop/sim/core/proto"
@@ -27,6 +28,9 @@ type APLValue interface {
 
 	// Pretty-print string for debugging.
 	String() string
+
+	// Equals check (has identical contents apart from Uuid)
+	Equals(APLValue) bool
 }
 
 // Provides empty implementations for the GetX() value interface functions.
@@ -348,4 +352,18 @@ func (rot *APLRotation) newAPLValueWithContext(config *proto.APLValue, groupVari
 // Default implementation of Agent.NewAPLValue so each spec doesn't need this boilerplate.
 func (unit *Unit) NewAPLValue(rot *APLRotation, config *proto.APLValue) APLValue {
 	return nil
+}
+
+func APLValueEquals(a, b APLValue) bool {
+	if a != nil && b != nil {
+		return a.Equals(b)
+	} else if a == nil && b == nil {
+		return true
+	} else {
+		return false
+	}
+}
+
+func APLValueSliceEquals(a, b []APLValue) bool {
+	return slices.EqualFunc(a, b, APLValueEquals)
 }

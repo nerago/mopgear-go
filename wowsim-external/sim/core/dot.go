@@ -355,6 +355,10 @@ func (dot *Dot) ChannelCanBeInterrupted(sim *Simulation) bool {
 	return true
 }
 
+func (dot *Dot) EqualForAPL(other *Dot) bool {
+	return dot.Spell.EqualForAPL(other.Spell)
+}
+
 func newDot(config Dot) *Dot {
 	dot := &config
 

@@ -250,17 +250,14 @@ func (action *APLActionGroupReference) replacePlaceholders(value APLValue, varia
 		if anyReplaced {
 			// Handle specific value types that need special treatment
 			switch v := value.(type) {
-			case *APLValueCompare:
+			case APLValueCompareLike:
 				// Re-coerce the types after replacement to ensure compatibility
 				lhs, rhs := rot.coerceToSameType(newInnerValues[0], newInnerValues[1])
-				return &APLValueCompare{
-					DefaultAPLValueImpl: v.DefaultAPLValueImpl,
-					op:                  v.op,
-					lhs:                 lhs,
-					rhs:                 rhs,
+				comp, ok := makeSpecificCompare(lhs, rhs, v.Op())
+				if !ok {
+					panic("couldn't replace compare")
 				}
-			case *APLValueCompareCommon:
-				panic("TODO")
+				return comp
 			case *APLValueCompareDurationGt:
 				panic("TODO")
 			case *APLValueCompareFloatLe:
@@ -326,49 +323,4 @@ func (action *APLActionGroupReference) replaceActionPlaceholders(actionImpl APLA
 
 	// This is a simplified approach - in practice, you'd need to handle each action type specifically
 	// For now, we'll rely on the value replacement in the main flow
-}
-
-func optimizeLogic(value APLValue, rot *APLRotation) APLValue {
-	switch v := value.(type) {
-	case *APLValueConst:
-		if v.valType == proto.APLValueType_ValueTypeFloat && v.boolVal == false && v.durationVal == 0 && v.intVal == 0 && v.stringVal == "" {
-			return &APLValueConstFloat{floatVal: v.floatVal}
-		}
-
-	case *APLValueCompare:
-		replace, convertOk := makeSpecificCompare(v.lhs, v.rhs, v.op)
-		if convertOk {
-			return replace
-		}
-
-	case *APLValueAnd:
-		// NOTE newValueAnd already handles much of this, just call stacks implied that might not always apply?
-		// i don't check for nils and consts like that do anyway
-		if len(v.vals) == 0 {
-			return &APLValueConst{valType: proto.APLValueType_ValueTypeBool, boolVal: true}
-		} else if len(v.vals) == 1 {
-			return optimizeLogic(v.vals[0], rot)
-		} else if len(v.vals) == 2 {
-			replace, foundReplace := makeBetween(v, rot)
-			if foundReplace {
-				return replace
-			}
-		}
-
-	case *APLValueOr:
-		if len(v.vals) == 0 {
-			return &APLValueConst{valType: proto.APLValueType_ValueTypeBool, boolVal: false}
-		} else if len(v.vals) == 1 {
-			return optimizeLogic(v.vals[0], rot)
-		}
-
-		// case *APLValueNot:
-		// 	return &APLValueNot{
-		// 		DefaultAPLValueImpl: v.DefaultAPLValueImpl,
-		// 		val:                 newInnerValues[0],
-		// 	}
-
-	}
-
-	return value
 }

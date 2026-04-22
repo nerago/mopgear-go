@@ -947,3 +947,13 @@ func (unit *Unit) GetTotalAvoidanceChance(atkTable *AttackTable) float64 {
 	block := unit.GetTotalBlockChanceAsDefender(atkTable)
 	return miss + dodge + parry + block
 }
+
+func (unit *Unit) EqualForAPL(other *Unit) bool {
+	if unit != nil && other != nil {
+		return unit.UnitIndex == other.UnitIndex 
+	} else if unit == nil && other == nil {
+		return true
+	} else {
+		return false
+	}
+}

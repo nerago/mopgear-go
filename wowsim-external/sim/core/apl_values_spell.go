@@ -37,6 +37,12 @@ func (value *APLValueSpellCanCast) GetBool(sim *Simulation) bool {
 func (value *APLValueSpellCanCast) String() string {
 	return fmt.Sprintf("Can Cast(%s)", value.spell.ActionID)
 }
+func (value *APLValueSpellCanCast) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueSpellCanCast); isType {
+		return value.spell.EqualForAPL(otherValue.spell)
+	}
+	return false
+}
 
 type APLValueSpellIsReady struct {
 	DefaultAPLValueImpl
@@ -60,6 +66,12 @@ func (value *APLValueSpellIsReady) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueSpellIsReady) String() string {
 	return fmt.Sprintf("Is Ready(%s)", value.spell.ActionID)
+}
+func (value *APLValueSpellIsReady) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueSpellIsReady); isType {
+		return value.spell.EqualForAPL(otherValue.spell)
+	}
+	return false
 }
 
 type APLValueSpellTimeToReady struct {
@@ -88,6 +100,12 @@ func (value *APLValueSpellTimeToReady) GetFloat(sim *Simulation) float64 {
 func (value *APLValueSpellTimeToReady) String() string {
 	return fmt.Sprintf("Time To Ready(%s)", value.spell.ActionID)
 }
+func (value *APLValueSpellTimeToReady) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueSpellTimeToReady); isType {
+		return value.spell.EqualForAPL(otherValue.spell)
+	}
+	return false
+}
 
 type APLValueSpellCastTime struct {
 	DefaultAPLValueImpl
@@ -111,6 +129,12 @@ func (value *APLValueSpellCastTime) GetDuration(_ *Simulation) time.Duration {
 }
 func (value *APLValueSpellCastTime) String() string {
 	return fmt.Sprintf("Cast Time(%s)", value.spell.ActionID)
+}
+func (value *APLValueSpellCastTime) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueSpellCastTime); isType {
+		return value.spell.EqualForAPL(otherValue.spell)
+	}
+	return false
 }
 
 type APLValueSpellTravelTime struct {
@@ -136,6 +160,12 @@ func (value *APLValueSpellTravelTime) GetDuration(_ *Simulation) time.Duration {
 func (value *APLValueSpellTravelTime) String() string {
 	return fmt.Sprintf("Travel Time(%s)", value.spell.ActionID)
 }
+func (value *APLValueSpellTravelTime) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueSpellTravelTime); isType {
+		return value.spell.EqualForAPL(otherValue.spell)
+	}
+	return false
+}
 
 type APLValueSpellCPM struct {
 	DefaultAPLValueImpl
@@ -159,6 +189,12 @@ func (value *APLValueSpellCPM) GetFloat(sim *Simulation) float64 {
 }
 func (value *APLValueSpellCPM) String() string {
 	return fmt.Sprintf("CPM(%s)", value.spell.ActionID)
+}
+func (value *APLValueSpellCPM) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueSpellCPM); isType {
+		return value.spell.EqualForAPL(otherValue.spell)
+	}
+	return false
 }
 
 type APLValueSpellIsCasting struct {
@@ -184,6 +220,12 @@ func (action *APLValueSpellIsCasting) GetBool(sim *Simulation) bool {
 func (action *APLValueSpellIsCasting) String() string {
 	return fmt.Sprintf("IsCasting(%s)", action.spell.ActionID)
 }
+func (value *APLValueSpellIsCasting) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueSpellIsCasting); isType {
+		return value.spell.EqualForAPL(otherValue.spell)
+	}
+	return false
+}
 
 type APLValueSpellIsChanneling struct {
 	DefaultAPLValueImpl
@@ -207,6 +249,12 @@ func (value *APLValueSpellIsChanneling) GetBool(_ *Simulation) bool {
 }
 func (value *APLValueSpellIsChanneling) String() string {
 	return fmt.Sprintf("IsChanneling(%s)", value.spell.ActionID)
+}
+func (value *APLValueSpellIsChanneling) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueSpellIsChanneling); isType {
+		return value.spell.EqualForAPL(otherValue.spell)
+	}
+	return false
 }
 
 type APLValueSpellChanneledTicks struct {
@@ -237,6 +285,12 @@ func (value *APLValueSpellChanneledTicks) GetInt(_ *Simulation) int32 {
 func (value *APLValueSpellChanneledTicks) String() string {
 	return fmt.Sprintf("ChanneledTicks(%s)", value.spell.ActionID)
 }
+func (value *APLValueSpellChanneledTicks) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueSpellChanneledTicks); isType {
+		return value.spell.EqualForAPL(otherValue.spell)
+	}
+	return false
+}
 
 type APLValueSpellCurrentCost struct {
 	DefaultAPLValueImpl
@@ -265,6 +319,12 @@ func (value *APLValueSpellCurrentCost) GetFloat(_ *Simulation) float64 {
 func (value *APLValueSpellCurrentCost) String() string {
 	return fmt.Sprintf("CurrentCost(%s)", value.spell.ActionID)
 }
+func (value *APLValueSpellCurrentCost) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueSpellCurrentCost); isType {
+		return value.spell.EqualForAPL(otherValue.spell)
+	}
+	return false
+}
 
 // Spell Charges
 type APLValueSpellNumCharges struct {
@@ -292,6 +352,13 @@ func (value *APLValueSpellNumCharges) GetInt(_ *Simulation) int32 {
 
 func (value *APLValueSpellNumCharges) String() string {
 	return fmt.Sprintf("SpellNumCharges(%s)", value.spell.ActionID)
+}
+
+func (value *APLValueSpellNumCharges) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueSpellNumCharges); isType {
+		return value.spell.EqualForAPL(otherValue.spell)
+	}
+	return false
 }
 
 type APLValueSpellTimeToCharge struct {
@@ -323,6 +390,13 @@ func (value *APLValueSpellTimeToCharge) GetFloat(sim *Simulation) float64 {
 
 func (value *APLValueSpellTimeToCharge) String() string {
 	return fmt.Sprintf("SpellTimeToCharge(%s)", value.spell.ActionID)
+}
+
+func (value *APLValueSpellTimeToCharge) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueSpellTimeToCharge); isType {
+		return value.spell.EqualForAPL(otherValue.spell)
+	}
+	return false
 }
 
 // GCD duration
@@ -363,6 +437,13 @@ func (value *APLValueSpellGCDHastedDuration) String() string {
 	return fmt.Sprintf("SpellGCDHastedDuration(%s)", value.spell.ActionID)
 }
 
+func (value *APLValueSpellGCDHastedDuration) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueSpellGCDHastedDuration); isType {
+		return value.spell.EqualForAPL(otherValue.spell)
+	}
+	return false
+}
+
 // Full Cooldown duration
 type APLValueSpellFullCooldown struct {
 	DefaultAPLValueImpl
@@ -389,6 +470,13 @@ func (value *APLValueSpellFullCooldown) GetDuration(sim *Simulation) time.Durati
 
 func (value *APLValueSpellFullCooldown) String() string {
 	return fmt.Sprintf("SpellFullCooldown(%s)", value.spell.ActionID)
+}
+
+func (value *APLValueSpellFullCooldown) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueSpellFullCooldown); isType {
+		return value.spell.EqualForAPL(otherValue.spell)
+	}
+	return false
 }
 
 // Spell In Flight
@@ -419,4 +507,10 @@ func (value *APLValueSpellInFlight) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueSpellInFlight) String() string {
 	return fmt.Sprintf("SpellInFlight(%s)", value.spell.ActionID)
+}
+func (value *APLValueSpellInFlight) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueSpellInFlight); isType {
+		return value.spell.EqualForAPL(otherValue.spell)
+	}
+	return false
 }

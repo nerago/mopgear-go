@@ -1,6 +1,7 @@
 package core
 
 import (
+	"slices"
 	"time"
 
 	"github.com/wowsims/mop/sim/core/proto"
@@ -34,6 +35,9 @@ func (ur UnitReference) Get() *Unit {
 
 func (ur *UnitReference) String() string {
 	return ur.Get().Label
+}
+func (ur UnitReference) EqualForAPL(other UnitReference) bool {
+	return ur.Type == other.Type && ur.fixedUnit.EqualForAPL(other.fixedUnit) && ur.targetLookupSource.EqualForAPL(other.targetLookupSource)
 }
 
 func NewUnitReference(ref *proto.UnitReference, contextUnit *Unit) UnitReference {
@@ -94,6 +98,11 @@ func (ar *AuraReference) String() string {
 	return ar.Get().ActionID.String()
 }
 
+func (ar *AuraReference) EqualForAPL(other *AuraReference) bool {
+	return ar.fixedAura.EqualForAPL(other.fixedAura) && ar.targetRef.EqualForAPL(other.targetRef) &&
+		slices.EqualFunc(ar.allTargetAuras, other.allTargetAuras, (*Aura).EqualForAPL)
+}
+
 func newAuraReferenceHelper(sourceUnit UnitReference, auraId *proto.ActionID, auraGetter func(*Unit, ActionID) *Aura) AuraReference {
 	resolvedSourceUnit := sourceUnit.Get()
 	if resolvedSourceUnit == nil {
@@ -141,6 +150,11 @@ func (ar *DotReference) Get() *Dot {
 
 func (ar *DotReference) String() string {
 	return ar.Get().ActionID.String()
+}
+
+func (ar *DotReference) EqualForAPL(other *DotReference) bool {
+	return ar.fixedDot.EqualForAPL(other.fixedDot) && ar.targetRef.EqualForAPL(other.targetRef) &&
+		slices.EqualFunc(ar.allDots, other.allDots, (*Dot).EqualForAPL)
 }
 
 func (rot *APLRotation) NewDotReference(targetUnitRef UnitReference, auraId *proto.ActionID) *DotReference {

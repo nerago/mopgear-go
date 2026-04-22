@@ -23,6 +23,12 @@ func (value *APLValueCurrentTime) GetDuration(sim *Simulation) time.Duration {
 func (value *APLValueCurrentTime) String() string {
 	return "Current Time"
 }
+func (value *APLValueCurrentTime) Equals(other APLValue) bool {
+	if _, isType := other.(*APLValueCurrentTime); isType {
+		return true
+	}
+	return false
+}
 
 type APLValueCurrentTimePercent struct {
 	DefaultAPLValueImpl
@@ -39,6 +45,12 @@ func (value *APLValueCurrentTimePercent) GetFloat(sim *Simulation) float64 {
 }
 func (value *APLValueCurrentTimePercent) String() string {
 	return fmt.Sprintf("Current Time %%")
+}
+func (value *APLValueCurrentTimePercent) Equals(other APLValue) bool {
+	if _, isType := other.(*APLValueCurrentTimePercent); isType {
+		return true
+	}
+	return false
 }
 
 type APLValueRemainingTime struct {
@@ -57,6 +69,12 @@ func (value *APLValueRemainingTime) GetDuration(sim *Simulation) time.Duration {
 func (value *APLValueRemainingTime) String() string {
 	return "Remaining Time"
 }
+func (value *APLValueRemainingTime) Equals(other APLValue) bool {
+	if _, isType := other.(*APLValueRemainingTime); isType {
+		return true
+	}
+	return false
+}
 
 type APLValueRemainingTimePercent struct {
 	DefaultAPLValueImpl
@@ -73,6 +91,12 @@ func (value *APLValueRemainingTimePercent) GetFloat(sim *Simulation) float64 {
 }
 func (value *APLValueRemainingTimePercent) String() string {
 	return fmt.Sprintf("Remaining Time %%")
+}
+func (value *APLValueRemainingTimePercent) Equals(other APLValue) bool {
+	if _, isType := other.(*APLValueRemainingTimePercent); isType {
+		return true
+	}
+	return false
 }
 
 type APLValueNumberTargets struct {
@@ -93,6 +117,12 @@ func (value *APLValueNumberTargets) GetFloat(sim *Simulation) float64 {
 }
 func (value *APLValueNumberTargets) String() string {
 	return "Num Active Targets"
+}
+func (value *APLValueNumberTargets) Equals(other APLValue) bool {
+	if _, isType := other.(*APLValueNumberTargets); isType {
+		return true
+	}
+	return false
 }
 
 type APLValueIsExecutePhase struct {
@@ -128,4 +158,10 @@ func (value *APLValueIsExecutePhase) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueIsExecutePhase) String() string {
 	return "Is Execute Phase"
+}
+func (value *APLValueIsExecutePhase) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueIsExecutePhase); isType {
+		return value.threshold == otherValue.threshold
+	}
+	return false
 }

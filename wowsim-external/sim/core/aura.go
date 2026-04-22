@@ -1191,3 +1191,7 @@ func (aura *Aura) RestoreState(state AuraState, sim *Simulation) {
 		aura.SetStacks(sim, state.Stacks)
 	}
 }
+
+func (aura *Aura) EqualForAPL(other *Aura) bool {
+	return aura.Label == other.Label
+}

@@ -25,3 +25,9 @@ func (value *APLValueRemainingCastTime) GetDuration(sim *Simulation) time.Durati
 func (value *APLValueRemainingCastTime) String() string {
 	return "Remaining Cast Time"
 }
+func (value *APLValueRemainingCastTime) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueRemainingCastTime); isType {
+		return value.unit.EqualForAPL(otherValue.unit)
+	}
+	return false
+}

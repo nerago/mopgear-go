@@ -40,3 +40,9 @@ func (value *APLValueActiveItemSwapSet) GetBool(sim *Simulation) bool {
 func (value *APLValueActiveItemSwapSet) String() string {
 	return fmt.Sprintf("Active Item Swap Set(%s)", value.swapSet)
 }
+func (value *APLValueActiveItemSwapSet) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueActiveItemSwapSet); isType {
+		return value.character.EqualForAPL(&otherValue.character.Unit) && value.swapSet == otherValue.swapSet
+	}
+	return false
+}

@@ -9,20 +9,20 @@ import (
 	"github.com/wowsims/mop/sim/core/proto"
 )
 
-type APLValueConstFloat struct {
-	DefaultAPLValueImpl
-	floatVal float64
-}
+// type APLValueConstFloat struct {
+// 	DefaultAPLValueImpl
+// 	floatVal float64
+// }
 
-func (value *APLValueConstFloat) GetFloat(_ *Simulation) float64 {
-	return value.floatVal
-}
-func (value *APLValueConstFloat) Type() proto.APLValueType {
-	return proto.APLValueType_ValueTypeFloat
-}
-func (value *APLValueConstFloat) String() string {
-	return "float"
-}
+// func (value *APLValueConstFloat) GetFloat(_ *Simulation) float64 {
+// 	return value.floatVal
+// }
+// func (value *APLValueConstFloat) Type() proto.APLValueType {
+// 	return proto.APLValueType_ValueTypeFloat
+// }
+// func (value *APLValueConstFloat) String() string {
+// 	return "float"
+// }
 
 type APLValueConst struct {
 	DefaultAPLValueImpl
@@ -103,6 +103,14 @@ func (value *APLValueConst) GetString(_ *Simulation) string {
 }
 func (value *APLValueConst) String() string {
 	return value.stringVal
+}
+func (value *APLValueConst) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueConst); isType {
+		return value.valType == otherValue.valType && value.intVal == otherValue.intVal &&
+			value.floatVal == otherValue.floatVal && value.durationVal == otherValue.durationVal &&
+			value.stringVal == otherValue.stringVal && value.boolVal == otherValue.boolVal
+	}
+	return false
 }
 
 type APLValueCoerced struct {
@@ -203,6 +211,12 @@ func (value APLValueCoerced) GetString(sim *Simulation) string {
 func (value *APLValueCoerced) String() string {
 	return value.inner.String()
 }
+func (value *APLValueCoerced) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueCoerced); isType {
+		return value.valueType == otherValue.valueType && APLValueEquals(value.inner, otherValue.inner)
+	}
+	return false
+}
 
 // Wraps a value so that it is converted into a Boolean.
 func (rot *APLRotation) coerceTo(value APLValue, newType proto.APLValueType) APLValue {
@@ -286,18 +300,18 @@ func (rot *APLRotation) coerceToSameType(value1 APLValue, value2 APLValue) (APLV
 
 // Utility function which returns the constant float value of a Const or Coerced(Const) APL value.
 // Returns -1 if the value is not a constant, or does not have a float value.
-func getConstAPLFloatValue(value APLValue) float64 {
-	if constValue, isConst := value.(*APLValueConst); isConst {
-		return constValue.GetFloat(nil)
-	} else if constValue, isConst := value.(*APLValueConstFloat); isConst {
-		return constValue.GetFloat(nil)
-	} else if coercedValue, isCoerced := value.(*APLValueCoerced); isCoerced {
-		if _, innerIsConst := coercedValue.inner.(*APLValueConst); innerIsConst {
-			return coercedValue.GetFloat(nil)
-		}
-	}
-	return -1
-}
+// func getConstAPLFloatValue(value APLValue) float64 {
+// 	if constValue, isConst := value.(*APLValueConst); isConst {
+// 		return constValue.GetFloat(nil)
+// 	// } else if constValue, isConst := value.(*APLValueConstFloat); isConst {
+// 	// 	return constValue.GetFloat(nil)
+// 	} else if coercedValue, isCoerced := value.(*APLValueCoerced); isCoerced {
+// 		if _, innerIsConst := coercedValue.inner.(*APLValueConst); innerIsConst {
+// 			return coercedValue.GetFloat(nil)
+// 		}
+// 	}
+// 	return -1
+// }
 
 type APLValueCompare struct {
 	DefaultAPLValueImpl
@@ -511,6 +525,12 @@ func (value *APLValueMath) GetDuration(sim *Simulation) time.Duration {
 func (value *APLValueMath) String() string {
 	return fmt.Sprintf("Math(%s %s %s)", value.lhs, value.op, value.rhs)
 }
+func (value *APLValueMath) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueMath); isType {
+		return value.op == otherValue.op && APLValueEquals(value.lhs, otherValue.lhs) && APLValueEquals(value.rhs, otherValue.rhs)
+	}
+	return false
+}
 
 type APLValueMax struct {
 	DefaultAPLValueImpl
@@ -546,6 +566,12 @@ func (value *APLValueMax) GetDuration(sim *Simulation) time.Duration {
 }
 func (value *APLValueMax) String() string {
 	return fmt.Sprintf("Max(%s)", strings.Join(MapSlice(value.vals, func(subvalue APLValue) string { return fmt.Sprintf("(%s)", subvalue) }), ", "))
+}
+func (value *APLValueMax) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueMax); isType {
+		return APLValueSliceEquals(value.vals, otherValue.vals)
+	}
+	return false
 }
 
 type APLValueMin struct {
@@ -583,6 +609,12 @@ func (value *APLValueMin) GetDuration(sim *Simulation) time.Duration {
 func (value *APLValueMin) String() string {
 	return fmt.Sprintf("Min(%s)", strings.Join(MapSlice(value.vals, func(subvalue APLValue) string { return fmt.Sprintf("(%s)", subvalue) }), ", "))
 }
+func (value *APLValueMin) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueMin); isType {
+		return APLValueSliceEquals(value.vals, otherValue.vals)
+	}
+	return false
+}
 
 type APLValueAnd struct {
 	DefaultAPLValueImpl
@@ -605,6 +637,12 @@ func (value *APLValueAnd) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueAnd) String() string {
 	return strings.Join(MapSlice(value.vals, func(subvalue APLValue) string { return fmt.Sprintf("(%s)", subvalue) }), " AND ")
+}
+func (value *APLValueAnd) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueAnd); isType {
+		return APLValueSliceEquals(value.vals, otherValue.vals)
+	}
+	return false
 }
 
 type APLValueOr struct {
@@ -629,6 +667,12 @@ func (value *APLValueOr) GetBool(sim *Simulation) bool {
 func (value *APLValueOr) String() string {
 	return strings.Join(MapSlice(value.vals, func(subvalue APLValue) string { return fmt.Sprintf("(%s)", subvalue) }), " OR ")
 }
+func (value *APLValueOr) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueOr); isType {
+		return APLValueSliceEquals(value.vals, otherValue.vals)
+	}
+	return false
+}
 
 type APLValueNot struct {
 	DefaultAPLValueImpl
@@ -646,6 +690,12 @@ func (value *APLValueNot) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueNot) String() string {
 	return fmt.Sprintf("Not(%s)", value.val)
+}
+func (value *APLValueNot) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueNot); isType {
+		return APLValueEquals(value.val, otherValue.val)
+	}
+	return false
 }
 
 // variableCache holds per-evaluation-pass cached results for a named variable.
@@ -782,6 +832,12 @@ func (v *APLValueVariableRef) GetString(sim *Simulation) string {
 func (v *APLValueVariableRef) String() string {
 	return fmt.Sprintf("VarRef(%s)", v.name)
 }
+func (value *APLValueVariableRef) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueVariableRef); isType {
+		return value.name == otherValue.name
+	}
+	return false
+}
 
 // Variable Placeholder value for group APLs
 type APLValueVariablePlaceholder struct {
@@ -827,6 +883,12 @@ func (v *APLValueVariablePlaceholder) GetString(sim *Simulation) string {
 }
 func (v *APLValueVariablePlaceholder) String() string {
 	return fmt.Sprintf("VarPlaceholder(%s)", v.name)
+}
+func (value *APLValueVariablePlaceholder) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueVariablePlaceholder); isType {
+		return value.name == otherValue.name
+	}
+	return false
 }
 
 // Operator functions that handle groupVariables context for placeholder replacement
@@ -953,6 +1015,13 @@ func (rot *APLRotation) newValueAnd(config *proto.APLValueAnd, _ *proto.UUID, gr
 			return constVal
 		}
 	}
+
+	between, orphan := makeBetween(vals, rot)
+	if between != nil {
+		rot.orphanValue(orphan)
+		return between
+	}
+
 	return &APLValueAnd{
 		vals: vals,
 	}

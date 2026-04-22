@@ -25,6 +25,12 @@ func (value *APLValueGCDIsReady) GetBool(sim *Simulation) bool {
 func (value *APLValueGCDIsReady) String() string {
 	return "GCD Is Ready"
 }
+func (value *APLValueGCDIsReady) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueGCDIsReady); isType {
+		return value.unit.EqualForAPL(otherValue.unit)
+	}
+	return false
+}
 
 type APLValueGCDTimeToReady struct {
 	DefaultAPLValueImpl
@@ -44,4 +50,10 @@ func (value *APLValueGCDTimeToReady) GetDuration(sim *Simulation) time.Duration 
 }
 func (value *APLValueGCDTimeToReady) String() string {
 	return "GCD Time To Ready"
+}
+func (value *APLValueGCDTimeToReady) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueGCDTimeToReady); isType {
+		return value.unit.UnitIndex == otherValue.unit.UnitIndex
+	}
+	return false
 }

@@ -33,6 +33,13 @@ func (value *APLValueDotIsActive) GetBool(sim *Simulation) bool {
 func (value *APLValueDotIsActive) String() string {
 	return fmt.Sprintf("Dot Is Active(%s)", value.dot.Get().Spell.ActionID)
 }
+func (value *APLValueDotIsActive) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueDotIsActive); isType {
+		return value.dot.EqualForAPL(otherValue.dot)
+	}
+	return false
+}
+
 
 type APLValueDotIsActiveOnAllTargets struct {
 	DefaultAPLValueImpl

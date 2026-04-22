@@ -25,6 +25,12 @@ func (value *APLValueChannelClipDelay) GetDuration(sim *Simulation) time.Duratio
 func (value *APLValueChannelClipDelay) String() string {
 	return "Channel Clip Delay()"
 }
+func (value *APLValueChannelClipDelay) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueChannelClipDelay); isType {
+		return value.unit.EqualForAPL(otherValue.unit)
+	}
+	return false
+}
 
 type APLValueInputDelay struct {
 	DefaultAPLValueImpl
@@ -45,6 +51,12 @@ func (value *APLValueInputDelay) GetDuration(sim *Simulation) time.Duration {
 func (value *APLValueInputDelay) String() string {
 	return "Channel Clip Delay()"
 }
+func (value *APLValueInputDelay) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueInputDelay); isType {
+		return value.unit.EqualForAPL(otherValue.unit)
+	}
+	return false
+}
 
 type APLValueFrontOfTarget struct {
 	DefaultAPLValueImpl
@@ -64,4 +76,10 @@ func (value *APLValueFrontOfTarget) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueFrontOfTarget) String() string {
 	return "Front of Target()"
+}
+func (value *APLValueFrontOfTarget) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueFrontOfTarget); isType {
+		return value.unit.EqualForAPL(otherValue.unit)
+	}
+	return false
 }

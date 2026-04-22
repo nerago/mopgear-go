@@ -30,6 +30,12 @@ func (value *APLValueBossSpellIsCasting) GetBool(sim *Simulation) bool {
 func (value *APLValueBossSpellIsCasting) String() string {
 	return fmt.Sprintf("Boss is Casting(%s)", value.spell.ActionID)
 }
+func (value *APLValueBossSpellIsCasting) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueBossSpellIsCasting); isType {
+		return value.spell.EqualForAPL(otherValue.spell)
+	}
+	return false
+}
 
 type APLValueBossSpellTimeToReady struct {
 	DefaultAPLValueImpl
@@ -54,6 +60,13 @@ func (value *APLValueBossSpellTimeToReady) GetDuration(sim *Simulation) time.Dur
 func (value *APLValueBossSpellTimeToReady) String() string {
 	return fmt.Sprintf("Boss Spell Time to Ready(%s)", value.spell.ActionID)
 }
+func (value *APLValueBossSpellTimeToReady) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueBossSpellTimeToReady); isType {
+		return value.spell.EqualForAPL(otherValue.spell)
+	}
+	return false
+}
+
 
 type APLValueBossCurrentTarget struct {
 	DefaultAPLValueImpl
@@ -79,4 +92,10 @@ func (value *APLValueBossCurrentTarget) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueBossCurrentTarget) String() string {
 	return fmt.Sprintf("IsTanking(%s)", value.target.Get().Label)
+}
+func (value *APLValueBossCurrentTarget) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueBossCurrentTarget); isType {
+		return value.player.EqualForAPL(otherValue.player) && value.target.EqualForAPL(otherValue.target)
+	}
+	return false
 }

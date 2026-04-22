@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/wowsims/mop/sim/core/proto"
@@ -55,7 +56,7 @@ func (value *APLValueItemStatProcCheck) Finalize(rot *APLRotation) {
 }
 
 type APLValueAllItemStatProcsActive struct {
-	*APLValueItemStatProcCheck
+	APLValueItemStatProcCheck
 }
 
 func (rot *APLRotation) newValueAllItemStatProcsActive(config *proto.APLValueAllTrinketStatProcsActive, uuid *proto.UUID) APLValue {
@@ -66,7 +67,7 @@ func (rot *APLRotation) newValueAllItemStatProcsActive(config *proto.APLValueAll
 	}
 
 	return &APLValueAllItemStatProcsActive{
-		APLValueItemStatProcCheck: parentImpl,
+		APLValueItemStatProcCheck: *parentImpl,
 	}
 }
 func (value *APLValueAllItemStatProcsActive) Type() proto.APLValueType {
@@ -81,9 +82,23 @@ func (value *APLValueAllItemStatProcsActive) GetBool(sim *Simulation) bool {
 
 	return true
 }
+func valueStatProcEqual(value *APLValueItemStatProcCheck, otherValue *APLValueItemStatProcCheck) bool {
+	return value.baseName == otherValue.baseName &&
+		value.includeWarnings == otherValue.includeWarnings &&
+		slices.Equal(value.statTypesToMatch, otherValue.statTypesToMatch) &&
+		slices.EqualFunc(value.matchingAuras, otherValue.matchingAuras, func(a, b *StatBuffAura) bool {
+			return a.EqualForAPL(b.Aura)
+		})
+}
+func (value *APLValueAllItemStatProcsActive) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueAllItemStatProcsActive); isType {
+		return valueStatProcEqual(&value.APLValueItemStatProcCheck, &otherValue.APLValueItemStatProcCheck)
+	}
+	return false
+}
 
 type APLValueAnyItemStatProcsActive struct {
-	*APLValueItemStatProcCheck
+	APLValueItemStatProcCheck
 }
 
 func (rot *APLRotation) newValueAnyTrinketStatProcsActive(config *proto.APLValueAnyTrinketStatProcsActive, uuid *proto.UUID) APLValue {
@@ -94,7 +109,7 @@ func (rot *APLRotation) newValueAnyTrinketStatProcsActive(config *proto.APLValue
 	}
 
 	return &APLValueAnyItemStatProcsActive{
-		APLValueItemStatProcCheck: parentImpl,
+		APLValueItemStatProcCheck: *parentImpl,
 	}
 }
 func (value *APLValueAnyItemStatProcsActive) Type() proto.APLValueType {
@@ -109,9 +124,15 @@ func (value *APLValueAnyItemStatProcsActive) GetBool(sim *Simulation) bool {
 
 	return false
 }
+func (value *APLValueAnyItemStatProcsActive) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueAnyItemStatProcsActive); isType {
+		return valueStatProcEqual(&value.APLValueItemStatProcCheck, &otherValue.APLValueItemStatProcCheck)
+	}
+	return false
+}
 
 type APLValueAnyItemStatProcsAvailable struct {
-	*APLValueItemStatProcCheck
+	APLValueItemStatProcCheck
 }
 
 func (rot *APLRotation) newValueAnyTrinketStatProcsAvailable(config *proto.APLValueAnyTrinketStatProcsAvailable, uuid *proto.UUID) APLValue {
@@ -122,7 +143,7 @@ func (rot *APLRotation) newValueAnyTrinketStatProcsAvailable(config *proto.APLVa
 	}
 
 	return &APLValueAnyItemStatProcsAvailable{
-		APLValueItemStatProcCheck: parentImpl,
+		APLValueItemStatProcCheck: *parentImpl,
 	}
 }
 func (value *APLValueAnyItemStatProcsAvailable) Type() proto.APLValueType {
@@ -145,8 +166,15 @@ func (value *APLValueAnyItemStatProcsAvailable) GetBool(sim *Simulation) bool {
 	return false
 }
 
+func (value *APLValueAnyItemStatProcsAvailable) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueAnyItemStatProcsAvailable); isType {
+		return valueStatProcEqual(&value.APLValueItemStatProcCheck, &otherValue.APLValueItemStatProcCheck)
+	}
+	return false
+}
+
 type APLValueItemProcsMinRemainingTime struct {
-	*APLValueItemStatProcCheck
+	APLValueItemStatProcCheck
 }
 
 func (rot *APLRotation) newValueItemProcsMinRemainingTime(config *proto.APLValueTrinketProcsMinRemainingTime, uuid *proto.UUID) APLValue {
@@ -157,7 +185,7 @@ func (rot *APLRotation) newValueItemProcsMinRemainingTime(config *proto.APLValue
 	}
 
 	return &APLValueItemProcsMinRemainingTime{
-		APLValueItemStatProcCheck: parentImpl,
+		APLValueItemStatProcCheck: *parentImpl,
 	}
 }
 func (value *APLValueItemProcsMinRemainingTime) Type() proto.APLValueType {
@@ -174,9 +202,15 @@ func (value *APLValueItemProcsMinRemainingTime) GetDuration(sim *Simulation) tim
 
 	return minRemainingTime
 }
+func (value *APLValueItemProcsMinRemainingTime) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueItemProcsMinRemainingTime); isType {
+		return valueStatProcEqual(&value.APLValueItemStatProcCheck, &otherValue.APLValueItemStatProcCheck)
+	}
+	return false
+}
 
 type APLValueItemProcsMaxRemainingICD struct {
-	*APLValueItemStatProcCheck
+	APLValueItemStatProcCheck
 }
 
 func (rot *APLRotation) newValueItemsProcsMaxRemainingICD(config *proto.APLValueTrinketProcsMaxRemainingICD, uuid *proto.UUID) APLValue {
@@ -187,7 +221,7 @@ func (rot *APLRotation) newValueItemsProcsMaxRemainingICD(config *proto.APLValue
 	}
 
 	return &APLValueItemProcsMaxRemainingICD{
-		APLValueItemStatProcCheck: parentImpl,
+		APLValueItemStatProcCheck: *parentImpl,
 	}
 }
 func (value *APLValueItemProcsMaxRemainingICD) Type() proto.APLValueType {
@@ -204,16 +238,22 @@ func (value *APLValueItemProcsMaxRemainingICD) GetDuration(sim *Simulation) time
 
 	return maxRemainingICD
 }
+func (value *APLValueItemProcsMaxRemainingICD) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueItemProcsMaxRemainingICD); isType {
+		return valueStatProcEqual(&value.APLValueItemStatProcCheck, &otherValue.APLValueItemStatProcCheck)
+	}
+	return false
+}
 
 type APLValueNumEquippedStatProcItems struct {
-	*APLValueItemStatProcCheck
+	APLValueItemStatProcCheck
 }
 
 func (rot *APLRotation) newValueNumEquippedStatProcItems(config *proto.APLValueNumEquippedStatProcTrinkets, uuid *proto.UUID) APLValue {
 	parentImpl := rot.newItemStatProcValue("NumEquippedStatProcItems", config.StatType1, config.StatType2, config.StatType3, config.MinIcdSeconds, false, uuid)
 
 	return &APLValueNumEquippedStatProcItems{
-		APLValueItemStatProcCheck: parentImpl,
+		APLValueItemStatProcCheck: *parentImpl,
 	}
 }
 func (value *APLValueNumEquippedStatProcItems) Type() proto.APLValueType {
@@ -223,6 +263,12 @@ func (value *APLValueNumEquippedStatProcItems) GetInt(sim *Simulation) int32 {
 	return int32(len(FilterSlice(value.matchingAuras, func(aura *StatBuffAura) bool {
 		return aura.CanProc(sim)
 	})))
+}
+func (value *APLValueNumEquippedStatProcItems) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueNumEquippedStatProcItems); isType {
+		return valueStatProcEqual(&value.APLValueItemStatProcCheck, &otherValue.APLValueItemStatProcCheck)
+	}
+	return false
 }
 
 type APLValueNumStatBuffCooldowns struct {
@@ -264,6 +310,13 @@ func (value *APLValueNumStatBuffCooldowns) Finalize(rot *APLRotation) {
 	})
 
 	rot.ValidationMessageByUUID(value.Uuid, proto.LogLevel_Information, "%s will count the currently equipped subset of: %s", value, StringFromActionIDs(actionIDs))
+}
+func (value *APLValueNumStatBuffCooldowns) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueNumStatBuffCooldowns); isType {
+		return slices.Equal(value.statTypesToMatch, otherValue.statTypesToMatch) &&
+			slices.EqualFunc(value.matchingSpells, otherValue.matchingSpells, (*Spell).EqualForAPL)
+	}
+	return false
 }
 
 type APLValueAnyStatBuffCooldownsActive struct {
@@ -313,6 +366,15 @@ func (value *APLValueAnyStatBuffCooldownsActive) Finalize(rot *APLRotation) {
 	})
 
 	rot.ValidationMessageByUUID(value.Uuid, proto.LogLevel_Information, "%s will check the following auras: %s", value, StringFromActionIDs(actionIDs))
+}
+func (value *APLValueAnyStatBuffCooldownsActive) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueAnyStatBuffCooldownsActive); isType {
+		return slices.Equal(value.statTypesToMatch, otherValue.statTypesToMatch) &&
+			slices.EqualFunc(value.matchingAuras, otherValue.matchingAuras, func(a, b *StatBuffAura) bool {
+				return a.EqualForAPL(b.Aura)
+			})
+	}
+	return false
 }
 
 type APLValueAnyStatBuffCooldownsMinDuration struct {
@@ -364,4 +426,13 @@ func (value *APLValueAnyStatBuffCooldownsMinDuration) Finalize(rot *APLRotation)
 	})
 
 	rot.ValidationMessageByUUID(value.Uuid, proto.LogLevel_Information, "%s will check the following auras: %s", value, StringFromActionIDs(actionIDs))
+}
+func (value *APLValueAnyStatBuffCooldownsMinDuration) Equals(other APLValue) bool {
+	if otherValue, isType := other.(*APLValueAnyStatBuffCooldownsMinDuration); isType {
+		return slices.Equal(value.statTypesToMatch, otherValue.statTypesToMatch) &&
+			slices.EqualFunc(value.matchingAuras, otherValue.matchingAuras, func(a, b *StatBuffAura) bool {
+				return a.EqualForAPL(b.Aura)
+			})
+	}
+	return false
 }

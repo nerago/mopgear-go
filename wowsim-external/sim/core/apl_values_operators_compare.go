@@ -85,12 +85,29 @@ func makeSpecificCompare(lhs APLValue, rhs APLValue, op proto.APLValueCompare_Co
 type APLValueCompareLike interface {
 	APLValue
 	Op() proto.APLValueCompare_ComparisonOperator
+	Lhs() APLValue
+	Rhs() APLValue
 }
 
 type APLValueCompareCommon struct {
 	DefaultAPLValueImpl
 	lhs APLValue
 	rhs APLValue
+}
+
+func (value *APLValueCompareCommon) Lhs() APLValue {
+	return value.lhs
+}
+func (value *APLValueCompareCommon) Rhs() APLValue {
+	return value.rhs
+}
+func valueCommonCompareEquals[T APLValueCompareLike](value T, other APLValue) bool {
+	if otherValue, isType := other.(APLValueCompareLike); isType {
+		return value.Op() == otherValue.Op() &&
+			value.Lhs() == otherValue.Lhs() &&
+			value.Lhs() == otherValue.Rhs()
+	}
+	return false
 }
 
 func (value *APLValueCompareCommon) GetInnerValues() []APLValue {
@@ -111,6 +128,9 @@ func (value *APLValueCompareBoolEq) GetBool(sim *Simulation) bool {
 func (value *APLValueCompareBoolEq) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpEq
 }
+func (value *APLValueCompareBoolEq) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
+}
 
 type APLValueCompareBoolNe struct{ APLValueCompareCommon }
 
@@ -119,6 +139,9 @@ func (value *APLValueCompareBoolNe) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueCompareBoolNe) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpNe
+}
+func (value *APLValueCompareBoolNe) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
 }
 
 type APLValueCompareIntEq struct{ APLValueCompareCommon }
@@ -129,6 +152,9 @@ func (value *APLValueCompareIntEq) GetBool(sim *Simulation) bool {
 func (value *APLValueCompareIntEq) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpEq
 }
+func (value *APLValueCompareIntEq) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
+}
 
 type APLValueCompareIntNe struct{ APLValueCompareCommon }
 
@@ -137,6 +163,9 @@ func (value *APLValueCompareIntNe) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueCompareIntNe) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpNe
+}
+func (value *APLValueCompareIntNe) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
 }
 
 type APLValueCompareIntLt struct{ APLValueCompareCommon }
@@ -147,6 +176,9 @@ func (value *APLValueCompareIntLt) GetBool(sim *Simulation) bool {
 func (value *APLValueCompareIntLt) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpLt
 }
+func (value *APLValueCompareIntLt) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
+}
 
 type APLValueCompareIntLe struct{ APLValueCompareCommon }
 
@@ -155,6 +187,9 @@ func (value *APLValueCompareIntLe) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueCompareIntLe) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpLe
+}
+func (value *APLValueCompareIntLe) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
 }
 
 type APLValueCompareIntGt struct{ APLValueCompareCommon }
@@ -165,6 +200,9 @@ func (value *APLValueCompareIntGt) GetBool(sim *Simulation) bool {
 func (value *APLValueCompareIntGt) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpGt
 }
+func (value *APLValueCompareIntGt) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
+}
 
 type APLValueCompareIntGe struct{ APLValueCompareCommon }
 
@@ -173,6 +211,9 @@ func (value *APLValueCompareIntGe) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueCompareIntGe) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpGe
+}
+func (value *APLValueCompareIntGe) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
 }
 
 type APLValueCompareFloatEq struct{ APLValueCompareCommon }
@@ -183,6 +224,9 @@ func (value *APLValueCompareFloatEq) GetBool(sim *Simulation) bool {
 func (value *APLValueCompareFloatEq) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpEq
 }
+func (value *APLValueCompareFloatEq) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
+}
 
 type APLValueCompareFloatNe struct{ APLValueCompareCommon }
 
@@ -191,6 +235,9 @@ func (value *APLValueCompareFloatNe) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueCompareFloatNe) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpNe
+}
+func (value *APLValueCompareFloatNe) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
 }
 
 type APLValueCompareFloatLt struct{ APLValueCompareCommon }
@@ -201,6 +248,9 @@ func (value *APLValueCompareFloatLt) GetBool(sim *Simulation) bool {
 func (value *APLValueCompareFloatLt) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpLt
 }
+func (value *APLValueCompareFloatLt) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
+}
 
 type APLValueCompareFloatLe struct{ APLValueCompareCommon }
 
@@ -209,6 +259,9 @@ func (value *APLValueCompareFloatLe) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueCompareFloatLe) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpLe
+}
+func (value *APLValueCompareFloatLe) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
 }
 
 type APLValueCompareFloatGt struct{ APLValueCompareCommon }
@@ -219,6 +272,9 @@ func (value *APLValueCompareFloatGt) GetBool(sim *Simulation) bool {
 func (value *APLValueCompareFloatGt) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpGt
 }
+func (value *APLValueCompareFloatGt) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
+}
 
 type APLValueCompareFloatGe struct{ APLValueCompareCommon }
 
@@ -227,6 +283,9 @@ func (value *APLValueCompareFloatGe) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueCompareFloatGe) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpGe
+}
+func (value *APLValueCompareFloatGe) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
 }
 
 type APLValueCompareDurationEq struct{ APLValueCompareCommon }
@@ -237,15 +296,20 @@ func (value *APLValueCompareDurationEq) GetBool(sim *Simulation) bool {
 func (value *APLValueCompareDurationEq) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpEq
 }
+func (value *APLValueCompareDurationEq) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
+}
 
 type APLValueCompareDurationNe struct{ APLValueCompareCommon }
 
 func (value *APLValueCompareDurationNe) GetBool(sim *Simulation) bool {
 	return value.lhs.GetDuration(sim) != value.rhs.GetDuration(sim)
 }
-
 func (value *APLValueCompareDurationNe) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpNe
+}
+func (value *APLValueCompareDurationNe) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
 }
 
 type APLValueCompareDurationLt struct{ APLValueCompareCommon }
@@ -256,6 +320,9 @@ func (value *APLValueCompareDurationLt) GetBool(sim *Simulation) bool {
 func (value *APLValueCompareDurationLt) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpLt
 }
+func (value *APLValueCompareDurationLt) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
+}
 
 type APLValueCompareDurationLe struct{ APLValueCompareCommon }
 
@@ -264,6 +331,9 @@ func (value *APLValueCompareDurationLe) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueCompareDurationLe) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpLe
+}
+func (value *APLValueCompareDurationLe) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
 }
 
 type APLValueCompareDurationGt struct{ APLValueCompareCommon }
@@ -274,6 +344,9 @@ func (value *APLValueCompareDurationGt) GetBool(sim *Simulation) bool {
 func (value *APLValueCompareDurationGt) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpGt
 }
+func (value *APLValueCompareDurationGt) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
+}
 
 type APLValueCompareDurationGe struct{ APLValueCompareCommon }
 
@@ -282,6 +355,9 @@ func (value *APLValueCompareDurationGe) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueCompareDurationGe) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpGe
+}
+func (value *APLValueCompareDurationGe) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
 }
 
 type APLValueCompareStringEq struct{ APLValueCompareCommon }
@@ -292,6 +368,9 @@ func (value *APLValueCompareStringEq) GetBool(sim *Simulation) bool {
 func (value *APLValueCompareStringEq) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpEq
 }
+func (value *APLValueCompareStringEq) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
+}
 
 type APLValueCompareStringNe struct{ APLValueCompareCommon }
 
@@ -300,6 +379,9 @@ func (value *APLValueCompareStringNe) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueCompareStringNe) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpNe
+}
+func (value *APLValueCompareStringNe) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
 }
 
 type APLValueCompareStringLt struct{ APLValueCompareCommon }
@@ -310,6 +392,9 @@ func (value *APLValueCompareStringLt) GetBool(sim *Simulation) bool {
 func (value *APLValueCompareStringLt) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpLt
 }
+func (value *APLValueCompareStringLt) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
+}
 
 type APLValueCompareStringLe struct{ APLValueCompareCommon }
 
@@ -318,6 +403,9 @@ func (value *APLValueCompareStringLe) GetBool(sim *Simulation) bool {
 }
 func (value *APLValueCompareStringLe) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpLe
+}
+func (value *APLValueCompareStringLe) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
 }
 
 type APLValueCompareStringGt struct{ APLValueCompareCommon }
@@ -328,13 +416,18 @@ func (value *APLValueCompareStringGt) GetBool(sim *Simulation) bool {
 func (value *APLValueCompareStringGt) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpGt
 }
+func (value *APLValueCompareStringGt) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
+}
 
 type APLValueCompareStringGe struct{ APLValueCompareCommon }
 
 func (value *APLValueCompareStringGe) GetBool(sim *Simulation) bool {
 	return value.lhs.GetString(sim) >= value.rhs.GetString(sim)
 }
-
 func (value *APLValueCompareStringGe) Op() proto.APLValueCompare_ComparisonOperator {
 	return proto.APLValueCompare_OpGe
+}
+func (value *APLValueCompareStringGe) Equals(other APLValue) bool {
+	return valueCommonCompareEquals(value, other)
 }
