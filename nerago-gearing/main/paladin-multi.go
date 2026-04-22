@@ -31,13 +31,12 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95141, // shado assault loop
 		86957, // heroic bladed tempest ring
 		96500, // scaled tyrant heroic
-		// 94462, // pvp ring REMOVE1234
 		96481, // durumu tentacle heroic
 
 		87015, // heroic clawfeet
 		86979, // heroic impaling treads
 		87024, // null greathelm
-		// 86955, // heroic overwhelm assault belt REMOVE1234
+		86955, // heroic overwhelm assault belt REMOVE1234
 		94726, // cloudbreaker belt normal
 		96373, // cloudbreaker belt heroic
 		96478, // treads of the blind heroic
@@ -46,10 +45,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94773, // centripetal shoulders normal
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
-		// 95098, // Sightblinder Shoulderguards REMOVE1234
 
 		87024, // null greathelm
-		95282, // ret tier15 normal head [would need gem]
+		95282, // ret tier15 normal head
 		95910, // ret tier15 chest celestial
 		95281, // ret tier15 gloves normal
 		96657, // ret tier15 legs heroic
@@ -62,20 +60,18 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95142, // striker's battletags
 		95205, // terra-cotta neck
 		94776, // primal turtle amulet
+		96420, // talisman of angry spirits
 
-		// 94527, // ji-kun trinket
+		94527, // ji-kun trinket
 		94529, // gaze of the twins
 
 		87145, // defiled earth OFF
-		94820, // caustic spike bracers OFF123
 		96394, // frozen warlord bracer heroic
 	})
-	// ret.AddBagsExtra()
 	ret.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
 	ret.AddFixedSlot(items.Equip_Ring2, 96500)    // scaled tyrant heroic
 	ret.AddFixedSlot(items.Equip_Back, 98147)     // pre-legend strength dps
 	blockHelmetsWithoutCapacitance(&ret)
-	job.AddSetParam(ret)
 
 	protDps := multi.MultiSetParam{
 		Label:                     "Prot-Damage",
@@ -90,7 +86,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protDps.AddExtraItems([]items.ItemId{
 		86957, // heroic bladed tempest ring
 		95140, // shado assault band
-		// 95141, // shado assault loop
+		// 95141, // shado assault loop OFF1
 		96500, // scaled tyrant heroic
 		96481, // durumu tentacle heroic
 
@@ -103,7 +99,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		98147, // pre-legend strength dps
 
-		// 86955, // heroic overwhelm assault belt REMOVE123
 		95535, // normal lightning legs
 		94773, // centripetal shoulders normal
 		96468, // talonrender chest heroic
@@ -111,27 +106,26 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95153, // Tyrant King Battleplate
 
 		87024, // null greathelm
-		95778, // crown golden golem celestial [would need gem, acceptable]
-		95282, // ret tier15 normal head [would need gem]
+		95778, // crown golden golem celestial [would need gem]
+		95282, // ret tier15 normal head
 		95292, // prot tier15 head normal
 
 		95910, // ret tier15 chest celestial
-		95281, // ret tier15 gloves normal
+		// 95281, // ret tier15 gloves normal
 		96657, // ret tier15 legs heroic
 		96658, // ret tier15 shoulder heroic
 
 		// 95290, // prot tier15 chest normal
 		// 95291, // prot tier15 hand normal
 		// 96667, // prot tier15 leg heroic
-		96668, // prot tier15 shoulder heroic
+		// 96668, // prot tier15 shoulder heroic
 
 		95142, // striker's battletags
 		95205, // terra-cotta neck
-		// 87036, // soulgrasp heroic REMOVE1234
 		94776, // primal turtle amulet
+		96420, // talisman of angry spirits
 
-		87145, // defiled earth REMOVE123
-		// 94820, // caustic spike bracers OFF123
+		// 94820, // caustic spike bracers OFF1234
 		96394, // frozen warlord bracer heroic
 
 		96376, // worldbreaker weapon
@@ -144,17 +138,15 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96182, // ultimate prot of the emperor thunder normal
 		96436, // tortos shell heroic
 	})
-	// protDps.AddBagsExtra()                         // TODO allow ignore trinkets
 	protDps.AddFixedSlot(items.Equip_Ring2, 96500) // scaled tyrant heroic
 	// protDps.AddFixedSlot(items.Equip_Offhand, 96182)  // ultimate prot of the emperor thunder normal
 	protDps.AddFixedSlot(items.Equip_Back, 98147)     // pre-legend strength dps
 	protDps.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
 	blockHelmetsWithoutCapacitance(&protDps)
-	job.AddSetParam(protDps)
 
 	protCompromise := multi.MultiSetParam{
 		Label:                     "Prot-Compromise",
-		GearFile:                  files.GearFileProtMitigationNoSet,
+		GearFile:                  files.GearFileProtCompromise,
 		Model:                     model.Model_PallyProtCompromise(),
 		IncludeInFirstPass:        true,
 		RequestRatingPercent:      0.14,
@@ -169,7 +161,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96500, // scaled tyrant heroic
 		96481, // durumu tentacle heroic
 
-		// 87015, // heroic clawfeet
+		87015, // heroic clawfeet
 		86979, // heroic impaling treads
 		96478, // treads of the blind heroic
 
@@ -181,12 +173,12 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96428, // shell-coated wrists
 		96447, // rot-proof greatplate
 
-		// 86955, // heroic overwhelm assault belt REMOVE1
+		// 86955, // heroic overwhelm assault belt REMOVE12
 		95535, // normal lightning legs
-		// 94773, // centripetal shoulders normal REMOVE1
+		// 94773, // centripetal shoulders normal REMOVE12
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
-		95153, // Tyrant King Battleplate REMOVE1
+		// 95153, // Tyrant King Battleplate REMOVE12
 
 		87024, // null greathelm
 		95778, // crown golden golem celestial [would need gem, acceptable]
@@ -199,11 +191,12 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		95142, // striker's battletags
 		95205, // terra-cotta neck
-		// 87036, // soulgrasp heroic REMOVE12
+		// 87036, // soulgrasp heroic REMOVE123
 		94776, // primal turtle amulet
+		96420, // talisman of angry spirits
 
-		// 87145, // defiled earth OFF1
-		94820, // caustic spike bracers OFF1
+		87145, // defiled earth OFF1
+		// 94820, // caustic spike bracers OFF12
 		96394, // frozen warlord bracer heroic
 
 		96376, // worldbreaker weapon
@@ -216,15 +209,13 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96182, // ultimate prot of the emperor thunder normal
 		96436, // tortos shell heroic
 	})
-	// protCompromise.AddBagsExtra()
 	protCompromise.AddFixedSlot(items.Equip_Ring2, 96500) // scaled tyrant heroic
 	// protCompromise.AddFixedSlot(items.Equip_Offhand, 96182)  // ultimate prot of the emperor thunder normal
 	protCompromise.AddFixedSlot(items.Equip_Back, 98147)     // pre-legend strength dps
 	protCompromise.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
-	protCompromise.AddFixedSlot(items.Equip_Trinket2, 94529) // gaze of the twins
+	// protCompromise.AddFixedSlot(items.Equip_Trinket2, 94529) // gaze of the twins
 	blockHelmetsWithoutCapacitance(&protCompromise)
 	protCompromise.BlockItem(96793) // Fortitude of the Zandalari
-	job.AddSetParam(protCompromise)
 
 	protMitigationNoSet := multi.MultiSetParam{
 		Label:                     "Prot-Mitigation-NoSet",
@@ -237,24 +228,23 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		ForceUpgradeExistingItems: 2,
 	}
 	protMitigationNoSet.AddExtraItems([]items.ItemId{
-		86979, // heroic impaling treads
-		87015, // heroic clawfeet
+		// 86979, // heroic impaling treads REMOVE1
+		// 87015, // heroic clawfeet REMOVE1
 		96478, // treads of the blind heroic
 
-		// 86957, // heroic bladed tempest ring REMOVE12
-		// 95140, // shado assault band
+		86957, // heroic bladed tempest ring REMOVE12
+		// 95140, // shado assault band REMOVE1
 		95141, // shado assault loop
 		96500, // scaled tyrant heroic
 		96481, // durumu tentacle heroic
 
 		96373, // cloudbreaker belt heroic
-		// 86955, // heroic overwhelm assault belt REMOVE123
 
 		98147, // pre-legend strength dps
 		98146, // pre-legend strength tank
 
 		95535, // normal lightning legs
-		// 94773, // centripetal shoulders normal REMOVE123
+		// 94773, // centripetal shoulders normal REMOVE1234
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
 
@@ -276,9 +266,10 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95205, // terra-cotta neck
 		95178, // lootraptor amulet
 		94776, // primal turtle amulet
+		96420, // talisman of angry spirits
 
 		87145, // defiled earth
-		// 94820, // caustic spike bracers REMOVE1
+		// 94820, // caustic spike bracers REMOVE12
 		96394, // frozen warlord bracer heroic
 
 		96376, // worldbreaker weapon
@@ -287,12 +278,10 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
 	})
-	// protMitigationNoSet.AddBagsExtra()
 	protMitigationNoSet.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
 	protMitigationNoSet.AddFixedSlot(items.Equip_Ring1, 96481)    // durumu
 	// protMitigationNoSet.AddFixedSlot(items.Equip_Offhand, 94945)  // greatshield of the gloaming normal
 	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
-	job.AddSetParam(protMitigationNoSet)
 
 	protMitigationWithSet := multi.MultiSetParam{
 		Label:                     "Prot-Mitigation-WithSet",
@@ -305,13 +294,13 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		ForceUpgradeExistingItems: 2,
 	}
 	protMitigationWithSet.AddExtraItems([]items.ItemId{
-		// 86979, // heroic impaling treads
-		87015, // heroic clawfeet REMOVE12
+		86979, // heroic impaling treads
+		// 87015, // heroic clawfeet REMOVE123
 		96478, // treads of the blind heroic
 
-		86957, // heroic bladed tempest ring REMOVE1
-		95140, // shado assault band
-		// 95141, // shado assault loop
+		// 86957, // heroic bladed tempest ring REMOVE12
+		// 95140, // shado assault band REMOVE1
+		95141, // shado assault loop
 		96500, // scaled tyrant heroic
 		96481, // durumu tentacle heroic
 
@@ -320,9 +309,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		98146, // pre-legend strength tank
 
-		95535, // normal lightning legs REMOVE1
-		// 94773, // centripetal shoulders normal REMOVE12
-		96468, // talonrender chest heroic
+		// 95535, // normal lightning legs REMOVE12
+		// 94773, // centripetal shoulders normal REMOVE123
+		// 96468, // talonrender chest heroic REMOVE1
 		96533, // rein-binders fists heroic
 		96428, // shell-coated wrists REMOVE123
 		96447, // rot-proof greatplate
@@ -338,11 +327,12 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		95142, // striker's battletags
 		95205, // terra-cotta neck
-		95178, // lootraptor amulet
-		94776, // primal turtle amulet REMOVE1
+		// 95178, // lootraptor amulet REMOVE1
+		// 94776, // primal turtle amulet REMOVE12
+		96420, // talisman of angry spirits
 
 		87145, // defiled earth
-		94820, // caustic spike bracers REMOVE12
+		// 94820, // caustic spike bracers REMOVE123
 		96394, // frozen warlord bracer heroic
 
 		96376, // worldbreaker weapon
@@ -351,13 +341,11 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
 	})
-	// protMitigationWithSet.AddBagsExtra()
 	protMitigationWithSet.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
 	protMitigationWithSet.AddFixedSlot(items.Equip_Ring1, 96481)    // durumu
 	// protMitigationSet.AddFixedSlot(items.Equip_Offhand, 94945)  // greatshield of the gloaming normal
 	protMitigationWithSet.AddFixedSlot(items.Equip_Back, 98146) // pre-legend strength tank
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
-	job.AddSetParam(protMitigationWithSet)
 
 	// job.AddSuppressSlotCheck(86946) // Vizier's Ruby Signet
 	// job.AddSuppressSlotCheck(86957) // Ring of the Bladed Tempest
@@ -366,8 +354,20 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	// job.AddSuppressSlotCheck(94529) // Gaze of the Twins
 	// job.AddSuppressSlotCheck(94527) // Ji-Kun's Rising Winds
-	job.AddSpecificAllowRate(94527, multi.Force_Forbidden, multi.Force_Optional, 0.20)           // ji-kun trinket
-	job.AddSpecificAllowRate(96436, multi.Force_Optional, multi.Force_FixedWhereAvailable, 0.40) // tortos shell heroic
+	job.AddSpecificAllowRate(94527, multi.Force_Forbidden, multi.Force_Optional, 0.20) // ji-kun trinket
+	// job.AddSpecificAllowRate(96436, multi.Force_Optional, multi.Force_FixedWhereAvailable, 0.40) // tortos shell heroic
+
+	// ret.AddBagsExtra()
+	// protDps.AddBagsExtra()
+	// protCompromise.AddBagsExtra()
+	// protMitigationNoSet.AddBagsExtra()
+	// protMitigationWithSet.AddBagsExtra()
+
+	job.AddSetParam(ret)
+	job.AddSetParam(protDps)
+	job.AddSetParam(protCompromise)
+	job.AddSetParam(protMitigationNoSet)
+	job.AddSetParam(protMitigationWithSet)
 
 	// job.SuggestCulls(100, 10)
 	// job.SuggestCulls(1000, 40)
@@ -376,15 +376,13 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.SuggestCulls(25000, 150)
 	// job.SuggestCulls(150000, 200)
 
-	// TODO block helmets not working somehow
-
 	// job.FindTopAndPassToSim(10, 1, false, simulate.RunSize_QuickDirty)
 	// job.FindTopAndPassToSim(100, 10, true, simulate.RunSize_QuickDirty)
 	// job.FindTopAndPassToSim(100, 10, true, simulate.RunSize_Medium)
-	job.FindTopAndPassToSim(5000, 30, false, simulate.RunSize_QuickDirty)
+	// job.FindTopAndPassToSim(5000, 30, false, simulate.RunSize_QuickDirty)
 	// job.FindTopAndPassToSim(75000, 30, true, simulate.RunSize_Medium)
 	// job.FindTopAndPassToSim(150000, 50, true, simulate.RunSize_Medium)
-	// job.FindTopAndPassToSim(500000, 75, true, simulate.RunSize_Medium)
+	job.FindTopAndPassToSim(500000, 75, true, simulate.RunSize_Medium)
 }
 
 func blockHelmetsWithoutCapacitance(param *multi.MultiSetParam) {
@@ -393,6 +391,7 @@ func blockHelmetsWithoutCapacitance(param *multi.MultiSetParam) {
 	param.BlockItem(87101) // white tiger helmet = prot gem
 	param.BlockItem(95292) // lightning emp faceguard = prot gem
 	param.BlockItem(95778) // golden golem celestial = ignore in all sets
+	blockGeneral(param)
 }
 
 func blockHelmetsWithoutIndomitable(param *multi.MultiSetParam) {
@@ -401,4 +400,9 @@ func blockHelmetsWithoutIndomitable(param *multi.MultiSetParam) {
 	// param.BlockItem(87101) // white tiger helmet = prot gem
 	// param.BlockItem(95292) // lightning emp faceguard = prot gem
 	param.BlockItem(95778) // golden golem celestial = ignore in all sets
+	blockGeneral(param)
+}
+
+func blockGeneral(param *multi.MultiSetParam) {
+	param.BlockItem(95513) // normal ring
 }

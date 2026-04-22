@@ -144,6 +144,8 @@ func (result upgradeItemResultWithSim) percentSim() float64 {
 		return result.sim.IncreaseOf(&result.baseSim, simulate.Result_HPS)
 	case UpgradeGoal_Mitigation:
 		return result.sim.IncreaseMitigation(&result.baseSim)
+	case UpgradeGoal_HalfMitiDps:
+		return (result.sim.IncreaseMitigation(&result.baseSim) + result.sim.IncreaseOf(&result.baseSim, simulate.Result_DPS)) / 2.0
 	default:
 		panic("unknown goal")
 	}
@@ -253,7 +255,10 @@ func makeReportSimForItem(mapSize int) func(*items.FullItem, items.SlotEquip) *r
 func (report *reportForItemWithSim) Add(group reportGroup, result upgradeItemResultWithSim) {
 	old, exists := report.grouped[group.specLabel]
 	if exists && !old.Equals(result) {
-		panic("duplicate group entry for spec with " + result.item.CreateString())
+		if result.percentSim() < old.percentSim() {
+			return
+		}
+		// panic("duplicate group entry for spec with " + result.item.CreateString())
 	}
 	report.grouped[group.specLabel] = result
 }

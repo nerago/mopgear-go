@@ -137,6 +137,7 @@ func (param *multiSetParamInternal) cullingReport() {
 			param.job.printer.Printf("%5d %d MISSING IN OPTIONS\n", info.itemId, info.count)
 		}
 	}
+	param.job.printer.Println0()
 }
 
 func (param *multiSetParamInternal) cullingReportBags() {

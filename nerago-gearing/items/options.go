@@ -54,7 +54,7 @@ func (optionsMap *FullOptionsMap) IncludesItemNameInSlot(itemName string, slot S
 	return false
 }
 
-func (optionsMap *FullOptionsMap) MapSlots(mapper func([]FullItem) []FullItem) {
+func (optionsMap *FullOptionsMap) MapSlotsAll(mapper func([]FullItem) []FullItem) {
 	for i := range optionsMap {
 		optionsMap[i] = mapper(optionsMap[i])
 	}
@@ -68,6 +68,16 @@ func (optionsMap *FullOptionsMap) MapEachItem(mapper func(*FullItem) FullItem) {
 	for i := range optionsMap {
 		optionsMap[i] = util.MapSliceAsNew(optionsMap[i], mapper)
 	}
+}
+
+func (optionsMap *FullOptionsMap) FilterSlotsAll(filter func(*FullItem) bool) {
+	for i := range optionsMap {
+		optionsMap[i] = util.FilterSliceAsNew(optionsMap[i], filter)
+	}
+}
+
+func (optionsMap *FullOptionsMap) FilterSlot(slot SlotEquip, filter func(*FullItem) bool) {
+	optionsMap[slot] = util.FilterSliceAsNew(optionsMap[slot], filter)
 }
 
 func (optionsMap *FullOptionsMap) FindItemId(itemId ItemId) iter.Seq[FullItem] {

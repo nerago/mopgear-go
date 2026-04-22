@@ -186,7 +186,7 @@ func (param *multiSetParamInternal) restrictFixed() {
 
 	// remove blocked items
 	for _, itemId := range param.blockedItems {
-		param.itemOptions.MapSlots(func(options []items.FullItem) []items.FullItem {
+		param.itemOptions.MapSlotsAll(func(options []items.FullItem) []items.FullItem {
 			newSlice := util.FilterSliceAsNew(options, func(x *items.FullItem) bool {
 				if x.ItemId() == itemId {
 					param.job.printer.Printf("BLOCKING ITEM %d %s\n", itemId, x.CreateString())

@@ -438,7 +438,7 @@ func addGearFileToCommon(common map[items.ItemId]stats.ReforgeRecipe, gearFile s
 }
 
 func restrictOptionsToCommon(common map[items.ItemId]stats.ReforgeRecipe, optionsMap *items.FullOptionsMap) {
-	optionsMap.MapSlots(func(slotCurrent []items.FullItem) []items.FullItem {
+	optionsMap.MapSlotsAll(func(slotCurrent []items.FullItem) []items.FullItem {
 		return util.FilterSliceAsNew(slotCurrent, func(check *items.FullItem) bool {
 			reforge, isCommon := common[check.ItemId()]
 			if isCommon {

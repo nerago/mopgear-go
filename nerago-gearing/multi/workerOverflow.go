@@ -39,7 +39,7 @@ func makeComboAndAdvance(commonOptions commonComboOptions, slotIndexes map[items
 	for itemId, options := range commonOptions {
 		index := slotIndexes[itemId]
 		choice := &options[index]
-		combo.addItem(itemId, choice)
+		combo.addItem(itemId, choice, Force_Optional)
 
 		slotSize := len(options)
 		if slotSize > 1 && remainingSkip.Cmp(util.Int_Zero) > 0 {

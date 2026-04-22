@@ -33,6 +33,13 @@ func ItemFinder_ThroneStrengthPlateTank(difficulty stats.Difficulty) []*items.Fu
 	)
 }
 
+func ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff(difficulty stats.Difficulty) []*items.FullItem {
+	exclude := []items.ItemId {95513}
+	return util.FilterSliceAsNew(ItemFinder_ThroneStrengthPlateTank(difficulty), func(item **items.FullItem) bool {
+		return !slices.Contains(exclude, (*item).ItemId())
+	})
+}
+
 func ItemFinder_CelestialCloak(difficulty stats.Difficulty) []*items.FullItem {
 	return []*items.FullItem{
 		db.WowSimDB_ByIdAndUpgrade(98147, 0),

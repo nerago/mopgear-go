@@ -220,7 +220,7 @@ func (job *MultiSetJob) determineComboFromScratch(outputs []singleProposed, comb
 		for item := range outputs[index].fullSet.Items().AllItemSeq() {
 			previousVersion, hasPrevious := itemSeen[item.ItemId()]
 			if hasPrevious && previousVersion.Equals(item) {
-				combo.addItem(item.ItemId(), item)
+				combo.addItem(item.ItemId(), item, Force_Optional)
 			} else if hasPrevious {
 				panic("inconsisent version of item " + item.CreateString())
 			} else {

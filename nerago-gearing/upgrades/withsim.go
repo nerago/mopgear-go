@@ -16,14 +16,14 @@ func FindUpgrades_Sim_Run(input *FindUpgrades_SimInputs, goal UpgradeGoal, model
 
 	tracker := util.TrackProgress_Start()
 
-	findUpgradeAndSim(input, &optionsMap, upgradeItems, model, printer, tracker, goal)
+	findUpgradeAndSim(input, &optionsMap, upgradeItems, model, printer, tracker, goal, nil)
 }
 
-func findUpgradeAndSim(input *FindUpgrades_SimInputs, baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal) []upgradeItemResultWithSim {
+func findUpgradeAndSim(input *FindUpgrades_SimInputs, baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) []upgradeItemResultWithSim {
 	tracker.RunOuterTracking(3)
 	defer tracker.Stop()
 
-	initialList, baseSet := findUpgrade(&input.FindUpgrades_BasicInputs, baseItems, extraItems, model, printer, tracker.MakeNested(), goal, true)
+	initialList, baseSet := findUpgrade(&input.FindUpgrades_BasicInputs, baseItems, extraItems, model, printer, tracker.MakeNested(), goal, true, substituteEmptySlotOnly)
 
 	baseSim := simulate.WowSim_Execute(input.SimSize, model.Spec, baseSet.Items(), model.Professions, nil, tracker.MakeNested())
 	printer.Println("SIM *BASELINE*")

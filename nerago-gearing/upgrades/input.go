@@ -11,9 +11,10 @@ import (
 type UpgradeGoal int8
 
 const (
-	UpgradeGoal_Mitigation UpgradeGoal = iota
-	UpgradeGoal_Dps        UpgradeGoal = iota
-	UpgradeGoal_Healing    UpgradeGoal = iota
+	UpgradeGoal_Mitigation  UpgradeGoal = iota
+	UpgradeGoal_Dps         UpgradeGoal = iota
+	UpgradeGoal_HalfMitiDps UpgradeGoal = iota
+	UpgradeGoal_Healing     UpgradeGoal = iota
 )
 
 func (up UpgradeGoal) Name() string {
@@ -22,6 +23,8 @@ func (up UpgradeGoal) Name() string {
 		return "miti"
 	case UpgradeGoal_Dps:
 		return "dps"
+	case UpgradeGoal_HalfMitiDps:
+		return "half"
 	case UpgradeGoal_Healing:
 		return "heal"
 	default:
@@ -54,10 +57,11 @@ type FindUpgrades_MultiSpec_Sim struct {
 }
 
 type FindUpgrades_Spec struct {
-	Label           string
-	Goal            UpgradeGoal
-	Model           model.Model
-	GearFile        string
-	ItemFinder      func(stats.Difficulty) []*items.FullItem
-	SubstituteItems []items.ItemId
+	Label                   string
+	Goal                    UpgradeGoal
+	Model                   model.Model
+	GearFile                string
+	ItemFinder              func(stats.Difficulty) []*items.FullItem
+	SubstituteItems         []items.ItemId
+	SubstituteEmptySlotOnly map[items.SlotItem]items.ItemId
 }

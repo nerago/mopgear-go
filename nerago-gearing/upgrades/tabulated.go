@@ -16,8 +16,8 @@ import (
 )
 
 func FindUpgrades_AllRaid_Run(input *FindUpgrades_MultiSpec, printer *util.PrintRecorder) {
-	find := func(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal) []upgradeItemResult {
-		result, _ := findUpgrade(&input.FindUpgrades_BasicInputs, baseItems, extraItems, model, printer, tracker, goal, false)
+	find := func(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) []upgradeItemResult {
+		result, _ := findUpgrade(&input.FindUpgrades_BasicInputs, baseItems, extraItems, model, printer, tracker, goal, false, substituteEmptySlotOnly)
 		return result
 	}
 
@@ -27,8 +27,8 @@ func FindUpgrades_AllRaid_Run(input *FindUpgrades_MultiSpec, printer *util.Print
 }
 
 func FindUpgrades_Sim_AllRaid_Run(input *FindUpgrades_MultiSpec_Sim, printer *util.PrintRecorder) {
-	find := func(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal) []upgradeItemResultWithSim {
-		return findUpgradeAndSim(&input.FindUpgrades_SimInputs, baseItems, extraItems, model, printer, tracker, goal)
+	find := func(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) []upgradeItemResultWithSim {
+		return findUpgradeAndSim(&input.FindUpgrades_SimInputs, baseItems, extraItems, model, printer, tracker, goal, substituteEmptySlotOnly)
 	}
 
 	outputMap, _ := findUpgrades_AllRaid(&input.FindUpgrades_BasicInputs, input.Specs, find)
@@ -37,7 +37,7 @@ func FindUpgrades_Sim_AllRaid_Run(input *FindUpgrades_MultiSpec_Sim, printer *ut
 	reportTabulatedSimResults_Boss(outputMap, input.Specs, printer, input.PositiveResultsOnly)
 }
 
-func findUpgrades_AllRaid[T any](input *FindUpgrades_BasicInputs, specs []FindUpgrades_Spec, find func(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal) []T) (map[reportGroup][]T, []reportGroup) {
+func findUpgrades_AllRaid[T any](input *FindUpgrades_BasicInputs, specs []FindUpgrades_Spec, find func(baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) []T) (map[reportGroup][]T, []reportGroup) {
 	outerCount := 0
 	if input.IncludeNormal {
 		outerCount += len(specs)
@@ -65,12 +65,14 @@ func findUpgrades_AllRaid[T any](input *FindUpgrades_BasicInputs, specs []FindUp
 	return outputMap, groups
 }
 
-func processSpec[T any](find func(*items.FullOptionsMap, []*items.FullItem, *model.Model, *util.PrintRecorder, *util.TrackProgress, UpgradeGoal) []T,
+func processSpec[T any](find func(*items.FullOptionsMap, []*items.FullItem, *model.Model, *util.PrintRecorder, *util.TrackProgress, UpgradeGoal, map[items.SlotItem]items.ItemId) []T,
 	input *FindUpgrades_BasicInputs, spec *FindUpgrades_Spec, difficulty stats.Difficulty, outputMap map[reportGroup][]T, groups *[]reportGroup, tracker *util.TrackProgress) {
 	printer := util.PrintRecorder_CreateLogFile(files.LogOutputPath)
 	printer.Println("[[[[[[[[[[[[[[[[[[[[ " + spec.Label + " " + difficulty.Name() + " UPGRADES ]]]]]]]]]]]]]]]]]]]]")
 
 	options := setup.OptionsSetup_FromGearFile(spec.GearFile, &spec.Model, setup.MissingEnchant_Panic, printer)
+	addSubstituteItems(&options, spec.SubstituteItems, &spec.Model, printer)
+
 	upgradeItems := spec.ItemFinder(difficulty)
 	if !input.IncludeRaden {
 		upgradeItems = loaders.ItemFinder_FilterOutRadenItems(upgradeItems)
@@ -79,7 +81,7 @@ func processSpec[T any](find func(*items.FullOptionsMap, []*items.FullItem, *mod
 	group := reportGroup{spec.Label, difficulty}
 	*groups = append(*groups, group)
 
-	outputMap[group] = find(&options, upgradeItems, &spec.Model, printer, tracker.MakeNested(), spec.Goal)
+	outputMap[group] = find(&options, upgradeItems, &spec.Model, printer, tracker.MakeNested(), spec.Goal, spec.SubstituteEmptySlotOnly)
 
 	printer.Close()
 }

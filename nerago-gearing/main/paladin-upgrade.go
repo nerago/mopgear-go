@@ -11,17 +11,18 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/upgrades"
 	"paladin_gearing_go/util"
+	"slices"
 )
 
 const (
 	// simRunSize     = simulate.RunSize_Medium
 	// simRunSize  = simulate.RunSize_QuickDirty
 
-	// itemSolveSize  = solver.SolveSize_Medium
-	// simRunSize     = simulate.RunSize_QuickDirty
+	itemSolveSize  = solver.SolveSize_Medium
+	simRunSize     = simulate.RunSize_QuickDirty
 
-	itemSolveSize = solver.SolveSize_Medium
-	simRunSize    = simulate.RunSize_Medium
+	// itemSolveSize = solver.SolveSize_Medium
+	// simRunSize    = simulate.RunSize_Medium
 
 	// itemSolveSize = solver.SolveSize_PerItem
 	// simRunSize    = simulate.RunSize_TestOnly
@@ -67,6 +68,7 @@ var substituteItemsDps = []items.ItemId{
 	94776, // primal turtle amulet
 	94527, // ji-kun trinket [not sure about trinkets here]
 	94529, // gaze of the twins [not sure about trinkets here]
+		96436, // tortos shell heroic
 }
 var substituteItemsMiti = []items.ItemId{
 	95291, // prot tier15 hand normal
@@ -150,6 +152,13 @@ func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 }
 
 func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
+	substituteItemsDpsMiti := slices.Concat(substituteItemsDps, substituteItemsMiti)
+	substituteItemsDpsMiti = util.RemoveDuplicatesComparable(substituteItemsDpsMiti)
+
+	substituteEmptySlotOnly := make(map[items.SlotItem]items.ItemId)
+	substituteEmptySlotOnly[items.Item_Trinket] = 94519
+	substituteEmptySlotOnly[items.Item_Ring] = 86957
+
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
@@ -168,24 +177,36 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 				Goal:            upgrades.UpgradeGoal_Dps,
 				Model:           model.Model_PallyProtDps(),
 				GearFile:        files.GearFileProtDps,
-				ItemFinder:      loaders.ItemFinder_ThroneStrengthPlateTank,
+				ItemFinder:      loaders.ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff,
 				SubstituteItems: substituteItemsDps,
+				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
-				Label:           "mit_set",
-				Goal:            upgrades.UpgradeGoal_Mitigation,
-				Model:           model.Model_PallyProtMitigation_WithSet(),
-				GearFile:        files.GearFileProtMitigationSet,
-				ItemFinder:      loaders.ItemFinder_ThroneStrengthPlateTank,
-				SubstituteItems: substituteItemsMiti,
+				Label:           "compromise",
+				Goal:            upgrades.UpgradeGoal_HalfMitiDps,
+				Model:           model.Model_PallyProtCompromise(),
+				GearFile:        files.GearFileProtCompromise,
+				ItemFinder:      loaders.ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff,
+				SubstituteItems: substituteItemsDpsMiti,
+				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
 				Label:           "mit_noset",
 				Goal:            upgrades.UpgradeGoal_Mitigation,
 				Model:           model.Model_PallyProtMitigation_NoSet(),
 				GearFile:        files.GearFileProtMitigationNoSet,
-				ItemFinder:      loaders.ItemFinder_ThroneStrengthPlateTank,
+				ItemFinder:      loaders.ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff,
 				SubstituteItems: substituteItemsMiti,
+				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
+			},
+			{
+				Label:           "mit_set",
+				Goal:            upgrades.UpgradeGoal_Mitigation,
+				Model:           model.Model_PallyProtMitigation_WithSet(),
+				GearFile:        files.GearFileProtMitigationSet,
+				ItemFinder:      loaders.ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff,
+				SubstituteItems: substituteItemsMiti,
+				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 		},
 	}

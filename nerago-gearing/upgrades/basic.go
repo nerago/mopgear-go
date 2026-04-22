@@ -1,6 +1,7 @@
 package upgrades
 
 import (
+	"fmt"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
@@ -12,7 +13,7 @@ import (
 	"slices"
 )
 
-func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal, forceIncludeMost bool) ([]upgradeItemResult, *items.FullItemSet) {
+func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal, forceIncludeMost bool, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) ([]upgradeItemResult, *items.FullItemSet) {
 	extraItems = setupUpgradeLevel(extraItems, printer)
 	checkDuplicates(extraItems)
 	extraTasks := makeExtraTasks(input, extraItems, baseItems, printer, goal)
@@ -27,7 +28,7 @@ func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMa
 	printer.Println("TRYING ITEMS")
 	resultList := channel_op.IterateEach_SliceToSlice(c_upgradeEachThreads, extraTasks,
 		func(task *upgradeItemTask, resultChannel chan<- upgradeItemResult) {
-			resultChannel <- performUpgradeTask(input, task, baseItems, baseRating, model, printer, tracker, forceIncludeMost)
+			resultChannel <- performUpgradeTask(input, task, baseItems, baseRating, model, printer, tracker, forceIncludeMost, substituteEmptySlotOnly)
 		})
 	reportBasicResults(resultList, printer, input.PositiveResultsOnly)
 	return resultList, baseSet
@@ -190,7 +191,7 @@ func findBase(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, 
 	return float64(output.ResultRating), &output.FullSet
 }
 
-func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *model.Model, parentPrinter *util.PrintRecorder, outerTracker *util.TrackProgress, forceIncludeMost bool) upgradeItemResult {
+func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *model.Model, parentPrinter *util.PrintRecorder, outerTracker *util.TrackProgress, forceIncludeMost bool, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) upgradeItemResult {
 	if !extraTask.actuallyAttemptUpgrade(forceIncludeMost) {
 		parentPrinter.Println("SKIPPING " + extraTask.item.BaseName)
 		return upgradeItemResult_OfFailure(extraTask)
@@ -203,10 +204,13 @@ func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemT
 	printer.Println("OFFER " + item.CreateString())
 	printer.Println("REPLACING " + baseItems.Get(slot)[0].CreateString())
 
-	// TODO consider loading from bags etc
 	newOptions, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(item.ItemId(), item.Ref.UpgradeLevel, model, printer)
 	jobItems := baseItems.Clone()
 	jobItems[slot] = newOptions
+
+	if extraTask.canUpgrade == CanUpgrade_Equipped || extraTask.canUpgrade == CanUpgrade_Equipped_Similar {
+		removePairedSimilar(&jobItems, slot, item, substituteEmptySlotOnly, model, printer)
+	}
 
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions:        &jobItems,
@@ -236,4 +240,25 @@ func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemT
 	parentPrinter.AppendOther(printer)
 
 	return result
+}
+
+func removePairedSimilar(jobItems *items.FullOptionsMap, testSlot items.SlotEquip, testItem *items.FullItem, substituteEmptySlotOnly map[items.SlotItem]items.ItemId, model *model.Model, printer *util.PrintRecorder) {
+	pairedSlot := testSlot.PairedSlot()
+	if pairedSlot != -1 {
+		fmt.Println("removePairedSimilar")
+		for _, z := range jobItems[pairedSlot] {
+			fmt.Println(z.CreateString())
+		}
+		jobItems.FilterSlot(pairedSlot, func(x *items.FullItem) bool { return !items.UniqueEquipViolation(x.BaseName, testItem.BaseName) })
+
+		if len(jobItems[pairedSlot]) == 0 {
+			substituteId, hasSub := substituteEmptySlotOnly[testItem.Slot]
+			if hasSub {
+				subOpts, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(substituteId, 2, model, printer)
+				jobItems[pairedSlot] = subOpts
+			} else {
+				panic("remove paired "  + testItem.BaseName + " left empty slot")
+			}
+		}
+	}
 }

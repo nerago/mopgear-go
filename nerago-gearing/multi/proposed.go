@@ -135,7 +135,7 @@ func (job *MultiSetJob) secondPassSolveCombo(baseCombo *commonCombo, otherOutput
 	for _, otherOutput := range otherOutputList {
 		if otherOutput.exists {
 			for item := range otherOutput.fullSet.Items().AllItemSeq() {
-				restrictedCombo.addItem(item.ItemId(), item)
+				restrictedCombo.addItem(item.ItemId(), item, Force_Optional)
 			}
 		}
 	}
@@ -153,12 +153,12 @@ func buildOptionsGivenCombo(allOptions items.FullOptionsMap, combo *commonCombo)
 	selectedOptions := items.FullOptionsMap{}
 	itemIdSeen := make(map[items.ItemId]bool)
 	for slot, slotOptions := range allOptions {
-		selectedOptions[slot] = buildOptionsGivenCombo_Slot(slotOptions, combo, itemIdSeen)
+		selectedOptions[slot] = buildOptionsGivenComboForSlot(slotOptions, combo, itemIdSeen)
 	}
 	return selectedOptions
 }
 
-func buildOptionsGivenCombo_Slot(slotOptions []items.FullItem, combo *commonCombo, itemIdSeen map[items.ItemId]bool) []items.FullItem {
+func buildOptionsGivenComboForSlot(slotOptions []items.FullItem, combo *commonCombo, itemIdSeen map[items.ItemId]bool) []items.FullItem {
 	clear(itemIdSeen)
 	selectedItems := make([]items.FullItem, 0, len(slotOptions))
 
@@ -170,8 +170,12 @@ func buildOptionsGivenCombo_Slot(slotOptions []items.FullItem, combo *commonComb
 			selectedItems = append(selectedItems, *item)
 		} else if !itemIdSeen[itemId] {
 			switch forceMode {
-			case Force_Optional, Force_FixedWhereAvailable, Force_RequiredAlways:
+			case Force_Optional:
 				selectedItems = append(selectedItems, *specifiedItem)
+			case Force_FixedWhereAvailable, Force_RequiredAlways:
+				return []items.FullItem{*specifiedItem}
+			case Force_Forbidden:
+				// nothing
 			default:
 				panic("unexpected force value")
 			}

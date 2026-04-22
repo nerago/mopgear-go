@@ -26,7 +26,7 @@ func makeRandomCombo(commonOptions commonComboOptions, rng *rand.Rand) commonCom
 	for itemId, options := range commonOptions {
 		index := rng.Intn(len(options))
 		choice := &options[index]
-		combo.addItem(itemId, choice)
+		combo.addItem(itemId, choice, Force_Optional)
 	}
 	return combo
 }

@@ -74,8 +74,8 @@ func commonCombo_Make(len int, comboType comboType) commonCombo {
 	}
 }
 
-func (combo *commonCombo) addItem(itemId items.ItemId, item *items.FullItem) {
-	combo.entryMap[itemId] = commonComboEntry{Item: item}
+func (combo *commonCombo) addItem(itemId items.ItemId, item *items.FullItem, forceMode forceItemMode) {
+	combo.entryMap[itemId] = commonComboEntry{Item: item, forceMode: forceMode}
 }
 
 func (combo *commonCombo) hasItem(itemId items.ItemId) bool {
@@ -176,7 +176,7 @@ func makeBaselineWorker(params []multiSetParamInternal, commonOptions commonComb
 
 			// copy what items are in baseline set
 			for item := range param.baselineResult.FullSet.Items().AllItemSeq() {
-				combo.addItem(item.ItemId(), item)
+				combo.addItem(item.ItemId(), item, Force_Optional)
 			}
 
 			fillOutRemainingOptions(commonOptions, &combo, rng)
@@ -195,7 +195,7 @@ func makeEquippedWorker(params []multiSetParamInternal, commonOptions commonComb
 
 			// copy what items are in equipped set
 			for item := range param.exactEquippedGear.AllItemSeq() {
-				combo.addItem(item.ItemId(), item)
+				combo.addItem(item.ItemId(), item, Force_Optional)
 			}
 
 			fillOutRemainingOptions(commonOptions, &combo, rng)
@@ -209,7 +209,7 @@ func fillOutRemainingOptions(commonOptions commonComboOptions, combo *commonComb
 	for itemId, options := range commonOptions {
 		if !combo.hasItem(itemId) {
 			index := rng.Intn(len(options))
-			combo.addItem(itemId, &options[index])
+			combo.addItem(itemId, &options[index], Force_Optional)
 		}
 	}
 }
