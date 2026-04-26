@@ -69,6 +69,7 @@ var substituteItemsDps = []items.ItemId{
 	94527, // ji-kun trinket [not sure about trinkets here]
 	94529, // gaze of the twins [not sure about trinkets here]
 		96436, // tortos shell heroic
+		96420, // talisman of angry spirits
 }
 var substituteItemsMiti = []items.ItemId{
 	95291, // prot tier15 hand normal
@@ -107,8 +108,8 @@ var substituteItemsMiti = []items.ItemId{
 	98147, // pre-legend strength dps
 	94776, // primal turtle amulet
 	94820, // caustic spike bracers
-
 	95141, // shado assault loop
+		96420, // talisman of angry spirits
 }
 
 var ignoredItems = []items.ItemId{
