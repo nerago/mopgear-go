@@ -44,7 +44,7 @@ func RemoveDuplicatesComparable[T comparable](slice []T) []T {
 		return slice
 	}
 
-	mapSet := make(map[T]bool)
+	mapSet := make(map[T]bool, len(slice))
 	for _, item := range slice {
 		mapSet[item] = true
 	}

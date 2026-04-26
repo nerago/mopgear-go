@@ -8,132 +8,6 @@ import (
 	"strconv"
 )
 
-func reportBasicResults(resultList []upgradeItemResult, printer *util.PrintRecorder, positiveResultsOnly bool) {
-	if positiveResultsOnly {
-		resultList = filterPositive(resultList)
-	}
-
-	reportBasicByBoss(resultList, printer)
-	printer.Println0()
-	reportBasicBySlot(resultList, printer)
-	printer.Println0()
-	reportBasicOverallRank(resultList, printer)
-	printer.Println0()
-	printer.Println0()
-}
-
-func reportBasicByBoss(resultList []upgradeItemResult, printer *util.PrintRecorder) {
-	rankedByBoss := groupByBoss(resultList)
-
-	printer.Println("RANKING UPGRADE BY BOSS")
-	for _, bossName := range db.BossItemData_NamesInOrder {
-		rank := rankedByBoss[bossName]
-		if rank != nil {
-			printer.Println(bossName)
-
-			var tab util.TabulateOutput
-			tab.SetColumnSpacing(2)
-			tab.AddColumnHeader("slot", true)
-			tab.AddColumnHeader("ilvl", false)
-			tab.AddColumnHeader("name", true)
-			tab.AddColumnHeader("increase", false)
-			tab.AddColumnHeader("note", false)
-
-			for result := range rank.OrderedResult() {
-				tab.AddRow([]string{
-					result.slot.Name(),
-					strconv.FormatUint(uint64(result.item.Ref.ItemLevel), 10),
-					result.item.BaseName,
-					result.increaseStr(),
-					makeNote(result),
-				})
-			}
-
-			tab.Write(printer)
-			printer.Println0()
-		}
-	}
-}
-
-func makeNote(result upgradeItemResult) string {
-	return result.canUpgrade.Text()
-}
-
-func makeNoteSim(result upgradeItemResultWithSim) string {
-	return result.canUpgrade.Text()
-}
-
-type reportableRanked interface {
-	comparable
-	reportable
-	ranking() float64
-	Slot() items.SlotEquip
-}
-
-func reportBasicBySlot(resultList []upgradeItemResult, printer *util.PrintRecorder) {
-	rankedBySlot := groupBySlot(resultList)
-
-	printer.Println("RANKING UPGRADE BY SLOT")
-	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
-		rank := rankedBySlot[slot]
-		if rank != nil {
-			printer.Println("RANKING " + slot.Name())
-
-			var tab util.TabulateOutput
-			tab.SetColumnSpacing(2)
-			tab.AddColumnHeader("ilvl", false)
-			tab.AddColumnHeader("name", true)
-			tab.AddColumnHeader("increase", false)
-			tab.AddColumnHeader("boss", false)
-			tab.AddColumnHeader("note", false)
-
-			for result := range rank.OrderedResult() {
-				tab.AddRow([]string{
-					strconv.FormatUint(uint64(result.item.Ref.ItemLevel), 10),
-					result.item.BaseName,
-					result.increaseStr(),
-					result.boss,
-					makeNote(result),
-				})
-			}
-
-			tab.Write(printer)
-			printer.Println0()
-		}
-	}
-}
-
-func reportBasicOverallRank(resultList []upgradeItemResult, printer *util.PrintRecorder) {
-	ranked := util_rank.RankedCollection[upgradeItemResult]{}
-	for _, result := range resultList {
-		ranked.Add(result, result.factor)
-	}
-
-	printer.Println("RANKING OVERALL PERCENT UPGRADE")
-
-	var tab util.TabulateOutput
-	tab.SetColumnSpacing(2)
-	tab.AddColumnHeader("slot", true)
-	tab.AddColumnHeader("ilvl", false)
-	tab.AddColumnHeader("name", true)
-	tab.AddColumnHeader("increase", false)
-	tab.AddColumnHeader("boss", false)
-	tab.AddColumnHeader("note", false)
-
-	for result := range ranked.OrderedResult() {
-		tab.AddRow([]string{
-			result.slot.Name(),
-			strconv.FormatUint(uint64(result.item.Ref.ItemLevel), 10),
-			result.item.BaseName,
-			result.increaseStr(),
-			result.boss,
-			makeNote(result),
-		})
-	}
-
-	tab.Write(printer)
-}
-
 func reportBasicResultsSim(resultList []upgradeItemResultWithSim, printer *util.PrintRecorder, positiveResultsOnly bool) {
 	if positiveResultsOnly {
 		resultList = filterPositiveSim(resultList)
@@ -175,10 +49,10 @@ func reportBasicByBossSim(resultList []upgradeItemResultWithSim, printer *util.P
 						strconv.FormatUint(uint64(result.item.Ref.ItemLevel), 10),
 						result.item.BaseName,
 						strconv.FormatUint(uint64(result.setBonus), 10),
-						result.increaseStr(),
+						result.increaseWeightsStr(false),
 						"",
 						"",
-						makeNoteSim(result),
+						result.makeNoteFull(),
 					})
 				} else {
 					tab.AddRow([]string{
@@ -186,10 +60,10 @@ func reportBasicByBossSim(resultList []upgradeItemResultWithSim, printer *util.P
 						strconv.FormatUint(uint64(result.item.Ref.ItemLevel), 10),
 						result.item.BaseName,
 						strconv.FormatUint(uint64(result.setBonus), 10),
-						result.increaseStr(),
-						result.percentStrSim(),
+						result.increaseWeightsStr(false),
+						result.increaseSimStr(false),
 						result.increaseSimBreakdown().CompactStringSignedPercent(),
-						makeNoteSim(result),
+						result.makeNoteFull(),
 					})
 				}
 			}
@@ -227,10 +101,10 @@ func reportBasicBySlotSim(resultList []upgradeItemResultWithSim, printer *util.P
 						result.item.BaseName,
 						result.boss,
 						strconv.FormatUint(uint64(result.setBonus), 10),
-						result.increaseStr(),
+						result.increaseWeightsStr(false),
 						"",
 						"",
-						makeNoteSim(result),
+						result.makeNoteFull(),
 					})
 				} else {
 					tab.AddRow([]string{
@@ -238,10 +112,10 @@ func reportBasicBySlotSim(resultList []upgradeItemResultWithSim, printer *util.P
 						result.item.BaseName,
 						result.boss,
 						strconv.FormatUint(uint64(result.setBonus), 10),
-						result.increaseStr(),
-						result.percentStrSim(),
+						result.increaseWeightsStr(false),
+						result.increaseSimStr(false),
 						result.increaseSimBreakdown().CompactStringSignedPercent(),
-						makeNoteSim(result),
+						result.makeNoteFull(),
 					})
 				}
 			}
@@ -255,7 +129,7 @@ func reportBasicBySlotSim(resultList []upgradeItemResultWithSim, printer *util.P
 func reportBasicOverallRankSim(resultList []upgradeItemResultWithSim, printer *util.PrintRecorder) {
 	ranked := util_rank.RankedCollection[upgradeItemResultWithSim]{}
 	for _, result := range resultList {
-		ranked.Add(result, result.ranking())
+		ranked.Add(result, result.increaseSim())
 	}
 
 	printer.Println("RANKING OVERALL PERCENT UPGRADE")
@@ -280,10 +154,10 @@ func reportBasicOverallRankSim(resultList []upgradeItemResultWithSim, printer *u
 				result.item.BaseName,
 				result.boss,
 				strconv.FormatUint(uint64(result.setBonus), 10),
-				result.increaseStr(),
+				result.increaseWeightsStr(false),
 				"",
 				"",
-				makeNoteSim(result),
+				result.makeNoteFull(),
 			})
 		} else {
 			tab.AddRow([]string{
@@ -292,10 +166,10 @@ func reportBasicOverallRankSim(resultList []upgradeItemResultWithSim, printer *u
 				result.item.BaseName,
 				result.boss,
 				strconv.FormatUint(uint64(result.setBonus), 10),
-				result.increaseStr(),
-				result.percentStrSim(),
+				result.increaseWeightsStr(false),
+				result.increaseSimStr(false),
 				result.increaseSimBreakdown().CompactStringSignedPercent(),
-				makeNoteSim(result),
+				result.makeNoteFull(),
 			})
 		}
 	}
@@ -303,28 +177,28 @@ func reportBasicOverallRankSim(resultList []upgradeItemResultWithSim, printer *u
 	tab.Write(printer)
 }
 
-func groupByBoss[T reportableRanked](resultList []T) map[string]*util_rank.RankedCollection[T] {
-	rankedByBoss := make(map[string]*util_rank.RankedCollection[T])
+func groupByBoss(resultList []upgradeItemResultWithSim) map[string]*util_rank.RankedCollection[upgradeItemResultWithSim] {
+	rankedByBoss := make(map[string]*util_rank.RankedCollection[upgradeItemResultWithSim])
 	for _, result := range resultList {
-		rank := rankedByBoss[result.Boss()]
+		rank := rankedByBoss[result.boss]
 		if rank == nil {
-			rank = new(util_rank.RankedCollection[T])
-			rankedByBoss[result.Boss()] = rank
+			rank = new(util_rank.RankedCollection[upgradeItemResultWithSim])
+			rankedByBoss[result.boss] = rank
 		}
-		rank.Add(result, result.ranking())
+		rank.Add(result, result.increaseSim())
 	}
 	return rankedByBoss
 }
 
-func groupBySlot[T reportableRanked](resultList []T) map[items.SlotEquip]*util_rank.RankedCollection[T] {
-	rankedBySlot := make(map[items.SlotEquip]*util_rank.RankedCollection[T])
+func groupBySlot(resultList []upgradeItemResultWithSim) map[items.SlotEquip]*util_rank.RankedCollection[upgradeItemResultWithSim] {
+	rankedBySlot := make(map[items.SlotEquip]*util_rank.RankedCollection[upgradeItemResultWithSim])
 	for _, result := range resultList {
-		rank := rankedBySlot[result.Slot()]
+		rank := rankedBySlot[result.slot]
 		if rank == nil {
-			rank = new(util_rank.RankedCollection[T])
-			rankedBySlot[result.Slot()] = rank
+			rank = new(util_rank.RankedCollection[upgradeItemResultWithSim])
+			rankedBySlot[result.slot] = rank
 		}
-		rank.Add(result, result.ranking())
+		rank.Add(result, result.increaseSim())
 	}
 	return rankedBySlot
 }
@@ -332,7 +206,7 @@ func groupBySlot[T reportableRanked](resultList []T) map[items.SlotEquip]*util_r
 func filterPositive(input []upgradeItemResult) []upgradeItemResult {
 	output := make([]upgradeItemResult, 0, len(input))
 	for _, item := range input {
-		if item.increase() > 0.0 {
+		if item.increaseWeightsRaw() > 0.0 {
 			output = append(output, item)
 		}
 	}
@@ -342,7 +216,7 @@ func filterPositive(input []upgradeItemResult) []upgradeItemResult {
 func filterPositiveSim(input []upgradeItemResultWithSim) []upgradeItemResultWithSim {
 	output := make([]upgradeItemResultWithSim, 0, len(input))
 	for _, item := range input {
-		if item.increase() > 0.0 || item.percentSim() > 0.0 {
+		if item.increaseWeightsRaw() > 0.0 || item.increaseSim() > 0.0 {
 			output = append(output, item)
 		}
 	}

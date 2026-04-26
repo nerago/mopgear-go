@@ -47,25 +47,3 @@ func (opt Optional[T]) GetOrDefault(defaultValue T) T {
 		return defaultValue
 	}
 }
-
-func (opt *Optional[T]) MapInPlace(onValue func(value T) T) {
-	if opt.exists {
-		opt.value = onValue(opt.value)
-	}
-}
-
-func Optional_MapAsValue[T any, R any](opt Optional[T], onValue func(value T) R) Optional[R] {
-	if opt.exists {
-		return Optional[R]{true, onValue(opt.value)}
-	} else {
-		return Optional[R]{}
-	}
-}
-
-func Optional_MapAsValueOrEmpty[T any, R any](opt Optional[T], onValue func(value T) R, onEmpty func() R) R {
-	if opt.exists {
-		return onValue(opt.value)
-	} else {
-		return onEmpty()
-	}
-}

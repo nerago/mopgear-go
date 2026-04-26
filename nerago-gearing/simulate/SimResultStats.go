@@ -16,6 +16,8 @@ const (
 	Result_DEATH SimResultType = iota
 )
 
+const c_nullIncrease = -100.0
+
 func (types SimResultType) IsHighGood() bool {
 	switch types {
 	case Result_DPS:
@@ -180,12 +182,12 @@ func (stats *SimResultStats) IncreaseSimBreakdown(baseSim *SimResultStats) SimRe
 
 	increase := SimResultStats{}
 	for _, resultType := range SimResultTypeList {
-		increase.Set(resultType, ratioToIncrease(stats, baseSim, resultType))
+		increase.Set(resultType, increaseForPart(stats, baseSim, resultType))
 	}
 	return increase
 }
 
-func ratioToIncrease(sim, baseSim *SimResultStats, part SimResultType) float64 {
+func increaseForPart(sim, baseSim *SimResultStats, part SimResultType) float64 {
 	newValue := sim.Get(part)
 	baseValue := baseSim.Get(part)
 
@@ -205,22 +207,22 @@ func ratioToIncrease(sim, baseSim *SimResultStats, part SimResultType) float64 {
 }
 
 func (stats *SimResultStats) IncreaseOf(baseSim *SimResultStats, part SimResultType) float64 {
-	return ratioToIncrease(stats, baseSim, part)
+	return increaseForPart(stats, baseSim, part)
 }
 
 func (stats *SimResultStats) IncreaseMitigation(baseSim *SimResultStats) float64 {
 	checkParts := []SimResultType{Result_DPS, Result_DTPS, Result_TMI, Result_DEATH}
 	var total float64
 	for _, part := range checkParts {
-		total += ratioToIncrease(stats, baseSim, part)
+		total += increaseForPart(stats, baseSim, part)
 	}
 	return total / float64(len(checkParts))
 }
 
 func (stats *SimResultStats) BestIncrease(baseSim *SimResultStats) float64 {
-	best := -100.0
+	best := c_nullIncrease
 	for _, resultType := range SimResultTypeList {
-		increase := ratioToIncrease(stats, baseSim, resultType)
+		increase := increaseForPart(stats, baseSim, resultType)
 		best = util.MaxIgnoreNaN(best, increase)
 	}
 	return best

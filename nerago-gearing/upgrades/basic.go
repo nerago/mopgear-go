@@ -13,10 +13,13 @@ import (
 	"slices"
 )
 
-func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress, goal UpgradeGoal, forceIncludeMost bool, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) ([]upgradeItemResult, *items.FullItemSet) {
+func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress,
+	goal UpgradeGoal, forceIncludeMost bool, substituteItems []items.ItemId, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) ([]upgradeItemResult, *items.FullItemSet) {
+
 	extraItems = setupUpgradeLevel(extraItems, printer)
 	checkDuplicates(extraItems)
 	extraTasks := makeExtraTasks(input, extraItems, baseItems, printer, goal)
+	addSubstituteItems(baseItems, substituteItems, model, printer)
 
 	tracker.RunOuterTracking(len(extraTasks) + 1)
 	defer tracker.Stop()
@@ -30,7 +33,6 @@ func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMa
 		func(task *upgradeItemTask, resultChannel chan<- upgradeItemResult) {
 			resultChannel <- performUpgradeTask(input, task, baseItems, baseRating, model, printer, tracker, forceIncludeMost, substituteEmptySlotOnly)
 		})
-	reportBasicResults(resultList, printer, input.PositiveResultsOnly)
 	return resultList, baseSet
 }
 
@@ -92,7 +94,7 @@ const (
 	CanUpgrade_InvalidAlways    CanUpgradeResult = iota
 )
 
-func (can CanUpgradeResult) Text() string {
+func (can CanUpgradeResult) TextLong() string {
 	switch can {
 	case CanUpgrade_Equipped:
 		return "equipped"
@@ -102,6 +104,21 @@ func (can CanUpgradeResult) Text() string {
 		return "available in bags"
 	case CanUpgrade_InvalidAlways:
 		return "invalid"
+	default:
+		return ""
+	}
+}
+
+func (can CanUpgradeResult) TextAbbrev() string {
+	switch can {
+	case CanUpgrade_Equipped:
+		return "E"
+	case CanUpgrade_Equipped_Similar:
+		return "e"
+	case CanUpgrade_AvailableInBags:
+		return "b"
+	case CanUpgrade_InvalidAlways:
+		return "X"
 	default:
 		return ""
 	}
@@ -230,7 +247,7 @@ func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemT
 
 		setBonus := model.SetBonus.CountInAnySet(output.FullSet.Items())
 
-		result = upgradeItemResult{upgradeItemTask: *extraTask, success: true, itemSet: &output.FullSet, factor: factor, setBonus: setBonus}
+		result = upgradeItemResult{upgradeItemTask: *extraTask, success: true, itemSet: &output.FullSet, factor: util.Optional_OfValue(factor), setBonus: setBonus}
 	} else {
 		printer.Println("UPGRADE SET NOT FOUND")
 		return upgradeItemResult_OfFailure(extraTask)
@@ -257,7 +274,7 @@ func removePairedSimilar(jobItems *items.FullOptionsMap, testSlot items.SlotEqui
 				subOpts, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(substituteId, 2, model, printer)
 				jobItems[pairedSlot] = subOpts
 			} else {
-				panic("remove paired "  + testItem.BaseName + " left empty slot")
+				panic("remove paired " + testItem.BaseName + " left empty slot")
 			}
 		}
 	}
