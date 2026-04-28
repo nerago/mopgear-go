@@ -5,4 +5,9 @@
         "debugAdapter":"dlv-dap",
         "showRegisters": true
     },
+    "js/ts.validate.enabled": false,
+    "js/ts.suggestionActions.enabled": false,
+    "go.alternateTools": {
+        
+    },
 }

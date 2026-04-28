@@ -99,6 +99,14 @@ change_part:
 	return slice[:writeIndex]
 }
 
+func RepeatValue[T any](value T, count int) []T {
+	result := make([]T, count)
+	for i := range count {
+		result[i] = value
+	}
+	return result
+}
+
 func PermuteAll[T any](sliceOfSlices [][]T) iter.Seq[[]T] {
 	index := 0
 	progress := make([][]T, 0, len(sliceOfSlices[index]))

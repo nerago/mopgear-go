@@ -4,7 +4,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"os/exec"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
@@ -13,8 +12,6 @@ import (
 	"paladin_gearing_go/util"
 	"runtime"
 	"runtime/pprof"
-	"strconv"
-	"syscall"
 	"time"
 
 	"github.com/wowsims/mop/sim"
@@ -27,7 +24,7 @@ const (
 var printer *util.PrintRecorder
 
 func main() {
-	lowerPriority()
+	util.CurrentProcessLowerPriority()
 
 	printer = util.PrintRecorder_CreateLogFile(files.LogOutputPath)
 	defer printer.Close()
@@ -105,14 +102,4 @@ func setupPallyMitigationNoSet() (items.FullOptionsMap, model.Model) {
 func setupPallyDps() (items.FullOptionsMap, model.Model) {
 	model := model.Model_PallyProtDps()
 	return setup.OptionsSetup_FromGearFile(files.GearFileProtDps, &model, setup.MissingEnchant_Panic, printer), model
-}
-
-func lowerPriority() {
-	// NOTE go command mangles the double quote in priority if allowed to build command line
-	pid := strconv.Itoa(os.Getpid())
-	cmd := exec.Command(`C:\Windows\System32\wbem\wmic.exe`)
-	cmd.SysProcAttr = &syscall.SysProcAttr{CmdLine: `C:\\Windows\\System32\\wbem\\wmic.exe process where ProcessId=` + pid + ` CALL setpriority "below normal"`}
-	if err := cmd.Run(); err != nil {
-		panic(err)
-	}
 }

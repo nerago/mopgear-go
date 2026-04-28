@@ -275,7 +275,7 @@ func addToSpecificSet8(counts *[8]uint8, itemToSet []uint8, item IItem) {
 	}
 }
 
-// ########################### set data ###########################
+// ########################### set type ###########################
 type setInfo struct {
 	spec    SpecType
 	name    string
@@ -300,6 +300,15 @@ func (set setInfo) Equals(other setInfo) bool {
 	return set.spec == other.spec && set.name == other.name
 }
 
+type ActiveSet interface {
+	BonusForCount(uint8) float32
+}
+
+func (set setInfo) BonusForCount(count uint8) float32 {
+	return set.bonuses[count]
+}
+
+// ########################### set data ###########################
 var g_setData = buildSets()
 var g_itemSetLookup = buildItemLookup(g_setData)
 
@@ -404,6 +413,15 @@ func (sets *SetBonus) AllSetItemIds() iter.Seq[ItemId] {
 			}
 		}
 	}
+}
+
+func (set *SetBonus) ActiveSetForItem(itemId ItemId) ActiveSet {
+	setEntry := set.itemToSet[itemId]
+	if setEntry == 0 {
+		return nil
+	}
+
+	return set.activeSets[setEntry-1]
 }
 
 func SetBonus_IsAnyKnownItem(itemId ItemId) bool {

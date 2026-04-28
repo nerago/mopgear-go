@@ -69,7 +69,8 @@ func (inst *StatRequirementsHitExpertise) IsLow(stat StatType, value uint32) boo
 		return value < inst.hitMin
 	case Stat_Expertise:
 		return value < inst.expMin
-	default: return false
+	default:
+		return false
 	}
 }
 
@@ -79,6 +80,23 @@ func (inst *StatRequirementsHitExpertise) IsHigh(stat StatType, value uint32) bo
 		return value > inst.hitMax
 	case Stat_Expertise:
 		return value > inst.expMax
-	default: return false
+	default:
+		return false
 	}
+}
+
+func (inst *StatRequirementsHitExpertise) HitMin() uint32 {
+	return inst.hitMin
+}
+
+func (inst *StatRequirementsHitExpertise) HitMax() uint32 {
+	return inst.hitMax
+}
+
+func (inst *StatRequirementsHitExpertise) ExpertMin() uint32 {
+	return inst.expMin
+}
+
+func (inst *StatRequirementsHitExpertise) ExpertMax() uint32 {
+	return inst.expMax
 }

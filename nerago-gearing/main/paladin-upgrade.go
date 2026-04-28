@@ -21,11 +21,11 @@ const (
 	// itemSolveSize  = solver.SolveSize_Medium
 	// simRunSize     = simulate.RunSize_QuickDirty
 
-	// itemSolveSize = solver.SolveSize_Medium
-	// simRunSize    = simulate.RunSize_Medium
+	itemSolveSize = solver.SolveSize_Medium
+	simRunSize    = simulate.RunSize_Medium
 
-	itemSolveSize = solver.SolveSize_PerItem
-	simRunSize    = simulate.RunSize_TestOnly
+	// itemSolveSize = solver.SolveSize_PerItem
+	// simRunSize    = simulate.RunSize_TestOnly
 )
 
 var substituteItemsDps = []items.ItemId{

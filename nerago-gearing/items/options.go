@@ -308,11 +308,31 @@ func (optionsMap *SolvableOptionsMap) TotalCombinationCountAsInt() uint64 {
 	return combo.Uint64()
 }
 
+func (optionsMap *SolvableOptionsMap) TotalItemCount() int {
+	itemCount := 0
+	for _, slotArray := range optionsMap {
+		itemCount += len(slotArray)
+	}
+	return itemCount
+}
+
 func (optionsMap *SolvableOptionsMap) AllItemSeq() iter.Seq[*SolvableItem] {
 	return func(yield func(*SolvableItem) bool) {
 		for _, slotArray := range optionsMap {
 			for _, item := range slotArray {
 				if !yield(&item) {
+					return
+				}
+			}
+		}
+	}
+}
+
+func (optionsMap *SolvableOptionsMap) AllItemSlotSeq() iter.Seq2[SlotEquip, *SolvableItem] {
+	return func(yield func(SlotEquip, *SolvableItem) bool) {
+		for slot := Equip_Iter_First; slot <= Equip_Iter_Last; slot++ {
+			for i := range optionsMap[slot] {
+				if !yield(slot, &optionsMap[slot][i]) {
 					return
 				}
 			}
