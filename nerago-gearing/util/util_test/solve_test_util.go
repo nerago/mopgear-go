@@ -30,8 +30,8 @@ func MakeTestExpectedBest() items.SolvableEquipMap {
 	equip := items.SolvableEquipMap{}
 	equip[items.Equip_Head] = testItemPointer(100, 11)
 	equip[items.Equip_Neck] = testItemPointer(201, 23)
-	equip[items.Equip_Shoulder] = testItemPointer(303, 33)
-	equip[items.Equip_Back] = testItemPointer(401, 44)
+	equip[items.Equip_Shoulder] = testItemPointer(302, 33)
+	equip[items.Equip_Back] = testItemPointer(400, 44)
 	return equip
 }
 

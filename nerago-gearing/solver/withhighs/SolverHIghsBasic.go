@@ -13,7 +13,12 @@ import (
 // wowsim-external/ui/worker/lp_format.ts
 
 type buildConstraintForBasic struct {
-	param highs.Model
+	param *highs.RawModel
+
+	VarTypes []highs.VariableType // Type of each model variable
+	ColCosts []float64            // Column costs (i.e., the objective function itself)
+	ColLower []float64            // Column lower bounds
+	ColUpper []float64
 
 	slotsOneEachRow     [16]constraintRow // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
 	requireSetCountsRow constraintRow     // if requireSetCount then constrain set count to match
@@ -21,6 +26,21 @@ type buildConstraintForBasic struct {
 	expertValueRow      constraintRow     // values for the expertise of each item
 
 	variableLookup []lookupEntry
+}
+
+func (cons buildConstraintForBasic) finishColumns() {
+	err := cons.param.AddColumnBounds(cons.ColLower, cons.ColUpper)
+	if err != nil {
+		panic(err)
+	}
+	err = cons.param.SetColumnCosts(cons.ColCosts)
+	if err != nil {
+		panic(err)
+	}
+	err = cons.param.SetIntegrality(cons.VarTypes)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func RunBasic(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet gear_model.ActiveSet, requireSetCount util.Optional[int]) util.Optional[items.SolvableItemSet] {
@@ -31,6 +51,7 @@ func RunBasic(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Mode
 		constraints.addItem(slot, item, gear_model, requiredSet)
 	}
 
+	constraints.finishColumns()
 	constraints.finishItems(itemOptions, gear_model)
 	// constraints.finishSet(requireSetCount)
 
@@ -45,7 +66,7 @@ func RunBasic(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Mode
 		fmt.Println(i, x)
 	}
 
-	result := buildResultSet(&solution, &constraints)
+	result := buildResultSet(&solution.Solution, &constraints)
 	return util.Optional_OfValue(result)
 }
 
@@ -62,23 +83,30 @@ func buildResultSet(solution *highs.Solution, constraints *buildConstraintForBas
 }
 
 func (cons *buildConstraintForBasic) init(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model) {
-	cons.param.Maximize = false
+	// cons.param.Maximize = false
+	cons.param = highs.NewRawModel()
+	err := cons.param.SetMaximization(true)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (cons *buildConstraintForBasic) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, gear_model *gear_model.Model, requiredSet gear_model.ActiveSet) {
 	rating := float64(gear_model.CalcRatingSolveItemAsFloat(item))
 
 	// item version "boolean" (0 or 1)
-	cons.param.VarTypes = append(cons.param.VarTypes, highs.IntegerType)
-	cons.param.ColLower = append(cons.param.ColLower, 0)
-	cons.param.ColUpper = append(cons.param.ColUpper, 1)
+	cons.VarTypes = append(cons.VarTypes, highs.IntegerType)
+	cons.ColLower = append(cons.ColLower, 0)
+	cons.ColUpper = append(cons.ColUpper, 1)
 
 	// the "objective function" value, or weighted total stat rating in our terms
-	cons.param.ColCosts = append(cons.param.ColCosts, rating)
+	cons.ColCosts = append(cons.ColCosts, rating)
 
 	// specific hit/expertise values for hi/lo limits
-	cons.hitValueRow.add(float64(item.TotalCap().Hit()))
-	cons.expertValueRow.add(float64(item.TotalCap().Expertise()))
+	// cons.hitValueRow.add(float64(item.TotalCap().Hit()))
+	cons.hitValueRow.add(3)
+	// cons.expertValueRow.add(float64(item.TotalCap().Expertise()))
+	cons.expertValueRow.add(4)
 
 	// 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
 	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
@@ -104,18 +132,27 @@ func (cons *buildConstraintForBasic) finishSet(requireSetCount util.Optional[int
 	// constrain us to have exactly that many items from the set
 	if require, hasRequire := requireSetCount.GetWithFlag(); hasRequire {
 		requireFloat := float64(require)
-		cons.param.AddDenseRow(requireFloat, cons.requireSetCountsRow.data, requireFloat)
+		cons.param.AddDenseRow(requireFloat, cons.requireSetCountsRow.getDataChecked(), requireFloat)
 	}
 }
 
 func (cons *buildConstraintForBasic) finishItems(itemOptions *items.SolvableOptionsMap, model *gear_model.Model) {
-	// cons.param.AddDenseRow(float64(model.StatRequirements.HitMin()), cons.hitValueRow.data, float64(model.StatRequirements.HitMax()))
-	cons.param.AddDenseRow(0, cons.hitValueRow.data, 10000)
-	// cons.param.AddDenseRow(float64(model.StatRequirements.ExpertMin()), cons.expertValueRow.data, float64(model.StatRequirements.ExpertMax()))
+	err := cons.param.AddDenseRow(float64(model.StatRequirements.HitMin()), cons.hitValueRow.getDataChecked(), float64(model.StatRequirements.HitMax()))
+	if err != nil {
+		panic(err)
+	}
+
+	err = cons.param.AddDenseRow(float64(model.StatRequirements.ExpertMin()), cons.expertValueRow.getDataChecked(), float64(model.StatRequirements.ExpertMax()))
+	if err != nil {
+		panic(err)
+	}
 
 	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
 		if itemOptions.Has(slot) {
-			cons.param.AddDenseRow(1, cons.slotsOneEachRow[slot].data, 1)
+			err = cons.param.AddDenseRow(1, cons.slotsOneEachRow[slot].getDataChecked(), 1)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 }

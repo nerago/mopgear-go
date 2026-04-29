@@ -168,15 +168,15 @@ func (cons *buildConstraintForSetBonus) finish(gear_model *gear_model.Model) {
 func (cons *buildConstraintForSetBonus) finishSets() {
 	// constrain us to have exactly that many items from the set
 	for setIndex := range cons.setEachItemCountRow {
-		cons.param.AddDenseRow(0, cons.setEachItemCountRow[setIndex].data, 0)
+		cons.param.AddDenseRow(0, cons.setEachItemCountRow[setIndex].getDataChecked(), 0)
 	}
 }
 
 func (cons *buildConstraintForSetBonus) finishItems(model *gear_model.Model) {
-	cons.param.AddDenseRow(float64(model.StatRequirements.HitMin()), cons.hitValueRow.data, float64(model.StatRequirements.HitMax()))
-	cons.param.AddDenseRow(float64(model.StatRequirements.ExpertMin()), cons.expertValueRow.data, float64(model.StatRequirements.ExpertMax()))
+	cons.param.AddDenseRow(float64(model.StatRequirements.HitMin()), cons.hitValueRow.getDataChecked(), float64(model.StatRequirements.HitMax()))
+	cons.param.AddDenseRow(float64(model.StatRequirements.ExpertMin()), cons.expertValueRow.getDataChecked(), float64(model.StatRequirements.ExpertMax()))
 
 	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
-		cons.param.AddDenseRow(1, cons.slotsOneEachRow[slot].data, 1)
+		cons.param.AddDenseRow(1, cons.slotsOneEachRow[slot].getDataChecked(), 1)
 	}
 }

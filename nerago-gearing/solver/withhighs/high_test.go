@@ -19,7 +19,7 @@ func TestSolverBasicRun(t *testing.T) {
 
 	if result.HasValue() {
 		resultSet := result.GetOrPanic()
-		if equals(expectSet, resultSet) {
+		if !equals(expectSet, resultSet) {
 			t.Fatalf("set not equal")
 		}
 	} else {
@@ -34,7 +34,7 @@ func equals(expectSet, resultSet items.SolvableItemSet) bool {
 	for i := range expectSet.Items() {
 		e := expectSet.Items()[i]
 		r := resultSet.Items()[i]
-		if *e != *r {
+		if (e != nil && r != nil && *e != *r) || ((e == nil) != (r == nil)) {
 			return false
 		}
 	}

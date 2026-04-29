@@ -23,11 +23,24 @@ type lookupEntry struct {
 }
 
 type constraintRow struct {
-	data []float64
+	dataInternal []float64
 }
 
 func (row *constraintRow) add(value float64) {
-	row.data = append(row.data, value)
+	row.dataInternal = append(row.dataInternal, value)
+}
+
+func (row *constraintRow) getDataChecked() []float64 {
+	nonZeros := 0
+	for _, val := range row.dataInternal {
+		if val != 0.0 {
+			nonZeros++
+		}
+	}
+	if nonZeros == 0 {
+		panic("row of all zeros")
+	}
+	return row.dataInternal
 }
 
 type constraintRowSparse struct {
