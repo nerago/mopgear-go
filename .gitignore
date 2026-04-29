@@ -2,3 +2,5 @@ nerago-gearing/main/*.exe
 nerago-gearing/main/_*
 profile/main-new.pgo
 main.exe~
+main.exe
+output/*

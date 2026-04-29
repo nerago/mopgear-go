@@ -106,11 +106,10 @@ func Model_PallyRet() Model {
 }
 
 func Model_Testing() Model {
-	weight := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
 	return Model{
 		Spec:             Spec_PaladinProtDps,
 		SimulateAs:       stats.Fight_Horridon_HighHeal,
-		StatRatings:      weight,
+		StatRatings:      StatRatingsWeights_Testing(),
 		StatRequirements: StatRequirementsHitExpertise_None(),
 		ReforgeRules:     ReforgeRules_tank,
 		EnchantChoice:    EnchantChoice_ForSpec(Spec_PaladinProtDps),

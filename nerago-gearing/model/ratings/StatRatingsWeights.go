@@ -108,3 +108,11 @@ func addNum(block *StatBlock, stat StatType, value string) {
 	}
 	block[stat] = uint32(math.Round(num * 1000))
 }
+
+func StatRatingsWeights_Testing() StatRatingsWeights {
+	block := StatBlock{}
+	for i := range block {
+		block[i] = 1
+	}
+	return StatRatingsWeights{block}
+}

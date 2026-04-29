@@ -25,6 +25,14 @@ func (opt Optional[T]) IsEmpty() bool {
 	return !opt.exists
 }
 
+func (opt Optional[T]) HasValue() bool {
+	return opt.exists
+}
+
+func (opt Optional[T]) GetWithFlag() (T, bool) {
+	return opt.value, opt.exists
+}
+
 func (opt Optional[T]) GetAsNillable() *T {
 	if opt.exists {
 		return &opt.value

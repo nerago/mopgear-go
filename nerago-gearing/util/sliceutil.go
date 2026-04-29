@@ -66,6 +66,14 @@ func MapSliceAsNew[T any](slice []T, mapper func(x *T) T) []T {
 	return result
 }
 
+func CastSliceAsNew[T any, R any](slice []T, mapper func(x *T) R) []R {
+	result := make([]R, len(slice))
+	for i := range slice {
+		result[i] = mapper(&slice[i])
+	}
+	return result
+}
+
 func FilterSliceAsNew[T any](slice []T, filter func(x *T) bool) []T {
 	result := make([]T, 0, len(slice))
 	for _, item := range slice {

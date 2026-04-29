@@ -13,7 +13,7 @@ import (
 func diagnoseFailure(optionsMap *items.SolvableOptionsMap, model *model.Model) (util.Optional[items.SolvableItemSet], string) {
 	proposedList := setsAtLimits(optionsMap)
 	accepatable := findAccepableSet(proposedList, model)
-	if !accepatable.IsEmpty() {
+	if accepatable.HasValue() {
 		return accepatable, ""
 	} else {
 		message := discoverCommonProblem(proposedList, &model.StatRequirements)

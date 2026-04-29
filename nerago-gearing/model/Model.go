@@ -73,6 +73,11 @@ func (model *Model) CalcRatingSolveItem(item *SolvableItem) uint64 {
 	return model.StatRatings.CalcRatingInt(item.TotalRated())
 }
 
+func (model *Model) CalcRatingSolveItemAsFloat(item *SolvableItem) float32 {
+	return model.StatRatings.CalcRatingFloat(item.TotalRated())
+}
+
+
 func (model *Model) CalcRatingGenericItem(item IItem) uint64 {
 	return model.StatRatings.CalcRatingInt(item.TotalRated())
 }

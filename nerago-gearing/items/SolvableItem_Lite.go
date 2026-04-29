@@ -85,6 +85,13 @@ func (set *SolvableItemSet) AddItem_DeferCalc(slot SlotEquip, item *SolvableItem
 	set.items[slot] = item
 }
 
+func (set *SolvableItemSet) AddItem_DeferCalc_ExpectEmpty(slot SlotEquip, item *SolvableItem) {
+	if set.items[slot] != nil {
+		panic("slot not empty")
+	}
+	set.items[slot] = item
+}
+
 // obsolete
 // func (set *SolvableItemSet) AddItem_CreateNew(slot SlotEquip, item *SolvableItem) *SolvableItemSet {
 // 	result := new(SolvableItemSet)

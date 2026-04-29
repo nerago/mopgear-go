@@ -73,7 +73,7 @@ func (sets *SetBonus) initMap() {
 }
 
 func (sets *SetBonus) Equals(other *SetBonus) bool {
-	return slices.EqualFunc(sets.activeSets, other.activeSets, setInfo.Equals)
+	return slices.EqualFunc(sets.activeSets, other.activeSets, setInfo.EqualsTyped)
 }
 
 // ########################### CalcBonus ###########################
@@ -296,12 +296,21 @@ func setInfoMake(spec SpecType, name string, bonus2 uint64, bonus4 uint64, items
 		items}
 }
 
-func (set setInfo) Equals(other setInfo) bool {
+func (set setInfo) EqualsTyped(other setInfo) bool {
 	return set.spec == other.spec && set.name == other.name
+}
+
+func (set setInfo) Equals(other ActiveSet) bool {
+	if otherSet, isType := other.(setInfo); isType {
+		return set.EqualsTyped(otherSet)
+	} else {
+		return false
+	}
 }
 
 type ActiveSet interface {
 	BonusForCount(uint8) float32
+	Equals(ActiveSet) bool
 }
 
 func (set setInfo) BonusForCount(count uint8) float32 {
@@ -415,13 +424,17 @@ func (sets *SetBonus) AllSetItemIds() iter.Seq[ItemId] {
 	}
 }
 
-func (set *SetBonus) ActiveSetForItem(itemId ItemId) ActiveSet {
-	setEntry := set.itemToSet[itemId]
+func (sets *SetBonus) ActiveSetForItem(itemId ItemId) (active ActiveSet, index int) {
+	setEntry := sets.itemToSet[itemId]
 	if setEntry == 0 {
-		return nil
+		return nil, -1
 	}
 
-	return set.activeSets[setEntry-1]
+	return sets.activeSets[setEntry-1], int(setEntry - 1)
+}
+
+func (sets *SetBonus) ActiveSets() []ActiveSet {
+	return util.CastSliceAsNew(sets.activeSets, func(s *setInfo) ActiveSet { return s })
 }
 
 func SetBonus_IsAnyKnownItem(itemId ItemId) bool {
