@@ -15,10 +15,10 @@ import (
 type buildConstraintForBasic struct {
 	param *highs.RawModel
 
-	VarTypes []highs.VariableType // Type of each model variable
+	ColTypes []highs.VariableType // Type of each model variable
 	ColCosts []float64            // Column costs (i.e., the objective function itself)
 	ColLower []float64            // Column lower bounds
-	ColUpper []float64
+	ColUpper []float64            // Column upper bounds
 
 	slotsOneEachRow     [16]constraintRow // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
 	requireSetCountsRow constraintRow     // if requireSetCount then constrain set count to match
@@ -28,32 +28,16 @@ type buildConstraintForBasic struct {
 	variableLookup []lookupEntry
 }
 
-func (cons buildConstraintForBasic) finishColumns() {
-	err := cons.param.AddColumnBounds(cons.ColLower, cons.ColUpper)
-	if err != nil {
-		panic(err)
-	}
-	err = cons.param.SetColumnCosts(cons.ColCosts)
-	if err != nil {
-		panic(err)
-	}
-	err = cons.param.SetIntegrality(cons.VarTypes)
-	if err != nil {
-		panic(err)
-	}
-}
-
 func RunBasic(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet gear_model.ActiveSet, requireSetCount util.Optional[int]) util.Optional[items.SolvableItemSet] {
 	constraints := buildConstraintForBasic{}
-	constraints.init(itemOptions, gear_model)
+	constraints.init(itemOptions, gear_model, requireSetCount)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
 		constraints.addItem(slot, item, gear_model, requiredSet)
 	}
 
 	constraints.finishColumns()
-	constraints.finishItems(itemOptions, gear_model)
-	// constraints.finishSet(requireSetCount)
+	constraints.finishRows()
 
 	highs_model := constraints.param
 	solution, err := highs_model.Solve()
@@ -82,12 +66,30 @@ func buildResultSet(solution *highs.Solution, constraints *buildConstraintForBas
 	return itemSet
 }
 
-func (cons *buildConstraintForBasic) init(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model) {
-	// cons.param.Maximize = false
+func (cons *buildConstraintForBasic) init(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requireSetCount util.Optional[int]) {
 	cons.param = highs.NewRawModel()
 	err := cons.param.SetMaximization(true)
 	if err != nil {
 		panic(err)
+	}
+
+	cons.hitValueRow = constraintRow_make(cons.param, float64(gear_model.StatRequirements.HitMin()), float64(gear_model.StatRequirements.HitMax()))
+	cons.expertValueRow = constraintRow_make(cons.param, float64(gear_model.StatRequirements.ExpertMin()), float64(gear_model.StatRequirements.ExpertMax()))
+
+	// constraint:
+	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
+		if itemOptions.Has(slot) {
+			cons.slotsOneEachRow[slot] = constraintRow_make(cons.param, 1, 1)
+		} else {
+			cons.slotsOneEachRow[slot] = constraintRow_make_nil()
+		}
+	}
+
+	// constrain: exact item count in specific gear set
+	if require, hasRequire := requireSetCount.GetWithFlag(); hasRequire {
+		cons.requireSetCountsRow = constraintRow_make(cons.param, float64(require), float64(require))
+	} else {
+		cons.requireSetCountsRow = constraintRow_make_nil()
 	}
 }
 
@@ -95,7 +97,7 @@ func (cons *buildConstraintForBasic) addItem(itemSlot items.SlotEquip, item *ite
 	rating := float64(gear_model.CalcRatingSolveItemAsFloat(item))
 
 	// item version "boolean" (0 or 1)
-	cons.VarTypes = append(cons.VarTypes, highs.IntegerType)
+	cons.ColTypes = append(cons.ColTypes, highs.IntegerType)
 	cons.ColLower = append(cons.ColLower, 0)
 	cons.ColUpper = append(cons.ColUpper, 1)
 
@@ -103,10 +105,10 @@ func (cons *buildConstraintForBasic) addItem(itemSlot items.SlotEquip, item *ite
 	cons.ColCosts = append(cons.ColCosts, rating)
 
 	// specific hit/expertise values for hi/lo limits
-	// cons.hitValueRow.add(float64(item.TotalCap().Hit()))
-	cons.hitValueRow.add(3)
-	// cons.expertValueRow.add(float64(item.TotalCap().Expertise()))
-	cons.expertValueRow.add(4)
+	cons.hitValueRow.add(float64(item.TotalCap().Hit()))
+	cons.expertValueRow.add(float64(item.TotalCap().Expertise()))
+	// cons.hitValueRow.add(2)
+	// cons.expertValueRow.add(3)
 
 	// 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
 	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
@@ -128,31 +130,29 @@ func (cons *buildConstraintForBasic) addItem(itemSlot items.SlotEquip, item *ite
 	cons.variableLookup = append(cons.variableLookup, entry)
 }
 
-func (cons *buildConstraintForBasic) finishSet(requireSetCount util.Optional[int]) {
-	// constrain us to have exactly that many items from the set
-	if require, hasRequire := requireSetCount.GetWithFlag(); hasRequire {
-		requireFloat := float64(require)
-		cons.param.AddDenseRow(requireFloat, cons.requireSetCountsRow.getDataChecked(), requireFloat)
+func (cons buildConstraintForBasic) finishColumns() {
+	err := cons.param.AddColumnBounds(cons.ColLower, cons.ColUpper)
+	if err != nil {
+		panic(err)
+	}
+
+	err = cons.param.SetColumnCosts(cons.ColCosts)
+	if err != nil {
+		panic(err)
+	}
+
+	err = cons.param.SetIntegrality(cons.ColTypes)
+	if err != nil {
+		panic(err)
 	}
 }
 
-func (cons *buildConstraintForBasic) finishItems(itemOptions *items.SolvableOptionsMap, model *gear_model.Model) {
-	err := cons.param.AddDenseRow(float64(model.StatRequirements.HitMin()), cons.hitValueRow.getDataChecked(), float64(model.StatRequirements.HitMax()))
-	if err != nil {
-		panic(err)
+func (cons buildConstraintForBasic) finishRows() {
+	for _, row := range cons.slotsOneEachRow {
+		row.finish()
 	}
 
-	err = cons.param.AddDenseRow(float64(model.StatRequirements.ExpertMin()), cons.expertValueRow.getDataChecked(), float64(model.StatRequirements.ExpertMax()))
-	if err != nil {
-		panic(err)
-	}
-
-	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
-		if itemOptions.Has(slot) {
-			err = cons.param.AddDenseRow(1, cons.slotsOneEachRow[slot].getDataChecked(), 1)
-			if err != nil {
-				panic(err)
-			}
-		}
-	}
+	cons.requireSetCountsRow.finish()
+	cons.hitValueRow.finish()
+	cons.expertValueRow.finish()
 }

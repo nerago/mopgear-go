@@ -23,41 +23,113 @@ type lookupEntry struct {
 }
 
 type constraintRow struct {
-	dataInternal []float64
+	constraintRowRaw
 }
 
-func (row *constraintRow) add(value float64) {
-	row.dataInternal = append(row.dataInternal, value)
+func constraintRow_make(high_model *highs.RawModel, lowerBound float64, upperBound float64) constraintRow {
+	return constraintRow{constraintRowRaw_make(high_model, lowerBound, upperBound)}
 }
 
-func (row *constraintRow) getDataChecked() []float64 {
-	nonZeros := 0
-	for _, val := range row.dataInternal {
-		if val != 0.0 {
-			nonZeros++
-		}
+func constraintRow_make_nil() constraintRow {
+	return constraintRow{constraintRowRaw_make_nil()}
+}
+
+type constraintRowRaw struct {
+	high_model *highs.RawModel
+	lowerBound float64
+	upperBound float64
+
+	insertColumn  int
+	columnNumbers []int
+	values        []float64
+}
+
+func (row *constraintRowRaw) finish() {
+	// expected nil row
+	if row.high_model == nil {
+		return
 	}
-	if nonZeros == 0 {
-		panic("row of all zeros")
+
+	var err error
+	if len(row.values) > 0 {
+		err = row.high_model.AddCompSparseRows(
+			[]float64{row.lowerBound},
+			[]int{0}, 
+			row.columnNumbers,
+			row.values,
+			[]float64{row.upperBound},
+		)
+	} else {
+		// need to set an explicit zero value so array isn't empty
+		// i'd argue this is a bug in go/highs binding library, 
+		// empty array should be acceptable to lower level code
+		err = row.high_model.AddCompSparseRows(
+			[]float64{row.lowerBound},
+			[]int{0}, 
+			[]int{0},
+			[]float64{0.0},
+			[]float64{row.upperBound},
+		)
 	}
-	return row.dataInternal
+	
+	if err != nil {
+		panic(err)
+	}
 }
 
-type constraintRowSparse struct {
+func (row *constraintRowRaw) add(value float64) {
+	if row.high_model == nil && value != 0.0 {
+		panic("expected nil row recived a non zero")
+	}
+
+	if value != 0.0 {
+		row.columnNumbers = append(row.columnNumbers, row.insertColumn)
+		row.values = append(row.values, value)
+	}
+	row.insertColumn++
+}
+
+func constraintRowRaw_make(high_model *highs.RawModel, lowerBound float64, upperBound float64) constraintRowRaw {
+	return constraintRowRaw{
+		high_model:   high_model,
+		lowerBound:   lowerBound,
+		upperBound:   upperBound,
+		insertColumn: 0,
+	}
+}
+
+func constraintRowRaw_make_nil() constraintRowRaw {
+	return constraintRowRaw{}
+}
+
+type constraintRowDirect struct {
 	constMatrix *[]highs.Nonzero
 	row         int
 	currCol     int
 }
 
-func (row *constraintRowSparse) init(m *highs.Model, lowerBound float64, upperBound float64) {
-	row.constMatrix = &m.ConstMatrix
-	row.row = len(m.RowLower)
-	row.currCol = 0
+func constraintRowDirect_make(m *highs.Model, lowerBound float64, upperBound float64) constraintRowDirect {
+	row := len(m.RowLower)
 	m.RowLower = append(m.RowLower, lowerBound)
 	m.RowUpper = append(m.RowUpper, upperBound)
+	return constraintRowDirect{
+		constMatrix: &m.ConstMatrix,
+		row:         row,
+		currCol:     0,
+	}
 }
 
-func (row *constraintRowSparse) add(value float64) {
+func constraintRowDirect_make_null() constraintRowDirect {
+	return constraintRowDirect{
+		constMatrix: nil,
+	}
+}
+
+func (row *constraintRowDirect) add(value float64) {
+	if row.constMatrix == nil && value != 0.0 {
+		panic("expected nil row recived a non zero")
+	}
+
 	if value != 0.0 {
 		nz := highs.Nonzero{
 			Row: row.row,
