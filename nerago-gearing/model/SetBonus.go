@@ -424,13 +424,22 @@ func (sets *SetBonus) AllSetItemIds() iter.Seq[ItemId] {
 	}
 }
 
-func (sets *SetBonus) ActiveSetForItem(itemId ItemId) (active ActiveSet, index int) {
+func (sets *SetBonus) ActiveSetForItem(itemId ItemId) (active ActiveSet, index int, hasSet bool) {
 	setEntry := sets.itemToSet[itemId]
 	if setEntry == 0 {
-		return nil, -1
+		return nil, -1, false
 	}
 
-	return sets.activeSets[setEntry-1], int(setEntry - 1)
+	return sets.activeSets[setEntry-1], int(setEntry - 1), true
+}
+
+func (sets *SetBonus) ActiveSetIndexForItem(itemId ItemId) (index int, hasSet bool) {
+	setEntry := sets.itemToSet[itemId]
+	if setEntry == 0 {
+		return -1, false
+	}
+
+	return int(setEntry - 1), true
 }
 
 func (sets *SetBonus) ActiveSets() []ActiveSet {

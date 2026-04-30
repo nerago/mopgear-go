@@ -1,174 +1,271 @@
 package withhighs
 
-// see wowsim-external\ui\core\components\suggest_reforges_action.tsx
-// wowsim-external/ui/worker/lp_format.ts
+import (
+	"fmt"
+	"math"
+	"paladin_gearing_go/items"
+	gear_model "paladin_gearing_go/model"
+	"paladin_gearing_go/util"
 
-// type buildConstraintForSetBonus struct {
-// 	param highs.Model
+	"github.com/lanl/highs"
+)
 
-// 	hitValueRow    constraintRow // values for the hits of each item
-// 	expertValueRow constraintRow // values for the expertise of each item
+func RunAllActiveSets(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model) util.Optional[items.SolvableItemSet] {
+	constraints := buildConstraintForSetBonus{}
+	constraints.init(itemOptions, gear_model)
+	constraints.prepareActiveSets(gear_model)
 
-// 	slotsOneEachRow [16]constraintRow // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
+	for slot, item := range itemOptions.AllItemSlotSeq() {
+		constraints.addItem(slot, item, gear_model)
+	}
 
-// 	activeSets          []gear_model.ActiveSet
-// 	setEachItemCountRow []constraintRow
-// 	permuteCodesRow     constraintRow
-// 	allPermutations     []multiSetPermutation
+	constraints.vars.apply(constraints.param)
+	constraints.finishColumns()
+	constraints.finishRows()
 
-// 	variableLookup []lookupEntry
-// }
+	highs_model := constraints.param
+	solution, err := highs_model.Solve()
+	fmt.Println(solution.Status.String())
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(solution.Status.String())
+	for i, x := range solution.ColumnPrimal {
+		fmt.Println(i, x)
+	}
 
-// func RunSetBonus(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model) {
-// 	constraints := buildConstraintForSetBonus{}
-// 	constraints.init(itemOptions, gear_model)
+	result := constraints.buildResultSet(&solution.Solution)
+	return util.Optional_OfValue(result)
+}
 
-// 	for slot, item := range itemOptions.AllItemSlotSeq() {
-// 		constraints.addItem(slot, item, gear_model)
-// 	}
+type buildConstraintForSetBonus struct {
+	param *highs.RawModel
 
-// 	constraints.finish(gear_model)
+	vars variableArrayBuilder
 
-// 	m := constraints.param
-// 	sol, err := m.Solve()
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	fmt.Println(sol.Status.String())
-// 	for _, x := range sol.ColumnPrimal {
-// 		fmt.Println(x)
-// 	}
-// }
+	slotsOneEachRow      [16]constraintRowSparse // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
+	countEachSetItemsRow []constraintRowSparse   // count items used from each set, more 1 or 0 flags
+	baseRatingSumRow     constraintRowSparse     // values for the hits of each item
+	hitValueRow          constraintRowSparse     // constrains values for the hits of each item
+	expertValueRow       constraintRowSparse     // constrains values for the expertise of each item
 
-// func (cons *buildConstraintForSetBonus) init(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model) {
-// 	cons.param.Maximize = false
+	variableLookup []lookupEntryWithSetBonuses
+}
 
-// 	activeSets := gear_model.SetBonus.ActiveSets()
-// 	cons.setEachItemCountRow = make([]constraintRow, len(activeSets))
-// 	for setIndex := range len(activeSets) {
-// 		cons.addSetVariable(setIndex, activeSets[setIndex])
-// 	}
+func (cons *buildConstraintForSetBonus) init(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model) {
+	cons.param = highs.NewRawModel()
+	err := cons.param.SetMaximization(true)
+	if err != nil {
+		panic(err)
+	}
 
-// 	cons.allPermutations = []multiSetPermutation{{totalBonus: 1, permutationCode: 0}}
+	activeSets := gear_model.SetBonus.ActiveSets()
+	cons.countEachSetItemsRow = make([]constraintRowSparse, len(activeSets))
+}
 
-// 	// SUDDENLY NOT CONVINCED, DUE TO NOT BEING ABLE TO <= THINGS?
-// }
+func (cons *buildConstraintForSetBonus) prepareActiveSets(gear_model *gear_model.Model) {
+	// constrain: exact item count in each active set
+	activeSets := gear_model.SetBonus.ActiveSets()
+	if len(activeSets) == 0 {
+		panic("shouldn't be in this solver without active sets")
+	}
+	for range activeSets {
+		cons.countEachSetItemsRow = append(cons.countEachSetItemsRow, constraintRow_make(cons.param, 0, 0))
+	}
+	for setIndex, setInfo := range activeSets {
+		cons.addSetVariable(setIndex, setInfo)
+	}
+}
 
-// func (cons *buildConstraintForSetBonus) addSetVariable(activeSetIndex int, activeSet gear_model.ActiveSet) {
-// 	// set item target count
-// 	cons.param.VarTypes = append(cons.param.VarTypes, highs.IntegerType)
-// 	cons.param.ColLower = append(cons.param.ColLower, 0)
-// 	cons.param.ColUpper = append(cons.param.ColUpper, 5)
+func (cons *buildConstraintForSetBonus) addSumRatingVariable(activeSetIndex int, activeSet gear_model.ActiveSet) {
+	// set item target/derived actual count, solver might approach from either direction
+	cons.ColTypes = append(cons.ColTypes, highs.ContinuousType)
+	cons.ColLower = append(cons.ColLower, 0)
+	cons.ColUpper = append(cons.ColUpper, math.Inf(1))
+	cons.ColCosts = append(cons.ColCosts, 0) // contributes 0 to rating itself
 
-// 	// the direct value of the variable towards rating is zero, but constraints enable upscaled item versions
-// 	cons.param.ColCosts = append(cons.param.ColCosts, 0)
+	// not an item, no effect on caps
+	cons.hitValueRow.add(0)
+	cons.expertValueRow.add(0)
 
-// 	// not an item, no effect on caps
-// 	cons.hitValueRow.add(0)
-// 	cons.expertValueRow.add(0)
+	// not an item, no effect on slots
+	for slot := range cons.slotsOneEachRow {
+		cons.slotsOneEachRow[slot].add(0)
+	}
 
-// 	// not an item, no effect on slots
-// 	for slot := range cons.slotsOneEachRow {
-// 		cons.slotsOneEachRow[slot].add(0)
-// 	}
+	// main action of this variable: derive value to match rest of rest of row sum
+	cons.baseRatingSumRow.add(-1)
 
-// 	// add corresponding -1 to the item count array, so we can compare variable value to the sum of items
-// 	for index := range len(cons.setEachItemCountRow) {
-// 		addValue := 0.0
-// 		if index == activeSetIndex {
-// 			addValue = -1.0
-// 		}
-// 		cons.slotsOneEachRow[index].add(addValue)
-// 	}
+	// add corresponding -1 to the item count array, so we can compare variable value to the sum of items
+	for index := range len(cons.countEachSetItemsRow) {
+		cons.slotsOneEachRow[index].add(0)
+	}
 
-// 	// add permute code negative
-// 	codeMultiply := 1 << (c_permuteCodeShift * activeSetIndex)
-// 	cons.permuteCodesRow.add(float64(-codeMultiply))
+	// save reference
+	entry := lookupEntryBasic{purpose: entry_sum_rating}
+	cons.variableLookup = append(cons.variableLookup, entry)
+}
 
-// 	// save reference
-// 	entry := lookupEntry{purpose: entry_set_item_count, set: activeSet}
-// 	cons.variableLookup = append(cons.variableLookup, entry)
-// }
+func (cons *buildConstraintForSetBonus) addSetVariable(activeSetIndex int, activeSet gear_model.ActiveSet) {
+	// set item target/derived actual count, solver might approach from either direction
+	cons.ColTypes = append(cons.ColTypes, highs.IntegerType)
+	cons.ColLower = append(cons.ColLower, 0)
+	cons.ColUpper = append(cons.ColUpper, c_maxSetItems)
+	cons.ColCosts = append(cons.ColCosts, 0) // contributes 0 to rating itself
 
-// func (cons *buildConstraintForSetBonus) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, gear_model *gear_model.Model) {
-// 	rating := float64(gear_model.CalcRatingSolveItemAsFloat(item))
-// 	set, setIndex := gear_model.SetBonus.ActiveSetForItem(item.ItemId())
+	// not an item, no effect on caps
+	cons.hitValueRow.add(0)
+	cons.expertValueRow.add(0)
 
-// 	if set == nil {
-// 		cons.addItemWithVariant(itemSlot, item, rating, -1, 0)
-// 	} else {
-// 		cons.addItemWithVariant(itemSlot, item, rating, setIndex, 0)
+	// not an item, no effect on slots
+	for slot := range cons.slotsOneEachRow {
+		cons.slotsOneEachRow[slot].add(0)
+	}
 
-// 		mult2 := set.BonusForCount(2)
-// 		cons.addItemWithVariant(itemSlot, item, rating*float64(mult2), setIndex, 2)
+	// not an item, no rating value
+	cons.baseRatingSumRow.add(0)
 
-// 		mult4 := set.BonusForCount(4)
-// 		cons.addItemWithVariant(itemSlot, item, rating*float64(mult4), setIndex, 4)
+	// add corresponding -1 to the item count array, so we can compare variable value to the sum of items
+	cons.countEachSetItemsRow
+	for index := range len(cons.countEachSetItemsRow) {
+		addValue := 0.0
+		if index == activeSetIndex {
+			addValue = -1.0
+		}
+		cons.slotsOneEachRow[index].add(addValue)
+	}
 
-// 		// so only one item for each slot will light up
-// 		// if we sum them for a 0,1 should be baseline items
-// 		// if we sum them for a 2 should be either 2 or 3 enhanced items
-// 		// alt: if we sum them for a 2 should be exactly 2 enhanced items
-// 		// if we sum four of them we want ones that meet more of the product/square?
+	// save reference
+	entry := lookupEntryBasic{purpose: entry_set_item_count, set: activeSet}
+	cons.variableLookup = append(cons.variableLookup, entry)
+}
 
-// 		// or we have separate constraints by bonus slot, then since only one will light up we could kinda do a ==count compare
+func (cons *buildConstraintForSetBonus) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, gear_model *gear_model.Model) {
+	rating := float64(gear_model.CalcRatingSolveItemAsFloat(item))
 
-// 		// if we do every slot then would need separate constrains for each permutation of set counts. every item exists in [012345]*[012345] variants
-// 	}
-// }
+	// boolean value to flag use of specific item
+	// contributes 0 to final rating itself, but via additional summation and calcs
+	columnIndex := cons.vars.add(highs.IntegerType, 0, 1, 0)
 
-// func (cons *buildConstraintForSetBonus) addItemWithVariant(itemSlot items.SlotEquip, item *items.SolvableItem, rating float64, activeSetIndex int, permuteCode float64) {
-// 	// item version "boolean" (0 or 1)
-// 	cons.param.VarTypes = append(cons.param.VarTypes, highs.IntegerType)
-// 	cons.param.ColLower = append(cons.param.ColLower, 0)
-// 	cons.param.ColUpper = append(cons.param.ColUpper, 1)
+	// add rating via a summation condition
+	cons.baseRatingSumRow.add(columnIndex, rating)
 
-// 	// the "objective function" value, or weighted total stat rating in our terms
-// 	cons.param.ColCosts = append(cons.param.ColCosts, rating)
+	// specific hit/expertise values for hi/lo limits
+	cons.hitValueRow.add(columnIndex, float64(item.TotalCap().Hit()))
+	cons.expertValueRow.add(columnIndex, float64(item.TotalCap().Expertise()))
 
-// 	// specific hit/expertise values for hi/lo limits
-// 	cons.hitValueRow.add(float64(item.TotalCap().Hit()))
-// 	cons.expertValueRow.add(float64(item.TotalCap().Expertise()))
+	// 1 for that slot that matches the item, so we can tell solver only one item per slot
+	cons.slotsOneEachRow[itemSlot].add(columnIndex, 1.0)
 
-// 	// 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
-// 	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
-// 		addValue := 0.0
-// 		if slot == itemSlot {
-// 			addValue = 1.0
-// 		}
-// 		cons.slotsOneEachRow[slot].add(addValue)
-// 	}
+	// if this item belongs to any item set then flag with a 1
+	activeSetIndex, hasSet := gear_model.SetBonus.ActiveSetIndexForItem(item.ItemId())
+	if hasSet {
+		cons.countEachSetItemsRow[activeSetIndex].add(columnIndex, 1.0)
+	}
 
-// 	// add corresponding 1 to the item count array, count this item in that set if included
-// 	for index := range len(cons.setEachItemCountRow) {
-// 		addValue := 0.0
-// 		if index == activeSetIndex {
-// 			addValue = 1.0
-// 		}
-// 		cons.setEachItemCountRow[index].add(addValue)
-// 	}
+	entry := lookupEntryWithSetBonuses{entryType: entry_item, itemSlot: itemSlot, item: item}
+	cons.variableLookup = append(cons.variableLookup, entry)
+}
 
-// 	entry := lookupEntry{purpose: entry_item, itemSlot: itemSlot, item: item}
-// 	cons.variableLookup = append(cons.variableLookup, entry)
-// }
+func (cons buildConstraintForSetBonus) finishRows(itemOptions *items.SolvableOptionsMap) {
 
-// func (cons *buildConstraintForSetBonus) finish(gear_model *gear_model.Model) {
-// 	cons.finishItems(gear_model)
-// 	cons.finishSets()
-// }
+	// constrain: exactly one item for each slot
+	for slot, row := range cons.slotsOneEachRow {
+		if len(itemOptions[slot]) > 0 {
+			row.finish(cons.param, 1, 1)
+		}
+	}
+	// slotsOneEachRow      [16]constraintRowSparse // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
+	// countEachSetItemsRow []constraintRowSparse   // count items used from each set, more 1 or 0 flags
+	// baseRatingSumRow     constraintRowSparse     // values for the hits of each item
+	// hitValueRow          constraintRowSparse     // constrains values for the hits of each item
+	// expertValueRow       constraintRowSparse     // constrains values for the expertise of each item
 
-// func (cons *buildConstraintForSetBonus) finishSets() {
-// 	// constrain us to have exactly that many items from the set
-// 	for setIndex := range cons.setEachItemCountRow {
-// 		cons.param.AddDenseRow(0, cons.setEachItemCountRow[setIndex].getDataChecked(), 0)
-// 	}
-// }
+	// constrain: total sum of hit/exp are within requested limits
+	// cons.hitValueRow = constraintRow_make(cons.param, float64(gear_model.StatRequirements.HitMin()), float64(gear_model.StatRequirements.HitMax()))
+	// cons.expertValueRow = constraintRow_make(cons.param, float64(gear_model.StatRequirements.ExpertMin()), float64(gear_model.StatRequirements.ExpertMax()))
 
-// func (cons *buildConstraintForSetBonus) finishItems(model *gear_model.Model) {
-// 	cons.param.AddDenseRow(float64(model.StatRequirements.HitMin()), cons.hitValueRow.getDataChecked(), float64(model.StatRequirements.HitMax()))
-// 	cons.param.AddDenseRow(float64(model.StatRequirements.ExpertMin()), cons.expertValueRow.getDataChecked(), float64(model.StatRequirements.ExpertMax()))
+	//
+	// for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
+	// 	if itemOptions.Has(slot) {
+	// 		cons.slotsOneEachRow[slot] = constraintRow_make(cons.param, 1, 1)
+	// 	} else {
+	// 		cons.slotsOneEachRow[slot] = constraintRow_make_nil()
+	// 	}
+	// }
 
-// 	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
-// 		cons.param.AddDenseRow(1, cons.slotsOneEachRow[slot].getDataChecked(), 1)
-// 	}
-// }
+	// // calculate: sum the basic unscaled item ratings
+	// cons.baseRatingSumRow = constraintRow_make(cons.param, 0, 0)
+
+	// cons.requireSetCountsRow.finish()
+	cons.hitValueRow.finish()
+	cons.expertValueRow.finish()
+}
+
+func (cons *buildConstraintForSetBonus) buildResultSet(solution *highs.Solution) items.SolvableItemSet {
+	itemSet := items.SolvableItemSet{}
+	for colIndex, variableResult := range solution.ColumnPrimal {
+		if variableResult == 1.0 {
+			entry := cons.variableLookup[colIndex]
+			itemSet.AddItem_DeferCalc_ExpectEmpty(entry.itemSlot, entry.item)
+		}
+	}
+	items.SolvableItemSet_RecalculateTotal(&itemSet)
+	return itemSet
+}
+
+type constraintRowSparse struct {
+	columnNumbers []int
+	values        []float64
+}
+
+func (row *constraintRowSparse) add(columnIndex int, value float64) {
+	if value != 0.0 {
+		row.columnNumbers = append(row.columnNumbers, columnIndex)
+		row.values = append(row.values, value)
+	}
+}
+
+func (row *constraintRowSparse) finish(param *highs.RawModel, lowerBound float64, upperBound float64) {
+	var err error
+	if len(row.values) > 0 {
+		err = param.AddCompSparseRows(
+			[]float64{lowerBound},
+			[]int{0},
+			row.columnNumbers,
+			row.values,
+			[]float64{upperBound},
+		)
+	} else {
+		// need to set an explicit zero value so array isn't empty
+		// i'd argue this is a bug in go/highs binding library,
+		// empty array should be acceptable to lower level code
+		// maybe these don't need to be added in many use cases though, automatically skipping seems risky
+		err = param.AddCompSparseRows(
+			[]float64{lowerBound},
+			[]int{0},
+			[]int{0},
+			[]float64{0.0},
+			[]float64{upperBound},
+		)
+	}
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+type entryType int8
+
+const (
+	entry_item           entryType = iota
+	entry_set_item_count entryType = iota
+	entry_sum_rating     entryType = iota
+)
+
+type lookupEntryWithSetBonuses struct {
+	entryType entryType
+	itemSlot  items.SlotEquip
+	item      *items.SolvableItem
+	set       gear_model.ActiveSet
+}

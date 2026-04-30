@@ -9,35 +9,16 @@ import (
 	"github.com/lanl/highs"
 )
 
-// see wowsim-external\ui\core\components\suggest_reforges_action.tsx
-// wowsim-external/ui/worker/lp_format.ts
-
-type buildConstraintForBasic struct {
-	param *highs.RawModel
-
-	ColTypes []highs.VariableType // Type of each model variable
-	ColCosts []float64            // Column costs (i.e., the objective function itself)
-	ColLower []float64            // Column lower bounds
-	ColUpper []float64            // Column upper bounds
-
-	slotsOneEachRow     [16]constraintRow // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
-	requireSetCountsRow constraintRow     // if requireSetCount then constrain set count to match
-	hitValueRow         constraintRow     // values for the hits of each item
-	expertValueRow      constraintRow     // values for the expertise of each item
-
-	variableLookup []lookupEntry
-}
-
 func RunBasic(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet gear_model.ActiveSet, requireSetCount util.Optional[int]) util.Optional[items.SolvableItemSet] {
 	constraints := buildConstraintForBasic{}
-	constraints.init(itemOptions, gear_model, requireSetCount)
+	constraints.init()
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
 		constraints.addItem(slot, item, gear_model, requiredSet)
 	}
 
-	constraints.finishColumns()
-	constraints.finishRows()
+	constraints.vars.apply(constraints.param)
+	constraints.finishItems(itemOptions, gear_model, requireSetCount)
 
 	highs_model := constraints.param
 	solution, err := highs_model.Solve()
@@ -50,46 +31,28 @@ func RunBasic(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Mode
 		fmt.Println(i, x)
 	}
 
-	result := buildResultSet(&solution.Solution, &constraints)
+	result := constraints.buildResultSet(&solution.Solution)
 	return util.Optional_OfValue(result)
 }
 
-func buildResultSet(solution *highs.Solution, constraints *buildConstraintForBasic) items.SolvableItemSet {
-	itemSet := items.SolvableItemSet{}
-	for colIndex, variableResult := range solution.ColumnPrimal {
-		if variableResult == 1.0 {
-			entry := constraints.variableLookup[colIndex]
-			itemSet.AddItem_DeferCalc_ExpectEmpty(entry.itemSlot, entry.item)
-		}
-	}
-	items.SolvableItemSet_RecalculateTotal(&itemSet)
-	return itemSet
+type buildConstraintForBasic struct {
+	param *highs.RawModel
+
+	vars variableArrayBuilder
+
+	slotsOneEachRow     [16]constraintRowSequential // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
+	requireSetCountsRow constraintRowSequential     // if requireSetCount then constrain set count to match
+	hitValueRow         constraintRowSequential     // values for the hits of each item
+	expertValueRow      constraintRowSequential     // values for the expertise of each item
+
+	itemLookup []lookupEntryBasic
 }
 
-func (cons *buildConstraintForBasic) init(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requireSetCount util.Optional[int]) {
+func (cons *buildConstraintForBasic) init() {
 	cons.param = highs.NewRawModel()
 	err := cons.param.SetMaximization(true)
 	if err != nil {
 		panic(err)
-	}
-
-	cons.hitValueRow = constraintRow_make(cons.param, float64(gear_model.StatRequirements.HitMin()), float64(gear_model.StatRequirements.HitMax()))
-	cons.expertValueRow = constraintRow_make(cons.param, float64(gear_model.StatRequirements.ExpertMin()), float64(gear_model.StatRequirements.ExpertMax()))
-
-	// constraint:
-	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
-		if itemOptions.Has(slot) {
-			cons.slotsOneEachRow[slot] = constraintRow_make(cons.param, 1, 1)
-		} else {
-			cons.slotsOneEachRow[slot] = constraintRow_make_nil()
-		}
-	}
-
-	// constrain: exact item count in specific gear set
-	if require, hasRequire := requireSetCount.GetWithFlag(); hasRequire {
-		cons.requireSetCountsRow = constraintRow_make(cons.param, float64(require), float64(require))
-	} else {
-		cons.requireSetCountsRow = constraintRow_make_nil()
 	}
 }
 
@@ -97,18 +60,11 @@ func (cons *buildConstraintForBasic) addItem(itemSlot items.SlotEquip, item *ite
 	rating := float64(gear_model.CalcRatingSolveItemAsFloat(item))
 
 	// item version "boolean" (0 or 1)
-	cons.ColTypes = append(cons.ColTypes, highs.IntegerType)
-	cons.ColLower = append(cons.ColLower, 0)
-	cons.ColUpper = append(cons.ColUpper, 1)
-
-	// the "objective function" value, or weighted total stat rating in our terms
-	cons.ColCosts = append(cons.ColCosts, rating)
+	cons.vars.add(highs.IntegerType, 0, 1, rating)
 
 	// specific hit/expertise values for hi/lo limits
 	cons.hitValueRow.add(float64(item.TotalCap().Hit()))
 	cons.expertValueRow.add(float64(item.TotalCap().Expertise()))
-	// cons.hitValueRow.add(2)
-	// cons.expertValueRow.add(3)
 
 	// 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
 	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
@@ -119,6 +75,7 @@ func (cons *buildConstraintForBasic) addItem(itemSlot items.SlotEquip, item *ite
 		cons.slotsOneEachRow[slot].add(addValue)
 	}
 
+	// if this item belongs to target item set then flag with a 1
 	itemSet, _ := gear_model.SetBonus.ActiveSetForItem(item.ItemId())
 	if itemSet != nil && requiredSet != nil && itemSet.Equals(requiredSet) {
 		cons.requireSetCountsRow.add(1)
@@ -126,33 +83,81 @@ func (cons *buildConstraintForBasic) addItem(itemSlot items.SlotEquip, item *ite
 		cons.requireSetCountsRow.add(0)
 	}
 
-	entry := lookupEntry{purpose: entry_item, itemSlot: itemSlot, item: item}
-	cons.variableLookup = append(cons.variableLookup, entry)
+	entry := lookupEntryBasic{itemSlot, item}
+	cons.itemLookup = append(cons.itemLookup, entry)
 }
 
-func (cons buildConstraintForBasic) finishColumns() {
-	err := cons.param.AddColumnBounds(cons.ColLower, cons.ColUpper)
-	if err != nil {
-		panic(err)
+func (cons buildConstraintForBasic) finishItems(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requireSetCount util.Optional[int]) {
+	for slot, row := range cons.slotsOneEachRow {
+		if len(itemOptions[slot]) > 0 {
+			row.finish(cons.param, 1, 1)
+		}
 	}
 
-	err = cons.param.SetColumnCosts(cons.ColCosts)
-	if err != nil {
-		panic(err)
-	}
+	cons.hitValueRow.finish(cons.param, float64(gear_model.StatRequirements.HitMin()), float64(gear_model.StatRequirements.HitMax()))
+	cons.expertValueRow.finish(cons.param, float64(gear_model.StatRequirements.ExpertMin()), float64(gear_model.StatRequirements.ExpertMax()))
 
-	err = cons.param.SetIntegrality(cons.ColTypes)
-	if err != nil {
-		panic(err)
+	if require, hasRequire := requireSetCount.GetWithFlag(); hasRequire {
+		cons.requireSetCountsRow.finish(cons.param, float64(require), float64(require))
 	}
 }
 
-func (cons buildConstraintForBasic) finishRows() {
-	for _, row := range cons.slotsOneEachRow {
-		row.finish()
+func (cons *buildConstraintForBasic) buildResultSet(solution *highs.Solution) items.SolvableItemSet {
+	itemSet := items.SolvableItemSet{}
+	for colIndex, variableResult := range solution.ColumnPrimal {
+		if variableResult == 1.0 {
+			entry := cons.itemLookup[colIndex]
+			itemSet.AddItem_DeferCalc_ExpectEmpty(entry.itemSlot, entry.item)
+		}
+	}
+	items.SolvableItemSet_RecalculateTotal(&itemSet)
+	return itemSet
+}
+
+type lookupEntryBasic struct {
+	itemSlot items.SlotEquip
+	item     *items.SolvableItem
+}
+
+type constraintRowSequential struct {
+	insertColumn  int
+	columnNumbers []int
+	values        []float64
+}
+
+func (row *constraintRowSequential) add(value float64) {
+	if value != 0.0 {
+		row.columnNumbers = append(row.columnNumbers, row.insertColumn)
+		row.values = append(row.values, value)
+	}
+	row.insertColumn++
+}
+
+func (row *constraintRowSequential) finish(param *highs.RawModel, lowerBound float64, upperBound float64) {
+	var err error
+	if len(row.values) > 0 {
+		err = param.AddCompSparseRows(
+			[]float64{lowerBound},
+			[]int{0},
+			row.columnNumbers,
+			row.values,
+			[]float64{upperBound},
+		)
+	} else {
+		// need to set an explicit zero value so array isn't empty
+		// i'd argue this is a bug in go/highs binding library,
+		// empty array should be acceptable to lower level code
+		// maybe these don't need to be added in many use cases though, automatically skipping seems risky
+		err = param.AddCompSparseRows(
+			[]float64{lowerBound},
+			[]int{0},
+			[]int{0},
+			[]float64{0.0},
+			[]float64{upperBound},
+		)
 	}
 
-	cons.requireSetCountsRow.finish()
-	cons.hitValueRow.finish()
-	cons.expertValueRow.finish()
+	if err != nil {
+		panic(err)
+	}
 }
