@@ -76,7 +76,7 @@ func (cons *buildConstraintForBasic) addItem(itemSlot items.SlotEquip, item *ite
 	}
 
 	// if this item belongs to target item set then flag with a 1
-	itemSet, _ := gear_model.SetBonus.ActiveSetForItem(item.ItemId())
+	itemSet := gear_model.SetBonus.ActiveSetForItem(item.ItemId())
 	if itemSet != nil && requiredSet != nil && itemSet.Equals(requiredSet) {
 		cons.requireSetCountsRow.add(1)
 	} else {
@@ -89,16 +89,18 @@ func (cons *buildConstraintForBasic) addItem(itemSlot items.SlotEquip, item *ite
 
 func (cons buildConstraintForBasic) finishItems(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requireSetCount util.Optional[int]) {
 	for slot, row := range cons.slotsOneEachRow {
-		if len(itemOptions[slot]) > 0 {
-			row.finish(cons.param, 1, 1)
+		if itemOptions.Has(items.SlotEquip(slot)) {
+			row.apply(cons.param, 1, 1)
+		} else {
+			row.apply(cons.param, 0, 0)
 		}
 	}
 
-	cons.hitValueRow.finish(cons.param, float64(gear_model.StatRequirements.HitMin()), float64(gear_model.StatRequirements.HitMax()))
-	cons.expertValueRow.finish(cons.param, float64(gear_model.StatRequirements.ExpertMin()), float64(gear_model.StatRequirements.ExpertMax()))
+	cons.hitValueRow.apply(cons.param, float64(gear_model.StatRequirements.HitMin()), float64(gear_model.StatRequirements.HitMax()))
+	cons.expertValueRow.apply(cons.param, float64(gear_model.StatRequirements.ExpertMin()), float64(gear_model.StatRequirements.ExpertMax()))
 
 	if require, hasRequire := requireSetCount.GetWithFlag(); hasRequire {
-		cons.requireSetCountsRow.finish(cons.param, float64(require), float64(require))
+		cons.requireSetCountsRow.apply(cons.param, float64(require), float64(require))
 	}
 }
 
@@ -117,47 +119,4 @@ func (cons *buildConstraintForBasic) buildResultSet(solution *highs.Solution) it
 type lookupEntryBasic struct {
 	itemSlot items.SlotEquip
 	item     *items.SolvableItem
-}
-
-type constraintRowSequential struct {
-	insertColumn  int
-	columnNumbers []int
-	values        []float64
-}
-
-func (row *constraintRowSequential) add(value float64) {
-	if value != 0.0 {
-		row.columnNumbers = append(row.columnNumbers, row.insertColumn)
-		row.values = append(row.values, value)
-	}
-	row.insertColumn++
-}
-
-func (row *constraintRowSequential) finish(param *highs.RawModel, lowerBound float64, upperBound float64) {
-	var err error
-	if len(row.values) > 0 {
-		err = param.AddCompSparseRows(
-			[]float64{lowerBound},
-			[]int{0},
-			row.columnNumbers,
-			row.values,
-			[]float64{upperBound},
-		)
-	} else {
-		// need to set an explicit zero value so array isn't empty
-		// i'd argue this is a bug in go/highs binding library,
-		// empty array should be acceptable to lower level code
-		// maybe these don't need to be added in many use cases though, automatically skipping seems risky
-		err = param.AddCompSparseRows(
-			[]float64{lowerBound},
-			[]int{0},
-			[]int{0},
-			[]float64{0.0},
-			[]float64{upperBound},
-		)
-	}
-
-	if err != nil {
-		panic(err)
-	}
 }

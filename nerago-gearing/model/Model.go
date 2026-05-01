@@ -52,6 +52,12 @@ func (model *Model) CalcRatingSolve(itemSet *SolvableItemSet) uint64 {
 	return uint64(baseRating * setRating)
 }
 
+func (model *Model) CalcRatingSolveAsFloat(itemSet *SolvableItemSet) float32 {
+	baseRating := model.StatRatings.CalcRatingFloat(itemSet.TotalRated())
+	setRating := model.SetBonus.CalcBonusSolve(itemSet.Items())
+	return baseRating * setRating
+}
+
 func (model *Model) CalcRatingFull(itemSet *FullItemSet) uint64 {
 	baseRating := model.StatRatings.CalcRatingFloat(itemSet.TotalRated())
 	setRating := model.SetBonus.CalcBonusFull(itemSet.Items())
@@ -76,7 +82,6 @@ func (model *Model) CalcRatingSolveItem(item *SolvableItem) uint64 {
 func (model *Model) CalcRatingSolveItemAsFloat(item *SolvableItem) float32 {
 	return model.StatRatings.CalcRatingFloat(item.TotalRated())
 }
-
 
 func (model *Model) CalcRatingGenericItem(item IItem) uint64 {
 	return model.StatRatings.CalcRatingInt(item.TotalRated())

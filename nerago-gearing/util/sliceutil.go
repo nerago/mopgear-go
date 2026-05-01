@@ -127,7 +127,7 @@ func PermuteAll[T any](sliceOfSlices [][]T) iter.Seq[[]T] {
 		next := make([][]T, 0, len(sliceOfSlices[index])*len(progress))
 		for _, item := range sliceOfSlices[index] {
 			for _, curr := range progress {
-				list := copyAndAppend(curr, item)
+				list := CopyAndAppend(curr, item)
 				next = append(next, list)
 			}
 		}
@@ -138,7 +138,7 @@ func PermuteAll[T any](sliceOfSlices [][]T) iter.Seq[[]T] {
 	return func(yield func([]T) bool) {
 		for _, item := range sliceOfSlices[index] {
 			for _, curr := range progress {
-				list := copyAndAppend(curr, item)
+				list := CopyAndAppend(curr, item)
 				if !yield(list) {
 					return
 				}
@@ -147,9 +147,10 @@ func PermuteAll[T any](sliceOfSlices [][]T) iter.Seq[[]T] {
 	}
 }
 
-func copyAndAppend[T any](curr []T, item T) []T {
+func CopyAndAppend[T any](curr []T, item T) []T {
 	list := make([]T, len(curr)+1)
 	copy(list, curr)
 	list[len(curr)] = item
 	return list
 }
+
