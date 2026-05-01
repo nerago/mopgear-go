@@ -10,14 +10,14 @@ import (
 )
 
 func RunBasic(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet gear_model.ActiveSet, requireSetCount util.Optional[int]) util.Optional[items.SolvableItemSet] {
-	constraints := buildConstraintForBasic{}
+	constraints := buildInputForBasic{}
 	constraints.init()
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
 		constraints.addItem(slot, item, gear_model, requiredSet)
 	}
 
-	constraints.vars.apply(constraints.param)
+	constraints.vars.applyToModel(constraints.param)
 	constraints.finishItems(itemOptions, gear_model, requireSetCount)
 
 	highs_model := constraints.param
@@ -35,7 +35,7 @@ func RunBasic(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Mode
 	return util.Optional_OfValue(result)
 }
 
-type buildConstraintForBasic struct {
+type buildInputForBasic struct {
 	param *highs.RawModel
 
 	vars variableArrayBuilder
@@ -48,7 +48,7 @@ type buildConstraintForBasic struct {
 	itemLookup []lookupEntryBasic
 }
 
-func (cons *buildConstraintForBasic) init() {
+func (cons *buildInputForBasic) init() {
 	cons.param = highs.NewRawModel()
 	err := cons.param.SetMaximization(true)
 	if err != nil {
@@ -56,7 +56,7 @@ func (cons *buildConstraintForBasic) init() {
 	}
 }
 
-func (cons *buildConstraintForBasic) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, gear_model *gear_model.Model, requiredSet gear_model.ActiveSet) {
+func (cons *buildInputForBasic) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, gear_model *gear_model.Model, requiredSet gear_model.ActiveSet) {
 	rating := float64(gear_model.CalcRatingSolveItemAsFloat(item))
 
 	// item version "boolean" (0 or 1)
@@ -87,24 +87,24 @@ func (cons *buildConstraintForBasic) addItem(itemSlot items.SlotEquip, item *ite
 	cons.itemLookup = append(cons.itemLookup, entry)
 }
 
-func (cons buildConstraintForBasic) finishItems(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requireSetCount util.Optional[int]) {
+func (cons buildInputForBasic) finishItems(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requireSetCount util.Optional[int]) {
 	for slot, row := range cons.slotsOneEachRow {
 		if itemOptions.Has(items.SlotEquip(slot)) {
-			row.apply(cons.param, 1, 1)
+			row.finish(cons.param, 1, 1)
 		} else {
-			row.apply(cons.param, 0, 0)
+			row.finish(cons.param, 0, 0)
 		}
 	}
 
-	cons.hitValueRow.apply(cons.param, float64(gear_model.StatRequirements.HitMin()), float64(gear_model.StatRequirements.HitMax()))
-	cons.expertValueRow.apply(cons.param, float64(gear_model.StatRequirements.ExpertMin()), float64(gear_model.StatRequirements.ExpertMax()))
+	cons.hitValueRow.finish(cons.param, float64(gear_model.StatRequirements.HitMin()), float64(gear_model.StatRequirements.HitMax()))
+	cons.expertValueRow.finish(cons.param, float64(gear_model.StatRequirements.ExpertMin()), float64(gear_model.StatRequirements.ExpertMax()))
 
 	if require, hasRequire := requireSetCount.GetWithFlag(); hasRequire {
-		cons.requireSetCountsRow.apply(cons.param, float64(require), float64(require))
+		cons.requireSetCountsRow.finish(cons.param, float64(require), float64(require))
 	}
 }
 
-func (cons *buildConstraintForBasic) buildResultSet(solution *highs.Solution) items.SolvableItemSet {
+func (cons *buildInputForBasic) buildResultSet(solution *highs.Solution) items.SolvableItemSet {
 	itemSet := items.SolvableItemSet{}
 	for colIndex, variableResult := range solution.ColumnPrimal {
 		if variableResult == 1.0 {

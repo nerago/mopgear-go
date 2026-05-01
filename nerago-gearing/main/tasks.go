@@ -10,6 +10,7 @@ import (
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver"
+	"paladin_gearing_go/solver/withhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/upgrades"
@@ -18,15 +19,31 @@ import (
 	"slices"
 )
 
-func basicReforge(itemOptions *items.FullOptionsMap, model *model.Model, printer *util.PrintRecorder) {
+func basicReforge(printer *util.PrintRecorder) {
+	itemOptions, model := setupPallyMitigationSet()
+
 	output := solver.Solver(solver.SolveInput{
-		ItemOptions:         itemOptions,
-		Model:               model,
+		ItemOptions:         &itemOptions,
+		Model:               &model,
 		PhasedAcceptable:    false,
 		EnableTrackProgress: true,
 		SolveSize:           solver.SolveSize_Long,
 		Printer:             nil})
 	output.Report(printer)
+}
+
+func checkHighs(printer *util.PrintRecorder) {
+	itemOptions, model := setupPallyMitigationSet()
+
+	solveOptions := items.SolvableOptionsMap_of(&itemOptions)
+	solvedSet := withhighs.RunAllActiveSets(&solveOptions, &model)
+
+	if solvedSet.IsEmpty() {
+		printer.Println("FAILED SOLVE")
+	} else {
+		fullItemSet := items.FullItemSet_FromSolved(solvedSet.GetOrPanic(), &itemOptions)
+		solver.ReportSet(printer, fullItemSet, model.CalcRatingFull(&fullItemSet), &model)
+	}
 }
 
 func testSim(printer *util.PrintRecorder) {
