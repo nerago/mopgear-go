@@ -60,7 +60,7 @@ func (cons *buildInputForBasic) addItem(itemSlot items.SlotEquip, item *items.So
 	rating := float64(gear_model.CalcRatingSolveItemAsFloat(item))
 
 	// item version "boolean" (0 or 1)
-	cons.vars.add(highs.IntegerType, 0, 1, rating)
+	cons.vars.create(highs.IntegerType, 0, 1, rating)
 
 	// specific hit/expertise values for hi/lo limits
 	cons.hitValueRow.add(float64(item.TotalCap().Hit()))

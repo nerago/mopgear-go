@@ -24,6 +24,11 @@ func floatEqualsOne(value float64) bool {
 	return 0.999999 <= value && value <= 1.000001
 }
 
+func floatsApproxEquals(a, b float64) bool {
+	ratio := a / b
+	return 0.99999 <= ratio && ratio <= 1.00001
+}
+
 type variableArrayBuilder struct {
 	ColTypes []highs.VariableType // Type of each model variable
 	ColCosts []float64            // Column costs (i.e., the objective function itself)
@@ -31,7 +36,7 @@ type variableArrayBuilder struct {
 	ColUpper []float64            // Column upper bounds
 }
 
-func (vars *variableArrayBuilder) add(varType highs.VariableType, lower, upper, cost float64) int {
+func (vars *variableArrayBuilder) create(varType highs.VariableType, lower, upper, cost float64) int {
 	index := len(vars.ColTypes)
 	vars.ColTypes = append(vars.ColTypes, varType)
 	vars.ColLower = append(vars.ColLower, lower)

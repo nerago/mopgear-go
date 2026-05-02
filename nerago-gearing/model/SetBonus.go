@@ -309,8 +309,14 @@ func (set setInfo) Equals(other ActiveSet) bool {
 }
 
 type ActiveSet interface {
+	Name() string
 	BonusForCount(uint8) float32
 	Equals(ActiveSet) bool
+
+}
+
+func (set setInfo) Name() string {
+	return set.name
 }
 
 func (set setInfo) BonusForCount(count uint8) float32 {

@@ -33,6 +33,10 @@ func (sb *StringBuild2) WriteRune(value rune) {
 	*sb = utf8.AppendRune(*sb, value)
 }
 
+func (sb *StringBuild2) WriteInt64(value int64) {
+	*sb = strconv.AppendInt(*sb, value, 10)
+}
+
 func (sb *StringBuild2) WriteUint64(value uint64) {
 	*sb = strconv.AppendUint(*sb, value, 10)
 }
