@@ -23,19 +23,24 @@ const (
 	white_tiger_battlegear_4      = 1024
 	white_tiger_battlegear_4_tank = 1035 // gives 2% to dps, a bit more overall
 
-	plate_lightning_bonus_2_miti  = 1013 // 1.3% bonus applies to death chance only, from sim
-	plate_lightning_bonus_4_miti  = 1050 // compromise number, it's situational after all
-	plate_lightning_bonus_4_dps   = 1027 // sim result for horridon h10, might not always apply
-	plate_lightning_bonus_4_death = 1250 // actual result of sim for horridon h10
+	plate_lightning_bonus_2_miti = 1013 // 1.3% bonus applies to death chance only, from sim, but other one is close anyway
+	plate_lightning_bonus_4_miti = 1040 // compromise number, it's situational after all. breakpoint where it makes up for stat weights is 1.028
+
+	plate_lightning_bonus_4_dps = 1010 // sim result for horridon h10 was 1.027 but higher than i believe in
 )
 
 func SetBonus_Named(names ...string) SetBonus {
 	sets := SetBonus{}
 	for _, name := range names {
+		found := false
 		for _, info := range g_setData {
 			if info.name == name {
 				sets.activeSets = append(sets.activeSets, info)
+				found = true
 			}
+		}
+		if !found {
+			panic("set not found " + name)
 		}
 	}
 	sets.initMap()
@@ -312,7 +317,6 @@ type ActiveSet interface {
 	Name() string
 	BonusForCount(uint8) float32
 	Equals(ActiveSet) bool
-
 }
 
 func (set setInfo) Name() string {

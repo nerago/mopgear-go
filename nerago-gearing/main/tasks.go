@@ -32,8 +32,30 @@ func basicReforge(printer *util.PrintRecorder) {
 	output.Report(printer)
 }
 
+var allSetItems = []items.ItemId{
+	95291, 95290, 96666, 96667, 96668, // prot tier15
+	95282, 95910, 95281, 96657, 96658, // ret tier15
+	87101, 87103, 87099, 87100, 87102, // prot tier14 (heroic versions)
+	87109, 87110, 87111, 87112, 87113, // ret tier14 (heroic versions)
+}
+
 func checkHighs(printer *util.PrintRecorder) {
+	// bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Mitigation", "Battlegear of the Lightning Emperor")
+	// bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Mitigation")
+	bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Damage")
+	// bonus := model.SetBonus_Empty()
+
 	itemOptions, model := setupPallyMitigationSet()
+	model.SetBonus = bonus
+
+	extraItemsCombined := slices.Concat(substituteItemsMiti, allSetItems)
+
+	for _, itemId := range extraItemsCombined {
+		if !itemOptions.IncludesItemId(itemId) {
+			opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
+			itemOptions.AddSeveralOptions(example.Slot, opts)
+		}
+	}
 
 	solveOptions := items.SolvableOptionsMap_of(&itemOptions)
 	solvedSet := withhighs.RunAllActiveSets(&solveOptions, &model)

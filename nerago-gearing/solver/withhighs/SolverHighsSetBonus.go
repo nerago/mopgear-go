@@ -134,21 +134,21 @@ type setWithCount struct {
 func (cons *buildInputsForSetBonus) prepareActiveSets(gear_model *gear_model.Model) {
 	// constrain: exact item count in each active set
 	activeSets := gear_model.SetBonus.ActiveSets()
-	if len(activeSets) == 0 {
-		panic("shouldn't be in this solver without active sets")
-	}
+	if len(activeSets) > 0 {
+		cons.setData = make([]setInfo, len(activeSets))
+		for setIndex, set := range activeSets {
+			info := setInfo{activeSet: set, setIndex: setIndex}
+			cons.addSetItemCountVariable(&info)
+			cons.addSetItemsCountExactVariables(&info)
+			cons.setData[setIndex] = info
+		}
 
-	cons.setData = make([]setInfo, len(activeSets))
-	for setIndex, set := range activeSets {
-		info := setInfo{activeSet: set, setIndex: setIndex}
-		cons.addSetItemCountVariable(&info)
-		cons.addSetItemsCountExactVariables(&info)
-		cons.setData[setIndex] = info
-	}
-
-	allSetPermutation := makeSetPermutations(cons.setData)
-	for _, permutation := range allSetPermutation {
-		cons.buildSetMultipliedOutput(permutation)
+		allSetPermutation := makeSetPermutations(cons.setData)
+		for _, permutation := range allSetPermutation {
+			cons.buildSetMultipliedOutput(permutation)
+		}
+	} else {
+		cons.buildSimpleNoSetsOutput()
 	}
 }
 
@@ -158,6 +158,20 @@ const (
 	c_ratings_low_range  = 10000000.0
 	c_ratings_high_range = 1000000000.0
 )
+
+func (cons *buildInputsForSetBonus) buildSimpleNoSetsOutput() {
+	// just used when we have zero sets
+	totalWeight := 1.0
+	columnIndex := cons.vars.create(highs.ContinuousType, c_minusInf, c_plusInf, totalWeight)
+
+	equalTotal := constraintRowBuild{}
+	equalTotal.add(columnIndex, -1)
+	equalTotal.add(cons.baseRatingSumVar.columnIndex, 1)
+	equalTotal.finish(&cons.mat, 0, 0)
+
+	entry := columnInfo{entryType: entry_permutation_output_weighted, columnIndex: columnIndex, permutation: &setPermutation{}, weight: totalWeight}
+	cons.allColumns = append(cons.allColumns, entry)
+}
 
 func (cons *buildInputsForSetBonus) buildSetMultipliedOutput(permutation setPermutation) {
 	outputVar := cons.buildSetWeightedOutputVar(permutation)

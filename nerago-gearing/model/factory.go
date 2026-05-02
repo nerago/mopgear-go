@@ -60,7 +60,7 @@ func Model_PallyProtCompromise() Model {
 		ReforgeRules:     ReforgeRules_tank,
 		EnchantChoice:    EnchantChoice_ForSpec(spec),
 		GemChoice:        GemChoice_ForSpec(spec),
-		SetBonus:         SetBonus_Empty(),
+		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Damage"),
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,
