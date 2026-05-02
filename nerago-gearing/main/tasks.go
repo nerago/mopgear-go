@@ -37,6 +37,7 @@ func checkHighs(printer *util.PrintRecorder) {
 
 	solveOptions := items.SolvableOptionsMap_of(&itemOptions)
 	solvedSet := withhighs.RunAllActiveSets(&solveOptions, &model)
+	// solvedSet := withhighs.RunBasic(&solveOptions, &model, nil, util.Optional_Empty[int]())
 
 	if solvedSet.IsEmpty() {
 		printer.Println("FAILED SOLVE")

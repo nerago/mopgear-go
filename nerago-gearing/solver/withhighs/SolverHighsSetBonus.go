@@ -12,6 +12,7 @@ import (
 
 func RunAllActiveSets(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model) util.Optional[items.SolvableItemSet] {
 	constraints := buildInputsForSetBonus{}
+
 	constraints.addSumRatingVariable()
 	constraints.prepareActiveSets(gear_model)
 
@@ -65,7 +66,7 @@ func debugPrint(solution *highs.RawSolution, cons *buildInputsForSetBonus) {
 			case entry_permutation_active:
 				fmt.Println(columnIndex, outputValue, "permutation active", colEntry.permutation.debugStr())
 			case entry_permutation_output_weighted:
-				fmt.Println(columnIndex, outputValue, "permutation weighted output", colEntry.permutation.debugStr())
+				fmt.Println(columnIndex, outputValue, "permutation weighted output", colEntry.permutation.debugStr(), colEntry.weight)
 			}
 		} else {
 			fmt.Println(columnIndex, outputValue, "NOT FOUND???")
@@ -78,13 +79,13 @@ type buildInputsForSetBonus struct {
 	mat  constraintMatrixBuilder
 	vars variableArrayBuilder
 
-	slotsOneEachRow [16]constraintRowSparse // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
+	slotsOneEachRow [16]constraintRowBuild // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
 
-	hitValueRow    constraintRowSparse // constrains values for the hits of each item
-	expertValueRow constraintRowSparse // constrains values for the expertise of each item
+	hitValueRow    constraintRowBuild // constrains values for the hits of each item
+	expertValueRow constraintRowBuild // constrains values for the expertise of each item
 
-	baseRatingSumRow constraintRowSparse // values for the ratings of each item
-	baseRatingSumVar columnInfo          // sum of values for the ratings of selected items
+	baseRatingSumRow constraintRowBuild // values for the ratings of each item
+	baseRatingSumVar *columnInfo        // sum of values for the ratings of selected items
 
 	setData []setInfo
 
@@ -95,7 +96,7 @@ type buildInputsForSetBonus struct {
 func (cons *buildInputsForSetBonus) toHighsModel() *highs.RawModel {
 	model := highs.NewRawModel()
 
-	model.SetStringOption("presolve", "off")
+	// model.SetStringOption("presolve", "off")
 	model.SetBoolOption("log_to_console", true)
 	model.SetIntOption("log_dev_level", 3)
 
@@ -153,7 +154,7 @@ func (cons *buildInputsForSetBonus) prepareActiveSets(gear_model *gear_model.Mod
 
 const (
 	// example rating      178237915
-    //                     187513497
+	//                     187513497
 	c_ratings_low_range  = 10000000.0
 	c_ratings_high_range = 1000000000.0
 )
@@ -161,20 +162,20 @@ const (
 func (cons *buildInputsForSetBonus) buildSetMultipliedOutput(permutation setPermutation) {
 	outputVar := cons.buildSetWeightedOutputVar(permutation)
 	activatingBool := cons.buildPermutationActivatingVar(permutation)
-	
+
 	contraintIfBoolCopyValueElseZero(&cons.mat, activatingBool, cons.baseRatingSumVar.columnIndex, outputVar, c_ratings_low_range, c_ratings_high_range)
 }
 
 func (cons *buildInputsForSetBonus) buildSetWeightedOutputVar(permutation setPermutation) int {
-	totalMultiplier := 1.0
+	totalWeight := 1.0
 	for _, setAndCount := range permutation.content {
 		bonusForCount := setAndCount.setInfo.activeSet.BonusForCount(uint8(setAndCount.count))
-		totalMultiplier *= float64(bonusForCount)
+		totalWeight *= float64(bonusForCount)
 	}
 
 	// the actual output variable from this permutation, applies relevant set related multipliers
-	columnIndex := cons.vars.create(highs.ContinuousType, c_minusInf, c_plusInf, totalMultiplier)
-	entry := columnInfo{entryType: entry_permutation_output_weighted, columnIndex: columnIndex, permutation: permutation}
+	columnIndex := cons.vars.create(highs.ContinuousType, c_minusInf, c_plusInf, totalWeight)
+	entry := columnInfo{entryType: entry_permutation_output_weighted, columnIndex: columnIndex, permutation: &permutation, weight: totalWeight}
 	cons.allColumns = append(cons.allColumns, entry)
 	return columnIndex
 }
@@ -196,7 +197,7 @@ func (cons *buildInputsForSetBonus) buildPermutationActivatingVar(permutation se
 
 	buildAnd.finishAndApply(&cons.mat)
 
-	entry := columnInfo{entryType: entry_permutation_active, columnIndex: permutationActiveBool, permutation: permutation}
+	entry := columnInfo{entryType: entry_permutation_active, columnIndex: permutationActiveBool, permutation: &permutation}
 	cons.allColumns = append(cons.allColumns, entry)
 
 	return permutationActiveBool
@@ -233,17 +234,17 @@ func (cons *buildInputsForSetBonus) addSetItemCountVariable(info *setInfo) {
 
 	// save reference
 	entry := columnInfo{entryType: entry_set_total_count, columnIndex: columnIndex, set: info.activeSet}
-	info.setTotalCountVar = entry
+	info.setTotalCountVar = &entry
 	cons.allColumns = append(cons.allColumns, entry)
 }
 
 func (cons *buildInputsForSetBonus) addSetItemsCountExactVariables(info *setInfo) {
 	// compare total number of items previous computed into this constraint
-	compareRow := constraintRowSparse{}
+	compareRow := constraintRowBuild{}
 	compareRow.add(info.setTotalCountVar.columnIndex, -1)
 
 	// constraint so only one of these flags gets set
-	singleFlagOnly := constraintRowSparse{}
+	singleFlagOnly := constraintRowBuild{}
 
 	// make a bool for each possible count in range 0..5
 	for itemCount := 0; itemCount <= c_maxSetItems; itemCount++ {
@@ -274,7 +275,7 @@ func (cons *buildInputsForSetBonus) addSumRatingVariable() {
 
 	// save reference
 	entry := columnInfo{entryType: entry_sum_rating, columnIndex: columnIndex}
-	cons.baseRatingSumVar = entry
+	cons.baseRatingSumVar = &entry
 	cons.allColumns = append(cons.allColumns, entry)
 }
 
@@ -363,18 +364,20 @@ type columnInfo struct {
 	entryType   entryType
 	columnIndex int
 
-	itemSlot    items.SlotEquip
-	item        *items.SolvableItem
+	itemSlot items.SlotEquip
+	item     *items.SolvableItem
+
 	set         gear_model.ActiveSet
-	permutation setPermutation
 	itemCount   int
+	permutation *setPermutation
+	weight      float64
 }
 
 type setInfo struct {
 	activeSet gear_model.ActiveSet
 	setIndex  int
 
-	countSetItemsRow    constraintRowSparse          // use to count items used from this set, has 1 or 0 flags
-	setTotalCountVar  columnInfo                   // total count of items used
+	countSetItemsRow  constraintRowBuild           // use to count items used from this set, has 1 or 0 flags
+	setTotalCountVar  *columnInfo                  // total count of items used
 	setExactCountVars [c_setItemsCounts]columnInfo // specific bools for different counts
 }

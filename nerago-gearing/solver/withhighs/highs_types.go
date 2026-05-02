@@ -62,40 +62,22 @@ func (vars variableArrayBuilder) applyToModel(param *highs.RawModel) {
 	}
 }
 
-type constraintRowSequential struct {
-	insertColumn  int
-	columnNumbers []int
-	values        []float64
-}
-
-func (row *constraintRowSequential) add(value float64) {
-	if value != 0.0 {
-		row.columnNumbers = append(row.columnNumbers, row.insertColumn)
-		row.values = append(row.values, value)
-	}
-	row.insertColumn++
-}
-
-func (row *constraintRowSequential) finish(param *highs.RawModel, lowerBound float64, upperBound float64) {
-	applyRowData(param, row.values, row.columnNumbers, lowerBound, upperBound)
-}
-
 type indexAndValue struct {
 	columnNumber int
 	value        float64
 }
 
-type constraintRowSparse struct {
+type constraintRowBuild struct {
 	entries []indexAndValue
 }
 
-func (row *constraintRowSparse) add(columnIndex int, value float64) {
+func (row *constraintRowBuild) add(columnIndex int, value float64) {
 	if value != 0.0 {
 		row.entries = append(row.entries, indexAndValue{columnIndex, value})
 	}
 }
 
-func (row *constraintRowSparse) finish(build *constraintMatrixBuilder, lowerBound float64, upperBound float64) {
+func (row *constraintRowBuild) finish(build *constraintMatrixBuilder, lowerBound float64, upperBound float64) {
 	// couldn't find reference for sure that indexes need to be sorted but probably best
 	slices.SortFunc(row.entries, func(a, b indexAndValue) int { return cmp.Compare(a.columnNumber, b.columnNumber) })
 
