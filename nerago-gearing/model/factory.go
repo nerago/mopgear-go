@@ -20,7 +20,7 @@ func Model_PallyProtMitigation_WithSet() Model {
 		ReforgeRules:     ReforgeRules_tank,
 		EnchantChoice:    EnchantChoice_ForSpec(spec),
 		GemChoice:        GemChoice_ForSpec(spec),
-		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Mitigation"),
+		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor"),
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,

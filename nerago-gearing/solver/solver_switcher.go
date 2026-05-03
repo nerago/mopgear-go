@@ -127,7 +127,7 @@ func (output *SolveOutput) Report(printer *util.PrintRecorder) {
 
 func ReportSet(printer *util.PrintRecorder, fullSet items.FullItemSet, rating uint64, modelObj *model.Model) {
 	printer.Printf("SET rating %d\n", rating)
-	printer.Printf("BONUSES POSSIBLE %s\n", model.AllBonusesText(fullSet.Items()))
+	printer.Printf("BONUS counts %s\n", model.AllBonusesText(fullSet.Items()))
 	printer.Printf("BONUS multiply %f\n", modelObj.SetBonus.CalcBonusFull(fullSet.Items()))
 	fullSet.PrintStats(printer)
 	printEquipMap(fullSet.Items(), printer)

@@ -282,7 +282,7 @@ func (job *MultiSetJob) prepareRatingMultipliers() {
 }
 
 func (param *multiSetParamInternal) prepareRatingMultiplier() {
-	var targetCombined float64 = 1000000000000000000.0
+	var targetCombined float64 = 100000000000000.0
 	baselineRating := float64(param.baselineResult.ResultRating)
 	if baselineRating > targetCombined/100.0 {
 		panic("need bigger ratings")
@@ -292,5 +292,9 @@ func (param *multiSetParamInternal) prepareRatingMultiplier() {
 	multiplyRatingsBy := targetForThis / baselineRating
 	param.ratingMultiply = uint64(math.Round(multiplyRatingsBy))
 
-	param.job.printer.Printf("MULTIPLIERS %s base=%d mult=%d value=%d\n", param.Label, param.baselineResult.ResultRating, param.ratingMultiply, uint64(math.Round(baselineRating*float64(param.ratingMultiply))))
+	param.job.printer.Printf("MULTIPLIERS %s base=%d mult=%d value=%d percent=%.2f\n",
+		param.Label, param.baselineResult.ResultRating, param.ratingMultiply,
+		uint64(math.Round(baselineRating*float64(param.ratingMultiply))),
+		baselineRating*float64(param.ratingMultiply)/targetCombined*100,
+	)
 }

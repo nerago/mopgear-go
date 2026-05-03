@@ -24,7 +24,8 @@ const (
 	white_tiger_battlegear_4_tank = 1035 // gives 2% to dps, a bit more overall
 
 	plate_lightning_bonus_2_miti = 1013 // 1.3% bonus applies to death chance only, from sim, but other one is close anyway
-	plate_lightning_bonus_4_miti = 1040 // compromise number, it's situational after all. breakpoint where it makes up for stat weights is 1.028
+	// plate_lightning_bonus_4_miti = 1040 // compromise number, it's situational after all. breakpoint where it makes up for stat weights is 1.028
+	plate_lightning_bonus_4_miti = 1030 // TODO think that might have been sepearate from bonus2?
 
 	plate_lightning_bonus_4_dps = 1010 // sim result for horridon h10 was 1.027 but higher than i believe in
 )

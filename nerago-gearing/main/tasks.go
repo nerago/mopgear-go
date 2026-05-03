@@ -68,6 +68,7 @@ func checkHighs(printer *util.PrintRecorder) {
 	}
 
 	solveOptions := items.SolvableOptionsMap_of(&itemOptions)
+	// solvedSet := withhighs.RunSingleAcrossSets_ReturnBest(&solveOptions, &model, printer)
 	solvedSet := withhighs.RunAllActiveSets(&solveOptions, &model)
 	// solvedSet := withhighs.RunBasic(&solveOptions, &model, nil, util.Optional_Empty[int]())
 
@@ -124,9 +125,10 @@ func checkHighsAcross(printer *util.PrintRecorder) {
 	}
 
 	solveOptions := items.SolvableOptionsMap_of(&itemOptions)
-	solvedSetList := withhighs.RunBasicAcrossSets_ReturnAll(&solveOptions, &model, printer)
+	solvedSetList := withhighs.RunSingleAcrossSets_ReturnAll(&solveOptions, &model, printer)
 	// solvedSet := withhighs.RunBasic(&solveOptions, &model, nil, util.Optional_Empty[int]())
 
+	printer.Println("[[[[[[[ highs SOLVE ]]]]]]]")
 	for _, solvedSet := range solvedSetList {
 		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &itemOptions)
 		fullItemSet.DebugValidate()

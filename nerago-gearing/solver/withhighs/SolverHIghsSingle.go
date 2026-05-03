@@ -9,10 +9,12 @@ import (
 	"github.com/lanl/highs"
 )
 
-func RunBasic(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet gear_model.ActiveSet, requireSetCount util.Optional[int]) util.Optional[items.SolvableItemSet] {
+type RequiredSetCounts map[gear_model.ActiveSet]int
+
+func RunSingle(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet RequiredSetCounts) util.Optional[items.SolvableItemSet] {
 	inputBuilder := inputBuilder{}
 
-	inputs := setupBasicConstraint(&inputBuilder, itemOptions, gear_model, requiredSet, requireSetCount)
+	inputs := setupBasicConstraint(&inputBuilder, itemOptions, gear_model, requiredSet)
 	if inputs == nil {
 		return util.Optional_Empty[items.SolvableItemSet]()
 	}
@@ -24,27 +26,28 @@ func RunBasic(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Mode
 		panic(err)
 	}
 
-	for i, x := range solution.ColumnPrimal {
-		fmt.Println(i, x)
-	}
+	// for i, x := range solution.ColumnPrimal {
+	// 	fmt.Println(i, x)
+	// }
 
 	if solution.Status != highs.Optimal && solution.Status != highs.ObjectiveBound && solution.Status != highs.ObjectiveTarget {
 		return util.Optional_Empty[items.SolvableItemSet]()
 	}
 
 	result := inputs.buildResultSet(&solution.Solution, itemOptions, gear_model)
-	checkSetBonusMet(&result, requiredSet, requireSetCount)
+	checkSetBonusMet(&result, requiredSet)
 	return util.Optional_OfValue(result)
 }
 
-func setupBasicConstraint(inputBuilder *inputBuilder, itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet gear_model.ActiveSet, requireSetCount util.Optional[int]) *setupInputForBasic {
+func setupBasicConstraint(inputBuilder *inputBuilder, itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet RequiredSetCounts) *setupInputForBasic {
 	inputs := setupInputForBasic{input: inputBuilder}
+	inputs.prepareRequiredSets(requiredSet)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
-		inputs.addItem(slot, item, gear_model, requiredSet)
+		inputs.addItem(slot, item, gear_model)
 	}
 
-	if inputs.finishItems(itemOptions, gear_model, requireSetCount) {
+	if inputs.finishItems(itemOptions, gear_model, requiredSet) {
 		return &inputs
 	} else {
 		return nil
@@ -54,15 +57,24 @@ func setupBasicConstraint(inputBuilder *inputBuilder, itemOptions *items.Solvabl
 type setupInputForBasic struct {
 	input *inputBuilder
 
-	slotsOneEachRow     [16]constraintRowBuild // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
-	requireSetCountsRow constraintRowBuild     // if requireSetCount then constrain set count to match
-	hitValueRow         constraintRowBuild     // values for the hits of each item
-	expertValueRow      constraintRowBuild     // values for the expertise of each item
+	slotsOneEachRow [16]constraintRowBuild                       // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
+	requireSetRows  map[gear_model.ActiveSet]*constraintRowBuild // if requireSetCount then constrain set count to match
+	hitValueRow     constraintRowBuild                           // values for the hits of each item
+	expertValueRow  constraintRowBuild                           // values for the expertise of each item
 
 	itemLookup []lookupEntryBasic
 }
 
-func (setup *setupInputForBasic) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, model *gear_model.Model, requiredSet gear_model.ActiveSet) {
+func (setup *setupInputForBasic) prepareRequiredSets(requiredSet RequiredSetCounts) {
+	if requiredSet != nil {
+		setup.requireSetRows = make(map[gear_model.ActiveSet]*constraintRowBuild)
+		for set := range requiredSet {
+			setup.requireSetRows[set] = &constraintRowBuild{}
+		}
+	}
+}
+
+func (setup *setupInputForBasic) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, model *gear_model.Model) {
 	rating := float64(model.CalcRatingSolveItemAsFloat(item))
 
 	// item version "boolean" (0 or 1)
@@ -80,15 +92,17 @@ func (setup *setupInputForBasic) addItem(itemSlot items.SlotEquip, item *items.S
 	}
 
 	// if this item belongs to target item set then flag with a 1
-	if requiredSet != nil && requiredSet.ContainsItem(item.ItemId()) {
-		setup.requireSetCountsRow.add(columnIndex, 1)
+	for set, row := range setup.requireSetRows {
+		if set.ContainsItem(item.ItemId()) {
+			row.add(columnIndex, 1)
+		}
 	}
 
 	entry := lookupEntryBasic{itemSlot, item}
 	setup.itemLookup = append(setup.itemLookup, entry)
 }
 
-func (setup *setupInputForBasic) finishItems(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requireSetCount util.Optional[int]) bool {
+func (setup *setupInputForBasic) finishItems(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet RequiredSetCounts) bool {
 	for slot, row := range setup.slotsOneEachRow {
 		if itemOptions.Has(items.SlotEquip(slot)) {
 			row.finish(setup.input, 1, 1)
@@ -102,11 +116,9 @@ func (setup *setupInputForBasic) finishItems(itemOptions *items.SolvableOptionsM
 	setup.hitValueRow.finish(setup.input, float64(gear_model.StatRequirements.HitMin()), float64(gear_model.StatRequirements.HitMax()))
 	setup.expertValueRow.finish(setup.input, float64(gear_model.StatRequirements.ExpertMin()), float64(gear_model.StatRequirements.ExpertMax()))
 
-	if require, hasRequire := requireSetCount.GetWithFlag(); hasRequire {
-		if setup.requireSetCountsRow.isEmpty() && require > 0 {
-			return false
-		}
-		setup.requireSetCountsRow.finish(setup.input, float64(require), float64(require))
+	for set, requireCount := range requiredSet {
+		row := setup.requireSetRows[set]
+		row.finish(setup.input, float64(requireCount), float64(requireCount))
 	}
 
 	return true
@@ -144,16 +156,16 @@ func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOp
 	}
 }
 
-func checkSetBonusMet(solvableItemSet *items.SolvableItemSet, requiredSet gear_model.ActiveSet, requireSetCount util.Optional[int]) {
-	if require, hasRequire := requireSetCount.GetWithFlag(); hasRequire {
+func checkSetBonusMet(solvableItemSet *items.SolvableItemSet, requiredSet RequiredSetCounts) {
+	for set, requireCount := range requiredSet {
 		actualCount := 0
 		for item := range solvableItemSet.Items().AllItemSeq() {
-			if requiredSet.ContainsItem(item.ItemId()) {
+			if set.ContainsItem(item.ItemId()) {
 				actualCount++
 			}
 		}
 
-		if actualCount != require {
+		if actualCount != requireCount {
 			panic("didn't add correct number of set items")
 		}
 	}

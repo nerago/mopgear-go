@@ -166,7 +166,7 @@ const (
 	// example rating      178237915
 	//                     187513497
 	c_ratings_low_range  = 10000000.0
-	c_ratings_high_range = 1000000000.0
+	c_ratings_high_range = 100000000000.0
 )
 
 func (setup *setupInputsForSetBonus) buildSimpleNoSetsOutput() {

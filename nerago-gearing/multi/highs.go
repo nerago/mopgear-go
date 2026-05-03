@@ -46,9 +46,13 @@ func (job *MultiSetJob) makeOutputFromHighs(setResults []items.FullItemSet) mult
 		totalRatingSum += single.resultRating * param.ratingMultiply
 	}
 
-	combo := job.determineComboFromScratch(outputs, comboType_highs)
-	proposed := multiProposedOutput{uuid.NewString(), totalRatingSum, outputs, combo}
-	return proposed
+	if checkNoConflicts(outputs) {
+		combo := job.determineComboFromScratch(outputs, comboType_highs)
+		proposed := multiProposedOutput{uuid.NewString(), totalRatingSum, outputs, combo}
+		return proposed
+	} else {
+		panic("conflicted items")
+	}
 }
 
 func (job *MultiSetJob) FindSeveralHighsAndSim(runSize simulate.WowSim_RunSize) {

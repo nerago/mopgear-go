@@ -56,9 +56,16 @@ func (input *inputBuilder) addRow(entries []indexAndValue, lowerBound float64, u
 func (input *inputBuilder) toHighsModel() *highs.RawModel {
 	model := highs.NewRawModel()
 
-	// model.SetStringOption("presolve", "off")
+	model.SetStringOption("presolve", "off")
 	model.SetBoolOption("log_to_console", true)
 	model.SetIntOption("log_dev_level", 3)
+
+	// tempFile, err := os.CreateTemp("", "highslog")
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// tempFile.Close()
+	// model.SetStringOption("log_file", tempFile.Name())
 
 	err := model.SetMaximization(true)
 	if err != nil {
