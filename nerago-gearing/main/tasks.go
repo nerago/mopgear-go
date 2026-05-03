@@ -41,21 +41,29 @@ var allSetItems = []items.ItemId{
 
 func checkHighs(printer *util.PrintRecorder) {
 	// bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Mitigation", "Battlegear of the Lightning Emperor")
-	bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Mitigation")
+	// bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Mitigation")
 	// bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Damage")
 	// bonus := model.SetBonus_Named( "Plate of the Lightning Emperor Prot Damage", "White Tiger Plate")
 	// bonus := model.SetBonus_Named( "Plate of the Lightning Emperor Prot Damage")
 	// bonus := model.SetBonus_Empty()
 
-	itemOptions, model := setupPallyMitigationSet()
-	model.SetBonus = bonus
+	// itemOptions, model := setupPallyMitigationSet()
+	// model.SetBonus = bonus
+
+	model := model.Model_PallyRet()
+	// model.SetBonus = bonus
+	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileRet, &model, setup.MissingEnchant_Panic, printer)
 
 	extraItemsCombined := slices.Concat(substituteItemsMiti, allSetItems)
 
 	for _, itemId := range extraItemsCombined {
 		if !itemOptions.IncludesItemId(itemId) {
 			opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
-			itemOptions.AddSeveralOptions(example.Slot, opts)
+			for _, slotEquip := range example.Slot.ToSlotEquipOptions() {
+				if itemOptions.Has(slotEquip) {
+					itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)
+				}
+			}
 		}
 	}
 
@@ -63,11 +71,13 @@ func checkHighs(printer *util.PrintRecorder) {
 	solvedSet := withhighs.RunAllActiveSets(&solveOptions, &model)
 	// solvedSet := withhighs.RunBasic(&solveOptions, &model, nil, util.Optional_Empty[int]())
 
-
+	var fullItemSet items.FullItemSet
 	if solvedSet.IsEmpty() {
 		printer.Println("FAILED SOLVE")
 	} else {
-		fullItemSet := items.FullItemSet_FromSolved(solvedSet.GetOrPanic(), &itemOptions)
+		fullItemSet = items.FullItemSet_FromSolved(solvedSet.GetOrPanic(), &itemOptions)
+		fullItemSet.DebugValidate()
+		fullItemSet.ValidateItemRules()
 		solver.ReportSet(printer, fullItemSet, model.CalcRatingFull(&fullItemSet), &model)
 	}
 
@@ -75,12 +85,54 @@ func checkHighs(printer *util.PrintRecorder) {
 	compareSolveOuput := solver.Solver(solver.SolveInput{
 		ItemOptions:         &itemOptions,
 		Model:               &model,
-		PhasedAcceptable:    false,
+		PhasedAcceptable:    true,
 		EnableTrackProgress: true,
 		SolveSize:           solver.SolveSize_Medium,
 		Printer:             util.PrintRecorder_HoldAll(),
 	})
 	compareSolveOuput.Report(printer)
+
+	printer.Printf("ratio of results %d %d %f\n", model.CalcRatingFull(&fullItemSet), model.CalcRatingFull(&compareSolveOuput.FullSet), float64(model.CalcRatingFull(&fullItemSet))/float64(model.CalcRatingFull(&compareSolveOuput.FullSet)))
+}
+
+func checkHighsAcross(printer *util.PrintRecorder) {
+	// bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Mitigation", "Battlegear of the Lightning Emperor")
+	// bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Mitigation")
+	// bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Damage")
+	// bonus := model.SetBonus_Named( "Plate of the Lightning Emperor Prot Damage", "White Tiger Plate")
+	// bonus := model.SetBonus_Named( "Plate of the Lightning Emperor Prot Damage")
+	// bonus := model.SetBonus_Empty()
+
+	// itemOptions, model := setupPallyMitigationSet()
+	// model.SetBonus = bonus
+
+	model := model.Model_PallyRet()
+	// model.SetBonus = bonus
+	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileRet, &model, setup.MissingEnchant_Panic, printer)
+
+	extraItemsCombined := slices.Concat(substituteItemsMiti, allSetItems)
+
+	for _, itemId := range extraItemsCombined {
+		if !itemOptions.IncludesItemId(itemId) {
+			opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
+			for _, slotEquip := range example.Slot.ToSlotEquipOptions() {
+				if itemOptions.Has(slotEquip) {
+					itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)
+				}
+			}
+		}
+	}
+
+	solveOptions := items.SolvableOptionsMap_of(&itemOptions)
+	solvedSetList := withhighs.RunBasicAcrossSets_ReturnAll(&solveOptions, &model, printer)
+	// solvedSet := withhighs.RunBasic(&solveOptions, &model, nil, util.Optional_Empty[int]())
+
+	for _, solvedSet := range solvedSetList {
+		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &itemOptions)
+		fullItemSet.DebugValidate()
+		fullItemSet.ValidateItemRules()
+		solver.ReportSet(printer, fullItemSet, model.CalcRatingFull(&fullItemSet), &model)
+	}
 }
 
 func testSim(printer *util.PrintRecorder) {

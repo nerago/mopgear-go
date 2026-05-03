@@ -19,9 +19,12 @@ var (
 	c_plusInf  = math.Inf(1)
 )
 
-// not sure if necessary but I don't trust floats
 func floatEqualsOne(value float64) bool {
 	return 0.999999 <= value && value <= 1.000001
+}
+
+func floatEqualsZero(value float64) bool {
+	return -0.000001 <= value && value <= 0.000001
 }
 
 func floatsApproxEquals(a, b float64) bool {
@@ -64,6 +67,7 @@ func (input *inputBuilder) toHighsModel() *highs.RawModel {
 
 	input.vars.applyToModel(model)
 	input.mat.finishAndApplyToModelEfficient(model)
+	// input.mat.finishAndApplyToModelSlow(model)
 
 	return model
 }
@@ -110,6 +114,14 @@ type constraintRowBuild struct {
 	entries []indexAndValue
 }
 
+func (row *constraintRowBuild) isEmpty() bool {
+	return len(row.entries) == 0
+}
+
+func (row *constraintRowBuild) hasValues() bool {
+	return len(row.entries) > 0
+}
+
 func (row *constraintRowBuild) add(columnIndex int, value float64) {
 	if value != 0.0 {
 		row.entries = append(row.entries, indexAndValue{columnIndex, value})
@@ -143,10 +155,16 @@ func (mat *constraintMatrixBuilder) finishAndApplyToModelSlow(param *highs.RawMo
 
 func (mat *constraintMatrixBuilder) finishAndApplyToModelEfficient(param *highs.RawModel) {
 	numRows := len(mat.entries)
+	if len(mat.lowerBound) != numRows || len(mat.upperBound) != numRows {
+		panic("inconsistent row count")
+	}
 
 	valueCount := 0
 	for i := range numRows {
 		valueCount += len(mat.entries[i])
+	}
+	if valueCount == 0 {
+		panic("completely empty model")
 	}
 
 	startArray := make([]int, numRows)
@@ -154,6 +172,7 @@ func (mat *constraintMatrixBuilder) finishAndApplyToModelEfficient(param *highs.
 	valuesArray := make([]float64, valueCount)
 
 	insertIndex := 0
+
 	for rowNum, rowEntries := range mat.entries {
 		startArray[rowNum] = insertIndex
 

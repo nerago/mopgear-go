@@ -2,8 +2,8 @@ package model
 
 import (
 	"iter"
+	"paladin_gearing_go/items"
 	. "paladin_gearing_go/items"
-	"paladin_gearing_go/model/modelassem"
 	. "paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
@@ -137,73 +137,9 @@ func (sets *SetBonus) CalcBonusSolve(equip *SolvableEquipMap) float32 {
 		return value
 	}
 }
-func (sets *SetBonus) CalcBonusSolveC0(equip *SolvableEquipMap) float32 {
-	numSets := len(sets.activeSets)
-	switch numSets {
-	case 0:
-		return 1
-	case 1:
-		var count uint8
-		incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Head])
-		incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Shoulder])
-		incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Chest])
-		incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Hand])
-		incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Leg])
-		return sets.activeFlatBonuses[count]
-	default:
-		var counts [10]uint8
-		addToSpecificSet(&counts, sets.itemToSet, equip[Equip_Head])
-		addToSpecificSet(&counts, sets.itemToSet, equip[Equip_Shoulder])
-		addToSpecificSet(&counts, sets.itemToSet, equip[Equip_Chest])
-		addToSpecificSet(&counts, sets.itemToSet, equip[Equip_Hand])
-		addToSpecificSet(&counts, sets.itemToSet, equip[Equip_Leg])
-		var value float32 = 1.0
-		for index := range sets.activeSets {
-			value *= sets.activeFlatBonuses[uint8(index)*6+counts[index+1]]
-		}
-		return value
-	}
-}
-func (sets *SetBonus) CalcBonusSolveC(equip *SolvableEquipMap) float32 {
-	numSets := len(sets.activeSets)
-	switch numSets {
-	case 0:
-		return 1
-	case 1:
-		var count uint8
-		incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Head])
-		incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Shoulder])
-		incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Chest])
-		incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Hand])
-		incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Leg])
-		return sets.activeFlatBonuses[count]
-	default:
-		var counts [8]uint8
-		addToSpecificSet8(&counts, sets.itemToSet, equip[Equip_Head])
-		addToSpecificSet8(&counts, sets.itemToSet, equip[Equip_Shoulder])
-		addToSpecificSet8(&counts, sets.itemToSet, equip[Equip_Chest])
-		addToSpecificSet8(&counts, sets.itemToSet, equip[Equip_Hand])
-		addToSpecificSet8(&counts, sets.itemToSet, equip[Equip_Leg])
-		var value float32 = 1.0
-		for index := range sets.activeSets {
-			value *= sets.activeFlatBonuses[uint8(index)*6+counts[index+1]]
-		}
-		return value
-	}
-}
 
 func (sets *SetBonus) CalcBonusGeneric(equip IEquipMap) float32 {
 	return calcBonusFromFunc(equip.GetAsId, sets.activeSets, sets.itemToSet)
-}
-
-func (sets *SetBonus) CalcBonusSolveUseAssem(equip *SolvableEquipMap) float32 {
-	return modelassem.CalcBonusSolveAssem(equip, sets.itemToSet, sets.activeFlatBonuses)
-}
-func (sets *SetBonus) CalcBonusSolveAssemAssumeNonNull(equip *SolvableEquipMap) float32 {
-	return modelassem.CalcBonusSolveAssemAssumeNonNull(equip, sets.itemToSet, sets.activeFlatBonuses)
-}
-func (sets *SetBonus) CalcBonusSolveAssemAssumeNonNullWithCases(equip *SolvableEquipMap) float32 {
-	return modelassem.CalcBonusSolveAssemAssumeNonNullWithCases(equip, sets.itemToSet, sets.activeFlatBonuses)
 }
 
 func calcBonusFromFunc(getAsId func(SlotEquip) ItemId, activeSets []setInfo, itemToSet []uint8) float32 {
@@ -273,19 +209,14 @@ func addToSpecificSet(counts *[10]uint8, itemToSet []uint8, item IItem) {
 		counts[entry]++
 	}
 }
-func addToSpecificSet8(counts *[8]uint8, itemToSet []uint8, item IItem) {
-	if item != nil {
-		entry := itemToSet[item.ItemId()]
-		counts[entry]++
-	}
-}
 
 // ########################### set type ###########################
 type setInfo struct {
-	spec    SpecType
-	name    string
-	bonuses [6]float32
-	items   []uint32
+	spec               SpecType
+	name               string
+	bonuses            [6]float32
+	items              []uint32
+	isSpecialSkipLists bool
 }
 
 func setInfoMake(spec SpecType, name string, bonus2 uint64, bonus4 uint64, items []uint32) setInfo {
@@ -298,7 +229,24 @@ func setInfoMake(spec SpecType, name string, bonus2 uint64, bonus4 uint64, items
 			float32(bonus2) / float32(denominator),
 			float32(bonus2) / float32(denominator) * float32(bonus4) / float32(denominator),
 			float32(bonus2) / float32(denominator) * float32(bonus4) / float32(denominator)},
-		items}
+		items,
+		false,
+	}
+}
+
+func setInfoMakeSpecial(spec SpecType, name string, bonus2 uint64, bonus4 uint64, items []uint32) setInfo {
+	return setInfo{spec,
+		name,
+		[6]float32{
+			1.0,
+			1.0,
+			float32(bonus2) / float32(denominator),
+			float32(bonus2) / float32(denominator),
+			float32(bonus2) / float32(denominator) * float32(bonus4) / float32(denominator),
+			float32(bonus2) / float32(denominator) * float32(bonus4) / float32(denominator)},
+		items,
+		true,
+	}
 }
 
 func (set setInfo) EqualsTyped(other setInfo) bool {
@@ -316,6 +264,8 @@ func (set setInfo) Equals(other ActiveSet) bool {
 type ActiveSet interface {
 	Name() string
 	BonusForCount(uint8) float32
+	ContainsItem(items.ItemId) bool
+	CountItems(*SolvableEquipMap) uint8
 	Equals(ActiveSet) bool
 }
 
@@ -327,20 +277,53 @@ func (set setInfo) BonusForCount(count uint8) float32 {
 	return set.bonuses[count]
 }
 
+func (set setInfo) ContainsItem(itemId items.ItemId) bool {
+	return slices.Contains(set.items, uint32(itemId))
+}
+
+func (set setInfo) containsItem(item *SolvableItem) bool {
+	if item != nil {
+		return slices.Contains(set.items, uint32(item.ItemId()))
+	}
+	return false
+}
+
+func (set setInfo) CountItems(equip *SolvableEquipMap) uint8 {
+	var count uint8
+	if set.containsItem(equip[Equip_Head]) {
+		count++
+	}
+	if set.containsItem(equip[Equip_Shoulder]) {
+		count++
+	}
+	if set.containsItem(equip[Equip_Chest]) {
+		count++
+	}
+	if set.containsItem(equip[Equip_Hand]) {
+		count++
+	}
+	if set.containsItem(equip[Equip_Leg]) {
+		count++
+	}
+	return count
+}
+
 // ########################### set data ###########################
 var g_setData = buildSets()
 var g_itemSetLookup = buildItemLookup(g_setData)
 
 func buildSets() []setInfo {
 	sets := make([]setInfo, 0)
-	sets = append(sets, setInfoMake(Spec_PaladinProtMitigation, "White Tiger Battlegear Prot Mitigation", denominator, white_tiger_battlegear_4_tank, []uint32{86681, 86679, 86683, 86682, 86680, 85341, 85339, 85343, 85342, 85340, 87101, 87103, 87099, 87100, 87102}))
-	sets = append(sets, setInfoMake(Spec_PaladinProtMitigation, "White Tiger Plate", defaultBonus, defaultBonus, []uint32{85319, 85320, 85321, 85322, 85323, 86659, 86660, 86661, 86662, 86663, 87109, 87110, 87111, 87112, 87113}))
 
-	sets = append(sets, setInfoMake(Spec_PaladinProtMitigation, "Plate of the Lightning Emperor Prot Mitigation", plate_lightning_bonus_2_miti, plate_lightning_bonus_4_miti, []uint32{95290, 95291, 95292, 95293, 95294, 95920, 95921, 95922, 95923, 95924, 96664, 96665, 96666, 96667, 96668}))
-	sets = append(sets, setInfoMake(Spec_PaladinProtDps, "Plate of the Lightning Emperor Prot Damage", denominator, plate_lightning_bonus_4_dps, []uint32{95290, 95291, 95292, 95293, 95294, 95920, 95921, 95922, 95923, 95924, 96664, 96665, 96666, 96667, 96668}))
-
-	sets = append(sets, setInfoMake(Spec_PaladinProtMitigation, "Plate of Winged Triumph", defaultBonus, defaultBonus, []uint32{99026, 99027, 99028, 99029, 99031, 99126, 99127, 99128, 99129, 99130, 99364, 99368, 99369, 99370, 99371, 99593, 99594, 99595, 99596, 99598}))
 	sets = append(sets, setInfoMake(Spec_PaladinRet, "White Tiger Battlegear", white_tiger_battlegear_2, white_tiger_battlegear_4, []uint32{85339, 85340, 85341, 85342, 85343, 86679, 86680, 86681, 86682, 86683, 87099, 87100, 87101, 87102, 87103}))
+	sets = append(sets, setInfoMakeSpecial(Spec_PaladinProtMitigation, "White Tiger Battlegear Prot Mitigation", denominator, white_tiger_battlegear_4_tank, []uint32{86681, 86679, 86683, 86682, 86680, 85341, 85339, 85343, 85342, 85340, 87101, 87103, 87099, 87100, 87102}))
+
+	sets = append(sets, setInfoMake(Spec_PaladinProtMitigation, "Plate of the Lightning Emperor", plate_lightning_bonus_2_miti, plate_lightning_bonus_4_miti, []uint32{95290, 95291, 95292, 95293, 95294, 95920, 95921, 95922, 95923, 95924, 96664, 96665, 96666, 96667, 96668}))
+	sets = append(sets, setInfoMakeSpecial(Spec_PaladinProtDps, "Plate of the Lightning Emperor Prot Damage", denominator, plate_lightning_bonus_4_dps, []uint32{95290, 95291, 95292, 95293, 95294, 95920, 95921, 95922, 95923, 95924, 96664, 96665, 96666, 96667, 96668}))
+
+	sets = append(sets, setInfoMake(Spec_PaladinProtMitigation, "White Tiger Plate", defaultBonus, defaultBonus, []uint32{85319, 85320, 85321, 85322, 85323, 86659, 86660, 86661, 86662, 86663, 87109, 87110, 87111, 87112, 87113}))
+	sets = append(sets, setInfoMake(Spec_PaladinProtMitigation, "Plate of Winged Triumph", defaultBonus, defaultBonus, []uint32{99026, 99027, 99028, 99029, 99031, 99126, 99127, 99128, 99129, 99130, 99364, 99368, 99369, 99370, 99371, 99593, 99594, 99595, 99596, 99598}))
+
 	sets = append(sets, setInfoMake(Spec_PaladinRet, "Battlegear of the Lightning Emperor", defaultBonus, defaultBonus, []uint32{95280, 95281, 95282, 95283, 95284, 95910, 95911, 95912, 95913, 95914, 96654, 96655, 96656, 96657, 96658}))
 	sets = append(sets, setInfoMake(Spec_PaladinRet, "Battlegear of Winged Triumph", defaultBonus, defaultBonus, []uint32{98985, 98986, 98987, 99002, 99052, 99132, 99136, 99137, 99138, 99139, 99372, 99373, 99379, 99380, 99387, 99566, 99625, 99651, 99661, 99662}))
 	sets = append(sets, setInfoMake(Spec_PaladinHoly, "White Tiger Vestments", defaultBonus, defaultBonus, []uint32{85344, 85345, 85346, 85347, 85348, 86684, 86685, 86686, 86687, 86688, 87104, 87105, 87106, 87107, 87108}))
@@ -414,8 +397,10 @@ func buildSets() []setInfo {
 func buildItemLookup(setData []setInfo) map[ItemId]*setInfo {
 	lookup := make(map[ItemId]*setInfo, len(setData)*15)
 	for _, info := range setData {
-		for _, itemId := range info.items {
-			lookup[ItemId(itemId)] = &info
+		if !info.isSpecialSkipLists {
+			for _, itemId := range info.items {
+				lookup[ItemId(itemId)] = &info
+			}
 		}
 	}
 	return lookup
@@ -459,6 +444,15 @@ func (sets *SetBonus) ActiveSets() []ActiveSet {
 func SetBonus_IsAnyKnownItem(itemId ItemId) bool {
 	_, found := g_itemSetLookup[itemId]
 	return found
+}
+
+func SetBonus_AnySetForItem(itemId ItemId) ActiveSet {
+	set, found := g_itemSetLookup[itemId]
+	if found {
+		return set
+	} else {
+		return nil
+	}
 }
 
 // ########################### utility lookups ###########################

@@ -5,6 +5,8 @@ import (
 	"paladin_gearing_go/items"
 	gear_model "paladin_gearing_go/model"
 	"paladin_gearing_go/util"
+
+	"github.com/lanl/highs"
 )
 
 type SolverHighsMultiParam struct {
@@ -13,7 +15,8 @@ type SolverHighsMultiParam struct {
 	Gear_model     *gear_model.Model
 	RatingMultiply uint64
 
-	setup *setupInputsForSetBonus
+	setup        *setupInputsForSetBonus
+	solveOptions items.SolvableOptionsMap
 }
 
 type SolverHighsMultiProcess struct {
@@ -44,10 +47,14 @@ func (job *SolverHighsMultiProcess) Run(printer *util.PrintRecorder) []items.Ful
 		panic(err)
 	}
 
+	if solution.Status != highs.Optimal && solution.Status != highs.ObjectiveBound && solution.Status != highs.ObjectiveTarget {
+		return nil
+	}
+
 	resultList := make([]items.FullItemSet, len(job.parts))
 	for partIndex := range job.parts {
 		part := job.parts[partIndex]
-		solvedSet := part.setup.buildResultSet(&solution.Solution)
+		solvedSet := part.setup.buildResultSet(&solution.Solution, &part.solveOptions, part.Gear_model)
 		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &part.ItemOptions)
 		resultList[partIndex] = fullItemSet
 	}
@@ -55,8 +62,8 @@ func (job *SolverHighsMultiProcess) Run(printer *util.PrintRecorder) []items.Ful
 }
 
 func (param *SolverHighsMultiParam) doSetup(inputBuilder *inputBuilder) {
-	solveOptions := items.SolvableOptionsMap_of(&param.ItemOptions)
-	param.setup = setupBonusedConstaint(inputBuilder, param.Gear_model, &solveOptions, float64(param.RatingMultiply))
+	param.solveOptions = items.SolvableOptionsMap_of(&param.ItemOptions)
+	param.setup = setupBonusedInputs(inputBuilder, param.Gear_model, &param.solveOptions, float64(param.RatingMultiply))
 }
 
 func (job *SolverHighsMultiProcess) addCommonConstraints(inputBuilder *inputBuilder) {

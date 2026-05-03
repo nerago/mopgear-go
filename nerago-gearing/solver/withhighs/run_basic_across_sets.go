@@ -33,9 +33,10 @@ func RunBasicAcrossSets_ReturnBest(itemOptions *items.SolvableOptionsMap, model 
 	return best.GetBestOptional()
 }
 
-func RunBasicAcrossSets_ReturnAll(itemOptions *items.SolvableOptionsMap, model *model.Model) []items.SolvableItemSet {
+func RunBasicAcrossSets_ReturnAll(itemOptions *items.SolvableOptionsMap, model *model.Model, printer *util.PrintRecorder) []items.SolvableItemSet {
 	resultList := []items.SolvableItemSet{}
 
+	printer.Println("{{{{{{{{ run unconstrained }}}}}}}}")
 	unconstrainedResult := RunBasic(itemOptions, model, nil, util.Optional_Empty[int]())
 	if unconstrainedResultSet, found := unconstrainedResult.GetWithFlag(); found {
 		if model.CheckSet(&unconstrainedResultSet) {
@@ -45,6 +46,8 @@ func RunBasicAcrossSets_ReturnAll(itemOptions *items.SolvableOptionsMap, model *
 
 	for _, activeSet := range model.SetBonus.ActiveSets() {
 		for requireSetCount := 1; requireSetCount <= 5; requireSetCount++ {
+
+			printer.Printf("{{{{{{{{ run %s %d }}}}}}}}\n", activeSet.Name(), requireSetCount)
 			otherResult := RunBasic(itemOptions, model, activeSet, util.Optional_OfValue(requireSetCount))
 			if otherResultSet, found := otherResult.GetWithFlag(); found {
 				if model.CheckSet(&otherResultSet) {

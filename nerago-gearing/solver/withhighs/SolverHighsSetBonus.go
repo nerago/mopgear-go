@@ -12,7 +12,7 @@ import (
 
 func RunAllActiveSets(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model) util.Optional[items.SolvableItemSet] {
 	inputBuilder := inputBuilder{}
-	setup := setupBonusedConstaint(&inputBuilder, gear_model, itemOptions, 1)
+	setup := setupBonusedInputs(&inputBuilder, gear_model, itemOptions, 1)
 
 	highs_model := inputBuilder.toHighsModel()
 	solution, err := highs_model.Solve()
@@ -27,12 +27,12 @@ func RunAllActiveSets(itemOptions *items.SolvableOptionsMap, gear_model *gear_mo
 		return util.Optional_Empty[items.SolvableItemSet]()
 	}
 
-	result := setup.buildResultSet(&solution.Solution)
+	result := setup.buildResultSet(&solution.Solution, itemOptions, gear_model)
 	checkSetRating(&solution.Solution, &result, gear_model)
 	return util.Optional_OfValue(result)
 }
 
-func setupBonusedConstaint(inputBuilder *inputBuilder, gear_model *gear_model.Model, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *setupInputsForSetBonus {
+func setupBonusedInputs(inputBuilder *inputBuilder, gear_model *gear_model.Model, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *setupInputsForSetBonus {
 	setup := setupInputsForSetBonus{input: inputBuilder}
 
 	setup.addFinalOutputVariable(scaleOutputRating)
@@ -51,6 +51,7 @@ func debugPrint(solution *highs.RawSolution, setup *setupInputsForSetBonus) {
 	fmt.Println("OBJECTIVE VALUE = ", solution.Objective)
 
 	activeBonus := ""
+	activeBonusWeight := 0.0
 
 	for columnIndex, outputValue := range solution.ColumnPrimal {
 		var colEntry columnInfo
@@ -75,10 +76,13 @@ func debugPrint(solution *highs.RawSolution, setup *setupInputsForSetBonus) {
 			case entry_permutation_active:
 				fmt.Println(columnIndex, outputValue, "permutation active", colEntry.permutation.debugStr())
 				if floatEqualsOne(outputValue) {
-					activeBonus = colEntry.permutation.debugStr()
+					activeBonus += colEntry.permutation.debugStr()
 				}
 			case entry_permutation_output_weighted:
 				fmt.Println(columnIndex, outputValue, "permutation weighted output", colEntry.permutation.debugStr(), colEntry.weight)
+				if !floatEqualsZero(outputValue) {
+					activeBonusWeight += colEntry.weight
+				}
 			case entry_final_output:
 				fmt.Println(columnIndex, outputValue, "final value")
 			default:
@@ -89,7 +93,7 @@ func debugPrint(solution *highs.RawSolution, setup *setupInputsForSetBonus) {
 		}
 	}
 
-	fmt.Println("ACTIVE Bonus = " + activeBonus)
+	fmt.Printf("ACTIVE highs Bonus = %s %f\n", activeBonus, activeBonusWeight)
 }
 
 type setupInputsForSetBonus struct {
@@ -106,7 +110,8 @@ type setupInputsForSetBonus struct {
 	finalOutputRow constraintRowBuild // compute final output from set based alternatives
 	finalOutputVar *columnInfo        // output variable, to be used directly or scaled against other models
 
-	setData []setInfo
+	setData           []setInfo
+	allSetPermutation []setPermutation
 
 	itemColumns []columnInfo
 	allColumns  []columnInfo
@@ -114,6 +119,10 @@ type setupInputsForSetBonus struct {
 
 type setPermutation struct {
 	content []setWithCount
+
+	outputVar     int
+	activatingVar int
+	weight        float64
 }
 
 func (perm setPermutation) debugStr() string {
@@ -144,9 +153,9 @@ func (setup *setupInputsForSetBonus) prepareActiveSets(gear_model *gear_model.Mo
 			setup.setData[setIndex] = info
 		}
 
-		allSetPermutation := makeSetPermutations(setup.setData)
-		for _, permutation := range allSetPermutation {
-			setup.buildSetMultipliedOutput(permutation)
+		setup.allSetPermutation = makeSetPermutations(setup.setData)
+		for permIndex := range setup.allSetPermutation {
+			setup.buildSetMultipliedOutput(&setup.allSetPermutation[permIndex])
 		}
 	} else {
 		setup.buildSimpleNoSetsOutput()
@@ -165,18 +174,22 @@ func (setup *setupInputsForSetBonus) buildSimpleNoSetsOutput() {
 	setup.finalOutputRow.add(setup.baseRatingSumVar.columnIndex, 1)
 }
 
-func (setup *setupInputsForSetBonus) buildSetMultipliedOutput(permutation setPermutation) {
+func (setup *setupInputsForSetBonus) buildSetMultipliedOutput(permutation *setPermutation) {
 	outputVar, weight := setup.buildSetWeightedOutputVar(permutation)
-	activatingBool := setup.buildPermutationActivatingVar(permutation)
+	activatingVar := setup.buildPermutationActivatingVar(permutation)
 
 	// copy regular rating sum to column if flag is set
-	contraintIfBoolCopyValueElseZero(setup.input, activatingBool, setup.baseRatingSumVar.columnIndex, outputVar, c_ratings_low_range, c_ratings_high_range)
+	contraintIfBoolCopyValueElseZero(setup.input, activatingVar, setup.baseRatingSumVar.columnIndex, outputVar, c_ratings_low_range, c_ratings_high_range)
 
 	// add scaled rating to final computation
 	setup.finalOutputRow.add(outputVar, weight)
+
+	permutation.outputVar = outputVar
+	permutation.activatingVar = activatingVar
+	permutation.weight = weight
 }
 
-func (setup *setupInputsForSetBonus) buildSetWeightedOutputVar(permutation setPermutation) (int, float64) {
+func (setup *setupInputsForSetBonus) buildSetWeightedOutputVar(permutation *setPermutation) (int, float64) {
 	totalWeight := 1.0
 	for _, setAndCount := range permutation.content {
 		bonusForCount := setAndCount.setInfo.activeSet.BonusForCount(uint8(setAndCount.count))
@@ -185,12 +198,12 @@ func (setup *setupInputsForSetBonus) buildSetWeightedOutputVar(permutation setPe
 
 	// the actual output variable from this permutation, applies relevant set related multipliers
 	columnIndex := setup.input.createColumnGeneral(highs.ContinuousType, c_minusInf, c_plusInf)
-	entry := columnInfo{entryType: entry_permutation_output_weighted, columnIndex: columnIndex, permutation: &permutation, weight: totalWeight}
+	entry := columnInfo{entryType: entry_permutation_output_weighted, columnIndex: columnIndex, permutation: permutation, weight: totalWeight}
 	setup.allColumns = append(setup.allColumns, entry)
 	return columnIndex, totalWeight
 }
 
-func (setup *setupInputsForSetBonus) buildPermutationActivatingVar(permutation setPermutation) int {
+func (setup *setupInputsForSetBonus) buildPermutationActivatingVar(permutation *setPermutation) int {
 	// we are effecively building a logical AND between these vars
 
 	permutationActiveBool := setup.input.createColumnBool()
@@ -207,7 +220,7 @@ func (setup *setupInputsForSetBonus) buildPermutationActivatingVar(permutation s
 
 	buildAnd.finishAndApply(setup.input)
 
-	entry := columnInfo{entryType: entry_permutation_active, columnIndex: permutationActiveBool, permutation: &permutation}
+	entry := columnInfo{entryType: entry_permutation_active, columnIndex: permutationActiveBool, permutation: permutation}
 	setup.allColumns = append(setup.allColumns, entry)
 
 	return permutationActiveBool
@@ -220,7 +233,7 @@ func makeSetPermutations(setData []setInfo) []setPermutation {
 
 func makeSetPermutationsRecur(allSetPermutation []setPermutation, setData []setInfo, setIndex int, totalCount int, built []setWithCount) []setPermutation {
 	if setIndex == len(setData) {
-		return append(allSetPermutation, setPermutation{built})
+		return append(allSetPermutation, setPermutation{content: built})
 	}
 
 	addSet := setData[setIndex]
@@ -355,7 +368,7 @@ func (setup *setupInputsForSetBonus) finishItems(itemOptions *items.SolvableOpti
 	setup.finalOutputRow.finish(setup.input, 0, 0)
 }
 
-func (setup *setupInputsForSetBonus) buildResultSet(solution *highs.Solution) items.SolvableItemSet {
+func (setup *setupInputsForSetBonus) buildResultSet(solution *highs.Solution, itemOptions *items.SolvableOptionsMap, model *gear_model.Model) items.SolvableItemSet {
 	itemSet := items.SolvableItemSet{}
 	for _, columnEntry := range setup.itemColumns {
 		variableResult := solution.ColumnPrimal[columnEntry.columnIndex]
@@ -365,6 +378,10 @@ func (setup *setupInputsForSetBonus) buildResultSet(solution *highs.Solution) it
 	}
 	items.SolvableItemSet_RecalculateTotal(&itemSet)
 
+	validateNewSet(itemSet, itemOptions, model)
+
+	setup.checkActivePermutation(solution, &itemSet)
+
 	return itemSet
 }
 
@@ -372,6 +389,35 @@ func checkSetRating(solution *highs.Solution, itemSet *items.SolvableItemSet, ge
 	checkRating := gear_model.CalcRatingSolveAsFloat(itemSet)
 	if !floatsApproxEquals(solution.Objective, float64(checkRating)) {
 		panic("rating inconsistent " + strconv.FormatFloat(solution.Objective, 'f', 0, 64) + " " + strconv.FormatFloat(float64(checkRating), 'f', 0, 32))
+	}
+}
+
+func (setup *setupInputsForSetBonus) checkActivePermutation(solution *highs.Solution, solvableItemSet *items.SolvableItemSet) {
+	if len(setup.allSetPermutation) > 0 {
+		var activePermutation *setPermutation
+
+		for _, permutation := range setup.allSetPermutation {
+			variableResult := solution.ColumnPrimal[permutation.activatingVar]
+			if floatEqualsOne(variableResult) {
+				if activePermutation == nil {
+					activePermutation = &permutation
+				} else {
+					panic("multiple permutations active")
+				}
+			}
+		}
+
+		if activePermutation != nil {
+			for _, entry := range activePermutation.content {
+				activeSet := entry.setInfo.activeSet
+				actualCount := activeSet.CountItems(solvableItemSet.Items())
+				if actualCount != uint8(entry.count) {
+					panic("number of items not what solver returned")
+				}
+			}
+		} else {
+			panic("no permutation active")
+		}
 	}
 }
 

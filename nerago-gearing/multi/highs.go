@@ -26,8 +26,12 @@ func (job *MultiSetJob) FindHighsResult() {
 	}
 
 	setResults := highProcess.Run(job.printer)
-	proposedOutput := job.makeOutputFromHighs(setResults)
-	job.listInitialOutputs([]multiProposedOutput{proposedOutput})
+	if setResults != nil {
+		proposedOutput := job.makeOutputFromHighs(setResults)
+		job.listInitialOutputs([]multiProposedOutput{proposedOutput})
+	} else {
+		job.printer.Println("FAILED")
+	}
 }
 
 func (job *MultiSetJob) makeOutputFromHighs(setResults []items.FullItemSet) multiProposedOutput {
