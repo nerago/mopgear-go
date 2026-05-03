@@ -1,6 +1,7 @@
 package items
 
 import (
+	"paladin_gearing_go/stats"
 	. "paladin_gearing_go/stats"
 )
 
@@ -36,6 +37,14 @@ func (item *SolvableItem) TotalCap() *StatBlock {
 
 func (item *SolvableItem) TotalRated() *StatBlock {
 	return &item.total
+}
+
+func (item *SolvableItem) Equals(other *SolvableItem) bool {
+	return item.itemId == other.itemId && stats.StatBlock_Equals(&item.total, &other.total)
+}
+
+func (item *SolvableItem) EqualsFull(other *FullItem) bool {
+	return item.itemId == other.ItemId() && stats.StatBlock_Equals(&item.total, &other.total)
 }
 
 // /////////////////////////////////////////////////////////////

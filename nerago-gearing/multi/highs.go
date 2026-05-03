@@ -1,0 +1,51 @@
+package multi
+
+import (
+	"paladin_gearing_go/items"
+	"paladin_gearing_go/simulate"
+	"paladin_gearing_go/solver/withhighs"
+
+	"github.com/google/uuid"
+)
+
+func (job *MultiSetJob) FindHighsResult() {
+	highProcess := withhighs.SolverHighsMultiProcess{}
+
+	job.prepareInitial()
+	commonOptions := job.determineCommon()
+	highProcess.SetCommon(commonOptions)
+
+	for paramIndex := range job.params {
+		param := &job.params[paramIndex]
+		highProcess.AddSetParam(withhighs.SolverHighsMultiParam{
+			Label:          param.Label,
+			ItemOptions:    param.itemOptions,
+			Gear_model:     &param.Model,
+			RatingMultiply: param.ratingMultiply,
+		})
+	}
+
+	setResults := highProcess.Run(job.printer)
+	proposedOutput := job.makeOutputFromHighs(setResults)
+	job.listInitialOutputs([]multiProposedOutput{proposedOutput})
+}
+
+func (job *MultiSetJob) makeOutputFromHighs(setResults []items.FullItemSet) multiProposedOutput {
+	var totalRatingSum uint64
+	outputs := make([]singleProposed, len(job.params))
+
+	for paramIndex := range job.params {
+		param := &job.params[paramIndex]
+		itemSet := setResults[paramIndex]
+		single := SingleProposed_FromItemSet(itemSet, &param.Model)
+		outputs[paramIndex] = single
+		totalRatingSum += single.resultRating * param.ratingMultiply
+	}
+
+	combo := job.determineComboFromScratch(outputs, comboType_highs)
+	proposed := multiProposedOutput{uuid.NewString(), totalRatingSum, outputs, combo}
+	return proposed
+}
+
+func (job *MultiSetJob) FindSeveralHighsAndSim(runSize simulate.WowSim_RunSize) {
+}

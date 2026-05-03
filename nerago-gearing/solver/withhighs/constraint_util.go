@@ -1,35 +1,35 @@
 package withhighs
 
-func contraintIfBoolCopyValueElseZero(mat *constraintMatrixBuilder, boolSwitchVar, sourceVar, targetVar int, rangeLow, rangeHigh float64) {
+func contraintIfBoolCopyValueElseZero(input *inputBuilder, boolSwitchVar, sourceVar, targetVar int, rangeLow, rangeHigh float64) {
 	// based on https://medium.com/data-science/a-comprehensive-guide-to-modeling-techniques-in-mixed-integer-linear-programming-3e96cc1bc03d
 
 	valueHigh := constraintRowBuild{}
 	valueHigh.add(targetVar, -1)
 	valueHigh.add(sourceVar, 1)
 	valueHigh.add(boolSwitchVar, rangeHigh)
-	valueHigh.finish(mat, c_minusInf, rangeHigh)
+	valueHigh.finish(input, c_minusInf, rangeHigh)
 
 	valueLow := constraintRowBuild{}
 	valueLow.add(targetVar, 1)
 	valueLow.add(sourceVar, -1)
 	valueLow.add(boolSwitchVar, -rangeLow)
-	valueLow.finish(mat, c_minusInf, -rangeLow)
+	valueLow.finish(input, c_minusInf, -rangeLow)
 
 	zeroHigh := constraintRowBuild{}
 	zeroHigh.add(targetVar, 1)
 	zeroHigh.add(boolSwitchVar, -rangeHigh)
-	zeroHigh.finish(mat, c_minusInf, 0)
+	zeroHigh.finish(input, c_minusInf, 0)
 
 	zeroLow := constraintRowBuild{}
 	zeroLow.add(targetVar, -1)
 	zeroLow.add(boolSwitchVar, rangeLow)
-	zeroLow.finish(mat, c_minusInf, 0)
+	zeroLow.finish(input, c_minusInf, 0)
 }
 
 // https://medium.com/data-science/a-comprehensive-guide-to-modeling-techniques-in-mixed-integer-linear-programming-3e96cc1bc03d
 type contraintAndBuilder struct {
 	outputVar int
-	inputVar  []int
+	inputVars []int
 }
 
 func (build *contraintAndBuilder) setOutput(column int) {
@@ -37,22 +37,22 @@ func (build *contraintAndBuilder) setOutput(column int) {
 }
 
 func (build *contraintAndBuilder) addInput(column int) {
-	build.inputVar = append(build.inputVar, column)
+	build.inputVars = append(build.inputVars, column)
 }
 
-func (build *contraintAndBuilder) finishAndApply(mat *constraintMatrixBuilder) {
+func (build *contraintAndBuilder) finishAndApply(input *inputBuilder) {
 	sumRow := constraintRowBuild{}
 	sumRow.add(build.outputVar, -1)
 
-	for _, input := range build.inputVar {
-		sumRow.add(input, 1)
+	for _, inputVar := range build.inputVars {
+		sumRow.add(inputVar, 1)
 
 		pullDown := constraintRowBuild{}
-		pullDown.add(input, -1)
+		pullDown.add(inputVar, -1)
 		pullDown.add(build.outputVar, 1)
-		pullDown.finish(mat, c_minusInf, 0)
+		pullDown.finish(input, c_minusInf, 0)
 	}
 
-	targetNum := len(build.inputVar) - 1
-	sumRow.finish(mat, c_minusInf, float64(targetNum))
+	targetNum := len(build.inputVars) - 1
+	sumRow.finish(input, c_minusInf, float64(targetNum))
 }

@@ -29,6 +29,45 @@ func floatsApproxEquals(a, b float64) bool {
 	return 0.99999 <= ratio && ratio <= 1.00001
 }
 
+type inputBuilder struct {
+	vars variableArrayBuilder
+	mat  constraintMatrixBuilder
+}
+
+func (input *inputBuilder) createColumnBool() int {
+	return input.vars.create(highs.IntegerType, 0, 1, 0)
+}
+
+func (input *inputBuilder) createColumnGeneral(varType highs.VariableType, lower, upper float64) int {
+	return input.vars.create(varType, lower, upper, 0)
+}
+
+func (input *inputBuilder) createColumnWithOutput(varType highs.VariableType, lower, upper, cost float64) int {
+	return input.vars.create(varType, lower, upper, cost)
+}
+
+func (input *inputBuilder) addRow(entries []indexAndValue, lowerBound float64, upperBound float64) {
+	input.mat.addRow(entries, lowerBound, upperBound)
+}
+
+func (input *inputBuilder) toHighsModel() *highs.RawModel {
+	model := highs.NewRawModel()
+
+	// model.SetStringOption("presolve", "off")
+	model.SetBoolOption("log_to_console", true)
+	model.SetIntOption("log_dev_level", 3)
+
+	err := model.SetMaximization(true)
+	if err != nil {
+		panic(err)
+	}
+
+	input.vars.applyToModel(model)
+	input.mat.finishAndApplyToModelEfficient(model)
+
+	return model
+}
+
 type variableArrayBuilder struct {
 	ColTypes []highs.VariableType // Type of each model variable
 	ColCosts []float64            // Column costs (i.e., the objective function itself)
@@ -77,11 +116,11 @@ func (row *constraintRowBuild) add(columnIndex int, value float64) {
 	}
 }
 
-func (row *constraintRowBuild) finish(build *constraintMatrixBuilder, lowerBound float64, upperBound float64) {
+func (row *constraintRowBuild) finish(input *inputBuilder, lowerBound float64, upperBound float64) {
 	// couldn't find reference for sure that indexes need to be sorted but probably best
 	slices.SortFunc(row.entries, func(a, b indexAndValue) int { return cmp.Compare(a.columnNumber, b.columnNumber) })
 
-	build.addRow(row.entries, lowerBound, upperBound)
+	input.addRow(row.entries, lowerBound, upperBound)
 }
 
 type constraintMatrixBuilder struct {

@@ -28,11 +28,8 @@ type MultiSetParam struct {
 	fixedSlots                map[items.SlotEquip]items.ItemId
 
 	// stuff not ported
-	// boolean upgradeCurrentItems;
 	// boolean challengeScale;
-	// double worstCommonPenalty;
 	// Map<Integer, Integer> duplicatedItems;
-	// List<Integer> removeItems;
 	// suppressSlotCheck
 }
 

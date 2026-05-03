@@ -41,8 +41,10 @@ var allSetItems = []items.ItemId{
 
 func checkHighs(printer *util.PrintRecorder) {
 	// bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Mitigation", "Battlegear of the Lightning Emperor")
-	// bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Mitigation")
-	bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Damage")
+	bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Mitigation")
+	// bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Damage")
+	// bonus := model.SetBonus_Named( "Plate of the Lightning Emperor Prot Damage", "White Tiger Plate")
+	// bonus := model.SetBonus_Named( "Plate of the Lightning Emperor Prot Damage")
 	// bonus := model.SetBonus_Empty()
 
 	itemOptions, model := setupPallyMitigationSet()
@@ -61,12 +63,24 @@ func checkHighs(printer *util.PrintRecorder) {
 	solvedSet := withhighs.RunAllActiveSets(&solveOptions, &model)
 	// solvedSet := withhighs.RunBasic(&solveOptions, &model, nil, util.Optional_Empty[int]())
 
+
 	if solvedSet.IsEmpty() {
 		printer.Println("FAILED SOLVE")
 	} else {
 		fullItemSet := items.FullItemSet_FromSolved(solvedSet.GetOrPanic(), &itemOptions)
 		solver.ReportSet(printer, fullItemSet, model.CalcRatingFull(&fullItemSet), &model)
 	}
+
+	printer.Println("COMPARE standard solver")
+	compareSolveOuput := solver.Solver(solver.SolveInput{
+		ItemOptions:         &itemOptions,
+		Model:               &model,
+		PhasedAcceptable:    false,
+		EnableTrackProgress: true,
+		SolveSize:           solver.SolveSize_Medium,
+		Printer:             util.PrintRecorder_HoldAll(),
+	})
+	compareSolveOuput.Report(printer)
 }
 
 func testSim(printer *util.PrintRecorder) {

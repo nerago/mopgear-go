@@ -11,9 +11,9 @@ import (
 	"strings"
 )
 
-type commonComboOptions map[items.ItemId][]items.FullItem
+type CommonComboOptions map[items.ItemId][]items.FullItem
 
-func (optionsMap *commonComboOptions) TotalCombinationCount() *big.Int {
+func (optionsMap *CommonComboOptions) TotalCombinationCount() *big.Int {
 	valueCount := 0
 	total := big.NewInt(1)
 	for _, slotArray := range *optionsMap {
@@ -29,7 +29,7 @@ func (optionsMap *commonComboOptions) TotalCombinationCount() *big.Int {
 	return total
 }
 
-func (job *MultiSetJob) determineCommon() commonComboOptions {
+func (job *MultiSetJob) determineCommon() CommonComboOptions {
 	commonOptions, seenIn := searchParamOptions(&job.params)
 
 	applyFixedForges(job.fixedForge, &commonOptions, job.printer)
@@ -42,8 +42,8 @@ func (job *MultiSetJob) determineCommon() commonComboOptions {
 	return commonOptions
 }
 
-func searchParamOptions(params *[]multiSetParamInternal) (commonComboOptions, map[items.ItemId][]string) {
-	commonOptions := make(commonComboOptions)
+func searchParamOptions(params *[]multiSetParamInternal) (CommonComboOptions, map[items.ItemId][]string) {
+	commonOptions := make(CommonComboOptions)
 	seenIn := make(map[items.ItemId][]string)
 
 	for paramIndex := range *params {
@@ -96,7 +96,7 @@ func filterCommonForges(prior []items.FullItem, newOptions []items.FullItem) []i
 	return result
 }
 
-func applyFixedForges(fixedForge map[items.ItemId]stats.ReforgeRecipe, commonOptions *commonComboOptions, printer *util.PrintRecorder) {
+func applyFixedForges(fixedForge map[items.ItemId]stats.ReforgeRecipe, commonOptions *CommonComboOptions, printer *util.PrintRecorder) {
 	for itemId, reforge := range fixedForge {
 		options, ok := (*commonOptions)[itemId]
 		if ok {
@@ -109,7 +109,7 @@ func applyFixedForges(fixedForge map[items.ItemId]stats.ReforgeRecipe, commonOpt
 	}
 }
 
-func checkItemRates(allowRates map[items.ItemId]specificAllowEntry, commonOptions *commonComboOptions) {
+func checkItemRates(allowRates map[items.ItemId]specificAllowEntry, commonOptions *CommonComboOptions) {
 	for itemId := range allowRates {
 		_, ok := (*commonOptions)[itemId]
 		if !ok {
@@ -127,7 +127,7 @@ func onlyMatchingForge(options []items.FullItem, reforge stats.ReforgeRecipe, it
 	panic("fixed forge selection not available for item " + strconv.Itoa(int(itemId)))
 }
 
-func removeSingleSetItems(seenIn map[items.ItemId][]string, commonOptions *commonComboOptions, fixedForge map[items.ItemId]stats.ReforgeRecipe, specificRates map[items.ItemId]specificAllowEntry) {
+func removeSingleSetItems(seenIn map[items.ItemId][]string, commonOptions *CommonComboOptions, fixedForge map[items.ItemId]stats.ReforgeRecipe, specificRates map[items.ItemId]specificAllowEntry) {
 	for itemId, whereSeen := range seenIn {
 		_, isFixed := fixedForge[itemId]
 		if isFixed {
@@ -145,7 +145,7 @@ func removeSingleSetItems(seenIn map[items.ItemId][]string, commonOptions *commo
 	}
 }
 
-func printCommons(seenIn map[items.ItemId][]string, commonOptions commonComboOptions, printer *util.PrintRecorder) {
+func printCommons(seenIn map[items.ItemId][]string, commonOptions CommonComboOptions, printer *util.PrintRecorder) {
 	for itemId, options := range commonOptions {
 		if len(options) == 0 {
 			log.Panicf("no common forge for %d", itemId)

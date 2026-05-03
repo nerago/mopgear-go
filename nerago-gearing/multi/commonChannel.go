@@ -24,6 +24,7 @@ const (
 	comboType_baselineAndFillOut comboType = iota
 	comboType_equippedAndFillOut comboType = iota
 	comboType_equippedExact      comboType = iota
+	comboType_highs      comboType = iota
 )
 
 func (comboType comboType) name() string {
@@ -133,7 +134,7 @@ func (combo *commonCombo) clone() commonCombo {
 	}
 }
 
-func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targetCount uint64) (<-chan commonCombo, uint64) {
+func (job *MultiSetJob) makeCommonChannel(commonOptions CommonComboOptions, targetCount uint64) (<-chan commonCombo, uint64) {
 	additionalCount := additionalSetEach * additionalThreads * uint64(len(job.params))
 
 	var calculatedEachThreadCount int64 = (int64(targetCount) - int64(additionalCount)) / generateThreadCount
@@ -167,7 +168,7 @@ func (job *MultiSetJob) makeCommonChannel(commonOptions commonComboOptions, targ
 	return resultChannel, actualExpectedCount
 }
 
-func makeBaselineWorker(params []multiSetParamInternal, commonOptions commonComboOptions, comboChannel chan<- commonCombo) {
+func makeBaselineWorker(params []multiSetParamInternal, commonOptions CommonComboOptions, comboChannel chan<- commonCombo) {
 	rng := rand.New(rand.NewSource(0xBA5E))
 	for paramIndex := range params {
 		param := &params[paramIndex]
@@ -186,7 +187,7 @@ func makeBaselineWorker(params []multiSetParamInternal, commonOptions commonComb
 	}
 }
 
-func makeEquippedWorker(params []multiSetParamInternal, commonOptions commonComboOptions, comboChannel chan<- commonCombo) {
+func makeEquippedWorker(params []multiSetParamInternal, commonOptions CommonComboOptions, comboChannel chan<- commonCombo) {
 	rng := rand.New(rand.NewSource(0xE819))
 	for paramIndex := range params {
 		param := &params[paramIndex]
@@ -205,7 +206,7 @@ func makeEquippedWorker(params []multiSetParamInternal, commonOptions commonComb
 	}
 }
 
-func fillOutRemainingOptions(commonOptions commonComboOptions, combo *commonCombo, rng *rand.Rand) {
+func fillOutRemainingOptions(commonOptions CommonComboOptions, combo *commonCombo, rng *rand.Rand) {
 	for itemId, options := range commonOptions {
 		if !combo.hasItem(itemId) {
 			index := rng.Intn(len(options))
@@ -214,7 +215,7 @@ func fillOutRemainingOptions(commonOptions commonComboOptions, combo *commonComb
 	}
 }
 
-func combinationCount(options commonComboOptions) *big.Int {
+func combinationCount(options CommonComboOptions) *big.Int {
 	valueCount := 0
 	total := big.NewInt(1)
 	for _, slotArray := range options {

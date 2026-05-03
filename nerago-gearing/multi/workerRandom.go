@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-func makeRandomThreads(waitGroup *sync.WaitGroup, commonOptions commonComboOptions, threadCount uint64, eachThreadCount uint64, comboChannel chan commonCombo) {
+func makeRandomThreads(waitGroup *sync.WaitGroup, commonOptions CommonComboOptions, threadCount uint64, eachThreadCount uint64, comboChannel chan commonCombo) {
 	for threadNum := range threadCount {
 		waitGroup.Go(func() {
 			makeRandomWorker(commonOptions, eachThreadCount, threadNum, comboChannel)
@@ -13,7 +13,7 @@ func makeRandomThreads(waitGroup *sync.WaitGroup, commonOptions commonComboOptio
 	}
 }
 
-func makeRandomWorker(commonOptions commonComboOptions, loopCount uint64, threadNum uint64, comboChannel chan<- commonCombo) {
+func makeRandomWorker(commonOptions CommonComboOptions, loopCount uint64, threadNum uint64, comboChannel chan<- commonCombo) {
 	rng := rand.New(rand.NewSource(int64(threadNum)))
 	for range loopCount {
 		combo := makeRandomCombo(commonOptions, rng)
@@ -21,7 +21,7 @@ func makeRandomWorker(commonOptions commonComboOptions, loopCount uint64, thread
 	}
 }
 
-func makeRandomCombo(commonOptions commonComboOptions, rng *rand.Rand) commonCombo {
+func makeRandomCombo(commonOptions CommonComboOptions, rng *rand.Rand) commonCombo {
 	combo := commonCombo_Make(len(commonOptions), comboType_random)
 	for itemId, options := range commonOptions {
 		index := rng.Intn(len(options))

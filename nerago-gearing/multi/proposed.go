@@ -39,6 +39,10 @@ func SingleProposed_FromEquip(equipMap items.FullEquipMap, param *multiSetParamI
 	return singleProposed{exists: true, spec: param.Model.Spec, outputId: uuid.NewString(), resultRating: param.Model.CalcRatingFull(&set), fullSet: set, model: &param.Model}
 }
 
+func SingleProposed_FromItemSet(itemSet items.FullItemSet, model *model.Model) singleProposed {
+	return singleProposed{exists: true, spec: model.Spec, outputId: uuid.NewString(), resultRating: model.CalcRatingFull(&itemSet), fullSet: itemSet, model: model}
+}
+
 func (single *singleProposed) Equals(b *singleProposed) bool {
 	return single.exists == b.exists && single.resultRating == b.resultRating && single.fullSet.Equals(&b.fullSet)
 }

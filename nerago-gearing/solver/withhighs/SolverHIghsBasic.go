@@ -10,15 +10,10 @@ import (
 )
 
 func RunBasic(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet gear_model.ActiveSet, requireSetCount util.Optional[int]) util.Optional[items.SolvableItemSet] {
-	constraints := buildInputForBasic{}
+	inputBuilder := inputBuilder{}
+	constraints := setupBasicConstraint(&inputBuilder, itemOptions, gear_model, requiredSet, requireSetCount)
 
-	for slot, item := range itemOptions.AllItemSlotSeq() {
-		constraints.addItem(slot, item, gear_model, requiredSet)
-	}
-
-	constraints.finishItems(itemOptions, gear_model, requireSetCount)
-
-	highs_model := constraints.toHighsModel()
+	highs_model := inputBuilder.toHighsModel()
 	solution, err := highs_model.Solve()
 	fmt.Println(solution.Status.String())
 	if err != nil {
@@ -34,9 +29,19 @@ func RunBasic(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Mode
 	return util.Optional_OfValue(result)
 }
 
-type buildInputForBasic struct {
-	mat  constraintMatrixBuilder
-	vars variableArrayBuilder
+func setupBasicConstraint(inputBuilder *inputBuilder, itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet gear_model.ActiveSet, requireSetCount util.Optional[int]) setupInputForBasic {
+	constraints := setupInputForBasic{input: inputBuilder}
+
+	for slot, item := range itemOptions.AllItemSlotSeq() {
+		constraints.addItem(slot, item, gear_model, requiredSet)
+	}
+
+	constraints.finishItems(itemOptions, gear_model, requireSetCount)
+	return constraints
+}
+
+type setupInputForBasic struct {
+	input *inputBuilder
 
 	slotsOneEachRow     [16]constraintRowBuild // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
 	requireSetCountsRow constraintRowBuild     // if requireSetCount then constrain set count to match
@@ -46,73 +51,55 @@ type buildInputForBasic struct {
 	itemLookup []lookupEntryBasic
 }
 
-func (cons *buildInputForBasic) toHighsModel() *highs.RawModel {
-	model := highs.NewRawModel()
-
-	// model.SetStringOption("presolve", "off")
-	model.SetBoolOption("log_to_console", true)
-	model.SetIntOption("log_dev_level", 3)
-
-	err := model.SetMaximization(true)
-	if err != nil {
-		panic(err)
-	}
-
-	cons.vars.applyToModel(model)
-	cons.mat.finishAndApplyToModelEfficient(model)
-
-	return model
-}
-
-func (cons *buildInputForBasic) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, gear_model *gear_model.Model, requiredSet gear_model.ActiveSet) {
+func (setup *setupInputForBasic) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, gear_model *gear_model.Model, requiredSet gear_model.ActiveSet) {
 	rating := float64(gear_model.CalcRatingSolveItemAsFloat(item))
 
 	// item version "boolean" (0 or 1)
-	columnIndex := cons.vars.create(highs.IntegerType, 0, 1, rating)
+	columnIndex := setup.input.createColumnWithOutput(highs.IntegerType, 0, 1, rating)
 
 	// specific hit/expertise values for hi/lo limits
-	cons.hitValueRow.add(columnIndex, float64(item.TotalCap().Hit()))
-	cons.expertValueRow.add(columnIndex, float64(item.TotalCap().Expertise()))
+	setup.hitValueRow.add(columnIndex, float64(item.TotalCap().Hit()))
+	setup.expertValueRow.add(columnIndex, float64(item.TotalCap().Expertise()))
 
 	// 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
 	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
 		if slot == itemSlot {
-			cons.slotsOneEachRow[slot].add(columnIndex, 1)
+			setup.slotsOneEachRow[slot].add(columnIndex, 1)
 		}
 	}
 
 	// if this item belongs to target item set then flag with a 1
 	itemSet := gear_model.SetBonus.ActiveSetForItem(item.ItemId())
 	if itemSet != nil && requiredSet != nil && itemSet.Equals(requiredSet) {
-		cons.requireSetCountsRow.add(columnIndex, 1)
+		setup.requireSetCountsRow.add(columnIndex, 1)
 	}
 
 	entry := lookupEntryBasic{itemSlot, item}
-	cons.itemLookup = append(cons.itemLookup, entry)
+	setup.itemLookup = append(setup.itemLookup, entry)
 }
 
-func (cons *buildInputForBasic) finishItems(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requireSetCount util.Optional[int]) {
-	for slot, row := range cons.slotsOneEachRow {
+func (setup *setupInputForBasic) finishItems(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requireSetCount util.Optional[int]) {
+	for slot, row := range setup.slotsOneEachRow {
 		if itemOptions.Has(items.SlotEquip(slot)) {
-			row.finish(&cons.mat, 1, 1)
+			row.finish(setup.input, 1, 1)
 		} else {
-			row.finish(&cons.mat, 0, 0)
+			row.finish(setup.input, 0, 0)
 		}
 	}
 
-	cons.hitValueRow.finish(&cons.mat, float64(gear_model.StatRequirements.HitMin()), float64(gear_model.StatRequirements.HitMax()))
-	cons.expertValueRow.finish(&cons.mat, float64(gear_model.StatRequirements.ExpertMin()), float64(gear_model.StatRequirements.ExpertMax()))
+	setup.hitValueRow.finish(setup.input, float64(gear_model.StatRequirements.HitMin()), float64(gear_model.StatRequirements.HitMax()))
+	setup.expertValueRow.finish(setup.input, float64(gear_model.StatRequirements.ExpertMin()), float64(gear_model.StatRequirements.ExpertMax()))
 
 	if require, hasRequire := requireSetCount.GetWithFlag(); hasRequire {
-		cons.requireSetCountsRow.finish(&cons.mat, float64(require), float64(require))
+		setup.requireSetCountsRow.finish(setup.input, float64(require), float64(require))
 	}
 }
 
-func (cons *buildInputForBasic) buildResultSet(solution *highs.Solution) items.SolvableItemSet {
+func (setup *setupInputForBasic) buildResultSet(solution *highs.Solution) items.SolvableItemSet {
 	itemSet := items.SolvableItemSet{}
 	for colIndex, variableResult := range solution.ColumnPrimal {
 		if variableResult == 1.0 {
-			entry := cons.itemLookup[colIndex]
+			entry := setup.itemLookup[colIndex]
 			itemSet.AddItem_DeferCalc_ExpectEmpty(entry.itemSlot, entry.item)
 		}
 	}

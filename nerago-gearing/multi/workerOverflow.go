@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-func makeOverflowThreads(waitGroup *sync.WaitGroup, commonOptions commonComboOptions, threadCount uint64, eachThreadCount uint64, comboChannel chan<- commonCombo) {
+func makeOverflowThreads(waitGroup *sync.WaitGroup, commonOptions CommonComboOptions, threadCount uint64, eachThreadCount uint64, comboChannel chan<- commonCombo) {
 	skip := chooseSkip_PrimeAndIsntSlotSize(commonOptions, threadCount*eachThreadCount)
 	for threadNum := range threadCount {
 		waitGroup.Go(func() {
@@ -16,7 +16,7 @@ func makeOverflowThreads(waitGroup *sync.WaitGroup, commonOptions commonComboOpt
 	}
 }
 
-func evaluateOverflowWorker(commonOptions commonComboOptions, loopCount uint64, threadNum uint64, skip *big.Int, comboChannel chan<- commonCombo) {
+func evaluateOverflowWorker(commonOptions CommonComboOptions, loopCount uint64, threadNum uint64, skip *big.Int, comboChannel chan<- commonCombo) {
 	indexes := make(map[items.ItemId]uint32, len(commonOptions))
 
 	initialSkip := big.NewInt(int64(threadNum * loopCount))
@@ -29,7 +29,7 @@ func evaluateOverflowWorker(commonOptions commonComboOptions, loopCount uint64, 
 	}
 }
 
-func makeComboAndAdvance(commonOptions commonComboOptions, slotIndexes map[items.ItemId]uint32, skip *big.Int) commonCombo {
+func makeComboAndAdvance(commonOptions CommonComboOptions, slotIndexes map[items.ItemId]uint32, skip *big.Int) commonCombo {
 	combo := commonCombo_Make(len(commonOptions), comboType_overflow)
 
 	remainingSkip := big.NewInt(0).Set(skip)
@@ -51,7 +51,7 @@ func makeComboAndAdvance(commonOptions commonComboOptions, slotIndexes map[items
 	return combo
 }
 
-func advanceArrays(commonOptions commonComboOptions, slotIndexes map[items.ItemId]uint32, skip *big.Int) {
+func advanceArrays(commonOptions CommonComboOptions, slotIndexes map[items.ItemId]uint32, skip *big.Int) {
 	remainingSkip := big.NewInt(0).Set(skip)
 	temp := big.NewInt(0)
 	mod := big.NewInt(0)
@@ -71,7 +71,7 @@ func advanceArrays(commonOptions commonComboOptions, slotIndexes map[items.ItemI
 	}
 }
 
-func chooseSkip_PrimeAndIsntSlotSize(commonOptions commonComboOptions, targetCount uint64) *big.Int {
+func chooseSkip_PrimeAndIsntSlotSize(commonOptions CommonComboOptions, targetCount uint64) *big.Int {
 	comboCount := commonOptions.TotalCombinationCount()
 	skip := util.ChooseSkip_NextPrimeFromRatio(comboCount, big.NewInt(int64(targetCount)))
 
@@ -85,7 +85,7 @@ func chooseSkip_PrimeAndIsntSlotSize(commonOptions commonComboOptions, targetCou
 	return skip
 }
 
-func isFactorOfSlotSize(commonOptions commonComboOptions, skip *big.Int) bool {
+func isFactorOfSlotSize(commonOptions CommonComboOptions, skip *big.Int) bool {
 	mod := big.NewInt(0)
 	for _, options := range commonOptions {
 		slotSizePrim := int64(len(options))
