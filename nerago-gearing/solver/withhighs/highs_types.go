@@ -56,7 +56,7 @@ func (input *inputBuilder) addRow(entries []indexAndValue, lowerBound float64, u
 func (input *inputBuilder) toHighsModel() *highs.Solver {
 	solver, err := highs.NewSolver()
 
-	solver.SetStringOption("presolve", "off")
+	// solver.SetStringOption("presolve", "off")
 	solver.SetBoolOption("log_to_console", true)
 	solver.SetIntOption("log_dev_level", 3)
 

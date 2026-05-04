@@ -40,7 +40,7 @@ func (job *MultiSetJob) highProcessSetup() withhighs.SolverHighsMultiProcess {
 }
 
 func (job *MultiSetJob) makeOutputFromHighs(setResults []items.FullItemSet) multiProposedOutput {
-	var totalRatingSum uint64
+	var totalRatingSum float64
 	outputs := make([]singleProposed, len(job.params))
 
 	for paramIndex := range job.params {

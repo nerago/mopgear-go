@@ -85,7 +85,7 @@ func (job *MultiSetJob) prepareOneRevisionForSim(prior *multiProposedOutput, tra
 	}
 
 	for outputSet := range util.PermuteAll(revisedOptionArrays) {
-		var totalRatingSum uint64
+		var totalRatingSum float64
 		for _, output := range outputSet {
 			totalRatingSum += output.resultRating
 		}

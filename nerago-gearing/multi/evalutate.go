@@ -24,10 +24,10 @@ func (job *MultiSetJob) evalutateTopN(proposedChannel <-chan multiProposedOutput
 
 	if len(job.specificAllowRates) == 0 {
 		job.printer.Printf("COLLECTING TOP %d\n", topCount)
-		bestChannel := channel_op.TransformAll_ChannelToChannel(evaluateThreadCount, proposedChannel, func(_ int, proposedChannel <-chan multiProposedOutput, bestChannel chan<- util_rank.HighestCollectorN[multiProposedOutput]) {
+		bestChannel := channel_op.TransformAll_ChannelToChannel(evaluateThreadCount, proposedChannel, func(_ int, proposedChannel <-chan multiProposedOutput, bestChannel chan<- util_rank.HighestCollectorFloatN[multiProposedOutput]) {
 			evalutateTopNWorker(proposedChannel, bestChannel, topCount)
 		})
-		return util_rank.HighestCollectorN_OfChannel(bestChannel, evaluateThreadCount)
+		return util_rank.HighestCollectorFloatN_OfChannel(bestChannel, evaluateThreadCount)
 	} else {
 		job.printer.Printf("COLLECTING TOP %d WITH SPLIT\n", topCount)
 		bestChannel := channel_op.TransformAll_ChannelToChannel(evaluateThreadCount, proposedChannel, func(_ int, proposedChannel <-chan multiProposedOutput, bestChannel chan<- splitHighCollector) {
@@ -37,8 +37,8 @@ func (job *MultiSetJob) evalutateTopN(proposedChannel <-chan multiProposedOutput
 	}
 }
 
-func evalutateTopNWorker(proposedChannel <-chan multiProposedOutput, bestChannel chan<- util_rank.HighestCollectorN[multiProposedOutput], topCount uint64) {
-	best := util_rank.HighestCollector_ForN(topCount, (*multiProposedOutput).Equals)
+func evalutateTopNWorker(proposedChannel <-chan multiProposedOutput, bestChannel chan<- util_rank.HighestCollectorFloatN[multiProposedOutput], topCount uint64) {
+	best := util_rank.HighestCollectorFloat_ForN(topCount, (*multiProposedOutput).Equals)
 	for proposed := range proposedChannel {
 		best.Offer(&proposed, proposed.totalRatingSum)
 	}
@@ -55,7 +55,7 @@ func evalutateTopNSplitWorker(proposedChannel <-chan multiProposedOutput, bestCh
 
 type splitHighCollector struct {
 	allowIds       []items.ItemId
-	highCollectors []util_rank.HighestCollectorN[multiProposedOutput]
+	highCollectors []util_rank.HighestCollectorFloatN[multiProposedOutput]
 }
 
 func splitHighCollector_make(specificAllowRates map[items.ItemId]specificAllowEntry, topCount uint64) splitHighCollector {
@@ -79,7 +79,7 @@ func splitHighCollector_make(specificAllowRates map[items.ItemId]specificAllowEn
 		if count <= 0 {
 			panic("unexpected zero")
 		}
-		collector.highCollectors = append(collector.highCollectors, util_rank.HighestCollector_ForN(count, (*multiProposedOutput).Equals))
+		collector.highCollectors = append(collector.highCollectors, util_rank.HighestCollectorFloat_ForN(count, (*multiProposedOutput).Equals))
 	}
 
 	return collector

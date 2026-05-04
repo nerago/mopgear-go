@@ -13,7 +13,7 @@ import (
 
 type multiProposedOutput struct {
 	id             string
-	totalRatingSum uint64
+	totalRatingSum float64
 	parts          []singleProposed
 	combo          commonCombo
 }
@@ -23,7 +23,7 @@ type singleProposed struct {
 	exists       bool
 	spec         stats.SpecType
 	outputId     string
-	resultRating uint64
+	resultRating float64
 	model        *model.Model
 }
 
@@ -31,16 +31,16 @@ func SingleProposed_FromOutput(out *solver.SolveOutput) singleProposed {
 	if !out.Success {
 		panic("should filter before putting as proposal")
 	}
-	return singleProposed{exists: true, spec: out.Input.Model.Spec, outputId: out.OutputId, resultRating: out.ResultRating, fullSet: out.FullSet, model: out.Input.Model}
+	return singleProposed{exists: true, spec: out.Input.Model.Spec, outputId: out.OutputId, resultRating: float64(out.ResultRating), fullSet: out.FullSet, model: out.Input.Model}
 }
 
 func SingleProposed_FromEquip(equipMap items.FullEquipMap, param *multiSetParamInternal) singleProposed {
 	set := items.FullItemSet_FromMap(equipMap)
-	return singleProposed{exists: true, spec: param.Model.Spec, outputId: uuid.NewString(), resultRating: param.Model.CalcRatingFull(&set), fullSet: set, model: &param.Model}
+	return singleProposed{exists: true, spec: param.Model.Spec, outputId: uuid.NewString(), resultRating: float64(param.Model.CalcRatingFullAsFloat(&set)), fullSet: set, model: &param.Model}
 }
 
 func SingleProposed_FromItemSet(itemSet items.FullItemSet, model *model.Model) singleProposed {
-	return singleProposed{exists: true, spec: model.Spec, outputId: uuid.NewString(), resultRating: model.CalcRatingFull(&itemSet), fullSet: itemSet, model: model}
+	return singleProposed{exists: true, spec: model.Spec, outputId: uuid.NewString(), resultRating: float64(model.CalcRatingFullAsFloat(&itemSet)), fullSet: itemSet, model: model}
 }
 
 func (single *singleProposed) Equals(b *singleProposed) bool {
@@ -49,7 +49,7 @@ func (single *singleProposed) Equals(b *singleProposed) bool {
 
 func (single *singleProposed) Report(printer *util.PrintRecorder) {
 	printer.Println(single.outputId)
-	solver.ReportSet(printer, single.fullSet, single.resultRating, single.model)
+	solver.ReportSet(printer, single.fullSet, uint64(single.resultRating), single.model)
 }
 
 func (proposed *multiProposedOutput) Equals(other *multiProposedOutput) bool {
@@ -73,7 +73,7 @@ func (job *MultiSetJob) makeProposedChannel(comboChannel <-chan commonCombo, com
 }
 
 func (job *MultiSetJob) subSolveCombo(combo *commonCombo, trackProgress *util.TrackProgress, outputChannel chan<- multiProposedOutput) {
-	var totalRatingSum uint64
+	var totalRatingSum float64
 	output := make([]singleProposed, len(job.params))
 	trackProgress.RunOuterTracking(len(job.params))
 	defer trackProgress.Stop()
@@ -85,7 +85,7 @@ func (job *MultiSetJob) subSolveCombo(combo *commonCombo, trackProgress *util.Tr
 			if solveFailure(result, param, job) {
 				return
 			}
-			totalRatingSum += result.ResultRating * param.ratingMultiply
+			totalRatingSum += float64(result.ResultRating) * param.ratingMultiply
 			output[paramIndex] = SingleProposed_FromOutput(&result)
 		}
 	}
@@ -97,7 +97,7 @@ func (job *MultiSetJob) subSolveCombo(combo *commonCombo, trackProgress *util.Tr
 			if solveFailure(result, param, job) {
 				return
 			}
-			totalRatingSum += result.ResultRating * param.ratingMultiply
+			totalRatingSum += float64(result.ResultRating) * param.ratingMultiply
 			output[paramIndex] = SingleProposed_FromOutput(&result)
 		}
 	}

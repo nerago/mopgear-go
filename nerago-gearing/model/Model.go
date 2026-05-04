@@ -47,9 +47,7 @@ func (model *Model) CheckSetSkinny(itemSet *SkinnyItemSet) bool {
 
 // ////////// set ratings
 func (model *Model) CalcRatingSolve(itemSet *SolvableItemSet) uint64 {
-	baseRating := model.StatRatings.CalcRatingFloat(itemSet.TotalRated())
-	setRating := model.SetBonus.CalcBonusSolve(itemSet.Items())
-	return uint64(baseRating * setRating)
+	return uint64(model.CalcRatingSolveAsFloat(itemSet))
 }
 
 func (model *Model) CalcRatingSolveAsFloat(itemSet *SolvableItemSet) float32 {
@@ -59,9 +57,13 @@ func (model *Model) CalcRatingSolveAsFloat(itemSet *SolvableItemSet) float32 {
 }
 
 func (model *Model) CalcRatingFull(itemSet *FullItemSet) uint64 {
+	return uint64(model.CalcRatingFullAsFloat(itemSet))
+}
+
+func (model *Model) CalcRatingFullAsFloat(itemSet *FullItemSet) float32 {
 	baseRating := model.StatRatings.CalcRatingFloat(itemSet.TotalRated())
 	setRating := model.SetBonus.CalcBonusFull(itemSet.Items())
-	return uint64(baseRating * setRating)
+	return baseRating * setRating
 }
 
 func (model *Model) CalcRatingGenericSet(itemSet IItemSet) uint64 {

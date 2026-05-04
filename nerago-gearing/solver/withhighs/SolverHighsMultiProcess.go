@@ -14,7 +14,7 @@ type SolverHighsMultiParam struct {
 	Label          string
 	ItemOptions    items.FullOptionsMap
 	Gear_model     *gear_model.Model
-	RatingMultiply uint64
+	RatingMultiply float64
 
 	setup        *setupInputsForSetBonus
 	solveOptions items.SolvableOptionsMap
@@ -123,7 +123,7 @@ func (param *SolverHighsMultiParam) doSetup(inputBuilder *inputBuilder, job *Sol
 	param.solveOptions = items.SolvableOptionsMap_of(&param.ItemOptions)
 	param.setup = setupBonusedInputs(inputBuilder, param.Gear_model, &param.solveOptions, 0)
 	// param.setup = setupBonusedInputs(inputBuilder, param.Gear_model, &param.solveOptions, float64(param.RatingMultiply))
-	job.outputRow.add(param.setup.mainOutputVar.columnIndex, float64(param.RatingMultiply))
+	job.outputRow.add(param.setup.mainOutputVar.columnIndex, param.RatingMultiply)
 }
 
 func (job *SolverHighsMultiProcess) addCommonConstraints(inputBuilder *inputBuilder) {

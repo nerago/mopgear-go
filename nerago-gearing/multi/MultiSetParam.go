@@ -44,7 +44,7 @@ type multiSetParamInternal struct {
 	addedFromBags     []items.ItemId
 	seenInSolutions   *seenMap
 	baselineResult    solver.SolveOutput
-	ratingMultiply    uint64 // derived
+	ratingMultiply    float64 // derived
 
 	//debug
 	solveFailCount    atomic.Uint64

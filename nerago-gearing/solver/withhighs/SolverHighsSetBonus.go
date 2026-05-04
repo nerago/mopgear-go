@@ -48,7 +48,7 @@ func setupBonusedInputs(inputBuilder *inputBuilder, gear_model *gear_model.Model
 }
 
 func debugPrint(solution *highs.Solution, setup *setupInputsForSetBonus) {
-	fmt.Println("OBJECTIVE VALUE = ", solution.Objective)
+	fmt.Println("OBJECTIVE VALUE = ", solution.Objective*c_scaled_ratings)
 
 	activeBonus := ""
 	activeBonusWeight := 0.0
@@ -163,10 +163,12 @@ func (setup *setupInputsForSetBonus) prepareActiveSets(gear_model *gear_model.Mo
 }
 
 const (
+	c_scaled_ratings = 10000000.0 // try to make highs happier
+
 	// example rating      178237915
 	//                     187513497
-	c_ratings_low_range  = 10000000.0
-	c_ratings_high_range = 100000000000.0
+	c_ratings_low_range  = 10000000.0 / c_scaled_ratings
+	c_ratings_high_range = 10000000000.0 / c_scaled_ratings
 )
 
 func (setup *setupInputsForSetBonus) buildSimpleNoSetsOutput() {
@@ -321,7 +323,8 @@ func (setup *setupInputsForSetBonus) addItem(itemSlot items.SlotEquip, item *ite
 	columnIndex := setup.input.createColumnBool()
 
 	// add rating via a summation condition
-	rating := float64(gear_model.CalcRatingSolveItemAsFloat(item))
+	// scale down ratings to keep numbers small for solver stability
+	rating := float64(gear_model.CalcRatingSolveItemAsFloat(item)) / c_scaled_ratings
 	setup.baseRatingSumRow.add(columnIndex, rating)
 
 	// specific hit/expertise values for hi/lo limits
@@ -386,7 +389,7 @@ func (setup *setupInputsForSetBonus) buildResultSet(solution *highs.Solution, it
 
 func checkSetRatingIsObjective(solution *highs.Solution, itemSet *items.SolvableItemSet, gear_model *gear_model.Model) {
 	checkRating := gear_model.CalcRatingSolveAsFloat(itemSet)
-	if !floatsApproxEquals(solution.Objective, float64(checkRating)) {
+	if !floatsApproxEquals(solution.Objective*c_scaled_ratings, float64(checkRating)) {
 		panic("rating inconsistent " + strconv.FormatFloat(solution.Objective, 'f', 0, 64) + " " + strconv.FormatFloat(float64(checkRating), 'f', 0, 32))
 	}
 }
