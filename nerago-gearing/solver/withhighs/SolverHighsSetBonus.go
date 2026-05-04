@@ -7,7 +7,7 @@ import (
 	"paladin_gearing_go/util"
 	"strconv"
 
-	"github.com/lanl/highs"
+	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 func RunAllActiveSets(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model) util.Optional[items.SolvableItemSet] {
@@ -15,7 +15,7 @@ func RunAllActiveSets(itemOptions *items.SolvableOptionsMap, gear_model *gear_mo
 	setup := setupBonusedInputs(&inputBuilder, gear_model, itemOptions, 1)
 
 	highs_model := inputBuilder.toHighsModel()
-	solution, err := highs_model.Solve()
+	solution, err := highs_model.Run()
 	fmt.Println("SOLUTION STATUS = " + solution.Status.String())
 	if err != nil {
 		panic(err)
@@ -23,12 +23,12 @@ func RunAllActiveSets(itemOptions *items.SolvableOptionsMap, gear_model *gear_mo
 
 	debugPrint(solution, setup)
 
-	if solution.Status != highs.Optimal && solution.Status != highs.ObjectiveBound && solution.Status != highs.ObjectiveTarget {
+	if solution.Status != highs.ModelStatusOptimal {
 		return util.Optional_Empty[items.SolvableItemSet]()
 	}
 
-	result := setup.buildResultSet(&solution.Solution, itemOptions, gear_model)
-	checkSetRatingIsObjective(&solution.Solution, &result, gear_model)
+	result := setup.buildResultSet(solution, itemOptions, gear_model)
+	checkSetRatingIsObjective(solution, &result, gear_model)
 	return util.Optional_OfValue(result)
 }
 
@@ -47,13 +47,13 @@ func setupBonusedInputs(inputBuilder *inputBuilder, gear_model *gear_model.Model
 	return &setup
 }
 
-func debugPrint(solution *highs.RawSolution, setup *setupInputsForSetBonus) {
+func debugPrint(solution *highs.Solution, setup *setupInputsForSetBonus) {
 	fmt.Println("OBJECTIVE VALUE = ", solution.Objective)
 
 	activeBonus := ""
 	activeBonusWeight := 0.0
 
-	for columnIndex, outputValue := range solution.ColumnPrimal {
+	for columnIndex, outputValue := range solution.ColValues {
 		var colEntry columnInfo
 		found := false
 		for _, col := range setup.allColumns {
@@ -197,7 +197,7 @@ func (setup *setupInputsForSetBonus) buildSetWeightedOutputVar(permutation *setP
 	}
 
 	// the actual output variable from this permutation, applies relevant set related multipliers
-	columnIndex := setup.input.createColumnGeneral(highs.ContinuousType, c_minusInf, c_plusInf)
+	columnIndex := setup.input.createColumnGeneral(highs.Continuous, c_minusInf, c_plusInf)
 	entry := columnInfo{entryType: entry_permutation_output_weighted, columnIndex: columnIndex, permutation: permutation, weight: totalWeight}
 	setup.allColumns = append(setup.allColumns, entry)
 	return columnIndex, totalWeight
@@ -250,7 +250,7 @@ func makeSetPermutationsRecur(allSetPermutation []setPermutation, setData []setI
 
 func (setup *setupInputsForSetBonus) addSetItemCountVariable(info *setInfo) {
 	// set item actual count
-	columnIndex := setup.input.createColumnGeneral(highs.IntegerType, 0, c_maxSetItems)
+	columnIndex := setup.input.createColumnGeneral(highs.Integer, 0, c_maxSetItems)
 
 	// add corresponding -1 to the set item count array, so we can compare value to the sum of items, relevant items will flag a 1
 	info.countSetItemsRow.add(columnIndex, -1)
@@ -290,7 +290,7 @@ func (setup *setupInputsForSetBonus) addSetItemsCountExactVariables(info *setInf
 
 func (setup *setupInputsForSetBonus) addMainOutputVariable(scaleOutputRating float64) {
 	// goes directly into overall rating, but could have an external scale applied
-	columnIndex := setup.input.createColumnWithOutput(highs.ContinuousType, 0, c_plusInf, scaleOutputRating)
+	columnIndex := setup.input.createColumnWithOutput(highs.Continuous, 0, c_plusInf, scaleOutputRating)
 
 	// derive value based on whichever setup bonus permutation is active
 	setup.mainOutputRow.add(columnIndex, -1)
@@ -304,7 +304,7 @@ func (setup *setupInputsForSetBonus) addMainOutputVariable(scaleOutputRating flo
 func (setup *setupInputsForSetBonus) addSumRatingVariable() {
 	// sum of individual selected item ratings
 	// doesen't go directly into output rating
-	columnIndex := setup.input.createColumnGeneral(highs.ContinuousType, 0, c_plusInf)
+	columnIndex := setup.input.createColumnGeneral(highs.Continuous, 0, c_plusInf)
 
 	// main action of this variable: derive value to match rest of rest of row sum
 	setup.baseRatingSumRow.add(columnIndex, -1)
@@ -371,7 +371,7 @@ func (setup *setupInputsForSetBonus) finishItems(itemOptions *items.SolvableOpti
 func (setup *setupInputsForSetBonus) buildResultSet(solution *highs.Solution, itemOptions *items.SolvableOptionsMap, model *gear_model.Model) items.SolvableItemSet {
 	itemSet := items.SolvableItemSet{}
 	for _, columnEntry := range setup.itemColumns {
-		variableResult := solution.ColumnPrimal[columnEntry.columnIndex]
+		variableResult := solution.ColValues[columnEntry.columnIndex]
 		if columnEntry.entryType == entry_item && floatEqualsOne(variableResult) {
 			itemSet.AddItem_DeferCalc_ExpectEmpty(columnEntry.itemSlot, columnEntry.item)
 		}
@@ -396,7 +396,7 @@ func (setup *setupInputsForSetBonus) checkActivePermutation(solution *highs.Solu
 		var activePermutation *setPermutation
 
 		for _, permutation := range setup.allSetPermutation {
-			variableResult := solution.ColumnPrimal[permutation.activatingVar]
+			variableResult := solution.ColValues[permutation.activatingVar]
 			if floatEqualsOne(variableResult) {
 				if activePermutation == nil {
 					activePermutation = &permutation
@@ -429,7 +429,7 @@ const (
 	entry_sum_rating                  entryType = iota
 	entry_permutation_active          entryType = iota
 	entry_permutation_output_weighted entryType = iota
-	entry_main_output                entryType = iota
+	entry_main_output                 entryType = iota
 )
 
 type columnInfo struct {

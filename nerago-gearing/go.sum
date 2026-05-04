@@ -1,10 +1,7 @@
+github.com/bartolsthoorn/gohighs v1.0.0 h1:qDrUc3/y2RRekTOT8kIuivDxDd3cwafQyBFXrKnbHxQ=
+github.com/bartolsthoorn/gohighs v1.0.0/go.mod h1:Pgn3qEVcXg3OXE4/rltZDtOBHG293ZAA0WJl5o3nA3M=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/lanl/highs v1.0.3 h1:E+0m1EBLl9rEJmnW59wT7XJsJ3uSenPRSYMotnPp5R0=
-github.com/lanl/highs v1.0.3/go.mod h1:2Z1f+OSB3JD+qTDUySxGnh6PN5Ns7XtZLUyHBk+aczc=
-golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 h1:nDVHiLt8aIbd/VzvPWN6kSOPE7+F/fNFDSXLVYkE/Iw=
-golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f h1:W3F4c+6OLc6H2lb//N1q4WpJkhzJCK5J6kUi1NTVXfM=
-golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f/go.mod h1:J1xhfL/vlindoeF/aINzNzt2Bket5bjo9sdOYzOsU80=
 google.golang.org/protobuf v1.36.11 h1:fV6ZwhNocDyBLK0dj+fg8ektcVegBBuEolpbTQyBNVE=
 google.golang.org/protobuf v1.36.11/go.mod h1:HTf+CrKn2C3g5S8VImy6tdcUvCska2kB7j23XfzDpco=

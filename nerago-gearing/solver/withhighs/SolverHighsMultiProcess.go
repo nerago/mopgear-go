@@ -7,7 +7,7 @@ import (
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/util"
 
-	"github.com/lanl/highs"
+	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 type SolverHighsMultiParam struct {
@@ -38,34 +38,34 @@ func (job *SolverHighsMultiProcess) SetCommon(common map[items.ItemId][]items.Fu
 
 func (job *SolverHighsMultiProcess) Run(printer *util.PrintRecorder) []items.FullItemSet {
 	highs_model := job.makeFullModel()
-	solution, err := highs_model.Solve()
+	solution, err := highs_model.Run()
 	printer.Println("SOLUTION STATUS = " + solution.Status.String())
 	if err != nil {
 		panic(err)
 	}
 
-	if solution.Status != highs.Optimal && solution.Status != highs.ObjectiveBound && solution.Status != highs.ObjectiveTarget {
+	if solution.Status != highs.ModelStatusOptimal {
 		return nil
 	}
 
 	return job.solutionToResult(solution)
 }
 
-func (job *SolverHighsMultiProcess) solutionToResult(solution *highs.RawSolution) []items.FullItemSet {
+func (job *SolverHighsMultiProcess) solutionToResult(solution *highs.Solution) []items.FullItemSet {
 	resultList := make([]items.FullItemSet, len(job.parts))
 	for partIndex := range job.parts {
 		part := job.parts[partIndex]
-		solvedSet := part.setup.buildResultSet(&solution.Solution, &part.solveOptions, part.Gear_model)
+		solvedSet := part.setup.buildResultSet(solution, &part.solveOptions, part.Gear_model)
 		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &part.ItemOptions)
 		resultList[partIndex] = fullItemSet
 	}
 	return resultList
 }
 
-func (job *SolverHighsMultiProcess) makeFullModel() *highs.RawModel {
+func (job *SolverHighsMultiProcess) makeFullModel() *highs.Solver {
 	inputBuilder := inputBuilder{}
 
-	job.outputColumn = inputBuilder.createColumnWithOutput(highs.ContinuousType, c_minusInf, c_plusInf, 1)
+	job.outputColumn = inputBuilder.createColumnWithOutput(highs.Continuous, c_minusInf, c_plusInf, 1)
 	job.outputRow.add(job.outputColumn, -1)
 
 	for partIndex := range job.parts {
@@ -82,7 +82,7 @@ func (job *SolverHighsMultiProcess) makeFullModel() *highs.RawModel {
 
 func (job SolverHighsMultiProcess) RunForSeveral(printer *util.PrintRecorder, topN int) [][]items.FullItemSet {
 	highs_model := job.makeFullModel()
-	solution, err := highs_model.Solve()
+	solution, err := highs_model.Run()
 	printer.Println("SOLUTION STATUS = " + solution.Status.String())
 	if err != nil {
 		panic(err)
@@ -101,7 +101,7 @@ func (job SolverHighsMultiProcess) RunForSeveral(printer *util.PrintRecorder, to
 	for len(resultList) < topN {
 		// highs_model.AddCompSparseRows([]float64{0}, []int{0}, []int{job.outputColumn}, []float64{1}, []float64{previousScore - 1})
 
-		solution, err := highs_model.Solve()
+		solution, err := highs_model.Run()
 		printer.Println("SOLUTION STATUS = " + solution.Status.String())
 		if err != nil {
 			panic(err)

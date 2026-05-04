@@ -5,7 +5,7 @@ import (
 	"math"
 	"slices"
 
-	"github.com/lanl/highs"
+	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 const (
@@ -38,7 +38,7 @@ type inputBuilder struct {
 }
 
 func (input *inputBuilder) createColumnBool() int {
-	return input.vars.create(highs.IntegerType, 0, 1, 0)
+	return input.vars.create(highs.Integer, 0, 1, 0)
 }
 
 func (input *inputBuilder) createColumnGeneral(varType highs.VariableType, lower, upper float64) int {
@@ -53,12 +53,12 @@ func (input *inputBuilder) addRow(entries []indexAndValue, lowerBound float64, u
 	input.mat.addRow(entries, lowerBound, upperBound)
 }
 
-func (input *inputBuilder) toHighsModel() *highs.RawModel {
-	model := highs.NewRawModel()
+func (input *inputBuilder) toHighsModel() *highs.Solver {
+	solver, err := highs.NewSolver()
 
-	model.SetStringOption("presolve", "off")
-	model.SetBoolOption("log_to_console", true)
-	model.SetIntOption("log_dev_level", 3)
+	solver.SetStringOption("presolve", "off")
+	solver.SetBoolOption("log_to_console", true)
+	solver.SetIntOption("log_dev_level", 3)
 
 	// tempFile, err := os.CreateTemp("", "highslog")
 	// if err != nil {
@@ -67,16 +67,22 @@ func (input *inputBuilder) toHighsModel() *highs.RawModel {
 	// tempFile.Close()
 	// model.SetStringOption("log_file", tempFile.Name())
 
-	err := model.SetMaximization(true)
+	err = solver.SetMaximize(true)
 	if err != nil {
 		panic(err)
 	}
 
-	input.vars.applyToModel(model)
-	input.mat.finishAndApplyToModelEfficient(model)
-	// input.mat.finishAndApplyToModelSlow(model)
+	numRows, lowerBound, upperBound, startArray, indexArray, valuesArray := input.mat.prepareForModel()
 
-	return model
+	solver.PassModel(
+		len(input.vars.ColTypes),
+		numRows,
+		input.vars.ColCosts, input.vars.ColLower, input.vars.ColUpper,
+		lowerBound, upperBound,
+		startArray, indexArray, valuesArray,
+		input.vars.ColTypes, true, 0)
+
+	return solver
 }
 
 type variableArrayBuilder struct {
@@ -93,23 +99,6 @@ func (vars *variableArrayBuilder) create(varType highs.VariableType, lower, uppe
 	vars.ColUpper = append(vars.ColUpper, upper)
 	vars.ColCosts = append(vars.ColCosts, cost)
 	return index
-}
-
-func (vars variableArrayBuilder) applyToModel(param *highs.RawModel) {
-	err := param.AddColumnBounds(vars.ColLower, vars.ColUpper)
-	if err != nil {
-		panic(err)
-	}
-
-	err = param.SetColumnCosts(vars.ColCosts)
-	if err != nil {
-		panic(err)
-	}
-
-	err = param.SetIntegrality(vars.ColTypes)
-	if err != nil {
-		panic(err)
-	}
 }
 
 type indexAndValue struct {
@@ -154,14 +143,8 @@ func (mat *constraintMatrixBuilder) addRow(entries []indexAndValue, lowerBound f
 	mat.upperBound = append(mat.upperBound, upperBound)
 }
 
-func (mat *constraintMatrixBuilder) finishAndApplyToModelSlow(param *highs.RawModel) {
-	for i := range mat.entries {
-		applyRowEntriesForRow(param, mat.entries[i], mat.lowerBound[i], mat.upperBound[i])
-	}
-}
-
-func (mat *constraintMatrixBuilder) finishAndApplyToModelEfficient(param *highs.RawModel) {
-	numRows := len(mat.entries)
+func (mat *constraintMatrixBuilder) prepareForModel() (numRows int, lowerBound []float64, upperBound []float64, startArray []int, indexArray []int, valuesArray []float64) {
+	numRows = len(mat.entries)
 	if len(mat.lowerBound) != numRows || len(mat.upperBound) != numRows {
 		panic("inconsistent row count")
 	}
@@ -174,12 +157,11 @@ func (mat *constraintMatrixBuilder) finishAndApplyToModelEfficient(param *highs.
 		panic("completely empty model")
 	}
 
-	startArray := make([]int, numRows)
-	indexArray := make([]int, valueCount)
-	valuesArray := make([]float64, valueCount)
+	startArray = make([]int, numRows)
+	indexArray = make([]int, valueCount)
+	valuesArray = make([]float64, valueCount)
 
 	insertIndex := 0
-
 	for rowNum, rowEntries := range mat.entries {
 		startArray[rowNum] = insertIndex
 
@@ -190,54 +172,5 @@ func (mat *constraintMatrixBuilder) finishAndApplyToModelEfficient(param *highs.
 		}
 	}
 
-	err := param.AddCompSparseRows(
-		mat.lowerBound,
-		startArray,
-		indexArray,
-		valuesArray,
-		mat.upperBound,
-	)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func applyRowEntriesForRow(param *highs.RawModel, entries []indexAndValue, lowerBound float64, upperBound float64) {
-	values := make([]float64, len(entries))
-	columnNumbers := make([]int, len(entries))
-	for i := range entries {
-		values[i] = entries[i].value
-		columnNumbers[i] = entries[i].columnNumber
-	}
-
-	applyRowData(param, values, columnNumbers, lowerBound, upperBound)
-}
-
-func applyRowData(param *highs.RawModel, values []float64, columnNumbers []int, lowerBound float64, upperBound float64) {
-	var err error
-	if len(values) > 0 {
-		err = param.AddCompSparseRows(
-			[]float64{lowerBound},
-			[]int{0},
-			columnNumbers,
-			values,
-			[]float64{upperBound},
-		)
-	} else {
-		// need to set an explicit zero value so array isn't empty
-		// i'd argue this is a bug in go/highs binding library,
-		// empty array should be acceptable to lower level code
-		// maybe these don't need to be added in many use cases though, automatically skipping seems risky
-		err = param.AddCompSparseRows(
-			[]float64{lowerBound},
-			[]int{0},
-			[]int{0},
-			[]float64{0.0},
-			[]float64{upperBound},
-		)
-	}
-
-	if err != nil {
-		panic(err)
-	}
+	return numRows, mat.lowerBound, mat.upperBound, startArray, indexArray, valuesArray
 }

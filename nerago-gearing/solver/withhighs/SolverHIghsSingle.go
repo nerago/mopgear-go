@@ -6,7 +6,7 @@ import (
 	gear_model "paladin_gearing_go/model"
 	"paladin_gearing_go/util"
 
-	"github.com/lanl/highs"
+	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 type RequiredSetCounts map[gear_model.ActiveSet]int
@@ -20,7 +20,7 @@ func RunSingle(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Mod
 	}
 
 	highs_model := inputBuilder.toHighsModel()
-	solution, err := highs_model.Solve()
+	solution, err := highs_model.Run()
 	fmt.Println(solution.Status.String())
 	if err != nil {
 		panic(err)
@@ -30,11 +30,11 @@ func RunSingle(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Mod
 	// 	fmt.Println(i, x)
 	// }
 
-	if solution.Status != highs.Optimal && solution.Status != highs.ObjectiveBound && solution.Status != highs.ObjectiveTarget {
+	if solution.Status != highs.ModelStatusOptimal {
 		return util.Optional_Empty[items.SolvableItemSet]()
 	}
 
-	result := inputs.buildResultSet(&solution.Solution, itemOptions, gear_model)
+	result := inputs.buildResultSet(solution, itemOptions, gear_model)
 	checkSetBonusMet(&result, requiredSet)
 	return util.Optional_OfValue(result)
 }
@@ -78,7 +78,7 @@ func (setup *setupInputForBasic) addItem(itemSlot items.SlotEquip, item *items.S
 	rating := float64(model.CalcRatingSolveItemAsFloat(item))
 
 	// item version "boolean" (0 or 1)
-	columnIndex := setup.input.createColumnWithOutput(highs.IntegerType, 0, 1, rating)
+	columnIndex := setup.input.createColumnWithOutput(highs.Integer, 0, 1, rating)
 
 	// specific hit/expertise values for hi/lo limits
 	setup.hitValueRow.add(columnIndex, float64(item.TotalCap().Hit()))
@@ -126,7 +126,7 @@ func (setup *setupInputForBasic) finishItems(itemOptions *items.SolvableOptionsM
 
 func (setup *setupInputForBasic) buildResultSet(solution *highs.Solution, itemOptions *items.SolvableOptionsMap, model *gear_model.Model) items.SolvableItemSet {
 	itemSet := items.SolvableItemSet{}
-	for colIndex, variableResult := range solution.ColumnPrimal {
+	for colIndex, variableResult := range solution.ColValues {
 		if floatEqualsOne(variableResult) {
 			entry := setup.itemLookup[colIndex]
 			itemSet.AddItem_DeferCalc_ExpectEmpty(entry.itemSlot, entry.item)
