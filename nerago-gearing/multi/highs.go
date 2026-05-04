@@ -9,6 +9,18 @@ import (
 )
 
 func (job *MultiSetJob) FindHighsResult() {
+	highProcess := job.highProcessSetup()
+
+	setResults := highProcess.Run(job.printer)
+	if setResults != nil {
+		proposedOutput := job.makeOutputFromHighs(setResults)
+		job.listInitialOutputs([]multiProposedOutput{proposedOutput})
+	} else {
+		job.printer.Println("FAILED")
+	}
+}
+
+func (job *MultiSetJob) highProcessSetup() withhighs.SolverHighsMultiProcess {
 	highProcess := withhighs.SolverHighsMultiProcess{}
 
 	job.prepareInitial()
@@ -24,14 +36,7 @@ func (job *MultiSetJob) FindHighsResult() {
 			RatingMultiply: param.ratingMultiply,
 		})
 	}
-
-	setResults := highProcess.Run(job.printer)
-	if setResults != nil {
-		proposedOutput := job.makeOutputFromHighs(setResults)
-		job.listInitialOutputs([]multiProposedOutput{proposedOutput})
-	} else {
-		job.printer.Println("FAILED")
-	}
+	return highProcess
 }
 
 func (job *MultiSetJob) makeOutputFromHighs(setResults []items.FullItemSet) multiProposedOutput {
@@ -56,4 +61,14 @@ func (job *MultiSetJob) makeOutputFromHighs(setResults []items.FullItemSet) mult
 }
 
 func (job *MultiSetJob) FindSeveralHighsAndSim(runSize simulate.WowSim_RunSize) {
+	highProcess := job.highProcessSetup()
+
+	// var setResults [][]items.FullItemSet = highProcess.RunForSeveral(job.printer, 10)
+	_ = highProcess.RunForSeveral(job.printer, 10)
+	// if setResults != nil {
+	// 	proposedOutput := job.makeOutputFromHighs(setResults)
+	// 	job.listInitialOutputs([]multiProposedOutput{proposedOutput})
+	// } else {
+	// 	job.printer.Println("FAILED")
+	// }
 }

@@ -28,14 +28,14 @@ func RunAllActiveSets(itemOptions *items.SolvableOptionsMap, gear_model *gear_mo
 	}
 
 	result := setup.buildResultSet(&solution.Solution, itemOptions, gear_model)
-	checkSetRating(&solution.Solution, &result, gear_model)
+	checkSetRatingIsObjective(&solution.Solution, &result, gear_model)
 	return util.Optional_OfValue(result)
 }
 
 func setupBonusedInputs(inputBuilder *inputBuilder, gear_model *gear_model.Model, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *setupInputsForSetBonus {
 	setup := setupInputsForSetBonus{input: inputBuilder}
 
-	setup.addFinalOutputVariable(scaleOutputRating)
+	setup.addMainOutputVariable(scaleOutputRating)
 	setup.addSumRatingVariable()
 	setup.prepareActiveSets(gear_model)
 
@@ -83,7 +83,7 @@ func debugPrint(solution *highs.RawSolution, setup *setupInputsForSetBonus) {
 				if !floatEqualsZero(outputValue) {
 					activeBonusWeight += colEntry.weight
 				}
-			case entry_final_output:
+			case entry_main_output:
 				fmt.Println(columnIndex, outputValue, "final value")
 			default:
 				panic("unknown column")
@@ -107,8 +107,8 @@ type setupInputsForSetBonus struct {
 	baseRatingSumRow constraintRowBuild // values for the ratings of each item
 	baseRatingSumVar *columnInfo        // sum of values for the ratings of selected items
 
-	finalOutputRow constraintRowBuild // compute final output from set based alternatives
-	finalOutputVar *columnInfo        // output variable, to be used directly or scaled against other models
+	mainOutputRow constraintRowBuild // compute final output from set based alternatives
+	mainOutputVar *columnInfo        // output variable, to be used directly or scaled against other models
 
 	setData           []setInfo
 	allSetPermutation []setPermutation
@@ -171,7 +171,7 @@ const (
 
 func (setup *setupInputsForSetBonus) buildSimpleNoSetsOutput() {
 	// just copy initial rating sum into final if no sets
-	setup.finalOutputRow.add(setup.baseRatingSumVar.columnIndex, 1)
+	setup.mainOutputRow.add(setup.baseRatingSumVar.columnIndex, 1)
 }
 
 func (setup *setupInputsForSetBonus) buildSetMultipliedOutput(permutation *setPermutation) {
@@ -182,7 +182,7 @@ func (setup *setupInputsForSetBonus) buildSetMultipliedOutput(permutation *setPe
 	contraintIfBoolCopyValueElseZero(setup.input, activatingVar, setup.baseRatingSumVar.columnIndex, outputVar, c_ratings_low_range, c_ratings_high_range)
 
 	// add scaled rating to final computation
-	setup.finalOutputRow.add(outputVar, weight)
+	setup.mainOutputRow.add(outputVar, weight)
 
 	permutation.outputVar = outputVar
 	permutation.activatingVar = activatingVar
@@ -288,16 +288,16 @@ func (setup *setupInputsForSetBonus) addSetItemsCountExactVariables(info *setInf
 	singleFlagOnly.finish(setup.input, 1, 1) // sum of flags should be just one, should pull the zero flag up if no other set
 }
 
-func (setup *setupInputsForSetBonus) addFinalOutputVariable(scaleOutputRating float64) {
+func (setup *setupInputsForSetBonus) addMainOutputVariable(scaleOutputRating float64) {
 	// goes directly into overall rating, but could have an external scale applied
 	columnIndex := setup.input.createColumnWithOutput(highs.ContinuousType, 0, c_plusInf, scaleOutputRating)
 
 	// derive value based on whichever setup bonus permutation is active
-	setup.finalOutputRow.add(columnIndex, -1)
+	setup.mainOutputRow.add(columnIndex, -1)
 
 	// save reference
-	entry := columnInfo{entryType: entry_final_output, columnIndex: columnIndex}
-	setup.finalOutputVar = &entry
+	entry := columnInfo{entryType: entry_main_output, columnIndex: columnIndex}
+	setup.mainOutputVar = &entry
 	setup.allColumns = append(setup.allColumns, entry)
 }
 
@@ -365,7 +365,7 @@ func (setup *setupInputsForSetBonus) finishItems(itemOptions *items.SolvableOpti
 	}
 
 	// constrain: whichever alternate set output into final
-	setup.finalOutputRow.finish(setup.input, 0, 0)
+	setup.mainOutputRow.finish(setup.input, 0, 0)
 }
 
 func (setup *setupInputsForSetBonus) buildResultSet(solution *highs.Solution, itemOptions *items.SolvableOptionsMap, model *gear_model.Model) items.SolvableItemSet {
@@ -379,13 +379,12 @@ func (setup *setupInputsForSetBonus) buildResultSet(solution *highs.Solution, it
 	items.SolvableItemSet_RecalculateTotal(&itemSet)
 
 	validateNewSet(itemSet, itemOptions, model)
-
 	setup.checkActivePermutation(solution, &itemSet)
 
 	return itemSet
 }
 
-func checkSetRating(solution *highs.Solution, itemSet *items.SolvableItemSet, gear_model *gear_model.Model) {
+func checkSetRatingIsObjective(solution *highs.Solution, itemSet *items.SolvableItemSet, gear_model *gear_model.Model) {
 	checkRating := gear_model.CalcRatingSolveAsFloat(itemSet)
 	if !floatsApproxEquals(solution.Objective, float64(checkRating)) {
 		panic("rating inconsistent " + strconv.FormatFloat(solution.Objective, 'f', 0, 64) + " " + strconv.FormatFloat(float64(checkRating), 'f', 0, 32))
@@ -430,7 +429,7 @@ const (
 	entry_sum_rating                  entryType = iota
 	entry_permutation_active          entryType = iota
 	entry_permutation_output_weighted entryType = iota
-	entry_final_output                entryType = iota
+	entry_main_output                entryType = iota
 )
 
 type columnInfo struct {
