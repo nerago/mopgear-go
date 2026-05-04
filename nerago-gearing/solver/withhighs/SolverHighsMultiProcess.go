@@ -1,6 +1,7 @@
 package withhighs
 
 import (
+	"fmt"
 	"iter"
 	"paladin_gearing_go/items"
 	gear_model "paladin_gearing_go/model"
@@ -26,6 +27,8 @@ type SolverHighsMultiProcess struct {
 
 	outputColumn int
 	outputRow    constraintRowBuild
+
+	allColumns []columnInfo
 }
 
 func (job *SolverHighsMultiProcess) AddSetParam(param SolverHighsMultiParam) {
@@ -44,11 +47,32 @@ func (job *SolverHighsMultiProcess) Run(printer *util.PrintRecorder) []items.Ful
 		panic(err)
 	}
 
+	debugPrintAll(solution, job)
+
 	if solution.Status != highs.ModelStatusOptimal {
 		return nil
 	}
 
 	return job.solutionToResult(solution)
+}
+
+func debugPrintAll(solution *highs.Solution, job *SolverHighsMultiProcess) {
+	fmt.Println("OBJECTIVE VALUE = ", solution.Objective*c_scaled_ratings)
+
+columnLoop:
+	for columnIndex, outputValue := range solution.ColValues {
+		if debugPrintColumn(job.allColumns, columnIndex, outputValue, nil, nil) {
+			continue columnLoop
+		}
+
+		for _, part := range job.parts {
+			if debugPrintColumn(part.setup.allColumns, columnIndex, outputValue, nil, nil) {
+				continue columnLoop
+			}
+		}
+
+		fmt.Println(columnIndex, outputValue, "NOT FOUND???")
+	}
 }
 
 func (job *SolverHighsMultiProcess) solutionToResult(solution *highs.Solution) []items.FullItemSet {
@@ -67,6 +91,9 @@ func (job *SolverHighsMultiProcess) makeFullModel() *highs.Solver {
 
 	job.outputColumn = inputBuilder.createColumnWithOutput(highs.Continuous, c_minusInf, c_plusInf, 1)
 	job.outputRow.add(job.outputColumn, -1)
+
+	entry := columnInfo{entryType: entry_multi_output, columnIndex: job.outputColumn}
+	job.allColumns = append(job.allColumns, entry)
 
 	for partIndex := range job.parts {
 		job.parts[partIndex].doSetup(&inputBuilder, job)
@@ -147,6 +174,9 @@ func (job *SolverHighsMultiProcess) addCommonConstraintsForItem(inputBuilder *in
 			matchingReforge.add(partUsedItem, -1)
 			matchingReforge.finish(inputBuilder, 0, 1)
 		}
+
+		entry := columnInfo{entryType: entry_multi_enable_forge, columnIndex: enableReforge, itemFull: &item}
+		job.allColumns = append(job.allColumns, entry)
 	}
 
 	onlyOneReforge.finish(inputBuilder, 1, 1)

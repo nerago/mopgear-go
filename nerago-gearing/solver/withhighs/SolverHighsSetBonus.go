@@ -54,46 +54,60 @@ func debugPrint(solution *highs.Solution, setup *setupInputsForSetBonus) {
 	activeBonusWeight := 0.0
 
 	for columnIndex, outputValue := range solution.ColValues {
-		var colEntry columnInfo
-		found := false
-		for _, col := range setup.allColumns {
-			if col.columnIndex == columnIndex {
-				colEntry = col
-				found = true
-			}
-		}
-
-		if found {
-			switch colEntry.entryType {
-			case entry_item:
-				fmt.Println(columnIndex, outputValue, "item", colEntry.itemSlot.Name(), colEntry.item.ItemId())
-			case entry_set_total_count:
-				fmt.Println(columnIndex, outputValue, "set total count", colEntry.set.Name())
-			case entry_set_exact_count:
-				fmt.Println(columnIndex, outputValue, "set exact count flag", colEntry.set.Name(), colEntry.itemCount)
-			case entry_sum_rating:
-				fmt.Println(columnIndex, outputValue, "initial item rating sum")
-			case entry_permutation_active:
-				fmt.Println(columnIndex, outputValue, "permutation active", colEntry.permutation.debugStr())
-				if floatEqualsOne(outputValue) {
-					activeBonus += colEntry.permutation.debugStr()
-				}
-			case entry_permutation_output_weighted:
-				fmt.Println(columnIndex, outputValue, "permutation weighted output", colEntry.permutation.debugStr(), colEntry.weight)
-				if !floatEqualsZero(outputValue) {
-					activeBonusWeight += colEntry.weight
-				}
-			case entry_main_output:
-				fmt.Println(columnIndex, outputValue, "final value")
-			default:
-				panic("unknown column")
-			}
-		} else {
+		if !debugPrintColumn(setup.allColumns, columnIndex, outputValue, &activeBonus, &activeBonusWeight) {
 			fmt.Println(columnIndex, outputValue, "NOT FOUND???")
 		}
 	}
 
 	fmt.Printf("ACTIVE highs Bonus = %s %f\n", activeBonus, activeBonusWeight)
+}
+
+func debugPrintColumn(allColumns []columnInfo, columnIndex int, outputValue float64, activeBonus *string, activeBonusWeight *float64) bool {
+	var colEntry columnInfo
+	found := false
+	for _, col := range allColumns {
+		if col.columnIndex == columnIndex {
+			colEntry = col
+			found = true
+			break
+		}
+	}
+
+	if found {
+		debugPrintColumnEntry(colEntry, columnIndex, outputValue, activeBonus, activeBonusWeight)
+	}
+	return found
+}
+
+func debugPrintColumnEntry(colEntry columnInfo, columnIndex int, outputValue float64, activeBonus *string, activeBonusWeight *float64) {
+	switch colEntry.entryType {
+	case entry_item:
+		fmt.Println(columnIndex, outputValue, "item", colEntry.itemSlot.Name(), colEntry.item.ItemId())
+	case entry_set_total_count:
+		fmt.Println(columnIndex, outputValue, "set total count", colEntry.set.Name())
+	case entry_set_exact_count:
+		fmt.Println(columnIndex, outputValue, "set exact count flag", colEntry.set.Name(), colEntry.itemCount)
+	case entry_sum_rating:
+		fmt.Println(columnIndex, outputValue, "initial item rating sum")
+	case entry_permutation_active:
+		fmt.Println(columnIndex, outputValue, "permutation active", colEntry.permutation.debugStr())
+		if floatEqualsOne(outputValue) && activeBonus != nil {
+			*activeBonus += colEntry.permutation.debugStr()
+		}
+	case entry_permutation_output_weighted:
+		fmt.Println(columnIndex, outputValue, "permutation weighted output", colEntry.permutation.debugStr(), colEntry.weight)
+		if !floatEqualsZero(outputValue) && activeBonusWeight != nil {
+			*activeBonusWeight += colEntry.weight
+		}
+	case entry_main_output:
+		fmt.Println(columnIndex, outputValue, "final value")
+	case entry_multi_enable_forge:
+		fmt.Println(columnIndex, outputValue, "multi enable forge", colEntry.itemFull.ItemId())
+	case entry_multi_output:
+		fmt.Println(columnIndex, outputValue, "multi output")
+	default:
+		panic("unknown column")
+	}
 }
 
 type setupInputsForSetBonus struct {
@@ -168,7 +182,7 @@ const (
 	// example rating      178237915
 	//                     187513497
 	c_ratings_low_range  = 10000000.0 / c_scaled_ratings
-	c_ratings_high_range = 10000000000.0 / c_scaled_ratings
+	c_ratings_high_range = 1000000000000.0 / c_scaled_ratings
 )
 
 func (setup *setupInputsForSetBonus) buildSimpleNoSetsOutput() {
@@ -433,6 +447,8 @@ const (
 	entry_permutation_active          entryType = iota
 	entry_permutation_output_weighted entryType = iota
 	entry_main_output                 entryType = iota
+	entry_multi_enable_forge          entryType = iota
+	entry_multi_output                entryType = iota
 )
 
 type columnInfo struct {
@@ -441,6 +457,7 @@ type columnInfo struct {
 
 	itemSlot items.SlotEquip
 	item     *items.SolvableItem
+	itemFull *items.FullItem
 
 	set         gear_model.ActiveSet
 	itemCount   int
