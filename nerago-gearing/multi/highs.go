@@ -64,11 +64,21 @@ func (job *MultiSetJob) FindSeveralHighsAndSim(runSize simulate.WowSim_RunSize) 
 	highProcess := job.highProcessSetup()
 
 	// var setResults [][]items.FullItemSet = highProcess.RunForSeveral(job.printer, 10)
-	_ = highProcess.RunForSeveral(job.printer, 10)
-	// if setResults != nil {
-	// 	proposedOutput := job.makeOutputFromHighs(setResults)
-	// 	job.listInitialOutputs([]multiProposedOutput{proposedOutput})
-	// } else {
-	// 	job.printer.Println("FAILED")
-	// }
+	setResultList := highProcess.RunForSeveral_CommonDifferent(job.printer)
+	if setResultList != nil {
+		// util.RemoveDuplicatesComparable(setResults)
+
+		// specOptions = util.RemoveDuplicatesFuncNotify(specOptions, func(a, b *singleProposed) bool {
+		// 	return a.fullSet.Equals(&b.fullSet)
+		// }, func(removed *singleProposed) {
+		// 	printer.Printf("removed duplicate output %s\n", removed.outputId)
+		// })
+
+		for _, setResult := range setResultList {
+			proposedOutput := job.makeOutputFromHighs(setResult)
+			job.listInitialOutputs([]multiProposedOutput{proposedOutput})
+		}
+	} else {
+		job.printer.Println("FAILED")
+	}
 }

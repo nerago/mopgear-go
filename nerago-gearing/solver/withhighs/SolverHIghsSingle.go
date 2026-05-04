@@ -30,13 +30,13 @@ func RunSingle(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Mod
 	// 	fmt.Println(i, x)
 	// }
 
-	if solution.Status != highs.ModelStatusOptimal {
+	if solution.HasSolution() {
+		result := inputs.buildResultSet(solution, itemOptions, gear_model)
+		checkSetBonusMet(&result, requiredSet)
+		return util.Optional_OfValue(result)
+	} else {
 		return util.Optional_Empty[items.SolvableItemSet]()
 	}
-
-	result := inputs.buildResultSet(solution, itemOptions, gear_model)
-	checkSetBonusMet(&result, requiredSet)
-	return util.Optional_OfValue(result)
 }
 
 func setupBasicConstraint(inputBuilder *inputBuilder, itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet RequiredSetCounts) *setupInputForBasic {

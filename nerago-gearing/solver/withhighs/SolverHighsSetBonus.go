@@ -1,7 +1,6 @@
 package withhighs
 
 import (
-	"fmt"
 	"paladin_gearing_go/items"
 	gear_model "paladin_gearing_go/model"
 	"paladin_gearing_go/util"
@@ -10,26 +9,26 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
-func RunAllActiveSets(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model) util.Optional[items.SolvableItemSet] {
+func RunAllActiveSets(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, printer *util.PrintRecorder) util.Optional[items.SolvableItemSet] {
 	inputBuilder := inputBuilder{}
 	setup := setupBonusedInputs(&inputBuilder, gear_model, itemOptions, 1)
 
 	highs_model := inputBuilder.toHighsModel()
 	solution, err := highs_model.Run()
-	fmt.Println("SOLUTION STATUS = " + solution.Status.String())
+	printer.Printf("SOLUTION STATUS = %s\n", solution.Status.String())
 	if err != nil {
 		panic(err)
 	}
 
-	debugPrint(solution, setup)
+	debugPrint(solution, setup, printer)
 
-	if solution.Status != highs.ModelStatusOptimal {
+	if solution.HasSolution() {
+		result := setup.buildResultSet(solution, itemOptions, gear_model)
+		checkSetRatingIsObjective(solution, &result, gear_model)
+		return util.Optional_OfValue(result)
+	} else {
 		return util.Optional_Empty[items.SolvableItemSet]()
 	}
-
-	result := setup.buildResultSet(solution, itemOptions, gear_model)
-	checkSetRatingIsObjective(solution, &result, gear_model)
-	return util.Optional_OfValue(result)
 }
 
 func setupBonusedInputs(inputBuilder *inputBuilder, gear_model *gear_model.Model, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *setupInputsForSetBonus {
@@ -47,22 +46,22 @@ func setupBonusedInputs(inputBuilder *inputBuilder, gear_model *gear_model.Model
 	return &setup
 }
 
-func debugPrint(solution *highs.Solution, setup *setupInputsForSetBonus) {
-	fmt.Println("OBJECTIVE VALUE = ", solution.Objective*c_scaled_ratings)
+func debugPrint(solution *highs.Solution, setup *setupInputsForSetBonus, printer *util.PrintRecorder) {
+	printer.Printf("OBJECTIVE VALUE = %f\n", solution.Objective*c_scaled_ratings)
 
 	activeBonus := ""
 	activeBonusWeight := 0.0
 
 	for columnIndex, outputValue := range solution.ColValues {
-		if !debugPrintColumn(setup.allColumns, columnIndex, outputValue, &activeBonus, &activeBonusWeight) {
-			fmt.Println(columnIndex, outputValue, "NOT FOUND???")
+		if !debugPrintColumn(setup.allColumns, columnIndex, outputValue, &activeBonus, &activeBonusWeight, printer) {
+			printer.Printf("%d %f UNKNOWN\n", columnIndex, outputValue)
 		}
 	}
 
-	fmt.Printf("ACTIVE highs Bonus = %s %f\n", activeBonus, activeBonusWeight)
+	printer.Printf("ACTIVE highs Bonus = %s %f\n", activeBonus, activeBonusWeight)
 }
 
-func debugPrintColumn(allColumns []columnInfo, columnIndex int, outputValue float64, activeBonus *string, activeBonusWeight *float64) bool {
+func debugPrintColumn(allColumns []columnInfo, columnIndex int, outputValue float64, activeBonus *string, activeBonusWeight *float64, printer *util.PrintRecorder) bool {
 	var colEntry columnInfo
 	found := false
 	for _, col := range allColumns {
@@ -74,37 +73,37 @@ func debugPrintColumn(allColumns []columnInfo, columnIndex int, outputValue floa
 	}
 
 	if found {
-		debugPrintColumnEntry(colEntry, columnIndex, outputValue, activeBonus, activeBonusWeight)
+		debugPrintColumnEntry(colEntry, columnIndex, outputValue, activeBonus, activeBonusWeight, printer)
 	}
 	return found
 }
 
-func debugPrintColumnEntry(colEntry columnInfo, columnIndex int, outputValue float64, activeBonus *string, activeBonusWeight *float64) {
+func debugPrintColumnEntry(colEntry columnInfo, columnIndex int, outputValue float64, activeBonus *string, activeBonusWeight *float64, printer *util.PrintRecorder) {
 	switch colEntry.entryType {
 	case entry_item:
-		fmt.Println(columnIndex, outputValue, "item", colEntry.itemSlot.Name(), colEntry.item.ItemId())
+		printer.Printf("%d %f %s %s %d\n", columnIndex, outputValue, "item", colEntry.itemSlot.Name(), colEntry.item.ItemId())
 	case entry_set_total_count:
-		fmt.Println(columnIndex, outputValue, "set total count", colEntry.set.Name())
+		printer.Printf("%d %f %s %s\n", columnIndex, outputValue, "set total count", colEntry.set.Name())
 	case entry_set_exact_count:
-		fmt.Println(columnIndex, outputValue, "set exact count flag", colEntry.set.Name(), colEntry.itemCount)
+		printer.Printf("%d %f %s %s %d\n", columnIndex, outputValue, "set exact count flag", colEntry.set.Name(), colEntry.itemCount)
 	case entry_sum_rating:
-		fmt.Println(columnIndex, outputValue, "initial item rating sum")
+		printer.Printf("%d %f %s\n", columnIndex, outputValue, "initial item rating sum")
 	case entry_permutation_active:
-		fmt.Println(columnIndex, outputValue, "permutation active", colEntry.permutation.debugStr())
+		printer.Printf("%d %f %s %s\n", columnIndex, outputValue, "permutation active", colEntry.permutation.debugStr())
 		if floatEqualsOne(outputValue) && activeBonus != nil {
 			*activeBonus += colEntry.permutation.debugStr()
 		}
 	case entry_permutation_output_weighted:
-		fmt.Println(columnIndex, outputValue, "permutation weighted output", colEntry.permutation.debugStr(), colEntry.weight)
+		printer.Printf("%d %f %s %s %f\n", columnIndex, outputValue, "permutation weighted output", colEntry.permutation.debugStr(), colEntry.weight)
 		if !floatEqualsZero(outputValue) && activeBonusWeight != nil {
 			*activeBonusWeight += colEntry.weight
 		}
 	case entry_main_output:
-		fmt.Println(columnIndex, outputValue, "final value")
+		printer.Printf("%d %f %s\n", columnIndex, outputValue, "final value")
 	case entry_multi_enable_forge:
-		fmt.Println(columnIndex, outputValue, "multi enable forge", colEntry.itemFull.ItemId())
+		printer.Printf("%d %f %s %d\n", columnIndex, outputValue, "multi enable forge", colEntry.itemFull.ItemId())
 	case entry_multi_output:
-		fmt.Println(columnIndex, outputValue, "multi output")
+		printer.Printf("%d %f %s\n", columnIndex, outputValue, "multi output")
 	default:
 		panic("unknown column")
 	}

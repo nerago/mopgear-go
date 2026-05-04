@@ -289,7 +289,7 @@ func (param *multiSetParamInternal) prepareRatingMultiplier() {
 	multiplyRatingsBy := targetForThis / baselineRating
 	param.ratingMultiply = multiplyRatingsBy
 
-	param.job.printer.Printf("MULTIPLIERS %s base=%d mult=%.2f value=%d percent=%.2f\n",
+	param.job.printer.Printf("MULTIPLIERS %s base=%d mult=%f value=%d percent=%.2f\n",
 		param.Label, param.baselineResult.ResultRating, param.ratingMultiply,
 		uint64(math.Round(baselineRating*param.ratingMultiply)),
 		math.Round(baselineRating*param.ratingMultiply)/targetCombined*100,

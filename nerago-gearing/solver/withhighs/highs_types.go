@@ -49,8 +49,8 @@ func (input *inputBuilder) createColumnWithOutput(varType highs.VariableType, lo
 	return input.vars.create(varType, lower, upper, cost)
 }
 
-func (input *inputBuilder) addRow(entries []indexAndValue, lowerBound float64, upperBound float64) {
-	input.mat.addRow(entries, lowerBound, upperBound)
+func (input *inputBuilder) addRow(entries []indexAndValue, lowerBound float64, upperBound float64) (rowIndex int) {
+	return input.mat.addRow(entries, lowerBound, upperBound)
 }
 
 func (input *inputBuilder) toHighsModel() *highs.Solver {
@@ -59,6 +59,10 @@ func (input *inputBuilder) toHighsModel() *highs.Solver {
 	// solver.SetStringOption("presolve", "off")
 	solver.SetBoolOption("log_to_console", true)
 	solver.SetIntOption("log_dev_level", 3)
+
+	solver.SetStringOption("parallel", "on")
+	solver.SetIntOption("threads", 6)
+	// solver.SetFloatOption("time_limit", 10)
 
 	// tempFile, err := os.CreateTemp("", "highslog")
 	// if err != nil {
@@ -107,7 +111,9 @@ type indexAndValue struct {
 }
 
 type constraintRowBuild struct {
-	entries []indexAndValue
+	entries  []indexAndValue
+	isAdded  bool
+	rowIndex int
 }
 
 func (row *constraintRowBuild) isEmpty() bool {
@@ -124,11 +130,27 @@ func (row *constraintRowBuild) add(columnIndex int, value float64) {
 	}
 }
 
+func (row *constraintRowBuild) change(columnIndex int, value float64) {
+	for i := range row.entries {
+		if row.entries[i].columnNumber == columnIndex {
+			row.entries[i].value = value
+			return
+		}
+	}
+
+	panic("column didn't exist")
+}
+
 func (row *constraintRowBuild) finish(input *inputBuilder, lowerBound float64, upperBound float64) {
 	// couldn't find reference for sure that indexes need to be sorted but probably best
 	slices.SortFunc(row.entries, func(a, b indexAndValue) int { return cmp.Compare(a.columnNumber, b.columnNumber) })
 
-	input.addRow(row.entries, lowerBound, upperBound)
+	if row.isAdded {
+		input.mat.changeRow(row.rowIndex, row.entries, lowerBound, upperBound)
+	} else {
+		row.rowIndex = input.addRow(row.entries, lowerBound, upperBound)
+		row.isAdded = true
+	}
 }
 
 type constraintMatrixBuilder struct {
@@ -137,10 +159,18 @@ type constraintMatrixBuilder struct {
 	upperBound []float64
 }
 
-func (mat *constraintMatrixBuilder) addRow(entries []indexAndValue, lowerBound float64, upperBound float64) {
+func (mat *constraintMatrixBuilder) addRow(entries []indexAndValue, lowerBound float64, upperBound float64) (rowIndex int) {
+	rowIndex = len(mat.entries)
 	mat.entries = append(mat.entries, entries)
 	mat.lowerBound = append(mat.lowerBound, lowerBound)
 	mat.upperBound = append(mat.upperBound, upperBound)
+	return rowIndex
+}
+
+func (mat constraintMatrixBuilder) changeRow(rowIndex int, entries []indexAndValue, lowerBound float64, upperBound float64) {
+	mat.entries[rowIndex] = entries
+	mat.lowerBound[rowIndex] = lowerBound
+	mat.upperBound[rowIndex] = upperBound
 }
 
 func (mat *constraintMatrixBuilder) prepareForModel() (numRows int, lowerBound []float64, upperBound []float64, startArray []int, indexArray []int, valuesArray []float64) {

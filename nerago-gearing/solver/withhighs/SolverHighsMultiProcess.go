@@ -22,6 +22,8 @@ type SolverHighsMultiParam struct {
 }
 
 type SolverHighsMultiProcess struct {
+	input *inputBuilder
+
 	common map[items.ItemId][]items.FullItem
 	parts  []SolverHighsMultiParam
 
@@ -40,107 +42,177 @@ func (job *SolverHighsMultiProcess) SetCommon(common map[items.ItemId][]items.Fu
 }
 
 func (job *SolverHighsMultiProcess) Run(printer *util.PrintRecorder) []items.FullItemSet {
-	highs_model := job.makeFullModel()
+	job.makeFullModel()
+	highs_model := job.input.toHighsModel()
 	solution, err := highs_model.Run()
 	printer.Println("SOLUTION STATUS = " + solution.Status.String())
 	if err != nil {
 		panic(err)
 	}
 
-	debugPrintAll(solution, job)
+	debugPrintAll(solution, job, printer)
 
-	if solution.Status != highs.ModelStatusOptimal {
+	if solution.HasSolution() {
+		return job.solutionToResult(solution, printer)
+	} else {
 		return nil
 	}
-
-	return job.solutionToResult(solution)
 }
 
-func debugPrintAll(solution *highs.Solution, job *SolverHighsMultiProcess) {
+func debugPrintAll(solution *highs.Solution, job *SolverHighsMultiProcess, printer *util.PrintRecorder) {
 	fmt.Println("OBJECTIVE VALUE = ", solution.Objective*c_scaled_ratings)
 
 columnLoop:
 	for columnIndex, outputValue := range solution.ColValues {
-		if debugPrintColumn(job.allColumns, columnIndex, outputValue, nil, nil) {
+		if debugPrintColumn(job.allColumns, columnIndex, outputValue, nil, nil, printer) {
 			continue columnLoop
 		}
 
 		for _, part := range job.parts {
-			if debugPrintColumn(part.setup.allColumns, columnIndex, outputValue, nil, nil) {
+			if debugPrintColumn(part.setup.allColumns, columnIndex, outputValue, nil, nil, printer) {
 				continue columnLoop
 			}
 		}
 
-		fmt.Println(columnIndex, outputValue, "NOT FOUND???")
+		printer.Printf("%d %f UNKNOWN\n", columnIndex, outputValue)
 	}
 }
 
-func (job *SolverHighsMultiProcess) solutionToResult(solution *highs.Solution) []items.FullItemSet {
+func (job *SolverHighsMultiProcess) extractCommonChoices(solution *highs.Solution) []columnInfo {
+	commonChosenColumns := make([]columnInfo, 0, len(job.common))
+	for _, jobColumn := range job.allColumns {
+		colValue := solution.ColValues[jobColumn.columnIndex]
+		if jobColumn.entryType == entry_multi_enable_forge && floatEqualsOne(colValue) {
+			commonChosenColumns = append(commonChosenColumns, jobColumn)
+		}
+	}
+	return commonChosenColumns
+}
+
+func (job *SolverHighsMultiProcess) solutionToResult(solution *highs.Solution, printer *util.PrintRecorder) []items.FullItemSet {
 	resultList := make([]items.FullItemSet, len(job.parts))
 	for partIndex := range job.parts {
 		part := job.parts[partIndex]
 		solvedSet := part.setup.buildResultSet(solution, &part.solveOptions, part.Gear_model)
 		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &part.ItemOptions)
+		solver.ReportSet(printer, fullItemSet, part.Gear_model.CalcRatingFull(&fullItemSet), part.Gear_model)
 		resultList[partIndex] = fullItemSet
 	}
 	return resultList
 }
 
-func (job *SolverHighsMultiProcess) makeFullModel() *highs.Solver {
-	inputBuilder := inputBuilder{}
+func (job *SolverHighsMultiProcess) makeFullModel() {
+	job.input = &inputBuilder{}
 
-	job.outputColumn = inputBuilder.createColumnWithOutput(highs.Continuous, c_minusInf, c_plusInf, 1)
+	job.outputColumn = job.input.createColumnWithOutput(highs.Continuous, c_minusInf, c_plusInf, 1)
 	job.outputRow.add(job.outputColumn, -1)
 
 	entry := columnInfo{entryType: entry_multi_output, columnIndex: job.outputColumn}
 	job.allColumns = append(job.allColumns, entry)
 
 	for partIndex := range job.parts {
-		job.parts[partIndex].doSetup(&inputBuilder, job)
+		job.parts[partIndex].doSetup(job.input, job)
 	}
 
-	job.addCommonConstraints(&inputBuilder)
+	job.addCommonConstraints(job.input)
 
-	job.outputRow.finish(&inputBuilder, 0, 0)
-
-	highs_model := inputBuilder.toHighsModel()
-	return highs_model
+	job.outputRow.finish(job.input, 0, 0)
 }
 
-func (job SolverHighsMultiProcess) RunForSeveral(printer *util.PrintRecorder, topN int) [][]items.FullItemSet {
-	highs_model := job.makeFullModel()
+func (job *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.PrintRecorder) [][]items.FullItemSet {
+	job.makeFullModel()
+	solution, err := job.input.toHighsModel().Run()
+	printer.Println("SOLUTION STATUS = " + solution.Status.String())
+	if err != nil {
+		panic(err)
+	}
+
+	debugPrintAll(solution, job, printer)
+
+	if !solution.HasSolution() {
+		return nil
+	}
+
+	resultList := make([][]items.FullItemSet, 0)
+
+	jobResult := job.solutionToResult(solution, printer)
+	resultList = append(resultList, jobResult)
+	bestCommonChoices := job.extractCommonChoices(solution)
+
+	printer.Println("############################################################################")
+	printer.Println("############################################################################")
+	printer.Println("############################################################################")
+
+	rowLimitCommon := constraintRowBuild{}
+
+	for _, changeColumn := range bestCommonChoices {
+		rowLimitCommon.add(changeColumn.columnIndex, 1)
+		rowLimitCommon.finish(job.input, 0, 0)
+
+		solution, err := job.input.toHighsModel().Run()
+		printer.Println("SOLUTION STATUS = " + solution.Status.String())
+		if err != nil {
+			panic(err)
+		}
+
+		if solution.HasSolution() {
+			jobResult := job.solutionToResult(solution, printer)
+			resultList = append(resultList, jobResult)
+		}
+
+		printer.Println("############################################################################")
+		printer.Println("############################################################################")
+		printer.Println("############################################################################")
+
+		rowLimitCommon.change(changeColumn.columnIndex, 0)
+	}
+
+	return resultList
+}
+
+func (job SolverHighsMultiProcess) RunForSeveral_ObjectiveScoreLower(printer *util.PrintRecorder, topN int) [][]items.FullItemSet {
+	job.makeFullModel()
+	highs_model := job.input.toHighsModel()
 	solution, err := highs_model.Run()
 	printer.Println("SOLUTION STATUS = " + solution.Status.String())
 	if err != nil {
 		panic(err)
 	}
-	printer.Println("############################################################################")
-	printer.Println("############################################################################")
-	printer.Println("############################################################################")
+
+	if !solution.HasSolution() {
+		return nil
+	}
 
 	resultList := make([][]items.FullItemSet, 0, topN)
 
-	jobResult := job.solutionToResult(solution)
+	jobResult := job.solutionToResult(solution, printer)
 	resultList = append(resultList, jobResult)
-	solver.ReportSet(printer, jobResult[1], job.parts[1].Gear_model.CalcRatingFull(&jobResult[1]), job.parts[1].Gear_model)
-	// previousScore := solution.Objective
+	previousScore := solution.Objective
+
+	printer.Println("############################################################################")
+	printer.Println("############################################################################")
+	printer.Println("############################################################################")
 
 	for len(resultList) < topN {
-		// highs_model.AddCompSparseRows([]float64{0}, []int{0}, []int{job.outputColumn}, []float64{1}, []float64{previousScore - 1})
+		highs_model.SetColBounds(job.outputColumn, 0, previousScore-0.001)
 
 		solution, err := highs_model.Run()
 		printer.Println("SOLUTION STATUS = " + solution.Status.String())
 		if err != nil {
 			panic(err)
 		}
-		printer.Println("############################################################################")
-		printer.Println("############################################################################")
-		printer.Println("############################################################################")
 
-		jobResult := job.solutionToResult(solution)
+		if !solution.HasSolution() {
+			break
+		}
+
+		jobResult := job.solutionToResult(solution, printer)
 		resultList = append(resultList, jobResult)
-		solver.ReportSet(printer, jobResult[1], job.parts[1].Gear_model.CalcRatingFull(&jobResult[1]), job.parts[1].Gear_model)
-		// previousScore = solution.Objective
+		previousScore = solution.Objective
+
+		printer.Println("############################################################################")
+		printer.Println("############################################################################")
+		printer.Println("############################################################################")
 	}
 
 	return resultList

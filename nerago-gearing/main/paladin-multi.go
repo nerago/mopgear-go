@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/multi"
+	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/util"
 )
@@ -378,7 +379,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.FindTopAndPassToSim(150000, 50, true, simulate.RunSize_Medium)
 	// job.FindTopAndPassToSim(500000, 75, true, simulate.RunSize_Medium)
 
-	job.FindHighsResult()
+	// job.FindHighsResult()
+	job.FindSeveralHighsAndSim(simulate.RunSize_Medium)
 }
 
 func blockHelmetsWithoutCapacitance(param *multi.MultiSetParam) {
