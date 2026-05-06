@@ -6,6 +6,7 @@ import (
 	. "paladin_gearing_go/model/requirements"
 	"paladin_gearing_go/stats"
 	. "paladin_gearing_go/stats"
+	"paladin_gearing_go/util"
 )
 
 // ////////// standard model builders
@@ -51,7 +52,27 @@ func Model_PallyProtCompromise() Model {
 	spec := Spec_PaladinProtCompromise
 	weightMiti := StatRatingsWeights_ReadFile(files.WeightMitiNoSetFile, false, true, false)
 	weightDps := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
-	weight := StatRatingsWeights_Mix(weightMiti, 62, weightDps, 51)
+	weight := StatRatingsWeights_Mix(weightMiti, 62, weightDps, 51, util.Optional_OfValue(Stat_Strength))
+	return Model{
+		Spec:             spec,
+		SimulateAs:       stats.Fight_Animus,
+		StatRatings:      weight,
+		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
+		ReforgeRules:     ReforgeRules_tank,
+		EnchantChoice:    EnchantChoice_ForSpec(spec),
+		GemChoice:        GemChoice_ForSpec(spec),
+		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Damage"),
+		Professions: ProfessionInfo{
+			IsBlacksmith: true,
+			IsEngineer:   true,
+		},
+	}
+}
+func Model_PallyProtCompromise_old() Model {
+	spec := Spec_PaladinProtCompromise
+	weightMiti := StatRatingsWeights_ReadFile(files.WeightMitiNoSetFile, false, true, false)
+	weightDps := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
+	weight := StatRatingsWeights_Mix(weightMiti, 62, weightDps, 51, util.Optional_Empty[StatType]())
 	return Model{
 		Spec:             spec,
 		SimulateAs:       stats.Fight_Animus,

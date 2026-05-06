@@ -1,11 +1,10 @@
 package withhighs
 
 import (
-	"fmt"
 	"iter"
 	"paladin_gearing_go/items"
 	gear_model "paladin_gearing_go/model"
-	"paladin_gearing_go/solver"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -43,12 +42,9 @@ func (job *SolverHighsMultiProcess) SetCommon(common map[items.ItemId][]items.Fu
 
 func (job *SolverHighsMultiProcess) Run(printer *util.PrintRecorder) []items.FullItemSet {
 	job.makeFullModel()
-	highs_model := job.input.toHighsModel()
-	solution, err := highs_model.Run()
+	solution, log := job.input.runHighs()
+	printer.AppendOther(log)
 	printer.Println("SOLUTION STATUS = " + solution.Status.String())
-	if err != nil {
-		panic(err)
-	}
 
 	debugPrintAll(solution, job, printer)
 
@@ -95,7 +91,7 @@ func (job *SolverHighsMultiProcess) solutionToResult(solution *highs.Solution, p
 		part := job.parts[partIndex]
 		solvedSet := part.setup.buildResultSet(solution, &part.solveOptions, part.Gear_model)
 		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &part.ItemOptions)
-		solver.ReportSet(printer, fullItemSet, part.Gear_model.CalcRatingFull(&fullItemSet), part.Gear_model)
+		// solver.ReportSet(printer, fullItemSet, part.Gear_model.CalcRatingFull(&fullItemSet), part.Gear_model)
 		resultList[partIndex] = fullItemSet
 	}
 	return resultList
@@ -121,13 +117,11 @@ func (job *SolverHighsMultiProcess) makeFullModel() {
 
 func (job *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.PrintRecorder) [][]items.FullItemSet {
 	job.makeFullModel()
-	solution, err := job.input.toHighsModel().Run()
+	solution, log := job.input.runHighs()
+	printer.AppendOther(log)
 	printer.Println("SOLUTION STATUS = " + solution.Status.String())
-	if err != nil {
-		panic(err)
-	}
 
-	debugPrintAll(solution, job, printer)
+	// debugPrintAll(solution, job, printer)
 
 	if !solution.HasSolution() {
 		return nil
@@ -146,14 +140,13 @@ func (job *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.
 	rowLimitCommon := constraintRowBuild{}
 
 	for _, changeColumn := range bestCommonChoices {
+		printer.Printf("COMMON VARIANT blocking %s\n", changeColumn.itemFull.CreateString())
 		rowLimitCommon.add(changeColumn.columnIndex, 1)
 		rowLimitCommon.finish(job.input, 0, 0)
 
-		solution, err := job.input.toHighsModel().Run()
+		solution, log := job.input.runHighs()
+		printer.AppendOther(log)
 		printer.Println("SOLUTION STATUS = " + solution.Status.String())
-		if err != nil {
-			panic(err)
-		}
 
 		if solution.HasSolution() {
 			jobResult := job.solutionToResult(solution, printer)
@@ -172,12 +165,12 @@ func (job *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.
 
 func (job SolverHighsMultiProcess) RunForSeveral_ObjectiveScoreLower(printer *util.PrintRecorder, topN int) [][]items.FullItemSet {
 	job.makeFullModel()
-	highs_model := job.input.toHighsModel()
-	solution, err := highs_model.Run()
+	highs_solver := job.input.toHighsModel_internal("")
+	defer highs_solver.Close()
+
+	solution, log := job.input.runHighs()
+	printer.AppendOther(log)
 	printer.Println("SOLUTION STATUS = " + solution.Status.String())
-	if err != nil {
-		panic(err)
-	}
 
 	if !solution.HasSolution() {
 		return nil
@@ -194,9 +187,9 @@ func (job SolverHighsMultiProcess) RunForSeveral_ObjectiveScoreLower(printer *ut
 	printer.Println("############################################################################")
 
 	for len(resultList) < topN {
-		highs_model.SetColBounds(job.outputColumn, 0, previousScore-0.001)
+		highs_solver.SetColBounds(job.outputColumn, 0, previousScore-0.001)
 
-		solution, err := highs_model.Run()
+		solution, err := highs_solver.Run()
 		printer.Println("SOLUTION STATUS = " + solution.Status.String())
 		if err != nil {
 			panic(err)
@@ -221,7 +214,6 @@ func (job SolverHighsMultiProcess) RunForSeveral_ObjectiveScoreLower(printer *ut
 func (param *SolverHighsMultiParam) doSetup(inputBuilder *inputBuilder, job *SolverHighsMultiProcess) {
 	param.solveOptions = items.SolvableOptionsMap_of(&param.ItemOptions)
 	param.setup = setupBonusedInputs(inputBuilder, param.Gear_model, &param.solveOptions, 0)
-	// param.setup = setupBonusedInputs(inputBuilder, param.Gear_model, &param.solveOptions, float64(param.RatingMultiply))
 	job.outputRow.add(param.setup.mainOutputVar.columnIndex, param.RatingMultiply)
 }
 

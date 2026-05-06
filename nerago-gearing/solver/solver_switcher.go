@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/build"
 	"paladin_gearing_go/solver/phased"
+	"paladin_gearing_go/solver/withhighs"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 
@@ -31,23 +32,10 @@ type SolveInput struct {
 }
 
 func Solver(input SolveInput) SolveOutput {
-	printer := input.Printer
-	if printer == nil {
-		printer = util.PrintRecorder_HoldAll()
-	}
-
-	var trackProgress *util.TrackProgress
-	if input.OuterTrackProgress != nil {
-		trackProgress = input.OuterTrackProgress.MakeNested()
-	} else if input.EnableTrackProgress {
-		trackProgress = util.TrackProgress_Start()
-		defer trackProgress.Stop()
-	} else {
-		trackProgress = util.TrackProgress_Nop()
-	}
+	printer, trackProgress, solveOptions := prepareSolve(input)
+	defer trackProgress.Stop()
 
 	targetCount := uint64(input.SolveSize)
-	solveOptions := items.SolvableOptionsMap_of(input.ItemOptions)
 	combinationCount := solveOptions.TotalCombinationCount()
 
 	var solvedResult util.Optional[items.SolvableItemSet]
@@ -63,6 +51,39 @@ func Solver(input SolveInput) SolveOutput {
 		}
 	}
 
+	return finaliseSolve(solvedResult, solveOptions, input, printer)
+}
+
+func Solver_WithHighs(input SolveInput) SolveOutput {
+	printer, trackProgress, solveOptions := prepareSolve(input)
+	defer trackProgress.Stop()
+
+	var solvedResult util.Optional[items.SolvableItemSet]
+	solvedResult = withhighs.RunAllActiveSets(&solveOptions, input.Model, printer)
+
+	return finaliseSolve(solvedResult, solveOptions, input, printer)
+}
+
+func prepareSolve(input SolveInput) (*util.PrintRecorder, *util.TrackProgress, items.SolvableOptionsMap) {
+	printer := input.Printer
+	if printer == nil {
+		printer = util.PrintRecorder_HoldAll()
+	}
+
+	var trackProgress *util.TrackProgress
+	if input.OuterTrackProgress != nil {
+		trackProgress = input.OuterTrackProgress.MakeNested()
+	} else if input.EnableTrackProgress {
+		trackProgress = util.TrackProgress_Start()
+	} else {
+		trackProgress = util.TrackProgress_Nop()
+	}
+
+	solveOptions := items.SolvableOptionsMap_of(input.ItemOptions)
+	return printer, trackProgress, solveOptions
+}
+
+func finaliseSolve(solvedResult util.Optional[items.SolvableItemSet], solveOptions items.SolvableOptionsMap, input SolveInput, printer *util.PrintRecorder) SolveOutput {
 	var solvedSet items.SolvableItemSet
 	if solvedResult.IsEmpty() {
 		fallbackSet, failureSummary := diagnoseFailure(&solveOptions, input.Model)

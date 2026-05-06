@@ -32,6 +32,36 @@ func basicReforge(printer *util.PrintRecorder) {
 	output.Report(printer)
 }
 
+func findBestSubjectToCommon(printer *util.PrintRecorder) {
+	model := model.Model_PallyProtMitigation_WithSet()
+
+	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationSet, &model, setup.MissingEnchant_Panic, printer)
+
+	for _, itemId := range substituteItemsMiti {
+		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
+		itemOptions.AddSeveralOptions(example.Slot, opts)
+	}
+
+	common := commonComboCurrent()
+	addGearFileToCommon(common, files.GearFileRet, &model, printer)
+	addGearFileToCommon(common, files.GearFileProtCompromise, &model, printer)
+	addGearFileToCommon(common, files.GearFileProtDps, &model, printer)
+	addGearFileToCommon(common, files.GearFileProtMitigationNoSet, &model, printer)
+	restrictOptionsToCommon(common, &itemOptions)
+
+	restrictSlotToId(&itemOptions, items.Equip_Ring1, 96481)
+
+	output := solver.Solver(solver.SolveInput{
+		ItemOptions:         &itemOptions,
+		Model:               &model,
+		PhasedAcceptable:    false,
+		EnableTrackProgress: true,
+		SolveSize:           solver.SolveSize_Long,
+		Printer:             printer})
+
+	output.Report(printer)
+}
+
 var allSetItems = []items.ItemId{
 	95291, 95290, 96666, 96667, 96668, // prot tier15
 	95282, 95910, 95281, 96657, 96658, // ret tier15
@@ -66,6 +96,8 @@ func checkHighs(printer *util.PrintRecorder) {
 			}
 		}
 	}
+
+	// TODO use solver.Solver_WithHighs()
 
 	solveOptions := items.SolvableOptionsMap_of(&itemOptions)
 	// solvedSet := withhighs.RunSingleAcrossSets_ReturnBest(&solveOptions, &model, printer)
@@ -564,4 +596,108 @@ func restrictSlotToId(itemOptions *items.FullOptionsMap, slotEquip items.SlotEqu
 			return check.ItemId() == id
 		})
 	})
+}
+
+func basicListRatingEach(printer *util.PrintRecorder) {
+	type group struct {
+		label string
+		model model.Model
+		file  string
+	}
+
+
+	groups := []group{
+		{
+			"ret",
+			model.Model_PallyRet(),
+			files.GearFileRet,
+		}, {
+			"dps",
+			model.Model_PallyProtDps(),
+			files.GearFileProtDps,
+		}, {
+			"compromise",
+			// model.Model_PallyProtCompromise(),
+			model.Model_PallyProtCompromise_old(),
+			files.GearFileProtCompromise,
+		}, {
+			"no_set",
+			model.Model_PallyProtMitigation_NoSet(),
+			files.GearFileProtMitigationNoSet,
+		},
+		{
+			"with_set",
+			model.Model_PallyProtMitigation_WithSet(),
+			files.GearFileProtMitigationSet,
+		},
+	}
+
+	for _, group := range groups {
+		equipItems := loaders.GearFileReader_Read(group.file)
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, util.PrintRecorder_HoldAll())
+		itemSet:=items.FullItemSet_FromMap(equipMap)
+		rating := group.model.CalcRatingFull(&itemSet)
+		solver.ReportSet(printer, itemSet, rating, &group.model)
+		
+		printer.Printf("%20s %10d %s\n", group.label, rating, group.model.StatRatings.Weights().CreateString())
+	}
+
+	// for _, group := range groups {
+	// 	rating := group.model.CalcRatingFull(itemSet)
+		
+	// }
+}
+
+func solveForRatings(printer *util.PrintRecorder) {
+	type group struct {
+		label string
+		model model.Model
+		file  string
+	}
+
+    var prescaleTarget float64 = 100000000.0
+
+	groups := []group{
+		{
+			"ret",
+			model.Model_PallyRet(),
+			files.GearFileRet,
+		}, {
+			"dps",
+			model.Model_PallyProtDps(),
+			files.GearFileProtDps,
+		}, {
+			"compromise",
+			model.Model_PallyProtCompromise(),
+			files.GearFileProtCompromise,
+		}, {
+			"no_set",
+			model.Model_PallyProtMitigation_NoSet(),
+			files.GearFileProtMitigationNoSet,
+		},
+		{
+			"with_set",
+			model.Model_PallyProtMitigation_WithSet(),
+			files.GearFileProtMitigationSet,
+		},
+	}
+
+	for _, group := range groups {
+		equipItems := loaders.GearFileReader_Read(group.file)
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, util.PrintRecorder_HoldAll())
+		itemSet:=items.FullItemSet_FromMap(equipMap)
+		rating := group.model.CalcRatingFull(&itemSet)
+		// solver.ReportSet(printer, itemSet, rating, &group.model)
+
+		prescaleMult := prescaleTarget / float64(rating)
+		
+		printer.Printf("%20s %10d %.4f %s\n", group.label, rating, float64(rating) * prescaleMult, group.model.StatRatings.Weights().CreateString())
+	}
+
+	
+
+	// for _, group := range groups {
+	// 	rating := group.model.CalcRatingFull(itemSet)
+		
+	// }
 }

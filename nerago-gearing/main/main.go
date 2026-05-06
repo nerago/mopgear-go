@@ -75,6 +75,9 @@ func core(printer *util.PrintRecorder) {
 
 	// slotRating(itemOptions[Equip_Chest], &model, printer)
 	// basicReforge(printer)
+	// basicListRatingEach(printer)
+	// solveForRatings(printer)
+	// findBestSubjectToCommon(printer)
 	// checkHighs(printer)
 	// checkHighsAcross(printer)
 

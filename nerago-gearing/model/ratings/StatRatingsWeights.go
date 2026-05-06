@@ -3,7 +3,9 @@ package ratings
 import (
 	"math"
 	"os"
+	"paladin_gearing_go/stats"
 	. "paladin_gearing_go/stats"
+	"paladin_gearing_go/util"
 	"strconv"
 	"strings"
 )
@@ -33,7 +35,7 @@ func validate(block StatBlock) {
 	}
 }
 
-func StatRatingsWeights_Mix(weightA StatRatingsWeights, multiplyA uint32, weightB StatRatingsWeights, multiplyB uint32) StatRatingsWeights {
+func StatRatingsWeights_Mix(weightA StatRatingsWeights, multiplyA uint32, weightB StatRatingsWeights, multiplyB uint32, rescaleAround util.Optional[stats.StatType]) StatRatingsWeights {
 	scaleA := StatBlock{}
 	weightA.weight.MultiplyScalar(multiplyA, &scaleA)
 	scaleB := StatBlock{}
@@ -41,6 +43,13 @@ func StatRatingsWeights_Mix(weightA StatRatingsWeights, multiplyA uint32, weight
 
 	combined := StatBlock{}
 	StatBlock_Add_Into(&scaleA, &scaleB, &combined)
+
+	if statType, hasRescale := rescaleAround.GetWithFlag(); hasRescale {
+		div := combined[statType] / 1000
+		for i := range combined {
+			combined[i] /= div
+		}
+	}
 
 	validate(combined)
 	return StatRatingsWeights{combined}
