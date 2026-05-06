@@ -13,12 +13,9 @@ func RunAllActiveSets(itemOptions *items.SolvableOptionsMap, gear_model *gear_mo
 	inputBuilder := inputBuilder{}
 	setup := setupBonusedInputs(&inputBuilder, gear_model, itemOptions, 1)
 
-	highs_model := inputBuilder.toHighsModel()
-	solution, err := highs_model.Run()
+	solution, log := inputBuilder.runHighs()
+	printer.AppendOther(log)
 	printer.Printf("SOLUTION STATUS = %s\n", solution.Status.String())
-	if err != nil {
-		panic(err)
-	}
 
 	debugPrint(solution, setup, printer)
 

@@ -3,6 +3,8 @@ package withhighs
 import (
 	"cmp"
 	"math"
+	"os"
+	"paladin_gearing_go/util"
 	"slices"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -53,23 +55,41 @@ func (input *inputBuilder) addRow(entries []indexAndValue, lowerBound float64, u
 	return input.mat.addRow(entries, lowerBound, upperBound)
 }
 
-func (input *inputBuilder) toHighsModel() *highs.Solver {
+func (input *inputBuilder) runHighs() (*highs.Solution, *util.PrintRecorder) {
+	tempFilename := makeTempFilename()
+
+	solver := input.toHighsModel_internal(tempFilename)
+	solution, err := solver.Run()
+	solver.Close()
+	if err != nil {
+		panic(err)
+	}
+
+	bytes, err := os.ReadFile(tempFilename)
+	if err != nil {
+		panic(err)
+	}
+	printer := util.PrintRecorder_HoldAll()
+	printer.PrintBytes(bytes)
+
+	return solution, printer
+}
+
+func (input *inputBuilder) toHighsModel_internal(logfile string) *highs.Solver {
 	solver, err := highs.NewSolver()
 
 	// solver.SetStringOption("presolve", "off")
-	solver.SetBoolOption("log_to_console", true)
-	solver.SetIntOption("log_dev_level", 3)
-
 	solver.SetStringOption("parallel", "on")
 	solver.SetIntOption("threads", 6)
 	// solver.SetFloatOption("time_limit", 10)
 
-	// tempFile, err := os.CreateTemp("", "highslog")
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// tempFile.Close()
-	// model.SetStringOption("log_file", tempFile.Name())
+	if logfile != "" {
+		solver.SetStringOption("log_file", logfile)
+		solver.SetIntOption("log_dev_level", 3)
+	} else {
+		solver.SetBoolOption("log_to_console", true)
+		solver.SetIntOption("log_dev_level", 3)
+	}
 
 	err = solver.SetMaximize(true)
 	if err != nil {
@@ -89,6 +109,15 @@ func (input *inputBuilder) toHighsModel() *highs.Solver {
 	return solver
 }
 
+func makeTempFilename() string {
+	tempFile, err := os.CreateTemp("", "highslog")
+	if err != nil {
+		panic(err)
+	}
+	tempFile.Close()
+	return tempFile.Name()
+}
+
 type variableArrayBuilder struct {
 	ColTypes []highs.VariableType // Type of each model variable
 	ColCosts []float64            // Column costs (i.e., the objective function itself)
@@ -103,6 +132,10 @@ func (vars *variableArrayBuilder) create(varType highs.VariableType, lower, uppe
 	vars.ColUpper = append(vars.ColUpper, upper)
 	vars.ColCosts = append(vars.ColCosts, cost)
 	return index
+}
+
+func (vars *variableArrayBuilder) changeColumnCost(columnIndex int, cost float64) {
+	vars.ColCosts[columnIndex] = cost
 }
 
 type indexAndValue struct {

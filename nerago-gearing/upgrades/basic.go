@@ -1,7 +1,6 @@
 package upgrades
 
 import (
-	"fmt"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
@@ -262,9 +261,9 @@ func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemT
 func removePairedSimilar(jobItems *items.FullOptionsMap, testSlot items.SlotEquip, testItem *items.FullItem, substituteEmptySlotOnly map[items.SlotItem]items.ItemId, model *model.Model, printer *util.PrintRecorder) {
 	pairedSlot := testSlot.PairedSlot()
 	if pairedSlot != -1 {
-		fmt.Println("removePairedSimilar")
+		printer.Println("removePairedSimilar")
 		for _, z := range jobItems[pairedSlot] {
-			fmt.Println(z.CreateString())
+			printer.Println("---" + z.CreateString())
 		}
 		jobItems.FilterSlot(pairedSlot, func(x *items.FullItem) bool { return !items.UniqueEquipViolation(x.BaseName, testItem.BaseName) })
 

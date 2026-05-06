@@ -25,6 +25,10 @@ func PrintRecorder_CreateLogFile(path string) *PrintRecorder {
 	return &PrintRecorder{false, nil, file, sync.Mutex{}}
 }
 
+func PrintRecorder_Testing() *PrintRecorder {
+	return &PrintRecorder{false, nil, nil, sync.Mutex{}}
+}
+
 func PrintRecorder_HoldAll() *PrintRecorder {
 	return &PrintRecorder{true, nil, nil, sync.Mutex{}}
 }
@@ -32,17 +36,23 @@ func PrintRecorder_HoldAll() *PrintRecorder {
 var _newline = []byte{'\n'}
 
 func (print *PrintRecorder) outputNewline() {
-	print.file.Write(_newline)
+	if print.file != nil {
+		print.file.Write(_newline)
+	}
 	os.Stdout.Write(_newline)
 }
 
 func (print *PrintRecorder) outputBytes(bytes []byte) {
-	print.file.Write(bytes)
+	if print.file != nil {
+		print.file.Write(bytes)
+	}
 	os.Stdout.Write(bytes)
 }
 
 func (print *PrintRecorder) outputString(str string) {
-	print.file.WriteString(str)
+	if print.file != nil {
+		print.file.WriteString(str)
+	}
 	os.Stdout.WriteString(str)
 }
 
@@ -92,6 +102,17 @@ func (print *PrintRecorder) Printf(format string, args ...any) {
 		print.builder.WriteString(str)
 	} else {
 		print.outputString(str)
+	}
+}
+
+func (print *PrintRecorder) PrintBytes(bytes []byte) {
+	print.mutex.Lock()
+	defer print.mutex.Unlock()
+
+	if print.holdOutput {
+		print.builder.WriteBytes(bytes)
+	} else {
+		print.outputString(string(bytes))
 	}
 }
 

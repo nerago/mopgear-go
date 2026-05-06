@@ -3,6 +3,7 @@ package withhighs
 import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
+	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_test"
 	"testing"
 )
@@ -11,7 +12,7 @@ func TestSolverBasicRun(t *testing.T) {
 	const targetCount = util_test.TargetCountStandard
 	options, model := util_test.MakeTestOptions()
 
-	result := RunSingle(options, model, nil)
+	result := RunSingle(options, model, nil, util.PrintRecorder_Testing())
 
 	expectEquip := util_test.MakeTestExpectedBest()
 	expectSet := items.SolvableItemSet_Of(expectEquip)

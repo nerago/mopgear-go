@@ -1,7 +1,6 @@
 package simulate
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"paladin_gearing_go/db"
@@ -12,7 +11,6 @@ import (
 	"paladin_gearing_go/stats/extern_stats"
 	"paladin_gearing_go/util"
 	"slices"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/wowsims/mop/sim/core"
@@ -290,15 +288,6 @@ func waitForResult(reporter chan *wowsim_proto.ProgressMetrics, tracker *util.Tr
 	panic("no final result")
 }
 
-func printResult(finalResult *wowsim_proto.RaidSimResult) {
-	output, err := wowsim_protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(finalResult)
-	if err != nil {
-		log.Fatalf("failed to marshal final results: %s", err)
-	}
-
-	fmt.Print(string(output))
-}
-
 func convertResult(finalResult *wowsim_proto.RaidSimResult) SimResultStats {
 	if finalResult.Error != nil {
 		panic("sim fail = " + finalResult.Error.Message)
@@ -309,54 +298,6 @@ func convertResult(finalResult *wowsim_proto.RaidSimResult) SimResultStats {
 		return SimResultStats{DPS: playerMetrics.Dps.Avg, TPS: playerMetrics.Threat.Avg, DTPS: playerMetrics.Dtps.Avg, TMI: playerMetrics.Tmi.Avg, HPS: playerMetrics.Hps.Avg, DEATH: playerMetrics.ChanceOfDeath}
 	} else {
 		panic("incomplete sim result")
-	}
-}
-
-func readMetrics(unitMetrics *wowsim_proto.UnitMetrics) {
-	spellLookup := make(map[int32]string)
-	spellLookup[35395] = "Crusader Strike"
-	spellLookup[138248] = "Unknown Holy Power"
-	spellLookup[498] = "Divine Protection"
-	spellLookup[53600] = "Shield Of The Righteous"
-	spellLookup[105427] = "Judgment"
-	spellLookup[98057] = "Avenger's Shield"
-	spellLookup[105809] = "Holy Avenger"
-
-	totalGain := 0.0
-	for _, res := range unitMetrics.Resources {
-		if res.Type == wowsim_proto.ResourceType_ResourceTypeGenericResource {
-			switch res.Id.RawId.(type) {
-			case *wowsim_proto.ActionID_SpellId:
-				if res.Gain > 0 {
-					totalGain += res.Gain
-				}
-			}
-		}
-	}
-
-	for _, res := range unitMetrics.Resources {
-		if res.Type == wowsim_proto.ResourceType_ResourceTypeGenericResource {
-			switch id := res.Id.RawId.(type) {
-			case *wowsim_proto.ActionID_SpellId:
-				if res.Gain > 0 {
-					fmt.Printf("res +%6.0f spell %6d %s\t%f\n", res.Gain, id.SpellId, spellLookup[id.SpellId], res.Gain/totalGain)
-				}
-			case *wowsim_proto.ActionID_OtherId:
-				fmt.Printf("res other %d\n", id.OtherId)
-			case *wowsim_proto.ActionID_ItemId:
-				fmt.Printf("res item %d\n", id.ItemId)
-			}
-		}
-	}
-}
-
-func parseLogs(logText string) {
-	for line := range strings.SplitSeq(logText, "\n") {
-		if strings.Contains(line, "Gained") && strings.Contains(line, "SecondaryResourceTypeHolyPower ") {
-			fmt.Println(line)
-		} else if strings.Contains(line, "498") {
-			// fmt.Println(line)
-		}
 	}
 }
 

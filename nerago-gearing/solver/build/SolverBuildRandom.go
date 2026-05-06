@@ -33,7 +33,6 @@ func evaluateRandomWorker(resultChannel chan util_rank.BestCollector1[SolvableIt
 	rng := rand.New(rand.NewSource(int64(threadNum)))
 
 	for range eachThreadCount {
-		// fmt.Printf("build %d\n", x)
 		itemSet := makeSetFromRandom(itemOptions, rng)
 		if peekFunc != nil {
 			peekFunc(&itemSet)

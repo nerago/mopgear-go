@@ -1,7 +1,6 @@
 package withhighs
 
 import (
-	"fmt"
 	"paladin_gearing_go/items"
 	gear_model "paladin_gearing_go/model"
 	"paladin_gearing_go/util"
@@ -11,7 +10,7 @@ import (
 
 type RequiredSetCounts map[gear_model.ActiveSet]int
 
-func RunSingle(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet RequiredSetCounts) util.Optional[items.SolvableItemSet] {
+func RunSingle(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet RequiredSetCounts, printer *util.PrintRecorder) util.Optional[items.SolvableItemSet] {
 	inputBuilder := inputBuilder{}
 
 	inputs := setupBasicConstraint(&inputBuilder, itemOptions, gear_model, requiredSet)
@@ -19,15 +18,12 @@ func RunSingle(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Mod
 		return util.Optional_Empty[items.SolvableItemSet]()
 	}
 
-	highs_model := inputBuilder.toHighsModel()
-	solution, err := highs_model.Run()
-	fmt.Println(solution.Status.String())
-	if err != nil {
-		panic(err)
-	}
+	solution, log := inputBuilder.runHighs()
+	printer.AppendOther(log)
+	printer.Println(solution.Status.String())
 
 	// for i, x := range solution.ColumnPrimal {
-	// 	fmt.Println(i, x)
+	// 	printer.Println(i, x)
 	// }
 
 	if solution.HasSolution() {

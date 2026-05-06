@@ -29,6 +29,10 @@ func (sb *StringBuild2) WriteString(value string) {
 	*sb = append(*sb, value...)
 }
 
+func (sb *StringBuild2) WriteBytes(bytes []byte) {
+	*sb = append(*sb, bytes...)
+}
+
 func (sb *StringBuild2) WriteRune(value rune) {
 	*sb = utf8.AppendRune(*sb, value)
 }

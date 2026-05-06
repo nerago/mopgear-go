@@ -52,6 +52,16 @@ func (reforge *ReforgeRecipe) IsEmpty() bool {
 	return !reforge.hasValue
 }
 
+func (reforge *ReforgeRecipe) Equals(other *ReforgeRecipe) bool {
+	if reforge.hasValue && other.hasValue {
+		return reforge.To == other.To && reforge.From == other.From
+	} else if !reforge.hasValue && !other.hasValue {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (reforge *ReforgeRecipe) AppendString(builder *util.StringBuild2) {
 	builder.WriteRune('(')
 	builder.WriteString(reforge.From.Name())

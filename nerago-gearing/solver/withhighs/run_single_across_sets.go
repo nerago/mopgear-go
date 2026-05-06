@@ -24,7 +24,7 @@ func RunSingleAcrossSets_ReturnAll(itemOptions *items.SolvableOptionsMap, model 
 	resultList := []items.SolvableItemSet{}
 
 	printer.Println("{{{{{{{{ run unconstrained }}}}}}}}")
-	unconstrainedResult := RunSingle(itemOptions, model, nil)
+	unconstrainedResult := RunSingle(itemOptions, model, nil, printer)
 	if unconstrainedResultSet, found := unconstrainedResult.GetWithFlag(); found {
 		if model.CheckSet(&unconstrainedResultSet) {
 			resultList = append(resultList, unconstrainedResultSet)
@@ -46,7 +46,7 @@ func RunSingleAcrossSets_ReturnAll(itemOptions *items.SolvableOptionsMap, model 
 		}
 
 		printer.Printf("{{{{{{{{ run %s }}}}}}}}\n", permute.debugStr())
-		otherResult := RunSingle(itemOptions, model, required)
+		otherResult := RunSingle(itemOptions, model, required, printer)
 		if otherResultSet, found := otherResult.GetWithFlag(); found {
 			if model.CheckSet(&otherResultSet) {
 				resultList = append(resultList, otherResultSet)

@@ -154,3 +154,8 @@ func CopyAndAppend[T any](curr []T, item T) []T {
 	return list
 }
 
+func ForPointers[T any](slice []T, body func(*T)) {
+	for i := range slice {
+		body(&slice[i])
+	}
+}
