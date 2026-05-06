@@ -33,13 +33,18 @@ func (job *MultiSetJob) DetermineWhatRatingsLeadToResult(commonChoices map[items
 
 	setBonus := model.SetBonus_Named("Plate of the Lightning Emperor")
 
+	oldMultipliers := []float64{}
+	equippedRatings := []float64{}
+	bestUnderOldMultsRatings := []float64{}
+	optimumIndependentRatings := []float64{}
+
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
 		equippedSet := items.FullItemSet_FromMap(param.exactEquippedGear)
 		equippedRating := param.Model.CalcRatingFull(&equippedSet)
 		bestIndependentRating := param.baselineResultHighs.ResultRating
 		bestMultiRating := param.Model.CalcRatingFull(&optimumMultiSet[paramIndex])
-		job.printer.Printf("MULTI PENALTY %30s equip=%10d multi=%10d indep=%10d bestRatio=%.6f equipRatio=%.6f %d %d %d\n", param.Label,
+		job.printer.Printf("MULTI PENALTY %30s equip=%10d multi=%10d indep=%10d bestRatio=%.6f equipRatio=%.6f setitems=%d,%d,%d mult_calc=%f\n", param.Label,
 			equippedRating,
 			bestMultiRating,
 			bestIndependentRating,
@@ -48,15 +53,18 @@ func (job *MultiSetJob) DetermineWhatRatingsLeadToResult(commonChoices map[items
 			setBonus.CountInAnySet(equippedSet.Items()),
 			setBonus.CountInAnySet(optimumMultiSet[paramIndex].Items()),
 			setBonus.CountInAnySet(param.baselineResultHighs.FullSet.Items()),
+			param.ratingMultiply,
 		)
+
+		oldMultipliers = append(oldMultipliers, param.RequestRatingPercent)
+		equippedRatings = append(equippedRatings, float64(equippedRating))
+		bestUnderOldMultsRatings = append(bestUnderOldMultsRatings, float64(bestMultiRating))
+		optimumIndependentRatings = append(optimumIndependentRatings, float64(bestIndependentRating))
 	}
 
-	
+	withhighs.FindSuggestedRatingMultipliers(oldMultipliers, equippedRatings, bestUnderOldMultsRatings, optimumIndependentRatings, job.printer)
 
-	// so if we imagine we're multiplying these to 
-
-
-
+	// so if we imagine we're multiplying these to
 
 	// what if baseline is good, vs highs version
 

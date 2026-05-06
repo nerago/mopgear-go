@@ -4,7 +4,6 @@ import (
 	"iter"
 	"paladin_gearing_go/items"
 	gear_model "paladin_gearing_go/model"
-	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -56,7 +55,7 @@ func (job *SolverHighsMultiProcess) Run(printer *util.PrintRecorder) []items.Ful
 }
 
 func debugPrintAll(solution *highs.Solution, job *SolverHighsMultiProcess, printer *util.PrintRecorder) {
-	fmt.Println("OBJECTIVE VALUE = ", solution.Objective*c_scaled_ratings)
+	printer.Printf("OBJECTIVE VALUE %f \n", solution.Objective*c_scaled_ratings)
 
 columnLoop:
 	for columnIndex, outputValue := range solution.ColValues {

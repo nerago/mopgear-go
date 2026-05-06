@@ -75,6 +75,31 @@ func (input *inputBuilder) runHighs() (*highs.Solution, *util.PrintRecorder) {
 	return solution, printer
 }
 
+func (input *inputBuilder) runHighsMinimise() (*highs.Solution, *util.PrintRecorder) {
+	tempFilename := makeTempFilename()
+
+	solver := input.toHighsModel_internal(tempFilename)
+	err := solver.SetMaximize(false)
+	if err != nil {
+		panic(err)
+	}
+	
+	solution, err := solver.Run()
+	solver.Close()
+	if err != nil {
+		panic(err)
+	}
+
+	bytes, err := os.ReadFile(tempFilename)
+	if err != nil {
+		panic(err)
+	}
+	printer := util.PrintRecorder_HoldAll()
+	printer.PrintBytes(bytes)
+
+	return solution, printer
+}
+
 func (input *inputBuilder) toHighsModel_internal(logfile string) *highs.Solver {
 	solver, err := highs.NewSolver()
 
