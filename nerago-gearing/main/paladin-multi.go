@@ -64,8 +64,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94776, // primal turtle amulet
 		96420, // talisman of angry spirits
 
-		// 94527, // ji-kun trinket
-		// 94529, // gaze of the twins
+		94527, // ji-kun trinket
+		94529, // gaze of the twins
 
 		87145, // defiled earth OFF
 		96394, // frozen warlord bracer heroic
@@ -80,7 +80,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		GearFile:                  files.GearFileProtDps,
 		Model:                     model.Model_PallyProtDps(),
 		IncludeInFirstPass:        true,
-		RequestRatingPercent:      0.20,
+		RequestRatingPercent:      0.04,
 		PhasedAcceptable:          false,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
@@ -117,12 +117,12 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96657, // ret tier15 legs heroic
 		96658, // ret tier15 shoulder heroic
 
-		// 95290, // prot tier15 chest normal
-		// 95291, // prot tier15 hand normal
-		// 96667, // prot tier15 leg heroic
-		// 96668, // prot tier15 shoulder heroic
+		95290, // prot tier15 chest normal
+		95291, // prot tier15 hand normal
+		96667, // prot tier15 leg heroic
+		96668, // prot tier15 shoulder heroic
 
-		// 95142, // striker's battletags OFF12
+		95142, // striker's battletags OFF12
 		95205, // terra-cotta neck
 		94776, // primal turtle amulet
 		96420, // talisman of angry spirits
@@ -150,7 +150,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		GearFile:                  files.GearFileProtCompromise,
 		Model:                     model.Model_PallyProtCompromise(),
 		IncludeInFirstPass:        true,
-		RequestRatingPercent:      0.14,
+		RequestRatingPercent:      0.10,
 		PhasedAcceptable:          false,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
@@ -178,13 +178,13 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94773, // centripetal shoulders normal REMOVE12
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
-		// 95153, // Tyrant King Battleplate REMOVE1234
+		95153, // Tyrant King Battleplate REMOVE1234
 
 		87024, // null greathelm
 		95778, // crown golden golem celestial [would need gem, acceptable]
 		95282, // ret tier15 normal head [would need gem]
 
-		// 95910, // ret tier15 chest celestial
+		95910, // ret tier15 chest celestial
 		95281, // ret tier15 gloves normal
 		96657, // ret tier15 legs heroic
 		96658, // ret tier15 shoulder heroic
@@ -196,7 +196,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96420, // talisman of angry spirits
 
 		87145, // defiled earth OFF12
-		// 94820, // caustic spike bracers OFF1234
+		94820, // caustic spike bracers OFF1234
 		96394, // frozen warlord bracer heroic
 
 		96376, // worldbreaker weapon
@@ -216,13 +216,14 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// protCompromise.AddFixedSlot(items.Equip_Trinket2, 94529) // gaze of the twins
 	blockHelmetsWithoutCapacitance(&protCompromise)
 	protCompromise.BlockItem(96793) // Fortitude of the Zandalari
+	protCompromise.AddReportVariant(items.Equip_Trinket2, 96793) // Fortitude of the Zandalari
 
 	protMitigationNoSet := multi.MultiSetParam{
 		Label:                     "Prot-Mitigation-NoSet",
 		GearFile:                  files.GearFileProtMitigationNoSet,
 		Model:                     model.Model_PallyProtMitigation_NoSet(),
 		IncludeInFirstPass:        true,
-		RequestRatingPercent:      0.35,
+		RequestRatingPercent:      0.70,
 		PhasedAcceptable:          false,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
@@ -233,7 +234,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96478, // treads of the blind heroic
 
 		86957, // heroic bladed tempest ring REMOVE12
-		// 95140, // shado assault band REMOVE123
+		95140, // shado assault band REMOVE123
 		95141, // shado assault loop
 		96500, // scaled tyrant heroic
 		96481, // durumu tentacle heroic
@@ -250,7 +251,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96428, // shell-coated wrists UPGRADE LIKED
 		96447, // rot-proof greatplate
 
-		// 95910, // ret tier15 chest celestial REMOVE12
+		95910, // ret tier15 chest celestial REMOVE12
 		95281, // ret tier15 gloves normal
 		96657, // ret tier15 legs heroic
 		96658, // ret tier15 shoulder heroic
@@ -268,7 +269,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96420, // talisman of angry spirits
 
 		87145, // defiled earth
-		// 94820, // caustic spike bracers REMOVE1234
+		94820, // caustic spike bracers REMOVE1234
 		96394, // frozen warlord bracer heroic
 
 		96376, // worldbreaker weapon
@@ -280,6 +281,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protMitigationNoSet.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
 	protMitigationNoSet.AddFixedSlot(items.Equip_Ring1, 96481)    // durumu
 	// protMitigationNoSet.AddFixedSlot(items.Equip_Offhand, 94945)  // greatshield of the gloaming normal
+	protMitigationNoSet.AddFixedSlot(items.Equip_Trinket2, 96793) // Fortitude of the Zandalari
+	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, 94529) // gaze of the twins
 	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
 
 	protMitigationWithSet := multi.MultiSetParam{
@@ -287,7 +290,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		GearFile:                  files.GearFileProtMitigationSet,
 		Model:                     model.Model_PallyProtMitigation_WithSet(),
 		IncludeInFirstPass:        true,
-		RequestRatingPercent:      0.30,
+		RequestRatingPercent:      0.15,
 		PhasedAcceptable:          false,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
@@ -307,7 +310,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		98146, // pre-legend strength tank
 
 		95535, // normal lightning legs REMOVE12
-		// 94773, // centripetal shoulders normal REMOVE1234
+		94773, // centripetal shoulders normal REMOVE1234
 		96468, // talonrender chest heroic REMOVE12
 		96533, // rein-binders fists heroic
 		96428, // shell-coated wrists REMOVE1234
@@ -324,7 +327,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		95142, // striker's battletags
 		95205, // terra-cotta neck
-		// 95178, // lootraptor amulet REMOVE123
+		95178, // lootraptor amulet REMOVE123
 		94776, // primal turtle amulet REMOVE12
 		96420, // talisman of angry spirits
 
@@ -341,6 +344,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protMitigationWithSet.AddFixedSlot(items.Equip_Ring1, 96481)    // durumu
 	// protMitigationSet.AddFixedSlot(items.Equip_Offhand, 94945)  // greatshield of the gloaming normal
 	protMitigationWithSet.AddFixedSlot(items.Equip_Back, 98146) // pre-legend strength tank
+	protMitigationWithSet.AddFixedSlot(items.Equip_Trinket2, 96793) // Fortitude of the Zandalari
+	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, 94529) // gaze of the twins
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 
 	// job.AddSuppressSlotCheck(86946) // Vizier's Ruby Signet
@@ -382,10 +387,10 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.FindTopAndPassToSim(500000, 75, true, simulate.RunSize_Medium)
 
 	// job.FindHighsResult()
-	// job.FindSeveralHighsAndSim(simulate.RunSize_Medium)
+	job.FindSeveralHighsAndSim(simulate.RunSize_Medium)
 
 	
-	job.DetermineWhatRatingsLeadToResult(commonComboCurrent())
+	// job.DetermineWhatRatingsLeadToResult(commonComboCurrent())
 }
 
 func blockHelmetsWithoutCapacitance(param *multi.MultiSetParam) {

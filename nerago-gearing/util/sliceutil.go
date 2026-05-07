@@ -9,6 +9,10 @@ import (
 // }
 
 func RemoveDuplicatesFunc[T any](slice []T, equals func(a, b *T) bool) []T {
+	if slice == nil {
+		return nil
+	}
+
 	result := make([]T, 0, len(slice))
 outer:
 	for outerIndex := range slice {
@@ -24,6 +28,10 @@ outer:
 }
 
 func RemoveDuplicatesFuncNotify[T any](slice []T, equals func(a, b *T) bool, removedNotify func(x *T)) []T {
+	if slice == nil {
+		return nil
+	}
+
 	result := make([]T, 0, len(slice))
 outer:
 	for outerIndex := range slice {
@@ -59,6 +67,10 @@ func RemoveDuplicatesComparable[T comparable](slice []T) []T {
 }
 
 func MapSliceAsNew[T any](slice []T, mapper func(x *T) T) []T {
+	if slice == nil {
+		return nil
+	}
+
 	result := make([]T, len(slice))
 	for i := range slice {
 		result[i] = mapper(&slice[i])
@@ -67,6 +79,10 @@ func MapSliceAsNew[T any](slice []T, mapper func(x *T) T) []T {
 }
 
 func CastSliceAsNew[T any, R any](slice []T, mapper func(x *T) R) []R {
+	if slice == nil {
+		return nil
+	}
+
 	result := make([]R, len(slice))
 	for i := range slice {
 		result[i] = mapper(&slice[i])
@@ -75,6 +91,10 @@ func CastSliceAsNew[T any, R any](slice []T, mapper func(x *T) R) []R {
 }
 
 func FilterSliceAsNew[T any](slice []T, filter func(x *T) bool) []T {
+	if slice == nil {
+		return slice
+	}
+
 	result := make([]T, 0, len(slice))
 	for _, item := range slice {
 		if filter(&item) {
@@ -85,6 +105,10 @@ func FilterSliceAsNew[T any](slice []T, filter func(x *T) bool) []T {
 }
 
 func FilterSliceInPlace[T any](slice []T, filter func(x *T) bool) []T {
+	if slice == nil {
+		return nil
+	}
+
 	readIndex := 0
 	for readIndex < len(slice) {
 		if !filter(&slice[readIndex]) {
@@ -148,10 +172,16 @@ func PermuteAll[T any](sliceOfSlices [][]T) iter.Seq[[]T] {
 }
 
 func CopyAndAppend[T any](curr []T, item T) []T {
-	list := make([]T, len(curr)+1)
-	copy(list, curr)
-	list[len(curr)] = item
-	return list
+	if curr != nil {
+		list := make([]T, len(curr)+1)
+		copy(list, curr)
+		list[len(curr)] = item
+		return list
+	} else {
+		list := make([]T, 1)
+		list[0] = item
+		return list
+	}
 }
 
 func ForPointers[T any](slice []T, body func(*T)) {

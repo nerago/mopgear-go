@@ -55,6 +55,13 @@ func (input *inputBuilder) addRow(entries []indexAndValue, lowerBound float64, u
 	return input.mat.addRow(entries, lowerBound, upperBound)
 }
 
+func (input *inputBuilder) clone() *inputBuilder {
+	return &inputBuilder{
+		vars: input.vars.clone(),
+		mat:  input.mat.clone(),
+	}
+}
+
 func (input *inputBuilder) runHighs() (*highs.Solution, *util.PrintRecorder) {
 	tempFilename := makeTempFilename()
 
@@ -83,7 +90,7 @@ func (input *inputBuilder) runHighsMinimise() (*highs.Solution, *util.PrintRecor
 	if err != nil {
 		panic(err)
 	}
-	
+
 	solution, err := solver.Run()
 	solver.Close()
 	if err != nil {
@@ -110,11 +117,11 @@ func (input *inputBuilder) toHighsModel_internal(logfile string) *highs.Solver {
 
 	if logfile != "" {
 		solver.SetStringOption("log_file", logfile)
-		solver.SetIntOption("log_dev_level", 3)
 	} else {
 		solver.SetBoolOption("log_to_console", true)
-		solver.SetIntOption("log_dev_level", 3)
 	}
+
+	// solver.SetIntOption("log_dev_level", 3)
 
 	err = solver.SetMaximize(true)
 	if err != nil {
@@ -157,6 +164,15 @@ func (vars *variableArrayBuilder) create(varType highs.VariableType, lower, uppe
 	vars.ColUpper = append(vars.ColUpper, upper)
 	vars.ColCosts = append(vars.ColCosts, cost)
 	return index
+}
+
+func (vars *variableArrayBuilder) clone() variableArrayBuilder {
+	return variableArrayBuilder{
+		ColTypes: slices.Clone(vars.ColTypes),
+		ColCosts: slices.Clone(vars.ColCosts),
+		ColLower: slices.Clone(vars.ColLower),
+		ColUpper: slices.Clone(vars.ColUpper),
+	}
 }
 
 func (vars *variableArrayBuilder) changeColumnCost(columnIndex int, cost float64) {
@@ -215,6 +231,16 @@ type constraintMatrixBuilder struct {
 	entries    [][]indexAndValue
 	lowerBound []float64
 	upperBound []float64
+}
+
+func (mat *constraintMatrixBuilder) clone() constraintMatrixBuilder {
+	return constraintMatrixBuilder{
+		entries: util.MapSliceAsNew(mat.entries, func(subSlice *[]indexAndValue) []indexAndValue {
+			return slices.Clone(*subSlice)
+		}),
+		lowerBound: slices.Clone(mat.lowerBound),
+		upperBound: slices.Clone(mat.upperBound),
+	}
 }
 
 func (mat *constraintMatrixBuilder) addRow(entries []indexAndValue, lowerBound float64, upperBound float64) (rowIndex int) {

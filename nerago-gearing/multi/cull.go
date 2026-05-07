@@ -42,7 +42,7 @@ func (job *MultiSetJob) cullingMakeRevisions(proposedList []multiProposedOutput,
 		set       *items.FullItemSet
 	}
 
-	optionChannel := channel_op.IterateEach_SliceToChannel(generateThreadCount, proposedList, func(prior *multiProposedOutput, downstream chan<- bestOption) {
+	optionChannel := channel_op.Map_SliceToChannel(generateThreadCount, proposedList, func(prior *multiProposedOutput, downstream chan<- bestOption) {
 		printer := util.PrintRecorder_HoldAll()
 		printer.Printf(">>> PREP REVISIONS %s\n", prior.id)
 		revisedCommon := job.revisedComboActuallyUsed(prior.parts, &prior.combo, printer)

@@ -18,11 +18,11 @@ const (
 	// simRunSize     = simulate.RunSize_Medium
 	// simRunSize  = simulate.RunSize_QuickDirty
 
-	// itemSolveSize  = solver.SolveSize_Medium
-	// simRunSize     = simulate.RunSize_QuickDirty
+	itemSolveSize  = solver.SolveSize_Medium
+	simRunSize     = simulate.RunSize_QuickDirty
 
-	itemSolveSize = solver.SolveSize_Medium
-	simRunSize    = simulate.RunSize_Medium
+	// itemSolveSize = solver.SolveSize_Medium
+	// simRunSize    = simulate.RunSize_Medium
 
 	// itemSolveSize = solver.SolveSize_PerItem
 	// simRunSize    = simulate.RunSize_TestOnly
@@ -163,9 +163,9 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
-				IncludeNormal: true,
+				IncludeNormal: false,
 				IncludeHeroic: true,
-				IncludeRaden:  false,
+				IncludeRaden:  true,
 				IgnoredItems:  ignoredItems,
 				SolveSize:     itemSolveSize,
 				// PositiveResultsOnly: true,

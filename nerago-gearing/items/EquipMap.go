@@ -36,6 +36,15 @@ func (equipMap *FullEquipMap) IncludesItemId(itemId ItemId) bool {
 	return false
 }
 
+func (equipMap *FullEquipMap) FindItemId(itemId ItemId) *FullItem {
+	for _, item := range equipMap {
+		if item != nil && item.ItemId() == itemId {
+			return item
+		}
+	}
+	return nil
+}
+
 func (equipMap *FullEquipMap) Equals(other *FullEquipMap) bool {
 	for slot := range equipMap {
 		a := equipMap[slot]

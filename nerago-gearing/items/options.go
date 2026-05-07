@@ -83,9 +83,10 @@ func (optionsMap *FullOptionsMap) FilterSlot(slot SlotEquip, filter func(*FullIt
 func (optionsMap *FullOptionsMap) FindItemId(itemId ItemId) iter.Seq[FullItem] {
 	return func(yield func(FullItem) bool) {
 		for _, slotArray := range optionsMap {
-			for _, item := range slotArray {
+			for i := range slotArray {
+				item := &slotArray[i]
 				if item.ItemId() == itemId {
-					if !yield(item) {
+					if !yield(*item) {
 						return
 					}
 				}
@@ -94,9 +95,10 @@ func (optionsMap *FullOptionsMap) FindItemId(itemId ItemId) iter.Seq[FullItem] {
 	}
 }
 
-func (optionsMap *FullOptionsMap) FindItemIdFirst(itemId ItemId) FullItem {
+func (optionsMap *FullOptionsMap) FindItemIdFirst(itemId ItemId) *FullItem {
 	for _, slotArray := range optionsMap {
-		for _, item := range slotArray {
+		for i := range slotArray {
+			item := &slotArray[i]
 			if item.ItemId() == itemId {
 				return item
 			}
@@ -105,22 +107,24 @@ func (optionsMap *FullOptionsMap) FindItemIdFirst(itemId ItemId) FullItem {
 	panic("no such item")
 }
 
-func (optionsMap *FullOptionsMap) FindItemIdFirstOptional(itemId ItemId) (FullItem, bool) {
+func (optionsMap *FullOptionsMap) FindItemIdFirstOptional(itemId ItemId) (*FullItem, bool) {
 	for _, slotArray := range optionsMap {
-		for _, item := range slotArray {
+		for i := range slotArray {
+			item := &slotArray[i]
 			if item.ItemId() == itemId {
 				return item, true
 			}
 		}
 	}
-	return FullItem{}, false
+	return nil, false
 }
 
 func (optionsMap *FullOptionsMap) AllItems() iter.Seq[*FullItem] {
 	return func(yield func(*FullItem) bool) {
 		for _, slotArray := range optionsMap {
-			for _, item := range slotArray {
-				if !yield(&item) {
+			for i := range slotArray {
+				item := &slotArray[i]
+				if !yield(item) {
 					return
 				}
 			}

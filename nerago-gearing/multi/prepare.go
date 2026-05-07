@@ -46,12 +46,7 @@ func (param *multiSetParamInternal) prepareStartingGear() {
 
 	equipped := loaders.GearFileReader_Read(param.GearFile)
 	param.exactEquippedGear = setup.OptionsSetup_ExactEquippedOnly(equipped, &param.Model, param.job.printer)
-	// TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert
-	// TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert
-	// param.itemOptions = setup.OptionsSetup_FromEquipped(equipped, &param.Model, setup.MissingEnchant_Panic, param.job.printer)
-	// TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert
-	// TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert TODO revert
-	param.itemOptions = setup.OptionsSetup_FromEquipped(equipped, &param.Model, setup.MissingEnchant_Fix, param.job.printer)
+	param.itemOptions = setup.OptionsSetup_FromEquipped(equipped, &param.Model, setup.MissingEnchant_Panic, param.job.printer)
 
 	setup.UpgradeExistingToLevel2(&param.itemOptions, param.ForceUpgradeExistingItems, &param.Model, param.job.printer)
 }

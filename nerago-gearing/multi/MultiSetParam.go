@@ -26,6 +26,7 @@ type MultiSetParam struct {
 	extraFromBags             bool
 	blockedItems              []items.ItemId
 	fixedSlots                map[items.SlotEquip]items.ItemId
+	reportVariant             map[items.SlotEquip]items.ItemId
 
 	// stuff not ported
 	// boolean challengeScale;
@@ -39,13 +40,13 @@ type multiSetParamInternal struct {
 	job *MultiSetJob
 
 	// working data
-	exactEquippedGear items.FullEquipMap
-	itemOptions       items.FullOptionsMap
-	addedFromBags     []items.ItemId
-	seenInSolutions   *seenMap
-	baselineResult    solver.SolveOutput
-	baselineResultHighs    solver.SolveOutput
-	ratingMultiply    float64 // derived
+	exactEquippedGear   items.FullEquipMap
+	itemOptions         items.FullOptionsMap
+	addedFromBags       []items.ItemId
+	seenInSolutions     *seenMap
+	baselineResult      solver.SolveOutput
+	baselineResultHighs solver.SolveOutput
+	ratingMultiply      float64 // derived
 
 	//debug
 	solveFailCount    atomic.Uint64
@@ -81,6 +82,13 @@ func (param *MultiSetParam) AddFixedSlot(slot items.SlotEquip, itemId items.Item
 	}
 	param.fixedSlots[slot] = itemId
 	return param
+}
+
+func (param *MultiSetParam) AddReportVariant(slot items.SlotEquip, id items.ItemId) {
+	if param.reportVariant == nil {
+		param.reportVariant = make(map[items.SlotEquip]items.ItemId)
+	}
+	param.reportVariant[slot] = id
 }
 
 type seenMap struct {

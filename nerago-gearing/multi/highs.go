@@ -129,8 +129,10 @@ func (job *MultiSetJob) FindSeveralHighsAndSim(runSize simulate.WowSim_RunSize) 
 			proposalList = append(proposalList, proposedOutput)
 		}
 
-		util.RemoveDuplicatesFunc(proposalList, func(a, b *multiProposedOutput) bool {
+		util.RemoveDuplicatesFuncNotify(proposalList, func(a, b *multiProposedOutput) bool {
 			return a.Equals(b)
+		}, func(x *multiProposedOutput) {
+			job.printer.Printf("Remove Duplicate %s\n", x.id)
 		})
 
 		job.listInitialOutputs(proposalList)

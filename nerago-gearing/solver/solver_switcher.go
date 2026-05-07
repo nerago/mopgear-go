@@ -146,6 +146,18 @@ func (output *SolveOutput) Report(printer *util.PrintRecorder) {
 	}
 }
 
+func ReportSetFewerParams(printer *util.PrintRecorder, fullSet items.FullItemSet, modelObj *model.Model) {
+	printer.Printf("SET rating %d\n", modelObj.CalcRatingFull(&fullSet))
+	printer.Printf("BONUS counts %s\n", model.AllBonusesText(fullSet.Items()))
+	printer.Printf("BONUS multiply %f\n", modelObj.SetBonus.CalcBonusFull(fullSet.Items()))
+	fullSet.PrintStats(printer)
+	printEquipMap(fullSet.Items(), printer)
+
+	simulate.WowSimJson_Write(fullSet.Items(), modelObj, printer)
+
+	fullSet.DebugValidate()
+}
+
 func ReportSet(printer *util.PrintRecorder, fullSet items.FullItemSet, rating uint64, modelObj *model.Model) {
 	printer.Printf("SET rating %d\n", rating)
 	printer.Printf("BONUS counts %s\n", model.AllBonusesText(fullSet.Items()))

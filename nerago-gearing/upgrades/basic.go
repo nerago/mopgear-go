@@ -28,7 +28,7 @@ func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMa
 	solver.ReportSet(printer, *baseSet, model.CalcRatingFull(baseSet), model)
 
 	printer.Println("TRYING ITEMS")
-	resultList := channel_op.IterateEach_SliceToSlice(c_upgradeEachThreads, extraTasks,
+	resultList := channel_op.Map_SliceToSlice(c_upgradeEachThreads, extraTasks,
 		func(task *upgradeItemTask, resultChannel chan<- upgradeItemResult) {
 			resultChannel <- performUpgradeTask(input, task, baseItems, baseRating, model, printer, tracker, forceIncludeMost, substituteEmptySlotOnly)
 		})

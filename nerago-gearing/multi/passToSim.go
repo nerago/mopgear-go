@@ -3,6 +3,7 @@ package multi
 import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
+	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -42,7 +43,7 @@ func (job *MultiSetJob) prepareRevisionsForSim(proposedList []multiProposedOutpu
 	trackProgress.RunOuterTracking(expectedSets)
 	defer trackProgress.Stop()
 
-	allProposals := channel_op.IterateEach_SliceToSlice(generateThreadCount, proposedList, func(prior *multiProposedOutput, downstream chan<- multiProposedOutput) {
+	allProposals := channel_op.Map_SliceToSlice(generateThreadCount, proposedList, func(prior *multiProposedOutput, downstream chan<- multiProposedOutput) {
 		job.prepareOneRevisionForSim(prior, trackProgress, downstream)
 	})
 
@@ -170,7 +171,7 @@ func (job *MultiSetJob) runSims(jobList []simulateJob, runSize simulate.WowSim_R
 	trackProgress.RunOuterTracking(len(jobList))
 	defer trackProgress.Stop()
 
-	channel_op.IterateEach_Blocking_Void(evaluateThreadCount, jobList, func(sim *simulateJob) {
+	channel_op.ForEach_Blocking_Void(evaluateThreadCount, jobList, func(sim *simulateJob) {
 		result := simulate.WowSim_Execute_SelectFight(runSize, sim.spec, sim.fight, &sim.equip, sim.professions, nil, trackProgress.MakeNested())
 		job.printer.Printf("sim %22s fight=%d %s\n", sim.spec.Name(), sim.fight, result.CompactStringGeneral())
 		sim.result = &result
@@ -212,10 +213,39 @@ func (job *MultiSetJob) reportSimResults(resultList []simulateResult) {
 			output := result.proposed.parts[specIndex]
 			output.Report(job.printer)
 			specResult.Print(job.printer)
+
+			for slot, itemId := range param.reportVariant {
+				variantEquip := *output.fullSet.Items()
+				variantItem := job.findVariantItem(result, itemId, param)
+				variantEquip[slot] = variantItem
+				job.printer.Printf("---------------- %s %s ----------------\n", param.Label, variantItem.BaseName)
+				simulate.WowSimJson_Write(&variantEquip, &param.Model, job.printer)
+			}
 		}
 		job.printer.Println0()
 		job.printer.Println0()
 	}
+}
+
+func (job *MultiSetJob) findVariantItem(result simulateResult, itemId items.ItemId, param *multiSetParamInternal) *items.FullItem {
+	variantItem := result.proposed.findItemById(itemId)
+	if variantItem != nil {
+		return variantItem
+	}
+
+	if item, found := param.itemOptions.FindItemIdFirstOptional(itemId); found {
+		return item
+	}
+
+	for paramIndex := range job.params {
+		otherParam := &job.params[paramIndex]
+		if item, found := otherParam.itemOptions.FindItemIdFirstOptional(itemId); found {
+			return item
+		}
+	}
+
+	_, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &param.Model, job.printer)
+	return example
 }
 
 func (job *MultiSetJob) reportAsCsv(simResultList []simulateResult) {

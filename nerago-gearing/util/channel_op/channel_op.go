@@ -45,7 +45,7 @@ func Filter_ChannelToChannel[T any](threadCount int, inputChannel <-chan T, pred
 	return outputChannel
 }
 
-func TransformEach_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, transform func(T, chan<- R)) <-chan R {
+func MapMulti_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, transform func(T, chan<- R)) <-chan R {
 	var waitGroup sync.WaitGroup
 	outputChannel := makeOutputChannel[R]()
 	for range threadCount {
@@ -92,7 +92,7 @@ func GenerateAll_ToChannel[R any](threadCount int, generateSubGroup func(int, ch
 	return outputChannel
 }
 
-func IterateEach_SliceToChannel[T any, R any](threadCount int, inputSlice []T, transform func(*T, chan<- R)) <-chan R {
+func Map_SliceToChannel[T any, R any](threadCount int, inputSlice []T, transform func(*T, chan<- R)) <-chan R {
 	var waitGroup sync.WaitGroup
 	outputChannel := makeOutputChannel[R]()
 
@@ -115,7 +115,7 @@ func IterateEach_SliceToChannel[T any, R any](threadCount int, inputSlice []T, t
 	return outputChannel
 }
 
-func IterateEach_SliceToSlice[T any, R any](threadCount int, inputSlice []T, transform func(*T, chan<- R)) []R {
+func Map_SliceToSlice[T any, R any](threadCount int, inputSlice []T, transform func(*T, chan<- R)) []R {
 	var waitGroup sync.WaitGroup
 
 	inputLength := len(inputSlice)
@@ -144,7 +144,7 @@ func IterateEach_SliceToSlice[T any, R any](threadCount int, inputSlice []T, tra
 	return outputSlice
 }
 
-func IterateEach_Blocking_Void[T any](threadCount int, inputSlice []T, process func(*T)) {
+func ForEach_Blocking_Void[T any](threadCount int, inputSlice []T, process func(*T)) {
 	var waitGroup sync.WaitGroup
 
 	inputLength := len(inputSlice)
@@ -163,7 +163,7 @@ func IterateEach_Blocking_Void[T any](threadCount int, inputSlice []T, process f
 	waitGroup.Wait()
 }
 
-func IterateEach_BlockingTracked_Void[T any](trackProgress *util.TrackProgress, threadCount int, inputSlice []T, process func(*T)) {
+func ForEach_BlockingTracked_Void[T any](trackProgress *util.TrackProgress, threadCount int, inputSlice []T, process func(*T)) {
 	var waitGroup sync.WaitGroup
 
 	inputLength := len(inputSlice)

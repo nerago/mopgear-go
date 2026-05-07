@@ -18,6 +18,16 @@ type multiProposedOutput struct {
 	combo          commonCombo
 }
 
+func (proposed *multiProposedOutput) findItemById(itemId items.ItemId) *items.FullItem {
+	for _, part := range proposed.parts {
+		item := part.fullSet.Items().FindItemId(itemId)
+		if item != nil {
+			return item
+		}
+	}
+	return nil
+}
+
 type singleProposed struct {
 	fullSet      items.FullItemSet
 	exists       bool
@@ -67,7 +77,7 @@ func (proposed *multiProposedOutput) Equals(other *multiProposedOutput) bool {
 
 func (job *MultiSetJob) makeProposedChannel(comboChannel <-chan commonCombo, comboCount uint64, trackProgress *util.TrackProgress) <-chan multiProposedOutput {
 	trackProgress.RunOuterTracking(int(comboCount))
-	return channel_op.TransformEach_ChannelToChannel(solveThreadCount, comboChannel, func(combo commonCombo, outputChannel chan<- multiProposedOutput) {
+	return channel_op.MapMulti_ChannelToChannel(solveThreadCount, comboChannel, func(combo commonCombo, outputChannel chan<- multiProposedOutput) {
 		job.subSolveCombo(&combo, trackProgress.MakeNested(), outputChannel)
 	})
 }
