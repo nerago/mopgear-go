@@ -44,6 +44,10 @@ func setupBonusedInputs(inputBuilder *inputBuilder, gear_model *gear_model.Model
 }
 
 func debugPrint(solution *highs.Solution, setup *setupInputsForSetBonus, printer *util.PrintRecorder) {
+	if !c_debugHighs {
+		return
+	}
+
 	printer.Printf("OBJECTIVE VALUE = %f\n", solution.Objective*c_scaled_ratings)
 
 	activeBonus := ""

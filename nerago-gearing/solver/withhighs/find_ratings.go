@@ -81,7 +81,9 @@ func FindSuggestedRatingMultipliers(oldMultipliers []float64, equippedRatings []
 	solution, log := inputBuilder.runHighsMinimise()
 	printer.AppendOther(log)
 
-	for i, v := range solution.ColValues {
-		printer.Printf("%d %f\n", i, v)
+	if c_debugHighs {
+		for i, v := range solution.ColValues {
+			printer.Printf("%d %f\n", i, v)
+		}
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/items"
 	gear_model "paladin_gearing_go/model"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
@@ -48,13 +49,17 @@ func (job *SolverHighsMultiProcess) Run(printer *util.PrintRecorder) []items.Ful
 	debugPrintAll(solution, job, printer)
 
 	if solution.HasSolution() {
-		return job.solutionToResult(solution, printer)
+		return job.solutionToResult(solution)
 	} else {
 		return nil
 	}
 }
 
 func debugPrintAll(solution *highs.Solution, job *SolverHighsMultiProcess, printer *util.PrintRecorder) {
+	if !c_debugHighs {
+		return
+	}
+
 	printer.Printf("OBJECTIVE VALUE %f \n", solution.Objective*c_scaled_ratings)
 
 columnLoop:
@@ -84,13 +89,12 @@ func (job *SolverHighsMultiProcess) extractCommonChoices(solution *highs.Solutio
 	return commonChosenColumns
 }
 
-func (job *SolverHighsMultiProcess) solutionToResult(solution *highs.Solution, printer *util.PrintRecorder) []items.FullItemSet {
+func (job *SolverHighsMultiProcess) solutionToResult(solution *highs.Solution) []items.FullItemSet {
 	resultList := make([]items.FullItemSet, len(job.parts))
 	for partIndex := range job.parts {
 		part := job.parts[partIndex]
 		solvedSet := part.setup.buildResultSet(solution, &part.solveOptions, part.Gear_model)
 		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &part.ItemOptions)
-		// solver.ReportSet(printer, fullItemSet, part.Gear_model.CalcRatingFull(&fullItemSet), part.Gear_model)
 		resultList[partIndex] = fullItemSet
 	}
 	return resultList
@@ -120,7 +124,7 @@ func (job *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.
 	printer.AppendOther(log)
 	printer.Println("SOLUTION STATUS = " + solution.Status.String())
 
-	// debugPrintAll(solution, job, printer)
+	debugPrintAll(solution, job, printer)
 
 	if !solution.HasSolution() {
 		return nil
@@ -128,7 +132,7 @@ func (job *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.
 
 	resultList := make([][]items.FullItemSet, 0)
 
-	jobResult := job.solutionToResult(solution, printer)
+	jobResult := job.solutionToResult(solution)
 	resultList = append(resultList, jobResult)
 	bestCommonChoices := job.extractCommonChoices(solution)
 
@@ -148,7 +152,7 @@ func (job *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.
 		printer.Println("SOLUTION STATUS = " + solution.Status.String())
 
 		if solution.HasSolution() {
-			jobResult := job.solutionToResult(solution, printer)
+			jobResult := job.solutionToResult(solution)
 			resultList = append(resultList, jobResult)
 		}
 
@@ -158,6 +162,50 @@ func (job *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.
 
 		rowLimitCommon.change(changeColumn.columnIndex, 0)
 	}
+
+	return resultList
+}
+
+func (job *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_WithParallel(printer *util.PrintRecorder) [][]items.FullItemSet {
+	printer.Printf("INITIAL MULTI run\n")
+
+	job.makeFullModel()
+	solution, log := job.input.runHighs()
+	printer.AppendOther(log)
+	printer.Println("SOLUTION STATUS = " + solution.Status.String())
+	// debugPrintAll(solution, job, printer)
+
+	if !solution.HasSolution() {
+		return nil
+	}
+
+	initialResult := job.solutionToResult(solution)
+	bestCommonChoices := job.extractCommonChoices(solution)
+
+	printer.Println("############################################################################")
+
+	resultList := channel_op.Map_SliceToSlice(c_threads, bestCommonChoices, func(changeColumn *columnInfo, resultChannel chan<- []items.FullItemSet) {
+		innerPrint := util.PrintRecorder_HoldAll()
+		printer.Printf("COMMON VARIANT blocking %s\n", changeColumn.itemFull.CreateString())
+
+		input := job.input.clone()
+		rowLimitCommon := constraintRowBuild{}
+		rowLimitCommon.add(changeColumn.columnIndex, 1)
+		rowLimitCommon.finish(input, 0, 0)
+
+		solution, log := input.runHighs()
+		innerPrint.AppendOther(log)
+		innerPrint.Println("SOLUTION STATUS = " + solution.Status.String())
+
+		if solution.HasSolution() {
+			jobResult := job.solutionToResult(solution)
+			resultChannel <- jobResult
+		}
+
+		innerPrint.Println("############################################################################")
+		printer.AppendOther(innerPrint)
+	})
+	resultList = append(resultList, initialResult)
 
 	return resultList
 }
@@ -177,7 +225,7 @@ func (job SolverHighsMultiProcess) RunForSeveral_ObjectiveScoreLower(printer *ut
 
 	resultList := make([][]items.FullItemSet, 0, topN)
 
-	jobResult := job.solutionToResult(solution, printer)
+	jobResult := job.solutionToResult(solution)
 	resultList = append(resultList, jobResult)
 	previousScore := solution.Objective
 
@@ -198,7 +246,7 @@ func (job SolverHighsMultiProcess) RunForSeveral_ObjectiveScoreLower(printer *ut
 			break
 		}
 
-		jobResult := job.solutionToResult(solution, printer)
+		jobResult := job.solutionToResult(solution)
 		resultList = append(resultList, jobResult)
 		previousScore = solution.Objective
 

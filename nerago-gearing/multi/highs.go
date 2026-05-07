@@ -120,7 +120,8 @@ func (job *MultiSetJob) FindSeveralHighsAndSim(runSize simulate.WowSim_RunSize) 
 	job.prepareInitial()
 	highProcess := job.highProcessSetup()
 
-	setResultList := highProcess.RunForSeveral_CommonDifferent(job.printer)
+	// setResultList := highProcess.RunForSeveral_CommonDifferent(job.printer)
+	setResultList := highProcess.RunForSeveral_CommonDifferent_WithParallel(job.printer)
 
 	if setResultList != nil {
 		proposalList := make([]multiProposedOutput, 0, len(setResultList))
