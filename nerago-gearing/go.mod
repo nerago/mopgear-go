@@ -1,6 +1,6 @@
 module paladin_gearing_go
 
-go 1.26
+go 1.25.5
 
 require (
 	github.com/bartolsthoorn/gohighs v1.0.0

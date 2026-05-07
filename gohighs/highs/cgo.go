@@ -1,4 +1,4 @@
-//go:build (linux || darwin) && (amd64 || arm64)
+//go:build ((linux || darwin) && (amd64 || arm64)) || (windows && amd64)
 
 // Package highs provides Go bindings for the HiGHS linear optimization solver.
 //
@@ -14,6 +14,7 @@
 //   - linux/arm64
 //   - darwin/amd64
 //   - darwin/arm64
+//   - windows/amd64
 //
 // # High-Level API Example
 //
@@ -54,6 +55,7 @@ package highs
 #cgo linux,arm64 LDFLAGS: ${SRCDIR}/../internal/highs/lib/linux_arm64/libhighs.a -lstdc++ -lm -ldl -lz
 #cgo darwin,amd64 LDFLAGS: ${SRCDIR}/../internal/highs/lib/darwin_amd64/libhighs.a -lc++ -lz
 #cgo darwin,arm64 LDFLAGS: ${SRCDIR}/../internal/highs/lib/darwin_arm64/libhighs.a -lc++ -lz
+#cgo windows,amd64 LDFLAGS: -L${SRCDIR}/../internal/highs/lib/windows_amd64/ -lhighs -lstdc++
 
 #include <stdlib.h>
 #include <stdint.h>
