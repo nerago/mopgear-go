@@ -2,7 +2,6 @@ package requirements
 
 import (
 	"math"
-	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/stats"
 )
 
@@ -47,20 +46,6 @@ func (inst StatRequirementsHitExpertise) CheckSet(block *StatBlock) bool {
 	hit := block.Hit()
 	exp := block.Expertise()
 	return inst.hitMin <= hit && hit <= inst.hitMax && inst.expMin <= exp && exp <= inst.expMax
-}
-
-func (inst StatRequirementsHitExpertise) CheckSetSkinny(set *SkinnyItemSet) bool {
-	hit := set.A
-	exp := set.B
-	return inst.hitMin <= hit && hit <= inst.hitMax && inst.expMin <= exp && exp <= inst.expMax
-}
-
-func (inst StatRequirementsHitExpertise) ToSkinny(item *SolvableItem) SkinnyItem {
-	return SkinnyItem{A: item.TotalCap().Hit(), B: item.TotalCap().Expertise(), Exists: true}
-}
-
-func (inst StatRequirementsHitExpertise) SkinnyMatch(skinny *SkinnyItem, item *SolvableItem) bool {
-	return skinny.A == item.TotalCap().Hit() && skinny.B == item.TotalCap().Expertise()
 }
 
 func (inst *StatRequirementsHitExpertise) IsLow(stat StatType, value uint32) bool {

@@ -4,8 +4,6 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/simulate"
-	"paladin_gearing_go/solver/build"
-	"paladin_gearing_go/solver/phased"
 	"paladin_gearing_go/solver/withhighs"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
@@ -24,7 +22,6 @@ const (
 type SolveInput struct {
 	ItemOptions         *items.FullOptionsMap
 	Model               *model.Model
-	PhasedAcceptable    bool
 	EnableTrackProgress bool
 	OuterTrackProgress  *util.TrackProgress
 	SolveSize           SolveSize
@@ -32,29 +29,6 @@ type SolveInput struct {
 }
 
 func Solver(input SolveInput) SolveOutput {
-	printer, trackProgress, solveOptions := prepareSolve(input)
-	defer trackProgress.Stop()
-
-	targetCount := uint64(input.SolveSize)
-	combinationCount := solveOptions.TotalCombinationCount()
-
-	var solvedResult util.Optional[items.SolvableItemSet]
-	if combinationCount.IsUint64() && combinationCount.Uint64() < targetCount {
-		solvedResult = build.SolverBuildFull_Run(&solveOptions, input.Model, trackProgress, printer)
-	} else if input.PhasedAcceptable {
-		solvedResult = phased.SolverSkinnyPhasedIndex_Run(&solveOptions, input.Model, targetCount, trackProgress, printer)
-	} else {
-		solvedResult = build.SolverBuildOverflow2_Run(&solveOptions, input.Model, targetCount, trackProgress, printer)
-		if solvedResult.IsEmpty() {
-			printer.Println("Initial Failure with Overflow, trying with phased!!")
-			solvedResult = phased.SolverSkinnyPhasedIndex_Run(&solveOptions, input.Model, targetCount, trackProgress, printer)
-		}
-	}
-
-	return finaliseSolve(solvedResult, solveOptions, input, printer)
-}
-
-func Solver_WithHighs(input SolveInput) SolveOutput {
 	printer, trackProgress, solveOptions := prepareSolve(input)
 	defer trackProgress.Stop()
 

@@ -1,15 +1,11 @@
 package model
 
 import (
-	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/stats"
 )
 
 type StatRequirements interface {
 	CheckSet(block *StatBlock) bool
-	CheckSetSkinny(set *SkinnyItemSet) bool
-	ToSkinny(item *SolvableItem) SkinnyItem
-	SkinnyMatch(skinny *SkinnyItem, item *SolvableItem) bool
 }
 
 type StatRatings interface {

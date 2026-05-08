@@ -118,54 +118,22 @@ func (sets *SetBonus) CalcBonusSolve(equip *SolvableEquipMap) float32 {
 		return 1
 	case 1:
 		var count uint8
-		incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Head])
-		incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Shoulder])
-		incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Chest])
-		incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Hand])
-		incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Leg])
+		incrementWithSetValueSolve(&count, sets.itemToSet, equip[Equip_Head])
+		incrementWithSetValueSolve(&count, sets.itemToSet, equip[Equip_Shoulder])
+		incrementWithSetValueSolve(&count, sets.itemToSet, equip[Equip_Chest])
+		incrementWithSetValueSolve(&count, sets.itemToSet, equip[Equip_Hand])
+		incrementWithSetValueSolve(&count, sets.itemToSet, equip[Equip_Leg])
 		return sets.activeSets[0].bonuses[count]
 	default:
 		var counts [10]uint8
-		addToSpecificSet(&counts, sets.itemToSet, equip[Equip_Head])
-		addToSpecificSet(&counts, sets.itemToSet, equip[Equip_Shoulder])
-		addToSpecificSet(&counts, sets.itemToSet, equip[Equip_Chest])
-		addToSpecificSet(&counts, sets.itemToSet, equip[Equip_Hand])
-		addToSpecificSet(&counts, sets.itemToSet, equip[Equip_Leg])
+		addToSpecificSetSolve(&counts, sets.itemToSet, equip[Equip_Head])
+		addToSpecificSetSolve(&counts, sets.itemToSet, equip[Equip_Shoulder])
+		addToSpecificSetSolve(&counts, sets.itemToSet, equip[Equip_Chest])
+		addToSpecificSetSolve(&counts, sets.itemToSet, equip[Equip_Hand])
+		addToSpecificSetSolve(&counts, sets.itemToSet, equip[Equip_Leg])
 		var value float32 = 1.0
 		for index := range sets.activeSets {
 			value *= sets.activeSets[index].bonuses[counts[index+1]]
-		}
-		return value
-	}
-}
-
-func (sets *SetBonus) CalcBonusGeneric(equip IEquipMap) float32 {
-	return calcBonusFromFunc(equip.GetAsId, sets.activeSets, sets.itemToSet)
-}
-
-func calcBonusFromFunc(getAsId func(SlotEquip) ItemId, activeSets []setInfo, itemToSet []uint8) float32 {
-	numSets := len(activeSets)
-	switch numSets {
-	case 0:
-		return 1
-	case 1:
-		var count uint8
-		count += itemToSet[getAsId(Equip_Head)]
-		count += itemToSet[getAsId(Equip_Shoulder)]
-		count += itemToSet[getAsId(Equip_Chest)]
-		count += itemToSet[getAsId(Equip_Hand)]
-		count += itemToSet[getAsId(Equip_Leg)]
-		return activeSets[0].bonuses[count]
-	default:
-		var counts [10]uint8
-		counts[itemToSet[getAsId(Equip_Head)]]++
-		counts[itemToSet[getAsId(Equip_Shoulder)]]++
-		counts[itemToSet[getAsId(Equip_Chest)]]++
-		counts[itemToSet[getAsId(Equip_Hand)]]++
-		counts[itemToSet[getAsId(Equip_Leg)]]++
-		var value float32 = 1.0
-		for index := range activeSets {
-			value *= activeSets[index].bonuses[counts[index+1]]
 		}
 		return value
 	}
@@ -188,7 +156,7 @@ func (sets *SetBonus) CountInAnySet(itemSet *FullEquipMap) uint8 {
 }
 
 // ########################### incrementIfInAnySet ###########################
-func incrementIfInAnySet(count *uint8, itemToSet []uint8, item IItem) {
+func incrementIfInAnySet(count *uint8, itemToSet []uint8, item *FullItem) {
 	if item != nil {
 		entry := itemToSet[item.ItemId()]
 		if entry != 0 {
@@ -197,14 +165,25 @@ func incrementIfInAnySet(count *uint8, itemToSet []uint8, item IItem) {
 	}
 }
 
-func incrementWithSetValue(count *uint8, itemToSet []uint8, item IItem) {
+func incrementWithSetValue(count *uint8, itemToSet []uint8, item *FullItem) {
+	if item != nil {
+		*count += itemToSet[item.ItemId()]
+	}
+}
+func incrementWithSetValueSolve(count *uint8, itemToSet []uint8, item *SolvableItem) {
 	if item != nil {
 		*count += itemToSet[item.ItemId()]
 	}
 }
 
 // ########################### addToSpecificSet ###########################
-func addToSpecificSet(counts *[10]uint8, itemToSet []uint8, item IItem) {
+func addToSpecificSet(counts *[10]uint8, itemToSet []uint8, item *FullItem) {
+	if item != nil {
+		entry := itemToSet[item.ItemId()]
+		counts[entry]++
+	}
+}
+func addToSpecificSetSolve(counts *[10]uint8, itemToSet []uint8, item *SolvableItem) {
 	if item != nil {
 		entry := itemToSet[item.ItemId()]
 		counts[entry]++

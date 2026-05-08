@@ -85,7 +85,3 @@ func (itemSet *FullItemSet) TotalRated() *StatBlock {
 func (itemSet *FullItemSet) Items() *FullEquipMap {
 	return &itemSet.items
 }
-
-func (itemSet *FullItemSet) ItemsGeneric() IEquipMap {
-	return &itemSet.items
-}

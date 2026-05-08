@@ -118,54 +118,6 @@ func (job *SolverHighsMultiProcess) makeFullModel() {
 	job.outputRow.finish(job.input, 0, 0)
 }
 
-func (job *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.PrintRecorder) [][]items.FullItemSet {
-	job.makeFullModel()
-	solution, log := job.input.runHighs()
-	printer.AppendOther(log)
-	printer.Println("SOLUTION STATUS = " + solution.Status.String())
-
-	debugPrintAll(solution, job, printer)
-
-	if !solution.HasSolution() {
-		return nil
-	}
-
-	resultList := make([][]items.FullItemSet, 0)
-
-	jobResult := job.solutionToResult(solution)
-	resultList = append(resultList, jobResult)
-	bestCommonChoices := job.extractCommonChoices(solution)
-
-	printer.Println("############################################################################")
-	printer.Println("############################################################################")
-	printer.Println("############################################################################")
-
-	rowLimitCommon := constraintRowBuild{}
-
-	for _, changeColumn := range bestCommonChoices {
-		printer.Printf("COMMON VARIANT blocking %s\n", changeColumn.itemFull.CreateString())
-		rowLimitCommon.add(changeColumn.columnIndex, 1)
-		rowLimitCommon.finish(job.input, 0, 0)
-
-		solution, log := job.input.runHighs()
-		printer.AppendOther(log)
-		printer.Println("SOLUTION STATUS = " + solution.Status.String())
-
-		if solution.HasSolution() {
-			jobResult := job.solutionToResult(solution)
-			resultList = append(resultList, jobResult)
-		}
-
-		printer.Println("############################################################################")
-		printer.Println("############################################################################")
-		printer.Println("############################################################################")
-
-		rowLimitCommon.change(changeColumn.columnIndex, 0)
-	}
-
-	return resultList
-}
-
 func (job *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_WithParallel(printer *util.PrintRecorder) [][]items.FullItemSet {
 	printer.Printf("INITIAL MULTI run\n")
 
@@ -206,54 +158,6 @@ func (job *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_WithParallel(p
 		printer.AppendOther(innerPrint)
 	})
 	resultList = append(resultList, initialResult)
-
-	return resultList
-}
-
-func (job SolverHighsMultiProcess) RunForSeveral_ObjectiveScoreLower(printer *util.PrintRecorder, topN int) [][]items.FullItemSet {
-	job.makeFullModel()
-	highs_solver := job.input.toHighsModel_internal("")
-	defer highs_solver.Close()
-
-	solution, log := job.input.runHighs()
-	printer.AppendOther(log)
-	printer.Println("SOLUTION STATUS = " + solution.Status.String())
-
-	if !solution.HasSolution() {
-		return nil
-	}
-
-	resultList := make([][]items.FullItemSet, 0, topN)
-
-	jobResult := job.solutionToResult(solution)
-	resultList = append(resultList, jobResult)
-	previousScore := solution.Objective
-
-	printer.Println("############################################################################")
-	printer.Println("############################################################################")
-	printer.Println("############################################################################")
-
-	for len(resultList) < topN {
-		highs_solver.SetColBounds(job.outputColumn, 0, previousScore-0.001)
-
-		solution, err := highs_solver.Run()
-		printer.Println("SOLUTION STATUS = " + solution.Status.String())
-		if err != nil {
-			panic(err)
-		}
-
-		if !solution.HasSolution() {
-			break
-		}
-
-		jobResult := job.solutionToResult(solution)
-		resultList = append(resultList, jobResult)
-		previousScore = solution.Objective
-
-		printer.Println("############################################################################")
-		printer.Println("############################################################################")
-		printer.Println("############################################################################")
-	}
 
 	return resultList
 }

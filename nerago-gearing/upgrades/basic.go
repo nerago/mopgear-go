@@ -194,7 +194,6 @@ func findBase(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, 
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions:        baseItems,
 		Model:              model,
-		PhasedAcceptable:   false,
 		OuterTrackProgress: tracker,
 		Printer:            printer,
 		SolveSize:          input.SolveSize * c_baseSolveScale})
@@ -231,7 +230,6 @@ func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemT
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions:        &jobItems,
 		Model:              model,
-		PhasedAcceptable:   false,
 		OuterTrackProgress: outerTracker,
 		Printer:            printer,
 		SolveSize:          input.SolveSize})

@@ -69,6 +69,7 @@ func BenchmarkCalcBonusSolve(test *testing.B) {
 	}
 	resultFloat = v
 }
+
 // func BenchmarkCalcBonusSolveC(test *testing.B) {
 // 	a, b, c := makeSetBonuses()
 // 	var v float32
@@ -98,20 +99,20 @@ func BenchmarkCalcBonusSolve(test *testing.B) {
 // 	resultFloat = v
 // }
 
-func BenchmarkCalcBonusGeneric(test *testing.B) {
-	a, b, c := makeSetBonuses()
-	var v float32
+// func BenchmarkCalcBonusGeneric(test *testing.B) {
+// 	a, b, c := makeSetBonuses()
+// 	var v float32
 
-	equipFetch := makeEquipFetch()
+// 	equipFetch := makeEquipFetch()
 
-	for test.Loop() {
-		equip := equipFetch.next()
-		v += a.CalcBonusGeneric(equip)
-		v += b.CalcBonusGeneric(equip)
-		v += c.CalcBonusGeneric(equip)
-	}
-	resultFloat = v
-}
+// 	for test.Loop() {
+// 		equip := equipFetch.next()
+// 		v += a.CalcBonusGeneric(equip)
+// 		v += b.CalcBonusGeneric(equip)
+// 		v += c.CalcBonusGeneric(equip)
+// 	}
+// 	resultFloat = v
+// }
 
 // func BenchmarkCalcBonusSolveUseAssem(test *testing.B) {
 // 	a, b, c := makeSetBonuses()
@@ -169,7 +170,8 @@ func TestCalcBonusCompared(test *testing.T) {
 		// (*SetBonus).CalcBonusSolveUseAssem,
 		// (*SetBonus).CalcBonusSolveAssemAssumeNonNull,
 		// (*SetBonus).CalcBonusSolveAssemAssumeNonNullWithCases,
-		func(s *SetBonus, e *SolvableEquipMap) float32 { return s.CalcBonusGeneric(e) }}
+		// func(s *SetBonus, e *SolvableEquipMap) float32 { return s.CalcBonusGeneric(e) },
+	}
 
 	for range 1000 {
 		equip := equipFetch.next()

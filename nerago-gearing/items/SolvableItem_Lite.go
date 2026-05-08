@@ -71,10 +71,6 @@ func (set *SolvableItemSet) Items() *SolvableEquipMap {
 	return &set.items
 }
 
-func (set *SolvableItemSet) ItemsGeneric() IEquipMap {
-	return &set.items
-}
-
 func (set *SolvableItemSet) Clear() {
 	set.items = SolvableEquipMap{}
 	set.total = StatBlock{}
@@ -99,20 +95,6 @@ func (set *SolvableItemSet) AddItem_DeferCalc_ExpectEmpty(slot SlotEquip, item *
 		panic("slot not empty")
 	}
 	set.items[slot] = item
-}
-
-// obsolete
-// func (set *SolvableItemSet) AddItem_CreateNew(slot SlotEquip, item *SolvableItem) *SolvableItemSet {
-// 	result := new(SolvableItemSet)
-// 	set.items.ReplaceItem_Into(slot, item, &result.items)
-// 	StatBlock_Add_Into(&set.total, &item.total, &result.total)
-// 	return result
-// }
-
-func (set *SolvableItemSet) AddItem_CreateNew_DeferCalc(slot SlotEquip, item *SolvableItem) *SolvableItemSet {
-	result := new(SolvableItemSet)
-	set.items.ReplaceItem_Into(slot, item, &result.items)
-	return result
 }
 
 func (set *SolvableItemSet) ReplaceItem_Into(slot SlotEquip, item *SolvableItem, dest *SolvableItemSet) {

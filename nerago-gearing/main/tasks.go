@@ -25,7 +25,6 @@ func basicReforge(printer *util.PrintRecorder) {
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions:         &itemOptions,
 		Model:               &model,
-		PhasedAcceptable:    false,
 		EnableTrackProgress: true,
 		SolveSize:           solver.SolveSize_Long,
 		Printer:             nil})
@@ -54,7 +53,6 @@ func findBestSubjectToCommon(printer *util.PrintRecorder) {
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions:         &itemOptions,
 		Model:               &model,
-		PhasedAcceptable:    false,
 		EnableTrackProgress: true,
 		SolveSize:           solver.SolveSize_Long,
 		Printer:             printer})
@@ -111,14 +109,13 @@ func checkHighs(printer *util.PrintRecorder) {
 		fullItemSet = items.FullItemSet_FromSolved(solvedSet.GetOrPanic(), &itemOptions)
 		fullItemSet.DebugValidate()
 		fullItemSet.ValidateItemRules()
-		solver.ReportSet(printer, fullItemSet, model.CalcRatingFull(&fullItemSet), &model)
+		solver.ReportSetFewerParams(printer, fullItemSet, &model)
 	}
 
 	printer.Println("COMPARE standard solver")
 	compareSolveOuput := solver.Solver(solver.SolveInput{
 		ItemOptions:         &itemOptions,
 		Model:               &model,
-		PhasedAcceptable:    true,
 		EnableTrackProgress: true,
 		SolveSize:           solver.SolveSize_Medium,
 		Printer:             util.PrintRecorder_HoldAll(),
@@ -165,7 +162,7 @@ func checkHighsAcross(printer *util.PrintRecorder) {
 		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &itemOptions)
 		fullItemSet.DebugValidate()
 		fullItemSet.ValidateItemRules()
-		solver.ReportSet(printer, fullItemSet, model.CalcRatingFull(&fullItemSet), &model)
+		solver.ReportSetFewerParams(printer, fullItemSet, &model)
 	}
 }
 
@@ -181,7 +178,6 @@ func testSimA(printer *util.PrintRecorder) {
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions:         &itemOptions,
 		Model:               &model,
-		PhasedAcceptable:    false,
 		EnableTrackProgress: true,
 		SolveSize:           solver.SolveSize_Medium,
 		Printer:             printer})
@@ -195,7 +191,6 @@ func testSimB(printer *util.PrintRecorder) {
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions:         &itemOptions,
 		Model:               &model,
-		PhasedAcceptable:    false,
 		EnableTrackProgress: true,
 		SolveSize:           solver.SolveSize_Medium,
 		Printer:             printer})
@@ -204,7 +199,11 @@ func testSimB(printer *util.PrintRecorder) {
 	resultStats.Print(printer)
 }
 
-func slotRating(itemArray []items.FullItem, model *model.Model, printer *util.PrintRecorder) {
+func slotRating(printer *util.PrintRecorder) {
+	itemOptions, model := setupPallyMitigationNoSet()
+
+	itemArray := itemOptions[items.Equip_Chest]
+
 	printer.Println("RATINGS")
 	// printer.Println(model.StatRatings.(ratings.StatRatingsWeights).Weights())
 	printer.Println(model.StatRatings.Weights().CreateString())
@@ -247,7 +246,6 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions:         &itemOptions,
 		Model:               &model,
-		PhasedAcceptable:    false,
 		EnableTrackProgress: true,
 		SolveSize:           solver.SolveSize_Long,
 		Printer:             printer})
@@ -368,7 +366,6 @@ func findMitigationWithCapicitance(printer *util.PrintRecorder) {
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions:         &itemOptions,
 		Model:               &model,
-		PhasedAcceptable:    false,
 		EnableTrackProgress: true,
 		SolveSize:           solveSize,
 		Printer:             printer})
@@ -454,7 +451,6 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 			output := solver.Solver(solver.SolveInput{
 				ItemOptions:         &itemOptionsSpecific,
 				Model:               &model,
-				PhasedAcceptable:    false,
 				EnableTrackProgress: true,
 				SolveSize:           solveSize,
 				Printer:             printer})
@@ -605,7 +601,6 @@ func basicListRatingEach(printer *util.PrintRecorder) {
 		file  string
 	}
 
-
 	groups := []group{
 		{
 			"ret",
@@ -635,16 +630,16 @@ func basicListRatingEach(printer *util.PrintRecorder) {
 	for _, group := range groups {
 		equipItems := loaders.GearFileReader_Read(group.file)
 		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, util.PrintRecorder_HoldAll())
-		itemSet:=items.FullItemSet_FromMap(equipMap)
+		itemSet := items.FullItemSet_FromMap(equipMap)
 		rating := group.model.CalcRatingFull(&itemSet)
 		solver.ReportSet(printer, itemSet, rating, &group.model)
-		
+
 		printer.Printf("%20s %10d %s\n", group.label, rating, group.model.StatRatings.Weights().CreateString())
 	}
 
 	// for _, group := range groups {
 	// 	rating := group.model.CalcRatingFull(itemSet)
-		
+
 	// }
 }
 
@@ -655,7 +650,7 @@ func solveForRatings(printer *util.PrintRecorder) {
 		file  string
 	}
 
-    var prescaleTarget float64 = 100000000.0
+	var prescaleTarget float64 = 100000000.0
 
 	groups := []group{
 		{
@@ -685,19 +680,17 @@ func solveForRatings(printer *util.PrintRecorder) {
 	for _, group := range groups {
 		equipItems := loaders.GearFileReader_Read(group.file)
 		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, util.PrintRecorder_HoldAll())
-		itemSet:=items.FullItemSet_FromMap(equipMap)
+		itemSet := items.FullItemSet_FromMap(equipMap)
 		rating := group.model.CalcRatingFull(&itemSet)
 		// solver.ReportSet(printer, itemSet, rating, &group.model)
 
 		prescaleMult := prescaleTarget / float64(rating)
-		
-		printer.Printf("%20s %10d %.4f %s\n", group.label, rating, float64(rating) * prescaleMult, group.model.StatRatings.Weights().CreateString())
-	}
 
-	
+		printer.Printf("%20s %10d %.4f %s\n", group.label, rating, float64(rating)*prescaleMult, group.model.StatRatings.Weights().CreateString())
+	}
 
 	// for _, group := range groups {
 	// 	rating := group.model.CalcRatingFull(itemSet)
-		
+
 	// }
 }

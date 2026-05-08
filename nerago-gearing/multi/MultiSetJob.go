@@ -20,7 +20,6 @@ type MultiSetJob struct {
 	fixedForge         map[items.ItemId]stats.ReforgeRecipe
 	specificAllowRates map[items.ItemId]specificAllowEntry
 	bagsGear           loaders.EquippedArray
-	multiSetFilter     func(multiProposedOutput) bool
 	solveSizeProposal  solver.SolveSize
 	solveSizeRevised   solver.SolveSize
 }
@@ -45,20 +44,15 @@ func (job *MultiSetJob) AddFixedForge(itemId items.ItemId, reforge stats.Reforge
 	job.fixedForge[itemId] = reforge
 }
 
-func (job *MultiSetJob) SetMultiSetFilter(filter func(multiProposedOutput) bool) {
-	job.multiSetFilter = filter
-}
-
-func (job *MultiSetJob) AddSpecificAllowRate(itemId items.ItemId, modeOff forceItemMode, modeOn forceItemMode, proportion float32) {
+func (job *MultiSetJob) SetSpecificItemVariedInclusion(itemId items.ItemId, modeOff forceItemMode, modeOn forceItemMode) {
 	if job.specificAllowRates == nil {
 		job.specificAllowRates = make(map[items.ItemId]specificAllowEntry)
 	}
-	job.specificAllowRates[itemId] = specificAllowEntry{itemId: itemId, modeOff: modeOff, modeOn: modeOn, proportion: proportion}
+	job.specificAllowRates[itemId] = specificAllowEntry{itemId: itemId, modeOff: modeOff, modeOn: modeOn}
 }
 
 type specificAllowEntry struct {
 	itemId     items.ItemId
 	modeOff    forceItemMode
 	modeOn     forceItemMode
-	proportion float32
 }

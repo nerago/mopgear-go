@@ -12,101 +12,6 @@ import (
 	"github.com/google/uuid"
 )
 
-func (job *MultiSetJob) FindTopAndPassToSim(targetCount uint64, topCapture uint64, addRevisions bool, runSize simulate.WowSim_RunSize) {
-	topTracker := util.TrackProgress_Start()
-	topTracker.RunOuterTracking(3)
-	defer topTracker.Stop()
-
-	job.printer.Printf("@@@@@@@@@@ FIND TOP %d %d @@@@@@@@@@\n", targetCount, topCapture)
-	bestOutputs := job.runForTopN(targetCount, topCapture, topTracker.MakeNested())
-	job.listInitialOutputs(bestOutputs)
-
-	var proposalList []multiProposedOutput
-	if addRevisions {
-		proposalList = job.prepareRevisionsForSim(bestOutputs, topTracker.MakeNested())
-	} else {
-		proposalList = bestOutputs
-	}
-
-	simList := job.prepareSimList(proposalList)
-	job.runSims(simList, runSize, topTracker.MakeNested())
-
-	simResult := job.linkSimResults(proposalList, simList)
-	job.reportSimResults(simResult)
-	job.reportAsCsv(simResult)
-}
-
-func (job *MultiSetJob) prepareRevisionsForSim(proposedList []multiProposedOutput, trackProgress *util.TrackProgress) []multiProposedOutput {
-	job.printer.Printf("@@@@@@@@@@ MAKE REVISIONS FOR %d @@@@@@@@@@\n", len(proposedList))
-
-	expectedSets := len(proposedList) * len(job.params) * revisedExtraSetsExpectedEach
-	trackProgress.RunOuterTracking(expectedSets)
-	defer trackProgress.Stop()
-
-	allProposals := channel_op.Map_SliceToSlice(generateThreadCount, proposedList, func(prior *multiProposedOutput, downstream chan<- multiProposedOutput) {
-		job.prepareOneRevisionForSim(prior, trackProgress, downstream)
-	})
-
-	allProposals = append(allProposals, job.existingGearAsProposal())
-	return allProposals
-}
-
-func (job *MultiSetJob) prepareOneRevisionForSim(prior *multiProposedOutput, trackProgress *util.TrackProgress, downstream chan<- multiProposedOutput) {
-	printer := util.PrintRecorder_HoldAll()
-	printer.Printf(">>> PREP REVISIONS %s\n", prior.id)
-
-	revisedCommon := job.revisedComboActuallyUsed(prior.parts, &prior.combo, printer)
-
-	revisedOptionArrays := make([][]singleProposed, len(prior.parts))
-
-	for i := range prior.parts {
-		draft := &prior.parts[i]
-		param := &job.params[i]
-
-		// TODO refactor common parts with cullingMakeRevisions better
-		printer.Printf("== %s\n", param.Label)
-		printer.Println("DRAFT")
-		draft.Report(printer)
-
-		specOptions := job.makeRevised(param, &revisedCommon, trackProgress, printer)
-		for _, newOutput := range specOptions {
-			param.seenInSolutions.Add(&newOutput.fullSet)
-		}
-
-		param.seenInSolutions.Add(&draft.fullSet)
-		specOptions = append(specOptions, *draft)
-
-		specOptions = util.RemoveDuplicatesFuncNotify(specOptions, func(a, b *singleProposed) bool {
-			return a.fullSet.Equals(&b.fullSet)
-		}, func(removed *singleProposed) {
-			printer.Printf("removed duplicate output %s\n", removed.outputId)
-		})
-
-		revisedOptionArrays[i] = specOptions
-	}
-
-	for outputSet := range util.PermuteAll(revisedOptionArrays) {
-		var totalRatingSum float64
-		for _, output := range outputSet {
-			totalRatingSum += output.resultRating
-		}
-		if checkNoConflicts(outputSet) {
-			proposed := multiProposedOutput{uuid.NewString(), totalRatingSum, outputSet, revisedCommon}
-			componentIds := ""
-			for _, set := range outputSet {
-				componentIds = componentIds + set.outputId + " "
-			}
-			printer.Printf("&&& NEW PROPOSAL %s => %s\n", proposed.id, componentIds)
-			downstream <- proposed
-		}
-	}
-
-	printer.Println0()
-	printer.Println0()
-
-	job.printer.AppendOther(printer)
-}
-
 func checkNoConflicts(outputSet []singleProposed) bool {
 	itemById := make(map[items.ItemId]*items.FullItem)
 	for outputIndex := range outputSet {
@@ -131,7 +36,7 @@ func (job *MultiSetJob) existingGearAsProposal() multiProposedOutput {
 		proposal.parts = append(proposal.parts, single)
 		proposal.totalRatingSum += single.resultRating
 	}
-	proposal.combo = job.determineComboFromScratch(proposal.parts, comboType_equippedExact)
+	proposal.combo = job.determineComboFromScratch(proposal.parts)
 	return proposal
 }
 

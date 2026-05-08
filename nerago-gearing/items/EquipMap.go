@@ -23,10 +23,6 @@ func (equipMap *FullEquipMap) GetAsId(slot SlotEquip) ItemId {
 	}
 }
 
-func (equipMap *FullEquipMap) GetGeneric(slot SlotEquip) IItem {
-	return equipMap[slot]
-}
-
 func (equipMap *FullEquipMap) IncludesItemId(itemId ItemId) bool {
 	for _, item := range equipMap {
 		if item != nil && item.ItemId() == itemId {
@@ -62,18 +58,6 @@ func (equipMap *FullEquipMap) Equals(other *FullEquipMap) bool {
 
 func (equipMap *FullEquipMap) AllItemSeq() iter.Seq[*FullItem] {
 	return func(yield func(*FullItem) bool) {
-		for _, item := range equipMap {
-			if item != nil {
-				if !yield(item) {
-					return
-				}
-			}
-		}
-	}
-}
-
-func (equipMap *FullEquipMap) AllItemSeqGeneric() iter.Seq[IItem] {
-	return func(yield func(IItem) bool) {
 		for _, item := range equipMap {
 			if item != nil {
 				if !yield(item) {
@@ -123,24 +107,8 @@ func (equipMap *SolvableEquipMap) GetAsId(slot SlotEquip) ItemId {
 	}
 }
 
-func (equipMap SolvableEquipMap) GetGeneric(slot SlotEquip) IItem {
-	return equipMap[slot]
-}
-
 func (equipMap *SolvableEquipMap) AllItemSeq() iter.Seq[*SolvableItem] {
 	return func(yield func(*SolvableItem) bool) {
-		for _, item := range equipMap {
-			if item != nil {
-				if !yield(item) {
-					return
-				}
-			}
-		}
-	}
-}
-
-func (equipMap SolvableEquipMap) AllItemSeqGeneric() iter.Seq[IItem] {
-	return func(yield func(IItem) bool) {
 		for _, item := range equipMap {
 			if item != nil {
 				if !yield(item) {

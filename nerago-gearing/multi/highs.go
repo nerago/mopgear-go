@@ -2,79 +2,32 @@ package multi
 
 import (
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/model"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/withhighs"
-	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_rank"
 
 	"github.com/google/uuid"
 )
 
-func (job *MultiSetJob) FindHighsResult() {
+func (job *MultiSetJob) FindHighsResult() util.Optional[multiProposedOutput] {
 	job.prepareInitial()
 	highProcess := job.highProcessSetup()
+
+	// TODO allow variants
+
+	best := util_rank.BestCollector1[multiProposedOutput]{}
 
 	setResults := highProcess.Run(job.printer)
 	if setResults != nil {
 		proposedOutput := job.makeOutputFromHighs(setResults)
 		job.listInitialOutputs([]multiProposedOutput{proposedOutput})
+		best.Offer(&proposedOutput, uint64(proposedOutput.totalRatingSum)) // TODO float
 	} else {
 		job.printer.Println("FAILED")
 	}
-}
 
-func (job *MultiSetJob) DetermineWhatRatingsLeadToResult(commonChoices map[items.ItemId]stats.ReforgeRecipe) {
-	job.prepareInitial()
-
-	job.printer.Println("{{ FIND OPTIMUM ACCORDING TO HIGHS }}")
-	highProcess := job.highProcessSetup()
-	optimumMultiSet := highProcess.Run(job.printer)
-
-	setBonus := model.SetBonus_Named("Plate of the Lightning Emperor")
-
-	oldMultipliers := []float64{}
-	equippedRatings := []float64{}
-	bestUnderOldMultsRatings := []float64{}
-	optimumIndependentRatings := []float64{}
-
-	for paramIndex := range job.params {
-		param := &job.params[paramIndex]
-		equippedSet := items.FullItemSet_FromMap(param.exactEquippedGear)
-		equippedRating := param.Model.CalcRatingFull(&equippedSet)
-		bestIndependentRating := param.baselineResultHighs.ResultRating
-		bestMultiRating := param.Model.CalcRatingFull(&optimumMultiSet[paramIndex])
-		job.printer.Printf("MULTI PENALTY %30s equip=%10d multi=%10d indep=%10d bestRatio=%.6f equipRatio=%.6f setitems=%d,%d,%d mult_calc=%f\n", param.Label,
-			equippedRating,
-			bestMultiRating,
-			bestIndependentRating,
-			float64(bestMultiRating)/float64(bestIndependentRating),
-			float64(equippedRating)/float64(bestIndependentRating),
-			setBonus.CountInAnySet(equippedSet.Items()),
-			setBonus.CountInAnySet(optimumMultiSet[paramIndex].Items()),
-			setBonus.CountInAnySet(param.baselineResultHighs.FullSet.Items()),
-			param.ratingMultiply,
-		)
-
-		oldMultipliers = append(oldMultipliers, param.RequestRatingPercent)
-		equippedRatings = append(equippedRatings, float64(equippedRating))
-		bestUnderOldMultsRatings = append(bestUnderOldMultsRatings, float64(bestMultiRating))
-		optimumIndependentRatings = append(optimumIndependentRatings, float64(bestIndependentRating))
-	}
-
-	withhighs.FindSuggestedRatingMultipliers(oldMultipliers, equippedRatings, bestUnderOldMultsRatings, optimumIndependentRatings, job.printer)
-
-	// so if we imagine we're multiplying these to
-
-	// what if baseline is good, vs highs version
-
-	// setResults := highProcess.DetermineWhatRatingsLeadToResult(job.printer, commonChoices)
-	// if setResults != nil {
-	// 	proposedOutput := job.makeOutputFromHighs(setResults)
-	// 	job.listInitialOutputs([]multiProposedOutput{proposedOutput})
-	// } else {
-	// 	job.printer.Println("FAILED")
-	// }
+	return best.GetBestOptional()
 }
 
 func (job *MultiSetJob) highProcessSetup() withhighs.SolverHighsMultiProcess {
@@ -108,7 +61,7 @@ func (job *MultiSetJob) makeOutputFromHighs(setResults []items.FullItemSet) mult
 	}
 
 	if checkNoConflicts(outputs) {
-		combo := job.determineComboFromScratch(outputs, comboType_highs)
+		combo := job.determineComboFromScratch(outputs)
 		proposed := multiProposedOutput{uuid.NewString(), totalRatingSum, outputs, combo}
 		return proposed
 	} else {
@@ -120,6 +73,8 @@ func (job *MultiSetJob) FindSeveralHighsAndSim(runSize simulate.WowSim_RunSize) 
 	job.prepareInitial()
 	highProcess := job.highProcessSetup()
 
+	// TODO allow variants
+
 	// setResultList := highProcess.RunForSeveral_CommonDifferent(job.printer)
 	setResultList := highProcess.RunForSeveral_CommonDifferent_WithParallel(job.printer)
 
@@ -129,6 +84,8 @@ func (job *MultiSetJob) FindSeveralHighsAndSim(runSize simulate.WowSim_RunSize) 
 			proposedOutput := job.makeOutputFromHighs(setResult)
 			proposalList = append(proposalList, proposedOutput)
 		}
+
+		proposalList = append(proposalList, job.existingGearAsProposal())
 
 		util.RemoveDuplicatesFuncNotify(proposalList, func(a, b *multiProposedOutput) bool {
 			return a.Equals(b)

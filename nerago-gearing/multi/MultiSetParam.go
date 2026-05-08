@@ -15,9 +15,8 @@ type MultiSetParam struct {
 	Model    model.Model
 
 	// solve settings
-	IncludeInFirstPass   bool
+	IncludeInFirstPass   bool // TODO consider reintroducing in hights solver
 	RequestRatingPercent float64
-	PhasedAcceptable     bool
 
 	// extra item settings
 	ExtraUpgradeLevel         int8
@@ -40,13 +39,12 @@ type multiSetParamInternal struct {
 	job *MultiSetJob
 
 	// working data
-	exactEquippedGear   items.FullEquipMap
-	itemOptions         items.FullOptionsMap
-	addedFromBags       []items.ItemId
-	seenInSolutions     *seenMap
-	baselineResult      solver.SolveOutput
-	baselineResultHighs solver.SolveOutput
-	ratingMultiply      float64 // derived
+	exactEquippedGear items.FullEquipMap
+	itemOptions       items.FullOptionsMap
+	addedFromBags     []items.ItemId
+	seenInSolutions   *seenMap
+	baselineResult    solver.SolveOutput
+	ratingMultiply    float64 // derived
 
 	//debug
 	solveFailCount    atomic.Uint64
@@ -102,14 +100,5 @@ func (seen *seenMap) Add(itemSet *items.FullItemSet) {
 
 	for item := range itemSet.Items().AllItemSeq() {
 		seen.content[item.ItemId()]++
-	}
-}
-
-func (seen *seenMap) Add1000(itemSet *items.FullItemSet) {
-	seen.mutex.Lock()
-	defer seen.mutex.Unlock()
-
-	for item := range itemSet.Items().AllItemSeq() {
-		seen.content[item.ItemId()] += 1000
 	}
 }

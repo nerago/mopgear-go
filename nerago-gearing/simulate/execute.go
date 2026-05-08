@@ -10,7 +10,6 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/stats/extern_stats"
 	"paladin_gearing_go/util"
-	"slices"
 
 	"github.com/google/uuid"
 	"github.com/wowsims/mop/sim/core"
@@ -311,82 +310,4 @@ func loadAnyProtoFile[T proto.Message](object T, filename string) {
 	if err != nil {
 		log.Fatalf("failed to load input json file: %s", err)
 	}
-}
-
-func addSelfWordOfGlory(rotation *wowsim_proto.APLRotation) {
-	// Improves
-
-	actionCastWord := wowsim_proto.APLListItem{
-		Action: &wowsim_proto.APLAction{
-			Action: &wowsim_proto.APLAction_CastSpell{
-				CastSpell: &wowsim_proto.APLActionCastSpell{
-					SpellId: &wowsim_proto.ActionID{
-						RawId: &wowsim_proto.ActionID_SpellId{
-							SpellId: 85673,
-						},
-					},
-				},
-			},
-			Condition: &wowsim_proto.APLValue{
-				Value: &wowsim_proto.APLValue_And{
-					And: &wowsim_proto.APLValueAnd{
-						Vals: []*wowsim_proto.APLValue{
-							{
-								Value: &wowsim_proto.APLValue_Cmp{
-									Cmp: &wowsim_proto.APLValueCompare{
-										Lhs: &wowsim_proto.APLValue{
-											Value: &wowsim_proto.APLValue_CurrentHealthPercent{
-												CurrentHealthPercent: &wowsim_proto.APLValueCurrentHealthPercent{
-													SourceUnit: &wowsim_proto.UnitReference{
-														Type: wowsim_proto.UnitReference_Self,
-													},
-												},
-											},
-										},
-										Op: wowsim_proto.APLValueCompare_OpLt,
-										Rhs: &wowsim_proto.APLValue{
-											Value: &wowsim_proto.APLValue_Const{
-												Const: &wowsim_proto.APLValueConst{
-													Val: "50%",
-												},
-											},
-										},
-									},
-								},
-							},
-							{
-								Value: &wowsim_proto.APLValue_Cmp{
-									Cmp: &wowsim_proto.APLValueCompare{
-										Lhs: &wowsim_proto.APLValue{
-											Value: &wowsim_proto.APLValue_CurrentGenericResource{
-												CurrentGenericResource: &wowsim_proto.APLValueCurrentGenericResource{},
-											},
-										},
-										Op: wowsim_proto.APLValueCompare_OpGe,
-										Rhs: &wowsim_proto.APLValue{
-											Value: &wowsim_proto.APLValue_Const{
-												Const: &wowsim_proto.APLValueConst{
-													Val: "3",
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	shieldRighteousIndex := slices.IndexFunc(rotation.PriorityList, func(item *wowsim_proto.APLListItem) bool {
-		if castSpell := item.Action.Action.(*wowsim_proto.APLAction_CastSpell); castSpell != nil {
-			if spellId := castSpell.CastSpell.SpellId.RawId.(*wowsim_proto.ActionID_SpellId); spellId != nil {
-				return spellId.SpellId == 53600
-			}
-		}
-		return false
-	})
-	rotation.PriorityList = slices.Insert(rotation.PriorityList, shieldRighteousIndex, &actionCastWord)
 }

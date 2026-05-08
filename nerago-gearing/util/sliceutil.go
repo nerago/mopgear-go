@@ -1,9 +1,5 @@
 package util
 
-import (
-	"iter"
-)
-
 // type Equatable[T any] interface {
 // 	Equals(other T)
 // }
@@ -139,38 +135,6 @@ func RepeatValue[T any](value T, count int) []T {
 	return result
 }
 
-func PermuteAll[T any](sliceOfSlices [][]T) iter.Seq[[]T] {
-	index := 0
-	progress := make([][]T, 0, len(sliceOfSlices[index]))
-	for _, item := range sliceOfSlices[index] {
-		progress = append(progress, []T{item})
-	}
-	index++
-
-	for index < len(sliceOfSlices)-1 {
-		next := make([][]T, 0, len(sliceOfSlices[index])*len(progress))
-		for _, item := range sliceOfSlices[index] {
-			for _, curr := range progress {
-				list := CopyAndAppend(curr, item)
-				next = append(next, list)
-			}
-		}
-		index++
-		progress = next
-	}
-
-	return func(yield func([]T) bool) {
-		for _, item := range sliceOfSlices[index] {
-			for _, curr := range progress {
-				list := CopyAndAppend(curr, item)
-				if !yield(list) {
-					return
-				}
-			}
-		}
-	}
-}
-
 func CopyAndAppend[T any](curr []T, item T) []T {
 	if curr != nil {
 		list := make([]T, len(curr)+1)
@@ -181,11 +145,5 @@ func CopyAndAppend[T any](curr []T, item T) []T {
 		list := make([]T, 1)
 		list[0] = item
 		return list
-	}
-}
-
-func ForPointers[T any](slice []T, body func(*T)) {
-	for i := range slice {
-		body(&slice[i])
 	}
 }

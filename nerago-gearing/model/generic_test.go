@@ -9,16 +9,6 @@ import (
 
 var resultInt uint64
 
-func BenchmarkCalcSetGeneric(test *testing.B) {
-	model := Model_PallyProtMitigation_WithSet()
-	set := makeSet()
-	var v uint64
-	for test.Loop() {
-		v += model.CalcRatingGenericSet(set)
-	}
-	resultInt = v
-}
-
 func BenchmarkCalcSetSpecific(test *testing.B) {
 	model := Model_PallyProtMitigation_WithSet()
 	set := makeSet()

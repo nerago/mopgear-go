@@ -22,7 +22,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Model:                model.Model_PallyRet(),
 		IncludeInFirstPass:   false,
 		RequestRatingPercent: 0.01,
-		PhasedAcceptable:     false,
 		ExtraUpgradeLevel:    2,
 		// ForceUpgradeExistingItems: 2,
 	}
@@ -81,7 +80,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Model:                     model.Model_PallyProtDps(),
 		IncludeInFirstPass:        true,
 		RequestRatingPercent:      0.04,
-		PhasedAcceptable:          false,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -151,7 +149,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Model:                     model.Model_PallyProtCompromise(),
 		IncludeInFirstPass:        true,
 		RequestRatingPercent:      0.10,
-		PhasedAcceptable:          false,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -215,7 +212,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protCompromise.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
 	// protCompromise.AddFixedSlot(items.Equip_Trinket2, 94529) // gaze of the twins
 	blockHelmetsWithoutCapacitance(&protCompromise)
-	protCompromise.BlockItem(96793) // Fortitude of the Zandalari
+	protCompromise.BlockItem(96793)                              // Fortitude of the Zandalari
 	protCompromise.AddReportVariant(items.Equip_Trinket2, 96793) // Fortitude of the Zandalari
 
 	protMitigationNoSet := multi.MultiSetParam{
@@ -224,7 +221,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Model:                     model.Model_PallyProtMitigation_NoSet(),
 		IncludeInFirstPass:        true,
 		RequestRatingPercent:      0.70,
-		PhasedAcceptable:          false,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -281,7 +277,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protMitigationNoSet.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
 	protMitigationNoSet.AddFixedSlot(items.Equip_Ring1, 96481)    // durumu
 	// protMitigationNoSet.AddFixedSlot(items.Equip_Offhand, 94945)  // greatshield of the gloaming normal
-	protMitigationNoSet.AddFixedSlot(items.Equip_Trinket2, 96793) // Fortitude of the Zandalari
+	protMitigationNoSet.AddFixedSlot(items.Equip_Trinket2, 96793)     // Fortitude of the Zandalari
 	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, 94529) // gaze of the twins
 	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
 
@@ -291,7 +287,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Model:                     model.Model_PallyProtMitigation_WithSet(),
 		IncludeInFirstPass:        true,
 		RequestRatingPercent:      0.15,
-		PhasedAcceptable:          false,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -343,26 +338,19 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protMitigationWithSet.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
 	protMitigationWithSet.AddFixedSlot(items.Equip_Ring1, 96481)    // durumu
 	// protMitigationSet.AddFixedSlot(items.Equip_Offhand, 94945)  // greatshield of the gloaming normal
-	protMitigationWithSet.AddFixedSlot(items.Equip_Back, 98146) // pre-legend strength tank
-	protMitigationWithSet.AddFixedSlot(items.Equip_Trinket2, 96793) // Fortitude of the Zandalari
+	protMitigationWithSet.AddFixedSlot(items.Equip_Back, 98146)         // pre-legend strength tank
+	protMitigationWithSet.AddFixedSlot(items.Equip_Trinket2, 96793)     // Fortitude of the Zandalari
 	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, 94529) // gaze of the twins
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 
-	// job.AddSuppressSlotCheck(86946) // Vizier's Ruby Signet
-	// job.AddSuppressSlotCheck(86957) // Ring of the Bladed Tempest
-	// job.AddSuppressSlotCheck(95140) // Band of the Shado-Pan Assault
-	// job.AddSuppressSlotCheck(96481) // Durumu's Severed Tentacle
+	job.SetSpecificItemVariedInclusion(94527, multi.Force_ForbiddenTODO, multi.Force_RequireAtLeastOneUseTODO) // ji-kun trinket
+	// job.SetSpecificItemVariedInclusion(96436, multi.Force_Optional, multi.Force_FixedWhereAvailable, 0.40) // tortos shell heroic
 
-	// job.AddSuppressSlotCheck(94529) // Gaze of the Twins
-	// job.AddSuppressSlotCheck(94527) // Ji-Kun's Rising Winds
-	job.AddSpecificAllowRate(94527, multi.Force_Forbidden, multi.Force_Optional, 0.20) // ji-kun trinket
-	// job.AddSpecificAllowRate(96436, multi.Force_Optional, multi.Force_FixedWhereAvailable, 0.40) // tortos shell heroic
-
-	// ret.AddBagsExtra()
-	// protDps.AddBagsExtra()
-	// protCompromise.AddBagsExtra()
-	// protMitigationNoSet.AddBagsExtra()
-	// protMitigationWithSet.AddBagsExtra()
+	ret.AddBagsExtra()
+	protDps.AddBagsExtra()
+	protCompromise.AddBagsExtra()
+	protMitigationNoSet.AddBagsExtra()
+	protMitigationWithSet.AddBagsExtra()
 
 	job.AddSetParam(ret)
 	job.AddSetParam(protDps)
@@ -370,27 +358,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	job.AddSetParam(protMitigationNoSet)
 	job.AddSetParam(protMitigationWithSet)
 
-	// job.SuggestCulls(100, 10)
-	// job.SuggestCulls(1000, 40)
-	// job.SuggestCulls(5000, 10)
-	// job.SuggestCulls(10000, 100)
-	// job.SuggestCulls(25000, 150)
-	// job.SuggestCulls(150000, 200)
-
-	// job.FindTopAndPassToSim(10, 1, false, simulate.RunSize_QuickDirty)
-	// job.FindTopAndPassToSim(100, 10, true, simulate.RunSize_QuickDirty)
-	// job.FindTopAndPassToSim(100, 10, true, simulate.RunSize_Medium)
-	// job.FindTopAndPassToSim(5000, 30, false, simulate.RunSize_QuickDirty)
-	// job.FindTopAndPassToSim(20000, 24, true, simulate.RunSize_Medium)
-	// job.FindTopAndPassToSim(75000, 30, true, simulate.RunSize_Medium)
-	// job.FindTopAndPassToSim(150000, 50, true, simulate.RunSize_Medium)
-	// job.FindTopAndPassToSim(500000, 75, true, simulate.RunSize_Medium)
-
-	// job.FindHighsResult()
+	job.FindHighsResult()
 	job.FindSeveralHighsAndSim(simulate.RunSize_Medium)
-
-	
-	// job.DetermineWhatRatingsLeadToResult(commonComboCurrent())
 }
 
 func blockHelmetsWithoutCapacitance(param *multi.MultiSetParam) {

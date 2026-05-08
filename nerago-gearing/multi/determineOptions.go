@@ -3,7 +3,6 @@ package multi
 import (
 	"iter"
 	"log"
-	"math/big"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -12,22 +11,6 @@ import (
 )
 
 type CommonComboOptions map[items.ItemId][]items.FullItem
-
-func (optionsMap *CommonComboOptions) TotalCombinationCount() *big.Int {
-	valueCount := 0
-	total := big.NewInt(1)
-	for _, slotArray := range *optionsMap {
-		slotSize := int64(len(slotArray))
-		if slotSize > 0 {
-			total.Mul(total, big.NewInt(slotSize))
-			valueCount++
-		}
-	}
-	if valueCount == 0 {
-		panic("empty options")
-	}
-	return total
-}
 
 func (job *MultiSetJob) determineCommon() CommonComboOptions {
 	commonOptions, seenIn := searchParamOptions(&job.params)
@@ -160,22 +143,16 @@ func printCommons(seenIn map[items.ItemId][]string, commonOptions CommonComboOpt
 }
 
 func printChosenCombo(combo *commonCombo, printer *util.PrintRecorder) {
-	printer.Println("COMMON_COMBO " + combo.logString())
-	for itemId, entry := range combo.entryMap {
-		if entry.forceMode == Force_Forbidden {
-			printer.Printf("COMMON %d forbidden\n", itemId)
-		} else {
-			printer.Printf("COMMON %s\n", entry.Item.CreateString())
-		}
+	printer.Println("COMMON_COMBO")
+	for _, entry := range combo.entryMap {
+		printer.Printf("COMMON %s\n", entry.Item.CreateString())
 	}
 	for _, entry := range combo.entryMap {
-		if entry.forceMode != Force_Forbidden {
-			item := entry.Item
-			if item.Reforge.IsEmpty() {
-				printer.Printf("common[%d] = stats.ReforgeRecipe_empty\n", item.ItemId())
-			} else {
-				printer.Printf("common[%d] = stats.ReforgeRecipe_of(stats.%s, stats.%s)\n", item.ItemId(), item.Reforge.From.EnumName(), item.Reforge.To.EnumName())
-			}
+		item := entry.Item
+		if item.Reforge.IsEmpty() {
+			printer.Printf("common[%d] = stats.ReforgeRecipe_empty\n", item.ItemId())
+		} else {
+			printer.Printf("common[%d] = stats.ReforgeRecipe_of(stats.%s, stats.%s)\n", item.ItemId(), item.Reforge.From.EnumName(), item.Reforge.To.EnumName())
 		}
 	}
 }
@@ -212,15 +189,15 @@ func (job *MultiSetJob) revisedComboActuallyUsed(outputs []singleProposed, initi
 	return revisedCombo
 }
 
-func (job *MultiSetJob) determineComboFromScratch(outputs []singleProposed, comboType comboType) commonCombo {
-	combo := commonCombo_Make(0, comboType)
+func (job *MultiSetJob) determineComboFromScratch(outputs []singleProposed) commonCombo {
+	combo := commonCombo_Make()
 	itemSeen := make(map[items.ItemId]*items.FullItem)
 
 	for index := range outputs {
 		for item := range outputs[index].fullSet.Items().AllItemSeq() {
 			previousVersion, hasPrevious := itemSeen[item.ItemId()]
 			if hasPrevious && previousVersion.Equals(item) {
-				combo.addItem(item.ItemId(), item, Force_Optional)
+				combo.addItem(item.ItemId(), item)
 			} else if hasPrevious {
 				panic("inconsisent version of item " + item.CreateString())
 			} else {

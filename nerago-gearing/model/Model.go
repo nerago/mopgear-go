@@ -41,10 +41,6 @@ func (model *Model) CheckSet(itemSet *SolvableItemSet) bool {
 	return model.StatRequirements.CheckSet(itemSet.TotalCap())
 }
 
-func (model *Model) CheckSetSkinny(itemSet *SkinnyItemSet) bool {
-	return model.StatRequirements.CheckSetSkinny(itemSet)
-}
-
 // ////////// set ratings
 func (model *Model) CalcRatingSolve(itemSet *SolvableItemSet) uint64 {
 	return uint64(model.CalcRatingSolveAsFloat(itemSet))
@@ -66,12 +62,6 @@ func (model *Model) CalcRatingFullAsFloat(itemSet *FullItemSet) float32 {
 	return baseRating * setRating
 }
 
-func (model *Model) CalcRatingGenericSet(itemSet IItemSet) uint64 {
-	baseRating := model.StatRatings.CalcRatingFloat(itemSet.TotalRated())
-	setRating := model.SetBonus.CalcBonusGeneric(itemSet.ItemsGeneric())
-	return uint64(baseRating * setRating)
-}
-
 // ////////// items ratings
 func (model *Model) CalcRatingFullItem(item *FullItem) uint64 {
 	return model.StatRatings.CalcRatingInt(item.TotalRated())
@@ -83,10 +73,6 @@ func (model *Model) CalcRatingSolveItem(item *SolvableItem) uint64 {
 
 func (model *Model) CalcRatingSolveItemAsFloat(item *SolvableItem) float32 {
 	return model.StatRatings.CalcRatingFloat(item.TotalRated())
-}
-
-func (model *Model) CalcRatingGenericItem(item IItem) uint64 {
-	return model.StatRatings.CalcRatingInt(item.TotalRated())
 }
 
 // ////////// ProfessionInfo

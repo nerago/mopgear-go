@@ -9,7 +9,6 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/stats/extern_stats"
 	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_rank"
 	"strconv"
 )
 
@@ -49,15 +48,6 @@ func WowSimDB_ByIdAndUpgrade(itemId items.ItemId, upgradeLevel int8) *items.Full
 	}
 
 	return nil
-}
-
-func WowSimDB_ByIdFindMaxUpgrade(itemId items.ItemId) *items.FullItem {
-	best := util_rank.BestCollector1[items.FullItem]{}
-	known := itemsById[itemId]
-	for _, item := range known {
-		best.Offer(&item, uint64(item.Ref.ItemLevel))
-	}
-	return best.GetBestPointerOrPanic()
 }
 
 func WowSimDB_ByIdAndUpgrade_AllowFallback(itemId items.ItemId, upgradeLevel int8, printer *util.PrintRecorder) *items.FullItem {

@@ -35,7 +35,6 @@ func (job *MultiSetJob) prepareInitial() {
 
 	for i := range job.params {
 		job.params[i].runBaseline()
-		job.params[i].runBaselineHigh()
 	}
 
 	job.prepareRatingMultipliers()
@@ -258,7 +257,6 @@ func (param *multiSetParamInternal) runBaseline() {
 	param.baselineResult = solver.Solver(solver.SolveInput{
 		ItemOptions:         &param.itemOptions,
 		Model:               &param.Model,
-		PhasedAcceptable:    param.PhasedAcceptable,
 		EnableTrackProgress: true,
 		SolveSize:           param.job.solveSizeRevised,
 		Printer:             param.job.printer})
@@ -268,26 +266,6 @@ func (param *multiSetParamInternal) runBaseline() {
 	}
 	param.baselineResult.Report(param.job.printer)
 	param.seenInSolutions.Add(&param.baselineResult.FullSet)
-}
-
-func (param *multiSetParamInternal) runBaselineHigh() {
-	param.job.printer.Printf("BASELINE HIGHS for %s\n", param.Label)
-
-	param.baselineResultHighs = solver.Solver_WithHighs(solver.SolveInput{
-		ItemOptions:         &param.itemOptions,
-		Model:               &param.Model,
-		PhasedAcceptable:    param.PhasedAcceptable,
-		EnableTrackProgress: true,
-		SolveSize:           param.job.solveSizeRevised,
-		Printer:             param.job.printer})
-
-	if !param.baselineResultHighs.Success {
-		panic("failed to find highs baseline for " + param.Label)
-	}
-
-	param.baselineResultHighs.Report(param.job.printer)
-
-	param.job.printer.Printf("RATING factor %f\n", float64(param.baselineResult.ResultRating)/float64(param.baselineResultHighs.ResultRating))
 }
 
 func (job *MultiSetJob) prepareRatingMultipliers() {

@@ -4,8 +4,6 @@ import "paladin_gearing_go/stats"
 
 func SolvableItemSet_RecalculateTotal(set *SolvableItemSet)
 
-func MakeSetFromArraysAndAdvance4(slotOptions *SolvableOptionsMap, slotIndexes *[16]uint32, itemSet *SolvableItemSet)
-
 func go_SolvableItemSet_RecalculateTotal(set *SolvableItemSet) {
 	set.ClearTotals()
 	for _, item := range set.items {

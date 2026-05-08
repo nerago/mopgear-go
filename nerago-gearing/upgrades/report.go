@@ -203,16 +203,6 @@ func groupBySlot(resultList []upgradeItemResultWithSim) map[items.SlotEquip]*uti
 	return rankedBySlot
 }
 
-func filterPositive(input []upgradeItemResult) []upgradeItemResult {
-	output := make([]upgradeItemResult, 0, len(input))
-	for _, item := range input {
-		if item.increaseWeightsRaw() > 0.0 {
-			output = append(output, item)
-		}
-	}
-	return output
-}
-
 func filterPositiveSim(input []upgradeItemResultWithSim) []upgradeItemResultWithSim {
 	output := make([]upgradeItemResultWithSim, 0, len(input))
 	for _, item := range input {

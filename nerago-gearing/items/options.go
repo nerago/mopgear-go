@@ -343,21 +343,3 @@ func (optionsMap *SolvableOptionsMap) AllItemSlotSeq() iter.Seq2[SlotEquip, *Sol
 		}
 	}
 }
-
-type SkinnyOptionsMap [16][]SkinnyItem
-
-func (optionsMap *SkinnyOptionsMap) TotalCombinationCount() *big.Int {
-	valueCount := 0
-	total := big.NewInt(1)
-	for _, slotArray := range optionsMap {
-		slotSize := int64(len(slotArray))
-		if slotSize > 0 {
-			total.Mul(total, big.NewInt(slotSize))
-			valueCount++
-		}
-	}
-	if valueCount == 0 {
-		panic("empty options")
-	}
-	return total
-}

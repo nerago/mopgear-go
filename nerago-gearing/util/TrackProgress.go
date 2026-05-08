@@ -3,7 +3,6 @@ package util
 import (
 	"context"
 	"fmt"
-	"math/big"
 	"strconv"
 	"sync"
 	"time"
@@ -92,15 +91,6 @@ func (track *TrackProgress) run(getProgress func() float64) {
 	} else if track.nested {
 		track.nestedProgressFunc = getProgress
 	}
-}
-
-func (track *TrackProgress) RunFromBigInt(current *big.Int, targetCount *big.Int) {
-	track.run(func() float64 {
-		var ratio big.Rat
-		ratio.SetFrac(current, targetCount)
-		percent, _ := ratio.Float64()
-		return percent
-	})
 }
 
 func (track *TrackProgress) RunFromInt(current *uint64, targetCount uint64) {
