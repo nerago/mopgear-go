@@ -1,7 +1,6 @@
 package main
 
 import (
-	"math"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
@@ -87,22 +86,22 @@ func relativeRatingsCompromise(printer *util.PrintRecorder) {
 	gearDps := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(files.GearFileProtDps), &modelDps, printer)
 	itemSetDps := items.FullItemSet_FromMap(gearDps)
 
-	var targetCombined = 10000000000
+	var targetCombined = 10000000000.0
 	targetRatio := 0.7
 
-	rateA1 := modelMitiNoSet.CalcRatingFull(&itemSetMitiNoSet)
-	rateA2 := modelDps.CalcRatingFull(&itemSetMitiNoSet)
-	printer.Printf("A %d %d\n", rateA1, rateA2)
-	multA1 := uint64(math.Round(float64(targetCombined) * targetRatio / float64(rateA1)))
-	multA2 := uint64(math.Round(float64(targetCombined) * (1 - targetRatio) / float64(rateA2)))
-	printer.Printf("* %d %d\n", multA1, multA2)
-	printer.Printf("? %f %f\n", float64(multA1*rateA1)/float64(targetCombined), float64(multA2*rateA2)/float64(targetCombined))
+	rateA1 := modelMitiNoSet.CalcRatingFullAsFloat(&itemSetMitiNoSet)
+	rateA2 := modelDps.CalcRatingFullAsFloat(&itemSetMitiNoSet)
+	printer.Printf("A %f %f\n", rateA1, rateA2)
+	multA1 := targetCombined * targetRatio / rateA1
+	multA2 := targetCombined * (1 - targetRatio) / rateA2
+	printer.Printf("* %f %f\n", multA1, multA2)
+	printer.Printf("? %f %f\n", multA1*rateA1/targetCombined, multA2*rateA2/targetCombined)
 
-	rateB1 := modelMitiNoSet.CalcRatingFull(&itemSetDps)
-	rateB2 := modelDps.CalcRatingFull(&itemSetDps)
-	printer.Printf("B %d %d\n", rateB1, rateB2)
-	multB1 := uint64(math.Round(float64(targetCombined) * targetRatio / float64(rateB1)))
-	multB2 := uint64(math.Round(float64(targetCombined) * (1 - targetRatio) / float64(rateB2)))
-	printer.Printf("* %d %d\n", multB1, multB2)
-	printer.Printf("? %f %f\n", float64(multB1*rateB1)/float64(targetCombined), float64(multB2*rateB2)/float64(targetCombined))
+	rateB1 := modelMitiNoSet.CalcRatingFullAsFloat(&itemSetDps)
+	rateB2 := modelDps.CalcRatingFullAsFloat(&itemSetDps)
+	printer.Printf("B %f %f\n", rateB1, rateB2)
+	multB1 := targetCombined * targetRatio / rateB1
+	multB2 := targetCombined * (1 - targetRatio) / rateB2
+	printer.Printf("* %f %f\n", multB1, multB2)
+	printer.Printf("? %f %f\n", multB1*rateB1/targetCombined, multB2*rateB2/(targetCombined))
 }

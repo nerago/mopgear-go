@@ -32,11 +32,3 @@ func StatBlock_MultiplyForTotalSum_Float(a, b *StatBlock) float32 {
 	}
 	return result
 }
-
-func StatBlock_MultiplyForTotalSum_Int(a, b *StatBlock) uint64 {
-	var result uint64 = 0
-	for i := range a {
-		result += uint64(a[i]) * uint64(b[i])
-	}
-	return result
-}

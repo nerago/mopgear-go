@@ -399,15 +399,6 @@ func (sets *SetBonus) AllSetItemIds() iter.Seq[ItemId] {
 	}
 }
 
-func (sets *SetBonus) ActiveSetForItem(itemId ItemId) ActiveSet {
-	setEntry := sets.itemToSet[itemId]
-	if setEntry == 0 {
-		return nil
-	}
-
-	return sets.activeSets[setEntry-1]
-}
-
 func (sets *SetBonus) ActiveSetIndexForItem(itemId ItemId) (index int, hasSet bool) {
 	setEntry := sets.itemToSet[itemId]
 	if setEntry == 0 {
@@ -424,15 +415,6 @@ func (sets *SetBonus) ActiveSets() []ActiveSet {
 func SetBonus_IsAnyKnownItem(itemId ItemId) bool {
 	_, found := g_itemSetLookup[itemId]
 	return found
-}
-
-func SetBonus_AnySetForItem(itemId ItemId) ActiveSet {
-	set, found := g_itemSetLookup[itemId]
-	if found {
-		return set
-	} else {
-		return nil
-	}
 }
 
 // ########################### utility lookups ###########################

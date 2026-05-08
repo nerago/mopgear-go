@@ -1,7 +1,6 @@
 package multi
 
 import (
-	"math"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
@@ -53,11 +52,11 @@ func (param *multiSetParamInternal) prepareStartingGear() {
 func (param *multiSetParamInternal) prepareExtraItems() {
 	param.job.printer.Println(param.Label)
 
-	for _, itemId := range param.extraItems {
+	for _, itemId := range param.ExtraItems {
 		param.includeExtra(itemId)
 	}
 
-	if param.extraFromBags {
+	if param.ExtraFromBags {
 		for _, item := range param.job.bagsGear {
 			param.tryAddExtraFromBags(&item)
 		}
@@ -159,7 +158,7 @@ func (param *multiSetParamInternal) restrictFixed() {
 	param.job.printer.Println(param.Label)
 
 	// actual fixed slot stuff
-	for slot, itemId := range param.fixedSlots {
+	for slot, itemId := range param.FixedSlots {
 		if !param.itemOptions.Has(slot) {
 			panic("restricting slot but already empty")
 		}
@@ -185,7 +184,7 @@ func (param *multiSetParamInternal) restrictFixed() {
 	}
 
 	// remove blocked items
-	for _, itemId := range param.blockedItems {
+	for _, itemId := range param.BlockedItems {
 		param.itemOptions.MapSlotsAll(func(options []items.FullItem) []items.FullItem {
 			newSlice := util.FilterSliceAsNew(options, func(x *items.FullItem) bool {
 				if x.ItemId() == itemId {
@@ -288,9 +287,9 @@ func (param *multiSetParamInternal) prepareRatingMultiplier() {
 	multiplyRatingsBy := targetForThis / baselineRating
 	param.ratingMultiply = multiplyRatingsBy
 
-	param.job.printer.Printf("MULTIPLIERS %s base=%d mult=%f value=%d percent=%.2f\n",
+	param.job.printer.Printf("MULTIPLIERS %s base=%.0f mult=%f value=%0.f percent=%.2f\n",
 		param.Label, param.baselineResult.ResultRating, param.ratingMultiply,
-		uint64(math.Round(baselineRating*param.ratingMultiply)),
-		math.Round(baselineRating*param.ratingMultiply)/targetCombined*100,
+		baselineRating*param.ratingMultiply,
+		baselineRating*param.ratingMultiply/targetCombined*100,
 	)
 }

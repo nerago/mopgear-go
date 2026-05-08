@@ -2,7 +2,6 @@ package items
 
 import (
 	"iter"
-	"math/big"
 	"paladin_gearing_go/util"
 	"slices"
 )
@@ -35,14 +34,6 @@ func (optionsMap *FullOptionsMap) IncludesItemIdInSlot(itemId ItemId, slot SlotE
 		}
 	}
 	return false
-}
-
-func (optionsMap *FullOptionsMap) SlotGroupedByItemId(slot SlotEquip) map[ItemId][]*FullItem {
-	grouped := make(map[ItemId][]*FullItem)
-	for _, item := range optionsMap[slot] {
-		grouped[item.ItemId()] = append(grouped[item.ItemId()], &item)
-	}
-	return grouped
 }
 
 func (optionsMap *FullOptionsMap) IncludesItemNameInSlot(itemName string, slot SlotEquip) bool {
@@ -286,38 +277,6 @@ func (optionsMap *SolvableOptionsMap) Get(slot SlotEquip) []SolvableItem {
 
 func (optionsMap *SolvableOptionsMap) Has(slot SlotEquip) bool {
 	return len(optionsMap[slot]) > 0
-}
-
-func (optionsMap *SolvableOptionsMap) TotalCombinationCount() *big.Int {
-	valueCount := 0
-	total := big.NewInt(1)
-	for _, slotArray := range optionsMap {
-		slotSize := int64(len(slotArray))
-		if slotSize > 0 {
-			total.Mul(total, big.NewInt(slotSize))
-			valueCount++
-		}
-	}
-	if valueCount == 0 {
-		panic("empty options")
-	}
-	return total
-}
-
-func (optionsMap *SolvableOptionsMap) TotalCombinationCountAsInt() uint64 {
-	combo := optionsMap.TotalCombinationCount()
-	if !combo.IsUint64() {
-		panic("too big for 64 bit int")
-	}
-	return combo.Uint64()
-}
-
-func (optionsMap *SolvableOptionsMap) TotalItemCount() int {
-	itemCount := 0
-	for _, slotArray := range optionsMap {
-		itemCount += len(slotArray)
-	}
-	return itemCount
 }
 
 func (optionsMap *SolvableOptionsMap) AllItemSeq() iter.Seq[*SolvableItem] {

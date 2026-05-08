@@ -42,37 +42,25 @@ func (model *Model) CheckSet(itemSet *SolvableItemSet) bool {
 }
 
 // ////////// set ratings
-func (model *Model) CalcRatingSolve(itemSet *SolvableItemSet) uint64 {
-	return uint64(model.CalcRatingSolveAsFloat(itemSet))
-}
-
-func (model *Model) CalcRatingSolveAsFloat(itemSet *SolvableItemSet) float32 {
+func (model *Model) CalcRatingSolveAsFloat(itemSet *SolvableItemSet) float64 {
 	baseRating := model.StatRatings.CalcRatingFloat(itemSet.TotalRated())
 	setRating := model.SetBonus.CalcBonusSolve(itemSet.Items())
-	return baseRating * setRating
+	return float64(baseRating * setRating)
 }
 
-func (model *Model) CalcRatingFull(itemSet *FullItemSet) uint64 {
-	return uint64(model.CalcRatingFullAsFloat(itemSet))
-}
-
-func (model *Model) CalcRatingFullAsFloat(itemSet *FullItemSet) float32 {
+func (model *Model) CalcRatingFullAsFloat(itemSet *FullItemSet) float64 {
 	baseRating := model.StatRatings.CalcRatingFloat(itemSet.TotalRated())
 	setRating := model.SetBonus.CalcBonusFull(itemSet.Items())
-	return baseRating * setRating
+	return float64(baseRating * setRating)
 }
 
 // ////////// items ratings
-func (model *Model) CalcRatingFullItem(item *FullItem) uint64 {
-	return model.StatRatings.CalcRatingInt(item.TotalRated())
+func (model *Model) CalcRatingSolveItemAsFloat(item *SolvableItem) float64 {
+	return float64(model.StatRatings.CalcRatingFloat(item.TotalRated()))
 }
 
-func (model *Model) CalcRatingSolveItem(item *SolvableItem) uint64 {
-	return model.StatRatings.CalcRatingInt(item.TotalRated())
-}
-
-func (model *Model) CalcRatingSolveItemAsFloat(item *SolvableItem) float32 {
-	return model.StatRatings.CalcRatingFloat(item.TotalRated())
+func (model *Model) CalcRatingFullItemAsFloat(item *FullItem) float64 {
+	return float64(model.StatRatings.CalcRatingFloat(item.TotalRated()))
 }
 
 // ////////// ProfessionInfo

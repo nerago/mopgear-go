@@ -3,6 +3,7 @@ package multi
 import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
+	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -32,7 +33,7 @@ func MultiSetJob_Create(printer *util.PrintRecorder, solveSizeProposal solver.So
 	}
 }
 
-func (job *MultiSetJob) AddSetParam(param MultiSetParam) {
+func (job *MultiSetJob) AddSetParam(param multi_types.MultiSetParam) {
 	job.params = append(job.params, multiSetParamInternal{MultiSetParam: param, job: job})
 	job.params[len(job.params)-1].init()
 }
@@ -51,8 +52,19 @@ func (job *MultiSetJob) SetSpecificItemVariedInclusion(itemId items.ItemId, mode
 	job.specificAllowRates[itemId] = specificAllowEntry{itemId: itemId, modeOff: modeOff, modeOn: modeOn}
 }
 
+type forceItemMode int8
+
+const (
+	Force_UnknownTODO              forceItemMode = iota
+	Force_ForbiddenTODO            forceItemMode = iota
+	Force_OptionalTODO             forceItemMode = iota
+	Force_FixedWhereAvailableTODO  forceItemMode = iota
+	Force_RequireAtLeastOneUseTODO forceItemMode = iota
+	Force_RequiredAlwaysTODO       forceItemMode = iota
+)
+
 type specificAllowEntry struct {
-	itemId     items.ItemId
-	modeOff    forceItemMode
-	modeOn     forceItemMode
+	itemId  items.ItemId
+	modeOff forceItemMode
+	modeOn  forceItemMode
 }

@@ -109,7 +109,7 @@ func checkHighs(printer *util.PrintRecorder) {
 		fullItemSet = items.FullItemSet_FromSolved(solvedSet.GetOrPanic(), &itemOptions)
 		fullItemSet.DebugValidate()
 		fullItemSet.ValidateItemRules()
-		solver.ReportSetFewerParams(printer, fullItemSet, &model)
+		tools.ReportSetFewerParams(&model, &fullItemSet, printer)
 	}
 
 	printer.Println("COMPARE standard solver")
@@ -122,7 +122,11 @@ func checkHighs(printer *util.PrintRecorder) {
 	})
 	compareSolveOuput.Report(printer)
 
-	printer.Printf("ratio of results %d %d %f\n", model.CalcRatingFull(&fullItemSet), model.CalcRatingFull(&compareSolveOuput.FullSet), float64(model.CalcRatingFull(&fullItemSet))/float64(model.CalcRatingFull(&compareSolveOuput.FullSet)))
+	printer.Printf("ratio of results %.0f %.0f %f\n",
+		model.CalcRatingFullAsFloat(&fullItemSet),
+		model.CalcRatingFullAsFloat(&compareSolveOuput.FullSet),
+		model.CalcRatingFullAsFloat(&fullItemSet)/model.CalcRatingFullAsFloat(&compareSolveOuput.FullSet),
+	)
 }
 
 func checkHighsAcross(printer *util.PrintRecorder) {
@@ -162,7 +166,7 @@ func checkHighsAcross(printer *util.PrintRecorder) {
 		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &itemOptions)
 		fullItemSet.DebugValidate()
 		fullItemSet.ValidateItemRules()
-		solver.ReportSetFewerParams(printer, fullItemSet, &model)
+		tools.ReportSetFewerParams(&model, &fullItemSet, printer)
 	}
 }
 
@@ -211,9 +215,9 @@ func slotRating(printer *util.PrintRecorder) {
 
 	best := util_rank.BestCollector1[items.FullItem]{}
 	for _, item := range itemArray {
-		rate := model.CalcRatingFullItem(&item)
+		rate := model.CalcRatingFullItemAsFloat(&item)
 		printer.Println(item.CreateString())
-		printer.Printf("%d\n\n", rate)
+		printer.Printf("%.0f\n\n", rate)
 		best.Offer(&item, rate)
 	}
 
@@ -631,10 +635,10 @@ func basicListRatingEach(printer *util.PrintRecorder) {
 		equipItems := loaders.GearFileReader_Read(group.file)
 		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, util.PrintRecorder_HoldAll())
 		itemSet := items.FullItemSet_FromMap(equipMap)
-		rating := group.model.CalcRatingFull(&itemSet)
-		solver.ReportSet(printer, itemSet, rating, &group.model)
+		rating := group.model.CalcRatingFullAsFloat(&itemSet)
+		tools.ReportSet(&group.model, &itemSet, rating, printer)
 
-		printer.Printf("%20s %10d %s\n", group.label, rating, group.model.StatRatings.Weights().CreateString())
+		printer.Printf("%20s %10.0f %s\n", group.label, rating, group.model.StatRatings.Weights().CreateString())
 	}
 
 	// for _, group := range groups {
@@ -681,12 +685,12 @@ func solveForRatings(printer *util.PrintRecorder) {
 		equipItems := loaders.GearFileReader_Read(group.file)
 		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, util.PrintRecorder_HoldAll())
 		itemSet := items.FullItemSet_FromMap(equipMap)
-		rating := group.model.CalcRatingFull(&itemSet)
+		rating := group.model.CalcRatingFullAsFloat(&itemSet)
 		// solver.ReportSet(printer, itemSet, rating, &group.model)
 
-		prescaleMult := prescaleTarget / float64(rating)
+		prescaleMult := prescaleTarget / rating
 
-		printer.Printf("%20s %10d %.4f %s\n", group.label, rating, float64(rating)*prescaleMult, group.model.StatRatings.Weights().CreateString())
+		printer.Printf("%20s %10.0f %.4f %s\n", group.label, rating, rating*prescaleMult, group.model.StatRatings.Weights().CreateString())
 	}
 
 	// for _, group := range groups {

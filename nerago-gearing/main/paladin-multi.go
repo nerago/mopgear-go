@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/multi"
+	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/util"
@@ -16,7 +17,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	job := multi.MultiSetJob_Create(printer, solver.SolveSize_PerItem, solver.SolveSize_Medium)
 	// job := multi.MultiSetJob_Create(printer, solver.SolveSize_PerItem, solver.SolveSize_PerItem)
 
-	ret := multi.MultiSetParam{
+	ret := multi_types.MultiSetParam{
 		Label:                "Ret",
 		GearFile:             files.GearFileRet,
 		Model:                model.Model_PallyRet(),
@@ -74,7 +75,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	ret.AddFixedSlot(items.Equip_Back, 98147)     // pre-legend strength dps
 	blockHelmetsWithoutCapacitance(&ret)
 
-	protDps := multi.MultiSetParam{
+	protDps := multi_types.MultiSetParam{
 		Label:                     "Prot-Damage",
 		GearFile:                  files.GearFileProtDps,
 		Model:                     model.Model_PallyProtDps(),
@@ -143,7 +144,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protDps.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
 	blockHelmetsWithoutCapacitance(&protDps)
 
-	protCompromise := multi.MultiSetParam{
+	protCompromise := multi_types.MultiSetParam{
 		Label:                     "Prot-Compromise",
 		GearFile:                  files.GearFileProtCompromise,
 		Model:                     model.Model_PallyProtCompromise(),
@@ -215,7 +216,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protCompromise.BlockItem(96793)                              // Fortitude of the Zandalari
 	protCompromise.AddReportVariant(items.Equip_Trinket2, 96793) // Fortitude of the Zandalari
 
-	protMitigationNoSet := multi.MultiSetParam{
+	protMitigationNoSet := multi_types.MultiSetParam{
 		Label:                     "Prot-Mitigation-NoSet",
 		GearFile:                  files.GearFileProtMitigationNoSet,
 		Model:                     model.Model_PallyProtMitigation_NoSet(),
@@ -281,7 +282,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, 94529) // gaze of the twins
 	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
 
-	protMitigationWithSet := multi.MultiSetParam{
+	protMitigationWithSet := multi_types.MultiSetParam{
 		Label:                     "Prot-Mitigation-WithSet",
 		GearFile:                  files.GearFileProtMitigationSet,
 		Model:                     model.Model_PallyProtMitigation_WithSet(),
@@ -362,7 +363,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	job.FindSeveralHighsAndSim(simulate.RunSize_Medium)
 }
 
-func blockHelmetsWithoutCapacitance(param *multi.MultiSetParam) {
+func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {
 	// param.BlockItem(87024) // nullification greathelm = capacitance
 	// param.BlockItem(95282) // lightning emp helmet = capacitance
 	param.BlockItem(87101) // white tiger helmet = prot gem
@@ -372,7 +373,7 @@ func blockHelmetsWithoutCapacitance(param *multi.MultiSetParam) {
 	blockGeneral(param)
 }
 
-func blockHelmetsWithoutIndomitable(param *multi.MultiSetParam) {
+func blockHelmetsWithoutIndomitable(param *multi_types.MultiSetParam) {
 	param.BlockItem(87024) // nullification greathelm = capacitance
 	param.BlockItem(95282) // lightning emp helmet = capacitance
 	// param.BlockItem(87101) // white tiger helmet = prot gem
@@ -381,6 +382,6 @@ func blockHelmetsWithoutIndomitable(param *multi.MultiSetParam) {
 	blockGeneral(param)
 }
 
-func blockGeneral(param *multi.MultiSetParam) {
+func blockGeneral(param *multi_types.MultiSetParam) {
 	param.BlockItem(95513) // normal ring
 }

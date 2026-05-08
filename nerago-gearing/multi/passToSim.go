@@ -3,19 +3,21 @@ package multi
 import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
+	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
+	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
 
 	"github.com/google/uuid"
 )
 
-func checkNoConflicts(outputSet []singleProposed) bool {
+func checkNoConflicts(outputSet []multi_types.SingleProposedOutput) bool {
 	itemById := make(map[items.ItemId]*items.FullItem)
 	for outputIndex := range outputSet {
-		for item := range outputSet[outputIndex].fullSet.Items().AllItemSeq() {
+		for item := range outputSet[outputIndex].FullSet.Items().AllItemSeq() {
 			existing, found := itemById[item.ItemId()]
 			if !found {
 				itemById[item.ItemId()] = item
@@ -28,15 +30,15 @@ func checkNoConflicts(outputSet []singleProposed) bool {
 	return true
 }
 
-func (job *MultiSetJob) existingGearAsProposal() multiProposedOutput {
-	proposal := multiProposedOutput{id: uuid.NewString()}
+func (job *MultiSetJob) existingGearAsProposal() multi_types.MultiProposedOutput {
+	proposal := multi_types.MultiProposedOutput{Id: uuid.NewString()}
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
-		single := SingleProposed_FromEquip(param.exactEquippedGear, param)
-		proposal.parts = append(proposal.parts, single)
-		proposal.totalRatingSum += single.resultRating
+		single := multi_types.SingleProposed_FromEquip(param.exactEquippedGear, &param.MultiSetParam)
+		proposal.Parts = append(proposal.Parts, single)
+		proposal.TotalRatingSum += single.ResultRating
 	}
-	proposal.combo = job.determineComboFromScratch(proposal.parts)
+	proposal.Combo = multi_types.CommonCombo_FromProposed(proposal.Parts)
 	return proposal
 }
 
@@ -53,15 +55,15 @@ func (simJob *simulateJob) Equals(other *simulateJob) bool {
 }
 
 type simulateResult struct {
-	proposed multiProposedOutput
+	proposed multi_types.MultiProposedOutput
 	result   []simulate.SimResultStats
 }
 
-func (job *MultiSetJob) prepareSimList(proposalList []multiProposedOutput) []simulateJob {
+func (job *MultiSetJob) prepareSimList(proposalList []multi_types.MultiProposedOutput) []simulateJob {
 	jobList := make([]simulateJob, 0)
 	for _, proposal := range proposalList {
-		for _, output := range proposal.parts {
-			job := simulateJob{output.spec, output.model.SimulateAs, *output.fullSet.Items(), output.model.Professions, nil}
+		for _, output := range proposal.Parts {
+			job := simulateJob{output.Spec, output.Model.SimulateAs, *output.FullSet.Items(), output.Model.Professions, nil}
 			jobList = append(jobList, job)
 		}
 	}
@@ -83,7 +85,7 @@ func (job *MultiSetJob) runSims(jobList []simulateJob, runSize simulate.WowSim_R
 	})
 }
 
-func (job *MultiSetJob) linkSimResults(proposalList []multiProposedOutput, jobList []simulateJob) []simulateResult {
+func (job *MultiSetJob) linkSimResults(proposalList []multi_types.MultiProposedOutput, jobList []simulateJob) []simulateResult {
 	resultList := make([]simulateResult, 0, len(proposalList))
 	for _, proposal := range proposalList {
 		result := linkSimResult(proposal, jobList)
@@ -92,13 +94,13 @@ func (job *MultiSetJob) linkSimResults(proposalList []multiProposedOutput, jobLi
 	return resultList
 }
 
-func linkSimResult(proposal multiProposedOutput, jobList []simulateJob) simulateResult {
-	result := simulateResult{proposal, make([]simulate.SimResultStats, len(proposal.parts))}
-	for outIndex := range proposal.parts {
-		output := &proposal.parts[outIndex]
+func linkSimResult(proposal multi_types.MultiProposedOutput, jobList []simulateJob) simulateResult {
+	result := simulateResult{proposal, make([]simulate.SimResultStats, len(proposal.Parts))}
+	for outIndex := range proposal.Parts {
+		output := &proposal.Parts[outIndex]
 		for jobIndex := range jobList {
 			job := &jobList[jobIndex]
-			if output.fullSet.Items().Equals(&job.equip) && output.spec == job.spec && output.model.SimulateAs == job.fight {
+			if output.FullSet.Items().Equals(&job.equip) && output.Spec == job.spec && output.Model.SimulateAs == job.fight {
 				result.result[outIndex] = *job.result
 				break
 			}
@@ -110,21 +112,21 @@ func linkSimResult(proposal multiProposedOutput, jobList []simulateJob) simulate
 func (job *MultiSetJob) reportSimResults(resultList []simulateResult) {
 	job.printer.Println("@@@@@@@@@@@@@@@@ RESULTS @@@@@@@@@@@@@@@@")
 	for _, result := range resultList {
-		job.printer.Printf("&&&&&&&&&&&&& %s\n", result.proposed.id)
-		printChosenCombo(&result.proposed.combo, job.printer)
+		job.printer.Printf("&&&&&&&&&&&&& %s\n", result.proposed.Id)
+		result.proposed.Combo.Print(job.printer)
 		for specIndex, specResult := range result.result {
 			param := &job.params[specIndex]
 			job.printer.Printf("---------------- %s ----------------\n", param.Label)
-			output := result.proposed.parts[specIndex]
+			output := result.proposed.Parts[specIndex]
 			output.Report(job.printer)
 			specResult.Print(job.printer)
 
-			for slot, itemId := range param.reportVariant {
-				variantEquip := *output.fullSet.Items()
+			for slot, itemId := range param.ReportVariant {
+				variantEquip := *output.FullSet.Items()
 				variantItem := job.findVariantItem(result, itemId, param)
 				variantEquip[slot] = variantItem
 				job.printer.Printf("---------------- %s %s ----------------\n", param.Label, variantItem.BaseName)
-				simulate.WowSimJson_Write(&variantEquip, &param.Model, job.printer)
+				tools.WowSimJson_Write(&variantEquip, &param.Model, job.printer)
 			}
 		}
 		job.printer.Println0()
@@ -133,7 +135,7 @@ func (job *MultiSetJob) reportSimResults(resultList []simulateResult) {
 }
 
 func (job *MultiSetJob) findVariantItem(result simulateResult, itemId items.ItemId, param *multiSetParamInternal) *items.FullItem {
-	variantItem := result.proposed.findItemById(itemId)
+	variantItem := result.proposed.FindItemById(itemId)
 	if variantItem != nil {
 		return variantItem
 	}
@@ -175,7 +177,7 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateResult) {
 	csv.FinishColumn()
 
 	for _, simResult := range simResultList {
-		csv.AddString(simResult.proposed.id)
+		csv.AddString(simResult.proposed.Id)
 
 		for _, resultStat := range simResult.result {
 			for _, resultType := range outputTypes {

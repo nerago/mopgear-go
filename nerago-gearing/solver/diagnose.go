@@ -71,7 +71,7 @@ func findAccepableSet(proposedList []items.SolvableItemSet, model *model.Model) 
 	best := util_rank.BestCollector1[items.SolvableItemSet]{}
 	for _, set := range proposedList {
 		if model.CheckSet(&set) {
-			rate := model.CalcRatingSolve(&set)
+			rate := model.CalcRatingSolveAsFloat(&set)
 			best.Offer(&set, rate)
 		}
 	}

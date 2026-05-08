@@ -18,10 +18,6 @@ func (rating *StatRatingsWeights) Weights() *StatBlock {
 	return &rating.weight
 }
 
-func (rating *StatRatingsWeights) CalcRatingInt(block *StatBlock) uint64 {
-	return StatBlock_MultiplyForTotalSum_Int(&rating.weight, block)
-}
-
 func (rating *StatRatingsWeights) CalcRatingFloat(block *StatBlock) float32 {
 	return StatBlock_MultiplyForTotalSum_Float(&rating.weight, block)
 }

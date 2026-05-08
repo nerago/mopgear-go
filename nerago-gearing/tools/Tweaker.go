@@ -8,7 +8,7 @@ import (
 
 func Tweaker_Run(initialSet *SolvableItemSet, solvableOptionsMap *SolvableOptionsMap, model *Model) SolvableItemSet {
 	best := util_rank.BestCollector1[SolvableItemSet]{}
-	best.Offer(initialSet, model.CalcRatingSolve(initialSet))
+	best.Offer(initialSet, model.CalcRatingSolveAsFloat(initialSet))
 
 	possibleSet := new(SolvableItemSet)
 	for slot := Equip_Iter_First; slot <= Equip_Iter_Last; slot++ {
@@ -24,7 +24,7 @@ func Tweaker_Run(initialSet *SolvableItemSet, solvableOptionsMap *SolvableOption
 				best.BestObject.ReplaceItem_Into(slot, replaceItem, possibleSet)
 
 				if model.CheckSet(possibleSet) {
-					best.OfferAndSwap(&possibleSet, model.CalcRatingSolve(possibleSet))
+					best.OfferAndSwap(&possibleSet, model.CalcRatingSolveAsFloat(possibleSet))
 				}
 			}
 		}

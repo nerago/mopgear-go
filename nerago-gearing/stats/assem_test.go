@@ -235,52 +235,6 @@ func TestMultiplySum(test *testing.T) {
 	}
 }
 
-func TestMultiplySum0Int(test *testing.T) {
-	a := StatBlock{1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	b := StatBlock{3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-
-	assertIntEqual(test, 13, go_StatBlock_MultiplyForTotalSum_Int(&a, &b))
-	assertIntEqual(test, 13, StatBlock_MultiplyForTotalSum_Int(&a, &b))
-}
-
-func TestMultiplySum1Int(test *testing.T) {
-	a := StatBlock{1, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0}
-	b := StatBlock{3, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0}
-
-	assertIntEqual(test, 19, go_StatBlock_MultiplyForTotalSum_Int(&a, &b))
-	assertIntEqual(test, 19, StatBlock_MultiplyForTotalSum_Int(&a, &b))
-}
-
-func TestMultiplySum2Int(test *testing.T) {
-	a := StatBlock{1, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0}
-	b := StatBlock{3, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0}
-
-	assertIntEqual(test, 38, go_StatBlock_MultiplyForTotalSum_Int(&a, &b))
-	assertIntEqual(test, 38, StatBlock_MultiplyForTotalSum_Int(&a, &b))
-}
-
-func TestMultiplySumInt(test *testing.T) {
-	for range checkLoops {
-		// a0 := randBlockLimited(0x70000000)
-		// b0 := randBlockLimited(0x70000000)
-		a0 := randStatBlockLimited(100)
-		b0 := randStatBlockLimited(100)
-
-		a1 := a0
-		a2 := a0
-		b1 := b0
-		b2 := b0
-
-		test.Logf("%s\n%s", a1.CreateStringCSV(), b1.CreateStringCSV())
-		assertIntEqual(test, go_StatBlock_MultiplyForTotalSum_Int(&a1, &b1), StatBlock_MultiplyForTotalSum_Int(&a2, &b2))
-
-		assertEquals(test, &a0, &a1, "should be unchanged")
-		assertEquals(test, &a0, &a2, "should be unchanged")
-		assertEquals(test, &b0, &b1, "should be unchanged")
-		assertEquals(test, &b0, &b2, "should be unchanged")
-	}
-}
-
 var resultFloat float32
 var resultInt uint64
 
@@ -302,26 +256,6 @@ func BenchmarkMultiplysAssemFloat(test *testing.B) {
 		t += StatBlock_MultiplyForTotalSum_Float(&a, &b)
 	}
 	resultFloat = t
-}
-
-func BenchmarkMultiplysGoInt(test *testing.B) {
-	a := randStatBlockLimited(100)
-	b := randStatBlockLimited(100)
-	var t uint64
-	for test.Loop() {
-		t += go_StatBlock_MultiplyForTotalSum_Int(&a, &b)
-	}
-	resultInt = t
-}
-
-func BenchmarkMultiplysAssemInt(test *testing.B) {
-	a := randStatBlockLimited(100)
-	b := randStatBlockLimited(100)
-	var t uint64
-	for test.Loop() {
-		t += StatBlock_MultiplyForTotalSum_Int(&a, &b)
-	}
-	resultInt = t
 }
 
 func assertEquals(test *testing.T, a, b *StatBlock, failMessage string) {
@@ -406,14 +340,6 @@ func go_StatBlock_MultiplyForTotalSum_Float(a, b *StatBlock) float32 {
 	var result float32 = 0
 	for i := range a {
 		result += float32(a[i]) * float32(b[i])
-	}
-	return result
-}
-
-func go_StatBlock_MultiplyForTotalSum_Int(a, b *StatBlock) uint64 {
-	var result uint64 = 0
-	for i := range a {
-		result += uint64(a[i]) * uint64(b[i])
 	}
 	return result
 }

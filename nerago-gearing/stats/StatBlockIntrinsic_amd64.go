@@ -9,5 +9,3 @@ func StatBlock_Equals(a, b *StatBlock) bool
 func StatBlock_AddAndSubtract_Into(add1, add2, subtract, out *StatBlock)
 
 func StatBlock_MultiplyForTotalSum_Float(a, b *StatBlock) float32
-
-func StatBlock_MultiplyForTotalSum_Int(a, b *StatBlock) uint64

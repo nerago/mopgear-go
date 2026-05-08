@@ -2,6 +2,7 @@ package multi
 
 import (
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/withhighs"
 	"paladin_gearing_go/util"
@@ -10,19 +11,19 @@ import (
 	"github.com/google/uuid"
 )
 
-func (job *MultiSetJob) FindHighsResult() util.Optional[multiProposedOutput] {
+func (job *MultiSetJob) FindHighsResult() util.Optional[multi_types.MultiProposedOutput] {
 	job.prepareInitial()
 	highProcess := job.highProcessSetup()
 
 	// TODO allow variants
 
-	best := util_rank.BestCollector1[multiProposedOutput]{}
+	best := util_rank.BestCollector1[multi_types.MultiProposedOutput]{}
 
 	setResults := highProcess.Run(job.printer)
 	if setResults != nil {
 		proposedOutput := job.makeOutputFromHighs(setResults)
-		job.listInitialOutputs([]multiProposedOutput{proposedOutput})
-		best.Offer(&proposedOutput, uint64(proposedOutput.totalRatingSum)) // TODO float
+		job.listInitialOutputs([]multi_types.MultiProposedOutput{proposedOutput})
+		best.Offer(&proposedOutput, proposedOutput.TotalRatingSum)
 	} else {
 		job.printer.Println("FAILED")
 	}
@@ -48,21 +49,21 @@ func (job *MultiSetJob) highProcessSetup() withhighs.SolverHighsMultiProcess {
 	return highProcess
 }
 
-func (job *MultiSetJob) makeOutputFromHighs(setResults []items.FullItemSet) multiProposedOutput {
+func (job *MultiSetJob) makeOutputFromHighs(setResults []items.FullItemSet) multi_types.MultiProposedOutput {
 	var totalRatingSum float64
-	outputs := make([]singleProposed, len(job.params))
+	outputs := make([]multi_types.SingleProposedOutput, len(job.params))
 
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
 		itemSet := setResults[paramIndex]
-		single := SingleProposed_FromItemSet(itemSet, &param.Model)
+		single := multi_types.SingleProposed_FromItemSet(itemSet, &param.Model)
 		outputs[paramIndex] = single
-		totalRatingSum += single.resultRating * param.ratingMultiply
+		totalRatingSum += single.ResultRating * param.ratingMultiply
 	}
 
 	if checkNoConflicts(outputs) {
-		combo := job.determineComboFromScratch(outputs)
-		proposed := multiProposedOutput{uuid.NewString(), totalRatingSum, outputs, combo}
+		combo := multi_types.CommonCombo_FromProposed(outputs)
+		proposed := multi_types.MultiProposedOutput{Id: uuid.NewString(), TotalRatingSum: totalRatingSum, Parts: outputs, Combo: combo}
 		return proposed
 	} else {
 		panic("conflicted items")
@@ -79,7 +80,7 @@ func (job *MultiSetJob) FindSeveralHighsAndSim(runSize simulate.WowSim_RunSize) 
 	setResultList := highProcess.RunForSeveral_CommonDifferent_WithParallel(job.printer)
 
 	if setResultList != nil {
-		proposalList := make([]multiProposedOutput, 0, len(setResultList))
+		proposalList := make([]multi_types.MultiProposedOutput, 0, len(setResultList))
 		for _, setResult := range setResultList {
 			proposedOutput := job.makeOutputFromHighs(setResult)
 			proposalList = append(proposalList, proposedOutput)
@@ -87,10 +88,10 @@ func (job *MultiSetJob) FindSeveralHighsAndSim(runSize simulate.WowSim_RunSize) 
 
 		proposalList = append(proposalList, job.existingGearAsProposal())
 
-		util.RemoveDuplicatesFuncNotify(proposalList, func(a, b *multiProposedOutput) bool {
+		util.RemoveDuplicatesFuncNotify(proposalList, func(a, b *multi_types.MultiProposedOutput) bool {
 			return a.Equals(b)
-		}, func(x *multiProposedOutput) {
-			job.printer.Printf("Remove Duplicate %s\n", x.id)
+		}, func(x *multi_types.MultiProposedOutput) {
+			job.printer.Printf("Remove Duplicate %s\n", x.Id)
 		})
 
 		job.listInitialOutputs(proposalList)
@@ -106,5 +107,15 @@ func (job *MultiSetJob) FindSeveralHighsAndSim(runSize simulate.WowSim_RunSize) 
 		job.reportAsCsv(simResult)
 	} else {
 		job.printer.Println("FAILED")
+	}
+}
+
+func (job *MultiSetJob) listInitialOutputs(bestOutputs []multi_types.MultiProposedOutput) {
+	for _, best := range bestOutputs {
+		job.printer.Printf("::::::::: MULTI RATING %.0f :::::::: %s ::::::::\n", best.TotalRatingSum, best.Id)
+		for i, out := range best.Parts {
+			job.printer.Println(job.params[i].Label)
+			out.Report(job.printer)
+		}
 	}
 }

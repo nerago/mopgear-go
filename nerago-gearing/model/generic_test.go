@@ -7,16 +7,16 @@ import (
 	"testing"
 )
 
-var resultInt uint64
+var resultFloat float64
 
 func BenchmarkCalcSetSpecific(test *testing.B) {
 	model := Model_PallyProtMitigation_WithSet()
 	set := makeSet()
-	var v uint64
+	var v float64
 	for test.Loop() {
-		v += model.CalcRatingSolve(set)
+		v += model.CalcRatingSolveAsFloat(set)
 	}
-	resultInt = v
+	resultFloat = v
 }
 
 func makeSet() *items.SolvableItemSet {

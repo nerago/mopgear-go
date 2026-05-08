@@ -49,8 +49,6 @@ func makeEquipFetch2(a, b *SetBonus) loopedFetch {
 	return fetch
 }
 
-var resultFloat float32
-
 func makeSetBonuses() (SetBonus, SetBonus, SetBonus) {
 	return SetBonus_Empty(), SetBonus_Named("White Tiger Plate"), SetBonus_ForSpec(Spec_PaladinRet)
 }
@@ -67,7 +65,7 @@ func BenchmarkCalcBonusSolve(test *testing.B) {
 		v += b.CalcBonusSolve(equip)
 		v += c.CalcBonusSolve(equip)
 	}
-	resultFloat = v
+	resultFloat = float64(v)
 }
 
 // func BenchmarkCalcBonusSolveC(test *testing.B) {

@@ -4,6 +4,7 @@ import (
 	"iter"
 	"paladin_gearing_go/items"
 	gear_model "paladin_gearing_go/model"
+	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
 
@@ -23,7 +24,7 @@ type SolverHighsMultiParam struct {
 type SolverHighsMultiProcess struct {
 	input *inputBuilder
 
-	common map[items.ItemId][]items.FullItem
+	common multi_types.CommonOptions
 	parts  []SolverHighsMultiParam
 
 	outputColumn int
@@ -36,7 +37,7 @@ func (job *SolverHighsMultiProcess) AddSetParam(param SolverHighsMultiParam) {
 	job.parts = append(job.parts, param)
 }
 
-func (job *SolverHighsMultiProcess) SetCommon(common map[items.ItemId][]items.FullItem) {
+func (job *SolverHighsMultiProcess) SetCommon(common multi_types.CommonOptions) {
 	job.common = common
 }
 

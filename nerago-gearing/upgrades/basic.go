@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/solver"
+	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
 	"slices"
@@ -25,7 +26,7 @@ func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMa
 
 	printer.Println("FINDING BASELINE")
 	baseRating, baseSet := findBase(input, baseItems, model, printer, tracker)
-	solver.ReportSet(printer, *baseSet, model.CalcRatingFull(baseSet), model)
+	tools.ReportSetFewerParams(model, baseSet, printer)
 
 	printer.Println("TRYING ITEMS")
 	resultList := channel_op.Map_SliceToSlice(c_upgradeEachThreads, extraTasks,
@@ -202,7 +203,7 @@ func findBase(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, 
 		panic("couldn't find valid baseline set")
 	}
 
-	printer.Printf("\n%s\nBASE RATING    = %d\n\n", output.SolvedSet.TotalRated().CreateString(), output.ResultRating)
+	printer.Printf("\n%s\nBASE RATING    = %.0f\n\n", output.SolvedSet.TotalRated().CreateString(), output.ResultRating)
 	return float64(output.ResultRating), &output.FullSet
 }
 
@@ -240,7 +241,7 @@ func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemT
 		output.Report(printer) // verbose
 
 		factor := float64(output.ResultRating) / baseRating
-		printer.Printf("UPGRADE RATING = %d FACTOR = %1.3f\n", output.ResultRating, factor)
+		printer.Printf("UPGRADE RATING = %.0f FACTOR = %1.3f\n", output.ResultRating, factor)
 
 		setBonus := model.SetBonus.CountInAnySet(output.FullSet.Items())
 

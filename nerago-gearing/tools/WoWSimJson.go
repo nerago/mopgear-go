@@ -1,4 +1,4 @@
-package simulate
+package tools
 
 import (
 	"encoding/json"

@@ -3,7 +3,6 @@ package solver
 import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
-	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/withhighs"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
@@ -86,7 +85,7 @@ func finaliseSolve(solvedResult util.Optional[items.SolvableItemSet], solveOptio
 		Input:        &input,
 		SolvedSet:    solvedSet,
 		FullSet:      fullItem,
-		ResultRating: input.Model.CalcRatingSolve(&solvedSet),
+		ResultRating: input.Model.CalcRatingSolveAsFloat(&solvedSet),
 		Printer:      printer}
 }
 
@@ -96,7 +95,7 @@ type SolveOutput struct {
 	Input          *SolveInput
 	SolvedSet      items.SolvableItemSet
 	FullSet        items.FullItemSet
-	ResultRating   uint64
+	ResultRating   float64
 	FailureSummary string
 	Printer        *util.PrintRecorder
 }
@@ -114,40 +113,8 @@ func (output *SolveOutput) Report(printer *util.PrintRecorder) {
 		fullSet := output.FullSet
 		rating := output.ResultRating
 		printer.Println(output.OutputId)
-		ReportSet(printer, fullSet, rating, output.Input.Model)
+		tools.ReportSet(output.Input.Model, &fullSet, rating, printer)
 	} else {
 		printer.Printf("SET SOLVE FAILED\n")
-	}
-}
-
-func ReportSetFewerParams(printer *util.PrintRecorder, fullSet items.FullItemSet, modelObj *model.Model) {
-	printer.Printf("SET rating %d\n", modelObj.CalcRatingFull(&fullSet))
-	printer.Printf("BONUS counts %s\n", model.AllBonusesText(fullSet.Items()))
-	printer.Printf("BONUS multiply %f\n", modelObj.SetBonus.CalcBonusFull(fullSet.Items()))
-	fullSet.PrintStats(printer)
-	printEquipMap(fullSet.Items(), printer)
-
-	simulate.WowSimJson_Write(fullSet.Items(), modelObj, printer)
-
-	fullSet.DebugValidate()
-}
-
-func ReportSet(printer *util.PrintRecorder, fullSet items.FullItemSet, rating uint64, modelObj *model.Model) {
-	printer.Printf("SET rating %d\n", rating)
-	printer.Printf("BONUS counts %s\n", model.AllBonusesText(fullSet.Items()))
-	printer.Printf("BONUS multiply %f\n", modelObj.SetBonus.CalcBonusFull(fullSet.Items()))
-	fullSet.PrintStats(printer)
-	printEquipMap(fullSet.Items(), printer)
-
-	simulate.WowSimJson_Write(fullSet.Items(), modelObj, printer)
-
-	fullSet.DebugValidate()
-}
-
-func printEquipMap(fullEquipMap *items.FullEquipMap, printer *util.PrintRecorder) {
-	for _, item := range fullEquipMap {
-		if item != nil {
-			printer.Println(item.CreateString())
-		}
 	}
 }

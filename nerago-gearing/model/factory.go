@@ -4,7 +4,6 @@ import (
 	"paladin_gearing_go/files"
 	. "paladin_gearing_go/model/ratings"
 	. "paladin_gearing_go/model/requirements"
-	"paladin_gearing_go/stats"
 	. "paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
@@ -15,7 +14,7 @@ func Model_PallyProtMitigation_WithSet() Model {
 	weight := StatRatingsWeights_ReadFile(files.WeightMitiWithSetFile, false, true, false)
 	return Model{
 		Spec:             spec,
-		SimulateAs:       stats.Fight_Horridon_LowHeal,
+		SimulateAs:       Fight_Horridon_LowHeal,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:     ReforgeRules_tank,
@@ -34,7 +33,7 @@ func Model_PallyProtMitigation_NoSet() Model {
 	weight := StatRatingsWeights_ReadFile(files.WeightMitiNoSetFile, false, true, false)
 	return Model{
 		Spec:             spec,
-		SimulateAs:       stats.Fight_Animus,
+		SimulateAs:       Fight_Animus,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:     ReforgeRules_tank,
@@ -55,7 +54,7 @@ func Model_PallyProtCompromise() Model {
 	weight := StatRatingsWeights_Mix(weightMiti, 62, weightDps, 51, util.Optional_OfValue(Stat_Strength))
 	return Model{
 		Spec:             spec,
-		SimulateAs:       stats.Fight_Animus,
+		SimulateAs:       Fight_Animus,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:     ReforgeRules_tank,
@@ -75,7 +74,7 @@ func Model_PallyProtCompromise_old() Model {
 	weight := StatRatingsWeights_Mix(weightMiti, 62, weightDps, 51, util.Optional_Empty[StatType]())
 	return Model{
 		Spec:             spec,
-		SimulateAs:       stats.Fight_Animus,
+		SimulateAs:       Fight_Animus,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:     ReforgeRules_tank,
@@ -94,7 +93,7 @@ func Model_PallyProtDps() Model {
 	weight := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
 	return Model{
 		Spec:             spec,
-		SimulateAs:       stats.Fight_Horridon_HighHeal,
+		SimulateAs:       Fight_Horridon_HighHeal,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:     ReforgeRules_tank,
@@ -112,7 +111,7 @@ func Model_PallyRet() Model {
 	weight := StatRatingsWeights_ReadFile(files.WeightRetFile, false, false, false)
 	return Model{
 		Spec:             Spec_PaladinRet,
-		SimulateAs:       stats.Fight_Horridon_HighHeal,
+		SimulateAs:       Fight_Horridon_HighHeal,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_RetWideCap(),
 		ReforgeRules:     ReforgeRules_melee,
@@ -129,7 +128,7 @@ func Model_PallyRet() Model {
 func Model_Testing() Model {
 	return Model{
 		Spec:             Spec_PaladinProtDps,
-		SimulateAs:       stats.Fight_Horridon_HighHeal,
+		SimulateAs:       Fight_Horridon_HighHeal,
 		StatRatings:      StatRatingsWeights_Testing(),
 		StatRequirements: StatRequirementsHitExpertise_None(),
 		ReforgeRules:     ReforgeRules_tank,
