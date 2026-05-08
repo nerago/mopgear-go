@@ -1,60 +1,15 @@
 package items
 
-import (
-	"paladin_gearing_go/stats"
-	. "paladin_gearing_go/stats"
-)
-
-// /////////////////////////////////////////////////////////////
-type SolvableItem struct {
-	total  StatBlock
-	itemId ItemId
-}
-
-func SolvableItem_Of(item FullItem) SolvableItem {
-	return SolvableItem{
-		itemId: item.Ref.ItemId,
-		total:  item.total}
-}
-
-func SolvableItem_ForTest(itemid ItemId, block StatBlock) SolvableItem {
-	return SolvableItem{
-		itemId: itemid,
-		total:  block}
-}
-
-func (item *SolvableItem) ItemId() ItemId {
-	return item.itemId
-}
-
-func (item *SolvableItem) IsEmpty() bool {
-	return item.itemId == 0
-}
-
-func (item *SolvableItem) TotalCap() *StatBlock {
-	return &item.total
-}
-
-func (item *SolvableItem) TotalRated() *StatBlock {
-	return &item.total
-}
-
-func (item *SolvableItem) Equals(other *SolvableItem) bool {
-	return item.itemId == other.itemId && stats.StatBlock_Equals(&item.total, &other.total)
-}
-
-func (item *SolvableItem) EqualsFull(other *FullItem) bool {
-	return item.itemId == other.ItemId() && stats.StatBlock_Equals(&item.total, &other.total)
-}
+import "paladin_gearing_go/stats"
 
 // /////////////////////////////////////////////////////////////
 type SolvableItemSet struct {
-	total StatBlock
+	total stats.StatBlock
 	items SolvableEquipMap
 }
 
 func SolvableItemSet_Of(equipMap SolvableEquipMap) SolvableItemSet {
-	result := SolvableItemSet{items: equipMap, total: StatBlock{}}
+	result := SolvableItemSet{items: equipMap, total: stats.StatBlock{}}
 	SolvableItemSet_RecalculateTotal(&result)
 	return result
 }
@@ -73,11 +28,11 @@ func (set *SolvableItemSet) Items() *SolvableEquipMap {
 
 func (set *SolvableItemSet) Clear() {
 	set.items = SolvableEquipMap{}
-	set.total = StatBlock{}
+	set.total = stats.StatBlock{}
 }
 
 func (set *SolvableItemSet) ClearTotals() {
-	set.total = StatBlock{}
+	set.total = stats.StatBlock{}
 }
 
 // obsolete, use AddItem_DeferCalc and SolvableItemSet_RecalculateTotal
@@ -100,18 +55,18 @@ func (set *SolvableItemSet) AddItem_DeferCalc_ExpectEmpty(slot SlotEquip, item *
 func (set *SolvableItemSet) ReplaceItem_Into(slot SlotEquip, item *SolvableItem, dest *SolvableItemSet) {
 	oldItem := set.items[slot]
 	set.items.ReplaceItem_Into(slot, item, &dest.items)
-	StatBlock_AddAndSubtract_Into(&set.total, &item.total, &oldItem.total, &dest.total)
+	stats.StatBlock_AddAndSubtract_Into(&set.total, &item.total, &oldItem.total, &dest.total)
 }
 
-func (set *SolvableItemSet) TotalCap() *StatBlock {
+func (set *SolvableItemSet) TotalCap() *stats.StatBlock {
 	return &set.total
 }
 
-func (set *SolvableItemSet) TotalRated() *StatBlock {
+func (set *SolvableItemSet) TotalRated() *stats.StatBlock {
 	return &set.total
 }
 
 func isMatch(fullItem *FullItem, solveItem *SolvableItem) bool {
 	return fullItem.ItemId() == solveItem.itemId &&
-		StatBlock_Equals(&fullItem.total, &solveItem.total)
+		stats.StatBlock_Equals(&fullItem.total, &solveItem.total)
 }

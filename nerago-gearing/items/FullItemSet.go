@@ -5,52 +5,47 @@ import (
 	"paladin_gearing_go/util"
 )
 
-type fullItem_common struct {
-	// generally fixed from imports
-	Ref         ItemRef
-	Slot        SlotItem
-	BaseName    string
-	ArmorType   stats.ArmorType
-	PrimaryStat stats.PrimaryStatType
-	SocketSlots []stats.SocketType
-	SocketBonus stats.StatBlock
-	Phase       int8
-
-	// specific item instance choices
-	Reforge       stats.ReforgeRecipe
-	GemChoice     []stats.GemInfo
-	EnchantChoice uint32
-	RandomSuffix  int32
-
-	// stats for different purposes
-	StatBase    stats.StatBlock // constant stats post reforge
-	StatEnchant stats.StatBlock // stats added from gems, enchant, or trinket model
+// /////////////////////////////////////////////////////////////
+type FullItemSet struct {
+	items FullEquipMap
+	total stats.StatBlock
 }
 
-func (item *fullItem_common) AppendFullName(build *util.StringBuild2) {
-	build.WriteString(item.BaseName)
-	if !item.Reforge.IsEmpty() {
-		build.WriteRune(' ')
-		item.Reforge.AppendString(build)
+func FullItemSet_FromSolved(solvedSet SolvableItemSet, optionsMap *FullOptionsMap) FullItemSet {
+	fullMap := FullEquipMap{}
+	for slot, solveItem := range solvedSet.items {
+		if solveItem != nil {
+			fullItem := findMatch(optionsMap[slot], solveItem)
+			fullMap[slot] = fullItem
+		}
 	}
+	return FullItemSet{items: fullMap, total: solvedSet.total}
 }
 
-func (item *fullItem_common) ItemId() ItemId {
-	return item.Ref.ItemId
+func FullItemSet_FromMap(equipMap FullEquipMap) FullItemSet {
+	itemSet := FullItemSet{equipMap, stats.StatBlock{}}
+	for _, item := range equipMap {
+		if item != nil {
+			stats.StatBlock_Increment_Mutating(&itemSet.total, &item.total)
+		}
+	}
+	return itemSet
 }
 
-func (item *fullItem_common) IsEmpty() bool {
-	return item.Ref.ItemId == 0
+func (itemSet *FullItemSet) PrintStats(printer *util.PrintRecorder) {
+	printer.Printf("STATS %s\n", itemSet.total.CreateString())
 }
 
-func (item *FullItem) Equals(other *FullItem) bool {
-	return item.Ref.ItemId == other.Ref.ItemId && item.Ref.ItemLevel == other.Ref.ItemLevel && item.Slot == other.Slot &&
-		stats.StatBlock_Equals(&item.StatBase, &other.StatBase) && stats.StatBlock_Equals(&item.StatEnchant, &other.StatEnchant)
+func (itemSet *FullItemSet) TotalCap() *stats.StatBlock {
+	return &itemSet.total
 }
 
-func (item *FullItem) EqualsExceptEnchant(other *FullItem) bool {
-	return item.Ref.ItemId == other.Ref.ItemId && item.Ref.ItemLevel == other.Ref.ItemLevel && item.Slot == other.Slot &&
-		stats.StatBlock_Equals(&item.StatBase, &other.StatBase)
+func (itemSet *FullItemSet) TotalRated() *stats.StatBlock {
+	return &itemSet.total
+}
+
+func (itemSet *FullItemSet) Items() *FullEquipMap {
+	return &itemSet.items
 }
 
 func (itemSet *FullItemSet) Equals(other *FullItemSet) bool {
