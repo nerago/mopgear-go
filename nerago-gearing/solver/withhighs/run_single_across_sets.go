@@ -13,7 +13,7 @@ func RunSingleAcrossSets_ReturnBest(itemOptions *items.SolvableOptionsMap, model
 	all := RunSingleAcrossSets_ReturnAll(itemOptions, model, printer)
 	for _, itemSet := range all {
 		if model.CheckSet(&itemSet) {
-			best.Offer(&itemSet, model.CalcRatingSolveAsFloat(&itemSet))
+			best.Offer(&itemSet, model.CalcRatingSolve(&itemSet))
 		}
 	}
 

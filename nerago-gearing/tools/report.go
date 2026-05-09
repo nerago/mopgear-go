@@ -9,7 +9,7 @@ import (
 // reporting
 
 func ReportSetFewerParams(model *model.Model, fullSet *items.FullItemSet, printer *util.PrintRecorder) {
-	ReportSet(model, fullSet, model.CalcRatingFullAsFloat(fullSet), printer)
+	ReportSet(model, fullSet, model.CalcRatingFull(fullSet), printer)
 }
 
 func ReportSet(model_obj *model.Model, fullSet *items.FullItemSet, rating float64, printer *util.PrintRecorder) {

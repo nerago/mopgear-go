@@ -14,6 +14,7 @@ import (
 	"strconv"
 )
 
+// possible entry point
 func FindUpgrades_Sim_AllRaid_Run(input *FindUpgrades_MultiSpec_Sim, printer *util.PrintRecorder) {
 	outputMap, _ := findUpgrades_AllRaid(&input.FindUpgrades_SimInputs, input.Specs)
 

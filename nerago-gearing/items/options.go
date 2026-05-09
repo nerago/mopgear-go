@@ -302,3 +302,4 @@ func (optionsMap *SolvableOptionsMap) AllItemSlotSeq() iter.Seq2[SlotEquip, *Sol
 		}
 	}
 }
+

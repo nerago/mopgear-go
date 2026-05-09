@@ -14,7 +14,7 @@ func BenchmarkCalcSetSpecific(test *testing.B) {
 	set := makeSet()
 	var v float64
 	for test.Loop() {
-		v += model.CalcRatingSolveAsFloat(set)
+		v += model.CalcRatingSolve(set)
 	}
 	resultFloat = v
 }

@@ -85,7 +85,7 @@ func finaliseSolve(solvedResult util.Optional[items.SolvableItemSet], solveOptio
 		Input:        &input,
 		SolvedSet:    solvedSet,
 		FullSet:      fullItem,
-		ResultRating: input.Model.CalcRatingSolveAsFloat(&solvedSet),
+		ResultRating: input.Model.CalcRatingSolve(&solvedSet),
 		Printer:      printer}
 }
 

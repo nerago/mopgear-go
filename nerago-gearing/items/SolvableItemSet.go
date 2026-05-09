@@ -58,11 +58,7 @@ func (set *SolvableItemSet) ReplaceItem_Into(slot SlotEquip, item *SolvableItem,
 	stats.StatBlock_AddAndSubtract_Into(&set.total, &item.total, &oldItem.total, &dest.total)
 }
 
-func (set *SolvableItemSet) TotalCap() *stats.StatBlock {
-	return &set.total
-}
-
-func (set *SolvableItemSet) TotalRated() *stats.StatBlock {
+func (set *SolvableItemSet) Total() *stats.StatBlock {
 	return &set.total
 }
 

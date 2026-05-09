@@ -18,8 +18,8 @@ const (
 	// simRunSize     = simulate.RunSize_Medium
 	// simRunSize  = simulate.RunSize_QuickDirty
 
-	itemSolveSize  = solver.SolveSize_Medium
-	simRunSize     = simulate.RunSize_QuickDirty
+	itemSolveSize = solver.SolveSize_Medium
+	simRunSize    = simulate.RunSize_QuickDirty
 
 	// itemSolveSize = solver.SolveSize_Medium
 	// simRunSize    = simulate.RunSize_Medium

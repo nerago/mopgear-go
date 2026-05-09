@@ -66,7 +66,7 @@ func makeExtraTasks(input *FindUpgrades_BasicInputs, extraItems []*items.FullIte
 		for _, slot := range extra.Slot.ToSlotEquipOptions() {
 			canUpgrade := canPerformSpecifiedUpgrade(input, extra, slot, baseItems, bagsFile, printer)
 			switch canUpgrade {
-			case CanUpgrade_Yes, CanUpgrade_Equipped, CanUpgrade_Equipped_Similar, CanUpgrade_AvailableInBags:
+			case items.CanUpgrade_Yes, items.CanUpgrade_Equipped, items.CanUpgrade_Equipped_Similar, items.CanUpgrade_AvailableInBags:
 				taskList = append(taskList, upgradeItemTask{item: extra, slot: slot, goal: goal, boss: boss, canUpgrade: canUpgrade})
 			}
 		}
@@ -84,111 +84,21 @@ func addSubstituteItems(optionsMap *items.FullOptionsMap, substituteItems []item
 	}
 }
 
-type CanUpgradeResult int8
-
-const (
-	CanUpgrade_Yes              CanUpgradeResult = iota
-	CanUpgrade_Equipped         CanUpgradeResult = iota
-	CanUpgrade_Equipped_Similar CanUpgradeResult = iota
-	CanUpgrade_AvailableInBags  CanUpgradeResult = iota
-	CanUpgrade_InvalidAlways    CanUpgradeResult = iota
-)
-
-func (can CanUpgradeResult) TextLong() string {
-	switch can {
-	case CanUpgrade_Equipped:
-		return "equipped"
-	case CanUpgrade_Equipped_Similar:
-		return "equipped similar"
-	case CanUpgrade_AvailableInBags:
-		return "available in bags"
-	case CanUpgrade_InvalidAlways:
-		return "invalid"
-	default:
-		return ""
-	}
-}
-
-func (can CanUpgradeResult) TextAbbrev() string {
-	switch can {
-	case CanUpgrade_Equipped:
-		return "E"
-	case CanUpgrade_Equipped_Similar:
-		return "e"
-	case CanUpgrade_AvailableInBags:
-		return "b"
-	case CanUpgrade_InvalidAlways:
-		return "X"
-	default:
-		return ""
-	}
-}
-
-func canPerformSpecifiedUpgrade(input *FindUpgrades_BasicInputs, extra *items.FullItem, slot items.SlotEquip, baseItems *items.FullOptionsMap, bagsFile loaders.EquippedArray, printer *util.PrintRecorder) CanUpgradeResult {
+func canPerformSpecifiedUpgrade(input *FindUpgrades_BasicInputs, extra *items.FullItem, slot items.SlotEquip, baseItems *items.FullOptionsMap, bagsFile loaders.EquippedArray, printer *util.PrintRecorder) items.CanUpgradeResult {
 	if slices.Contains(input.IgnoredItems, extra.ItemId()) {
-		return CanUpgrade_InvalidAlways
+		return items.CanUpgrade_InvalidAlways
 	}
 
-	if result := CouldAddUpgradeToSet(baseItems, slot, printer, extra); result != CanUpgrade_Yes {
+	if result := baseItems.CouldAddUpgrade_EquipSlot(slot, extra, printer); result != items.CanUpgrade_Yes {
 		return result
 	}
 
 	if bagsFile.HasAnyWithItemId(extra.ItemId()) {
 		printer.Println("ALREADY AVAILABLE IN BAG " + extra.CreateString())
-		return CanUpgrade_AvailableInBags
+		return items.CanUpgrade_AvailableInBags
 	}
 
-	return CanUpgrade_Yes
-}
-
-func CouldAddUpgradeToSet_ItemSlot(baseItems *items.FullOptionsMap, slot items.SlotItem, printer *util.PrintRecorder, extra *items.FullItem) CanUpgradeResult {
-	result := CanUpgrade_InvalidAlways
-	for _, slotEquip := range slot.ToSlotEquipOptions() {
-		result = CouldAddUpgradeToSet(baseItems, slotEquip, printer, extra)
-		if result == CanUpgrade_Yes {
-			return result
-		}
-	}
-	return result
-}
-
-func CouldAddUpgradeToSet(baseItems *items.FullOptionsMap, slot items.SlotEquip, printer *util.PrintRecorder, extra *items.FullItem) CanUpgradeResult {
-	if !baseItems.Has(slot) {
-		printer.Println("SLOT NOT USED IN CURRENT SET " + extra.CreateString())
-		return CanUpgrade_InvalidAlways
-	}
-
-	if slot == items.Equip_Weapon {
-		currentWeapon := baseItems.Get(items.Equip_Weapon)[0]
-		if extra.Slot != currentWeapon.Slot {
-			printer.Println("WRONG WEAPON TYPE " + extra.CreateString())
-			return CanUpgrade_InvalidAlways
-		}
-	}
-
-	if slot == items.Equip_Offhand {
-		currentWeapon := baseItems.Get(items.Equip_Weapon)[0]
-		if currentWeapon.Slot == items.Item_Weapon2H {
-			printer.Println("INVALID OFFHAND WITH 2H WEAPON " + extra.CreateString())
-			return CanUpgrade_InvalidAlways
-		}
-	}
-
-	if baseItems.IncludesItemIdInSlot(extra.ItemId(), slot) {
-		printer.Println("SAME ITEM " + extra.CreateString())
-		return CanUpgrade_Equipped
-	}
-
-	paired := slot.PairedSlot()
-	if paired != -1 && baseItems.IncludesItemIdInSlot(extra.ItemId(), paired) {
-		printer.Println("SAME ITEM ID IN OTHER SLOT " + extra.CreateString())
-		return CanUpgrade_Equipped
-	} else if paired != -1 && baseItems.IncludesUniqueEquippedViolationInSlot(extra.BaseName, paired) {
-		printer.Println("RELATED ITEM NAME IN OTHER SLOT (unique equipped) " + extra.CreateString())
-		return CanUpgrade_Equipped_Similar
-	}
-
-	return CanUpgrade_Yes
+	return items.CanUpgrade_Yes
 }
 
 func findBase(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress) (float64, *items.FullItemSet) {
@@ -203,7 +113,7 @@ func findBase(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, 
 		panic("couldn't find valid baseline set")
 	}
 
-	printer.Printf("\n%s\nBASE RATING    = %.0f\n\n", output.SolvedSet.TotalRated().CreateString(), output.ResultRating)
+	printer.Printf("\n%s\nBASE RATING    = %.0f\n\n", output.SolvedSet.Total().CreateString(), output.ResultRating)
 	return float64(output.ResultRating), &output.FullSet
 }
 
@@ -224,7 +134,7 @@ func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemT
 	jobItems := baseItems.Clone()
 	jobItems[slot] = newOptions
 
-	if extraTask.canUpgrade == CanUpgrade_Equipped || extraTask.canUpgrade == CanUpgrade_Equipped_Similar {
+	if extraTask.canUpgrade == items.CanUpgrade_Equipped || extraTask.canUpgrade == items.CanUpgrade_Equipped_Similar {
 		removePairedSimilar(&jobItems, slot, item, substituteEmptySlotOnly, model, printer)
 	}
 
@@ -237,7 +147,7 @@ func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemT
 
 	var result upgradeItemResult
 	if output.Success {
-		printer.Printf("SET STATS %s\n", output.SolvedSet.TotalRated().CreateString())
+		printer.Printf("SET STATS %s\n", output.SolvedSet.Total().CreateString())
 		output.Report(printer) // verbose
 
 		factor := float64(output.ResultRating) / baseRating

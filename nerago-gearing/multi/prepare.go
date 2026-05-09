@@ -6,7 +6,6 @@ import (
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/solver"
-	"paladin_gearing_go/upgrades"
 	"paladin_gearing_go/util"
 	"slices"
 )
@@ -118,7 +117,7 @@ func (param *multiSetParamInternal) tryAddExtraFromBags(equipped *loaders.Equipp
 	if db.WowSimDB_HasItemId(equipped.ItemId) {
 		// bail early before considering full item stats/enchants/etc that might not fit spec
 		basicVersion := db.WowSimDB_ByIdAndUpgrade(equipped.ItemId, 0)
-		if upgrades.CouldAddUpgradeToSet_ItemSlot(&param.itemOptions, basicVersion.Slot, param.job.printer, basicVersion) != upgrades.CanUpgrade_Yes {
+		if param.itemOptions.CouldAddUpgrade_ItemSlot(basicVersion.Slot, basicVersion, param.job.printer) != items.CanUpgrade_Yes {
 			return
 		}
 
@@ -133,7 +132,7 @@ func (param *multiSetParamInternal) tryAddExtraFromBags(equipped *loaders.Equipp
 
 		added := false
 		for _, slot := range example.Slot.ToSlotEquipOptions() {
-			if upgrades.CouldAddUpgradeToSet(&param.itemOptions, slot, param.job.printer, example) == upgrades.CanUpgrade_Yes {
+			if param.itemOptions.CouldAddUpgrade_EquipSlot(slot, example, param.job.printer) == items.CanUpgrade_Yes {
 				param.job.printer.Printf("ADDITIONAL EXTRA OPTION from bags %s\n", example.CreateString())
 				param.itemOptions.AddSeveralOptionsSpecific(slot, options)
 				added = true

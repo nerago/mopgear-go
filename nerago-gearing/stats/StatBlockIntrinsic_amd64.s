@@ -71,13 +71,13 @@ TEXT ·StatBlock_Equals(SB), NOSPLIT|NOFRAME, $0-17
 
     RET
 
-TEXT ·StatBlock_MultiplyForTotalSum_Float(SB), NOSPLIT|NOFRAME, $0-20
+TEXT ·StatBlock_MultiplyForTotalSum(SB), NOSPLIT|NOFRAME, $0-24
     MOVQ          a+0(FP), AX
     MOVQ          b+8(FP), BX
 
     // first 8 values load and convert to float32
     VCVTDQ2PS        (AX), Y1
-    VCVTDQ2PS        (BX), Y2 
+    VCVTDQ2PS        (BX), Y2
     // next 4 values load and convert to float32
     VCVTDQ2PS      32(AX), X3
     VCVTDQ2PS      32(BX), X4
@@ -87,12 +87,17 @@ TEXT ·StatBlock_MultiplyForTotalSum_Float(SB), NOSPLIT|NOFRAME, $0-20
     VDPPS           $0xF1, Y1, Y2, Y5
     VDPPS           $0xF1, X3, X4, X6
 
-    // add subtotals 
-    VADDSS             X5, X6, X0 // add X6, Y5(low half)
+    // convert subtotals to double
     VEXTRACTF128       $1, Y5, X7 // grab Y5(top half)
-    VADDSS             X0, X7, X0 // add Y5(top half)
+    VCVTSS2SD          X7, X7, X7 // convert top half to double
+    VCVTSS2SD          X5, X5, X5 // convert lower half to double, old junk may still remain in upper part of Y5, ignore
+    VCVTSS2SD          X6, X6, X6 // convert the single float to double
+
+    // add subtotals 
+    VADDSD             X5, X6, X0 // add X6, Y5(low half)
+    VADDSD             X0, X7, X0 // add Y5(top half)
 
     // result
-    MOVSS              X0, ret+16(FP)
+    MOVSD              X0, ret+16(FP)
 
     RET

@@ -37,14 +37,14 @@ type upgradeItemTask struct {
 	slot       items.SlotEquip
 	goal       UpgradeGoal
 	boss       string
-	canUpgrade CanUpgradeResult
+	canUpgrade items.CanUpgradeResult
 }
 
 func (task upgradeItemTask) actuallyAttemptUpgrade(forceIncludeMost bool) bool {
 	if forceIncludeMost {
-		return task.canUpgrade != CanUpgrade_InvalidAlways
+		return task.canUpgrade != items.CanUpgrade_InvalidAlways
 	} else {
-		return task.canUpgrade == CanUpgrade_Yes || task.canUpgrade == CanUpgrade_AvailableInBags
+		return task.canUpgrade == items.CanUpgrade_Yes || task.canUpgrade == items.CanUpgrade_AvailableInBags
 	}
 }
 
@@ -86,7 +86,7 @@ func (result upgradeItemResult) increaseWeightsRaw() float64 {
 
 func (result upgradeItemResult) increaseWeightsStr(prefixNote bool) string {
 	if result.factor.IsEmpty() {
-		if result.canUpgrade != CanUpgrade_Yes {
+		if result.canUpgrade != items.CanUpgrade_Yes {
 			return result.canUpgrade.TextLong()
 		}
 		return ""
@@ -95,7 +95,7 @@ func (result upgradeItemResult) increaseWeightsStr(prefixNote bool) string {
 	percent := (result.factor.GetOrPanic() - 1.0) * 100
 	str := formatIncreaseGeneric(percent)
 
-	if prefixNote && result.canUpgrade != CanUpgrade_Yes {
+	if prefixNote && result.canUpgrade != items.CanUpgrade_Yes {
 		str = result.makeNoteAbbrev() + " " + str
 	}
 	return str
@@ -143,14 +143,14 @@ func (result upgradeItemResultWithSim) increaseSim() float64 {
 
 func (result upgradeItemResultWithSim) increaseSimStr(prefixNote bool) string {
 	if result.sim.IsEmpty() {
-		if result.canUpgrade != CanUpgrade_Yes {
+		if result.canUpgrade != items.CanUpgrade_Yes {
 			return result.canUpgrade.TextLong()
 		}
 		return ""
 	}
 
 	str := formatIncreaseGeneric(result.increaseSim())
-	if prefixNote && result.canUpgrade != CanUpgrade_Yes {
+	if prefixNote && result.canUpgrade != items.CanUpgrade_Yes {
 		str = result.makeNoteAbbrev() + " " + str
 	}
 	return str

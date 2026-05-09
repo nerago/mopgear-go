@@ -53,11 +53,7 @@ func (item *FullItem) ChangeDerivedStatFields() {
 	stats.StatBlock_Add_Into(&item.StatBase, &item.StatEnchant, &item.total)
 }
 
-func (item *FullItem) TotalCap() *stats.StatBlock {
-	return &item.total
-}
-
-func (item *FullItem) TotalRated() *stats.StatBlock {
+func (item *FullItem) Total() *stats.StatBlock {
 	return &item.total
 }
 

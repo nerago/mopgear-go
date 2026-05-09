@@ -89,16 +89,16 @@ func relativeRatingsCompromise(printer *util.PrintRecorder) {
 	var targetCombined = 10000000000.0
 	targetRatio := 0.7
 
-	rateA1 := modelMitiNoSet.CalcRatingFullAsFloat(&itemSetMitiNoSet)
-	rateA2 := modelDps.CalcRatingFullAsFloat(&itemSetMitiNoSet)
+	rateA1 := modelMitiNoSet.CalcRatingFull(&itemSetMitiNoSet)
+	rateA2 := modelDps.CalcRatingFull(&itemSetMitiNoSet)
 	printer.Printf("A %f %f\n", rateA1, rateA2)
 	multA1 := targetCombined * targetRatio / rateA1
 	multA2 := targetCombined * (1 - targetRatio) / rateA2
 	printer.Printf("* %f %f\n", multA1, multA2)
 	printer.Printf("? %f %f\n", multA1*rateA1/targetCombined, multA2*rateA2/targetCombined)
 
-	rateB1 := modelMitiNoSet.CalcRatingFullAsFloat(&itemSetDps)
-	rateB2 := modelDps.CalcRatingFullAsFloat(&itemSetDps)
+	rateB1 := modelMitiNoSet.CalcRatingFull(&itemSetDps)
+	rateB2 := modelDps.CalcRatingFull(&itemSetDps)
 	printer.Printf("B %f %f\n", rateB1, rateB2)
 	multB1 := targetCombined * targetRatio / rateB1
 	multB2 := targetCombined * (1 - targetRatio) / rateB2

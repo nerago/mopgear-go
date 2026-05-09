@@ -28,7 +28,7 @@ func (set *FullItemSet) DebugValidate() {
 
 	recalcTotal := StatBlock{}
 	for item := range equipMap.AllItemSeq() {
-		StatBlock_Increment_Mutating(&recalcTotal, item.TotalCap())
+		StatBlock_Increment_Mutating(&recalcTotal, item.Total())
 	}
 
 	if !StatBlock_Equals(&recalcTotal, &previousTotal) {

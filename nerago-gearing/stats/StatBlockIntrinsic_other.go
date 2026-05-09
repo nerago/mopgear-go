@@ -25,10 +25,11 @@ func StatBlock_AddAndSubtract_Into(add1, add2, subtract, out *StatBlock) {
 	}
 }
 
-func StatBlock_MultiplyForTotalSum_Float(a, b *StatBlock) float32 {
-	var result float32 = 0
+func StatBlock_MultiplyForTotalSum(a, b *StatBlock) float64 {
+	// doesn't exactly match order of operations in assembly version anymore, but shouldn't mind floating precision anyway
+	var result float64 = 0
 	for i := range a {
-		result += float32(a[i]) * float32(b[i])
+		result += float64(a[i]) * float64(b[i])
 	}
 	return result
 }

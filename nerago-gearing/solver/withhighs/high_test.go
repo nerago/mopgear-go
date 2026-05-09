@@ -28,7 +28,7 @@ func TestSolverBasicRun(t *testing.T) {
 }
 
 func equals(expectSet, resultSet items.SolvableItemSet) bool {
-	if !stats.StatBlock_Equals(expectSet.TotalRated(), resultSet.TotalRated()) {
+	if !stats.StatBlock_Equals(expectSet.Total(), resultSet.Total()) {
 		return false
 	}
 	for i := range expectSet.Items() {

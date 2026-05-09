@@ -13,7 +13,6 @@ import (
 	"paladin_gearing_go/solver/withhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
-	"paladin_gearing_go/upgrades"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_rank"
 	"slices"
@@ -123,9 +122,9 @@ func checkHighs(printer *util.PrintRecorder) {
 	compareSolveOuput.Report(printer)
 
 	printer.Printf("ratio of results %.0f %.0f %f\n",
-		model.CalcRatingFullAsFloat(&fullItemSet),
-		model.CalcRatingFullAsFloat(&compareSolveOuput.FullSet),
-		model.CalcRatingFullAsFloat(&fullItemSet)/model.CalcRatingFullAsFloat(&compareSolveOuput.FullSet),
+		model.CalcRatingFull(&fullItemSet),
+		model.CalcRatingFull(&compareSolveOuput.FullSet),
+		model.CalcRatingFull(&fullItemSet)/model.CalcRatingFull(&compareSolveOuput.FullSet),
 	)
 }
 
@@ -215,7 +214,7 @@ func slotRating(printer *util.PrintRecorder) {
 
 	best := util_rank.BestCollector1[items.FullItem]{}
 	for _, item := range itemArray {
-		rate := model.CalcRatingFullItemAsFloat(&item)
+		rate := model.CalcRatingFullItem(&item)
 		printer.Println(item.CreateString())
 		printer.Printf("%.0f\n\n", rate)
 		best.Offer(&item, rate)
@@ -294,12 +293,6 @@ func findMitigationWithCapicitance(printer *util.PrintRecorder) {
 		if slices.Contains(ignoredItems, equip.ItemId) {
 			continue
 		}
-		if equip.ItemId == 96534 { // missing gem in export (temporary issue)
-			if len(equip.GemChoice) == 1 {
-				continue
-			}
-			// equip.GemChoice = []uint32{76667, 76699}
-		}
 		equip.UpgradeStep = 2
 		opts, example := setup.OptionsSetup_Single_FromEquipped(equip, &model, setup.MissingEnchant_Fix, printer)
 
@@ -307,15 +300,6 @@ func findMitigationWithCapicitance(printer *util.PrintRecorder) {
 			if len(example.GemChoice) == 0 {
 				panic("dunno")
 			}
-			// switch example.GemChoice[0].Id {
-			// case 95344, 95346:
-			// 	for i := range opts {
-			// 		opts[i].GemChoice[0] = db.GemData_ById(95346)
-			// 	}
-
-			// default:
-			// 	panic("unexpected meta")
-			// }
 
 			if len(equip.GemChoice) == 0 {
 				printer.Printf("(head) %s none\n", example.BaseName)
@@ -324,8 +308,8 @@ func findMitigationWithCapicitance(printer *util.PrintRecorder) {
 			}
 		}
 
-		can := upgrades.CouldAddUpgradeToSet_ItemSlot(&itemOptions, example.Slot, printer, example)
-		if can == upgrades.CanUpgrade_Yes || can == upgrades.CanUpgrade_Equipped_Similar {
+		can := itemOptions.CouldAddUpgrade_ItemSlot(example.Slot, example, printer)
+		if can == items.CanUpgrade_Yes || can == items.CanUpgrade_Equipped_Similar {
 			itemOptions.AddSeveralOptions(example.Slot, opts)
 		}
 	}
@@ -635,7 +619,7 @@ func basicListRatingEach(printer *util.PrintRecorder) {
 		equipItems := loaders.GearFileReader_Read(group.file)
 		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, util.PrintRecorder_HoldAll())
 		itemSet := items.FullItemSet_FromMap(equipMap)
-		rating := group.model.CalcRatingFullAsFloat(&itemSet)
+		rating := group.model.CalcRatingFull(&itemSet)
 		tools.ReportSet(&group.model, &itemSet, rating, printer)
 
 		printer.Printf("%20s %10.0f %s\n", group.label, rating, group.model.StatRatings.Weights().CreateString())
@@ -685,7 +669,7 @@ func solveForRatings(printer *util.PrintRecorder) {
 		equipItems := loaders.GearFileReader_Read(group.file)
 		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, util.PrintRecorder_HoldAll())
 		itemSet := items.FullItemSet_FromMap(equipMap)
-		rating := group.model.CalcRatingFullAsFloat(&itemSet)
+		rating := group.model.CalcRatingFull(&itemSet)
 		// solver.ReportSet(printer, itemSet, rating, &group.model)
 
 		prescaleMult := prescaleTarget / rating

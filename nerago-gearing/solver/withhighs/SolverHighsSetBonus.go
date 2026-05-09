@@ -338,7 +338,7 @@ func (setup *setupInputsForSetBonus) addItem(itemSlot items.SlotEquip, item *ite
 
 	// add rating via a summation condition
 	// scale down ratings to keep numbers small for solver stability
-	rating := float64(gear_model.CalcRatingSolveItemAsFloat(item)) / c_scaled_ratings
+	rating := float64(gear_model.CalcRatingSolveItem(item)) / c_scaled_ratings
 	setup.baseRatingSumRow.add(columnIndex, rating)
 
 	// specific hit/expertise values for hi/lo limits
@@ -402,7 +402,7 @@ func (setup *setupInputsForSetBonus) buildResultSet(solution *highs.Solution, it
 }
 
 func checkSetRatingIsObjective(solution *highs.Solution, itemSet *items.SolvableItemSet, gear_model *gear_model.Model) {
-	checkRating := gear_model.CalcRatingSolveAsFloat(itemSet)
+	checkRating := gear_model.CalcRatingSolve(itemSet)
 	if !floatsApproxEquals(solution.Objective*c_scaled_ratings, float64(checkRating)) {
 		panic("rating inconsistent " + strconv.FormatFloat(solution.Objective, 'f', 0, 64) + " " + strconv.FormatFloat(float64(checkRating), 'f', 0, 32))
 	}

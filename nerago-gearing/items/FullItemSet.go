@@ -36,11 +36,7 @@ func (itemSet *FullItemSet) PrintStats(printer *util.PrintRecorder) {
 	printer.Printf("STATS %s\n", itemSet.total.CreateString())
 }
 
-func (itemSet *FullItemSet) TotalCap() *stats.StatBlock {
-	return &itemSet.total
-}
-
-func (itemSet *FullItemSet) TotalRated() *stats.StatBlock {
+func (itemSet *FullItemSet) Total() *stats.StatBlock {
 	return &itemSet.total
 }
 

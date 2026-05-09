@@ -55,7 +55,7 @@ func makeSetBonuses() (SetBonus, SetBonus, SetBonus) {
 
 func BenchmarkCalcBonusSolve(test *testing.B) {
 	a, b, c := makeSetBonuses()
-	var v float32
+	var v float64
 
 	equipFetch := makeEquipFetch()
 
@@ -163,7 +163,7 @@ func TestCalcBonusCompared(test *testing.T) {
 
 	sets := []*SetBonus{&a, &b, &c}
 
-	impls := []func(*SetBonus, *SolvableEquipMap) float32{
+	impls := []func(*SetBonus, *SolvableEquipMap) float64{
 		(*SetBonus).CalcBonusSolve,
 		// (*SetBonus).CalcBonusSolveUseAssem,
 		// (*SetBonus).CalcBonusSolveAssemAssumeNonNull,
@@ -175,7 +175,7 @@ func TestCalcBonusCompared(test *testing.T) {
 		equip := equipFetch.next()
 
 		for t, set := range sets {
-			var expect float32
+			var expect float64
 			for i, call := range impls {
 				val := call(set, equip)
 				fmt.Printf("set=%d func=%d %f\n", t, i, val)

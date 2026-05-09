@@ -71,7 +71,7 @@ func findAccepableSet(proposedList []items.SolvableItemSet, model *model.Model) 
 	best := util_rank.BestCollector1[items.SolvableItemSet]{}
 	for _, set := range proposedList {
 		if model.CheckSet(&set) {
-			rate := model.CalcRatingSolveAsFloat(&set)
+			rate := model.CalcRatingSolve(&set)
 			best.Offer(&set, rate)
 		}
 	}
@@ -81,16 +81,16 @@ func findAccepableSet(proposedList []items.SolvableItemSet, model *model.Model) 
 func discoverCommonProblem(proposedList []items.SolvableItemSet, require *requirements.StatRequirementsHitExpertise) string {
 	var hitLow, hitHigh, expLow, expHigh int
 	for _, set := range proposedList {
-		if require.IsLow(stats.Stat_Hit, set.TotalCap().Hit()) {
+		if require.IsLow(stats.Stat_Hit, set.Total().Hit()) {
 			hitLow++
 		}
-		if require.IsHigh(stats.Stat_Hit, set.TotalCap().Hit()) {
+		if require.IsHigh(stats.Stat_Hit, set.Total().Hit()) {
 			hitHigh++
 		}
-		if require.IsLow(stats.Stat_Expertise, set.TotalCap().Expertise()) {
+		if require.IsLow(stats.Stat_Expertise, set.Total().Expertise()) {
 			expLow++
 		}
-		if require.IsHigh(stats.Stat_Expertise, set.TotalCap().Expertise()) {
+		if require.IsHigh(stats.Stat_Expertise, set.Total().Expertise()) {
 			expHigh++
 		}
 	}

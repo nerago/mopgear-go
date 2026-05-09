@@ -71,7 +71,7 @@ func (setup *setupInputForBasic) prepareRequiredSets(requiredSet RequiredSetCoun
 }
 
 func (setup *setupInputForBasic) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, model *gear_model.Model) {
-	rating := float64(model.CalcRatingSolveItemAsFloat(item))
+	rating := float64(model.CalcRatingSolveItem(item))
 
 	// item version "boolean" (0 or 1)
 	columnIndex := setup.input.createColumnWithOutput(highs.Integer, 0, 1, rating)
@@ -145,9 +145,9 @@ func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOp
 	if !model.CheckSet(&itemSet) {
 		sb := util.StringBuild2{}
 		sb.WriteString("set fails standard CheckSet ")
-		sb.WriteUint32(itemSet.TotalCap().Hit())
+		sb.WriteUint32(itemSet.Total().Hit())
 		sb.WriteRune(' ')
-		sb.WriteUint32(itemSet.TotalCap().Expertise())
+		sb.WriteUint32(itemSet.Total().Expertise())
 		panic(sb.String())
 	}
 }
