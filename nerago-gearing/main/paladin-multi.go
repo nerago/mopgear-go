@@ -344,7 +344,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, 94529) // gaze of the twins
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 
-	job.SetSpecificItemVariedInclusion(94527, multi.Force_ForbiddenTODO, multi.Force_RequireAtLeastOneUseTODO) // ji-kun trinket
+	job.SetSpecificItemVariedInclusion(94527, multi_types.Force_ForbiddenTODO, multi_types.Force_RequireAtLeastOneUseTODO) // ji-kun trinket
 	// job.SetSpecificItemVariedInclusion(96436, multi.Force_Optional, multi.Force_FixedWhereAvailable, 0.40) // tortos shell heroic
 
 	ret.AddBagsExtra()

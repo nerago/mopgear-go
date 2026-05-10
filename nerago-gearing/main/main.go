@@ -71,25 +71,25 @@ func main() {
 
 func core(printer *util.PrintRecorder) {
 
-	slotRating(printer)
-	basicReforge(printer)
-	basicListRatingEach(printer)
-	solveForRatings(printer)
-	findBestSubjectToCommon(printer)
-	checkHighs(printer)
-	checkHighsAcross(printer)
+	// slotRating(printer)
+	// basicReforge(printer)
+	// basicListRatingEach(printer)
+	// solveForRatings(printer)
+	// findBestSubjectToCommon(printer)
+	// checkHighs(printer)
+	// checkHighsAcross(printer)
 
-	PaladinMultiRun(printer)
-	testSim(printer)
-	findUpgrades_Sim_PaladinMiti_Run(printer)
-	findUpgrades_Sim_PaladinDps_Run(printer)
-	findUpgrades_Paladin_Sim_AllRaid_Run(printer)
-	findSimpleUpgrade_ForceEach(printer)
-	findMitigationWithCapicitance(printer)
-	relativeRatingsCompromise(printer)
+	// PaladinMultiRun(printer)
+	// testSim(printer)
+	// findUpgrades_Sim_PaladinMiti_Run(printer)
+	// findUpgrades_Sim_PaladinDps_Run(printer)
+	// findUpgrades_Paladin_Sim_AllRaid_Run(printer)
+	// findSimpleUpgrade_ForceEach(printer)
+	// findMitigationWithCapicitance(printer)
+	// relativeRatingsCompromise(printer)
 	trinketSims(printer)
 
-	generateRatingsDataFromSims(printer)
+	// generateRatingsDataFromSims(printer)
 }
 
 func setupPallyMitigationSet() (items.FullOptionsMap, model.Model) {

@@ -100,11 +100,11 @@ func (job *MultiSetJob) FindSeveralHighsAndSim(runSize simulate.WowSim_RunSize) 
 		defer tracker.Stop()
 
 		simList := job.prepareSimList(proposalList)
-		job.runSims(simList, runSize, tracker)
+		simResultList := job.runSims(simList, runSize, tracker)
 
-		simResult := job.linkSimResults(proposalList, simList)
-		job.reportSimResults(simResult)
-		job.reportAsCsv(simResult)
+		simMultiResults := job.linkSimResults(proposalList, simResultList)
+		job.reportSimResults(simMultiResults)
+		job.reportAsCsv(simMultiResults)
 	} else {
 		job.printer.Println("FAILED")
 	}

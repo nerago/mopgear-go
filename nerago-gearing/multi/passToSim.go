@@ -47,14 +47,18 @@ type simulateJob struct {
 	fight       stats.WowSim_Fight
 	equip       items.FullEquipMap
 	professions model.ProfessionInfo
-	result      *simulate.SimResultStats
+}
+
+type simulateJobResult struct {
+	job    simulateJob
+	result simulate.SimResultStats
 }
 
 func (simJob *simulateJob) Equals(other *simulateJob) bool {
 	return simJob.spec == other.spec && simJob.fight == other.fight && simJob.equip.Equals(&other.equip) && simJob.professions == other.professions
 }
 
-type simulateResult struct {
+type simulateMultiResult struct {
 	proposed multi_types.MultiProposedOutput
 	result   []simulate.SimResultStats
 }
@@ -63,7 +67,7 @@ func (job *MultiSetJob) prepareSimList(proposalList []multi_types.MultiProposedO
 	jobList := make([]simulateJob, 0)
 	for _, proposal := range proposalList {
 		for _, output := range proposal.Parts {
-			job := simulateJob{output.Spec, output.Model.SimulateAs, *output.FullSet.Items(), output.Model.Professions, nil}
+			job := simulateJob{output.Spec, output.Model.SimulateAs, *output.FullSet.Items(), output.Model.Professions}
 			jobList = append(jobList, job)
 		}
 	}
@@ -73,20 +77,20 @@ func (job *MultiSetJob) prepareSimList(proposalList []multi_types.MultiProposedO
 	return jobList
 }
 
-func (job *MultiSetJob) runSims(jobList []simulateJob, runSize simulate.WowSim_RunSize, trackProgress *util.TrackProgress) {
+func (job *MultiSetJob) runSims(jobList []simulateJob, runSize simulate.WowSim_RunSize, trackProgress *util.TrackProgress) []simulateJobResult {
 	job.printer.Printf("@@@@@@@@@@ RUN SIM JOBS %d @@@@@@@@@@\n", len(jobList))
 	trackProgress.RunOuterTracking(len(jobList))
 	defer trackProgress.Stop()
 
-	channel_op.ForEach_Blocking_Void(evaluateThreadCount, jobList, func(sim *simulateJob) {
+	return channel_op.Map_SliceToSlice(evaluateThreadCount, jobList, func(sim *simulateJob, resultChan chan<- simulateJobResult) {
 		result := simulate.WowSim_Execute_SelectFight(runSize, sim.spec, sim.fight, &sim.equip, sim.professions, nil, trackProgress.MakeNested())
 		job.printer.Printf("sim %22s fight=%d %s\n", sim.spec.Name(), sim.fight, result.CompactStringGeneral())
-		sim.result = &result
+		resultChan <- simulateJobResult{*sim, result}
 	})
 }
 
-func (job *MultiSetJob) linkSimResults(proposalList []multi_types.MultiProposedOutput, jobList []simulateJob) []simulateResult {
-	resultList := make([]simulateResult, 0, len(proposalList))
+func (job *MultiSetJob) linkSimResults(proposalList []multi_types.MultiProposedOutput, jobList []simulateJobResult) []simulateMultiResult {
+	resultList := make([]simulateMultiResult, 0, len(proposalList))
 	for _, proposal := range proposalList {
 		result := linkSimResult(proposal, jobList)
 		resultList = append(resultList, result)
@@ -94,29 +98,31 @@ func (job *MultiSetJob) linkSimResults(proposalList []multi_types.MultiProposedO
 	return resultList
 }
 
-func linkSimResult(proposal multi_types.MultiProposedOutput, jobList []simulateJob) simulateResult {
-	result := simulateResult{proposal, make([]simulate.SimResultStats, len(proposal.Parts))}
-	for outIndex := range proposal.Parts {
-		output := &proposal.Parts[outIndex]
-		for jobIndex := range jobList {
-			job := &jobList[jobIndex]
-			if output.FullSet.Items().Equals(&job.equip) && output.Spec == job.spec && output.Model.SimulateAs == job.fight {
-				result.result[outIndex] = *job.result
+func linkSimResult(proposal multi_types.MultiProposedOutput, resultList []simulateJobResult) simulateMultiResult {
+	multiResult := simulateMultiResult{proposal, make([]simulate.SimResultStats, len(proposal.Parts))}
+	for partIndex := range proposal.Parts {
+		part := &proposal.Parts[partIndex]
+		for resultIndex := range resultList {
+			simResult := &resultList[resultIndex]
+			if part.FullSet.Items().Equals(&simResult.job.equip) && part.Spec == simResult.job.spec && part.Model.SimulateAs == simResult.job.fight {
+				multiResult.result[partIndex] = simResult.result
 				break
 			}
 		}
 	}
-	return result
+	return multiResult
 }
 
-func (job *MultiSetJob) reportSimResults(resultList []simulateResult) {
+func (job *MultiSetJob) reportSimResults(multiResultList []simulateMultiResult) {
 	job.printer.Println("@@@@@@@@@@@@@@@@ RESULTS @@@@@@@@@@@@@@@@")
-	for _, result := range resultList {
+	for _, result := range multiResultList {
 		job.printer.Printf("&&&&&&&&&&&&& %s\n", result.proposed.Id)
 		result.proposed.Combo.Print(job.printer)
+
 		for specIndex, specResult := range result.result {
 			param := &job.params[specIndex]
 			job.printer.Printf("---------------- %s ----------------\n", param.Label)
+
 			output := result.proposed.Parts[specIndex]
 			output.Report(job.printer)
 			specResult.Print(job.printer)
@@ -129,12 +135,13 @@ func (job *MultiSetJob) reportSimResults(resultList []simulateResult) {
 				tools.WowSimJson_Write(&variantEquip, &param.Model, job.printer)
 			}
 		}
+		
 		job.printer.Println0()
 		job.printer.Println0()
 	}
 }
 
-func (job *MultiSetJob) findVariantItem(result simulateResult, itemId items.ItemId, param *multiSetParamInternal) *items.FullItem {
+func (job *MultiSetJob) findVariantItem(result simulateMultiResult, itemId items.ItemId, param *multiSetParamInternal) *items.FullItem {
 	variantItem := result.proposed.FindItemById(itemId)
 	if variantItem != nil {
 		return variantItem
@@ -155,7 +162,7 @@ func (job *MultiSetJob) findVariantItem(result simulateResult, itemId items.Item
 	return example
 }
 
-func (job *MultiSetJob) reportAsCsv(simResultList []simulateResult) {
+func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 	job.printer.Println("@@@@@@@@@@@@@@@@ SPREADSHEET COPY @@@@@@@@@@@@@@@@")
 
 	outputTypes := []simulate.SimResultType{simulate.Result_DPS, simulate.Result_DTPS, simulate.Result_TMI, simulate.Result_DEATH}

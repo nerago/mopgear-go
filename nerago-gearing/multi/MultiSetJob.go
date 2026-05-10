@@ -45,26 +45,15 @@ func (job *MultiSetJob) AddFixedForge(itemId items.ItemId, reforge stats.Reforge
 	job.fixedForge[itemId] = reforge
 }
 
-func (job *MultiSetJob) SetSpecificItemVariedInclusion(itemId items.ItemId, modeOff forceItemMode, modeOn forceItemMode) {
+func (job *MultiSetJob) SetSpecificItemVariedInclusion(itemId items.ItemId, modeOff multi_types.ForceItemMode, modeOn multi_types.ForceItemMode) {
 	if job.specificAllowRates == nil {
 		job.specificAllowRates = make(map[items.ItemId]specificAllowEntry)
 	}
 	job.specificAllowRates[itemId] = specificAllowEntry{itemId: itemId, modeOff: modeOff, modeOn: modeOn}
 }
 
-type forceItemMode int8
-
-const (
-	Force_UnknownTODO              forceItemMode = iota
-	Force_ForbiddenTODO            forceItemMode = iota
-	Force_OptionalTODO             forceItemMode = iota
-	Force_FixedWhereAvailableTODO  forceItemMode = iota
-	Force_RequireAtLeastOneUseTODO forceItemMode = iota
-	Force_RequiredAlwaysTODO       forceItemMode = iota
-)
-
 type specificAllowEntry struct {
 	itemId  items.ItemId
-	modeOff forceItemMode
-	modeOn  forceItemMode
+	modeOff multi_types.ForceItemMode
+	modeOn  multi_types.ForceItemMode
 }
