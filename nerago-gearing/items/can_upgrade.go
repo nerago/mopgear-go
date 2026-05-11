@@ -63,7 +63,7 @@ func (optionsMap *FullOptionsMap) CouldAddUpgrade_EquipSlot(slot SlotEquip, extr
 
 	if slot == Equip_Weapon {
 		currentWeapon := optionsMap.Get(Equip_Weapon)[0]
-		if extra.Slot != currentWeapon.Slot {
+		if extra.SlotItem() != currentWeapon.SlotItem() {
 			printer.Println("WRONG WEAPON TYPE " + extra.CreateString())
 			return CanUpgrade_InvalidAlways
 		}
@@ -71,7 +71,7 @@ func (optionsMap *FullOptionsMap) CouldAddUpgrade_EquipSlot(slot SlotEquip, extr
 
 	if slot == Equip_Offhand {
 		currentWeapon := optionsMap.Get(Equip_Weapon)[0]
-		if currentWeapon.Slot == Item_Weapon2H {
+		if currentWeapon.SlotItem() == Item_Weapon2H {
 			printer.Println("INVALID OFFHAND WITH 2H WEAPON " + extra.CreateString())
 			return CanUpgrade_InvalidAlways
 		}
@@ -86,7 +86,7 @@ func (optionsMap *FullOptionsMap) CouldAddUpgrade_EquipSlot(slot SlotEquip, extr
 	if paired != -1 && optionsMap.IncludesItemIdInSlot(extra.ItemId(), paired) {
 		printer.Println("SAME ITEM ID IN OTHER SLOT " + extra.CreateString())
 		return CanUpgrade_Equipped
-	} else if paired != -1 && optionsMap.IncludesUniqueEquippedViolationInSlot(extra.BaseName, paired) {
+	} else if paired != -1 && optionsMap.IncludesUniqueEquippedViolationInSlot(extra.BaseName(), paired) {
 		printer.Println("RELATED ITEM NAME IN OTHER SLOT (unique equipped) " + extra.CreateString())
 		return CanUpgrade_Equipped_Similar
 	}

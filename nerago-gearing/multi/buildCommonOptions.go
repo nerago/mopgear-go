@@ -60,7 +60,7 @@ func filterCommonForges(prior []items.FullItem, newOptions []items.FullItem) []i
 		for _, two := range newOptions {
 			if one.EqualsExceptEnchant(&two) { // essentially just choose first one
 				result = append(result, one)
-			} else if one.Ref.ItemId == two.Ref.ItemId && one.Ref.ItemLevel != two.Ref.ItemLevel {
+			} else if one.ItemId() == two.ItemId() && one.ItemLevel() != two.ItemLevel() {
 				panic("inconsistent item levels " + one.CreateString() + " and " + two.CreateString())
 			}
 		}
@@ -81,18 +81,9 @@ func applyFixedForges(fixedForge map[items.ItemId]stats.ReforgeRecipe, commonOpt
 	}
 }
 
-func checkItemRates(allowRates map[items.ItemId]specificAllowEntry, commonOptions *multi_types.CommonOptions) {
-	for itemId := range allowRates {
-		_, ok := (*commonOptions)[itemId]
-		if !ok {
-			log.Panicf("item rate not seen in set options %d", itemId)
-		}
-	}
-}
-
 func onlyMatchingForge(options []items.FullItem, reforge stats.ReforgeRecipe, itemId items.ItemId) items.FullItem {
 	for _, item := range options {
-		if item.Reforge == reforge {
+		if item.Reforge() == reforge {
 			return item
 		}
 	}
@@ -127,6 +118,6 @@ func printCommons(seenIn map[items.ItemId][]string, commonOptions multi_types.Co
 		whereSeen := seenIn[itemId]
 		seenText := strings.Join(whereSeen, " ")
 
-		printer.Printf("COMMON %d %s %d => %s\n", itemId, item.CreateFullName(), item.Ref.ItemLevel, seenText)
+		printer.Printf("COMMON %d %s %d => %s\n", itemId, item.CreateFullName(), item.ItemLevel(), seenText)
 	}
 }

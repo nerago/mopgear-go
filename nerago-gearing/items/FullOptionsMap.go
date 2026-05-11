@@ -38,37 +38,11 @@ func (optionsMap *FullOptionsMap) IncludesItemIdInSlot(itemId ItemId, slot SlotE
 
 func (optionsMap *FullOptionsMap) IncludesItemNameInSlot(itemName string, slot SlotEquip) bool {
 	for _, item := range optionsMap[slot] {
-		if item.BaseName == itemName {
+		if item.BaseName() == itemName {
 			return true
 		}
 	}
 	return false
-}
-
-func (optionsMap *FullOptionsMap) MapSlotsAll(mapper func([]FullItem) []FullItem) {
-	for i := range optionsMap {
-		optionsMap[i] = mapper(optionsMap[i])
-	}
-}
-
-func (optionsMap *FullOptionsMap) MapSlot(slot SlotEquip, mapper func([]FullItem) []FullItem) {
-	optionsMap[slot] = mapper(optionsMap[slot])
-}
-
-func (optionsMap *FullOptionsMap) MapEachItem(mapper func(*FullItem) FullItem) {
-	for i := range optionsMap {
-		optionsMap[i] = util.MapSliceAsNew(optionsMap[i], mapper)
-	}
-}
-
-func (optionsMap *FullOptionsMap) FilterSlotsAll(filter func(*FullItem) bool) {
-	for i := range optionsMap {
-		optionsMap[i] = util.FilterSliceAsNew(optionsMap[i], filter)
-	}
-}
-
-func (optionsMap *FullOptionsMap) FilterSlot(slot SlotEquip, filter func(*FullItem) bool) {
-	optionsMap[slot] = util.FilterSliceAsNew(optionsMap[slot], filter)
 }
 
 func (optionsMap *FullOptionsMap) FindItemId(itemId ItemId) iter.Seq[FullItem] {
@@ -136,7 +110,7 @@ func (optionsMap *FullOptionsMap) AllItemsWithSlot() iter.Seq2[SlotEquip, *FullI
 }
 
 func (optionsMap *FullOptionsMap) AddOneOption(item FullItem) {
-	for _, slotEquip := range item.Slot.ToSlotEquipOptions() {
+	for _, slotEquip := range item.slot.ToSlotEquipOptions() {
 		optionsMap[slotEquip] = append(optionsMap[slotEquip], item)
 	}
 }
@@ -261,6 +235,61 @@ func (equipMap *FullEquipMap) FillSlot_ExpectedEmpty(slotItem SlotItem, item *Fu
 	}
 }
 
+func (optionsMap *FullOptionsMap) MapEachItem(mapper func(*FullItem) FullItem) {
+	for i := range optionsMap {
+		optionsMap[i] = util.MapSliceAsNew(optionsMap[i], mapper)
+	}
+}
+
+func (optionsMap *FullOptionsMap) FilterAllItems(filter func(*FullItem) bool) {
+	for i := range optionsMap {
+		if len(optionsMap[i]) > 0 {
+			optionsMap[i] = util.FilterSliceInPlace(optionsMap[i], filter)
+			if len(optionsMap[i]) == 0 {
+				panic("removing items leaves slot empty")
+			}
+		}
+	}
+}
+
+func (optionsMap *FullOptionsMap) FilterSlot(slot SlotEquip, filter func(*FullItem) bool) {
+	if len(optionsMap[slot]) > 0 {
+		optionsMap[slot] = util.FilterSliceInPlace(optionsMap[slot], filter)
+		if len(optionsMap[slot]) == 0 {
+			panic("removing items leaves slot empty")
+		}
+	}
+}
+
+func (optionsMap *FullOptionsMap) RemoveItemIdFromAll(itemId ItemId) {
+	for slot := range optionsMap {
+		if len(optionsMap[slot]) > 0 {
+			optionsMap[slot] = util.FilterSliceInPlace(optionsMap[slot], func(x *FullItem) bool { return x.ItemId() != itemId })
+			if len(optionsMap[slot]) == 0 {
+				panic("removing items leaves slot empty")
+			}
+		}
+	}
+}
+
+func (optionsMap *FullOptionsMap) RemoveItemIdFromSlot(slot SlotEquip, itemId ItemId) {
+	if len(optionsMap[slot]) > 0 {
+		optionsMap[slot] = util.FilterSliceInPlace(optionsMap[slot], func(x *FullItem) bool { return x.ItemId() != itemId })
+		if len(optionsMap[slot]) == 0 {
+			panic("removing items leaves slot empty")
+		}
+	}
+}
+
+func (optionsMap *FullOptionsMap) ForceSlotOnlySpecifiedItemId(slot SlotEquip, itemId ItemId) {
+	if len(optionsMap[slot]) > 0 {
+		optionsMap[slot] = util.FilterSliceInPlace(optionsMap[slot], func(x *FullItem) bool { return x.ItemId() == itemId })
+		if len(optionsMap[slot]) == 0 {
+			panic("removing items leaves slot empty")
+		}
+	}
+}
+
 func (optionsMap *FullOptionsMap) Clone() FullOptionsMap {
 	result := FullOptionsMap{}
 	for slot, content := range optionsMap {
@@ -268,38 +297,3 @@ func (optionsMap *FullOptionsMap) Clone() FullOptionsMap {
 	}
 	return result
 }
-
-type SolvableOptionsMap [16][]SolvableItem
-
-func (optionsMap *SolvableOptionsMap) Get(slot SlotEquip) []SolvableItem {
-	return optionsMap[slot]
-}
-
-func (optionsMap *SolvableOptionsMap) Has(slot SlotEquip) bool {
-	return len(optionsMap[slot]) > 0
-}
-
-func (optionsMap *SolvableOptionsMap) AllItemSeq() iter.Seq[*SolvableItem] {
-	return func(yield func(*SolvableItem) bool) {
-		for _, slotArray := range optionsMap {
-			for _, item := range slotArray {
-				if !yield(&item) {
-					return
-				}
-			}
-		}
-	}
-}
-
-func (optionsMap *SolvableOptionsMap) AllItemSlotSeq() iter.Seq2[SlotEquip, *SolvableItem] {
-	return func(yield func(SlotEquip, *SolvableItem) bool) {
-		for slot := Equip_Iter_First; slot <= Equip_Iter_Last; slot++ {
-			for i := range optionsMap[slot] {
-				if !yield(slot, &optionsMap[slot][i]) {
-					return
-				}
-			}
-		}
-	}
-}
-

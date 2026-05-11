@@ -48,11 +48,11 @@ func setupUpgradeLevel(extraItems []*items.FullItem, printer *util.PrintRecorder
 func checkDuplicates(extraItems []*items.FullItem) {
 	byName := make(map[string]*items.FullItem)
 	for _, item := range extraItems {
-		_, alreadySeen := byName[item.BaseName]
+		_, alreadySeen := byName[item.BaseName()]
 		if alreadySeen {
-			panic("duplicate item for " + item.BaseName)
+			panic("duplicate item for " + item.BaseName())
 		} else {
-			byName[item.BaseName] = item
+			byName[item.BaseName()] = item
 		}
 	}
 }
@@ -63,7 +63,7 @@ func makeExtraTasks(input *FindUpgrades_BasicInputs, extraItems []*items.FullIte
 	taskList := make([]upgradeItemTask, 0, len(extraItems))
 	for _, extra := range extraItems {
 		boss := db.BossItemData_BossForItem(extra)
-		for _, slot := range extra.Slot.ToSlotEquipOptions() {
+		for _, slot := range extra.SlotItem().ToSlotEquipOptions() {
 			canUpgrade := canPerformSpecifiedUpgrade(input, extra, slot, baseItems, bagsFile, printer)
 			switch canUpgrade {
 			case items.CanUpgrade_Yes, items.CanUpgrade_Equipped, items.CanUpgrade_Equipped_Similar, items.CanUpgrade_AvailableInBags:
@@ -78,7 +78,7 @@ func addSubstituteItems(optionsMap *items.FullOptionsMap, substituteItems []item
 	for _, itemId := range substituteItems {
 		if !optionsMap.IncludesItemId(itemId) {
 			options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, model, printer)
-			optionsMap.AddSeveralOptions(example.Slot, options)
+			optionsMap.AddSeveralOptions(example.SlotItem(), options)
 			printer.Println("SUBSTITUTE " + example.CreateString())
 		}
 	}
@@ -119,7 +119,7 @@ func findBase(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, 
 
 func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *model.Model, parentPrinter *util.PrintRecorder, outerTracker *util.TrackProgress, forceIncludeMost bool, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) upgradeItemResult {
 	if !extraTask.actuallyAttemptUpgrade(forceIncludeMost) {
-		parentPrinter.Println("SKIPPING " + extraTask.item.BaseName)
+		parentPrinter.Println("SKIPPING " + extraTask.item.BaseName())
 		return upgradeItemResult_OfFailure(extraTask)
 	}
 
@@ -130,7 +130,7 @@ func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemT
 	printer.Println("OFFER " + item.CreateString())
 	printer.Println("REPLACING " + baseItems.Get(slot)[0].CreateString())
 
-	newOptions, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(item.ItemId(), item.Ref.UpgradeLevel, model, printer)
+	newOptions, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(item.ItemId(), item.UpgradeLevel(), model, printer)
 	jobItems := baseItems.Clone()
 	jobItems[slot] = newOptions
 
@@ -174,15 +174,15 @@ func removePairedSimilar(jobItems *items.FullOptionsMap, testSlot items.SlotEqui
 		for _, z := range jobItems[pairedSlot] {
 			printer.Println("---" + z.CreateString())
 		}
-		jobItems.FilterSlot(pairedSlot, func(x *items.FullItem) bool { return !items.UniqueEquipViolation(x.BaseName, testItem.BaseName) })
+		jobItems.FilterSlot(pairedSlot, func(x *items.FullItem) bool { return !items.UniqueEquipViolation(x.BaseName(), testItem.BaseName()) })
 
 		if len(jobItems[pairedSlot]) == 0 {
-			substituteId, hasSub := substituteEmptySlotOnly[testItem.Slot]
+			substituteId, hasSub := substituteEmptySlotOnly[testItem.SlotItem()]
 			if hasSub {
 				subOpts, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(substituteId, 2, model, printer)
 				jobItems[pairedSlot] = subOpts
 			} else {
-				panic("remove paired " + testItem.BaseName + " left empty slot")
+				panic("remove paired " + testItem.BaseName() + " left empty slot")
 			}
 		}
 	}

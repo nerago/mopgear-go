@@ -11,9 +11,9 @@ type SolvableItem struct {
 	itemId ItemId
 }
 
-func SolvableItem_Of(item FullItem) SolvableItem {
+func SolvableItem_Of(item *FullItem) SolvableItem {
 	return SolvableItem{
-		itemId: item.Ref.ItemId,
+		itemId: item.itemId,
 		total:  item.total}
 }
 

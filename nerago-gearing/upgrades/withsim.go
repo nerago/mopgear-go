@@ -43,7 +43,7 @@ func simEachInitialResult(input *FindUpgrades_SimInputs, inputList []upgradeItem
 		if initial.success {
 			simResult := simulate.WowSim_Execute(input.SimSize, model.Spec, initial.itemSet.Items(), model.Professions, nil, tracker.MakeNested())
 
-			printer.Println("SIM " + initial.item.BaseName)
+			printer.Println("SIM " + initial.item.BaseName())
 			simResult.Print(printer)
 
 			resultChannel <- upgradeItemResultWithSim{*initial, *baseSim, simResult}

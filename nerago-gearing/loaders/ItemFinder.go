@@ -54,7 +54,7 @@ func throneClassGearSet(specType stats.SpecType, difficulty stats.Difficulty) []
 	targetLevel := difficulty.ExpectedItemLevel()
 	for itemId := range specBonus.AllSetItemIds() {
 		item := db.WowSimDB_ByIdAndUpgrade(itemId, 0)
-		if item.Ref.ItemLevel == targetLevel {
+		if item.ItemLevel() == targetLevel {
 			result = append(result, item)
 		}
 	}
@@ -67,7 +67,7 @@ func throneClassGearSet(specType stats.SpecType, difficulty stats.Difficulty) []
 func throneGearGeneric(armor stats.ArmorType, primary stats.PrimaryStatType, difficulty stats.Difficulty) []*items.FullItem {
 	groupByName := make(map[string][]*items.FullItem)
 	for item := range db.WowSimDB_AllItems() {
-		name := item.BaseName
+		name := item.BaseName()
 		if matchesGenericGearCriteria(item, armor, primary) {
 			groupByName[name] = append(groupByName[name], item)
 		}
@@ -88,38 +88,31 @@ func selectAppropriateDifficultyItem(itemList []*items.FullItem, difficulty stat
 
 	targetLevel := difficulty.ExpectedItemLevel()
 	for _, item := range itemList {
-		if item.Ref.ItemLevel == targetLevel {
+		if item.ItemLevel() == targetLevel {
 			return item
 		}
 	}
 
-	if len(itemList) == 2 && itemList[0].Ref.ItemLevel == itemList[1].Ref.ItemLevel {
+	if len(itemList) == 2 && itemList[0].ItemLevel() == itemList[1].ItemLevel() {
 		return itemList[0]
 	}
 
 	// some items don't have heroic version trash drops etc
 	if difficulty == stats.Difficulty_Heroic {
-		slices.SortFunc(itemList, func(a, b *items.FullItem) int { return cmp.Compare(a.Ref.ItemLevel, b.Ref.ItemLevel) })
+		slices.SortFunc(itemList, func(a, b *items.FullItem) int { return cmp.Compare(a.ItemLevel(), b.ItemLevel()) })
 		return itemList[len(itemList)-1]
 	}
-
-	// slices.SortFunc(itemList, func(a, b *items.FullItem) int { return cmp.Compare(a.Ref.ItemLevel, b.Ref.ItemLevel) })
-	// if difficulty == stats.Difficulty_Heroic {
-	// 	return itemList[len(itemList) - 1]
-	// } else {
-	// 	return itemList[0]
-	// }
 
 	panic("unknown item choice")
 }
 
 func matchesGenericGearCriteria(item *items.FullItem, armor stats.ArmorType, primary stats.PrimaryStatType) bool {
-	return item.Phase == 3 &&
-		item.Ref.UpgradeLevel == 0 &&
-		!strings.Contains(item.BaseName, "Gladiator") &&
-		(item.ArmorType.Matches(armor) || item.Slot == items.Item_Back) &&
-		item.Slot != items.Item_Trinket &&
-		item.PrimaryStat == primary &&
+	return item.Phase() == 3 &&
+		item.UpgradeLevel() == 0 &&
+		!strings.Contains(item.BaseName(), "Gladiator") &&
+		(item.ArmorType().Matches(armor) || item.SlotItem() == items.Item_Back) &&
+		item.SlotItem() != items.Item_Trinket &&
+		item.PrimaryStat() == primary &&
 		!model.SetBonus_IsAnyKnownItem(item.ItemId())
 }
 
@@ -145,10 +138,10 @@ func trinketsForDifficulty(trinketIds []items.ItemId, difficulty stats.Difficult
 }
 
 func trinketForDifficulty(exampleItemId items.ItemId, difficulty stats.Difficulty) *items.FullItem {
-	itemName := db.WowSimDB_ByIdAndUpgrade(exampleItemId, 0).BaseName
+	itemName := db.WowSimDB_ByIdAndUpgrade(exampleItemId, 0).BaseName()
 	candidates := make([]*items.FullItem, 0)
 	for item := range db.WowSimDB_AllItems() {
-		if item.BaseName == itemName {
+		if item.BaseName() == itemName {
 			candidates = append(candidates, item)
 		}
 	}

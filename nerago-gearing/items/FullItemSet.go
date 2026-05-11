@@ -11,6 +11,16 @@ type FullItemSet struct {
 	total stats.StatBlock
 }
 
+func FullItemSet_FromMap(equipMap FullEquipMap) FullItemSet {
+	itemSet := FullItemSet{equipMap, stats.StatBlock{}}
+	for _, item := range equipMap {
+		if item != nil {
+			stats.StatBlock_Increment_Mutating(&itemSet.total, &item.total)
+		}
+	}
+	return itemSet
+}
+
 func FullItemSet_FromSolved(solvedSet SolvableItemSet, optionsMap *FullOptionsMap) FullItemSet {
 	fullMap := FullEquipMap{}
 	for slot, solveItem := range solvedSet.items {
@@ -22,14 +32,13 @@ func FullItemSet_FromSolved(solvedSet SolvableItemSet, optionsMap *FullOptionsMa
 	return FullItemSet{items: fullMap, total: solvedSet.total}
 }
 
-func FullItemSet_FromMap(equipMap FullEquipMap) FullItemSet {
-	itemSet := FullItemSet{equipMap, stats.StatBlock{}}
-	for _, item := range equipMap {
-		if item != nil {
-			stats.StatBlock_Increment_Mutating(&itemSet.total, &item.total)
+func findMatch(fullItem []FullItem, solveItem *SolvableItem) *FullItem {
+	for _, item := range fullItem {
+		if isMatch(&item, solveItem) {
+			return &item
 		}
 	}
-	return itemSet
+	panic("match not found")
 }
 
 func (itemSet *FullItemSet) PrintStats(printer *util.PrintRecorder) {
@@ -62,9 +71,9 @@ func (itemSet *FullItemSet) ValidateItemRules() {
 	weapon := itemSet.items.Get(Equip_Weapon)
 	if weapon == nil {
 		panic("no weapon in set")
-	} else if weapon.Slot == Item_Weapon2H && itemSet.items.Has(Equip_Offhand) {
+	} else if weapon.slot == Item_Weapon2H && itemSet.items.Has(Equip_Offhand) {
 		panic("weapon 2H with unexpected offhand")
-	} else if weapon.Slot == Item_Weapon1H && !itemSet.items.Has(Equip_Offhand) {
+	} else if weapon.slot == Item_Weapon1H && !itemSet.items.Has(Equip_Offhand) {
 		panic("weapon 1H with missing offhand")
 	}
 
@@ -82,7 +91,7 @@ func checkPairedSlotNoDuplicate(a, b *FullItem) {
 	if a != nil && b != nil {
 		if a.ItemId() == b.ItemId() {
 			panic("duplicate item " + a.CreateString())
-		} else if UniqueEquipViolation(a.BaseName, b.BaseName) {
+		} else if UniqueEquipViolation(a.baseName, b.baseName) {
 			panic("unique equipped violation:\n" + a.CreateString() + "\n" + b.CreateString())
 		}
 	}

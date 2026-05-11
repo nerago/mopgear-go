@@ -91,7 +91,7 @@ func (param *multiSetParamInternal) copyExtraFromOtherSpec(itemId items.ItemId) 
 	// NOTE these may not copy with the model's reforge preferences etc
 
 	if len(options) > 0 {
-		param.itemOptions.AddSeveralOptions(options[0].Slot, options)
+		param.itemOptions.AddSeveralOptions(options[0].SlotItem(), options)
 		param.job.printer.Printf("OPTION from other spec %s\n", options[0].CreateString())
 		return true
 	} else {
@@ -106,7 +106,7 @@ func (param *multiSetParamInternal) copyExtraFromBags(itemId items.ItemId) bool 
 		equipped.UpgradeStep = param.ExtraUpgradeLevel
 
 		options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &param.Model, setup.MissingEnchant_Fix, param.job.printer)
-		param.itemOptions.AddSeveralOptions(example.Slot, options)
+		param.itemOptions.AddSeveralOptions(example.SlotItem(), options)
 		param.job.printer.Printf("OPTION from bags %s\n", example.CreateString())
 		return true
 	}
@@ -117,7 +117,7 @@ func (param *multiSetParamInternal) tryAddExtraFromBags(equipped *loaders.Equipp
 	if db.WowSimDB_HasItemId(equipped.ItemId) {
 		// bail early before considering full item stats/enchants/etc that might not fit spec
 		basicVersion := db.WowSimDB_ByIdAndUpgrade(equipped.ItemId, 0)
-		if param.itemOptions.CouldAddUpgrade_ItemSlot(basicVersion.Slot, basicVersion, param.job.printer) != items.CanUpgrade_Yes {
+		if param.itemOptions.CouldAddUpgrade_ItemSlot(basicVersion.SlotItem(), basicVersion, param.job.printer) != items.CanUpgrade_Yes {
 			return
 		}
 
@@ -131,7 +131,7 @@ func (param *multiSetParamInternal) tryAddExtraFromBags(equipped *loaders.Equipp
 		options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &param.Model, setup.MissingEnchant_Fix, param.job.printer)
 
 		added := false
-		for _, slot := range example.Slot.ToSlotEquipOptions() {
+		for _, slot := range example.SlotItem().ToSlotEquipOptions() {
 			if param.itemOptions.CouldAddUpgrade_EquipSlot(slot, example, param.job.printer) == items.CanUpgrade_Yes {
 				param.job.printer.Printf("ADDITIONAL EXTRA OPTION from bags %s\n", example.CreateString())
 				param.itemOptions.AddSeveralOptionsSpecific(slot, options)
@@ -149,7 +149,7 @@ func (param *multiSetParamInternal) tryAddExtraFromBags(equipped *loaders.Equipp
 
 func (param *multiSetParamInternal) extraLoadAndGenerate(itemId items.ItemId) {
 	options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, param.ExtraUpgradeLevel, &param.Model, param.job.printer)
-	param.itemOptions.AddSeveralOptions(example.Slot, options)
+	param.itemOptions.AddSeveralOptions(example.SlotItem(), options)
 	param.job.printer.Printf("OPTION %s\n", example.CreateString())
 }
 
@@ -162,11 +162,7 @@ func (param *multiSetParamInternal) restrictFixed() {
 			panic("restricting slot but already empty")
 		}
 
-		param.itemOptions.MapSlot(slot, func(options []items.FullItem) []items.FullItem {
-			return util.FilterSliceAsNew(options, func(x *items.FullItem) bool {
-				return x.ItemId() == itemId
-			})
-		})
+		param.itemOptions.ForceSlotOnlySpecifiedItemId(slot, itemId)
 
 		if !param.itemOptions.Has(slot) {
 			panic("restricting slot leaves slot empty")
@@ -174,13 +170,10 @@ func (param *multiSetParamInternal) restrictFixed() {
 
 		paired := slot.PairedSlot()
 		if paired != -1 {
-			param.itemOptions.MapSlot(paired, func(options []items.FullItem) []items.FullItem {
-				return util.FilterSliceAsNew(options, func(x *items.FullItem) bool {
-					return x.ItemId() != itemId
-				})
-			})
+			param.itemOptions.RemoveItemIdFromSlot(slot, itemId)
 		}
 	}
+}
 
 	// remove blocked items
 	for _, itemId := range param.BlockedItems {

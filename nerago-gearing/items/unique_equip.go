@@ -4,7 +4,7 @@ import "slices"
 
 func (optionsMap *FullOptionsMap) IncludesUniqueEquippedViolationInSlot(itemName string, slot SlotEquip) bool {
 	for _, item := range optionsMap[slot] {
-		if UniqueEquipViolation(item.BaseName, itemName) {
+		if UniqueEquipViolation(item.BaseName(), itemName) {
 			return true
 		}
 	}

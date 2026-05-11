@@ -228,26 +228,26 @@ func updateGear(input *wowsim_proto.RaidSimRequest, equipMap *items.FullEquipMap
 
 	for item := range equipMap.AllItemSeq() {
 		spec := wowsim_proto.ItemSpec{}
-		spec.Id = int32(item.Ref.ItemId)
-		spec.UpgradeStep = wowsim_proto.ItemLevelState(item.Ref.UpgradeLevel)
-		if !item.Reforge.IsEmpty() {
-			spec.Reforging = int32(db.WowSimDB_ReforgeToId(item.Reforge))
+		spec.Id = int32(item.ItemId())
+		spec.UpgradeStep = wowsim_proto.ItemLevelState(item.UpgradeLevel())
+		if !item.Reforge().IsEmpty() {
+			spec.Reforging = int32(db.WowSimDB_ReforgeToId(item.Reforge()))
 		}
 
-		spec.Gems = make([]int32, len(item.GemChoice))
-		for i := range item.GemChoice {
-			spec.Gems[i] = int32(item.GemChoice[i].Id)
+		spec.Gems = make([]int32, len(item.GemChoice()))
+		for i := range item.GemChoice() {
+			spec.Gems[i] = int32(item.GemChoice()[i].Id)
 		}
 
-		if item.EnchantChoice != 0 {
-			spec.Enchant = int32(item.EnchantChoice)
+		if item.EnchantChoice() != 0 {
+			spec.Enchant = int32(item.EnchantChoice())
 		}
 
-		if item.RandomSuffix != 0 {
-			spec.RandomSuffix = item.RandomSuffix
+		if item.RandomSuffix() != 0 {
+			spec.RandomSuffix = item.RandomSuffix()
 		}
 
-		if item.Slot == items.Item_Hand && professions.IsEngineer {
+		if item.SlotItem() == items.Item_Hand && professions.IsEngineer {
 			spec.Tinker = 4898
 		}
 

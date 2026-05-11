@@ -14,7 +14,6 @@ import (
 
 var loaded = false
 var itemsById map[items.ItemId][]items.FullItem = make(map[items.ItemId][]items.FullItem)
-var itemsByRef map[items.ItemRef]items.FullItem = make(map[items.ItemRef]items.FullItem)
 var reforgeById map[uint16]stats.ReforgeRecipe = make(map[uint16]stats.ReforgeRecipe)
 var reforgeByObj map[stats.ReforgeRecipe]uint16 = make(map[stats.ReforgeRecipe]uint16)
 
@@ -42,7 +41,7 @@ func WowSimDB_HasItemId(itemId items.ItemId) bool {
 func WowSimDB_ByIdAndUpgrade(itemId items.ItemId, upgradeLevel int8) *items.FullItem {
 	known := itemsById[itemId]
 	for _, item := range known {
-		if item.Ref.UpgradeLevel == upgradeLevel {
+		if item.UpgradeLevel() == upgradeLevel {
 			return &item
 		}
 	}
@@ -128,7 +127,7 @@ func addItem(itemObj map[string]any) {
 
 	scalingOptions := itemObj["scalingOptions"].(map[string]any)
 	baseItemLevel := getUInt16OrPanic(scalingOptions["0"].(map[string]any), "ilvl")
-	for scaleGroup, entry := range scalingOptions {
+	for _, entry := range scalingOptions {
 		scaleEntry := entry.(map[string]any)
 		itemLevel := getUInt16OrPanic(scaleEntry, "ilvl")
 
@@ -137,15 +136,8 @@ func addItem(itemObj map[string]any) {
 			scaleStats = extern_stats.SimJsonMapToGearStatBlock(scaleEntry["stats"].(map[string]any))
 		}
 
-		var itemRef items.ItemRef
-		if scaleGroup == "-1" {
-			itemRef = items.ItemRef_Challenge(itemId, itemLevel)
-		} else {
-			itemRef = items.ItemRef_Make(itemId, itemLevel, baseItemLevel)
-		}
-		item := items.FullItem_FromWowSim(itemRef, slot, name, scaleStats, armorType, socketSlots, socketBonus, phase)
+		item := items.FullItem_FromWowSim(itemId, itemLevel, baseItemLevel, slot, name, scaleStats, armorType, socketSlots, socketBonus, phase)
 		itemsById[itemId] = append(itemsById[itemId], item)
-		itemsByRef[itemRef] = item
 	}
 }
 

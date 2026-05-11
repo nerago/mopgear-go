@@ -49,22 +49,22 @@ func makeItemObject(item *items.FullItem, profession model.ProfessionInfo) map[s
 	object := make(map[string]any)
 
 	object["id"] = item.ItemId()
-	object["upgrade_step"] = item.Ref.UpgradeLevel
-	if !item.Reforge.IsEmpty() {
-		reforgeId := db.WowSimDB_ReforgeToId(item.Reforge)
+	object["upgrade_step"] = item.UpgradeLevel()
+	if !item.Reforge().IsEmpty() {
+		reforgeId := db.WowSimDB_ReforgeToId(item.Reforge())
 		object["reforging"] = reforgeId
 	}
 
-	if len(item.GemChoice) > 0 {
-		gemArray := make([]any, len(item.GemChoice))
-		for i, gemInfo := range item.GemChoice {
+	if len(item.GemChoice()) > 0 {
+		gemArray := make([]any, len(item.GemChoice()))
+		for i, gemInfo := range item.GemChoice() {
 			gemArray[i] = gemInfo.Id
 		}
 		object["gems"] = gemArray
 	}
 
-	if item.EnchantChoice != 0 {
-		object["enchant"] = item.EnchantChoice
+	if item.EnchantChoice() != 0 {
+		object["enchant"] = item.EnchantChoice()
 	}
 
 	//     StatBlock expectedEnchants = GemData.process(item.gemChoice, item.enchantChoice, item.shared.socketSlots(), item.shared.socketBonus(), item.shared.name(), item.slot().possibleBlacksmith());
@@ -72,11 +72,11 @@ func makeItemObject(item *items.FullItem, profession model.ProfessionInfo) map[s
 	//         throw new RuntimeException("enchant details don't match");
 	//     }
 
-	if item.RandomSuffix != 0 {
-		object["random_suffix"] = item.RandomSuffix
+	if item.RandomSuffix() != 0 {
+		object["random_suffix"] = item.RandomSuffix()
 	}
 
-	if item.Slot == items.Item_Hand && profession.IsEngineer {
+	if item.SlotItem() == items.Item_Hand && profession.IsEngineer {
 		object["tinker"] = 4898
 	}
 

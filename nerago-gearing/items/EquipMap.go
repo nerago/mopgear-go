@@ -17,7 +17,7 @@ func (equipMap *FullEquipMap) Has(slot SlotEquip) bool {
 func (equipMap *FullEquipMap) GetAsId(slot SlotEquip) ItemId {
 	item := equipMap[slot]
 	if item != nil {
-		return item.Ref.ItemId
+		return item.ItemId()
 	} else {
 		return 0
 	}

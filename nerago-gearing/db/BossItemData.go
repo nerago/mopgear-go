@@ -64,5 +64,5 @@ func BossItemData_BossForItem(item *items.FullItem) string {
 		load()
 	}
 
-	return g_itemNameToBoss[item.BaseName]
+	return g_itemNameToBoss[item.BaseName()]
 }

@@ -42,10 +42,10 @@ func (combo *CommonCombo) Print(printer *util.PrintRecorder) {
 		printer.Printf("COMMON %s\n", item.CreateString())
 	}
 	for _, item := range *combo {
-		if item.Reforge.IsEmpty() {
+		if item.Reforge().IsEmpty() {
 			printer.Printf("common[%d] = stats.ReforgeRecipe_empty\n", item.ItemId())
 		} else {
-			printer.Printf("common[%d] = stats.ReforgeRecipe_of(stats.%s, stats.%s)\n", item.ItemId(), item.Reforge.From.EnumName(), item.Reforge.To.EnumName())
+			printer.Printf("common[%d] = stats.ReforgeRecipe_of(stats.%s, stats.%s)\n", item.ItemId(), item.Reforge().From.EnumName(), item.Reforge().To.EnumName())
 		}
 	}
 }

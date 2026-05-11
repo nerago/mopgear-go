@@ -156,8 +156,8 @@ func reportTabledSimResultItemMap(itemMap map[reportItemRef]*reportForItemWithSi
 	for _, report := range reportList {
 		row := make([]string, 0, tab.ColumnCount())
 		row = append(row, report.slot.Name())
-		row = append(row, strconv.FormatUint(uint64(report.item.Ref.ItemLevel), 10))
-		row = append(row, report.item.BaseName)
+		row = append(row, strconv.FormatUint(uint64(report.item.ItemLevel()), 10))
+		row = append(row, report.item.BaseName())
 
 		for _, spec := range specs {
 			groupContent := report.grouped[spec.Label]
@@ -204,8 +204,8 @@ func reportTabledSimResultItemMap_NoWeight(itemMap map[reportItemRef]*reportForI
 	for _, report := range reportList {
 		row := make([]string, 0, tab.ColumnCount())
 		row = append(row, report.slot.Name())
-		row = append(row, strconv.FormatUint(uint64(report.item.Ref.ItemLevel), 10))
-		row = append(row, report.item.BaseName)
+		row = append(row, strconv.FormatUint(uint64(report.item.ItemLevel()), 10))
+		row = append(row, report.item.BaseName())
 		row = append(row, db.BossItemData_BossForItem(report.item))
 
 		for _, spec := range specs {

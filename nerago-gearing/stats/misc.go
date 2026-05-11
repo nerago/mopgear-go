@@ -48,11 +48,11 @@ func ReforgeRecipe_of_pointer(from, to StatType) *ReforgeRecipe {
 	return &ReforgeRecipe{hasValue: true, From: from, To: to}
 }
 
-func (reforge *ReforgeRecipe) IsEmpty() bool {
+func (reforge ReforgeRecipe) IsEmpty() bool {
 	return !reforge.hasValue
 }
 
-func (reforge *ReforgeRecipe) Equals(other *ReforgeRecipe) bool {
+func (reforge ReforgeRecipe) Equals(other *ReforgeRecipe) bool {
 	if reforge.hasValue && other.hasValue {
 		return reforge.To == other.To && reforge.From == other.From
 	} else if !reforge.hasValue && !other.hasValue {
@@ -62,7 +62,7 @@ func (reforge *ReforgeRecipe) Equals(other *ReforgeRecipe) bool {
 	}
 }
 
-func (reforge *ReforgeRecipe) AppendString(builder *util.StringBuild2) {
+func (reforge ReforgeRecipe) AppendString(builder *util.StringBuild2) {
 	builder.WriteRune('(')
 	builder.WriteString(reforge.From.Name())
 	builder.WriteString("->")

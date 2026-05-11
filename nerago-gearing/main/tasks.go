@@ -37,7 +37,7 @@ func findBestSubjectToCommon(printer *util.PrintRecorder) {
 
 	for _, itemId := range substituteItemsMiti {
 		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
-		itemOptions.AddSeveralOptions(example.Slot, opts)
+		itemOptions.AddSeveralOptions(example.SlotItem(), opts)
 	}
 
 	common := commonComboCurrent()
@@ -86,7 +86,7 @@ func checkHighs(printer *util.PrintRecorder) {
 	for _, itemId := range extraItemsCombined {
 		if !itemOptions.IncludesItemId(itemId) {
 			opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
-			for _, slotEquip := range example.Slot.ToSlotEquipOptions() {
+			for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
 				if itemOptions.Has(slotEquip) {
 					itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)
 				}
@@ -148,7 +148,7 @@ func checkHighsAcross(printer *util.PrintRecorder) {
 	for _, itemId := range extraItemsCombined {
 		if !itemOptions.IncludesItemId(itemId) {
 			opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
-			for _, slotEquip := range example.Slot.ToSlotEquipOptions() {
+			for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
 				if itemOptions.Has(slotEquip) {
 					itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)
 				}
@@ -233,7 +233,7 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationNoSet, &model, setup.MissingEnchant_Panic, printer)
 	for _, itemId := range substituteItemsMiti {
 		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
-		itemOptions.AddSeveralOptions(example.Slot, opts)
+		itemOptions.AddSeveralOptions(example.SlotItem(), opts)
 	}
 
 	common := commonComboCurrent()
@@ -296,8 +296,8 @@ func findMitigationWithCapicitance(printer *util.PrintRecorder) {
 		equip.UpgradeStep = 2
 		opts, example := setup.OptionsSetup_Single_FromEquipped(equip, &model, setup.MissingEnchant_Fix, printer)
 
-		if example.Slot == items.Item_Head {
-			if len(example.GemChoice) == 0 {
+		if example.SlotItem() == items.Item_Head {
+			if len(example.GemChoice()) == 0 {
 				panic("dunno")
 			}
 
@@ -308,9 +308,9 @@ func findMitigationWithCapicitance(printer *util.PrintRecorder) {
 			}
 		}
 
-		can := itemOptions.CouldAddUpgrade_ItemSlot(example.Slot, example, printer)
+		can := itemOptions.CouldAddUpgrade_ItemSlot(example.SlotItem(), example, printer)
 		if can == items.CanUpgrade_Yes || can == items.CanUpgrade_Equipped_Similar {
-			itemOptions.AddSeveralOptions(example.Slot, opts)
+			itemOptions.AddSeveralOptions(example.SlotItem(), opts)
 		}
 	}
 
@@ -329,7 +329,7 @@ func findMitigationWithCapicitance(printer *util.PrintRecorder) {
 	printer.Println("HEADS")
 	for _, item := range itemOptions.Get(items.Equip_Head) {
 		printer.Println(item.CreateString())
-		for _, gem := range item.GemChoice {
+		for _, gem := range item.GemChoice() {
 			name := gem.Name()
 			if name != "" {
 				printer.Println("  " + name)
@@ -343,13 +343,9 @@ func findMitigationWithCapicitance(printer *util.PrintRecorder) {
 	// restrictSlotToId(&itemOptionsShared, items.Equip_Head, 96481)
 
 	// remove prot piece
-	itemOptions.MapSlot(items.Equip_Head, func(lst []items.FullItem) []items.FullItem {
-		return util.FilterSliceAsNew(lst, func(x *items.FullItem) bool { return x.ItemId() != 95292 })
-	})
+	itemOptions.RemoveItemIdFromSlot(items.Equip_Head, 95292)
 	// remove White Tiger Helmet
-	itemOptions.MapSlot(items.Equip_Head, func(lst []items.FullItem) []items.FullItem {
-		return util.FilterSliceAsNew(lst, func(x *items.FullItem) bool { return x.ItemId() != 87101 })
-	})
+	itemOptions.RemoveItemIdFromSlot(items.Equip_Head, 87101)
 
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions:         &itemOptions,
@@ -396,7 +392,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 	itemOptionsShared := setup.OptionsSetup_FromGearFile(startGear, &model, setup.MissingEnchant_Panic, printer)
 	for _, itemId := range substituteItemsMiti {
 		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
-		itemOptionsShared.AddSeveralOptions(example.Slot, opts)
+		itemOptionsShared.AddSeveralOptions(example.SlotItem(), opts)
 	}
 
 	common := commonComboCurrent()
@@ -426,7 +422,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 
 		_, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
 
-		for _, slotEquip := range example.Slot.ToSlotEquipOptions() {
+		for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
 			if slotEquip == items.Equip_Ring1 {
 				continue
 			}
@@ -459,7 +455,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 			dpsInc := resultStats.IncreaseOf(&currentStats, simulate.Result_DPS)
 			printer.Printf("INCREASE miti=%.3f dps=%.3f\n", mitiInc, dpsInc)
 
-			resultPairs = append(resultPairs, pair{mitiInc, dpsInc, example.BaseName})
+			resultPairs = append(resultPairs, pair{mitiInc, dpsInc, example.BaseName()})
 		}
 	}
 
@@ -575,29 +571,23 @@ func trinketSims(printer *util.PrintRecorder) {
 func addGearFileToCommon(common map[items.ItemId]stats.ReforgeRecipe, gearFile string, model *model.Model, printer *util.PrintRecorder) {
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), model, printer)
 	for item := range currentEquip.AllItemSeq() {
-		common[item.ItemId()] = item.Reforge
+		common[item.ItemId()] = item.Reforge()
 	}
 }
 
 func restrictOptionsToCommon(common map[items.ItemId]stats.ReforgeRecipe, optionsMap *items.FullOptionsMap) {
-	optionsMap.MapSlotsAll(func(slotCurrent []items.FullItem) []items.FullItem {
-		return util.FilterSliceAsNew(slotCurrent, func(check *items.FullItem) bool {
-			reforge, isCommon := common[check.ItemId()]
-			if isCommon {
-				return check.Reforge == reforge
-			} else {
-				return true
-			}
-		})
+	optionsMap.FilterAllItems(func(check *items.FullItem) bool {
+		reforge, isCommon := common[check.ItemId()]
+		if isCommon {
+			return check.Reforge().Equals(&reforge)
+		} else {
+			return true
+		}
 	})
 }
 
 func restrictSlotToId(itemOptions *items.FullOptionsMap, slotEquip items.SlotEquip, id items.ItemId) {
-	itemOptions.MapSlot(slotEquip, func(currSlot []items.FullItem) []items.FullItem {
-		return util.FilterSliceAsNew(currSlot, func(check *items.FullItem) bool {
-			return check.ItemId() == id
-		})
-	})
+	itemOptions.ForceSlotOnlySpecifiedItemId(slotEquip, id)
 }
 
 func basicListRatingEach(printer *util.PrintRecorder) {
