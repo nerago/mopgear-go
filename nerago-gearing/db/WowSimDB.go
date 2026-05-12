@@ -9,7 +9,6 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/stats/extern_stats"
 	"paladin_gearing_go/util"
-	"strconv"
 )
 
 var loaded = false
@@ -60,7 +59,7 @@ func WowSimDB_ByIdAndUpgrade_AllowFallback(itemId items.ItemId, upgradeLevel int
 	}
 
 	if storedItem == nil {
-		panic("NOT FOUND at any upgrade level itemid=" + strconv.FormatUint(uint64(itemId), 10))
+		panic("NOT FOUND at any upgrade level itemid=" + itemId.String())
 	}
 
 	return storedItem

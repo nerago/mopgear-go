@@ -77,13 +77,13 @@ func (job *MultiSetJob) prepareSimList(proposalList []multi_types.MultiProposedO
 	return jobList
 }
 
-func (job *MultiSetJob) runSims(jobList []simulateJob, runSize simulate.WowSim_RunSize, trackProgress *util.TrackProgress) []simulateJobResult {
+func (job *MultiSetJob) runSims(jobList []simulateJob, trackProgress *util.TrackProgress) []simulateJobResult {
 	job.printer.Printf("@@@@@@@@@@ RUN SIM JOBS %d @@@@@@@@@@\n", len(jobList))
 	trackProgress.RunOuterTracking(len(jobList))
 	defer trackProgress.Stop()
 
 	return channel_op.Map_SliceToSlice(evaluateThreadCount, jobList, func(sim *simulateJob, resultChan chan<- simulateJobResult) {
-		result := simulate.WowSim_Execute_SelectFight(runSize, sim.spec, sim.fight, &sim.equip, sim.professions, nil, trackProgress.MakeNested())
+		result := simulate.WowSim_Execute_SelectFight(job.simRunSize, sim.spec, sim.fight, &sim.equip, sim.professions, nil, trackProgress.MakeNested())
 		job.printer.Printf("sim %22s fight=%d %s\n", sim.spec.Name(), sim.fight, result.CompactStringGeneral())
 		resultChan <- simulateJobResult{*sim, result}
 	})
@@ -131,11 +131,11 @@ func (job *MultiSetJob) reportSimResults(multiResultList []simulateMultiResult) 
 				variantEquip := *output.FullSet.Items()
 				variantItem := job.findVariantItem(result, itemId, param)
 				variantEquip[slot] = variantItem
-				job.printer.Printf("---------------- %s %s ----------------\n", param.Label, variantItem.BaseName)
+				job.printer.Printf("---------------- %s %s ----------------\n", param.Label, variantItem.BaseName())
 				tools.WowSimJson_Write(&variantEquip, &param.Model, job.printer)
 			}
 		}
-		
+
 		job.printer.Println0()
 		job.printer.Println0()
 	}

@@ -25,13 +25,13 @@ func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMa
 	defer tracker.Stop()
 
 	printer.Println("FINDING BASELINE")
-	baseRating, baseSet := findBase(input, baseItems, model, printer, tracker)
+	baseRating, baseSet := findBase(baseItems, model, printer, tracker)
 	tools.ReportSetFewerParams(model, baseSet, printer)
 
 	printer.Println("TRYING ITEMS")
 	resultList := channel_op.Map_SliceToSlice(c_upgradeEachThreads, extraTasks,
 		func(task *upgradeItemTask, resultChannel chan<- upgradeItemResult) {
-			resultChannel <- performUpgradeTask(input, task, baseItems, baseRating, model, printer, tracker, forceIncludeMost, substituteEmptySlotOnly)
+			resultChannel <- performUpgradeTask(task, baseItems, baseRating, model, printer, tracker, forceIncludeMost, substituteEmptySlotOnly)
 		})
 	return resultList, baseSet
 }
@@ -101,13 +101,13 @@ func canPerformSpecifiedUpgrade(input *FindUpgrades_BasicInputs, extra *items.Fu
 	return items.CanUpgrade_Yes
 }
 
-func findBase(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress) (float64, *items.FullItemSet) {
+func findBase(baseItems *items.FullOptionsMap, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress) (float64, *items.FullItemSet) {
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions:        baseItems,
 		Model:              model,
 		OuterTrackProgress: tracker,
 		Printer:            printer,
-		SolveSize:          input.SolveSize * c_baseSolveScale})
+	})
 
 	if !output.Success {
 		panic("couldn't find valid baseline set")
@@ -117,7 +117,7 @@ func findBase(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, 
 	return float64(output.ResultRating), &output.FullSet
 }
 
-func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *model.Model, parentPrinter *util.PrintRecorder, outerTracker *util.TrackProgress, forceIncludeMost bool, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) upgradeItemResult {
+func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *model.Model, parentPrinter *util.PrintRecorder, outerTracker *util.TrackProgress, forceIncludeMost bool, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) upgradeItemResult {
 	if !extraTask.actuallyAttemptUpgrade(forceIncludeMost) {
 		parentPrinter.Println("SKIPPING " + extraTask.item.BaseName())
 		return upgradeItemResult_OfFailure(extraTask)
@@ -143,7 +143,7 @@ func performUpgradeTask(input *FindUpgrades_BasicInputs, extraTask *upgradeItemT
 		Model:              model,
 		OuterTrackProgress: outerTracker,
 		Printer:            printer,
-		SolveSize:          input.SolveSize})
+	})
 
 	var result upgradeItemResult
 	if output.Success {

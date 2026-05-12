@@ -15,9 +15,8 @@ func (job *MultiSetJob) determineCommon() multi_types.CommonOptions {
 	commonOptions, seenIn := searchParamOptions(&job.params)
 
 	applyFixedForges(job.fixedForge, &commonOptions, job.printer)
-	checkItemRates(job.specificAllowRates, &commonOptions)
 
-	removeSingleSetItems(seenIn, &commonOptions, job.fixedForge, job.specificAllowRates)
+	removeSingleSetItems(seenIn, &commonOptions, job.fixedForge)
 
 	printCommons(seenIn, commonOptions, job.printer)
 
@@ -69,6 +68,7 @@ func filterCommonForges(prior []items.FullItem, newOptions []items.FullItem) []i
 }
 
 func applyFixedForges(fixedForge map[items.ItemId]stats.ReforgeRecipe, commonOptions *multi_types.CommonOptions, printer *util.PrintRecorder) {
+	// we could we apply this to the input itemOptions earlier on, but here we make sure it makes it out of all sets as a valid common too, rather than potentially disappearing from some specs silently
 	for itemId, reforge := range fixedForge {
 		options, ok := (*commonOptions)[itemId]
 		if ok {
@@ -90,15 +90,10 @@ func onlyMatchingForge(options []items.FullItem, reforge stats.ReforgeRecipe, it
 	panic("fixed forge selection not available for item " + strconv.Itoa(int(itemId)))
 }
 
-func removeSingleSetItems(seenIn map[items.ItemId][]string, commonOptions *multi_types.CommonOptions, fixedForge map[items.ItemId]stats.ReforgeRecipe, specificRates map[items.ItemId]specificAllowEntry) {
+func removeSingleSetItems(seenIn map[items.ItemId][]string, commonOptions *multi_types.CommonOptions, fixedForge map[items.ItemId]stats.ReforgeRecipe) {
 	for itemId, whereSeen := range seenIn {
 		_, isFixed := fixedForge[itemId]
 		if isFixed {
-			continue
-		}
-
-		_, isSpecific := specificRates[itemId]
-		if isSpecific {
 			continue
 		}
 

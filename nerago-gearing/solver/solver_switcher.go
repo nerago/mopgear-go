@@ -23,7 +23,6 @@ type SolveInput struct {
 	Model               *model.Model
 	EnableTrackProgress bool
 	OuterTrackProgress  *util.TrackProgress
-	SolveSize           SolveSize
 	Printer             *util.PrintRecorder
 }
 

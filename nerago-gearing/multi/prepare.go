@@ -24,6 +24,11 @@ func (job *MultiSetJob) prepareInitial() {
 		job.params[i].prepareExtraItems()
 	}
 
+	job.printer.Println("RESTRICTING ANY BLOCKED ITEMS")
+	for i := range job.params {
+		job.params[i].removeBlocked()
+	}
+
 	job.printer.Println("RESTRICTING ANY FIXED SLOTS")
 	for i := range job.params {
 		job.params[i].restrictFixed()
@@ -156,59 +161,42 @@ func (param *multiSetParamInternal) extraLoadAndGenerate(itemId items.ItemId) {
 func (param *multiSetParamInternal) restrictFixed() {
 	param.job.printer.Println(param.Label)
 
-	// actual fixed slot stuff
-	for slot, itemId := range param.FixedSlots {
+	for slot, itemIdList := range param.SemiFixedSlots {
 		if !param.itemOptions.Has(slot) {
 			panic("restricting slot but already empty")
+		} else if len(itemIdList) == 0 {
+			panic("empty restrict list")
 		}
 
-		param.itemOptions.ForceSlotOnlySpecifiedItemId(slot, itemId)
+		if len(itemIdList) == 1 {
+			param.itemOptions.ForceSlotOnlySpecifiedItemId(slot, itemIdList[0])
+		} else {
+			for _, itemId := range itemIdList {
+				if !param.itemOptions.IncludesItemIdInSlot(itemId, slot) {
+					panic("item included in slot restrictions but not actually available option " + itemId.String())
+				}
+			}
 
-		if !param.itemOptions.Has(slot) {
-			panic("restricting slot leaves slot empty")
+			param.itemOptions.FilterSlot(slot, func(x *items.FullItem) bool { return slices.Contains(itemIdList, x.ItemId()) })
 		}
 
 		paired := slot.PairedSlot()
 		if paired != -1 {
-			param.itemOptions.RemoveItemIdFromSlot(slot, itemId)
+			for _, itemId := range itemIdList {
+				if param.itemOptions.IncludesItemIdInSlot(itemId, slot) {
+					panic("item is fixed in one slot but also available in paired slot " + itemId.String())
+				}
+			}
 		}
 	}
 }
 
+func (param *multiSetParamInternal) removeBlocked() {
 	// remove blocked items
 	for _, itemId := range param.BlockedItems {
-		param.itemOptions.MapSlotsAll(func(options []items.FullItem) []items.FullItem {
-			newSlice := util.FilterSliceAsNew(options, func(x *items.FullItem) bool {
-				if x.ItemId() == itemId {
-					param.job.printer.Printf("BLOCKING ITEM %d %s\n", itemId, x.CreateString())
-					return false
-				}
-				return true
-			})
-			if len(options) > 0 && len(newSlice) == 0 {
-				panic("removing blocked leaves slot empty")
-			}
-			return newSlice
-		})
+		param.job.printer.Printf("BLOCKING ITEM %d\n", itemId)
+		param.itemOptions.RemoveItemIdFromAll(itemId)
 	}
-
-	// include rates slots: validate makes sense, but doesn't do anything with them
-	// TODO consider more automatic handling
-	// for slot, rule := range param.includeRateSlots {
-	// 	if !param.itemOptions.IncludesItemIdInSlot(rule.itemId, slot) {
-	// 		panic("includes rate rule but item missing " + strconv.FormatUint(uint64(rule.itemId), 10))
-	// 	}
-
-	// 	slotByItem := param.itemOptions.SlotGroupedByItemId(slot)
-	// 	if len(slotByItem) < 2 {
-	// 		panic("includes rate rule has no alternate items")
-	// 	}
-
-	// 	paired := slot.PairedSlot()
-	// 	if paired != -1 && param.itemOptions.IncludesItemIdInSlot(rule.itemId, paired) {
-	// 		panic("includes rate rule but item still allowed in paired slot " + strconv.FormatUint(uint64(rule.itemId), 10))
-	// 	}
-	// }
 }
 
 func (job *MultiSetJob) validateMultiSetAlignItemSlots() {
@@ -249,7 +237,6 @@ func (param *multiSetParamInternal) runBaseline() {
 		ItemOptions:         &param.itemOptions,
 		Model:               &param.Model,
 		EnableTrackProgress: true,
-		SolveSize:           param.job.solveSizeRevised,
 		Printer:             param.job.printer})
 
 	if !param.baselineResult.Success {

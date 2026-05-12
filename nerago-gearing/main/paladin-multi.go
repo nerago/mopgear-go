@@ -7,15 +7,14 @@ import (
 	"paladin_gearing_go/multi"
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/simulate"
-	"paladin_gearing_go/solver"
 	"paladin_gearing_go/util"
 )
 
 var dontRemoveMyImportPlease = simulate.RunSize_TestOnly
 
 func PaladinMultiRun(printer *util.PrintRecorder) {
-	job := multi.MultiSetJob_Create(printer, solver.SolveSize_PerItem, solver.SolveSize_Medium)
-	// job := multi.MultiSetJob_Create(printer, solver.SolveSize_PerItem, solver.SolveSize_PerItem)
+	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Medium)
+	// job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
 
 	ret := multi_types.MultiSetParam{
 		Label:                "Ret",
@@ -70,9 +69,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		87145, // defiled earth OFF
 		96394, // frozen warlord bracer heroic
 	})
-	ret.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
-	ret.AddFixedSlot(items.Equip_Ring2, 96500)    // scaled tyrant heroic
-	ret.AddFixedSlot(items.Equip_Back, 98147)     // pre-legend strength dps
+	ret.ForceSingleSlot(items.Equip_Trinket1, 96398) // zandalar trinket
+	ret.ForceSingleSlot(items.Equip_Ring2, 96500)    // scaled tyrant heroic
+	ret.ForceSingleSlot(items.Equip_Back, 98147)     // pre-legend strength dps
 	blockHelmetsWithoutCapacitance(&ret)
 
 	protDps := multi_types.MultiSetParam{
@@ -138,10 +137,11 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96182, // ultimate prot of the emperor thunder normal
 		96436, // tortos shell heroic
 	})
-	protDps.AddFixedSlot(items.Equip_Ring2, 96500) // scaled tyrant heroic
-	// protDps.AddFixedSlot(items.Equip_Offhand, 96182)  // ultimate prot of the emperor thunder normal
-	protDps.AddFixedSlot(items.Equip_Back, 98147)     // pre-legend strength dps
-	protDps.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
+	protDps.ForceSingleSlot(items.Equip_Ring2, 96500) // scaled tyrant heroic
+	// protDps.ForceSingleSlot(items.Equip_Offhand, 96182)  // ultimate prot of the emperor thunder normal
+	protDps.ForceSingleSlot(items.Equip_Back, 98147)                   // pre-legend strength dps
+	protDps.ForceSingleSlot(items.Equip_Trinket1, 96398)               // zandalar trinket
+	protDps.ForceTryAllSlot(items.Equip_Trinket2, 94527, 94529, 94519) // gaze of twins/ji-kun/prim rage
 	blockHelmetsWithoutCapacitance(&protDps)
 
 	protCompromise := multi_types.MultiSetParam{
@@ -207,14 +207,14 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96182, // ultimate prot of the emperor thunder normal
 		96436, // tortos shell heroic
 	})
-	protCompromise.AddFixedSlot(items.Equip_Ring2, 96500) // scaled tyrant heroic
-	// protCompromise.AddFixedSlot(items.Equip_Offhand, 96182)  // ultimate prot of the emperor thunder normal
-	protCompromise.AddFixedSlot(items.Equip_Back, 98147)     // pre-legend strength dps
-	protCompromise.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
-	// protCompromise.AddFixedSlot(items.Equip_Trinket2, 94529) // gaze of the twins
+	protCompromise.ForceSingleSlot(items.Equip_Ring2, 96500) // scaled tyrant heroic
+	protCompromise.ForceSingleSlot(items.Equip_Back, 98147)  // pre-legend strength dps
 	blockHelmetsWithoutCapacitance(&protCompromise)
-	protCompromise.BlockItem(96793)                              // Fortitude of the Zandalari
-	protCompromise.AddReportVariant(items.Equip_Trinket2, 96793) // Fortitude of the Zandalari
+
+	protCompromise.ForceSingleSlot(items.Equip_Trinket1, 96398)               // zandalar trinket
+	protCompromise.ForceTryAllSlot(items.Equip_Trinket2, 94527, 94529, 94519) // gaze of twins/ji-kun/prim rage
+	protCompromise.BlockItem(96793)                                           // Fortitude of the Zandalari
+	protCompromise.AddReportVariant(items.Equip_Trinket2, 96793)              // Fortitude of the Zandalari
 
 	protMitigationNoSet := multi_types.MultiSetParam{
 		Label:                     "Prot-Mitigation-NoSet",
@@ -275,12 +275,14 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
 	})
-	protMitigationNoSet.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
-	protMitigationNoSet.AddFixedSlot(items.Equip_Ring1, 96481)    // durumu
-	// protMitigationNoSet.AddFixedSlot(items.Equip_Offhand, 94945)  // greatshield of the gloaming normal
-	protMitigationNoSet.AddFixedSlot(items.Equip_Trinket2, 96793)     // Fortitude of the Zandalari
-	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, 94529) // gaze of the twins
+
+	protMitigationNoSet.ForceSingleSlot(items.Equip_Ring1, 96481) // durumu
 	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
+
+	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, 96398)               // zandalar trinket
+	protMitigationNoSet.BlockItem(96793)                                           // Fortitude of the Zandalari
+	protMitigationNoSet.ForceTryAllSlot(items.Equip_Trinket2, 94527, 94529, 94519) // gaze of twins/ji-kun/prim rage
+	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, 96793)              // gaze of the twins
 
 	protMitigationWithSet := multi_types.MultiSetParam{
 		Label:                     "Prot-Mitigation-WithSet",
@@ -336,16 +338,13 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
 	})
-	protMitigationWithSet.AddFixedSlot(items.Equip_Trinket1, 96398) // zandalar trinket
-	protMitigationWithSet.AddFixedSlot(items.Equip_Ring1, 96481)    // durumu
-	// protMitigationSet.AddFixedSlot(items.Equip_Offhand, 94945)  // greatshield of the gloaming normal
-	protMitigationWithSet.AddFixedSlot(items.Equip_Back, 98146)         // pre-legend strength tank
-	protMitigationWithSet.AddFixedSlot(items.Equip_Trinket2, 96793)     // Fortitude of the Zandalari
-	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, 94529) // gaze of the twins
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, 96398) // zandalar trinket
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Ring1, 96481)    // durumu
+	// protMitigationSet.ForceSingleSlot(items.Equip_Offhand, 94945)  // greatshield of the gloaming normal
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, 98146)      // pre-legend strength tank
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, 96793)  // Fortitude of the Zandalari
+	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, 94519) // prim rage
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
-
-	job.SetSpecificItemVariedInclusion(94527, multi_types.Force_ForbiddenTODO, multi_types.Force_RequireAtLeastOneUseTODO) // ji-kun trinket
-	// job.SetSpecificItemVariedInclusion(96436, multi.Force_Optional, multi.Force_FixedWhereAvailable, 0.40) // tortos shell heroic
 
 	ret.AddBagsExtra()
 	protDps.AddBagsExtra()
@@ -360,7 +359,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	job.AddSetParam(protMitigationWithSet)
 
 	job.FindHighsResult()
-	job.FindSeveralHighsAndSim(simulate.RunSize_Medium)
+	job.FindSeveralHighsAndSim()
 }
 
 func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {

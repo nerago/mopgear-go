@@ -20,11 +20,11 @@ type MultiSetParam struct {
 	ForceUpgradeExistingItems int8
 
 	// intended to use accessor funcs
-	ExtraItems    []items.ItemId
-	ExtraFromBags bool
-	BlockedItems  []items.ItemId
-	FixedSlots    map[items.SlotEquip]items.ItemId
-	ReportVariant map[items.SlotEquip]items.ItemId
+	ExtraItems     []items.ItemId
+	ExtraFromBags  bool
+	BlockedItems   []items.ItemId
+	SemiFixedSlots map[items.SlotEquip][]items.ItemId
+	ReportVariant  map[items.SlotEquip]items.ItemId
 }
 
 func (param *MultiSetParam) AddExtraItems(extraItemIds []items.ItemId) {
@@ -43,11 +43,24 @@ func (param *MultiSetParam) BlockItem(itemId items.ItemId) {
 	param.BlockedItems = append(param.BlockedItems, itemId)
 }
 
-func (param *MultiSetParam) AddFixedSlot(slot items.SlotEquip, itemId items.ItemId) {
-	if param.FixedSlots == nil {
-		param.FixedSlots = make(map[items.SlotEquip]items.ItemId)
+func (param *MultiSetParam) ForceSingleSlot(slot items.SlotEquip, itemId items.ItemId) {
+	if param.SemiFixedSlots == nil {
+		param.SemiFixedSlots = make(map[items.SlotEquip][]items.ItemId)
 	}
-	param.FixedSlots[slot] = itemId
+	if param.SemiFixedSlots[slot] != nil {
+		panic("slot already has forced item(s) set")
+	}
+	param.SemiFixedSlots[slot] = []items.ItemId{itemId}
+}
+
+func (param MultiSetParam) ForceTryAllSlot(slot items.SlotEquip, idList ...items.ItemId) {
+	if param.SemiFixedSlots == nil {
+		param.SemiFixedSlots = make(map[items.SlotEquip][]items.ItemId)
+	}
+	if param.SemiFixedSlots[slot] != nil {
+		panic("slot already has forced item(s) set")
+	}
+	param.SemiFixedSlots[slot] = idList
 }
 
 func (param *MultiSetParam) AddReportVariant(slot items.SlotEquip, id items.ItemId) {

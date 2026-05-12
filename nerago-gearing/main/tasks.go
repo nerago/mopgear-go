@@ -25,7 +25,6 @@ func basicReforge(printer *util.PrintRecorder) {
 		ItemOptions:         &itemOptions,
 		Model:               &model,
 		EnableTrackProgress: true,
-		SolveSize:           solver.SolveSize_Long,
 		Printer:             nil})
 	output.Report(printer)
 }
@@ -53,7 +52,6 @@ func findBestSubjectToCommon(printer *util.PrintRecorder) {
 		ItemOptions:         &itemOptions,
 		Model:               &model,
 		EnableTrackProgress: true,
-		SolveSize:           solver.SolveSize_Long,
 		Printer:             printer})
 
 	output.Report(printer)
@@ -116,7 +114,6 @@ func checkHighs(printer *util.PrintRecorder) {
 		ItemOptions:         &itemOptions,
 		Model:               &model,
 		EnableTrackProgress: true,
-		SolveSize:           solver.SolveSize_Medium,
 		Printer:             util.PrintRecorder_HoldAll(),
 	})
 	compareSolveOuput.Report(printer)
@@ -182,7 +179,6 @@ func testSimA(printer *util.PrintRecorder) {
 		ItemOptions:         &itemOptions,
 		Model:               &model,
 		EnableTrackProgress: true,
-		SolveSize:           solver.SolveSize_Medium,
 		Printer:             printer})
 	printer.Println("Running sim")
 	resultStats := simulate.WowSim_Execute(simulate.RunSize_QuickDirty, model.Spec, output.FullSet.Items(), model.Professions, nil, util.TrackProgress_Start())
@@ -195,7 +191,6 @@ func testSimB(printer *util.PrintRecorder) {
 		ItemOptions:         &itemOptions,
 		Model:               &model,
 		EnableTrackProgress: true,
-		SolveSize:           solver.SolveSize_Medium,
 		Printer:             printer})
 	printer.Println("Running sim")
 	resultStats := simulate.WowSim_Execute(simulate.RunSize_Medium, model.Spec, output.FullSet.Items(), model.Professions, nil, util.TrackProgress_Start())
@@ -250,7 +245,6 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 		ItemOptions:         &itemOptions,
 		Model:               &model,
 		EnableTrackProgress: true,
-		SolveSize:           solver.SolveSize_Long,
 		Printer:             printer})
 
 	output.Report(printer)
@@ -271,10 +265,6 @@ func findMitigationWithCapicitance(printer *util.PrintRecorder) {
 	// simSize := simulate.RunSize_SlowAccurate
 	simSize := simulate.RunSize_Medium
 	// simSize := simulate.RunSize_QuickDirty
-
-	solveSize := solver.SolveSize_Long
-	// solveSize := solver.SolveSize_Medium
-	// solveSize := solver.SolveSize_PerItem
 
 	// model := model.Model_PallyProtMitigation()
 	// startGear := files.GearFileProtMitigationSet
@@ -302,9 +292,9 @@ func findMitigationWithCapicitance(printer *util.PrintRecorder) {
 			}
 
 			if len(equip.GemChoice) == 0 {
-				printer.Printf("(head) %s none\n", example.BaseName)
+				printer.Printf("(head) %s none\n", example.BaseName())
 			} else {
-				printer.Printf("(head) %s %d\n", example.BaseName, equip.GemChoice[0])
+				printer.Printf("(head) %s %d\n", example.BaseName(), equip.GemChoice[0])
 			}
 		}
 
@@ -351,7 +341,6 @@ func findMitigationWithCapicitance(printer *util.PrintRecorder) {
 		ItemOptions:         &itemOptions,
 		Model:               &model,
 		EnableTrackProgress: true,
-		SolveSize:           solveSize,
 		Printer:             printer})
 	output.Report(printer)
 
@@ -375,10 +364,6 @@ func findMitigationWithCapicitance(printer *util.PrintRecorder) {
 func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 	// simSize := simulate.RunSize_Medium
 	simSize := simulate.RunSize_QuickDirty
-
-	// solveSize := solver.SolveSize_Long
-	// solveSize := solver.SolveSize_Medium
-	solveSize := solver.SolveSize_PerItem
 
 	// model := model.Model_PallyProtMitigation_NoSet()
 	model := model.Model_PallyProtMitigation_WithSet()
@@ -427,7 +412,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 				continue
 			}
 
-			printer.Printf("<<<<< FORCING %s %s >>>>>\n", slotEquip.Name(), example.BaseName)
+			printer.Printf("<<<<< FORCING %s %s >>>>>\n", slotEquip.Name(), example.BaseName())
 
 			itemOptionsSpecific := itemOptionsShared.Clone()
 			restrictSlotToId(&itemOptionsSpecific, slotEquip, itemId)
@@ -436,7 +421,6 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 				ItemOptions:         &itemOptionsSpecific,
 				Model:               &model,
 				EnableTrackProgress: true,
-				SolveSize:           solveSize,
 				Printer:             printer})
 			output.Report(printer)
 
@@ -448,7 +432,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 			printer.Println("NEW SET STATS")
 			resultStats.Print(printer)
 
-			printer.Printf("INCREASE STATS (%s %s)\n", slotEquip.Name(), example.BaseName)
+			printer.Printf("INCREASE STATS (%s %s)\n", slotEquip.Name(), example.BaseName())
 			resultStats.IncreaseSimBreakdown(&currentStats).Print(printer)
 
 			mitiInc := resultStats.IncreaseMitigation(&currentStats)

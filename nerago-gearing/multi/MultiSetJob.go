@@ -4,7 +4,7 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/multi/multi_types"
-	"paladin_gearing_go/solver"
+	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
@@ -16,20 +16,17 @@ const (
 )
 
 type MultiSetJob struct {
-	printer            *util.PrintRecorder
-	params             []multiSetParamInternal
-	fixedForge         map[items.ItemId]stats.ReforgeRecipe
-	specificAllowRates map[items.ItemId]specificAllowEntry
-	bagsGear           loaders.EquippedArray
-	solveSizeProposal  solver.SolveSize
-	solveSizeRevised   solver.SolveSize
+	printer    *util.PrintRecorder
+	params     []multiSetParamInternal
+	fixedForge map[items.ItemId]stats.ReforgeRecipe
+	bagsGear   loaders.EquippedArray
+	simRunSize simulate.WowSim_RunSize
 }
 
-func MultiSetJob_Create(printer *util.PrintRecorder, solveSizeProposal solver.SolveSize, solveSizeRevised solver.SolveSize) MultiSetJob {
+func MultiSetJob_Create(printer *util.PrintRecorder, simRunSize simulate.WowSim_RunSize) MultiSetJob {
 	return MultiSetJob{
-		printer:           printer,
-		solveSizeProposal: solveSizeProposal,
-		solveSizeRevised:  solveSizeRevised,
+		printer:    printer,
+		simRunSize: simRunSize,
 	}
 }
 
@@ -43,17 +40,4 @@ func (job *MultiSetJob) AddFixedForge(itemId items.ItemId, reforge stats.Reforge
 		job.fixedForge = make(map[items.ItemId]stats.ReforgeRecipe)
 	}
 	job.fixedForge[itemId] = reforge
-}
-
-func (job *MultiSetJob) SetSpecificItemVariedInclusion(itemId items.ItemId, modeOff multi_types.ForceItemMode, modeOn multi_types.ForceItemMode) {
-	if job.specificAllowRates == nil {
-		job.specificAllowRates = make(map[items.ItemId]specificAllowEntry)
-	}
-	job.specificAllowRates[itemId] = specificAllowEntry{itemId: itemId, modeOff: modeOff, modeOn: modeOn}
-}
-
-type specificAllowEntry struct {
-	itemId  items.ItemId
-	modeOff multi_types.ForceItemMode
-	modeOn  multi_types.ForceItemMode
 }

@@ -1,6 +1,7 @@
 package channel_op
 
 import (
+	"paladin_gearing_go/util"
 	"sync"
 )
 
@@ -8,19 +9,86 @@ func makeOutputChannel[R any]() chan R {
 	return make(chan R)
 }
 
-func Map_SliceToSlice[T any, R any](threadCount int, inputSlice []T, transform func(*T, chan<- R)) []R {
+func Map_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T, chan<- R)) <-chan R {
+	var waitGroup sync.WaitGroup
+	outputChannel := make(chan R)
+
+	for range threadCount {
+		waitGroup.Go(func() {
+			for value := range inputChannel {
+				mapper(value, outputChannel)
+			}
+		})
+	}
+
+	go func() {
+		waitGroup.Wait()
+		close(outputChannel)
+	}()
+	return outputChannel
+}
+
+func Map_ChannelToSlice[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T, chan<- R)) []R {
+	var waitGroup sync.WaitGroup
+	tempChannel := make(chan R)
+
+	for range threadCount {
+		waitGroup.Go(func() {
+			for value := range inputChannel {
+				mapper(value, tempChannel)
+			}
+		})
+	}
+
+	go func() {
+		waitGroup.Wait()
+		close(tempChannel)
+	}()
+
+	outputSlice := make([]R, 0)
+	for item := range tempChannel {
+		outputSlice = append(outputSlice, item)
+	}
+	return outputSlice
+}
+
+func Map_SliceToChannel[T any, R any](threadCount int, inputSlice []T, mapper func(*T, chan<- R)) <-chan R {
 	var waitGroup sync.WaitGroup
 
 	inputLength := len(inputSlice)
 	splits := indexSplitsInt(inputLength, threadCount)
 
-	tempChannel := makeOutputChannel[R]()
+	outputChannel := make(chan R)
 	for threadNum := range threadCount {
 		waitGroup.Go(func() {
 			start := splits[threadNum]
 			end := splits[threadNum+1]
 			for index := start; index < end; index++ {
-				transform(&inputSlice[index], tempChannel)
+				mapper(&inputSlice[index], outputChannel)
+			}
+		})
+	}
+
+	go func() {
+		waitGroup.Wait()
+		close(outputChannel)
+	}()
+	return outputChannel
+}
+
+func Map_SliceToSlice[T any, R any](threadCount int, inputSlice []T, mapper func(*T, chan<- R)) []R {
+	var waitGroup sync.WaitGroup
+
+	inputLength := len(inputSlice)
+	splits := indexSplitsInt(inputLength, threadCount)
+
+	tempChannel := make(chan R)
+	for threadNum := range threadCount {
+		waitGroup.Go(func() {
+			start := splits[threadNum]
+			end := splits[threadNum+1]
+			for index := start; index < end; index++ {
+				mapper(&inputSlice[index], tempChannel)
 			}
 		})
 	}
@@ -68,4 +136,29 @@ func indexSplitsInt(sliceLength int, threadCount int) []int {
 	splitArray = append(splitArray, sliceLength)
 
 	return splitArray
+}
+
+func PermuteAsChannel[T any](listsOfOptions [][]T) <-chan []T {
+	stepChannel := make(chan []T)
+	go func() {
+		for _, value := range listsOfOptions[0] {
+			stepChannel <- []T{value}
+		}
+		close(stepChannel)
+	}()
+
+	for i := 1; i < len(listsOfOptions); i++ {
+		nextChannel := make(chan []T)
+		go func() {
+			for currSlice := range stepChannel {
+				for _, value := range listsOfOptions[i] {
+					nextChannel <- util.CopyAndAppend(currSlice, value)
+				}
+			}
+			close(nextChannel)
+		}()
+		stepChannel = nextChannel
+	}
+
+	return stepChannel
 }
