@@ -139,7 +139,7 @@ func indexSplitsInt(sliceLength int, threadCount int) []int {
 }
 
 func PermuteAsChannel[T any](listsOfOptions [][]T) <-chan []T {
-	stepChannel := make(chan []T)
+	stepChannel := make(chan []T, 8)
 	go func() {
 		for _, value := range listsOfOptions[0] {
 			stepChannel <- []T{value}
@@ -148,17 +148,21 @@ func PermuteAsChannel[T any](listsOfOptions [][]T) <-chan []T {
 	}()
 
 	for i := 1; i < len(listsOfOptions); i++ {
-		nextChannel := make(chan []T)
-		go func() {
-			for currSlice := range stepChannel {
-				for _, value := range listsOfOptions[i] {
-					nextChannel <- util.CopyAndAppend(currSlice, value)
-				}
-			}
-			close(nextChannel)
-		}()
-		stepChannel = nextChannel
+		stepChannel = permuteStep(stepChannel, listsOfOptions[i])
 	}
 
 	return stepChannel
+}
+
+func permuteStep[T any](inChannel chan []T, options []T) chan []T {
+	outputChannel := make(chan []T, 8)
+	go func() {
+		for currSlice := range inChannel {
+			for _, value := range options {
+				outputChannel <- util.CopyAndAppend(currSlice, value)
+			}
+		}
+		close(outputChannel)
+	}()
+	return outputChannel
 }

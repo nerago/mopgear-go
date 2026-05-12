@@ -32,10 +32,9 @@ type FullItem struct {
 	total stats.StatBlock // constant total stats as they contribute to caps
 }
 
-func FullItem_FromWowSim(itemId ItemId, itemLevel uint16, itemLevelBase uint16, slot SlotItem, baseName string, statBase stats.StatBlock, armorType stats.ArmorType, socketSlots []stats.SocketType, socketBonus stats.StatBlock, phase int8) FullItem {
-	upgrade := calcUpgradeLevel(itemLevel, itemLevelBase)
+func FullItem_FromWowSim(itemId ItemId, itemLevel uint16, itemLevelBase uint16, upgradeLevel int8, slot SlotItem, baseName string, statBase stats.StatBlock, armorType stats.ArmorType, socketSlots []stats.SocketType, socketBonus stats.StatBlock, phase int8) FullItem {
 	return FullItem{
-		itemId, itemLevel, upgrade, slot, baseName, armorType, statBase.PrimaryStat(),
+		itemId, itemLevel, upgradeLevel, slot, baseName, armorType, statBase.PrimaryStat(),
 		socketSlots, socketBonus, phase,
 		stats.ReforgeRecipe_empty, nil, 0, 0,
 		statBase, stats.StatBlock_empty,

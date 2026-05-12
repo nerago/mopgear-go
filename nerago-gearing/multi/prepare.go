@@ -33,6 +33,9 @@ func (job *MultiSetJob) prepareInitial() {
 	for i := range job.params {
 		job.params[i].restrictFixed()
 	}
+	for i := range job.params {
+		job.params[i].restrictFixedValidate()
+	}
 
 	job.validateMultiSetAlignItemSlots()
 
@@ -179,11 +182,15 @@ func (param *multiSetParamInternal) restrictFixed() {
 
 			param.itemOptions.FilterSlot(slot, func(x *items.FullItem) bool { return slices.Contains(itemIdList, x.ItemId()) })
 		}
+	}
+}
 
+func (param *multiSetParamInternal) restrictFixedValidate() {
+	for slot, itemIdList := range param.SemiFixedSlots {
 		paired := slot.PairedSlot()
 		if paired != -1 {
 			for _, itemId := range itemIdList {
-				if param.itemOptions.IncludesItemIdInSlot(itemId, slot) {
+				if param.itemOptions.IncludesItemIdInSlot(itemId, paired) {
 					panic("item is fixed in one slot but also available in paired slot " + itemId.String())
 				}
 			}

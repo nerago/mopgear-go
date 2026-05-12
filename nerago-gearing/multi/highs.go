@@ -35,7 +35,7 @@ func (job *MultiSetJob) FindHighsResultPerPermutedFixed() {
 	commonOptions := job.determineCommon() // TODO common after resolving options might be good
 	permuteChannel := job.prepareFixedPermutations()
 
-	setResultList := channel_op.Map_ChannelToSlice(solveThreadCount, permuteChannel,
+	setResultList := channel_op.Map_ChannelToSlice(evaluateThreadCount, permuteChannel,
 		func(permuteSet []fixedPermuteEntry, resultChannel chan<- multi_types.MultiProposedOutput) {
 			highProcess := job.highProcessSetupForPermute(permuteSet, commonOptions)
 			setResults := highProcess.Run(job.printer)
@@ -79,33 +79,6 @@ func (job *MultiSetJob) highProcessSetup() withhighs.SolverHighsMultiProcess {
 		highProcess.AddSetParam(withhighs.SolverHighsMultiParam{
 			Label:          param.Label,
 			ItemOptions:    param.itemOptions,
-			Gear_model:     &param.Model,
-			RatingMultiply: param.ratingMultiply,
-		})
-	}
-	return highProcess
-}
-
-func (job *MultiSetJob) highProcessSetupForPermute(permuteSet []fixedPermuteEntry, commonOptions multi_types.CommonOptions) withhighs.SolverHighsMultiProcess {
-	highProcess := withhighs.SolverHighsMultiProcess{}
-	highProcess.SetCommon(commonOptions)
-
-	itemOptionsEach := make([]items.FullOptionsMap, len(job.params))
-	for paramIndex := range job.params {
-		itemOptionsEach[paramIndex] = job.params[paramIndex].itemOptions.Clone()
-	}
-
-	job.printer.Println("PERMUTE SET:")
-	for _, entry := range permuteSet {
-		job.printer.Printf(" > %d %d\n", entry.paramIndex, entry.itemId)
-		itemOptionsEach[entry.paramIndex].ForceSlotOnlySpecifiedItemId(entry.slot, entry.itemId)
-	}
-
-	for paramIndex := range job.params {
-		param := &job.params[paramIndex]
-		highProcess.AddSetParam(withhighs.SolverHighsMultiParam{
-			Label:          param.Label,
-			ItemOptions:    itemOptionsEach[paramIndex],
 			Gear_model:     &param.Model,
 			RatingMultiply: param.ratingMultiply,
 		})

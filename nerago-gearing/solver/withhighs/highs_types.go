@@ -15,7 +15,7 @@ const (
 	c_setItemsCounts = c_maxSetItems + 1
 
 	c_debugHighs = false
-	c_threads = 6
+	c_threads    = 6
 )
 
 // not really consts but would be nice
@@ -66,84 +66,64 @@ func (input *inputBuilder) clone() *inputBuilder {
 }
 
 func (input *inputBuilder) runHighs() (*highs.Solution, *util.PrintRecorder) {
-	tempFilename := makeTempFilename()
+	logFilename := makeTempFilename()
 
-	solver := input.toHighsModel_internal(tempFilename)
-	solution, err := solver.Run()
-	solver.Close()
-	if err != nil {
-		panic(err)
-	}
+	solver := highsPool.Get()
+	input.configureHighsModel_internal(solver, logFilename)
 
-	bytes, err := os.ReadFile(tempFilename)
-	if err != nil {
-		panic(err)
-	}
-	printer := util.PrintRecorder_HoldAll()
-	printer.PrintBytes(bytes)
+	solution, err := highsPool.RunSolverUnderMutex(solver)
+	checkError(err)
+
+	checkError(solver.SetStringOption("log_file", "")) // flush log
+	printer := readLogfile(logFilename)
+
+	highsPool.Put(solver)
 
 	return solution, printer
 }
 
-func (input *inputBuilder) runHighsMinimise() (*highs.Solution, *util.PrintRecorder) {
-	tempFilename := makeTempFilename()
-
-	solver := input.toHighsModel_internal(tempFilename)
-	err := solver.SetMaximize(false)
-	if err != nil {
-		panic(err)
-	}
-
-	solution, err := solver.Run()
-	solver.Close()
-	if err != nil {
-		panic(err)
-	}
-
+func readLogfile(tempFilename string) *util.PrintRecorder {
 	bytes, err := os.ReadFile(tempFilename)
-	if err != nil {
-		panic(err)
-	}
+	checkError(err)
+
 	printer := util.PrintRecorder_HoldAll()
 	printer.PrintBytes(bytes)
-
-	return solution, printer
+	return printer
 }
 
-func (input *inputBuilder) toHighsModel_internal(logfile string) *highs.Solver {
-	solver, err := highs.NewSolver()
-
-	// solver.SetStringOption("presolve", "off")
-	solver.SetStringOption("parallel", "on")
-	solver.SetIntOption("threads", c_threads)
-	// solver.SetFloatOption("time_limit", 10)
+func (input *inputBuilder) configureHighsModel_internal(solver *highs.Solver, logfile string) {
+	// checkError(solver.SetStringOption("presolve", "off"))
+	// checkError(solver.SetStringOption("parallel", "on"))
+	// checkError(solver.SetIntOption("threads", c_threads))
+	// checkError(solver.SetFloatOption("time_limit", 10))
 
 	if logfile != "" {
-		solver.SetStringOption("log_file", logfile)
+		checkError(solver.SetStringOption("log_file", logfile))
 	} else {
-		solver.SetBoolOption("log_to_console", true)
+		checkError(solver.SetBoolOption("log_to_console", true))
 	}
 
 	if c_debugHighs {
-		solver.SetIntOption("log_dev_level", 3)
+		checkError(solver.SetIntOption("log_dev_level", 3))
 	}
 
-	err = solver.SetMaximize(true)
-	if err != nil {
-		panic(err)
-	}
+	checkError(solver.SetMaximize(true))
 
-	numRows, lowerBound, upperBound, startArray, indexArray, valuesArray := input.mat.prepareForModel()
+	numRows, lowerBound, upperBound, startArray, indexArray, valuesArray := input.mat.createSolverInputArrays()
 
-	solver.PassModel(
+	checkError(solver.PassModel(
 		len(input.vars.ColTypes),
 		numRows,
 		input.vars.ColCosts, input.vars.ColLower, input.vars.ColUpper,
 		lowerBound, upperBound,
 		startArray, indexArray, valuesArray,
-		input.vars.ColTypes, true, 0)
+		input.vars.ColTypes, true, 0))
+}
 
-	return solver
+func checkError(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
 
 func makeTempFilename() string {
@@ -151,7 +131,7 @@ func makeTempFilename() string {
 	if err != nil {
 		panic(err)
 	}
-	tempFile.Close()
+	checkError(tempFile.Close())
 	return tempFile.Name()
 }
 
@@ -262,7 +242,7 @@ func (mat constraintMatrixBuilder) changeRow(rowIndex int, entries []indexAndVal
 	mat.upperBound[rowIndex] = upperBound
 }
 
-func (mat *constraintMatrixBuilder) prepareForModel() (numRows int, lowerBound []float64, upperBound []float64, startArray []int, indexArray []int, valuesArray []float64) {
+func (mat *constraintMatrixBuilder) createSolverInputArrays() (numRows int, lowerBound []float64, upperBound []float64, startArray []int, indexArray []int, valuesArray []float64) {
 	numRows = len(mat.entries)
 	if len(mat.lowerBound) != numRows || len(mat.upperBound) != numRows {
 		panic("inconsistent row count")

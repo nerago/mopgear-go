@@ -13,7 +13,7 @@ func (id ItemId) String() string {
 	return strconv.FormatUint(uint64(id), 10)
 }
 
-func calcUpgradeLevel(itemLevel uint16, itemLevelBase uint16) int8 {
+func CalcUpgradeLevel(itemLevel uint16, itemLevelBase uint16) int8 {
 	diff := int16(itemLevel) - int16(itemLevelBase)
 	if diff < 0 {
 		return -1

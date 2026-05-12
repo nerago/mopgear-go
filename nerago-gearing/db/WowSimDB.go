@@ -126,16 +126,24 @@ func addItem(itemObj map[string]any) {
 
 	scalingOptions := itemObj["scalingOptions"].(map[string]any)
 	baseItemLevel := getUInt16OrPanic(scalingOptions["0"].(map[string]any), "ilvl")
-	for _, entry := range scalingOptions {
+	for scaleGroup, entry := range scalingOptions {
+
 		scaleEntry := entry.(map[string]any)
 		itemLevel := getUInt16OrPanic(scaleEntry, "ilvl")
 
 		var scaleStats stats.StatBlock
 		if scaleEntry["stats"] != nil {
 			scaleStats = extern_stats.SimJsonMapToGearStatBlock(scaleEntry["stats"].(map[string]any))
+		} 
+
+		var upgradeLevel int8
+		if scaleGroup == "-1" {
+			upgradeLevel = -1
+		} else {
+			upgradeLevel = items.CalcUpgradeLevel(itemLevel, baseItemLevel)
 		}
 
-		item := items.FullItem_FromWowSim(itemId, itemLevel, baseItemLevel, slot, name, scaleStats, armorType, socketSlots, socketBonus, phase)
+		item := items.FullItem_FromWowSim(itemId, itemLevel, baseItemLevel, upgradeLevel, slot, name, scaleStats, armorType, socketSlots, socketBonus, phase)
 		itemsById[itemId] = append(itemsById[itemId], item)
 	}
 }

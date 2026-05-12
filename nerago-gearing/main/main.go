@@ -79,7 +79,7 @@ func core(printer *util.PrintRecorder) {
 	// checkHighs(printer)
 	// checkHighsAcross(printer)
 
-	// PaladinMultiRun(printer)
+	PaladinMultiRun(printer)
 	// testSim(printer)
 	// findUpgrades_Sim_PaladinMiti_Run(printer)
 	// findUpgrades_Sim_PaladinDps_Run(printer)
@@ -87,7 +87,7 @@ func core(printer *util.PrintRecorder) {
 	// findSimpleUpgrade_ForceEach(printer)
 	// findMitigationWithCapicitance(printer)
 	// relativeRatingsCompromise(printer)
-	trinketSims(printer)
+	// trinketSims(printer)
 
 	// generateRatingsDataFromSims(printer)
 }
