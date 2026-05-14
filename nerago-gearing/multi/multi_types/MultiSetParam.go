@@ -53,7 +53,7 @@ func (param *MultiSetParam) ForceSingleSlot(slot items.SlotEquip, itemId items.I
 	param.SemiFixedSlots[slot] = []items.ItemId{itemId}
 }
 
-func (param MultiSetParam) ForceTryAllSlot(slot items.SlotEquip, idList ...items.ItemId) {
+func (param *MultiSetParam) ForceTryAllSlot(slot items.SlotEquip, idList ...items.ItemId) {
 	if param.SemiFixedSlots == nil {
 		param.SemiFixedSlots = make(map[items.SlotEquip][]items.ItemId)
 	}

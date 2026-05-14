@@ -10,9 +10,8 @@ import (
 )
 
 const (
-	generateThreadCount = 6
-	solveThreadCount    = 6
-	evaluateThreadCount = 6
+	simThreadCount   = 4
+	highsThreadCount = 10
 )
 
 type MultiSetJob struct {

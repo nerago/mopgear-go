@@ -1,5 +1,7 @@
 package withhighs
 
+import "github.com/bartolsthoorn/gohighs/highs"
+
 func contraintIfBoolCopyValueElseZero(input *inputBuilder, boolSwitchVar, sourceVar, targetVar int, rangeLow, rangeHigh float64) {
 	// based on https://medium.com/data-science/a-comprehensive-guide-to-modeling-techniques-in-mixed-integer-linear-programming-3e96cc1bc03d
 
@@ -24,6 +26,13 @@ func contraintIfBoolCopyValueElseZero(input *inputBuilder, boolSwitchVar, source
 	zeroLow.add(targetVar, -1)
 	zeroLow.add(boolSwitchVar, rangeLow)
 	zeroLow.finish(input, c_minusInf, 0)
+}
+
+func constraintNotBool(input *inputBuilder, sourceVar, targetVar int) {
+	not := constraintRowBuild{}
+	not.add(sourceVar, 1)
+	not.add(targetVar, 1)
+	not.finish(input, 1, 1)
 }
 
 // https://medium.com/data-science/a-comprehensive-guide-to-modeling-techniques-in-mixed-integer-linear-programming-3e96cc1bc03d
@@ -55,4 +64,55 @@ func (build *contraintAndBuilder) finishAndApply(input *inputBuilder) {
 
 	targetNum := len(build.inputVars) - 1
 	sumRow.finish(input, c_minusInf, float64(targetNum))
+}
+
+func absoluteValue_messy(input *inputBuilder, inputVar, outputVar int, rangeHigh float64) {
+	// inputVar + outputVar = 0   OR   inputVar - outputVar = 0
+	// diff1 = inputVar
+	// diff2 = -inputVar
+
+	// H = 10, M = 10
+	// 0 <= inputVar + M*b1 <= H
+	// if inputVar==0 then b1=0/1
+	// if inputVar==5 then b1=0
+	// if inputVar==10 then b1=0
+	// if inputVar==-5 then b1=1
+	// if inputVar==-10 then b1=1
+	isNegativeCol := input.createColumnBool()
+	negativeCheck := constraintRowBuild{}
+	negativeCheck.add(inputVar, 1)
+	negativeCheck.add(isNegativeCol, rangeHigh)
+	negativeCheck.finish(input, 0, rangeHigh)
+
+	isZeroOrPositiveCol := input.createColumnBool()
+	constraintNotBool(input, isNegativeCol, isZeroOrPositiveCol)
+
+	inputNegated := input.createColumnGeneral(highs.Continuous, -rangeHigh, rangeHigh) // would be nice to get passed more info
+	negateCalc := constraintRowBuild{}
+	negateCalc.add(inputVar, 1)
+	negateCalc.add(inputNegated, -1)
+	negateCalc.finish(input, 0, 0)
+
+	contraintIfBoolCopyValueElseZero(input, isNegativeCol, inputNegated, outputVar, 0, rangeHigh)
+	contraintIfBoolCopyValueElseZero(input, isZeroOrPositiveCol, inputVar, outputVar, 0, rangeHigh)
+}
+
+func absoluteValue(input *inputBuilder, inputVar, outputVar int, rangeHigh float64) {
+	isNegativeCol := input.createColumnBool()
+	negativeCheck := constraintRowBuild{}
+	negativeCheck.add(inputVar, 1)
+	negativeCheck.add(isNegativeCol, rangeHigh)
+	negativeCheck.finish(input, 0, rangeHigh)
+
+	setIfNegative := constraintRowBuild{}
+	setIfNegative.add(inputVar, 1)
+	setIfNegative.add(outputVar, 1)
+	setIfNegative.add(isNegativeCol, rangeHigh)
+	setIfNegative.finish(input, 0, rangeHigh)
+
+	setIfPositive := constraintRowBuild{}
+	setIfPositive.add(inputVar, -1)
+	setIfPositive.add(outputVar, 1)
+	setIfPositive.add(isNegativeCol, -rangeHigh)
+	setIfPositive.finish(input, -rangeHigh, 0)
 }

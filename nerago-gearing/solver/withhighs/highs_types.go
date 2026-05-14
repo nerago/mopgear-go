@@ -66,20 +66,30 @@ func (input *inputBuilder) clone() *inputBuilder {
 }
 
 func (input *inputBuilder) runHighs() (*highs.Solution, *util.PrintRecorder) {
-	logFilename := makeTempFilename()
-
-	solver := highsPool.Get()
-	input.configureHighsModel_internal(solver, logFilename)
+	solver, logFilename := input.preHighsRun()
 
 	solution, err := highsPool.RunSolverUnderMutex(solver)
 	checkError(err)
 
+	printer := input.postHighsRun(solver, logFilename)
+	return solution, printer
+}
+
+func (input *inputBuilder) preHighsRun() (*highs.Solver, string) {
+	logFilename := makeTempFilename()
+
+	solver := highsPool.Get()
+	input.configureHighsModel_internal(solver, logFilename)
+	return solver, logFilename
+}
+
+func (*inputBuilder) postHighsRun(solver *highs.Solver, logFilename string) *util.PrintRecorder {
 	checkError(solver.SetStringOption("log_file", "")) // flush log
 	printer := readLogfile(logFilename)
 
 	highsPool.Put(solver)
 
-	return solution, printer
+	return printer
 }
 
 func readLogfile(tempFilename string) *util.PrintRecorder {
@@ -99,9 +109,8 @@ func (input *inputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 
 	if logfile != "" {
 		checkError(solver.SetStringOption("log_file", logfile))
-	} else {
-		checkError(solver.SetBoolOption("log_to_console", true))
-	}
+	} 
+	checkError(solver.SetBoolOption("log_to_console", c_debugHighs))
 
 	if c_debugHighs {
 		checkError(solver.SetIntOption("log_dev_level", 3))
@@ -110,7 +119,6 @@ func (input *inputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 	checkError(solver.SetMaximize(true))
 
 	numRows, lowerBound, upperBound, startArray, indexArray, valuesArray := input.mat.createSolverInputArrays()
-
 	checkError(solver.PassModel(
 		len(input.vars.ColTypes),
 		numRows,

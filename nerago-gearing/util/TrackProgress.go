@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -96,6 +97,13 @@ func (track *TrackProgress) run(getProgress func() float64) {
 func (track *TrackProgress) RunFromInt(current *uint64, targetCount uint64) {
 	track.run(func() float64 {
 		percent := float64(*current) / float64(targetCount)
+		return percent
+	})
+}
+
+func (track *TrackProgress) RunFromAtomicInt(current *atomic.Uint64, targetCount uint64) {
+	track.run(func() float64 {
+		percent := float64(current.Load()) / float64(targetCount)
 		return percent
 	})
 }

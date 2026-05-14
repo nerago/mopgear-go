@@ -5,10 +5,6 @@ import (
 	"sync"
 )
 
-func makeOutputChannel[R any]() chan R {
-	return make(chan R)
-}
-
 func Map_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T, chan<- R)) <-chan R {
 	var waitGroup sync.WaitGroup
 	outputChannel := make(chan R)

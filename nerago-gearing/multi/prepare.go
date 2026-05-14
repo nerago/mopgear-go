@@ -176,7 +176,7 @@ func (param *multiSetParamInternal) restrictFixed() {
 		} else {
 			for _, itemId := range itemIdList {
 				if !param.itemOptions.IncludesItemIdInSlot(itemId, slot) {
-					panic("item included in slot restrictions but not actually available option " + itemId.String())
+					panic("item included in slot restrictions but not actually available option " + param.Label + " " + itemId.String())
 				}
 			}
 

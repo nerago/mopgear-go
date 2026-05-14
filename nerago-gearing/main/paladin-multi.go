@@ -11,11 +11,14 @@ import (
 )
 
 const (
-	trinketZandSpark = 96398
-	trinketFortZand  = 96793
-	trinketPrimRage  = 94519
-	trinketTwinsGaze = 94529
-	trinketJiKun     = 94527
+	trinketZandSpark    = 96398
+	trinketFortZand     = 96793
+	trinketPrimRage     = 94519
+	trinketTwinsGaze    = 94529
+	trinketJiKun        = 94527
+	trinketSoulBarrier  = 96555
+	preLegendMeleeCloak = 98147
+	preLegendTankCloak  = 98146
 )
 
 func PaladinMultiRun(printer *util.PrintRecorder) {
@@ -32,7 +35,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		ForceUpgradeExistingItems: 2,
 	}
 	ret.AddExtraItems([]items.ItemId{
-		98147, // pre-legend strength dps
+		preLegendMeleeCloak, // pre-legend strength dps
 
 		95140, // shado assault band
 		95141, // shado assault loop
@@ -53,6 +56,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96533, // rein-binders fists heroic
 		95153, // Tyrant King Battleplate
 
+		96550, // doomed crown heroic
 		87024, // null greathelm
 		95282, // ret tier15 normal head
 		95910, // ret tier15 chest celestial
@@ -72,6 +76,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		trinketZandSpark,
 		trinketJiKun,     // ji-kun trinket
 		trinketTwinsGaze, // gaze of the twins
+		trinketSoulBarrier,
 
 		87145, // defiled earth OFF
 		96394, // frozen warlord bracer heroic
@@ -79,7 +84,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	ret.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark) // zandalar trinket
 	ret.ForceSingleSlot(items.Equip_Trinket2, trinketTwinsGaze) // zandalar trinket
 	ret.ForceSingleSlot(items.Equip_Ring2, 96500)               // scaled tyrant heroic
-	ret.ForceSingleSlot(items.Equip_Back, 98147)                // pre-legend strength dps
+	ret.ForceSingleSlot(items.Equip_Back, preLegendMeleeCloak)  // pre-legend strength dps
 	blockHelmetsWithoutCapacitance(&ret)
 
 	protDps := multi_types.MultiSetParam{
@@ -105,7 +110,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94726, // cloudbreaker belt normal
 		96373, // cloudbreaker belt heroic
 
-		98147, // pre-legend strength dps
+		preLegendMeleeCloak, // pre-legend strength dps
 
 		95535, // normal lightning legs
 		94773, // centripetal shoulders normal
@@ -113,6 +118,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96533, // rein-binders fists heroic
 		95153, // Tyrant King Battleplate
 
+		96550, // doomed crown heroic
 		87024, // null greathelm
 		95778, // crown golden golem celestial [would need gem]
 		95282, // ret tier15 normal head
@@ -142,15 +148,17 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		trinketPrimRage,
 		trinketJiKun,
 		trinketTwinsGaze,
+		trinketSoulBarrier,
 
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
 		96436, // tortos shell heroic
 	})
 	protDps.ForceSingleSlot(items.Equip_Ring2, 96500)                                              // scaled tyrant heroic
-	protDps.ForceSingleSlot(items.Equip_Back, 98147)                                               // pre-legend strength dps
+	protDps.ForceSingleSlot(items.Equip_Back, preLegendMeleeCloak)                                 // pre-legend strength dps
 	protDps.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)                                // zandalar trinket
 	protDps.ForceTryAllSlot(items.Equip_Trinket2, trinketJiKun, trinketTwinsGaze, trinketPrimRage) // gaze of twins/ji-kun/prim rage
+	protDps.ForceTryAllSlot(items.Equip_Offhand, 94945, 96182, 96436)
 	blockHelmetsWithoutCapacitance(&protDps)
 
 	protCompromise := multi_types.MultiSetParam{
@@ -176,7 +184,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94726, // cloudbreaker belt normal
 		96373, // cloudbreaker belt heroic
 
-		98147, // pre-legend strength dps
+		preLegendMeleeCloak, // pre-legend strength dps
 
 		96428, // shell-coated wrists
 		96447, // rot-proof greatplate
@@ -187,6 +195,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96533, // rein-binders fists heroic
 		95153, // Tyrant King Battleplate REMOVE1234
 
+		96550, // doomed crown heroic
 		87024, // null greathelm
 		95778, // crown golden golem celestial [would need gem, acceptable]
 		95282, // ret tier15 normal head [would need gem]
@@ -213,13 +222,17 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		trinketPrimRage,
 		trinketJiKun,
 		trinketTwinsGaze,
+		trinketSoulBarrier,
+
+		preLegendMeleeCloak,
+		preLegendTankCloak,
 
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
 		96436, // tortos shell heroic
 	})
-	protCompromise.ForceSingleSlot(items.Equip_Ring2, 96500) // scaled tyrant heroic
-	protCompromise.ForceSingleSlot(items.Equip_Back, 98147)  // pre-legend strength dps
+	protCompromise.ForceSingleSlot(items.Equip_Ring2, 96500)              // scaled tyrant heroic
+	protCompromise.ForceTryAllSlot(items.Equip_Back, preLegendMeleeCloak, preLegendTankCloak)
 	blockHelmetsWithoutCapacitance(&protCompromise)
 
 	protCompromise.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)                                // zandalar trinket
@@ -249,8 +262,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		96373, // cloudbreaker belt heroic
 
-		98147, // pre-legend strength dps
-		98146, // pre-legend strength tank
+		preLegendMeleeCloak, // pre-legend strength dps
+		preLegendTankCloak,  // pre-legend strength tank
 
 		95535, // normal lightning legs
 		96468, // talonrender chest heroic
@@ -259,6 +272,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96428, // shell-coated wrists UPGRADE LIKED
 		96447, // rot-proof greatplate
 
+		96550, // doomed crown heroic
 		95910, // ret tier15 chest celestial REMOVE12
 		95281, // ret tier15 gloves normal
 		96657, // ret tier15 legs heroic
@@ -287,6 +301,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		trinketPrimRage,
 		trinketJiKun,
 		trinketTwinsGaze,
+		trinketSoulBarrier,
 
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
@@ -294,6 +309,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Ring1, 96481) // durumu
 	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
+
+	protMitigationNoSet.ForceTryAllSlot(items.Equip_Back, preLegendMeleeCloak, preLegendTankCloak)
 
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)                                // zandalar trinket
 	protMitigationNoSet.ForceTryAllSlot(items.Equip_Trinket2, trinketTwinsGaze, trinketJiKun, trinketPrimRage) // gaze of twins/ji-kun/prim rage
@@ -321,7 +338,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		96373, // cloudbreaker belt heroic
 
-		98146, // pre-legend strength tank
+		preLegendTankCloak, // pre-legend strength tank
 
 		95535, // normal lightning legs REMOVE12
 		94773, // centripetal shoulders normal REMOVE1234
@@ -333,6 +350,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96657, // ret tier15 legs heroic   REMOVE12
 		96658, // ret tier15 shoulder heroic  REMOVE12
 
+		96550, // doomed crown heroic
 		95291, // prot tier15 hand normal
 		95290, // prot tier15 chest normal
 		96666, // prot tier15 head heroic
@@ -355,19 +373,20 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		trinketPrimRage,
 		trinketJiKun,
 		trinketTwinsGaze,
+		trinketSoulBarrier,
 
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
 	})
 
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Ring1, 96481)               // durumu
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, 98146)                // pre-legend strength tank
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, preLegendTankCloak)   // pre-legend strength tank
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark) // zandalar trinket
-	// protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)  // Fortitude of the Zandalari
-	// protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage) // prim rage
-	protMitigationWithSet.ForceTryAllSlot(items.Equip_Trinket2, trinketTwinsGaze, trinketJiKun, trinketPrimRage) // gaze of twins/ji-kun/prim rage
-	protMitigationWithSet.BlockItem(trinketFortZand)                                                             // Fortitude of the Zandalari
-	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketFortZand)                                // gaze of the twins
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)  // Fortitude of the Zandalari
+	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage) // prim rage
+	// protMitigationWithSet.ForceTryAllSlot(items.Equip_Trinket2, trinketTwinsGaze, trinketJiKun, trinketPrimRage) // gaze of twins/ji-kun/prim rage
+	// protMitigationWithSet.BlockItem(trinketFortZand)                                                             // Fortitude of the Zandalari
+	// protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketFortZand)                                // gaze of the twins
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 
 	// ret.AddBagsExtra()
@@ -382,9 +401,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	job.AddSetParam(protMitigationNoSet)
 	job.AddSetParam(protMitigationWithSet)
 
-	// job.FindHighsResult()
+	job.FindHighsResult()
 	// job.FindSeveralHighsAndSim()
-	job.FindHighsResultPerPermutedFixed()
+	// job.FindHighsResultPerPermutedFixed(2)
 }
 
 func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {

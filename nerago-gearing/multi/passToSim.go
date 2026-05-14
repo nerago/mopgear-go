@@ -82,7 +82,7 @@ func (job *MultiSetJob) runSims(jobList []simulateJob, trackProgress *util.Track
 	trackProgress.RunOuterTracking(len(jobList))
 	defer trackProgress.Stop()
 
-	return channel_op.Map_SliceToSlice(evaluateThreadCount, jobList, func(sim *simulateJob, resultChan chan<- simulateJobResult) {
+	return channel_op.Map_SliceToSlice(simThreadCount, jobList, func(sim *simulateJob, resultChan chan<- simulateJobResult) {
 		result := simulate.WowSim_Execute_SelectFight(job.simRunSize, sim.spec, sim.fight, &sim.equip, sim.professions, nil, trackProgress.MakeNested())
 		job.printer.Printf("sim %22s fight=%d %s\n", sim.spec.Name(), sim.fight, result.CompactStringGeneral())
 		resultChan <- simulateJobResult{*sim, result}
