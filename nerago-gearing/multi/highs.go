@@ -12,13 +12,14 @@ import (
 	"github.com/google/uuid"
 )
 
-func (job *MultiSetJob) FindHighsResult() util.Optional[multi_types.MultiProposedOutput] {
+func (job *MultiSetJob) FindHighsResult_Sample() util.Optional[multi_types.MultiProposedOutput] {
 	job.prepareInitial()
 	highProcess := job.highProcessSetup()
 
 	best := util_rank.BestCollector1[multi_types.MultiProposedOutput]{}
 
-	setResults := highProcess.RunForSeveral_NextObjective(job.printer)
+	setResults := highProcess.RunForSeveral_NextObjective(job.printer, 6)
+	// setResults := highProcess.RunForSeveral_CommonDifferent_Sampling(job.printer, 6)
 	if setResults != nil {
 		proposedOutput := util.CastSliceAsNew(setResults, func(x *[]items.FullItemSet) multi_types.MultiProposedOutput {
 			return job.makeOutputFromHighs(*x, job.printer)
@@ -34,7 +35,7 @@ func (job *MultiSetJob) FindHighsResult() util.Optional[multi_types.MultiPropose
 	return best.GetBestOptional()
 }
 
-func (job *MultiSetJob) FindHighsResultPerPermutedFixed(solutionsPerPermute int) {
+func (job *MultiSetJob) FindHighsResultPerPermute(solutionsPerPermute int) {
 	job.prepareInitial()
 
 	tracker := util.TrackProgress_Start()
@@ -55,21 +56,23 @@ func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, s
 	tracker.RunFromAtomicInt(&currentProgress, estimate)
 	defer tracker.Stop()
 
-	permuteChannel := job.prepareFixedPermutations()
+	permuteChannel := job.preparePermutations()
 	setResultList := channel_op.Map_ChannelToSlice(highsThreadCount, permuteChannel,
-		func(permuteSet fixedPermuteSet, resultChannel chan<- multi_types.MultiProposedOutput) {
+		func(permuteSet permuteSet, resultChannel chan<- multi_types.MultiProposedOutput) {
 			printer := util.PrintRecorder_HoldAll()
 
 			highProcess := job.highProcessSetupForPermute(permuteSet, commonOptions, printer)
 
-			// setResults := highProcess.Run(printer)
-			// if setResults != nil {
-			// 	resultChannel <- job.makeOutputFromHighs(setResults, printer)
-			// }
-
-			setResultsList := highProcess.RunForSeveral_CommonDifferent_Sampling(printer, solutionsPerPermute)
-			for _, setResults := range setResultsList {
-				resultChannel <- job.makeOutputFromHighs(setResults, printer)
+			if solutionsPerPermute == 1 {
+				setResults := highProcess.Run(printer)
+				if setResults != nil {
+					resultChannel <- job.makeOutputFromHighs(setResults, printer)
+				}
+			} else {
+				setResultsList := highProcess.RunForSeveral_CommonDifferent_Sampling(printer, solutionsPerPermute)
+				for _, setResults := range setResultsList {
+					resultChannel <- job.makeOutputFromHighs(setResults, printer)
+				}
 			}
 
 			job.printer.AppendOther(printer)
@@ -146,6 +149,7 @@ func (job *MultiSetJob) makeOutputFromHighs(setResults []items.FullItemSet, prin
 		param := &job.params[paramIndex]
 		itemSet := setResults[paramIndex]
 		single := multi_types.SingleProposed_FromItemSet(itemSet, &param.Model)
+		single.Report(printer)
 		outputs[paramIndex] = single
 		totalRatingSum += single.ResultRating * param.ratingMultiply
 	}

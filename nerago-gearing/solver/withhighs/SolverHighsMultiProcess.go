@@ -171,7 +171,6 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_WithParall
 	return resultList
 }
 
-
 func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_Sampling(printer *util.PrintRecorder, outputTarget int) [][]items.FullItemSet {
 	printer.Printf("INITIAL MULTI run\n")
 
@@ -197,7 +196,9 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_Sampling(p
 		var tryIndex int
 		for {
 			tryIndex = rand.Intn(len(bestCommonChoices))
-			if !slices.Contains(checkedIndexes, tryIndex) { break }
+			if !slices.Contains(checkedIndexes, tryIndex) {
+				break
+			}
 		}
 		checkedIndexes = append(checkedIndexes, tryIndex)
 		changeColumn := bestCommonChoices[tryIndex]
@@ -226,13 +227,16 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_Sampling(p
 	return resultList
 }
 
+// this is generally slower on subsequent results
+// as opposed to common change ones that are about the same
 func (process *SolverHighsMultiProcess) RunForSeveral_NextObjective(printer *util.PrintRecorder, targetCount int) [][]items.FullItemSet {
 	printer.Printf("INITIAL MULTI run\n")
+	resultList := make([][]items.FullItemSet, 0)
 
 	process.makeFullModel()
 
 	startTime1 := time.Now()
-	printer.Println("Started at " + startTime1.Format(time.RFC1123))
+	printer.Println("Started initial " + startTime1.Format(time.RFC1123))
 
 	solver, logFilename := process.input.preHighsRun()
 	solution, err := highsPool.RunSolverUnderMutex(solver)
@@ -240,43 +244,38 @@ func (process *SolverHighsMultiProcess) RunForSeveral_NextObjective(printer *uti
 
 	printer.Println("Duration initial = " + time.Since(startTime1).String())
 	printer.Println("SOLUTION STATUS = " + solution.Status.String())
-
-	initialResult := process.solutionToResult(solution)
-	// initialObjective := solution.Objective
-
-	resultList := make([][]items.FullItemSet, 0)
-	resultList = append(resultList, initialResult)
-
+	printer.Printf("Objective %f\n", solution.Objective)
 	if !solution.HasSolution() {
 		return nil
 	}
 
-	bestCommonChoices := process.extractCommonChoices(solution)
-	randIndex := rand.Intn(len(bestCommonChoices))
-	changeColumn := bestCommonChoices[randIndex].columnIndex
-	checkError(solver.AddRow(0, 0, []int{changeColumn}, []float64{1}))
-	// rowLimitCommon := constraintRowBuild{}
-	// 	rowLimitCommon.add(, 1)
-	// 	rowLimitCommon.finish(input, 0, 0)
+	initialResult := process.solutionToResult(solution)
+	resultList = append(resultList, initialResult)
+	lastObjectiveValue := solution.Objective
 
-	// checkError(solver.SetColBounds(process.outputColumn, 0, initialObjective * 0.99999))
-	// checkError(solver.AddRow(0, initialObjective * 0.99999, []int{process.outputColumn}, []float64{1}))
-	// checkError(solver.ClearSolver())
+	for len(resultList) < targetCount {
+		checkError(solver.SetColBounds(process.outputColumn, 0, lastObjectiveValue*0.99999))
 
-	startTime2 := time.Now()
+		startTime2 := time.Now()
+		printer.Println("Started next " + startTime1.Format(time.RFC1123))
 
-	solution, err = highsPool.RunSolverUnderMutex(solver)
-	checkError(err)
+		solution, err = highsPool.RunSolverUnderMutex(solver)
+		checkError(err)
 
-	printer.Println("Duration second = " + time.Since(startTime2).String())
-	printer.Println("SOLUTION STATUS = " + solution.Status.String())
+		printer.Println("Duration next = " + time.Since(startTime2).String())
+		printer.Println("SOLUTION STATUS = " + solution.Status.String())
+		printer.Printf("Objective %f\n", solution.Objective)
+		if !solution.HasSolution() {
+			break
+		}
 
-	secondResult := process.solutionToResult(solution)
-	resultList = append(resultList, secondResult)
+		nextResult := process.solutionToResult(solution)
+		resultList = append(resultList, nextResult)
+		lastObjectiveValue = solution.Objective
+	}
 
 	log := process.input.postHighsRun(solver, logFilename)
 	printer.AppendOther(log)
-
 	return resultList
 }
 

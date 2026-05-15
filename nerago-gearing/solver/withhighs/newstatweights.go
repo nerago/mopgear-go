@@ -44,6 +44,7 @@ var requiredStats = []stats.StatType{stats.Stat_Strength, stats.Stat_Stamina, st
 var requiredSims = []simulate.SimResultType{simulate.Result_DPS, simulate.Result_DEATH, simulate.Result_TMI, simulate.Result_DTPS}
 
 func CalcNewStatWeights(inputData []NewWeightInput, targetRatios simulate.SimResultStats) {
+	highRange := 100000.0 // basic sum of stats Mop P4 is about 83k
 
 	input := new(inputBuilder)
 
@@ -66,20 +67,38 @@ func CalcNewStatWeights(inputData []NewWeightInput, targetRatios simulate.SimRes
 	totalSimWeightRow.finish(input, 1, 1)
 
 	for _, data := range inputData {
-		// gearScoreColIndex := input.createColumnGeneral(highs.Continuous, 1, 1000)
-
-		dataRow := constraintRowBuild{}
+		// add up weighted gear score for row
+		gearScoreCol := input.createColumnGeneral(highs.Continuous, 1, 1000)
+		gearRow := constraintRowBuild{}
 		for statType, statCol := range statWeightColumns {
-			dataRow.add(statCol, float64(data.totalStat.Get(statType)))
+			gearRow.add(statCol, float64(data.totalStat.Get(statType)))
 		}
+		gearRow.add(gearScoreCol, -1)
+		gearRow.finish(input, 0, 0)
 
+		simScoreRow := constraintRowBuild{}
 		for simType, simCol := range simWeightColumns {
-			dataRow.add(simCol, data.simResult.Get(simType) * targetRatios.Get(simType)) // does this multiply actually do anything useful?
+			simScoreRow.add(simCol, data.simResult.Get(simType))
 		}
 
-		diffTerm := input.createColumnWithOutput(highs.Continuous, c_minusInf, c_plusInf, 1)  // signed diff doesn't add
-		dataRow.add(diffTerm, 1)
+		// actually want average contribution to the total
+		// make the target weights coeffecients, multiply by calculated weights, then do another diff to target?
+
+		// simTotalScore is made up of 0.1 * x + 0.4 * y + 0.5 * z, should add to one
+		// x,y,z = is simResult[Type]*simWeightCol[type]
+		// contribution is actually simResult[type]*simWeightCol[type]*targetWeight[type]. of those targetWeight and simResult are known
+
+		// alternate method again calc simResult[Type]*simWeightCol, then diff that to 0.1
+
+		// alternate method again calc simResult[Type]*simWeightCol
+		//                        calc sum(simResult[type]
+
+		diffSigned := input.createColumnGeneral(highs.Continuous, c_minusInf, c_plusInf)
+		dataRow.add(diffSigned, 1)
 		dataRow.finish(input, 0, 0)
+
+		diffAbsOutput := input.createColumnWithOutput(highs.Continuous, c_minusInf, c_plusInf, 1)
+		absoluteValue(input, diffSigned, diffAbsOutput, highRange)
 	}
 
 	// str   * str_weight??   = str_score

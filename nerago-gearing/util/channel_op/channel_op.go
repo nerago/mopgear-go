@@ -1,7 +1,6 @@
 package channel_op
 
 import (
-	"paladin_gearing_go/util"
 	"sync"
 )
 
@@ -132,33 +131,4 @@ func indexSplitsInt(sliceLength int, threadCount int) []int {
 	splitArray = append(splitArray, sliceLength)
 
 	return splitArray
-}
-
-func PermuteAsChannel[T any](listsOfOptions [][]T) <-chan []T {
-	stepChannel := make(chan []T, 8)
-	go func() {
-		for _, value := range listsOfOptions[0] {
-			stepChannel <- []T{value}
-		}
-		close(stepChannel)
-	}()
-
-	for i := 1; i < len(listsOfOptions); i++ {
-		stepChannel = permuteStep(stepChannel, listsOfOptions[i])
-	}
-
-	return stepChannel
-}
-
-func permuteStep[T any](inChannel chan []T, options []T) chan []T {
-	outputChannel := make(chan []T, 8)
-	go func() {
-		for currSlice := range inChannel {
-			for _, value := range options {
-				outputChannel <- util.CopyAndAppend(currSlice, value)
-			}
-		}
-		close(outputChannel)
-	}()
-	return outputChannel
 }

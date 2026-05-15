@@ -401,9 +401,11 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	job.AddSetParam(protMitigationNoSet)
 	job.AddSetParam(protMitigationWithSet)
 
-	job.FindHighsResult()
+	job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
+
+	// job.FindHighsResult_Sample()
 	// job.FindSeveralHighsAndSim()
-	// job.FindHighsResultPerPermutedFixed(2)
+	job.FindHighsResultPerPermute(1)
 }
 
 func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {

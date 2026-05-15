@@ -66,6 +66,37 @@ func (build *contraintAndBuilder) finishAndApply(input *inputBuilder) {
 	sumRow.finish(input, c_minusInf, float64(targetNum))
 }
 
+type contraintOrBuilder struct {
+	outputVar int
+	inputVars []int
+}
+
+func (build *contraintOrBuilder) setOutput(column int) {
+	build.outputVar = column
+}
+
+func (build *contraintOrBuilder) addInput(column int) {
+	build.inputVars = append(build.inputVars, column)
+}
+
+func (build *contraintOrBuilder) finishAndApply(input *inputBuilder) {
+	zeroIfNone := constraintRowBuild{}
+	zeroIfNone.add(build.outputVar, -1)
+
+	for _, inputVar := range build.inputVars {
+		zeroIfNone.add(inputVar, 1)
+
+		pullUp := constraintRowBuild{}
+		pullUp.add(inputVar, -1)
+		pullUp.add(build.outputVar, 1)
+		pullUp.finish(input, 0, 1)
+	}
+
+	// maxNum := len(build.inputVars) - 1
+	// sumRow.finish(input, 0, float64(maxNum))
+	zeroIfNone.finish(input, 0, c_plusInf) 
+}
+
 func absoluteValue_messy(input *inputBuilder, inputVar, outputVar int, rangeHigh float64) {
 	// inputVar + outputVar = 0   OR   inputVar - outputVar = 0
 	// diff1 = inputVar
