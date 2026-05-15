@@ -14,7 +14,7 @@ const (
 	c_maxSetItems    = 5 // fundamental in MoP gear sets
 	c_setItemsCounts = c_maxSetItems + 1
 
-	c_debugHighs = false
+	c_debugHighs = true
 	c_threads    = 6
 )
 

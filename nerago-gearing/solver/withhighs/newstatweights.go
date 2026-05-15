@@ -3,37 +3,38 @@ package withhighs
 import (
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
+	"paladin_gearing_go/util"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 type NewWeightInput struct {
-	totalStat stats.StatBlock
-	simResult simulate.SimResultStats
+	TotalStat stats.StatBlock
+	SimResult simulate.SimResultStats
 }
 
-var defSpreadSheetWeight = simulate.SimResultStats{
+var NewStatWeights_defSpreadSheetWeight = simulate.SimResultStats{
 	DPS:   0.1,
 	DEATH: 0.2,
 	TMI:   0.4,
 	DTPS:  0.3,
 }
 
-var defWeight = simulate.SimResultStats{
+var NewStatWeights_defWeight = simulate.SimResultStats{
 	DPS:   0.1,
 	DEATH: 0.2,
 	TMI:   0.3,
 	DTPS:  0.4,
 }
 
-var animusWeight = simulate.SimResultStats{
+var NewStatWeights_animusWeight = simulate.SimResultStats{
 	DPS:   0.4,
 	DEATH: 0.1,
 	TMI:   0.4,
 	DTPS:  0.1,
 }
 
-var dpsWeight = simulate.SimResultStats{
+var NewStatWeights_dpsWeight = simulate.SimResultStats{
 	DPS:   0.97,
 	DEATH: 0.01,
 	TMI:   0.01,
@@ -43,24 +44,29 @@ var dpsWeight = simulate.SimResultStats{
 var requiredStats = []stats.StatType{stats.Stat_Strength, stats.Stat_Stamina, stats.Stat_Crit, stats.Stat_Haste, stats.Stat_Expertise, stats.Stat_Mastery, stats.Stat_Dodge, stats.Stat_Parry}
 var requiredSims = []simulate.SimResultType{simulate.Result_DPS, simulate.Result_DEATH, simulate.Result_TMI, simulate.Result_DTPS}
 
-func CalcNewStatWeights(inputData []NewWeightInput, targetRatios simulate.SimResultStats) {
+func CalcNewStatWeights(inputData []NewWeightInput, targetRatios simulate.SimResultStats, printer *util.PrintRecorder) {
 	highRange := 100000.0 // basic sum of stats Mop P4 is about 83k
+	scaleMin := 0.0  // similar number of places, can get scores down to around 1
+	scaleMax := 100000.0
+	colNames := make([]string, 0)
 
 	input := new(inputBuilder)
 
 	totalStatWeightRow := constraintRowBuild{}
 	statWeightColumns := make(map[stats.StatType]int)
 	for _, stat := range requiredStats {
-		statColIndex := input.createColumnGeneral(highs.Continuous, 0.0001, 1)
+		statColIndex := input.createColumnGeneral(highs.Continuous, scaleMin, scaleMax)
+		colNames = append(colNames, stat.Name())
 		statWeightColumns[stat] = statColIndex
 		totalStatWeightRow.add(statColIndex, 1)
 	}
-	totalStatWeightRow.finish(input, 1, 1)
+	// totalStatWeightRow.finish(input, 1, 1)
 
 	totalSimWeightRow := constraintRowBuild{}
 	simWeightColumns := make(map[simulate.SimResultType]int)
 	for _, simType := range requiredSims {
-		simColIndex := input.createColumnGeneral(highs.Continuous, 0.000001, 1)
+		simColIndex := input.createColumnGeneral(highs.Continuous, scaleMin, scaleMax)
+		colNames = append(colNames, simType.String())
 		simWeightColumns[simType] = simColIndex
 		totalSimWeightRow.add(simColIndex, 1)
 	}
@@ -68,58 +74,71 @@ func CalcNewStatWeights(inputData []NewWeightInput, targetRatios simulate.SimRes
 
 	for _, data := range inputData {
 		// add up weighted gear score for row
-		gearScoreCol := input.createColumnGeneral(highs.Continuous, 1, 1000)
+		gearScoreTotal := input.createColumnGeneral(highs.Continuous, 0, highRange)
+		colNames = append(colNames, "gearScoreTotal")
 		gearRow := constraintRowBuild{}
-		for statType, statCol := range statWeightColumns {
-			gearRow.add(statCol, float64(data.totalStat.Get(statType)))
+		for statType, statWeightCol := range statWeightColumns {
+			gearRow.add(statWeightCol, float64(data.TotalStat.Get(statType)))
 		}
-		gearRow.add(gearScoreCol, -1)
+		gearRow.add(gearScoreTotal, -1)
 		gearRow.finish(input, 0, 0)
 
+		// add up weighted sim score for row
+		simScoreTotal := input.createColumnGeneral(highs.Continuous, 0, highRange)
+		colNames = append(colNames, "simScoreTotal")
 		simScoreRow := constraintRowBuild{}
-		for simType, simCol := range simWeightColumns {
-			simScoreRow.add(simCol, data.simResult.Get(simType))
+		for simType, simWeightCol := range simWeightColumns {
+			simScoreRow.add(simWeightCol, data.SimResult.Get(simType))
+		}
+		simScoreRow.add(simScoreTotal, -1)
+		simScoreRow.finish(input, 0, 0)
+
+		// contribution of sim part of simScoreTotal
+		for simType, simWeightCol := range simWeightColumns {
+			contributionRow := constraintRowBuild{}
+
+			// calc simResult[simType]*simWeightCol[simType]
+			contributionRow.add(simWeightCol, data.SimResult.Get(simType))
+
+			// ideally we want that to equal simScoreTotal*targetRatio[simType]
+			contributionRow.add(simScoreTotal, targetRatios.Get(simType))
+
+			contributionDiff := input.createColumnGeneral(highs.Continuous, -highRange, highRange)
+			colNames = append(colNames, "contributionDiff")
+			contributionRow.add(contributionDiff, 1)
+			contributionRow.finish(input, 0, 0)
+
+			contributionDiffAbsOutput := input.createColumnWithOutput(highs.Continuous, 0, c_plusInf, 1)
+			colNames = append(colNames, "contributionDiffAbsOutput")
+			absoluteValue2(input, contributionDiff, contributionDiffAbsOutput, highRange*2) // could maybe be narrower highRange
+			// colNames = append(colNames, "absBool")
 		}
 
-		// actually want average contribution to the total
-		// make the target weights coeffecients, multiply by calculated weights, then do another diff to target?
+		scoreDiffSigned := input.createColumnGeneral(highs.Continuous, -highRange, highRange)
+		colNames = append(colNames, "scoreDiffSigned")
+		scoreDiffRow := constraintRowBuild{}
+		scoreDiffRow.add(gearScoreTotal, 1)
+		scoreDiffRow.add(simScoreTotal, -1)
+		scoreDiffRow.add(scoreDiffSigned, 1)
+		scoreDiffRow.finish(input, 0, 0)
 
-		// simTotalScore is made up of 0.1 * x + 0.4 * y + 0.5 * z, should add to one
-		// x,y,z = is simResult[Type]*simWeightCol[type]
-		// contribution is actually simResult[type]*simWeightCol[type]*targetWeight[type]. of those targetWeight and simResult are known
-
-		// alternate method again calc simResult[Type]*simWeightCol, then diff that to 0.1
-
-		// alternate method again calc simResult[Type]*simWeightCol
-		//                        calc sum(simResult[type]
-
-		diffSigned := input.createColumnGeneral(highs.Continuous, c_minusInf, c_plusInf)
-		dataRow.add(diffSigned, 1)
-		dataRow.finish(input, 0, 0)
-
-		diffAbsOutput := input.createColumnWithOutput(highs.Continuous, c_minusInf, c_plusInf, 1)
-		absoluteValue(input, diffSigned, diffAbsOutput, highRange)
+		diffAbsOutput := input.createColumnWithOutput(highs.Continuous, 0, c_plusInf, 1)
+		colNames = append(colNames, "diffAbsOutput")
+		absoluteValue2(input, scoreDiffSigned, diffAbsOutput, highRange*2)
+		// colNames = append(colNames, "absBool")
 	}
 
-	// str   * str_weight??   = str_score
-	// haste * haste_weight?? = haste_score
-	// crit  * crit_weight??  = crit_score
-	//                        = total_gear_score
-	//
-	// dps   * ?? = [0 .. 0.4]
-	// death * ?? = [0 .. 0.1]
-	// tmi   * ?? = [0 .. 0.4]
-	//            = relative_sim_score
+	// solution, log := input.runHighs()
+	solver, logFilename := input.preHighsRun()
+	checkError(solver.SetMaximize(false))
+	solution, err := highsPool.RunSolverUnderMutex(solver)
+	checkError(err)
+	log := input.postHighsRun(solver, logFilename)
 
-	// we could put both in the 0..1 range?
+	printer.AppendOther(log)
+	printer.Println(solution.Status.String())
 
-	// what i kinda want is (abs(a_str - b_str) * w_hst + abs(a_hst - b_hst) * w_hst)
-	//                  and (abs(a_dps - b_dps) * z_dps + abs(a_tmi - b_tmi) * z_tmi)
-	//    (abs(a_str - b_str) * w_hst + abs(a_hst - b_hst) * w_hst) - (abs(a_dps - b_dps) * z_dps + abs(a_tmi - b_tmi) * z_tmi) = discrepancy
-	//    (a_str * w_hst - b_str * w_hst + a_hst * w_hst - b_hst * w_hst) - (a_dps * z_dps - b_dps * z_dps + a_tmi * z_tmi - b_tmi * z_tmi) = discrepancy
-	//    (a_str * w_str + a_hst * w_hst) - (a_dps * z_dps + a_tmi * z_tmi) = discrepancy
-
-	// but this just makes up some numbers. might be better to do it per sim stat first then combine
-	// how do we otherwise include the target desired ratios
-	// maybe doing the rows as differences is better?
+	for i, x := range solution.ColValues {
+		printer.Printf("%3d %14f %s\n", i, x, colNames[i])
+	}
 }

@@ -147,3 +147,21 @@ func absoluteValue(input *inputBuilder, inputVar, outputVar int, rangeHigh float
 	setIfPositive.add(isNegativeCol, -rangeHigh)
 	setIfPositive.finish(input, -rangeHigh, 0)
 }
+
+func absoluteValue2(input *inputBuilder, inputVar, outputVar int, rangeHigh float64) {
+	// isNegativeCol := input.createColumnBool()
+	// negativeCheck := constraintRowBuild{}
+	// negativeCheck.add(inputVar, 1)
+	// negativeCheck.add(isNegativeCol, rangeHigh)
+	// negativeCheck.finish(input, 0, rangeHigh)
+
+	setIfNegative := constraintRowBuild{}
+	setIfNegative.add(inputVar, 1)
+	setIfNegative.add(outputVar, 1)
+	setIfNegative.finish(input, 0, c_plusInf)
+
+	setIfPositive := constraintRowBuild{}
+	setIfPositive.add(inputVar, 1)
+	setIfPositive.add(outputVar, -1)
+	setIfPositive.finish(input, c_minusInf, 0)
+}
