@@ -46,8 +46,9 @@ var requiredSims = []simulate.SimResultType{simulate.Result_DPS, simulate.Result
 
 func CalcNewStatWeights(inputData []NewWeightInput, targetRatios simulate.SimResultStats, printer *util.PrintRecorder) {
 	highRange := 100000.0 // basic sum of stats Mop P4 is about 83k
-	scaleMin := 0.0  // similar number of places, can get scores down to around 1
-	scaleMax := 100000.0
+	// scaleMin := 0.001  // similar number of places, can get scores down to around 1
+	scaleMin := 0.0
+	scaleMax := 100.0
 	colNames := make([]string, 0)
 
 	input := new(inputBuilder)
@@ -88,7 +89,7 @@ func CalcNewStatWeights(inputData []NewWeightInput, targetRatios simulate.SimRes
 		colNames = append(colNames, "simScoreTotal")
 		simScoreRow := constraintRowBuild{}
 		for simType, simWeightCol := range simWeightColumns {
-			simScoreRow.add(simWeightCol, data.SimResult.Get(simType))
+			simScoreRow.add(simWeightCol, data.SimResult.GetFriendly(simType))
 		}
 		simScoreRow.add(simScoreTotal, -1)
 		simScoreRow.finish(input, 0, 0)
@@ -97,24 +98,30 @@ func CalcNewStatWeights(inputData []NewWeightInput, targetRatios simulate.SimRes
 		for simType, simWeightCol := range simWeightColumns {
 			contributionRow := constraintRowBuild{}
 
+			// formula sum(simWeight*simResult[simType]) = simScoreTotal
+			// simScoreTotal * 0.4 = simWeightCol * valuue[type]
+
 			// calc simResult[simType]*simWeightCol[simType]
-			contributionRow.add(simWeightCol, data.SimResult.Get(simType))
+			contributionRow.add(simWeightCol, data.SimResult.GetFriendly(simType))
 
 			// ideally we want that to equal simScoreTotal*targetRatio[simType]
-			contributionRow.add(simScoreTotal, targetRatios.Get(simType))
+			contributionRow.add(simScoreTotal, -targetRatios.Get(simType))
 
-			contributionDiff := input.createColumnGeneral(highs.Continuous, -highRange, highRange)
+			// contributionDiff := input.createColumnGeneral(highs.Continuous, -highRange, highRange)
+			contributionDiff := input.createColumnGeneral(highs.Continuous, c_minusInf, c_plusInf)
 			colNames = append(colNames, "contributionDiff")
 			contributionRow.add(contributionDiff, 1)
 			contributionRow.finish(input, 0, 0)
 
 			contributionDiffAbsOutput := input.createColumnWithOutput(highs.Continuous, 0, c_plusInf, 1)
 			colNames = append(colNames, "contributionDiffAbsOutput")
-			absoluteValue2(input, contributionDiff, contributionDiffAbsOutput, highRange*2) // could maybe be narrower highRange
+			absoluteValue2(input, contributionDiff, contributionDiffAbsOutput, highRange) // could maybe be narrower highRange
+			// absoluteValue(input, contributionDiff, contributionDiffAbsOutput, highRange)
 			// colNames = append(colNames, "absBool")
 		}
 
-		scoreDiffSigned := input.createColumnGeneral(highs.Continuous, -highRange, highRange)
+		// scoreDiffSigned := input.createColumnGeneral(highs.Continuous, -highRange, highRange)
+		scoreDiffSigned := input.createColumnGeneral(highs.Continuous,c_minusInf, c_plusInf)
 		colNames = append(colNames, "scoreDiffSigned")
 		scoreDiffRow := constraintRowBuild{}
 		scoreDiffRow.add(gearScoreTotal, 1)
@@ -124,7 +131,8 @@ func CalcNewStatWeights(inputData []NewWeightInput, targetRatios simulate.SimRes
 
 		diffAbsOutput := input.createColumnWithOutput(highs.Continuous, 0, c_plusInf, 1)
 		colNames = append(colNames, "diffAbsOutput")
-		absoluteValue2(input, scoreDiffSigned, diffAbsOutput, highRange*2)
+		absoluteValue2(input, scoreDiffSigned, diffAbsOutput, highRange)
+		// absoluteValue(input, scoreDiffSigned, diffAbsOutput, highRange)
 		// colNames = append(colNames, "absBool")
 	}
 
