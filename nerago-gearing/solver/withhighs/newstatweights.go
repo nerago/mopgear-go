@@ -61,17 +61,18 @@ func CalcNewStatWeights(inputData []NewWeightInput, targetRatios simulate.SimRes
 		statWeightColumns[stat] = statColIndex
 		totalStatWeightRow.add(statColIndex, 1)
 	}
-	// totalStatWeightRow.finish(input, 1, 1)
+	totalStatWeightRow.finish(input, 1, 1)
 
 	totalSimWeightRow := constraintRowBuild{}
 	simWeightColumns := make(map[simulate.SimResultType]int)
 	for _, simType := range requiredSims {
-		simColIndex := input.createColumnGeneral(highs.Continuous, scaleMin, scaleMax)
+		// simColIndex := input.createColumnGeneral(highs.Continuous, scaleMin, scaleMax)
+		simColIndex := input.createColumnGeneral(highs.Continuous, 0, c_plusInf)
 		colNames = append(colNames, simType.String())
 		simWeightColumns[simType] = simColIndex
 		totalSimWeightRow.add(simColIndex, 1)
 	}
-	totalSimWeightRow.finish(input, 1, 1)
+	// totalSimWeightRow.finish(input, 1, 1)
 
 	for _, data := range inputData {
 		// add up weighted gear score for row
