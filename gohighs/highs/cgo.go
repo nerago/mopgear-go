@@ -622,8 +622,30 @@ func (s *Solver) SetColCosts(costs []float64) error {
 	return newError("SetColCosts", status)
 }
 
+// AddLinearObjective adds an additional linear objective entry, overriding regular ColCosts.
+func (s *Solver) AddLinearObjective(weight float64, offset float64, coefficients []float64, abs_tolerance float64, rel_tolerance float64, priority int) error {
+	var pCoefficients *C.double
+	if len(coefficients) > 0 {
+		pCoefficients = (*C.double)(&coefficients[0])
+	}
+
+	status := Status(C.Highs_addLinearObjective(s.ptr, C.double(weight), C.double(offset), pCoefficients, C.double(abs_tolerance), C.double(rel_tolerance), C.HighsInt(priority)))
+	return newError("AddLinearObjective", status)
+}
+
+// ClearLinearObjectives removes any additional linear objective entries.
+func (s *Solver) ClearLinearObjectives() error {
+	status := Status(C.Highs_clearLinearObjectives(s.ptr))
+	return newError("ClearLinearObjectives", status)
+}
+
 // SetColBounds sets the bounds for a column.
 func (s *Solver) SetColBounds(col int, lower, upper float64) error {
+	status := Status(C.Highs_changeColBounds(s.ptr,
+		C.HighsInt(col), C.double(lower), C.double(upper)))
+	return newError("SetColBounds", status)
+}
+func (s *Solver) SetColBounds2(col int32, lower, upper float64) error {
 	status := Status(C.Highs_changeColBounds(s.ptr,
 		C.HighsInt(col), C.double(lower), C.double(upper)))
 	return newError("SetColBounds", status)
@@ -716,6 +738,77 @@ func (s *Solver) PassModel(
 	}
 	if len(cAIndex) > 0 {
 		pAIndex = &cAIndex[0]
+	}
+	if len(aValue) > 0 {
+		pAValue = (*C.double)(&aValue[0])
+	}
+
+	status := Status(C.Highs_passModel(s.ptr,
+		C.HighsInt(numCol), C.HighsInt(numRow),
+		C.HighsInt(len(aValue)), 0, // num_nz, q_num_nz
+		C.kHighsMatrixFormatRowwise, C.kHighsHessianFormatTriangular,
+		C.HighsInt(sense), C.double(offset),
+		pColCost, pColLower, pColUpper,
+		pRowLower, pRowUpper,
+		pAStart, pAIndex, pAValue,
+		nil, nil, nil, // Hessian pointers
+		pIntegrality))
+	return newError("PassModel", status)
+}
+
+func (s *Solver) PassModel2(
+	numCol, numRow int32,
+	colCost, colLower, colUpper []float64,
+	rowLower, rowUpper []float64,
+	aStart, aIndex []int32,
+	aValue []float64,
+	integrality []VariableType,
+	maximize bool,
+	offset float64,
+) error {
+	// Convert to C types
+	sense := C.kHighsObjSenseMinimize
+	if maximize {
+		sense = C.kHighsObjSenseMaximize
+	}
+
+	// Convert integrality
+	var cIntegrality []C.HighsInt
+	var pIntegrality *C.HighsInt
+	if len(integrality) > 0 {
+		cIntegrality = make([]C.HighsInt, len(integrality))
+		for i, vt := range integrality {
+			cIntegrality[i] = vt.toC()
+		}
+		pIntegrality = &cIntegrality[0]
+	}
+
+	// Get pointers
+	var pColCost, pColLower, pColUpper *C.double
+	var pRowLower, pRowUpper *C.double
+	var pAStart, pAIndex *C.HighsInt
+	var pAValue *C.double
+
+	if len(colCost) > 0 {
+		pColCost = (*C.double)(&colCost[0])
+	}
+	if len(colLower) > 0 {
+		pColLower = (*C.double)(&colLower[0])
+	}
+	if len(colUpper) > 0 {
+		pColUpper = (*C.double)(&colUpper[0])
+	}
+	if len(rowLower) > 0 {
+		pRowLower = (*C.double)(&rowLower[0])
+	}
+	if len(rowUpper) > 0 {
+		pRowUpper = (*C.double)(&rowUpper[0])
+	}
+	if len(aStart) > 0 {
+		pAStart = (*C.HighsInt)(&aStart[0])
+	}
+	if len(aIndex) > 0 {
+		pAIndex = (*C.HighsInt)(&aIndex[0])
 	}
 	if len(aValue) > 0 {
 		pAValue = (*C.double)(&aValue[0])
@@ -904,4 +997,3 @@ func (s *Solver) WriteSolution(filename string, pretty bool) error {
 	}
 	return newError("WriteSolution", Status(status))
 }
-

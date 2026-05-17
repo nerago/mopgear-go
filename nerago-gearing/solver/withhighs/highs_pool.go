@@ -25,7 +25,7 @@ func (pool *highsPoolType) Get() *highs.Solver {
 		return solver
 	} else {
 		solver, err := highs.NewSolver()
-		checkError(err)
+		verifyNoError(err)
 		return solver
 	}
 }

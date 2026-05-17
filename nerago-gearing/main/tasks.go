@@ -2,6 +2,8 @@ package main
 
 import (
 	"cmp"
+	"encoding/json"
+	"os"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
@@ -10,12 +12,10 @@ import (
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver"
-	"paladin_gearing_go/solver/build"
 	"paladin_gearing_go/solver/withhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/channel_op"
 	"paladin_gearing_go/util/util_rank"
 	"slices"
 )
@@ -678,33 +678,52 @@ func solveForRatings(printer *util.PrintRecorder) {
 }
 
 func statWeightsFromHighAndSim(printer *util.PrintRecorder) {
-	makeSetCount := 16
-	simSize := simulate.RunSize_TestOnly
+	// makeSetCount := 256
+	// simSize := simulate.RunSize_Medium
 
-	model := model.Model_PallyProtMitigation_NoSet()
-	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationNoSet, &model, setup.MissingEnchant_Panic, printer)
-	for _, itemId := range substituteItemsMiti {
-		if !itemOptions.IncludesItemId(itemId) {
-			opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
-			for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
-				if itemOptions.Has(slotEquip) {
-					itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)
-				}
-			}
-		}
+	// model := model.Model_PallyProtMitigation_NoSet()
+	// itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationNoSet, &model, setup.MissingEnchant_Panic, printer)
+	// for _, itemId := range substituteItemsMiti {
+	// 	if !itemOptions.IncludesItemId(itemId) {
+	// 		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
+	// 		for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
+	// 			if itemOptions.Has(slotEquip) {
+	// 				itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)
+	// 			}
+	// 		}
+	// 	}
+	// }
+	// itemOptions.RemoveItemIdFromAll(95141)
+
+	// setList := build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, &model, makeSetCount, printer)
+
+	// track := util.TrackProgress_Start()
+	// track.RunOuterTracking(len(setList))
+	// defer track.Stop()
+
+	// weightInputs := channel_op.Map_SliceToSlice(6, setList, func(itemSet *items.FullItemSet, weightInputs chan<- withhighs.NewWeightInput) {
+	// 	simResult := simulate.WowSim_Execute_SelectFight(simSize, model.Spec, model.SimulateAs, itemSet.Items(), model.Professions, nil, track.MakeNested())
+	// 	weightInputs <- withhighs.NewWeightInput{TotalStat: *itemSet.Total(), SimResult: simResult}
+	// })
+
+	// bytes, err := json.Marshal(weightInputs)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// err = os.WriteFile("sim-stats-input-data.json", bytes, 0)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	bytes, err := os.ReadFile("sim-stats-input-data.json")
+	if err != nil {
+		panic(err)
 	}
-	itemOptions.RemoveItemIdFromAll(95141)
-
-	setList := build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, &model, makeSetCount, printer)
-
-	track := util.TrackProgress_Start()
-	track.RunOuterTracking(len(setList))
-	defer track.Stop()
-
-	weightInputs := channel_op.Map_SliceToSlice(6, setList, func(itemSet *items.FullItemSet, weightInputs chan<- withhighs.NewWeightInput) {
-		simResult := simulate.WowSim_Execute_SelectFight(simSize, model.Spec, model.SimulateAs, itemSet.Items(), model.Professions, nil, track.MakeNested())
-		weightInputs <- withhighs.NewWeightInput{TotalStat: *itemSet.Total(), SimResult: simResult}
-	})
+	var weightInputs []withhighs.NewWeightInput
+	err = json.Unmarshal(bytes, &weightInputs)
+	if err != nil {
+		panic(err)
+	}
 
 	withhighs.CalcNewStatWeights(weightInputs, withhighs.NewStatWeights_animusWeight, printer)
 }

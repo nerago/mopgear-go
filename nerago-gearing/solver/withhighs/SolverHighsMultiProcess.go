@@ -30,7 +30,7 @@ type SolverHighsMultiProcess struct {
 	common multi_types.CommonOptions
 	parts  []SolverHighsMultiParam
 
-	outputColumn int
+	outputColumn columnIndex
 	outputRow    constraintRowBuild
 
 	allColumns []columnInfo
@@ -67,7 +67,9 @@ func debugPrintAll(solution *highs.Solution, job *SolverHighsMultiProcess, print
 	printer.Printf("OBJECTIVE VALUE %f \n", solution.Objective*c_scaled_ratings)
 
 columnLoop:
-	for columnIndex, outputValue := range solution.ColValues {
+	for colIndex, outputValue := range solution.ColValues {
+		columnIndex := columnIndex(colIndex)
+
 		if debugPrintColumn(job.allColumns, columnIndex, outputValue, nil, nil, printer) {
 			continue columnLoop
 		}
@@ -240,7 +242,7 @@ func (process *SolverHighsMultiProcess) RunForSeveral_NextObjective(printer *uti
 
 	solver, logFilename := process.input.preHighsRun()
 	solution, err := highsPool.RunSolverUnderMutex(solver)
-	checkError(err)
+	verifyNoError(err)
 
 	printer.Println("Duration initial = " + time.Since(startTime1).String())
 	printer.Println("SOLUTION STATUS = " + solution.Status.String())
@@ -254,13 +256,13 @@ func (process *SolverHighsMultiProcess) RunForSeveral_NextObjective(printer *uti
 	lastObjectiveValue := solution.Objective
 
 	for len(resultList) < targetCount {
-		checkError(solver.SetColBounds(process.outputColumn, 0, lastObjectiveValue*0.99999))
+		verifyNoError(solver.SetColBounds2(int32(process.outputColumn), 0, lastObjectiveValue*0.99999))
 
 		startTime2 := time.Now()
 		printer.Println("Started next " + startTime1.Format(time.RFC1123))
 
 		solution, err = highsPool.RunSolverUnderMutex(solver)
-		checkError(err)
+		verifyNoError(err)
 
 		printer.Println("Duration next = " + time.Since(startTime2).String())
 		printer.Println("SOLUTION STATUS = " + solution.Status.String())
@@ -314,8 +316,8 @@ func (process *SolverHighsMultiProcess) addCommonConstraintsForItem(inputBuilder
 	onlyOneReforge.finish(inputBuilder, 1, 1)
 }
 
-func (process *SolverHighsMultiProcess) findMatchingItemColumns(item *items.FullItem) iter.Seq[int] {
-	return func(yield func(int) bool) {
+func (process *SolverHighsMultiProcess) findMatchingItemColumns(item *items.FullItem) iter.Seq[columnIndex] {
+	return func(yield func(columnIndex) bool) {
 		for _, part := range process.parts {
 			for _, column := range part.setup.itemColumns {
 				if column.item.EqualsFull(item) {

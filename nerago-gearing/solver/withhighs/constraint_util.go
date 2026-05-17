@@ -2,7 +2,7 @@ package withhighs
 
 import "github.com/bartolsthoorn/gohighs/highs"
 
-func contraintIfBoolCopyValueElseZero(input *inputBuilder, boolSwitchVar, sourceVar, targetVar int, rangeLow, rangeHigh float64) {
+func contraintIfBoolCopyValueElseZero(input *inputBuilder, boolSwitchVar, sourceVar, targetVar columnIndex, rangeLow, rangeHigh float64) {
 	// based on https://medium.com/data-science/a-comprehensive-guide-to-modeling-techniques-in-mixed-integer-linear-programming-3e96cc1bc03d
 
 	valueHigh := constraintRowBuild{}
@@ -28,7 +28,7 @@ func contraintIfBoolCopyValueElseZero(input *inputBuilder, boolSwitchVar, source
 	zeroLow.finish(input, c_minusInf, 0)
 }
 
-func constraintNotBool(input *inputBuilder, sourceVar, targetVar int) {
+func constraintNotBool(input *inputBuilder, sourceVar, targetVar columnIndex) {
 	not := constraintRowBuild{}
 	not.add(sourceVar, 1)
 	not.add(targetVar, 1)
@@ -37,15 +37,15 @@ func constraintNotBool(input *inputBuilder, sourceVar, targetVar int) {
 
 // https://medium.com/data-science/a-comprehensive-guide-to-modeling-techniques-in-mixed-integer-linear-programming-3e96cc1bc03d
 type contraintAndBuilder struct {
-	outputVar int
-	inputVars []int
+	outputVar columnIndex
+	inputVars []columnIndex
 }
 
-func (build *contraintAndBuilder) setOutput(column int) {
+func (build *contraintAndBuilder) setOutput(column columnIndex) {
 	build.outputVar = column
 }
 
-func (build *contraintAndBuilder) addInput(column int) {
+func (build *contraintAndBuilder) addInput(column columnIndex) {
 	build.inputVars = append(build.inputVars, column)
 }
 
@@ -67,15 +67,15 @@ func (build *contraintAndBuilder) finishAndApply(input *inputBuilder) {
 }
 
 type contraintOrBuilder struct {
-	outputVar int
-	inputVars []int
+	outputVar columnIndex
+	inputVars []columnIndex
 }
 
-func (build *contraintOrBuilder) setOutput(column int) {
+func (build *contraintOrBuilder) setOutput(column columnIndex) {
 	build.outputVar = column
 }
 
-func (build *contraintOrBuilder) addInput(column int) {
+func (build *contraintOrBuilder) addInput(column columnIndex) {
 	build.inputVars = append(build.inputVars, column)
 }
 
@@ -97,7 +97,7 @@ func (build *contraintOrBuilder) finishAndApply(input *inputBuilder) {
 	zeroIfNone.finish(input, 0, c_plusInf) 
 }
 
-func absoluteValue_messy(input *inputBuilder, inputVar, outputVar int, rangeHigh float64) {
+func absoluteValue_messy(input *inputBuilder, inputVar, outputVar columnIndex, rangeHigh float64) {
 	// inputVar + outputVar = 0   OR   inputVar - outputVar = 0
 	// diff1 = inputVar
 	// diff2 = -inputVar
@@ -128,7 +128,7 @@ func absoluteValue_messy(input *inputBuilder, inputVar, outputVar int, rangeHigh
 	contraintIfBoolCopyValueElseZero(input, isZeroOrPositiveCol, inputVar, outputVar, 0, rangeHigh)
 }
 
-func absoluteValue(input *inputBuilder, inputVar, outputVar int, rangeHigh float64) {
+func absoluteValue(input *inputBuilder, inputVar, outputVar columnIndex, rangeHigh float64) {
 	isNegativeCol := input.createColumnBool()
 	negativeCheck := constraintRowBuild{}
 	negativeCheck.add(inputVar, 1)
@@ -148,7 +148,7 @@ func absoluteValue(input *inputBuilder, inputVar, outputVar int, rangeHigh float
 	setIfPositive.finish(input, -rangeHigh, 0)
 }
 
-func absoluteValue2(input *inputBuilder, inputVar, outputVar int, rangeHigh float64) {
+func absoluteValue2(input *inputBuilder, inputVar, outputVar columnIndex, rangeHigh float64) {
 	// isNegativeCol := input.createColumnBool()
 	// negativeCheck := constraintRowBuild{}
 	// negativeCheck.add(inputVar, 1)

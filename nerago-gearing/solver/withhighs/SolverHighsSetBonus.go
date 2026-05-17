@@ -53,16 +53,16 @@ func debugPrint(solution *highs.Solution, setup *setupInputsForSetBonus, printer
 	activeBonus := ""
 	activeBonusWeight := 0.0
 
-	for columnIndex, outputValue := range solution.ColValues {
-		if !debugPrintColumn(setup.allColumns, columnIndex, outputValue, &activeBonus, &activeBonusWeight, printer) {
-			printer.Printf("%d %f UNKNOWN\n", columnIndex, outputValue)
+	for colIndex, outputValue := range solution.ColValues {
+		if !debugPrintColumn(setup.allColumns, columnIndex(colIndex), outputValue, &activeBonus, &activeBonusWeight, printer) {
+			printer.Printf("%d %f UNKNOWN\n", colIndex, outputValue)
 		}
 	}
 
 	printer.Printf("ACTIVE highs Bonus = %s %f\n", activeBonus, activeBonusWeight)
 }
 
-func debugPrintColumn(allColumns []columnInfo, columnIndex int, outputValue float64, activeBonus *string, activeBonusWeight *float64, printer *util.PrintRecorder) bool {
+func debugPrintColumn(allColumns []columnInfo, columnIndex columnIndex, outputValue float64, activeBonus *string, activeBonusWeight *float64, printer *util.PrintRecorder) bool {
 	var colEntry columnInfo
 	found := false
 	for _, col := range allColumns {
@@ -79,7 +79,7 @@ func debugPrintColumn(allColumns []columnInfo, columnIndex int, outputValue floa
 	return found
 }
 
-func debugPrintColumnEntry(colEntry columnInfo, columnIndex int, outputValue float64, activeBonus *string, activeBonusWeight *float64, printer *util.PrintRecorder) {
+func debugPrintColumnEntry(colEntry columnInfo, columnIndex columnIndex, outputValue float64, activeBonus *string, activeBonusWeight *float64, printer *util.PrintRecorder) {
 	switch colEntry.entryType {
 	case entry_item:
 		printer.Printf("%d %f %s %s %d\n", columnIndex, outputValue, "item", colEntry.itemSlot.Name(), colEntry.item.ItemId())
@@ -134,8 +134,8 @@ type setupInputsForSetBonus struct {
 type setPermutation struct {
 	content []setWithCount
 
-	outputVar     int
-	activatingVar int
+	outputVar     columnIndex
+	activatingVar columnIndex
 	weight        float64
 }
 
@@ -205,7 +205,7 @@ func (setup *setupInputsForSetBonus) buildSetMultipliedOutput(permutation *setPe
 	permutation.weight = weight
 }
 
-func (setup *setupInputsForSetBonus) buildSetWeightedOutputVar(permutation *setPermutation) (int, float64) {
+func (setup *setupInputsForSetBonus) buildSetWeightedOutputVar(permutation *setPermutation) (columnIndex, float64) {
 	totalWeight := 1.0
 	for _, setAndCount := range permutation.content {
 		bonusForCount := setAndCount.setInfo.activeSet.BonusForCount(uint8(setAndCount.count))
@@ -219,7 +219,7 @@ func (setup *setupInputsForSetBonus) buildSetWeightedOutputVar(permutation *setP
 	return columnIndex, totalWeight
 }
 
-func (setup *setupInputsForSetBonus) buildPermutationActivatingVar(permutation *setPermutation) int {
+func (setup *setupInputsForSetBonus) buildPermutationActivatingVar(permutation *setPermutation) columnIndex {
 	// we are effecively building a logical AND between these vars
 
 	permutationActiveBool := setup.input.createColumnBool()
@@ -453,7 +453,7 @@ const (
 
 type columnInfo struct {
 	entryType   entryType
-	columnIndex int
+	columnIndex columnIndex
 
 	itemSlot items.SlotEquip
 	item     *items.SolvableItem

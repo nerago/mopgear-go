@@ -37,7 +37,7 @@ func SolverBuildRandom_MakeN_FullAndValidate(itemOptions *items.FullOptionsMap, 
 	rng := rand.New(rand.NewSource(int64(0)))
 	for len(results) < targetCount {
 		itemSet := makeSetFromRandomFull(itemOptions, rng)
-		if model.StatRequirements.CheckSet(itemSet.Total()) {
+		if model.StatRequirements.CheckSet(itemSet.Total()) && checkPairedSlotsNoDuplicate(itemSet.Items()) {
 			itemSet.DebugValidate()
 			itemSet.ValidateItemRules()
 			results = append(results, itemSet)
@@ -56,4 +56,20 @@ func makeSetFromRandomFull(itemOptions *items.FullOptionsMap, rng *rand.Rand) it
 		}
 	}
 	return items.FullItemSet_FromMap(equip)
+}
+
+func checkPairedSlotsNoDuplicate(equip *items.FullEquipMap) bool {
+	return checkPairedSlotNoDuplicate(equip.Get(items.Equip_Ring1), equip.Get(items.Equip_Ring2)) &&
+		checkPairedSlotNoDuplicate(equip.Get(items.Equip_Trinket1), equip.Get(items.Equip_Trinket2))
+}
+
+func checkPairedSlotNoDuplicate(a, b *items.FullItem) bool {
+	if a != nil && b != nil {
+		if a.ItemId() == b.ItemId() {
+			return false
+		} else if items.UniqueEquipViolation(a.BaseName(), b.BaseName()) {
+			return false
+		}
+	}
+	return true
 }
