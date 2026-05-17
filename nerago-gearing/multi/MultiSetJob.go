@@ -36,8 +36,9 @@ func MultiSetJob_Create(printer *util.PrintRecorder, simRunSize simulate.WowSim_
 }
 
 func (job *MultiSetJob) AddSetParam(param multi_types.MultiSetParam) {
-	job.params = append(job.params, multiSetParamInternal{MultiSetParam: param, job: job})
-	job.params[len(job.params)-1].init()
+	index := len(job.params)
+	job.params = append(job.params, multiSetParamInternal{MultiSetParam: param, job: job, paramIndex: index})
+	job.params[index].init()
 }
 
 func (job *MultiSetJob) AddFixedForge(itemId items.ItemId, reforge stats.ReforgeRecipe) {

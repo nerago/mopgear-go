@@ -2,7 +2,6 @@ package multi
 
 import (
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/solver/withhighs"
 	"paladin_gearing_go/util"
 	"slices"
@@ -17,7 +16,8 @@ type permuteEntryFixedForce struct {
 }
 
 type permuteEntryAllowGroup struct {
-	paramIndexList []int
+	allowIndexList []int
+	forceIndex     int
 	itemId         items.ItemId
 }
 
@@ -43,8 +43,8 @@ func (job *MultiSetJob) estimateFixedPermutations() uint64 {
 			count *= uint64(len(itemIdList))
 		}
 	}
-	for range job.distinctUsageGroups {
-		count *= 2
+	for _, group := range job.distinctUsageGroups {
+		count *= uint64(len(group.groupAIndexes) + len(group.groupBIndexes) + 2)
 	}
 	return count
 }
@@ -64,10 +64,15 @@ func (job *MultiSetJob) preparePermutations() <-chan permuteSet {
 	}
 
 	for itemId, group := range job.distinctUsageGroups {
-		entriesList := []permuteEntry{
-			{group: &permuteEntryAllowGroup{group.groupAIndexes, itemId}},
-			{group: &permuteEntryAllowGroup{group.groupBIndexes, itemId}},
+		entriesList := make([]permuteEntry, 0)
+		for _, forceIdx := range group.groupAIndexes {
+			entriesList = append(entriesList, permuteEntry{group: &permuteEntryAllowGroup{group.groupAIndexes, forceIdx, itemId}})
 		}
+		entriesList = append(entriesList, permuteEntry{group: &permuteEntryAllowGroup{group.groupAIndexes, -1, itemId}})
+		for _, forceIdx := range group.groupBIndexes {
+			entriesList = append(entriesList, permuteEntry{group: &permuteEntryAllowGroup{group.groupBIndexes, forceIdx, itemId}})
+		}
+		entriesList = append(entriesList, permuteEntry{group: &permuteEntryAllowGroup{group.groupBIndexes, -1, itemId}})
 		optionEntriesList = append(optionEntriesList, permuteOptions{options: entriesList})
 	}
 
@@ -108,9 +113,8 @@ func permuteStep(inChannel <-chan permuteSet, options permuteOptions) <-chan per
 	return outputChannel
 }
 
-func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, commonOptions multi_types.CommonOptions, printer *util.PrintRecorder) withhighs.SolverHighsMultiProcess {
+func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, printer *util.PrintRecorder) withhighs.SolverHighsMultiProcess {
 	highProcess := withhighs.SolverHighsMultiProcess{}
-	highProcess.SetCommon(commonOptions)
 
 	itemOptionsEach := make([]items.FullOptionsMap, len(job.params))
 	for paramIndex := range job.params {
@@ -128,7 +132,12 @@ func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, common
 			build := util.StringBuild2{}
 			build.WriteString(" > ")
 			for paramIndex := range job.params {
-				if slices.Contains(group.paramIndexList, paramIndex) {
+				if group.forceIndex == paramIndex {
+					slot := itemOptionsEach[paramIndex].FindItemIdSlotUnique(group.itemId)
+					itemOptionsEach[paramIndex].ForceSlotOnlySpecifiedItemId(slot, group.itemId)
+					build.WriteUint32(uint32(paramIndex))
+					build.WriteString("! ")
+				} else if slices.Contains(group.allowIndexList, paramIndex) {
 					build.WriteUint32(uint32(paramIndex))
 					build.WriteRune(' ')
 				} else {
@@ -142,6 +151,14 @@ func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, common
 		}
 	}
 
+	optionsInputList := make([]commonOptionsInput, len(job.params))
+	for paramIndex := range job.params {
+		param := &job.params[paramIndex]
+		optionsInputList[paramIndex] = commonOptionsInput{param.Label, &itemOptionsEach[paramIndex]}
+	}
+	commonOptions := job.determineCommon(optionsInputList)
+	highProcess.SetCommon(commonOptions)
+
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
 		highProcess.AddSetParam(withhighs.SolverHighsMultiParam{
@@ -151,5 +168,6 @@ func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, common
 			RatingMultiply: param.ratingMultiply,
 		})
 	}
+
 	return highProcess
 }

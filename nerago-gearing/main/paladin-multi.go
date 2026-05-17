@@ -29,7 +29,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:                     "Ret",
 		GearFile:                  files.GearFileRet,
 		Model:                     model.Model_PallyRet(),
-		IncludeInFirstPass:        false,
+		// IncludeInFirstPass:        false,
 		RequestRatingPercent:      0.01,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
@@ -76,22 +76,22 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		trinketZandSpark,
 		trinketJiKun,     // ji-kun trinket
 		trinketTwinsGaze, // gaze of the twins
-		trinketSoulBarrier,
+		trinketPrimRage,
 
 		87145, // defiled earth OFF
 		96394, // frozen warlord bracer heroic
 	})
-	ret.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark) // zandalar trinket
-	ret.ForceSingleSlot(items.Equip_Trinket2, trinketTwinsGaze) // zandalar trinket
-	ret.ForceSingleSlot(items.Equip_Ring2, 96500)               // scaled tyrant heroic
-	ret.ForceSingleSlot(items.Equip_Back, preLegendMeleeCloak)  // pre-legend strength dps
+	ret.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
+	ret.ForceTryAllSlot(items.Equip_Trinket2, trinketTwinsGaze, trinketPrimRage)
+	ret.ForceSingleSlot(items.Equip_Ring2, 96500)              // scaled tyrant heroic
+	ret.ForceSingleSlot(items.Equip_Back, preLegendMeleeCloak) // pre-legend strength dps
 	blockHelmetsWithoutCapacitance(&ret)
 
 	protDps := multi_types.MultiSetParam{
 		Label:                     "Prot-Damage",
 		GearFile:                  files.GearFileProtDps,
 		Model:                     model.Model_PallyProtDps(),
-		IncludeInFirstPass:        true,
+		// IncludeInFirstPass:        true,
 		RequestRatingPercent:      0.04,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
@@ -148,16 +148,15 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		trinketPrimRage,
 		trinketJiKun,
 		trinketTwinsGaze,
-		trinketSoulBarrier,
 
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
 		96436, // tortos shell heroic
 	})
-	protDps.ForceSingleSlot(items.Equip_Ring2, 96500)                                              // scaled tyrant heroic
-	protDps.ForceSingleSlot(items.Equip_Back, preLegendMeleeCloak)                                 // pre-legend strength dps
-	protDps.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)                                // zandalar trinket
-	protDps.ForceTryAllSlot(items.Equip_Trinket2, trinketJiKun, trinketTwinsGaze, trinketPrimRage) // gaze of twins/ji-kun/prim rage
+	protDps.ForceSingleSlot(items.Equip_Ring2, 96500)               // scaled tyrant heroic
+	protDps.ForceSingleSlot(items.Equip_Back, preLegendMeleeCloak)  // pre-legend strength dps
+	protDps.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark) // zandalar trinket
+	protDps.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
 	protDps.ForceTryAllSlot(items.Equip_Offhand, 94945, 96182, 96436)
 	blockHelmetsWithoutCapacitance(&protDps)
 
@@ -165,8 +164,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:                     "Prot-Compromise",
 		GearFile:                  files.GearFileProtCompromise,
 		Model:                     model.Model_PallyProtCompromise(),
-		IncludeInFirstPass:        true,
-		RequestRatingPercent:      0.10,
+		// IncludeInFirstPass:        true,
+		RequestRatingPercent:      0.20,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -223,6 +222,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		trinketJiKun,
 		trinketTwinsGaze,
 		trinketSoulBarrier,
+		trinketFortZand,
 
 		preLegendMeleeCloak,
 		preLegendTankCloak,
@@ -231,21 +231,26 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96182, // ultimate prot of the emperor thunder normal
 		96436, // tortos shell heroic
 	})
-	protCompromise.ForceSingleSlot(items.Equip_Ring2, 96500)              // scaled tyrant heroic
-	protCompromise.ForceTryAllSlot(items.Equip_Back, preLegendMeleeCloak, preLegendTankCloak)
+	protCompromise.ForceSingleSlot(items.Equip_Ring2, 96500)             // scaled tyrant heroic
+	protCompromise.ForceSingleSlot(items.Equip_Back, preLegendTankCloak) //                         see spreadsheet multisolve4d
+	// protCompromise.ForceTryAllSlot(items.Equip_Back, preLegendMeleeCloak, preLegendTankCloak) // see spreadsheet multisolve4d
 	blockHelmetsWithoutCapacitance(&protCompromise)
 
-	protCompromise.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)                                // zandalar trinket
-	protCompromise.ForceTryAllSlot(items.Equip_Trinket2, trinketJiKun, trinketTwinsGaze, trinketPrimRage) // gaze of twins/ji-kun/prim rage
-	protCompromise.BlockItem(trinketFortZand)                                                             // Fortitude of the Zandalari
-	protCompromise.AddReportVariant(items.Equip_Trinket2, trinketFortZand)                                // Fortitude of the Zandalari
+	protCompromise.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
+	// protCompromise.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
+	// protCompromise.BlockItem(trinketFortZand)
+	// protCompromise.AddReportVariant(items.Equip_Trinket2, trinketFortZand)
+
+	protCompromise.ForceTryAllSlot(items.Equip_Trinket2, trinketFortZand, trinketSoulBarrier)
+	protCompromise.BlockItem(trinketPrimRage)                                       
+	protCompromise.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)  
 
 	protMitigationNoSet := multi_types.MultiSetParam{
 		Label:                     "Prot-Mitigation-NoSet",
 		GearFile:                  files.GearFileProtMitigationNoSet,
 		Model:                     model.Model_PallyProtMitigation_NoSet(),
-		IncludeInFirstPass:        true,
-		RequestRatingPercent:      0.70,
+		// IncludeInFirstPass:        true,
+		RequestRatingPercent:      0.50,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -302,27 +307,32 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		trinketJiKun,
 		trinketTwinsGaze,
 		trinketSoulBarrier,
+		trinketFortZand,
 
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
 	})
 
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Ring1, 96481) // durumu
+	protMitigationNoSet.ForceSingleSlot(items.Equip_Back, preLegendTankCloak)
 	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
 
-	protMitigationNoSet.ForceTryAllSlot(items.Equip_Back, preLegendMeleeCloak, preLegendTankCloak)
-
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)                                // zandalar trinket
-	protMitigationNoSet.ForceTryAllSlot(items.Equip_Trinket2, trinketTwinsGaze, trinketJiKun, trinketPrimRage) // gaze of twins/ji-kun/prim rage
-	protMitigationNoSet.BlockItem(trinketFortZand)                                                             // Fortitude of the Zandalari
-	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketFortZand)                                // gaze of the twins
+
+	// protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
+	// protMitigationNoSet.BlockItem(trinketFortZand)                                 
+	// protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketFortZand)    
+	
+	protMitigationNoSet.ForceTryAllSlot(items.Equip_Trinket2, trinketFortZand, trinketSoulBarrier)
+	protMitigationNoSet.BlockItem(trinketPrimRage)                                       
+	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)  
 
 	protMitigationWithSet := multi_types.MultiSetParam{
 		Label:                     "Prot-Mitigation-WithSet",
 		GearFile:                  files.GearFileProtMitigationSet,
 		Model:                     model.Model_PallyProtMitigation_WithSet(),
-		IncludeInFirstPass:        true,
-		RequestRatingPercent:      0.15,
+		// IncludeInFirstPass:        true,
+		RequestRatingPercent:      0.25,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -374,20 +384,25 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		trinketJiKun,
 		trinketTwinsGaze,
 		trinketSoulBarrier,
+		trinketFortZand,
 
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
 	})
 
+	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Ring1, 96481)               // durumu
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, preLegendTankCloak)   // pre-legend strength tank
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark) // zandalar trinket
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)  // Fortitude of the Zandalari
-	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage) // prim rage
-	// protMitigationWithSet.ForceTryAllSlot(items.Equip_Trinket2, trinketTwinsGaze, trinketJiKun, trinketPrimRage) // gaze of twins/ji-kun/prim rage
-	// protMitigationWithSet.BlockItem(trinketFortZand)                                                             // Fortitude of the Zandalari
-	// protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketFortZand)                                // gaze of the twins
-	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
+
+	// protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)  // Fortitude of the Zandalari
+	// protMitigationWithSet.BlockItem(trinketPrimRage)                                       
+	// protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage) 
+
+	protMitigationWithSet.ForceTryAllSlot(items.Equip_Trinket2, trinketFortZand, trinketSoulBarrier)
+	protMitigationWithSet.BlockItem(trinketPrimRage)                                       
+	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)          
+
 
 	// ret.AddBagsExtra()
 	// protDps.AddBagsExtra()
@@ -405,7 +420,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	// job.FindHighsResult_Sample()
 	// job.FindSeveralHighsAndSim()
-	job.FindHighsResultPerPermute(1)
+	job.FindHighsResultPerPermute(2)
 }
 
 func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {

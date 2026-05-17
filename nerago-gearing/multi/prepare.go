@@ -88,10 +88,28 @@ func (param *multiSetParamInternal) includeExtra(itemId items.ItemId) {
 }
 
 func (param *multiSetParamInternal) copyExtraFromOtherSpec(itemId items.ItemId) bool {
+	usageGroups, hasUsageGroups := param.job.distinctUsageGroups[itemId]
+
 	options := make([]items.FullItem, 0)
-	for otherIndex := range param.job.params {
-		more := param.job.params[otherIndex].itemOptions.FindItemId(itemId)
-		options = slices.AppendSeq(options, more)
+	if !hasUsageGroups {
+		for otherIndex := range param.job.params {
+			more := param.job.params[otherIndex].itemOptions.FindItemId(itemId)
+			options = slices.AppendSeq(options, more)
+		}
+	} else {
+		if slices.Contains(usageGroups.groupAIndexes, param.paramIndex) {
+			for _, otherIndex := range usageGroups.groupAIndexes {
+				more := param.job.params[otherIndex].itemOptions.FindItemId(itemId)
+				options = slices.AppendSeq(options, more)
+			}
+		} else if slices.Contains(usageGroups.groupBIndexes, param.paramIndex) {
+			for _, otherIndex := range usageGroups.groupBIndexes {
+				more := param.job.params[otherIndex].itemOptions.FindItemId(itemId)
+				options = slices.AppendSeq(options, more)
+			}
+		} else {
+			panic("expected param index to be in one of the groups")
+		}
 	}
 
 	options = util.RemoveDuplicatesFunc(options, (*items.FullItem).Equals)

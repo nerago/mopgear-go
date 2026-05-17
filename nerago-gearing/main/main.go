@@ -79,7 +79,7 @@ func core(printer *util.PrintRecorder) {
 	// checkHighs(printer)
 	// checkHighsAcross(printer)
 
-	// PaladinMultiRun(printer)
+	PaladinMultiRun(printer)
 	// testSim(printer)
 	// findUpgrades_Sim_PaladinMiti_Run(printer)
 	// findUpgrades_Sim_PaladinDps_Run(printer)
@@ -90,7 +90,7 @@ func core(printer *util.PrintRecorder) {
 	// trinketSims(printer)
 
 	// generateRatingsDataFromSims(printer)
-	statWeightsFromHighAndSim(printer)
+	// statWeightsFromHighAndSim(printer)
 }
 
 func setupPallyMitigationSet() (items.FullOptionsMap, model.Model) {

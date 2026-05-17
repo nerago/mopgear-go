@@ -12,7 +12,7 @@ type MultiSetParam struct {
 	Model    model.Model
 
 	// solve settings
-	IncludeInFirstPass   bool // TODO consider reintroducing in hights solver
+	// IncludeInFirstPass   bool // TODO consider reintroducing in hights solver
 	RequestRatingPercent float64
 
 	// extra item settings

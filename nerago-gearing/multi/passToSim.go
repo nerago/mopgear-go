@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func checkNoConflicts(outputSet []multi_types.SingleProposedOutput) bool {
+func checkNoConflicts(outputSet []multi_types.SingleProposedOutput, printer *util.PrintRecorder) bool {
 	itemById := make(map[items.ItemId]*items.FullItem)
 	for outputIndex := range outputSet {
 		for item := range outputSet[outputIndex].FullSet.Items().AllItemSeq() {
@@ -22,7 +22,7 @@ func checkNoConflicts(outputSet []multi_types.SingleProposedOutput) bool {
 			if !found {
 				itemById[item.ItemId()] = item
 			} else if !existing.Equals(item) {
-				// printer.Printf("!! CONFLICT %s\n!!          %s\n", item.CreateString(), existing.CreateString())
+				printer.Printf("!! CONFLICT %s\n!!          %s\n", item.CreateString(), existing.CreateString())
 				return false
 			}
 		}

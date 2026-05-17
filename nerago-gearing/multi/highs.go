@@ -48,8 +48,6 @@ func (job *MultiSetJob) FindHighsResultPerPermute(solutionsPerPermute int) {
 }
 
 func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, solutionsPerPermute int) []multi_types.MultiProposedOutput {
-	commonOptions := job.determineCommon() // TODO common after resolving options might be good
-
 	estimate := job.estimateFixedPermutations()
 	job.printer.Printf("PERMUTE SET COUNT %d\n", estimate)
 	currentProgress := atomic.Uint64{}
@@ -61,7 +59,7 @@ func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, s
 		func(permuteSet permuteSet, resultChannel chan<- multi_types.MultiProposedOutput) {
 			printer := util.PrintRecorder_HoldAll()
 
-			highProcess := job.highProcessSetupForPermute(permuteSet, commonOptions, printer)
+			highProcess := job.highProcessSetupForPermute(permuteSet, printer)
 
 			if solutionsPerPermute == 1 {
 				setResults := highProcess.Run(printer)
@@ -109,7 +107,10 @@ func (job *MultiSetJob) FindSeveralHighsAndSim() {
 func (job *MultiSetJob) highProcessSetup() withhighs.SolverHighsMultiProcess {
 	highProcess := withhighs.SolverHighsMultiProcess{}
 
-	commonOptions := job.determineCommon()
+	optionsInputList := util.CastSliceAsNew(job.params, func(param *multiSetParamInternal) commonOptionsInput {
+		return commonOptionsInput{param.Label, &param.itemOptions}
+	})
+	commonOptions := job.determineCommon(optionsInputList)
 	highProcess.SetCommon(commonOptions)
 
 	for paramIndex := range job.params {
@@ -154,11 +155,12 @@ func (job *MultiSetJob) makeOutputFromHighs(setResults []items.FullItemSet, prin
 		totalRatingSum += single.ResultRating * param.ratingMultiply
 	}
 
-	if checkNoConflicts(outputs) {
+	if checkNoConflicts(outputs, job.printer) {
 		combo := multi_types.CommonCombo_FromProposed(outputs)
 		proposed := multi_types.MultiProposedOutput{Id: uuid.NewString(), TotalRatingSum: totalRatingSum, Parts: outputs, Combo: combo}
 		return proposed
 	} else {
+		job.printer.AppendOther(printer)
 		panic("conflicted items")
 	}
 }

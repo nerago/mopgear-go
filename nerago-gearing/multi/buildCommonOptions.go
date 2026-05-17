@@ -11,31 +11,39 @@ import (
 	"strings"
 )
 
-func (job *MultiSetJob) determineCommon() multi_types.CommonOptions {
-	commonOptions, seenIn := searchParamOptions(&job.params)
+type commonOptionsInput struct {
+	label       string
+	itemOptions *items.FullOptionsMap
+}
+
+func (job *MultiSetJob) determineCommon(optionsInputList []commonOptionsInput) multi_types.CommonOptions {
+	commonOptions, seenIn := searchItemOptions(optionsInputList)
 
 	applyFixedForges(job.fixedForge, &commonOptions, job.printer)
 
 	removeSingleSetItems(seenIn, &commonOptions, job.fixedForge)
 
-	printCommons(seenIn, commonOptions, job.printer)
+	restrictItemOptionsToCommon(optionsInputList, commonOptions)
+
+	validateCommons(commonOptions)
+	// printCommons(seenIn, commonOptions, job.printer)
 
 	return commonOptions
 }
 
-func searchParamOptions(params *[]multiSetParamInternal) (multi_types.CommonOptions, map[items.ItemId][]string) {
+func searchItemOptions(optionsInputList []commonOptionsInput) (multi_types.CommonOptions, map[items.ItemId][]string) {
 	commonOptions := make(multi_types.CommonOptions)
 	seenIn := make(map[items.ItemId][]string)
 
-	for paramIndex := range *params {
-		param := &(*params)[paramIndex]
-		if param.IncludeInFirstPass {
-			grouped := groupById(param.itemOptions.AllItems())
-			for itemId, options := range grouped {
-				seenIn[itemId] = append(seenIn[itemId], param.Label)
-				commonOptions[itemId] = filterCommonForges(commonOptions[itemId], options)
-			}
+	for paramIndex := range optionsInputList {
+		input := &optionsInputList[paramIndex]
+		// if param.IncludeInFirstPass {
+		grouped := groupById(input.itemOptions.AllItems())
+		for itemId, options := range grouped {
+			seenIn[itemId] = append(seenIn[itemId], input.label)
+			commonOptions[itemId] = filterCommonForges(commonOptions[itemId], options)
 		}
+		// }
 	}
 
 	return commonOptions, seenIn
@@ -57,7 +65,7 @@ func filterCommonForges(prior []items.FullItem, newOptions []items.FullItem) []i
 	result := make([]items.FullItem, 0, len(prior))
 	for _, one := range prior {
 		for _, two := range newOptions {
-			if one.EqualsExceptEnchant(&two) { // essentially just choose first one
+			if one.Equals(&two) { // essentially just choose first one
 				result = append(result, one)
 			} else if one.ItemId() == two.ItemId() && one.ItemLevel() != two.ItemLevel() {
 				panic("inconsistent item levels " + one.CreateString() + " and " + two.CreateString())
@@ -103,12 +111,30 @@ func removeSingleSetItems(seenIn map[items.ItemId][]string, commonOptions *multi
 	}
 }
 
-func printCommons(seenIn map[items.ItemId][]string, commonOptions multi_types.CommonOptions, printer *util.PrintRecorder) {
+func restrictItemOptionsToCommon(optionsInputList []commonOptionsInput, commonOptions multi_types.CommonOptions) {
+	for paramIndex := range optionsInputList {
+		itemOptions := optionsInputList[paramIndex].itemOptions
+		itemOptions.FilterAllItems(func(item *items.FullItem) bool {
+			commonVersions, isCommon := commonOptions[item.ItemId()]
+			if isCommon {
+				return util.ContainsFunc_Pointer(commonVersions, item.Equals)
+			} else {
+				return true
+			}
+		})
+	}
+}
+
+func validateCommons(commonOptions multi_types.CommonOptions) {
 	for itemId, options := range commonOptions {
 		if len(options) == 0 {
 			log.Panicf("no common forge for %d", itemId)
 		}
+	}
+}
 
+func printCommons(seenIn map[items.ItemId][]string, commonOptions multi_types.CommonOptions, printer *util.PrintRecorder) {
+	for itemId, options := range commonOptions {
 		item := options[0]
 		whereSeen := seenIn[itemId]
 		seenText := strings.Join(whereSeen, " ")

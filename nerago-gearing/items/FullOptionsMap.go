@@ -84,6 +84,25 @@ func (optionsMap *FullOptionsMap) FindItemIdFirstOptional(itemId ItemId) (*FullI
 	return nil, false
 }
 
+func (optionsMap *FullOptionsMap) FindItemIdSlotUnique(itemId ItemId) SlotEquip {
+	var slotFound SlotEquip
+	found := false
+	for slot, slotArray := range optionsMap {
+		for i := range slotArray {
+			item := &slotArray[i]
+			if item.ItemId() == itemId {
+				if !found {
+					found = true
+					slotFound = SlotEquip(slot)
+				} else if slotFound != SlotEquip(slot) {
+					panic("duplicate slot for item")
+				}
+			}
+		}
+	}
+	return slotFound
+}
+
 func (optionsMap *FullOptionsMap) AllItems() iter.Seq[*FullItem] {
 	return func(yield func(*FullItem) bool) {
 		for _, slotArray := range optionsMap {

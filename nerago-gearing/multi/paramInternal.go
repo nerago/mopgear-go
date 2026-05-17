@@ -11,7 +11,8 @@ import (
 type multiSetParamInternal struct {
 	multi_types.MultiSetParam
 
-	job *MultiSetJob
+	job        *MultiSetJob
+	paramIndex int
 
 	// working data
 	exactEquippedGear items.FullEquipMap

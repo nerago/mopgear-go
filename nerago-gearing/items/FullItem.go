@@ -174,11 +174,6 @@ func (item *FullItem) Equals(other *FullItem) bool {
 		stats.StatBlock_Equals(&item.statBase, &other.statBase) && stats.StatBlock_Equals(&item.statEnchant, &other.statEnchant)
 }
 
-func (item *FullItem) EqualsExceptEnchant(other *FullItem) bool {
-	return item.itemId == other.itemId && item.itemLevel == other.itemLevel && item.slot == other.slot &&
-		stats.StatBlock_Equals(&item.statBase, &other.statBase)
-}
-
 func (item *FullItem) CreateString() string {
 	build := util.StringBuild2{}
 	item.AppendString(&build)

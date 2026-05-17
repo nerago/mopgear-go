@@ -1,6 +1,8 @@
 package util
 
-import "iter"
+import (
+	"iter"
+)
 
 // type Equatable[T any] interface {
 // 	Equals(other T)
@@ -129,6 +131,15 @@ change_part:
 	return slice[:writeIndex]
 }
 
+func ContainsFunc_Pointer[T any](slice []T, predicate func(*T) bool) bool {
+	for i := range slice {
+		if predicate(&slice[i]) {
+			return true
+		}
+	}
+	return false
+}
+
 func RepeatValue[T any](value T, count int) []T {
 	result := make([]T, count)
 	for i := range count {
@@ -250,4 +261,3 @@ func permuteRecur4[T any](listsOfOptions [][]T, curr []T, yield func([]T) bool) 
 		return true
 	}
 }
-

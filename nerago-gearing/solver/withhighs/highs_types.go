@@ -14,7 +14,7 @@ const (
 	c_maxSetItems    = 5 // fundamental in MoP gear sets
 	c_setItemsCounts = c_maxSetItems + 1
 
-	c_debugHighs = true
+	c_debugHighs = false
 	c_threads    = 6
 )
 
@@ -114,7 +114,7 @@ func (input *inputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 	// checkError(solver.SetStringOption("presolve", "off"))
 	// checkError(solver.SetStringOption("parallel", "on"))
 	// checkError(solver.SetIntOption("threads", c_threads))
-	verifyNoError(solver.SetFloatOption("time_limit", 300))
+	// verifyNoError(solver.SetFloatOption("time_limit", 300))
 
 	verifyNoError(solver.SetStringOption("log_file", logfile))
 	verifyNoError(solver.SetBoolOption("log_to_console", c_debugHighs))
