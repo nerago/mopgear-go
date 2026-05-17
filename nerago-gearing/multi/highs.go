@@ -18,8 +18,8 @@ func (job *MultiSetJob) FindHighsResult_Sample() util.Optional[multi_types.Multi
 
 	best := util_rank.BestCollector1[multi_types.MultiProposedOutput]{}
 
-	setResults := highProcess.RunForSeveral_NextObjective(job.printer, 6)
-	// setResults := highProcess.RunForSeveral_CommonDifferent_Sampling(job.printer, 6)
+	// setResults := highProcess.RunForSeveral_NextObjective(job.printer, 6)
+	setResults := highProcess.RunForSeveral_CommonDifferent_Sampling(job.printer, 6)
 	if setResults != nil {
 		proposedOutput := util.CastSliceAsNew(setResults, func(x *[]items.FullItemSet) multi_types.MultiProposedOutput {
 			return job.makeOutputFromHighs(*x, job.printer)

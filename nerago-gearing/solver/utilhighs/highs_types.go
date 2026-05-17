@@ -1,4 +1,4 @@
-package withhighs
+package utilhighs
 
 import (
 	"cmp"
@@ -11,92 +11,93 @@ import (
 )
 
 const (
-	c_maxSetItems    = 5 // fundamental in MoP gear sets
-	c_setItemsCounts = c_maxSetItems + 1
-
-	c_debugHighs = false
+	C_DebugHighs = false
 	c_threads    = 6
 )
 
 // not really consts but would be nice
 var (
-	c_minusInf = math.Inf(-1)
-	c_plusInf  = math.Inf(1)
+	C_MinusInf = math.Inf(-1)
+	C_PlusInf  = math.Inf(1)
 )
 
-func floatEqualsOne(value float64) bool {
+func FloatEqualsOne(value float64) bool {
 	return 0.999999 <= value && value <= 1.000001
 }
 
-func floatEqualsZero(value float64) bool {
+func FloatEqualsZero(value float64) bool {
 	return -0.000001 <= value && value <= 0.000001
 }
 
-func floatsApproxEquals(a, b float64) bool {
+func FloatsApproxEquals(a, b float64) bool {
 	ratio := a / b
 	return 0.99999 <= ratio && ratio <= 1.00001
 }
 
-type columnIndex int32
-type rowIndex int32
+type ColumnIndex int32
+type RowIndex int32
 
-type inputBuilder struct {
+type InputBuilder struct {
 	vars                 variableArrayBuilder
 	mat                  constraintMatrixBuilder
-	minimise             bool
-	blendMultiObjectives bool
+	Minimise             bool
+	BlendMultiObjectives bool
 }
 
-func (input *inputBuilder) createColumnBool() columnIndex {
+func (input *InputBuilder) AddLinearObjective(weight float64, offset float64, abs_tolerance float64, rel_tolerance float64, priority int) int {
+	return input.vars.addLinearObjective(weight, offset, abs_tolerance, rel_tolerance, priority)
+}
+
+func (input *InputBuilder) CreateColumnBool() ColumnIndex {
 	return input.vars.create(highs.Integer, 0, 1, 0)
 }
 
-func (input *inputBuilder) createColumnGeneral(varType highs.VariableType, lower, upper float64) columnIndex {
+func (input *InputBuilder) CreateColumnGeneral(varType highs.VariableType, lower, upper float64) ColumnIndex {
 	return input.vars.create(varType, lower, upper, 0)
 }
 
-func (input *inputBuilder) createColumnWithOutput(varType highs.VariableType, lower, upper, cost float64) columnIndex {
+func (input *InputBuilder) CreateColumnWithOutput(varType highs.VariableType, lower, upper, cost float64) ColumnIndex {
 	return input.vars.create(varType, lower, upper, cost)
 }
 
-func (input *inputBuilder) createColumnForLinearObjective(varType highs.VariableType, lower, upper, cost float64, linearObjectiveIndex int) columnIndex {
+func (input *InputBuilder) CreateColumnForLinearObjective(varType highs.VariableType, lower, upper, cost float64, linearObjectiveIndex int) ColumnIndex {
 	return input.vars.createForLinear(varType, lower, upper, cost, linearObjectiveIndex)
 }
 
-func (input *inputBuilder) addRow(entries []indexAndValue, lowerBound float64, upperBound float64) rowIndex {
+func (input *InputBuilder) AddRow(entries []indexAndValue, lowerBound float64, upperBound float64) RowIndex {
 	return input.mat.addRow(entries, lowerBound, upperBound)
 }
 
-func (input *inputBuilder) clone() *inputBuilder {
-	return &inputBuilder{
+func (input *InputBuilder) Clone() *InputBuilder {
+	return &InputBuilder{
 		vars: input.vars.clone(),
 		mat:  input.mat.clone(),
 	}
 }
 
-func (input *inputBuilder) runHighs() (*highs.Solution, *util.PrintRecorder) {
+func (input *InputBuilder) RunHighs() (*highs.Solution, *util.PrintRecorder) {
 	solver, logFilename := input.preHighsRun()
 
-	solution, err := highsPool.RunSolverUnderMutex(solver)
+	solution, err := G_HighsPool.RunSolverUnderMutex(solver)
 	verifyNoError(err)
 
 	printer := input.postHighsRun(solver, logFilename)
 	return solution, printer
 }
 
-func (input *inputBuilder) preHighsRun() (*highs.Solver, string) {
+func (input *InputBuilder) preHighsRun() (*highs.Solver, string) {
 	logFilename := makeTempFilename()
 
-	solver := highsPool.Get()
+	solver := G_HighsPool.Get()
 	input.configureHighsModel_internal(solver, logFilename)
 	return solver, logFilename
 }
 
-func (*inputBuilder) postHighsRun(solver *highs.Solver, logFilename string) *util.PrintRecorder {
+func (*InputBuilder) postHighsRun(solver *highs.Solver, logFilename string) *util.PrintRecorder {
 	verifyNoError(solver.SetStringOption("log_file", "")) // flush log
 	printer := readLogfile(logFilename)
 
-	highsPool.Put(solver)
+	G_HighsPool.Put(solver)
 
 	return printer
 }
@@ -110,22 +111,22 @@ func readLogfile(tempFilename string) *util.PrintRecorder {
 	return printer
 }
 
-func (input *inputBuilder) configureHighsModel_internal(solver *highs.Solver, logfile string) {
+func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, logfile string) {
 	// checkError(solver.SetStringOption("presolve", "off"))
 	// checkError(solver.SetStringOption("parallel", "on"))
 	// checkError(solver.SetIntOption("threads", c_threads))
 	// verifyNoError(solver.SetFloatOption("time_limit", 300))
 
 	verifyNoError(solver.SetStringOption("log_file", logfile))
-	verifyNoError(solver.SetBoolOption("log_to_console", c_debugHighs))
-	if c_debugHighs {
+	verifyNoError(solver.SetBoolOption("log_to_console", C_DebugHighs))
+	if C_DebugHighs {
 		verifyNoError(solver.SetIntOption("log_dev_level", 3))
 	} else {
 		verifyNoError(solver.SetIntOption("log_dev_level", 0))
 	}
 
-	verifyNoError(solver.SetMaximize(!input.minimise))
-	verifyNoError(solver.SetBoolOption("blend_multi_objectives", input.blendMultiObjectives))
+	verifyNoError(solver.SetMaximize(!input.Minimise))
+	verifyNoError(solver.SetBoolOption("blend_multi_objectives", input.BlendMultiObjectives))
 
 	numRows, lowerBound, upperBound, startArray, indexArray, valuesArray := input.mat.createSolverInputArrays()
 	verifyNoError(solver.PassModel2(
@@ -190,7 +191,7 @@ func (vars *variableArrayBuilder) addLinearObjective(weight float64, offset floa
 	return index
 }
 
-func (vars *variableArrayBuilder) create(varType highs.VariableType, lower, upper, cost float64) columnIndex {
+func (vars *variableArrayBuilder) create(varType highs.VariableType, lower, upper, cost float64) ColumnIndex {
 	if len(vars.linearObjectives) > 0 && cost != 0.0 {
 		panic("unexpected column cost while using linear objectives")
 	}
@@ -200,10 +201,10 @@ func (vars *variableArrayBuilder) create(varType highs.VariableType, lower, uppe
 	vars.colLower = append(vars.colLower, lower)
 	vars.colUpper = append(vars.colUpper, upper)
 	vars.colCosts = append(vars.colCosts, cost)
-	return columnIndex(index)
+	return ColumnIndex(index)
 }
 
-func (vars *variableArrayBuilder) createForLinear(varType highs.VariableType, lower float64, upper float64, cost float64, linearObjectiveIndex int) columnIndex {
+func (vars *variableArrayBuilder) createForLinear(varType highs.VariableType, lower float64, upper float64, cost float64, linearObjectiveIndex int) ColumnIndex {
 	columnIndex := vars.create(varType, lower, upper, 0)
 
 	linearObjective := &vars.linearObjectives[linearObjectiveIndex]
@@ -226,31 +227,31 @@ func (vars *variableArrayBuilder) changeColumnCost(columnIndex int, cost float64
 }
 
 type indexAndValue struct {
-	columnNumber columnIndex
+	columnNumber ColumnIndex
 	value        float64
 }
 
-type constraintRowBuild struct {
+type ConstraintRowBuild struct {
 	entries  []indexAndValue
 	isAdded  bool
-	rowIndex rowIndex
+	rowIndex RowIndex
 }
 
-func (row *constraintRowBuild) isEmpty() bool {
+func (row *ConstraintRowBuild) IsEmpty() bool {
 	return len(row.entries) == 0
 }
 
-func (row *constraintRowBuild) hasValues() bool {
+func (row *ConstraintRowBuild) HasValues() bool {
 	return len(row.entries) > 0
 }
 
-func (row *constraintRowBuild) add(columnIndex columnIndex, value float64) {
+func (row *ConstraintRowBuild) Add(columnIndex ColumnIndex, value float64) {
 	if value != 0.0 {
 		row.entries = append(row.entries, indexAndValue{columnIndex, value})
 	}
 }
 
-func (row *constraintRowBuild) change(columnIndex columnIndex, value float64) {
+func (row *ConstraintRowBuild) Change(columnIndex ColumnIndex, value float64) {
 	for i := range row.entries {
 		if row.entries[i].columnNumber == columnIndex {
 			row.entries[i].value = value
@@ -261,14 +262,14 @@ func (row *constraintRowBuild) change(columnIndex columnIndex, value float64) {
 	panic("column didn't exist")
 }
 
-func (row *constraintRowBuild) finish(input *inputBuilder, lowerBound float64, upperBound float64) {
+func (row *ConstraintRowBuild) Finish(input *InputBuilder, lowerBound float64, upperBound float64) {
 	// couldn't find reference for sure that indexes need to be sorted but probably best
 	slices.SortFunc(row.entries, func(a, b indexAndValue) int { return cmp.Compare(a.columnNumber, b.columnNumber) })
 
 	if row.isAdded {
 		input.mat.changeRow(row.rowIndex, row.entries, lowerBound, upperBound)
 	} else {
-		row.rowIndex = input.addRow(row.entries, lowerBound, upperBound)
+		row.rowIndex = input.AddRow(row.entries, lowerBound, upperBound)
 		row.isAdded = true
 	}
 }
@@ -289,15 +290,15 @@ func (mat *constraintMatrixBuilder) clone() constraintMatrixBuilder {
 	}
 }
 
-func (mat *constraintMatrixBuilder) addRow(entries []indexAndValue, lowerBound float64, upperBound float64) rowIndex {
+func (mat *constraintMatrixBuilder) addRow(entries []indexAndValue, lowerBound float64, upperBound float64) RowIndex {
 	index := len(mat.entries)
 	mat.entries = append(mat.entries, entries)
 	mat.lowerBound = append(mat.lowerBound, lowerBound)
 	mat.upperBound = append(mat.upperBound, upperBound)
-	return rowIndex(index)
+	return RowIndex(index)
 }
 
-func (mat constraintMatrixBuilder) changeRow(rowIndex rowIndex, entries []indexAndValue, lowerBound float64, upperBound float64) {
+func (mat constraintMatrixBuilder) changeRow(rowIndex RowIndex, entries []indexAndValue, lowerBound float64, upperBound float64) {
 	mat.entries[rowIndex] = entries
 	mat.lowerBound[rowIndex] = lowerBound
 	mat.upperBound[rowIndex] = upperBound

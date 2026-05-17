@@ -3,17 +3,23 @@ package withhighs
 import (
 	"paladin_gearing_go/items"
 	gear_model "paladin_gearing_go/model"
+	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/util"
 	"strconv"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
+const (
+	c_maxSetItems    = 5 // fundamental in MoP gear sets
+	c_setItemsCounts = c_maxSetItems + 1
+)
+
 func RunAllActiveSets(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, printer *util.PrintRecorder) util.Optional[items.SolvableItemSet] {
-	inputBuilder := inputBuilder{}
+	inputBuilder := utilhighs.InputBuilder{}
 	setup := setupBonusedInputs(&inputBuilder, gear_model, itemOptions, 1)
 
-	solution, log := inputBuilder.runHighs()
+	solution, log := inputBuilder.RunHighs()
 	printer.AppendOther(log)
 	printer.Printf("SOLUTION STATUS = %s\n", solution.Status.String())
 
@@ -28,7 +34,7 @@ func RunAllActiveSets(itemOptions *items.SolvableOptionsMap, gear_model *gear_mo
 	}
 }
 
-func setupBonusedInputs(inputBuilder *inputBuilder, gear_model *gear_model.Model, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *setupInputsForSetBonus {
+func setupBonusedInputs(inputBuilder *utilhighs.InputBuilder, gear_model *gear_model.Model, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *setupInputsForSetBonus {
 	setup := setupInputsForSetBonus{input: inputBuilder}
 
 	setup.addMainOutputVariable(scaleOutputRating)
@@ -44,7 +50,7 @@ func setupBonusedInputs(inputBuilder *inputBuilder, gear_model *gear_model.Model
 }
 
 func debugPrint(solution *highs.Solution, setup *setupInputsForSetBonus, printer *util.PrintRecorder) {
-	if !c_debugHighs {
+	if !utilhighs.C_DebugHighs {
 		return
 	}
 
@@ -54,7 +60,7 @@ func debugPrint(solution *highs.Solution, setup *setupInputsForSetBonus, printer
 	activeBonusWeight := 0.0
 
 	for colIndex, outputValue := range solution.ColValues {
-		if !debugPrintColumn(setup.allColumns, columnIndex(colIndex), outputValue, &activeBonus, &activeBonusWeight, printer) {
+		if !debugPrintColumn(setup.allColumns, utilhighs.ColumnIndex(colIndex), outputValue, &activeBonus, &activeBonusWeight, printer) {
 			printer.Printf("%d %f UNKNOWN\n", colIndex, outputValue)
 		}
 	}
@@ -62,7 +68,7 @@ func debugPrint(solution *highs.Solution, setup *setupInputsForSetBonus, printer
 	printer.Printf("ACTIVE highs Bonus = %s %f\n", activeBonus, activeBonusWeight)
 }
 
-func debugPrintColumn(allColumns []columnInfo, columnIndex columnIndex, outputValue float64, activeBonus *string, activeBonusWeight *float64, printer *util.PrintRecorder) bool {
+func debugPrintColumn(allColumns []columnInfo, columnIndex utilhighs.ColumnIndex, outputValue float64, activeBonus *string, activeBonusWeight *float64, printer *util.PrintRecorder) bool {
 	var colEntry columnInfo
 	found := false
 	for _, col := range allColumns {
@@ -79,7 +85,7 @@ func debugPrintColumn(allColumns []columnInfo, columnIndex columnIndex, outputVa
 	return found
 }
 
-func debugPrintColumnEntry(colEntry columnInfo, columnIndex columnIndex, outputValue float64, activeBonus *string, activeBonusWeight *float64, printer *util.PrintRecorder) {
+func debugPrintColumnEntry(colEntry columnInfo, columnIndex utilhighs.ColumnIndex, outputValue float64, activeBonus *string, activeBonusWeight *float64, printer *util.PrintRecorder) {
 	switch colEntry.entryType {
 	case entry_item:
 		printer.Printf("%d %f %s %s %d\n", columnIndex, outputValue, "item", colEntry.itemSlot.Name(), colEntry.item.ItemId())
@@ -91,12 +97,12 @@ func debugPrintColumnEntry(colEntry columnInfo, columnIndex columnIndex, outputV
 		printer.Printf("%d %f %s\n", columnIndex, outputValue, "initial item rating sum")
 	case entry_permutation_active:
 		printer.Printf("%d %f %s %s\n", columnIndex, outputValue, "permutation active", colEntry.permutation.debugStr())
-		if floatEqualsOne(outputValue) && activeBonus != nil {
+		if utilhighs.FloatEqualsOne(outputValue) && activeBonus != nil {
 			*activeBonus += colEntry.permutation.debugStr()
 		}
 	case entry_permutation_output_weighted:
 		printer.Printf("%d %f %s %s %f\n", columnIndex, outputValue, "permutation weighted output", colEntry.permutation.debugStr(), colEntry.weight)
-		if !floatEqualsZero(outputValue) && activeBonusWeight != nil {
+		if !utilhighs.FloatEqualsZero(outputValue) && activeBonusWeight != nil {
 			*activeBonusWeight += colEntry.weight
 		}
 	case entry_main_output:
@@ -111,18 +117,18 @@ func debugPrintColumnEntry(colEntry columnInfo, columnIndex columnIndex, outputV
 }
 
 type setupInputsForSetBonus struct {
-	input *inputBuilder
+	input *utilhighs.InputBuilder
 
-	slotsOneEachRow [16]constraintRowBuild // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
+	slotsOneEachRow [16]utilhighs.ConstraintRowBuild // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
 
-	hitValueRow    constraintRowBuild // constrains values for the hits of each item
-	expertValueRow constraintRowBuild // constrains values for the expertise of each item
+	hitValueRow    utilhighs.ConstraintRowBuild // constrains values for the hits of each item
+	expertValueRow utilhighs.ConstraintRowBuild // constrains values for the expertise of each item
 
-	baseRatingSumRow constraintRowBuild // values for the ratings of each item
-	baseRatingSumVar *columnInfo        // sum of values for the ratings of selected items
+	baseRatingSumRow utilhighs.ConstraintRowBuild // values for the ratings of each item
+	baseRatingSumVar *columnInfo                  // sum of values for the ratings of selected items
 
-	mainOutputRow constraintRowBuild // compute final output from set based alternatives
-	mainOutputVar *columnInfo        // output variable, to be used directly or scaled against other models
+	mainOutputRow utilhighs.ConstraintRowBuild // compute final output from set based alternatives
+	mainOutputVar *columnInfo                  // output variable, to be used directly or scaled against other models
 
 	setData           []setInfo
 	allSetPermutation []setPermutation
@@ -134,8 +140,8 @@ type setupInputsForSetBonus struct {
 type setPermutation struct {
 	content []setWithCount
 
-	outputVar     columnIndex
-	activatingVar columnIndex
+	outputVar     utilhighs.ColumnIndex
+	activatingVar utilhighs.ColumnIndex
 	weight        float64
 }
 
@@ -187,7 +193,7 @@ const (
 
 func (setup *setupInputsForSetBonus) buildSimpleNoSetsOutput() {
 	// just copy initial rating sum into final if no sets
-	setup.mainOutputRow.add(setup.baseRatingSumVar.columnIndex, 1)
+	setup.mainOutputRow.Add(setup.baseRatingSumVar.columnIndex, 1)
 }
 
 func (setup *setupInputsForSetBonus) buildSetMultipliedOutput(permutation *setPermutation) {
@@ -195,17 +201,17 @@ func (setup *setupInputsForSetBonus) buildSetMultipliedOutput(permutation *setPe
 	activatingVar := setup.buildPermutationActivatingVar(permutation)
 
 	// copy regular rating sum to column if flag is set
-	contraintIfBoolCopyValueElseZero(setup.input, activatingVar, setup.baseRatingSumVar.columnIndex, outputVar, c_ratings_low_range, c_ratings_high_range)
+	utilhighs.ContraintIfBoolCopyValueElseZero(setup.input, activatingVar, setup.baseRatingSumVar.columnIndex, outputVar, c_ratings_low_range, c_ratings_high_range)
 
 	// add scaled rating to final computation
-	setup.mainOutputRow.add(outputVar, weight)
+	setup.mainOutputRow.Add(outputVar, weight)
 
 	permutation.outputVar = outputVar
 	permutation.activatingVar = activatingVar
 	permutation.weight = weight
 }
 
-func (setup *setupInputsForSetBonus) buildSetWeightedOutputVar(permutation *setPermutation) (columnIndex, float64) {
+func (setup *setupInputsForSetBonus) buildSetWeightedOutputVar(permutation *setPermutation) (utilhighs.ColumnIndex, float64) {
 	totalWeight := 1.0
 	for _, setAndCount := range permutation.content {
 		bonusForCount := setAndCount.setInfo.activeSet.BonusForCount(uint8(setAndCount.count))
@@ -213,28 +219,28 @@ func (setup *setupInputsForSetBonus) buildSetWeightedOutputVar(permutation *setP
 	}
 
 	// the actual output variable from this permutation, applies relevant set related multipliers
-	columnIndex := setup.input.createColumnGeneral(highs.Continuous, c_minusInf, c_plusInf)
+	columnIndex := setup.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
 	entry := columnInfo{entryType: entry_permutation_output_weighted, columnIndex: columnIndex, permutation: permutation, weight: totalWeight}
 	setup.allColumns = append(setup.allColumns, entry)
 	return columnIndex, totalWeight
 }
 
-func (setup *setupInputsForSetBonus) buildPermutationActivatingVar(permutation *setPermutation) columnIndex {
+func (setup *setupInputsForSetBonus) buildPermutationActivatingVar(permutation *setPermutation) utilhighs.ColumnIndex {
 	// we are effecively building a logical AND between these vars
 
-	permutationActiveBool := setup.input.createColumnBool()
+	permutationActiveBool := setup.input.CreateColumnBool()
 
-	buildAnd := contraintAndBuilder{}
-	buildAnd.setOutput(permutationActiveBool)
+	buildAnd := utilhighs.ContraintAndBuilder{}
+	buildAnd.SetOutput(permutationActiveBool)
 
 	for _, setAndCount := range permutation.content {
 		setInfo := setAndCount.setInfo
 		count := setAndCount.count
 		specificExactBool := setInfo.setExactCountVars[count]
-		buildAnd.addInput(specificExactBool.columnIndex)
+		buildAnd.AddInput(specificExactBool.columnIndex)
 	}
 
-	buildAnd.finishAndApply(setup.input)
+	buildAnd.FinishAndApply(setup.input)
 
 	entry := columnInfo{entryType: entry_permutation_active, columnIndex: permutationActiveBool, permutation: permutation}
 	setup.allColumns = append(setup.allColumns, entry)
@@ -266,10 +272,10 @@ func makeSetPermutationsRecur(allSetPermutation []setPermutation, setData []setI
 
 func (setup *setupInputsForSetBonus) addSetItemCountVariable(info *setInfo) {
 	// set item actual count
-	columnIndex := setup.input.createColumnGeneral(highs.Integer, 0, c_maxSetItems)
+	columnIndex := setup.input.CreateColumnGeneral(highs.Integer, 0, c_maxSetItems)
 
 	// add corresponding -1 to the set item count array, so we can compare value to the sum of items, relevant items will flag a 1
-	info.countSetItemsRow.add(columnIndex, -1)
+	info.countSetItemsRow.Add(columnIndex, -1)
 
 	// save reference
 	entry := columnInfo{entryType: entry_set_total_count, columnIndex: columnIndex, set: info.activeSet}
@@ -279,37 +285,37 @@ func (setup *setupInputsForSetBonus) addSetItemCountVariable(info *setInfo) {
 
 func (setup *setupInputsForSetBonus) addSetItemsCountExactVariables(info *setInfo) {
 	// compare total number of items previous computed into this constraint
-	compareRow := constraintRowBuild{}
-	compareRow.add(info.setTotalCountVar.columnIndex, -1)
+	compareRow := utilhighs.ConstraintRowBuild{}
+	compareRow.Add(info.setTotalCountVar.columnIndex, -1)
 
 	// constraint so only one of these flags gets set
-	singleFlagOnly := constraintRowBuild{}
+	singleFlagOnly := utilhighs.ConstraintRowBuild{}
 
 	// make a bool for each possible count in range 0..5
 	for itemCount := 0; itemCount <= c_maxSetItems; itemCount++ {
-		boolColumn := setup.input.createColumnBool()
+		boolColumn := setup.input.CreateColumnBool()
 
 		// should activate this flag which will match the total count
-		compareRow.add(boolColumn, float64(itemCount))
+		compareRow.Add(boolColumn, float64(itemCount))
 
 		// but only one flag at a time
-		singleFlagOnly.add(boolColumn, 1)
+		singleFlagOnly.Add(boolColumn, 1)
 
 		entry := columnInfo{entryType: entry_set_exact_count, columnIndex: boolColumn, set: info.activeSet, itemCount: itemCount}
 		info.setExactCountVars[itemCount] = entry
 		setup.allColumns = append(setup.allColumns, entry)
 	}
 
-	compareRow.finish(setup.input, 0, 0)     // equal
-	singleFlagOnly.finish(setup.input, 1, 1) // sum of flags should be just one, should pull the zero flag up if no other set
+	compareRow.Finish(setup.input, 0, 0)     // equal
+	singleFlagOnly.Finish(setup.input, 1, 1) // sum of flags should be just one, should pull the zero flag up if no other set
 }
 
 func (setup *setupInputsForSetBonus) addMainOutputVariable(scaleOutputRating float64) {
 	// goes directly into overall rating, but could have an external scale applied
-	columnIndex := setup.input.createColumnWithOutput(highs.Continuous, 0, c_plusInf, scaleOutputRating)
+	columnIndex := setup.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, scaleOutputRating)
 
 	// derive value based on whichever setup bonus permutation is active
-	setup.mainOutputRow.add(columnIndex, -1)
+	setup.mainOutputRow.Add(columnIndex, -1)
 
 	// save reference
 	entry := columnInfo{entryType: entry_main_output, columnIndex: columnIndex}
@@ -320,10 +326,10 @@ func (setup *setupInputsForSetBonus) addMainOutputVariable(scaleOutputRating flo
 func (setup *setupInputsForSetBonus) addSumRatingVariable() {
 	// sum of individual selected item ratings
 	// doesen't go directly into output rating
-	columnIndex := setup.input.createColumnGeneral(highs.Continuous, 0, c_plusInf)
+	columnIndex := setup.input.CreateColumnGeneral(highs.Continuous, 0, utilhighs.C_PlusInf)
 
 	// main action of this variable: derive value to match rest of rest of row sum
-	setup.baseRatingSumRow.add(columnIndex, -1)
+	setup.baseRatingSumRow.Add(columnIndex, -1)
 
 	// save reference
 	entry := columnInfo{entryType: entry_sum_rating, columnIndex: columnIndex}
@@ -334,24 +340,24 @@ func (setup *setupInputsForSetBonus) addSumRatingVariable() {
 func (setup *setupInputsForSetBonus) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, gear_model *gear_model.Model) {
 	// boolean value to flag use of specific item
 	// contributes 0 to final rating itself, but via additional summation and calcs
-	columnIndex := setup.input.createColumnBool()
+	columnIndex := setup.input.CreateColumnBool()
 
 	// add rating via a summation condition
 	// scale down ratings to keep numbers small for solver stability
 	rating := float64(gear_model.CalcRatingSolveItem(item)) / c_scaled_ratings
-	setup.baseRatingSumRow.add(columnIndex, rating)
+	setup.baseRatingSumRow.Add(columnIndex, rating)
 
 	// specific hit/expertise values for hi/lo limits
-	setup.hitValueRow.add(columnIndex, float64(item.TotalCap().Hit()))
-	setup.expertValueRow.add(columnIndex, float64(item.TotalCap().Expertise()))
+	setup.hitValueRow.Add(columnIndex, float64(item.TotalCap().Hit()))
+	setup.expertValueRow.Add(columnIndex, float64(item.TotalCap().Expertise()))
 
 	// 1 for that slot that matches the item, so we can tell solver only one item per slot
-	setup.slotsOneEachRow[itemSlot].add(columnIndex, 1.0)
+	setup.slotsOneEachRow[itemSlot].Add(columnIndex, 1.0)
 
 	// if this item belongs to any item set then flag with a 1
 	activeSetIndex, hasSet := gear_model.SetBonus.ActiveSetIndexForItem(item.ItemId())
 	if hasSet {
-		setup.setData[activeSetIndex].countSetItemsRow.add(columnIndex, 1)
+		setup.setData[activeSetIndex].countSetItemsRow.Add(columnIndex, 1)
 	}
 
 	entry := columnInfo{entryType: entry_item, columnIndex: columnIndex, itemSlot: itemSlot, item: item}
@@ -363,33 +369,33 @@ func (setup *setupInputsForSetBonus) finishItems(itemOptions *items.SolvableOpti
 	// constrain: exactly one item for each slot
 	for slot, row := range setup.slotsOneEachRow {
 		if itemOptions.Has(items.SlotEquip(slot)) {
-			row.finish(setup.input, 1, 1)
+			row.Finish(setup.input, 1, 1)
 		} else {
-			row.finish(setup.input, 0, 0)
+			row.Finish(setup.input, 0, 0)
 		}
 	}
 
 	// constrain: total sum of hit/exp are within requested limits
-	setup.hitValueRow.finish(setup.input, float64(gear_model.StatRequirements.HitMin()), float64(gear_model.StatRequirements.HitMax()))
-	setup.expertValueRow.finish(setup.input, float64(gear_model.StatRequirements.ExpertMin()), float64(gear_model.StatRequirements.ExpertMax()))
+	setup.hitValueRow.Finish(setup.input, float64(gear_model.StatRequirements.HitMin()), float64(gear_model.StatRequirements.HitMax()))
+	setup.expertValueRow.Finish(setup.input, float64(gear_model.StatRequirements.ExpertMin()), float64(gear_model.StatRequirements.ExpertMax()))
 
 	// constrain: matching sum to individual ratings
-	setup.baseRatingSumRow.finish(setup.input, 0, 0)
+	setup.baseRatingSumRow.Finish(setup.input, 0, 0)
 
 	// constrain: matching number of items from each given set
 	for _, setInfo := range setup.setData {
-		setInfo.countSetItemsRow.finish(setup.input, 0, 0)
+		setInfo.countSetItemsRow.Finish(setup.input, 0, 0)
 	}
 
 	// constrain: whichever alternate set output into final
-	setup.mainOutputRow.finish(setup.input, 0, 0)
+	setup.mainOutputRow.Finish(setup.input, 0, 0)
 }
 
 func (setup *setupInputsForSetBonus) buildResultSet(solution *highs.Solution, itemOptions *items.SolvableOptionsMap, model *gear_model.Model) items.SolvableItemSet {
 	itemSet := items.SolvableItemSet{}
 	for _, columnEntry := range setup.itemColumns {
 		variableResult := solution.ColValues[columnEntry.columnIndex]
-		if columnEntry.entryType == entry_item && floatEqualsOne(variableResult) {
+		if columnEntry.entryType == entry_item && utilhighs.FloatEqualsOne(variableResult) {
 			itemSet.AddItem_DeferCalc_ExpectEmpty(columnEntry.itemSlot, columnEntry.item)
 		}
 	}
@@ -403,7 +409,7 @@ func (setup *setupInputsForSetBonus) buildResultSet(solution *highs.Solution, it
 
 func checkSetRatingIsObjective(solution *highs.Solution, itemSet *items.SolvableItemSet, gear_model *gear_model.Model) {
 	checkRating := gear_model.CalcRatingSolve(itemSet)
-	if !floatsApproxEquals(solution.Objective*c_scaled_ratings, float64(checkRating)) {
+	if !utilhighs.FloatsApproxEquals(solution.Objective*c_scaled_ratings, float64(checkRating)) {
 		panic("rating inconsistent " + strconv.FormatFloat(solution.Objective, 'f', 0, 64) + " " + strconv.FormatFloat(float64(checkRating), 'f', 0, 32))
 	}
 }
@@ -414,7 +420,7 @@ func (setup *setupInputsForSetBonus) checkActivePermutation(solution *highs.Solu
 
 		for _, permutation := range setup.allSetPermutation {
 			variableResult := solution.ColValues[permutation.activatingVar]
-			if floatEqualsOne(variableResult) {
+			if utilhighs.FloatEqualsOne(variableResult) {
 				if activePermutation == nil {
 					activePermutation = &permutation
 				} else {
@@ -453,7 +459,7 @@ const (
 
 type columnInfo struct {
 	entryType   entryType
-	columnIndex columnIndex
+	columnIndex utilhighs.ColumnIndex
 
 	itemSlot items.SlotEquip
 	item     *items.SolvableItem
@@ -469,7 +475,7 @@ type setInfo struct {
 	activeSet gear_model.ActiveSet
 	setIndex  int
 
-	countSetItemsRow  constraintRowBuild           // use to count items used from this set, has 1 or 0 flags
+	countSetItemsRow  utilhighs.ConstraintRowBuild // use to count items used from this set, has 1 or 0 flags
 	setTotalCountVar  *columnInfo                  // total count of items used
 	setExactCountVars [c_setItemsCounts]columnInfo // specific bools for different counts
 }

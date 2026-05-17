@@ -3,6 +3,7 @@ package withhighs
 import (
 	"paladin_gearing_go/items"
 	gear_model "paladin_gearing_go/model"
+	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/util"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -11,14 +12,14 @@ import (
 type RequiredSetCounts map[gear_model.ActiveSet]int
 
 func RunSingle(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet RequiredSetCounts, printer *util.PrintRecorder) util.Optional[items.SolvableItemSet] {
-	inputBuilder := inputBuilder{}
+	inputBuilder := utilhighs.InputBuilder{}
 
 	inputs := setupBasicConstraint(&inputBuilder, itemOptions, gear_model, requiredSet)
 	if inputs == nil {
 		return util.Optional_Empty[items.SolvableItemSet]()
 	}
 
-	solution, log := inputBuilder.runHighs()
+	solution, log := inputBuilder.RunHighs()
 	printer.AppendOther(log)
 	printer.Println(solution.Status.String())
 
@@ -35,7 +36,7 @@ func RunSingle(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Mod
 	}
 }
 
-func setupBasicConstraint(inputBuilder *inputBuilder, itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet RequiredSetCounts) *setupInputForBasic {
+func setupBasicConstraint(inputBuilder *utilhighs.InputBuilder, itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet RequiredSetCounts) *setupInputForBasic {
 	inputs := setupInputForBasic{input: inputBuilder}
 	inputs.prepareRequiredSets(requiredSet)
 
@@ -51,21 +52,21 @@ func setupBasicConstraint(inputBuilder *inputBuilder, itemOptions *items.Solvabl
 }
 
 type setupInputForBasic struct {
-	input *inputBuilder
+	input *utilhighs.InputBuilder
 
-	slotsOneEachRow [16]constraintRowBuild                       // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
-	requireSetRows  map[gear_model.ActiveSet]*constraintRowBuild // if requireSetCount then constrain set count to match
-	hitValueRow     constraintRowBuild                           // values for the hits of each item
-	expertValueRow  constraintRowBuild                           // values for the expertise of each item
+	slotsOneEachRow [16]utilhighs.ConstraintRowBuild                       // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
+	requireSetRows  map[gear_model.ActiveSet]*utilhighs.ConstraintRowBuild // if requireSetCount then constrain set count to match
+	hitValueRow     utilhighs.ConstraintRowBuild                           // values for the hits of each item
+	expertValueRow  utilhighs.ConstraintRowBuild                           // values for the expertise of each item
 
 	itemLookup []lookupEntryBasic
 }
 
 func (setup *setupInputForBasic) prepareRequiredSets(requiredSet RequiredSetCounts) {
 	if requiredSet != nil {
-		setup.requireSetRows = make(map[gear_model.ActiveSet]*constraintRowBuild)
+		setup.requireSetRows = make(map[gear_model.ActiveSet]*utilhighs.ConstraintRowBuild)
 		for set := range requiredSet {
-			setup.requireSetRows[set] = &constraintRowBuild{}
+			setup.requireSetRows[set] = &utilhighs.ConstraintRowBuild{}
 		}
 	}
 }
@@ -74,23 +75,23 @@ func (setup *setupInputForBasic) addItem(itemSlot items.SlotEquip, item *items.S
 	rating := float64(model.CalcRatingSolveItem(item))
 
 	// item version "boolean" (0 or 1)
-	columnIndex := setup.input.createColumnWithOutput(highs.Integer, 0, 1, rating)
+	columnIndex := setup.input.CreateColumnWithOutput(highs.Integer, 0, 1, rating)
 
 	// specific hit/expertise values for hi/lo limits
-	setup.hitValueRow.add(columnIndex, float64(item.TotalCap().Hit()))
-	setup.expertValueRow.add(columnIndex, float64(item.TotalCap().Expertise()))
+	setup.hitValueRow.Add(columnIndex, float64(item.TotalCap().Hit()))
+	setup.expertValueRow.Add(columnIndex, float64(item.TotalCap().Expertise()))
 
 	// 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
 	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
 		if slot == itemSlot {
-			setup.slotsOneEachRow[slot].add(columnIndex, 1)
+			setup.slotsOneEachRow[slot].Add(columnIndex, 1)
 		}
 	}
 
 	// if this item belongs to target item set then flag with a 1
 	for set, row := range setup.requireSetRows {
 		if set.ContainsItem(item.ItemId()) {
-			row.add(columnIndex, 1)
+			row.Add(columnIndex, 1)
 		}
 	}
 
@@ -101,20 +102,20 @@ func (setup *setupInputForBasic) addItem(itemSlot items.SlotEquip, item *items.S
 func (setup *setupInputForBasic) finishItems(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, requiredSet RequiredSetCounts) bool {
 	for slot, row := range setup.slotsOneEachRow {
 		if itemOptions.Has(items.SlotEquip(slot)) {
-			row.finish(setup.input, 1, 1)
-		} else if row.isEmpty() {
-			row.finish(setup.input, 0, 0)
+			row.Finish(setup.input, 1, 1)
+		} else if row.IsEmpty() {
+			row.Finish(setup.input, 0, 0)
 		} else {
 			panic("unexpected items added for supposedly empty slot")
 		}
 	}
 
-	setup.hitValueRow.finish(setup.input, float64(gear_model.StatRequirements.HitMin()), float64(gear_model.StatRequirements.HitMax()))
-	setup.expertValueRow.finish(setup.input, float64(gear_model.StatRequirements.ExpertMin()), float64(gear_model.StatRequirements.ExpertMax()))
+	setup.hitValueRow.Finish(setup.input, float64(gear_model.StatRequirements.HitMin()), float64(gear_model.StatRequirements.HitMax()))
+	setup.expertValueRow.Finish(setup.input, float64(gear_model.StatRequirements.ExpertMin()), float64(gear_model.StatRequirements.ExpertMax()))
 
 	for set, requireCount := range requiredSet {
 		row := setup.requireSetRows[set]
-		row.finish(setup.input, float64(requireCount), float64(requireCount))
+		row.Finish(setup.input, float64(requireCount), float64(requireCount))
 	}
 
 	return true
@@ -123,7 +124,7 @@ func (setup *setupInputForBasic) finishItems(itemOptions *items.SolvableOptionsM
 func (setup *setupInputForBasic) buildResultSet(solution *highs.Solution, itemOptions *items.SolvableOptionsMap, model *gear_model.Model) items.SolvableItemSet {
 	itemSet := items.SolvableItemSet{}
 	for colIndex, variableResult := range solution.ColValues {
-		if floatEqualsOne(variableResult) {
+		if utilhighs.FloatEqualsOne(variableResult) {
 			entry := setup.itemLookup[colIndex]
 			itemSet.AddItem_DeferCalc_ExpectEmpty(entry.itemSlot, entry.item)
 		}

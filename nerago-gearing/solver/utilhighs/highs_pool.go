@@ -1,4 +1,4 @@
-package withhighs
+package utilhighs
 
 import (
 	"sync"
@@ -6,7 +6,7 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
-var highsPool = highsPoolType{}
+var G_HighsPool = highsPoolType{}
 
 type highsPoolType struct {
 	instances      []*highs.Solver

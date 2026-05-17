@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/items"
 	gear_model "paladin_gearing_go/model"
 	"paladin_gearing_go/multi/multi_types"
+	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
 	"slices"
@@ -25,13 +26,13 @@ type SolverHighsMultiParam struct {
 }
 
 type SolverHighsMultiProcess struct {
-	input *inputBuilder
+	input *utilhighs.InputBuilder
 
 	common multi_types.CommonOptions
 	parts  []SolverHighsMultiParam
 
-	outputColumn columnIndex
-	outputRow    constraintRowBuild
+	outputColumn utilhighs.ColumnIndex
+	outputRow    utilhighs.ConstraintRowBuild
 
 	allColumns []columnInfo
 }
@@ -46,7 +47,7 @@ func (process *SolverHighsMultiProcess) SetCommon(common multi_types.CommonOptio
 
 func (process *SolverHighsMultiProcess) Run(printer *util.PrintRecorder) []items.FullItemSet {
 	process.makeFullModel()
-	solution, log := process.input.runHighs()
+	solution, log := process.input.RunHighs()
 	printer.AppendOther(log)
 	printer.Println("SOLUTION STATUS = " + solution.Status.String())
 
@@ -60,7 +61,7 @@ func (process *SolverHighsMultiProcess) Run(printer *util.PrintRecorder) []items
 }
 
 func debugPrintAll(solution *highs.Solution, job *SolverHighsMultiProcess, printer *util.PrintRecorder) {
-	if !c_debugHighs {
+	if !utilhighs.C_DebugHighs {
 		return
 	}
 
@@ -68,7 +69,7 @@ func debugPrintAll(solution *highs.Solution, job *SolverHighsMultiProcess, print
 
 columnLoop:
 	for colIndex, outputValue := range solution.ColValues {
-		columnIndex := columnIndex(colIndex)
+		columnIndex := utilhighs.ColumnIndex(colIndex)
 
 		if debugPrintColumn(job.allColumns, columnIndex, outputValue, nil, nil, printer) {
 			continue columnLoop
@@ -88,7 +89,7 @@ func (process *SolverHighsMultiProcess) extractCommonChoices(solution *highs.Sol
 	commonChosenColumns := make([]columnInfo, 0, len(process.common))
 	for _, jobColumn := range process.allColumns {
 		colValue := solution.ColValues[jobColumn.columnIndex]
-		if jobColumn.entryType == entry_multi_enable_forge && floatEqualsOne(colValue) {
+		if jobColumn.entryType == entry_multi_enable_forge && utilhighs.FloatEqualsOne(colValue) {
 			commonChosenColumns = append(commonChosenColumns, jobColumn)
 		}
 	}
@@ -108,10 +109,10 @@ func (process *SolverHighsMultiProcess) solutionToResult(solution *highs.Solutio
 }
 
 func (process *SolverHighsMultiProcess) makeFullModel() {
-	process.input = &inputBuilder{}
+	process.input = &utilhighs.InputBuilder{}
 
-	process.outputColumn = process.input.createColumnWithOutput(highs.Continuous, c_minusInf, c_plusInf, 1)
-	process.outputRow.add(process.outputColumn, -1)
+	process.outputColumn = process.input.CreateColumnWithOutput(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, 1)
+	process.outputRow.Add(process.outputColumn, -1)
 
 	entry := columnInfo{entryType: entry_multi_output, columnIndex: process.outputColumn}
 	process.allColumns = append(process.allColumns, entry)
@@ -122,7 +123,7 @@ func (process *SolverHighsMultiProcess) makeFullModel() {
 
 	process.addCommonConstraints(process.input)
 
-	process.outputRow.finish(process.input, 0, 0)
+	process.outputRow.Finish(process.input, 0, 0)
 }
 
 func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_WithParallel(printer *util.PrintRecorder) [][]items.FullItemSet {
@@ -130,7 +131,7 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_WithParall
 
 	process.makeFullModel()
 	startTime1 := time.Now()
-	solution, log := process.input.runHighs()
+	solution, log := process.input.RunHighs()
 	printer.Println("Duration! initial = " + time.Since(startTime1).String())
 	printer.AppendOther(log)
 	printer.Println("SOLUTION STATUS = " + solution.Status.String())
@@ -149,13 +150,13 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_WithParall
 		innerPrint := util.PrintRecorder_HoldAll()
 		printer.Printf("COMMON VARIANT blocking %s\n", changeColumn.itemFull.CreateString())
 
-		input := process.input.clone()
-		rowLimitCommon := constraintRowBuild{}
-		rowLimitCommon.add(changeColumn.columnIndex, 1)
-		rowLimitCommon.finish(input, 0, 0)
+		input := process.input.Clone()
+		rowLimitCommon := utilhighs.ConstraintRowBuild{}
+		rowLimitCommon.Add(changeColumn.columnIndex, 1)
+		rowLimitCommon.Finish(input, 0, 0)
 
 		startTime2 := time.Now()
-		solution, log := input.runHighs()
+		solution, log := input.RunHighs()
 		printer.Println("Duration! loop = " + time.Since(startTime2).String())
 		innerPrint.AppendOther(log)
 		innerPrint.Println("SOLUTION STATUS = " + solution.Status.String())
@@ -177,7 +178,7 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_Sampling(p
 	printer.Printf("INITIAL MULTI run\n")
 
 	process.makeFullModel()
-	solution, log := process.input.runHighs()
+	solution, log := process.input.RunHighs()
 	printer.AppendOther(log)
 	printer.Println("SOLUTION STATUS = " + solution.Status.String())
 
@@ -208,12 +209,12 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_Sampling(p
 		innerPrint := util.PrintRecorder_HoldAll()
 		printer.Printf("COMMON VARIANT blocking %s\n", changeColumn.itemFull.CreateString())
 
-		input := process.input.clone()
-		rowLimitCommon := constraintRowBuild{}
-		rowLimitCommon.add(changeColumn.columnIndex, 1)
-		rowLimitCommon.finish(input, 0, 0)
+		input := process.input.Clone()
+		rowLimitCommon := utilhighs.ConstraintRowBuild{}
+		rowLimitCommon.Add(changeColumn.columnIndex, 1)
+		rowLimitCommon.Finish(input, 0, 0)
 
-		solution, log := input.runHighs()
+		solution, log := input.RunHighs()
 		innerPrint.AppendOther(log)
 		innerPrint.Println("SOLUTION STATUS = " + solution.Status.String())
 
@@ -231,93 +232,93 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_Sampling(p
 
 // this is generally slower on subsequent results
 // as opposed to common change ones that are about the same
-func (process *SolverHighsMultiProcess) RunForSeveral_NextObjective(printer *util.PrintRecorder, targetCount int) [][]items.FullItemSet {
-	printer.Printf("INITIAL MULTI run\n")
-	resultList := make([][]items.FullItemSet, 0)
+// func (process *SolverHighsMultiProcess) RunForSeveral_NextObjective(printer *util.PrintRecorder, targetCount int) [][]items.FullItemSet {
+// 	printer.Printf("INITIAL MULTI run\n")
+// 	resultList := make([][]items.FullItemSet, 0)
 
-	process.makeFullModel()
+// 	process.makeFullModel()
 
-	startTime1 := time.Now()
-	printer.Println("Started initial " + startTime1.Format(time.RFC1123))
+// 	startTime1 := time.Now()
+// 	printer.Println("Started initial " + startTime1.Format(time.RFC1123))
 
-	solver, logFilename := process.input.preHighsRun()
-	solution, err := highsPool.RunSolverUnderMutex(solver)
-	verifyNoError(err)
+// 	solver, logFilename := process.input.preHighsRun()
+// 	solution, err := utilhighs.G_HighsPool.RunSolverUnderMutex(solver)
+// 	verifyNoError(err)
 
-	printer.Println("Duration initial = " + time.Since(startTime1).String())
-	printer.Println("SOLUTION STATUS = " + solution.Status.String())
-	printer.Printf("Objective %f\n", solution.Objective)
-	if !solution.HasSolution() {
-		return nil
-	}
+// 	printer.Println("Duration initial = " + time.Since(startTime1).String())
+// 	printer.Println("SOLUTION STATUS = " + solution.Status.String())
+// 	printer.Printf("Objective %f\n", solution.Objective)
+// 	if !solution.HasSolution() {
+// 		return nil
+// 	}
 
-	initialResult := process.solutionToResult(solution)
-	resultList = append(resultList, initialResult)
-	lastObjectiveValue := solution.Objective
+// 	initialResult := process.solutionToResult(solution)
+// 	resultList = append(resultList, initialResult)
+// 	lastObjectiveValue := solution.Objective
 
-	for len(resultList) < targetCount {
-		verifyNoError(solver.SetColBounds2(int32(process.outputColumn), 0, lastObjectiveValue*0.99999))
+// 	for len(resultList) < targetCount {
+// 		verifyNoError(solver.SetColBounds2(int32(process.outputColumn), 0, lastObjectiveValue*0.99999))
 
-		startTime2 := time.Now()
-		printer.Println("Started next " + startTime1.Format(time.RFC1123))
+// 		startTime2 := time.Now()
+// 		printer.Println("Started next " + startTime1.Format(time.RFC1123))
 
-		solution, err = highsPool.RunSolverUnderMutex(solver)
-		verifyNoError(err)
+// 		solution, err = utilhighs.G_HighsPool.RunSolverUnderMutex(solver)
+// 		verifyNoError(err)
 
-		printer.Println("Duration next = " + time.Since(startTime2).String())
-		printer.Println("SOLUTION STATUS = " + solution.Status.String())
-		printer.Printf("Objective %f\n", solution.Objective)
-		if !solution.HasSolution() {
-			break
-		}
+// 		printer.Println("Duration next = " + time.Since(startTime2).String())
+// 		printer.Println("SOLUTION STATUS = " + solution.Status.String())
+// 		printer.Printf("Objective %f\n", solution.Objective)
+// 		if !solution.HasSolution() {
+// 			break
+// 		}
 
-		nextResult := process.solutionToResult(solution)
-		resultList = append(resultList, nextResult)
-		lastObjectiveValue = solution.Objective
-	}
+// 		nextResult := process.solutionToResult(solution)
+// 		resultList = append(resultList, nextResult)
+// 		lastObjectiveValue = solution.Objective
+// 	}
 
-	log := process.input.postHighsRun(solver, logFilename)
-	printer.AppendOther(log)
-	return resultList
-}
+// 	log := process.input.postHighsRun(solver, logFilename)
+// 	printer.AppendOther(log)
+// 	return resultList
+// }
 
-func (param *SolverHighsMultiParam) doSetup(inputBuilder *inputBuilder, job *SolverHighsMultiProcess) {
+func (param *SolverHighsMultiParam) doSetup(inputBuilder *utilhighs.InputBuilder, job *SolverHighsMultiProcess) {
 	param.solveOptions = items.SolvableOptionsMap_of(&param.ItemOptions)
 	param.setup = setupBonusedInputs(inputBuilder, param.Gear_model, &param.solveOptions, 0)
-	job.outputRow.add(param.setup.mainOutputVar.columnIndex, param.RatingMultiply)
+	job.outputRow.Add(param.setup.mainOutputVar.columnIndex, param.RatingMultiply)
 }
 
-func (process *SolverHighsMultiProcess) addCommonConstraints(inputBuilder *inputBuilder) {
+func (process *SolverHighsMultiProcess) addCommonConstraints(inputBuilder *utilhighs.InputBuilder) {
 	for _, array := range process.common {
 		process.addCommonConstraintsForItem(inputBuilder, array)
 	}
 }
 
-func (process *SolverHighsMultiProcess) addCommonConstraintsForItem(inputBuilder *inputBuilder, array []items.FullItem) {
-	onlyOneReforge := constraintRowBuild{}
+func (process *SolverHighsMultiProcess) addCommonConstraintsForItem(inputBuilder *utilhighs.InputBuilder, array []items.FullItem) {
+	onlyOneReforge := utilhighs.ConstraintRowBuild{}
 
 	for _, item := range array {
-		enableReforge := inputBuilder.createColumnBool()
-		onlyOneReforge.add(enableReforge, 1)
+		enableReforge := inputBuilder.CreateColumnBool()
+		onlyOneReforge.Add(enableReforge, 1)
 
 		for partUsedItem := range process.findMatchingItemColumns(&item) {
 			// formula is partUsedItem <= enableReforge
 			//            0 <= enableReforge - partUsedItem
-			matchingReforge := constraintRowBuild{}
-			matchingReforge.add(enableReforge, 1)
-			matchingReforge.add(partUsedItem, -1)
-			matchingReforge.finish(inputBuilder, 0, 1)
+			matchingReforge := utilhighs.ConstraintRowBuild{}
+			matchingReforge.Add(enableReforge, 1)
+			matchingReforge.Add(partUsedItem, -1)
+			matchingReforge.Finish(inputBuilder, 0, 1)
 		}
 
 		entry := columnInfo{entryType: entry_multi_enable_forge, columnIndex: enableReforge, itemFull: &item}
 		process.allColumns = append(process.allColumns, entry)
 	}
 
-	onlyOneReforge.finish(inputBuilder, 1, 1)
+	onlyOneReforge.Finish(inputBuilder, 1, 1)
 }
 
-func (process *SolverHighsMultiProcess) findMatchingItemColumns(item *items.FullItem) iter.Seq[columnIndex] {
-	return func(yield func(columnIndex) bool) {
+func (process *SolverHighsMultiProcess) findMatchingItemColumns(item *items.FullItem) iter.Seq[utilhighs.ColumnIndex] {
+	return func(yield func(utilhighs.ColumnIndex) bool) {
 		for _, part := range process.parts {
 			for _, column := range part.setup.itemColumns {
 				if column.item.EqualsFull(item) {

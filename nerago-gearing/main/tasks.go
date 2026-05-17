@@ -12,6 +12,7 @@ import (
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver"
+	"paladin_gearing_go/solver/stathighs"
 	"paladin_gearing_go/solver/withhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
@@ -719,11 +720,11 @@ func statWeightsFromHighAndSim(printer *util.PrintRecorder) {
 	if err != nil {
 		panic(err)
 	}
-	var weightInputs []withhighs.NewWeightInput
+	var weightInputs []stathighs.NewWeightInput
 	err = json.Unmarshal(bytes, &weightInputs)
 	if err != nil {
 		panic(err)
 	}
 
-	withhighs.CalcNewStatWeights(weightInputs, withhighs.NewStatWeights_animusWeight, printer)
+	stathighs.CalcNewStatWeights(weightInputs, stathighs.NewStatWeights_animusWeight, printer)
 }
