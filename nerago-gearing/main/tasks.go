@@ -459,14 +459,18 @@ func trinketSims(printer *util.PrintRecorder) {
 		945190, // crit->master prim rage
 		87063,  // none vial dragon
 		95779,  // none vial sang
-		95811,  // none soul celesial
 		96793,  // none fort zand
+		96555,  // none soul barrier
 		87172,  // none darkmist
 		94529,  // none gaze twins
-		94527,  // exp->crit ji-kun
-		94507,  // (could have)
-		94508,  // (could have)
+		94527,  // ji-kun
+		945270,  // exp->crit ji-kun
+		// 94507,  // valor
+		// 94508,  // valor
 	}
+
+	// fight := stats.Fight_Animus
+	fight := stats.Fight_Horridon_LowHeal
 
 	type group struct {
 		label string
@@ -523,13 +527,11 @@ func trinketSims(printer *util.PrintRecorder) {
 		for _, itemId := range itemIds {
 			var item *items.FullItem
 			switch itemId {
-			case 94519:
-				item = db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemId, 2, printer)
 			case 945190:
 				item = db.WowSimDB_ByIdAndUpgrade_AllowFallback(94519, 2, printer)
 				item = tools.Reforger_SinglePreset(item, stats.ReforgeRecipe_of_pointer(stats.Stat_Crit, stats.Stat_Mastery))
-			case 94527:
-				item = db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemId, 2, printer)
+			case 945270:
+				item = db.WowSimDB_ByIdAndUpgrade_AllowFallback(94527, 2, printer)
 				item = tools.Reforger_SinglePreset(item, stats.ReforgeRecipe_of_pointer(stats.Stat_Expertise, stats.Stat_Crit))
 			default:
 				item = db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemId, 2, printer)
@@ -542,7 +544,7 @@ func trinketSims(printer *util.PrintRecorder) {
 			newEquip[items.Equip_Trinket2] = item
 			// fullSet := items.FullItemSet_FromMap(newEquip)
 
-			resultStats := simulate.WowSim_Execute_SelectFight(simulate.RunSize_Medium, model.Spec, stats.Fight_Animus, &newEquip, model.Professions, nil, util.TrackProgress_Nop())
+			resultStats := simulate.WowSim_Execute_SelectFight(simulate.RunSize_Medium, model.Spec, fight, &newEquip, model.Professions, nil, util.TrackProgress_Nop())
 			resultStats.Print(printer)
 			for _, statType := range simulate.SimResultTypeList {
 				csv.AddFloat64(resultStats.GetFriendly(statType), 2)

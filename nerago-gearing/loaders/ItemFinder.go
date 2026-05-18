@@ -40,6 +40,12 @@ func ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff(difficulty stats.Diff
 	})
 }
 
+func ItemFinder_ThroneStrengthPlateTank_RadenOnly(difficulty stats.Difficulty) []*items.FullItem {
+	return util.FilterSliceAsNew(ItemFinder_ThroneStrengthPlateTank(difficulty), func(item **items.FullItem) bool {
+		return isRadenItem((*item).ItemId())
+	})
+}
+
 func ItemFinder_CelestialCloak(difficulty stats.Difficulty) []*items.FullItem {
 	return []*items.FullItem{
 		db.WowSimDB_ByIdAndUpgrade(98147, 0),
