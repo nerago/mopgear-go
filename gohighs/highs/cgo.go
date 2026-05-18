@@ -64,7 +64,6 @@ package highs
 import "C"
 import (
 	"fmt"
-	"runtime"
 	"unsafe"
 )
 
@@ -374,7 +373,7 @@ func NewSolver() (*Solver, error) {
 	}
 
 	s := &Solver{ptr: ptr}
-	runtime.SetFinalizer(s, (*Solver).Close)
+	// runtime.SetFinalizer(s, (*Solver).Close)
 	return s, nil
 }
 

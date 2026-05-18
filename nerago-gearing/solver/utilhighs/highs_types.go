@@ -70,8 +70,10 @@ func (input *InputBuilder) AddRow(entries []indexAndValue, lowerBound float64, u
 
 func (input *InputBuilder) Clone() *InputBuilder {
 	return &InputBuilder{
-		vars: input.vars.clone(),
-		mat:  input.mat.clone(),
+		vars:                 input.vars.clone(),
+		mat:                  input.mat.clone(),
+		Minimise:             input.Minimise,
+		BlendMultiObjectives: input.BlendMultiObjectives,
 	}
 }
 
@@ -179,6 +181,17 @@ type linearObjectiveFields struct {
 	priority           int
 }
 
+func (lin *linearObjectiveFields) clone() linearObjectiveFields {
+	return linearObjectiveFields{
+		coefficientEntries: slices.Clone(lin.coefficientEntries),
+		weight:             lin.weight,
+		offset:             lin.offset,
+		abs_tolerance:      lin.abs_tolerance,
+		rel_tolerance:      lin.rel_tolerance,
+		priority:           lin.priority,
+	}
+}
+
 func (vars *variableArrayBuilder) addLinearObjective(weight float64, offset float64, abs_tolerance float64, rel_tolerance float64, priority int) int {
 	index := len(vars.linearObjectives)
 	vars.linearObjectives = append(vars.linearObjectives, linearObjectiveFields{
@@ -215,10 +228,11 @@ func (vars *variableArrayBuilder) createForLinear(varType highs.VariableType, lo
 
 func (vars *variableArrayBuilder) clone() variableArrayBuilder {
 	return variableArrayBuilder{
-		colTypes: slices.Clone(vars.colTypes),
-		colCosts: slices.Clone(vars.colCosts),
-		colLower: slices.Clone(vars.colLower),
-		colUpper: slices.Clone(vars.colUpper),
+		colTypes:         slices.Clone(vars.colTypes),
+		colCosts:         slices.Clone(vars.colCosts),
+		colLower:         slices.Clone(vars.colLower),
+		colUpper:         slices.Clone(vars.colUpper),
+		linearObjectives: util.MapSliceAsNew(vars.linearObjectives, (*linearObjectiveFields).clone),
 	}
 }
 

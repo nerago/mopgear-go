@@ -42,8 +42,8 @@ var NewStatWeights_dpsWeight = simulate.SimResultStats{
 	DTPS:  0.01,
 }
 
-var requiredStats = []stats.StatType{stats.Stat_Strength, stats.Stat_Stamina, stats.Stat_Crit, stats.Stat_Haste, stats.Stat_Expertise, stats.Stat_Mastery, stats.Stat_Dodge, stats.Stat_Parry}
-var requiredSims = []simulate.SimResultType{simulate.Result_DPS, simulate.Result_DEATH, simulate.Result_TMI, simulate.Result_DTPS}
+var g_requiredStats = []stats.StatType{stats.Stat_Strength, stats.Stat_Stamina, stats.Stat_Crit, stats.Stat_Haste, stats.Stat_Expertise, stats.Stat_Mastery, stats.Stat_Dodge, stats.Stat_Parry}
+var g_requiredSims = []simulate.SimResultType{simulate.Result_DPS, simulate.Result_DEATH, simulate.Result_TMI, simulate.Result_DTPS}
 
 func CalcNewStatWeights(inputData []NewWeightInput, targetRatios simulate.SimResultStats, printer *util.PrintRecorder) {
 	highRange := 100000.0 // basic sum of stats Mop P4 is about 83k
@@ -77,7 +77,7 @@ func weightColumns(input *utilhighs.InputBuilder, colNames []string) (map[stats.
 
 	totalStatWeightRow := utilhighs.ConstraintRowBuild{}
 	statWeightColumns := make(map[stats.StatType]utilhighs.ColumnIndex)
-	for _, stat := range requiredStats {
+	for _, stat := range g_requiredStats {
 		// statColIndex := input.createColumnGeneral(highs.Continuous, scaleMin, scaleMax)
 		statColIndex := input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
 		colNames = append(colNames, stat.Name())
@@ -93,7 +93,7 @@ func weightColumns(input *utilhighs.InputBuilder, colNames []string) (map[stats.
 
 	totalSimWeightRow := utilhighs.ConstraintRowBuild{}
 	simWeightColumns := make(map[simulate.SimResultType]utilhighs.ColumnIndex)
-	for _, simType := range requiredSims {
+	for _, simType := range g_requiredSims {
 		// simColIndex := input.createColumnGeneral(highs.Continuous, scaleMin, scaleMax)
 		simColIndex := input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
 		colNames = append(colNames, simType.String())
@@ -110,7 +110,7 @@ func dataEquations(inputData []NewWeightInput, input *utilhighs.InputBuilder, hi
 		gearScoreTotal := input.CreateColumnGeneral(highs.Continuous, 0, highRange)
 		colNames = append(colNames, "gearScoreTotal")
 		gearRow := utilhighs.ConstraintRowBuild{}
-		for _, statType := range requiredStats {
+		for _, statType := range g_requiredStats {
 			statWeightCol := statWeightColumns[statType]
 			gearRow.Add(statWeightCol, float64(data.TotalStat.Get(statType)))
 		}
@@ -121,7 +121,7 @@ func dataEquations(inputData []NewWeightInput, input *utilhighs.InputBuilder, hi
 		simScoreTotal := input.CreateColumnGeneral(highs.Continuous, 0, highRange)
 		colNames = append(colNames, "simScoreTotal")
 		simScoreRow := utilhighs.ConstraintRowBuild{}
-		for _, simType := range requiredSims {
+		for _, simType := range g_requiredSims {
 			simWeightCol := simWeightColumns[simType]
 			simScoreRow.Add(simWeightCol, data.SimResult.GetFriendly(simType))
 		}
@@ -129,7 +129,7 @@ func dataEquations(inputData []NewWeightInput, input *utilhighs.InputBuilder, hi
 		simScoreRow.Finish(input, 0, 0)
 
 		// contribution of sim part of simScoreTotal
-		for _, simType := range requiredSims {
+		for _, simType := range g_requiredSims {
 			contributionRow := utilhighs.ConstraintRowBuild{}
 
 			// formula sum(simWeight*simResult[simType]) = simScoreTotal
@@ -175,9 +175,9 @@ func dataEquations(inputData []NewWeightInput, input *utilhighs.InputBuilder, hi
 
 func dataCompareInPairsEquations(input *utilhighs.InputBuilder, colNames []string, inputData []NewWeightInput, statWeightColumns map[stats.StatType]utilhighs.ColumnIndex, simWeightColumns map[simulate.SimResultType]utilhighs.ColumnIndex, targetRatios simulate.SimResultStats, highRange float64) []string {
 	detailedWeights := make(map[stats.StatType]map[simulate.SimResultType]utilhighs.ColumnIndex)
-	for _, statType := range requiredStats {
+	for _, statType := range g_requiredStats {
 		detailedWeights[statType] = make(map[simulate.SimResultType]utilhighs.ColumnIndex)
-		for _, simType := range requiredSims {
+		for _, simType := range g_requiredSims {
 			detailedWeights[statType][simType] = input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
 		}
 	}
@@ -191,9 +191,9 @@ func dataCompareInPairsEquations(input *utilhighs.InputBuilder, colNames []strin
 		}
 	}
 
-	for _, statType := range requiredStats {
+	for _, statType := range g_requiredStats {
 		statRow := utilhighs.ConstraintRowBuild{}
-		for _, simType := range requiredSims {
+		for _, simType := range g_requiredSims {
 			statRow.Add(detailedWeights[statType][simType], targetRatios.Get(simType))
 		}
 		statRow.Add(statWeightColumns[statType], -1)
@@ -219,10 +219,10 @@ func dataCompareInPairsEquations_Single(input *utilhighs.InputBuilder, colNames 
 	// sim's percent difference should make sense for given stat combo
 	// simTotal * 0.4
 
-	for _, simType := range requiredSims {
+	for _, simType := range g_requiredSims {
 		simRow := utilhighs.ConstraintRowBuild{}
 
-		for _, statType := range requiredStats {
+		for _, statType := range g_requiredStats {
 			statDiff := data1.TotalStat.Get(statType) - data2.TotalStat.Get(statType)
 			simRow.Add(weights[statType][simType], float64(statDiff))
 		}
@@ -249,12 +249,12 @@ func reportWeightSolution(solution *highs.Solution, printer *util.PrintRecorder,
 	statWeightResult := make(map[stats.StatType]float64)
 	simWeightResult := make(map[simulate.SimResultType]float64)
 	printer.Println("WEIGHTS")
-	for _, statType := range requiredStats {
+	for _, statType := range g_requiredStats {
 		statWeightCol := statWeightColumns[statType]
 		statWeightResult[statType] = solution.ColValues[statWeightCol]
 		printer.Printf("%10s %f\n", statType.Name(), statWeightResult[statType])
 	}
-	for _, simType := range requiredSims {
+	for _, simType := range g_requiredSims {
 		simWeightCol := simWeightColumns[simType]
 		simWeightResult[simType] = solution.ColValues[simWeightCol]
 		printer.Printf("%10s %f\n", simType.String(), simWeightResult[simType])
@@ -272,7 +272,7 @@ func reportWeightSolution(solution *highs.Solution, printer *util.PrintRecorder,
 		// ideally we want that to equal simScoreTotal*targetRatio[simType]
 
 		statSum := 0.0
-		for _, statType := range requiredStats {
+		for _, statType := range g_requiredStats {
 			val := float64(data.TotalStat.Get(statType))
 			weight := statWeightResult[statType]
 			printer.Printf(" %10s %8.2f * %8.4f = %8.2f\n", statType.Name(), val, weight, val*weight)
@@ -281,12 +281,12 @@ func reportWeightSolution(solution *highs.Solution, printer *util.PrintRecorder,
 		printer.Printf("%46f\n", statSum)
 
 		simSum := 0.0
-		for _, simType := range requiredSims {
+		for _, simType := range g_requiredSims {
 			val := data.SimResult.GetFriendly(simType)
 			weight := simWeightResult[simType]
 			simSum += val * weight
 		}
-		for _, simType := range requiredSims {
+		for _, simType := range g_requiredSims {
 			val := data.SimResult.GetFriendly(simType)
 			weight := simWeightResult[simType]
 			printer.Printf(" %10s %12.2f * %8.4f = %8.2f (%.4f)\n", simType.String(), val, weight, val*weight, val*weight/simSum)
