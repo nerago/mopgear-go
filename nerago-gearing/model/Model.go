@@ -56,7 +56,7 @@ func (model *Model) CalcRatingFull(itemSet *FullItemSet) float64 {
 
 // ////////// items ratings
 func (model *Model) CalcRatingSolveItem(item *SolvableItem) float64 {
-	return model.StatRatings.CalcRating(item.TotalRated())
+	return model.StatRatings.CalcRating(item.Total())
 }
 
 func (model *Model) CalcRatingFullItem(item *FullItem) float64 {

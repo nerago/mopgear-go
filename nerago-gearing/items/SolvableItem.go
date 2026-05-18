@@ -31,11 +31,7 @@ func (item *SolvableItem) IsEmpty() bool {
 	return item.itemId == 0
 }
 
-func (item *SolvableItem) TotalCap() *StatBlock {
-	return &item.total
-}
-
-func (item *SolvableItem) TotalRated() *StatBlock {
+func (item *SolvableItem) Total() *StatBlock {
 	return &item.total
 }
 

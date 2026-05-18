@@ -4,6 +4,7 @@ import (
 	"paladin_gearing_go/items"
 	gear_model "paladin_gearing_go/model"
 	"paladin_gearing_go/solver/utilhighs"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"strconv"
 
@@ -46,6 +47,25 @@ func setupBonusedInputs(inputBuilder *utilhighs.InputBuilder, gear_model *gear_m
 	}
 
 	setup.finishItems(itemOptions, gear_model)
+	return &setup
+}
+
+func setupBonusedInputsWithMinimum(inputBuilder *utilhighs.InputBuilder, gear_model *gear_model.Model, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64, minimumStatType stats.StatType, minimumStatValue float64) *setupInputsForSetBonus {
+	setup := setupInputsForSetBonus{input: inputBuilder}
+
+	setup.addMainOutputVariable(scaleOutputRating)
+	setup.addSumRatingVariable()
+	setup.prepareActiveSets(gear_model)
+
+	for slot, item := range itemOptions.AllItemSlotSeq() {
+		columnIndex := setup.addItem(slot, item, gear_model)
+		setup.minimumValueRow.Add(columnIndex, float64(item.Total().Get(minimumStatType)))
+	}
+
+	setup.finishItems(itemOptions, gear_model)
+
+	setup.minimumValueRow.Finish(setup.input, minimumStatValue, utilhighs.C_PlusInf)
+
 	return &setup
 }
 
@@ -121,8 +141,9 @@ type setupInputsForSetBonus struct {
 
 	slotsOneEachRow [16]utilhighs.ConstraintRowBuild // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
 
-	hitValueRow    utilhighs.ConstraintRowBuild // constrains values for the hits of each item
-	expertValueRow utilhighs.ConstraintRowBuild // constrains values for the expertise of each item
+	hitValueRow     utilhighs.ConstraintRowBuild // constrains values for the hits of each item
+	expertValueRow  utilhighs.ConstraintRowBuild // constrains values for the expertise of each item
+	minimumValueRow utilhighs.ConstraintRowBuild // when an extra minimum is specified
 
 	baseRatingSumRow utilhighs.ConstraintRowBuild // values for the ratings of each item
 	baseRatingSumVar *columnInfo                  // sum of values for the ratings of selected items
@@ -337,7 +358,7 @@ func (setup *setupInputsForSetBonus) addSumRatingVariable() {
 	setup.allColumns = append(setup.allColumns, entry)
 }
 
-func (setup *setupInputsForSetBonus) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, gear_model *gear_model.Model) {
+func (setup *setupInputsForSetBonus) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, gear_model *gear_model.Model) utilhighs.ColumnIndex {
 	// boolean value to flag use of specific item
 	// contributes 0 to final rating itself, but via additional summation and calcs
 	columnIndex := setup.input.CreateColumnBool()
@@ -348,8 +369,8 @@ func (setup *setupInputsForSetBonus) addItem(itemSlot items.SlotEquip, item *ite
 	setup.baseRatingSumRow.Add(columnIndex, rating)
 
 	// specific hit/expertise values for hi/lo limits
-	setup.hitValueRow.Add(columnIndex, float64(item.TotalCap().Hit()))
-	setup.expertValueRow.Add(columnIndex, float64(item.TotalCap().Expertise()))
+	setup.hitValueRow.Add(columnIndex, float64(item.Total().Hit()))
+	setup.expertValueRow.Add(columnIndex, float64(item.Total().Expertise()))
 
 	// 1 for that slot that matches the item, so we can tell solver only one item per slot
 	setup.slotsOneEachRow[itemSlot].Add(columnIndex, 1.0)
@@ -363,6 +384,8 @@ func (setup *setupInputsForSetBonus) addItem(itemSlot items.SlotEquip, item *ite
 	entry := columnInfo{entryType: entry_item, columnIndex: columnIndex, itemSlot: itemSlot, item: item}
 	setup.itemColumns = append(setup.itemColumns, entry)
 	setup.allColumns = append(setup.allColumns, entry)
+
+	return columnIndex
 }
 
 func (setup *setupInputsForSetBonus) finishItems(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model) {

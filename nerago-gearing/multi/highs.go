@@ -1,9 +1,9 @@
 package multi
 
 import (
-	"paladin_gearing_go/items"
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/solver/withhighs"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
 	"paladin_gearing_go/util/util_rank"
@@ -13,6 +13,7 @@ import (
 )
 
 func (job *MultiSetJob) FindHighsResult_Sample() util.Optional[multi_types.MultiProposedOutput] {
+	job.checkNoPermutations()
 	job.prepareInitial()
 	highProcess := job.highProcessSetup()
 
@@ -21,7 +22,7 @@ func (job *MultiSetJob) FindHighsResult_Sample() util.Optional[multi_types.Multi
 	// setResults := highProcess.RunForSeveral_NextObjective(job.printer, 6)
 	setResults := highProcess.RunForSeveral_CommonDifferent_Sampling(job.printer, 6)
 	if setResults != nil {
-		proposedOutput := util.CastSliceAsNew(setResults, func(x *[]items.FullItemSet) multi_types.MultiProposedOutput {
+		proposedOutput := util.CastSliceAsNew(setResults, func(x *withhighs.HighsMultiResult) multi_types.MultiProposedOutput {
 			return job.makeOutputFromHighs(*x, job.printer)
 		})
 		job.listInitialOutputs(proposedOutput)
@@ -63,8 +64,8 @@ func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, s
 
 			if solutionsPerPermute == 1 {
 				setResults := highProcess.Run(printer)
-				if setResults != nil {
-					resultChannel <- job.makeOutputFromHighs(setResults, printer)
+				if setResults.HasValue() {
+					resultChannel <- job.makeOutputFromHighs(setResults.GetOrPanic(), printer)
 				}
 			} else {
 				setResultsList := highProcess.RunForSeveral_CommonDifferent_Sampling(printer, solutionsPerPermute)
@@ -82,6 +83,7 @@ func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, s
 }
 
 func (job *MultiSetJob) FindSeveralHighsAndSim() {
+	job.checkNoPermutations()
 	job.prepareInitial()
 	highProcess := job.highProcessSetup()
 
@@ -101,6 +103,64 @@ func (job *MultiSetJob) FindSeveralHighsAndSim() {
 		job.proposalsToSimAndOutput(proposalList, tracker)
 	} else {
 		job.printer.Println("FAILED")
+	}
+}
+
+func (job *MultiSetJob) RunWithMinimumHaste(paramLabel string, start float64, end float64, inc float64) {
+	job.checkNoPermutations()
+	job.prepareInitial()
+
+	statLevels := make([]float64, 0)
+	for val := start; val <= end; val += inc {
+		statLevels = append(statLevels, val)
+	}
+
+	paramToChange := job.paramFromLabel(paramLabel)
+
+	proposalList := channel_op.Map_SliceToSlice(highsThreadCount, statLevels,
+		func(statValue *float64, resultChannel chan<- multi_types.MultiProposedOutput) {
+			printer := util.PrintRecorder_HoldAll()
+
+			highProcess := job.highProcessSetup()
+
+			setResults := highProcess.RunWithStatMin(printer, paramToChange.paramIndex, stats.Stat_Haste, *statValue)
+			if setResults.HasValue() {
+				resultChannel <- job.makeOutputFromHighs(setResults.GetOrPanic(), printer)
+				printer.Printf("TARGET STAT = %d\n", setResults.GetOrPanic().ItemSets[paramToChange.paramIndex].Total().Get(stats.Stat_Haste))
+			}
+
+			job.printer.AppendOther(printer)
+		},
+	)
+	proposalList = append(proposalList, job.existingGearAsProposal())
+
+	tracker := util.TrackProgress_Start()
+	defer tracker.Stop()
+	job.proposalsToSimAndOutput(proposalList, tracker)
+}
+
+func (job *MultiSetJob) paramFromLabel(paramLabel string) *multiSetParamInternal {
+	for paramIndex := range job.params {
+		param := &job.params[paramIndex]
+		if param.Label == paramLabel {
+			return param
+		}
+	}
+	panic("param not found")
+}
+
+func (job *MultiSetJob) checkNoPermutations() {
+	if len(job.distinctUsageGroups) > 0 {
+		panic("usage groups will be ignored, may lead to confusing results")
+	}
+
+	for paramIndex := range job.params {
+		param := &job.params[paramIndex]
+		for _, itemArray := range param.SemiFixedSlots {
+			if len(itemArray) > 1 {
+				panic("TryAll slots will be ignored, may lead to confusing results")
+			}
+		}
 	}
 }
 
@@ -142,14 +202,15 @@ func (job *MultiSetJob) proposalsToSimAndOutput(proposalList []multi_types.Multi
 	job.reportAsCsv(simMultiResults)
 }
 
-func (job *MultiSetJob) makeOutputFromHighs(setResults []items.FullItemSet, printer *util.PrintRecorder) multi_types.MultiProposedOutput {
+func (job *MultiSetJob) makeOutputFromHighs(multiResult withhighs.HighsMultiResult, printer *util.PrintRecorder) multi_types.MultiProposedOutput {
 	var totalRatingSum float64
 	outputs := make([]multi_types.SingleProposedOutput, len(job.params))
 
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
-		itemSet := setResults[paramIndex]
-		single := multi_types.SingleProposed_FromItemSet(itemSet, &param.Model)
+		itemSet := multiResult.ItemSets[paramIndex]
+		outputId := multiResult.OutputId[paramIndex]
+		single := multi_types.SingleProposed_FromItemSet(itemSet, outputId, &param.Model)
 		single.Report(printer)
 		outputs[paramIndex] = single
 		totalRatingSum += single.ResultRating * param.ratingMultiply

@@ -78,8 +78,8 @@ func (setup *setupInputForBasic) addItem(itemSlot items.SlotEquip, item *items.S
 	columnIndex := setup.input.CreateColumnWithOutput(highs.Integer, 0, 1, rating)
 
 	// specific hit/expertise values for hi/lo limits
-	setup.hitValueRow.Add(columnIndex, float64(item.TotalCap().Hit()))
-	setup.expertValueRow.Add(columnIndex, float64(item.TotalCap().Expertise()))
+	setup.hitValueRow.Add(columnIndex, float64(item.Total().Hit()))
+	setup.expertValueRow.Add(columnIndex, float64(item.Total().Expertise()))
 
 	// 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
 	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {

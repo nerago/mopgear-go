@@ -7,12 +7,14 @@ import (
 	gear_model "paladin_gearing_go/model"
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/solver/utilhighs"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
 	"slices"
 	"time"
 
 	"github.com/bartolsthoorn/gohighs/highs"
+	"github.com/google/uuid"
 )
 
 type SolverHighsMultiParam struct {
@@ -23,6 +25,10 @@ type SolverHighsMultiParam struct {
 
 	setup        *setupInputsForSetBonus
 	solveOptions items.SolvableOptionsMap
+
+	withMinimum      bool
+	withMinimumType  stats.StatType
+	withMinimumValue float64
 }
 
 type SolverHighsMultiProcess struct {
@@ -37,6 +43,11 @@ type SolverHighsMultiProcess struct {
 	allColumns []columnInfo
 }
 
+type HighsMultiResult struct {
+	ItemSets []items.FullItemSet
+	OutputId []string
+}
+
 func (process *SolverHighsMultiProcess) AddSetParam(param SolverHighsMultiParam) {
 	process.parts = append(process.parts, param)
 }
@@ -45,7 +56,7 @@ func (process *SolverHighsMultiProcess) SetCommon(common multi_types.CommonOptio
 	process.common = common
 }
 
-func (process *SolverHighsMultiProcess) Run(printer *util.PrintRecorder) []items.FullItemSet {
+func (process *SolverHighsMultiProcess) Run(printer *util.PrintRecorder) util.Optional[HighsMultiResult] {
 	process.makeFullModel()
 	solution, log := process.input.RunHighs()
 	printer.AppendOther(log)
@@ -54,9 +65,28 @@ func (process *SolverHighsMultiProcess) Run(printer *util.PrintRecorder) []items
 	debugPrintAll(solution, process, printer)
 
 	if solution.HasSolution() {
-		return process.solutionToResult(solution)
+		return util.Optional_OfValue(process.solutionToResult(solution, printer))
 	} else {
-		return nil
+		return util.Optional_Empty[HighsMultiResult]()
+	}
+}
+
+func (process *SolverHighsMultiProcess) RunWithStatMin(printer *util.PrintRecorder, paramToChange int, statType stats.StatType, statValue float64) util.Optional[HighsMultiResult] {
+	process.parts[paramToChange].withMinimum = true
+	process.parts[paramToChange].withMinimumType = statType
+	process.parts[paramToChange].withMinimumValue = statValue
+
+	process.makeFullModel()
+	solution, log := process.input.RunHighs()
+	printer.AppendOther(log)
+	printer.Println("SOLUTION STATUS = " + solution.Status.String())
+
+	debugPrintAll(solution, process, printer)
+
+	if solution.HasSolution() {
+		return util.Optional_OfValue(process.solutionToResult(solution, printer))
+	} else {
+		return util.Optional_Empty[HighsMultiResult]()
 	}
 }
 
@@ -97,15 +127,20 @@ func (process *SolverHighsMultiProcess) extractCommonChoices(solution *highs.Sol
 	return commonChosenColumns
 }
 
-func (process *SolverHighsMultiProcess) solutionToResult(solution *highs.Solution) []items.FullItemSet {
+func (process *SolverHighsMultiProcess) solutionToResult(solution *highs.Solution, printer *util.PrintRecorder) HighsMultiResult {
 	resultList := make([]items.FullItemSet, len(process.parts))
+	idList := make([]string, len(process.parts))
 	for partIndex := range process.parts {
 		part := process.parts[partIndex]
 		solvedSet := part.setup.buildResultSet(solution, &part.solveOptions, part.Gear_model)
 		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &part.ItemOptions)
 		resultList[partIndex] = fullItemSet
+
+		outputId := uuid.NewString()
+		printer.Printf("OutputId = %s\n", outputId)
+		idList = append(idList, outputId)
 	}
-	return resultList
+	return HighsMultiResult{resultList, idList}
 }
 
 func (process *SolverHighsMultiProcess) makeFullModel() {
@@ -126,7 +161,7 @@ func (process *SolverHighsMultiProcess) makeFullModel() {
 	process.outputRow.Finish(process.input, 0, 0)
 }
 
-func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_WithParallel(printer *util.PrintRecorder) [][]items.FullItemSet {
+func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_WithParallel(printer *util.PrintRecorder) []HighsMultiResult {
 	printer.Printf("INITIAL MULTI run\n")
 
 	process.makeFullModel()
@@ -141,12 +176,12 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_WithParall
 		return nil
 	}
 
-	initialResult := process.solutionToResult(solution)
+	initialResult := process.solutionToResult(solution, printer)
 	bestCommonChoices := process.extractCommonChoices(solution)
 
 	printer.Println("############################################################################")
 
-	resultList := channel_op.Map_SliceToSlice(10, bestCommonChoices, func(changeColumn *columnInfo, resultChannel chan<- []items.FullItemSet) {
+	resultList := channel_op.Map_SliceToSlice(10, bestCommonChoices, func(changeColumn *columnInfo, resultChannel chan<- HighsMultiResult) {
 		innerPrint := util.PrintRecorder_HoldAll()
 		printer.Printf("COMMON VARIANT blocking %s\n", changeColumn.itemFull.CreateString())
 
@@ -162,7 +197,7 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_WithParall
 		innerPrint.Println("SOLUTION STATUS = " + solution.Status.String())
 
 		if solution.HasSolution() {
-			jobResult := process.solutionToResult(solution)
+			jobResult := process.solutionToResult(solution, innerPrint)
 			resultChannel <- jobResult
 		}
 
@@ -174,7 +209,7 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_WithParall
 	return resultList
 }
 
-func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_Sampling(printer *util.PrintRecorder, outputTarget int) [][]items.FullItemSet {
+func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_Sampling(printer *util.PrintRecorder, outputTarget int) []HighsMultiResult {
 	printer.Printf("INITIAL MULTI run\n")
 
 	process.makeFullModel()
@@ -186,8 +221,8 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_Sampling(p
 		return nil
 	}
 
-	initialResult := process.solutionToResult(solution)
-	resultList := make([][]items.FullItemSet, 0, outputTarget)
+	initialResult := process.solutionToResult(solution, printer)
+	resultList := make([]HighsMultiResult, 0, outputTarget)
 	resultList = append(resultList, initialResult)
 
 	bestCommonChoices := process.extractCommonChoices(solution)
@@ -219,7 +254,7 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_Sampling(p
 		innerPrint.Println("SOLUTION STATUS = " + solution.Status.String())
 
 		if solution.HasSolution() {
-			jobResult := process.solutionToResult(solution)
+			jobResult := process.solutionToResult(solution, innerPrint)
 			resultList = append(resultList, jobResult)
 		}
 
@@ -284,7 +319,11 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_Sampling(p
 
 func (param *SolverHighsMultiParam) doSetup(inputBuilder *utilhighs.InputBuilder, job *SolverHighsMultiProcess) {
 	param.solveOptions = items.SolvableOptionsMap_of(&param.ItemOptions)
-	param.setup = setupBonusedInputs(inputBuilder, param.Gear_model, &param.solveOptions, 0)
+	if param.withMinimum {
+		param.setup = setupBonusedInputsWithMinimum(inputBuilder, param.Gear_model, &param.solveOptions, 0, param.withMinimumType, param.withMinimumValue)
+	} else {
+		param.setup = setupBonusedInputs(inputBuilder, param.Gear_model, &param.solveOptions, 0)
+	}
 	job.outputRow.Add(param.setup.mainOutputVar.columnIndex, param.RatingMultiply)
 }
 
