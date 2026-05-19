@@ -13,9 +13,34 @@ type MapMapEntry[J comparable, K comparable, V any] struct {
 	value V
 }
 
-// type Lookup[K comparable, V any] interface {
-// 	GetOrPanic(key K) V
-// }
+func (mapmap *MapMap[J, K, V]) Get(key1 J, key2 K) (V, bool) {
+	data := mapmap.dataBy1
+	if data != nil {
+		inner, hasInner := data[key1]
+		if hasInner {
+			value, hasValue := inner[key2]
+			return value, hasValue
+		}
+	}
+
+	var nilValue V
+	return nilValue, false
+}
+
+func (mapmap *MapMap[J, K, V]) GetOrPanic(key1 J, key2 K) V {
+	data := mapmap.dataBy1
+	if data != nil {
+		inner, hasInner := data[key1]
+		if hasInner {
+			value, hasValue := inner[key2]
+			if hasValue {
+				return value
+			}
+		}
+	}
+
+	panic("value not found")
+}
 
 func (mapmap *MapMap[J, K, V]) Clear() {
 	clear(mapmap.dataBy1)
@@ -48,33 +73,37 @@ func (mapmap *MapMap[J, K, V]) Put(key1 J, key2 K, value V) {
 	inner2[key1] = value
 }
 
-func (mapmap *MapMap[J, K, V]) Get(key1 J, key2 K) (V, bool) {
-	data := mapmap.dataBy1
-	if data != nil {
-		inner, hasInner := data[key1]
-		if hasInner {
-			value, hasValue := inner[key2]
-			return value, hasValue
-		}
+func (mapmap *MapMap[J, K, V]) Apply(key1 J, key2 K, apply func(oldValue V) V) {
+	data1 := mapmap.dataBy1
+	if data1 == nil {
+		data1 = make(map[J]map[K]V)
+		mapmap.dataBy1 = data1
 	}
-
-	var nilValue V
-	return nilValue, false
-}
-
-func (mapmap *MapMap[J, K, V]) GetOrPanic(key1 J, key2 K) V {
-	data := mapmap.dataBy1
-	if data != nil {
-		inner, hasInner := data[key1]
-		if hasInner {
-			value, hasValue := inner[key2]
-			if hasValue {
-				return value
-			}
-		}
+	inner1, hasInner1 := data1[key1]
+	if !hasInner1 {
+		inner1 = make(map[K]V)
+		data1[key1] = inner1
 	}
+	value, hasValue := inner1[key2]
+	if hasValue {
+		value = apply(value)
+	} else {
+		var nilValue V
+		value = apply(nilValue)
+	}
+	inner1[key2] = value
 
-	panic("value not found")
+	data2 := mapmap.dataBy2
+	if data2 == nil {
+		data2 = make(map[K]map[J]V)
+		mapmap.dataBy2 = data2
+	}
+	inner2, hasInner2 := data2[key2]
+	if !hasInner2 {
+		inner2 = make(map[J]V)
+		data2[key2] = inner2
+	}
+	inner2[key1] = value
 }
 
 func (mapmap *MapMap[J, K, V]) SeqWithKeys() iter.Seq[MapMapEntry[J, K, V]] {
@@ -131,6 +160,28 @@ func (mapmap *MapMap[J, K, V]) ForeachGroupForKey2(apply func(key2 K, lookup fun
 				}
 			}
 			apply(key2, lookup)
+		}
+	}
+}
+
+func (mapmap *MapMap[J, K, V]) ForeachInnerWithKey1Value(key1 J, apply func(key2 K, value V)) {
+	if mapmap.dataBy1 != nil {
+		inner, hasInner := mapmap.dataBy1[key1]
+		if hasInner {
+			for key2, value := range inner {
+				apply(key2, value)
+			}
+		}
+	}
+}
+
+func (mapmap *MapMap[J, K, V]) ForeachInnerWithKey2Value(key2 K, apply func(key1 J, value V)) {
+	if mapmap.dataBy2 != nil {
+		inner, hasInner := mapmap.dataBy2[key2]
+		if hasInner {
+			for key1, value := range inner {
+				apply(key1, value)
+			}
 		}
 	}
 }

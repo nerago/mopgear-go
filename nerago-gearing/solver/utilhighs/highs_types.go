@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	C_DebugHighs = false
+	C_DebugHighs = true
 	c_threads    = 6
 )
 
@@ -42,6 +42,7 @@ type InputBuilder struct {
 	mat                  constraintMatrixBuilder
 	Minimise             bool
 	BlendMultiObjectives bool
+	Solver               string
 }
 
 func (input *InputBuilder) AddLinearObjective(weight float64, offset float64, abs_tolerance float64, rel_tolerance float64, priority int) int {
@@ -129,6 +130,12 @@ func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 
 	verifyNoError(solver.SetMaximize(!input.Minimise))
 	verifyNoError(solver.SetBoolOption("blend_multi_objectives", input.BlendMultiObjectives))
+
+	if input.Solver != "" {
+		verifyNoError(solver.SetStringOption("solver", input.Solver))
+	} else {
+		verifyNoError(solver.SetStringOption("solver", "choose"))
+	}
 
 	numRows, lowerBound, upperBound, startArray, indexArray, valuesArray := input.mat.createSolverInputArrays()
 	verifyNoError(solver.PassModel2(
