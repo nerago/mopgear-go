@@ -24,8 +24,8 @@ var NewStatWeights_defSpreadSheetWeight = simulate.SimResultStats{
 var NewStatWeights_defWeight = simulate.SimResultStats{
 	DPS:   0.1,
 	DEATH: 0.2,
-	TMI:   0.3,
-	DTPS:  0.4,
+	TMI:   0.4,
+	DTPS:  0.3,
 }
 
 var NewStatWeights_animusWeight = simulate.SimResultStats{

@@ -83,7 +83,7 @@ func core(printer *util.PrintRecorder) {
 	// testSim(printer)
 	// findUpgrades_Sim_PaladinMiti_Run(printer)
 	// findUpgrades_Sim_PaladinDps_Run(printer)
-	findUpgrades_Paladin_Sim_AllRaid_Run(printer)
+	// findUpgrades_Paladin_Sim_AllRaid_Run(printer)
 	// findSimpleUpgrade_ForceEach(printer)
 	// findMitigationWithCapicitance(printer)
 	// relativeRatingsCompromise(printer)
@@ -91,6 +91,7 @@ func core(printer *util.PrintRecorder) {
 
 	// generateRatingsDataFromSims(printer)
 	// statWeightsFromHighAndSim(printer)
+	statWeightsBasic(printer)
 }
 
 func setupPallyMitigationSet() (items.FullOptionsMap, model.Model) {
