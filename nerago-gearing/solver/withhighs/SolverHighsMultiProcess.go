@@ -26,9 +26,7 @@ type SolverHighsMultiParam struct {
 	setup        *setupInputsForSetBonus
 	solveOptions items.SolvableOptionsMap
 
-	withMinimum      bool
-	withMinimumType  stats.StatType
-	withMinimumValue float64
+	withMinimum *stats.StatAndValue
 }
 
 type SolverHighsMultiProcess struct {
@@ -57,25 +55,6 @@ func (process *SolverHighsMultiProcess) SetCommon(common multi_types.CommonOptio
 }
 
 func (process *SolverHighsMultiProcess) Run(printer *util.PrintRecorder) util.Optional[HighsMultiResult] {
-	process.makeFullModel()
-	solution, log := process.input.RunHighs()
-	printer.AppendOther(log)
-	printer.Println("SOLUTION STATUS = " + solution.Status.String())
-
-	debugPrintAll(solution, process, printer)
-
-	if solution.HasSolution() {
-		return util.Optional_OfValue(process.solutionToResult(solution, printer))
-	} else {
-		return util.Optional_Empty[HighsMultiResult]()
-	}
-}
-
-func (process *SolverHighsMultiProcess) RunWithStatMin(printer *util.PrintRecorder, paramToChange int, statType stats.StatType, statValue float64) util.Optional[HighsMultiResult] {
-	process.parts[paramToChange].withMinimum = true
-	process.parts[paramToChange].withMinimumType = statType
-	process.parts[paramToChange].withMinimumValue = statValue
-
 	process.makeFullModel()
 	solution, log := process.input.RunHighs()
 	printer.AppendOther(log)
@@ -319,11 +298,7 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_Sampling(p
 
 func (param *SolverHighsMultiParam) doSetup(inputBuilder *utilhighs.InputBuilder, job *SolverHighsMultiProcess) {
 	param.solveOptions = items.SolvableOptionsMap_of(&param.ItemOptions)
-	if param.withMinimum {
-		param.setup = setupBonusedInputsWithMinimum(inputBuilder, param.Gear_model, &param.solveOptions, 0, param.withMinimumType, param.withMinimumValue)
-	} else {
-		param.setup = setupBonusedInputs(inputBuilder, param.Gear_model, &param.solveOptions, 0)
-	}
+	param.setup = setupBonusedInputs(inputBuilder, param.Gear_model, &param.solveOptions, 0)
 	job.outputRow.Add(param.setup.mainOutputVar.columnIndex, param.RatingMultiply)
 }
 

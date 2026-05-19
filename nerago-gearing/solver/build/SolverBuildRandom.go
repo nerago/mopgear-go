@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
 
@@ -32,12 +33,14 @@ func makeSetFromRandom(itemOptions *items.SolvableOptionsMap, rng *rand.Rand) it
 	return items.SolvableItemSet_Of(equip)
 }
 
-func SolverBuildRandom_MakeN_FullAndValidate(itemOptions *items.FullOptionsMap, model *model.Model, targetCount int, printer *util.PrintRecorder) []items.FullItemSet {
+func SolverBuildRandom_MakeN_FullAndValidate(itemOptions *items.FullOptionsMap, model *model.Model, targetCount int, printer *util.PrintRecorder, minimumHaste uint32) []items.FullItemSet {
 	results := make([]items.FullItemSet, 0, targetCount)
 	rng := rand.New(rand.NewSource(int64(0)))
 	for len(results) < targetCount {
 		itemSet := makeSetFromRandomFull(itemOptions, rng)
-		if model.StatRequirements.CheckSet(itemSet.Total()) && checkPairedSlotsNoDuplicate(itemSet.Items()) {
+		if model.StatRequirements.CheckSet(itemSet.Total()) && checkPairedSlotsNoDuplicate(itemSet.Items()) &&
+			itemSet.Total().Get(stats.Stat_Haste) >= minimumHaste {
+
 			itemSet.DebugValidate()
 			itemSet.ValidateItemRules()
 			results = append(results, itemSet)

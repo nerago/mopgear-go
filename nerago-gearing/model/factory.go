@@ -5,7 +5,6 @@ import (
 	. "paladin_gearing_go/model/ratings"
 	. "paladin_gearing_go/model/requirements"
 	. "paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
 )
 
 // ////////// standard model builders
@@ -13,14 +12,15 @@ func Model_PallyProtMitigation_WithSet() Model {
 	spec := Spec_PaladinProtMitigation
 	weight := StatRatingsWeights_ReadFile(files.WeightMitiWithSetFile, false, true, false)
 	return Model{
-		Spec:             spec,
-		SimulateAs:       Fight_Horridon_LowHeal,
-		StatRatings:      weight,
-		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
-		ReforgeRules:     ReforgeRules_tank,
-		EnchantChoice:    EnchantChoice_ForSpec(spec),
-		GemChoice:        GemChoice_ForSpec(spec),
-		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor"),
+		Spec:        spec,
+		SimulateAs:  Fight_Horridon_LowHeal, // TODO really a raden set
+		StatRatings: weight,
+		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry_PlusAdditional(
+			&StatAndValue{StatType: Stat_Haste, Value: 13500}),
+		ReforgeRules:  ReforgeRules_tank,
+		EnchantChoice: EnchantChoice_ForSpec(spec),
+		GemChoice:     GemChoice_ForSpec(spec),
+		SetBonus:      SetBonus_Named("Plate of the Lightning Emperor"),
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,
@@ -49,29 +49,7 @@ func Model_PallyProtMitigation_NoSet() Model {
 
 func Model_PallyProtCompromise() Model {
 	spec := Spec_PaladinProtCompromise
-	weightMiti := StatRatingsWeights_ReadFile(files.WeightMitiNoSetFile, false, true, false)
-	weightDps := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
-	weight := StatRatingsWeights_Mix(weightMiti, 62, weightDps, 51, util.Optional_OfValue(Stat_Strength))
-	return Model{
-		Spec:             spec,
-		SimulateAs:       Fight_Animus,
-		StatRatings:      weight,
-		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
-		ReforgeRules:     ReforgeRules_tank,
-		EnchantChoice:    EnchantChoice_ForSpec(spec),
-		GemChoice:        GemChoice_ForSpec(spec),
-		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Damage"),
-		Professions: ProfessionInfo{
-			IsBlacksmith: true,
-			IsEngineer:   true,
-		},
-	}
-}
-func Model_PallyProtCompromise_old() Model {
-	spec := Spec_PaladinProtCompromise
-	weightMiti := StatRatingsWeights_ReadFile(files.WeightMitiNoSetFile, false, true, false)
-	weightDps := StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
-	weight := StatRatingsWeights_Mix(weightMiti, 62, weightDps, 51, util.Optional_Empty[StatType]())
+	weight := StatRatingsWeights_ReadFile(files.GearFileProtCompromise, false, true, false)
 	return Model{
 		Spec:             spec,
 		SimulateAs:       Fight_Animus,

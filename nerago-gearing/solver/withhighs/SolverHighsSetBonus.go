@@ -4,7 +4,6 @@ import (
 	"paladin_gearing_go/items"
 	gear_model "paladin_gearing_go/model"
 	"paladin_gearing_go/solver/utilhighs"
-	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"strconv"
 
@@ -42,29 +41,23 @@ func setupBonusedInputs(inputBuilder *utilhighs.InputBuilder, gear_model *gear_m
 	setup.addSumRatingVariable()
 	setup.prepareActiveSets(gear_model)
 
-	for slot, item := range itemOptions.AllItemSlotSeq() {
-		setup.addItem(slot, item, gear_model)
-	}
-
-	setup.finishItems(itemOptions, gear_model)
-	return &setup
-}
-
-func setupBonusedInputsWithMinimum(inputBuilder *utilhighs.InputBuilder, gear_model *gear_model.Model, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64, minimumStatType stats.StatType, minimumStatValue float64) *setupInputsForSetBonus {
-	setup := setupInputsForSetBonus{input: inputBuilder}
-
-	setup.addMainOutputVariable(scaleOutputRating)
-	setup.addSumRatingVariable()
-	setup.prepareActiveSets(gear_model)
-
-	for slot, item := range itemOptions.AllItemSlotSeq() {
-		columnIndex := setup.addItem(slot, item, gear_model)
-		setup.minimumValueRow.Add(columnIndex, float64(item.Total().Get(minimumStatType)))
+	additionalMinimum := gear_model.StatRequirements.AdditionalMinimumRequirement
+	if additionalMinimum == nil {
+		for slot, item := range itemOptions.AllItemSlotSeq() {
+			setup.addItem(slot, item, gear_model)
+		}
+	} else {
+		for slot, item := range itemOptions.AllItemSlotSeq() {
+			columnIndex := setup.addItem(slot, item, gear_model)
+			setup.minimumValueRow.Add(columnIndex, float64(item.Total().Get(additionalMinimum.StatType)))
+		}
 	}
 
 	setup.finishItems(itemOptions, gear_model)
 
-	setup.minimumValueRow.Finish(setup.input, minimumStatValue, utilhighs.C_PlusInf)
+	if additionalMinimum != nil {
+		setup.minimumValueRow.Finish(setup.input, float64(additionalMinimum.Value), utilhighs.C_PlusInf)
+	}
 
 	return &setup
 }

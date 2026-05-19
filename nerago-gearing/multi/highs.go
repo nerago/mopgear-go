@@ -3,7 +3,6 @@ package multi
 import (
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/solver/withhighs"
-	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
 	"paladin_gearing_go/util/util_rank"
@@ -104,39 +103,6 @@ func (job *MultiSetJob) FindSeveralHighsAndSim() {
 	} else {
 		job.printer.Println("FAILED")
 	}
-}
-
-func (job *MultiSetJob) RunWithMinimumHaste(paramLabel string, start float64, end float64, inc float64) {
-	job.checkNoPermutations()
-	job.prepareInitial()
-
-	statLevels := make([]float64, 0)
-	for val := start; val <= end; val += inc {
-		statLevels = append(statLevels, val)
-	}
-
-	paramToChange := job.paramFromLabel(paramLabel)
-
-	proposalList := channel_op.Map_SliceToSlice(highsThreadCount, statLevels,
-		func(statValue *float64, resultChannel chan<- multi_types.MultiProposedOutput) {
-			printer := util.PrintRecorder_HoldAll()
-
-			highProcess := job.highProcessSetup()
-
-			setResults := highProcess.RunWithStatMin(printer, paramToChange.paramIndex, stats.Stat_Haste, *statValue)
-			if setResults.HasValue() {
-				resultChannel <- job.makeOutputFromHighs(setResults.GetOrPanic(), printer)
-				printer.Printf("TARGET STAT = %d\n", setResults.GetOrPanic().ItemSets[paramToChange.paramIndex].Total().Get(stats.Stat_Haste))
-			}
-
-			job.printer.AppendOther(printer)
-		},
-	)
-	proposalList = append(proposalList, job.existingGearAsProposal())
-
-	tracker := util.TrackProgress_Start()
-	defer tracker.Stop()
-	job.proposalsToSimAndOutput(proposalList, tracker)
 }
 
 func (job *MultiSetJob) paramFromLabel(paramLabel string) *multiSetParamInternal {

@@ -2,13 +2,15 @@ package requirements
 
 import (
 	"math"
+	"paladin_gearing_go/stats"
 	. "paladin_gearing_go/stats"
 )
 
 type StatRequirementsHitExpertise struct {
 	hitMin, hitMax uint32
 	expMin, expMax uint32
-	// minimiseExpertise bool
+
+	AdditionalMinimumRequirement *stats.StatAndValue
 }
 
 const (
@@ -23,23 +25,29 @@ const (
 func StatRequirementsHitExpertise_RetWideCap() StatRequirementsHitExpertise {
 	return StatRequirementsHitExpertise{
 		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED*5,
-		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED*5}
+		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED*5, nil}
 }
 
 func StatRequirementsHitExpertise_ProtFullExpertise() StatRequirementsHitExpertise {
 	return StatRequirementsHitExpertise{
 		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED,
-		TARGET_RATING_TANK, TARGET_RATING_TANK + DEFAULT_CAP_ALLOW_EXCEED}
+		TARGET_RATING_TANK, TARGET_RATING_TANK + DEFAULT_CAP_ALLOW_EXCEED, nil}
 }
 
 func StatRequirementsHitExpertise_ProtFlexibleParry() StatRequirementsHitExpertise {
 	return StatRequirementsHitExpertise{
 		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED*4,
-		TARGET_RATING_MELEE, TARGET_RATING_TANK}
+		TARGET_RATING_MELEE, TARGET_RATING_TANK, nil}
+}
+
+func StatRequirementsHitExpertise_ProtFlexibleParry_PlusAdditional(additional *stats.StatAndValue) StatRequirementsHitExpertise {
+	return StatRequirementsHitExpertise{
+		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED*4,
+		TARGET_RATING_MELEE, TARGET_RATING_TANK, additional}
 }
 
 func StatRequirementsHitExpertise_None() StatRequirementsHitExpertise {
-	return StatRequirementsHitExpertise{0, math.MaxUint32, 0, math.MaxUint32}
+	return StatRequirementsHitExpertise{0, math.MaxUint32, 0, math.MaxUint32, nil}
 }
 
 func (inst StatRequirementsHitExpertise) CheckSet(block *StatBlock) bool {

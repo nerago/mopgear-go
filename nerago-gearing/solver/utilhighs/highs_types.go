@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	C_DebugHighs = true
+	C_DebugHighs = false
 	c_threads    = 6
 )
 
@@ -124,6 +124,7 @@ func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 		startArray, indexArray, valuesArray,
 		input.vars.colTypes, !input.Minimise, 0))
 
+	verifyNoError(solver.ClearLinearObjectives())
 	for linearObjectiveIndex := range input.vars.linearObjectives {
 		objective := &input.vars.linearObjectives[linearObjectiveIndex]
 		coefficientArray := make([]float64, len(input.vars.colTypes))
@@ -286,6 +287,14 @@ func (row *ConstraintRowBuild) Change(columnIndex ColumnIndex, value float64) {
 func (row *ConstraintRowBuild) Finish(input *InputBuilder, lowerBound float64, upperBound float64) {
 	// couldn't find reference for sure that indexes need to be sorted but probably best
 	slices.SortFunc(row.entries, func(a, b indexAndValue) int { return cmp.Compare(a.columnNumber, b.columnNumber) })
+
+	// if C_DebugHighs {
+	// 	for _, entry := range row.entries {
+	// 		if (entry.value > 0 && entry.value <= 1e-9) || (entry.value < 0 && entry.value >= -1e-9) {
+	// 			panic("small values, highs won't like it")
+	// 		}
+	// 	}
+	// }
 
 	if row.isAdded {
 		input.mat.changeRow(row.rowIndex, row.entries, lowerBound, upperBound)

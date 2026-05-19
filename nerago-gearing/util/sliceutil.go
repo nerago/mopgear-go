@@ -161,99 +161,35 @@ func CopyAndAppend[T any](curr []T, item T) []T {
 	}
 }
 
-func PermuteAll[T any](sliceOfSlices [][]T) iter.Seq[[]T] {
-	index := 0
-	progress := make([][]T, 0, len(sliceOfSlices[index]))
-	for _, item := range sliceOfSlices[index] {
-		progress = append(progress, []T{item})
-	}
-	index++
-
-	for index < len(sliceOfSlices)-1 {
-		next := make([][]T, 0, len(sliceOfSlices[index])*len(progress))
-		for _, item := range sliceOfSlices[index] {
-			for _, curr := range progress {
-				list := CopyAndAppend(curr, item)
-				next = append(next, list)
-			}
-		}
-		index++
-		progress = next
-	}
-
-	return func(yield func([]T) bool) {
-		for _, item := range sliceOfSlices[index] {
-			for _, curr := range progress {
-				list := CopyAndAppend(curr, item)
-				if !yield(list) {
-					return
-				}
-			}
-		}
-	}
+func PermuteAll_Slice[T any](listsOfOptions [][]T) [][]T {
+	return permuteRecur_Slice(listsOfOptions, nil, make([][]T, 0))
 }
 
-func PermuteAll2[T any](listsOfOptions [][]T) iter.Seq[[]T] {
-	permuteLen := len(listsOfOptions)
-	indexes := make([]int, permuteLen)
-	lengths := make([]int, permuteLen)
-
-	for i := range permuteLen {
-		lengths[i] = len(listsOfOptions[i])
-	}
-
-	return func(yield func([]T) bool) {
-		for {
-			combo := make([]T, permuteLen)
-			inc := 1
-			for i := range permuteLen {
-				combo[i] = listsOfOptions[i][indexes[i]]
-				if inc > 0 {
-					indexes[i]++
-					if indexes[i] < lengths[i] {
-						inc = 0
-					} else {
-						indexes[i] = 0
-					}
-				}
-			}
-			if inc > 0 {
-				break
-			}
-		}
-	}
-}
-
-func PermuteAll3[T any](listsOfOptions [][]T) iter.Seq[[]T] {
-	return func(yield func([]T) bool) {
-		permuteRecur3(listsOfOptions, nil, yield)
-	}
-}
-
-func permuteRecur3[T any](listsOfOptions [][]T, curr []T, yield func([]T) bool) {
+func permuteRecur_Slice[T any](listsOfOptions [][]T, curr []T, slice [][]T) [][]T {
 	if len(listsOfOptions) == 0 {
-		yield(curr)
+		slice = append(slice, curr)
 	} else {
 		for _, opt := range listsOfOptions[0] {
 			next := CopyAndAppend(curr, opt)
-			permuteRecur3(listsOfOptions[1:], next, yield)
+			slice = permuteRecur_Slice(listsOfOptions[1:], next, slice)
 		}
 	}
+	return slice
 }
 
-func PermuteAll4[T any](listsOfOptions [][]T) iter.Seq[[]T] {
+func PermuteAll_Seq[T any](listsOfOptions [][]T) iter.Seq[[]T] {
 	return func(yield func([]T) bool) {
-		permuteRecur4(listsOfOptions, nil, yield)
+		permuteRecur_Seq(listsOfOptions, nil, yield)
 	}
 }
 
-func permuteRecur4[T any](listsOfOptions [][]T, curr []T, yield func([]T) bool) bool {
+func permuteRecur_Seq[T any](listsOfOptions [][]T, curr []T, yield func([]T) bool) bool {
 	if len(listsOfOptions) == 0 {
 		return yield(curr)
 	} else {
 		for _, opt := range listsOfOptions[0] {
 			next := CopyAndAppend(curr, opt)
-			more := permuteRecur4(listsOfOptions[1:], next, yield)
+			more := permuteRecur_Seq(listsOfOptions[1:], next, yield)
 			if !more {
 				return false
 			}

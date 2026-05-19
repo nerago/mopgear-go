@@ -11,6 +11,7 @@ const (
 
 	WeightMitiNoSetFile   = `nerago-gearing/files/weight/PaladinProtMitigationNoSet.txt`
 	WeightMitiWithSetFile = `nerago-gearing/files/weight/PaladinProtMitigationWithSet.txt`
+	WeightCompromiseFile  = `nerago-gearing/files/weight/PaladinProtCompromise.txt`
 	WeightDpsFile         = `nerago-gearing/files/weight/PaladinProtDps.txt`
 	WeightRetFile         = `nerago-gearing/files/weight/PaladinRet.txt`
 

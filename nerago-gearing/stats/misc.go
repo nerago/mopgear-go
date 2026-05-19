@@ -162,3 +162,8 @@ const (
 	Fight_Horridon_LowHeal  WowSim_Fight = iota
 	Fight_Animus            WowSim_Fight = iota
 )
+
+type StatAndValue struct {
+	StatType StatType
+	Value    uint32
+}

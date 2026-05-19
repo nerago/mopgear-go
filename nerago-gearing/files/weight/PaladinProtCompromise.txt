@@ -1,0 +1,2 @@
+( Pawn: v1: "Protection WoWSims Weights": Class=Paladin,Strength=1.0000000000,Stamina=2.4119249118,CritRating=1.4362161082,HasteRating=1.7411132797,ExpertiseRating=1.1295639188,MasteryRating=1.6327379521,DodgeRating=0.7087616251,ParryRating=0.6768036305, )
+

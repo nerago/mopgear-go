@@ -594,8 +594,7 @@ func basicListRatingEach(printer *util.PrintRecorder) {
 			files.GearFileProtDps,
 		}, {
 			"compromise",
-			// model.Model_PallyProtCompromise(),
-			model.Model_PallyProtCompromise_old(),
+			model.Model_PallyProtCompromise(),
 			files.GearFileProtCompromise,
 		}, {
 			"no_set",

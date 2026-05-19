@@ -9,13 +9,6 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
-const (
-	c_rangeHigh        = 100.0
-	c_baseStatType     = stats.Stat_Strength
-	c_finalWeightLimit = 50
-	c_offsetLimit      = 0.1
-)
-
 type BasicStatWeightProcess struct {
 	printer *util.PrintRecorder
 
@@ -63,7 +56,7 @@ func (basic *BasicStatWeightProcess) AddSimData(statType stats.StatType, statVal
 
 // alternately we could baseline each other with a full array of +100 perumtations etc
 
-func (basic *BasicStatWeightProcess) Run() {
+func (basic *BasicStatWeightProcess) Run() map[stats.StatType]float64 {
 	for _, statType := range G_RequiredStats {
 		colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
 		// colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, -c_finalWeightLimit, c_finalWeightLimit)
@@ -99,7 +92,7 @@ func (basic *BasicStatWeightProcess) Run() {
 
 	debugPrintColumns(solution, basic)
 
-	reportOutputWeights(solution, basic.finalWeights, basic.printer)
+	return reportOutputWeights(solution, basic.finalWeights, basic.printer)
 }
 
 // this is a single diff value, ideally we want to push data in and average across multiple
@@ -186,11 +179,14 @@ func debugPrintColumns(solution *highs.Solution, basic *BasicStatWeightProcess) 
 	}
 }
 
-func reportOutputWeights(solution *highs.Solution, weightColumns map[stats.StatType]utilhighs.ColumnIndex, printer *util.PrintRecorder) {
+func reportOutputWeights(solution *highs.Solution, weightColumns map[stats.StatType]utilhighs.ColumnIndex, printer *util.PrintRecorder) map[stats.StatType]float64 {
+	result := make(map[stats.StatType]float64)
 	printer.Println("FINAL WEIGHTS:")
 	for _, statType := range G_RequiredStats {
 		columnIndex := weightColumns[statType]
 		value := solution.ColValues[columnIndex]
 		printer.Printf("%10s %f\n", statType.Name(), value)
+		result[statType] = value
 	}
+	return result
 }
