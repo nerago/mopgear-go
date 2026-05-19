@@ -59,24 +59,27 @@ var G_RequiredSims = []simulate.SimResultType{
 	simulate.Result_DTPS,
 }
 
+const c_highRange = 100000.0
+
 func CalcNewStatWeights(inputData []NewWeightInput, targetRatios simulate.SimResultStats, printer *util.PrintRecorder) {
-	highRange := 100000.0 // basic sum of stats Mop P4 is about 83k
+	// highRange := 100000.0 // basic sum of stats Mop P4 is about 83k
 	// scaleMin := 0.001  // similar number of places, can get scores down to around 1
 	colNames := make([]string, 0)
 
 	input := new(utilhighs.InputBuilder)
 
-	input.Minimise = true
+	input.Minimise = false
 	input.BlendMultiObjectives = true
-	input.AddLinearObjective(1, 0, 1000, 0.2, 1)   // contributionDiff
-	input.AddLinearObjective(1, 0, 1000, 0.2, 2)   // scoreDiff
-	input.AddLinearObjective(0.1, 0, 1000, 0.2, 3) // data pairs offset
+	input.Solver = "ipm"
+	input.AddLinearObjective(-1, 0, 1000, 0.2, 1)   // contributionDiff
+	input.AddLinearObjective(-2, 0, 1000, 0.2, 2)   // scoreDiff
+	input.AddLinearObjective(-1, 0, 1000, 0.2, 3) // data pairs offset
 
 	statWeightColumns, colNames, simWeightColumns := weightColumns(input, colNames)
 
-	colNames = dataEquations(inputData, input, highRange, colNames, statWeightColumns, simWeightColumns, targetRatios)
+	colNames = dataEquations(inputData, input, colNames, statWeightColumns, simWeightColumns, targetRatios)
 
-	colNames = dataCompareInPairsEquations(input, colNames, inputData, statWeightColumns, simWeightColumns, targetRatios, highRange)
+	colNames = dataCompareInPairsEquations(input, colNames, inputData, statWeightColumns, simWeightColumns, targetRatios)
 
 	solution, log := input.RunHighs()
 	printer.AppendOther(log)
@@ -86,14 +89,14 @@ func CalcNewStatWeights(inputData []NewWeightInput, targetRatios simulate.SimRes
 }
 
 func weightColumns(input *utilhighs.InputBuilder, colNames []string) (map[stats.StatType]utilhighs.ColumnIndex, []string, map[simulate.SimResultType]utilhighs.ColumnIndex) {
-	// scaleMin := 0.0
-	// scaleMax := 100.0
+	scaleMin := 0.0
+	scaleMax := 100.0
 
 	totalStatWeightRow := utilhighs.ConstraintRowBuild{}
 	statWeightColumns := make(map[stats.StatType]utilhighs.ColumnIndex)
 	for _, stat := range G_RequiredStats {
-		// statColIndex := input.createColumnGeneral(highs.Continuous, scaleMin, scaleMax)
-		statColIndex := input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
+		statColIndex := input.CreateColumnGeneral(highs.Continuous, scaleMin, scaleMax)
+		// statColIndex := input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
 		colNames = append(colNames, stat.Name())
 		statWeightColumns[stat] = statColIndex
 		totalStatWeightRow.Add(statColIndex, 1)
@@ -108,8 +111,8 @@ func weightColumns(input *utilhighs.InputBuilder, colNames []string) (map[stats.
 	totalSimWeightRow := utilhighs.ConstraintRowBuild{}
 	simWeightColumns := make(map[simulate.SimResultType]utilhighs.ColumnIndex)
 	for _, simType := range G_RequiredSims {
-		// simColIndex := input.createColumnGeneral(highs.Continuous, scaleMin, scaleMax)
-		simColIndex := input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
+		simColIndex := input.CreateColumnGeneral(highs.Continuous, scaleMin, scaleMax)
+		// simColIndex := input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
 		colNames = append(colNames, simType.String())
 		simWeightColumns[simType] = simColIndex
 		totalSimWeightRow.Add(simColIndex, 1)
@@ -118,10 +121,10 @@ func weightColumns(input *utilhighs.InputBuilder, colNames []string) (map[stats.
 	return statWeightColumns, colNames, simWeightColumns
 }
 
-func dataEquations(inputData []NewWeightInput, input *utilhighs.InputBuilder, highRange float64, colNames []string, statWeightColumns map[stats.StatType]utilhighs.ColumnIndex, simWeightColumns map[simulate.SimResultType]utilhighs.ColumnIndex, targetRatios simulate.SimResultStats) []string {
+func dataEquations(inputData []NewWeightInput, input *utilhighs.InputBuilder, colNames []string, statWeightColumns map[stats.StatType]utilhighs.ColumnIndex, simWeightColumns map[simulate.SimResultType]utilhighs.ColumnIndex, targetRatios simulate.SimResultStats) []string {
 	for _, data := range inputData {
 		// add up weighted gear score for row
-		gearScoreTotal := input.CreateColumnGeneral(highs.Continuous, 0, highRange)
+		gearScoreTotal := input.CreateColumnGeneral(highs.Continuous, 0, c_highRange)
 		colNames = append(colNames, "gearScoreTotal")
 		gearRow := utilhighs.ConstraintRowBuild{}
 		for _, statType := range G_RequiredStats {
@@ -132,7 +135,7 @@ func dataEquations(inputData []NewWeightInput, input *utilhighs.InputBuilder, hi
 		gearRow.Finish(input, 0, 0)
 
 		// add up weighted sim score for row
-		simScoreTotal := input.CreateColumnGeneral(highs.Continuous, 0, highRange)
+		simScoreTotal := input.CreateColumnGeneral(highs.Continuous, 0, c_highRange)
 		colNames = append(colNames, "simScoreTotal")
 		simScoreRow := utilhighs.ConstraintRowBuild{}
 		for _, simType := range G_RequiredSims {
@@ -156,21 +159,27 @@ func dataEquations(inputData []NewWeightInput, input *utilhighs.InputBuilder, hi
 			// ideally we want that to equal simScoreTotal*targetRatio[simType]
 			contributionRow.Add(simScoreTotal, -targetRatios.Get(simType))
 
-			// contributionDiff := input.createColumnGeneral(highs.Continuous, -highRange, highRange)
-			contributionDiff := input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
+			// diff = simWeightCol[type] * thisResult[type] - thisScoreTotal * targetRatio[type]
+			// ideally for comparison sake the diff should look like the ratio
+			// simWeightCol[type] * thisResult[type] - thisScoreTotal * (targetRatio[type] + diff) = 0
+			// simWeightCol[type] * thisResult[type] - thisScoreTotal * (targetRatio[type] + diff) = 0
+
+			contributionDiff := input.CreateColumnGeneral(highs.Continuous, -c_highRange, c_highRange)
+			// contributionDiff := input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
 			colNames = append(colNames, "contributionDiff")
 			contributionRow.Add(contributionDiff, 1)
 			contributionRow.Finish(input, 0, 0)
 
-			contributionDiffAbsOutput := input.CreateColumnForLinearObjective(highs.Continuous, 0, utilhighs.C_PlusInf, 1, 0)
+			contributionDiffAbsOutput := input.CreateColumnForLinearObjective(highs.Continuous, 0, c_highRange, 1, 0)
+			// contributionDiffAbsOutput := input.CreateColumnForLinearObjective(highs.Continuous, 0, utilhighs.C_PlusInf, 1, 0)
 			colNames = append(colNames, "contributionDiffAbsOutput")
-			utilhighs.AbsoluteValue2(input, contributionDiff, contributionDiffAbsOutput, highRange) // could maybe be narrower highRange
+			utilhighs.AbsoluteValue2(input, contributionDiff, contributionDiffAbsOutput) // could maybe be narrower highRange
 			// absoluteValue(input, contributionDiff, contributionDiffAbsOutput, highRange)
 			// colNames = append(colNames, "absBool")
 		}
 
-		// scoreDiffSigned := input.createColumnGeneral(highs.Continuous, -highRange, highRange)
-		scoreDiffSigned := input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
+		scoreDiffSigned := input.CreateColumnGeneral(highs.Continuous, -c_highRange, c_highRange)
+		// scoreDiffSigned := input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
 		colNames = append(colNames, "scoreDiffSigned")
 		scoreDiffRow := utilhighs.ConstraintRowBuild{}
 		scoreDiffRow.Add(gearScoreTotal, 1)
@@ -178,21 +187,23 @@ func dataEquations(inputData []NewWeightInput, input *utilhighs.InputBuilder, hi
 		scoreDiffRow.Add(scoreDiffSigned, 1)
 		scoreDiffRow.Finish(input, 0, 0)
 
-		diffAbsOutput := input.CreateColumnForLinearObjective(highs.Continuous, 0, utilhighs.C_PlusInf, 1, 1)
+		// diffAbsOutput := input.CreateColumnForLinearObjective(highs.Continuous, 0, utilhighs.C_PlusInf, 1, 1)
+		diffAbsOutput := input.CreateColumnForLinearObjective(highs.Continuous, 0, c_highRange, 1, 1)
 		colNames = append(colNames, "diffAbsOutput")
-		utilhighs.AbsoluteValue2(input, scoreDiffSigned, diffAbsOutput, highRange)
+		utilhighs.AbsoluteValue2(input, scoreDiffSigned, diffAbsOutput)
 		// absoluteValue(input, scoreDiffSigned, diffAbsOutput, highRange)
 		// colNames = append(colNames, "absBool")
 	}
 	return colNames
 }
 
-func dataCompareInPairsEquations(input *utilhighs.InputBuilder, colNames []string, inputData []NewWeightInput, statWeightColumns map[stats.StatType]utilhighs.ColumnIndex, simWeightColumns map[simulate.SimResultType]utilhighs.ColumnIndex, targetRatios simulate.SimResultStats, highRange float64) []string {
+func dataCompareInPairsEquations(input *utilhighs.InputBuilder, colNames []string, inputData []NewWeightInput, statWeightColumns map[stats.StatType]utilhighs.ColumnIndex, simWeightColumns map[simulate.SimResultType]utilhighs.ColumnIndex, targetRatios simulate.SimResultStats) []string {
 	detailedWeights := make(map[stats.StatType]map[simulate.SimResultType]utilhighs.ColumnIndex)
 	for _, statType := range G_RequiredStats {
 		detailedWeights[statType] = make(map[simulate.SimResultType]utilhighs.ColumnIndex)
 		for _, simType := range G_RequiredSims {
-			detailedWeights[statType][simType] = input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
+			detailedWeights[statType][simType] = input.CreateColumnGeneral(highs.Continuous, -c_highRange, c_highRange)
+			// detailedWeights[statType][simType] = input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
 		}
 	}
 
@@ -200,7 +211,7 @@ func dataCompareInPairsEquations(input *utilhighs.InputBuilder, colNames []strin
 	for _, data1 := range inputData {
 		for _, data2 := range inputData {
 			if !stats.StatBlock_Equals(&data1.TotalStat, &data2.TotalStat) {
-				colNames = dataCompareInPairsEquations_Single(input, colNames, data1, data2, detailedWeights, highRange)
+				colNames = dataCompareInPairsEquations_Single(input, colNames, data1, data2, detailedWeights, c_highRange)
 			}
 		}
 	}
@@ -241,10 +252,11 @@ func dataCompareInPairsEquations_Single(input *utilhighs.InputBuilder, colNames 
 			simRow.Add(weights[statType][simType], float64(statDiff))
 		}
 
-		offset := input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
+		// offset := input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
+		offset := input.CreateColumnGeneral(highs.Continuous, -highRange, highRange)
 		simRow.Add(offset, 1)
 		offsetAbs := input.CreateColumnForLinearObjective(highs.Continuous, 0, utilhighs.C_PlusInf, 1, 2)
-		utilhighs.AbsoluteValue2(input, offset, offsetAbs, highRange)
+		utilhighs.AbsoluteValue2(input, offset, offsetAbs)
 
 		simDiff := data1.SimResult.Get(simType) - data2.SimResult.Get(simType)
 		simRow.Finish(input, simDiff, simDiff)

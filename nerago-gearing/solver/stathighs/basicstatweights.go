@@ -155,7 +155,7 @@ func (basic *BasicStatWeightProcess) unitValuesToCalcDetailedRatings_single(unit
 	basic.colNames = append(basic.colNames, "OFFSET SIGNED "+simType.String()+" "+statType.Name())
 	offsetAbs := basic.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1) // outputs for objective function
 	basic.colNames = append(basic.colNames, "OFFSET ABS "+simType.String()+" "+statType.Name())
-	utilhighs.AbsoluteValue2(&basic.input, offsetSigned, offsetAbs, c_rangeHigh)
+	utilhighs.AbsoluteValue2(&basic.input, offsetSigned, offsetAbs)
 
 	// detailweight_dps_haste * unit_dps_base - detailweight_dps_base * unit_dps_haste + offset = 0
 	weightRow := utilhighs.ConstraintRowBuild{}

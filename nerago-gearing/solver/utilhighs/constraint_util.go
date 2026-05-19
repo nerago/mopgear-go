@@ -148,7 +148,7 @@ func absoluteValue(input *InputBuilder, inputVar, outputVar ColumnIndex, rangeHi
 	setIfPositive.Finish(input, -rangeHigh, 0)
 }
 
-func AbsoluteValue2(input *InputBuilder, inputVar, outputVar ColumnIndex, rangeHigh float64) {
+func AbsoluteValue2(input *InputBuilder, inputVar, outputVar ColumnIndex) {
 	setIfNegative := ConstraintRowBuild{}
 	setIfNegative.Add(inputVar, 1)
 	setIfNegative.Add(outputVar, 1)

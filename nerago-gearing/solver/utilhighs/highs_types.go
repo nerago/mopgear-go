@@ -132,7 +132,7 @@ func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 		}
 		verifyNoError(solver.AddLinearObjective(objective.weight, objective.offset, coefficientArray, objective.abs_tolerance, objective.rel_tolerance, objective.priority))
 	}
-	
+
 	// verifyNoError(solver.SetStringOption("presolve", "off"))
 	// verifyNoError(solver.SetStringOption("parallel", "on"))
 	// verifyNoError(solver.SetIntOption("threads", c_threads))
@@ -153,6 +153,7 @@ func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 	} else {
 		verifyNoError(solver.SetStringOption("solver", "choose"))
 	}
+	verifyNoError(solver.SetStringOption("run_crossover", "off"))
 }
 
 func verifyNoError(err error) {
