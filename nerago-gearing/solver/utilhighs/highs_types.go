@@ -115,9 +115,27 @@ func readLogfile(tempFilename string) *util.PrintRecorder {
 }
 
 func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, logfile string) {
-	// checkError(solver.SetStringOption("presolve", "off"))
-	// checkError(solver.SetStringOption("parallel", "on"))
-	// checkError(solver.SetIntOption("threads", c_threads))
+	numRows, lowerBound, upperBound, startArray, indexArray, valuesArray := input.mat.createSolverInputArrays()
+	verifyNoError(solver.PassModel2(
+		int32(len(input.vars.colTypes)),
+		numRows,
+		input.vars.colCosts, input.vars.colLower, input.vars.colUpper,
+		lowerBound, upperBound,
+		startArray, indexArray, valuesArray,
+		input.vars.colTypes, !input.Minimise, 0))
+
+	for linearObjectiveIndex := range input.vars.linearObjectives {
+		objective := &input.vars.linearObjectives[linearObjectiveIndex]
+		coefficientArray := make([]float64, len(input.vars.colTypes))
+		for _, entry := range objective.coefficientEntries {
+			coefficientArray[entry.columnNumber] = entry.value
+		}
+		verifyNoError(solver.AddLinearObjective(objective.weight, objective.offset, coefficientArray, objective.abs_tolerance, objective.rel_tolerance, objective.priority))
+	}
+	
+	// verifyNoError(solver.SetStringOption("presolve", "off"))
+	// verifyNoError(solver.SetStringOption("parallel", "on"))
+	// verifyNoError(solver.SetIntOption("threads", c_threads))
 	// verifyNoError(solver.SetFloatOption("time_limit", 300))
 
 	verifyNoError(solver.SetStringOption("log_file", logfile))
@@ -128,31 +146,12 @@ func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 		verifyNoError(solver.SetIntOption("log_dev_level", 0))
 	}
 
-	verifyNoError(solver.SetMaximize(!input.Minimise))
 	verifyNoError(solver.SetBoolOption("blend_multi_objectives", input.BlendMultiObjectives))
 
 	if input.Solver != "" {
 		verifyNoError(solver.SetStringOption("solver", input.Solver))
 	} else {
 		verifyNoError(solver.SetStringOption("solver", "choose"))
-	}
-
-	numRows, lowerBound, upperBound, startArray, indexArray, valuesArray := input.mat.createSolverInputArrays()
-	verifyNoError(solver.PassModel2(
-		int32(len(input.vars.colTypes)),
-		numRows,
-		input.vars.colCosts, input.vars.colLower, input.vars.colUpper,
-		lowerBound, upperBound,
-		startArray, indexArray, valuesArray,
-		input.vars.colTypes, true, 0))
-
-	for linearObjectiveIndex := range input.vars.linearObjectives {
-		objective := &input.vars.linearObjectives[linearObjectiveIndex]
-		coefficientArray := make([]float64, len(input.vars.colTypes))
-		for _, entry := range objective.coefficientEntries {
-			coefficientArray[entry.columnNumber] = entry.value
-		}
-		verifyNoError(solver.AddLinearObjective(objective.weight, objective.offset, coefficientArray, objective.abs_tolerance, objective.rel_tolerance, objective.priority))
 	}
 }
 

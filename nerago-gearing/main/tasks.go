@@ -2,8 +2,6 @@ package main
 
 import (
 	"cmp"
-	"encoding/json"
-	"os"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
@@ -12,15 +10,12 @@ import (
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver"
-	"paladin_gearing_go/solver/stathighs"
 	"paladin_gearing_go/solver/withhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_rank"
 	"slices"
-	"strconv"
-	"strings"
 )
 
 func basicReforge(printer *util.PrintRecorder) {
@@ -680,84 +675,4 @@ func solveForRatings(printer *util.PrintRecorder) {
 	// 	rating := group.model.CalcRatingFull(itemSet)
 
 	// }
-}
-
-func statWeightsFromHighAndSim(printer *util.PrintRecorder) {
-	// makeSetCount := 256
-	// simSize := simulate.RunSize_Medium
-
-	// model := model.Model_PallyProtMitigation_NoSet()
-	// itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationNoSet, &model, setup.MissingEnchant_Panic, printer)
-	// for _, itemId := range substituteItemsMiti {
-	// 	if !itemOptions.IncludesItemId(itemId) {
-	// 		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
-	// 		for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
-	// 			if itemOptions.Has(slotEquip) {
-	// 				itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)
-	// 			}
-	// 		}
-	// 	}
-	// }
-	// itemOptions.RemoveItemIdFromAll(95141)
-
-	// setList := build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, &model, makeSetCount, printer)
-
-	// track := util.TrackProgress_Start()
-	// track.RunOuterTracking(len(setList))
-	// defer track.Stop()
-
-	// weightInputs := channel_op.Map_SliceToSlice(6, setList, func(itemSet *items.FullItemSet, weightInputs chan<- withhighs.NewWeightInput) {
-	// 	simResult := simulate.WowSim_Execute_SelectFight(simSize, model.Spec, model.SimulateAs, itemSet.Items(), model.Professions, nil, track.MakeNested())
-	// 	weightInputs <- withhighs.NewWeightInput{TotalStat: *itemSet.Total(), SimResult: simResult}
-	// })
-
-	// bytes, err := json.Marshal(weightInputs)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// err = os.WriteFile("sim-stats-input-data.json", bytes, 0)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	bytes, err := os.ReadFile("sim-stats-input-data.json")
-	if err != nil {
-		panic(err)
-	}
-	var weightInputs []stathighs.NewWeightInput
-	err = json.Unmarshal(bytes, &weightInputs)
-	if err != nil {
-		panic(err)
-	}
-
-	stathighs.CalcNewStatWeights(weightInputs, stathighs.NewStatWeights_animusWeight, printer)
-}
-
-func statWeightsBasic(printer *util.PrintRecorder) {
-	process := stathighs.BasicStatWeightProcess{}
-	process.Init(printer)
-	process.SetTargetRatios(stathighs.NewStatWeights_defWeight)
-	process.SetBaseline(parseSimStats("254619.21 1604831.48 27870.13 39389.66 56.82 14.23"))
-	process.AddSimData(stats.Stat_Strength, +600, parseSimStats("256235.27 1614633.03 27573.09 39660.8 56.16 12.89"))
-	process.AddSimData(stats.Stat_Stamina, +600, parseSimStats("254474.09 1603914.71 27941.9 39360.88 55.72 13.62"))
-	process.AddSimData(stats.Stat_Crit, +600, parseSimStats("257106.61 1620383.56 27870.13 39389.66 56.82 14.23"))
-	process.AddSimData(stats.Stat_Haste, +600, parseSimStats("256815.91 1619941.66 27591.27 39782.48 55.98 12.51"))
-	process.AddSimData(stats.Stat_Expertise, +600, parseSimStats("256349.38 1615203.97 27893.43 40077.8 56.72 13.16"))
-	process.AddSimData(stats.Stat_Mastery, +600, parseSimStats("254483.79 1603982.91 27230.32 39355.29 55.17 12.03"))
-	process.AddSimData(stats.Stat_Dodge, +600, parseSimStats("254623.68 1604870.45 27649.33 39384.54 56.34 13.46"))
-	process.AddSimData(stats.Stat_Parry, +600, parseSimStats("254649.78 1605018.37 27660.8 39408.39 56.36 13.45"))
-	process.Run()
-}
-
-func parseSimStats(str string) simulate.SimResultStats {
-	result := simulate.SimResultStats{}
-	parts := strings.Split(str, " ")
-	for i, simType := range simulate.SimResultTypeList {
-		value, err := strconv.ParseFloat(parts[i], 64)
-		if err != nil {
-			panic(err)
-		}
-		result.Set(simType, value)
-	}
-	return result
 }

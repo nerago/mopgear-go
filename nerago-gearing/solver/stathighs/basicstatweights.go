@@ -43,7 +43,7 @@ func (basic *BasicStatWeightProcess) SetBaseline(simBase simulate.SimResultStats
 
 func (basic *BasicStatWeightProcess) SetTargetRatios(targetRatios simulate.SimResultStats) {
 	sum := 0.0
-	for _, simType := range g_requiredSims {
+	for _, simType := range G_RequiredSims {
 		val := targetRatios.Get(simType)
 		if val <= 0 {
 			panic("missing ratio")
@@ -64,21 +64,22 @@ func (basic *BasicStatWeightProcess) AddSimData(statType stats.StatType, statVal
 // alternately we could baseline each other with a full array of +100 perumtations etc
 
 func (basic *BasicStatWeightProcess) Run() {
-	for _, statType := range g_requiredStats {
-		colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, -c_finalWeightLimit, c_finalWeightLimit)
+	for _, statType := range G_RequiredStats {
+		colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
+		// colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, -c_finalWeightLimit, c_finalWeightLimit)
 		basic.finalWeights[statType] = colFinalWeight
 		basic.colNames = append(basic.colNames, "FINAL WEIGHT: "+statType.Name())
 	}
 
-	for _, statType := range g_requiredStats {
-		for _, simType := range g_requiredSims {
+	for _, statType := range G_RequiredStats {
+		for _, simType := range G_RequiredSims {
 			colDetailWeight := basic.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
 			basic.detailedWeights.Put(statType, simType, colDetailWeight)
 			basic.colNames = append(basic.colNames, "WEIGHT: "+statType.Name()+" "+simType.String())
 		}
 	}
 
-	for _, simType := range g_requiredSims {
+	for _, simType := range G_RequiredSims {
 		value := basic.targetRatios.Get(simType)
 		colDetailWeight := basic.detailedWeights.GetOrPanic(c_baseStatType, simType)
 		strengthSetToRatio := utilhighs.ConstraintRowBuild{}
@@ -113,7 +114,7 @@ func (basic *BasicStatWeightProcess) incorporateSample(statType stats.StatType, 
 	// unit_dps_haste = (this_dps[haste] - base_dps) / this_haste_value
 	// detailweight_dps_haste = unit_dps_haste / unit_dps_str * detailweight_str
 
-	for _, simType := range g_requiredSims {
+	for _, simType := range G_RequiredSims {
 		// TODO validateIsRelevantBase(basic.simBase // can't valiidate since we don't actually have full stat blocks, just this one difference value
 		unitStatValue := basic.unitDiffValue(sim, simType, statValue)
 		basic.unitStatValues.Apply(statType, simType, func(oldValue []float64) []float64 { return append(oldValue, unitStatValue) })
@@ -131,7 +132,7 @@ func (basic *BasicStatWeightProcess) unitValuesToCalcDetailedRatings() {
 	basic.unitStatValues.ForeachGroupForKey2(func(simType simulate.SimResultType, lookupStat func(stats.StatType) []float64) {
 		unitValueBaseArray := lookupStat(c_baseStatType)
 		detailWeightBase := basic.detailedWeights.GetOrPanic(c_baseStatType, simType)
-		for _, thisStatType := range g_requiredStats {
+		for _, thisStatType := range G_RequiredStats {
 			if thisStatType != c_baseStatType {
 				thisUnitValueArray := lookupStat(thisStatType)
 				thisDetailWeight := basic.detailedWeights.GetOrPanic(thisStatType, simType)
@@ -150,22 +151,22 @@ func (basic *BasicStatWeightProcess) unitValuesToCalcDetailedRatings() {
 func (basic *BasicStatWeightProcess) unitValuesToCalcDetailedRatings_single(unitValueBase float64, detailWeightBase utilhighs.ColumnIndex,
 	thisUnitValue float64, thisdetailWeight utilhighs.ColumnIndex, simType simulate.SimResultType, statType stats.StatType) {
 
-	// offsetSigned := basic.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
-	// basic.colNames = append(basic.colNames, "OFFSET SIGNED "+simType.String()+" "+statType.Name())
-	// offsetAbs := basic.input.CreateColumnWithOutput(highs.Continuous, 0, c_offsetLimit, 1) // outputs for objective function
-	// basic.colNames = append(basic.colNames, "OFFSET ABS "+simType.String()+" "+statType.Name())
-	// utilhighs.AbsoluteValue2(&basic.input, offsetSigned, offsetAbs, c_rangeHigh)
+	offsetSigned := basic.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
+	basic.colNames = append(basic.colNames, "OFFSET SIGNED "+simType.String()+" "+statType.Name())
+	offsetAbs := basic.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1) // outputs for objective function
+	basic.colNames = append(basic.colNames, "OFFSET ABS "+simType.String()+" "+statType.Name())
+	utilhighs.AbsoluteValue2(&basic.input, offsetSigned, offsetAbs, c_rangeHigh)
 
 	// detailweight_dps_haste * unit_dps_base - detailweight_dps_base * unit_dps_haste + offset = 0
 	weightRow := utilhighs.ConstraintRowBuild{}
 	weightRow.Add(thisdetailWeight, unitValueBase)
 	weightRow.Add(detailWeightBase, -thisUnitValue)
-	// weightRow.Add(offsetSigned, 1)
+	weightRow.Add(offsetSigned, 1)
 	weightRow.Finish(&basic.input, 0, 0)
 }
 
 func (basic *BasicStatWeightProcess) calcTotalRatings() {
-	for _, statType := range g_requiredStats {
+	for _, statType := range G_RequiredStats {
 		statFinalRow := utilhighs.ConstraintRowBuild{}
 		basic.detailedWeights.ForeachInnerWithKey1Value(statType, func(_ simulate.SimResultType, detailColumn utilhighs.ColumnIndex) {
 			statFinalRow.Add(detailColumn, 1)
@@ -187,7 +188,7 @@ func debugPrintColumns(solution *highs.Solution, basic *BasicStatWeightProcess) 
 
 func reportOutputWeights(solution *highs.Solution, weightColumns map[stats.StatType]utilhighs.ColumnIndex, printer *util.PrintRecorder) {
 	printer.Println("FINAL WEIGHTS:")
-	for _, statType := range g_requiredStats {
+	for _, statType := range G_RequiredStats {
 		columnIndex := weightColumns[statType]
 		value := solution.ColValues[columnIndex]
 		printer.Printf("%10s %f\n", statType.Name(), value)
