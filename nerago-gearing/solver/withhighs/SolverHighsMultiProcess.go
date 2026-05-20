@@ -334,7 +334,7 @@ func (process *SolverHighsMultiProcess) addCommonConstraintsForItem(inputBuilder
 func (process *SolverHighsMultiProcess) findMatchingItemColumns(item *items.FullItem) iter.Seq[utilhighs.ColumnIndex] {
 	return func(yield func(utilhighs.ColumnIndex) bool) {
 		for _, part := range process.parts {
-			for _, column := range part.setup.itemColumns {
+			for column := range part.setup.itemColumns.ValuesForKeyAsSeq(item.ItemId()) {
 				if column.item.EqualsFull(item) {
 					if !yield(column.columnIndex) {
 						return

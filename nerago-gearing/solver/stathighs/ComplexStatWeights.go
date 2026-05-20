@@ -29,7 +29,7 @@ func CalcComplexStatWeights(inputData []WeightInput, targetRatios simulate.SimRe
 
 	// colNames = dataEquations(inputData, input, colNames, statWeightColumns, simWeightColumns, targetRatios)
 
-	colNames = dataCompareInPairsEquations(input, colNames, inputData, statWeightColumns, simWeightColumns, targetRatios)
+	colNames = dataCompareInPairsEquations(input, colNames, inputData, statWeightColumns, targetRatios)
 
 	solution, log := input.RunHighs()
 	printer.AppendOther(log)
@@ -147,7 +147,7 @@ func dataEquations(inputData []WeightInput, input *utilhighs.InputBuilder, colNa
 	return colNames
 }
 
-func dataCompareInPairsEquations(input *utilhighs.InputBuilder, colNames []string, inputData []WeightInput, statWeightColumns map[stats.StatType]utilhighs.ColumnIndex, simWeightColumns map[simulate.SimResultType]utilhighs.ColumnIndex, targetRatios simulate.SimResultStats) []string {
+func dataCompareInPairsEquations(input *utilhighs.InputBuilder, colNames []string, inputData []WeightInput, statWeightColumns map[stats.StatType]utilhighs.ColumnIndex, targetRatios simulate.SimResultStats) []string {
 	detailedWeights := make(map[stats.StatType]map[simulate.SimResultType]utilhighs.ColumnIndex)
 	for _, statType := range G_RequiredStats {
 		detailedWeights[statType] = make(map[simulate.SimResultType]utilhighs.ColumnIndex)

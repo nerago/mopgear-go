@@ -11,15 +11,14 @@ import (
 	"github.com/google/uuid"
 )
 
-func (job *MultiSetJob) FindHighsResult_Sample() util.Optional[multi_types.MultiProposedOutput] {
+func (job *MultiSetJob) FindHighsResult_Sample(sampleCount int) util.Optional[multi_types.MultiProposedOutput] {
 	job.checkNoPermutations()
 	job.prepareInitial()
 	highProcess := job.highProcessSetup()
 
 	best := util_rank.BestCollector1[multi_types.MultiProposedOutput]{}
 
-	// setResults := highProcess.RunForSeveral_NextObjective(job.printer, 6)
-	setResults := highProcess.RunForSeveral_CommonDifferent_Sampling(job.printer, 6)
+	setResults := highProcess.RunForSeveral_CommonDifferent_Sampling(job.printer, sampleCount)
 	if setResults != nil {
 		proposedOutput := util.CastSliceAsNew(setResults, func(x *withhighs.HighsMultiResult) multi_types.MultiProposedOutput {
 			return job.makeOutputFromHighs(*x, job.printer)
@@ -187,7 +186,6 @@ func (job *MultiSetJob) makeOutputFromHighs(multiResult withhighs.HighsMultiResu
 		proposed := multi_types.MultiProposedOutput{Id: uuid.NewString(), TotalRatingSum: totalRatingSum, Parts: outputs, Combo: combo}
 		return proposed
 	} else {
-		job.printer.AppendOther(printer)
 		panic("conflicted items")
 	}
 }

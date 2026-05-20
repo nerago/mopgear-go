@@ -41,7 +41,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95141, // shado assault loop
 		86957, // heroic bladed tempest ring
 		96500, // scaled tyrant heroic
-		96481, // durumu tentacle heroic
+		96481, // durumu tentacle h
+		96377, // jinrohk soulcrystaleroic
 
 		87015, // heroic clawfeet
 		86979, // heroic impaling treads
@@ -74,7 +75,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96420, // talisman of angry spirits
 
 		96375, // bracers implosion
-		96377, // jinrohk soulcrystal
 		96395, // bloodsoaked legplates
 
 		trinketZandSpark,
@@ -104,9 +104,10 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protDps.AddExtraItems([]items.ItemId{
 		86957, // heroic bladed tempest ring
 		95140, // shado assault band
-		// 95141, // shado assault loop OFF123
+		95141, // shado assault loop OFF123
 		96500, // scaled tyrant heroic
 		96481, // durumu tentacle heroic
+		96377, // jinrohk soulcrystal
 
 		87015, // heroic clawfeet
 		86979, // heroic impaling treads
@@ -150,7 +151,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96534, // qon's scimitar
 
 		96375, // bracers implosion
-		96377, // jinrohk soulcrystal
 		96395, // bloodsoaked legplates
 
 		trinketZandSpark,
@@ -184,6 +184,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95141, // shado assault loop
 		96500, // scaled tyrant heroic
 		96481, // durumu tentacle heroic
+		96377, // jinrohk soulcrystal
 
 		87015, // heroic clawfeet
 		86979, // heroic impaling treads
@@ -224,7 +225,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96394, // frozen warlord bracer heroic
 
 		96375, // bracers implosion
-		96377, // jinrohk soulcrystal
 		96395, // bloodsoaked legplates
 
 		96376, // worldbreaker weapon
@@ -277,6 +277,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95141, // shado assault loop
 		96500, // scaled tyrant heroic
 		96481, // durumu tentacle heroic
+		96377, // jinrohk soulcrystal
 
 		96373, // cloudbreaker belt heroic
 
@@ -313,7 +314,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96394, // frozen warlord bracer heroic
 
 		96375, // bracers implosion
-		96377, // jinrohk soulcrystal
 		96395, // bloodsoaked legplates
 
 		96376, // worldbreaker weapon
@@ -363,6 +363,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95141, // shado assault loop
 		96500, // scaled tyrant heroic
 		96481, // durumu tentacle heroic
+		96377, // jinrohk soulcrystal
 
 		96373, // cloudbreaker belt heroic
 
@@ -398,7 +399,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96534, // qon's scimitar
 
 		96375, // bracers implosion
-		96377, // jinrohk soulcrystal
 		96395, // bloodsoaked legplates
 
 		trinketZandSpark,
@@ -441,7 +441,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
-	job.FindHighsResult_Sample()
+	job.FindHighsResult_Sample(1)
 	// job.FindSeveralHighsAndSim()
 	// job.FindHighsResultPerPermute(2)
 	// job.RunWithMinimumHaste("Prot-Mitigation-WithSet", 11000, 18000, 250)

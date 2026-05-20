@@ -64,6 +64,15 @@ var allSetItems = []items.ItemId{
 	87109, 87110, 87111, 87112, 87113, // ret tier14 (heroic versions)
 }
 
+var miscRings = []items.ItemId{
+	96481, // durumu tentacle heroic
+	86957, // heroic bladed tempest ring
+	95140, // shado assault band
+	95141, // shado assault loop
+	96500, // scaled tyrant heroic
+	96377, // jinrohk soulcrystal
+}
+
 func checkHighs(printer *util.PrintRecorder) {
 	// bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Mitigation", "Battlegear of the Lightning Emperor")
 	// bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Mitigation")
@@ -79,7 +88,7 @@ func checkHighs(printer *util.PrintRecorder) {
 	// model.SetBonus = bonus
 	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileRet, &model, setup.MissingEnchant_Panic, printer)
 
-	extraItemsCombined := slices.Concat(substituteItemsMiti, allSetItems)
+	extraItemsCombined := slices.Concat(substituteItemsMiti, allSetItems, miscRings)
 
 	for _, itemId := range extraItemsCombined {
 		if !itemOptions.IncludesItemId(itemId) {
@@ -92,7 +101,11 @@ func checkHighs(printer *util.PrintRecorder) {
 		}
 	}
 
-	// TODO use solver.Solver_WithHighs()
+	// itemOptions.RemoveItemIdFromAll(96500)
+	// itemOptions.RemoveItemIdFromAll(96481)
+	// itemOptions.RemoveItemIdFromAll(96377)
+	// itemOptions.RemoveItemIdFromAll(95140)
+	// itemOptions.RemoveItemIdFromAll(95141)
 
 	solveOptions := items.SolvableOptionsMap_of(&itemOptions)
 	// solvedSet := withhighs.RunSingleAcrossSets_ReturnBest(&solveOptions, &model, printer)
@@ -104,62 +117,6 @@ func checkHighs(printer *util.PrintRecorder) {
 		printer.Println("FAILED SOLVE")
 	} else {
 		fullItemSet = items.FullItemSet_FromSolved(solvedSet.GetOrPanic(), &itemOptions)
-		fullItemSet.DebugValidate()
-		fullItemSet.ValidateItemRules()
-		tools.ReportSetFewerParams(&model, &fullItemSet, printer)
-	}
-
-	printer.Println("COMPARE standard solver")
-	compareSolveOuput := solver.Solver(solver.SolveInput{
-		ItemOptions:         &itemOptions,
-		Model:               &model,
-		EnableTrackProgress: true,
-		Printer:             util.PrintRecorder_HoldAll(),
-	})
-	compareSolveOuput.Report(printer)
-
-	printer.Printf("ratio of results %.0f %.0f %f\n",
-		model.CalcRatingFull(&fullItemSet),
-		model.CalcRatingFull(&compareSolveOuput.FullSet),
-		model.CalcRatingFull(&fullItemSet)/model.CalcRatingFull(&compareSolveOuput.FullSet),
-	)
-}
-
-func checkHighsAcross(printer *util.PrintRecorder) {
-	// bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Mitigation", "Battlegear of the Lightning Emperor")
-	// bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Mitigation")
-	// bonus := model.SetBonus_Named("White Tiger Battlegear Prot Mitigation", "White Tiger Plate", "Plate of the Lightning Emperor Prot Damage")
-	// bonus := model.SetBonus_Named( "Plate of the Lightning Emperor Prot Damage", "White Tiger Plate")
-	// bonus := model.SetBonus_Named( "Plate of the Lightning Emperor Prot Damage")
-	// bonus := model.SetBonus_Empty()
-
-	// itemOptions, model := setupPallyMitigationSet()
-	// model.SetBonus = bonus
-
-	model := model.Model_PallyRet()
-	// model.SetBonus = bonus
-	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileRet, &model, setup.MissingEnchant_Panic, printer)
-
-	extraItemsCombined := slices.Concat(substituteItemsMiti, allSetItems)
-
-	for _, itemId := range extraItemsCombined {
-		if !itemOptions.IncludesItemId(itemId) {
-			opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
-			for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
-				if itemOptions.Has(slotEquip) {
-					itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)
-				}
-			}
-		}
-	}
-
-	solveOptions := items.SolvableOptionsMap_of(&itemOptions)
-	solvedSetList := withhighs.RunSingleAcrossSets_ReturnAll(&solveOptions, &model, printer)
-	// solvedSet := withhighs.RunBasic(&solveOptions, &model, nil, util.Optional_Empty[int]())
-
-	printer.Println("[[[[[[[ highs SOLVE ]]]]]]]")
-	for _, solvedSet := range solvedSetList {
-		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &itemOptions)
 		fullItemSet.DebugValidate()
 		fullItemSet.ValidateItemRules()
 		tools.ReportSetFewerParams(&model, &fullItemSet, printer)

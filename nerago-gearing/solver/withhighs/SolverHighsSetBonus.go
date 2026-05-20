@@ -55,6 +55,8 @@ func setupBonusedInputs(inputBuilder *utilhighs.InputBuilder, gear_model *gear_m
 
 	setup.finishItems(itemOptions, gear_model)
 
+	setup.constrainUniqueEquipsItems()
+
 	if additionalMinimum != nil {
 		setup.minimumValueRow.Finish(setup.input, float64(additionalMinimum.Value), utilhighs.C_PlusInf)
 	}
@@ -157,7 +159,7 @@ type setupInputsForSetBonus struct {
 	setData           []setInfo
 	allSetPermutation []setPermutation
 
-	itemColumns []columnInfo
+	itemColumns util.MapSlice[items.ItemId, columnInfo]
 	allColumns  []columnInfo
 }
 
@@ -385,8 +387,8 @@ func (setup *setupInputsForSetBonus) addItem(itemSlot items.SlotEquip, item *ite
 	}
 
 	entry := columnInfo{entryType: entry_item, columnIndex: columnIndex, itemSlot: itemSlot, item: item}
-	setup.itemColumns = append(setup.itemColumns, entry)
 	setup.allColumns = append(setup.allColumns, entry)
+	setup.itemColumns.Add(item.ItemId(), entry)
 
 	return columnIndex
 }
@@ -417,9 +419,41 @@ func (setup *setupInputsForSetBonus) finishItems(itemOptions *items.SolvableOpti
 	setup.mainOutputRow.Finish(setup.input, 0, 0)
 }
 
+func (setup *setupInputsForSetBonus) constrainUniqueEquipsItems() {
+	uniqueEquipSets := make([][]items.ItemId, 0)
+	idsAdded := make(map[items.ItemId]bool)
+
+	// add items from predefined unique equipped sets
+	for _, set := range items.UniqueItemIdSets {
+		for _, itemId := range set {
+			idsAdded[itemId] = true
+		}
+		uniqueEquipSets = append(uniqueEquipSets, set)
+	}
+
+	// add all other items as single item sets
+	for itemId := range setup.itemColumns.SeqKeys() {
+		if !idsAdded[itemId] {
+			idsAdded[itemId] = true
+			uniqueEquipSets = append(uniqueEquipSets, []items.ItemId{itemId})
+		}
+	}
+
+	// set up a constraint for each item grouping
+	for _, set := range uniqueEquipSets {
+		rowItemUniqueInSet := utilhighs.ConstraintRowBuild{}
+		for _, itemId := range set {
+			for columnEntry := range setup.itemColumns.ValuesForKeyAsSeq(itemId) {
+				rowItemUniqueInSet.Add(columnEntry.columnIndex, 1)
+			}
+		}
+		rowItemUniqueInSet.Finish(setup.input, 0, 1)
+	}
+}
+
 func (setup *setupInputsForSetBonus) buildResultSet(solution *highs.Solution, itemOptions *items.SolvableOptionsMap, model *gear_model.Model) items.SolvableItemSet {
 	itemSet := items.SolvableItemSet{}
-	for _, columnEntry := range setup.itemColumns {
+	for columnEntry := range setup.itemColumns.SeqValues() {
 		variableResult := solution.ColValues[columnEntry.columnIndex]
 		if columnEntry.entryType == entry_item && utilhighs.FloatEqualsOne(variableResult) {
 			itemSet.AddItem_DeferCalc_ExpectEmpty(columnEntry.itemSlot, columnEntry.item)
@@ -431,6 +465,24 @@ func (setup *setupInputsForSetBonus) buildResultSet(solution *highs.Solution, it
 	setup.checkActivePermutation(solution, &itemSet)
 
 	return itemSet
+}
+
+func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOptionsMap, model *gear_model.Model) {
+	itemSet.DebugValidate()
+	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
+		if itemOptions.Has(slot) != itemSet.Items().Has(slot) {
+			panic("expected slots not filled")
+		}
+	}
+
+	if !model.CheckSet(&itemSet) {
+		sb := util.StringBuild2{}
+		sb.WriteString("set fails standard CheckSet ")
+		sb.WriteUint32(itemSet.Total().Hit())
+		sb.WriteRune(' ')
+		sb.WriteUint32(itemSet.Total().Expertise())
+		panic(sb.String())
+	}
 }
 
 func checkSetRatingIsObjective(solution *highs.Solution, itemSet *items.SolvableItemSet, gear_model *gear_model.Model) {

@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	C_DebugHighs = false
+	C_DebugHighs = true
 	c_threads    = 6
 )
 

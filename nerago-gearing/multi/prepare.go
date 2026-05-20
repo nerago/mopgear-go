@@ -37,8 +37,6 @@ func (job *MultiSetJob) prepareInitial() {
 		job.params[i].restrictFixedValidate()
 	}
 
-	job.validateMultiSetAlignItemSlots()
-
 	for i := range job.params {
 		job.params[i].runBaseline()
 	}
@@ -222,38 +220,6 @@ func (param *multiSetParamInternal) removeBlocked() {
 		param.job.printer.Printf("BLOCKING ITEM %d\n", itemId)
 		param.itemOptions.RemoveItemIdFromAll(itemId)
 	}
-}
-
-func (job *MultiSetJob) validateMultiSetAlignItemSlots() {
-	// TODO can't remember what this was in aid of, not needed anymore?
-	// maybe was in order of a warning that things might be bad downstream or explode permutations
-
-	// NEW VERSION check within set, make things easier for solvers
-	for paramIndex := range job.params {
-		param := &job.params[paramIndex]
-		seen := make(map[items.ItemId]items.SlotEquip)
-		for slot, item := range param.itemOptions.AllItemsWithSlot() {
-			seenSlot, found := seen[item.ItemId()]
-			if found && seenSlot != slot {
-				panic("duplicate item in different slots " + item.CreateString() + " in set " + param.Label)
-			} else if !found {
-				seen[item.ItemId()] = slot
-			}
-		}
-	}
-
-	// OLD VERSION checked across all sets
-	// seen := make(map[items.ItemId]items.SlotEquip)
-	// for paramIndex := range job.params {
-	// 	for slot, item := range job.params[paramIndex].itemOptions.AllItemsWithSlot() {
-	// 		seenSlot, found := seen[item.ItemId()]
-	// 		if found && seenSlot != slot && !slices.Contains(job.suppressSlotCheck, item.ItemId()) {
-	// 			panic("duplicate in non-matching slot " + item.CreateString())
-	// 		} else if !found {
-	// 			seen[item.ItemId()] = slot
-	// 		}
-	// 	}
-	// }
 }
 
 func (param *multiSetParamInternal) runBaseline() {
