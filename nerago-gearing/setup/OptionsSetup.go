@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
+	"strconv"
 )
 
 type MissingEnchantMode int8
@@ -73,28 +74,39 @@ func makeItemLevelToRandomAmount() map[uint16]uint32 {
 	lookup[502] = 712
 	lookup[522] = 858
 	lookup[528] = 907
-	lookup[535] = 968
+	lookup[535] = 969
+	lookup[536] = 978
 	lookup[541] = 1019
+	lookup[549] = 1103
 	return lookup
 }
 
 func processRandomSuffix(equipItem loaders.EquippedItem, item items.FullItem) items.FullItem {
-	if equipItem.RandomSuffix == -336 {
-		// TODO finish
-		// suffixInfo := core.RandomSuffixesByID[equipItem.RandomSuffix]
-		// extern_stats.SimStatsToGearStatBlock(suffixInfo.Stats)
-		// suffixInfo.Stats
+	// suffixInfo := core.RandomSuffixesByID[equipItem.RandomSuffix]
+	// extern_stats.SimStatsToGearStatBlock(suffixInfo.Stats)
 
-		stat := stats.Stat_Crit
-		amount := itemLevelToRandomAmount[item.ItemLevel()]
+	if equipItem.RandomSuffix != 0 {
+		var stat stats.StatType
+		switch equipItem.RandomSuffix {
+		case -336:
+			stat = stats.Stat_Crit
+		case -338:
+			stat = stats.Stat_Expertise
+		default:
+			panic("unknown random suffix")
+		}
+
+		amount, knownAmount := itemLevelToRandomAmount[item.ItemLevel()]
+		if !knownAmount {
+			panic("don't know for ilevel " + strconv.FormatInt(int64(item.ItemLevel()), 10))
+		}
 
 		var newStats stats.StatBlock = *item.StatBase()
 		newStats[stat] = amount
 
 		item = *item.NewWithChangedStatsSuffix(newStats, equipItem.RandomSuffix)
-	} else if equipItem.RandomSuffix != 0 {
-		panic("unknown random suffix")
 	}
+
 	return item
 }
 

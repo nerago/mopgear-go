@@ -16,29 +16,59 @@ type Model struct {
 	StatRequirements StatRequirementsHitExpertise
 	StatRatings      StatRatingsWeights
 
-	Spec          SpecType
-	SimulateAs    WowSim_Fight
-	ReforgeRules  ReforgeRules
-	EnchantChoice EnchantChoice
-	GemChoice     GemChoice
-	SetBonus      SetBonus
-	Professions   ProfessionInfo
+	Spec             SpecType
+	SimulateAs       WowSim_Fight
+	ReforgeRules     ReforgeRules
+	EnchantChoice    EnchantChoice
+	GemChoice        GemChoice
+	SetBonus         SetBonus
+	SetBonusRequired uint8
+	Professions      ProfessionInfo
 }
 
 func (model *Model) Equals(other *Model) bool {
-	return model.StatRequirements == other.StatRequirements &&
+	return model.StatRequirements.Equals(&other.StatRequirements) &&
 		model.StatRatings == other.StatRatings &&
 		model.Spec == other.Spec &&
 		model.ReforgeRules.Equals(&other.ReforgeRules) &&
 		model.EnchantChoice.Equals(other.EnchantChoice) &&
 		model.GemChoice.Equals(other.GemChoice) &&
 		model.SetBonus.Equals(&other.SetBonus) &&
+		model.SetBonusRequired == other.SetBonusRequired &&
 		model.Professions == other.Professions
 }
 
 // ////////// requirements
 func (model *Model) CheckSet(itemSet *SolvableItemSet) bool {
-	return model.StatRequirements.CheckSet(itemSet.Total())
+	if model.StatRequirements.CheckSet(itemSet.Total()) {
+		if model.SetBonusRequired > 0 {
+			if len(model.SetBonus.activeSets) != 1 {
+				panic("set bonus required only available for single set")
+			}
+			count := model.SetBonus.CountInAnySetSolve(itemSet.Items())
+			return count >= model.SetBonusRequired
+		} else {
+			return true
+		}
+	} else {
+		return false
+	}
+}
+
+func (model *Model) CheckSetFull(itemSet *FullItemSet) bool {
+	if model.StatRequirements.CheckSet(itemSet.Total()) {
+		if model.SetBonusRequired > 0 {
+			if len(model.SetBonus.activeSets) != 1 {
+				panic("set bonus required only available for single set")
+			}
+			count := model.SetBonus.CountInAnySet(itemSet.Items())
+			return count >= model.SetBonusRequired
+		} else {
+			return true
+		}
+	} else {
+		return false
+	}
 }
 
 // ////////// set ratings

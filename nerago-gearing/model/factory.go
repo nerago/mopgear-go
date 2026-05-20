@@ -16,11 +16,13 @@ func Model_PallyProtMitigation_WithSet() Model {
 		SimulateAs:  Fight_Horridon_LowHeal, // TODO really a raden set
 		StatRatings: weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry_PlusAdditional(
-			&StatAndValue{StatType: Stat_Haste, Value: 13500}),
-		ReforgeRules:  ReforgeRules_tank,
-		EnchantChoice: EnchantChoice_ForSpec(spec),
-		GemChoice:     GemChoice_ForSpec(spec),
-		SetBonus:      SetBonus_Named("Plate of the Lightning Emperor"),
+			// &StatAndValue{StatType: Stat_Haste, Value: 13500}),
+			&StatAndValue{StatType: Stat_Haste, Value: 12500}),
+		ReforgeRules:     ReforgeRules_tank,
+		EnchantChoice:    EnchantChoice_ForSpec(spec),
+		GemChoice:        GemChoice_ForSpec(spec),
+		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor"),
+		SetBonusRequired: 4,
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,
@@ -49,7 +51,7 @@ func Model_PallyProtMitigation_NoSet() Model {
 
 func Model_PallyProtCompromise() Model {
 	spec := Spec_PaladinProtCompromise
-	weight := StatRatingsWeights_ReadFile(files.GearFileProtCompromise, false, true, false)
+	weight := StatRatingsWeights_ReadFile(files.WeightCompromiseFile, false, true, false)
 	return Model{
 		Spec:             spec,
 		SimulateAs:       Fight_Animus,

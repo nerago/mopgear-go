@@ -157,8 +157,8 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 	substituteItemsDpsMiti = util.RemoveDuplicatesComparable(substituteItemsDpsMiti)
 
 	substituteEmptySlotOnly := make(map[items.SlotItem]items.ItemId)
-	substituteEmptySlotOnly[items.Item_Trinket] = 94519
-	substituteEmptySlotOnly[items.Item_Ring] = 86957
+	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
+	substituteEmptySlotOnly[items.Item_Ring] = 86957 // heroic bladed tempest ring
 
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{

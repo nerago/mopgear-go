@@ -280,6 +280,12 @@ func (optionsMap *FullOptionsMap) FilterSlot(slot SlotEquip, filter func(*FullIt
 	}
 }
 
+func (optionsMap *FullOptionsMap) FilterSlotNoValidate(slot SlotEquip, filter func(*FullItem) bool) {
+	if len(optionsMap[slot]) > 0 {
+		optionsMap[slot] = util.FilterSliceInPlace(optionsMap[slot], filter)
+	}
+}
+
 func (optionsMap *FullOptionsMap) RemoveItemIdFromAll(itemId ItemId) {
 	for slot := range optionsMap {
 		if len(optionsMap[slot]) > 0 {

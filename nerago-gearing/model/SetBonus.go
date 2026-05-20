@@ -16,6 +16,8 @@ type SetBonus struct {
 }
 
 const (
+	c_maxItemId = 300000
+
 	zeroBonus = 1.0
 	defaultBonus = 1.025
 
@@ -66,7 +68,7 @@ func SetBonus_Empty() SetBonus {
 }
 
 func (sets *SetBonus) initMap() {
-	sets.itemToSet = make([]uint8, 200000)
+	sets.itemToSet = make([]uint8, c_maxItemId)
 	for index, info := range sets.activeSets {
 		for _, itemId := range info.items {
 			sets.itemToSet[itemId] = uint8(index + 1)
@@ -155,8 +157,32 @@ func (sets *SetBonus) CountInAnySet(itemSet *FullEquipMap) uint8 {
 	return count
 }
 
+func (sets *SetBonus) CountInAnySetSolve(itemSet *SolvableEquipMap) uint8 {
+	size := len(sets.activeSets)
+	if size == 0 {
+		return 0
+	}
+
+	var count uint8 = 0
+	incrementIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Head])
+	incrementIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Shoulder])
+	incrementIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Chest])
+	incrementIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Hand])
+	incrementIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Leg])
+	return count
+}
+
 // ########################### incrementIfInAnySet ###########################
 func incrementIfInAnySet(count *uint8, itemToSet []uint8, item *FullItem) {
+	if item != nil {
+		entry := itemToSet[item.ItemId()]
+		if entry != 0 {
+			*count++
+		}
+	}
+}
+
+func incrementIfInAnySetSolve(count *uint8, itemToSet []uint8, item *SolvableItem) {
 	if item != nil {
 		entry := itemToSet[item.ItemId()]
 		if entry != 0 {

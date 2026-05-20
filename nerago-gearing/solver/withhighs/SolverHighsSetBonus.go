@@ -59,6 +59,16 @@ func setupBonusedInputs(inputBuilder *utilhighs.InputBuilder, gear_model *gear_m
 		setup.minimumValueRow.Finish(setup.input, float64(additionalMinimum.Value), utilhighs.C_PlusInf)
 	}
 
+	if gear_model.SetBonusRequired > 0 {
+		if len(setup.setData) != 1 {
+			panic("set bonus required only available for single set")
+		}
+		setCountCol := setup.setData[0].setTotalCountVar
+		rowSetCountRequired := utilhighs.ConstraintRowBuild{}
+		rowSetCountRequired.Add(setCountCol.columnIndex, 1)
+		rowSetCountRequired.Finish(setup.input, float64(gear_model.SetBonusRequired), utilhighs.C_PlusInf)
+	}
+
 	return &setup
 }
 

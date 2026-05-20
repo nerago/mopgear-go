@@ -73,6 +73,10 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94776, // primal turtle amulet
 		96420, // talisman of angry spirits
 
+		96375, // bracers implosion
+		96377, // jinrohk soulcrystal
+		96395, // bloodsoaked legplates
+
 		trinketZandSpark,
 		trinketJiKun,     // ji-kun trinket
 		trinketTwinsGaze, // gaze of the twins
@@ -93,7 +97,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		GearFile: files.GearFileProtDps,
 		Model:    model.Model_PallyProtDps(),
 		// IncludeInFirstPass:        true,
-		RequestRatingPercent:      0.04,
+		RequestRatingPercent:      0.09,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -145,6 +149,10 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96376, // worldbreaker weapon
 		96534, // qon's scimitar
 
+		96375, // bracers implosion
+		96377, // jinrohk soulcrystal
+		96395, // bloodsoaked legplates
+
 		trinketZandSpark,
 		trinketPrimRage,
 		trinketJiKun,
@@ -166,7 +174,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		GearFile: files.GearFileProtCompromise,
 		Model:    model.Model_PallyProtCompromise(),
 		// IncludeInFirstPass:        true,
-		RequestRatingPercent:      0.15,
+		RequestRatingPercent:      0.35,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -215,6 +223,10 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94820, // caustic spike bracers OFF1234
 		96394, // frozen warlord bracer heroic
 
+		96375, // bracers implosion
+		96377, // jinrohk soulcrystal
+		96395, // bloodsoaked legplates
+
 		96376, // worldbreaker weapon
 		96534, // qon's scimitar
 
@@ -242,7 +254,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// protCompromise.BlockItem(trinketFortZand)
 	// protCompromise.AddReportVariant(items.Equip_Trinket2, trinketFortZand)
 
-	// protCompromise.ForceTryAllSlot(items.Equip_Trinket2, trinketFortZand, trinketSoulBarrier)
 	protCompromise.ForceSingleSlot(items.Equip_Trinket2, trinketSoulBarrier)
 	protCompromise.BlockItem(trinketPrimRage)
 	protCompromise.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
@@ -301,6 +312,10 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94820, // caustic spike bracers REMOVE1234
 		96394, // frozen warlord bracer heroic
 
+		96375, // bracers implosion
+		96377, // jinrohk soulcrystal
+		96395, // bloodsoaked legplates
+
 		96376, // worldbreaker weapon
 		96534, // qon's scimitar
 
@@ -326,8 +341,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// protMitigationNoSet.BlockItem(trinketFortZand)
 	// protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketFortZand)
 
-	// protMitigationNoSet.ForceTryAllSlot(items.Equip_Trinket2, trinketFortZand, trinketSoulBarrier)
-	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketSoulBarrier) // fort simmed better, but raden calls for soul
+	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
 	protMitigationNoSet.BlockItem(trinketPrimRage)
 	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
 
@@ -336,7 +350,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		GearFile: files.GearFileProtMitigationSet,
 		Model:    model.Model_PallyProtMitigation_WithSet(),
 		// IncludeInFirstPass:        true,
-		RequestRatingPercent:      0.55,
+		RequestRatingPercent:      0.30,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -383,6 +397,10 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96376, // worldbreaker weapon
 		96534, // qon's scimitar
 
+		96375, // bracers implosion
+		96377, // jinrohk soulcrystal
+		96395, // bloodsoaked legplates
+
 		trinketZandSpark,
 		trinketPrimRage,
 		trinketJiKun,
@@ -409,11 +427,11 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protMitigationWithSet.BlockItem(trinketPrimRage)
 	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
 
-	// ret.AddBagsExtra()
-	// protDps.AddBagsExtra()
-	// protCompromise.AddBagsExtra()
-	// protMitigationNoSet.AddBagsExtra()
-	// protMitigationWithSet.AddBagsExtra()
+	ret.AddBagsExtra()
+	protDps.AddBagsExtra()
+	protCompromise.AddBagsExtra()
+	protMitigationNoSet.AddBagsExtra()
+	protMitigationWithSet.AddBagsExtra()
 
 	job.AddSetParam(ret)
 	job.AddSetParam(protDps)
@@ -423,8 +441,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
-	// job.FindHighsResult_Sample()
-	job.FindSeveralHighsAndSim()
+	job.FindHighsResult_Sample()
+	// job.FindSeveralHighsAndSim()
 	// job.FindHighsResultPerPermute(2)
 	// job.RunWithMinimumHaste("Prot-Mitigation-WithSet", 11000, 18000, 250)
 	// job.RunWithMinimumHaste("Prot-Mitigation-NoSet", 11000, 18000, 250)

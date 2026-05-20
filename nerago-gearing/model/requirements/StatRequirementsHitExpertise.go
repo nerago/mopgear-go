@@ -50,10 +50,29 @@ func StatRequirementsHitExpertise_None() StatRequirementsHitExpertise {
 	return StatRequirementsHitExpertise{0, math.MaxUint32, 0, math.MaxUint32, nil}
 }
 
-func (inst StatRequirementsHitExpertise) CheckSet(block *StatBlock) bool {
+func (inst *StatRequirementsHitExpertise) CheckSet(block *StatBlock) bool {
 	hit := block.Hit()
 	exp := block.Expertise()
-	return inst.hitMin <= hit && hit <= inst.hitMax && inst.expMin <= exp && exp <= inst.expMax
+	if inst.hitMin <= hit && hit <= inst.hitMax && inst.expMin <= exp && exp <= inst.expMax {
+		if inst.AdditionalMinimumRequirement != nil {
+			return block.Get(inst.AdditionalMinimumRequirement.StatType) >= inst.AdditionalMinimumRequirement.Value
+		} else {
+			return true
+		}
+	} else {
+		return false
+	}
+}
+
+func (inst *StatRequirementsHitExpertise) Equals(other *StatRequirementsHitExpertise) bool {
+	if inst.hitMin == other.hitMin && inst.hitMax == other.hitMax && inst.expMin == other.expMin && inst.expMax == other.expMax {
+		if inst.AdditionalMinimumRequirement == nil && other.AdditionalMinimumRequirement == nil {
+			return true
+		} else if inst.AdditionalMinimumRequirement != nil && other.AdditionalMinimumRequirement != nil {
+			return *inst.AdditionalMinimumRequirement == *other.AdditionalMinimumRequirement
+		}
+	}
+	return false
 }
 
 func (inst *StatRequirementsHitExpertise) IsLow(stat StatType, value uint32) bool {
