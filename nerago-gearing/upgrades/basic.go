@@ -174,7 +174,7 @@ func removePairedSimilar(jobItems *items.FullOptionsMap, testSlot items.SlotEqui
 		for _, z := range jobItems[pairedSlot] {
 			printer.Println("---" + z.CreateString())
 		}
-		jobItems.FilterSlotNoValidate(pairedSlot, func(x *items.FullItem) bool { return !items.UniqueEquipViolation(x.BaseName(), testItem.BaseName()) })
+		jobItems.FilterSlotNoValidate(pairedSlot, func(x *items.FullItem) bool { return !items.UniqueEquipViolation(x, testItem) })
 
 		if len(jobItems[pairedSlot]) == 0 {
 			substituteId, hasSub := substituteEmptySlotOnly[testItem.SlotItem()]

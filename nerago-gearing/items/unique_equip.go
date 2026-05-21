@@ -2,17 +2,14 @@ package items
 
 import "slices"
 
-func (optionsMap *FullOptionsMap) IncludesUniqueEquippedViolationInSlot(itemName string, slot SlotEquip) bool {
-	for _, item := range optionsMap[slot] {
-		if UniqueEquipViolation(item.BaseName(), itemName) {
+func (optionsMap *FullOptionsMap) IncludesUniqueEquippedViolationInSlot(search *FullItem, slot SlotEquip) bool {
+	for i := range optionsMap[slot] {
+		item := &optionsMap[slot][i]
+		if UniqueEquipViolation(search, item) {
 			return true
 		}
 	}
 	return false
-}
-
-var _uniqueSets = [][]string{
-	{"Loop of the Shado-Pan Assault", "Band of the Shado-Pan Assault"},
 }
 
 var UniqueItemIdSets = [][]ItemId{
@@ -20,13 +17,28 @@ var UniqueItemIdSets = [][]ItemId{
 	{95513, 96500}, // Band of the Scaled Tyrant: normal/heroic
 }
 
-func UniqueEquipViolation(a, b string) bool {
-	if a == b {
+func UniqueEquipViolation(a, b *FullItem) bool {
+	if a.ItemId() == b.ItemId() || a.BaseName() == b.BaseName() {
 		return true
 	}
 
-	for _, set := range _uniqueSets {
-		if slices.Contains(set, a) && slices.Contains(set, b) {
+	for _, set := range UniqueItemIdSets {
+		if slices.Contains(set, a.ItemId()) && slices.Contains(set, b.ItemId()) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// TODO should have the name collision items in UniqueItemIdSets
+func UniqueEquipViolationSolve(a, b *SolvableItem) bool {
+	if a.ItemId() == b.ItemId() {
+		return true
+	}
+
+	for _, set := range UniqueItemIdSets {
+		if slices.Contains(set, a.ItemId()) && slices.Contains(set, b.ItemId()) {
 			return true
 		}
 	}

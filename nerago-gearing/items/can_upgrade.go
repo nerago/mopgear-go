@@ -86,7 +86,7 @@ func (optionsMap *FullOptionsMap) CouldAddUpgrade_EquipSlot(slot SlotEquip, extr
 	if paired != -1 && optionsMap.IncludesItemIdInSlot(extra.ItemId(), paired) {
 		printer.Println("SAME ITEM ID IN OTHER SLOT " + extra.CreateString())
 		return CanUpgrade_Equipped
-	} else if paired != -1 && optionsMap.IncludesUniqueEquippedViolationInSlot(extra.BaseName(), paired) {
+	} else if paired != -1 && optionsMap.IncludesUniqueEquippedViolationInSlot(extra, paired) {
 		printer.Println("RELATED ITEM NAME IN OTHER SLOT (unique equipped) " + extra.CreateString())
 		return CanUpgrade_Equipped_Similar
 	}

@@ -275,7 +275,7 @@ func (optionsMap *FullOptionsMap) FilterSlot(slot SlotEquip, filter func(*FullIt
 	if len(optionsMap[slot]) > 0 {
 		optionsMap[slot] = util.FilterSliceInPlace(optionsMap[slot], filter)
 		if len(optionsMap[slot]) == 0 {
-			panic("removing items leaves slot empty")
+			panic("removing items leaves slot empty " + slot.Name())
 		}
 	}
 }
@@ -301,7 +301,7 @@ func (optionsMap *FullOptionsMap) RemoveItemIdFromSlot(slot SlotEquip, itemId It
 	if len(optionsMap[slot]) > 0 {
 		optionsMap[slot] = util.FilterSliceInPlace(optionsMap[slot], func(x *FullItem) bool { return x.ItemId() != itemId })
 		if len(optionsMap[slot]) == 0 {
-			panic("removing items leaves slot empty")
+			panic("removing items leaves slot empty " + slot.Name())
 		}
 	}
 }
@@ -310,7 +310,7 @@ func (optionsMap *FullOptionsMap) ForceSlotOnlySpecifiedItemId(slot SlotEquip, i
 	if len(optionsMap[slot]) > 0 {
 		optionsMap[slot] = util.FilterSliceInPlace(optionsMap[slot], func(x *FullItem) bool { return x.ItemId() == itemId })
 		if len(optionsMap[slot]) == 0 {
-			panic("removing items leaves slot empty")
+			panic("removing items leaves slot empty " + slot.Name())
 		}
 	}
 }

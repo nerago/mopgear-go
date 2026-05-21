@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"paladin_gearing_go/items"
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/model"
 	"paladin_gearing_go/util/util_rank"
@@ -21,6 +22,14 @@ func Tweaker_Run(initialSet *SolvableItemSet, solvableOptionsMap *SolvableOption
 		} else if existing != nil {
 			for i := range slotOptions {
 				replaceItem := &slotOptions[i]
+
+				if (slot == Equip_Ring1 || slot == Equip_Ring2 || slot == Equip_Trinket1 || slot == Equip_Trinket2) {
+					pairItem := best.BestObject.Items().Get(slot.PairedSlot())
+					if items.UniqueEquipViolationSolve(replaceItem, pairItem) {
+						continue
+					}
+				}
+				
 				best.BestObject.ReplaceItem_Into(slot, replaceItem, possibleSet)
 
 				if model.CheckSet(possibleSet) {

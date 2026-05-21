@@ -46,3 +46,13 @@ func (optionsMap *SolvableOptionsMap) AllItemSlotSeq() iter.Seq2[SlotEquip, *Sol
 		}
 	}
 }
+
+func (optionsMap *SolvableOptionsMap) SlotItemSeq(slotEquip SlotEquip) iter.Seq[*SolvableItem] {
+	return func(yield func(*SolvableItem) bool) {
+		for _, item := range optionsMap[slotEquip] {
+			if !yield(&item) {
+				return
+			}
+		}
+	}
+}

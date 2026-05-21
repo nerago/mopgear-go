@@ -70,7 +70,7 @@ func checkPairedSlotNoDuplicate(a, b *items.FullItem) bool {
 	if a != nil && b != nil {
 		if a.ItemId() == b.ItemId() {
 			return false
-		} else if items.UniqueEquipViolation(a.BaseName(), b.BaseName()) {
+		} else if items.UniqueEquipViolation(a, b) {
 			return false
 		}
 	}

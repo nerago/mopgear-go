@@ -40,26 +40,13 @@ func setupBonusedInputs(inputBuilder *utilhighs.InputBuilder, gear_model *gear_m
 	setup.addMainOutputVariable(scaleOutputRating)
 	setup.addSumRatingVariable()
 	setup.prepareActiveSets(gear_model)
+	setup.prepareUniqueEquipped(itemOptions)
 
-	additionalMinimum := gear_model.StatRequirements.AdditionalMinimumRequirement
-	if additionalMinimum == nil {
-		for slot, item := range itemOptions.AllItemSlotSeq() {
-			setup.addItem(slot, item, gear_model)
-		}
-	} else {
-		for slot, item := range itemOptions.AllItemSlotSeq() {
-			columnIndex := setup.addItem(slot, item, gear_model)
-			setup.minimumValueRow.Add(columnIndex, float64(item.Total().Get(additionalMinimum.StatType)))
-		}
+	for slot, item := range itemOptions.AllItemSlotSeq() {
+		setup.addItem(slot, item, gear_model)
 	}
 
 	setup.finishItems(itemOptions, gear_model)
-
-	setup.constrainUniqueEquipsItems()
-
-	if additionalMinimum != nil {
-		setup.minimumValueRow.Finish(setup.input, float64(additionalMinimum.Value), utilhighs.C_PlusInf)
-	}
 
 	if gear_model.SetBonusRequired > 0 {
 		if len(setup.setData) != 1 {
@@ -155,6 +142,9 @@ type setupInputsForSetBonus struct {
 
 	mainOutputRow utilhighs.ConstraintRowBuild // compute final output from set based alternatives
 	mainOutputVar *columnInfo                  // output variable, to be used directly or scaled against other models
+
+	uniqueEquipRows    map[items.ItemId]*utilhighs.ConstraintRowBuild // lookup by id, may have multiple mappings for an item so need pointers
+	uniqueEquipRowsAll []*utilhighs.ConstraintRowBuild                // definitive copy of each unique equip row constraint
 
 	setData           []setInfo
 	allSetPermutation []setPermutation
@@ -377,6 +367,12 @@ func (setup *setupInputsForSetBonus) addItem(itemSlot items.SlotEquip, item *ite
 	setup.hitValueRow.Add(columnIndex, float64(item.Total().Hit()))
 	setup.expertValueRow.Add(columnIndex, float64(item.Total().Expertise()))
 
+	// additional minimum value (e.g. haste)
+	additionalMinimum := gear_model.StatRequirements.AdditionalMinimumRequirement
+	if additionalMinimum != nil {
+		setup.minimumValueRow.Add(columnIndex, float64(item.Total().Get(additionalMinimum.StatType)))
+	}
+
 	// 1 for that slot that matches the item, so we can tell solver only one item per slot
 	setup.slotsOneEachRow[itemSlot].Add(columnIndex, 1.0)
 
@@ -384,6 +380,12 @@ func (setup *setupInputsForSetBonus) addItem(itemSlot items.SlotEquip, item *ite
 	activeSetIndex, hasSet := gear_model.SetBonus.ActiveSetIndexForItem(item.ItemId())
 	if hasSet {
 		setup.setData[activeSetIndex].countSetItemsRow.Add(columnIndex, 1)
+	}
+
+	// if this item is unique equipped (mostly checked for ring/trinket)
+	uniqueRow := setup.uniqueEquipRows[item.ItemId()]
+	if uniqueRow != nil {
+		uniqueRow.Add(columnIndex, 1)
 	}
 
 	entry := columnInfo{entryType: entry_item, columnIndex: columnIndex, itemSlot: itemSlot, item: item}
@@ -407,6 +409,12 @@ func (setup *setupInputsForSetBonus) finishItems(itemOptions *items.SolvableOpti
 	setup.hitValueRow.Finish(setup.input, float64(gear_model.StatRequirements.HitMin()), float64(gear_model.StatRequirements.HitMax()))
 	setup.expertValueRow.Finish(setup.input, float64(gear_model.StatRequirements.ExpertMin()), float64(gear_model.StatRequirements.ExpertMax()))
 
+	// constrain: additional minimum value if specified has required minimum
+	additionalMinimum := gear_model.StatRequirements.AdditionalMinimumRequirement
+	if additionalMinimum != nil {
+		setup.minimumValueRow.Finish(setup.input, float64(additionalMinimum.Value), utilhighs.C_PlusInf)
+	}
+
 	// constrain: matching sum to individual ratings
 	setup.baseRatingSumRow.Finish(setup.input, 0, 0)
 
@@ -415,43 +423,46 @@ func (setup *setupInputsForSetBonus) finishItems(itemOptions *items.SolvableOpti
 		setInfo.countSetItemsRow.Finish(setup.input, 0, 0)
 	}
 
+	// constrain: unique item by itemid/unique set
+	for _, row := range setup.uniqueEquipRowsAll {
+		row.Finish(setup.input, 0, 1)
+	}
+
 	// constrain: whichever alternate set output into final
 	setup.mainOutputRow.Finish(setup.input, 0, 0)
 }
 
-func (setup *setupInputsForSetBonus) constrainUniqueEquipsItems() {
-	uniqueEquipSets := make([][]items.ItemId, 0)
-	idsAdded := make(map[items.ItemId]bool)
+func (setup *setupInputsForSetBonus) prepareUniqueEquipped(itemOptions *items.SolvableOptionsMap) {
+	setup.uniqueEquipRows = make(map[items.ItemId]*utilhighs.ConstraintRowBuild)
+	setup.uniqueEquipRowsAll = make([]*utilhighs.ConstraintRowBuild, 0)
+	seen := make(map[items.ItemId]bool)
 
 	// add items from predefined unique equipped sets
 	for _, set := range items.UniqueItemIdSets {
-		for _, itemId := range set {
-			idsAdded[itemId] = true
-		}
-		uniqueEquipSets = append(uniqueEquipSets, set)
-	}
+		row := new(utilhighs.ConstraintRowBuild)
+		setup.uniqueEquipRowsAll = append(setup.uniqueEquipRowsAll, row)
 
-	// add all other items as single item sets
-	for columnInfo := range setup.itemColumns.SeqValues() {
-		slot := columnInfo.itemSlot
-		if slot == items.Equip_Ring1 || slot == items.Equip_Ring2 || slot == items.Equip_Trinket1 || slot == items.Equip_Trinket2 {
-			itemId := columnInfo.item.ItemId()
-			if !idsAdded[itemId] {
-				idsAdded[itemId] = true
-				uniqueEquipSets = append(uniqueEquipSets, []items.ItemId{itemId})
+		for _, itemId := range set {
+			if seen[itemId] {
+				panic("unique equipped data has duplicate")
 			}
+			setup.uniqueEquipRows[itemId] = row
+			seen[itemId] = true
 		}
 	}
 
-	// set up a constraint for each item grouping
-	for _, set := range uniqueEquipSets {
-		rowItemUniqueInSet := utilhighs.ConstraintRowBuild{}
-		for _, itemId := range set {
-			for columnEntry := range setup.itemColumns.ValuesForKeyAsSeq(itemId) {
-				rowItemUniqueInSet.Add(columnEntry.columnIndex, 1)
+	// add all remaining Ring/Trinket items
+	pairedSlots := []items.SlotEquip{items.Equip_Ring1, items.Equip_Ring2, items.Equip_Trinket1, items.Equip_Trinket2}
+	for _, slotEquip := range pairedSlots {
+		for item := range itemOptions.SlotItemSeq(slotEquip) {
+			itemId := item.ItemId()
+			if !seen[itemId] {
+				row := new(utilhighs.ConstraintRowBuild)
+				setup.uniqueEquipRowsAll = append(setup.uniqueEquipRowsAll, row)
+				setup.uniqueEquipRows[itemId] = row
+				seen[itemId] = true
 			}
 		}
-		rowItemUniqueInSet.Finish(setup.input, 0, 1)
 	}
 }
 

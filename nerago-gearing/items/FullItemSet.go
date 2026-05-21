@@ -33,9 +33,10 @@ func FullItemSet_FromSolved(solvedSet SolvableItemSet, optionsMap *FullOptionsMa
 }
 
 func findMatch(fullItem []FullItem, solveItem *SolvableItem) *FullItem {
-	for _, item := range fullItem {
-		if isMatch(&item, solveItem) {
-			return &item
+	for i := range fullItem {
+		item := &fullItem[i]
+		if isMatch(item, solveItem) {
+			return item
 		}
 	}
 	panic("match not found")
@@ -91,7 +92,7 @@ func checkPairedSlotNoDuplicate(a, b *FullItem) {
 	if a != nil && b != nil {
 		if a.ItemId() == b.ItemId() {
 			panic("duplicate item " + a.CreateString())
-		} else if UniqueEquipViolation(a.baseName, b.baseName) {
+		} else if UniqueEquipViolation(a, b) {
 			panic("unique equipped violation:\n" + a.CreateString() + "\n" + b.CreateString())
 		}
 	}
