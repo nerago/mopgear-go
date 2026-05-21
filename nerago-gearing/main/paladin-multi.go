@@ -29,7 +29,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:    "Ret",
 		GearFile: files.GearFileRet,
 		Model:    model.Model_PallyRet(),
-		// IncludeInFirstPass:        false,
 		RequestRatingPercent:      0.01,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
@@ -85,19 +84,16 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		87145, // defiled earth OFF
 		96394, // frozen warlord bracer heroic
 	})
-	ret.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
-	// ret.ForceTryAllSlot(items.Equip_Trinket2, trinketTwinsGaze, trinketPrimRage)
-	ret.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
-	ret.ForceSingleSlot(items.Equip_Ring2, 96500)              // scaled tyrant heroic
-	ret.ForceSingleSlot(items.Equip_Back, preLegendMeleeCloak) // pre-legend strength dps
 	blockHelmetsWithoutCapacitance(&ret)
+	ret.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
+	ret.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
+	ret.ForceSingleSlot(items.Equip_Back, preLegendMeleeCloak) 
 
 	protDps := multi_types.MultiSetParam{
 		Label:    "Prot-Damage",
 		GearFile: files.GearFileProtDps,
 		Model:    model.Model_PallyProtDps(),
-		// IncludeInFirstPass:        true,
-		RequestRatingPercent:      0.09,
+		RequestRatingPercent:      0.04,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -162,19 +158,17 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96182, // ultimate prot of the emperor thunder normal
 		96436, // tortos shell heroic
 	})
-	protDps.ForceSingleSlot(items.Equip_Ring2, 96500)               // scaled tyrant heroic
+	blockHelmetsWithoutCapacitance(&protDps)
+	// protDps.ForceSingleSlot(items.Equip_Ring2, 96500)               // scaled tyrant heroic
 	protDps.ForceSingleSlot(items.Equip_Back, preLegendMeleeCloak)  // pre-legend strength dps
 	protDps.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark) // zandalar trinket
 	protDps.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
-	// protDps.ForceTryAllSlot(items.Equip_Offhand, 94945, 96182, 96436)
-	blockHelmetsWithoutCapacitance(&protDps)
 
 	protCompromise := multi_types.MultiSetParam{
 		Label:    "Prot-Compromise",
 		GearFile: files.GearFileProtCompromise,
 		Model:    model.Model_PallyProtCompromise(),
-		// IncludeInFirstPass:        true,
-		RequestRatingPercent:      0.35,
+		RequestRatingPercent:      0.40,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -244,25 +238,16 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96182, // ultimate prot of the emperor thunder normal
 		96436, // tortos shell heroic
 	})
-	protCompromise.ForceSingleSlot(items.Equip_Ring2, 96500)             // scaled tyrant heroic
-	protCompromise.ForceSingleSlot(items.Equip_Back, preLegendTankCloak) //                         see spreadsheet multisolve4d
-	// protCompromise.ForceTryAllSlot(items.Equip_Back, preLegendMeleeCloak, preLegendTankCloak) // see spreadsheet multisolve4d
 	blockHelmetsWithoutCapacitance(&protCompromise)
-
+	// protCompromise.ForceTryAllSlot(items.Equip_Wrist, 96375, 96394)
 	protCompromise.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
-	// protCompromise.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
-	// protCompromise.BlockItem(trinketFortZand)
-	// protCompromise.AddReportVariant(items.Equip_Trinket2, trinketFortZand)
-
 	protCompromise.ForceSingleSlot(items.Equip_Trinket2, trinketSoulBarrier)
-	protCompromise.BlockItem(trinketPrimRage)
 	protCompromise.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
 
 	protMitigationNoSet := multi_types.MultiSetParam{
 		Label:    "Prot-Mitigation-NoSet",
 		GearFile: files.GearFileProtMitigationNoSet,
 		Model:    model.Model_PallyProtMitigation_NoSet(),
-		// IncludeInFirstPass:        true,
 		RequestRatingPercent:      0.25,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
@@ -330,26 +315,16 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96182, // ultimate prot of the emperor thunder normal
 		96436, // tortos shell heroic
 	})
-
-	protMitigationNoSet.ForceSingleSlot(items.Equip_Ring1, 96481) // durumu
-	protMitigationNoSet.ForceSingleSlot(items.Equip_Back, preLegendTankCloak)
 	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
-
-	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark) // zandalar trinket
-
-	// protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
-	// protMitigationNoSet.BlockItem(trinketFortZand)
-	// protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketFortZand)
-
+	protMitigationNoSet.ForceSingleSlot(items.Equip_Back, preLegendTankCloak)
+	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark) 
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
-	protMitigationNoSet.BlockItem(trinketPrimRage)
 	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
 
 	protMitigationWithSet := multi_types.MultiSetParam{
 		Label:    "Prot-Mitigation-WithSet",
 		GearFile: files.GearFileProtMitigationSet,
 		Model:    model.Model_PallyProtMitigation_WithSet(),
-		// IncludeInFirstPass:        true,
 		RequestRatingPercent:      0.30,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
@@ -414,24 +389,21 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	})
 
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Ring1, 96481)               // durumu
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, preLegendTankCloak)   // pre-legend strength tank
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark) // zandalar trinket
-
-	// protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)  // Fortitude of the Zandalari
-	// protMitigationWithSet.BlockItem(trinketPrimRage)
-	// protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
-
-	// protMitigationWithSet.ForceTryAllSlot(items.Equip_Trinket2, trinketFortZand, trinketSoulBarrier)
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, preLegendTankCloak)   
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark) 
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketSoulBarrier) // fort good for taken, soul for death, but soul for raden for now
-	protMitigationWithSet.BlockItem(trinketPrimRage)
 	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
 
-	ret.AddBagsExtra()
-	protDps.AddBagsExtra()
-	protCompromise.AddBagsExtra()
-	protMitigationNoSet.AddBagsExtra()
-	protMitigationWithSet.AddBagsExtra()
+	// ret.AddBagsExtra()
+	// protDps.AddBagsExtra()
+	// protCompromise.AddBagsExtra()
+	// protMitigationNoSet.AddBagsExtra()
+	// protMitigationWithSet.AddBagsExtra()
+
+	// dps alone = win
+	// dps + comp = fail
+	// dps + ret = fail
+	// dps + noone
 
 	job.AddSetParam(ret)
 	job.AddSetParam(protDps)

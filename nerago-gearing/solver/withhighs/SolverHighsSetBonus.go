@@ -432,10 +432,14 @@ func (setup *setupInputsForSetBonus) constrainUniqueEquipsItems() {
 	}
 
 	// add all other items as single item sets
-	for itemId := range setup.itemColumns.SeqKeys() {
-		if !idsAdded[itemId] {
-			idsAdded[itemId] = true
-			uniqueEquipSets = append(uniqueEquipSets, []items.ItemId{itemId})
+	for columnInfo := range setup.itemColumns.SeqValues() {
+		slot := columnInfo.itemSlot
+		if slot == items.Equip_Ring1 || slot == items.Equip_Ring2 || slot == items.Equip_Trinket1 || slot == items.Equip_Trinket2 {
+			itemId := columnInfo.item.ItemId()
+			if !idsAdded[itemId] {
+				idsAdded[itemId] = true
+				uniqueEquipSets = append(uniqueEquipSets, []items.ItemId{itemId})
+			}
 		}
 	}
 

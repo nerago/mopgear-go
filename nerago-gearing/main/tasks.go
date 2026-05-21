@@ -84,11 +84,75 @@ func checkHighs(printer *util.PrintRecorder) {
 	// itemOptions, model := setupPallyMitigationSet()
 	// model.SetBonus = bonus
 
-	model := model.Model_PallyRet()
-	// model.SetBonus = bonus
-	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileRet, &model, setup.MissingEnchant_Panic, printer)
+	// model := model.Model_PallyRet()
+	// itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileRet, &model, setup.MissingEnchant_Panic, printer)
 
-	extraItemsCombined := slices.Concat(substituteItemsMiti, allSetItems, miscRings)
+	model := model.Model_PallyProtDps()
+	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtDps, &model, setup.MissingEnchant_Panic, printer)
+
+	// extraItemsCombined := slices.Concat(substituteItemsMiti, allSetItems, miscRings)
+
+	extraItemsCombined := []items.ItemId{
+		86957, // heroic bladed tempest ring
+		// 95140, // shado assault band
+		// 95141, // shado assault loop OFF123
+		// 96500, // scaled tyrant heroic
+		// 96481, // durumu tentacle heroic
+		// 96377, // jinrohk soulcrystal
+
+		87015, // heroic clawfeet
+		86979, // heroic impaling treads
+		96478, // treads of the blind heroic
+
+		94726, // cloudbreaker belt normal
+		96373, // cloudbreaker belt heroic
+
+		preLegendMeleeCloak, // pre-legend strength dps
+
+		95535, // normal lightning legs
+		94773, // centripetal shoulders normal
+		96468, // talonrender chest heroic
+		96533, // rein-binders fists heroic
+		95153, // Tyrant King Battleplate
+
+		96550, // doomed crown heroic
+		87024, // null greathelm
+		95778, // crown golden golem celestial [would need gem]
+		95282, // ret tier15 normal head
+		95292, // prot tier15 head normal
+
+		95910, // ret tier15 chest celestial
+		95281, // ret tier15 gloves normal
+		96657, // ret tier15 legs heroic
+		96658, // ret tier15 shoulder heroic
+
+		95290, // prot tier15 chest normal
+		95291, // prot tier15 hand normal
+		96667, // prot tier15 leg heroic
+		96668, // prot tier15 shoulder heroic
+
+		95142, // striker's battletags OFF12
+		95205, // terra-cotta neck
+		94776, // primal turtle amulet
+		96420, // talisman of angry spirits
+
+		96394, // frozen warlord bracer heroic
+
+		96376, // worldbreaker weapon
+		96534, // qon's scimitar
+
+		96375, // bracers implosion
+		96395, // bloodsoaked legplates
+
+		trinketZandSpark,
+		trinketPrimRage,
+		trinketJiKun,
+		trinketTwinsGaze,
+
+		94945, // greatshield of the gloaming normal
+		96182, // ultimate prot of the emperor thunder normal
+		96436, // tortos shell heroic
+	}
 
 	for _, itemId := range extraItemsCombined {
 		if !itemOptions.IncludesItemId(itemId) {
