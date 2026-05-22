@@ -18,6 +18,10 @@ var UniqueItemIdSets = [][]ItemId{
 }
 
 func UniqueEquipViolation(a, b *FullItem) bool {
+	if a == nil || b == nil {
+		return false
+	}
+	
 	if a.ItemId() == b.ItemId() || a.BaseName() == b.BaseName() {
 		return true
 	}
@@ -33,6 +37,10 @@ func UniqueEquipViolation(a, b *FullItem) bool {
 
 // TODO should have the name collision items in UniqueItemIdSets
 func UniqueEquipViolationSolve(a, b *SolvableItem) bool {
+	if a == nil || b == nil {
+		return false
+	}
+
 	if a.ItemId() == b.ItemId() {
 		return true
 	}

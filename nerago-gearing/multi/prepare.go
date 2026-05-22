@@ -42,6 +42,7 @@ func (job *MultiSetJob) prepareInitial() {
 	}
 
 	job.prepareRatingMultipliers()
+
 }
 
 func (param *multiSetParamInternal) prepareStartingGear() {
@@ -202,16 +203,16 @@ func (param *multiSetParamInternal) restrictFixed() {
 }
 
 func (param *multiSetParamInternal) restrictFixedValidate() {
-	// for slot, itemIdList := range param.SemiFixedSlots {
-	// 	paired := slot.PairedSlot()
-	// 	if paired != -1 {
-	// 		for _, itemId := range itemIdList {
-	// 			if param.itemOptions.IncludesItemIdInSlot(itemId, paired) {
-	// 				panic("item is fixed in one slot but also available in paired slot " + itemId.String())
-	// 			}
-	// 		}
-	// 	}
-	// }
+	for slot, itemIdList := range param.SemiFixedSlots {
+		paired := slot.PairedSlot()
+		if paired != -1 {
+			for _, itemId := range itemIdList {
+				if param.itemOptions.IncludesItemIdInSlot(itemId, paired) {
+					panic("item is fixed in one slot but also available in paired slot " + itemId.String())
+				}
+			}
+		}
+	}
 }
 
 func (param *multiSetParamInternal) removeBlocked() {

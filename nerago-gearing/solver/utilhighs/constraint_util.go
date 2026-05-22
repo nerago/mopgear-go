@@ -1,35 +1,33 @@
 package utilhighs
 
-import "github.com/bartolsthoorn/gohighs/highs"
-
 func ContraintIfBoolCopyValueElseZero(input *InputBuilder, boolSwitchVar, sourceVar, targetVar ColumnIndex, rangeLow, rangeHigh float64) {
 	// based on https://medium.com/data-science/a-comprehensive-guide-to-modeling-techniques-in-mixed-integer-linear-programming-3e96cc1bc03d
 
-	valueHigh := ConstraintRowBuild{}
+	valueHigh := ConstraintRowBuild{Debug: "ContraintIfBoolCopyValueElseZero"}
 	valueHigh.Add(targetVar, -1)
 	valueHigh.Add(sourceVar, 1)
 	valueHigh.Add(boolSwitchVar, rangeHigh)
 	valueHigh.Finish(input, C_MinusInf, rangeHigh)
 
-	valueLow := ConstraintRowBuild{}
+	valueLow := ConstraintRowBuild{Debug: "ContraintIfBoolCopyValueElseZero"}
 	valueLow.Add(targetVar, 1)
 	valueLow.Add(sourceVar, -1)
 	valueLow.Add(boolSwitchVar, -rangeLow)
 	valueLow.Finish(input, C_MinusInf, -rangeLow)
 
-	zeroHigh := ConstraintRowBuild{}
+	zeroHigh := ConstraintRowBuild{Debug: "ContraintIfBoolCopyValueElseZero"}
 	zeroHigh.Add(targetVar, 1)
 	zeroHigh.Add(boolSwitchVar, -rangeHigh)
 	zeroHigh.Finish(input, C_MinusInf, 0)
 
-	zeroLow := ConstraintRowBuild{}
+	zeroLow := ConstraintRowBuild{Debug: "ContraintIfBoolCopyValueElseZero"}
 	zeroLow.Add(targetVar, -1)
 	zeroLow.Add(boolSwitchVar, rangeLow)
 	zeroLow.Finish(input, C_MinusInf, 0)
 }
 
 func constraintNotBool(input *InputBuilder, sourceVar, targetVar ColumnIndex) {
-	not := ConstraintRowBuild{}
+	not := ConstraintRowBuild{Debug: "constraintNotBool"}
 	not.Add(sourceVar, 1)
 	not.Add(targetVar, 1)
 	not.Finish(input, 1, 1)
@@ -50,13 +48,13 @@ func (build *ContraintAndBuilder) AddInput(column ColumnIndex) {
 }
 
 func (build *ContraintAndBuilder) FinishAndApply(input *InputBuilder) {
-	sumRow := ConstraintRowBuild{}
+	sumRow := ConstraintRowBuild{Debug: "ContraintAndBuilder"}
 	sumRow.Add(build.outputVar, -1)
 
 	for _, inputVar := range build.inputVars {
 		sumRow.Add(inputVar, 1)
 
-		pullDown := ConstraintRowBuild{}
+		pullDown := ConstraintRowBuild{Debug: "ContraintAndBuilder"}
 		pullDown.Add(inputVar, -1)
 		pullDown.Add(build.outputVar, 1)
 		pullDown.Finish(input, C_MinusInf, 0)
@@ -80,13 +78,13 @@ func (build *ConstraintOrBuilder) AddInput(column ColumnIndex) {
 }
 
 func (build *ConstraintOrBuilder) FinishAndApply(input *InputBuilder) {
-	zeroIfNone := ConstraintRowBuild{}
+	zeroIfNone := ConstraintRowBuild{Debug: "ConstraintOrBuilder"}
 	zeroIfNone.Add(build.outputVar, -1)
 
 	for _, inputVar := range build.inputVars {
 		zeroIfNone.Add(inputVar, 1)
 
-		pullUp := ConstraintRowBuild{}
+		pullUp := ConstraintRowBuild{Debug: "ConstraintOrBuilder"}
 		pullUp.Add(inputVar, -1)
 		pullUp.Add(build.outputVar, 1)
 		pullUp.Finish(input, 0, 1)
@@ -97,64 +95,33 @@ func (build *ConstraintOrBuilder) FinishAndApply(input *InputBuilder) {
 	zeroIfNone.Finish(input, 0, C_PlusInf)
 }
 
-func absoluteValue_messy(input *InputBuilder, inputVar, outputVar ColumnIndex, rangeHigh float64) {
-	// inputVar + outputVar = 0   OR   inputVar - outputVar = 0
-	// diff1 = inputVar
-	// diff2 = -inputVar
+// func absoluteValue(input *InputBuilder, inputVar, outputVar ColumnIndex, rangeHigh float64) {
+// 	isNegativeCol := input.CreateColumnBool()
+// 	negativeCheck := ConstraintRowBuild{}
+// 	negativeCheck.Add(inputVar, 1)
+// 	negativeCheck.Add(isNegativeCol, rangeHigh)
+// 	negativeCheck.Finish(input, 0, rangeHigh)
 
-	// H = 10, M = 10
-	// 0 <= inputVar + M*b1 <= H
-	// if inputVar==0 then b1=0/1
-	// if inputVar==5 then b1=0
-	// if inputVar==10 then b1=0
-	// if inputVar==-5 then b1=1
-	// if inputVar==-10 then b1=1
-	isNegativeCol := input.CreateColumnBool()
-	negativeCheck := ConstraintRowBuild{}
-	negativeCheck.Add(inputVar, 1)
-	negativeCheck.Add(isNegativeCol, rangeHigh)
-	negativeCheck.Finish(input, 0, rangeHigh)
+// 	setIfNegative := ConstraintRowBuild{}
+// 	setIfNegative.Add(inputVar, 1)
+// 	setIfNegative.Add(outputVar, 1)
+// 	setIfNegative.Add(isNegativeCol, rangeHigh)
+// 	setIfNegative.Finish(input, 0, rangeHigh)
 
-	isZeroOrPositiveCol := input.CreateColumnBool()
-	constraintNotBool(input, isNegativeCol, isZeroOrPositiveCol)
-
-	inputNegated := input.CreateColumnGeneral(highs.Continuous, -rangeHigh, rangeHigh) // would be nice to get passed more info
-	negateCalc := ConstraintRowBuild{}
-	negateCalc.Add(inputVar, 1)
-	negateCalc.Add(inputNegated, -1)
-	negateCalc.Finish(input, 0, 0)
-
-	ContraintIfBoolCopyValueElseZero(input, isNegativeCol, inputNegated, outputVar, 0, rangeHigh)
-	ContraintIfBoolCopyValueElseZero(input, isZeroOrPositiveCol, inputVar, outputVar, 0, rangeHigh)
-}
-
-func absoluteValue(input *InputBuilder, inputVar, outputVar ColumnIndex, rangeHigh float64) {
-	isNegativeCol := input.CreateColumnBool()
-	negativeCheck := ConstraintRowBuild{}
-	negativeCheck.Add(inputVar, 1)
-	negativeCheck.Add(isNegativeCol, rangeHigh)
-	negativeCheck.Finish(input, 0, rangeHigh)
-
-	setIfNegative := ConstraintRowBuild{}
-	setIfNegative.Add(inputVar, 1)
-	setIfNegative.Add(outputVar, 1)
-	setIfNegative.Add(isNegativeCol, rangeHigh)
-	setIfNegative.Finish(input, 0, rangeHigh)
-
-	setIfPositive := ConstraintRowBuild{}
-	setIfPositive.Add(inputVar, -1)
-	setIfPositive.Add(outputVar, 1)
-	setIfPositive.Add(isNegativeCol, -rangeHigh)
-	setIfPositive.Finish(input, -rangeHigh, 0)
-}
+// 	setIfPositive := ConstraintRowBuild{}
+// 	setIfPositive.Add(inputVar, -1)
+// 	setIfPositive.Add(outputVar, 1)
+// 	setIfPositive.Add(isNegativeCol, -rangeHigh)
+// 	setIfPositive.Finish(input, -rangeHigh, 0)
+// }
 
 func AbsoluteValue2(input *InputBuilder, inputVar, outputVar ColumnIndex) {
-	setIfNegative := ConstraintRowBuild{}
+	setIfNegative := ConstraintRowBuild{Debug: "AbsoluteValue2"}
 	setIfNegative.Add(inputVar, 1)
 	setIfNegative.Add(outputVar, 1)
 	setIfNegative.Finish(input, 0, C_PlusInf)
 
-	setIfPositive := ConstraintRowBuild{}
+	setIfPositive := ConstraintRowBuild{Debug: "AbsoluteValue2"}
 	setIfPositive.Add(inputVar, 1)
 	setIfPositive.Add(outputVar, -1)
 	setIfPositive.Finish(input, C_MinusInf, 0)

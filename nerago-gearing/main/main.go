@@ -79,7 +79,7 @@ func core(printer *util.PrintRecorder) {
 	// checkHighs(printer)
 	// checkHighsAcross(printer)
 
-	PaladinMultiRunDebug(printer)
+	PaladinMultiRun(printer)
 	// testSim(printer)
 	// findUpgrades_Sim_PaladinMiti_Run(printer)
 	// findUpgrades_Sim_PaladinDps_Run(printer)

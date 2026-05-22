@@ -37,13 +37,18 @@ func searchItemOptions(optionsInputList []commonOptionsInput) (multi_types.Commo
 
 	for paramIndex := range optionsInputList {
 		input := &optionsInputList[paramIndex]
-		// if param.IncludeInFirstPass {
 		grouped := groupById(input.itemOptions.AllItems())
 		for itemId, options := range grouped {
 			seenIn[itemId] = append(seenIn[itemId], input.label)
 			commonOptions[itemId] = filterCommonForges(commonOptions[itemId], options)
 		}
-		// }
+	}
+
+	for itemId := range commonOptions {
+		commonOptions[itemId] = util.RemoveDuplicatesFunc(commonOptions[itemId], (*items.FullItem).Equals)
+	}
+	for itemId := range seenIn {
+		seenIn[itemId] = util.RemoveDuplicatesComparable(seenIn[itemId])
 	}
 
 	return commonOptions, seenIn

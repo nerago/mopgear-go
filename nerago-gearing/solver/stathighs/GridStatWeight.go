@@ -70,7 +70,7 @@ func (grid *GridStatWeightProcess) Run() map[stats.StatType]float64 {
 
 func (grid *GridStatWeightProcess) setupWeightVars() {
 	for _, statType := range G_RequiredStats {
-		colFinalWeight := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
+		colFinalWeight := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, nil)
 		// colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, -c_finalWeightLimit, c_finalWeightLimit)
 		grid.finalWeights[statType] = colFinalWeight
 		grid.colNames = append(grid.colNames, "FINAL WEIGHT: "+statType.Name())
@@ -78,7 +78,7 @@ func (grid *GridStatWeightProcess) setupWeightVars() {
 
 	for _, statType := range G_RequiredStats {
 		for _, simType := range G_RequiredSims {
-			colDetailWeight := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
+			colDetailWeight := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, nil)
 			grid.detailedWeights.Put(statType, simType, colDetailWeight)
 			grid.colNames = append(grid.colNames, "WEIGHT: "+statType.Name()+" "+simType.String())
 		}
@@ -180,9 +180,9 @@ func (grid *GridStatWeightProcess) unitValuesToCalcDetailedRatings() {
 func (grid *GridStatWeightProcess) unitValuesToCalcDetailedRatings_single(unitValueBase float64, detailWeightBase utilhighs.ColumnIndex,
 	thisUnitValue float64, thisdetailWeight utilhighs.ColumnIndex, simType simulate.SimResultType, statType stats.StatType) {
 
-	offsetSigned := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
+	offsetSigned := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, nil)
 	grid.colNames = append(grid.colNames, "OFFSET SIGNED "+simType.String()+" "+statType.Name())
-	offsetAbs := grid.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1) // outputs for objective function
+	offsetAbs := grid.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, nil) // outputs for objective function
 	grid.colNames = append(grid.colNames, "OFFSET ABS "+simType.String()+" "+statType.Name())
 	utilhighs.AbsoluteValue2(&grid.input, offsetSigned, offsetAbs)
 

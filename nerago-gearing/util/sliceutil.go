@@ -66,6 +66,21 @@ func RemoveDuplicatesComparable[T comparable](slice []T) []T {
 	return slice[:index]
 }
 
+func DeleteIndexInPlace[T any](slice []T, index int) []T {
+	if index == 0 {
+		clear(slice[0:1])
+		return slice[1:]
+	} else if len := len(slice); index == len-1 {
+		clear(slice[index:len])
+		return slice[:index]
+	} else {
+		copy(slice[index:], slice[index+1:])
+		clear(slice[len-1 : len])
+		return slice[:len-1]
+	}
+	// return slices.Delete(slice, index, index+1)
+}
+
 func MapSliceAsNew[T any](slice []T, mapper func(x *T) T) []T {
 	if slice == nil {
 		return nil
@@ -104,32 +119,32 @@ func FilterSliceAsNew[T any](slice []T, filter func(x *T) bool) []T {
 	return result
 }
 
-func FilterSliceInPlace[T any](slice []T, filter func(x *T) bool) []T {
-	if slice == nil {
-		return nil
-	}
+// func FilterSliceInPlace[T any](slice []T, filter func(x *T) bool) []T {
+// 	if slice == nil {
+// 		return nil
+// 	}
 
-	readIndex := 0
-	for readIndex < len(slice) {
-		if !filter(&slice[readIndex]) {
-			goto change_part
-		}
-		readIndex++
-	}
-	return slice
+// 	readIndex := 0
+// 	for readIndex < len(slice) {
+// 		if !filter(&slice[readIndex]) {
+// 			goto change_part
+// 		}
+// 		readIndex++
+// 	}
+// 	return slice
 
-change_part:
-	writeIndex := readIndex
-	readIndex++
-	for readIndex < len(slice) {
-		if filter(&slice[readIndex]) {
-			slice[writeIndex] = slice[readIndex]
-			writeIndex++
-		}
-		readIndex++
-	}
-	return slice[:writeIndex]
-}
+// change_part:
+// 	writeIndex := readIndex
+// 	readIndex++
+// 	for readIndex < len(slice) {
+// 		if filter(&slice[readIndex]) {
+// 			slice[writeIndex] = slice[readIndex]
+// 			writeIndex++
+// 		}
+// 		readIndex++
+// 	}
+// 	return slice[:writeIndex]
+// }
 
 func ContainsFunc_Pointer[T any](slice []T, predicate func(*T) bool) bool {
 	for i := range slice {

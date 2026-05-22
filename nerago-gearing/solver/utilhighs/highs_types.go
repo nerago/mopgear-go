@@ -2,6 +2,7 @@ package utilhighs
 
 import (
 	"cmp"
+	"fmt"
 	"math"
 	"os"
 	"paladin_gearing_go/util"
@@ -11,8 +12,9 @@ import (
 )
 
 const (
-	C_DebugHighs = true
-	c_threads    = 6
+	C_DebugHighs         = false
+	C_DiagnoseInfeasible = false
+	c_threads            = 6
 )
 
 // not really consts but would be nice
@@ -40,55 +42,78 @@ type RowIndex int32
 type InputBuilder struct {
 	vars                 variableArrayBuilder
 	mat                  constraintMatrixBuilder
+	NoOutput             bool
 	Minimise             bool
 	BlendMultiObjectives bool
 	Solver               string
 }
 
-func (input *InputBuilder) AddLinearObjective(weight float64, offset float64, abs_tolerance float64, rel_tolerance float64, priority int) int {
-	return input.vars.addLinearObjective(weight, offset, abs_tolerance, rel_tolerance, priority)
+type DebugContext interface {
+	DebugText() string
 }
 
-func (input *InputBuilder) CreateColumnBool() ColumnIndex {
-	return input.vars.create(highs.Integer, 0, 1, 0)
+type DebugString struct {
+	Text string
 }
 
-func (input *InputBuilder) CreateColumnGeneral(varType highs.VariableType, lower, upper float64) ColumnIndex {
-	return input.vars.create(varType, lower, upper, 0)
-}
-
-func (input *InputBuilder) CreateColumnWithOutput(varType highs.VariableType, lower, upper, cost float64) ColumnIndex {
-	return input.vars.create(varType, lower, upper, cost)
-}
-
-func (input *InputBuilder) CreateColumnForLinearObjective(varType highs.VariableType, lower, upper, cost float64, linearObjectiveIndex int) ColumnIndex {
-	return input.vars.createForLinear(varType, lower, upper, cost, linearObjectiveIndex)
-}
-
-func (input *InputBuilder) AddRow(entries []indexAndValue, lowerBound float64, upperBound float64) RowIndex {
-	return input.mat.addRow(entries, lowerBound, upperBound)
+func (debugString DebugString) DebugText() string {
+	return debugString.Text
 }
 
 func (input *InputBuilder) Clone() *InputBuilder {
 	return &InputBuilder{
 		vars:                 input.vars.clone(),
 		mat:                  input.mat.clone(),
+		NoOutput:             input.NoOutput,
 		Minimise:             input.Minimise,
 		BlendMultiObjectives: input.BlendMultiObjectives,
+		Solver:               input.Solver,
 	}
 }
 
+func (input *InputBuilder) AddLinearObjective(weight float64, offset float64, abs_tolerance float64, rel_tolerance float64, priority int) int {
+	return input.vars.addLinearObjective(weight, offset, abs_tolerance, rel_tolerance, priority)
+}
+
+func (input *InputBuilder) CreateColumnBool(debug DebugContext) ColumnIndex {
+	return input.vars.create(highs.Integer, 0, 1, 0, debug)
+}
+
+func (input *InputBuilder) CreateColumnGeneral(varType highs.VariableType, lower, upper float64, debug DebugContext) ColumnIndex {
+	return input.vars.create(varType, lower, upper, 0, debug)
+}
+
+func (input *InputBuilder) CreateColumnWithOutput(varType highs.VariableType, lower, upper, cost float64, debug DebugContext) ColumnIndex {
+	return input.vars.create(varType, lower, upper, cost, debug)
+}
+
+func (input *InputBuilder) CreateColumnForLinearObjective(varType highs.VariableType, lower, upper, cost float64, linearObjectiveIndex int, debug DebugContext) ColumnIndex {
+	return input.vars.createForLinear(varType, lower, upper, cost, linearObjectiveIndex)
+}
+
+func (input *InputBuilder) RunHighsThenDiagnose(printer *util.PrintRecorder) *highs.Solution {
+	solution, innerPrinter := input.RunHighs()
+	printer.AppendOther(innerPrinter)
+
+	if solution.Status == highs.ModelStatusInfeasible {
+		diagnoseInfeasible(input, printer)
+	}
+
+	return solution
+}
+
 func (input *InputBuilder) RunHighs() (*highs.Solution, *util.PrintRecorder) {
-	solver, logFilename := input.preHighsRun()
+	solver, logFilename := input.prepareHighsRun()
 
 	solution, err := G_HighsPool.RunSolverUnderMutex(solver)
 	verifyNoError(err)
 
 	printer := input.postHighsRun(solver, logFilename)
+
 	return solution, printer
 }
 
-func (input *InputBuilder) preHighsRun() (*highs.Solver, string) {
+func (input *InputBuilder) prepareHighsRun() (*highs.Solver, string) {
 	logFilename := makeTempFilename()
 
 	solver := G_HighsPool.Get()
@@ -106,11 +131,12 @@ func (*InputBuilder) postHighsRun(solver *highs.Solver, logFilename string) *uti
 }
 
 func readLogfile(tempFilename string) *util.PrintRecorder {
-	bytes, err := os.ReadFile(tempFilename)
-	verifyNoError(err)
-
 	printer := util.PrintRecorder_HoldAll()
-	printer.PrintBytes(bytes)
+	if tempFilename != "" {
+		bytes, err := os.ReadFile(tempFilename)
+		verifyNoError(err)
+		printer.PrintBytes(bytes)
+	}
 	return printer
 }
 
@@ -140,7 +166,7 @@ func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 	// verifyNoError(solver.SetFloatOption("time_limit", 300))
 
 	verifyNoError(solver.SetStringOption("log_file", logfile))
-	verifyNoError(solver.SetBoolOption("log_to_console", C_DebugHighs))
+	verifyNoError(solver.SetBoolOption("log_to_console", C_DebugHighs && !input.NoOutput))
 	if C_DebugHighs {
 		verifyNoError(solver.SetIntOption("log_dev_level", 3))
 	} else {
@@ -177,6 +203,7 @@ type variableArrayBuilder struct {
 	colCosts         []float64            // Column costs (i.e., the objective function itself)
 	colLower         []float64            // Column lower bounds
 	colUpper         []float64            // Column upper bounds
+	debug            []DebugContext
 	linearObjectives []linearObjectiveFields
 }
 
@@ -212,7 +239,7 @@ func (vars *variableArrayBuilder) addLinearObjective(weight float64, offset floa
 	return index
 }
 
-func (vars *variableArrayBuilder) create(varType highs.VariableType, lower, upper, cost float64) ColumnIndex {
+func (vars *variableArrayBuilder) create(varType highs.VariableType, lower, upper, cost float64, debug DebugContext) ColumnIndex {
 	if len(vars.linearObjectives) > 0 && cost != 0.0 {
 		panic("unexpected column cost while using linear objectives")
 	}
@@ -222,16 +249,21 @@ func (vars *variableArrayBuilder) create(varType highs.VariableType, lower, uppe
 	vars.colLower = append(vars.colLower, lower)
 	vars.colUpper = append(vars.colUpper, upper)
 	vars.colCosts = append(vars.colCosts, cost)
+	vars.debug = append(vars.debug, debug)
 	return ColumnIndex(index)
 }
 
 func (vars *variableArrayBuilder) createForLinear(varType highs.VariableType, lower float64, upper float64, cost float64, linearObjectiveIndex int) ColumnIndex {
-	columnIndex := vars.create(varType, lower, upper, 0)
+	if linearObjectiveIndex < len(vars.linearObjectives) {
+		columnIndex := vars.create(varType, lower, upper, 0, nil)
 
-	linearObjective := &vars.linearObjectives[linearObjectiveIndex]
-	linearObjective.coefficientEntries = append(linearObjective.coefficientEntries, indexAndValue{columnIndex, cost})
+		linearObjective := &vars.linearObjectives[linearObjectiveIndex]
+		linearObjective.coefficientEntries = append(linearObjective.coefficientEntries, indexAndValue{columnIndex, cost})
 
-	return columnIndex
+		return columnIndex
+	} else {
+		panic("no such linear objective")
+	}
 }
 
 func (vars *variableArrayBuilder) clone() variableArrayBuilder {
@@ -240,6 +272,7 @@ func (vars *variableArrayBuilder) clone() variableArrayBuilder {
 		colCosts:         slices.Clone(vars.colCosts),
 		colLower:         slices.Clone(vars.colLower),
 		colUpper:         slices.Clone(vars.colUpper),
+		debug:            slices.Clone(vars.debug),
 		linearObjectives: util.MapSliceAsNew(vars.linearObjectives, (*linearObjectiveFields).clone),
 	}
 }
@@ -254,9 +287,10 @@ type indexAndValue struct {
 }
 
 type ConstraintRowBuild struct {
-	entries  []indexAndValue
-	isAdded  bool
-	rowIndex RowIndex
+	entries []indexAndValue
+	// isAdded  bool
+	// rowIndex RowIndex
+	Debug string
 }
 
 func (row *ConstraintRowBuild) IsEmpty() bool {
@@ -296,18 +330,29 @@ func (row *ConstraintRowBuild) Finish(input *InputBuilder, lowerBound float64, u
 	// 	}
 	// }
 
-	if row.isAdded {
-		input.mat.changeRow(row.rowIndex, row.entries, lowerBound, upperBound)
-	} else {
-		row.rowIndex = input.AddRow(row.entries, lowerBound, upperBound)
-		row.isAdded = true
+	if C_DebugHighs {
+		if len(row.entries) == 0 && lowerBound != 0 && upperBound != 0 {
+			panic("empty row makes infeasible")
+		} else if len(row.entries) == 0 {
+			fmt.Printf("warn empty row\n")
+		}
 	}
+
+	input.mat.addRow(row.entries, lowerBound, upperBound, row.Debug)
+
+	// if row.isAdded {
+	// 	input.mat.changeRow(row.rowIndex, row.entries, lowerBound, upperBound)
+	// } else {
+	// row.rowIndex = input.AddRow(row.entries, lowerBound, upperBound)
+	// row.isAdded = true
+	// }
 }
 
 type constraintMatrixBuilder struct {
 	entries    [][]indexAndValue
 	lowerBound []float64
 	upperBound []float64
+	debug      []string
 }
 
 func (mat *constraintMatrixBuilder) clone() constraintMatrixBuilder {
@@ -317,22 +362,38 @@ func (mat *constraintMatrixBuilder) clone() constraintMatrixBuilder {
 		}),
 		lowerBound: slices.Clone(mat.lowerBound),
 		upperBound: slices.Clone(mat.upperBound),
+		debug:      slices.Clone(mat.debug),
 	}
 }
 
-func (mat *constraintMatrixBuilder) addRow(entries []indexAndValue, lowerBound float64, upperBound float64) RowIndex {
+func (mat *constraintMatrixBuilder) addRow(entries []indexAndValue, lowerBound float64, upperBound float64, debug string) RowIndex {
 	index := len(mat.entries)
 	mat.entries = append(mat.entries, entries)
 	mat.lowerBound = append(mat.lowerBound, lowerBound)
 	mat.upperBound = append(mat.upperBound, upperBound)
+	mat.debug = append(mat.debug, debug)
 	return RowIndex(index)
 }
 
-func (mat constraintMatrixBuilder) changeRow(rowIndex RowIndex, entries []indexAndValue, lowerBound float64, upperBound float64) {
-	mat.entries[rowIndex] = entries
-	mat.lowerBound[rowIndex] = lowerBound
-	mat.upperBound[rowIndex] = upperBound
+func (mat *constraintMatrixBuilder) deleteRow(rowIndex int) {
+	mat.entries = util.DeleteIndexInPlace(mat.entries, rowIndex)
+	mat.lowerBound = util.DeleteIndexInPlace(mat.lowerBound, rowIndex)
+	mat.upperBound = util.DeleteIndexInPlace(mat.upperBound, rowIndex)
+	mat.debug = util.DeleteIndexInPlace(mat.debug, rowIndex)
 }
+
+func (mat *constraintMatrixBuilder) deleteRowRange(firstDelete, lastDelete int) {
+	mat.entries = slices.Delete(mat.entries, firstDelete, lastDelete+1)
+	mat.lowerBound = slices.Delete(mat.lowerBound, firstDelete, lastDelete+1)
+	mat.upperBound = slices.Delete(mat.upperBound, firstDelete, lastDelete+1)
+	mat.debug = slices.Delete(mat.debug, firstDelete, lastDelete+1)
+}
+
+// func (mat *constraintMatrixBuilder) changeRow(rowIndex RowIndex, entries []indexAndValue, lowerBound float64, upperBound float64) {
+// 	mat.entries[rowIndex] = entries
+// 	mat.lowerBound[rowIndex] = lowerBound
+// 	mat.upperBound[rowIndex] = upperBound
+// }
 
 func (mat *constraintMatrixBuilder) createSolverInputArrays() (numRows int32, lowerBound []float64, upperBound []float64, startArray []int32, indexArray []int32, valuesArray []float64) {
 	numRows = int32(len(mat.entries))

@@ -129,7 +129,7 @@ func isRadenItem(itemId items.ItemId) bool {
 }
 
 func ItemFinder_FilterOutRadenItems(upgradeItems []*items.FullItem) []*items.FullItem {
-	return util.FilterSliceInPlace(upgradeItems, func(item **items.FullItem) bool {
+	return util.FilterSliceAsNew(upgradeItems, func(item **items.FullItem) bool {
 		return !isRadenItem((*item).ItemId())
 	})
 }
