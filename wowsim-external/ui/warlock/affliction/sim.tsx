@@ -84,7 +84,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecAfflictionWarlock, {
 
 	defaults: {
 		// Default equipped gear.
-		gear: Presets.P2_PRESET.gear,
+		gear: Presets.P3_PRESET.gear,
 
 		// Default EP weights for sorting gear in the gear picker.
 		epWeights: Presets.P2_BIS_EP_PRESET.epWeights,
@@ -98,7 +98,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecAfflictionWarlock, {
 				breakpoints: relevantDotBreakpoints,
 				capType: StatCapType.TypeSoftCap,
 				postCapEPs: relevantDotBreakpoints.map(
-					() => (Presets.P1_BIS_EP_PRESET.epWeights.getStat(Stat.StatMasteryRating) - 0.05) * Mechanics.HASTE_RATING_PER_HASTE_PERCENT,
+					() => (Presets.P1_BIS_EP_PRESET.epWeights.getStat(Stat.StatMasteryRating) - 0.02) * Mechanics.HASTE_RATING_PER_HASTE_PERCENT,
 				),
 			});
 
@@ -133,13 +133,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecAfflictionWarlock, {
 	petConsumeInputs: [],
 	// Inputs to include in the 'Other' section on the settings tab.
 	otherInputs: {
-		inputs: [
-			AffInputs.ExhaleWindow,
-			OtherInputs.InputDelay,
-			OtherInputs.DistanceFromTarget,
-			OtherInputs.TankAssignment,
-			OtherInputs.ChannelClipDelay,
-		],
+		inputs: [AffInputs.ExhaleWindow, OtherInputs.InputDelay, OtherInputs.DistanceFromTarget, OtherInputs.TankAssignment, OtherInputs.ChannelClipDelay],
 	},
 	itemSwapSlots: [ItemSlot.ItemSlotMainHand, ItemSlot.ItemSlotOffHand, ItemSlot.ItemSlotTrinket1, ItemSlot.ItemSlotTrinket2],
 	encounterPicker: {
@@ -148,7 +142,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecAfflictionWarlock, {
 	},
 
 	presets: {
-		epWeights: [Presets.P1_BIS_EP_PRESET, Presets.P2_BIS_EP_PRESET],
+		epWeights: [Presets.P1_BIS_EP_PRESET, Presets.P2_BIS_EP_PRESET, Presets.P5_BIS_EP_PRESET],
 		// Preset talents that the user can quickly select.
 		talents: [Presets.AfflictionTalents],
 		// Preset rotations that the user can quickly select.
@@ -157,7 +151,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecAfflictionWarlock, {
 		builds: [Presets.PRESET_SINGLETARGET, Presets.PRESET_MULTITARGET],
 
 		// Preset gear configurations that the user can quickly select.
-		gear: [Presets.PRERAID_PRESET, Presets.P1_PRESET, Presets.P2_PRESET, Presets.P3_PRESET],
+		gear: [Presets.PRERAID_PRESET, Presets.P1_PRESET, Presets.P2_PRESET, Presets.P3_PRESET, Presets.P5_PRESET],
 		itemSwaps: [],
 	},
 
@@ -169,31 +163,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecAfflictionWarlock, {
 		return Presets.APL_Default.rotation.rotation!;
 	},
 
-	raidSimPresets: [
-		{
-			spec: Spec.SpecAfflictionWarlock,
-			talents: Presets.AfflictionTalents.data,
-			specOptions: Presets.DefaultOptions,
-			consumables: Presets.DefaultConsumables,
-			defaultFactionRaces: {
-				[Faction.Unknown]: Race.RaceUnknown,
-				[Faction.Alliance]: Race.RaceHuman,
-				[Faction.Horde]: Race.RaceTroll,
-			},
-			defaultGear: {
-				[Faction.Unknown]: {},
-				[Faction.Alliance]: {
-					1: Presets.PRERAID_PRESET.gear,
-					2: Presets.P1_PRESET.gear,
-				},
-				[Faction.Horde]: {
-					1: Presets.PRERAID_PRESET.gear,
-					2: Presets.P1_PRESET.gear,
-				},
-			},
-			otherDefaults: Presets.OtherDefaults,
-		},
-	],
+	raidSimPresets: [],
 });
 
 export class AfflictionWarlockSimUI extends IndividualSimUI<Spec.SpecAfflictionWarlock> {
@@ -211,11 +181,22 @@ export class AfflictionWarlockSimUI extends IndividualSimUI<Spec.SpecAfflictionW
 			statSelectionPresets,
 			enableBreakpointLimits: true,
 			getEPDefaults: player => {
+				let epWeights = player.getEpWeights();
 				const avgIlvl = player.getGear().getAverageItemLevel(false);
 				if (avgIlvl >= 512) {
-					return Presets.P2_BIS_EP_PRESET.epWeights;
+					epWeights = Presets.P2_BIS_EP_PRESET.epWeights;
+				} else if (avgIlvl >= 560) {
+					epWeights = Presets.P5_BIS_EP_PRESET.epWeights;
+				} else {
+					epWeights = Presets.P1_BIS_EP_PRESET.epWeights;
 				}
-				return Presets.P1_BIS_EP_PRESET.epWeights;
+
+				const ampModifier = player.getTotalAmplificationTrinketStatModifier();
+				epWeights = epWeights
+					.withStat(Stat.StatHasteRating, epWeights.getStat(Stat.StatHasteRating) / ampModifier)
+					.withStat(Stat.StatMasteryRating, epWeights.getStat(Stat.StatMasteryRating) / ampModifier);
+
+				return epWeights;
 			},
 			// updateSoftCaps: softCaps => {
 			// 	const raidBuffs = player.getRaid()?.getBuffs();

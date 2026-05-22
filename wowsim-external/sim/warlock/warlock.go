@@ -42,6 +42,9 @@ type Warlock struct {
 	T15_2pc      *core.Aura
 	T15_4pc      *core.Aura
 	T16_2pc_buff *core.Aura
+
+	T16_4pc_HandOfGuldan *core.Spell
+	T16_4pc_ChaosWave    *core.Spell
 }
 
 func (warlock *Warlock) GetCharacter() *core.Character {
@@ -227,9 +230,16 @@ func (warlock *Warlock) ApplyDotWithPandemic(dot *core.Dot, sim *core.Simulation
 	// It allows for the extension of up to 50% of the unhasted base duration
 	// So we need to determine which is shorter base + remaining or base + maxExtend
 	remaining := dot.RemainingDuration(sim)
+	baseDuration := dot.BaseDuration()
+	extendDuration := baseDuration / 2
+	// There is some odd behavior when the Glyph of Eternal Resolve is used in game
+	// It's very irregular, but this comes the closest to matching it ticks wise.
+	if dot.BaseDurationMultiplier > 1 {
+		extendDuration = time.Duration(float64(baseDuration) / dot.BaseDurationMultiplier)
+	}
 	extend := time.Duration(math.Min(
-		float64(dot.BaseDuration()+remaining),
-		float64(dot.BaseDuration()+dot.BaseDuration()/2),
+		float64(baseDuration+remaining),
+		float64(baseDuration+extendDuration),
 	))
 
 	// First do usual dot carry over

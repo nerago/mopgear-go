@@ -574,9 +574,10 @@ func LoadAndWriteRandomPropAllocations(dbHelper *DBHelper, inputsDir string) (ma
 	randProps := make(dbc.RandomPropAllocationsByIlvl)
 	for _, r := range processed {
 		randProps[int(r.Ilvl)] = dbc.RandomPropAllocationMap{
-			proto.ItemQuality_ItemQualityEpic:     [5]int32{r.Allocation.Epic0, r.Allocation.Epic1, r.Allocation.Epic2, r.Allocation.Epic3, r.Allocation.Epic4},
-			proto.ItemQuality_ItemQualityRare:     [5]int32{r.Allocation.Superior0, r.Allocation.Superior1, r.Allocation.Superior2, r.Allocation.Superior3, r.Allocation.Superior4},
-			proto.ItemQuality_ItemQualityUncommon: [5]int32{r.Allocation.Good0, r.Allocation.Good1, r.Allocation.Good2, r.Allocation.Good3, r.Allocation.Good4},
+			proto.ItemQuality_ItemQualityLegendary: [5]int32{r.Allocation.Epic0, r.Allocation.Epic1, r.Allocation.Epic2, r.Allocation.Epic3, r.Allocation.Epic4},
+			proto.ItemQuality_ItemQualityEpic:      [5]int32{r.Allocation.Epic0, r.Allocation.Epic1, r.Allocation.Epic2, r.Allocation.Epic3, r.Allocation.Epic4},
+			proto.ItemQuality_ItemQualityRare:      [5]int32{r.Allocation.Superior0, r.Allocation.Superior1, r.Allocation.Superior2, r.Allocation.Superior3, r.Allocation.Superior4},
+			proto.ItemQuality_ItemQualityUncommon:  [5]int32{r.Allocation.Good0, r.Allocation.Good1, r.Allocation.Good2, r.Allocation.Good3, r.Allocation.Good4},
 		}
 	}
 	json, _ := json.Marshal(randProps)
@@ -1132,6 +1133,7 @@ func ScanSpells(rows *sql.Rows) (dbc.Spell, error) {
 	var stringShapeShift string            //2
 	var iconId int                         //
 	var rppmModsJSON string
+	var startRecoveryCategory int
 	err := rows.Scan(
 		&spell.NameLang,
 		&spell.ID,
@@ -1156,6 +1158,7 @@ func ScanSpells(rows *sql.Rows) (dbc.Spell, error) {
 		&spell.ChargeRecoveryTime,
 		&spell.CategoryTypeMask,
 		&spell.Category,
+		&startRecoveryCategory,
 		&spell.Duration,
 		&spell.ProcChance,
 		&spell.ProcCharges,
@@ -1214,6 +1217,7 @@ func ScanSpells(rows *sql.Rows) (dbc.Spell, error) {
 		)
 	}
 	spell.IconPath = iconsMap[iconId]
+
 	return spell, nil
 }
 
@@ -1243,6 +1247,7 @@ func LoadAndWriteSpells(dbHelper *DBHelper, inputsDir string) ([]dbc.Spell, erro
 	COALESCE(ssc.ChargeRecoveryTime, 0),
 	COALESCE(ssc.TypeMask, 0),
 	COALESCE(scs.Category, 0),
+	COALESCE(scs.StartRecoveryCategory, 0),
 	COALESCE(sd.Duration, 0),
 	COALESCE(sao.ProcChance, 0),
 	COALESCE(sao.ProcCharges, 0),

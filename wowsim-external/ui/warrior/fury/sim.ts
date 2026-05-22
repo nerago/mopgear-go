@@ -15,6 +15,7 @@ import * as Presets from './presets';
 
 const P2HitPostCapEPs = [0, 0];
 const P3HitPostCapEPs = [0.42 * Mechanics.PHYSICAL_HIT_RATING_PER_HIT_PERCENT, 0];
+const P5HitPostCapEPs = [1.18 * Mechanics.PHYSICAL_HIT_RATING_PER_HIT_PERCENT, 0];
 
 const SPEC_CONFIG = registerSpecConfig(Spec.SpecFuryWarrior, {
 	cssClass: 'fury-warrior-sim-ui',
@@ -180,16 +181,25 @@ export class FuryWarriorSimUI extends IndividualSimUI<Spec.SpecFuryWarrior> {
 
 		this.reforger = new ReforgeOptimizer(this, {
 			getEPDefaults: player => {
-				const avgIlvl = player.getGear().getAverageItemLevel(false);
-				if (avgIlvl >= 550) {
-					return Presets.P5_FURY_TG_EP_PRESET.epWeights;
+				let epWeights = player.getEpWeights();
+
+				const avgIlvl = player.getGear().getAverageItemLevel(player.canDualWield2H());
+				if (avgIlvl >= 560) {
+					epWeights = Presets.P5_FURY_TG_EP_PRESET.epWeights;
 				} else if (avgIlvl >= 517) {
-					return Presets.P3_4_FURY_TG_EP_PRESET.epWeights;
+					epWeights = Presets.P3_4_FURY_TG_EP_PRESET.epWeights;
+				} else {
+					epWeights = Presets.P2_FURY_TG_EP_PRESET.epWeights;
 				}
-				return Presets.P2_FURY_TG_EP_PRESET.epWeights;
+
+				const ampModifier = player.getTotalAmplificationTrinketStatModifier();
+				epWeights = epWeights
+					.withStat(Stat.StatHasteRating, epWeights.getStat(Stat.StatHasteRating) / ampModifier)
+					.withStat(Stat.StatMasteryRating, epWeights.getStat(Stat.StatMasteryRating) / ampModifier);
+				return epWeights;
 			},
 			updateSoftCaps: softCaps => {
-				const avgIlvl = player.getGear().getAverageItemLevel(false);
+				const avgIlvl = player.getGear().getAverageItemLevel(player.canDualWield2H());
 				// const gear = player.getGear();
 				// const avgIlvl = gear.getAverageItemLevel(false);
 				// const hasT154P = gear.getItemSetCount('Battleplate of the Last Mogu') >= 4;
@@ -198,7 +208,10 @@ export class FuryWarriorSimUI extends IndividualSimUI<Spec.SpecFuryWarrior> {
 				this.individualConfig.defaults.softCapBreakpoints!.forEach(softCap => {
 					const softCapToModify = softCaps.find(sc => sc.unitStat.equals(softCap.unitStat));
 					if (softCap.unitStat.equalsPseudoStat(PseudoStat.PseudoStatPhysicalHitPercent) && softCapToModify) {
-						if (avgIlvl >= 517) {
+						console.log(avgIlvl);
+						if (avgIlvl >= 560) {
+							softCapToModify.postCapEPs = P5HitPostCapEPs;
+						} else if (avgIlvl >= 517) {
 							softCapToModify.postCapEPs = P3HitPostCapEPs;
 						} else {
 							softCapToModify.postCapEPs = P2HitPostCapEPs;

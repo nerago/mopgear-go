@@ -646,8 +646,8 @@ func registerBloodlustCD(agent Agent, spellID int32) {
 			},
 		},
 
-		ApplyEffects: func(sim *Simulation, target *Unit, _ *Spell) {
-			if !target.HasActiveAura(SatedAuraLabel) {
+		ApplyEffects: func(sim *Simulation, _ *Unit, _ *Spell) {
+			if !character.HasActiveAura(SatedAuraLabel) {
 				bloodlustAura.Activate(sim)
 			}
 		},
@@ -1289,7 +1289,7 @@ func StormLashAura(character *Character, actionTag int32) *Aura {
 		ActionID:    actionId,
 		Flags:       SpellFlagNoOnCastComplete | SpellFlagPassiveSpell,
 		SpellSchool: SpellSchoolNature,
-		ProcMask:    ProcMaskEmpty,
+		ProcMask:    ProcMaskSpellProc,
 
 		DamageMultiplier: 1,
 		CritMultiplier:   character.DefaultCritMultiplier(),

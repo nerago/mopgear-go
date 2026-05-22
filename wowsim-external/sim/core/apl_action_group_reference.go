@@ -94,7 +94,6 @@ func (action *APLActionGroupReference) Finalize(rot *APLRotation) {
 	for _, groupAction := range action.group.actions {
 		// Check condition for placeholders
 		if groupAction.condition != nil {
-			// groupAction.condition = optimizeLogic(groupAction.condition, rot)
 			action.scanForPlaceholders(groupAction.condition, placeholders)
 		}
 		// Check action implementation for placeholders
@@ -259,12 +258,6 @@ func (action *APLActionGroupReference) replacePlaceholders(value APLValue, varia
 					lhs:                 lhs,
 					rhs:                 rhs,
 				}
-			case *APLValueCompareCommon:
-				panic("TODO")
-			case *APLValueCompareDurationGt:
-				panic("TODO")
-			case *APLValueCompareFloatLe:
-				panic("TODO")
 			case *APLValueMath:
 				// Re-coerce the types after replacement to ensure compatibility
 				lhs, rhs := newInnerValues[0], newInnerValues[1]
@@ -328,47 +321,34 @@ func (action *APLActionGroupReference) replaceActionPlaceholders(actionImpl APLA
 	// For now, we'll rely on the value replacement in the main flow
 }
 
-func optimizeLogic(value APLValue, rot *APLRotation) APLValue {
-	switch v := value.(type) {
-	case *APLValueConst:
-		if v.valType == proto.APLValueType_ValueTypeFloat && v.boolVal == false && v.durationVal == 0 && v.intVal == 0 && v.stringVal == "" {
-			return &APLValueConstFloat{floatVal: v.floatVal}
-		}
+type APLValueActionGroupUsed struct {
+	DefaultAPLValueImpl
+	name   string
+	isUsed bool
+}
 
-	case *APLValueCompare:
-		replace, convertOk := makeSpecificCompare(v.lhs, v.rhs, v.op)
-		if convertOk {
-			return replace
-		}
+func (rot *APLRotation) newValueActionGroupUsed(config *proto.APLValueActionGroupUsed, _ *proto.UUID) APLValue {
+	isUsed := false
 
-	case *APLValueAnd:
-		// NOTE newValueAnd already handles much of this, just call stacks implied that might not always apply?
-		// i don't check for nils and consts like that do anyway
-		if len(v.vals) == 0 {
-			return &APLValueConst{valType: proto.APLValueType_ValueTypeBool, boolVal: true}
-		} else if len(v.vals) == 1 {
-			return optimizeLogic(v.vals[0], rot)
-		} else if len(v.vals) == 2 {
-			replace, foundReplace := makeBetween(v, rot)
-			if foundReplace {
-				return replace
-			}
-		}
-
-	case *APLValueOr:
-		if len(v.vals) == 0 {
-			return &APLValueConst{valType: proto.APLValueType_ValueTypeBool, boolVal: false}
-		} else if len(v.vals) == 1 {
-			return optimizeLogic(v.vals[0], rot)
-		}
-
-		// case *APLValueNot:
-		// 	return &APLValueNot{
-		// 		DefaultAPLValueImpl: v.DefaultAPLValueImpl,
-		// 		val:                 newInnerValues[0],
-		// 	}
-
+	return &APLValueActionGroupUsed{
+		name:   config.Name,
+		isUsed: isUsed,
 	}
-
-	return value
+}
+func (value *APLValueActionGroupUsed) Type() proto.APLValueType {
+	return proto.APLValueType_ValueTypeBool
+}
+func (value *APLValueActionGroupUsed) GetBool(sim *Simulation) bool {
+	return value.isUsed
+}
+func (value *APLValueActionGroupUsed) String() string {
+	return fmt.Sprintf("Action Group Is Used(%s)", value.name)
+}
+func (value *APLValueActionGroupUsed) Finalize(rotation *APLRotation) {
+	for _, group := range rotation.groups {
+		if group.name == value.name && (group.referencedBy != nil) {
+			value.isUsed = true
+			break
+		}
+	}
 }

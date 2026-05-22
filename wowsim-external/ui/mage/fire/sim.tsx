@@ -12,6 +12,7 @@ import { DefaultDebuffs, DefaultRaidBuffs, MAGE_BREAKPOINTS } from '../presets';
 import * as Presets from './presets';
 import * as MageInputs from '../inputs';
 import * as FireInputs from './inputs';
+import { CalculateCombustionThresholds } from './calculate_combustion_thresholds';
 
 const mageBombBreakpoints = MAGE_BREAKPOINTS.presets;
 // const combustBreakpoints = Presets.COMBUSTION_BREAKPOINT.presets;
@@ -153,14 +154,19 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecFireMage, {
 	presets: {
 		epWeights: [Presets.DEFAULT_EP_PRESET, Presets.P1_PREBIS_EP_PRESET, Presets.MASTERY_EP_PRESET],
 		// Preset rotations that the user can quickly select.
-		rotations: [Presets.P1_ROTATION_PRESET_APL, Presets.P3_SIMPLE_ROTATION_PRESET_DEFAULT, Presets.MASTERY_ROTATION_PRESET_APL],
+		rotations: [
+			Presets.P1_ROTATION_PRESET_APL,
+			Presets.P4_SIMPLE_ROTATION_PRESET_DEFAULT,
+			Presets.P5_SIMPLE_ROTATION_PRESET_DEFAULT,
+			Presets.MASTERY_ROTATION_PRESET_APL,
+		],
 		// Preset talents that the user can quickly select.
 		talents: [Presets.FireTalents, Presets.FireTalentsCleave, Presets.FireTalentsMastery],
 		// Preset gear configurations that the user can quickly select.
-		gear: [Presets.P3_MASTERY, Presets.P4_BIS],
+		gear: [Presets.P1_PREBIS, Presets.P3_MASTERY, Presets.P4_BIS, Presets.P5_BIS],
 		// gear: [Presets.P1_PREBIS, Presets.P1_BIS, Presets.P2_BIS, Presets.P3_BIS, Presets.P3_MASTERY],
 
-		builds: [Presets.P3_CRIT_PRESET_BUILD, Presets.P3_MASTERY_PRESET_BUILD],
+		builds: [Presets.P4_CRIT_PRESET_BUILD, Presets.P5_CRIT_PRESET_BUILD, Presets.P3_MASTERY_PRESET_BUILD],
 
 		// Saved Encounter presets
 		encounters: [Presets.ENCOUNTER_SINGLE_TARGET, Presets.ENCOUNTER_MASTERY],
@@ -174,7 +180,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecFireMage, {
 		// if (numTargets >= 3) {
 		// 	return Presets.FIRE_ROTATION_PRESET_CLEAVE.rotation.rotation!;
 		// } else {
-		return Presets.P3_SIMPLE_ROTATION_PRESET_DEFAULT.rotation.rotation!;
+		return Presets.P4_SIMPLE_ROTATION_PRESET_DEFAULT.rotation.rotation!;
 		// }
 	},
 
@@ -284,6 +290,8 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecFireMage, {
 export class FireMageSimUI extends IndividualSimUI<Spec.SpecFireMage> {
 	constructor(parentElem: HTMLElement, player: Player<Spec.SpecFireMage>) {
 		super(parentElem, player, SPEC_CONFIG);
+
+		new CalculateCombustionThresholds(this.rootElem, this);
 
 		const statSelectionPresets = [
 			{

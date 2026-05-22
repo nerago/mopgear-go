@@ -30,6 +30,9 @@ type Hunter struct {
 	SerpentSting         *core.Spell
 
 	BestialWrathAura *core.Aura
+
+	T14_4pcAura *core.Aura
+	T16_4pcAura *core.Aura
 }
 
 func (hunter *Hunter) GetCharacter() *core.Character {
@@ -246,10 +249,13 @@ const (
 	HunterSpellGlaiveToss
 	HunterSpellBarrage
 	HunterSpellPowershot
+	HunterSpellFocusFire
+	HunterSpellStampede
 	HunterSpellsAll = HunterSpellSteadyShot | HunterSpellCobraShot |
 		HunterSpellArcaneShot | HunterSpellKillCommand | HunterSpellChimeraShot | HunterSpellExplosiveShot |
 		HunterSpellExplosiveTrap | HunterSpellBlackArrow | HunterSpellMultiShot | HunterSpellAimedShot |
-		HunterSpellSerpentSting | HunterSpellKillShot | HunterSpellRapidFire | HunterSpellBestialWrath
+		HunterSpellSerpentSting | HunterSpellKillShot | HunterSpellRapidFire | HunterSpellBestialWrath |
+		HunterSpellFocusFire | HunterSpellStampede
 	HunterSpellsTalents = HunterSpellFervor | HunterSpellDireBeast | HunterSpellAMurderOfCrows | HunterSpellLynxRush | HunterSpellGlaiveToss | HunterSpellPowershot | HunterSpellBarrage
 
 	// These spells trigger auto shot when their cast time finishes
