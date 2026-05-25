@@ -167,3 +167,28 @@ type StatAndValue struct {
 	StatType StatType
 	Value    uint32
 }
+
+type OptimiseGoal int8
+
+const (
+	OptimiseGoal_Unknown     OptimiseGoal = iota
+	OptimiseGoal_Mitigation  OptimiseGoal = iota
+	OptimiseGoal_Dps         OptimiseGoal = iota
+	OptimiseGoal_HalfMitiDps OptimiseGoal = iota
+	OptimiseGoal_Healing     OptimiseGoal = iota
+)
+
+func (up OptimiseGoal) Name() string {
+	switch up {
+	case OptimiseGoal_Mitigation:
+		return "miti"
+	case OptimiseGoal_Dps:
+		return "dps"
+	case OptimiseGoal_HalfMitiDps:
+		return "half"
+	case OptimiseGoal_Healing:
+		return "heal"
+	default:
+		panic("unknown")
+	}
+}

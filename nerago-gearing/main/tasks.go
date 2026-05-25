@@ -202,7 +202,7 @@ func testSimA(printer *util.PrintRecorder) {
 		EnableTrackProgress: true,
 		Printer:             printer})
 	printer.Println("Running sim")
-	resultStats := simulate.WowSim_Execute(simulate.RunSize_QuickDirty, model.Spec, output.FullSet.Items(), model.Professions, nil, util.TrackProgress_Start())
+	resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_QuickDirty, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
 }
 func testSimB(printer *util.PrintRecorder) {
@@ -214,7 +214,7 @@ func testSimB(printer *util.PrintRecorder) {
 		EnableTrackProgress: true,
 		Printer:             printer})
 	printer.Println("Running sim")
-	resultStats := simulate.WowSim_Execute(simulate.RunSize_Medium, model.Spec, output.FullSet.Items(), model.Professions, nil, util.TrackProgress_Start())
+	resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_Medium, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
 }
 
@@ -270,8 +270,8 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 
 	output.Report(printer)
 
-	currentStats := simulate.WowSim_Execute(simulate.RunSize_SlowAccurate, model.Spec, &currentEquip, model.Professions, nil, util.TrackProgress_Start())
-	resultStats := simulate.WowSim_Execute(simulate.RunSize_SlowAccurate, model.Spec, output.FullSet.Items(), model.Professions, nil, util.TrackProgress_Start())
+	currentStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_SlowAccurate, &model, &currentEquip, nil, util.TrackProgress_Start())
+	resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_SlowAccurate, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
 
 	printer.Println("CURRENT STATS")
 	currentStats.Print(printer)
@@ -280,106 +280,6 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 	resultStats.Print(printer)
 
 	resultStats.IncreaseSimBreakdown(&currentStats).Print(printer)
-}
-
-func findMitigationWithCapicitance(printer *util.PrintRecorder) {
-	// simSize := simulate.RunSize_SlowAccurate
-	simSize := simulate.RunSize_Medium
-	// simSize := simulate.RunSize_QuickDirty
-
-	// model := model.Model_PallyProtMitigation()
-	// startGear := files.GearFileProtMitigationSet
-	model := model.Model_PallyProtMitigation_NoSet()
-	startGear := files.GearFileProtMitigationNoSet
-
-	printer.Println("READ existing")
-	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &model, printer)
-	currentStats := simulate.WowSim_Execute(simSize, model.Spec, &currentEquip, model.Professions, nil, util.TrackProgress_Start())
-
-	printer.Println("SETUP options")
-	allGear := loaders.BagsFile_PlusPaladinGear_Read()
-	// itemOptions := items.FullOptionsMap{}
-	itemOptions := setup.OptionsSetup_FromGearFile(startGear, &model, setup.MissingEnchant_Fix, printer)
-	for _, equip := range allGear {
-		if slices.Contains(ignoredItems, equip.ItemId) {
-			continue
-		}
-		equip.UpgradeStep = 2
-		opts, example := setup.OptionsSetup_Single_FromEquipped(equip, &model, setup.MissingEnchant_Fix, printer)
-
-		if example.SlotItem() == items.Item_Head {
-			if len(example.GemChoice()) == 0 {
-				panic("dunno")
-			}
-
-			if len(equip.GemChoice) == 0 {
-				printer.Printf("(head) %s none\n", example.BaseName())
-			} else {
-				printer.Printf("(head) %s %d\n", example.BaseName(), equip.GemChoice[0])
-			}
-		}
-
-		can := itemOptions.CouldAddUpgrade_ItemSlot(example.SlotItem(), example, printer)
-		if can == items.CanUpgrade_Yes || can == items.CanUpgrade_Equipped_Similar {
-			itemOptions.AddSeveralOptions(example.SlotItem(), opts)
-		}
-	}
-
-	common := commonComboCurrent()
-	printer.Println("RESTRICT ret")
-	addGearFileToCommon(common, files.GearFileRet, &model, printer)
-	printer.Println("RESTRICT dps")
-	addGearFileToCommon(common, files.GearFileProtDps, &model, printer)
-	printer.Println("RESTRICT mitset")
-	addGearFileToCommon(common, files.GearFileProtMitigationSet, &model, printer)
-	printer.Println("RESTRICT mitnoset")
-	addGearFileToCommon(common, files.GearFileProtMitigationNoSet, &model, printer)
-	restrictOptionsToCommon(common, &itemOptions)
-
-	printer.Println0()
-	printer.Println("HEADS")
-	for _, item := range itemOptions.Get(items.Equip_Head) {
-		printer.Println(item.CreateString())
-		for _, gem := range item.GemChoice() {
-			name := gem.Name()
-			if name != "" {
-				printer.Println("  " + name)
-			}
-		}
-	}
-	printer.Println0()
-	printer.Println0()
-
-	// restrictSlotToId(&itemOptionsShared, items.Equip_Ring1, 96481)
-	// restrictSlotToId(&itemOptionsShared, items.Equip_Head, 96481)
-
-	// remove prot piece
-	itemOptions.RemoveItemIdFromSlot(items.Equip_Head, 95292)
-	// remove White Tiger Helmet
-	itemOptions.RemoveItemIdFromSlot(items.Equip_Head, 87101)
-
-	output := solver.Solver(solver.SolveInput{
-		ItemOptions:         &itemOptions,
-		Model:               &model,
-		EnableTrackProgress: true,
-		Printer:             printer})
-	output.Report(printer)
-
-	resultStats := simulate.WowSim_Execute(simSize, model.Spec, output.FullSet.Items(), model.Professions, nil, util.TrackProgress_Start())
-
-	printer.Println("CURRENT STATS")
-	currentStats.Print(printer)
-
-	printer.Println("NEW SET STATS")
-	resultStats.Print(printer)
-
-	printer.Printf("INCREASE STATS\n")
-	resultStats.IncreaseSimBreakdown(&currentStats).Print(printer)
-
-	mitiInc := resultStats.IncreaseMitigation(&currentStats)
-	dpsInc := resultStats.IncreaseOf(&currentStats, simulate.Result_DPS)
-	printer.Printf("INCREASE miti=%.3f dps=%.3f\n", mitiInc, dpsInc)
-
 }
 
 func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
@@ -392,7 +292,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 
 	printer.Println("READ existing")
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &model, printer)
-	currentStats := simulate.WowSim_Execute(simSize, model.Spec, &currentEquip, model.Professions, nil, util.TrackProgress_Start())
+	currentStats := simulate.WowSim_Execute_UseModel(simSize, &model, &currentEquip, nil, util.TrackProgress_Start())
 
 	printer.Println("SETUP options")
 	itemOptionsShared := setup.OptionsSetup_FromGearFile(startGear, &model, setup.MissingEnchant_Panic, printer)
@@ -445,7 +345,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 				Printer:             printer})
 			output.Report(printer)
 
-			resultStats := simulate.WowSim_Execute(simSize, model.Spec, output.FullSet.Items(), model.Professions, nil, util.TrackProgress_Start())
+			resultStats := simulate.WowSim_Execute_UseModel(simSize, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
 
 			printer.Println("CURRENT STATS")
 			currentStats.Print(printer)
@@ -562,7 +462,7 @@ func trinketSims(printer *util.PrintRecorder) {
 			newEquip[items.Equip_Trinket2] = item
 			// fullSet := items.FullItemSet_FromMap(newEquip)
 
-			resultStats := simulate.WowSim_Execute_SelectFight(simulate.RunSize_Medium, model.Spec, fight, &newEquip, model.Professions, nil, util.TrackProgress_Nop())
+			resultStats := simulate.WowSim_Execute_SpecifyAll(simulate.RunSize_Medium, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
 			resultStats.Print(printer)
 			for _, statType := range simulate.SimResultTypeList {
 				csv.AddFloat64(resultStats.GetFriendly(statType), 2)

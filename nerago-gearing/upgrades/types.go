@@ -35,7 +35,7 @@ func formatIncreaseGeneric(percent float64) string {
 type upgradeItemTask struct {
 	item       *items.FullItem
 	slot       items.SlotEquip
-	goal       UpgradeGoal
+	goal       stats.OptimiseGoal
 	boss       string
 	canUpgrade items.CanUpgradeResult
 }
@@ -128,13 +128,13 @@ func (result upgradeItemResultWithSim) increaseSim() float64 {
 	}
 
 	switch result.goal {
-	case UpgradeGoal_Dps:
+	case stats.OptimiseGoal_Dps:
 		return result.sim.IncreaseOf(&result.baseSim, simulate.Result_DPS)
-	case UpgradeGoal_Healing:
+	case stats.OptimiseGoal_Healing:
 		return result.sim.IncreaseOf(&result.baseSim, simulate.Result_HPS)
-	case UpgradeGoal_Mitigation:
+	case stats.OptimiseGoal_Mitigation:
 		return result.sim.IncreaseMitigation(&result.baseSim)
-	case UpgradeGoal_HalfMitiDps:
+	case stats.OptimiseGoal_HalfMitiDps:
 		return (result.sim.IncreaseMitigation(&result.baseSim) + result.sim.IncreaseOf(&result.baseSim, simulate.Result_DPS)) / 2.0
 	default:
 		panic("unknown goal")

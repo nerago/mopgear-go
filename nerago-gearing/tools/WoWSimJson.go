@@ -4,14 +4,13 @@ import (
 	"encoding/json"
 	"os"
 	"paladin_gearing_go/db"
-	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/util"
 )
 
 func WowSimJson_Write(equip *items.FullEquipMap, model *model.Model, printer *util.PrintRecorder) {
-	inputFile := files.GearFileFor(model.Spec, true)
+	inputFile := model.ReferenceGearFile
 	allBytes, err := os.ReadFile(inputFile)
 	if err != nil {
 		panic(err)

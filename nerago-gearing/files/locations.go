@@ -31,29 +31,19 @@ const (
 	PaladinRetRotation  = `wowsim-external/ui/paladin/retribution/apls/default.apl.json`
 )
 
-func SimFileFor(spec stats.SpecType) string {
+func SimFileFor(spec stats.SpecType, goal stats.OptimiseGoal) string {
 	switch spec {
-	case stats.Spec_PaladinProtDps, stats.Spec_PaladinProtCompromise:
-		return SimProtDps
-	case stats.Spec_PaladinProtMitigation:
-		return SimProtMitigation
+	case stats.Spec_PaladinProt:
+		switch goal {
+		case stats.OptimiseGoal_Dps, stats.OptimiseGoal_HalfMitiDps:
+			return SimProtDps
+		case stats.OptimiseGoal_Mitigation:
+			return SimProtMitigation
+		default:
+			panic("spec+goal not supported")
+		}
 	case stats.Spec_PaladinRet:
 		return SimRet
-	default:
-		panic("spec not supported")
-	}
-}
-
-func GearFileFor(spec stats.SpecType, fuzzyOkay bool) string {
-	switch spec {
-	case stats.Spec_PaladinProtMitigation:
-		return GearFileProtMitigationNoSet
-	case stats.Spec_PaladinProtCompromise:
-		return GearFileProtCompromise
-	case stats.Spec_PaladinProtDps:
-		return GearFileProtDps
-	case stats.Spec_PaladinRet:
-		return GearFileRet
 	default:
 		panic("spec not supported")
 	}

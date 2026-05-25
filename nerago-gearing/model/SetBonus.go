@@ -10,7 +10,7 @@ import (
 )
 
 type SetBonus struct {
-	activeSets        []setInfo
+	activeSets        []setInfoActive
 	activeFlatBonuses []float64
 	itemToSet         []uint8
 }
@@ -18,7 +18,7 @@ type SetBonus struct {
 const (
 	c_maxItemId = 300000
 
-	zeroBonus = 1.0
+	zeroBonus    = 1.0
 	defaultBonus = 1.025
 
 	white_tiger_battlegear_2      = 1.032
@@ -36,10 +36,12 @@ func SetBonus_Named(names ...string) SetBonus {
 	sets := SetBonus{}
 	for _, name := range names {
 		found := false
-		for _, info := range g_setData {
-			if info.name == name {
-				sets.activeSets = append(sets.activeSets, info)
-				found = true
+		for _, common := range g_setData {
+			for _, variant := range common.variants {
+				if variant.name == name {
+					sets.activeSets = append(sets.activeSets, activeSetMake(common, variant))
+					found = true
+				}
 			}
 		}
 		if !found {
@@ -50,12 +52,51 @@ func SetBonus_Named(names ...string) SetBonus {
 	return sets
 }
 
-func SetBonus_ForSpec(spec SpecType) SetBonus {
+func SetBonus_ForSpec(spec SpecType, goal OptimiseGoal) SetBonus {
+	if goal == OptimiseGoal_Unknown {
+		panic("please specific goal")
+	}
+	return SetBonus_ForSpec_AllowFallback(spec, goal, false)
+}
+
+func SetBonus_ForSpec_AllowFallback(spec SpecType, goal OptimiseGoal, fallback bool) SetBonus {
 	sets := SetBonus{}
-	for _, info := range g_setData {
-		if info.spec == spec {
-			sets.activeSets = append(sets.activeSets, info)
+	for _, common := range g_setData {
+		if len(common.variants) == 1 {
+			if common.variants[0].spec == spec {
+				sets.activeSets = append(sets.activeSets, activeSetMake(common, common.variants[0]))
+				continue
+			}
+		} else if len(common.variants) > 1 {
+			// exact spec+goal match
+			for _, variant := range common.variants {
+				if variant.spec == spec && variant.goal == goal {
+					sets.activeSets = append(sets.activeSets, activeSetMake(common, common.variants[0]))
+					continue
+				}
+			}
+			// fallback entry for spec
+			for _, variant := range common.variants {
+				if variant.spec == spec && variant.goal == OptimiseGoal_Unknown {
+					sets.activeSets = append(sets.activeSets, activeSetMake(common, common.variants[0]))
+					continue
+				}
+			}
+			// useful in ItemBuilder, etc
+			if fallback {
+				for _, variant := range common.variants {
+					if variant.spec == spec {
+						sets.activeSets = append(sets.activeSets, activeSetMake(common, common.variants[0]))
+						continue
+					}
+				}
+			}
+		} else {
+			panic("no variants")
 		}
+	}
+	if len(sets.activeSets) == 0 {
+		panic("didn't find any sets")
 	}
 	sets.initMap()
 	return sets
@@ -71,6 +112,9 @@ func (sets *SetBonus) initMap() {
 	sets.itemToSet = make([]uint8, c_maxItemId)
 	for index, info := range sets.activeSets {
 		for _, itemId := range info.items {
+			if sets.itemToSet[itemId] != 0 {
+				panic("overlapping sets")
+			}
 			sets.itemToSet[itemId] = uint8(index + 1)
 		}
 
@@ -81,7 +125,7 @@ func (sets *SetBonus) initMap() {
 }
 
 func (sets *SetBonus) Equals(other *SetBonus) bool {
-	return slices.EqualFunc(sets.activeSets, other.activeSets, setInfo.EqualsTyped)
+	return slices.EqualFunc(sets.activeSets, other.activeSets, setInfoActive.EqualsTyped)
 }
 
 // ########################### CalcBonus ###########################
@@ -217,52 +261,68 @@ func addToSpecificSetSolve(counts *[10]uint8, itemToSet []uint8, item *SolvableI
 }
 
 // ########################### set type ###########################
-type setInfo struct {
-	spec               SpecType
-	name               string
-	bonuses            [6]float64
-	items              []uint32
-	isSpecialSkipLists bool
+type setInfoCommon struct {
+	variants []setInfoVariant
+	items    []uint32
 }
 
-func setInfoMake(spec SpecType, name string, bonus2 float64, bonus4 float64, items []uint32) setInfo {
-	return setInfo{spec,
-		name,
-		[6]float64{
-			1.0,
-			1.0,
-			bonus2,
-			bonus2,
-			bonus2 * bonus4,
-			bonus2 * bonus4,
+type setInfoVariant struct {
+	spec   SpecType
+	goal   OptimiseGoal
+	name   string
+	bonus2 float64
+	bonus4 float64
+}
+
+type setInfoActive struct {
+	bonuses [6]float64
+	items   []uint32
+	name    string
+}
+
+func setInfoMake(spec SpecType, name string, bonus2 float64, bonus4 float64, items []uint32) setInfoCommon {
+	return setInfoCommon{
+		[]setInfoVariant{
+			{
+				spec,
+				OptimiseGoal_Unknown,
+				name,
+				bonus2,
+				bonus4,
+			},
 		},
 		items,
-		false,
 	}
 }
 
-func setInfoMakeSpecial(spec SpecType, name string, bonus2 float64, bonus4 float64, items []uint32) setInfo {
-	return setInfo{spec,
-		name,
-		[6]float64{
-			1.0,
-			1.0,
-			bonus2,
-			bonus2,
-			bonus2 * bonus4,
-			bonus2 * bonus4,
-		},
+func setInfoMakeSpecial(variants []setInfoVariant, items []uint32) setInfoCommon {
+	return setInfoCommon{
+		variants,
 		items,
-		true,
 	}
 }
 
-func (set setInfo) EqualsTyped(other setInfo) bool {
-	return set.spec == other.spec && set.name == other.name
+func activeSetMake(common setInfoCommon, variant setInfoVariant) setInfoActive {
+	return setInfoActive{
+		[6]float64{
+			1.0,
+			1.0,
+			variant.bonus2,
+			variant.bonus2,
+			variant.bonus2 * variant.bonus4,
+			variant.bonus2 * variant.bonus4,
+		},
+		common.items,
+		variant.name,
+	}
 }
 
-func (set setInfo) Equals(other ActiveSet) bool {
-	if otherSet, isType := other.(setInfo); isType {
+func (set setInfoActive) EqualsTyped(other setInfoActive) bool {
+	return set.bonuses == other.bonuses && slices.Equal(set.items, other.items) && set.name == other.name
+}
+
+func (set setInfoActive) Equals(other ActiveSet) bool {
+	if otherSet, isType := other.(setInfoActive); isType {
 		return set.EqualsTyped(otherSet)
 	} else {
 		return false
@@ -277,26 +337,26 @@ type ActiveSet interface {
 	Equals(ActiveSet) bool
 }
 
-func (set setInfo) Name() string {
+func (set setInfoActive) Name() string {
 	return set.name
 }
 
-func (set setInfo) BonusForCount(count uint8) float64 {
+func (set setInfoActive) BonusForCount(count uint8) float64 {
 	return set.bonuses[count]
 }
 
-func (set setInfo) ContainsItem(itemId items.ItemId) bool {
+func (set setInfoActive) ContainsItem(itemId items.ItemId) bool {
 	return slices.Contains(set.items, uint32(itemId))
 }
 
-func (set setInfo) containsItem(item *SolvableItem) bool {
+func (set setInfoActive) containsItem(item *SolvableItem) bool {
 	if item != nil {
 		return slices.Contains(set.items, uint32(item.ItemId()))
 	}
 	return false
 }
 
-func (set setInfo) CountItems(equip *SolvableEquipMap) uint8 {
+func (set setInfoActive) CountItems(equip *SolvableEquipMap) uint8 {
 	var count uint8
 	if set.containsItem(equip[Equip_Head]) {
 		count++
@@ -320,17 +380,25 @@ func (set setInfo) CountItems(equip *SolvableEquipMap) uint8 {
 var g_setData = buildSets()
 var g_itemSetLookup = buildItemLookup(g_setData)
 
-func buildSets() []setInfo {
-	sets := make([]setInfo, 0)
+func buildSets() []setInfoCommon {
+	sets := make([]setInfoCommon, 0)
 
-	sets = append(sets, setInfoMake(Spec_PaladinRet, "White Tiger Battlegear", white_tiger_battlegear_2, white_tiger_battlegear_4, []uint32{85339, 85340, 85341, 85342, 85343, 86679, 86680, 86681, 86682, 86683, 87099, 87100, 87101, 87102, 87103}))
-	sets = append(sets, setInfoMakeSpecial(Spec_PaladinProtMitigation, "White Tiger Battlegear Prot Mitigation", zeroBonus, white_tiger_battlegear_4_tank, []uint32{86681, 86679, 86683, 86682, 86680, 85341, 85339, 85343, 85342, 85340, 87101, 87103, 87099, 87100, 87102}))
+	sets = append(sets, setInfoMakeSpecial(
+		[]setInfoVariant{
+			{Spec_PaladinRet, OptimiseGoal_Dps, "White Tiger Battlegear", white_tiger_battlegear_2, white_tiger_battlegear_4},
+			{Spec_PaladinProt, OptimiseGoal_Mitigation, "White Tiger Battlegear Prot Mitigation", zeroBonus, white_tiger_battlegear_4_tank},
+		},
+		[]uint32{86681, 86679, 86683, 86682, 86680, 85341, 85339, 85343, 85342, 85340, 87101, 87103, 87099, 87100, 87102}))
 
-	sets = append(sets, setInfoMake(Spec_PaladinProtMitigation, "Plate of the Lightning Emperor", plate_lightning_bonus_2_miti, plate_lightning_bonus_4_miti, []uint32{95290, 95291, 95292, 95293, 95294, 95920, 95921, 95922, 95923, 95924, 96664, 96665, 96666, 96667, 96668}))
-	sets = append(sets, setInfoMakeSpecial(Spec_PaladinProtDps, "Plate of the Lightning Emperor Prot Damage", zeroBonus, plate_lightning_bonus_4_dps, []uint32{95290, 95291, 95292, 95293, 95294, 95920, 95921, 95922, 95923, 95924, 96664, 96665, 96666, 96667, 96668}))
+	sets = append(sets, setInfoMakeSpecial(
+		[]setInfoVariant{
+			{Spec_PaladinProt, OptimiseGoal_Mitigation, "Plate of the Lightning Emperor", plate_lightning_bonus_2_miti, plate_lightning_bonus_4_miti},
+			{Spec_PaladinProt, OptimiseGoal_Dps, "Plate of the Lightning Emperor Prot Damage", zeroBonus, plate_lightning_bonus_4_dps},
+		},
+		[]uint32{95290, 95291, 95292, 95293, 95294, 95920, 95921, 95922, 95923, 95924, 96664, 96665, 96666, 96667, 96668}))
 
-	sets = append(sets, setInfoMake(Spec_PaladinProtMitigation, "White Tiger Plate", defaultBonus, defaultBonus, []uint32{85319, 85320, 85321, 85322, 85323, 86659, 86660, 86661, 86662, 86663, 87109, 87110, 87111, 87112, 87113}))
-	sets = append(sets, setInfoMake(Spec_PaladinProtMitigation, "Plate of Winged Triumph", defaultBonus, defaultBonus, []uint32{99026, 99027, 99028, 99029, 99031, 99126, 99127, 99128, 99129, 99130, 99364, 99368, 99369, 99370, 99371, 99593, 99594, 99595, 99596, 99598}))
+	sets = append(sets, setInfoMake(Spec_PaladinProt, "White Tiger Plate", defaultBonus, defaultBonus, []uint32{85319, 85320, 85321, 85322, 85323, 86659, 86660, 86661, 86662, 86663, 87109, 87110, 87111, 87112, 87113}))
+	sets = append(sets, setInfoMake(Spec_PaladinProt, "Plate of Winged Triumph", defaultBonus, defaultBonus, []uint32{99026, 99027, 99028, 99029, 99031, 99126, 99127, 99128, 99129, 99130, 99364, 99368, 99369, 99370, 99371, 99593, 99594, 99595, 99596, 99598}))
 
 	sets = append(sets, setInfoMake(Spec_PaladinRet, "Battlegear of the Lightning Emperor", defaultBonus, defaultBonus, []uint32{95280, 95281, 95282, 95283, 95284, 95910, 95911, 95912, 95913, 95914, 96654, 96655, 96656, 96657, 96658}))
 	sets = append(sets, setInfoMake(Spec_PaladinRet, "Battlegear of Winged Triumph", defaultBonus, defaultBonus, []uint32{98985, 98986, 98987, 99002, 99052, 99132, 99136, 99137, 99138, 99139, 99372, 99373, 99379, 99380, 99387, 99566, 99625, 99651, 99661, 99662}))
@@ -402,13 +470,12 @@ func buildSets() []setInfo {
 	return sets
 }
 
-func buildItemLookup(setData []setInfo) map[ItemId]*setInfo {
-	lookup := make(map[ItemId]*setInfo, len(setData)*15)
+func buildItemLookup(setData []setInfoCommon) map[ItemId]*setInfoActive {
+	lookup := make(map[ItemId]*setInfoActive, len(setData)*15)
 	for _, info := range setData {
-		if !info.isSpecialSkipLists {
-			for _, itemId := range info.items {
-				lookup[ItemId(itemId)] = &info
-			}
+		for _, itemId := range info.items {
+			active := activeSetMake(info, info.variants[0])
+			lookup[ItemId(itemId)] = &active
 		}
 	}
 	return lookup
@@ -437,7 +504,7 @@ func (sets *SetBonus) ActiveSetIndexForItem(itemId ItemId) (index int, hasSet bo
 }
 
 func (sets *SetBonus) ActiveSets() []ActiveSet {
-	return util.CastSliceAsNew(sets.activeSets, func(s *setInfo) ActiveSet { return s })
+	return util.CastSliceAsNew(sets.activeSets, func(s *setInfoActive) ActiveSet { return s })
 }
 
 func SetBonus_IsAnyKnownItem(itemId ItemId) bool {

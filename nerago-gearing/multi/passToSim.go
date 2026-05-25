@@ -44,6 +44,7 @@ func (job *MultiSetJob) existingGearAsProposal() multi_types.MultiProposedOutput
 
 type simulateJob struct {
 	spec        stats.SpecType
+	goal        stats.OptimiseGoal
 	fight       stats.WowSim_Fight
 	equip       items.FullEquipMap
 	professions model.ProfessionInfo
@@ -67,7 +68,7 @@ func (job *MultiSetJob) prepareSimList(proposalList []multi_types.MultiProposedO
 	jobList := make([]simulateJob, 0)
 	for _, proposal := range proposalList {
 		for _, output := range proposal.Parts {
-			job := simulateJob{output.Spec, output.Model.SimulateAs, *output.FullSet.Items(), output.Model.Professions}
+			job := simulateJob{output.Spec, output.Model.Goal, output.Model.SimulateAs, *output.FullSet.Items(), output.Model.Professions}
 			jobList = append(jobList, job)
 		}
 	}
@@ -83,7 +84,7 @@ func (job *MultiSetJob) runSims(jobList []simulateJob, trackProgress *util.Track
 	defer trackProgress.Stop()
 
 	return channel_op.Map_SliceToSlice(simThreadCount, jobList, func(sim *simulateJob, resultChan chan<- simulateJobResult) {
-		result := simulate.WowSim_Execute_SelectFight(job.simRunSize, sim.spec, sim.fight, &sim.equip, sim.professions, nil, trackProgress.MakeNested())
+		result := simulate.WowSim_Execute_SpecifyAll(job.simRunSize, sim.spec, sim.goal, sim.fight, sim.professions, &sim.equip, nil, trackProgress.MakeNested())
 		job.printer.Printf("sim %22s fight=%d %s\n", sim.spec.Name(), sim.fight, result.CompactStringGeneral())
 		resultChan <- simulateJobResult{*sim, result}
 	})

@@ -28,18 +28,12 @@ const (
 	RunSize_SlowAccurate WowSim_RunSize = 500000
 )
 
-func WowSim_Execute(runSize WowSim_RunSize, spec stats.SpecType, equipMap *items.FullEquipMap, profession model.ProfessionInfo, bonusStats *stats.StatBlock, tracker *util.TrackProgress) SimResultStats {
-	var fight stats.WowSim_Fight
-	if spec == stats.Spec_PaladinProtMitigation || spec == stats.Spec_PaladinProtCompromise {
-		fight = stats.Fight_Animus
-	} else {
-		fight = stats.Fight_Horridon_HighHeal
-	}
-	return WowSim_Execute_SelectFight(runSize, spec, fight, equipMap, profession, bonusStats, tracker)
+func WowSim_Execute_UseModel(runSize WowSim_RunSize, model *model.Model, equipMap *items.FullEquipMap, bonusStats *stats.StatBlock, tracker *util.TrackProgress) SimResultStats {
+	return WowSim_Execute_SpecifyAll(runSize, model.Spec, model.Goal, model.SimulateAs, model.Professions, equipMap, bonusStats, tracker)
 }
 
-func WowSim_Execute_SelectFight(runSize WowSim_RunSize, spec stats.SpecType, fight stats.WowSim_Fight, equipMap *items.FullEquipMap, profession model.ProfessionInfo, bonusStats *stats.StatBlock, tracker *util.TrackProgress) SimResultStats {
-	infile := files.SimFileFor(spec)
+func WowSim_Execute_SpecifyAll(runSize WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *stats.StatBlock, tracker *util.TrackProgress) SimResultStats {
+	infile := files.SimFileFor(spec, goal)
 	input := inputRequestFromTemplate(infile, equipMap, profession, bonusStats, spec, fight, runSize)
 
 	reporter := make(chan *wowsim_proto.ProgressMetrics, 10)
@@ -214,7 +208,7 @@ func updateFight(input *wowsim_proto.RaidSimRequest, fight stats.WowSim_Fight) {
 func updateRotation(input *wowsim_proto.RaidSimRequest, spec stats.SpecType) {
 	var rotation wowsim_proto.APLRotation
 	switch spec {
-	case stats.Spec_PaladinProtDps, stats.Spec_PaladinProtMitigation, stats.Spec_PaladinProtCompromise:
+	case stats.Spec_PaladinProt:
 		loadAnyProtoFile(&rotation, files.PaladinProtRotation)
 	case stats.Spec_PaladinRet:
 		loadAnyProtoFile(&rotation, files.PaladinRetRotation)

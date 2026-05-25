@@ -7,7 +7,6 @@ import (
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/simulate"
-	"paladin_gearing_go/solver"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/upgrades"
 	"paladin_gearing_go/util"
@@ -15,16 +14,12 @@ import (
 )
 
 const (
-	// simRunSize     = simulate.RunSize_Medium
 	// simRunSize  = simulate.RunSize_QuickDirty
 
-	itemSolveSize = solver.SolveSize_Medium
-	simRunSize    = simulate.RunSize_QuickDirty
+	simRunSize = simulate.RunSize_QuickDirty
 
-	// itemSolveSize = solver.SolveSize_Medium
 	// simRunSize    = simulate.RunSize_Medium
 
-	// itemSolveSize = solver.SolveSize_PerItem
 	// simRunSize    = simulate.RunSize_TestOnly
 )
 
@@ -118,7 +113,7 @@ var ignoredItems = []items.ItemId{
 	90042} // straw hat
 
 func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
-	goal := upgrades.UpgradeGoal_Dps
+	goal := stats.OptimiseGoal_Dps
 	model := model.Model_PallyProtDps()
 	gearFile := files.GearFileProtDps
 	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
@@ -129,13 +124,13 @@ func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
 			IncludeHeroic: true,
 			IncludeRaden:  false,
 			IgnoredItems:  ignoredItems,
-			SolveSize:     itemSolveSize},
+		},
 		SimSize: simRunSize}
 	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsDps, printer)
 }
 
 func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
-	goal := upgrades.UpgradeGoal_Mitigation
+	goal := stats.OptimiseGoal_Mitigation
 	model := model.Model_PallyProtMitigation_WithSet()
 	gearFile := files.GearFileProtMitigationSet
 	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
@@ -147,7 +142,7 @@ func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 			IncludeHeroic: true,
 			IncludeRaden:  false,
 			IgnoredItems:  ignoredItems,
-			SolveSize:     itemSolveSize},
+		},
 		SimSize: simRunSize}
 	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsMiti, printer)
 }
@@ -158,7 +153,7 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 
 	substituteEmptySlotOnly := make(map[items.SlotItem]items.ItemId)
 	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
-	substituteEmptySlotOnly[items.Item_Ring] = 86957 // heroic bladed tempest ring
+	substituteEmptySlotOnly[items.Item_Ring] = 86957    // heroic bladed tempest ring
 
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{
@@ -167,15 +162,12 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 				IncludeHeroic: true,
 				IncludeRaden:  true,
 				IgnoredItems:  ignoredItems,
-				SolveSize:     itemSolveSize,
-				// PositiveResultsOnly: true,
 			},
 			SimSize: simRunSize,
 		},
 		Specs: []upgrades.FindUpgrades_Spec{
 			{
 				Label:      "dps",
-				Goal:       upgrades.UpgradeGoal_Dps,
 				Model:      model.Model_PallyProtDps(),
 				GearFile:   files.GearFileProtDps,
 				ItemFinder: loaders.ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff,
@@ -185,7 +177,6 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 			},
 			{
 				Label:      "compromise",
-				Goal:       upgrades.UpgradeGoal_HalfMitiDps,
 				Model:      model.Model_PallyProtCompromise(),
 				GearFile:   files.GearFileProtCompromise,
 				ItemFinder: loaders.ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff,
@@ -195,7 +186,6 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 			},
 			{
 				Label:      "mit_noset",
-				Goal:       upgrades.UpgradeGoal_Mitigation,
 				Model:      model.Model_PallyProtMitigation_NoSet(),
 				GearFile:   files.GearFileProtMitigationNoSet,
 				ItemFinder: loaders.ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff,
@@ -205,7 +195,6 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 			},
 			{
 				Label:      "mit_set",
-				Goal:       upgrades.UpgradeGoal_Mitigation,
 				Model:      model.Model_PallyProtMitigation_WithSet(),
 				GearFile:   files.GearFileProtMitigationSet,
 				ItemFinder: loaders.ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff,

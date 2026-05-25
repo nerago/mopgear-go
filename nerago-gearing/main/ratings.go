@@ -27,16 +27,19 @@ func forSpreadsheetGenerateRatingsDataFromSims(printer *util.PrintRecorder) {
 	// spec := stats.Spec_PaladinProtMitigation
 	// startGear := files.GearFileProtMitigationNoSet
 	// modelEquipOnly := model.Model_PallyProtMitigation_NoSet()
+	// goal := stats.UpgradeGoal_Mitigation
 
 	fight := stats.Fight_Horridon_LowHeal
-	spec := stats.Spec_PaladinProtMitigation
+	spec := stats.Spec_PaladinProt
 	startGear := files.GearFileProtMitigationSet
 	modelEquipOnly := model.Model_PallyProtMitigation_WithSet()
+	goal := stats.OptimiseGoal_Mitigation
 
 	// fight := stats.Fight_Horridon_HighHeal
 	// spec := stats.Spec_PaladinProtDps
 	// startGear := files.GearFileProtDps
 	// modelEquipOnly := model.Model_PallyProtDps()
+	// goal := stats.UpgradeGoal_Dps
 
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &modelEquipOnly, printer)
 
@@ -58,7 +61,7 @@ func forSpreadsheetGenerateRatingsDataFromSims(printer *util.PrintRecorder) {
 	csv := util.CSVOutputByColumn{}
 	csv.InitRows(len(simulate.SimResultTypeList) + 1)
 
-	simBase := simulate.WowSim_Execute_SelectFight(simSpeed, spec, fight, &currentEquip, modelEquipOnly.Professions, &baseStat, tracker.MakeNested())
+	simBase := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, modelEquipOnly.Professions, &currentEquip, &baseStat, tracker.MakeNested())
 	csv.AddString("base")
 	simResultAddToCSV(simBase, &csv)
 	csv.FinishColumn()
@@ -66,7 +69,7 @@ func forSpreadsheetGenerateRatingsDataFromSims(printer *util.PrintRecorder) {
 	for _, statCheck := range statCheckList {
 		bonusStat := baseStat
 		bonusStat[statCheck] += statAdd
-		simResult := simulate.WowSim_Execute_SelectFight(simSpeed, spec, fight, &currentEquip, modelEquipOnly.Professions, &bonusStat, tracker.MakeNested())
+		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, modelEquipOnly.Professions, &currentEquip, &bonusStat, tracker.MakeNested())
 
 		csv.AddString(statCheck.Name())
 		simResultAddToCSV(simResult, &csv)
@@ -94,17 +97,20 @@ func forBasicStatsGenerateRatingsDataFromSims(printer *util.PrintRecorder) {
 	// spec := stats.Spec_PaladinProtMitigation
 	// startGear := files.GearFileProtMitigationNoSet
 	// modelEquipOnly := model.Model_PallyProtMitigation_NoSet()
+	// goal := stats.UpgradeGoal_Mitigation
 
 	fight := stats.Fight_Horridon_LowHeal
-	spec := stats.Spec_PaladinProtMitigation
+	spec := stats.Spec_PaladinProt
 	startGear := files.GearFileProtMitigationSet
 	modelEquipOnly := model.Model_PallyProtMitigation_WithSet()
 	targetRatio := stathighs.NewStatWeights_generalMiti
+	goal := stats.OptimiseGoal_Mitigation
 
 	// fight := stats.Fight_Horridon_HighHeal
 	// spec := stats.Spec_PaladinProtDps
 	// startGear := files.GearFileProtDps
 	// modelEquipOnly := model.Model_PallyProtDps()
+	// goal := stats.UpgradeGoal_Dps
 
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &modelEquipOnly, printer)
 
@@ -127,13 +133,13 @@ func forBasicStatsGenerateRatingsDataFromSims(printer *util.PrintRecorder) {
 	tracker.RunOuterTracking(len(statCheckList) + 1)
 	defer tracker.Stop()
 
-	simBase := simulate.WowSim_Execute_SelectFight(simSpeed, spec, fight, &currentEquip, modelEquipOnly.Professions, &baseStat, tracker.MakeNested())
+	simBase := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, modelEquipOnly.Professions, &currentEquip, &baseStat, tracker.MakeNested())
 	process.SetBaseline(simBase)
 
 	for _, statCheck := range statCheckList {
 		bonusStat := baseStat
 		bonusStat[statCheck] += statAdd
-		simResult := simulate.WowSim_Execute_SelectFight(simSpeed, spec, fight, &currentEquip, modelEquipOnly.Professions, &bonusStat, tracker.MakeNested())
+		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, modelEquipOnly.Professions, &currentEquip, &bonusStat, tracker.MakeNested())
 		process.AddSimData(statCheck, statAdd, simResult)
 	}
 
@@ -180,24 +186,28 @@ func generateRatingsInputFromArtificalStatOverrides(printer *util.PrintRecorder)
 	// startGear := files.GearFileProtMitigationNoSet
 	// modelEquipOnly := model.Model_PallyProtMitigation_NoSet()
 	// targetRatio := stathighs.NewStatWeights_generalMiti
+	// goal := stats.UpgradeGoal_Mitigation
 
 	// fight := stats.Fight_Horridon_LowHeal
 	// spec := stats.Spec_PaladinProtMitigation
 	// startGear := files.GearFileProtMitigationSet
 	// modelEquipOnly := model.Model_PallyProtMitigation_WithSet()
 	// targetRatio := stathighs.NewStatWeights_radenWeight
+	// goal := stats.UpgradeGoal_Mitigation
 
 	fight := stats.Fight_Animus
-	spec := stats.Spec_PaladinProtCompromise
+	spec := stats.Spec_PaladinProt
 	startGear := files.GearFileProtCompromise
 	modelEquipOnly := model.Model_PallyProtCompromise()
 	targetRatio := stathighs.NewStatWeights_animusWeight
+	goal := stats.OptimiseGoal_HalfMitiDps
 
 	// fight := stats.Fight_Horridon_HighHeal
 	// spec := stats.Spec_PaladinProtDps
 	// startGear := files.GearFileProtDps
 	// modelEquipOnly := model.Model_PallyProtDps()
 	// targetRatio := stathighs.NewStatWeights_dpsWeight
+	// goal := stats.UpgradeGoal_Dps
 
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &modelEquipOnly, printer)
 	currentItemSet := items.FullItemSet_FromMap(currentEquip)
@@ -252,7 +262,7 @@ func generateRatingsInputFromArtificalStatOverrides(printer *util.PrintRecorder)
 			str.WriteRune(' ')
 		}
 
-		simResult := simulate.WowSim_Execute_SelectFight(simSpeed, spec, fight, &currentEquip, modelEquipOnly.Professions, &bonusStat, tracker.MakeNested())
+		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, modelEquipOnly.Professions, &currentEquip, &bonusStat, tracker.MakeNested())
 
 		resultChannel <- stathighs.WeightInput{
 			TotalStat: bonusStat,
@@ -303,7 +313,7 @@ func generateRatingsInputFromRealRandomSets(printer *util.PrintRecorder) ([]stat
 	defer track.Stop()
 
 	weightInputs := channel_op.Map_SliceToSlice(6, setList, func(itemSet *items.FullItemSet, weightInputs chan<- stathighs.WeightInput) {
-		simResult := simulate.WowSim_Execute_SelectFight(simSize, model.Spec, model.SimulateAs, itemSet.Items(), model.Professions, nil, track.MakeNested())
+		simResult := simulate.WowSim_Execute_UseModel(simSize, &model, itemSet.Items(), nil, track.MakeNested())
 		weightInputs <- stathighs.WeightInput{TotalStat: *itemSet.Total(), SimResult: simResult}
 	})
 

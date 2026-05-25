@@ -16,14 +16,16 @@ type Model struct {
 	StatRequirements StatRequirementsHitExpertise
 	StatRatings      StatRatingsWeights
 
-	Spec             SpecType
-	SimulateAs       WowSim_Fight
-	ReforgeRules     ReforgeRules
-	EnchantChoice    EnchantChoice
-	GemChoice        GemChoice
-	SetBonus         SetBonus
-	SetBonusRequired uint8
-	Professions      ProfessionInfo
+	Spec              SpecType
+	Goal              OptimiseGoal
+	SimulateAs        WowSim_Fight
+	ReforgeRules      ReforgeRules
+	EnchantChoice     EnchantChoice
+	GemChoice         GemChoice
+	SetBonus          SetBonus
+	SetBonusRequired  uint8
+	Professions       ProfessionInfo
+	ReferenceGearFile string // should just be used by exporters etc
 }
 
 func (model *Model) Equals(other *Model) bool {

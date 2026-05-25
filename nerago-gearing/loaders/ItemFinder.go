@@ -24,7 +24,7 @@ var g_strengthTrinkets = []items.ItemId{
 
 func ItemFinder_ThroneStrengthPlateTank(difficulty stats.Difficulty) []*items.FullItem {
 	return slices.Concat(
-		throneClassGearSet(stats.Spec_PaladinProtMitigation, difficulty),
+		throneClassGearSet(stats.Spec_PaladinProt, difficulty),
 		throneClassGearSet(stats.Spec_PaladinRet, difficulty),
 		throneGearGeneric(stats.Armor_Plate, stats.PrimaryStat_Strength, difficulty),
 		trinketsForDifficulty(g_tankTrinkets, difficulty),
@@ -56,7 +56,7 @@ func ItemFinder_CelestialCloak(difficulty stats.Difficulty) []*items.FullItem {
 
 func throneClassGearSet(specType stats.SpecType, difficulty stats.Difficulty) []*items.FullItem {
 	result := make([]*items.FullItem, 0)
-	specBonus := model.SetBonus_ForSpec(specType)
+	specBonus := model.SetBonus_ForSpec_AllowFallback(specType, stats.OptimiseGoal_Unknown, true)
 	targetLevel := difficulty.ExpectedItemLevel()
 	for itemId := range specBonus.AllSetItemIds() {
 		item := db.WowSimDB_ByIdAndUpgrade(itemId, 0)

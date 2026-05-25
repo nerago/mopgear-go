@@ -3,41 +3,35 @@ package stats
 type SpecType int8
 
 const (
-	Spec_PaladinProtMitigation SpecType = iota
-	Spec_PaladinProtCompromise SpecType = iota
-	Spec_PaladinProtDps        SpecType = iota
-	Spec_PaladinRet            SpecType = iota
-	Spec_PaladinHoly           SpecType = iota
-	Spec_WarriorProt           SpecType = iota
-	Spec_WarriorArms           SpecType = iota
-	Spec_DruidBear             SpecType = iota
-	Spec_DruidTree             SpecType = iota
-	Spec_DruidBoom             SpecType = iota
-	Spec_DruidFeral            SpecType = iota
-	Spec_MageFrost             SpecType = iota
-	Spec_PriestShadow          SpecType = iota
-	Spec_PriestHoly            SpecType = iota
-	Spec_Rogue                 SpecType = iota
-	Spec_Warlock               SpecType = iota
-	Spec_ShamanRestoration     SpecType = iota
-	Spec_ShamanElemental       SpecType = iota
-	Spec_ShamanEnhance         SpecType = iota
-	Spec_Hunter                SpecType = iota
-	Spec_MonkBrewmaster        SpecType = iota
-	Spec_MonkMistweaver        SpecType = iota
-	Spec_MonkDps               SpecType = iota
-	Spec_DeathKnightDps        SpecType = iota
-	Spec_DeathKnightBlood      SpecType = iota
+	Spec_PaladinProt       SpecType = iota
+	Spec_PaladinRet        SpecType = iota
+	Spec_PaladinHoly       SpecType = iota
+	Spec_WarriorProt       SpecType = iota
+	Spec_WarriorArms       SpecType = iota
+	Spec_DruidBear         SpecType = iota
+	Spec_DruidTree         SpecType = iota
+	Spec_DruidBoom         SpecType = iota
+	Spec_DruidFeral        SpecType = iota
+	Spec_MageFrost         SpecType = iota
+	Spec_PriestShadow      SpecType = iota
+	Spec_PriestHoly        SpecType = iota
+	Spec_Rogue             SpecType = iota
+	Spec_Warlock           SpecType = iota
+	Spec_ShamanRestoration SpecType = iota
+	Spec_ShamanElemental   SpecType = iota
+	Spec_ShamanEnhance     SpecType = iota
+	Spec_Hunter            SpecType = iota
+	Spec_MonkBrewmaster    SpecType = iota
+	Spec_MonkMistweaver    SpecType = iota
+	Spec_MonkDps           SpecType = iota
+	Spec_DeathKnightDps    SpecType = iota
+	Spec_DeathKnightBlood  SpecType = iota
 )
 
 func (spec SpecType) Name() any {
 	switch spec {
-	case Spec_PaladinProtMitigation:
-		return "PaladinProtMitigation"
-	case Spec_PaladinProtCompromise:
-		return "PaladinProtCompromise"
-	case Spec_PaladinProtDps:
-		return "PaladinProtDps"
+	case Spec_PaladinProt:
+		return "PaladinProt"
 	case Spec_PaladinRet:
 		return "PaladinRet"
 	case Spec_PaladinHoly:

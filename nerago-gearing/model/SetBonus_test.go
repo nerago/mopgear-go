@@ -32,7 +32,7 @@ func makeEquipFetch() loopedFetch {
 }
 
 func makeEquipFetch2(a, b *SetBonus) loopedFetch {
-	allInfo := []setInfo{}
+	allInfo := []setInfoActive{}
 	allInfo = append(allInfo, a.activeSets...)
 	allInfo = append(allInfo, b.activeSets...)
 
@@ -50,7 +50,7 @@ func makeEquipFetch2(a, b *SetBonus) loopedFetch {
 }
 
 func makeSetBonuses() (SetBonus, SetBonus, SetBonus) {
-	return SetBonus_Empty(), SetBonus_Named("White Tiger Plate"), SetBonus_ForSpec(Spec_PaladinRet)
+	return SetBonus_Empty(), SetBonus_Named("White Tiger Plate"), SetBonus_ForSpec(Spec_PaladinRet, OptimiseGoal_Dps)
 }
 
 func BenchmarkCalcBonusSolve(test *testing.B) {
@@ -208,7 +208,7 @@ func makeEquipForBonus(numInSet int) *SolvableEquipMap {
 	return &equip
 }
 
-func makeEquipForBonus2(a, b *setInfo, x, y int) *SolvableEquipMap {
+func makeEquipForBonus2(a, b *setInfoActive, x, y int) *SolvableEquipMap {
 	equip := SolvableEquipMap{}
 	for slot := range equip {
 		equip[slot] = makeItem()

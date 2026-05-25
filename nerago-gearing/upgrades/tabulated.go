@@ -64,7 +64,7 @@ func processSpec(input *FindUpgrades_SimInputs, spec *FindUpgrades_Spec, difficu
 	group := reportGroup{spec.Label, difficulty}
 	*groups = append(*groups, group)
 
-	outputMap[group] = findUpgradeAndSim(input, &options, upgradeItems, &spec.Model, printer, tracker.MakeNested(), spec.Goal, spec.SubstituteItems, spec.SubstituteEmptySlotOnly)
+	outputMap[group] = findUpgradeAndSim(input, &options, upgradeItems, &spec.Model, printer, tracker.MakeNested(), spec.Model.Goal, spec.SubstituteItems, spec.SubstituteEmptySlotOnly)
 
 	printer.Close()
 }

@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/solver"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
@@ -14,7 +15,7 @@ import (
 )
 
 func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress,
-	goal UpgradeGoal, forceIncludeMost bool, substituteItems []items.ItemId, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) ([]upgradeItemResult, *items.FullItemSet) {
+	goal stats.OptimiseGoal, forceIncludeMost bool, substituteItems []items.ItemId, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) ([]upgradeItemResult, *items.FullItemSet) {
 
 	extraItems = setupUpgradeLevel(extraItems, printer)
 	checkDuplicates(extraItems)
@@ -57,7 +58,7 @@ func checkDuplicates(extraItems []*items.FullItem) {
 	}
 }
 
-func makeExtraTasks(input *FindUpgrades_BasicInputs, extraItems []*items.FullItem, baseItems *items.FullOptionsMap, printer *util.PrintRecorder, goal UpgradeGoal) []upgradeItemTask {
+func makeExtraTasks(input *FindUpgrades_BasicInputs, extraItems []*items.FullItem, baseItems *items.FullOptionsMap, printer *util.PrintRecorder, goal stats.OptimiseGoal) []upgradeItemTask {
 	bagsFile := loaders.BagsFile_PlusPaladinGear_Read()
 
 	taskList := make([]upgradeItemTask, 0, len(extraItems))
