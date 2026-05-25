@@ -14,7 +14,6 @@ const c_highRange = 100000.0
 func CalcComplexStatWeights(inputData []WeightInput, targetRatios simulate.SimResultStats, printer *util.PrintRecorder) map[stats.StatType]float64 {
 	// highRange := 100000.0 // basic sum of stats Mop P4 is about 83k
 	// scaleMin := 0.001  // similar number of places, can get scores down to around 1
-	colNames := make([]string, 0)
 
 	input := new(utilhighs.InputBuilder)
 
@@ -25,29 +24,28 @@ func CalcComplexStatWeights(inputData []WeightInput, targetRatios simulate.SimRe
 	input.AddLinearObjective(-2, 0, 1000, 0.2, 2) // scoreDiff
 	input.AddLinearObjective(-1, 0, 1000, 0.2, 3) // data pairs offset
 
-	statWeightColumns, colNames, simWeightColumns := weightColumns(input, colNames)
+	statWeightColumns, simWeightColumns := weightColumns(input)
 
 	// colNames = dataEquations(inputData, input, colNames, statWeightColumns, simWeightColumns, targetRatios)
 
-	colNames = dataCompareInPairsEquations(input, colNames, inputData, statWeightColumns, targetRatios)
+	dataCompareInPairsEquations(input, inputData, statWeightColumns, targetRatios)
 
 	solution, log := input.RunHighs()
 	printer.AppendOther(log)
 	printer.Println(solution.Status.String())
 
-	return reportWeightSolution(solution, printer, colNames, statWeightColumns, simWeightColumns, inputData)
+	return reportWeightSolution(input, solution, printer, statWeightColumns, simWeightColumns, inputData)
 }
 
-func weightColumns(input *utilhighs.InputBuilder, colNames []string) (map[stats.StatType]utilhighs.ColumnIndex, []string, map[simulate.SimResultType]utilhighs.ColumnIndex) {
+func weightColumns(input *utilhighs.InputBuilder) (map[stats.StatType]utilhighs.ColumnIndex, map[simulate.SimResultType]utilhighs.ColumnIndex) {
 	scaleMin := 0.0
 	scaleMax := 100.0
 
 	totalStatWeightRow := utilhighs.ConstraintRowBuild{}
 	statWeightColumns := make(map[stats.StatType]utilhighs.ColumnIndex)
 	for _, stat := range G_RequiredStats {
-		statColIndex := input.CreateColumnGeneral(highs.Continuous, scaleMin, scaleMax, nil)
+		statColIndex := input.CreateColumnGeneral(highs.Continuous, scaleMin, scaleMax, utilhighs.DebugString{Text: stat.Name()})
 		// statColIndex := input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
-		colNames = append(colNames, stat.Name())
 		statWeightColumns[stat] = statColIndex
 		totalStatWeightRow.Add(statColIndex, 1)
 	}
@@ -61,14 +59,13 @@ func weightColumns(input *utilhighs.InputBuilder, colNames []string) (map[stats.
 	totalSimWeightRow := utilhighs.ConstraintRowBuild{}
 	simWeightColumns := make(map[simulate.SimResultType]utilhighs.ColumnIndex)
 	for _, simType := range G_RequiredSims {
-		simColIndex := input.CreateColumnGeneral(highs.Continuous, scaleMin, scaleMax, nil)
+		simColIndex := input.CreateColumnGeneral(highs.Continuous, scaleMin, scaleMax, utilhighs.DebugString{Text: simType.String()})
 		// simColIndex := input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
-		colNames = append(colNames, simType.String())
 		simWeightColumns[simType] = simColIndex
 		totalSimWeightRow.Add(simColIndex, 1)
 	}
 	// totalSimWeightRow.finish(input, 1, 1)
-	return statWeightColumns, colNames, simWeightColumns
+	return statWeightColumns, simWeightColumns
 }
 
 func dataEquations(inputData []WeightInput, input *utilhighs.InputBuilder, colNames []string, statWeightColumns map[stats.StatType]utilhighs.ColumnIndex, simWeightColumns map[simulate.SimResultType]utilhighs.ColumnIndex, targetRatios simulate.SimResultStats) []string {
@@ -147,7 +144,7 @@ func dataEquations(inputData []WeightInput, input *utilhighs.InputBuilder, colNa
 	return colNames
 }
 
-func dataCompareInPairsEquations(input *utilhighs.InputBuilder, colNames []string, inputData []WeightInput, statWeightColumns map[stats.StatType]utilhighs.ColumnIndex, targetRatios simulate.SimResultStats) []string {
+func dataCompareInPairsEquations(input *utilhighs.InputBuilder, inputData []WeightInput, statWeightColumns map[stats.StatType]utilhighs.ColumnIndex, targetRatios simulate.SimResultStats) {
 	detailedWeights := make(map[stats.StatType]map[simulate.SimResultType]utilhighs.ColumnIndex)
 	for _, statType := range G_RequiredStats {
 		detailedWeights[statType] = make(map[simulate.SimResultType]utilhighs.ColumnIndex)
@@ -161,7 +158,7 @@ func dataCompareInPairsEquations(input *utilhighs.InputBuilder, colNames []strin
 	for _, data1 := range inputData {
 		for _, data2 := range inputData {
 			if !stats.StatBlock_Equals(&data1.TotalStat, &data2.TotalStat) {
-				colNames = dataCompareInPairsEquations_Single(input, colNames, data1, data2, detailedWeights, c_highRange)
+				dataCompareInPairsEquations_Single(input, data1, data2, detailedWeights, c_highRange)
 			}
 		}
 	}
@@ -174,11 +171,9 @@ func dataCompareInPairsEquations(input *utilhighs.InputBuilder, colNames []strin
 		statRow.Add(statWeightColumns[statType], -1)
 		statRow.Finish(input, 0, 0)
 	}
-
-	return colNames
 }
 
-func dataCompareInPairsEquations_Single(input *utilhighs.InputBuilder, colNames []string, data1, data2 WeightInput, weights map[stats.StatType]map[simulate.SimResultType]utilhighs.ColumnIndex, highRange float64) []string {
+func dataCompareInPairsEquations_Single(input *utilhighs.InputBuilder, data1, data2 WeightInput, weights map[stats.StatType]map[simulate.SimResultType]utilhighs.ColumnIndex, highRange float64) {
 
 	// so i'd normally do this in the area of a single stat and simType
 	// Death's Haste improvement is F37/C37 = (death_with_0_haste_str - death_with_+600_haste)/(death_with_0_haste_str - death_with_+600_str)
@@ -216,16 +211,10 @@ func dataCompareInPairsEquations_Single(input *utilhighs.InputBuilder, colNames 
 		}
 		simRow.Finish(input, simDiff, simDiff)
 	}
-
-	return colNames
 }
 
-func reportWeightSolution(solution *highs.Solution, printer *util.PrintRecorder, colNames []string, statWeightColumns map[stats.StatType]utilhighs.ColumnIndex, simWeightColumns map[simulate.SimResultType]utilhighs.ColumnIndex, inputData []WeightInput) map[stats.StatType]float64 {
-	for i, x := range solution.ColValues {
-		if i < len(colNames) {
-			printer.Printf("%3d %14f %s\n", i, x, colNames[i])
-		}
-	}
+func reportWeightSolution(input *utilhighs.InputBuilder, solution *highs.Solution, printer *util.PrintRecorder, statWeightColumns map[stats.StatType]utilhighs.ColumnIndex, simWeightColumns map[simulate.SimResultType]utilhighs.ColumnIndex, inputData []WeightInput) map[stats.StatType]float64 {
+	input.DebugPrintColumns(solution, printer)
 
 	statWeightResult := make(map[stats.StatType]float64)
 	simWeightResult := make(map[simulate.SimResultType]float64)

@@ -1,10 +1,13 @@
 package stathighs
 
 import (
+	"iter"
+	"math"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"strconv"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
@@ -12,14 +15,19 @@ import (
 type GridStatWeightProcess struct {
 	printer *util.PrintRecorder
 
-	targetRatios simulate.SimResultStats
-	inputData    []WeightInput
+	targetRatios            simulate.SimResultStats
+	inputData               []WeightInput
+	inputDataIncludeToggles []utilhighs.ColumnIndex
 
 	input           utilhighs.InputBuilder
-	colNames        []string
-	unitStatValues  util.MapMap[stats.StatType, simulate.SimResultType, []float64]
+	unitStatValues  util.MapMapSlice[stats.StatType, simulate.SimResultType, gridDataSample]
 	detailedWeights util.MapMap[stats.StatType, simulate.SimResultType, utilhighs.ColumnIndex]
 	finalWeights    map[stats.StatType]utilhighs.ColumnIndex
+}
+
+type gridDataSample struct {
+	value          float64
+	includeToggles [2]utilhighs.ColumnIndex
 }
 
 func (grid *GridStatWeightProcess) Init(printer *util.PrintRecorder) {
@@ -52,10 +60,9 @@ func (grid *GridStatWeightProcess) SetTargetRatios(targetRatios simulate.SimResu
 func (grid *GridStatWeightProcess) Run() map[stats.StatType]float64 {
 	grid.setupWeightVars()
 
-	// grid.simData.ForeachWithKeys(func(statType stats.StatType, statValue uint32, sim simulate.SimResultStats) {
-	// 	grid.incorporateSample(statType, statValue, sim)
-	// })
-	grid.sweepData()
+	grid.createIncludeToggles()
+	grid.dataSamplesFromPairs()
+	grid.checkSampleRange()
 	grid.unitValuesToCalcDetailedRatings()
 	grid.calcTotalRatings()
 
@@ -63,24 +70,22 @@ func (grid *GridStatWeightProcess) Run() map[stats.StatType]float64 {
 	grid.printer.AppendOther(log)
 	grid.printer.Println(solution.Status.String())
 
-	debugPrintColumnsGrid(solution, grid)
+	grid.input.DebugPrintColumns(solution, grid.printer)
 
 	return reportOutputWeightsGrid(solution, grid.finalWeights, grid.printer)
 }
 
 func (grid *GridStatWeightProcess) setupWeightVars() {
 	for _, statType := range G_RequiredStats {
-		colFinalWeight := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, nil)
+		colFinalWeight := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "FINAL WEIGHT: " + statType.Name()})
 		// colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, -c_finalWeightLimit, c_finalWeightLimit)
 		grid.finalWeights[statType] = colFinalWeight
-		grid.colNames = append(grid.colNames, "FINAL WEIGHT: "+statType.Name())
 	}
 
 	for _, statType := range G_RequiredStats {
 		for _, simType := range G_RequiredSims {
-			colDetailWeight := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, nil)
+			colDetailWeight := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.String()})
 			grid.detailedWeights.Put(statType, simType, colDetailWeight)
-			grid.colNames = append(grid.colNames, "WEIGHT: "+statType.Name()+" "+simType.String())
 		}
 	}
 
@@ -93,19 +98,37 @@ func (grid *GridStatWeightProcess) setupWeightVars() {
 	}
 }
 
+func (grid *GridStatWeightProcess) createIncludeToggles() {
+	includeScore := 0.1
+
+	rowIncludeReasonableNumber := utilhighs.ConstraintRowBuild{}
+
+	grid.inputDataIncludeToggles = make([]utilhighs.ColumnIndex, len(grid.inputData))
+	for i := range len(grid.inputData) {
+		// negative score since we're minimising, each variable used is "better"
+		column := grid.input.CreateColumnWithOutput(highs.Integer, 0, 1, -includeScore, utilhighs.DebugString{Text: "input toggle " + strconv.Itoa(i)})
+		grid.inputDataIncludeToggles[i] = column
+
+		rowIncludeReasonableNumber.Add(column, 1)
+	}
+
+	minimumUseful := len(grid.inputData) / 4
+	rowIncludeReasonableNumber.Finish(&grid.input, float64(minimumUseful), float64(len(grid.inputData)))
+}
+
 // lazy func, could avoid double processing and put in order, very N**2
-func (grid *GridStatWeightProcess) sweepData() {
+func (grid *GridStatWeightProcess) dataSamplesFromPairs() {
 	for a := range grid.inputData {
 		for b := range grid.inputData {
-			statType, isGood := isGoodSample(&grid.inputData[a].TotalStat, &grid.inputData[b].TotalStat)
+			statType, isGood := isGoodPair(&grid.inputData[a].TotalStat, &grid.inputData[b].TotalStat)
 			if isGood {
-				grid.incorporateSample(statType, &grid.inputData[a], &grid.inputData[b])
+				grid.prepareSample(statType, &grid.inputData[a], &grid.inputData[b], grid.inputDataIncludeToggles[a], grid.inputDataIncludeToggles[b])
 			}
 		}
 	}
 }
 
-func isGoodSample(blockHigh, blockLow *stats.StatBlock) (stats.StatType, bool) {
+func isGoodPair(blockHigh, blockLow *stats.StatBlock) (stats.StatType, bool) {
 	var changedStat stats.StatType
 	foundChange := false
 	for stat := range blockHigh {
@@ -126,7 +149,7 @@ func isGoodSample(blockHigh, blockLow *stats.StatBlock) (stats.StatType, bool) {
 	return changedStat, foundChange
 }
 
-func (grid *GridStatWeightProcess) incorporateSample(statType stats.StatType, high, low *WeightInput) {
+func (grid *GridStatWeightProcess) prepareSample(statType stats.StatType, high, low *WeightInput, highInclude, lowInclude utilhighs.ColumnIndex) {
 	// basic approach (spreadsheet "build ratings miti_2")
 	// unit_dps_haste = (this_dps[haste] - base_dps) / this_haste_value
 	// detailweight_dps_haste = unit_dps_haste / unit_dps_str * detailweight_str
@@ -146,8 +169,29 @@ func (grid *GridStatWeightProcess) incorporateSample(statType stats.StatType, hi
 		// 	panic("small values, highs won't like it")
 		// }
 
-		grid.unitStatValues.Apply(statType, simType, func(oldValue []float64) []float64 { return append(oldValue, unitStatValue) })
+		dataSample := gridDataSample{unitStatValue, [2]utilhighs.ColumnIndex{highInclude, lowInclude}}
+		grid.unitStatValues.Add(statType, simType, dataSample)
 	}
+}
+
+func (grid *GridStatWeightProcess) checkSampleRange() {
+	good, bad := 0, 0
+	for entry := range grid.unitStatValues.SeqValues() {
+		if isGoodValueRange(entry.value) {
+			good++
+		} else {
+			bad++
+		}
+	}
+	grid.printer.Printf("checkSampleRange good=%d bad=%d\n", good, bad)
+	if bad > (good+bad)/10 {
+		panic("many values have inconvenient range")
+	}
+}
+
+func isGoodValueRange(value float64) bool {
+	value = math.Abs(value)
+	return 1e-6 <= value && value <= 1e6
 }
 
 func (grid *GridStatWeightProcess) unitValuesToCalcDetailedRatings() {
@@ -158,40 +202,64 @@ func (grid *GridStatWeightProcess) unitValuesToCalcDetailedRatings() {
 	// detailweight_dps_haste * unit_dps_str - detailweight_dps_str * unit_dps_haste = 0
 	// detailweight_dps_haste * unit_dps_str - detailweight_dps_str * unit_dps_haste + offset = 0  (allow small offset to optimise on)
 
-	grid.unitStatValues.ForeachGroupForKey2(func(simType simulate.SimResultType, lookupStat func(stats.StatType) []float64) {
-		unitValueBaseArray := lookupStat(c_baseStatType)
+	for simType, lookupStat := range grid.unitStatValues.SeqGroupsKey2() {
+		unitValueBaseSeq := lookupStat(c_baseStatType)
 		detailWeightBase := grid.detailedWeights.GetOrPanic(c_baseStatType, simType)
 		for _, thisStatType := range G_RequiredStats {
 			if thisStatType != c_baseStatType {
-				thisUnitValueArray := lookupStat(thisStatType)
-				thisDetailWeight := grid.detailedWeights.GetOrPanic(thisStatType, simType)
-
-				// look at multiple input values of each unitstat value
-				for _, unitValueBase := range unitValueBaseArray {
-					for _, thisUnitValue := range thisUnitValueArray {
-						grid.unitValuesToCalcDetailedRatings_single(unitValueBase, detailWeightBase, thisUnitValue, thisDetailWeight, simType, thisStatType)
-					}
-				}
+				thisUnitValueSeq := lookupStat(thisStatType)
+				grid.unitValuesCalcForGroup(simType, thisStatType, unitValueBaseSeq, thisUnitValueSeq, detailWeightBase)
 			}
 		}
-	})
+	}
 }
 
-func (grid *GridStatWeightProcess) unitValuesToCalcDetailedRatings_single(unitValueBase float64, detailWeightBase utilhighs.ColumnIndex,
-	thisUnitValue float64, thisdetailWeight utilhighs.ColumnIndex, simType simulate.SimResultType, statType stats.StatType) {
+func (grid *GridStatWeightProcess) unitValuesCalcForGroup(simType simulate.SimResultType, thisStatType stats.StatType, unitValueBaseSeq iter.Seq[gridDataSample], thisUnitValueSeq iter.Seq[gridDataSample], detailWeightBase utilhighs.ColumnIndex) {
+	debugText := simType.String() + " " + thisStatType.Name()
+	thisDetailWeight := grid.detailedWeights.GetOrPanic(thisStatType, simType)
 
-	offsetSigned := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, nil)
-	grid.colNames = append(grid.colNames, "OFFSET SIGNED "+simType.String()+" "+statType.Name())
-	offsetAbs := grid.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, nil) // outputs for objective function
-	grid.colNames = append(grid.colNames, "OFFSET ABS "+simType.String()+" "+statType.Name())
-	utilhighs.AbsoluteValue2(&grid.input, offsetSigned, offsetAbs)
+	// look at multiple input values of each unitstat value
+	index := 0
+	for unitValueBase := range unitValueBaseSeq {
+		for thisUnitValue := range thisUnitValueSeq {
+			if isGoodValueRange(unitValueBase.value) && isGoodValueRange(thisUnitValue.value) {
+				grid.unitValueCombinationAddToModel(unitValueBase, detailWeightBase, thisUnitValue, thisDetailWeight, debugText+" "+strconv.Itoa(index))
+				index++
+			}
+		}
+	}
+}
+
+func (grid *GridStatWeightProcess) unitValueCombinationAddToModel(baseUnitSample gridDataSample, detailWeightBase utilhighs.ColumnIndex,
+	thisUnitSample gridDataSample, thisDetailWeight utilhighs.ColumnIndex, debugText string) {
+
+	includeDataPointToggle := grid.input.CreateColumnBool(utilhighs.DebugString{Text: "DATA TOGGLE " + debugText})
+	and := utilhighs.ContraintAndBuilder{}
+	and.SetOutput(includeDataPointToggle)
+	and.AddInput(baseUnitSample.includeToggles[0])
+	and.AddInput(baseUnitSample.includeToggles[1])
+	and.AddInput(thisUnitSample.includeToggles[0])
+	and.AddInput(thisUnitSample.includeToggles[1])
+	and.FinishAndApply(&grid.input)
 
 	// detailweight_dps_haste * unit_dps_base - detailweight_dps_base * unit_dps_haste + offset = 0
+	// detailweight_dps_haste / unit_dps_haste  - detailweight_dps_base   / unit_dps_base + offset / unit_dps_base / unit_dps_haste = 0
+	offsetSigned := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "OFFSET SIGNED " + debugText})
 	weightRow := utilhighs.ConstraintRowBuild{}
-	weightRow.Add(thisdetailWeight, unitValueBase)
-	weightRow.Add(detailWeightBase, -thisUnitValue)
+	weightRow.Add(thisDetailWeight, baseUnitSample.value)  // OLD
+	weightRow.Add(detailWeightBase, -thisUnitSample.value) // OLD
+	// weightRow.Add(thisDetailWeight, 1/thisUnitSample.value) // NEW BUT TOO BIG
+	// weightRow.Add(detailWeightBase, -1/baseUnitSample.value) // NEW BUT TOO BIG
 	weightRow.Add(offsetSigned, 1)
 	weightRow.Finish(&grid.input, 0, 0)
+
+	// take absolute value
+	offsetAbs := grid.input.CreateColumnGeneral(highs.Continuous, 0, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "OFFSET ABS " + debugText})
+	utilhighs.AbsoluteValue2(&grid.input, offsetSigned, offsetAbs)
+
+	// output for objective function
+	output := grid.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "OUTPUT " + debugText})
+	utilhighs.ContraintIfBoolCopyValueElseZero(&grid.input, includeDataPointToggle, offsetAbs, output, 0, c_finalWeightLimit) // don't know if this can work, especially with zero low
 }
 
 func (grid *GridStatWeightProcess) calcTotalRatings() {
@@ -204,14 +272,6 @@ func (grid *GridStatWeightProcess) calcTotalRatings() {
 		finalWeightColumn := grid.finalWeights[statType]
 		statFinalRow.Add(finalWeightColumn, -1)
 		statFinalRow.Finish(&grid.input, 0, 0)
-	}
-}
-
-func debugPrintColumnsGrid(solution *highs.Solution, basic *GridStatWeightProcess) {
-	if utilhighs.C_DebugHighs {
-		for i, x := range solution.ColValues {
-			basic.printer.Printf("%3d %14f %s\n", i, x, basic.colNames[i])
-		}
 	}
 }
 

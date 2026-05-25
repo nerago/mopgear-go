@@ -1,26 +1,28 @@
 package utilhighs
 
+import "slices"
+
 func ContraintIfBoolCopyValueElseZero(input *InputBuilder, boolSwitchVar, sourceVar, targetVar ColumnIndex, rangeLow, rangeHigh float64) {
 	// based on https://medium.com/data-science/a-comprehensive-guide-to-modeling-techniques-in-mixed-integer-linear-programming-3e96cc1bc03d
 
-	valueHigh := ConstraintRowBuild{Debug: "ContraintIfBoolCopyValueElseZero"}
+	valueHigh := ConstraintRowBuild{Debug: "ContraintIfBoolCopyValueElseZero_ValueHigh"}
 	valueHigh.Add(targetVar, -1)
 	valueHigh.Add(sourceVar, 1)
 	valueHigh.Add(boolSwitchVar, rangeHigh)
 	valueHigh.Finish(input, C_MinusInf, rangeHigh)
 
-	valueLow := ConstraintRowBuild{Debug: "ContraintIfBoolCopyValueElseZero"}
+	valueLow := ConstraintRowBuild{Debug: "ContraintIfBoolCopyValueElseZero_ValueLow"}
 	valueLow.Add(targetVar, 1)
 	valueLow.Add(sourceVar, -1)
 	valueLow.Add(boolSwitchVar, -rangeLow)
 	valueLow.Finish(input, C_MinusInf, -rangeLow)
 
-	zeroHigh := ConstraintRowBuild{Debug: "ContraintIfBoolCopyValueElseZero"}
+	zeroHigh := ConstraintRowBuild{Debug: "ContraintIfBoolCopyValueElseZero_ZeroHigh"}
 	zeroHigh.Add(targetVar, 1)
 	zeroHigh.Add(boolSwitchVar, -rangeHigh)
 	zeroHigh.Finish(input, C_MinusInf, 0)
 
-	zeroLow := ConstraintRowBuild{Debug: "ContraintIfBoolCopyValueElseZero"}
+	zeroLow := ConstraintRowBuild{Debug: "ContraintIfBoolCopyValueElseZero_ZeroLow"}
 	zeroLow.Add(targetVar, -1)
 	zeroLow.Add(boolSwitchVar, rangeLow)
 	zeroLow.Finish(input, C_MinusInf, 0)
@@ -44,17 +46,19 @@ func (build *ContraintAndBuilder) SetOutput(column ColumnIndex) {
 }
 
 func (build *ContraintAndBuilder) AddInput(column ColumnIndex) {
-	build.inputVars = append(build.inputVars, column)
+	if !slices.Contains(build.inputVars, column) {
+		build.inputVars = append(build.inputVars, column)
+	}
 }
 
 func (build *ContraintAndBuilder) FinishAndApply(input *InputBuilder) {
-	sumRow := ConstraintRowBuild{Debug: "ContraintAndBuilder"}
+	sumRow := ConstraintRowBuild{Debug: "ContraintAndBuilder_sumRow"}
 	sumRow.Add(build.outputVar, -1)
 
 	for _, inputVar := range build.inputVars {
 		sumRow.Add(inputVar, 1)
 
-		pullDown := ConstraintRowBuild{Debug: "ContraintAndBuilder"}
+		pullDown := ConstraintRowBuild{Debug: "ContraintAndBuilder_pullDown"}
 		pullDown.Add(inputVar, -1)
 		pullDown.Add(build.outputVar, 1)
 		pullDown.Finish(input, C_MinusInf, 0)
@@ -74,7 +78,9 @@ func (build *ConstraintOrBuilder) SetOutput(column ColumnIndex) {
 }
 
 func (build *ConstraintOrBuilder) AddInput(column ColumnIndex) {
-	build.inputVars = append(build.inputVars, column)
+	if !slices.Contains(build.inputVars, column) {
+		build.inputVars = append(build.inputVars, column)
+	}
 }
 
 func (build *ConstraintOrBuilder) FinishAndApply(input *InputBuilder) {

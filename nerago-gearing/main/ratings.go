@@ -171,8 +171,8 @@ func relativeRatingsCompromise(printer *util.PrintRecorder) {
 }
 
 func generateRatingsInputFromArtificalStatOverrides(printer *util.PrintRecorder) ([]stathighs.WeightInput, simulate.SimResultStats) {
-	// simSpeed := simulate.RunSize_TestOnly
-	simSpeed := simulate.RunSize_QuickDirty
+	simSpeed := simulate.RunSize_TestOnly
+	// simSpeed := simulate.RunSize_QuickDirty
 	// simSpeed := simulate.RunSize_SlowAccurate
 
 	// fight := stats.Fight_Animus
@@ -342,22 +342,22 @@ func statWeightsFromHighAndSim(printer *util.PrintRecorder) {
 	writePawnString(weights, printer)
 }
 
-// func statWeightsBasic(printer *util.PrintRecorder) {
-// 	process := stathighs.BasicStatWeightProcess{}
-// 	process.Init(printer)
-// 	process.SetTargetRatios(stathighs.NewStatWeights_generalMiti)
-// 	process.SetBaseline(parseSimStats("254619.21 1604831.48 27870.13 39389.66 56.82 14.23"))
-// 	process.AddSimData(stats.Stat_Strength, +600, parseSimStats("256235.27 1614633.03 27573.09 39660.8 56.16 12.89"))
-// 	process.AddSimData(stats.Stat_Stamina, +600, parseSimStats("254474.09 1603914.71 27941.9 39360.88 55.72 13.62"))
-// 	process.AddSimData(stats.Stat_Crit, +600, parseSimStats("257106.61 1620383.56 27870.13 39389.66 56.82 14.23"))
-// 	process.AddSimData(stats.Stat_Haste, +600, parseSimStats("256815.91 1619941.66 27591.27 39782.48 55.98 12.51"))
-// 	process.AddSimData(stats.Stat_Expertise, +600, parseSimStats("256349.38 1615203.97 27893.43 40077.8 56.72 13.16"))
-// 	process.AddSimData(stats.Stat_Mastery, +600, parseSimStats("254483.79 1603982.91 27230.32 39355.29 55.17 12.03"))
-// 	process.AddSimData(stats.Stat_Dodge, +600, parseSimStats("254623.68 1604870.45 27649.33 39384.54 56.34 13.46"))
-// 	process.AddSimData(stats.Stat_Parry, +600, parseSimStats("254649.78 1605018.37 27660.8 39408.39 56.36 13.45"))
-// 	weights := process.Run()
-// 	writePawnString(weights, printer)
-// }
+func statWeightsBasic(printer *util.PrintRecorder) {
+	process := stathighs.BasicStatWeightProcess{}
+	process.Init(printer)
+	process.SetTargetRatios(stathighs.NewStatWeights_generalMiti)
+	process.SetBaseline(parseSimStats("254619.21 1604831.48 27870.13 39389.66 56.82 14.23"))
+	process.AddSimData(stats.Stat_Strength, +600, parseSimStats("256235.27 1614633.03 27573.09 39660.8 56.16 12.89"))
+	process.AddSimData(stats.Stat_Stamina, +600, parseSimStats("254474.09 1603914.71 27941.9 39360.88 55.72 13.62"))
+	process.AddSimData(stats.Stat_Crit, +600, parseSimStats("257106.61 1620383.56 27870.13 39389.66 56.82 14.23"))
+	process.AddSimData(stats.Stat_Haste, +600, parseSimStats("256815.91 1619941.66 27591.27 39782.48 55.98 12.51"))
+	process.AddSimData(stats.Stat_Expertise, +600, parseSimStats("256349.38 1615203.97 27893.43 40077.8 56.72 13.16"))
+	process.AddSimData(stats.Stat_Mastery, +600, parseSimStats("254483.79 1603982.91 27230.32 39355.29 55.17 12.03"))
+	process.AddSimData(stats.Stat_Dodge, +600, parseSimStats("254623.68 1604870.45 27649.33 39384.54 56.34 13.46"))
+	process.AddSimData(stats.Stat_Parry, +600, parseSimStats("254649.78 1605018.37 27660.8 39408.39 56.36 13.45"))
+	weights := process.Run()
+	writePawnString(weights, printer)
+}
 
 func statWeightsGrid(printer *util.PrintRecorder) {
 	inputData, targetRatio := generateRatingsInputFromArtificalStatOverrides(printer)

@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	C_DebugHighs         = false
-	C_DiagnoseInfeasible = false
+	C_DebugHighs         = true
+	C_DiagnoseInfeasible = true
 	c_threads            = 6
 )
 
@@ -46,18 +46,6 @@ type InputBuilder struct {
 	Minimise             bool
 	BlendMultiObjectives bool
 	Solver               string
-}
-
-type DebugContext interface {
-	DebugText() string
-}
-
-type DebugString struct {
-	Text string
-}
-
-func (debugString DebugString) DebugText() string {
-	return debugString.Text
 }
 
 func (input *InputBuilder) Clone() *InputBuilder {
@@ -198,6 +186,34 @@ func makeTempFilename() string {
 	return tempFile.Name()
 }
 
+type DebugContext interface {
+	DebugText() string
+}
+
+type DebugString struct {
+	Text string
+}
+
+func (debugString DebugString) DebugText() string {
+	return debugString.Text
+}
+
+func debugText(debug DebugContext) string {
+	debugText := ""
+	if debug != nil {
+		debugText = debug.DebugText()
+	}
+	return debugText
+}
+
+func (input *InputBuilder) DebugPrintColumns(solution *highs.Solution, printer *util.PrintRecorder) {
+	if C_DebugHighs {
+		for i, x := range solution.ColValues {
+			printer.Printf("%3d %14f %s\n", i, x, debugText(input.vars.debug[i]))
+		}
+	}
+}
+
 type variableArrayBuilder struct {
 	colTypes         []highs.VariableType // Type of each model variable
 	colCosts         []float64            // Column costs (i.e., the objective function itself)
@@ -288,9 +304,7 @@ type indexAndValue struct {
 
 type ConstraintRowBuild struct {
 	entries []indexAndValue
-	// isAdded  bool
-	// rowIndex RowIndex
-	Debug string
+	Debug   string
 }
 
 func (row *ConstraintRowBuild) IsEmpty() bool {
@@ -322,14 +336,6 @@ func (row *ConstraintRowBuild) Finish(input *InputBuilder, lowerBound float64, u
 	// couldn't find reference for sure that indexes need to be sorted but probably best
 	slices.SortFunc(row.entries, func(a, b indexAndValue) int { return cmp.Compare(a.columnNumber, b.columnNumber) })
 
-	// if C_DebugHighs {
-	// 	for _, entry := range row.entries {
-	// 		if (entry.value > 0 && entry.value <= 1e-9) || (entry.value < 0 && entry.value >= -1e-9) {
-	// 			panic("small values, highs won't like it")
-	// 		}
-	// 	}
-	// }
-
 	if C_DebugHighs {
 		if len(row.entries) == 0 && lowerBound != 0 && upperBound != 0 {
 			panic("empty row makes infeasible")
@@ -339,13 +345,6 @@ func (row *ConstraintRowBuild) Finish(input *InputBuilder, lowerBound float64, u
 	}
 
 	input.mat.addRow(row.entries, lowerBound, upperBound, row.Debug)
-
-	// if row.isAdded {
-	// 	input.mat.changeRow(row.rowIndex, row.entries, lowerBound, upperBound)
-	// } else {
-	// row.rowIndex = input.AddRow(row.entries, lowerBound, upperBound)
-	// row.isAdded = true
-	// }
 }
 
 type constraintMatrixBuilder struct {
@@ -388,12 +387,6 @@ func (mat *constraintMatrixBuilder) deleteRowRange(firstDelete, lastDelete int) 
 	mat.upperBound = slices.Delete(mat.upperBound, firstDelete, lastDelete+1)
 	mat.debug = slices.Delete(mat.debug, firstDelete, lastDelete+1)
 }
-
-// func (mat *constraintMatrixBuilder) changeRow(rowIndex RowIndex, entries []indexAndValue, lowerBound float64, upperBound float64) {
-// 	mat.entries[rowIndex] = entries
-// 	mat.lowerBound[rowIndex] = lowerBound
-// 	mat.upperBound[rowIndex] = upperBound
-// }
 
 func (mat *constraintMatrixBuilder) createSolverInputArrays() (numRows int32, lowerBound []float64, upperBound []float64, startArray []int32, indexArray []int32, valuesArray []float64) {
 	numRows = int32(len(mat.entries))

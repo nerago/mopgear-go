@@ -95,14 +95,6 @@ func debugPrintSolutionValues(solution *highs.Solution, input *InputBuilder, pri
 	}
 }
 
-func debugText(debug DebugContext) string {
-	debugText := ""
-	if debug != nil {
-		debugText = debug.DebugText()
-	}
-	return debugText
-}
-
 func debugPrintSolutionValuesWithRowContext(solution *highs.Solution, input *InputBuilder, rowIndex int, printer *util.PrintRecorder) {
 	entryLookup := make(map[ColumnIndex]float64)
 	for _, entry := range input.mat.entries[rowIndex] {

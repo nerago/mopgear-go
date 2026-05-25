@@ -201,6 +201,11 @@ func updateFight(input *wowsim_proto.RaidSimRequest, fight stats.WowSim_Fight) {
 			target.MinBaseDamage *= 1.3
 		}
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 220000
+		// TODO MORE HEALS PLZ
+		// TODO MORE HEALS PLZ
+		// TODO MORE HEALS PLZ
+		// TODO MORE HEALS PLZ
+		// TODO MORE HEALS PLZ
 	default:
 		panic("unknown fight")
 	}
