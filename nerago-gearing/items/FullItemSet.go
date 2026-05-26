@@ -55,7 +55,7 @@ func (itemSet *FullItemSet) Items() *FullEquipMap {
 }
 
 func (itemSet *FullItemSet) Equals(other *FullItemSet) bool {
-	return itemSet.items.Equals(&other.items)
+	return stats.StatBlock_Equals(&itemSet.total, &other.total) && itemSet.items.Equals(&other.items)
 }
 
 func (itemSet *FullItemSet) EqualsAllowNil(other *FullItemSet) bool {

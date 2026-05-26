@@ -18,6 +18,7 @@ import (
 	"paladin_gearing_go/util/channel_op"
 	"paladin_gearing_go/util/util_rank"
 	"slices"
+	"sync/atomic"
 )
 
 func basicReforge(printer *util.PrintRecorder) {
@@ -768,39 +769,41 @@ func findT5TrinketPermutations(printer *util.PrintRecorder) {
 }
 
 func findT5WeightPermutations(printer *util.PrintRecorder) {
-	// simRunSize := simulate.RunSize_QuickDirty
-	simRunSize := simulate.RunSize_TestOnly
+	simRunSize := simulate.RunSize_QuickDirty
+	// simRunSize := simulate.RunSize_TestOnly
 
 	_, _, itemOptions := allT5stuff(printer)
 	solveOptions := items.SolvableOptionsMap_of(&itemOptions)
 
 	// ALL
-	// statListAll := []stats.StatType{
-	// 	stats.Stat_Strength, stats.Stat_Stamina,
-	// 	stats.Stat_Crit, stats.Stat_Haste,
-	// 	stats.Stat_Expertise, stats.Stat_Dodge,
-	// 	stats.Stat_Parry, stats.Stat_Mastery}
+	statListAll := []stats.StatType{
+		stats.Stat_Strength, stats.Stat_Stamina,
+		stats.Stat_Crit, stats.Stat_Haste,
+		stats.Stat_Expertise, stats.Stat_Dodge,
+		stats.Stat_Parry, stats.Stat_Mastery}
 
 	// DPS: dump dodge, stam
-	statList := []stats.StatType{
-		stats.Stat_Strength, stats.Stat_Crit, stats.Stat_Haste,
-		stats.Stat_Expertise, stats.Stat_Parry, stats.Stat_Mastery}
+	// statList := []stats.StatType{
+	// 	stats.Stat_Strength, stats.Stat_Crit, stats.Stat_Haste,
+	// 	stats.Stat_Expertise, stats.Stat_Parry, stats.Stat_Mastery}
 
 	// MITI: dump crit, expertise
-	// statList := []stats.StatType{
-	// 	stats.Stat_Strength, stats.Stat_Stamina, stats.Stat_Haste,
-	// 	stats.Stat_Dodge, stats.Stat_Parry, stats.Stat_Mastery}
+	statListTest := []stats.StatType{
+		stats.Stat_Strength, stats.Stat_Stamina, stats.Stat_Haste,
+		stats.Stat_Dodge, stats.Stat_Parry, stats.Stat_Mastery}
 
-	allPossibleOrders := generateAllOrders(statList)
+	allPossibleOrders := generateAllOrders(statListTest)
 
 	type orderIntermediate struct {
-		order   []stats.StatType
-		itemSet items.FullItemSet
+		order      []stats.StatType
+		orderText  string
+		itemSet    items.FullItemSet
+		alterModel model.Model
 	}
 
 	type orderIntermediateGrouped struct {
-		order   []stats.StatType
-		itemSet items.FullItemSet
+		itemSet       items.FullItemSet
+		intermediates []orderIntermediate
 	}
 
 	type orderResult struct {
@@ -808,17 +811,15 @@ func findT5WeightPermutations(printer *util.PrintRecorder) {
 		sim   simulate.SimResultStats
 	}
 
-	progress := util.TrackProgress_Start()
-	progress.RunOuterTracking(len(allPossibleOrders))
-	intermediates := channel_op.Map_SliceToSlice(6, allPossibleOrders, func(order *[]stats.StatType, outChan chan<- orderIntermediate) {
+	progress1 := util.TrackProgress_Start()
+	progress1Atom := atomic.Uint64{}
+	progress1.RunFromAtomicInt(&progress1Atom, uint64(len(allPossibleOrders)))
+	intermediates := channel_op.Map_SliceToSlice(10, allPossibleOrders, func(order *[]stats.StatType, outChan chan<- orderIntermediate) {
 		alterModel := model.Model_PallyProtMitigation_NoSet()
 		alterModel.StatRatings = ratings.StatRatingsWeights_FromPriorities(*order)
 
 		thisSolvedSet := withhighs.RunAllActiveSets(&solveOptions, &alterModel, printer)
 		thisItemSet := items.FullItemSet_FromSolved(thisSolvedSet.GetOrPanic(), &itemOptions)
-
-		thisEquip := thisItemSet.Items()
-		sim := simulate.WowSim_Execute_UseModel(simRunSize, &alterModel, thisEquip, nil, progress.MakeNested())
 
 		orderText := util.StringBuild2{}
 		for _, stat := range *order {
@@ -826,39 +827,50 @@ func findT5WeightPermutations(printer *util.PrintRecorder) {
 			orderText.WriteRune(' ')
 		}
 
-		printer.Printf("%s %s\n", orderText.String(), sim.CompactStringGeneral())
+		orderTextStr := orderText.String()
+		printer.Printf("%s %s\n", orderTextStr, thisItemSet.Total().CreateString())
 
-		outChan <- orderResult{*order, thisItemSet, sim}
+		outChan <- orderIntermediate{*order, orderTextStr, thisItemSet, alterModel}
+		progress1Atom.Add(1)
 	})
+	progress1.Stop()
 
-	results := channel_op.Map_SliceToSlice(6, allPossibleOrders, func(order *[]stats.StatType, outChan chan<- orderResult) {
-		alterModel := model.Model_PallyProtMitigation_NoSet()
-		alterModel.StatRatings = ratings.StatRatingsWeights_FromPriorities(*order)
-
-		thisSolvedSet := withhighs.RunAllActiveSets(&solveOptions, &alterModel, printer)
-		thisItemSet := items.FullItemSet_FromSolved(thisSolvedSet.GetOrPanic(), &itemOptions)
-
-		thisEquip := thisItemSet.Items()
-		sim := simulate.WowSim_Execute_UseModel(simRunSize, &alterModel, thisEquip, nil, progress.MakeNested())
-
-		orderText := util.StringBuild2{}
-		for _, stat := range *order {
-			orderText.WriteString(stat.Name())
-			orderText.WriteRune(' ')
+	intermediatesGrouped := make([]*orderIntermediateGrouped, 0)
+outerIntermediateLoop:
+	for _, inter := range intermediates {
+		for _, group := range intermediatesGrouped {
+			if group.itemSet.Equals(&inter.itemSet) {
+				group.intermediates = append(group.intermediates, inter)
+				continue outerIntermediateLoop
+			}
 		}
+		intermediatesGrouped = append(intermediatesGrouped, &orderIntermediateGrouped{
+			inter.itemSet,
+			[]orderIntermediate{inter},
+		})
+	}
 
-		printer.Printf("%s %s\n", orderText.String(), sim.CompactStringGeneral())
+	progress2 := util.TrackProgress_Start()
+	progress2.RunOuterTracking(len(intermediatesGrouped))
+	results := channel_op.Map_SliceToSlice(10, intermediatesGrouped, func(group **orderIntermediateGrouped, outChan chan<- orderResult) {
+		thisEquip := (*group).itemSet.Items()
+		alterModel := (*group).intermediates[0].alterModel // all models should be the same for passing basic info to sim
 
-		outChan <- orderResult{*order, thisItemSet, sim}
+		sim := simulate.WowSim_Execute_UseModel(simRunSize, &alterModel, thisEquip, nil, progress2.MakeNested())
+
+		printer.Printf("%s %s\n", (*group).itemSet.Total().CreateString(), sim.CompactStringGeneral())
+
+		outChan <- orderResult{**group, sim}
 	})
+	progress2.Stop()
 
 	line := util.StringBuild2{}
-	for i := range statList {
+	for i := range statListTest {
 		line.WriteString("order")
 		line.WriteInt(i)
 		line.WriteRune(',')
 	}
-	for _, v := range statList {
+	for _, v := range statListAll {
 		line.WriteString(v.Name())
 		line.WriteRune(',')
 	}
@@ -870,20 +882,22 @@ func findT5WeightPermutations(printer *util.PrintRecorder) {
 	line.Reset()
 
 	for _, res := range results {
-		for i := range res.order {
-			line.WriteString(res.order[i].Name())
-			line.WriteRune(',')
+		for _, inter := range res.group.intermediates {
+			for i := range inter.order {
+				line.WriteString(inter.order[i].Name())
+				line.WriteRune(',')
+			}
+			for _, v := range statListAll {
+				line.WriteUint32(res.group.itemSet.Total().Get(v))
+				line.WriteRune(',')
+			}
+			for _, simType := range simulate.SimResultTypeList {
+				line.WriteFloat64(res.sim.GetFriendly(simType), 3)
+				line.WriteRune(',')
+			}
+			printer.PrintlnFromBuild(line)
+			line.Reset()
 		}
-		for _, v := range statList {
-			line.WriteUint32(res.itemSet.Total().Get(v))
-			line.WriteRune(',')
-		}
-		for _, simType := range simulate.SimResultTypeList {
-			line.WriteFloat64(res.sim.GetFriendly(simType), 3)
-			line.WriteRune(',')
-		}
-		printer.PrintlnFromBuild(line)
-		line.Reset()
 	}
 }
 
