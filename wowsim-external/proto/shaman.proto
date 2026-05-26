@@ -1,0 +1,216 @@
+syntax = "proto3";
+package proto;
+
+option go_package = "./proto";
+// DO NOT REMOVE THE COMMENTS
+// BEGIN GENERATED
+// ShamanTalents message.
+message ShamanTalents {
+    bool natures_guardian = 1;
+    bool stone_bulwark_totem = 2;
+    bool astral_shift = 3;
+    bool frozen_power = 4;
+    bool earthgrab_totem = 5;
+    bool windwalk_totem = 6;
+    bool call_of_the_elements = 7;
+    bool totemic_persistence = 8;
+    bool totemic_projection = 9;
+    bool elemental_mastery = 10;
+    bool ancestral_swiftness = 11;
+    bool echo_of_the_elements = 12;
+    bool rushing_streams = 13;
+    bool ancestral_guidance = 14;
+    bool conductivity = 15;
+    bool unleashed_fury = 16;
+    bool primal_elementalist = 17;
+    bool elemental_blast = 18;
+}
+
+enum ShamanMajorGlyph {
+    ShamanMajorGlyphNone = 0;
+    GlyphOfUnstableEarth = 41517;
+    GlyphOfChainLightning = 41518;
+    GlyphOfSpiritWalk = 41524;
+    GlyphOfCapacitorTotem = 41526;
+    GlyphOfPurge = 41527;
+    GlyphOfFireElementalTotem = 41529;
+    GlyphOfFireNova = 41530;
+    GlyphOfFlameShock = 41531;
+    GlyphOfWindShear = 41532;
+    GlyphOfHealingStreamTotem = 41533;
+    GlyphOfHealingWave = 41534;
+    GlyphOfTotemicRecall = 41535;
+    GlyphOfTelluricCurrents = 41536;
+    GlyphOfGroundingTotem = 41538;
+    GlyphOfSpiritwalkersGrace = 41539;
+    GlyphOfWaterShield = 41541;
+    GlyphOfCleansingWaters = 41542;
+    GlyphOfFrostShock = 41547;
+    GlyphOfChaining = 41552;
+    GlyphOfHealingStorm = 43344;
+    GlyphOfGhostWolf = 43725;
+    GlyphOfThunder = 45770;
+    GlyphOfFeralSpirit = 45771;
+    GlyphOfRiptide = 45772;
+    GlyphOfShamanisticRage = 45776;
+    GlyphOfHex = 45777;
+    GlyphOfTotemicVigor = 45778;
+    GlyphOfLightningShield = 71155;
+    GlyphOfPurging = 104052;
+    GlyphOfEternalEarth = 104053;
+}
+
+enum ShamanMinorGlyph {
+    ShamanMinorGlyphNone = 0;
+    GlyphOfTheLakestrider = 41537;
+    GlyphOfLavaLash = 41540;
+    GlyphOfAstralRecall = 43381;
+    GlyphOfFarSight = 43385;
+    GlyphOfTheSpectralWolf = 43386;
+    GlyphOfTotemicEncirclement = 43388;
+    GlyphOfThunderstorm = 44923;
+    GlyphOfDeluge = 45775;
+    GlyphOfSpiritRaptors = 104126;
+    GlyphOfLingeringAncestors = 104127;
+    GlyphOfSpiritWolf = 104128;
+    GlyphOfFlamingSerpent = 104129;
+    GlyphOfTheCompy = 104130;
+    GlyphOfElementalFamiliars = 104131;
+    GlyphOfAstralFixation = 104133;
+    GlyphOfRainOfFrogs = 104134;
+}
+
+// END GENERATED
+
+enum EarthTotem {
+	NoEarthTotem = 0;
+	EarthElementalTotem = 1;
+	TremorTotem = 2;
+	EarthbindTotem = 3;
+}
+
+enum AirTotem {
+	NoAirTotem = 0;
+	StormlashTotem = 1;
+	GroundingTotem = 2;
+	CapacitorTotem = 3;
+	SpiritLinkTotem = 4;
+}
+
+enum FireTotem {
+	NoFireTotem = 0;
+	MagmaTotem = 1;
+	SearingTotem = 2;
+	FireElementalTotem = 3;
+}
+
+enum WaterTotem {
+	NoWaterTotem = 0;
+	HealingTideTotem = 1;
+	HealingStreamTotem = 2;
+	ManaTideTotem = 3;
+}
+
+message ShamanTotems {
+    enum TotemType {
+	    TypeUnknownTotem = 0;
+	    Earth = 1;
+	    Air = 2;
+	    Fire = 3;
+	    Water = 4;
+    }
+    
+	EarthTotem earth = 1;
+	AirTotem air = 2;
+	FireTotem fire = 3;
+	WaterTotem water = 4;
+}
+
+enum ShamanShield {
+	NoShield = 0;
+	WaterShield = 1;
+	LightningShield = 2;
+}
+
+enum ShamanImbue {
+    NoImbue = 0;
+    WindfuryWeapon = 1;
+    FlametongueWeapon = 2;
+    FrostbrandWeapon = 3;
+	EarthlivingWeapon = 4;
+    RockbiterWeapon = 5;
+}
+
+enum ShamanSyncType {
+  NoSync = 0;
+  SyncMainhandOffhandSwings = 1;
+  DelayOffhandSwings = 2;
+	Auto = 3;
+}
+
+message FeleAutocastSettings {
+    bool autocast_fireblast = 1;
+    bool autocast_firenova = 2;
+    bool autocast_immolate = 3;
+    bool autocast_empower = 4;
+    bool no_immolate_wfunleash = 5;
+    double no_immolate_duration = 6;
+}
+
+message ShamanOptions {
+	ShamanShield shield = 1;
+	ShamanImbue imbue_mh = 2;
+    ShamanImbue imbue_mh_swap = 4;
+
+    FeleAutocastSettings fele_autocast = 3;
+}
+
+message ElementalShaman {
+	message Rotation {
+	}
+
+	message Options {
+		ShamanOptions class_options = 1;
+
+		enum ThunderstormRange {
+			UnsetTSRange = 0;
+			TSInRange = 1;
+			TSOutofRange = 2;
+		}
+		ThunderstormRange thunderstormRange = 2;
+	}
+	Options options = 3;
+}
+
+message EnhancementShaman {
+	message Rotation {
+	}
+
+	message Options {
+		ShamanOptions class_options = 1;
+		ShamanSyncType sync_type = 2;
+		ShamanImbue imbue_oh = 3;
+        ShamanImbue imbue_oh_swap = 4;
+	}
+
+	Options options = 3;
+}
+
+enum ShamanHealSpell {
+	AutoHeal = 0;
+	HealingWave = 1;
+	HealingSurge = 2;
+	ChainHeal = 3;
+}
+
+message RestorationShaman {
+	message Rotation {
+	}
+
+	message Options {
+		ShamanOptions class_options = 1;
+		int32 earth_shield_p_p_m = 2;
+	}
+
+	Options options = 3;
+}

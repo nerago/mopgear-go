@@ -1,0 +1,118 @@
+syntax = "proto3";
+package proto;
+
+option go_package = "./proto";
+
+import "common.proto";
+// DO NOT REMOVE THE COMMENTS
+// BEGIN GENERATED
+// RogueTalents message.
+message RogueTalents {
+    bool nightstalker = 1;
+    bool subterfuge = 2;
+    bool shadow_focus = 3;
+    bool deadly_throw = 4;
+    bool nerve_strike = 5;
+    bool combat_readiness = 6;
+    bool cheat_death = 7;
+    bool leeching_poison = 8;
+    bool elusiveness = 9;
+    bool cloak_and_dagger = 10;
+    bool shadowstep = 11;
+    bool burst_of_speed = 12;
+    bool prey_on_the_weak = 13;
+    bool paralytic_poison = 14;
+    bool dirty_tricks = 15;
+    bool shuriken_toss = 16;
+    bool marked_for_death = 17;
+    bool anticipation = 18;
+}
+
+enum RogueMajorGlyph {
+    RogueMajorGlyphNone = 0;
+    GlyphOfShadowWalk = 42954;
+    GlyphOfAmbush = 42955;
+    GlyphOfBladeFlurry = 42957;
+    GlyphOfSharpKnives = 42958;
+    GlyphOfRecuperate = 42959;
+    GlyphOfEvasion = 42960;
+    GlyphOfRecovery = 42961;
+    GlyphOfExposeArmor = 42962;
+    GlyphOfFeint = 42963;
+    GlyphOfGarrote = 42964;
+    GlyphOfGouge = 42966;
+    GlyphOfSmokeBomb = 42968;
+    GlyphOfCheapShot = 42969;
+    GlyphOfHemorraghingVeins = 42970;
+    GlyphOfKick = 42971;
+    GlyphOfRedirect = 42972;
+    GlyphOfShiv = 42973;
+    GlyphOfSprint = 42974;
+    GlyphOfVendetta = 45761;
+    GlyphOfStealth = 45764;
+    GlyphOfDeadlyMomentum = 45766;
+    GlyphOfCloakOfShadows = 45769;
+    GlyphOfVanish = 63420;
+    GlyphOfBlind = 64493;
+}
+
+enum RogueMinorGlyph {
+    RogueMinorGlyphNone = 0;
+    GlyphOfDecoy = 42956;
+    GlyphOfDetection = 42965;
+    GlyphOfHemorrhage = 42967;
+    GlyphOfPickPocket = 43343;
+    GlyphOfDistract = 43376;
+    GlyphOfPickLock = 43377;
+    GlyphOfSafeFall = 43378;
+    GlyphOfBlurredSpeed = 43379;
+    GlyphOfPoisons = 43380;
+    GlyphOfKillingSpree = 45762;
+    GlyphOfTricksOfTheTrade = 45767;
+    GlyphOfDisguise = 45768;
+    GlyphOfHeadhunting = 104123;
+    GlyphOfImprovedDistraction = 104124;
+}
+
+// END GENERATED
+
+message RogueOptions {
+	UnitReference tricks_of_the_trade_target = 1;
+	enum PoisonOptions {
+		NoPoison = 0;
+		DeadlyPoison = 1;
+		WoundPoison = 2;
+	}
+	PoisonOptions lethal_poison = 2;
+	int32 starting_overkill_duration = 3;
+	bool apply_poisons_manually = 4;
+	float vanish_break_time = 5;
+}
+
+message AssassinationRogue {
+	message Rotation {}
+
+	message Options {
+		RogueOptions class_options = 1;
+	}
+	Options options = 1;
+}
+
+message CombatRogue {
+	message Rotation {}
+
+	message Options {
+		RogueOptions class_options = 1;
+	}
+	Options options = 1;
+}
+
+message SubtletyRogue {
+	message Rotation {}
+
+	message Options {
+		RogueOptions class_options = 1;
+		int32 honor_among_thieves_crit_rate = 6;
+	}
+	Options options = 1;
+}

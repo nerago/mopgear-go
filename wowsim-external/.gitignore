@@ -1,0 +1,44 @@
+# nodejs modules
+node_modules
+
+ui/core/index.ts
+ui/*/*/index.html
+.dirstamp
+
+# IDE folders
+.idea
+.history
+
+# binaries
+dist
+binary_dist
+sim/web/__debug_bin
+/wowsimcli*
+/wowsimmop*
+
+# temporary files
+*.results.tmp
+package.json.tmp
+.stylelintcache
+
+#.dockerignore
+/mop/
+*.code-workspace
+wowsimmop
+
+# old result file
+TestAPL.results
+
+#macos
+.DS_Store
+
+# air tmp dir
+tmp/
+
+# lib
+wowsimmop*.so
+wowsimmop*.dll
+wowsimmop*.h
+wowsims.db
+assets/db_inputs/dbc/
+mop.sln
