@@ -44,9 +44,9 @@ func (model *Model) Equals(other *Model) bool {
 func (model *Model) CheckSet(itemSet *SolvableItemSet) bool {
 	if model.StatRequirements.CheckSet(itemSet.Total()) {
 		if model.SetBonusRequired > 0 {
-			if len(model.SetBonus.activeSets) != 1 {
-				panic("set bonus required only available for single set")
-			}
+			// if len(model.SetBonus.activeSets) != 1 {
+			// 	panic("set bonus required only available for single set")
+			// }
 			count := model.SetBonus.CountInAnySetSolve(itemSet.Items())
 			return count >= model.SetBonusRequired
 		} else {
@@ -60,9 +60,9 @@ func (model *Model) CheckSet(itemSet *SolvableItemSet) bool {
 func (model *Model) CheckSetFull(itemSet *FullItemSet) bool {
 	if model.StatRequirements.CheckSet(itemSet.Total()) {
 		if model.SetBonusRequired > 0 {
-			if len(model.SetBonus.activeSets) != 1 {
-				panic("set bonus required only available for single set")
-			}
+			// if len(model.SetBonus.activeSets) != 1 {
+			// 	panic("set bonus required only available for single set")
+			// }
 			count := model.SetBonus.CountInAnySet(itemSet.Items())
 			return count >= model.SetBonusRequired
 		} else {

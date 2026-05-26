@@ -61,25 +61,27 @@ func SetBonus_ForSpec(spec SpecType, goal OptimiseGoal) SetBonus {
 
 func SetBonus_ForSpec_AllowFallback(spec SpecType, goal OptimiseGoal, fallback bool) SetBonus {
 	sets := SetBonus{}
+
+mainEntry:
 	for _, common := range g_setData {
 		if len(common.variants) == 1 {
 			if common.variants[0].spec == spec {
 				sets.activeSets = append(sets.activeSets, activeSetMake(common, common.variants[0]))
-				continue
+				continue mainEntry
 			}
 		} else if len(common.variants) > 1 {
 			// exact spec+goal match
 			for _, variant := range common.variants {
 				if variant.spec == spec && variant.goal == goal {
 					sets.activeSets = append(sets.activeSets, activeSetMake(common, common.variants[0]))
-					continue
+					continue mainEntry
 				}
 			}
 			// fallback entry for spec
 			for _, variant := range common.variants {
 				if variant.spec == spec && variant.goal == OptimiseGoal_Unknown {
 					sets.activeSets = append(sets.activeSets, activeSetMake(common, common.variants[0]))
-					continue
+					continue mainEntry
 				}
 			}
 			// useful in ItemBuilder, etc
@@ -87,7 +89,7 @@ func SetBonus_ForSpec_AllowFallback(spec SpecType, goal OptimiseGoal, fallback b
 				for _, variant := range common.variants {
 					if variant.spec == spec {
 						sets.activeSets = append(sets.activeSets, activeSetMake(common, common.variants[0]))
-						continue
+						continue mainEntry
 					}
 				}
 			}
@@ -95,6 +97,7 @@ func SetBonus_ForSpec_AllowFallback(spec SpecType, goal OptimiseGoal, fallback b
 			panic("no variants")
 		}
 	}
+
 	if len(sets.activeSets) == 0 {
 		panic("didn't find any sets")
 	}

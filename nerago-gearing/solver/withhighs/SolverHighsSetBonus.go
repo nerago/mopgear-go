@@ -48,13 +48,21 @@ func setupInputs(inputBuilder *utilhighs.InputBuilder, gear_model *gear_model.Mo
 	setup.finishItems(itemOptions, gear_model)
 
 	if gear_model.SetBonusRequired > 0 {
-		if len(setup.setData) != 1 {
-			panic("set bonus required only available for single set")
+		if len(setup.setData) == 0 {
+			panic("no setdata to use from SetBonusRequired")
+		} else if len(setup.setData) == 1 {
+			setCountCol := setup.setData[0].setTotalCountVar
+			rowSetCountRequired := utilhighs.ConstraintRowBuild{Debug: "rowSetCountRequired"}
+			rowSetCountRequired.Add(setCountCol.columnIndex, 1)
+			rowSetCountRequired.Finish(setup.input, float64(gear_model.SetBonusRequired), utilhighs.C_PlusInf)
+		} else {
+			// TODO doesn't actually confirm these are active set bonuses in any sensible combination
+			rowSetCountRequired := utilhighs.ConstraintRowBuild{Debug: "rowSetCountRequired"}
+			for _, set := range setup.setData {
+				rowSetCountRequired.Add(set.setTotalCountVar.columnIndex, 1)
+			}
+			rowSetCountRequired.Finish(setup.input, float64(gear_model.SetBonusRequired), utilhighs.C_PlusInf)
 		}
-		setCountCol := setup.setData[0].setTotalCountVar
-		rowSetCountRequired := utilhighs.ConstraintRowBuild{Debug: "rowSetCountRequired"}
-		rowSetCountRequired.Add(setCountCol.columnIndex, 1)
-		rowSetCountRequired.Finish(setup.input, float64(gear_model.SetBonusRequired), utilhighs.C_PlusInf)
 	}
 
 	return &setup

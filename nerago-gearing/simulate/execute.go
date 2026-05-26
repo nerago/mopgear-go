@@ -12,7 +12,6 @@ import (
 	"paladin_gearing_go/util"
 
 	"github.com/google/uuid"
-	"github.com/wowsims/mop/sim/core"
 	wowsim_core "github.com/wowsims/mop/sim/core"
 	wowsim_proto "github.com/wowsims/mop/sim/core/proto"
 	wowsim_protojson "google.golang.org/protobuf/encoding/protojson"
@@ -103,8 +102,8 @@ func inputRequestFromScratch(equipMap *items.FullEquipMap, profession model.Prof
 	}
 	updateFight(&input, fight)
 
-	input.Raid = core.SinglePlayerRaidProto(
-		core.WithSpec(
+	input.Raid = wowsim_core.SinglePlayerRaidProto(
+		wowsim_core.WithSpec(
 			&wowsim_proto.Player{
 				Race:          wowsim_proto.Race_RaceBloodElf,
 				Class:         wowsim_proto.Class_ClassPaladin,

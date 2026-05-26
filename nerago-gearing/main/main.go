@@ -73,6 +73,7 @@ func core(printer *util.PrintRecorder) {
 
 	// slotRating(printer)
 	// basicReforge(printer)
+	findT5BIS(printer)
 	// basicListRatingEach(printer)
 	// solveForRatings(printer)
 	// findBestSubjectToCommon(printer)
@@ -93,7 +94,7 @@ func core(printer *util.PrintRecorder) {
 	// forSpreadsheetGenerateRatingsDataFromSims(printer)
 	// statWeightsFromHighAndSim(printer)
 	// statWeightsBasic(printer)
-	statWeightsGrid(printer)
+	// statWeightsGrid(printer)
 }
 
 func setupPallyMitigationSet() (items.FullOptionsMap, model.Model) {

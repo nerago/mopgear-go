@@ -128,7 +128,20 @@ const (
 	Difficulty_Heroic               = iota
 )
 
-func (difficulty Difficulty) ExpectedItemLevel() uint16 {
+func (difficulty Difficulty) ExpectedItemLevelThrone() uint16 {
+	switch difficulty {
+	case Difficulty_Celestial:
+		return 528
+	case Difficulty_Normal:
+		return 553
+	case Difficulty_Heroic:
+		return 566
+	default:
+		panic("unknown Difficulty")
+	}
+}
+
+func (difficulty Difficulty) ExpectedItemLevelSiege() uint16 {
 	switch difficulty {
 	case Difficulty_Celestial:
 		return 502

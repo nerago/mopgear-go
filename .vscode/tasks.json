@@ -10,6 +10,7 @@
 				"-v",
 				"-pgo=./profile/main.pgo",
 				"-tags=with_db",
+				"-ldflags=\"-s -w\"",
 				"./nerago-gearing/main"
 			],
 			"presentation": {

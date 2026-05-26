@@ -596,3 +596,50 @@ func solveForRatings(printer *util.PrintRecorder) {
 
 	// }
 }
+
+func findT5BIS(printer *util.PrintRecorder) {
+
+	// model := model.Model_PallyProtMitigation_NoSet()
+	// itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationNoSet, &model, setup.MissingEnchant_Panic, printer)
+
+	// model := model.Model_PallyProtMitigation_WithSet()
+	// itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationSet, &model, setup.MissingEnchant_Panic, printer)
+
+	model := model.Model_PallyProtCompromise()
+	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtCompromise, &model, setup.MissingEnchant_Panic, printer)
+
+	extraItemsCombined := slices.Concat(
+		loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic),
+		loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic),
+	)
+
+	for _, itemExtra := range extraItemsCombined {
+		itemId := itemExtra.ItemId()
+		if !itemOptions.IncludesItemId(itemId) {
+			opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
+			for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
+				if itemOptions.CouldAddUpgrade_EquipSlot(slotEquip, example, printer) != items.CanUpgrade_InvalidAlways {
+					itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)
+				}
+			}
+		}
+	}
+
+	solveOptions := items.SolvableOptionsMap_of(&itemOptions)
+	// solvedSet := withhighs.RunSingleAcrossSets_ReturnBest(&solveOptions, &model, printer)
+	solvedSet := withhighs.RunAllActiveSets(&solveOptions, &model, printer)
+	// solvedSet := withhighs.RunBasic(&solveOptions, &model, nil, util.Optional_Empty[int]())
+
+	var fullItemSet items.FullItemSet
+	if solvedSet.IsEmpty() {
+		printer.Println("FAILED SOLVE")
+	} else {
+		fullItemSet = items.FullItemSet_FromSolved(solvedSet.GetOrPanic(), &itemOptions)
+		fullItemSet.DebugValidate()
+		fullItemSet.ValidateItemRules()
+		tools.ReportSetFewerParams(&model, &fullItemSet, printer)
+		for item := range fullItemSet.Items().AllItemSeq() {
+			printer.Println(item.BaseName())
+		}
+	}
+}

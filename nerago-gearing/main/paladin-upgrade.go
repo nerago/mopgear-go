@@ -147,6 +147,24 @@ func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsMiti, printer)
 }
 
+func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
+	goal := stats.OptimiseGoal_Mitigation
+	model := model.Model_PallyProtMitigation_WithSet()
+	gearFile := files.GearFileProtMitigationSet
+	upgradeItems := loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Normal)
+	// upgradeItems := loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic)
+	input := upgrades.FindUpgrades_SimInputs{
+		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
+			IncludeNormal: true,
+			IncludeHeroic: true,
+			IncludeRaden:  false,
+			IgnoredItems:  ignoredItems,
+		},
+		SimSize: simRunSize}
+	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsMiti, printer)
+}
+
+
 func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 	substituteItemsDpsMiti := slices.Concat(substituteItemsDps, substituteItemsMiti)
 	substituteItemsDpsMiti = util.RemoveDuplicatesComparable(substituteItemsDpsMiti)
