@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/model"
+	"paladin_gearing_go/model/ratings"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver"
@@ -14,6 +15,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 	"paladin_gearing_go/util/util_rank"
 	"slices"
 )
@@ -642,4 +644,276 @@ func findT5BIS(printer *util.PrintRecorder) {
 			printer.Println(item.BaseName())
 		}
 	}
+}
+
+var g_seigeTankTrinkets = []items.ItemId{
+	// 102316, special PTR item?
+	102307, //curse-of-hubris
+	102297, //juggernauts-focusing-crystal
+	102296, //rooks-unlucky-talisman
+	102306, //vial-of-living-corruption
+}
+var g_siegeStrengthTrinkets = []items.ItemId{
+	// 102315, special PTR item?
+	102298, //evil-eye-of-galakras
+	102295, //fusion-fire-core
+	102308, //skeers-bloodsoaked-talisman
+	102305, //thoks-tail-tip
+}
+
+func allT5stuff(printer *util.PrintRecorder) ([]items.ItemId, model.Model, items.FullOptionsMap) {
+	throneTrinkets := []items.ItemId{
+		94519, // crit prim rage
+		87063, // none vial dragon
+		95779, // none vial sang
+		96793, // none fort zand
+		96555, // none soul barrier
+		87172, // none darkmist
+		94529, // none gaze twins
+		94527, // ji-kun
+		96398, // spark of zandalar
+	}
+
+	allTrinkets := slices.Concat(throneTrinkets, g_siegeStrengthTrinkets, g_seigeTankTrinkets)
+	allTrinkets = util.RemoveDuplicatesComparable(allTrinkets)
+
+	model := model.Model_PallyProtMitigation_NoSet()
+	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationNoSet, &model, setup.MissingEnchant_Panic, printer)
+
+	extraItemsCombined := slices.Concat(
+		util.CastSliceAsNew(loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic), func(x **items.FullItem) items.ItemId { return (*x).ItemId() }),
+		util.CastSliceAsNew(loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic), func(x **items.FullItem) items.ItemId { return (*x).ItemId() }),
+		allTrinkets,
+	)
+
+	for _, itemId := range extraItemsCombined {
+		if !itemOptions.IncludesItemId(itemId) || slices.Contains(allTrinkets, itemId) {
+			opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
+			for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
+				if itemOptions.CouldAddUpgrade_EquipSlot(slotEquip, example, printer) != items.CanUpgrade_InvalidAlways {
+					itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)
+				}
+			}
+		}
+	}
+
+	itemOptions[items.Equip_Trinket1] = util.RemoveDuplicatesFunc(itemOptions[items.Equip_Trinket1], (*items.FullItem).Equals)
+	itemOptions[items.Equip_Trinket2] = util.RemoveDuplicatesFunc(itemOptions[items.Equip_Trinket2], (*items.FullItem).Equals)
+	return allTrinkets, model, itemOptions
+}
+
+func findT5TrinketPermutations(printer *util.PrintRecorder) {
+	allTrinkets, model, itemOptions := allT5stuff(printer)
+
+	solveOptions := items.SolvableOptionsMap_of(&itemOptions)
+	baseSolvedSet := withhighs.RunAllActiveSets(&solveOptions, &model, printer)
+	baseItemSet := items.FullItemSet_FromSolved(baseSolvedSet.GetOrPanic(), &itemOptions)
+	baseItemSet.DebugValidate()
+	baseItemSet.ValidateItemRules()
+	printer.Println("BASELINE SET")
+	tools.ReportSetFewerParams(&model, &baseItemSet, printer)
+
+	trinkCombos := make([][2]items.ItemId, 0)
+	for _, trinkA := range allTrinkets {
+		for _, trinkB := range allTrinkets {
+			if trinkA < trinkB {
+				trinkCombos = append(trinkCombos, [2]items.ItemId{trinkA, trinkB})
+			}
+		}
+	}
+
+	type trinkResult struct {
+		combo [2]items.ItemId
+		sim   simulate.SimResultStats
+	}
+
+	progress := util.TrackProgress_Start()
+	progress.RunOuterTracking(len(trinkCombos))
+	results := channel_op.Map_SliceToSlice(6, trinkCombos, func(combo *[2]items.ItemId, outChan chan<- trinkResult) {
+		thisOptions := itemOptions.Clone()
+		thisOptions.ForceSlotOnlySpecifiedItemId(items.Equip_Trinket1, combo[0])
+		thisOptions.ForceSlotOnlySpecifiedItemId(items.Equip_Trinket2, combo[1])
+		thisSolveOptions := items.SolvableOptionsMap_of(&thisOptions)
+
+		thisSolvedSet := withhighs.RunAllActiveSets(&thisSolveOptions, &model, printer)
+		thisItemSet := items.FullItemSet_FromSolved(thisSolvedSet.GetOrPanic(), &thisOptions)
+
+		thisEquip := thisItemSet.Items()
+		sim := simulate.WowSim_Execute_UseModel(simulate.RunSize_QuickDirty, &model, thisEquip, nil, progress.MakeNested())
+		printer.Printf("%s %s %s\n", thisEquip[items.Equip_Trinket1].CreateFullName(), thisEquip[items.Equip_Trinket2].CreateFullName(), sim.CompactStringGeneral())
+
+		outChan <- trinkResult{*combo, sim}
+	})
+
+	csv := util.CSVOutputByColumn{}
+	csv.InitRows(6)
+	csv.AddStringMany("trink1", "trink2", "dps", "taken", "tmi", "death")
+	csv.FinishColumn()
+
+	for _, res := range results {
+		name0 := db.WowSimDB_ByIdAndUpgrade(res.combo[0], 0).BaseName()
+		csv.AddString(name0)
+
+		name1 := db.WowSimDB_ByIdAndUpgrade(res.combo[1], 0).BaseName()
+		csv.AddString(name1)
+
+		csv.AddFloat64(res.sim.DPS, 0)
+		csv.AddFloat64(res.sim.DTPS, 0)
+		csv.AddFloat64(res.sim.TMI, 3)
+		csv.AddFloat64(res.sim.DEATH*100, 3)
+		csv.FinishColumn()
+	}
+
+	csv.Write(printer)
+}
+
+func findT5WeightPermutations(printer *util.PrintRecorder) {
+	// simRunSize := simulate.RunSize_QuickDirty
+	simRunSize := simulate.RunSize_TestOnly
+
+	_, _, itemOptions := allT5stuff(printer)
+	solveOptions := items.SolvableOptionsMap_of(&itemOptions)
+
+	// ALL
+	// statListAll := []stats.StatType{
+	// 	stats.Stat_Strength, stats.Stat_Stamina,
+	// 	stats.Stat_Crit, stats.Stat_Haste,
+	// 	stats.Stat_Expertise, stats.Stat_Dodge,
+	// 	stats.Stat_Parry, stats.Stat_Mastery}
+
+	// DPS: dump dodge, stam
+	statList := []stats.StatType{
+		stats.Stat_Strength, stats.Stat_Crit, stats.Stat_Haste,
+		stats.Stat_Expertise, stats.Stat_Parry, stats.Stat_Mastery}
+
+	// MITI: dump crit, expertise
+	// statList := []stats.StatType{
+	// 	stats.Stat_Strength, stats.Stat_Stamina, stats.Stat_Haste,
+	// 	stats.Stat_Dodge, stats.Stat_Parry, stats.Stat_Mastery}
+
+	allPossibleOrders := generateAllOrders(statList)
+
+	type orderIntermediate struct {
+		order   []stats.StatType
+		itemSet items.FullItemSet
+	}
+
+	type orderIntermediateGrouped struct {
+		order   []stats.StatType
+		itemSet items.FullItemSet
+	}
+
+	type orderResult struct {
+		group orderIntermediateGrouped
+		sim   simulate.SimResultStats
+	}
+
+	progress := util.TrackProgress_Start()
+	progress.RunOuterTracking(len(allPossibleOrders))
+	intermediates := channel_op.Map_SliceToSlice(6, allPossibleOrders, func(order *[]stats.StatType, outChan chan<- orderIntermediate) {
+		alterModel := model.Model_PallyProtMitigation_NoSet()
+		alterModel.StatRatings = ratings.StatRatingsWeights_FromPriorities(*order)
+
+		thisSolvedSet := withhighs.RunAllActiveSets(&solveOptions, &alterModel, printer)
+		thisItemSet := items.FullItemSet_FromSolved(thisSolvedSet.GetOrPanic(), &itemOptions)
+
+		thisEquip := thisItemSet.Items()
+		sim := simulate.WowSim_Execute_UseModel(simRunSize, &alterModel, thisEquip, nil, progress.MakeNested())
+
+		orderText := util.StringBuild2{}
+		for _, stat := range *order {
+			orderText.WriteString(stat.Name())
+			orderText.WriteRune(' ')
+		}
+
+		printer.Printf("%s %s\n", orderText.String(), sim.CompactStringGeneral())
+
+		outChan <- orderResult{*order, thisItemSet, sim}
+	})
+
+	results := channel_op.Map_SliceToSlice(6, allPossibleOrders, func(order *[]stats.StatType, outChan chan<- orderResult) {
+		alterModel := model.Model_PallyProtMitigation_NoSet()
+		alterModel.StatRatings = ratings.StatRatingsWeights_FromPriorities(*order)
+
+		thisSolvedSet := withhighs.RunAllActiveSets(&solveOptions, &alterModel, printer)
+		thisItemSet := items.FullItemSet_FromSolved(thisSolvedSet.GetOrPanic(), &itemOptions)
+
+		thisEquip := thisItemSet.Items()
+		sim := simulate.WowSim_Execute_UseModel(simRunSize, &alterModel, thisEquip, nil, progress.MakeNested())
+
+		orderText := util.StringBuild2{}
+		for _, stat := range *order {
+			orderText.WriteString(stat.Name())
+			orderText.WriteRune(' ')
+		}
+
+		printer.Printf("%s %s\n", orderText.String(), sim.CompactStringGeneral())
+
+		outChan <- orderResult{*order, thisItemSet, sim}
+	})
+
+	line := util.StringBuild2{}
+	for i := range statList {
+		line.WriteString("order")
+		line.WriteInt(i)
+		line.WriteRune(',')
+	}
+	for _, v := range statList {
+		line.WriteString(v.Name())
+		line.WriteRune(',')
+	}
+	for _, simType := range simulate.SimResultTypeList {
+		line.WriteString(simType.String())
+		line.WriteRune(',')
+	}
+	printer.PrintlnFromBuild(line)
+	line.Reset()
+
+	for _, res := range results {
+		for i := range res.order {
+			line.WriteString(res.order[i].Name())
+			line.WriteRune(',')
+		}
+		for _, v := range statList {
+			line.WriteUint32(res.itemSet.Total().Get(v))
+			line.WriteRune(',')
+		}
+		for _, simType := range simulate.SimResultTypeList {
+			line.WriteFloat64(res.sim.GetFriendly(simType), 3)
+			line.WriteRune(',')
+		}
+		printer.PrintlnFromBuild(line)
+		line.Reset()
+	}
+}
+
+func generateAllOrders(statList []stats.StatType) [][]stats.StatType {
+	result := make([][]stats.StatType, 0)
+	result = generateAllOrders_recur(result, statList, nil)
+	return result
+}
+
+func generateAllOrders_recur(result [][]stats.StatType, statList []stats.StatType, progress []stats.StatType) [][]stats.StatType {
+	if len(statList) == 0 {
+		return append(result, progress)
+	} else {
+		for i, st := range statList {
+			opt := slices.Clone(progress)
+			opt = append(opt, st)
+			minus := withoutIndex(statList, i)
+			result = generateAllOrders_recur(result, minus, opt)
+		}
+		return result
+	}
+}
+
+func withoutIndex(slice []stats.StatType, remove int) []stats.StatType {
+	if len(slice) == 1 {
+		return nil
+	}
+
+	trimmed := make([]stats.StatType, 0, len(slice)-1)
+	trimmed = append(trimmed, slice[0:remove]...)
+	trimmed = append(trimmed, slice[remove+1:]...)
+	return trimmed
 }

@@ -51,6 +51,20 @@ func StatRatingsWeights_Mix(weightA StatRatingsWeights, multiplyA uint32, weight
 	return StatRatingsWeights{combined}
 }
 
+func StatRatingsWeights_FromPriorities(priorities []StatType) StatRatingsWeights {
+	// normal range from file load is 1..2500 approx
+	// so we could use about 11 bits of multiplier
+	// normally have about 8 of them
+
+	var value uint32 = 1024
+	block := StatBlock{}
+	for _, stat := range priorities {
+		block[stat] = value
+		value >>= 1
+	}
+	return StatRatingsWeights{block}
+}
+
 func StatRatingsWeights_ReadFile(filename string, includeHit, includeExpertise, includeSpirit bool) StatRatingsWeights {
 	bytes, err := os.ReadFile(filename)
 	if err != nil {

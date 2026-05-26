@@ -53,6 +53,10 @@ func (sb *StringBuild2) WriteUint16(value uint16) {
 	*sb = strconv.AppendUint(*sb, uint64(value), 10)
 }
 
+func (sb *StringBuild2) WriteInt(value int) {
+	*sb = strconv.AppendInt(*sb, int64(value), 10)
+}
+
 func (sb *StringBuild2) WriteFloat64(value float64, decimalPlaces int) {
 	*sb = strconv.AppendFloat(*sb, value, 'f', decimalPlaces, 64)
 }

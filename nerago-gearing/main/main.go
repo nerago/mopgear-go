@@ -73,7 +73,9 @@ func core(printer *util.PrintRecorder) {
 
 	// slotRating(printer)
 	// basicReforge(printer)
-	findT5BIS(printer)
+	// findT5BIS(printer)
+	// findT5TrinketPermutations(printer)
+	findT5WeightPermutations(printer)
 	// basicListRatingEach(printer)
 	// solveForRatings(printer)
 	// findBestSubjectToCommon(printer)

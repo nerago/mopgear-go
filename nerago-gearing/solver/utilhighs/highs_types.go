@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	C_DebugHighs         = true
-	C_DiagnoseInfeasible = true
+	C_DebugHighs         = false
+	C_DiagnoseInfeasible = false
 	c_threads            = 6
 )
 
