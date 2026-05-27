@@ -1,894 +1,1453 @@
-﻿87014	Stonemaw Armguards	Wrist	Dogs MSV
-87018	Cape of Three Lanterns	Back	Dogs MSV
-87015	Jasper Clawfeet	Feet	Dogs MSV
-87060	Star-Stealer Waistguard	Waist	Dogs MSV
-87019	Stonebound Cinch	Waist	Dogs MSV
-87013	Stoneflesh Leggings	Legs	Dogs MSV
-87016	Beads of the Mogu'shi	Neck	Dogs MSV
-87020	Sixteen-Fanged Crown	Head	Dogs MSV
-89931	Claws of Amethyst	Hands	Dogs MSV
-87017	Jade Dust Leggings	Legs	Dogs MSV
-87021	Heavenly Jade Greatboots	Feet	Dogs MSV
-89929	Stonefang Chestguard	Chest	Dogs MSV
-89930	Ruby-Linked Girdle	Waist	Dogs MSV
+79327	Relic of Xuen	Trinket	Darkmoon
+79328	Relic of Xuen	Trinket	Darkmoon
+79329	Relic of Niuzao	Trinket	Darkmoon
+79330	Relic of Chi-Ji	Trinket	Darkmoon
+79331	Relic of Yu'lon	Trinket	Darkmoon
+86865	Kri'tak, Imperial Scepter of the Swarm	Weapon	Empress HOF
+86913	Breastplate of the Lost Catacomb	Chest	Empress HOF
+86914	Gauntlets of the Lost Catacomb	Hands	Wind Lord HOF
+86915	Helmet of the Lost Catacomb	Head	Sha ToES
+86916	Greaves of the Lost Catacomb	Legs	Amber-Shaper HOF
+86917	Pauldrons of the Lost Catacomb	Shoulder	Lei Shi ToES
+86918	Chestguard of the Lost Catacomb	Chest	Empress HOF
+86919	Handguards of the Lost Catacomb	Hands	Wind Lord HOF
+86920	Faceguard of the Lost Catacomb	Head	Sha ToES
+86921	Legguards of the Lost Catacomb	Legs	Amber-Shaper HOF
+86922	Shoulderguards of the Lost Catacomb	Shoulder	Lei Shi ToES
+86923	Eternal Blossom Raiment	Chest	Empress HOF
+86924	Eternal Blossom Grips	Hands	Wind Lord HOF
+86925	Eternal Blossom Headpiece	Head	Sha ToES
+86926	Eternal Blossom Legguards	Legs	Amber-Shaper HOF
+86927	Eternal Blossom Spaulders	Shoulder	Lei Shi ToES
+86928	Eternal Blossom Handwraps	Hands	Wind Lord HOF
+86929	Eternal Blossom Helm	Head	Sha ToES
+86930	Eternal Blossom Legwraps	Legs	Amber-Shaper HOF
+86931	Eternal Blossom Robes	Chest	Empress HOF
+86932	Eternal Blossom Mantle	Shoulder	Lei Shi ToES
+86933	Eternal Blossom Gloves	Hands	Wind Lord HOF
+86934	Eternal Blossom Cover	Head	Sha ToES
+86935	Eternal Blossom Leggings	Legs	Amber-Shaper HOF
+86936	Eternal Blossom Vestment	Chest	Empress HOF
+86937	Eternal Blossom Shoulderwraps	Shoulder	Lei Shi ToES
+86938	Eternal Blossom Tunic	Chest	Empress HOF
+86939	Eternal Blossom Handguards	Hands	Wind Lord HOF
+86940	Eternal Blossom Headguard	Head	Sha ToES
+86941	Eternal Blossom Breeches	Legs	Amber-Shaper HOF
+86942	Eternal Blossom Shoulderguards	Shoulder	Lei Shi ToES
+86943	Boots of the Still Breath	Feet	Vizier HOF
+86944	Articulated Legplates	Legs	Vizier HOF
+86945	Hisek's Chrysanthemum Cape	Back	Vizier HOF
+86946	Vizier's Ruby Signet	Finger	Vizier HOF
+86947	Gloves of Grasping Claws	Hands	Vizier HOF
+86948	Attenuating Bracers	Wrist	Vizier HOF
+86949	Fragment of Fear Made Flesh	Finger	Vizier HOF
+86950	Gauntlets of Undesired Gifts	Hands	Vizier HOF
+86951	Mail of Screaming Secrets	Chest	Vizier HOF
+86952	Chestplate of the Forbidden Tower	Chest	Vizier HOF
+86953	Choker of the Unleashed Storm	Neck	Blade Lord HOF
+86954	Bracers of Unseen Strikes	Wrist	Blade Lord HOF
+86955	Waistplate of Overwhelming Assault	Waist	Blade Lord HOF
+86956	Windblade Talons	Hands	Blade Lord HOF
+86957	Ring of the Bladed Tempest	Finger	Blade Lord HOF
+86958	Twisting Wind Bracers	Wrist	Blade Lord HOF
+86959	Boots of the Blowing Wind	Feet	Blade Lord HOF
+86960	Tornado-Summoning Censer	Held In Off-hand	Blade Lord HOF
+86961	Drape of Gathering Clouds	Back	Blade Lord HOF
+86962	Bracers of Tempestuous Fury	Wrist	Blade Lord HOF
+86963	Legbreaker Greatcloak	Back	Garalon HOF
+86964	Bonebreaker Gauntlets	Hands	Garalon HOF
+86965	Grips of the Leviathan	Hands	Garalon HOF
+86966	Garalon's Hollow Skull	Head	Garalon HOF
+86967	Necklace of Congealed Weaknesses	Neck	Garalon HOF
+86968	Ring of the Shattered Shell	Finger	Garalon HOF
+86969	Sandals of the Unbidden	Feet	Garalon HOF
+86970	Xaril's Hood of Intoxicating Vapors	Head	Garalon HOF
+86971	Stormwake Mistcloak	Back	Garalon HOF
+86972	Robes of Eighty Lights	Chest	Garalon HOF
+86973	Grasps of Panic	Hands	Garalon HOF
+86974	Painful Thorned Ring	Finger	Wind Lord HOF
+86975	Robes of Torn Nightmares	Chest	Wind Lord HOF
+86976	Korven's Amber-Sealed Beetle	Neck	Wind Lord HOF
+86977	Clutches of Dying Hope	Hands	Wind Lord HOF
+86978	Wingslasher Pauldrons	Shoulder	Wind Lord HOF
+86979	Impaling Treads	Feet	Wind Lord HOF
+86980	Cloak of Raining Blades	Back	Wind Lord HOF
+86981	Belt of Malleable Amber	Waist	Amber-Shaper HOF
+86982	Seal of the Profane	Finger	Amber-Shaper HOF
+86984	Treads of Deadly Secretions	Feet	Amber-Shaper HOF
+86985	Monstrous Stompers	Feet	Amber-Shaper HOF
+86986	Shoulderpads of Misshapen Life	Shoulder	Amber-Shaper HOF
+86988	Claws of Shek'zeer	Weapon	Empress HOF
+86989	Leggings of Shadow Infestation	Legs	Empress HOF
+86991	Crown of the Doomed Empress	Head	Empress HOF
+87002	Yaungol Slayer's Tunic	Chest	Empress HOF
+87003	Yaungol Slayer's Gloves	Hands	Wind Lord HOF
+87004	Yaungol Slayer's Headguard	Head	Sha ToES
+87005	Yaungol Slayer's Legguards	Legs	Amber-Shaper HOF
+87006	Yaungol Slayer's Spaulders	Shoulder	Lei Shi ToES
+87007	Gloves of the Burning Scroll	Hands	Wind Lord HOF
+87008	Hood of the Burning Scroll	Head	Sha ToES
+87009	Leggings of the Burning Scroll	Legs	Amber-Shaper HOF
+87010	Robes of the Burning Scroll	Chest	Empress HOF
+87011	Mantle of the Burning Scroll	Shoulder	Lei Shi ToES
 87012	Dagger of the Seven Stars	Weapon	Dogs MSV
-87057	Bottle of Infinite Stars	Trinket	Elegon MSV
-87065	Light of the Cosmos	Trinket	Elegon MSV
-87064	Orbital Belt	Waist	Elegon MSV
-89937	Band of Bursting Novas	Finger	Elegon MSV
-87067	Phasewalker Striders	Feet	Elegon MSV
-87059	Starcrusher Gauntlets	Hands	Elegon MSV
-87058	Chestguard of Total Annihilation	Chest	Elegon MSV
-89938	Galaxyfire Girdle	Waist	Elegon MSV
-87068	Shoulders of Empyreal Focus	Shoulder	Elegon MSV
-87063	Vial of Dragon's Blood	Trinket	Elegon MSV
-89939	Crown of Keening Stars	Head	Elegon MSV
-87062	Elegion the Fanged Crescent	Weapon	Elegon MSV
-87061	Starshatter	Weapon	Elegon MSV
-87066	Torch of the Celestial Spark	Weapon	Elegon MSV
-89425	Fan of Fiery Winds	Held In Off-hand	Feng MSV
-89933	Feng's Ring of Dreams	Finger	Feng MSV
-87024	Nullification Greathelm	Head	Feng MSV
-89932	Feng's Seal of Binding	Finger	Feng MSV
-87028	Amulet of Seven Curses	Neck	Feng MSV
+87013	Stoneflesh Leggings	Legs	Dogs MSV
+87014	Stonemaw Armguards	Wrist	Dogs MSV
+87015	Jasper Clawfeet	Feet	Dogs MSV
+87016	Beads of the Mogu'shi	Neck	Dogs MSV
+87017	Jade Dust Leggings	Legs	Dogs MSV
+87018	Cape of Three Lanterns	Back	Dogs MSV
+87019	Stonebound Cinch	Waist	Dogs MSV
+87020	Sixteen-Fanged Crown	Head	Dogs MSV
+87021	Heavenly Jade Greatboots	Feet	Dogs MSV
 87022	Tomb Raider's Girdle	Waist	Feng MSV
-87026	Cloak of Peacock Feathers	Back	Feng MSV
-87030	Chain of Shadow	Waist	Feng MSV
-87025	Bracers of Six Oxen	Wrist	Feng MSV
-87029	Hood of Cursed Dreams	Head	Feng MSV
 87023	Wildfire Worldwalkers	Feet	Feng MSV
+87024	Nullification Greathelm	Head	Feng MSV
+87025	Bracers of Six Oxen	Wrist	Feng MSV
+87026	Cloak of Peacock Feathers	Back	Feng MSV
 87027	Imperial Ghostbinder's Robes	Chest	Feng MSV
+87028	Amulet of Seven Curses	Neck	Feng MSV
+87029	Hood of Cursed Dreams	Head	Feng MSV
+87030	Chain of Shadow	Waist	Feng MSV
 87031	Legplates of Sagacious Shadows	Legs	Feng MSV
-87044	Arrow Breaking Windcloak	Back	Feng MSV
-87040	Circuit of the Frail Soul	Finger	Gara'jal MSV
-87039	Eye of the Ancient Spirit	Shield	Gara'jal MSV
-87038	Shadowsummoner Spaulders	Shoulder	Gara'jal MSV
-89934	Bonded Soul Bracers	Wrist	Gara'jal MSV
-87036	Soulgrasp Choker	Neck	Gara'jal MSV
+87032	Gara’kal, Fist of the Spiritbinder	Weapon	Gara'jal MSV
 87033	Netherrealm Shoulderpads	Shoulder	Gara'jal MSV
 87034	Fetters of Death	Waist	Gara'jal MSV
 87035	Sollerets of Spirit Splitting	Feet	Gara'jal MSV
-87041	Spaulders of the Divided Mind	Shoulder	Gara'jal MSV
+87036	Soulgrasp Choker	Neck	Gara'jal MSV
 87037	Sandals of the Severed Soul	Feet	Gara'jal MSV
+87038	Shadowsummoner Spaulders	Shoulder	Gara'jal MSV
+87039	Eye of the Ancient Spirit	Shield	Gara'jal MSV
+87040	Circuit of the Frail Soul	Finger	Gara'jal MSV
+87041	Spaulders of the Divided Mind	Shoulder	Gara'jal MSV
 87042	Leggings of Imprisoned Will	Legs	Gara'jal MSV
 87043	Bindings of Ancient Spirits	Wrist	Gara'jal MSV
-87032	Gara’kal, Fist of the Spiritbinder	Weapon	Gara'jal MSV
-87054	Bracers of Dark Thoughts	Wrist	Kings MSV
-87053	Zian's Choker of Coalesced Shadow	Neck	Kings MSV
+87044	Arrow Breaking Windcloak	Back	Feng MSV
 87045	Amulet of the Hidden Kings	Neck	Kings MSV
-89935	Bracers of Violent Meditation	Wrist	Kings MSV
-89936	Mindshard Drape	Back	Kings MSV
-87050	Steelskin, Qiang's Impervious Shield	Shield	Kings MSV
 87046	Screaming Tiger, Qiang’s Unbreakable Polearm	Weapon	Kings MSV
-87051	Hood of Blind Eyes	Head	Kings MSV
-87048	Breastplate of the Kings' Guard	Chest	Kings MSV
-87055	Meng's Treads of Insanity	Feet	Kings MSV
-87049	Shoulderguards of the Unflanked	Shoulder	Kings MSV
-87052	Undying Shadow Grips	Hands	Kings MSV
 87047	Subetai's Pillaging Leggings	Legs	Kings MSV
+87048	Breastplate of the Kings' Guard	Chest	Kings MSV
+87049	Shoulderguards of the Unflanked	Shoulder	Kings MSV
+87050	Steelskin, Qiang's Impervious Shield	Shield	Kings MSV
+87051	Hood of Blind Eyes	Head	Kings MSV
+87052	Undying Shadow Grips	Hands	Kings MSV
+87053	Zian's Choker of Coalesced Shadow	Neck	Kings MSV
+87054	Bracers of Dark Thoughts	Wrist	Kings MSV
+87055	Meng's Treads of Insanity	Feet	Kings MSV
 87056	Girdle of Delirious Visions	Waist	Kings MSV
-87072	Lei Shen's Final Orders	Trinket	Will MSV
-87076	Worldwaker Cabochon	Neck	Will MSV
-87075	Qin-xi's Polarizing Seal	Trinket	Will MSV
-87070	Crown of Opportunistic Strikes	Head	Will MSV
-87073	Hood of Focused Energy	Head	Will MSV
-87071	Jang-xi's Devastating Legplates	Legs	Will MSV
-87074	Tihan, Scepter of the Sleeping Emperor	Weapon	Will MSV
+87057	Bottle of Infinite Stars	Trinket	Elegon MSV
+87058	Chestguard of Total Annihilation	Chest	Elegon MSV
+87059	Starcrusher Gauntlets	Hands	Elegon MSV
+87060	Star-Stealer Waistguard	Waist	Dogs MSV
+87061	Starshatter	Weapon	Elegon MSV
+87062	Elegion the Fanged Crescent	Weapon	Elegon MSV
+87063	Vial of Dragon's Blood	Trinket	Elegon MSV
+87064	Orbital Belt	Waist	Elegon MSV
+87065	Light of the Cosmos	Trinket	Elegon MSV
+87066	Torch of the Celestial Spark	Weapon	Elegon MSV
+87067	Phasewalker Striders	Feet	Elegon MSV
+87068	Shoulders of Empyreal Focus	Shoulder	Elegon MSV
 87069	Fang Kung, Spark of Titans	Weapon	Will MSV
-89940	Dreadeye Gaze	Head	Will MSV
-89941	Chestguard of Eternal Vigilance	Chest	Will MSV
+87070	Crown of Opportunistic Strikes	Head	Will MSV
+87071	Jang-xi's Devastating Legplates	Legs	Will MSV
+87072	Lei Shen's Final Orders	Trinket	Will MSV
+87073	Hood of Focused Energy	Head	Will MSV
+87074	Tihan, Scepter of the Sleeping Emperor	Weapon	Will MSV
+87075	Qin-xi's Polarizing Seal	Trinket	Will MSV
+87076	Worldwaker Cabochon	Neck	Will MSV
 87077	Magnetized Leggings	Legs	Will MSV
 87078	Spaulders of the Emperor's Rage	Shoulder	Will MSV
-87825	Grips of Terra Cotta	Hands	Will MSV
-89942	Enameled Grips of Solemnity	Hands	Will MSV
-86986	Shoulderpads of Misshapen Life	Shoulder	Amber-Shaper HOF
-86982	Seal of the Profane	Finger	Amber-Shaper HOF
-86981	Belt of Malleable Amber	Waist	Amber-Shaper HOF
-86984	Treads of Deadly Secretions	Feet	Amber-Shaper HOF
-86985	Monstrous Stompers	Feet	Amber-Shaper HOF
-86960	Tornado-Summoning Censer	Held In Off-hand	Blade Lord HOF
-86955	Waistplate of Overwhelming Assault	Waist	Blade Lord HOF
-86961	Drape of Gathering Clouds	Back	Blade Lord HOF
-86957	Ring of the Bladed Tempest	Finger	Blade Lord HOF
-86954	Bracers of Unseen Strikes	Wrist	Blade Lord HOF
-86953	Choker of the Unleashed Storm	Neck	Blade Lord HOF
-89922	Hood of Stilled Winds	Head	Blade Lord HOF
-89921	Pauldrons of the Broken Blade	Shoulder	Blade Lord HOF
-86958	Twisting Wind Bracers	Wrist	Blade Lord HOF
-86959	Boots of the Blowing Wind	Feet	Blade Lord HOF
-86962	Bracers of Tempestuous Fury	Wrist	Blade Lord HOF
-86956	Windblade Talons	Hands	Blade Lord HOF
-90740	Kaz'tik's Stormseizer Gauntlets	Hands	Blade Lord HOF
-89920	Sword Dancer's Leggings	Legs	Blade Lord HOF
-89926	Shadow Heart Spaulders	Shoulder	Empress HOF
-86989	Leggings of Shadow Infestation	Legs	Empress HOF
-89928	Legplates of Regal Reinforcement	Legs	Empress HOF
-89927	Hood of Dark Dreams	Head	Empress HOF
-86991	Crown of the Doomed Empress	Head	Empress HOF
-86865	Kri'tak, Imperial Scepter of the Swarm	Weapon	Empress HOF
-86949	Fragment of Fear Made Flesh	Finger	Vizier HOF
-86948	Attenuating Bracers	Wrist	Vizier HOF
-89919	Warbelt of Sealed Pods	Waist	Vizier HOF
-86945	Hisek's Chrysanthemum Cape	Back	Vizier HOF
-89918	Scent-Soaked Sandals	Feet	Vizier HOF
-89917	Pheromone-Coated Choker	Neck	Vizier HOF
-86943	Boots of the Still Breath	Feet	Vizier HOF
-86947	Gloves of Grasping Claws	Hands	Vizier HOF
-86951	Mail of Screaming Secrets	Chest	Vizier HOF
-86946	Vizier's Ruby Signet	Finger	Vizier HOF
-86950	Gauntlets of Undesired Gifts	Hands	Vizier HOF
-86952	Chestplate of the Forbidden Tower	Chest	Vizier HOF
-86944	Articulated Legplates	Legs	Vizier HOF
-87822	Zor'lok's Fizzing Chestguard	Chest	Vizier HOF
-86974	Painful Thorned Ring	Finger	Wind Lord HOF
-86976	Korven's Amber-Sealed Beetle	Neck	Wind Lord HOF
-86979	Impaling Treads	Feet	Wind Lord HOF
-86975	Robes of Torn Nightmares	Chest	Wind Lord HOF
-86980	Cloak of Raining Blades	Back	Wind Lord HOF
-86978	Wingslasher Pauldrons	Shoulder	Wind Lord HOF
-86977	Clutches of Dying Hope	Hands	Wind Lord HOF
-86963	Legbreaker Greatcloak	Back	Garalon HOF
-86967	Necklace of Congealed Weaknesses	Neck	Garalon HOF
-86971	Stormwake Mistcloak	Back	Garalon HOF
-86969	Sandals of the Unbidden	Feet	Garalon HOF
-86970	Xaril's Hood of Intoxicating Vapors	Head	Garalon HOF
-86966	Garalon's Hollow Skull	Head	Garalon HOF
-86968	Ring of the Shattered Shell	Finger	Garalon HOF
-89924	Shoulders of Foaming Fluids	Shoulder	Garalon HOF
-86972	Robes of Eighty Lights	Chest	Garalon HOF
-89923	Garalon's Graven Carapace	Chest	Garalon HOF
-86965	Grips of the Leviathan	Hands	Garalon HOF
-86964	Bonebreaker Gauntlets	Hands	Garalon HOF
-89925	Vestments of Steaming Ichor	Chest	Garalon HOF
-86973	Grasps of Panic	Hands	Garalon HOF
-87169	Robes of the Unknown Fear	Chest	Lei Shi ToES
-87171	Cuirass of the Animated Protector	Chest	Lei Shi ToES
-87167	Terror in the Mists	Trinket	Lei Shi ToES
-87172	Darkmist Vortex	Trinket	Lei Shi ToES
-87150	Cloak of Overwhelming Corruption	Back	Protectors ToES
-87153	Asani's Uncleansed Sandals	Feet	Protectors ToES
-87154	Lightning Prisoner's Boots	Feet	Protectors ToES
-87146	Deepwater Greatboots	Feet	Protectors ToES
-87151	Watersoul Signet	Finger	Protectors ToES
+87084	Red Crane Tunic	Chest	Empress HOF
+87085	Red Crane Grips	Hands	Wind Lord HOF
+87086	Red Crane Headpiece	Head	Sha ToES
+87087	Red Crane Leggings	Legs	Amber-Shaper HOF
+87088	Red Crane Spaulders	Shoulder	Lei Shi ToES
+87089	Red Crane Handwraps	Hands	Wind Lord HOF
+87090	Red Crane Helm	Head	Sha ToES
+87091	Red Crane Legwraps	Legs	Amber-Shaper HOF
+87092	Red Crane Vest	Chest	Empress HOF
+87093	Red Crane Mantle	Shoulder	Lei Shi ToES
+87094	Red Crane Chestguard	Chest	Empress HOF
+87095	Red Crane Gauntlets	Hands	Wind Lord HOF
+87096	Red Crane Crown	Head	Sha ToES
+87097	Red Crane Legguards	Legs	Amber-Shaper HOF
+87098	Red Crane Shoulderguards	Shoulder	Lei Shi ToES
+87099	White Tiger Battleplate	Chest	Empress HOF
+87100	White Tiger Gauntlets	Hands	Wind Lord HOF
+87101	White Tiger Helmet	Head	Sha ToES
+87102	White Tiger Legplates	Legs	Amber-Shaper HOF
+87103	White Tiger Pauldrons	Shoulder	Lei Shi ToES
+87104	White Tiger Breastplate	Chest	Empress HOF
+87105	White Tiger Gloves	Hands	Wind Lord HOF
+87106	White Tiger Headguard	Head	Sha ToES
+87107	White Tiger Greaves	Legs	Amber-Shaper HOF
+87108	White Tiger Mantle	Shoulder	Lei Shi ToES
+87109	White Tiger Chestguard	Chest	Empress HOF
+87110	White Tiger Handguards	Hands	Wind Lord HOF
+87111	White Tiger Faceguard	Head	Sha ToES
+87112	White Tiger Legguards	Legs	Amber-Shaper HOF
+87113	White Tiger Shoulderguards	Shoulder	Lei Shi ToES
+87114	Guardian Serpent Handwraps	Hands	Wind Lord HOF
+87115	Guardian Serpent Cowl	Head	Sha ToES
+87116	Guardian Serpent Legwraps	Legs	Amber-Shaper HOF
+87117	Guardian Serpent Robes	Chest	Empress HOF
+87118	Guardian Serpent Mantle	Shoulder	Lei Shi ToES
+87119	Guardian Serpent Gloves	Hands	Wind Lord HOF
+87120	Guardian Serpent Hood	Head	Sha ToES
+87121	Guardian Serpent Leggings	Legs	Amber-Shaper HOF
+87122	Guardian Serpent Raiment	Chest	Empress HOF
+87123	Guardian Serpent Shoulderguards	Shoulder	Lei Shi ToES
+87124	Tunic of the Thousandfold Blades	Chest	Empress HOF
+87125	Gloves of the Thousandfold Blades	Hands	Wind Lord HOF
+87126	Helmet of the Thousandfold Blades	Head	Sha ToES
+87127	Legguards of the Thousandfold Blades	Legs	Amber-Shaper HOF
+87128	Spaulders of the Thousandfold Blades	Shoulder	Lei Shi ToES
+87129	Firebird's Tunic	Chest	Empress HOF
+87130	Firebird's Handwraps	Hands	Wind Lord HOF
+87131	Firebird's Faceguard	Head	Sha ToES
+87132	Firebird's Legwraps	Legs	Amber-Shaper HOF
+87133	Firebird's Mantle	Shoulder	Lei Shi ToES
+87134	Firebird's Cuirass	Chest	Empress HOF
+87135	Firebird's Grips	Hands	Wind Lord HOF
+87136	Firebird's Helmet	Head	Sha ToES
+87137	Firebird's Legguards	Legs	Amber-Shaper HOF
+87138	Firebird's Spaulders	Shoulder	Lei Shi ToES
+87139	Firebird's Hauberk	Chest	Empress HOF
+87140	Firebird's Gloves	Hands	Wind Lord HOF
+87141	Firebird's Headpiece	Head	Sha ToES
+87142	Firebird's Kilt	Legs	Amber-Shaper HOF
+87143	Firebird's Shoulderwraps	Shoulder	Lei Shi ToES
 87144	Regail's Band of the Endless	Finger	Protectors ToES
-87155	Casque of Expelled Corruption	Head	Protectors ToES
-89943	Legguards of Failing Purification	Legs	Protectors ToES
+87145	Bracers of Defiled Earth	Wrist	Protectors ToES
+87146	Deepwater Greatboots	Feet	Protectors ToES
 87147	Shackle of Eversparks	Neck	Protectors ToES
 87148	Kaolan's Withering Necklace	Neck	Protectors ToES
-89944	Waterborne Shoulderguards	Shoulder	Protectors ToES
-87152	Regail’s Crackling Dagger	Weapon	Protectors ToES
-87145	Bracers of Defiled Earth	Wrist	Protectors ToES
 87149	Cuffs of the Corrupted Waters	Wrist	Protectors ToES
-89950	Wrap of Instant Petrification	Chest	Sha ToES
-89949	Robes of Pinioned Eyes	Chest	Sha ToES
-87174	Dreadwoven Leggings of Failure	Legs	Sha ToES
-87175	Essence of Terror	Trinket	Sha ToES
-89951	Shadowgrip Girdle	Waist	Sha ToES
-87173	Kilrak, Jaws of Terror	Weapon	Sha ToES
-87176	Shin'ka, Execution of Domination	Weapon	Sha ToES
-87159	Daybreak Drape	Back	Tsulong ToES
+87150	Cloak of Overwhelming Corruption	Back	Protectors ToES
+87151	Watersoul Signet	Finger	Protectors ToES
+87152	Regail’s Crackling Dagger	Weapon	Protectors ToES
+87153	Asani's Uncleansed Sandals	Feet	Protectors ToES
+87154	Lightning Prisoner's Boots	Feet	Protectors ToES
+87155	Casque of Expelled Corruption	Head	Protectors ToES
+87156	Gao-Rei, Staff of the Legendary Protector	Weapon	Tsulong ToES
 87157	Sunwrought Mail Hauberk	Chest	Tsulong ToES
-87162	Sandals of the Blackest Night	Feet	Tsulong ToES
-87165	Sollerets of Instability	Feet	Tsulong ToES
 87158	Dread Shadow Ring	Finger	Tsulong ToES
-89945	Gauntlets of the Shadow's Caress	Hands	Tsulong ToES
-89946	Grasps of Serpentine Might	Hands	Tsulong ToES
-89948	Fear-Blackened Leggings	Legs	Tsulong ToES
-89947	Shoulderpads of Twisted Fate	Shoulder	Tsulong ToES
-87163	Spirits of the Sun	Trinket	Tsulong ToES
+87159	Daybreak Drape	Back	Tsulong ToES
 87160	Stuff of Nightmares	Trinket	Tsulong ToES
 87161	Belt of Embodied Terror	Waist	Tsulong ToES
-87183	Binder's Chain of Unending Summer	Waist	Tsulong ToES
-87181	Weaver's Cord of Eternal Autumn	Waist	Tsulong ToES
-87184	Mender's Girdle of Endless Spring	Waist	Tsulong ToES
-87177	Invoker's Belt of Final Winter	Waist	Tsulong ToES
-87179	Sorcerer's Belt of Final Winter	Waist	Tsulong ToES
-87180	Stalker's Cord of Eternal Autumn	Waist	Tsulong ToES
-87186	Patroller's Girdle of Endless Spring	Waist	Tsulong ToES
-87182	Ranger's Chain of Unending Summer	Waist	Tsulong ToES
-87185	Protector's Girdle of Endless Spring	Waist	Tsulong ToES
-87178	Healer's Belt of Final Winter	Waist	Tsulong ToES
-87183	Binder's Chain of Unending Summer	Waist	Lei Shi ToES
-87181	Weaver's Cord of Eternal Autumn	Waist	Lei Shi ToES
-87184	Mender's Girdle of Endless Spring	Waist	Lei Shi ToES
-87177	Invoker's Belt of Final Winter	Waist	Lei Shi ToES
-87179	Sorcerer's Belt of Final Winter	Waist	Lei Shi ToES
-87180	Stalker's Cord of Eternal Autumn	Waist	Lei Shi ToES
-87186	Patroller's Girdle of Endless Spring	Waist	Lei Shi ToES
-87182	Ranger's Chain of Unending Summer	Waist	Lei Shi ToES
-87185	Protector's Girdle of Endless Spring	Waist	Lei Shi ToES
-87178	Healer's Belt of Final Winter	Waist	Lei Shi ToES
+87162	Sandals of the Blackest Night	Feet	Tsulong ToES
+87163	Spirits of the Sun	Trinket	Tsulong ToES
 87164	Loshan, Terror Incarnate	Weapon	Tsulong ToES
-87156	Gao-Rei, Staff of the Legendary Protector	Weapon	Tsulong ToES
-87002	Yaungol Slayer's Tunic	Chest	Empress HOF
-87109	White Tiger Chestguard	Chest	Empress HOF
-87104	White Tiger Breastplate	Chest	Empress HOF
-87099	White Tiger Battleplate	Chest	Empress HOF
-87124	Tunic of the Thousandfold Blades	Chest	Empress HOF
-87190	Sha-Skin Robes	Chest	Empress HOF
-87010	Robes of the Burning Scroll	Chest	Empress HOF
-87092	Red Crane Vest	Chest	Empress HOF
-87084	Red Crane Tunic	Chest	Empress HOF
-87094	Red Crane Chestguard	Chest	Empress HOF
-87117	Guardian Serpent Robes	Chest	Empress HOF
-87122	Guardian Serpent Raiment	Chest	Empress HOF
-87129	Firebird's Tunic	Chest	Empress HOF
-87139	Firebird's Hauberk	Chest	Empress HOF
-87134	Firebird's Cuirass	Chest	Empress HOF
-86936	Eternal Blossom Vestment	Chest	Empress HOF
-86938	Eternal Blossom Tunic	Chest	Empress HOF
-86931	Eternal Blossom Robes	Chest	Empress HOF
-86923	Eternal Blossom Raiment	Chest	Empress HOF
-86918	Chestguard of the Lost Catacomb	Chest	Empress HOF
-87197	Chestguard of Resounding Rings	Chest	Empress HOF
-86913	Breastplate of the Lost Catacomb	Chest	Empress HOF
-87193	Battleplate of Resounding Rings	Chest	Empress HOF
-87003	Yaungol Slayer's Gloves	Hands	Wind Lord HOF
-87110	White Tiger Handguards	Hands	Wind Lord HOF
-87105	White Tiger Gloves	Hands	Wind Lord HOF
-87100	White Tiger Gauntlets	Hands	Wind Lord HOF
+87165	Sollerets of Instability	Feet	Tsulong ToES
+87166	Spiritsever	Weapon	Lei Shi ToES
+87167	Terror in the Mists	Trinket	Lei Shi ToES
+87168	Taoren, the Soul Burner	Weapon	Lei Shi ToES
+87169	Robes of the Unknown Fear	Chest	Lei Shi ToES
+87170	Jin'ya, Orb of the Waterspeaker	Weapon	Lei Shi ToES
+87171	Cuirass of the Animated Protector	Chest	Lei Shi ToES
+87172	Darkmist Vortex	Trinket	Lei Shi ToES
+87173	Kilrak, Jaws of Terror	Weapon	Sha ToES
+87174	Dreadwoven Leggings of Failure	Legs	Sha ToES
+87175	Essence of Terror	Trinket	Sha ToES
+87176	Shin'ka, Execution of Domination	Weapon	Sha ToES
+87177	Invoker's Belt of Final Winter	Waist	Tsulong ToES
+87177	Invoker's Belt of Final Winter	Waist	Lei Shi ToES
+87178	Healer's Belt of Final Winter	Waist	Tsulong ToES
+87178	Healer's Belt of Final Winter	Waist	Lei Shi ToES
+87179	Sorcerer's Belt of Final Winter	Waist	Tsulong ToES
+87179	Sorcerer's Belt of Final Winter	Waist	Lei Shi ToES
+87180	Stalker's Cord of Eternal Autumn	Waist	Tsulong ToES
+87180	Stalker's Cord of Eternal Autumn	Waist	Lei Shi ToES
+87181	Weaver's Cord of Eternal Autumn	Waist	Tsulong ToES
+87181	Weaver's Cord of Eternal Autumn	Waist	Lei Shi ToES
+87182	Ranger's Chain of Unending Summer	Waist	Tsulong ToES
+87182	Ranger's Chain of Unending Summer	Waist	Lei Shi ToES
+87183	Binder's Chain of Unending Summer	Waist	Tsulong ToES
+87183	Binder's Chain of Unending Summer	Waist	Lei Shi ToES
+87184	Mender's Girdle of Endless Spring	Waist	Tsulong ToES
+87184	Mender's Girdle of Endless Spring	Waist	Lei Shi ToES
+87185	Protector's Girdle of Endless Spring	Waist	Tsulong ToES
+87185	Protector's Girdle of Endless Spring	Waist	Lei Shi ToES
+87186	Patroller's Girdle of Endless Spring	Waist	Tsulong ToES
+87186	Patroller's Girdle of Endless Spring	Waist	Lei Shi ToES
 87187	Sha-Skin Gloves	Hands	Wind Lord HOF
-87089	Red Crane Handwraps	Hands	Wind Lord HOF
-87085	Red Crane Grips	Hands	Wind Lord HOF
-87095	Red Crane Gauntlets	Hands	Wind Lord HOF
-86919	Handguards of the Lost Catacomb	Hands	Wind Lord HOF
-87198	Handguards of Resounding Rings	Hands	Wind Lord HOF
-87114	Guardian Serpent Handwraps	Hands	Wind Lord HOF
-87119	Guardian Serpent Gloves	Hands	Wind Lord HOF
-87125	Gloves of the Thousandfold Blades	Hands	Wind Lord HOF
-87007	Gloves of the Burning Scroll	Hands	Wind Lord HOF
-86914	Gauntlets of the Lost Catacomb	Hands	Wind Lord HOF
-87194	Gauntlets of Resounding Rings	Hands	Wind Lord HOF
-87130	Firebird's Handwraps	Hands	Wind Lord HOF
-87135	Firebird's Grips	Hands	Wind Lord HOF
-87140	Firebird's Gloves	Hands	Wind Lord HOF
-86928	Eternal Blossom Handwraps	Hands	Wind Lord HOF
-86939	Eternal Blossom Handguards	Hands	Wind Lord HOF
-86924	Eternal Blossom Grips	Hands	Wind Lord HOF
-86933	Eternal Blossom Gloves	Hands	Wind Lord HOF
-87004	Yaungol Slayer's Headguard	Head	Sha ToES
-87101	White Tiger Helmet	Head	Sha ToES
-87106	White Tiger Headguard	Head	Sha ToES
-87111	White Tiger Faceguard	Head	Sha ToES
 87188	Sha-Skin Hood	Head	Sha ToES
-87090	Red Crane Helm	Head	Sha ToES
-87086	Red Crane Headpiece	Head	Sha ToES
-87096	Red Crane Crown	Head	Sha ToES
-87008	Hood of the Burning Scroll	Head	Sha ToES
-87126	Helmet of the Thousandfold Blades	Head	Sha ToES
-86915	Helmet of the Lost Catacomb	Head	Sha ToES
-87192	Helmet of Resounding Rings	Head	Sha ToES
-87120	Guardian Serpent Hood	Head	Sha ToES
-87115	Guardian Serpent Cowl	Head	Sha ToES
-87136	Firebird's Helmet	Head	Sha ToES
-87141	Firebird's Headpiece	Head	Sha ToES
-87131	Firebird's Faceguard	Head	Sha ToES
-86920	Faceguard of the Lost Catacomb	Head	Sha ToES
-87199	Faceguard of Resounding Rings	Head	Sha ToES
-86929	Eternal Blossom Helm	Head	Sha ToES
-86925	Eternal Blossom Headpiece	Head	Sha ToES
-86940	Eternal Blossom Headguard	Head	Sha ToES
-86934	Eternal Blossom Cover	Head	Sha ToES
-87005	Yaungol Slayer's Legguards	Legs	Amber-Shaper HOF
-87102	White Tiger Legplates	Legs	Amber-Shaper HOF
-87112	White Tiger Legguards	Legs	Amber-Shaper HOF
-87107	White Tiger Greaves	Legs	Amber-Shaper HOF
 87189	Sha-Skin Leggings	Legs	Amber-Shaper HOF
-87091	Red Crane Legwraps	Legs	Amber-Shaper HOF
-87097	Red Crane Legguards	Legs	Amber-Shaper HOF
-87087	Red Crane Leggings	Legs	Amber-Shaper HOF
-87195	Legplates of Resounding Rings	Legs	Amber-Shaper HOF
-87127	Legguards of the Thousandfold Blades	Legs	Amber-Shaper HOF
-86921	Legguards of the Lost Catacomb	Legs	Amber-Shaper HOF
-87200	Legguards of Resounding Rings	Legs	Amber-Shaper HOF
-87009	Leggings of the Burning Scroll	Legs	Amber-Shaper HOF
-87116	Guardian Serpent Legwraps	Legs	Amber-Shaper HOF
-87121	Guardian Serpent Leggings	Legs	Amber-Shaper HOF
-86916	Greaves of the Lost Catacomb	Legs	Amber-Shaper HOF
-87132	Firebird's Legwraps	Legs	Amber-Shaper HOF
-87137	Firebird's Legguards	Legs	Amber-Shaper HOF
-87142	Firebird's Kilt	Legs	Amber-Shaper HOF
-86930	Eternal Blossom Legwraps	Legs	Amber-Shaper HOF
-86926	Eternal Blossom Legguards	Legs	Amber-Shaper HOF
-86935	Eternal Blossom Leggings	Legs	Amber-Shaper HOF
-86941	Eternal Blossom Breeches	Legs	Amber-Shaper HOF
-87006	Yaungol Slayer's Spaulders	Shoulder	Lei Shi ToES
-87113	White Tiger Shoulderguards	Shoulder	Lei Shi ToES
-87103	White Tiger Pauldrons	Shoulder	Lei Shi ToES
-87108	White Tiger Mantle	Shoulder	Lei Shi ToES
-87128	Spaulders of the Thousandfold Blades	Shoulder	Lei Shi ToES
-86922	Shoulderguards of the Lost Catacomb	Shoulder	Lei Shi ToES
-87201	Shoulderguards of Resounding Rings	Shoulder	Lei Shi ToES
+87190	Sha-Skin Robes	Chest	Empress HOF
 87191	Sha-Skin Mantle	Shoulder	Lei Shi ToES
-87088	Red Crane Spaulders	Shoulder	Lei Shi ToES
-87098	Red Crane Shoulderguards	Shoulder	Lei Shi ToES
-87093	Red Crane Mantle	Shoulder	Lei Shi ToES
-86917	Pauldrons of the Lost Catacomb	Shoulder	Lei Shi ToES
+87192	Helmet of Resounding Rings	Head	Sha ToES
+87193	Battleplate of Resounding Rings	Chest	Empress HOF
+87194	Gauntlets of Resounding Rings	Hands	Wind Lord HOF
+87195	Legplates of Resounding Rings	Legs	Amber-Shaper HOF
 87196	Pauldrons of Resounding Rings	Shoulder	Lei Shi ToES
-87011	Mantle of the Burning Scroll	Shoulder	Lei Shi ToES
-87123	Guardian Serpent Shoulderguards	Shoulder	Lei Shi ToES
-87118	Guardian Serpent Mantle	Shoulder	Lei Shi ToES
-87138	Firebird's Spaulders	Shoulder	Lei Shi ToES
-87143	Firebird's Shoulderwraps	Shoulder	Lei Shi ToES
-87133	Firebird's Mantle	Shoulder	Lei Shi ToES
-86927	Eternal Blossom Spaulders	Shoulder	Lei Shi ToES
-86937	Eternal Blossom Shoulderwraps	Shoulder	Lei Shi ToES
-86942	Eternal Blossom Shoulderguards	Shoulder	Lei Shi ToES
-86932	Eternal Blossom Mantle	Shoulder	Lei Shi ToES
+87197	Chestguard of Resounding Rings	Chest	Empress HOF
+87198	Handguards of Resounding Rings	Hands	Wind Lord HOF
+87199	Faceguard of Resounding Rings	Head	Sha ToES
+87200	Legguards of Resounding Rings	Legs	Amber-Shaper HOF
+87201	Shoulderguards of Resounding Rings	Shoulder	Lei Shi ToES
+87822	Zor'lok's Fizzing Chestguard	Chest	Vizier HOF
+87825	Grips of Terra Cotta	Hands	Will MSV
+89425	Fan of Fiery Winds	Held In Off-hand	Feng MSV
+89917	Pheromone-Coated Choker	Neck	Vizier HOF
+89918	Scent-Soaked Sandals	Feet	Vizier HOF
+89919	Warbelt of Sealed Pods	Waist	Vizier HOF
+89920	Sword Dancer's Leggings	Legs	Blade Lord HOF
+89921	Pauldrons of the Broken Blade	Shoulder	Blade Lord HOF
+89922	Hood of Stilled Winds	Head	Blade Lord HOF
+89923	Garalon's Graven Carapace	Chest	Garalon HOF
+89924	Shoulders of Foaming Fluids	Shoulder	Garalon HOF
+89925	Vestments of Steaming Ichor	Chest	Garalon HOF
+89926	Shadow Heart Spaulders	Shoulder	Empress HOF
+89927	Hood of Dark Dreams	Head	Empress HOF
+89928	Legplates of Regal Reinforcement	Legs	Empress HOF
+89929	Stonefang Chestguard	Chest	Dogs MSV
+89930	Ruby-Linked Girdle	Waist	Dogs MSV
+89931	Claws of Amethyst	Hands	Dogs MSV
+89932	Feng's Seal of Binding	Finger	Feng MSV
+89933	Feng's Ring of Dreams	Finger	Feng MSV
+89934	Bonded Soul Bracers	Wrist	Gara'jal MSV
+89935	Bracers of Violent Meditation	Wrist	Kings MSV
+89936	Mindshard Drape	Back	Kings MSV
+89937	Band of Bursting Novas	Finger	Elegon MSV
+89938	Galaxyfire Girdle	Waist	Elegon MSV
+89939	Crown of Keening Stars	Head	Elegon MSV
+89940	Dreadeye Gaze	Head	Will MSV
+89941	Chestguard of Eternal Vigilance	Chest	Will MSV
+89942	Enameled Grips of Solemnity	Hands	Will MSV
+89943	Legguards of Failing Purification	Legs	Protectors ToES
+89944	Waterborne Shoulderguards	Shoulder	Protectors ToES
+89945	Gauntlets of the Shadow's Caress	Hands	Tsulong ToES
+89946	Grasps of Serpentine Might	Hands	Tsulong ToES
+89947	Shoulderpads of Twisted Fate	Shoulder	Tsulong ToES
+89948	Fear-Blackened Leggings	Legs	Tsulong ToES
+89949	Robes of Pinioned Eyes	Chest	Sha ToES
+89950	Wrap of Instant Petrification	Chest	Sha ToES
+89951	Shadowgrip Girdle	Waist	Sha ToES
+90740	Kaz'tik's Stormseizer Gauntlets	Hands	Blade Lord HOF
 90858	Seal of the Prime	Finger	Faction
 90859	Seal of the Lucid	Finger	Faction
 90860	Seal of the Unscathed	Finger	Faction
 90861	Seal of the Windreaver	Finger	Faction
 90862	Seal of the Bloodseeker	Finger	Faction
-79331	Relic of Yu'lon	Trinket	Darkmoon
-79328	Relic of Xuen	Trinket	Darkmoon
-79327	Relic of Xuen	Trinket	Darkmoon
-79330	Relic of Chi-Ji	Trinket	Darkmoon
-79329	Relic of Niuzao	Trinket	Darkmoon
-87166	Spiritsever	Weapon	Lei Shi ToES
-87168	Taoren, the Soul Burner	Weapon	Lei Shi ToES
-87170	Jin'ya, Orb of the Waterspeaker	Weapon	Lei Shi ToES
-86988	Claws of Shek'zeer	Weapon	Empress HOF
-96414	Amun-Thoth, Sul's Spiritrending Talons	Weapon	Council ToT
-96409	Bad Juju	Trinket	Council ToT
-96650	Fire-Charm Gauntlets	Hand	Council ToT
-96640	Fire-Charm Grips	Hand	Council ToT
-96644	Fire-Charm Handwraps	Hand	Council ToT
-96421	Fortitude of the Zandalari	Trinket	Council ToT
-96570	Gauntlets of the All-Consuming Maw	Hand	Council ToT
-96732	Gauntlets of the Last Mogu	Hand	Council ToT
-96416	Gaze of Gara'jal	Head	Council ToT
-96634	Gloves of the Chromatic Hydra	Hand	Council ToT
-96674	Gloves of the Exorcist	Hand	Council ToT
-96589	Gloves of the Haunted Forest	Hand	Council ToT
-96725	Gloves of the Thousandfold Hells	Hand	Council ToT
-96695	Gloves of the Witch Doctor	Hand	Council ToT
-96580	Grips of the Haunted Forest	Hand	Council ToT
-96690	Grips of the Witch Doctor	Hand	Council ToT
-96575	Handguards of the All-Consuming Maw	Hand	Council ToT
-96595	Handguards of the Haunted Forest	Hand	Council ToT
-96736	Handguards of the Last Mogu	Hand	Council ToT
-96669	Handwraps of the Exorcist	Hand	Council ToT
-96584	Handwraps of the Haunted Forest	Hand	Council ToT
-96685	Handwraps of the Witch Doctor	Hand	Council ToT
-96410	Kura-Kura, Kazra'jin's Skullcleaver	Weapon	Council ToT
-96655	Lightning Emperor's Gauntlets	Hand	Council ToT
-96660	Lightning Emperor's Gloves	Hand	Council ToT
-96665	Lightning Emperor's Handguards	Hand	Council ToT
-96417	Loa-Ridden Bracers	Wrist	Council ToT
-96411	Mar'li's Bloodstained Sandals	Foot	Council ToT
-96680	Nine-Tailed Gloves	Hand	Council ToT
-96418	Overloaded Bladebreaker Cuirass	Chest	Council ToT
-96415	Robes of Treacherous Ground	Chest	Council ToT
-96627	Saurok Stalker's Gloves	Hand	Council ToT
-96420	Talisman of Angry Spirits	Neck	Council ToT
-96413	Wushoolay's Final Choice	Trinket	Council ToT
-96412	Zandalari Robes of the Final Rite	Chest	Council ToT
-96419	Zerat, Malakk's Soulburning Greatsword	Weapon	Council ToT
-94276	Cloud Serpent Helm	Head	Crafted
-94275	Cloud Serpent Sabatons	Foot	Crafted
-94272	Dreadrunner Helm	Head	Crafted
-94271	Dreadrunner Sabatons	Foot	Crafted
-94278	Falling Blossom Cowl	Head	Crafted
-94280	Falling Blossom Hood	Head	Crafted
-94279	Falling Blossom Sandals	Foot	Crafted
-94277	Falling Blossom Treads	Foot	Crafted
-94266	Haunted Steel Greathelm	Head	Crafted
 94263	Haunted Steel Greaves	Foot	Crafted
 94264	Haunted Steel Headcover	Head	Crafted
-94268	Haunted Steel Headguard	Head	Crafted
 94265	Haunted Steel Treads	Foot	Crafted
+94266	Haunted Steel Greathelm	Head	Crafted
 94267	Haunted Steel Warboots	Foot	Crafted
+94268	Haunted Steel Headguard	Head	Crafted
 94269	Quilen Hide Boots	Foot	Crafted
 94270	Quilen Hide Helm	Head	Crafted
+94271	Dreadrunner Sabatons	Foot	Crafted
+94272	Dreadrunner Helm	Head	Crafted
 94273	Spirit Keeper Footguards	Foot	Crafted
 94274	Spirit Keeper Helm	Head	Crafted
-96520	Anima-Ringed Fingers	Hand	Dark Animus ToT
-96518	Athame of the Sanguine Ritual	Weapon	Dark Animus ToT
-96731	Battleplate of the Last Mogu	Chest	Dark Animus ToT
-96569	Breastplate of the All-Consuming Maw	Chest	Dark Animus ToT
-96516	Cha-Ye's Essence of Brilliance	Trinket	Dark Animus ToT
-96574	Chestguard of the All-Consuming Maw	Chest	Dark Animus ToT
-96735	Chestguard of the Last Mogu	Chest	Dark Animus ToT
-96517	Constantly Accelerating Cloak	Back	Dark Animus ToT
-96522	Crown of the Golden Golem	Head	Dark Animus ToT
-96689	Cuirass of the Witch Doctor	Chest	Dark Animus ToT
-96523	Delicate Vial of the Sanguinaire	Trinket	Dark Animus ToT
-96649	Fire-Charm Chestguard	Chest	Dark Animus ToT
-96639	Fire-Charm Tunic	Chest	Dark Animus ToT
-96647	Fire-Charm Vest	Chest	Dark Animus ToT
-96513	Gore-Soaked Gear	Ring	Dark Animus ToT
-96514	Hand of the Dark Animus	Weapon	Dark Animus ToT
-96694	Hauberk of the Witch Doctor	Chest	Dark Animus ToT
-96515	Hood of the Crimson Wake	Head	Dark Animus ToT
-96654	Lightning Emperor's Battleplate	Chest	Dark Animus ToT
-96659	Lightning Emperor's Breastplate	Chest	Dark Animus ToT
-96664	Lightning Emperor's Chestguard	Chest	Dark Animus ToT
-96521	Matter-Swapped Legplates	Leg	Dark Animus ToT
-96679	Nine-Tailed Tunic	Chest	Dark Animus ToT
-96677	Raiment of the Exorcist	Chest	Dark Animus ToT
-96579	Raiment of the Haunted Forest	Chest	Dark Animus ToT
-96637	Robes of the Chromatic Hydra	Chest	Dark Animus ToT
-96672	Robes of the Exorcist	Chest	Dark Animus ToT
-96587	Robes of the Haunted Forest	Chest	Dark Animus ToT
-96728	Robes of the Thousandfold Hells	Chest	Dark Animus ToT
-96626	Saurok Stalker's Tunic	Chest	Dark Animus ToT
-96594	Tunic of the Haunted Forest	Chest	Dark Animus ToT
-96684	Tunic of the Witch Doctor	Chest	Dark Animus ToT
-96592	Vestment of the Haunted Forest	Chest	Dark Animus ToT
-96519	Worldbinder Leggings	Leg	Dark Animus ToT
-96475	Aberrant Chestguard of Torment	Chest	Durumu ToT
-96479	Artery Rippers	Hand	Durumu ToT
-96476	Caustic Spike Bracers	Wrist	Durumu ToT
-96484	Chilblain Spaulders	Shoulder	Durumu ToT
-96473	Crimson Bloom Legguards	Leg	Durumu ToT
-96485	Deadly Glare Cape	Back	Durumu ToT
-96472	Durumu's Baleful Gaze	Weapon	Durumu ToT
-96486	Durumu's Captive Eyeball	Ring	Durumu ToT
-96481	Durumu's Severed Tentacle	Ring	Durumu ToT
-96490	Iceshatter Gauntlets	Hand	Durumu ToT
-96483	Leggings of Pulsing Blood	Leg	Durumu ToT
-96491	Legplates of Re-Emergence	Leg	Durumu ToT
-96477	Legplates of the Dark Parasite	Leg	Durumu ToT
-96482	Lifedrainer's Sordid Grip	Hand	Durumu ToT
-96474	Links of the Disintegrator	Belt	Durumu ToT
-96480	Reinforced Mirror-Sheen Cloak	Back	Durumu ToT
-96487	Ritual Dagger of the Mind's Eye	Weapon	Durumu ToT
-96488	Sandals of the Starving Eye	Foot	Durumu ToT
-96478	Treads of the Blind Eye	Foot	Durumu ToT
-96489	Vein-Cover Bracers	Wrist	Durumu ToT
-96408	Armplates of the Vanquished Abomination	Wrist	Horridon ToT
-96392	Bindings of Multiplicative Strikes	Wrist	Horridon ToT
-96395	Bloodlord's Bloodsoaked Legplates	Leg	Horridon ToT
-96401	Dinomancer's Spiritbinding Spire	Weapon	Horridon ToT
-96399	Flamecaster's Burning Crown	Head	Horridon ToT
-96394	Frozen Warlord's Bracers	Wrist	Horridon ToT
-96397	Horn-Rimmed Doomcloak	Back	Horridon ToT
-96385	Horridon's Last Gasp	Trinket	Horridon ToT
-96402	Horridon's Tusk Fragment	Neck	Horridon ToT
-96391	Jalak's Maelstrom Staff	Weapon	Horridon ToT
-96407	Legguards of Scintillating Scales	Leg	Horridon ToT
-96403	Petrified Eye of the Basilisk	Ring	Horridon ToT
-96396	Puncture-Proof Greathelm	Head	Horridon ToT
-96405	Roots of Rampaging Earth	Leg	Horridon ToT
-96398	Spark of Zandalar	Trinket	Horridon ToT
-96406	Spaulders of Dinomancy	Shoulder	Horridon ToT
-96393	Sul'lithuz Sandmail	Chest	Horridon ToT
-96390	Talisman of Living Poison	Neck	Horridon ToT
-96400	Vaccinator's Armwraps	Wrist	Horridon ToT
-96404	Venomlord's Totemic Wand	Weapon	Horridon ToT
-96389	Wastewalker's Sandblasted Drape	Back	Horridon ToT
-96528	Dam'ren's Frozen Footguards	Foot	Iron Qon ToT
-96648	Fire-Charm Mantle	Shoulder	Iron Qon ToT
-96653	Fire-Charm Shoulderguards	Shoulder	Iron Qon ToT
-96643	Fire-Charm Spaulders	Shoulder	Iron Qon ToT
-96524	Iron Qon's Boot Knife	Weapon	Iron Qon ToT
-96663	Lightning Emperor's Mantle	Shoulder	Iron Qon ToT
-96658	Lightning Emperor's Pauldrons	Shoulder	Iron Qon ToT
-96668	Lightning Emperor's Shoulderguards	Shoulder	Iron Qon ToT
-96638	Mantle of the Chromatic Hydra	Shoulder	Iron Qon ToT
-96673	Mantle of the Exorcist	Shoulder	Iron Qon ToT
-96588	Mantle of the Haunted Forest	Shoulder	Iron Qon ToT
-96729	Mantle of the Thousandfold Hells	Shoulder	Iron Qon ToT
-96688	Mantle of the Witch Doctor	Shoulder	Iron Qon ToT
-96683	Nine-Tailed Spaulders	Shoulder	Iron Qon ToT
-96530	Orb of Arcing Lightning	Offhand	Iron Qon ToT
-96573	Pauldrons of the All-Consuming Maw	Shoulder	Iron Qon ToT
-96734	Pauldrons of the Last Mogu	Shoulder	Iron Qon ToT
-96534	Qon's Flaming Scimitar	Weapon	Iron Qon ToT
-96526	Quet'zal's Crackling Cord	Belt	Iron Qon ToT
-96533	Rein-Binder's Fists	Hand	Iron Qon ToT
-96532	Ro'shak's Molten Chain	Chest	Iron Qon ToT
-96529	Ro'shak's Remembrance	Ring	Iron Qon ToT
-96527	Saddle-Scarred Leggings	Leg	Iron Qon ToT
-96630	Saurok Stalker's Spaulders	Shoulder	Iron Qon ToT
-96578	Shoulderguards of the All-Consuming Maw	Shoulder	Iron Qon ToT
-96678	Shoulderguards of the Exorcist	Shoulder	Iron Qon ToT
-96598	Shoulderguards of the Haunted Forest	Shoulder	Iron Qon ToT
-96739	Shoulderguards of the Last Mogu	Shoulder	Iron Qon ToT
-96593	Shoulderwraps of the Haunted Forest	Shoulder	Iron Qon ToT
-96698	Shoulderwraps of the Witch Doctor	Shoulder	Iron Qon ToT
-96583	Spaulders of the Haunted Forest	Shoulder	Iron Qon ToT
-96693	Spaulders of the Witch Doctor	Shoulder	Iron Qon ToT
-96531	Spurs of the Storm Cavalry	Foot	Iron Qon ToT
-96525	Voice of the Quilen	Weapon	Iron Qon ToT
-96597	Breeches of the Haunted Forest	Leg	Ji-Kun ToT
-96462	Cord of Cacophonous Cawing	Belt	Ji-Kun ToT
-96467	Crown of Potentiated Birth	Head	Ji-Kun ToT
-96469	Egg-Shard Grips	Hand	Ji-Kun ToT
-96470	Fabled Feather of Ji-Kun	Trinket	Ji-Kun ToT
-96465	Featherflight Belt	Belt	Ji-Kun ToT
-96642	Fire-Charm Leggings	Leg	Ji-Kun ToT
-96652	Fire-Charm Legguards	Leg	Ji-Kun ToT
-96646	Fire-Charm Legwraps	Leg	Ji-Kun ToT
-96464	Giorgio's Caduceus of Pure Moods	Weapon	Ji-Kun ToT
-96466	Grasp of the Ruthless Mother	Hand	Ji-Kun ToT
-96572	Greaves of the All-Consuming Maw	Leg	Ji-Kun ToT
-96471	Ji-Kun's Rising Winds	Trinket	Ji-Kun ToT
-96697	Kilt of the Witch Doctor	Leg	Ji-Kun ToT
-96636	Leggings of the Chromatic Hydra	Leg	Ji-Kun ToT
-96676	Leggings of the Exorcist	Leg	Ji-Kun ToT
-96591	Leggings of the Haunted Forest	Leg	Ji-Kun ToT
-96727	Leggings of the Thousandfold Hells	Leg	Ji-Kun ToT
-96577	Legguards of the All-Consuming Maw	Leg	Ji-Kun ToT
-96582	Legguards of the Haunted Forest	Leg	Ji-Kun ToT
-96738	Legguards of the Last Mogu	Leg	Ji-Kun ToT
-96692	Legguards of the Witch Doctor	Leg	Ji-Kun ToT
-96733	Legplates of the Last Mogu	Leg	Ji-Kun ToT
-96671	Legwraps of the Exorcist	Leg	Ji-Kun ToT
-96586	Legwraps of the Haunted Forest	Leg	Ji-Kun ToT
-96687	Legwraps of the Witch Doctor	Leg	Ji-Kun ToT
-96662	Lightning Emperor's Greaves	Leg	Ji-Kun ToT
-96667	Lightning Emperor's Legguards	Leg	Ji-Kun ToT
-96657	Lightning Emperor's Legplates	Leg	Ji-Kun ToT
-96682	Nine-Tailed Legguards	Leg	Ji-Kun ToT
-96461	Pinionfeather Greatcloak	Back	Ji-Kun ToT
-96463	Robe of Midnight Down	Chest	Ji-Kun ToT
-96629	Saurok Stalker's Legguards	Leg	Ji-Kun ToT
-96468	Talonrender Chestplate	Chest	Ji-Kun ToT
-96379	Al'set's Tormented Leggings	Leg	Jinrokh ToT
-96375	Bracers of Constant Implosion	Wrist	Jinrokh ToT
-96374	Chestplate of Violent Detonation	Chest	Jinrokh ToT
-96373	Cloudbreaker Greatbelt	Belt	Jinrokh ToT
-96383	Drape of Booming Nights	Back	Jinrokh ToT
-96380	Fissure-Split Shoulderwraps	Shoulder	Jinrokh ToT
-96387	Ghostbinder Greatboots	Foot	Jinrokh ToT
-96386	Infinitely Conducting Bracers	Wrist	Jinrokh ToT
-96388	Ionized Yojamban Carapace	Chest	Jinrokh ToT
-96382	Jin'rokh's Dreamshard	Ring	Jinrokh ToT
-96377	Jin'rokh's Soulcrystal	Ring	Jinrokh ToT
-96370	Lightning-Eye Hood	Head	Jinrokh ToT
-96378	Lightningweaver Gauntlets	Hand	Jinrokh ToT
-96369	Renataki's Soul Charm	Trinket	Jinrokh ToT
-96381	Robes of Static Bursts	Chest	Jinrokh ToT
-96368	Sign of the Bloodied God	Ring	Jinrokh ToT
-96384	Soulblade of the Breaking Storm	Weapon	Jinrokh ToT
-96371	Spearman's Jingling Leggings	Leg	Jinrokh ToT
-96372	Static-Shot Shoulderguards	Shoulder	Jinrokh ToT
-96376	Worldbreaker's Stormscythe	Weapon	Jinrokh ToT
-97191	Ancient Overlord's Onyx Band	Ring	Kirin Tor Offensive
-97189	Ancient Primalist's Seal	Ring	Kirin Tor Offensive
-97207	Cloak of the Immortal Guardian	Back	Kirin Tor Offensive
-97187	Refurbished Band of Jin	Ring	Kirin Tor Offensive
-97190	Refurbished Seal of Jin	Ring	Kirin Tor Offensive
-97188	Restored Hexxer's Signet	Ring	Kirin Tor Offensive
-97205	Shan'ze Gravetender Cloak	Back	Kirin Tor Offensive
-97206	Shan'ze Partisan's Greatcloak	Back	Kirin Tor Offensive
-97204	Static-Collecting Cloak	Back	Kirin Tor Offensive
-97203	Thunder-Chaser Cloak	Back	Kirin Tor Offensive
-96549	Conduit-Breaker Chain Leggings	Leg	Lei Shen ToT
-96550	Doomed Crown of Lei Shen	Head	Lei Shen ToT
-96548	Fusion Slasher Chestguard	Chest	Lei Shen ToT
-96557	Gloves of the Maimed Vizier	Hand	Lei Shen ToT
-96563	Grips of Slicing Electricity	Hand	Lei Shen ToT
-96564	Leggings of the Violent Gale	Leg	Lei Shen ToT
-96552	Legplates of Whipping Ionization	Leg	Lei Shen ToT
-96551	Legplates of the Lightning Throne	Leg	Lei Shen ToT
-96556	Legwraps of Cardinality	Leg	Lei Shen ToT
-96565	Lei Shen's Grounded Carapace	Chest	Lei Shen ToT
-96562	Lei Shen's Orb of Command	Offhand	Lei Shen ToT
-96561	Lightning-Imbued Chalice	Trinket	Lei Shen ToT
-96546	Rune of Re-Origination	Trinket	Lei Shen ToT
-96547	Shan-Dun, Breaker of Hope	Weapon	Lei Shen ToT
-96555	Soul Barrier	Trinket	Lei Shen ToT
-96560	Soul Prism of Lei Shen	Neck	Lei Shen ToT
-96559	Torall, Rod of the Shattered Throne	Weapon	Lei Shen ToT
-96554	Ultimate Protection of the Emperor	Offhand	Lei Shen ToT
-96558	Unerring Vision of Lei Shen	Trinket	Lei Shen ToT
-96553	Uroe, Harbinger of Terror	Weapon2H	Lei Shen ToT
-96455	Breath of the Hydra	Trinket	Megaera ToT
-96459	Chain of Consuming Magic	Chest	Megaera ToT
-96454	Fetish of the Hydra	Offhand	Megaera ToT
-96452	Frostborn Wristwraps	Wrist	Megaera ToT
-96451	Gleaming-Eye Shoulderpads	Shoulder	Megaera ToT
-96445	Grips of Cinderflesh	Hand	Megaera ToT
-96457	Hood of Smoldering Flesh	Head	Megaera ToT
-96449	Hydraskull Choker	Neck	Megaera ToT
-96460	Ice-Scored Treads	Foot	Megaera ToT
-96456	Inscribed Bag of Hydra-Spawn	Trinket	Megaera ToT
-96458	Links of the Bifurcated Tongue	Belt	Megaera ToT
-96442	Megaera's Poisoned Fang	Weapon	Megaera ToT
-96453	Megaera's Shining Eye	Neck	Megaera ToT
-96446	Plated Toothbreaker Girdle	Belt	Megaera ToT
-96444	Poisonblood Bladeshoulders	Shoulder	Megaera ToT
-96443	Quadra-Head Brooch	Neck	Megaera ToT
-96447	Rot-Proof Greatplate	Chest	Megaera ToT
-96450	Sandals of Arcane Fury	Foot	Megaera ToT
-96448	Spinescale Seal	Ring	Megaera ToT
-95165	Achillobator Ring	Ring	Oondasta
-95181	Amulet of the Titanorex	Neck	Oondasta
-95186	Belt of Crushed Dreams	Belt	Oondasta
-95188	Belt of the Arch Avimimus	Belt	Oondasta
-95189	Belt of the Dying Diemetradon	Belt	Oondasta
-95192	Belt of the Tyrannotitan	Belt	Oondasta
-95152	Breastplate of the Iguanocolossus	Chest	Oondasta
-95199	Carnotaur Battlegloves	Hand	Oondasta
-95177	Choker of Stygimolochy	Neck	Oondasta
-95164	Eye of Oondasta	Ring	Oondasta
-95147	Fancifully Frilled Tunic	Chest	Oondasta
-95166	Forzarra's Last Meal	Ring	Oondasta
-95184	Girdle of Dimorphodontics	Belt	Oondasta
-95187	Girdle of the Derrodoccus	Belt	Oondasta
-95196	Gloves of Gastric Rumbling	Hand	Oondasta
-95194	Gloves of Tyranomancy	Hand	Oondasta
-95195	Gloves of Unliving Fossil	Hand	Oondasta
-95193	Gloves of Varsoon the Greater	Hand	Oondasta
-95149	Gorgoraptor Scale Chest	Chest	Oondasta
-95178	Lootraptor's Amulet	Neck	Oondasta
-95150	Mail of the Mosschopper	Chest	Oondasta
-95179	Necklace of the Hazillosaurus	Neck	Oondasta
-95200	Orndo Mando's Gloves	Hand	Oondasta
-95180	Overcompensating Chain of the Alpha Male	Neck	Oondasta
-95167	Ring of King Kangrom	Ring	Oondasta
-95163	Ring of Shamuru	Ring	Oondasta
-95182	Robes of Zalmoxes	Chest	Oondasta
-95151	Scorched Spiritfire Drape	Chest	Oondasta
-95201	Skullsmashing Gauntlets	Hand	Oondasta
-95185	Terrorful Weave	Belt	Oondasta
-95197	Therapsid Scale Gloves	Hand	Oondasta
-95153	Tyrant King Battleplate	Chest	Oondasta
-95148	Vest of the Bordomorono	Chest	Oondasta
-95191	Voolar's Bloodied Belt	Belt	Oondasta
-95198	Vulcanodon Gauntlets	Hand	Oondasta
-95183	Waistband of Elder Falcarius	Chest	Oondasta
-95190	Waistband of Furious Stomping	Belt	Oondasta
-96502	Acid-Spine Bonemace	Weapon	Primordius ToT
-96500	Band of the Scaled Tyrant	Ring	Primordius ToT
-96497	Black Blood Legplates	Leg	Primordius ToT
-96510	Bonemender Bracers	Wrist	Primordius ToT
-96506	Bracers of Fragile Bone	Wrist	Primordius ToT
-96494	Bracers of Mutagenic Fervor	Wrist	Primordius ToT
-96509	Clear-Mind Helm	Head	Primordius ToT
-96493	Gloves of Cushioned Air	Hand	Primordius ToT
-96512	Greatshield of the Gloaming	Offhand	Primordius ToT
-96504	Helix-Breaker Gloves	Hand	Primordius ToT
-96499	Hydra-Scale Bloodcloak	Back	Primordius ToT
-96505	Leggings of Ebon Veins	Leg	Primordius ToT
-96508	Leggings of the Malformed Sapling	Leg	Primordius ToT
-96498	Metabolically Boosted Shoulderplates	Shoulder	Primordius ToT
-96496	Pathogenic Gauntlets	Hand	Primordius ToT
-96501	Primordius' Talisman of Rage	Trinket	Primordius ToT
-96503	Robes of Mutagenic Blood	Chest	Primordius ToT
-96511	Spaulders of Primordial Growth	Shoulder	Primordius ToT
-96507	Stolen Relic of Zuldazar	Trinket	Primordius ToT
-96495	Synapse-String Handguards	Hand	Primordius ToT
-96492	Talisman of Bloodlust	Trinket	Primordius ToT
-95025	Archaic Protector's Legguards	Leg	Raden ToT
-95013	Black Night Thundercloak	Back	Raden ToT
-95001	Bubbling Anima Belt	Belt	Raden ToT
-95038	Carapace of the Core	Chest	Raden ToT
-95035	Chains of Counted Souls	Chest	Raden ToT
-95033	Chestguard of Coruscating Blades	Chest	Raden ToT
-95028	Cosmicfire Legwraps	Leg	Raden ToT
-95002	Cracklesnap Clasp	Belt	Raden ToT
+94275	Cloud Serpent Sabatons	Foot	Crafted
+94276	Cloud Serpent Helm	Head	Crafted
+94277	Falling Blossom Treads	Foot	Crafted
+94278	Falling Blossom Cowl	Head	Crafted
+94279	Falling Blossom Sandals	Foot	Crafted
+94280	Falling Blossom Hood	Head	Crafted
+94507	Steadfast Talisman of the Shado-Pan Assault	Trinket	Shado-Pan Assault
+94508	Brutal Talisman of the Shado-Pan Assault	Trinket	Shado-Pan Assault
+94509	Soothing Talisman of the Shado-Pan Assault	Trinket	Shado-Pan Assault
+94510	Volatile Talisman of the Shado-Pan Assault	Trinket	Shado-Pan Assault
+94511	Vicious Talisman of the Shado-Pan Assault	Trinket	Shado-Pan Assault
 94995	Detonation Cord	Belt	Raden ToT
-95003	Flare-Forged Greatbelt	Belt	Raden ToT
-95015	Grey Wind Mistcloak	Back	Raden ToT
-95010	Hypersensitive Sollerets	Foot	Raden ToT
+94996	Vita-Binder Wrap	Belt	Raden ToT
+94997	Worldbender Waistband	Belt	Raden ToT
+94998	Strap of Murderous Strikes	Belt	Raden ToT
+94999	Longdraw Chain Belt	Belt	Raden ToT
 95000	Jingling Fetishgirdle	Belt	Raden ToT
+95001	Bubbling Anima Belt	Belt	Raden ToT
+95002	Cracklesnap Clasp	Belt	Raden ToT
+95003	Flare-Forged Greatbelt	Belt	Raden ToT
+95004	Starwalker Sandals	Foot	Raden ToT
+95005	Treads of Delicate Fascia	Foot	Raden ToT
+95006	Roots of Pain	Foot	Raden ToT
+95007	Twist-Toe Tabi	Foot	Raden ToT
+95008	World-Mote Sabatons	Foot	Raden ToT
+95009	Treads of the Sanguine Volley	Foot	Raden ToT
+95010	Hypersensitive Sollerets	Foot	Raden ToT
+95011	Lightning-Walker Clawfeet	Foot	Raden ToT
+95012	Sabatons of the Superior Being	Foot	Raden ToT
+95013	Black Night Thundercloak	Back	Raden ToT
+95014	Red Sky Cloudcloak	Back	Raden ToT
+95015	Grey Wind Mistcloak	Back	Raden ToT
+95016	White Snow Skycloak	Back	Raden ToT
+95017	Yellow Dawn Lightningcloak	Back	Raden ToT
+95018	Ra-den's Evolving Signet	Ring	Raden ToT
+95019	Ra-den's Summoning Band	Ring	Raden ToT
+95020	Ra-den's Contemplative Loop	Ring	Raden ToT
+95021	Ra-den's Swift Seal	Ring	Raden ToT
+95022	Ra-den's Ruinous Ring	Ring	Raden ToT
+95023	Legplates of Lightning Blood	Leg	Raden ToT
+95024	Time-Lost Greaves	Leg	Raden ToT
+95025	Archaic Protector's Legguards	Leg	Raden ToT
+95026	Sparkstring Chain Leggings	Leg	Raden ToT
+95027	Legguards of Awaked Repair	Leg	Raden ToT
+95028	Cosmicfire Legwraps	Leg	Raden ToT
 95029	Kilt of Perpetual Genuflection	Leg	Raden ToT
 95030	Leggings of the Discarded Warning	Leg	Raden ToT
-95027	Legguards of Awaked Repair	Leg	Raden ToT
 95031	Legguards of Surreal Visions	Leg	Raden ToT
-95023	Legplates of Lightning Blood	Leg	Raden ToT
-95011	Lightning-Walker Clawfeet	Foot	Raden ToT
-94999	Longdraw Chain Belt	Belt	Raden ToT
+95032	Robes of Contagious Time	Chest	Raden ToT
+95033	Chestguard of Coruscating Blades	Chest	Raden ToT
+95034	Scales of Shaped Flesh	Chest	Raden ToT
+95035	Chains of Counted Souls	Chest	Raden ToT
 95036	Nova-Binder Breastplate	Chest	Raden ToT
 95037	Planet-Birthed Cuirass	Chest	Raden ToT
-95020	Ra-den's Contemplative Loop	Ring	Raden ToT
-95018	Ra-den's Evolving Signet	Ring	Raden ToT
-95022	Ra-den's Ruinous Ring	Ring	Raden ToT
-95019	Ra-den's Summoning Band	Ring	Raden ToT
-95021	Ra-den's Swift Seal	Ring	Raden ToT
-95014	Red Sky Cloudcloak	Back	Raden ToT
-95032	Robes of Contagious Time	Chest	Raden ToT
-95040	Robes of Nova	Chest	Raden ToT
-95006	Roots of Pain	Foot	Raden ToT
-95012	Sabatons of the Superior Being	Foot	Raden ToT
-95034	Scales of Shaped Flesh	Chest	Raden ToT
-95026	Sparkstring Chain Leggings	Leg	Raden ToT
+95038	Carapace of the Core	Chest	Raden ToT
 95039	Starburner Robes	Chest	Raden ToT
-95004	Starwalker Sandals	Foot	Raden ToT
-94998	Strap of Murderous Strikes	Belt	Raden ToT
-95024	Time-Lost Greaves	Leg	Raden ToT
-95005	Treads of Delicate Fascia	Foot	Raden ToT
-95009	Treads of the Sanguine Volley	Foot	Raden ToT
-95007	Twist-Toe Tabi	Foot	Raden ToT
-94996	Vita-Binder Wrap	Belt	Raden ToT
-95016	White Snow Skycloak	Back	Raden ToT
-95008	World-Mote Sabatons	Foot	Raden ToT
-94997	Worldbender Waistband	Belt	Raden ToT
-95017	Yellow Dawn Lightningcloak	Back	Raden ToT
-95129	Axebinder Wristguards	Wrist	Shado-Pan Assault
-95140	Band of the Shado-Pan Assault	Ring	Shado-Pan Assault
-95111	Bloodstained Skullsqueezers	Hand	Shado-Pan Assault
-95128	Bonecrusher Bracers	Wrist	Shado-Pan Assault
-95135	Bracers of Shielding Thought	Wrist	Shado-Pan Assault
-95076	Breastplate of Brutal Strikes	Chest	Shado-Pan Assault
-94508	Brutal Talisman of the Shado-Pan Assault	Trinket	Shado-Pan Assault
-95079	Carapace of Segmented Scale	Chest	Shado-Pan Assault
-95123	Charfire Leggings	Leg	Shado-Pan Assault
-95087	Cracklebite Links	Belt	Shado-Pan Assault
-95108	Daggerfinger Clutches	Hand	Shado-Pan Assault
-95088	Darkfang Belt	Belt	Shado-Pan Assault
-95146	Destroyer's Battletags	Neck	Shado-Pan Assault
-95118	Dreamweaver Drape	Back	Shado-Pan Assault
-95081	Fire Support Robes	Chest	Shado-Pan Assault
-95090	Firestrike Cord	Belt	Shado-Pan Assault
-95106	Flameweaver Handwraps	Hand	Shado-Pan Assault
-95143	Flanker's Battletags	Neck	Shado-Pan Assault
-95102	Frost-Kissed Shoulderwraps	Shoulder	Shado-Pan Assault
-95109	Gauntlets of the Longbow	Hand	Shado-Pan Assault
-95105	Ghostbinder Grips	Hand	Shado-Pan Assault
-95075	Gianttooth Chestplate	Chest	Shado-Pan Assault
-95091	Girdle of Glowing Light	Belt	Shado-Pan Assault
-95107	Gloves of Enduring Renewal	Hand	Shado-Pan Assault
-95101	Halo-Graced Mantle	Shoulder	Shado-Pan Assault
+95040	Robes of Nova	Chest	Raden ToT
 95074	Hauberk of Gleaming Fire	Chest	Shado-Pan Assault
-95134	Hearthfire Armwraps	Wrist	Shado-Pan Assault
-95097	Heartroot Shoulderguards	Shoulder	Shado-Pan Assault
-95127	Homeguard Leggings	Leg	Shado-Pan Assault
-95126	Kilt of Rising Thunder	Leg	Shado-Pan Assault
-95125	Legguards of Hidden Knives	Leg	Shado-Pan Assault
-95120	Legguards of Renewal	Leg	Shado-Pan Assault
-95099	Lightning Strike Mantle	Shoulder	Shado-Pan Assault
-95116	Longshot Forestcloak	Back	Shado-Pan Assault
-95141	Loop of the Shado-Pan Assault	Ring	Shado-Pan Assault
-95115	Many-Layered Scalecloak	Back	Shado-Pan Assault
-95089	Martiean's Splitleaf Girdle	Belt	Shado-Pan Assault
-95145	Mender's Battletags	Neck	Shado-Pan Assault
-95086	Nightflight Chain	Belt	Shado-Pan Assault
-95131	Powderburn Bracers	Wrist	Shado-Pan Assault
-95078	Raiment of Silent Stars	Chest	Shado-Pan Assault
-95084	Reinforced Spiritplate Girdle	Belt	Shado-Pan Assault
-95139	Ring of the Shado-Pan Assault	Ring	Shado-Pan Assault
-95082	Robes of Misty Bindings	Chest	Shado-Pan Assault
+95075	Gianttooth Chestplate	Chest	Shado-Pan Assault
+95076	Breastplate of Brutal Strikes	Chest	Shado-Pan Assault
 95077	Roofstalker Shadowwrap	Chest	Shado-Pan Assault
-95137	Seal of the Shado-Pan Assault	Ring	Shado-Pan Assault
-95117	Shadowspike Cloak	Back	Shado-Pan Assault
-95104	Shoulderguards of Potentiation	Shoulder	Shado-Pan Assault
-95096	Shoulders of Demonic Dreams	Shoulder	Shado-Pan Assault
-95098	Sightblinder Shoulderguards	Shoulder	Shado-Pan Assault
-95138	Signet of the Shado-Pan Assault	Ring	Shado-Pan Assault
+95078	Raiment of Silent Stars	Chest	Shado-Pan Assault
+95079	Carapace of Segmented Scale	Chest	Shado-Pan Assault
 95080	Skinsealer Tunic	Chest	Shado-Pan Assault
-95130	Softscar Armplates	Wrist	Shado-Pan Assault
-94509	Soothing Talisman of the Shado-Pan Assault	Trinket	Shado-Pan Assault
-95103	Sparksmasher Pauldrons	Shoulder	Shado-Pan Assault
-95114	Spikeshard Greatcloak	Back	Shado-Pan Assault
-95132	Spiritcaller Cuffs	Wrist	Shado-Pan Assault
-94507	Steadfast Talisman of the Shado-Pan Assault	Trinket	Shado-Pan Assault
-95110	Stoneward Handguards	Hand	Shado-Pan Assault
-95142	Striker's Battletags	Neck	Shado-Pan Assault
+95081	Fire Support Robes	Chest	Shado-Pan Assault
+95082	Robes of Misty Bindings	Chest	Shado-Pan Assault
 95083	Swordhook Slingbelt	Belt	Shado-Pan Assault
+95084	Reinforced Spiritplate Girdle	Belt	Shado-Pan Assault
+95085	Waistplate of Channeled Mending	Belt	Shado-Pan Assault
+95086	Nightflight Chain	Belt	Shado-Pan Assault
+95087	Cracklebite Links	Belt	Shado-Pan Assault
+95088	Darkfang Belt	Belt	Shado-Pan Assault
+95089	Martiean's Splitleaf Girdle	Belt	Shado-Pan Assault
+95090	Firestrike Cord	Belt	Shado-Pan Assault
+95091	Girdle of Glowing Light	Belt	Shado-Pan Assault
 95095	Targetblinder Spaulders	Shoulder	Shado-Pan Assault
-95119	Thunderbreaker Legplates	Leg	Shado-Pan Assault
+95096	Shoulders of Demonic Dreams	Shoulder	Shado-Pan Assault
+95097	Heartroot Shoulderguards	Shoulder	Shado-Pan Assault
+95098	Sightblinder Shoulderguards	Shoulder	Shado-Pan Assault
+95099	Lightning Strike Mantle	Shoulder	Shado-Pan Assault
+95100	Wallwalker Spaulders	Shoulder	Shado-Pan Assault
+95101	Halo-Graced Mantle	Shoulder	Shado-Pan Assault
+95102	Frost-Kissed Shoulderwraps	Shoulder	Shado-Pan Assault
+95103	Sparksmasher Pauldrons	Shoulder	Shado-Pan Assault
+95104	Shoulderguards of Potentiation	Shoulder	Shado-Pan Assault
+95105	Ghostbinder Grips	Hand	Shado-Pan Assault
+95106	Flameweaver Handwraps	Hand	Shado-Pan Assault
+95107	Gloves of Enduring Renewal	Hand	Shado-Pan Assault
+95108	Daggerfinger Clutches	Hand	Shado-Pan Assault
+95109	Gauntlets of the Longbow	Hand	Shado-Pan Assault
+95110	Stoneward Handguards	Hand	Shado-Pan Assault
+95111	Bloodstained Skullsqueezers	Hand	Shado-Pan Assault
 95112	Totemshaper Gloves	Hand	Shado-Pan Assault
 95113	Touch of Soothing Mists	Hand	Shado-Pan Assault
-95136	Troll-Burner Bracers	Wrist	Shado-Pan Assault
-95124	Trousers of Waning Shadow	Leg	Shado-Pan Assault
-95144	Vanguard's Battletags	Neck	Shado-Pan Assault
+95114	Spikeshard Greatcloak	Back	Shado-Pan Assault
+95115	Many-Layered Scalecloak	Back	Shado-Pan Assault
+95116	Longshot Forestcloak	Back	Shado-Pan Assault
+95117	Shadowspike Cloak	Back	Shado-Pan Assault
+95118	Dreamweaver Drape	Back	Shado-Pan Assault
+95119	Thunderbreaker Legplates	Leg	Shado-Pan Assault
+95120	Legguards of Renewal	Leg	Shado-Pan Assault
 95121	Vaultbreaker Greaves	Leg	Shado-Pan Assault
-94511	Vicious Talisman of the Shado-Pan Assault	Trinket	Shado-Pan Assault
-94510	Volatile Talisman of the Shado-Pan Assault	Trinket	Shado-Pan Assault
-95085	Waistplate of Channeled Mending	Belt	Shado-Pan Assault
-95100	Wallwalker Spaulders	Shoulder	Shado-Pan Assault
-95133	Willow-Weave Armbands	Wrist	Shado-Pan Assault
 95122	Wisp-Weave Pantaloons	Leg	Shado-Pan Assault
-96614	Abandoned Spaulders of Arrowflight	Shoulder	Shared Boss ToT
-96615	Abandoned Spaulders of Renewal	Shoulder	Shared Boss ToT
-96621	Bo-Ris, Horror in the Night	Weapon	Shared Boss ToT
-96606	Darkwood Spiritstaff	Weapon	Shared Boss ToT
-96620	Do-tharak, the Swordbreaker	Weapon	Shared Boss ToT
-96612	Forgotten Mantle of the Moon	Shoulder	Shared Boss ToT
-96613	Forgotten Mantle of the Sun	Shoulder	Shared Boss ToT
-96604	Fyn's Flickering Dagger	Weapon	Shared Boss ToT
-96619	Greatsword of Frozen Hells	Weapon	Shared Boss ToT
-96602	Invocation of the Dawn	Weapon	Shared Boss ToT
-96611	Jerthud, Graceful Hand of the Savior	Weapon	Shared Boss ToT
-96607	Lost Shoulders of Fire	Shoulder	Shared Boss ToT
-96609	Lost Shoulders of Fluidity	Shoulder	Shared Boss ToT
-96608	Lost Shoulders of Healing	Shoulder	Shared Boss ToT
-96603	Miracoran, the Vehement Chord	Weapon	Shared Boss ToT
-96610	Nadagast's Exsanguinator	Weapon	Shared Boss ToT
-96618	Reconstructed Bloody Shoulderplates	Shoulder	Shared Boss ToT
-96617	Reconstructed Furious Shoulderplates	Shoulder	Shared Boss ToT
-96616	Reconstructed Holy Shoulderplates	Shoulder	Shared Boss ToT
-97127	Tia-Tia, the Scything Star	Weapon	Shared Boss ToT
-96622	Visage of the Doomed	Offhand	Shared Boss ToT
-96605	Zeeg's Ancient Kegsmasher	Weapon	Shared Boss ToT
-95523	Belt of Loa Charms	Belt	Sunreaver Onslaught
-95521	Cinch of the Dead Forest's Vigil	Belt	Sunreaver Onslaught
-95520	Girdle of Shan'ze Glory	Belt	Sunreaver Onslaught
-95518	Pain-Binder Girdle	Belt	Sunreaver Onslaught
-95522	Rotting Bog Cinch	Belt	Sunreaver Onslaught
+95123	Charfire Leggings	Leg	Shado-Pan Assault
+95124	Trousers of Waning Shadow	Leg	Shado-Pan Assault
+95125	Legguards of Hidden Knives	Leg	Shado-Pan Assault
+95126	Kilt of Rising Thunder	Leg	Shado-Pan Assault
+95127	Homeguard Leggings	Leg	Shado-Pan Assault
+95128	Bonecrusher Bracers	Wrist	Shado-Pan Assault
+95129	Axebinder Wristguards	Wrist	Shado-Pan Assault
+95130	Softscar Armplates	Wrist	Shado-Pan Assault
+95131	Powderburn Bracers	Wrist	Shado-Pan Assault
+95132	Spiritcaller Cuffs	Wrist	Shado-Pan Assault
+95133	Willow-Weave Armbands	Wrist	Shado-Pan Assault
+95134	Hearthfire Armwraps	Wrist	Shado-Pan Assault
+95135	Bracers of Shielding Thought	Wrist	Shado-Pan Assault
+95136	Troll-Burner Bracers	Wrist	Shado-Pan Assault
+95137	Seal of the Shado-Pan Assault	Ring	Shado-Pan Assault
+95138	Signet of the Shado-Pan Assault	Ring	Shado-Pan Assault
+95139	Ring of the Shado-Pan Assault	Ring	Shado-Pan Assault
+95140	Band of the Shado-Pan Assault	Ring	Shado-Pan Assault
+95141	Loop of the Shado-Pan Assault	Ring	Shado-Pan Assault
+95142	Striker's Battletags	Neck	Shado-Pan Assault
+95143	Flanker's Battletags	Neck	Shado-Pan Assault
+95144	Vanguard's Battletags	Neck	Shado-Pan Assault
+95145	Mender's Battletags	Neck	Shado-Pan Assault
+95146	Destroyer's Battletags	Neck	Shado-Pan Assault
+95147	Fancifully Frilled Tunic	Chest	Oondasta
+95148	Vest of the Bordomorono	Chest	Oondasta
+95149	Gorgoraptor Scale Chest	Chest	Oondasta
+95150	Mail of the Mosschopper	Chest	Oondasta
+95151	Scorched Spiritfire Drape	Chest	Oondasta
+95152	Breastplate of the Iguanocolossus	Chest	Oondasta
+95153	Tyrant King Battleplate	Chest	Oondasta
+95163	Ring of Shamuru	Ring	Oondasta
+95164	Eye of Oondasta	Ring	Oondasta
+95165	Achillobator Ring	Ring	Oondasta
+95166	Forzarra's Last Meal	Ring	Oondasta
+95167	Ring of King Kangrom	Ring	Oondasta
+95177	Choker of Stygimolochy	Neck	Oondasta
+95178	Lootraptor's Amulet	Neck	Oondasta
+95179	Necklace of the Hazillosaurus	Neck	Oondasta
+95180	Overcompensating Chain of the Alpha Male	Neck	Oondasta
+95181	Amulet of the Titanorex	Neck	Oondasta
+95182	Robes of Zalmoxes	Chest	Oondasta
+95183	Waistband of Elder Falcarius	Chest	Oondasta
+95184	Girdle of Dimorphodontics	Belt	Oondasta
+95185	Terrorful Weave	Belt	Oondasta
+95186	Belt of Crushed Dreams	Belt	Oondasta
+95187	Girdle of the Derrodoccus	Belt	Oondasta
+95188	Belt of the Arch Avimimus	Belt	Oondasta
+95189	Belt of the Dying Diemetradon	Belt	Oondasta
+95190	Waistband of Furious Stomping	Belt	Oondasta
+95191	Voolar's Bloodied Belt	Belt	Oondasta
+95192	Belt of the Tyrannotitan	Belt	Oondasta
+95193	Gloves of Varsoon the Greater	Hand	Oondasta
+95194	Gloves of Tyranomancy	Hand	Oondasta
+95195	Gloves of Unliving Fossil	Hand	Oondasta
+95196	Gloves of Gastric Rumbling	Hand	Oondasta
+95197	Therapsid Scale Gloves	Hand	Oondasta
+95198	Vulcanodon Gauntlets	Hand	Oondasta
+95199	Carnotaur Battlegloves	Hand	Oondasta
+95200	Orndo Mando's Gloves	Hand	Oondasta
+95201	Skullsmashing Gauntlets	Hand	Oondasta
 95517	Shan'ze Scholar's Girdle	Belt	Sunreaver Onslaught
-95525	Skumblade Ritualist Links	Belt	Sunreaver Onslaught
+95518	Pain-Binder Girdle	Belt	Sunreaver Onslaught
 95519	Skumblade-Tooth Girdle	Belt	Sunreaver Onslaught
+95520	Girdle of Shan'ze Glory	Belt	Sunreaver Onslaught
+95521	Cinch of the Dead Forest's Vigil	Belt	Sunreaver Onslaught
+95522	Rotting Bog Cinch	Belt	Sunreaver Onslaught
+95523	Belt of Loa Charms	Belt	Sunreaver Onslaught
 95524	Thunder Caressed Waistguard	Belt	Sunreaver Onslaught
-96429	Amulet of the Primal Turtle	Neck	Tortos ToT
-96432	Azure Shell Bracers	Wrist	Tortos ToT
-96425	Beady-Eye Bracers	Wrist	Tortos ToT
-96431	Beakbreaker Greatcloak	Back	Tortos ToT
-96434	Crystal-Claw Gloves	Hand	Tortos ToT
-96424	Grips of Vampiric Cruelty	Hand	Tortos ToT
-96426	Quakestompers	Foot	Tortos ToT
-96440	Refreshing Abalone Girdle	Belt	Tortos ToT
-96438	Robes of Concussive Shocks	Chest	Tortos ToT
-96423	Rockfall Ribwraps	Chest	Tortos ToT
+95525	Skumblade Ritualist Links	Belt	Sunreaver Onslaught
+96368	Sign of the Bloodied God	Ring	Jinrokh ToT
+96369	Renataki's Soul Charm	Trinket	Jinrokh ToT
+96370	Lightning-Eye Hood	Head	Jinrokh ToT
+96371	Spearman's Jingling Leggings	Leg	Jinrokh ToT
+96372	Static-Shot Shoulderguards	Shoulder	Jinrokh ToT
+96373	Cloudbreaker Greatbelt	Belt	Jinrokh ToT
+96374	Chestplate of Violent Detonation	Chest	Jinrokh ToT
+96375	Bracers of Constant Implosion	Wrist	Jinrokh ToT
+96376	Worldbreaker's Stormscythe	Weapon	Jinrokh ToT
+96377	Jin'rokh's Soulcrystal	Ring	Jinrokh ToT
+96378	Lightningweaver Gauntlets	Hand	Jinrokh ToT
+96379	Al'set's Tormented Leggings	Leg	Jinrokh ToT
+96380	Fissure-Split Shoulderwraps	Shoulder	Jinrokh ToT
+96381	Robes of Static Bursts	Chest	Jinrokh ToT
+96382	Jin'rokh's Dreamshard	Ring	Jinrokh ToT
+96383	Drape of Booming Nights	Back	Jinrokh ToT
+96384	Soulblade of the Breaking Storm	Weapon	Jinrokh ToT
+96385	Horridon's Last Gasp	Trinket	Horridon ToT
+96386	Infinitely Conducting Bracers	Wrist	Jinrokh ToT
+96387	Ghostbinder Greatboots	Foot	Jinrokh ToT
+96388	Ionized Yojamban Carapace	Chest	Jinrokh ToT
+96389	Wastewalker's Sandblasted Drape	Back	Horridon ToT
+96390	Talisman of Living Poison	Neck	Horridon ToT
+96391	Jalak's Maelstrom Staff	Weapon	Horridon ToT
+96392	Bindings of Multiplicative Strikes	Wrist	Horridon ToT
+96393	Sul'lithuz Sandmail	Chest	Horridon ToT
+96394	Frozen Warlord's Bracers	Wrist	Horridon ToT
+96395	Bloodlord's Bloodsoaked Legplates	Leg	Horridon ToT
+96396	Puncture-Proof Greathelm	Head	Horridon ToT
+96397	Horn-Rimmed Doomcloak	Back	Horridon ToT
+96398	Spark of Zandalar	Trinket	Horridon ToT
+96399	Flamecaster's Burning Crown	Head	Horridon ToT
+96400	Vaccinator's Armwraps	Wrist	Horridon ToT
+96401	Dinomancer's Spiritbinding Spire	Weapon	Horridon ToT
+96402	Horridon's Tusk Fragment	Neck	Horridon ToT
+96403	Petrified Eye of the Basilisk	Ring	Horridon ToT
+96404	Venomlord's Totemic Wand	Weapon	Horridon ToT
+96405	Roots of Rampaging Earth	Leg	Horridon ToT
+96406	Spaulders of Dinomancy	Shoulder	Horridon ToT
+96407	Legguards of Scintillating Scales	Leg	Horridon ToT
+96408	Armplates of the Vanquished Abomination	Wrist	Horridon ToT
+96409	Bad Juju	Trinket	Council ToT
+96410	Kura-Kura, Kazra'jin's Skullcleaver	Weapon	Council ToT
+96411	Mar'li's Bloodstained Sandals	Foot	Council ToT
+96412	Zandalari Robes of the Final Rite	Chest	Council ToT
+96413	Wushoolay's Final Choice	Trinket	Council ToT
+96414	Amun-Thoth, Sul's Spiritrending Talons	Weapon	Council ToT
+96415	Robes of Treacherous Ground	Chest	Council ToT
+96416	Gaze of Gara'jal	Head	Council ToT
+96417	Loa-Ridden Bracers	Wrist	Council ToT
+96418	Overloaded Bladebreaker Cuirass	Chest	Council ToT
+96419	Zerat, Malakk's Soulburning Greatsword	Weapon	Council ToT
+96420	Talisman of Angry Spirits	Neck	Council ToT
+96421	Fortitude of the Zandalari	Trinket	Council ToT
 96422	Shattered Tortoiseshell Longbow	Weapon	Tortos ToT
-96428	Shell-Coated Wristplates	Wrist	Tortos ToT
-96430	Shellsplitter Greataxe	Weapon	Tortos ToT
-96435	Shimmershell Cape	Back	Tortos ToT
+96423	Rockfall Ribwraps	Chest	Tortos ToT
+96424	Grips of Vampiric Cruelty	Hand	Tortos ToT
+96425	Beady-Eye Bracers	Wrist	Tortos ToT
+96426	Quakestompers	Foot	Tortos ToT
 96427	Shoulderguards of Centripetal Destruction	Shoulder	Tortos ToT
-96439	Spaulders of Quaking Fear	Shoulder	Tortos ToT
+96428	Shell-Coated Wristplates	Wrist	Tortos ToT
+96429	Amulet of the Primal Turtle	Neck	Tortos ToT
+96430	Shellsplitter Greataxe	Weapon	Tortos ToT
+96431	Beakbreaker Greatcloak	Back	Tortos ToT
+96432	Azure Shell Bracers	Wrist	Tortos ToT
 96433	Stonegaze Hood	Head	Tortos ToT
+96434	Crystal-Claw Gloves	Hand	Tortos ToT
+96435	Shimmershell Cape	Back	Tortos ToT
 96436	Tortos' Discarded Shell	Offhand	Tortos ToT
-96441	Tortos' Shellseizers	Hand	Tortos ToT
 96437	Vampire Bat-Hide Bracers	Wrist	Tortos ToT
-96540	Bracers of the Midnight Comet	Wrist	Twin Consorts ToT
-96590	Cover of the Haunted Forest	Head	Twin Consorts ToT
-96670	Cowl of the Exorcist	Head	Twin Consorts ToT
-96576	Faceguard of the All-Consuming Maw	Head	Twin Consorts ToT
-96737	Faceguard of the Last Mogu	Head	Twin Consorts ToT
-96686	Faceguard of the Witch Doctor	Head	Twin Consorts ToT
-96545	Fingers of the Night	Hand	Twin Consorts ToT
-96651	Fire-Charm Crown	Head	Twin Consorts ToT
-96641	Fire-Charm Headpiece	Head	Twin Consorts ToT
-96645	Fire-Charm Helm	Head	Twin Consorts ToT
-96543	Gaze of the Twins	Trinket	Twin Consorts ToT
-96541	Girdle of Night and Day	Belt	Twin Consorts ToT
-96596	Headguard of the Haunted Forest	Head	Twin Consorts ToT
-96581	Headpiece of the Haunted Forest	Head	Twin Consorts ToT
-96696	Headpiece of the Witch Doctor	Head	Twin Consorts ToT
-96585	Helm of the Haunted Forest	Head	Twin Consorts ToT
-96571	Helmet of the All-Consuming Maw	Head	Twin Consorts ToT
-96730	Helmet of the Last Mogu	Head	Twin Consorts ToT
-96691	Helmet of the Witch Doctor	Head	Twin Consorts ToT
-96635	Hood of the Chromatic Hydra	Head	Twin Consorts ToT
-96675	Hood of the Exorcist	Head	Twin Consorts ToT
-96726	Hood of the Thousandfold Hells	Head	Twin Consorts ToT
-96666	Lightning Emperor's Faceguard	Head	Twin Consorts ToT
-96661	Lightning Emperor's Headguard	Head	Twin Consorts ToT
-96656	Lightning Emperor's Helmet	Head	Twin Consorts ToT
-96544	Moonjade Necklace	Neck	Twin Consorts ToT
-96681	Nine-Tailed Helmet	Head	Twin Consorts ToT
-96537	Passionfire Choker	Neck	Twin Consorts ToT
+96438	Robes of Concussive Shocks	Chest	Tortos ToT
+96439	Spaulders of Quaking Fear	Shoulder	Tortos ToT
+96440	Refreshing Abalone Girdle	Belt	Tortos ToT
+96441	Tortos' Shellseizers	Hand	Tortos ToT
+96442	Megaera's Poisoned Fang	Weapon	Megaera ToT
+96443	Quadra-Head Brooch	Neck	Megaera ToT
+96444	Poisonblood Bladeshoulders	Shoulder	Megaera ToT
+96445	Grips of Cinderflesh	Hand	Megaera ToT
+96446	Plated Toothbreaker Girdle	Belt	Megaera ToT
+96447	Rot-Proof Greatplate	Chest	Megaera ToT
+96448	Spinescale Seal	Ring	Megaera ToT
+96449	Hydraskull Choker	Neck	Megaera ToT
+96450	Sandals of Arcane Fury	Foot	Megaera ToT
+96451	Gleaming-Eye Shoulderpads	Shoulder	Megaera ToT
+96452	Frostborn Wristwraps	Wrist	Megaera ToT
+96453	Megaera's Shining Eye	Neck	Megaera ToT
+96454	Fetish of the Hydra	Offhand	Megaera ToT
+96455	Breath of the Hydra	Trinket	Megaera ToT
+96456	Inscribed Bag of Hydra-Spawn	Trinket	Megaera ToT
+96457	Hood of Smoldering Flesh	Head	Megaera ToT
+96458	Links of the Bifurcated Tongue	Belt	Megaera ToT
+96459	Chain of Consuming Magic	Chest	Megaera ToT
+96460	Ice-Scored Treads	Foot	Megaera ToT
+96461	Pinionfeather Greatcloak	Back	Ji-Kun ToT
+96462	Cord of Cacophonous Cawing	Belt	Ji-Kun ToT
+96463	Robe of Midnight Down	Chest	Ji-Kun ToT
+96464	Giorgio's Caduceus of Pure Moods	Weapon	Ji-Kun ToT
+96465	Featherflight Belt	Belt	Ji-Kun ToT
+96466	Grasp of the Ruthless Mother	Hand	Ji-Kun ToT
+96467	Crown of Potentiated Birth	Head	Ji-Kun ToT
+96468	Talonrender Chestplate	Chest	Ji-Kun ToT
+96469	Egg-Shard Grips	Hand	Ji-Kun ToT
+96470	Fabled Feather of Ji-Kun	Trinket	Ji-Kun ToT
+96471	Ji-Kun's Rising Winds	Trinket	Ji-Kun ToT
+96472	Durumu's Baleful Gaze	Weapon	Durumu ToT
+96473	Crimson Bloom Legguards	Leg	Durumu ToT
+96474	Links of the Disintegrator	Belt	Durumu ToT
+96475	Aberrant Chestguard of Torment	Chest	Durumu ToT
+96476	Caustic Spike Bracers	Wrist	Durumu ToT
+96477	Legplates of the Dark Parasite	Leg	Durumu ToT
+96478	Treads of the Blind Eye	Foot	Durumu ToT
+96479	Artery Rippers	Hand	Durumu ToT
+96480	Reinforced Mirror-Sheen Cloak	Back	Durumu ToT
+96481	Durumu's Severed Tentacle	Ring	Durumu ToT
+96482	Lifedrainer's Sordid Grip	Hand	Durumu ToT
+96483	Leggings of Pulsing Blood	Leg	Durumu ToT
+96484	Chilblain Spaulders	Shoulder	Durumu ToT
+96485	Deadly Glare Cape	Back	Durumu ToT
+96486	Durumu's Captive Eyeball	Ring	Durumu ToT
+96487	Ritual Dagger of the Mind's Eye	Weapon	Durumu ToT
+96488	Sandals of the Starving Eye	Foot	Durumu ToT
+96489	Vein-Cover Bracers	Wrist	Durumu ToT
+96490	Iceshatter Gauntlets	Hand	Durumu ToT
+96491	Legplates of Re-Emergence	Leg	Durumu ToT
+96492	Talisman of Bloodlust	Trinket	Primordius ToT
+96493	Gloves of Cushioned Air	Hand	Primordius ToT
+96494	Bracers of Mutagenic Fervor	Wrist	Primordius ToT
+96495	Synapse-String Handguards	Hand	Primordius ToT
+96496	Pathogenic Gauntlets	Hand	Primordius ToT
+96497	Black Blood Legplates	Leg	Primordius ToT
+96498	Metabolically Boosted Shoulderplates	Shoulder	Primordius ToT
+96499	Hydra-Scale Bloodcloak	Back	Primordius ToT
+96500	Band of the Scaled Tyrant	Ring	Primordius ToT
+96501	Primordius' Talisman of Rage	Trinket	Primordius ToT
+96502	Acid-Spine Bonemace	Weapon	Primordius ToT
+96503	Robes of Mutagenic Blood	Chest	Primordius ToT
+96504	Helix-Breaker Gloves	Hand	Primordius ToT
+96505	Leggings of Ebon Veins	Leg	Primordius ToT
+96506	Bracers of Fragile Bone	Wrist	Primordius ToT
+96507	Stolen Relic of Zuldazar	Trinket	Primordius ToT
+96508	Leggings of the Malformed Sapling	Leg	Primordius ToT
+96509	Clear-Mind Helm	Head	Primordius ToT
+96510	Bonemender Bracers	Wrist	Primordius ToT
+96511	Spaulders of Primordial Growth	Shoulder	Primordius ToT
+96512	Greatshield of the Gloaming	Offhand	Primordius ToT
+96513	Gore-Soaked Gear	Ring	Dark Animus ToT
+96514	Hand of the Dark Animus	Weapon	Dark Animus ToT
+96515	Hood of the Crimson Wake	Head	Dark Animus ToT
+96516	Cha-Ye's Essence of Brilliance	Trinket	Dark Animus ToT
+96517	Constantly Accelerating Cloak	Back	Dark Animus ToT
+96518	Athame of the Sanguine Ritual	Weapon	Dark Animus ToT
+96519	Worldbinder Leggings	Leg	Dark Animus ToT
+96520	Anima-Ringed Fingers	Hand	Dark Animus ToT
+96521	Matter-Swapped Legplates	Leg	Dark Animus ToT
+96522	Crown of the Golden Golem	Head	Dark Animus ToT
+96523	Delicate Vial of the Sanguinaire	Trinket	Dark Animus ToT
+96524	Iron Qon's Boot Knife	Weapon	Iron Qon ToT
+96525	Voice of the Quilen	Weapon	Iron Qon ToT
+96526	Quet'zal's Crackling Cord	Belt	Iron Qon ToT
+96527	Saddle-Scarred Leggings	Leg	Iron Qon ToT
+96528	Dam'ren's Frozen Footguards	Foot	Iron Qon ToT
+96529	Ro'shak's Remembrance	Ring	Iron Qon ToT
+96530	Orb of Arcing Lightning	Offhand	Iron Qon ToT
+96531	Spurs of the Storm Cavalry	Foot	Iron Qon ToT
+96532	Ro'shak's Molten Chain	Chest	Iron Qon ToT
+96533	Rein-Binder's Fists	Hand	Iron Qon ToT
+96534	Qon's Flaming Scimitar	Weapon	Iron Qon ToT
+96535	Wu-Lai, Bladed Fan of the Empyreans	Weapon	Twin Consorts ToT
 96536	Robes of the Moon Lotus	Chest	Twin Consorts ToT
-96628	Saurok Stalker's Headguard	Head	Twin Consorts ToT
+96537	Passionfire Choker	Neck	Twin Consorts ToT
 96538	Shield of Twinned Despair	Offhand	Twin Consorts ToT
 96539	Suen-Wo, Spire of the Falling Sun	Weapon	Twin Consorts ToT
+96540	Bracers of the Midnight Comet	Wrist	Twin Consorts ToT
+96541	Girdle of Night and Day	Belt	Twin Consorts ToT
 96542	Tidal Force Treads	Foot	Twin Consorts ToT
-96535	Wu-Lai, Bladed Fan of the Empyreans	Weapon	Twin Consorts ToT
-96716	Abandoned Zandalari Arrowlinks	Belt	Unknown
-96720	Abandoned Zandalari Bucklebreaker	Belt	Unknown
-96705	Abandoned Zandalari Firecord	Belt	Unknown
-96719	Abandoned Zandalari Goreplate	Belt	Unknown
-96718	Abandoned Zandalari Greatbelt	Belt	Unknown
-96715	Abandoned Zandalari Moonstrap	Belt	Unknown
-96706	Abandoned Zandalari Shadowgirdle	Belt	Unknown
-96714	Abandoned Zandalari Silentbelt	Belt	Unknown
-96717	Abandoned Zandalari Waterchain	Belt	Unknown
-98140	Boots of Boundless Patience	Foot	Unknown
-96723	Columnbreaker Stompers	Foot	Unknown
-96710	Deeproot Treads	Foot	Unknown
-96709	Home-Warding Slippers	Foot	Unknown
-96722	Locksmasher Greaves	Foot	Unknown
-98142	Modest Sandals	Foot	Unknown
-98141	Sabatons of the Humble	Foot	Unknown
-96704	Scalehide Spurs	Foot	Unknown
-98145	Self-Effacing Boots	Foot	Unknown
-96707	Silentflame Sandals	Foot	Unknown
+96543	Gaze of the Twins	Trinket	Twin Consorts ToT
+96544	Moonjade Necklace	Neck	Twin Consorts ToT
+96545	Fingers of the Night	Hand	Twin Consorts ToT
+96546	Rune of Re-Origination	Trinket	Lei Shen ToT
+96547	Shan-Dun, Breaker of Hope	Weapon	Lei Shen ToT
+96548	Fusion Slasher Chestguard	Chest	Lei Shen ToT
+96549	Conduit-Breaker Chain Leggings	Leg	Lei Shen ToT
+96550	Doomed Crown of Lei Shen	Head	Lei Shen ToT
+96551	Legplates of the Lightning Throne	Leg	Lei Shen ToT
+96552	Legplates of Whipping Ionization	Leg	Lei Shen ToT
+96553	Uroe, Harbinger of Terror	Weapon2H	Lei Shen ToT
+96554	Ultimate Protection of the Emperor	Offhand	Lei Shen ToT
+96555	Soul Barrier	Trinket	Lei Shen ToT
+96556	Legwraps of Cardinality	Leg	Lei Shen ToT
+96557	Gloves of the Maimed Vizier	Hand	Lei Shen ToT
+96558	Unerring Vision of Lei Shen	Trinket	Lei Shen ToT
+96559	Torall, Rod of the Shattered Throne	Weapon	Lei Shen ToT
+96560	Soul Prism of Lei Shen	Neck	Lei Shen ToT
+96561	Lightning-Imbued Chalice	Trinket	Lei Shen ToT
+96562	Lei Shen's Orb of Command	Offhand	Lei Shen ToT
+96563	Grips of Slicing Electricity	Hand	Lei Shen ToT
+96564	Leggings of the Violent Gale	Leg	Lei Shen ToT
+96565	Lei Shen's Grounded Carapace	Chest	Lei Shen ToT
+96569	Breastplate of the All-Consuming Maw	Chest	Dark Animus ToT
+96570	Gauntlets of the All-Consuming Maw	Hand	Council ToT
+96571	Helmet of the All-Consuming Maw	Head	Twin Consorts ToT
+96572	Greaves of the All-Consuming Maw	Leg	Ji-Kun ToT
+96573	Pauldrons of the All-Consuming Maw	Shoulder	Iron Qon ToT
+96574	Chestguard of the All-Consuming Maw	Chest	Dark Animus ToT
+96575	Handguards of the All-Consuming Maw	Hand	Council ToT
+96576	Faceguard of the All-Consuming Maw	Head	Twin Consorts ToT
+96577	Legguards of the All-Consuming Maw	Leg	Ji-Kun ToT
+96578	Shoulderguards of the All-Consuming Maw	Shoulder	Iron Qon ToT
+96579	Raiment of the Haunted Forest	Chest	Dark Animus ToT
+96580	Grips of the Haunted Forest	Hand	Council ToT
+96581	Headpiece of the Haunted Forest	Head	Twin Consorts ToT
+96582	Legguards of the Haunted Forest	Leg	Ji-Kun ToT
+96583	Spaulders of the Haunted Forest	Shoulder	Iron Qon ToT
+96584	Handwraps of the Haunted Forest	Hand	Council ToT
+96585	Helm of the Haunted Forest	Head	Twin Consorts ToT
+96586	Legwraps of the Haunted Forest	Leg	Ji-Kun ToT
+96587	Robes of the Haunted Forest	Chest	Dark Animus ToT
+96588	Mantle of the Haunted Forest	Shoulder	Iron Qon ToT
+96589	Gloves of the Haunted Forest	Hand	Council ToT
+96590	Cover of the Haunted Forest	Head	Twin Consorts ToT
+96591	Leggings of the Haunted Forest	Leg	Ji-Kun ToT
+96592	Vestment of the Haunted Forest	Chest	Dark Animus ToT
+96593	Shoulderwraps of the Haunted Forest	Shoulder	Iron Qon ToT
+96594	Tunic of the Haunted Forest	Chest	Dark Animus ToT
+96595	Handguards of the Haunted Forest	Hand	Council ToT
+96596	Headguard of the Haunted Forest	Head	Twin Consorts ToT
+96597	Breeches of the Haunted Forest	Leg	Ji-Kun ToT
+96598	Shoulderguards of the Haunted Forest	Shoulder	Iron Qon ToT
+96602	Invocation of the Dawn	Weapon	Shared Boss ToT
+96603	Miracoran, the Vehement Chord	Weapon	Shared Boss ToT
+96604	Fyn's Flickering Dagger	Weapon	Shared Boss ToT
+96605	Zeeg's Ancient Kegsmasher	Weapon	Shared Boss ToT
+96606	Darkwood Spiritstaff	Weapon	Shared Boss ToT
+96607	Lost Shoulders of Fire	Shoulder	Shared Boss ToT
+96608	Lost Shoulders of Healing	Shoulder	Shared Boss ToT
+96609	Lost Shoulders of Fluidity	Shoulder	Shared Boss ToT
+96610	Nadagast's Exsanguinator	Weapon	Shared Boss ToT
+96611	Jerthud, Graceful Hand of the Savior	Weapon	Shared Boss ToT
+96612	Forgotten Mantle of the Moon	Shoulder	Shared Boss ToT
+96613	Forgotten Mantle of the Sun	Shoulder	Shared Boss ToT
+96614	Abandoned Spaulders of Arrowflight	Shoulder	Shared Boss ToT
+96615	Abandoned Spaulders of Renewal	Shoulder	Shared Boss ToT
+96616	Reconstructed Holy Shoulderplates	Shoulder	Shared Boss ToT
+96617	Reconstructed Furious Shoulderplates	Shoulder	Shared Boss ToT
+96618	Reconstructed Bloody Shoulderplates	Shoulder	Shared Boss ToT
+96619	Greatsword of Frozen Hells	Weapon	Shared Boss ToT
+96620	Do-tharak, the Swordbreaker	Weapon	Shared Boss ToT
+96621	Bo-Ris, Horror in the Night	Weapon	Shared Boss ToT
+96622	Visage of the Doomed	Offhand	Shared Boss ToT
+96626	Saurok Stalker's Tunic	Chest	Dark Animus ToT
+96627	Saurok Stalker's Gloves	Hand	Council ToT
+96628	Saurok Stalker's Headguard	Head	Twin Consorts ToT
+96629	Saurok Stalker's Legguards	Leg	Ji-Kun ToT
+96630	Saurok Stalker's Spaulders	Shoulder	Iron Qon ToT
+96634	Gloves of the Chromatic Hydra	Hand	Council ToT
+96635	Hood of the Chromatic Hydra	Head	Twin Consorts ToT
+96636	Leggings of the Chromatic Hydra	Leg	Ji-Kun ToT
+96637	Robes of the Chromatic Hydra	Chest	Dark Animus ToT
+96638	Mantle of the Chromatic Hydra	Shoulder	Iron Qon ToT
+96639	Fire-Charm Tunic	Chest	Dark Animus ToT
+96640	Fire-Charm Grips	Hand	Council ToT
+96641	Fire-Charm Headpiece	Head	Twin Consorts ToT
+96642	Fire-Charm Leggings	Leg	Ji-Kun ToT
+96643	Fire-Charm Spaulders	Shoulder	Iron Qon ToT
+96644	Fire-Charm Handwraps	Hand	Council ToT
+96645	Fire-Charm Helm	Head	Twin Consorts ToT
+96646	Fire-Charm Legwraps	Leg	Ji-Kun ToT
+96647	Fire-Charm Vest	Chest	Dark Animus ToT
+96648	Fire-Charm Mantle	Shoulder	Iron Qon ToT
+96649	Fire-Charm Chestguard	Chest	Dark Animus ToT
+96650	Fire-Charm Gauntlets	Hand	Council ToT
+96651	Fire-Charm Crown	Head	Twin Consorts ToT
+96652	Fire-Charm Legguards	Leg	Ji-Kun ToT
+96653	Fire-Charm Shoulderguards	Shoulder	Iron Qon ToT
+96654	Lightning Emperor's Battleplate	Chest	Dark Animus ToT
+96655	Lightning Emperor's Gauntlets	Hand	Council ToT
+96656	Lightning Emperor's Helmet	Head	Twin Consorts ToT
+96657	Lightning Emperor's Legplates	Leg	Ji-Kun ToT
+96658	Lightning Emperor's Pauldrons	Shoulder	Iron Qon ToT
+96659	Lightning Emperor's Breastplate	Chest	Dark Animus ToT
+96660	Lightning Emperor's Gloves	Hand	Council ToT
+96661	Lightning Emperor's Headguard	Head	Twin Consorts ToT
+96662	Lightning Emperor's Greaves	Leg	Ji-Kun ToT
+96663	Lightning Emperor's Mantle	Shoulder	Iron Qon ToT
+96664	Lightning Emperor's Chestguard	Chest	Dark Animus ToT
+96665	Lightning Emperor's Handguards	Hand	Council ToT
+96666	Lightning Emperor's Faceguard	Head	Twin Consorts ToT
+96667	Lightning Emperor's Legguards	Leg	Ji-Kun ToT
+96668	Lightning Emperor's Shoulderguards	Shoulder	Iron Qon ToT
+96669	Handwraps of the Exorcist	Hand	Council ToT
+96670	Cowl of the Exorcist	Head	Twin Consorts ToT
+96671	Legwraps of the Exorcist	Leg	Ji-Kun ToT
+96672	Robes of the Exorcist	Chest	Dark Animus ToT
+96673	Mantle of the Exorcist	Shoulder	Iron Qon ToT
+96674	Gloves of the Exorcist	Hand	Council ToT
+96675	Hood of the Exorcist	Head	Twin Consorts ToT
+96676	Leggings of the Exorcist	Leg	Ji-Kun ToT
+96677	Raiment of the Exorcist	Chest	Dark Animus ToT
+96678	Shoulderguards of the Exorcist	Shoulder	Iron Qon ToT
+96679	Nine-Tailed Tunic	Chest	Dark Animus ToT
+96680	Nine-Tailed Gloves	Hand	Council ToT
+96681	Nine-Tailed Helmet	Head	Twin Consorts ToT
+96682	Nine-Tailed Legguards	Leg	Ji-Kun ToT
+96683	Nine-Tailed Spaulders	Shoulder	Iron Qon ToT
+96684	Tunic of the Witch Doctor	Chest	Dark Animus ToT
+96685	Handwraps of the Witch Doctor	Hand	Council ToT
+96686	Faceguard of the Witch Doctor	Head	Twin Consorts ToT
+96687	Legwraps of the Witch Doctor	Leg	Ji-Kun ToT
+96688	Mantle of the Witch Doctor	Shoulder	Iron Qon ToT
+96689	Cuirass of the Witch Doctor	Chest	Dark Animus ToT
+96690	Grips of the Witch Doctor	Hand	Council ToT
+96691	Helmet of the Witch Doctor	Head	Twin Consorts ToT
+96692	Legguards of the Witch Doctor	Leg	Ji-Kun ToT
+96693	Spaulders of the Witch Doctor	Shoulder	Iron Qon ToT
+96694	Hauberk of the Witch Doctor	Chest	Dark Animus ToT
+96695	Gloves of the Witch Doctor	Hand	Council ToT
+96696	Headpiece of the Witch Doctor	Head	Twin Consorts ToT
+96697	Kilt of the Witch Doctor	Leg	Ji-Kun ToT
+96698	Shoulderwraps of the Witch Doctor	Shoulder	Iron Qon ToT
 96703	Spiderweb Tabi	Foot	Unknown
+96704	Scalehide Spurs	Foot	Unknown
+96705	Abandoned Zandalari Firecord	Belt	Unknown
+96706	Abandoned Zandalari Shadowgirdle	Belt	Unknown
+96707	Silentflame Sandals	Foot	Unknown
+96709	Home-Warding Slippers	Foot	Unknown
+96710	Deeproot Treads	Foot	Unknown
 96711	Spiritbound Boots	Foot	Unknown
-98143	Subservient Greatboots	Foot	Unknown
-103678	Time-Lost Artifact	Trinket	Unknown
-98139	Treads of Respect	Foot	Unknown
-98137	Treads of Reticence	Foot	Unknown
-98144	Unassuming Slippers	Foot	Unknown
-98138	Unpretentious Boots	Foot	Unknown
 96712	Vaultwalker Sabatons	Foot	Unknown
-103987	Yu'lon's Bite	Trinket	Timeless
-103990	Resolve of Niuzao	Trinket	Timeless
+96714	Abandoned Zandalari Silentbelt	Belt	Unknown
+96715	Abandoned Zandalari Moonstrap	Belt	Unknown
+96716	Abandoned Zandalari Arrowlinks	Belt	Unknown
+96717	Abandoned Zandalari Waterchain	Belt	Unknown
+96718	Abandoned Zandalari Greatbelt	Belt	Unknown
+96719	Abandoned Zandalari Goreplate	Belt	Unknown
+96720	Abandoned Zandalari Bucklebreaker	Belt	Unknown
+96722	Locksmasher Greaves	Foot	Unknown
+96723	Columnbreaker Stompers	Foot	Unknown
+96725	Gloves of the Thousandfold Hells	Hand	Council ToT
+96726	Hood of the Thousandfold Hells	Head	Twin Consorts ToT
+96727	Leggings of the Thousandfold Hells	Leg	Ji-Kun ToT
+96728	Robes of the Thousandfold Hells	Chest	Dark Animus ToT
+96729	Mantle of the Thousandfold Hells	Shoulder	Iron Qon ToT
+96730	Helmet of the Last Mogu	Head	Twin Consorts ToT
+96731	Battleplate of the Last Mogu	Chest	Dark Animus ToT
+96732	Gauntlets of the Last Mogu	Hand	Council ToT
+96733	Legplates of the Last Mogu	Leg	Ji-Kun ToT
+96734	Pauldrons of the Last Mogu	Shoulder	Iron Qon ToT
+96735	Chestguard of the Last Mogu	Chest	Dark Animus ToT
+96736	Handguards of the Last Mogu	Hand	Council ToT
+96737	Faceguard of the Last Mogu	Head	Twin Consorts ToT
+96738	Legguards of the Last Mogu	Leg	Ji-Kun ToT
+96739	Shoulderguards of the Last Mogu	Shoulder	Iron Qon ToT
+97127	Tia-Tia, the Scything Star	Weapon	Shared Boss ToT
+97187	Refurbished Band of Jin	Ring	Kirin Tor Offensive
+97188	Restored Hexxer's Signet	Ring	Kirin Tor Offensive
+97189	Ancient Primalist's Seal	Ring	Kirin Tor Offensive
+97190	Refurbished Seal of Jin	Ring	Kirin Tor Offensive
+97191	Ancient Overlord's Onyx Band	Ring	Kirin Tor Offensive
+97203	Thunder-Chaser Cloak	Back	Kirin Tor Offensive
+97204	Static-Collecting Cloak	Back	Kirin Tor Offensive
+97205	Shan'ze Gravetender Cloak	Back	Kirin Tor Offensive
+97206	Shan'ze Partisan's Greatcloak	Back	Kirin Tor Offensive
+97207	Cloak of the Immortal Guardian	Back	Kirin Tor Offensive
+98137	Treads of Reticence	Foot	Unknown
+98138	Unpretentious Boots	Foot	Unknown
+98139	Treads of Respect	Foot	Unknown
+98140	Boots of Boundless Patience	Foot	Unknown
+98141	Sabatons of the Humble	Foot	Unknown
+98142	Modest Sandals	Foot	Unknown
+98143	Subservient Greatboots	Foot	Unknown
+98144	Unassuming Slippers	Foot	Unknown
+98145	Self-Effacing Boots	Foot	Unknown
+98599	White Cloud Leggings	Leg	Crafted
+98600	Pennyroyal Leggings	Leg	Crafted
+98601	Krasari Prowler Britches	Leg	Crafted
+98602	Blessed Trillium Greaves	Leg	Crafted
+98603	Leggings of the Night Sky	Leg	Crafted
+98604	Snow Lily Britches	Leg	Crafted
+98605	Gorge Stalker Legplates	Leg	Crafted
+98606	Protector's Trillium Legguards	Leg	Crafted
+98607	Avenger's Trillium Legplates	Leg	Crafted
+98608	White Cloud Belt	Belt	Crafted
+98609	Pennyroyal Belt	Belt	Crafted
+98610	Krasari Prowler Belt	Belt	Crafted
+98611	Blessed Trillium Belt	Belt	Crafted
+98612	Belt of the Night Sky	Belt	Crafted
+98613	Snow Lily Belt	Belt	Crafted
+98614	Gorge Stalker Belt	Belt	Crafted
+98615	Protector's Trillium Waistguard	Belt	Crafted
+98616	Avenger's Trillium Waistplate	Belt	Crafted
+99322	Spaulders of the Shattered Vale	Shoulder	SoO Blackfuse
+99323	Faceguard of Cyclopean Dread	Head	SoO Thok
+99324	Legguards of Cyclopean Dread	Leg	SoO Paragons
+99325	Shoulderguards of Cyclopean Dread	Shoulder	SoO Blackfuse
+99326	Raiment of the Shattered Vale	Chest	SoO ShaofPride
+99327	Grips of the Shattered Vale	Hand	SoO Nazgrim
+99328	Headpiece of the Shattered Vale	Head	SoO Thok
+99329	Legguards of the Shattered Vale	Leg	SoO Paragons
+99330	Chestguard of Cyclopean Dread	Chest	SoO ShaofPride
+99331	Handguards of Cyclopean Dread	Hand	SoO Nazgrim
+99332	Headpiece of Celestial Harmony	Head	SoO Thok
+99333	Leggings of Celestial Harmony	Leg	SoO Paragons
+99334	Shoulderwraps of Celestial Harmony	Shoulder	SoO Blackfuse
+99335	Breastplate of Cyclopean Dread	Chest	SoO ShaofPride
+99336	Gauntlets of Cyclopean Dread	Hand	SoO Nazgrim
+99337	Helmet of Cyclopean Dread	Head	SoO Thok
+99338	Greaves of Cyclopean Dread	Leg	SoO Paragons
+99339	Pauldrons of Cyclopean Dread	Shoulder	SoO Blackfuse
+99340	Grips of Celestial Harmony	Hand	SoO Nazgrim
+99341	Helmet of Celestial Harmony	Head	SoO Thok
+99342	Legguards of Celestial Harmony	Leg	SoO Paragons
+99343	Spaulders of Celestial Harmony	Shoulder	SoO Blackfuse
+99344	Hauberk of Celestial Harmony	Chest	SoO ShaofPride
+99345	Gloves of Celestial Harmony	Hand	SoO Nazgrim
+99346	Mantle of Celestial Harmony	Shoulder	SoO Blackfuse
+99347	Cuirass of Celestial Harmony	Chest	SoO ShaofPride
+99348	Helmet of the Barbed Assassin	Head	SoO Thok
+99349	Legguards of the Barbed Assassin	Leg	SoO Paragons
+99350	Spaulders of the Barbed Assassin	Shoulder	SoO Blackfuse
+99351	Tunic of Celestial Harmony	Chest	SoO ShaofPride
+99352	Handwraps of Celestial Harmony	Hand	SoO Nazgrim
+99353	Faceguard of Celestial Harmony	Head	SoO Thok
+99354	Legwraps of Celestial Harmony	Leg	SoO Paragons
+99355	Gloves of the Barbed Assassin	Hand	SoO Nazgrim
+99356	Tunic of the Barbed Assassin	Chest	SoO ShaofPride
+99357	Robes of the Ternion Glory	Chest	SoO ShaofPride
+99358	Mantle of the Ternion Glory	Shoulder	SoO Blackfuse
+99359	Gloves of the Ternion Glory	Hand	SoO Nazgrim
+99360	Hood of the Ternion Glory	Head	SoO Thok
+99361	Leggings of the Ternion Glory	Leg	SoO Paragons
+99362	Raiment of the Ternion Glory	Chest	SoO ShaofPride
+99363	Shoulderguards of the Ternion Glory	Shoulder	SoO Blackfuse
+99364	Shoulderguards of Winged Triumph	Shoulder	SoO Blackfuse
+99365	Handwraps of the Ternion Glory	Hand	SoO Nazgrim
+99366	Cowl of the Ternion Glory	Head	SoO Thok
+99367	Legwraps of the Ternion Glory	Leg	SoO Paragons
+99368	Chestguard of Winged Triumph	Chest	SoO ShaofPride
+99369	Handguards of Winged Triumph	Hand	SoO Nazgrim
+99370	Faceguard of Winged Triumph	Head	SoO Thok
+99371	Legguards of Winged Triumph	Leg	SoO Paragons
+99372	Legplates of Winged Triumph	Leg	SoO Paragons
+99373	Pauldrons of Winged Triumph	Shoulder	SoO Blackfuse
+99374	Breastplate of Winged Triumph	Chest	SoO ShaofPride
+99375	Gloves of Winged Triumph	Hand	SoO Nazgrim
+99376	Headguard of Winged Triumph	Head	SoO Thok
+99377	Greaves of Winged Triumph	Leg	SoO Paragons
+99378	Mantle of Winged Triumph	Shoulder	SoO Blackfuse
+99379	Helmet of Winged Triumph	Head	SoO Thok
+99380	Gauntlets of Winged Triumph	Hand	SoO Nazgrim
+99381	Mantle of Seven Sacred Seals	Shoulder	SoO Blackfuse
+99382	Chestguard of Seven Sacred Seals	Chest	SoO ShaofPride
+99383	Gauntlets of Seven Sacred Seals	Hand	SoO Nazgrim
+99384	Crown of Seven Sacred Seals	Head	SoO Thok
+99385	Legguards of Seven Sacred Seals	Leg	SoO Paragons
+99386	Shoulderguards of Seven Sacred Seals	Shoulder	SoO Blackfuse
+99387	Battleplate of Winged Triumph	Chest	SoO ShaofPride
+99388	Handwraps of Seven Sacred Seals	Hand	SoO Nazgrim
+99389	Helm of Seven Sacred Seals	Head	SoO Thok
+99390	Legwraps of Seven Sacred Seals	Leg	SoO Paragons
+99391	Vest of Seven Sacred Seals	Chest	SoO ShaofPride
+99392	Grips of Seven Sacred Seals	Hand	SoO Nazgrim
+99393	Headpiece of Seven Sacred Seals	Head	SoO Thok
+99394	Leggings of Seven Sacred Seals	Leg	SoO Paragons
+99395	Spaulders of Seven Sacred Seals	Shoulder	SoO Blackfuse
+99396	Tunic of Seven Sacred Seals	Chest	SoO ShaofPride
+99397	Chronomancer Gloves	Hand	SoO Nazgrim
+99398	Chronomancer Hood	Head	SoO Thok
+99399	Chronomancer Leggings	Leg	SoO Paragons
+99400	Chronomancer Robes	Chest	SoO ShaofPride
+99401	Chronomancer Mantle	Shoulder	SoO Blackfuse
+99402	Headguard of the Unblinking Vigil	Head	SoO Thok
+99403	Legguards of the Unblinking Vigil	Leg	SoO Paragons
+99404	Spaulders of the Unblinking Vigil	Shoulder	SoO Blackfuse
+99405	Tunic of the Unblinking Vigil	Chest	SoO ShaofPride
+99406	Gloves of the Unblinking Vigil	Hand	SoO Nazgrim
+99407	Shoulderguards of the Prehistoric Marauder	Shoulder	SoO Blackfuse
+99408	Handguards of the Prehistoric Marauder	Hand	SoO Nazgrim
+99409	Faceguard of the Prehistoric Marauder	Head	SoO Thok
+99410	Legguards of the Prehistoric Marauder	Leg	SoO Paragons
+99411	Battleplate of the Prehistoric Marauder	Chest	SoO ShaofPride
+99412	Gauntlets of the Prehistoric Marauder	Hand	SoO Nazgrim
+99413	Legplates of the Prehistoric Marauder	Leg	SoO Paragons
+99414	Pauldrons of the Prehistoric Marauder	Shoulder	SoO Blackfuse
+99415	Chestguard of the Prehistoric Marauder	Chest	SoO ShaofPride
+99416	Robes of the Horned Nightmare	Chest	SoO ShaofPride
+99417	Mantle of the Horned Nightmare	Shoulder	SoO Blackfuse
+99418	Helmet of the Prehistoric Marauder	Head	SoO Thok
+99419	Tunic of the Shattered Vale	Chest	SoO ShaofPride
+99420	Handguards of the Shattered Vale	Hand	SoO Nazgrim
+99421	Headguard of the Shattered Vale	Head	SoO Thok
+99422	Breeches of the Shattered Vale	Leg	SoO Paragons
+99423	Shoulderguards of the Shattered Vale	Shoulder	SoO Blackfuse
+99424	Gloves of the Horned Nightmare	Hand	SoO Nazgrim
+99425	Hood of the Horned Nightmare	Head	SoO Thok
+99426	Leggings of the Horned Nightmare	Leg	SoO Paragons
+99427	Vestment of the Shattered Vale	Chest	SoO ShaofPride
+99428	Shoulderwraps of the Shattered Vale	Shoulder	SoO Blackfuse
+99429	Legwraps of the Shattered Vale	Leg	SoO Paragons
+99430	Robes of the Shattered Vale	Chest	SoO ShaofPride
+99431	Mantle of the Shattered Vale	Shoulder	SoO Blackfuse
+99432	Gloves of the Shattered Vale	Hand	SoO Nazgrim
+99433	Cover of the Shattered Vale	Head	SoO Thok
+99434	Leggings of the Shattered Vale	Leg	SoO Paragons
+99435	Handwraps of the Shattered Vale	Hand	SoO Nazgrim
+99436	Helm of the Shattered Vale	Head	SoO Thok
+101870	Fire-Chanter Bindings	Wrist	Unknown
+101871	Fire-Chanter Boots	Foot	Unknown
+101872	Fire-Chanter Britches	Leg	Unknown
+101873	Fire-Chanter Gloves	Hand	Unknown
+101874	Fire-Chanter Hood	Head	Unknown
+101875	Fire-Chanter Jerkin	Chest	Unknown
+101876	Fire-Chanter Shoulders	Shoulder	Unknown
+101877	Fire-Chanter Waistband	Belt	Unknown
+101878	Cliffbreaker Breastplate	Chest	Unknown
+101879	Cliffbreaker Drape	Back	Unknown
+101880	Cliffbreaker Gauntlets	Hand	Unknown
+101881	Cliffbreaker Girdle	Belt	Unknown
+101882	Cliffbreaker Helm	Head	Unknown
+101883	Cliffbreaker Legplates	Leg	Unknown
+101884	Cliffbreaker Neck	Neck	Unknown
+101885	Cliffbreaker Pauldrons	Shoulder	Unknown
+101886	Cliffbreaker Sabatons	Foot	Unknown
+101887	Cliffbreaker Seal	Ring	Unknown
+101888	Cliffbreaker Vambraces	Wrist	Unknown
+101889	Amaranthine Cloak	Back	Unknown
+101890	Amaranthine Cord	Belt	Unknown
+101891	Amaranthine Cowl	Head	Unknown
+101892	Amaranthine Handwraps	Hand	Unknown
+101893	Amaranthine Leggings	Leg	Unknown
+101894	Amaranthine Necklace	Neck	Unknown
+101895	Amaranthine Robe	Chest	Unknown
+101896	Amaranthine Sandals	Foot	Unknown
+101897	Amaranthine Shoulderpads	Shoulder	Unknown
+101898	Amaranthine Signet	Ring	Unknown
+101899	Amaranthine Wristwraps	Wrist	Unknown
+101900	Cloudscorcher Belt	Belt	Unknown
+101901	Cloudscorcher Cowl	Head	Unknown
+101902	Cloudscorcher Handwraps	Hand	Unknown
+101903	Cloudscorcher Leggings	Leg	Unknown
+101904	Cloudscorcher Robe	Chest	Unknown
+101905	Cloudscorcher Sandals	Foot	Unknown
+101906	Cloudscorcher Shoulderpads	Shoulder	Unknown
+101907	Cloudscorcher Wristwraps	Wrist	Unknown
+101908	Everbright Breastplate	Chest	Unknown
+101909	Everbright Gauntlets	Hand	Unknown
+101910	Everbright Girdle	Belt	Unknown
+101911	Everbright Helm	Head	Unknown
+101912	Everbright Legplates	Leg	Unknown
+101913	Everbright Pauldrons	Shoulder	Unknown
+101914	Everbright Sabatons	Foot	Unknown
+101915	Everbright Vambraces	Wrist	Unknown
+101916	Warmsun Choker	Neck	Unknown
+101917	Warmsun Cloak	Back	Unknown
+101918	Warmsun Ring	Ring	Unknown
+101919	Ordon Legend-Keeper Belt	Belt	Unknown
+101920	Ordon Legend-Keeper Bracers	Wrist	Unknown
+101921	Ordon Legend-Keeper Gauntlets	Hand	Unknown
+101922	Ordon Legend-Keeper Greaves	Foot	Unknown
+101923	Ordon Legend-Keeper Helm	Head	Unknown
+101924	Ordon Legend-Keeper Legguards	Leg	Unknown
+101925	Ordon Legend-Keeper Spaulders	Shoulder	Unknown
+101926	Ordon Legend-Keeper Vest	Chest	Unknown
+101927	Crimsonscale Belt	Belt	Unknown
+101928	Crimsonscale Bracers	Wrist	Unknown
+101929	Crimsonscale Gauntlets	Hand	Unknown
+101930	Crimsonscale Greaves	Foot	Unknown
+101931	Crimsonscale Helm	Head	Unknown
+101932	Crimsonscale Legguards	Leg	Unknown
+101933	Crimsonscale Spaulders	Shoulder	Unknown
+101934	Crimsonscale Vest	Chest	Unknown
+101935	Kiln-Stoker Cloak	Back	Unknown
+101936	Kiln-Stoker Collar	Neck	Unknown
+101937	Kiln-Stoker Ring	Ring	Unknown
+101938	Elder Tortoiseshell Breastplate	Chest	Unknown
+101939	Elder Tortoiseshell Drape	Back	Unknown
+101940	Elder Tortoiseshell Gauntlets	Hand	Unknown
+101941	Elder Tortoiseshell Girdle	Belt	Unknown
+101942	Elder Tortoiseshell Helm	Head	Unknown
+101943	Elder Tortoiseshell Legplates	Leg	Unknown
+101944	Elder Tortoiseshell Neck	Neck	Unknown
+101945	Elder Tortoiseshell Pauldrons	Shoulder	Unknown
+101946	Elder Tortoiseshell Sabatons	Foot	Unknown
+101947	Elder Tortoiseshell Seal	Ring	Unknown
+101948	Elder Tortoiseshell Vambraces	Wrist	Unknown
+101949	Cranefeather Bindings	Wrist	Unknown
+101950	Cranefeather Boots	Foot	Unknown
+101951	Cranefeather Britches	Leg	Unknown
+101952	Cranefeather Gloves	Hand	Unknown
+101953	Cranefeather Hood	Head	Unknown
+101954	Cranefeather Jerkin	Chest	Unknown
+101955	Cranefeather Shoulders	Shoulder	Unknown
+101956	Cranefeather Waistband	Belt	Unknown
+102245	Qian-Le, Courage of Niuzao	Back	Unknown
+102246	Xing-Ho, Breath of Yu'lon	Back	Unknown
+102247	Jina-Kang, Kindness of Chi-Ji	Back	Unknown
+102248	Fen-Yu, Fury of Xuen	Back	Unknown
+102249	Gong-Lu, Strength of Xuen	Back	Unknown
+102250	Qian-Ying, Fortitude of Niuzao	Back	Unknown
+103678	Time-Lost Artifact	Trinket	Unknown
+103746	5.4 Raid - Normal - Siege of Orgrimmar - Undetermined - Plate Str Tank Boot	Foot	Unknown
 103986	Discipline of Xuen	Trinket	Timeless
+103987	Yu'lon's Bite	Trinket	Timeless
 103988	Contemplation of Chi-Ji	Trinket	Timeless
 103989	Alacrity of Xuen	Trinket	Timeless
+103990	Resolve of Niuzao	Trinket	Timeless
+104411	Immerseus' Crystalline Eye	Neck	SoO Immerseus
+104412	Trident of Corrupted Waters	Weapon2H	SoO Immerseus
+104413	Hood of Blackened Tears	Head	SoO Immerseus
+104414	Puddle Punishers	Foot	SoO Immerseus
+104415	Bubble-Burst Bracers	Wrist	SoO Immerseus
+104416	Chestplate of Congealed Corrosion	Chest	SoO Immerseus
+104417	Corruption-Rotted Gauntlets	Hand	SoO Immerseus
+104418	Treads of Unchained Hate	Foot	SoO Immerseus
+104419	Bracers of Sordid Sleep	Wrist	SoO Immerseus
+104420	Pauldrons of Violent Eruption	Shoulder	SoO Immerseus
+104421	Encapsulated Essence of Immerseus	Weapon1H	SoO Immerseus
+104422	Bolt-Burster Grips	Hand	SoO Immerseus
+104423	Ichor-Dripping Shoulderpads	Shoulder	SoO Immerseus
+104424	Hood of Swirling Senses	Head	SoO Immerseus
+104425	Cloak of Misguided Power	Back	SoO Immerseus
+104426	Purified Bindings of Immerseus	Trinket	SoO Immerseus
+104427	Seal of Eternal Sorrow	Ring	SoO Immerseus
+104428	Salt Water Sandals	Foot	SoO Immerseus
+104429	Bracers of Purified Spirit	Wrist	SoO Immerseus
+104430	Soul-Soaked Gloves	Hand	SoO Immerseus
+104431	Greatbelt of Living Waters	Belt	SoO Immerseus
+104432	Waterwalker Greatboots	Foot	SoO Immerseus
+104433	Death Lotus Crossbow	Weapon2H	SoO FallenProtectors
+104434	Softfoot's Last Resort	Weapon1H	SoO FallenProtectors
+104435	Stonetoe's Tormented Treads	Foot	SoO FallenProtectors
+104436	Grips of Unending Anguish	Hand	SoO FallenProtectors
+104437	Poisonbinder Girth	Belt	SoO FallenProtectors
+104438	Darkfallen Shoulderplates	Shoulder	SoO FallenProtectors
+104439	Shockstriker Gauntlets	Hand	SoO FallenProtectors
+104440	Sorrowpath Signet	Ring	SoO FallenProtectors
+104441	Gloomwrap Greatcloak	Back	SoO FallenProtectors
+104442	Rook's Unlucky Talisman	Trinket	SoO FallenProtectors
+104443	Sha-Seared Sandals	Foot	SoO FallenProtectors
+104444	Robes of the Tendered Heart	Chest	SoO FallenProtectors
+104445	Shoulderpads of Dou Dou Chong	Shoulder	SoO FallenProtectors
+104446	Lifebane Bracers	Wrist	SoO FallenProtectors
+104447	Petrified Pennyroyal Ring	Ring	SoO FallenProtectors
+104448	Purehearted Cricket Cage	Offhand	SoO FallenProtectors
+104449	Shoulders of the Roiling Inferno	Shoulder	SoO FallenProtectors
+104450	Sabatons of Defilement	Foot	SoO FallenProtectors
+104451	Shoulderguards of Dark Meditations	Shoulder	SoO FallenProtectors
+104452	Grips of the Fallen Council	Hand	SoO FallenProtectors
+104453	Gaze of Echoing Despair	Head	SoO FallenProtectors
+104454	Norushen's Shortblade	Weapon1H	SoO Norushen
+104455	Reality Ripper Ring	Ring	SoO Norushen
+104456	Robes of the Blackened Watcher	Chest	SoO Norushen
+104457	Gloves of the Golden Protector	Hand	SoO Norushen
+104458	Leggings of Unabashed Anger	Leg	SoO Norushen
+104459	Quarantine Shoulderguards	Shoulder	SoO Norushen
+104460	Bracers of Blind Hatred	Wrist	SoO Norushen
+104461	Rage-Blind Greathelm	Head	SoO Norushen
+104462	Drape of the Despairing Pit	Back	SoO Norushen
+104463	Fusion-Fire Core	Trinket	SoO Norushen
+104464	Xifeng, Longblade of the Titanic Guardian	Weapon1H	SoO Norushen
+104465	Bracers of Broken Causation	Wrist	SoO Norushen
+104466	Blight Hurlers	Hand	SoO Norushen
+104467	Sash of the Last Guardian	Belt	SoO Norushen
+104468	Rime-Rift Shoulders	Shoulder	SoO Norushen
+104469	Untainted Guardian's Chain	Neck	SoO Norushen
+104470	Norushen's Enigmatic Barrier	Offhand	SoO Norushen
+104471	Boots of Broken Reliance	Foot	SoO Norushen
+104472	Confident Grips	Hand	SoO Norushen
+104473	Bracers of Final Serenity	Wrist	SoO Norushen
+104474	Shadow-Binder's Kilt	Leg	SoO Norushen
+104475	Wristplates of Broken Doubt	Wrist	SoO Norushen
+104476	Assurance of Consequence	Trinket	SoO ShaofPride
+104477	Necklace of Fading Light	Neck	SoO ShaofPride
+104478	Prismatic Prison of Pride	Trinket	SoO ShaofPride
+104479	Gaze of Arrogance	Weapon2H	SoO ShaofPride
+104480	Self-Reflecting Mask	Head	SoO ShaofPride
+104481	Crown of Boastful Words	Head	SoO ShaofPride
+104482	Greaves of Sublime Superiority	Foot	SoO ShaofPride
+104483	Greatsword of Pride's Fall	Weapon2H	SoO ShaofPride
+104484	Choker of the Final Word	Neck	SoO ShaofPride
+104485	Shield of Mockery	Offhand	SoO ShaofPride
+104486	Dagryn's Discarded Longbow	Weapon2H	SoO Galakras
+104487	Swift Serpent Signet	Ring	SoO Galakras
+104488	Unrepentant Heels	Foot	SoO Galakras
+104489	Korgra's Venom-Soaked Gauntlets	Hand	SoO Galakras
+104490	Cannoneer's Multipocket Gunbelt	Belt	SoO Galakras
+104491	Dagryn's Fuselight Bracers	Wrist	SoO Galakras
+104492	Thranok's Shattering Helm	Head	SoO Galakras
+104493	Arcsmasher Bracers	Wrist	SoO Galakras
+104494	Krugruk's Rigid Shoulderplates	Shoulder	SoO Galakras
+104495	Evil Eye of Galakras	Trinket	SoO Galakras
+104496	Galakrond Control Band	Ring	SoO Galakras
+104497	Bone-Inlaid Sandals	Foot	SoO Galakras
+104498	Scalebane Bracers	Wrist	SoO Galakras
+104499	Flameslinger's Fiery Cowl	Head	SoO Galakras
+104500	Skydancer Boots	Foot	SoO Galakras
+104501	Shoulderpads of Pulsing Protection	Shoulder	SoO Galakras
+104502	Extinguished Ember of Galakras	Ring	SoO Galakras
+104503	Drakebinder Greatstaff	Weapon2H	SoO Galakras
+104504	Dragonmaw Emergency Strap	Belt	SoO Galakras
+104505	Grips of Tidal Force	Hand	SoO Galakras
+104506	Smoldering Drakescale Bracers	Wrist	SoO Galakras
+104507	Windfire Legplates	Leg	SoO Galakras
+104508	Seismic Bore	Weapon1H	SoO IronJuggernaut
+104509	Laser Burn Bracers	Wrist	SoO IronJuggernaut
+104510	Ricocheting Shoulderguards	Shoulder	SoO IronJuggernaut
+104511	Minelayer's Padded Boots	Foot	SoO IronJuggernaut
+104512	Precision Cutters	Hand	SoO IronJuggernaut
+104513	Demolisher's Reinforced Belt	Belt	SoO IronJuggernaut
+104514	Wall-Borer Bracers	Wrist	SoO IronJuggernaut
+104515	Tar-Coated Gauntlets	Hand	SoO IronJuggernaut
+104516	Earthbreaker's Steaming Chestplate	Chest	SoO IronJuggernaut
+104517	Juggernaut's Ignition Keys	Neck	SoO IronJuggernaut
+104518	Juggernaut's Focusing Crystal	Trinket	SoO IronJuggernaut
+104519	Belt of Ominous Trembles	Belt	SoO IronJuggernaut
+104520	Leggings of Furious Flame	Leg	SoO IronJuggernaut
+104521	Bracers of the Broken Fault	Wrist	SoO IronJuggernaut
+104522	Earthripper Gloves	Hand	SoO IronJuggernaut
+104523	Shock Pulse Robes	Chest	SoO IronJuggernaut
+104524	Laser-Slice Signet	Ring	SoO IronJuggernaut
+104525	Juggernaut's Power Core	Offhand	SoO IronJuggernaut
+104526	Castlebreaker Bracers	Wrist	SoO IronJuggernaut
+104527	Treads of Autonomic Motion	Foot	SoO IronJuggernaut
+104528	Cavemaker Wristguards	Wrist	SoO IronJuggernaut
+104529	Borer Drill Boots	Foot	SoO IronJuggernaut
+104530	Poisonmist Nightcloak	Back	SoO DarkShaman
+104531	Haromm's Talisman	Trinket	SoO DarkShaman
+104532	Damron's Belt of Darkness	Belt	SoO DarkShaman
+104533	Riou's Vigilant Leggings	Leg	SoO DarkShaman
+104534	Haromm's Horrifying Helm	Head	SoO DarkShaman
+104535	Wolf-Rider Spurs	Foot	SoO DarkShaman
+104536	Breastplate of Shamanic Mirrors	Chest	SoO DarkShaman
+104537	Ashen Wall Girdle	Belt	SoO DarkShaman
+104538	Bloodclaw Band	Ring	SoO DarkShaman
+104539	Haromm's Frozen Crescent	Weapon1H	SoO DarkShaman
+104540	Ring of the Iron Tomb	Ring	SoO DarkShaman
+104541	Toxic Tornado Treads	Foot	SoO DarkShaman
+104542	Iron Wolf Hood	Head	SoO DarkShaman
+104543	Ashflare Pendant	Neck	SoO DarkShaman
+104544	Kardris' Toxic Totem	Trinket	SoO DarkShaman
+104545	Kardris' Scepter	Weapon1H	SoO DarkShaman
+104546	Darkfang Mask	Head	SoO DarkShaman
+104547	Belt of the Iron Prison	Belt	SoO DarkShaman
+104548	Shoulderguards of Foul Streams	Shoulder	SoO DarkShaman
+104549	Shackles of Stinking Slime	Wrist	SoO DarkShaman
+104550	Shoulderplates of Gushing Geysers	Shoulder	SoO DarkShaman
+104551	Nazgrim's Gutripper	Weapon1H	SoO Nazgrim
+104552	Sandals of Two Little Bees	Foot	SoO Nazgrim
+104553	Nazgrim's Burnished Insignia	Trinket	SoO Nazgrim
+104554	Arcweaver Spell Sword	Weapon1H	SoO Nazgrim
+104555	Shoulderguards of the Righteous Stand	Shoulder	SoO Nazgrim
+104556	Robes of the Warrior's Fall	Chest	SoO Nazgrim
+104557	Ravager's Pathwalkers	Foot	SoO Nazgrim
+104558	Crown of Tragic Truth	Head	SoO Nazgrim
+104559	Gar'tok, Strength of the Faithful	Weapon2H	SoO Nazgrim
+104560	Bulwark of the Fallen General	Offhand	SoO Nazgrim
+104561	Spaulders of Kor'kron Fealty	Shoulder	SoO Nazgrim
+104562	Ring of Restless Energy	Ring	SoO Malkorok
+104563	Kor'kron Hand Cannon	Weapon2H	SoO Malkorok
+104564	Halberd of Inner Shadows	Weapon2H	SoO Malkorok
+104565	Lazahk's Lost Shadowrap	Chest	SoO Malkorok
+104566	Wristguards of Ruination	Wrist	SoO Malkorok
+104567	Malkorok's Giant Stompers	Foot	SoO Malkorok
+104568	Blood Rage Bracers	Wrist	SoO Malkorok
+104569	Legplates of Willful Doom	Leg	SoO Malkorok
+104570	Malkorok's Tainted Dog Tags	Neck	SoO Malkorok
+104571	Malkorok's Skullcleaver	Weapon1H	SoO Malkorok
+104572	Vial of Living Corruption	Trinket	SoO Malkorok
+104573	Miasmic Skullbelt	Belt	SoO Malkorok
+104574	Hood of Perpetual Implosion	Head	SoO Malkorok
+104575	Robes of Riven Dreams	Chest	SoO Malkorok
+104576	Frenzied Crystal of Rage	Trinket	SoO Malkorok
+104577	Black-Blooded Drape	Back	SoO Malkorok
+104578	Seal of Sullen Fury	Ring	SoO Malkorok
+104579	Visage of the Monstrous	Offhand	SoO Malkorok
+104580	Boots of Perilous Infusion	Foot	SoO Malkorok
+104581	Bracers of Averted Fatality	Wrist	SoO Malkorok
+104582	Ebon Blood Chestguard	Chest	SoO Malkorok
+104583	Terrorguard Chestplate	Chest	SoO Malkorok
+104584	Sigil of Rampage	Trinket	SoO Spoils
+104585	Enchanted Shao-Tien Saber	Weapon1H	SoO Spoils
+104586	Pandaren Roofsprinters	Foot	SoO Spoils
+104587	Mantid Carapace Augments	Wrist	SoO Spoils
+104588	Arrowflight Girdle	Belt	SoO Spoils
+104589	Ancient Archer's Chestguard	Chest	SoO Spoils
+104590	Helm of the Night Watchman	Head	SoO Spoils
+104591	Untarnishable Greatbelt	Belt	SoO Spoils
+104592	Ominous Mogu Greatboots	Foot	SoO Spoils
+104593	Seal of the Forgotten Kings	Ring	SoO Spoils
+104594	Ancient Mogu Tower Shield	Offhand	SoO Spoils
+104595	Avool's Ancestral Bracers	Wrist	SoO Spoils
+104596	Mantid Vizier's Robes	Chest	SoO Spoils
+104597	Lost Necklace of the Mogu Empress	Neck	SoO Spoils
+104598	Immaculately Preserved Wand	Weapon2H	SoO Spoils
+104599	Klaxxi Grips of Rejuvenation	Hand	SoO Spoils
+104600	Shado-Pan Reliquary Kilt	Leg	SoO Spoils
+104601	Chitin-Link Chain Belt	Belt	SoO Spoils
+104602	Bracers of the Pristine Purifier	Wrist	SoO Spoils
+104603	Plate Belt of the War-Healer	Belt	SoO Spoils
+104604	Mogu Mindbender's Greaves	Foot	SoO Spoils
+104605	Hvitserk's Formidable Shanker	Weapon1H	SoO Thok
+104606	Gleaming Eye of the Devilsaur	Neck	SoO Thok
+104607	Montak's Grips of Scorching Breath	Hand	SoO Thok
+104608	Akolik's Acid-Soaked Robes	Chest	SoO Thok
+104609	Festering Primordial Globule	Offhand	SoO Thok
+104610	Signet of the Dinomancers	Ring	SoO Thok
+104611	Thok's Acid-Grooved Tooth	Trinket	SoO Thok
+104612	Icy Blood Chestplate	Chest	SoO Thok
+104613	Thok's Tail Tip	Trinket	SoO Thok
+104614	Britomart's Jagged Pike	Weapon2H	SoO Thok
+104615	Devilfang Band	Ring	SoO Thok
+104616	Ticking Ebon Detonator	Trinket	SoO Blackfuse
+104617	Fusespark Gloves	Hand	SoO Blackfuse
+104618	Lever of the Megantholithic Apparatus	Weapon2H	SoO Blackfuse
+104619	Dysmorphic Samophlange of Discontinuity	Trinket	SoO Blackfuse
+104620	Bomber's Blackened Wristwatch	Wrist	SoO Blackfuse
+104621	Bracers of Infinite Pipes	Wrist	SoO Blackfuse
+104622	Powder-Stained Totemic Treads	Foot	SoO Blackfuse
+104623	Calixian Bladebreakers	Hand	SoO Blackfuse
+104624	Asgorathian Blood Seal	Ring	SoO Blackfuse
+104625	Siegecrafter's Forge Hammer	Weapon1H	SoO Blackfuse
+104626	Blackfuse's Blasting Cord	Neck	SoO Blackfuse
+104627	Hisek's Reserve Longbow	Weapon2H	SoO Paragons
+104628	Kil'ruk's Band of Ascendancy	Ring	SoO Paragons
+104629	Korven's Crimson Crescent	Weapon1H	SoO Paragons
+104630	Bracers of Sonic Projection	Wrist	SoO Paragons
+104631	Rik'kal's Bloody Scalpel	Weapon1H	SoO Paragons
+104632	Iyyokuk's Hereditary Seal	Ring	SoO Paragons
+104633	Amber Parasite Wraps	Chest	SoO Paragons
+104634	Chestguard of Toxic Injections	Chest	SoO Paragons
+104635	Gauntlets of Insane Calculations	Hand	SoO Paragons
+104636	Skeer's Bloodsoaked Talisman	Trinket	SoO Paragons
+104637	Kil'ruk's Furious Blade	Weapon1H	SoO Paragons
+104638	Kor'kron Spire of Supremacy	Weapon2H	SoO Garrosh
+104639	Cord of Black Dreams	Belt	SoO Garrosh
+104640	Kor'kron Elite Skullmask	Head	SoO Garrosh
+104641	Chestguard of Relentless Tyranny	Chest	SoO Garrosh
+104642	Penetrating Gaze of Y'Shaarj	Head	SoO Garrosh
+104643	Shoulderguards of Intended Power	Shoulder	SoO Garrosh
+104644	Legplates of Unthinking Strife	Leg	SoO Garrosh
+104645	Spaulders of the Fallen Warchief	Shoulder	SoO Garrosh
+104646	Tusks of Mannoroth	Shoulder	SoO Garrosh
+104647	Greathelm of the Warchief	Head	SoO Garrosh
+104648	Xal'atoh, Desecrated Image of Gorehowl	Weapon2H	SoO Garrosh
+104649	Curse of Hubris	Trinket	SoO Garrosh
+104650	Belt of the Broken Pact	Belt	SoO Garrosh
+104651	Ebon Ritual Hood	Head	SoO Garrosh
+104652	Black Blood of Y'Shaarj	Trinket	SoO Garrosh
+104653	Horned Mace of the Old Ones	Weapon1H	SoO Garrosh
+104654	Revelations of Y'Shaarj	Offhand	SoO Garrosh
+104655	Seal of Karmic Return	Belt	SoO Garrosh
+104656	Hopeglow Spaulders	Shoulder	SoO Garrosh
+104657	Cowl of Smoking Dreams	Head	SoO Garrosh
+104658	Chestplate of Fallen Passion	Chest	SoO Garrosh
+104659	Mantle of Looming Darkness	Shoulder	SoO Garrosh
+105683	Hellscream's Warbow	Weapon2H	SoO Garrosh
+105684	Hellscream's Razor	Weapon1H	SoO Garrosh
+105685	Hellscream's Cleaver	Weapon1H	SoO Garrosh
+105686	Hellscream's Pig Sticker	Weapon2H	SoO Garrosh
+105687	Hellscream's Barrier	Offhand	SoO Garrosh
+105688	Hellscream's Warmace	Weapon1H	SoO Garrosh
+105689	Hellscream's Tome of Destruction	Offhand	SoO Garrosh
+105690	Hellscream's War Staff	Weapon2H	SoO Garrosh
+105691	Hellscream's Doomblade	Weapon1H	SoO Garrosh
+105692	Hellscream's Decapitator	Weapon2H	SoO Garrosh
+105693	Hellscream's Shield Wall	Offhand	SoO Garrosh
+105754	Desirae's Dashing Leggings	Leg	Unknown
+105755	Moshne's Keen Kilt	Leg	Unknown
+105756	Poxleitner's Leggings of Lights	Leg	Unknown
+105757	Shipley's Shady Silks	Leg	Unknown
+105758	Arielle's Ancient Legwraps	Leg	Unknown
+105759	Magmaplates of Jian Wu Xi Feng	Leg	Unknown
+105760	Hamlet's Wind-Whipped Leggings	Leg	Unknown
+105761	Partik's Purified Legplates	Leg	Unknown
+105762	Smoldering Eye	Neck	Unknown
+105763	Penate's Perilous Pendant	Neck	Unknown
+105764	Rising New Moon Talisman	Neck	Unknown
+105765	Bladeforger Necklace	Neck	Unknown
+105766	Anafielle's Spiked Choker	Neck	Unknown
+105767	Hoodrych's Bloodied Chestplate	Chest	Unknown
+105768	Pamela's Muuscat Wrap	Chest	Unknown
+105769	Omegal's Crushing Carapace	Chest	Unknown
+105770	Zoo-Per's Superior Chestguard	Chest	Unknown
+105771	Chestguard of Pyrrhic Immolation	Chest	Unknown
+105772	Moonhee's Mean Vest	Chest	Unknown
+105773	Ulmaas' Robes of Crushing Magma	Chest	Unknown
+105774	Catia's Flowing Robes	Chest	Unknown
+105775	Gleaming Eye Spellplate	Chest	Unknown
+105776	Belt of the Burning Soul	Belt	Unknown
+105777	Remnar's Ruinous Girdle	Belt	Unknown
+105778	Derevka's Gleaming Girdle	Belt	Unknown
+105779	Light Kindler Waistguard	Belt	Unknown
+105780	Windflame Girdle	Belt	Unknown
+105781	Venruki's Venerable Sash	Belt	Unknown
+105782	Belt of Glowing Embers	Belt	Unknown
+105783	Greatbelt of the Crendor	Belt	Unknown
+105784	Binkenstein's Burnished Belt	Belt	Unknown
+105785	Vanguard's Burly Bracers	Wrist	Unknown
+105786	Ordosian Cultist's Bracers	Wrist	Unknown
+105787	Burnseal Bracers	Wrist	Unknown
+105788	Paululum's Doodled Wraps	Wrist	Unknown
+105789	Bjam's Blasting Bracers	Wrist	Unknown
+105790	Firetotem Bracers	Wrist	Unknown
+105791	Bracers of Unquestioning Belief	Wrist	Unknown
+105792	Bowflight Wristguard	Wrist	Unknown
+105793	Bracers of Simmering Fury	Wrist	Unknown
+105794	Starry Spaulders of Durability	Shoulder	Unknown
+105795	Bo He Me's Deathwind Mantle	Shoulder	Unknown
+105796	Rossi's Rosin-Soaked Shoulderplates	Shoulder	Unknown
+105797	Shay-Nii's Popping Shoulderpads	Shoulder	Unknown
+105798	Flame Healer's Shoulderguards	Shoulder	Unknown
+105799	Fleshsmoke Chain Shoulders	Shoulder	Unknown
+105800	Firearrow Shoulderpads	Shoulder	Unknown
+105801	Spaulders of Dominating Dreams	Shoulder	Unknown
+105802	Yaungol Deathcult Shoulderguards	Shoulder	Unknown
+105803	Stickney's Grey-Shade Hood	Head	Unknown
+105804	Aladya's Spiritfire Greathelm	Head	Unknown
+105805	Dominik's Casque of Raging Flame	Head	Unknown
+105806	Circlet of the Panser	Head	Unknown
+105807	Magdalena's Murderous Crown	Head	Unknown
+105808	Damien's Ice-Vein Mask	Head	Unknown
+105809	Crest of Burning Deeds	Head	Unknown
+105810	Buc-Zakai Burning Hood	Head	Unknown
+105811	Olivia's Graceful Gaze	Head	Unknown
+105840	Cape of the Alpha	Back	SoO Shared
+105841	Kalaena's Arcane Handwraps	Hand	SoO Shared
+105842	Seebo's Sainted Touch	Hand	SoO Shared
+105843	Drape of the Omega	Back	SoO Shared
+105844	Brave Niunai's Cloak	Back	SoO Shared
+105845	Siid's Silent Stranglers	Hand	SoO Shared
+105846	Crimson Gauntlets of Death	Hand	SoO Shared
+105847	Keengrip Arrowpullers	Hand	SoO Shared
+105848	Marco's Crackling Gloves	Hand	SoO Shared
+105849	Romy's Reliable Grips	Hand	SoO Shared
+105850	Zoid's Molten Gauntlets	Hand	SoO Shared
+105851	Gauntlets of Discarded Time	Hand	SoO Shared
+105852	Aeth's Swiftcinder Cloak	Back	SoO Shared
+105853	Turtleshell Greatcloak	Back	SoO Shared

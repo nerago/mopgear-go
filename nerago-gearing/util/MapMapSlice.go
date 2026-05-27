@@ -177,3 +177,18 @@ func (mmapslice *MapMapSlice[J, K, V]) SeqGroupsKey2() iter.Seq2[K, func(J) iter
 		return func(yield func(K, func(J) iter.Seq[V]) bool) {}
 	}
 }
+
+func (mmapslice *MapMapSlice[J, K, V]) MapInternalSlice(key1 J, key2 K, mapper func([]V) []V) {
+	data := mmapslice.dataBy1
+	if data != nil {
+		inner, hasInner := data[key1]
+		if hasInner {
+			value, hasValue := inner[key2]
+			if hasValue {
+				inner[key2] = mapper(value)
+				return
+			}
+		}
+	}
+	panic("keys not found")
+}

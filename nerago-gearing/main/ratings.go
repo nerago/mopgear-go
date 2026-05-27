@@ -211,20 +211,36 @@ func generateRatingsInputFromArtificalStatOverrides(printer *util.PrintRecorder)
 
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &modelEquipOnly, printer)
 	currentItemSet := items.FullItemSet_FromMap(currentEquip)
+	inputList := generateRatingsInputFromArtificalStatOverrides_inner(currentItemSet, printer, simSpeed, spec, goal, fight, modelEquipOnly.Professions)
+
+	// bytes, err := json.Marshal(inputList)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// err = os.WriteFile("sim-stats-grid-data.json", bytes, 0)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	return inputList, targetRatio
+}
+
+func generateRatingsInputFromArtificalStatOverrides_inner(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo) []stathighs.WeightInput {
 	currentHaste := currentItemSet.Total().Get(stats.Stat_Haste)
-	var incrementBaseHaste uint32 = 1900
+
+	var incrementBaseHaste uint32 = 0
+	var incrementMin uint32 = 0
+	var incrementMax uint32 = 500
+	var incrementStep uint32 = 250
+
 	printer.Printf("Current gear haste %d\n", currentHaste)
 	printer.Printf("Simulated minimum gear haste %d\n", currentHaste+incrementBaseHaste)
-	if currentHaste+incrementBaseHaste < 14000 {
+	if currentHaste+incrementBaseHaste+incrementMax > 10500 && currentHaste+incrementBaseHaste < 14000 {
 		panic("haste in discontinuity range")
 	}
 
 	initialBaseStats := stats.StatBlock{}
 	initialBaseStats[stats.Stat_Haste] += incrementBaseHaste
-
-	var incrementMin uint32 = 0
-	var incrementMax uint32 = 500
-	var incrementStep uint32 = 250
 
 	statCheckList := stathighs.G_RequiredStats
 	type incrementStat struct {
@@ -262,7 +278,7 @@ func generateRatingsInputFromArtificalStatOverrides(printer *util.PrintRecorder)
 			str.WriteRune(' ')
 		}
 
-		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, modelEquipOnly.Professions, &currentEquip, &bonusStat, tracker.MakeNested())
+		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.MakeNested())
 
 		resultChannel <- stathighs.WeightInput{
 			TotalStat: bonusStat,
@@ -274,17 +290,7 @@ func generateRatingsInputFromArtificalStatOverrides(printer *util.PrintRecorder)
 
 		printer.AppendOther(innerPrint)
 	})
-
-	// bytes, err := json.Marshal(inputList)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// err = os.WriteFile("sim-stats-grid-data.json", bytes, 0)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	return inputList, targetRatio
+	return inputList
 }
 
 func generateRatingsInputFromRealRandomSets(printer *util.PrintRecorder) ([]stathighs.WeightInput, simulate.SimResultStats) {

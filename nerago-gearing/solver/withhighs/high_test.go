@@ -12,7 +12,7 @@ func TestSolverBasicRun(t *testing.T) {
 	const targetCount = util_test.TargetCountStandard
 	options, model := util_test.MakeTestOptions()
 
-	result := RunAllActiveSets(options, model, util.PrintRecorder_Testing())
+	result := SolverHighsMain(options, model, util.PrintRecorder_Testing())
 
 	expectEquip := util_test.MakeTestExpectedBest()
 	expectSet := items.SolvableItemSet_Of(expectEquip)

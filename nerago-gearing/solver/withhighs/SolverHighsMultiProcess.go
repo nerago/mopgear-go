@@ -24,7 +24,7 @@ type SolverHighsMultiParam struct {
 	Gear_model     *gear_model.Model
 	RatingMultiply float64
 
-	setup        *setupInputsForSetBonus
+	setup        *setupInputSetAware
 	solveOptions items.SolvableOptionsMap
 
 	withMinimum *stats.StatAndValue
@@ -208,6 +208,17 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_Sampling(p
 	bestCommonChoices := process.extractCommonChoices(solution)
 	checkedIndexes := make([]int, 0, outputTarget)
 
+	if len(bestCommonChoices) == 0 {
+		printer.Println("WARNWARNWARNWARNWARNWARNWARNWARN")
+		printer.Println("WARNWARNWARNWARNWARNWARNWARNWARN")
+		printer.Println("WARNWARNWARNWARNWARNWARNWARNWARN")
+		printer.Println("WARN no common choices found WAR")
+		printer.Println("WARNWARNWARNWARNWARNWARNWARNWARN")
+		printer.Println("WARNWARNWARNWARNWARNWARNWARNWARN")
+		printer.Println("WARNWARNWARNWARNWARNWARNWARNWARN")
+		return resultList
+	}
+
 	printer.Println("############################################################################")
 
 	for len(resultList) < outputTarget {
@@ -247,7 +258,7 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_Sampling(p
 
 func (param *SolverHighsMultiParam) doSetup(inputBuilder *utilhighs.InputBuilder, job *SolverHighsMultiProcess) {
 	param.solveOptions = items.SolvableOptionsMap_of(&param.ItemOptions)
-	param.setup = setupInputs(inputBuilder, param.Gear_model, &param.solveOptions, 0)
+	param.setup = setupHighsSetAware(inputBuilder, param.Gear_model, &param.solveOptions, 0)
 	job.outputRow.Add(param.setup.mainOutputVar.columnIndex, param.RatingMultiply)
 }
 

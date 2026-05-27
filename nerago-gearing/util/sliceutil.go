@@ -4,10 +4,6 @@ import (
 	"iter"
 )
 
-// type Equatable[T any] interface {
-// 	Equals(other T)
-// }
-
 func RemoveDuplicatesFunc[T any](slice []T, equals func(a, b *T) bool) []T {
 	if slice == nil {
 		return nil
@@ -23,6 +19,36 @@ outer:
 			}
 		}
 		result = append(result, *next)
+	}
+	return result
+}
+
+func RemoveDuplicatesFunc2[T any](slice []T, equals func(a, b *T) bool) []T {
+	if slice == nil {
+		return nil
+	}
+
+	var a, b int
+	for a = 0; a < len(slice); a++ {
+		for b = a + 1; b < len(slice); b++ {
+			if equals(&slice[a], &slice[b]) {
+				goto changed
+			}
+		}
+	}
+	return slice
+
+changed:
+	result := make([]T, 0, len(slice)-1)
+	result = append(result, slice[0:a]...)
+outerLoop:
+	for a = a + 1; a < len(slice); a++ {
+		for b = a + 1; b < len(slice); b++ {
+			if equals(&slice[a], &slice[b]) {
+				continue outerLoop
+			}
+		}
+		result = append(result, slice[a])
 	}
 	return result
 }

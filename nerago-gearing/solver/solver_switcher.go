@@ -23,9 +23,18 @@ func Solver(input SolveInput) SolveOutput {
 	defer trackProgress.Stop()
 
 	var solvedResult util.Optional[items.SolvableItemSet]
-	solvedResult = withhighs.RunAllActiveSets(&solveOptions, input.Model, printer)
+	solvedResult = withhighs.SolverHighsMain(&solveOptions, input.Model, printer)
 
 	return finaliseSolve(solvedResult, solveOptions, input, printer)
+}
+
+func Solver_Lite(itemOptions *items.FullOptionsMap, model *model.Model, printer *util.PrintRecorder) items.FullItemSet {
+	solveOptions := items.SolvableOptionsMap_of(itemOptions)
+	solvedSet := withhighs.SolverHighsMain(&solveOptions, model, printer)
+	itemSet := items.FullItemSet_FromSolved(solvedSet.GetOrPanic(), itemOptions)
+	itemSet.DebugValidate()
+	itemSet.ValidateItemRules()
+	return itemSet
 }
 
 func prepareSolve(input SolveInput) (*util.PrintRecorder, *util.TrackProgress, items.SolvableOptionsMap) {

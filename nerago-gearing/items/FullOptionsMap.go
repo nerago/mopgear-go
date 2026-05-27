@@ -315,6 +315,14 @@ func (optionsMap *FullOptionsMap) ForceSlotOnlySpecifiedItemId(slot SlotEquip, i
 	}
 }
 
+func (optionsMap *FullOptionsMap) RemoveDuplicates() {
+	for slot := range optionsMap {
+		if len(optionsMap[slot]) > 0 {
+			optionsMap[slot] = util.RemoveDuplicatesFunc(optionsMap[slot], (*FullItem).Equals)
+		}
+	}
+}
+
 func (optionsMap *FullOptionsMap) Clone() FullOptionsMap {
 	result := FullOptionsMap{}
 	for slot, content := range optionsMap {

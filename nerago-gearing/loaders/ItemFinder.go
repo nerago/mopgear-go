@@ -24,19 +24,21 @@ var g_throneStrengthTrinkets = []items.ItemId{
 	96398, // Spark of Zandalar
 }
 
-var g_seigeTankTrinkets = []items.ItemId{
+var G_seigeTankTrinkets = []items.ItemId{
 	// 102316, special PTR item?
 	102307, //curse-of-hubris
 	102297, //juggernauts-focusing-crystal
 	102296, //rooks-unlucky-talisman
 	102306, //vial-of-living-corruption
+	103990, //resolve-of-niuzao
 }
-var g_siegeStrengthTrinkets = []items.ItemId{
+var G_siegeStrengthTrinkets = []items.ItemId{
 	// 102315, special PTR item?
 	102298, //evil-eye-of-galakras
 	102295, //fusion-fire-core
 	102308, //skeers-bloodsoaked-talisman
 	102305, //thoks-tail-tip
+	103989, //alacrity-of-xuen
 }
 
 func ItemFinder_SiegeStrengthPlateTank(difficulty stats.Difficulty) []*items.FullItem {
@@ -44,8 +46,8 @@ func ItemFinder_SiegeStrengthPlateTank(difficulty stats.Difficulty) []*items.Ful
 		throneClassGearSet(stats.Spec_PaladinProt, difficulty),
 		throneClassGearSet(stats.Spec_PaladinRet, difficulty),
 		seigeGearGeneric(stats.Armor_Plate, stats.PrimaryStat_Strength, difficulty),
-		trinketsForDifficulty(g_seigeTankTrinkets, difficulty, stats.Difficulty.ExpectedItemLevelSiege),
-		trinketsForDifficulty(g_siegeStrengthTrinkets, difficulty, stats.Difficulty.ExpectedItemLevelSiege),
+		trinketsForDifficulty(G_seigeTankTrinkets, difficulty, stats.Difficulty.ExpectedItemLevelSiege),
+		trinketsForDifficulty(G_siegeStrengthTrinkets, difficulty, stats.Difficulty.ExpectedItemLevelSiege),
 	)
 }
 
