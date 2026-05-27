@@ -26,9 +26,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
 
 	ret := multi_types.MultiSetParam{
-		Label:    "Ret",
-		GearFile: files.GearFileRet,
-		Model:    model.Model_PallyRet(),
+		Label:                     "Ret",
+		GearFile:                  files.GearFileRet,
+		Model:                     model.Model_PallyRet(),
 		RequestRatingPercent:      0.01,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
@@ -87,12 +87,12 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	blockHelmetsWithoutCapacitance(&ret)
 	ret.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
 	ret.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
-	ret.ForceSingleSlot(items.Equip_Back, preLegendMeleeCloak) 
+	ret.ForceSingleSlot(items.Equip_Back, preLegendMeleeCloak)
 
 	protDps := multi_types.MultiSetParam{
-		Label:    "Prot-Damage",
-		GearFile: files.GearFileProtDps,
-		Model:    model.Model_PallyProtDps(),
+		Label:                     "Prot-Damage",
+		GearFile:                  files.GearFileProtDps,
+		Model:                     model.Model_PallyProtDps(),
 		RequestRatingPercent:      0.04,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
@@ -165,9 +165,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protDps.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
 
 	protCompromise := multi_types.MultiSetParam{
-		Label:    "Prot-Compromise",
-		GearFile: files.GearFileProtCompromise,
-		Model:    model.Model_PallyProtCompromise(),
+		Label:                     "Prot-Compromise",
+		GearFile:                  files.GearFileProtCompromise,
+		Model:                     model.Model_PallyProtCompromise(),
 		RequestRatingPercent:      0.40,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
@@ -245,10 +245,10 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protCompromise.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
 
 	protMitigationNoSet := multi_types.MultiSetParam{
-		Label:    "Prot-Mitigation-NoSet",
-		GearFile: files.GearFileProtMitigationNoSet,
-		Model:    model.Model_PallyProtMitigation_NoSet(),
-		RequestRatingPercent:      0.25,
+		Label:                     "Prot-Mitigation-NoSet",
+		GearFile:                  files.GearFileProtMitigationNoSet,
+		Model:                     model.Model_PallyProtMitigation_NoSet(),
+		RequestRatingPercent:      0.20,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -316,18 +316,20 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96436, // tortos shell heroic
 	})
 	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
+	protMitigationNoSet.ForceTryAllSlot(items.Equip_Ring1, 96481, 96377, 96500)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Back, preLegendTankCloak)
-	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark) 
+	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
 	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
 
 	protMitigationWithSet := multi_types.MultiSetParam{
-		Label:    "Prot-Mitigation-WithSet",
-		GearFile: files.GearFileProtMitigationSet,
-		Model:    model.Model_PallyProtMitigation_WithSet(),
-		RequestRatingPercent:      0.30,
+		Label:                     "Prot-Mitigation-WithSet",
+		GearFile:                  files.GearFileProtMitigationSet,
+		Model:                     model.Model_PallyProtMitigation_WithSet(),
+		RequestRatingPercent:      0.35,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
+		RequireSetBonus:           4,
 	}
 	protMitigationWithSet.AddExtraItems([]items.ItemId{
 		86979, // heroic impaling treads
@@ -389,8 +391,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	})
 
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, preLegendTankCloak)   
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark) 
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, preLegendTankCloak)
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketSoulBarrier) // fort good for taken, soul for death, but soul for raden for now
 	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
 
@@ -413,9 +415,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
-	job.FindHighsResult_Sample(1)
+	// job.FindHighsResult_Sample(1)
 	// job.FindSeveralHighsAndSim()
-	// job.FindHighsResultPerPermute(2)
+	job.FindHighsResultPerPermute(12)
 	// job.RunWithMinimumHaste("Prot-Mitigation-WithSet", 11000, 18000, 250)
 	// job.RunWithMinimumHaste("Prot-Mitigation-NoSet", 11000, 18000, 250)
 }

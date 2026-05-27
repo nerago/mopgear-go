@@ -67,6 +67,23 @@ func (param *multiSetParamInternal) prepareExtraItems() {
 			param.tryAddExtraFromBags(&item)
 		}
 	}
+
+	param.replicatePairedOptions()
+}
+
+func (param *multiSetParamInternal) replicatePairedOptions() {
+	// risky compared to old algorithms, but now we have better unique equipped maybe ok?
+	param.replicatePairedSlots(items.Equip_Ring1, items.Equip_Ring2)
+	param.replicatePairedSlots(items.Equip_Trinket1, items.Equip_Trinket2)
+}
+
+func (param *multiSetParamInternal) replicatePairedSlots(slotA items.SlotEquip, slotB items.SlotEquip) {
+	optA := param.itemOptions.Get(slotA)
+	optB := param.itemOptions.Get(slotB)
+	combined := slices.Concat(optA, optB)
+	combined = util.RemoveDuplicatesFunc(combined, (*items.FullItem).Equals)
+	param.itemOptions[slotA] = combined
+	param.itemOptions[slotB] = combined
 }
 
 func (param *multiSetParamInternal) includeExtra(itemId items.ItemId) {
@@ -203,16 +220,18 @@ func (param *multiSetParamInternal) restrictFixed() {
 }
 
 func (param *multiSetParamInternal) restrictFixedValidate() {
-	for slot, itemIdList := range param.SemiFixedSlots {
-		paired := slot.PairedSlot()
-		if paired != -1 {
-			for _, itemId := range itemIdList {
-				if param.itemOptions.IncludesItemIdInSlot(itemId, paired) {
-					panic("item is fixed in one slot but also available in paired slot " + itemId.String())
-				}
-			}
-		}
-	}
+	// TODO reapply just as optimisation maybe?
+
+	// for slot, itemIdList := range param.SemiFixedSlots {
+	// 	paired := slot.PairedSlot()
+	// 	if paired != -1 {
+	// 		for _, itemId := range itemIdList {
+	// 			if param.itemOptions.IncludesItemIdInSlot(itemId, paired) {
+	// 				panic("item is fixed in one slot but also available in paired slot " + itemId.String())
+	// 			}
+	// 		}
+	// 	}
+	// }
 }
 
 func (param *multiSetParamInternal) removeBlocked() {

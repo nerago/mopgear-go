@@ -262,16 +262,16 @@ func (process *SolverHighsMultiProcess) addCommonConstraintsForItem(inputBuilder
 
 	for _, item := range array {
 		entryEnableReforge := columnInfo{entryType: entry_multi_enable_forge, itemFull: &item}
-		enableReforge := inputBuilder.CreateColumnBool(&entryEnableReforge)
+		entryEnableReforge.columnIndex = inputBuilder.CreateColumnBool(&entryEnableReforge)
 		process.allColumns = append(process.allColumns, &entryEnableReforge)
 
-		onlyOneReforge.Add(enableReforge, 1)
+		onlyOneReforge.Add(entryEnableReforge.columnIndex, 1)
 
 		for partUsedItem := range process.findMatchingItemColumns(&item) {
 			// formula is partUsedItem <= enableReforge
 			//            0 <= enableReforge - partUsedItem
 			matchingReforge := utilhighs.ConstraintRowBuild{Debug: "matchingReforge" + itemId.String() + "_" + strconv.Itoa(int(partUsedItem))}
-			matchingReforge.Add(enableReforge, 1)
+			matchingReforge.Add(entryEnableReforge.columnIndex, 1)
 			matchingReforge.Add(partUsedItem, -1)
 			matchingReforge.Finish(inputBuilder, 0, 1)
 		}
