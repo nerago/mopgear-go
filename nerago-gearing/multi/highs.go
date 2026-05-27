@@ -165,7 +165,10 @@ func (job *MultiSetJob) proposalsToSimAndOutput(proposalList []multi_types.Multi
 	simMultiResults := job.linkSimResults(proposalList, simResultList)
 	job.reportSimResults(simMultiResults)
 	job.reportAsCsv(simMultiResults)
+
+	job.suggestResultFromRankings(simMultiResults)
 }
+
 
 func (job *MultiSetJob) makeOutputFromHighs(multiResult withhighs.HighsMultiResult, printer *util.PrintRecorder) multi_types.MultiProposedOutput {
 	var totalRatingSum float64

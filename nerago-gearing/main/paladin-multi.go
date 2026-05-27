@@ -75,6 +75,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		96375, // bracers implosion
 		96395, // bloodsoaked legplates
+		96542, // tidal force treads
 
 		trinketZandSpark,
 		trinketJiKun,     // ji-kun trinket
@@ -93,7 +94,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:                     "Prot-Damage",
 		GearFile:                  files.GearFileProtDps,
 		Model:                     model.Model_PallyProtDps(),
-		RequestRatingPercent:      0.04,
+		// RequestRatingPercent:      0.04,
+		RequestRatingPercent:      0.01,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -148,6 +150,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		96375, // bracers implosion
 		96395, // bloodsoaked legplates
+		96542, // tidal force treads
 
 		trinketZandSpark,
 		trinketPrimRage,
@@ -168,7 +171,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:                     "Prot-Compromise",
 		GearFile:                  files.GearFileProtCompromise,
 		Model:                     model.Model_PallyProtCompromise(),
-		RequestRatingPercent:      0.40,
+		// RequestRatingPercent:      0.40,
+		RequestRatingPercent:      0.01,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -220,6 +224,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		96375, // bracers implosion
 		96395, // bloodsoaked legplates
+		96542, // tidal force treads
 
 		96376, // worldbreaker weapon
 		96534, // qon's scimitar
@@ -248,7 +253,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:                     "Prot-Mitigation-NoSet",
 		GearFile:                  files.GearFileProtMitigationNoSet,
 		Model:                     model.Model_PallyProtMitigation_NoSet(),
-		RequestRatingPercent:      0.20,
+		// RequestRatingPercent:      0.20,
+		RequestRatingPercent:      0.01,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -300,6 +306,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		96375, // bracers implosion
 		96395, // bloodsoaked legplates
+		96542, // tidal force treads
 
 		96376, // worldbreaker weapon
 		96534, // qon's scimitar
@@ -316,7 +323,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96436, // tortos shell heroic
 	})
 	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
-	protMitigationNoSet.ForceTryAllSlot(items.Equip_Ring1, 96481, 96377, 96500)
+	// protMitigationNoSet.ForceTryAllSlot(items.Equip_Ring1, 96481, 96377, 96500)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Back, preLegendTankCloak)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
@@ -326,7 +333,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:                     "Prot-Mitigation-WithSet",
 		GearFile:                  files.GearFileProtMitigationSet,
 		Model:                     model.Model_PallyProtMitigation_WithSet(),
-		RequestRatingPercent:      0.35,
+		// RequestRatingPercent:      0.35,
+		RequestRatingPercent:      0.95,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 		RequireSetBonus:           4,
@@ -358,7 +366,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		96550, // doomed crown heroic
 		95291, // prot tier15 hand normal
-		95290, // prot tier15 chest normal
+		96664, // prot tier15 chest heroic
 		96666, // prot tier15 head heroic
 		96667, // prot tier15 leg heroic
 		96668, // prot tier15 shoulder heroic
@@ -377,6 +385,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		96375, // bracers implosion
 		96395, // bloodsoaked legplates
+		96542, // tidal force treads
 
 		trinketZandSpark,
 		trinketPrimRage,

@@ -75,13 +75,13 @@ func (param *multiSetParamInternal) replicatePairedOptions() {
 	// risky compared to old algorithms, but now we have better unique equipped maybe ok?
 	param.replicatePairedSlots(items.Equip_Ring1, items.Equip_Ring2)
 	param.replicatePairedSlots(items.Equip_Trinket1, items.Equip_Trinket2)
+	param.itemOptions.RemoveDuplicates()
 }
 
 func (param *multiSetParamInternal) replicatePairedSlots(slotA items.SlotEquip, slotB items.SlotEquip) {
 	optA := param.itemOptions.Get(slotA)
 	optB := param.itemOptions.Get(slotB)
 	combined := slices.Concat(optA, optB)
-	combined = util.RemoveDuplicatesFunc(combined, (*items.FullItem).Equals)
 	param.itemOptions[slotA] = combined
 	param.itemOptions[slotB] = combined
 }

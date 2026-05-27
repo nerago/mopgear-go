@@ -1,6 +1,8 @@
 package multi
 
 import (
+	"cmp"
+	"math"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/multi/multi_types"
@@ -10,6 +12,8 @@ import (
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
+	"paladin_gearing_go/util/util_rank"
+	"slices"
 
 	"github.com/google/uuid"
 )
@@ -117,29 +121,33 @@ func linkSimResult(proposal multi_types.MultiProposedOutput, resultList []simula
 func (job *MultiSetJob) reportSimResults(multiResultList []simulateMultiResult) {
 	job.printer.Println("@@@@@@@@@@@@@@@@ RESULTS @@@@@@@@@@@@@@@@")
 	for _, result := range multiResultList {
-		job.printer.Printf("&&&&&&&&&&&&& %s\n", result.proposed.Id)
-		result.proposed.Combo.Print(job.printer)
-
-		for specIndex, specResult := range result.result {
-			param := &job.params[specIndex]
-			job.printer.Printf("---------------- %s ----------------\n", param.Label)
-
-			output := result.proposed.Parts[specIndex]
-			output.Report(job.printer)
-			specResult.Print(job.printer)
-
-			for slot, itemId := range param.ReportVariant {
-				variantEquip := *output.FullSet.Items()
-				variantItem := job.findVariantItem(result, itemId, param)
-				variantEquip[slot] = variantItem
-				job.printer.Printf("---------------- %s %s ----------------\n", param.Label, variantItem.BaseName())
-				tools.WowSimJson_Write(&variantEquip, &param.Model, job.printer)
-			}
-		}
-
-		job.printer.Println0()
-		job.printer.Println0()
+		job.reportSimResults_One(result)
 	}
+}
+
+func (job *MultiSetJob) reportSimResults_One(result simulateMultiResult) {
+	job.printer.Printf("&&&&&&&&&&&&& %s\n", result.proposed.Id)
+	result.proposed.Combo.Print(job.printer)
+
+	for specIndex, specResult := range result.result {
+		param := &job.params[specIndex]
+		job.printer.Printf("---------------- %s ----------------\n", param.Label)
+
+		output := result.proposed.Parts[specIndex]
+		output.Report(job.printer)
+		specResult.Print(job.printer)
+
+		for slot, itemId := range param.ReportVariant {
+			variantEquip := *output.FullSet.Items()
+			variantItem := job.findVariantItem(result, itemId, param)
+			variantEquip[slot] = variantItem
+			job.printer.Printf("---------------- %s %s ----------------\n", param.Label, variantItem.BaseName())
+			tools.WowSimJson_Write(&variantEquip, &param.Model, job.printer)
+		}
+	}
+
+	job.printer.Println0()
+	job.printer.Println0()
 }
 
 func (job *MultiSetJob) findVariantItem(result simulateMultiResult, itemId items.ItemId, param *multiSetParamInternal) *items.FullItem {
@@ -198,4 +206,52 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 	}
 
 	csv.Write(job.printer)
+}
+
+func (job *MultiSetJob) suggestResultFromRankings(results []simulateMultiResult) {
+	simResultTypeList := []simulate.SimResultType{simulate.Result_DPS, simulate.Result_DTPS, simulate.Result_TMI, simulate.Result_DEATH}
+	rankInputArrays := util.MapMapSlice[int, simulate.SimResultType, float64]{}
+	for _, result := range results {
+		for paramIndex, simStats := range result.result {
+			for _, simType := range simResultTypeList {
+				value := simStats.Get(simType)
+				rankInputArrays.Add(paramIndex, simType, value)
+			}
+		}
+	}
+
+	for paramIndex := range job.params {
+		for _, simType := range simResultTypeList {
+			rankInputArrays.MapInternalSlice(paramIndex, simType, func(rankValues []float64) []float64 {
+				if simType.IsHighGood() {
+					// decending order (best first)
+					slices.SortFunc(rankValues, func(a, b float64) int { return cmp.Compare(b, a) })
+				} else {
+					// ascending order (best first)
+					slices.Sort(rankValues)
+				}
+
+				return rankValues
+			})
+		}
+	}
+
+	best := util_rank.BestCollector1[simulateMultiResult]{}
+	best.BestValue = math.Inf(-1)
+
+	for _, result := range results {
+		sumOfRanks := 0
+		for paramIndex, simStats := range result.result {
+			for _, simType := range simResultTypeList {
+				value := simStats.Get(simType)
+				rankArray, _ := rankInputArrays.ValuesForKeyAsSlice(paramIndex, simType)
+				valueRank := slices.Index(rankArray, value)
+				sumOfRanks += valueRank
+			}
+		}
+		best.Offer(&result, float64(-sumOfRanks))
+	}
+
+	job.printer.Println("Best ranked result")
+	job.reportSimResults_One(best.GetBestOrPanic())
 }
