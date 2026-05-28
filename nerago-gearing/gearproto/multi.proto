@@ -1,0 +1,229 @@
+syntax = "proto3";
+package gearproto;
+
+option go_package = "./gearproto";
+
+message MultiSetJob {
+    int32 simRunSize                          = 1;
+    repeated MultiSetParam param              = 2;
+    repeated FixedForge fixed_forge           = 3;
+    repeated DistinctUsageGroups usage_groups = 4;
+    string bagsFile                           = 5;
+}
+
+message MultiSetParam {
+    string Label                        = 1;
+	string GearFile                     = 2;
+	Model  Model                        = 3;
+
+	double RatingPercent                = 4;
+	int32 ExtraUpgradeLevel             = 6;
+	int32 ForceUpgradeExistingItems     = 7;
+
+	bool ExtraFromBags                  = 8;
+    repeated uint32 ExtraItems          = 9;
+	repeated uint32 BlockedItems        = 10;
+
+    repeated ItemInSlot ForceSingle     = 11;
+    repeated ItemListInSlot ForceTryAll = 12;
+	ItemInSlot ReportVariant            = 13;
+}
+
+message Model {
+    StatRequirements  StatRequirements    = 1;
+	StatRatings       StatRatings         = 2;
+	SpecType          Spec                = 3;      
+	OptimiseGoal      Goal                = 4;
+	Fight             Fight               = 5;
+
+	ReforgeRules      ReforgeRules        = 6;
+	repeated Enchant  Enchant             = 7;
+	repeated Gem      Gem                 = 8;
+    Professions       Professions         = 9;
+	
+    SetBonus          SetBonus            = 10;
+	uint32            SetBonusRequired    = 11;
+}
+
+message StatRequirements {
+    uint32 hitMin            = 1;
+    uint32 hitMax            = 2;
+	uint32 expMin            = 3;
+    uint32 expMax            = 4;
+    StatType additionalStat  = 5;
+    uint32 additionalValue   = 6;
+}
+
+message StatRatings {
+    // treat like a oneof, can't be due to repeated
+    string pawnFile            = 1;
+    repeated StatType priority = 2;
+    StatBlock values           = 3;
+}
+
+message ReforgeRules {
+    repeated StatType source = 1;
+    repeated StatType target = 2;
+}
+
+message Enchant {
+    SlotItem slot = 1;
+    oneof specify {
+        uint32 effectId = 2;
+        string name     = 3;
+    }
+}
+
+message Gem {
+    SocketType socket   = 1;
+    oneof specify {
+        uint32 gemId    = 2;
+        StatBlock stats = 3;
+    }
+}
+
+message Professions {
+    bool IsBlacksmith = 1;
+	bool IsEngineer   = 2;
+}
+
+message SetBonus {
+    // treat like a oneof, can't be due to repeated
+    bool            none        = 1;
+    bool            specDefault = 2;
+    repeated string named       = 3;
+}
+
+message StatBlock {
+    repeated StatValue values = 1;
+}
+
+message FixedForge {
+    uint32 itemId = 1;
+    bool default = 2;
+    StatType from = 3;
+    StatType to = 4;
+}
+
+message DistinctUsageGroups {
+    uint32 itemId = 1;
+    repeated string groupA = 2;
+    repeated string groupB = 3;
+}
+
+message ItemInSlot {
+    SlotEquip slot = 1;
+    uint32 itemId  = 2;
+}
+
+message ItemListInSlot {
+    SlotEquip slot          = 1;
+    repeated uint32 itemId  = 2;
+}
+
+message StatValue {
+    StatType statType = 1;
+    uint32 value      = 2;
+}
+
+enum StatType {
+    Strength   = 0;
+	Agility    = 1;
+	Stamina    = 2;
+	Intellect  = 3;
+	Spirit     = 4;
+	Hit        = 5;
+	Crit       = 6;
+	Haste      = 7;
+	Expertise  = 8;
+	Dodge      = 9;
+	Parry      = 10;
+	Mastery    = 11;
+}
+
+enum SpecType {
+    PaladinProt       = 0;
+    PaladinRet        = 1;
+    PaladinHoly       = 2;
+    WarriorProt       = 3;
+    WarriorArms       = 4;
+    DruidBear         = 5;
+    DruidTree         = 6;
+    DruidBoom         = 7;
+    DruidFeral        = 8;
+    MageFrost         = 9;
+    PriestShadow      = 10;
+    PriestHoly        = 11;
+    Rogue             = 12;
+    Warlock           = 13;
+    ShamanRestoration = 14;
+    ShamanElemental   = 15;
+    ShamanEnhance     = 16;
+    Hunter            = 17;
+    MonkBrewmaster    = 18;
+    MonkMistweaver    = 19;
+    MonkDps           = 20;
+    DeathKnightDps    = 21;
+    DeathKnightBlood  = 22;
+}
+
+enum OptimiseGoal {
+    Dps          = 0;
+    Mitigation   = 1;
+	HalfMitiDps  = 2;
+	Healing      = 3;
+}
+
+enum Fight {
+    Horridon_HighHeal = 0;
+	Horridon_LowHeal  = 1;
+	Animus            = 2;
+}
+
+enum SlotItem {
+    Item_Head     = 0;
+	Item_Neck     = 1;
+	Item_Shoulder = 2;
+	Item_Back     = 3;
+	Item_Chest    = 4;
+	Item_Wrist    = 5;
+	Item_Hand     = 6;
+	Item_Belt     = 7;
+	Item_Leg      = 8;
+	Item_Foot     = 9;
+	Item_Ring     = 10;
+	Item_Trinket  = 11;
+	Item_Weapon1H = 12;
+	Item_Weapon2H = 13;
+	Item_Offhand  = 14;
+}
+
+enum SlotEquip {
+    Equip_Head      = 0;
+    Equip_Neck      = 1;
+    Equip_Shoulder  = 2;
+    Equip_Back      = 3;
+    Equip_Chest     = 4;
+    Equip_Wrist     = 5;
+    Equip_Hand      = 6;
+    Equip_Belt      = 7;
+    Equip_Leg       = 8;
+    Equip_Foot      = 9;
+    Equip_Ring1     = 10;
+    Equip_Ring2     = 11;
+    Equip_Trinket1  = 12;
+    Equip_Trinket2  = 13;
+    Equip_Weapon    = 14;
+    Equip_Offhand   = 15;
+}
+
+enum SocketType {
+	Meta        = 0;
+	Red         = 1;
+	Blue        = 2;
+	Yellow      = 3;
+	General     = 4;
+	Engineering = 5;
+	Sha         = 6;
+}
+

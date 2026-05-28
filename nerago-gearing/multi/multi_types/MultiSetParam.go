@@ -14,7 +14,6 @@ type MultiSetParam struct {
 	// solve settings
 	// IncludeInFirstPass   bool // TODO consider reintroducing in hights solver
 	RequestRatingPercent float64
-	RequireSetBonus      int8
 
 	// extra item settings
 	ExtraUpgradeLevel         int8

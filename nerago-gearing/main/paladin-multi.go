@@ -337,7 +337,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		RequestRatingPercent:      0.95,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
-		RequireSetBonus:           4,
 	}
 	protMitigationWithSet.AddExtraItems([]items.ItemId{
 		86979, // heroic impaling treads
