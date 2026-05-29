@@ -23,7 +23,7 @@ func SolverBuildRandom_MakeN(itemOptions *items.SolvableOptionsMap, model *model
 
 func makeSetFromRandom(itemOptions *items.SolvableOptionsMap, rng *rand.Rand) items.SolvableItemSet {
 	equip := items.SolvableEquipMap{}
-	for slot, options := range itemOptions {
+	for slot, options := range itemOptions.SlotSliceSeq() {
 		optionSize := len(options)
 		if optionSize > 0 {
 			index := rng.Intn(optionSize)

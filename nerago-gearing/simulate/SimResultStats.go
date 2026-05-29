@@ -100,9 +100,9 @@ func (stats SimResultStats) CompactStringGeneral() string {
 	build.WriteString(" dtps=")
 	build.WriteFloat64_RightPadded(stats.DTPS, 0, 6)
 	build.WriteString(" tmi=")
-	build.WriteFloat64_RightPadded(stats.TMI, 0, 6)
+	build.WriteFloat64_RightPadded(stats.TMI, 2, 6)
 	build.WriteString(" death=")
-	build.WriteFloat64(stats.DEATH*100, 1)
+	build.WriteFloat64(stats.DEATH*100, 2)
 	return build.String()
 }
 

@@ -27,11 +27,11 @@ const (
 	RunSize_SlowAccurate WowSim_RunSize = 500000
 )
 
-func WowSim_Execute_UseModel(runSize WowSim_RunSize, model *model.Model, equipMap *items.FullEquipMap, bonusStats *stats.StatBlock, tracker *util.TrackProgress) SimResultStats {
+func WowSim_Execute_UseModel(runSize WowSim_RunSize, model *model.Model, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) SimResultStats {
 	return WowSim_Execute_SpecifyAll(runSize, model.Spec, model.Goal, model.SimulateAs, model.Professions, equipMap, bonusStats, tracker)
 }
 
-func WowSim_Execute_SpecifyAll(runSize WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *stats.StatBlock, tracker *util.TrackProgress) SimResultStats {
+func WowSim_Execute_SpecifyAll(runSize WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) SimResultStats {
 	infile := files.SimFileFor(spec, goal)
 	input := inputRequestFromTemplate(infile, equipMap, profession, bonusStats, spec, fight, runSize)
 
@@ -46,7 +46,7 @@ func WowSim_Execute_SpecifyAll(runSize WowSim_RunSize, spec stats.SpecType, goal
 	return convertResult(finalResult)
 }
 
-func inputRequestFromTemplate(infile string, equipMap *items.FullEquipMap, profession model.ProfessionInfo, bonusStats *stats.StatBlock, spec stats.SpecType, fight stats.WowSim_Fight, runSize WowSim_RunSize) *wowsim_proto.RaidSimRequest {
+func inputRequestFromTemplate(infile string, equipMap *items.FullEquipMap, profession model.ProfessionInfo, bonusStats *map[stats.StatType]int32, spec stats.SpecType, fight stats.WowSim_Fight, runSize WowSim_RunSize) *wowsim_proto.RaidSimRequest {
 	var input wowsim_proto.RaidSimRequest
 	loadAnyProtoFile(&input, infile)
 
@@ -59,7 +59,7 @@ func inputRequestFromTemplate(infile string, equipMap *items.FullEquipMap, profe
 	return &input
 }
 
-func inputRequestFromScratch(equipMap *items.FullEquipMap, profession model.ProfessionInfo, bonusStats *stats.StatBlock, spec stats.SpecType, fight stats.WowSim_Fight, runSize WowSim_RunSize) *wowsim_proto.RaidSimRequest {
+func inputRequestFromScratch(equipMap *items.FullEquipMap, profession model.ProfessionInfo, bonusStats *map[stats.StatType]int32, spec stats.SpecType, fight stats.WowSim_Fight, runSize WowSim_RunSize) *wowsim_proto.RaidSimRequest {
 	input := wowsim_proto.RaidSimRequest{
 		Type: wowsim_proto.SimType_SimTypeIndividual,
 		SimOptions: &wowsim_proto.SimOptions{
@@ -222,7 +222,7 @@ func updateGear(input *wowsim_proto.RaidSimRequest, equipMap *items.FullEquipMap
 		return
 	}
 
-	itemSpecArray := make([]*wowsim_proto.ItemSpec, 0, 16)
+	itemSpecArray := make([]*wowsim_proto.ItemSpec, 0, items.ITEM_SLOT_COUNT)
 
 	for item := range equipMap.AllItemSeq() {
 		spec := wowsim_proto.ItemSpec{}
@@ -255,12 +255,12 @@ func updateGear(input *wowsim_proto.RaidSimRequest, equipMap *items.FullEquipMap
 	input.Raid.Parties[0].Players[0].Equipment.Items = itemSpecArray
 }
 
-func updateBonus(input *wowsim_proto.RaidSimRequest, bonusStats *stats.StatBlock) {
+func updateBonus(input *wowsim_proto.RaidSimRequest, bonusStats *map[stats.StatType]int32) {
 	if bonusStats == nil {
 		return
 	}
 
-	unitStats := extern_stats.GearStatBlockToUnitStats(bonusStats)
+	unitStats := extern_stats.GearStatMapToUnitStats(*bonusStats)
 	input.Raid.Parties[0].Players[0].BonusStats = unitStats
 }
 

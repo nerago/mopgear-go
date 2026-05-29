@@ -76,13 +76,14 @@ func core(printer *util.PrintRecorder) {
 	// findT5BIS(printer)
 	// findT5TrinketPermutations(printer)
 	// findT5WeightPermutations(printer)
+	statWeightsGridFromInitialT5(printer)
 	// basicListRatingEach(printer)
 	// solveForRatings(printer)
 	// findBestSubjectToCommon(printer)
 	// checkHighs(printer)
 	// checkHighsAcross(printer)
 
-	PaladinMultiRun(printer)
+	// PaladinMultiRun(printer)
 	// testSim(printer)
 	// findUpgrades_Sim_PaladinMiti_Run(printer)
 	// findUpgrades_Sim_PaladinDps_Run(printer)
@@ -101,7 +102,7 @@ func core(printer *util.PrintRecorder) {
 
 func setupPallyMitigationSet() (items.FullOptionsMap, model.Model) {
 	model := model.Model_PallyProtMitigation_WithSet()
-	return setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationSet, &model, setup.MissingEnchant_Panic, printer), model
+	return setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationWithSet, &model, setup.MissingEnchant_Panic, printer), model
 }
 
 func setupPallyMitigationNoSet() (items.FullOptionsMap, model.Model) {

@@ -17,8 +17,20 @@ const (
 	trinketTwinsGaze    = 94529
 	trinketJiKun        = 94527
 	trinketSoulBarrier  = 96555
+	
+	trinketCurseHubris  = 105645 // heroic warforged
+	trinketThokTail     = 105609 // heroic warforged
+	trinketFusionCore   = 105459 // heroic warforged
+	trinketSkeerBlood   = 105632 // heroic warforged
+	trinketVialCorrupt  = 105568 // heroic warforged
+	trinketRookUnlucky  = 105438 // heroic warforged
+	trinketJuggFocusing = 105514 // heroic warforged
+	trinketEyeGalakras  = 102298
+
 	preLegendMeleeCloak = 98147
 	preLegendTankCloak  = 98146
+	legendMeleeCloak = 102249
+	legendTankCloak  = 102250
 )
 
 func PaladinMultiRun(printer *util.PrintRecorder) {
@@ -35,6 +47,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	}
 	ret.AddExtraItems([]items.ItemId{
 		preLegendMeleeCloak, // pre-legend strength dps
+		legendMeleeCloak,
 
 		95140, // shado assault band
 		95141, // shado assault loop
@@ -88,12 +101,12 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	blockHelmetsWithoutCapacitance(&ret)
 	ret.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
 	ret.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
-	ret.ForceSingleSlot(items.Equip_Back, preLegendMeleeCloak)
+	// ret.ForceSingleSlot(items.Equip_Back, preLegendMeleeCloak)
 
 	protDps := multi_types.MultiSetParam{
-		Label:                     "Prot-Damage",
-		GearFile:                  files.GearFileProtDps,
-		Model:                     model.Model_PallyProtDps(),
+		Label:    "Prot-Damage",
+		GearFile: files.GearFileProtDps,
+		Model:    model.Model_PallyProtDps(),
 		// RequestRatingPercent:      0.04,
 		RequestRatingPercent:      0.01,
 		ExtraUpgradeLevel:         2,
@@ -115,6 +128,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96373, // cloudbreaker belt heroic
 
 		preLegendMeleeCloak, // pre-legend strength dps
+		legendMeleeCloak,
 
 		95535, // normal lightning legs
 		94773, // centripetal shoulders normal
@@ -163,14 +177,14 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	})
 	blockHelmetsWithoutCapacitance(&protDps)
 	// protDps.ForceSingleSlot(items.Equip_Ring2, 96500)               // scaled tyrant heroic
-	protDps.ForceSingleSlot(items.Equip_Back, preLegendMeleeCloak)  // pre-legend strength dps
+	// protDps.ForceSingleSlot(items.Equip_Back, preLegendMeleeCloak)  // pre-legend strength dps
 	protDps.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark) // zandalar trinket
 	protDps.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
 
 	protCompromise := multi_types.MultiSetParam{
-		Label:                     "Prot-Compromise",
-		GearFile:                  files.GearFileProtCompromise,
-		Model:                     model.Model_PallyProtCompromise(),
+		Label:    "Prot-Compromise",
+		GearFile: files.GearFileProtCompromise,
+		Model:    model.Model_PallyProtCompromise(),
 		// RequestRatingPercent:      0.40,
 		RequestRatingPercent:      0.01,
 		ExtraUpgradeLevel:         2,
@@ -190,8 +204,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		94726, // cloudbreaker belt normal
 		96373, // cloudbreaker belt heroic
-
-		preLegendMeleeCloak, // pre-legend strength dps
 
 		96428, // shell-coated wrists
 		96447, // rot-proof greatplate
@@ -238,6 +250,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		preLegendMeleeCloak,
 		preLegendTankCloak,
+		legendTankCloak,
+		legendMeleeCloak,
 
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
@@ -250,9 +264,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protCompromise.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
 
 	protMitigationNoSet := multi_types.MultiSetParam{
-		Label:                     "Prot-Mitigation-NoSet",
-		GearFile:                  files.GearFileProtMitigationNoSet,
-		Model:                     model.Model_PallyProtMitigation_NoSet(),
+		Label:    "Prot-Mitigation-NoSet",
+		GearFile: files.GearFileProtMitigationNoSet,
+		Model:    model.Model_PallyProtMitigation_NoSet(),
 		// RequestRatingPercent:      0.20,
 		RequestRatingPercent:      0.01,
 		ExtraUpgradeLevel:         2,
@@ -272,8 +286,10 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		96373, // cloudbreaker belt heroic
 
-		preLegendMeleeCloak, // pre-legend strength dps
-		preLegendTankCloak,  // pre-legend strength tank
+		// preLegendMeleeCloak,
+		// legendMeleeCloak,
+		preLegendTankCloak,
+		legendTankCloak,
 
 		95535, // normal lightning legs
 		96468, // talonrender chest heroic
@@ -324,15 +340,15 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	})
 	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
 	// protMitigationNoSet.ForceTryAllSlot(items.Equip_Ring1, 96481, 96377, 96500)
-	protMitigationNoSet.ForceSingleSlot(items.Equip_Back, preLegendTankCloak)
+	// protMitigationNoSet.ForceSingleSlot(items.Equip_Back, preLegendTankCloak)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
 	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
 
 	protMitigationWithSet := multi_types.MultiSetParam{
-		Label:                     "Prot-Mitigation-WithSet",
-		GearFile:                  files.GearFileProtMitigationSet,
-		Model:                     model.Model_PallyProtMitigation_WithSet(),
+		Label:    "Prot-Mitigation-WithSet",
+		GearFile: files.GearFileProtMitigationWithSet,
+		Model:    model.Model_PallyProtMitigation_WithSet(),
 		// RequestRatingPercent:      0.35,
 		RequestRatingPercent:      0.95,
 		ExtraUpgradeLevel:         2,
@@ -351,7 +367,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		96373, // cloudbreaker belt heroic
 
-		preLegendTankCloak, // pre-legend strength tank
+		preLegendTankCloak,
+		legendTankCloak,
 
 		95535, // normal lightning legs REMOVE12
 		94773, // centripetal shoulders normal REMOVE1234
@@ -399,7 +416,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	})
 
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, preLegendTankCloak)
+	// protMitigationWithSet.ForceSingleSlot(items.Equip_Back, preLegendTankCloak)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketSoulBarrier) // fort good for taken, soul for death, but soul for raden for now
 	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)

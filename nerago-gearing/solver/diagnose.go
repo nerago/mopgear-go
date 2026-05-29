@@ -34,7 +34,7 @@ func setsAtLimitsOfStat(optionsMap *items.SolvableOptionsMap, stat stats.StatTyp
 	var lowSet, highSet items.SolvableItemSet
 
 	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
-		options := optionsMap[slot]
+		options := optionsMap.Get(slot)
 		min, max := findMinMaxWithStat(options, stat)
 		lowSet.AddItem_DeferCalc(slot, min)
 		highSet.AddItem_DeferCalc(slot, max)

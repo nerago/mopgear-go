@@ -5,27 +5,35 @@ import (
 	"paladin_gearing_go/util"
 )
 
-type SolvableOptionsMap [16][]SolvableItem
+type SolvableOptionsMap struct {
+	array              [ITEM_SLOT_COUNT][]SolvableItem
+	uniqueEquippedSets [][]ItemId
+}
 
 func SolvableOptionsMap_of(fullMap *FullOptionsMap) SolvableOptionsMap {
 	result := SolvableOptionsMap{}
 	for slot := range fullMap {
-		result[slot] = util.CastSliceAsNew(fullMap[slot], SolvableItem_Of)
+		result.array[slot] = util.CastSliceAsNew(fullMap[slot], SolvableItem_Of)
 	}
+	result.uniqueEquippedSets = UniqueEquipSetsInOptions(fullMap)
 	return result
 }
 
 func (optionsMap *SolvableOptionsMap) Get(slot SlotEquip) []SolvableItem {
-	return optionsMap[slot]
+	return optionsMap.array[slot]
 }
 
 func (optionsMap *SolvableOptionsMap) Has(slot SlotEquip) bool {
-	return len(optionsMap[slot]) > 0
+	return len(optionsMap.array[slot]) > 0
+}
+
+func (optionsMap SolvableOptionsMap) Set(slot SlotEquip, options []SolvableItem) {
+	optionsMap.array[slot] = options
 }
 
 func (optionsMap *SolvableOptionsMap) AllItemSeq() iter.Seq[*SolvableItem] {
 	return func(yield func(*SolvableItem) bool) {
-		for _, slotArray := range optionsMap {
+		for _, slotArray := range optionsMap.array {
 			for _, item := range slotArray {
 				if !yield(&item) {
 					return
@@ -38,8 +46,8 @@ func (optionsMap *SolvableOptionsMap) AllItemSeq() iter.Seq[*SolvableItem] {
 func (optionsMap *SolvableOptionsMap) AllItemSlotSeq() iter.Seq2[SlotEquip, *SolvableItem] {
 	return func(yield func(SlotEquip, *SolvableItem) bool) {
 		for slot := Equip_Iter_First; slot <= Equip_Iter_Last; slot++ {
-			for i := range optionsMap[slot] {
-				if !yield(slot, &optionsMap[slot][i]) {
+			for i := range optionsMap.array[slot] {
+				if !yield(slot, &optionsMap.array[slot][i]) {
 					return
 				}
 			}
@@ -49,10 +57,40 @@ func (optionsMap *SolvableOptionsMap) AllItemSlotSeq() iter.Seq2[SlotEquip, *Sol
 
 func (optionsMap *SolvableOptionsMap) SlotItemSeq(slotEquip SlotEquip) iter.Seq[*SolvableItem] {
 	return func(yield func(*SolvableItem) bool) {
-		for _, item := range optionsMap[slotEquip] {
+		for _, item := range optionsMap.array[slotEquip] {
 			if !yield(&item) {
 				return
 			}
 		}
 	}
+}
+
+func (optionsMap *SolvableOptionsMap) SlotSliceSeq() iter.Seq2[SlotEquip, []SolvableItem] {
+	return func(yield func(SlotEquip, []SolvableItem) bool) {
+		for slot := Equip_Iter_First; slot <= Equip_Iter_Last; slot++ {
+			if !yield(slot, optionsMap.array[slot]) {
+				return
+			}
+		}
+	}
+}
+
+func (optionsMap *SolvableOptionsMap) SlotNestedSeq() iter.Seq2[SlotEquip, iter.Seq[*SolvableItem]] {
+	return func(yield func(SlotEquip, iter.Seq[*SolvableItem]) bool) {
+		for slot := Equip_Iter_First; slot <= Equip_Iter_Last; slot++ {
+			if !yield(slot, func(yield2 func(*SolvableItem) bool) {
+				for i := range optionsMap.array[slot] {
+					if !yield2(&optionsMap.array[slot][i]) {
+						return
+					}
+				}
+			}) {
+				return
+			}
+		}
+	}
+}
+
+func (optionsMap *SolvableOptionsMap) UniqueEquippedSets() [][]ItemId {
+	return optionsMap.uniqueEquippedSets
 }

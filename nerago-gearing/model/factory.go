@@ -17,21 +17,22 @@ func Model_PallyProtMitigation_WithSet() Model {
 		Goal:        goal,
 		SimulateAs:  Fight_Horridon_LowHeal, // TODO really a raden set
 		StatRatings: weight,
-		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry_PlusAdditional(
+		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
+		// StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry_PlusAdditional(
 			// &StatAndValue{StatType: Stat_Haste, Value: 13500}),
-			&StatAndValue{StatType: Stat_Haste, Value: 13000}),
+			// &StatAndValue{StatType: Stat_Haste, Value: 13000}),
 		// &StatAndValue{StatType: Stat_Haste, Value: 12500}),
-		ReforgeRules:     ReforgeRules_tank,
-		EnchantChoice:    EnchantChoice_ForSpec(spec, goal),
-		GemChoice:        GemChoice_ForSpec(spec, goal),
-		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor"),
-		// SetBonus:         SetBonus_Named("Plate of the Lightning Emperor", "Plate of Winged Triumph"),
+		ReforgeRules:  ReforgeRules_tank,
+		EnchantChoice: EnchantChoice_ForSpec(spec, goal),
+		GemChoice:     GemChoice_ForSpec(spec, goal),
+		// SetBonus:      SetBonus_Named("Plate of the Lightning Emperor"),
+		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor", "Plate of Winged Triumph"),
 		SetBonusRequired: 4,
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,
 		},
-		ReferenceGearFile: files.GearFileProtMitigationSet,
+		ReferenceGearFile: files.GearFileProtMitigationWithSet,
 	}
 }
 

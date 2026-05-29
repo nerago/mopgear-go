@@ -31,7 +31,7 @@ func BagsFileReader_Read() EquippedArray {
 
 func BagsFile_PlusPaladinGear_Read() EquippedArray {
 	equippedItems := BagsFileReader_Read()
-	gearFiles := []string{files.GearFileProtMitigationSet, files.GearFileProtMitigationNoSet, files.GearFileProtDps, files.GearFileRet}
+	gearFiles := []string{files.GearFileProtMitigationWithSet, files.GearFileProtMitigationNoSet, files.GearFileProtDps, files.GearFileRet}
 	for _, filename := range gearFiles {
 		gear := GearFileReader_Read(filename)
 		equippedItems = append(equippedItems, gear...)

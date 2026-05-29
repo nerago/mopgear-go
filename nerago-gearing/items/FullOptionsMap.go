@@ -6,7 +6,7 @@ import (
 	"slices"
 )
 
-type FullOptionsMap [16][]FullItem
+type FullOptionsMap [ITEM_SLOT_COUNT][]FullItem
 
 func (optionsMap *FullOptionsMap) Get(slot SlotEquip) []FullItem {
 	return optionsMap[slot]
@@ -101,6 +101,16 @@ func (optionsMap *FullOptionsMap) FindItemIdSlotUnique(itemId ItemId) SlotEquip 
 		}
 	}
 	return slotFound
+}
+
+func (optionsMap *FullOptionsMap) SlotItemSeq(slotEquip SlotEquip) iter.Seq[*FullItem] {
+	return func(yield func(*FullItem) bool) {
+		for i := range optionsMap[slotEquip] {
+			if !yield(&optionsMap[slotEquip][i]) {
+				return
+			}
+		}
+	}
 }
 
 func (optionsMap *FullOptionsMap) AllItems() iter.Seq[*FullItem] {

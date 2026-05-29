@@ -2,11 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"maps"
+	"math"
 	"os"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/model"
+	"paladin_gearing_go/model/requirements"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/build"
@@ -31,7 +34,7 @@ func forSpreadsheetGenerateRatingsDataFromSims(printer *util.PrintRecorder) {
 
 	fight := stats.Fight_Horridon_LowHeal
 	spec := stats.Spec_PaladinProt
-	startGear := files.GearFileProtMitigationSet
+	startGear := files.GearFileProtMitigationWithSet
 	modelEquipOnly := model.Model_PallyProtMitigation_WithSet()
 	goal := stats.OptimiseGoal_Mitigation
 
@@ -43,12 +46,15 @@ func forSpreadsheetGenerateRatingsDataFromSims(printer *util.PrintRecorder) {
 
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &modelEquipOnly, printer)
 
-	baseStat := stats.StatBlock_of(stats.Stat_Haste, 500) // for miti sets avoid breakpoint
-	// baseStat := stats.StatBlock_of(stats.Stat_Haste, 0)
 	// var statAdd uint32 = 50
 	// var statAdd uint32 = 200
-	var statAdd uint32 = 400
+	var statAdd int32 = 400
 	// var statAdd uint32 = 600
+
+	var incrementBaseHaste int32 = 0
+	var decrementBaseExpertise int32 = 0
+	baseStat := initialBonusStatMap(printer, items.FullItemSet_FromMap(currentEquip), incrementBaseHaste, decrementBaseExpertise, statAdd)
+
 	statCheckList := []stats.StatType{
 		stats.Stat_Strength, stats.Stat_Stamina, stats.Stat_Crit, stats.Stat_Haste,
 		stats.Stat_Expertise, stats.Stat_Mastery, stats.Stat_Dodge, stats.Stat_Parry,
@@ -67,7 +73,7 @@ func forSpreadsheetGenerateRatingsDataFromSims(printer *util.PrintRecorder) {
 	csv.FinishColumn()
 
 	for _, statCheck := range statCheckList {
-		bonusStat := baseStat
+		bonusStat := maps.Clone(baseStat)
 		bonusStat[statCheck] += statAdd
 		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, modelEquipOnly.Professions, &currentEquip, &bonusStat, tracker.MakeNested())
 
@@ -101,7 +107,7 @@ func forBasicStatsGenerateRatingsDataFromSims(printer *util.PrintRecorder) {
 
 	fight := stats.Fight_Horridon_LowHeal
 	spec := stats.Spec_PaladinProt
-	startGear := files.GearFileProtMitigationSet
+	startGear := files.GearFileProtMitigationWithSet
 	modelEquipOnly := model.Model_PallyProtMitigation_WithSet()
 	targetRatio := stathighs.NewStatWeights_generalMiti
 	goal := stats.OptimiseGoal_Mitigation
@@ -114,12 +120,15 @@ func forBasicStatsGenerateRatingsDataFromSims(printer *util.PrintRecorder) {
 
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &modelEquipOnly, printer)
 
-	baseStat := stats.StatBlock_of(stats.Stat_Haste, 500) // for miti sets avoid breakpoint
-	// baseStat := stats.StatBlock_of(stats.Stat_Haste, 0)
 	// var statAdd uint32 = 50
 	// var statAdd uint32 = 200
-	var statAdd uint32 = 400
+	var statAdd int32 = 400
 	// var statAdd uint32 = 600
+
+	var incrementBaseHaste int32 = 0
+	var decrementBaseExpertise int32 = 0
+	baseStat := initialBonusStatMap(printer, items.FullItemSet_FromMap(currentEquip), incrementBaseHaste, decrementBaseExpertise, statAdd)
+
 	statCheckList := []stats.StatType{
 		stats.Stat_Strength, stats.Stat_Stamina, stats.Stat_Crit, stats.Stat_Haste,
 		stats.Stat_Expertise, stats.Stat_Mastery, stats.Stat_Dodge, stats.Stat_Parry,
@@ -137,10 +146,10 @@ func forBasicStatsGenerateRatingsDataFromSims(printer *util.PrintRecorder) {
 	process.SetBaseline(simBase)
 
 	for _, statCheck := range statCheckList {
-		bonusStat := baseStat
+		bonusStat := maps.Clone(baseStat)
 		bonusStat[statCheck] += statAdd
 		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, modelEquipOnly.Professions, &currentEquip, &bonusStat, tracker.MakeNested())
-		process.AddSimData(statCheck, statAdd, simResult)
+		process.AddSimData(statCheck, uint32(statAdd), simResult)
 	}
 
 	process.Run()
@@ -211,7 +220,7 @@ func generateRatingsInputFromArtificalStatOverrides(printer *util.PrintRecorder)
 
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &modelEquipOnly, printer)
 	currentItemSet := items.FullItemSet_FromMap(currentEquip)
-	inputList := generateRatingsInputFromArtificalStatOverrides_inner(currentItemSet, printer, simSpeed, spec, goal, fight, modelEquipOnly.Professions)
+	inputList := generateRatingsInputFromArtificalStatOverrides_ForGrid(currentItemSet, printer, simSpeed, spec, goal, fight, modelEquipOnly.Professions)
 
 	// bytes, err := json.Marshal(inputList)
 	// if err != nil {
@@ -225,27 +234,19 @@ func generateRatingsInputFromArtificalStatOverrides(printer *util.PrintRecorder)
 	return inputList, targetRatio
 }
 
-func generateRatingsInputFromArtificalStatOverrides_inner(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo) []stathighs.WeightInput {
-	currentHaste := currentItemSet.Total().Get(stats.Stat_Haste)
+func generateRatingsInputFromArtificalStatOverrides_ForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo) []stathighs.WeightInput {
+	var incrementBaseHaste int32 = 1200
+	var decrementBaseExpertise int32 = 600
+	var incrementMin int32 = 0
+	var incrementMax int32 = 500
+	var incrementStep int32 = 250
 
-	var incrementBaseHaste uint32 = 0
-	var incrementMin uint32 = 0
-	var incrementMax uint32 = 500
-	var incrementStep uint32 = 250
-
-	printer.Printf("Current gear haste %d\n", currentHaste)
-	printer.Printf("Simulated minimum gear haste %d\n", currentHaste+incrementBaseHaste)
-	if currentHaste+incrementBaseHaste+incrementMax > 10500 && currentHaste+incrementBaseHaste < 14000 {
-		panic("haste in discontinuity range")
-	}
-
-	initialBaseStats := stats.StatBlock{}
-	initialBaseStats[stats.Stat_Haste] += incrementBaseHaste
+	initialBaseStats := initialBonusStatMap(printer, currentItemSet, incrementBaseHaste, decrementBaseExpertise, incrementMax)
 
 	statCheckList := stathighs.G_RequiredStats
 	type incrementStat struct {
 		stat  stats.StatType
-		value uint32
+		value int32
 	}
 
 	incrementOptions := make([][]incrementStat, 0)
@@ -267,22 +268,70 @@ func generateRatingsInputFromArtificalStatOverrides_inner(currentItemSet items.F
 	inputList := channel_op.Map_SliceToSlice(6, incrementPermutations, func(increments *[]incrementStat, resultChannel chan<- stathighs.WeightInput) {
 		innerPrint := util.PrintRecorder_HoldAll()
 
-		bonusStat := initialBaseStats
+		bonusStat := maps.Clone(initialBaseStats)
 		str := util.StringBuild2{}
 		str.WriteString("STATS SCENARIO ")
 		for _, inc := range *increments {
 			bonusStat[inc.stat] += inc.value
 			str.WriteString(inc.stat.Name())
 			str.WriteRune('=')
-			str.WriteUint32(bonusStat[inc.stat])
+			str.WriteInt32(bonusStat[inc.stat])
 			str.WriteRune(' ')
 		}
 
 		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.MakeNested())
 
 		resultChannel <- stathighs.WeightInput{
-			TotalStat: bonusStat,
+			TotalStat: addBonusStats(currentItemSet.Total(), bonusStat),
 			SimResult: simResult,
+		}
+
+		innerPrint.PrintlnFromBuild(str)
+		innerPrint.Println("   --> " + simResult.CompactStringGeneral())
+
+		printer.AppendOther(innerPrint)
+	})
+	return inputList
+}
+
+
+type basicStatInput struct {
+	IncrementStat  stats.StatType
+	IncrementValue int32
+	SimResult      simulate.SimResultStats
+}
+
+func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo) []basicStatInput {
+	var incrementBaseHaste int32 = 0
+	var decrementBaseExpertise int32 = 600
+	var incrementValue int32 = 250
+
+	initialBaseStats := initialBonusStatMap(printer, currentItemSet, incrementBaseHaste, decrementBaseExpertise, incrementValue)
+
+	statCheckList := stathighs.G_RequiredStats
+
+	tracker := util.TrackProgress_Start()
+	tracker.RunOuterTracking(len(statCheckList))
+	defer tracker.Stop()
+
+	inputList := channel_op.Map_SliceToSlice(len(statCheckList), statCheckList, func(incStat *stats.StatType, resultChannel chan<- basicStatInput) {
+		innerPrint := util.PrintRecorder_HoldAll()
+
+		bonusStat := maps.Clone(initialBaseStats)
+		str := util.StringBuild2{}
+		str.WriteString("STATS SCENARIO ")
+		bonusStat[*incStat] += incrementValue
+		str.WriteString(incStat.Name())
+		str.WriteRune('=')
+		str.WriteInt32(bonusStat[*incStat])
+		str.WriteRune(' ')
+
+		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.MakeNested())
+
+		resultChannel <- basicStatInput{
+			IncrementStat:  *incStat,
+			IncrementValue: incrementValue,
+			SimResult:      simResult,
 		}
 
 		innerPrint.PrintlnFromBuild(str)
@@ -385,7 +434,7 @@ func statWeightsGrid(printer *util.PrintRecorder) {
 	writePawnString(weights, printer)
 }
 
-func writePawnString(weights map[stats.StatType]float64, printer *util.PrintRecorder) {
+func writePawnString(weights map[stats.StatType]float64, printer *util.PrintRecorder) string {
 	str := util.StringBuild2{}
 	str.WriteString("( Pawn: v1: \"Protection WoWSims Weights\": Class=Paladin,Strength=")
 	str.WriteFloat64(weights[stats.Stat_Strength], 10)
@@ -405,6 +454,7 @@ func writePawnString(weights map[stats.StatType]float64, printer *util.PrintReco
 	str.WriteFloat64(weights[stats.Stat_Parry], 10)
 	str.WriteString(", )")
 	printer.PrintlnFromBuild(str)
+	return str.String()
 }
 
 func parseSimStats(str string) simulate.SimResultStats {
@@ -418,4 +468,45 @@ func parseSimStats(str string) simulate.SimResultStats {
 		result.Set(simType, value)
 	}
 	return result
+}
+
+func checkHasteRange(printer *util.PrintRecorder, currentHaste uint32, incrementBaseHaste int32, plannedIncrementTestRange int32) {
+	printer.Printf("Current gear haste %d\n", currentHaste)
+	min := int32(currentHaste) + incrementBaseHaste
+	max := int32(currentHaste) + incrementBaseHaste + plannedIncrementTestRange
+	printer.Printf("Planned simulated gear haste %d-%d\n", min, max)
+	if max > 10500 && min < 14000 {
+		panic("haste in discontinuity range")
+	}
+}
+
+func checkExpertRange(printer *util.PrintRecorder, current uint32, decrementBase int32, plannedIncrementTestRange int32) {
+	printer.Printf("Current gear expertise %d\n", current)
+	min := int32(current) - decrementBase
+	max := int32(current) - decrementBase + plannedIncrementTestRange
+	printer.Printf("Planned simulated gear expertise %d-%d\n", min, max)
+	if max > int32(requirements.TARGET_RATING_TANK) {
+		panic("simulate will overcap expertise")
+	}
+}
+
+func initialBonusStatMap(printer *util.PrintRecorder, currentItemSet items.FullItemSet, incrementBaseHaste int32, decrementBaseExpertise int32, incrementMax int32) map[stats.StatType]int32 {
+	checkHasteRange(printer, currentItemSet.Total().Get(stats.Stat_Haste), incrementBaseHaste, incrementMax)
+	checkExpertRange(printer, currentItemSet.Total().Expertise(), decrementBaseExpertise, incrementMax)
+	initialBaseStats := make(map[stats.StatType]int32)
+	initialBaseStats[stats.Stat_Haste] += incrementBaseHaste
+	initialBaseStats[stats.Stat_Expertise] -= decrementBaseExpertise
+	return initialBaseStats
+}
+
+func addBonusStats(base *stats.StatBlock, bonusStat map[stats.StatType]int32) stats.StatBlock {
+	resultBlock := *base
+	for stat, add := range bonusStat {
+		value := int64(resultBlock[stat]) + int64(add)
+		if value < 0 || value > math.MaxUint32 {
+			panic("out of range")
+		}
+		resultBlock[stat] = uint32(value)
+	}
+	return resultBlock
 }

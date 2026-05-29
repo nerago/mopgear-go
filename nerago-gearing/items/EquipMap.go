@@ -4,7 +4,9 @@ import (
 	"iter"
 )
 
-type FullEquipMap [16]*FullItem
+const ITEM_SLOT_COUNT = 16
+
+type FullEquipMap [ITEM_SLOT_COUNT]*FullItem
 
 func (equipMap *FullEquipMap) Get(slot SlotEquip) *FullItem {
 	return equipMap[slot]
@@ -68,8 +70,43 @@ func (equipMap *FullEquipMap) AllItemSeq() iter.Seq[*FullItem] {
 	}
 }
 
+// so export doesn't flip around
+// TODO fix this upstream
+func (equipMap *FullEquipMap) AllItemSeqPairedConsistent() iter.Seq[*FullItem] {
+	return func(yield func(*FullItem) bool) {
+		for slot := Equip_Iter_First; slot < Equip_Ring1; slot++ {
+			if equipMap[slot] != nil {
+				if !yield(equipMap[slot]) {
+					return
+				}
+			}
+		}
+		if !withConsistentOrder(equipMap[Equip_Ring1], equipMap[Equip_Ring2], yield) {
+			return
+		}
+		if !withConsistentOrder(equipMap[Equip_Trinket1], equipMap[Equip_Trinket2], yield) {
+			return
+		}
+		for slot := Equip_Weapon; slot <= Equip_Iter_Last; slot++ {
+			if equipMap[slot] != nil {
+				if !yield(equipMap[slot]) {
+					return
+				}
+			}
+		}
+	}
+}
+
+func withConsistentOrder(a, b *FullItem, yield func(*FullItem) bool) bool {
+	if a.baseName < b.baseName {
+		return yield(a) && yield(b)
+	} else {
+		return yield(b) && yield(a)
+	}
+}
+
 // //////////////////////////////////////////////////////
-type SolvableEquipMap [16]*SolvableItem
+type SolvableEquipMap [ITEM_SLOT_COUNT]*SolvableItem
 
 func (equipMap *SolvableEquipMap) WithAdditional(slot SlotEquip, item *SolvableItem) SolvableEquipMap {
 	var result SolvableEquipMap = *equipMap

@@ -181,7 +181,7 @@ func debugPrintColumnEntry(colEntry *columnInfo, columnIndex utilhighs.ColumnInd
 type setupInputSetAware struct {
 	input *utilhighs.InputBuilder
 
-	slotsOneEachRow [16]utilhighs.ConstraintRowBuild // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
+	slotsOneEachRow [items.ITEM_SLOT_COUNT]utilhighs.ConstraintRowBuild // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
 
 	hitValueRow     utilhighs.ConstraintRowBuild // constrains values for the hits of each item
 	expertValueRow  utilhighs.ConstraintRowBuild // constrains values for the expertise of each item
@@ -193,7 +193,7 @@ type setupInputSetAware struct {
 	mainOutputRow utilhighs.ConstraintRowBuild // compute final output from set based alternatives
 	mainOutputVar *columnInfo                  // output variable, to be used directly or scaled against other models
 
-	uniqueEquipRows    map[items.ItemId]*utilhighs.ConstraintRowBuild // lookup by id, may have multiple mappings for an item so need pointers
+	uniqueEquipRowsById    map[items.ItemId]*utilhighs.ConstraintRowBuild // lookup by id, may have multiple mappings for an item so need pointers
 	uniqueEquipRowsAll []*utilhighs.ConstraintRowBuild                // definitive copy of each unique equip row constraint
 
 	setData           []setInfo
@@ -444,7 +444,7 @@ func (setup *setupInputSetAware) addItem(itemSlot items.SlotEquip, item *items.S
 	}
 
 	// if this item is unique equipped (mostly checked for ring/trinket)
-	uniqueRow := setup.uniqueEquipRows[item.ItemId()]
+	uniqueRow := setup.uniqueEquipRowsById[item.ItemId()]
 	if uniqueRow != nil {
 		uniqueRow.Add(columnIndex, 1)
 	}
@@ -487,7 +487,9 @@ func (setup *setupInputSetAware) finishItems(itemOptions *items.SolvableOptionsM
 
 	// constrain: unique item by itemid/unique set
 	for _, row := range setup.uniqueEquipRowsAll {
-		row.Finish(setup.input, 0, 1)
+		if !row.IsEmpty() {
+			row.Finish(setup.input, 0, 1)
+		}
 	}
 
 	// constrain: whichever alternate set output into final
@@ -496,37 +498,22 @@ func (setup *setupInputSetAware) finishItems(itemOptions *items.SolvableOptionsM
 }
 
 func (setup *setupInputSetAware) prepareUniqueEquipped(itemOptions *items.SolvableOptionsMap) {
-	setup.uniqueEquipRows = make(map[items.ItemId]*utilhighs.ConstraintRowBuild)
+	setup.uniqueEquipRowsById = make(map[items.ItemId]*utilhighs.ConstraintRowBuild)
 	setup.uniqueEquipRowsAll = make([]*utilhighs.ConstraintRowBuild, 0)
 	seen := make(map[items.ItemId]bool)
 
 	// add items from predefined unique equipped sets
-	for _, set := range items.UniqueItemIdSets {
+	for _, set := range itemOptions.UniqueEquippedSets() {
 		row := new(utilhighs.ConstraintRowBuild)
-		row.Debug = "uniqueEquippedFromMetadata"
+		row.Debug = "uniqueEquipped" + set[0].String()
 		setup.uniqueEquipRowsAll = append(setup.uniqueEquipRowsAll, row)
 
 		for _, itemId := range set {
 			if seen[itemId] {
 				panic("unique equipped data has duplicate")
 			}
-			setup.uniqueEquipRows[itemId] = row
+			setup.uniqueEquipRowsById[itemId] = row
 			seen[itemId] = true
-		}
-	}
-
-	// add all remaining Ring/Trinket items
-	pairedSlots := []items.SlotEquip{items.Equip_Ring1, items.Equip_Ring2, items.Equip_Trinket1, items.Equip_Trinket2}
-	for _, slotEquip := range pairedSlots {
-		for item := range itemOptions.SlotItemSeq(slotEquip) {
-			itemId := item.ItemId()
-			if !seen[itemId] {
-				row := new(utilhighs.ConstraintRowBuild)
-				row.Debug = "uniqueEquipped" + itemId.String()
-				setup.uniqueEquipRowsAll = append(setup.uniqueEquipRowsAll, row)
-				setup.uniqueEquipRows[itemId] = row
-				seen[itemId] = true
-			}
 		}
 	}
 }

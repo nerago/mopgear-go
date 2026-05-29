@@ -41,6 +41,8 @@ var G_siegeStrengthTrinkets = []items.ItemId{
 	103989, //alacrity-of-xuen
 }
 
+var legendCloaks = []items.ItemId{102249, 102250}
+
 func ItemFinder_SiegeStrengthPlateTank(difficulty stats.Difficulty) []*items.FullItem {
 	return slices.Concat(
 		throneClassGearSet(stats.Spec_PaladinProt, difficulty),
@@ -48,6 +50,7 @@ func ItemFinder_SiegeStrengthPlateTank(difficulty stats.Difficulty) []*items.Ful
 		seigeGearGeneric(stats.Armor_Plate, stats.PrimaryStat_Strength, difficulty),
 		trinketsForDifficulty(G_seigeTankTrinkets, difficulty, stats.Difficulty.ExpectedItemLevelSiege),
 		trinketsForDifficulty(G_siegeStrengthTrinkets, difficulty, stats.Difficulty.ExpectedItemLevelSiege),
+		[]*items.FullItem{db.WowSimDB_ByIdAndUpgrade(102249, 0), db.WowSimDB_ByIdAndUpgrade(102250, 0)},
 	)
 }
 

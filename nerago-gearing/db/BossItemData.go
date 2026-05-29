@@ -50,11 +50,13 @@ func load() {
 	itemNameToBoss := make(map[string]string)
 	for line := range strings.SplitSeq(fullStr, "\r\n") {
 		parts := strings.Split(line, "\t")
-		// itemIdStr := parts[0]
-		itemName := parts[1]
-		// slot := parts[2]
-		bossName := parts[3]
-		itemNameToBoss[itemName] = bossName
+		if len(parts) > 2 {
+			// itemIdStr := parts[0]
+			itemName := parts[1]
+			// slot := parts[2]
+			bossName := parts[3]
+			itemNameToBoss[itemName] = bossName
+		}
 	}
 	g_itemNameToBoss = itemNameToBoss
 }

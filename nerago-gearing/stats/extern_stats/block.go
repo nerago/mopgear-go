@@ -29,6 +29,16 @@ func GearStatBlockToUnitStats(block *gear_stat.StatBlock) *wowsim_proto.UnitStat
 	return unitStats
 }
 
+func GearStatMapToUnitStats(statMap map[gear_stat.StatType]int32) *wowsim_proto.UnitStats {
+	unitStats := &wowsim_proto.UnitStats{}
+	unitStats.Stats = make([]float64, 12)
+	for gearStat, value := range statMap {
+		simStat := GearStatToSimStat(gearStat)
+		unitStats.Stats[simStat] = float64(value)
+	}
+	return unitStats
+}
+
 func SimStatsToGearStatBlock(stats wowsim_stat.Stats) gear_stat.StatBlock {
 	block := gear_stat.StatBlock{}
 	for index := range block {

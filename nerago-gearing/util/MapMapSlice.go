@@ -93,38 +93,30 @@ func (mmapslice *MapMapSlice[J, K, V]) Add(key1 J, key2 K, value V) {
 }
 
 func (mmapslice *MapMapSlice[J, K, V]) SeqWithKeys() iter.Seq[MapMapEntry[J, K, V]] {
-	if mmapslice.dataBy1 != nil {
-		return func(yield func(MapMapEntry[J, K, V]) bool) {
-			for key1, inner := range mmapslice.dataBy1 {
-				for key2, slice := range inner {
-					for _, value := range slice {
-						if !yield(MapMapEntry[J, K, V]{key1, key2, value}) {
-							return
-						}
+	return func(yield func(MapMapEntry[J, K, V]) bool) {
+		for key1, inner := range mmapslice.dataBy1 {
+			for key2, slice := range inner {
+				for _, value := range slice {
+					if !yield(MapMapEntry[J, K, V]{key1, key2, value}) {
+						return
 					}
 				}
 			}
 		}
-	} else {
-		return func(yield func(MapMapEntry[J, K, V]) bool) {}
 	}
 }
 
 func (mmapslice *MapMapSlice[J, K, V]) SeqValues() iter.Seq[V] {
-	if mmapslice.dataBy1 != nil {
-		return func(yield func(V) bool) {
-			for _, inner := range mmapslice.dataBy1 {
-				for _, slice := range inner {
-					for _, value := range slice {
-						if !yield(value) {
-							return
-						}
+	return func(yield func(V) bool) {
+		for _, inner := range mmapslice.dataBy1 {
+			for _, slice := range inner {
+				for _, value := range slice {
+					if !yield(value) {
+						return
 					}
 				}
 			}
 		}
-	} else {
-		return func(yield func(V) bool) {}
 	}
 }
 
@@ -141,40 +133,32 @@ func (mmapslice *MapMapSlice[J, K, V]) ForeachWithKeys(apply func(key1 J, key2 K
 }
 
 func (mmapslice *MapMapSlice[J, K, V]) SeqGroupsKey1() iter.Seq2[J, func(K) iter.Seq[V]] {
-	if mmapslice.dataBy1 != nil {
-		return func(yield func(J, func(K) iter.Seq[V]) bool) {
-			for key1, inner := range mmapslice.dataBy1 {
-				lookup := func(key2 K) iter.Seq[V] {
-					slice := inner[key2]
-					return slices.Values(slice)
-				}
+	return func(yield func(J, func(K) iter.Seq[V]) bool) {
+		for key1, inner := range mmapslice.dataBy1 {
+			lookup := func(key2 K) iter.Seq[V] {
+				slice := inner[key2]
+				return slices.Values(slice)
+			}
 
-				if !yield(key1, lookup) {
-					return
-				}
+			if !yield(key1, lookup) {
+				return
 			}
 		}
-	} else {
-		return func(yield func(J, func(K) iter.Seq[V]) bool) {}
 	}
 }
 
 func (mmapslice *MapMapSlice[J, K, V]) SeqGroupsKey2() iter.Seq2[K, func(J) iter.Seq[V]] {
-	if mmapslice.dataBy2 != nil {
-		return func(yield func(K, func(J) iter.Seq[V]) bool) {
-			for key2, inner := range mmapslice.dataBy2 {
-				lookup := func(key1 J) iter.Seq[V] {
-					slice := inner[key1]
-					return slices.Values(slice)
-				}
+	return func(yield func(K, func(J) iter.Seq[V]) bool) {
+		for key2, inner := range mmapslice.dataBy2 {
+			lookup := func(key1 J) iter.Seq[V] {
+				slice := inner[key1]
+				return slices.Values(slice)
+			}
 
-				if !yield(key2, lookup) {
-					return
-				}
+			if !yield(key2, lookup) {
+				return
 			}
 		}
-	} else {
-		return func(yield func(K, func(J) iter.Seq[V]) bool) {}
 	}
 }
 

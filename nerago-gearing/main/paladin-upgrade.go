@@ -132,7 +132,7 @@ func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
 func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 	goal := stats.OptimiseGoal_Mitigation
 	model := model.Model_PallyProtMitigation_WithSet()
-	gearFile := files.GearFileProtMitigationSet
+	gearFile := files.GearFileProtMitigationWithSet
 	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
 	// upgradeItems := loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic)
 	upgradeItems := []*items.FullItem{db.WowSimDB_ByIdAndUpgrade_AllowFallback(96436, 2, printer)} // tortos shell heroic
@@ -150,7 +150,7 @@ func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 	goal := stats.OptimiseGoal_Mitigation
 	model := model.Model_PallyProtMitigation_WithSet()
-	gearFile := files.GearFileProtMitigationSet
+	gearFile := files.GearFileProtMitigationWithSet
 	upgradeItems := loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Normal)
 	// upgradeItems := loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic)
 	input := upgrades.FindUpgrades_SimInputs{
@@ -163,7 +163,6 @@ func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 		SimSize: simRunSize}
 	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsMiti, printer)
 }
-
 
 func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 	substituteItemsDpsMiti := slices.Concat(substituteItemsDps, substituteItemsMiti)
@@ -214,7 +213,7 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 			{
 				Label:      "mit_set",
 				Model:      model.Model_PallyProtMitigation_WithSet(),
-				GearFile:   files.GearFileProtMitigationSet,
+				GearFile:   files.GearFileProtMitigationWithSet,
 				ItemFinder: loaders.ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff,
 				// ItemFinder: loaders.ItemFinder_ThroneStrengthPlateTank_RadenOnly,
 				SubstituteItems:         substituteItemsMiti,

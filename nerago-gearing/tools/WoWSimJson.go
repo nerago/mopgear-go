@@ -9,7 +9,7 @@ import (
 	"paladin_gearing_go/util"
 )
 
-func WowSimJson_Write(equip *items.FullEquipMap, model *model.Model, printer *util.PrintRecorder) {
+func WowSimJson_Write(equip *items.FullEquipMap, model *model.Model, printer *util.PrintRecorder) string {
 	inputFile := model.ReferenceGearFile
 	allBytes, err := os.ReadFile(inputFile)
 	if err != nil {
@@ -17,10 +17,13 @@ func WowSimJson_Write(equip *items.FullEquipMap, model *model.Model, printer *ut
 	}
 
 	var mainObject map[string]any
-	json.Unmarshal(allBytes, &mainObject)
+	err = json.Unmarshal(allBytes, &mainObject)
+	if err != nil {
+		panic(err)
+	}
 
-	itemArray := make([]any, 0, 16)
-	for item := range equip.AllItemSeq() {
+	itemArray := make([]any, 0, items.ITEM_SLOT_COUNT)
+	for item := range equip.AllItemSeqPairedConsistent() {
 		itemArray = append(itemArray, makeItemObject(item, model.Professions))
 	}
 
@@ -42,6 +45,7 @@ func WowSimJson_Write(equip *items.FullEquipMap, model *model.Model, printer *ut
 
 	asText := string(allBytes)
 	printer.Println(asText)
+	return asText
 }
 
 func makeItemObject(item *items.FullItem, profession model.ProfessionInfo) map[string]any {

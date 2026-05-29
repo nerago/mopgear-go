@@ -17,7 +17,7 @@ type WeightInput struct {
 	SimResult simulate.SimResultStats
 }
 
-// how about noset - tortos, horridon, ironqon, jikun, durumu
+// now about noset - tortos, horridon, ironqon, jikun, durumu
 var NewStatWeights_generalMiti = simulate.SimResultStats{
 	DPS:   0.3,
 	DEATH: 0.1,

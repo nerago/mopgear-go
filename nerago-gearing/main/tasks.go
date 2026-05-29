@@ -32,7 +32,7 @@ func basicReforge(printer *util.PrintRecorder) {
 func findBestSubjectToCommon(printer *util.PrintRecorder) {
 	model := model.Model_PallyProtMitigation_WithSet()
 
-	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationSet, &model, setup.MissingEnchant_Panic, printer)
+	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationWithSet, &model, setup.MissingEnchant_Panic, printer)
 
 	for _, itemId := range substituteItemsMiti {
 		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
@@ -207,7 +207,7 @@ func testSimA(printer *util.PrintRecorder) {
 }
 func testSimB(printer *util.PrintRecorder) {
 	model := model.Model_PallyProtMitigation_WithSet()
-	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationSet, &model, setup.MissingEnchant_Panic, printer)
+	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationWithSet, &model, setup.MissingEnchant_Panic, printer)
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions:         &itemOptions,
 		Model:               &model,
@@ -255,7 +255,7 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 	common := commonComboCurrent()
 	addGearFileToCommon(common, files.GearFileRet, &model, printer)
 	addGearFileToCommon(common, files.GearFileProtDps, &model, printer)
-	addGearFileToCommon(common, files.GearFileProtMitigationSet, &model, printer)
+	addGearFileToCommon(common, files.GearFileProtMitigationWithSet, &model, printer)
 	restrictOptionsToCommon(common, &itemOptions)
 
 	restrictSlotToId(&itemOptions, items.Equip_Ring1, 96481)
@@ -288,7 +288,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 
 	// model := model.Model_PallyProtMitigation_NoSet()
 	model := model.Model_PallyProtMitigation_WithSet()
-	startGear := files.GearFileProtMitigationSet
+	startGear := files.GearFileProtMitigationWithSet
 
 	printer.Println("READ existing")
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &model, printer)
@@ -400,7 +400,7 @@ func trinketSims(printer *util.PrintRecorder) {
 		{
 			"with_set",
 			model.Model_PallyProtMitigation_WithSet(),
-			files.GearFileProtMitigationSet,
+			files.GearFileProtMitigationWithSet,
 		}, {
 			"no_set",
 			model.Model_PallyProtMitigation_NoSet(),
@@ -525,7 +525,7 @@ func basicListRatingEach(printer *util.PrintRecorder) {
 		{
 			"with_set",
 			model.Model_PallyProtMitigation_WithSet(),
-			files.GearFileProtMitigationSet,
+			files.GearFileProtMitigationWithSet,
 		},
 	}
 
@@ -575,7 +575,7 @@ func solveForRatings(printer *util.PrintRecorder) {
 		{
 			"with_set",
 			model.Model_PallyProtMitigation_WithSet(),
-			files.GearFileProtMitigationSet,
+			files.GearFileProtMitigationWithSet,
 		},
 	}
 

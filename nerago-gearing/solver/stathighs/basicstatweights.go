@@ -132,7 +132,7 @@ func (basic *BasicStatWeightProcess) unitValuesToCalcDetailedRatings() {
 	// detailweight_dps_haste * unit_dps_str - detailweight_dps_str * unit_dps_haste = 0
 	// detailweight_dps_haste * unit_dps_str - detailweight_dps_str * unit_dps_haste + offset = 0  (allow small offset to optimise on)
 
-	for simType, lookupStat := range basic.unitStatValues.SeqGroupsKey2() {
+	for simType, lookupStat := range basic.unitStatValues.SeqGroupsKey2Lookup() {
 		unitValueBase := lookupStat(c_baseStatType)
 		detailWeightBase := basic.detailedWeights.GetOrPanic(c_baseStatType, simType)
 		for _, thisStatType := range G_RequiredStats {

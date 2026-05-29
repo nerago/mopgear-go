@@ -17,11 +17,11 @@ const (
 
 	BagsFilename = `nerago-gearing/files/gear/bags-gear.json`
 
-	GearFileProtMitigationSet   = `nerago-gearing/files/gear/gear-prot-miti-set.json`
-	GearFileProtMitigationNoSet = `nerago-gearing/files/gear/gear-prot-miti-noset.json`
-	GearFileProtCompromise      = `nerago-gearing/files/gear/gear-prot-compromise.json`
-	GearFileProtDps             = `nerago-gearing/files/gear/gear-prot-dps.json`
-	GearFileRet                 = `nerago-gearing/files/gear/gear-ret.json`
+	GearFileProtMitigationWithSet = `nerago-gearing/files/gear/gear-prot-miti-set.json`
+	GearFileProtMitigationNoSet   = `nerago-gearing/files/gear/gear-prot-miti-noset.json`
+	GearFileProtCompromise        = `nerago-gearing/files/gear/gear-prot-compromise.json`
+	GearFileProtDps               = `nerago-gearing/files/gear/gear-prot-dps.json`
+	GearFileRet                   = `nerago-gearing/files/gear/gear-ret.json`
 
 	SimProtMitigation = `nerago-gearing/files/cli/example-prot-miti.json`
 	SimProtDps        = `nerago-gearing/files/cli/example-prot-dps.json`

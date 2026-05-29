@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	C_DebugHighs         = true
+	C_HighsToConsole     = true
+	C_DebugHighs         = false
 	C_DiagnoseInfeasible = false
 	c_threads            = 6
 )
@@ -154,7 +155,7 @@ func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 	// verifyNoError(solver.SetFloatOption("time_limit", 300))
 
 	verifyNoError(solver.SetStringOption("log_file", logfile))
-	verifyNoError(solver.SetBoolOption("log_to_console", C_DebugHighs && !input.NoOutput))
+	verifyNoError(solver.SetBoolOption("log_to_console", (C_DebugHighs || C_HighsToConsole) && !input.NoOutput))
 	if C_DebugHighs {
 		verifyNoError(solver.SetIntOption("log_dev_level", 3))
 	} else {

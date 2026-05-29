@@ -18,10 +18,10 @@ const (
 
 func MakeTestOptions() (*items.SolvableOptionsMap, *model.Model) {
 	options := items.SolvableOptionsMap{}
-	options[items.Equip_Head] = []items.SolvableItem{testItem(100, 11)}
-	options[items.Equip_Neck] = []items.SolvableItem{testItem(200, 22), testItem(201, 23)}
-	options[items.Equip_Shoulder] = []items.SolvableItem{testItem(300, 31), testItem(301, 32), testItem(302, 33), testItem(303, 32), testItem(304, 31)}
-	options[items.Equip_Back] = []items.SolvableItem{testItem(400, 44), testItem(401, 43), testItem(402, 42), testItem(403, 41)}
+	options.Set(items.Equip_Head, []items.SolvableItem{testItem(100, 11)})
+	options.Set(items.Equip_Neck, []items.SolvableItem{testItem(200, 22), testItem(201, 23)})
+	options.Set(items.Equip_Shoulder, []items.SolvableItem{testItem(300, 31), testItem(301, 32), testItem(302, 33), testItem(303, 32), testItem(304, 31)})
+	options.Set(items.Equip_Back, []items.SolvableItem{testItem(400, 44), testItem(401, 43), testItem(402, 42), testItem(403, 41)})
 	model := model.Model_Testing()
 	return &options, &model
 }
@@ -95,11 +95,11 @@ func verifyUniqueCheckValid(t *testing.T, options *items.SolvableOptionsMap) {
 }
 
 func recurAdd(allSets []items.SolvableItemSet, options *items.SolvableOptionsMap, slot int, equip items.SolvableEquipMap) []items.SolvableItemSet {
-	if slot >= len(options) {
+	if slot >= items.ITEM_SLOT_COUNT {
 		set := items.SolvableItemSet_Of(equip)
 		return append(allSets, set)
-	} else if len(options[slot]) > 0 {
-		for _, item := range options[slot] {
+	} else if slotOptions := options.Get(items.SlotEquip(slot)); len(slotOptions) > 0 {
+		for _, item := range slotOptions {
 			equip[slot] = &item
 			allSets = recurAdd(allSets, options, slot+1, equip)
 		}
