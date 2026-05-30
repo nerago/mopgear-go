@@ -101,34 +101,28 @@ func (build *ConstraintOrBuilder) FinishAndApply(input *InputBuilder) {
 	zeroIfNone.Finish(input, 0, C_PlusInf)
 }
 
-// func absoluteValue(input *InputBuilder, inputVar, outputVar ColumnIndex, rangeHigh float64) {
-// 	isNegativeCol := input.CreateColumnBool()
-// 	negativeCheck := ConstraintRowBuild{}
-// 	negativeCheck.Add(inputVar, 1)
-// 	negativeCheck.Add(isNegativeCol, rangeHigh)
-// 	negativeCheck.Finish(input, 0, rangeHigh)
+func AbsoluteValue(input *InputBuilder, inputVar, outputVar ColumnIndex) {
+	negative := ConstraintRowBuild{Debug: "AbsoluteValueNegative"}
+	negative.Add(inputVar, 1)
+	negative.Add(outputVar, 1)
+	negative.Finish(input, 0, C_PlusInf)
 
-// 	setIfNegative := ConstraintRowBuild{}
-// 	setIfNegative.Add(inputVar, 1)
-// 	setIfNegative.Add(outputVar, 1)
-// 	setIfNegative.Add(isNegativeCol, rangeHigh)
-// 	setIfNegative.Finish(input, 0, rangeHigh)
+	positive := ConstraintRowBuild{Debug: "AbsoluteValuePositive"}
+	positive.Add(inputVar, 1)
+	positive.Add(outputVar, -1)
+	positive.Finish(input, C_MinusInf, 0)
+}
 
-// 	setIfPositive := ConstraintRowBuild{}
-// 	setIfPositive.Add(inputVar, -1)
-// 	setIfPositive.Add(outputVar, 1)
-// 	setIfPositive.Add(isNegativeCol, -rangeHigh)
-// 	setIfPositive.Finish(input, -rangeHigh, 0)
-// }
-
-func AbsoluteValue2(input *InputBuilder, inputVar, outputVar ColumnIndex) {
-	setIfNegative := ConstraintRowBuild{Debug: "AbsoluteValue2"}
+func AbsoluteValue_WithToggle(input *InputBuilder, inputVar, outputVar, toggleVar ColumnIndex, rangeHigh float64) {
+	setIfNegative := ConstraintRowBuild{}
 	setIfNegative.Add(inputVar, 1)
 	setIfNegative.Add(outputVar, 1)
-	setIfNegative.Finish(input, 0, C_PlusInf)
+	setIfNegative.Add(toggleVar, -rangeHigh)
+	setIfNegative.Finish(input, -rangeHigh, C_PlusInf)
 
-	setIfPositive := ConstraintRowBuild{Debug: "AbsoluteValue2"}
+	setIfPositive := ConstraintRowBuild{}
 	setIfPositive.Add(inputVar, 1)
 	setIfPositive.Add(outputVar, -1)
-	setIfPositive.Finish(input, C_MinusInf, 0)
+	setIfPositive.Add(toggleVar, rangeHigh)
+	setIfPositive.Finish(input, C_MinusInf, rangeHigh)
 }

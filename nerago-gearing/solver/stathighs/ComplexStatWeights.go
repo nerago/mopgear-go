@@ -120,7 +120,7 @@ func dataEquations(inputData []WeightInput, input *utilhighs.InputBuilder, colNa
 			contributionDiffAbsOutput := input.CreateColumnForLinearObjective(highs.Continuous, 0, c_highRange, 1, 0, nil)
 			// contributionDiffAbsOutput := input.CreateColumnForLinearObjective(highs.Continuous, 0, utilhighs.C_PlusInf, 1, 0)
 			colNames = append(colNames, "contributionDiffAbsOutput")
-			utilhighs.AbsoluteValue2(input, contributionDiff, contributionDiffAbsOutput) // could maybe be narrower highRange
+			utilhighs.AbsoluteValue(input, contributionDiff, contributionDiffAbsOutput) // could maybe be narrower highRange
 			// absoluteValue(input, contributionDiff, contributionDiffAbsOutput, highRange)
 			// colNames = append(colNames, "absBool")
 		}
@@ -137,7 +137,7 @@ func dataEquations(inputData []WeightInput, input *utilhighs.InputBuilder, colNa
 		// diffAbsOutput := input.CreateColumnForLinearObjective(highs.Continuous, 0, utilhighs.C_PlusInf, 1, 1)
 		diffAbsOutput := input.CreateColumnForLinearObjective(highs.Continuous, 0, c_highRange, 1, 1, nil)
 		colNames = append(colNames, "diffAbsOutput")
-		utilhighs.AbsoluteValue2(input, scoreDiffSigned, diffAbsOutput)
+		utilhighs.AbsoluteValue(input, scoreDiffSigned, diffAbsOutput)
 		// absoluteValue(input, scoreDiffSigned, diffAbsOutput, highRange)
 		// colNames = append(colNames, "absBool")
 	}
@@ -201,7 +201,7 @@ func dataCompareInPairsEquations_Single(input *utilhighs.InputBuilder, data1, da
 		offset := input.CreateColumnGeneral(highs.Continuous, -highRange, highRange, nil)
 		simRow.Add(offset, 1)
 		offsetAbs := input.CreateColumnForLinearObjective(highs.Continuous, 0, utilhighs.C_PlusInf, 1, 2, nil)
-		utilhighs.AbsoluteValue2(input, offset, offsetAbs)
+		utilhighs.AbsoluteValue(input, offset, offsetAbs)
 
 		var simDiff float64
 		if simType.IsHighGood() {

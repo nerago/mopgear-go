@@ -1,0 +1,139 @@
+package stathighs
+
+import (
+	"paladin_gearing_go/simulate"
+	"paladin_gearing_go/solver/utilhighs"
+	"paladin_gearing_go/stats"
+	"paladin_gearing_go/util"
+
+	"github.com/bartolsthoorn/gohighs/highs"
+)
+
+// STR example: 30554
+const c_statRangeHigh = 50000
+
+// TPS example: 1957667
+const c_simRangeHigh = 5000000
+
+const c_fittingDifferenceOutput = 1
+
+// so we want to define a line of best fit for each stat/sim
+// but also only for certain ranges of each stat, others excluded
+
+// question is do we work each stat separately, even though ranges may not line up
+// yes, we can always compose the individual parts later
+
+// but do we allow ranges on the other stats we're not checking
+// we might end up very fragmented and noisy if we do
+
+// do we consider simType separately? why not - some aren't correlated, going to hard enough to reconcile across one dimension
+//                                    why - some are highly correlated
+
+// we need to consider that we're developing a function that correlates to the sim output, not predicts it in any summation sense
+// maybe suggests start with the individual ones, less tempting to try to hit totals
+
+type FittingSingleStatWeightProcess struct {
+	printer *util.PrintRecorder
+	input   *utilhighs.InputBuilder
+
+	inputData []fittingSample
+
+	lineSlope        utilhighs.ColumnIndex
+	lineOffset       utilhighs.ColumnIndex
+	minimumThreshold utilhighs.ColumnIndex
+	maximumThreshold utilhighs.ColumnIndex
+
+	includeCountRow utilhighs.ConstraintRowBuild
+}
+
+type FittingSingleStatResult struct {
+	lineSlope  float64
+	lineOffset float64
+	minimum    float64
+	maximum    float64
+}
+
+type fittingSample struct {
+	statValue float64
+	simResult float64
+}
+
+func (fit *FittingSingleStatWeightProcess) Init(printer *util.PrintRecorder) {
+	fit.printer = printer
+	fit.input = new(utilhighs.InputBuilder)
+	fit.input.Minimise = true
+}
+
+func (fit *FittingSingleStatWeightProcess) SupplyData(inputData []fittingSample) {
+	fit.inputData = inputData
+}
+
+func (fit *FittingSingleStatWeightProcess) SupplyDataFromStandard(inputData []WeightInput, stat stats.StatType, sim simulate.SimResultType) {
+	fit.inputData = util.CastSliceAsNew(inputData, func(input *WeightInput) fittingSample {
+		return fittingSample{
+			float64(input.TotalStat.Get(stat)),
+			input.SimResult.GetFriendly(sim),
+		}
+	})
+}
+
+func (fit *FittingSingleStatWeightProcess) Run() FittingSingleStatResult {
+	fit.lineSlope = fit.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "slope"})
+	fit.lineOffset = fit.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "offset"})
+	fit.minimumThreshold = fit.input.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "minimum"})
+	fit.maximumThreshold = fit.input.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "maximum"})
+
+	for _, sample := range fit.inputData {
+		fit.addSample(sample)
+	}
+
+	return FittingSingleStatResult{}
+}
+
+func (fit *FittingSingleStatWeightProcess) addSample(sample fittingSample) {
+	includeColumn := fit.sampleIncludeToggleColumn(sample)
+	fit.sampleToFitLine(sample, includeColumn)
+}
+
+func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample fittingSample) utilhighs.ColumnIndex {
+	includeColumn := fit.input.CreateColumnBool(utilhighs.DebugString{Text: "include"})
+	fit.includeCountRow.Add(includeColumn, 1)
+
+	// if include:   stat - max <= 0     ->>      stat <= max
+	// if not:          0 - max <= 0     ->>      max >= 0, (max free)
+	includeRowMax := utilhighs.ConstraintRowBuild{Debug: "includeRowMax"}
+	includeRowMax.Add(includeColumn, sample.statValue)
+	includeRowMax.Add(fit.maximumThreshold, -1)
+	includeRowMax.Finish(fit.input, utilhighs.C_MinusInf, 0)
+
+	// if include: range + min <= range + stat  ->>  min <= stat
+	// if not:             min <= range + stat  ->>  min is free
+	includeRowMin := utilhighs.ConstraintRowBuild{Debug: "includeRowMin"}
+	includeRowMin.Add(includeColumn, c_statRangeHigh)
+	includeRowMin.Add(fit.minimumThreshold, 1)
+	includeRowMin.Finish(fit.input, utilhighs.C_MinusInf, c_statRangeHigh+sample.statValue)
+
+	return includeColumn
+}
+
+func (fit *FittingSingleStatWeightProcess) sampleToFitLine(sample fittingSample, toggle utilhighs.ColumnIndex) {
+	difference := fit.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "difference"})
+	differenceAbs := fit.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, c_fittingDifferenceOutput, utilhighs.DebugString{Text: "differenceAbs"})
+
+	// i'd like lineSlope to look like sim/stat
+	// i don't really care what lineOffset looks like, don't expect to use it at all
+	// basic line formula:               y = lineSlope * x + lineOffset
+	//                      y - lineOffset = lineSlope * x
+	//                  y/x - lineOffset/x = lineSlope
+	//          sim/stat - lineOffset/stat = lineSlope
+	//                            sim/stat = lineSlope + lineOffset/stat
+	//                                 sim = lineSlope*stat + lineOffset
+	sampleRow := utilhighs.ConstraintRowBuild{Debug: "sampleRow"}
+	sampleRow.Add(fit.lineSlope, sample.statValue)
+	sampleRow.Add(fit.lineOffset, 1)
+	sampleRow.Add(difference, 1) // now technically this is a "vertical" difference, not a anything squared, but hopefully proportional...
+	sampleRow.Finish(fit.input, sample.simResult, sample.simResult)
+
+	// new absolute val with toggle, this is its test
+	utilhighs.AbsoluteValue_WithToggle(fit.input, difference, differenceAbs, toggle, c_simRangeHigh)
+}

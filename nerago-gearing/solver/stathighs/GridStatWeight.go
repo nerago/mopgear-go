@@ -219,7 +219,7 @@ func (grid *GridStatWeightProcess) unitValueCombinationAddToModel(baseUnitSample
 
 	// take absolute value, output for objective function
 	offsetAbs := grid.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "OFFSET ABS " + debugText})
-	utilhighs.AbsoluteValue2(&grid.input, offsetSigned, offsetAbs)
+	utilhighs.AbsoluteValue(&grid.input, offsetSigned, offsetAbs)
 }
 
 func (grid *GridStatWeightProcess) calcTotalRatings() {

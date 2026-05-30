@@ -249,7 +249,9 @@ func (selgrid *SelectiveGridStatWeightProcess) unitValueCombinationAddToModel(ba
 
 	// take absolute value
 	offsetAbs := selgrid.input.CreateColumnGeneral(highs.Continuous, 0, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "OFFSET ABS " + debugText})
-	utilhighs.AbsoluteValue2(&selgrid.input, offsetSigned, offsetAbs)
+	utilhighs.AbsoluteValue(&selgrid.input, offsetSigned, offsetAbs)
+
+	// TODO use AbsoluteValue_WithToggle
 
 	// output for objective function
 	output := selgrid.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "OUTPUT " + debugText})
