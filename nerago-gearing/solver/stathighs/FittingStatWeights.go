@@ -106,6 +106,11 @@ func (fit *FittingSingleStatWeightProcess) Run() FittingSingleStatResult {
 	fit.minimumThreshold = fit.input.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "minimum"})
 	fit.maximumThreshold = fit.input.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "maximum"})
 
+	maxVsMin := utilhighs.ConstraintRowBuild{}
+	maxVsMin.Add(fit.minimumThreshold, -1)
+	maxVsMin.Add(fit.maximumThreshold, 1)
+	maxVsMin.Finish(fit.input, 0, utilhighs.C_PlusInf)
+
 	// setmin := utilhighs.ConstraintRowBuild{}
 	// setmin.Add(fit.minimumThreshold, 1)
 	// setmin.Finish(fit.input, 4000, 4000)
@@ -170,6 +175,12 @@ func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample *fit
 	isOverMinimum := fit.makeIsOverMinimum(sample.statValue)
 	isUnderMaximum := fit.makeIsUnderMaximum(sample.statValue)
 
+	and := utilhighs.ContraintAndBuilder{}
+	and.AddInput(isOverMinimum)
+	and.AddInput(isUnderMaximum)
+	and.SetOutput(includeColumn)
+	and.FinishAndApply(fit.input)
+
 	return includeColumn
 }
 
@@ -186,16 +197,6 @@ func (fit *FittingSingleStatWeightProcess) makeIsOverMinimum(statValue float64) 
 	checkIsOverMin.Add(fit.minimumThreshold, 1)
 	checkIsOverMin.Finish(fit.input, utilhighs.C_MinusInf, c_statRangeHigh+statValue)
 
-	// SEEMS UNDOABLE, even though parallels opposite verions
-	// if overmin:      1*stat - min >= 0  ->>  stat >= min
-	// if !overmin:     0*stat - min >= 0  ->>  min <= 0  ->>  min is free
-	// if stat > min:   x*stat - min >= 0  ->>  x*range <= range + stat - min  ->>  x*range <= range + small_positive   ->>   x = 0 or 1
-	// if stat < min:   x*stat - min >= 0  ->>  x*range <= range + stat - min  ->>  x*range <= range + small_negative   ->>   x = 0
-	// checkIsOverMin := utilhighs.ConstraintRowBuild{Debug: "checkIsOverMin"}
-	// checkIsOverMin.Add(isOverMinimum, -statValue)
-	// checkIsOverMin.Add(fit.minimumThreshold, 1)
-	// checkIsOverMin.Finish(fit.input, utilhighs.C_MinusInf, 0)
-
 	//   min - stat + x.range >= 0   ->>   min + x.range >= stat
 	// if stat > min  ->>  min - stat + x.range >= 0  ->>  small_negative + x.range >= 0  ->>  x=1
 	// if stat < min  ->>  min - stat + x.range >= 0  ->>  small_positive + x.range >= 0  ->>  x=0 or 1
@@ -204,7 +205,7 @@ func (fit *FittingSingleStatWeightProcess) makeIsOverMinimum(statValue float64) 
 	setIfOverMin := utilhighs.ConstraintRowBuild{Debug: "setIfOverMin"}
 	setIfOverMin.Add(fit.minimumThreshold, 1)
 	setIfOverMin.Add(isOverMinimum, c_statRangeHigh)
-	setIfOverMin.Finish(fit.input, utilhighs.C_MinusInf, statValue)
+	setIfOverMin.Finish(fit.input, statValue, utilhighs.C_PlusInf)
 
 	return isOverMinimum
 }
