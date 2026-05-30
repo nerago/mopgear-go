@@ -33,6 +33,19 @@ const c_outputIncludePerInclude = -1
 // we need to consider that we're developing a function that correlates to the sim output, not predicts it in any summation sense
 // maybe suggests start with the individual ones, less tempting to try to hit totals
 
+type FittingEachStatWeightProcess struct {
+	printer *util.PrintRecorder
+	input   *utilhighs.InputBuilder
+
+	each util.MapMap[stats.StatType, simulate.SimResultType, FittingSingleStatWeightProcess]
+}
+
+func (fiteach *FittingEachStatWeightProcess) Init(printer *util.PrintRecorder) {
+	fiteach.printer = printer
+	fiteach.input = new(utilhighs.InputBuilder)
+	fiteach.input.Minimise = true
+}
+
 type FittingSingleStatWeightProcess struct {
 	printer *util.PrintRecorder
 	input   *utilhighs.InputBuilder
@@ -93,13 +106,18 @@ func (fit *FittingSingleStatWeightProcess) Run() FittingSingleStatResult {
 	fit.minimumThreshold = fit.input.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "minimum"})
 	fit.maximumThreshold = fit.input.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "maximum"})
 
-	setmin := utilhighs.ConstraintRowBuild{}
-	setmin.Add(fit.minimumThreshold, 1)
-	setmin.Finish(fit.input, 4000, 4000)
+	// setmin := utilhighs.ConstraintRowBuild{}
+	// setmin.Add(fit.minimumThreshold, 1)
+	// setmin.Finish(fit.input, 4000, 4000)
 
-	setmax := utilhighs.ConstraintRowBuild{}
-	setmax.Add(fit.maximumThreshold, 1)
-	setmax.Finish(fit.input, 6000, 6000)
+	// setmax := utilhighs.ConstraintRowBuild{}
+	// setmax.Add(fit.maximumThreshold, 1)
+	// setmax.Finish(fit.input, 6000, 6000)
+
+	// so we could introduce rows to set min/max to specific entries that exact match
+	// could make this diffcult with likely duplicates
+	// but otherwise might make the math easier?
+	// likely that vertex search will do it anyway
 
 	for sample := range util.ForPointer(fit.inputData) {
 		fit.addSample(sample)
@@ -149,22 +167,107 @@ func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample *fit
 	fit.includeColumns = append(fit.includeColumns, includeColumn)
 	sample.includeColumn = includeColumn
 
+	isOverMinimum := fit.makeIsOverMinimum(sample.statValue)
+	isUnderMaximum := fit.makeIsUnderMaximum(sample.statValue)
+
+	return includeColumn
+}
+
+func (fit *FittingSingleStatWeightProcess) makeIsOverMinimum(statValue float64) utilhighs.ColumnIndex {
+	isOverMinimum := fit.input.CreateColumnBool(utilhighs.DebugString{Text: "isOverMinimum"})
+
+	// ORIGINAL
+	// if overmin:      1*range + min <= range + stat  ->>  min <= stat
+	// if !overmin:     0*range + min <= range + stat  ->>  min is free
+	// if stat > min:   x*range + min <= range + stat  ->>  x*range <= range + stat - min  ->>  x*range <= range + small_positive   ->>   x = 0 or 1
+	// if stat < min:   x*range + min <= range + stat  ->>  x*range <= range + stat - min  ->>  x*range <= range + small_negative   ->>   x = 0
+	checkIsOverMin := utilhighs.ConstraintRowBuild{Debug: "checkIsOverMin"}
+	checkIsOverMin.Add(isOverMinimum, c_statRangeHigh)
+	checkIsOverMin.Add(fit.minimumThreshold, 1)
+	checkIsOverMin.Finish(fit.input, utilhighs.C_MinusInf, c_statRangeHigh+statValue)
+
+	// SEEMS UNDOABLE, even though parallels opposite verions
+	// if overmin:      1*stat - min >= 0  ->>  stat >= min
+	// if !overmin:     0*stat - min >= 0  ->>  min <= 0  ->>  min is free
+	// if stat > min:   x*stat - min >= 0  ->>  x*range <= range + stat - min  ->>  x*range <= range + small_positive   ->>   x = 0 or 1
+	// if stat < min:   x*stat - min >= 0  ->>  x*range <= range + stat - min  ->>  x*range <= range + small_negative   ->>   x = 0
+	// checkIsOverMin := utilhighs.ConstraintRowBuild{Debug: "checkIsOverMin"}
+	// checkIsOverMin.Add(isOverMinimum, -statValue)
+	// checkIsOverMin.Add(fit.minimumThreshold, 1)
+	// checkIsOverMin.Finish(fit.input, utilhighs.C_MinusInf, 0)
+
+	//   min - stat + x.range >= 0   ->>   min + x.range >= stat
+	// if stat > min  ->>  min - stat + x.range >= 0  ->>  small_negative + x.range >= 0  ->>  x=1
+	// if stat < min  ->>  min - stat + x.range >= 0  ->>  small_positive + x.range >= 0  ->>  x=0 or 1
+	// if overmin     ->>  min - stat + 1.range >= 0  ->>  min >= stat - range   ->>   min is free
+	// if !overmin    ->>  min - stat + 0.range >= 0  ->>  min >= stat    ->>   min is free
+	setIfOverMin := utilhighs.ConstraintRowBuild{Debug: "setIfOverMin"}
+	setIfOverMin.Add(fit.minimumThreshold, 1)
+	setIfOverMin.Add(isOverMinimum, c_statRangeHigh)
+	setIfOverMin.Finish(fit.input, utilhighs.C_MinusInf, statValue)
+
+	return isOverMinimum
+}
+
+func (fit *FittingSingleStatWeightProcess) makeIsUnderMaximum(statValue float64) utilhighs.ColumnIndex {
+	isUnderMaximum := fit.input.CreateColumnBool(utilhighs.DebugString{Text: "isUnderMaximum"})
+
+	// if undermax:    1*stat - max <= 0     ->>      stat <= max
+	// if !undermax:   0*stat - max <= 0     ->>      max >= 0, (max free)
+	// if stat <= max   ->>   x.stat - max <= 0    ->>     x.stat <= max   (x is free)
+	// if stat > max    ->>   x.stat - max <= 0    ->>     x=0
+	checkIsUnderMax := utilhighs.ConstraintRowBuild{Debug: "checkIsUnderMax"}
+	checkIsUnderMax.Add(isUnderMaximum, statValue)
+	checkIsUnderMax.Add(fit.maximumThreshold, -1)
+	checkIsUnderMax.Finish(fit.input, utilhighs.C_MinusInf, 0)
+
+	//    max - stat - x.range <= 0    ->>     max - x.range <= stat
+	// if stat < max    ->>   max - stat - x.range <= 0   ->>   small_positive - x.range <= 0   ->>   small_positive <= x.range   ->>   x=1
+	// if stat > max    ->>   max - stat - x.range <= 0   ->>   small_negative - x.range <= 0   ->>   small_negative <= x.range   ->>   x=0 or 1
+	// if stat == max   ->>   max - stat - x.range <= 0   ->>   0 - x.range <= 0   ->>   0 <= x.range   ->> x=0 or 1
+	// if undermax      ->>   max - stat - 1.range <= 0   ->>   max <= 1.range + stat  ->>  max is free
+	// if !undermax     ->>   max - stat - 0.range <= 0   ->>   max - stat <= 0   ->>   max <= stat
+	setIfUnderMax := utilhighs.ConstraintRowBuild{Debug: "setIfUnderMax"}
+	setIfUnderMax.Add(fit.maximumThreshold, 1)
+	setIfUnderMax.Add(isUnderMaximum, -c_statRangeHigh)
+	setIfUnderMax.Finish(fit.input, utilhighs.C_MinusInf, statValue)
+
+	return isUnderMaximum
+}
+
+func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn_old(sample *fittingSample) utilhighs.ColumnIndex {
+	includeColumn := fit.input.CreateColumnWithOutput(highs.Integer, 0, 1, c_outputIncludePerInclude, utilhighs.DebugString{Text: "include"})
+	fit.includeCountRow.Add(includeColumn, 1)
+	fit.includeColumns = append(fit.includeColumns, includeColumn)
+	sample.includeColumn = includeColumn
+
 	// at the moment includes work in a positive direction: only in range samples are included
 	// but the reverse direction: force all valid samples to be true, not so much
 
 	// if include:   stat - max <= 0     ->>      stat <= max
 	// if not:          0 - max <= 0     ->>      max >= 0, (max free)
-	includeRowMax := utilhighs.ConstraintRowBuild{Debug: "includeRowMax"}
-	includeRowMax.Add(includeColumn, sample.statValue)
-	includeRowMax.Add(fit.maximumThreshold, -1)
-	includeRowMax.Finish(fit.input, utilhighs.C_MinusInf, 0)
+	includedRowLessThanMax := utilhighs.ConstraintRowBuild{Debug: "includeRowMax"}
+	includedRowLessThanMax.Add(includeColumn, sample.statValue)
+	includedRowLessThanMax.Add(fit.maximumThreshold, -1)
+	includedRowLessThanMax.Finish(fit.input, utilhighs.C_MinusInf, 0)
 
 	// if include: range + min <= range + stat  ->>  min <= stat
 	// if not:             min <= range + stat  ->>  min is free
-	includeRowMin := utilhighs.ConstraintRowBuild{Debug: "includeRowMin"}
-	includeRowMin.Add(includeColumn, c_statRangeHigh)
-	includeRowMin.Add(fit.minimumThreshold, 1)
-	includeRowMin.Finish(fit.input, utilhighs.C_MinusInf, c_statRangeHigh+sample.statValue)
+	includedRowGreaterThanMin := utilhighs.ConstraintRowBuild{Debug: "includeRowMin"}
+	includedRowGreaterThanMin.Add(includeColumn, c_statRangeHigh)
+	includedRowGreaterThanMin.Add(fit.minimumThreshold, 1)
+	includedRowGreaterThanMin.Finish(fit.input, utilhighs.C_MinusInf, c_statRangeHigh+sample.statValue)
+
+	// basic rule:  min <= stat <= max
+	// basic rule:  0 <= stat-min <= max-min  how does that help?
+
+	// so want something where inclue=false, but value in range is invalid
+	// so bad:  min <= stat + 0.include <= max
+	// but only bad when its both
+
+	//
+	excludedRowNotInRange := utilhighs.ConstraintRowBuild{Debug: ""}
+	excludedRowNotInRange.Add(includeColumn, 1)
 
 	return includeColumn
 }
