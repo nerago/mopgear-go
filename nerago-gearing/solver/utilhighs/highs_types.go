@@ -77,7 +77,7 @@ func (input *InputBuilder) CreateColumnWithOutput(varType highs.VariableType, lo
 }
 
 func (input *InputBuilder) CreateColumnForLinearObjective(varType highs.VariableType, lower, upper, cost float64, linearObjectiveIndex int, debug DebugContext) ColumnIndex {
-	return input.vars.createForLinear(varType, lower, upper, cost, linearObjectiveIndex)
+	return input.vars.createForLinear(varType, lower, upper, cost, linearObjectiveIndex, debug)
 }
 
 func (input *InputBuilder) RunHighsThenDiagnose(printer *util.PrintRecorder) *highs.Solution {
@@ -261,6 +261,10 @@ func (vars *variableArrayBuilder) create(varType highs.VariableType, lower, uppe
 		panic("unexpected column cost while using linear objectives")
 	}
 
+	return vars.create_inner(varType, lower, upper, cost, debug)
+}
+
+func (vars *variableArrayBuilder) create_inner(varType highs.VariableType, lower float64, upper float64, cost float64, debug DebugContext) ColumnIndex {
 	index := len(vars.colTypes)
 	vars.colTypes = append(vars.colTypes, varType)
 	vars.colLower = append(vars.colLower, lower)
@@ -270,9 +274,11 @@ func (vars *variableArrayBuilder) create(varType highs.VariableType, lower, uppe
 	return ColumnIndex(index)
 }
 
-func (vars *variableArrayBuilder) createForLinear(varType highs.VariableType, lower float64, upper float64, cost float64, linearObjectiveIndex int) ColumnIndex {
-	if linearObjectiveIndex < len(vars.linearObjectives) {
-		columnIndex := vars.create(varType, lower, upper, 0, nil)
+func (vars *variableArrayBuilder) createForLinear(varType highs.VariableType, lower float64, upper float64, cost float64, linearObjectiveIndex int, debug DebugContext) ColumnIndex {
+	if linearObjectiveIndex == -1 && len(vars.linearObjectives) == 0 {
+		return vars.create_inner(varType, lower, upper, cost, debug)
+	} else if linearObjectiveIndex < len(vars.linearObjectives) {
+		columnIndex := vars.create_inner(varType, lower, upper, 0, debug)
 
 		linearObjective := &vars.linearObjectives[linearObjectiveIndex]
 		linearObjective.coefficientEntries = append(linearObjective.coefficientEntries, indexAndValue{columnIndex, cost})

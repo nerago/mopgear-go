@@ -425,12 +425,22 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 		}
 	}
 
-	fitting := stathighs.FittingSingleStatWeightProcess{}
-	fitting.Init(printer)
-	fitting.SetMinimumIncludeRate(0.2)
-	fitting.SupplyDataFromStandard(weightInputs[0:16], stats.Stat_Crit, simulate.Result_DPS)
-	oneWeight := fitting.Run()
-	printer.Printf("%f %f %f %f %f\n", oneWeight.LineSlope, oneWeight.LineOffset, oneWeight.Minimum, oneWeight.Maximum, oneWeight.IncludePercent)
+	// fitting := stathighs.FittingSingleStatWeightProcess{}
+	// fitting.Init(printer)
+	// fitting.SetMinimumIncludeRate(0.2)
+	// fitting.SupplyDataFromStandard(weightInputs[0:32], stats.Stat_Crit, simulate.Result_DPS)
+	// oneWeight := fitting.Run()
+	// printer.Printf("%f %f %f %f %f\n", oneWeight.LineSlope, oneWeight.LineOffset, oneWeight.Minimum, oneWeight.Maximum, oneWeight.IncludePercent)
+	// writePawnString(weights, printer)
+
+	fitting := stathighs.FittingSingleStatSegmentsProcess{}
+	// fitting.Init(printer, stats.Stat_Crit, simulate.Result_DPS)
+	fitting.Init(printer, stats.Stat_Haste, simulate.Result_DPS)
+	fitting.SupplyDataFromStandard(weightInputs)
+	weightMap := fitting.Run()
+	for _, oneWeight := range weightMap {
+		printer.Printf("%f %f %f %f %f\n", oneWeight.LineSlope, oneWeight.LineOffset, oneWeight.Minimum, oneWeight.Maximum, oneWeight.IncludePercent)
+	}
 	// writePawnString(weights, printer)
 }
 

@@ -1,22 +1,29 @@
 package stathighs
 
 import (
+	"cmp"
+	"math"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"slices"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
-// STR example: 30554
-const c_statRangeHigh = 50000
+const (
 
-// TPS example: 1957667
-const c_simRangeHigh = 5000000
+	// STR example: 30554
+	c_statRangeHigh = 50000
 
-const c_outputFittingDifference = 1
-const c_outputIncludePerInclude = -1
+	c_scaleBigSim = 1000
+	// TPS example:  1957667
+	c_simRangeHigh = 5000000 / c_scaleBigSim // we try to scale values like above towards nicer range
+
+	c_outputFittingDifference = 1
+	c_outputIncludePerInclude = -1
+)
 
 // so we want to define a line of best fit for each stat/sim
 // but also only for certain ranges of each stat, others excluded
@@ -46,12 +53,88 @@ func (fiteach *FittingEachStatWeightProcess) Init(printer *util.PrintRecorder) {
 	fiteach.input.Minimise = true
 }
 
+////////////////////////////////////////////////////////
+
+type StatRange struct {
+	Minimum float64
+	Maximum float64
+}
+
+type FittingSingleStatSegmentsProcess struct {
+	printer *util.PrintRecorder
+
+	inputData []WeightInput
+	stat      stats.StatType
+	sim       simulate.SimResultType
+
+	segments         map[StatRange]FittingSingleStatResult
+	coveredRangeLow  uint32
+	coveredRangeHigh uint32
+}
+
+func (fitseg *FittingSingleStatSegmentsProcess) Init(printer *util.PrintRecorder, stat stats.StatType, sim simulate.SimResultType) {
+	fitseg.printer = printer
+	fitseg.segments = make(map[StatRange]FittingSingleStatResult)
+	fitseg.stat = stat
+	fitseg.sim = sim
+}
+
+func (fitseg *FittingSingleStatSegmentsProcess) SupplyDataFromStandard(inputData []WeightInput) {
+	fitseg.inputData = inputData
+}
+
+func (fitseg *FittingSingleStatSegmentsProcess) Run() map[StatRange]FittingSingleStatResult {
+	fitseg.runInitial()
+
+	lowData := util.FilterSliceAsNew(fitseg.inputData, func(in *WeightInput) bool { return in.TotalStat.Get(fitseg.stat) < fitseg.coveredRangeLow })
+	fitseg.runEndSegment(lowData)
+
+	highData := util.FilterSliceAsNew(fitseg.inputData, func(in *WeightInput) bool { return in.TotalStat.Get(fitseg.stat) > fitseg.coveredRangeHigh })
+	fitseg.runEndSegment(highData)
+
+	return fitseg.segments
+}
+
+func (fitseg *FittingSingleStatSegmentsProcess) runInitial() {
+	initialFit := FittingSingleStatWeightProcess{}
+	initialFit.Init(fitseg.printer)
+	initialFit.SetMinimumIncludeRate(0.3)
+	initialFit.SupplyDataFromStandard(fitseg.inputData, fitseg.stat, fitseg.sim)
+	weight := initialFit.Run()
+
+	statRange := StatRange{weight.Minimum, weight.Maximum}
+	fitseg.segments[statRange] = weight
+
+	fitseg.coveredRangeLow = uint32(math.Round(weight.Minimum))
+	fitseg.coveredRangeHigh = uint32(math.Round(weight.Maximum))
+}
+
+func (fitseg *FittingSingleStatSegmentsProcess) runEndSegment(inputData []WeightInput) {
+	initialFit := FittingSingleStatWeightProcess{}
+	initialFit.Init(fitseg.printer)
+	initialFit.SetMinimumIncludeRate(1)
+	initialFit.SupplyDataFromStandard(inputData, fitseg.stat, fitseg.sim)
+	weight := initialFit.Run()
+
+	statRange := StatRange{weight.Minimum, weight.Maximum}
+	fitseg.segments[statRange] = weight
+
+	fitseg.coveredRangeLow = min(fitseg.coveredRangeLow, uint32(math.Round(weight.Minimum)))
+	fitseg.coveredRangeHigh = max(fitseg.coveredRangeHigh, uint32(math.Round(weight.Maximum)))
+}
+
+////////////////////////////////////////////////////////
+
 type FittingSingleStatWeightProcess struct {
 	printer *util.PrintRecorder
 	input   *utilhighs.InputBuilder
 
 	minimumIncludeRate float64
 	inputData          []fittingSample
+	inputDataSimScale  float64
+
+	linearLineDiff int
+	linearInclude  int
 
 	lineSlope        utilhighs.ColumnIndex
 	lineOffset       utilhighs.ColumnIndex
@@ -86,18 +169,30 @@ func (fit *FittingSingleStatWeightProcess) SetMinimumIncludeRate(percent float64
 	fit.minimumIncludeRate = percent
 }
 
-func (fit *FittingSingleStatWeightProcess) SupplyData(inputData []fittingSample) {
-	fit.inputData = inputData
-}
-
 func (fit *FittingSingleStatWeightProcess) SupplyDataFromStandard(inputData []WeightInput, stat stats.StatType, sim simulate.SimResultType) {
 	fit.inputData = util.CastSliceAsNew(inputData, func(input *WeightInput) fittingSample {
 		return fittingSample{
 			float64(input.TotalStat.Get(stat)),
-			input.SimResult.GetFriendly(sim),
+			scaleSimItem(input.SimResult.Get(sim), sim),
 			-1,
 		}
 	})
+	fit.inputDataSimScale = scaleSimItem(1, sim)
+}
+
+func scaleSimItem(value float64, sim simulate.SimResultType) float64 {
+	// example values 1671858.348 10396269.605 117613.197 217148.877 180.467 21.1
+	// with scaleBig  1671.858    10396.269    117.613197 217.148877
+	switch sim {
+	case simulate.Result_DPS, simulate.Result_TPS, simulate.Result_DTPS, simulate.Result_HPS:
+		return value / c_scaleBigSim
+	case simulate.Result_TMI:
+		return value
+	case simulate.Result_DEATH:
+		return value * 100
+	default:
+		panic("unknown type")
+	}
 }
 
 func (fit *FittingSingleStatWeightProcess) Run() FittingSingleStatResult {
@@ -106,23 +201,14 @@ func (fit *FittingSingleStatWeightProcess) Run() FittingSingleStatResult {
 	fit.minimumThreshold = fit.input.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "minimum"})
 	fit.maximumThreshold = fit.input.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "maximum"})
 
+	fit.input.BlendMultiObjectives = true
+	fit.linearInclude = fit.input.AddLinearObjective(20, 0, 1000, 1, 1)
+	fit.linearLineDiff = fit.input.AddLinearObjective(1, 0, 10000, 5, 2)
+
 	maxVsMin := utilhighs.ConstraintRowBuild{}
 	maxVsMin.Add(fit.minimumThreshold, -1)
 	maxVsMin.Add(fit.maximumThreshold, 1)
 	maxVsMin.Finish(fit.input, 0, utilhighs.C_PlusInf)
-
-	// setmin := utilhighs.ConstraintRowBuild{}
-	// setmin.Add(fit.minimumThreshold, 1)
-	// setmin.Finish(fit.input, 4000, 4000)
-
-	// setmax := utilhighs.ConstraintRowBuild{}
-	// setmax.Add(fit.maximumThreshold, 1)
-	// setmax.Finish(fit.input, 6000, 6000)
-
-	// so we could introduce rows to set min/max to specific entries that exact match
-	// could make this diffcult with likely duplicates
-	// but otherwise might make the math easier?
-	// likely that vertex search will do it anyway
 
 	for sample := range util.ForPointer(fit.inputData) {
 		fit.addSample(sample)
@@ -141,8 +227,8 @@ func (fit *FittingSingleStatWeightProcess) Run() FittingSingleStatResult {
 
 func (fit *FittingSingleStatWeightProcess) buildResult(solution *highs.Solution) FittingSingleStatResult {
 	result := FittingSingleStatResult{}
-	result.LineSlope = solution.ColValues[fit.lineSlope]
-	result.LineOffset = solution.ColValues[fit.lineOffset]
+	result.LineSlope = solution.ColValues[fit.lineSlope] / fit.inputDataSimScale
+	result.LineOffset = solution.ColValues[fit.lineOffset] / fit.inputDataSimScale
 	result.Minimum = solution.ColValues[fit.minimumThreshold]
 	result.Maximum = solution.ColValues[fit.maximumThreshold]
 
@@ -154,7 +240,9 @@ func (fit *FittingSingleStatWeightProcess) buildResult(solution *highs.Solution)
 	}
 	result.IncludePercent = float64(includeCount) / float64(len(fit.inputData))
 
-	for sample := range util.ForPointer(fit.inputData) {
+	inputSorted := slices.Clone(fit.inputData)
+	slices.SortFunc(inputSorted, func(a, b fittingSample) int { return cmp.Compare(a.statValue, b.statValue) })
+	for _, sample := range inputSorted {
 		fit.printer.Printf("INC %f %f\n", sample.statValue, solution.ColValues[sample.includeColumn])
 	}
 
@@ -167,7 +255,7 @@ func (fit *FittingSingleStatWeightProcess) addSample(sample *fittingSample) {
 }
 
 func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample *fittingSample) utilhighs.ColumnIndex {
-	includeColumn := fit.input.CreateColumnWithOutput(highs.Integer, 0, 1, c_outputIncludePerInclude, utilhighs.DebugString{Text: "include"})
+	includeColumn := fit.input.CreateColumnForLinearObjective(highs.Integer, 0, 1, c_outputIncludePerInclude, fit.linearInclude, utilhighs.DebugString{Text: "include"})
 	fit.includeCountRow.Add(includeColumn, 1)
 	fit.includeColumns = append(fit.includeColumns, includeColumn)
 	sample.includeColumn = includeColumn
@@ -184,6 +272,7 @@ func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample *fit
 	return includeColumn
 }
 
+// actually equal or greater than minimum
 func (fit *FittingSingleStatWeightProcess) makeIsOverMinimum(statValue float64) utilhighs.ColumnIndex {
 	isOverMinimum := fit.input.CreateColumnBool(utilhighs.DebugString{Text: "isOverMinimum"})
 
@@ -192,6 +281,7 @@ func (fit *FittingSingleStatWeightProcess) makeIsOverMinimum(statValue float64) 
 	// if !overmin:     0*range + min <= range + stat  ->>  min is free
 	// if stat > min:   x*range + min <= range + stat  ->>  x*range <= range + stat - min  ->>  x*range <= range + small_positive   ->>   x = 0 or 1
 	// if stat < min:   x*range + min <= range + stat  ->>  x*range <= range + stat - min  ->>  x*range <= range + small_negative   ->>   x = 0
+	// if stat == min:  x*range + min <= range + stat  ->>  x*range <= range   ->>   x = 0 or 1
 	checkIsOverMin := utilhighs.ConstraintRowBuild{Debug: "checkIsOverMin"}
 	checkIsOverMin.Add(isOverMinimum, c_statRangeHigh)
 	checkIsOverMin.Add(fit.minimumThreshold, 1)
@@ -200,16 +290,19 @@ func (fit *FittingSingleStatWeightProcess) makeIsOverMinimum(statValue float64) 
 	//   min - stat + x.range >= 0   ->>   min + x.range >= stat
 	// if stat > min  ->>  min - stat + x.range >= 0  ->>  small_negative + x.range >= 0  ->>  x=1
 	// if stat < min  ->>  min - stat + x.range >= 0  ->>  small_positive + x.range >= 0  ->>  x=0 or 1
+	// if stat == min  ->> min - stat + x.range >= 1 ->>  x.range >= 1  ->> x=1
 	// if overmin     ->>  min - stat + 1.range >= 0  ->>  min >= stat - range   ->>   min is free
 	// if !overmin    ->>  min - stat + 0.range >= 0  ->>  min >= stat    ->>   min is free
+	// modifiying with the plus one for the equals case, the rest of the math should hold ok
 	setIfOverMin := utilhighs.ConstraintRowBuild{Debug: "setIfOverMin"}
 	setIfOverMin.Add(fit.minimumThreshold, 1)
 	setIfOverMin.Add(isOverMinimum, c_statRangeHigh)
-	setIfOverMin.Finish(fit.input, statValue, utilhighs.C_PlusInf)
+	setIfOverMin.Finish(fit.input, statValue+1, utilhighs.C_PlusInf)
 
 	return isOverMinimum
 }
 
+// actually equal or less than maximum
 func (fit *FittingSingleStatWeightProcess) makeIsUnderMaximum(statValue float64) utilhighs.ColumnIndex {
 	isUnderMaximum := fit.input.CreateColumnBool(utilhighs.DebugString{Text: "isUnderMaximum"})
 
@@ -236,46 +329,9 @@ func (fit *FittingSingleStatWeightProcess) makeIsUnderMaximum(statValue float64)
 	return isUnderMaximum
 }
 
-func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn_old(sample *fittingSample) utilhighs.ColumnIndex {
-	includeColumn := fit.input.CreateColumnWithOutput(highs.Integer, 0, 1, c_outputIncludePerInclude, utilhighs.DebugString{Text: "include"})
-	fit.includeCountRow.Add(includeColumn, 1)
-	fit.includeColumns = append(fit.includeColumns, includeColumn)
-	sample.includeColumn = includeColumn
-
-	// at the moment includes work in a positive direction: only in range samples are included
-	// but the reverse direction: force all valid samples to be true, not so much
-
-	// if include:   stat - max <= 0     ->>      stat <= max
-	// if not:          0 - max <= 0     ->>      max >= 0, (max free)
-	includedRowLessThanMax := utilhighs.ConstraintRowBuild{Debug: "includeRowMax"}
-	includedRowLessThanMax.Add(includeColumn, sample.statValue)
-	includedRowLessThanMax.Add(fit.maximumThreshold, -1)
-	includedRowLessThanMax.Finish(fit.input, utilhighs.C_MinusInf, 0)
-
-	// if include: range + min <= range + stat  ->>  min <= stat
-	// if not:             min <= range + stat  ->>  min is free
-	includedRowGreaterThanMin := utilhighs.ConstraintRowBuild{Debug: "includeRowMin"}
-	includedRowGreaterThanMin.Add(includeColumn, c_statRangeHigh)
-	includedRowGreaterThanMin.Add(fit.minimumThreshold, 1)
-	includedRowGreaterThanMin.Finish(fit.input, utilhighs.C_MinusInf, c_statRangeHigh+sample.statValue)
-
-	// basic rule:  min <= stat <= max
-	// basic rule:  0 <= stat-min <= max-min  how does that help?
-
-	// so want something where inclue=false, but value in range is invalid
-	// so bad:  min <= stat + 0.include <= max
-	// but only bad when its both
-
-	//
-	excludedRowNotInRange := utilhighs.ConstraintRowBuild{Debug: ""}
-	excludedRowNotInRange.Add(includeColumn, 1)
-
-	return includeColumn
-}
-
 func (fit *FittingSingleStatWeightProcess) sampleToFitLine(sample *fittingSample, toggle utilhighs.ColumnIndex) {
 	difference := fit.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "difference"})
-	differenceAbs := fit.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, c_outputFittingDifference, utilhighs.DebugString{Text: "differenceAbs"})
+	differenceAbs := fit.input.CreateColumnForLinearObjective(highs.Continuous, 0, utilhighs.C_PlusInf, c_outputFittingDifference, fit.linearLineDiff, utilhighs.DebugString{Text: "differenceAbs"})
 
 	// i'd like lineSlope to look like sim/stat
 	// i don't really care what lineOffset looks like, don't expect to use it at all
