@@ -15,7 +15,8 @@ const c_statRangeHigh = 50000
 // TPS example: 1957667
 const c_simRangeHigh = 5000000
 
-const c_fittingDifferenceOutput = 1
+const c_outputFittingDifference = 1
+const c_outputIncludePerInclude = -1
 
 // so we want to define a line of best fit for each stat/sim
 // but also only for certain ranges of each stat, others excluded
@@ -36,32 +37,40 @@ type FittingSingleStatWeightProcess struct {
 	printer *util.PrintRecorder
 	input   *utilhighs.InputBuilder
 
-	inputData []fittingSample
+	minimumIncludeRate float64
+	inputData          []fittingSample
 
 	lineSlope        utilhighs.ColumnIndex
 	lineOffset       utilhighs.ColumnIndex
 	minimumThreshold utilhighs.ColumnIndex
 	maximumThreshold utilhighs.ColumnIndex
+	includeColumns   []utilhighs.ColumnIndex
 
 	includeCountRow utilhighs.ConstraintRowBuild
 }
 
 type FittingSingleStatResult struct {
-	lineSlope  float64
-	lineOffset float64
-	minimum    float64
-	maximum    float64
+	LineSlope      float64
+	LineOffset     float64
+	Minimum        float64
+	Maximum        float64
+	IncludePercent float64
 }
 
 type fittingSample struct {
-	statValue float64
-	simResult float64
+	statValue     float64
+	simResult     float64
+	includeColumn utilhighs.ColumnIndex
 }
 
 func (fit *FittingSingleStatWeightProcess) Init(printer *util.PrintRecorder) {
 	fit.printer = printer
 	fit.input = new(utilhighs.InputBuilder)
 	fit.input.Minimise = true
+}
+
+func (fit *FittingSingleStatWeightProcess) SetMinimumIncludeRate(percent float64) {
+	fit.minimumIncludeRate = percent
 }
 
 func (fit *FittingSingleStatWeightProcess) SupplyData(inputData []fittingSample) {
@@ -73,6 +82,7 @@ func (fit *FittingSingleStatWeightProcess) SupplyDataFromStandard(inputData []We
 		return fittingSample{
 			float64(input.TotalStat.Get(stat)),
 			input.SimResult.GetFriendly(sim),
+			-1,
 		}
 	})
 }
@@ -83,21 +93,64 @@ func (fit *FittingSingleStatWeightProcess) Run() FittingSingleStatResult {
 	fit.minimumThreshold = fit.input.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "minimum"})
 	fit.maximumThreshold = fit.input.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "maximum"})
 
-	for _, sample := range fit.inputData {
+	setmin := utilhighs.ConstraintRowBuild{}
+	setmin.Add(fit.minimumThreshold, 1)
+	setmin.Finish(fit.input, 4000, 4000)
+
+	setmax := utilhighs.ConstraintRowBuild{}
+	setmax.Add(fit.maximumThreshold, 1)
+	setmax.Finish(fit.input, 6000, 6000)
+
+	for sample := range util.ForPointer(fit.inputData) {
 		fit.addSample(sample)
 	}
 
-	return FittingSingleStatResult{}
+	fit.includeCountRow.Finish(fit.input, float64(len(fit.inputData))*fit.minimumIncludeRate, utilhighs.C_PlusInf)
+
+	solution, log := fit.input.RunHighs()
+	fit.printer.AppendOther(log)
+	fit.printer.Println(solution.Status.String())
+
+	fit.input.DebugPrintColumns(solution, fit.printer)
+
+	return fit.buildResult(solution)
 }
 
-func (fit *FittingSingleStatWeightProcess) addSample(sample fittingSample) {
+func (fit *FittingSingleStatWeightProcess) buildResult(solution *highs.Solution) FittingSingleStatResult {
+	result := FittingSingleStatResult{}
+	result.LineSlope = solution.ColValues[fit.lineSlope]
+	result.LineOffset = solution.ColValues[fit.lineOffset]
+	result.Minimum = solution.ColValues[fit.minimumThreshold]
+	result.Maximum = solution.ColValues[fit.maximumThreshold]
+
+	includeCount := 0
+	for _, col := range fit.includeColumns {
+		if utilhighs.FloatEqualsOne(solution.ColValues[col]) {
+			includeCount++
+		}
+	}
+	result.IncludePercent = float64(includeCount) / float64(len(fit.inputData))
+
+	for sample := range util.ForPointer(fit.inputData) {
+		fit.printer.Printf("INC %f %f\n", sample.statValue, solution.ColValues[sample.includeColumn])
+	}
+
+	return result
+}
+
+func (fit *FittingSingleStatWeightProcess) addSample(sample *fittingSample) {
 	includeColumn := fit.sampleIncludeToggleColumn(sample)
 	fit.sampleToFitLine(sample, includeColumn)
 }
 
-func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample fittingSample) utilhighs.ColumnIndex {
-	includeColumn := fit.input.CreateColumnBool(utilhighs.DebugString{Text: "include"})
+func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample *fittingSample) utilhighs.ColumnIndex {
+	includeColumn := fit.input.CreateColumnWithOutput(highs.Integer, 0, 1, c_outputIncludePerInclude, utilhighs.DebugString{Text: "include"})
 	fit.includeCountRow.Add(includeColumn, 1)
+	fit.includeColumns = append(fit.includeColumns, includeColumn)
+	sample.includeColumn = includeColumn
+
+	// at the moment includes work in a positive direction: only in range samples are included
+	// but the reverse direction: force all valid samples to be true, not so much
 
 	// if include:   stat - max <= 0     ->>      stat <= max
 	// if not:          0 - max <= 0     ->>      max >= 0, (max free)
@@ -116,9 +169,9 @@ func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample fitt
 	return includeColumn
 }
 
-func (fit *FittingSingleStatWeightProcess) sampleToFitLine(sample fittingSample, toggle utilhighs.ColumnIndex) {
+func (fit *FittingSingleStatWeightProcess) sampleToFitLine(sample *fittingSample, toggle utilhighs.ColumnIndex) {
 	difference := fit.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "difference"})
-	differenceAbs := fit.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, c_fittingDifferenceOutput, utilhighs.DebugString{Text: "differenceAbs"})
+	differenceAbs := fit.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, c_outputFittingDifference, utilhighs.DebugString{Text: "differenceAbs"})
 
 	// i'd like lineSlope to look like sim/stat
 	// i don't really care what lineOffset looks like, don't expect to use it at all

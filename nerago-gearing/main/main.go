@@ -76,7 +76,7 @@ func core(printer *util.PrintRecorder) {
 	// findT5BIS(printer)
 	// findT5TrinketPermutations(printer)
 	// findT5WeightPermutations(printer)
-	statWeightsGridFromInitialT5(printer)
+	// statWeightsGridFromInitialT5(printer)
 	// basicListRatingEach(printer)
 	// solveForRatings(printer)
 	// findBestSubjectToCommon(printer)
@@ -98,6 +98,7 @@ func core(printer *util.PrintRecorder) {
 	// statWeightsFromHighAndSim(printer)
 	// statWeightsBasic(printer)
 	// statWeightsGrid(printer)
+	statWeightsFitting(printer)
 }
 
 func setupPallyMitigationSet() (items.FullOptionsMap, model.Model) {

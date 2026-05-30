@@ -238,3 +238,13 @@ func permuteRecur_Seq[T any](listsOfOptions [][]T, curr []T, yield func([]T) boo
 		return true
 	}
 }
+
+func ForPointer[T any](slice []T) iter.Seq[*T] {
+	return func(yield func(*T) bool) {
+		for i := range slice {
+			if !yield(&slice[i]) {
+				return 
+			}
+		}
+	}
+}

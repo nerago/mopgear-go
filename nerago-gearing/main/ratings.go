@@ -294,7 +294,6 @@ func generateRatingsInputFromArtificalStatOverrides_ForGrid(currentItemSet items
 	return inputList
 }
 
-
 type basicStatInput struct {
 	IncrementStat  stats.StatType
 	IncrementValue int32
@@ -384,7 +383,7 @@ func generateRatingsInputFromRealRandomSets(printer *util.PrintRecorder) ([]stat
 	return weightInputs, targetRatio
 }
 
-func statWeightsFromHighAndSim(printer *util.PrintRecorder) {
+func statWeightsComplex(printer *util.PrintRecorder) {
 	weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
 
 	// bytes, err := os.ReadFile("sim-stats-input-data.json")
@@ -405,6 +404,34 @@ func statWeightsFromHighAndSim(printer *util.PrintRecorder) {
 
 	weights := stathighs.CalcComplexStatWeights(weightInputs, targetRatio, printer)
 	writePawnString(weights, printer)
+}
+
+func statWeightsFitting(printer *util.PrintRecorder) {
+	// weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
+
+	bytes, err := os.ReadFile("sim-stats-input-data.json")
+	if err != nil {
+		panic(err)
+	}
+	var weightInputs []stathighs.WeightInput
+	err = json.Unmarshal(bytes, &weightInputs)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, entry := range weightInputs {
+		if hasteInDiscontinuityRange(entry.TotalStat.Get(stats.Stat_Haste)) {
+			printer.Println("haste in discontinuity range")
+		}
+	}
+
+	fitting := stathighs.FittingSingleStatWeightProcess{}
+	fitting.Init(printer)
+	fitting.SetMinimumIncludeRate(0.2)
+	fitting.SupplyDataFromStandard(weightInputs[0:16], stats.Stat_Crit, simulate.Result_DPS)
+	oneWeight := fitting.Run()
+	printer.Printf("%f %f %f %f %f\n", oneWeight.LineSlope, oneWeight.LineOffset, oneWeight.Minimum, oneWeight.Maximum, oneWeight.IncludePercent)
+	// writePawnString(weights, printer)
 }
 
 func statWeightsBasic(printer *util.PrintRecorder) {
@@ -470,29 +497,45 @@ func parseSimStats(str string) simulate.SimResultStats {
 	return result
 }
 
-func checkHasteRange(printer *util.PrintRecorder, currentHaste uint32, incrementBaseHaste int32, plannedIncrementTestRange int32) {
-	printer.Printf("Current gear haste %d\n", currentHaste)
-	min := int32(currentHaste) + incrementBaseHaste
-	max := int32(currentHaste) + incrementBaseHaste + plannedIncrementTestRange
-	printer.Printf("Planned simulated gear haste %d-%d\n", min, max)
-	if max > 10500 && min < 14000 {
+const c_hasteDiscontinuityStart = 10500
+const c_hasteDiscontinuityEnd = 14000
+
+func verifyHasteRange(printer *util.PrintRecorder, currentHaste uint32, incrementBaseHaste int32, plannedIncrementTestRange int32) {
+	if checkBadHasteRange(printer, currentHaste, incrementBaseHaste, plannedIncrementTestRange) {
 		panic("haste in discontinuity range")
 	}
 }
 
-func checkExpertRange(printer *util.PrintRecorder, current uint32, decrementBase int32, plannedIncrementTestRange int32) {
-	printer.Printf("Current gear expertise %d\n", current)
-	min := int32(current) - decrementBase
-	max := int32(current) - decrementBase + plannedIncrementTestRange
-	printer.Printf("Planned simulated gear expertise %d-%d\n", min, max)
-	if max > int32(requirements.TARGET_RATING_TANK) {
+func checkBadHasteRange(printer *util.PrintRecorder, currentHaste uint32, incrementBaseHaste int32, plannedIncrementTestRange int32) bool {
+	printer.Printf("Current gear haste %d\n", currentHaste)
+	min := int32(currentHaste) + incrementBaseHaste
+	max := int32(currentHaste) + incrementBaseHaste + plannedIncrementTestRange
+	printer.Printf("Planned simulated gear haste %d-%d\n", min, max)
+
+	return max > c_hasteDiscontinuityStart && min < c_hasteDiscontinuityEnd
+}
+
+func hasteInDiscontinuityRange(value uint32) bool {
+	return value >= c_hasteDiscontinuityStart && value <= c_hasteDiscontinuityEnd
+}
+
+func verifyExpertRange(printer *util.PrintRecorder, current uint32, decrementBase int32, plannedIncrementTestRange int32) {
+	if checkBadExpertRange(printer, current, decrementBase, plannedIncrementTestRange) {
 		panic("simulate will overcap expertise")
 	}
 }
 
+func checkBadExpertRange(printer *util.PrintRecorder, current uint32, decrementBase int32, plannedIncrementTestRange int32) bool {
+	printer.Printf("Current gear expertise %d\n", current)
+	min := int32(current) - decrementBase
+	max := int32(current) - decrementBase + plannedIncrementTestRange
+	printer.Printf("Planned simulated gear expertise %d-%d\n", min, max)
+	return max > int32(requirements.TARGET_RATING_TANK)
+}
+
 func initialBonusStatMap(printer *util.PrintRecorder, currentItemSet items.FullItemSet, incrementBaseHaste int32, decrementBaseExpertise int32, incrementMax int32) map[stats.StatType]int32 {
-	checkHasteRange(printer, currentItemSet.Total().Get(stats.Stat_Haste), incrementBaseHaste, incrementMax)
-	checkExpertRange(printer, currentItemSet.Total().Expertise(), decrementBaseExpertise, incrementMax)
+	verifyHasteRange(printer, currentItemSet.Total().Get(stats.Stat_Haste), incrementBaseHaste, incrementMax)
+	verifyExpertRange(printer, currentItemSet.Total().Expertise(), decrementBaseExpertise, incrementMax)
 	initialBaseStats := make(map[stats.StatType]int32)
 	initialBaseStats[stats.Stat_Haste] += incrementBaseHaste
 	initialBaseStats[stats.Stat_Expertise] -= decrementBaseExpertise
