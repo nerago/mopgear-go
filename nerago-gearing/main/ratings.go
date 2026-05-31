@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"maps"
 	"math"
@@ -17,6 +18,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -412,7 +414,8 @@ func statWeightsComplex(printer *util.PrintRecorder) {
 func statWeightsFitting(printer *util.PrintRecorder) {
 	// generateRatingsInputFromRealRandomSets(printer)
 
-	bytes, err := os.ReadFile("sim-stats-input-data.json")
+	bytes, err := os.ReadFile("sim-stats-input-data2.json")
+	// bytes, err := os.ReadFile("sim-stats-input-data.json")
 	if err != nil {
 		panic(err)
 	}
@@ -428,6 +431,8 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 		}
 	}
 
+	printer.Printf("Initial weight input size = %d\n", len(weightInputs))
+
 	// fitting := stathighs.FittingSingleStatWeightProcess{}
 	// fitting.Init(printer)
 	// fitting.SetMinimumIncludeRate(0.2)
@@ -440,10 +445,31 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 	// fitting.Init(printer, stats.Stat_Crit, simulate.Result_DPS)
 	fitting.Init(printer, stats.Stat_Haste, simulate.Result_DPS)
 	fitting.SupplyDataFromStandard(weightInputs)
+
 	weightMap := fitting.Run()
-	for _, oneWeight := range weightMap {
-		printer.Printf("%f %f %d %d %f\n", oneWeight.LineSlope, oneWeight.LineOffset, oneWeight.Minimum, oneWeight.Maximum, oneWeight.IncludePercent)
+	printer.Printf("weightMap size %d\n", len(weightMap))
+	weightList := slices.SortedFunc(maps.Values(weightMap), func(a, b stathighs.FittingSingleStatResult) int {return cmp.Compare(a.Minimum, b.Minimum)})
+
+	tab := util.TabulateOutput{}
+	tab.SetColumnSpacing(1)
+	tab.AddColumnHeader("min", true)
+	tab.AddColumnHeader("max", false)
+	tab.AddColumnHeader("m", true)
+	tab.AddColumnHeader("c", false)
+	tab.AddColumnHeader("used", true)
+	tab.AddColumnHeader("used%", false)
+	for _, oneWeight := range weightList {
+		tab.AddRow([]string {
+			strconv.FormatUint(uint64(oneWeight.Minimum), 10),
+			strconv.FormatUint(uint64(oneWeight.Maximum), 10),
+			strconv.FormatFloat(oneWeight.LineSlope, 'f', 6, 64),
+			strconv.FormatFloat(oneWeight.LineOffset, 'f', 1, 64),
+			strconv.FormatUint(uint64(oneWeight.IncludeCount), 10),
+			strconv.FormatFloat(oneWeight.IncludePercent * 100, 'f', 1, 64),
+		})
+		// printer.Printf("%f %f %d %d %f\n", oneWeight.LineSlope, oneWeight.LineOffset, oneWeight.Minimum, oneWeight.Maximum, oneWeight.IncludePercent)
 	}
+	tab.Write(printer)
 	// writePawnString(weights, printer)
 }
 
