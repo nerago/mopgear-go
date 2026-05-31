@@ -20,9 +20,13 @@ func CalcComplexStatWeights(inputData []WeightInput, targetRatios simulate.SimRe
 	input.Minimise = false
 	input.BlendMultiObjectives = true
 	input.Solver = "ipm"
-	input.AddLinearObjective(-1, 0, 1000, 0.2, 1) // contributionDiff
-	input.AddLinearObjective(-2, 0, 1000, 0.2, 2) // scoreDiff
-	input.AddLinearObjective(-1, 0, 1000, 0.2, 3) // data pairs offset
+	input.AddLinearBlended(1, 0) // contributionDiff
+	input.AddLinearBlended(2, 0) // scoreDiff
+	input.AddLinearBlended(1, 0) // data pairs offset
+
+	// input.AddLinearPrioritised(false, 1000, 0.2, 1) // contributionDiff
+	// input.AddLinearPrioritised(false, 1000, 0.2, 2) // scoreDiff
+	// input.AddLinearPrioritised(false, 1000, 0.2, 3) // data pairs offset
 
 	statWeightColumns, simWeightColumns := weightColumns(input)
 

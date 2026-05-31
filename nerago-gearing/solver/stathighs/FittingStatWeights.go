@@ -40,17 +40,40 @@ const (
 // we need to consider that we're developing a function that correlates to the sim output, not predicts it in any summation sense
 // maybe suggests start with the individual ones, less tempting to try to hit totals
 
-type FittingEachStatWeightProcess struct {
+type FittingAllStatWeightProcess struct {
 	printer *util.PrintRecorder
 	input   *utilhighs.InputBuilder
 
 	each util.MapMap[stats.StatType, simulate.SimResultType, FittingSingleStatWeightProcess]
 }
 
+func (fitall *FittingAllStatWeightProcess) Init(printer *util.PrintRecorder) {
+	fitall.printer = printer
+	fitall.input = new(utilhighs.InputBuilder)
+	fitall.input.Minimise = true
+}
+
+////////////////////////////////////////////////////////
+
+type FittingEachStatWeightProcess struct {
+	printer   *util.PrintRecorder
+	inputData []WeightInput
+	each      util.MapMap[stats.StatType, simulate.SimResultType, FittingSingleStatWeightProcess]
+}
+
 func (fiteach *FittingEachStatWeightProcess) Init(printer *util.PrintRecorder) {
 	fiteach.printer = printer
-	fiteach.input = new(utilhighs.InputBuilder)
-	fiteach.input.Minimise = true
+}
+
+func (fiteach *FittingEachStatWeightProcess) SupplyDataFromStandard(inputData []WeightInput) {
+	fiteach.inputData = inputData
+}
+
+func (fiteach *FittingEachStatWeightProcess) Run() {
+	// for _, statType := range G_RequiredStats {
+	// 	for _, simType := range G_RequiredSims {
+	// 	}
+	// }
 }
 
 ////////////////////////////////////////////////////////
@@ -84,7 +107,7 @@ func (fitseg *FittingSingleStatSegmentsProcess) SupplyDataFromStandard(inputData
 }
 
 func (fitseg *FittingSingleStatSegmentsProcess) Run() map[StatRange]FittingSingleStatResult {
-	fitseg.runFitAll()
+	// fitseg.runFitAll()
 
 	fitseg.runInitial()
 
@@ -104,7 +127,7 @@ func (fitseg *FittingSingleStatSegmentsProcess) Run() map[StatRange]FittingSingl
 			fitseg.runNextSegment(nextData, nextRange, 0.4)
 		} else {
 			fitseg.runNextSegment(nextData, nextRange, 0.2)
-		} 
+		}
 	}
 
 	return fitseg.segments
@@ -241,6 +264,16 @@ func (fit *FittingSingleStatWeightProcess) Init(printer *util.PrintRecorder) {
 	fit.printer = printer
 	fit.input = new(utilhighs.InputBuilder)
 	fit.input.Minimise = true
+
+	fit.lineSlope = fit.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "slope"})
+	fit.lineOffset = fit.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "offset"})
+	fit.minimumThreshold = fit.input.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "minimum"})
+	fit.maximumThreshold = fit.input.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "maximum"})
+
+	maxVsMin := utilhighs.ConstraintRowBuild{}
+	maxVsMin.Add(fit.minimumThreshold, -1)
+	maxVsMin.Add(fit.maximumThreshold, 1)
+	maxVsMin.Finish(fit.input, 0, utilhighs.C_PlusInf)
 }
 
 func (fit *FittingSingleStatWeightProcess) SetMinimumIncludeRate(percent float64) {
@@ -273,27 +306,51 @@ func scaleSimItem(value float64, sim simulate.SimResultType) float64 {
 	}
 }
 
+/*
+
+  if (this->options_.blend_multi_objectives) {
+    HighsLinearObjective& multi_linear_objective = this->multi_linear_objective_[iObj];
+    lp.col_cost_[iCol] += multi_linear_objective.weight * multi_linear_objective.coefficients[iCol];
+    lp.sense_ = ObjSense::kMinimize;
+
+  ELSE PRIORITIES
+
+  for (HighsInt iObj = 0; iObj < num_linear_objective; iObj++)
+    priority_objective.push_back(std::make_pair(this->multi_linear_objective_[iObj].priority, iObj));
+  std::sort(priority_objective.begin(), priority_objective.end(), comparison);
+
+  for (HighsInt iIx = 0; iIx < num_linear_objective; iIx++) {
+    lp.col_cost_ = linear_objective.coefficients;
+	lp.sense_ = linear_objective.weight > 0 ? ObjSense::kMinimize : ObjSense::kMaximize;
+	use previous round's solution as start, needs to be valid for this too
+    HighsStatus optimize_model_status = this->optimizeModel();
+	if (lp.isMip())
+		save col values for next
+
+  	std::vector<HighsInt> index(lp.num_col_);
+  	std::vector<double> value(lp.num_col_);
+	for (HighsInt iCol = 0; iCol < lp.num_col_; iCol++) {
+      if (lp.col_cost_[iCol]) {
+        index[nnz] = iCol;
+        value[nnz] = lp.col_cost_[iCol];
+        nnz++;
+      }
+
+	double lower_bound = -kHighsInf;
+    double upper_bound = kHighsInf;
+	if (lp.sense_ == ObjSense::kMinimize)
+	  if (linear_objective.abs_tolerance >= 0)
+        upper_bound = objective + linear_objective.abs_tolerance;
+      if (linear_objective.rel_tolerance >= 0) {
+	    if (objective >= 0) {
+		  upper_bound = std::min(objective * (1.0 + linear_objective.rel_tolerance), upper_bound);
+		else
+		  upper_bound = std::min(objective * (1.0 - linear_objective.rel_tolerance), upper_bound);
+	addRow(lower_bound, upper_bound, nnz, index, value);
+*/
+
 func (fit *FittingSingleStatWeightProcess) Run() util.Optional[FittingSingleStatResult] {
-	fit.lineSlope = fit.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "slope"})
-	fit.lineOffset = fit.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "offset"})
-	fit.minimumThreshold = fit.input.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "minimum"})
-	fit.maximumThreshold = fit.input.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "maximum"})
-
-	var scaleIncludeObjective float64
-	
-	// scaleIncludeObjective = 20 // 20 used previously for the 256 samples, maybe a touch too high
-	// scaleIncludeObjective = 19 // 15 is too low for 256, 19 about right
-
-	scaleIncludeObjective = 12 // for 2000: 10-12 is a bit low. 15 was nice maybe too high? ideal range somewhere 13-14, but runs take 1H
-
-	fit.input.BlendMultiObjectives = true
-	fit.linearInclude = fit.input.AddLinearObjective(scaleIncludeObjective, 0, 1000, 1, 1) 
-	fit.linearLineDiff = fit.input.AddLinearObjective(1, 0, 10000, 5, 2)
-
-	maxVsMin := utilhighs.ConstraintRowBuild{}
-	maxVsMin.Add(fit.minimumThreshold, -1)
-	maxVsMin.Add(fit.maximumThreshold, 1)
-	maxVsMin.Finish(fit.input, 0, utilhighs.C_PlusInf)
+	fit.setupLinearObjectives()
 
 	for sample := range util.ForPointer(fit.inputData) {
 		fit.addSample(sample)
@@ -312,6 +369,42 @@ func (fit *FittingSingleStatWeightProcess) Run() util.Optional[FittingSingleStat
 	} else {
 		return util.Optional_Empty[FittingSingleStatResult]()
 	}
+}
+
+func (fit *FittingSingleStatWeightProcess) setupLinearObjectives() {
+
+	// var scaleIncludeObjective float64
+	// scaleIncludeObjective = 20 // 20 used previously for the 256 samples, maybe a touch too high
+	// scaleIncludeObjective = 19 // 15 is too low for 256, 19 about right
+	// scaleIncludeObjective = 12 // for 2000: 10-12 is a bit low. 15 was nice maybe too high? ideal range somewhere 13-14, but runs take 1H
+	// these numbers are just too finicky
+
+	// fit.input.BlendMultiObjectives = true
+	// fit.linearInclude = fit.input.AddLinearObjective(scaleIncludeObjective, 0, 1000, 1, 1)
+	// fit.linearLineDiff = fit.input.AddLinearObjective(1, 0, 10000, 5, 2)
+
+	// averageIncludedDifference := 14 // based on data, haste_dps. rather not use this
+
+	fit.input.BlendMultiObjectives = false
+
+	// first linear step find a regular solution to the line fit
+	// will probably follow the minimum required include
+	// will get us a positive initial result from the sum of differenceAbs
+	// let it expand to full coverage if it wants, but without worsening the average difference
+	multiplierToFullCoverage := 1 / fit.minimumIncludeRate
+	// add consider a bit of factor to this, only 80% etc, otherwise might get too greedy
+	multiplierToFullCoverage *= 0.8
+	// highs logic is "objective * (1.0 + linear_objective.rel_tolerance)", so need to minus one in compenstation
+	// don't let it go negative or below a small value
+	relativeToleranceParam := max(multiplierToFullCoverage-1, 0.1)
+	fit.linearLineDiff = fit.input.AddLinearPrioritised(false, -1, relativeToleranceParam, 2)
+
+	// second priority is sum of includeColumn which are negative one each, can lead to negative total objective
+	// but we don't need to care about offsets much since its the last one, highs shouldn't even look at them
+	fit.linearInclude = fit.input.AddLinearPrioritised(false, -1, -1, 1)
+
+	// we might want to increase c_outputIncludePerInclude a bit since average at least for our first test case is 3-10
+	// but actually unless we combine the objectives then they aren't getting scaled against each other anyway
 }
 
 func (fit *FittingSingleStatWeightProcess) buildResult(solution *highs.Solution) FittingSingleStatResult {

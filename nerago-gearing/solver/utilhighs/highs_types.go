@@ -60,8 +60,23 @@ func (input *InputBuilder) Clone() *InputBuilder {
 	}
 }
 
-func (input *InputBuilder) AddLinearObjective(weight float64, offset float64, abs_tolerance float64, rel_tolerance float64, priority int) int {
-	return input.vars.addLinearObjective(weight, offset, abs_tolerance, rel_tolerance, priority)
+func (input *InputBuilder) AddLinearBlended(weight float64, offset float64) int {
+	if !input.BlendMultiObjectives {
+		panic("wrong linear type")
+	}
+	return input.vars.addLinearObjective(weight, offset, -1, -1, -1)
+}
+
+func (input *InputBuilder) AddLinearPrioritised(maximise bool, abs_tolerance float64, rel_tolerance float64, priority int) int {
+	if input.BlendMultiObjectives {
+		panic("wrong linear type")
+	}
+	// lp.sense_ = linear_objective.weight > 0 ? ObjSense::kMinimize : ObjSense::kMaximize;
+	if maximise {
+		return input.vars.addLinearObjective(-1, 0, abs_tolerance, rel_tolerance, priority)
+	} else {
+		return input.vars.addLinearObjective(1, 0, abs_tolerance, rel_tolerance, priority)
+	}
 }
 
 func (input *InputBuilder) CreateColumnBool(debug DebugContext) ColumnIndex {
