@@ -342,25 +342,28 @@ func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet item
 }
 
 func generateRatingsInputFromRealRandomSets(printer *util.PrintRecorder) ([]stathighs.WeightInput, simulate.SimResultStats) {
-	makeSetCount := 256
+	makeSetCount := 2000
 	simSize := simulate.RunSize_Medium
 
 	targetRatio := stathighs.NewStatWeights_generalMiti
 	model := model.Model_PallyProtMitigation_NoSet()
-	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationNoSet, &model, setup.MissingEnchant_Panic, printer)
-	for _, itemId := range substituteItemsMiti {
-		if !itemOptions.IncludesItemId(itemId) {
-			opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
-			for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
-				if itemOptions.Has(slotEquip) {
-					itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)
-				}
-			}
-		}
-	}
-	itemOptions.RemoveItemIdFromAll(95141)
+	// itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationNoSet, &model, setup.MissingEnchant_Panic, printer)
+	// for _, itemId := range substituteItemsMiti {
+	// 	if !itemOptions.IncludesItemId(itemId) {
+	// 		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
+	// 		for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
+	// 			if itemOptions.Has(slotEquip) {
+	// 				itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)
+	// 			}
+	// 		}
+	// 	}
+	// }
+	// itemOptions.RemoveItemIdFromAll(95141)
 
-	setList := build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, &model, makeSetCount, printer, 14000)
+	_, itemOptions := allT5stuff(&model, files.GearFileProtMitigationNoSet, printer)
+
+	// setList := build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, &model, makeSetCount, printer, 14000)
+	setList := build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, &model, makeSetCount, printer, 0)
 
 	track := util.TrackProgress_Start()
 	track.RunOuterTracking(len(setList))
@@ -375,7 +378,7 @@ func generateRatingsInputFromRealRandomSets(printer *util.PrintRecorder) ([]stat
 	if err != nil {
 		panic(err)
 	}
-	err = os.WriteFile("sim-stats-input-data.json", bytes, 0)
+	err = os.WriteFile("sim-stats-input-data2.json", bytes, 0)
 	if err != nil {
 		panic(err)
 	}
@@ -407,7 +410,7 @@ func statWeightsComplex(printer *util.PrintRecorder) {
 }
 
 func statWeightsFitting(printer *util.PrintRecorder) {
-	// weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
+	// generateRatingsInputFromRealRandomSets(printer)
 
 	bytes, err := os.ReadFile("sim-stats-input-data.json")
 	if err != nil {
@@ -439,7 +442,7 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 	fitting.SupplyDataFromStandard(weightInputs)
 	weightMap := fitting.Run()
 	for _, oneWeight := range weightMap {
-		printer.Printf("%f %f %f %f %f\n", oneWeight.LineSlope, oneWeight.LineOffset, oneWeight.Minimum, oneWeight.Maximum, oneWeight.IncludePercent)
+		printer.Printf("%f %f %d %d %f\n", oneWeight.LineSlope, oneWeight.LineOffset, oneWeight.Minimum, oneWeight.Maximum, oneWeight.IncludePercent)
 	}
 	// writePawnString(weights, printer)
 }

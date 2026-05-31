@@ -56,41 +56,46 @@ func (fiteach *FittingEachStatWeightProcess) Init(printer *util.PrintRecorder) {
 ////////////////////////////////////////////////////////
 
 type StatRange struct {
-	Minimum float64
-	Maximum float64
+	Minimum uint32
+	Maximum uint32
 }
 
 type FittingSingleStatSegmentsProcess struct {
 	printer *util.PrintRecorder
 
-	inputData []WeightInput
-	stat      stats.StatType
-	sim       simulate.SimResultType
+	inputDataOriginal       []*WeightInput
+	inputDataRemainingParts map[StatRange][]*WeightInput
+	stat                    stats.StatType
+	sim                     simulate.SimResultType
 
-	segments         map[StatRange]FittingSingleStatResult
-	coveredRangeLow  uint32
-	coveredRangeHigh uint32
+	segments map[StatRange]FittingSingleStatResult
 }
 
 func (fitseg *FittingSingleStatSegmentsProcess) Init(printer *util.PrintRecorder, stat stats.StatType, sim simulate.SimResultType) {
 	fitseg.printer = printer
 	fitseg.segments = make(map[StatRange]FittingSingleStatResult)
+	fitseg.inputDataRemainingParts = make(map[StatRange][]*WeightInput)
 	fitseg.stat = stat
 	fitseg.sim = sim
 }
 
 func (fitseg *FittingSingleStatSegmentsProcess) SupplyDataFromStandard(inputData []WeightInput) {
-	fitseg.inputData = inputData
+	fitseg.inputDataOriginal = util.CastSliceAsNew(inputData, func(w *WeightInput) *WeightInput { return w })
 }
 
 func (fitseg *FittingSingleStatSegmentsProcess) Run() map[StatRange]FittingSingleStatResult {
 	fitseg.runInitial()
 
-	lowData := util.FilterSliceAsNew(fitseg.inputData, func(in *WeightInput) bool { return in.TotalStat.Get(fitseg.stat) < fitseg.coveredRangeLow })
-	fitseg.runEndSegment(lowData)
+	for len(fitseg.inputDataRemainingParts) > 0 {
+		nextRange, nextData := util.MapFirstEntry(fitseg.inputDataRemainingParts)
+		delete(fitseg.inputDataRemainingParts, nextRange)
 
-	highData := util.FilterSliceAsNew(fitseg.inputData, func(in *WeightInput) bool { return in.TotalStat.Get(fitseg.stat) > fitseg.coveredRangeHigh })
-	fitseg.runEndSegment(highData)
+		if len(nextData) < 10 {
+			fitseg.runNextSegment(nextData, nextRange, 1)
+		} else {
+			fitseg.runNextSegment(nextData, nextRange, 0.1)
+		}
+	}
 
 	return fitseg.segments
 }
@@ -99,28 +104,74 @@ func (fitseg *FittingSingleStatSegmentsProcess) runInitial() {
 	initialFit := FittingSingleStatWeightProcess{}
 	initialFit.Init(fitseg.printer)
 	initialFit.SetMinimumIncludeRate(0.3)
-	initialFit.SupplyDataFromStandard(fitseg.inputData, fitseg.stat, fitseg.sim)
-	weight := initialFit.Run()
+	initialFit.SupplyDataFromStandard(fitseg.inputDataOriginal, fitseg.stat, fitseg.sim)
+	weightOptional := initialFit.Run()
+	if weight, hasWeight := weightOptional.GetWithFlag(); hasWeight {
+		statRange := StatRange{weight.Minimum, weight.Maximum}
+		fitseg.segments[statRange] = weight
 
-	statRange := StatRange{weight.Minimum, weight.Maximum}
-	fitseg.segments[statRange] = weight
-
-	fitseg.coveredRangeLow = uint32(math.Round(weight.Minimum))
-	fitseg.coveredRangeHigh = uint32(math.Round(weight.Maximum))
+		totalRange := StatRange{0, c_statRangeHigh}
+		fitseg.addToRemainingData(fitseg.inputDataOriginal, totalRange, statRange)
+	}
 }
 
-func (fitseg *FittingSingleStatSegmentsProcess) runEndSegment(inputData []WeightInput) {
+func (fitseg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []*WeightInput, inputRange StatRange, includeRate float64) {
 	initialFit := FittingSingleStatWeightProcess{}
 	initialFit.Init(fitseg.printer)
-	initialFit.SetMinimumIncludeRate(1)
+	initialFit.SetMinimumIncludeRate(includeRate)
 	initialFit.SupplyDataFromStandard(inputData, fitseg.stat, fitseg.sim)
-	weight := initialFit.Run()
+	weightOptional := initialFit.Run()
+	if weight, hasWeight := weightOptional.GetWithFlag(); hasWeight {
+		minimum := max(inputRange.Minimum, weight.Minimum)
+		maximum := min(inputRange.Maximum, weight.Maximum)
 
-	statRange := StatRange{weight.Minimum, weight.Maximum}
-	fitseg.segments[statRange] = weight
+		statRange := StatRange{minimum, maximum}
+		weight.Minimum = minimum
+		weight.Maximum = maximum
+		fitseg.segments[statRange] = weight
 
-	fitseg.coveredRangeLow = min(fitseg.coveredRangeLow, uint32(math.Round(weight.Minimum)))
-	fitseg.coveredRangeHigh = max(fitseg.coveredRangeHigh, uint32(math.Round(weight.Maximum)))
+		fitseg.addToRemainingData(inputData, inputRange, statRange)
+	}
+}
+
+func (fitseg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData []*WeightInput, inputRange StatRange, removeRange StatRange) {
+	if removeRange.Minimum < inputRange.Minimum || removeRange.Maximum > inputRange.Maximum || removeRange.Minimum > removeRange.Maximum || inputRange.Minimum > inputRange.Maximum {
+		panic("range isn't within bounds")
+	}
+
+	loData := make([]*WeightInput, 0)
+	hiData := make([]*WeightInput, 0)
+	for _, input := range processedData {
+		stat := input.TotalStat.Get(fitseg.stat)
+		if stat < inputRange.Minimum {
+			panic("sample isn't within bounds")
+		} else if inputRange.Minimum <= stat && stat < removeRange.Minimum {
+			loData = append(loData, input)
+		} else if removeRange.Minimum <= stat && stat <= removeRange.Maximum {
+			// drop
+		} else if removeRange.Maximum < stat && stat <= inputRange.Maximum {
+			hiData = append(hiData, input)
+		} else {
+			panic("sample isn't within bounds")
+		}
+	}
+
+	if len(loData) > 0 {
+		loRange := StatRange{inputRange.Minimum, removeRange.Minimum - 1}
+		fitseg.inputDataRemainingParts[loRange] = loData
+	}
+
+	if len(hiData) > 0 {
+		hiRange := StatRange{removeRange.Maximum + 1, inputRange.Maximum}
+		fitseg.inputDataRemainingParts[hiRange] = hiData
+	}
+}
+
+func (fitseg *FittingSingleStatSegmentsProcess) filterDataStatRange(inputData []WeightInput, lo, hi uint32) {
+	util.FilterSliceAsNew(inputData, func(in *WeightInput) bool {
+		value := in.TotalStat.Get(fitseg.stat)
+		return lo <= value && value <= hi
+	})
 }
 
 ////////////////////////////////////////////////////////
@@ -148,8 +199,8 @@ type FittingSingleStatWeightProcess struct {
 type FittingSingleStatResult struct {
 	LineSlope      float64
 	LineOffset     float64
-	Minimum        float64
-	Maximum        float64
+	Minimum        uint32
+	Maximum        uint32
 	IncludePercent float64
 }
 
@@ -169,11 +220,11 @@ func (fit *FittingSingleStatWeightProcess) SetMinimumIncludeRate(percent float64
 	fit.minimumIncludeRate = percent
 }
 
-func (fit *FittingSingleStatWeightProcess) SupplyDataFromStandard(inputData []WeightInput, stat stats.StatType, sim simulate.SimResultType) {
-	fit.inputData = util.CastSliceAsNew(inputData, func(input *WeightInput) fittingSample {
+func (fit *FittingSingleStatWeightProcess) SupplyDataFromStandard(inputData []*WeightInput, stat stats.StatType, sim simulate.SimResultType) {
+	fit.inputData = util.CastSliceAsNew(inputData, func(input **WeightInput) fittingSample {
 		return fittingSample{
-			float64(input.TotalStat.Get(stat)),
-			scaleSimItem(input.SimResult.Get(sim), sim),
+			float64((*input).TotalStat.Get(stat)),
+			scaleSimItem((*input).SimResult.Get(sim), sim),
 			-1,
 		}
 	})
@@ -195,7 +246,7 @@ func scaleSimItem(value float64, sim simulate.SimResultType) float64 {
 	}
 }
 
-func (fit *FittingSingleStatWeightProcess) Run() FittingSingleStatResult {
+func (fit *FittingSingleStatWeightProcess) Run() util.Optional[FittingSingleStatResult] {
 	fit.lineSlope = fit.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "slope"})
 	fit.lineOffset = fit.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "offset"})
 	fit.minimumThreshold = fit.input.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "minimum"})
@@ -222,15 +273,19 @@ func (fit *FittingSingleStatWeightProcess) Run() FittingSingleStatResult {
 
 	fit.input.DebugPrintColumns(solution, fit.printer)
 
-	return fit.buildResult(solution)
+	if solution.IsOptimal() {
+		return util.Optional_OfValue(fit.buildResult(solution))
+	} else {
+		return util.Optional_Empty[FittingSingleStatResult]()
+	}
 }
 
 func (fit *FittingSingleStatWeightProcess) buildResult(solution *highs.Solution) FittingSingleStatResult {
 	result := FittingSingleStatResult{}
 	result.LineSlope = solution.ColValues[fit.lineSlope] / fit.inputDataSimScale
 	result.LineOffset = solution.ColValues[fit.lineOffset] / fit.inputDataSimScale
-	result.Minimum = solution.ColValues[fit.minimumThreshold]
-	result.Maximum = solution.ColValues[fit.maximumThreshold]
+	result.Minimum = uint32(math.Round(solution.ColValues[fit.minimumThreshold]))
+	result.Maximum = uint32(math.Round(solution.ColValues[fit.maximumThreshold]))
 
 	includeCount := 0
 	for _, col := range fit.includeColumns {
@@ -239,6 +294,10 @@ func (fit *FittingSingleStatWeightProcess) buildResult(solution *highs.Solution)
 		}
 	}
 	result.IncludePercent = float64(includeCount) / float64(len(fit.inputData))
+
+	if includeCount == 0 {
+		panic("shouldn't this have failed in model")
+	}
 
 	inputSorted := slices.Clone(fit.inputData)
 	slices.SortFunc(inputSorted, func(a, b fittingSample) int { return cmp.Compare(a.statValue, b.statValue) })

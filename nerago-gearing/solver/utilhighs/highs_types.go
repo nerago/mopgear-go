@@ -157,7 +157,8 @@ func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 	verifyNoError(solver.SetStringOption("log_file", logfile))
 	verifyNoError(solver.SetBoolOption("log_to_console", (C_DebugHighs || C_HighsToConsole) && !input.NoOutput))
 	if C_DebugHighs {
-		verifyNoError(solver.SetIntOption("log_dev_level", 3))
+		// verifyNoError(solver.SetIntOption("log_dev_level", 3))
+		verifyNoError(solver.SetIntOption("log_dev_level", 2))
 	} else {
 		verifyNoError(solver.SetIntOption("log_dev_level", 0))
 	}
