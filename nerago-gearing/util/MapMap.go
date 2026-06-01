@@ -143,46 +143,6 @@ func (mapmap *MapMap[J, K, V]) ForeachWithKeys(apply func(key1 J, key2 K, value 
 	}
 }
 
-func (mapmap *MapMap[J, K, V]) ForeachGroupForKey1(apply func(key1 J, lookup func(K) V)) {
-	for key1, inner := range mapmap.dataBy1 {
-		lookup := func(key2 K) V {
-			value, hasValue := inner[key2]
-			if hasValue {
-				return value
-			} else {
-				panic("value not found")
-			}
-		}
-		apply(key1, lookup)
-	}
-}
-
-func (mapmap *MapMap[J, K, V]) ForeachGroupForKey2(apply func(key2 K, lookup func(J) V)) {
-	for key2, inner := range mapmap.dataBy2 {
-		lookup := func(key1 J) V {
-			value, hasValue := inner[key1]
-			if hasValue {
-				return value
-			} else {
-				panic("value not found")
-			}
-		}
-		apply(key2, lookup)
-	}
-}
-
-func (mapmap *MapMap[J, K, V]) ForeachInnerWithKey1Value(key1 J, apply func(key2 K, value V)) {
-	for key2, value := range mapmap.dataBy1[key1] {
-		apply(key2, value)
-	}
-}
-
-func (mapmap *MapMap[J, K, V]) ForeachInnerWithKey2Value(key2 K, apply func(key1 J, value V)) {
-	for key1, value := range mapmap.dataBy2[key2] {
-		apply(key1, value)
-	}
-}
-
 func (mapmap *MapMap[J, K, V]) SeqInnerWithKey1Value(key1 J) iter.Seq2[K, V] {
 	return func(yield func(K, V) bool) {
 		for key2, value := range mapmap.dataBy1[key1] {
@@ -236,6 +196,26 @@ func (mapmap *MapMap[J, K, V]) SeqGroupsKey2Lookup() iter.Seq2[K, func(J) V] {
 			}
 
 			if !yield(key2, lookup) {
+				return
+			}
+		}
+	}
+}
+
+func (mapmap *MapMap[J, K, V]) SeqGroupsKey1NestedKeyValue() iter.Seq2[J, iter.Seq2[K, V]] {
+	return func(yield func(J, iter.Seq2[K, V]) bool) {
+		for key1, inner := range mapmap.dataBy1 {
+			if !yield(key1, maps.All(inner)) {
+				return
+			}
+		}
+	}
+}
+
+func (mapmap *MapMap[J, K, V]) SeqGroupsKey2NestedKeyValue() iter.Seq2[K, iter.Seq2[J, V]] {
+	return func(yield func(K, iter.Seq2[J, V]) bool) {
+		for key2, inner := range mapmap.dataBy2 {
+			if !yield(key2, maps.All(inner)) {
 				return
 			}
 		}

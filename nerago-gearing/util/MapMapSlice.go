@@ -17,29 +17,13 @@ type MapMapSliceEntry[J comparable, K comparable, V any] struct {
 }
 
 func (mmapslice *MapMapSlice[J, K, V]) ValuesForKeyAsSlice(key1 J, key2 K) ([]V, bool) {
-	data := mmapslice.dataBy1
-	if data != nil {
-		inner, hasInner := data[key1]
-		if hasInner {
-			value, hasValue := inner[key2]
-			return value, hasValue
-		}
-	}
-	return nil, false
+	value, hasValue := mmapslice.dataBy1[key1][key2]
+	return value, hasValue
 }
 
 func (mmapslice *MapMapSlice[J, K, V]) ValuesForKeyAsSeq(key1 J, key2 K) iter.Seq[V] {
-	data := mmapslice.dataBy1
-	if data != nil {
-		inner, hasInner := data[key1]
-		if hasInner {
-			value, hasValue := inner[key2]
-			if hasValue {
-				return slices.Values(value)
-			}
-		}
-	}
-	return func(yield func(V) bool) {}
+	value := mmapslice.dataBy1[key1][key2]
+	return slices.Values(value)
 }
 
 func (mmapslice *MapMapSlice[J, K, V]) Clear() {
@@ -121,18 +105,16 @@ func (mmapslice *MapMapSlice[J, K, V]) SeqValues() iter.Seq[V] {
 }
 
 func (mmapslice *MapMapSlice[J, K, V]) ForeachWithKeys(apply func(key1 J, key2 K, value V)) {
-	if mmapslice.dataBy1 != nil {
-		for key1, inner := range mmapslice.dataBy1 {
-			for key2, slice := range inner {
-				for _, value := range slice {
-					apply(key1, key2, value)
-				}
+	for key1, inner := range mmapslice.dataBy1 {
+		for key2, slice := range inner {
+			for _, value := range slice {
+				apply(key1, key2, value)
 			}
 		}
 	}
 }
 
-func (mmapslice *MapMapSlice[J, K, V]) SeqGroupsKey1() iter.Seq2[J, func(K) iter.Seq[V]] {
+func (mmapslice *MapMapSlice[J, K, V]) SeqGroupsKey1Lookup() iter.Seq2[J, func(K) iter.Seq[V]] {
 	return func(yield func(J, func(K) iter.Seq[V]) bool) {
 		for key1, inner := range mmapslice.dataBy1 {
 			lookup := func(key2 K) iter.Seq[V] {
@@ -147,7 +129,7 @@ func (mmapslice *MapMapSlice[J, K, V]) SeqGroupsKey1() iter.Seq2[J, func(K) iter
 	}
 }
 
-func (mmapslice *MapMapSlice[J, K, V]) SeqGroupsKey2() iter.Seq2[K, func(J) iter.Seq[V]] {
+func (mmapslice *MapMapSlice[J, K, V]) SeqGroupsKey2Lookup() iter.Seq2[K, func(J) iter.Seq[V]] {
 	return func(yield func(K, func(J) iter.Seq[V]) bool) {
 		for key2, inner := range mmapslice.dataBy2 {
 			lookup := func(key1 J) iter.Seq[V] {

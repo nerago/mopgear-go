@@ -26,22 +26,9 @@ func (mapslice *MapSlice[K, V]) Add(key K, value V) {
 	}
 }
 
-func (mapslice *MapSlice[K, V]) ValuesForKeyAsSlice(key K) ([]V, bool) {
-	inner, hasInner := mapslice.data[key]
-	if hasInner {
-		return inner, hasInner
-	} else {
-		return nil, false
-	}
-}
-
 func (mapslice *MapSlice[K, V]) ValuesForKeyAsSeq(key K) iter.Seq[V] {
-	inner, hasInner := mapslice.data[key]
-	if hasInner {
-		return slices.Values(inner)
-	} else {
-		return func(yield func(V) bool) {}
-	}
+	inner := mapslice.data[key]
+	return slices.Values(inner)
 }
 
 func (mapslice *MapSlice[K, V]) SeqKeys() iter.Seq[K] {
@@ -74,22 +61,6 @@ func (mapslice *MapSlice[K, V]) SeqValues() iter.Seq[V] {
 					return
 				}
 			}
-		}
-	}
-}
-
-func (mapslice *MapSlice[K, V]) ForeachWithKeys(apply func(key K, value V)) {
-	for key, inner := range mapslice.data {
-		for _, value := range inner {
-			apply(key, value)
-		}
-	}
-}
-
-func (mapslice *MapSlice[K, V]) ForeachValues(apply func(value V)) {
-	for _, inner := range mapslice.data {
-		for _, value := range inner {
-			apply(value)
 		}
 	}
 }

@@ -167,9 +167,9 @@ func (basic *BasicStatWeightProcess) unitValuesToCalcDetailedRatings_single(unit
 func (basic *BasicStatWeightProcess) calcTotalRatings() {
 	for _, statType := range G_RequiredStats {
 		statFinalRow := utilhighs.ConstraintRowBuild{}
-		basic.detailedWeights.ForeachInnerWithKey1Value(statType, func(_ simulate.SimResultType, detailColumn utilhighs.ColumnIndex) {
+		for _, detailColumn := range basic.detailedWeights.SeqInnerWithKey1Value(statType) {
 			statFinalRow.Add(detailColumn, 1)
-		})
+		}
 
 		finalWeightColumn := basic.finalWeights[statType]
 		statFinalRow.Add(finalWeightColumn, -1)

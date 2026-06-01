@@ -196,7 +196,7 @@ func (selgrid *SelectiveGridStatWeightProcess) unitValuesToCalcDetailedRatings()
 	// detailweight_dps_haste * unit_dps_str - detailweight_dps_str * unit_dps_haste = 0
 	// detailweight_dps_haste * unit_dps_str - detailweight_dps_str * unit_dps_haste + offset = 0  (allow small offset to optimise on)
 
-	for simType, lookupStat := range selgrid.unitStatValues.SeqGroupsKey2() {
+	for simType, lookupStat := range selgrid.unitStatValues.SeqGroupsKey2Lookup() {
 		unitValueBaseSeq := lookupStat(c_baseStatType)
 		detailWeightBase := selgrid.detailedWeights.GetOrPanic(c_baseStatType, simType)
 		for _, thisStatType := range G_RequiredStats {
@@ -261,9 +261,9 @@ func (selgrid *SelectiveGridStatWeightProcess) unitValueCombinationAddToModel(ba
 func (selgrid *SelectiveGridStatWeightProcess) calcTotalRatings() {
 	for _, statType := range G_RequiredStats {
 		statFinalRow := utilhighs.ConstraintRowBuild{}
-		selgrid.detailedWeights.ForeachInnerWithKey1Value(statType, func(_ simulate.SimResultType, detailColumn utilhighs.ColumnIndex) {
+		for _, detailColumn := range selgrid.detailedWeights.SeqInnerWithKey1Value(statType) {
 			statFinalRow.Add(detailColumn, 1)
-		})
+		}
 
 		finalWeightColumn := selgrid.finalWeights[statType]
 		statFinalRow.Add(finalWeightColumn, -1)

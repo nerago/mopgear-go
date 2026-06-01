@@ -14,4 +14,9 @@
         "PATH": "${env:PATH};C:/msys64/ucrt64/bin",
         "CGO_ENABLED": "1"
     },
+    "gopls": {
+        "directoryFilters": [
+            "-wowsim-external/sim/web"
+        ]
+    },
 }
