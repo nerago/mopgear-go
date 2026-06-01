@@ -391,7 +391,7 @@ func generateRatingsInputFromRealRandomSets(printer *util.PrintRecorder) ([]stat
 func statWeightsComplex(printer *util.PrintRecorder) {
 	// weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
 
-	bytes, err := os.ReadFile("sim-stats-input-data.json")
+	bytes, err := os.ReadFile("sim-stats-input-data2.json")
 	if err != nil {
 		panic(err)
 	}
@@ -413,10 +413,12 @@ func statWeightsComplex(printer *util.PrintRecorder) {
 			between(w, stats.Stat_Dodge, 4271, 8342) &&
 			between(w, stats.Stat_Crit, 0, 3399)
 	})
+	printer.Printf("filteredInput size %d\n", len(filteredInput))
 
 	fitting := stathighs.ComplexStatWeightProcess{}
 
 	fitting.Init(printer)
+	fitting.SetTargetRatios(stathighs.NewStatWeights_generalMiti)
 	fitting.SupplyData(filteredInput)
 	weights := fitting.Run()
 	writePawnString(weights, printer)

@@ -45,7 +45,7 @@ func (compfit *ComplexStatWeightProcess) SetTargetRatios(targetRatios simulate.S
 func (compfit *ComplexStatWeightProcess) Run() map[stats.StatType]float64 {
 	compfit.input = new(utilhighs.InputBuilder)
 	compfit.input.Minimise = true
-	compfit.input.BlendMultiObjectives = true
+	// compfit.input.BlendMultiObjectives = true
 	compfit.input.Solver = "ipm"
 	// compfit.linearContribution = compfit.input.AddLinearBlended(1, 0) // contributionDiff
 	// compfit.linearScore = compfit.input.AddLinearBlended(2, 0)        // scoreDiff
@@ -127,16 +127,18 @@ func (compfit *ComplexStatWeightProcess) createWeightColumns() {
 	}
 
 	// force strength
-	for _, simType := range G_RequiredSims {
-		value := compfit.targetRatios.Get(simType)
-		column := compfit.detailedWeights.GetOrPanic(stats.Stat_Strength, simType)
-		setStrengthFromRatio := utilhighs.ConstraintRowBuild{}
-		setStrengthFromRatio.Debug = "setStrengthFromRatio " + simType.String()
-		setStrengthFromRatio.Add(column, 1)
-		setStrengthFromRatio.Finish(compfit.input, value, value)
-	}
+	// for _, simType := range G_RequiredSims {
+	// 	value := compfit.targetRatios.Get(simType)
+	// 	column := compfit.detailedWeights.GetOrPanic(stats.Stat_Strength, simType)
+	// 	setStrengthFromRatio := utilhighs.ConstraintRowBuild{}
+	// 	setStrengthFromRatio.Debug = "setStrengthFromRatio " + simType.String()
+	// 	setStrengthFromRatio.Add(column, 1)
+	// 	// maybe should flip the sign for simType.IsHighGood???
+	// 	setStrengthFromRatio.Finish(compfit.input, value, value)
+	// }
 
 	// total is sum of detailed
+	// NOTE not sure we can add these without scaling
 	for _, stat := range G_RequiredStats {
 		sumTotalStat := utilhighs.ConstraintRowBuild{}
 		sumTotalStat.Debug = "sumTotalStat " + stat.Name()
@@ -343,6 +345,7 @@ func (compfit *ComplexStatWeightProcess) reportWeightSolution(solution *highs.So
 		statWeightResult[statType] = weightCorrectedScale
 		compfit.printer.Printf("%10s %f %f\n", statType.Name(), weight, weightCorrectedScale)
 	}
+	compfit.printer.Println0()
 
 	detailWeight := util.MapMap[stats.StatType, simulate.SimResultType, float64]{}
 	for entry := range compfit.detailedWeights.SeqWithKeys() {
@@ -352,6 +355,15 @@ func (compfit *ComplexStatWeightProcess) reportWeightSolution(solution *highs.So
 		detailWeight.Put(entry.Key1, entry.Key2, weightCorrectedScale)
 		compfit.printer.Printf("%10s %10s %f %f\n", entry.Key1.Name(), entry.Key2.String(), weight, weightCorrectedScale)
 	}
+	compfit.printer.Println0()
+
+	for entry := range compfit.detailedWeights.SeqWithKeysOtherOrder() {
+		column := entry.Value
+		weight := solution.ColValues[column]
+		weightCorrectedScale := weight * compfit.scaleSims[entry.Key2] / compfit.scaleStats[entry.Key1]
+		compfit.printer.Printf("%10s %10s %f %f\n", entry.Key1.Name(), entry.Key2.String(), weight, weightCorrectedScale)
+	}
+	compfit.printer.Println0()
 
 	for i := range 5 {
 		data := compfit.inputData[i]

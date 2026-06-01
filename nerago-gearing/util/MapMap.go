@@ -123,6 +123,18 @@ func (mapmap *MapMap[J, K, V]) SeqWithKeys() iter.Seq[MapMapEntry[J, K, V]] {
 	}
 }
 
+func (mapmap *MapMap[J, K, V]) SeqWithKeysOtherOrder() iter.Seq[MapMapEntry[J, K, V]] {
+	return func(yield func(MapMapEntry[J, K, V]) bool) {
+		for key2, inner := range mapmap.dataBy2 {
+			for key1, value := range inner {
+				if !yield(MapMapEntry[J, K, V]{key1, key2, value}) {
+					return
+				}
+			}
+		}
+	}
+}
+
 func (mapmap *MapMap[J, K, V]) ForeachWithKeys(apply func(key1 J, key2 K, value V)) {
 	for key1, inner := range mapmap.dataBy1 {
 		for key2, value := range inner {
