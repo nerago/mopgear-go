@@ -44,14 +44,7 @@ func (compfit *ComplexStatWeightProcess) SetTargetRatios(targetRatios simulate.S
 func (compfit *ComplexStatWeightProcess) Run() map[stats.StatType]float64 {
 	compfit.input = new(utilhighs.InputBuilder)
 	compfit.input.Minimise = true
-	// compfit.input.BlendMultiObjectives = true
 	compfit.input.Solver = "ipm"
-	// compfit.linearContribution = compfit.input.AddLinearBlended(1, 0) // contributionDiff
-	// compfit.linearScore = compfit.input.AddLinearBlended(2, 0)        // scoreDiff
-
-	// compfit.input.AddLinearPrioritised(false, 1000, 0.2, 1) // contributionDiff
-	// compfit.input.AddLinearPrioritised(false, 1000, 0.2, 2) // scoreDiff
-	// compfit.input.AddLinearPrioritised(false, 1000, 0.2, 3) // data pairs offset
 
 	compfit.chooseSimScaling()
 	compfit.chooseStatScaling()
@@ -60,9 +53,8 @@ func (compfit *ComplexStatWeightProcess) Run() map[stats.StatType]float64 {
 
 	solution, log := compfit.input.RunHighs()
 	compfit.printer.AppendOther(log)
-	compfit.printer.Println(solution.Status.String())
 
-	return compfit.reportWeightSolution(solution)
+	return compfit.exactAndReportSolution(solution)
 }
 
 func (compfit *ComplexStatWeightProcess) chooseSimScaling() {
@@ -150,187 +142,46 @@ func (compfit *ComplexStatWeightProcess) buildDataEquationForSim(stats *stats.St
 	matchSimValue.Finish(compfit.input, simValue, simValue)
 }
 
-// func (compfit *ComplexStatWeightProcess) buildDataEquationForInputOld(data *WeightInput) {
-// 	// add up weighted gear score for row
-// 	gearScoreTotal := compfit.input.CreateColumnGeneral(highs.Continuous, 0, c_highRange, utilhighs.DebugString{Text: "gearScoreTotal"})
-// 	gearRow := utilhighs.ConstraintRowBuild{}
-// 	for _, statType := range G_RequiredStats {
-// 		statWeightCol := compfit.finalStatWeights[statType]
-// 		gearRow.Add(statWeightCol, float64(data.TotalStat.Get(statType)))
-// 	}
-// 	gearRow.Add(gearScoreTotal, -1)
-// 	gearRow.Finish(compfit.input, 0, 0)
-
-// 	// add up weighted sim score for row
-// 	simScoreTotal := compfit.input.CreateColumnGeneral(highs.Continuous, 0, c_highRange, utilhighs.DebugString{Text: "simScoreTotal"})
-// 	simScoreRow := utilhighs.ConstraintRowBuild{}
-// 	for _, simType := range G_RequiredSims {
-// 		simWeightCol := compfit.simWeightColumns[simType]
-// 		simScoreRow.Add(simWeightCol, data.SimResult.GetFriendly(simType))
-// 	}
-// 	simScoreRow.Add(simScoreTotal, -1)
-// 	simScoreRow.Finish(compfit.input, 0, 0)
-
-// 	// contribution of sim part of simScoreTotal
-// 	for _, simType := range G_RequiredSims {
-// 		contributionRow := utilhighs.ConstraintRowBuild{}
-
-// 		// formula sum(simWeight*simResult[simType]) = simScoreTotal
-// 		// simScoreTotal * 0.4 = simWeightCol * valuue[type]
-
-// 		// calc simResult[simType]*simWeightCol[simType]
-// 		simWeightCol := compfit.simWeightColumns[simType]
-// 		contributionRow.Add(simWeightCol, data.SimResult.GetFriendly(simType))
-
-// 		// ideally we want that to equal simScoreTotal*targetRatio[simType]
-// 		contributionRow.Add(simScoreTotal, -compfit.targetRatios.Get(simType))
-
-// 		// diff = simWeightCol[type] * thisResult[type] - thisScoreTotal * targetRatio[type]
-// 		// ideally for comparison sake the diff should look like the ratio
-// 		// simWeightCol[type] * thisResult[type] - thisScoreTotal * (targetRatio[type] + diff) = 0
-// 		// simWeightCol[type] * thisResult[type] - thisScoreTotal * (targetRatio[type] + diff) = 0
-
-// 		contributionDiff := compfit.input.CreateColumnGeneral(highs.Continuous, -c_highRange, c_highRange, utilhighs.DebugString{Text: "contributionDiff"})
-// 		// contributionDiff := input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
-// 		contributionRow.Add(contributionDiff, 1)
-// 		contributionRow.Finish(compfit.input, 0, 0)
-
-// 		contributionDiffAbsOutput := compfit.input.CreateColumnForLinearObjective(highs.Continuous, 0, c_highRange, 1, 0, utilhighs.DebugString{Text: "contributionDiffAbsOutput"})
-// 		// contributionDiffAbsOutput := input.CreateColumnForLinearObjective(highs.Continuous, 0, utilhighs.C_PlusInf, 1, 0)
-// 		utilhighs.AbsoluteValue(compfit.input, contributionDiff, contributionDiffAbsOutput) // could maybe be narrower highRange
-// 		// absoluteValue(input, contributionDiff, contributionDiffAbsOutput, highRange)
-// 		// colNames = append(colNames, "absBool")
-// 	}
-
-// 	scoreDiffSigned := compfit.input.CreateColumnGeneral(highs.Continuous, -c_highRange, c_highRange, utilhighs.DebugString{Text: "scoreDiffSigned"})
-// 	// scoreDiffSigned := input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
-// 	scoreDiffRow := utilhighs.ConstraintRowBuild{}
-// 	scoreDiffRow.Add(gearScoreTotal, 1)
-// 	scoreDiffRow.Add(simScoreTotal, -1)
-// 	scoreDiffRow.Add(scoreDiffSigned, 1)
-// 	scoreDiffRow.Finish(compfit.input, 0, 0)
-
-// 	// diffAbsOutput := input.CreateColumnForLinearObjective(highs.Continuous, 0, utilhighs.C_PlusInf, 1, 1)
-// 	diffAbsOutput := compfit.input.CreateColumnForLinearObjective(highs.Continuous, 0, c_highRange, 1, 1, utilhighs.DebugString{Text: "diffAbsOutput"})
-// 	utilhighs.AbsoluteValue(compfit.input, scoreDiffSigned, diffAbsOutput)
-// 	// absoluteValue(input, scoreDiffSigned, diffAbsOutput, highRange)
-// 	// colNames = append(colNames, "absBool")
-// }
-
-// func dataCompareInPairsEquations(input *utilhighs.InputBuilder, inputData []WeightInput, statWeightColumns map[stats.StatType]utilhighs.ColumnIndex, targetRatios simulate.SimResultStats) {
-// 	detailedWeights := make(map[stats.StatType]map[simulate.SimResultType]utilhighs.ColumnIndex)
-// 	for _, statType := range G_RequiredStats {
-// 		detailedWeights[statType] = make(map[simulate.SimResultType]utilhighs.ColumnIndex)
-// 		for _, simType := range G_RequiredSims {
-// 			detailedWeights[statType][simType] = input.CreateColumnGeneral(highs.Continuous, -c_highRange, c_highRange, nil)
-// 			// detailedWeights[statType][simType] = input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
-// 		}
-// 	}
-
-// 	inputData = inputData[0:20]
-// 	for _, data1 := range inputData {
-// 		for _, data2 := range inputData {
-// 			if !stats.StatBlock_Equals(&data1.TotalStat, &data2.TotalStat) {
-// 				dataCompareInPairsEquations_Single(input, data1, data2, detailedWeights, c_highRange)
-// 			}
-// 		}
-// 	}
-
-// 	for _, statType := range G_RequiredStats {
-// 		statRow := utilhighs.ConstraintRowBuild{}
-// 		for _, simType := range G_RequiredSims {
-// 			statRow.Add(detailedWeights[statType][simType], targetRatios.Get(simType))
-// 		}
-// 		statRow.Add(statWeightColumns[statType], -1)
-// 		statRow.Finish(input, 0, 0)
-// 	}
-// }
-
-// func dataCompareInPairsEquations_Single(input *utilhighs.InputBuilder, data1, data2 WeightInput, weights map[stats.StatType]map[simulate.SimResultType]utilhighs.ColumnIndex, highRange float64) {
-
-// 	// so i'd normally do this in the area of a single stat and simType
-// 	// Death's Haste improvement is F37/C37 = (death_with_0_haste_str - death_with_+600_haste)/(death_with_0_haste_str - death_with_+600_str)
-// 	// overall haste improvement is 0.4 * pos_only(F37/C37)
-
-// 	// we consider gearScoreTotal1/gearScoreTotal2? doesn't say much
-
-// 	// MAYBE A NEW SET OF COEFFECTIENCTS FOR HASTE_DEATH etc
-// 	// then we can define signedDiffDeath = (haste2-haste1)*hasteDeath + (crit2-crit1)*critDeath			{or this series expands out cleanly}
-
-// 	// maybe we make an equasion for each
-
-// 	// sim's percent difference should make sense for given stat combo
-// 	// simTotal * 0.4
-
-// 	for _, simType := range G_RequiredSims {
-// 		simRow := utilhighs.ConstraintRowBuild{}
-
-// 		for _, statType := range G_RequiredStats {
-// 			statDiff := data1.TotalStat.Get(statType) - data2.TotalStat.Get(statType)
-// 			simRow.Add(weights[statType][simType], float64(statDiff))
-// 		}
-
-// 		// offset := input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf)
-// 		offset := input.CreateColumnGeneral(highs.Continuous, -highRange, highRange, nil)
-// 		simRow.Add(offset, 1)
-// 		offsetAbs := input.CreateColumnForLinearObjective(highs.Continuous, 0, utilhighs.C_PlusInf, 1, 2, nil)
-// 		utilhighs.AbsoluteValue(input, offset, offsetAbs)
-
-// 		var simDiff float64
-// 		if simType.IsHighGood() {
-// 			simDiff = data1.SimResult.Get(simType) - data2.SimResult.Get(simType)
-// 		} else {
-// 			simDiff = data2.SimResult.Get(simType) - data1.SimResult.Get(simType)
-// 		}
-// 		simRow.Finish(input, simDiff, simDiff)
-// 	}
-// }
-
-func (compfit *ComplexStatWeightProcess) reportWeightSolution(solution *highs.Solution) map[stats.StatType]float64 {
+func (compfit *ComplexStatWeightProcess) exactAndReportSolution(solution *highs.Solution) map[stats.StatType]float64 {
 	compfit.input.DebugPrintColumns(solution, compfit.printer)
 
 	compfit.printer.Println("WEIGHTS")
+	detailWeightMapForCompute, detailWeightMapForExample := compfit.extractDetailWeights(solution)
+	statWeightResult := compfit.computeFinalWeights(detailWeightMapForCompute)
 
-	detailWeight := util.MapMap[stats.StatType, simulate.SimResultType, float64]{}
+	compfit.reportExamples(detailWeightMapForExample)
+
+	return statWeightResult
+}
+
+func (compfit *ComplexStatWeightProcess) extractDetailWeights(solution *highs.Solution) (util.MapMap[stats.StatType, simulate.SimResultType, float64], util.MapMap[stats.StatType, simulate.SimResultType, float64]) {
+	// extract and report on detail weights
+	detailWeightMapForCompute := util.MapMap[stats.StatType, simulate.SimResultType, float64]{}
+	detailWeightMapForExample := util.MapMap[stats.StatType, simulate.SimResultType, float64]{}
 	for entry := range compfit.detailedWeights.SeqWithKeys() {
 		column := entry.Value
 		weight := solution.ColValues[column]
-		// weightCorrectedScale := weight * compfit.scaleSims[entry.Key2] / compfit.scaleStats[entry.Key1]
-		weightCorrectedScale := weight / compfit.scaleStats[entry.Key1]
-		detailWeight.Put(entry.Key1, entry.Key2, weightCorrectedScale)
-		compfit.printer.Printf("%10s %10s %f %f\n", entry.Key1.Name(), entry.Key2.String(), weight, weightCorrectedScale)
+
+		weightCorrectedPreserveRelative := weight * compfit.scaleStats[entry.Key1]
+		detailWeightMapForCompute.Put(entry.Key1, entry.Key2, weightCorrectedPreserveRelative)
+
+		weightCorrectedBothScale := weight * compfit.scaleStats[entry.Key1] / compfit.scaleSims[entry.Key2]
+		detailWeightMapForExample.Put(entry.Key1, entry.Key2, weightCorrectedBothScale)
+
+		compfit.printer.Printf("%10s %10s %11.8f %11.8f %11.8f\n", entry.Key1.Name(), entry.Key2.String(), weight, weightCorrectedPreserveRelative, weightCorrectedBothScale)
 	}
 	compfit.printer.Println0()
 
-	for entry := range compfit.detailedWeights.SeqWithKeysOtherOrder() {
-		column := entry.Value
-		weight := solution.ColValues[column]
-		// weightCorrectedScale := weight * compfit.scaleSims[entry.Key2] / compfit.scaleStats[entry.Key1]
-		weightCorrectedScale := weight / compfit.scaleStats[entry.Key1]
-		compfit.printer.Printf("%10s %10s %f %f\n", entry.Key1.Name(), entry.Key2.String(), weight, weightCorrectedScale)
+	for entry := range detailWeightMapForCompute.SeqWithKeysOtherOrder() {
+		weightCorrectedPreserveRelative := entry.Value
+		weightCorrectedBothScale := detailWeightMapForExample.GetOrPanic(entry.Key1, entry.Key2)
+		compfit.printer.Printf("%10s %10s %11.8f %11.8f\n", entry.Key1.Name(), entry.Key2.String(), weightCorrectedPreserveRelative, weightCorrectedBothScale)
 	}
 	compfit.printer.Println0()
+	return detailWeightMapForCompute, detailWeightMapForExample
+}
 
-	statWeightResult := make(map[stats.StatType]float64)
-	// for statType, seqPairs := range detailWeight.SeqGroupsKey1NestedKeyValue() {
-	// }
-
-	// for statType, simLookup := range compfit.detailedWeights.SeqGroupsKey1NestedKeyValue() {
-
-	// weightCorrectedScale := weight / compfit.scaleStats[statType]
-	// statWeightResult[statType] = weightCorrectedScale
-	// compfit.printer.Printf("%10s %f %f\n", statType.Name(), weight, weightCorrectedScale)
-	// }
-	compfit.printer.Println0()
-
-	// for _, statType := range G_RequiredStats {
-	// 	statWeightCol := compfit.finalStatWeights[statType]
-	// 	weight := solution.ColValues[statWeightCol]
-	// 	weightCorrectedScale := weight / compfit.scaleStats[statType]
-	// 	statWeightResult[statType] = weightCorrectedScale
-	// 	compfit.printer.Printf("%10s %f %f\n", statType.Name(), weight, weightCorrectedScale)
-	// }
-
+func (compfit *ComplexStatWeightProcess) reportExamples(detailWeightMapForExample util.MapMap[stats.StatType, simulate.SimResultType, float64]) {
 	for i := range 5 {
 		data := compfit.inputData[i]
 		compfit.printer.Println("EXAMPLE")
@@ -340,15 +191,42 @@ func (compfit *ComplexStatWeightProcess) reportWeightSolution(solution *highs.So
 			compfit.printer.Printf(" %10s", simType.String())
 			for _, statType := range G_RequiredStats {
 				statValue := float64(data.TotalStat.Get(statType))
-				weight := detailWeight.GetOrPanic(statType, simType)
-				compfit.printer.Printf(" {%s %.2f * %.4f = %.2f}", statType.Name(), statValue, weight, statValue*weight)
+				weight := detailWeightMapForExample.GetOrPanic(statType, simType)
+				compfit.printer.Printf(" {%s %.2f * %.4e = %.4f}", statType.Name(), statValue, weight, statValue*weight)
 				statSum += statValue * weight
 			}
-			compfit.printer.Printf(" = %.2f (expect %.2f)\n", statSum, data.SimResult.Get(simType))
+			compfit.printer.Printf(" = %.4f (expect %.4f)\n", statSum, data.SimResult.Get(simType))
 		}
 
 		compfit.printer.Println0()
 	}
+}
 
+func (compfit *ComplexStatWeightProcess) computeFinalWeights(detailWeightMapForCompute util.MapMap[stats.StatType, simulate.SimResultType, float64]) map[stats.StatType]float64 {
+	statWeightResult := make(map[stats.StatType]float64)
+	for statType, seqSimPairs := range detailWeightMapForCompute.SeqGroupsKey1NestedKeyValue() {
+		sumIndividual := 0.0
+
+		for simType, thisDetailWeight := range seqSimPairs {
+			targetRatio := compfit.targetRatios.Get(simType)
+			componentValue := thisDetailWeight * targetRatio
+			if !simType.IsHighGood() {
+				componentValue *= -1
+			}
+			sumIndividual += componentValue
+		}
+
+		statWeightResult[statType] = sumIndividual
+	}
+
+	// rescale them so that strength is value 1.0
+	// only try if positive result (should always be) mostly to guard divide by zero
+	// but negative also would flip everything else, and be messy
+	strengthResult := statWeightResult[stats.Stat_Strength]
+	if strengthResult > 0 {
+		for _, statType := range G_RequiredStats {
+			statWeightResult[statType] /= strengthResult
+		}
+	}
 	return statWeightResult
 }
