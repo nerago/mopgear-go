@@ -98,7 +98,8 @@ func core(printer *util.PrintRecorder) {
 	// statWeightsFromHighAndSim(printer)
 	// statWeightsBasic(printer)
 	// statWeightsGrid(printer)
-	statWeightsFitting2(printer)
+	// statWeightsFitting2(printer)
+	statWeightsComplex(printer)
 }
 
 func setupPallyMitigationSet() (items.FullOptionsMap, model.Model) {

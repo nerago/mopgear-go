@@ -389,25 +389,36 @@ func generateRatingsInputFromRealRandomSets(printer *util.PrintRecorder) ([]stat
 }
 
 func statWeightsComplex(printer *util.PrintRecorder) {
-	weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
+	// weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
 
-	// bytes, err := os.ReadFile("sim-stats-input-data.json")
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// var weightInputs []stathighs.WeightInput
-	// err = json.Unmarshal(bytes, &weightInputs)
-	// if err != nil {
-	// 	panic(err)
-	// }
+	bytes, err := os.ReadFile("sim-stats-input-data.json")
+	if err != nil {
+		panic(err)
+	}
+	var weightInputs []stathighs.WeightInput
+	err = json.Unmarshal(bytes, &weightInputs)
+	if err != nil {
+		panic(err)
+	}
 
-	// for _, entry := range weightInputs {
-	// 	if entry.TotalStat.Get(stats.Stat_Haste) < 14000 {
-	// 		panic("haste in discontinuity range")
-	// 	}
-	// }
+	between := func(w *stathighs.WeightInput, stat stats.StatType, lo, hi uint32) bool {
+		value := w.TotalStat.Get(stat)
+		return lo <= value && value <= hi
+	}
 
-	weights := stathighs.CalcComplexStatWeights(weightInputs, targetRatio, printer)
+	filteredInput := util.FilterSliceAsNew(weightInputs, func(w *stathighs.WeightInput) bool {
+		return between(w, stats.Stat_Haste, 3187, 8675) &&
+			between(w, stats.Stat_Expertise, 2805, 4950) &&
+			between(w, stats.Stat_Mastery, 5767, 11787) &&
+			between(w, stats.Stat_Dodge, 4271, 8342) &&
+			between(w, stats.Stat_Crit, 0, 3399)
+	})
+
+	fitting := stathighs.ComplexStatWeightProcess{}
+
+	fitting.Init(printer)
+	fitting.SupplyData(filteredInput)
+	weights := fitting.Run()
 	writePawnString(weights, printer)
 }
 
