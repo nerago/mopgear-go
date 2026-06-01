@@ -11,9 +11,9 @@ type MapMap[J comparable, K comparable, V any] struct {
 }
 
 type MapMapEntry[J comparable, K comparable, V any] struct {
-	key1  J
-	key2  K
-	value V
+	Key1  J
+	Key2  K
+	Value V
 }
 
 func (mapmap *MapMap[J, K, V]) Get(key1 J, key2 K) (V, bool) {
@@ -119,6 +119,18 @@ func (mapmap *MapMap[J, K, V]) Apply(key1 J, key2 K, apply func(oldValue V) V) {
 		data2[key2] = inner2
 	}
 	inner2[key1] = value
+}
+
+func (mapmap *MapMap[J, K, V]) SeqValues() iter.Seq[V] {
+	return func(yield func(V) bool) {
+		for _, inner := range mapmap.dataBy1 {
+			for _, value := range inner {
+				if !yield(value) {
+					return
+				}
+			}
+		}
+	}
 }
 
 func (mapmap *MapMap[J, K, V]) SeqWithKeys() iter.Seq[MapMapEntry[J, K, V]] {

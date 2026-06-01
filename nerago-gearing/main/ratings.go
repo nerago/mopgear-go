@@ -448,7 +448,7 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 
 	weightMap := fitting.Run()
 	printer.Printf("weightMap size %d\n", len(weightMap))
-	weightList := slices.SortedFunc(maps.Values(weightMap), func(a, b stathighs.FittingSingleStatResult) int {return cmp.Compare(a.Minimum, b.Minimum)})
+	weightList := slices.SortedFunc(maps.Values(weightMap), func(a, b stathighs.FittingSingleStatResult) int { return cmp.Compare(a.Minimum, b.Minimum) })
 
 	tab := util.TabulateOutput{}
 	tab.SetColumnSpacing(1)
@@ -459,18 +459,73 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 	tab.AddColumnHeader("used", true)
 	tab.AddColumnHeader("used%", false)
 	for _, oneWeight := range weightList {
-		tab.AddRow([]string {
+		tab.AddRow([]string{
 			strconv.FormatUint(uint64(oneWeight.Minimum), 10),
 			strconv.FormatUint(uint64(oneWeight.Maximum), 10),
 			strconv.FormatFloat(oneWeight.LineSlope, 'f', 6, 64),
 			strconv.FormatFloat(oneWeight.LineOffset, 'f', 1, 64),
 			strconv.FormatUint(uint64(oneWeight.IncludeCount), 10),
-			strconv.FormatFloat(oneWeight.IncludePercent * 100, 'f', 1, 64),
+			strconv.FormatFloat(oneWeight.IncludePercent*100, 'f', 1, 64),
 		})
 		// printer.Printf("%f %f %d %d %f\n", oneWeight.LineSlope, oneWeight.LineOffset, oneWeight.Minimum, oneWeight.Maximum, oneWeight.IncludePercent)
 	}
 	tab.Write(printer)
 	// writePawnString(weights, printer)
+}
+
+func statWeightsFitting2(printer *util.PrintRecorder) {
+	bytes, err := os.ReadFile("sim-stats-input-data2.json")
+	// bytes, err := os.ReadFile("sim-stats-input-data.json")
+	if err != nil {
+		panic(err)
+	}
+	var weightInputs []stathighs.WeightInput
+	err = json.Unmarshal(bytes, &weightInputs)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, entry := range weightInputs {
+		if hasteInDiscontinuityRange(entry.TotalStat.Get(stats.Stat_Haste)) {
+			printer.Println("haste in discontinuity range")
+		}
+	}
+
+	printer.Printf("Initial weight input size = %d\n", len(weightInputs))
+
+	fitting := stathighs.FittingEachStatWeightProcess{}
+	fitting.Init(printer)
+	fitting.SupplyDataFromStandard(weightInputs)
+
+	weightMapMapMap := fitting.Run()
+	for entry := range weightMapMapMap.SeqWithKeys() {
+		weightMap := entry.Value
+
+		printer.Printf("################### %s %s ###################\n", entry.Key1.Name(), entry.Key2.String())
+		printer.Printf("weightMap size %d\n", len(weightMap))
+		weightList := slices.SortedFunc(maps.Values(weightMap), func(a, b stathighs.FittingSingleStatResult) int { return cmp.Compare(a.Minimum, b.Minimum) })
+
+		tab := util.TabulateOutput{}
+		tab.SetColumnSpacing(1)
+		tab.AddColumnHeader("min", true)
+		tab.AddColumnHeader("max", false)
+		tab.AddColumnHeader("m", true)
+		tab.AddColumnHeader("c", false)
+		tab.AddColumnHeader("used", true)
+		tab.AddColumnHeader("used%", false)
+		for _, oneWeight := range weightList {
+			tab.AddRow([]string{
+				strconv.FormatUint(uint64(oneWeight.Minimum), 10),
+				strconv.FormatUint(uint64(oneWeight.Maximum), 10),
+				strconv.FormatFloat(oneWeight.LineSlope, 'f', 6, 64),
+				strconv.FormatFloat(oneWeight.LineOffset, 'f', 1, 64),
+				strconv.FormatUint(uint64(oneWeight.IncludeCount), 10),
+				strconv.FormatFloat(oneWeight.IncludePercent*100, 'f', 1, 64),
+			})
+			// printer.Printf("%f %f %d %d %f\n", oneWeight.LineSlope, oneWeight.LineOffset, oneWeight.Minimum, oneWeight.Maximum, oneWeight.IncludePercent)
+		}
+		tab.Write(printer)
+	}
 }
 
 func statWeightsBasic(printer *util.PrintRecorder) {

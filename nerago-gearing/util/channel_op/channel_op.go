@@ -1,6 +1,7 @@
 package channel_op
 
 import (
+	"iter"
 	"sync"
 )
 
@@ -141,7 +142,7 @@ func Map_SliceToSlice[T any, R any](threadCount int, inputSlice []T, mapper func
 	return outputSlice
 }
 
-func ForEach_Blocking_Void[T any](threadCount int, inputSlice []T, process func(*T)) {
+func ForEach_Slice[T any](threadCount int, inputSlice []T, process func(*T)) {
 	var waitGroup sync.WaitGroup
 
 	inputLength := len(inputSlice)
@@ -153,6 +154,20 @@ func ForEach_Blocking_Void[T any](threadCount int, inputSlice []T, process func(
 			end := splits[threadNum+1]
 			for index := start; index < end; index++ {
 				process(&inputSlice[index])
+			}
+		})
+	}
+
+	waitGroup.Wait()
+}
+
+func ForEach_Channel[T any](threadCount int, inputChannel <-chan T, process func(T)) {
+	var waitGroup sync.WaitGroup
+
+	for range threadCount {
+		waitGroup.Go(func() {
+			for value := range inputChannel {
+				process(value)
 			}
 		})
 	}
@@ -227,6 +242,17 @@ func GroupChannel_To_ManyChannel[T any, G comparable](threadCount int, inputChan
 			close(entry.channel)
 			return true
 		})
+	}()
+	return outputChannel
+}
+
+func SeqToChannel[T any](seq iter.Seq[T]) <-chan T {
+	outputChannel := make(chan T)
+	go func() {
+		for value := range seq {
+			outputChannel <- value
+		}
+		close(outputChannel)
 	}()
 	return outputChannel
 }

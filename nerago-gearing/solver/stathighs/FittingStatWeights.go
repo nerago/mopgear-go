@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 	"slices"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -58,7 +59,14 @@ func (fitall *FittingAllStatWeightProcess) Init(printer *util.PrintRecorder) {
 type FittingEachStatWeightProcess struct {
 	printer   *util.PrintRecorder
 	inputData []WeightInput
-	each      util.MapMap[stats.StatType, simulate.SimResultType, FittingSingleStatWeightProcess]
+	each      util.MapMap[stats.StatType, simulate.SimResultType, *fittingEachFields]
+}
+
+type fittingEachFields struct {
+	statType  stats.StatType
+	simType   simulate.SimResultType
+	process   FittingSingleStatSegmentsProcess
+	resultMap map[StatRange]FittingSingleStatResult
 }
 
 func (fiteach *FittingEachStatWeightProcess) Init(printer *util.PrintRecorder) {
@@ -69,11 +77,27 @@ func (fiteach *FittingEachStatWeightProcess) SupplyDataFromStandard(inputData []
 	fiteach.inputData = inputData
 }
 
-func (fiteach *FittingEachStatWeightProcess) Run() {
-	// for _, statType := range G_RequiredStats {
-	// 	for _, simType := range G_RequiredSims {
-	// 	}
-	// }
+func (fiteach *FittingEachStatWeightProcess) Run() util.MapMap[stats.StatType, simulate.SimResultType, map[StatRange]FittingSingleStatResult] {
+	for _, statType := range G_RequiredStats {
+		for _, simType := range G_RequiredSims {
+			// TODO holding printer?
+			fields := fittingEachFields{statType: statType, simType: simType}
+			fields.process.Init(fiteach.printer, statType, simType)
+			fields.process.SupplyDataFromStandard(fiteach.inputData)
+			fiteach.each.Put(statType, simType, &fields)
+		}
+	}
+
+	channelEach := channel_op.SeqToChannel(fiteach.each.SeqValues())
+	channel_op.ForEach_Channel(10, channelEach, func(fields *fittingEachFields) {
+		fields.resultMap = fields.process.Run()
+	})
+
+	resultMap := util.MapMap[stats.StatType, simulate.SimResultType, map[StatRange]FittingSingleStatResult]{}
+	fiteach.each.ForeachWithKeys(func(statType stats.StatType, simType simulate.SimResultType, value *fittingEachFields) {
+		resultMap.Put(statType, simType, value.resultMap)
+	})
+	return resultMap
 }
 
 ////////////////////////////////////////////////////////
@@ -387,16 +411,21 @@ func (fit *FittingSingleStatWeightProcess) setupLinearObjectives() {
 
 	fit.input.BlendMultiObjectives = false
 
-	// first linear step find a regular solution to the line fit
-	// will probably follow the minimum required include
-	// will get us a positive initial result from the sum of differenceAbs
-	// let it expand to full coverage if it wants, but without worsening the average difference
-	multiplierToFullCoverage := 1 / fit.minimumIncludeRate
-	// add consider a bit of factor to this, only 80% etc, otherwise might get too greedy
-	multiplierToFullCoverage *= 0.8
-	// highs logic is "objective * (1.0 + linear_objective.rel_tolerance)", so need to minus one in compenstation
-	// don't let it go negative or below a small value
-	relativeToleranceParam := max(multiplierToFullCoverage-1, 0.1)
+	var relativeToleranceParam float64
+	if fit.minimumIncludeRate < 1 {
+		// first linear step find a regular solution to the line fit
+		// will probably follow the minimum required include
+		// will get us a positive initial result from the sum of differenceAbs
+		// let it expand to full coverage if it wants, but without worsening the average difference
+		multiplierToFullCoverage := 1 / fit.minimumIncludeRate
+		// add consider a bit of factor to this, only 80% etc, otherwise might get too greedy
+		multiplierToFullCoverage *= 0.5
+		// highs logic is "objective * (1.0 + linear_objective.rel_tolerance)", so need to minus one in compenstation
+		// don't let it go negative or below a small value
+		relativeToleranceParam = max(multiplierToFullCoverage-1, 0.1)
+	} else {
+		relativeToleranceParam = 0
+	}
 	fit.linearLineDiff = fit.input.AddLinearPrioritised(false, -1, relativeToleranceParam, 2)
 
 	// second priority is sum of includeColumn which are negative one each, can lead to negative total objective
