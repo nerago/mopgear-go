@@ -95,7 +95,7 @@ func (compfit *ComplexStatWeightProcess) chooseStatScaling() {
 			compfit.scaleStats[statType] = 1
 		}
 
-		compfit.printer.Printf("scale %s %f\n", statType.Name(), compfit.scaleStats[statType])
+		compfit.printer.Printf("scale %s %.8f\n", statType.Name(), compfit.scaleStats[statType])
 	}
 }
 
@@ -182,7 +182,7 @@ func (compfit *ComplexStatWeightProcess) extractDetailWeights(solution *highs.So
 }
 
 func (compfit *ComplexStatWeightProcess) reportExamples(detailWeightMapForExample util.MapMap[stats.StatType, simulate.SimResultType, float64]) {
-	for i := range 5 {
+	for i := range 20 {
 		data := compfit.inputData[i]
 		compfit.printer.Println("EXAMPLE")
 
@@ -213,7 +213,7 @@ func (compfit *ComplexStatWeightProcess) computeFinalWeights(detailWeightMapForC
 			if !simType.IsHighGood() {
 				componentValue *= -1
 			}
-			sumIndividual += componentValue
+			sumIndividual += componentValue // NOTE not sure if adding these is actually meaningful math, or they only make sense relatively within simType
 		}
 
 		statWeightResult[statType] = sumIndividual

@@ -401,19 +401,19 @@ func statWeightsComplex(printer *util.PrintRecorder) {
 		panic(err)
 	}
 
-	between := func(w *stathighs.WeightInput, stat stats.StatType, lo, hi uint32) bool {
-		value := w.TotalStat.Get(stat)
-		return lo <= value && value <= hi
-	}
-
-	filteredInput := util.FilterSliceAsNew(weightInputs, func(w *stathighs.WeightInput) bool {
-		return between(w, stats.Stat_Haste, 3187, 8675) &&
-			between(w, stats.Stat_Expertise, 2805, 4950) &&
-			between(w, stats.Stat_Mastery, 5767, 11787) &&
-			between(w, stats.Stat_Dodge, 4271, 8342) &&
-			between(w, stats.Stat_Crit, 0, 3399)
-	})
-	printer.Printf("filteredInput size %d\n", len(filteredInput))
+	// between := func(w *stathighs.WeightInput, stat stats.StatType, lo, hi uint32) bool {
+	// 	value := w.TotalStat.Get(stat)
+	// 	return lo <= value && value <= hi
+	// }
+	// filteredInput := util.FilterSliceAsNew(weightInputs, func(w *stathighs.WeightInput) bool {
+	// 	return between(w, stats.Stat_Haste, 3187, 8675) &&
+	// 		between(w, stats.Stat_Expertise, 2805, 4950) &&
+	// 		between(w, stats.Stat_Mastery, 5767, 11787) &&
+	// 		between(w, stats.Stat_Dodge, 4271, 8342) &&
+	// 		between(w, stats.Stat_Crit, 0, 3399)
+	// })
+	// printer.Printf("filteredInput size %d\n", len(filteredInput))
+	filteredInput := weightInputs
 
 	fitting := stathighs.ComplexStatWeightProcess{}
 
