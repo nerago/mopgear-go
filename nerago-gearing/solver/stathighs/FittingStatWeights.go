@@ -23,7 +23,7 @@ const (
 	c_simRangeHigh = 5000000 / c_scaleBigSim // we try to scale values like above towards nicer range
 
 	c_outputFittingDifference = 1
-	c_outputIncludePerInclude = -1
+	c_outputFittingPerInclude = -1
 )
 
 // so we want to define a line of best fit for each stat/sim
@@ -471,7 +471,7 @@ func (fit *FittingSingleStatWeightProcess) addSample(sample *fittingSample) {
 }
 
 func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample *fittingSample) utilhighs.ColumnIndex {
-	includeColumn := fit.input.CreateColumnForLinearObjective(highs.Integer, 0, 1, c_outputIncludePerInclude, fit.linearInclude, utilhighs.DebugString{Text: "include"})
+	includeColumn := fit.input.CreateColumnForLinearObjective(highs.Integer, 0, 1, c_outputFittingPerInclude, fit.linearInclude, utilhighs.DebugString{Text: "include"})
 	fit.includeCountRow.Add(includeColumn, 1)
 	fit.includeColumns = append(fit.includeColumns, includeColumn)
 	sample.includeColumn = includeColumn

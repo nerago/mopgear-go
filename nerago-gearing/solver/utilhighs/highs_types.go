@@ -164,7 +164,7 @@ func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 		verifyNoError(solver.AddLinearObjective(objective.weight, objective.offset, coefficientArray, objective.abs_tolerance, objective.rel_tolerance, objective.priority))
 	}
 
-	verifyNoError(solver.SetStringOption("presolve", "off"))
+	// verifyNoError(solver.SetStringOption("presolve", "off"))
 	// verifyNoError(solver.SetStringOption("parallel", "on"))
 	// verifyNoError(solver.SetIntOption("threads", c_threads))
 	// verifyNoError(solver.SetFloatOption("time_limit", 300))

@@ -9,7 +9,11 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
-// const c_ComplexHighRange = 100000.0
+const (
+	c_complexHighWeight       = 50.0
+	c_complexHighDiff         = 1000.0
+	c_complexOutputPerInclude = -0.1
+)
 
 type ComplexStatWeightProcess struct {
 	printer *util.PrintRecorder
@@ -19,166 +23,222 @@ type ComplexStatWeightProcess struct {
 
 	input *utilhighs.InputBuilder
 
-	// linearContribution int
-	// linearScore        int
-
-	// simWeightColumns  map[simulate.SimResultType]utilhighs.ColumnIndex
+	linearEquationDiff int
+	linearInclude      int
 
 	scaleSims             map[simulate.SimResultType]float64
 	scaleStats            map[stats.StatType]float64
 	detailedWeightColumns util.MapMap[stats.StatType, simulate.SimResultType, utilhighs.ColumnIndex]
+
+	minimumIncludeRate float64
+	includeColumns     []utilhighs.ColumnIndex
+	includeCountRow    utilhighs.ConstraintRowBuild
 }
 
-func (compfit *ComplexStatWeightProcess) Init(printer *util.PrintRecorder) {
-	compfit.printer = printer
+func (comp *ComplexStatWeightProcess) Init(printer *util.PrintRecorder) {
+	comp.printer = printer
 }
 
-func (compfit *ComplexStatWeightProcess) SupplyData(inputData []WeightInput) {
-	compfit.inputData = inputData
+func (comp *ComplexStatWeightProcess) SupplyData(inputData []WeightInput) {
+	comp.inputData = inputData
 }
 
-func (compfit *ComplexStatWeightProcess) SetTargetRatios(targetRatios simulate.SimResultStats) {
-	compfit.targetRatios = targetRatios
+func (comp *ComplexStatWeightProcess) SetTargetRatios(targetRatios simulate.SimResultStats) {
+	comp.targetRatios = targetRatios
 }
 
-func (compfit *ComplexStatWeightProcess) Run() map[stats.StatType]float64 {
-	compfit.input = new(utilhighs.InputBuilder)
-	compfit.input.Minimise = true
-	compfit.input.Solver = "ipm"
-
-	compfit.chooseSimScaling()
-	compfit.chooseStatScaling()
-	compfit.createWeightColumns()
-	compfit.buildDataEquations()
-
-	solution, log := compfit.input.RunHighs()
-	compfit.printer.AppendOther(log)
-
-	return compfit.exactAndReportSolution(solution)
+func (comp *ComplexStatWeightProcess) SetMinimumIncludeRate(percent float64) {
+	comp.minimumIncludeRate = percent
 }
 
-func (compfit *ComplexStatWeightProcess) chooseSimScaling() {
+func (comp *ComplexStatWeightProcess) Run() map[stats.StatType]float64 {
+	comp.input = new(utilhighs.InputBuilder)
+	comp.input.Minimise = true
+	// comp.input.Solver = "ipm"
+
+	// comp.linearEquationDiff = -1
+	// comp.linearInclude = -1
+	
+	comp.input.BlendMultiObjectives = false
+	comp.linearEquationDiff = comp.input.AddLinearPrioritised(false, -1, 0.5, 2)
+	comp.linearInclude = comp.input.AddLinearPrioritised(false, -1, -1, 1)
+
+	comp.chooseSimScaling()
+	comp.chooseStatScaling()
+	comp.createWeightColumns()
+	comp.buildDataEquations()
+
+	comp.includeCountRow.Finish(comp.input, float64(len(comp.inputData))*comp.minimumIncludeRate, utilhighs.C_PlusInf)
+
+	solution, log := comp.input.RunHighs()
+	comp.printer.AppendOther(log)
+
+	return comp.exactAndReportSolution(solution)
+}
+
+func (comp *ComplexStatWeightProcess) chooseSimScaling() {
 	c_targetNumber := 1.0
-	compfit.scaleSims = make(map[simulate.SimResultType]float64)
+	comp.scaleSims = make(map[simulate.SimResultType]float64)
 	for _, simType := range G_RequiredSims {
 		total := 0.0
-		for data := range util.ForPointer(compfit.inputData) {
+		for data := range util.ForPointer(comp.inputData) {
 			total += data.SimResult.Get(simType)
 		}
 
-		average := total / float64(len(compfit.inputData))
+		average := total / float64(len(comp.inputData))
 		if average != 0 {
 			scale := c_targetNumber / average
-			compfit.scaleSims[simType] = scale
+			comp.scaleSims[simType] = scale
 		} else {
-			compfit.scaleSims[simType] = 1
+			comp.scaleSims[simType] = 1
 		}
 
-		compfit.printer.Printf("scale %s %e\n", simType.String(), compfit.scaleSims[simType])
+		comp.printer.Printf("scale %s %e\n", simType.String(), comp.scaleSims[simType])
 	}
 }
 
-func (compfit *ComplexStatWeightProcess) chooseStatScaling() {
+func (comp *ComplexStatWeightProcess) chooseStatScaling() {
 	c_targetNumber := 1.0
-	compfit.scaleStats = make(map[stats.StatType]float64)
+	comp.scaleStats = make(map[stats.StatType]float64)
 	for _, statType := range G_RequiredStats {
 		total := 0.0
-		for data := range util.ForPointer(compfit.inputData) {
+		for data := range util.ForPointer(comp.inputData) {
 			total += float64(data.TotalStat.Get(statType))
 		}
 
-		average := total / float64(len(compfit.inputData))
+		average := total / float64(len(comp.inputData))
 		if average != 0 {
 			scale := c_targetNumber / average
-			compfit.scaleStats[statType] = scale
+			comp.scaleStats[statType] = scale
 		} else {
-			compfit.scaleStats[statType] = 1
+			comp.scaleStats[statType] = 1
 		}
 
-		compfit.printer.Printf("scale %s %.8f\n", statType.Name(), compfit.scaleStats[statType])
+		comp.printer.Printf("scale %s %.8f\n", statType.Name(), comp.scaleStats[statType])
 	}
 }
 
-func (compfit *ComplexStatWeightProcess) createWeightColumns() {
+func (comp *ComplexStatWeightProcess) createWeightColumns() {
 	minimumStrength := 0.0001
 
 	for _, statType := range G_RequiredStats {
 		for _, simType := range G_RequiredSims {
-			// we don't want to be dealing with 0 strength since that's our base stat to scale against
-			// however could be rejecting some special situtations where it actually is true
 			lo := utilhighs.C_MinusInf
 			hi := utilhighs.C_PlusInf
-			// if statType == stats.Stat_Strength {
-			// 	lo = minimumStrength
-			// }
-
-			colDetailWeight := compfit.input.CreateColumnGeneral(highs.Continuous, lo, hi, utilhighs.DebugString{Text: "WEIGHT " + statType.Name() + " " + simType.String()})
-			compfit.detailedWeightColumns.Put(statType, simType, colDetailWeight)
+			colDetailWeight := comp.input.CreateColumnGeneral(highs.Continuous, lo, hi, utilhighs.DebugString{Text: "WEIGHT " + statType.Name() + " " + simType.String()})
+			comp.detailedWeightColumns.Put(statType, simType, colDetailWeight)
 		}
 	}
 
 	// we don't want to be dealing with 0 strength since that's our base stat to scale against
 	// however could be rejecting some special situtations where it actually is true
-	for simType, colDetailWeight := range compfit.detailedWeightColumns.SeqInnerWithKey1Value(stats.Stat_Strength) {
-		weightAbsoluteValue := compfit.input.CreateColumnGeneral(highs.Continuous, minimumStrength, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT ABS strength " + simType.String()})
-		utilhighs.AbsoluteValue(compfit.input, colDetailWeight, weightAbsoluteValue)
+	for _, colDetailWeight := range comp.detailedWeightColumns.SeqInnerWithKey1Value(stats.Stat_Strength) {
+		comp.makeNotBetween(colDetailWeight, -minimumStrength, minimumStrength)
 	}
 }
 
-func (compfit *ComplexStatWeightProcess) buildDataEquations() {
-	for data := range util.ForPointer(compfit.inputData) {
-		compfit.buildDataEquationForInput(data)
+// copied from FittingSingleStatWeightProcess.makeIsOverMinimum
+func (comp *ComplexStatWeightProcess) makeNotBetween(checkColumn utilhighs.ColumnIndex, lo, hi float64) {
+	isUnderMin := comp.input.CreateColumnBool(utilhighs.DebugString{Text: "isUnderMin"})
+	isOverMax := comp.input.CreateColumnBool(utilhighs.DebugString{Text: "isOverMax"})
+
+	// lo <= check + x*range <= range+lo
+	// if undermin: lo <= check + range <= range+lo     ->>  lo <= check + range (for sure)
+	//                                                  ->>  check <= lo
+	// if !undermin: lo <= check + x*range <= range+lo  ->>  lo <= check
+	//                                                       check <= range+lo (for sure)
+	// if check < lo: lo <= check + x*range <= range+lo ->>  lo <= check + x*range        ->> lo - check <= x*range          ->>  small_positive <= x*range          ->>  x=1
+	//                                                       check + x*range <= range+lo  ->> check - lo + x*range <= range  ->>  small_negative + x*range <= range  ->>  x=0 or 1
+	// if check > lo: lo <= check + x*range <= range+lo ->>  lo <= check + x*range        ->> lo - check <= x*range          ->>  small_negative <= x*range          ->>  x=0 or 1
+	//                                                       check + x*range <= range+lo  ->> check - lo + x*range <= range  ->>  small_positive + x*range <= range  ->>  x=0
+	underMin := utilhighs.ConstraintRowBuild{Debug: "setIfOverMin"}
+	underMin.Add(checkColumn, 1)
+	underMin.Add(isUnderMin, c_complexHighWeight)
+	underMin.Finish(comp.input, lo, lo+c_complexHighWeight)
+
+	// hi-range <= check - x*range <= hi
+	// if overmax: hi-range <= check - x*range <= hi  ->>  hi-range <= check - range <= hi  ->>  hi-range <= check - range  ->>  hi <= check
+	//                                                                                      ->>  check - range <= hi        ->>  whatever
+	// if !overmax: hi-range <= check - x*range <= hi  ->>  hi-range <= check <= hi  ->>  hi-range <= check  ->>  whatever
+	//                                                                               ->>  check <= hi
+	// if check < hi: hi-range <= check - x*range <= hi  ->>  hi-range <= check - x*range  ->>  hi-check <= range - x*range ->>  small_positive <= range - x*range  ->>  x=0
+	//                                                        check - x*range <= hi        ->>  check - hi <= x*range       ->>  small_negative <= x*range          ->>  x=0 or 1
+	// if check > hi: hi-range <= check - x*range <= hi  ->>  hi-range <= check - x*range  ->>  hi-check <= range - x*range ->>  small_negative <= range - x*range  ->>  x=0 or 1
+	//                                                        check - x*range <= hi        ->>  check - hi <= x*range       ->>  small_positive <= x*range          ->>  x=1
+	overMax := utilhighs.ConstraintRowBuild{Debug: "setIfUnderMax"}
+	overMax.Add(checkColumn, 1)
+	overMax.Add(isOverMax, -c_complexHighWeight)
+	overMax.Finish(comp.input, hi-c_complexHighWeight, hi)
+
+	or := utilhighs.ConstraintRowBuild{}
+	or.Add(isUnderMin, 1)
+	or.Add(isOverMax, 1)
+	or.Finish(comp.input, 1, 1)
+}
+
+func (comp *ComplexStatWeightProcess) buildDataEquations() {
+	for data := range util.ForPointer(comp.inputData) {
+		comp.buildDataEquationForInput(data)
 	}
 }
 
-func (compfit *ComplexStatWeightProcess) buildDataEquationForInput(data *WeightInput) {
+func (comp *ComplexStatWeightProcess) buildDataEquationForInput(data *WeightInput) {
+	includeColumn := comp.sampleIncludeToggleColumn()
 	for _, simType := range G_RequiredSims {
-		compfit.buildDataEquationForSim(&data.TotalStat, data.SimResult.Get(simType), simType)
+		comp.buildDataEquationForSim(&data.TotalStat, data.SimResult.Get(simType), simType, includeColumn)
 	}
+}
+
+func (comp *ComplexStatWeightProcess) sampleIncludeToggleColumn() utilhighs.ColumnIndex {
+	includeColumn := comp.input.CreateColumnForLinearObjective(highs.Integer, 0, 1, c_complexOutputPerInclude, comp.linearInclude, utilhighs.DebugString{Text: "include"})
+	comp.includeCountRow.Add(includeColumn, 1)
+	comp.includeColumns = append(comp.includeColumns, includeColumn)
+	return includeColumn
 }
 
 // equation is: weightA*scaledStatA + weightB*scaledStatB = scaledSimValue - diff
-func (compfit *ComplexStatWeightProcess) buildDataEquationForSim(stats *stats.StatBlock, simValue float64, simType simulate.SimResultType) {
+func (comp *ComplexStatWeightProcess) buildDataEquationForSim(stats *stats.StatBlock, simValue float64, simType simulate.SimResultType, includeColumn utilhighs.ColumnIndex) {
 	matchSimValue := utilhighs.ConstraintRowBuild{}
 
 	// TODO is there a way to flip the division for TMI DEATH etc, fundamental problem is that they don't increase linearly with stats
 
 	for _, statType := range G_RequiredStats {
-		weightDetailCol := compfit.detailedWeightColumns.GetOrPanic(statType, simType)
+		weightDetailCol := comp.detailedWeightColumns.GetOrPanic(statType, simType)
 		statValue := float64(stats.Get(statType))
-		statScale := compfit.scaleStats[statType]
+		statScale := comp.scaleStats[statType]
 
 		scaledStatValue := statValue * statScale
 		matchSimValue.Add(weightDetailCol, scaledStatValue)
 	}
 
-	diffSigned := compfit.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "diffSigned"})
+	diffSigned := comp.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "diffSigned"})
 	matchSimValue.Add(diffSigned, 1)
 
-	diffOutput := compfit.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "diffOutput"})
-	utilhighs.AbsoluteValue(compfit.input, diffSigned, diffOutput)
+	diffOutput := comp.input.CreateColumnForLinearObjective(highs.Continuous, 0, c_complexHighDiff, 1, comp.linearEquationDiff, utilhighs.DebugString{Text: "diffOutput"})
+	utilhighs.AbsoluteValue_WithToggle(comp.input, diffSigned, diffOutput, includeColumn, c_complexHighDiff)
 
-	simScale := compfit.scaleSims[simType]
+	simScale := comp.scaleSims[simType]
 	scaledSimValue := simValue * simScale
-	matchSimValue.Finish(compfit.input, scaledSimValue, scaledSimValue)
+	matchSimValue.Finish(comp.input, scaledSimValue, scaledSimValue)
 }
 
-func (compfit *ComplexStatWeightProcess) exactAndReportSolution(solution *highs.Solution) map[stats.StatType]float64 {
-	compfit.input.DebugPrintColumns(solution, compfit.printer)
+func (comp *ComplexStatWeightProcess) exactAndReportSolution(solution *highs.Solution) map[stats.StatType]float64 {
+	comp.input.DebugPrintColumns(solution, comp.printer)
 
-	compfit.printer.Println("WEIGHTS")
-	detailWeightMap := compfit.extractDetailWeights(solution)
-	statWeightResult := compfit.computeFinalWeights(detailWeightMap)
+	comp.printer.Println("WEIGHTS")
+	detailWeightMap := comp.extractDetailWeights(solution)
+	statWeightResult := comp.computeFinalWeights(detailWeightMap)
 
-	compfit.reportExamples(detailWeightMap)
+	comp.reportExamples(detailWeightMap)
+	comp.reportInclude(solution)
 
 	return statWeightResult
 }
 
-func (compfit *ComplexStatWeightProcess) extractDetailWeights(solution *highs.Solution) util.MapMap[stats.StatType, simulate.SimResultType, float64] {
+func (comp *ComplexStatWeightProcess) extractDetailWeights(solution *highs.Solution) util.MapMap[stats.StatType, simulate.SimResultType, float64] {
 	// extract and report on detail weights
 	detailWeightMap := util.MapMap[stats.StatType, simulate.SimResultType, float64]{}
-	for entry := range compfit.detailedWeightColumns.SeqWithKeys() {
+	for entry := range comp.detailedWeightColumns.SeqWithKeys() {
 		statType := entry.Key1
 		simType := entry.Key2
 		column := entry.Value
@@ -200,7 +260,7 @@ func (compfit *ComplexStatWeightProcess) extractDetailWeights(solution *highs.So
 		//   --> modelWeight = usableWeight * scaleFix
 		//   --> usableWeight = modelWeight / scaleFix
 
-		scaleFix := compfit.scaleSims[simType] / compfit.scaleStats[statType]
+		scaleFix := comp.scaleSims[simType] / comp.scaleStats[statType]
 		usableWeight := modelWeight / scaleFix
 
 		if !simType.IsHighGood() {
@@ -209,50 +269,50 @@ func (compfit *ComplexStatWeightProcess) extractDetailWeights(solution *highs.So
 
 		detailWeightMap.Put(statType, simType, usableWeight)
 
-		compfit.printer.Printf("%10s %10s %11.8f (%5.2e) %11.8f (%5.2e)\n", statType.Name(), simType.String(), modelWeight, modelWeight, usableWeight, usableWeight)
+		comp.printer.Printf("%10s %10s %11.8f (%5.2e) %11.8f (%5.2e)\n", statType.Name(), simType.String(), modelWeight, modelWeight, usableWeight, usableWeight)
 	}
-	compfit.printer.Println0()
+	comp.printer.Println0()
 
 	for entry := range detailWeightMap.SeqWithKeysOtherOrder() {
 		usableWeight := entry.Value
-		compfit.printer.Printf("%10s %10s %11.8f (%5.2e)\n", entry.Key1.Name(), entry.Key2.String(), usableWeight, usableWeight)
+		comp.printer.Printf("%10s %10s %11.8f (%5.2e)\n", entry.Key1.Name(), entry.Key2.String(), usableWeight, usableWeight)
 	}
-	compfit.printer.Println0()
+	comp.printer.Println0()
 	return detailWeightMap
 }
 
-func (compfit *ComplexStatWeightProcess) reportExamples(detailWeightMap util.MapMap[stats.StatType, simulate.SimResultType, float64]) {
+func (comp *ComplexStatWeightProcess) reportExamples(detailWeightMap util.MapMap[stats.StatType, simulate.SimResultType, float64]) {
 	for i := range 20 {
-		data := compfit.inputData[i]
-		compfit.printer.Println("EXAMPLE")
+		data := comp.inputData[i]
+		comp.printer.Println("EXAMPLE")
 
 		for _, simType := range G_RequiredSims {
 			statSum := 0.0
-			compfit.printer.Printf(" %10s", simType.String())
+			comp.printer.Printf(" %10s", simType.String())
 			for _, statType := range G_RequiredStats {
 				statValue := float64(data.TotalStat.Get(statType))
 				weight := detailWeightMap.GetOrPanic(statType, simType)
 				if !simType.IsHighGood() {
 					weight *= -1 // unflip so equation appears matches what the model saw
 				}
-				compfit.printer.Printf(" {%s %.2f * %.4e = %.4f}", statType.Name(), statValue, weight, statValue*weight)
+				comp.printer.Printf(" {%s %.2f * %.4e = %.4f}", statType.Name(), statValue, weight, statValue*weight)
 				statSum += statValue * weight
 			}
-			compfit.printer.Printf(" = %.4f (expect %.4f)\n", statSum, data.SimResult.Get(simType))
+			comp.printer.Printf(" = %.4f (expect %.4f)\n", statSum, data.SimResult.Get(simType))
 		}
 
-		compfit.printer.Println0()
+		comp.printer.Println0()
 	}
 }
 
-func (compfit *ComplexStatWeightProcess) computeFinalWeights(detailWeightMap util.MapMap[stats.StatType, simulate.SimResultType, float64]) map[stats.StatType]float64 {
+func (comp *ComplexStatWeightProcess) computeFinalWeights(detailWeightMap util.MapMap[stats.StatType, simulate.SimResultType, float64]) map[stats.StatType]float64 {
 	statWeightResult := make(map[stats.StatType]float64)
 	for statType, seqSimPairs := range detailWeightMap.SeqGroupsKey1NestedKeyValue() {
 		sumIndividual := 0.0
 
 		for simType, thisDetailWeight := range seqSimPairs {
 			strengthDetailWeight := detailWeightMap.GetOrPanic(stats.Stat_Strength, simType)
-			targetRatio := compfit.targetRatios.Get(simType)
+			targetRatio := comp.targetRatios.Get(simType)
 
 			componentValue := targetRatio * thisDetailWeight / strengthDetailWeight
 
@@ -263,4 +323,15 @@ func (compfit *ComplexStatWeightProcess) computeFinalWeights(detailWeightMap uti
 	}
 
 	return statWeightResult
+}
+
+func (comp *ComplexStatWeightProcess) reportInclude(solution *highs.Solution) {
+	var includeCount uint32 = 0
+	for _, col := range comp.includeColumns {
+		if utilhighs.FloatEqualsOne(solution.ColValues[col]) {
+			includeCount++
+		}
+	}
+	includePercent := float64(includeCount) / float64(len(comp.inputData))
+	comp.printer.Printf("Include %d %f\n", includeCount, includePercent)
 }
