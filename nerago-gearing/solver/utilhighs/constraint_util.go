@@ -128,6 +128,21 @@ func AbsoluteValueFromDiff(input *InputBuilder, inputOneVar ColumnIndex, inputOn
 	positive.Finish(input, C_MinusInf, 0)
 }
 
+func AbsoluteValueFromDiffWithOffset(input *InputBuilder, inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, offset float64, debug string) {
+	negative := ConstraintRowBuild{Debug: debug + " AbsoluteValueNegative"}
+	negative.Add(inputOneVar, inputOneCoefficient)
+	negative.Add(inputTwoVar, -inputTwoCoefficient)
+	negative.Add(outputVar, 1)
+	negative.Finish(input, offset, C_PlusInf)
+
+	positive := ConstraintRowBuild{Debug: debug + " AbsoluteValuePositive"}
+	negative.Add(inputOneVar, inputOneCoefficient)
+	negative.Add(inputTwoVar, -inputTwoCoefficient)
+	positive.Add(outputVar, -1)
+	positive.Finish(input, C_MinusInf, offset)
+}
+
+
 func AbsoluteValue_WithToggle(input *InputBuilder, inputVar, outputVar, toggleVar ColumnIndex, rangeHigh float64) {
 	setIfNegative := ConstraintRowBuild{}
 	setIfNegative.Add(inputVar, 1)
