@@ -43,6 +43,52 @@ var G_siegeStrengthTrinkets = []items.ItemId{
 
 var legendCloaks = []items.ItemId{102249, 102250}
 
+var ordosItems = []items.ItemId{105804, 105766, 105758, 105782, 105776, 105784, 105789, 105765, 105795, 105792, 105793, 105791, 105810, 105787, 105774, 105771, 105806, 105809, 105808, 105778, 105754, 105805, 105800, 105790, 105798, 105799, 105775, 105783, 105760, 105767, 105779, 105807, 105759, 105772, 105755, 105811, 105769, 105786, 105768, 105761, 105788, 105763, 105756, 105777, 105764, 105796, 105797, 105757, 105762, 105801, 105794, 105803, 105773, 105785, 105781, 105780, 105802, 105770}
+
+func ItemFinder_TimelessPlate(_ stats.Difficulty) []*items.FullItem {
+	// var targetLevel uint16 = 496
+	var targetLevel uint16 = 535
+	result := make([]*items.FullItem, 0)
+	for item := range db.WowSimDB_AllItems() {
+		if (strings.Contains(item.BaseName(), "Cliffbreaker") || strings.Contains(item.BaseName(), "Elder Tortoiseshell")) && item.ItemLevel() == targetLevel {
+			onlyCoreStats(item)
+
+			item = item.MakeItemWithRandomSuffix(-340) // give it haste
+
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+func onlyCoreStats(item *items.FullItem) {
+	for statIdx, value := range item.Total() {
+		stat := stats.StatType(statIdx)
+		if stat == stats.Stat_Strength || stat == stats.Stat_Stamina {
+			if value == 0 {
+				panic("expected value")
+			}
+		} else {
+			if value != 0 {
+				panic("expected zero")
+			}
+		}
+	}
+}
+
+func ItemFinder_Ordos(_ stats.Difficulty) []*items.FullItem {
+	result := make([]*items.FullItem, 0)
+	for _, itemId := range ordosItems {
+		item := db.WowSimDB_ByIdAndUpgrade(itemId, 0)
+		if item.ArmorType() == stats.Armor_None || item.ArmorType() == stats.Armor_Plate || item.SlotItem() == items.Item_Back {
+			if item.PrimaryStat() == stats.PrimaryStat_None || item.PrimaryStat() == stats.PrimaryStat_Strength {
+				result = append(result, item)
+			}
+		}
+	}
+	return result
+}
+
 func ItemFinder_SiegeStrengthPlateTank(difficulty stats.Difficulty) []*items.FullItem {
 	return slices.Concat(
 		throneClassGearSet(stats.Spec_PaladinProt, difficulty),
@@ -50,7 +96,7 @@ func ItemFinder_SiegeStrengthPlateTank(difficulty stats.Difficulty) []*items.Ful
 		seigeGearGeneric(stats.Armor_Plate, stats.PrimaryStat_Strength, difficulty),
 		trinketsForDifficulty(G_seigeTankTrinkets, difficulty, stats.Difficulty.ExpectedItemLevelSiege),
 		trinketsForDifficulty(G_siegeStrengthTrinkets, difficulty, stats.Difficulty.ExpectedItemLevelSiege),
-		[]*items.FullItem{db.WowSimDB_ByIdAndUpgrade(102249, 0), db.WowSimDB_ByIdAndUpgrade(102250, 0)},
+		// []*items.FullItem{db.WowSimDB_ByIdAndUpgrade(102249, 0), db.WowSimDB_ByIdAndUpgrade(102250, 0)},
 	)
 }
 
@@ -130,7 +176,9 @@ func seigeGearGeneric(armor stats.ArmorType, primary stats.PrimaryStatType, diff
 	result := make([]*items.FullItem, 0)
 	for _, groupList := range groupByName {
 		item := selectAppropriateDifficultyItem(groupList, difficulty, stats.Difficulty.ExpectedItemLevelSiege)
-		result = append(result, item)
+		if item != nil {
+			result = append(result, item)
+		}
 	}
 	return result
 }
@@ -147,7 +195,9 @@ func throneGearGeneric(armor stats.ArmorType, primary stats.PrimaryStatType, dif
 	result := make([]*items.FullItem, 0)
 	for _, groupList := range groupByName {
 		item := selectAppropriateDifficultyItem(groupList, difficulty, stats.Difficulty.ExpectedItemLevelThrone)
-		result = append(result, item)
+		if item != nil {
+			result = append(result, item)
+		}
 	}
 	return result
 }
@@ -169,18 +219,37 @@ func selectAppropriateDifficultyItem(itemList []*items.FullItem, difficulty stat
 	}
 
 	// some items don't have heroic version trash drops etc
+	slices.SortFunc(itemList, func(a, b *items.FullItem) int { return cmp.Compare(a.ItemLevel(), b.ItemLevel()) })
 	if difficulty == stats.Difficulty_Heroic {
-		slices.SortFunc(itemList, func(a, b *items.FullItem) int { return cmp.Compare(a.ItemLevel(), b.ItemLevel()) })
 		return itemList[len(itemList)-1]
 	}
 
-	panic("unknown item choice")
+	// timeless pieces
+	if len(itemList) == 2 && itemList[0].ItemLevel() == 496 && itemList[1].ItemLevel() == 535 {
+		return itemList[1]
+	}
+
+	// garrosh weapons
+	if len(itemList) == 3 && itemList[0].ItemLevel() == 556 {
+		switch difficulty {
+		case stats.Difficulty_Celestial:
+			return nil
+		case stats.Difficulty_Normal:
+			return itemList[1]
+		case stats.Difficulty_Heroic:
+			return itemList[2]
+		}
+	}
+
+	return nil
+	// panic("unknown item choice")
 }
 
 func matchesSeigeGearCriteria(item *items.FullItem, armor stats.ArmorType, primary stats.PrimaryStatType) bool {
 	return item.Phase() == 5 &&
 		item.UpgradeLevel() == 0 &&
 		!strings.Contains(item.BaseName(), "Gladiator") &&
+		// TODO how do weapons work here?
 		(item.ArmorType().Matches(armor) || item.SlotItem() == items.Item_Back) &&
 		item.SlotItem() != items.Item_Trinket &&
 		item.PrimaryStat() == primary &&
@@ -213,7 +282,9 @@ func trinketsForDifficulty(trinketIds []items.ItemId, difficulty stats.Difficult
 	result := make([]*items.FullItem, 0)
 	for _, id := range trinketIds {
 		item := trinketForDifficulty(id, difficulty, expectedItemLevelFunc)
-		result = append(result, item)
+		if item != nil {
+			result = append(result, item)
+		}
 	}
 	return result
 }

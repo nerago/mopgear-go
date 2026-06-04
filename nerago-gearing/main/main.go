@@ -83,7 +83,7 @@ func core(printer *util.PrintRecorder) {
 	// checkHighs(printer)
 	// checkHighsAcross(printer)
 
-	// PaladinMultiRun(printer)
+	PaladinMultiRun(printer)
 	// testSim(printer)
 	// findUpgrades_Sim_PaladinMiti_Run(printer)
 	// findUpgrades_Sim_PaladinDps_Run(printer)
@@ -99,7 +99,9 @@ func core(printer *util.PrintRecorder) {
 	// statWeightsBasic(printer)
 	// statWeightsGrid(printer)
 	// statWeightsFitting2(printer)
-	statWeightsComplex(printer)
+	// statWeightsComplex(printer)
+
+	// statWeightsGrid_updateAll(printer) // seed of standard process? 4/6/2026
 }
 
 func setupPallyMitigationSet() (items.FullOptionsMap, model.Model) {

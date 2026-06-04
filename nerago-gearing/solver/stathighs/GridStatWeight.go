@@ -30,7 +30,7 @@ type gridDataSample struct {
 func (grid *GridStatWeightProcess) Init(printer *util.PrintRecorder) {
 	grid.printer = printer
 	grid.input.Minimise = true
-	// grid.input.Solver = "ipm"
+	grid.input.Solver = "pdlp"
 	grid.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }
 
@@ -162,9 +162,12 @@ func (grid *GridStatWeightProcess) checkSampleRange() {
 		}
 	}
 	grid.printer.Printf("checkSampleRange good=%d bad=%d\n", good, bad)
-	if bad > (good+bad)/10 {
+	if bad > (good+bad)/5 {
 		panic("many values have inconvenient range")
 	}
+
+	// TODO port scaling process from complex weighter
+	// TODO check per type rather than on all, or maybe mix. maybe post scaling
 }
 
 func (grid *GridStatWeightProcess) unitValuesToCalcDetailedRatings() {
@@ -185,41 +188,45 @@ func (grid *GridStatWeightProcess) unitValuesToCalcDetailedRatings() {
 			}
 		}
 	}
+
+	// TODO could be interesting experiment to setup all stat pairings, not just strength base
 }
 
-func (grid *GridStatWeightProcess) unitValuesCalcForGroup(simType simulate.SimResultType, thisStatType stats.StatType, unitValueBaseSeq iter.Seq[gridDataSample], thisUnitValueSeq iter.Seq[gridDataSample], detailWeightBase utilhighs.ColumnIndex) {
+func (grid *GridStatWeightProcess) unitValuesCalcForGroup(simType simulate.SimResultType, thisStatType stats.StatType, baseUnitValueSeq iter.Seq[gridDataSample], thisUnitValueSeq iter.Seq[gridDataSample], baseDetailWeightCol utilhighs.ColumnIndex) {
 	debugText := simType.String() + " " + thisStatType.Name()
-	thisDetailWeight := grid.detailedWeights.GetOrPanic(thisStatType, simType)
+	thisDetailWeightCol := grid.detailedWeights.GetOrPanic(thisStatType, simType)
 
 	// look at multiple input values of each unitstat value
 	index := 0
-	for unitValueBase := range unitValueBaseSeq {
-		for thisUnitValue := range thisUnitValueSeq {
-			if isGoodValueRange(unitValueBase.value) && isGoodValueRange(thisUnitValue.value) {
-				grid.unitValueCombinationAddToModel(unitValueBase, detailWeightBase, thisUnitValue, thisDetailWeight, debugText+" "+strconv.Itoa(index))
+	for baseUnitSample := range baseUnitValueSeq {
+		for thisUnitSample := range thisUnitValueSeq {
+			if isGoodValueRange(baseUnitSample.value) && isGoodValueRange(thisUnitSample.value) {
+				grid.unitValueCombinationAddToModel(baseUnitSample, baseDetailWeightCol, thisUnitSample, thisDetailWeightCol, debugText+" "+strconv.Itoa(index))
 				index++
 			}
 		}
 	}
 }
 
-func (grid *GridStatWeightProcess) unitValueCombinationAddToModel(baseUnitSample gridDataSample, detailWeightBase utilhighs.ColumnIndex,
-	thisUnitSample gridDataSample, thisDetailWeight utilhighs.ColumnIndex, debugText string) {
+func (grid *GridStatWeightProcess) unitValueCombinationAddToModel(baseUnitSample gridDataSample, baseDetailWeightCol utilhighs.ColumnIndex,
+	thisUnitSample gridDataSample, thisDetailWeightCol utilhighs.ColumnIndex, debugText string) {
 
 	// detailweight_dps_haste * unit_dps_base - detailweight_dps_base * unit_dps_haste + offset = 0
 	// detailweight_dps_haste / unit_dps_haste  - detailweight_dps_base   / unit_dps_base + offset / unit_dps_base / unit_dps_haste = 0
-	offsetSigned := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "OFFSET SIGNED " + debugText})
-	weightRow := utilhighs.ConstraintRowBuild{}
-	weightRow.Add(thisDetailWeight, baseUnitSample.value)  // OLD
-	weightRow.Add(detailWeightBase, -thisUnitSample.value) // OLD
-	// weightRow.Add(thisDetailWeight, 1/thisUnitSample.value) // NEW BUT TOO BIG
-	// weightRow.Add(detailWeightBase, -1/baseUnitSample.value) // NEW BUT TOO BIG
-	weightRow.Add(offsetSigned, 1)
-	weightRow.Finish(&grid.input, 0, 0)
+	// offsetSigned := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "OFFSET SIGNED " + debugText})
+	// weightRow := utilhighs.ConstraintRowBuild{}
+	// weightRow.Add(thisDetailWeight, baseUnitSample.value)  // OLD
+	// weightRow.Add(detailWeightBase, -thisUnitSample.value) // OLD
+	// // weightRow.Add(thisDetailWeight, 1/thisUnitSample.value) // NEW BUT TOO BIG
+	// // weightRow.Add(detailWeightBase, -1/baseUnitSample.value) // NEW BUT TOO BIG
+	// weightRow.Add(offsetSigned, 1)
+	// weightRow.Finish(&grid.input, 0, 0)
 
 	// take absolute value, output for objective function
 	offsetAbs := grid.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "OFFSET ABS " + debugText})
-	utilhighs.AbsoluteValue(&grid.input, offsetSigned, offsetAbs)
+	// utilhighs.AbsoluteValueFromDiff(&grid.input, offsetSigned, offsetAbs)
+
+	utilhighs.AbsoluteValueFromDiff(&grid.input, thisDetailWeightCol, baseUnitSample.value, baseDetailWeightCol, thisUnitSample.value, offsetAbs, "OFFSET ABS "+debugText)
 }
 
 func (grid *GridStatWeightProcess) calcTotalRatings() {

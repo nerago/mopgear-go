@@ -107,7 +107,7 @@ func checkHighs(printer *util.PrintRecorder) {
 		94726, // cloudbreaker belt normal
 		96373, // cloudbreaker belt heroic
 
-		preLegendMeleeCloak, // pre-legend strength dps
+		legendMeleeCloak, // pre-legend strength dps
 
 		95535, // normal lightning legs
 		94773, // centripetal shoulders normal
@@ -383,8 +383,10 @@ func trinketSims(printer *util.PrintRecorder) {
 		94529,  // none gaze twins
 		94527,  // ji-kun
 		945270, // exp->crit ji-kun
-		// 94507,  // valor
-		// 94508,  // valor
+		94507,  // valor
+		94508,  // valor
+		103989, // timeless alacrity of xuen
+		103990, // timeless resolve of niuzao
 	}
 
 	// fight := stats.Fight_Animus

@@ -131,11 +131,12 @@ const (
 func (difficulty Difficulty) ExpectedItemLevelThrone() uint16 {
 	switch difficulty {
 	case Difficulty_Celestial:
-		return 528
+		return 502
 	case Difficulty_Normal:
-		return 553
+		return 522
 	case Difficulty_Heroic:
-		return 566
+		return 535
+
 	default:
 		panic("unknown Difficulty")
 	}
@@ -144,11 +145,11 @@ func (difficulty Difficulty) ExpectedItemLevelThrone() uint16 {
 func (difficulty Difficulty) ExpectedItemLevelSiege() uint16 {
 	switch difficulty {
 	case Difficulty_Celestial:
-		return 502
+		return 528
 	case Difficulty_Normal:
-		return 522
+		return 553
 	case Difficulty_Heroic:
-		return 535
+		return 566
 	default:
 		panic("unknown Difficulty")
 	}

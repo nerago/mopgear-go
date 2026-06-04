@@ -8,6 +8,7 @@ import (
 )
 
 type FindUpgrades_BasicInputs struct {
+	IncludeCelestial    bool
 	IncludeNormal       bool
 	IncludeHeroic       bool
 	IncludeRaden        bool

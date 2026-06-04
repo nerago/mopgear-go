@@ -125,7 +125,10 @@ func addNum(block *StatBlock, stat StatType, value string) {
 	if err != nil {
 		panic(err)
 	}
-	block[stat] = uint32(math.Round(num * 1000))
+	if num > 0 {
+		// TODO temporary or move to signed/floats?
+		block[stat] = uint32(math.Round(num * 1000))
+	}
 }
 
 func StatRatingsWeights_Testing() StatRatingsWeights {

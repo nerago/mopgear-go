@@ -165,57 +165,58 @@ func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 }
 
 func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
-	substituteItemsDpsMiti := slices.Concat(substituteItemsDps, substituteItemsMiti)
-	substituteItemsDpsMiti = util.RemoveDuplicatesComparable(substituteItemsDpsMiti)
+	substituteItemsDpsAndMiti := slices.Concat(substituteItemsDps, substituteItemsMiti)
+	substituteItemsDpsAndMiti = util.RemoveDuplicatesComparable(substituteItemsDpsAndMiti)
 
 	substituteEmptySlotOnly := make(map[items.SlotItem]items.ItemId)
 	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
 	substituteEmptySlotOnly[items.Item_Ring] = 86957    // heroic bladed tempest ring
 
+	// finder := loaders.ItemFinder_SiegeStrengthPlateTank
+	// finder := loaders.ItemFinder_Ordos
+	finder := loaders.ItemFinder_TimelessPlate
+
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
-				IncludeNormal: false,
-				IncludeHeroic: true,
-				IncludeRaden:  true,
-				IgnoredItems:  ignoredItems,
+				IncludeCelestial: true,
+				IncludeNormal:    false,
+				IncludeHeroic:    false,
+				IncludeRaden:     false,
+				IgnoredItems:     ignoredItems,
 			},
 			SimSize: simRunSize,
 		},
 		Specs: []upgrades.FindUpgrades_Spec{
 			{
-				Label:      "dps",
-				Model:      model.Model_PallyProtDps(),
-				GearFile:   files.GearFileProtDps,
-				ItemFinder: loaders.ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff,
-				// ItemFinder: loaders.ItemFinder_ThroneStrengthPlateTank_RadenOnly,
+				Label:                   "dps",
+				Model:                   model.Model_PallyProtDps(),
+				GearFile:                files.GearFileProtDps,
+				ItemFinder:              finder,
 				SubstituteItems:         substituteItemsDps,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
-				Label:      "compromise",
-				Model:      model.Model_PallyProtCompromise(),
-				GearFile:   files.GearFileProtCompromise,
-				ItemFinder: loaders.ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff,
-				// ItemFinder: loaders.ItemFinder_ThroneStrengthPlateTank_RadenOnly,
-				SubstituteItems:         substituteItemsDpsMiti,
+				Label:                   "compromise",
+				Model:                   model.Model_PallyProtCompromise(),
+				GearFile:                files.GearFileProtCompromise,
+				ItemFinder:              finder,
+				SubstituteItems:         substituteItemsDpsAndMiti,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
-				Label:      "mit_noset",
-				Model:      model.Model_PallyProtMitigation_NoSet(),
-				GearFile:   files.GearFileProtMitigationNoSet,
-				ItemFinder: loaders.ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff,
-				// ItemFinder: loaders.ItemFinder_ThroneStrengthPlateTank_RadenOnly,
+				Label:                   "mit_noset",
+				Model:                   model.Model_PallyProtMitigation_NoSet(),
+				GearFile:                files.GearFileProtMitigationNoSet,
+				ItemFinder:              finder,
 				SubstituteItems:         substituteItemsMiti,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
-				Label:      "mit_set",
-				Model:      model.Model_PallyProtMitigation_WithSet(),
-				GearFile:   files.GearFileProtMitigationWithSet,
-				ItemFinder: loaders.ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff,
-				// ItemFinder: loaders.ItemFinder_ThroneStrengthPlateTank_RadenOnly,
+				Label:                   "mit_set",
+				Model:                   model.Model_PallyProtMitigation_WithSet(),
+				GearFile:                files.GearFileProtMitigationWithSet,
+				ItemFinder:              finder,
 				SubstituteItems:         substituteItemsMiti,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},

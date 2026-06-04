@@ -41,6 +41,7 @@ func setupUpgradeLevel(extraItems []*items.FullItem, printer *util.PrintRecorder
 	result := make([]*items.FullItem, 0, len(extraItems))
 	for _, item := range extraItems {
 		replace := db.WowSimDB_ByIdAndUpgrade_AllowFallback(item.ItemId(), c_targetUpgradeLevel, printer)
+		replace = replace.MakeItemWithRandomSuffix(item.RandomSuffix())
 		result = append(result, replace)
 	}
 	return result
@@ -126,17 +127,26 @@ func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptions
 
 	printer := util.PrintRecorder_HoldAll()
 
-	item := extraTask.item // this "item" is from ItemFinder and is just a basic DB object
+	incompleteItem := extraTask.item // this "item" is from ItemFinder and is just a basic DB object
+	itemId := incompleteItem.ItemId()
+	upgradeLevel := incompleteItem.UpgradeLevel()
+	randomSuffix := incompleteItem.RandomSuffix()
 	slot := extraTask.slot
-	printer.Println("OFFER " + item.CreateString())
-	printer.Println("REPLACING " + baseItems.Get(slot)[0].CreateString())
 
-	newOptions, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(item.ItemId(), item.UpgradeLevel(), model, printer)
+	newOptions, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, upgradeLevel, model, printer)
+	if randomSuffix != 0 {
+		newOptions = util.MapSliceAsNew(newOptions, func(x *items.FullItem) items.FullItem {
+			return *x.MakeItemWithRandomSuffix(randomSuffix)
+		})
+	}
 	jobItems := baseItems.Clone()
 	jobItems[slot] = newOptions
 
+	printer.Println("OFFER " + newOptions[0].CreateString())
+	printer.Println("REPLACING " + baseItems.Get(slot)[0].CreateString())
+
 	if extraTask.canUpgrade == items.CanUpgrade_Equipped || extraTask.canUpgrade == items.CanUpgrade_Equipped_Similar {
-		removePairedSimilar(&jobItems, slot, item, substituteEmptySlotOnly, model, printer)
+		removePairedSimilar(&jobItems, slot, incompleteItem, substituteEmptySlotOnly, model, printer)
 	}
 
 	output := solver.Solver(solver.SolveInput{

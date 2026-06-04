@@ -24,6 +24,9 @@ func FindUpgrades_Sim_AllRaid_Run(input *FindUpgrades_MultiSpec_Sim, printer *ut
 
 func findUpgrades_AllRaid(input *FindUpgrades_SimInputs, specs []FindUpgrades_Spec) (map[reportGroup][]upgradeItemResultWithSim, []reportGroup) {
 	outerCount := 0
+	if input.IncludeCelestial {
+		outerCount += len(specs)
+	}
 	if input.IncludeNormal {
 		outerCount += len(specs)
 	}
@@ -39,6 +42,10 @@ func findUpgrades_AllRaid(input *FindUpgrades_SimInputs, specs []FindUpgrades_Sp
 	groups := make([]reportGroup, 0, len(specs)*2)
 
 	for _, spec := range specs {
+
+		if input.IncludeCelestial {
+			processSpec(input, &spec, stats.Difficulty_Celestial, outputMap, &groups, tracker)
+		}
 		if input.IncludeNormal {
 			processSpec(input, &spec, stats.Difficulty_Normal, outputMap, &groups, tracker)
 		}

@@ -3,6 +3,7 @@ package items
 import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"strconv"
 )
 
 // /////////////////////////////////////////////////////////////
@@ -215,4 +216,58 @@ func (item *FullItem) AppendString(build *util.StringBuild2) {
 	}
 
 	build.WriteString(" }")
+}
+
+var itemLevelToRandomAmount = makeItemLevelToRandomAmount()
+
+func makeItemLevelToRandomAmount() map[uint16]uint32 {
+	lookup := make(map[uint16]uint32)
+	lookup[496] = 680 // complete guess, probably optimistic
+	lookup[502] = 712
+	lookup[522] = 858
+	lookup[528] = 907
+	lookup[535] = 969
+	lookup[536] = 978
+	lookup[541] = 1019
+	lookup[549] = 1103
+	return lookup
+}
+
+func (item *FullItem) MakeItemWithRandomSuffix(randomSuffix int32) *FullItem {
+	// suffixInfo := core.RandomSuffixesByID[equipItem.RandomSuffix]
+	// extern_stats.SimStatsToGearStatBlock(suffixInfo.Stats)
+
+	if randomSuffix != 0 {
+		var stat stats.StatType
+		switch randomSuffix {
+		case -336:
+			stat = stats.Stat_Crit
+		case -337:
+			stat = stats.Stat_Hit
+		case -338:
+			stat = stats.Stat_Expertise
+		case -339:
+			stat = stats.Stat_Mastery
+		case -340:
+			stat = stats.Stat_Haste
+		case -341:
+			stat = stats.Stat_Parry
+		case -342:
+			stat = stats.Stat_Dodge
+		default:
+			panic("unknown random suffix")
+		}
+
+		amount, knownAmount := itemLevelToRandomAmount[item.ItemLevel()]
+		if !knownAmount {
+			panic("don't know for ilevel " + strconv.FormatInt(int64(item.ItemLevel()), 10))
+		}
+
+		var newStats stats.StatBlock = *item.StatBase()
+		newStats[stat] += amount
+
+		item = item.NewWithChangedStatsSuffix(newStats, randomSuffix)
+	}
+
+	return item
 }

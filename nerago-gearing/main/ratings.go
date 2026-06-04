@@ -188,8 +188,8 @@ func relativeRatingsCompromise(printer *util.PrintRecorder) {
 }
 
 func generateRatingsInputFromArtificalStatOverrides(printer *util.PrintRecorder) ([]stathighs.WeightInput, simulate.SimResultStats) {
-	simSpeed := simulate.RunSize_TestOnly
-	// simSpeed := simulate.RunSize_QuickDirty
+	// simSpeed := simulate.RunSize_TestOnly
+	simSpeed := simulate.RunSize_QuickDirty
 	// simSpeed := simulate.RunSize_SlowAccurate
 
 	// fight := stats.Fight_Animus
@@ -237,13 +237,11 @@ func generateRatingsInputFromArtificalStatOverrides(printer *util.PrintRecorder)
 }
 
 func generateRatingsInputFromArtificalStatOverrides_ForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo) []stathighs.WeightInput {
-	var incrementBaseHaste int32 = 1200
-	var decrementBaseExpertise int32 = 600
 	var incrementMin int32 = 0
 	var incrementMax int32 = 500
 	var incrementStep int32 = 250
 
-	initialBaseStats := initialBonusStatMap(printer, currentItemSet, incrementBaseHaste, decrementBaseExpertise, incrementMax)
+	initialBaseStats := initialBonusStatMap_fixRanges(printer, currentItemSet, incrementMax)
 
 	statCheckList := stathighs.G_RequiredStats
 	type incrementStat struct {
@@ -275,6 +273,7 @@ func generateRatingsInputFromArtificalStatOverrides_ForGrid(currentItemSet items
 		str.WriteString("STATS SCENARIO ")
 		for _, inc := range *increments {
 			bonusStat[inc.stat] += inc.value
+
 			str.WriteString(inc.stat.Name())
 			str.WriteRune('=')
 			str.WriteInt32(bonusStat[inc.stat])
@@ -413,9 +412,9 @@ func statWeightsComplex(printer *util.PrintRecorder) {
 	// 		between(w, stats.Stat_Crit, 0, 3399)
 	// })
 	// filteredInput := util.FilterSliceAsNew(weightInputs, func(w *stathighs.WeightInput) bool {
-	// 	return between(w, stats.Stat_Haste, 0, 8200) 
+	// 	return between(w, stats.Stat_Haste, 0, 8200)
 	// })
-	
+
 	filteredInput := weightInputs
 	printer.Printf("filteredInput size %d\n", len(filteredInput))
 
@@ -612,10 +611,8 @@ func parseSimStats(str string) simulate.SimResultStats {
 const c_hasteDiscontinuityStart = 10500
 const c_hasteDiscontinuityEnd = 14000
 
-func verifyHasteRange(printer *util.PrintRecorder, currentHaste uint32, incrementBaseHaste int32, plannedIncrementTestRange int32) {
-	if checkBadHasteRange(printer, currentHaste, incrementBaseHaste, plannedIncrementTestRange) {
-		panic("haste in discontinuity range")
-	}
+func hasteInDiscontinuityRange(value uint32) bool {
+	return value >= c_hasteDiscontinuityStart && value <= c_hasteDiscontinuityEnd
 }
 
 func checkBadHasteRange(printer *util.PrintRecorder, currentHaste uint32, incrementBaseHaste int32, plannedIncrementTestRange int32) bool {
@@ -627,16 +624,6 @@ func checkBadHasteRange(printer *util.PrintRecorder, currentHaste uint32, increm
 	return max > c_hasteDiscontinuityStart && min < c_hasteDiscontinuityEnd
 }
 
-func hasteInDiscontinuityRange(value uint32) bool {
-	return value >= c_hasteDiscontinuityStart && value <= c_hasteDiscontinuityEnd
-}
-
-func verifyExpertRange(printer *util.PrintRecorder, current uint32, decrementBase int32, plannedIncrementTestRange int32) {
-	if checkBadExpertRange(printer, current, decrementBase, plannedIncrementTestRange) {
-		panic("simulate will overcap expertise")
-	}
-}
-
 func checkBadExpertRange(printer *util.PrintRecorder, current uint32, decrementBase int32, plannedIncrementTestRange int32) bool {
 	printer.Printf("Current gear expertise %d\n", current)
 	min := int32(current) - decrementBase
@@ -645,9 +632,54 @@ func checkBadExpertRange(printer *util.PrintRecorder, current uint32, decrementB
 	return max > int32(requirements.TARGET_RATING_TANK)
 }
 
+func fixBadHasteRange(printer *util.PrintRecorder, currentHaste uint32, plannedIncrementTestRange int32) int32 {
+	printer.Printf("Current gear haste %d\n", currentHaste)
+	min := int32(currentHaste)
+	max := int32(currentHaste) + plannedIncrementTestRange
+	printer.Printf("Planned simulated gear haste %d-%d\n", min, max)
+
+	var fix int32
+	if max > c_hasteDiscontinuityStart {
+		fix = c_hasteDiscontinuityStart - max
+	} else if min < c_hasteDiscontinuityEnd {
+		fix = c_hasteDiscontinuityEnd - min
+	}
+
+	printer.Printf("Corrected simulated gear haste %d-%d\n", min+fix, max+fix)
+	return fix
+}
+
+func fixBadExpertRange(printer *util.PrintRecorder, currentExpert uint32, plannedIncrementTestRange int32) int32 {
+	printer.Printf("Current gear expertise %d\n", currentExpert)
+	min := int32(currentExpert)
+	max := int32(currentExpert) + plannedIncrementTestRange
+	printer.Printf("Planned simulated gear expertise %d-%d\n", min, max)
+
+	var fix int32
+	if max >= int32(requirements.TARGET_RATING_TANK) {
+		fix = int32(requirements.TARGET_RATING_TANK) - max
+	}
+
+	printer.Printf("Corrected simulated gear expertise %d-%d\n", min+fix, max+fix)
+	return fix
+}
+
+func initialBonusStatMap_fixRanges(printer *util.PrintRecorder, currentItemSet items.FullItemSet, plannedIncrementTestRange int32) map[stats.StatType]int32 {
+	incrementBaseHaste := fixBadHasteRange(printer, currentItemSet.Total().Get(stats.Stat_Haste), plannedIncrementTestRange)
+	incrementBaseExpertise := fixBadExpertRange(printer, currentItemSet.Total().Expertise(), plannedIncrementTestRange)
+	initialBaseStats := make(map[stats.StatType]int32)
+	initialBaseStats[stats.Stat_Haste] += incrementBaseHaste
+	initialBaseStats[stats.Stat_Expertise] += incrementBaseExpertise
+	return initialBaseStats
+}
+
 func initialBonusStatMap(printer *util.PrintRecorder, currentItemSet items.FullItemSet, incrementBaseHaste int32, decrementBaseExpertise int32, incrementMax int32) map[stats.StatType]int32 {
-	verifyHasteRange(printer, currentItemSet.Total().Get(stats.Stat_Haste), incrementBaseHaste, incrementMax)
-	verifyExpertRange(printer, currentItemSet.Total().Expertise(), decrementBaseExpertise, incrementMax)
+	if checkBadHasteRange(printer, currentItemSet.Total().Get(stats.Stat_Haste), incrementBaseHaste, incrementMax) {
+		panic("haste in discontinuity range")
+	}
+	if checkBadExpertRange(printer, currentItemSet.Total().Expertise(), decrementBaseExpertise, incrementMax) {
+		panic("simulate will overcap expertise")
+	}
 	initialBaseStats := make(map[stats.StatType]int32)
 	initialBaseStats[stats.Stat_Haste] += incrementBaseHaste
 	initialBaseStats[stats.Stat_Expertise] -= decrementBaseExpertise
@@ -664,4 +696,53 @@ func addBonusStats(base *stats.StatBlock, bonusStat map[stats.StatType]int32) st
 		resultBlock[stat] = uint32(value)
 	}
 	return resultBlock
+}
+
+func statWeightsGrid_updateAll(printer *util.PrintRecorder) {
+	// simSpeed := simulate.RunSize_TestOnly
+	simSpeed := simulate.RunSize_QuickDirty
+	// simSpeed := simulate.RunSize_Medium
+
+	weightFileOut := files.WeightMitiNoSetFile
+	gearFile := files.GearFileProtMitigationNoSet
+	gearModel := model.Model_PallyProtMitigation_NoSet()
+	ratios := stathighs.NewStatWeights_generalMiti
+	statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
+
+	weightFileOut = files.WeightMitiWithSetFile
+	gearFile = files.GearFileProtMitigationWithSet
+	gearModel = model.Model_PallyProtMitigation_WithSet()
+	ratios = stathighs.NewStatWeights_radenWeight
+	statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
+
+	weightFileOut = files.WeightDpsFile
+	gearFile = files.GearFileProtDps
+	gearModel = model.Model_PallyProtDps()
+	ratios = stathighs.NewStatWeights_dpsWeight
+	statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
+
+	weightFileOut = files.WeightCompromiseFile
+	gearFile = files.GearFileProtCompromise
+	gearModel = model.Model_PallyProtCompromise()
+	ratios = stathighs.NewStatWeights_animusWeight
+	statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
+}
+
+func statWeightsGrid_updateOne(gearModel model.Model, gearFile string, ratios simulate.SimResultStats, weightFileOut string, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize) {
+	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), &gearModel, printer)
+	currentItemSet := items.FullItemSet_FromMap(currentEquip)
+
+	// SIMULATE STAT CHANGES
+	inputData := generateRatingsInputFromArtificalStatOverrides_ForGrid(currentItemSet, printer, simSpeed, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions)
+
+	// SOLVE FOR STAT WEIGHTS
+	process := stathighs.GridStatWeightProcess{}
+	process.Init(printer)
+	process.SetTargetRatios(ratios)
+	process.SupplyData(inputData)
+	weights := process.Run()
+	pawn := writePawnString(weights, printer)
+
+	// OVERWRITE WEIGHT FILE
+	writeFile(weightFileOut, pawn)
 }
