@@ -278,7 +278,7 @@ outerIntermediateLoop:
 				line.WriteRune(',')
 			}
 			for _, v := range statListAll {
-				line.WriteUint32(res.group.itemSet.Total().Get(v))
+				line.WriteUint32(res.group.itemSet.Total().GetUInt(v))
 				line.WriteRune(',')
 			}
 			for _, simType := range simulate.SimResultTypeList {
@@ -386,7 +386,7 @@ func statWeightsGridFromInitialT5(printer *util.PrintRecorder) {
 	ratios = stathighs.NewStatWeights_radenWeight
 	priority = initialPriorityDeath
 	trinkets = [2]items.ItemId{trinketVialCorrupt, trinketThokTail}
-	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile,  trinkets,fight, ratios, weightFileOut, printer, simSpeed)
+	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, ratios, weightFileOut, printer, simSpeed)
 
 	weightFileOut = files.WeightDpsFile
 	gearFile = files.GearFileProtDps
@@ -394,7 +394,7 @@ func statWeightsGridFromInitialT5(printer *util.PrintRecorder) {
 	ratios = stathighs.NewStatWeights_dpsWeight
 	priority = initialPriorityDps
 	trinkets = [2]items.ItemId{trinketCurseHubris, trinketSkeerBlood}
-	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile,  trinkets,fight, ratios, weightFileOut, printer, simSpeed)
+	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, ratios, weightFileOut, printer, simSpeed)
 
 	weightFileOut = files.WeightCompromiseFile
 	gearFile = files.GearFileProtCompromise

@@ -188,8 +188,8 @@ func relativeRatingsCompromise(printer *util.PrintRecorder) {
 }
 
 func generateRatingsInputFromArtificalStatOverrides(printer *util.PrintRecorder) ([]stathighs.WeightInput, simulate.SimResultStats) {
-	simSpeed := simulate.RunSize_TestOnly
-	// simSpeed := simulate.RunSize_QuickDirty
+	// simSpeed := simulate.RunSize_TestOnly
+	simSpeed := simulate.RunSize_QuickDirty
 	// simSpeed := simulate.RunSize_SlowAccurate
 
 	// fight := stats.Fight_Animus
@@ -375,14 +375,7 @@ func generateRatingsInputFromRealRandomSets(printer *util.PrintRecorder) ([]stat
 		weightInputs <- stathighs.WeightInput{TotalStat: *itemSet.Total(), SimResult: simResult}
 	})
 
-	bytes, err := json.Marshal(weightInputs)
-	if err != nil {
-		panic(err)
-	}
-	err = os.WriteFile("sim-stats-input-data2.json", bytes, 0)
-	if err != nil {
-		panic(err)
-	}
+	writeWeightInputsToFile(weightInputs, "sim-stats-input-data2.json")
 
 	return weightInputs, targetRatio
 }
@@ -390,15 +383,7 @@ func generateRatingsInputFromRealRandomSets(printer *util.PrintRecorder) ([]stat
 func statWeightsComplex(printer *util.PrintRecorder) {
 	// weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
 
-	bytes, err := os.ReadFile("sim-stats-input-data2.json")
-	if err != nil {
-		panic(err)
-	}
-	var weightInputs []stathighs.WeightInput
-	err = json.Unmarshal(bytes, &weightInputs)
-	if err != nil {
-		panic(err)
-	}
+	weightInputs := readWeightInputFile("sim-stats-input-data2.json")
 
 	// between := func(w *stathighs.WeightInput, stat stats.StatType, lo, hi uint32) bool {
 	// 	value := w.TotalStat.Get(stat)
@@ -443,7 +428,7 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 	}
 
 	for _, entry := range weightInputs {
-		if hasteInDiscontinuityRange(entry.TotalStat.Get(stats.Stat_Haste)) {
+		if hasteInDiscontinuityRange(entry.TotalStat.GetUInt(stats.Stat_Haste)) {
 			printer.Println("haste in discontinuity range")
 		}
 	}
@@ -503,7 +488,7 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 	}
 
 	for _, entry := range weightInputs {
-		if hasteInDiscontinuityRange(entry.TotalStat.Get(stats.Stat_Haste)) {
+		if hasteInDiscontinuityRange(entry.TotalStat.GetUInt(stats.Stat_Haste)) {
 			printer.Println("haste in discontinuity range")
 		}
 	}
@@ -563,7 +548,12 @@ func statWeightsBasic(printer *util.PrintRecorder) {
 }
 
 func statWeightsGrid(printer *util.PrintRecorder) {
-	inputData, targetRatio := generateRatingsInputFromArtificalStatOverrides(printer)
+	// inputData, targetRatio := generateRatingsInputFromArtificalStatOverrides(printer)
+	// writeWeightInputsToFile(inputData, "sim-stats-input-grid.json" )
+
+	inputData := readWeightInputFile("sim-stats-input-grid.json")
+	targetRatio := stathighs.NewStatWeights_animusWeight
+
 	process := stathighs.GridStatWeightProcess2{}
 	process.Init(printer)
 	process.SetTargetRatios(targetRatio)
@@ -665,7 +655,7 @@ func fixBadExpertRange(printer *util.PrintRecorder, currentExpert uint32, planne
 }
 
 func initialBonusStatMap_fixRanges(printer *util.PrintRecorder, currentItemSet items.FullItemSet, plannedIncrementTestRange int32) map[stats.StatType]int32 {
-	incrementBaseHaste := fixBadHasteRange(printer, currentItemSet.Total().Get(stats.Stat_Haste), plannedIncrementTestRange)
+	incrementBaseHaste := fixBadHasteRange(printer, currentItemSet.Total().GetUInt(stats.Stat_Haste), plannedIncrementTestRange)
 	incrementBaseExpertise := fixBadExpertRange(printer, currentItemSet.Total().Expertise(), plannedIncrementTestRange)
 	initialBaseStats := make(map[stats.StatType]int32)
 	initialBaseStats[stats.Stat_Haste] += incrementBaseHaste
@@ -674,7 +664,7 @@ func initialBonusStatMap_fixRanges(printer *util.PrintRecorder, currentItemSet i
 }
 
 func initialBonusStatMap(printer *util.PrintRecorder, currentItemSet items.FullItemSet, incrementBaseHaste int32, decrementBaseExpertise int32, incrementMax int32) map[stats.StatType]int32 {
-	if checkBadHasteRange(printer, currentItemSet.Total().Get(stats.Stat_Haste), incrementBaseHaste, incrementMax) {
+	if checkBadHasteRange(printer, currentItemSet.Total().GetUInt(stats.Stat_Haste), incrementBaseHaste, incrementMax) {
 		panic("haste in discontinuity range")
 	}
 	if checkBadExpertRange(printer, currentItemSet.Total().Expertise(), decrementBaseExpertise, incrementMax) {
@@ -745,4 +735,28 @@ func statWeightsGrid_updateOne(gearModel model.Model, gearFile string, ratios si
 
 	// OVERWRITE WEIGHT FILE
 	writeFile(weightFileOut, pawn)
+}
+
+func writeWeightInputsToFile(weightInputs []stathighs.WeightInput, filename string) {
+	bytes, err := json.Marshal(weightInputs)
+	if err != nil {
+		panic(err)
+	}
+	err = os.WriteFile(filename, bytes, 0)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func readWeightInputFile(filename string) []stathighs.WeightInput {
+	bytes, err := os.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+	var weightInputs []stathighs.WeightInput
+	err = json.Unmarshal(bytes, &weightInputs)
+	if err != nil {
+		panic(err)
+	}
+	return weightInputs
 }

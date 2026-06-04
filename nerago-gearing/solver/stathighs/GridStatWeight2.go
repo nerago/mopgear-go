@@ -120,7 +120,7 @@ func (grid2 *GridStatWeightProcess2) chooseStatScaling() {
 	for _, statType := range G_RequiredStats {
 		total := 0.0
 		for data := range util.ForPointer(grid2.inputData) {
-			total += float64(data.TotalStat.Get(statType))
+			total += data.TotalStat.GetFloat(statType)
 		}
 
 		average := total / float64(len(grid2.inputData))
@@ -141,7 +141,7 @@ func (grid2 *GridStatWeightProcess2) processInputData() {
 			differenceCount, diffStatA, diffStatB := grid2.checkForNumberStatDifferences(&grid2.inputData[a].TotalStat, &grid2.inputData[b].TotalStat)
 			switch differenceCount {
 			case 1:
-				grid2.prepareSampleOneDifferenceStats(&grid2.inputData[a], &grid2.inputData[b], diffStatA)
+				// grid2.prepareSampleOneDifferenceStats(&grid2.inputData[a], &grid2.inputData[b], diffStatA)
 			case 2:
 				grid2.prepareSampleTwoDifferenceStats(&grid2.inputData[a], &grid2.inputData[b], diffStatA, diffStatB)
 			}
@@ -168,7 +168,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStats(one *Weight
 	// maybe old formula applies somehow still? dunno, thats a separates pair of differences
 	// formula: detailweight_dps_haste * unit_dps_strength - detailweight_dps_strength * unit_dps_haste + offset = 0
 
-	statDiff := float64(one.TotalStat.Get(statType) - two.TotalStat.Get(statType))
+	statDiff := one.TotalStat.GetFloat(statType) - two.TotalStat.GetFloat(statType)
 	statDiff *= grid2.scaleStats[statType]
 
 	for _, simType := range G_RequiredSims {
@@ -210,8 +210,8 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *Weight
 
 	// formula: detailweight_dps_haste * (simValSingleDiff / strengthSingleDiff) - detailweight_dps_strength * (simValOtherDiff / hasteSingleDiff) + offset = 0
 
-	statDiffA := float64(one.TotalStat.Get(statTypeA) - two.TotalStat.Get(statTypeA))
-	statDiffB := float64(one.TotalStat.Get(statTypeB) - two.TotalStat.Get(statTypeB))
+	statDiffA := one.TotalStat.GetFloat(statTypeA) - two.TotalStat.GetFloat(statTypeA)
+	statDiffB := one.TotalStat.GetFloat(statTypeB) - two.TotalStat.GetFloat(statTypeB)
 	statDiffA *= grid2.scaleStats[statTypeA]
 	statDiffB *= grid2.scaleStats[statTypeB]
 
@@ -228,8 +228,8 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *Weight
 		// not based directly on above
 		// weightA * statDiffA - weightB * statDiffB + mismatch = simDiff
 		utilhighs.AbsoluteValueFromDiffWithOffset(&grid2.input,
-			weightColumnA, statDiffA,
-			weightColumnB, statDiffB,
+			weightColumnA, statDiffB,
+			weightColumnB, statDiffA,
 			mismatchCol,
 			simDiff,
 			debugText)
@@ -247,8 +247,14 @@ func (grid2 *GridStatWeightProcess2) twoSamplesDifferenceAddToModel(oneSample fl
 func (grid2 *GridStatWeightProcess2) calcTotalRatings() {
 	for _, statType := range G_RequiredStats {
 		statFinalRow := utilhighs.ConstraintRowBuild{}
-		for _, detailColumn := range grid2.detailedWeights.SeqInnerWithKey1Value(statType) {
-			statFinalRow.Add(detailColumn, 1)
+		for simType, detailColumn := range grid2.detailedWeights.SeqInnerWithKey1Value(statType) {
+			scale := 1.0 / grid2.scaleSims[simType]
+			if simType.IsHighGood() || statType == stats.Stat_Strength {
+				scale *= 1
+			} else {
+				scale *= -1
+			}
+			statFinalRow.Add(detailColumn, scale)
 		}
 
 		finalWeightColumn := grid2.finalWeights[statType]
@@ -263,6 +269,7 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 	for _, statType := range G_RequiredStats {
 		columnIndex := weightColumns[statType]
 		value := solution.ColValues[columnIndex]
+		value *= grid2.scaleStats[statType]
 		printer.Printf("%10s %f\n", statType.Name(), value)
 		result[statType] = value
 	}

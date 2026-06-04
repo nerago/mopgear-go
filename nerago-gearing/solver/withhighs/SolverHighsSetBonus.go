@@ -431,7 +431,7 @@ func (setup *setupInputSetAware) addItem(itemSlot items.SlotEquip, item *items.S
 	// additional minimum value (e.g. haste)
 	additionalMinimum := gear_model.StatRequirements.AdditionalMinimumRequirement
 	if additionalMinimum != nil {
-		setup.minimumValueRow.Add(columnIndex, float64(item.Total().Get(additionalMinimum.StatType)))
+		setup.minimumValueRow.Add(columnIndex, item.Total().GetFloat(additionalMinimum.StatType))
 	}
 
 	// 1 for that slot that matches the item, so we can tell solver only one item per slot

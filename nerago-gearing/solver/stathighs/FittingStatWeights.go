@@ -215,7 +215,7 @@ func (fitseg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData
 	loData := make([]*WeightInput, 0)
 	hiData := make([]*WeightInput, 0)
 	for _, input := range processedData {
-		stat := input.TotalStat.Get(fitseg.stat)
+		stat := input.TotalStat.GetUInt(fitseg.stat)
 		if stat < inputRange.Minimum {
 			panic("sample isn't within bounds")
 		} else if inputRange.Minimum <= stat && stat < removeRange.Minimum {
@@ -242,7 +242,7 @@ func (fitseg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData
 
 func (fitseg *FittingSingleStatSegmentsProcess) filterDataStatRange(inputData []WeightInput, lo, hi uint32) {
 	util.FilterSliceAsNew(inputData, func(in *WeightInput) bool {
-		value := in.TotalStat.Get(fitseg.stat)
+		value := in.TotalStat.GetUInt(fitseg.stat)
 		return lo <= value && value <= hi
 	})
 }
@@ -307,7 +307,7 @@ func (fit *FittingSingleStatWeightProcess) SetMinimumIncludeRate(percent float64
 func (fit *FittingSingleStatWeightProcess) SupplyDataFromStandard(inputData []*WeightInput, stat stats.StatType, sim simulate.SimResultType) {
 	fit.inputData = util.CastSliceAsNew(inputData, func(input **WeightInput) fittingSample {
 		return fittingSample{
-			float64((*input).TotalStat.Get(stat)),
+			(*input).TotalStat.GetFloat(stat),
 			scaleSimItem((*input).SimResult.Get(sim), sim),
 			-1,
 		}

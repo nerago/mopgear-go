@@ -39,7 +39,7 @@ func SolverBuildRandom_MakeN_FullAndValidate(itemOptions *items.FullOptionsMap, 
 	for len(results) < targetCount {
 		itemSet := makeSetFromRandomFull(itemOptions, rng)
 		if model.CheckSetFull(&itemSet) && checkPairedSlotsNoDuplicate(itemSet.Items()) &&
-			itemSet.Total().Get(stats.Stat_Haste) >= minimumHaste {
+			itemSet.Total().GetUInt(stats.Stat_Haste) >= minimumHaste {
 
 			itemSet.DebugValidate()
 			itemSet.ValidateItemRules()

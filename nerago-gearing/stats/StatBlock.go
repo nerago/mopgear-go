@@ -49,7 +49,11 @@ func (block *StatBlock) HasSingleStat() bool {
 	return countNonZero == 1
 }
 
-func (block *StatBlock) Get(stat StatType) uint32 {
+func (block *StatBlock) GetFloat(stat StatType) float64 {
+	return float64(block[stat])
+}
+
+func (block *StatBlock) GetUInt(stat StatType) uint32 {
 	return block[stat]
 }
 

@@ -132,7 +132,7 @@ func (grid *GridStatWeightProcess) prepareSample(statType stats.StatType, high, 
 	// unit_dps_haste = (this_dps[haste] - base_dps) / this_haste_value
 	// detailweight_dps_haste = unit_dps_haste / unit_dps_str * detailweight_str
 
-	statDiff := high.TotalStat.Get(statType) - low.TotalStat.Get(statType)
+	statDiff := high.TotalStat.GetFloat(statType) - low.TotalStat.GetFloat(statType)
 
 	for _, simType := range G_RequiredSims {
 		var simValueDiff float64
@@ -141,7 +141,7 @@ func (grid *GridStatWeightProcess) prepareSample(statType stats.StatType, high, 
 		} else {
 			simValueDiff = low.SimResult.GetFriendly(simType) - high.SimResult.GetFriendly(simType)
 		}
-		unitStatValue := simValueDiff / float64(statDiff)
+		unitStatValue := simValueDiff / statDiff
 
 		// if (unitStatValue > 0 && unitStatValue <= 1e-9) || (unitStatValue < 0 && unitStatValue >= -1e-9) {
 		// 	panic("small values, highs won't like it")

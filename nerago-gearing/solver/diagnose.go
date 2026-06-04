@@ -57,10 +57,10 @@ func findMinMaxWithStat(options []items.SolvableItem, stat stats.StatType) (*ite
 	max := &options[0]
 	for i := 1; i < len(options); i++ {
 		item := &options[i]
-		if item.Total().Get(stat) < min.Total().Get(stat) {
+		if item.Total().GetUInt(stat) < min.Total().GetUInt(stat) {
 			min = item
 		}
-		if item.Total().Get(stat) > max.Total().Get(stat) {
+		if item.Total().GetUInt(stat) > max.Total().GetUInt(stat) {
 			max = item
 		}
 	}

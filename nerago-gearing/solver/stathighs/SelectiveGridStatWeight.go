@@ -153,7 +153,7 @@ func (selgrid *SelectiveGridStatWeightProcess) prepareSample(statType stats.Stat
 	// unit_dps_haste = (this_dps[haste] - base_dps) / this_haste_value
 	// detailweight_dps_haste = unit_dps_haste / unit_dps_str * detailweight_str
 
-	statDiff := high.TotalStat.Get(statType) - low.TotalStat.Get(statType)
+	statDiff := high.TotalStat.GetFloat(statType) - low.TotalStat.GetFloat(statType)
 
 	for _, simType := range G_RequiredSims {
 		var simValueDiff float64

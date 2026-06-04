@@ -103,7 +103,7 @@ func (comp *ComplexStatWeightProcess) chooseStatScaling() {
 	for _, statType := range G_RequiredStats {
 		total := 0.0
 		for data := range util.ForPointer(comp.inputData) {
-			total += float64(data.TotalStat.Get(statType))
+			total += data.TotalStat.GetFloat(statType)
 		}
 
 		average := total / float64(len(comp.inputData))
@@ -204,7 +204,7 @@ func (comp *ComplexStatWeightProcess) buildDataEquationForSim(stats *stats.StatB
 
 	for _, statType := range G_RequiredStats {
 		weightDetailCol := comp.detailedWeightColumns.GetOrPanic(statType, simType)
-		statValue := float64(stats.Get(statType))
+		statValue := stats.GetFloat(statType)
 		statScale := comp.scaleStats[statType]
 
 		scaledStatValue := statValue * statScale
@@ -290,7 +290,7 @@ func (comp *ComplexStatWeightProcess) reportExamples(detailWeightMap util.MapMap
 			statSum := 0.0
 			comp.printer.Printf(" %10s", simType.String())
 			for _, statType := range G_RequiredStats {
-				statValue := float64(data.TotalStat.Get(statType))
+				statValue := data.TotalStat.GetFloat(statType)
 				weight := detailWeightMap.GetOrPanic(statType, simType)
 				if !simType.IsHighGood() {
 					weight *= -1 // unflip so equation appears matches what the model saw

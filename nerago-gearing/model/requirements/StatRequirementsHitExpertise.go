@@ -55,7 +55,7 @@ func (inst *StatRequirementsHitExpertise) CheckSet(block *StatBlock) bool {
 	exp := block.Expertise()
 	if inst.hitMin <= hit && hit <= inst.hitMax && inst.expMin <= exp && exp <= inst.expMax {
 		if inst.AdditionalMinimumRequirement != nil {
-			return block.Get(inst.AdditionalMinimumRequirement.StatType) >= inst.AdditionalMinimumRequirement.Value
+			return block.GetUInt(inst.AdditionalMinimumRequirement.StatType) >= inst.AdditionalMinimumRequirement.Value
 		} else {
 			return true
 		}
