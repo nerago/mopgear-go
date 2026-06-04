@@ -188,8 +188,8 @@ func relativeRatingsCompromise(printer *util.PrintRecorder) {
 }
 
 func generateRatingsInputFromArtificalStatOverrides(printer *util.PrintRecorder) ([]stathighs.WeightInput, simulate.SimResultStats) {
-	// simSpeed := simulate.RunSize_TestOnly
-	simSpeed := simulate.RunSize_QuickDirty
+	simSpeed := simulate.RunSize_TestOnly
+	// simSpeed := simulate.RunSize_QuickDirty
 	// simSpeed := simulate.RunSize_SlowAccurate
 
 	// fight := stats.Fight_Animus
@@ -564,7 +564,7 @@ func statWeightsBasic(printer *util.PrintRecorder) {
 
 func statWeightsGrid(printer *util.PrintRecorder) {
 	inputData, targetRatio := generateRatingsInputFromArtificalStatOverrides(printer)
-	process := stathighs.GridStatWeightProcess{}
+	process := stathighs.GridStatWeightProcess2{}
 	process.Init(printer)
 	process.SetTargetRatios(targetRatio)
 	process.SupplyData(inputData)

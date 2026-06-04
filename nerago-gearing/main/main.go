@@ -83,7 +83,7 @@ func core(printer *util.PrintRecorder) {
 	// checkHighs(printer)
 	// checkHighsAcross(printer)
 
-	PaladinMultiRun(printer)
+	// PaladinMultiRun(printer)
 	// testSim(printer)
 	// findUpgrades_Sim_PaladinMiti_Run(printer)
 	// findUpgrades_Sim_PaladinDps_Run(printer)
@@ -97,7 +97,7 @@ func core(printer *util.PrintRecorder) {
 	// forSpreadsheetGenerateRatingsDataFromSims(printer)
 	// statWeightsFromHighAndSim(printer)
 	// statWeightsBasic(printer)
-	// statWeightsGrid(printer)
+	statWeightsGrid(printer)
 	// statWeightsFitting2(printer)
 	// statWeightsComplex(printer)
 
