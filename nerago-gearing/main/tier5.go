@@ -265,7 +265,7 @@ outerIntermediateLoop:
 		line.WriteRune(',')
 	}
 	for _, simType := range simulate.SimResultTypeList {
-		line.WriteString(simType.String())
+		line.WriteString(simType.Name())
 		line.WriteRune(',')
 	}
 	printer.PrintlnFromBuild(line)

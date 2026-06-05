@@ -375,11 +375,11 @@ func trinketSims(printer *util.PrintRecorder) {
 	itemIds := []items.ItemId{
 		94519,  // crit prim rage
 		945190, // crit->master prim rage
-		87063,  // none vial dragon
-		95779,  // none vial sang
-		96793,  // none fort zand
-		96555,  // none soul barrier
-		87172,  // none darkmist
+		// 87063,  // none vial dragon
+		// 95779,  // none vial sang
+		96793, // none fort zand
+		96555, // none soul barrier
+		// 87172,  // none darkmist
 		94529,  // none gaze twins
 		94527,  // ji-kun
 		945270, // exp->crit ji-kun
@@ -387,6 +387,7 @@ func trinketSims(printer *util.PrintRecorder) {
 		94508,  // valor
 		103989, // timeless alacrity of xuen
 		103990, // timeless resolve of niuzao
+		103678, // time lost artifict
 	}
 
 	// fight := stats.Fight_Animus
@@ -422,7 +423,7 @@ func trinketSims(printer *util.PrintRecorder) {
 	csv.InitRows(8)
 	csv.AddStringMany("set", "item")
 	for _, statType := range simulate.SimResultTypeList {
-		csv.AddString(statType.String())
+		csv.AddString(statType.Name())
 	}
 	csv.FinishColumn()
 

@@ -80,7 +80,7 @@ func (grid *GridStatWeightProcess) setupWeightVars() {
 
 	for _, statType := range G_RequiredStats {
 		for _, simType := range G_RequiredSims {
-			colDetailWeight := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.String()})
+			colDetailWeight := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
 			grid.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
 	}
@@ -193,7 +193,7 @@ func (grid *GridStatWeightProcess) unitValuesToCalcDetailedRatings() {
 }
 
 func (grid *GridStatWeightProcess) unitValuesCalcForGroup(simType simulate.SimResultType, thisStatType stats.StatType, baseUnitValueSeq iter.Seq[gridDataSample], thisUnitValueSeq iter.Seq[gridDataSample], baseDetailWeightCol utilhighs.ColumnIndex) {
-	debugText := simType.String() + " " + thisStatType.Name()
+	debugText := simType.Name() + " " + thisStatType.Name()
 	thisDetailWeightCol := grid.detailedWeights.GetOrPanic(thisStatType, simType)
 
 	// look at multiple input values of each unitstat value

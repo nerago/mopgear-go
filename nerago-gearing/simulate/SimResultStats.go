@@ -5,7 +5,7 @@ import (
 	"paladin_gearing_go/util"
 )
 
-type SimResultType int8
+type SimResultType uint8
 
 const (
 	Result_DPS   SimResultType = iota
@@ -36,7 +36,7 @@ func (types SimResultType) IsHighGood() bool {
 		panic("unknown value")
 	}
 }
-func (types SimResultType) String() string {
+func (types SimResultType) Name() string {
 	switch types {
 	case Result_DPS:
 		return "DPS"

@@ -501,7 +501,7 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 	for entry := range weightMapMapMap.SeqWithKeys() {
 		weightMap := entry.Value
 
-		printer.Printf("################### %s %s ###################\n", entry.Key1.Name(), entry.Key2.String())
+		printer.Printf("################### %s %s ###################\n", entry.Key1.Name(), entry.Key2.Name())
 		printer.Printf("weightMap size %d\n", len(weightMap))
 		weightList := slices.SortedFunc(maps.Values(weightMap), func(a, b stathighs.FittingSingleStatResult) int { return cmp.Compare(a.Minimum, b.Minimum) })
 
@@ -764,9 +764,10 @@ func readWeightInputFile(filename string) []stathighs.WeightInput {
 }
 
 func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
-	simSpeed := simulate.RunSize_QuickDirty
+	simSpeed := simulate.RunSize_Medium
 	// simSpeed := simulate.RunSize_TestOnly
-	makeSetCount := 80
+	makeSetCount := 400
+	// makeSetCount := 40
 
 	gearFile := files.GearFileProtMitigationNoSet
 	gearModel := model.Model_PallyProtMitigation_NoSet()
@@ -779,6 +780,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	inputDataBasic, basicSimBase := generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet, printer, simSpeed, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions)
 	inputDataGrid := generateRatingsInputFromArtificalStatOverrides_ForGrid(currentItemSet, printer, simSpeed, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions)
 	inputDataRandom := generateRatingsInputFromRealRandomSetsGeneral(gearFile, substituteItemsMiti, &gearModel, makeSetCount, simSpeed, true)
+	mixedInputData := slices.Concat(inputDataGrid, inputDataRandom)
 
 	resultsByAlgorithm := make(map[string]map[stats.StatType]float64)
 
@@ -847,6 +849,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	for _, stat := range stathighs.G_RequiredStats {
 		tab.AddColumnHeader(stat.Name(), true)
 	}
+	tab.AddColumnHeader("accuracy", false)
 	for label, resultMap := range resultsByAlgorithm {
 		row := make([]string, 0)
 		row = append(row, label)
@@ -854,7 +857,92 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			value := resultMap[stat]
 			row = append(row, strconv.FormatFloat(value, 'f', 4, 64))
 		}
+		accuracy := evaluateAccuracy(resultMap, mixedInputData, targetRatio)
+		row = append(row, strconv.FormatFloat(accuracy, 'f', 4, 64))
 		tab.AddRow(row)
 	}
 	tab.Write(printer)
+}
+
+func evaluateAccuracy(statWeights map[stats.StatType]float64, inputData []stathighs.WeightInput, simRatios simulate.SimResultStats) float64 {
+	// Make ranked sim data
+	rankedSims := util.MapSlice[simulate.SimResultType, float64]{}
+	for _, sample := range inputData {
+		for _, simType := range stathighs.G_RequiredSims {
+			rankedSims.Add(simType, sample.SimResult.GetFriendly(simType))
+		}
+	}
+	rankedSims.MapInternalSlicesAll(func(simType simulate.SimResultType, inner []float64) []float64 {
+		if simType.IsHighGood() {
+			// ascending, so that later indexes are better and worth more rank
+			slices.Sort(inner)
+		} else {
+			// decending, later entries are smaller numerically, but worth more in index
+			slices.SortFunc(inner, func(a, b float64) int { return cmp.Compare(b, a) })
+		}
+		return inner
+	})
+
+	// make structures
+	type accuracyInfo struct {
+		input *stathighs.WeightInput
+
+		simRanks             map[simulate.SimResultType]int
+		combinedSimRankScore float64
+
+		statScore float64
+		statRank  int
+	}
+	accuracyData := util.CastSliceAsNew(inputData, func(input *stathighs.WeightInput) accuracyInfo {
+		return accuracyInfo{
+			input:     input,
+			statScore: calcStatScore(input, statWeights),
+		}
+	})
+
+	// rank the accuracy structures by stat score
+	slices.SortFunc(accuracyData, func(a, b accuracyInfo) int { return cmp.Compare(a.statScore, b.statScore) })
+
+	// set rank values
+	for statRankIndex := range accuracyData {
+		info := &accuracyData[statRankIndex]
+		info.statRank = statRankIndex // save the stat ranks from current slice order
+
+		info.simRanks = make(map[simulate.SimResultType]int)
+		for _, simType := range stathighs.G_RequiredSims {
+			rankedValues := rankedSims.GetInternalSlice(simType)
+			queryValue := info.input.SimResult.GetFriendly(simType)
+
+			rank := slices.Index(rankedValues, queryValue)
+			info.simRanks[simType] = rank
+
+			info.combinedSimRankScore += float64(rank) * simRatios.Get(simType)
+		}
+	}
+
+	// rank the accuracy structures by stat score
+	slices.SortFunc(accuracyData, func(a, b accuracyInfo) int { return cmp.Compare(a.combinedSimRankScore, b.combinedSimRankScore) })
+
+	// compute average difference between stat rank and sim rank
+	// TODO TODO TODO maybe this is what we should optimise for in the weight models
+	totalComparePercents := 0.0
+	for combinedSimRankIndex := range accuracyData {
+		info := &accuracyData[combinedSimRankIndex]
+
+		// 100% if ranks are equal, 90% if average 10% difference, etc
+		diff := util.AbsIntDiff(combinedSimRankIndex, info.statRank)
+		diffAsPercent := float64(diff) / float64(len(accuracyData))
+		percentScore := 100.0 - (diffAsPercent * 100.0)
+		totalComparePercents += percentScore
+	}
+
+	return totalComparePercents / float64(len(accuracyData))
+}
+
+func calcStatScore(input *stathighs.WeightInput, statWeights map[stats.StatType]float64) float64 {
+	total := 0.0
+	for statType, weightValue := range statWeights {
+		total += input.TotalStat.GetFloat(statType) * weightValue
+	}
+	return total
 }

@@ -183,7 +183,7 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 		param := &job.params[paramIndex]
 		for _, resultType := range outputTypes {
 			csv.AddToBuilder(func(b *util.StringBuild2) {
-				b.WriteString(resultType.String())
+				b.WriteString(resultType.Name())
 				b.WriteString(" (")
 				b.WriteString(param.Label)
 				b.WriteRune(')')

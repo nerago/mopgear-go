@@ -46,6 +46,7 @@ func SolverBuildRandom_MakeN_FullAndValidate(itemOptions *items.FullOptionsMap, 
 			results = append(results, itemSet)
 		}
 	}
+	results = util.RemoveDuplicatesFunc(results, (*items.FullItemSet).Equals)
 	return results
 }
 

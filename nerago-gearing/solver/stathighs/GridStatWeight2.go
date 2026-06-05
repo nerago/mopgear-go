@@ -56,8 +56,7 @@ func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios simulate.SimRe
 
 func (grid2 *GridStatWeightProcess2) Run() map[stats.StatType]float64 {
 	grid2.setupWeightVars()
-	grid2.chooseSimScaling()
-	grid2.chooseStatScaling()
+	grid2.chooseScaling()
 	grid2.processInputData()
 	// grid2.calcTotalRatings()
 
@@ -79,7 +78,7 @@ func (grid2 *GridStatWeightProcess2) setupWeightVars() {
 
 	for _, statType := range G_RequiredStats {
 		for _, simType := range G_RequiredSims {
-			colDetailWeight := grid2.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.String()})
+			colDetailWeight := grid2.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
 			grid2.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
 	}
@@ -93,46 +92,9 @@ func (grid2 *GridStatWeightProcess2) setupWeightVars() {
 	}
 }
 
-func (grid2 *GridStatWeightProcess2) chooseSimScaling() {
-	c_targetNumber := 1.0
-	grid2.scaleSims = make(map[simulate.SimResultType]float64)
-	for _, simType := range G_RequiredSims {
-		total := 0.0
-		for data := range util.ForPointer(grid2.inputData) {
-			total += data.SimResult.Get(simType)
-		}
-
-		average := total / float64(len(grid2.inputData))
-		if average != 0 {
-			scale := c_targetNumber / average
-			grid2.scaleSims[simType] = scale
-		} else {
-			grid2.scaleSims[simType] = 1
-		}
-
-		grid2.printer.Printf("scale %s %e\n", simType.String(), grid2.scaleSims[simType])
-	}
-}
-
-func (grid2 *GridStatWeightProcess2) chooseStatScaling() {
-	c_targetNumber := 1.0
-	grid2.scaleStats = make(map[stats.StatType]float64)
-	for _, statType := range G_RequiredStats {
-		total := 0.0
-		for data := range util.ForPointer(grid2.inputData) {
-			total += data.TotalStat.GetFloat(statType)
-		}
-
-		average := total / float64(len(grid2.inputData))
-		if average != 0 {
-			scale := c_targetNumber / average
-			grid2.scaleStats[statType] = scale
-		} else {
-			grid2.scaleStats[statType] = 1
-		}
-
-		grid2.printer.Printf("scale %s %.8f\n", statType.Name(), grid2.scaleStats[statType])
-	}
+func (grid2 *GridStatWeightProcess2) chooseScaling() {
+	grid2.scaleSims = chooseSimScaling(grid2.inputData, grid2.printer)
+	grid2.scaleStats = chooseStatScaling(grid2.inputData, grid2.printer)
 }
 
 func (grid2 *GridStatWeightProcess2) processInputData() {
@@ -174,9 +136,9 @@ func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStats(one *Weight
 	for _, simType := range G_RequiredSims {
 		weightColumn := grid2.detailedWeights.GetOrPanic(statType, simType)
 
-		debugText := "MISMATCH1 signed " + statType.Name() + " " + simType.String()
+		debugText := "MISMATCH1 signed " + statType.Name() + " " + simType.Name()
 		mismatchSignedCol := grid2.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: debugText})
-		debugText = "MISMATCH1 " + statType.Name() + " " + simType.String()
+		debugText = "MISMATCH1 " + statType.Name() + " " + simType.Name()
 		mismatchCol := grid2.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
 
 		simDiff := one.SimResult.GetFriendly(simType) - two.SimResult.GetFriendly(simType)
@@ -219,7 +181,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *Weight
 		weightColumnA := grid2.detailedWeights.GetOrPanic(statTypeA, simType)
 		weightColumnB := grid2.detailedWeights.GetOrPanic(statTypeB, simType)
 
-		debugText := "MISMATCH2 " + statTypeA.Name() + " " + statTypeB.Name() + " " + simType.String()
+		debugText := "MISMATCH2 " + statTypeA.Name() + " " + statTypeB.Name() + " " + simType.Name()
 		mismatchCol := grid2.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
 
 		simDiff := one.SimResult.GetFriendly(simType) - two.SimResult.GetFriendly(simType)
@@ -282,7 +244,7 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 				usableWeight *= -1
 			}
 
-			grid2.printer.Printf("         %5s > %f %f\n", simType.String(), weight, usableWeight)
+			grid2.printer.Printf("         %5s > %f %f\n", simType.Name(), weight, usableWeight)
 
 			sumIndividual += usableWeight
 		}

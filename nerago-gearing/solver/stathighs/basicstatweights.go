@@ -74,7 +74,7 @@ func (basic *BasicStatWeightProcess) Run() map[stats.StatType]float64 {
 
 	for _, statType := range G_RequiredStats {
 		for _, simType := range G_RequiredSims {
-			colName := "WEIGHT: " + statType.Name() + " " + simType.String()
+			colName := "WEIGHT: " + statType.Name() + " " + simType.Name()
 			colDetailWeight := basic.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: colName})
 			basic.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
@@ -149,10 +149,10 @@ func (basic *BasicStatWeightProcess) unitValuesToCalcDetailedRatings() {
 func (basic *BasicStatWeightProcess) unitValuesToCalcDetailedRatings_single(unitValueBase float64, detailWeightBase utilhighs.ColumnIndex,
 	thisUnitValue float64, thisdetailWeight utilhighs.ColumnIndex, simType simulate.SimResultType, statType stats.StatType) {
 
-	colName := "OFFSET SIGNED " + simType.String() + " " + statType.Name()
+	colName := "OFFSET SIGNED " + simType.Name() + " " + statType.Name()
 	offsetSigned := basic.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: colName})
 
-	colName = "OFFSET ABS " + simType.String() + " " + statType.Name()
+	colName = "OFFSET ABS " + simType.Name() + " " + statType.Name()
 	offsetAbs := basic.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: colName}) // outputs for objective function
 	utilhighs.AbsoluteValue(&basic.input, offsetSigned, offsetAbs)
 

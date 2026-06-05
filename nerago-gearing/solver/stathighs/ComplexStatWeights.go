@@ -58,13 +58,12 @@ func (comp *ComplexStatWeightProcess) Run() map[stats.StatType]float64 {
 
 	// comp.linearEquationDiff = -1
 	// comp.linearInclude = -1
-	
+
 	comp.input.BlendMultiObjectives = false
 	comp.linearEquationDiff = comp.input.AddLinearPrioritised(false, -1, 0.5, 2)
 	comp.linearInclude = comp.input.AddLinearPrioritised(false, -1, -1, 1)
 
-	comp.chooseSimScaling()
-	comp.chooseStatScaling()
+	comp.chooseScaling()
 	comp.createWeightColumns()
 	comp.buildDataEquations()
 
@@ -76,46 +75,9 @@ func (comp *ComplexStatWeightProcess) Run() map[stats.StatType]float64 {
 	return comp.exactAndReportSolution(solution)
 }
 
-func (comp *ComplexStatWeightProcess) chooseSimScaling() {
-	c_targetNumber := 1.0
-	comp.scaleSims = make(map[simulate.SimResultType]float64)
-	for _, simType := range G_RequiredSims {
-		total := 0.0
-		for data := range util.ForPointer(comp.inputData) {
-			total += data.SimResult.Get(simType)
-		}
-
-		average := total / float64(len(comp.inputData))
-		if average != 0 {
-			scale := c_targetNumber / average
-			comp.scaleSims[simType] = scale
-		} else {
-			comp.scaleSims[simType] = 1
-		}
-
-		comp.printer.Printf("scale %s %e\n", simType.String(), comp.scaleSims[simType])
-	}
-}
-
-func (comp *ComplexStatWeightProcess) chooseStatScaling() {
-	c_targetNumber := 1.0
-	comp.scaleStats = make(map[stats.StatType]float64)
-	for _, statType := range G_RequiredStats {
-		total := 0.0
-		for data := range util.ForPointer(comp.inputData) {
-			total += data.TotalStat.GetFloat(statType)
-		}
-
-		average := total / float64(len(comp.inputData))
-		if average != 0 {
-			scale := c_targetNumber / average
-			comp.scaleStats[statType] = scale
-		} else {
-			comp.scaleStats[statType] = 1
-		}
-
-		comp.printer.Printf("scale %s %.8f\n", statType.Name(), comp.scaleStats[statType])
-	}
+func (comp *ComplexStatWeightProcess) chooseScaling() {
+	comp.scaleSims = chooseSimScaling(comp.inputData, comp.printer)
+	comp.scaleStats = chooseStatScaling(comp.inputData, comp.printer)
 }
 
 func (comp *ComplexStatWeightProcess) createWeightColumns() {
@@ -125,7 +87,7 @@ func (comp *ComplexStatWeightProcess) createWeightColumns() {
 		for _, simType := range G_RequiredSims {
 			lo := utilhighs.C_MinusInf
 			hi := utilhighs.C_PlusInf
-			colDetailWeight := comp.input.CreateColumnGeneral(highs.Continuous, lo, hi, utilhighs.DebugString{Text: "WEIGHT " + statType.Name() + " " + simType.String()})
+			colDetailWeight := comp.input.CreateColumnGeneral(highs.Continuous, lo, hi, utilhighs.DebugString{Text: "WEIGHT " + statType.Name() + " " + simType.Name()})
 			comp.detailedWeightColumns.Put(statType, simType, colDetailWeight)
 		}
 	}
@@ -269,13 +231,13 @@ func (comp *ComplexStatWeightProcess) extractDetailWeights(solution *highs.Solut
 
 		detailWeightMap.Put(statType, simType, usableWeight)
 
-		comp.printer.Printf("%10s %10s %11.8f (%5.2e) %11.8f (%5.2e)\n", statType.Name(), simType.String(), modelWeight, modelWeight, usableWeight, usableWeight)
+		comp.printer.Printf("%10s %10s %11.8f (%5.2e) %11.8f (%5.2e)\n", statType.Name(), simType.Name(), modelWeight, modelWeight, usableWeight, usableWeight)
 	}
 	comp.printer.Println0()
 
 	for entry := range detailWeightMap.SeqWithKeysOtherOrder() {
 		usableWeight := entry.Value
-		comp.printer.Printf("%10s %10s %11.8f (%5.2e)\n", entry.Key1.Name(), entry.Key2.String(), usableWeight, usableWeight)
+		comp.printer.Printf("%10s %10s %11.8f (%5.2e)\n", entry.Key1.Name(), entry.Key2.Name(), usableWeight, usableWeight)
 	}
 	comp.printer.Println0()
 	return detailWeightMap
@@ -288,7 +250,7 @@ func (comp *ComplexStatWeightProcess) reportExamples(detailWeightMap util.MapMap
 
 		for _, simType := range G_RequiredSims {
 			statSum := 0.0
-			comp.printer.Printf(" %10s", simType.String())
+			comp.printer.Printf(" %10s", simType.Name())
 			for _, statType := range G_RequiredStats {
 				statValue := data.TotalStat.GetFloat(statType)
 				weight := detailWeightMap.GetOrPanic(statType, simType)

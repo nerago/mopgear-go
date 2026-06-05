@@ -31,6 +31,10 @@ func (mapslice *MapSlice[K, V]) ValuesForKeyAsSeq(key K) iter.Seq[V] {
 	return slices.Values(inner)
 }
 
+func (mapslice *MapSlice[K, V]) GetInternalSlice(key K) []V {
+	return mapslice.data[key]
+}
+
 func (mapslice *MapSlice[K, V]) SeqKeys() iter.Seq[K] {
 	return func(yield func(K) bool) {
 		for key := range mapslice.data {
@@ -62,5 +66,27 @@ func (mapslice *MapSlice[K, V]) SeqValues() iter.Seq[V] {
 				}
 			}
 		}
+	}
+}
+
+func (mapslice *MapSlice[K, V]) SeqGroupsNestedKeyValue() iter.Seq2[K, iter.Seq[V]] {
+	return func(yield func(K, iter.Seq[V]) bool) {
+		for key, inner := range mapslice.data {
+			if !yield(key, slices.Values(inner)) {
+				return
+			}
+		}
+	}
+}
+
+func (mapslice *MapSlice[K, V]) MapInternalSlice(key K, mapper func([]V) []V) {
+	if mapslice.data != nil {
+		mapslice.data[key] = mapper(mapslice.data[key])
+	}
+}
+
+func (mapslice *MapSlice[K, V]) MapInternalSlicesAll(mapper func(K, []V) []V) {
+	for key, inner := range mapslice.data {
+		mapslice.data[key] = mapper(key, inner)
 	}
 }

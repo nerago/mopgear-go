@@ -29,3 +29,11 @@ func MaxIgnoreNaN3(a, b, c float64) float64 {
 		return math.Max(math.Max(a, b), c)
 	}
 }
+
+func AbsIntDiff(a, b int) int {
+	if a > b {
+		return a - b
+	} else {
+		return b - a
+	}
+}

@@ -83,7 +83,7 @@ func (selgrid *SelectiveGridStatWeightProcess) setupWeightVars() {
 
 	for _, statType := range G_RequiredStats {
 		for _, simType := range G_RequiredSims {
-			colDetailWeight := selgrid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.String()})
+			colDetailWeight := selgrid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
 			selgrid.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
 	}
@@ -209,7 +209,7 @@ func (selgrid *SelectiveGridStatWeightProcess) unitValuesToCalcDetailedRatings()
 }
 
 func (selgrid *SelectiveGridStatWeightProcess) unitValuesCalcForGroup(simType simulate.SimResultType, thisStatType stats.StatType, unitValueBaseSeq iter.Seq[selectiveGridDataSample], thisUnitValueSeq iter.Seq[selectiveGridDataSample], detailWeightBase utilhighs.ColumnIndex) {
-	debugText := simType.String() + " " + thisStatType.Name()
+	debugText := simType.Name() + " " + thisStatType.Name()
 	thisDetailWeight := selgrid.detailedWeights.GetOrPanic(thisStatType, simType)
 
 	// look at multiple input values of each unitstat value
