@@ -20,7 +20,7 @@ type GridStatWeightProcess2 struct {
 
 	input           utilhighs.InputBuilder
 	detailedWeights util.MapMap[stats.StatType, simulate.SimResultType, utilhighs.ColumnIndex]
-	finalWeights    map[stats.StatType]utilhighs.ColumnIndex
+	// finalWeights    map[stats.StatType]utilhighs.ColumnIndex
 }
 
 type gridDataSample2 struct {
@@ -31,7 +31,7 @@ func (grid2 *GridStatWeightProcess2) Init(printer *util.PrintRecorder) {
 	grid2.printer = printer
 	grid2.input.Minimise = true
 	// grid2.input.Solver = "pdlp"
-	grid2.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
+	// grid2.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }
 
 func (grid2 *GridStatWeightProcess2) SupplyData(inputData []WeightInput) {
@@ -59,7 +59,7 @@ func (grid2 *GridStatWeightProcess2) Run() map[stats.StatType]float64 {
 	grid2.chooseSimScaling()
 	grid2.chooseStatScaling()
 	grid2.processInputData()
-	grid2.calcTotalRatings()
+	// grid2.calcTotalRatings()
 
 	solution, log := grid2.input.RunHighs()
 	grid2.printer.AppendOther(log)
@@ -67,15 +67,15 @@ func (grid2 *GridStatWeightProcess2) Run() map[stats.StatType]float64 {
 
 	grid2.input.DebugPrintColumns(solution, grid2.printer)
 
-	return grid2.reportOutputWeightsGrid(solution, grid2.finalWeights, grid2.printer)
+	return grid2.reportOutputWeightsGrid(solution)
 }
 
 func (grid2 *GridStatWeightProcess2) setupWeightVars() {
-	for _, statType := range G_RequiredStats {
-		colFinalWeight := grid2.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "FINAL WEIGHT: " + statType.Name()})
-		// colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, -c_finalWeightLimit, c_finalWeightLimit)
-		grid2.finalWeights[statType] = colFinalWeight
-	}
+	// for _, statType := range G_RequiredStats {
+	// 	colFinalWeight := grid2.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "FINAL WEIGHT: " + statType.Name()})
+	// 	// colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, -c_finalWeightLimit, c_finalWeightLimit)
+	// 	grid2.finalWeights[statType] = colFinalWeight
+	// }
 
 	for _, statType := range G_RequiredStats {
 		for _, simType := range G_RequiredSims {
@@ -228,8 +228,8 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *Weight
 		// not based directly on above
 		// weightA * statDiffA - weightB * statDiffB + mismatch = simDiff
 		utilhighs.AbsoluteValueFromDiffWithOffset(&grid2.input,
-			weightColumnA, statDiffB,
-			weightColumnB, statDiffA,
+			weightColumnA, statDiffA,
+			weightColumnB, statDiffB,
 			mismatchCol,
 			simDiff,
 			debugText)
@@ -244,34 +244,52 @@ func (grid2 *GridStatWeightProcess2) twoSamplesDifferenceAddToModel(oneSample fl
 		offsetAbs, "OFFSET "+debugText)
 }
 
-func (grid2 *GridStatWeightProcess2) calcTotalRatings() {
+// func (grid2 *GridStatWeightProcess2) calcTotalRatings() {
+// 	for _, statType := range G_RequiredStats {
+// 		statFinalRow := utilhighs.ConstraintRowBuild{}
+// 		for simType, detailColumn := range grid2.detailedWeights.SeqInnerWithKey1Value(statType) {
+// 			scale := 1.0 / grid2.scaleSims[simType]
+// 			if simType.IsHighGood() || statType == stats.Stat_Strength {
+// 				scale *= 1
+// 			} else {
+// 				scale *= -1
+// 			}
+// 			statFinalRow.Add(detailColumn, scale)
+// 		}
+
+// 		finalWeightColumn := grid2.finalWeights[statType]
+// 		statFinalRow.Add(finalWeightColumn, -1)
+// 		statFinalRow.Finish(&grid2.input, 0, 0)
+// 	}
+// }
+
+func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Solution) map[stats.StatType]float64 {
+	result := make(map[stats.StatType]float64)
+	grid2.printer.Println("FINAL WEIGHTS:")
+
 	for _, statType := range G_RequiredStats {
-		statFinalRow := utilhighs.ConstraintRowBuild{}
-		for simType, detailColumn := range grid2.detailedWeights.SeqInnerWithKey1Value(statType) {
-			scale := 1.0 / grid2.scaleSims[simType]
-			if simType.IsHighGood() || statType == stats.Stat_Strength {
-				scale *= 1
-			} else {
-				scale *= -1
+		grid2.printer.Printf("%10s >>>>>\n", statType.Name())
+
+		sumIndividual := 0.0
+
+		for simType, detailWeightCol := range grid2.detailedWeights.SeqInnerWithKey1Value(statType) {
+			weight := solution.ColValues[detailWeightCol]
+
+			scaleFix := grid2.scaleStats[statType] / grid2.scaleSims[simType]
+			usableWeight := weight * scaleFix
+
+			if !simType.IsHighGood() {
+				usableWeight *= -1
 			}
-			statFinalRow.Add(detailColumn, scale)
+
+			grid2.printer.Printf("         %5s > %f %f\n", simType.String(), weight, usableWeight)
+
+			sumIndividual += usableWeight
 		}
 
-		finalWeightColumn := grid2.finalWeights[statType]
-		statFinalRow.Add(finalWeightColumn, -1)
-		statFinalRow.Finish(&grid2.input, 0, 0)
-	}
-}
-
-func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Solution, weightColumns map[stats.StatType]utilhighs.ColumnIndex, printer *util.PrintRecorder) map[stats.StatType]float64 {
-	result := make(map[stats.StatType]float64)
-	printer.Println("FINAL WEIGHTS:")
-	for _, statType := range G_RequiredStats {
-		columnIndex := weightColumns[statType]
-		value := solution.ColValues[columnIndex]
-		value *= grid2.scaleStats[statType]
-		printer.Printf("%10s %f\n", statType.Name(), value)
-		result[statType] = value
+		// grid2.printer.Printf("%10s %f\n", statType.Name(), sumIndividual)
+		grid2.printer.Printf("             === %f\n", sumIndividual)
+		result[statType] = sumIndividual
 	}
 	return result
 }

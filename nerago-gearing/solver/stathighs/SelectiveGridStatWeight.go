@@ -61,7 +61,7 @@ func (selgrid *SelectiveGridStatWeightProcess) Run() map[stats.StatType]float64 
 
 	selgrid.createIncludeToggles()
 	selgrid.dataSamplesFromPairs()
-	selgrid.checkSampleRange()
+	// selgrid.checkSampleRange()
 	selgrid.unitValuesToCalcDetailedRatings()
 	selgrid.calcTotalRatings()
 

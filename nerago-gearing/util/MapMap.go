@@ -16,6 +16,12 @@ type MapMapEntry[J comparable, K comparable, V any] struct {
 	Value V
 }
 
+// optional
+func (mapmap *MapMap[J, K, V]) Init(size int) {
+	mapmap.dataBy1 = make(map[J]map[K]V, size)
+	mapmap.dataBy2 = make(map[K]map[J]V, size)
+}
+
 func (mapmap *MapMap[J, K, V]) Get(key1 J, key2 K) (V, bool) {
 	value, hasValue := mapmap.dataBy1[key1][key2]
 	return value, hasValue
@@ -240,4 +246,27 @@ func (mapmap *MapMap[J, K, V]) SeqKey2Key1Nested() iter.Seq2[K, iter.Seq[J]] {
 			}
 		}
 	}
+}
+
+// a "map operation" in map/reduce terms, but too many uses for the word "map" here
+func MapMap_FromExitingMapMap_WithApply[J comparable, K comparable, V any, R any](mapmap *MapMap[J, K, V], apply func(V) R) *MapMap[J, K, R] {
+	resultMap := MapMap[J, K, R]{}
+
+	resultMap.dataBy2 = make(map[K]map[J]R, len(mapmap.dataBy2))
+	for key2, inner := range mapmap.dataBy2 {
+		resultMap.dataBy2[key2] = make(map[J]R, len(inner))
+	}
+
+	resultMap.dataBy1 = make(map[J]map[K]R, len(mapmap.dataBy1))
+	for key1, inner := range mapmap.dataBy1 {
+		newInner := make(map[K]R, len(inner))
+		for key2, value := range inner {
+			newValue := apply(value)
+			newInner[key2] = newValue
+			resultMap.dataBy2[key2][key1] = newValue
+		}
+		resultMap.dataBy1[key1] = newInner
+	}
+
+	return &resultMap
 }

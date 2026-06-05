@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
+	"paladin_gearing_go/util/util_rank"
 	"slices"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -57,9 +58,12 @@ func (fitall *FittingAllStatWeightProcess) Init(printer *util.PrintRecorder) {
 ////////////////////////////////////////////////////////
 
 type FittingEachStatWeightProcess struct {
-	printer   *util.PrintRecorder
-	inputData []WeightInput
-	each      util.MapMap[stats.StatType, simulate.SimResultType, *fittingEachFields]
+	printer *util.PrintRecorder
+
+	inputData    []WeightInput
+	targetRatios simulate.SimResultStats
+
+	each util.MapMap[stats.StatType, simulate.SimResultType, *fittingEachFields]
 }
 
 type fittingEachFields struct {
@@ -73,11 +77,15 @@ func (fiteach *FittingEachStatWeightProcess) Init(printer *util.PrintRecorder) {
 	fiteach.printer = printer
 }
 
+func (fiteach *FittingEachStatWeightProcess) SetTargetRatios(targetRatios simulate.SimResultStats) {
+	fiteach.targetRatios = targetRatios
+}
+
 func (fiteach *FittingEachStatWeightProcess) SupplyDataFromStandard(inputData []WeightInput) {
 	fiteach.inputData = inputData
 }
 
-func (fiteach *FittingEachStatWeightProcess) Run() util.MapMap[stats.StatType, simulate.SimResultType, map[StatRange]FittingSingleStatResult] {
+func (fiteach *FittingEachStatWeightProcess) RunDetailedResults() util.MapMap[stats.StatType, simulate.SimResultType, map[StatRange]FittingSingleStatResult] {
 	for _, statType := range G_RequiredStats {
 		for _, simType := range G_RequiredSims {
 			// TODO holding printer?
@@ -98,6 +106,34 @@ func (fiteach *FittingEachStatWeightProcess) Run() util.MapMap[stats.StatType, s
 		resultMap.Put(statType, simType, value.resultMap)
 	})
 	return resultMap
+}
+
+func (fiteach *FittingEachStatWeightProcess) Run() map[stats.StatType]float64 {
+	detailResult := fiteach.RunDetailedResults()
+
+	bestRatingEach := util.MapMap_FromExitingMapMap_WithApply(&detailResult, func(byRange map[StatRange]FittingSingleStatResult) float64 {
+		best := util_rank.BestCollector1[FittingSingleStatResult]{}
+		for _, entry := range byRange {
+			best.Offer(&entry, float64(entry.IncludeCount))
+		}
+		return best.GetBestOrPanic().LineSlope
+	})
+
+	standardResult := make(map[stats.StatType]float64)
+	standardResult[stats.Stat_Strength] = 1
+	for _, statType := range G_RequiredStats {
+		if statType != stats.Stat_Strength {
+			totalSum := 0.0
+			for _, simType := range G_RequiredSims {
+				thisRating := bestRatingEach.GetOrPanic(statType, simType)
+				strengthRating := bestRatingEach.GetOrPanic(stats.Stat_Strength, simType)
+				relative := thisRating / strengthRating * fiteach.targetRatios.Get(simType)
+				totalSum += relative
+			}
+			standardResult[statType] = totalSum
+		}
+	}
+	return standardResult
 }
 
 ////////////////////////////////////////////////////////

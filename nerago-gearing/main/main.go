@@ -97,12 +97,15 @@ func core(printer *util.PrintRecorder) {
 	// forSpreadsheetGenerateRatingsDataFromSims(printer)
 	// statWeightsFromHighAndSim(printer)
 	// statWeightsBasic(printer)
-	statWeightsGrid(printer)
+	// statWeightsGrid(printer)
 	// statWeightsFitting2(printer)
 	// statWeightsComplex(printer)
 
+	statWeights_CompareAlgorithms(printer)
+
 	// statWeightsGrid_updateAll(printer) // seed of standard process? 4/6/2026
 }
+
 
 func setupPallyMitigationSet() (items.FullOptionsMap, model.Model) {
 	model := model.Model_PallyProtMitigation_WithSet()
