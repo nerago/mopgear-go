@@ -890,6 +890,19 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 
 		resultsByAlgorithm["ranking2"] = ranking.Run()
 	}
+	printer.Println("################# RANKING3 ###################")
+	{
+		ranking := stathighs.RankingStatWeightProcess{}
+		ranking.Init(printer)
+		ranking.SetTargetRatios(targetRatio)
+		// ranking.SupplyData(inputDataGrid)
+		// ranking.SupplyData(mixedInputData[0:16])
+		// ranking.SupplyData(mixedInputData[0:64])
+		ranking.SupplyData(mixedInputData)
+		ranking.RANKMODE = 3
+
+		resultsByAlgorithm["ranking3"] = ranking.Run()
+	}
 
 	// printer.Println("################# SELECTIVE GRID ###################")
 	// {

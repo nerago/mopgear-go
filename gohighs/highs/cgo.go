@@ -926,6 +926,35 @@ func (s *Solver) Run() (*Solution, error) {
 	return sol, nil
 }
 
+func (s *Solver) SetSparseSolution(aIndex []int32, aValue []float64) error {
+	// HighsInt Highs_postsolve(void* highs, const double* col_value,
+	//                      const double* col_dual, const double* row_dual);
+
+	// HighsInt Highs_setSolution(void* highs, const double* col_value,
+	//                            const double* row_value, const double* col_dual,
+	//                            const double* row_dual);
+
+	/**
+	 * Set a partial primal solution by passing values for a set of variables
+	 *
+	 * @param highs       A pointer to the Highs instance.
+	 * @param num_entries Number of variables in the set
+	 * @param index       Indices of variables in the set
+	 * @param value       Values of variables in the set
+	 *
+	 * @returns A `kHighsStatus` constant indicating whether the call succeeded.
+	 */
+	// HighsInt Highs_setSparseSolution(void* highs, const HighsInt num_entries,
+	//                                  const HighsInt* index, const double* value);
+
+	numEntries := len(aIndex)
+	if numEntries == 0 {
+		return nil
+	}
+	status := Status(C.Highs_setSparseSolution(s.ptr, C.HighsInt(numEntries), (*C.HighsInt)(&aIndex[0]), (*C.double)(&aValue[0])))
+	return newError("SetSparseSolution", status)
+}
+
 // GetIntInfo returns an integer info value.
 func (s *Solver) GetIntInfo(name string) (int, error) {
 	cName := C.CString(name)

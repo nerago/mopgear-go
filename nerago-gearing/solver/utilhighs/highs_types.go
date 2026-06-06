@@ -96,6 +96,10 @@ func (input *InputBuilder) CreateColumnForLinearObjective(varType highs.Variable
 	return input.vars.createForLinear(varType, lower, upper, cost, linearObjectiveIndex, debug)
 }
 
+func (input *InputBuilder) SetInitialSolutionValue(columnNumber ColumnIndex, value float64)  {
+	input.vars.partialSolution = append(input.vars.partialSolution, indexAndValue{columnNumber: columnNumber, value: value})
+}
+
 func (input *InputBuilder) RunHighsThenDiagnose(printer *util.PrintRecorder) *highs.Solution {
 	solution, innerPrinter := input.RunHighs()
 	printer.AppendOther(innerPrinter)
@@ -165,6 +169,16 @@ func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 		verifyNoError(solver.AddLinearObjective(objective.weight, objective.offset, coefficientArray, objective.abs_tolerance, objective.rel_tolerance, objective.priority))
 	}
 	verifyNoError(solver.SetBoolOption("blend_multi_objectives", input.BlendMultiObjectives))
+
+	if len(input.vars.partialSolution) > 0 {
+		indexArray := make([]int32, len(input.vars.partialSolution))
+		valueArray := make([]float64, len(input.vars.partialSolution))
+		for i := range input.vars.partialSolution {
+			indexArray[i] = int32(input.vars.partialSolution[i].columnNumber)
+			valueArray[i] = input.vars.partialSolution[i].value
+		}
+		verifyNoError(solver.SetSparseSolution(indexArray, valueArray))
+	}
 
 	// verifyNoError(solver.SetStringOption("parallel", "on"))
 	// verifyNoError(solver.SetIntOption("threads", c_threads))
@@ -240,11 +254,13 @@ func (input *InputBuilder) DebugPrintColumns(solution *highs.Solution, printer *
 }
 
 type variableArrayBuilder struct {
-	colTypes         []highs.VariableType // Type of each model variable
-	colCosts         []float64            // Column costs (i.e., the objective function itself)
-	colLower         []float64            // Column lower bounds
-	colUpper         []float64            // Column upper bounds
-	debug            []DebugContext
+	colTypes []highs.VariableType // Type of each model variable
+	colCosts []float64            // Column costs (i.e., the objective function itself)
+	colLower []float64            // Column lower bounds
+	colUpper []float64            // Column upper bounds
+	debug    []DebugContext
+
+	partialSolution  []indexAndValue
 	linearObjectives []linearObjectiveFields
 }
 

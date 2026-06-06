@@ -260,12 +260,19 @@ func ColumnIsBetweenConstants(input *InputBuilder, checkColumn ColumnIndex, lo, 
 	or.Finish(input, 1, 1)
 }
 
-func ColumnIsGreaterOrEqualColumn(input *InputBuilder, thresholdColumn, checkColumn, targetBoolColumn ColumnIndex, rangeHigh float64) {
-	// check>thresh, we need a negative to fit, so TRUE
-	// check<thresh, already negative, needs to BE FALSE
-	isOver := ConstraintRowBuild{Debug: "isOver"}
-	isOver.Add(thresholdColumn, -1)
-	isOver.Add(checkColumn, 1)
-	isOver.Add(targetBoolColumn, -rangeHigh)
-	isOver.Finish(input, -rangeHigh, 0)
+func ColumnIsGreaterOrEqualColumn(input *InputBuilder, thresholdLowColumn, checkHighColumn, boolIsGreater ColumnIndex, rangeHigh float64) {
+	// -range <= check - thresh - x*range <= 0
+	// if check>thresh  ->>  -range <= small_positive - x*range <= 0   ->>  -range <= small_positive - x*range  ->> x=0 or 1  
+	//                                                                      small_positive - x*range <= 0       ->> x=1
+	// if check<thresh  ->>  -range <= small_negative - x*range <= 0   ->>  -range <= small_negative - x*range  ->> x=0
+	//                                                                      small_negative - x*range <= 0       ->> x=0 or 1
+	// if bool   ->>  -range <= check - thresh - range <= 0  ->>  -range <= check - thresh - range  ->>  0 <= check - thresh  ->>  thresh <= check
+	//                                                            check - thresh - range <= 0       ->> whatever
+	// if !bool  ->>  -range <= check - thresh <= 0  ->>  -range <= check - thresh  ->>  whatever
+	//                                                    check - thresh <= 0       ->>  check <= thresh
+	isGreaterEqual := ConstraintRowBuild{Debug: "isGreaterEqual"}
+	isGreaterEqual.Add(thresholdLowColumn, -1)
+	isGreaterEqual.Add(checkHighColumn, 1)
+	isGreaterEqual.Add(boolIsGreater, -rangeHigh)
+	isGreaterEqual.Finish(input, -rangeHigh, 0)
 }
