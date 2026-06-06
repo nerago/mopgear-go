@@ -13,7 +13,7 @@ type SolvableOptionsMap struct {
 func SolvableOptionsMap_of(fullMap *FullOptionsMap) SolvableOptionsMap {
 	result := SolvableOptionsMap{}
 	for slot := range fullMap {
-		result.array[slot] = util.CastSliceAsNew(fullMap[slot], SolvableItem_Of)
+		result.array[slot] = util.MapSliceAsNew(fullMap[slot], SolvableItem_Of)
 	}
 	result.uniqueEquippedSets = UniqueEquipSetsInOptions(fullMap)
 	return result

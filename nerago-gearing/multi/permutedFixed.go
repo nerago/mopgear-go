@@ -56,7 +56,7 @@ func (job *MultiSetJob) preparePermutations() <-chan permuteSet {
 		param := &job.params[paramIndex]
 		semiFixed := param.SemiFixedSlots
 		for slot, itemIdList := range semiFixed {
-			entriesList := util.CastSliceAsNew(itemIdList, func(itemId *items.ItemId) permuteEntry {
+			entriesList := util.MapSliceAsNew(itemIdList, func(itemId *items.ItemId) permuteEntry {
 				return permuteEntry{fixed: &permuteEntryFixedForce{paramIndex, slot, *itemId}}
 			})
 			optionEntriesList = append(optionEntriesList, permuteOptions{options: entriesList})

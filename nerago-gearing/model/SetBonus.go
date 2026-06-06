@@ -507,7 +507,7 @@ func (sets *SetBonus) ActiveSetIndexForItem(itemId ItemId) (index int, hasSet bo
 }
 
 func (sets *SetBonus) ActiveSets() []ActiveSet {
-	return util.CastSliceAsNew(sets.activeSets, func(s *setInfoActive) ActiveSet { return s })
+	return util.MapSliceAsNew(sets.activeSets, func(s *setInfoActive) ActiveSet { return s })
 }
 
 func SetBonus_IsAnyKnownItem(itemId ItemId) bool {

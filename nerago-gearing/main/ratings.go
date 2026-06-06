@@ -67,7 +67,7 @@ func forSpreadsheetGenerateRatingsDataFromSims(printer *util.PrintRecorder) {
 	defer tracker.Stop()
 
 	csv := util.CSVOutputByColumn{}
-	csv.InitRows(len(simulate.SimResultTypeList) + 1)
+	csv.InitRows(len(simulate.SimTypeList) + 1)
 
 	simBase := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, modelEquipOnly.Professions, &currentEquip, &baseStat, tracker.MakeNested())
 	csv.AddString("base")
@@ -87,10 +87,10 @@ func forSpreadsheetGenerateRatingsDataFromSims(printer *util.PrintRecorder) {
 	csv.Write(printer)
 }
 
-func simResultAddToCSV(simResult simulate.SimResultStats, csv *util.CSVOutputByColumn) {
-	for _, simType := range simulate.SimResultTypeList {
+func simResultAddToCSV(simResult simulate.SimData, csv *util.CSVOutputByColumn) {
+	for _, simType := range simulate.SimTypeList {
 		num := simResult.Get(simType)
-		if simType == simulate.Result_DEATH {
+		if simType == simulate.Sim_DEATH {
 			num *= 100
 		}
 		csv.AddFloat64(num, 2)
@@ -165,7 +165,7 @@ func relativeRatingsCompromise(printer *util.PrintRecorder) {
 	printer.Printf("? %f %f\n", multB1*rateB1/targetCombined, multB2*rateB2/(targetCombined))
 }
 
-func generateRatingsInputFromArtificalStatOverrides(printer *util.PrintRecorder) ([]stathighs.WeightInput, simulate.SimResultStats) {
+func generateRatingsInputFromArtificalStatOverrides(printer *util.PrintRecorder) ([]stathighs.WeightInput, simulate.SimData) {
 	// simSpeed := simulate.RunSize_TestOnly
 	simSpeed := simulate.RunSize_QuickDirty
 	// simSpeed := simulate.RunSize_SlowAccurate
@@ -276,10 +276,10 @@ func generateRatingsInputFromArtificalStatOverrides_ForGrid(currentItemSet items
 type basicStatInput struct {
 	IncrementStat  stats.StatType
 	IncrementValue int32
-	SimResult      simulate.SimResultStats
+	SimResult      simulate.SimData
 }
 
-func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo) ([]basicStatInput, simulate.SimResultStats) {
+func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo) ([]basicStatInput, simulate.SimData) {
 	var incrementValue int32 = 250
 
 	initialBaseStats := initialBonusStatMap_fixRanges(printer, currentItemSet, incrementValue)
@@ -320,7 +320,7 @@ func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet item
 	return inputList, simBase
 }
 
-func generateRatingsInputFromRealRandomSetsT5(printer *util.PrintRecorder) ([]stathighs.WeightInput, simulate.SimResultStats) {
+func generateRatingsInputFromRealRandomSetsT5(printer *util.PrintRecorder) ([]stathighs.WeightInput, simulate.SimData) {
 	makeSetCount := 2000
 	simSize := simulate.RunSize_Medium
 
@@ -411,6 +411,24 @@ func statWeightsComplex(printer *util.PrintRecorder) {
 	writePawnString(weights, printer)
 }
 
+func statWeightsRanking(printer *util.PrintRecorder) {
+	// weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
+
+	weightInputs := readWeightInputFile("sim-stats-input-data2.json")
+
+	filteredInput := weightInputs
+	printer.Printf("filteredInput size %d\n", len(filteredInput))
+
+	ranking := stathighs.RankingStatWeightProcess{}
+
+	ranking.Init(printer)
+	ranking.SetTargetRatios(stathighs.NewStatWeights_generalMiti)
+	// ranking.SetMinimumIncludeRate(0.7)
+	ranking.SupplyData(filteredInput)
+	weights := ranking.Run()
+	writePawnString(weights, printer)
+}
+
 func statWeightsFitting(printer *util.PrintRecorder) {
 	// generateRatingsInputFromRealRandomSets(printer)
 
@@ -443,7 +461,7 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 
 	fitting := stathighs.FittingSingleStatSegmentsProcess{}
 	// fitting.Init(printer, stats.Stat_Crit, simulate.Result_DPS)
-	fitting.Init(printer, stats.Stat_Haste, simulate.Result_DPS)
+	fitting.Init(printer, stats.Stat_Haste, simulate.Sim_DPS)
 	fitting.SupplyDataFromStandard(weightInputs)
 
 	weightMap := fitting.Run()
@@ -583,10 +601,10 @@ func writePawnString(weights map[stats.StatType]float64, printer *util.PrintReco
 	return str.String()
 }
 
-func parseSimStats(str string) simulate.SimResultStats {
-	result := simulate.SimResultStats{}
+func parseSimStats(str string) simulate.SimData {
+	result := simulate.SimData{}
 	parts := strings.Split(str, " ")
-	for i, simType := range simulate.SimResultTypeList {
+	for i, simType := range simulate.SimTypeList {
 		value, err := strconv.ParseFloat(parts[i], 64)
 		if err != nil {
 			panic(err)
@@ -720,7 +738,7 @@ func statWeightsGrid_updateAll(printer *util.PrintRecorder) {
 	statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
 }
 
-func statWeightsGrid_updateOne(gearModel model.Model, gearFile string, ratios simulate.SimResultStats, weightFileOut string, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize) {
+func statWeightsGrid_updateOne(gearModel model.Model, gearFile string, ratios simulate.SimData, weightFileOut string, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize) {
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), &gearModel, printer)
 	currentItemSet := items.FullItemSet_FromMap(currentEquip)
 
@@ -764,9 +782,9 @@ func readWeightInputFile(filename string) []stathighs.WeightInput {
 }
 
 func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
-	simSpeed := simulate.RunSize_Medium
-	// simSpeed := simulate.RunSize_TestOnly
-	makeSetCount := 400
+	// simSpeed := simulate.RunSize_Medium
+	simSpeed := simulate.RunSize_TestOnly
+	// makeSetCount := 400
 	// makeSetCount := 40
 
 	gearFile := files.GearFileProtMitigationNoSet
@@ -776,10 +794,11 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), &gearModel, printer)
 	currentItemSet := items.FullItemSet_FromMap(currentEquip)
 
-	// is this needed, or just make both run off grid version for now?
 	inputDataBasic, basicSimBase := generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet, printer, simSpeed, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions)
-	inputDataGrid := generateRatingsInputFromArtificalStatOverrides_ForGrid(currentItemSet, printer, simSpeed, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions)
-	inputDataRandom := generateRatingsInputFromRealRandomSetsGeneral(gearFile, substituteItemsMiti, &gearModel, makeSetCount, simSpeed, true)
+	// inputDataGrid := generateRatingsInputFromArtificalStatOverrides_ForGrid(currentItemSet, printer, simSpeed, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions)
+	// inputDataRandom := generateRatingsInputFromRealRandomSetsGeneral(gearFile, substituteItemsMiti, &gearModel, makeSetCount, simSpeed, true)
+	inputDataGrid := readWeightInputFile("sim-stats-input-grid.json")
+	inputDataRandom := readWeightInputFile("sim-stats-input-data2.json")
 	mixedInputData := slices.Concat(inputDataGrid, inputDataRandom)
 
 	resultsByAlgorithm := make(map[string]map[stats.StatType]float64)
@@ -806,14 +825,15 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		resultsByAlgorithm["complex"] = comp.Run()
 	}
 
-	printer.Println("################# FITTING ###################")
-	{
-		fitting := stathighs.FittingEachStatWeightProcess{}
-		fitting.Init(printer)
-		fitting.SetTargetRatios(targetRatio)
-		fitting.SupplyDataFromStandard(inputDataRandom)
-		resultsByAlgorithm["fitting"] = fitting.Run()
-	}
+	// printer.Println("################# FITTING ###################")
+	// {
+	// 	fitting := stathighs.FittingEachStatWeightProcess{}
+	// 	fitting.Init(printer)
+	// 	fitting.SetTargetRatios(targetRatio)
+	// 	fitting.SetLazyMode(true)
+	// 	fitting.SupplyDataFromStandard(inputDataRandom)
+	// 	resultsByAlgorithm["fitting"] = fitting.Run()
+	// }
 
 	printer.Println("################# GRID1 ###################")
 	{
@@ -824,13 +844,24 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		resultsByAlgorithm["grid1"] = grid1.Run()
 	}
 
-	printer.Println("################# GRID1 ###################")
+	printer.Println("################# GRID2 ###################")
 	{
 		grid2 := stathighs.GridStatWeightProcess2{}
 		grid2.Init(printer)
 		grid2.SetTargetRatios(targetRatio)
 		grid2.SupplyData(inputDataGrid)
 		resultsByAlgorithm["grid2"] = grid2.Run()
+	}
+
+	printer.Println("################# RANKING ###################")
+	{
+		ranking := stathighs.RankingStatWeightProcess{}
+		ranking.Init(printer)
+		ranking.SetTargetRatios(targetRatio)
+		// ranking.SupplyData(inputDataGrid)
+		ranking.SupplyData(mixedInputData)
+		
+		resultsByAlgorithm["ranking"] = ranking.Run()
 	}
 
 	// printer.Println("################# SELECTIVE GRID ###################")
@@ -864,15 +895,15 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	tab.Write(printer)
 }
 
-func evaluateAccuracy(statWeights map[stats.StatType]float64, inputData []stathighs.WeightInput, simRatios simulate.SimResultStats) float64 {
+func evaluateAccuracy(statWeights map[stats.StatType]float64, inputData []stathighs.WeightInput, simRatios simulate.SimData) float64 {
 	// Make ranked sim data
-	rankedSims := util.MapSlice[simulate.SimResultType, float64]{}
+	rankedSims := util.MapSlice[simulate.SimType, float64]{}
 	for _, sample := range inputData {
 		for _, simType := range stathighs.G_RequiredSims {
 			rankedSims.Add(simType, sample.SimResult.GetFriendly(simType))
 		}
 	}
-	rankedSims.MapInternalSlicesAll(func(simType simulate.SimResultType, inner []float64) []float64 {
+	rankedSims.MapInternalSlicesAll(func(simType simulate.SimType, inner []float64) []float64 {
 		if simType.IsHighGood() {
 			// ascending, so that later indexes are better and worth more rank
 			slices.Sort(inner)
@@ -887,13 +918,13 @@ func evaluateAccuracy(statWeights map[stats.StatType]float64, inputData []stathi
 	type accuracyInfo struct {
 		input *stathighs.WeightInput
 
-		simRanks             map[simulate.SimResultType]int
+		simRanks             map[simulate.SimType]int
 		combinedSimRankScore float64
 
 		statScore float64
 		statRank  int
 	}
-	accuracyData := util.CastSliceAsNew(inputData, func(input *stathighs.WeightInput) accuracyInfo {
+	accuracyData := util.MapSliceAsNew(inputData, func(input *stathighs.WeightInput) accuracyInfo {
 		return accuracyInfo{
 			input:     input,
 			statScore: calcStatScore(input, statWeights),
@@ -908,7 +939,7 @@ func evaluateAccuracy(statWeights map[stats.StatType]float64, inputData []stathi
 		info := &accuracyData[statRankIndex]
 		info.statRank = statRankIndex // save the stat ranks from current slice order
 
-		info.simRanks = make(map[simulate.SimResultType]int)
+		info.simRanks = make(map[simulate.SimType]int)
 		for _, simType := range stathighs.G_RequiredSims {
 			rankedValues := rankedSims.GetInternalSlice(simType)
 			queryValue := info.input.SimResult.GetFriendly(simType)

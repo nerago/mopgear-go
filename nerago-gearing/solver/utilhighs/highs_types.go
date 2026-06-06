@@ -13,7 +13,7 @@ import (
 
 const (
 	C_HighsToConsole     = true
-	C_DebugHighs         = true
+	C_DebugHighs         = false
 	C_DiagnoseInfeasible = false
 	c_threads            = 6
 )
@@ -47,6 +47,7 @@ type InputBuilder struct {
 	Minimise             bool
 	BlendMultiObjectives bool
 	Solver               string
+	DisablePreSolve      bool
 }
 
 func (input *InputBuilder) Clone() *InputBuilder {
@@ -163,8 +164,8 @@ func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 		}
 		verifyNoError(solver.AddLinearObjective(objective.weight, objective.offset, coefficientArray, objective.abs_tolerance, objective.rel_tolerance, objective.priority))
 	}
+	verifyNoError(solver.SetBoolOption("blend_multi_objectives", input.BlendMultiObjectives))
 
-	// verifyNoError(solver.SetStringOption("presolve", "off"))
 	// verifyNoError(solver.SetStringOption("parallel", "on"))
 	// verifyNoError(solver.SetIntOption("threads", c_threads))
 	// verifyNoError(solver.SetFloatOption("time_limit", 300))
@@ -178,14 +179,17 @@ func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 		verifyNoError(solver.SetIntOption("log_dev_level", 0))
 	}
 
-	verifyNoError(solver.SetBoolOption("blend_multi_objectives", input.BlendMultiObjectives))
-
 	if input.Solver != "" {
 		verifyNoError(solver.SetStringOption("solver", input.Solver))
 	} else {
 		verifyNoError(solver.SetStringOption("solver", "choose"))
 	}
-	verifyNoError(solver.SetStringOption("run_crossover", "off"))
+	if input.DisablePreSolve {
+		verifyNoError(solver.SetStringOption("presolve", "off"))
+	} else {
+		verifyNoError(solver.SetStringOption("presolve", "on"))
+	}
+	// verifyNoError(solver.SetStringOption("run_crossover", "off"))
 }
 
 func verifyNoError(err error) {
@@ -221,6 +225,10 @@ func debugText(debug DebugContext) string {
 		debugText = debug.DebugText()
 	}
 	return debugText
+}
+
+func DebugText(text string) DebugString {
+	return DebugString{Text: text}
 }
 
 func (input *InputBuilder) DebugPrintColumns(solution *highs.Solution, printer *util.PrintRecorder) {

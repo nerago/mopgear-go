@@ -113,8 +113,8 @@ func (result upgradeItemResult) makeNoteAbbrev() string {
 
 type upgradeItemResultWithSim struct {
 	upgradeItemResult
-	baseSim simulate.SimResultStats
-	sim     simulate.SimResultStats
+	baseSim simulate.SimData
+	sim     simulate.SimData
 }
 
 func (result upgradeItemResultWithSim) Equals(other upgradeItemResultWithSim) bool {
@@ -129,13 +129,13 @@ func (result upgradeItemResultWithSim) increaseSim() float64 {
 
 	switch result.goal {
 	case stats.OptimiseGoal_Dps:
-		return result.sim.IncreaseOf(&result.baseSim, simulate.Result_DPS)
+		return result.sim.IncreaseOf(&result.baseSim, simulate.Sim_DPS)
 	case stats.OptimiseGoal_Healing:
-		return result.sim.IncreaseOf(&result.baseSim, simulate.Result_HPS)
+		return result.sim.IncreaseOf(&result.baseSim, simulate.Sim_HPS)
 	case stats.OptimiseGoal_Mitigation:
 		return result.sim.IncreaseMitigation(&result.baseSim)
 	case stats.OptimiseGoal_HalfMitiDps:
-		return (result.sim.IncreaseMitigation(&result.baseSim) + result.sim.IncreaseOf(&result.baseSim, simulate.Result_DPS)) / 2.0
+		return (result.sim.IncreaseMitigation(&result.baseSim) + result.sim.IncreaseOf(&result.baseSim, simulate.Sim_DPS)) / 2.0
 	default:
 		panic("unknown goal")
 	}
@@ -156,7 +156,7 @@ func (result upgradeItemResultWithSim) increaseSimStr(prefixNote bool) string {
 	return str
 }
 
-func (result upgradeItemResultWithSim) increaseSimBreakdown() simulate.SimResultStats {
+func (result upgradeItemResultWithSim) increaseSimBreakdown() simulate.SimData {
 	return result.sim.IncreaseSimBreakdown(&result.baseSim)
 }
 

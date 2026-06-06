@@ -20,7 +20,7 @@ func (job *MultiSetJob) FindHighsResult_Sample(sampleCount int) util.Optional[mu
 
 	setResults := highProcess.RunForSeveral_CommonDifferent_Sampling(job.printer, sampleCount)
 	if setResults != nil {
-		proposedOutput := util.CastSliceAsNew(setResults, func(x *withhighs.HighsMultiResult) multi_types.MultiProposedOutput {
+		proposedOutput := util.MapSliceAsNew(setResults, func(x *withhighs.HighsMultiResult) multi_types.MultiProposedOutput {
 			return job.makeOutputFromHighs(*x, job.printer)
 		})
 		job.listInitialOutputs(proposedOutput)
@@ -132,7 +132,7 @@ func (job *MultiSetJob) checkNoPermutations() {
 func (job *MultiSetJob) highProcessSetup() withhighs.SolverHighsMultiProcess {
 	highProcess := withhighs.SolverHighsMultiProcess{}
 
-	optionsInputList := util.CastSliceAsNew(job.params, func(param *multiSetParamInternal) commonOptionsInput {
+	optionsInputList := util.MapSliceAsNew(job.params, func(param *multiSetParamInternal) commonOptionsInput {
 		return commonOptionsInput{param.Label, &param.itemOptions}
 	})
 	commonOptions := job.determineCommon(optionsInputList)
@@ -168,7 +168,6 @@ func (job *MultiSetJob) proposalsToSimAndOutput(proposalList []multi_types.Multi
 
 	job.suggestResultFromRankings(simMultiResults)
 }
-
 
 func (job *MultiSetJob) makeOutputFromHighs(multiResult withhighs.HighsMultiResult, printer *util.PrintRecorder) multi_types.MultiProposedOutput {
 	var totalRatingSum float64

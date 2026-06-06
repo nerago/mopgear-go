@@ -12,14 +12,14 @@ import (
 type GridStatWeightProcess2 struct {
 	printer *util.PrintRecorder
 
-	targetRatios simulate.SimResultStats
+	targetRatios simulate.SimData
 	inputData    []WeightInput
 
-	scaleSims  map[simulate.SimResultType]float64
+	scaleSims  map[simulate.SimType]float64
 	scaleStats map[stats.StatType]float64
 
 	input           utilhighs.InputBuilder
-	detailedWeights util.MapMap[stats.StatType, simulate.SimResultType, utilhighs.ColumnIndex]
+	detailedWeights util.MapMap[stats.StatType, simulate.SimType, utilhighs.ColumnIndex]
 	// finalWeights    map[stats.StatType]utilhighs.ColumnIndex
 }
 
@@ -38,7 +38,7 @@ func (grid2 *GridStatWeightProcess2) SupplyData(inputData []WeightInput) {
 	grid2.inputData = inputData
 }
 
-func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios simulate.SimResultStats) {
+func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios simulate.SimData) {
 	sum := 0.0
 	for _, simType := range G_RequiredSims {
 		val := targetRatios.Get(simType)

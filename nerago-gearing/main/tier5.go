@@ -68,8 +68,8 @@ func addExtrasT5Dumb(itemOptions *items.FullOptionsMap, model *model.Model, prin
 	allTrinkets = util.RemoveDuplicatesComparable(allTrinkets)
 
 	extraItemsCombined := slices.Concat(
-		util.CastSliceAsNew(loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic), func(x **items.FullItem) items.ItemId { return (*x).ItemId() }),
-		util.CastSliceAsNew(loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic), func(x **items.FullItem) items.ItemId { return (*x).ItemId() }),
+		util.MapSliceAsNew(loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic), func(x **items.FullItem) items.ItemId { return (*x).ItemId() }),
+		util.MapSliceAsNew(loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic), func(x **items.FullItem) items.ItemId { return (*x).ItemId() }),
 		allTrinkets,
 	)
 
@@ -118,7 +118,7 @@ func findT5TrinketPermutations(printer *util.PrintRecorder) {
 
 	type trinkResult struct {
 		combo [2]items.ItemId
-		sim   simulate.SimResultStats
+		sim   simulate.SimData
 	}
 
 	progress := util.TrackProgress_Start()
@@ -199,7 +199,7 @@ func findT5WeightPermutations(printer *util.PrintRecorder) {
 
 	type orderResult struct {
 		group orderIntermediateGrouped
-		sim   simulate.SimResultStats
+		sim   simulate.SimData
 	}
 
 	progress1 := util.TrackProgress_Start()
@@ -264,7 +264,7 @@ outerIntermediateLoop:
 		line.WriteString(v.Name())
 		line.WriteRune(',')
 	}
-	for _, simType := range simulate.SimResultTypeList {
+	for _, simType := range simulate.SimTypeList {
 		line.WriteString(simType.Name())
 		line.WriteRune(',')
 	}
@@ -281,7 +281,7 @@ outerIntermediateLoop:
 				line.WriteUint32(res.group.itemSet.Total().GetUInt(v))
 				line.WriteRune(',')
 			}
-			for _, simType := range simulate.SimResultTypeList {
+			for _, simType := range simulate.SimTypeList {
 				line.WriteFloat64(res.sim.GetFriendly(simType), 3)
 				line.WriteRune(',')
 			}
@@ -405,7 +405,7 @@ func statWeightsGridFromInitialT5(printer *util.PrintRecorder) {
 	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, ratios, weightFileOut, printer, simSpeed)
 }
 
-func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.StatType, gearFile string, trinkets [2]items.ItemId, fight stats.WowSim_Fight, ratios simulate.SimResultStats, weightFileOut string, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize) {
+func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.StatType, gearFile string, trinkets [2]items.ItemId, fight stats.WowSim_Fight, ratios simulate.SimData, weightFileOut string, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize) {
 	// INITIAL MODEL BASED ON PRIORITIES PREVIOUSLY GUESSED AT
 	model.StatRatings = ratings.StatRatingsWeights_FromPriorities(priority)
 

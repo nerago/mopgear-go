@@ -17,10 +17,10 @@ type enumWithName interface {
 	Name() string
 }
 
-func chooseSimScaling(inputData []WeightInput, printer *util.PrintRecorder) map[simulate.SimResultType]float64 {
+func chooseSimScaling(inputData []WeightInput, printer *util.PrintRecorder) map[simulate.SimType]float64 {
 	return chooseScalingNumbers(inputData,
 		G_RequiredSims,
-		func(data *WeightInput, simType simulate.SimResultType) float64 { return data.SimResult.Get(simType) },
+		func(data *WeightInput, simType simulate.SimType) float64 { return data.SimResult.Get(simType) },
 		printer)
 }
 

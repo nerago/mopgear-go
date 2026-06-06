@@ -27,11 +27,11 @@ const (
 	RunSize_SlowAccurate WowSim_RunSize = 500000
 )
 
-func WowSim_Execute_UseModel(runSize WowSim_RunSize, model *model.Model, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) SimResultStats {
+func WowSim_Execute_UseModel(runSize WowSim_RunSize, model *model.Model, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) SimData {
 	return WowSim_Execute_SpecifyAll(runSize, model.Spec, model.Goal, model.SimulateAs, model.Professions, equipMap, bonusStats, tracker)
 }
 
-func WowSim_Execute_SpecifyAll(runSize WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) SimResultStats {
+func WowSim_Execute_SpecifyAll(runSize WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) SimData {
 	infile := files.SimFileFor(spec, goal)
 	input := inputRequestFromTemplate(infile, equipMap, profession, bonusStats, spec, fight, runSize)
 
@@ -285,14 +285,14 @@ func waitForResult(reporter chan *wowsim_proto.ProgressMetrics, tracker *util.Tr
 	panic("no final result")
 }
 
-func convertResult(finalResult *wowsim_proto.RaidSimResult) SimResultStats {
+func convertResult(finalResult *wowsim_proto.RaidSimResult) SimData {
 	if finalResult.Error != nil {
 		panic("sim fail = " + finalResult.Error.Message)
 	} else if finalResult != nil && finalResult.RaidMetrics != nil && finalResult.RaidMetrics.Parties != nil && finalResult.RaidMetrics.Parties[0] != nil && finalResult.RaidMetrics.Parties[0].Players != nil && finalResult.RaidMetrics.Parties[0].Players[0] != nil {
 		playerMetrics := finalResult.RaidMetrics.Parties[0].Players[0]
 		// parseLogs(finalResult.Logs)
 		// readMetrics(playerMetrics)
-		return SimResultStats{DPS: playerMetrics.Dps.Avg, TPS: playerMetrics.Threat.Avg, DTPS: playerMetrics.Dtps.Avg, TMI: playerMetrics.Tmi.Avg, HPS: playerMetrics.Hps.Avg, DEATH: playerMetrics.ChanceOfDeath}
+		return SimData{DPS: playerMetrics.Dps.Avg, TPS: playerMetrics.Threat.Avg, DTPS: playerMetrics.Dtps.Avg, TMI: playerMetrics.Tmi.Avg, HPS: playerMetrics.Hps.Avg, DEATH: playerMetrics.ChanceOfDeath}
 	} else {
 		panic("incomplete sim result")
 	}

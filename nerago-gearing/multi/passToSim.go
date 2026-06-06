@@ -14,8 +14,6 @@ import (
 	"paladin_gearing_go/util/channel_op"
 	"paladin_gearing_go/util/util_rank"
 	"slices"
-
-	"github.com/google/uuid"
 )
 
 func checkNoConflicts(outputSet []multi_types.SingleProposedOutput, printer *util.PrintRecorder) bool {
@@ -35,7 +33,7 @@ func checkNoConflicts(outputSet []multi_types.SingleProposedOutput, printer *uti
 }
 
 func (job *MultiSetJob) existingGearAsProposal() multi_types.MultiProposedOutput {
-	proposal := multi_types.MultiProposedOutput{Id: uuid.NewString()}
+	proposal := multi_types.MultiProposedOutput{Id: "00000000-0000-4000-8000-000000000000"}
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
 		single := multi_types.SingleProposed_FromEquip(param.exactEquippedGear, &param.MultiSetParam)
@@ -56,7 +54,7 @@ type simulateJob struct {
 
 type simulateJobResult struct {
 	job    simulateJob
-	result simulate.SimResultStats
+	result simulate.SimData
 }
 
 func (simJob *simulateJob) Equals(other *simulateJob) bool {
@@ -65,7 +63,7 @@ func (simJob *simulateJob) Equals(other *simulateJob) bool {
 
 type simulateMultiResult struct {
 	proposed multi_types.MultiProposedOutput
-	result   []simulate.SimResultStats
+	result   []simulate.SimData
 }
 
 func (job *MultiSetJob) prepareSimList(proposalList []multi_types.MultiProposedOutput) []simulateJob {
@@ -104,7 +102,7 @@ func (job *MultiSetJob) linkSimResults(proposalList []multi_types.MultiProposedO
 }
 
 func linkSimResult(proposal multi_types.MultiProposedOutput, resultList []simulateJobResult) simulateMultiResult {
-	multiResult := simulateMultiResult{proposal, make([]simulate.SimResultStats, len(proposal.Parts))}
+	multiResult := simulateMultiResult{proposal, make([]simulate.SimData, len(proposal.Parts))}
 	for partIndex := range proposal.Parts {
 		part := &proposal.Parts[partIndex]
 		for resultIndex := range resultList {
@@ -174,7 +172,7 @@ func (job *MultiSetJob) findVariantItem(result simulateMultiResult, itemId items
 func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 	job.printer.Println("@@@@@@@@@@@@@@@@ SPREADSHEET COPY @@@@@@@@@@@@@@@@")
 
-	outputTypes := []simulate.SimResultType{simulate.Result_DPS, simulate.Result_DTPS, simulate.Result_TMI, simulate.Result_DEATH}
+	outputTypes := []simulate.SimType{simulate.Sim_DPS, simulate.Sim_DTPS, simulate.Sim_TMI, simulate.Sim_DEATH}
 
 	csv := util.CSVOutputByColumn{}
 	csv.InitRows(len(job.params)*len(outputTypes) + 1)
@@ -209,8 +207,8 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 }
 
 func (job *MultiSetJob) suggestResultFromRankings(results []simulateMultiResult) {
-	simResultTypeList := []simulate.SimResultType{simulate.Result_DPS, simulate.Result_DTPS, simulate.Result_TMI, simulate.Result_DEATH}
-	rankInputArrays := util.MapMapSlice[int, simulate.SimResultType, float64]{}
+	simResultTypeList := []simulate.SimType{simulate.Sim_DPS, simulate.Sim_DTPS, simulate.Sim_TMI, simulate.Sim_DEATH}
+	rankInputArrays := util.MapMapSlice[int, simulate.SimType, float64]{}
 	for _, result := range results {
 		for paramIndex, simStats := range result.result {
 			for _, simType := range simResultTypeList {

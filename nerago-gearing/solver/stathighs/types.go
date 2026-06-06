@@ -14,11 +14,11 @@ const (
 
 type WeightInput struct {
 	TotalStat stats.StatBlock
-	SimResult simulate.SimResultStats
+	SimResult simulate.SimData
 }
 
 // now about noset - tortos, horridon, ironqon, jikun, durumu
-var NewStatWeights_generalMiti = simulate.SimResultStats{
+var NewStatWeights_generalMiti = simulate.SimData{
 	DPS:   0.3,
 	DEATH: 0.1,
 	TMI:   0.2,
@@ -26,7 +26,7 @@ var NewStatWeights_generalMiti = simulate.SimResultStats{
 }
 
 // for withset - raden
-var NewStatWeights_radenWeight = simulate.SimResultStats{
+var NewStatWeights_radenWeight = simulate.SimData{
 	DPS:   0.2,
 	DEATH: 0.3,
 	TMI:   0.1,
@@ -34,7 +34,7 @@ var NewStatWeights_radenWeight = simulate.SimResultStats{
 }
 
 // for comp set - animus
-var NewStatWeights_animusWeight = simulate.SimResultStats{
+var NewStatWeights_animusWeight = simulate.SimData{
 	DPS:   0.4,
 	DEATH: 0.1,
 	TMI:   0.4,
@@ -42,7 +42,7 @@ var NewStatWeights_animusWeight = simulate.SimResultStats{
 }
 
 // for dps set
-var NewStatWeights_dpsWeight = simulate.SimResultStats{
+var NewStatWeights_dpsWeight = simulate.SimData{
 	DPS:   0.90,
 	DEATH: 0.03,
 	TMI:   0.03,
@@ -59,9 +59,9 @@ var G_RequiredStats = []stats.StatType{
 	stats.Stat_Dodge,
 	stats.Stat_Parry,
 }
-var G_RequiredSims = []simulate.SimResultType{
-	simulate.Result_DPS,
-	simulate.Result_DEATH,
-	simulate.Result_TMI,
-	simulate.Result_DTPS,
+var G_RequiredSims = []simulate.SimType{
+	simulate.Sim_DPS,
+	simulate.Sim_DEATH,
+	simulate.Sim_TMI,
+	simulate.Sim_DTPS,
 }

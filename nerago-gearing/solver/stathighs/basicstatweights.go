@@ -12,19 +12,19 @@ import (
 type BasicStatWeightProcess struct {
 	printer *util.PrintRecorder
 
-	targetRatios simulate.SimResultStats
-	simBase      simulate.SimResultStats
+	targetRatios simulate.SimData
+	simBase      simulate.SimData
 	simData      map[stats.StatType]basicDataEntry
 
 	input           utilhighs.InputBuilder
-	unitStatValues  util.MapMap[stats.StatType, simulate.SimResultType, float64]
-	detailedWeights util.MapMap[stats.StatType, simulate.SimResultType, utilhighs.ColumnIndex]
+	unitStatValues  util.MapMap[stats.StatType, simulate.SimType, float64]
+	detailedWeights util.MapMap[stats.StatType, simulate.SimType, utilhighs.ColumnIndex]
 	finalWeights    map[stats.StatType]utilhighs.ColumnIndex
 }
 
 type basicDataEntry struct {
 	increment uint32
-	sim       simulate.SimResultStats
+	sim       simulate.SimData
 }
 
 func (basic *BasicStatWeightProcess) Init(printer *util.PrintRecorder) {
@@ -35,11 +35,11 @@ func (basic *BasicStatWeightProcess) Init(printer *util.PrintRecorder) {
 	basic.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }
 
-func (basic *BasicStatWeightProcess) SetBaseline(simBase simulate.SimResultStats) {
+func (basic *BasicStatWeightProcess) SetBaseline(simBase simulate.SimData) {
 	basic.simBase = simBase
 }
 
-func (basic *BasicStatWeightProcess) SetTargetRatios(targetRatios simulate.SimResultStats) {
+func (basic *BasicStatWeightProcess) SetTargetRatios(targetRatios simulate.SimData) {
 	sum := 0.0
 	for _, simType := range G_RequiredSims {
 		val := targetRatios.Get(simType)
@@ -55,7 +55,7 @@ func (basic *BasicStatWeightProcess) SetTargetRatios(targetRatios simulate.SimRe
 	basic.targetRatios = targetRatios
 }
 
-func (basic *BasicStatWeightProcess) AddSimData(statType stats.StatType, statValue uint32, sim simulate.SimResultStats) {
+func (basic *BasicStatWeightProcess) AddSimData(statType stats.StatType, statValue uint32, sim simulate.SimData) {
 	if _, hasValue := basic.simData[statType]; hasValue {
 		panic("entry already set for stat type")
 	}
@@ -104,13 +104,13 @@ func (basic *BasicStatWeightProcess) Run() map[stats.StatType]float64 {
 }
 
 // this is a single diff value, ideally we want to push data in and average across multiple
-func (basic *BasicStatWeightProcess) unitDiffValue(sim simulate.SimResultStats, simType simulate.SimResultType, statValue uint32) float64 {
+func (basic *BasicStatWeightProcess) unitDiffValue(sim simulate.SimData, simType simulate.SimType, statValue uint32) float64 {
 	simValueDiff := sim.Get(simType) - basic.simBase.Get(simType)
 	simValueDiffPerStat := simValueDiff / float64(statValue)
 	return simValueDiffPerStat
 }
 
-func (basic *BasicStatWeightProcess) incorporateSample(statType stats.StatType, statValue uint32, sim simulate.SimResultStats) {
+func (basic *BasicStatWeightProcess) incorporateSample(statType stats.StatType, statValue uint32, sim simulate.SimData) {
 	// basic approach (spreadsheet "build ratings miti_2")
 	// unit_dps_haste = (this_dps[haste] - base_dps) / this_haste_value
 	// detailweight_dps_haste = unit_dps_haste / unit_dps_str * detailweight_str
@@ -147,7 +147,7 @@ func (basic *BasicStatWeightProcess) unitValuesToCalcDetailedRatings() {
 }
 
 func (basic *BasicStatWeightProcess) unitValuesToCalcDetailedRatings_single(unitValueBase float64, detailWeightBase utilhighs.ColumnIndex,
-	thisUnitValue float64, thisdetailWeight utilhighs.ColumnIndex, simType simulate.SimResultType, statType stats.StatType) {
+	thisUnitValue float64, thisdetailWeight utilhighs.ColumnIndex, simType simulate.SimType, statType stats.StatType) {
 
 	colName := "OFFSET SIGNED " + simType.Name() + " " + statType.Name()
 	offsetSigned := basic.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: colName})

@@ -233,8 +233,8 @@ func reportTabledSimResultItemMap_NoWeight(itemMap map[reportItemRef]*reportForI
 	printer.Println0()
 }
 
-func bestSimOf(report *reportForItemWithSim) (simulate.SimResultStats, string) {
-	var bestIncrease simulate.SimResultStats
+func bestSimOf(report *reportForItemWithSim) (simulate.SimData, string) {
+	var bestIncrease simulate.SimData
 	var bestLabel string
 	best := c_nullIncrease
 	for label, result := range report.grouped {

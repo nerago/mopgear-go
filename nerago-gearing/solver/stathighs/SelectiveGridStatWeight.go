@@ -14,13 +14,13 @@ import (
 type SelectiveGridStatWeightProcess struct {
 	printer *util.PrintRecorder
 
-	targetRatios            simulate.SimResultStats
+	targetRatios            simulate.SimData
 	inputData               []WeightInput
 	inputDataIncludeToggles []utilhighs.ColumnIndex
 
 	input           utilhighs.InputBuilder
-	unitStatValues  util.MapMapSlice[stats.StatType, simulate.SimResultType, selectiveGridDataSample]
-	detailedWeights util.MapMap[stats.StatType, simulate.SimResultType, utilhighs.ColumnIndex]
+	unitStatValues  util.MapMapSlice[stats.StatType, simulate.SimType, selectiveGridDataSample]
+	detailedWeights util.MapMap[stats.StatType, simulate.SimType, utilhighs.ColumnIndex]
 	finalWeights    map[stats.StatType]utilhighs.ColumnIndex
 }
 
@@ -40,7 +40,7 @@ func (selgrid *SelectiveGridStatWeightProcess) SupplyData(inputData []WeightInpu
 	selgrid.inputData = inputData
 }
 
-func (selgrid *SelectiveGridStatWeightProcess) SetTargetRatios(targetRatios simulate.SimResultStats) {
+func (selgrid *SelectiveGridStatWeightProcess) SetTargetRatios(targetRatios simulate.SimData) {
 	sum := 0.0
 	for _, simType := range G_RequiredSims {
 		val := targetRatios.Get(simType)
@@ -208,7 +208,7 @@ func (selgrid *SelectiveGridStatWeightProcess) unitValuesToCalcDetailedRatings()
 	}
 }
 
-func (selgrid *SelectiveGridStatWeightProcess) unitValuesCalcForGroup(simType simulate.SimResultType, thisStatType stats.StatType, unitValueBaseSeq iter.Seq[selectiveGridDataSample], thisUnitValueSeq iter.Seq[selectiveGridDataSample], detailWeightBase utilhighs.ColumnIndex) {
+func (selgrid *SelectiveGridStatWeightProcess) unitValuesCalcForGroup(simType simulate.SimType, thisStatType stats.StatType, unitValueBaseSeq iter.Seq[selectiveGridDataSample], thisUnitValueSeq iter.Seq[selectiveGridDataSample], detailWeightBase utilhighs.ColumnIndex) {
 	debugText := simType.Name() + " " + thisStatType.Name()
 	thisDetailWeight := selgrid.detailedWeights.GetOrPanic(thisStatType, simType)
 

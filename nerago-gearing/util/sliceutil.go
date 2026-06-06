@@ -107,19 +107,7 @@ func DeleteIndexInPlace[T any](slice []T, index int) []T {
 	// return slices.Delete(slice, index, index+1)
 }
 
-func MapSliceAsNew[T any](slice []T, mapper func(x *T) T) []T {
-	if slice == nil {
-		return nil
-	}
-
-	result := make([]T, len(slice))
-	for i := range slice {
-		result[i] = mapper(&slice[i])
-	}
-	return result
-}
-
-func CastSliceAsNew[T any, R any](slice []T, mapper func(x *T) R) []R {
+func MapSliceAsNew[T any, R any](slice []T, mapper func(x *T) R) []R {
 	if slice == nil {
 		return nil
 	}
@@ -243,8 +231,9 @@ func ForPointer[T any](slice []T) iter.Seq[*T] {
 	return func(yield func(*T) bool) {
 		for i := range slice {
 			if !yield(&slice[i]) {
-				return 
+				return
 			}
 		}
 	}
 }
+

@@ -14,12 +14,12 @@ import (
 type GridStatWeightProcess struct {
 	printer *util.PrintRecorder
 
-	targetRatios simulate.SimResultStats
+	targetRatios simulate.SimData
 	inputData    []WeightInput
 
 	input           utilhighs.InputBuilder
-	unitStatValues  util.MapMapSlice[stats.StatType, simulate.SimResultType, gridDataSample]
-	detailedWeights util.MapMap[stats.StatType, simulate.SimResultType, utilhighs.ColumnIndex]
+	unitStatValues  util.MapMapSlice[stats.StatType, simulate.SimType, gridDataSample]
+	detailedWeights util.MapMap[stats.StatType, simulate.SimType, utilhighs.ColumnIndex]
 	finalWeights    map[stats.StatType]utilhighs.ColumnIndex
 }
 
@@ -38,7 +38,7 @@ func (grid *GridStatWeightProcess) SupplyData(inputData []WeightInput) {
 	grid.inputData = inputData
 }
 
-func (grid *GridStatWeightProcess) SetTargetRatios(targetRatios simulate.SimResultStats) {
+func (grid *GridStatWeightProcess) SetTargetRatios(targetRatios simulate.SimData) {
 	sum := 0.0
 	for _, simType := range G_RequiredSims {
 		val := targetRatios.Get(simType)
@@ -192,7 +192,7 @@ func (grid *GridStatWeightProcess) unitValuesToCalcDetailedRatings() {
 	// TODO could be interesting experiment to setup all stat pairings, not just strength base
 }
 
-func (grid *GridStatWeightProcess) unitValuesCalcForGroup(simType simulate.SimResultType, thisStatType stats.StatType, baseUnitValueSeq iter.Seq[gridDataSample], thisUnitValueSeq iter.Seq[gridDataSample], baseDetailWeightCol utilhighs.ColumnIndex) {
+func (grid *GridStatWeightProcess) unitValuesCalcForGroup(simType simulate.SimType, thisStatType stats.StatType, baseUnitValueSeq iter.Seq[gridDataSample], thisUnitValueSeq iter.Seq[gridDataSample], baseDetailWeightCol utilhighs.ColumnIndex) {
 	debugText := simType.Name() + " " + thisStatType.Name()
 	thisDetailWeightCol := grid.detailedWeights.GetOrPanic(thisStatType, simType)
 

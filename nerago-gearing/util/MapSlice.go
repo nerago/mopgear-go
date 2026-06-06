@@ -79,6 +79,16 @@ func (mapslice *MapSlice[K, V]) SeqGroupsNestedKeyValue() iter.Seq2[K, iter.Seq[
 	}
 }
 
+func (mapslice *MapSlice[K, V]) SeqGroupsInternalSlice() iter.Seq2[K, []V] {
+	return func(yield func(K, []V) bool) {
+		for key, inner := range mapslice.data {
+			if !yield(key, inner) {
+				return
+			}
+		}
+	}
+}
+
 func (mapslice *MapSlice[K, V]) MapInternalSlice(key K, mapper func([]V) []V) {
 	if mapslice.data != nil {
 		mapslice.data[key] = mapper(mapslice.data[key])

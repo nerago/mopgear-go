@@ -5,63 +5,63 @@ import (
 	"paladin_gearing_go/util"
 )
 
-type SimResultType uint8
+type SimType uint8
 
 const (
-	Result_DPS   SimResultType = iota
-	Result_TPS   SimResultType = iota
-	Result_DTPS  SimResultType = iota
-	Result_HPS   SimResultType = iota
-	Result_TMI   SimResultType = iota
-	Result_DEATH SimResultType = iota
+	Sim_DPS   SimType = iota
+	Sim_TPS   SimType = iota
+	Sim_DTPS  SimType = iota
+	Sim_HPS   SimType = iota
+	Sim_TMI   SimType = iota
+	Sim_DEATH SimType = iota
 )
 
 const c_nullIncrease = -100.0
 
-func (types SimResultType) IsHighGood() bool {
+func (types SimType) IsHighGood() bool {
 	switch types {
-	case Result_DPS:
+	case Sim_DPS:
 		return true
-	case Result_TPS:
+	case Sim_TPS:
 		return true
-	case Result_DTPS:
+	case Sim_DTPS:
 		return false
-	case Result_HPS:
+	case Sim_HPS:
 		return true
-	case Result_TMI:
+	case Sim_TMI:
 		return false
-	case Result_DEATH:
+	case Sim_DEATH:
 		return false
 	default:
 		panic("unknown value")
 	}
 }
-func (types SimResultType) Name() string {
+func (types SimType) Name() string {
 	switch types {
-	case Result_DPS:
+	case Sim_DPS:
 		return "DPS"
-	case Result_TPS:
+	case Sim_TPS:
 		return "TPS"
-	case Result_DTPS:
+	case Sim_DTPS:
 		return "DTPS"
-	case Result_HPS:
+	case Sim_HPS:
 		return "HPS"
-	case Result_TMI:
+	case Sim_TMI:
 		return "TMI"
-	case Result_DEATH:
+	case Sim_DEATH:
 		return "DEATH"
 	default:
 		panic("unknown value")
 	}
 }
 
-var SimResultTypeList = []SimResultType{Result_DPS, Result_TPS, Result_DTPS, Result_HPS, Result_TMI, Result_DEATH}
+var SimTypeList = []SimType{Sim_DPS, Sim_TPS, Sim_DTPS, Sim_HPS, Sim_TMI, Sim_DEATH}
 
-type SimResultStats struct {
+type SimData struct {
 	DPS, TPS, DTPS, HPS, TMI, DEATH float64
 }
 
-func (stats SimResultStats) Print(printer *util.PrintRecorder) {
+func (stats SimData) Print(printer *util.PrintRecorder) {
 	printer.Printf("DPS\t%.2f\n", stats.DPS)
 	printer.Printf("TPS\t%.2f\n", stats.TPS)
 	printer.Printf("DTPS\t%.2f\n", stats.DTPS)
@@ -70,7 +70,7 @@ func (stats SimResultStats) Print(printer *util.PrintRecorder) {
 	printer.Printf("DEATH\t%.2f\n", stats.DEATH*100)
 }
 
-func (stats SimResultStats) CompactStringSignedPercent() string {
+func (stats SimData) CompactStringSignedPercent() string {
 	var build util.StringBuild2
 	build.WriteString("dps=")
 	appendFloatSignedPercent(stats.DPS, &build)
@@ -93,7 +93,7 @@ func appendFloatSignedPercent(value float64, build *util.StringBuild2) {
 	build.WriteFloat64_RightPadded(value, 1, padSize)
 }
 
-func (stats SimResultStats) CompactStringGeneral() string {
+func (stats SimData) CompactStringGeneral() string {
 	var build util.StringBuild2
 	build.WriteString("dps=")
 	build.WriteFloat64_RightPadded(stats.DPS, 0, 6)
@@ -106,85 +106,85 @@ func (stats SimResultStats) CompactStringGeneral() string {
 	return build.String()
 }
 
-func (stats SimResultStats) IsEmpty() bool {
+func (stats SimData) IsEmpty() bool {
 	return stats.DPS == 0 && stats.TPS == 0 && stats.DTPS == 0 && stats.HPS == 0 && stats.TMI == 0 && stats.DEATH == 0
 }
 
-func (stats SimResultStats) Get(types SimResultType) float64 {
+func (stats SimData) Get(types SimType) float64 {
 	switch types {
-	case Result_DPS:
+	case Sim_DPS:
 		return stats.DPS
-	case Result_TPS:
+	case Sim_TPS:
 		return stats.TPS
-	case Result_DTPS:
+	case Sim_DTPS:
 		return stats.DTPS
-	case Result_HPS:
+	case Sim_HPS:
 		return stats.HPS
-	case Result_TMI:
+	case Sim_TMI:
 		return stats.TMI
-	case Result_DEATH:
+	case Sim_DEATH:
 		return stats.DEATH
 	default:
 		panic("unknown value")
 	}
 }
 
-func (stats SimResultStats) GetFriendly(types SimResultType) float64 {
+func (stats SimData) GetFriendly(types SimType) float64 {
 	switch types {
-	case Result_DPS:
+	case Sim_DPS:
 		return stats.DPS
-	case Result_TPS:
+	case Sim_TPS:
 		return stats.TPS
-	case Result_DTPS:
+	case Sim_DTPS:
 		return stats.DTPS
-	case Result_HPS:
+	case Sim_HPS:
 		return stats.HPS
-	case Result_TMI:
+	case Sim_TMI:
 		return stats.TMI
-	case Result_DEATH:
+	case Sim_DEATH:
 		return stats.DEATH * 100
 	default:
 		panic("unknown value")
 	}
 }
 
-func (stats *SimResultStats) Set(types SimResultType, value float64) {
+func (stats *SimData) Set(types SimType, value float64) {
 	switch types {
-	case Result_DPS:
+	case Sim_DPS:
 		stats.DPS = value
-	case Result_TPS:
+	case Sim_TPS:
 		stats.TPS = value
-	case Result_DTPS:
+	case Sim_DTPS:
 		stats.DTPS = value
-	case Result_HPS:
+	case Sim_HPS:
 		stats.HPS = value
-	case Result_TMI:
+	case Sim_TMI:
 		stats.TMI = value
-	case Result_DEATH:
+	case Sim_DEATH:
 		stats.DEATH = value
 	default:
 		panic("unknown value")
 	}
 }
 
-func (stats *SimResultStats) IncreaseSimBreakdown(baseSim *SimResultStats) SimResultStats {
+func (stats *SimData) IncreaseSimBreakdown(baseSim *SimData) SimData {
 	if stats.IsEmpty() || baseSim.IsEmpty() {
 		panic("empty sim shouldn't get called here")
 	}
 
-	increase := SimResultStats{}
-	for _, resultType := range SimResultTypeList {
+	increase := SimData{}
+	for _, resultType := range SimTypeList {
 		increase.Set(resultType, increaseForPart(stats, baseSim, resultType))
 	}
 	return increase
 }
 
-func increaseForPart(sim, baseSim *SimResultStats, part SimResultType) float64 {
+func increaseForPart(sim, baseSim *SimData, part SimType) float64 {
 	newValue := sim.Get(part)
 	baseValue := baseSim.Get(part)
 
 	var result float64
-	if part == Result_DEATH {
+	if part == Sim_DEATH {
 		result = baseValue - newValue
 	} else if part.IsHighGood() {
 		result = (newValue/baseValue - 1.0) * 100
@@ -198,12 +198,12 @@ func increaseForPart(sim, baseSim *SimResultStats, part SimResultType) float64 {
 	return result
 }
 
-func (stats *SimResultStats) IncreaseOf(baseSim *SimResultStats, part SimResultType) float64 {
+func (stats *SimData) IncreaseOf(baseSim *SimData, part SimType) float64 {
 	return increaseForPart(stats, baseSim, part)
 }
 
-func (stats *SimResultStats) IncreaseMitigation(baseSim *SimResultStats) float64 {
-	checkParts := []SimResultType{Result_DPS, Result_DTPS, Result_TMI, Result_DEATH}
+func (stats *SimData) IncreaseMitigation(baseSim *SimData) float64 {
+	checkParts := []SimType{Sim_DPS, Sim_DTPS, Sim_TMI, Sim_DEATH}
 	var total float64
 	for _, part := range checkParts {
 		total += increaseForPart(stats, baseSim, part)
