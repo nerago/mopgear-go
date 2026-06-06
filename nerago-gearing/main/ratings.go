@@ -781,25 +781,56 @@ func readWeightInputFile(filename string) []stathighs.WeightInput {
 	return weightInputs
 }
 
+type basicWeightsTestDataFormat struct {
+	InputDataBasic []basicStatInput
+	BasicSimBase   simulate.SimData
+}
+
+func writeWeightBasicInputsToFile(inputDataBasic []basicStatInput, basicSimBase simulate.SimData, filename string) {
+	bytes, err := json.Marshal(&basicWeightsTestDataFormat{inputDataBasic, basicSimBase})
+	if err != nil {
+		panic(err)
+	}
+	err = os.WriteFile(filename, bytes, 0)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func readWeightBasicInputsFile(filename string) ([]basicStatInput, simulate.SimData) {
+	bytes, err := os.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+	var weightInputs basicWeightsTestDataFormat
+	err = json.Unmarshal(bytes, &weightInputs)
+	if err != nil {
+		panic(err)
+	}
+	return weightInputs.InputDataBasic, weightInputs.BasicSimBase
+}
+
 func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	// simSpeed := simulate.RunSize_Medium
-	simSpeed := simulate.RunSize_QuickDirty
+	// simSpeed := simulate.RunSize_QuickDirty
 	// simSpeed := simulate.RunSize_TestOnly
 	// makeSetCount := 400
 	// makeSetCount := 40
 
-	gearFile := files.GearFileProtMitigationNoSet
-	gearModel := model.Model_PallyProtMitigation_NoSet()
+	// gearFile := files.GearFileProtMitigationNoSet
+	// gearModel := model.Model_PallyProtMitigation_NoSet()
 	targetRatio := stathighs.NewStatWeights_generalMiti
 
-	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), &gearModel, printer)
-	currentItemSet := items.FullItemSet_FromMap(currentEquip)
+	// currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), &gearModel, printer)
+	// currentItemSet := items.FullItemSet_FromMap(currentEquip)
 
-	inputDataBasic, basicSimBase := generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet, printer, simSpeed, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions)
+	// inputDataBasic, basicSimBase := generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet, printer, simSpeed, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions)
 	// inputDataGrid := generateRatingsInputFromArtificalStatOverrides_ForGrid(currentItemSet, printer, simSpeed, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions)
 	// inputDataRandom := generateRatingsInputFromRealRandomSetsGeneral(gearFile, substituteItemsMiti, &gearModel, 400, simSpeed, true)
 	// writeWeightInputsToFile(inputDataGrid, "sim-stats-compare-grid.json")
 	// writeWeightInputsToFile(inputDataRandom, "sim-stats-compare-rand.json")
+	// writeWeightBasicInputsToFile(inputDataBasic, basicSimBase, "sim-stats-compare-basic.json")
+	inputDataBasic, basicSimBase := readWeightBasicInputsFile("sim-stats-compare-basic.json")
 	inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
 	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
 	mixedInputData := slices.Concat(inputDataGrid, inputDataRandom)
@@ -892,14 +923,13 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	}
 	printer.Println("################# RANKING3 ###################")
 	{
-		ranking := stathighs.RankingStatWeightProcess{}
+		ranking := stathighs.RankingStatWeightProcess3{}
 		ranking.Init(printer)
 		ranking.SetTargetRatios(targetRatio)
 		// ranking.SupplyData(inputDataGrid)
-		// ranking.SupplyData(mixedInputData[0:16])
+		// ranking.SupplyData(mixedInputData[0:15])
 		// ranking.SupplyData(mixedInputData[0:64])
 		ranking.SupplyData(mixedInputData)
-		ranking.RANKMODE = 3
 
 		resultsByAlgorithm["ranking3"] = ranking.Run()
 	}
