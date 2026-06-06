@@ -99,43 +99,8 @@ func (comp *ComplexStatWeightProcess) createWeightColumns() {
 	}
 }
 
-// copied from FittingSingleStatWeightProcess.makeIsOverMinimum
 func (comp *ComplexStatWeightProcess) makeNotBetween(checkColumn utilhighs.ColumnIndex, lo, hi float64) {
-	isUnderMin := comp.input.CreateColumnBool(utilhighs.DebugString{Text: "isUnderMin"})
-	isOverMax := comp.input.CreateColumnBool(utilhighs.DebugString{Text: "isOverMax"})
-
-	// lo <= check + x*range <= range+lo
-	// if undermin: lo <= check + range <= range+lo     ->>  lo <= check + range (for sure)
-	//                                                  ->>  check <= lo
-	// if !undermin: lo <= check + x*range <= range+lo  ->>  lo <= check
-	//                                                       check <= range+lo (for sure)
-	// if check < lo: lo <= check + x*range <= range+lo ->>  lo <= check + x*range        ->> lo - check <= x*range          ->>  small_positive <= x*range          ->>  x=1
-	//                                                       check + x*range <= range+lo  ->> check - lo + x*range <= range  ->>  small_negative + x*range <= range  ->>  x=0 or 1
-	// if check > lo: lo <= check + x*range <= range+lo ->>  lo <= check + x*range        ->> lo - check <= x*range          ->>  small_negative <= x*range          ->>  x=0 or 1
-	//                                                       check + x*range <= range+lo  ->> check - lo + x*range <= range  ->>  small_positive + x*range <= range  ->>  x=0
-	underMin := utilhighs.ConstraintRowBuild{Debug: "setIfOverMin"}
-	underMin.Add(checkColumn, 1)
-	underMin.Add(isUnderMin, c_complexHighWeight)
-	underMin.Finish(comp.input, lo, lo+c_complexHighWeight)
-
-	// hi-range <= check - x*range <= hi
-	// if overmax: hi-range <= check - x*range <= hi  ->>  hi-range <= check - range <= hi  ->>  hi-range <= check - range  ->>  hi <= check
-	//                                                                                      ->>  check - range <= hi        ->>  whatever
-	// if !overmax: hi-range <= check - x*range <= hi  ->>  hi-range <= check <= hi  ->>  hi-range <= check  ->>  whatever
-	//                                                                               ->>  check <= hi
-	// if check < hi: hi-range <= check - x*range <= hi  ->>  hi-range <= check - x*range  ->>  hi-check <= range - x*range ->>  small_positive <= range - x*range  ->>  x=0
-	//                                                        check - x*range <= hi        ->>  check - hi <= x*range       ->>  small_negative <= x*range          ->>  x=0 or 1
-	// if check > hi: hi-range <= check - x*range <= hi  ->>  hi-range <= check - x*range  ->>  hi-check <= range - x*range ->>  small_negative <= range - x*range  ->>  x=0 or 1
-	//                                                        check - x*range <= hi        ->>  check - hi <= x*range       ->>  small_positive <= x*range          ->>  x=1
-	overMax := utilhighs.ConstraintRowBuild{Debug: "setIfUnderMax"}
-	overMax.Add(checkColumn, 1)
-	overMax.Add(isOverMax, -c_complexHighWeight)
-	overMax.Finish(comp.input, hi-c_complexHighWeight, hi)
-
-	or := utilhighs.ConstraintRowBuild{}
-	or.Add(isUnderMin, 1)
-	or.Add(isOverMax, 1)
-	or.Finish(comp.input, 1, 1)
+	utilhighs.ColumnIsBetweenConstants(comp.input, checkColumn, lo, hi, c_complexHighWeight)
 }
 
 func (comp *ComplexStatWeightProcess) buildDataEquations() {

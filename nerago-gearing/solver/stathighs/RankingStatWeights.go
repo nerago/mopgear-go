@@ -165,7 +165,7 @@ func (ranker *RankingStatWeightProcess) processData() {
 		}
 
 		// several adjacent
-		eachCheckCount := 20
+		eachCheckCount := 50
 		for a := 0; a < len(ranker.data); a++ {
 			for b := a + 1; b < min(a+eachCheckCount, len(ranker.data)); b++ {
 				ranker.processEntrySequencePairOriginal(&ranker.data[a], &ranker.data[b])
@@ -316,6 +316,7 @@ func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs
 }
 
 func (ranker *RankingStatWeightProcess) reportRankingOfInputs(statWeightResult map[stats.StatType]float64) {
+	ranker.printer.Println("INPUT CHECK (index, combinedSimRank, calcStat)")
 	for i, entry := range ranker.data {
 		ranker.printer.Printf("%4d %8f %8f\n", i, entry.combinedSimRankScore, calcStatScore(entry.data, statWeightResult))
 	}
@@ -328,3 +329,4 @@ func calcStatScore(input *WeightInput, statWeights map[stats.StatType]float64) f
 	}
 	return total
 }
+

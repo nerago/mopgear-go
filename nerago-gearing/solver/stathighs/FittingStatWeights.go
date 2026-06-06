@@ -527,76 +527,12 @@ func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample *fit
 	fit.includeColumns = append(fit.includeColumns, includeColumn)
 	sample.includeColumn = includeColumn
 
-	isOverMinimum := fit.makeIsOverMinimum(sample.statValue)
-	isUnderMaximum := fit.makeIsUnderMaximum(sample.statValue)
-
-	and := utilhighs.ContraintAndBuilder{}
-	and.AddInput(isOverMinimum)
-	and.AddInput(isUnderMaximum)
-	and.SetOutput(includeColumn)
-	and.FinishAndApply(fit.input)
+	utilhighs.ConstantIsBetweenColumns(fit.input, fit.minimumThreshold, fit.maximumThreshold, includeColumn, sample.statValue, c_statRangeHigh)
 
 	// another thought, samples could be presorted and indexed, then we setup relationships between adjactent pairs,
 	// they pull each other up, until we reach a sample marked as THE high/low cutoff
 
 	return includeColumn
-}
-
-// actually equal or greater than minimum
-func (fit *FittingSingleStatWeightProcess) makeIsOverMinimum(statValue float64) utilhighs.ColumnIndex {
-	isOverMinimum := fit.input.CreateColumnBool(utilhighs.DebugString{Text: "isOverMinimum"})
-
-	// ORIGINAL
-	// if overmin:      1*range + min <= range + stat  ->>  min <= stat
-	// if !overmin:     0*range + min <= range + stat  ->>  min is free
-	// if stat > min:   x*range + min <= range + stat  ->>  x*range <= range + stat - min  ->>  x*range <= range + small_positive   ->>   x = 0 or 1
-	// if stat < min:   x*range + min <= range + stat  ->>  x*range <= range + stat - min  ->>  x*range <= range + small_negative   ->>   x = 0
-	// if stat == min:  x*range + min <= range + stat  ->>  x*range <= range   ->>   x = 0 or 1
-	checkIsOverMin := utilhighs.ConstraintRowBuild{Debug: "checkIsOverMin"}
-	checkIsOverMin.Add(isOverMinimum, c_statRangeHigh)
-	checkIsOverMin.Add(fit.minimumThreshold, 1)
-	checkIsOverMin.Finish(fit.input, utilhighs.C_MinusInf, c_statRangeHigh+statValue)
-
-	//   min - stat + x.range >= 0   ->>   min + x.range >= stat
-	// if stat > min  ->>  min - stat + x.range >= 0  ->>  small_negative + x.range >= 0  ->>  x=1
-	// if stat < min  ->>  min - stat + x.range >= 0  ->>  small_positive + x.range >= 0  ->>  x=0 or 1
-	// if stat == min  ->> min - stat + x.range >= 1 ->>  x.range >= 1  ->> x=1
-	// if overmin     ->>  min - stat + 1.range >= 0  ->>  min >= stat - range   ->>   min is free
-	// if !overmin    ->>  min - stat + 0.range >= 0  ->>  min >= stat    ->>   min is free
-	// modifiying with the plus one for the equals case, the rest of the math should hold ok
-	setIfOverMin := utilhighs.ConstraintRowBuild{Debug: "setIfOverMin"}
-	setIfOverMin.Add(fit.minimumThreshold, 1)
-	setIfOverMin.Add(isOverMinimum, c_statRangeHigh)
-	setIfOverMin.Finish(fit.input, statValue+1, utilhighs.C_PlusInf)
-
-	return isOverMinimum
-}
-
-// actually equal or less than maximum
-func (fit *FittingSingleStatWeightProcess) makeIsUnderMaximum(statValue float64) utilhighs.ColumnIndex {
-	isUnderMaximum := fit.input.CreateColumnBool(utilhighs.DebugString{Text: "isUnderMaximum"})
-
-	// if undermax:    1*stat - max <= 0     ->>      stat <= max
-	// if !undermax:   0*stat - max <= 0     ->>      max >= 0, (max free)
-	// if stat <= max   ->>   x.stat - max <= 0    ->>     x.stat <= max   (x is free)
-	// if stat > max    ->>   x.stat - max <= 0    ->>     x=0
-	checkIsUnderMax := utilhighs.ConstraintRowBuild{Debug: "checkIsUnderMax"}
-	checkIsUnderMax.Add(isUnderMaximum, statValue)
-	checkIsUnderMax.Add(fit.maximumThreshold, -1)
-	checkIsUnderMax.Finish(fit.input, utilhighs.C_MinusInf, 0)
-
-	//    max - stat - x.range <= 0    ->>     max - x.range <= stat
-	// if stat < max    ->>   max - stat - x.range <= 0   ->>   small_positive - x.range <= 0   ->>   small_positive <= x.range   ->>   x=1
-	// if stat > max    ->>   max - stat - x.range <= 0   ->>   small_negative - x.range <= 0   ->>   small_negative <= x.range   ->>   x=0 or 1
-	// if stat == max   ->>   max - stat - x.range <= 0   ->>   0 - x.range <= 0   ->>   0 <= x.range   ->> x=0 or 1
-	// if undermax      ->>   max - stat - 1.range <= 0   ->>   max <= 1.range + stat  ->>  max is free
-	// if !undermax     ->>   max - stat - 0.range <= 0   ->>   max - stat <= 0   ->>   max <= stat
-	setIfUnderMax := utilhighs.ConstraintRowBuild{Debug: "setIfUnderMax"}
-	setIfUnderMax.Add(fit.maximumThreshold, 1)
-	setIfUnderMax.Add(isUnderMaximum, -c_statRangeHigh)
-	setIfUnderMax.Finish(fit.input, utilhighs.C_MinusInf, statValue)
-
-	return isUnderMaximum
 }
 
 func (fit *FittingSingleStatWeightProcess) sampleToFitLine(sample *fittingSample, toggle utilhighs.ColumnIndex) {
