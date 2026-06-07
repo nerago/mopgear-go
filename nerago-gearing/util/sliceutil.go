@@ -1,7 +1,9 @@
 package util
 
 import (
+	"cmp"
 	"iter"
+	"slices"
 )
 
 func RemoveDuplicatesFunc[T any](slice []T, equals func(a, b *T) bool) []T {
@@ -237,3 +239,34 @@ func ForPointer[T any](slice []T) iter.Seq[*T] {
 	}
 }
 
+// guarantees that each ranking number is used in range, even given duplicate numbers
+func CalculateRanking[T any](highGood bool, inputData []T, toValue func(*T) float64) iter.Seq2[*T, int] {
+	type internalEntry struct {
+		value   float64
+		pointer *T
+	}
+
+	rankArray := make([]internalEntry, len(inputData))
+	for i := range len(inputData) {
+		pointer := &inputData[i]
+		rankArray[i] = internalEntry{
+			toValue(pointer),
+			pointer,
+		}
+	}
+
+	if highGood {
+		slices.SortFunc(rankArray, func(a, b internalEntry) int { return cmp.Compare(a.value, b.value) })
+	} else {
+		slices.SortFunc(rankArray, func(a, b internalEntry) int { return cmp.Compare(b.value, a.value) })
+	}
+
+	return func(yield func(*T, int) bool) {
+		for i := range len(inputData) {
+			entry := &rankArray[i]
+			if !yield(entry.pointer, i) {
+				return
+			}
+		}
+	}
+}

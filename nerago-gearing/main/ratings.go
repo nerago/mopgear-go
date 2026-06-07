@@ -966,74 +966,47 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 }
 
 func evaluateAccuracy(statWeights map[stats.StatType]float64, inputData []stathighs.WeightInput, simRatios simulate.SimData) float64 {
-	// Make ranked sim data
-	rankedSims := util.MapSlice[simulate.SimType, float64]{}
-	for _, sample := range inputData {
-		for _, simType := range stathighs.G_RequiredSims {
-			rankedSims.Add(simType, sample.SimResult.Get(simType))
-		}
-	}
-	rankedSims.MapInternalSlicesAll(func(simType simulate.SimType, inner []float64) []float64 {
-		if simType.IsHighGood() {
-			// ascending, so that later indexes are better and worth more rank
-			slices.Sort(inner)
-		} else {
-			// decending, later entries are smaller numerically, but worth more in index
-			slices.SortFunc(inner, func(a, b float64) int { return cmp.Compare(b, a) })
-		}
-		return inner
-	})
-
 	// make structures
 	type accuracyInfo struct {
 		input *stathighs.WeightInput
 
-		simRanks             map[simulate.SimType]int
+		simRankDetail        map[simulate.SimType]int
 		combinedSimRankScore float64
 
-		statScore float64
-		statRank  int
+		statRank int
+		simRank  int
 	}
 	accuracyData := util.MapSliceAsNew(inputData, func(input *stathighs.WeightInput) accuracyInfo {
 		return accuracyInfo{
-			input:     input,
-			statScore: calcStatScore(input, statWeights),
+			input:         input,
+			simRankDetail: make(map[simulate.SimType]int),
 		}
 	})
 
-	// rank the accuracy structures by stat score
-	slices.SortFunc(accuracyData, func(a, b accuracyInfo) int { return cmp.Compare(a.statScore, b.statScore) })
+	// score stats
+	for entry, statRank := range util.CalculateRanking(true, accuracyData, func(x *accuracyInfo) float64 { return calcStatScore(x.input, statWeights) }) {
+		entry.statRank = statRank
+	}
 
-	// set rank values
-	for statRankIndex := range accuracyData {
-		info := &accuracyData[statRankIndex]
-		info.statRank = statRankIndex // save the stat ranks from current slice order
-
-		info.simRanks = make(map[simulate.SimType]int)
-		for _, simType := range stathighs.G_RequiredSims {
-			rankedValues := rankedSims.GetInternalSlice(simType)
-			queryValue := info.input.SimResult.Get(simType)
-
-			rank := slices.Index(rankedValues, queryValue)
-			if rank == -1 {
-				panic("missing value")
-			}
-			info.simRanks[simType] = rank
-
-			info.combinedSimRankScore += float64(rank) * simRatios.Get(simType)
+	// score each sim
+	for _, simType := range stathighs.G_RequiredSims {
+		for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), accuracyData, func(x *accuracyInfo) float64 { return x.input.SimResult.Get(simType) }) {
+			entry.simRankDetail[simType] = simDetailRank
+			entry.combinedSimRankScore += float64(simDetailRank) * simRatios.Get(simType)
 		}
 	}
 
-	// rank the accuracy structures by sim score
-	slices.SortFunc(accuracyData, func(a, b accuracyInfo) int { return cmp.Compare(a.combinedSimRankScore, b.combinedSimRankScore) })
+	// rank combined sims
+	for entry, simRank := range util.CalculateRanking(true, accuracyData, func(x *accuracyInfo) float64 { return x.combinedSimRankScore }) {
+		entry.simRank = simRank
+	}
 
 	// compute average difference between stat rank and sim rank
+	// TODO make allowance for duplicate numbers, should be permissive where in that range it falls
 	totalComparePercents := 0.0
-	for combinedSimRankIndex := range accuracyData {
-		info := &accuracyData[combinedSimRankIndex]
-
+	for info := range util.ForPointer(accuracyData) {
 		// 100% if ranks are equal, 90% if average 10% difference, etc
-		diff := util.AbsIntDiff(combinedSimRankIndex, info.statRank)
+		diff := util.AbsIntDiff(info.simRank, info.statRank)
 		diffAsPercent := float64(diff) / float64(len(accuracyData))
 		percentScore := 100.0 - (diffAsPercent * 100.0)
 		totalComparePercents += percentScore

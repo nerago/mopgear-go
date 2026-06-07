@@ -1,12 +1,10 @@
 package stathighs
 
 import (
-	"cmp"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
-	"slices"
 	"strconv"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -42,9 +40,9 @@ type RankingStatWeightProcess struct {
 type rankEntry struct {
 	data *WeightInput
 
-	simRanks             map[simulate.SimType]int
-	combinedSimRankScore float64
-	targetRank           int
+	simRanks         map[simulate.SimType]int
+	combinedSimScore float64
+	targetRank       int
 
 	scoreColumn utilhighs.ColumnIndex
 	rankColumn  utilhighs.ColumnIndex
@@ -57,7 +55,7 @@ func (ranker *RankingStatWeightProcess) Init(printer *util.PrintRecorder) {
 func (ranker *RankingStatWeightProcess) SupplyData(inputData []WeightInput) {
 	ranker.scaleStats = chooseStatScaling(inputData, ranker.printer)
 	ranker.data = util.MapSliceAsNew(inputData, func(input *WeightInput) rankEntry {
-		return rankEntry{data: input}
+		return rankEntry{data: input, simRanks: make(map[simulate.SimType]int)}
 	})
 }
 
@@ -116,46 +114,17 @@ func (ranker *RankingStatWeightProcess) createWeightColumns() {
 }
 
 func (ranker *RankingStatWeightProcess) prepareRankings() {
-	// collect individual values of each sim type
-	rankedSims := util.MapSlice[simulate.SimType, float64]{}
-	for entry := range util.ForPointer(ranker.data) {
-		for _, simType := range G_RequiredSims {
-			rankedSims.Add(simType, entry.data.SimResult.Get(simType))
+	// score each sim
+	for _, simType := range G_RequiredSims {
+		for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), ranker.data, func(x *rankEntry) float64 { return x.data.SimResult.Get(simType) }) {
+			entry.simRanks[simType] = simDetailRank
+			entry.combinedSimScore += float64(simDetailRank) * ranker.targetRatios.Get(simType)
 		}
 	}
 
-	// sort the values
-	rankedSims.MapInternalSlicesAll(func(simType simulate.SimType, inner []float64) []float64 {
-		if simType.IsHighGood() {
-			// ascending, so that later indexes are better and worth more rank
-			slices.Sort(inner)
-		} else {
-			// decending, later entries are smaller numerically, but worth more in index
-			slices.SortFunc(inner, func(a, b float64) int { return cmp.Compare(b, a) })
-		}
-		return inner
-	})
-
-	// set ranks
-	for entry := range util.ForPointer(ranker.data) {
-		entry.simRanks = make(map[simulate.SimType]int)
-		for simType, rankedValues := range rankedSims.SeqGroupsInternalSlice() {
-			queryValue := entry.data.SimResult.Get(simType)
-
-			rank := slices.Index(rankedValues, queryValue)
-			if rank == -1 {
-				panic("missing value")
-			}
-			entry.simRanks[simType] = rank
-
-			entry.combinedSimRankScore += float64(rank) * ranker.targetRatios.Get(simType)
-		}
-	}
-
-	// sort the data in ascending rank order
-	slices.SortFunc(ranker.data, func(a, b rankEntry) int { return cmp.Compare(a.combinedSimRankScore, b.combinedSimRankScore) })
-	for i := range ranker.data {
-		ranker.data[i].targetRank = i
+	// rank combined sims
+	for entry, simRank := range util.CalculateRanking(true, ranker.data, func(x *rankEntry) float64 { return x.combinedSimScore }) {
+		entry.targetRank = simRank
 	}
 }
 
@@ -293,7 +262,7 @@ func (ranker *RankingStatWeightProcess) processDataEntryForceScoreToRank(entry *
 		targetNum := float64(entry.targetRank)
 		scoreRow.Finish(ranker.input, targetNum, targetNum)
 	case 2:
-		targetNum := entry.combinedSimRankScore
+		targetNum := entry.combinedSimScore
 		scoreRow.Finish(ranker.input, targetNum, targetNum)
 	}
 }
@@ -352,7 +321,7 @@ func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs
 func (ranker *RankingStatWeightProcess) reportRankingOfInputs(statWeightResult map[stats.StatType]float64) {
 	ranker.printer.Println("INPUT CHECK (index, combinedSimRank, calcStat)")
 	for i, entry := range ranker.data {
-		ranker.printer.Printf("%4d %8f %8f\n", i, entry.combinedSimRankScore, calcStatScore(entry.data, statWeightResult))
+		ranker.printer.Printf("%4d %8f %8f\n", i, entry.combinedSimScore, calcStatScore(entry.data, statWeightResult))
 	}
 }
 
