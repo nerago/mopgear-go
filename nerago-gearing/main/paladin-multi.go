@@ -127,6 +127,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		87145, // defiled earth OFF
 		96394, // frozen warlord bracer heroic
+
+		101882, // cliffbreaker helm exp/mastery
 	})
 	blockHelmetsWithoutCapacitance(&ret)
 	ret.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
@@ -194,6 +196,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
 		96436, // tortos shell heroic
+
+		101882, // cliffbreaker helm exp/mastery
 	})
 	blockHelmetsWithoutCapacitance(&protDps)
 	// protDps.ForceSingleSlot(items.Equip_Ring2, 96500)               // scaled tyrant heroic
@@ -265,6 +269,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
 		96436, // tortos shell heroic
+
+		101882, // cliffbreaker helm exp/mastery
 	})
 	blockHelmetsWithoutCapacitance(&protCompromise)
 	protCompromise.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
@@ -334,6 +340,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
 		96436, // tortos shell heroic
+
+		101882, // cliffbreaker helm exp/mastery
 	})
 	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
@@ -399,6 +407,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
 		96436, // tortos shell heroic
+
+		101882, // cliffbreaker helm exp/mastery
 	})
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
@@ -419,6 +429,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	job.AddSetParam(protMitigationWithSet)
 
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
+	job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
 	// job.FindHighsResult_Sample(1)
 	job.FindSeveralHighsAndSim()

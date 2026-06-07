@@ -91,8 +91,8 @@ func ItemFinder_Ordos(_ stats.Difficulty) []*items.FullItem {
 
 func ItemFinder_SiegeStrengthPlateTank(difficulty stats.Difficulty) []*items.FullItem {
 	return slices.Concat(
-		throneClassGearSet(stats.Spec_PaladinProt, difficulty),
-		throneClassGearSet(stats.Spec_PaladinRet, difficulty),
+		seigeClassGearSet(stats.Spec_PaladinProt, difficulty),
+		seigeClassGearSet(stats.Spec_PaladinRet, difficulty),
 		seigeGearGeneric(stats.Armor_Plate, stats.PrimaryStat_Strength, difficulty),
 		trinketsForDifficulty(G_seigeTankTrinkets, difficulty, stats.Difficulty.ExpectedItemLevelSiege),
 		trinketsForDifficulty(G_siegeStrengthTrinkets, difficulty, stats.Difficulty.ExpectedItemLevelSiege),
@@ -253,6 +253,7 @@ func matchesSeigeGearCriteria(item *items.FullItem, armor stats.ArmorType, prima
 		(item.ArmorType().Matches(armor) || item.SlotItem() == items.Item_Back) &&
 		item.SlotItem() != items.Item_Trinket &&
 		item.PrimaryStat() == primary &&
+		item.ItemLevel() > 500 &&
 		!model.SetBonus_IsAnyKnownItem(item.ItemId())
 }
 

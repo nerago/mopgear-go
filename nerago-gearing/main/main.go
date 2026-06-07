@@ -87,7 +87,7 @@ func core(printer *util.PrintRecorder) {
 	// testSim(printer)
 	// findUpgrades_Sim_PaladinMiti_Run(printer)
 	// findUpgrades_Sim_PaladinDps_Run(printer)
-	// findUpgrades_Paladin_Sim_AllRaid_Run(printer)
+	findUpgrades_Paladin_Sim_AllRaid_Run(printer)
 	// findSimpleUpgrade_ForceEach(printer)
 	// findMitigationWithCapicitance(printer)
 	// relativeRatingsCompromise(printer)
@@ -102,7 +102,7 @@ func core(printer *util.PrintRecorder) {
 	// statWeightsComplex(printer)
 	// statWeightsRanking(printer)
 
-	statWeights_CompareAlgorithms(printer)
+	// statWeights_CompareAlgorithms(printer)
 
 	// statWeightsGrid_updateAll(printer) // seed of standard process? 4/6/2026
 }

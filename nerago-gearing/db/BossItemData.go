@@ -36,7 +36,22 @@ var BossItemData_NamesInOrder = []string{
 	"Iron Qon ToT",
 	"Twin Consorts ToT",
 	"Lei Shen ToT",
-	"Raden ToT"}
+	"Raden ToT",
+	"SoO Shared",
+	"SoO Immerseus",
+	"SoO FallenProtectors",
+	"SoO Norushen",
+	"SoO ShaofPride",
+	"SoO Galakras",
+	"SoO IronJuggernaut",
+	"SoO DarkShaman",
+	"SoO Nazgrim",
+	"SoO Malkorok",
+	"SoO Spoils",
+	"SoO Thok",
+	"SoO Blackfuse",
+	"SoO Paragons",
+	"SoO Garrosh"}
 
 var g_itemNameToBoss map[string]string
 

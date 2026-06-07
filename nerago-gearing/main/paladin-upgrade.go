@@ -172,15 +172,15 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
 	substituteEmptySlotOnly[items.Item_Ring] = 86957    // heroic bladed tempest ring
 
-	// finder := loaders.ItemFinder_SiegeStrengthPlateTank
+	finder := loaders.ItemFinder_SiegeStrengthPlateTank
 	// finder := loaders.ItemFinder_Ordos
-	finder := loaders.ItemFinder_TimelessPlate
+	// finder := loaders.ItemFinder_TimelessPlate
 
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
-				IncludeCelestial: true,
-				IncludeNormal:    false,
+				IncludeCelestial: false,
+				IncludeNormal:    true,
 				IncludeHeroic:    false,
 				IncludeRaden:     false,
 				IgnoredItems:     ignoredItems,
