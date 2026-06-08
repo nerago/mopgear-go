@@ -20,7 +20,7 @@ type MultiSetJob struct {
 	params              []multiSetParamInternal
 	fixedForge          map[items.ItemId]stats.ReforgeRecipe
 	distinctUsageGroups map[items.ItemId]distinctUsageGroups
-	alternateGemming    *stats.GemInfo
+	alternateGemming    []stats.GemInfo
 	bagsGear            loaders.EquippedArray
 	simRunSize          simulate.WowSim_RunSize
 }
@@ -83,7 +83,7 @@ func findLabelInParams(label string, group []multi_types.MultiSetParam) bool {
 	return false
 }
 
-func (job *MultiSetJob) SetAlternateGemming(block stats.StatBlock) {
+func (job *MultiSetJob) AddAlternateGemming(block stats.StatBlock) {
 	gem := db.GemData_ByStat(&block)
-	job.alternateGemming = &gem
+	job.alternateGemming = append(job.alternateGemming, gem)
 }

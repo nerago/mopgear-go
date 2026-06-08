@@ -56,7 +56,7 @@ func makeStandardGems() map[uint32]GemInfo {
 	addGem2(lookup, 76686, Stat_Intellect, 80, Stat_Spirit, 160)
 	addGem1(lookup, 76693, Stat_Expertise, 320)
 	addGem1(lookup, 76694, Stat_Intellect, 160)
-	addGem1(lookup, 76696, Stat_Strength, 320)
+	addGem1(lookup, 76696, Stat_Strength, 160)
 	addGem1(lookup, 76697, Stat_Crit, 320)
 	addGem1(lookup, 76699, Stat_Haste, 320)
 	addGem1(lookup, 76700, Stat_Mastery, 320)

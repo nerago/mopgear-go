@@ -83,7 +83,7 @@ func core(printer *util.PrintRecorder) {
 	// checkHighs(printer)
 	// checkHighsAcross(printer)
 
-	PaladinMultiRun(printer)
+	// PaladinMultiRun(printer)
 	// testSim(printer)
 	// findUpgrades_Sim_PaladinMiti_Run(printer)
 	// findUpgrades_Sim_PaladinDps_Run(printer)
@@ -102,7 +102,7 @@ func core(printer *util.PrintRecorder) {
 	// statWeightsComplex(printer)
 	// statWeightsRanking(printer)
 
-	// statWeights_CompareAlgorithms(printer)
+	statWeights_CompareAlgorithms(printer)
 
 	// statWeightsGrid_updateAll(printer) // seed of standard process? 4/6/2026
 }

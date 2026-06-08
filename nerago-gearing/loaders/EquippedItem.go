@@ -1,7 +1,10 @@
 package loaders
 
 import (
+	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/stats"
+	"paladin_gearing_go/util"
 	"slices"
 )
 
@@ -21,4 +24,19 @@ func (eqi *EquippedItem) Equals(other *EquippedItem) bool {
 		eqi.RandomSuffix == other.RandomSuffix &&
 		eqi.UpgradeStep == other.UpgradeStep &&
 		eqi.Reforging == other.Reforging
+}
+
+func EquippedItem_FromFull(full *items.FullItem) EquippedItem {
+	var reforge uint16 = 0
+	if !full.Reforge().IsEmpty() {
+		reforge = db.WowSimDB_ReforgeToId(full.Reforge())
+	}
+	return EquippedItem{
+		ItemId:        full.ItemId(),
+		GemChoice:     util.MapSliceAsNew(full.GemChoice(), func(x *stats.GemInfo) uint32 { return x.Id }),
+		EnchantChoice: full.EnchantChoice(),
+		RandomSuffix:  full.RandomSuffix(),
+		UpgradeStep:   full.UpgradeLevel(),
+		Reforging:     reforge,
+	}
 }

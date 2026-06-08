@@ -38,7 +38,6 @@ func OptionsSetup_Single_FromEquipped(equipItem loaders.EquippedItem, model *mod
 	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
 }
 
-// todo consider usages
 func OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId items.ItemId, upgradeLevel int8, model *model.Model, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
 	item := loadItemBasic(itemId, upgradeLevel, printer)
 	item = addDetailUsingDefaults(item, model)
@@ -48,13 +47,7 @@ func OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId items.ItemId, upgradeLe
 func OptionsSetup_ExactEquippedOnly(equipped []loaders.EquippedItem, model *model.Model, printer *util.PrintRecorder) items.FullEquipMap {
 	resultMap := items.FullEquipMap{}
 	for _, equipItem := range equipped {
-		item := loadItemBasic(equipItem.ItemId, equipItem.UpgradeStep, printer)
-		item = addDetailFromEquip(item, equipItem, model, MissingEnchant_Ignore, printer)
-
-		if equipItem.Reforging != 0 {
-			reforge := db.WowSimDB_ReforgeById(equipItem.Reforging)
-			item = *tools.Reforger_SinglePreset(&item, &reforge)
-		}
+		item := OptionsSetup_ExactEquippedOnly_Item(equipItem, MissingEnchant_Panic, model, printer)
 
 		printer.Println(item.CreateString())
 		resultMap.FillSlot_ExpectedEmpty(item.SlotItem(), &item)
@@ -62,27 +55,16 @@ func OptionsSetup_ExactEquippedOnly(equipped []loaders.EquippedItem, model *mode
 	return resultMap
 }
 
-func OptionsSetup_DeriveWithAlternateGems(original *items.FullItem, gemAlternate *stats.GemInfo, model *model.Model, printer *util.PrintRecorder) *items.FullItem {
-	equipItem := itemToEquipItem(original)
+func OptionsSetup_ExactEquippedOnly_Item(equipItem loaders.EquippedItem, missingEnchant MissingEnchantMode, model *model.Model, printer *util.PrintRecorder) items.FullItem {
+	item := loadItemBasic(equipItem.ItemId, equipItem.UpgradeStep, printer)
+	item = addDetailFromEquip(item, equipItem, model, missingEnchant, printer)
 
-	for i := range equipItem.GemChoice {
-		equipItem.GemChoice[i] = gemAlternate.Id
+	if equipItem.Reforging != 0 {
+		reforge := db.WowSimDB_ReforgeById(equipItem.Reforging)
+		item = *tools.Reforger_SinglePreset(&item, &reforge)
 	}
 
-	alternateItem := loadItemBasic(equipItem.ItemId, equipItem.UpgradeStep, printer)
-	alternateItem = addDetailFromEquip(alternateItem, equipItem, model, MissingEnchant_Panic, printer)
-	return &alternateItem
-}
-
-func itemToEquipItem(full *items.FullItem) loaders.EquippedItem {
-	return loaders.EquippedItem{
-		ItemId:        full.ItemId(),
-		GemChoice:     util.MapSliceAsNew(full.GemChoice(), func(x *stats.GemInfo) uint32 { return x.Id }),
-		EnchantChoice: full.EnchantChoice(),
-		RandomSuffix:  full.RandomSuffix(),
-		UpgradeStep:   full.UpgradeLevel(),
-		Reforging:     db.WowSimDB_ReforgeToId(full.Reforge()),
-	}
+	return item
 }
 
 func loadItemBasic(itemId items.ItemId, upgradeLevel int8, printer *util.PrintRecorder) items.FullItem {

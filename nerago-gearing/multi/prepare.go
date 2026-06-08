@@ -34,9 +34,6 @@ func (job *MultiSetJob) prepareInitial() {
 	for i := range job.params {
 		job.params[i].restrictFixed()
 	}
-	for i := range job.params {
-		job.params[i].restrictFixedValidate()
-	}
 
 	for i := range job.params {
 		job.params[i].runBaseline()
@@ -44,10 +41,8 @@ func (job *MultiSetJob) prepareInitial() {
 
 	job.prepareRatingMultipliers()
 
-	if job.alternateGemming != nil {
-		for i := range job.params {
-			job.params[i].setupAlternateGemming(job.alternateGemming)
-		}
+	for i := range job.params {
+		job.params[i].setupAlternateGemming(job.alternateGemming)
 	}
 }
 
@@ -225,21 +220,6 @@ func (param *multiSetParamInternal) restrictFixed() {
 	}
 }
 
-func (param *multiSetParamInternal) restrictFixedValidate() {
-	// TODO reapply just as optimisation maybe?
-
-	// for slot, itemIdList := range param.SemiFixedSlots {
-	// 	paired := slot.PairedSlot()
-	// 	if paired != -1 {
-	// 		for _, itemId := range itemIdList {
-	// 			if param.itemOptions.IncludesItemIdInSlot(itemId, paired) {
-	// 				panic("item is fixed in one slot but also available in paired slot " + itemId.String())
-	// 			}
-	// 		}
-	// 	}
-	// }
-}
-
 func (param *multiSetParamInternal) removeBlocked() {
 	// remove blocked items
 	for _, itemId := range param.BlockedItems {
@@ -248,15 +228,43 @@ func (param *multiSetParamInternal) removeBlocked() {
 	}
 }
 
-func (param *multiSetParamInternal) setupAlternateGemming(alternateGem *stats.GemInfo) {
-	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
-		existing := param.itemOptions.Get(slot)
-		for _, item := range existing {
-			alternateItem := setup.OptionsSetup_DeriveWithAlternateGems(&item, alternateGem, &param.Model, param.job.printer)
-			param.itemOptions.AddSeveralOptionsSpecific(slot, []items.FullItem{*alternateItem})
+func (param *multiSetParamInternal) setupAlternateGemming(alternateGemList []stats.GemInfo) {
+	if len(alternateGemList) > 0 {
+		for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
+			existing := param.itemOptions.Get(slot)
+			for _, item := range existing {
+				for _, alternateGem := range alternateGemList {
+					alternateItem := param.regemAlternate(item, alternateGem)
+					param.itemOptions.AddSeveralOptionsSpecific(slot, []items.FullItem{alternateItem})
+				}
+
+				defaultItem := param.regemDefault(item)
+				param.itemOptions.AddSeveralOptionsSpecific(slot, []items.FullItem{defaultItem})
+			}
+		}
+		param.itemOptions.RemoveDuplicates()
+	}
+}
+
+func (param *multiSetParamInternal) regemAlternate(item items.FullItem, alternateGem stats.GemInfo) items.FullItem {
+	alternateEquipItem := loaders.EquippedItem_FromFull(&item)
+	for i := range alternateEquipItem.GemChoice {
+		socket := item.SocketSlots()[i]
+		if socket.IsStandard() {
+			alternateEquipItem.GemChoice[i] = alternateGem.Id
 		}
 	}
-	param.itemOptions.RemoveDuplicates()
+	alternateItem := setup.OptionsSetup_ExactEquippedOnly_Item(alternateEquipItem, setup.MissingEnchant_Panic, &param.Model, param.job.printer)
+	alternateItem.SetNameTag("GemAlternate")
+	return alternateItem
+}
+
+func (param *multiSetParamInternal) regemDefault(item items.FullItem) items.FullItem {
+	defaultEquipItem := loaders.EquippedItem_FromFull(&item)
+	defaultEquipItem.GemChoice = nil
+	defaultItem := setup.OptionsSetup_ExactEquippedOnly_Item(defaultEquipItem, setup.MissingEnchant_Fix, &param.Model, param.job.printer)
+	defaultItem.SetNameTag("GemDefault")
+	return defaultItem
 }
 
 func (param *multiSetParamInternal) runBaseline() {

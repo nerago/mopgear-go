@@ -13,6 +13,7 @@ type FullItem struct {
 	upgradeLevel int8
 	slot         SlotItem
 	baseName     string
+	tagName      string
 	armorType    stats.ArmorType
 	primaryStat  stats.PrimaryStatType
 	socketSlots  []stats.SocketType
@@ -34,7 +35,7 @@ type FullItem struct {
 
 func FullItem_FromWowSim(itemId ItemId, itemLevel uint16, itemLevelBase uint16, upgradeLevel int8, slot SlotItem, baseName string, statBase stats.StatBlock, armorType stats.ArmorType, socketSlots []stats.SocketType, socketBonus stats.StatBlock, phase int8) FullItem {
 	return FullItem{
-		itemId, itemLevel, upgradeLevel, slot, baseName, armorType, statBase.PrimaryStat(),
+		itemId, itemLevel, upgradeLevel, slot, baseName, "", armorType, statBase.PrimaryStat(),
 		socketSlots, socketBonus, phase,
 		stats.ReforgeRecipe_empty, nil, 0, 0,
 		statBase, stats.StatBlock_empty,
@@ -44,7 +45,7 @@ func FullItem_FromWowSim(itemId ItemId, itemLevel uint16, itemLevelBase uint16, 
 func FullItem_ForTest(itemId ItemId, slot SlotItem, statBase stats.StatBlock) FullItem {
 	return FullItem{
 		itemId, 400, 1,
-		slot, slot.Name(), stats.Armor_None, statBase.PrimaryStat(),
+		slot, slot.Name(), "", stats.Armor_None, statBase.PrimaryStat(),
 		nil, stats.StatBlock_empty, 0,
 		stats.ReforgeRecipe_empty, nil, 0, 0,
 		statBase, stats.StatBlock_empty,
@@ -89,6 +90,10 @@ func (item *FullItem) NewWithInstanceDetails(socketSlots []stats.SocketType, ref
 	return &newItem
 }
 
+func (item *FullItem) SetNameTag(add string) {
+	item.tagName += add
+}
+
 func (item *FullItem) changeDerivedStatFields() {
 	stats.StatBlock_Add_Into(&item.statBase, &item.statEnchant, &item.total)
 }
@@ -107,6 +112,10 @@ func (item *FullItem) StatEnchant() *stats.StatBlock {
 
 func (item *FullItem) AppendFullName(build *util.StringBuild2) {
 	build.WriteString(item.baseName)
+	if item.tagName != "" {
+		build.WriteRune(' ')
+		build.WriteString(item.tagName)
+	}
 	if !item.reforge.IsEmpty() {
 		build.WriteRune(' ')
 		item.reforge.AppendString(build)

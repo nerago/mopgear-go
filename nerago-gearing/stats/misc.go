@@ -111,6 +111,17 @@ func (socket SocketType) SocketMatch(gemStat *StatBlock) bool {
 	}
 }
 
+func (socket SocketType) IsStandard() bool {
+	switch socket {
+	case Socket_Red, Socket_Yellow, Socket_Blue, Socket_General:
+		return true
+	case Socket_Meta, Socket_Engineering, Socket_Sha:
+		return false
+	default:
+		panic("unexpected common.SocketType")
+	}
+}
+
 type PrimaryStatType int8
 
 const (

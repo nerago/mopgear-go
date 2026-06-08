@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/multi"
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/simulate"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
 
@@ -131,6 +132,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		101882, // cliffbreaker helm exp/mastery
 		103787, // poisonbinder girth
+		103742, // blood rage bracers
 	})
 	blockHelmetsWithoutCapacitance(&ret)
 	ret.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
@@ -200,6 +202,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		101882, // cliffbreaker helm exp/mastery
 		103787, // poisonbinder girth
+		103742, // blood rage bracers
 	})
 	blockHelmetsWithoutCapacitance(&protDps)
 	protDps.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
@@ -272,6 +275,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		101882, // cliffbreaker helm exp/mastery
 		103787, // poisonbinder girth
+		103742, // blood rage bracers
 	})
 	blockHelmetsWithoutCapacitance(&protCompromise)
 	protCompromise.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
@@ -345,6 +349,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		101882, // cliffbreaker helm exp/mastery
 		103787, // poisonbinder girth
+		103742, // blood rage bracers
 	})
 	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
@@ -414,6 +419,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		101882, // cliffbreaker helm exp/mastery
 		103787, // poisonbinder girth
+		103742, // blood rage bracers
 	})
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
@@ -428,7 +434,11 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// protMitigationNoSet.AddBagsExtra()
 	// protMitigationWithSet.AddBagsExtra()
 
-	// job.SetAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
+	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
+	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Expertise, 320))
+	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Hit, 320))
+	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
+	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
 
 	job.AddSetParam(ret)
 	job.AddSetParam(protDps)
@@ -437,11 +447,11 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	job.AddSetParam(protMitigationWithSet)
 
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
-	job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
+	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
-	// job.FindHighsResult_Sample(1)
+	job.FindHighsResult_Sample(1)
 	// job.FindSeveralHighsAndSim()
-	job.FindHighsResultPerPermute(12)
+	// job.FindHighsResultPerPermute(12)
 	// job.RunWithMinimumHaste("Prot-Mitigation-WithSet", 11000, 18000, 250)
 	// job.RunWithMinimumHaste("Prot-Mitigation-NoSet", 11000, 18000, 250)
 }
@@ -458,11 +468,10 @@ func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {
 }
 
 func blockHelmetsWithoutIndomitable(param *multi_types.MultiSetParam) {
-	param.BlockItem(87024) // nullification greathelm = capacitance
-	param.BlockItem(95282) // lightning emp helmet = capacitance
-	// param.BlockItem(87101) // white tiger helmet = prot gem
-	// param.BlockItem(95292) // lightning emp faceguard = prot gem
-	param.BlockItem(95778) // golden golem celestial = ignore in all sets
+	param.BlockItem(87024)  // nullification greathelm = capacitance
+	param.BlockItem(95282)  // lightning emp helmet = capacitance
+	param.BlockItem(95778)  // golden golem celestial = ignore in all sets
+	param.BlockItem(101882) // cliffbreaker helm = capacitance
 	blockGeneral(param)
 }
 

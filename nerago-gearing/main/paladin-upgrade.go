@@ -6,7 +6,6 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/model"
-	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/upgrades"
 	"paladin_gearing_go/util"
@@ -16,7 +15,9 @@ import (
 const (
 	// simRunSize  = simulate.RunSize_QuickDirty
 
-	simRunSize = simulate.RunSize_QuickDirty
+	// simRunSize = simulate.RunSize_QuickDirty
+
+	simRunSize = 1500
 
 	// simRunSize    = simulate.RunSize_Medium
 
@@ -67,44 +68,44 @@ var substituteItemsDps = []items.ItemId{
 	96420, // talisman of angry spirits
 }
 var substituteItemsMiti = []items.ItemId{
-	95291, // prot tier15 hand normal
-	95290, // prot tier15 chest normal
-	95292, // prot tier15 head normal
-	96667, // prot tier15 leg heroic
-	96668, // prot tier15 shoulder heroic
-	96657, // ret tier15 legs heroic
-	96658, // ret tier15 shoulder heroic
-	95281, // ret tier15 gloves normal
-	96394, // frozen warlord bracer heroic
-	96373, // cloudbreaker belt heroic
-	96478, // treads of the blind heroic
-	95142, // striker's battletags
-	95205, // terra-cotta neck
-	95178, // lootraptor amulet
-	96468, // talonrender chest heroic
-	96533, // rein-binders fists heroic
-	86957, // heroic bladed tempest ring
-	86955, // heroic overwhelm assault belt
-	95535, // normal lightning legs
-	87015, // heroic clawfeet
-	96481, // durumu tentacle heroic
-	95140, // shado assault band
-	95141, // shado assault loop
-	96500, // scaled tyrant heroic
-	96182, // ultimate prot of the emperor thunder normal
-	94945, // greatshield of the gloaming normal
-	96436, // tortos shell heroic
-	96428, // shell-coated wrists
-	96447, // rot-proof greatplate
-	96376, // worldbreaker weapon
-	96534, // qon's scimitar
-	86387, // kilrak weapon
-	98146, // pre-legend strength tank
-	98147, // pre-legend strength dps
-	94776, // primal turtle amulet
-	94820, // caustic spike bracers
-	95141, // shado assault loop
-	96420, // talisman of angry spirits
+	95291,  // prot tier15 hand normal
+	95290,  // prot tier15 chest normal
+	95292,  // prot tier15 head normal
+	96667,  // prot tier15 leg heroic
+	96668,  // prot tier15 shoulder heroic
+	96657,  // ret tier15 legs heroic
+	96658,  // ret tier15 shoulder heroic
+	95281,  // ret tier15 gloves normal
+	96394,  // frozen warlord bracer heroic
+	96373,  // cloudbreaker belt heroic
+	96478,  // treads of the blind heroic
+	95142,  // striker's battletags
+	95205,  // terra-cotta neck
+	95178,  // lootraptor amulet
+	96468,  // talonrender chest heroic
+	96533,  // rein-binders fists heroic
+	86957,  // heroic bladed tempest ring
+	86955,  // heroic overwhelm assault belt
+	95535,  // normal lightning legs
+	87015,  // heroic clawfeet
+	96481,  // durumu tentacle heroic
+	95140,  // shado assault band
+	95141,  // shado assault loop
+	96500,  // scaled tyrant heroic
+	96182,  // ultimate prot of the emperor thunder normal
+	94945,  // greatshield of the gloaming normal
+	96436,  // tortos shell heroic
+	96428,  // shell-coated wrists
+	96447,  // rot-proof greatplate
+	96376,  // worldbreaker weapon
+	96534,  // qon's scimitar
+	86387,  // kilrak weapon
+	98146,  // pre-legend strength tank
+	98147,  // pre-legend strength dps
+	94776,  // primal turtle amulet
+	94820,  // caustic spike bracers
+	95141,  // shado assault loop
+	96420,  // talisman of angry spirits
 	101882, // cliffbreaker helm exp/mastery
 	103787, // poisonbinder girth
 }
@@ -174,9 +175,9 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
 	substituteEmptySlotOnly[items.Item_Ring] = 86957    // heroic bladed tempest ring
 
-	// finder := loaders.ItemFinder_SiegeStrengthPlateTank
+	finder := loaders.ItemFinder_SiegeStrengthPlateTank
 	// finder := loaders.ItemFinder_Ordos
-	finder := loaders.ItemFinder_TimelessPlate
+	// finder := loaders.ItemFinder_TimelessPlate
 
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{
