@@ -110,7 +110,7 @@ func addItem(itemObj map[string]any) {
 	}
 
 	handType := getIntOrDefault(itemObj, "handType", 0)
-	slot := extern_stats.MapSlotToGear(itemType, handType)
+	slot := items.MapSlotToGear(itemType, handType)
 
 	armorType := convertArmorType(getIntOrDefault(itemObj, "armorType", -1))
 

@@ -240,9 +240,9 @@ func ForPointer[T any](slice []T) iter.Seq[*T] {
 }
 
 // guarantees that each ranking number is used in range, even given duplicate numbers
-func CalculateRanking[T any](highGood bool, inputData []T, toValue func(*T) float64) iter.Seq2[*T, int] {
+func CalculateRanking[T any](highGood bool, inputData []T, toScore func(*T) float64) iter.Seq2[*T, int] {
 	type internalEntry struct {
-		value   float64
+		score   float64
 		pointer *T
 	}
 
@@ -250,21 +250,83 @@ func CalculateRanking[T any](highGood bool, inputData []T, toValue func(*T) floa
 	for i := range len(inputData) {
 		pointer := &inputData[i]
 		rankArray[i] = internalEntry{
-			toValue(pointer),
+			toScore(pointer),
 			pointer,
 		}
 	}
 
 	if highGood {
-		slices.SortFunc(rankArray, func(a, b internalEntry) int { return cmp.Compare(a.value, b.value) })
+		slices.SortFunc(rankArray, func(a, b internalEntry) int { return cmp.Compare(a.score, b.score) })
 	} else {
-		slices.SortFunc(rankArray, func(a, b internalEntry) int { return cmp.Compare(b.value, a.value) })
+		slices.SortFunc(rankArray, func(a, b internalEntry) int { return cmp.Compare(b.score, a.score) })
 	}
 
 	return func(yield func(*T, int) bool) {
 		for i := range len(inputData) {
 			entry := &rankArray[i]
 			if !yield(entry.pointer, i) {
+				return
+			}
+		}
+	}
+}
+
+type HiLoInt struct {
+	Lo int
+	Hi int
+}
+
+func (hilo HiLoInt) Overlap(other HiLoInt) bool {
+	return hilo.Between(other.Lo) || hilo.Between(other.Hi) || other.Between(hilo.Lo) || other.Between(hilo.Hi)
+}
+
+func (hilo HiLoInt) Between(check int) bool {
+	return hilo.Lo <= check && check <= hilo.Hi
+}
+
+// guarantees that each ranking number is used in range, even given duplicate numbers
+func CalculateRankingRanges[T any](highGood bool, inputData []T, toScore func(*T) float64) iter.Seq2[*T, HiLoInt] {
+	if len(inputData) == 0 {
+		return func(yield func(*T, HiLoInt) bool) {}
+	}
+
+	type internalEntry struct {
+		score   float64
+		pointer *T
+	}
+
+	rankArray := make([]internalEntry, len(inputData))
+	for i := range len(inputData) {
+		pointer := &inputData[i]
+		rankArray[i] = internalEntry{
+			toScore(pointer),
+			pointer,
+		}
+	}
+
+	if highGood {
+		slices.SortFunc(rankArray, func(a, b internalEntry) int { return cmp.Compare(a.score, b.score) })
+	} else {
+		slices.SortFunc(rankArray, func(a, b internalEntry) int { return cmp.Compare(b.score, a.score) })
+	}
+
+	grouped := make(map[float64]HiLoInt)
+	for rankIndex := range rankArray {
+		entryScore := rankArray[rankIndex].score
+		if hiLo, hasExisting := grouped[entryScore]; hasExisting {
+			hiLo.Hi = rankIndex
+			grouped[entryScore] = hiLo
+		} else {
+			grouped[entryScore] = HiLoInt{Lo: rankIndex, Hi: rankIndex}
+		}
+	}
+
+	return func(yield func(*T, HiLoInt) bool) {
+		for i := range rankArray {
+			entry := &rankArray[i]
+			score := rankArray[i].score
+			hiLo := grouped[score]
+			if !yield(entry.pointer, hiLo) {
 				return
 			}
 		}

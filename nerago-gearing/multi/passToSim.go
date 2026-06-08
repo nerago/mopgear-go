@@ -2,7 +2,6 @@ package multi
 
 import (
 	"cmp"
-	"math"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/multi/multi_types"
@@ -207,6 +206,26 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 }
 
 func (job *MultiSetJob) suggestResultFromRankings(results []simulateMultiResult) {
+	// type rankable struct {
+	// 	result        *simulateMultiResult
+	// 	simRankDetail map[simulate.SimType]int
+	// 	simScore      float64
+	// }
+	// entries := util.MapSliceAsNew(results, func(result *simulateMultiResult) rankable {
+	// 	return rankable{
+	// 		result:        result,
+	// 		simRankDetail: make(map[simulate.SimType]int),
+	// 	}
+	// })
+
+	// // score each sim
+	// for _, simType := range stathighs.G_RequiredSims {
+	// 	for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), entries, func(x *rankable) float64 { return x.input.SimResult.Get(simType) }) {
+	// 		entry.simRankDetail[simType] = simDetailRank
+	// 		entry.combinedSimRankScore += float64(simDetailRank) * simRatios.Get(simType)
+	// 	}
+	// }
+
 	simResultTypeList := []simulate.SimType{simulate.Sim_DPS, simulate.Sim_DTPS, simulate.Sim_TMI, simulate.Sim_DEATH}
 	rankInputArrays := util.MapMapSlice[int, simulate.SimType, float64]{}
 	for _, result := range results {
@@ -222,20 +241,16 @@ func (job *MultiSetJob) suggestResultFromRankings(results []simulateMultiResult)
 		for _, simType := range simResultTypeList {
 			rankInputArrays.MapInternalSlice(paramIndex, simType, func(rankValues []float64) []float64 {
 				if simType.IsHighGood() {
-					// decending order (best first)
-					slices.SortFunc(rankValues, func(a, b float64) int { return cmp.Compare(b, a) })
+					slices.SortFunc(rankValues, func(a, b float64) int { return cmp.Compare(a, b) })
 				} else {
-					// ascending order (best first)
-					slices.Sort(rankValues)
+					slices.SortFunc(rankValues, func(a, b float64) int { return cmp.Compare(b, a) })
 				}
-
 				return rankValues
 			})
 		}
 	}
 
 	best := util_rank.BestCollector1[simulateMultiResult]{}
-	best.BestValue = math.Inf(-1)
 
 	for _, result := range results {
 		sumOfRanks := 0
@@ -247,7 +262,7 @@ func (job *MultiSetJob) suggestResultFromRankings(results []simulateMultiResult)
 				sumOfRanks += valueRank
 			}
 		}
-		best.Offer(&result, float64(-sumOfRanks))
+		best.Offer(&result, float64(sumOfRanks))
 	}
 
 	job.printer.Println("Best ranked result")

@@ -105,6 +105,8 @@ var substituteItemsMiti = []items.ItemId{
 	94820, // caustic spike bracers
 	95141, // shado assault loop
 	96420, // talisman of angry spirits
+	101882, // cliffbreaker helm exp/mastery
+	103787, // poisonbinder girth
 }
 
 var ignoredItems = []items.ItemId{
@@ -172,9 +174,9 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
 	substituteEmptySlotOnly[items.Item_Ring] = 86957    // heroic bladed tempest ring
 
-	finder := loaders.ItemFinder_SiegeStrengthPlateTank
+	// finder := loaders.ItemFinder_SiegeStrengthPlateTank
 	// finder := loaders.ItemFinder_Ordos
-	// finder := loaders.ItemFinder_TimelessPlate
+	finder := loaders.ItemFinder_TimelessPlate
 
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{

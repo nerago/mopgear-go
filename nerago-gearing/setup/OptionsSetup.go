@@ -62,6 +62,29 @@ func OptionsSetup_ExactEquippedOnly(equipped []loaders.EquippedItem, model *mode
 	return resultMap
 }
 
+func OptionsSetup_DeriveWithAlternateGems(original *items.FullItem, gemAlternate *stats.GemInfo, model *model.Model, printer *util.PrintRecorder) *items.FullItem {
+	equipItem := itemToEquipItem(original)
+
+	for i := range equipItem.GemChoice {
+		equipItem.GemChoice[i] = gemAlternate.Id
+	}
+
+	alternateItem := loadItemBasic(equipItem.ItemId, equipItem.UpgradeStep, printer)
+	alternateItem = addDetailFromEquip(alternateItem, equipItem, model, MissingEnchant_Panic, printer)
+	return &alternateItem
+}
+
+func itemToEquipItem(full *items.FullItem) loaders.EquippedItem {
+	return loaders.EquippedItem{
+		ItemId:        full.ItemId(),
+		GemChoice:     util.MapSliceAsNew(full.GemChoice(), func(x *stats.GemInfo) uint32 { return x.Id }),
+		EnchantChoice: full.EnchantChoice(),
+		RandomSuffix:  full.RandomSuffix(),
+		UpgradeStep:   full.UpgradeLevel(),
+		Reforging:     db.WowSimDB_ReforgeToId(full.Reforge()),
+	}
+}
+
 func loadItemBasic(itemId items.ItemId, upgradeLevel int8, printer *util.PrintRecorder) items.FullItem {
 	return *db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemId, upgradeLevel, printer)
 }

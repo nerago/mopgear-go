@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/solver"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
 )
@@ -43,6 +44,11 @@ func (job *MultiSetJob) prepareInitial() {
 
 	job.prepareRatingMultipliers()
 
+	if job.alternateGemming != nil {
+		for i := range job.params {
+			job.params[i].setupAlternateGemming(job.alternateGemming)
+		}
+	}
 }
 
 func (param *multiSetParamInternal) prepareStartingGear() {
@@ -240,6 +246,17 @@ func (param *multiSetParamInternal) removeBlocked() {
 		param.job.printer.Printf("BLOCKING ITEM %d\n", itemId)
 		param.itemOptions.RemoveItemIdFromAll(itemId)
 	}
+}
+
+func (param *multiSetParamInternal) setupAlternateGemming(alternateGem *stats.GemInfo) {
+	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
+		existing := param.itemOptions.Get(slot)
+		for _, item := range existing {
+			alternateItem := setup.OptionsSetup_DeriveWithAlternateGems(&item, alternateGem, &param.Model, param.job.printer)
+			param.itemOptions.AddSeveralOptionsSpecific(slot, []items.FullItem{*alternateItem})
+		}
+	}
+	param.itemOptions.RemoveDuplicates()
 }
 
 func (param *multiSetParamInternal) runBaseline() {

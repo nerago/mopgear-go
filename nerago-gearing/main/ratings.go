@@ -973,8 +973,8 @@ func evaluateAccuracy(statWeights map[stats.StatType]float64, inputData []stathi
 		simRankDetail        map[simulate.SimType]int
 		combinedSimRankScore float64
 
-		statRank int
-		simRank  int
+		statRankRange util.HiLoInt
+		simRankRange  util.HiLoInt
 	}
 	accuracyData := util.MapSliceAsNew(inputData, func(input *stathighs.WeightInput) accuracyInfo {
 		return accuracyInfo{
@@ -984,8 +984,8 @@ func evaluateAccuracy(statWeights map[stats.StatType]float64, inputData []stathi
 	})
 
 	// score stats
-	for entry, statRank := range util.CalculateRanking(true, accuracyData, func(x *accuracyInfo) float64 { return calcStatScore(x.input, statWeights) }) {
-		entry.statRank = statRank
+	for entry, statRank := range util.CalculateRankingRanges(true, accuracyData, func(x *accuracyInfo) float64 { return calcStatScore(x.input, statWeights) }) {
+		entry.statRankRange = statRank
 	}
 
 	// score each sim
@@ -997,22 +997,35 @@ func evaluateAccuracy(statWeights map[stats.StatType]float64, inputData []stathi
 	}
 
 	// rank combined sims
-	for entry, simRank := range util.CalculateRanking(true, accuracyData, func(x *accuracyInfo) float64 { return x.combinedSimRankScore }) {
-		entry.simRank = simRank
+	for entry, simRank := range util.CalculateRankingRanges(true, accuracyData, func(x *accuracyInfo) float64 { return x.combinedSimRankScore }) {
+		entry.simRankRange = simRank
 	}
 
 	// compute average difference between stat rank and sim rank
-	// TODO make allowance for duplicate numbers, should be permissive where in that range it falls
 	totalComparePercents := 0.0
 	for info := range util.ForPointer(accuracyData) {
-		// 100% if ranks are equal, 90% if average 10% difference, etc
-		diff := util.AbsIntDiff(info.simRank, info.statRank)
-		diffAsPercent := float64(diff) / float64(len(accuracyData))
-		percentScore := 100.0 - (diffAsPercent * 100.0)
+		percentScore := rangePercentDiff(info.simRankRange, info.statRankRange, len(accuracyData))
 		totalComparePercents += percentScore
 	}
-
 	return totalComparePercents / float64(len(accuracyData))
+}
+
+// 100% if ranks are equal, 90% if average 10% difference, etc
+func rangePercentDiff(one, two util.HiLoInt, fullLength int) float64 {
+	var diff int
+	if one.Overlap(two) {
+		return 100.0
+	} else if one.Hi < two.Lo {
+		diff = two.Lo - one.Hi
+	} else if two.Hi < one.Lo {
+		diff = one.Lo - two.Hi
+	} else {
+		panic("logic issue")
+	}
+
+	diffAsRatio := float64(diff) / float64(fullLength)
+	percentScore := 100.0 - (diffAsRatio * 100.0)
+	return percentScore
 }
 
 func calcStatScore(input *stathighs.WeightInput, statWeights map[stats.StatType]float64) float64 {

@@ -30,6 +30,26 @@ func (block *StatBlock) MultiplyScalar(factor uint32, out *StatBlock) {
 	}
 }
 
+func (block *StatBlock) SetFromAddOthers(a, b *StatBlock) {
+	StatBlock_Add_Into(a, b, block)
+}
+
+func (block *StatBlock) SetFromAddSubtractOthers(add1, add2, subtract *StatBlock) {
+	StatBlock_AddAndSubtract_Into(add1, add2, subtract, block)
+}
+
+func (block *StatBlock) IncrementMutating(other *StatBlock) {
+	StatBlock_Increment_Mutating(block, other)
+}
+
+func (block *StatBlock) MultiplyForTotalSum(other *StatBlock) float64 {
+	return StatBlock_MultiplyForTotalSum(block, other)
+}
+
+func (block *StatBlock) Equals(other *StatBlock) bool {
+	return StatBlock_Equals(block, other)
+}
+
 func (block *StatBlock) IsEmpty() bool {
 	for i := range block {
 		if block[i] != 0 {

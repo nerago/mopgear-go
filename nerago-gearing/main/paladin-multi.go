@@ -40,40 +40,40 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		GearFile:                  files.GearFileRet,
 		Model:                     model.Model_PallyRet(),
 		RequestRatingPercent:      0.01,
-		ExtraUpgradeLevel:         0,
+		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 0,
 	}
 	protDps := multi_types.MultiSetParam{
-		Label:    "Prot-Damage",
-		GearFile: files.GearFileProtDps,
-		Model:    model.Model_PallyProtDps(),
+		Label:                     "Prot-Damage",
+		GearFile:                  files.GearFileProtDps,
+		Model:                     model.Model_PallyProtDps(),
 		RequestRatingPercent:      0.09,
-		ExtraUpgradeLevel:         0,
-		ForceUpgradeExistingItems: 0,
+		ExtraUpgradeLevel:         2,
+		ForceUpgradeExistingItems: 2,
 	}
 	protCompromise := multi_types.MultiSetParam{
-		Label:    "Prot-Compromise",
-		GearFile: files.GearFileProtCompromise,
-		Model:    model.Model_PallyProtCompromise(),
+		Label:                     "Prot-Compromise",
+		GearFile:                  files.GearFileProtCompromise,
+		Model:                     model.Model_PallyProtCompromise(),
 		RequestRatingPercent:      0.30,
-		ExtraUpgradeLevel:         0,
-		ForceUpgradeExistingItems: 0,
+		ExtraUpgradeLevel:         2,
+		ForceUpgradeExistingItems: 2,
 	}
 	protMitigationNoSet := multi_types.MultiSetParam{
-		Label:    "Prot-Mitigation-NoSet",
-		GearFile: files.GearFileProtMitigationNoSet,
-		Model:    model.Model_PallyProtMitigation_NoSet(),
+		Label:                     "Prot-Mitigation-NoSet",
+		GearFile:                  files.GearFileProtMitigationNoSet,
+		Model:                     model.Model_PallyProtMitigation_NoSet(),
 		RequestRatingPercent:      0.45,
-		ExtraUpgradeLevel:         0,
-		ForceUpgradeExistingItems: 0,
+		ExtraUpgradeLevel:         2,
+		ForceUpgradeExistingItems: 2,
 	}
 	protMitigationWithSet := multi_types.MultiSetParam{
-		Label:    "Prot-Mitigation-WithSet",
-		GearFile: files.GearFileProtMitigationWithSet,
-		Model:    model.Model_PallyProtMitigation_WithSet(),
+		Label:                     "Prot-Mitigation-WithSet",
+		GearFile:                  files.GearFileProtMitigationWithSet,
+		Model:                     model.Model_PallyProtMitigation_WithSet(),
 		RequestRatingPercent:      0.15,
-		ExtraUpgradeLevel:         0,
-		ForceUpgradeExistingItems: 0,
+		ExtraUpgradeLevel:         2,
+		ForceUpgradeExistingItems: 2,
 	}
 
 	ret.AddExtraItems([]items.ItemId{
@@ -129,6 +129,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96394, // frozen warlord bracer heroic
 
 		101882, // cliffbreaker helm exp/mastery
+		103787, // poisonbinder girth
 	})
 	blockHelmetsWithoutCapacitance(&ret)
 	ret.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
@@ -198,6 +199,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96436, // tortos shell heroic
 
 		101882, // cliffbreaker helm exp/mastery
+		103787, // poisonbinder girth
 	})
 	blockHelmetsWithoutCapacitance(&protDps)
 	// protDps.ForceSingleSlot(items.Equip_Ring2, 96500)               // scaled tyrant heroic
@@ -271,6 +273,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96436, // tortos shell heroic
 
 		101882, // cliffbreaker helm exp/mastery
+		103787, // poisonbinder girth
 	})
 	blockHelmetsWithoutCapacitance(&protCompromise)
 	protCompromise.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
@@ -342,6 +345,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96436, // tortos shell heroic
 
 		101882, // cliffbreaker helm exp/mastery
+		103787, // poisonbinder girth
 	})
 	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
@@ -409,6 +413,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96436, // tortos shell heroic
 
 		101882, // cliffbreaker helm exp/mastery
+		103787, // poisonbinder girth
 	})
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
@@ -422,6 +427,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// protMitigationNoSet.AddBagsExtra()
 	// protMitigationWithSet.AddBagsExtra()
 
+	// job.SetAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
+
 	job.AddSetParam(ret)
 	job.AddSetParam(protDps)
 	job.AddSetParam(protCompromise)
@@ -429,7 +436,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	job.AddSetParam(protMitigationWithSet)
 
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
-	job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
+	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
 	// job.FindHighsResult_Sample(1)
 	job.FindSeveralHighsAndSim()

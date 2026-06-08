@@ -9,6 +9,10 @@ type MapSlice[K comparable, V any] struct {
 	data map[K][]V
 }
 
+func (mapslice MapSlice[K, V]) Init(size int) {
+	mapslice.data = make(map[K][]V, size)
+}
+
 func (mapslice *MapSlice[K, V]) Clear() {
 	clear(mapslice.data)
 }

@@ -1,6 +1,7 @@
 package multi
 
 import (
+	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/multi/multi_types"
@@ -19,6 +20,7 @@ type MultiSetJob struct {
 	params              []multiSetParamInternal
 	fixedForge          map[items.ItemId]stats.ReforgeRecipe
 	distinctUsageGroups map[items.ItemId]distinctUsageGroups
+	alternateGemming    *stats.GemInfo
 	bagsGear            loaders.EquippedArray
 	simRunSize          simulate.WowSim_RunSize
 }
@@ -79,4 +81,9 @@ func findLabelInParams(label string, group []multi_types.MultiSetParam) bool {
 		}
 	}
 	return false
+}
+
+func (job *MultiSetJob) SetAlternateGemming(block stats.StatBlock) {
+	gem := db.GemData_ByStat(&block)
+	job.alternateGemming = &gem
 }
