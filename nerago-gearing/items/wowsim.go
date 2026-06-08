@@ -18,7 +18,7 @@ func (item *FullItem) getAsWowSimItem() (simBaseItem *core.Item, simScale *proto
 	panic("level scale not found")
 }
 
-func (item *FullItem) randomStatsFromWowSim(randomSuffix int32) stats.StatBlock {
+func (item *FullItem) randomStatsFromWowSim(randomSuffix int32) (stats.StatBlock, string) {
 	_, simScale := item.getAsWowSimItem()
 
 	suffixObject, knownSuffix := core.RandomSuffixesByID[randomSuffix]
@@ -28,7 +28,7 @@ func (item *FullItem) randomStatsFromWowSim(randomSuffix int32) stats.StatBlock 
 
 	simStats := suffixObject.Stats.Multiply(float64(simScale.RandPropPoints) / 10000.).Floor()
 	statBlock := extern_stats.SimStatsToGearStatBlock(simStats)
-	return statBlock
+	return statBlock, suffixObject.Name
 }
 
 func MapSlotToGear(itemType, handType int32) SlotItem {

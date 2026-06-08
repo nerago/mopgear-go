@@ -29,6 +29,8 @@ const (
 
 	legendMeleeCloak = 102249
 	legendTankCloak  = 102250
+
+	ringScaledTyrant = 96500
 )
 
 func PaladinMultiRun(printer *util.PrintRecorder) {
@@ -89,7 +91,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		87015, // heroic clawfeet
 		86979, // heroic impaling treads
 		87024, // null greathelm
-		94726, // cloudbreaker belt normal
 		96373, // cloudbreaker belt heroic
 		96478, // treads of the blind heroic
 
@@ -132,6 +133,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		103787, // poisonbinder girth
 	})
 	blockHelmetsWithoutCapacitance(&ret)
+	ret.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
 	ret.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
 	ret.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
 	ret.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
@@ -148,7 +150,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		86979, // heroic impaling treads
 		96478, // treads of the blind heroic
 
-		94726, // cloudbreaker belt normal
 		96373, // cloudbreaker belt heroic
 
 		legendMeleeCloak,
@@ -161,7 +162,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		96550, // doomed crown heroic
 		87024, // null greathelm
-		95778, // crown golden golem celestial [would need gem]
 		95282, // ret tier15 normal head
 		95292, // prot tier15 head normal
 
@@ -202,7 +202,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		103787, // poisonbinder girth
 	})
 	blockHelmetsWithoutCapacitance(&protDps)
-	// protDps.ForceSingleSlot(items.Equip_Ring2, 96500)               // scaled tyrant heroic
+	protDps.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
 	protDps.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
 	protDps.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark) // zandalar trinket
 	protDps.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
@@ -219,7 +219,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		86979, // heroic impaling treads
 		96478, // treads of the blind heroic
 
-		94726, // cloudbreaker belt normal
 		96373, // cloudbreaker belt heroic
 
 		96428, // shell-coated wrists
@@ -233,8 +232,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		96550, // doomed crown heroic
 		87024, // null greathelm
-		95778, // crown golden golem celestial [would need gem, acceptable]
-		95282, // ret tier15 normal head [would need gem]
+		95282, // ret tier15 normal head
 
 		95910, // ret tier15 chest celestial
 		95281, // ret tier15 gloves normal
@@ -276,6 +274,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		103787, // poisonbinder girth
 	})
 	blockHelmetsWithoutCapacitance(&protCompromise)
+	protCompromise.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
 	protCompromise.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
 	protCompromise.ForceSingleSlot(items.Equip_Trinket2, trinketSoulBarrier)
 	protCompromise.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
@@ -348,6 +347,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		103787, // poisonbinder girth
 	})
 	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
+	protMitigationNoSet.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
@@ -416,6 +416,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		103787, // poisonbinder girth
 	})
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
@@ -436,11 +437,11 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	job.AddSetParam(protMitigationWithSet)
 
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
-	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
+	job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
 	// job.FindHighsResult_Sample(1)
-	job.FindSeveralHighsAndSim()
-	// job.FindHighsResultPerPermute(12)
+	// job.FindSeveralHighsAndSim()
+	job.FindHighsResultPerPermute(12)
 	// job.RunWithMinimumHaste("Prot-Mitigation-WithSet", 11000, 18000, 250)
 	// job.RunWithMinimumHaste("Prot-Mitigation-NoSet", 11000, 18000, 250)
 }

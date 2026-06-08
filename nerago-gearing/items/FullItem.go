@@ -3,7 +3,6 @@ package items
 import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
-	"strconv"
 )
 
 // /////////////////////////////////////////////////////////////
@@ -218,71 +217,15 @@ func (item *FullItem) AppendString(build *util.StringBuild2) {
 	build.WriteString(" }")
 }
 
-var randomAmountOffPieceLookup = map[uint16]uint32{
-	496: 680, // complete guess, probably optimistic
-	502: 712,
-	522: 858,
-	528: 907,
-	535: 969,
-	536: 978,
-	541: 1019,
-	549: 1103,
-}
-
-var randomAmountMainPieceLookup = map[uint16]uint32{
-	535: 932,
-	543: 1004,
-}
-
 func (item *FullItem) MakeItemWithRandomSuffix(randomSuffix int32) *FullItem {
 	if randomSuffix != 0 {
-		wowSimStats := item.randomStatsFromWowSim(randomSuffix)
-
-		var knownAmount bool
-		var amount uint32
-		if item.SlotItem() == Item_Head || item.SlotItem() == Item_Leg || item.SlotItem() == Item_Chest {
-			amount, knownAmount = randomAmountMainPieceLookup[item.ItemLevel()]
-		} else if item.SlotItem() == Item_Wrist || item.SlotItem() == Item_Belt {
-			amount, knownAmount = randomAmountOffPieceLookup[item.ItemLevel()]
-		}
-		if !knownAmount {
-			panic("don't know for ilevel " + strconv.FormatInt(int64(item.ItemLevel()), 10))
-		}
-
-		addStats := stats.StatBlock{}
-		switch randomSuffix {
-		case -336:
-			addStats[stats.Stat_Crit] = amount
-		case -337:
-			addStats[stats.Stat_Hit] = amount
-		case -338:
-			addStats[stats.Stat_Expertise] = amount
-		case -339:
-			addStats[stats.Stat_Mastery] = amount
-		case -340:
-			addStats[stats.Stat_Haste] = amount
-		case -341:
-			addStats[stats.Stat_Parry] = amount
-		case -342:
-			addStats[stats.Stat_Dodge] = amount
-		case -455:
-			addStats[stats.Stat_Expertise] = amount
-			addStats[stats.Stat_Mastery] = amount
-		case -454:
-			addStats[stats.Stat_Haste] = amount
-			addStats[stats.Stat_Mastery] = amount
-		default:
-			panic("unknown random suffix")
-		}
-
-		if !addStats.Equals(&wowSimStats) {
-			panic("disagree on stats")
-		}
+		wowSimStats, suffix := item.randomStatsFromWowSim(randomSuffix)
 
 		newStats := stats.StatBlock{}
-		newStats.SetFromAddOthers(item.StatBase(), &addStats)
+		newStats.SetFromAddOthers(item.StatBase(), &wowSimStats)
 
 		item = item.NewWithChangedStatsSuffix(newStats, randomSuffix)
+		item.baseName += " " + suffix
 	}
 
 	return item

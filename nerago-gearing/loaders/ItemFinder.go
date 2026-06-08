@@ -53,14 +53,12 @@ func ItemFinder_TimelessPlate(_ stats.Difficulty) []*items.FullItem {
 		if (strings.Contains(item.BaseName(), "Cliffbreaker") || strings.Contains(item.BaseName(), "Elder Tortoiseshell")) && item.ItemLevel() == targetLevel {
 			onlyCoreStats(item)
 
-			var randomId int32
-			if item.SlotItem() == items.Item_Head || item.SlotItem() == items.Item_Leg || item.SlotItem() == items.Item_Chest || item.SlotItem() == items.Item_Ring {
-				randomId = -454 // haste/mastery
-			} else if item.SlotItem() == items.Item_Wrist || item.SlotItem() == items.Item_Belt {
-				randomId = -340 // haste
-			}
+			var randomId int32 = -454                               // haste/mastery
 			item = item.MakeItemWithRandomSuffix(randomId) // give it haste
+			result = append(result, item)
 
+			randomId = -340                                // haste
+			item = item.MakeItemWithRandomSuffix(randomId) // give it haste
 			result = append(result, item)
 		}
 	}
