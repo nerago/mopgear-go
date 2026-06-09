@@ -226,7 +226,7 @@ func (grid *GridStatWeightProcess) unitValueCombinationAddToModel(baseUnitSample
 	offsetAbs := grid.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "OFFSET ABS " + debugText})
 	// utilhighs.AbsoluteValueFromDiff(&grid.input, offsetSigned, offsetAbs)
 
-	utilhighs.AbsoluteValueFromDiff(&grid.input, thisDetailWeightCol, baseUnitSample.value, baseDetailWeightCol, thisUnitSample.value, offsetAbs, "OFFSET ABS "+debugText)
+	utilhighs.AbsoluteValueFromDiffTwoVars(&grid.input, thisDetailWeightCol, baseUnitSample.value, baseDetailWeightCol, thisUnitSample.value, offsetAbs, "OFFSET ABS "+debugText)
 }
 
 func (grid *GridStatWeightProcess) calcTotalRatings() {

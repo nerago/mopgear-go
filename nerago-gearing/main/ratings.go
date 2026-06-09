@@ -830,34 +830,34 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	// writeWeightInputsToFile(inputDataGrid, "sim-stats-compare-grid.json")
 	// writeWeightInputsToFile(inputDataRandom, "sim-stats-compare-rand.json")
 	// writeWeightBasicInputsToFile(inputDataBasic, basicSimBase, "sim-stats-compare-basic.json")
-	inputDataBasic, basicSimBase := readWeightBasicInputsFile("sim-stats-compare-basic.json")
+	// inputDataBasic, basicSimBase := readWeightBasicInputsFile("sim-stats-compare-basic.json")
 	inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
 	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
 	mixedInputData := slices.Concat(inputDataGrid, inputDataRandom)
 
 	resultsByAlgorithm := make(map[string]map[stats.StatType]float64)
 
-	printer.Println("################# BASIC ###################")
-	{
-		basic := stathighs.BasicStatWeightProcess{}
-		basic.Init(printer)
-		basic.SetTargetRatios(targetRatio)
-		basic.SetBaseline(basicSimBase)
-		for _, data := range inputDataBasic {
-			basic.AddSimData(data.IncrementStat, uint32(data.IncrementValue), data.SimResult)
-		}
-		resultsByAlgorithm["basic"] = basic.Run()
-	}
+	// printer.Println("################# BASIC ###################")
+	// {
+	// 	basic := stathighs.BasicStatWeightProcess{}
+	// 	basic.Init(printer)
+	// 	basic.SetTargetRatios(targetRatio)
+	// 	basic.SetBaseline(basicSimBase)
+	// 	for _, data := range inputDataBasic {
+	// 		basic.AddSimData(data.IncrementStat, uint32(data.IncrementValue), data.SimResult)
+	// 	}
+	// 	resultsByAlgorithm["basic"] = basic.Run()
+	// }
 
-	printer.Println("################# COMPLEX ###################")
-	{
-		comp := stathighs.ComplexStatWeightProcess{}
-		comp.Init(printer)
-		comp.SetTargetRatios(targetRatio)
-		comp.SetMinimumIncludeRate(1)
-		comp.SupplyData(inputDataRandom)
-		resultsByAlgorithm["complex"] = comp.Run()
-	}
+	// printer.Println("################# COMPLEX ###################")
+	// {
+	// 	comp := stathighs.ComplexStatWeightProcess{}
+	// 	comp.Init(printer)
+	// 	comp.SetTargetRatios(targetRatio)
+	// 	comp.SetMinimumIncludeRate(1)
+	// 	comp.SupplyData(inputDataRandom)
+	// 	resultsByAlgorithm["complex"] = comp.Run()
+	// }
 
 	// printer.Println("################# FITTING ###################")
 	// {
@@ -887,40 +887,40 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	// 	resultsByAlgorithm["grid2"] = grid2.Run()
 	// }
 
-	printer.Println("################# RANKING0 ###################")
-	{
-		ranking := stathighs.RankingStatWeightProcess{}
-		ranking.Init(printer)
-		ranking.SetTargetRatios(targetRatio)
-		// ranking.SupplyData(inputDataGrid)
-		ranking.SupplyData(mixedInputData)
-		ranking.RANKMODE = 0
+	// printer.Println("################# RANKING0 ###################")
+	// {
+	// 	ranking := stathighs.RankingStatWeightProcess{}
+	// 	ranking.Init(printer)
+	// 	ranking.SetTargetRatios(targetRatio)
+	// 	// ranking.SupplyData(inputDataGrid)
+	// 	ranking.SupplyData(mixedInputData)
+	// 	ranking.RANKMODE = 0
 
-		resultsByAlgorithm["ranking0"] = ranking.Run()
-	}
+	// 	resultsByAlgorithm["ranking0"] = ranking.Run()
+	// }
 
-	printer.Println("################# RANKING1 ###################")
-	{
-		ranking := stathighs.RankingStatWeightProcess{}
-		ranking.Init(printer)
-		ranking.SetTargetRatios(targetRatio)
-		// ranking.SupplyData(inputDataGrid)
-		ranking.SupplyData(mixedInputData)
-		ranking.RANKMODE = 1
+	// printer.Println("################# RANKING1 ###################")
+	// {
+	// 	ranking := stathighs.RankingStatWeightProcess{}
+	// 	ranking.Init(printer)
+	// 	ranking.SetTargetRatios(targetRatio)
+	// 	// ranking.SupplyData(inputDataGrid)
+	// 	ranking.SupplyData(mixedInputData)
+	// 	ranking.RANKMODE = 1
 
-		resultsByAlgorithm["ranking1"] = ranking.Run()
-	}
-	printer.Println("################# RANKING2 ###################")
-	{
-		ranking := stathighs.RankingStatWeightProcess{}
-		ranking.Init(printer)
-		ranking.SetTargetRatios(targetRatio)
-		// ranking.SupplyData(inputDataGrid)
-		ranking.SupplyData(mixedInputData)
-		ranking.RANKMODE = 2
+	// 	resultsByAlgorithm["ranking1"] = ranking.Run()
+	// }
+	// printer.Println("################# RANKING2 ###################")
+	// {
+	// 	ranking := stathighs.RankingStatWeightProcess{}
+	// 	ranking.Init(printer)
+	// 	ranking.SetTargetRatios(targetRatio)
+	// 	// ranking.SupplyData(inputDataGrid)
+	// 	ranking.SupplyData(mixedInputData)
+	// 	ranking.RANKMODE = 2
 
-		resultsByAlgorithm["ranking2"] = ranking.Run()
-	}
+	// 	resultsByAlgorithm["ranking2"] = ranking.Run()
+	// }
 	printer.Println("################# RANKING3 ###################")
 	{
 		ranking := stathighs.RankingStatWeightProcess3{}
@@ -928,10 +928,10 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		ranking.SetTargetRatios(targetRatio)
 		// ranking.SupplyData(inputDataGrid)
 		// ranking.SupplyData(mixedInputData[0:15])
-		// ranking.SupplyData(mixedInputData[0:64])
-		ranking.SupplyData(mixedInputData)
+		ranking.SupplyData(mixedInputData[0:350])
+		// ranking.SupplyData(mixedInputData)
 
-		resultsByAlgorithm["ranking3"] = ranking.Run()
+		resultsByAlgorithm["ranking3a"], resultsByAlgorithm["ranking3b"] = ranking.Run()
 	}
 
 	// printer.Println("################# SELECTIVE GRID ###################")

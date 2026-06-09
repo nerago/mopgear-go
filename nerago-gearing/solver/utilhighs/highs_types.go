@@ -7,6 +7,7 @@ import (
 	"os"
 	"paladin_gearing_go/util"
 	"slices"
+	"strconv"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
@@ -96,8 +97,27 @@ func (input *InputBuilder) CreateColumnForLinearObjective(varType highs.Variable
 	return input.vars.createForLinear(varType, lower, upper, cost, linearObjectiveIndex, debug)
 }
 
-func (input *InputBuilder) SetInitialSolutionValue(columnNumber ColumnIndex, value float64)  {
-	input.vars.partialSolution = append(input.vars.partialSolution, indexAndValue{columnNumber: columnNumber, value: value})
+func (input *InputBuilder) ClearInitialSolutionValue() {
+	clear(input.vars.partialSolution)
+}
+
+func (input *InputBuilder) SetInitialSolutionValue(columnNumber ColumnIndex, value float64) {
+	if input.vars.partialSolution == nil {
+		input.vars.partialSolution = make(map[ColumnIndex]float64)
+	}
+	if 0 <= columnNumber && int(columnNumber) < len(input.vars.colLower) {
+		input.vars.partialSolution[columnNumber] = value
+	} else {
+		panic("invalid column number")
+	}
+}
+
+func (input *InputBuilder) GetInitialSolutionValue(columnNumber ColumnIndex) float64 {
+	value, hasValue := input.vars.partialSolution[columnNumber]
+	if !hasValue {
+		panic("initial not set")
+	}
+	return value
 }
 
 func (input *InputBuilder) RunHighsThenDiagnose(printer *util.PrintRecorder) *highs.Solution {
@@ -173,9 +193,11 @@ func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 	if len(input.vars.partialSolution) > 0 {
 		indexArray := make([]int32, len(input.vars.partialSolution))
 		valueArray := make([]float64, len(input.vars.partialSolution))
-		for i := range input.vars.partialSolution {
-			indexArray[i] = int32(input.vars.partialSolution[i].columnNumber)
-			valueArray[i] = input.vars.partialSolution[i].value
+		index := 0
+		for columnNumber, value := range input.vars.partialSolution {
+			indexArray[index] = int32(columnNumber)
+			valueArray[index] = value
+			index++
 		}
 		verifyNoError(solver.SetSparseSolution(indexArray, valueArray))
 	}
@@ -260,7 +282,7 @@ type variableArrayBuilder struct {
 	colUpper []float64            // Column upper bounds
 	debug    []DebugContext
 
-	partialSolution  []indexAndValue
+	partialSolution  map[ColumnIndex]float64
 	linearObjectives []linearObjectiveFields
 }
 
@@ -465,4 +487,43 @@ func (mat *constraintMatrixBuilder) createSolverInputArrays() (numRows int32, lo
 	}
 
 	return numRows, mat.lowerBound, mat.upperBound, startArray, indexArray, valuesArray
+}
+
+func (input *InputBuilder) ValidateInitialSolutionState() {
+	colValues := make(map[ColumnIndex]float64)
+	for colNum, value := range input.vars.partialSolution {
+		colValues[colNum] = value
+		if value < input.vars.colLower[colNum] || value > input.vars.colUpper[colNum] {
+			panic("initial value out of bounds")
+		}
+		if input.vars.colTypes[colNum] == highs.Integer && math.Round(value) != value {
+			panic("initial value not integer")
+		}
+	}
+
+	for rowIndex := range input.mat.entries {
+		lowerBound := input.mat.lowerBound[rowIndex]
+		upperBound := input.mat.upperBound[rowIndex]
+		entries := input.mat.entries[rowIndex]
+		debug := input.mat.debug[rowIndex]
+
+		anyKnown := false
+		anyUnknown := false
+		sum := 0.0
+		for _, entry := range entries {
+			value, haveValue := colValues[entry.columnNumber]
+			if haveValue {
+				sum += value * entry.value
+				anyKnown = true
+			} else {
+				anyUnknown = true
+			}
+		}
+
+		if anyKnown && !anyUnknown {
+			if sum < lowerBound || sum > upperBound {
+				panic("initial values don't fit row " + strconv.FormatInt(int64(rowIndex), 10) + " " + debug)
+			}
+		}
+	}
 }

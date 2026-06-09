@@ -189,7 +189,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *Weight
 
 		// not based directly on above
 		// weightA * statDiffA - weightB * statDiffB + mismatch = simDiff
-		utilhighs.AbsoluteValueFromDiffWithOffset(&grid2.input,
+		utilhighs.AbsoluteValueFromDiffTwoVarsWithOffset(&grid2.input,
 			weightColumnA, statDiffA,
 			weightColumnB, statDiffB,
 			mismatchCol,
@@ -200,7 +200,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *Weight
 
 func (grid2 *GridStatWeightProcess2) twoSamplesDifferenceAddToModel(oneSample float64, oneWeightCol utilhighs.ColumnIndex, twoSample float64, twoWeightCol utilhighs.ColumnIndex, debugText string) {
 	offsetAbs := grid2.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "OFFSET " + debugText})
-	utilhighs.AbsoluteValueFromDiff(&grid2.input,
+	utilhighs.AbsoluteValueFromDiffTwoVars(&grid2.input,
 		oneWeightCol, twoSample,
 		twoWeightCol, oneSample,
 		offsetAbs, "OFFSET "+debugText)

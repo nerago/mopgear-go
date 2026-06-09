@@ -101,6 +101,13 @@ func (build *ConstraintOrBuilder) FinishAndApply(input *InputBuilder) {
 	zeroIfNone.Finish(input, 0, C_PlusInf)
 }
 
+func ConstraintNot(input *InputBuilder, inputVar, outputVar ColumnIndex) {
+	row := ConstraintRowBuild{Debug: "Not"}
+	row.Add(inputVar, 1)
+	row.Add(outputVar, 1)
+	row.Finish(input, 1, 1)
+}
+
 func AbsoluteValue(input *InputBuilder, inputVar, outputVar ColumnIndex) {
 	negative := ConstraintRowBuild{Debug: "AbsoluteValueNegative"}
 	negative.Add(inputVar, 1)
@@ -114,7 +121,7 @@ func AbsoluteValue(input *InputBuilder, inputVar, outputVar ColumnIndex) {
 }
 
 // untested but should be ok in principle
-func AbsoluteValueFromDiff(input *InputBuilder, inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, debug string) {
+func AbsoluteValueFromDiffTwoVars(input *InputBuilder, inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, debug string) {
 	negative := ConstraintRowBuild{Debug: debug + " AbsoluteValueNegative"}
 	negative.Add(inputOneVar, inputOneCoefficient)
 	negative.Add(inputTwoVar, -inputTwoCoefficient)
@@ -122,13 +129,25 @@ func AbsoluteValueFromDiff(input *InputBuilder, inputOneVar ColumnIndex, inputOn
 	negative.Finish(input, 0, C_PlusInf)
 
 	positive := ConstraintRowBuild{Debug: debug + " AbsoluteValuePositive"}
-	negative.Add(inputOneVar, inputOneCoefficient)
-	negative.Add(inputTwoVar, -inputTwoCoefficient)
+	positive.Add(inputOneVar, inputOneCoefficient)
+	positive.Add(inputTwoVar, -inputTwoCoefficient)
 	positive.Add(outputVar, -1)
 	positive.Finish(input, C_MinusInf, 0)
 }
 
-func AbsoluteValueFromDiffWithOffset(input *InputBuilder, inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, offset float64, debug string) {
+func AbsoluteValueFromDiffOneToConst(input *InputBuilder, inputOneVar ColumnIndex, inputOneCoefficient float64, constCompare float64, outputVar ColumnIndex, debug string) {
+	negative := ConstraintRowBuild{Debug: debug + " AbsoluteValueNegative"}
+	negative.Add(inputOneVar, inputOneCoefficient)
+	negative.Add(outputVar, 1)
+	negative.Finish(input, constCompare, C_PlusInf)
+
+	positive := ConstraintRowBuild{Debug: debug + " AbsoluteValuePositive"}
+	negative.Add(inputOneVar, inputOneCoefficient)
+	positive.Add(outputVar, -1)
+	positive.Finish(input, C_MinusInf, constCompare)
+}
+
+func AbsoluteValueFromDiffTwoVarsWithOffset(input *InputBuilder, inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, offset float64, debug string) {
 	negative := ConstraintRowBuild{Debug: debug + " AbsoluteValueNegative"}
 	negative.Add(inputOneVar, inputOneCoefficient)
 	negative.Add(inputTwoVar, -inputTwoCoefficient)
@@ -154,6 +173,21 @@ func AbsoluteValue_WithToggle(input *InputBuilder, inputVar, outputVar, toggleVa
 	setIfPositive.Add(outputVar, -1)
 	setIfPositive.Add(toggleVar, rangeHigh)
 	setIfPositive.Finish(input, C_MinusInf, rangeHigh)
+}
+
+// much the same as absolute value logic, just bool optimised
+// similarly needs output variable under minimisation pressure
+func Xor(input *InputBuilder, boolOne ColumnIndex, boolTwo ColumnIndex, output ColumnIndex) {
+	negative := ConstraintRowBuild{Debug: "Xor"}
+	negative.Add(boolOne, 1)
+	negative.Add(boolTwo, -1)
+	negative.Add(output, 1)
+	negative.Finish(input, 0, 2)
+	positive := ConstraintRowBuild{Debug: "Xor"}
+	positive.Add(boolOne, 1)
+	positive.Add(boolTwo, -1)
+	positive.Add(output, -1)
+	positive.Finish(input, -2, 0)
 }
 
 func ConstantIsGreaterOrEqualColumn(input *InputBuilder, minimumColumn ColumnIndex, checkValue float64, rangeHigh float64) ColumnIndex {
@@ -262,7 +296,7 @@ func ColumnIsBetweenConstants(input *InputBuilder, checkColumn ColumnIndex, lo, 
 
 func ColumnIsGreaterOrEqualColumn(input *InputBuilder, thresholdLowColumn, checkHighColumn, boolIsGreater ColumnIndex, rangeHigh float64) {
 	// -range <= check - thresh - x*range <= 0
-	// if check>thresh  ->>  -range <= small_positive - x*range <= 0   ->>  -range <= small_positive - x*range  ->> x=0 or 1  
+	// if check>thresh  ->>  -range <= small_positive - x*range <= 0   ->>  -range <= small_positive - x*range  ->> x=0 or 1
 	//                                                                      small_positive - x*range <= 0       ->> x=1
 	// if check<thresh  ->>  -range <= small_negative - x*range <= 0   ->>  -range <= small_negative - x*range  ->> x=0
 	//                                                                      small_negative - x*range <= 0       ->> x=0 or 1
