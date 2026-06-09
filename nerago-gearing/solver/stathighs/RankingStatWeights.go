@@ -67,7 +67,7 @@ func (ranker *RankingStatWeightProcess) SetTargetRatios(targetRatios simulate.Si
 // 	ranker.minimumIncludeRate = percent
 // }
 
-func (ranker *RankingStatWeightProcess) Run() map[stats.StatType]float64 {
+func (ranker *RankingStatWeightProcess) Run() WeightResult {
 	ranker.input = new(utilhighs.InputBuilder)
 	ranker.input.Minimise = true
 	ranker.input.Solver = "ipx"
@@ -292,12 +292,12 @@ func (ranker *RankingStatWeightProcess) processEntrySequencePairOriginal(lower *
 	compareRow.Finish(ranker.input, 0, utilhighs.C_PlusInf)
 }
 
-func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs.Solution) map[stats.StatType]float64 {
+func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs.Solution) WeightResult {
 	ranker.input.DebugPrintColumns(solution, ranker.printer)
 
 	ranker.printer.Println("WEIGHTS")
 
-	statWeightResult := make(map[stats.StatType]float64)
+	statWeightResult := WeightResult_Make()
 	for _, statType := range G_RequiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statScale := ranker.scaleStats[statType]
@@ -305,12 +305,12 @@ func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs
 		modelWeight := solution.ColValues[weightColumn]
 		usableWeight := modelWeight / statScale
 
-		statWeightResult[statType] = usableWeight
+		statWeightResult.Put(statType, usableWeight)
 	}
 
-	divideBy := statWeightResult[stats.Stat_Strength]
+	divideBy := statWeightResult.Get(stats.Stat_Strength)
 	for _, statType := range G_RequiredStats {
-		statWeightResult[statType] /= divideBy
+		statWeightResult.Put(statType, statWeightResult.Get(statType)/divideBy)
 	}
 
 	ranker.reportRankingOfInputs(statWeightResult)
@@ -318,17 +318,9 @@ func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs
 	return statWeightResult
 }
 
-func (ranker *RankingStatWeightProcess) reportRankingOfInputs(statWeightResult map[stats.StatType]float64) {
+func (ranker *RankingStatWeightProcess) reportRankingOfInputs(statWeightResult WeightResult) {
 	ranker.printer.Println("INPUT CHECK (index, combinedSimRank, calcStat)")
 	for i, entry := range ranker.data {
-		ranker.printer.Printf("%4d %8f %8f\n", i, entry.combinedSimScore, calcStatScore(entry.data, statWeightResult))
+		ranker.printer.Printf("%4d %8f %8f\n", i, entry.combinedSimScore, statWeightResult.CalcStatScore(entry.data))
 	}
-}
-
-func calcStatScore(input *WeightInput, statWeights map[stats.StatType]float64) float64 {
-	total := 0.0
-	for statType, weightValue := range statWeights {
-		total += input.TotalStat.GetFloat(statType) * weightValue
-	}
-	return total
 }

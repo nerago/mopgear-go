@@ -51,7 +51,7 @@ func (comp *ComplexStatWeightProcess) SetMinimumIncludeRate(percent float64) {
 	comp.minimumIncludeRate = percent
 }
 
-func (comp *ComplexStatWeightProcess) Run() map[stats.StatType]float64 {
+func (comp *ComplexStatWeightProcess) Run() WeightResult {
 	comp.input = new(utilhighs.InputBuilder)
 	comp.input.Minimise = true
 	// comp.input.Solver = "ipm"
@@ -149,7 +149,7 @@ func (comp *ComplexStatWeightProcess) buildDataEquationForSim(stats *stats.StatB
 	matchSimValue.Finish(comp.input, scaledSimValue, scaledSimValue)
 }
 
-func (comp *ComplexStatWeightProcess) extractAndReportSolution(solution *highs.Solution) map[stats.StatType]float64 {
+func (comp *ComplexStatWeightProcess) extractAndReportSolution(solution *highs.Solution) WeightResult {
 	comp.input.DebugPrintColumns(solution, comp.printer)
 
 	comp.printer.Println("WEIGHTS")
@@ -232,8 +232,8 @@ func (comp *ComplexStatWeightProcess) reportExamples(detailWeightMap util.MapMap
 	}
 }
 
-func (comp *ComplexStatWeightProcess) computeFinalWeights(detailWeightMap util.MapMap[stats.StatType, simulate.SimType, float64]) map[stats.StatType]float64 {
-	statWeightResult := make(map[stats.StatType]float64)
+func (comp *ComplexStatWeightProcess) computeFinalWeights(detailWeightMap util.MapMap[stats.StatType, simulate.SimType, float64]) WeightResult {
+	statWeightResult := WeightResult_Make()
 	for statType, seqSimPairs := range detailWeightMap.SeqGroupsKey1NestedKeyValue() {
 		sumIndividual := 0.0
 
@@ -246,7 +246,7 @@ func (comp *ComplexStatWeightProcess) computeFinalWeights(detailWeightMap util.M
 			sumIndividual += componentValue
 		}
 
-		statWeightResult[statType] = sumIndividual
+		statWeightResult.Put(statType, sumIndividual)
 	}
 
 	return statWeightResult

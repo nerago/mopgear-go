@@ -114,7 +114,7 @@ func (fiteach *FittingEachStatWeightProcess) RunDetailedResults() util.MapMap[st
 	return resultMap
 }
 
-func (fiteach *FittingEachStatWeightProcess) Run() map[stats.StatType]float64 {
+func (fiteach *FittingEachStatWeightProcess) Run() WeightResult {
 	detailResult := fiteach.RunDetailedResults()
 
 	bestRatingEach := util.MapMap_FromExitingMapMap_WithApply(&detailResult, func(byRange map[StatRange]FittingSingleStatResult) float64 {
@@ -125,8 +125,8 @@ func (fiteach *FittingEachStatWeightProcess) Run() map[stats.StatType]float64 {
 		return best.GetBestOrPanic().LineSlope
 	})
 
-	standardResult := make(map[stats.StatType]float64)
-	standardResult[stats.Stat_Strength] = 1
+	standardResult := WeightResult_Make()
+	standardResult.Put(stats.Stat_Strength, 1)
 	for _, statType := range G_RequiredStats {
 		if statType != stats.Stat_Strength {
 			totalSum := 0.0
@@ -136,7 +136,7 @@ func (fiteach *FittingEachStatWeightProcess) Run() map[stats.StatType]float64 {
 				relative := thisRating / strengthRating * fiteach.targetRatios.Get(simType)
 				totalSum += relative
 			}
-			standardResult[statType] = totalSum
+			standardResult.Put(statType, totalSum)
 		}
 	}
 	return standardResult

@@ -54,7 +54,7 @@ func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios simulate.SimDa
 	grid2.targetRatios = targetRatios
 }
 
-func (grid2 *GridStatWeightProcess2) Run() map[stats.StatType]float64 {
+func (grid2 *GridStatWeightProcess2) Run() WeightResult {
 	grid2.setupWeightVars()
 	grid2.chooseScaling()
 	grid2.processInputData()
@@ -225,8 +225,8 @@ func (grid2 *GridStatWeightProcess2) twoSamplesDifferenceAddToModel(oneSample fl
 // 	}
 // }
 
-func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Solution) map[stats.StatType]float64 {
-	result := make(map[stats.StatType]float64)
+func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Solution) WeightResult {
+	result := WeightResult_Make()
 	grid2.printer.Println("FINAL WEIGHTS:")
 
 	for _, statType := range G_RequiredStats {
@@ -251,7 +251,7 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 
 		// grid2.printer.Printf("%10s %f\n", statType.Name(), sumIndividual)
 		grid2.printer.Printf("             === %f\n", sumIndividual)
-		result[statType] = sumIndividual
+		result.Put(statType, sumIndividual)
 	}
 	return result
 }

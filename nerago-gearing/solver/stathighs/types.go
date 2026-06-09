@@ -17,6 +17,29 @@ type WeightInput struct {
 	SimResult simulate.SimData
 }
 
+// type WeightResult map[stats.StatType]float64
+type WeightResult struct{ values map[stats.StatType]float64 }
+
+func WeightResult_Make() WeightResult {
+	return WeightResult{make(map[stats.StatType]float64)}
+}
+
+func (wr *WeightResult) Get(statType stats.StatType) float64 {
+	return wr.values[statType]
+}
+
+func (wr *WeightResult) Put(statType stats.StatType, value float64) {
+	wr.values[statType] = value
+}
+
+func (wr *WeightResult) CalcStatScore(input *WeightInput) float64 {
+	total := 0.0
+	for statType, weightValue := range wr.values {
+		total += input.TotalStat.GetFloat(statType) * weightValue
+	}
+	return total
+}
+
 // now about noset - tortos, horridon, ironqon, jikun, durumu
 var NewStatWeights_generalMiti = simulate.SimData{
 	DPS:   0.3,

@@ -578,24 +578,24 @@ func statWeightsGrid(printer *util.PrintRecorder) {
 	writePawnString(weights, printer)
 }
 
-func writePawnString(weights map[stats.StatType]float64, printer *util.PrintRecorder) string {
+func writePawnString(weights stathighs.WeightResult, printer *util.PrintRecorder) string {
 	str := util.StringBuild2{}
 	str.WriteString("( Pawn: v1: \"Protection WoWSims Weights\": Class=Paladin,Strength=")
-	str.WriteFloat64(weights[stats.Stat_Strength], 10)
+	str.WriteFloat64(weights.Get(stats.Stat_Strength), 10)
 	str.WriteString(",Stamina=")
-	str.WriteFloat64(weights[stats.Stat_Stamina], 10)
+	str.WriteFloat64(weights.Get(stats.Stat_Stamina), 10)
 	str.WriteString(",CritRating=")
-	str.WriteFloat64(weights[stats.Stat_Crit], 10)
+	str.WriteFloat64(weights.Get(stats.Stat_Crit), 10)
 	str.WriteString(",HasteRating=")
-	str.WriteFloat64(weights[stats.Stat_Haste], 10)
+	str.WriteFloat64(weights.Get(stats.Stat_Haste), 10)
 	str.WriteString(",ExpertiseRating=")
-	str.WriteFloat64(weights[stats.Stat_Expertise], 10)
+	str.WriteFloat64(weights.Get(stats.Stat_Expertise), 10)
 	str.WriteString(",MasteryRating=")
-	str.WriteFloat64(weights[stats.Stat_Mastery], 10)
+	str.WriteFloat64(weights.Get(stats.Stat_Mastery), 10)
 	str.WriteString(",DodgeRating=")
-	str.WriteFloat64(weights[stats.Stat_Dodge], 10)
+	str.WriteFloat64(weights.Get(stats.Stat_Dodge), 10)
 	str.WriteString(",ParryRating=")
-	str.WriteFloat64(weights[stats.Stat_Parry], 10)
+	str.WriteFloat64(weights.Get(stats.Stat_Parry), 10)
 	str.WriteString(", )")
 	printer.PrintlnFromBuild(str)
 	return str.String()
@@ -830,97 +830,98 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	// writeWeightInputsToFile(inputDataGrid, "sim-stats-compare-grid.json")
 	// writeWeightInputsToFile(inputDataRandom, "sim-stats-compare-rand.json")
 	// writeWeightBasicInputsToFile(inputDataBasic, basicSimBase, "sim-stats-compare-basic.json")
-	// inputDataBasic, basicSimBase := readWeightBasicInputsFile("sim-stats-compare-basic.json")
+	inputDataBasic, basicSimBase := readWeightBasicInputsFile("sim-stats-compare-basic.json")
 	inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
 	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
 	mixedInputData := slices.Concat(inputDataGrid, inputDataRandom)
 
-	resultsByAlgorithm := make(map[string]map[stats.StatType]float64)
+	resultsByAlgorithm := make(map[string]stathighs.WeightResult)
 
-	// printer.Println("################# BASIC ###################")
-	// {
-	// 	basic := stathighs.BasicStatWeightProcess{}
-	// 	basic.Init(printer)
-	// 	basic.SetTargetRatios(targetRatio)
-	// 	basic.SetBaseline(basicSimBase)
-	// 	for _, data := range inputDataBasic {
-	// 		basic.AddSimData(data.IncrementStat, uint32(data.IncrementValue), data.SimResult)
-	// 	}
-	// 	resultsByAlgorithm["basic"] = basic.Run()
-	// }
+	printer.Println("################# BASIC ###################")
+	{
+		basic := stathighs.BasicStatWeightProcess{}
+		basic.Init(printer)
+		basic.SetTargetRatios(targetRatio)
+		basic.SetBaseline(basicSimBase)
+		for _, data := range inputDataBasic {
+			basic.AddSimData(data.IncrementStat, uint32(data.IncrementValue), data.SimResult)
+		}
+		resultsByAlgorithm["basic"] = basic.Run()
+	}
 
-	// printer.Println("################# COMPLEX ###################")
-	// {
-	// 	comp := stathighs.ComplexStatWeightProcess{}
-	// 	comp.Init(printer)
-	// 	comp.SetTargetRatios(targetRatio)
-	// 	comp.SetMinimumIncludeRate(1)
-	// 	comp.SupplyData(inputDataRandom)
-	// 	resultsByAlgorithm["complex"] = comp.Run()
-	// }
+	printer.Println("################# COMPLEX ###################")
+	{
+		comp := stathighs.ComplexStatWeightProcess{}
+		comp.Init(printer)
+		comp.SetTargetRatios(targetRatio)
+		comp.SetMinimumIncludeRate(1)
+		comp.SupplyData(inputDataRandom)
+		resultsByAlgorithm["complex"] = comp.Run()
+	}
 
-	// printer.Println("################# FITTING ###################")
-	// {
-	// 	fitting := stathighs.FittingEachStatWeightProcess{}
-	// 	fitting.Init(printer)
-	// 	fitting.SetTargetRatios(targetRatio)
-	// 	fitting.SetLazyMode(true)
-	// 	fitting.SupplyDataFromStandard(inputDataRandom)
-	// 	resultsByAlgorithm["fitting"] = fitting.Run()
-	// }
+	printer.Println("################# FITTING ###################")
+	{
+		fitting := stathighs.FittingEachStatWeightProcess{}
+		fitting.Init(printer)
+		fitting.SetTargetRatios(targetRatio)
+		fitting.SetLazyMode(true)
+		fitting.SupplyDataFromStandard(inputDataRandom)
+		resultsByAlgorithm["fitting"] = fitting.Run()
+	}
 
-	// printer.Println("################# GRID1 ###################")
-	// {
-	// 	grid1 := stathighs.GridStatWeightProcess{}
-	// 	grid1.Init(printer)
-	// 	grid1.SetTargetRatios(targetRatio)
-	// 	grid1.SupplyData(inputDataGrid)
-	// 	resultsByAlgorithm["grid1"] = grid1.Run()
-	// }
+	printer.Println("################# GRID1 ###################")
+	{
+		grid1 := stathighs.GridStatWeightProcess{}
+		grid1.Init(printer)
+		grid1.SetTargetRatios(targetRatio)
+		grid1.SupplyData(inputDataGrid)
+		resultsByAlgorithm["grid1"] = grid1.Run()
+	}
 
-	// printer.Println("################# GRID2 ###################")
-	// {
-	// 	grid2 := stathighs.GridStatWeightProcess2{}
-	// 	grid2.Init(printer)
-	// 	grid2.SetTargetRatios(targetRatio)
-	// 	grid2.SupplyData(inputDataGrid)
-	// 	resultsByAlgorithm["grid2"] = grid2.Run()
-	// }
+	printer.Println("################# GRID2 ###################")
+	{
+		grid2 := stathighs.GridStatWeightProcess2{}
+		grid2.Init(printer)
+		grid2.SetTargetRatios(targetRatio)
+		grid2.SupplyData(inputDataGrid)
+		resultsByAlgorithm["grid2"] = grid2.Run()
+	}
 
-	// printer.Println("################# RANKING0 ###################")
-	// {
-	// 	ranking := stathighs.RankingStatWeightProcess{}
-	// 	ranking.Init(printer)
-	// 	ranking.SetTargetRatios(targetRatio)
-	// 	// ranking.SupplyData(inputDataGrid)
-	// 	ranking.SupplyData(mixedInputData)
-	// 	ranking.RANKMODE = 0
+	printer.Println("################# RANKING0 ###################")
+	{
+		ranking := stathighs.RankingStatWeightProcess{}
+		ranking.Init(printer)
+		ranking.SetTargetRatios(targetRatio)
+		// ranking.SupplyData(inputDataGrid)
+		ranking.SupplyData(mixedInputData)
+		ranking.RANKMODE = 0
 
-	// 	resultsByAlgorithm["ranking0"] = ranking.Run()
-	// }
+		resultsByAlgorithm["ranking0"] = ranking.Run()
+	}
 
-	// printer.Println("################# RANKING1 ###################")
-	// {
-	// 	ranking := stathighs.RankingStatWeightProcess{}
-	// 	ranking.Init(printer)
-	// 	ranking.SetTargetRatios(targetRatio)
-	// 	// ranking.SupplyData(inputDataGrid)
-	// 	ranking.SupplyData(mixedInputData)
-	// 	ranking.RANKMODE = 1
+	printer.Println("################# RANKING1 ###################")
+	{
+		ranking := stathighs.RankingStatWeightProcess{}
+		ranking.Init(printer)
+		ranking.SetTargetRatios(targetRatio)
+		// ranking.SupplyData(inputDataGrid)
+		ranking.SupplyData(mixedInputData)
+		ranking.RANKMODE = 1
 
-	// 	resultsByAlgorithm["ranking1"] = ranking.Run()
-	// }
-	// printer.Println("################# RANKING2 ###################")
-	// {
-	// 	ranking := stathighs.RankingStatWeightProcess{}
-	// 	ranking.Init(printer)
-	// 	ranking.SetTargetRatios(targetRatio)
-	// 	// ranking.SupplyData(inputDataGrid)
-	// 	ranking.SupplyData(mixedInputData)
-	// 	ranking.RANKMODE = 2
+		resultsByAlgorithm["ranking1"] = ranking.Run()
+	}
+	printer.Println("################# RANKING2 ###################")
+	{
+		ranking := stathighs.RankingStatWeightProcess{}
+		ranking.Init(printer)
+		ranking.SetTargetRatios(targetRatio)
+		// ranking.SupplyData(inputDataGrid)
+		ranking.SupplyData(mixedInputData)
+		ranking.RANKMODE = 2
 
-	// 	resultsByAlgorithm["ranking2"] = ranking.Run()
-	// }
+		resultsByAlgorithm["ranking2"] = ranking.Run()
+	}
+
 	printer.Println("################# RANKING3 ###################")
 	{
 		ranking := stathighs.RankingStatWeightProcess3{}
@@ -931,17 +932,17 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		ranking.SupplyData(mixedInputData[0:350])
 		// ranking.SupplyData(mixedInputData)
 
-		resultsByAlgorithm["ranking3a"], resultsByAlgorithm["ranking3b"] = ranking.Run()
+		resultsByAlgorithm["ranking3a"], resultsByAlgorithm["ranking3b"], resultsByAlgorithm["ranking3c"] = ranking.Run()
 	}
 
-	// printer.Println("################# SELECTIVE GRID ###################")
-	// {
-	// 	selgrid := stathighs.SelectiveGridStatWeightProcess{}
-	// 	selgrid.Init(printer)
-	// 	selgrid.SetTargetRatios(targetRatio)
-	// 	selgrid.SupplyData(inputDataGrid)
-	// 	resultsByAlgorithm["selgrid"] = selgrid.Run()
-	// }
+	printer.Println("################# SELECTIVE GRID ###################")
+	{
+		selgrid := stathighs.SelectiveGridStatWeightProcess{}
+		selgrid.Init(printer)
+		selgrid.SetTargetRatios(targetRatio)
+		selgrid.SupplyData(inputDataGrid)
+		resultsByAlgorithm["selgrid"] = selgrid.Run()
+	}
 
 	printer.Println("################# FINAL RESULT ###################")
 	tab := util.TabulateOutput{}
@@ -955,7 +956,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		row := make([]string, 0)
 		row = append(row, label)
 		for _, stat := range stathighs.G_RequiredStats {
-			value := resultMap[stat]
+			value := resultMap.Get(stat)
 			row = append(row, strconv.FormatFloat(value, 'f', 4, 64))
 		}
 		accuracy := evaluateAccuracy(resultMap, mixedInputData, targetRatio)
@@ -965,7 +966,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	tab.Write(printer)
 }
 
-func evaluateAccuracy(statWeights map[stats.StatType]float64, inputData []stathighs.WeightInput, simRatios simulate.SimData) float64 {
+func evaluateAccuracy(statWeights stathighs.WeightResult, inputData []stathighs.WeightInput, simRatios simulate.SimData) float64 {
 	// make structures
 	type accuracyInfo struct {
 		input *stathighs.WeightInput
@@ -984,7 +985,7 @@ func evaluateAccuracy(statWeights map[stats.StatType]float64, inputData []stathi
 	})
 
 	// score stats
-	for entry, statRank := range util.CalculateRankingRanges(true, accuracyData, func(x *accuracyInfo) float64 { return calcStatScore(x.input, statWeights) }) {
+	for entry, statRank := range util.CalculateRankingRanges(true, accuracyData, func(x *accuracyInfo) float64 { return statWeights.CalcStatScore(x.input) }) {
 		entry.statRankRange = statRank
 	}
 
@@ -1026,12 +1027,4 @@ func rangePercentDiff(one, two util.HiLoInt, fullLength int) float64 {
 	diffAsRatio := float64(diff) / float64(fullLength)
 	percentScore := 100.0 - (diffAsRatio * 100.0)
 	return percentScore
-}
-
-func calcStatScore(input *stathighs.WeightInput, statWeights map[stats.StatType]float64) float64 {
-	total := 0.0
-	for statType, weightValue := range statWeights {
-		total += input.TotalStat.GetFloat(statType) * weightValue
-	}
-	return total
 }

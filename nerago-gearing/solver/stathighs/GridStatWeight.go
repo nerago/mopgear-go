@@ -54,7 +54,7 @@ func (grid *GridStatWeightProcess) SetTargetRatios(targetRatios simulate.SimData
 	grid.targetRatios = targetRatios
 }
 
-func (grid *GridStatWeightProcess) Run() map[stats.StatType]float64 {
+func (grid *GridStatWeightProcess) Run() WeightResult {
 	grid.setupWeightVars()
 
 	grid.dataSamplesFromPairs()
@@ -242,14 +242,14 @@ func (grid *GridStatWeightProcess) calcTotalRatings() {
 	}
 }
 
-func (grid *GridStatWeightProcess) reportOutputWeightsGrid(solution *highs.Solution, weightColumns map[stats.StatType]utilhighs.ColumnIndex, printer *util.PrintRecorder) map[stats.StatType]float64 {
-	result := make(map[stats.StatType]float64)
+func (grid *GridStatWeightProcess) reportOutputWeightsGrid(solution *highs.Solution, weightColumns map[stats.StatType]utilhighs.ColumnIndex, printer *util.PrintRecorder) WeightResult {
+	result := WeightResult_Make()
 	printer.Println("FINAL WEIGHTS:")
 	for _, statType := range G_RequiredStats {
 		columnIndex := weightColumns[statType]
 		value := solution.ColValues[columnIndex]
 		printer.Printf("%10s %f\n", statType.Name(), value)
-		result[statType] = value
+		result.Put(statType, value)
 	}
 	return result
 }

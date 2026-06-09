@@ -64,7 +64,7 @@ func (basic *BasicStatWeightProcess) AddSimData(statType stats.StatType, statVal
 
 // alternately we could baseline each other with a full array of +100 perumtations etc
 
-func (basic *BasicStatWeightProcess) Run() map[stats.StatType]float64 {
+func (basic *BasicStatWeightProcess) Run() WeightResult {
 	for _, statType := range G_RequiredStats {
 		colName := "FINAL WEIGHT: " + statType.Name()
 		colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: colName})
@@ -177,14 +177,15 @@ func (basic *BasicStatWeightProcess) calcTotalRatings() {
 	}
 }
 
-func reportOutputWeights(solution *highs.Solution, weightColumns map[stats.StatType]utilhighs.ColumnIndex, printer *util.PrintRecorder) map[stats.StatType]float64 {
-	result := make(map[stats.StatType]float64)
+func reportOutputWeights(solution *highs.Solution, weightColumns map[stats.StatType]utilhighs.ColumnIndex, printer *util.PrintRecorder) WeightResult {
+	result := WeightResult_Make()
 	printer.Println("FINAL WEIGHTS:")
 	for _, statType := range G_RequiredStats {
 		columnIndex := weightColumns[statType]
 		value := solution.ColValues[columnIndex]
 		printer.Printf("%10s %f\n", statType.Name(), value)
-		result[statType] = value
+		result.Put(statType, value)
 	}
 	return result
 }
+

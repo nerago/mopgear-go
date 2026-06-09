@@ -56,7 +56,7 @@ func (selgrid *SelectiveGridStatWeightProcess) SetTargetRatios(targetRatios simu
 	selgrid.targetRatios = targetRatios
 }
 
-func (selgrid *SelectiveGridStatWeightProcess) Run() map[stats.StatType]float64 {
+func (selgrid *SelectiveGridStatWeightProcess) Run() WeightResult {
 	selgrid.setupWeightVars()
 
 	selgrid.createIncludeToggles()
@@ -271,14 +271,14 @@ func (selgrid *SelectiveGridStatWeightProcess) calcTotalRatings() {
 	}
 }
 
-func (selgrid *SelectiveGridStatWeightProcess) reportOutputWeightsGrid(solution *highs.Solution, weightColumns map[stats.StatType]utilhighs.ColumnIndex, printer *util.PrintRecorder) map[stats.StatType]float64 {
-	result := make(map[stats.StatType]float64)
+func (selgrid *SelectiveGridStatWeightProcess) reportOutputWeightsGrid(solution *highs.Solution, weightColumns map[stats.StatType]utilhighs.ColumnIndex, printer *util.PrintRecorder) WeightResult {
+	result := WeightResult_Make()
 	printer.Println("FINAL WEIGHTS:")
 	for _, statType := range G_RequiredStats {
 		columnIndex := weightColumns[statType]
 		value := solution.ColValues[columnIndex]
 		printer.Printf("%10s %f\n", statType.Name(), value)
-		result[statType] = value
+		result.Put(statType, value)
 	}
 	return result
 }

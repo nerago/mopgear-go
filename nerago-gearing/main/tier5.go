@@ -418,7 +418,7 @@ func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.Stat
 	printer.Println("BASELINE SET")
 	tools.ReportSetFewerParams(&model, &baseItemSet, printer)
 
-	var weights map[stats.StatType]float64
+	var weights stathighs.WeightResult
 	if false {
 		// SIMULATE STAT CHANGES
 		// baseLine := simulate.WowSim_Execute_SpecifyAll(simSpeed, model.Spec, model.Goal, fight, model.Professions, baseItemSet.Items(), nil, nil)
