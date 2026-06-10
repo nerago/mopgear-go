@@ -49,6 +49,7 @@ type InputBuilder struct {
 	BlendMultiObjectives bool
 	Solver               string
 	DisablePreSolve      bool
+	TimeLimitSeconds     int
 }
 
 func (input *InputBuilder) Clone() *InputBuilder {
@@ -204,7 +205,12 @@ func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 
 	// verifyNoError(solver.SetStringOption("parallel", "on"))
 	// verifyNoError(solver.SetIntOption("threads", c_threads))
-	// verifyNoError(solver.SetFloatOption("time_limit", 300))
+
+	if input.TimeLimitSeconds != 0 {
+		verifyNoError(solver.SetFloatOption("time_limit", float64(input.TimeLimitSeconds)))
+	} else {
+		verifyNoError(solver.SetFloatOption("time_limit", C_PlusInf))
+	}
 
 	verifyNoError(solver.SetStringOption("log_file", logfile))
 	verifyNoError(solver.SetBoolOption("log_to_console", (C_DebugHighs || C_HighsToConsole) && !input.NoOutput))

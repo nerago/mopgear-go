@@ -17,25 +17,33 @@ type WeightInput struct {
 	SimResult simulate.SimData
 }
 
-// type WeightResult map[stats.StatType]float64
-type WeightResult struct{ values map[stats.StatType]float64 }
+type WeightResult map[stats.StatType]float64
+// type WeightResult struct{ values map[stats.StatType]float64 }
 
 func WeightResult_Make() WeightResult {
-	return WeightResult{make(map[stats.StatType]float64)}
+	return make(map[stats.StatType]float64)
 }
 
 func (wr *WeightResult) Get(statType stats.StatType) float64 {
-	return wr.values[statType]
+	return (*wr)[statType]
 }
 
 func (wr *WeightResult) Put(statType stats.StatType, value float64) {
-	wr.values[statType] = value
+	(*wr)[statType] = value
 }
 
 func (wr *WeightResult) CalcStatScore(input *WeightInput) float64 {
 	total := 0.0
-	for statType, weightValue := range wr.values {
+	for statType, weightValue := range *wr {
 		total += input.TotalStat.GetFloat(statType) * weightValue
+	}
+	return total
+}
+
+func (wr *WeightResult) CalcStatScoreScaled(input *WeightInput, statScale map[stats.StatType]float64) float64 {
+	total := 0.0
+	for statType, weightValue := range *wr {
+		total += input.TotalStat.GetFloat(statType) * statScale[statType] * weightValue
 	}
 	return total
 }

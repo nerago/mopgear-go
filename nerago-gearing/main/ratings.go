@@ -859,15 +859,15 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		resultsByAlgorithm["complex"] = comp.Run()
 	}
 
-	printer.Println("################# FITTING ###################")
-	{
-		fitting := stathighs.FittingEachStatWeightProcess{}
-		fitting.Init(printer)
-		fitting.SetTargetRatios(targetRatio)
-		fitting.SetLazyMode(true)
-		fitting.SupplyDataFromStandard(inputDataRandom)
-		resultsByAlgorithm["fitting"] = fitting.Run()
-	}
+	// printer.Println("################# FITTING ###################")
+	// {
+	// 	fitting := stathighs.FittingEachStatWeightProcess{}
+	// 	fitting.Init(printer)
+	// 	fitting.SetTargetRatios(targetRatio)
+	// 	fitting.SetLazyMode(true)
+	// 	fitting.SupplyDataFromStandard(inputDataRandom)
+	// 	resultsByAlgorithm["fitting"] = fitting.Run()
+	// }
 
 	printer.Println("################# GRID1 ###################")
 	{
@@ -929,20 +929,21 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		ranking.SetTargetRatios(targetRatio)
 		// ranking.SupplyData(inputDataGrid)
 		// ranking.SupplyData(mixedInputData[0:15])
-		ranking.SupplyData(mixedInputData[0:350])
-		// ranking.SupplyData(mixedInputData)
+		// ranking.SupplyData(mixedInputData[0:350])
+		ranking.SupplyData(mixedInputData)
 
-		resultsByAlgorithm["ranking3a"], resultsByAlgorithm["ranking3b"], resultsByAlgorithm["ranking3c"] = ranking.Run()
+		// resultsByAlgorithm["ranking3a"], resultsByAlgorithm["ranking3b"], resultsByAlgorithm["ranking3c"] = ranking.Run(true)
+		resultsByAlgorithm["ranking3a"], resultsByAlgorithm["ranking3b"], _ = ranking.Run(false)
 	}
 
-	printer.Println("################# SELECTIVE GRID ###################")
-	{
-		selgrid := stathighs.SelectiveGridStatWeightProcess{}
-		selgrid.Init(printer)
-		selgrid.SetTargetRatios(targetRatio)
-		selgrid.SupplyData(inputDataGrid)
-		resultsByAlgorithm["selgrid"] = selgrid.Run()
-	}
+	// printer.Println("################# SELECTIVE GRID ###################")
+	// {
+	// 	selgrid := stathighs.SelectiveGridStatWeightProcess{}
+	// 	selgrid.Init(printer)
+	// 	selgrid.SetTargetRatios(targetRatio)
+	// 	selgrid.SupplyData(inputDataGrid)
+	// 	resultsByAlgorithm["selgrid"] = selgrid.Run()
+	// }
 
 	printer.Println("################# FINAL RESULT ###################")
 	tab := util.TabulateOutput{}
