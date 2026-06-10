@@ -114,6 +114,8 @@ func (ranker *RankingStatWeightProcess3) Run(doRound3 bool) (WeightResult, Weigh
 		weights3 = ranker.extractAndReportSolution(solution3)
 	}
 
+	// TODO should really care about solution1.HasSolution()
+
 	return weights1, weights2, weights3
 }
 

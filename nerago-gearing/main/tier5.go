@@ -383,7 +383,7 @@ func statWeightsGridFromInitialT5(printer *util.PrintRecorder) {
 	weightFileOut = files.WeightMitiWithSetFile
 	gearFile = files.GearFileProtMitigationWithSet
 	gearModel = model.Model_PallyProtMitigation_WithSet()
-	ratios = stathighs.NewStatWeights_radenWeight
+	ratios = stathighs.NewStatWeights_malkrokWeight
 	priority = initialPriorityDeath
 	trinkets = [2]items.ItemId{trinketVialCorrupt, trinketThokTail}
 	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, ratios, weightFileOut, printer, simSpeed)

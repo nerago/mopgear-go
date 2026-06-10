@@ -58,7 +58,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:                     "Prot-Compromise",
 		GearFile:                  files.GearFileProtCompromise,
 		Model:                     model.Model_PallyProtCompromise(),
-		RequestRatingPercent:      0.30,
+		RequestRatingPercent:      0.20,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -74,7 +74,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:                     "Prot-Mitigation-WithSet",
 		GearFile:                  files.GearFileProtMitigationWithSet,
 		Model:                     model.Model_PallyProtMitigation_WithSet(),
-		RequestRatingPercent:      0.15,
+		RequestRatingPercent:      0.25,
 		ExtraUpgradeLevel:         2,
 		ForceUpgradeExistingItems: 2,
 	}
@@ -435,10 +435,11 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// protMitigationWithSet.AddBagsExtra()
 
 	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
-	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Expertise, 320))
-	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Hit, 320))
-	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
+	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Expertise, 320))
+	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Hit, 320))
+	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
 	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
+	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 
 	job.AddSetParam(ret)
 	job.AddSetParam(protDps)
@@ -449,9 +450,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
-	job.FindHighsResult_Sample(1)
-	// job.FindSeveralHighsAndSim()
-	// job.FindHighsResultPerPermute(12)
+	// job.FindHighsResult_Sample(10)
+	job.FindSeveralHighsAndSim()
+	// job.FindHighsResultPerPermute(10)
 	// job.RunWithMinimumHaste("Prot-Mitigation-WithSet", 11000, 18000, 250)
 	// job.RunWithMinimumHaste("Prot-Mitigation-NoSet", 11000, 18000, 250)
 }

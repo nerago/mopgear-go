@@ -160,6 +160,10 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_WithParall
 	initialResult := process.solutionToResult(solution, printer)
 	bestCommonChoices := process.extractCommonChoices(solution)
 
+	bestCommonChoices = bestCommonChoices[0:10] // TODO revert
+
+	printer.Println("############################################################################")
+	printer.Printf("COMMON VARIANT count %d\n", len(bestCommonChoices))
 	printer.Println("############################################################################")
 
 	resultList := channel_op.Map_SliceToSlice(10, bestCommonChoices, func(changeColumn **columnInfo, resultChannel chan<- HighsMultiResult) {

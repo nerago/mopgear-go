@@ -30,7 +30,7 @@ type gridDataSample struct {
 func (grid *GridStatWeightProcess) Init(printer *util.PrintRecorder) {
 	grid.printer = printer
 	grid.input.Minimise = true
-	grid.input.Solver = "pdlp"
+	// grid.input.Solver = "pdlp"
 	grid.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }
 

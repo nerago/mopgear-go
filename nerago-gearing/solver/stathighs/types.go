@@ -50,18 +50,18 @@ func (wr *WeightResult) CalcStatScoreScaled(input *WeightInput, statScale map[st
 
 // now about noset - tortos, horridon, ironqon, jikun, durumu
 var NewStatWeights_generalMiti = simulate.SimData{
-	DPS:   0.3,
+	DPS:   0.2,
 	DEATH: 0.1,
-	TMI:   0.2,
+	TMI:   0.3,
 	DTPS:  0.4,
 }
 
-// for withset - raden
-var NewStatWeights_radenWeight = simulate.SimData{
-	DPS:   0.2,
+// for withset - malkrok
+var NewStatWeights_malkrokWeight = simulate.SimData{
+	DPS:   0.15,
 	DEATH: 0.3,
-	TMI:   0.1,
-	DTPS:  0.4,
+	TMI:   0.05,
+	DTPS:  0.5,
 }
 
 // for comp set - animus

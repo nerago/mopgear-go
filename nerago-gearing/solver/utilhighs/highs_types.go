@@ -232,6 +232,8 @@ func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 		verifyNoError(solver.SetStringOption("presolve", "on"))
 	}
 	// verifyNoError(solver.SetStringOption("run_crossover", "off"))
+
+	verifyNoError(solver.SetFloatOption("dual_residual_tolerance", 1e-4)) // up from default of 1e-7, i don't care about dual
 }
 
 func verifyNoError(err error) {

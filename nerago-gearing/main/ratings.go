@@ -21,6 +21,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // old code for spreadsheet weights
@@ -713,29 +714,41 @@ func statWeightsGrid_updateAll(printer *util.PrintRecorder) {
 	simSpeed := simulate.RunSize_QuickDirty
 	// simSpeed := simulate.RunSize_Medium
 
-	weightFileOut := files.WeightMitiNoSetFile
-	gearFile := files.GearFileProtMitigationNoSet
-	gearModel := model.Model_PallyProtMitigation_NoSet()
-	ratios := stathighs.NewStatWeights_generalMiti
-	statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
+	wg := sync.WaitGroup{}
 
-	weightFileOut = files.WeightMitiWithSetFile
-	gearFile = files.GearFileProtMitigationWithSet
-	gearModel = model.Model_PallyProtMitigation_WithSet()
-	ratios = stathighs.NewStatWeights_radenWeight
-	statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
+	wg.Go(func() {
+		weightFileOut := files.WeightMitiNoSetFile
+		gearFile := files.GearFileProtMitigationNoSet
+		gearModel := model.Model_PallyProtMitigation_NoSet()
+		ratios := stathighs.NewStatWeights_generalMiti
+		statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
+	})
 
-	weightFileOut = files.WeightDpsFile
-	gearFile = files.GearFileProtDps
-	gearModel = model.Model_PallyProtDps()
-	ratios = stathighs.NewStatWeights_dpsWeight
-	statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
+	wg.Go(func() {
+		weightFileOut := files.WeightMitiWithSetFile
+		gearFile := files.GearFileProtMitigationWithSet
+		gearModel := model.Model_PallyProtMitigation_WithSet()
+		ratios := stathighs.NewStatWeights_malkrokWeight
+		statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
+	})
 
-	weightFileOut = files.WeightCompromiseFile
-	gearFile = files.GearFileProtCompromise
-	gearModel = model.Model_PallyProtCompromise()
-	ratios = stathighs.NewStatWeights_animusWeight
-	statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
+	// wg.Go(func() {
+	// 	weightFileOut := files.WeightDpsFile
+	// 	gearFile := files.GearFileProtDps
+	// 	gearModel := model.Model_PallyProtDps()
+	// 	ratios := stathighs.NewStatWeights_dpsWeight
+	// 	statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
+	// })
+
+	// wg.Go(func() {
+	// 	weightFileOut := files.WeightCompromiseFile
+	// 	gearFile := files.GearFileProtCompromise
+	// 	gearModel := model.Model_PallyProtCompromise()
+	// 	ratios := stathighs.NewStatWeights_animusWeight
+	// 	statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
+	// })
+
+	wg.Wait()
 }
 
 func statWeightsGrid_updateOne(gearModel model.Model, gearFile string, ratios simulate.SimData, weightFileOut string, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize) {
@@ -935,6 +948,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		// resultsByAlgorithm["ranking3a"], resultsByAlgorithm["ranking3b"], resultsByAlgorithm["ranking3c"] = ranking.Run(true)
 		resultsByAlgorithm["ranking3a"], resultsByAlgorithm["ranking3b"], _ = ranking.Run(false)
 	}
+
+	// TODO what about ranking by each simtype, then combine. simlar to fitting?
 
 	// printer.Println("################# SELECTIVE GRID ###################")
 	// {
