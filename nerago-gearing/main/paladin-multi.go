@@ -7,7 +7,6 @@ import (
 	"paladin_gearing_go/multi"
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/simulate"
-	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
 
@@ -133,6 +132,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		101882, // cliffbreaker helm exp/mastery
 		103787, // poisonbinder girth
 		103742, // blood rage bracers
+		99126,  // prot t16 chest normal
+		103738, // bubble bracers
 	})
 	blockHelmetsWithoutCapacitance(&ret)
 	ret.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
@@ -156,6 +157,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		legendMeleeCloak,
 
+		94820, // caustic spike bracers OFF1234
 		95535, // normal lightning legs
 		94773, // centripetal shoulders normal
 		96468, // talonrender chest heroic
@@ -203,6 +205,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		101882, // cliffbreaker helm exp/mastery
 		103787, // poisonbinder girth
 		103742, // blood rage bracers
+		99126,  // prot t16 chest normal
+		103738, // bubble bracers
 	})
 	blockHelmetsWithoutCapacitance(&protDps)
 	protDps.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
@@ -248,7 +252,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94776, // primal turtle amulet
 		96420, // talisman of angry spirits
 
-		87145, // defiled earth OFF12
 		94820, // caustic spike bracers OFF1234
 		96394, // frozen warlord bracer heroic
 
@@ -276,6 +279,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		101882, // cliffbreaker helm exp/mastery
 		103787, // poisonbinder girth
 		103742, // blood rage bracers
+		99126,  // prot t16 chest normal
+		103738, // bubble bracers
 	})
 	blockHelmetsWithoutCapacitance(&protCompromise)
 	protCompromise.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
@@ -325,7 +330,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94776, // primal turtle amulet
 		96420, // talisman of angry spirits
 
-		87145, // defiled earth
 		94820, // caustic spike bracers REMOVE1234
 		96394, // frozen warlord bracer heroic
 
@@ -350,6 +354,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		101882, // cliffbreaker helm exp/mastery
 		103787, // poisonbinder girth
 		103742, // blood rage bracers
+		99126,  // prot t16 chest normal
+		103738, // bubble bracers
 	})
 	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
@@ -396,7 +402,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94776, // primal turtle amulet REMOVE12
 		96420, // talisman of angry spirits
 
-		87145, // defiled earth
 		96394, // frozen warlord bracer heroic
 
 		96376, // worldbreaker weapon
@@ -420,6 +425,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		101882, // cliffbreaker helm exp/mastery
 		103787, // poisonbinder girth
 		103742, // blood rage bracers
+		99126,  // prot t16 chest normal
+		103738, // bubble bracers
 	})
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
@@ -428,17 +435,29 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
 	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
 
+	// { Wrist "Bubble-Burst Bracers" id=103738 lvl=561 {str=1249 stam=1874 hit=927 haste=671}
+	// { Wrist "Blood Rage Bracers" id=103742 lvl=553 {str=1159 stam=1739 expert=829 parry=678} }
+	// { Wrist "Frozen Warlord's Bracers" id=96394 lvl=549 {str=1116 stam=1675 haste=798 expert=392 master=261}
+	// { Wrist "Caustic Spike Bracers CritRating" id=94820 lvl=536 {str=909 stam=1484 crit=978}
+	// { Wrist "Bracers of Constant Implosion ExpertiseRating" id=96375 lvl=549 {str=1036 stam=1675 expert=1103} }
+
+	// protDps.ForceTryAllSlot(items.Equip_Wrist, 103738, 96394, 94820, 96375)
+	// protCompromise.ForceTryAllSlot(items.Equip_Wrist, 103738, 103742, 96394, 96375)
+	// protMitigationNoSet.ForceTryAllSlot(items.Equip_Wrist, 103738, 103742, 96394, 96375)
+	// protMitigationWithSet.ForceTryAllSlot(items.Equip_Wrist, 103738, 96394)
+
 	// ret.AddBagsExtra()
 	// protDps.AddBagsExtra()
 	// protCompromise.AddBagsExtra()
 	// protMitigationNoSet.AddBagsExtra()
 	// protMitigationWithSet.AddBagsExtra()
 
-	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
+	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Expertise, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Hit, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
-	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
+	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
+	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
 	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 
 	job.AddSetParam(ret)
@@ -451,8 +470,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
 	// job.FindHighsResult_Sample(10)
-	job.FindSeveralHighsAndSim()
-	// job.FindHighsResultPerPermute(10)
+	// job.FindSeveralHighsAndSim()
+	job.FindHighsResultPerPermute(1)
 	// job.RunWithMinimumHaste("Prot-Mitigation-WithSet", 11000, 18000, 250)
 	// job.RunWithMinimumHaste("Prot-Mitigation-NoSet", 11000, 18000, 250)
 }

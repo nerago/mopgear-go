@@ -414,20 +414,25 @@ func statWeightsComplex(printer *util.PrintRecorder) {
 
 func statWeightsRanking(printer *util.PrintRecorder) {
 	// weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
+	targetRatio := stathighs.NewStatWeights_generalMiti
 
-	weightInputs := readWeightInputFile("sim-stats-input-data2.json")
+	inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
+	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
+	mixedInputData := slices.Concat(inputDataGrid, inputDataRandom)
 
-	filteredInput := weightInputs
+	filteredInput := mixedInputData
 	printer.Printf("filteredInput size %d\n", len(filteredInput))
 
-	ranking := stathighs.RankingStatWeightProcess{}
+	ranking := stathighs.RankingStatWeightProcess3{}
 
 	ranking.Init(printer)
-	ranking.SetTargetRatios(stathighs.NewStatWeights_generalMiti)
-	// ranking.SetMinimumIncludeRate(0.7)
+	ranking.SetTargetRatios(targetRatio)
 	ranking.SupplyData(filteredInput)
-	weights := ranking.Run()
-	writePawnString(weights, printer)
+	weightsList := ranking.Run(false)
+	for _, weight := range weightsList {
+		writePawnString(weight, printer)
+		printer.Printf("accuracy = %f\n", evaluateAccuracy(weight, mixedInputData, targetRatio))
+	}
 }
 
 func statWeightsFitting(printer *util.PrintRecorder) {
@@ -711,8 +716,8 @@ func addBonusStats(base *stats.StatBlock, bonusStat map[stats.StatType]int32) st
 
 func statWeightsGrid_updateAll(printer *util.PrintRecorder) {
 	// simSpeed := simulate.RunSize_TestOnly
-	simSpeed := simulate.RunSize_QuickDirty
-	// simSpeed := simulate.RunSize_Medium
+	// simSpeed := simulate.RunSize_QuickDirty
+	simSpeed := simulate.RunSize_Medium
 
 	wg := sync.WaitGroup{}
 
@@ -732,21 +737,21 @@ func statWeightsGrid_updateAll(printer *util.PrintRecorder) {
 		statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
 	})
 
-	// wg.Go(func() {
-	// 	weightFileOut := files.WeightDpsFile
-	// 	gearFile := files.GearFileProtDps
-	// 	gearModel := model.Model_PallyProtDps()
-	// 	ratios := stathighs.NewStatWeights_dpsWeight
-	// 	statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
-	// })
+	wg.Go(func() {
+		weightFileOut := files.WeightDpsFile
+		gearFile := files.GearFileProtDps
+		gearModel := model.Model_PallyProtDps()
+		ratios := stathighs.NewStatWeights_dpsWeight
+		statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
+	})
 
-	// wg.Go(func() {
-	// 	weightFileOut := files.WeightCompromiseFile
-	// 	gearFile := files.GearFileProtCompromise
-	// 	gearModel := model.Model_PallyProtCompromise()
-	// 	ratios := stathighs.NewStatWeights_animusWeight
-	// 	statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
-	// })
+	wg.Go(func() {
+		weightFileOut := files.WeightCompromiseFile
+		gearFile := files.GearFileProtCompromise
+		gearModel := model.Model_PallyProtCompromise()
+		ratios := stathighs.NewStatWeights_animusWeight
+		statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
+	})
 
 	wg.Wait()
 }
@@ -850,8 +855,10 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 
 	resultsByAlgorithm := make(map[string]stathighs.WeightResult)
 
-	printer.Println("################# BASIC ###################")
-	{
+	wg := sync.WaitGroup{}
+
+	wg.Go(func() {
+		printer.Println("################# BASIC ###################")
 		basic := stathighs.BasicStatWeightProcess{}
 		basic.Init(printer)
 		basic.SetTargetRatios(targetRatio)
@@ -860,18 +867,19 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			basic.AddSimData(data.IncrementStat, uint32(data.IncrementValue), data.SimResult)
 		}
 		resultsByAlgorithm["basic"] = basic.Run()
-	}
+	})
 
-	printer.Println("################# COMPLEX ###################")
-	{
+	wg.Go(func() {
+		printer.Println("################# COMPLEX ###################")
 		comp := stathighs.ComplexStatWeightProcess{}
 		comp.Init(printer)
 		comp.SetTargetRatios(targetRatio)
 		comp.SetMinimumIncludeRate(1)
 		comp.SupplyData(inputDataRandom)
 		resultsByAlgorithm["complex"] = comp.Run()
-	}
+	})
 
+	// wg.Go(func(){
 	// printer.Println("################# FITTING ###################")
 	// {
 	// 	fitting := stathighs.FittingEachStatWeightProcess{}
@@ -882,26 +890,26 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	// 	resultsByAlgorithm["fitting"] = fitting.Run()
 	// }
 
-	printer.Println("################# GRID1 ###################")
-	{
+	wg.Go(func() {
+		printer.Println("################# GRID1 ###################")
 		grid1 := stathighs.GridStatWeightProcess{}
 		grid1.Init(printer)
 		grid1.SetTargetRatios(targetRatio)
 		grid1.SupplyData(inputDataGrid)
 		resultsByAlgorithm["grid1"] = grid1.Run()
-	}
+	})
 
-	printer.Println("################# GRID2 ###################")
-	{
+	wg.Go(func() {
+		printer.Println("################# GRID2 ###################")
 		grid2 := stathighs.GridStatWeightProcess2{}
 		grid2.Init(printer)
 		grid2.SetTargetRatios(targetRatio)
 		grid2.SupplyData(inputDataGrid)
 		resultsByAlgorithm["grid2"] = grid2.Run()
-	}
+	})
 
-	printer.Println("################# RANKING0 ###################")
-	{
+	wg.Go(func() {
+		printer.Println("################# RANKING0 ###################")
 		ranking := stathighs.RankingStatWeightProcess{}
 		ranking.Init(printer)
 		ranking.SetTargetRatios(targetRatio)
@@ -910,10 +918,10 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		ranking.RANKMODE = 0
 
 		resultsByAlgorithm["ranking0"] = ranking.Run()
-	}
+	})
 
-	printer.Println("################# RANKING1 ###################")
-	{
+	wg.Go(func() {
+		printer.Println("################# RANKING1 ###################")
 		ranking := stathighs.RankingStatWeightProcess{}
 		ranking.Init(printer)
 		ranking.SetTargetRatios(targetRatio)
@@ -922,9 +930,10 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		ranking.RANKMODE = 1
 
 		resultsByAlgorithm["ranking1"] = ranking.Run()
-	}
-	printer.Println("################# RANKING2 ###################")
-	{
+	})
+
+	wg.Go(func() {
+		printer.Println("################# RANKING2 ###################")
 		ranking := stathighs.RankingStatWeightProcess{}
 		ranking.Init(printer)
 		ranking.SetTargetRatios(targetRatio)
@@ -933,10 +942,10 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		ranking.RANKMODE = 2
 
 		resultsByAlgorithm["ranking2"] = ranking.Run()
-	}
+	})
 
-	printer.Println("################# RANKING3 ###################")
-	{
+	wg.Go(func() {
+		printer.Println("################# RANKING3 ###################")
 		ranking := stathighs.RankingStatWeightProcess3{}
 		ranking.Init(printer)
 		ranking.SetTargetRatios(targetRatio)
@@ -945,12 +954,15 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		// ranking.SupplyData(mixedInputData[0:350])
 		ranking.SupplyData(mixedInputData)
 
-		// resultsByAlgorithm["ranking3a"], resultsByAlgorithm["ranking3b"], resultsByAlgorithm["ranking3c"] = ranking.Run(true)
-		resultsByAlgorithm["ranking3a"], resultsByAlgorithm["ranking3b"], _ = ranking.Run(false)
-	}
+		weightList := ranking.Run(false)
+		for i, weight := range weightList {
+			resultsByAlgorithm["ranking3-"+strconv.Itoa(i)] = weight
+		}
+	})
 
 	// TODO what about ranking by each simtype, then combine. simlar to fitting?
 
+	// wg.Go(func(){
 	// printer.Println("################# SELECTIVE GRID ###################")
 	// {
 	// 	selgrid := stathighs.SelectiveGridStatWeightProcess{}
@@ -959,6 +971,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	// 	selgrid.SupplyData(inputDataGrid)
 	// 	resultsByAlgorithm["selgrid"] = selgrid.Run()
 	// }
+
+	wg.Wait()
 
 	printer.Println("################# FINAL RESULT ###################")
 	tab := util.TabulateOutput{}
@@ -983,6 +997,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 }
 
 func evaluateAccuracy(statWeights stathighs.WeightResult, inputData []stathighs.WeightInput, simRatios simulate.SimData) float64 {
+
+	// TODO take into acccoount sim's uncertainty ranges
 	// make structures
 	type accuracyInfo struct {
 		input *stathighs.WeightInput

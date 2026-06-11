@@ -26,7 +26,8 @@ func Model_PallyProtMitigation_WithSet() Model {
 		EnchantChoice: EnchantChoice_ForSpec(spec, goal),
 		GemChoice:     GemChoice_ForSpec(spec, goal),
 		// SetBonus:      SetBonus_Named("Plate of the Lightning Emperor"),
-		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor", "Plate of Winged Triumph"),
+		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor"),
+		// SetBonus:         SetBonus_Named("Plate of the Lightning Emperor", "Plate of Winged Triumph"),
 		SetBonusRequired: 4,
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
@@ -71,7 +72,8 @@ func Model_PallyProtCompromise() Model {
 		ReforgeRules:     ReforgeRules_tank,
 		EnchantChoice:    EnchantChoice_ForSpec(spec, goal),
 		GemChoice:        GemChoice_ForSpec(spec, goal),
-		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Damage"),
+		// SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Damage"),
+		SetBonus:         SetBonus_Empty(),
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,
@@ -93,7 +95,8 @@ func Model_PallyProtDps() Model {
 		ReforgeRules:     ReforgeRules_tank,
 		EnchantChoice:    EnchantChoice_ForSpec(spec, goal),
 		GemChoice:        GemChoice_ForSpec(spec, goal),
-		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Damage"),
+		// SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Damage"),
+		SetBonus:         SetBonus_Empty(),
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,
