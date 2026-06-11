@@ -18,6 +18,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const c_timeLimit = 15*60 // 15 mins
+
 type SolverHighsMultiParam struct {
 	Label          string
 	ItemOptions    items.FullOptionsMap
@@ -125,6 +127,7 @@ func (process *SolverHighsMultiProcess) solutionToResult(solution *highs.Solutio
 
 func (process *SolverHighsMultiProcess) makeFullModel() {
 	process.input = &utilhighs.InputBuilder{}
+	process.input.TimeLimitSeconds = c_timeLimit // an hour
 
 	entry := columnInfo{entryType: entry_multi_output}
 	entry.columnIndex = process.input.CreateColumnWithOutput(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, 1, &entry)

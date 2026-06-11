@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"strconv"
+	"time"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
@@ -36,10 +37,10 @@ type rankEntry3 struct {
 	initialStatScore float64
 	simScore         float64
 	targetRank       int
+	primeMultiplier  int64
 
-	scoreColumn utilhighs.ColumnIndex
-	rankColumn  utilhighs.ColumnIndex
-	// rankDiffColumn    utilhighs.ColumnIndex
+	scoreColumn       utilhighs.ColumnIndex
+	rankColumn        utilhighs.ColumnIndex
 	rankDiffAbsColumn utilhighs.ColumnIndex
 }
 
@@ -72,20 +73,23 @@ func (ranker *RankingStatWeightProcess3) SetTargetRatios(targetRatios simulate.S
 	ranker.targetRatios = targetRatios
 }
 
-func (ranker *RankingStatWeightProcess3) Run(doRound3 bool) (WeightResult, WeightResult, WeightResult) {
+func (ranker *RankingStatWeightProcess3) Run(doRound3 bool) []WeightResult {
+	weightResultList := make([]WeightResult, 0)
+
 	ranker.input = new(utilhighs.InputBuilder)
 	ranker.input.Minimise = true
 
 	// FIRST ROUND: minimal data, dumb initial values
 	ranker.printer.Println("RankingStatWeightProcess3 FIRST ROUND")
-	minimalData := ranker.dataAll[0:200]
+	minimalData := ranker.dataAll[0:100]
 	ranker.prepareRankings(minimalData)
 	ranker.createWeightColumns()
 	ranker.makeDataListEntryColumns(minimalData)
 	ranker.setupDumbInitialSolution(minimalData)
 	solution1, log := ranker.input.RunHighs()
 	ranker.printer.AppendOther(log)
-	weights1 := ranker.extractAndReportSolution(solution1)
+	weights := ranker.extractAndReportSolution(solution1)
+	weightResultList = append(weightResultList, weights)
 
 	// SECOND ROUND, minimal data, add extra conditions, copy initial from previous
 	ranker.printer.Println("RankingStatWeightProcess3 SECOND ROUND")
@@ -93,30 +97,63 @@ func (ranker *RankingStatWeightProcess3) Run(doRound3 bool) (WeightResult, Weigh
 	ranker.setupInitialSolutionFromPrevious(solution1)
 	solution2, log := ranker.input.RunHighs()
 	ranker.printer.AppendOther(log)
-	weights2 := ranker.extractAndReportSolution(solution2)
+	weights = ranker.extractAndReportSolution(solution2)
+	weightResultList = append(weightResultList, weights)
 
 	// THIRD ROUND, full data, copy just weights from previous
 	// data change means column ids won't line up
-	var weights3 WeightResult
-	if doRound3 {
-		ranker.printer.Println("RankingStatWeightProcess3 THIRD ROUND")
+	// var weights3 WeightResult
+	// if doRound3 {
+	// 	ranker.printer.Println("RankingStatWeightProcess3 THIRD ROUND")
+	// 	ranker.input = new(utilhighs.InputBuilder)
+	// 	ranker.input.Minimise = true
+	// 	ranker.input.TimeLimitSeconds = 3600
+	// 	fullData := ranker.dataAll
+	// 	ranker.prepareRankings(fullData)
+	// 	ranker.createWeightColumns()
+	// 	ranker.makeDataListEntryColumns(fullData)
+	// 	ranker.makeDataListPairRules(fullData)
+	// 	ranker.setupInitialSolutionFromPreviousWeightOnly(solution2, fullData)
+	// 	solution3, log := ranker.input.RunHighs()
+	// 	ranker.printer.AppendOther(log)
+	// 	weights = ranker.extractAndReportSolution(solution3)
+	// 	weightResultList = append(weightResultList, weights)
+	// }
+
+	latestSolution := solution2
+	times := make(map[int]time.Duration)
+	for size := 150; size < 400; size += 25 {
+		startTime := time.Now()
+
+		dataSample := ranker.dataAll[0:size]
+		ranker.printer.Println("RankingStatWeightProcess3 THIRD ROUND " + strconv.Itoa(size))
 		ranker.input = new(utilhighs.InputBuilder)
 		ranker.input.Minimise = true
-		ranker.input.TimeLimitSeconds = 3600
-		fullData := ranker.dataAll
-		ranker.prepareRankings(fullData)
+		ranker.input.TimeLimitSeconds = 2000
+		ranker.prepareRankings(dataSample)
 		ranker.createWeightColumns()
-		ranker.makeDataListEntryColumns(fullData)
-		ranker.makeDataListPairRules(fullData)
-		ranker.setupInitialSolutionFromPreviousWeightOnly(solution2, fullData)
+		ranker.makeDataListEntryColumns(dataSample)
+		ranker.makeDataListPairRules(dataSample)
+		ranker.setupInitialSolutionFromPreviousWeightOnly(latestSolution, dataSample)
 		solution3, log := ranker.input.RunHighs()
 		ranker.printer.AppendOther(log)
-		weights3 = ranker.extractAndReportSolution(solution3)
+		weights = ranker.extractAndReportSolution(solution3)
+		weightResultList = append(weightResultList, weights)
+		latestSolution = solution3
+
+		timeTaken := time.Since(startTime)
+		times[size] = timeTaken
+
+		if solution3.Status == highs.ModelStatusTimeLimit {
+			break
+		}
 	}
 
-	// TODO should really care about solution1.HasSolution()
+	for size, duration := range times {
+		ranker.printer.Printf("%4d %s\n", size, duration)
+	}
 
-	return weights1, weights2, weights3
+	return weightResultList
 }
 
 func (ranker *RankingStatWeightProcess3) createWeightColumns() {
@@ -175,8 +212,6 @@ func (ranker *RankingStatWeightProcess3) makeDataListPairRules(data []rankEntry3
 			ranker.makeEntryPairSequenceConstraints(&data[a], &data[b], a, b)
 		}
 	}
-
-	// TODO try out ranges of ranks, each times their own 2power/prime, and desirable sum, which would imply exact ordering
 }
 
 func (ranker *RankingStatWeightProcess3) makeEntryColumns(entry *rankEntry3, maxRank float64) {

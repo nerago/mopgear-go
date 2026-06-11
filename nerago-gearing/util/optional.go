@@ -55,3 +55,9 @@ func (opt Optional[T]) GetOrDefault(defaultValue T) T {
 		return defaultValue
 	}
 }
+
+func (opt Optional[T]) ApplyIfValue(apply func(T)) {
+	if opt.exists {
+		apply(opt.value)
+	}
+}
