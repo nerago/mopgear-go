@@ -20,7 +20,6 @@ type GridStatWeightProcess2 struct {
 
 	input           utilhighs.InputBuilder
 	detailedWeights util.MapMap[stats.StatType, simulate.SimType, utilhighs.ColumnIndex]
-	// finalWeights    map[stats.StatType]utilhighs.ColumnIndex
 }
 
 type gridDataSample2 struct {
@@ -31,7 +30,6 @@ func (grid2 *GridStatWeightProcess2) Init(printer *util.PrintRecorder) {
 	grid2.printer = printer
 	grid2.input.Minimise = true
 	// grid2.input.Solver = "pdlp"
-	// grid2.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }
 
 func (grid2 *GridStatWeightProcess2) SupplyData(inputData []WeightInput) {
@@ -58,7 +56,6 @@ func (grid2 *GridStatWeightProcess2) Run() WeightResult {
 	grid2.setupWeightVars()
 	grid2.chooseScaling()
 	grid2.processInputData()
-	// grid2.calcTotalRatings()
 
 	solution, log := grid2.input.RunHighs()
 	grid2.printer.AppendOther(log)
@@ -70,12 +67,6 @@ func (grid2 *GridStatWeightProcess2) Run() WeightResult {
 }
 
 func (grid2 *GridStatWeightProcess2) setupWeightVars() {
-	// for _, statType := range G_RequiredStats {
-	// 	colFinalWeight := grid2.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "FINAL WEIGHT: " + statType.Name()})
-	// 	// colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, -c_finalWeightLimit, c_finalWeightLimit)
-	// 	grid2.finalWeights[statType] = colFinalWeight
-	// }
-
 	// create detail columns
 	for _, statType := range G_RequiredStats {
 		for _, simType := range G_RequiredSims {
@@ -243,33 +234,6 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *Weight
 	}
 }
 
-// func (grid2 *GridStatWeightProcess2) twoSamplesDifferenceAddToModel(oneSample float64, oneWeightCol utilhighs.ColumnIndex, twoSample float64, twoWeightCol utilhighs.ColumnIndex, debugText string) {
-// 	offsetAbs := grid2.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "OFFSET " + debugText})
-// 	utilhighs.AbsoluteValueFromDiffTwoVars(&grid2.input,
-// 		oneWeightCol, twoSample,
-// 		twoWeightCol, oneSample,
-// 		offsetAbs, "OFFSET "+debugText)
-// }
-
-// func (grid2 *GridStatWeightProcess2) calcTotalRatings() {
-// 	for _, statType := range G_RequiredStats {
-// 		statFinalRow := utilhighs.ConstraintRowBuild{}
-// 		for simType, detailColumn := range grid2.detailedWeights.SeqInnerWithKey1Value(statType) {
-// 			scale := 1.0 / grid2.scaleSims[simType]
-// 			if simType.IsHighGood() || statType == stats.Stat_Strength {
-// 				scale *= 1
-// 			} else {
-// 				scale *= -1
-// 			}
-// 			statFinalRow.Add(detailColumn, scale)
-// 		}
-
-// 		finalWeightColumn := grid2.finalWeights[statType]
-// 		statFinalRow.Add(finalWeightColumn, -1)
-// 		statFinalRow.Finish(&grid2.input, 0, 0)
-// 	}
-// }
-
 func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Solution) WeightResult {
 	result := WeightResult_Make()
 	grid2.printer.Println("FINAL WEIGHTS:")
@@ -282,7 +246,8 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 		for simType, detailWeightCol := range grid2.detailedWeights.SeqInnerWithKey1Value(statType) {
 			weight := solution.ColValues[detailWeightCol]
 
-			scaleFix := grid2.scaleStats[statType] / grid2.scaleSims[simType]
+			// scaleFix := grid2.scaleStats[statType] / grid2.scaleSims[simType]
+			scaleFix := 1.0
 			usableWeight := weight * scaleFix
 
 			if !simType.IsHighGood() {
