@@ -108,6 +108,12 @@ func ConstraintNot(input *InputBuilder, inputVar, outputVar ColumnIndex) {
 	row.Finish(input, 1, 1)
 }
 
+func NotAsColumn(input *InputBuilder, inputVar ColumnIndex) ColumnIndex {
+	outputVar := input.CreateColumnBool(nil)
+	ConstraintNot(input, inputVar, outputVar)
+	return outputVar
+}
+
 func AbsoluteValue(input *InputBuilder, inputVar, outputVar ColumnIndex) {
 	negative := ConstraintRowBuild{Debug: "AbsoluteValueNegative"}
 	negative.Add(inputVar, 1)

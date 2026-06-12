@@ -10,6 +10,7 @@ type MapMap[J comparable, K comparable, V any] struct {
 	dataBy2 map[K]map[J]V
 }
 
+
 type MapMapEntry[J comparable, K comparable, V any] struct {
 	Key1  J
 	Key2  K
@@ -44,6 +45,14 @@ func (mapmap *MapMap[J, K, V]) Has(key1 J, key2 K) bool {
 func (mapmap *MapMap[J, K, V]) Clear() {
 	clear(mapmap.dataBy1)
 	clear(mapmap.dataBy2)
+}
+
+func (mapmap MapMap[J, K, V]) Size() int {
+	size := 0
+	for _, inner := range mapmap.dataBy1 {
+		size += len(inner)
+	}
+	return size
 }
 
 func (mapmap *MapMap[J, K, V]) Put(key1 J, key2 K, value V) {

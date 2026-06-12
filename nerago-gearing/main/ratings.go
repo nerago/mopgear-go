@@ -423,7 +423,7 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 	filteredInput := mixedInputData
 	printer.Printf("filteredInput size %d\n", len(filteredInput))
 
-	ranking := stathighs.RankingStatWeightProcess3{}
+	ranking := stathighs.RankingStatWeightProcess4{}
 
 	ranking.Init(printer)
 	ranking.SetTargetRatios(targetRatio)
@@ -899,14 +899,14 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		resultsByAlgorithm["grid1"] = grid1.Run()
 	})
 
-	wg.Go(func() {
-		printer.Println("################# GRID2 ###################")
-		grid2 := stathighs.GridStatWeightProcess2{}
-		grid2.Init(printer)
-		grid2.SetTargetRatios(targetRatio)
-		grid2.SupplyData(inputDataGrid)
-		resultsByAlgorithm["grid2"] = grid2.Run()
-	})
+	// wg.Go(func() {
+	// 	printer.Println("################# GRID2 ###################")
+	// 	grid2 := stathighs.GridStatWeightProcess2{}
+	// 	grid2.Init(printer)
+	// 	grid2.SetTargetRatios(targetRatio)
+	// 	grid2.SupplyData(inputDataGrid)
+	// 	resultsByAlgorithm["grid2"] = grid2.Run()
+	// })
 
 	// wg.Go(func() {
 	// 	printer.Println("################# RANKING0 ###################")
@@ -959,6 +959,22 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	// 		resultsByAlgorithm["ranking3-"+strconv.Itoa(i)] = weight
 	// 	}
 	// })
+
+	wg.Go(func() {
+		printer.Println("################# RANKING4 ###################")
+		ranking := stathighs.RankingStatWeightProcess4{}
+		ranking.Init(printer)
+		ranking.SetTargetRatios(targetRatio)
+		// ranking.SupplyData(inputDataGrid)
+		ranking.SupplyData(mixedInputData[0:15])
+		// ranking.SupplyData(mixedInputData[0:350])
+		// ranking.SupplyData(mixedInputData)
+
+		weightList := ranking.Run(false)
+		for i, weight := range weightList {
+			resultsByAlgorithm["ranking4-"+strconv.Itoa(i)] = weight
+		}
+	})
 
 	// TODO what about ranking by each simtype, then combine. simlar to fitting?
 

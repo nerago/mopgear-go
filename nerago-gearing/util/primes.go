@@ -18,7 +18,7 @@ func PrimesSmall(requestCount int64) []int64 {
 		}
 	}
 
-	primeList := make([]int64, requestCount)
+	primeList := make([]int64, 0, requestCount)
 	for prime = 2; prime < max && int64(len(primeList)) < requestCount; prime++ {
 		if !sieve[prime] {
 			primeList = append(primeList, prime)

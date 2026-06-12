@@ -93,36 +93,42 @@ func (grid2 *GridStatWeightProcess2) chooseScaling() {
 func (grid2 *GridStatWeightProcess2) processInputData() {
 	for a := range grid2.inputData {
 		for b := a + 1; b < len(grid2.inputData); b++ {
-			differenceCount, diffStatA, diffStatB := grid2.checkForNumberStatDifferences(&grid2.inputData[a].TotalStat, &grid2.inputData[b].TotalStat)
+			differenceCount, diffStatA, _, _ := grid2.checkForNumberStatDifferences(&grid2.inputData[a].TotalStat, &grid2.inputData[b].TotalStat)
 			switch differenceCount {
 			case 1:
-				// grid2.prepareSampleOneDifferenceStats(&grid2.inputData[a], &grid2.inputData[b], diffStatA)
+				grid2.prepareSampleOneDifferenceStats(&grid2.inputData[a], &grid2.inputData[b], diffStatA)
 			case 2:
-				grid2.prepareSampleTwoDifferenceStats(&grid2.inputData[a], &grid2.inputData[b], diffStatA, diffStatB)
+				// grid2.prepareSampleTwoDifferenceStats(&grid2.inputData[a], &grid2.inputData[b], diffStatA, diffStatB)
+			case 3:
+				// grid2.prepareSampleThreeDifferenceStats(&grid2.inputData[a], &grid2.inputData[b], diffStatA, diffStatB, diffStatC)
 			}
+
+			// using 1,2,3: 68.5225% 
+			// using 1,2: 89.3560%
+			// using 2: 89.4443%
 		}
 	}
 }
 
-func (grid2 *GridStatWeightProcess2) checkForNumberStatDifferences(one, two *stats.StatBlock) (differenceCount int, diffStatA stats.StatType, diffStatB stats.StatType) {
-	for stat := range one {
+func (grid2 *GridStatWeightProcess2) checkForNumberStatDifferences(one, two *stats.StatBlock) (differenceCount int, diffStatA stats.StatType, diffStatB stats.StatType, diffStatC stats.StatType) {
+	// for stat := range one { // was doing fine in tests up until now, up to 89%
+	for _, stat := range G_RequiredStats {
 		if one[stat] != two[stat] {
 			switch differenceCount {
 			case 0:
 				diffStatA = stats.StatType(stat)
 			case 1:
 				diffStatB = stats.StatType(stat)
+			case 2:
+				diffStatC = stats.StatType(stat)
 			}
 			differenceCount++
 		}
 	}
-	return differenceCount, diffStatA, diffStatB
+	return differenceCount, diffStatA, diffStatB, diffStatC
 }
 
 func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStats(one *WeightInput, two *WeightInput, statType stats.StatType) {
-	// maybe old formula applies somehow still? dunno, thats a separates pair of differences
-	// formula: detailweight_dps_haste * unit_dps_strength - detailweight_dps_strength * unit_dps_haste + offset = 0
-
 	statDiff := one.TotalStat.GetFloat(statType) - two.TotalStat.GetFloat(statType)
 	statDiff *= grid2.scaleStats[statType]
 
@@ -132,7 +138,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStats(one *Weight
 		debugText := "MISMATCH1 " + statType.Name() + " " + simType.Name()
 		mismatchCol := grid2.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
 
-		simDiff := one.SimResult.GetFriendly(simType) - two.SimResult.GetFriendly(simType)
+		simDiff := two.SimResult.GetFriendly(simType) - one.SimResult.GetFriendly(simType)
 		simDiff *= grid2.scaleSims[simType]
 
 		utilhighs.AbsoluteValueFromDiffOneToConst(&grid2.input, weightColumn, statDiff, simDiff, mismatchCol, debugText)
@@ -140,54 +146,6 @@ func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStats(one *Weight
 }
 
 func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *WeightInput, two *WeightInput, statTypeA stats.StatType, statTypeB stats.StatType) {
-	// formula: detailweight_dps_haste * unit_dps_strength - detailweight_dps_strength * unit_dps_haste + offset = 0
-	// general form: weightA / unitValueA == weightB / unitValueB
-	//   -->         weightA / (simA / statA) == weightB / (simB / statB)
-	//   -->         (simB / statB) / (simA / statA) == weightB / weightA				(in words, we're checking on the ratio of different valuation of the two stats)
-
-	// so the old method we're comparing   baseSim[0, 0]<=>strengthSimPlus[0, +s] vs baseSim[0, 0]<=>hasteSimPlus[+h, 0]
-	// what if we pretend that we have that sim too even though its unavailable at least at this point
-	// pretendSim[a b]<=>strengthSimPlus[a, b+strengthIncrement] vs pretendSim[a b]<=>hasteSimPlus[a+hasteIncrement, b]
-	//
-	// (strengthSimPlus-pretendSim)/strengthIncrement vs (hasteSimPlus-pretendSim)/hasteIncrement
-	// ((strengthSimPlus-pretendSim)) / ((hasteSimPlus-pretendSim)/hasteIncrement) = weightStrength/weightHaste
-	//  (strengthSimPlus-pretendSim)           hasteIncrement
-	//   --------------------------   *   -------------------------   = weightStrength/weightHaste
-	//       strengthIncrement            (hasteSimPlus-pretendSim)
-	//  what if we substitute pretendSim + strengthIncrement*strengthWeight = strengthSimPlus
-	//                        pretendSim = strengthSimPlus - strengthIncrement*strengthWeight
-	//  (strengthSimPlus-(strengthSimPlus - strengthIncrement*strengthWeight ))           hasteIncrement
-	//   ---------------------------------------------------------------------   *   ------------------------------------------------------------------    = weightStrength/weightHaste
-	//       strengthIncrement                                                      (hasteSimPlus-(strengthSimPlus - strengthIncrement*strengthWeight ))
-	//  ( strengthIncrement*strengthWeight ))                             hasteIncrement
-	//   -------------------------------------   *   ------------------------------------------------------------------    = weightStrength/weightHaste
-	//       strengthIncrement                       (hasteSimPlus-strengthSimPlus + strengthIncrement*strengthWeight ))
-	//                                 hasteIncrement
-	//   strengthWeight      *   ------------------------------------------------------------------    = weightStrength/weightHaste
-	//                           (hasteSimPlus-strengthSimPlus + strengthIncrement*strengthWeight ))
-	//                                 hasteIncrement
-	//                           ------------------------------------------------------------------    = 1/weightHaste
-	//                           (hasteSimPlus-strengthSimPlus + strengthIncrement*strengthWeight ))
-	//                                 1
-	//                           ------------------------------------------------------------------    = 1/weightHaste**2
-	//                           (hasteSimPlus-strengthSimPlus + strengthIncrement*strengthWeight ))
-	//                           (hasteSimPlus-strengthSimPlus + strengthIncrement*strengthWeight ))   = weightHaste**2
-	//                           ( strengthIncrement*strengthWeight )) - weightHaste**2  = hasteSimPlus-strengthSimPlus
-	//                  feels like we've made a mistake, squared is weird
-	//
-	//
-	// or (strengthSimPlus-pretendSim) - (hasteSimPlus-pretendSim) = simDiff
-	//    --> strengthSimPlus-hasteSimPlus = simDiff
-	//    --> statStrength*strengthWeight -
-
-	// basic method formula, as with spreadsheet
-	// unit_dps_haste = (this_dps[haste] - base_dps) / this_haste_increment
-	// unit_dps_strength = (this_dps[strength] - base_dps) / this_strength_increment
-	// Weight[x] = unit_stat[x] / unit_stat[str] * weight[str]
-	// Weight[x] / weight[str] = unit_stat[x] / unit_stat[str]
-
-	// formula: detailweight_dps_haste * (simValSingleDiff / strengthSingleDiff) - detailweight_dps_strength * (simValOtherDiff / hasteSingleDiff) + offset = 0
-
 	statDiffA := one.TotalStat.GetFloat(statTypeA) - two.TotalStat.GetFloat(statTypeA)
 	statDiffB := one.TotalStat.GetFloat(statTypeB) - two.TotalStat.GetFloat(statTypeB)
 	statDiffA *= grid2.scaleStats[statTypeA]
@@ -200,37 +158,46 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *Weight
 		debugText := "MISMATCH2 " + statTypeA.Name() + " " + statTypeB.Name() + " " + simType.Name()
 		mismatchCol := grid2.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
 
-		simDiff := one.SimResult.GetFriendly(simType) - two.SimResult.GetFriendly(simType)
+		simDiff := two.SimResult.GetFriendly(simType) - one.SimResult.GetFriendly(simType)
 		simDiff *= grid2.scaleSims[simType]
 
-		// not based directly on above
-		// weightA * statDiffA - weightB * statDiffB + mismatch = simDiff
-		// TODO neeeds thought awake
-		// simOne + weightA * statDiffA + weightB * statDiffB = simTwo
-
-		// RESULT 69% accuracy
-		// utilhighs.AbsoluteValueFromDiffTwoVarsWithOffset(&grid2.input,
-		// 	weightColumnA, statDiffA,
-		// 	weightColumnB, -statDiffB,
-		// 	mismatchCol,
-		// 	simDiff,
-		// 	debugText)
-
-		// result 52%
-		// 		utilhighs.AbsoluteValueFromDiffTwoVarsWithOffset(&grid2.input,
-		// weightColumnA, statDiffA,
-		// weightColumnB, statDiffB,
-		// mismatchCol,
-		// simDiff,
-		// debugText)
-
-		//result 85%
 		utilhighs.AbsoluteValueFromDiffTwoVarsWithOffset(&grid2.input,
 			weightColumnA, statDiffA,
 			weightColumnB, statDiffB,
 			mismatchCol,
-			-simDiff,
+			simDiff,
 			debugText)
+	}
+}
+
+func (grid2 *GridStatWeightProcess2) prepareSampleThreeDifferenceStats(one *WeightInput, two *WeightInput, statTypeA stats.StatType, statTypeB stats.StatType, statTypeC stats.StatType) {
+	statDiffA := one.TotalStat.GetFloat(statTypeA) - two.TotalStat.GetFloat(statTypeA)
+	statDiffA *= grid2.scaleStats[statTypeA]
+	statDiffB := one.TotalStat.GetFloat(statTypeB) - two.TotalStat.GetFloat(statTypeB)
+	statDiffB *= grid2.scaleStats[statTypeB]
+	statDiffC := one.TotalStat.GetFloat(statTypeC) - two.TotalStat.GetFloat(statTypeC)
+	statDiffC *= grid2.scaleStats[statTypeC]
+
+	for _, simType := range G_RequiredSims {
+		weightColumnA := grid2.detailedWeights.GetOrPanic(statTypeA, simType)
+		weightColumnB := grid2.detailedWeights.GetOrPanic(statTypeB, simType)
+		weightColumnC := grid2.detailedWeights.GetOrPanic(statTypeC, simType)
+
+		simDiff := two.SimResult.GetFriendly(simType) - one.SimResult.GetFriendly(simType)
+		simDiff *= grid2.scaleSims[simType]
+
+		debugText := "MISMATCH3 " + statTypeA.Name() + " " + statTypeB.Name() + " " + statTypeC.Name() + " " + simType.Name()
+		mismatchSignedCol := grid2.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, nil)
+
+		rowEquate := utilhighs.ConstraintRowBuild{}
+		rowEquate.Add(weightColumnA, statDiffA)
+		rowEquate.Add(weightColumnB, statDiffB)
+		rowEquate.Add(weightColumnC, statDiffC)
+		rowEquate.Add(mismatchSignedCol, 1)
+		rowEquate.Finish(&grid2.input, simDiff, simDiff)
+
+		mismatchCol := grid2.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
+		utilhighs.AbsoluteValue(&grid2.input, mismatchSignedCol, mismatchCol)
 	}
 }
 
@@ -246,16 +213,7 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 		for simType, detailWeightCol := range grid2.detailedWeights.SeqInnerWithKey1Value(statType) {
 			weight := solution.ColValues[detailWeightCol]
 
-			// scaleFix := 1.0 // accuracy 51%
-
-			// scaleFix := grid2.scaleSims[simType] // 51.1047%
-			// scaleFix := grid2.scaleStats[statType] // 51.7147
-			scaleFix := 1/grid2.scaleSims[simType] // 89.443
-			// scaleFix := 1/grid2.scaleStats[statType] //51.3041 
-			// scaleFix := grid2.scaleSims[simType] / grid2.scaleStats[statType] // 51.302
-			// scaleFix := grid2.scaleStats[statType] / grid2.scaleSims[simType] //85.5545
-
-			usableWeight := weight * scaleFix
+			usableWeight := weight / grid2.scaleSims[simType]
 
 			if !simType.IsHighGood() {
 				usableWeight *= -1
@@ -266,9 +224,14 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 			sumIndividual += usableWeight
 		}
 
-		// grid2.printer.Printf("%10s %f\n", statType.Name(), sumIndividual)
 		grid2.printer.Printf("             === %f\n", sumIndividual)
 		result.Put(statType, sumIndividual)
 	}
+
+	divideBy := result[stats.Stat_Strength]
+	for _, statType := range G_RequiredStats {
+		result[statType] /= divideBy
+	}
+
 	return result
 }
