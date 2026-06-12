@@ -13,22 +13,23 @@ func Model_PallyProtMitigation_WithSet() Model {
 	goal := OptimiseGoal_Mitigation
 	weight := StatRatingsWeights_ReadFile(files.WeightMitiWithSetFile, false, true, false)
 	return Model{
-		Spec:        spec,
-		Goal:        goal,
-		SimulateAs:  Fight_Horridon_LowHeal, // TODO really a raden set
-		StatRatings: weight,
+		Spec:             spec,
+		Goal:             goal,
+		SimulateAs:       Fight_Horridon_LowHeal, // TODO really a raden set
+		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
 		// StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry_PlusAdditional(
-			// &StatAndValue{StatType: Stat_Haste, Value: 13500}),
-			// &StatAndValue{StatType: Stat_Haste, Value: 13000}),
+		// &StatAndValue{StatType: Stat_Haste, Value: 13500}),
+		// &StatAndValue{StatType: Stat_Haste, Value: 13000}),
 		// &StatAndValue{StatType: Stat_Haste, Value: 12500}),
 		ReforgeRules:  ReforgeRules_tank,
 		EnchantChoice: EnchantChoice_ForSpec(spec, goal),
 		GemChoice:     GemChoice_ForSpec(spec, goal),
-		// SetBonus:      SetBonus_Named("Plate of the Lightning Emperor"),
-		SetBonus:         SetBonus_Named("Plate of the Lightning Emperor"),
-		// SetBonus:         SetBonus_Named("Plate of the Lightning Emperor", "Plate of Winged Triumph"),
-		SetBonusRequired: 4,
+		SetBonus:      SetBonus_Named("Plate of the Lightning Emperor", "Plate of Winged Triumph"),
+		SetBonusRequired: []ActiveSetCountsRequired{
+			ActiveSetCountsRequiredMake(ActiveSet_Named("Plate of the Lightning Emperor"), 4),
+			ActiveSetCountsRequiredMake(ActiveSet_Named("Plate of the Lightning Emperor"), 2, ActiveSet_Named("Plate of Winged Triumph"), 2),
+		},
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,
@@ -72,7 +73,6 @@ func Model_PallyProtCompromise() Model {
 		ReforgeRules:     ReforgeRules_tank,
 		EnchantChoice:    EnchantChoice_ForSpec(spec, goal),
 		GemChoice:        GemChoice_ForSpec(spec, goal),
-		// SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Damage"),
 		SetBonus:         SetBonus_Empty(),
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
@@ -96,7 +96,7 @@ func Model_PallyProtDps() Model {
 		EnchantChoice:    EnchantChoice_ForSpec(spec, goal),
 		GemChoice:        GemChoice_ForSpec(spec, goal),
 		// SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Damage"),
-		SetBonus:         SetBonus_Empty(),
+		SetBonus: SetBonus_Empty(),
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,

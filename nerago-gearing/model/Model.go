@@ -5,6 +5,7 @@ import (
 	. "paladin_gearing_go/model/ratings"
 	. "paladin_gearing_go/model/requirements"
 	. "paladin_gearing_go/stats"
+	"slices"
 )
 
 type Model struct {
@@ -23,7 +24,7 @@ type Model struct {
 	EnchantChoice     EnchantChoice
 	GemChoice         GemChoice
 	SetBonus          SetBonus
-	SetBonusRequired  uint8
+	SetBonusRequired  []ActiveSetCountsRequired
 	Professions       ProfessionInfo
 	ReferenceGearFile string // should just be used by exporters etc
 }
@@ -36,19 +37,15 @@ func (model *Model) Equals(other *Model) bool {
 		model.EnchantChoice.Equals(other.EnchantChoice) &&
 		model.GemChoice.Equals(other.GemChoice) &&
 		model.SetBonus.Equals(&other.SetBonus) &&
-		model.SetBonusRequired == other.SetBonusRequired &&
+		slices.EqualFunc(model.SetBonusRequired, other.SetBonusRequired, ActiveSetCountsRequired.Equals) &&
 		model.Professions == other.Professions
 }
 
 // ////////// requirements
 func (model *Model) CheckSet(itemSet *SolvableItemSet) bool {
 	if model.StatRequirements.CheckSet(itemSet.Total()) {
-		if model.SetBonusRequired > 0 {
-			// if len(model.SetBonus.activeSets) != 1 {
-			// 	panic("set bonus required only available for single set")
-			// }
-			count := model.SetBonus.CountInAnySetSolve(itemSet.Items())
-			return count >= model.SetBonusRequired
+		if len(model.SetBonusRequired) > 0 {
+			return ActiveSetCountsMeetAny(model.SetBonusRequired, itemSet.Items())
 		} else {
 			return true
 		}
@@ -59,12 +56,8 @@ func (model *Model) CheckSet(itemSet *SolvableItemSet) bool {
 
 func (model *Model) CheckSetFull(itemSet *FullItemSet) bool {
 	if model.StatRequirements.CheckSet(itemSet.Total()) {
-		if model.SetBonusRequired > 0 {
-			// if len(model.SetBonus.activeSets) != 1 {
-			// 	panic("set bonus required only available for single set")
-			// }
-			count := model.SetBonus.CountInAnySet(itemSet.Items())
-			return count >= model.SetBonusRequired
+		if len(model.SetBonusRequired) > 0 {
+			return ActiveSetCountsMeetAny_FullItem(model.SetBonusRequired, itemSet.Items())
 		} else {
 			return true
 		}

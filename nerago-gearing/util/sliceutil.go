@@ -239,6 +239,15 @@ func ForPointer[T any](slice []T) iter.Seq[*T] {
 	}
 }
 
+func FindWith[T any](slice []T, check func(T) bool) T {
+	for _, item := range slice {
+		if check(item) {
+			return item
+		}
+	}
+	panic("not found")
+}
+
 // guarantees that each ranking number is used in range, even given duplicate numbers
 func CalculateRanking[T any](highGood bool, inputData []T, toScore func(*T) float64) iter.Seq2[*T, int] {
 	type internalEntry struct {

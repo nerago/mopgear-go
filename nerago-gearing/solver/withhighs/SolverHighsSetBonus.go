@@ -47,25 +47,49 @@ func setupHighsSetAware(inputBuilder *utilhighs.InputBuilder, gear_model *gear_m
 
 	setup.finishItems(itemOptions, gear_model)
 
-	if gear_model.SetBonusRequired > 0 {
-		if len(setup.setData) == 0 {
-			panic("no setdata to use from SetBonusRequired")
-		} else if len(setup.setData) == 1 {
-			setCountCol := setup.setData[0].setTotalCountVar
-			rowSetCountRequired := utilhighs.ConstraintRowBuild{Debug: "rowSetCountRequired"}
-			rowSetCountRequired.Add(setCountCol.columnIndex, 1)
-			rowSetCountRequired.Finish(setup.input, float64(gear_model.SetBonusRequired), utilhighs.C_PlusInf)
-		} else {
-			// TODO doesn't actually confirm these are active set bonuses in any sensible combination
-			rowSetCountRequired := utilhighs.ConstraintRowBuild{Debug: "rowSetCountRequired"}
-			for _, set := range setup.setData {
-				rowSetCountRequired.Add(set.setTotalCountVar.columnIndex, 1)
-			}
-			rowSetCountRequired.Finish(setup.input, float64(gear_model.SetBonusRequired), utilhighs.C_PlusInf)
-		}
-	}
+	setup.addSetNeededCounts(gear_model)
 
 	return &setup
+}
+
+func (setup *setupInputSetAware) addSetNeededCounts(gear_model *gear_model.Model) {
+	if len(gear_model.SetBonusRequired) > 0 {
+		if len(setup.setData) == 0 {
+			panic("no setdata to use from SetBonusRequired")
+		} else if len(setup.setData) == 1 && len(gear_model.SetBonusRequired) == 1 && gear_model.SetBonusRequired[0].Count() == 1 {
+			setCountCol := setup.setData[0].setTotalCountVar
+			_, needCount := gear_model.SetBonusRequired[0].PairsByIndex(0)
+
+			rowSetCountRequired := utilhighs.ConstraintRowBuild{Debug: "rowSetCountRequired"}
+			rowSetCountRequired.Add(setCountCol.columnIndex, 1)
+			rowSetCountRequired.Finish(setup.input, float64(needCount), utilhighs.C_PlusInf)
+		} else {
+			oneOfTheseOptions := utilhighs.ConstraintRowBuild{}
+
+			for _, option := range gear_model.SetBonusRequired {
+				optionParts := utilhighs.ContraintAndBuilder{}
+
+				for activeSet, needCount := range option.Pairs() {
+					setInfo := util.FindWith(setup.setData, func(x setInfo) bool { return x.activeSet.Equals(activeSet) })
+					setCountCol := setInfo.setTotalCountVar
+
+					// do these work without minimisation?
+					// maybe just have off by one
+					needCount = 5
+					inRange := utilhighs.ConstantIsLessOrEqualColumn(setup.input, setCountCol.columnIndex, float64(needCount), 10)
+					// inRange := utilhighs.ConstantIsGreaterOrEqualColumn(setup.input, setCountCol.columnIndex, float64(needCount), 10)
+					optionParts.AddInput(inRange)
+				}
+
+				optionActive := setup.input.CreateColumnBool(utilhighs.DebugText("SetBonusRequired option"))
+				optionParts.SetOutput(optionActive)
+
+				oneOfTheseOptions.Add(optionActive, 1)
+			}
+
+			oneOfTheseOptions.Finish(setup.input, 1, utilhighs.C_PlusInf)
+		}
+	}
 }
 
 func debugPrint(solution *highs.Solution, setup *setupInputSetAware, printer *util.PrintRecorder) {
@@ -193,8 +217,8 @@ type setupInputSetAware struct {
 	mainOutputRow utilhighs.ConstraintRowBuild // compute final output from set based alternatives
 	mainOutputVar *columnInfo                  // output variable, to be used directly or scaled against other models
 
-	uniqueEquipRowsById    map[items.ItemId]*utilhighs.ConstraintRowBuild // lookup by id, may have multiple mappings for an item so need pointers
-	uniqueEquipRowsAll []*utilhighs.ConstraintRowBuild                // definitive copy of each unique equip row constraint
+	uniqueEquipRowsById map[items.ItemId]*utilhighs.ConstraintRowBuild // lookup by id, may have multiple mappings for an item so need pointers
+	uniqueEquipRowsAll  []*utilhighs.ConstraintRowBuild                // definitive copy of each unique equip row constraint
 
 	setData           []setInfo
 	allSetPermutation []setPermutation

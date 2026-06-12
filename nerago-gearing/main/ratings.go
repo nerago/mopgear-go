@@ -869,15 +869,15 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		resultsByAlgorithm["basic"] = basic.Run()
 	})
 
-	wg.Go(func() {
-		printer.Println("################# COMPLEX ###################")
-		comp := stathighs.ComplexStatWeightProcess{}
-		comp.Init(printer)
-		comp.SetTargetRatios(targetRatio)
-		comp.SetMinimumIncludeRate(1)
-		comp.SupplyData(inputDataRandom)
-		resultsByAlgorithm["complex"] = comp.Run()
-	})
+	// wg.Go(func() {
+	// 	printer.Println("################# COMPLEX ###################")
+	// 	comp := stathighs.ComplexStatWeightProcess{}
+	// 	comp.Init(printer)
+	// 	comp.SetTargetRatios(targetRatio)
+	// 	comp.SetMinimumIncludeRate(1)
+	// 	comp.SupplyData(inputDataRandom)
+	// 	resultsByAlgorithm["complex"] = comp.Run()
+	// })
 
 	// wg.Go(func(){
 	// printer.Println("################# FITTING ###################")
@@ -908,57 +908,57 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		resultsByAlgorithm["grid2"] = grid2.Run()
 	})
 
-	wg.Go(func() {
-		printer.Println("################# RANKING0 ###################")
-		ranking := stathighs.RankingStatWeightProcess{}
-		ranking.Init(printer)
-		ranking.SetTargetRatios(targetRatio)
-		// ranking.SupplyData(inputDataGrid)
-		ranking.SupplyData(mixedInputData)
-		ranking.RANKMODE = 0
+	// wg.Go(func() {
+	// 	printer.Println("################# RANKING0 ###################")
+	// 	ranking := stathighs.RankingStatWeightProcess{}
+	// 	ranking.Init(printer)
+	// 	ranking.SetTargetRatios(targetRatio)
+	// 	// ranking.SupplyData(inputDataGrid)
+	// 	ranking.SupplyData(mixedInputData)
+	// 	ranking.RANKMODE = 0
 
-		resultsByAlgorithm["ranking0"] = ranking.Run()
-	})
+	// 	resultsByAlgorithm["ranking0"] = ranking.Run()
+	// })
 
-	wg.Go(func() {
-		printer.Println("################# RANKING1 ###################")
-		ranking := stathighs.RankingStatWeightProcess{}
-		ranking.Init(printer)
-		ranking.SetTargetRatios(targetRatio)
-		// ranking.SupplyData(inputDataGrid)
-		ranking.SupplyData(mixedInputData)
-		ranking.RANKMODE = 1
+	// wg.Go(func() {
+	// 	printer.Println("################# RANKING1 ###################")
+	// 	ranking := stathighs.RankingStatWeightProcess{}
+	// 	ranking.Init(printer)
+	// 	ranking.SetTargetRatios(targetRatio)
+	// 	// ranking.SupplyData(inputDataGrid)
+	// 	ranking.SupplyData(mixedInputData)
+	// 	ranking.RANKMODE = 1
 
-		resultsByAlgorithm["ranking1"] = ranking.Run()
-	})
+	// 	resultsByAlgorithm["ranking1"] = ranking.Run()
+	// })
 
-	wg.Go(func() {
-		printer.Println("################# RANKING2 ###################")
-		ranking := stathighs.RankingStatWeightProcess{}
-		ranking.Init(printer)
-		ranking.SetTargetRatios(targetRatio)
-		// ranking.SupplyData(inputDataGrid)
-		ranking.SupplyData(mixedInputData)
-		ranking.RANKMODE = 2
+	// wg.Go(func() {
+	// 	printer.Println("################# RANKING2 ###################")
+	// 	ranking := stathighs.RankingStatWeightProcess{}
+	// 	ranking.Init(printer)
+	// 	ranking.SetTargetRatios(targetRatio)
+	// 	// ranking.SupplyData(inputDataGrid)
+	// 	ranking.SupplyData(mixedInputData)
+	// 	ranking.RANKMODE = 2
 
-		resultsByAlgorithm["ranking2"] = ranking.Run()
-	})
+	// 	resultsByAlgorithm["ranking2"] = ranking.Run()
+	// })
 
-	wg.Go(func() {
-		printer.Println("################# RANKING3 ###################")
-		ranking := stathighs.RankingStatWeightProcess3{}
-		ranking.Init(printer)
-		ranking.SetTargetRatios(targetRatio)
-		// ranking.SupplyData(inputDataGrid)
-		// ranking.SupplyData(mixedInputData[0:15])
-		// ranking.SupplyData(mixedInputData[0:350])
-		ranking.SupplyData(mixedInputData)
+	// wg.Go(func() {
+	// 	printer.Println("################# RANKING3 ###################")
+	// 	ranking := stathighs.RankingStatWeightProcess3{}
+	// 	ranking.Init(printer)
+	// 	ranking.SetTargetRatios(targetRatio)
+	// 	// ranking.SupplyData(inputDataGrid)
+	// 	// ranking.SupplyData(mixedInputData[0:15])
+	// 	// ranking.SupplyData(mixedInputData[0:350])
+	// 	ranking.SupplyData(mixedInputData)
 
-		weightList := ranking.Run(false)
-		for i, weight := range weightList {
-			resultsByAlgorithm["ranking3-"+strconv.Itoa(i)] = weight
-		}
-	})
+	// 	weightList := ranking.Run(false)
+	// 	for i, weight := range weightList {
+	// 		resultsByAlgorithm["ranking3-"+strconv.Itoa(i)] = weight
+	// 	}
+	// })
 
 	// TODO what about ranking by each simtype, then combine. simlar to fitting?
 

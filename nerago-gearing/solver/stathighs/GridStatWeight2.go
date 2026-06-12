@@ -246,8 +246,15 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 		for simType, detailWeightCol := range grid2.detailedWeights.SeqInnerWithKey1Value(statType) {
 			weight := solution.ColValues[detailWeightCol]
 
-			// scaleFix := grid2.scaleStats[statType] / grid2.scaleSims[simType]
-			scaleFix := 1.0
+			// scaleFix := 1.0 // accuracy 51%
+
+			// scaleFix := grid2.scaleSims[simType] // 51.1047%
+			// scaleFix := grid2.scaleStats[statType] // 51.7147
+			scaleFix := 1/grid2.scaleSims[simType] // 89.443
+			// scaleFix := 1/grid2.scaleStats[statType] //51.3041 
+			// scaleFix := grid2.scaleSims[simType] / grid2.scaleStats[statType] // 51.302
+			// scaleFix := grid2.scaleStats[statType] / grid2.scaleSims[simType] //85.5545
+
 			usableWeight := weight * scaleFix
 
 			if !simType.IsHighGood() {

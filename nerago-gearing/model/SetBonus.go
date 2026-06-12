@@ -32,6 +32,17 @@ const (
 	plate_lightning_bonus_4_dps = 1.010 // sim result for horridon h10 was 1.027 but higher than i believe in
 )
 
+func ActiveSet_Named(name string) ActiveSet {
+	for _, common := range g_setData {
+		for _, variant := range common.variants {
+			if variant.name == name {
+				return activeSetMake(common, variant)
+			}
+		}
+	}
+	panic("set not found " + name)
+}
+
 func SetBonus_Named(names ...string) SetBonus {
 	sets := SetBonus{}
 	for _, name := range names {
@@ -332,11 +343,79 @@ func (set setInfoActive) Equals(other ActiveSet) bool {
 	}
 }
 
+type ActiveSetCountsRequired struct {
+	sets   []ActiveSet
+	counts []uint8
+}
+
+func ActiveSetCountsRequiredMake(init ...any) ActiveSetCountsRequired {
+	acr := ActiveSetCountsRequired{}
+	for i := 0; i < len(init); i += 2 {
+		set := init[i].(ActiveSet)
+		count := init[i + 1].(int)
+		acr.sets = append(acr.sets, set)
+		acr.counts = append(acr.counts, uint8(count))
+	}
+	return acr
+}
+
+func (acr ActiveSetCountsRequired) Equals(other ActiveSetCountsRequired) bool {
+	return slices.EqualFunc(acr.sets, other.sets, ActiveSet.Equals) &&
+		slices.Equal(acr.counts, other.counts)
+}
+
+func (acr ActiveSetCountsRequired) Pairs() iter.Seq2[ActiveSet, uint8] {
+	return func(yield func(ActiveSet, uint8) bool) {
+		for i := range acr.sets {
+			if !yield(acr.sets[i], acr.counts[i]) {
+				return
+			}
+		}
+	}
+}
+
+func (acr ActiveSetCountsRequired) PairsByIndex(index int) (ActiveSet, uint8) {
+	return acr.sets[index], acr.counts[index]
+}
+
+func (acr ActiveSetCountsRequired) Count() int {
+	return len(acr.sets)
+}
+
+func ActiveSetCountsMeetAny(setOptions []ActiveSetCountsRequired, items *SolvableEquipMap) bool {
+optionLoop:
+	for _, option := range setOptions {
+		for active, needCount := range option.Pairs() {
+			haveCount := active.CountItems(items)
+			if haveCount < needCount {
+				continue optionLoop
+			}
+		}
+		return true
+	}
+	return false
+}
+
+func ActiveSetCountsMeetAny_FullItem(setOptions []ActiveSetCountsRequired, items *FullEquipMap) bool {
+optionLoop:
+	for _, option := range setOptions {
+		for active, needCount := range option.Pairs() {
+			haveCount := active.CountItemsFull(items)
+			if haveCount < needCount {
+				continue optionLoop
+			}
+		}
+		return true
+	}
+	return false
+}
+
 type ActiveSet interface {
 	Name() string
 	BonusForCount(uint8) float64
 	ContainsItem(items.ItemId) bool
 	CountItems(*SolvableEquipMap) uint8
+	CountItemsFull(*FullEquipMap) uint8
 	Equals(ActiveSet) bool
 }
 
@@ -359,6 +438,13 @@ func (set setInfoActive) containsItem(item *SolvableItem) bool {
 	return false
 }
 
+func (set setInfoActive) containsItemFull(item *FullItem) bool {
+	if item != nil {
+		return slices.Contains(set.items, uint32(item.ItemId()))
+	}
+	return false
+}
+
 func (set setInfoActive) CountItems(equip *SolvableEquipMap) uint8 {
 	var count uint8
 	if set.containsItem(equip[Equip_Head]) {
@@ -374,6 +460,26 @@ func (set setInfoActive) CountItems(equip *SolvableEquipMap) uint8 {
 		count++
 	}
 	if set.containsItem(equip[Equip_Leg]) {
+		count++
+	}
+	return count
+}
+
+func (set setInfoActive) CountItemsFull(equip *FullEquipMap) uint8 {
+	var count uint8
+	if set.containsItemFull(equip[Equip_Head]) {
+		count++
+	}
+	if set.containsItemFull(equip[Equip_Shoulder]) {
+		count++
+	}
+	if set.containsItemFull(equip[Equip_Chest]) {
+		count++
+	}
+	if set.containsItemFull(equip[Equip_Hand]) {
+		count++
+	}
+	if set.containsItemFull(equip[Equip_Leg]) {
 		count++
 	}
 	return count
