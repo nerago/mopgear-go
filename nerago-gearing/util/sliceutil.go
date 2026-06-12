@@ -285,6 +285,10 @@ type HiLoInt struct {
 	Hi int
 }
 
+func (hilo HiLoInt) Mid() int {
+	return (hilo.Hi + hilo.Lo) / 2
+}
+
 func (hilo HiLoInt) Overlap(other HiLoInt) bool {
 	return hilo.Between(other.Lo) || hilo.Between(other.Hi) || other.Between(hilo.Lo) || other.Between(hilo.Hi)
 }

@@ -13,7 +13,9 @@ import (
 const (
 	// c_RankLargeWeight = 50.0
 	// c_RankLargeScore  = 500.0
-	c_RankLimitScore = 200.0
+	c_RankLimitScore    = 200.0
+	c_RankInitialSample = 25
+	c_RankAddSample     = 25
 
 // c_RankLargeRank   = 10000.0
 )
@@ -49,10 +51,10 @@ type rankEntry4 struct {
 }
 
 type rankPair4 struct {
-	indexOne     int
+	entryOne     *rankEntry4
 	oneIsGreater utilhighs.ColumnIndex
 
-	indexTwo     int
+	entryTwo     *rankEntry4
 	twoIsGreater utilhighs.ColumnIndex
 }
 
@@ -64,7 +66,7 @@ func (process *RankingStatWeightProcess4) SupplyData(inputData []WeightInput) {
 	process.dataAll = inputData
 }
 
-func (run *rankInternalRun4) SupplyData(inputData []WeightInput) {
+func (run *rankInternalRun4) supplyData(inputData []WeightInput) {
 	run.scaleStats = chooseStatScaling(inputData, run.process.printer)
 	run.runData = util.MapSliceAsNew(inputData, func(input *WeightInput) rankEntry4 {
 		return rankEntry4{
@@ -81,75 +83,47 @@ func (process *RankingStatWeightProcess4) SetTargetRatios(targetRatios simulate.
 	process.targetRatios = targetRatios
 }
 
-func (process *RankingStatWeightProcess4) Run(doRound3 bool) []WeightResult {
+func (process *RankingStatWeightProcess4) Run(doRound2 bool) []WeightResult {
 	weightResultList := make([]WeightResult, 0)
 
 	// FIRST ROUND: minimal data, dumb initial values
 	process.printer.Println("RankingStatWeightProcess4 FIRST ROUND")
-	minimalData := takeDataSample(process.dataAll, 40)
 	run1 := rankInternalRun4_create(process)
-	run1.SupplyData(minimalData)
+	// run1.input.TimeLimitSeconds = 120
+	run1.supplyData(takeDataSample(process.dataAll, c_RankInitialSample))
 	run1.prepareRankings()
 	run1.createWeightColumns()
 	run1.makeDataListEntryColumns()
 	run1.makeDataListPairRules()
-	// run1.setupDumbInitialSolution()
+	// run1.setupInitialSolutionDumb1()
 	weights, _ := run1.run()
 	weights.ApplyIfValue(func(w WeightResult) { weightResultList = append(weightResultList, w) })
 
-	// SECOND ROUND, minimal data, add extra conditions, copy initial from previous
-	// rwp.printer.Println("RankingStatWeightProcess4 SECOND ROUND")
-	// run2 := rankInternalRun4_create(rwp)
-	// run2.SupplyData(minimalData)
-	// run2.prepareRankings()
-	// run2.createWeightColumns()
-	// run2.makeDataListEntryColumns()
-	// run2.makeDataListPairRules() // extra beyond first round
-	// // run2.setupInitialSolutionFromPrevious(solution1)
-	// weights, solution2 := run2.run()
-	// weights.ApplyIfValue(func(w WeightResult) { weightResultList = append(weightResultList, w) })
+	// dumb2, sample25, accuracy = 85.227590, Duration = 4m0.7662002s
+	// dumb1, sample25, accuracy = 85.225498 Duration = 4m32.3105105s
 
-	// THIRD ROUND, full data, copy just weights from previous
-	// data change means column ids won't line up
-	// var weights3 WeightResult
-	// if doRound3 {
-	// 	ranker.printer.Println("RankingStatWeightProcess4 THIRD ROUND")
-	// 	ranker.input = new(utilhighs.InputBuilder)
-	// 	ranker.input.Minimise = true
-	// 	ranker.input.TimeLimitSeconds = 3600
-	// 	fullData := ranker.dataAll
-	// 	ranker.prepareRankings(fullData)
-	// 	ranker.createWeightColumns()
-	// 	ranker.makeDataListEntryColumns(fullData)
-	// 	ranker.makeDataListPairRules(fullData)
-	// 	ranker.setupInitialSolutionFromPreviousWeightOnly(solution2, fullData)
-	// 	solution3, log := ranker.input.RunHighs()
-	// 	ranker.printer.AppendOther(log)
-	// 	weights = ranker.extractAndReportSolution(solution3)
-	// 	weightResultList = append(weightResultList, weights)
-	// }
+	// latestRun := run1
 
 	// times := make(map[int]time.Duration)
-	// for size := 150; size < 500; size += 50 {
+	// for size := c_RankInitialSample+c_RankAddSample; size <= len(process.dataAll); size += c_RankAddSample {
 	// 	startTime := time.Now()
 
-	// 	dataSample := rwp.dataAll[0:size]
-	// 	rwp.printer.Println("RankingStatWeightProcess4 THIRD ROUND " + strconv.Itoa(size))
-	// 	run3 := rankInternalRun4_create(rwp)
-	// 	run3.input.TimeLimitSeconds = 3600
-	// 	run2.SupplyData(dataSample)
-	// 	run3.prepareRankings()
-	// 	run3.createWeightColumns()
-	// 	run3.makeDataListEntryColumns()
-	// 	run3.makeDataListPairRules()
-	// 	run3.setupInitialSolutionFromPreviousWeightOnly(solution2)
+	// 	dataSample := takeDataSample(process.dataAll, size)
+	// 	process.printer.Println("RankingStatWeightProcess4 SECOND ROUND " + strconv.Itoa(size))
+	// 	run2 := rankInternalRun4_create(process)
+	// 	run2.input.TimeLimitSeconds = 600
+	// 	run2.supplyData(dataSample)
+	// 	run2.prepareRankings()
+	// 	run2.createWeightColumns()
+	// 	run2.makeDataListEntryColumns()
+	// 	run2.makeDataListPairRules()
+	// 	run2.setupInitialSolutionFromPreviousWeightOnly(solution2)
 	// 	weights, _ := run2.run()
 	// 	weights.ApplyIfValue(func(w WeightResult) { weightResultList = append(weightResultList, w) })
 
 	// 	timeTaken := time.Since(startTime)
 	// 	times[size] = timeTaken
 	// }
-
 	// for size, duration := range times {
 	// 	rwp.printer.Printf("%4d %s\n", size, duration)
 	// }
@@ -214,14 +188,14 @@ func (run *rankInternalRun4) prepareRankings() {
 
 	// score each sim
 	for _, simType := range G_RequiredSims {
-		for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), run.runData, func(x *rankEntry4) float64 { return x.data.SimResult.Get(simType) }) {
-			entry.simScore += float64(simDetailRank) * run.process.targetRatios.Get(simType)
+		for entry, simDetailRankHiLo := range util.CalculateRankingRanges(simType.IsHighGood(), run.runData, func(x *rankEntry4) float64 { return x.data.SimResult.Get(simType) }) {
+			entry.simScore += float64(simDetailRankHiLo.Mid()) * run.process.targetRatios.Get(simType)
 		}
 	}
 
 	// rank combined sims
-	for entry, simRank := range util.CalculateRanking(true, run.runData, func(x *rankEntry4) float64 { return x.simScore }) {
-		entry.targetRank = simRank
+	for entry, simRankHiLo := range util.CalculateRankingRanges(true, run.runData, func(x *rankEntry4) float64 { return x.simScore }) {
+		entry.targetRank = simRankHiLo.Lo
 	}
 }
 
@@ -290,8 +264,8 @@ func (run *rankInternalRun4) makeDataListPairRules() {
 		panic("expected exact size")
 	}
 
-	for a := 0; a < len(run.runData); a++ {
-		run.makeRankDerivation(a)
+	for i := 0; i < len(run.runData); i++ {
+		run.makeRankDerivation(i, &run.runData[i])
 	}
 }
 
@@ -301,38 +275,38 @@ func (run *rankInternalRun4) makeEntryPairScoreChecks(one *rankEntry4, two *rank
 
 	oneIsGreater := run.input.CreateColumnBool(utilhighs.DebugText("oneIsGreater"))
 	twoIsGreater := run.input.CreateColumnBool(utilhighs.DebugText("twoIsGreater"))
-	// utilhighs.ColumnIsGreaterOrEqualColumn(run.input, two.scoreColumn, one.scoreColumn, twoIsGreater, c_RankLargeScore)
+	utilhighs.ColumnIsGreaterOrEqualColumn(run.input, two.scoreColumn, one.scoreColumn, oneIsGreater, c_RankLargeScore)
 	utilhighs.ColumnIsGreaterOrEqualColumn(run.input, one.scoreColumn, two.scoreColumn, twoIsGreater, c_RankLargeScore)
-	utilhighs.ConstraintNot(run.input, twoIsGreater, oneIsGreater)
+	// utilhighs.ConstraintNot(run.input, oneIsGreater, twoIsGreater)
+	// utilhighs.ColumnIsGreaterOrEqualColumn(run.input, one.scoreColumn, two.scoreColumn, twoIsGreater, c_RankLargeScore)
+	// utilhighs.ConstraintNot(run.input, twoIsGreater, oneIsGreater)
 
 	run.pairLinks.Put(indexOne, indexTwo, &rankPair4{
-		indexOne:     indexOne, // first index is always the "threshholdLow"
-		indexTwo:     indexTwo,
+		entryOne:     one,
+		entryTwo:     two,
 		oneIsGreater: oneIsGreater,
 		twoIsGreater: twoIsGreater,
 	})
 }
 
-func (run *rankInternalRun4) makeRankDerivation(mainIndex int) {
+func (run *rankInternalRun4) makeRankDerivation(mainIndex int, mainEntry *rankEntry4) {
 	sumCompareFlags := utilhighs.ConstraintRowBuild{Debug: "rankDerive " + strconv.FormatInt(int64(mainIndex), 10)}
-	// technically the not is 1-x, could just include negative var, and bump target number
+
+	// technically the NOT is 1-x, could just include negative var, and bump target number
 	for _, pair := range run.pairLinks.SeqInnerWithKeyValue(mainIndex) {
-		if pair.indexOne == mainIndex {
+		if pair.entryOne == mainEntry {
 			sumCompareFlags.Add(pair.oneIsGreater, 1)
 		} else {
 			sumCompareFlags.Add(pair.twoIsGreater, 1)
 		}
 	}
 
-	
-
 	// rankFudge := run.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugText("rankFudge"))
 	// sumCompareFlags.Add(rankFudge, 1)
 	// rankFudgeAbs := run.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugText("rankFudgeAbs"))
 	// utilhighs.AbsoluteValue(run.input, rankFudge, rankFudgeAbs)
 
-	entry := &run.runData[mainIndex]
-	sumCompareFlags.Add(entry.rankColumn, -1)
+	sumCompareFlags.Add(mainEntry.rankColumn, -1)
 	sumCompareFlags.Finish(run.input, 0, 0)
 }
 
@@ -360,7 +334,7 @@ func (run *rankInternalRun4) extractAndReportSolution(solution *highs.Solution) 
 	return statWeightResult
 }
 
-func (run *rankInternalRun4) setupDumbInitialSolution() {
+func (run *rankInternalRun4) setupInitialSolutionDumb1() {
 	for statType, colWeight := range run.weightColumns {
 		if statType == stats.Stat_Strength {
 			run.input.SetInitialSolutionValue(colWeight, 1)
@@ -370,24 +344,84 @@ func (run *rankInternalRun4) setupDumbInitialSolution() {
 	}
 
 	statScale := run.scaleStats[stats.Stat_Strength]
-	for entry, dumbRank := range util.CalculateRanking(true, run.runData, func(x *rankEntry4) float64 { return x.data.TotalStat.GetFloat(stats.Stat_Strength) }) {
-		thisValue := entry.data.TotalStat.GetFloat(stats.Stat_Strength)
-		scaledValue := thisValue * statScale
-		run.input.SetInitialSolutionValue(entry.scoreColumn, scaledValue)
-		run.input.SetInitialSolutionValue(entry.rankColumn, float64(dumbRank))
+	for entry := range util.ForPointer(run.runData) {
+		entry.initialStatScore = entry.data.TotalStat.GetFloat(stats.Stat_Strength) * statScale
+	}
+
+	run.setupRemainingInitialSolution()
+	run.input.ValidateInitialSolutionState()
+}
+
+func (run *rankInternalRun4) setupInitialSolutionDumb2() {
+	initialDumbValue := 0.2
+
+	dumbWeights := WeightResult_Make()
+	for statType, colWeight := range run.weightColumns {
+		run.input.SetInitialSolutionValue(colWeight, initialDumbValue)
+		dumbWeights.Put(statType, initialDumbValue)
+	}
+
+	for entry := range util.ForPointer(run.runData) {
+		entry.initialStatScore = dumbWeights.CalcStatScoreScaled(entry.data, run.scaleStats)
+	}
+
+	run.setupRemainingInitialSolution()
+	run.input.ValidateInitialSolutionState()
+}
+
+func (run *rankInternalRun4) setupInitialSolutionFromPrevious(previous *rankInternalRun4, solution *highs.Solution) {
+	internalWeights := WeightResult_Make()
+	for statType, oldWeightCol := range previous.weightColumns {
+		newWeightCol := run.weightColumns[statType]
+		oldWeightValue := solution.ColValues[oldWeightCol]
+		run.input.SetInitialSolutionValue(newWeightCol, oldWeightValue)
+		internalWeights.Put(statType, oldWeightValue)
+	}
+
+	for entry := range util.ForPointer(run.runData) {
+		entry.initialStatScore = internalWeights.CalcStatScoreScaled(entry.data, run.scaleStats)
+	}
+
+	run.setupRemainingInitialSolution()
+	run.input.ValidateInitialSolutionState()
+}
+
+func (run *rankInternalRun4) setupInitialSolutionFromExternal(weights stats.StatBlock) {
+	internalWeights := WeightResult_Make()
+	for statType, colWeight := range run.weightColumns {
+		basicValue := weights.GetFloat(statType) / 1000.0 // NOTE reverse scale as used in StatRatingsWeights
+		scale := run.scaleStats[statType]
+		scaledValue := basicValue * scale
+		run.input.SetInitialSolutionValue(colWeight, scaledValue)
+		internalWeights.Put(statType, scaledValue)
+	}
+
+	for entry := range util.ForPointer(run.runData) {
+		entry.initialStatScore = internalWeights.CalcStatScoreScaled(entry.data, run.scaleStats)
+	}
+
+	run.setupRemainingInitialSolution()
+	run.input.ValidateInitialSolutionState()
+}
+
+func (run *rankInternalRun4) setupRemainingInitialSolution() {
+	for entry, rankHiLo := range util.CalculateRankingRanges(true, run.runData, func(x *rankEntry4) float64 { return x.initialStatScore }) {
+		run.input.SetInitialSolutionValue(entry.scoreColumn, entry.initialStatScore)
+		run.input.SetInitialSolutionValue(entry.rankColumn, float64(rankHiLo.Lo))
 	}
 
 	for pair := range run.pairLinks.SeqValues() {
-		entryOne := &run.runData[pair.indexOne]
-		entryTwo := &run.runData[pair.indexTwo]
-		if entryOne.data.TotalStat.GetFloat(stats.Stat_Strength) > entryTwo.data.TotalStat.GetFloat(stats.Stat_Strength) {
+		entryOne := pair.entryOne
+		entryTwo := pair.entryTwo
+		if entryOne.initialStatScore > entryTwo.initialStatScore {
 			run.input.SetInitialSolutionValue(pair.oneIsGreater, 1)
 			run.input.SetInitialSolutionValue(pair.twoIsGreater, 0)
-		} else {
+		} else if entryOne.initialStatScore < entryTwo.initialStatScore {
 			run.input.SetInitialSolutionValue(pair.oneIsGreater, 0)
 			run.input.SetInitialSolutionValue(pair.twoIsGreater, 1)
+		} else {
+			run.input.SetInitialSolutionValue(pair.oneIsGreater, 0)
+			run.input.SetInitialSolutionValue(pair.twoIsGreater, 0)
 		}
 	}
-
-	run.input.ValidateInitialSolutionState()
 }

@@ -14,7 +14,7 @@ import (
 
 const (
 	C_HighsToConsole     = true
-	C_DebugHighs         = true
+	C_DebugHighs         = false
 	C_DiagnoseInfeasible = false
 	c_threads            = 6
 )
@@ -36,6 +36,10 @@ func FloatEqualsZero(value float64) bool {
 func FloatsApproxEquals(a, b float64) bool {
 	ratio := a / b
 	return 0.99999 <= ratio && ratio <= 1.00001
+}
+
+func FloatsBetween(lo, val, hi float64) bool {
+	return lo-0.000001 <= val && val <= hi+0.000001
 }
 
 type ColumnIndex int32
@@ -529,7 +533,7 @@ func (input *InputBuilder) ValidateInitialSolutionState() {
 		}
 
 		if anyKnown && !anyUnknown {
-			if sum < lowerBound || sum > upperBound {
+			if !FloatsBetween(lowerBound, sum, upperBound) {
 				panic("initial values don't fit row " + strconv.FormatInt(int64(rowIndex), 10) + " " + debug)
 			}
 		}
