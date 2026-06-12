@@ -133,7 +133,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		103787, // poisonbinder girth
 		103742, // blood rage bracers
 		99126,  // prot t16 chest normal
+		99128,  // prot t16 head normal
 		103738, // bubble bracers
+
 	})
 	blockHelmetsWithoutCapacitance(&ret)
 	ret.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
@@ -206,6 +208,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		103787, // poisonbinder girth
 		103742, // blood rage bracers
 		99126,  // prot t16 chest normal
+		99128,  // prot t16 head normal
 		103738, // bubble bracers
 	})
 	blockHelmetsWithoutCapacitance(&protDps)
@@ -280,6 +283,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		103787, // poisonbinder girth
 		103742, // blood rage bracers
 		99126,  // prot t16 chest normal
+		99128,  // prot t16 head normal
 		103738, // bubble bracers
 	})
 	blockHelmetsWithoutCapacitance(&protCompromise)
@@ -355,6 +359,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		103787, // poisonbinder girth
 		103742, // blood rage bracers
 		99126,  // prot t16 chest normal
+		99128,  // prot t16 head normal
 		103738, // bubble bracers
 	})
 	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
@@ -426,6 +431,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		103787, // poisonbinder girth
 		103742, // blood rage bracers
 		99126,  // prot t16 chest normal
+		99128,  // prot t16 head normal
 		103738, // bubble bracers
 	})
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
@@ -484,6 +490,7 @@ func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {
 	param.BlockItem(95778) // golden golem celestial = ignore in all sets
 	param.BlockItem(96666) // lightning emp faceguard heroic = prot gem
 	param.BlockItem(96550) // doomed crown heroic = prot gem
+	param.BlockItem(99128) // winged faceguard = prot gem
 	blockGeneral(param)
 }
 

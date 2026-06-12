@@ -100,11 +100,11 @@ func core(printer *util.PrintRecorder) {
 	// statWeightsComplex(printer)
 	// statWeightsRanking(printer)
 
-	// statWeights_CompareAlgorithms(printer)
+	statWeights_CompareAlgorithms(printer)
 
 	// statWeightsGrid_updateAll(printer) // seed of standard process? 4/6/2026
 
-	PaladinMultiRun(printer)
+	// PaladinMultiRun(printer)
 
 	// findUpgrades_Paladin_Sim_AllRaid_Run(printer)
 }

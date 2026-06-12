@@ -6,22 +6,11 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/model"
+	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/upgrades"
 	"paladin_gearing_go/util"
 	"slices"
-)
-
-const (
-	// simRunSize  = simulate.RunSize_QuickDirty
-
-	// simRunSize = simulate.RunSize_QuickDirty
-
-	simRunSize = 1500
-
-	// simRunSize    = simulate.RunSize_Medium
-
-	// simRunSize    = simulate.RunSize_TestOnly
 )
 
 var substituteItemsDps = []items.ItemId{
@@ -108,6 +97,9 @@ var substituteItemsMiti = []items.ItemId{
 	96420,  // talisman of angry spirits
 	101882, // cliffbreaker helm exp/mastery
 	103787, // poisonbinder girth
+	103742, // blood rage bracers
+	99126,  // prot t16 chest normal
+	103738, // bubble bracers
 }
 
 var ignoredItems = []items.ItemId{
@@ -116,6 +108,7 @@ var ignoredItems = []items.ItemId{
 	90042} // straw hat
 
 func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
+	simRunSize := simulate.RunSize_QuickDirty
 	goal := stats.OptimiseGoal_Dps
 	model := model.Model_PallyProtDps()
 	gearFile := files.GearFileProtDps
@@ -133,6 +126,7 @@ func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
 }
 
 func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
+	simRunSize := simulate.RunSize_QuickDirty
 	goal := stats.OptimiseGoal_Mitigation
 	model := model.Model_PallyProtMitigation_WithSet()
 	gearFile := files.GearFileProtMitigationWithSet
@@ -151,6 +145,7 @@ func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 }
 
 func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
+	simRunSize := simulate.RunSize_QuickDirty
 	goal := stats.OptimiseGoal_Mitigation
 	model := model.Model_PallyProtMitigation_WithSet()
 	gearFile := files.GearFileProtMitigationWithSet
@@ -168,6 +163,11 @@ func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 }
 
 func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
+	// simRunSize    = simulate.RunSize_TestOnly
+	var simRunSize simulate.WowSim_RunSize = 1500
+	// simRunSize  := simulate.RunSize_QuickDirty
+	// simRunSize    := simulate.RunSize_Medium
+
 	substituteItemsDpsAndMiti := slices.Concat(substituteItemsDps, substituteItemsMiti)
 	substituteItemsDpsAndMiti = util.RemoveDuplicatesComparable(substituteItemsDpsAndMiti)
 
@@ -175,7 +175,10 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
 	substituteEmptySlotOnly[items.Item_Ring] = 86957    // heroic bladed tempest ring
 
-	finder := loaders.ItemFinder_SiegeStrengthPlateTank
+	finder := func(_ stats.Difficulty) []*items.FullItem {
+		return []*items.FullItem{db.WowSimDB_ByIdAndUpgrade(99128, 2), db.WowSimDB_ByIdAndUpgrade(99138, 2)}
+	}
+	// finder := loaders.ItemFinder_SiegeStrengthPlateTank
 	// finder := loaders.ItemFinder_Ordos
 	// finder := loaders.ItemFinder_TimelessPlate
 

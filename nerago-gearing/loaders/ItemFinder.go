@@ -39,6 +39,7 @@ var G_siegeStrengthTrinkets = []items.ItemId{
 	102308, //skeers-bloodsoaked-talisman
 	102305, //thoks-tail-tip
 	103989, //alacrity-of-xuen
+	103678, //time-lost artifact
 }
 
 var legendCloaks = []items.ItemId{102249, 102250}
