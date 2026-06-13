@@ -425,7 +425,7 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 	filteredInput := mixedInputData
 	printer.Printf("filteredInput size %d\n", len(filteredInput))
 
-	ranking := stathighs.RankingStatWeightProcess4{}
+	ranking := stathighs.RankingStatWeightProcess5{}
 
 	ranking.Init(printer)
 	ranking.SetTargetRatios(targetRatio)
