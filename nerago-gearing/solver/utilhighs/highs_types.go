@@ -54,6 +54,8 @@ type InputBuilder struct {
 	Solver               string
 	DisablePreSolve      bool
 	TimeLimitSeconds     int
+	Mip_disallow_restart bool
+	Mip_lp_solver        string
 }
 
 func (input *InputBuilder) Clone() *InputBuilder {
@@ -238,6 +240,13 @@ func (input *InputBuilder) configureHighsModel_internal(solver *highs.Solver, lo
 	// verifyNoError(solver.SetStringOption("run_crossover", "off"))
 
 	verifyNoError(solver.SetFloatOption("dual_residual_tolerance", 1e-4)) // up from default of 1e-7, i don't care about dual
+
+	verifyNoError(solver.SetBoolOption("mip_allow_restart", !input.Mip_disallow_restart))
+	if input.Mip_lp_solver == "" {
+		verifyNoError(solver.SetStringOption("mip_lp_solver", "choose"))
+	} else {
+		verifyNoError(solver.SetStringOption("mip_lp_solver", input.Mip_lp_solver))
+	}
 }
 
 func verifyNoError(err error) {

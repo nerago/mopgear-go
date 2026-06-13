@@ -148,7 +148,7 @@ func AbsoluteValueFromDiffOneToConst(input *InputBuilder, inputOneVar ColumnInde
 	negative.Finish(input, constCompare, C_PlusInf)
 
 	positive := ConstraintRowBuild{Debug: debug + " AbsoluteValuePositive"}
-	negative.Add(inputOneVar, inputOneCoefficient)
+	positive.Add(inputOneVar, inputOneCoefficient)
 	positive.Add(outputVar, -1)
 	positive.Finish(input, C_MinusInf, constCompare)
 }
@@ -161,8 +161,8 @@ func AbsoluteValueFromDiffTwoVarsWithOffset(input *InputBuilder, inputOneVar Col
 	negative.Finish(input, offset, C_PlusInf)
 
 	positive := ConstraintRowBuild{Debug: debug + " AbsoluteValuePositive"}
-	negative.Add(inputOneVar, inputOneCoefficient)
-	negative.Add(inputTwoVar, -inputTwoCoefficient)
+	positive.Add(inputOneVar, inputOneCoefficient)
+	positive.Add(inputTwoVar, -inputTwoCoefficient)
 	positive.Add(outputVar, -1)
 	positive.Finish(input, C_MinusInf, offset)
 }
@@ -189,6 +189,7 @@ func Xor(input *InputBuilder, boolOne ColumnIndex, boolTwo ColumnIndex, output C
 	negative.Add(boolTwo, -1)
 	negative.Add(output, 1)
 	negative.Finish(input, 0, 2)
+
 	positive := ConstraintRowBuild{Debug: "Xor"}
 	positive.Add(boolOne, 1)
 	positive.Add(boolTwo, -1)
