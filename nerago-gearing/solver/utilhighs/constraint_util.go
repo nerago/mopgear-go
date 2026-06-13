@@ -28,6 +28,20 @@ func ContraintIfBoolCopyValueElseZero(input *InputBuilder, boolSwitchVar, source
 	zeroLow.Finish(input, C_MinusInf, 0)
 }
 
+func ContraintIfBoolCopy(input *InputBuilder, boolSwitchVar, sourceVar, targetVar ColumnIndex, rangeHigh float64) {
+	valueHigh := ConstraintRowBuild{Debug: "ContraintIfBoolCopy_ValueHigh"}
+	valueHigh.Add(targetVar, -1)
+	valueHigh.Add(sourceVar, 1)
+	valueHigh.Add(boolSwitchVar, rangeHigh)
+	valueHigh.Finish(input, C_MinusInf, rangeHigh)
+
+	valueLow := ConstraintRowBuild{Debug: "ContraintIfBoolCopy_ValueLow"}
+	valueLow.Add(targetVar, 1)
+	valueLow.Add(sourceVar, -1)
+	valueLow.Add(boolSwitchVar, rangeHigh)
+	valueLow.Finish(input, C_MinusInf, rangeHigh)
+}
+
 func constraintNotBool(input *InputBuilder, sourceVar, targetVar ColumnIndex) {
 	not := ConstraintRowBuild{Debug: "constraintNotBool"}
 	not.Add(sourceVar, 1)

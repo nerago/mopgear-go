@@ -337,7 +337,7 @@ func CalculateRankingRanges[T any](highGood bool, inputData []T, toScore func(*T
 	return func(yield func(*T, HiLoInt) bool) {
 		for i := range rankArray {
 			entry := &rankArray[i]
-			score := rankArray[i].score
+			score := entry.score
 			hiLo := grouped[score]
 			if !yield(entry.pointer, hiLo) {
 				return
