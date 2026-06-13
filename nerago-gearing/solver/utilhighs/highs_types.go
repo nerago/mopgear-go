@@ -92,6 +92,10 @@ func (input *InputBuilder) CreateColumnBool(debug DebugContext) ColumnIndex {
 	return input.vars.create(highs.Integer, 0, 1, 0, debug)
 }
 
+func (input *InputBuilder) CreateColumnBoolWithOutput(cost float64, debug DebugContext) ColumnIndex {
+	return input.vars.create(highs.Integer, 0, 1, cost, debug)
+}
+
 func (input *InputBuilder) CreateColumnGeneral(varType highs.VariableType, lower, upper float64, debug DebugContext) ColumnIndex {
 	return input.vars.create(varType, lower, upper, 0, debug)
 }
@@ -100,7 +104,7 @@ func (input *InputBuilder) CreateColumnWithOutput(varType highs.VariableType, lo
 	return input.vars.create(varType, lower, upper, cost, debug)
 }
 
-func (input *InputBuilder) CreateColumnForLinearObjective(varType highs.VariableType, lower, upper, cost float64, linearObjectiveIndex int, debug DebugContext) ColumnIndex {
+func (input *InputBuilder) CreateColumnWithLinearObjective(varType highs.VariableType, lower, upper, cost float64, linearObjectiveIndex int, debug DebugContext) ColumnIndex {
 	return input.vars.createForLinear(varType, lower, upper, cost, linearObjectiveIndex, debug)
 }
 

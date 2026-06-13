@@ -183,7 +183,7 @@ func AbsoluteValue_WithToggle(input *InputBuilder, inputVar, outputVar, toggleVa
 
 // much the same as absolute value logic, just bool optimised
 // similarly needs output variable under minimisation pressure
-func Xor(input *InputBuilder, boolOne ColumnIndex, boolTwo ColumnIndex, output ColumnIndex) {
+func IsXor(input *InputBuilder, boolOne ColumnIndex, boolTwo ColumnIndex, output ColumnIndex) {
 	negative := ConstraintRowBuild{Debug: "Xor"}
 	negative.Add(boolOne, 1)
 	negative.Add(boolTwo, -1)
@@ -263,7 +263,7 @@ func ConstantIsBetweenColumns(input *InputBuilder, minimumColumn, maximumColumn,
 	and.FinishAndApply(input)
 }
 
-func ColumnIsBetweenConstants(input *InputBuilder, checkColumn ColumnIndex, lo, hi float64, rangeHigh float64) {
+func ColumnIsNotBetweenConstants(input *InputBuilder, checkColumn ColumnIndex, lo, hi float64, rangeHigh float64) {
 	isUnderMin := input.CreateColumnBool(DebugString{Text: "isUnderMin"})
 	isOverMax := input.CreateColumnBool(DebugString{Text: "isOverMax"})
 

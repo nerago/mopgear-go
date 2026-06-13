@@ -522,7 +522,7 @@ func (fit *FittingSingleStatWeightProcess) addSample(sample *fittingSample) {
 }
 
 func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample *fittingSample) utilhighs.ColumnIndex {
-	includeColumn := fit.input.CreateColumnForLinearObjective(highs.Integer, 0, 1, c_outputFittingPerInclude, fit.linearInclude, utilhighs.DebugString{Text: "include"})
+	includeColumn := fit.input.CreateColumnWithLinearObjective(highs.Integer, 0, 1, c_outputFittingPerInclude, fit.linearInclude, utilhighs.DebugString{Text: "include"})
 	fit.includeCountRow.Add(includeColumn, 1)
 	fit.includeColumns = append(fit.includeColumns, includeColumn)
 	sample.includeColumn = includeColumn
@@ -537,7 +537,7 @@ func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample *fit
 
 func (fit *FittingSingleStatWeightProcess) sampleToFitLine(sample *fittingSample, toggle utilhighs.ColumnIndex) {
 	difference := fit.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "difference"})
-	differenceAbs := fit.input.CreateColumnForLinearObjective(highs.Continuous, 0, utilhighs.C_PlusInf, c_outputFittingDifference, fit.linearLineDiff, utilhighs.DebugString{Text: "differenceAbs"})
+	differenceAbs := fit.input.CreateColumnWithLinearObjective(highs.Continuous, 0, utilhighs.C_PlusInf, c_outputFittingDifference, fit.linearLineDiff, utilhighs.DebugString{Text: "differenceAbs"})
 
 	// i'd like lineSlope to look like sim/stat
 	// i don't really care what lineOffset looks like, don't expect to use it at all

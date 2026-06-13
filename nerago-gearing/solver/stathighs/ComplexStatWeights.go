@@ -81,7 +81,7 @@ func (comp *ComplexStatWeightProcess) chooseScaling() {
 }
 
 func (comp *ComplexStatWeightProcess) createWeightColumns() {
-	minimumStrength := 0.0001
+	// minimumStrength := 0.0001
 
 	for _, statType := range G_RequiredStats {
 		for _, simType := range G_RequiredSims {
@@ -92,15 +92,17 @@ func (comp *ComplexStatWeightProcess) createWeightColumns() {
 		}
 	}
 
+	// TODO do a positive sum for each?
+
 	// we don't want to be dealing with 0 strength since that's our base stat to scale against
 	// however could be rejecting some special situtations where it actually is true
-	for _, colDetailWeight := range comp.detailedWeightColumns.SeqInnerWithKey1Value(stats.Stat_Strength) {
-		comp.makeNotBetween(colDetailWeight, -minimumStrength, minimumStrength)
-	}
+	// for _, colDetailWeight := range comp.detailedWeightColumns.SeqInnerWithKey1Value(stats.Stat_Strength) {
+	// 	comp.makeNotBetween(colDetailWeight, -minimumStrength, minimumStrength)
+	// }
 }
 
 func (comp *ComplexStatWeightProcess) makeNotBetween(checkColumn utilhighs.ColumnIndex, lo, hi float64) {
-	utilhighs.ColumnIsBetweenConstants(comp.input, checkColumn, lo, hi, c_complexHighWeight)
+	utilhighs.ColumnIsNotBetweenConstants(comp.input, checkColumn, lo, hi, c_complexHighWeight)
 }
 
 func (comp *ComplexStatWeightProcess) buildDataEquations() {
@@ -117,7 +119,7 @@ func (comp *ComplexStatWeightProcess) buildDataEquationForInput(data *WeightInpu
 }
 
 func (comp *ComplexStatWeightProcess) sampleIncludeToggleColumn() utilhighs.ColumnIndex {
-	includeColumn := comp.input.CreateColumnForLinearObjective(highs.Integer, 0, 1, c_complexOutputPerInclude, comp.linearInclude, utilhighs.DebugString{Text: "include"})
+	includeColumn := comp.input.CreateColumnWithLinearObjective(highs.Integer, 0, 1, c_complexOutputPerInclude, comp.linearInclude, utilhighs.DebugString{Text: "include"})
 	comp.includeCountRow.Add(includeColumn, 1)
 	comp.includeColumns = append(comp.includeColumns, includeColumn)
 	return includeColumn
@@ -141,7 +143,7 @@ func (comp *ComplexStatWeightProcess) buildDataEquationForSim(stats *stats.StatB
 	diffSigned := comp.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "diffSigned"})
 	matchSimValue.Add(diffSigned, 1)
 
-	diffOutput := comp.input.CreateColumnForLinearObjective(highs.Continuous, 0, c_complexHighDiff, 1, comp.linearEquationDiff, utilhighs.DebugString{Text: "diffOutput"})
+	diffOutput := comp.input.CreateColumnWithLinearObjective(highs.Continuous, 0, c_complexHighDiff, 1, comp.linearEquationDiff, utilhighs.DebugString{Text: "diffOutput"})
 	utilhighs.AbsoluteValue_WithToggle(comp.input, diffSigned, diffOutput, includeColumn, c_complexHighDiff)
 
 	simScale := comp.scaleSims[simType]

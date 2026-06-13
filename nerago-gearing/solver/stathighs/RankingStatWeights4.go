@@ -144,6 +144,19 @@ func (process *RankingStatWeightProcess4) Run(doRound2 bool) []WeightResult {
 	return weightResultList
 }
 
+func (process *RankingStatWeightProcess4) RunUsingExternalStart(initialWeight WeightResult) util.Optional[WeightResult] {
+	run2 := rankInternalRun4_create(process)
+	run2.input.TimeLimitSeconds = 2500
+	run2.supplyData(process.dataAll)
+	run2.prepareRankings()
+	run2.createWeightColumns()
+	run2.makeDataListEntryColumns()
+	run2.makeDataListPairRules()
+	run2.setupInitialSolutionFromExternal2(initialWeight)
+	weights2, _ := run2.run()
+	return weights2
+}
+
 func takeDataSample(slice []WeightInput, size int) []WeightInput {
 	if len(slice) < size {
 		return slice
@@ -431,8 +444,27 @@ func (run *rankInternalRun4) setupInitialSolutionFromExternal(weights stats.Stat
 	internalWeights := WeightResult_Make()
 	for statType, colWeight := range run.weightColumns {
 		basicValue := weights.GetFloat(statType) / 1000.0 // NOTE reverse scale as used in StatRatingsWeights
-		scale := run.scaleStats[statType]
-		scaledValue := basicValue * scale
+		// scale := run.scaleStats[statType]
+		scaledValue := basicValue 
+		run.input.SetInitialSolutionValue(colWeight, scaledValue)
+		internalWeights.Put(statType, scaledValue)
+	}
+
+	for entry := range util.ForPointer(run.runData) {
+		entry.initialStatScore = internalWeights.CalcStatScoreScaled(entry.data, run.scaleStats)
+		run.input.SetInitialSolutionValue(entry.scoreColumn, entry.initialStatScore)
+	}
+
+	run.setupRemainingInitialSolution()
+	run.input.ValidateInitialSolutionState()
+}
+
+func (run *rankInternalRun4) setupInitialSolutionFromExternal2(weights WeightResult) {
+	internalWeights := WeightResult_Make()
+	for statType, colWeight := range run.weightColumns {
+		basicValue := weights.Get(statType)
+		// scale := run.scaleStats[statType]
+		scaledValue := basicValue 
 		run.input.SetInitialSolutionValue(colWeight, scaledValue)
 		internalWeights.Put(statType, scaledValue)
 	}

@@ -27,10 +27,14 @@ type gridDataSample struct {
 	value float64
 }
 
+// default solver - dual simplex - HiGHS run time      :        812.56 (s)
+// ipx    - HiGHS run time      :        912.37
+// pldp   - HiGHS run time      :        594.94
+// hipdlp - HiGHS run time      :        414.98
 func (grid *GridStatWeightProcess) Init(printer *util.PrintRecorder) {
 	grid.printer = printer
 	grid.input.Minimise = true
-	// grid.input.Solver = "pdlp"
+	grid.input.Solver = "hipdlp"
 	grid.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }
 

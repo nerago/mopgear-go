@@ -105,7 +105,7 @@ func (selgrid *SelectiveGridStatWeightProcess) createIncludeToggles() {
 	selgrid.inputDataIncludeToggles = make([]utilhighs.ColumnIndex, len(selgrid.inputData))
 	for i := range len(selgrid.inputData) {
 		// negative score since we're minimising, each variable used is "better"
-		column := selgrid.input.CreateColumnWithOutput(highs.Integer, 0, 1, -includeScore, utilhighs.DebugString{Text: "input toggle " + strconv.Itoa(i)})
+		column := selgrid.input.CreateColumnBoolWithOutput(-includeScore, utilhighs.DebugString{Text: "input toggle " + strconv.Itoa(i)})
 		selgrid.inputDataIncludeToggles[i] = column
 
 		rowIncludeReasonableNumber.Add(column, 1)

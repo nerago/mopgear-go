@@ -18,6 +18,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
+	"paladin_gearing_go/util/util_rank"
 	"slices"
 	"strconv"
 	"strings"
@@ -434,6 +435,66 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 		writePawnString(weight, printer)
 		printer.Printf("accuracy = %f\n", evaluateAccuracy(weight, mixedInputData, targetRatio))
 	}
+}
+
+func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
+	targetRatio := stathighs.NewStatWeights_generalMiti
+
+	inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
+	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
+	mixedInputData := slices.Concat(inputDataRandom, inputDataGrid)
+
+	var weights1 stathighs.WeightResult
+	if false {
+		grid := stathighs.GridStatWeightProcess{}
+		grid.Init(printer)
+		grid.SetTargetRatios(targetRatio)
+		grid.SupplyData(inputDataGrid)
+		weights1 = grid.Run()
+		writePawnString(weights1, printer)
+	} else {
+		//  Pawn: v1: "Protection WoWSims Weights": Class=Paladin,Strength=1.0000000000,Stamina=0.4804976439,CritRating=0.6462171056,HasteRating=0.8598561605,ExpertiseRating=0.6679862341,MasteryRating=1.9405533853,DodgeRating=0.6518112608,ParryRating=0.6243298125, )
+		// FINAL WEIGHTS
+		//        str 1.000000
+		//       stam 0.480498
+		//       crit 0.646220
+		//      haste 0.859856
+		//     expert 0.667986
+		//     master 1.940554
+		//      dodge 0.651811
+		//      parry 0.624330
+
+		weights1 = stathighs.WeightResult{
+			stats.Stat_Strength:  1.000000,
+			stats.Stat_Stamina:   0.480505,
+			stats.Stat_Crit:      0.646226,
+			stats.Stat_Haste:     0.859856,
+			stats.Stat_Expertise: 0.667975,
+			stats.Stat_Mastery:   1.940581,
+			stats.Stat_Dodge:     0.651822,
+			stats.Stat_Parry:     0.624330,
+		}
+	}
+
+	ranking := stathighs.RankingStatWeightProcess3{}
+	// ranking := stathighs.RankingStatWeightProcess4{}
+	ranking.Init(printer)
+	ranking.SetTargetRatios(targetRatio)
+	ranking.SupplyData(mixedInputData)
+	weights2 := ranking.RunUsingExternalStart(weights1).GetOrPanic()
+
+	writePawnString(weights1, printer)
+	printer.Printf("accuracy1 = %f\n", evaluateAccuracy(weights1, mixedInputData, targetRatio))
+
+	writePawnString(weights2, printer)
+	printer.Printf("accuracy2 = %f\n", evaluateAccuracy(weights2, mixedInputData, targetRatio))
+
+	// ( Pawn: v1: "Protection WoWSims Weights": Class=Paladin,Strength=1.0000000000,Stamina=0.4805050000,CritRating=0.6462260000,HasteRating=0.8598560000,ExpertiseRating=0.6679750000,MasteryRating=1.9405810000,DodgeRating=0.6518220000,ParryRating=0.6243300000, )
+	// accuracy1 = 92.635522
+	// ( Pawn: v1: "Protection WoWSims Weights": Class=Paladin,Strength=1.0000000000,Stamina=-0.0896998019,CritRating=0.3760289134,HasteRating=0.4969834753,ExpertiseRating=0.3863096443,MasteryRating=1.1063898778,DodgeRating=0.3787533903,ParryRating=0.3581785849, )
+	// accuracy2 = 91.501292
+	// Duration = 2h2m1.7439799s
+
 }
 
 func statWeightsFitting(printer *util.PrintRecorder) {
@@ -880,16 +941,15 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		resultsByAlgorithm["complex"] = comp.Run()
 	})
 
-	wg.Go(func(){
-	printer.Println("################# FITTING ###################")
-	{
+	wg.Go(func() {
+		printer.Println("################# FITTING ###################")
 		fitting := stathighs.FittingEachStatWeightProcess{}
 		fitting.Init(printer)
 		fitting.SetTargetRatios(targetRatio)
 		fitting.SetLazyMode(true)
 		fitting.SupplyDataFromStandard(inputDataRandom)
 		resultsByAlgorithm["fitting"] = fitting.Run()
-	}
+	})
 
 	wg.Go(func() {
 		printer.Println("################# GRID1 ###################")
@@ -1020,7 +1080,7 @@ func evaluateAccuracy(statWeights stathighs.WeightResult, inputData []stathighs.
 	type accuracyInfo struct {
 		input *stathighs.WeightInput
 
-		simRankDetail        map[simulate.SimType]int
+		// simRankDetail        map[simulate.SimType]int
 		combinedSimRankScore float64
 
 		statRankRange util.HiLoInt
@@ -1028,8 +1088,8 @@ func evaluateAccuracy(statWeights stathighs.WeightResult, inputData []stathighs.
 	}
 	accuracyData := util.MapSliceAsNew(inputData, func(input *stathighs.WeightInput) accuracyInfo {
 		return accuracyInfo{
-			input:         input,
-			simRankDetail: make(map[simulate.SimType]int),
+			input: input,
+			// simRankDetail: make(map[simulate.SimType]int),
 		}
 	})
 
@@ -1041,7 +1101,7 @@ func evaluateAccuracy(statWeights stathighs.WeightResult, inputData []stathighs.
 	// score each sim
 	for _, simType := range stathighs.G_RequiredSims {
 		for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), accuracyData, func(x *accuracyInfo) float64 { return x.input.SimResult.Get(simType) }) {
-			entry.simRankDetail[simType] = simDetailRank
+			// entry.simRankDetail[simType] = simDetailRank
 			entry.combinedSimRankScore += float64(simDetailRank) * simRatios.Get(simType)
 		}
 	}
@@ -1076,4 +1136,56 @@ func rangePercentDiff(one, two util.HiLoInt, fullLength int) float64 {
 	diffAsRatio := float64(diff) / float64(fullLength)
 	percentScore := 100.0 - (diffAsRatio * 100.0)
 	return percentScore
+}
+
+func statWeightsCustom(printer *util.PrintRecorder) {
+	targetRatio := stathighs.NewStatWeights_generalMiti
+
+	inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
+	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
+	mixedInputData := slices.Concat(inputDataRandom, inputDataGrid)
+
+	changeStats := []stats.StatType{
+		stats.Stat_Stamina, stats.Stat_Crit, stats.Stat_Haste,
+		stats.Stat_Expertise, stats.Stat_Mastery, stats.Stat_Dodge, stats.Stat_Parry}
+
+	mult := 1.01
+
+	startWeight := stathighs.WeightResult{
+		stats.Stat_Strength:  1.000000,
+		stats.Stat_Stamina:   0.480505,
+		stats.Stat_Crit:      0.646226,
+		stats.Stat_Haste:     0.859856,
+		stats.Stat_Expertise: 0.667975,
+		stats.Stat_Mastery:   1.940581,
+		stats.Stat_Dodge:     0.651822,
+		stats.Stat_Parry:     0.624330,
+	}
+
+	printer.Printf("START %s accuracy=%f\n", startWeight.String(), evaluateAccuracy(startWeight, mixedInputData, targetRatio))
+
+	bestWeight := startWeight.Clone()
+
+	for {
+		best := util_rank.BestCollector1[stathighs.WeightResult]{}
+		best.Offer(&bestWeight, evaluateAccuracy(bestWeight, mixedInputData, targetRatio))
+		for _, stat := range changeStats {
+			hi := bestWeight.Clone()
+			hi[stat] *= mult
+			best.Offer(&hi, evaluateAccuracy(hi, mixedInputData, targetRatio))
+
+			lo := bestWeight.Clone()
+			lo[stat] /= mult
+			best.Offer(&lo, evaluateAccuracy(lo, mixedInputData, targetRatio))
+		}
+		updateWeight := best.GetBestOrPanic()
+
+		if updateWeight.Equals(bestWeight) {
+			printer.Printf("DONE\n")
+			break
+		} else {
+			printer.Printf("NEXT %s accuracy=%f\n", updateWeight.String(), evaluateAccuracy(updateWeight, mixedInputData, targetRatio))
+			bestWeight = updateWeight
+		}
+	}
 }

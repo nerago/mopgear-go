@@ -99,8 +99,9 @@ func core(printer *util.PrintRecorder) {
 	// statWeightsFitting2(printer)
 	// statWeightsComplex(printer)
 	// statWeightsRanking(printer)
+	statWeightsGridIntoRanking(printer)
 
-	statWeights_CompareAlgorithms(printer)
+	// statWeights_CompareAlgorithms(printer)
 
 	// statWeightsGrid_updateAll(printer) // seed of standard process? 4/6/2026
 
