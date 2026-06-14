@@ -31,6 +31,23 @@ func chooseStatScaling(inputData []WeightInput, printer *util.PrintRecorder) map
 		printer)
 }
 
+func chooseStatScalingAll(inputData []WeightInput, printer *util.PrintRecorder) float64 {
+	c_targetNumber := 1.0
+	max := 0.0
+	for _, check := range G_RequiredStats {
+		for _, data := range inputData {
+			value := data.TotalStat.GetFloat(check)
+			if value > max {
+				max = value
+			}
+		}
+	}
+
+	scale := c_targetNumber / max
+	printer.Printf("scale %e\n", scale)
+	return scale
+}
+
 func chooseScalingNumbers[E enumWithName](inputData []WeightInput, checkTypes []E, getValue func(*WeightInput, E) float64, printer *util.PrintRecorder) map[E]float64 {
 	c_targetNumber := 1.0
 	scaleMap := make(map[E]float64)

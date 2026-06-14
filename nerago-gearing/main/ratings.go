@@ -425,22 +425,22 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 	filteredInput := mixedInputData
 	printer.Printf("filteredInput size %d\n", len(filteredInput))
 
-	startWeight := stathighs.WeightResult{
-		stats.Stat_Strength:  1.000000,
-		stats.Stat_Stamina:   0.480505,
-		stats.Stat_Crit:      0.646226,
-		stats.Stat_Haste:     0.859856,
-		stats.Stat_Expertise: 0.667975,
-		stats.Stat_Mastery:   1.940581,
-		stats.Stat_Dodge:     0.651822,
-		stats.Stat_Parry:     0.624330,
-	}
+	// startWeight := stathighs.WeightResult{
+	// 	stats.Stat_Strength:  1.000000,
+	// 	stats.Stat_Stamina:   0.480505,
+	// 	stats.Stat_Crit:      0.646226,
+	// 	stats.Stat_Haste:     0.859856,
+	// 	stats.Stat_Expertise: 0.667975,
+	// 	stats.Stat_Mastery:   1.940581,
+	// 	stats.Stat_Dodge:     0.651822,
+	// 	stats.Stat_Parry:     0.624330,
+	// }
 
 	ranking := stathighs.RankingStatWeightProcess5{}
 	ranking.Init(printer)
 	ranking.SetTargetRatios(targetRatio)
 	ranking.SupplyData(filteredInput)
-	ranking.SupplyInitialWeights(startWeight)
+	// ranking.SupplyInitialWeights(startWeight)
 	weightsList := ranking.Run()
 	for _, weight := range weightsList {
 		writePawnString(weight, printer)

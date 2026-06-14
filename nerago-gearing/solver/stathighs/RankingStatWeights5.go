@@ -92,7 +92,8 @@ type rankInternalRun5 struct {
 	input *utilhighs.InputBuilder
 
 	runData    []rankEntry5
-	scaleStats map[stats.StatType]float64
+	// scaleStats map[stats.StatType]float64
+	scaleStats float64
 
 	weightColumns map[stats.StatType]utilhighs.ColumnIndex
 	pairLinks     util.MapMapDiagonal[int, *rankPair5]
@@ -191,7 +192,7 @@ func (run *rankInternalRun5) createWeightColumns() {
 }
 
 func (run *rankInternalRun5) supplyData(inputData []WeightInput) {
-	run.scaleStats = chooseStatScaling(inputData, run.process.printer)
+	run.scaleStats = chooseStatScalingAll(inputData, run.process.printer)
 	run.runData = util.MapSliceAsNew(inputData, func(input *WeightInput) rankEntry5 {
 		return rankEntry5{
 			data: input,
@@ -232,7 +233,8 @@ func (run *rankInternalRun5) makeEntryColumnRefs(entry *rankEntry5) {
 	scoreRow := utilhighs.ConstraintRowBuild{Debug: "scoreRow"}
 	for statType, weightColumn := range run.weightColumns {
 		statValue := entry.data.TotalStat.GetFloat(statType)
-		statScale := run.scaleStats[statType]
+		// statScale := run.scaleStats[statType]
+		statScale := run.scaleStats
 		scoreRow.Add(weightColumn, statValue*statScale)
 	}
 	scoreRow.Add(entry.scoreCompute, -1)
@@ -274,12 +276,12 @@ func (run *rankInternalRun5) extractAndReportSolution(solution *highs.Solution) 
 	statWeightResult := WeightResult_Make()
 	for _, statType := range G_RequiredStats {
 		weightColumn := run.weightColumns[statType]
-		statScale := run.scaleStats[statType]
+		// statScale := run.scaleStats[statType]
 
 		modelWeight := solution.ColValues[weightColumn]
 		// usableWeight := modelWeight / statScale
-		usableWeight := modelWeight * statScale
-		// usableWeight := modelWeight
+		// usableWeight := modelWeight * statScale
+		usableWeight := modelWeight
 
 		statWeightResult.Put(statType, usableWeight)
 	}
@@ -341,7 +343,8 @@ func (run *rankInternalRun5) setupInitialSolutionFromExternal(weights WeightResu
 
 	entryScores := make([]float64, len(run.runData))
 	for i, entry := range run.runData {
-		score := weights.CalcStatScoreScaled(entry.data, run.scaleStats)
+		// score := weights.CalcStatScoreScaled(entry.data, run.scaleStats)
+		score := weights.CalcStatScore(entry.data)
 		entryScores[i] = score
 		run.input.SetInitialSolutionValue(entry.scoreCompute, score)
 	}
