@@ -63,7 +63,7 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 	// TWEAK weights see if dumb changes can do better than grid
 	// TODO look into ranking stats solver
 	mixedInputData := slices.Concat(inputDataGrid, inputDataReal)
-	WeightTweaker(weights, tweakerChangeStats, ratios, mixedInputData, printer)
+	WeightTweaker(weights, TweakerChangeStats, ratios, mixedInputData, printer)
 	printer.Println(">>>>> Tweaked Weights:")
 	pawn = tools.WritePawnString(weights, printer)
 	printer.Println(pawn)

@@ -565,26 +565,26 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		comp.Init(printer)
 		comp.SetTargetRatios(targetRatio)
 		comp.SetMinimumIncludeRate(1)
-		comp.SupplyData(inputDataRandom)
+		comp.SupplyData(slices.Clone(inputDataRandom))
 		resultsByAlgorithm["complex"] = comp.Run()
 	})
 
-	wg.Go(func() {
-		printer.Println("################# FITTING ###################")
-		fitting := stathighs.FittingEachStatWeightProcess{}
-		fitting.Init(printer)
-		fitting.SetTargetRatios(targetRatio)
-		fitting.SetLazyMode(true)
-		fitting.SupplyDataFromStandard(inputDataRandom)
-		resultsByAlgorithm["fitting"] = fitting.Run()
-	})
+	// wg.Go(func() {
+	// 	printer.Println("################# FITTING ###################")
+	// 	fitting := stathighs.FittingEachStatWeightProcess{}
+	// 	fitting.Init(printer)
+	// 	fitting.SetTargetRatios(targetRatio)
+	// 	fitting.SetLazyMode(true)
+	// 	fitting.SupplyDataFromStandard(inputDataRandom)
+	// 	resultsByAlgorithm["fitting"] = fitting.Run()
+	// })
 
 	wg.Go(func() {
 		printer.Println("################# GRID1 ###################")
 		grid1 := stathighs.GridStatWeightProcess{}
 		grid1.Init(printer)
 		grid1.SetTargetRatios(targetRatio)
-		grid1.SupplyData(inputDataGrid)
+		grid1.SupplyData(slices.Clone(inputDataGrid))
 		resultsByAlgorithm["grid1"] = grid1.Run()
 	})
 
@@ -593,7 +593,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		grid2 := stathighs.GridStatWeightProcess2{}
 		grid2.Init(printer)
 		grid2.SetTargetRatios(targetRatio)
-		grid2.SupplyData(inputDataGrid)
+		grid2.SupplyData(slices.Clone(inputDataGrid))
 		resultsByAlgorithm["grid2"] = grid2.Run()
 	})
 
@@ -603,7 +603,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		ranking.Init(printer)
 		ranking.SetTargetRatios(targetRatio)
 		// ranking.SupplyData(inputDataGrid)
-		ranking.SupplyData(mixedInputData)
+		ranking.SupplyData(slices.Clone(mixedInputData))
 		ranking.RANKMODE = 0
 
 		resultsByAlgorithm["ranking0"] = ranking.Run()
@@ -615,7 +615,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		ranking.Init(printer)
 		ranking.SetTargetRatios(targetRatio)
 		// ranking.SupplyData(inputDataGrid)
-		ranking.SupplyData(mixedInputData)
+		ranking.SupplyData(slices.Clone(mixedInputData))
 		ranking.RANKMODE = 1
 
 		resultsByAlgorithm["ranking1"] = ranking.Run()
@@ -627,7 +627,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		ranking.Init(printer)
 		ranking.SetTargetRatios(targetRatio)
 		// ranking.SupplyData(inputDataGrid)
-		ranking.SupplyData(mixedInputData)
+		ranking.SupplyData(slices.Clone(mixedInputData))
 		ranking.RANKMODE = 2
 
 		resultsByAlgorithm["ranking2"] = ranking.Run()
@@ -641,7 +641,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		// ranking.SupplyData(inputDataGrid)
 		// ranking.SupplyData(mixedInputData[0:15])
 		// ranking.SupplyData(mixedInputData[0:350])
-		ranking.SupplyData(mixedInputData)
+		ranking.SupplyData(slices.Clone(mixedInputData))
 
 		weightList := ranking.Run(false)
 		for i, weight := range weightList {
@@ -657,9 +657,22 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		// ranking.SupplyData(inputDataGrid)
 		// ranking.SupplyData(mixedInputData[0:15])
 		// ranking.SupplyData(mixedInputData[0:350])
-		ranking.SupplyData(inputDataRandom)
+		ranking.SupplyData(slices.Clone(inputDataRandom))
 
 		weightList := ranking.Run(false)
+		for i, weight := range weightList {
+			resultsByAlgorithm["ranking4-"+strconv.Itoa(i)] = weight
+		}
+	})
+
+	wg.Go(func() {
+		printer.Println("################# RANKING5 ###################")
+		ranking := stathighs.RankingStatWeightProcess5{}
+		ranking.Init(printer)
+		ranking.SetTargetRatios(targetRatio)
+		ranking.SupplyData(slices.Clone(inputDataRandom))
+
+		weightList := ranking.Run()
 		for i, weight := range weightList {
 			resultsByAlgorithm["ranking4-"+strconv.Itoa(i)] = weight
 		}
@@ -687,15 +700,22 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		tab.AddColumnHeader(stat.Name(), true)
 	}
 	tab.AddColumnHeader("accuracy", false)
-	for label, resultMap := range resultsByAlgorithm {
+	tab.AddColumnHeader("accuracy_tweaked", false)
+	for label, weight := range resultsByAlgorithm {
 		row := make([]string, 0)
 		row = append(row, label)
 		for _, stat := range stathighs.G_RequiredStats {
-			value := resultMap.Get(stat)
+			value := weight.Get(stat)
 			row = append(row, strconv.FormatFloat(value, 'f', 4, 64))
 		}
-		accuracy := weightfind.EvaluateAccuracy(resultMap, mixedInputData, targetRatio)
+
+		accuracy := weightfind.EvaluateAccuracy(weight, mixedInputData, targetRatio)
 		row = append(row, strconv.FormatFloat(accuracy, 'f', 4, 64))
+
+		weightTweak := weightfind.WeightTweaker(weight, weightfind.TweakerChangeStats, targetRatio, mixedInputData, util.PrintRecorder_HoldAll())
+		accuracyTweak := weightfind.EvaluateAccuracy(weightTweak, mixedInputData, targetRatio)
+		row = append(row, strconv.FormatFloat(accuracyTweak, 'f', 4, 64))
+
 		tab.AddRow(row)
 	}
 	tab.Write(printer)

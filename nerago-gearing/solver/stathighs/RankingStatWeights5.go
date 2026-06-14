@@ -17,7 +17,7 @@ import (
 // thus scores are 8*=  0.0 .. 80
 
 const (
-	c_rank5_sample    = 150
+	c_rank5_sample    = 60
 	c_rank5_timeLimit = 4000
 
 	c_rank5_computeScoreM = 100

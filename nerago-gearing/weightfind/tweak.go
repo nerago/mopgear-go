@@ -8,7 +8,7 @@ import (
 	"paladin_gearing_go/util/util_rank"
 )
 
-var tweakerChangeStats = []stats.StatType{
+var TweakerChangeStats = []stats.StatType{
 	stats.Stat_Stamina, stats.Stat_Crit, stats.Stat_Haste,
 	stats.Stat_Expertise, stats.Stat_Mastery, stats.Stat_Dodge, stats.Stat_Parry}
 
