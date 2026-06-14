@@ -15,9 +15,9 @@ import (
 type RankingStatWeightProcess5 struct {
 	printer *util.PrintRecorder
 
-	targetRatios simulate.SimData
+	targetRatios   simulate.SimData
 	initialWeights *WeightResult
-	dataAll      []WeightInput
+	dataAll        []WeightInput
 }
 
 type rankInternalRun5 struct {
@@ -25,10 +25,8 @@ type rankInternalRun5 struct {
 
 	input *utilhighs.InputBuilder
 
-	runData            []rankEntry5
-	scaleStats         map[stats.StatType]float64
-	minimumIncludeRate float64
-	includeCountRow    utilhighs.ConstraintRowBuild
+	runData    []rankEntry5
+	scaleStats map[stats.StatType]float64
 
 	weightColumns map[stats.StatType]utilhighs.ColumnIndex
 	pairLinks     util.MapMapDiagonal[int, *rankPair5]
@@ -70,14 +68,13 @@ func (process *RankingStatWeightProcess5) Run() []WeightResult {
 	weightResultList := make([]WeightResult, 0)
 	process.printer.Printf("RankingStatWeightProcess5 RunOptimisitic\n")
 	run := rankInternalRun5_create(process)
-	run.minimumIncludeRate = 0.5
-	run.input.TimeLimitSeconds = 4000
-	run.supplyData(takeDataSample_Start(process.dataAll, 30))
+	run.input.TimeLimitSeconds = 2000
+	run.supplyData(takeDataSample_Random(process.dataAll, 80))
+	// run.supplyData(process.dataAll)
 	run.prepareRankings()
 	run.createWeightColumns()
 	run.makeDataListEntryColumns()
 	run.makeDataListPairRules()
-	run.finishCounts()
 	if process.initialWeights != nil {
 		run.setupInitialSolutionFromExternal(*process.initialWeights)
 	}
@@ -125,10 +122,6 @@ func (run *rankInternalRun5) createWeightColumns() {
 	}
 
 	sumWeights.Finish(run.input, 1.0, hi) // force positive and non-zero result
-}
-
-func (run *rankInternalRun5) finishCounts() {
-	// run.includeCountRow.Finish(run.input, float64(len(run.runData))*run.minimumIncludeRate, utilhighs.C_PlusInf)
 }
 
 func (run *rankInternalRun5) supplyData(inputData []WeightInput) {
@@ -181,7 +174,6 @@ func (run *rankInternalRun5) makeEntryColumnRefs(entry *rankEntry5) {
 
 	// TODO consider varying score, especially low end maybe?
 	entry.isInclude = run.input.CreateColumnBoolWithOutput(1, utilhighs.DebugText("include-"+rankStr))
-	run.includeCountRow.Add(entry.isInclude, 1)
 
 	entry.scoreIfIncluded = run.input.CreateColumnGeneral(highs.Continuous, -c_RankLimitScore, c_RankLimitScore, utilhighs.DebugText("scoreIfIncluded-"+rankStr))
 	utilhighs.ContraintIfBoolCopy(run.input, entry.isInclude, entry.scoreCompute, entry.scoreIfIncluded, c_RankLargeScore)
@@ -238,17 +230,6 @@ func (run *rankInternalRun5) extractAndReportSolution(solution *highs.Solution) 
 	}
 	run.process.printer.Println("}")
 
-	// startWeight := stathighs.WeightResult{
-	// 	stats.Stat_Strength:  1.000000,
-	// 	stats.Stat_Stamina:   0.480505,
-	// 	stats.Stat_Crit:      0.646226,
-	// 	stats.Stat_Haste:     0.859856,
-	// 	stats.Stat_Expertise: 0.667975,
-	// 	stats.Stat_Mastery:   1.940581,
-	// 	stats.Stat_Dodge:     0.651822,
-	// 	stats.Stat_Parry:     0.624330,
-	// }
-
 	includeCount := 0
 	for entry := range util.ForPointer(run.runData) {
 		includeValue := solution.ColValues[entry.isInclude]
@@ -281,21 +262,28 @@ func (run *rankInternalRun5) setupInitialSolutionFromExternal(weights WeightResu
 		run.input.SetInitialSolutionValue(entry.scoreCompute, score)
 	}
 
-	firstInclude, lastInclude := 0, len(run.runData)-1
+	firstInclude, lastIndex := 0, len(run.runData)-1
 	run.input.SetInitialSolutionValue(run.runData[firstInclude].isInclude, 1)
 	run.input.SetInitialSolutionValue(run.runData[firstInclude].scoreIfIncluded, entryScores[firstInclude])
-	run.input.SetInitialSolutionValue(run.runData[lastInclude].isInclude, 1)
-	run.input.SetInitialSolutionValue(run.runData[lastInclude].scoreIfIncluded, entryScores[lastInclude])
 
-	for i := firstInclude + 1; i < lastInclude; i++ {
+	for i := firstInclude + 1; i < lastIndex; i++ {
 		entry := &run.runData[i]
 		if entryScores[i-1] <= entryScores[i] && entryScores[i] <= entryScores[i+1] {
 			run.input.SetInitialSolutionValue(entry.isInclude, 1)
 			run.input.SetInitialSolutionValue(entry.scoreIfIncluded, entryScores[i])
 		} else {
-			// run.input.SetInitialSolutionValue(entry.isInclude, 0)
-			// run.input.SetInitialSolutionValue(entry.scoreIfIncluded, entryScores[i-1])
+			run.input.SetInitialSolutionValue(entry.isInclude, 0)
+			run.input.SetInitialSolutionValue(entry.scoreIfIncluded, entryScores[i-1])
+			entryScores[i] = entryScores[i-1]
 		}
+	}
+
+	if entryScores[lastIndex-1] <= entryScores[lastIndex] {
+		run.input.SetInitialSolutionValue(run.runData[lastIndex].isInclude, 1)
+		run.input.SetInitialSolutionValue(run.runData[lastIndex].scoreIfIncluded, entryScores[lastIndex])
+	} else {
+		run.input.SetInitialSolutionValue(run.runData[lastIndex].isInclude, 0)
+		run.input.SetInitialSolutionValue(run.runData[lastIndex].scoreIfIncluded, entryScores[lastIndex-1])
 	}
 
 	run.input.ValidateInitialSolutionState()
