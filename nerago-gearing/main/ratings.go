@@ -4,90 +4,25 @@ import (
 	"cmp"
 	"encoding/json"
 	"maps"
-	"math"
 	"os"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/model"
-	"paladin_gearing_go/model/requirements"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/build"
 	"paladin_gearing_go/solver/stathighs"
 	"paladin_gearing_go/stats"
+	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
-	"paladin_gearing_go/util/util_rank"
+	"paladin_gearing_go/weightfind"
 	"slices"
 	"strconv"
 	"strings"
 	"sync"
 )
-
-// old code for spreadsheet weights
-func forSpreadsheetGenerateRatingsDataFromSims(printer *util.PrintRecorder) {
-	// simSpeed := simulate.RunSize_QuickDirty
-	simSpeed := simulate.RunSize_SlowAccurate
-
-	// fight := stats.Fight_Animus
-	// spec := stats.Spec_PaladinProtMitigation
-	// startGear := files.GearFileProtMitigationNoSet
-	// modelEquipOnly := model.Model_PallyProtMitigation_NoSet()
-	// goal := stats.UpgradeGoal_Mitigation
-
-	fight := stats.Fight_Horridon_LowHeal
-	spec := stats.Spec_PaladinProt
-	startGear := files.GearFileProtMitigationWithSet
-	modelEquipOnly := model.Model_PallyProtMitigation_WithSet()
-	goal := stats.OptimiseGoal_Mitigation
-
-	// fight := stats.Fight_Horridon_HighHeal
-	// spec := stats.Spec_PaladinProtDps
-	// startGear := files.GearFileProtDps
-	// modelEquipOnly := model.Model_PallyProtDps()
-	// goal := stats.UpgradeGoal_Dps
-
-	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &modelEquipOnly, printer)
-
-	// var statAdd uint32 = 50
-	// var statAdd uint32 = 200
-	var statAdd int32 = 400
-	// var statAdd uint32 = 600
-
-	var incrementBaseHaste int32 = 0
-	var decrementBaseExpertise int32 = 0
-	baseStat := initialBonusStatMap(printer, items.FullItemSet_FromMap(currentEquip), incrementBaseHaste, decrementBaseExpertise, statAdd)
-
-	statCheckList := []stats.StatType{
-		stats.Stat_Strength, stats.Stat_Stamina, stats.Stat_Crit, stats.Stat_Haste,
-		stats.Stat_Expertise, stats.Stat_Mastery, stats.Stat_Dodge, stats.Stat_Parry,
-	}
-
-	tracker := util.TrackProgress_Start()
-	tracker.RunOuterTracking(len(statCheckList) + 1)
-	defer tracker.Stop()
-
-	csv := util.CSVOutputByColumn{}
-	csv.InitRows(len(simulate.SimTypeList) + 1)
-
-	simBase := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, modelEquipOnly.Professions, &currentEquip, &baseStat, tracker.MakeNested())
-	csv.AddString("base")
-	simResultAddToCSV(simBase, &csv)
-	csv.FinishColumn()
-
-	for _, statCheck := range statCheckList {
-		bonusStat := maps.Clone(baseStat)
-		bonusStat[statCheck] += statAdd
-		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, modelEquipOnly.Professions, &currentEquip, &bonusStat, tracker.MakeNested())
-
-		csv.AddString(statCheck.Name())
-		simResultAddToCSV(simResult, &csv)
-		csv.FinishColumn()
-	}
-
-	csv.Write(printer)
-}
 
 func simResultAddToCSV(simResult simulate.SimData, csv *util.CSVOutputByColumn) {
 	for _, simType := range simulate.SimTypeList {
@@ -167,114 +102,6 @@ func relativeRatingsCompromise(printer *util.PrintRecorder) {
 	printer.Printf("? %f %f\n", multB1*rateB1/targetCombined, multB2*rateB2/(targetCombined))
 }
 
-func generateRatingsInputFromArtificalStatOverrides(printer *util.PrintRecorder) ([]stathighs.WeightInput, simulate.SimData) {
-	// simSpeed := simulate.RunSize_TestOnly
-	simSpeed := simulate.RunSize_QuickDirty
-	// simSpeed := simulate.RunSize_SlowAccurate
-
-	// fight := stats.Fight_Animus
-	// spec := stats.Spec_PaladinProtMitigation
-	// startGear := files.GearFileProtMitigationNoSet
-	// modelEquipOnly := model.Model_PallyProtMitigation_NoSet()
-	// targetRatio := stathighs.NewStatWeights_generalMiti
-	// goal := stats.UpgradeGoal_Mitigation
-
-	// fight := stats.Fight_Horridon_LowHeal
-	// spec := stats.Spec_PaladinProtMitigation
-	// startGear := files.GearFileProtMitigationSet
-	// modelEquipOnly := model.Model_PallyProtMitigation_WithSet()
-	// targetRatio := stathighs.NewStatWeights_radenWeight
-	// goal := stats.UpgradeGoal_Mitigation
-
-	fight := stats.Fight_Animus
-	spec := stats.Spec_PaladinProt
-	startGear := files.GearFileProtCompromise
-	modelEquipOnly := model.Model_PallyProtCompromise()
-	targetRatio := stathighs.NewStatWeights_animusWeight
-	goal := stats.OptimiseGoal_HalfMitiDps
-
-	// fight := stats.Fight_Horridon_HighHeal
-	// spec := stats.Spec_PaladinProtDps
-	// startGear := files.GearFileProtDps
-	// modelEquipOnly := model.Model_PallyProtDps()
-	// targetRatio := stathighs.NewStatWeights_dpsWeight
-	// goal := stats.UpgradeGoal_Dps
-
-	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &modelEquipOnly, printer)
-	currentItemSet := items.FullItemSet_FromMap(currentEquip)
-	inputList := generateRatingsInputFromArtificalStatOverrides_ForGrid(currentItemSet, printer, simSpeed, spec, goal, fight, modelEquipOnly.Professions)
-
-	// bytes, err := json.Marshal(inputList)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// err = os.WriteFile("sim-stats-grid-data.json", bytes, 0)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	return inputList, targetRatio
-}
-
-func generateRatingsInputFromArtificalStatOverrides_ForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo) []stathighs.WeightInput {
-	var incrementMin int32 = 0
-	var incrementMax int32 = 500
-	var incrementStep int32 = 250
-
-	initialBaseStats := initialBonusStatMap_fixRanges(printer, currentItemSet, incrementMax)
-
-	statCheckList := stathighs.G_RequiredStats
-	type incrementStat struct {
-		stat  stats.StatType
-		value int32
-	}
-
-	incrementOptions := make([][]incrementStat, 0)
-	for _, stat := range statCheckList {
-		optionArray := make([]incrementStat, 0)
-		for value := incrementMin; value < incrementMax; value += incrementStep {
-			entry := incrementStat{stat, value}
-			optionArray = append(optionArray, entry)
-		}
-		incrementOptions = append(incrementOptions, optionArray)
-	}
-
-	incrementPermutations := util.PermuteAll_Slice(incrementOptions)
-
-	tracker := util.TrackProgress_Start()
-	tracker.RunOuterTracking(len(incrementPermutations))
-	defer tracker.Stop()
-
-	inputList := channel_op.Map_SliceToSlice(6, incrementPermutations, func(increments *[]incrementStat, resultChannel chan<- stathighs.WeightInput) {
-		innerPrint := util.PrintRecorder_HoldAll()
-
-		bonusStat := maps.Clone(initialBaseStats)
-		str := util.StringBuild2{}
-		str.WriteString("STATS SCENARIO ")
-		for _, inc := range *increments {
-			bonusStat[inc.stat] += inc.value
-
-			str.WriteString(inc.stat.Name())
-			str.WriteRune('=')
-			str.WriteInt32(bonusStat[inc.stat])
-			str.WriteRune(' ')
-		}
-
-		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.MakeNested())
-
-		resultChannel <- stathighs.WeightInput{
-			TotalStat: addBonusStats(currentItemSet.Total(), bonusStat),
-			SimResult: simResult,
-		}
-
-		innerPrint.PrintlnFromBuild(str)
-		innerPrint.Println("   --> " + simResult.CompactStringGeneral())
-
-		printer.AppendOther(innerPrint)
-	})
-	return inputList
-}
-
 type basicStatInput struct {
 	IncrementStat  stats.StatType
 	IncrementValue int32
@@ -284,7 +111,7 @@ type basicStatInput struct {
 func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo) ([]basicStatInput, simulate.SimData) {
 	var incrementValue int32 = 250
 
-	initialBaseStats := initialBonusStatMap_fixRanges(printer, currentItemSet, incrementValue)
+	initialBaseStats := weightfind.InitialBonusStatMap_fixRanges(printer, currentItemSet, incrementValue)
 
 	statCheckList := stathighs.G_RequiredStats
 
@@ -348,38 +175,6 @@ func generateRatingsInputFromRealRandomSetsT5(printer *util.PrintRecorder) ([]st
 	return weightInputs, targetRatio
 }
 
-func generateRatingsInputFromRealRandomSetsGeneral(gearFile string, substituteItems []items.ItemId, model *model.Model, makeSetCount int, simSize simulate.WowSim_RunSize, doFixRanges bool) []stathighs.WeightInput {
-	itemOptions := setup.OptionsSetup_FromGearFile(gearFile, model, setup.MissingEnchant_Panic, printer)
-	for _, itemId := range substituteItems {
-		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, model, printer)
-		for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
-			if itemOptions.Has(slotEquip) {
-				itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)
-			}
-		}
-	}
-	itemOptions.RemoveDuplicates()
-
-	setList := build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, model, makeSetCount, printer, 0)
-
-	track := util.TrackProgress_Start()
-	track.RunOuterTracking(len(setList))
-	defer track.Stop()
-
-	weightInputs := channel_op.Map_SliceToSlice(6, setList, func(itemSet *items.FullItemSet, weightInputs chan<- stathighs.WeightInput) {
-		var bonusStats *map[stats.StatType]int32 = nil
-		if doFixRanges {
-			bonusFix := initialBonusStatMap_fixRanges(printer, *itemSet, 0)
-			bonusStats = &bonusFix
-		}
-
-		simResult := simulate.WowSim_Execute_UseModel(simSize, model, itemSet.Items(), bonusStats, track.MakeNested())
-		weightInputs <- stathighs.WeightInput{TotalStat: *itemSet.Total(), SimResult: simResult}
-	})
-
-	return weightInputs
-}
-
 func statWeightsComplex(printer *util.PrintRecorder) {
 	// weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
 
@@ -410,7 +205,7 @@ func statWeightsComplex(printer *util.PrintRecorder) {
 	comp.SetMinimumIncludeRate(0.7)
 	comp.SupplyData(filteredInput)
 	weights := comp.Run()
-	writePawnString(weights, printer)
+	tools.WritePawnString(weights, printer)
 }
 
 func statWeightsRanking(printer *util.PrintRecorder) {
@@ -425,26 +220,26 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 	filteredInput := mixedInputData
 	printer.Printf("filteredInput size %d\n", len(filteredInput))
 
-	// startWeight := stathighs.WeightResult{
-	// 	stats.Stat_Strength:  1.000000,
-	// 	stats.Stat_Stamina:   0.480505,
-	// 	stats.Stat_Crit:      0.646226,
-	// 	stats.Stat_Haste:     0.859856,
-	// 	stats.Stat_Expertise: 0.667975,
-	// 	stats.Stat_Mastery:   1.940581,
-	// 	stats.Stat_Dodge:     0.651822,
-	// 	stats.Stat_Parry:     0.624330,
-	// }
+	startWeight := stathighs.WeightResult{
+		stats.Stat_Strength:  1.000000,
+		stats.Stat_Stamina:   0.639290,
+		stats.Stat_Crit:      0.671679,
+		stats.Stat_Haste:     1.186655,
+		stats.Stat_Expertise: 0.858334,
+		stats.Stat_Mastery:   2.530013,
+		stats.Stat_Dodge:     0.671679,
+		stats.Stat_Parry:     1.186655,
+	}
 
 	ranking := stathighs.RankingStatWeightProcess5{}
 	ranking.Init(printer)
 	ranking.SetTargetRatios(targetRatio)
 	ranking.SupplyData(filteredInput)
-	// ranking.SupplyInitialWeights(startWeight)
+	ranking.SupplyInitialWeights(startWeight)
 	weightsList := ranking.Run()
 	for _, weight := range weightsList {
-		writePawnString(weight, printer)
-		printer.Printf("accuracy = %f\n", evaluateAccuracy(weight, mixedInputData, targetRatio))
+		tools.WritePawnString(weight, printer)
+		printer.Printf("accuracy = %f\n", weightfind.EvaluateAccuracy(weight, mixedInputData, targetRatio))
 	}
 }
 
@@ -462,7 +257,7 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 		grid.SetTargetRatios(targetRatio)
 		grid.SupplyData(inputDataGrid)
 		weights1 = grid.Run()
-		writePawnString(weights1, printer)
+		tools.WritePawnString(weights1, printer)
 	} else {
 		//  Pawn: v1: "Protection WoWSims Weights": Class=Paladin,Strength=1.0000000000,Stamina=0.4804976439,CritRating=0.6462171056,HasteRating=0.8598561605,ExpertiseRating=0.6679862341,MasteryRating=1.9405533853,DodgeRating=0.6518112608,ParryRating=0.6243298125, )
 		// FINAL WEIGHTS
@@ -494,11 +289,11 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 	ranking.SupplyData(mixedInputData)
 	weights2 := ranking.RunUsingExternalStart(weights1).GetOrPanic()
 
-	writePawnString(weights1, printer)
-	printer.Printf("accuracy1 = %f\n", evaluateAccuracy(weights1, mixedInputData, targetRatio))
+	tools.WritePawnString(weights1, printer)
+	printer.Printf("accuracy1 = %f\n", weightfind.EvaluateAccuracy(weights1, mixedInputData, targetRatio))
 
-	writePawnString(weights2, printer)
-	printer.Printf("accuracy2 = %f\n", evaluateAccuracy(weights2, mixedInputData, targetRatio))
+	tools.WritePawnString(weights2, printer)
+	printer.Printf("accuracy2 = %f\n", weightfind.EvaluateAccuracy(weights2, mixedInputData, targetRatio))
 
 	// ( Pawn: v1: "Protection WoWSims Weights": Class=Paladin,Strength=1.0000000000,Stamina=0.4805050000,CritRating=0.6462260000,HasteRating=0.8598560000,ExpertiseRating=0.6679750000,MasteryRating=1.9405810000,DodgeRating=0.6518220000,ParryRating=0.6243300000, )
 	// accuracy1 = 92.635522
@@ -522,11 +317,11 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 		panic(err)
 	}
 
-	for _, entry := range weightInputs {
-		if hasteInDiscontinuityRange(entry.TotalStat.GetUInt(stats.Stat_Haste)) {
-			printer.Println("haste in discontinuity range")
-		}
-	}
+	// for _, entry := range weightInputs {
+	// 	if hasteInDiscontinuityRange(entry.TotalStat.GetUInt(stats.Stat_Haste)) {
+	// 		printer.Println("haste in discontinuity range")
+	// 	}
+	// }
 
 	printer.Printf("Initial weight input size = %d\n", len(weightInputs))
 
@@ -536,7 +331,7 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 	// fitting.SupplyDataFromStandard(weightInputs[0:32], stats.Stat_Crit, simulate.Result_DPS)
 	// oneWeight := fitting.Run()
 	// printer.Printf("%f %f %f %f %f\n", oneWeight.LineSlope, oneWeight.LineOffset, oneWeight.Minimum, oneWeight.Maximum, oneWeight.IncludePercent)
-	// writePawnString(weights, printer)
+	// tools.WritePawnString(weights, printer)
 
 	fitting := stathighs.FittingSingleStatSegmentsProcess{}
 	// fitting.Init(printer, stats.Stat_Crit, simulate.Result_DPS)
@@ -567,7 +362,7 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 		// printer.Printf("%f %f %d %d %f\n", oneWeight.LineSlope, oneWeight.LineOffset, oneWeight.Minimum, oneWeight.Maximum, oneWeight.IncludePercent)
 	}
 	tab.Write(printer)
-	// writePawnString(weights, printer)
+	// tools.WritePawnString(weights, printer)
 }
 
 func statWeightsFitting2(printer *util.PrintRecorder) {
@@ -582,11 +377,11 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 		panic(err)
 	}
 
-	for _, entry := range weightInputs {
-		if hasteInDiscontinuityRange(entry.TotalStat.GetUInt(stats.Stat_Haste)) {
-			printer.Println("haste in discontinuity range")
-		}
-	}
+	// for _, entry := range weightInputs {
+	// 	if hasteInDiscontinuityRange(entry.TotalStat.GetUInt(stats.Stat_Haste)) {
+	// 		printer.Println("haste in discontinuity range")
+	// 	}
+	// }
 
 	printer.Printf("Initial weight input size = %d\n", len(weightInputs))
 
@@ -639,7 +434,7 @@ func statWeightsBasic(printer *util.PrintRecorder) {
 	process.AddSimData(stats.Stat_Dodge, +600, parseSimStats("254623.68 1604870.45 27649.33 39384.54 56.34 13.46"))
 	process.AddSimData(stats.Stat_Parry, +600, parseSimStats("254649.78 1605018.37 27660.8 39408.39 56.36 13.45"))
 	weights := process.Run()
-	writePawnString(weights, printer)
+	tools.WritePawnString(weights, printer)
 }
 
 func statWeightsGrid(printer *util.PrintRecorder) {
@@ -654,30 +449,7 @@ func statWeightsGrid(printer *util.PrintRecorder) {
 	process.SetTargetRatios(targetRatio)
 	process.SupplyData(inputData)
 	weights := process.Run()
-	writePawnString(weights, printer)
-}
-
-func writePawnString(weights stathighs.WeightResult, printer *util.PrintRecorder) string {
-	str := util.StringBuild2{}
-	str.WriteString("( Pawn: v1: \"Protection WoWSims Weights\": Class=Paladin,Strength=")
-	str.WriteFloat64(weights.Get(stats.Stat_Strength), 10)
-	str.WriteString(",Stamina=")
-	str.WriteFloat64(weights.Get(stats.Stat_Stamina), 10)
-	str.WriteString(",CritRating=")
-	str.WriteFloat64(weights.Get(stats.Stat_Crit), 10)
-	str.WriteString(",HasteRating=")
-	str.WriteFloat64(weights.Get(stats.Stat_Haste), 10)
-	str.WriteString(",ExpertiseRating=")
-	str.WriteFloat64(weights.Get(stats.Stat_Expertise), 10)
-	str.WriteString(",MasteryRating=")
-	str.WriteFloat64(weights.Get(stats.Stat_Mastery), 10)
-	str.WriteString(",DodgeRating=")
-	str.WriteFloat64(weights.Get(stats.Stat_Dodge), 10)
-	str.WriteString(",ParryRating=")
-	str.WriteFloat64(weights.Get(stats.Stat_Parry), 10)
-	str.WriteString(", )")
-	printer.PrintlnFromBuild(str)
-	return str.String()
+	tools.WritePawnString(weights, printer)
 }
 
 func parseSimStats(str string) simulate.SimData {
@@ -691,161 +463,6 @@ func parseSimStats(str string) simulate.SimData {
 		result.Set(simType, value)
 	}
 	return result
-}
-
-const c_hasteDiscontinuityStart = 10500
-const c_hasteDiscontinuityEnd = 14000
-
-func hasteInDiscontinuityRange(value uint32) bool {
-	return value >= c_hasteDiscontinuityStart && value <= c_hasteDiscontinuityEnd
-}
-
-func checkBadHasteRange(printer *util.PrintRecorder, currentHaste uint32, incrementBaseHaste int32, plannedIncrementTestRange int32) bool {
-	printer.Printf("Current gear haste %d\n", currentHaste)
-	min := int32(currentHaste) + incrementBaseHaste
-	max := int32(currentHaste) + incrementBaseHaste + plannedIncrementTestRange
-	printer.Printf("Planned simulated gear haste %d-%d\n", min, max)
-
-	return max > c_hasteDiscontinuityStart && min < c_hasteDiscontinuityEnd
-}
-
-func checkBadExpertRange(printer *util.PrintRecorder, current uint32, decrementBase int32, plannedIncrementTestRange int32) bool {
-	printer.Printf("Current gear expertise %d\n", current)
-	min := int32(current) - decrementBase
-	max := int32(current) - decrementBase + plannedIncrementTestRange
-	printer.Printf("Planned simulated gear expertise %d-%d\n", min, max)
-	return max > int32(requirements.TARGET_RATING_TANK)
-}
-
-func fixBadHasteRange(printer *util.PrintRecorder, currentHaste uint32, plannedIncrementTestRange int32) int32 {
-	printer.Printf("Current gear haste %d\n", currentHaste)
-	min := int32(currentHaste)
-	max := int32(currentHaste) + plannedIncrementTestRange
-	printer.Printf("Planned simulated gear haste %d-%d\n", min, max)
-
-	var fix int32
-	if max > c_hasteDiscontinuityStart {
-		fix = c_hasteDiscontinuityStart - max
-	} else if min < c_hasteDiscontinuityEnd {
-		fix = c_hasteDiscontinuityEnd - min
-	}
-
-	if fix != 0 {
-		printer.Printf("Corrected simulated gear haste %d-%d\n", min+fix, max+fix)
-	}
-	return fix
-}
-
-func fixBadExpertRange(printer *util.PrintRecorder, currentExpert uint32, plannedIncrementTestRange int32) int32 {
-	printer.Printf("Current gear expertise %d\n", currentExpert)
-	min := int32(currentExpert)
-	max := int32(currentExpert) + plannedIncrementTestRange
-	printer.Printf("Planned simulated gear expertise %d-%d\n", min, max)
-
-	var fix int32
-	if max >= int32(requirements.TARGET_RATING_TANK) {
-		fix = int32(requirements.TARGET_RATING_TANK) - max
-	}
-
-	if fix != 0 {
-		printer.Printf("Corrected simulated gear expertise %d-%d\n", min+fix, max+fix)
-	}
-	return fix
-}
-
-func initialBonusStatMap_fixRanges(printer *util.PrintRecorder, currentItemSet items.FullItemSet, plannedIncrementTestRange int32) map[stats.StatType]int32 {
-	incrementBaseHaste := fixBadHasteRange(printer, currentItemSet.Total().GetUInt(stats.Stat_Haste), plannedIncrementTestRange)
-	incrementBaseExpertise := fixBadExpertRange(printer, currentItemSet.Total().Expertise(), plannedIncrementTestRange)
-	initialBaseStats := make(map[stats.StatType]int32)
-	initialBaseStats[stats.Stat_Haste] += incrementBaseHaste
-	initialBaseStats[stats.Stat_Expertise] += incrementBaseExpertise
-	return initialBaseStats
-}
-
-func initialBonusStatMap(printer *util.PrintRecorder, currentItemSet items.FullItemSet, incrementBaseHaste int32, decrementBaseExpertise int32, incrementMax int32) map[stats.StatType]int32 {
-	if checkBadHasteRange(printer, currentItemSet.Total().GetUInt(stats.Stat_Haste), incrementBaseHaste, incrementMax) {
-		panic("haste in discontinuity range")
-	}
-	if checkBadExpertRange(printer, currentItemSet.Total().Expertise(), decrementBaseExpertise, incrementMax) {
-		panic("simulate will overcap expertise")
-	}
-	initialBaseStats := make(map[stats.StatType]int32)
-	initialBaseStats[stats.Stat_Haste] += incrementBaseHaste
-	initialBaseStats[stats.Stat_Expertise] -= decrementBaseExpertise
-	return initialBaseStats
-}
-
-func addBonusStats(base *stats.StatBlock, bonusStat map[stats.StatType]int32) stats.StatBlock {
-	resultBlock := *base
-	for stat, add := range bonusStat {
-		value := int64(resultBlock[stat]) + int64(add)
-		if value < 0 || value > math.MaxUint32 {
-			panic("out of range")
-		}
-		resultBlock[stat] = uint32(value)
-	}
-	return resultBlock
-}
-
-func statWeightsGrid_updateAll(printer *util.PrintRecorder) {
-	// simSpeed := simulate.RunSize_TestOnly
-	// simSpeed := simulate.RunSize_QuickDirty
-	simSpeed := simulate.RunSize_Medium
-
-	wg := sync.WaitGroup{}
-
-	wg.Go(func() {
-		weightFileOut := files.WeightMitiNoSetFile
-		gearFile := files.GearFileProtMitigationNoSet
-		gearModel := model.Model_PallyProtMitigation_NoSet()
-		ratios := stathighs.NewStatWeights_generalMiti
-		statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
-	})
-
-	wg.Go(func() {
-		weightFileOut := files.WeightMitiWithSetFile
-		gearFile := files.GearFileProtMitigationWithSet
-		gearModel := model.Model_PallyProtMitigation_WithSet()
-		ratios := stathighs.NewStatWeights_malkrokWeight
-		statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
-	})
-
-	wg.Go(func() {
-		weightFileOut := files.WeightDpsFile
-		gearFile := files.GearFileProtDps
-		gearModel := model.Model_PallyProtDps()
-		ratios := stathighs.NewStatWeights_dpsWeight
-		statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
-	})
-
-	wg.Go(func() {
-		weightFileOut := files.WeightCompromiseFile
-		gearFile := files.GearFileProtCompromise
-		gearModel := model.Model_PallyProtCompromise()
-		ratios := stathighs.NewStatWeights_animusWeight
-		statWeightsGrid_updateOne(gearModel, gearFile, ratios, weightFileOut, printer, simSpeed)
-	})
-
-	wg.Wait()
-}
-
-func statWeightsGrid_updateOne(gearModel model.Model, gearFile string, ratios simulate.SimData, weightFileOut string, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize) {
-	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), &gearModel, printer)
-	currentItemSet := items.FullItemSet_FromMap(currentEquip)
-
-	// SIMULATE STAT CHANGES
-	inputData := generateRatingsInputFromArtificalStatOverrides_ForGrid(currentItemSet, printer, simSpeed, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions)
-
-	// SOLVE FOR STAT WEIGHTS
-	process := stathighs.GridStatWeightProcess{}
-	process.Init(printer)
-	process.SetTargetRatios(ratios)
-	process.SupplyData(inputData)
-	weights := process.Run()
-	pawn := writePawnString(weights, printer)
-
-	// OVERWRITE WEIGHT FILE
-	writeFile(weightFileOut, pawn)
 }
 
 func writeWeightInputsToFile(weightInputs []stathighs.WeightInput, filename string) {
@@ -1077,131 +694,46 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			value := resultMap.Get(stat)
 			row = append(row, strconv.FormatFloat(value, 'f', 4, 64))
 		}
-		accuracy := evaluateAccuracy(resultMap, mixedInputData, targetRatio)
+		accuracy := weightfind.EvaluateAccuracy(resultMap, mixedInputData, targetRatio)
 		row = append(row, strconv.FormatFloat(accuracy, 'f', 4, 64))
 		tab.AddRow(row)
 	}
 	tab.Write(printer)
 }
 
-func evaluateAccuracy(statWeights stathighs.WeightResult, inputData []stathighs.WeightInput, simRatios simulate.SimData) float64 {
+func statWeightsGrid_updateAll(printer *util.PrintRecorder) {
+	// simSpeed := simulate.RunSize_TestOnly
+	// simSpeed := simulate.RunSize_QuickDirty
+	simSpeed := simulate.RunSize_Medium
 
-	// TODO take into acccoount sim's uncertainty ranges
-	// make structures
-	type accuracyInfo struct {
-		input *stathighs.WeightInput
-
-		// simRankDetail        map[simulate.SimType]int
-		combinedSimRankScore float64
-
-		statRankRange util.HiLoInt
-		simRankRange  util.HiLoInt
-	}
-	accuracyData := util.MapSliceAsNew(inputData, func(input *stathighs.WeightInput) accuracyInfo {
-		return accuracyInfo{
-			input: input,
-			// simRankDetail: make(map[simulate.SimType]int),
-		}
+	weightfind.StatWeights_updateAll(simSpeed, printer, []weightfind.WeightOptions{
+		{
+			WeightFileOut:   files.WeightMitiNoSetFile,
+			GearFile:        files.GearFileProtMitigationNoSet,
+			Model:           model.Model_PallyProtMitigation_NoSet(),
+			Ratios:          stathighs.NewStatWeights_generalMiti,
+			SubstituteItems: substituteItemsMiti,
+		},
+		{
+			WeightFileOut:   files.WeightMitiWithSetFile,
+			GearFile:        files.GearFileProtMitigationWithSet,
+			Model:           model.Model_PallyProtMitigation_WithSet(),
+			Ratios:          stathighs.NewStatWeights_malkrokWeight,
+			SubstituteItems: substituteItemsMiti,
+		},
+		{
+			WeightFileOut:   files.WeightDpsFile,
+			GearFile:        files.GearFileProtDps,
+			Model:           model.Model_PallyProtDps(),
+			Ratios:          stathighs.NewStatWeights_dpsWeight,
+			SubstituteItems: substituteItemsDps,
+		},
+		{
+			WeightFileOut:   files.WeightCompromiseFile,
+			GearFile:        files.GearFileProtCompromise,
+			Model:           model.Model_PallyProtCompromise(),
+			Ratios:          stathighs.NewStatWeights_animusWeight,
+			SubstituteItems: util.RemoveDuplicatesComparable(slices.Concat(substituteItemsDps, substituteItemsMiti)),
+		},
 	})
-
-	// score stats
-	for entry, statRank := range util.CalculateRankingRanges(true, accuracyData, func(x *accuracyInfo) float64 { return statWeights.CalcStatScore(x.input) }) {
-		entry.statRankRange = statRank
-	}
-
-	// score each sim
-	for _, simType := range stathighs.G_RequiredSims {
-		for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), accuracyData, func(x *accuracyInfo) float64 { return x.input.SimResult.Get(simType) }) {
-			// entry.simRankDetail[simType] = simDetailRank
-			entry.combinedSimRankScore += float64(simDetailRank) * simRatios.Get(simType)
-		}
-	}
-
-	// rank combined sims
-	for entry, simRank := range util.CalculateRankingRanges(true, accuracyData, func(x *accuracyInfo) float64 { return x.combinedSimRankScore }) {
-		entry.simRankRange = simRank
-	}
-
-	// compute average difference between stat rank and sim rank
-	totalComparePercents := 0.0
-	for info := range util.ForPointer(accuracyData) {
-		percentScore := rangePercentDiff(info.simRankRange, info.statRankRange, len(accuracyData))
-		totalComparePercents += percentScore
-	}
-	return totalComparePercents / float64(len(accuracyData))
-}
-
-// 100% if ranks are equal, 90% if average 10% difference, etc
-func rangePercentDiff(one, two util.HiLoInt, fullLength int) float64 {
-	var diff int
-	if one.Overlap(two) {
-		return 100.0
-	} else if one.Hi < two.Lo {
-		diff = two.Lo - one.Hi
-	} else if two.Hi < one.Lo {
-		diff = one.Lo - two.Hi
-	} else {
-		panic("logic issue")
-	}
-
-	diffAsRatio := float64(diff) / float64(fullLength)
-	percentScore := 100.0 - (diffAsRatio * 100.0)
-	return percentScore
-}
-
-func statWeightsCustom(printer *util.PrintRecorder) {
-	targetRatio := stathighs.NewStatWeights_generalMiti
-
-	inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
-	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
-	mixedInputData := slices.Concat(inputDataRandom, inputDataGrid)
-
-	changeStats := []stats.StatType{
-		stats.Stat_Stamina, stats.Stat_Crit, stats.Stat_Haste,
-		stats.Stat_Expertise, stats.Stat_Mastery, stats.Stat_Dodge, stats.Stat_Parry}
-
-	startWeight := stathighs.WeightResult{
-		stats.Stat_Strength:  1.000000,
-		stats.Stat_Stamina:   0.480505,
-		stats.Stat_Crit:      0.646226,
-		stats.Stat_Haste:     0.859856,
-		stats.Stat_Expertise: 0.667975,
-		stats.Stat_Mastery:   1.940581,
-		stats.Stat_Dodge:     0.651822,
-		stats.Stat_Parry:     0.624330,
-	}
-
-	printer.Printf("START %s accuracy=%f\n", startWeight.String(), evaluateAccuracy(startWeight, mixedInputData, targetRatio))
-
-	weightTweaker(startWeight, changeStats, targetRatio, mixedInputData, printer)
-}
-
-func weightTweaker(startWeight stathighs.WeightResult, changeStats []stats.StatType, targetRatio simulate.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) stathighs.WeightResult {
-	mult := 1.01
-	bestWeight := startWeight.Clone()
-
-	for {
-		best := util_rank.BestCollector1[stathighs.WeightResult]{}
-		best.Offer(&bestWeight, evaluateAccuracy(bestWeight, inputData, targetRatio))
-		for _, stat := range changeStats {
-			hi := bestWeight.Clone()
-			hi[stat] *= mult
-			best.Offer(&hi, evaluateAccuracy(hi, inputData, targetRatio))
-
-			lo := bestWeight.Clone()
-			lo[stat] /= mult
-			best.Offer(&lo, evaluateAccuracy(lo, inputData, targetRatio))
-		}
-		updateWeight := best.GetBestOrPanic()
-
-		if updateWeight.Equals(bestWeight) {
-			printer.Printf("DONE\n")
-			break
-		} else {
-			printer.Printf("NEXT %s accuracy=%f\n", updateWeight.String(), evaluateAccuracy(updateWeight, inputData, targetRatio))
-			bestWeight = updateWeight
-		}
-	}
-
-	return bestWeight
 }

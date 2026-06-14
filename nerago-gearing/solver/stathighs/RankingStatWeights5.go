@@ -17,32 +17,36 @@ import (
 // thus scores are 8*=  0.0 .. 80
 
 const (
-	c_rank5_sample    = 30
-	c_rank5_timeLimit = 2000
+	c_rank5_sample    = 150
+	c_rank5_timeLimit = 4000
 
-	// c_rank5_computeScoreLo = 0
-	// c_rank5_computeScoreHi = 200
-	c_rank5_computeScoreM = 1000
+	c_rank5_computeScoreM = 100
 )
 
 var (
 	c_rank5_weightLo = -10.0
-	// c_rank5_weightLo = 0.0
 	c_rank5_weightHi = 10.0
-	// c_rank5_weightLo = utilhighs.C_MinusInf
-	// c_rank5_weightHi = utilhighs.C_PlusInf
 
-	c_rank5_computeScoreLo = utilhighs.C_MinusInf
-	// c_rank5_computeScoreLo = 0.1
-	c_rank5_computeScoreHi = 800.0
+	// last last commit
+	// c_rank5_computeScoreLo = utilhighs.C_MinusInf
 	// c_rank5_computeScoreHi = utilhighs.C_PlusInf
-
-	c_rank5_weightTotalEnable = true
-	c_rank5_weightTotalMin    = 0.1
-	c_rank5_weightTotalMax    = 800.0
+	// c_rank5_weightTotalMin = 0.1
 	// c_rank5_weightTotalMax = utilhighs.C_PlusInf
 
-	c_rank5_weightTotalMaximize = true
+	// last commit
+	// c_rank5_computeScoreLo = utilhighs.C_MinusInf
+	// c_rank5_computeScoreHi = 800.0
+	// c_rank5_weightTotalMin = 0.1
+	// c_rank5_weightTotalMax = 800.0
+
+	// thought this was good
+	c_rank5_computeScoreLo = 0.0
+	// c_rank5_computeScoreLo = 0.1
+	c_rank5_computeScoreHi = 80.0
+	// c_rank5_computeScoreHi = utilhighs.C_PlusInf
+	c_rank5_weightTotalMin = 0.1
+	c_rank5_weightTotalMax = 80.0
+	// c_rank5_weightTotalMax = utilhighs.C_PlusInf
 )
 
 type RankingStatWeightProcess5 struct {
@@ -58,8 +62,9 @@ type rankInternalRun5 struct {
 
 	input *utilhighs.InputBuilder
 
-	runData    []rankEntry5
-	scaleStats float64
+	runData []rankEntry5
+	// scaleStats float64
+	scaleStats map[stats.StatType]float64
 
 	weightColumns map[stats.StatType]utilhighs.ColumnIndex
 	pairLinks     util.MapMapDiagonal[int, *rankPair5]
@@ -124,10 +129,10 @@ func rankInternalRun5_create(process *RankingStatWeightProcess5) *rankInternalRu
 	run := new(rankInternalRun5)
 	run.process = process
 	run.input = new(utilhighs.InputBuilder)
-	// run.input.Mip_lp_solver = "ipx"
+	run.input.Mip_lp_solver = "ipx"
 
 	run.input.BlendMultiObjectives = false
-	run.linearInclude = run.input.AddLinearPrioritised(true, -1, 0.2, 2)
+	run.linearInclude = run.input.AddLinearPrioritised(true, -1, 0.05, 2)
 	run.linearWeight = run.input.AddLinearPrioritised(true, -1, -1, 1)
 
 	return run
@@ -149,27 +154,18 @@ func (run *rankInternalRun5) createWeightColumns() {
 	run.weightColumns = make(map[stats.StatType]utilhighs.ColumnIndex)
 	for _, statType := range G_RequiredStats {
 		var colWeight utilhighs.ColumnIndex
-		// if statType == stats.Stat_Strength {
-		// 	colWeight = run.input.CreateColumnGeneral(highs.Continuous, strengthMin, hi, utilhighs.DebugString{Text: "WEIGHT " + statType.Name()})
-		// } else {
 		colWeight = run.input.CreateColumnGeneral(highs.Continuous, c_rank5_weightLo, c_rank5_weightHi, utilhighs.DebugString{Text: "WEIGHT " + statType.Name()})
-		// }
 		run.weightColumns[statType] = colWeight
 		sumWeights.Add(colWeight, 1)
 	}
 
-	if c_rank5_weightTotalMaximize {
-		sumWeightCol := run.input.CreateColumnWithLinear(highs.Continuous, c_rank5_weightTotalMin, c_rank5_weightTotalMax, 1, run.linearWeight, utilhighs.DebugText("sumWeightCol"))
-		sumWeights.Add(sumWeightCol, -1)
-		sumWeights.Finish(run.input, 0, 0)
-	} else if c_rank5_weightTotalEnable { // force positive and non-zero result
-		sumWeights.Finish(run.input, c_rank5_weightTotalMin, c_rank5_weightTotalMax)
-	}
-
+	sumWeightCol := run.input.CreateColumnWithLinear(highs.Continuous, c_rank5_weightTotalMin, c_rank5_weightTotalMax, 1, run.linearWeight, utilhighs.DebugText("sumWeightCol"))
+	sumWeights.Add(sumWeightCol, -1)
+	sumWeights.Finish(run.input, 0, 0)
 }
 
 func (run *rankInternalRun5) supplyData(inputData []WeightInput) {
-	run.scaleStats = chooseStatScalingAll(inputData, run.process.printer)
+	run.scaleStats = chooseStatScaling(inputData, run.process.printer)
 	run.runData = util.MapSliceAsNew(inputData, func(input *WeightInput) rankEntry5 {
 		return rankEntry5{
 			data: input,
@@ -210,8 +206,8 @@ func (run *rankInternalRun5) makeEntryColumnRefs(entry *rankEntry5) {
 	scoreRow := utilhighs.ConstraintRowBuild{Debug: "scoreRow"}
 	for statType, weightColumn := range run.weightColumns {
 		statValue := entry.data.TotalStat.GetFloat(statType)
-		// statScale := run.scaleStats[statType]
-		statScale := run.scaleStats
+		statScale := run.scaleStats[statType]
+		// statScale := run.scaleStats
 		scoreRow.Add(weightColumn, statValue*statScale)
 	}
 	scoreRow.Add(entry.scoreCompute, -1)
@@ -253,8 +249,8 @@ func (run *rankInternalRun5) extractAndReportSolution(solution *highs.Solution) 
 	statWeightResult := WeightResult_Make()
 	for _, statType := range G_RequiredStats {
 		weightColumn := run.weightColumns[statType]
-		// statScale := run.scaleStats[statType]
-		statScale := run.scaleStats
+		statScale := run.scaleStats[statType]
+		// statScale := run.scaleStats
 
 		modelWeight := solution.ColValues[weightColumn]
 		// usableWeight := modelWeight / statScale
@@ -321,8 +317,9 @@ func (run *rankInternalRun5) setupInitialSolutionFromExternal(weights WeightResu
 
 	entryScores := make([]float64, len(run.runData))
 	for i, entry := range run.runData {
-		// score := weights.CalcStatScoreScaled(entry.data, run.scaleStats)
-		score := weights.CalcStatScore(entry.data)
+		score := weights.CalcStatScoreScaled(entry.data, run.scaleStats)
+		// score := weights.CalcStatScore(entry.data)
+		// score *= run.scaleStats
 		entryScores[i] = score
 		run.input.SetInitialSolutionValue(entry.scoreCompute, score)
 	}

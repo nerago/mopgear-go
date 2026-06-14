@@ -16,6 +16,7 @@ import (
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
+	"paladin_gearing_go/weightfind"
 	"slices"
 	"sync/atomic"
 )
@@ -437,7 +438,7 @@ func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.Stat
 
 	} else {
 		// SIMULATE STAT CHANGES
-		inputData := generateRatingsInputFromArtificalStatOverrides_ForGrid(baseItemSet, printer, simSpeed, model.Spec, model.Goal, fight, model.Professions)
+		inputData := weightfind.GenerateRatingsInputFromArtificalStatOverrides_ForGrid(baseItemSet, printer, simSpeed, model.Spec, model.Goal, fight, model.Professions, util.TrackProgress_Start())
 
 		// SOLVE FOR STAT WEIGHTS
 		process := stathighs.GridStatWeightProcess{}
@@ -447,7 +448,7 @@ func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.Stat
 		weights = process.Run()
 	}
 
-	pawn := writePawnString(weights, printer)
+	pawn := tools.WritePawnString(weights, printer)
 	gearJson := tools.WowSimJson_Write(baseItemSet.Items(), &model, util.PrintRecorder_HoldAll())
 
 	writeFile(weightFileOut, pawn)
