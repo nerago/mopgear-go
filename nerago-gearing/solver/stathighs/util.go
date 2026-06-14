@@ -35,18 +35,16 @@ func chooseScalingNumbers[E enumWithName](inputData []WeightInput, checkTypes []
 	c_targetNumber := 1.0
 	scaleMap := make(map[E]float64)
 	for _, check := range checkTypes {
-		total := 0.0
+		max := 0.0
 		for data := range util.ForPointer(inputData) {
-			total += getValue(data, check)
+			value := getValue(data, check)
+			if value > max {
+				max = value
+			}
 		}
 
-		average := total / float64(len(inputData))
-		if average != 0 {
-			scale := c_targetNumber / average
-			scaleMap[check] = scale
-		} else {
-			scaleMap[check] = 1
-		}
+		scale := c_targetNumber / max
+		scaleMap[check] = scale
 
 		printer.Printf("scale %s %e\n", check.Name(), scaleMap[check])
 	}
