@@ -23,8 +23,8 @@ type ComplexStatWeightProcess struct {
 
 	input *utilhighs.InputBuilder
 
-	linearEquationDiff int
-	linearInclude      int
+	linearEquationDiff utilhighs.LinearIndex
+	linearInclude      utilhighs.LinearIndex
 
 	scaleSims             map[simulate.SimType]float64
 	scaleStats            map[stats.StatType]float64
@@ -119,7 +119,7 @@ func (comp *ComplexStatWeightProcess) buildDataEquationForInput(data *WeightInpu
 }
 
 func (comp *ComplexStatWeightProcess) sampleIncludeToggleColumn() utilhighs.ColumnIndex {
-	includeColumn := comp.input.CreateColumnWithLinearObjective(highs.Integer, 0, 1, c_complexOutputPerInclude, comp.linearInclude, utilhighs.DebugString{Text: "include"})
+	includeColumn := comp.input.CreateColumnWithLinear(highs.Integer, 0, 1, c_complexOutputPerInclude, comp.linearInclude, utilhighs.DebugString{Text: "include"})
 	comp.includeCountRow.Add(includeColumn, 1)
 	comp.includeColumns = append(comp.includeColumns, includeColumn)
 	return includeColumn
@@ -143,7 +143,7 @@ func (comp *ComplexStatWeightProcess) buildDataEquationForSim(stats *stats.StatB
 	diffSigned := comp.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "diffSigned"})
 	matchSimValue.Add(diffSigned, 1)
 
-	diffOutput := comp.input.CreateColumnWithLinearObjective(highs.Continuous, 0, c_complexHighDiff, 1, comp.linearEquationDiff, utilhighs.DebugString{Text: "diffOutput"})
+	diffOutput := comp.input.CreateColumnWithLinear(highs.Continuous, 0, c_complexHighDiff, 1, comp.linearEquationDiff, utilhighs.DebugString{Text: "diffOutput"})
 	utilhighs.AbsoluteValue_WithToggle(comp.input, diffSigned, diffOutput, includeColumn, c_complexHighDiff)
 
 	simScale := comp.scaleSims[simType]

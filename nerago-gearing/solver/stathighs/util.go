@@ -34,8 +34,8 @@ func chooseStatScaling(inputData []WeightInput, printer *util.PrintRecorder) map
 func chooseStatScalingAll(inputData []WeightInput, printer *util.PrintRecorder) float64 {
 	c_targetNumber := 1.0
 	max := 0.0
-	for _, check := range G_RequiredStats {
-		for _, data := range inputData {
+	for _, data := range inputData {
+		for _, check := range G_RequiredStats {
 			value := data.TotalStat.GetFloat(check)
 			if value > max {
 				max = value

@@ -43,6 +43,7 @@ func FloatsBetween(lo, val, hi float64) bool {
 }
 
 type ColumnIndex int32
+type LinearIndex int32
 type RowIndex int32
 
 type InputBuilder struct {
@@ -55,7 +56,7 @@ type InputBuilder struct {
 	DisablePreSolve      bool
 	TimeLimitSeconds     int
 	// Mip_disallow_restart bool
-	Mip_lp_solver        string
+	Mip_lp_solver string
 }
 
 func (input *InputBuilder) Clone() *InputBuilder {
@@ -69,14 +70,14 @@ func (input *InputBuilder) Clone() *InputBuilder {
 	}
 }
 
-func (input *InputBuilder) AddLinearBlended(weight float64, offset float64) int {
+func (input *InputBuilder) AddLinearBlended(weight float64, offset float64) LinearIndex {
 	if !input.BlendMultiObjectives {
 		panic("wrong linear type")
 	}
 	return input.vars.addLinearObjective(weight, offset, -1, -1, -1)
 }
 
-func (input *InputBuilder) AddLinearPrioritised(maximise bool, abs_tolerance float64, rel_tolerance float64, priority int) int {
+func (input *InputBuilder) AddLinearPrioritised(maximise bool, abs_tolerance float64, rel_tolerance float64, priority int) LinearIndex {
 	if input.BlendMultiObjectives {
 		panic("wrong linear type")
 	}
@@ -96,6 +97,10 @@ func (input *InputBuilder) CreateColumnBoolWithOutput(cost float64, debug DebugC
 	return input.vars.create(highs.Integer, 0, 1, cost, debug)
 }
 
+func (input *InputBuilder) CreateColumnBoolWithLinear(cost float64, linearIndex LinearIndex, debug DebugContext) ColumnIndex {
+	return input.vars.createForLinear(highs.Integer, 0, 1, cost, linearIndex, debug)
+}
+
 func (input *InputBuilder) CreateColumnGeneral(varType highs.VariableType, lower, upper float64, debug DebugContext) ColumnIndex {
 	return input.vars.create(varType, lower, upper, 0, debug)
 }
@@ -104,8 +109,8 @@ func (input *InputBuilder) CreateColumnWithOutput(varType highs.VariableType, lo
 	return input.vars.create(varType, lower, upper, cost, debug)
 }
 
-func (input *InputBuilder) CreateColumnWithLinearObjective(varType highs.VariableType, lower, upper, cost float64, linearObjectiveIndex int, debug DebugContext) ColumnIndex {
-	return input.vars.createForLinear(varType, lower, upper, cost, linearObjectiveIndex, debug)
+func (input *InputBuilder) CreateColumnWithLinear(varType highs.VariableType, lower, upper, cost float64, linearIndex LinearIndex, debug DebugContext) ColumnIndex {
+	return input.vars.createForLinear(varType, lower, upper, cost, linearIndex, debug)
 }
 
 func (input *InputBuilder) ClearInitialSolutionValue() {
@@ -331,7 +336,7 @@ func (lin *linearObjectiveFields) clone() linearObjectiveFields {
 	}
 }
 
-func (vars *variableArrayBuilder) addLinearObjective(weight float64, offset float64, abs_tolerance float64, rel_tolerance float64, priority int) int {
+func (vars *variableArrayBuilder) addLinearObjective(weight float64, offset float64, abs_tolerance float64, rel_tolerance float64, priority int) LinearIndex {
 	index := len(vars.linearObjectives)
 	vars.linearObjectives = append(vars.linearObjectives, linearObjectiveFields{
 		weight:        weight,
@@ -340,7 +345,7 @@ func (vars *variableArrayBuilder) addLinearObjective(weight float64, offset floa
 		rel_tolerance: rel_tolerance,
 		priority:      priority,
 	})
-	return index
+	return LinearIndex(index)
 }
 
 func (vars *variableArrayBuilder) create(varType highs.VariableType, lower, upper, cost float64, debug DebugContext) ColumnIndex {
@@ -361,10 +366,10 @@ func (vars *variableArrayBuilder) create_inner(varType highs.VariableType, lower
 	return ColumnIndex(index)
 }
 
-func (vars *variableArrayBuilder) createForLinear(varType highs.VariableType, lower float64, upper float64, cost float64, linearObjectiveIndex int, debug DebugContext) ColumnIndex {
+func (vars *variableArrayBuilder) createForLinear(varType highs.VariableType, lower float64, upper float64, cost float64, linearObjectiveIndex LinearIndex, debug DebugContext) ColumnIndex {
 	if linearObjectiveIndex == -1 && len(vars.linearObjectives) == 0 {
 		return vars.create_inner(varType, lower, upper, cost, debug)
-	} else if linearObjectiveIndex < len(vars.linearObjectives) {
+	} else if int(linearObjectiveIndex) < len(vars.linearObjectives) {
 		columnIndex := vars.create_inner(varType, lower, upper, 0, debug)
 
 		linearObjective := &vars.linearObjectives[linearObjectiveIndex]
