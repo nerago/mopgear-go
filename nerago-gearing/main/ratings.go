@@ -425,13 +425,23 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 	filteredInput := mixedInputData
 	printer.Printf("filteredInput size %d\n", len(filteredInput))
 
-	ranking := stathighs.RankingStatWeightProcess5{}
+	startWeight := stathighs.WeightResult{
+		stats.Stat_Strength:  1.000000,
+		stats.Stat_Stamina:   0.480505,
+		stats.Stat_Crit:      0.646226,
+		stats.Stat_Haste:     0.859856,
+		stats.Stat_Expertise: 0.667975,
+		stats.Stat_Mastery:   1.940581,
+		stats.Stat_Dodge:     0.651822,
+		stats.Stat_Parry:     0.624330,
+	}
 
+	ranking := stathighs.RankingStatWeightProcess5{}
 	ranking.Init(printer)
 	ranking.SetTargetRatios(targetRatio)
 	ranking.SupplyData(filteredInput)
+	ranking.SupplyInitialWeights(startWeight)
 	weightsList := ranking.Run()
-	// weightsList := ranking.RunProgressiveData()
 	for _, weight := range weightsList {
 		writePawnString(weight, printer)
 		printer.Printf("accuracy = %f\n", evaluateAccuracy(weight, mixedInputData, targetRatio))
@@ -1150,8 +1160,6 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 		stats.Stat_Stamina, stats.Stat_Crit, stats.Stat_Haste,
 		stats.Stat_Expertise, stats.Stat_Mastery, stats.Stat_Dodge, stats.Stat_Parry}
 
-	mult := 1.01
-
 	startWeight := stathighs.WeightResult{
 		stats.Stat_Strength:  1.000000,
 		stats.Stat_Stamina:   0.480505,
@@ -1165,19 +1173,24 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 
 	printer.Printf("START %s accuracy=%f\n", startWeight.String(), evaluateAccuracy(startWeight, mixedInputData, targetRatio))
 
+	weightTweaker(startWeight, changeStats, targetRatio, mixedInputData, printer)
+}
+
+func weightTweaker(startWeight stathighs.WeightResult, changeStats []stats.StatType, targetRatio simulate.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) stathighs.WeightResult {
+	mult := 1.01
 	bestWeight := startWeight.Clone()
 
 	for {
 		best := util_rank.BestCollector1[stathighs.WeightResult]{}
-		best.Offer(&bestWeight, evaluateAccuracy(bestWeight, mixedInputData, targetRatio))
+		best.Offer(&bestWeight, evaluateAccuracy(bestWeight, inputData, targetRatio))
 		for _, stat := range changeStats {
 			hi := bestWeight.Clone()
 			hi[stat] *= mult
-			best.Offer(&hi, evaluateAccuracy(hi, mixedInputData, targetRatio))
+			best.Offer(&hi, evaluateAccuracy(hi, inputData, targetRatio))
 
 			lo := bestWeight.Clone()
 			lo[stat] /= mult
-			best.Offer(&lo, evaluateAccuracy(lo, mixedInputData, targetRatio))
+			best.Offer(&lo, evaluateAccuracy(lo, inputData, targetRatio))
 		}
 		updateWeight := best.GetBestOrPanic()
 
@@ -1185,8 +1198,10 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 			printer.Printf("DONE\n")
 			break
 		} else {
-			printer.Printf("NEXT %s accuracy=%f\n", updateWeight.String(), evaluateAccuracy(updateWeight, mixedInputData, targetRatio))
+			printer.Printf("NEXT %s accuracy=%f\n", updateWeight.String(), evaluateAccuracy(updateWeight, inputData, targetRatio))
 			bestWeight = updateWeight
 		}
 	}
+
+	return bestWeight
 }
