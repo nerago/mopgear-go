@@ -430,7 +430,7 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 	ranking.Init(printer)
 	ranking.SetTargetRatios(targetRatio)
 	ranking.SupplyData(filteredInput)
-	weightsList := ranking.RunOptimisitic()
+	weightsList := ranking.Run()
 	// weightsList := ranking.RunProgressiveData()
 	for _, weight := range weightsList {
 		writePawnString(weight, printer)

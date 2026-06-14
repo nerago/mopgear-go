@@ -24,9 +24,8 @@ type rankInternalRun5 struct {
 
 	input *utilhighs.InputBuilder
 
-	runData    []rankEntry5
-	scaleStats map[stats.StatType]float64
-	// allowSlack bool
+	runData            []rankEntry5
+	scaleStats         map[stats.StatType]float64
 	minimumIncludeRate float64
 	includeCountRow    utilhighs.ConstraintRowBuild
 
@@ -43,9 +42,6 @@ type rankEntry5 struct {
 	scoreCompute    utilhighs.ColumnIndex
 	scoreIfIncluded utilhighs.ColumnIndex
 	isInclude       utilhighs.ColumnIndex
-
-	// scoreSlack       utilhighs.ColumnIndex
-	// scoreSlackOutput utilhighs.ColumnIndex
 }
 
 type rankPair5 struct {
@@ -65,13 +61,13 @@ func (process *RankingStatWeightProcess5) SetTargetRatios(targetRatios simulate.
 	process.targetRatios = targetRatios
 }
 
-func (process *RankingStatWeightProcess5) RunOptimisitic() []WeightResult {
+func (process *RankingStatWeightProcess5) Run() []WeightResult {
 	weightResultList := make([]WeightResult, 0)
 	process.printer.Printf("RankingStatWeightProcess5 RunOptimisitic\n")
 	run := rankInternalRun5_create(process)
-	// run.allowSlack = true
-	run.minimumIncludeRate = 0.9
-	run.supplyData(process.dataAll)
+	run.minimumIncludeRate = 0.5
+	run.input.TimeLimitSeconds = 4000
+	run.supplyData(takeDataSample_Random(process.dataAll, 40))
 	run.prepareRankings()
 	run.createWeightColumns()
 	run.makeDataListEntryColumns()
@@ -82,38 +78,12 @@ func (process *RankingStatWeightProcess5) RunOptimisitic() []WeightResult {
 	return weightResultList
 }
 
-func (process *RankingStatWeightProcess5) RunProgressiveData() []WeightResult {
-	weightResultList := make([]WeightResult, 0)
-
-	dataSample := process.dataAll[0:2]
-
-	for addIndex := 2; addIndex < len(process.dataAll); addIndex++ {
-		dataSample = append(dataSample, process.dataAll[addIndex])
-
-		process.printer.Printf("RankingStatWeightProcess5 ROUND %d %d\n", addIndex, len(dataSample))
-		run := rankInternalRun5_create(process)
-		run.supplyData(dataSample)
-		run.prepareRankings()
-		run.createWeightColumns()
-		run.makeDataListEntryColumns()
-		run.makeDataListPairRules()
-		weights, _ := run.run()
-
-		if weights.HasValue() {
-			weightResultList = append(weightResultList, weights.GetOrPanic())
-		} else {
-			dataSample = dataSample[0 : len(dataSample)-1]
-		}
-	}
-
-	return weightResultList
-}
-
 func rankInternalRun5_create(process *RankingStatWeightProcess5) *rankInternalRun5 {
 	run := new(rankInternalRun5)
 	run.process = process
 	run.input = new(utilhighs.InputBuilder)
 	run.input.Minimise = false
+	run.input.Mip_lp_solver = "ipx"
 	return run
 }
 
@@ -201,19 +171,12 @@ func (run *rankInternalRun5) makeEntryColumnRefs(entry *rankEntry5) {
 	scoreRow.Add(entry.scoreCompute, -1)
 	scoreRow.Finish(run.input, 0, 0)
 
+	// TODO consider varying score, especially low end maybe?
 	entry.isInclude = run.input.CreateColumnBoolWithOutput(1, utilhighs.DebugText("include-"+rankStr))
 	run.includeCountRow.Add(entry.isInclude, 1)
 
 	entry.scoreIfIncluded = run.input.CreateColumnGeneral(highs.Continuous, -c_RankLimitScore, c_RankLimitScore, utilhighs.DebugText("scoreIfIncluded-"+rankStr))
 	utilhighs.ContraintIfBoolCopy(run.input, entry.isInclude, entry.scoreCompute, entry.scoreIfIncluded, c_RankLargeScore)
-
-	// if run.allowSlack {
-	// 	entry.scoreSlack = run.input.CreateColumnGeneral(highs.Continuous, -c_RankLimitScore, c_RankLimitScore, utilhighs.DebugText("scoreSlack"))
-	// 	entry.scoreSlackOutput = run.input.CreateColumnWithOutput(highs.Continuous, -c_RankLimitScore, c_RankLimitScore, 1, utilhighs.DebugText("scoreSlackOutput"))
-	// 	scoreRow.Add(entry.scoreSlack, 1)
-	// 	utilhighs.AbsoluteValue(run.input, entry.scoreSlack, entry.scoreSlackOutput)
-	// }
-
 }
 
 func (run *rankInternalRun5) makeDataListPairRules() {
@@ -259,6 +222,15 @@ func (run *rankInternalRun5) extractAndReportSolution(solution *highs.Solution) 
 		statWeightResult.Put(statType, value)
 		run.process.printer.Printf("%10s %f\n", statType.Name(), value)
 	}
+
+	includeCount := 0
+	for entry := range util.ForPointer(run.runData) {
+		includeValue := solution.ColValues[entry.isInclude]
+		if utilhighs.FloatEqualsOne(includeValue) {
+			includeCount++
+		}
+	}
+	run.process.printer.Printf("INCLUDE %d %d %f%%\n", includeCount, len(run.runData), float64(includeCount)/float64(len(run.runData))*100)
 
 	return statWeightResult
 }

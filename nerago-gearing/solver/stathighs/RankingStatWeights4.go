@@ -1,10 +1,12 @@
 package stathighs
 
 import (
+	"math/rand"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"slices"
 	"strconv"
 	"time"
 
@@ -91,7 +93,7 @@ func (process *RankingStatWeightProcess4) Run(doRound2 bool) []WeightResult {
 	process.printer.Println("RankingStatWeightProcess4 FIRST ROUND")
 	run1 := rankInternalRun4_create(process)
 	run1.input.TimeLimitSeconds = 3600
-	run1.supplyData(takeDataSample(process.dataAll, c_RankInitialSample))
+	run1.supplyData(takeDataSample_Random(process.dataAll, c_RankInitialSample))
 	run1.prepareRankings()
 	run1.createWeightColumns()
 	run1.makeDataListEntryColumns()
@@ -111,7 +113,7 @@ func (process *RankingStatWeightProcess4) Run(doRound2 bool) []WeightResult {
 	for size := c_RankInitialSample + c_RankAddSample; size <= len(process.dataAll); size += c_RankAddSample {
 		startTime := time.Now()
 
-		dataSample := takeDataSample(process.dataAll, size)
+		dataSample := takeDataSample_Random(process.dataAll, size)
 		process.printer.Println("RankingStatWeightProcess4 SECOND ROUND " + strconv.Itoa(size))
 		run2 := rankInternalRun4_create(process)
 		run2.input.TimeLimitSeconds = 8000
@@ -157,12 +159,22 @@ func (process *RankingStatWeightProcess4) RunUsingExternalStart(initialWeight We
 	return weights2
 }
 
-func takeDataSample(slice []WeightInput, size int) []WeightInput {
+func takeDataSample_Start(slice []WeightInput, size int) []WeightInput {
 	if len(slice) < size {
 		return slice
 	} else {
 		return slice[0:size]
 	}
+}
+
+func takeDataSample_Random(slice []WeightInput, size int) []WeightInput {
+	if len(slice) < size {
+		return slice
+	} else {
+		copy := slices.Clone(slice)
+		rand.Shuffle(len(copy), func(a, b int) { copy[a], copy[b] = copy[b], copy[a] })
+		return copy[0:size]
+	} 
 }
 
 func rankInternalRun4_create(process *RankingStatWeightProcess4) *rankInternalRun4 {
@@ -445,7 +457,7 @@ func (run *rankInternalRun4) setupInitialSolutionFromExternal(weights stats.Stat
 	for statType, colWeight := range run.weightColumns {
 		basicValue := weights.GetFloat(statType) / 1000.0 // NOTE reverse scale as used in StatRatingsWeights
 		// scale := run.scaleStats[statType]
-		scaledValue := basicValue 
+		scaledValue := basicValue
 		run.input.SetInitialSolutionValue(colWeight, scaledValue)
 		internalWeights.Put(statType, scaledValue)
 	}
@@ -464,7 +476,7 @@ func (run *rankInternalRun4) setupInitialSolutionFromExternal2(weights WeightRes
 	for statType, colWeight := range run.weightColumns {
 		basicValue := weights.Get(statType)
 		// scale := run.scaleStats[statType]
-		scaledValue := basicValue 
+		scaledValue := basicValue
 		run.input.SetInitialSolutionValue(colWeight, scaledValue)
 		internalWeights.Put(statType, scaledValue)
 	}
