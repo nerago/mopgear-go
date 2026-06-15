@@ -142,7 +142,6 @@ func AbsoluteValue(build *LinearBuilder, inputVar, outputVar ColumnIndex) {
 	positive.Build(build, C_MinusInf, 0)
 }
 
-// untested but should be ok in principle
 func AbsoluteValueFromDiffTwoVars(build *LinearBuilder, inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, debug string) {
 	negative := ConstraintRow{Debug: debug + " AbsoluteValueNegative"}
 	negative.Add(inputOneVar, inputOneCoefficient)
@@ -169,6 +168,7 @@ func AbsoluteValueFromDiffOneToConst(build *LinearBuilder, inputOneVar ColumnInd
 	positive.Build(build, C_MinusInf, constCompare)
 }
 
+// what i wanted it to be is ABS(one-two <=> offset)
 func AbsoluteValueFromDiffTwoVarsWithOffset(build *LinearBuilder, inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, offset float64, debug string) {
 	negative := ConstraintRow{Debug: debug + " AbsoluteValueNegative"}
 	negative.Add(inputOneVar, inputOneCoefficient)
@@ -197,8 +197,9 @@ func AbsoluteValue_WithToggle(build *LinearBuilder, inputVar, outputVar, toggleV
 	setIfPositive.Build(build, C_MinusInf, rangeHigh)
 }
 
-// much the same as absolute value logic, just bool optimised
-// similarly needs output variable under minimisation pressure
+// basic logic: output = one xor two
+// however output is free when condition not met, should ideally put output under minimise pressure
+// similar to absolute value, just intended for int vars
 func IsXor(build *LinearBuilder, boolOne ColumnIndex, boolTwo ColumnIndex, output ColumnIndex) {
 	negative := ConstraintRow{Debug: "Xor"}
 	negative.Add(boolOne, 1)
@@ -215,7 +216,7 @@ func IsXor(build *LinearBuilder, boolOne ColumnIndex, boolTwo ColumnIndex, outpu
 
 // rangeHigh should be bigger than any possible value
 // equalDelta should be just big enough to make unequal (1.0 for ints)
-// logic = colValue >= constValue
+// logic: colValue >= constValue
 func ColumnIsGreaterOrEqualThanConstant(build *LinearBuilder, compareColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) ColumnIndex {
 	isGreaterEqual := build.CreateColumnBool(DebugString{Text: "isGreaterEqual"})
 
@@ -234,7 +235,7 @@ func ColumnIsGreaterOrEqualThanConstant(build *LinearBuilder, compareColumn Colu
 
 // rangeHigh should be bigger than any possible value
 // equalDelta should be just big enough to make unequal (1.0 for ints)
-// logic colValue <= constValue
+// logic: colValue <= constValue
 func ColumnIsLessOrEqualThanConstant(build *LinearBuilder, compareColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) ColumnIndex {
 	isLessEqual := build.CreateColumnBool(DebugString{Text: "isLessEqual"})
 

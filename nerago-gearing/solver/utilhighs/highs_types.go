@@ -34,8 +34,12 @@ func FloatEqualsZero(value float64) bool {
 }
 
 func FloatsApproxEquals(a, b float64) bool {
-	ratio := a / b
-	return 0.99999 <= ratio && ratio <= 1.00001
+	if b != 0 {
+		ratio := a / b
+		return (0.99999 <= ratio && ratio <= 1.00001) || (math.Abs(a - b) < 0.00001)
+	} else {
+		return FloatEqualsZero(a)
+	}
 }
 
 func FloatsBetween(lo, val, hi float64) bool {
