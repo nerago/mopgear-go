@@ -274,9 +274,9 @@ func (ranker *RankingStatWeightProcess) processEntrySequencePairToDerivedRank(on
 	isGreater := ranker.input.CreateColumnBool(utilhighs.DebugText("isGreater"))
 	ranker.input.SetInitialSolutionValue(isGreater, 1)
 
-	utilhighs.ColumnIsGreaterOrEqualColumn(ranker.input, one.scoreColumn, two.scoreColumn, isGreater, c_RankLargeScore)
+	utilhighs.ColumnIsGreaterOrEqualColumn(ranker.input, one.scoreColumn, two.scoreColumn, isGreater, c_RankLargeScore, 0.0001)
 
-	utilhighs.ColumnIsGreaterOrEqualColumn(ranker.input, one.rankColumn, two.rankColumn, isGreater, c_RankLargeRank)
+	utilhighs.ColumnIsGreaterOrEqualColumn(ranker.input, one.rankColumn, two.rankColumn, isGreater, c_RankLargeRank, 1.0)
 }
 
 // we want to optimise for higher.score > lower.score

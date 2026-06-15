@@ -280,8 +280,8 @@ func (ranker *RankingStatWeightProcess3) makeEntryPairSequenceConstraints(one *r
 	isGreaterRank := ranker.input.CreateColumnBool(utilhighs.DebugText("isGreaterRank"))
 	isSequenceDiff := ranker.input.CreateColumnBoolWithOutput(float64(scaleDiffOutput), utilhighs.DebugText("sequenceDiff"))
 
-	utilhighs.ColumnIsGreaterOrEqualColumn(ranker.input, one.scoreColumn, two.scoreColumn, isGreaterScore, c_RankLargeScore)
-	utilhighs.ColumnIsGreaterOrEqualColumn(ranker.input, one.rankColumn, two.rankColumn, isGreaterRank, c_RankLargeRank)
+	utilhighs.ColumnIsGreaterOrEqualColumn(ranker.input, one.scoreColumn, two.scoreColumn, isGreaterScore, c_RankLargeScore, 0.0001)
+	utilhighs.ColumnIsGreaterOrEqualColumn(ranker.input, one.rankColumn, two.rankColumn, isGreaterRank, c_RankLargeRank, 1.0)
 	utilhighs.IsXor(ranker.input, isGreaterRank, isGreaterScore, isSequenceDiff)
 
 	ranker.pairLinks.Put(indexOne, indexTwo, rankPair3{

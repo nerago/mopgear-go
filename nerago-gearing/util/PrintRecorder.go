@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"testing"
 	"time"
 )
 
@@ -12,6 +13,7 @@ type PrintRecorder struct {
 	holdOutput bool
 	builder    StringBuild2
 	file       *os.File
+	test       *testing.T
 	mutex      sync.Mutex
 }
 
@@ -22,15 +24,15 @@ func PrintRecorder_CreateLogFile(path string) *PrintRecorder {
 	if err != nil {
 		panic("error creating log")
 	}
-	return &PrintRecorder{false, nil, file, sync.Mutex{}}
+	return &PrintRecorder{false, nil, file, nil, sync.Mutex{}}
 }
 
-func PrintRecorder_Testing() *PrintRecorder {
-	return &PrintRecorder{false, nil, nil, sync.Mutex{}}
+func PrintRecorder_Testing(test *testing.T) *PrintRecorder {
+	return &PrintRecorder{false, nil, nil, test, sync.Mutex{}}
 }
 
 func PrintRecorder_HoldAll() *PrintRecorder {
-	return &PrintRecorder{true, nil, nil, sync.Mutex{}}
+	return &PrintRecorder{true, nil, nil, nil, sync.Mutex{}}
 }
 
 var _newline = []byte{'\n'}
@@ -38,6 +40,8 @@ var _newline = []byte{'\n'}
 func (print *PrintRecorder) outputNewline() {
 	if print.file != nil {
 		print.file.Write(_newline)
+	} else if print.test != nil {
+		print.test.Log()
 	}
 	os.Stdout.Write(_newline)
 }
@@ -45,6 +49,8 @@ func (print *PrintRecorder) outputNewline() {
 func (print *PrintRecorder) outputBytes(bytes []byte) {
 	if print.file != nil {
 		print.file.Write(bytes)
+	} else if print.test != nil {
+		print.test.Log(bytes)
 	}
 	os.Stdout.Write(bytes)
 }
@@ -52,6 +58,8 @@ func (print *PrintRecorder) outputBytes(bytes []byte) {
 func (print *PrintRecorder) outputString(str string) {
 	if print.file != nil {
 		print.file.WriteString(str)
+	} else if print.test != nil {
+		print.test.Log(str)
 	}
 	os.Stdout.WriteString(str)
 }

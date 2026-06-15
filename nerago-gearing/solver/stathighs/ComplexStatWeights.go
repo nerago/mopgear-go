@@ -102,7 +102,7 @@ func (comp *ComplexStatWeightProcess) createWeightColumns() {
 }
 
 func (comp *ComplexStatWeightProcess) makeNotBetween(checkColumn utilhighs.ColumnIndex, lo, hi float64) {
-	utilhighs.ColumnIsNotBetweenConstants(comp.input, checkColumn, lo, hi, c_complexHighWeight)
+	utilhighs.ColumnIsNotBetweenConstantsVerify(comp.input, checkColumn, lo, hi, c_complexHighWeight)
 }
 
 func (comp *ComplexStatWeightProcess) buildDataEquations() {

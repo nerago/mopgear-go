@@ -299,9 +299,12 @@ func DebugText(text string) DebugString {
 
 func (input *InputBuilder) DebugPrintColumns(solution *highs.Solution, printer *util.PrintRecorder) {
 	if C_DebugHighs {
-		for i, x := range solution.ColValues {
-			printer.Printf("%3d %14f %s\n", i, x, debugText(input.vars.debug[i]))
-		}
+		input.debugPrintColumnsForce(solution, printer)
+	}
+}
+func (input *InputBuilder) debugPrintColumnsForce(solution *highs.Solution, printer *util.PrintRecorder) {
+	for i, x := range solution.ColValues {
+		printer.Printf("%3d %14f %s\n", i, x, debugText(input.vars.debug[i]))
 	}
 }
 

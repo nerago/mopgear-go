@@ -260,9 +260,20 @@ func ConstantIsBetweenColumns(input *InputBuilder, minimumColumn, maximumColumn,
 	and.AddInput(isUnderMaximum)
 	and.SetOutput(targetBoolColumn)
 	and.FinishAndApply(input)
+
+	// NOTE: this may not be needed and hurt performance for some callers, could have alternate version without
+	// but generally makes sense for consistency of expectations
+	checkSequence := ConstraintRowBuild{}
+	checkSequence.Add(maximumColumn, 1)
+	checkSequence.Add(minimumColumn, -1)
+	checkSequence.Finish(input, 0, C_PlusInf)
 }
 
-func ColumnIsNotBetweenConstants(input *InputBuilder, checkColumn ColumnIndex, lo, hi float64, rangeHigh float64) {
+func ColumnIsNotBetweenConstantsVerify(input *InputBuilder, checkColumn ColumnIndex, lo, hi float64, rangeHigh float64) {
+	if lo > hi {
+		panic("backwards range")
+	}
+
 	isUnderMin := input.CreateColumnBool(DebugString{Text: "isUnderMin"})
 	isOverMax := input.CreateColumnBool(DebugString{Text: "isOverMax"})
 
@@ -300,8 +311,8 @@ func ColumnIsNotBetweenConstants(input *InputBuilder, checkColumn ColumnIndex, l
 	or.Finish(input, 1, 1)
 }
 
-// TODO test me too
-func ColumnIsGreaterOrEqualColumn(input *InputBuilder, thresholdLowColumn, checkHighColumn, boolIsGreater ColumnIndex, rangeHigh float64) {
+// logic: leftSideCol < rightSideCol
+func ColumnIsLessThanColumnEqualityFree(input *InputBuilder, leftSideCol, rightSideCol, boolIsLess ColumnIndex, rangeHigh float64) {
 	// -range <= check - thresh - x*range <= 0
 	// if check>thresh  ->>  -range <= small_positive - x*range <= 0   ->>  -range <= small_positive - x*range  ->> x=0 or 1
 	//                                                                      small_positive - x*range <= 0       ->> x=1
@@ -311,9 +322,44 @@ func ColumnIsGreaterOrEqualColumn(input *InputBuilder, thresholdLowColumn, check
 	//                                                            check - thresh - range <= 0       ->> whatever
 	// if !bool  ->>  -range <= check - thresh <= 0  ->>  -range <= check - thresh  ->>  whatever
 	//                                                    check - thresh <= 0       ->>  check <= thresh
-	isGreaterEqual := ConstraintRowBuild{Debug: "isGreaterEqual"}
-	isGreaterEqual.Add(thresholdLowColumn, -1)
-	isGreaterEqual.Add(checkHighColumn, 1)
-	isGreaterEqual.Add(boolIsGreater, -rangeHigh)
-	isGreaterEqual.Finish(input, -rangeHigh, 0)
+	isLess := ConstraintRowBuild{Debug: "ColumnIsLessThanColumnEqualityFree"}
+	isLess.Add(leftSideCol, -1)
+	isLess.Add(rightSideCol, 1)
+	isLess.Add(boolIsLess, -rangeHigh)
+	isLess.Finish(input, -rangeHigh, 0)
+}
+
+// logic: leftSideCol > rightSideCol
+func ColumnIsGreaterThanColumnEqualityFree(input *InputBuilder, leftSideCol, rightSideCol, boolIsGreater ColumnIndex, rangeHigh float64) {
+	ColumnIsLessThanColumnEqualityFree(input, rightSideCol, leftSideCol, boolIsGreater, rangeHigh)
+}
+
+// logic: leftSideCol >= rightSideCol
+func ColumnIsGreaterOrEqualColumn(input *InputBuilder, leftSideCol, rightSideCol, boolIsGreater ColumnIndex, rangeHigh float64, equalDelta float64) {
+	set := ConstraintRowBuild{Debug: "ColumnIsGreaterOrEqualColumn_set"}
+	set.Add(leftSideCol, 1)
+	set.Add(rightSideCol, -1)
+	set.Add(boolIsGreater, -rangeHigh)
+	set.Finish(input, C_MinusInf, -equalDelta)
+
+	confirm := ConstraintRowBuild{Debug: "ColumnIsGreaterOrEqualColumn_confirm"}
+	confirm.Add(leftSideCol, -1)
+	confirm.Add(rightSideCol, 1)
+	confirm.Add(boolIsGreater, rangeHigh)
+	confirm.Finish(input, C_MinusInf, rangeHigh)
+}
+
+// logic: leftSideCol <= rightSideCol
+func ColumnIsLessOrEqualColumn(input *InputBuilder, leftSideCol, rightSideCol, boolIsLess ColumnIndex, rangeHigh float64, equalDelta float64) {
+	set := ConstraintRowBuild{Debug: "ColumnIsLessOrEqualColumn_set"}
+	set.Add(leftSideCol, 1)
+	set.Add(rightSideCol, -1)
+	set.Add(boolIsLess, rangeHigh)
+	set.Finish(input, equalDelta, C_PlusInf)
+
+	confirm := ConstraintRowBuild{Debug: "ColumnIsLessOrEqualColumn_confirm"}
+	confirm.Add(leftSideCol, 1)
+	confirm.Add(rightSideCol, -1)
+	confirm.Add(boolIsLess, rangeHigh)
+	confirm.Finish(input, C_MinusInf, rangeHigh)
 }
