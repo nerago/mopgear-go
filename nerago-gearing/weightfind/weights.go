@@ -40,38 +40,36 @@ func StatWeights_updateAll(simSpeed simulate.WowSim_RunSize, printer *util.Print
 
 func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios simulate.SimData, weightFileOut string, substituteItems []items.ItemId, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, tracker *util.TrackProgress) {
 	tracker.RunOuterTracking(4)
+	defer tracker.Stop()
 
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), gearModel, printer)
 	currentItemSet := items.FullItemSet_FromMap(currentEquip)
 
 	// SIMULATE STAT CHANGES
-	inputDataGrid := GenerateRatingsInputFromArtificalStatOverrides_ForGrid(currentItemSet, printer, simSpeed, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions, tracker.MakeNested())
-	inputDataReal := GenerateRatingsInputFromRealRandomSetsGeneral(gearFile, substituteItems, gearModel, 200, simSpeed, false, printer, tracker.MakeNested())
+	inputDataGrid := SimulateSteppedStatChangesForGrid(currentItemSet, printer, simSpeed, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions, tracker.MakeNested())
+	inputDataReal := SimulateRealRandomSets(gearFile, substituteItems, gearModel, 200, simSpeed, false, printer, tracker.MakeNested())
 
 	// SOLVE FOR STAT WEIGHTS
 	process := stathighs.GridStatWeightProcess{}
 	process.Init(printer)
 	process.SetTargetRatios(ratios)
+	process.SetTestMode(simSpeed == simulate.RunSize_TestOnly)
 	process.SupplyData(inputDataGrid)
 	weights := process.Run()
 	printer.Println(">>>>> Grid Weights:")
 	pawn := tools.WritePawnString(weights, printer)
-	printer.Println(pawn)
 
-	tracker.MakeNested().Stop() // pretend we were tracking the highs and mark done
+	tracker.MakeNested().Stop() // pretend we were tracking the linear process and mark done
 
 	// TWEAK weights see if dumb changes can do better than grid
 	// TODO look into ranking stats solver
 	mixedInputData := slices.Concat(inputDataGrid, inputDataReal)
-	WeightTweaker(weights, TweakerChangeStats, ratios, mixedInputData, printer)
+	weights = WeightTweaker(weights, TweakerChangeStats, ratios, mixedInputData, printer)
 	printer.Println(">>>>> Tweaked Weights:")
 	pawn = tools.WritePawnString(weights, printer)
-	printer.Println(pawn)
 
 	// OVERWRITE WEIGHT FILE
 	writeFile(weightFileOut, pawn)
-
-	tracker.Stop()
 }
 
 func writeFile(filename, content string) {

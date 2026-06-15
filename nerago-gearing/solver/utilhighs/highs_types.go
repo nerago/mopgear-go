@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	C_HighsToConsole     = false
+	C_HighsToConsole     = true
 	C_DebugHighs         = false
 	C_DiagnoseInfeasible = false
 	c_threads            = 6
@@ -303,6 +303,10 @@ func (input *InputBuilder) DebugPrintColumns(solution *highs.Solution, printer *
 			printer.Printf("%3d %14f %s\n", i, x, debugText(input.vars.debug[i]))
 		}
 	}
+}
+
+func (input *InputBuilder) DebugTextFor(columnIndex ColumnIndex) any {
+	return debugText(input.vars.debug[columnIndex])
 }
 
 type variableArrayBuilder struct {

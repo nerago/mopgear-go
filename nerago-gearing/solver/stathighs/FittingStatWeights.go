@@ -527,7 +527,7 @@ func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample *fit
 	fit.includeColumns = append(fit.includeColumns, includeColumn)
 	sample.includeColumn = includeColumn
 
-	utilhighs.ConstantIsBetweenColumns(fit.input, fit.minimumThreshold, fit.maximumThreshold, includeColumn, sample.statValue, c_statRangeHigh)
+	utilhighs.ConstantIsBetweenColumns(fit.input, fit.minimumThreshold, fit.maximumThreshold, includeColumn, sample.statValue, c_statRangeHigh, 1.0)
 
 	// another thought, samples could be presorted and indexed, then we setup relationships between adjactent pairs,
 	// they pull each other up, until we reach a sample marked as THE high/low cutoff

@@ -15,7 +15,7 @@ import (
 	"paladin_gearing_go/util/channel_op"
 )
 
-func GenerateRatingsInputFromArtificalStatOverrides_ForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, tracker *util.TrackProgress) []stathighs.WeightInput {
+func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, tracker *util.TrackProgress) []stathighs.WeightInput {
 	var incrementMin int32 = 0
 	var incrementMax int32 = 500
 	var incrementStep int32 = 250
@@ -73,7 +73,7 @@ func GenerateRatingsInputFromArtificalStatOverrides_ForGrid(currentItemSet items
 	return inputList
 }
 
-func GenerateRatingsInputFromRealRandomSetsGeneral(gearFile string, substituteItems []items.ItemId, model *model.Model, makeSetCount int, simSize simulate.WowSim_RunSize, doFixRanges bool, printer *util.PrintRecorder, track *util.TrackProgress) []stathighs.WeightInput {
+func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, model *model.Model, makeSetCount int, simSize simulate.WowSim_RunSize, doFixRanges bool, printer *util.PrintRecorder, track *util.TrackProgress) []stathighs.WeightInput {
 	itemOptions := setup.OptionsSetup_FromGearFile(gearFile, model, setup.MissingEnchant_Panic, printer)
 	for _, itemId := range substituteItems {
 		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, model, printer)

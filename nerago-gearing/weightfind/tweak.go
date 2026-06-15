@@ -14,19 +14,30 @@ var TweakerChangeStats = []stats.StatType{
 
 func WeightTweaker(startWeight stathighs.WeightResult, changeStats []stats.StatType, targetRatio simulate.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) stathighs.WeightResult {
 	mult := 1.01
+	add := 0.01
 	bestWeight := startWeight.Clone()
 
 	for {
 		best := util_rank.BestCollector1[stathighs.WeightResult]{}
 		best.Offer(&bestWeight, EvaluateAccuracy(bestWeight, inputData, targetRatio))
 		for _, stat := range changeStats {
-			hi := bestWeight.Clone()
-			hi[stat] *= mult
-			best.Offer(&hi, EvaluateAccuracy(hi, inputData, targetRatio))
+			if bestWeight[stat] != 0 {
+				hi := bestWeight.Clone()
+				hi[stat] *= mult
+				best.Offer(&hi, EvaluateAccuracy(hi, inputData, targetRatio))
 
-			lo := bestWeight.Clone()
-			lo[stat] /= mult
-			best.Offer(&lo, EvaluateAccuracy(lo, inputData, targetRatio))
+				lo := bestWeight.Clone()
+				lo[stat] /= mult
+				best.Offer(&lo, EvaluateAccuracy(lo, inputData, targetRatio))
+			} else {
+				hi := bestWeight.Clone()
+				hi[stat] += add
+				best.Offer(&hi, EvaluateAccuracy(hi, inputData, targetRatio))
+
+				lo := bestWeight.Clone()
+				lo[stat] -= add
+				best.Offer(&lo, EvaluateAccuracy(lo, inputData, targetRatio))
+			}
 		}
 		updateWeight := best.GetBestOrPanic()
 

@@ -93,15 +93,17 @@ func (grid2 *GridStatWeightProcess2) chooseScaling() {
 func (grid2 *GridStatWeightProcess2) processInputData() {
 	for a := range grid2.inputData {
 		for b := a + 1; b < len(grid2.inputData); b++ {
-			differenceCount, diffStatA, _, _ := grid2.checkForNumberStatDifferences(&grid2.inputData[a].TotalStat, &grid2.inputData[b].TotalStat)
+			differenceCount, diffStatA, diffStatB, _ := grid2.checkForNumberStatDifferences(&grid2.inputData[a].TotalStat, &grid2.inputData[b].TotalStat)
 			switch differenceCount {
 			case 1:
 				grid2.prepareSampleOneDifferenceStats(&grid2.inputData[a], &grid2.inputData[b], diffStatA)
 			case 2:
-				// grid2.prepareSampleTwoDifferenceStats(&grid2.inputData[a], &grid2.inputData[b], diffStatA, diffStatB)
+				grid2.prepareSampleTwoDifferenceStats(&grid2.inputData[a], &grid2.inputData[b], diffStatA, diffStatB)
 			case 3:
 				// grid2.prepareSampleThreeDifferenceStats(&grid2.inputData[a], &grid2.inputData[b], diffStatA, diffStatB, diffStatC)
 			}
+
+			// TODO param for this, use for compare accuracy etc
 
 			// using 1,2,3: 68.5225% 
 			// using 1,2: 89.3560%

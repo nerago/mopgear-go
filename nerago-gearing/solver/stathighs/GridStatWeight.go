@@ -16,6 +16,7 @@ type GridStatWeightProcess struct {
 
 	targetRatios simulate.SimData
 	inputData    []WeightInput
+	testMode bool
 
 	input           utilhighs.InputBuilder
 	unitStatValues  util.MapMapSlice[stats.StatType, simulate.SimType, gridDataSample]
@@ -35,6 +36,7 @@ func (grid *GridStatWeightProcess) Init(printer *util.PrintRecorder) {
 	grid.printer = printer
 	grid.input.Minimise = true
 	grid.input.Solver = "hipdlp"
+	grid.input.TimeLimitSeconds = 3600 * 2
 	grid.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }
 
@@ -56,6 +58,13 @@ func (grid *GridStatWeightProcess) SetTargetRatios(targetRatios simulate.SimData
 	}
 
 	grid.targetRatios = targetRatios
+}
+
+func (grid *GridStatWeightProcess) SetTestMode(testMode bool) {
+	grid.testMode = testMode
+	if testMode {
+		grid.input.TimeLimitSeconds = 60
+	} 
 }
 
 func (grid *GridStatWeightProcess) Run() WeightResult {
@@ -167,7 +176,8 @@ func (grid *GridStatWeightProcess) checkSampleRange() {
 	}
 	grid.printer.Printf("checkSampleRange good=%d bad=%d\n", good, bad)
 	if bad > (good+bad)/5 {
-		panic("many values have inconvenient range")
+		// panic("many values have inconvenient range")
+		grid.printer.Println("many values have inconvenient range")
 	}
 
 	// TODO port scaling process from complex weighter
