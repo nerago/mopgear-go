@@ -24,6 +24,23 @@ func Map_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, 
 	return outputChannel
 }
 
+func Map_ChannelToChannel_Provided[T any, R any](threadCount int, inputChannel <-chan T, outputChannel chan<- R, mapper func(T, chan<- R)) {
+	var waitGroup sync.WaitGroup
+
+	for range threadCount {
+		waitGroup.Go(func() {
+			for value := range inputChannel {
+				mapper(value, outputChannel)
+			}
+		})
+	}
+
+	go func() {
+		waitGroup.Wait()
+		close(outputChannel)
+	}()
+}
+
 func Map_ChannelToSlice[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T, chan<- R)) []R {
 	var waitGroup sync.WaitGroup
 	tempChannel := make(chan R)
@@ -70,6 +87,28 @@ func Map_SliceToChannel[T any, R any](threadCount int, inputSlice []T, mapper fu
 		close(outputChannel)
 	}()
 	return outputChannel
+}
+
+func Map_SliceToChannel_Provided[T any, R any](threadCount int, inputSlice []T, outputChannel chan<- R, mapper func(*T, chan<- R)) {
+	var waitGroup sync.WaitGroup
+
+	inputLength := len(inputSlice)
+	splits := indexSplitsInt(inputLength, threadCount)
+
+	for threadNum := range threadCount {
+		waitGroup.Go(func() {
+			start := splits[threadNum]
+			end := splits[threadNum+1]
+			for index := start; index < end; index++ {
+				mapper(&inputSlice[index], outputChannel)
+			}
+		})
+	}
+
+	go func() {
+		waitGroup.Wait()
+		close(outputChannel)
+	}()
 }
 
 func Map_SliceToSlice_LowOverhead[T any, R any](threadCount int, inputSlice []T, mapper func(*T, chan<- R)) []R {
@@ -254,5 +293,39 @@ func SeqToChannel[T any](seq iter.Seq[T]) <-chan T {
 		}
 		close(outputChannel)
 	}()
+	return outputChannel
+}
+
+func PeekChannel[T any](threadCount int, inputChannel <-chan T, apply func(T)) <-chan T {
+	var waitGroup sync.WaitGroup
+	outputChannel := make(chan T)
+
+	for range threadCount {
+		waitGroup.Go(func() {
+			for value := range inputChannel {
+				apply(value)
+				outputChannel <- value
+			}
+		})
+	}
+
+	go func() {
+		waitGroup.Wait()
+		close(outputChannel)
+	}()
+	return outputChannel
+}
+
+func TeeChannelToSlice[T any](inputChannel <-chan T, slicePointer *[]T) <-chan T {
+	outputChannel := make(chan T)
+
+	go func() {
+		for value := range inputChannel {
+			*slicePointer = append(*slicePointer, value)
+			outputChannel <- value
+		}
+		close(outputChannel)
+	}()
+
 	return outputChannel
 }

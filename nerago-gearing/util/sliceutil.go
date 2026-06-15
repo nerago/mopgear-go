@@ -3,7 +3,9 @@ package util
 import (
 	"cmp"
 	"iter"
+	"paladin_gearing_go/util/channel_op"
 	"slices"
+	"sync"
 )
 
 func RemoveDuplicatesFunc[T any](slice []T, equals func(a, b *T) bool) []T {
@@ -73,6 +75,45 @@ outer:
 		result = append(result, *next)
 	}
 	return result
+}
+
+func RemoveDuplicatesFunc_Channels[T any](inputChannel <-chan T, equals func(a, b *T) bool) <-chan T {
+	lock := sync.Mutex{}
+	seen := make([]T, 0)
+
+	return channel_op.Map_ChannelToChannel(2, inputChannel, func(next T, outputChannel chan<- T) {
+		lock.Lock()
+		defer lock.Unlock()
+
+		for checkIndex := range seen {
+			if equals(&next, &seen[checkIndex]) {
+				return
+			}
+		}
+
+		seen = append(seen, next)
+		outputChannel <- next
+	})
+}
+
+func RemoveDuplicatesFuncNotify_Channels[T any](inputChannel <-chan T, equals func(a, b *T) bool, removedNotify func(x *T)) <-chan T {
+	lock := sync.Mutex{}
+	seen := make([]T, 0)
+
+	return channel_op.Map_ChannelToChannel(2, inputChannel, func(next T, outputChannel chan<- T) {
+		lock.Lock()
+		defer lock.Unlock()
+
+		for checkIndex := range seen {
+			if equals(&next, &seen[checkIndex]) {
+				removedNotify(&next)
+				return
+			}
+		}
+
+		seen = append(seen, next)
+		outputChannel <- next
+	})
 }
 
 func RemoveDuplicatesComparable[T comparable](slice []T) []T {

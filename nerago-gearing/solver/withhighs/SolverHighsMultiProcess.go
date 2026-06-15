@@ -18,7 +18,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const c_timeLimit = 15*60 // 15 mins
+const c_timeLimit = 15 * 60 // 15 mins
 
 type SolverHighsMultiParam struct {
 	Label          string
@@ -120,8 +120,8 @@ func (process *SolverHighsMultiProcess) solutionToResult(solution *highs.Solutio
 		resultList[partIndex] = fullItemSet
 
 		outputId := uuid.NewString()
-		printer.Printf("OutputId = %s\n", outputId)
-		idList = append(idList, outputId)
+		printer.Printf("OutputId[%s] = %s\n", part.Label, outputId)
+		idList[partIndex] = outputId
 	}
 	return HighsMultiResult{resultList, idList}
 }
@@ -146,7 +146,7 @@ func (process *SolverHighsMultiProcess) makeFullModel() {
 	process.outputRow.Finish(process.input, 0, 0)
 }
 
-func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_WithParallel(printer *util.PrintRecorder) []HighsMultiResult {
+func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_WithParallel(printer *util.PrintRecorder) <-chan HighsMultiResult {
 	printer.Printf("INITIAL MULTI run\n")
 
 	process.makeFullModel()
@@ -164,13 +164,14 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_WithParall
 	initialResult := process.solutionToResult(solution, printer)
 	bestCommonChoices := process.extractCommonChoices(solution)
 
-	bestCommonChoices = bestCommonChoices[0:10] // TODO revert
-
 	printer.Println("############################################################################")
 	printer.Printf("COMMON VARIANT count %d\n", len(bestCommonChoices))
 	printer.Println("############################################################################")
 
-	resultList := channel_op.Map_SliceToSlice(10, bestCommonChoices, func(changeColumn **columnInfo, resultChannel chan<- HighsMultiResult) {
+	resultChannel := make(chan HighsMultiResult, 8)
+	resultChannel <- initialResult
+
+	channel_op.Map_SliceToChannel_Provided(10, bestCommonChoices, resultChannel, func(changeColumn **columnInfo, resultChannel chan<- HighsMultiResult) {
 		innerPrint := util.PrintRecorder_HoldAll()
 		printer.Printf("COMMON VARIANT blocking %s\n", (*changeColumn).itemFull.CreateString())
 
@@ -193,9 +194,8 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_WithParall
 		innerPrint.Println("############################################################################")
 		printer.AppendOther(innerPrint)
 	})
-	resultList = append(resultList, initialResult)
 
-	return resultList
+	return resultChannel
 }
 
 func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent_Sampling(printer *util.PrintRecorder, outputTarget int) []HighsMultiResult {

@@ -63,6 +63,8 @@ func (single *SingleProposedOutput) Equals(b *SingleProposedOutput) bool {
 }
 
 func (single *SingleProposedOutput) Report(printer *util.PrintRecorder) {
-	printer.Println(single.OutputId)
+	if single.OutputId != "" {
+		printer.Println(single.OutputId)
+	}
 	tools.ReportSet(single.Model, &single.FullSet, single.ResultRating, printer)
 }

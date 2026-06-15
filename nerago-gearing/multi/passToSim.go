@@ -65,29 +65,26 @@ type simulateMultiResult struct {
 	result   []simulate.SimData
 }
 
-func (job *MultiSetJob) prepareSimList(proposalList []multi_types.MultiProposedOutput) []simulateJob {
-	jobList := make([]simulateJob, 0)
-	for _, proposal := range proposalList {
+func (job *MultiSetJob) prepareSimList(proposalList <-chan multi_types.MultiProposedOutput) <-chan simulateJob {
+	jobChannel := channel_op.Map_ChannelToChannel(2, proposalList, func(proposal multi_types.MultiProposedOutput, next chan<- simulateJob) {
 		for _, output := range proposal.Parts {
 			job := simulateJob{output.Spec, output.Model.Goal, output.Model.SimulateAs, *output.FullSet.Items(), output.Model.Professions}
-			jobList = append(jobList, job)
+			next <- job
 		}
-	}
+	})
 
-	jobList = util.RemoveDuplicatesFunc(jobList, (*simulateJob).Equals)
-
-	return jobList
+	return util.RemoveDuplicatesFunc_Channels(jobChannel, (*simulateJob).Equals)
 }
 
-func (job *MultiSetJob) runSims(jobList []simulateJob, trackProgress *util.TrackProgress) []simulateJobResult {
-	job.printer.Printf("@@@@@@@@@@ RUN SIM JOBS %d @@@@@@@@@@\n", len(jobList))
-	trackProgress.RunOuterTracking(len(jobList))
+func (job *MultiSetJob) runSims(jobChan <-chan simulateJob, trackProgress *util.TrackProgress) []simulateJobResult {
+	// job.printer.Printf("@@@@@@@@@@ RUN SIM JOBS %d @@@@@@@@@@\n", len(jobList))
+	// trackProgress.RunOuterTracking(len(jobList))
 	defer trackProgress.Stop()
 
-	return channel_op.Map_SliceToSlice(simThreadCount, jobList, func(sim *simulateJob, resultChan chan<- simulateJobResult) {
+	return channel_op.Map_ChannelToSlice(simThreadCount, jobChan, func(sim simulateJob, resultChan chan<- simulateJobResult) {
 		result := simulate.WowSim_Execute_SpecifyAll(job.simRunSize, sim.spec, sim.goal, sim.fight, sim.professions, &sim.equip, nil, trackProgress.MakeNested())
 		job.printer.Printf("sim %22s fight=%d %s\n", sim.spec.Name(), sim.fight, result.CompactStringGeneral())
-		resultChan <- simulateJobResult{*sim, result}
+		resultChan <- simulateJobResult{sim, result}
 	})
 }
 
@@ -128,7 +125,7 @@ func (job *MultiSetJob) reportSimResults_One(result simulateMultiResult) {
 
 	for specIndex, specResult := range result.result {
 		param := &job.params[specIndex]
-		job.printer.Printf("---------------- %s ----------------\n", param.Label)
+		job.printer.Printf("\n---------------- %s ----------------\n", param.Label)
 
 		output := result.proposed.Parts[specIndex]
 		output.Report(job.printer)
@@ -138,8 +135,9 @@ func (job *MultiSetJob) reportSimResults_One(result simulateMultiResult) {
 			variantEquip := *output.FullSet.Items()
 			variantItem := job.findVariantItem(result, itemId, param)
 			variantEquip[slot] = variantItem
-			job.printer.Printf("---------------- %s %s ----------------\n", param.Label, variantItem.BaseName())
+			job.printer.Printf("\n---------------- %s %s ----------------\n", param.Label, variantItem.BaseName())
 			tools.WowSimJson_Write(&variantEquip, &param.Model, job.printer)
+			job.printer.Println0()
 		}
 	}
 
