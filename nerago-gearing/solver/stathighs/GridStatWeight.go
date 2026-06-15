@@ -16,9 +16,9 @@ type GridStatWeightProcess struct {
 
 	targetRatios simulate.SimData
 	inputData    []WeightInput
-	testMode bool
+	testMode     bool
 
-	input           utilhighs.InputBuilder
+	build           utilhighs.LinearBuilder
 	unitStatValues  util.MapMapSlice[stats.StatType, simulate.SimType, gridDataSample]
 	detailedWeights util.MapMap[stats.StatType, simulate.SimType, utilhighs.ColumnIndex]
 	finalWeights    map[stats.StatType]utilhighs.ColumnIndex
@@ -34,9 +34,9 @@ type gridDataSample struct {
 // hipdlp - HiGHS run time      :        414.98
 func (grid *GridStatWeightProcess) Init(printer *util.PrintRecorder) {
 	grid.printer = printer
-	grid.input.Minimise = true
-	grid.input.Solver = "hipdlp"
-	grid.input.TimeLimitSeconds = 3600 * 2
+	grid.build.Minimise = true
+	grid.build.Solver = "hipdlp"
+	grid.build.TimeLimitSeconds = 3600 * 2
 	grid.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }
 
@@ -63,8 +63,8 @@ func (grid *GridStatWeightProcess) SetTargetRatios(targetRatios simulate.SimData
 func (grid *GridStatWeightProcess) SetTestMode(testMode bool) {
 	grid.testMode = testMode
 	if testMode {
-		grid.input.TimeLimitSeconds = 60
-	} 
+		grid.build.TimeLimitSeconds = 60
+	}
 }
 
 func (grid *GridStatWeightProcess) Run() WeightResult {
@@ -75,25 +75,25 @@ func (grid *GridStatWeightProcess) Run() WeightResult {
 	grid.unitValuesToCalcDetailedRatings()
 	grid.calcTotalRatings()
 
-	solution, log := grid.input.RunHighs()
+	solution, log := grid.build.RunHighs()
 	grid.printer.AppendOther(log)
 	grid.printer.Println(solution.Status.String())
 
-	grid.input.DebugPrintColumns(solution, grid.printer)
+	grid.build.DebugPrintColumns(solution, grid.printer)
 
 	return grid.reportOutputWeightsGrid(solution, grid.finalWeights, grid.printer)
 }
 
 func (grid *GridStatWeightProcess) setupWeightVars() {
 	for _, statType := range G_RequiredStats {
-		colFinalWeight := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "FINAL WEIGHT: " + statType.Name()})
+		colFinalWeight := grid.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "FINAL WEIGHT: " + statType.Name()})
 		// colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, -c_finalWeightLimit, c_finalWeightLimit)
 		grid.finalWeights[statType] = colFinalWeight
 	}
 
 	for _, statType := range G_RequiredStats {
 		for _, simType := range G_RequiredSims {
-			colDetailWeight := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
+			colDetailWeight := grid.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
 			grid.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
 	}
@@ -101,9 +101,9 @@ func (grid *GridStatWeightProcess) setupWeightVars() {
 	for _, simType := range G_RequiredSims {
 		value := grid.targetRatios.Get(simType)
 		colDetailWeight := grid.detailedWeights.GetOrPanic(c_baseStatType, simType)
-		strengthSetToRatio := utilhighs.ConstraintRowBuild{}
+		strengthSetToRatio := utilhighs.ConstraintRow{}
 		strengthSetToRatio.Add(colDetailWeight, 1)
-		strengthSetToRatio.Finish(&grid.input, value, value)
+		strengthSetToRatio.Build(&grid.build, value, value)
 	}
 }
 
@@ -237,22 +237,22 @@ func (grid *GridStatWeightProcess) unitValueCombinationAddToModel(baseUnitSample
 	// weightRow.Finish(&grid.input, 0, 0)
 
 	// take absolute value, output for objective function
-	offsetAbs := grid.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "OFFSET ABS " + debugText})
+	offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "OFFSET ABS " + debugText})
 	// utilhighs.AbsoluteValueFromDiff(&grid.input, offsetSigned, offsetAbs)
 
-	utilhighs.AbsoluteValueFromDiffTwoVars(&grid.input, thisDetailWeightCol, baseUnitSample.value, baseDetailWeightCol, thisUnitSample.value, offsetAbs, "OFFSET ABS "+debugText)
+	utilhighs.AbsoluteValueFromDiffTwoVars(&grid.build, thisDetailWeightCol, baseUnitSample.value, baseDetailWeightCol, thisUnitSample.value, offsetAbs, "OFFSET ABS "+debugText)
 }
 
 func (grid *GridStatWeightProcess) calcTotalRatings() {
 	for _, statType := range G_RequiredStats {
-		statFinalRow := utilhighs.ConstraintRowBuild{}
+		statFinalRow := utilhighs.ConstraintRow{}
 		for _, detailColumn := range grid.detailedWeights.SeqInnerWithKey1Value(statType) {
 			statFinalRow.Add(detailColumn, 1)
 		}
 
 		finalWeightColumn := grid.finalWeights[statType]
 		statFinalRow.Add(finalWeightColumn, -1)
-		statFinalRow.Finish(&grid.input, 0, 0)
+		statFinalRow.Build(&grid.build, 0, 0)
 	}
 }
 

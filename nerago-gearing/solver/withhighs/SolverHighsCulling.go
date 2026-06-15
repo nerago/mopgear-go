@@ -8,7 +8,7 @@ import (
 )
 
 type SolverHighsCullingProcess struct {
-	input   *utilhighs.InputBuilder
+	build   *utilhighs.LinearBuilder
 	printer *util.PrintRecorder
 
 	setup        *setupInputSetAware

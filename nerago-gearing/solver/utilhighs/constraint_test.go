@@ -66,7 +66,7 @@ func TestColumnIsGreaterOrEqualThanConstant(test *testing.T) {
 			test.Logf("bool=%f", *setBool)
 		}
 
-		build := new(InputBuilder)
+		build := new(LinearBuilder)
 		build.NoOutput = true
 		compareColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
 		setColumnToConstant(build, compareColumn, colValue)
@@ -115,7 +115,7 @@ func TestColumnIsLessOrEqualThanConstant(test *testing.T) {
 			test.Logf("bool=%f", *setBool)
 		}
 
-		build := new(InputBuilder)
+		build := new(LinearBuilder)
 		build.NoOutput = true
 		compareColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
 		setColumnToConstant(build, compareColumn, colValue)
@@ -166,7 +166,7 @@ func TestConstantIsBetweenColumns(test *testing.T) {
 			test.Logf("bool=%f", *setBool)
 		}
 
-		build := new(InputBuilder)
+		build := new(LinearBuilder)
 		build.NoOutput = true
 		loColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
 		hiColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
@@ -246,7 +246,7 @@ func TestColumnIsNotBetweenConstantsVerify(test *testing.T) {
 	testValues := func(loValue, checkValue, hiValue float64, expectStatus highs.ModelStatus) {
 		test.Logf("CASE: lo=%f check=%f hi=%f", loValue, checkValue, hiValue)
 
-		build := new(InputBuilder)
+		build := new(LinearBuilder)
 		build.NoOutput = true
 		checkColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
 		setColumnToConstant(build, checkColumn, checkValue)
@@ -315,7 +315,7 @@ func TestColumnIsGreaterOrEqualColumn(test *testing.T) {
 			test.Logf("bool=%f", *setBool)
 		}
 
-		build := new(InputBuilder)
+		build := new(LinearBuilder)
 		build.NoOutput = true
 		oneColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
 		twoColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
@@ -370,7 +370,7 @@ func TestColumnIsLessOrEqualColumn(test *testing.T) {
 			test.Logf("bool=%f", *setBool)
 		}
 
-		build := new(InputBuilder)
+		build := new(LinearBuilder)
 		build.NoOutput = true
 		oneColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
 		twoColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
@@ -424,7 +424,7 @@ func TestColumnIsGreaterThanColumnEqualityFree(test *testing.T) {
 			test.Logf("bool=%f", *setBool)
 		}
 
-		build := new(InputBuilder)
+		build := new(LinearBuilder)
 		build.NoOutput = true
 		oneColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
 		twoColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
@@ -475,7 +475,7 @@ func TestColumnIsLessThanColumnEqualityFree(test *testing.T) {
 			test.Logf("bool=%f", *setBool)
 		}
 
-		build := new(InputBuilder)
+		build := new(LinearBuilder)
 		build.NoOutput = true
 		oneColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
 		twoColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
@@ -516,10 +516,10 @@ func TestColumnIsLessThanColumnEqualityFree(test *testing.T) {
 	testValues(51, 50, one, highs.ModelStatusInfeasible, nil)
 }
 
-func setColumnToConstant(build *InputBuilder, column ColumnIndex, value float64) {
-	row := ConstraintRowBuild{}
+func setColumnToConstant(build *LinearBuilder, column ColumnIndex, value float64) {
+	row := ConstraintRow{}
 	row.Add(column, 1)
-	row.Finish(build, value, value)
+	row.Build(build, value, value)
 }
 
 func ptr(value float64) *float64 {

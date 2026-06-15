@@ -16,7 +16,7 @@ type BasicStatWeightProcess struct {
 	simBase      simulate.SimData
 	simData      map[stats.StatType]basicDataEntry
 
-	input           utilhighs.InputBuilder
+	build           utilhighs.LinearBuilder
 	unitStatValues  util.MapMap[stats.StatType, simulate.SimType, float64]
 	detailedWeights util.MapMap[stats.StatType, simulate.SimType, utilhighs.ColumnIndex]
 	finalWeights    map[stats.StatType]utilhighs.ColumnIndex
@@ -29,8 +29,8 @@ type basicDataEntry struct {
 
 func (basic *BasicStatWeightProcess) Init(printer *util.PrintRecorder) {
 	basic.printer = printer
-	basic.input.Minimise = true
-	basic.input.Solver = "ipm"
+	basic.build.Minimise = true
+	basic.build.Solver = "ipm"
 	basic.simData = make(map[stats.StatType]basicDataEntry)
 	basic.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }
@@ -67,7 +67,7 @@ func (basic *BasicStatWeightProcess) AddSimData(statType stats.StatType, statVal
 func (basic *BasicStatWeightProcess) Run() WeightResult {
 	for _, statType := range G_RequiredStats {
 		colName := "FINAL WEIGHT: " + statType.Name()
-		colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: colName})
+		colFinalWeight := basic.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: colName})
 		// colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, -c_finalWeightLimit, c_finalWeightLimit)
 		basic.finalWeights[statType] = colFinalWeight
 	}
@@ -75,7 +75,7 @@ func (basic *BasicStatWeightProcess) Run() WeightResult {
 	for _, statType := range G_RequiredStats {
 		for _, simType := range G_RequiredSims {
 			colName := "WEIGHT: " + statType.Name() + " " + simType.Name()
-			colDetailWeight := basic.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: colName})
+			colDetailWeight := basic.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: colName})
 			basic.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
 	}
@@ -83,9 +83,9 @@ func (basic *BasicStatWeightProcess) Run() WeightResult {
 	for _, simType := range G_RequiredSims {
 		value := basic.targetRatios.Get(simType)
 		colDetailWeight := basic.detailedWeights.GetOrPanic(c_baseStatType, simType)
-		strengthSetToRatio := utilhighs.ConstraintRowBuild{}
+		strengthSetToRatio := utilhighs.ConstraintRow{}
 		strengthSetToRatio.Add(colDetailWeight, 1)
-		strengthSetToRatio.Finish(&basic.input, value, value)
+		strengthSetToRatio.Build(&basic.build, value, value)
 	}
 
 	for statType, entry := range basic.simData {
@@ -94,11 +94,11 @@ func (basic *BasicStatWeightProcess) Run() WeightResult {
 	basic.unitValuesToCalcDetailedRatings()
 	basic.calcTotalRatings()
 
-	solution, log := basic.input.RunHighs()
+	solution, log := basic.build.RunHighs()
 	basic.printer.AppendOther(log)
 	basic.printer.Println(solution.Status.String())
 
-	basic.input.DebugPrintColumns(solution, basic.printer)
+	basic.build.DebugPrintColumns(solution, basic.printer)
 
 	return reportOutputWeights(solution, basic.finalWeights, basic.printer)
 }
@@ -150,30 +150,30 @@ func (basic *BasicStatWeightProcess) unitValuesToCalcDetailedRatings_single(unit
 	thisUnitValue float64, thisdetailWeight utilhighs.ColumnIndex, simType simulate.SimType, statType stats.StatType) {
 
 	colName := "OFFSET SIGNED " + simType.Name() + " " + statType.Name()
-	offsetSigned := basic.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: colName})
+	offsetSigned := basic.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: colName})
 
 	colName = "OFFSET ABS " + simType.Name() + " " + statType.Name()
-	offsetAbs := basic.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: colName}) // outputs for objective function
-	utilhighs.AbsoluteValue(&basic.input, offsetSigned, offsetAbs)
+	offsetAbs := basic.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: colName}) // outputs for objective function
+	utilhighs.AbsoluteValue(&basic.build, offsetSigned, offsetAbs)
 
 	// detailweight_dps_haste * unit_dps_base - detailweight_dps_base * unit_dps_haste + offset = 0
-	weightRow := utilhighs.ConstraintRowBuild{}
+	weightRow := utilhighs.ConstraintRow{}
 	weightRow.Add(thisdetailWeight, unitValueBase)
 	weightRow.Add(detailWeightBase, -thisUnitValue)
 	weightRow.Add(offsetSigned, 1)
-	weightRow.Finish(&basic.input, 0, 0)
+	weightRow.Build(&basic.build, 0, 0)
 }
 
 func (basic *BasicStatWeightProcess) calcTotalRatings() {
 	for _, statType := range G_RequiredStats {
-		statFinalRow := utilhighs.ConstraintRowBuild{}
+		statFinalRow := utilhighs.ConstraintRow{}
 		for _, detailColumn := range basic.detailedWeights.SeqInnerWithKey1Value(statType) {
 			statFinalRow.Add(detailColumn, 1)
 		}
 
 		finalWeightColumn := basic.finalWeights[statType]
 		statFinalRow.Add(finalWeightColumn, -1)
-		statFinalRow.Finish(&basic.input, 0, 0)
+		statFinalRow.Build(&basic.build, 0, 0)
 	}
 }
 
@@ -188,4 +188,3 @@ func reportOutputWeights(solution *highs.Solution, weightColumns map[stats.StatT
 	}
 	return result
 }
-

@@ -22,7 +22,7 @@ type RankingStatWeightProcess struct {
 	targetRatios simulate.SimData
 	data         []rankEntry
 
-	input *utilhighs.InputBuilder
+	build *utilhighs.LinearBuilder
 
 	// linearEquationDiff int
 	// linearInclude      int
@@ -68,11 +68,11 @@ func (ranker *RankingStatWeightProcess) SetTargetRatios(targetRatios simulate.Si
 // }
 
 func (ranker *RankingStatWeightProcess) Run() WeightResult {
-	ranker.input = new(utilhighs.InputBuilder)
-	ranker.input.Minimise = true
-	ranker.input.Solver = "ipx"
+	ranker.build = new(utilhighs.LinearBuilder)
+	ranker.build.Minimise = true
+	ranker.build.Solver = "ipx"
 	if ranker.RANKMODE != 3 {
-		ranker.input.DisablePreSolve = true
+		ranker.build.DisablePreSolve = true
 	}
 	// ranker.input.Solver = "pdlp"
 	// ranker.input.Solver = "hipdlp"
@@ -83,7 +83,7 @@ func (ranker *RankingStatWeightProcess) Run() WeightResult {
 
 	// ranker.includeCountRow.Finish(ranker.input, float64(len(ranker.inputData))*ranker.minimumIncludeRate, utilhighs.C_PlusInf)
 
-	solution, log := ranker.input.RunHighs()
+	solution, log := ranker.build.RunHighs()
 	ranker.printer.AppendOther(log)
 
 	return ranker.extractAndReportSolution(solution)
@@ -93,17 +93,17 @@ func (ranker *RankingStatWeightProcess) createWeightColumns() {
 	lo := -c_RankLargeWeight
 	hi := c_RankLargeWeight
 
-	sumWeights := utilhighs.ConstraintRowBuild{}
+	sumWeights := utilhighs.ConstraintRow{}
 	ranker.weightColumns = make(map[stats.StatType]utilhighs.ColumnIndex)
 	for _, statType := range G_RequiredStats {
-		colDetailWeight := ranker.input.CreateColumnGeneral(highs.Continuous, lo, hi, utilhighs.DebugString{Text: "WEIGHT " + statType.Name()})
+		colDetailWeight := ranker.build.CreateColumnGeneral(highs.Continuous, lo, hi, utilhighs.DebugString{Text: "WEIGHT " + statType.Name()})
 		ranker.weightColumns[statType] = colDetailWeight
 		sumWeights.Add(colDetailWeight, 1)
 	}
 
 	if ranker.RANKMODE == 0 || ranker.RANKMODE == 3 {
 		// TODO just doesn't seem right
-		sumWeights.Finish(ranker.input, 1.0, utilhighs.C_PlusInf) // force positive and non-zero result
+		sumWeights.Build(ranker.build, 1.0, utilhighs.C_PlusInf) // force positive and non-zero result
 	}
 
 	// this assumes that a positive strength will work for the scoring system, should be true in most situations
@@ -147,7 +147,7 @@ func (ranker *RankingStatWeightProcess) processData() {
 			ranker.processDataEntryForceScoreToRank(entry)
 		}
 	case 3:
-		sumRanks := utilhighs.ConstraintRowBuild{}
+		sumRanks := utilhighs.ConstraintRow{}
 		for entry := range util.ForPointer(ranker.data) {
 			ranker.processDataEntryPlusRankCompareToExpected(entry)
 			sumRanks.Add(entry.rankColumn, 1)
@@ -156,7 +156,7 @@ func (ranker *RankingStatWeightProcess) processData() {
 		// check 10, accuracy with disabled: 87.1993%, Duration = 2m5.2630056s
 		// check 10, accuracy with enabled: 87.1993%, Duration = 1m48.1206008s
 		expectedSum := len(ranker.data) * (len(ranker.data) - 1) / 2
-		sumRanks.Finish(ranker.input, float64(expectedSum), float64(expectedSum))
+		sumRanks.Build(ranker.build, float64(expectedSum), float64(expectedSum))
 
 		eachCheckCount := 2
 		for a := 0; a < len(ranker.data); a++ {
@@ -191,9 +191,9 @@ func (ranker *RankingStatWeightProcess) processDataEntryOriginal(entry *rankEntr
 	// these scores are meaningless in themselves, at least in value terms
 	// however their increasing sequence should correlate to combinedSimRankScore
 	// which is what we'll optimise for
-	entry.scoreColumn = ranker.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugText("score"))
+	entry.scoreColumn = ranker.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugText("score"))
 
-	scoreRow := utilhighs.ConstraintRowBuild{}
+	scoreRow := utilhighs.ConstraintRow{}
 	for _, statType := range G_RequiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statValue := entry.data.TotalStat.GetFloat(statType)
@@ -203,7 +203,7 @@ func (ranker *RankingStatWeightProcess) processDataEntryOriginal(entry *rankEntr
 	}
 
 	scoreRow.Add(entry.scoreColumn, -1)
-	scoreRow.Finish(ranker.input, 0, 0)
+	scoreRow.Build(ranker.build, 0, 0)
 }
 
 func (ranker *RankingStatWeightProcess) processDataEntryPlusRankCompareToExpected(entry *rankEntry) {
@@ -211,9 +211,9 @@ func (ranker *RankingStatWeightProcess) processDataEntryPlusRankCompareToExpecte
 	// however their increasing sequence should correlate to combinedSimRankScore
 	// which is what we'll optimise for
 	rankStr := strconv.FormatInt(int64(entry.targetRank), 10)
-	entry.scoreColumn = ranker.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugText("score-"+rankStr))
+	entry.scoreColumn = ranker.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugText("score-"+rankStr))
 
-	scoreRow := utilhighs.ConstraintRowBuild{}
+	scoreRow := utilhighs.ConstraintRow{}
 	for _, statType := range G_RequiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statValue := entry.data.TotalStat.GetFloat(statType)
@@ -222,31 +222,31 @@ func (ranker *RankingStatWeightProcess) processDataEntryPlusRankCompareToExpecte
 		scoreRow.Add(weightColumn, statValue*statScale)
 	}
 	scoreRow.Add(entry.scoreColumn, -1)
-	scoreRow.Finish(ranker.input, 0, 0)
+	scoreRow.Build(ranker.build, 0, 0)
 
 	// TODO give it an initial solution to ranks
 
-	entry.rankColumn = ranker.input.CreateColumnGeneral(highs.Integer, 0, float64(len(ranker.data)-1), utilhighs.DebugText("derivedRank-"+rankStr))
-	rankDiffColumn := ranker.input.CreateColumnGeneral(highs.Integer, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugText("rankDiff-"+rankStr))
-	rankDiffAbsColumn := ranker.input.CreateColumnWithOutput(highs.Integer, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugText("rankDiffAbs-"+rankStr))
+	entry.rankColumn = ranker.build.CreateColumnGeneral(highs.Integer, 0, float64(len(ranker.data)-1), utilhighs.DebugText("derivedRank-"+rankStr))
+	rankDiffColumn := ranker.build.CreateColumnGeneral(highs.Integer, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugText("rankDiff-"+rankStr))
+	rankDiffAbsColumn := ranker.build.CreateColumnWithOutput(highs.Integer, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugText("rankDiffAbs-"+rankStr))
 
 	targetRank := float64(entry.targetRank)
-	rankDiff := utilhighs.ConstraintRowBuild{}
+	rankDiff := utilhighs.ConstraintRow{}
 	rankDiff.Add(entry.rankColumn, 1)
 	rankDiff.Add(rankDiffColumn, -1)
-	rankDiff.Finish(ranker.input, targetRank, targetRank)
-	utilhighs.AbsoluteValue(ranker.input, rankDiffColumn, rankDiffAbsColumn)
+	rankDiff.Build(ranker.build, targetRank, targetRank)
+	utilhighs.AbsoluteValue(ranker.build, rankDiffColumn, rankDiffAbsColumn)
 
-	ranker.input.SetInitialSolutionValue(entry.rankColumn, float64(entry.targetRank))
+	ranker.build.SetInitialSolutionValue(entry.rankColumn, float64(entry.targetRank))
 }
 
 // one thing to try might be just to say that stats->score should calculate a rank directly. then can do a direct compare to targetRank
 func (ranker *RankingStatWeightProcess) processDataEntryForceScoreToRank(entry *rankEntry) {
-	offsetColumn := ranker.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugText("offset"))
-	offsetAbs := ranker.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugText("offset"))
-	utilhighs.AbsoluteValue(ranker.input, offsetColumn, offsetAbs)
+	offsetColumn := ranker.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugText("offset"))
+	offsetAbs := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugText("offset"))
+	utilhighs.AbsoluteValue(ranker.build, offsetColumn, offsetAbs)
 
-	scoreRow := utilhighs.ConstraintRowBuild{}
+	scoreRow := utilhighs.ConstraintRow{}
 	for _, statType := range G_RequiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statValue := entry.data.TotalStat.GetFloat(statType)
@@ -260,10 +260,10 @@ func (ranker *RankingStatWeightProcess) processDataEntryForceScoreToRank(entry *
 	switch ranker.RANKMODE {
 	case 1:
 		targetNum := float64(entry.targetRank)
-		scoreRow.Finish(ranker.input, targetNum, targetNum)
+		scoreRow.Build(ranker.build, targetNum, targetNum)
 	case 2:
 		targetNum := entry.combinedSimScore
-		scoreRow.Finish(ranker.input, targetNum, targetNum)
+		scoreRow.Build(ranker.build, targetNum, targetNum)
 	}
 }
 
@@ -271,29 +271,29 @@ func (ranker *RankingStatWeightProcess) processDataEntryForceScoreToRank(entry *
 func (ranker *RankingStatWeightProcess) processEntrySequencePairToDerivedRank(one *rankEntry, two *rankEntry) {
 	// so we could totally do a boolean thing where scoreA>scoreB then implies rankA>rankB
 	// would need all possible pairs connected, but would then force solver to make a full integer order
-	isGreater := ranker.input.CreateColumnBool(utilhighs.DebugText("isGreater"))
-	ranker.input.SetInitialSolutionValue(isGreater, 1)
+	isGreater := ranker.build.CreateColumnBool(utilhighs.DebugText("isGreater"))
+	ranker.build.SetInitialSolutionValue(isGreater, 1)
 
-	utilhighs.ColumnIsGreaterOrEqualColumn(ranker.input, one.scoreColumn, two.scoreColumn, isGreater, c_RankLargeScore, 0.0001)
+	utilhighs.ColumnIsGreaterOrEqualColumn(ranker.build, one.scoreColumn, two.scoreColumn, isGreater, c_RankLargeScore, 0.0001)
 
-	utilhighs.ColumnIsGreaterOrEqualColumn(ranker.input, one.rankColumn, two.rankColumn, isGreater, c_RankLargeRank, 1.0)
+	utilhighs.ColumnIsGreaterOrEqualColumn(ranker.build, one.rankColumn, two.rankColumn, isGreater, c_RankLargeRank, 1.0)
 }
 
 // we want to optimise for higher.score > lower.score
 func (ranker *RankingStatWeightProcess) processEntrySequencePairOriginal(lower *rankEntry, higher *rankEntry) {
-	offsetColumn := ranker.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugText("offset"))
+	offsetColumn := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugText("offset"))
 
 	// if lower <= higher then it will trivially pass the >= 0 check. offset will be free but under minimise pressure so effectively zero
 	// if lower > higher then it will initially fail the >= 0 check, and need an extra boost from offset to get over the line
-	compareRow := utilhighs.ConstraintRowBuild{}
+	compareRow := utilhighs.ConstraintRow{}
 	compareRow.Add(lower.scoreColumn, -1)
 	compareRow.Add(higher.scoreColumn, 1)
 	compareRow.Add(offsetColumn, 1)
-	compareRow.Finish(ranker.input, 0, utilhighs.C_PlusInf)
+	compareRow.Build(ranker.build, 0, utilhighs.C_PlusInf)
 }
 
 func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs.Solution) WeightResult {
-	ranker.input.DebugPrintColumns(solution, ranker.printer)
+	ranker.build.DebugPrintColumns(solution, ranker.printer)
 
 	ranker.printer.Println("WEIGHTS")
 

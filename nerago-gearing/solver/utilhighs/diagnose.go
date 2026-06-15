@@ -7,18 +7,18 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
-func diagnoseInfeasible(input *InputBuilder, printer *util.PrintRecorder) {
+func diagnoseInfeasible(build *LinearBuilder, printer *util.PrintRecorder) {
 	printer.Println("INFEASIBLE MODEL TRYING TO FIND PROBLEM ROW")
 	// diagnoseSearchRange(input, printer)
-	diagnoseInfeasibleOneByOne(input, printer)
+	diagnoseInfeasibleOneByOne(build, printer)
 }
 
-func diagnoseSearchRange(input *InputBuilder, printer *util.PrintRecorder) {
-	min, max := 0, len(input.mat.lowerBound)-1
+func diagnoseSearchRange(build *LinearBuilder, printer *util.PrintRecorder) {
+	min, max := 0, len(build.mat.lowerBound)-1
 
 	for max-min > 2 {
 		pivot := (min + max) / 2
-		cmp := diagnoseTryHalves(input, min, pivot, max, printer)
+		cmp := diagnoseTryHalves(build, min, pivot, max, printer)
 		if cmp < 0 {
 			max = pivot - 1
 		} else if cmp > 0 {
@@ -30,10 +30,10 @@ func diagnoseSearchRange(input *InputBuilder, printer *util.PrintRecorder) {
 
 }
 
-func diagnoseTryHalves(input *InputBuilder, min, pivot, max int, printer *util.PrintRecorder) int {
-	cloneLower := input.Clone()
+func diagnoseTryHalves(build *LinearBuilder, min, pivot, max int, printer *util.PrintRecorder) int {
+	cloneLower := build.Clone()
 	cloneLower.NoOutput = true
-	cloneUpper := input.Clone()
+	cloneUpper := build.Clone()
 	cloneUpper.NoOutput = true
 
 	cloneLower.mat.deleteRowRange(min, pivot-1)
@@ -61,43 +61,43 @@ func diagnoseTryHalves(input *InputBuilder, min, pivot, max int, printer *util.P
 	}
 }
 
-func diagnoseInfeasibleOneByOne(input *InputBuilder, printer *util.PrintRecorder) {
-	for rowIndex := range input.mat.lowerBound {
-		clone := input.Clone()
+func diagnoseInfeasibleOneByOne(build *LinearBuilder, printer *util.PrintRecorder) {
+	for rowIndex := range build.mat.lowerBound {
+		clone := build.Clone()
 		clone.NoOutput = true
 		clone.mat.deleteRow(rowIndex)
 		solution, log := clone.RunHighs()
-		printer.Printf("Removed row %4d (%s) []=%2d --> %s\n", rowIndex, input.mat.debug[rowIndex], len(input.mat.entries[rowIndex]), solution.Status.String())
+		printer.Printf("Removed row %4d (%s) []=%2d --> %s\n", rowIndex, build.mat.debug[rowIndex], len(build.mat.entries[rowIndex]), solution.Status.String())
 		if solution.Status == highs.ModelStatusOptimal {
 			printer.AppendOther(log)
-			debugPrintRow(input, rowIndex, printer)
-			debugPrintSolutionValuesWithRowContext(solution, input, rowIndex, printer)
+			debugPrintRow(build, rowIndex, printer)
+			debugPrintSolutionValuesWithRowContext(solution, build, rowIndex, printer)
 			// drillDownColumn(solution, input,
 		}
 	}
 }
 
-func debugPrintRow(input *InputBuilder, rowIndex int, printer *util.PrintRecorder) {
-	debugText := input.mat.debug[rowIndex]
-	printer.Printf("ROW %d %f-%f %s\n", rowIndex, input.mat.lowerBound[rowIndex], input.mat.upperBound[rowIndex], debugText)
-	for _, entry := range input.mat.entries[rowIndex] {
+func debugPrintRow(build *LinearBuilder, rowIndex int, printer *util.PrintRecorder) {
+	debugText := build.mat.debug[rowIndex]
+	printer.Printf("ROW %d %f-%f %s\n", rowIndex, build.mat.lowerBound[rowIndex], build.mat.upperBound[rowIndex], debugText)
+	for _, entry := range build.mat.entries[rowIndex] {
 		printer.Printf("  $ %d %f\n", entry.columnNumber, entry.value)
 	}
 }
 
-func debugPrintSolutionValues(solution *highs.Solution, input *InputBuilder, printer *util.PrintRecorder) {
+func debugPrintSolutionValues(solution *highs.Solution, build *LinearBuilder, printer *util.PrintRecorder) {
 	printer.Printf("OBJECTIVE VALUE %f \n", solution.Objective)
 
 	for columnIndex, outputValue := range solution.ColValues {
-		debugText := debugText(input.vars.debug[columnIndex])
+		debugText := debugText(build.vars.debug[columnIndex])
 
 		printer.Printf("%d %f %s\r\n", columnIndex, outputValue, debugText)
 	}
 }
 
-func debugPrintSolutionValuesWithRowContext(solution *highs.Solution, input *InputBuilder, rowIndex int, printer *util.PrintRecorder) {
+func debugPrintSolutionValuesWithRowContext(solution *highs.Solution, build *LinearBuilder, rowIndex int, printer *util.PrintRecorder) {
 	entryLookup := make(map[ColumnIndex]float64)
-	for _, entry := range input.mat.entries[rowIndex] {
+	for _, entry := range build.mat.entries[rowIndex] {
 		entryLookup[entry.columnNumber] = entry.value
 	}
 
@@ -109,7 +109,7 @@ func debugPrintSolutionValuesWithRowContext(solution *highs.Solution, input *Inp
 	tab.AddColumnHeader("debug text", false)
 
 	for columnIndex, outputValue := range solution.ColValues {
-		debugText := debugText(input.vars.debug[columnIndex])
+		debugText := debugText(build.vars.debug[columnIndex])
 
 		coefficient, hasValue := entryLookup[ColumnIndex(columnIndex)]
 		if hasValue {

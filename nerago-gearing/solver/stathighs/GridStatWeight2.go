@@ -18,7 +18,7 @@ type GridStatWeightProcess2 struct {
 	scaleSims  map[simulate.SimType]float64
 	scaleStats map[stats.StatType]float64
 
-	input           utilhighs.InputBuilder
+	build           utilhighs.LinearBuilder
 	detailedWeights util.MapMap[stats.StatType, simulate.SimType, utilhighs.ColumnIndex]
 }
 
@@ -28,7 +28,7 @@ type gridDataSample2 struct {
 
 func (grid2 *GridStatWeightProcess2) Init(printer *util.PrintRecorder) {
 	grid2.printer = printer
-	grid2.input.Minimise = true
+	grid2.build.Minimise = true
 	// grid2.input.Solver = "pdlp"
 }
 
@@ -57,11 +57,11 @@ func (grid2 *GridStatWeightProcess2) Run() WeightResult {
 	grid2.chooseScaling()
 	grid2.processInputData()
 
-	solution, log := grid2.input.RunHighs()
+	solution, log := grid2.build.RunHighs()
 	grid2.printer.AppendOther(log)
 	grid2.printer.Println(solution.Status.String())
 
-	grid2.input.DebugPrintColumns(solution, grid2.printer)
+	grid2.build.DebugPrintColumns(solution, grid2.printer)
 
 	return grid2.reportOutputWeightsGrid(solution)
 }
@@ -70,7 +70,7 @@ func (grid2 *GridStatWeightProcess2) setupWeightVars() {
 	// create detail columns
 	for _, statType := range G_RequiredStats {
 		for _, simType := range G_RequiredSims {
-			colDetailWeight := grid2.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
+			colDetailWeight := grid2.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
 			grid2.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
 	}
@@ -79,9 +79,9 @@ func (grid2 *GridStatWeightProcess2) setupWeightVars() {
 	for _, simType := range G_RequiredSims {
 		value := grid2.targetRatios.Get(simType)
 		colDetailWeight := grid2.detailedWeights.GetOrPanic(c_baseStatType, simType)
-		strengthSetToRatio := utilhighs.ConstraintRowBuild{}
+		strengthSetToRatio := utilhighs.ConstraintRow{}
 		strengthSetToRatio.Add(colDetailWeight, 1)
-		strengthSetToRatio.Finish(&grid2.input, value, value)
+		strengthSetToRatio.Build(&grid2.build, value, value)
 	}
 }
 
@@ -105,7 +105,7 @@ func (grid2 *GridStatWeightProcess2) processInputData() {
 
 			// TODO param for this, use for compare accuracy etc
 
-			// using 1,2,3: 68.5225% 
+			// using 1,2,3: 68.5225%
 			// using 1,2: 89.3560%
 			// using 2: 89.4443%
 		}
@@ -138,12 +138,12 @@ func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStats(one *Weight
 		weightColumn := grid2.detailedWeights.GetOrPanic(statType, simType)
 
 		debugText := "MISMATCH1 " + statType.Name() + " " + simType.Name()
-		mismatchCol := grid2.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
+		mismatchCol := grid2.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
 
 		simDiff := two.SimResult.GetFriendly(simType) - one.SimResult.GetFriendly(simType)
 		simDiff *= grid2.scaleSims[simType]
 
-		utilhighs.AbsoluteValueFromDiffOneToConst(&grid2.input, weightColumn, statDiff, simDiff, mismatchCol, debugText)
+		utilhighs.AbsoluteValueFromDiffOneToConst(&grid2.build, weightColumn, statDiff, simDiff, mismatchCol, debugText)
 	}
 }
 
@@ -158,12 +158,12 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *Weight
 		weightColumnB := grid2.detailedWeights.GetOrPanic(statTypeB, simType)
 
 		debugText := "MISMATCH2 " + statTypeA.Name() + " " + statTypeB.Name() + " " + simType.Name()
-		mismatchCol := grid2.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
+		mismatchCol := grid2.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
 
 		simDiff := two.SimResult.GetFriendly(simType) - one.SimResult.GetFriendly(simType)
 		simDiff *= grid2.scaleSims[simType]
 
-		utilhighs.AbsoluteValueFromDiffTwoVarsWithOffset(&grid2.input,
+		utilhighs.AbsoluteValueFromDiffTwoVarsWithOffset(&grid2.build,
 			weightColumnA, statDiffA,
 			weightColumnB, statDiffB,
 			mismatchCol,
@@ -189,17 +189,17 @@ func (grid2 *GridStatWeightProcess2) prepareSampleThreeDifferenceStats(one *Weig
 		simDiff *= grid2.scaleSims[simType]
 
 		debugText := "MISMATCH3 " + statTypeA.Name() + " " + statTypeB.Name() + " " + statTypeC.Name() + " " + simType.Name()
-		mismatchSignedCol := grid2.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, nil)
+		mismatchSignedCol := grid2.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, nil)
 
-		rowEquate := utilhighs.ConstraintRowBuild{}
+		rowEquate := utilhighs.ConstraintRow{}
 		rowEquate.Add(weightColumnA, statDiffA)
 		rowEquate.Add(weightColumnB, statDiffB)
 		rowEquate.Add(weightColumnC, statDiffC)
 		rowEquate.Add(mismatchSignedCol, 1)
-		rowEquate.Finish(&grid2.input, simDiff, simDiff)
+		rowEquate.Build(&grid2.build, simDiff, simDiff)
 
-		mismatchCol := grid2.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
-		utilhighs.AbsoluteValue(&grid2.input, mismatchSignedCol, mismatchCol)
+		mismatchCol := grid2.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
+		utilhighs.AbsoluteValue(&grid2.build, mismatchSignedCol, mismatchCol)
 	}
 }
 

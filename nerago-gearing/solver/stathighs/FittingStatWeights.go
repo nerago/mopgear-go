@@ -44,15 +44,15 @@ const (
 
 type FittingAllStatWeightProcess struct {
 	printer *util.PrintRecorder
-	input   *utilhighs.InputBuilder
+	build   *utilhighs.LinearBuilder
 
 	each util.MapMap[stats.StatType, simulate.SimType, FittingSingleStatWeightProcess]
 }
 
 func (fitall *FittingAllStatWeightProcess) Init(printer *util.PrintRecorder) {
 	fitall.printer = printer
-	fitall.input = new(utilhighs.InputBuilder)
-	fitall.input.Minimise = true
+	fitall.build = new(utilhighs.LinearBuilder)
+	fitall.build.Minimise = true
 }
 
 ////////////////////////////////////////////////////////
@@ -302,14 +302,14 @@ func (fitseg *FittingSingleStatSegmentsProcess) filterDataStatRange(inputData []
 
 type FittingSingleStatWeightProcess struct {
 	printer *util.PrintRecorder
-	input   *utilhighs.InputBuilder
+	build   *utilhighs.LinearBuilder
 
 	minimumIncludeRate float64
 	inputData          []fittingSample
 	inputDataSimScale  float64
 
-	linearLineDiff utilhighs.LinearIndex
-	linearInclude  utilhighs.LinearIndex
+	objectiveLineDiff utilhighs.ObjectiveIndex
+	objectiveInclude  utilhighs.ObjectiveIndex
 
 	lineSlope        utilhighs.ColumnIndex
 	lineOffset       utilhighs.ColumnIndex
@@ -317,7 +317,7 @@ type FittingSingleStatWeightProcess struct {
 	maximumThreshold utilhighs.ColumnIndex
 	includeColumns   []utilhighs.ColumnIndex
 
-	includeCountRow utilhighs.ConstraintRowBuild
+	includeCountRow utilhighs.ConstraintRow
 }
 
 type FittingSingleStatResult struct {
@@ -337,18 +337,18 @@ type fittingSample struct {
 
 func (fit *FittingSingleStatWeightProcess) Init(printer *util.PrintRecorder) {
 	fit.printer = printer
-	fit.input = new(utilhighs.InputBuilder)
-	fit.input.Minimise = true
+	fit.build = new(utilhighs.LinearBuilder)
+	fit.build.Minimise = true
 
-	fit.lineSlope = fit.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "slope"})
-	fit.lineOffset = fit.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "offset"})
-	fit.minimumThreshold = fit.input.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "minimum"})
-	fit.maximumThreshold = fit.input.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "maximum"})
+	fit.lineSlope = fit.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "slope"})
+	fit.lineOffset = fit.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "offset"})
+	fit.minimumThreshold = fit.build.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "minimum"})
+	fit.maximumThreshold = fit.build.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, utilhighs.DebugString{Text: "maximum"})
 
-	maxVsMin := utilhighs.ConstraintRowBuild{}
+	maxVsMin := utilhighs.ConstraintRow{}
 	maxVsMin.Add(fit.minimumThreshold, -1)
 	maxVsMin.Add(fit.maximumThreshold, 1)
-	maxVsMin.Finish(fit.input, 0, utilhighs.C_PlusInf)
+	maxVsMin.Build(fit.build, 0, utilhighs.C_PlusInf)
 }
 
 func (fit *FittingSingleStatWeightProcess) SetMinimumIncludeRate(percent float64) {
@@ -431,13 +431,13 @@ func (fit *FittingSingleStatWeightProcess) Run() util.Optional[FittingSingleStat
 		fit.addSample(sample)
 	}
 
-	fit.includeCountRow.Finish(fit.input, float64(len(fit.inputData))*fit.minimumIncludeRate, utilhighs.C_PlusInf)
+	fit.includeCountRow.Build(fit.build, float64(len(fit.inputData))*fit.minimumIncludeRate, utilhighs.C_PlusInf)
 
-	solution, log := fit.input.RunHighs()
+	solution, log := fit.build.RunHighs()
 	fit.printer.AppendOther(log)
 	fit.printer.Println(solution.Status.String())
 
-	fit.input.DebugPrintColumns(solution, fit.printer)
+	fit.build.DebugPrintColumns(solution, fit.printer)
 
 	if solution.IsOptimal() {
 		return util.Optional_OfValue(fit.buildResult(solution))
@@ -460,7 +460,7 @@ func (fit *FittingSingleStatWeightProcess) setupLinearObjectives() {
 
 	// averageIncludedDifference := 14 // based on data, haste_dps. rather not use this
 
-	fit.input.BlendMultiObjectives = false
+	fit.build.BlendMultiObjectives = false
 
 	var relativeToleranceParam float64
 	if fit.minimumIncludeRate < 1 {
@@ -477,11 +477,11 @@ func (fit *FittingSingleStatWeightProcess) setupLinearObjectives() {
 	} else {
 		relativeToleranceParam = 0
 	}
-	fit.linearLineDiff = fit.input.AddLinearPrioritised(false, -1, relativeToleranceParam, 2)
+	fit.objectiveLineDiff = fit.build.AddObjectivePrioritised(false, -1, relativeToleranceParam, 2)
 
 	// second priority is sum of includeColumn which are negative one each, can lead to negative total objective
 	// but we don't need to care about offsets much since its the last one, highs shouldn't even look at them
-	fit.linearInclude = fit.input.AddLinearPrioritised(false, -1, -1, 1)
+	fit.objectiveInclude = fit.build.AddObjectivePrioritised(false, -1, -1, 1)
 
 	// we might want to increase c_outputIncludePerInclude a bit since average at least for our first test case is 3-10
 	// but actually unless we combine the objectives then they aren't getting scaled against each other anyway
@@ -522,12 +522,12 @@ func (fit *FittingSingleStatWeightProcess) addSample(sample *fittingSample) {
 }
 
 func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample *fittingSample) utilhighs.ColumnIndex {
-	includeColumn := fit.input.CreateColumnWithLinear(highs.Integer, 0, 1, c_outputFittingPerInclude, fit.linearInclude, utilhighs.DebugString{Text: "include"})
+	includeColumn := fit.build.CreateColumnWithObjective(highs.Integer, 0, 1, c_outputFittingPerInclude, fit.objectiveInclude, utilhighs.DebugString{Text: "include"})
 	fit.includeCountRow.Add(includeColumn, 1)
 	fit.includeColumns = append(fit.includeColumns, includeColumn)
 	sample.includeColumn = includeColumn
 
-	utilhighs.ConstantIsBetweenColumns(fit.input, fit.minimumThreshold, fit.maximumThreshold, includeColumn, sample.statValue, c_statRangeHigh, 1.0)
+	utilhighs.ConstantIsBetweenColumns(fit.build, fit.minimumThreshold, fit.maximumThreshold, includeColumn, sample.statValue, c_statRangeHigh, 1.0)
 
 	// another thought, samples could be presorted and indexed, then we setup relationships between adjactent pairs,
 	// they pull each other up, until we reach a sample marked as THE high/low cutoff
@@ -536,8 +536,8 @@ func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample *fit
 }
 
 func (fit *FittingSingleStatWeightProcess) sampleToFitLine(sample *fittingSample, toggle utilhighs.ColumnIndex) {
-	difference := fit.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "difference"})
-	differenceAbs := fit.input.CreateColumnWithLinear(highs.Continuous, 0, utilhighs.C_PlusInf, c_outputFittingDifference, fit.linearLineDiff, utilhighs.DebugString{Text: "differenceAbs"})
+	difference := fit.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "difference"})
+	differenceAbs := fit.build.CreateColumnWithObjective(highs.Continuous, 0, utilhighs.C_PlusInf, c_outputFittingDifference, fit.objectiveLineDiff, utilhighs.DebugString{Text: "differenceAbs"})
 
 	// i'd like lineSlope to look like sim/stat
 	// i don't really care what lineOffset looks like, don't expect to use it at all
@@ -547,12 +547,12 @@ func (fit *FittingSingleStatWeightProcess) sampleToFitLine(sample *fittingSample
 	//          sim/stat - lineOffset/stat = lineSlope
 	//                            sim/stat = lineSlope + lineOffset/stat
 	//                                 sim = lineSlope*stat + lineOffset
-	sampleRow := utilhighs.ConstraintRowBuild{Debug: "sampleRow"}
+	sampleRow := utilhighs.ConstraintRow{Debug: "sampleRow"}
 	sampleRow.Add(fit.lineSlope, sample.statValue)
 	sampleRow.Add(fit.lineOffset, 1)
 	sampleRow.Add(difference, 1) // now technically this is a "vertical" difference, not a anything squared, but hopefully proportional...
-	sampleRow.Finish(fit.input, sample.simResult, sample.simResult)
+	sampleRow.Build(fit.build, sample.simResult, sample.simResult)
 
 	// new absolute val with toggle, this is its test
-	utilhighs.AbsoluteValue_WithToggle(fit.input, difference, differenceAbs, toggle, c_simRangeHigh)
+	utilhighs.AbsoluteValue_WithToggle(fit.build, difference, differenceAbs, toggle, c_simRangeHigh)
 }

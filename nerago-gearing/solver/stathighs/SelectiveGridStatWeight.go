@@ -18,7 +18,7 @@ type SelectiveGridStatWeightProcess struct {
 	inputData               []WeightInput
 	inputDataIncludeToggles []utilhighs.ColumnIndex
 
-	input           utilhighs.InputBuilder
+	build           utilhighs.LinearBuilder
 	unitStatValues  util.MapMapSlice[stats.StatType, simulate.SimType, selectiveGridDataSample]
 	detailedWeights util.MapMap[stats.StatType, simulate.SimType, utilhighs.ColumnIndex]
 	finalWeights    map[stats.StatType]utilhighs.ColumnIndex
@@ -31,7 +31,7 @@ type selectiveGridDataSample struct {
 
 func (selgrid *SelectiveGridStatWeightProcess) Init(printer *util.PrintRecorder) {
 	selgrid.printer = printer
-	selgrid.input.Minimise = true
+	selgrid.build.Minimise = true
 	// grid.input.Solver = "ipm"
 	selgrid.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }
@@ -65,25 +65,25 @@ func (selgrid *SelectiveGridStatWeightProcess) Run() WeightResult {
 	selgrid.unitValuesToCalcDetailedRatings()
 	selgrid.calcTotalRatings()
 
-	solution, log := selgrid.input.RunHighs()
+	solution, log := selgrid.build.RunHighs()
 	selgrid.printer.AppendOther(log)
 	selgrid.printer.Println(solution.Status.String())
 
-	selgrid.input.DebugPrintColumns(solution, selgrid.printer)
+	selgrid.build.DebugPrintColumns(solution, selgrid.printer)
 
 	return selgrid.reportOutputWeightsGrid(solution, selgrid.finalWeights, selgrid.printer)
 }
 
 func (selgrid *SelectiveGridStatWeightProcess) setupWeightVars() {
 	for _, statType := range G_RequiredStats {
-		colFinalWeight := selgrid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "FINAL WEIGHT: " + statType.Name()})
+		colFinalWeight := selgrid.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "FINAL WEIGHT: " + statType.Name()})
 		// colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, -c_finalWeightLimit, c_finalWeightLimit)
 		selgrid.finalWeights[statType] = colFinalWeight
 	}
 
 	for _, statType := range G_RequiredStats {
 		for _, simType := range G_RequiredSims {
-			colDetailWeight := selgrid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
+			colDetailWeight := selgrid.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
 			selgrid.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
 	}
@@ -91,28 +91,28 @@ func (selgrid *SelectiveGridStatWeightProcess) setupWeightVars() {
 	for _, simType := range G_RequiredSims {
 		value := selgrid.targetRatios.Get(simType)
 		colDetailWeight := selgrid.detailedWeights.GetOrPanic(c_baseStatType, simType)
-		strengthSetToRatio := utilhighs.ConstraintRowBuild{}
+		strengthSetToRatio := utilhighs.ConstraintRow{}
 		strengthSetToRatio.Add(colDetailWeight, 1)
-		strengthSetToRatio.Finish(&selgrid.input, value, value)
+		strengthSetToRatio.Build(&selgrid.build, value, value)
 	}
 }
 
 func (selgrid *SelectiveGridStatWeightProcess) createIncludeToggles() {
 	includeScore := 0.1
 
-	rowIncludeReasonableNumber := utilhighs.ConstraintRowBuild{}
+	rowIncludeReasonableNumber := utilhighs.ConstraintRow{}
 
 	selgrid.inputDataIncludeToggles = make([]utilhighs.ColumnIndex, len(selgrid.inputData))
 	for i := range len(selgrid.inputData) {
 		// negative score since we're minimising, each variable used is "better"
-		column := selgrid.input.CreateColumnBoolWithOutput(-includeScore, utilhighs.DebugString{Text: "input toggle " + strconv.Itoa(i)})
+		column := selgrid.build.CreateColumnBoolWithOutput(-includeScore, utilhighs.DebugString{Text: "input toggle " + strconv.Itoa(i)})
 		selgrid.inputDataIncludeToggles[i] = column
 
 		rowIncludeReasonableNumber.Add(column, 1)
 	}
 
 	minimumUseful := len(selgrid.inputData) / 4
-	rowIncludeReasonableNumber.Finish(&selgrid.input, float64(minimumUseful), float64(len(selgrid.inputData)))
+	rowIncludeReasonableNumber.Build(&selgrid.build, float64(minimumUseful), float64(len(selgrid.inputData)))
 }
 
 // lazy func, could avoid double processing and put in order, very N**2
@@ -227,47 +227,47 @@ func (selgrid *SelectiveGridStatWeightProcess) unitValuesCalcForGroup(simType si
 func (selgrid *SelectiveGridStatWeightProcess) unitValueCombinationAddToModel(baseUnitSample selectiveGridDataSample, detailWeightBase utilhighs.ColumnIndex,
 	thisUnitSample selectiveGridDataSample, thisDetailWeight utilhighs.ColumnIndex, debugText string) {
 
-	includeDataPointToggle := selgrid.input.CreateColumnBool(utilhighs.DebugString{Text: "DATA TOGGLE " + debugText})
+	includeDataPointToggle := selgrid.build.CreateColumnBool(utilhighs.DebugString{Text: "DATA TOGGLE " + debugText})
 	and := utilhighs.ContraintAndBuilder{}
 	and.SetOutput(includeDataPointToggle)
 	and.AddInput(baseUnitSample.includeToggles[0])
 	and.AddInput(baseUnitSample.includeToggles[1])
 	and.AddInput(thisUnitSample.includeToggles[0])
 	and.AddInput(thisUnitSample.includeToggles[1])
-	and.FinishAndApply(&selgrid.input)
+	and.Build(&selgrid.build)
 
 	// detailweight_dps_haste * unit_dps_base - detailweight_dps_base * unit_dps_haste + offset = 0
 	// detailweight_dps_haste / unit_dps_haste  - detailweight_dps_base   / unit_dps_base + offset / unit_dps_base / unit_dps_haste = 0
-	offsetSigned := selgrid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "OFFSET SIGNED " + debugText})
-	weightRow := utilhighs.ConstraintRowBuild{}
+	offsetSigned := selgrid.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "OFFSET SIGNED " + debugText})
+	weightRow := utilhighs.ConstraintRow{}
 	weightRow.Add(thisDetailWeight, baseUnitSample.value)  // OLD
 	weightRow.Add(detailWeightBase, -thisUnitSample.value) // OLD
 	// weightRow.Add(thisDetailWeight, 1/thisUnitSample.value) // NEW BUT TOO BIG
 	// weightRow.Add(detailWeightBase, -1/baseUnitSample.value) // NEW BUT TOO BIG
 	weightRow.Add(offsetSigned, 1)
-	weightRow.Finish(&selgrid.input, 0, 0)
+	weightRow.Build(&selgrid.build, 0, 0)
 
 	// take absolute value
-	offsetAbs := selgrid.input.CreateColumnGeneral(highs.Continuous, 0, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "OFFSET ABS " + debugText})
-	utilhighs.AbsoluteValue(&selgrid.input, offsetSigned, offsetAbs)
+	offsetAbs := selgrid.build.CreateColumnGeneral(highs.Continuous, 0, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "OFFSET ABS " + debugText})
+	utilhighs.AbsoluteValue(&selgrid.build, offsetSigned, offsetAbs)
 
 	// TODO use AbsoluteValue_WithToggle
 
 	// output for objective function
-	output := selgrid.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "OUTPUT " + debugText})
-	utilhighs.ContraintIfBoolCopyValueElseZero(&selgrid.input, includeDataPointToggle, offsetAbs, output, 0, c_finalWeightLimit) // don't know if this can work, especially with zero low
+	output := selgrid.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "OUTPUT " + debugText})
+	utilhighs.ContraintIfBoolCopyValueElseZero(&selgrid.build, includeDataPointToggle, offsetAbs, output, 0, c_finalWeightLimit) // don't know if this can work, especially with zero low
 }
 
 func (selgrid *SelectiveGridStatWeightProcess) calcTotalRatings() {
 	for _, statType := range G_RequiredStats {
-		statFinalRow := utilhighs.ConstraintRowBuild{}
+		statFinalRow := utilhighs.ConstraintRow{}
 		for _, detailColumn := range selgrid.detailedWeights.SeqInnerWithKey1Value(statType) {
 			statFinalRow.Add(detailColumn, 1)
 		}
 
 		finalWeightColumn := selgrid.finalWeights[statType]
 		statFinalRow.Add(finalWeightColumn, -1)
-		statFinalRow.Finish(&selgrid.input, 0, 0)
+		statFinalRow.Build(&selgrid.build, 0, 0)
 	}
 }
 

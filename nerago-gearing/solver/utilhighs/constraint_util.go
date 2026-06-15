@@ -2,44 +2,44 @@ package utilhighs
 
 import "slices"
 
-func ContraintIfBoolCopyValueElseZero(input *InputBuilder, boolSwitchVar, sourceVar, targetVar ColumnIndex, rangeLow, rangeHigh float64) {
+func ContraintIfBoolCopyValueElseZero(build *LinearBuilder, boolSwitchVar, sourceVar, targetVar ColumnIndex, rangeLow, rangeHigh float64) {
 	// based on https://medium.com/data-science/a-comprehensive-guide-to-modeling-techniques-in-mixed-integer-linear-programming-3e96cc1bc03d
 
-	valueHigh := ConstraintRowBuild{Debug: "ContraintIfBoolCopyValueElseZero_ValueHigh"}
+	valueHigh := ConstraintRow{Debug: "ContraintIfBoolCopyValueElseZero_ValueHigh"}
 	valueHigh.Add(targetVar, -1)
 	valueHigh.Add(sourceVar, 1)
 	valueHigh.Add(boolSwitchVar, rangeHigh)
-	valueHigh.Finish(input, C_MinusInf, rangeHigh)
+	valueHigh.Build(build, C_MinusInf, rangeHigh)
 
-	valueLow := ConstraintRowBuild{Debug: "ContraintIfBoolCopyValueElseZero_ValueLow"}
+	valueLow := ConstraintRow{Debug: "ContraintIfBoolCopyValueElseZero_ValueLow"}
 	valueLow.Add(targetVar, 1)
 	valueLow.Add(sourceVar, -1)
 	valueLow.Add(boolSwitchVar, -rangeLow)
-	valueLow.Finish(input, C_MinusInf, -rangeLow)
+	valueLow.Build(build, C_MinusInf, -rangeLow)
 
-	zeroHigh := ConstraintRowBuild{Debug: "ContraintIfBoolCopyValueElseZero_ZeroHigh"}
+	zeroHigh := ConstraintRow{Debug: "ContraintIfBoolCopyValueElseZero_ZeroHigh"}
 	zeroHigh.Add(targetVar, 1)
 	zeroHigh.Add(boolSwitchVar, -rangeHigh)
-	zeroHigh.Finish(input, C_MinusInf, 0)
+	zeroHigh.Build(build, C_MinusInf, 0)
 
-	zeroLow := ConstraintRowBuild{Debug: "ContraintIfBoolCopyValueElseZero_ZeroLow"}
+	zeroLow := ConstraintRow{Debug: "ContraintIfBoolCopyValueElseZero_ZeroLow"}
 	zeroLow.Add(targetVar, -1)
 	zeroLow.Add(boolSwitchVar, rangeLow)
-	zeroLow.Finish(input, C_MinusInf, 0)
+	zeroLow.Build(build, C_MinusInf, 0)
 }
 
-func ContraintIfBoolCopy(input *InputBuilder, boolSwitchVar, sourceVar, targetVar ColumnIndex, rangeHigh float64) {
-	valueHigh := ConstraintRowBuild{Debug: "ContraintIfBoolCopy_ValueHigh"}
+func ContraintIfBoolCopy(build *LinearBuilder, boolSwitchVar, sourceVar, targetVar ColumnIndex, rangeHigh float64) {
+	valueHigh := ConstraintRow{Debug: "ContraintIfBoolCopy_ValueHigh"}
 	valueHigh.Add(targetVar, -1)
 	valueHigh.Add(sourceVar, 1)
 	valueHigh.Add(boolSwitchVar, rangeHigh)
-	valueHigh.Finish(input, C_MinusInf, rangeHigh)
+	valueHigh.Build(build, C_MinusInf, rangeHigh)
 
-	valueLow := ConstraintRowBuild{Debug: "ContraintIfBoolCopy_ValueLow"}
+	valueLow := ConstraintRow{Debug: "ContraintIfBoolCopy_ValueLow"}
 	valueLow.Add(targetVar, 1)
 	valueLow.Add(sourceVar, -1)
 	valueLow.Add(boolSwitchVar, rangeHigh)
-	valueLow.Finish(input, C_MinusInf, rangeHigh)
+	valueLow.Build(build, C_MinusInf, rangeHigh)
 }
 
 // https://medium.com/data-science/a-comprehensive-guide-to-modeling-techniques-in-mixed-integer-linear-programming-3e96cc1bc03d
@@ -48,39 +48,39 @@ type ContraintAndBuilder struct {
 	inputVars []ColumnIndex
 }
 
-func (build *ContraintAndBuilder) SetOutput(column ColumnIndex) {
-	build.outputVar = column
+func (and *ContraintAndBuilder) SetOutput(column ColumnIndex) {
+	and.outputVar = column
 }
 
-func (build *ContraintAndBuilder) AddInput(column ColumnIndex) {
-	if !slices.Contains(build.inputVars, column) {
-		build.inputVars = append(build.inputVars, column)
+func (and *ContraintAndBuilder) AddInput(column ColumnIndex) {
+	if !slices.Contains(and.inputVars, column) {
+		and.inputVars = append(and.inputVars, column)
 	}
 }
 
-func (build *ContraintAndBuilder) FinishAndApply(input *InputBuilder) {
-	if len(build.inputVars) == 0 {
+func (and *ContraintAndBuilder) Build(build *LinearBuilder) {
+	if len(and.inputVars) == 0 {
 		panic("no inputs")
-	} else if len(build.inputVars) == 1 {
-		copyRow := ConstraintRowBuild{Debug: "ContraintAndBuilder_copy"}
-		copyRow.Add(build.outputVar, -1)
-		copyRow.Add(build.inputVars[0], 1)
-		copyRow.Finish(input, 0, 0)
+	} else if len(and.inputVars) == 1 {
+		copyRow := ConstraintRow{Debug: "ContraintAndBuilder_copy"}
+		copyRow.Add(and.outputVar, -1)
+		copyRow.Add(and.inputVars[0], 1)
+		copyRow.Build(build, 0, 0)
 	} else {
-		sumRow := ConstraintRowBuild{Debug: "ContraintAndBuilder_sumRow"}
-		sumRow.Add(build.outputVar, -1)
+		sumRow := ConstraintRow{Debug: "ContraintAndBuilder_sumRow"}
+		sumRow.Add(and.outputVar, -1)
 
-		for _, inputVar := range build.inputVars {
+		for _, inputVar := range and.inputVars {
 			sumRow.Add(inputVar, 1)
 
-			pullDown := ConstraintRowBuild{Debug: "ContraintAndBuilder_pullDown"}
+			pullDown := ConstraintRow{Debug: "ContraintAndBuilder_pullDown"}
 			pullDown.Add(inputVar, -1)
-			pullDown.Add(build.outputVar, 1)
-			pullDown.Finish(input, C_MinusInf, 0)
+			pullDown.Add(and.outputVar, 1)
+			pullDown.Build(build, C_MinusInf, 0)
 		}
 
-		targetNum := len(build.inputVars) - 1
-		sumRow.Finish(input, C_MinusInf, float64(targetNum))
+		targetNum := len(and.inputVars) - 1
+		sumRow.Build(build, C_MinusInf, float64(targetNum))
 	}
 }
 
@@ -89,145 +89,145 @@ type ConstraintOrBuilder struct {
 	inputVars []ColumnIndex
 }
 
-func (build *ConstraintOrBuilder) SetOutput(column ColumnIndex) {
-	build.outputVar = column
+func (or *ConstraintOrBuilder) SetOutput(column ColumnIndex) {
+	or.outputVar = column
 }
 
-func (build *ConstraintOrBuilder) AddInput(column ColumnIndex) {
-	if !slices.Contains(build.inputVars, column) {
-		build.inputVars = append(build.inputVars, column)
+func (or *ConstraintOrBuilder) AddInput(column ColumnIndex) {
+	if !slices.Contains(or.inputVars, column) {
+		or.inputVars = append(or.inputVars, column)
 	}
 }
 
-func (build *ConstraintOrBuilder) FinishAndApply(input *InputBuilder) {
-	zeroIfNone := ConstraintRowBuild{Debug: "ConstraintOrBuilder"}
-	zeroIfNone.Add(build.outputVar, -1)
+func (or *ConstraintOrBuilder) Build(build *LinearBuilder) {
+	zeroIfNone := ConstraintRow{Debug: "ConstraintOrBuilder"}
+	zeroIfNone.Add(or.outputVar, -1)
 
-	for _, inputVar := range build.inputVars {
+	for _, inputVar := range or.inputVars {
 		zeroIfNone.Add(inputVar, 1)
 
-		pullUp := ConstraintRowBuild{Debug: "ConstraintOrBuilder"}
+		pullUp := ConstraintRow{Debug: "ConstraintOrBuilder"}
 		pullUp.Add(inputVar, -1)
-		pullUp.Add(build.outputVar, 1)
-		pullUp.Finish(input, 0, 1)
+		pullUp.Add(or.outputVar, 1)
+		pullUp.Build(build, 0, 1)
 	}
 
 	// maxNum := len(build.inputVars) - 1
 	// sumRow.finish(input, 0, float64(maxNum))
-	zeroIfNone.Finish(input, 0, C_PlusInf)
+	zeroIfNone.Build(build, 0, C_PlusInf)
 }
 
-func ConstraintNot(input *InputBuilder, inputVar, outputVar ColumnIndex) {
-	row := ConstraintRowBuild{Debug: "Not"}
+func ConstraintNot(build *LinearBuilder, inputVar, outputVar ColumnIndex) {
+	row := ConstraintRow{Debug: "Not"}
 	row.Add(inputVar, 1)
 	row.Add(outputVar, 1)
-	row.Finish(input, 1, 1)
+	row.Build(build, 1, 1)
 }
 
-func NotAsColumn(input *InputBuilder, inputVar ColumnIndex) ColumnIndex {
-	outputVar := input.CreateColumnBool(nil)
-	ConstraintNot(input, inputVar, outputVar)
+func NotAsColumn(build *LinearBuilder, inputVar ColumnIndex) ColumnIndex {
+	outputVar := build.CreateColumnBool(nil)
+	ConstraintNot(build, inputVar, outputVar)
 	return outputVar
 }
 
-func AbsoluteValue(input *InputBuilder, inputVar, outputVar ColumnIndex) {
-	negative := ConstraintRowBuild{Debug: "AbsoluteValueNegative"}
+func AbsoluteValue(build *LinearBuilder, inputVar, outputVar ColumnIndex) {
+	negative := ConstraintRow{Debug: "AbsoluteValueNegative"}
 	negative.Add(inputVar, 1)
 	negative.Add(outputVar, 1)
-	negative.Finish(input, 0, C_PlusInf)
+	negative.Build(build, 0, C_PlusInf)
 
-	positive := ConstraintRowBuild{Debug: "AbsoluteValuePositive"}
+	positive := ConstraintRow{Debug: "AbsoluteValuePositive"}
 	positive.Add(inputVar, 1)
 	positive.Add(outputVar, -1)
-	positive.Finish(input, C_MinusInf, 0)
+	positive.Build(build, C_MinusInf, 0)
 }
 
 // untested but should be ok in principle
-func AbsoluteValueFromDiffTwoVars(input *InputBuilder, inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, debug string) {
-	negative := ConstraintRowBuild{Debug: debug + " AbsoluteValueNegative"}
+func AbsoluteValueFromDiffTwoVars(build *LinearBuilder, inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, debug string) {
+	negative := ConstraintRow{Debug: debug + " AbsoluteValueNegative"}
 	negative.Add(inputOneVar, inputOneCoefficient)
 	negative.Add(inputTwoVar, -inputTwoCoefficient)
 	negative.Add(outputVar, 1)
-	negative.Finish(input, 0, C_PlusInf)
+	negative.Build(build, 0, C_PlusInf)
 
-	positive := ConstraintRowBuild{Debug: debug + " AbsoluteValuePositive"}
+	positive := ConstraintRow{Debug: debug + " AbsoluteValuePositive"}
 	positive.Add(inputOneVar, inputOneCoefficient)
 	positive.Add(inputTwoVar, -inputTwoCoefficient)
 	positive.Add(outputVar, -1)
-	positive.Finish(input, C_MinusInf, 0)
+	positive.Build(build, C_MinusInf, 0)
 }
 
-func AbsoluteValueFromDiffOneToConst(input *InputBuilder, inputOneVar ColumnIndex, inputOneCoefficient float64, constCompare float64, outputVar ColumnIndex, debug string) {
-	negative := ConstraintRowBuild{Debug: debug + " AbsoluteValueNegative"}
+func AbsoluteValueFromDiffOneToConst(build *LinearBuilder, inputOneVar ColumnIndex, inputOneCoefficient float64, constCompare float64, outputVar ColumnIndex, debug string) {
+	negative := ConstraintRow{Debug: debug + " AbsoluteValueNegative"}
 	negative.Add(inputOneVar, inputOneCoefficient)
 	negative.Add(outputVar, 1)
-	negative.Finish(input, constCompare, C_PlusInf)
+	negative.Build(build, constCompare, C_PlusInf)
 
-	positive := ConstraintRowBuild{Debug: debug + " AbsoluteValuePositive"}
+	positive := ConstraintRow{Debug: debug + " AbsoluteValuePositive"}
 	positive.Add(inputOneVar, inputOneCoefficient)
 	positive.Add(outputVar, -1)
-	positive.Finish(input, C_MinusInf, constCompare)
+	positive.Build(build, C_MinusInf, constCompare)
 }
 
-func AbsoluteValueFromDiffTwoVarsWithOffset(input *InputBuilder, inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, offset float64, debug string) {
-	negative := ConstraintRowBuild{Debug: debug + " AbsoluteValueNegative"}
+func AbsoluteValueFromDiffTwoVarsWithOffset(build *LinearBuilder, inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, offset float64, debug string) {
+	negative := ConstraintRow{Debug: debug + " AbsoluteValueNegative"}
 	negative.Add(inputOneVar, inputOneCoefficient)
 	negative.Add(inputTwoVar, -inputTwoCoefficient)
 	negative.Add(outputVar, 1)
-	negative.Finish(input, offset, C_PlusInf)
+	negative.Build(build, offset, C_PlusInf)
 
-	positive := ConstraintRowBuild{Debug: debug + " AbsoluteValuePositive"}
+	positive := ConstraintRow{Debug: debug + " AbsoluteValuePositive"}
 	positive.Add(inputOneVar, inputOneCoefficient)
 	positive.Add(inputTwoVar, -inputTwoCoefficient)
 	positive.Add(outputVar, -1)
-	positive.Finish(input, C_MinusInf, offset)
+	positive.Build(build, C_MinusInf, offset)
 }
 
-func AbsoluteValue_WithToggle(input *InputBuilder, inputVar, outputVar, toggleVar ColumnIndex, rangeHigh float64) {
-	setIfNegative := ConstraintRowBuild{}
+func AbsoluteValue_WithToggle(build *LinearBuilder, inputVar, outputVar, toggleVar ColumnIndex, rangeHigh float64) {
+	setIfNegative := ConstraintRow{}
 	setIfNegative.Add(inputVar, 1)
 	setIfNegative.Add(outputVar, 1)
 	setIfNegative.Add(toggleVar, -rangeHigh)
-	setIfNegative.Finish(input, -rangeHigh, C_PlusInf)
+	setIfNegative.Build(build, -rangeHigh, C_PlusInf)
 
-	setIfPositive := ConstraintRowBuild{}
+	setIfPositive := ConstraintRow{}
 	setIfPositive.Add(inputVar, 1)
 	setIfPositive.Add(outputVar, -1)
 	setIfPositive.Add(toggleVar, rangeHigh)
-	setIfPositive.Finish(input, C_MinusInf, rangeHigh)
+	setIfPositive.Build(build, C_MinusInf, rangeHigh)
 }
 
 // much the same as absolute value logic, just bool optimised
 // similarly needs output variable under minimisation pressure
-func IsXor(input *InputBuilder, boolOne ColumnIndex, boolTwo ColumnIndex, output ColumnIndex) {
-	negative := ConstraintRowBuild{Debug: "Xor"}
+func IsXor(build *LinearBuilder, boolOne ColumnIndex, boolTwo ColumnIndex, output ColumnIndex) {
+	negative := ConstraintRow{Debug: "Xor"}
 	negative.Add(boolOne, 1)
 	negative.Add(boolTwo, -1)
 	negative.Add(output, 1)
-	negative.Finish(input, 0, 2)
+	negative.Build(build, 0, 2)
 
-	positive := ConstraintRowBuild{Debug: "Xor"}
+	positive := ConstraintRow{Debug: "Xor"}
 	positive.Add(boolOne, 1)
 	positive.Add(boolTwo, -1)
 	positive.Add(output, -1)
-	positive.Finish(input, -2, 0)
+	positive.Build(build, -2, 0)
 }
 
 // rangeHigh should be bigger than any possible value
 // equalDelta should be just big enough to make unequal (1.0 for ints)
 // logic = colValue >= constValue
-func ColumnIsGreaterOrEqualThanConstant(input *InputBuilder, compareColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) ColumnIndex {
-	isGreaterEqual := input.CreateColumnBool(DebugString{Text: "isGreaterEqual"})
+func ColumnIsGreaterOrEqualThanConstant(build *LinearBuilder, compareColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) ColumnIndex {
+	isGreaterEqual := build.CreateColumnBool(DebugString{Text: "isGreaterEqual"})
 
-	set := ConstraintRowBuild{Debug: "ColumnIsGreaterOrEqualThanConstant_set"}
+	set := ConstraintRow{Debug: "ColumnIsGreaterOrEqualThanConstant_set"}
 	set.Add(compareColumn, 1)
 	set.Add(isGreaterEqual, -rangeHigh)
-	set.Finish(input, C_MinusInf, constValue-equalDelta)
+	set.Build(build, C_MinusInf, constValue-equalDelta)
 
-	confirm := ConstraintRowBuild{Debug: "ColumnIsGreaterOrEqualThanConstant_confirm"}
+	confirm := ConstraintRow{Debug: "ColumnIsGreaterOrEqualThanConstant_confirm"}
 	confirm.Add(isGreaterEqual, constValue)
 	confirm.Add(compareColumn, -1)
-	confirm.Finish(input, C_MinusInf, 0)
+	confirm.Build(build, C_MinusInf, 0)
 
 	return isGreaterEqual
 }
@@ -235,47 +235,47 @@ func ColumnIsGreaterOrEqualThanConstant(input *InputBuilder, compareColumn Colum
 // rangeHigh should be bigger than any possible value
 // equalDelta should be just big enough to make unequal (1.0 for ints)
 // logic colValue <= constValue
-func ColumnIsLessOrEqualThanConstant(input *InputBuilder, compareColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) ColumnIndex {
-	isLessEqual := input.CreateColumnBool(DebugString{Text: "isLessEqual"})
+func ColumnIsLessOrEqualThanConstant(build *LinearBuilder, compareColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) ColumnIndex {
+	isLessEqual := build.CreateColumnBool(DebugString{Text: "isLessEqual"})
 
-	set := ConstraintRowBuild{Debug: "ColumnIsLessOrEqualThanConstant_set"}
+	set := ConstraintRow{Debug: "ColumnIsLessOrEqualThanConstant_set"}
 	set.Add(compareColumn, 1)
 	set.Add(isLessEqual, rangeHigh)
-	set.Finish(input, constValue+equalDelta, C_PlusInf)
+	set.Build(build, constValue+equalDelta, C_PlusInf)
 
-	confirm := ConstraintRowBuild{Debug: "ColumnIsLessOrEqualThanConstant_confirm"}
+	confirm := ConstraintRow{Debug: "ColumnIsLessOrEqualThanConstant_confirm"}
 	confirm.Add(isLessEqual, rangeHigh)
 	confirm.Add(compareColumn, 1)
-	confirm.Finish(input, C_MinusInf, rangeHigh+constValue)
+	confirm.Build(build, C_MinusInf, rangeHigh+constValue)
 
 	return isLessEqual
 }
 
-func ConstantIsBetweenColumns(input *InputBuilder, minimumColumn, maximumColumn, targetBoolColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) {
-	isOverMinimum := ColumnIsLessOrEqualThanConstant(input, minimumColumn, constValue, rangeHigh, equalDelta)
-	isUnderMaximum := ColumnIsGreaterOrEqualThanConstant(input, maximumColumn, constValue, rangeHigh, equalDelta)
+func ConstantIsBetweenColumns(build *LinearBuilder, minimumColumn, maximumColumn, targetBoolColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) {
+	isOverMinimum := ColumnIsLessOrEqualThanConstant(build, minimumColumn, constValue, rangeHigh, equalDelta)
+	isUnderMaximum := ColumnIsGreaterOrEqualThanConstant(build, maximumColumn, constValue, rangeHigh, equalDelta)
 
 	and := ContraintAndBuilder{}
 	and.AddInput(isOverMinimum)
 	and.AddInput(isUnderMaximum)
 	and.SetOutput(targetBoolColumn)
-	and.FinishAndApply(input)
+	and.Build(build)
 
 	// NOTE: this may not be needed and hurt performance for some callers, could have alternate version without
 	// but generally makes sense for consistency of expectations
-	checkSequence := ConstraintRowBuild{}
+	checkSequence := ConstraintRow{}
 	checkSequence.Add(maximumColumn, 1)
 	checkSequence.Add(minimumColumn, -1)
-	checkSequence.Finish(input, 0, C_PlusInf)
+	checkSequence.Build(build, 0, C_PlusInf)
 }
 
-func ColumnIsNotBetweenConstantsVerify(input *InputBuilder, checkColumn ColumnIndex, lo, hi float64, rangeHigh float64) {
+func ColumnIsNotBetweenConstantsVerify(build *LinearBuilder, checkColumn ColumnIndex, lo, hi float64, rangeHigh float64) {
 	if lo > hi {
 		panic("backwards range")
 	}
 
-	isUnderMin := input.CreateColumnBool(DebugString{Text: "isUnderMin"})
-	isOverMax := input.CreateColumnBool(DebugString{Text: "isOverMax"})
+	isUnderMin := build.CreateColumnBool(DebugString{Text: "isUnderMin"})
+	isOverMax := build.CreateColumnBool(DebugString{Text: "isOverMax"})
 
 	// lo <= check + x*range <= range+lo
 	// if undermin: lo <= check + range <= range+lo     ->>  lo <= check + range (for sure)
@@ -286,10 +286,10 @@ func ColumnIsNotBetweenConstantsVerify(input *InputBuilder, checkColumn ColumnIn
 	//                                                       check + x*range <= range+lo  ->> check - lo + x*range <= range  ->>  small_negative + x*range <= range  ->>  x=0 or 1
 	// if check > lo: lo <= check + x*range <= range+lo ->>  lo <= check + x*range        ->> lo - check <= x*range          ->>  small_negative <= x*range          ->>  x=0 or 1
 	//                                                       check + x*range <= range+lo  ->> check - lo + x*range <= range  ->>  small_positive + x*range <= range  ->>  x=0
-	underMin := ConstraintRowBuild{Debug: "setIfOverMin"}
+	underMin := ConstraintRow{Debug: "setIfOverMin"}
 	underMin.Add(checkColumn, 1)
 	underMin.Add(isUnderMin, rangeHigh)
-	underMin.Finish(input, lo, lo+rangeHigh)
+	underMin.Build(build, lo, lo+rangeHigh)
 
 	// hi-range <= check - x*range <= hi
 	// if overmax: hi-range <= check - x*range <= hi  ->>  hi-range <= check - range <= hi  ->>  hi-range <= check - range  ->>  hi <= check
@@ -300,19 +300,19 @@ func ColumnIsNotBetweenConstantsVerify(input *InputBuilder, checkColumn ColumnIn
 	//                                                        check - x*range <= hi        ->>  check - hi <= x*range       ->>  small_negative <= x*range          ->>  x=0 or 1
 	// if check > hi: hi-range <= check - x*range <= hi  ->>  hi-range <= check - x*range  ->>  hi-check <= range - x*range ->>  small_negative <= range - x*range  ->>  x=0 or 1
 	//                                                        check - x*range <= hi        ->>  check - hi <= x*range       ->>  small_positive <= x*range          ->>  x=1
-	overMax := ConstraintRowBuild{Debug: "setIfUnderMax"}
+	overMax := ConstraintRow{Debug: "setIfUnderMax"}
 	overMax.Add(checkColumn, 1)
 	overMax.Add(isOverMax, -rangeHigh)
-	overMax.Finish(input, hi-rangeHigh, hi)
+	overMax.Build(build, hi-rangeHigh, hi)
 
-	or := ConstraintRowBuild{}
+	or := ConstraintRow{}
 	or.Add(isUnderMin, 1)
 	or.Add(isOverMax, 1)
-	or.Finish(input, 1, 1)
+	or.Build(build, 1, 1)
 }
 
 // logic: leftSideCol < rightSideCol
-func ColumnIsLessThanColumnEqualityFree(input *InputBuilder, leftSideCol, rightSideCol, boolIsLess ColumnIndex, rangeHigh float64) {
+func ColumnIsLessThanColumnEqualityFree(build *LinearBuilder, leftSideCol, rightSideCol, boolIsLess ColumnIndex, rangeHigh float64) {
 	// -range <= check - thresh - x*range <= 0
 	// if check>thresh  ->>  -range <= small_positive - x*range <= 0   ->>  -range <= small_positive - x*range  ->> x=0 or 1
 	//                                                                      small_positive - x*range <= 0       ->> x=1
@@ -322,44 +322,44 @@ func ColumnIsLessThanColumnEqualityFree(input *InputBuilder, leftSideCol, rightS
 	//                                                            check - thresh - range <= 0       ->> whatever
 	// if !bool  ->>  -range <= check - thresh <= 0  ->>  -range <= check - thresh  ->>  whatever
 	//                                                    check - thresh <= 0       ->>  check <= thresh
-	isLess := ConstraintRowBuild{Debug: "ColumnIsLessThanColumnEqualityFree"}
+	isLess := ConstraintRow{Debug: "ColumnIsLessThanColumnEqualityFree"}
 	isLess.Add(leftSideCol, -1)
 	isLess.Add(rightSideCol, 1)
 	isLess.Add(boolIsLess, -rangeHigh)
-	isLess.Finish(input, -rangeHigh, 0)
+	isLess.Build(build, -rangeHigh, 0)
 }
 
 // logic: leftSideCol > rightSideCol
-func ColumnIsGreaterThanColumnEqualityFree(input *InputBuilder, leftSideCol, rightSideCol, boolIsGreater ColumnIndex, rangeHigh float64) {
-	ColumnIsLessThanColumnEqualityFree(input, rightSideCol, leftSideCol, boolIsGreater, rangeHigh)
+func ColumnIsGreaterThanColumnEqualityFree(build *LinearBuilder, leftSideCol, rightSideCol, boolIsGreater ColumnIndex, rangeHigh float64) {
+	ColumnIsLessThanColumnEqualityFree(build, rightSideCol, leftSideCol, boolIsGreater, rangeHigh)
 }
 
 // logic: leftSideCol >= rightSideCol
-func ColumnIsGreaterOrEqualColumn(input *InputBuilder, leftSideCol, rightSideCol, boolIsGreater ColumnIndex, rangeHigh float64, equalDelta float64) {
-	set := ConstraintRowBuild{Debug: "ColumnIsGreaterOrEqualColumn_set"}
+func ColumnIsGreaterOrEqualColumn(build *LinearBuilder, leftSideCol, rightSideCol, boolIsGreater ColumnIndex, rangeHigh float64, equalDelta float64) {
+	set := ConstraintRow{Debug: "ColumnIsGreaterOrEqualColumn_set"}
 	set.Add(leftSideCol, 1)
 	set.Add(rightSideCol, -1)
 	set.Add(boolIsGreater, -rangeHigh)
-	set.Finish(input, C_MinusInf, -equalDelta)
+	set.Build(build, C_MinusInf, -equalDelta)
 
-	confirm := ConstraintRowBuild{Debug: "ColumnIsGreaterOrEqualColumn_confirm"}
+	confirm := ConstraintRow{Debug: "ColumnIsGreaterOrEqualColumn_confirm"}
 	confirm.Add(leftSideCol, -1)
 	confirm.Add(rightSideCol, 1)
 	confirm.Add(boolIsGreater, rangeHigh)
-	confirm.Finish(input, C_MinusInf, rangeHigh)
+	confirm.Build(build, C_MinusInf, rangeHigh)
 }
 
 // logic: leftSideCol <= rightSideCol
-func ColumnIsLessOrEqualColumn(input *InputBuilder, leftSideCol, rightSideCol, boolIsLess ColumnIndex, rangeHigh float64, equalDelta float64) {
-	set := ConstraintRowBuild{Debug: "ColumnIsLessOrEqualColumn_set"}
+func ColumnIsLessOrEqualColumn(build *LinearBuilder, leftSideCol, rightSideCol, boolIsLess ColumnIndex, rangeHigh float64, equalDelta float64) {
+	set := ConstraintRow{Debug: "ColumnIsLessOrEqualColumn_set"}
 	set.Add(leftSideCol, 1)
 	set.Add(rightSideCol, -1)
 	set.Add(boolIsLess, rangeHigh)
-	set.Finish(input, equalDelta, C_PlusInf)
+	set.Build(build, equalDelta, C_PlusInf)
 
-	confirm := ConstraintRowBuild{Debug: "ColumnIsLessOrEqualColumn_confirm"}
+	confirm := ConstraintRow{Debug: "ColumnIsLessOrEqualColumn_confirm"}
 	confirm.Add(leftSideCol, 1)
 	confirm.Add(rightSideCol, -1)
 	confirm.Add(boolIsLess, rangeHigh)
-	confirm.Finish(input, C_MinusInf, rangeHigh)
+	confirm.Build(build, C_MinusInf, rangeHigh)
 }

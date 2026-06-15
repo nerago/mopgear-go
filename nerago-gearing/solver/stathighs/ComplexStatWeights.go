@@ -21,10 +21,10 @@ type ComplexStatWeightProcess struct {
 	targetRatios simulate.SimData
 	inputData    []WeightInput
 
-	input *utilhighs.InputBuilder
+	build *utilhighs.LinearBuilder
 
-	linearEquationDiff utilhighs.LinearIndex
-	linearInclude      utilhighs.LinearIndex
+	objectiveEquationDiff utilhighs.ObjectiveIndex
+	objectiveInclude      utilhighs.ObjectiveIndex
 
 	scaleSims             map[simulate.SimType]float64
 	scaleStats            map[stats.StatType]float64
@@ -32,7 +32,7 @@ type ComplexStatWeightProcess struct {
 
 	minimumIncludeRate float64
 	includeColumns     []utilhighs.ColumnIndex
-	includeCountRow    utilhighs.ConstraintRowBuild
+	includeCountRow    utilhighs.ConstraintRow
 }
 
 func (comp *ComplexStatWeightProcess) Init(printer *util.PrintRecorder) {
@@ -52,24 +52,24 @@ func (comp *ComplexStatWeightProcess) SetMinimumIncludeRate(percent float64) {
 }
 
 func (comp *ComplexStatWeightProcess) Run() WeightResult {
-	comp.input = new(utilhighs.InputBuilder)
-	comp.input.Minimise = true
+	comp.build = new(utilhighs.LinearBuilder)
+	comp.build.Minimise = true
 	// comp.input.Solver = "ipm"
 
 	// comp.linearEquationDiff = -1
 	// comp.linearInclude = -1
 
-	comp.input.BlendMultiObjectives = false
-	comp.linearEquationDiff = comp.input.AddLinearPrioritised(false, -1, 0.5, 2)
-	comp.linearInclude = comp.input.AddLinearPrioritised(false, -1, -1, 1)
+	comp.build.BlendMultiObjectives = false
+	comp.objectiveEquationDiff = comp.build.AddObjectivePrioritised(false, -1, 0.5, 2)
+	comp.objectiveInclude = comp.build.AddObjectivePrioritised(false, -1, -1, 1)
 
 	comp.chooseScaling()
 	comp.createWeightColumns()
 	comp.buildDataEquations()
 
-	comp.includeCountRow.Finish(comp.input, float64(len(comp.inputData))*comp.minimumIncludeRate, utilhighs.C_PlusInf)
+	comp.includeCountRow.Build(comp.build, float64(len(comp.inputData))*comp.minimumIncludeRate, utilhighs.C_PlusInf)
 
-	solution, log := comp.input.RunHighs()
+	solution, log := comp.build.RunHighs()
 	comp.printer.AppendOther(log)
 
 	return comp.extractAndReportSolution(solution)
@@ -87,7 +87,7 @@ func (comp *ComplexStatWeightProcess) createWeightColumns() {
 		for _, simType := range G_RequiredSims {
 			lo := utilhighs.C_MinusInf
 			hi := utilhighs.C_PlusInf
-			colDetailWeight := comp.input.CreateColumnGeneral(highs.Continuous, lo, hi, utilhighs.DebugString{Text: "WEIGHT " + statType.Name() + " " + simType.Name()})
+			colDetailWeight := comp.build.CreateColumnGeneral(highs.Continuous, lo, hi, utilhighs.DebugString{Text: "WEIGHT " + statType.Name() + " " + simType.Name()})
 			comp.detailedWeightColumns.Put(statType, simType, colDetailWeight)
 		}
 	}
@@ -102,7 +102,7 @@ func (comp *ComplexStatWeightProcess) createWeightColumns() {
 }
 
 func (comp *ComplexStatWeightProcess) makeNotBetween(checkColumn utilhighs.ColumnIndex, lo, hi float64) {
-	utilhighs.ColumnIsNotBetweenConstantsVerify(comp.input, checkColumn, lo, hi, c_complexHighWeight)
+	utilhighs.ColumnIsNotBetweenConstantsVerify(comp.build, checkColumn, lo, hi, c_complexHighWeight)
 }
 
 func (comp *ComplexStatWeightProcess) buildDataEquations() {
@@ -119,7 +119,7 @@ func (comp *ComplexStatWeightProcess) buildDataEquationForInput(data *WeightInpu
 }
 
 func (comp *ComplexStatWeightProcess) sampleIncludeToggleColumn() utilhighs.ColumnIndex {
-	includeColumn := comp.input.CreateColumnWithLinear(highs.Integer, 0, 1, c_complexOutputPerInclude, comp.linearInclude, utilhighs.DebugString{Text: "include"})
+	includeColumn := comp.build.CreateColumnWithObjective(highs.Integer, 0, 1, c_complexOutputPerInclude, comp.objectiveInclude, utilhighs.DebugString{Text: "include"})
 	comp.includeCountRow.Add(includeColumn, 1)
 	comp.includeColumns = append(comp.includeColumns, includeColumn)
 	return includeColumn
@@ -127,7 +127,7 @@ func (comp *ComplexStatWeightProcess) sampleIncludeToggleColumn() utilhighs.Colu
 
 // equation is: weightA*scaledStatA + weightB*scaledStatB = scaledSimValue - diff
 func (comp *ComplexStatWeightProcess) buildDataEquationForSim(stats *stats.StatBlock, simValue float64, simType simulate.SimType, includeColumn utilhighs.ColumnIndex) {
-	matchSimValue := utilhighs.ConstraintRowBuild{}
+	matchSimValue := utilhighs.ConstraintRow{}
 
 	// TODO is there a way to flip the division for TMI DEATH etc, fundamental problem is that they don't increase linearly with stats
 
@@ -140,19 +140,19 @@ func (comp *ComplexStatWeightProcess) buildDataEquationForSim(stats *stats.StatB
 		matchSimValue.Add(weightDetailCol, scaledStatValue)
 	}
 
-	diffSigned := comp.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "diffSigned"})
+	diffSigned := comp.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "diffSigned"})
 	matchSimValue.Add(diffSigned, 1)
 
-	diffOutput := comp.input.CreateColumnWithLinear(highs.Continuous, 0, c_complexHighDiff, 1, comp.linearEquationDiff, utilhighs.DebugString{Text: "diffOutput"})
-	utilhighs.AbsoluteValue_WithToggle(comp.input, diffSigned, diffOutput, includeColumn, c_complexHighDiff)
+	diffOutput := comp.build.CreateColumnWithObjective(highs.Continuous, 0, c_complexHighDiff, 1, comp.objectiveEquationDiff, utilhighs.DebugString{Text: "diffOutput"})
+	utilhighs.AbsoluteValue_WithToggle(comp.build, diffSigned, diffOutput, includeColumn, c_complexHighDiff)
 
 	simScale := comp.scaleSims[simType]
 	scaledSimValue := simValue * simScale
-	matchSimValue.Finish(comp.input, scaledSimValue, scaledSimValue)
+	matchSimValue.Build(comp.build, scaledSimValue, scaledSimValue)
 }
 
 func (comp *ComplexStatWeightProcess) extractAndReportSolution(solution *highs.Solution) WeightResult {
-	comp.input.DebugPrintColumns(solution, comp.printer)
+	comp.build.DebugPrintColumns(solution, comp.printer)
 
 	comp.printer.Println("WEIGHTS")
 	detailWeightMap := comp.extractDetailWeights(solution)
