@@ -73,16 +73,13 @@ func (setup *setupInputSetAware) addSetNeededCounts(gear_model *gear_model.Model
 					setInfo := util.FindWith(setup.setData, func(x setInfo) bool { return x.activeSet.Equals(activeSet) })
 					setCountCol := setInfo.setTotalCountVar
 
-					// do these work without minimisation?
-					// maybe just have off by one
-					needCount = 5
-					inRange := utilhighs.ConstantIsLessOrEqualColumn(setup.input, setCountCol.columnIndex, float64(needCount), 10)
-					// inRange := utilhighs.ConstantIsGreaterOrEqualColumn(setup.input, setCountCol.columnIndex, float64(needCount), 10)
+					inRange := utilhighs.ColumnIsGreaterOrEqualThanConstant(setup.input, setCountCol.columnIndex, float64(needCount), 10, 1.0)
 					optionParts.AddInput(inRange)
 				}
 
 				optionActive := setup.input.CreateColumnBool(utilhighs.DebugText("SetBonusRequired option"))
 				optionParts.SetOutput(optionActive)
+				optionParts.FinishAndApply(setup.input)
 
 				oneOfTheseOptions.Add(optionActive, 1)
 			}

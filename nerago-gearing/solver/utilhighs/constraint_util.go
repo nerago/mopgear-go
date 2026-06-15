@@ -66,20 +66,29 @@ func (build *ContraintAndBuilder) AddInput(column ColumnIndex) {
 }
 
 func (build *ContraintAndBuilder) FinishAndApply(input *InputBuilder) {
-	sumRow := ConstraintRowBuild{Debug: "ContraintAndBuilder_sumRow"}
-	sumRow.Add(build.outputVar, -1)
+	if len(build.inputVars) == 0 {
+		panic("no inputs")
+	} else if len(build.inputVars) == 1 {
+		copyRow := ConstraintRowBuild{Debug: "ContraintAndBuilder_copy"}
+		copyRow.Add(build.outputVar, -1)
+		copyRow.Add(build.inputVars[0], 1)
+		copyRow.Finish(input, 0, 0)
+	} else {
+		sumRow := ConstraintRowBuild{Debug: "ContraintAndBuilder_sumRow"}
+		sumRow.Add(build.outputVar, -1)
 
-	for _, inputVar := range build.inputVars {
-		sumRow.Add(inputVar, 1)
+		for _, inputVar := range build.inputVars {
+			sumRow.Add(inputVar, 1)
 
-		pullDown := ConstraintRowBuild{Debug: "ContraintAndBuilder_pullDown"}
-		pullDown.Add(inputVar, -1)
-		pullDown.Add(build.outputVar, 1)
-		pullDown.Finish(input, C_MinusInf, 0)
+			pullDown := ConstraintRowBuild{Debug: "ContraintAndBuilder_pullDown"}
+			pullDown.Add(inputVar, -1)
+			pullDown.Add(build.outputVar, 1)
+			pullDown.Finish(input, C_MinusInf, 0)
+		}
+
+		targetNum := len(build.inputVars) - 1
+		sumRow.Finish(input, C_MinusInf, float64(targetNum))
 	}
-
-	targetNum := len(build.inputVars) - 1
-	sumRow.Finish(input, C_MinusInf, float64(targetNum))
 }
 
 type ConstraintOrBuilder struct {
@@ -211,64 +220,47 @@ func IsXor(input *InputBuilder, boolOne ColumnIndex, boolTwo ColumnIndex, output
 	positive.Finish(input, -2, 0)
 }
 
-func ConstantIsGreaterOrEqualColumn(input *InputBuilder, minimumColumn ColumnIndex, checkValue float64, rangeHigh float64) ColumnIndex {
-	isOverMinimum := input.CreateColumnBool(DebugString{Text: "isOverMinimum"})
+// rangeHigh should be bigger than any possible value
+// equalDelta should be just big enough to make unequal (1.0 for ints)
+// logic = colValue >= constValue
+func ColumnIsGreaterOrEqualThanConstant(input *InputBuilder, compareColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) ColumnIndex {
+	isGreaterEqual := input.CreateColumnBool(DebugString{Text: "isGreaterEqual"})
 
-	// ORIGINAL
-	// if overmin:      1*range + min <= range + stat  ->>  min <= stat
-	// if !overmin:     0*range + min <= range + stat  ->>  min is free
-	// if stat > min:   x*range + min <= range + stat  ->>  x*range <= range + stat - min  ->>  x*range <= range + small_positive   ->>   x = 0 or 1
-	// if stat < min:   x*range + min <= range + stat  ->>  x*range <= range + stat - min  ->>  x*range <= range + small_negative   ->>   x = 0
-	// if stat == min:  x*range + min <= range + stat  ->>  x*range <= range   ->>   x = 0 or 1
-	checkIsOverMin := ConstraintRowBuild{Debug: "checkIsOverMin"}
-	checkIsOverMin.Add(isOverMinimum, rangeHigh)
-	checkIsOverMin.Add(minimumColumn, 1)
-	checkIsOverMin.Finish(input, C_MinusInf, rangeHigh+checkValue)
+	set := ConstraintRowBuild{Debug: "ColumnIsGreaterOrEqualThanConstant_set"}
+	set.Add(compareColumn, 1)
+	set.Add(isGreaterEqual, -rangeHigh)
+	set.Finish(input, C_MinusInf, constValue-equalDelta)
 
-	//   min - stat + x.range >= 0   ->>   min + x.range >= stat
-	// if stat > min  ->>  min - stat + x.range >= 0  ->>  small_negative + x.range >= 0  ->>  x=1
-	// if stat < min  ->>  min - stat + x.range >= 0  ->>  small_positive + x.range >= 0  ->>  x=0 or 1
-	// if stat == min  ->> min - stat + x.range >= 1 ->>  x.range >= 1  ->> x=1
-	// if overmin     ->>  min - stat + 1.range >= 0  ->>  min >= stat - range   ->>   min is free
-	// if !overmin    ->>  min - stat + 0.range >= 0  ->>  min >= stat    ->>   min is free
-	// modifiying with the plus one for the equals case, the rest of the math should hold ok
-	setIfOverMin := ConstraintRowBuild{Debug: "setIfOverMin"}
-	setIfOverMin.Add(minimumColumn, 1)
-	setIfOverMin.Add(isOverMinimum, rangeHigh)
-	setIfOverMin.Finish(input, checkValue+1, C_PlusInf)
+	confirm := ConstraintRowBuild{Debug: "ColumnIsGreaterOrEqualThanConstant_confirm"}
+	confirm.Add(isGreaterEqual, constValue)
+	confirm.Add(compareColumn, -1)
+	confirm.Finish(input, C_MinusInf, 0)
 
-	return isOverMinimum
+	return isGreaterEqual
 }
 
-func ConstantIsLessOrEqualColumn(input *InputBuilder, maximumColumn ColumnIndex, checkValue float64, rangeHigh float64) ColumnIndex {
-	isUnderMaximum := input.CreateColumnBool(DebugString{Text: "isUnderMaximum"})
+// rangeHigh should be bigger than any possible value
+// equalDelta should be just big enough to make unequal (1.0 for ints)
+// logic colValue <= constValue
+func ColumnIsLessOrEqualThanConstant(input *InputBuilder, compareColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) ColumnIndex {
+	isLessEqual := input.CreateColumnBool(DebugString{Text: "isLessEqual"})
 
-	// if undermax:    1*stat - max <= 0     ->>      stat <= max
-	// if !undermax:   0*stat - max <= 0     ->>      max >= 0, (max free)
-	// if stat <= max   ->>   x.stat - max <= 0    ->>     x.stat <= max   (x is free)
-	// if stat > max    ->>   x.stat - max <= 0    ->>     x=0
-	checkIsUnderMax := ConstraintRowBuild{Debug: "checkIsUnderMax"}
-	checkIsUnderMax.Add(isUnderMaximum, checkValue)
-	checkIsUnderMax.Add(maximumColumn, -1)
-	checkIsUnderMax.Finish(input, C_MinusInf, 0)
+	set := ConstraintRowBuild{Debug: "ColumnIsLessOrEqualThanConstant_set"}
+	set.Add(compareColumn, 1)
+	set.Add(isLessEqual, rangeHigh)
+	set.Finish(input, constValue+equalDelta, C_PlusInf)
 
-	//    max - stat - x.range <= 0    ->>     max - x.range <= stat
-	// if stat < max    ->>   max - stat - x.range <= 0   ->>   small_positive - x.range <= 0   ->>   small_positive <= x.range   ->>   x=1
-	// if stat > max    ->>   max - stat - x.range <= 0   ->>   small_negative - x.range <= 0   ->>   small_negative <= x.range   ->>   x=0 or 1
-	// if stat == max   ->>   max - stat - x.range <= 0   ->>   0 - x.range <= 0   ->>   0 <= x.range   ->> x=0 or 1
-	// if undermax      ->>   max - stat - 1.range <= 0   ->>   max <= 1.range + stat  ->>  max is free
-	// if !undermax     ->>   max - stat - 0.range <= 0   ->>   max - stat <= 0   ->>   max <= stat
-	setIfUnderMax := ConstraintRowBuild{Debug: "setIfUnderMax"}
-	setIfUnderMax.Add(maximumColumn, 1)
-	setIfUnderMax.Add(isUnderMaximum, -rangeHigh)
-	setIfUnderMax.Finish(input, C_MinusInf, checkValue)
+	confirm := ConstraintRowBuild{Debug: "ColumnIsLessOrEqualThanConstant_confirm"}
+	confirm.Add(isLessEqual, rangeHigh)
+	confirm.Add(compareColumn, 1)
+	confirm.Finish(input, C_MinusInf, rangeHigh+constValue)
 
-	return isUnderMaximum
+	return isLessEqual
 }
 
-func ConstantIsBetweenColumns(input *InputBuilder, minimumColumn, maximumColumn, targetBoolColumn ColumnIndex, checkValue float64, rangeHigh float64) {
-	isOverMinimum := ConstantIsGreaterOrEqualColumn(input, minimumColumn, checkValue, rangeHigh)
-	isUnderMaximum := ConstantIsLessOrEqualColumn(input, maximumColumn, checkValue, rangeHigh)
+func ConstantIsBetweenColumns(input *InputBuilder, minimumColumn, maximumColumn, targetBoolColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) {
+	isOverMinimum := ColumnIsLessOrEqualThanConstant(input, minimumColumn, constValue, rangeHigh, equalDelta)
+	isUnderMaximum := ColumnIsGreaterOrEqualThanConstant(input, maximumColumn, constValue, rangeHigh, equalDelta)
 
 	and := ContraintAndBuilder{}
 	and.AddInput(isOverMinimum)
