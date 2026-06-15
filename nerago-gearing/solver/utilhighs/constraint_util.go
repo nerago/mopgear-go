@@ -42,13 +42,6 @@ func ContraintIfBoolCopy(input *InputBuilder, boolSwitchVar, sourceVar, targetVa
 	valueLow.Finish(input, C_MinusInf, rangeHigh)
 }
 
-func constraintNotBool(input *InputBuilder, sourceVar, targetVar ColumnIndex) {
-	not := ConstraintRowBuild{Debug: "constraintNotBool"}
-	not.Add(sourceVar, 1)
-	not.Add(targetVar, 1)
-	not.Finish(input, 1, 1)
-}
-
 // https://medium.com/data-science/a-comprehensive-guide-to-modeling-techniques-in-mixed-integer-linear-programming-3e96cc1bc03d
 type ContraintAndBuilder struct {
 	outputVar ColumnIndex
