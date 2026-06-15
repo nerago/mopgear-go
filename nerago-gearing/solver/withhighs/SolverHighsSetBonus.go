@@ -101,7 +101,8 @@ func debugPrint(solution *highs.Solution, setup *setupInputSetAware, printer *ut
 
 	for colIndex, outputValue := range solution.ColValues {
 		if !debugPrintColumn(setup.allColumns, utilhighs.ColumnIndex(colIndex), outputValue, &activeBonus, &activeBonusWeight, printer) {
-			printer.Printf("%d %f UNKNOWN\n", colIndex, outputValue)
+			text := setup.input.DebugTextFor(utilhighs.ColumnIndex(colIndex))
+			printer.Printf("%d %f %s\n", colIndex, outputValue, text)
 		}
 	}
 

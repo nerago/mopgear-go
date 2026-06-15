@@ -37,12 +37,15 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Medium)
 	// job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
 
+	var generalUpgrade int8 = 0
+	var forceUpgrade int8 = 0
+
 	ret := multi_types.MultiSetParam{
 		Label:                     "Ret",
 		GearFile:                  files.GearFileRet,
 		Model:                     model.Model_PallyRet(),
 		RequestRatingPercent:      0.01,
-		ExtraUpgradeLevel:         2,
+		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: 0,
 	}
 	protDps := multi_types.MultiSetParam{
@@ -50,32 +53,32 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		GearFile:                  files.GearFileProtDps,
 		Model:                     model.Model_PallyProtDps(),
 		RequestRatingPercent:      0.09,
-		ExtraUpgradeLevel:         2,
-		ForceUpgradeExistingItems: 2,
+		ExtraUpgradeLevel:         generalUpgrade,
+		ForceUpgradeExistingItems: forceUpgrade,
 	}
 	protCompromise := multi_types.MultiSetParam{
 		Label:                     "Prot-Compromise",
 		GearFile:                  files.GearFileProtCompromise,
 		Model:                     model.Model_PallyProtCompromise(),
 		RequestRatingPercent:      0.20,
-		ExtraUpgradeLevel:         2,
-		ForceUpgradeExistingItems: 2,
+		ExtraUpgradeLevel:         generalUpgrade,
+		ForceUpgradeExistingItems: forceUpgrade,
 	}
 	protMitigationNoSet := multi_types.MultiSetParam{
 		Label:                     "Prot-Mitigation-NoSet",
 		GearFile:                  files.GearFileProtMitigationNoSet,
 		Model:                     model.Model_PallyProtMitigation_NoSet(),
 		RequestRatingPercent:      0.45,
-		ExtraUpgradeLevel:         2,
-		ForceUpgradeExistingItems: 2,
+		ExtraUpgradeLevel:         generalUpgrade,
+		ForceUpgradeExistingItems: forceUpgrade,
 	}
 	protMitigationWithSet := multi_types.MultiSetParam{
 		Label:                     "Prot-Mitigation-WithSet",
 		GearFile:                  files.GearFileProtMitigationWithSet,
 		Model:                     model.Model_PallyProtMitigation_WithSet(),
 		RequestRatingPercent:      0.25,
-		ExtraUpgradeLevel:         2,
-		ForceUpgradeExistingItems: 2,
+		ExtraUpgradeLevel:         generalUpgrade,
+		ForceUpgradeExistingItems: forceUpgrade,
 	}
 
 	ret.AddExtraItems([]items.ItemId{
@@ -130,12 +133,12 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96394, // frozen warlord bracer heroic
 
 		101882, // cliffbreaker helm exp/mastery
+		101887, // timeless ring haste/mastery
 		103787, // poisonbinder girth
 		103742, // blood rage bracers
 		99126,  // prot t16 chest normal
 		99128,  // prot t16 head normal
 		103738, // bubble bracers
-
 	})
 	blockHelmetsWithoutCapacitance(&ret)
 	ret.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
@@ -205,6 +208,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96436, // tortos shell heroic
 
 		101882, // cliffbreaker helm exp/mastery
+		101887, // timeless ring haste/mastery
 		103787, // poisonbinder girth
 		103742, // blood rage bracers
 		99126,  // prot t16 chest normal
@@ -280,6 +284,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96436, // tortos shell heroic
 
 		101882, // cliffbreaker helm exp/mastery
+		101887, // timeless ring haste/mastery
 		103787, // poisonbinder girth
 		103742, // blood rage bracers
 		99126,  // prot t16 chest normal
@@ -356,6 +361,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96436, // tortos shell heroic
 
 		101882, // cliffbreaker helm exp/mastery
+		101887, // timeless ring haste/mastery
 		103787, // poisonbinder girth
 		103742, // blood rage bracers
 		99126,  // prot t16 chest normal
@@ -428,6 +434,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96436, // tortos shell heroic
 
 		101882, // cliffbreaker helm exp/mastery
+		101887, // timeless ring haste/mastery
 		103787, // poisonbinder girth
 		103742, // blood rage bracers
 		99126,  // prot t16 chest normal
@@ -476,8 +483,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
 	// job.FindHighsResult_Sample(10)
-	// job.FindSeveralHighsAndSim()
-	job.FindHighsResultPerPermute(1)
+	job.FindSeveralHighsAndSim()
+	// job.FindHighsResultPerPermute(1)
 	// job.RunWithMinimumHaste("Prot-Mitigation-WithSet", 11000, 18000, 250)
 	// job.RunWithMinimumHaste("Prot-Mitigation-NoSet", 11000, 18000, 250)
 }

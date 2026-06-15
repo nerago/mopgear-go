@@ -93,7 +93,8 @@ columnLoop:
 			}
 		}
 
-		printer.Printf("%d %f UNKNOWN\n", columnIndex, outputValue)
+		text := job.input.DebugTextFor(columnIndex)
+		printer.Printf("%d %f %s\n", columnIndex, outputValue, text)
 	}
 }
 

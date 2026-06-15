@@ -307,6 +307,7 @@ func ColumnIsNotBetweenConstants(input *InputBuilder, checkColumn ColumnIndex, l
 	or.Finish(input, 1, 1)
 }
 
+// TODO test me too
 func ColumnIsGreaterOrEqualColumn(input *InputBuilder, thresholdLowColumn, checkHighColumn, boolIsGreater ColumnIndex, rangeHigh float64) {
 	// -range <= check - thresh - x*range <= 0
 	// if check>thresh  ->>  -range <= small_positive - x*range <= 0   ->>  -range <= small_positive - x*range  ->> x=0 or 1
