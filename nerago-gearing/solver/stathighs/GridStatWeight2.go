@@ -163,7 +163,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *Weight
 		simDiff := two.SimResult.GetFriendly(simType) - one.SimResult.GetFriendly(simType)
 		simDiff *= grid2.scaleSims[simType]
 
-		utilhighs.AbsoluteValueFromDiffTwoVarsWithOffset(&grid2.build,
+		utilhighs.AbsoluteValueDiffTwoVarsThenDiffConst(&grid2.build,
 			weightColumnA, statDiffA,
 			weightColumnB, statDiffB,
 			mismatchCol,

@@ -217,7 +217,7 @@ func (run *rankInternalRun5) makeEntryColumnRefs(entry *rankEntry5) {
 	entry.isInclude = run.build.CreateColumnBoolWithObjective(1, run.objectiveInclude, utilhighs.DebugText("include-"+rankStr))
 
 	entry.scoreIfIncluded = run.build.CreateColumnGeneral(highs.Continuous, c_rank5_computeScoreLo, c_rank5_computeScoreHi, utilhighs.DebugText("scoreIfIncluded-"+rankStr))
-	utilhighs.ContraintIfBoolCopy(run.build, entry.isInclude, entry.scoreCompute, entry.scoreIfIncluded, c_rank5_computeScoreM)
+	utilhighs.ContraintIfBoolCopy(run.build, entry.isInclude, entry.scoreCompute, 1, entry.scoreIfIncluded, c_rank5_computeScoreM)
 }
 
 func (run *rankInternalRun5) makeDataListPairRules() {

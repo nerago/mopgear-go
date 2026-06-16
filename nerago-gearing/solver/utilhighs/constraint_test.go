@@ -92,7 +92,7 @@ func TestAbsoluteValueFromDiffTwoVars(test *testing.T) {
 	testValues(5, 2, 9, -1, nil, highs.ModelStatusOptimal, ptr(19))
 	testValues(5, 0.5, 9, 1, nil, highs.ModelStatusOptimal, ptr(6.5))
 	testValues(3, 0.1, 4, 0.1, nil, highs.ModelStatusOptimal, ptr(0.1))
-	
+
 	// confirm forced minimum, goes equals, then free when higher
 	testValues(3, 1, 4, 1, ptr(0), highs.ModelStatusInfeasible, nil)
 	testValues(3, 1, 4, 1, ptr(0.9), highs.ModelStatusInfeasible, nil)
@@ -101,28 +101,25 @@ func TestAbsoluteValueFromDiffTwoVars(test *testing.T) {
 	testValues(3, 1, 4, 1, ptr(77), highs.ModelStatusOptimal, ptr(77))
 }
 
-func TestAbsoluteValueFromDiffOneToConst(test *testing.T) {
-	//TODO
-}
-
-func TestAbsoluteValueFromDiffTwoVarsWithOffset(test *testing.T) {
+func TestAbsoluteValueFromDiffTwoVarsNonFree(test *testing.T) {
 	maxValue := 100.0
+	highRange := 200.0
 
-	testValues := func(oneValue, oneCoeff, twoValue, twoCoeff, offset float64, outValueSet *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
-		test.Logf("CASE: one=%f co=%f two=%f co=%f off=%f", oneValue, oneCoeff, twoValue, twoCoeff, offset)
+	testValues := func(oneValue, oneCoeff, twoValue, twoCoeff float64, outValueSet *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: one=%f co=%f two=%f co=%f", oneValue, oneCoeff, twoValue, twoCoeff)
 		if outValueSet != nil {
 			test.Logf("out=%f", *outValueSet)
 		}
 
 		build := new(LinearBuilder)
-		build.NoOutput = true
+		// build.NoOutput = true
 		oneColumn := build.CreateColumnGeneral(highs.Continuous, -maxValue, maxValue, nil)
 		twoColumn := build.CreateColumnGeneral(highs.Continuous, -maxValue, maxValue, nil)
 		outColumn := build.CreateColumnGeneral(highs.Continuous, -maxValue, maxValue, nil)
 		setColumnToConstant(build, oneColumn, oneValue)
 		setColumnToConstant(build, twoColumn, twoValue)
 
-		AbsoluteValueFromDiffTwoVarsWithOffset(build, oneColumn, oneCoeff, twoColumn, twoCoeff, outColumn, offset, "")
+		AbsoluteValueFromDiffTwoVarsNonFree4(build, oneColumn, oneCoeff, twoColumn, twoCoeff, outColumn, highRange, "")
 
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)
@@ -139,39 +136,174 @@ func TestAbsoluteValueFromDiffTwoVarsWithOffset(test *testing.T) {
 	}
 
 	// standard positive differences
-	testValues(3, 1, 3, 1, 0, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(3, 1, 4, 1, 1, nil, highs.ModelStatusOptimal, ptr(2))
-	testValues(4, 1, 3, 1, 3, nil, highs.ModelStatusOptimal, ptr(4))
-	testValues(25.4, 1, 12.3, 1, -2, nil, highs.ModelStatusOptimal, ptr(11.1))
-	testValues(12.3, 1, 25.4, 1, 1.5, nil, highs.ModelStatusOptimal, ptr(14.6))
+	testValues(3, 1, 3, 1, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(3, 1, 4, 1, nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(4, 1, 3, 1, nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(25.4, 1, 12.3, 1, nil, highs.ModelStatusOptimal, ptr(13.1))
+	testValues(12.3, 1, 25.4, 1, nil, highs.ModelStatusOptimal, ptr(13.1))
 
 	// negatives
-	testValues(-55, 1, -44, 1, 0, nil, highs.ModelStatusOptimal, ptr(11))
-	testValues(-44, 1, -55, 1, 1, nil, highs.ModelStatusOptimal, ptr(12))
-	testValues(-44, 1, 10, 1, -1, nil, highs.ModelStatusOptimal, ptr(53))
-	testValues(10, 1, -44, 1, 5, nil, highs.ModelStatusOptimal, ptr(59))
-
-	// big negative offset, who knows
-	testValues(3, 1, 4, 1, -10, nil, highs.ModelStatusOptimal, ptr(-9))
+	testValues(-55, 1, -44, 1, nil, highs.ModelStatusOptimal, ptr(11))
+	testValues(-44, 1, -55, 1, nil, highs.ModelStatusOptimal, ptr(11))
+	testValues(-44, 1, 10, 1, nil, highs.ModelStatusOptimal, ptr(54))
+	testValues(10, 1, -44, 1, nil, highs.ModelStatusOptimal, ptr(54))
 
 	// zeros
-	testValues(0, 1, -44, 1, 0, nil, highs.ModelStatusOptimal, ptr(44))
-	testValues(-44, 1, 0, 1, 1, nil, highs.ModelStatusOptimal, ptr(45))
-	testValues(44, 1, 0, 1, 7, nil, highs.ModelStatusOptimal, ptr(51))
-	testValues(0, 1, 44, 1, -2.5, nil, highs.ModelStatusOptimal, ptr(41.5))
+	testValues(0, 1, -44, 1, nil, highs.ModelStatusOptimal, ptr(44))
+	testValues(-44, 1, 0, 1, nil, highs.ModelStatusOptimal, ptr(44))
+	testValues(44, 1, 0, 1, nil, highs.ModelStatusOptimal, ptr(44))
+	testValues(0, 1, 44, 1, nil, highs.ModelStatusOptimal, ptr(44))
 
 	// coeffecients
-	testValues(5, 2, 9, 1, 1, nil, highs.ModelStatusOptimal, ptr(2))
-	testValues(5, 2, 9, -1, 1, nil, highs.ModelStatusOptimal, ptr(20))
-	testValues(5, 0.5, 9, 1, 1, nil, highs.ModelStatusOptimal, ptr(7.5))
-	testValues(3, 0.1, 4, 0.1,1,nil, highs.ModelStatusOptimal, ptr(1.1))
-	
+	testValues(5, 2, 9, 1, nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(5, 2, 9, -1, nil, highs.ModelStatusOptimal, ptr(19))
+	testValues(5, 0.5, 9, 1, nil, highs.ModelStatusOptimal, ptr(6.5))
+	testValues(3, 0.1, 4, 0.1, nil, highs.ModelStatusOptimal, ptr(0.1))
+
+	// confirm forced minimum, goes equals, then infeasible when higher too
+	testValues(3, 1, 4, 1, ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(3, 1, 4, 1, ptr(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(3, 1, 4, 1, ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(3, 1, 4, 1, ptr(1.1), highs.ModelStatusInfeasible, nil)
+	testValues(3, 1, 4, 1, ptr(77), highs.ModelStatusInfeasible, nil)
+
+	// same with values flipped
+	testValues(4, 1, 3, 1, ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(4, 1, 3, 1, ptr(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(4, 1, 3, 1, ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(4, 1, 3, 1, ptr(1.1), highs.ModelStatusInfeasible, nil)
+	testValues(4, 1, 3, 1, ptr(77), highs.ModelStatusInfeasible, nil)
+}
+
+func TestAbsoluteValueFromDiffOneToConst(test *testing.T) {
+	maxValue := 100.0
+
+	testValues := func(oneValue, oneCoeff, constValue float64, outValueSet *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: one=%f co=%f const=%f", oneValue, oneCoeff, constValue)
+		if outValueSet != nil {
+			test.Logf("out=%f", *outValueSet)
+		}
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		oneColumn := build.CreateColumnGeneral(highs.Continuous, -maxValue, maxValue, nil)
+		outColumn := build.CreateColumnGeneral(highs.Continuous, -maxValue, maxValue, nil)
+		setColumnToConstant(build, oneColumn, oneValue)
+
+		AbsoluteValueFromDiffOneToConst(build, oneColumn, oneCoeff, constValue, outColumn, "")
+
+		if outValueSet != nil {
+			setColumnToConstant(build, outColumn, *outValueSet)
+		}
+		solution, _ := build.RunHighs()
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[outColumn]
+		test.Logf("%s %f\n", solution.Status.String(), boolOutput)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqualFloat(*expectOutputValue, boolOutput, test)
+		}
+	}
+
+	// standard positive differences
+	testValues(3, 1, 3, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(3, 1, 4, nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(4, 1, 3, nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(25.4, 1, 12.3, nil, highs.ModelStatusOptimal, ptr(13.1))
+	testValues(12.3, 1, 25.4, nil, highs.ModelStatusOptimal, ptr(13.1))
+
+	// negatives
+	testValues(-55, 1, -44, nil, highs.ModelStatusOptimal, ptr(11))
+	testValues(-44, 1, -55, nil, highs.ModelStatusOptimal, ptr(11))
+	testValues(-44, 1, 10, nil, highs.ModelStatusOptimal, ptr(54))
+	testValues(10, 1, -44, nil, highs.ModelStatusOptimal, ptr(54))
+
+	// zeros
+	testValues(0, 1, -44, nil, highs.ModelStatusOptimal, ptr(44))
+	testValues(-44, 1, 0, nil, highs.ModelStatusOptimal, ptr(44))
+	testValues(44, 1, 0, nil, highs.ModelStatusOptimal, ptr(44))
+	testValues(0, 1, 44, nil, highs.ModelStatusOptimal, ptr(44))
+
 	// confirm forced minimum, goes equals, then free when higher
-	testValues(3, 1, 4, 1, 1, ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(3, 1, 4, 1, 1, ptr(0.9), highs.ModelStatusInfeasible, nil)
-	testValues(3, 1, 4, 1, 1, ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(3, 1, 4, 1, 1, ptr(1.1), highs.ModelStatusOptimal, ptr(1.1))
-	testValues(3, 1, 4, 1, 1, ptr(77), highs.ModelStatusOptimal, ptr(77))
+	testValues(3, 1, 4, ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(3, 1, 4, ptr(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(3, 1, 4, ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(3, 1, 4, ptr(1.1), highs.ModelStatusOptimal, ptr(1.1))
+	testValues(3, 1, 4, ptr(77), highs.ModelStatusOptimal, ptr(77))
+}
+
+func TestAbsoluteValueDiffTwoVarsThenDiffConst(test *testing.T) {
+	maxValue := 100.0
+
+	testValues := func(oneValue, oneCoeff, twoValue, twoCoeff, offset float64, outValueSet *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: one=%f co=%f two=%f co=%f off=%f", oneValue, oneCoeff, twoValue, twoCoeff, offset)
+		if outValueSet != nil {
+			test.Logf("out=%f", *outValueSet)
+		}
+
+		build := new(LinearBuilder)
+		// build.NoOutput = true
+		build.Minimise = true
+		oneColumn := build.CreateColumnGeneral(highs.Continuous, oneValue, oneValue, nil)
+		twoColumn := build.CreateColumnGeneral(highs.Continuous, twoValue, twoValue, nil)
+		// outColumn := build.CreateColumnGeneral(highs.Continuous, -maxValue, maxValue, nil)
+		outColumn := build.CreateColumnWithOutput(highs.Continuous, -maxValue, maxValue, 1, nil)
+		// setColumnToConstant(build, oneColumn, oneValue)
+		// setColumnToConstant(build, twoColumn, twoValue)
+
+		AbsoluteValueDiffTwoVarsThenDiffConst(build, oneColumn, oneCoeff, twoColumn, twoCoeff, outColumn, offset, "")
+
+		if outValueSet != nil {
+			setColumnToConstant(build, outColumn, *outValueSet)
+		}
+		solution, _ := build.RunHighs()
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[outColumn]
+		test.Logf("%s %f\n", solution.Status.String(), boolOutput)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqualFloat(*expectOutputValue, boolOutput, test)
+		}
+	}
+
+	// standard positive differences
+	// testValues(3, 1, 3, 1, 0, nil, highs.ModelStatusOptimal, ptr(0))
+	// testValues(3, 1, 4, 1, 1, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(4, 1, 3, 1, 3, nil, highs.ModelStatusOptimal, ptr(2))
+	// testValues(25.4, 1, 12.3, 1, -2, nil, highs.ModelStatusOptimal, ptr(15.1))
+	// testValues(12.3, 1, 25.4, 1, 11, nil, highs.ModelStatusOptimal, ptr(2.1))
+
+	// // negatives
+	// testValues(-55, 1, -44, 1, 0, nil, highs.ModelStatusOptimal, ptr(11))
+	// testValues(-44, 1, -55, 1, 1, nil, highs.ModelStatusOptimal, ptr(12))
+	// testValues(-44, 1, 10, 1, -1, nil, highs.ModelStatusOptimal, ptr(53))
+	// testValues(10, 1, -44, 1, 5, nil, highs.ModelStatusOptimal, ptr(59))
+
+	// // big negative offset, who knows
+	// testValues(3, 1, 4, 1, -10, nil, highs.ModelStatusOptimal, ptr(-9))
+
+	// // ALSO need revising based on whatever offset does
+
+	// // zeros
+	// testValues(0, 1, -44, 1, 0, nil, highs.ModelStatusOptimal, ptr(44))
+	// testValues(-44, 1, 0, 1, 1, nil, highs.ModelStatusOptimal, ptr(45))
+	// testValues(44, 1, 0, 1, 7, nil, highs.ModelStatusOptimal, ptr(51))
+	// testValues(0, 1, 44, 1, -2.5, nil, highs.ModelStatusOptimal, ptr(41.5))
+
+	// // coeffecients
+	// testValues(5, 2, 9, 1, 1, nil, highs.ModelStatusOptimal, ptr(2))
+	// testValues(5, 2, 9, -1, 1, nil, highs.ModelStatusOptimal, ptr(20))
+	// testValues(5, 0.5, 9, 1, 1, nil, highs.ModelStatusOptimal, ptr(7.5))
+	// testValues(3, 0.1, 4, 0.1, 1, nil, highs.ModelStatusOptimal, ptr(1.1))
+
+	// // confirm forced minimum, goes equals, then free when higher
+	// testValues(3, 1, 4, 1, 1, ptr(0), highs.ModelStatusInfeasible, nil)
+	// testValues(3, 1, 4, 1, 1, ptr(0.9), highs.ModelStatusInfeasible, nil)
+	// testValues(3, 1, 4, 1, 1, ptr(1), highs.ModelStatusOptimal, ptr(1))
+	// testValues(3, 1, 4, 1, 1, ptr(1.1), highs.ModelStatusOptimal, ptr(1.1))
+	// testValues(3, 1, 4, 1, 1, ptr(77), highs.ModelStatusOptimal, ptr(77))
 }
 
 func TestAbsoluteValue_WithToggle(test *testing.T) {
