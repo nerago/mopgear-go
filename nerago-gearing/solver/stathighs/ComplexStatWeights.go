@@ -102,7 +102,7 @@ func (comp *ComplexStatWeightProcess) createWeightColumns() {
 }
 
 func (comp *ComplexStatWeightProcess) makeNotBetween(checkColumn utilhighs.ColumnIndex, lo, hi float64) {
-	utilhighs.ColumnIsNotBetweenConstantsVerify(comp.build, checkColumn, lo, hi, c_complexHighWeight)
+	comp.build.ColumnIsNotBetweenConstantsVerify(checkColumn, lo, hi, c_complexHighWeight)
 }
 
 func (comp *ComplexStatWeightProcess) buildDataEquations() {
@@ -144,7 +144,7 @@ func (comp *ComplexStatWeightProcess) buildDataEquationForSim(stats *stats.StatB
 	matchSimValue.Add(diffSigned, 1)
 
 	diffOutput := comp.build.CreateColumnWithObjective(highs.Continuous, 0, c_complexHighDiff, 1, comp.objectiveEquationDiff, utilhighs.DebugString{Text: "diffOutput"})
-	utilhighs.AbsoluteValue_WithToggle(comp.build, diffSigned, diffOutput, includeColumn, c_complexHighDiff)
+	comp.build.AbsoluteValue_WithToggle(diffSigned, diffOutput, includeColumn, c_complexHighDiff)
 
 	simScale := comp.scaleSims[simType]
 	scaledSimValue := simValue * simScale

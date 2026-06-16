@@ -288,7 +288,7 @@ func (run *rankInternalRun4) makeEntryColumnRefs(entry *rankEntry4, maxRank floa
 	entry.rankColumn = run.build.CreateColumnGeneral(highs.Integer, 0, maxRank, utilhighs.DebugText("derivedRank-"+rankStr))
 
 	rankDiff := run.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugText("rankDiff"))
-	utilhighs.AbsoluteValueFromDiffOneToConst(run.build, entry.rankColumn, 1, float64(entry.targetRank), rankDiff, "rankDiff")
+	run.build.AbsoluteValueFromDiffOneToConst(entry.rankColumn, 1, float64(entry.targetRank), rankDiff, "rankDiff")
 }
 
 // what if i have all pairs of possible greater thans

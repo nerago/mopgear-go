@@ -9,6 +9,9 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
+const c_grid2_maxWeight = 50.0
+const c_grid2_highScore = 100.0
+
 type GridStatWeightProcess2 struct {
 	printer *util.PrintRecorder
 
@@ -70,7 +73,7 @@ func (grid2 *GridStatWeightProcess2) setupWeightVars() {
 	// create detail columns
 	for _, statType := range G_RequiredStats {
 		for _, simType := range G_RequiredSims {
-			colDetailWeight := grid2.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
+			colDetailWeight := grid2.build.CreateColumnGeneral(highs.Continuous, -c_grid2_maxWeight, c_grid2_maxWeight, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
 			grid2.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
 	}
@@ -143,7 +146,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStats(one *Weight
 		simDiff := two.SimResult.GetFriendly(simType) - one.SimResult.GetFriendly(simType)
 		simDiff *= grid2.scaleSims[simType]
 
-		utilhighs.AbsoluteValueFromDiffOneToConst(&grid2.build, weightColumn, statDiff, simDiff, mismatchCol, debugText)
+		grid2.build.AbsoluteValueFromDiffOneToConst(weightColumn, statDiff, simDiff, mismatchCol, debugText)
 	}
 }
 
@@ -163,11 +166,12 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *Weight
 		simDiff := two.SimResult.GetFriendly(simType) - one.SimResult.GetFriendly(simType)
 		simDiff *= grid2.scaleSims[simType]
 
-		utilhighs.AbsoluteValueDiffTwoVarsThenDiffConst(&grid2.build,
+		grid2.build.AbsoluteValueDiffTwoVarsThenDiffConst(
 			weightColumnA, statDiffA,
 			weightColumnB, statDiffB,
 			mismatchCol,
 			simDiff,
+			c_grid2_highScore,
 			debugText)
 	}
 }
@@ -199,7 +203,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleThreeDifferenceStats(one *Weig
 		rowEquate.Build(&grid2.build, simDiff, simDiff)
 
 		mismatchCol := grid2.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
-		utilhighs.AbsoluteValue(&grid2.build, mismatchSignedCol, mismatchCol)
+		grid2.build.AbsoluteValue(mismatchSignedCol, mismatchCol)
 	}
 }
 

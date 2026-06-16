@@ -249,13 +249,13 @@ func (selgrid *SelectiveGridStatWeightProcess) unitValueCombinationAddToModel(ba
 
 	// take absolute value
 	offsetAbs := selgrid.build.CreateColumnGeneral(highs.Continuous, 0, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "OFFSET ABS " + debugText})
-	utilhighs.AbsoluteValue(&selgrid.build, offsetSigned, offsetAbs)
+	selgrid.build.AbsoluteValue(offsetSigned, offsetAbs)
 
 	// TODO use AbsoluteValue_WithToggle
 
 	// output for objective function
 	output := selgrid.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "OUTPUT " + debugText})
-	utilhighs.ContraintIfBoolCopyValueElseZero(&selgrid.build, includeDataPointToggle, offsetAbs, output, 0, c_finalWeightLimit) // don't know if this can work, especially with zero low
+	selgrid.build.ContraintIfBoolCopyValueElseZero(includeDataPointToggle, offsetAbs, output, 0, c_finalWeightLimit) // don't know if this can work, especially with zero low
 }
 
 func (selgrid *SelectiveGridStatWeightProcess) calcTotalRatings() {

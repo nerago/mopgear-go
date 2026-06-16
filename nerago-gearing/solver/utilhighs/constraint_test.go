@@ -52,7 +52,7 @@ func TestAbsoluteValueFromDiffTwoVars(test *testing.T) {
 		setColumnToConstant(build, oneColumn, oneValue)
 		setColumnToConstant(build, twoColumn, twoValue)
 
-		AbsoluteValueFromDiffTwoVars(build, oneColumn, oneCoeff, twoColumn, twoCoeff, outColumn, "")
+		build.AbsoluteValueFromDiffTwoVars(oneColumn, oneCoeff, twoColumn, twoCoeff, outColumn, "")
 
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)
@@ -119,7 +119,7 @@ func TestAbsoluteValueFromDiffTwoVarsNonFree(test *testing.T) {
 		setColumnToConstant(build, oneColumn, oneValue)
 		setColumnToConstant(build, twoColumn, twoValue)
 
-		AbsoluteValueFromDiffTwoVarsNonFree(build, oneColumn, oneCoeff, twoColumn, twoCoeff, outColumn, highRange, "")
+		build.AbsoluteValueFromDiffTwoVarsNonFree(oneColumn, oneCoeff, twoColumn, twoCoeff, outColumn, highRange, "")
 
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)
@@ -201,7 +201,7 @@ func TestAbsoluteValueFromDiffOneToConst(test *testing.T) {
 		outColumn := build.CreateColumnGeneral(highs.Continuous, -maxValue, maxValue, nil)
 		setColumnToConstant(build, oneColumn, oneValue)
 
-		AbsoluteValueFromDiffOneToConst(build, oneColumn, oneCoeff, constValue, outColumn, "")
+		build.AbsoluteValueFromDiffOneToConst(oneColumn, oneCoeff, constValue, outColumn, "")
 
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)
@@ -261,7 +261,7 @@ func TestAbsoluteValueDiffTwoVarsThenDiffConst(test *testing.T) {
 		twoColumn := build.CreateColumnGeneral(highs.Continuous, twoValue, twoValue, nil)
 		outColumn := build.CreateColumnWithOutput(highs.Continuous, -maxValue, maxValue, 1, nil)
 
-		AbsoluteValueDiffTwoVarsThenDiffConst(build, oneColumn, oneCoeff, twoColumn, twoCoeff, outColumn, offset, highRange, "")
+		build.AbsoluteValueDiffTwoVarsThenDiffConst(oneColumn, oneCoeff, twoColumn, twoCoeff, outColumn, offset, highRange, "")
 
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)
@@ -330,7 +330,7 @@ func TestIsXor(test *testing.T) {
 		setColumnToConstant(build, oneCol, one)
 		setColumnToConstant(build, twoCol, two)
 
-		IsXor(build, oneCol, twoCol, outCol)
+		build.IsXor(oneCol, twoCol, outCol)
 
 		if out != nil {
 			setColumnToConstant(build, outCol, *out)
@@ -384,7 +384,7 @@ func TestColumnIsGreaterOrEqualThanConstant(test *testing.T) {
 		compareColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
 		setColumnToConstant(build, compareColumn, colValue)
 
-		isGreater := ColumnIsGreaterOrEqualThanConstant(build, compareColumn, checkValue, rangeHigh, equalDelta)
+		isGreater := build.ColumnIsGreaterOrEqualThanConstant(compareColumn, checkValue, rangeHigh, equalDelta)
 
 		if setBool != nil {
 			setColumnToConstant(build, isGreater, *setBool)
@@ -433,7 +433,7 @@ func TestColumnIsLessOrEqualThanConstant(test *testing.T) {
 		compareColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
 		setColumnToConstant(build, compareColumn, colValue)
 
-		isLess := ColumnIsLessOrEqualThanConstant(build, compareColumn, checkValue, rangeHigh, equalDelta)
+		isLess := build.ColumnIsLessOrEqualThanConstant(compareColumn, checkValue, rangeHigh, equalDelta)
 
 		if setBool != nil {
 			setColumnToConstant(build, isLess, *setBool)
@@ -487,7 +487,7 @@ func TestConstantIsBetweenColumns(test *testing.T) {
 		setColumnToConstant(build, loColumn, loValue)
 		setColumnToConstant(build, hiColumn, hiValue)
 
-		ConstantIsBetweenColumns(build, loColumn, hiColumn, boolColumn, constValue, rangeHigh, equalDelta)
+		build.ConstantIsBetweenColumns(loColumn, hiColumn, boolColumn, constValue, rangeHigh, equalDelta)
 
 		if setBool != nil {
 			setColumnToConstant(build, boolColumn, *setBool)
@@ -573,7 +573,7 @@ func TestColumnIsNotBetweenConstantsVerify(test *testing.T) {
 					}
 				}
 			}()
-			ColumnIsNotBetweenConstantsVerify(build, checkColumn, loValue, hiValue, rangeHigh)
+			build.ColumnIsNotBetweenConstantsVerify(checkColumn, loValue, hiValue, rangeHigh)
 		}
 
 		if expectStatus == -1 {
@@ -636,7 +636,7 @@ func TestColumnIsGreaterOrEqualColumn(test *testing.T) {
 		setColumnToConstant(build, oneColumn, oneValue)
 		setColumnToConstant(build, twoColumn, twoValue)
 
-		ColumnIsGreaterOrEqualColumn(build, oneColumn, twoColumn, boolColumn, rangeHigh, equalDelta)
+		build.ColumnIsGreaterOrEqualColumn(oneColumn, twoColumn, boolColumn, rangeHigh, equalDelta)
 
 		if setBool != nil {
 			setColumnToConstant(build, boolColumn, *setBool)
@@ -691,7 +691,7 @@ func TestColumnIsLessOrEqualColumn(test *testing.T) {
 		setColumnToConstant(build, oneColumn, oneValue)
 		setColumnToConstant(build, twoColumn, twoValue)
 
-		ColumnIsLessOrEqualColumn(build, oneColumn, twoColumn, boolColumn, rangeHigh, equalDelta)
+		build.ColumnIsLessOrEqualColumn(oneColumn, twoColumn, boolColumn, rangeHigh, equalDelta)
 
 		if setBool != nil {
 			setColumnToConstant(build, boolColumn, *setBool)
@@ -745,7 +745,7 @@ func TestColumnIsGreaterThanColumnEqualityFree(test *testing.T) {
 		setColumnToConstant(build, oneColumn, oneValue)
 		setColumnToConstant(build, twoColumn, twoValue)
 
-		ColumnIsGreaterThanColumnEqualityFree(build, oneColumn, twoColumn, boolColumn, rangeHigh)
+		build.ColumnIsGreaterThanColumnEqualityFree(oneColumn, twoColumn, boolColumn, rangeHigh)
 
 		if setBool != nil {
 			setColumnToConstant(build, boolColumn, *setBool)
@@ -796,7 +796,7 @@ func TestColumnIsLessThanColumnEqualityFree(test *testing.T) {
 		setColumnToConstant(build, oneColumn, oneValue)
 		setColumnToConstant(build, twoColumn, twoValue)
 
-		ColumnIsLessThanColumnEqualityFree(build, oneColumn, twoColumn, boolColumn, rangeHigh)
+		build.ColumnIsLessThanColumnEqualityFree(oneColumn, twoColumn, boolColumn, rangeHigh)
 
 		if setBool != nil {
 			setColumnToConstant(build, boolColumn, *setBool)

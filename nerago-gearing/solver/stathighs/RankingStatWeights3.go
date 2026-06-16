@@ -270,7 +270,7 @@ func (ranker *RankingStatWeightProcess3) makeEntryColumns(entry *rankEntry3, max
 	entry.rankDiffAbsColumn = ranker.build.CreateColumnWithOutput(highs.Integer, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugText("rankDiffAbs-"+rankStr))
 
 	targetRank := float64(entry.targetRank)
-	utilhighs.AbsoluteValueFromDiffOneToConst(ranker.build, entry.rankColumn, 1, targetRank, entry.rankDiffAbsColumn, "")
+	ranker.build.AbsoluteValueFromDiffOneToConst(entry.rankColumn, 1, targetRank, entry.rankDiffAbsColumn, "")
 }
 
 func (ranker *RankingStatWeightProcess3) makeEntryPairSequenceConstraints(one *rankEntry3, two *rankEntry3, indexOne, indexTwo int, scaleDiffOutput int) {
@@ -280,9 +280,9 @@ func (ranker *RankingStatWeightProcess3) makeEntryPairSequenceConstraints(one *r
 	isGreaterRank := ranker.build.CreateColumnBool(utilhighs.DebugText("isGreaterRank"))
 	isSequenceDiff := ranker.build.CreateColumnBoolWithOutput(float64(scaleDiffOutput), utilhighs.DebugText("sequenceDiff"))
 
-	utilhighs.ColumnIsGreaterOrEqualColumn(ranker.build, one.scoreColumn, two.scoreColumn, isGreaterScore, c_RankLargeScore, 0.0001)
-	utilhighs.ColumnIsGreaterOrEqualColumn(ranker.build, one.rankColumn, two.rankColumn, isGreaterRank, c_RankLargeRank, 1.0)
-	utilhighs.IsXor(ranker.build, isGreaterRank, isGreaterScore, isSequenceDiff)
+	ranker.build.ColumnIsGreaterOrEqualColumn(one.scoreColumn, two.scoreColumn, isGreaterScore, c_RankLargeScore, 0.0001)
+	ranker.build.ColumnIsGreaterOrEqualColumn(one.rankColumn, two.rankColumn, isGreaterRank, c_RankLargeRank, 1.0)
+	ranker.build.IsXor(isGreaterRank, isGreaterScore, isSequenceDiff)
 
 	ranker.pairLinks.Put(indexOne, indexTwo, rankPair3{
 		indexOne:       indexOne,

@@ -73,7 +73,7 @@ func (setup *setupInputSetAware) addSetNeededCounts(gear_model *gear_model.Model
 					setInfo := util.FindWith(setup.setData, func(x setInfo) bool { return x.activeSet.Equals(activeSet) })
 					setCountCol := setInfo.setTotalCountVar
 
-					inRange := utilhighs.ColumnIsGreaterOrEqualThanConstant(setup.build, setCountCol.columnIndex, float64(needCount), 10, 1.0)
+					inRange := setup.build.ColumnIsGreaterOrEqualThanConstant(setCountCol.columnIndex, float64(needCount), 10, 1.0)
 					optionParts.AddInput(inRange)
 				}
 
@@ -290,7 +290,7 @@ func (setup *setupInputSetAware) buildSetMultipliedOutput(permutation *setPermut
 	activatingVar := setup.buildPermutationActivatingVar(permutation)
 
 	// copy regular rating sum to column if flag is set
-	utilhighs.ContraintIfBoolCopyValueElseZero(setup.build, activatingVar.columnIndex, setup.baseRatingSumVar.columnIndex, outputVar.columnIndex, c_ratings_low_range, c_ratings_high_range)
+	setup.build.ContraintIfBoolCopyValueElseZero(activatingVar.columnIndex, setup.baseRatingSumVar.columnIndex, outputVar.columnIndex, c_ratings_low_range, c_ratings_high_range)
 
 	// add scaled rating to final computation
 	setup.mainOutputRow.Add(outputVar.columnIndex, weight)

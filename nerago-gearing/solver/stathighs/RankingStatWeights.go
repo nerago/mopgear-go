@@ -235,7 +235,7 @@ func (ranker *RankingStatWeightProcess) processDataEntryPlusRankCompareToExpecte
 	rankDiff.Add(entry.rankColumn, 1)
 	rankDiff.Add(rankDiffColumn, -1)
 	rankDiff.Build(ranker.build, targetRank, targetRank)
-	utilhighs.AbsoluteValue(ranker.build, rankDiffColumn, rankDiffAbsColumn)
+	ranker.build.AbsoluteValue(rankDiffColumn, rankDiffAbsColumn)
 
 	ranker.build.SetInitialSolutionValue(entry.rankColumn, float64(entry.targetRank))
 }
@@ -244,7 +244,7 @@ func (ranker *RankingStatWeightProcess) processDataEntryPlusRankCompareToExpecte
 func (ranker *RankingStatWeightProcess) processDataEntryForceScoreToRank(entry *rankEntry) {
 	offsetColumn := ranker.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugText("offset"))
 	offsetAbs := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugText("offset"))
-	utilhighs.AbsoluteValue(ranker.build, offsetColumn, offsetAbs)
+	ranker.build.AbsoluteValue(offsetColumn, offsetAbs)
 
 	scoreRow := utilhighs.ConstraintRow{}
 	for _, statType := range G_RequiredStats {
@@ -272,11 +272,10 @@ func (ranker *RankingStatWeightProcess) processEntrySequencePairToDerivedRank(on
 	// so we could totally do a boolean thing where scoreA>scoreB then implies rankA>rankB
 	// would need all possible pairs connected, but would then force solver to make a full integer order
 	isGreater := ranker.build.CreateColumnBool(utilhighs.DebugText("isGreater"))
-	ranker.build.SetInitialSolutionValue(isGreater, 1)
 
-	utilhighs.ColumnIsGreaterOrEqualColumn(ranker.build, one.scoreColumn, two.scoreColumn, isGreater, c_RankLargeScore, 0.0001)
+	ranker.build.ColumnIsGreaterOrEqualColumn(one.scoreColumn, two.scoreColumn, isGreater, c_RankLargeScore, 0.0001)
 
-	utilhighs.ColumnIsGreaterOrEqualColumn(ranker.build, one.rankColumn, two.rankColumn, isGreater, c_RankLargeRank, 1.0)
+	ranker.build.ColumnIsGreaterOrEqualColumn(one.rankColumn, two.rankColumn, isGreater, c_RankLargeRank, 1.0)
 }
 
 // we want to optimise for higher.score > lower.score
