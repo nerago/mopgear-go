@@ -119,7 +119,7 @@ func TestAbsoluteValueFromDiffTwoVarsNonFree(test *testing.T) {
 		setColumnToConstant(build, oneColumn, oneValue)
 		setColumnToConstant(build, twoColumn, twoValue)
 
-		AbsoluteValueFromDiffTwoVarsNonFree0(build, oneColumn, oneCoeff, twoColumn, twoCoeff, outColumn, highRange, "")
+		AbsoluteValueFromDiffTwoVarsNonFree(build, oneColumn, oneCoeff, twoColumn, twoCoeff, outColumn, highRange, "")
 
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)
@@ -173,6 +173,17 @@ func TestAbsoluteValueFromDiffTwoVarsNonFree(test *testing.T) {
 	testValues(4, 1, 3, 1, ptr(1), highs.ModelStatusOptimal, ptr(1))
 	testValues(4, 1, 3, 1, ptr(1.1), highs.ModelStatusInfeasible, nil)
 	testValues(4, 1, 3, 1, ptr(77), highs.ModelStatusInfeasible, nil)
+
+	// and with a zero
+	testValues(4, 1, 4, 1, ptr(-1), highs.ModelStatusInfeasible, nil)
+	testValues(4, 1, 4, 1, ptr(-0.1), highs.ModelStatusInfeasible, nil)
+	testValues(4, 1, 4, 1, ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(4, 1, 4, 1, ptr(0.1), highs.ModelStatusInfeasible, nil)
+	testValues(4, 1, 4, 1, ptr(77), highs.ModelStatusInfeasible, nil)
+
+	// flipped sign was buggy
+	testValues(3, 1, 4, 1, ptr(-1), highs.ModelStatusInfeasible, nil)
+	testValues(4, 1, 3, 1, ptr(-1), highs.ModelStatusInfeasible, nil)
 }
 
 func TestAbsoluteValueFromDiffOneToConst(test *testing.T) {
@@ -250,7 +261,7 @@ func TestAbsoluteValueDiffTwoVarsThenDiffConst(test *testing.T) {
 		twoColumn := build.CreateColumnGeneral(highs.Continuous, twoValue, twoValue, nil)
 		outColumn := build.CreateColumnWithOutput(highs.Continuous, -maxValue, maxValue, 1, nil)
 
-		AbsoluteValueDiffTwoVarsThenDiffConst3(build, oneColumn, oneCoeff, twoColumn, twoCoeff, outColumn, offset, highRange, "")
+		AbsoluteValueDiffTwoVarsThenDiffConst(build, oneColumn, oneCoeff, twoColumn, twoCoeff, outColumn, offset, highRange, "")
 
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)
@@ -354,7 +365,7 @@ func TestIsXor(test *testing.T) {
 	// for condition not met output is free
 	testValues(1, 1, nil, highs.ModelStatusOptimal, zero)
 	testValues(1, 1, zero, highs.ModelStatusOptimal, zero)
-	testValues(1, 1, one, highs.ModelStatusInfeasible, one)
+	testValues(1, 1, one, highs.ModelStatusOptimal, one)
 }
 
 func TestColumnIsGreaterOrEqualThanConstant(test *testing.T) {
