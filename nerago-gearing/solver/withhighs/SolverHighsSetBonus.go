@@ -67,7 +67,7 @@ func (setup *setupInputSetAware) addSetNeededCounts(gear_model *gear_model.Model
 			oneOfTheseOptions := utilhighs.ConstraintRow{}
 
 			for _, option := range gear_model.SetBonusRequired {
-				optionParts := utilhighs.ContraintAndBuilder{}
+				optionParts := utilhighs.ConstraintAndBuilder{}
 
 				for activeSet, needCount := range option.Pairs() {
 					setInfo := util.FindWith(setup.setData, func(x setInfo) bool { return x.activeSet.Equals(activeSet) })
@@ -321,7 +321,7 @@ func (setup *setupInputSetAware) buildPermutationActivatingVar(permutation *setP
 	permutationActiveBool := columnInfo{entryType: entry_permutation_active, permutation: permutation}
 	permutationActiveBool.columnIndex = setup.build.CreateColumnBool(&permutationActiveBool)
 
-	buildAnd := utilhighs.ContraintAndBuilder{}
+	buildAnd := utilhighs.ConstraintAndBuilder{}
 	buildAnd.SetOutput(permutationActiveBool.columnIndex)
 
 	for _, setAndCount := range permutation.content {

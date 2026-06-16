@@ -8,31 +8,449 @@ import (
 )
 
 func TestContraintIfBoolCopyValueElseZero(test *testing.T) {
-	//TODO
+	rangeLow := -200.0
+	rangeHigh := 200.0
+
+	testValues := func(oneValue, toggleValue float64, outValueSet *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: one=%f toggle=%f", oneValue, toggleValue)
+		if outValueSet != nil {
+			test.Logf("out=%f", *outValueSet)
+		}
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		oneColumn := build.CreateColumnGeneral(highs.Continuous, C_MinusInf, C_PlusInf, nil)
+		toggleColumn := build.CreateColumnBool(nil)
+		outColumn := build.CreateColumnGeneral(highs.Continuous, C_MinusInf, C_PlusInf, nil)
+		setColumnToConstant(build, oneColumn, oneValue)
+		setColumnToConstant(build, toggleColumn, toggleValue)
+
+		build.ContraintIfBoolCopyValueElseZero(toggleColumn, oneColumn, outColumn, rangeLow, rangeHigh)
+
+		if outValueSet != nil {
+			setColumnToConstant(build, outColumn, *outValueSet)
+		}
+		solution, _ := build.RunHighs()
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[outColumn]
+		test.Logf("%s %f\n", solution.Status.String(), boolOutput)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqualFloat(*expectOutputValue, boolOutput, test)
+		}
+	}
+
+	// basic copy with toggle enabled
+	testValues(0, 1, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(5, 1, nil, highs.ModelStatusOptimal, ptr(5))
+	testValues(-5.5, 1, nil, highs.ModelStatusOptimal, ptr(-5.5))
+
+	// confirm lock-in with toggle enabled
+	testValues(0, 1, ptr(-0.1), highs.ModelStatusInfeasible, nil)
+	testValues(0, 1, ptr(0.1), highs.ModelStatusInfeasible, nil)
+	testValues(5, 1, ptr(4.9), highs.ModelStatusInfeasible, nil)
+	testValues(5, 1, ptr(-5), highs.ModelStatusInfeasible, nil)
+	testValues(5, 1, ptr(5.1), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 1, ptr(-5.4), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 1, ptr(5.5), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 1, ptr(-5.6), highs.ModelStatusInfeasible, nil)
+
+	// copy zero with toggle disabled
+	testValues(0, 0, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(5, 0, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(-5.5, 0, nil, highs.ModelStatusOptimal, ptr(0))
+
+	// confirm still lock-in with toggle disabled
+	testValues(0, 0, ptr(-0.1), highs.ModelStatusInfeasible, nil)
+	testValues(0, 0, ptr(0.1), highs.ModelStatusInfeasible, nil)
+	testValues(5, 0, ptr(4.9), highs.ModelStatusInfeasible, nil)
+	testValues(5, 0, ptr(-5), highs.ModelStatusInfeasible, nil)
+	testValues(5, 0, ptr(5.1), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 0, ptr(-5.4), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 0, ptr(5.5), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 0, ptr(-5.6), highs.ModelStatusInfeasible, nil)
 }
 
 func TestContraintIfBoolCopy(test *testing.T) {
-	//TODO
+	rangeHigh := 200.0
+
+	testValues := func(oneValue, oneCoeff, toggleValue float64, outValueSet *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: one=%f co=%f toggle=%f", oneValue, oneCoeff, toggleValue)
+		if outValueSet != nil {
+			test.Logf("out=%f", *outValueSet)
+		}
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		oneColumn := build.CreateColumnGeneral(highs.Continuous, C_MinusInf, C_PlusInf, nil)
+		toggleColumn := build.CreateColumnBool(nil)
+		outColumn := build.CreateColumnGeneral(highs.Continuous, C_MinusInf, C_PlusInf, nil)
+		setColumnToConstant(build, oneColumn, oneValue)
+		setColumnToConstant(build, toggleColumn, toggleValue)
+
+		build.ContraintIfBoolCopy(toggleColumn, oneColumn, oneCoeff, outColumn, rangeHigh)
+
+		if outValueSet != nil {
+			setColumnToConstant(build, outColumn, *outValueSet)
+		}
+		solution, _ := build.RunHighs()
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[outColumn]
+		test.Logf("%s %f\n", solution.Status.String(), boolOutput)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqualFloat(*expectOutputValue, boolOutput, test)
+		}
+	}
+
+	// basic copy with toggle enabled
+	testValues(0, 1, 1, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(5, 1, 1, nil, highs.ModelStatusOptimal, ptr(5))
+	testValues(-5.5, 1, 1, nil, highs.ModelStatusOptimal, ptr(-5.5))
+	testValues(5, 0.5, 1, nil, highs.ModelStatusOptimal, ptr(2.5))
+	testValues(5, 0, 1, nil, highs.ModelStatusOptimal, ptr(0))
+
+	// confirm lock-in with toggle enabled
+	testValues(0, 1, 1, ptr(-0.1), highs.ModelStatusInfeasible, nil)
+	testValues(0, 1, 1, ptr(0.1), highs.ModelStatusInfeasible, nil)
+	testValues(5, 1, 1, ptr(4.9), highs.ModelStatusInfeasible, nil)
+	testValues(5, 1, 1, ptr(-5), highs.ModelStatusInfeasible, nil)
+	testValues(5, 1, 1, ptr(5.1), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 1, 1, ptr(-5.4), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 1, 1, ptr(5.5), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 1, 1, ptr(-5.6), highs.ModelStatusInfeasible, nil)
+	testValues(5, 0.5, 1, ptr(2.4), highs.ModelStatusInfeasible, nil)
+	testValues(5, 0.5, 1, ptr(-2.5), highs.ModelStatusInfeasible, nil)
+	testValues(5, 0.5, 1, ptr(2.6), highs.ModelStatusInfeasible, nil)
+	testValues(5, 0, 1, ptr(-0.1), highs.ModelStatusInfeasible, nil)
+	testValues(5, 0, 1, ptr(0.1), highs.ModelStatusInfeasible, nil)
+
+	// free copy with toggle disabled. doesn't really have a true default as this would imply
+	// defaultValue := -rangeHigh
+	// testValues(0, 1, 0, nil, highs.ModelStatusOptimal, ptr(defaultValue))
+	// testValues(5, 1, 0, nil, highs.ModelStatusOptimal, ptr(defaultValue))
+	// testValues(-5.5, 1, 0, nil, highs.ModelStatusOptimal, ptr(defaultValue))
+	// testValues(5, 0.5, 0, nil, highs.ModelStatusOptimal, ptr(defaultValue))
+	// testValues(5, 0, 0, nil, highs.ModelStatusOptimal, ptr(defaultValue))
+	testValues(0, 1, 0, nil, highs.ModelStatusOptimal, nil)
+	testValues(5, 1, 0, nil, highs.ModelStatusOptimal, nil)
+	testValues(-5.5, 1, 0, nil, highs.ModelStatusOptimal, nil)
+	testValues(5, 0.5, 0, nil, highs.ModelStatusOptimal, nil)
+	testValues(5, 0, 0, nil, highs.ModelStatusOptimal, nil)
+
+	// confirm free with toggle disabled
+	testValues(0, 1, 0, ptr(-0.1), highs.ModelStatusOptimal, ptr(-0.1))
+	testValues(0, 1, 0, ptr(0.1), highs.ModelStatusOptimal, ptr(0.1))
+	testValues(5, 1, 0, ptr(4.9), highs.ModelStatusOptimal, ptr(4.9))
+	testValues(5, 1, 0, ptr(-5), highs.ModelStatusOptimal, ptr(-5))
+	testValues(5, 1, 0, ptr(5.1), highs.ModelStatusOptimal, ptr(5.1))
+	testValues(-5.5, 1, 0, ptr(-5.4), highs.ModelStatusOptimal, ptr(-5.4))
+	testValues(-5.5, 1, 0, ptr(5.5), highs.ModelStatusOptimal, ptr(5.5))
+	testValues(-5.5, 1, 0, ptr(-5.6), highs.ModelStatusOptimal, ptr(-5.6))
+	testValues(5, 0.5, 0, ptr(2.4), highs.ModelStatusOptimal, ptr(2.4))
+	testValues(5, 0.5, 0, ptr(-2.5), highs.ModelStatusOptimal, ptr(-2.5))
+	testValues(5, 0.5, 0, ptr(2.6), highs.ModelStatusOptimal, ptr(2.6))
+	testValues(5, 0, 0, ptr(-0.1), highs.ModelStatusOptimal, ptr(-0.1))
+	testValues(5, 0, 0, ptr(0.1), highs.ModelStatusOptimal, ptr(0.1))
 }
 
 func TestContraintAndBuilder(test *testing.T) {
-	//TODO
+	testValues := func(values []float64, out *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE:")
+		for _, val := range values {
+			test.Logf("%f", val)
+		}
+		if out != nil {
+			test.Logf("out=%f", *out)
+		}
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		outCol := build.CreateColumnBool(nil)
+
+		and := ConstraintAndBuilder{}
+		for _, val := range values {
+			col := build.CreateColumnBool(nil)
+			setColumnToConstant(build, col, val)
+			and.AddInput(col)
+		}
+		and.SetOutput(outCol)
+		and.Build(build)
+
+		if out != nil {
+			setColumnToConstant(build, outCol, *out)
+		}
+		solution, _ := build.RunHighs()
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[outCol]
+		test.Logf("%s %f\n", solution.Status.String(), boolOutput)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqual(*expectOutputValue, boolOutput, test)
+		}
+	}
+
+	testValues(makeSlice(), nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(0), nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(1), nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(0, 0), nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(0, 1), nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(1, 0), nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(1, 1), nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(0, 0, 0), nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(0, 0, 1), nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(0, 1, 0), nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(0, 1, 1), nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(1, 0, 0), nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(1, 0, 1), nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(1, 1, 0), nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(1, 1, 1), nil, highs.ModelStatusOptimal, ptr(1))
+
+	testValues(makeSlice(), ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(0), ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(1), ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(0, 0), ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(0, 1), ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(1, 0), ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(1, 1), ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(0, 0, 0), ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(0, 0, 1), ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(0, 1, 0), ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(0, 1, 1), ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(1, 0, 0), ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(1, 0, 1), ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(1, 1, 0), ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(1, 1, 1), ptr(1), highs.ModelStatusOptimal, ptr(1))
+
+	testValues(makeSlice(), ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0), ptr(1), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1), ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 0), ptr(1), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 1), ptr(1), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 0), ptr(1), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 1), ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 0, 0), ptr(1), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 0, 1), ptr(1), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 1, 0), ptr(1), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 1, 1), ptr(1), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 0, 0), ptr(1), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 0, 1), ptr(1), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 1, 0), ptr(1), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 1, 1), ptr(0), highs.ModelStatusInfeasible, nil)
 }
 
 func TestConstraintOrBuilder(test *testing.T) {
-	//TODO
+	testValues := func(values []float64, out *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE:")
+		for _, val := range values {
+			test.Logf("%f", val)
+		}
+		if out != nil {
+			test.Logf("out=%f", *out)
+		}
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		outCol := build.CreateColumnBool(nil)
+
+		or := ConstraintOrBuilder{}
+		for _, val := range values {
+			col := build.CreateColumnBool(nil)
+			setColumnToConstant(build, col, val)
+			or.AddInput(col)
+		}
+		or.SetOutput(outCol)
+		or.Build(build)
+
+		if out != nil {
+			setColumnToConstant(build, outCol, *out)
+		}
+		solution, _ := build.RunHighs()
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[outCol]
+		test.Logf("%s %f\n", solution.Status.String(), boolOutput)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqual(*expectOutputValue, boolOutput, test)
+		}
+	}
+
+	testValues(makeSlice(), nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(0), nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(1), nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(0, 0), nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(0, 1), nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(1, 0), nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(1, 1), nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(0, 0, 0), nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(0, 0, 1), nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(0, 1, 0), nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(0, 1, 1), nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(1, 0, 0), nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(1, 0, 1), nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(1, 1, 0), nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(1, 1, 1), nil, highs.ModelStatusOptimal, ptr(1))
+
+	testValues(makeSlice(), ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(0), ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(1), ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(0, 0), ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(0, 1), ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(1, 0), ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(1, 1), ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(0, 0, 0), ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(makeSlice(0, 0, 1), ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(0, 1, 0), ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(0, 1, 1), ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(1, 0, 0), ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(1, 0, 1), ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(1, 1, 0), ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(1, 1, 1), ptr(1), highs.ModelStatusOptimal, ptr(1))
+
+	testValues(makeSlice(), ptr(1), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0), ptr(1), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1), ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 0), ptr(1), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 1), ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 0), ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 1), ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 0, 0), ptr(1), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 0, 1), ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 1, 0), ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 1, 1), ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 0, 0), ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 0, 1), ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 1, 0), ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 1, 1), ptr(0), highs.ModelStatusInfeasible, nil)
+}
+
+func makeSlice(vals ...float64) []float64 {
+	return vals
 }
 
 func TestConstraintNot(test *testing.T) {
-	//TODO
+	testValues := func(one float64, out *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: one=%f", one)
+		if out != nil {
+			test.Logf("out=%f", *out)
+		}
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		oneCol := build.CreateColumnBool(nil)
+		outCol := build.CreateColumnBool(nil)
+		setColumnToConstant(build, oneCol, one)
+
+		build.ConstraintNot(oneCol, outCol)
+
+		if out != nil {
+			setColumnToConstant(build, outCol, *out)
+		}
+		solution, _ := build.RunHighs()
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[outCol]
+		test.Logf("%s %f\n", solution.Status.String(), boolOutput)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqual(*expectOutputValue, boolOutput, test)
+		}
+	}
+
+	testValues(0, nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(0, ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(0, ptr(1), highs.ModelStatusOptimal, ptr(1))
+
+	testValues(1, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(1, ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(1, ptr(1), highs.ModelStatusInfeasible, nil)
 }
 
 func TestNotAsColumn(test *testing.T) {
-	//TODO
+	testValues := func(one float64, out *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: one=%f", one)
+		if out != nil {
+			test.Logf("out=%f", *out)
+		}
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		oneCol := build.CreateColumnBool(nil)
+		setColumnToConstant(build, oneCol, one)
+
+		outCol := build.NotAsColumn(oneCol)
+
+		if out != nil {
+			setColumnToConstant(build, outCol, *out)
+		}
+		solution, _ := build.RunHighs()
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[outCol]
+		test.Logf("%s %f\n", solution.Status.String(), boolOutput)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqual(*expectOutputValue, boolOutput, test)
+		}
+	}
+
+	testValues(0, nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(0, ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(0, ptr(1), highs.ModelStatusOptimal, ptr(1))
+
+	testValues(1, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(1, ptr(0), highs.ModelStatusOptimal, ptr(0))
+	testValues(1, ptr(1), highs.ModelStatusInfeasible, nil)
 }
 
 func TestAbsoluteValue(test *testing.T) {
+	maxValue := 100.0
 
+	testValues := func(oneValue float64, outValueSet *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: one=%f", oneValue)
+		if outValueSet != nil {
+			test.Logf("out=%f", *outValueSet)
+		}
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		oneColumn := build.CreateColumnGeneral(highs.Continuous, -maxValue, maxValue, nil)
+		outColumn := build.CreateColumnGeneral(highs.Continuous, -maxValue, maxValue, nil)
+		setColumnToConstant(build, oneColumn, oneValue)
+
+		build.AbsoluteValue(oneColumn, outColumn)
+
+		if outValueSet != nil {
+			setColumnToConstant(build, outColumn, *outValueSet)
+		}
+		solution, _ := build.RunHighs()
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[outColumn]
+		test.Logf("%s %f\n", solution.Status.String(), boolOutput)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqualFloat(*expectOutputValue, boolOutput, test)
+		}
+	}
+
+	// standard positive differences
+	testValues(0, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(1, nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(-1, nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(13.1, nil, highs.ModelStatusOptimal, ptr(13.1))
+	testValues(-13.1, nil, highs.ModelStatusOptimal, ptr(13.1))
+
+	// confirm forced minimum, goes equals, then free when higher
+	testValues(1, ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(1, ptr(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(1, ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(1, ptr(1.1), highs.ModelStatusOptimal, ptr(1.1))
+	testValues(1, ptr(77), highs.ModelStatusOptimal, ptr(77))
 }
 
 func TestAbsoluteValueFromDiffTwoVars(test *testing.T) {
@@ -312,7 +730,75 @@ func TestAbsoluteValueDiffTwoVarsThenDiffConst(test *testing.T) {
 }
 
 func TestAbsoluteValue_WithToggle(test *testing.T) {
-	//TODO
+	rangeHigh := 200.0
+
+	testValues := func(oneValue, toggleValue float64, outValueSet *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: one=%f toggle=%f", oneValue, toggleValue)
+		if outValueSet != nil {
+			test.Logf("out=%f", *outValueSet)
+		}
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		oneColumn := build.CreateColumnGeneral(highs.Continuous, C_MinusInf, C_PlusInf, nil)
+		toggleColumn := build.CreateColumnBool(nil)
+		outColumn := build.CreateColumnGeneral(highs.Continuous, C_MinusInf, C_PlusInf, nil)
+		setColumnToConstant(build, oneColumn, oneValue)
+		setColumnToConstant(build, toggleColumn, toggleValue)
+
+		build.AbsoluteValue_WithToggle(oneColumn, outColumn, toggleColumn, rangeHigh)
+
+		if outValueSet != nil {
+			setColumnToConstant(build, outColumn, *outValueSet)
+		}
+		solution, _ := build.RunHighs()
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[outColumn]
+		test.Logf("%s %f\n", solution.Status.String(), boolOutput)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqualFloat(*expectOutputValue, boolOutput, test)
+		}
+	}
+
+	// standard positive differences (checking toggle=ON works like normal AbsolueValue)
+	testValues(0, 1, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(1, 1, nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(-1, 1, nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(13.1, 1, nil, highs.ModelStatusOptimal, ptr(13.1))
+	testValues(-13.1, 1, nil, highs.ModelStatusOptimal, ptr(13.1))
+
+	// confirm forced minimum, goes equals, then free when higher (checking toggle=ON works like normal AbsolueValue)
+	testValues(1, 1, ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(1, 1, ptr(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(1, 1, ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(1, 1, ptr(1.1), highs.ModelStatusOptimal, ptr(1.1))
+	testValues(1, 1, ptr(77), highs.ModelStatusOptimal, ptr(77))
+
+	// standard positive differences toggle=OFF defaults to zero
+	testValues(0, 0, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(1, 0, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(-1, 0, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(13.1, 0, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(-13.1, 0, nil, highs.ModelStatusOptimal, ptr(0))
+
+	// confirm toggle off lets anything go
+	testValues(1, 0, ptr(0), highs.ModelStatusOptimal, nil)
+	testValues(1, 0, ptr(0.9), highs.ModelStatusOptimal, nil)
+	testValues(1, 0, ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(1, 0, ptr(1.1), highs.ModelStatusOptimal, ptr(1.1))
+	testValues(1, 0, ptr(77), highs.ModelStatusOptimal, ptr(77))
+	testValues(-1, 0, ptr(0), highs.ModelStatusOptimal, nil)
+	testValues(-1, 0, ptr(0.9), highs.ModelStatusOptimal, nil)
+	testValues(-1, 0, ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(-1, 0, ptr(1.1), highs.ModelStatusOptimal, ptr(1.1))
+	testValues(-1, 0, ptr(77), highs.ModelStatusOptimal, ptr(77))
+	testValues(0, 0, ptr(0), highs.ModelStatusOptimal, nil)
+	testValues(0, 0, ptr(0.9), highs.ModelStatusOptimal, nil)
+	testValues(0, 0, ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(0, 0, ptr(1.1), highs.ModelStatusOptimal, ptr(1.1))
+	testValues(0, 0, ptr(77), highs.ModelStatusOptimal, ptr(77))
 }
 
 func TestIsXor(test *testing.T) {

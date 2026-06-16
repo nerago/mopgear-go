@@ -47,24 +47,26 @@ func (build *LinearBuilder) ContraintIfBoolCopy(boolSwitchVar, sourceVar ColumnI
 }
 
 // https://medium.com/data-science/a-comprehensive-guide-to-modeling-techniques-in-mixed-integer-linear-programming-3e96cc1bc03d
-type ContraintAndBuilder struct {
+type ConstraintAndBuilder struct {
 	outputVar ColumnIndex
 	inputVars []ColumnIndex
 }
 
-func (and *ContraintAndBuilder) SetOutput(column ColumnIndex) {
+func (and *ConstraintAndBuilder) SetOutput(column ColumnIndex) {
 	and.outputVar = column
 }
 
-func (and *ContraintAndBuilder) AddInput(column ColumnIndex) {
+func (and *ConstraintAndBuilder) AddInput(column ColumnIndex) {
 	if !slices.Contains(and.inputVars, column) {
 		and.inputVars = append(and.inputVars, column)
 	}
 }
 
-func (and *ContraintAndBuilder) Build(build *LinearBuilder) {
+func (and *ConstraintAndBuilder) Build(build *LinearBuilder) {
 	if len(and.inputVars) == 0 {
-		panic("no inputs")
+		setTrue := ConstraintRow{Debug: "ContraintAndBuilder_setZero"}
+		setTrue.Add(and.outputVar, 1)
+		setTrue.Build(build, 1, 1)
 	} else if len(and.inputVars) == 1 {
 		copyRow := ConstraintRow{Debug: "ContraintAndBuilder_copy"}
 		copyRow.Add(and.outputVar, -1)
@@ -282,6 +284,11 @@ func (build *LinearBuilder) AbsoluteValue_WithToggle(inputVar, outputVar, toggle
 	setIfPositive.Add(outputVar, -1)
 	setIfPositive.Add(toggleVar, rangeHigh)
 	setIfPositive.Build(build, C_MinusInf, rangeHigh)
+
+	// ideally outputVar should be limited to zero already
+	zeroMinimum := ConstraintRow{}
+	zeroMinimum.Add(outputVar, 1)
+	zeroMinimum.Build(build, 0, C_PlusInf)
 }
 
 // basic logic: output = one xor two
@@ -343,7 +350,7 @@ func (build *LinearBuilder) ConstantIsBetweenColumns(minimumColumn, maximumColum
 	isOverMinimum := build.ColumnIsLessOrEqualThanConstant(minimumColumn, constValue, rangeHigh, equalDelta)
 	isUnderMaximum := build.ColumnIsGreaterOrEqualThanConstant(maximumColumn, constValue, rangeHigh, equalDelta)
 
-	and := ContraintAndBuilder{}
+	and := ConstraintAndBuilder{}
 	and.AddInput(isOverMinimum)
 	and.AddInput(isUnderMaximum)
 	and.SetOutput(targetBoolColumn)

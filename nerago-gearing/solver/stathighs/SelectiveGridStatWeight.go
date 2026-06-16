@@ -228,7 +228,7 @@ func (selgrid *SelectiveGridStatWeightProcess) unitValueCombinationAddToModel(ba
 	thisUnitSample selectiveGridDataSample, thisDetailWeight utilhighs.ColumnIndex, debugText string) {
 
 	includeDataPointToggle := selgrid.build.CreateColumnBool(utilhighs.DebugString{Text: "DATA TOGGLE " + debugText})
-	and := utilhighs.ContraintAndBuilder{}
+	and := utilhighs.ConstraintAndBuilder{}
 	and.SetOutput(includeDataPointToggle)
 	and.AddInput(baseUnitSample.includeToggles[0])
 	and.AddInput(baseUnitSample.includeToggles[1])
