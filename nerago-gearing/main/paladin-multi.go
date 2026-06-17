@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/multi"
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/simulate"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
 
@@ -52,7 +53,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:                     "Prot-Damage",
 		GearFile:                  files.GearFileProtDps,
 		Model:                     model.Model_PallyProtDps(),
-		RequestRatingPercent:      0.09,
+		RequestRatingPercent:      0.04,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
 	}
@@ -80,6 +81,14 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
 	}
+	protHeal := multi_types.MultiSetParam{
+		Label:                     "Prot-Heal",
+		GearFile:                  files.GearFileProtMitigationWithSet,
+		Model:                     model.Model_PallyProtHeal(),
+		RequestRatingPercent:      0.05,
+		ExtraUpgradeLevel:         generalUpgrade,
+		ForceUpgradeExistingItems: forceUpgrade,
+	}
 
 	ret.AddExtraItems([]items.ItemId{
 		legendMeleeCloak,
@@ -88,34 +97,28 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95141, // shado assault loop
 		86957, // heroic bladed tempest ring
 		96500, // scaled tyrant heroic
-		96481, // durumu tentacle h
 		96377, // jinrohk soulcrystaleroic
 
 		87015, // heroic clawfeet
 		86979, // heroic impaling treads
-		87024, // null greathelm
 		96373, // cloudbreaker belt heroic
 		96478, // treads of the blind heroic
 
-		95535, // normal lightning legs REMOVE12
 		94773, // centripetal shoulders normal
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
 		95153, // Tyrant King Battleplate
 
 		96550, // doomed crown heroic
-		87024, // null greathelm
 		95282, // ret tier15 normal head
 		95910, // ret tier15 chest celestial
 		95281, // ret tier15 gloves normal
 		96657, // ret tier15 legs heroic
 		96658, // ret tier15 shoulder heroic
 
-		85343, // white tiger battleplate t14
 		96447, // rot-proof greatplate
 		87100, // White Tiger Gauntlets
 
-		95142, // striker's battletags
 		95205, // terra-cotta neck
 		94776, // primal turtle amulet
 		96420, // talisman of angry spirits
@@ -129,7 +132,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		trinketTwinsGaze, // gaze of the twins
 		trinketPrimRage,
 
-		87145, // defiled earth OFF
 		96394, // frozen warlord bracer heroic
 
 		101882, // cliffbreaker helm exp/mastery
@@ -151,7 +153,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95140, // shado assault band
 		95141, // shado assault loop OFF123
 		96500, // scaled tyrant heroic
-		96481, // durumu tentacle heroic
 		96377, // jinrohk soulcrystal
 
 		87015, // heroic clawfeet
@@ -162,29 +163,18 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		legendMeleeCloak,
 
-		94820, // caustic spike bracers OFF1234
-		95535, // normal lightning legs
-		94773, // centripetal shoulders normal
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
 		95153, // Tyrant King Battleplate
 
 		96550, // doomed crown heroic
-		87024, // null greathelm
 		95282, // ret tier15 normal head
-		95292, // prot tier15 head normal
 
 		95910, // ret tier15 chest celestial
 		95281, // ret tier15 gloves normal
 		96657, // ret tier15 legs heroic
 		96658, // ret tier15 shoulder heroic
 
-		95290, // prot tier15 chest normal
-		95291, // prot tier15 hand normal
-		96667, // prot tier15 leg heroic
-		96668, // prot tier15 shoulder heroic
-
-		95142, // striker's battletags OFF12
 		95205, // terra-cotta neck
 		94776, // primal turtle amulet
 		96420, // talisman of angry spirits
@@ -205,7 +195,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
-		96436, // tortos shell heroic
 
 		101882, // cliffbreaker helm exp/mastery
 		101887, // timeless ring haste/mastery
@@ -242,10 +231,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		94773, // centripetal shoulders normal REMOVE12
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
-		95153, // Tyrant King Battleplate REMOVE1234
 
 		96550, // doomed crown heroic
-		87024, // null greathelm
 		95282, // ret tier15 normal head
 
 		95910, // ret tier15 chest celestial
@@ -281,7 +268,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		94945, // greatshield of the gloaming normal
 		96182, // ultimate prot of the emperor thunder normal
-		96436, // tortos shell heroic
 
 		101882, // cliffbreaker helm exp/mastery
 		101887, // timeless ring haste/mastery
@@ -448,24 +434,78 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
 	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
 
-	// { Wrist "Bubble-Burst Bracers" id=103738 lvl=561 {str=1249 stam=1874 hit=927 haste=671}
-	// { Wrist "Blood Rage Bracers" id=103742 lvl=553 {str=1159 stam=1739 expert=829 parry=678} }
-	// { Wrist "Frozen Warlord's Bracers" id=96394 lvl=549 {str=1116 stam=1675 haste=798 expert=392 master=261}
-	// { Wrist "Caustic Spike Bracers CritRating" id=94820 lvl=536 {str=909 stam=1484 crit=978}
-	// { Wrist "Bracers of Constant Implosion ExpertiseRating" id=96375 lvl=549 {str=1036 stam=1675 expert=1103} }
+protHeal.AddExtraItems([]items.ItemId{
+		86979, // heroic impaling treads
+		96478, // treads of the blind heroic
 
-	// protDps.ForceTryAllSlot(items.Equip_Wrist, 103738, 96394, 94820, 96375)
-	// protCompromise.ForceTryAllSlot(items.Equip_Wrist, 103738, 103742, 96394, 96375)
-	// protMitigationNoSet.ForceTryAllSlot(items.Equip_Wrist, 103738, 103742, 96394, 96375)
-	// protMitigationWithSet.ForceTryAllSlot(items.Equip_Wrist, 103738, 96394)
+		95141, // shado assault loop
+		96500, // scaled tyrant heroic
+		96481, // durumu tentacle heroic
+		96377, // jinrohk soulcrystal
 
-	// ret.AddBagsExtra()
-	// protDps.AddBagsExtra()
-	// protCompromise.AddBagsExtra()
-	// protMitigationNoSet.AddBagsExtra()
-	// protMitigationWithSet.AddBagsExtra()
+		96373, // cloudbreaker belt heroic
 
-	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
+		legendTankCloak,
+
+		94773, // centripetal shoulders normal REMOVE1234
+		96533, // rein-binders fists heroic
+		96447, // rot-proof greatplate
+
+		96550, // doomed crown heroic
+		95291, // prot tier15 hand normal
+		96664, // prot tier15 chest heroic
+		96666, // prot tier15 head heroic
+		96667, // prot tier15 leg heroic
+		96668, // prot tier15 shoulder heroic
+
+		95142, // striker's battletags
+		95205, // terra-cotta neck
+		95178, // lootraptor amulet REMOVE123
+		94776, // primal turtle amulet REMOVE12
+		96420, // talisman of angry spirits
+
+		96394, // frozen warlord bracer heroic
+
+		96376, // worldbreaker weapon
+		96534, // qon's scimitar
+
+		96375, // bracers implosion
+		96395, // bloodsoaked legplates
+		96542, // tidal force treads
+
+		trinketZandSpark,
+		trinketPrimRage,
+		trinketJiKun,
+		trinketTwinsGaze,
+		trinketSoulBarrier,
+		trinketFortZand,
+
+		94945, // greatshield of the gloaming normal
+		96182, // ultimate prot of the emperor thunder normal
+		96436, // tortos shell heroic
+
+		101882, // cliffbreaker helm exp/mastery
+		101887, // timeless ring haste/mastery
+		103787, // poisonbinder girth
+		103742, // blood rage bracers
+		99126,  // prot t16 chest normal
+		99128,  // prot t16 head normal
+		103738, // bubble bracers
+	})
+	blockHelmetsWithoutIndomitable(&protHeal)
+	// protHeal.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
+	protHeal.ForceSingleSlot(items.Equip_Back, legendTankCloak)
+	protHeal.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
+	protHeal.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
+
+	ret.AddBagsExtra()
+	protDps.AddBagsExtra()
+	protCompromise.AddBagsExtra()
+	protMitigationNoSet.AddBagsExtra()
+	protMitigationWithSet.AddBagsExtra()
+	protHeal.AddBagsExtra()
+
+	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Expertise, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Hit, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
@@ -478,6 +518,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	job.AddSetParam(protCompromise)
 	job.AddSetParam(protMitigationNoSet)
 	job.AddSetParam(protMitigationWithSet)
+	job.AddSetParam(protHeal)
 
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})

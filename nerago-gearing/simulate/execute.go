@@ -32,7 +32,7 @@ func WowSim_Execute_UseModel(runSize WowSim_RunSize, model *model.Model, equipMa
 }
 
 func WowSim_Execute_SpecifyAll(runSize WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) SimData {
-	infile := files.SimFileFor(spec, goal)
+	infile := files.SimFileFor(spec, goal, fight)
 	input := inputRequestFromTemplate(infile, equipMap, profession, bonusStats, spec, fight, runSize)
 
 	reporter := make(chan *wowsim_proto.ProgressMetrics, 10)
@@ -194,11 +194,8 @@ func updateFight(input *wowsim_proto.RaidSimRequest, fight stats.WowSim_Fight) {
 			target.MinBaseDamage *= 1.3
 		}
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 220000
-		// TODO MORE HEALS PLZ
-		// TODO MORE HEALS PLZ
-		// TODO MORE HEALS PLZ
-		// TODO MORE HEALS PLZ
-		// TODO MORE HEALS PLZ
+	case stats.Fight_Juggernaut:
+		// nothing so far
 	default:
 		panic("unknown fight")
 	}

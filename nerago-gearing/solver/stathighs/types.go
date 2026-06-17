@@ -105,6 +105,15 @@ var NewStatWeights_dpsWeight = simulate.SimData{
 	DTPS:  0.04,
 }
 
+// for dps set
+var NewStatWeights_healWeight = simulate.SimData{
+	DPS:   0.1,
+	DEATH: 0.1,
+	TMI:   0.1,
+	DTPS:  0.3,
+	HPS:   0.4,
+}
+
 var G_RequiredStats = []stats.StatType{
 	stats.Stat_Strength,
 	stats.Stat_Stamina,

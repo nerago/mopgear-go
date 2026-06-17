@@ -15,7 +15,7 @@ func Model_PallyProtMitigation_WithSet() Model {
 	return Model{
 		Spec:             spec,
 		Goal:             goal,
-		SimulateAs:       Fight_Horridon_LowHeal, // TODO really a raden set
+		SimulateAs:       Fight_Juggernaut,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
 		// StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry_PlusAdditional(
@@ -38,6 +38,31 @@ func Model_PallyProtMitigation_WithSet() Model {
 	}
 }
 
+func Model_PallyProtHeal() Model {
+	spec := Spec_PaladinProt
+	goal := OptimiseGoal_HalfMitiHeal
+	weight := StatRatingsWeights_ReadFile(files.WeightHealFile, false, true, false) // TODO new file
+	return Model{
+		Spec:             spec,
+		Goal:             goal,
+		SimulateAs:       Fight_Juggernaut,
+		StatRatings:      weight,
+		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
+		ReforgeRules:     ReforgeRules_tank,
+		EnchantChoice:    EnchantChoice_ForSpec(spec, goal),
+		GemChoice:        GemChoice_ForSpec(spec, goal),
+		SetBonus:         SetBonus_Named("Plate of Winged Triumph"),
+		SetBonusRequired: []ActiveSetCountsRequired{
+			ActiveSetCountsRequiredMake(ActiveSet_Named("Plate of Winged Triumph"), 4),
+		},
+		Professions: ProfessionInfo{
+			IsBlacksmith: true,
+			IsEngineer:   true,
+		},
+		ReferenceGearFile: files.GearFileProtMitigationWithSet, // TODO new file
+	}
+}
+
 func Model_PallyProtMitigation_NoSet() Model {
 	spec := Spec_PaladinProt
 	goal := OptimiseGoal_Mitigation
@@ -45,7 +70,7 @@ func Model_PallyProtMitigation_NoSet() Model {
 	return Model{
 		Spec:             spec,
 		Goal:             goal,
-		SimulateAs:       Fight_Horridon_LowHeal,
+		SimulateAs:       Fight_Juggernaut,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:     ReforgeRules_tank,
@@ -67,7 +92,7 @@ func Model_PallyProtCompromise() Model {
 	return Model{
 		Spec:             spec,
 		Goal:             goal,
-		SimulateAs:       Fight_Animus,
+		SimulateAs:       Fight_Juggernaut,
 		StatRatings:      weight,
 		StatRequirements: StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:     ReforgeRules_tank,

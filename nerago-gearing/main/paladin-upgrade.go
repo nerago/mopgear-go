@@ -164,8 +164,9 @@ func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 
 func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 	// simRunSize    = simulate.RunSize_TestOnly
-	var simRunSize simulate.WowSim_RunSize = 1500
-	// simRunSize  := simulate.RunSize_QuickDirty
+	// var simRunSize simulate.WowSim_RunSize = 1500
+	// var simRunSize simulate.WowSim_RunSize = 3000
+	simRunSize := simulate.RunSize_QuickDirty
 	// simRunSize    := simulate.RunSize_Medium
 
 	substituteItemsDpsAndMiti := slices.Concat(substituteItemsDps, substituteItemsMiti)
@@ -175,18 +176,18 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
 	substituteEmptySlotOnly[items.Item_Ring] = 86957    // heroic bladed tempest ring
 
-	finder := func(_ stats.Difficulty) []*items.FullItem {
-		return []*items.FullItem{db.WowSimDB_ByIdAndUpgrade(99128, 2), db.WowSimDB_ByIdAndUpgrade(99138, 2)}
-	}
-	// finder := loaders.ItemFinder_SiegeStrengthPlateTank
+	// finder := func(_ stats.Difficulty) []*items.FullItem {
+	// 	return []*items.FullItem{db.WowSimDB_ByIdAndUpgrade(99128, 2), db.WowSimDB_ByIdAndUpgrade(99138, 2)}
+	// }
+	finder := loaders.ItemFinder_SiegeStrengthPlateTank
 	// finder := loaders.ItemFinder_Ordos
 	// finder := loaders.ItemFinder_TimelessPlate
 
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
-				IncludeCelestial: false,
-				IncludeNormal:    true,
+				IncludeCelestial: true,
+				IncludeNormal:    false,
 				IncludeHeroic:    false,
 				IncludeRaden:     false,
 				IgnoredItems:     ignoredItems,

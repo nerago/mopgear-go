@@ -1,0 +1,1775 @@
+{
+  "requestId": "raidSimAsync-84efa051e5683fa3",
+  "raid": {
+    "parties": [
+      {
+        "players": [
+          {
+            "name": "Player",
+            "race": "RaceBloodElf",
+            "class": "ClassPaladin",
+            "equipment": {
+              "items": [
+                {
+                  "id": 105586,
+                  "gems": [
+                    95346,
+                    76667
+                  ],
+                  "upgradeStep": "UpgradeStepTwo"
+                },
+                {
+                  "id": 105513,
+                  "reforging": 137,
+                  "upgradeStep": "UpgradeStepTwo"
+                },
+                {
+                  "id": 99364,
+                  "enchant": 4803,
+                  "gems": [
+                    76667,
+                    76667
+                  ],
+                  "reforging": 160,
+                  "upgradeStep": "UpgradeStepTwo"
+                },
+                {
+                  "id": 102250,
+                  "enchant": 4422,
+                  "gems": [
+                    76667
+                  ],
+                  "reforging": 131,
+                  "upgradeStep": "UpgradeStepTwo"
+                },
+                {
+                  "id": 105412,
+                  "enchant": 4420,
+                  "gems": [
+                    76667,
+                    76699,
+                    76652
+                  ],
+                  "upgradeStep": "UpgradeStepTwo"
+                },
+                {
+                  "id": 105411,
+                  "enchant": 4415,
+                  "gems": [
+                    76699
+                  ],
+                  "reforging": 137,
+                  "upgradeStep": "UpgradeStepTwo"
+                },
+                {
+                  "id": 99369,
+                  "enchant": 4430,
+                  "gems": [
+                    76667,
+                    76667,
+                    76699
+                  ],
+                  "reforging": 159,
+                  "upgradeStep": "UpgradeStepTwo",
+                  "tinker": 4898
+                },
+                {
+                  "id": 105433,
+                  "gems": [
+                    76667,
+                    76642,
+                    76699
+                  ],
+                  "reforging": 137,
+                  "upgradeStep": "UpgradeStepTwo"
+                },
+                {
+                  "id": 105640,
+                  "enchant": 4823,
+                  "gems": [
+                    76642,
+                    76642,
+                    76667
+                  ],
+                  "reforging": 166,
+                  "upgradeStep": "UpgradeStepTwo"
+                },
+                {
+                  "id": 105531,
+                  "enchant": 4426,
+                  "gems": [
+                    76699
+                  ],
+                  "upgradeStep": "UpgradeStepTwo"
+                },
+                {
+                  "id": 105620,
+                  "gems": [
+                    76667
+                  ],
+                  "reforging": 159,
+                  "upgradeStep": "UpgradeStepTwo"
+                },
+                {
+                  "id": 105589,
+                  "gems": [
+                    76699
+                  ],
+                  "upgradeStep": "UpgradeStepTwo"
+                },
+                {
+                  "id": 105568,
+                  "upgradeStep": "UpgradeStepTwo"
+                },
+                {
+                  "id": 105632,
+                  "upgradeStep": "UpgradeStepTwo"
+                },
+                {
+                  "id": 105691,
+                  "enchant": 4444,
+                  "gems": [
+                    76667,
+                    76667
+                  ],
+                  "reforging": 160
+                },
+                {
+                  "id": 105693,
+                  "enchant": 4993,
+                  "gems": [
+                    76699,
+                    76699
+                  ],
+                  "reforging": 124
+                }
+              ]
+            },
+            "consumables": {
+              "prepotId": 76090,
+              "potId": 76095,
+              "flaskId": 76088,
+              "foodId": 74646,
+              "conjuredId": 5512,
+              "consumableIds": [
+                76084,
+                76087,
+                76088,
+                86569,
+                76076,
+                76077,
+                76078,
+                76080,
+                76083,
+                76075,
+                76081
+              ]
+            },
+            "bonusStats": {
+              "apiVersion": 3,
+              "stats": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "pseudoStats": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "itemSwap": {
+              "items": [
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {}
+              ],
+              "prepullBonusStats": {
+                "apiVersion": 3,
+                "stats": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "pseudoStats": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            "buffs": {
+              "tricksOfTheTrade": true,
+              "devotionAuraCount": 2,
+              "vigilanceCount": 2,
+              "rallyingCryCount": 2,
+              "shatteringThrowCount": 1
+            },
+            "protectionPaladin": {
+              "options": {
+                "classOptions": {
+                  "seal": "Insight"
+                }
+              }
+            },
+            "talentsString": "313213",
+            "glyphs": {
+              "major1": 41101,
+              "major2": 45744,
+              "major3": 41096,
+              "minor1": 80581
+            },
+            "profession1": "Blacksmithing",
+            "profession2": "Engineering",
+            "cooldowns": {
+              "hpPercentForDefensives": 0.3
+            },
+            "rotation": {
+              "type": "TypeAPL",
+              "simple": {
+                "cooldowns": {
+                  "hpPercentForDefensives": 0.3
+                }
+              },
+              "prepullActions": [
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 20925
+                      }
+                    }
+                  },
+                  "doAtValue": {
+                    "uuid": {
+                      "value": "cc000a45-1024-469a-a6b0-815529b417d1"
+                    },
+                    "const": {
+                      "val": "-1.6s"
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "otherId": "OtherActionPotion"
+                      }
+                    }
+                  },
+                  "doAtValue": {
+                    "uuid": {
+                      "value": "39757bf1-8362-48af-b97d-a1ed41c86dd2"
+                    },
+                    "const": {
+                      "val": "-0.1s"
+                    }
+                  }
+                }
+              ],
+              "priorityList": [
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 31884
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "condition": {
+                      "uuid": {
+                        "value": "85662c63-28cd-470d-a330-c2490f8a2f0d"
+                      },
+                      "and": {
+                        "vals": [
+                          {
+                            "uuid": {
+                              "value": "0d2371fe-22b4-4c55-a2b2-f4efd626a7d9"
+                            },
+                            "or": {
+                              "vals": [
+                                {
+                                  "uuid": {
+                                    "value": "3c45a584-8cbc-4ed4-a3c1-a8a8a4326d1c"
+                                  },
+                                  "and": {
+                                    "vals": [
+                                      {
+                                        "uuid": {
+                                          "value": "589f0bae-ea9c-4fe6-80ad-cf91b23149fe"
+                                        },
+                                        "bossCurrentTarget": {
+                                          "targetUnit": {
+                                            "type": "Target"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "uuid": {
+                                          "value": "a7d5a713-7bea-4627-b086-c50bb4113052"
+                                        },
+                                        "cmp": {
+                                          "op": "OpGt",
+                                          "lhs": {
+                                            "uuid": {
+                                              "value": "9692b63c-ecda-435f-a888-c08458ee55fc"
+                                            },
+                                            "auraNumStacks": {
+                                              "auraId": {
+                                                "spellId": 144467
+                                              },
+                                              "includeReactionTime": true
+                                            }
+                                          },
+                                          "rhs": {
+                                            "uuid": {
+                                              "value": "dc27dfa5-0764-499e-866f-214a3d1948eb"
+                                            },
+                                            "const": {
+                                              "val": "3"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                },
+                                {
+                                  "uuid": {
+                                    "value": "ab8d1caf-1e2b-49b2-8c0d-3ec07c74af45"
+                                  },
+                                  "cmp": {
+                                    "op": "OpLe",
+                                    "lhs": {
+                                      "uuid": {
+                                        "value": "de95c9df-10c4-442d-93cb-33dd58d65055"
+                                      },
+                                      "bossSpellTimeToReady": {
+                                        "targetUnit": {
+                                          "type": "Target"
+                                        },
+                                        "spellId": {
+                                          "spellId": 144464
+                                        }
+                                      }
+                                    },
+                                    "rhs": {
+                                      "uuid": {
+                                        "value": "c59d6f83-62b2-41b9-82a3-084488fcb82f"
+                                      },
+                                      "const": {
+                                        "val": "1s"
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 498
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "condition": {
+                      "uuid": {
+                        "value": "706a07d7-9aad-4fbc-a5dd-f7c509012344"
+                      },
+                      "and": {
+                        "vals": [
+                          {
+                            "uuid": {
+                              "value": "914593c0-4602-4fcd-aaaa-dc02426aabd9"
+                            },
+                            "not": {
+                              "val": {
+                                "uuid": {
+                                  "value": "6882e98a-f01e-442a-9601-8f550a20a8ed"
+                                },
+                                "spellIsReady": {
+                                  "spellId": {
+                                    "spellId": 498
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "f542142f-865f-4f43-8308-4257e31805a1"
+                            },
+                            "auraIsInactive": {
+                              "auraId": {
+                                "spellId": 498
+                              },
+                              "includeReactionTime": true
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "fab0dc1c-08a8-411a-95da-31dcdd051725"
+                            },
+                            "or": {
+                              "vals": [
+                                {
+                                  "uuid": {
+                                    "value": "0e6e9ab0-3b6a-4fd7-844a-8ca433478eae"
+                                  },
+                                  "and": {
+                                    "vals": [
+                                      {
+                                        "uuid": {
+                                          "value": "230a94df-a2e9-43de-ac3b-d9a2db7d9a17"
+                                        },
+                                        "bossCurrentTarget": {
+                                          "targetUnit": {
+                                            "type": "Target"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "uuid": {
+                                          "value": "6bcc6790-3075-4ef7-a00b-996c6e0c5ddf"
+                                        },
+                                        "cmp": {
+                                          "op": "OpGt",
+                                          "lhs": {
+                                            "uuid": {
+                                              "value": "d0549c23-4647-459f-82f4-a3c000087274"
+                                            },
+                                            "auraNumStacks": {
+                                              "auraId": {
+                                                "spellId": 144467
+                                              },
+                                              "includeReactionTime": true
+                                            }
+                                          },
+                                          "rhs": {
+                                            "uuid": {
+                                              "value": "aa51ea72-d80a-4915-8c0c-92582ff44324"
+                                            },
+                                            "const": {
+                                              "val": "3"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 86659
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "condition": {
+                      "uuid": {
+                        "value": "61a50456-d177-44dc-9d1d-02001ce41431"
+                      },
+                      "and": {
+                        "vals": [
+                          {
+                            "uuid": {
+                              "value": "de3638df-3a9c-4de5-9b67-4da7c771a2be"
+                            },
+                            "bossCurrentTarget": {
+                              "targetUnit": {
+                                "type": "Target"
+                              }
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "a3926300-2fe5-4b65-b4e6-afcc3ddac0c0"
+                            },
+                            "not": {
+                              "val": {
+                                "uuid": {
+                                  "value": "a955b8b7-74c3-4b4b-80a4-b66bac8cddee"
+                                },
+                                "spellIsReady": {
+                                  "spellId": {
+                                    "spellId": 86659
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "bbc17ee7-6fef-4ea8-8025-8ba623930cde"
+                            },
+                            "auraIsInactive": {
+                              "auraId": {
+                                "spellId": 86659
+                              },
+                              "includeReactionTime": true
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 31850
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "condition": {
+                      "uuid": {
+                        "value": "463076bd-72b4-4674-8f8b-468a32ec900c"
+                      },
+                      "and": {
+                        "vals": [
+                          {
+                            "uuid": {
+                              "value": "36c2e261-e059-4bd8-adfa-6e668d7bfa98"
+                            },
+                            "bossCurrentTarget": {
+                              "targetUnit": {
+                                "type": "Target"
+                              }
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "d8eac845-fb65-48e1-938a-5aac36dbed29"
+                            },
+                            "not": {
+                              "val": {
+                                "uuid": {
+                                  "value": "f918ebb0-93f3-4320-858a-61646b654c80"
+                                },
+                                "spellIsReady": {
+                                  "spellId": {
+                                    "spellId": 31850
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "02d28046-8e11-42ae-8a46-9249f689f0e7"
+                            },
+                            "auraIsInactive": {
+                              "auraId": {
+                                "spellId": 31850
+                              },
+                              "includeReactionTime": true
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "castAllStatBuffCooldowns": {
+                      "statType1": 11,
+                      "statType2": 19,
+                      "statType3": 10
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "condition": {
+                      "uuid": {
+                        "value": "f30ba2d2-d7ea-44a5-95ec-dbfd3fa5a999"
+                      },
+                      "and": {
+                        "vals": [
+                          {
+                            "uuid": {
+                              "value": "4eb79dae-1cc2-4a32-ac57-30667d7e1a82"
+                            },
+                            "bossCurrentTarget": {
+                              "targetUnit": {
+                                "type": "Target"
+                              }
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "074ea448-dc6e-4cab-95d4-d0f0116088a4"
+                            },
+                            "not": {
+                              "val": {
+                                "uuid": {
+                                  "value": "2913bde7-9564-4e0d-962a-46beeaebc4b9"
+                                },
+                                "spellIsReady": {
+                                  "spellId": {
+                                    "spellId": 86659
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "080cfe58-c61f-4e49-9eb5-37c9bb6e7f11"
+                            },
+                            "auraIsInactive": {
+                              "auraId": {
+                                "spellId": 86659
+                              },
+                              "includeReactionTime": true
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 114030,
+                        "tag": -1
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "condition": {
+                      "uuid": {
+                        "value": "ce2d6492-883e-420f-9f04-4423f83abab1"
+                      },
+                      "and": {
+                        "vals": [
+                          {
+                            "uuid": {
+                              "value": "b3b941b7-8c5d-4158-ae5b-7ecb01214b24"
+                            },
+                            "bossCurrentTarget": {
+                              "targetUnit": {
+                                "type": "Target"
+                              }
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "a774f8c8-9168-4dcb-b079-60263466e4ea"
+                            },
+                            "not": {
+                              "val": {
+                                "uuid": {
+                                  "value": "11f0205c-98db-4535-93dc-1c82eeb6d3ff"
+                                },
+                                "spellIsReady": {
+                                  "spellId": {
+                                    "spellId": 33206,
+                                    "tag": -1
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "1c28fc83-9369-40bc-812b-aa10b50c7cdb"
+                            },
+                            "auraIsInactive": {
+                              "auraId": {
+                                "spellId": 33206,
+                                "tag": -1
+                              },
+                              "includeReactionTime": true
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 97462,
+                        "tag": -1
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "condition": {
+                      "uuid": {
+                        "value": "aef8cf0a-609f-4884-880c-d8f3c694ee66"
+                      },
+                      "and": {
+                        "vals": [
+                          {
+                            "uuid": {
+                              "value": "6b1488a3-90e2-45ba-b375-d5694f2f591f"
+                            },
+                            "bossCurrentTarget": {
+                              "targetUnit": {
+                                "type": "Target"
+                              }
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "a13778db-2455-481f-b2be-c86b5a8d90f4"
+                            },
+                            "cmp": {
+                              "op": "OpLt",
+                              "lhs": {
+                                "uuid": {
+                                  "value": "c606c42f-da1a-4cf4-996e-e25254d2422c"
+                                },
+                                "currentHealthPercent": {}
+                              },
+                              "rhs": {
+                                "uuid": {
+                                  "value": "d03a1762-9d63-41f3-8004-17ff13214cb0"
+                                },
+                                "const": {
+                                  "val": "50%"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "castSpell": {
+                      "spellId": {
+                        "itemId": 5512
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "autocastOtherCooldowns": {}
+                  }
+                },
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 105809
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "condition": {
+                      "uuid": {
+                        "value": "3ff0907a-96df-4e67-b50a-d985d6fee260"
+                      },
+                      "or": {
+                        "vals": [
+                          {
+                            "uuid": {
+                              "value": "67965f59-b342-4e41-9ecf-e5c350f336c4"
+                            },
+                            "and": {
+                              "vals": [
+                                {
+                                  "uuid": {
+                                    "value": "a0b46fe6-467a-44d2-97be-360fe1bd88f4"
+                                  },
+                                  "cmp": {
+                                    "op": "OpLt",
+                                    "lhs": {
+                                      "uuid": {
+                                        "value": "7d525ec2-d3c3-434e-bc81-3afd886e16a2"
+                                      },
+                                      "auraRemainingTime": {
+                                        "auraId": {
+                                          "spellId": 114163
+                                        }
+                                      }
+                                    },
+                                    "rhs": {
+                                      "uuid": {
+                                        "value": "2b856648-cc7a-4805-9670-ca81e330dd77"
+                                      },
+                                      "const": {
+                                        "val": "2s"
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "uuid": {
+                                    "value": "0ff27663-4e48-402b-a955-56d80873bdd3"
+                                  },
+                                  "cmp": {
+                                    "op": "OpGt",
+                                    "lhs": {
+                                      "uuid": {
+                                        "value": "b9efe22b-2503-4fb9-bc97-ee49f63c61ec"
+                                      },
+                                      "auraNumStacks": {
+                                        "auraId": {
+                                          "spellId": 114637
+                                        }
+                                      }
+                                    },
+                                    "rhs": {
+                                      "uuid": {
+                                        "value": "874867ec-1ee9-4834-8b4e-a7628628b288"
+                                      },
+                                      "const": {
+                                        "val": "2"
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "uuid": {
+                                    "value": "00e99444-8523-4993-b9f4-0f526c557298"
+                                  },
+                                  "or": {
+                                    "vals": [
+                                      {
+                                        "uuid": {
+                                          "value": "28d856ac-7276-445a-a72e-93f40b542a17"
+                                        },
+                                        "cmp": {
+                                          "op": "OpGe",
+                                          "lhs": {
+                                            "uuid": {
+                                              "value": "233ac35d-7b4c-4978-b401-ec816c4b4fbe"
+                                            },
+                                            "currentGenericResource": {}
+                                          },
+                                          "rhs": {
+                                            "uuid": {
+                                              "value": "f30d654a-6741-4476-a1bf-de526a8ba63e"
+                                            },
+                                            "const": {
+                                              "val": "3"
+                                            }
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "uuid": {
+                                          "value": "608e3430-c4c7-4ad1-a5f8-a0c379b3248d"
+                                        },
+                                        "and": {
+                                          "vals": [
+                                            {
+                                              "uuid": {
+                                                "value": "0943e517-46e0-4884-ac57-10fa7073d82a"
+                                              },
+                                              "auraIsKnown": {
+                                                "auraId": {
+                                                  "spellId": 144566
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "uuid": {
+                                                "value": "9169b75d-2fca-4102-a5a5-6cbc9f693928"
+                                              },
+                                              "auraIsActive": {
+                                                "auraId": {
+                                                  "spellId": 144569
+                                                },
+                                                "includeReactionTime": true
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "5d25dcdd-8699-4daf-957c-42563d33a02f"
+                            },
+                            "and": {
+                              "vals": [
+                                {
+                                  "uuid": {
+                                    "value": "69216606-c55e-48fa-8ab4-cafce29aef65"
+                                  },
+                                  "auraIsKnown": {
+                                    "auraId": {
+                                      "spellId": 144566
+                                    }
+                                  }
+                                },
+                                {
+                                  "uuid": {
+                                    "value": "55efbd8d-a2ec-4ccc-b8c7-da65c0a82366"
+                                  },
+                                  "auraIsActive": {
+                                    "auraId": {
+                                      "spellId": 144569
+                                    },
+                                    "includeReactionTime": true
+                                  }
+                                },
+                                {
+                                  "uuid": {
+                                    "value": "7202cd3a-672f-4a4b-8074-73dd2c7cc0f4"
+                                  },
+                                  "cmp": {
+                                    "op": "OpGe",
+                                    "lhs": {
+                                      "uuid": {
+                                        "value": "58d8eb44-e400-49dd-8fb6-6fbcdbfc1985"
+                                      },
+                                      "auraNumStacks": {
+                                        "auraId": {
+                                          "spellId": 114637
+                                        }
+                                      }
+                                    },
+                                    "rhs": {
+                                      "uuid": {
+                                        "value": "98e92c6b-927b-4175-b36e-3794d9a33e25"
+                                      },
+                                      "const": {
+                                        "val": "5"
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 114163
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "condition": {
+                      "uuid": {
+                        "value": "163414f2-d9fc-422b-abc2-f940d5dd62e5"
+                      },
+                      "or": {
+                        "vals": [
+                          {
+                            "uuid": {
+                              "value": "380f1ed4-064c-4f40-a95b-c148d4f63b89"
+                            },
+                            "cmp": {
+                              "op": "OpLe",
+                              "lhs": {
+                                "uuid": {
+                                  "value": "76a86956-b7c8-4a78-8710-5d0d7a44e6ab"
+                                },
+                                "currentGenericResource": {}
+                              },
+                              "rhs": {
+                                "uuid": {
+                                  "value": "a8d04592-3658-4557-b65c-9c4531e579c8"
+                                },
+                                "const": {
+                                  "val": "5"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "731aa19b-2cfc-472d-8d14-42183c42046d"
+                            },
+                            "cmp": {
+                              "op": "OpGe",
+                              "lhs": {
+                                "uuid": {
+                                  "value": "610765f0-22da-4c6c-9c19-4a1dca04402c"
+                                },
+                                "protectionPaladinDamageTakenLastGlobal": {}
+                              },
+                              "rhs": {
+                                "uuid": {
+                                  "value": "2b44a6ff-34d7-4ec4-8880-d232b0be2084"
+                                },
+                                "math": {
+                                  "op": "OpMul",
+                                  "lhs": {
+                                    "uuid": {
+                                      "value": "e65db714-7b1d-4a51-a494-46fcd7f7b056"
+                                    },
+                                    "maxHealth": {}
+                                  },
+                                  "rhs": {
+                                    "uuid": {
+                                      "value": "19dbcff9-f053-45d2-ae81-e6c13399fbfe"
+                                    },
+                                    "const": {
+                                      "val": "0.3"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 53600
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "condition": {
+                      "uuid": {
+                        "value": "f3e5a413-8438-4759-af9a-b0c075e3e6b4"
+                      },
+                      "and": {
+                        "vals": [
+                          {
+                            "uuid": {
+                              "value": "91dbaec8-2631-4df6-ac29-9cbd28b2715e"
+                            },
+                            "auraIsKnown": {
+                              "auraId": {
+                                "spellId": 114232
+                              }
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "215d851c-b815-4891-a014-6146c2c7b903"
+                            },
+                            "auraIsActive": {
+                              "auraId": {
+                                "spellId": 31884
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 20271
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "condition": {
+                      "uuid": {
+                        "value": "dd014f3f-86c8-44c4-9521-ff82efea0600"
+                      },
+                      "and": {
+                        "vals": [
+                          {
+                            "uuid": {
+                              "value": "5cb25a9a-abc3-4841-9292-071caac41ffa"
+                            },
+                            "auraIsKnown": {
+                              "auraId": {
+                                "spellId": 114232
+                              }
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "7a2461d3-b73a-4029-8572-0b89861c403f"
+                            },
+                            "cmp": {
+                              "op": "OpGt",
+                              "lhs": {
+                                "uuid": {
+                                  "value": "e5dc5978-6900-432c-a801-0bbf03f58fa3"
+                                },
+                                "spellTimeToReady": {
+                                  "spellId": {
+                                    "spellId": 20271
+                                  }
+                                }
+                              },
+                              "rhs": {
+                                "uuid": {
+                                  "value": "bc9fead6-e540-4146-bbf0-74b2d70c7592"
+                                },
+                                "const": {
+                                  "val": "0"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "aa2adfea-9770-480d-a3c5-413927014d00"
+                            },
+                            "cmp": {
+                              "op": "OpLe",
+                              "lhs": {
+                                "uuid": {
+                                  "value": "e0018d3c-a411-449c-bc79-a863f028db0b"
+                                },
+                                "spellTimeToReady": {
+                                  "spellId": {
+                                    "spellId": 20271
+                                  }
+                                }
+                              },
+                              "rhs": {
+                                "uuid": {
+                                  "value": "0ea2f89d-92b0-4d18-bcac-e53454c66523"
+                                },
+                                "const": {
+                                  "val": "0.5s"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "wait": {
+                      "duration": {
+                        "uuid": {
+                          "value": "34a9b62c-8201-4ac9-9247-77ab1b36e2c2"
+                        },
+                        "spellTimeToReady": {
+                          "spellId": {
+                            "spellId": 20271
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "condition": {
+                      "uuid": {
+                        "value": "61cb7216-885c-4212-a907-b217ffdefbcc"
+                      },
+                      "auraIsActive": {
+                        "auraId": {
+                          "spellId": 85416
+                        },
+                        "includeReactionTime": true
+                      }
+                    },
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 31935
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 20271
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 31935
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 119072
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "condition": {
+                      "uuid": {
+                        "value": "a77ddc6c-8ad6-488b-93fd-70c0e3039761"
+                      },
+                      "auraIsActive": {
+                        "auraId": {
+                          "spellId": 105809
+                        }
+                      }
+                    },
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 35395
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 114916
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 35395
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 24275
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "condition": {
+                      "uuid": {
+                        "value": "9978b5cf-5fc5-4c07-8263-866dc5934260"
+                      },
+                      "and": {
+                        "vals": [
+                          {
+                            "uuid": {
+                              "value": "1cdad998-810d-43c1-aef3-99619ec2e964"
+                            },
+                            "cmp": {
+                              "op": "OpGt",
+                              "lhs": {
+                                "uuid": {
+                                  "value": "263c1288-be12-4a4e-b765-5fd925b47608"
+                                },
+                                "spellTimeToReady": {
+                                  "spellId": {
+                                    "spellId": 35395
+                                  }
+                                }
+                              },
+                              "rhs": {
+                                "uuid": {
+                                  "value": "ef9a54b2-26cd-4e78-962d-10b9b9227c07"
+                                },
+                                "const": {
+                                  "val": "0"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "aca1b9a0-1ab7-45ac-ad02-a3acbf367495"
+                            },
+                            "cmp": {
+                              "op": "OpLe",
+                              "lhs": {
+                                "uuid": {
+                                  "value": "f0d580f9-b7d7-4ebb-8e46-343974ef8963"
+                                },
+                                "spellTimeToReady": {
+                                  "spellId": {
+                                    "spellId": 35395
+                                  }
+                                }
+                              },
+                              "rhs": {
+                                "uuid": {
+                                  "value": "5c5ce191-746f-41b6-a6f0-e3a439bb423a"
+                                },
+                                "const": {
+                                  "val": "0.5s"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "wait": {
+                      "duration": {
+                        "uuid": {
+                          "value": "fd1c8bfc-0073-4f0d-a3b0-c49cddea7d44"
+                        },
+                        "spellTimeToReady": {
+                          "spellId": {
+                            "spellId": 35395
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "condition": {
+                      "uuid": {
+                        "value": "0a231725-c49e-483a-88ff-2ca99a6ea506"
+                      },
+                      "and": {
+                        "vals": [
+                          {
+                            "uuid": {
+                              "value": "4ba1c573-5593-46f5-a8c8-a5b01e3504de"
+                            },
+                            "cmp": {
+                              "op": "OpGt",
+                              "lhs": {
+                                "uuid": {
+                                  "value": "4c3b73e9-a540-46d5-a208-60e676da1719"
+                                },
+                                "spellTimeToReady": {
+                                  "spellId": {
+                                    "spellId": 20271
+                                  }
+                                }
+                              },
+                              "rhs": {
+                                "uuid": {
+                                  "value": "2660a8cd-3232-4756-9d1b-265951dc87d4"
+                                },
+                                "const": {
+                                  "val": "0"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "69d928da-c3fb-4033-bb5c-3e2ccda8c31b"
+                            },
+                            "cmp": {
+                              "op": "OpLe",
+                              "lhs": {
+                                "uuid": {
+                                  "value": "d3047fe1-a689-44b0-bc2e-5f684dcc6c3d"
+                                },
+                                "spellTimeToReady": {
+                                  "spellId": {
+                                    "spellId": 20271
+                                  }
+                                }
+                              },
+                              "rhs": {
+                                "uuid": {
+                                  "value": "7b06d54d-6670-4c52-b32f-455c6f0ec4ea"
+                                },
+                                "const": {
+                                  "val": "0.5s"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "uuid": {
+                              "value": "d5ece0bb-c748-42b7-89d4-be168a038d65"
+                            },
+                            "cmp": {
+                              "op": "OpGe",
+                              "lhs": {
+                                "uuid": {
+                                  "value": "78a6f265-abcd-403e-8053-2d04968517df"
+                                },
+                                "math": {
+                                  "op": "OpSub",
+                                  "lhs": {
+                                    "uuid": {
+                                      "value": "4ddbf310-08aa-415d-9ba1-7f50edc8e043"
+                                    },
+                                    "spellTimeToReady": {
+                                      "spellId": {
+                                        "spellId": 35395
+                                      }
+                                    }
+                                  },
+                                  "rhs": {
+                                    "uuid": {
+                                      "value": "515e6a32-db0f-4828-ac54-2396d589582b"
+                                    },
+                                    "spellTimeToReady": {
+                                      "spellId": {
+                                        "spellId": 20271
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "rhs": {
+                                "uuid": {
+                                  "value": "8581630f-baa2-47fb-97b5-83f7a2ddf7db"
+                                },
+                                "const": {
+                                  "val": "0.5s"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "wait": {
+                      "duration": {
+                        "uuid": {
+                          "value": "356e77ef-dff8-45bc-9972-f76b94992052"
+                        },
+                        "spellTimeToReady": {
+                          "spellId": {
+                            "spellId": 20271
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "condition": {
+                      "uuid": {
+                        "value": "d14a5211-df98-4fd3-a0aa-61d3062944e1"
+                      },
+                      "cmp": {
+                        "op": "OpLt",
+                        "lhs": {
+                          "uuid": {
+                            "value": "d5b6e637-6338-409d-97bf-353a217c4231"
+                          },
+                          "auraRemainingTime": {
+                            "auraId": {
+                              "spellId": 20925
+                            }
+                          }
+                        },
+                        "rhs": {
+                          "uuid": {
+                            "value": "9dbb3293-5747-406c-9233-6e808dda9c71"
+                          },
+                          "const": {
+                            "val": "5s"
+                          }
+                        }
+                      }
+                    },
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 20925
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "condition": {
+                      "uuid": {
+                        "value": "20dd0911-a74e-49b4-994d-a7b2bfdca6b1"
+                      },
+                      "not": {
+                        "val": {
+                          "uuid": {
+                            "value": "2b63454d-9182-481e-86c5-88420c8ce6db"
+                          },
+                          "dotIsActive": {
+                            "spellId": {
+                              "spellId": 26573
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 26573
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 114158
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 114852,
+                        "tag": 1
+                      }
+                    }
+                  }
+                },
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 20925
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            "reactionTimeMs": 400,
+            "inFrontOfTarget": true,
+            "distanceFromTarget": 5,
+            "healingModel": {
+              "hps": 210000,
+              "cadenceSeconds": 0.4,
+              "cadenceVariation": 1.11,
+              "absorbFrac": 0.18,
+              "burstWindow": 6
+            }
+          },
+          {},
+          {},
+          {},
+          {}
+        ],
+        "buffs": {}
+      },
+      {
+        "players": [
+          {},
+          {},
+          {},
+          {},
+          {}
+        ],
+        "buffs": {}
+      },
+      {
+        "players": [
+          {},
+          {},
+          {},
+          {},
+          {}
+        ],
+        "buffs": {}
+      },
+      {
+        "players": [
+          {},
+          {},
+          {},
+          {},
+          {}
+        ],
+        "buffs": {}
+      },
+      {
+        "players": [
+          {},
+          {},
+          {},
+          {},
+          {}
+        ],
+        "buffs": {}
+      }
+    ],
+    "numActiveParties": 5,
+    "buffs": {
+      "trueshotAura": true,
+      "serpentsSwiftness": true,
+      "arcaneBrilliance": true,
+      "elementalOath": true,
+      "blessingOfMight": true,
+      "blessingOfKings": true,
+      "powerWordFortitude": true,
+      "bloodlust": true,
+      "skullBannerCount": 2
+    },
+    "debuffs": {
+      "weakenedBlows": true,
+      "physicalVulnerability": true,
+      "weakenedArmor": true,
+      "curseOfElements": true
+    },
+    "tanks": [
+      {
+        "type": "Player"
+      }
+    ]
+  },
+  "encounter": {
+    "apiVersion": 3,
+    "duration": 120,
+    "durationVariation": 5,
+    "executeProportion90": 0.9,
+    "targets": [
+      {
+        "id": 71466,
+        "name": "Iron Juggernaut 10 H",
+        "level": 93,
+        "mobType": "MobTypeMechanical",
+        "stats": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          24835,
+          0,
+          600000000,
+          0,
+          0
+        ],
+        "minBaseDamage": 582961,
+        "damageSpread": 0.749,
+        "swingSpeed": 1.5,
+        "secondTankIndex": 1,
+        "targetInputs": [
+          {
+            "inputType": "Number",
+            "label": "Ignite Armor tank swap stacks",
+            "tooltip": "Taunt swap when the current tank reaches this many Ignite Armor stacks. Set to 0 to disable simulated tank swaps.",
+            "numberValue": 5
+          },
+          {
+            "label": "Swap back when Ignite Armor expires",
+            "tooltip": "Automatically swap back to the main tank when Ignite Armor expires on the main tank. If disabled, swap after stacks build up on the off-tank.",
+            "boolValue": true
+          }
+        ]
+      }
+    ]
+  },
+  "simOptions": {
+    "iterations": 8000,
+    "randomSeed": "187051874",
+    "debugFirstIteration": true
+  },
+  "type": "SimTypeIndividual"
+}

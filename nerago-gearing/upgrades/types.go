@@ -136,6 +136,8 @@ func (result upgradeItemResultWithSim) increaseSim() float64 {
 		return result.sim.IncreaseMitigation(&result.baseSim)
 	case stats.OptimiseGoal_HalfMitiDps:
 		return (result.sim.IncreaseMitigation(&result.baseSim) + result.sim.IncreaseOf(&result.baseSim, simulate.Sim_DPS)) / 2.0
+	case stats.OptimiseGoal_HalfMitiHeal:
+		return (result.sim.IncreaseMitigation(&result.baseSim) + result.sim.IncreaseOf(&result.baseSim, simulate.Sim_HPS)) / 2.0
 	default:
 		panic("unknown goal")
 	}

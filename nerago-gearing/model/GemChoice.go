@@ -29,7 +29,7 @@ func GemChoice_ForSpec(spec SpecType, goal OptimiseGoal) map[SocketType]GemInfo 
 
 	case Spec_PaladinProt:
 		switch goal {
-		case OptimiseGoal_Mitigation:
+		case OptimiseGoal_Mitigation, OptimiseGoal_HalfMitiHeal:
 			result[Socket_Red] = GemData_ById(76667)
 			result[Socket_Blue] = GemData_ById(76588)
 			result[Socket_Yellow] = GemData_ById(76699)

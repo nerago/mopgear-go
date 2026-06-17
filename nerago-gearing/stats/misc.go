@@ -186,6 +186,7 @@ const (
 	Fight_Horridon_HighHeal WowSim_Fight = iota
 	Fight_Horridon_LowHeal  WowSim_Fight = iota
 	Fight_Animus            WowSim_Fight = iota
+	Fight_Juggernaut        WowSim_Fight = iota
 )
 
 type StatAndValue struct {
@@ -196,11 +197,12 @@ type StatAndValue struct {
 type OptimiseGoal int8
 
 const (
-	OptimiseGoal_Unknown     OptimiseGoal = iota
-	OptimiseGoal_Mitigation  OptimiseGoal = iota
-	OptimiseGoal_Dps         OptimiseGoal = iota
-	OptimiseGoal_HalfMitiDps OptimiseGoal = iota
-	OptimiseGoal_Healing     OptimiseGoal = iota
+	OptimiseGoal_Unknown      OptimiseGoal = iota
+	OptimiseGoal_Mitigation   OptimiseGoal = iota
+	OptimiseGoal_Dps          OptimiseGoal = iota
+	OptimiseGoal_HalfMitiDps  OptimiseGoal = iota
+	OptimiseGoal_Healing      OptimiseGoal = iota
+	OptimiseGoal_HalfMitiHeal OptimiseGoal = iota
 )
 
 func (up OptimiseGoal) Name() string {
@@ -210,9 +212,11 @@ func (up OptimiseGoal) Name() string {
 	case OptimiseGoal_Dps:
 		return "dps"
 	case OptimiseGoal_HalfMitiDps:
-		return "half"
+		return "mit/dps"
 	case OptimiseGoal_Healing:
 		return "heal"
+	case OptimiseGoal_HalfMitiHeal:
+		return "mit/heal"
 	default:
 		panic("unknown")
 	}

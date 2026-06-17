@@ -28,7 +28,7 @@ func EnchantChoice_ForSpec(spec SpecType, goal OptimiseGoal) map[SlotItem]GemInf
 
 	case Spec_PaladinProt:
 		switch goal {
-		case OptimiseGoal_Mitigation:
+		case OptimiseGoal_Mitigation, OptimiseGoal_HalfMitiHeal:
 			result[Item_Shoulder] = EnchantData_ById(4805)
 			result[Item_Back] = EnchantData_ById(4422)
 			result[Item_Chest] = EnchantData_ById(4420)

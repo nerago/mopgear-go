@@ -1,6 +1,7 @@
 package simulate
 
 import (
+	"iter"
 	"math"
 	"paladin_gearing_go/util"
 )
@@ -164,6 +165,29 @@ func (stats *SimData) Set(types SimType, value float64) {
 		stats.DEATH = value
 	default:
 		panic("unknown value")
+	}
+}
+
+func (stats *SimData) Seq() iter.Seq2[SimType, float64] {
+	return func(yield func(SimType, float64) bool) {
+		if !yield(Sim_DPS, stats.DPS) {
+			return
+		}
+		if !yield(Sim_TPS, stats.TPS) {
+			return
+		}
+		if !yield(Sim_DTPS, stats.DTPS) {
+			return
+		}
+		if !yield(Sim_HPS, stats.HPS) {
+			return
+		}
+		if !yield(Sim_TMI, stats.TMI) {
+			return
+		}
+		if !yield(Sim_DEATH, stats.DEATH) {
+			return
+		}
 	}
 }
 
