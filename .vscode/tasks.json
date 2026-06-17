@@ -23,6 +23,27 @@
 				"kind": "build",
 			}
 		},
+		
+		{
+			"label": "Build Gearing Debug",
+			"type": "go",
+			"command": "build",
+			"args": [
+				"-o", "main-debug.exe",
+				"-v",
+				"-tags=with_db",
+				"./nerago-gearing/main"
+			],
+			"presentation": {
+				"reveal": "silent"
+			},
+			"problemMatcher": [
+				"$go"
+			],
+			"group": {
+				"kind": "build",
+			}
+		},
 
 		{
 			"type": "shell",

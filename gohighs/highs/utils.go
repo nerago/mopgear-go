@@ -83,17 +83,3 @@ func expandSlice(n int, slice []float64, fillValue float64) ([]float64, error) {
 	}
 	return nil, newErrorMsg("expandSlice", "inconsistent slice length")
 }
-
-// maxRowCol finds the maximum row and column indices from a slice of nonzeros.
-func maxRowCol(nz []Nonzero) (maxRow, maxCol int) {
-	maxRow, maxCol = -1, -1
-	for _, n := range nz {
-		if n.Row > maxRow {
-			maxRow = n.Row
-		}
-		if n.Col > maxCol {
-			maxCol = n.Col
-		}
-	}
-	return maxRow, maxCol
-}

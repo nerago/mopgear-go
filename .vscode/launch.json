@@ -5,10 +5,10 @@
             "name": "Launch Gearing Debug",
             "type": "go",
             "request": "launch",
-            "mode": "debug",
-            "program": "./nerago-gearing/main",
+            "mode": "exec",
+            "program": "main-debug.exe",
             "cwd": "${workspaceFolder}",
-            "buildFlags": "-tags=with_db",
+            "preLaunchTask": "Build Gearing Debug",
             "env": {
                 "Path": "${env:Path};${workspaceFolder}\\gohighs\\internal\\highs\\lib\\windows_amd64_gpu" 
             }
