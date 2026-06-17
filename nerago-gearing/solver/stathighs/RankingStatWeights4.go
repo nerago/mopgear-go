@@ -159,7 +159,7 @@ func (process *RankingStatWeightProcess4) RunUsingExternalStart(initialWeight We
 	return weights2
 }
 
-func takeDataSample_Start(slice []WeightInput, size int) []WeightInput {
+func takeDataSample_Start[T any](slice []T, size int) []T {
 	if len(slice) < size {
 		return slice
 	} else {
@@ -167,7 +167,7 @@ func takeDataSample_Start(slice []WeightInput, size int) []WeightInput {
 	}
 }
 
-func takeDataSample_Random(slice []WeightInput, size int) []WeightInput {
+func takeDataSample_Random[T any](slice []T, size int) []T {
 	if len(slice) < size {
 		return slice
 	} else {

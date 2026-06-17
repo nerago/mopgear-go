@@ -15,6 +15,7 @@ const c_grid2_highScore = 100.0
 type GridStatWeightProcess2 struct {
 	printer *util.PrintRecorder
 
+	DIFFINCLUDE  int
 	targetRatios simulate.SimData
 	inputData    []WeightInput
 
@@ -99,9 +100,13 @@ func (grid2 *GridStatWeightProcess2) processInputData() {
 			differenceCount, diffStatA, diffStatB, _ := grid2.checkForNumberStatDifferences(&grid2.inputData[a].TotalStat, &grid2.inputData[b].TotalStat)
 			switch differenceCount {
 			case 1:
-				grid2.prepareSampleOneDifferenceStats(&grid2.inputData[a], &grid2.inputData[b], diffStatA)
+				if grid2.DIFFINCLUDE == 1 || grid2.DIFFINCLUDE == 12 {
+					grid2.prepareSampleOneDifferenceStats(&grid2.inputData[a], &grid2.inputData[b], diffStatA)
+				}
 			case 2:
-				grid2.prepareSampleTwoDifferenceStats(&grid2.inputData[a], &grid2.inputData[b], diffStatA, diffStatB)
+				if grid2.DIFFINCLUDE == 2 || grid2.DIFFINCLUDE == 12 {
+					grid2.prepareSampleTwoDifferenceStats(&grid2.inputData[a], &grid2.inputData[b], diffStatA, diffStatB)
+				}
 			case 3:
 				// grid2.prepareSampleThreeDifferenceStats(&grid2.inputData[a], &grid2.inputData[b], diffStatA, diffStatB, diffStatC)
 			}

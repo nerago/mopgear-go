@@ -8,13 +8,18 @@ import (
 	"paladin_gearing_go/util/util_rank"
 )
 
+const (
+	c_tweak_start = 0.01
+	c_tweak_limit = 0.000001
+)
+
 var TweakerChangeStats = []stats.StatType{
 	stats.Stat_Stamina, stats.Stat_Crit, stats.Stat_Haste,
 	stats.Stat_Expertise, stats.Stat_Mastery, stats.Stat_Dodge, stats.Stat_Parry}
 
 func WeightTweaker(startWeight stathighs.WeightResult, changeStats []stats.StatType, targetRatio simulate.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) stathighs.WeightResult {
-	mult := 1.01
-	add := 0.01
+	add := c_tweak_start
+	mult := 1 + add
 	bestWeight := startWeight.Clone()
 
 	for {
@@ -42,8 +47,12 @@ func WeightTweaker(startWeight stathighs.WeightResult, changeStats []stats.StatT
 		updateWeight := best.GetBestOrPanic()
 
 		if updateWeight.Equals(bestWeight) {
-			printer.Printf("DONE\n")
-			break
+			add /= 2
+			mult = 1 + add
+			if add <= c_tweak_limit {
+				printer.Printf("DONE\n")
+				break
+			}
 		} else {
 			printer.Printf("NEXT %s accuracy=%f\n", updateWeight.String(), EvaluateAccuracy(updateWeight, inputData, targetRatio))
 			bestWeight = updateWeight

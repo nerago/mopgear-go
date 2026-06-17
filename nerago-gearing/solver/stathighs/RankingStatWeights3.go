@@ -84,7 +84,7 @@ func (ranker *RankingStatWeightProcess3) Run(doRound3 bool) []WeightResult {
 
 	// FIRST ROUND: minimal data, dumb initial values
 	ranker.printer.Println("RankingStatWeightProcess3 FIRST ROUND")
-	ranker.dataSample = ranker.dataAllOriginal[0:100]
+	ranker.dataSample = takeDataSample_Start(ranker.dataAllOriginal, 100)
 	ranker.prepareRankings()
 	ranker.createWeightColumns()
 	ranker.makeDataListEntryColumns()
@@ -128,7 +128,7 @@ func (ranker *RankingStatWeightProcess3) Run(doRound3 bool) []WeightResult {
 	for size := 150; size < 400; size += 25 {
 		startTime := time.Now()
 
-		ranker.dataSample = ranker.dataAllOriginal[0:size]
+		ranker.dataSample = takeDataSample_Start(ranker.dataAllOriginal, size)
 		ranker.printer.Println("RankingStatWeightProcess3 THIRD ROUND " + strconv.Itoa(size))
 		ranker.build = new(utilhighs.LinearBuilder)
 		ranker.build.Minimise = true

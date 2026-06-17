@@ -16,6 +16,7 @@ type GridStatWeightProcess struct {
 
 	targetRatios simulate.SimData
 	inputData    []WeightInput
+	simTypes     []simulate.SimType
 	testMode     bool
 
 	build           utilhighs.LinearBuilder
@@ -46,12 +47,11 @@ func (grid *GridStatWeightProcess) SupplyData(inputData []WeightInput) {
 
 func (grid *GridStatWeightProcess) SetTargetRatios(targetRatios simulate.SimData) {
 	sum := 0.0
-	for _, simType := range G_RequiredSims {
-		val := targetRatios.Get(simType)
-		if val <= 0 {
-			panic("missing ratio")
+	for simType, ratio := range targetRatios.Seq() {
+		if ratio >= 0 {
+			grid.simTypes = append(grid.simTypes, simType)
 		}
-		sum += val
+		sum += ratio
 	}
 	if !utilhighs.FloatEqualsOne(sum) {
 		panic("ratios don't add to one")
@@ -92,13 +92,13 @@ func (grid *GridStatWeightProcess) setupWeightVars() {
 	}
 
 	for _, statType := range G_RequiredStats {
-		for _, simType := range G_RequiredSims {
+		for _, simType := range grid.simTypes {
 			colDetailWeight := grid.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
 			grid.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
 	}
 
-	for _, simType := range G_RequiredSims {
+	for _, simType := range grid.simTypes {
 		value := grid.targetRatios.Get(simType)
 		colDetailWeight := grid.detailedWeights.GetOrPanic(c_baseStatType, simType)
 		strengthSetToRatio := utilhighs.ConstraintRow{}
@@ -147,7 +147,7 @@ func (grid *GridStatWeightProcess) prepareSample(statType stats.StatType, high, 
 
 	statDiff := high.TotalStat.GetFloat(statType) - low.TotalStat.GetFloat(statType)
 
-	for _, simType := range G_RequiredSims {
+	for _, simType := range grid.simTypes {
 		var simValueDiff float64
 		if simType.IsHighGood() {
 			simValueDiff = high.SimResult.GetFriendly(simType) - low.SimResult.GetFriendly(simType)
