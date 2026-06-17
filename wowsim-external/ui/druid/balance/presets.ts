@@ -47,12 +47,12 @@ export const P4_BIS_EP_PRESET = PresetUtils.makePresetEpWeights(
 	'Item Level >= 560 (WIP)',
 	Stats.fromMap({
 		[Stat.StatIntellect]: 1,
-		[Stat.StatSpirit]: 1.24 * 0.9,
-		[Stat.StatHitRating]: 1.18,
-		[Stat.StatCritRating]: 0.73,
-		[Stat.StatHasteRating]: 0.84 * 0.9,
-		[Stat.StatMasteryRating]: 0.67 * 0.9,
-		[Stat.StatSpellPower]: 0.73,
+		[Stat.StatSpirit]: 1.33,
+		[Stat.StatHitRating]: 1.27,
+		[Stat.StatCritRating]: 0.82,
+		[Stat.StatHasteRating]: 1.01,
+		[Stat.StatMasteryRating]: 0.81,
+		[Stat.StatSpellPower]: 0.74,
 	}),
 );
 
@@ -107,11 +107,17 @@ export const OtherDefaults = {
 	profession2: Profession.Tailoring,
 };
 
+const defaultPresetSettings = {
+	name: 'Settings',
+	playerOptions: OtherDefaults,
+};
+
 export const PresetPreraidBuild = PresetUtils.makePresetBuild('Pre-raid', {
 	gear: PreraidPresetGear,
 	talents: StandardTalents,
 	rotation: StandardRotation,
 	epWeights: P2_BIS_EP_PRESET,
+	settings: defaultPresetSettings,
 });
 
 export const T14PresetBuild = PresetUtils.makePresetBuild('T14', {
@@ -119,6 +125,7 @@ export const T14PresetBuild = PresetUtils.makePresetBuild('T14', {
 	talents: StandardTalents,
 	rotation: StandardRotation,
 	epWeights: P2_BIS_EP_PRESET,
+	settings: defaultPresetSettings,
 });
 
 export const T15PresetBuild = PresetUtils.makePresetBuild('T15', {
@@ -126,6 +133,7 @@ export const T15PresetBuild = PresetUtils.makePresetBuild('T15', {
 	talents: StandardTalents,
 	rotation: StandardRotation,
 	epWeights: P3_BIS_EP_PRESET,
+	settings: defaultPresetSettings,
 });
 
 export const T16PresetBuild = PresetUtils.makePresetBuild('T16 (WIP)', {
@@ -133,6 +141,14 @@ export const T16PresetBuild = PresetUtils.makePresetBuild('T16 (WIP)', {
 	talents: StandardTalents,
 	rotation: StandardRotation,
 	epWeights: P3_BIS_EP_PRESET,
+	settings: {
+		name: 'T16 (WIP)',
+		playerOptions: {
+			...OtherDefaults,
+			profession1: Profession.Engineering,
+			profession2: Profession.Blacksmithing,
+		},
+	},
 });
 
 export const BALANCE_BREAKPOINTS: UnitStatPresets = {

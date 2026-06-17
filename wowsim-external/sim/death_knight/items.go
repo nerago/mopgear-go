@@ -214,25 +214,28 @@ var ItemSetBattleplateOfCyclopeanDread = core.NewItemSet(core.ItemSet{
 				MaxStacks: 10,
 
 				OnStacksChange: func(aura *core.Aura, sim *core.Simulation, oldStacks, newStacks int32) {
-					newStat := core.Ternary(
-						dk.GetStat(stats.HasteRating) > dk.GetStat(stats.MasteryRating),
-						stats.HasteRating,
-						stats.MasteryRating)
-					if currentStat == newStat {
-						dk.AddStatDynamic(sim, currentStat, 500*float64(newStacks-oldStacks))
-					} else {
-						dk.AddStatDynamic(sim, currentStat, -500*float64(oldStacks))
-						dk.AddStatDynamic(sim, newStat, 500*float64(newStacks))
-						currentStat = newStat
-					}
+					dk.AddStatDynamic(sim, currentStat, 500*float64(newStacks-oldStacks))
 				},
 			})
+
+			masteryRaidBuffs := dk.GetExclusiveEffectCategory("MasteryRatingBuff")
 
 			setBonusAura.AttachProcTrigger(core.ProcTrigger{
 				Callback:       core.CallbackOnCastComplete,
 				ClassSpellMask: DeathKnightSpellKillingMachine | DeathKnightSpellSuddenDoom,
 
 				Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
+					// Stat only changes on a new application
+					if !deathShroudAura.IsActive() {
+						mastery := dk.GetStatWithoutDeps(stats.MasteryRating)
+						hasMasteryRaidBuff := masteryRaidBuffs.GetActiveAura().IsActive()
+						if hasMasteryRaidBuff {
+							mastery -= core.MasteryRaidBuffStrength
+						}
+
+						currentStat = core.Ternary(dk.GetStatWithoutDeps(stats.HasteRating) > mastery, stats.HasteRating, stats.MasteryRating)
+					}
+
 					deathShroudAura.Activate(sim)
 					deathShroudAura.AddStack(sim)
 				},
@@ -261,11 +264,15 @@ var ItemSetBattleplateOfCyclopeanDread = core.NewItemSet(core.ItemSet{
 					},
 				})
 			} else if dk.Spec == proto.Spec_SpecFrostDeathKnight {
+				// Frozen Power is missing both the "Suppress Weapon Effects" and "Suppress
+				// Caster Procs" flags in-game: WCL logs show it feeding MH weapon enchant
+				// procs (Fallen Crusader) and trinket triggers (Fusion-Fire Core cleave).
 				frozenPowerSpell := dk.RegisterSpell(core.SpellConfig{
-					ActionID:    core.ActionID{SpellID: 147620},
-					SpellSchool: core.SpellSchoolFrost,
-					ProcMask:    core.ProcMaskEmpty,
-					Flags:       core.SpellFlagPassiveSpell,
+					ActionID:       core.ActionID{SpellID: 147620},
+					SpellSchool:    core.SpellSchoolFrost,
+					ProcMask:       core.ProcMaskMeleeMHSpecial | core.ProcMaskMeleeProc,
+					Flags:          core.SpellFlagPassiveSpell | core.SpellFlagNoOnCastComplete,
+					ClassSpellMask: DeathKnightSpellFrozenPower,
 
 					DamageMultiplier: 1,
 					CritMultiplier:   dk.DefaultCritMultiplier(),
@@ -283,8 +290,11 @@ var ItemSetBattleplateOfCyclopeanDread = core.NewItemSet(core.ItemSet{
 					}
 
 					dk.PillarOfFrostAura.AttachProcTrigger(core.ProcTrigger{
-						Callback:           core.CallbackOnSpellHitDealt,
-						ProcMask:           core.ProcMaskSpecial,
+						Callback: core.CallbackOnSpellHitDealt,
+						ProcMask: core.ProcMaskSpecial,
+						// Frozen Power carries ProcMaskMeleeProc so it can feed other proc
+						// systems, but it does not re-trigger itself (WCL-verified).
+						ProcMaskExclude:    core.ProcMaskProc,
 						Outcome:            core.OutcomeLanded,
 						RequireDamageDealt: true,
 

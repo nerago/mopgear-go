@@ -180,8 +180,8 @@ dps_results: {
 dps_results: {
  key: "TestArcane-AllItems-ChronomancerRegalia"
  value: {
-  dps: 219495.70322
-  tps: 211096.3233
+  dps: 221189.59633
+  tps: 212563.73754
  }
 }
 dps_results: {
@@ -1371,8 +1371,8 @@ dps_results: {
 dps_results: {
  key: "TestArcane-AllItems-PurifiedBindingsofImmerseus-105422"
  value: {
-  dps: 284384.5254
-  tps: 273042.69575
+  dps: 281542.25231
+  tps: 270499.59373
  }
 }
 dps_results: {

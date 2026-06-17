@@ -961,8 +961,8 @@ dps_results: {
 dps_results: {
  key: "TestFeral-AllItems-Haromm'sTalisman-105527"
  value: {
-  dps: 280785.60625
-  tps: 423748.65223
+  dps: 280514.66639
+  tps: 423968.97918
   hps: 16221.03927
  }
 }
@@ -1145,8 +1145,8 @@ dps_results: {
 dps_results: {
  key: "TestFeral-AllItems-Kardris'ToxicTotem-105540"
  value: {
-  dps: 247454.87005
-  tps: 372502.26501
+  dps: 247054.58062
+  tps: 372078.53001
   hps: 16110.19552
  }
 }
@@ -1577,17 +1577,17 @@ dps_results: {
 dps_results: {
  key: "TestFeral-AllItems-PrismaticPrisonofPride-105474"
  value: {
-  dps: 247197.99381
-  tps: 359528.80904
-  hps: 16218.88172
+  dps: 248037.46296
+  tps: 363347.13047
+  hps: 15060.6293
  }
 }
 dps_results: {
  key: "TestFeral-AllItems-PurifiedBindingsofImmerseus-105422"
  value: {
-  dps: 247562.05865
-  tps: 360293.73578
-  hps: 16462.68479
+  dps: 247046.00198
+  tps: 356493.48327
+  hps: 16435.38142
  }
 }
 dps_results: {

@@ -135,7 +135,9 @@ var ItemSetChronomancerRegalia = core.NewItemSet(core.ItemSet{
 				Duration:  time.Second * 10,
 				MaxStacks: 4,
 				OnStacksChange: func(aura *core.Aura, sim *core.Simulation, oldStacks int32, newStacks int32) {
-					arcaneBlastMod.UpdateFloatValue(0.25 * float64(newStacks))
+					manaMod := []float64{0, -0.25, -0.5, -0.75, -2}[newStacks]
+					arcaneBlastMod.Activate()
+					arcaneBlastMod.UpdateFloatValue(manaMod)
 				},
 			})
 
@@ -192,10 +194,15 @@ var ItemSetChronomancerRegalia = core.NewItemSet(core.ItemSet{
 				FloatValue: 0.25,
 			})
 
+			// TriggerImmediately is required so the consume fires synchronously during
+			// DealDamage — before BrainFreezeAura.Deactivate re-activates Frozen Thoughts
+			// via its OnExpire chain. Without it the 10ms SpellBatchWindow defers the
+			// Deactivate call until after the new proc is already live, wiping it.
 			setBonusAura.MakeDependentProcTriggerAura(&mage.Unit, core.ProcTrigger{
-				Name:           "Frozen Thoughts - Consume",
-				ClassSpellMask: frostClassMask,
-				Callback:       core.CallbackOnSpellHitDealt,
+				Name:               "Frozen Thoughts - Consume",
+				ClassSpellMask:     frostClassMask,
+				Callback:           core.CallbackOnSpellHitDealt,
+				TriggerImmediately: true,
 				ExtraCondition: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) bool {
 					return frostAura.IsActive()
 				},
@@ -204,8 +211,13 @@ var ItemSetChronomancerRegalia = core.NewItemSet(core.ItemSet{
 				},
 			})
 
+			// Guard against double registration: both the main Frostbolt and the
+			// Icy Veins split-bolt variant share ClassSpellMask MageSpellFrostbolt,
+			// so OnSpellRegistered would fire twice and add the OnExpire callback
+			// twice, causing a duplicate Frozen Thoughts activation per Brain Freeze.
+			// Tag != 0 identifies variant spells (e.g. Tag 1 = Icy Veins split-bolt).
 			mage.OnSpellRegistered(func(spell *core.Spell) {
-				if !spell.Matches(MageSpellFrostbolt) {
+				if !spell.Matches(MageSpellFrostbolt) || spell.ActionID.Tag != 0 {
 					return
 				}
 				if mage.BrainFreezeAura == nil {
@@ -260,8 +272,10 @@ var ItemSetChronomancerRegalia = core.NewItemSet(core.ItemSet{
 				},
 			})
 
+			// Same guard as T16 2pc: Tag != 0 skips the Icy Veins split-bolt variant
+			// which shares the MageSpellFrostbolt ClassSpellMask but uses Tag 1.
 			mage.OnSpellRegistered(func(spell *core.Spell) {
-				if !spell.Matches(MageSpellFrostbolt) {
+				if !spell.Matches(MageSpellFrostbolt) || spell.ActionID.Tag != 0 {
 					return
 				}
 				if mage.BrainFreezeAura == nil {

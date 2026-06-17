@@ -2,6 +2,7 @@ package mop
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/wowsims/mop/sim/common/shared"
@@ -11,12 +12,13 @@ import (
 )
 
 type buffConfig struct {
-	auraLabel string
-	auraID    int32
-	stat      stats.Stat
-	duration  time.Duration
-	icd       time.Duration
-	callback  core.AuraCallback // default: core.CallbackOnSpellHitDealt
+	auraLabel       string
+	auraID          int32
+	stat            stats.Stat
+	duration        time.Duration
+	icd             time.Duration
+	procMaskExclude core.ProcMask
+	callback        core.AuraCallback // default: core.CallbackOnSpellHitDealt
 }
 
 type readinessTrinketConfig struct {
@@ -209,7 +211,7 @@ func init() {
 			ActionID:    core.ActionID{SpellID: spellID},
 			SpellSchool: spellSchool,
 			ProcMask:    core.ProcMaskEmpty,
-			Flags:       core.SpellFlagIgnoreArmor | core.SpellFlagIgnoreModifiers | core.SpellFlagPassiveSpell | core.SpellFlagNoSpellMods,
+			Flags:       core.SpellFlagIgnoreArmor | core.SpellFlagIgnoreModifiers | core.SpellFlagPassiveSpell | core.SpellFlagNoSpellMods | core.SpellFlagNoOnDamageDealt,
 
 			DamageMultiplier: 1,
 			ThreatMultiplier: 1,
@@ -263,7 +265,6 @@ func init() {
 		return physicalSpell, magicSpell
 	}
 
-	blackoutKickTickID := core.ActionID{SpellID: 100784}.WithTag(2)
 	newMultistrikeTrinket := func(config *multistrikeTrinketConfig) {
 		config.itemVersionMap.RegisterAll(func(version shared.ItemVersion, itemID int32, versionLabel string) {
 			core.NewItemEffect(itemID, func(agent core.Agent, state proto.ItemLevelState) {
@@ -271,7 +272,16 @@ func init() {
 
 				var baseDamage float64
 				applyEffects := func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
-					spell.CalcAndDealDamage(sim, target, baseDamage, spell.OutcomeAlwaysHit)
+					var outcome core.OutcomeApplier
+					if character.Class == proto.Class_ClassHunter {
+						outcome = spell.OutcomeRangedHit
+					} else if spell.ProcMask.Matches(core.ProcMaskMeleeOrMeleeProc) {
+						outcome = spell.OutcomeMeleeSpecialHit
+					} else {
+						outcome = spell.OutcomeMagicHit
+					}
+
+					spell.CalcAndDealDamage(sim, target, baseDamage, outcome)
 				}
 
 				physicalSpell, magicSpell := getMultistrikeSpells(character)
@@ -290,8 +300,7 @@ func init() {
 					Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 						baseDamage = result.Damage / 3.0
 
-						// Special case for Windwalker Blackout Kick DoTs which does physical damage but procs the nature damage spell
-						if spell.SpellSchool.Matches(core.SpellSchoolPhysical) && !spell.ActionID.SameAction(blackoutKickTickID) {
+						if !spell.ProcMask.Matches(core.ProcMaskSpellOrSpellProc) {
 							physicalSpell.ApplyEffects = applyEffects
 							physicalSpell.Cast(sim, result.Target)
 						} else {
@@ -400,6 +409,15 @@ func init() {
 					AttachStatDependency(character.NewDynamicMultiplyStat(stats.Spirit, spiritValue)).
 					AttachMultiplicativePseudoStatBuff(&character.PseudoStats.CritDamageMultiplier, critDamageValue)
 
+				eligibleSlots := character.ItemSwap.EligibleSlotsForItem(itemID)
+				character.ItemSwap.RegisterProcWithSlots(itemID, statAura, eligibleSlots)
+
+				// Prismatic Prison of Pride can only proc as a Healer
+				if config.baseTrinketLabel == "Prismatic Prison of Pride" &&
+					!slices.Contains([]proto.Spec{proto.Spec_SpecRestorationDruid, proto.Spec_SpecHolyPaladin, proto.Spec_SpecHolyPriest, proto.Spec_SpecDisciplinePriest, proto.Spec_SpecRestorationShaman, proto.Spec_SpecMistweaverMonk}, character.Spec) {
+					return
+				}
+
 				stats := stats.Stats{}
 				stats[config.buff.stat] = core.GetItemEffectScalingStatValue(itemID, 2.97300004959, state)
 
@@ -411,11 +429,12 @@ func init() {
 				)
 
 				triggerAura := character.MakeProcTriggerAura(core.ProcTrigger{
-					Name:       fmt.Sprintf("%s (%s)", config.baseTrinketLabel, versionLabel),
-					Callback:   core.Ternary(config.buff.callback != core.CallbackEmpty, config.buff.callback, core.CallbackOnSpellHitDealt),
-					Outcome:    core.OutcomeLanded,
-					ICD:        time.Second * 115,
-					ProcChance: 0.15,
+					Name:            fmt.Sprintf("%s (%s)", config.baseTrinketLabel, versionLabel),
+					Callback:        core.Ternary(config.buff.callback != core.CallbackEmpty, config.buff.callback, core.CallbackOnSpellHitDealt),
+					ProcMaskExclude: core.Ternary(config.buff.procMaskExclude != core.ProcMaskUnknown, config.buff.procMaskExclude, core.ProcMaskUnknown),
+					Outcome:         core.OutcomeLanded,
+					ICD:             time.Second * 115,
+					ProcChance:      0.15,
 
 					Handler: func(sim *core.Simulation, spell *core.Spell, _ *core.SpellResult) {
 						aura.Activate(sim)
@@ -424,10 +443,8 @@ func init() {
 
 				aura.Icd = triggerAura.Icd
 
-				eligibleSlots := character.ItemSwap.EligibleSlotsForItem(itemID)
 				character.AddStatProcBuff(itemID, aura, false, eligibleSlots)
 				character.ItemSwap.RegisterProcWithSlots(itemID, triggerAura, eligibleSlots)
-				character.ItemSwap.RegisterProcWithSlots(itemID, statAura, eligibleSlots)
 			})
 		})
 	}
@@ -468,9 +485,10 @@ func init() {
 		},
 		baseTrinketLabel: "Purified Bindings of Immerseus",
 		buff: &buffConfig{
-			auraLabel: "Expanded Mind",
-			auraID:    146046,
-			stat:      stats.Intellect,
+			auraLabel:       "Expanded Mind",
+			auraID:          146046,
+			stat:            stats.Intellect,
+			procMaskExclude: core.ProcMaskSpellProc | core.ProcMaskSpellDamageProc,
 		},
 	})
 
@@ -558,8 +576,8 @@ func init() {
 		}
 
 		physicalSpell := getTrinketSpell(character, physicalSpellID, core.SpellSchoolPhysical)
+		magicSpell := physicalSpell
 
-		var magicSpell *core.Spell
 		switch character.Class {
 		case proto.Class_ClassDruid:
 			magicSpell = getTrinketSpell(character, 146158, core.SpellSchoolArcane)
@@ -612,7 +630,7 @@ func init() {
 					var outcome core.OutcomeApplier
 					if character.Class == proto.Class_ClassHunter {
 						outcome = spell.OutcomeRangedHit
-					} else if spell.SpellSchool == core.SpellSchoolPhysical {
+					} else if spell.ProcMask.Matches(core.ProcMaskMeleeOrMeleeProc) {
 						outcome = spell.OutcomeMeleeSpecialHit
 					} else {
 						outcome = spell.OutcomeMagicHit
@@ -638,7 +656,7 @@ func init() {
 					Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 						baseDamage = result.Damage
 
-						if magicSpell == nil || !spell.ProcMask.Matches(core.ProcMaskSpellOrSpellProc) {
+						if !spell.ProcMask.Matches(core.ProcMaskSpellOrSpellProc) {
 							physicalSpell.ApplyEffects = applyEffects
 							physicalSpell.Cast(sim, result.Target)
 						} else {
