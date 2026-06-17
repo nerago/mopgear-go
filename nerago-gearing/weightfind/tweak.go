@@ -10,7 +10,7 @@ import (
 
 const (
 	c_tweak_start = 0.01
-	c_tweak_limit = 0.000001
+	c_tweak_limit = 0.00001
 )
 
 var TweakerChangeStats = []stats.StatType{

@@ -42,7 +42,11 @@ func (grid *GridStatWeightProcess) Init(printer *util.PrintRecorder) {
 }
 
 func (grid *GridStatWeightProcess) SupplyData(inputData []WeightInput) {
-	grid.inputData = inputData
+	if grid.testMode {
+		grid.inputData = inputData[0:10]
+	} else {
+		grid.inputData = inputData
+	}
 }
 
 func (grid *GridStatWeightProcess) SetTargetRatios(targetRatios simulate.SimData) {

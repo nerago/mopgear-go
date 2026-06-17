@@ -7,7 +7,6 @@ import (
 	"paladin_gearing_go/multi"
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/simulate"
-	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
 
@@ -434,7 +433,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
 	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
 
-protHeal.AddExtraItems([]items.ItemId{
+	protHeal.AddExtraItems([]items.ItemId{
 		86979, // heroic impaling treads
 		96478, // treads of the blind heroic
 
@@ -505,7 +504,7 @@ protHeal.AddExtraItems([]items.ItemId{
 	protMitigationWithSet.AddBagsExtra()
 	protHeal.AddBagsExtra()
 
-	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
+	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Expertise, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Hit, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
