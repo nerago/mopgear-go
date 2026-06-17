@@ -154,7 +154,9 @@ func (build *LinearBuilder) RunHighsThenDiagnose(printer *util.PrintRecorder) *h
 func (build *LinearBuilder) RunHighs() (*highs.Solution, *util.PrintRecorder) {
 	solver, logFilename := build.prepareHighsRun()
 
-	solution, err := G_HighsPool.RunSolverUnderMutex(solver)
+	requestGpu := build.Solver == "pdlp" || build.Solver == "hipdlp"
+
+	solution, err := G_HighsPool.RunSolverUnderMutex(solver, requestGpu)
 	verifyNoError(err)
 
 	printer := build.postHighsRun(solver, logFilename)

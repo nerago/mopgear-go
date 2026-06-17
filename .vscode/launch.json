@@ -9,6 +9,9 @@
             "program": "./nerago-gearing/main",
             "cwd": "${workspaceFolder}",
             "buildFlags": "-tags=with_db",
+            "env": {
+                "Path": "${env:Path};${workspaceFolder}\\gohighs\\internal\\highs\\lib\\windows_amd64_gpu" 
+            }
         },
 
         {
@@ -18,7 +21,10 @@
             "mode": "exec",
             "program": "main.exe",
             "cwd": "${workspaceFolder}",
-            "preLaunchTask": "Build Gearing Optimised"
+            "preLaunchTask": "Build Gearing Optimised",
+            "env": {
+                "Path": "${env:Path};${workspaceFolder}\\gohighs\\internal\\highs\\lib\\windows_amd64_gpu" 
+            }
         },
 
         {
@@ -27,7 +33,10 @@
             "request": "launch",
             "mode": "test",
             "program": "${workspaceFolder}",
-            "args": ["-v"]
+            "args": ["-v"],
+            "env": {
+                "Path": "${env:Path};${workspaceFolder}\\gohighs\\internal\\highs\\lib\\windows_amd64_gpu" 
+            }
         }
     ]
 }

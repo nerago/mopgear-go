@@ -13,6 +13,7 @@ type highsPoolType struct {
 	instancesMutex sync.Mutex
 
 	runMutex sync.RWMutex // running solve instances are considered "reads" while cleanup is a "write"
+	gpuMutex sync.Mutex
 }
 
 func (pool *highsPoolType) Get() *highs.Solver {
@@ -38,12 +39,21 @@ func (pool *highsPoolType) Put(solver *highs.Solver) {
 	// pool.tryClosePending()
 }
 
-func (pool *highsPoolType) RunSolverUnderMutex(solver *highs.Solver) (*highs.Solution, error) {
+func (pool *highsPoolType) RunSolverUnderMutex(solver *highs.Solver, requestGpu bool) (solution *highs.Solution, err error) {
 	pool.runMutex.RLock()
-	solution, err := solver.Run()
-	pool.runMutex.RUnlock()
+	defer pool.runMutex.RUnlock()
 
-	// pool.tryClosePending()
+	if requestGpu {
+		if pool.gpuMutex.TryLock() {
+			defer pool.gpuMutex.Unlock()
+			solution, err = solver.Run()
+		} else {
+			verifyNoError(solver.SetStringOption("solver", "ipx"))
+			solution, err = solver.Run()
+		}
+	} else {
+		solution, err = solver.Run()
+	}
 
 	return solution, err
 }

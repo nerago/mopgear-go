@@ -55,7 +55,7 @@ package highs
 #cgo linux,arm64 LDFLAGS: ${SRCDIR}/../internal/highs/lib/linux_arm64/libhighs.a -lstdc++ -lm -ldl -lz
 #cgo darwin,amd64 LDFLAGS: ${SRCDIR}/../internal/highs/lib/darwin_amd64/libhighs.a -lc++ -lz
 #cgo darwin,arm64 LDFLAGS: ${SRCDIR}/../internal/highs/lib/darwin_arm64/libhighs.a -lc++ -lz
-#cgo windows,amd64 LDFLAGS: -L${SRCDIR}/../internal/highs/lib/windows_amd64/ -lhighs -lstdc++
+#cgo windows,amd64 LDFLAGS: -L${SRCDIR}/../internal/highs/lib/windows_amd64_gpu/ -lhighs -lstdc++
 
 #include <stdlib.h>
 #include <stdint.h>
