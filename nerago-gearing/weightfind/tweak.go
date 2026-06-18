@@ -11,6 +11,7 @@ import (
 const (
 	c_tweak_start = 0.01
 	c_tweak_limit = 0.00001
+	c_tweak_iter_count = 1000 // limit to avoid infinite loop
 )
 
 var TweakerChangeStats = []stats.StatType{
@@ -22,7 +23,7 @@ func WeightTweaker(startWeight stathighs.WeightResult, changeStats []stats.StatT
 	mult := 1 + add
 	bestWeight := startWeight.Clone()
 
-	for {
+	for range c_tweak_iter_count {
 		best := util_rank.BestCollector1[stathighs.WeightResult]{}
 		best.Offer(&bestWeight, EvaluateAccuracy(bestWeight, inputData, targetRatio))
 		for _, stat := range changeStats {

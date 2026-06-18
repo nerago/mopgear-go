@@ -177,6 +177,7 @@ func (job *MultiSetJob) makeOutputFromHighs(multiResult withhighs.HighsMultiResu
 		outputId := multiResult.OutputId[paramIndex]
 		single := multi_types.SingleProposed_FromItemSet(itemSet, outputId, &param.Model)
 		single.Report(printer)
+		param.seenInSolutions.Add(&itemSet)
 		outputs[paramIndex] = single
 		totalRatingSum += single.ResultRating * param.ratingMultiply
 	}

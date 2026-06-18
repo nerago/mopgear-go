@@ -384,7 +384,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 		96395, // bloodsoaked legplates
 		96542, // tidal force treads
-
 	})
 
 	protHeal.AddExtraItems([]items.ItemId{
@@ -418,7 +417,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
 	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 
-	// job.AddSetParam(ret)
+	job.AddSetParam(ret)
 	job.AddSetParam(protDps)
 	job.AddSetParam(protCompromise)
 	job.AddSetParam(protMitigationNoSet)
@@ -433,6 +432,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	job.FindHighsResultPerPermute(1)
 	// job.RunWithMinimumHaste("Prot-Mitigation-WithSet", 11000, 18000, 250)
 	// job.RunWithMinimumHaste("Prot-Mitigation-NoSet", 11000, 18000, 250)
+
+	job.CullingReport()
 }
 
 func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {
