@@ -153,7 +153,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protMitigationNoSet.AddExtraItems(retT15) // was heroic subset only
 
 	retT16 := []items.ItemId{
-		90052, // ret t16 chest celstial
+		99052, // ret t16 chest celstial
 	}
 	ret.AddExtraItems(retT16)
 	protDps.AddExtraItems(retT16)

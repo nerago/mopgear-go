@@ -40,9 +40,9 @@ func (job *MultiSetJob) FindHighsResultPerPermute(solutionsPerPermute int) {
 	tracker.RunOuterTracking(2)
 	defer tracker.Stop()
 
-	setResultList := job.proposalsUnderPermutation(tracker.MakeNested(), solutionsPerPermute)
+	setResultChannel := job.proposalsUnderPermutation(tracker.MakeNested(), solutionsPerPermute)
 
-	job.proposalsToSimAndOutput(setResultList, tracker.MakeNested())
+	job.proposalsToSimAndOutput(setResultChannel, tracker.MakeNested())
 }
 
 func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, solutionsPerPermute int) <-chan multi_types.MultiProposedOutput {

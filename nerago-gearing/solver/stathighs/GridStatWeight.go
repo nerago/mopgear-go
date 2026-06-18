@@ -36,7 +36,8 @@ type gridDataSample struct {
 func (grid *GridStatWeightProcess) Init(printer *util.PrintRecorder) {
 	grid.printer = printer
 	grid.build.Minimise = true
-	grid.build.Solver = "ipx"
+	grid.build.Solver = "hipdlp"
+	// grid.build.Solver = "ipx"
 	grid.build.TimeLimitSeconds = 3600 * 2
 	grid.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }

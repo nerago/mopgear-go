@@ -104,7 +104,7 @@ func core(printer *util.PrintRecorder) {
 
 	// statWeights_CompareAlgorithms(printer)
 
-	statWeightsGrid_updateAll(printer)
+	// statWeightsGrid_updateAll(printer)
 
 	PaladinMultiRun(printer)
 

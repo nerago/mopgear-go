@@ -93,6 +93,11 @@ func (param *multiSetParamInternal) includeExtra(itemId items.ItemId) {
 		return
 	}
 
+	basicVersion := db.WowSimDB_ByIdAndUpgrade(itemId, 0)
+	if param.itemOptions.CouldAddUpgrade_ItemSlot(basicVersion.SlotItem(), basicVersion, param.job.printer) == items.CanUpgrade_InvalidAlways {
+		return
+	}
+
 	if param.copyExtraFromOtherSpec(itemId) {
 		return
 	}
