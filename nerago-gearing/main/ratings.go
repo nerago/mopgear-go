@@ -768,8 +768,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 }
 
 func statWeightsGrid_updateAll(printer *util.PrintRecorder) {
-	simSpeed := simulate.RunSize_TestOnly
+	// simSpeed := simulate.RunSize_TestOnly
 	// simSpeed := simulate.RunSize_QuickDirty
+	simSpeed := simulate.RunSize_QuickDirty/10
 	// simSpeed := simulate.RunSize_Medium
 
 	weightfind.StatWeights_updateAll(simSpeed, printer, []weightfind.WeightOptions{

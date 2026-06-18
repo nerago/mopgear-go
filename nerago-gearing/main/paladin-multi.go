@@ -7,7 +7,9 @@ import (
 	"paladin_gearing_go/multi"
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/simulate"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"slices"
 )
 
 const (
@@ -18,14 +20,16 @@ const (
 	trinketJiKun       = 94527
 	trinketSoulBarrier = 96555
 
-	trinketCurseHubris  = 105645 // heroic warforged
-	trinketThokTail     = 105609 // heroic warforged
-	trinketFusionCore   = 105459 // heroic warforged
-	trinketSkeerBlood   = 105632 // heroic warforged
-	trinketVialCorrupt  = 105568 // heroic warforged
-	trinketRookUnlucky  = 105438 // heroic warforged
-	trinketJuggFocusing = 105514 // heroic warforged
-	trinketEyeGalakras  = 102298
+	trinketCurseHubrisHeroic = 105645 // heroic warforged
+	// trinketThokTailHeroic     = 105609 // heroic warforged
+	trinketFusionCoreHeroic   = 105459 // heroic warforged
+	trinketSkeerBloodHeroic   = 105632 // heroic warforged
+	trinketVialCorruptHeroic  = 105568 // heroic warforged
+	trinketRookUnluckyHeroic  = 105438 // heroic warforged
+	trinketJuggFocusingHeroic = 105514 // heroic warforged
+	trinketEyeGalakrasHeroic  = 102298
+
+	trinketThokTail = 105111
 
 	legendMeleeCloak = 102249
 	legendTankCloak  = 102250
@@ -34,8 +38,8 @@ const (
 )
 
 func PaladinMultiRun(printer *util.PrintRecorder) {
-	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Medium)
-	// job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
+	// job := multi.MultiSetJob_Create(printer, simulate.RunSize_Medium)
+	job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
 
 	var generalUpgrade int8 = 0
 	var forceUpgrade int8 = 0
@@ -89,15 +93,201 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		ForceUpgradeExistingItems: forceUpgrade,
 	}
 
-	ret.AddExtraItems([]items.ItemId{
-		legendMeleeCloak,
+	// predetermined choices
+	// ret.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
+	ret.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
+	ret.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
+	ret.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
+	// protDps.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
+	protDps.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
+	protDps.ForceSingleSlot(items.Equip_Trinket1, trinketThokTail)
+	protDps.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
+	// protCompromise.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
+	protCompromise.ForceSingleSlot(items.Equip_Trinket1, trinketThokTail)
+	protCompromise.ForceSingleSlot(items.Equip_Trinket2, trinketZandSpark)
+	protCompromise.AddReportVariant(items.Equip_Trinket2, trinketFortZand)
+	// protMitigationNoSet.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
+	protMitigationNoSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
+	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, trinketThokTail)
+	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
+	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketZandSpark)
+	// protMitigationWithSet.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketThokTail)
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
+	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketZandSpark)
+	// protHeal.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
+	protHeal.ForceSingleSlot(items.Equip_Back, legendTankCloak)
+	protHeal.ForceSingleSlot(items.Equip_Trinket1, trinketThokTail)
+	protHeal.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
 
+	// HELMET
+	// TODO bake this into process
+	blockHelmetsWithoutCapacitance(&ret)
+	blockHelmetsWithoutCapacitance(&protDps)
+	blockHelmetsWithoutCapacitance(&protCompromise)
+	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
+	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
+	blockHelmetsWithoutIndomitable(&protHeal)
+
+	// CLOAK: add the cloaks to all even though we often override
+	legendCloaks := []items.ItemId{legendTankCloak, legendMeleeCloak}
+	ret.AddExtraItems(legendCloaks)
+	protDps.AddExtraItems(legendCloaks)
+	protCompromise.AddExtraItems(legendCloaks)
+	protMitigationNoSet.AddExtraItems(legendCloaks)
+	protMitigationWithSet.AddExtraItems(legendCloaks)
+	protHeal.AddExtraItems(legendCloaks)
+
+	// TIER
+	retT15 := []items.ItemId{
+		95282, // ret tier15 normal head
+		95910, // ret tier15 chest celestial
+		95281, // ret tier15 gloves normal
+		96657, // ret tier15 legs heroic
+		96658, // ret tier15 shoulder heroic
+	}
+	ret.AddExtraItems(retT15)
+	protDps.AddExtraItems(retT15)
+	protCompromise.AddExtraItems(retT15)
+	protMitigationNoSet.AddExtraItems(retT15) // was heroic subset only
+
+	retT16 := []items.ItemId{
+		90052, // ret t16 chest celstial
+	}
+	ret.AddExtraItems(retT16)
+	protDps.AddExtraItems(retT16)
+	protCompromise.AddExtraItems(retT16)
+	protMitigationNoSet.AddExtraItems(retT16)
+
+	protT15 := []items.ItemId{
+		95291, // prot tier15 hand normal
+		96664, // prot tier15 chest heroic
+		96666, // prot tier15 head heroic
+		96667, // prot tier15 leg heroic
+		96668, // prot tier15 shoulder heroic
+	}
+	protCompromise.AddExtraItems(protT15)
+	protMitigationNoSet.AddExtraItems(protT15)
+	protMitigationWithSet.AddExtraItems(protT15)
+
+	protT16 := []items.ItemId{
+		99126, // prot t16 chest normal
+		99128, // prot t16 head normal
+		90026, // prot t16 legs celestial
+		99027, // prot t16 shoulder celestial
+		90028, // prot t16 hand celestial
+	}
+	protCompromise.AddExtraItems(protT16)
+	protMitigationNoSet.AddExtraItems(protT16)
+	protMitigationWithSet.AddExtraItems(protT16)
+	protHeal.AddExtraItems(protT16)
+
+	// RING
+	throneRings := []items.ItemId{
 		95140, // shado assault band
 		95141, // shado assault loop
 		86957, // heroic bladed tempest ring
 		96500, // scaled tyrant heroic
-		96377, // jinrohk soulcrystaleroic
+	}
+	throneTankRings := []items.ItemId{
+		96481, // durumu tentacle heroic
+		96377, // jinrohk soulcrystal
+	}
+	ret.AddExtraItems(throneRings)
+	protDps.AddExtraItems(throneRings)
+	protCompromise.AddExtraItems(throneRings)
+	protCompromise.AddExtraItems(throneTankRings)
+	protMitigationNoSet.AddExtraItems(throneRings)
+	protMitigationNoSet.AddExtraItems(throneTankRings)
+	protMitigationWithSet.AddExtraItems(throneRings)
+	protMitigationWithSet.AddExtraItems(throneTankRings)
+	protHeal.AddExtraItems(throneRings)
+	protHeal.AddExtraItems(throneTankRings)
 
+	// TRINKET
+	trinketsDpsP3 := []items.ItemId{
+		trinketZandSpark,
+		trinketJiKun,
+		trinketTwinsGaze,
+		trinketPrimRage,
+	}
+	trinketsTankP3 := []items.ItemId{
+		trinketSoulBarrier,
+		trinketFortZand,
+	}
+	trinketsBothP3 := slices.Concat(trinketsDpsP3, trinketsTankP3)
+	ret.AddExtraItems(trinketsDpsP3)
+	protDps.AddExtraItems(trinketsDpsP3)
+	protCompromise.AddExtraItems(trinketsBothP3)
+	protMitigationNoSet.AddExtraItems(trinketsBothP3)
+	protMitigationWithSet.AddExtraItems(trinketsBothP3)
+	protHeal.AddExtraItems(trinketsBothP3) // TODO cut down on on-use trinkets etc
+
+	// WEAPONS
+	oneHandAndShieldP3 := []items.ItemId{
+		96376, // worldbreaker weapon
+		96534, // qon's scimitar
+		94945, // greatshield of the gloaming normal
+		96182, // ultimate prot of the emperor thunder normal
+	}
+	protDps.AddExtraItems(oneHandAndShieldP3)
+	protCompromise.AddExtraItems(oneHandAndShieldP3)
+	protMitigationNoSet.AddExtraItems(oneHandAndShieldP3)
+	protMitigationWithSet.AddExtraItems(oneHandAndShieldP3)
+	protHeal.AddExtraItems(oneHandAndShieldP3)
+
+	// WRIST
+	miscWristP3 := []items.ItemId{
+		96375, // bracers implosion
+		96394, // frozen warlord bracer heroic
+		94820, // caustic spike bracers REMOVE?
+	}
+	ret.AddExtraItems(miscWristP3)
+	protDps.AddExtraItems(miscWristP3)
+	protCompromise.AddExtraItems(miscWristP3)
+	protMitigationNoSet.AddExtraItems(miscWristP3)
+	protMitigationWithSet.AddExtraItems(miscWristP3)
+	protHeal.AddExtraItems(miscWristP3)
+
+	// NECK
+	miscNecksP3 := []items.ItemId{
+		95142, // striker's battletags
+		95205, // terra-cotta neck
+		94776, // primal turtle amulet
+	}
+	goodNeckP3 := []items.ItemId{
+		96420, // talisman of angry spirits
+	}
+	allNecksP3 := slices.Concat(miscNecksP3,goodNeckP3)
+	ret.AddExtraItems(allNecksP3)
+	protDps.AddExtraItems(allNecksP3)
+	protCompromise.AddExtraItems(allNecksP3)
+	protMitigationNoSet.AddExtraItems(allNecksP3)
+	protMitigationWithSet.AddExtraItems(allNecksP3)
+	protHeal.AddExtraItems(allNecksP3)
+
+	// ORGRIMMAR
+	newStuffP5 := []items.ItemId{
+		101882, // cliffbreaker helm exp/mastery
+		101887, // timeless ring haste/mastery
+		103787, // poisonbinder girth
+		103742, // blood rage bracers
+		103738, // bubble bracers
+		105785, // burly bracer
+		105092, // tower shield
+		105122, // blood seal
+		103734, // zoid gauntlets
+		103826, // xifeng weapon
+	}
+	ret.AddExtraItems(newStuffP5)
+	protDps.AddExtraItems(newStuffP5)
+	protCompromise.AddExtraItems(newStuffP5)
+	protMitigationNoSet.AddExtraItems(newStuffP5)
+	protMitigationWithSet.AddExtraItems(newStuffP5)
+	protHeal.AddExtraItems(newStuffP5)
+
+	ret.AddExtraItems([]items.ItemId{
 		87015, // heroic clawfeet
 		86979, // heroic impaling treads
 		96373, // cloudbreaker belt heroic
@@ -109,115 +299,34 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95153, // Tyrant King Battleplate
 
 		96550, // doomed crown heroic
-		95282, // ret tier15 normal head
-		95910, // ret tier15 chest celestial
-		95281, // ret tier15 gloves normal
-		96657, // ret tier15 legs heroic
-		96658, // ret tier15 shoulder heroic
 
 		96447, // rot-proof greatplate
 		87100, // White Tiger Gauntlets
 
-		95205, // terra-cotta neck
-		94776, // primal turtle amulet
-		96420, // talisman of angry spirits
-
-		96375, // bracers implosion
 		96395, // bloodsoaked legplates
 		96542, // tidal force treads
-
-		trinketZandSpark,
-		trinketJiKun,     // ji-kun trinket
-		trinketTwinsGaze, // gaze of the twins
-		trinketPrimRage,
-
-		96394, // frozen warlord bracer heroic
-
-		101882, // cliffbreaker helm exp/mastery
-		101887, // timeless ring haste/mastery
-		103787, // poisonbinder girth
-		103742, // blood rage bracers
-		99126,  // prot t16 chest normal
-		99128,  // prot t16 head normal
-		103738, // bubble bracers
 	})
-	blockHelmetsWithoutCapacitance(&ret)
-	ret.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
-	ret.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
-	ret.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
-	ret.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
 
 	protDps.AddExtraItems([]items.ItemId{
-		86957, // heroic bladed tempest ring
-		95140, // shado assault band
-		95141, // shado assault loop OFF123
-		96500, // scaled tyrant heroic
-		96377, // jinrohk soulcrystal
-
-		87015, // heroic clawfeet
+		// 87015, // heroic clawfeet
 		86979, // heroic impaling treads
 		96478, // treads of the blind heroic
 
 		96373, // cloudbreaker belt heroic
-
-		legendMeleeCloak,
 
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
 		95153, // Tyrant King Battleplate
 
 		96550, // doomed crown heroic
-		95282, // ret tier15 normal head
+		// 95282, // ret tier15 normal head
 
-		95910, // ret tier15 chest celestial
-		95281, // ret tier15 gloves normal
-		96657, // ret tier15 legs heroic
-		96658, // ret tier15 shoulder heroic
-
-		95205, // terra-cotta neck
-		94776, // primal turtle amulet
-		96420, // talisman of angry spirits
-
-		96394, // frozen warlord bracer heroic
-
-		96376, // worldbreaker weapon
-		96534, // qon's scimitar
-
-		96375, // bracers implosion
 		96395, // bloodsoaked legplates
 		96542, // tidal force treads
-
-		trinketZandSpark,
-		trinketPrimRage,
-		trinketJiKun,
-		trinketTwinsGaze,
-
-		94945, // greatshield of the gloaming normal
-		96182, // ultimate prot of the emperor thunder normal
-
-		101882, // cliffbreaker helm exp/mastery
-		101887, // timeless ring haste/mastery
-		103787, // poisonbinder girth
-		103742, // blood rage bracers
-		99126,  // prot t16 chest normal
-		99128,  // prot t16 head normal
-		103738, // bubble bracers
 	})
-	blockHelmetsWithoutCapacitance(&protDps)
-	protDps.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
-	protDps.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
-	protDps.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark) // zandalar trinket
-	protDps.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
 
 	protCompromise.AddExtraItems([]items.ItemId{
-		86957, // heroic bladed tempest ring
-		95140, // shado assault band
-		95141, // shado assault loop
-		96500, // scaled tyrant heroic
-		96481, // durumu tentacle heroic
-		96377, // jinrohk soulcrystal
-
-		87015, // heroic clawfeet
+		// 87015, // heroic clawfeet
 		86979, // heroic impaling treads
 		96478, // treads of the blind heroic
 
@@ -227,275 +336,72 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96447, // rot-proof greatplate
 
 		95535, // normal lightning legs
-		94773, // centripetal shoulders normal REMOVE12
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
 
 		96550, // doomed crown heroic
 		95282, // ret tier15 normal head
 
-		95910, // ret tier15 chest celestial
-		95281, // ret tier15 gloves normal
-		96657, // ret tier15 legs heroic
-		96658, // ret tier15 shoulder heroic
 		96666, // prot tier15 head heroic
 
-		95142, // striker's battletags
-		95205, // terra-cotta neck
-		94776, // primal turtle amulet
-		96420, // talisman of angry spirits
-
-		94820, // caustic spike bracers OFF1234
-		96394, // frozen warlord bracer heroic
-
-		96375, // bracers implosion
 		96395, // bloodsoaked legplates
 		96542, // tidal force treads
-
-		96376, // worldbreaker weapon
-		96534, // qon's scimitar
-
-		trinketZandSpark,
-		trinketPrimRage,
-		trinketJiKun,
-		trinketTwinsGaze,
-		trinketSoulBarrier,
-		trinketFortZand,
-
-		legendTankCloak,
-		legendMeleeCloak,
-
-		94945, // greatshield of the gloaming normal
-		96182, // ultimate prot of the emperor thunder normal
-
-		101882, // cliffbreaker helm exp/mastery
-		101887, // timeless ring haste/mastery
-		103787, // poisonbinder girth
-		103742, // blood rage bracers
-		99126,  // prot t16 chest normal
-		99128,  // prot t16 head normal
-		103738, // bubble bracers
 	})
-	blockHelmetsWithoutCapacitance(&protCompromise)
-	protCompromise.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
-	protCompromise.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
-	protCompromise.ForceSingleSlot(items.Equip_Trinket2, trinketSoulBarrier)
-	protCompromise.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
 
 	protMitigationNoSet.AddExtraItems([]items.ItemId{
 		86979, // heroic impaling treads REMOVE1
-		87015, // heroic clawfeet REMOVE1
+		// 87015, // heroic clawfeet REMOVE1
 		96478, // treads of the blind heroic
 
-		86957, // heroic bladed tempest ring REMOVE12
-		95140, // shado assault band REMOVE123
-		95141, // shado assault loop
-		96500, // scaled tyrant heroic
-		96481, // durumu tentacle heroic
-		96377, // jinrohk soulcrystal
-
 		96373, // cloudbreaker belt heroic
-
-		legendMeleeCloak,
-		legendTankCloak,
 
 		95535, // normal lightning legs
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
 
-		96428, // shell-coated wrists UPGRADE LIKED
 		96447, // rot-proof greatplate
 
 		96550, // doomed crown heroic
-		95910, // ret tier15 chest celestial REMOVE12
-		95281, // ret tier15 gloves normal
-		96657, // ret tier15 legs heroic
-		96658, // ret tier15 shoulder heroic
 
-		95290, // prot tier15 chest normal
-		95291, // prot tier15 hand normal
-		96666, // prot tier15 head heroic
-		96667, // prot tier15 leg heroic
-		96668, // prot tier15 shoulder heroic
-
-		95142, // striker's battletags
-		95205, // terra-cotta neck
-		95178, // lootraptor amulet
-		94776, // primal turtle amulet
-		96420, // talisman of angry spirits
-
-		94820, // caustic spike bracers REMOVE1234
-		96394, // frozen warlord bracer heroic
-
-		96375, // bracers implosion
 		96395, // bloodsoaked legplates
 		96542, // tidal force treads
-
-		96376, // worldbreaker weapon
-		96534, // qon's scimitar
-
-		trinketZandSpark,
-		trinketPrimRage,
-		trinketJiKun,
-		trinketTwinsGaze,
-		trinketSoulBarrier,
-		trinketFortZand,
-
-		94945, // greatshield of the gloaming normal
-		96182, // ultimate prot of the emperor thunder normal
-		96436, // tortos shell heroic
-
-		101882, // cliffbreaker helm exp/mastery
-		101887, // timeless ring haste/mastery
-		103787, // poisonbinder girth
-		103742, // blood rage bracers
-		99126,  // prot t16 chest normal
-		99128,  // prot t16 head normal
-		103738, // bubble bracers
 	})
-	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
-	protMitigationNoSet.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
-	protMitigationNoSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
-	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
-	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
-	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
 
 	protMitigationWithSet.AddExtraItems([]items.ItemId{
 		86979, // heroic impaling treads
 		96478, // treads of the blind heroic
 
-		86957, // heroic bladed tempest ring REMOVE12
-		95140, // shado assault band REMOVE12
-		95141, // shado assault loop
-		96500, // scaled tyrant heroic
-		96481, // durumu tentacle heroic
-		96377, // jinrohk soulcrystal
-
 		96373, // cloudbreaker belt heroic
 
-		legendTankCloak,
-
-		95535, // normal lightning legs REMOVE12
-		94773, // centripetal shoulders normal REMOVE1234
-		96468, // talonrender chest heroic REMOVE12
+		// 95535, // normal lightning legs REMOVE12
+		// 94773, // centripetal shoulders normal REMOVE1234
+		// 96468, // talonrender chest heroic REMOVE12
 		96533, // rein-binders fists heroic
 		96428, // shell-coated wrists REMOVE1234
 		96447, // rot-proof greatplate
 
-		96657, // ret tier15 legs heroic   REMOVE12
-		96658, // ret tier15 shoulder heroic  REMOVE12
-
 		96550, // doomed crown heroic
-		95291, // prot tier15 hand normal
-		96664, // prot tier15 chest heroic
-		96666, // prot tier15 head heroic
-		96667, // prot tier15 leg heroic
-		96668, // prot tier15 shoulder heroic
 
-		95142, // striker's battletags
-		95205, // terra-cotta neck
-		95178, // lootraptor amulet REMOVE123
-		94776, // primal turtle amulet REMOVE12
-		96420, // talisman of angry spirits
-
-		96394, // frozen warlord bracer heroic
-
-		96376, // worldbreaker weapon
-		96534, // qon's scimitar
-
-		96375, // bracers implosion
 		96395, // bloodsoaked legplates
 		96542, // tidal force treads
 
-		trinketZandSpark,
-		trinketPrimRage,
-		trinketJiKun,
-		trinketTwinsGaze,
-		trinketSoulBarrier,
-		trinketFortZand,
-
-		94945, // greatshield of the gloaming normal
-		96182, // ultimate prot of the emperor thunder normal
-		96436, // tortos shell heroic
-
-		101882, // cliffbreaker helm exp/mastery
-		101887, // timeless ring haste/mastery
-		103787, // poisonbinder girth
-		103742, // blood rage bracers
-		99126,  // prot t16 chest normal
-		99128,  // prot t16 head normal
-		103738, // bubble bracers
 	})
-	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
-	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
 
 	protHeal.AddExtraItems([]items.ItemId{
 		86979, // heroic impaling treads
 		96478, // treads of the blind heroic
 
-		95141, // shado assault loop
-		96500, // scaled tyrant heroic
-		96481, // durumu tentacle heroic
-		96377, // jinrohk soulcrystal
-
 		96373, // cloudbreaker belt heroic
 
-		legendTankCloak,
-
-		94773, // centripetal shoulders normal REMOVE1234
+		// 94773, // centripetal shoulders normal REMOVE1234
 		96533, // rein-binders fists heroic
 		96447, // rot-proof greatplate
 
 		96550, // doomed crown heroic
-		95291, // prot tier15 hand normal
-		96664, // prot tier15 chest heroic
-		96666, // prot tier15 head heroic
-		96667, // prot tier15 leg heroic
-		96668, // prot tier15 shoulder heroic
 
-		95142, // striker's battletags
-		95205, // terra-cotta neck
-		95178, // lootraptor amulet REMOVE123
-		94776, // primal turtle amulet REMOVE12
-		96420, // talisman of angry spirits
-
-		96394, // frozen warlord bracer heroic
-
-		96376, // worldbreaker weapon
-		96534, // qon's scimitar
-
-		96375, // bracers implosion
 		96395, // bloodsoaked legplates
 		96542, // tidal force treads
-
-		trinketZandSpark,
-		trinketPrimRage,
-		trinketJiKun,
-		trinketTwinsGaze,
-		trinketSoulBarrier,
-		trinketFortZand,
-
-		94945, // greatshield of the gloaming normal
-		96182, // ultimate prot of the emperor thunder normal
-		96436, // tortos shell heroic
-
-		101882, // cliffbreaker helm exp/mastery
-		101887, // timeless ring haste/mastery
-		103787, // poisonbinder girth
-		103742, // blood rage bracers
-		99126,  // prot t16 chest normal
-		99128,  // prot t16 head normal
-		103738, // bubble bracers
 	})
-	blockHelmetsWithoutIndomitable(&protHeal)
-	// protHeal.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
-	protHeal.ForceSingleSlot(items.Equip_Back, legendTankCloak)
-	protHeal.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
-	protHeal.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
 
 	ret.AddBagsExtra()
 	protDps.AddBagsExtra()
@@ -504,7 +410,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protMitigationWithSet.AddBagsExtra()
 	protHeal.AddBagsExtra()
 
-	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
+	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Expertise, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Hit, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
@@ -512,7 +418,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
 	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 
-	job.AddSetParam(ret)
+	// job.AddSetParam(ret)
 	job.AddSetParam(protDps)
 	job.AddSetParam(protCompromise)
 	job.AddSetParam(protMitigationNoSet)
@@ -523,8 +429,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
 	// job.FindHighsResult_Sample(10)
-	job.FindSeveralHighsAndSim()
-	// job.FindHighsResultPerPermute(1)
+	// job.FindSeveralHighsAndSim()
+	job.FindHighsResultPerPermute(1)
 	// job.RunWithMinimumHaste("Prot-Mitigation-WithSet", 11000, 18000, 250)
 	// job.RunWithMinimumHaste("Prot-Mitigation-NoSet", 11000, 18000, 250)
 }

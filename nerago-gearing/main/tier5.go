@@ -386,7 +386,7 @@ func statWeightsGridFromInitialT5(printer *util.PrintRecorder) {
 	gearModel = model.Model_PallyProtMitigation_WithSet()
 	ratios = stathighs.NewStatWeights_malkrokWeight
 	priority = initialPriorityDeath
-	trinkets = [2]items.ItemId{trinketVialCorrupt, trinketThokTail}
+	trinkets = [2]items.ItemId{trinketVialCorruptHeroic, trinketThokTail}
 	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, ratios, weightFileOut, printer, simSpeed)
 
 	weightFileOut = files.WeightDpsFile
@@ -394,7 +394,7 @@ func statWeightsGridFromInitialT5(printer *util.PrintRecorder) {
 	gearModel = model.Model_PallyProtDps()
 	ratios = stathighs.NewStatWeights_dpsWeight
 	priority = initialPriorityDps
-	trinkets = [2]items.ItemId{trinketCurseHubris, trinketSkeerBlood}
+	trinkets = [2]items.ItemId{trinketCurseHubrisHeroic, trinketSkeerBloodHeroic}
 	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, ratios, weightFileOut, printer, simSpeed)
 
 	weightFileOut = files.WeightCompromiseFile
@@ -402,7 +402,7 @@ func statWeightsGridFromInitialT5(printer *util.PrintRecorder) {
 	gearModel = model.Model_PallyProtCompromise()
 	ratios = stathighs.NewStatWeights_animusWeight
 	priority = initialPriorityCompromise
-	trinkets = [2]items.ItemId{trinketCurseHubris, trinketThokTail}
+	trinkets = [2]items.ItemId{trinketCurseHubrisHeroic, trinketThokTail}
 	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, ratios, weightFileOut, printer, simSpeed)
 }
 
