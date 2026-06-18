@@ -1,7 +1,6 @@
 package stathighs
 
 import (
-	"math/rand"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
@@ -172,7 +171,7 @@ func takeDataSample_Random[T any](slice []T, size int) []T {
 		return slice
 	} else {
 		copy := slices.Clone(slice)
-		rand.Shuffle(len(copy), func(a, b int) { copy[a], copy[b] = copy[b], copy[a] })
+		util.Shuffle(copy)
 		return copy[0:size]
 	}
 }

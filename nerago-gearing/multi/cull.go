@@ -2,6 +2,7 @@ package multi
 
 import (
 	"cmp"
+	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
 	"slices"
 )
@@ -57,7 +58,8 @@ func (param *multiSetParamInternal) cullingReport() {
 				param.job.printer.Printf("%5d %6d // %s; %s\n", info.itemId, info.count, item.SlotItem().Name(), item.BaseName())
 			}
 		} else {
-			param.job.printer.Printf("%5d %d MISSING IN OPTIONS\n", info.itemId, info.count)
+			basicVersion := db.WowSimDB_ByIdAndUpgrade(info.itemId, 0)
+			param.job.printer.Printf("%5d %d MISSING IN OPTIONS // %s\n", info.itemId, info.count, basicVersion.BaseName())
 		}
 	}
 	param.job.printer.Println0()
@@ -69,7 +71,7 @@ func (param *multiSetParamInternal) cullingReportBags() {
 		if seenCount > 0 {
 			item, itemFound := param.itemOptions.FindItemIdFirstOptional(itemId)
 			if itemFound {
-				param.job.printer.Printf("BAGS SUGGESTION %d %d %s; %s !!\n", itemId, seenCount, item.SlotItem().Name(), item.BaseName)
+				param.job.printer.Printf("BAGS SUGGESTION %d %d %s; %s !!\n", itemId, seenCount, item.SlotItem().Name(), item.BaseName())
 			} else {
 				param.job.printer.Printf("BAGS SUGGESTION %d %d BUT missing options?!?!?!?!\n", itemId, seenCount)
 			}

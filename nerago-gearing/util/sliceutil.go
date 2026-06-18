@@ -3,6 +3,7 @@ package util
 import (
 	"cmp"
 	"iter"
+	"math/rand"
 	"paladin_gearing_go/util/channel_op"
 	"slices"
 	"sync"
@@ -133,6 +134,10 @@ func RemoveDuplicatesComparable[T comparable](slice []T) []T {
 	}
 
 	return slice[:index]
+}
+
+func Shuffle[T any](slice []T) {
+	rand.Shuffle(len(slice), func(a, b int) { slice[a], slice[b] = slice[b], slice[a] })
 }
 
 func DeleteIndexInPlace[T any](slice []T, index int) []T {

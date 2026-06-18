@@ -373,21 +373,20 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 
 func trinketSims(printer *util.PrintRecorder) {
 	itemIds := []items.ItemId{
-		94519,  // crit prim rage
-		945190, // crit->master prim rage
-		// 87063,  // none vial dragon
-		// 95779,  // none vial sang
-		96793, // none fort zand
-		96555, // none soul barrier
-		// 87172,  // none darkmist
-		94529,  // none gaze twins
-		94527,  // ji-kun
-		945270, // exp->crit ji-kun
-		94507,  // valor
-		94508,  // valor
-		103989, // timeless alacrity of xuen
-		103990, // timeless resolve of niuzao
-		103678, // time lost artifict
+		94519,                    // crit prim rage
+		945190,                   // crit->master prim rage
+		96793,                    // none fort zand
+		96555,                    // none soul barrier
+		94529,                    // none gaze twins
+		94527,                    // ji-kun
+		945270,                   // exp->crit ji-kun
+		94507,                    // valor
+		94508,                    // valor
+		103989,                   // timeless alacrity of xuen
+		103990,                   // timeless resolve of niuzao
+		103678,                   // time lost artifict
+		trinketThokTailCelestial, // thok trinket
+		trinketFusionCoreCelestial,
 	}
 
 	// fight := stats.Fight_Animus
@@ -414,6 +413,10 @@ func trinketSims(printer *util.PrintRecorder) {
 			files.GearFileProtCompromise,
 		}, {
 			"dps",
+			model.Model_PallyProtDps(),
+			files.GearFileProtDps,
+		}, {
+			"ret",
 			model.Model_PallyProtDps(),
 			files.GearFileProtDps,
 		},
@@ -472,6 +475,127 @@ func trinketSims(printer *util.PrintRecorder) {
 			}
 
 			csv.FinishColumn()
+		}
+	}
+
+	csv.Write(printer)
+}
+
+func trinketSimsBoth(printer *util.PrintRecorder) {
+	itemIds := []items.ItemId{
+		94519,                    // crit prim rage
+		96793,                    // none fort zand
+		// 96555,                    // none soul barrier
+		94529,                    // none gaze twins
+		94527,                    // ji-kun
+		// 94507,                    // valor
+		// 94508,                    // valor
+		103989,                   // timeless alacrity of xuen
+		103990,                   // timeless resolve of niuzao
+		103678,                   // time lost artifict
+		trinketZandSpark,
+		trinketThokTailCelestial, 
+		trinketFusionCoreCelestial,
+		trinketVialCorruptCelestial,
+	}
+
+	fight := stats.Fight_Juggernaut
+	simRun := simulate.RunSize_QuickDirty // Medium
+
+	type group struct {
+		label string
+		model model.Model
+		file  string
+	}
+
+	groups := []group{
+		// {
+		// 	"heal",
+		// 	model.Model_PallyProtHeal(),
+		// 	files.GearFileProtHeal,
+		// }, 
+		{
+			"with_set",
+			model.Model_PallyProtMitigation_WithSet(),
+			files.GearFileProtMitigationWithSet,
+		}, {
+			"no_set",
+			model.Model_PallyProtMitigation_NoSet(),
+			files.GearFileProtMitigationNoSet,
+		}, 
+		// {
+		// 	"compromise",
+		// 	model.Model_PallyProtCompromise(),
+		// 	files.GearFileProtCompromise,
+		// }, {
+		// 	"dps",
+		// 	model.Model_PallyProtDps(),
+		// 	files.GearFileProtDps,
+		// }, {
+		// 	"ret",
+		// 	model.Model_PallyProtDps(),
+		// 	files.GearFileProtDps,
+		// },
+	}
+
+	csv := util.CSVOutputByColumn{}
+	csv.InitRows(9)
+	csv.AddStringMany("set", "item1", "item2")
+	for _, statType := range simulate.SimTypeList {
+		csv.AddString(statType.Name())
+	}
+	csv.FinishColumn()
+
+	for _, group := range groups {
+		model := group.model
+		file := group.file
+
+		equipped := loaders.GearFileReader_Read(file)
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, util.PrintRecorder_HoldAll())
+		printer.Println(group.label + " CURRENT")
+		printer.Println(equipMap[items.Equip_Trinket1].CreateString())
+		printer.Println(equipMap[items.Equip_Trinket2].CreateString())
+	}
+
+	for _, group := range groups {
+		model := group.model
+		file := group.file
+
+		equipped := loaders.GearFileReader_Read(file)
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, util.PrintRecorder_HoldAll())
+
+		for _, itemIdOne := range itemIds {
+			var upgrade int = 0
+			if itemIdOne < 100000 {
+				upgrade = 2
+			}
+			itemOne := db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemIdOne, int8(upgrade), printer)
+			for _, itemIdTwo := range itemIds {
+				if itemIdTwo >= itemIdOne {
+					continue
+				}
+
+				var upgrade int = 0
+				if itemIdTwo < 100000 {
+					upgrade = 2
+				}
+				itemTwo := db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemIdTwo, int8(upgrade), printer)
+
+				printer.Println(group.label + " " + itemOne.CreateFullName() + " " + itemTwo.CreateFullName())
+				csv.AddStringMany(group.label, itemOne.CreateFullName(), itemTwo.CreateFullName())
+
+				var newEquip items.FullEquipMap = equipMap
+				newEquip[items.Equip_Trinket1] = itemOne
+				newEquip[items.Equip_Trinket2] = itemTwo
+
+				resultStats := simulate.WowSim_Execute_SpecifyAll(simRun, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
+				resultStats.Print(printer)
+				for _, statType := range simulate.SimTypeList {
+					csv.AddFloat64(resultStats.GetFriendly(statType), 2)
+				}
+
+				csv.FinishColumn()
+			}
 		}
 	}
 

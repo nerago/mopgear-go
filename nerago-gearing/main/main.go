@@ -89,7 +89,7 @@ func core(printer *util.PrintRecorder) {
 	// findSimpleUpgrade_ForceEach(printer)
 	// findMitigationWithCapicitance(printer)
 	// relativeRatingsCompromise(printer)
-	// trinketSims(printer)
+	// trinketSimsBoth(printer)
 
 	// forBasicStatsGenerateRatingsDataFromSims(printer)
 	// forSpreadsheetGenerateRatingsDataFromSims(printer)

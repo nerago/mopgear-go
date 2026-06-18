@@ -68,9 +68,9 @@ func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, s
 					resultChannel <- job.makeOutputFromHighs(setResults.GetOrPanic(), printer)
 				}
 			} else {
-				setResultsList := highProcess.RunForSeveral_CommonDifferent_Sampling(printer, solutionsPerPermute)
-				for _, setResults := range setResultsList {
-					resultChannel <- job.makeOutputFromHighs(setResults, printer)
+				nextChan := highProcess.RunForSeveral_CommonDifferent(printer, util.Optional_OfValue(solutionsPerPermute))
+				for res := range nextChan {
+					setResultChannel <- job.makeOutputFromHighs(res, printer)
 				}
 			}
 
@@ -86,7 +86,7 @@ func (job *MultiSetJob) FindSeveralHighsAndSim() {
 	job.prepareInitial()
 	highProcess := job.highProcessSetup()
 
-	setResultChan := highProcess.RunForSeveral_CommonDifferent_WithParallel(job.printer)
+	setResultChan := highProcess.RunForSeveral_CommonDifferent(job.printer, util.Optional_Empty[int]())
 
 	proposalChannel := make(chan multi_types.MultiProposedOutput, 8)
 	proposalChannel <- job.existingGearAsProposal()
