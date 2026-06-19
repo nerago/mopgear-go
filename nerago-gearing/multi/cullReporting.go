@@ -4,18 +4,21 @@ import (
 	"cmp"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/util"
 	"slices"
 )
 
 func (job *MultiSetJob) CullingReport() {
 	for paramIndex := range job.params {
-		job.params[paramIndex].cullingReport()
+		job.params[paramIndex].cullingReportSeen()
 		job.params[paramIndex].cullingReportBags()
 		job.params[paramIndex].cullingReportOrphan()
 	}
+
+	job.cullReportAll()
 }
 
-func (param *multiSetParamInternal) cullingReport() {
+func (param *multiSetParamInternal) cullingReportSeen() {
 	type extraInfoStruct struct {
 		itemId items.ItemId
 		count  uint32
@@ -87,4 +90,33 @@ func (param *multiSetParamInternal) cullingReportOrphan() {
 			}
 		}
 	}
+}
+
+func (job *MultiSetJob) cullReportAll() {
+	combinedCount := make(map[items.ItemId]uint32)
+	seen := make(map[items.ItemId]bool)
+	for param := range util.ForPointer(job.params) {
+		for _, itemId := range param.ExtraItems {
+			seenCount := param.seenInSolutions.content[itemId]
+			combinedCount[itemId] += seenCount
+			seen[itemId] = true
+		}
+	}
+
+	for param := range util.ForPointer(job.params) {
+		for item := range param.exactEquippedGear.AllItemSeq() {
+			itemId := item.ItemId()
+			combinedCount[itemId] += 1000
+			seen[itemId] = true
+		}
+	}
+
+	job.printer.Printf("EXTRAS NEVER USED ACROSS SETS:\n")
+	for itemId := range seen {
+		if combinedCount[itemId] == 0 {
+		basicVersion := db.WowSimDB_ByIdAndUpgrade(itemId, 0)
+		job.printer.Printf("%5d %s\n", itemId, basicVersion.BaseName())
+		}
+	}
+	job.printer.Println0()
 }

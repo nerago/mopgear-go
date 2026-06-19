@@ -1,6 +1,8 @@
 package items
 
-import "paladin_gearing_go/stats"
+import (
+	"paladin_gearing_go/stats"
+)
 
 // /////////////////////////////////////////////////////////////
 type SolvableItemSet struct {
@@ -50,6 +52,10 @@ func (set *SolvableItemSet) AddItem_DeferCalc_ExpectEmpty(slot SlotEquip, item *
 		panic("slot not empty")
 	}
 	set.items[slot] = item
+}
+
+func (set *SolvableItemSet) RecalculateTotal() {
+	SolvableItemSet_RecalculateTotal(set)
 }
 
 func (set *SolvableItemSet) ReplaceItem_Into(slot SlotEquip, item *SolvableItem, dest *SolvableItemSet) {

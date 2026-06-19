@@ -41,7 +41,7 @@ outerLoop:
 
 func RemoveDuplicatesInPlaceFunc[T any](slice *[]T, equals func(a, b *T) bool) {
 	if slice == nil || *slice == nil {
-		return 
+		return
 	}
 
 	var a, b int
@@ -52,7 +52,7 @@ func RemoveDuplicatesInPlaceFunc[T any](slice *[]T, equals func(a, b *T) bool) {
 			}
 		}
 	}
-	return 
+	return
 
 changed:
 	write := a
@@ -192,32 +192,32 @@ func FilterSliceAsNew[T any](slice []T, filter func(x *T) bool) []T {
 	return result
 }
 
-// func FilterSliceInPlace[T any](slice []T, filter func(x *T) bool) []T {
-// 	if slice == nil {
-// 		return nil
-// 	}
+func FilterSliceInPlace[T any](slice *[]T, filter func(x *T) bool) {
+	if slice == nil || *slice == nil {
+		return
+	}
 
-// 	readIndex := 0
-// 	for readIndex < len(slice) {
-// 		if !filter(&slice[readIndex]) {
-// 			goto change_part
-// 		}
-// 		readIndex++
-// 	}
-// 	return slice
+	readIndex := 0
+	for readIndex < len(*slice) {
+		if !filter(&(*slice)[readIndex]) {
+			goto change_part
+		}
+		readIndex++
+	}
+	return
 
-// change_part:
-// 	writeIndex := readIndex
-// 	readIndex++
-// 	for readIndex < len(slice) {
-// 		if filter(&slice[readIndex]) {
-// 			slice[writeIndex] = slice[readIndex]
-// 			writeIndex++
-// 		}
-// 		readIndex++
-// 	}
-// 	return slice[:writeIndex]
-// }
+change_part:
+	writeIndex := readIndex
+	readIndex++
+	for readIndex < len(*slice) {
+		if filter(&(*slice)[readIndex]) {
+			(*slice)[writeIndex] = (*slice)[readIndex]
+			writeIndex++
+		}
+		readIndex++
+	}
+	*slice = (*slice)[:writeIndex]
+}
 
 func ContainsFunc_Pointer[T any](slice []T, predicate func(*T) bool) bool {
 	for i := range slice {

@@ -10,41 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// func (job *MultiSetJob) FindHighsResult_Sample(sampleCount int) util.Optional[multi_types.MultiProposedOutput] {
-// 	job.checkNoPermutations()
-// 	job.prepareInitial()
-// 	highProcess := job.highProcessSetup()
-
-// 	best := util_rank.BestCollector1[multi_types.MultiProposedOutput]{}
-
-// 	setResults := highProcess.RunForSeveral_CommonDifferent_Sampling(job.printer, sampleCount)
-// 	if setResults != nil {
-// 		proposedOutput := util.MapSliceAsNew(setResults, func(x *withhighs.HighsMultiResult) multi_types.MultiProposedOutput {
-// 			return job.makeOutputFromHighs(*x, job.printer)
-// 		})
-// 		job.listInitialOutputs(proposedOutput)
-// 		for _, x := range proposedOutput {
-// 			best.Offer(&x, x.TotalRatingSum)
-// 		}
-// 	} else {
-// 		job.printer.Println("FAILED")
-// 	}
-
-// 	return best.GetBestOptional()
-// }
-
-func (job *MultiSetJob) FindHighsResultPerPermute(solutionsPerPermute int) {
-	job.prepareInitial()
-
-	tracker := util.TrackProgress_Start()
-	tracker.RunOuterTracking(2)
-	defer tracker.Stop()
-
-	setResultChannel := job.proposalsUnderPermutation(tracker.MakeNested(), solutionsPerPermute)
-
-	job.proposalsToSimAndOutput(setResultChannel, tracker.MakeNested())
-}
-
 func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, solutionsPerPermute int) <-chan multi_types.MultiProposedOutput {
 	estimate := job.estimateFixedPermutations()
 	job.printer.Printf("PERMUTE SET COUNT %d\n", estimate)
@@ -81,24 +46,6 @@ func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, s
 	return setResultChannel
 }
 
-func (job *MultiSetJob) FindSeveralHighsAndSim() {
-	job.checkNoPermutations()
-	job.prepareInitial()
-	highProcess := job.highProcessSetup()
-
-	setResultChan := highProcess.RunForSeveral_CommonDifferent(job.printer, util.Optional_Empty[int]())
-
-	proposalChannel := make(chan multi_types.MultiProposedOutput, 8)
-	proposalChannel <- job.existingGearAsProposal()
-	channel_op.Map_ChannelToChannel_Provided(4, setResultChan, proposalChannel, func(setResult withhighs.HighsMultiResult, next chan<- multi_types.MultiProposedOutput) {
-		next <- job.makeOutputFromHighs(setResult, job.printer)
-	})
-
-	// TODO tracker covers highs part too
-	tracker := util.TrackProgress_Start()
-	defer tracker.Stop()
-	job.proposalsToSimAndOutput(proposalChannel, tracker)
-}
 
 func (job *MultiSetJob) paramFromLabel(paramLabel string) *multiSetParamInternal {
 	for paramIndex := range job.params {

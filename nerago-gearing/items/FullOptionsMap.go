@@ -17,9 +17,9 @@ func (optionsMap *FullOptionsMap) Has(slot SlotEquip) bool {
 }
 
 func (optionsMap *FullOptionsMap) IncludesItemId(itemId ItemId) bool {
-	for _, slotArray := range optionsMap {
-		for _, item := range slotArray {
-			if item.ItemId() == itemId {
+	for slot := range optionsMap {
+		for i := range optionsMap[slot] {
+			if optionsMap[slot][i].ItemId() == itemId {
 				return true
 			}
 		}
@@ -28,8 +28,8 @@ func (optionsMap *FullOptionsMap) IncludesItemId(itemId ItemId) bool {
 }
 
 func (optionsMap *FullOptionsMap) IncludesItemIdInSlot(itemId ItemId, slot SlotEquip) bool {
-	for _, item := range optionsMap[slot] {
-		if item.ItemId() == itemId {
+	for i := range optionsMap[slot] {
+		if optionsMap[slot][i].ItemId() == itemId {
 			return true
 		}
 	}
@@ -37,8 +37,8 @@ func (optionsMap *FullOptionsMap) IncludesItemIdInSlot(itemId ItemId, slot SlotE
 }
 
 func (optionsMap *FullOptionsMap) IncludesItemNameInSlot(itemName string, slot SlotEquip) bool {
-	for _, item := range optionsMap[slot] {
-		if item.BaseName() == itemName {
+	for i := range optionsMap[slot] {
+		if optionsMap[slot][i].BaseName() == itemName {
 			return true
 		}
 	}
@@ -47,9 +47,9 @@ func (optionsMap *FullOptionsMap) IncludesItemNameInSlot(itemName string, slot S
 
 func (optionsMap *FullOptionsMap) FindItemId(itemId ItemId) iter.Seq[FullItem] {
 	return func(yield func(FullItem) bool) {
-		for _, slotArray := range optionsMap {
-			for i := range slotArray {
-				item := &slotArray[i]
+		for slot := range optionsMap {
+			for i := range optionsMap[slot] {
+				item := &optionsMap[slot][i]
 				if item.ItemId() == itemId {
 					if !yield(*item) {
 						return
@@ -61,9 +61,9 @@ func (optionsMap *FullOptionsMap) FindItemId(itemId ItemId) iter.Seq[FullItem] {
 }
 
 func (optionsMap *FullOptionsMap) FindItemIdFirst(itemId ItemId) *FullItem {
-	for _, slotArray := range optionsMap {
-		for i := range slotArray {
-			item := &slotArray[i]
+	for slot := range optionsMap {
+		for i := range optionsMap[slot] {
+			item := &optionsMap[slot][i]
 			if item.ItemId() == itemId {
 				return item
 			}
@@ -73,9 +73,9 @@ func (optionsMap *FullOptionsMap) FindItemIdFirst(itemId ItemId) *FullItem {
 }
 
 func (optionsMap *FullOptionsMap) FindItemIdFirstOptional(itemId ItemId) (*FullItem, bool) {
-	for _, slotArray := range optionsMap {
-		for i := range slotArray {
-			item := &slotArray[i]
+	for slot := range optionsMap {
+		for i := range optionsMap[slot] {
+			item := &optionsMap[slot][i]
 			if item.ItemId() == itemId {
 				return item, true
 			}
@@ -87,9 +87,9 @@ func (optionsMap *FullOptionsMap) FindItemIdFirstOptional(itemId ItemId) (*FullI
 func (optionsMap *FullOptionsMap) FindItemIdSlotUnique(itemId ItemId) SlotEquip {
 	var slotFound SlotEquip
 	found := false
-	for slot, slotArray := range optionsMap {
-		for i := range slotArray {
-			item := &slotArray[i]
+	for slot := range optionsMap {
+		for i := range optionsMap[slot] {
+			item := &optionsMap[slot][i]
 			if item.ItemId() == itemId {
 				if !found {
 					found = true
@@ -115,9 +115,9 @@ func (optionsMap *FullOptionsMap) SlotItemSeq(slotEquip SlotEquip) iter.Seq[*Ful
 
 func (optionsMap *FullOptionsMap) AllItems() iter.Seq[*FullItem] {
 	return func(yield func(*FullItem) bool) {
-		for _, slotArray := range optionsMap {
-			for i := range slotArray {
-				item := &slotArray[i]
+		for slot := range optionsMap {
+			for i := range optionsMap[slot] {
+				item := &optionsMap[slot][i]
 				if !yield(item) {
 					return
 				}
@@ -128,9 +128,9 @@ func (optionsMap *FullOptionsMap) AllItems() iter.Seq[*FullItem] {
 
 func (optionsMap *FullOptionsMap) AllItemsWithSlot() iter.Seq2[SlotEquip, *FullItem] {
 	return func(yield func(SlotEquip, *FullItem) bool) {
-		for slot, slotArray := range optionsMap {
-			for _, item := range slotArray {
-				if !yield(SlotEquip(slot), &item) {
+		for slot := range optionsMap {
+			for i := range optionsMap[slot] {
+				if !yield(SlotEquip(slot), &optionsMap[slot][i]) {
 					return
 				}
 			}
@@ -335,8 +335,8 @@ func (optionsMap *FullOptionsMap) RemoveDuplicates() {
 
 func (optionsMap *FullOptionsMap) Clone() FullOptionsMap {
 	result := FullOptionsMap{}
-	for slot, content := range optionsMap {
-		result[slot] = slices.Clone(content)
+	for slot := range optionsMap {
+		result[slot] = slices.Clone(optionsMap[slot])
 	}
 	return result
 }

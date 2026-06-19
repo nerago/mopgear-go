@@ -3,6 +3,7 @@ package items
 import (
 	"iter"
 	"paladin_gearing_go/util"
+	"slices"
 )
 
 type SolvableOptionsMap struct {
@@ -27,15 +28,36 @@ func (optionsMap *SolvableOptionsMap) Has(slot SlotEquip) bool {
 	return len(optionsMap.array[slot]) > 0
 }
 
-func (optionsMap SolvableOptionsMap) Set(slot SlotEquip, options []SolvableItem) {
+func (optionsMap *SolvableOptionsMap) Set(slot SlotEquip, options []SolvableItem) {
 	optionsMap.array[slot] = options
+}
+
+func (optionsMap *SolvableOptionsMap) Clone() SolvableOptionsMap {
+	// send existing uniqueEquipped as-is, no need to manipulate
+	clone := SolvableOptionsMap{uniqueEquippedSets: optionsMap.uniqueEquippedSets}
+
+	// do copy the item slices
+	for i := range optionsMap.array {
+		clone.array[i] = slices.Clone(optionsMap.array[i])
+	}
+	return clone
+}
+
+func (optionsMap *SolvableOptionsMap) RemoveItemIdFromAll(itemId ItemId) (makesSlotEmpty bool) {
+	for slot := range optionsMap.array {
+		if len(optionsMap.array[slot]) > 0 {
+			util.FilterSliceInPlace(&optionsMap.array[slot], func(x *SolvableItem) bool { return x.ItemId() != itemId })
+			return len(optionsMap.array[slot]) == 0
+		}
+	}
+	return false
 }
 
 func (optionsMap *SolvableOptionsMap) AllItemSeq() iter.Seq[*SolvableItem] {
 	return func(yield func(*SolvableItem) bool) {
-		for _, slotArray := range optionsMap.array {
-			for _, item := range slotArray {
-				if !yield(&item) {
+		for slot := range optionsMap.array {
+			for i := range optionsMap.array[slot] {
+				if !yield(&optionsMap.array[slot][i]) {
 					return
 				}
 			}
@@ -57,8 +79,8 @@ func (optionsMap *SolvableOptionsMap) AllItemSlotSeq() iter.Seq2[SlotEquip, *Sol
 
 func (optionsMap *SolvableOptionsMap) SlotItemSeq(slotEquip SlotEquip) iter.Seq[*SolvableItem] {
 	return func(yield func(*SolvableItem) bool) {
-		for _, item := range optionsMap.array[slotEquip] {
-			if !yield(&item) {
+		for i := range optionsMap.array[slotEquip] {
+			if !yield(&optionsMap.array[slotEquip][i]) {
 				return
 			}
 		}

@@ -54,7 +54,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		RequestRatingPercent:      0.01,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: 0,
-		MissingEnchant:            setup.MissingEnchant_Panic,
+		MissingEnchant:            setup.MissingEnchant_Fix,
 	}
 	protDps := multi_types.MultiSetParam{
 		Label:                     "Prot-Damage",
@@ -387,10 +387,10 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protHeal.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
 	protHeal.ForceSingleSlot(items.Equip_Trinket2, trinketZandSpark)
 
-	protCompromise.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{96376, 96534, 103826})
-	protMitigationNoSet.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{96376, 96534, 103826})
-	protMitigationWithSet.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{96376, 96534, 103826})
-	protHeal.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{96376, 96534, 103826})
+	// protCompromise.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{96376, 96534, 103826})
+	// protMitigationNoSet.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{96376, 96534, 103826})
+	// protMitigationWithSet.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{96376, 96534, 103826})
+	// protHeal.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{96376, 96534, 103826})
 
 	// HELMET
 	// TODO bake this into process
@@ -409,12 +409,12 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
 	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 
-	ret.AddBagsExtra()
-	protDps.AddBagsExtra()
-	protCompromise.AddBagsExtra()
-	protMitigationNoSet.AddBagsExtra()
-	protMitigationWithSet.AddBagsExtra()
-	protHeal.AddBagsExtra()
+	// ret.AddBagsExtra()
+	// protDps.AddBagsExtra()
+	// protCompromise.AddBagsExtra()
+	// protMitigationNoSet.AddBagsExtra()
+	// protMitigationWithSet.AddBagsExtra()
+	// protHeal.AddBagsExtra()
 
 	job.AddSetParam(ret)
 	job.AddSetParam(protDps)
@@ -426,13 +426,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
-	// job.FindHighsResult_Sample(10)
-	// job.FindSeveralHighsAndSim()
-	job.FindHighsResultPerPermute(1)
-	// job.RunWithMinimumHaste("Prot-Mitigation-WithSet", 11000, 18000, 250)
-	// job.RunWithMinimumHaste("Prot-Mitigation-NoSet", 11000, 18000, 250)
-
-	job.CullingReport()
+	// job.RunNoPermutations_AllCommonAlternates()
+	// job.RunForSolutionsPerPerumte(30)
+	job.RunCullingSets()
 }
 
 func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {

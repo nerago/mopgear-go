@@ -173,7 +173,7 @@ func checkHighs(printer *util.PrintRecorder) {
 
 	solveOptions := items.SolvableOptionsMap_of(&itemOptions)
 	// solvedSet := withhighs.RunSingleAcrossSets_ReturnBest(&solveOptions, &model, printer)
-	solvedSet := withhighs.SolverHighsMain(&solveOptions, &model, printer)
+	solvedSet := withhighs.SingleGearSetMain(&solveOptions, &model, printer)
 	// solvedSet := withhighs.RunBasic(&solveOptions, &model, nil, util.Optional_Empty[int]())
 
 	var fullItemSet items.FullItemSet

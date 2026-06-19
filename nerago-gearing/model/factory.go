@@ -143,7 +143,7 @@ func Model_PallyRet() Model {
 		ReforgeRules:     ReforgeRules_melee,
 		EnchantChoice:    EnchantChoice_ForSpec(spec, goal),
 		GemChoice:        GemChoice_ForSpec(spec, goal),
-		SetBonus:         SetBonus_ForSpec(spec, goal),
+		SetBonus:         SetBonus_Named("Battlegear of the Lightning Emperor",  "Battlegear of Winged Triumph"),
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,
