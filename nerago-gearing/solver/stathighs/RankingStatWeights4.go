@@ -181,8 +181,7 @@ func rankInternalRun4_create(process *RankingStatWeightProcess4) *rankInternalRu
 	run.process = process
 	run.build = new(utilhighs.LinearBuilder)
 	run.build.Minimise = true
-	// run.input.Mip_disallow_restart = true
-	run.build.Mip_lp_solver = "ipx"
+	run.build.Solver = utilhighs.Solver_MIP_Interior
 	return run
 }
 

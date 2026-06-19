@@ -17,6 +17,8 @@ const (
 
 func SolverHighsMain(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, printer *util.PrintRecorder) util.Optional[items.SolvableItemSet] {
 	build := utilhighs.LinearBuilder{}
+	build.Solver = utilhighs.Solver_MIP_Interior
+
 	setup := setupHighsSetAware(&build, gear_model, itemOptions, 1)
 
 	solution := build.RunHighsThenDiagnose(printer)

@@ -136,6 +136,7 @@ func (process *SolverHighsMultiProcess) solutionToResult(solution *highs.Solutio
 func (process *SolverHighsMultiProcess) makeFullModel() {
 	process.build = &utilhighs.LinearBuilder{}
 	process.build.TimeLimitSeconds = c_timeLimit // an hour
+	process.build.Solver = utilhighs.Solver_MIP_Interior
 
 	entry := columnInfo{entryType: entry_multi_output}
 	entry.columnIndex = process.build.CreateColumnWithOutput(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, 1, &entry)

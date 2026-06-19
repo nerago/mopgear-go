@@ -30,7 +30,7 @@ type basicDataEntry struct {
 func (basic *BasicStatWeightProcess) Init(printer *util.PrintRecorder) {
 	basic.printer = printer
 	basic.build.Minimise = true
-	basic.build.Solver = "ipm"
+	basic.build.Solver = utilhighs.Solver_LP_NO_GPU // needs sync and would be overkill
 	basic.simData = make(map[stats.StatType]basicDataEntry)
 	basic.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }

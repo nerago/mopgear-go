@@ -70,11 +70,10 @@ func (ranker *RankingStatWeightProcess) SetTargetRatios(targetRatios simulate.Si
 func (ranker *RankingStatWeightProcess) Run() WeightResult {
 	ranker.build = new(utilhighs.LinearBuilder)
 	ranker.build.Minimise = true
-	ranker.build.Solver = "ipx"
+	ranker.build.Solver = utilhighs.Solver_MIP_Interior
 	if ranker.RANKMODE != 3 {
 		ranker.build.DisablePreSolve = true
 	}
-	// ranker.input.Solver = "pdlp"
 	// ranker.input.Solver = "hipdlp"
 
 	ranker.createWeightColumns()

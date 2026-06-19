@@ -36,7 +36,7 @@ func FloatEqualsZero(value float64) bool {
 func FloatsApproxEquals(a, b float64) bool {
 	if b != 0 {
 		ratio := a / b
-		return (0.99999 <= ratio && ratio <= 1.00001) || (math.Abs(a - b) < 0.00001)
+		return (0.99999 <= ratio && ratio <= 1.00001) || (math.Abs(a-b) < 0.00001)
 	} else {
 		return FloatEqualsZero(a)
 	}
@@ -45,6 +45,16 @@ func FloatsApproxEquals(a, b float64) bool {
 func FloatsBetween(lo, val, hi float64) bool {
 	return lo-0.000001 <= val && val <= hi+0.000001
 }
+
+type SolverMode int8
+
+const (
+	Solver_NotSet       SolverMode = iota
+	Solver_LP_CAN_GPU   SolverMode = iota
+	Solver_LP_NO_GPU    SolverMode = iota
+	Solver_MIP_Interior SolverMode = iota
+	Solver_MIP_Vertex   SolverMode = iota
+)
 
 type ColumnIndex int32
 type ObjectiveIndex int32
@@ -56,11 +66,9 @@ type LinearBuilder struct {
 	NoOutput             bool
 	Minimise             bool
 	BlendMultiObjectives bool
-	Solver               string
+	Solver               SolverMode
 	DisablePreSolve      bool
 	TimeLimitSeconds     int
-	// Mip_disallow_restart bool
-	Mip_lp_solver string
 }
 
 func (build *LinearBuilder) Clone() *LinearBuilder {
@@ -152,9 +160,7 @@ func (build *LinearBuilder) RunHighsThenDiagnose(printer *util.PrintRecorder) *h
 }
 
 func (build *LinearBuilder) RunHighs() (*highs.Solution, *util.PrintRecorder) {
-	solver, logFilename := build.prepareHighsRun()
-
-	requestGpu := build.Solver == "pdlp" || build.Solver == "hipdlp"
+	solver, logFilename, requestGpu := build.prepareHighsRun()
 
 	solution, err := G_HighsPool.RunSolverUnderMutex(solver, requestGpu)
 	verifyNoError(err)
@@ -164,12 +170,15 @@ func (build *LinearBuilder) RunHighs() (*highs.Solution, *util.PrintRecorder) {
 	return solution, printer
 }
 
-func (build *LinearBuilder) prepareHighsRun() (*highs.Solver, string) {
-	logFilename := makeTempFilename()
+func (build *LinearBuilder) prepareHighsRun() (*highs.Solver, string, bool) {
 
 	solver := G_HighsPool.Get()
-	build.configureHighsModel_internal(solver, logFilename)
-	return solver, logFilename
+
+	build.configureHighsMatrix(solver)
+	logFilename := makeTempFilename()
+	build.configureHighsUtil(solver, logFilename)
+	requestGpu := build.configureHighsSolver(solver)
+	return solver, logFilename, requestGpu
 }
 
 func (*LinearBuilder) postHighsRun(solver *highs.Solver, logFilename string) *util.PrintRecorder {
@@ -191,7 +200,7 @@ func readLogfile(tempFilename string) *util.PrintRecorder {
 	return printer
 }
 
-func (build *LinearBuilder) configureHighsModel_internal(solver *highs.Solver, logfile string) {
+func (build *LinearBuilder) configureHighsMatrix(solver *highs.Solver) {
 	numRows, lowerBound, upperBound, startArray, indexArray, valuesArray := build.mat.createSolverInputArrays()
 	verifyNoError(solver.PassModel2(
 		int32(len(build.vars.colTypes)),
@@ -223,9 +232,11 @@ func (build *LinearBuilder) configureHighsModel_internal(solver *highs.Solver, l
 		}
 		verifyNoError(solver.SetSparseSolution(indexArray, valueArray))
 	}
+}
 
-	// verifyNoError(solver.SetStringOption("parallel", "on"))
-	// verifyNoError(solver.SetIntOption("threads", c_threads))
+func (build *LinearBuilder) configureHighsUtil(solver *highs.Solver, logfile string) {
+	verifyNoError(solver.SetStringOption("parallel", "on"))
+	verifyNoError(solver.SetIntOption("threads", c_threads))
 
 	if build.TimeLimitSeconds != 0 {
 		verifyNoError(solver.SetFloatOption("time_limit", float64(build.TimeLimitSeconds)))
@@ -236,32 +247,43 @@ func (build *LinearBuilder) configureHighsModel_internal(solver *highs.Solver, l
 	verifyNoError(solver.SetStringOption("log_file", logfile))
 	verifyNoError(solver.SetBoolOption("log_to_console", (C_DebugHighs || C_HighsToConsole) && !build.NoOutput))
 	if C_DebugHighs {
-		// verifyNoError(solver.SetIntOption("log_dev_level", 3))
 		verifyNoError(solver.SetIntOption("log_dev_level", 2))
 	} else {
 		verifyNoError(solver.SetIntOption("log_dev_level", 0))
 	}
 
-	if build.Solver != "" {
-		verifyNoError(solver.SetStringOption("solver", build.Solver))
-	} else {
-		verifyNoError(solver.SetStringOption("solver", "choose"))
-	}
 	if build.DisablePreSolve {
 		verifyNoError(solver.SetStringOption("presolve", "off"))
 	} else {
 		verifyNoError(solver.SetStringOption("presolve", "on"))
 	}
-	// verifyNoError(solver.SetStringOption("run_crossover", "off"))
 
-	verifyNoError(solver.SetFloatOption("dual_residual_tolerance", 1e-4)) // up from default of 1e-7, i don't care about dual
+	// up from default of 1e-7, i don't care about dual
+	verifyNoError(solver.SetFloatOption("dual_residual_tolerance", 1e-4))
+}
 
-	// verifyNoError(solver.SetBoolOption("mip_allow_restart", !input.Mip_disallow_restart))
-	if build.Mip_lp_solver == "" {
-		verifyNoError(solver.SetStringOption("mip_lp_solver", "choose"))
-	} else {
-		verifyNoError(solver.SetStringOption("mip_lp_solver", build.Mip_lp_solver))
+func (build *LinearBuilder) configureHighsSolver(solver *highs.Solver) bool {
+	requestGpu := false
+
+	switch build.Solver {
+	case Solver_NotSet:
+		panic("solver not specified")
+	case Solver_LP_CAN_GPU:
+		verifyNoError(solver.SetStringOption("solver", "hipdlp"))
+		requestGpu = true
+	case Solver_LP_NO_GPU:
+		verifyNoError(solver.SetStringOption("solver", "hipo"))
+	case Solver_MIP_Interior:
+		verifyNoError(solver.SetStringOption("solver", "choose"))
+		verifyNoError(solver.SetStringOption("mip_lp_solver", "hipo"))
+		verifyNoError(solver.SetStringOption("mip_ipm_solver", "hipo"))
+	case Solver_MIP_Vertex:
+		verifyNoError(solver.SetStringOption("solver", "choose"))
+		verifyNoError(solver.SetStringOption("mip_lp_solver", ""))
+		verifyNoError(solver.SetStringOption("mip_ipm_solver", ""))
 	}
+
+	return requestGpu
 }
 
 func verifyNoError(err error) {

@@ -129,7 +129,7 @@ func rankInternalRun5_create(process *RankingStatWeightProcess5) *rankInternalRu
 	run := new(rankInternalRun5)
 	run.process = process
 	run.build = new(utilhighs.LinearBuilder)
-	run.build.Mip_lp_solver = "ipx"
+	run.build.Solver = utilhighs.Solver_MIP_Interior
 
 	run.build.BlendMultiObjectives = false
 	run.objectiveInclude = run.build.AddObjectivePrioritised(true, -1, 0.05, 2)
