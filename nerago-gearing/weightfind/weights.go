@@ -42,7 +42,7 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 	tracker.RunOuterTracking(4)
 	defer tracker.Stop()
 
-	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), gearModel, printer)
+	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), gearModel, setup.MissingEnchant_Panic, printer)
 	currentItemSet := items.FullItemSet_FromMap(currentEquip)
 
 	// SIMULATE STAT CHANGES

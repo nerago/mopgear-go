@@ -13,9 +13,9 @@ import (
 type MissingEnchantMode int8
 
 const (
-	MissingEnchant_Ignore MissingEnchantMode = iota
-	MissingEnchant_Fix    MissingEnchantMode = iota
 	MissingEnchant_Panic  MissingEnchantMode = iota
+	MissingEnchant_Fix    MissingEnchantMode = iota
+	MissingEnchant_Ignore MissingEnchantMode = iota
 )
 
 func OptionsSetup_FromGearFile(filename string, model *model.Model, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) items.FullOptionsMap {
@@ -44,10 +44,10 @@ func OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId items.ItemId, upgradeLe
 	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
 }
 
-func OptionsSetup_ExactEquippedOnly(equipped []loaders.EquippedItem, model *model.Model, printer *util.PrintRecorder) items.FullEquipMap {
+func OptionsSetup_ExactEquippedOnly(equipped []loaders.EquippedItem, model *model.Model, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) items.FullEquipMap {
 	resultMap := items.FullEquipMap{}
 	for _, equipItem := range equipped {
-		item := OptionsSetup_ExactEquippedOnly_Item(equipItem, MissingEnchant_Panic, model, printer)
+		item := OptionsSetup_ExactEquippedOnly_Item(equipItem, missingEnchant, model, printer)
 
 		printer.Println(item.CreateString())
 		resultMap.FillSlot_ExpectedEmpty(item.SlotItem(), &item)

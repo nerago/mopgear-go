@@ -244,7 +244,7 @@ func slotRating(printer *util.PrintRecorder) {
 func findSimpleUpgrade(printer *util.PrintRecorder) {
 	model := model.Model_PallyProtMitigation_WithSet()
 
-	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(files.GearFileProtMitigationNoSet), &model, printer)
+	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(files.GearFileProtMitigationNoSet), &model, setup.MissingEnchant_Panic, printer)
 
 	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationNoSet, &model, setup.MissingEnchant_Panic, printer)
 	for _, itemId := range substituteItemsMiti {
@@ -291,7 +291,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 	startGear := files.GearFileProtMitigationWithSet
 
 	printer.Println("READ existing")
-	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &model, printer)
+	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &model, setup.MissingEnchant_Panic, printer)
 	currentStats := simulate.WowSim_Execute_UseModel(simSize, &model, &currentEquip, nil, util.TrackProgress_Start())
 
 	printer.Println("SETUP options")
@@ -387,6 +387,7 @@ func trinketSims(printer *util.PrintRecorder) {
 		103678,                   // time lost artifict
 		trinketThokTailCelestial, // thok trinket
 		trinketFusionCoreCelestial,
+		trinketVialCorruptCelestial,
 	}
 
 	// fight := stats.Fight_Animus
@@ -435,7 +436,7 @@ func trinketSims(printer *util.PrintRecorder) {
 		file := group.file
 
 		equipped := loaders.GearFileReader_Read(file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, util.PrintRecorder_HoldAll())
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_HoldAll())
 		printer.Println(group.label + " CURRENT")
 		printer.Println(equipMap[items.Equip_Trinket1].CreateString())
 		printer.Println(equipMap[items.Equip_Trinket2].CreateString())
@@ -446,7 +447,7 @@ func trinketSims(printer *util.PrintRecorder) {
 		file := group.file
 
 		equipped := loaders.GearFileReader_Read(file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, util.PrintRecorder_HoldAll())
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_HoldAll())
 
 		for _, itemId := range itemIds {
 			var item *items.FullItem
@@ -551,7 +552,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		file := group.file
 
 		equipped := loaders.GearFileReader_Read(file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, util.PrintRecorder_HoldAll())
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_HoldAll())
 		printer.Println(group.label + " CURRENT")
 		printer.Println(equipMap[items.Equip_Trinket1].CreateString())
 		printer.Println(equipMap[items.Equip_Trinket2].CreateString())
@@ -562,7 +563,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		file := group.file
 
 		equipped := loaders.GearFileReader_Read(file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, util.PrintRecorder_HoldAll())
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_HoldAll())
 
 		for _, itemIdOne := range itemIds {
 			var upgrade int32 = 0
@@ -603,7 +604,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 }
 
 func addGearFileToCommon(common map[items.ItemId]stats.ReforgeRecipe, gearFile string, model *model.Model, printer *util.PrintRecorder) {
-	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), model, printer)
+	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), model, setup.MissingEnchant_Panic, printer)
 	for item := range currentEquip.AllItemSeq() {
 		common[item.ItemId()] = item.Reforge()
 	}
@@ -658,7 +659,7 @@ func basicListRatingEach(printer *util.PrintRecorder) {
 
 	for _, group := range groups {
 		equipItems := loaders.GearFileReader_Read(group.file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, util.PrintRecorder_HoldAll())
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, setup.MissingEnchant_Panic, util.PrintRecorder_HoldAll())
 		itemSet := items.FullItemSet_FromMap(equipMap)
 		rating := group.model.CalcRatingFull(&itemSet)
 		tools.ReportSet(&group.model, &itemSet, rating, printer)
@@ -708,7 +709,7 @@ func solveForRatings(printer *util.PrintRecorder) {
 
 	for _, group := range groups {
 		equipItems := loaders.GearFileReader_Read(group.file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, util.PrintRecorder_HoldAll())
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, setup.MissingEnchant_Panic, util.PrintRecorder_HoldAll())
 		itemSet := items.FullItemSet_FromMap(equipMap)
 		rating := group.model.CalcRatingFull(&itemSet)
 		// solver.ReportSet(printer, itemSet, rating, &group.model)

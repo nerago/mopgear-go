@@ -3,6 +3,7 @@ package multi_types
 import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
+	"paladin_gearing_go/setup"
 )
 
 type MultiSetParam struct {
@@ -18,6 +19,7 @@ type MultiSetParam struct {
 	// extra item settings
 	ExtraUpgradeLevel         items.UpgradeLevel
 	ForceUpgradeExistingItems items.UpgradeLevel
+	MissingEnchant            setup.MissingEnchantMode
 
 	// intended to use accessor funcs
 	ExtraItems     []items.ItemId

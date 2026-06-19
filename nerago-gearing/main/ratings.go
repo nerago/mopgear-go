@@ -59,7 +59,7 @@ func testBasicStatsGeneral(printer *util.PrintRecorder) {
 	// modelEquipOnly := model.Model_PallyProtDps()
 	// goal := stats.UpgradeGoal_Dps
 
-	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &modelEquipOnly, printer)
+	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &modelEquipOnly, setup.MissingEnchant_Panic, printer)
 	itemSet := items.FullItemSet_FromMap(currentEquip)
 
 	inputData, simBase := generateRatingsInputFromArtificalStatOverrides_ForBasic(itemSet, printer, simSpeed, spec, goal, fight, modelEquipOnly.Professions)
@@ -77,11 +77,11 @@ func testBasicStatsGeneral(printer *util.PrintRecorder) {
 // oldish code, may sometimes want to mix basic ratings??
 func relativeRatingsCompromise(printer *util.PrintRecorder) {
 	modelMitiNoSet := model.Model_PallyProtMitigation_NoSet()
-	gearMitiNoSet := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(files.GearFileProtMitigationNoSet), &modelMitiNoSet, printer)
+	gearMitiNoSet := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(files.GearFileProtMitigationNoSet), &modelMitiNoSet,setup.MissingEnchant_Panic, printer)
 	itemSetMitiNoSet := items.FullItemSet_FromMap(gearMitiNoSet)
 
 	modelDps := model.Model_PallyProtDps()
-	gearDps := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(files.GearFileProtDps), &modelDps, printer)
+	gearDps := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(files.GearFileProtDps), &modelDps,setup.MissingEnchant_Panic, printer)
 	itemSetDps := items.FullItemSet_FromMap(gearDps)
 
 	var targetCombined = 10000000000.0
