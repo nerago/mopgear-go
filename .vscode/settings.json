@@ -8,6 +8,7 @@
     "js/ts.validate.enabled": false,
     "js/ts.suggestionActions.enabled": false,
     "go.alternateTools": {
+
         
     },
     "terminal.integrated.env.windows": {
@@ -17,6 +18,9 @@
     "gopls": {
         "directoryFilters": [
             "-wowsim-external/sim/web"
+        ],
+        "build.buildFlags": [
+            "-tags=with_db"
         ]
     },
 }

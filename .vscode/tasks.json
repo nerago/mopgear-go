@@ -30,9 +30,8 @@
 			"command": "build",
 			"args": [
 				"-o", "main-debug.exe",
-				"-v",
 				"-tags=with_db",
-				"-gcflags=all=-N -l",
+				"-gcflags=all=-N -l -j",
 				"./nerago-gearing/main"
 			],
 			"presentation": {

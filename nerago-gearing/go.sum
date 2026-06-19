@@ -3,5 +3,7 @@ github.com/bartolsthoorn/gohighs v1.0.0/go.mod h1:Pgn3qEVcXg3OXE4/rltZDtOBHG293Z
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+golang.org/dl v0.0.0-20260618194738-ed70cd925632 h1:Jcz3jIUBYeN9pN6AneKG6JvBAkTUoGA+s5gLci4nOyM=
+golang.org/dl v0.0.0-20260618194738-ed70cd925632/go.mod h1:fwQ+hlTD8I6TIzOGkQqxQNfE2xqR+y7SzGaDkksVFkw=
 google.golang.org/protobuf v1.36.11 h1:fV6ZwhNocDyBLK0dj+fg8ektcVegBBuEolpbTQyBNVE=
 google.golang.org/protobuf v1.36.11/go.mod h1:HTf+CrKn2C3g5S8VImy6tdcUvCska2kB7j23XfzDpco=
