@@ -14,25 +14,6 @@ func RemoveDuplicatesFunc[T any](slice []T, equals func(a, b *T) bool) []T {
 		return nil
 	}
 
-	result := make([]T, 0, len(slice))
-outer:
-	for outerIndex := range slice {
-		next := &slice[outerIndex]
-		for checkIndex := range result {
-			if equals(next, &result[checkIndex]) {
-				continue outer
-			}
-		}
-		result = append(result, *next)
-	}
-	return result
-}
-
-func RemoveDuplicatesFunc2[T any](slice []T, equals func(a, b *T) bool) []T {
-	if slice == nil {
-		return nil
-	}
-
 	var a, b int
 	for a = 0; a < len(slice); a++ {
 		for b = a + 1; b < len(slice); b++ {
@@ -56,6 +37,36 @@ outerLoop:
 		result = append(result, slice[a])
 	}
 	return result
+}
+
+func RemoveDuplicatesInPlaceFunc[T any](slice *[]T, equals func(a, b *T) bool) {
+	if slice == nil || *slice == nil {
+		return 
+	}
+
+	var a, b int
+	for a = 0; a < len(*slice); a++ {
+		for b = a + 1; b < len(*slice); b++ {
+			if equals(&(*slice)[a], &(*slice)[b]) {
+				goto changed
+			}
+		}
+	}
+	return 
+
+changed:
+	write := a
+outerLoop:
+	for a = a + 1; a < len(*slice); a++ {
+		for b = a + 1; b < len(*slice); b++ {
+			if equals(&(*slice)[a], &(*slice)[b]) {
+				continue outerLoop
+			}
+		}
+		(*slice)[write] = (*slice)[a]
+		write++
+	}
+	*slice = (*slice)[0:write]
 }
 
 func RemoveDuplicatesFuncNotify[T any](slice []T, equals func(a, b *T) bool, removedNotify func(x *T)) []T {

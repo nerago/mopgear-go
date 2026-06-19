@@ -43,9 +43,9 @@ func readEquipped(itemObject map[string]any) EquippedItem {
 		enchant = uint32(itemObject["enchant"].(float64))
 	}
 
-	var upgradeStep int8
+	var upgradeStep int32
 	if itemObject["upgrade_step"] != nil {
-		upgradeStep = int8(itemObject["upgrade_step"].(float64))
+		upgradeStep = int32(itemObject["upgrade_step"].(float64))
 	}
 
 	var reforging uint16
@@ -53,17 +53,17 @@ func readEquipped(itemObject map[string]any) EquippedItem {
 		reforging = uint16(itemObject["reforging"].(float64))
 	}
 
-	var randomSuffix int32
+	var randomSuffix items.RandomSuffix
 	if itemObject["random_suffix"] != nil {
-		randomSuffix = int32(itemObject["random_suffix"].(float64))
+		randomSuffix = items.RandomSuffix(itemObject["random_suffix"].(float64))
 	}
 
 	return EquippedItem{
-		ItemId:        itemId,
-		GemChoice:     gems,
-		EnchantChoice: enchant,
-		RandomSuffix:  randomSuffix,
-		UpgradeStep:   upgradeStep,
-		Reforging:     reforging,
+		ItemId:                 itemId,
+		GemChoice:              gems,
+		EnchantChoice:          enchant,
+		RandomSuffix:           randomSuffix,
+		UpgradeStepOrItemLevel: upgradeStep,
+		Reforging:              reforging,
 	}
 }

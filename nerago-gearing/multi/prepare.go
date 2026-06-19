@@ -106,7 +106,7 @@ func (param *multiSetParamInternal) includeExtra(itemId items.ItemId) {
 		return
 	}
 
-	param.extraLoadAndGenerate(itemId)
+	param.extraLoadAndGenerate(itemId, items.NO_RANDOM_SUFFIX)
 }
 
 func (param *multiSetParamInternal) copyExtraFromOtherSpec(itemId items.ItemId) bool {
@@ -150,8 +150,8 @@ func (param *multiSetParamInternal) copyExtraFromOtherSpec(itemId items.ItemId) 
 func (param *multiSetParamInternal) copyExtraFromBags(itemId items.ItemId) bool {
 	equipped := param.job.bagsGear.GetWithItemId(itemId)
 	if equipped != nil {
-		// bags file doesn't have upgrade steps
-		equipped.UpgradeStep = param.ExtraUpgradeLevel
+		// bags file doesn't have proper upgrade steps
+		loaders.BagsFileItemSetExtraDefaults(equipped, param.ExtraUpgradeLevel)
 
 		options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &param.Model, setup.MissingEnchant_Fix, param.job.printer)
 		param.itemOptions.AddSeveralOptions(example.SlotItem(), options)
@@ -174,7 +174,7 @@ func (param *multiSetParamInternal) tryAddExtraFromBags(equipped *loaders.Equipp
 		}
 
 		// bags file doesn't have upgrade steps
-		equipped.UpgradeStep = param.ExtraUpgradeLevel
+		loaders.BagsFileItemSetExtraDefaults(equipped, param.ExtraUpgradeLevel)
 
 		options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &param.Model, setup.MissingEnchant_Fix, param.job.printer)
 
@@ -195,8 +195,8 @@ func (param *multiSetParamInternal) tryAddExtraFromBags(equipped *loaders.Equipp
 	}
 }
 
-func (param *multiSetParamInternal) extraLoadAndGenerate(itemId items.ItemId) {
-	options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, param.ExtraUpgradeLevel, &param.Model, param.job.printer)
+func (param *multiSetParamInternal) extraLoadAndGenerate(itemId items.ItemId, randomSuffix items.RandomSuffix) {
+	options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, param.ExtraUpgradeLevel, randomSuffix, &param.Model, param.job.printer)
 	param.itemOptions.AddSeveralOptions(example.SlotItem(), options)
 	param.job.printer.Printf("OPTION %s\n", example.CreateString())
 }

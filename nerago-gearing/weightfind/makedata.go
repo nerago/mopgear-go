@@ -76,7 +76,8 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, model *model.Model, makeSetCount int, simSize simulate.WowSim_RunSize, doFixRanges bool, printer *util.PrintRecorder, track *util.TrackProgress) []stathighs.WeightInput {
 	itemOptions := setup.OptionsSetup_FromGearFile(gearFile, model, setup.MissingEnchant_Panic, printer)
 	for _, itemId := range substituteItems {
-		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, model, printer)
+		// TODO support for random suffix items
+		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, model, printer)
 		for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
 			if itemOptions.Has(slotEquip) {
 				itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)

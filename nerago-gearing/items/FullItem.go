@@ -10,7 +10,7 @@ type FullItem struct {
 	// generally fixed from imports
 	itemId       ItemId
 	itemLevel    uint16
-	upgradeLevel int8
+	upgradeLevel UpgradeLevel
 	slot         SlotItem
 	baseName     string
 	tagName      string
@@ -24,7 +24,7 @@ type FullItem struct {
 	reforge       stats.ReforgeRecipe
 	gemChoice     []stats.GemInfo
 	enchantChoice uint32
-	randomSuffix  int32
+	randomSuffix  RandomSuffix
 
 	// stats for different purposes
 	statBase    stats.StatBlock // constant stats post reforge
@@ -33,7 +33,7 @@ type FullItem struct {
 	total stats.StatBlock // constant total stats as they contribute to caps
 }
 
-func FullItem_FromWowSim(itemId ItemId, itemLevel uint16, itemLevelBase uint16, upgradeLevel int8, slot SlotItem, baseName string, statBase stats.StatBlock, armorType stats.ArmorType, socketSlots []stats.SocketType, socketBonus stats.StatBlock, phase int8) FullItem {
+func FullItem_FromWowSim(itemId ItemId, itemLevel uint16, itemLevelBase uint16, upgradeLevel UpgradeLevel, slot SlotItem, baseName string, statBase stats.StatBlock, armorType stats.ArmorType, socketSlots []stats.SocketType, socketBonus stats.StatBlock, phase int8) FullItem {
 	return FullItem{
 		itemId, itemLevel, upgradeLevel, slot, baseName, "", armorType, statBase.PrimaryStat(),
 		socketSlots, socketBonus, phase,
@@ -60,7 +60,7 @@ func (item *FullItem) NewWithChangedStatsReforge(changeStats stats.StatBlock, ch
 	return &newItem
 }
 
-func (item *FullItem) NewWithChangedStatsSuffix(changeStats stats.StatBlock, randomSuffix int32) *FullItem {
+func (item *FullItem) NewWithChangedStatsSuffix(changeStats stats.StatBlock, randomSuffix RandomSuffix) *FullItem {
 	var newItem FullItem = *item
 	newItem.randomSuffix = randomSuffix
 	newItem.statBase = changeStats
@@ -78,7 +78,7 @@ func (item *FullItem) NewWithEnchantDetails(socketSlots []stats.SocketType, gemC
 	return &newItem
 }
 
-func (item *FullItem) NewWithInstanceDetails(socketSlots []stats.SocketType, reforge stats.ReforgeRecipe, gemChoice []stats.GemInfo, enchantChoice uint32, randomSuffix int32, statEnchant stats.StatBlock) *FullItem {
+func (item *FullItem) NewWithInstanceDetails(socketSlots []stats.SocketType, reforge stats.ReforgeRecipe, gemChoice []stats.GemInfo, enchantChoice uint32, randomSuffix RandomSuffix, statEnchant stats.StatBlock) *FullItem {
 	var newItem FullItem = *item
 	newItem.socketSlots = socketSlots
 	newItem.reforge = reforge
@@ -134,7 +134,7 @@ func (item *FullItem) ItemLevel() uint16 {
 	return item.itemLevel
 }
 
-func (item *FullItem) UpgradeLevel() int8 {
+func (item *FullItem) UpgradeLevel() UpgradeLevel {
 	return item.upgradeLevel
 }
 
@@ -174,13 +174,14 @@ func (item *FullItem) EnchantChoice() uint32 {
 	return item.enchantChoice
 }
 
-func (item *FullItem) RandomSuffix() int32 {
+func (item *FullItem) RandomSuffix() RandomSuffix {
 	return item.randomSuffix
 }
 
 func (item *FullItem) Equals(other *FullItem) bool {
 	return item.itemId == other.itemId && item.itemLevel == other.itemLevel && item.slot == other.slot &&
-		stats.StatBlock_Equals(&item.statBase, &other.statBase) && stats.StatBlock_Equals(&item.statEnchant, &other.statEnchant)
+		stats.StatBlock_Equals(&item.statBase, &other.statBase) && stats.StatBlock_Equals(&item.statEnchant, &other.statEnchant) &&
+		item.randomSuffix == other.randomSuffix
 }
 
 func (item *FullItem) CreateString() string {
@@ -226,7 +227,7 @@ func (item *FullItem) AppendString(build *util.StringBuild2) {
 	build.WriteString(" }")
 }
 
-func (item *FullItem) MakeItemWithRandomSuffix(randomSuffix int32) *FullItem {
+func (item *FullItem) MakeItemWithRandomSuffix(randomSuffix RandomSuffix) *FullItem {
 	if randomSuffix != 0 {
 		wowSimStats, suffix := item.randomStatsFromWowSim(randomSuffix)
 

@@ -25,7 +25,7 @@ func findUpgradeAndSim(input *FindUpgrades_SimInputs, baseItems *items.FullOptio
 	tracker.RunOuterTracking(3)
 	defer tracker.Stop()
 
-	initialList, baseSet := findUpgrade(&input.FindUpgrades_BasicInputs, baseItems, extraItems, model, printer, tracker.MakeNested(), goal, true, substituteItems, substituteEmptySlotOnly)
+	initialList, baseSet := findUpgrade(&input.FindUpgrades_BasicInputs, baseItems, extraItems, model, printer, tracker.MakeNested(), goal, input.TargetUpgradeLevel, true, substituteItems, substituteEmptySlotOnly)
 
 	baseSim := simulate.WowSim_Execute_SpecifyAll(input.SimSize, model.Spec, goal, model.SimulateAs, model.Professions, baseSet.Items(), nil, tracker.MakeNested())
 	printer.Println("SIM *BASELINE*")

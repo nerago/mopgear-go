@@ -32,6 +32,7 @@
 				"-o", "main-debug.exe",
 				"-v",
 				"-tags=with_db",
+				"-gcflags=all=-N -l",
 				"./nerago-gearing/main"
 			],
 			"presentation": {

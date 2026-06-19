@@ -106,9 +106,9 @@ func core(printer *util.PrintRecorder) {
 
 	// statWeightsGrid_updateAll(printer)
 
-	PaladinMultiRun(printer)
+	// PaladinMultiRun(printer)
 
-	// findUpgrades_Paladin_Sim_AllRaid_Run(printer)
+	findUpgrades_Paladin(printer)
 }
 
 func setupPallyMitigationSet() (items.FullOptionsMap, model.Model) {

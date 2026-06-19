@@ -12,7 +12,6 @@ import (
 const (
 	c_upgradeEachThreads = 4
 	c_simThreads         = 4
-	c_targetUpgradeLevel = 0 // TODO should be a process param
 	c_baseSolveScale     = 4
 	c_nullIncrease       = -100.0
 )

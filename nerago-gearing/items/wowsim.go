@@ -18,10 +18,10 @@ func (item *FullItem) getAsWowSimItem() (simBaseItem *core.Item, simScale *proto
 	panic("level scale not found")
 }
 
-func (item *FullItem) randomStatsFromWowSim(randomSuffix int32) (stats.StatBlock, string) {
+func (item *FullItem) randomStatsFromWowSim(randomSuffix RandomSuffix) (stats.StatBlock, string) {
 	_, simScale := item.getAsWowSimItem()
 
-	suffixObject, knownSuffix := core.RandomSuffixesByID[randomSuffix]
+	suffixObject, knownSuffix := core.RandomSuffixesByID[int32(randomSuffix)]
 	if !knownSuffix {
 		panic("unknown item suffix")
 	}

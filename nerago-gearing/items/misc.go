@@ -2,10 +2,17 @@ package items
 
 import "strconv"
 
-const LOW_HIGH_MOP_ITEM_LEVELS_THRESHOLD = 522
-const LOW_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL = 4
-const HIGH_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL = 3
-const MAX_UPGRADE_LEVEL = 2
+const (
+	LOW_HIGH_MOP_ITEM_LEVELS_THRESHOLD                  = 522
+	LOW_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL               = 4
+	HIGH_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL              = 3
+	MAX_UPGRADE_LEVEL                      UpgradeLevel = 2
+	NO_RANDOM_SUFFIX                       RandomSuffix = 0
+)
+
+type UpgradeLevel int8
+
+type RandomSuffix int32
 
 type ItemId uint32
 
@@ -13,7 +20,7 @@ func (id ItemId) String() string {
 	return strconv.FormatUint(uint64(id), 10)
 }
 
-func CalcUpgradeLevel(itemLevel uint16, itemLevelBase uint16) int8 {
+func CalcUpgradeLevel(itemLevel uint16, itemLevelBase uint16) UpgradeLevel {
 	diff := int16(itemLevel) - int16(itemLevelBase)
 	if diff < 0 {
 		return -1

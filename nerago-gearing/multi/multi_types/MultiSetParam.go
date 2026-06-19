@@ -16,8 +16,8 @@ type MultiSetParam struct {
 	RequestRatingPercent float64
 
 	// extra item settings
-	ExtraUpgradeLevel         int8
-	ForceUpgradeExistingItems int8
+	ExtraUpgradeLevel         items.UpgradeLevel
+	ForceUpgradeExistingItems items.UpgradeLevel
 
 	// intended to use accessor funcs
 	ExtraItems     []items.ItemId

@@ -33,14 +33,14 @@ func OptionsSetup_FromEquipped(equipped []loaders.EquippedItem, model *model.Mod
 }
 
 func OptionsSetup_Single_FromEquipped(equipItem loaders.EquippedItem, model *model.Model, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
-	item := loadItemBasic(equipItem.ItemId, equipItem.UpgradeStep, printer)
+	item := *db.WowSimDB_ByIdAndUpgrade_AllowFallback(equipItem.ItemId, equipItem.UpgradeStepOrItemLevel, printer)
 	item = addDetailFromEquip(item, equipItem, model, missingEnchant, printer)
 	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
 }
 
-func OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId items.ItemId, upgradeLevel int8, model *model.Model, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
-	item := loadItemBasic(itemId, upgradeLevel, printer)
-	item = addDetailUsingDefaults(item, model)
+func OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId items.ItemId, upgradeLevel items.UpgradeLevel, randomSuffix items.RandomSuffix, model *model.Model, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
+	item := *db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemId, int32(upgradeLevel), printer)
+	item = addDetailUsingDefaults(item, randomSuffix, model)
 	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
 }
 
@@ -56,7 +56,7 @@ func OptionsSetup_ExactEquippedOnly(equipped []loaders.EquippedItem, model *mode
 }
 
 func OptionsSetup_ExactEquippedOnly_Item(equipItem loaders.EquippedItem, missingEnchant MissingEnchantMode, model *model.Model, printer *util.PrintRecorder) items.FullItem {
-	item := loadItemBasic(equipItem.ItemId, equipItem.UpgradeStep, printer)
+	item := *db.WowSimDB_ByIdAndUpgrade_AllowFallback(equipItem.ItemId, equipItem.UpgradeStepOrItemLevel, printer)
 	item = addDetailFromEquip(item, equipItem, model, missingEnchant, printer)
 
 	if equipItem.Reforging != 0 {
@@ -67,12 +67,8 @@ func OptionsSetup_ExactEquippedOnly_Item(equipItem loaders.EquippedItem, missing
 	return item
 }
 
-func loadItemBasic(itemId items.ItemId, upgradeLevel int8, printer *util.PrintRecorder) items.FullItem {
-	return *db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemId, upgradeLevel, printer)
-}
-
-func addDetailUsingDefaults(item items.FullItem, model *model.Model) items.FullItem {
-	// TODO known random suffixes?
+func addDetailUsingDefaults(item items.FullItem, randomSuffix items.RandomSuffix, model *model.Model) items.FullItem {
+	item = *item.MakeItemWithRandomSuffix(randomSuffix)
 
 	if item.SlotItem() == items.Item_Trinket {
 		return item
@@ -192,7 +188,7 @@ func confirmSocketSlots(item items.FullItem, professions model.ProfessionInfo) [
 	return existingSockets
 }
 
-func UpgradeExistingToLevel2(optionsMap *items.FullOptionsMap, targetUpgrade int8, model *model.Model, printer *util.PrintRecorder) {
+func UpgradeExistingToLevel2(optionsMap *items.FullOptionsMap, targetUpgrade items.UpgradeLevel, model *model.Model, printer *util.PrintRecorder) {
 	printer.Println("$$$$ UPGRADE EXISTING ITEMS $$$$")
 	optionsMap.MapEachItem(func(currItem *items.FullItem) items.FullItem {
 		if currItem.UpgradeLevel() >= targetUpgrade {
@@ -203,8 +199,8 @@ func UpgradeExistingToLevel2(optionsMap *items.FullOptionsMap, targetUpgrade int
 	})
 }
 
-func upgradeItemTo2(currItem *items.FullItem, targetUpgrade int8, model *model.Model, printer *util.PrintRecorder) items.FullItem {
-	upgradeItem := db.WowSimDB_ByIdAndUpgrade(currItem.ItemId(), targetUpgrade)
+func upgradeItemTo2(currItem *items.FullItem, targetUpgrade items.UpgradeLevel, model *model.Model, printer *util.PrintRecorder) items.FullItem {
+	upgradeItem := db.WowSimDB_ByIdAndUpgrade(currItem.ItemId(), int32(targetUpgrade))
 	if upgradeItem == nil {
 		printer.Println("$ CAN'T UPGRADE " + currItem.CreateString())
 		return *currItem

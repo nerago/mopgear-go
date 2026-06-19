@@ -14,47 +14,46 @@ import (
 )
 
 var substituteItemsDps = []items.ItemId{
-	96394, // frozen warlord bracer heroic
-	95281, // ret tier15 gloves normal
-	95205, // terra-cotta neck
-	96481, // durumu tentacle heroic
-	95910, // ret tier15 chest celestial
-	86955, // heroic overwhelm assault belt
-	86957, // heroic bladed tempest ring
-	87015, // heroic clawfeet
-	95140, // shado assault band
-	95141, // shado assault loop
-	96500, // scaled tyrant heroic
-	86979, // heroic impaling treads
-	96373, // cloudbreaker belt heroic
-	96468, // talonrender chest heroic
-	94776, // primal turtle amulet
-	96533, // rein-binders fists heroic
-	94820, // caustic spike bracers
-	87024, // null greathelm
-	94773, // centripetal shoulders normal
-	95535, // normal lightning legs
-	96182, // ultimate prot of the emperor thunder normal
-	94945, // greatshield of the gloaming normal
-	96436, // tortos shell heroic
-	95778, // golden golem celestial [would need gem]
-	96376, // worldbreaker weapon
-	96534, // qon's scimitar
-	86387, // kilrak weapon
-	98147, // pre-legend strength dps
-	98146, // pre-legend strength tank
-	96478, // treads of the blind heroic
-	95153, // Tyrant King Battleplate
-	95282, // ret tier15 normal head
-	95292, // prot tier15 head normal
-	96657, // ret tier15 legs heroic
-	96658, // ret tier15 shoulder heroic
-	95142, // striker's battletags
-	94776, // primal turtle amulet
-	// 94527, // ji-kun trinket [not sure about trinkets here]
-	// 94529, // gaze of the twins [not sure about trinkets here]
-	96436, // tortos shell heroic
-	96420, // talisman of angry spirits
+	96394,  // frozen warlord bracer heroic
+	95281,  // ret tier15 gloves normal
+	95205,  // terra-cotta neck
+	96481,  // durumu tentacle heroic
+	95910,  // ret tier15 chest celestial
+	86955,  // heroic overwhelm assault belt
+	86957,  // heroic bladed tempest ring
+	95140,  // shado assault band
+	95141,  // shado assault loop
+	96500,  // scaled tyrant heroic
+	86979,  // heroic impaling treads
+	96373,  // cloudbreaker belt heroic
+	96468,  // talonrender chest heroic
+	94776,  // primal turtle amulet
+	96533,  // rein-binders fists heroic
+	94820,  // caustic spike bracers
+	94773,  // centripetal shoulders normal
+	96182,  // ultimate prot of the emperor thunder normal
+	94945,  // greatshield of the gloaming normal
+	96436,  // tortos shell heroic
+	96376,  // worldbreaker weapon
+	96534,  // qon's scimitar
+	86387,  // kilrak weapon
+	96478,  // treads of the blind heroic
+	95153,  // Tyrant King Battleplate
+	95282,  // ret tier15 normal head
+	95292,  // prot tier15 head normal
+	96657,  // ret tier15 legs heroic
+	96658,  // ret tier15 shoulder heroic
+	95142,  // striker's battletags
+	94776,  // primal turtle amulet
+	96436,  // tortos shell heroic
+	96420,  // talisman of angry spirits
+	101882, // cliffbreaker helm exp/mastery
+	// 101887, // timeless ring haste/mastery; random suffixes don't really work well in upgrade
+	103787, // poisonbinder girth
+	103742, // blood rage bracers
+	103738, // bubble bracers
+	105785, // burly bracer
+	103734, // zoid gauntlets
 }
 var substituteItemsMiti = []items.ItemId{
 	95291,  // prot tier15 hand normal
@@ -68,14 +67,12 @@ var substituteItemsMiti = []items.ItemId{
 	96394,  // frozen warlord bracer heroic
 	96373,  // cloudbreaker belt heroic
 	96478,  // treads of the blind heroic
-	95142,  // striker's battletags
 	95205,  // terra-cotta neck
 	95178,  // lootraptor amulet
 	96468,  // talonrender chest heroic
 	96533,  // rein-binders fists heroic
 	86957,  // heroic bladed tempest ring
 	86955,  // heroic overwhelm assault belt
-	95535,  // normal lightning legs
 	87015,  // heroic clawfeet
 	96481,  // durumu tentacle heroic
 	95140,  // shado assault band
@@ -89,8 +86,6 @@ var substituteItemsMiti = []items.ItemId{
 	96376,  // worldbreaker weapon
 	96534,  // qon's scimitar
 	86387,  // kilrak weapon
-	98146,  // pre-legend strength tank
-	98147,  // pre-legend strength dps
 	94776,  // primal turtle amulet
 	94820,  // caustic spike bracers
 	95141,  // shado assault loop
@@ -100,6 +95,12 @@ var substituteItemsMiti = []items.ItemId{
 	103742, // blood rage bracers
 	99126,  // prot t16 chest normal
 	103738, // bubble bracers
+	105092, // tower shield
+	105122, // blood seal
+	103738, // bubble bracers
+	105785, // burly bracer
+	103734, // zoid gauntlets
+	103826, // xifeng weapon
 }
 
 var ignoredItems = []items.ItemId{
@@ -116,10 +117,11 @@ func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
 	upgradeItems := loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic)
 	input := upgrades.FindUpgrades_SimInputs{
 		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
-			IncludeNormal: true,
-			IncludeHeroic: true,
-			IncludeRaden:  false,
-			IgnoredItems:  ignoredItems,
+			IncludeNormal:      true,
+			IncludeHeroic:      true,
+			IncludeRaden:       false,
+			IgnoredItems:       ignoredItems,
+			TargetUpgradeLevel: 0,
 		},
 		SimSize: simRunSize}
 	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsDps, printer)
@@ -135,10 +137,11 @@ func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 	upgradeItems := []*items.FullItem{db.WowSimDB_ByIdAndUpgrade_AllowFallback(96436, 2, printer)} // tortos shell heroic
 	input := upgrades.FindUpgrades_SimInputs{
 		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
-			IncludeNormal: true,
-			IncludeHeroic: true,
-			IncludeRaden:  false,
-			IgnoredItems:  ignoredItems,
+			IncludeNormal:      true,
+			IncludeHeroic:      true,
+			IncludeRaden:       false,
+			IgnoredItems:       ignoredItems,
+			TargetUpgradeLevel: 0,
 		},
 		SimSize: simRunSize}
 	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsMiti, printer)
@@ -153,20 +156,22 @@ func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 	// upgradeItems := loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic)
 	input := upgrades.FindUpgrades_SimInputs{
 		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
-			IncludeNormal: true,
-			IncludeHeroic: true,
-			IncludeRaden:  false,
-			IgnoredItems:  ignoredItems,
+			IncludeNormal:      true,
+			IncludeHeroic:      true,
+			IncludeRaden:       false,
+			IgnoredItems:       ignoredItems,
+			TargetUpgradeLevel: 0,
 		},
 		SimSize: simRunSize}
 	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsMiti, printer)
 }
 
-func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
+func findUpgrades_Paladin(printer *util.PrintRecorder) {
 	// simRunSize    = simulate.RunSize_TestOnly
 	// var simRunSize simulate.WowSim_RunSize = 1500
 	// var simRunSize simulate.WowSim_RunSize = 3000
-	simRunSize := simulate.RunSize_QuickDirty
+	var simRunSize simulate.WowSim_RunSize = 8000
+	// simRunSize := simulate.RunSize_QuickDirty
 	// simRunSize    := simulate.RunSize_Medium
 
 	substituteItemsDpsAndMiti := slices.Concat(substituteItemsDps, substituteItemsMiti)
@@ -179,18 +184,20 @@ func findUpgrades_Paladin_Sim_AllRaid_Run(printer *util.PrintRecorder) {
 	// finder := func(_ stats.Difficulty) []*items.FullItem {
 	// 	return []*items.FullItem{db.WowSimDB_ByIdAndUpgrade(99128, 2), db.WowSimDB_ByIdAndUpgrade(99138, 2)}
 	// }
-	finder := loaders.ItemFinder_SiegeStrengthPlateTank
+	// finder := loaders.ItemFinder_SiegeStrengthPlateTank
 	// finder := loaders.ItemFinder_Ordos
 	// finder := loaders.ItemFinder_TimelessPlate
+	finder := loaders.ItemFinder_BagsUpgraded
 
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
-				IncludeCelestial: true,
-				IncludeNormal:    false,
-				IncludeHeroic:    false,
-				IncludeRaden:     false,
-				IgnoredItems:     ignoredItems,
+				IncludeCelestial:   true,
+				IncludeNormal:      false,
+				IncludeHeroic:      false,
+				IncludeRaden:       false,
+				IgnoredItems:       ignoredItems,
+				TargetUpgradeLevel: 2,
 			},
 			SimSize: simRunSize,
 		},

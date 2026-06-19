@@ -76,7 +76,7 @@ func addExtrasT5Dumb(itemOptions *items.FullOptionsMap, model *model.Model, prin
 
 	for _, itemId := range extraItemsCombined {
 		// if !itemOptions.IncludesItemId(itemId) || slices.Contains(allTrinkets, itemId) {
-		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, model, printer)
+		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, model, printer)
 		for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
 			if itemOptions.CouldAddUpgrade_EquipSlot(slotEquip, example, printer) != items.CanUpgrade_InvalidAlways {
 				itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)

@@ -15,9 +15,9 @@ import (
 )
 
 func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress,
-	goal stats.OptimiseGoal, forceIncludeMost bool, substituteItems []items.ItemId, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) ([]upgradeItemResult, *items.FullItemSet) {
+	goal stats.OptimiseGoal, upgradeLevel items.UpgradeLevel, forceIncludeMost bool, substituteItems []items.ItemId, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) ([]upgradeItemResult, *items.FullItemSet) {
 
-	extraItems = setupUpgradeLevel(extraItems, printer)
+	extraItems = setupUpgradeLevel(extraItems, upgradeLevel, printer)
 	checkDuplicates(extraItems)
 	extraTasks := makeExtraTasks(input, extraItems, baseItems, printer, goal)
 	addSubstituteItems(baseItems, substituteItems, model, printer)
@@ -37,10 +37,10 @@ func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMa
 	return resultList, baseSet
 }
 
-func setupUpgradeLevel(extraItems []*items.FullItem, printer *util.PrintRecorder) []*items.FullItem {
+func setupUpgradeLevel(extraItems []*items.FullItem, upgradeLevel items.UpgradeLevel, printer *util.PrintRecorder) []*items.FullItem {
 	result := make([]*items.FullItem, 0, len(extraItems))
 	for _, item := range extraItems {
-		replace := db.WowSimDB_ByIdAndUpgrade_AllowFallback(item.ItemId(), c_targetUpgradeLevel, printer)
+		replace := db.WowSimDB_ByIdAndUpgrade_AllowFallback(item.ItemId(), int32(upgradeLevel), printer)
 		replace = replace.MakeItemWithRandomSuffix(item.RandomSuffix())
 		result = append(result, replace)
 	}
@@ -79,7 +79,8 @@ func makeExtraTasks(input *FindUpgrades_BasicInputs, extraItems []*items.FullIte
 func addSubstituteItems(optionsMap *items.FullOptionsMap, substituteItems []items.ItemId, model *model.Model, printer *util.PrintRecorder) {
 	for _, itemId := range substituteItems {
 		if !optionsMap.IncludesItemId(itemId) {
-			options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, model, printer)
+			// TODO system for random suffixes
+			options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, model, printer)
 			optionsMap.AddSeveralOptions(example.SlotItem(), options)
 			printer.Println("SUBSTITUTE " + example.CreateString())
 		}
@@ -133,12 +134,7 @@ func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptions
 	randomSuffix := incompleteItem.RandomSuffix()
 	slot := extraTask.slot
 
-	newOptions, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, upgradeLevel, model, printer)
-	if randomSuffix != 0 {
-		newOptions = util.MapSliceAsNew(newOptions, func(x *items.FullItem) items.FullItem {
-			return *x.MakeItemWithRandomSuffix(randomSuffix)
-		})
-	}
+	newOptions, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, upgradeLevel, randomSuffix, model, printer)
 	jobItems := baseItems.Clone()
 	jobItems[slot] = newOptions
 
@@ -190,7 +186,7 @@ func removePairedSimilar(jobItems *items.FullOptionsMap, testSlot items.SlotEqui
 		if len(jobItems[pairedSlot]) == 0 {
 			substituteId, hasSub := substituteEmptySlotOnly[testItem.SlotItem()]
 			if hasSub {
-				subOpts, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(substituteId, 2, model, printer)
+				subOpts, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(substituteId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, model, printer)
 				jobItems[pairedSlot] = subOpts
 			} else {
 				panic("remove paired " + testItem.BaseName() + " left empty slot")

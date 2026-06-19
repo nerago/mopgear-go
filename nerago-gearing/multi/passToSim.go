@@ -162,7 +162,7 @@ func (job *MultiSetJob) findVariantItem(result simulateMultiResult, itemId items
 		}
 	}
 
-	_, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &param.Model, job.printer)
+	_, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &param.Model, job.printer)
 	return example
 }
 

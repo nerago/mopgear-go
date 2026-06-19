@@ -239,7 +239,7 @@ func updateGear(input *wowsim_proto.RaidSimRequest, equipMap *items.FullEquipMap
 		}
 
 		if item.RandomSuffix() != 0 {
-			spec.RandomSuffix = item.RandomSuffix()
+			spec.RandomSuffix = int32(item.RandomSuffix())
 		}
 
 		if item.SlotItem() == items.Item_Hand && professions.IsEngineer {

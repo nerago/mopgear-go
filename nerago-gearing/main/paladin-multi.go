@@ -42,8 +42,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job := multi.MultiSetJob_Create(printer, simulate.RunSize_Medium)
 	job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
 
-	var generalUpgrade int8 = 0
-	var forceUpgrade int8 = 0
+	var generalUpgrade items.UpgradeLevel = 0
+	var forceUpgrade items.UpgradeLevel = 0
 
 	ret := multi_types.MultiSetParam{
 		Label:                     "Ret",

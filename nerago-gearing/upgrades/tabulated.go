@@ -67,6 +67,7 @@ func processSpec(input *FindUpgrades_SimInputs, spec *FindUpgrades_Spec, difficu
 	if !input.IncludeRaden {
 		upgradeItems = loaders.ItemFinder_FilterOutRadenItems(upgradeItems)
 	}
+	upgradeItems = util.RemoveDuplicatesFunc(upgradeItems, func(a, b **items.FullItem) bool {return (*a).Equals(*b)})
 
 	group := reportGroup{spec.Label, difficulty}
 	*groups = append(*groups, group)

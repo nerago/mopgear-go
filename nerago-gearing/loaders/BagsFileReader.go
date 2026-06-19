@@ -31,7 +31,7 @@ func BagsFileReader_Read() EquippedArray {
 
 func BagsFile_PlusPaladinGear_Read() EquippedArray {
 	equippedItems := BagsFileReader_Read()
-	gearFiles := []string{files.GearFileProtMitigationWithSet, files.GearFileProtMitigationNoSet, files.GearFileProtDps, files.GearFileRet}
+	gearFiles := []string{files.GearFileProtMitigationWithSet, files.GearFileProtMitigationNoSet, files.GearFileProtCompromise, files.GearFileProtHeal, files.GearFileProtDps, files.GearFileRet}
 	for _, filename := range gearFiles {
 		gear := GearFileReader_Read(filename)
 		equippedItems = append(equippedItems, gear...)
@@ -58,4 +58,11 @@ func (equippedArray *EquippedArray) GetWithItemId(itemId items.ItemId) *Equipped
 		}
 	}
 	return nil
+}
+
+func BagsFileItemSetExtraDefaults(equip *EquippedItem, upgradeLevelSuggested items.UpgradeLevel) {
+	// shouldn't be needed now we had an alternate export
+	if equip.UpgradeStepOrItemLevel == 0 {
+		equip.UpgradeStepOrItemLevel = int32(upgradeLevelSuggested)
+	}
 }

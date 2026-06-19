@@ -35,7 +35,7 @@ func findBestSubjectToCommon(printer *util.PrintRecorder) {
 	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationWithSet, &model, setup.MissingEnchant_Panic, printer)
 
 	for _, itemId := range substituteItemsMiti {
-		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
+		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 		itemOptions.AddSeveralOptions(example.SlotItem(), opts)
 	}
 
@@ -156,7 +156,7 @@ func checkHighs(printer *util.PrintRecorder) {
 
 	for _, itemId := range extraItemsCombined {
 		if !itemOptions.IncludesItemId(itemId) {
-			opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
+			opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 			for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
 				if itemOptions.Has(slotEquip) {
 					itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)
@@ -248,7 +248,7 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 
 	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationNoSet, &model, setup.MissingEnchant_Panic, printer)
 	for _, itemId := range substituteItemsMiti {
-		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
+		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 		itemOptions.AddSeveralOptions(example.SlotItem(), opts)
 	}
 
@@ -297,7 +297,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 	printer.Println("SETUP options")
 	itemOptionsShared := setup.OptionsSetup_FromGearFile(startGear, &model, setup.MissingEnchant_Panic, printer)
 	for _, itemId := range substituteItemsMiti {
-		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
+		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 		itemOptionsShared.AddSeveralOptions(example.SlotItem(), opts)
 	}
 
@@ -326,7 +326,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 			continue
 		}
 
-		_, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, 2, &model, printer)
+		_, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 
 		for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
 			if slotEquip == items.Equip_Ring1 {
@@ -483,18 +483,18 @@ func trinketSims(printer *util.PrintRecorder) {
 
 func trinketSimsBoth(printer *util.PrintRecorder) {
 	itemIds := []items.ItemId{
-		94519,                    // crit prim rage
-		96793,                    // none fort zand
+		94519, // crit prim rage
+		96793, // none fort zand
 		// 96555,                    // none soul barrier
-		94529,                    // none gaze twins
-		94527,                    // ji-kun
+		94529, // none gaze twins
+		94527, // ji-kun
 		// 94507,                    // valor
 		// 94508,                    // valor
-		103989,                   // timeless alacrity of xuen
-		103990,                   // timeless resolve of niuzao
-		103678,                   // time lost artifict
+		103989, // timeless alacrity of xuen
+		103990, // timeless resolve of niuzao
+		103678, // time lost artifict
 		trinketZandSpark,
-		trinketThokTailCelestial, 
+		trinketThokTailCelestial,
 		trinketFusionCoreCelestial,
 		trinketVialCorruptCelestial,
 	}
@@ -513,7 +513,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		// 	"heal",
 		// 	model.Model_PallyProtHeal(),
 		// 	files.GearFileProtHeal,
-		// }, 
+		// },
 		{
 			"with_set",
 			model.Model_PallyProtMitigation_WithSet(),
@@ -522,7 +522,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 			"no_set",
 			model.Model_PallyProtMitigation_NoSet(),
 			files.GearFileProtMitigationNoSet,
-		}, 
+		},
 		// {
 		// 	"compromise",
 		// 	model.Model_PallyProtCompromise(),
@@ -565,21 +565,21 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, util.PrintRecorder_HoldAll())
 
 		for _, itemIdOne := range itemIds {
-			var upgrade int = 0
+			var upgrade int32 = 0
 			if itemIdOne < 100000 {
 				upgrade = 2
 			}
-			itemOne := db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemIdOne, int8(upgrade), printer)
+			itemOne := db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemIdOne, upgrade, printer)
 			for _, itemIdTwo := range itemIds {
 				if itemIdTwo >= itemIdOne {
 					continue
 				}
 
-				var upgrade int = 0
+				var upgrade int32 = 0
 				if itemIdTwo < 100000 {
 					upgrade = 2
 				}
-				itemTwo := db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemIdTwo, int8(upgrade), printer)
+				itemTwo := db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemIdTwo, upgrade, printer)
 
 				printer.Println(group.label + " " + itemOne.CreateFullName() + " " + itemTwo.CreateFullName())
 				csv.AddStringMany(group.label, itemOne.CreateFullName(), itemTwo.CreateFullName())

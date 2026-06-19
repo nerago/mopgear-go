@@ -20,7 +20,7 @@ func (coll *RankedCollection[T]) Add(object T, rating float64) {
 
 func (coll *RankedCollection[T]) OrderedResult() iter.Seq2[T, float64] {
 	if coll.groups == nil {
-		return nil
+		return func(yield func(T, float64) bool) {}
 	}
 
 	keys := slices.AppendSeq([]float64{}, maps.Keys(coll.groups))

@@ -54,7 +54,7 @@ func ItemFinder_TimelessPlate(_ stats.Difficulty) []*items.FullItem {
 		if (strings.Contains(item.BaseName(), "Cliffbreaker") || strings.Contains(item.BaseName(), "Elder Tortoiseshell")) && item.ItemLevel() == targetLevel {
 			onlyCoreStats(item)
 
-			var randomId int32 = -454                               // haste/mastery
+			var randomId items.RandomSuffix = -454         // haste/mastery
 			item = item.MakeItemWithRandomSuffix(randomId) // give it haste
 			result = append(result, item)
 
@@ -185,6 +185,11 @@ func seigeGearGeneric(armor stats.ArmorType, primary stats.PrimaryStatType, diff
 			result = append(result, item)
 		}
 	}
+
+	if difficulty == stats.Difficulty_Celestial {
+		result = util.FilterSliceAsNew(result, func(x **items.FullItem) bool { return (*x).ItemLevel() < 555 })
+	}
+
 	return result
 }
 
@@ -304,4 +309,21 @@ func trinketForDifficulty(exampleItemId items.ItemId, difficulty stats.Difficult
 		}
 	}
 	return selectAppropriateDifficultyItem(candidates, difficulty, expectedItemLevelFunc)
+}
+
+func ItemFinder_BagsUpgraded(_ stats.Difficulty) []*items.FullItem {
+	bagsItems := BagsFile_PlusPaladinGear_Read()
+	result := make([]*items.FullItem, 0, len(bagsItems))
+	for _, equip := range bagsItems {
+		item := db.WowSimDB_ByIdAndUpgrade(equip.ItemId, equip.UpgradeStepOrItemLevel)
+		item = item.MakeItemWithRandomSuffix(equip.RandomSuffix)
+		if item.UpgradeLevel() < items.MAX_UPGRADE_LEVEL {
+			upgraded := db.WowSimDB_ByIdAndUpgrade(equip.ItemId, int32(items.MAX_UPGRADE_LEVEL))
+			upgraded = upgraded.MakeItemWithRandomSuffix(equip.RandomSuffix)
+			if upgraded != nil && upgraded.ItemLevel() > item.ItemLevel() {
+				result = append(result, upgraded)
+			}
+		}
+	}
+	return result
 }
