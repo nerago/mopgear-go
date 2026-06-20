@@ -9,7 +9,7 @@ import (
 )
 
 func (param *multiSetParamInternal) runCullingProcess(waitGroup *sync.WaitGroup, tracker *util.TrackProgress) {
-	var targetNum int64 = 4000
+	var targetNum int64 = 2000
 	currentNum := atomic.Uint64{}
 	tracker.RunFromAtomicInt(&currentNum, uint64(targetNum))
 
@@ -32,5 +32,7 @@ func (param *multiSetParamInternal) runCullingProcess(waitGroup *sync.WaitGroup,
 			param.seenInSolutions.Add(&fullSet)
 			currentNum.Add(1)
 		}
+
+		tracker.Stop()
 	})
 }

@@ -89,7 +89,7 @@ func (process *OptionsCulling) planNumberBranching() {
 	}
 
 	final := best.GetBestOrPanic()
-	process.printer.Printf("TASK setting item=%d task=%d\n", final.addItemBlocks, final.addTasks)
+	process.printer.Printf("TASK setting for=%s target=%d items=%d perf=%d additem=%d addtask=%d\n", process.label, targetTaskCount, totalItemCount, perfectBlockCount, final.addItemBlocks, final.addTasks)
 	process.addBlocksEachTime = final.addItemBlocks
 	process.addTasksPerTask = final.addTasks
 }
@@ -127,7 +127,7 @@ func (process *OptionsCulling) Run() <-chan items.SolvableItemSet {
 				case task := <-taskChannel:
 					process.runTask(task, taskChannel, resultChannel)
 					process.tasksCompleted.Add(1)
-				case <-time.After(5 * time.Minute):
+				case <-time.After(1 * time.Minute):
 					break taskLoop
 				}
 			}
@@ -220,6 +220,8 @@ func (process *OptionsCulling) deriveNewTasks(chosenSet items.SolvableItemSet, i
 			currHighwater = process.queueHighwater.Load()
 		}
 	}
+
+	// TODO get rid of all this recursive stuff, just go all random
 }
 
 func (*OptionsCulling) selectItemsCanRemove(chosenSet items.SolvableItemSet, itemOptions items.SolvableOptionsMap) []items.ItemId {
