@@ -2,7 +2,6 @@ package util
 
 import (
 	"maps"
-	"slices"
 )
 
 func CombineMaps[K comparable, V any](parts ...map[K]V) map[K]V {
@@ -14,8 +13,13 @@ func CombineMaps[K comparable, V any](parts ...map[K]V) map[K]V {
 }
 
 func KeysToSlice[K comparable, V any](m map[K]V) []K {
-	slice := make([]K, 0, len(m))
-	return slices.AppendSeq(slice, maps.Keys(m))
+	slice := make([]K, len(m))
+	i := 0
+	for k := range m {
+		slice[i] = k
+		i++
+	}
+	return slice
 }
 
 func MapFirstEntry[K comparable, V any](m map[K]V) (K, V) {
