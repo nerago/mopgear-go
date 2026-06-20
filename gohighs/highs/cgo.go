@@ -60,43 +60,12 @@ package highs
 #include <stdlib.h>
 #include <stdint.h>
 #include "highs_c_api.h"
-// #include "_cgo_export.h"
-//#include "lp_data/HighsCallback.h"
-
-typedef HighsInt (*gohighs_callback_t)(HighsInt, HighsInt);
-
-typedef struct GoHighsCallbackRef {
-	gohighs_callback_t gohighs_callback;
-	HighsInt solverReferenceIndex;
-} GoHighsCallbackRef;
-
-void userInterruptCallback(int callbackType, const char* message, const HighsCallbackDataOut* data_out, HighsCallbackDataIn* data_in, void* user_callback_data) {
-	//const HighsCallbackOutput* callback_out = (HighsCallbackOutput*) data_out;
-	if (user_callback_data != NULL) {
-		GoHighsCallbackRef* ref = (GoHighsCallbackRef*) user_callback_data;
-		HighsInt user_interrupt = ref->gohighs_callback(ref->solverReferenceIndex, callbackType);
-		data_in->user_interrupt = user_interrupt;
-	}
-}
-
-void enableGoHighsCallback(void* highs, HighsInt solverReferenceIndex, gohighs_callback_t gohighs_callback) {
-  GoHighsCallbackRef* ref = (GoHighsCallbackRef*) malloc(sizeof(GoHighsCallbackRef));
-  ref->solverReferenceIndex = solverReferenceIndex;
-  ref->gohighs_callback = gohighs_callback;
-//   ref->gohighs_callback = goHighsCallbackBridge;
-
-  Highs_setCallback(highs, userInterruptCallback, ref);
-  Highs_startCallback(highs, kHighsCallbackSimplexInterrupt);
-  Highs_startCallback(highs, kHighsCallbackIpmInterrupt);
-  Highs_startCallback(highs, kHighsCallbackMipInterrupt);
-}
-
-// TODO free
-
+#include "callbacks.h"
 */
 import "C"
 import (
 	"fmt"
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -383,6 +352,10 @@ func newErrorMsg(op, msg string) error {
 // Solver (Low-Level API)
 // ----------------------------------------------------------------------------
 
+// Used to bridge callbacks to highs C api.
+var solverReferenceArray = [C.GoHighsMaxSolverReference]*Solver{}
+var referenceNumberGenerator = atomic.Int32{}
+
 // Solver provides low-level access to the HiGHS solver.
 // It wraps the native HiGHS instance and provides methods for
 // building and solving optimization models programmatically.
@@ -392,31 +365,30 @@ func newErrorMsg(op, msg string) error {
 //	solver, _ := NewSolver()
 //	defer solver.Close()
 type Solver struct {
-	ptr unsafe.Pointer
+	ptr      unsafe.Pointer
+	refNum   int32
+	callback func(int32) int32
 }
 
 // NewSolver creates a new HiGHS solver instance.
 // Returns an error if the solver could not be created.
 //
-// The solver must be closed with Close() when no longer needed.
+// The solver cannot be closed in a thread safe manner.
+// Callers should pool and reuse instances as needed.
 func NewSolver() (*Solver, error) {
 	ptr := C.Highs_create()
 	if ptr == nil {
 		return nil, newErrorMsg("NewSolver", "failed to create HiGHS instance")
 	}
 
-	s := &Solver{ptr: ptr}
-	// runtime.SetFinalizer(s, (*Solver).Close)
-	return s, nil
-}
-
-// Close releases the resources held by the solver.
-// It is safe to call Close multiple times.
-func (s *Solver) Close() {
-	if s.ptr != nil {
-		C.Highs_destroy(s.ptr)
-		s.ptr = nil
+	refNum := referenceNumberGenerator.Add(1)
+	if refNum > C.GoHighsMaxSolverReference {
+		panic("solver reference number out of range")
 	}
+
+	s := &Solver{ptr: ptr, refNum: refNum}
+	solverReferenceArray[refNum] = s
+	return s, nil
 }
 
 // Clear resets the solver to its initial state, clearing
@@ -1059,15 +1031,41 @@ func (s *Solver) WriteSolution(filename string, pretty bool) error {
 	return newError("WriteSolution", Status(status))
 }
 
-// HighsInt gohighs_callback_t(HighsInt, HighsInt);
-
-//export goHighsCallbackBridge
-func goHighsCallbackBridge(solverReferenceIndex C.HighsInt, callbackType C.HighsInt) C.HighsInt {
-	return 1
+//export goHighsCallbackExportedBridge
+func goHighsCallbackExportedBridge(solverReference C.HighsInt, callbackType C.HighsInt) C.HighsInt {
+	solver := solverReferenceArray[solverReference]
+	if solver != nil {
+		callback := solver.callback
+		if callback != nil {
+			return C.HighsInt(callback(int32(callbackType)))
+		}
+	}
+	return 0
 }
 
-func (s *Solver) EnableCancelSupport() error {
-	// ref := C.HighsInt(2)
-	// C.enableGoHighsCallback(s.ptr, ref, C.goHighsCallbackBridge)
-	return nil
+func (s *Solver) InterruptSupportEnable() error {
+	status := Status(C.GoHighsInterruptEnable(s.ptr, C.HighsInt(s.refNum)))
+	return newError("EnableInterruptSupport", status)
+}
+
+func (s *Solver) InterruptSupportDisable() error {
+	status := Status(C.GoHighsInterruptDisable(s.ptr, C.HighsInt(s.refNum)))
+	return newError("DisableInterruptSupport", status)
+}
+
+func (s *Solver) InterruptSetFlag(value int) error {
+	status := Status(C.GoHighsInterruptSetFlag(s.ptr, C.HighsInt(s.refNum), C.HighsInt(value)))
+	return newError("InterruptSetFlag", status)
+}
+
+func (s *Solver) SetCallback(callback func(int32) int32) error {
+	s.callback = callback
+	status := Status(C.GoHighsCallbackBridgedEnable(s.ptr, C.HighsInt(s.refNum)))
+	return newError("SetCallback", status)
+}
+
+func (s *Solver) ClearCallback() error {
+	s.callback = nil
+	status := Status(C.GoHighsCallbackBridgedDisable(s.ptr, C.HighsInt(s.refNum)))
+	return newError("ClearCallback", status)
 }

@@ -172,7 +172,6 @@ func (m *Model) Solve(opts ...SolveOption) (*Solution, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer solver.Close()
 
 	// Apply options
 	cfg := defaultSolveConfig()
