@@ -93,11 +93,22 @@ func (param *multiSetParamInternal) cullingReportOrphan() {
 }
 
 func (job *MultiSetJob) cullReportAll() {
+	maxCountForParam := make([]uint32, len(job.params))
+	for param := range util.ForPointer(job.params) {
+		for _, count := range param.seenInSolutions.content {
+			maxCountForParam[param.paramIndex] = max(maxCountForParam[param.paramIndex], count)
+		}
+	}
+
 	combinedCount := make(map[items.ItemId]uint32)
+	bestPercent := make(map[items.ItemId]float64)
 	seen := make(map[items.ItemId]bool)
 	for param := range util.ForPointer(job.params) {
+		maxCount := float64(maxCountForParam[param.paramIndex])
 		for _, itemId := range param.ExtraItems {
 			seenCount := param.seenInSolutions.content[itemId]
+			percent := float64(seenCount) / maxCount
+			bestPercent[itemId] = max(bestPercent[itemId], percent)
 			combinedCount[itemId] += seenCount
 			seen[itemId] = true
 		}
@@ -106,16 +117,32 @@ func (job *MultiSetJob) cullReportAll() {
 	for param := range util.ForPointer(job.params) {
 		for item := range param.exactEquippedGear.AllItemSeq() {
 			itemId := item.ItemId()
+			bestPercent[itemId] = 1.0
 			combinedCount[itemId] += 1000
 			seen[itemId] = true
 		}
 	}
 
-	job.printer.Printf("EXTRAS NEVER USED ACROSS SETS:\n")
+	type lowEntry struct {
+		itemId  items.ItemId
+		percent float64
+	}
+	lowEntries := make([]lowEntry, 0)
 	for itemId := range seen {
-		if combinedCount[itemId] == 0 {
-		basicVersion := db.WowSimDB_ByIdAndUpgrade(itemId, 0)
-		job.printer.Printf("%5d %s\n", itemId, basicVersion.BaseName())
+		entry := lowEntry{itemId, bestPercent[itemId]}
+		lowEntries = append(lowEntries, entry)
+	}
+
+	slices.SortFunc(lowEntries, func(a, b lowEntry) int {
+		return cmp.Or(cmp.Compare(a.percent, b.percent), cmp.Compare(a.itemId, b.itemId))
+	})
+
+	job.printer.Printf("EXTRAS LOW RATE ACROSS SETS:\n")
+	for _, entry := range lowEntries {
+		if entry.percent < 0.2 {
+			itemId := entry.itemId
+			basicVersion := db.WowSimDB_ByIdAndUpgrade(itemId, 0)
+			job.printer.Printf("%4.1f%% %6d %s\n", entry.percent*100, itemId, basicVersion.BaseName())
 		}
 	}
 	job.printer.Println0()

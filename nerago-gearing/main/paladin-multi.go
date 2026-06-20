@@ -10,15 +10,14 @@ import (
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/util"
 	"slices"
+	"time"
 )
 
 const (
-	trinketZandSpark   = 96398
-	trinketFortZand    = 96793
-	trinketPrimRage    = 94519
-	trinketTwinsGaze   = 94529
-	trinketJiKun       = 94527
-	trinketSoulBarrier = 96555
+	trinketZandSpark = 96398
+	trinketFortZand  = 96793
+	trinketPrimRage  = 94519
+	trinketTwinsGaze = 94529
 
 	trinketCurseHubrisHeroic  = 105645 // heroic warforged
 	trinketThokTailHeroic     = 105609 // heroic warforged
@@ -163,8 +162,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// RING
 	throneRings := []items.ItemId{
 		95140, // shado assault band
-		95141, // shado assault loop
-		86957, // heroic bladed tempest ring
+		// 86957, // heroic bladed tempest ring // cull
 		96500, // scaled tyrant heroic
 
 		96481, // durumu tentacle heroic (not a tank ring, but ret likes?)
@@ -186,12 +184,12 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// TRINKET
 	trinketsDpsP3 := []items.ItemId{
 		trinketZandSpark,
-		trinketJiKun,
+		// trinketJiKun, // culled
 		trinketTwinsGaze,
 		trinketPrimRage,
 	}
 	trinketsTankP3 := []items.ItemId{
-		trinketSoulBarrier,
+		// trinketSoulBarrier, // culled
 		trinketFortZand,
 	}
 	trinketsBothP3 := slices.Concat(trinketsDpsP3, trinketsTankP3)
@@ -217,7 +215,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	// WRIST
 	miscWristP3 := []items.ItemId{
-		96375, // bracers implosion
 		96394, // frozen warlord bracer heroic
 		94820, // caustic spike bracers REMOVE?
 	}
@@ -253,7 +250,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	celestial := []items.ItemId{
 		105092, // tower shield
 		105122, // blood seal
-		104938, // sorrowpath signet
+		// 104938, // sorrowpath signet // would need upgrade to be useful
 	}
 	raidDrops := []items.ItemId{
 		103787, // poisonbinder girth
@@ -278,17 +275,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protHeal.AddExtraItems(newStuffP5)
 
 	ret.AddExtraItems([]items.ItemId{
-		87015, // heroic clawfeet
-		86979, // heroic impaling treads
 		96373, // cloudbreaker belt heroic
-		96478, // treads of the blind heroic
-		94773, // centripetal shoulders normal
 		96468, // talonrender chest heroic
-		96533, // rein-binders fists heroic
-		95153, // Tyrant King Battleplate
 		96550, // doomed crown heroic
-		96447, // rot-proof greatplate
-		87100, // White Tiger Gauntlets
 		96395, // bloodsoaked legplates
 		96542, // tidal force treads
 		86386, // Shin'ka, Execution of Dominion
@@ -313,8 +302,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96478, // treads of the blind heroic
 		96373, // cloudbreaker belt heroic
 		94773, // centripetal shoulders normal
-		96428, // shell-coated wrists
-		96447, // rot-proof greatplate
 		95535, // normal lightning legs
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
@@ -330,7 +317,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95535, // normal lightning legs
 		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
-		96447, // rot-proof greatplate
 		96550, // doomed crown heroic
 		96395, // bloodsoaked legplates
 		96542, // tidal force treads
@@ -341,8 +327,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96478, // treads of the blind heroic
 		96373, // cloudbreaker belt heroic
 		96533, // rein-binders fists heroic
-		96428, // shell-coated wrists
-		96447, // rot-proof greatplate
 		96550, // doomed crown heroic
 		96395, // bloodsoaked legplates
 		96542, // tidal force treads
@@ -361,7 +345,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	// predetermined choices
 	ret.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
-	// ret.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
+	ret.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
 	ret.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
 	ret.ForceSingleSlot(items.Equip_Trinket2, trinketTwinsGaze)
 	// protDps.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
@@ -377,7 +361,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
 	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
-	// protMitigationWithSet.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
@@ -428,7 +412,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	// job.RunNoPermutations_AllCommonAlternates()
 	// job.RunForSolutionsPerPerumte(30)
-	job.RunCullingSets()
+	job.RunCullingSets(2000, time.Minute*60)
 }
 
 func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {
@@ -448,6 +432,7 @@ func blockHelmetsWithoutIndomitable(param *multi_types.MultiSetParam) {
 	param.BlockItem(95282)  // lightning emp helmet = capacitance
 	param.BlockItem(95778)  // golden golem celestial = ignore in all sets
 	param.BlockItem(101882) // cliffbreaker helm = capacitance
+	param.BlockItem(98985)  // ret helm = capacitance
 	blockGeneral(param)
 }
 

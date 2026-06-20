@@ -146,7 +146,7 @@ func checkHighs(printer *util.PrintRecorder) {
 
 		trinketZandSpark,
 		trinketPrimRage,
-		trinketJiKun,
+		// trinketJiKun,
 		trinketTwinsGaze,
 
 		94945, // greatshield of the gloaming normal

@@ -28,7 +28,6 @@ type OptionsCulling struct {
 
 	targetResultCount int64
 	tasksCompleted    atomic.Int64
-	queueHighwater    atomic.Int64
 
 	didRemoveLock sync.Mutex
 	didRemove     map[items.ItemId]bool
@@ -44,7 +43,7 @@ func (process *OptionsCulling) Init(label string, targetResultCount int64, itemO
 	process.didRemove = make(map[items.ItemId]bool)
 }
 
-func (process *OptionsCulling) Run() <-chan items.SolvableItemSet {
+func (process *OptionsCulling) Run(shouldRun func() bool) <-chan items.SolvableItemSet {
 	process.printer.Printf("Running culling\n")
 
 	resultChannel := make(chan items.SolvableItemSet, 8)
@@ -52,7 +51,7 @@ func (process *OptionsCulling) Run() <-chan items.SolvableItemSet {
 	waitGroup := sync.WaitGroup{}
 	for range c_cullThreadCount {
 		waitGroup.Go(func() {
-			for process.tasksCompleted.Load() < process.targetResultCount-c_cullThreadCount {
+			for process.tasksCompleted.Load() < process.targetResultCount-c_cullThreadCount && shouldRun() {
 				process.runTask(resultChannel)
 			}
 			process.printer.Println("exit thread")
@@ -69,7 +68,7 @@ func (process *OptionsCulling) Run() <-chan items.SolvableItemSet {
 
 func (process *OptionsCulling) reportHowManyTried() {
 	itemIdOptions := process.allItemIds
-	process.printer.Printf("CULLING NUMS %s options=%d didRemove=%d highwater=%d\n", process.label, len(itemIdOptions), len(process.didRemove), process.queueHighwater.Load())
+	process.printer.Printf("CULLING NUMS %s options=%d didRemove=%d\n", process.label, len(itemIdOptions), len(process.didRemove))
 }
 
 func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSet) {

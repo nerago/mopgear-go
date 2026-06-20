@@ -68,9 +68,19 @@ func (track *TrackProgress) Stop() {
 		track.cancel()
 	} else if track.nested {
 		track.nested = false
-		track.nestedChildList = nil
 		track.nestedProgressFunc = oneFunc
 	}
+
+	for _, nested := range track.nestedChildList {
+		if nested != nil {
+			nested.Stop()
+		}
+	}
+	track.nestedChildList = nil
+}
+
+func (track *TrackProgress) IsRunning() bool {
+	return track.active || track.nested
 }
 
 func (track *TrackProgress) run(getProgress func() float64) {

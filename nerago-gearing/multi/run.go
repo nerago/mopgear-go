@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
 	"sync"
+	"time"
 )
 
 func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates() {
@@ -44,16 +45,22 @@ func (job *MultiSetJob) RunForSolutionsPerPerumte(solutionsPerPermute int) {
 	job.CullingReport()
 }
 
-func (job *MultiSetJob) RunCullingSets() {
+func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time.Duration) {
 	job.prepareInitial()
-	
+
 	tracker := util.TrackProgress_Start()
 	tracker.RunOuterTracking(len(job.params))
 	defer tracker.Stop()
 
+	timer := time.AfterFunc(timeLimit, func() {
+		job.printer.Println("###################### TIME LIMIT EXPIRED ######################")
+		tracker.Stop()
+	})
+	defer timer.Stop()
+
 	waitGroup := sync.WaitGroup{}
 	for param := range util.ForPointer(job.params) {
-		param.runCullingProcess(&waitGroup, tracker.MakeNested())
+		param.runCullingProcess(targetSolutionCount, &waitGroup, tracker.MakeNested())
 	}
 
 	waitGroup.Wait()
