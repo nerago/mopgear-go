@@ -60,6 +60,39 @@ package highs
 #include <stdlib.h>
 #include <stdint.h>
 #include "highs_c_api.h"
+// #include "_cgo_export.h"
+//#include "lp_data/HighsCallback.h"
+
+typedef HighsInt (*gohighs_callback_t)(HighsInt, HighsInt);
+
+typedef struct GoHighsCallbackRef {
+	gohighs_callback_t gohighs_callback;
+	HighsInt solverReferenceIndex;
+} GoHighsCallbackRef;
+
+void userInterruptCallback(int callbackType, const char* message, const HighsCallbackDataOut* data_out, HighsCallbackDataIn* data_in, void* user_callback_data) {
+	//const HighsCallbackOutput* callback_out = (HighsCallbackOutput*) data_out;
+	if (user_callback_data != NULL) {
+		GoHighsCallbackRef* ref = (GoHighsCallbackRef*) user_callback_data;
+		HighsInt user_interrupt = ref->gohighs_callback(ref->solverReferenceIndex, callbackType);
+		data_in->user_interrupt = user_interrupt;
+	}
+}
+
+void enableGoHighsCallback(void* highs, HighsInt solverReferenceIndex, gohighs_callback_t gohighs_callback) {
+  GoHighsCallbackRef* ref = (GoHighsCallbackRef*) malloc(sizeof(GoHighsCallbackRef));
+  ref->solverReferenceIndex = solverReferenceIndex;
+  ref->gohighs_callback = gohighs_callback;
+//   ref->gohighs_callback = goHighsCallbackBridge;
+
+  Highs_setCallback(highs, userInterruptCallback, ref);
+  Highs_startCallback(highs, kHighsCallbackSimplexInterrupt);
+  Highs_startCallback(highs, kHighsCallbackIpmInterrupt);
+  Highs_startCallback(highs, kHighsCallbackMipInterrupt);
+}
+
+// TODO free
+
 */
 import "C"
 import (
@@ -1024,4 +1057,17 @@ func (s *Solver) WriteSolution(filename string, pretty bool) error {
 		status = C.Highs_writeSolution(s.ptr, cFilename)
 	}
 	return newError("WriteSolution", Status(status))
+}
+
+// HighsInt gohighs_callback_t(HighsInt, HighsInt);
+
+//export goHighsCallbackBridge
+func goHighsCallbackBridge(solverReferenceIndex C.HighsInt, callbackType C.HighsInt) C.HighsInt {
+	return 1
+}
+
+func (s *Solver) EnableCancelSupport() error {
+	// ref := C.HighsInt(2)
+	// C.enableGoHighsCallback(s.ptr, ref, C.goHighsCallbackBridge)
+	return nil
 }
