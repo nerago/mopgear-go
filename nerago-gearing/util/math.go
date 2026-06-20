@@ -37,3 +37,11 @@ func AbsIntDiff(a, b int) int {
 		return b - a
 	}
 }
+
+func AbsInt64Diff(a, b int64) int64 {
+	if a > b {
+		return a - b
+	} else {
+		return b - a
+	}
+}

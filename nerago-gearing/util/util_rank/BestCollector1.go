@@ -6,6 +6,7 @@ import "paladin_gearing_go/util"
 type BestCollector1[T any] struct {
 	BestObject *T
 	BestValue  float64
+	Minimise   bool
 	hasBest    bool
 }
 
@@ -33,7 +34,7 @@ func (collect *BestCollector1[T]) GetBestOptional() util.Optional[T] {
 }
 
 func (collect *BestCollector1[T]) Offer(object *T, value float64) {
-	if value > collect.BestValue || !collect.hasBest {
+	if collect.isBetter(value) || !collect.hasBest {
 		collect.BestObject = object
 		collect.BestValue = value
 		collect.hasBest = true
@@ -41,11 +42,19 @@ func (collect *BestCollector1[T]) Offer(object *T, value float64) {
 }
 
 func (collect *BestCollector1[T]) OfferAndSwap(pointer **T, value float64) {
-	if value > collect.BestValue || !collect.hasBest {
+	if collect.isBetter(value) || !collect.hasBest {
 		var prev *T = collect.BestObject
 		collect.BestObject = *pointer
 		collect.BestValue = value
 		collect.hasBest = true
 		*pointer = prev
+	}
+}
+
+func (collect *BestCollector1[T]) isBetter(value float64) bool {
+	if collect.Minimise {
+		return value < collect.BestValue
+	} else {
+		return value > collect.BestValue
 	}
 }

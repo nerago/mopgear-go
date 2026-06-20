@@ -47,7 +47,9 @@ func (optionsMap *SolvableOptionsMap) RemoveItemIdFromAll(itemId ItemId) (makesS
 	for slot := range optionsMap.array {
 		if len(optionsMap.array[slot]) > 0 {
 			util.FilterSliceInPlace(&optionsMap.array[slot], func(x *SolvableItem) bool { return x.ItemId() != itemId })
-			return len(optionsMap.array[slot]) == 0
+			if len(optionsMap.array[slot]) == 0 {
+				return true
+			}
 		}
 	}
 	return false

@@ -1,21 +1,22 @@
 package withhighs
 
 import (
+	"math"
 	"paladin_gearing_go/items"
 	gear_model "paladin_gearing_go/model"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_rank"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 const (
-	c_cullThreadCount       = 10
-	c_cullMinimumSlotSize   = 2
-	c_cullAddTasksPerTask   = 2
-	c_cullAddBlocksEachTime = 5
+	c_cullThreadCount     = 16
+	c_cullMinimumSlotSize = 2
 )
 
 type cullTask struct {
@@ -34,26 +35,79 @@ func (task *cullTask) withMoreBlocks(removeItems []items.ItemId) cullTask {
 }
 
 type OptionsCulling struct {
-	label             string
-	targetResultCount int32
-	itemOptions       items.SolvableOptionsMap
-	model             *gear_model.Model
-	printer           *util.PrintRecorder
+	label       string
+	itemOptions items.SolvableOptionsMap
+	model       *gear_model.Model
+	printer     *util.PrintRecorder
 
-	tasksCompleted atomic.Int32
+	targetResultCount int64
+	addTasksPerTask   int64 //= 2
+	addBlocksEachTime int64 //= 5
+
+	tasksCompleted atomic.Int64
 	queueHighwater atomic.Int64
 
 	didRemoveLock sync.Mutex
 	didRemove     map[items.ItemId]bool
 }
 
-func (process *OptionsCulling) Init(label string, targetResultCount int32, itemOptions items.SolvableOptionsMap, model *gear_model.Model, printer *util.PrintRecorder) {
+func (process *OptionsCulling) Init(label string, targetResultCount int64, itemOptions items.SolvableOptionsMap, model *gear_model.Model, printer *util.PrintRecorder) {
 	process.label = label
 	process.targetResultCount = targetResultCount
 	process.itemOptions = itemOptions
 	process.model = model
 	process.printer = printer
 	process.didRemove = make(map[items.ItemId]bool)
+	process.planNumberBranching()
+}
+
+func (process *OptionsCulling) planNumberBranching() {
+	targetTaskCount := process.targetResultCount
+	totalItemCount := int64(len(distinctItemIdsAll(&process.itemOptions)))
+	perfectBlockCount := totalItemCount - items.ITEM_SLOT_COUNT
+
+	if perfectBlockCount < 4 || targetTaskCount < totalItemCount {
+		process.addBlocksEachTime = 1
+		process.addTasksPerTask = 1
+		return
+	}
+
+	type taskNums struct {
+		addTasks      int64
+		addItemBlocks int64
+	}
+
+	best := util_rank.BestCollector1[taskNums]{Minimise: true}
+	max := int64(math.Floor(math.Sqrt(float64(perfectBlockCount))))
+
+	var tasks, blocks int64
+	for tasks = 3; tasks <= max; tasks++ {
+		for blocks = 1; blocks <= max; blocks++ {
+			estimate := estimateLeafSize(tasks, blocks, targetTaskCount)
+			best.Offer(&taskNums{tasks, blocks}, float64(util.AbsInt64Diff(estimate, perfectBlockCount)))
+		}
+	}
+
+	final := best.GetBestOrPanic()
+	process.printer.Printf("TASK setting item=%d task=%d\n", final.addItemBlocks, final.addTasks)
+	process.addBlocksEachTime = final.addItemBlocks
+	process.addTasksPerTask = final.addTasks
+}
+
+func estimateLeafSize(addTasks int64, addItemBlocks int64, targetTaskCount int64) int64 {
+	// initial numbers for after round one
+	var countTasksDone int64 = 1
+	var roundNumTasks int64 = addTasks
+	var roundAverageTaskItemCount int64 = addItemBlocks
+
+	for countTasksDone+roundNumTasks < targetTaskCount {
+		// for countTasksDone < targetTaskCount {
+		countTasksDone += roundNumTasks            // complete tasks queued by last round
+		roundAverageTaskItemCount += addItemBlocks // make new tasks with bigger blocks
+		roundNumTasks *= addTasks                  // make new tasks for next round
+	}
+
+	return roundAverageTaskItemCount
 }
 
 func (process *OptionsCulling) Run() <-chan items.SolvableItemSet {
@@ -67,10 +121,15 @@ func (process *OptionsCulling) Run() <-chan items.SolvableItemSet {
 	waitGroup := sync.WaitGroup{}
 	for range c_cullThreadCount {
 		waitGroup.Go(func() {
-			for process.tasksCompleted.Load() < process.targetResultCount - c_cullThreadCount {
-				task := <-taskChannel
-				process.runTask(task, taskChannel, resultChannel)
-				process.tasksCompleted.Add(1)
+		taskLoop:
+			for process.tasksCompleted.Load() < process.targetResultCount-c_cullThreadCount {
+				select {
+				case task := <-taskChannel:
+					process.runTask(task, taskChannel, resultChannel)
+					process.tasksCompleted.Add(1)
+				case <-time.After(5 * time.Minute):
+					break taskLoop
+				}
 			}
 			process.printer.Println("exit thread")
 		})
@@ -147,8 +206,8 @@ func (process *OptionsCulling) recordDidRemove(items map[items.ItemId]bool) {
 func (process *OptionsCulling) deriveNewTasks(chosenSet items.SolvableItemSet, itemOptions items.SolvableOptionsMap, task cullTask, taskChannel chan cullTask) {
 	availableToRemove := process.selectItemsCanRemove(chosenSet, itemOptions)
 	if len(availableToRemove) > 0 {
-		for range c_cullAddTasksPerTask {
-			removeItems := randomSampleSlice(availableToRemove, c_cullAddBlocksEachTime)
+		for range process.addTasksPerTask {
+			removeItems := randomSampleSlice(availableToRemove, process.addBlocksEachTime)
 			taskChannel <- task.withMoreBlocks(removeItems)
 		}
 
@@ -194,8 +253,8 @@ func distinctItemIdsAll(itemOptions *items.SolvableOptionsMap) map[items.ItemId]
 	return distinct
 }
 
-func randomSampleSlice(availableToRemove []items.ItemId, sampleCount int) []items.ItemId {
-	if len(availableToRemove) <= sampleCount {
+func randomSampleSlice(availableToRemove []items.ItemId, sampleCount int64) []items.ItemId {
+	if int64(len(availableToRemove)) <= sampleCount {
 		return availableToRemove
 	}
 

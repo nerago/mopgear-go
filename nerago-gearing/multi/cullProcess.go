@@ -9,16 +9,19 @@ import (
 )
 
 func (param *multiSetParamInternal) runCullingProcess(waitGroup *sync.WaitGroup, tracker *util.TrackProgress) {
-	var targetNum int32 = 1000
+	var targetNum int64 = 4000
 	currentNum := atomic.Uint64{}
 	tracker.RunFromAtomicInt(&currentNum, uint64(targetNum))
 
 	waitGroup.Go(func() {
 		highCull := withhighs.OptionsCulling{}
 		solveOptions := items.SolvableOptionsMap_of(&param.itemOptions)
-		if param.Label == "Ret" {
-			highCull.Init(param.Label, targetNum/2, solveOptions, &param.Model, param.job.printer)
-		} else {
+		switch param.Label {
+		case "Ret":
+			highCull.Init(param.Label, targetNum/16, solveOptions, &param.Model, param.job.printer)
+		case "Prot-Mitigation-WithSet":
+			highCull.Init(param.Label, targetNum/8, solveOptions, &param.Model, param.job.printer)
+		default:
 			highCull.Init(param.Label, targetNum, solveOptions, &param.Model, param.job.printer)
 		}
 
