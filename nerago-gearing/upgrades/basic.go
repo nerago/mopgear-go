@@ -23,7 +23,7 @@ func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMa
 	addSubstituteItems(baseItems, substituteItems, model, printer)
 
 	tracker.RunOuterTracking(len(extraTasks) + 1)
-	defer tracker.Stop()
+	defer tracker.SetDone()
 
 	printer.Println("FINDING BASELINE")
 	baseRating, baseSet := findBase(baseItems, model, printer, tracker)

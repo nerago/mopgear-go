@@ -20,7 +20,7 @@ type SolveInput struct {
 
 func Solver(input SolveInput) SolveOutput {
 	printer, trackProgress, solveOptions := prepareSolve(input)
-	defer trackProgress.Stop()
+	defer trackProgress.SetDone()
 
 	var solvedResult util.Optional[items.SolvableItemSet]
 	solvedResult = withhighs.SingleGearSetMain(&solveOptions, input.Model, printer)
@@ -45,7 +45,7 @@ func prepareSolve(input SolveInput) (*util.PrintRecorder, *util.TrackProgress, i
 
 	var trackProgress *util.TrackProgress
 	if input.OuterTrackProgress != nil {
-		trackProgress = input.OuterTrackProgress.MakeNested()
+		trackProgress = input.OuterTrackProgress.NewChild()
 	} else if input.EnableTrackProgress {
 		trackProgress = util.TrackProgress_Start()
 	} else {

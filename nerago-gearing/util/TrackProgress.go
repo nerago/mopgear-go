@@ -10,33 +10,20 @@ import (
 )
 
 type TrackProgress struct {
-	active bool
-	nested bool
+	root *trackProgressRoot
 
-	lastPercent float64
-	startTime   time.Time
-	ringBuffer  RingBuffer[progressSnapshot]
+	progressForParent func() float64
+	childList         []*TrackProgress
 
-	ctx    context.Context
-	cancel context.CancelFunc
-
-	nestedChildList    []*TrackProgress
-	nestedProgressFunc func() float64
+	active        bool
+	cancelHandler func()
 
 	mutex sync.RWMutex
 }
 
-type progressSnapshot struct {
-	when    time.Time
-	percent float64
-}
-
 func TrackProgress_Start() *TrackProgress {
 	track := new(TrackProgress)
-	track.active = true
-	track.ctx, track.cancel = context.WithCancel(context.Background())
-	track.startTime = time.Now()
-	track.ringBuffer = RingBuffer_Create(10, progressSnapshot{track.startTime, 0.0})
+	track.root = trackProgressMakeRoot()
 	return track
 }
 
@@ -44,63 +31,72 @@ func TrackProgress_Nop() *TrackProgress {
 	return new(TrackProgress)
 }
 
-func (track *TrackProgress) MakeNested() *TrackProgress {
+func (track *TrackProgress) NewChild() *TrackProgress {
 	track.mutex.Lock()
 	defer track.mutex.Unlock()
 
-	nested := new(TrackProgress)
-	nested.nested = true
-	track.nestedChildList = append(track.nestedChildList, nested)
-
-	return nested
+	child := new(TrackProgress)
+	track.childList = append(track.childList, child)
+	return child
 }
 
 func oneFunc() float64 {
 	return 1.0
 }
 
-func (track *TrackProgress) Stop() {
+func (track *TrackProgress) SetDone() {
 	track.mutex.Lock()
 	defer track.mutex.Unlock()
 
-	if track.active {
-		track.active = false
-		track.cancel()
-	} else if track.nested {
-		track.nested = false
-		track.nestedProgressFunc = oneFunc
+	if track.root != nil {
+		track.root.stopLoop()
+	} else {
+		track.progressForParent = oneFunc
 	}
 
-	for _, nested := range track.nestedChildList {
-		if nested != nil {
-			nested.Stop()
-		}
-	}
-	track.nestedChildList = nil
+	track.active = false
 }
 
-func (track *TrackProgress) IsRunning() bool {
-	return track.active || track.nested
+func (track *TrackProgress) AddEarlyCancelHandler(cancelHandler func()) {
+	track.cancelHandler = cancelHandler
+}
+
+func (track *TrackProgress) CancelAll() {
+	track.mutex.Lock()
+	defer track.mutex.Unlock()
+
+	if track.cancelHandler != nil {
+		track.cancelHandler()
+	}
+
+	for _, nested := range track.childList {
+		if nested != nil {
+			nested.CancelAll()
+		}
+	}
+	track.childList = nil
+
+	track.SetDone()
+}
+
+func (track *TrackProgress) IsActive() bool {
+	return track.active
+}
+
+func (track *TrackProgress) IsCancelled() bool {
+	return !track.active
 }
 
 func (track *TrackProgress) run(getProgress func() float64) {
 	track.mutex.Lock()
 	defer track.mutex.Unlock()
 
-	if track.active {
-		go func() {
-			for {
-				select {
-				case <-track.ctx.Done():
-					return
-				case <-time.After(time.Second * 5):
-					percent := getProgress()
-					track.printProgress(percent)
-				}
-			}
-		}()
-	} else if track.nested {
-		track.nestedProgressFunc = getProgress
+	if track.root != nil {
+		track.root.startLoop(getProgress)
+	} else if track.progressForParent == nil {
+		track.progressForParent = getProgress
+	} else if track.active {
+		panic("TrackProgress run already called")
 	}
 }
 
@@ -143,7 +139,7 @@ func (track *TrackProgress) PrepareForPush() func(float64) {
 }
 
 func (track *TrackProgress) RunOuterTracking(expectedChildCount int) {
-	track.nestedChildList = make([]*TrackProgress, 0, expectedChildCount)
+	track.childList = make([]*TrackProgress, 0, expectedChildCount)
 	track.run(func() float64 {
 		return track.sumNestedProgress(expectedChildCount)
 	})
@@ -154,9 +150,9 @@ func (track *TrackProgress) sumNestedProgress(expectedChildCount int) float64 {
 	defer track.mutex.RUnlock()
 
 	var overallPercent float64 = 0
-	for _, nested := range track.nestedChildList {
+	for _, nested := range track.childList {
 		if nested != nil {
-			childFunc := nested.nestedProgressFunc
+			childFunc := nested.progressForParent
 			if childFunc != nil {
 				childRaw := childFunc()
 				overallPercent += childRaw / float64(expectedChildCount)
@@ -167,30 +163,80 @@ func (track *TrackProgress) sumNestedProgress(expectedChildCount int) float64 {
 	return overallPercent
 }
 
-func (track *TrackProgress) printProgress(percent float64) {
+type progressSnapshot struct {
+	when    time.Time
+	percent float64
+}
+
+type trackProgressRoot struct {
+	lastPercent float64
+	startTime   time.Time
+	ringBuffer  RingBuffer[progressSnapshot]
+
+	activeLoopRunning  bool
+	activeLoopEndCheck context.Context
+	activeLoopEndNow   context.CancelFunc
+}
+
+func trackProgressMakeRoot() *trackProgressRoot {
+	root := new(trackProgressRoot)
+	root.activeLoopEndCheck, root.activeLoopEndNow = context.WithCancel(context.Background())
+	root.startTime = time.Now()
+	root.ringBuffer = RingBuffer_Create(10, progressSnapshot{root.startTime, 0.0})
+	return root
+}
+
+func (root *trackProgressRoot) startLoop(getProgress func() float64) {
+	if root.activeLoopRunning {
+		panic("TrackProgress run already called")
+	}
+
+	go func() {
+		root.activeLoopRunning = true
+
+	loop:
+		for {
+			select {
+			case <-root.activeLoopEndCheck.Done():
+				break loop
+			case <-time.After(time.Second * 5):
+				percent := getProgress()
+				root.printProgress(percent)
+			}
+		}
+
+		root.activeLoopRunning = false
+	}()
+}
+
+func (root *trackProgressRoot) stopLoop() {
+	root.activeLoopEndNow()
+}
+
+func (root *trackProgressRoot) printProgress(percent float64) {
 	if percent > 0 {
-		if percent != track.lastPercent {
+		if percent != root.lastPercent {
 			now := time.Now()
 
-			estimateRemain := track.estimateRemain(now, percent)
-			track.ringBuffer.Write(progressSnapshot{now, percent})
+			estimateRemain := root.estimateRemain(now, percent)
+			root.ringBuffer.Write(progressSnapshot{now, percent})
 
 			fmt.Printf("%5.2f%% %s\n", percent*100, estimateRemain)
-			track.lastPercent = percent
+			root.lastPercent = percent
 		}
 	}
 }
 
-func (track *TrackProgress) estimateRemain(now time.Time, percent float64) string {
-	est1 := track.estimateRemainFromRef(now, percent, track.ringBuffer.ReadOldest())
-	est2 := track.estimateRemainFromRef(now, percent, track.ringBuffer.ReadNewest())
-	est3 := track.estimateRemainFromStart(now, percent)
+func (root *trackProgressRoot) estimateRemain(now time.Time, percent float64) string {
+	est1 := root.estimateRemainFromRef(now, percent, root.ringBuffer.ReadOldest())
+	est2 := root.estimateRemainFromRef(now, percent, root.ringBuffer.ReadNewest())
+	est3 := root.estimateRemainFromStart(now, percent)
 
 	averageRemain := (est1 + est2 + est3) / 3
 	return compactDurationString(averageRemain)
 }
 
-func (track *TrackProgress) estimateRemainFromRef(now time.Time, percent float64, ref progressSnapshot) time.Duration {
+func (root *trackProgressRoot) estimateRemainFromRef(now time.Time, percent float64, ref progressSnapshot) time.Duration {
 	timeTakenSinceRef := float64(now.Sub(ref.when))
 	percentIncreaseSinceRef := percent - ref.percent
 	totalEstimateRef := timeTakenSinceRef / percentIncreaseSinceRef
@@ -198,8 +244,8 @@ func (track *TrackProgress) estimateRemainFromRef(now time.Time, percent float64
 	return time.Duration(estimateRemain)
 }
 
-func (track *TrackProgress) estimateRemainFromStart(now time.Time, percent float64) time.Duration {
-	timeTakenSince := float64(now.Sub(track.startTime))
+func (root *trackProgressRoot) estimateRemainFromStart(now time.Time, percent float64) time.Duration {
+	timeTakenSince := float64(now.Sub(root.startTime))
 	totalEstimate := timeTakenSince / percent
 	estimateRemain := totalEstimate - timeTakenSince
 	return time.Duration(estimateRemain)

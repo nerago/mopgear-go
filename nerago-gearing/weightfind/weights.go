@@ -30,24 +30,24 @@ func StatWeights_updateAll(simSpeed simulate.WowSim_RunSize, printer *util.Print
 	for _, option := range options {
 		waitGrounp.Go(func() {
 			statWeightsGrid_updateOne(&option.Model, option.GearFile, option.Ratios, option.WeightFileOut,
-				option.SubstituteItems, printer, simSpeed, progress.MakeNested())
+				option.SubstituteItems, printer, simSpeed, progress.NewChild())
 		})
 	}
 
 	waitGrounp.Wait()
-	progress.Stop()
+	progress.SetDone()
 }
 
 func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios simulate.SimData, weightFileOut string, substituteItems []items.ItemId, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, tracker *util.TrackProgress) {
 	tracker.RunOuterTracking(4)
-	defer tracker.Stop()
+	defer tracker.SetDone()
 
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), gearModel, setup.MissingEnchant_Panic, printer)
 	currentItemSet := items.FullItemSet_FromMap(currentEquip)
 
 	// SIMULATE STAT CHANGES
-	inputDataGrid := SimulateSteppedStatChangesForGrid(currentItemSet, printer, simSpeed, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions, tracker.MakeNested())
-	inputDataReal := SimulateRealRandomSets(gearFile, substituteItems, gearModel, 200, simSpeed, false, printer, tracker.MakeNested())
+	inputDataGrid := SimulateSteppedStatChangesForGrid(currentItemSet, printer, simSpeed, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions, tracker.NewChild())
+	inputDataReal := SimulateRealRandomSets(gearFile, substituteItems, gearModel, 200, simSpeed, false, printer, tracker.NewChild())
 
 	// SOLVE FOR STAT WEIGHTS
 	process := stathighs.GridStatWeightProcess{}
@@ -59,7 +59,7 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 	printer.Println(">>>>> Grid Weights:")
 	pawn := tools.WritePawnString(weights, printer)
 
-	tracker.MakeNested().Stop() // pretend we were tracking the linear process and mark done
+	tracker.NewChild().SetDone() // pretend we were tracking the linear process and mark done
 
 	// TWEAK weights see if dumb changes can do better than grid
 	// TODO look into ranking stats solver

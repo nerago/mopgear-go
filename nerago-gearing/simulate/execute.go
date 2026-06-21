@@ -266,7 +266,7 @@ func waitForResult(reporter chan *wowsim_proto.ProgressMetrics, tracker *util.Tr
 		push := tracker.PrepareForPush()
 		for v := range reporter {
 			if v.FinalRaidResult != nil {
-				tracker.Stop()
+				tracker.SetDone()
 				return v.FinalRaidResult
 			}
 			progress := float64(v.CompletedIterations) / float64(v.TotalIterations)

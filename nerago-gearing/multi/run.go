@@ -17,7 +17,7 @@ func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates() {
 	setResultChan := highProcess.RunForSeveral_CommonDifferent(job.printer, util.Optional_Empty[int]())
 
 	tracker := util.TrackProgress_Start()
-	defer tracker.Stop()
+	defer tracker.SetDone()
 
 	proposalChannel := make(chan multi_types.MultiProposedOutput, 8)
 	proposalChannel <- job.existingGearAsProposal()
@@ -28,7 +28,7 @@ func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates() {
 	// TODO tracker covers highs part too
 	job.proposalsToSimAndOutput(proposalChannel, tracker)
 
-	job.CullingReport()
+	// job.CullingReport()
 }
 
 func (job *MultiSetJob) RunForSolutionsPerPerumte(solutionsPerPermute int) {
@@ -36,13 +36,13 @@ func (job *MultiSetJob) RunForSolutionsPerPerumte(solutionsPerPermute int) {
 
 	tracker := util.TrackProgress_Start()
 	tracker.RunOuterTracking(2)
-	defer tracker.Stop()
+	defer tracker.SetDone()
 
-	setResultChannel := job.proposalsUnderPermutation(tracker.MakeNested(), solutionsPerPermute)
+	setResultChannel := job.proposalsUnderPermutation(tracker.NewChild(), solutionsPerPermute)
 
-	job.proposalsToSimAndOutput(setResultChannel, tracker.MakeNested())
+	job.proposalsToSimAndOutput(setResultChannel, tracker.NewChild())
 
-	job.CullingReport()
+	// job.CullingReport()
 }
 
 func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time.Duration) {
@@ -50,17 +50,17 @@ func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time
 
 	tracker := util.TrackProgress_Start()
 	tracker.RunOuterTracking(len(job.params))
-	defer tracker.Stop()
+	defer tracker.SetDone()
 
 	timer := time.AfterFunc(timeLimit, func() {
 		job.printer.Println("###################### TIME LIMIT EXPIRED ######################")
-		tracker.Stop()
+		tracker.SetDone()
 	})
 	defer timer.Stop()
 
 	waitGroup := sync.WaitGroup{}
 	for param := range util.ForPointer(job.params) {
-		param.runCullingProcess(targetSolutionCount, &waitGroup, tracker.MakeNested())
+		param.runCullingProcess(targetSolutionCount, &waitGroup, tracker.NewChild())
 	}
 
 	waitGroup.Wait()

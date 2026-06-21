@@ -15,7 +15,7 @@ func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, s
 	job.printer.Printf("PERMUTE SET COUNT %d\n", estimate)
 	currentProgress := atomic.Uint64{}
 	tracker.RunFromAtomicInt(&currentProgress, estimate)
-	defer tracker.Stop()
+	defer tracker.SetDone()
 
 	permuteChannel := job.preparePermutations()
 
@@ -45,7 +45,6 @@ func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, s
 	)
 	return setResultChannel
 }
-
 
 func (job *MultiSetJob) paramFromLabel(paramLabel string) *multiSetParamInternal {
 	for paramIndex := range job.params {
@@ -94,7 +93,7 @@ func (job *MultiSetJob) highProcessSetup() withhighs.SolverHighsMultiProcess {
 }
 
 func (job *MultiSetJob) proposalsToSimAndOutput(proposalChannel <-chan multi_types.MultiProposedOutput, tracker *util.TrackProgress) {
-	proposalChannel = util.RemoveDuplicatesFuncNotify_Channels(proposalChannel, func(a, b *multi_types.MultiProposedOutput) bool {
+	proposalChannel = channel_op.RemoveDuplicatesFuncNotify_Channels(proposalChannel, func(a, b *multi_types.MultiProposedOutput) bool {
 		return a.Equals(b)
 	}, func(x *multi_types.MultiProposedOutput) {
 		job.printer.Printf("Remove Duplicate %s\n", x.Id)

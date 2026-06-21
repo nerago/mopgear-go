@@ -23,26 +23,26 @@ func findUpgradeAndSim(input *FindUpgrades_SimInputs, baseItems *items.FullOptio
 	goal stats.OptimiseGoal, substituteItems []items.ItemId, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) []upgradeItemResultWithSim {
 
 	tracker.RunOuterTracking(3)
-	defer tracker.Stop()
+	defer tracker.SetDone()
 
-	initialList, baseSet := findUpgrade(&input.FindUpgrades_BasicInputs, baseItems, extraItems, model, printer, tracker.MakeNested(), goal, input.TargetUpgradeLevel, true, substituteItems, substituteEmptySlotOnly)
+	initialList, baseSet := findUpgrade(&input.FindUpgrades_BasicInputs, baseItems, extraItems, model, printer, tracker.NewChild(), goal, input.TargetUpgradeLevel, true, substituteItems, substituteEmptySlotOnly)
 
-	baseSim := simulate.WowSim_Execute_SpecifyAll(input.SimSize, model.Spec, goal, model.SimulateAs, model.Professions, baseSet.Items(), nil, tracker.MakeNested())
+	baseSim := simulate.WowSim_Execute_SpecifyAll(input.SimSize, model.Spec, goal, model.SimulateAs, model.Professions, baseSet.Items(), nil, tracker.NewChild())
 	printer.Println("SIM *BASELINE*")
 	baseSim.Print(printer)
 
-	simResults := simEachInitialResult(input, initialList, goal, model, &baseSim, tracker.MakeNested(), printer)
+	simResults := simEachInitialResult(input, initialList, goal, model, &baseSim, tracker.NewChild(), printer)
 	reportBasicResultsSim(simResults, printer, input.PositiveResultsOnly)
 	return simResults
 }
 
 func simEachInitialResult(input *FindUpgrades_SimInputs, inputList []upgradeItemResult, goal stats.OptimiseGoal, model *model.Model, baseSim *simulate.SimData, tracker *util.TrackProgress, printer *util.PrintRecorder) []upgradeItemResultWithSim {
 	tracker.RunOuterTracking(len(inputList))
-	defer tracker.Stop()
+	defer tracker.SetDone()
 
 	return channel_op.Map_SliceToSlice(c_simThreads, inputList, func(initial *upgradeItemResult, resultChannel chan<- upgradeItemResultWithSim) {
 		if initial.success {
-			simResult := simulate.WowSim_Execute_SpecifyAll(input.SimSize, model.Spec, goal, model.SimulateAs, model.Professions, initial.itemSet.Items(), nil, tracker.MakeNested())
+			simResult := simulate.WowSim_Execute_SpecifyAll(input.SimSize, model.Spec, goal, model.SimulateAs, model.Professions, initial.itemSet.Items(), nil, tracker.NewChild())
 
 			printer.Println("SIM " + initial.item.BaseName())
 			simResult.Print(printer)

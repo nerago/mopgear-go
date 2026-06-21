@@ -41,7 +41,7 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 	incrementPermutations := util.PermuteAll_Slice(incrementOptions)
 
 	tracker.RunOuterTracking(len(incrementPermutations))
-	defer tracker.Stop()
+	defer tracker.SetDone()
 
 	inputList := channel_op.Map_SliceToSlice(6, incrementPermutations, func(increments *[]incrementStat, resultChannel chan<- stathighs.WeightInput) {
 		innerPrint := util.PrintRecorder_HoldAll()
@@ -58,7 +58,7 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 			str.WriteRune(' ')
 		}
 
-		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.MakeNested())
+		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.NewChild())
 
 		resultChannel <- stathighs.WeightInput{
 			TotalStat: addBonusStats(currentItemSet.Total(), bonusStat),
@@ -89,7 +89,7 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 	setList := build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, model, makeSetCount, printer, 0)
 
 	track.RunOuterTracking(len(setList))
-	defer track.Stop()
+	defer track.SetDone()
 
 	weightInputs := channel_op.Map_SliceToSlice(6, setList, func(itemSet *items.FullItemSet, weightInputs chan<- stathighs.WeightInput) {
 		var bonusStats *map[stats.StatType]int32 = nil
@@ -98,7 +98,7 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 			bonusStats = &bonusFix
 		}
 
-		simResult := simulate.WowSim_Execute_UseModel(simSize, model, itemSet.Items(), bonusStats, track.MakeNested())
+		simResult := simulate.WowSim_Execute_UseModel(simSize, model, itemSet.Items(), bonusStats, track.NewChild())
 		weightInputs <- stathighs.WeightInput{TotalStat: *itemSet.Total(), SimResult: simResult}
 	})
 

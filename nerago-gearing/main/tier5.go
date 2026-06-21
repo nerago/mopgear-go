@@ -132,7 +132,7 @@ func findT5TrinketPermutations(printer *util.PrintRecorder) {
 		thisItemSet := solver.Solver_Lite(&thisOptions, &model, printer)
 
 		thisEquip := thisItemSet.Items()
-		sim := simulate.WowSim_Execute_UseModel(simulate.RunSize_QuickDirty, &model, thisEquip, nil, progress.MakeNested())
+		sim := simulate.WowSim_Execute_UseModel(simulate.RunSize_QuickDirty, &model, thisEquip, nil, progress.NewChild())
 		printer.Printf("%s %s %s\n", thisEquip[items.Equip_Trinket1].CreateFullName(), thisEquip[items.Equip_Trinket2].CreateFullName(), sim.CompactStringGeneral())
 
 		outChan <- trinkResult{*combo, sim}
@@ -224,7 +224,7 @@ func findT5WeightPermutations(printer *util.PrintRecorder) {
 		outChan <- orderIntermediate{*order, orderTextStr, thisItemSet, alterModel}
 		progress1Atom.Add(1)
 	})
-	progress1.Stop()
+	progress1.SetDone()
 
 	intermediatesGrouped := make([]*orderIntermediateGrouped, 0)
 outerIntermediateLoop:
@@ -247,13 +247,13 @@ outerIntermediateLoop:
 		thisEquip := (*group).itemSet.Items()
 		alterModel := (*group).intermediates[0].alterModel // all models should be the same for passing basic info to sim
 
-		sim := simulate.WowSim_Execute_UseModel(simRunSize, &alterModel, thisEquip, nil, progress2.MakeNested())
+		sim := simulate.WowSim_Execute_UseModel(simRunSize, &alterModel, thisEquip, nil, progress2.NewChild())
 
 		printer.Printf("%s %s\n", (*group).itemSet.Total().CreateString(), sim.CompactStringGeneral())
 
 		outChan <- orderResult{**group, sim}
 	})
-	progress2.Stop()
+	progress2.SetDone()
 
 	line := util.StringBuild2{}
 	for i := range statListTest {

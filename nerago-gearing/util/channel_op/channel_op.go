@@ -2,6 +2,7 @@ package channel_op
 
 import (
 	"iter"
+	"paladin_gearing_go/util"
 	"sync"
 )
 
@@ -63,6 +64,43 @@ func Map_ChannelToSlice[T any, R any](threadCount int, inputChannel <-chan T, ma
 		outputSlice = append(outputSlice, item)
 	}
 	return outputSlice
+}
+
+func Map_ChannelToSlice_TrackerAndWaitable[T any, R any](threadCount int, inputChannel <-chan T, tracker *util.TrackProgress, mapper func(T, chan<- R)) *WaitableWithResult[[]R] {
+	waitable, supplyResult := WaitableWithResult_SendSupply[[]R]()
+	var waitGroup sync.WaitGroup
+
+	tempChannel := make(chan R)
+	for range threadCount {
+		waitGroup.Go(func() {
+			for value := range inputChannel {
+				if tracker.IsCancelled() {
+					break
+				}
+
+				mapper(value, tempChannel)
+
+				if tracker.IsCancelled() {
+					break
+				}
+			}
+		})
+	}
+
+	go func() {
+		waitGroup.Wait()
+		close(tempChannel)
+	}()
+
+	go func() {
+		outputSlice := make([]R, 0)
+		for item := range tempChannel {
+			outputSlice = append(outputSlice, item)
+		}
+		supplyResult(outputSlice)
+	}()
+
+	return waitable
 }
 
 func Map_SliceToChannel[T any, R any](threadCount int, inputSlice []T, mapper func(*T, chan<- R)) <-chan R {
@@ -328,4 +366,43 @@ func TeeChannelToSlice[T any](inputChannel <-chan T, slicePointer *[]T) <-chan T
 	}()
 
 	return outputChannel
+}
+
+func RemoveDuplicatesFunc_Channels[T any](inputChannel <-chan T, equals func(a, b *T) bool) <-chan T {
+	lock := sync.Mutex{}
+	seen := make([]T, 0)
+
+	return Map_ChannelToChannel(2, inputChannel, func(next T, outputChannel chan<- T) {
+		lock.Lock()
+		defer lock.Unlock()
+
+		for checkIndex := range seen {
+			if equals(&next, &seen[checkIndex]) {
+				return
+			}
+		}
+
+		seen = append(seen, next)
+		outputChannel <- next
+	})
+}
+
+func RemoveDuplicatesFuncNotify_Channels[T any](inputChannel <-chan T, equals func(a, b *T) bool, removedNotify func(x *T)) <-chan T {
+	lock := sync.Mutex{}
+	seen := make([]T, 0)
+
+	return Map_ChannelToChannel(2, inputChannel, func(next T, outputChannel chan<- T) {
+		lock.Lock()
+		defer lock.Unlock()
+
+		for checkIndex := range seen {
+			if equals(&next, &seen[checkIndex]) {
+				removedNotify(&next)
+				return
+			}
+		}
+
+		seen = append(seen, next)
+		outputChannel <- next
+	})
 }

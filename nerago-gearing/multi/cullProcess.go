@@ -17,7 +17,7 @@ func (param *multiSetParamInternal) runCullingProcess(targetNum int64, waitGroup
 		solveOptions := items.SolvableOptionsMap_of(&param.itemOptions)
 		highCull.Init(param.Label, targetNum, solveOptions, &param.Model, param.job.printer)
 
-		resultChannel := highCull.Run(tracker.IsRunning)
+		resultChannel := highCull.Run(tracker.IsActive)
 
 		for solvedSet := range resultChannel {
 			fullSet := items.FullItemSet_FromSolved(solvedSet, &param.itemOptions)
@@ -25,6 +25,6 @@ func (param *multiSetParamInternal) runCullingProcess(targetNum int64, waitGroup
 			currentNum.Add(1)
 		}
 
-		tracker.Stop()
+		tracker.SetDone()
 	})
 }

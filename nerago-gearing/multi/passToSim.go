@@ -73,16 +73,16 @@ func (job *MultiSetJob) prepareSimList(proposalList <-chan multi_types.MultiProp
 		}
 	})
 
-	return util.RemoveDuplicatesFunc_Channels(jobChannel, (*simulateJob).Equals)
+	return channel_op.RemoveDuplicatesFunc_Channels(jobChannel, (*simulateJob).Equals)
 }
 
-func (job *MultiSetJob) runSims(jobChan <-chan simulateJob, trackProgress *util.TrackProgress) []simulateJobResult {
+func (job *MultiSetJob) runSims(jobChan <-chan simulateJob, trackProgress *util.TrackProgress, expectCount int) *channel_op.WaitableWithResult[[]simulateJobResult] {
 	// job.printer.Printf("@@@@@@@@@@ RUN SIM JOBS %d @@@@@@@@@@\n", len(jobList))
-	// trackProgress.RunOuterTracking(len(jobList))
-	defer trackProgress.Stop()
+	trackProgress.RunOuterTracking(expectCount)
+	defer trackProgress.SetDone()
 
-	return channel_op.Map_ChannelToSlice(simThreadCount, jobChan, func(sim simulateJob, resultChan chan<- simulateJobResult) {
-		result := simulate.WowSim_Execute_SpecifyAll(job.simRunSize, sim.spec, sim.goal, sim.fight, sim.professions, &sim.equip, nil, trackProgress.MakeNested())
+	return channel_op.Map_ChannelToSlice_TrackerAndWaitable(simThreadCount, jobChan, trackProgress, func(sim simulateJob, resultChan chan<- simulateJobResult) {
+		result := simulate.WowSim_Execute_SpecifyAll(job.simRunSize, sim.spec, sim.goal, sim.fight, sim.professions, &sim.equip, nil, trackProgress.NewChild())
 		job.printer.Printf("sim %22s fight=%d %s\n", sim.spec.Name(), sim.fight, result.CompactStringGeneral())
 		resultChan <- simulateJobResult{sim, result}
 	})

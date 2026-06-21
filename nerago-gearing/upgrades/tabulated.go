@@ -36,7 +36,7 @@ func findUpgrades_AllRaid(input *FindUpgrades_SimInputs, specs []FindUpgrades_Sp
 
 	tracker := util.TrackProgress_Start()
 	tracker.RunOuterTracking(outerCount)
-	defer tracker.Stop()
+	defer tracker.SetDone()
 
 	outputMap := make(map[reportGroup][]upgradeItemResultWithSim)
 	groups := make([]reportGroup, 0, len(specs)*2)
@@ -67,12 +67,12 @@ func processSpec(input *FindUpgrades_SimInputs, spec *FindUpgrades_Spec, difficu
 	if !input.IncludeRaden {
 		upgradeItems = loaders.ItemFinder_FilterOutRadenItems(upgradeItems)
 	}
-	upgradeItems = util.RemoveDuplicatesFunc(upgradeItems, func(a, b **items.FullItem) bool {return (*a).Equals(*b)})
+	upgradeItems = util.RemoveDuplicatesFunc(upgradeItems, func(a, b **items.FullItem) bool { return (*a).Equals(*b) })
 
 	group := reportGroup{spec.Label, difficulty}
 	*groups = append(*groups, group)
 
-	outputMap[group] = findUpgradeAndSim(input, &options, upgradeItems, &spec.Model, printer, tracker.MakeNested(), spec.Model.Goal, spec.SubstituteItems, spec.SubstituteEmptySlotOnly)
+	outputMap[group] = findUpgradeAndSim(input, &options, upgradeItems, &spec.Model, printer, tracker.NewChild(), spec.Model.Goal, spec.SubstituteItems, spec.SubstituteEmptySlotOnly)
 
 	printer.Close()
 }

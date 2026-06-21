@@ -77,11 +77,11 @@ func testBasicStatsGeneral(printer *util.PrintRecorder) {
 // oldish code, may sometimes want to mix basic ratings??
 func relativeRatingsCompromise(printer *util.PrintRecorder) {
 	modelMitiNoSet := model.Model_PallyProtMitigation_NoSet()
-	gearMitiNoSet := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(files.GearFileProtMitigationNoSet), &modelMitiNoSet,setup.MissingEnchant_Panic, printer)
+	gearMitiNoSet := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(files.GearFileProtMitigationNoSet), &modelMitiNoSet, setup.MissingEnchant_Panic, printer)
 	itemSetMitiNoSet := items.FullItemSet_FromMap(gearMitiNoSet)
 
 	modelDps := model.Model_PallyProtDps()
-	gearDps := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(files.GearFileProtDps), &modelDps,setup.MissingEnchant_Panic, printer)
+	gearDps := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(files.GearFileProtDps), &modelDps, setup.MissingEnchant_Panic, printer)
 	itemSetDps := items.FullItemSet_FromMap(gearDps)
 
 	var targetCombined = 10000000000.0
@@ -119,9 +119,9 @@ func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet item
 
 	tracker := util.TrackProgress_Start()
 	tracker.RunOuterTracking(len(statCheckList) + 1)
-	defer tracker.Stop()
+	defer tracker.SetDone()
 
-	simBase := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, profession, currentItemSet.Items(), nil, tracker.MakeNested())
+	simBase := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, profession, currentItemSet.Items(), nil, tracker.NewChild())
 
 	inputList := channel_op.Map_SliceToSlice(len(statCheckList), statCheckList, func(incStat *stats.StatType, resultChannel chan<- basicStatInput) {
 		innerPrint := util.PrintRecorder_HoldAll()
@@ -135,7 +135,7 @@ func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet item
 		str.WriteInt32(bonusStat[*incStat])
 		str.WriteRune(' ')
 
-		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.MakeNested())
+		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.NewChild())
 
 		resultChannel <- basicStatInput{
 			IncrementStat:  *incStat,
@@ -165,10 +165,10 @@ func generateRatingsInputFromRealRandomSetsT5(printer *util.PrintRecorder) ([]st
 
 	track := util.TrackProgress_Start()
 	track.RunOuterTracking(len(setList))
-	defer track.Stop()
+	defer track.SetDone()
 
 	weightInputs := channel_op.Map_SliceToSlice(6, setList, func(itemSet *items.FullItemSet, weightInputs chan<- stathighs.WeightInput) {
-		simResult := simulate.WowSim_Execute_UseModel(simSize, &model, itemSet.Items(), nil, track.MakeNested())
+		simResult := simulate.WowSim_Execute_UseModel(simSize, &model, itemSet.Items(), nil, track.NewChild())
 		weightInputs <- stathighs.WeightInput{TotalStat: *itemSet.Total(), SimResult: simResult}
 	})
 
