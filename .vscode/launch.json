@@ -11,7 +11,8 @@
             "preLaunchTask": "Build Gearing Debug",
             "env": {
                 "Path": "${env:Path};${workspaceFolder}\\gohighs\\internal\\highs\\lib\\windows_amd64_gpu" 
-            }
+            },
+            "console": "integratedTerminal",
         },
 
         {
@@ -24,7 +25,8 @@
             "preLaunchTask": "Build Gearing Optimised",
             "env": {
                 "Path": "${env:Path};${workspaceFolder}\\gohighs\\internal\\highs\\lib\\windows_amd64_gpu" 
-            }
+            },
+            "console": "integratedTerminal",
         },
 
         {

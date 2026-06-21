@@ -68,13 +68,20 @@ func filterCommonForges(prior []items.FullItem, newOptions []items.FullItem) []i
 	}
 
 	result := make([]items.FullItem, 0, len(prior))
-	for _, one := range prior {
-		for _, two := range newOptions {
-			if one.Equals(&two) { // essentially just choose first one
-				result = append(result, one)
+	for a := range prior {
+		one := &prior[a]
+		found := false
+		for b := range newOptions {
+			two := &newOptions[b]
+			if one.Equals(two) { 
+				found = true
+				break
 			} else if one.ItemId() == two.ItemId() && one.ItemLevel() != two.ItemLevel() {
 				panic("inconsistent item levels " + one.CreateString() + " and " + two.CreateString())
 			}
+		}
+		if found {
+			result = append(result, *one)
 		}
 	}
 	return result

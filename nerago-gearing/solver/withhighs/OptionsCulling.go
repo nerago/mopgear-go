@@ -93,6 +93,7 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 
 	if solution.HasSolution() {
 		result := setup.buildResultSet(solution, &itemOptions, process.model)
+		checkSetRatingIsObjective(solution, &result, process.model)
 		resultChannel <- result
 		process.tasksCompleted.Add(1)
 	}

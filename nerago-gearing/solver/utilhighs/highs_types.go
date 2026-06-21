@@ -170,6 +170,36 @@ func (build *LinearBuilder) RunHighs() (*highs.Solution, *util.PrintRecorder) {
 	return solution, printer
 }
 
+type LinearResult struct {
+	Solution *highs.Solution
+	Log      *util.PrintRecorder
+}
+
+func (build *LinearBuilder) RunHighsInterruptable() (solutionChannel <-chan LinearResult, interruptFunc func()) {
+	solver, logFilename, requestGpu := build.prepareHighsRun()
+
+	outputChannel := make(chan LinearResult)
+	isDone := false
+	// flag should help us avoid this function remaining alive and cancelling another process reusing solver
+	interruptFunc = func() {
+		if !isDone {
+			verifyNoError(solver.InterruptSetFlag(1))
+		}
+	}
+
+	go func() {
+		solution, err := G_HighsPool.RunSolverUnderMutex(solver, requestGpu)
+		verifyNoError(err)
+
+		printer := build.postHighsRun(solver, logFilename)
+
+		isDone = true
+		outputChannel <- LinearResult{solution, printer}
+	}()
+
+	return outputChannel, interruptFunc
+}
+
 func (build *LinearBuilder) prepareHighsRun() (*highs.Solver, string, bool) {
 
 	solver := G_HighsPool.Get()
@@ -178,12 +208,15 @@ func (build *LinearBuilder) prepareHighsRun() (*highs.Solver, string, bool) {
 	logFilename := makeTempFilename()
 	build.configureHighsUtil(solver, logFilename)
 	requestGpu := build.configureHighsSolver(solver)
+
 	return solver, logFilename, requestGpu
 }
 
 func (*LinearBuilder) postHighsRun(solver *highs.Solver, logFilename string) *util.PrintRecorder {
 	verifyNoError(solver.SetStringOption("log_file", "")) // flush log
 	printer := readLogfile(logFilename)
+
+	// verifyNoError(solver.InterruptSupportDisable())
 
 	G_HighsPool.Put(solver)
 
@@ -243,6 +276,7 @@ func (build *LinearBuilder) configureHighsUtil(solver *highs.Solver, logfile str
 	} else {
 		verifyNoError(solver.SetFloatOption("time_limit", C_PlusInf))
 	}
+	// verifyNoError(solver.InterruptSupportEnable())
 
 	verifyNoError(solver.SetStringOption("log_file", logfile))
 	verifyNoError(solver.SetBoolOption("log_to_console", (C_DebugHighs || C_HighsToConsole) && !build.NoOutput))
@@ -272,18 +306,32 @@ func (build *LinearBuilder) configureHighsSolver(solver *highs.Solver) bool {
 		verifyNoError(solver.SetStringOption("solver", "hipdlp"))
 		requestGpu = true
 	case Solver_LP_NO_GPU:
-		verifyNoError(solver.SetStringOption("solver", "hipo"))
+		if build.isLargeModel() {
+			verifyNoError(solver.SetStringOption("solver", "hipo"))
+		} else {
+			verifyNoError(solver.SetStringOption("solver", "choose"))
+		}
 	case Solver_MIP_Interior:
-		verifyNoError(solver.SetStringOption("solver", "choose"))
-		verifyNoError(solver.SetStringOption("mip_lp_solver", "hipo"))
-		verifyNoError(solver.SetStringOption("mip_ipm_solver", "hipo"))
+		if build.isLargeModel() {
+			verifyNoError(solver.SetStringOption("solver", "choose"))
+			verifyNoError(solver.SetStringOption("mip_lp_solver", "hipo"))
+			verifyNoError(solver.SetStringOption("mip_ipm_solver", "hipo"))
+		} else {
+			verifyNoError(solver.SetStringOption("solver", "choose"))
+			verifyNoError(solver.SetStringOption("mip_lp_solver", "choose"))
+			verifyNoError(solver.SetStringOption("mip_ipm_solver", "choose"))
+		}
 	case Solver_MIP_Vertex:
 		verifyNoError(solver.SetStringOption("solver", "choose"))
-		verifyNoError(solver.SetStringOption("mip_lp_solver", ""))
-		verifyNoError(solver.SetStringOption("mip_ipm_solver", ""))
+		verifyNoError(solver.SetStringOption("mip_lp_solver", "j"))
+		verifyNoError(solver.SetStringOption("mip_ipm_solver", "choose"))
 	}
 
 	return requestGpu
+}
+
+func (build *LinearBuilder) isLargeModel() bool {
+	return len(build.vars.colTypes) > 500 || len(build.mat.entries) > 500
 }
 
 func verifyNoError(err error) {

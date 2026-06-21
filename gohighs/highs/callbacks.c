@@ -34,6 +34,8 @@ void goHighsCallbackForInterrupt(int callbackType, const char* message, const Hi
 }
 
 HighsInt GoHighsInterruptEnable(void* highs, HighsInt solverReference) {
+    GoHighsInterruptFlags[solverReference] = false;
+
     HighsInt err = Highs_setCallback(highs, goHighsCallbackForInterrupt, (void*)(uintptr_t) solverReference);
     err |= Highs_startCallback(highs, kHighsCallbackSimplexInterrupt);
     err |= Highs_startCallback(highs, kHighsCallbackIpmInterrupt);
@@ -42,6 +44,7 @@ HighsInt GoHighsInterruptEnable(void* highs, HighsInt solverReference) {
 }
 
 HighsInt GoHighsInterruptDisable(void* highs, HighsInt solverReference) {
+    GoHighsInterruptFlags[solverReference] = false;
     return Highs_setCallback(highs, nullptr, nullptr);
 }
 

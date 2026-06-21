@@ -55,22 +55,54 @@ func (process *SolverHighsMultiProcess) SetCommon(common multi_types.CommonOptio
 	process.common = common
 }
 
-func (process *SolverHighsMultiProcess) Run(printer *util.PrintRecorder) util.Optional[HighsMultiResult] {
+func (process *SolverHighsMultiProcess) RunInterruptable(printer *util.PrintRecorder, tracker *util.TrackProgress) <-chan HighsMultiResult {
 	process.makeFullModel()
-	solution, log := process.build.RunHighs()
-	printer.AppendOther(log)
-	printer.Println("SOLUTION STATUS = " + solution.Status.String())
 
-	debugPrintAll(solution, process, printer)
+	solutionChannel, interruptFunc := process.build.RunHighsInterruptable()
+	tracker.AddEarlyCancelHandler(interruptFunc)
 
-	if solution.HasSolution() {
-		return util.Optional_OfValue(process.solutionToResult(solution, printer))
-	} else {
-		return util.Optional_Empty[HighsMultiResult]()
-	}
+	resultChannel := make(chan HighsMultiResult)
+	go func() {
+		result := <-solutionChannel
+		solution, log := result.Solution, result.Log
+		printer.AppendOther(log)
+		printer.Println("SOLUTION STATUS = " + solution.Status.String())
+
+		debugPrintAll(solution, process, printer)
+
+		if solution.HasSolution() {
+			resultChannel <- process.solutionToResult(solution, printer)
+		}
+		close(resultChannel)
+	}()
+	return resultChannel
 }
 
 func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.PrintRecorder, outputTarget util.Optional[int]) <-chan HighsMultiResult {
+	resultChannel := make(chan HighsMultiResult, 8)
+
+	go func() {
+		initialResult, bestCommonChoices, hasInitial := process.generateInitialMulti(printer)
+		if hasInitial {
+			if target, hasTarget := outputTarget.GetWithFlag(); hasTarget && target < len(bestCommonChoices) {
+				util.Shuffle(bestCommonChoices)
+				bestCommonChoices = bestCommonChoices[0:target]
+			}
+
+			printer.Printf("COMMON VARIANT count %d\n", len(bestCommonChoices))
+
+			resultChannel <- initialResult
+
+			process.generateWithDifferentCommonVariants(bestCommonChoices, resultChannel, printer)
+		} else {
+			close(resultChannel)
+		}
+	}()
+
+	return resultChannel
+}
+
+func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.PrintRecorder) (HighsMultiResult, []*columnInfo, bool) {
 	printer.Printf("INITIAL MULTI run\n")
 
 	process.makeFullModel()
@@ -79,38 +111,18 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *u
 	printer.Println("Solve initial duration = " + time.Since(startTime1).String())
 	printer.AppendOther(log)
 	printer.Println("SOLUTION STATUS = " + solution.Status.String())
-	// debugPrintAll(solution, job, printer)
+	debugPrintAll(solution, process, printer)
 
-	if !solution.HasSolution() {
-		return nil
+	if solution.HasSolution() {
+		initialResult := process.solutionToResult(solution, printer)
+		bestCommonChoices := process.extractCommonChoices(solution)
+		return initialResult, bestCommonChoices, true
+	} else {
+		return HighsMultiResult{}, nil, false
 	}
+}
 
-	initialResult := process.solutionToResult(solution, printer)
-	bestCommonChoices := process.extractCommonChoices(solution)
-
-	if target, hasTarget := outputTarget.GetWithFlag(); hasTarget && target < len(bestCommonChoices) {
-		util.Shuffle(bestCommonChoices)
-		bestCommonChoices = bestCommonChoices[0:target]
-	}
-
-	printer.Println("############################################################################")
-	printer.Printf("COMMON VARIANT count %d\n", len(bestCommonChoices))
-	printer.Println("############################################################################")
-
-	resultChannel := make(chan HighsMultiResult, 8)
-	resultChannel <- initialResult
-
-	if len(bestCommonChoices) == 0 {
-		printer.Println("WARNWARNWARNWARNWARNWARNWARNWARNWARN")
-		printer.Println("WARNWARNWARNWARNWARNWARNWARNWARNWARN")
-		printer.Println("WARNWARNWARNWARNWARNWARNWARNWARNWARN")
-		printer.Println("WARN no common choices found WARWARN")
-		printer.Println("WARNWARNWARNWARNWARNWARNWARNWARNWARN")
-		printer.Println("WARNWARNWARNWARNWARNWARNWARNWARNWARN")
-		printer.Println("WARNWARNWARNWARNWARNWARNWARNWARNWARN")
-		return resultChannel
-	}
-
+func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariants(bestCommonChoices []*columnInfo, resultChannel chan HighsMultiResult, printer *util.PrintRecorder) {
 	channel_op.Map_SliceToChannel_Provided(10, bestCommonChoices, resultChannel, func(changeColumn **columnInfo, resultChannel chan<- HighsMultiResult) {
 		innerPrint := util.PrintRecorder_HoldAll()
 		printer.Printf("COMMON VARIANT blocking %s\n", (*changeColumn).itemFull.CreateString())
@@ -134,8 +146,6 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *u
 		innerPrint.Println("############################################################################")
 		printer.AppendOther(innerPrint)
 	})
-
-	return resultChannel
 }
 
 func debugPrintAll(solution *highs.Solution, job *SolverHighsMultiProcess, printer *util.PrintRecorder) {

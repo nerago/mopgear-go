@@ -10,7 +10,6 @@ import (
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/util"
 	"slices"
-	"time"
 )
 
 const (
@@ -393,9 +392,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
-	// job.RunNoPermutations_AllCommonAlternates()
-	// job.RunForSolutionsPerPerumte(30)
-	job.RunCullingSets(2000, time.Minute*60)
+	job.RunNoPermutations_AllCommonAlternates()
+	// job.RunForSolutionsPerPerumte(1)
+	// job.RunCullingSets(2000, time.Minute*60)
 }
 
 func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {

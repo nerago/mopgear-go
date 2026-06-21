@@ -27,16 +27,16 @@ func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, s
 
 			highProcess := job.highProcessSetupForPermute(permuteSet, printer)
 
+			var nextChan <-chan withhighs.HighsMultiResult
+
 			if solutionsPerPermute == 1 {
-				setResults := highProcess.Run(printer)
-				if setResults.HasValue() {
-					resultChannel <- job.makeOutputFromHighs(setResults.GetOrPanic(), printer)
-				}
+				nextChan = highProcess.RunInterruptable(printer, tracker)
 			} else {
-				nextChan := highProcess.RunForSeveral_CommonDifferent(printer, util.Optional_OfValue(solutionsPerPermute))
-				for res := range nextChan {
-					setResultChannel <- job.makeOutputFromHighs(res, printer)
-				}
+				nextChan = highProcess.RunForSeveral_CommonDifferent(printer, util.Optional_OfValue(solutionsPerPermute))
+			}
+
+			for res := range nextChan {
+				setResultChannel <- job.makeOutputFromHighs(res, printer)
 			}
 
 			job.printer.AppendOther(printer)
@@ -104,13 +104,19 @@ func (job *MultiSetJob) proposalsToSimAndOutput(proposalChannel <-chan multi_typ
 	proposalChannel = channel_op.TeeChannelToSlice(proposalChannel, &proposalList)
 
 	simChannel := job.prepareSimList(proposalChannel)
-	simResultList := job.runSims(simChannel, tracker)
+	waitForSimResultList := job.runSims(simChannel, tracker, 424242424242)
 
-	simMultiResults := job.linkSimResults(proposalList, simResultList)
-	job.reportSimResults(simMultiResults)
-	job.reportAsCsv(simMultiResults)
+	simResultList, gotResult := waitForSimResultList.WaitCompletionOrKeyPress()
 
-	job.suggestResultFromRankings(simMultiResults)
+	if gotResult {
+		simMultiResults := job.linkSimResults(proposalList, simResultList)
+		job.reportSimResults(simMultiResults)
+		job.reportAsCsv(simMultiResults)
+
+		job.suggestResultFromRankings(simMultiResults)
+	} else {
+		job.printer.Println("cancelled without result")
+	}
 }
 
 func (job *MultiSetJob) makeOutputFromHighs(multiResult withhighs.HighsMultiResult, printer *util.PrintRecorder) multi_types.MultiProposedOutput {

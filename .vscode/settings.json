@@ -23,4 +23,5 @@
             "-tags=with_db"
         ]
     },
+    "C_Cpp.errorSquiggles": "disabled",
 }

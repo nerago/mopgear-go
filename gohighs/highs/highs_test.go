@@ -211,7 +211,6 @@ func TestLowLevelAPI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewSolver failed: %v", err)
 	}
-	defer solver.Close()
 
 	if err := solver.SetBoolOption("output_flag", false); err != nil {
 		t.Fatalf("SetBoolOption failed: %v", err)
@@ -336,7 +335,6 @@ func TestSolverInfinity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewSolver failed: %v", err)
 	}
-	defer solver.Close()
 
 	inf := solver.Infinity()
 	if inf <= 0 || math.IsNaN(inf) {

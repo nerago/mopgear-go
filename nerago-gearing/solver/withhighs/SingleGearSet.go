@@ -28,6 +28,7 @@ func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, gear_model *gear_m
 
 	if solution.HasSolution() {
 		result := setup.buildResultSet(solution, itemOptions, gear_model)
+		checkSetRatingIsObjective(solution, &result, gear_model)
 		return util.Optional_OfValue(result)
 	} else {
 		return util.Optional_Empty[items.SolvableItemSet]()
@@ -553,7 +554,6 @@ func (setup *singleGearSetInputs) buildResultSet(solution *highs.Solution, itemO
 
 	validateNewSet(itemSet, itemOptions, model)
 	setup.checkActivePermutation(solution, &itemSet)
-	checkSetRatingIsObjective(solution, &itemSet, model)
 
 	return itemSet
 }
