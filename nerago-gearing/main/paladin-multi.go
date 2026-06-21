@@ -113,9 +113,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// TIER
 	retT15 := []items.ItemId{
 		95282, // ret tier15 normal head
-		95910, // ret tier15 chest celestial
-		95281, // ret tier15 gloves normal
-		96657, // ret tier15 legs heroic
+		// 95910, // ret tier15 chest celestial (cull)
 		96658, // ret tier15 shoulder heroic
 	}
 	ret.AddExtraItems(retT15)
@@ -135,7 +133,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protMitigationNoSet.AddExtraItems(retT16)
 
 	protT15 := []items.ItemId{
-		95291, // prot tier15 hand normal
 		96664, // prot tier15 chest heroic
 		96666, // prot tier15 head heroic
 		96667, // prot tier15 leg heroic
@@ -161,7 +158,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	// RING
 	throneRings := []items.ItemId{
-		95140, // shado assault band
 		// 86957, // heroic bladed tempest ring // cull
 		96500, // scaled tyrant heroic
 
@@ -213,21 +209,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protMitigationWithSet.AddExtraItems(oneHandAndShieldP3)
 	protHeal.AddExtraItems(oneHandAndShieldP3)
 
-	// WRIST
-	miscWristP3 := []items.ItemId{
-		96394, // frozen warlord bracer heroic
-		94820, // caustic spike bracers REMOVE?
-	}
-	ret.AddExtraItems(miscWristP3)
-	protDps.AddExtraItems(miscWristP3)
-	protCompromise.AddExtraItems(miscWristP3)
-	protMitigationNoSet.AddExtraItems(miscWristP3)
-	protMitigationWithSet.AddExtraItems(miscWristP3)
-	protHeal.AddExtraItems(miscWristP3)
-
 	// NECK
 	miscNecksP3 := []items.ItemId{
-		95142, // striker's battletags
+		// 95142, // striker's battletags (cull)
 		95205, // terra-cotta neck
 		94776, // primal turtle amulet
 	}
@@ -275,61 +259,61 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protHeal.AddExtraItems(newStuffP5)
 
 	ret.AddExtraItems([]items.ItemId{
-		96373, // cloudbreaker belt heroic
-		96468, // talonrender chest heroic
-		96550, // doomed crown heroic
-		96395, // bloodsoaked legplates
+		96373, // cloudbreaker belt heroic - good 2nd belt
+		96395, // bloodsoaked legplates - decent 2nd legs, offset
 		96542, // tidal force treads
 		86386, // Shin'ka, Execution of Dominion
+		95281, // ret tier15 gloves normal (moved from shared lists was 7.7%)
+		96657, // ret tier15 legs heroic
 	})
 
 	protDps.AddExtraItems([]items.ItemId{
 		86979, // heroic impaling treads
 		96478, // treads of the blind heroic
 		96373, // cloudbreaker belt heroic
-		94773, // centripetal shoulders normal
-		95535, // normal lightning legs
-		96468, // talonrender chest heroic
+		94773, // centripetal shoulders normal - actually good despite the level
+		95535, // normal lightning legs - actually good despite the level
 		96533, // rein-binders fists heroic
-		95153, // Tyrant King Battleplate
-		96550, // doomed crown heroic
-		96395, // bloodsoaked legplates
 		96542, // tidal force treads
+		94820, // caustic spike bracers - moved from shared, decent 3rd
+		95140, // shado assault band (decent 3rd)
+		96468, // talonrender chest heroic
+		96657, // ret tier15 legs heroic
 	})
 
 	protCompromise.AddExtraItems([]items.ItemId{
 		86979, // heroic impaling treads
 		96478, // treads of the blind heroic
 		96373, // cloudbreaker belt heroic
-		94773, // centripetal shoulders normal
-		95535, // normal lightning legs
-		96468, // talonrender chest heroic
-		96533, // rein-binders fists heroic
-		96550, // doomed crown heroic
+		94773, // centripetal shoulders normal - actually good despite the level
+		95535, // normal lightning legs - actually good despite the level
+		96533, // rein-binders fists heroic - actually good despite the level
 		96395, // bloodsoaked legplates
 		96542, // tidal force treads
+		96394, // frozen warlord bracer heroic (moved from shared lists was still 3rd)
+		95140, // shado assault band (decent 4th)
+		96468, // talonrender chest heroic
 	})
 
 	protMitigationNoSet.AddExtraItems([]items.ItemId{
-		86979, // heroic impaling treads
 		96478, // treads of the blind heroic
 		96373, // cloudbreaker belt heroic
 		95535, // normal lightning legs
-		96468, // talonrender chest heroic
 		96533, // rein-binders fists heroic
 		96550, // doomed crown heroic
 		96395, // bloodsoaked legplates
 		96542, // tidal force treads
+		96394, // frozen warlord bracer heroic (moved from shared lists was still 3rd)
 	})
 
 	protMitigationWithSet.AddExtraItems([]items.ItemId{
-		86979, // heroic impaling treads
 		96478, // treads of the blind heroic
 		96373, // cloudbreaker belt heroic
 		96533, // rein-binders fists heroic
 		96550, // doomed crown heroic
 		96395, // bloodsoaked legplates
 		96542, // tidal force treads
+		95291, // prot tier15 hand normal
 	})
 
 	protHeal.AddExtraItems([]items.ItemId{
@@ -337,7 +321,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96478, // treads of the blind heroic
 		96373, // cloudbreaker belt heroic
 		96533, // rein-binders fists heroic
-		96447, // rot-proof greatplate
 		96550, // doomed crown heroic
 		96395, // bloodsoaked legplates
 		96542, // tidal force treads
