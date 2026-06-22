@@ -5,8 +5,12 @@ import (
 	"sync"
 )
 
+func makeOutputChannel[R any]() chan R {
+	return make(chan R, 128)
+}
+
 func Map_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T) R) <-chan R {
-	outputChannel := make(chan R)
+	outputChannel := makeOutputChannel[R]()
 	var waitGroup sync.WaitGroup
 
 	for range threadCount {
@@ -25,7 +29,7 @@ func Map_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, 
 }
 
 func MapMulti_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T, chan<- R)) <-chan R {
-	outputChannel := make(chan R)
+	outputChannel := makeOutputChannel[R]()
 	var waitGroup sync.WaitGroup
 
 	for range threadCount {
@@ -105,7 +109,7 @@ func Map_ChannelToSlice_FutureCancellable[T any, R any](threadCount int, inputCh
 }
 
 func Map_SliceToChannel[T any, R any](threadCount int, inputSlice []T, mapper func(*T) R) <-chan R {
-	outputChannel := make(chan R)
+	outputChannel := makeOutputChannel[R]()
 	indexChannel := make(chan int, threadCount)
 	var waitGroup sync.WaitGroup
 
@@ -132,7 +136,7 @@ func Map_SliceToChannel[T any, R any](threadCount int, inputSlice []T, mapper fu
 }
 
 func MapOptional_SliceToChannel[T any, R any](threadCount int, inputSlice []T, mapper func(*T) (R, bool)) <-chan R {
-	outputChannel := make(chan R)
+	outputChannel := makeOutputChannel[R]()
 	indexChannel := make(chan int, threadCount)
 	var waitGroup sync.WaitGroup
 
@@ -286,7 +290,7 @@ func GroupChannel_To_ManyChannel[T any, G comparable](threadCount int, bufferSiz
 }
 
 func SeqToChannel[T any](seq iter.Seq[T]) <-chan T {
-	outputChannel := make(chan T)
+	outputChannel := makeOutputChannel[T]()
 	go func() {
 		for value := range seq {
 			outputChannel <- value
@@ -297,7 +301,7 @@ func SeqToChannel[T any](seq iter.Seq[T]) <-chan T {
 }
 
 func PeekChannel[T any](inputChannel <-chan T, apply func(*T)) <-chan T {
-	outputChannel := make(chan T)
+	outputChannel := makeOutputChannel[T]()
 
 	go func() {
 		for value := range inputChannel {
@@ -311,7 +315,7 @@ func PeekChannel[T any](inputChannel <-chan T, apply func(*T)) <-chan T {
 }
 
 func TeeChannelToSlice[T any](inputChannel <-chan T, slicePointer *[]T) <-chan T {
-	outputChannel := make(chan T)
+	outputChannel := makeOutputChannel[T]()
 
 	go func() {
 		for value := range inputChannel {
@@ -325,7 +329,7 @@ func TeeChannelToSlice[T any](inputChannel <-chan T, slicePointer *[]T) <-chan T
 }
 
 func Channel_RemoveDuplicatesComparable[T comparable](inputChannel <-chan T) <-chan T {
-	outputChannel := make(chan T)
+	outputChannel := makeOutputChannel[T]()
 	seen := make(map[T]bool)
 
 	go func() {
@@ -335,13 +339,14 @@ func Channel_RemoveDuplicatesComparable[T comparable](inputChannel <-chan T) <-c
 				outputChannel <- next
 			}
 		}
+		close(outputChannel)
 	}()
 
 	return outputChannel
 }
 
 func Channel_RemoveDuplicatesFunc[T any](inputChannel <-chan T, equals func(a, b *T) bool) <-chan T {
-	outputChannel := make(chan T)
+	outputChannel := makeOutputChannel[T]()
 	seen := make([]T, 0)
 
 	go func() {
@@ -359,6 +364,7 @@ func Channel_RemoveDuplicatesFunc[T any](inputChannel <-chan T, equals func(a, b
 				outputChannel <- next
 			}
 		}
+		close(outputChannel)
 	}()
 
 	return outputChannel
@@ -392,7 +398,7 @@ func Channel_RemoveDuplicatesFuncNotify[T any](inputChannel <-chan T, equals fun
 }
 
 func MixChannels[T any](channelOne <-chan T, channelTwo <-chan T) <-chan T {
-	outputChannel := make(chan T)
+	outputChannel := makeOutputChannel[T]()
 
 	go func() {
 		for channelOne != nil || channelTwo != nil {
@@ -411,13 +417,14 @@ func MixChannels[T any](channelOne <-chan T, channelTwo <-chan T) <-chan T {
 				}
 			}
 		}
+		close(outputChannel)
 	}()
 
 	return outputChannel
 }
 
 func ChannelWithPrependedValues[T any](inputChannel <-chan T, values ...T) <-chan T {
-	outputChannel := make(chan T)
+	outputChannel := makeOutputChannel[T]()
 
 	go func() {
 		for _, value := range values {
@@ -427,6 +434,8 @@ func ChannelWithPrependedValues[T any](inputChannel <-chan T, values ...T) <-cha
 		for value := range inputChannel {
 			outputChannel <- value
 		}
+
+		close(outputChannel)
 	}()
 
 	return outputChannel
@@ -437,5 +446,6 @@ func ChannelCopy[T any](inputChannel <-chan T, outputChannel chan<- T) {
 		for value := range inputChannel {
 			outputChannel <- value
 		}
+		close(outputChannel)
 	}()
 }

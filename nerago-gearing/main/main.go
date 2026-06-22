@@ -55,18 +55,6 @@ func main() {
 	timeTaken := time.Since(startTime)
 	printer.Println("Duration = " + timeTaken.String())
 	printer.Println("Finished at " + time.Now().Format(time.RFC1123))
-
-	if enableProfiling {
-		f, err := os.Create(files.ProfileDir + "main-memory.pgo")
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-		runtime.GC()
-		if err := pprof.Lookup("allocs").WriteTo(f, 0); err != nil {
-			panic(err)
-		}
-	}
 }
 
 func core(printer *util.PrintRecorder) {
