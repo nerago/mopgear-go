@@ -66,25 +66,24 @@ type simulateMultiResult struct {
 }
 
 func (job *MultiSetJob) prepareSimList(proposalList <-chan multi_types.MultiProposedOutput) <-chan simulateJob {
-	jobChannel := channel_op.Map_ChannelToChannel(2, proposalList, func(proposal multi_types.MultiProposedOutput, next chan<- simulateJob) {
+	jobChannel := channel_op.MapMulti_ChannelToChannel(2, proposalList, func(proposal multi_types.MultiProposedOutput, nextChan chan<- simulateJob) {
 		for _, output := range proposal.Parts {
-			job := simulateJob{output.Spec, output.Model.Goal, output.Model.SimulateAs, *output.FullSet.Items(), output.Model.Professions}
-			next <- job
+			nextChan <- simulateJob{output.Spec, output.Model.Goal, output.Model.SimulateAs, *output.FullSet.Items(), output.Model.Professions}
 		}
 	})
 
-	return channel_op.RemoveDuplicatesFunc_Channels(jobChannel, (*simulateJob).Equals)
+	return channel_op.Channel_RemoveDuplicatesFunc(jobChannel, (*simulateJob).Equals)
 }
 
-func (job *MultiSetJob) runSims(jobChan <-chan simulateJob, trackProgress *util.TrackProgress, expectCount int) *channel_op.WaitableWithResult[[]simulateJobResult] {
-	// job.printer.Printf("@@@@@@@@@@ RUN SIM JOBS %d @@@@@@@@@@\n", len(jobList))
+func (job *MultiSetJob) runSims(jobChan <-chan simulateJob, trackProgress *util.TrackProgress, expectCount int) *channel_op.FutureCancellable[[]simulateJobResult] {
+	job.printer.Printf("@@@@@@@@@@ RUN SIM JOBS %d @@@@@@@@@@\n", expectCount)
 	trackProgress.RunOuterTracking(expectCount)
 	defer trackProgress.SetDone()
 
-	return channel_op.Map_ChannelToSlice_TrackerAndWaitable(simThreadCount, jobChan, trackProgress, func(sim simulateJob, resultChan chan<- simulateJobResult) {
+	return channel_op.Map_ChannelToSlice_FutureCancellable(simThreadCount, jobChan, trackProgress.IsCancelled, func(sim simulateJob) simulateJobResult {
 		result := simulate.WowSim_Execute_SpecifyAll(job.simRunSize, sim.spec, sim.goal, sim.fight, sim.professions, &sim.equip, nil, trackProgress.NewChild())
 		job.printer.Printf("sim %22s fight=%d %s\n", sim.spec.Name(), sim.fight, result.CompactStringGeneral())
-		resultChan <- simulateJobResult{sim, result}
+		return simulateJobResult{sim, result}
 	})
 }
 

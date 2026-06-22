@@ -124,7 +124,7 @@ func findT5TrinketPermutations(printer *util.PrintRecorder) {
 
 	progress := util.TrackProgress_Start()
 	progress.RunOuterTracking(len(trinkCombos))
-	results := channel_op.Map_SliceToSlice(6, trinkCombos, func(combo *[2]items.ItemId, outChan chan<- trinkResult) {
+	results := channel_op.Map_SliceToSlice(6, trinkCombos, func(combo *[2]items.ItemId) trinkResult {
 		thisOptions := itemOptions.Clone()
 		thisOptions.ForceSlotOnlySpecifiedItemId(items.Equip_Trinket1, combo[0])
 		thisOptions.ForceSlotOnlySpecifiedItemId(items.Equip_Trinket2, combo[1])
@@ -135,7 +135,7 @@ func findT5TrinketPermutations(printer *util.PrintRecorder) {
 		sim := simulate.WowSim_Execute_UseModel(simulate.RunSize_QuickDirty, &model, thisEquip, nil, progress.NewChild())
 		printer.Printf("%s %s %s\n", thisEquip[items.Equip_Trinket1].CreateFullName(), thisEquip[items.Equip_Trinket2].CreateFullName(), sim.CompactStringGeneral())
 
-		outChan <- trinkResult{*combo, sim}
+		return trinkResult{*combo, sim}
 	})
 
 	csv := util.CSVOutputByColumn{}
@@ -206,7 +206,7 @@ func findT5WeightPermutations(printer *util.PrintRecorder) {
 	progress1 := util.TrackProgress_Start()
 	progress1Atom := atomic.Uint64{}
 	progress1.RunFromAtomicInt(&progress1Atom, uint64(len(allPossibleOrders)))
-	intermediates := channel_op.Map_SliceToSlice(10, allPossibleOrders, func(order *[]stats.StatType, outChan chan<- orderIntermediate) {
+	intermediates := channel_op.Map_SliceToSlice(10, allPossibleOrders, func(order *[]stats.StatType) orderIntermediate {
 		alterModel := model.Model_PallyProtMitigation_NoSet()
 		alterModel.StatRatings = ratings.StatRatingsWeights_FromPriorities(*order)
 
@@ -221,8 +221,8 @@ func findT5WeightPermutations(printer *util.PrintRecorder) {
 		orderTextStr := orderText.String()
 		printer.Printf("%s %s\n", orderTextStr, thisItemSet.Total().CreateString())
 
-		outChan <- orderIntermediate{*order, orderTextStr, thisItemSet, alterModel}
 		progress1Atom.Add(1)
+		return orderIntermediate{*order, orderTextStr, thisItemSet, alterModel}
 	})
 	progress1.SetDone()
 
@@ -243,7 +243,7 @@ outerIntermediateLoop:
 
 	progress2 := util.TrackProgress_Start()
 	progress2.RunOuterTracking(len(intermediatesGrouped))
-	results := channel_op.Map_SliceToSlice(10, intermediatesGrouped, func(group **orderIntermediateGrouped, outChan chan<- orderResult) {
+	results := channel_op.Map_SliceToSlice(10, intermediatesGrouped, func(group **orderIntermediateGrouped) orderResult {
 		thisEquip := (*group).itemSet.Items()
 		alterModel := (*group).intermediates[0].alterModel // all models should be the same for passing basic info to sim
 
@@ -251,7 +251,7 @@ outerIntermediateLoop:
 
 		printer.Printf("%s %s\n", (*group).itemSet.Total().CreateString(), sim.CompactStringGeneral())
 
-		outChan <- orderResult{**group, sim}
+		return orderResult{**group, sim}
 	})
 	progress2.SetDone()
 

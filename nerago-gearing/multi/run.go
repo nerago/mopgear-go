@@ -19,14 +19,15 @@ func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates() {
 	tracker := util.TrackProgress_Start()
 	defer tracker.SetDone()
 
-	proposalChannel := make(chan multi_types.MultiProposedOutput, 8)
-	proposalChannel <- job.existingGearAsProposal()
-	channel_op.Map_ChannelToChannel_Provided(4, setResultChan, proposalChannel, func(setResult withhighs.HighsMultiResult, next chan<- multi_types.MultiProposedOutput) {
-		next <- job.makeOutputFromHighs(setResult, job.printer)
+	proposalChannel := channel_op.Map_ChannelToChannel(4, setResultChan, func(setResult withhighs.HighsMultiResult) multi_types.MultiProposedOutput {
+		return job.makeOutputFromHighs(setResult, job.printer)
 	})
 
+	existingProposal := job.existingGearAsProposal()
+	combinedProposalChannel := channel_op.ChannelWithPrependedValues(proposalChannel, existingProposal)
+
 	// TODO tracker covers highs part too
-	job.proposalsToSimAndOutput(proposalChannel, tracker)
+	job.proposalsToSimAndOutput(combinedProposalChannel, tracker)
 
 	// job.CullingReport()
 }

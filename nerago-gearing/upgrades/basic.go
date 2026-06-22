@@ -31,8 +31,8 @@ func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMa
 
 	printer.Println("TRYING ITEMS")
 	resultList := channel_op.Map_SliceToSlice(c_upgradeEachThreads, extraTasks,
-		func(task *upgradeItemTask, resultChannel chan<- upgradeItemResult) {
-			resultChannel <- performUpgradeTask(task, baseItems, baseRating, model, printer, tracker, forceIncludeMost, substituteEmptySlotOnly)
+		func(task *upgradeItemTask) upgradeItemResult {
+			return performUpgradeTask(task, baseItems, baseRating, model, printer, tracker, forceIncludeMost, substituteEmptySlotOnly)
 		})
 	return resultList, baseSet
 }

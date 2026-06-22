@@ -84,6 +84,8 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *u
 	go func() {
 		initialResult, bestCommonChoices, hasInitial := process.generateInitialMulti(printer)
 		if hasInitial {
+			resultChannel <- initialResult
+
 			if target, hasTarget := outputTarget.GetWithFlag(); hasTarget && target < len(bestCommonChoices) {
 				util.Shuffle(bestCommonChoices)
 				bestCommonChoices = bestCommonChoices[0:target]
@@ -91,9 +93,8 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *u
 
 			printer.Printf("COMMON VARIANT count %d\n", len(bestCommonChoices))
 
-			resultChannel <- initialResult
-
-			process.generateWithDifferentCommonVariants(bestCommonChoices, resultChannel, printer)
+			innerChannel := process.generateWithDifferentCommonVariants(bestCommonChoices, printer)
+			channel_op.ChannelCopy(innerChannel, resultChannel)
 		} else {
 			close(resultChannel)
 		}
@@ -122,8 +123,8 @@ func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.Print
 	}
 }
 
-func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariants(bestCommonChoices []*columnInfo, resultChannel chan HighsMultiResult, printer *util.PrintRecorder) {
-	channel_op.Map_SliceToChannel_Provided(10, bestCommonChoices, resultChannel, func(changeColumn **columnInfo, resultChannel chan<- HighsMultiResult) {
+func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariants(bestCommonChoices []*columnInfo, printer *util.PrintRecorder) <-chan HighsMultiResult {
+	return channel_op.MapOptional_SliceToChannel(10, bestCommonChoices, func(changeColumn **columnInfo) (HighsMultiResult, bool) {
 		innerPrint := util.PrintRecorder_HoldAll()
 		printer.Printf("COMMON VARIANT blocking %s\n", (*changeColumn).itemFull.CreateString())
 
@@ -138,13 +139,14 @@ func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariants(best
 		innerPrint.Println("SOLUTION STATUS = " + solution.Status.String())
 		innerPrint.AppendOther(log)
 
-		if solution.HasSolution() {
-			jobResult := process.solutionToResult(solution, innerPrint)
-			resultChannel <- jobResult
-		}
-
 		innerPrint.Println("############################################################################")
 		printer.AppendOther(innerPrint)
+
+		if solution.HasSolution() {
+			return process.solutionToResult(solution, innerPrint), true
+		} else {
+			return HighsMultiResult{}, false
+		}
 	})
 }
 

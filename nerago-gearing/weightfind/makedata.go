@@ -43,7 +43,7 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 	tracker.RunOuterTracking(len(incrementPermutations))
 	defer tracker.SetDone()
 
-	inputList := channel_op.Map_SliceToSlice(6, incrementPermutations, func(increments *[]incrementStat, resultChannel chan<- stathighs.WeightInput) {
+	inputList := channel_op.Map_SliceToSlice(6, incrementPermutations, func(increments *[]incrementStat) stathighs.WeightInput {
 		innerPrint := util.PrintRecorder_HoldAll()
 
 		bonusStat := maps.Clone(initialBaseStats)
@@ -60,15 +60,15 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 
 		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.NewChild())
 
-		resultChannel <- stathighs.WeightInput{
-			TotalStat: addBonusStats(currentItemSet.Total(), bonusStat),
-			SimResult: simResult,
-		}
-
 		innerPrint.PrintlnFromBuild(str)
 		innerPrint.Println("   --> " + simResult.CompactStringGeneral())
 
 		printer.AppendOther(innerPrint)
+
+		return stathighs.WeightInput{
+			TotalStat: addBonusStats(currentItemSet.Total(), bonusStat),
+			SimResult: simResult,
+		}
 	})
 	return inputList
 }
@@ -91,7 +91,7 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 	track.RunOuterTracking(len(setList))
 	defer track.SetDone()
 
-	weightInputs := channel_op.Map_SliceToSlice(6, setList, func(itemSet *items.FullItemSet, weightInputs chan<- stathighs.WeightInput) {
+	weightInputs := channel_op.Map_SliceToSlice(6, setList, func(itemSet *items.FullItemSet) stathighs.WeightInput {
 		var bonusStats *map[stats.StatType]int32 = nil
 		if doFixRanges {
 			bonusFix := InitialBonusStatMap_fixRanges(printer, *itemSet, 0)
@@ -99,7 +99,7 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 		}
 
 		simResult := simulate.WowSim_Execute_UseModel(simSize, model, itemSet.Items(), bonusStats, track.NewChild())
-		weightInputs <- stathighs.WeightInput{TotalStat: *itemSet.Total(), SimResult: simResult}
+		return stathighs.WeightInput{TotalStat: *itemSet.Total(), SimResult: simResult}
 	})
 
 	return weightInputs

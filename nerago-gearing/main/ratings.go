@@ -123,7 +123,7 @@ func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet item
 
 	simBase := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, profession, currentItemSet.Items(), nil, tracker.NewChild())
 
-	inputList := channel_op.Map_SliceToSlice(len(statCheckList), statCheckList, func(incStat *stats.StatType, resultChannel chan<- basicStatInput) {
+	inputList := channel_op.Map_SliceToSlice(len(statCheckList), statCheckList, func(incStat *stats.StatType) basicStatInput {
 		innerPrint := util.PrintRecorder_HoldAll()
 
 		bonusStat := maps.Clone(initialBaseStats)
@@ -137,16 +137,16 @@ func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet item
 
 		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.NewChild())
 
-		resultChannel <- basicStatInput{
-			IncrementStat:  *incStat,
-			IncrementValue: incrementValue,
-			SimResult:      simResult,
-		}
-
 		innerPrint.PrintlnFromBuild(str)
 		innerPrint.Println("   --> " + simResult.CompactStringGeneral())
 
 		printer.AppendOther(innerPrint)
+
+		return basicStatInput{
+			IncrementStat:  *incStat,
+			IncrementValue: incrementValue,
+			SimResult:      simResult,
+		}
 	})
 	return inputList, simBase
 }
@@ -167,9 +167,9 @@ func generateRatingsInputFromRealRandomSetsT5(printer *util.PrintRecorder) ([]st
 	track.RunOuterTracking(len(setList))
 	defer track.SetDone()
 
-	weightInputs := channel_op.Map_SliceToSlice(6, setList, func(itemSet *items.FullItemSet, weightInputs chan<- stathighs.WeightInput) {
+	weightInputs := channel_op.Map_SliceToSlice(6, setList, func(itemSet *items.FullItemSet) stathighs.WeightInput {
 		simResult := simulate.WowSim_Execute_UseModel(simSize, &model, itemSet.Items(), nil, track.NewChild())
-		weightInputs <- stathighs.WeightInput{TotalStat: *itemSet.Total(), SimResult: simResult}
+		return stathighs.WeightInput{TotalStat: *itemSet.Total(), SimResult: simResult}
 	})
 
 	writeWeightInputsToFile(weightInputs, "sim-stats-input-data2.json")

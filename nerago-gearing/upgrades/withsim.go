@@ -40,16 +40,16 @@ func simEachInitialResult(input *FindUpgrades_SimInputs, inputList []upgradeItem
 	tracker.RunOuterTracking(len(inputList))
 	defer tracker.SetDone()
 
-	return channel_op.Map_SliceToSlice(c_simThreads, inputList, func(initial *upgradeItemResult, resultChannel chan<- upgradeItemResultWithSim) {
+	return channel_op.Map_SliceToSlice(c_simThreads, inputList, func(initial *upgradeItemResult) upgradeItemResultWithSim {
 		if initial.success {
 			simResult := simulate.WowSim_Execute_SpecifyAll(input.SimSize, model.Spec, goal, model.SimulateAs, model.Professions, initial.itemSet.Items(), nil, tracker.NewChild())
 
 			printer.Println("SIM " + initial.item.BaseName())
 			simResult.Print(printer)
 
-			resultChannel <- upgradeItemResultWithSim{*initial, *baseSim, simResult}
+			return upgradeItemResultWithSim{*initial, *baseSim, simResult}
 		} else {
-			resultChannel <- upgradeItemResultWithSim{upgradeItemResult: *initial}
+			return upgradeItemResultWithSim{upgradeItemResult: *initial}
 		}
 	})
 }

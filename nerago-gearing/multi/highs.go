@@ -19,9 +19,7 @@ func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, s
 
 	permuteChannel := job.preparePermutations()
 
-	setResultChannel := make(chan multi_types.MultiProposedOutput, 8)
-	setResultChannel <- job.existingGearAsProposal()
-	channel_op.Map_ChannelToChannel_Provided(highsThreadCount, permuteChannel, setResultChannel,
+	setResultChannel := channel_op.MapMulti_ChannelToChannel(highsThreadCount, permuteChannel,
 		func(permuteSet permuteSet, resultChannel chan<- multi_types.MultiProposedOutput) {
 			printer := util.PrintRecorder_HoldAll()
 
@@ -36,14 +34,16 @@ func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, s
 			}
 
 			for res := range nextChan {
-				setResultChannel <- job.makeOutputFromHighs(res, printer)
+				resultChannel <- job.makeOutputFromHighs(res, printer)
 			}
 
 			job.printer.AppendOther(printer)
 			currentProgress.Add(1)
 		},
 	)
-	return setResultChannel
+
+	existingProposal := job.existingGearAsProposal()
+	return channel_op.ChannelWithPrependedValues(setResultChannel, existingProposal)
 }
 
 func (job *MultiSetJob) paramFromLabel(paramLabel string) *multiSetParamInternal {
@@ -93,7 +93,7 @@ func (job *MultiSetJob) highProcessSetup() withhighs.SolverHighsMultiProcess {
 }
 
 func (job *MultiSetJob) proposalsToSimAndOutput(proposalChannel <-chan multi_types.MultiProposedOutput, tracker *util.TrackProgress) {
-	proposalChannel = channel_op.RemoveDuplicatesFuncNotify_Channels(proposalChannel, func(a, b *multi_types.MultiProposedOutput) bool {
+	proposalChannel = channel_op.Channel_RemoveDuplicatesFuncNotify(proposalChannel, func(a, b *multi_types.MultiProposedOutput) bool {
 		return a.Equals(b)
 	}, func(x *multi_types.MultiProposedOutput) {
 		job.printer.Printf("Remove Duplicate %s\n", x.Id)
@@ -104,9 +104,9 @@ func (job *MultiSetJob) proposalsToSimAndOutput(proposalChannel <-chan multi_typ
 	proposalChannel = channel_op.TeeChannelToSlice(proposalChannel, &proposalList)
 
 	simChannel := job.prepareSimList(proposalChannel)
-	waitForSimResultList := job.runSims(simChannel, tracker, 424242424242)
+	futureSimResultList := job.runSims(simChannel, tracker, 424242424242)
 
-	simResultList, gotResult := waitForSimResultList.WaitCompletionOrKeyPress()
+	simResultList, gotResult := futureSimResultList.WaitForResultOrKeyPress()
 
 	if gotResult {
 		simMultiResults := job.linkSimResults(proposalList, simResultList)
@@ -144,7 +144,7 @@ func (job *MultiSetJob) makeOutputFromHighs(multiResult withhighs.HighsMultiResu
 }
 
 func (job *MultiSetJob) listInitialOutputs(bestOutputs <-chan multi_types.MultiProposedOutput) <-chan multi_types.MultiProposedOutput {
-	return channel_op.PeekChannel(1, bestOutputs, func(best multi_types.MultiProposedOutput) {
+	return channel_op.PeekChannel(bestOutputs, func(best *multi_types.MultiProposedOutput) {
 		job.printer.Printf("::::::::: MULTI RATING %.0f :::::::: %s ::::::::\n", best.TotalRatingSum, best.Id)
 		for i, out := range best.Parts {
 			job.printer.Println(job.params[i].Label)

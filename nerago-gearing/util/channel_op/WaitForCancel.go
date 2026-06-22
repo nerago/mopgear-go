@@ -2,97 +2,151 @@ package channel_op
 
 import (
 	"os"
-	"paladin_gearing_go/util"
 	"sync"
 )
 
-type Waitable struct {
-	completionChannel chan any
-	onCancel          func()
-
-	waitGroup *sync.WaitGroup
-}
-
-type WaitableWithResult[T any] struct {
-	Waitable
-	resultChannel <-chan T
+// ########### Future ###########
+type Future[T any] struct {
+	signalChannel chan any
 	result        T
+	isValidResult bool
+	isComplete    bool
+	lock          sync.Mutex
 }
 
-func Waitable_ForWaitGroup(waitGroup *sync.WaitGroup) *Waitable {
-	waitable := new(Waitable)
-	waitable.completionChannel = make(chan any)
-	go func() {
-		waitGroup.Wait()
-		waitable.completionChannel <- true
-	}()
-	return waitable
-}
-
-func WaitableWithResult_ForWaitGroup[T any](waitGroup *sync.WaitGroup, resultChannel <-chan T) *WaitableWithResult[T] {
-	waitable := new(WaitableWithResult[T])
-	waitable.resultChannel = resultChannel
-	go func() {
-		waitGroup.Wait()
-		waitable.result = <-resultChannel
-		waitable.completionChannel <- true
-	}()
-	return waitable
-}
-
-func WaitableWithResult_ForChannel[T any](resultChannel <-chan T) *WaitableWithResult[T] {
-	waitable := new(WaitableWithResult[T])
-	waitable.resultChannel = resultChannel
-	go func() {
-		waitable.result = <-resultChannel
-		waitable.completionChannel <- true
-	}()
-	return waitable
-}
-
-func WaitableWithResult_SendSupply[T any]() (*WaitableWithResult[T], func(T)) {
-	waitable := new(WaitableWithResult[T])
-	supplyFunc := func(result T) {
-		waitable.result = result
-		waitable.completionChannel <- true
+func Future_Make[T any]() *Future[T] {
+	return &Future[T]{
+		signalChannel: make(chan any, 1),
 	}
-	return waitable, supplyFunc
 }
 
-func (wait *Waitable) AddCancelAction(onCancel func()) {
-	wait.onCancel = onCancel
+func (future *Future[T]) SetResult(value T) {
+	future.lock.Lock()
+	defer future.lock.Unlock()
+
+	if !future.isComplete {
+		future.result = value
+		future.isValidResult = true
+		future.isComplete = true
+		future.signalChannel <- true
+	}
 }
 
-func (wait *Waitable) AddCancelTracker(track *util.TrackProgress) {
-	wait.onCancel = track.CancelAll
+func (future *Future[T]) SetEmpty() {
+	future.lock.Lock()
+	defer future.lock.Unlock()
+
+	if !future.isComplete {
+		future.isValidResult = false
+		future.isComplete = true
+		future.signalChannel <- true
+	}
 }
 
-func (wait *Waitable) WaitCompletionOrKeyPress() {
-	channelForKey := wait.channelKeyPress()
+func (future *Future[T]) WaitForResult() (T, bool) {
+	<-future.signalChannel
+	return future.result, future.isValidResult
+}
+
+func (future *Future[T]) WaitForResultOrPanic() T {
+	<-future.signalChannel
+	if !future.isValidResult {
+		panic("no result")
+	}
+	return future.result
+}
+
+// ########### FutureCancellable ###########
+type FutureCancellable[T any] struct {
+	signalChannel chan any
+	result        T
+	isValidResult bool
+	isComplete    bool
+	onCancel      func()
+	lock          sync.Mutex
+}
+
+func FutureCancellable_Make[T any](onCancel func()) *FutureCancellable[T] {
+	if onCancel == nil {
+		panic("onCancel required")
+	}
+	return &FutureCancellable[T]{
+		signalChannel: make(chan any, 1),
+		onCancel:      onCancel,
+	}
+}
+
+func (future *FutureCancellable[T]) SetResult(value T) {
+	future.lock.Lock()
+	defer future.lock.Unlock()
+
+	if !future.isComplete {
+		future.result = value
+		future.isValidResult = true
+		future.isComplete = true
+		future.signalChannel <- true
+	}
+}
+
+func (future *FutureCancellable[T]) SetEmpty() {
+	future.lock.Lock()
+	defer future.lock.Unlock()
+
+	if !future.isComplete {
+		future.isValidResult = false
+		future.isComplete = true
+		future.signalChannel <- true
+	}
+}
+
+func (future *FutureCancellable[T]) Cancel(value T) {
+	future.lock.Lock()
+	defer future.lock.Unlock()
+
+	if !future.isComplete {
+		future.isValidResult = false
+		future.isComplete = true
+		future.onCancel()
+		future.signalChannel <- true
+	}
+}
+
+func (future *FutureCancellable[T]) WaitForResult() (T, bool) {
+	<-future.signalChannel
+	return future.result, future.isValidResult
+}
+
+func (future *FutureCancellable[T]) WaitForResultOrKeyPress() (T, bool) {
+	channelForKey := future.channelKeyPress()
 
 	select {
-	case <-wait.completionChannel:
+	case <-future.signalChannel:
+		return future.result, future.isValidResult
+
 	case <-channelForKey:
+		future.lock.Lock()
+		defer future.lock.Unlock()
+
+		// if we're here then noone is listening for signal anymore, but someone could still have beaten us to lock
+		if future.isComplete {
+			return future.result, future.isValidResult
+		} else {
+			future.isValidResult = false
+			future.isComplete = true
+			future.onCancel()
+			future.lock.Unlock()
+			return future.result, false
+		}
 	}
 }
 
-func (wait *WaitableWithResult[T]) WaitCompletionOrKeyPress() (T, bool) {
-
-	channelForKey := wait.channelKeyPress()
-
-	select {
-	case <-wait.completionChannel:
-		return wait.result, true
-	case <-channelForKey:
-		return wait.result, false
-	}
-}
-
-func (*Waitable) channelKeyPress() chan bool {
-	channelForKey := make(chan bool)
+func (*FutureCancellable[T]) channelKeyPress() chan any {
+	channelForKey := make(chan any)
 	go func() {
-		bytes := make([]byte, 1)
-		os.Stdin.Read(bytes)
+		_, err := os.Stdin.Read([]byte{0})
+		if err != nil {
+			panic(err)
+		}
 		channelForKey <- true
 	}()
 	return channelForKey

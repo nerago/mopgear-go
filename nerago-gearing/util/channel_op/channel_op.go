@@ -2,13 +2,31 @@ package channel_op
 
 import (
 	"iter"
-	"paladin_gearing_go/util"
 	"sync"
 )
 
-func Map_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T, chan<- R)) <-chan R {
-	var waitGroup sync.WaitGroup
+func Map_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T) R) <-chan R {
 	outputChannel := make(chan R)
+	var waitGroup sync.WaitGroup
+
+	for range threadCount {
+		waitGroup.Go(func() {
+			for value := range inputChannel {
+				outputChannel <- mapper(value)
+			}
+		})
+	}
+
+	go func() {
+		waitGroup.Wait()
+		close(outputChannel)
+	}()
+	return outputChannel
+}
+
+func MapMulti_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T, chan<- R)) <-chan R {
+	outputChannel := make(chan R)
+	var waitGroup sync.WaitGroup
 
 	for range threadCount {
 		waitGroup.Go(func() {
@@ -25,31 +43,14 @@ func Map_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, 
 	return outputChannel
 }
 
-func Map_ChannelToChannel_Provided[T any, R any](threadCount int, inputChannel <-chan T, outputChannel chan<- R, mapper func(T, chan<- R)) {
-	var waitGroup sync.WaitGroup
-
-	for range threadCount {
-		waitGroup.Go(func() {
-			for value := range inputChannel {
-				mapper(value, outputChannel)
-			}
-		})
-	}
-
-	go func() {
-		waitGroup.Wait()
-		close(outputChannel)
-	}()
-}
-
-func Map_ChannelToSlice[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T, chan<- R)) []R {
-	var waitGroup sync.WaitGroup
+func Map_ChannelToSlice[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T) R) []R {
 	tempChannel := make(chan R)
+	var waitGroup sync.WaitGroup
 
 	for range threadCount {
 		waitGroup.Go(func() {
 			for value := range inputChannel {
-				mapper(value, tempChannel)
+				tempChannel <- mapper(value)
 			}
 		})
 	}
@@ -66,21 +67,21 @@ func Map_ChannelToSlice[T any, R any](threadCount int, inputChannel <-chan T, ma
 	return outputSlice
 }
 
-func Map_ChannelToSlice_TrackerAndWaitable[T any, R any](threadCount int, inputChannel <-chan T, tracker *util.TrackProgress, mapper func(T, chan<- R)) *WaitableWithResult[[]R] {
-	waitable, supplyResult := WaitableWithResult_SendSupply[[]R]()
+func Map_ChannelToSlice_FutureCancellable[T any, R any](threadCount int, inputChannel <-chan T, isCancelled func() bool, mapper func(T) R) *FutureCancellable[[]R] {
+	future := FutureCancellable_Make[[]R](func() {})
+	tempChannel := make(chan R)
 	var waitGroup sync.WaitGroup
 
-	tempChannel := make(chan R)
 	for range threadCount {
 		waitGroup.Go(func() {
 			for value := range inputChannel {
-				if tracker.IsCancelled() {
+				if isCancelled() {
 					break
 				}
 
-				mapper(value, tempChannel)
+				tempChannel <- mapper(value)
 
-				if tracker.IsCancelled() {
+				if isCancelled() {
 					break
 				}
 			}
@@ -97,25 +98,28 @@ func Map_ChannelToSlice_TrackerAndWaitable[T any, R any](threadCount int, inputC
 		for item := range tempChannel {
 			outputSlice = append(outputSlice, item)
 		}
-		supplyResult(outputSlice)
+		future.SetResult(outputSlice)
 	}()
 
-	return waitable
+	return future
 }
 
-func Map_SliceToChannel[T any, R any](threadCount int, inputSlice []T, mapper func(*T, chan<- R)) <-chan R {
+func Map_SliceToChannel[T any, R any](threadCount int, inputSlice []T, mapper func(*T) R) <-chan R {
+	outputChannel := make(chan R)
+	indexChannel := make(chan int, threadCount)
 	var waitGroup sync.WaitGroup
 
-	inputLength := len(inputSlice)
-	splits := indexSplitsInt(inputLength, threadCount)
+	go func() {
+		for index := range inputSlice {
+			indexChannel <- index
+		}
+		close(indexChannel)
+	}()
 
-	outputChannel := make(chan R)
-	for threadNum := range threadCount {
+	for range threadCount {
 		waitGroup.Go(func() {
-			start := splits[threadNum]
-			end := splits[threadNum+1]
-			for index := start; index < end; index++ {
-				mapper(&inputSlice[index], outputChannel)
+			for index := range indexChannel {
+				outputChannel <- mapper(&inputSlice[index])
 			}
 		})
 	}
@@ -127,18 +131,25 @@ func Map_SliceToChannel[T any, R any](threadCount int, inputSlice []T, mapper fu
 	return outputChannel
 }
 
-func Map_SliceToChannel_Provided[T any, R any](threadCount int, inputSlice []T, outputChannel chan<- R, mapper func(*T, chan<- R)) {
+func MapOptional_SliceToChannel[T any, R any](threadCount int, inputSlice []T, mapper func(*T) (R, bool)) <-chan R {
+	outputChannel := make(chan R)
+	indexChannel := make(chan int, threadCount)
 	var waitGroup sync.WaitGroup
 
-	inputLength := len(inputSlice)
-	splits := indexSplitsInt(inputLength, threadCount)
+	go func() {
+		for index := range inputSlice {
+			indexChannel <- index
+		}
+		close(indexChannel)
+	}()
 
-	for threadNum := range threadCount {
+	for range threadCount {
 		waitGroup.Go(func() {
-			start := splits[threadNum]
-			end := splits[threadNum+1]
-			for index := start; index < end; index++ {
-				mapper(&inputSlice[index], outputChannel)
+			for index := range indexChannel {
+				value, isValid := mapper(&inputSlice[index])
+				if isValid {
+					outputChannel <- value
+				}
 			}
 		})
 	}
@@ -147,72 +158,34 @@ func Map_SliceToChannel_Provided[T any, R any](threadCount int, inputSlice []T, 
 		waitGroup.Wait()
 		close(outputChannel)
 	}()
+	return outputChannel
 }
 
-func Map_SliceToSlice_LowOverhead[T any, R any](threadCount int, inputSlice []T, mapper func(*T, chan<- R)) []R {
+func Map_SliceToSlice[T any, R any](threadCount int, inputSlice []T, mapper func(*T) R) []R {
+	indexChannel := make(chan int, threadCount)
+	resultChannel := make(chan R, threadCount)
 	var waitGroup sync.WaitGroup
 
-	inputLength := len(inputSlice)
-	splits := indexSplitsInt(inputLength, threadCount)
-
-	tempChannel := make(chan R)
-	for threadNum := range threadCount {
-		waitGroup.Go(func() {
-			start := splits[threadNum]
-			end := splits[threadNum+1]
-			for index := start; index < end; index++ {
-				mapper(&inputSlice[index], tempChannel)
-			}
-		})
-	}
-
 	go func() {
-		waitGroup.Wait()
-		close(tempChannel)
-	}()
-
-	outputSlice := make([]R, 0, inputLength)
-	for item := range tempChannel {
-		outputSlice = append(outputSlice, item)
-	}
-	return outputSlice
-}
-
-func Map_SliceToSlice[T any, R any](threadCount int, inputSlice []T, mapper func(*T, chan<- R)) []R {
-	inputLength := len(inputSlice)
-	splits := indexSplitsInt(inputLength, threadCount)
-
-	var waitGroupIndexes sync.WaitGroup
-	indexChannel := make(chan int, 8)
-	for threadNum := range threadCount {
-		waitGroupIndexes.Go(func() {
-			start := splits[threadNum]
-			end := splits[threadNum+1]
-			for index := start; index < end; index++ {
-				indexChannel <- index
-			}
-		})
-	}
-	go func() {
-		waitGroupIndexes.Wait()
+		for index := range inputSlice {
+			indexChannel <- index
+		}
 		close(indexChannel)
 	}()
 
-	var waitGroupResult sync.WaitGroup
-	resultChannel := make(chan R, 8)
 	for range threadCount {
-		waitGroupResult.Go(func() {
+		waitGroup.Go(func() {
 			for index := range indexChannel {
-				mapper(&inputSlice[index], resultChannel)
+				resultChannel <- mapper(&inputSlice[index])
 			}
 		})
 	}
 	go func() {
-		waitGroupResult.Wait()
+		waitGroup.Wait()
 		close(resultChannel)
 	}()
 
-	outputSlice := make([]R, 0, inputLength)
+	outputSlice := make([]R, 0, len(inputSlice))
 	for item := range resultChannel {
 		outputSlice = append(outputSlice, item)
 	}
@@ -220,16 +193,19 @@ func Map_SliceToSlice[T any, R any](threadCount int, inputSlice []T, mapper func
 }
 
 func ForEach_Slice[T any](threadCount int, inputSlice []T, process func(*T)) {
+	indexChannel := make(chan int, threadCount)
 	var waitGroup sync.WaitGroup
 
-	inputLength := len(inputSlice)
-	splits := indexSplitsInt(inputLength, threadCount)
+	go func() {
+		for index := range inputSlice {
+			indexChannel <- index
+		}
+		close(indexChannel)
+	}()
 
-	for threadNum := range threadCount {
+	for range threadCount {
 		waitGroup.Go(func() {
-			start := splits[threadNum]
-			end := splits[threadNum+1]
-			for index := start; index < end; index++ {
+			for index := range indexChannel {
 				process(&inputSlice[index])
 			}
 		})
@@ -252,20 +228,6 @@ func ForEach_Channel[T any](threadCount int, inputChannel <-chan T, process func
 	waitGroup.Wait()
 }
 
-func indexSplitsInt(sliceLength int, threadCount int) []int {
-	indexPerThread := sliceLength / threadCount
-
-	splitArray := make([]int, 0, threadCount+1)
-	start := 0
-	for range threadCount {
-		splitArray = append(splitArray, start)
-		start += indexPerThread
-	}
-	splitArray = append(splitArray, sliceLength)
-
-	return splitArray
-}
-
 type GroupChannelEntry[T any, G comparable] struct {
 	groupKey G
 	channel  chan T
@@ -279,11 +241,11 @@ func (entry GroupChannelEntry[T, G]) Channel() <-chan T {
 	return entry.channel
 }
 
-func GroupChannel_To_ManyChannel[T any, G comparable](threadCount int, inputChannel <-chan T, toGroup func(T) G) <-chan GroupChannelEntry[T, G] {
+func GroupChannel_To_ManyChannel[T any, G comparable](threadCount int, bufferSizes int, inputChannel <-chan T, toGroup func(T) G) <-chan GroupChannelEntry[T, G] {
 	nestedChannelMap := sync.Map{}
 
 	var waitGroup sync.WaitGroup
-	outputChannel := make(chan GroupChannelEntry[T, G])
+	outputChannel := make(chan GroupChannelEntry[T, G], bufferSizes)
 
 	for range threadCount {
 		waitGroup.Go(func() {
@@ -297,7 +259,7 @@ func GroupChannel_To_ManyChannel[T any, G comparable](threadCount int, inputChan
 				} else {
 					possibleNewEntry := &GroupChannelEntry[T, G]{
 						groupKey,
-						make(chan T),
+						make(chan T, bufferSizes),
 					}
 					oldOrNew, loadedExisting := nestedChannelMap.LoadOrStore(groupKey, possibleNewEntry)
 					if loadedExisting {
@@ -334,23 +296,17 @@ func SeqToChannel[T any](seq iter.Seq[T]) <-chan T {
 	return outputChannel
 }
 
-func PeekChannel[T any](threadCount int, inputChannel <-chan T, apply func(T)) <-chan T {
-	var waitGroup sync.WaitGroup
+func PeekChannel[T any](inputChannel <-chan T, apply func(*T)) <-chan T {
 	outputChannel := make(chan T)
 
-	for range threadCount {
-		waitGroup.Go(func() {
-			for value := range inputChannel {
-				apply(value)
-				outputChannel <- value
-			}
-		})
-	}
-
 	go func() {
-		waitGroup.Wait()
+		for value := range inputChannel {
+			apply(&value)
+			outputChannel <- value
+		}
 		close(outputChannel)
 	}()
+
 	return outputChannel
 }
 
@@ -368,41 +324,118 @@ func TeeChannelToSlice[T any](inputChannel <-chan T, slicePointer *[]T) <-chan T
 	return outputChannel
 }
 
-func RemoveDuplicatesFunc_Channels[T any](inputChannel <-chan T, equals func(a, b *T) bool) <-chan T {
+func Channel_RemoveDuplicatesComparable[T comparable](inputChannel <-chan T) <-chan T {
+	outputChannel := make(chan T)
+	seen := make(map[T]bool)
+
+	go func() {
+		for next := range inputChannel {
+			if !seen[next] {
+				seen[next] = true
+				outputChannel <- next
+			}
+		}
+	}()
+
+	return outputChannel
+}
+
+func Channel_RemoveDuplicatesFunc[T any](inputChannel <-chan T, equals func(a, b *T) bool) <-chan T {
+	outputChannel := make(chan T)
+	seen := make([]T, 0)
+
+	go func() {
+		for next := range inputChannel {
+			found := false
+			for checkIndex := range seen {
+				if equals(&next, &seen[checkIndex]) {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				seen = append(seen, next)
+				outputChannel <- next
+			}
+		}
+	}()
+
+	return outputChannel
+}
+
+func Channel_RemoveDuplicatesFuncNotify[T any](inputChannel <-chan T, equals func(a, b *T) bool, removedNotify func(x *T)) <-chan T {
 	lock := sync.Mutex{}
 	seen := make([]T, 0)
 
-	return Map_ChannelToChannel(2, inputChannel, func(next T, outputChannel chan<- T) {
+	return MapMulti_ChannelToChannel(4, inputChannel, func(next T, outputChannel chan<- T) {
 		lock.Lock()
-		defer lock.Unlock()
 
+		found := false
 		for checkIndex := range seen {
 			if equals(&next, &seen[checkIndex]) {
-				return
+				found = true
+				break
 			}
 		}
 
-		seen = append(seen, next)
-		outputChannel <- next
+		if !found {
+			seen = append(seen, next)
+			outputChannel <- next
+			lock.Unlock()
+		} else {
+			lock.Unlock() // release lock early so notifies can take longer
+
+			removedNotify(&next)
+		}
 	})
 }
 
-func RemoveDuplicatesFuncNotify_Channels[T any](inputChannel <-chan T, equals func(a, b *T) bool, removedNotify func(x *T)) <-chan T {
-	lock := sync.Mutex{}
-	seen := make([]T, 0)
+func MixChannels[T any](channelOne <-chan T, channelTwo <-chan T) <-chan T {
+	outputChannel := make(chan T)
 
-	return Map_ChannelToChannel(2, inputChannel, func(next T, outputChannel chan<- T) {
-		lock.Lock()
-		defer lock.Unlock()
-
-		for checkIndex := range seen {
-			if equals(&next, &seen[checkIndex]) {
-				removedNotify(&next)
-				return
+	go func() {
+		for channelOne != nil || channelTwo != nil {
+			select {
+			case value, ok := <-channelOne:
+				if ok {
+					outputChannel <- value
+				} else {
+					channelOne = nil
+				}
+			case value, ok := <-channelTwo:
+				if ok {
+					outputChannel <- value
+				} else {
+					channelTwo = nil
+				}
 			}
 		}
+	}()
 
-		seen = append(seen, next)
-		outputChannel <- next
-	})
+	return outputChannel
+}
+
+func ChannelWithPrependedValues[T any](inputChannel <-chan T, values ...T) <-chan T {
+	outputChannel := make(chan T)
+
+	go func() {
+		for _, value := range values {
+			outputChannel <- value
+		}
+
+		for value := range inputChannel {
+			outputChannel <- value
+		}
+	}()
+
+	return outputChannel
+}
+
+func ChannelCopy[T any](inputChannel <-chan T, outputChannel chan<- T) {
+	go func() {
+		for value := range inputChannel {
+			outputChannel <- value
+		}
+	}()
 }
