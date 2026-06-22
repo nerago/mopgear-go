@@ -7,10 +7,7 @@ import (
 )
 
 const (
-	c_rangeHigh        = 100.0
-	c_baseStatType     = stats.Stat_Strength
-	c_finalWeightLimit = 50
-	c_offsetLimit      = 0.1
+	c_baseStatType = stats.Stat_Strength
 )
 
 type WeightInput struct {

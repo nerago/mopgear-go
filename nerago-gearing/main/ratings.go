@@ -18,7 +18,6 @@ import (
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
-	"paladin_gearing_go/util/util_rank"
 	"paladin_gearing_go/weightfind"
 	"slices"
 	"strconv"
@@ -201,7 +200,7 @@ func statWeightsComplex(printer *util.PrintRecorder) {
 	filteredInput := weightInputs
 	printer.Printf("filteredInput size %d\n", len(filteredInput))
 
-	comp := stathighs.ComplexStatWeightProcess{}
+	comp := stathighs.FormulaStatWeightProcess{}
 
 	comp.Init(printer)
 	comp.SetTargetRatios(model.SimRatio_generalMiti)
@@ -444,13 +443,14 @@ func statWeightsGrid(printer *util.PrintRecorder) {
 	// inputData, targetRatio := generateRatingsInputFromArtificalStatOverrides(printer)
 	// writeWeightInputsToFile(inputData, "sim-stats-input-grid.json" )
 
-	inputDataFull := readWeightInputFile("sim-stats-input-grid.json")
+	inputDataFull := readWeightInputFile("sim-stats-compare-grid.json")
 	// inputData := takeDataSample_Random(inputDataFull, 8)
 	inputData := inputDataFull
 
 	targetRatio := model.SimRatio_generalMiti
 
-	process := stathighs.GridStatWeightProcess{}
+	// process := stathighs.GridStatWeightProcess{}
+	process := stathighs.SelectiveGridStatWeightProcess{}
 	process.Init(printer)
 	process.SetTargetRatios(targetRatio)
 	process.SupplyData(inputData)
@@ -582,16 +582,16 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	})
 
 	wg.Go(func() {
-		printer.Println("################# COMPLEX ###################")
+		printer.Println("################# FORMULA ###################")
 		start := time.Now()
-		comp := stathighs.ComplexStatWeightProcess{}
+		comp := stathighs.FormulaStatWeightProcess{}
 		comp.Init(printer)
 		comp.SetTargetRatios(targetRatio)
 		comp.SetMinimumIncludeRate(1)
 		comp.SupplyData(slices.Clone(inputDataRandom))
-		resultsByAlgorithm["complex"] = comp.Run()
-		timesByAlgorithm["complex"] = time.Since(start)
-		printer.Println("///////////////// COMPLEX /////////////////")
+		resultsByAlgorithm["form"] = comp.Run()
+		timesByAlgorithm["form"] = time.Since(start)
+		printer.Println("///////////////// FORMULA /////////////////")
 	})
 
 	wg.Go(func() {
@@ -671,60 +671,60 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		printer.Println("///////////////// RANKING2 /////////////////")
 	})
 
-	wg.Go(func() {
-		printer.Println("################# RANKING3 ###################")
-		start := time.Now()
-		ranking := stathighs.RankingStatWeightProcess3{}
-		ranking.Init(printer)
-		ranking.SetTargetRatios(targetRatio)
-		ranking.SupplyData(slices.Clone(mixedInputData))
-		weightList := ranking.Run(false)
-		best := util_rank.BestCollector1[stathighs.WeightResult]{}
-		for i, weight := range weightList {
-			resultsByAlgorithm["ranking3-"+strconv.Itoa(i)] = weight
-			best.Offer(&weight, weightfind.EvaluateAccuracy(weight, mixedInputDataFull, targetRatio))
-		}
-		timesByAlgorithm["ranking3"] = time.Since(start)
-		resultsByAlgorithm["ranking3"] = best.GetBestOrPanic()
-		printer.Println("///////////////// RANKING3 /////////////////")
-	})
+	// wg.Go(func() {
+	// 	printer.Println("################# RANKING3 ###################")
+	// 	start := time.Now()
+	// 	ranking := stathighs.RankingStatWeightProcess3{}
+	// 	ranking.Init(printer)
+	// 	ranking.SetTargetRatios(targetRatio)
+	// 	ranking.SupplyData(slices.Clone(mixedInputData))
+	// 	weightList := ranking.Run(false)
+	// 	best := util_rank.BestCollector1[stathighs.WeightResult]{}
+	// 	for i, weight := range weightList {
+	// 		resultsByAlgorithm["ranking3-"+strconv.Itoa(i)] = weight
+	// 		best.Offer(&weight, weightfind.EvaluateAccuracy(weight, mixedInputDataFull, targetRatio))
+	// 	}
+	// 	timesByAlgorithm["ranking3"] = time.Since(start)
+	// 	resultsByAlgorithm["ranking3"] = best.GetBestOrPanic()
+	// 	printer.Println("///////////////// RANKING3 /////////////////")
+	// })
 
-	wg.Go(func() {
-		printer.Println("################# RANKING4 ###################")
-		start := time.Now()
-		ranking := stathighs.RankingStatWeightProcess4{}
-		ranking.Init(printer)
-		ranking.SetTargetRatios(targetRatio)
-		ranking.SupplyData(slices.Clone(inputDataRandom))
+	// wg.Go(func() {
+	// 	printer.Println("################# RANKING4 ###################")
+	// 	start := time.Now()
+	// 	ranking := stathighs.RankingStatWeightProcess4{}
+	// 	ranking.Init(printer)
+	// 	ranking.SetTargetRatios(targetRatio)
+	// 	ranking.SupplyData(slices.Clone(inputDataRandom))
 
-		best := util_rank.BestCollector1[stathighs.WeightResult]{}
-		weightList := ranking.Run(false)
-		for i, weight := range weightList {
-			resultsByAlgorithm["ranking4-"+strconv.Itoa(i)] = weight
-			best.Offer(&weight, weightfind.EvaluateAccuracy(weight, mixedInputDataFull, targetRatio))
-		}
-		timesByAlgorithm["ranking4"] = time.Since(start)
-		resultsByAlgorithm["ranking4"] = best.GetBestOrPanic()
-		printer.Println("///////////////// RANKING4 /////////////////")
-	})
+	// 	best := util_rank.BestCollector1[stathighs.WeightResult]{}
+	// 	weightList := ranking.Run(false)
+	// 	for i, weight := range weightList {
+	// 		resultsByAlgorithm["ranking4-"+strconv.Itoa(i)] = weight
+	// 		best.Offer(&weight, weightfind.EvaluateAccuracy(weight, mixedInputDataFull, targetRatio))
+	// 	}
+	// 	timesByAlgorithm["ranking4"] = time.Since(start)
+	// 	resultsByAlgorithm["ranking4"] = best.GetBestOrPanic()
+	// 	printer.Println("///////////////// RANKING4 /////////////////")
+	// })
 
-	wg.Go(func() {
-		printer.Println("################# RANKING5 ###################")
-		start := time.Now()
-		ranking := stathighs.RankingStatWeightProcess5{}
-		ranking.Init(printer)
-		ranking.SetTargetRatios(targetRatio)
-		ranking.SupplyData(slices.Clone(inputDataRandom))
-		weightList := ranking.Run()
-		best := util_rank.BestCollector1[stathighs.WeightResult]{}
-		for i, weight := range weightList {
-			resultsByAlgorithm["ranking5-"+strconv.Itoa(i)] = weight
-			best.Offer(&weight, weightfind.EvaluateAccuracy(weight, mixedInputDataFull, targetRatio))
-		}
-		timesByAlgorithm["ranking5"] = time.Since(start)
-		resultsByAlgorithm["ranking5"] = best.GetBestOrPanic()
-		printer.Println("///////////////// RANKING5 /////////////////")
-	})
+	// wg.Go(func() {
+	// 	printer.Println("################# RANKING5 ###################")
+	// 	start := time.Now()
+	// 	ranking := stathighs.RankingStatWeightProcess5{}
+	// 	ranking.Init(printer)
+	// 	ranking.SetTargetRatios(targetRatio)
+	// 	ranking.SupplyData(slices.Clone(inputDataRandom))
+	// 	weightList := ranking.Run()
+	// 	best := util_rank.BestCollector1[stathighs.WeightResult]{}
+	// 	for i, weight := range weightList {
+	// 		resultsByAlgorithm["ranking5-"+strconv.Itoa(i)] = weight
+	// 		best.Offer(&weight, weightfind.EvaluateAccuracy(weight, mixedInputDataFull, targetRatio))
+	// 	}
+	// 	timesByAlgorithm["ranking5"] = time.Since(start)
+	// 	resultsByAlgorithm["ranking5"] = best.GetBestOrPanic()
+	// 	printer.Println("///////////////// RANKING5 /////////////////")
+	// })
 
 	// TODO what about ranking by each simtype, then combine. simlar to fitting?
 
