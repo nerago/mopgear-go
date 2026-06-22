@@ -134,7 +134,6 @@ func (future *FutureCancellable[T]) WaitForResultOrKeyPress() (T, bool) {
 			future.isValidResult = false
 			future.isComplete = true
 			future.onCancel()
-			future.lock.Unlock()
 			return future.result, false
 		}
 	}

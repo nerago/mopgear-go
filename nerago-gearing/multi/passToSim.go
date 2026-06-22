@@ -44,12 +44,12 @@ func (job *MultiSetJob) existingGearAsProposal() multi_types.MultiProposedOutput
 }
 
 type simulateJob struct {
-	spec            stats.SpecType
-	goal            stats.OptimiseGoal
-	fight           stats.WowSim_Fight
-	simulateSpeedUp int
-	equip           items.FullEquipMap
-	professions     model.ProfessionInfo
+	spec        stats.SpecType
+	goal        stats.OptimiseGoal
+	fight       stats.WowSim_Fight
+	simSpeedUp  int
+	equip       items.FullEquipMap
+	professions model.ProfessionInfo
 }
 
 type simulateJobResult struct {
@@ -69,7 +69,7 @@ type simulateMultiResult struct {
 func (job *MultiSetJob) prepareSimList(proposalList <-chan multi_types.MultiProposedOutput) <-chan simulateJob {
 	jobChannel := channel_op.MapMulti_ChannelToChannel(2, proposalList, func(proposal multi_types.MultiProposedOutput, nextChan chan<- simulateJob) {
 		for _, output := range proposal.Parts {
-			nextChan <- simulateJob{output.Spec, output.Model.Goal, output.Model.SimulateAs, *output.FullSet.Items(), output.Model.Professions}
+			nextChan <- simulateJob{output.Spec, output.Model.Goal, output.Model.SimulateAs, output.Model.SimSpeedUp, *output.FullSet.Items(), output.Model.Professions}
 		}
 	})
 
@@ -79,10 +79,11 @@ func (job *MultiSetJob) prepareSimList(proposalList <-chan multi_types.MultiProp
 func (job *MultiSetJob) runSims(jobChan <-chan simulateJob, trackProgress *util.TrackProgress, expectCount int) *channel_op.FutureCancellable[[]simulateJobResult] {
 	job.printer.Printf("@@@@@@@@@@ RUN SIM JOBS %d @@@@@@@@@@\n", expectCount)
 	trackProgress.RunOuterTracking(expectCount)
-	defer trackProgress.SetDone()
+	// defer trackProgress.SetDone()
+	isCancelled := func()bool {return false}
 
-	return channel_op.Map_ChannelToSlice_FutureCancellable(simThreadCount, jobChan, trackProgress.IsCancelled, func(sim simulateJob) simulateJobResult {
-		result := simulate.WowSim_Execute_SpecifyAll(job.simRunSize, sim.spec, sim.goal, sim.fight, sim.professions, &sim.equip, nil, trackProgress.NewChild())
+	return channel_op.Map_ChannelToSlice_FutureCancellable(simThreadCount, jobChan, isCancelled, func(sim simulateJob) simulateJobResult {
+		result := simulate.WowSim_Execute_SpecifyAll(job.simRunSize, sim.simSpeedUp, sim.spec, sim.goal, sim.fight, sim.professions, &sim.equip, nil, trackProgress.NewChild())
 		job.printer.Printf("sim %22s fight=%d %s\n", sim.spec.Name(), sim.fight, result.CompactStringGeneral())
 		return simulateJobResult{sim, result}
 	})
