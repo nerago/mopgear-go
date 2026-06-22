@@ -40,6 +40,8 @@ func (basic *BasicStatWeightProcess) SetBaseline(simBase stats.SimData) {
 }
 
 func (basic *BasicStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
+	basic.requiredSims = targetRatios.NonZeroTypes()
+
 	sum := 0.0
 	for _, simType := range basic.requiredSims {
 		val := targetRatios.Get(simType)
@@ -51,9 +53,7 @@ func (basic *BasicStatWeightProcess) SetTargetRatios(targetRatios stats.SimData)
 	if !utilhighs.FloatEqualsOne(sum) {
 		panic("ratios don't add to one")
 	}
-
 	basic.targetRatios = targetRatios
-	basic.requiredSims = targetRatios.NonZeroTypes()
 }
 
 func (basic *BasicStatWeightProcess) AddSimData(statType stats.StatType, statValue uint32, sim stats.SimData) {

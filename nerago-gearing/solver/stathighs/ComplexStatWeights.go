@@ -55,7 +55,7 @@ func (comp *ComplexStatWeightProcess) SetMinimumIncludeRate(percent float64) {
 func (comp *ComplexStatWeightProcess) Run() WeightResult {
 	comp.build = new(utilhighs.LinearBuilder)
 	comp.build.Minimise = true
-	// comp.input.Solver = "ipm"
+	comp.build.Solver = utilhighs.Solver_MIP_Interior
 
 	// comp.linearEquationDiff = -1
 	// comp.linearInclude = -1
@@ -120,7 +120,7 @@ func (comp *ComplexStatWeightProcess) buildDataEquationForInput(data *WeightInpu
 }
 
 func (comp *ComplexStatWeightProcess) sampleIncludeToggleColumn() utilhighs.ColumnIndex {
-	includeColumn := comp.build.CreateColumnWithObjective(highs.Integer, 0, 1, c_complexOutputPerInclude, comp.objectiveInclude, utilhighs.DebugString{Text: "include"})
+	includeColumn := comp.build.CreateColumnBoolWithObjective(c_complexOutputPerInclude, comp.objectiveInclude, utilhighs.DebugString{Text: "include"})
 	comp.includeCountRow.Add(includeColumn, 1)
 	comp.includeColumns = append(comp.includeColumns, includeColumn)
 	return includeColumn
@@ -212,7 +212,7 @@ func (comp *ComplexStatWeightProcess) extractDetailWeights(solution *highs.Solut
 }
 
 func (comp *ComplexStatWeightProcess) reportExamples(detailWeightMap util.MapMap[stats.StatType, stats.SimType, float64]) {
-	for i := range 20 {
+	for i := range min(20, len(comp.inputData)) {
 		data := comp.inputData[i]
 		comp.printer.Println("EXAMPLE")
 

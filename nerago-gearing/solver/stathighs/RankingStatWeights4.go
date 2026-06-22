@@ -92,7 +92,7 @@ func (process *RankingStatWeightProcess4) Run(doRound2 bool) []WeightResult {
 	// FIRST ROUND: minimal data, dumb initial values
 	process.printer.Println("RankingStatWeightProcess4 FIRST ROUND")
 	run1 := rankInternalRun4_create(process)
-	run1.build.TimeLimitSeconds = 3600
+	run1.build.TimeLimitSeconds = 1000
 	run1.supplyData(takeDataSample_Random(process.dataAll, c_RankInitialSample))
 	run1.prepareRankings()
 	run1.createWeightColumns()
@@ -116,7 +116,7 @@ func (process *RankingStatWeightProcess4) Run(doRound2 bool) []WeightResult {
 		dataSample := takeDataSample_Random(process.dataAll, size)
 		process.printer.Println("RankingStatWeightProcess4 SECOND ROUND " + strconv.Itoa(size))
 		run2 := rankInternalRun4_create(process)
-		run2.build.TimeLimitSeconds = 8000
+		run2.build.TimeLimitSeconds = 1000
 		run2.supplyData(dataSample)
 		run2.prepareRankings()
 		run2.createWeightColumns()

@@ -17,7 +17,7 @@ import (
 
 const (
 	c_rank5_sample    = 60
-	c_rank5_timeLimit = 4000
+	c_rank5_timeLimit = 2000
 
 	c_rank5_computeScoreM = 100
 )

@@ -23,7 +23,7 @@ type RankingStatWeightProcess3 struct {
 	printer *util.PrintRecorder
 
 	targetRatios    stats.SimData
-	requiredSims []stats.SimType
+	requiredSims    []stats.SimType
 	dataAllOriginal []rankEntry3
 	dataSample      []rankEntry3
 
@@ -82,6 +82,7 @@ func (ranker *RankingStatWeightProcess3) Run(doRound3 bool) []WeightResult {
 
 	ranker.build = new(utilhighs.LinearBuilder)
 	ranker.build.Minimise = true
+	ranker.build.Solver = utilhighs.Solver_MIP_Interior
 
 	// FIRST ROUND: minimal data, dumb initial values
 	ranker.printer.Println("RankingStatWeightProcess3 FIRST ROUND")
@@ -134,6 +135,7 @@ func (ranker *RankingStatWeightProcess3) Run(doRound3 bool) []WeightResult {
 		ranker.build = new(utilhighs.LinearBuilder)
 		ranker.build.Minimise = true
 		ranker.build.TimeLimitSeconds = 2000
+		ranker.build.Solver = utilhighs.Solver_MIP_Interior
 		ranker.prepareRankings()
 		ranker.createWeightColumns()
 		ranker.makeDataListEntryColumns()
@@ -164,6 +166,7 @@ func (ranker *RankingStatWeightProcess3) RunUsingExternalStart(initialWeight Wei
 	ranker.build = new(utilhighs.LinearBuilder)
 	ranker.build.Minimise = true
 	ranker.build.TimeLimitSeconds = 5000
+	ranker.build.Solver = utilhighs.Solver_MIP_Interior
 
 	ranker.printer.Println("RankingStatWeightProcess3 FIRST ROUND")
 	ranker.dataSample = ranker.dataAllOriginal

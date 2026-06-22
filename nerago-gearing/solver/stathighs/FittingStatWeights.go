@@ -340,6 +340,7 @@ func (fit *FittingSingleStatWeightProcess) Init(printer *util.PrintRecorder) {
 	fit.printer = printer
 	fit.build = new(utilhighs.LinearBuilder)
 	fit.build.Minimise = true
+	fit.build.Solver = utilhighs.Solver_MIP_Interior
 
 	fit.lineSlope = fit.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "slope"})
 	fit.lineOffset = fit.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "offset"})
@@ -523,7 +524,7 @@ func (fit *FittingSingleStatWeightProcess) addSample(sample *fittingSample) {
 }
 
 func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample *fittingSample) utilhighs.ColumnIndex {
-	includeColumn := fit.build.CreateColumnWithObjective(highs.Integer, 0, 1, c_outputFittingPerInclude, fit.objectiveInclude, utilhighs.DebugString{Text: "include"})
+	includeColumn := fit.build.CreateColumnBoolWithObjective(c_outputFittingPerInclude, fit.objectiveInclude, utilhighs.DebugString{Text: "include"})
 	fit.includeCountRow.Add(includeColumn, 1)
 	fit.includeColumns = append(fit.includeColumns, includeColumn)
 	sample.includeColumn = includeColumn

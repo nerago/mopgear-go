@@ -33,7 +33,7 @@ type gridDataSample2 struct {
 func (grid2 *GridStatWeightProcess2) Init(printer *util.PrintRecorder) {
 	grid2.printer = printer
 	grid2.build.Minimise = true
-	// grid2.input.Solver = "pdlp"
+	grid2.build.Solver = utilhighs.Solver_LP_CAN_GPU
 }
 
 func (grid2 *GridStatWeightProcess2) SupplyData(inputData []WeightInput) {
@@ -41,6 +41,8 @@ func (grid2 *GridStatWeightProcess2) SupplyData(inputData []WeightInput) {
 }
 
 func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios stats.SimData) {
+	grid2.requiredSims = targetRatios.NonZeroTypes()
+
 	sum := 0.0
 	for _, simType := range grid2.requiredSims {
 		val := targetRatios.Get(simType)
@@ -54,7 +56,6 @@ func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios stats.SimData)
 	}
 
 	grid2.targetRatios = targetRatios
-	grid2.requiredSims = targetRatios.NonZeroTypes()
 }
 
 func (grid2 *GridStatWeightProcess2) Run() WeightResult {

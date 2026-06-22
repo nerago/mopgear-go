@@ -32,7 +32,7 @@ type selectiveGridDataSample struct {
 func (selgrid *SelectiveGridStatWeightProcess) Init(printer *util.PrintRecorder) {
 	selgrid.printer = printer
 	selgrid.build.Minimise = true
-	// grid.input.Solver = "ipm"
+	selgrid.build.Solver = utilhighs.Solver_MIP_Interior
 	selgrid.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }
 
@@ -41,6 +41,8 @@ func (selgrid *SelectiveGridStatWeightProcess) SupplyData(inputData []WeightInpu
 }
 
 func (selgrid *SelectiveGridStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
+	selgrid.requiredSims = targetRatios.NonZeroTypes()
+
 	sum := 0.0
 	for _, simType := range selgrid.requiredSims {
 		val := targetRatios.Get(simType)
@@ -54,7 +56,6 @@ func (selgrid *SelectiveGridStatWeightProcess) SetTargetRatios(targetRatios stat
 	}
 
 	selgrid.targetRatios = targetRatios
-	selgrid.requiredSims = targetRatios.NonZeroTypes()
 }
 
 func (selgrid *SelectiveGridStatWeightProcess) Run() WeightResult {
