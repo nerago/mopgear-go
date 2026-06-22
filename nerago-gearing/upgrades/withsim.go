@@ -36,7 +36,7 @@ func findUpgradeAndSim(input *FindUpgrades_SimInputs, baseItems *items.FullOptio
 	return simResults
 }
 
-func simEachInitialResult(input *FindUpgrades_SimInputs, inputList []upgradeItemResult, goal stats.OptimiseGoal, model *model.Model, baseSim *simulate.SimData, tracker *util.TrackProgress, printer *util.PrintRecorder) []upgradeItemResultWithSim {
+func simEachInitialResult(input *FindUpgrades_SimInputs, inputList []upgradeItemResult, goal stats.OptimiseGoal, model *model.Model, baseSim *stats.SimData, tracker *util.TrackProgress, printer *util.PrintRecorder) []upgradeItemResultWithSim {
 	tracker.RunOuterTracking(len(inputList))
 	defer tracker.SetDone()
 

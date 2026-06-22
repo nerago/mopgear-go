@@ -7,7 +7,6 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/setup"
-	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
@@ -234,8 +233,8 @@ func reportTabledSimResultItemMap_NoWeight(itemMap map[reportItemRef]*reportForI
 	printer.Println0()
 }
 
-func bestSimOf(report *reportForItemWithSim) (simulate.SimData, string) {
-	var bestIncrease simulate.SimData
+func bestSimOf(report *reportForItemWithSim) (stats.SimData, string) {
+	var bestIncrease stats.SimData
 	var bestLabel string
 	best := c_nullIncrease
 	for label, result := range report.grouped {

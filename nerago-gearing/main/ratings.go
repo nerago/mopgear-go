@@ -26,10 +26,10 @@ import (
 	"time"
 )
 
-func simResultAddToCSV(simResult simulate.SimData, csv *util.CSVOutputByColumn) {
-	for _, simType := range simulate.SimTypeList {
+func simResultAddToCSV(simResult stats.SimData, csv *util.CSVOutputByColumn) {
+	for _, simType := range stats.SimTypeList {
 		num := simResult.Get(simType)
-		if simType == simulate.Sim_DEATH {
+		if simType == stats.Sim_DEATH {
 			num *= 100
 		}
 		csv.AddFloat64(num, 2)
@@ -50,7 +50,7 @@ func testBasicStatsGeneral(printer *util.PrintRecorder) {
 	spec := stats.Spec_PaladinProt
 	startGear := files.GearFileProtMitigationWithSet
 	modelEquipOnly := model.Model_PallyProtMitigation_WithSet()
-	targetRatio := stathighs.NewStatWeights_generalMiti
+	targetRatio := modelEquipOnly.SimRatioWeighting
 	goal := stats.OptimiseGoal_Mitigation
 
 	// fight := stats.Fight_Horridon_HighHeal
@@ -107,10 +107,10 @@ func relativeRatingsCompromise(printer *util.PrintRecorder) {
 type basicStatInput struct {
 	IncrementStat  stats.StatType
 	IncrementValue int32
-	SimResult      simulate.SimData
+	SimResult      stats.SimData
 }
 
-func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo) ([]basicStatInput, simulate.SimData) {
+func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo) ([]basicStatInput, stats.SimData) {
 	var incrementValue int32 = 250
 
 	initialBaseStats := weightfind.InitialBonusStatMap_fixRanges(printer, currentItemSet, incrementValue)
@@ -151,12 +151,12 @@ func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet item
 	return inputList, simBase
 }
 
-func generateRatingsInputFromRealRandomSetsT5(printer *util.PrintRecorder) ([]stathighs.WeightInput, simulate.SimData) {
+func generateRatingsInputFromRealRandomSetsT5(printer *util.PrintRecorder) ([]stathighs.WeightInput, stats.SimData) {
 	makeSetCount := 2000
 	simSize := simulate.RunSize_Medium
 
-	targetRatio := stathighs.NewStatWeights_generalMiti
 	model := model.Model_PallyProtMitigation_NoSet()
+	targetRatio := model.SimRatioWeighting
 
 	_, itemOptions := allT5stuff(&model, files.GearFileProtMitigationNoSet, printer)
 
@@ -203,7 +203,7 @@ func statWeightsComplex(printer *util.PrintRecorder) {
 	comp := stathighs.ComplexStatWeightProcess{}
 
 	comp.Init(printer)
-	comp.SetTargetRatios(stathighs.NewStatWeights_generalMiti)
+	comp.SetTargetRatios(model.SimRatio_generalMiti)
 	comp.SetMinimumIncludeRate(0.7)
 	comp.SupplyData(filteredInput)
 	weights := comp.Run()
@@ -212,7 +212,7 @@ func statWeightsComplex(printer *util.PrintRecorder) {
 
 func statWeightsRanking(printer *util.PrintRecorder) {
 	// weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
-	targetRatio := stathighs.NewStatWeights_generalMiti
+	targetRatio := model.SimRatio_generalMiti
 
 	inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
 	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
@@ -246,7 +246,7 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 }
 
 func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
-	targetRatio := stathighs.NewStatWeights_generalMiti
+	targetRatio := model.SimRatio_generalMiti
 
 	inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
 	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
@@ -337,7 +337,7 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 
 	fitting := stathighs.FittingSingleStatSegmentsProcess{}
 	// fitting.Init(printer, stats.Stat_Crit, simulate.Result_DPS)
-	fitting.Init(printer, stats.Stat_Haste, simulate.Sim_DPS)
+	fitting.Init(printer, stats.Stat_Haste, stats.Sim_DPS)
 	fitting.SupplyDataFromStandard(weightInputs)
 
 	weightMap := fitting.Run()
@@ -425,7 +425,7 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 func statWeightsBasic(printer *util.PrintRecorder) {
 	process := stathighs.BasicStatWeightProcess{}
 	process.Init(printer)
-	process.SetTargetRatios(stathighs.NewStatWeights_generalMiti)
+	process.SetTargetRatios(model.SimRatio_generalMiti)
 	process.SetBaseline(parseSimStats("254619.21 1604831.48 27870.13 39389.66 56.82 14.23"))
 	process.AddSimData(stats.Stat_Strength, +600, parseSimStats("256235.27 1614633.03 27573.09 39660.8 56.16 12.89"))
 	process.AddSimData(stats.Stat_Stamina, +600, parseSimStats("254474.09 1603914.71 27941.9 39360.88 55.72 13.62"))
@@ -447,7 +447,7 @@ func statWeightsGrid(printer *util.PrintRecorder) {
 	// inputData := takeDataSample_Random(inputDataFull, 8)
 	inputData := inputDataFull
 
-	targetRatio := stathighs.NewStatWeights_generalMiti
+	targetRatio := model.SimRatio_generalMiti
 
 	process := stathighs.GridStatWeightProcess{}
 	process.Init(printer)
@@ -463,10 +463,10 @@ func statWeightsGrid(printer *util.PrintRecorder) {
 	printer.Printf("accuracy_tweak = %f\n", acc2)
 }
 
-func parseSimStats(str string) simulate.SimData {
-	result := simulate.SimData{}
+func parseSimStats(str string) stats.SimData {
+	result := stats.SimData{}
 	parts := strings.Split(str, " ")
-	for i, simType := range simulate.SimTypeList {
+	for i, simType := range stats.SimTypeList {
 		value, err := strconv.ParseFloat(parts[i], 64)
 		if err != nil {
 			panic(err)
@@ -502,10 +502,10 @@ func readWeightInputFile(filename string) []stathighs.WeightInput {
 
 type basicWeightsTestDataFormat struct {
 	InputDataBasic []basicStatInput
-	BasicSimBase   simulate.SimData
+	BasicSimBase   stats.SimData
 }
 
-func writeWeightBasicInputsToFile(inputDataBasic []basicStatInput, basicSimBase simulate.SimData, filename string) {
+func writeWeightBasicInputsToFile(inputDataBasic []basicStatInput, basicSimBase stats.SimData, filename string) {
 	bytes, err := json.Marshal(&basicWeightsTestDataFormat{inputDataBasic, basicSimBase})
 	if err != nil {
 		panic(err)
@@ -516,7 +516,7 @@ func writeWeightBasicInputsToFile(inputDataBasic []basicStatInput, basicSimBase 
 	}
 }
 
-func readWeightBasicInputsFile(filename string) ([]basicStatInput, simulate.SimData) {
+func readWeightBasicInputsFile(filename string) ([]basicStatInput, stats.SimData) {
 	bytes, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
@@ -538,7 +538,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 
 	// gearFile := files.GearFileProtMitigationNoSet
 	// gearModel := model.Model_PallyProtMitigation_NoSet()
-	targetRatio := stathighs.NewStatWeights_generalMiti
+	targetRatio := model.SimRatio_generalMiti
 
 	// currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), &gearModel, printer)
 	// currentItemSet := items.FullItemSet_FromMap(currentEquip)
@@ -778,35 +778,30 @@ func statWeightsGrid_updateAll(printer *util.PrintRecorder) {
 			WeightFileOut:   files.WeightMitiNoSetFile,
 			GearFile:        files.GearFileProtMitigationNoSet,
 			Model:           model.Model_PallyProtMitigation_NoSet(),
-			Ratios:          stathighs.NewStatWeights_generalMiti,
 			SubstituteItems: substituteItemsMiti,
 		},
 		{
 			WeightFileOut:   files.WeightMitiWithSetFile,
 			GearFile:        files.GearFileProtMitigationWithSet,
 			Model:           model.Model_PallyProtMitigation_WithSet(),
-			Ratios:          stathighs.NewStatWeights_malkrokWeight,
 			SubstituteItems: substituteItemsMiti,
 		},
 		{
 			WeightFileOut:   files.WeightDpsFile,
 			GearFile:        files.GearFileProtDps,
 			Model:           model.Model_PallyProtDps(),
-			Ratios:          stathighs.NewStatWeights_dpsWeight,
 			SubstituteItems: substituteItemsDps,
 		},
 		{
 			WeightFileOut:   files.WeightCompromiseFile,
 			GearFile:        files.GearFileProtCompromise,
 			Model:           model.Model_PallyProtCompromise(),
-			Ratios:          stathighs.NewStatWeights_animusWeight,
 			SubstituteItems: util.RemoveDuplicatesComparable(slices.Concat(substituteItemsDps, substituteItemsMiti)),
 		},
 		{
 			WeightFileOut:   files.WeightHealFile,
 			GearFile:        files.GearFileProtHeal,
 			Model:           model.Model_PallyProtHeal(),
-			Ratios:          stathighs.NewStatWeights_healWeight,
 			SubstituteItems: util.RemoveDuplicatesComparable(slices.Concat(substituteItemsDps, substituteItemsMiti)),
 		},
 	})

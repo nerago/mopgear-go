@@ -2,7 +2,6 @@ package stathighs
 
 import (
 	"maps"
-	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
@@ -16,7 +15,7 @@ const (
 
 type WeightInput struct {
 	TotalStat stats.StatBlock
-	SimResult simulate.SimData
+	SimResult stats.SimData
 }
 
 type WeightResult map[stats.StatType]float64
@@ -73,47 +72,6 @@ func (wr *WeightResult) String() string {
 	return build.String()
 }
 
-// now about noset - tortos, horridon, ironqon, jikun, durumu
-var NewStatWeights_generalMiti = simulate.SimData{
-	DPS:   0.2,
-	DEATH: 0.1,
-	TMI:   0.3,
-	DTPS:  0.4,
-}
-
-// for withset - malkrok
-var NewStatWeights_malkrokWeight = simulate.SimData{
-	DPS:   0.15,
-	DEATH: 0.3,
-	TMI:   0.05,
-	DTPS:  0.5,
-}
-
-// for comp set - animus
-var NewStatWeights_animusWeight = simulate.SimData{
-	DPS:   0.4,
-	DEATH: 0.1,
-	TMI:   0.4,
-	DTPS:  0.1,
-}
-
-// for dps set
-var NewStatWeights_dpsWeight = simulate.SimData{
-	DPS:   0.90,
-	DEATH: 0.03,
-	TMI:   0.03,
-	DTPS:  0.04,
-}
-
-// for dps set
-var NewStatWeights_healWeight = simulate.SimData{
-	DPS:   0.1,
-	DEATH: 0.1,
-	TMI:   0.1,
-	DTPS:  0.3,
-	HPS:   0.4,
-}
-
 var G_RequiredStats = []stats.StatType{
 	stats.Stat_Strength,
 	stats.Stat_Stamina,
@@ -123,10 +81,4 @@ var G_RequiredStats = []stats.StatType{
 	stats.Stat_Mastery,
 	stats.Stat_Dodge,
 	stats.Stat_Parry,
-}
-var G_RequiredSims = []simulate.SimType{
-	simulate.Sim_DPS,
-	simulate.Sim_DEATH,
-	simulate.Sim_TMI,
-	simulate.Sim_DTPS,
 }

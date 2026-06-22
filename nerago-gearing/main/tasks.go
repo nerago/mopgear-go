@@ -357,7 +357,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 			resultStats.IncreaseSimBreakdown(&currentStats).Print(printer)
 
 			mitiInc := resultStats.IncreaseMitigation(&currentStats)
-			dpsInc := resultStats.IncreaseOf(&currentStats, simulate.Sim_DPS)
+			dpsInc := resultStats.IncreaseOf(&currentStats, stats.Sim_DPS)
 			printer.Printf("INCREASE miti=%.3f dps=%.3f\n", mitiInc, dpsInc)
 
 			resultPairs = append(resultPairs, pair{mitiInc, dpsInc, example.BaseName()})
@@ -426,7 +426,7 @@ func trinketSims(printer *util.PrintRecorder) {
 	csv := util.CSVOutputByColumn{}
 	csv.InitRows(8)
 	csv.AddStringMany("set", "item")
-	for _, statType := range simulate.SimTypeList {
+	for _, statType := range stats.SimTypeList {
 		csv.AddString(statType.Name())
 	}
 	csv.FinishColumn()
@@ -471,7 +471,7 @@ func trinketSims(printer *util.PrintRecorder) {
 
 			resultStats := simulate.WowSim_Execute_SpecifyAll(simulate.RunSize_Medium, model.SimSpeedUp, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
 			resultStats.Print(printer)
-			for _, statType := range simulate.SimTypeList {
+			for _, statType := range stats.SimTypeList {
 				csv.AddFloat64(resultStats.GetFriendly(statType), 2)
 			}
 
@@ -542,7 +542,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 	csv := util.CSVOutputByColumn{}
 	csv.InitRows(9)
 	csv.AddStringMany("set", "item1", "item2")
-	for _, statType := range simulate.SimTypeList {
+	for _, statType := range stats.SimTypeList {
 		csv.AddString(statType.Name())
 	}
 	csv.FinishColumn()
@@ -591,7 +591,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 
 				resultStats := simulate.WowSim_Execute_SpecifyAll(simRun, model.SimSpeedUp, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
 				resultStats.Print(printer)
-				for _, statType := range simulate.SimTypeList {
+				for _, statType := range stats.SimTypeList {
 					csv.AddFloat64(resultStats.GetFriendly(statType), 2)
 				}
 

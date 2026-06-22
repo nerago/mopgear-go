@@ -2,7 +2,6 @@ package stathighs
 
 import (
 	"iter"
-	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -14,13 +13,14 @@ import (
 type SelectiveGridStatWeightProcess struct {
 	printer *util.PrintRecorder
 
-	targetRatios            simulate.SimData
+	targetRatios            stats.SimData
+	requiredSims            []stats.SimType
 	inputData               []WeightInput
 	inputDataIncludeToggles []utilhighs.ColumnIndex
 
 	build           utilhighs.LinearBuilder
-	unitStatValues  util.MapMapSlice[stats.StatType, simulate.SimType, selectiveGridDataSample]
-	detailedWeights util.MapMap[stats.StatType, simulate.SimType, utilhighs.ColumnIndex]
+	unitStatValues  util.MapMapSlice[stats.StatType, stats.SimType, selectiveGridDataSample]
+	detailedWeights util.MapMap[stats.StatType, stats.SimType, utilhighs.ColumnIndex]
 	finalWeights    map[stats.StatType]utilhighs.ColumnIndex
 }
 
@@ -40,9 +40,9 @@ func (selgrid *SelectiveGridStatWeightProcess) SupplyData(inputData []WeightInpu
 	selgrid.inputData = inputData
 }
 
-func (selgrid *SelectiveGridStatWeightProcess) SetTargetRatios(targetRatios simulate.SimData) {
+func (selgrid *SelectiveGridStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
 	sum := 0.0
-	for _, simType := range G_RequiredSims {
+	for _, simType := range selgrid.requiredSims {
 		val := targetRatios.Get(simType)
 		if val <= 0 {
 			panic("missing ratio")
@@ -54,6 +54,7 @@ func (selgrid *SelectiveGridStatWeightProcess) SetTargetRatios(targetRatios simu
 	}
 
 	selgrid.targetRatios = targetRatios
+	selgrid.requiredSims = targetRatios.NonZeroTypes()
 }
 
 func (selgrid *SelectiveGridStatWeightProcess) Run() WeightResult {
@@ -82,13 +83,13 @@ func (selgrid *SelectiveGridStatWeightProcess) setupWeightVars() {
 	}
 
 	for _, statType := range G_RequiredStats {
-		for _, simType := range G_RequiredSims {
+		for _, simType := range selgrid.requiredSims {
 			colDetailWeight := selgrid.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
 			selgrid.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
 	}
 
-	for _, simType := range G_RequiredSims {
+	for _, simType := range selgrid.requiredSims {
 		value := selgrid.targetRatios.Get(simType)
 		colDetailWeight := selgrid.detailedWeights.GetOrPanic(c_baseStatType, simType)
 		strengthSetToRatio := utilhighs.ConstraintRow{}
@@ -155,7 +156,7 @@ func (selgrid *SelectiveGridStatWeightProcess) prepareSample(statType stats.Stat
 
 	statDiff := high.TotalStat.GetFloat(statType) - low.TotalStat.GetFloat(statType)
 
-	for _, simType := range G_RequiredSims {
+	for _, simType := range selgrid.requiredSims {
 		var simValueDiff float64
 		if simType.IsHighGood() {
 			simValueDiff = high.SimResult.GetFriendly(simType) - low.SimResult.GetFriendly(simType)
@@ -208,7 +209,7 @@ func (selgrid *SelectiveGridStatWeightProcess) unitValuesToCalcDetailedRatings()
 	}
 }
 
-func (selgrid *SelectiveGridStatWeightProcess) unitValuesCalcForGroup(simType simulate.SimType, thisStatType stats.StatType, unitValueBaseSeq iter.Seq[selectiveGridDataSample], thisUnitValueSeq iter.Seq[selectiveGridDataSample], detailWeightBase utilhighs.ColumnIndex) {
+func (selgrid *SelectiveGridStatWeightProcess) unitValuesCalcForGroup(simType stats.SimType, thisStatType stats.StatType, unitValueBaseSeq iter.Seq[selectiveGridDataSample], thisUnitValueSeq iter.Seq[selectiveGridDataSample], detailWeightBase utilhighs.ColumnIndex) {
 	debugText := simType.Name() + " " + thisStatType.Name()
 	thisDetailWeight := selgrid.detailedWeights.GetOrPanic(thisStatType, simType)
 

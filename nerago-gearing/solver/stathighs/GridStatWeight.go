@@ -2,7 +2,6 @@ package stathighs
 
 import (
 	"iter"
-	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -14,14 +13,14 @@ import (
 type GridStatWeightProcess struct {
 	printer *util.PrintRecorder
 
-	targetRatios simulate.SimData
+	targetRatios stats.SimData
 	inputData    []WeightInput
-	simTypes     []simulate.SimType
+	simTypes     []stats.SimType
 	testMode     bool
 
 	build           utilhighs.LinearBuilder
-	unitStatValues  util.MapMapSlice[stats.StatType, simulate.SimType, gridDataSample]
-	detailedWeights util.MapMap[stats.StatType, simulate.SimType, utilhighs.ColumnIndex]
+	unitStatValues  util.MapMapSlice[stats.StatType, stats.SimType, gridDataSample]
+	detailedWeights util.MapMap[stats.StatType, stats.SimType, utilhighs.ColumnIndex]
 	finalWeights    map[stats.StatType]utilhighs.ColumnIndex
 }
 
@@ -49,7 +48,7 @@ func (grid *GridStatWeightProcess) SupplyData(inputData []WeightInput) {
 	}
 }
 
-func (grid *GridStatWeightProcess) SetTargetRatios(targetRatios simulate.SimData) {
+func (grid *GridStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
 	sum := 0.0
 	for simType, ratio := range targetRatios.Seq() {
 		if ratio >= 0 {
@@ -210,7 +209,7 @@ func (grid *GridStatWeightProcess) unitValuesToCalcDetailedRatings() {
 	// TODO could be interesting experiment to setup all stat pairings, not just strength base
 }
 
-func (grid *GridStatWeightProcess) unitValuesCalcForGroup(simType simulate.SimType, thisStatType stats.StatType, baseUnitValueSeq iter.Seq[gridDataSample], thisUnitValueSeq iter.Seq[gridDataSample], baseDetailWeightCol utilhighs.ColumnIndex) {
+func (grid *GridStatWeightProcess) unitValuesCalcForGroup(simType stats.SimType, thisStatType stats.StatType, baseUnitValueSeq iter.Seq[gridDataSample], thisUnitValueSeq iter.Seq[gridDataSample], baseDetailWeightCol utilhighs.ColumnIndex) {
 	debugText := simType.Name() + " " + thisStatType.Name()
 	thisDetailWeightCol := grid.detailedWeights.GetOrPanic(thisStatType, simType)
 

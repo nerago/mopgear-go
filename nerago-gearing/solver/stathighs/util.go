@@ -2,7 +2,6 @@ package stathighs
 
 import (
 	"math"
-	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
@@ -17,10 +16,10 @@ type enumWithName interface {
 	Name() string
 }
 
-func chooseSimScaling(inputData []WeightInput, printer *util.PrintRecorder) map[simulate.SimType]float64 {
+func chooseSimScaling(inputData []WeightInput, printer *util.PrintRecorder) map[stats.SimType]float64 {
 	return chooseScalingNumbers(inputData,
-		G_RequiredSims,
-		func(data *WeightInput, simType simulate.SimType) float64 { return data.SimResult.Get(simType) },
+		stats.SimTypeList,
+		func(data *WeightInput, simType stats.SimType) float64 { return data.SimResult.Get(simType) },
 		printer)
 }
 
@@ -60,10 +59,12 @@ func chooseScalingNumbers[E enumWithName](inputData []WeightInput, checkTypes []
 			}
 		}
 
-		scale := c_targetNumber / max
-		scaleMap[check] = scale
+		if max != 0.0 {
+			scale := c_targetNumber / max
+			scaleMap[check] = scale
 
-		printer.Printf("scale %s %e\n", check.Name(), scaleMap[check])
+			printer.Printf("scale %s %e\n", check.Name(), scaleMap[check])
+		}
 	}
 	return scaleMap
 }

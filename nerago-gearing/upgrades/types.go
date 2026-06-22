@@ -3,7 +3,6 @@ package upgrades
 import (
 	"math"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"strconv"
@@ -112,8 +111,8 @@ func (result upgradeItemResult) makeNoteAbbrev() string {
 
 type upgradeItemResultWithSim struct {
 	upgradeItemResult
-	baseSim simulate.SimData
-	sim     simulate.SimData
+	baseSim stats.SimData
+	sim     stats.SimData
 }
 
 func (result upgradeItemResultWithSim) Equals(other upgradeItemResultWithSim) bool {
@@ -128,15 +127,15 @@ func (result upgradeItemResultWithSim) increaseSim() float64 {
 
 	switch result.goal {
 	case stats.OptimiseGoal_Dps:
-		return result.sim.IncreaseOf(&result.baseSim, simulate.Sim_DPS)
+		return result.sim.IncreaseOf(&result.baseSim, stats.Sim_DPS)
 	case stats.OptimiseGoal_Healing:
-		return result.sim.IncreaseOf(&result.baseSim, simulate.Sim_HPS)
+		return result.sim.IncreaseOf(&result.baseSim, stats.Sim_HPS)
 	case stats.OptimiseGoal_Mitigation:
 		return result.sim.IncreaseMitigation(&result.baseSim)
 	case stats.OptimiseGoal_HalfMitiDps:
-		return (result.sim.IncreaseMitigation(&result.baseSim) + result.sim.IncreaseOf(&result.baseSim, simulate.Sim_DPS)) / 2.0
+		return (result.sim.IncreaseMitigation(&result.baseSim) + result.sim.IncreaseOf(&result.baseSim, stats.Sim_DPS)) / 2.0
 	case stats.OptimiseGoal_HalfMitiHeal:
-		return (result.sim.IncreaseMitigation(&result.baseSim) + result.sim.IncreaseOf(&result.baseSim, simulate.Sim_HPS)) / 2.0
+		return (result.sim.IncreaseMitigation(&result.baseSim) + result.sim.IncreaseOf(&result.baseSim, stats.Sim_HPS)) / 2.0
 	default:
 		panic("unknown goal")
 	}
@@ -157,7 +156,7 @@ func (result upgradeItemResultWithSim) increaseSimStr(prefixNote bool) string {
 	return str
 }
 
-func (result upgradeItemResultWithSim) increaseSimBreakdown() simulate.SimData {
+func (result upgradeItemResultWithSim) increaseSimBreakdown() stats.SimData {
 	return result.sim.IncreaseSimBreakdown(&result.baseSim)
 }
 

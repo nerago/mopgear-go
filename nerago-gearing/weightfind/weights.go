@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/stathighs"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"slices"
@@ -18,27 +19,26 @@ type WeightOptions struct {
 	WeightFileOut   string
 	GearFile        string
 	Model           model.Model
-	Ratios          simulate.SimData
 	SubstituteItems []items.ItemId
 }
 
 func StatWeights_updateAll(simSpeed simulate.WowSim_RunSize, printer *util.PrintRecorder, options []WeightOptions) {
-	waitGrounp := sync.WaitGroup{}
+	waitGroup := sync.WaitGroup{}
 	progress := util.TrackProgress_Start()
 	progress.RunOuterTracking(len(options))
 
 	for _, option := range options {
-		waitGrounp.Go(func() {
-			statWeightsGrid_updateOne(&option.Model, option.GearFile, option.Ratios, option.WeightFileOut,
+		waitGroup.Go(func() {
+			statWeightsGrid_updateOne(&option.Model, option.GearFile, option.Model.SimRatioWeighting, option.WeightFileOut,
 				option.SubstituteItems, printer, simSpeed, progress.NewChild())
 		})
 	}
 
-	waitGrounp.Wait()
+	waitGroup.Wait()
 	progress.SetDone()
 }
 
-func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios simulate.SimData, weightFileOut string, substituteItems []items.ItemId, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, tracker *util.TrackProgress) {
+func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios stats.SimData, weightFileOut string, substituteItems []items.ItemId, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, tracker *util.TrackProgress) {
 	tracker.RunOuterTracking(4)
 	defer tracker.SetDone()
 

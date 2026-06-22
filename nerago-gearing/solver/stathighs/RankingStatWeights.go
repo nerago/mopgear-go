@@ -1,7 +1,6 @@
 package stathighs
 
 import (
-	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -19,7 +18,8 @@ const (
 type RankingStatWeightProcess struct {
 	printer *util.PrintRecorder
 
-	targetRatios simulate.SimData
+	targetRatios stats.SimData
+	requiredSims []stats.SimType
 	data         []rankEntry
 
 	build *utilhighs.LinearBuilder
@@ -40,7 +40,7 @@ type RankingStatWeightProcess struct {
 type rankEntry struct {
 	data *WeightInput
 
-	simRanks         map[simulate.SimType]int
+	simRanks         map[stats.SimType]int
 	combinedSimScore float64
 	targetRank       int
 
@@ -55,12 +55,13 @@ func (ranker *RankingStatWeightProcess) Init(printer *util.PrintRecorder) {
 func (ranker *RankingStatWeightProcess) SupplyData(inputData []WeightInput) {
 	ranker.scaleStats = chooseStatScaling(inputData, ranker.printer)
 	ranker.data = util.MapSliceAsNew(inputData, func(input *WeightInput) rankEntry {
-		return rankEntry{data: input, simRanks: make(map[simulate.SimType]int)}
+		return rankEntry{data: input, simRanks: make(map[stats.SimType]int)}
 	})
 }
 
-func (ranker *RankingStatWeightProcess) SetTargetRatios(targetRatios simulate.SimData) {
+func (ranker *RankingStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
 	ranker.targetRatios = targetRatios
+	ranker.requiredSims = targetRatios.NonZeroTypes()
 }
 
 // func (ranker *RankStatWeightProcess) SetMinimumIncludeRate(percent float64) {
@@ -114,7 +115,7 @@ func (ranker *RankingStatWeightProcess) createWeightColumns() {
 
 func (ranker *RankingStatWeightProcess) prepareRankings() {
 	// score each sim
-	for _, simType := range G_RequiredSims {
+	for _, simType := range ranker.requiredSims {
 		for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), ranker.data, func(x *rankEntry) float64 { return x.data.SimResult.Get(simType) }) {
 			entry.simRanks[simType] = simDetailRank
 			entry.combinedSimScore += float64(simDetailRank) * ranker.targetRatios.Get(simType)

@@ -1,4 +1,4 @@
-package simulate
+package stats
 
 import (
 	"iter"
@@ -189,6 +189,39 @@ func (stats *SimData) Seq() iter.Seq2[SimType, float64] {
 			return
 		}
 	}
+}
+
+func (stats *SimData) NonZeroTypes() []SimType {
+	types := [6]SimType{}
+	index := 0
+	if stats.DPS != 0 {
+		types[index] = Sim_DPS
+		index++
+	}
+	if stats.TPS != 0 {
+		types[index] = Sim_TPS
+		index++
+	}
+	if stats.DTPS != 0 {
+		types[index] = Sim_DTPS
+		index++
+	}
+	if stats.HPS != 0 {
+		types[index] = Sim_HPS
+		index++
+	}
+	if stats.TMI != 0 {
+		types[index] = Sim_TMI
+		index++
+	}
+	if stats.DEATH != 0 {
+		types[index] = Sim_DEATH
+		index++
+	}
+	if index == 0 {
+		panic("empty SimData")
+	}
+	return types[0:index]
 }
 
 func (stats *SimData) IncreaseSimBreakdown(baseSim *SimData) SimData {

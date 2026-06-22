@@ -54,7 +54,7 @@ type simulateJob struct {
 
 type simulateJobResult struct {
 	job    simulateJob
-	result simulate.SimData
+	result stats.SimData
 }
 
 func (simJob *simulateJob) Equals(other *simulateJob) bool {
@@ -63,7 +63,7 @@ func (simJob *simulateJob) Equals(other *simulateJob) bool {
 
 type simulateMultiResult struct {
 	proposed multi_types.MultiProposedOutput
-	result   []simulate.SimData
+	result   []stats.SimData
 }
 
 func (job *MultiSetJob) prepareSimList(proposalList <-chan multi_types.MultiProposedOutput) <-chan simulateJob {
@@ -80,7 +80,7 @@ func (job *MultiSetJob) runSims(jobChan <-chan simulateJob, trackProgress *util.
 	job.printer.Printf("@@@@@@@@@@ RUN SIM JOBS %d @@@@@@@@@@\n", expectCount)
 	trackProgress.RunOuterTracking(expectCount)
 
-	isCancelled := func()bool {return false}
+	isCancelled := func() bool { return false }
 	onComplete := trackProgress.SetDone
 
 	return channel_op.Map_ChannelToSlice_FutureCancellable(simThreadCount, jobChan, isCancelled, onComplete, func(sim simulateJob) simulateJobResult {
@@ -100,7 +100,7 @@ func (job *MultiSetJob) linkSimResults(proposalList []multi_types.MultiProposedO
 }
 
 func linkSimResult(proposal multi_types.MultiProposedOutput, resultList []simulateJobResult) simulateMultiResult {
-	multiResult := simulateMultiResult{proposal, make([]simulate.SimData, len(proposal.Parts))}
+	multiResult := simulateMultiResult{proposal, make([]stats.SimData, len(proposal.Parts))}
 	for partIndex := range proposal.Parts {
 		part := &proposal.Parts[partIndex]
 		for resultIndex := range resultList {
@@ -171,14 +171,24 @@ func (job *MultiSetJob) findVariantItem(result simulateMultiResult, itemId items
 func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 	job.printer.Println("@@@@@@@@@@@@@@@@ SPREADSHEET COPY @@@@@@@@@@@@@@@@")
 
-	outputTypes := []simulate.SimType{simulate.Sim_DPS, simulate.Sim_DTPS, simulate.Sim_TMI, simulate.Sim_DEATH}
+	rowCount := 1
+	outputTypesByParam := make([][]stats.SimType, len(job.params))
+	for paramIndex := range job.params {
+		param := &job.params[paramIndex]
+		simTypes := param.Model.SimRatioWeighting.NonZeroTypes()
+		outputTypesByParam[paramIndex] = simTypes
+		rowCount += len(simTypes)
+	}
+
+	// outputTypes := []stats.SimType{simulate.Sim_DPS, simulate.Sim_DTPS, simulate.Sim_TMI, simulate.Sim_DEATH}
 
 	csv := util.CSVOutputByColumn{}
-	csv.InitRows(len(job.params)*len(outputTypes) + 1)
+	csv.InitRows(rowCount)
 	csv.AddString("id")
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
-		for _, resultType := range outputTypes {
+		simTypes := outputTypesByParam[paramIndex]
+		for _, resultType := range simTypes {
 			csv.AddToBuilder(func(b *util.StringBuild2) {
 				b.WriteString(resultType.Name())
 				b.WriteString(" (")
@@ -192,8 +202,13 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 	for _, simResult := range simResultList {
 		csv.AddString(simResult.proposed.Id)
 
-		for _, resultStat := range simResult.result {
-			for _, resultType := range outputTypes {
+		if len(simResult.result) != len(job.params) {
+			panic("unexpected result size")
+		}
+
+		for paramIndex, resultStat := range simResult.result {
+			simTypes := outputTypesByParam[paramIndex]
+			for _, resultType := range simTypes {
 				value := resultStat.Get(resultType)
 				csv.AddFloat64(value, -1)
 			}
@@ -206,28 +221,8 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 }
 
 func (job *MultiSetJob) suggestResultFromRankings(results []simulateMultiResult) {
-	// type rankable struct {
-	// 	result        *simulateMultiResult
-	// 	simRankDetail map[simulate.SimType]int
-	// 	simScore      float64
-	// }
-	// entries := util.MapSliceAsNew(results, func(result *simulateMultiResult) rankable {
-	// 	return rankable{
-	// 		result:        result,
-	// 		simRankDetail: make(map[simulate.SimType]int),
-	// 	}
-	// })
-
-	// // score each sim
-	// for _, simType := range stathighs.G_RequiredSims {
-	// 	for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), entries, func(x *rankable) float64 { return x.input.SimResult.Get(simType) }) {
-	// 		entry.simRankDetail[simType] = simDetailRank
-	// 		entry.combinedSimRankScore += float64(simDetailRank) * simRatios.Get(simType)
-	// 	}
-	// }
-
-	simResultTypeList := []simulate.SimType{simulate.Sim_DPS, simulate.Sim_DTPS, simulate.Sim_TMI, simulate.Sim_DEATH}
-	rankInputArrays := util.MapMapSlice[int, simulate.SimType, float64]{}
+	simResultTypeList := []stats.SimType{stats.Sim_DPS, stats.Sim_DTPS, stats.Sim_TMI, stats.Sim_DEATH}
+	rankInputArrays := util.MapMapSlice[int, stats.SimType, float64]{}
 	for _, result := range results {
 		for paramIndex, simStats := range result.result {
 			for _, simType := range simResultTypeList {

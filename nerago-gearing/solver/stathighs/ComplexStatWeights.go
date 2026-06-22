@@ -1,7 +1,6 @@
 package stathighs
 
 import (
-	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -18,7 +17,8 @@ const (
 type ComplexStatWeightProcess struct {
 	printer *util.PrintRecorder
 
-	targetRatios simulate.SimData
+	targetRatios stats.SimData
+	requiredSims []stats.SimType
 	inputData    []WeightInput
 
 	build *utilhighs.LinearBuilder
@@ -26,9 +26,9 @@ type ComplexStatWeightProcess struct {
 	objectiveEquationDiff utilhighs.ObjectiveIndex
 	objectiveInclude      utilhighs.ObjectiveIndex
 
-	scaleSims             map[simulate.SimType]float64
+	scaleSims             map[stats.SimType]float64
 	scaleStats            map[stats.StatType]float64
-	detailedWeightColumns util.MapMap[stats.StatType, simulate.SimType, utilhighs.ColumnIndex]
+	detailedWeightColumns util.MapMap[stats.StatType, stats.SimType, utilhighs.ColumnIndex]
 
 	minimumIncludeRate float64
 	includeColumns     []utilhighs.ColumnIndex
@@ -43,8 +43,9 @@ func (comp *ComplexStatWeightProcess) SupplyData(inputData []WeightInput) {
 	comp.inputData = inputData
 }
 
-func (comp *ComplexStatWeightProcess) SetTargetRatios(targetRatios simulate.SimData) {
+func (comp *ComplexStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
 	comp.targetRatios = targetRatios
+	comp.requiredSims = targetRatios.NonZeroTypes()
 }
 
 func (comp *ComplexStatWeightProcess) SetMinimumIncludeRate(percent float64) {
@@ -84,7 +85,7 @@ func (comp *ComplexStatWeightProcess) createWeightColumns() {
 	// minimumStrength := 0.0001
 
 	for _, statType := range G_RequiredStats {
-		for _, simType := range G_RequiredSims {
+		for _, simType := range comp.requiredSims {
 			lo := utilhighs.C_MinusInf
 			hi := utilhighs.C_PlusInf
 			colDetailWeight := comp.build.CreateColumnGeneral(highs.Continuous, lo, hi, utilhighs.DebugString{Text: "WEIGHT " + statType.Name() + " " + simType.Name()})
@@ -113,7 +114,7 @@ func (comp *ComplexStatWeightProcess) buildDataEquations() {
 
 func (comp *ComplexStatWeightProcess) buildDataEquationForInput(data *WeightInput) {
 	includeColumn := comp.sampleIncludeToggleColumn()
-	for _, simType := range G_RequiredSims {
+	for _, simType := range comp.requiredSims {
 		comp.buildDataEquationForSim(&data.TotalStat, data.SimResult.Get(simType), simType, includeColumn)
 	}
 }
@@ -126,7 +127,7 @@ func (comp *ComplexStatWeightProcess) sampleIncludeToggleColumn() utilhighs.Colu
 }
 
 // equation is: weightA*scaledStatA + weightB*scaledStatB = scaledSimValue - diff
-func (comp *ComplexStatWeightProcess) buildDataEquationForSim(stats *stats.StatBlock, simValue float64, simType simulate.SimType, includeColumn utilhighs.ColumnIndex) {
+func (comp *ComplexStatWeightProcess) buildDataEquationForSim(stats *stats.StatBlock, simValue float64, simType stats.SimType, includeColumn utilhighs.ColumnIndex) {
 	matchSimValue := utilhighs.ConstraintRow{}
 
 	// TODO is there a way to flip the division for TMI DEATH etc, fundamental problem is that they don't increase linearly with stats
@@ -164,9 +165,9 @@ func (comp *ComplexStatWeightProcess) extractAndReportSolution(solution *highs.S
 	return statWeightResult
 }
 
-func (comp *ComplexStatWeightProcess) extractDetailWeights(solution *highs.Solution) util.MapMap[stats.StatType, simulate.SimType, float64] {
+func (comp *ComplexStatWeightProcess) extractDetailWeights(solution *highs.Solution) util.MapMap[stats.StatType, stats.SimType, float64] {
 	// extract and report on detail weights
-	detailWeightMap := util.MapMap[stats.StatType, simulate.SimType, float64]{}
+	detailWeightMap := util.MapMap[stats.StatType, stats.SimType, float64]{}
 	for entry := range comp.detailedWeightColumns.SeqWithKeys() {
 		statType := entry.Key1
 		simType := entry.Key2
@@ -210,12 +211,12 @@ func (comp *ComplexStatWeightProcess) extractDetailWeights(solution *highs.Solut
 	return detailWeightMap
 }
 
-func (comp *ComplexStatWeightProcess) reportExamples(detailWeightMap util.MapMap[stats.StatType, simulate.SimType, float64]) {
+func (comp *ComplexStatWeightProcess) reportExamples(detailWeightMap util.MapMap[stats.StatType, stats.SimType, float64]) {
 	for i := range 20 {
 		data := comp.inputData[i]
 		comp.printer.Println("EXAMPLE")
 
-		for _, simType := range G_RequiredSims {
+		for _, simType := range comp.requiredSims {
 			statSum := 0.0
 			comp.printer.Printf(" %10s", simType.Name())
 			for _, statType := range G_RequiredStats {
@@ -234,7 +235,7 @@ func (comp *ComplexStatWeightProcess) reportExamples(detailWeightMap util.MapMap
 	}
 }
 
-func (comp *ComplexStatWeightProcess) computeFinalWeights(detailWeightMap util.MapMap[stats.StatType, simulate.SimType, float64]) WeightResult {
+func (comp *ComplexStatWeightProcess) computeFinalWeights(detailWeightMap util.MapMap[stats.StatType, stats.SimType, float64]) WeightResult {
 	statWeightResult := WeightResult_Make()
 	for statType, seqSimPairs := range detailWeightMap.SeqGroupsKey1NestedKeyValue() {
 		sumIndividual := 0.0

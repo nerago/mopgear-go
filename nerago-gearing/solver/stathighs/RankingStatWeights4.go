@@ -1,7 +1,6 @@
 package stathighs
 
 import (
-	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -25,7 +24,8 @@ const (
 type RankingStatWeightProcess4 struct {
 	printer *util.PrintRecorder
 
-	targetRatios simulate.SimData
+	targetRatios stats.SimData
+	requiredSims []stats.SimType
 	dataAll      []WeightInput
 }
 
@@ -81,8 +81,9 @@ func (run *rankInternalRun4) supplyData(inputData []WeightInput) {
 	})
 }
 
-func (process *RankingStatWeightProcess4) SetTargetRatios(targetRatios simulate.SimData) {
+func (process *RankingStatWeightProcess4) SetTargetRatios(targetRatios stats.SimData) {
 	process.targetRatios = targetRatios
+	process.requiredSims = targetRatios.NonZeroTypes()
 }
 
 func (process *RankingStatWeightProcess4) Run(doRound2 bool) []WeightResult {
@@ -225,7 +226,7 @@ func (run *rankInternalRun4) prepareRankings() {
 	}
 
 	// score each sim
-	for _, simType := range G_RequiredSims {
+	for _, simType := range run.process.requiredSims {
 		for entry, simDetailRankHiLo := range util.CalculateRankingRanges(simType.IsHighGood(), run.runData, func(x *rankEntry4) float64 { return x.data.SimResult.Get(simType) }) {
 			entry.simScore += float64(simDetailRankHiLo.Mid()) * run.process.targetRatios.Get(simType)
 		}

@@ -4,6 +4,7 @@ import (
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/model/ratings"
 	. "paladin_gearing_go/model/requirements"
+	"paladin_gearing_go/stats"
 	. "paladin_gearing_go/stats"
 	"slices"
 )
@@ -27,6 +28,7 @@ type Model struct {
 	SetBonus          SetBonus
 	SetBonusRequired  []ActiveSetCountsRequired
 	Professions       ProfessionInfo
+	SimRatioWeighting stats.SimData
 	ReferenceGearFile string // should just be used by exporters etc
 }
 

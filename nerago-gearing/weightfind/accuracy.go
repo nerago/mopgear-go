@@ -1,19 +1,19 @@
 package weightfind
 
 import (
-	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/stathighs"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
 
-func EvaluateAccuracy(statWeights stathighs.WeightResult, inputData []stathighs.WeightInput, simRatios simulate.SimData) float64 {
+func EvaluateAccuracy(statWeights stathighs.WeightResult, inputData []stathighs.WeightInput, simRatios stats.SimData) float64 {
 
 	// TODO take into acccoount sim's uncertainty ranges
 	// make structures
 	type accuracyInfo struct {
 		input *stathighs.WeightInput
 
-		// simRankDetail        map[simulate.SimType]int
+		// simRankDetail        map[stats.SimType]int
 		combinedSimRankScore float64
 
 		statRankRange util.HiLoInt
@@ -22,7 +22,7 @@ func EvaluateAccuracy(statWeights stathighs.WeightResult, inputData []stathighs.
 	accuracyData := util.MapSliceAsNew(inputData, func(input *stathighs.WeightInput) accuracyInfo {
 		return accuracyInfo{
 			input: input,
-			// simRankDetail: make(map[simulate.SimType]int),
+			// simRankDetail: make(map[stats.SimType]int),
 		}
 	})
 
@@ -32,7 +32,8 @@ func EvaluateAccuracy(statWeights stathighs.WeightResult, inputData []stathighs.
 	}
 
 	// score each sim
-	for _, simType := range stathighs.G_RequiredSims {
+	requiredSims := simRatios.NonZeroTypes()
+	for _, simType := range requiredSims {
 		for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), accuracyData, func(x *accuracyInfo) float64 { return x.input.SimResult.Get(simType) }) {
 			// entry.simRankDetail[simType] = simDetailRank
 			entry.combinedSimRankScore += float64(simDetailRank) * simRatios.Get(simType)

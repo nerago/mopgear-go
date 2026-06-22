@@ -1,7 +1,6 @@
 package stathighs
 
 import (
-	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -16,14 +15,15 @@ type GridStatWeightProcess2 struct {
 	printer *util.PrintRecorder
 
 	DIFFINCLUDE  int
-	targetRatios simulate.SimData
+	targetRatios stats.SimData
+	requiredSims []stats.SimType
 	inputData    []WeightInput
 
-	scaleSims  map[simulate.SimType]float64
+	scaleSims  map[stats.SimType]float64
 	scaleStats map[stats.StatType]float64
 
 	build           utilhighs.LinearBuilder
-	detailedWeights util.MapMap[stats.StatType, simulate.SimType, utilhighs.ColumnIndex]
+	detailedWeights util.MapMap[stats.StatType, stats.SimType, utilhighs.ColumnIndex]
 }
 
 type gridDataSample2 struct {
@@ -40,9 +40,9 @@ func (grid2 *GridStatWeightProcess2) SupplyData(inputData []WeightInput) {
 	grid2.inputData = inputData
 }
 
-func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios simulate.SimData) {
+func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios stats.SimData) {
 	sum := 0.0
-	for _, simType := range G_RequiredSims {
+	for _, simType := range grid2.requiredSims {
 		val := targetRatios.Get(simType)
 		if val <= 0 {
 			panic("missing ratio")
@@ -54,6 +54,7 @@ func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios simulate.SimDa
 	}
 
 	grid2.targetRatios = targetRatios
+	grid2.requiredSims = targetRatios.NonZeroTypes()
 }
 
 func (grid2 *GridStatWeightProcess2) Run() WeightResult {
@@ -73,14 +74,14 @@ func (grid2 *GridStatWeightProcess2) Run() WeightResult {
 func (grid2 *GridStatWeightProcess2) setupWeightVars() {
 	// create detail columns
 	for _, statType := range G_RequiredStats {
-		for _, simType := range G_RequiredSims {
+		for _, simType := range grid2.requiredSims {
 			colDetailWeight := grid2.build.CreateColumnGeneral(highs.Continuous, -c_grid2_maxWeight, c_grid2_maxWeight, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
 			grid2.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
 	}
 
 	// strength column within each simtype is set to targetratio (0.4 etc)
-	for _, simType := range G_RequiredSims {
+	for _, simType := range grid2.requiredSims {
 		value := grid2.targetRatios.Get(simType)
 		colDetailWeight := grid2.detailedWeights.GetOrPanic(c_baseStatType, simType)
 		strengthSetToRatio := utilhighs.ConstraintRow{}
@@ -142,7 +143,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStats(one *Weight
 	statDiff := one.TotalStat.GetFloat(statType) - two.TotalStat.GetFloat(statType)
 	statDiff *= grid2.scaleStats[statType]
 
-	for _, simType := range G_RequiredSims {
+	for _, simType := range grid2.requiredSims {
 		weightColumn := grid2.detailedWeights.GetOrPanic(statType, simType)
 
 		debugText := "MISMATCH1 " + statType.Name() + " " + simType.Name()
@@ -161,7 +162,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *Weight
 	statDiffA *= grid2.scaleStats[statTypeA]
 	statDiffB *= grid2.scaleStats[statTypeB]
 
-	for _, simType := range G_RequiredSims {
+	for _, simType := range grid2.requiredSims {
 		weightColumnA := grid2.detailedWeights.GetOrPanic(statTypeA, simType)
 		weightColumnB := grid2.detailedWeights.GetOrPanic(statTypeB, simType)
 
@@ -189,7 +190,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleThreeDifferenceStats(one *Weig
 	statDiffC := one.TotalStat.GetFloat(statTypeC) - two.TotalStat.GetFloat(statTypeC)
 	statDiffC *= grid2.scaleStats[statTypeC]
 
-	for _, simType := range G_RequiredSims {
+	for _, simType := range grid2.requiredSims {
 		weightColumnA := grid2.detailedWeights.GetOrPanic(statTypeA, simType)
 		weightColumnB := grid2.detailedWeights.GetOrPanic(statTypeB, simType)
 		weightColumnC := grid2.detailedWeights.GetOrPanic(statTypeC, simType)

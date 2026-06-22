@@ -3,7 +3,6 @@ package stathighs
 import (
 	"cmp"
 	"math"
-	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -46,7 +45,7 @@ type FittingAllStatWeightProcess struct {
 	printer *util.PrintRecorder
 	build   *utilhighs.LinearBuilder
 
-	each util.MapMap[stats.StatType, simulate.SimType, FittingSingleStatWeightProcess]
+	each util.MapMap[stats.StatType, stats.SimType, FittingSingleStatWeightProcess]
 }
 
 func (fitall *FittingAllStatWeightProcess) Init(printer *util.PrintRecorder) {
@@ -62,14 +61,15 @@ type FittingEachStatWeightProcess struct {
 
 	lazyMode     bool
 	inputData    []WeightInput
-	targetRatios simulate.SimData
+	targetRatios stats.SimData
+	requiredSims []stats.SimType
 
-	each util.MapMap[stats.StatType, simulate.SimType, *fittingEachFields]
+	each util.MapMap[stats.StatType, stats.SimType, *fittingEachFields]
 }
 
 type fittingEachFields struct {
 	statType  stats.StatType
-	simType   simulate.SimType
+	simType   stats.SimType
 	process   FittingSingleStatSegmentsProcess
 	resultMap map[StatRange]FittingSingleStatResult
 }
@@ -78,8 +78,9 @@ func (fiteach *FittingEachStatWeightProcess) Init(printer *util.PrintRecorder) {
 	fiteach.printer = printer
 }
 
-func (fiteach *FittingEachStatWeightProcess) SetTargetRatios(targetRatios simulate.SimData) {
+func (fiteach *FittingEachStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
 	fiteach.targetRatios = targetRatios
+	fiteach.requiredSims = targetRatios.NonZeroTypes()
 }
 
 func (fiteach *FittingEachStatWeightProcess) SetLazyMode(lazy bool) {
@@ -90,9 +91,9 @@ func (fiteach *FittingEachStatWeightProcess) SupplyDataFromStandard(inputData []
 	fiteach.inputData = inputData
 }
 
-func (fiteach *FittingEachStatWeightProcess) RunDetailedResults() util.MapMap[stats.StatType, simulate.SimType, map[StatRange]FittingSingleStatResult] {
+func (fiteach *FittingEachStatWeightProcess) RunDetailedResults() util.MapMap[stats.StatType, stats.SimType, map[StatRange]FittingSingleStatResult] {
 	for _, statType := range G_RequiredStats {
-		for _, simType := range G_RequiredSims {
+		for _, simType := range fiteach.requiredSims {
 			// TODO holding printer?
 			fields := fittingEachFields{statType: statType, simType: simType}
 			fields.process.Init(fiteach.printer, statType, simType)
@@ -107,8 +108,8 @@ func (fiteach *FittingEachStatWeightProcess) RunDetailedResults() util.MapMap[st
 		fields.resultMap = fields.process.Run()
 	})
 
-	resultMap := util.MapMap[stats.StatType, simulate.SimType, map[StatRange]FittingSingleStatResult]{}
-	fiteach.each.ForeachWithKeys(func(statType stats.StatType, simType simulate.SimType, value *fittingEachFields) {
+	resultMap := util.MapMap[stats.StatType, stats.SimType, map[StatRange]FittingSingleStatResult]{}
+	fiteach.each.ForeachWithKeys(func(statType stats.StatType, simType stats.SimType, value *fittingEachFields) {
 		resultMap.Put(statType, simType, value.resultMap)
 	})
 	return resultMap
@@ -130,7 +131,7 @@ func (fiteach *FittingEachStatWeightProcess) Run() WeightResult {
 	for _, statType := range G_RequiredStats {
 		if statType != stats.Stat_Strength {
 			totalSum := 0.0
-			for _, simType := range G_RequiredSims {
+			for _, simType := range fiteach.requiredSims {
 				thisRating := bestRatingEach.GetOrPanic(statType, simType)
 				strengthRating := bestRatingEach.GetOrPanic(stats.Stat_Strength, simType)
 				relative := thisRating / strengthRating * fiteach.targetRatios.Get(simType)
@@ -157,12 +158,12 @@ type FittingSingleStatSegmentsProcess struct {
 	inputDataOriginal       []*WeightInput
 	inputDataRemainingParts map[StatRange][]*WeightInput
 	stat                    stats.StatType
-	sim                     simulate.SimType
+	sim                     stats.SimType
 
 	segments map[StatRange]FittingSingleStatResult
 }
 
-func (fitseg *FittingSingleStatSegmentsProcess) Init(printer *util.PrintRecorder, stat stats.StatType, sim simulate.SimType) {
+func (fitseg *FittingSingleStatSegmentsProcess) Init(printer *util.PrintRecorder, stat stats.StatType, sim stats.SimType) {
 	fitseg.printer = printer
 	fitseg.segments = make(map[StatRange]FittingSingleStatResult)
 	fitseg.inputDataRemainingParts = make(map[StatRange][]*WeightInput)
@@ -355,7 +356,7 @@ func (fit *FittingSingleStatWeightProcess) SetMinimumIncludeRate(percent float64
 	fit.minimumIncludeRate = percent
 }
 
-func (fit *FittingSingleStatWeightProcess) SupplyDataFromStandard(inputData []*WeightInput, stat stats.StatType, sim simulate.SimType) {
+func (fit *FittingSingleStatWeightProcess) SupplyDataFromStandard(inputData []*WeightInput, stat stats.StatType, sim stats.SimType) {
 	fit.inputData = util.MapSliceAsNew(inputData, func(input **WeightInput) fittingSample {
 		return fittingSample{
 			(*input).TotalStat.GetFloat(stat),
@@ -366,15 +367,15 @@ func (fit *FittingSingleStatWeightProcess) SupplyDataFromStandard(inputData []*W
 	fit.inputDataSimScale = scaleSimItem(1, sim)
 }
 
-func scaleSimItem(value float64, sim simulate.SimType) float64 {
+func scaleSimItem(value float64, sim stats.SimType) float64 {
 	// example values 1671858.348 10396269.605 117613.197 217148.877 180.467 21.1
 	// with scaleBig  1671.858    10396.269    117.613197 217.148877
 	switch sim {
-	case simulate.Sim_DPS, simulate.Sim_TPS, simulate.Sim_DTPS, simulate.Sim_HPS:
+	case stats.Sim_DPS, stats.Sim_TPS, stats.Sim_DTPS, stats.Sim_HPS:
 		return value / c_scaleBigSim
-	case simulate.Sim_TMI:
+	case stats.Sim_TMI:
 		return value
-	case simulate.Sim_DEATH:
+	case stats.Sim_DEATH:
 		return value * 100
 	default:
 		panic("unknown type")

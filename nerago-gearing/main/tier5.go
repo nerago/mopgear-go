@@ -119,7 +119,7 @@ func findT5TrinketPermutations(printer *util.PrintRecorder) {
 
 	type trinkResult struct {
 		combo [2]items.ItemId
-		sim   simulate.SimData
+		sim   stats.SimData
 	}
 
 	progress := util.TrackProgress_Start()
@@ -200,7 +200,7 @@ func findT5WeightPermutations(printer *util.PrintRecorder) {
 
 	type orderResult struct {
 		group orderIntermediateGrouped
-		sim   simulate.SimData
+		sim   stats.SimData
 	}
 
 	progress1 := util.TrackProgress_Start()
@@ -265,7 +265,7 @@ outerIntermediateLoop:
 		line.WriteString(v.Name())
 		line.WriteRune(',')
 	}
-	for _, simType := range simulate.SimTypeList {
+	for _, simType := range stats.SimTypeList {
 		line.WriteString(simType.Name())
 		line.WriteRune(',')
 	}
@@ -282,7 +282,7 @@ outerIntermediateLoop:
 				line.WriteUint32(res.group.itemSet.Total().GetUInt(v))
 				line.WriteRune(',')
 			}
-			for _, simType := range simulate.SimTypeList {
+			for _, simType := range stats.SimTypeList {
 				line.WriteFloat64(res.sim.GetFriendly(simType), 3)
 				line.WriteRune(',')
 			}
@@ -376,37 +376,33 @@ func statWeightsGridFromInitialT5(printer *util.PrintRecorder) {
 	weightFileOut := files.WeightMitiNoSetFile
 	gearFile := files.GearFileProtMitigationNoSet
 	gearModel := model.Model_PallyProtMitigation_NoSet()
-	ratios := stathighs.NewStatWeights_generalMiti
 	priority := initialPriorityTaken
 	trinkets := [2]items.ItemId{trinketFortZand, trinketThokTailHeroic}
-	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, ratios, weightFileOut, printer, simSpeed)
+	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, gearModel.SimRatioWeighting, weightFileOut, printer, simSpeed)
 
 	weightFileOut = files.WeightMitiWithSetFile
 	gearFile = files.GearFileProtMitigationWithSet
 	gearModel = model.Model_PallyProtMitigation_WithSet()
-	ratios = stathighs.NewStatWeights_malkrokWeight
 	priority = initialPriorityDeath
 	trinkets = [2]items.ItemId{trinketVialCorruptHeroic, trinketThokTailHeroic}
-	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, ratios, weightFileOut, printer, simSpeed)
+	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight,  gearModel.SimRatioWeighting, weightFileOut, printer, simSpeed)
 
 	weightFileOut = files.WeightDpsFile
 	gearFile = files.GearFileProtDps
 	gearModel = model.Model_PallyProtDps()
-	ratios = stathighs.NewStatWeights_dpsWeight
 	priority = initialPriorityDps
 	trinkets = [2]items.ItemId{trinketCurseHubrisHeroic, trinketSkeerBloodHeroic}
-	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, ratios, weightFileOut, printer, simSpeed)
+	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight,  gearModel.SimRatioWeighting, weightFileOut, printer, simSpeed)
 
 	weightFileOut = files.WeightCompromiseFile
 	gearFile = files.GearFileProtCompromise
 	gearModel = model.Model_PallyProtCompromise()
-	ratios = stathighs.NewStatWeights_animusWeight
 	priority = initialPriorityCompromise
 	trinkets = [2]items.ItemId{trinketCurseHubrisHeroic, trinketThokTailHeroic}
-	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, ratios, weightFileOut, printer, simSpeed)
+	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight,  gearModel.SimRatioWeighting, weightFileOut, printer, simSpeed)
 }
 
-func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.StatType, gearFile string, trinkets [2]items.ItemId, fight stats.WowSim_Fight, ratios simulate.SimData, weightFileOut string, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize) {
+func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.StatType, gearFile string, trinkets [2]items.ItemId, fight stats.WowSim_Fight, ratios stats.SimData, weightFileOut string, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize) {
 	// INITIAL MODEL BASED ON PRIORITIES PREVIOUSLY GUESSED AT
 	model.StatRatings = ratings.StatRatingsWeights_FromPriorities(priority)
 
