@@ -139,10 +139,15 @@ func (track *TrackProgress) PrepareForPush() func(float64) {
 }
 
 func (track *TrackProgress) RunOuterTracking(expectedChildCount int) {
-	track.childList = make([]*TrackProgress, 0, expectedChildCount)
-	track.run(func() float64 {
-		return track.sumNestedProgress(expectedChildCount)
-	})
+	if expectedChildCount != -1 {
+		track.childList = make([]*TrackProgress, 0, expectedChildCount)
+		track.run(func() float64 {
+			return track.sumNestedProgress(expectedChildCount)
+		})
+	} else {
+		track.childList = make([]*TrackProgress, 0)
+		track.run(track.sumNestedProgressUnknownSize)
+	}
 }
 
 func (track *TrackProgress) sumNestedProgress(expectedChildCount int) float64 {
@@ -156,6 +161,26 @@ func (track *TrackProgress) sumNestedProgress(expectedChildCount int) float64 {
 			if childFunc != nil {
 				childRaw := childFunc()
 				overallPercent += childRaw / float64(expectedChildCount)
+			}
+		}
+	}
+
+	return overallPercent
+}
+
+func (track *TrackProgress) sumNestedProgressUnknownSize() float64 {
+	track.mutex.RLock()
+	defer track.mutex.RUnlock()
+
+	currentCount := float64(len(track.childList))
+
+	var overallPercent float64 = 0
+	for _, nested := range track.childList {
+		if nested != nil {
+			childFunc := nested.progressForParent
+			if childFunc != nil {
+				childRaw := childFunc()
+				overallPercent += childRaw / currentCount
 			}
 		}
 	}

@@ -104,7 +104,7 @@ func (job *MultiSetJob) proposalsToSimAndOutput(proposalChannel <-chan multi_typ
 	proposalChannel = channel_op.TeeChannelToSlice(proposalChannel, &proposalList)
 
 	simChannel := job.prepareSimList(proposalChannel)
-	futureSimResultList := job.runSims(simChannel, tracker, 111)
+	futureSimResultList := job.runSims(simChannel, tracker, -1)
 
 	simResultList, gotResult := futureSimResultList.WaitForResultOrKeyPress()
 

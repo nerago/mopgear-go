@@ -71,7 +71,7 @@ func Map_ChannelToSlice[T any, R any](threadCount int, inputChannel <-chan T, ma
 	return outputSlice
 }
 
-func Map_ChannelToSlice_FutureCancellable[T any, R any](threadCount int, inputChannel <-chan T, isCancelled func() bool, mapper func(T) R) *FutureCancellable[[]R] {
+func Map_ChannelToSlice_FutureCancellable[T any, R any](threadCount int, inputChannel <-chan T, isCancelled func() bool, onComplete func(), mapper func(T) R) *FutureCancellable[[]R] {
 	future := FutureCancellable_Make[[]R](func() {})
 	tempChannel := make(chan R)
 	var waitGroup sync.WaitGroup
@@ -103,6 +103,7 @@ func Map_ChannelToSlice_FutureCancellable[T any, R any](threadCount int, inputCh
 			outputSlice = append(outputSlice, item)
 		}
 		future.SetResult(outputSlice)
+		onComplete()
 	}()
 
 	return future
