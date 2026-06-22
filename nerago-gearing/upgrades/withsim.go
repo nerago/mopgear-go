@@ -27,7 +27,7 @@ func findUpgradeAndSim(input *FindUpgrades_SimInputs, baseItems *items.FullOptio
 
 	initialList, baseSet := findUpgrade(&input.FindUpgrades_BasicInputs, baseItems, extraItems, model, printer, tracker.NewChild(), goal, input.TargetUpgradeLevel, true, substituteItems, substituteEmptySlotOnly)
 
-	baseSim := simulate.WowSim_Execute_SpecifyAll(input.SimSize, model.Spec, goal, model.SimulateAs, model.Professions, baseSet.Items(), nil, tracker.NewChild())
+	baseSim := simulate.WowSim_Execute_SpecifyAll(input.SimSize, model.SimSpeedUp, model.Spec, goal, model.SimulateAs, model.Professions, baseSet.Items(), nil, tracker.NewChild())
 	printer.Println("SIM *BASELINE*")
 	baseSim.Print(printer)
 
@@ -42,7 +42,7 @@ func simEachInitialResult(input *FindUpgrades_SimInputs, inputList []upgradeItem
 
 	return channel_op.Map_SliceToSlice(c_simThreads, inputList, func(initial *upgradeItemResult) upgradeItemResultWithSim {
 		if initial.success {
-			simResult := simulate.WowSim_Execute_SpecifyAll(input.SimSize, model.Spec, goal, model.SimulateAs, model.Professions, initial.itemSet.Items(), nil, tracker.NewChild())
+			simResult := simulate.WowSim_Execute_SpecifyAll(input.SimSize, model.SimSpeedUp, model.Spec, goal, model.SimulateAs, model.Professions, initial.itemSet.Items(), nil, tracker.NewChild())
 
 			printer.Println("SIM " + initial.item.BaseName())
 			simResult.Print(printer)

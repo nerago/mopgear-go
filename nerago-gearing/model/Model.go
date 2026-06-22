@@ -20,6 +20,7 @@ type Model struct {
 	Spec              SpecType
 	Goal              OptimiseGoal
 	SimulateAs        WowSim_Fight
+	SimSpeedUp        int
 	ReforgeRules      ReforgeRules
 	EnchantChoice     EnchantChoice
 	GemChoice         GemChoice

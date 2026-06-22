@@ -46,7 +46,7 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 	currentItemSet := items.FullItemSet_FromMap(currentEquip)
 
 	// SIMULATE STAT CHANGES
-	inputDataGrid := SimulateSteppedStatChangesForGrid(currentItemSet, printer, simSpeed, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions, tracker.NewChild())
+	inputDataGrid := SimulateSteppedStatChangesForGrid(currentItemSet, printer, simSpeed, gearModel.SimSpeedUp, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions, tracker.NewChild())
 	inputDataReal := SimulateRealRandomSets(gearFile, substituteItems, gearModel, 200, simSpeed, false, printer, tracker.NewChild())
 
 	// SOLVE FOR STAT WEIGHTS

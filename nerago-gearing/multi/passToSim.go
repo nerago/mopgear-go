@@ -44,11 +44,12 @@ func (job *MultiSetJob) existingGearAsProposal() multi_types.MultiProposedOutput
 }
 
 type simulateJob struct {
-	spec        stats.SpecType
-	goal        stats.OptimiseGoal
-	fight       stats.WowSim_Fight
-	equip       items.FullEquipMap
-	professions model.ProfessionInfo
+	spec            stats.SpecType
+	goal            stats.OptimiseGoal
+	fight           stats.WowSim_Fight
+	simulateSpeedUp int
+	equip           items.FullEquipMap
+	professions     model.ProfessionInfo
 }
 
 type simulateJobResult struct {

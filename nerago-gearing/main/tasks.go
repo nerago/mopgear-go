@@ -469,7 +469,7 @@ func trinketSims(printer *util.PrintRecorder) {
 			newEquip[items.Equip_Trinket2] = item
 			// fullSet := items.FullItemSet_FromMap(newEquip)
 
-			resultStats := simulate.WowSim_Execute_SpecifyAll(simulate.RunSize_Medium, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
+			resultStats := simulate.WowSim_Execute_SpecifyAll(simulate.RunSize_Medium, model.SimSpeedUp, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
 			resultStats.Print(printer)
 			for _, statType := range simulate.SimTypeList {
 				csv.AddFloat64(resultStats.GetFriendly(statType), 2)
@@ -589,7 +589,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 				newEquip[items.Equip_Trinket1] = itemOne
 				newEquip[items.Equip_Trinket2] = itemTwo
 
-				resultStats := simulate.WowSim_Execute_SpecifyAll(simRun, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
+				resultStats := simulate.WowSim_Execute_SpecifyAll(simRun, model.SimSpeedUp, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
 				resultStats.Print(printer)
 				for _, statType := range simulate.SimTypeList {
 					csv.AddFloat64(resultStats.GetFriendly(statType), 2)

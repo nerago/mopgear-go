@@ -62,7 +62,7 @@ func testBasicStatsGeneral(printer *util.PrintRecorder) {
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &modelEquipOnly, setup.MissingEnchant_Panic, printer)
 	itemSet := items.FullItemSet_FromMap(currentEquip)
 
-	inputData, simBase := generateRatingsInputFromArtificalStatOverrides_ForBasic(itemSet, printer, simSpeed, spec, goal, fight, modelEquipOnly.Professions)
+	inputData, simBase := generateRatingsInputFromArtificalStatOverrides_ForBasic(itemSet, printer, simSpeed, modelEquipOnly.SimSpeedUp, spec, goal, fight, modelEquipOnly.Professions)
 
 	process := stathighs.BasicStatWeightProcess{}
 	process.Init(printer)
@@ -110,7 +110,7 @@ type basicStatInput struct {
 	SimResult      simulate.SimData
 }
 
-func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo) ([]basicStatInput, simulate.SimData) {
+func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo) ([]basicStatInput, simulate.SimData) {
 	var incrementValue int32 = 250
 
 	initialBaseStats := weightfind.InitialBonusStatMap_fixRanges(printer, currentItemSet, incrementValue)
@@ -121,7 +121,7 @@ func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet item
 	tracker.RunOuterTracking(len(statCheckList) + 1)
 	defer tracker.SetDone()
 
-	simBase := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, profession, currentItemSet.Items(), nil, tracker.NewChild())
+	simBase := simulate.WowSim_Execute_SpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), nil, tracker.NewChild())
 
 	inputList := channel_op.Map_SliceToSlice(len(statCheckList), statCheckList, func(incStat *stats.StatType) basicStatInput {
 		innerPrint := util.PrintRecorder_HoldAll()
@@ -135,7 +135,7 @@ func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet item
 		str.WriteInt32(bonusStat[*incStat])
 		str.WriteRune(' ')
 
-		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.NewChild())
+		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.NewChild())
 
 		innerPrint.PrintlnFromBuild(str)
 		innerPrint.Println("   --> " + simResult.CompactStringGeneral())

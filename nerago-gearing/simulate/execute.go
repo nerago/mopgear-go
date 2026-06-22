@@ -28,10 +28,14 @@ const (
 )
 
 func WowSim_Execute_UseModel(runSize WowSim_RunSize, model *model.Model, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) SimData {
-	return WowSim_Execute_SpecifyAll(runSize, model.Spec, model.Goal, model.SimulateAs, model.Professions, equipMap, bonusStats, tracker)
+	return WowSim_Execute_SpecifyAll(runSize, model.SimSpeedUp, model.Spec, model.Goal, model.SimulateAs, model.Professions, equipMap, bonusStats, tracker)
 }
 
-func WowSim_Execute_SpecifyAll(runSize WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) SimData {
+func WowSim_Execute_SpecifyAll(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) SimData {
+	if speedUp != 0 {
+		runSize /= WowSim_RunSize(speedUp)
+	}
+
 	infile := files.SimFileFor(spec, goal, fight)
 	input := inputRequestFromTemplate(infile, equipMap, profession, bonusStats, spec, fight, runSize)
 

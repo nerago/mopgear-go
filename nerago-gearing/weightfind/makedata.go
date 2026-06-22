@@ -15,7 +15,7 @@ import (
 	"paladin_gearing_go/util/channel_op"
 )
 
-func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, tracker *util.TrackProgress) []stathighs.WeightInput {
+func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, tracker *util.TrackProgress) []stathighs.WeightInput {
 	var incrementMin int32 = 0
 	var incrementMax int32 = 500
 	var incrementStep int32 = 250
@@ -58,7 +58,7 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 			str.WriteRune(' ')
 		}
 
-		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.NewChild())
+		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.NewChild())
 
 		innerPrint.PrintlnFromBuild(str)
 		innerPrint.Println("   --> " + simResult.CompactStringGeneral())
