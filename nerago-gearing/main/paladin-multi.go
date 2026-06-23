@@ -376,6 +376,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
 	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 
+	job.MakeRandomVariants(101887, 0, -365, -352)
+
 	// ret.AddBagsExtra()
 	// protDps.AddBagsExtra()
 	// protCompromise.AddBagsExtra()

@@ -21,6 +21,7 @@ type MultiSetJob struct {
 	fixedForge          map[items.ItemId]stats.ReforgeRecipe
 	distinctUsageGroups map[items.ItemId]distinctUsageGroups
 	alternateGemming    []stats.GemInfo
+	randomVariantItems  []randomVariantItem
 	bagsGear            loaders.EquippedArray
 	simRunSize          simulate.WowSim_RunSize
 }
@@ -86,4 +87,18 @@ func findLabelInParams(label string, group []multi_types.MultiSetParam) bool {
 func (job *MultiSetJob) AddAlternateGemming(block stats.StatBlock) {
 	gem := db.GemData_ByStat(&block)
 	job.alternateGemming = append(job.alternateGemming, gem)
+}
+
+type randomVariantItem struct {
+	itemId           items.ItemId
+	upgradeLevel     items.UpgradeLevel
+	randomSuffixList []items.RandomSuffix
+}
+
+// so initial processing is based on itemId only and we might have multiple versions of a rolled item
+// force duplicate the item late in itemOptions build
+func (job *MultiSetJob) MakeRandomVariants(itemId items.ItemId, upgradeLevel items.UpgradeLevel, randomSuffix ...items.RandomSuffix) {
+	job.randomVariantItems = append(job.randomVariantItems,
+		randomVariantItem{itemId, upgradeLevel, randomSuffix},
+	)
 }

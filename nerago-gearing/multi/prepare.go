@@ -39,14 +39,18 @@ func (job *MultiSetJob) prepareInitial() {
 	}
 
 	for i := range job.params {
-		job.params[i].runBaseline()
+		job.params[i].makeRandomVariantItems(job.randomVariantItems)
 	}
-
-	job.prepareRatingMultipliers()
 
 	for i := range job.params {
 		job.params[i].setupAlternateGemming(job.alternateGemming)
 	}
+
+	for i := range job.params {
+		job.params[i].runBaseline()
+	}
+
+	job.prepareRatingMultipliers()
 }
 
 func (param *multiSetParamInternal) prepareStartingGear() {
@@ -274,6 +278,42 @@ func (param *multiSetParamInternal) regemDefault(item items.FullItem) items.Full
 	defaultItem := setup.OptionsSetup_ExactEquippedOnly_Item(defaultEquipItem, setup.MissingEnchant_Fix, &param.Model, param.job.printer)
 	defaultItem.SetNameTag(ReGem_GemDefault)
 	return defaultItem
+}
+
+func (param *multiSetParamInternal) makeRandomVariantItems(variantItems []randomVariantItem) {
+	for variantItem := range util.ForPointer(variantItems) {
+		for slot := range param.itemOptions {
+			slotOptions := param.itemOptions[slot]
+			slotOptions = param.makeRandomVariantItem(variantItem, slotOptions)
+			param.itemOptions[slot] = slotOptions
+		}
+	}
+}
+
+func (param *multiSetParamInternal) makeRandomVariantItem(variantItem *randomVariantItem, slotOptions []items.FullItem) []items.FullItem {
+	hasAny := false
+	hasVersion := make([]bool, len(variantItem.randomSuffixList))
+	for item := range util.ForPointer(slotOptions) {
+		if item.ItemId() == variantItem.itemId {
+			index := slices.Index(variantItem.randomSuffixList, item.RandomSuffix())
+			if index == -1 {
+				panic("variant item found with unexpected suffix")
+			}
+			hasAny = true
+			hasVersion[index] = true
+		}
+	}
+
+	if hasAny {
+		for index, randomSuffix := range variantItem.randomSuffixList {
+			if !hasVersion[index] {
+				options, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(variantItem.itemId, param.ExtraUpgradeLevel, randomSuffix, &param.Model, param.job.printer)
+				slotOptions = append(slotOptions, options...)
+			}
+		}
+	}
+
+	return slotOptions
 }
 
 func (param *multiSetParamInternal) runBaseline() {
