@@ -14,7 +14,7 @@ import (
 
 const (
 	C_HighsToConsole     = true
-	C_DebugHighs         = false
+	C_DebugHighs         = true
 	C_DiagnoseInfeasible = false
 	c_threads            = 6
 )
@@ -384,7 +384,7 @@ func (build *LinearBuilder) debugPrintColumnsForce(solution *highs.Solution, pri
 	}
 }
 
-func (build *LinearBuilder) DebugTextFor(columnIndex ColumnIndex) any {
+func (build *LinearBuilder) DebugTextFor(columnIndex ColumnIndex) string {
 	return debugText(build.vars.debug[columnIndex])
 }
 

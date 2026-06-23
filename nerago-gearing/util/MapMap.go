@@ -114,6 +114,14 @@ func (mapmap *MapMap[J, K, V]) Apply(key1 J, key2 K, apply func(oldValue V) V) {
 	inner2[key1] = value
 }
 
+func (mapmap *MapMap[J, K, V]) SeqKey1() iter.Seq[J] {
+	return maps.Keys(mapmap.dataBy1)
+}
+
+func (mapmap *MapMap[J, K, V]) SeqKey2() iter.Seq[K] {
+	return maps.Keys(mapmap.dataBy2)
+}
+
 func (mapmap *MapMap[J, K, V]) SeqValues() iter.Seq[V] {
 	return func(yield func(V) bool) {
 		for _, inner := range mapmap.dataBy1 {
@@ -271,6 +279,28 @@ func MapMap_FromExitingMapMap_WithApply[J comparable, K comparable, V any, R any
 		newInner := make(map[K]R, len(inner))
 		for key2, value := range inner {
 			newValue := apply(value)
+			newInner[key2] = newValue
+			resultMap.dataBy2[key2][key1] = newValue
+		}
+		resultMap.dataBy1[key1] = newInner
+	}
+
+	return &resultMap
+}
+
+func MapMap_FromExitingMapMap_WithApplyPlusKeys[J comparable, K comparable, V any, R any](mapmap *MapMap[J, K, V], apply func(J, K, V) R) *MapMap[J, K, R] {
+	resultMap := MapMap[J, K, R]{}
+
+	resultMap.dataBy2 = make(map[K]map[J]R, len(mapmap.dataBy2))
+	for key2, inner := range mapmap.dataBy2 {
+		resultMap.dataBy2[key2] = make(map[J]R, len(inner))
+	}
+
+	resultMap.dataBy1 = make(map[J]map[K]R, len(mapmap.dataBy1))
+	for key1, inner := range mapmap.dataBy1 {
+		newInner := make(map[K]R, len(inner))
+		for key2, value := range inner {
+			newValue := apply(key1, key2, value)
 			newInner[key2] = newValue
 			resultMap.dataBy2[key2][key1] = newValue
 		}

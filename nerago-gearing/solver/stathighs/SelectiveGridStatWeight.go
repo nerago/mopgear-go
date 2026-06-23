@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"strconv"
+	"strings"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
@@ -50,10 +51,9 @@ type SelectiveGridStatWeightProcess struct {
 	scaleStat map[stats.StatType]float64
 	scaleSim  map[stats.SimType]float64
 
-	build           utilhighs.LinearBuilder
+	build           *utilhighs.LinearBuilder
 	unitStatValues  util.MapMapSlice[stats.StatType, stats.SimType, selectiveGridDataSample]
 	detailedWeights util.MapMap[stats.StatType, stats.SimType, utilhighs.ColumnIndex]
-	finalWeights    map[stats.StatType]utilhighs.ColumnIndex
 }
 
 type selectiveGridDataSample struct {
@@ -63,10 +63,10 @@ type selectiveGridDataSample struct {
 
 func (selgrid *SelectiveGridStatWeightProcess) Init(printer *util.PrintRecorder) {
 	selgrid.printer = printer
+	selgrid.build = new(utilhighs.LinearBuilder)
 	selgrid.build.Minimise = true
 	selgrid.build.Solver = utilhighs.Solver_MIP_Interior
 	// selgrid.build.DisablePreSolve = true
-	selgrid.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }
 
 func (selgrid *SelectiveGridStatWeightProcess) SupplyData(inputData []WeightInput) {
@@ -106,15 +106,10 @@ func (selgrid *SelectiveGridStatWeightProcess) Run() WeightResult {
 
 	selgrid.build.DebugPrintColumns(solution, selgrid.printer)
 
-	return selgrid.reportOutputWeightsGrid(solution, selgrid.finalWeights)
+	return selgrid.reportOutputWeightsGrid(solution)
 }
 
 func (selgrid *SelectiveGridStatWeightProcess) setupWeightVars() {
-	for _, statType := range G_RequiredStats {
-		colFinalWeight := selgrid.build.CreateColumnGeneral(highs.Continuous, -c_selGrid_finalWeightLimit, c_selGrid_finalWeightLimit, utilhighs.DebugString{Text: "FINAL WEIGHT: " + statType.Name()})
-		selgrid.finalWeights[statType] = colFinalWeight
-	}
-
 	for _, statType := range G_RequiredStats {
 		for _, simType := range selgrid.requiredSims {
 			colDetailWeight := selgrid.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
@@ -123,28 +118,16 @@ func (selgrid *SelectiveGridStatWeightProcess) setupWeightVars() {
 	}
 
 	for _, simType := range selgrid.requiredSims {
-		value := selgrid.targetRatios.Get(simType)
 		colDetailWeight := selgrid.detailedWeights.GetOrPanic(c_baseStatType, simType)
 		strengthSetToRatio := utilhighs.ConstraintRow{}
 		strengthSetToRatio.Add(colDetailWeight, 1)
-		strengthSetToRatio.Build(&selgrid.build, value, value)
-	}
-
-	for _, statType := range G_RequiredStats {
-		statFinalRow := utilhighs.ConstraintRow{}
-		for simType, detailColumn := range selgrid.detailedWeights.SeqInnerWithKey1Value(statType) {
-			scale := selgrid.scaleSim[simType]
-			statFinalRow.Add(detailColumn, 1/scale)
-		}
-		finalWeightColumn := selgrid.finalWeights[statType]
-		statFinalRow.Add(finalWeightColumn, -1)
-		statFinalRow.Build(&selgrid.build, 0, 0)
+		strengthSetToRatio.Build(selgrid.build, 0.1, 100)
 	}
 }
 
 func (selgrid *SelectiveGridStatWeightProcess) createIncludeToggles() {
 	// negative score since we're minimising, each variable used is "better"
-	includeScore := -0.1
+	includeScore := -10.0
 
 	rowIncludeReasonableNumber := utilhighs.ConstraintRow{}
 
@@ -157,7 +140,7 @@ func (selgrid *SelectiveGridStatWeightProcess) createIncludeToggles() {
 	}
 
 	minimumUseful := len(selgrid.inputData) / 4
-	rowIncludeReasonableNumber.Build(&selgrid.build, float64(minimumUseful), float64(len(selgrid.inputData)))
+	rowIncludeReasonableNumber.Build(selgrid.build, float64(minimumUseful), float64(len(selgrid.inputData)))
 }
 
 // lazy func, could avoid double processing and put in order, very N**2
@@ -253,7 +236,7 @@ func (selgrid *SelectiveGridStatWeightProcess) unitValueCombinationAddToModel(ba
 	and.AddInput(baseUnitSample.includeToggles[1])
 	and.AddInput(thisUnitSample.includeToggles[0])
 	and.AddInput(thisUnitSample.includeToggles[1])
-	and.Build(&selgrid.build)
+	and.Build(selgrid.build)
 
 	// detailweight_dps_haste * unit_dps_base - detailweight_dps_base * unit_dps_haste + offset = 0
 	// detailweight_dps_haste / unit_dps_haste  - detailweight_dps_base   / unit_dps_base + offset / unit_dps_base / unit_dps_haste = 0
@@ -262,30 +245,73 @@ func (selgrid *SelectiveGridStatWeightProcess) unitValueCombinationAddToModel(ba
 	weightRow.Add(thisDetailWeight, baseUnitSample.value)
 	weightRow.Add(detailWeightBase, -thisUnitSample.value)
 	weightRow.Add(offsetSigned, 1)
-	weightRow.Build(&selgrid.build, 0, 0)
+	weightRow.Build(selgrid.build, 0, 0)
 
 	// take absolute value
 	offsetAbs := selgrid.build.CreateColumnWithOutput(highs.Continuous, 0, c_selGrid_formulaHigh, 1, utilhighs.DebugString{Text: "OFFSET ABS " + debugText})
-	selgrid.build.AbsoluteValue_WithToggle(offsetSigned, offsetAbs, includeDataPointToggle, c_selGrid_formulaHigh)
+	selgrid.build.AbsoluteValue_WithToggle(offsetSigned, offsetAbs, includeDataPointToggle, c_selGrid_formulaHigh*2)
 }
 
-func (selgrid *SelectiveGridStatWeightProcess) reportOutputWeightsGrid(solution *highs.Solution, weightColumns map[stats.StatType]utilhighs.ColumnIndex) WeightResult {
-	result := WeightResult_Make()
+func (selgrid *SelectiveGridStatWeightProcess) reportOutputWeightsGrid(solution *highs.Solution) WeightResult {
 	selgrid.printer.Println("FINAL WEIGHTS:")
-	for _, statType := range G_RequiredStats {
-		columnIndex := weightColumns[statType]
-		value := solution.ColValues[columnIndex]
-		selgrid.printer.Printf("%10s %f\n", statType.Name(), value)
-		result.Put(statType, value)
+
+	// weights are mutally scaled within simtype
+	// detailweight_dps_haste * unit_dps_str - detailweight_dps_str * unit_dps_haste + offset = 0
+	// unitValue := (DPS_Diff * DPS_SCALE) / (HASTE_DIFF * HASTE_SCALE)
+	// detailweight_dps_haste * (DPS_Diff * DPS_SCALE) / (STR_DIFF * STR_SCALE) = detailweight_dps_str * (DPS_Diff * DPS_SCALE) / (HASTE_DIFF * HASTE_SCALE)
+	// detailweight_dps_haste * (DPS_Diff * DPS_SCALE) / (STR_DIFF * STR_SCALE) = detailweight_dps_str * (DPS_Diff * DPS_SCALE) / (HASTE_DIFF * HASTE_SCALE)
+	// detailweight_dps_haste / (STR_DIFF * STR_SCALE) = detailweight_dps_str / (HASTE_DIFF * HASTE_SCALE)
+	// detailweight_dps_haste / detailweight_dps_str = (STR_DIFF * STR_SCALE) / (HASTE_DIFF * HASTE_SCALE)
+	// detailweight_dps_haste / detailweight_dps_str = (STR_DIFF / HASTE_DIFF) * (STR_SCALE / HASTE_SCALE)
+	// detailweight_dps_haste / detailweight_dps_str * (HASTE_SCALE / STR_SCALE) = (STR_DIFF / HASTE_DIFF)
+
+	weightValues := util.MapMap_FromExitingMapMap_WithApplyPlusKeys(&selgrid.detailedWeights,
+		func(statType stats.StatType, _ stats.SimType, weightCol utilhighs.ColumnIndex) float64 {
+			scale := selgrid.scaleStat[statType]
+			return solution.ColValues[weightCol] * scale
+		})
+
+	for simType := range weightValues.SeqKey2() {
+		strengthValue := weightValues.GetOrPanic(c_baseStatType, simType)
+		for statType := range weightValues.SeqKey1() {
+			weightValues.Apply(statType, simType, func(oldValue float64) float64 { 
+				value := oldValue / strengthValue * selgrid.targetRatios.Get(simType) 
+				// if !simType.IsHighGood() {
+				// 	value *= -1
+				// }
+				return value
+			})
+		}
+	}
+
+	finalWeightResult := WeightResult_Make()
+	for statType, valueSeq := range weightValues.SeqGroupsKey1NestedKeyValue() {
+		total := 0.0
+		for _, value := range valueSeq {
+			total += value
+		}
+		finalWeightResult.Put(statType, total)
 	}
 
 	included := 0
 	for _, colInclude := range selgrid.inputDataIncludeToggles {
 		if utilhighs.FloatEqualsOne(solution.ColValues[colInclude]) {
-			colInclude++
+			included++
 		}
 	}
 	selgrid.printer.Printf("SELGRID include rate %d / %d = %f\n", included, len(selgrid.inputData), float64(included)/float64(len(selgrid.inputData)))
 
-	return result
+	dataToggleTotal, dataToggleOn := 0, 0
+	for colIndex := range solution.ColValues {
+		debug := selgrid.build.DebugTextFor(utilhighs.ColumnIndex(colIndex))
+		if strings.Contains(debug, "DATA TOGGLE") {
+			if utilhighs.FloatEqualsOne(solution.ColValues[colIndex]) {
+				dataToggleOn++
+			}
+			dataToggleTotal++
+		}
+	}
+	selgrid.printer.Printf("SELGRID pair include rate %d / %d = %f\n", dataToggleOn, dataToggleTotal, float64(dataToggleOn)/float64(dataToggleTotal))
+
+	return finalWeightResult
 }

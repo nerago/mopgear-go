@@ -444,8 +444,8 @@ func statWeightsGrid(printer *util.PrintRecorder) {
 	// writeWeightInputsToFile(inputData, "sim-stats-input-grid.json" )
 
 	inputDataFull := readWeightInputFile("sim-stats-compare-grid.json")
-	// inputData := takeDataSample_Random(inputDataFull, 8)
-	inputData := inputDataFull
+	inputData := takeDataSample_Random(inputDataFull, 50)
+	// inputData := inputDataFull
 
 	targetRatio := model.SimRatio_generalMiti
 
