@@ -247,11 +247,11 @@ func (param *multiSetParamInternal) setupAlternateGemming(alternateGemList []sta
 			for _, item := range existing {
 				for _, alternateGem := range alternateGemList {
 					alternateItem := param.regemAlternate(item, alternateGem)
-					param.itemOptions.AddSeveralOptionsSpecific(slot, []items.FullItem{alternateItem})
+					param.itemOptions.AddSeveralOptionsSpecific_WhereNotExist(slot, []items.FullItem{alternateItem})
 				}
 
 				defaultItem := param.regemDefault(item)
-				param.itemOptions.AddSeveralOptionsSpecific(slot, []items.FullItem{defaultItem})
+				param.itemOptions.AddSeveralOptionsSpecific_WhereNotExist(slot, []items.FullItem{defaultItem})
 			}
 		}
 		param.itemOptions.RemoveDuplicates()

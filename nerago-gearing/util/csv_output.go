@@ -12,7 +12,7 @@ func (csv *CSVOutputByColumn) InitRows(count int) {
 
 func (csv *CSVOutputByColumn) FinishColumn() {
 	if csv.currRow != len(csv.builds) {
-		panic("too few values for column")
+		panic("too few/many values for column")
 	}
 	csv.currRow = 0
 }
@@ -53,7 +53,7 @@ func (csv *CSVOutputByColumn) AddFloat64(value float64, decimalPlaces int) {
 	csv.currRow++
 }
 
-func (csv CSVOutputByColumn) AddInt(value int) {
+func (csv *CSVOutputByColumn) AddInt(value int) {
 	csv.verifyAdd()
 	build := &csv.builds[csv.currRow]
 	build.WriteInt(value)

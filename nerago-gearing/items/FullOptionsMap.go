@@ -154,6 +154,14 @@ func (optionsMap *FullOptionsMap) AddSeveralOptionsSpecific(slotEquip SlotEquip,
 	optionsMap[slotEquip] = append(optionsMap[slotEquip], options...)
 }
 
+func (optionsMap *FullOptionsMap) AddSeveralOptionsSpecific_WhereNotExist(slotEquip SlotEquip, options []FullItem) {
+	for _, newItem := range options {
+		if !util.ContainsFunc_Pointer(optionsMap[slotEquip], newItem.Equals) {
+			optionsMap[slotEquip] = append(optionsMap[slotEquip], newItem)
+		}
+	}
+}
+
 func (optionsMap *FullOptionsMap) FillSlot_ExpectedEmpty(slotItem SlotItem, optionList []FullItem) {
 	var slotEquip SlotEquip
 	switch slotItem {
