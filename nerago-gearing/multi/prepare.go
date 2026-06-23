@@ -11,6 +11,9 @@ import (
 	"slices"
 )
 
+const ReGem_GemAlternate = "GemAlternate"
+const ReGem_GemDefault = "GemDefault"
+
 func (job *MultiSetJob) prepareInitial() {
 	job.printer.Println("LOADING BAGS")
 	job.bagsGear = loaders.BagsFileReader_Read()
@@ -260,7 +263,8 @@ func (param *multiSetParamInternal) regemAlternate(item items.FullItem, alternat
 		}
 	}
 	alternateItem := setup.OptionsSetup_ExactEquippedOnly_Item(alternateEquipItem, setup.MissingEnchant_Panic, &param.Model, param.job.printer)
-	alternateItem.SetNameTag("GemAlternate")
+
+	alternateItem.SetNameTag(ReGem_GemAlternate)
 	return alternateItem
 }
 
@@ -268,7 +272,7 @@ func (param *multiSetParamInternal) regemDefault(item items.FullItem) items.Full
 	defaultEquipItem := loaders.EquippedItem_FromFull(&item)
 	defaultEquipItem.GemChoice = nil
 	defaultItem := setup.OptionsSetup_ExactEquippedOnly_Item(defaultEquipItem, setup.MissingEnchant_Fix, &param.Model, param.job.printer)
-	defaultItem.SetNameTag("GemDefault")
+	defaultItem.SetNameTag(ReGem_GemDefault)
 	return defaultItem
 }
 

@@ -13,6 +13,7 @@ import (
 	"paladin_gearing_go/util/channel_op"
 	"paladin_gearing_go/util/util_rank"
 	"slices"
+	"strings"
 )
 
 func checkNoConflicts(outputSet []multi_types.SingleProposedOutput, printer *util.PrintRecorder) bool {
@@ -171,7 +172,7 @@ func (job *MultiSetJob) findVariantItem(result simulateMultiResult, itemId items
 func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 	job.printer.Println("@@@@@@@@@@@@@@@@ SPREADSHEET COPY @@@@@@@@@@@@@@@@")
 
-	rowCount := 1
+	rowCount := 0
 	outputTypesByParam := make([][]stats.SimType, len(job.params))
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
@@ -183,7 +184,7 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 	// outputTypes := []stats.SimType{simulate.Sim_DPS, simulate.Sim_DTPS, simulate.Sim_TMI, simulate.Sim_DEATH}
 
 	csv := util.CSVOutputByColumn{}
-	csv.InitRows(rowCount)
+	csv.InitRows(rowCount + 2)
 	csv.AddString("id")
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
@@ -197,6 +198,7 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 			})
 		}
 	}
+	csv.AddString("regem")
 	csv.FinishColumn()
 
 	for _, simResult := range simResultList {
@@ -214,10 +216,29 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 			}
 		}
 
+		csv.AddInt(countRegem(simResult.proposed))
+
 		csv.FinishColumn()
 	}
 
 	csv.Write(job.printer)
+}
+
+func countRegem(multiProposed multi_types.MultiProposedOutput) int {
+	allItems := make([]*items.FullItem, 0)
+	for part := range util.ForPointer(multiProposed.Parts) {
+		allItems = slices.AppendSeq(allItems, part.FullSet.Items().AllItemSeq())
+	}
+	allItems = util.RemoveDuplicatesFunc(allItems, func(a, b **items.FullItem) bool { return (*a).Equals(*b) })
+
+	countRegemmed := 0
+	for _, item := range allItems {
+		name := item.CreateFullName()
+		if strings.Contains(name, ReGem_GemAlternate) || strings.Contains(name, ReGem_GemDefault) {
+			countRegemmed++
+		}
+	}
+	return countRegemmed
 }
 
 func (job *MultiSetJob) suggestResultFromRankings(results []simulateMultiResult) {

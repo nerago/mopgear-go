@@ -53,6 +53,14 @@ func (csv *CSVOutputByColumn) AddFloat64(value float64, decimalPlaces int) {
 	csv.currRow++
 }
 
+func (csv CSVOutputByColumn) AddInt(value int) {
+	csv.verifyAdd()
+	build := &csv.builds[csv.currRow]
+	build.WriteInt(value)
+	build.WriteRune(',')
+	csv.currRow++
+}
+
 func (csv *CSVOutputByColumn) Write(printer *PrintRecorder) {
 	for index := range csv.builds {
 		printer.PrintlnFromBuild(csv.builds[index])

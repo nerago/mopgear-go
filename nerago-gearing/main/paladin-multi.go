@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
 )
@@ -367,13 +368,13 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 	blockHelmetsWithoutIndomitable(&protHeal)
 
-	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
-	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Expertise, 320))
-	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Hit, 320))
-	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
-	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
-	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
-	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
+	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
+	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Expertise, 320))
+	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Hit, 320))
+	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
+	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
+	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
+	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 
 	// ret.AddBagsExtra()
 	// protDps.AddBagsExtra()
