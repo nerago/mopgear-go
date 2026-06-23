@@ -307,7 +307,8 @@ func (param *multiSetParamInternal) makeRandomVariantItem(variantItem *randomVar
 	if hasAny {
 		for index, randomSuffix := range variantItem.randomSuffixList {
 			if !hasVersion[index] {
-				options, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(variantItem.itemId, param.ExtraUpgradeLevel, randomSuffix, &param.Model, param.job.printer)
+				options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(variantItem.itemId, param.ExtraUpgradeLevel, randomSuffix, &param.Model, param.job.printer)
+				param.job.printer.Println("RANDOM_VARIANT adding " + example.CreateString())
 				slotOptions = append(slotOptions, options...)
 			}
 		}

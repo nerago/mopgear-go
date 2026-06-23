@@ -40,8 +40,8 @@ const (
 )
 
 func PaladinMultiRun(printer *util.PrintRecorder) {
-	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Medium)
-	// job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
+	// job := multi.MultiSetJob_Create(printer, simulate.RunSize_Medium)
+	job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
 
 	var generalUpgrade items.UpgradeLevel = 0
 	var forceUpgrade items.UpgradeLevel = 0
@@ -369,9 +369,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	blockHelmetsWithoutIndomitable(&protHeal)
 
 	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
-	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Expertise, 320))
-	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Hit, 320))
-	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
+	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Expertise, 320))
+	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Hit, 320))
+	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
 	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
 	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
 	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
@@ -395,8 +395,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
-	job.RunNoPermutations_AllCommonAlternates()
-	// job.RunForSolutionsPerPerumte(1)
+	// job.RunNoPermutations_AllCommonAlternates()
+	job.RunForSolutionsPerPerumte(1)
 	// job.RunCullingSets(2000, time.Minute*60)
 }
 

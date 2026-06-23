@@ -176,6 +176,8 @@ func (slot SlotItem) ToSlotEquipOptions() []SlotEquip {
 	return equipOptionsMap[slot]
 }
 
+var PairedSlotList = []SlotEquip{Equip_Ring1, Equip_Ring2, Equip_Trinket1, Equip_Trinket2}
+
 func (slot SlotEquip) PairedSlot() SlotEquip {
 	switch slot {
 	case Equip_Ring1:

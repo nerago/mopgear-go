@@ -10,7 +10,6 @@ type MapMap[J comparable, K comparable, V any] struct {
 	dataBy2 map[K]map[J]V
 }
 
-
 type MapMapEntry[J comparable, K comparable, V any] struct {
 	Key1  J
 	Key2  K
@@ -55,6 +54,11 @@ func (mapmap MapMap[J, K, V]) Size() int {
 	return size
 }
 
+// uses assumtion that empty inner maps don't exist, no maps therefore no data
+func (mapmap MapMap[J, K, V]) IsEmpty() bool {
+	return len(mapmap.dataBy1) == 0
+}
+
 func (mapmap *MapMap[J, K, V]) Put(key1 J, key2 K, value V) {
 	data1 := mapmap.dataBy1
 	if data1 == nil {
@@ -79,6 +83,57 @@ func (mapmap *MapMap[J, K, V]) Put(key1 J, key2 K, value V) {
 		data2[key2] = inner2
 	}
 	inner2[key1] = value
+}
+
+// removes nested inner maps when last item removed, if changing this check IsEmpty etc
+func (mapmap *MapMap[J, K, V]) Delete(key1 J, key2 K) {
+	data1 := mapmap.dataBy1
+	if data1 != nil {
+		inner1, hasInner1 := data1[key1]
+		if hasInner1 {
+			delete(inner1, key2)
+			if len(inner1) == 0 {
+				delete(data1, key1)
+			}
+		}
+	}
+
+	data2 := mapmap.dataBy2
+	if data2 != nil {
+		inner2, hasInner2 := data2[key2]
+		if hasInner2 {
+			delete(inner2, key1)
+			if len(inner2) == 0 {
+				delete(data2, key2)
+			}
+		}
+	}
+}
+
+func (mapmap *MapMap[J, K, V]) DeleteAllForKey1(key1 J) {
+	for key2 := range mapmap.dataBy1[key1] {
+		inner2, hasInner2 := mapmap.dataBy2[key2]
+		if hasInner2 {
+			delete(inner2, key1)
+			if len(inner2) == 0 {
+				delete(mapmap.dataBy2, key2)
+			}
+		}
+	}
+	delete(mapmap.dataBy1, key1)
+}
+
+func (mapmap *MapMap[J, K, V]) DeleteAllForKey2(key2 K) {
+	for key1 := range mapmap.dataBy2[key2] {
+		inner1, hasInner1 := mapmap.dataBy1[key1]
+		if hasInner1 {
+			delete(inner1, key2)
+			if len(inner1) == 0 {
+				delete(mapmap.dataBy1, key1)
+			}
+		}
+	}
+	delete(mapmap.dataBy2, key2)
 }
 
 func (mapmap *MapMap[J, K, V]) Apply(key1 J, key2 K, apply func(oldValue V) V) {
@@ -112,6 +167,20 @@ func (mapmap *MapMap[J, K, V]) Apply(key1 J, key2 K, apply func(oldValue V) V) {
 		data2[key2] = inner2
 	}
 	inner2[key1] = value
+}
+
+func (mapmap *MapMap[J, K, V]) FirstKey1() J {
+	for x := range mapmap.dataBy1 {
+		return x
+	}
+	panic("empty map")
+}
+
+func (mapmap *MapMap[J, K, V]) FirstKey2() K {
+	for x := range mapmap.dataBy2 {
+		return x
+	}
+	panic("empty map")
 }
 
 func (mapmap *MapMap[J, K, V]) SeqKey1() iter.Seq[J] {
