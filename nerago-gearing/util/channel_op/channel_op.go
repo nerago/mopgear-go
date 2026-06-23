@@ -47,6 +47,34 @@ func MapMulti_ChannelToChannel[T any, R any](threadCount int, inputChannel <-cha
 	return outputChannel
 }
 
+func MapMulti_ChannelToChannel_Cancellable[T any, R any](threadCount int, inputChannel <-chan T, cancel CancelSignal, mapper func(T, chan<- R)) <-chan R {
+	outputChannel := makeOutputChannel[R]()
+	var waitGroup sync.WaitGroup
+
+	// TODO could be more consistent with a CancellableChannel type
+	for range threadCount {
+		waitGroup.Go(func() {
+			for value := range inputChannel {
+				if cancel.IsCancelled() {
+					break
+				}
+
+				mapper(value, outputChannel)
+
+				if cancel.IsCancelled() {
+					break
+				}
+			}
+		})
+	}
+
+	go func() {
+		waitGroup.Wait()
+		close(outputChannel)
+	}()
+	return outputChannel
+}
+
 func Map_ChannelToSlice[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T) R) []R {
 	tempChannel := make(chan R)
 	var waitGroup sync.WaitGroup
@@ -71,21 +99,21 @@ func Map_ChannelToSlice[T any, R any](threadCount int, inputChannel <-chan T, ma
 	return outputSlice
 }
 
-func Map_ChannelToSlice_FutureCancellable[T any, R any](threadCount int, inputChannel <-chan T, isCancelled func() bool, onComplete func(), mapper func(T) R) *FutureCancellable[[]R] {
-	future := FutureCancellable_Make[[]R](func() {})
+func Map_ChannelToSlice_FutureCancellable[T any, R any](threadCount int, inputChannel <-chan T, onComplete func(), mapper func(T) R) *FutureCancellable[[]R] {
+	future := FutureCancellable_Make[[]R]()
 	tempChannel := make(chan R)
 	var waitGroup sync.WaitGroup
 
 	for range threadCount {
 		waitGroup.Go(func() {
 			for value := range inputChannel {
-				if isCancelled() {
+				if future.IsCancelled() {
 					break
 				}
 
 				tempChannel <- mapper(value)
 
-				if isCancelled() {
+				if future.IsCancelled() {
 					break
 				}
 			}
@@ -154,6 +182,48 @@ func MapOptional_SliceToChannel[T any, R any](threadCount int, inputSlice []T, m
 				value, isValid := mapper(&inputSlice[index])
 				if isValid {
 					outputChannel <- value
+				}
+			}
+		})
+	}
+
+	go func() {
+		waitGroup.Wait()
+		close(outputChannel)
+	}()
+	return outputChannel
+}
+
+func MapOptional_SliceToChannel_Cancellable[T any, R any](threadCount int, inputSlice []T, cancel CancelSignal, mapper func(*T) (R, bool)) <-chan R {
+	outputChannel := makeOutputChannel[R]()
+	indexChannel := make(chan int, threadCount)
+	var waitGroup sync.WaitGroup
+
+	go func() {
+		for index := range inputSlice {
+			if cancel.IsCancelled() {
+				break
+			}
+
+			indexChannel <- index
+		}
+		close(indexChannel)
+	}()
+
+	for range threadCount {
+		waitGroup.Go(func() {
+			for index := range indexChannel {
+				if cancel.IsCancelled() {
+					break
+				}
+
+				value, isValid := mapper(&inputSlice[index])
+				if isValid {
+					outputChannel <- value
+				}
+
+				if cancel.IsCancelled() {
+					break
 				}
 			}
 		})

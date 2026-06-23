@@ -32,7 +32,7 @@ func (future *Future[T]) SetResult(value T) {
 	}
 }
 
-func (future *Future[T]) SetEmpty() {
+func (future *Future[T]) SetResultEmpty() {
 	future.lock.Lock()
 	defer future.lock.Unlock()
 
@@ -62,17 +62,13 @@ type FutureCancellable[T any] struct {
 	result        T
 	isValidResult bool
 	isComplete    bool
-	onCancel      func()
+	onCancel      []func()
 	lock          sync.Mutex
 }
 
-func FutureCancellable_Make[T any](onCancel func()) *FutureCancellable[T] {
-	if onCancel == nil {
-		panic("onCancel required")
-	}
+func FutureCancellable_Make[T any]() *FutureCancellable[T] {
 	return &FutureCancellable[T]{
 		signalChannel: make(chan any, 1),
-		onCancel:      onCancel,
 	}
 }
 
@@ -84,31 +80,51 @@ func (future *FutureCancellable[T]) SetResult(value T) {
 		future.result = value
 		future.isValidResult = true
 		future.isComplete = true
+		future.onCancel = nil
 		future.signalChannel <- true
 	}
 }
 
-func (future *FutureCancellable[T]) SetEmpty() {
+func (future *FutureCancellable[T]) SetResultEmpty() {
 	future.lock.Lock()
 	defer future.lock.Unlock()
 
 	if !future.isComplete {
 		future.isValidResult = false
 		future.isComplete = true
+		future.onCancel = nil
 		future.signalChannel <- true
 	}
 }
 
-func (future *FutureCancellable[T]) Cancel(value T) {
+func (future *FutureCancellable[T]) AddCancelHandler(onCancel func()) {
+	future.lock.Lock()
+	defer future.lock.Unlock()
+
+	if future.IsCancelled() {
+		onCancel()
+	} else {
+		future.onCancel = append(future.onCancel, onCancel)
+	}
+}
+
+func (future *FutureCancellable[T]) Cancel() {
 	future.lock.Lock()
 	defer future.lock.Unlock()
 
 	if !future.isComplete {
 		future.isValidResult = false
 		future.isComplete = true
-		future.onCancel()
+		for i := range future.onCancel {
+			future.onCancel[i]()
+		}
+		future.onCancel = nil
 		future.signalChannel <- true
 	}
+}
+
+func (future *FutureCancellable[T]) IsCancelled() bool {
+	return future.isComplete
 }
 
 func (future *FutureCancellable[T]) WaitForResult() (T, bool) {
@@ -133,7 +149,10 @@ func (future *FutureCancellable[T]) WaitForResultOrKeyPress() (T, bool) {
 		} else {
 			future.isValidResult = false
 			future.isComplete = true
-			future.onCancel()
+			for i := range future.onCancel {
+				future.onCancel[i]()
+			}
+			future.onCancel = nil
 			return future.result, false
 		}
 	}

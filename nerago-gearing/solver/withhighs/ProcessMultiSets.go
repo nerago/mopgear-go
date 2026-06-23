@@ -55,34 +55,40 @@ func (process *SolverHighsMultiProcess) SetCommon(common multi_types.CommonOptio
 	process.common = common
 }
 
-func (process *SolverHighsMultiProcess) RunInterruptable(printer *util.PrintRecorder, tracker *util.TrackProgress) <-chan HighsMultiResult {
+func (process *SolverHighsMultiProcess) RunInterruptable(printer *util.PrintRecorder) *channel_op.FutureCancellable[HighsMultiResult] {
 	process.makeFullModel()
 
-	solutionChannel, interruptFunc := process.build.RunHighsInterruptable()
-	tracker.AddEarlyCancelHandler(interruptFunc)
+	solveFuture := process.build.RunHighsFuture()
+	multiFuture := channel_op.FutureCancellable_Make[HighsMultiResult]()
+	channel_op.ChainCancel(multiFuture, solveFuture)
 
-	resultChannel := make(chan HighsMultiResult)
 	go func() {
-		result := <-solutionChannel
-		solution, log := result.Solution, result.Log
-		printer.AppendOther(log)
-		printer.Println("SOLUTION STATUS = " + solution.Status.String())
+		result, gotResult := solveFuture.WaitForResult()
+		if gotResult {
+			solution, log := result.Solution, result.Log
+			printer.AppendOther(log)
+			printer.Println("SOLUTION STATUS = " + solution.Status.String())
 
-		debugPrintAll(solution, process, printer)
+			debugPrintAll(solution, process, printer)
 
-		if solution.HasSolution() {
-			resultChannel <- process.solutionToResult(solution, printer)
+			if solution.HasSolution() {
+				multiResult := process.solutionToResult(solution, printer)
+				multiFuture.SetResult(multiResult)
+			} else {
+				multiFuture.SetResultEmpty()
+			}
+		} else {
+			multiFuture.SetResultEmpty()
 		}
-		close(resultChannel)
 	}()
-	return resultChannel
+	return multiFuture
 }
 
-func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.PrintRecorder, outputTarget util.Optional[int]) <-chan HighsMultiResult {
+func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.PrintRecorder, outputTarget util.Optional[int], cancel channel_op.CancelSignal) <-chan HighsMultiResult {
 	resultChannel := make(chan HighsMultiResult, 8)
 
 	go func() {
-		initialResult, bestCommonChoices, hasInitial := process.generateInitialMulti(printer)
+		initialResult, bestCommonChoices, hasInitial := process.generateInitialMulti(printer, cancel)
 		if hasInitial {
 			resultChannel <- initialResult
 
@@ -93,7 +99,7 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *u
 
 			printer.Printf("COMMON VARIANT count %d\n", len(bestCommonChoices))
 
-			innerChannel := process.generateWithDifferentCommonVariants(bestCommonChoices, printer)
+			innerChannel := process.generateWithDifferentCommonVariants(bestCommonChoices, printer, cancel)
 			channel_op.ChannelCopy(innerChannel, resultChannel)
 		} else {
 			close(resultChannel)
@@ -103,28 +109,33 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *u
 	return resultChannel
 }
 
-func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.PrintRecorder) (HighsMultiResult, []*columnInfo, bool) {
+func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.PrintRecorder, cancel channel_op.CancelSignal) (HighsMultiResult, []*columnInfo, bool) {
 	printer.Printf("INITIAL MULTI run\n")
 
 	process.makeFullModel()
 	startTime1 := time.Now()
-	solution, log := process.build.RunHighs()
-	printer.Println("Solve initial duration = " + time.Since(startTime1).String())
-	printer.AppendOther(log)
-	printer.Println("SOLUTION STATUS = " + solution.Status.String())
-	debugPrintAll(solution, process, printer)
+	future := process.build.RunHighsFuture()
+	channel_op.ChainCancel(cancel, future)
 
-	if solution.HasSolution() {
-		initialResult := process.solutionToResult(solution, printer)
-		bestCommonChoices := process.extractCommonChoices(solution)
-		return initialResult, bestCommonChoices, true
-	} else {
-		return HighsMultiResult{}, nil, false
+	result, gotResult := future.WaitForResult()
+	if gotResult {
+		solution := result.Solution
+		printer.Println("Solve initial duration = " + time.Since(startTime1).String())
+		printer.Println("SOLUTION STATUS = " + solution.Status.String())
+		printer.AppendOther(result.Log)
+		debugPrintAll(solution, process, printer)
+
+		if solution.HasSolution() {
+			initialResult := process.solutionToResult(solution, printer)
+			bestCommonChoices := process.extractCommonChoices(solution)
+			return initialResult, bestCommonChoices, true
+		}
 	}
+	return HighsMultiResult{}, nil, false
 }
 
-func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariants(bestCommonChoices []*columnInfo, printer *util.PrintRecorder) <-chan HighsMultiResult {
-	return channel_op.MapOptional_SliceToChannel(10, bestCommonChoices, func(changeColumn **columnInfo) (HighsMultiResult, bool) {
+func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariants(bestCommonChoices []*columnInfo, printer *util.PrintRecorder, cancel channel_op.CancelSignal) <-chan HighsMultiResult {
+	return channel_op.MapOptional_SliceToChannel_Cancellable(10, bestCommonChoices, cancel, func(changeColumn **columnInfo) (HighsMultiResult, bool) {
 		innerPrint := util.PrintRecorder_HoldAll()
 		printer.Printf("COMMON VARIANT blocking %s\n", (*changeColumn).itemFull.CreateString())
 
@@ -134,19 +145,25 @@ func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariants(best
 		rowLimitCommon.Build(build, 0, 0)
 
 		startTime2 := time.Now()
-		solution, log := build.RunHighs()
-		printer.Println("Solve loop duration = " + time.Since(startTime2).String())
-		innerPrint.Println("SOLUTION STATUS = " + solution.Status.String())
-		innerPrint.AppendOther(log)
 
-		innerPrint.Println("############################################################################")
-		printer.AppendOther(innerPrint)
+		future := build.RunHighsFuture()
+		channel_op.ChainCancel(cancel, future)
 
-		if solution.HasSolution() {
-			return process.solutionToResult(solution, innerPrint), true
-		} else {
-			return HighsMultiResult{}, false
+		result, gotResult := future.WaitForResult()
+		if gotResult {
+			solution := result.Solution
+			printer.Println("Solve loop duration = " + time.Since(startTime2).String())
+			innerPrint.Println("SOLUTION STATUS = " + solution.Status.String())
+			innerPrint.AppendOther(result.Log)
+
+			innerPrint.Println("############################################################################")
+			printer.AppendOther(innerPrint)
+
+			if solution.HasSolution() {
+				return process.solutionToResult(solution, innerPrint), true
+			}
 		}
+		return HighsMultiResult{}, false
 	})
 }
 

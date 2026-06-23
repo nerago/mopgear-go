@@ -100,8 +100,7 @@ func (selgrid *SelectiveGridStatWeightProcess) Run() WeightResult {
 	selgrid.dataSamplesFromPairs()
 	selgrid.unitValuesToCalcDetailedRatings()
 
-	solution, log := selgrid.build.RunHighs()
-	selgrid.printer.AppendOther(log)
+	solution := selgrid.build.RunHighs(selgrid.printer)
 	selgrid.printer.Println(solution.Status.String())
 
 	selgrid.build.DebugPrintColumns(solution, selgrid.printer)

@@ -83,7 +83,7 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 	linearBuild.NoOutput = true
 
 	setup := setupGearSet(&linearBuild, process.model, &itemOptions, 1)
-	solution, _ := linearBuild.RunHighs()
+	solution := linearBuild.RunHighs(process.printer)
 	if solution.Status == highs.ModelStatusOptimal {
 		percent := float64(process.tasksCompleted.Load()) / float64(process.targetResultCount) * 100
 		process.printer.Printf("TASK OK %s %.0f\n", process.label, percent)

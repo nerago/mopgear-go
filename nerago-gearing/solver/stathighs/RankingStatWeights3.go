@@ -91,8 +91,7 @@ func (ranker *RankingStatWeightProcess3) Run(doRound3 bool) []WeightResult {
 	ranker.createWeightColumns()
 	ranker.makeDataListEntryColumns()
 	ranker.setupDumbInitialSolution()
-	solution1, log := ranker.build.RunHighs()
-	ranker.printer.AppendOther(log)
+	solution1 := ranker.build.RunHighs(ranker.printer)
 	weights := ranker.extractAndReportSolution(solution1)
 	weightResultList = append(weightResultList, weights)
 
@@ -100,8 +99,7 @@ func (ranker *RankingStatWeightProcess3) Run(doRound3 bool) []WeightResult {
 	ranker.printer.Println("RankingStatWeightProcess3 SECOND ROUND")
 	ranker.makeDataListPairRules()
 	ranker.setupInitialSolutionFromPrevious(solution1)
-	solution2, log := ranker.build.RunHighs()
-	ranker.printer.AppendOther(log)
+	solution2 := ranker.build.RunHighs(ranker.printer)
 	weights = ranker.extractAndReportSolution(solution2)
 	weightResultList = append(weightResultList, weights)
 
@@ -141,8 +139,7 @@ func (ranker *RankingStatWeightProcess3) Run(doRound3 bool) []WeightResult {
 		ranker.makeDataListEntryColumns()
 		ranker.makeDataListPairRules()
 		ranker.setupInitialSolutionFromPreviousWeightOnly(latestSolution)
-		solution3, log := ranker.build.RunHighs()
-		ranker.printer.AppendOther(log)
+		solution3 := ranker.build.RunHighs(ranker.printer)
 		weights = ranker.extractAndReportSolution(solution3)
 		weightResultList = append(weightResultList, weights)
 		latestSolution = solution3
@@ -175,8 +172,7 @@ func (ranker *RankingStatWeightProcess3) RunUsingExternalStart(initialWeight Wei
 	ranker.makeDataListEntryColumns()
 	ranker.makeDataListPairRules()
 	ranker.setupInitialSolutionFromExternal2(initialWeight)
-	solution, log := ranker.build.RunHighs()
-	ranker.printer.AppendOther(log)
+	solution := ranker.build.RunHighs(ranker.printer)
 	if solution.HasSolution() {
 		weights := ranker.extractAndReportSolution(solution)
 		return util.Optional_OfValue(weights)

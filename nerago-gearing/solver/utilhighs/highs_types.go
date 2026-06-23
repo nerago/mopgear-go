@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 	"slices"
 	"strconv"
 
@@ -149,8 +150,7 @@ func (build *LinearBuilder) GetInitialSolutionValue(columnNumber ColumnIndex) fl
 }
 
 func (build *LinearBuilder) RunHighsThenDiagnose(printer *util.PrintRecorder) *highs.Solution {
-	solution, innerPrinter := build.RunHighs()
-	printer.AppendOther(innerPrinter)
+	solution := build.RunHighs(printer)
 
 	if solution.Status == highs.ModelStatusInfeasible {
 		diagnoseInfeasible(build, printer)
@@ -159,15 +159,16 @@ func (build *LinearBuilder) RunHighsThenDiagnose(printer *util.PrintRecorder) *h
 	return solution
 }
 
-func (build *LinearBuilder) RunHighs() (*highs.Solution, *util.PrintRecorder) {
+func (build *LinearBuilder) RunHighs(printer *util.PrintRecorder) *highs.Solution {
 	solver, logFilename, requestGpu := build.prepareHighsRun()
 
 	solution, err := G_HighsPool.RunSolverUnderMutex(solver, requestGpu)
 	verifyNoError(err)
 
-	printer := build.postHighsRun(solver, logFilename)
+	log := build.postHighsRun(solver, logFilename)
+	printer.AppendOther(log)
 
-	return solution, printer
+	return solution
 }
 
 type LinearResult struct {
@@ -175,29 +176,24 @@ type LinearResult struct {
 	Log      *util.PrintRecorder
 }
 
-func (build *LinearBuilder) RunHighsInterruptable() (solutionChannel <-chan LinearResult, interruptFunc func()) {
+func (build *LinearBuilder) RunHighsFuture() *channel_op.FutureCancellable[LinearResult] {
 	solver, logFilename, requestGpu := build.prepareHighsRun()
 
-	outputChannel := make(chan LinearResult)
-	isDone := false
-	// flag should help us avoid this function remaining alive and cancelling another process reusing solver
-	interruptFunc = func() {
-		if !isDone {
-			verifyNoError(solver.InterruptSetFlag(1))
-		}
-	}
+	future := channel_op.FutureCancellable_Make[LinearResult]()
+	future.AddCancelHandler(func() {
+		verifyNoError(solver.InterruptSetFlag(1))
+	})
 
 	go func() {
 		solution, err := G_HighsPool.RunSolverUnderMutex(solver, requestGpu)
 		verifyNoError(err)
 
-		printer := build.postHighsRun(solver, logFilename)
+		log := build.postHighsRun(solver, logFilename)
 
-		isDone = true
-		outputChannel <- LinearResult{solution, printer}
+		future.SetResult(LinearResult{solution, log})
 	}()
 
-	return outputChannel, interruptFunc
+	return future
 }
 
 func (build *LinearBuilder) prepareHighsRun() (*highs.Solver, string, bool) {

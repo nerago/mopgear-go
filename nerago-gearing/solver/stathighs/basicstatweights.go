@@ -95,8 +95,7 @@ func (basic *BasicStatWeightProcess) Run() WeightResult {
 	basic.unitValuesToCalcDetailedRatings()
 	basic.calcTotalRatings()
 
-	solution, log := basic.build.RunHighs()
-	basic.printer.AppendOther(log)
+	solution := basic.build.RunHighs(basic.printer)
 	basic.printer.Println(solution.Status.String())
 
 	basic.build.DebugPrintColumns(solution, basic.printer)

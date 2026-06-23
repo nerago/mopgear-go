@@ -70,8 +70,7 @@ func (form *FormulaStatWeightProcess) Run() WeightResult {
 
 	form.includeCountRow.Build(form.build, float64(len(form.inputData))*form.minimumIncludeRate, utilhighs.C_PlusInf)
 
-	solution, log := form.build.RunHighs()
-	form.printer.AppendOther(log)
+	solution := form.build.RunHighs(form.printer)
 
 	return form.extractAndReportSolution(solution)
 }

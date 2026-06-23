@@ -14,7 +14,9 @@ func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates() {
 	job.prepareInitial()
 	highProcess := job.highProcessSetup()
 
-	setResultChan := highProcess.RunForSeveral_CommonDifferent(job.printer, util.Optional_Empty[int]())
+	cancel := channel_op.CancelSignal_Make()
+
+	setResultChan := highProcess.RunForSeveral_CommonDifferent(job.printer, util.Optional_Empty[int](), cancel)
 
 	tracker := util.TrackProgress_Start()
 	defer tracker.SetDone()
@@ -27,7 +29,7 @@ func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates() {
 	combinedProposalChannel := channel_op.ChannelWithPrependedValues(proposalChannel, existingProposal)
 
 	// TODO tracker covers highs part too
-	job.proposalsToSimAndOutput(combinedProposalChannel, tracker)
+	job.proposalsToSimAndOutput(combinedProposalChannel, tracker, cancel)
 
 	// job.CullingReport()
 }
@@ -35,13 +37,14 @@ func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates() {
 func (job *MultiSetJob) RunForSolutionsPerPerumte(solutionsPerPermute int) {
 	job.prepareInitial()
 
+	cancel := channel_op.CancelSignal_Make()
 	tracker := util.TrackProgress_Start()
 	tracker.RunOuterTracking(2)
 	defer tracker.SetDone()
 
-	setResultChannel := job.proposalsUnderPermutation(tracker.NewChild(), solutionsPerPermute)
+	setResultChannel := job.proposalsUnderPermutation(tracker.NewChild(), solutionsPerPermute, cancel)
 
-	job.proposalsToSimAndOutput(setResultChannel, tracker.NewChild())
+	job.proposalsToSimAndOutput(setResultChannel, tracker.NewChild(), cancel)
 
 	// job.CullingReport()
 }

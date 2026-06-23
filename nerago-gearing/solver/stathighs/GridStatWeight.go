@@ -78,8 +78,7 @@ func (grid *GridStatWeightProcess) Run() WeightResult {
 	grid.unitValuesToCalcDetailedRatings()
 	grid.calcTotalRatings()
 
-	solution, log := grid.build.RunHighs()
-	grid.printer.AppendOther(log)
+	solution := grid.build.RunHighs(grid.printer)
 	grid.printer.Println(solution.Status.String())
 
 	grid.build.DebugPrintColumns(solution, grid.printer)

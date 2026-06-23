@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, solutionsPerPermute int) <-chan multi_types.MultiProposedOutput {
+func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, solutionsPerPermute int, cancel channel_op.CancelSignal) <-chan multi_types.MultiProposedOutput {
 	estimate := job.estimateFixedPermutations()
 	job.printer.Printf("PERMUTE SET COUNT %d\n", estimate)
 	currentProgress := atomic.Uint64{}
@@ -19,31 +19,37 @@ func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, s
 
 	permuteChannel := job.preparePermutations()
 
-	setResultChannel := channel_op.MapMulti_ChannelToChannel(highsThreadCount, permuteChannel,
+	setResultChannel := channel_op.MapMulti_ChannelToChannel_Cancellable(highsThreadCount, permuteChannel, cancel,
 		func(permuteSet permuteSet, resultChannel chan<- multi_types.MultiProposedOutput) {
-			printer := util.PrintRecorder_HoldAll()
-
-			highProcess := job.highProcessSetupForPermute(permuteSet, printer)
-
-			var nextChan <-chan withhighs.HighsMultiResult
-
-			if solutionsPerPermute == 1 {
-				nextChan = highProcess.RunInterruptable(printer, tracker)
-			} else {
-				nextChan = highProcess.RunForSeveral_CommonDifferent(printer, util.Optional_OfValue(solutionsPerPermute))
-			}
-
-			for res := range nextChan {
-				resultChannel <- job.makeOutputFromHighs(res, printer)
-			}
-
-			job.printer.AppendOther(printer)
+			job.runPermute(permuteSet, solutionsPerPermute, resultChannel, cancel)
 			currentProgress.Add(1)
 		},
 	)
 
 	existingProposal := job.existingGearAsProposal()
 	return channel_op.ChannelWithPrependedValues(setResultChannel, existingProposal)
+}
+
+func (job *MultiSetJob) runPermute(permuteSet permuteSet, solutionsPerPermute int, resultChannel chan<- multi_types.MultiProposedOutput, cancel channel_op.CancelSignal) {
+	printer := util.PrintRecorder_HoldAll()
+
+	highProcess := job.highProcessSetupForPermute(permuteSet, printer)
+
+	if solutionsPerPermute == 1 {
+		future := highProcess.RunInterruptable(printer)
+		channel_op.ChainCancel(cancel, future)
+		result, hasResult := future.WaitForResult()
+		if hasResult {
+			resultChannel <- job.makeOutputFromHighs(result, printer)
+		}
+	} else {
+		nextChan := highProcess.RunForSeveral_CommonDifferent(printer, util.Optional_OfValue(solutionsPerPermute), cancel)
+		for result := range nextChan {
+			resultChannel <- job.makeOutputFromHighs(result, printer)
+		}
+	}
+
+	job.printer.AppendOther(printer)
 }
 
 func (job *MultiSetJob) paramFromLabel(paramLabel string) *multiSetParamInternal {
@@ -92,7 +98,7 @@ func (job *MultiSetJob) highProcessSetup() withhighs.SolverHighsMultiProcess {
 	return highProcess
 }
 
-func (job *MultiSetJob) proposalsToSimAndOutput(proposalChannel <-chan multi_types.MultiProposedOutput, tracker *util.TrackProgress) {
+func (job *MultiSetJob) proposalsToSimAndOutput(proposalChannel <-chan multi_types.MultiProposedOutput, tracker *util.TrackProgress, cancel channel_op.CancelSignal) {
 	proposalChannel = channel_op.Channel_RemoveDuplicatesFuncNotify(proposalChannel, func(a, b *multi_types.MultiProposedOutput) bool {
 		return a.Equals(b)
 	}, func(x *multi_types.MultiProposedOutput) {
@@ -106,6 +112,7 @@ func (job *MultiSetJob) proposalsToSimAndOutput(proposalChannel <-chan multi_typ
 	simChannel := job.prepareSimList(proposalChannel)
 	futureSimResultList := job.runSims(simChannel, tracker, -1)
 
+	channel_op.ChainCancel(futureSimResultList, cancel)
 	simResultList, gotResult := futureSimResultList.WaitForResultOrKeyPress()
 
 	if gotResult {

@@ -187,8 +187,7 @@ func rankInternalRun4_create(process *RankingStatWeightProcess4) *rankInternalRu
 }
 
 func (run *rankInternalRun4) run() (util.Optional[WeightResult], *highs.Solution) {
-	solution, log := run.build.RunHighs()
-	run.process.printer.AppendOther(log)
+	solution := run.build.RunHighs(run.process.printer)
 	if solution.HasSolution() {
 		weights := run.extractAndReportSolution(solution)
 		return util.Optional_OfValue(weights), solution

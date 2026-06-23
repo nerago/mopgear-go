@@ -57,34 +57,8 @@ func (track *TrackProgress) SetDone() {
 	track.active = false
 }
 
-func (track *TrackProgress) AddEarlyCancelHandler(cancelHandler func()) {
-	track.cancelHandler = cancelHandler
-}
-
-func (track *TrackProgress) CancelAll() {
-	track.mutex.Lock()
-	defer track.mutex.Unlock()
-
-	if track.cancelHandler != nil {
-		track.cancelHandler()
-	}
-
-	for _, nested := range track.childList {
-		if nested != nil {
-			nested.CancelAll()
-		}
-	}
-	track.childList = nil
-
-	track.SetDone()
-}
-
 func (track *TrackProgress) IsActive() bool {
 	return track.active
-}
-
-func (track *TrackProgress) IsCancelled() bool {
-	return !track.active
 }
 
 func (track *TrackProgress) run(getProgress func() float64) {

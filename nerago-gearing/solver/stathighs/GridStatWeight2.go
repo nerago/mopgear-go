@@ -63,8 +63,7 @@ func (grid2 *GridStatWeightProcess2) Run() WeightResult {
 	grid2.chooseScaling()
 	grid2.processInputData()
 
-	solution, log := grid2.build.RunHighs()
-	grid2.printer.AppendOther(log)
+	solution := grid2.build.RunHighs(grid2.printer)
 	grid2.printer.Println(solution.Status.String())
 
 	grid2.build.DebugPrintColumns(solution, grid2.printer)

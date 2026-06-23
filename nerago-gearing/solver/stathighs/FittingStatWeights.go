@@ -435,8 +435,7 @@ func (fit *FittingSingleStatWeightProcess) Run() util.Optional[FittingSingleStat
 
 	fit.includeCountRow.Build(fit.build, float64(len(fit.inputData))*fit.minimumIncludeRate, utilhighs.C_PlusInf)
 
-	solution, log := fit.build.RunHighs()
-	fit.printer.AppendOther(log)
+	solution := fit.build.RunHighs(fit.printer)
 	fit.printer.Println(solution.Status.String())
 
 	fit.build.DebugPrintColumns(solution, fit.printer)

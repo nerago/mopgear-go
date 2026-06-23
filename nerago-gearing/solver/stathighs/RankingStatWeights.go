@@ -83,8 +83,7 @@ func (ranker *RankingStatWeightProcess) Run() WeightResult {
 
 	// ranker.includeCountRow.Finish(ranker.input, float64(len(ranker.inputData))*ranker.minimumIncludeRate, utilhighs.C_PlusInf)
 
-	solution, log := ranker.build.RunHighs()
-	ranker.printer.AppendOther(log)
+	solution := ranker.build.RunHighs(ranker.printer)
 
 	return ranker.extractAndReportSolution(solution)
 }
