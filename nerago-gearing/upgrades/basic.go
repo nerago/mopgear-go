@@ -10,31 +10,22 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/channel_op"
 	"slices"
 )
 
-func findUpgrade(input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, extraItems []*items.FullItem, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress,
-	goal stats.OptimiseGoal, upgradeLevel items.UpgradeLevel, forceIncludeMost bool, substituteItems []items.ItemId, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) ([]upgradeItemResult, *items.FullItemSet) {
-
+func prepareUpgradeInfo(extraItems []*items.FullItem, upgradeLevel items.UpgradeLevel, printer *util.PrintRecorder, input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, goal stats.OptimiseGoal, substituteItems []items.ItemId, model *model.Model) []upgradeItemTask {
 	extraItems = setupUpgradeLevel(extraItems, upgradeLevel, printer)
 	checkDuplicates(extraItems)
 	extraTasks := makeExtraTasks(input, extraItems, baseItems, printer, goal)
 	addSubstituteItems(baseItems, substituteItems, model, printer)
+	return extraTasks
+}
 
-	tracker.RunOuterTracking(len(extraTasks) + 1)
-	defer tracker.SetDone()
-
+func findBaseLine(printer *util.PrintRecorder, baseItems *items.FullOptionsMap, model *model.Model, tracker *util.TrackProgress) (float64, *items.FullItemSet) {
 	printer.Println("FINDING BASELINE")
 	baseRating, baseSet := findBase(baseItems, model, printer, tracker)
 	tools.ReportSetFewerParams(model, baseSet, printer)
-
-	printer.Println("TRYING ITEMS")
-	resultList := channel_op.Map_SliceToSlice(c_upgradeEachThreads, extraTasks,
-		func(task *upgradeItemTask) upgradeItemResult {
-			return performUpgradeTask(task, baseItems, baseRating, model, printer, tracker, forceIncludeMost, substituteEmptySlotOnly)
-		})
-	return resultList, baseSet
+	return baseRating, baseSet
 }
 
 func setupUpgradeLevel(extraItems []*items.FullItem, upgradeLevel items.UpgradeLevel, printer *util.PrintRecorder) []*items.FullItem {
