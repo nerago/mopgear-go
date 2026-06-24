@@ -41,6 +41,16 @@ func (mapmap *MapMap[J, K, V]) Has(key1 J, key2 K) bool {
 	return hasValue
 }
 
+func (mapmap MapMap[J, K, V]) HasKey1(key1 J) bool {
+	_, hasValue := mapmap.dataBy1[key1]
+	return hasValue
+}
+
+func (mapmap MapMap[J, K, V]) HasKey2(key2 K) bool {
+	_, hasValue := mapmap.dataBy2[key2]
+	return hasValue
+}
+
 func (mapmap *MapMap[J, K, V]) Clear() {
 	clear(mapmap.dataBy1)
 	clear(mapmap.dataBy2)

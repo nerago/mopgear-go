@@ -195,7 +195,7 @@ columnLoop:
 
 func (process *SolverHighsMultiProcess) extractCommonChoices(solution *highs.Solution) []*columnInfo {
 	// seenItems := make(map[items.ItemId]bool)
-	commonChosenColumns := make([]*columnInfo, 0, len(process.common))
+	commonChosenColumns := make([]*columnInfo, 0, process.common.Size())
 	for _, jobColumn := range process.allColumns {
 		colValue := solution.ColValues[jobColumn.columnIndex]
 		if jobColumn.entryType == entry_multi_enable_forge && utilhighs.FloatEqualsOne(colValue) {
@@ -258,13 +258,13 @@ func (param *SolverHighsMultiParam) doSetup(build *utilhighs.LinearBuilder, job 
 }
 
 func (process *SolverHighsMultiProcess) addCommonConstraints(build *utilhighs.LinearBuilder) {
-	for itemId, array := range process.common {
-		process.addCommonConstraintsForItem(build, itemId, array)
+	for itemRef, array := range process.common.SeqGroups() {
+		process.addCommonConstraintsForItemRef(build, itemRef, array)
 	}
 }
 
-func (process *SolverHighsMultiProcess) addCommonConstraintsForItem(build *utilhighs.LinearBuilder, itemId items.ItemId, array []items.FullItem) {
-	onlyOneReforge := utilhighs.ConstraintRow{Debug: "onlyOneReforge" + itemId.String()}
+func (process *SolverHighsMultiProcess) addCommonConstraintsForItemRef(build *utilhighs.LinearBuilder, itemRef items.ItemRef, array []items.FullItem) {
+	onlyOneReforge := utilhighs.ConstraintRow{Debug: "onlyOneReforge" + itemRef.ItemId.String()}
 
 	for _, item := range array {
 		entryEnableReforge := columnInfo{entryType: entry_multi_enable_forge, itemFull: &item}
@@ -273,10 +273,10 @@ func (process *SolverHighsMultiProcess) addCommonConstraintsForItem(build *utilh
 
 		onlyOneReforge.Add(entryEnableReforge.columnIndex, 1)
 
-		for partUsedItem := range process.findMatchingItemColumns(&item) {
+		for partUsedItem := range process.findMatchingItemColumnsForCommon(&item) {
 			// formula is partUsedItem <= enableReforge
 			//            0 <= enableReforge - partUsedItem
-			matchingReforge := utilhighs.ConstraintRow{Debug: "matchingReforge" + itemId.String() + "_" + strconv.Itoa(int(partUsedItem))}
+			matchingReforge := utilhighs.ConstraintRow{Debug: "matchingReforge" + itemRef.ItemId.String() + "_" + strconv.Itoa(int(partUsedItem))}
 			matchingReforge.Add(entryEnableReforge.columnIndex, 1)
 			matchingReforge.Add(partUsedItem, -1)
 			matchingReforge.Build(build, 0, 1)
@@ -286,10 +286,11 @@ func (process *SolverHighsMultiProcess) addCommonConstraintsForItem(build *utilh
 	onlyOneReforge.Build(build, 0, 1)
 }
 
-func (process *SolverHighsMultiProcess) findMatchingItemColumns(item *items.FullItem) iter.Seq[utilhighs.ColumnIndex] {
+func (process *SolverHighsMultiProcess) findMatchingItemColumnsForCommon(item *items.FullItem) iter.Seq[utilhighs.ColumnIndex] {
 	return func(yield func(utilhighs.ColumnIndex) bool) {
 		for _, part := range process.parts {
 			for column := range part.setup.itemColumns.ValuesForKeyAsSeq(item.ItemId()) {
+				// doesn't technically compare on RandomSuffix, but stats compare should be fine
 				if column.item.EqualsFull(item) {
 					if !yield(column.columnIndex) {
 						return

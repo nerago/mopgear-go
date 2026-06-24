@@ -31,33 +31,36 @@ func (job *MultiSetJob) determineCommon(optionsInputList []commonOptionsInput) m
 	return commonOptions
 }
 
-func searchItemOptions(optionsInputList []commonOptionsInput) (multi_types.CommonOptions, map[items.ItemId][]string) {
-	commonOptions := make(multi_types.CommonOptions)
-	seenIn := make(map[items.ItemId][]string)
+func searchItemOptions(optionsInputList []commonOptionsInput) (multi_types.CommonOptions, map[items.ItemRef][]string) {
+	commonOptions := multi_types.CommonOptions_Make()
+	seenIn := make(map[items.ItemRef][]string)
 
 	for paramIndex := range optionsInputList {
 		input := &optionsInputList[paramIndex]
 		grouped := groupById(input.itemOptions.AllItems())
-		for itemId, options := range grouped {
-			seenIn[itemId] = append(seenIn[itemId], input.label)
-			commonOptions[itemId] = filterCommonForges(commonOptions[itemId], options)
+		for itemRef, options := range grouped {
+			seenIn[itemRef] = append(seenIn[itemRef], input.label)
+			commonOptions.ApplyToSlicesByItemRef(itemRef, func(prior []items.FullItem) []items.FullItem {
+				return filterCommonForges(prior, options)
+			})
 		}
 	}
 
-	for itemId := range commonOptions {
-		commonOptions[itemId] = util.RemoveDuplicatesFunc(commonOptions[itemId], (*items.FullItem).Equals)
-	}
-	for itemId := range seenIn {
-		seenIn[itemId] = util.RemoveDuplicatesComparable(seenIn[itemId])
+	commonOptions.ApplyToAllSlices(func(slice []items.FullItem) []items.FullItem {
+		return util.RemoveDuplicatesFunc(slice, (*items.FullItem).Equals)
+	})
+	for itemRef := range seenIn {
+		seenIn[itemRef] = util.RemoveDuplicatesComparable(seenIn[itemRef])
 	}
 
 	return commonOptions, seenIn
 }
 
-func groupById(itemSeq iter.Seq[*items.FullItem]) map[items.ItemId][]items.FullItem {
-	grouped := make(map[items.ItemId][]items.FullItem)
+func groupById(itemSeq iter.Seq[*items.FullItem]) map[items.ItemRef][]items.FullItem {
+	grouped := make(map[items.ItemRef][]items.FullItem)
 	for item := range itemSeq {
-		grouped[item.ItemId()] = append(grouped[item.ItemId()], *item)
+		ref := items.ItemRef_Of(item)
+		grouped[ref] = append(grouped[ref], *item)
 	}
 	return grouped
 }
@@ -73,7 +76,7 @@ func filterCommonForges(prior []items.FullItem, newOptions []items.FullItem) []i
 		found := false
 		for b := range newOptions {
 			two := &newOptions[b]
-			if one.Equals(two) { 
+			if one.Equals(two) {
 				found = true
 				break
 			} else if one.ItemId() == two.ItemId() && one.ItemLevel() != two.ItemLevel() {
@@ -90,14 +93,15 @@ func filterCommonForges(prior []items.FullItem, newOptions []items.FullItem) []i
 func applyFixedForges(fixedForge map[items.ItemId]stats.ReforgeRecipe, commonOptions *multi_types.CommonOptions, printer *util.PrintRecorder) {
 	// we could we apply this to the input itemOptions earlier on, but here we make sure it makes it out of all sets as a valid common too, rather than potentially disappearing from some specs silently
 	for itemId, reforge := range fixedForge {
-		options, ok := (*commonOptions)[itemId]
-		if ok {
-			choice := onlyMatchingForge(options, reforge, itemId)
-			(*commonOptions)[itemId] = []items.FullItem{choice}
-			printer.Printf("FIXED %s\n", choice.CreateString())
-		} else {
-			log.Panicf("fixed forge not seen in set options for item %d", itemId)
+		if !commonOptions.IncludesItemId(itemId) {
+			panic("fixed forge not seen in set options for item " + itemId.String())
 		}
+
+		commonOptions.ApplyToSlicesByItemId(itemId, func(options []items.FullItem) []items.FullItem {
+			choice := onlyMatchingForge(options, reforge, itemId)
+			printer.Printf("FIXED %s\n", choice.CreateString())
+			return []items.FullItem{choice}
+		})
 	}
 }
 
@@ -110,15 +114,15 @@ func onlyMatchingForge(options []items.FullItem, reforge stats.ReforgeRecipe, it
 	panic("fixed forge selection not available for item " + strconv.Itoa(int(itemId)))
 }
 
-func removeSingleSetItems(seenIn map[items.ItemId][]string, commonOptions *multi_types.CommonOptions, fixedForge map[items.ItemId]stats.ReforgeRecipe) {
-	for itemId, whereSeen := range seenIn {
-		_, isFixed := fixedForge[itemId]
+func removeSingleSetItems(seenIn map[items.ItemRef][]string, commonOptions *multi_types.CommonOptions, fixedForge map[items.ItemId]stats.ReforgeRecipe) {
+	for itemRef, whereSeen := range seenIn {
+		_, isFixed := fixedForge[itemRef.ItemId]
 		if isFixed {
 			continue
 		}
 
 		if len(whereSeen) <= 1 {
-			delete(*commonOptions, itemId)
+			commonOptions.RemoveByItemRef(itemRef)
 		}
 	}
 }
@@ -127,7 +131,8 @@ func restrictItemOptionsToCommon(optionsInputList []commonOptionsInput, commonOp
 	for paramIndex := range optionsInputList {
 		itemOptions := optionsInputList[paramIndex].itemOptions
 		itemOptions.FilterAllItems(func(item *items.FullItem) bool {
-			commonVersions, isCommon := commonOptions[item.ItemId()]
+			ref := items.ItemRef_Of(item)
+			commonVersions, isCommon := commonOptions.Get(ref)
 			if isCommon {
 				return util.ContainsFunc_Pointer(commonVersions, item.Equals)
 			} else {
@@ -138,19 +143,19 @@ func restrictItemOptionsToCommon(optionsInputList []commonOptionsInput, commonOp
 }
 
 func validateCommons(commonOptions multi_types.CommonOptions) {
-	for itemId, options := range commonOptions {
+	for itemRef, options := range commonOptions.SeqGroups() {
 		if len(options) == 0 {
-			log.Panicf("no common forge for %d", itemId)
+			log.Panicf("no common forge for %d", itemRef.ItemId)
 		}
 	}
 }
 
-func printCommons(seenIn map[items.ItemId][]string, commonOptions multi_types.CommonOptions, printer *util.PrintRecorder) {
-	for itemId, options := range commonOptions {
+func printCommons(seenIn map[items.ItemRef][]string, commonOptions multi_types.CommonOptions, printer *util.PrintRecorder) {
+	for itemRef, options := range commonOptions.SeqGroups() {
 		item := options[0]
-		whereSeen := seenIn[itemId]
+		whereSeen := seenIn[itemRef]
 		seenText := strings.Join(whereSeen, " ")
 
-		printer.Printf("COMMON %d %s %d => %s\n", itemId, item.CreateFullName(), item.ItemLevel(), seenText)
+		printer.Printf("COMMON %d %s %d => %s\n", itemRef.ItemId, item.CreateFullName(), item.ItemLevel(), seenText)
 	}
 }

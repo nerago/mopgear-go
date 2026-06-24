@@ -30,6 +30,10 @@ func (mapslice *MapSlice[K, V]) Add(key K, value V) {
 	}
 }
 
+func (mapslice *MapSlice[K, V]) RemoveAllForKey(key K) {
+	delete(mapslice.data, key)
+}
+
 func (mapslice *MapSlice[K, V]) ValuesForKeyAsSeq(key K) iter.Seq[V] {
 	inner := mapslice.data[key]
 	return slices.Values(inner)
@@ -37,6 +41,16 @@ func (mapslice *MapSlice[K, V]) ValuesForKeyAsSeq(key K) iter.Seq[V] {
 
 func (mapslice *MapSlice[K, V]) GetInternalSlice(key K) []V {
 	return mapslice.data[key]
+}
+
+func (mapslice *MapSlice[K, V]) GetInternalSliceOptional(key K) ([]V, bool) {
+	slice, found := mapslice.data[key]
+	return slice, found
+}
+
+func (mapslice MapSlice[K, V]) Has(key K) bool {
+	slice := mapslice.data[key]
+	return len(slice) > 0
 }
 
 func (mapslice *MapSlice[K, V]) SeqKeys() iter.Seq[K] {
@@ -49,11 +63,11 @@ func (mapslice *MapSlice[K, V]) SeqKeys() iter.Seq[K] {
 	}
 }
 
-func (mapslice *MapSlice[K, V]) SeqKeysValues() iter.Seq2[K, V] {
-	return func(yield func(K, V) bool) {
+func (mapslice *MapSlice[K, V]) SeqKeysValues() iter.Seq2[K, *V] {
+	return func(yield func(K, *V) bool) {
 		for key, inner := range mapslice.data {
-			for _, value := range inner {
-				if !yield(key, value) {
+			for i := range inner {
+				if !yield(key, &inner[i]) {
 					return
 				}
 			}
@@ -64,8 +78,20 @@ func (mapslice *MapSlice[K, V]) SeqKeysValues() iter.Seq2[K, V] {
 func (mapslice *MapSlice[K, V]) SeqValues() iter.Seq[V] {
 	return func(yield func(V) bool) {
 		for _, inner := range mapslice.data {
-			for _, value := range inner {
-				if !yield(value) {
+			for i := range inner {
+				if !yield(inner[i]) {
+					return
+				}
+			}
+		}
+	}
+}
+
+func (mapslice *MapSlice[K, V]) SeqValuesPointer() iter.Seq[*V] {
+	return func(yield func(*V) bool) {
+		for _, inner := range mapslice.data {
+			for i := range inner {
+				if !yield(&inner[i]) {
 					return
 				}
 			}
@@ -94,9 +120,10 @@ func (mapslice *MapSlice[K, V]) SeqGroupsInternalSlice() iter.Seq2[K, []V] {
 }
 
 func (mapslice *MapSlice[K, V]) MapInternalSlice(key K, mapper func([]V) []V) {
-	if mapslice.data != nil {
-		mapslice.data[key] = mapper(mapslice.data[key])
+	if mapslice.data == nil {
+		mapslice.data = make(map[K][]V)
 	}
+	mapslice.data[key] = mapper(mapslice.data[key])
 }
 
 func (mapslice *MapSlice[K, V]) MapInternalSlicesAll(mapper func(K, []V) []V) {

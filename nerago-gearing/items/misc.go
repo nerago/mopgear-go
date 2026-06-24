@@ -38,3 +38,12 @@ func CalcUpgradeLevel(itemLevel uint16, itemLevelBase uint16) UpgradeLevel {
 		panic("unknown upgrade level")
 	}
 }
+
+type ItemRef struct {
+	ItemId       ItemId
+	RandomSuffix RandomSuffix
+}
+
+func ItemRef_Of(item *FullItem) ItemRef {
+	return ItemRef{ItemId: item.ItemId(), RandomSuffix: item.RandomSuffix()}
+}

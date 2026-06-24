@@ -17,12 +17,13 @@ import (
 )
 
 func checkNoConflicts(outputSet []multi_types.SingleProposedOutput, printer *util.PrintRecorder) bool {
-	itemById := make(map[items.ItemId]*items.FullItem)
+	itemByRef := make(map[items.ItemRef]*items.FullItem)
 	for outputIndex := range outputSet {
 		for item := range outputSet[outputIndex].FullSet.Items().AllItemSeq() {
-			existing, found := itemById[item.ItemId()]
+			ref := items.ItemRef_Of(item)
+			existing, found := itemByRef[ref]
 			if !found {
-				itemById[item.ItemId()] = item
+				itemByRef[ref] = item
 			} else if !existing.Equals(item) {
 				printer.Printf("!! CONFLICT %s\n!!          %s\n", item.CreateString(), existing.CreateString())
 				return false

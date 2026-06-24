@@ -295,11 +295,13 @@ func (param *multiSetParamInternal) makeRandomVariantItem(variantItem *randomVar
 	hasVersion := make([]bool, len(variantItem.randomSuffixList))
 	for item := range util.ForPointer(slotOptions) {
 		if item.ItemId() == variantItem.itemId {
+			hasAny = true
+
 			index := slices.Index(variantItem.randomSuffixList, item.RandomSuffix())
 			if index == -1 {
-				panic("variant item found with unexpected suffix")
+				// panic("variant item found with unexpected suffix")
+				continue
 			}
-			hasAny = true
 			hasVersion[index] = true
 		}
 	}
@@ -312,6 +314,10 @@ func (param *multiSetParamInternal) makeRandomVariantItem(variantItem *randomVar
 				slotOptions = append(slotOptions, options...)
 			}
 		}
+
+		slotOptions = util.FilterSliceAsNew(slotOptions, func(x *items.FullItem) bool {
+			return x.ItemId() != variantItem.itemId || slices.Contains(variantItem.randomSuffixList, x.RandomSuffix())
+		})
 	}
 
 	return slotOptions
