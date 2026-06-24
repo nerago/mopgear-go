@@ -325,5 +325,6 @@ func ItemFinder_BagsUpgraded(_ stats.Difficulty) []*items.FullItem {
 			}
 		}
 	}
+	result = util.RemoveDuplicatesFunc(result, func(a, b **items.FullItem) bool { return (*a).Equals(*b) })
 	return result
 }

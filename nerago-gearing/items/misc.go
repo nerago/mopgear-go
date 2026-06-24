@@ -1,6 +1,9 @@
 package items
 
-import "strconv"
+import (
+	"paladin_gearing_go/util"
+	"strconv"
+)
 
 const (
 	LOW_HIGH_MOP_ITEM_LEVELS_THRESHOLD                  = 522
@@ -46,4 +49,15 @@ type ItemRef struct {
 
 func ItemRef_Of(item *FullItem) ItemRef {
 	return ItemRef{ItemId: item.ItemId(), RandomSuffix: item.RandomSuffix()}
+}
+
+func (ref ItemRef) String() string {
+	build := util.StringBuild2{}
+	build.WriteInt32(int32(ref.ItemId))
+	if ref.RandomSuffix != 0 {
+		build.WriteString("[")
+		build.WriteInt32(int32(ref.RandomSuffix))
+		build.WriteString("]")
+	}
+	return build.String()
 }

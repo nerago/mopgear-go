@@ -25,7 +25,7 @@ func UniqueEquipViolation(a, b *FullItem) bool {
 		return false
 	}
 
-	if a.ItemId() == b.ItemId() || a.BaseName() == b.BaseName() {
+	if (a.ItemId() == b.ItemId() && a.RandomSuffix() == b.RandomSuffix()) || a.BaseName() == b.BaseName() {
 		return true
 	}
 

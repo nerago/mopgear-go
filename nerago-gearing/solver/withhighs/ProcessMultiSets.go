@@ -10,7 +10,6 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
 	"strconv"
-	"time"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 	"github.com/google/uuid"
@@ -87,6 +86,8 @@ func (process *SolverHighsMultiProcess) RunInterruptable(printer *util.PrintReco
 func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.PrintRecorder, outputTarget util.Optional[int], cancel channel_op.CancelSignal) <-chan HighsMultiResult {
 	resultChannel := make(chan HighsMultiResult, 8)
 
+	// process.common.Get()
+
 	go func() {
 		initialResult, bestCommonChoices, hasInitial := process.generateInitialMulti(printer, cancel)
 		if hasInitial {
@@ -113,14 +114,12 @@ func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.Print
 	printer.Printf("INITIAL MULTI run\n")
 
 	process.makeFullModel()
-	startTime1 := time.Now()
 	future := process.build.RunHighsFuture()
 	channel_op.ChainCancel(cancel, future)
 
 	result, gotResult := future.WaitForResult()
 	if gotResult {
 		solution := result.Solution
-		printer.Println("Solve initial duration = " + time.Since(startTime1).String())
 		printer.Println("SOLUTION STATUS = " + solution.Status.String())
 		printer.AppendOther(result.Log)
 		debugPrintAll(solution, process, printer)
@@ -136,35 +135,58 @@ func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.Print
 
 func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariants(bestCommonChoices []*columnInfo, printer *util.PrintRecorder, cancel channel_op.CancelSignal) <-chan HighsMultiResult {
 	return channel_op.MapOptional_SliceToChannel_Cancellable(10, bestCommonChoices, cancel, func(changeColumn **columnInfo) (HighsMultiResult, bool) {
-		innerPrint := util.PrintRecorder_HoldAll()
-		printer.Printf("COMMON VARIANT blocking %s\n", (*changeColumn).itemFull.CreateString())
-
-		build := process.build.Clone()
-		rowLimitCommon := utilhighs.ConstraintRow{Debug: "rowLimitCommon"}
-		rowLimitCommon.Add((*changeColumn).columnIndex, 1)
-		rowLimitCommon.Build(build, 0, 0)
-
-		startTime2 := time.Now()
-
-		future := build.RunHighsFuture()
-		channel_op.ChainCancel(cancel, future)
-
-		result, gotResult := future.WaitForResult()
-		if gotResult {
-			solution := result.Solution
-			printer.Println("Solve loop duration = " + time.Since(startTime2).String())
-			innerPrint.Println("SOLUTION STATUS = " + solution.Status.String())
-			innerPrint.AppendOther(result.Log)
-
-			innerPrint.Println("############################################################################")
-			printer.AppendOther(innerPrint)
-
-			if solution.HasSolution() {
-				return process.solutionToResult(solution, innerPrint), true
-			}
-		}
-		return HighsMultiResult{}, false
+		return process.generateWithDifferentCommonVariant_One(printer, *changeColumn, cancel)
 	})
+}
+
+// func (process *SolverHighsMultiProcess) generateWithForbiddenCommon_One(printer *util.PrintRecorder, forbiddenRef items.ItemRef, cancel channel_op.CancelSignal) (HighsMultiResult, bool) {
+// innerPrint := util.PrintRecorder_HoldAll()
+// printer.Printf("COMMON FORBIDDEN %s\n", forbiddenRef.String())
+
+// build := process.build.Clone()
+// rowLimitCommon := utilhighs.ConstraintRow{Debug: "rowLimitCommon"}
+// for _, part := range process.parts {
+// 		for column := range part.setup.itemColumns.ValuesForKeyAsSeq(forbiddenRef.ItemId) {
+// 			if column.item.EqualsFull(item) {
+// 			}
+// 		}
+// 	}
+// rowLimitCommon.Add(changeColumn.columnIndex, 1)
+// rowLimitCommon.Build(build, 0, 0)
+
+// return process.runVariant(build, cancel, innerPrint, printer)
+// }
+
+func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariant_One(printer *util.PrintRecorder, changeColumn *columnInfo, cancel channel_op.CancelSignal) (HighsMultiResult, bool) {
+	innerPrint := util.PrintRecorder_HoldAll()
+	printer.Printf("COMMON VARIANT blocking %s\n", changeColumn.itemFull.CreateString())
+
+	build := process.build.Clone()
+	rowLimitCommon := utilhighs.ConstraintRow{Debug: "rowLimitCommon"}
+	rowLimitCommon.Add(changeColumn.columnIndex, 1)
+	rowLimitCommon.Build(build, 0, 0)
+
+	return process.runVariant(build, cancel, innerPrint, printer)
+}
+
+func (process *SolverHighsMultiProcess) runVariant(build *utilhighs.LinearBuilder, cancel channel_op.CancelSignal, innerPrint *util.PrintRecorder, printer *util.PrintRecorder) (HighsMultiResult, bool) {
+	future := build.RunHighsFuture()
+	channel_op.ChainCancel(cancel, future)
+
+	result, gotResult := future.WaitForResult()
+	if gotResult {
+		solution := result.Solution
+		innerPrint.Println("SOLUTION STATUS = " + solution.Status.String())
+		innerPrint.AppendOther(result.Log)
+
+		innerPrint.Println("############################################################################")
+		printer.AppendOther(innerPrint)
+
+		if solution.HasSolution() {
+			return process.solutionToResult(solution, innerPrint), true
+		}
+	}
+	return HighsMultiResult{}, false
 }
 
 func debugPrintAll(solution *highs.Solution, job *SolverHighsMultiProcess, printer *util.PrintRecorder) {

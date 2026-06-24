@@ -72,8 +72,8 @@ func finaliseSolve(solvedResult util.Optional[items.SolvableItemSet], solveOptio
 
 	solvedSet.DebugValidate()
 
-	solvedSet = tools.Tweaker_Run(&solvedSet, &solveOptions, input.Model)
-	solvedSet.DebugValidate()
+	// solvedSet = tools.Tweaker_Run(&solvedSet, &solveOptions, input.Model)
+	// solvedSet.DebugValidate()
 
 	fullItem := items.FullItemSet_FromSolved(solvedSet, input.ItemOptions)
 	fullItem.DebugValidate()

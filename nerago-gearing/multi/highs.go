@@ -135,6 +135,7 @@ func (job *MultiSetJob) makeOutputFromHighs(multiResult withhighs.HighsMultiResu
 		itemSet := multiResult.ItemSets[paramIndex]
 		outputId := multiResult.OutputId[paramIndex]
 		single := multi_types.SingleProposed_FromItemSet(itemSet, outputId, &param.Model)
+		printer.Printf("LABEL %s\n", param.Label)
 		single.Report(printer)
 		param.seenInSolutions.Add(&itemSet)
 		outputs[paramIndex] = single
