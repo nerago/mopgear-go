@@ -395,14 +395,12 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
-	job.RunNoPermutations_AllCommonAlternates()
-	// job.RunForSolutionsPerPerumte(1)
+	// job.RunNoPermutations_AllCommonAlternates()
+	job.RunForSolutionsPerPerumte(10)
 	// job.RunCullingSets(2000, time.Minute*60)
 }
 
 func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {
-	// param.BlockItem(87024) // nullification greathelm = capacitance
-	// param.BlockItem(95282) // lightning emp helmet = capacitance
 	param.BlockItem(87101) // white tiger helmet = prot gem
 	param.BlockItem(95292) // lightning emp faceguard = prot gem
 	param.BlockItem(95778) // golden golem celestial = ignore in all sets

@@ -170,9 +170,9 @@ func findUpgrades_Paladin(printer *util.PrintRecorder) {
 	// simRunSize    = simulate.RunSize_TestOnly
 	// var simRunSize simulate.WowSim_RunSize = 1500
 	// var simRunSize simulate.WowSim_RunSize = 3000
-	var simRunSize simulate.WowSim_RunSize = 8000
+	// var simRunSize simulate.WowSim_RunSize = 8000
 	// simRunSize := simulate.RunSize_QuickDirty
-	// simRunSize    := simulate.RunSize_Medium
+	simRunSize := simulate.RunSize_Medium
 
 	substituteItemsDpsAndMiti := slices.Concat(substituteItemsDps, substituteItemsMiti)
 	substituteItemsDpsAndMiti = util.RemoveDuplicatesComparable(substituteItemsDpsAndMiti)
@@ -181,20 +181,20 @@ func findUpgrades_Paladin(printer *util.PrintRecorder) {
 	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
 	substituteEmptySlotOnly[items.Item_Ring] = 86957    // heroic bladed tempest ring
 
-	// finder := func(_ stats.Difficulty) []*items.FullItem {
-	// 	return []*items.FullItem{db.WowSimDB_ByIdAndUpgrade(99128, 2), db.WowSimDB_ByIdAndUpgrade(99138, 2)}
-	// }
+	finder := func(_ stats.Difficulty) []*items.FullItem {
+		return []*items.FullItem{db.WowSimDB_ByIdAndUpgrade(103735, 0), db.WowSimDB_ByIdAndUpgrade(103791, 0), db.WowSimDB_ByIdAndUpgrade(103872, 0)}
+	}
 	// finder := loaders.ItemFinder_SiegeStrengthPlateTank
 	// finder := loaders.ItemFinder_Ordos
 	// finder := loaders.ItemFinder_TimelessPlate
-	finder := loaders.ItemFinder_BagsUpgraded
+	// finder := loaders.ItemFinder_BagsUpgraded
 
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
-				IncludeCelestial:   true,
-				IncludeNormal:      false,
-				IncludeHeroic:      false,
+				// IncludeCelestial:   true,
+				IncludeNormal:      true,
+				IncludeHeroic:      false, // heroics: Immerseus Norushen ShaofPride FallenProtectors Galakras Nazgrim
 				IncludeRaden:       false,
 				IgnoredItems:       ignoredItems,
 				TargetUpgradeLevel: 2,

@@ -491,8 +491,8 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		94527, // ji-kun
 		// 94507,                    // valor
 		// 94508,                    // valor
-		103989, // timeless alacrity of xuen
-		103990, // timeless resolve of niuzao
+		// 103989, // timeless alacrity of xuen
+		// 103990, // timeless resolve of niuzao
 		103678, // time lost artifict
 		trinketZandSpark,
 		trinketThokTailCelestial,
@@ -510,11 +510,11 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 	}
 
 	groups := []group{
-		// {
-		// 	"heal",
-		// 	model.Model_PallyProtHeal(),
-		// 	files.GearFileProtHeal,
-		// },
+		{
+			"heal",
+			model.Model_PallyProtHeal(),
+			files.GearFileProtHeal,
+		},
 		{
 			"with_set",
 			model.Model_PallyProtMitigation_WithSet(),
@@ -524,15 +524,16 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 			model.Model_PallyProtMitigation_NoSet(),
 			files.GearFileProtMitigationNoSet,
 		},
+		{
+			"compromise",
+			model.Model_PallyProtCompromise(),
+			files.GearFileProtCompromise,
+		}, {
+			"dps",
+			model.Model_PallyProtDps(),
+			files.GearFileProtDps,
+		}, 
 		// {
-		// 	"compromise",
-		// 	model.Model_PallyProtCompromise(),
-		// 	files.GearFileProtCompromise,
-		// }, {
-		// 	"dps",
-		// 	model.Model_PallyProtDps(),
-		// 	files.GearFileProtDps,
-		// }, {
 		// 	"ret",
 		// 	model.Model_PallyProtDps(),
 		// 	files.GearFileProtDps,
