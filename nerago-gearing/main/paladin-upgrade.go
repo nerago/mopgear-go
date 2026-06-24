@@ -197,7 +197,7 @@ func findUpgrades_Paladin(printer *util.PrintRecorder) {
 				IncludeHeroic:      false, // heroics: Immerseus Norushen ShaofPride FallenProtectors Galakras Nazgrim
 				IncludeRaden:       false,
 				IgnoredItems:       ignoredItems,
-				TargetUpgradeLevel: 2,
+				TargetUpgradeLevel: 0,
 			},
 			SimSize: simRunSize,
 		},

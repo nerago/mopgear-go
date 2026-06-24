@@ -187,6 +187,7 @@ const (
 	Fight_Horridon_LowHeal  WowSim_Fight = iota
 	Fight_Animus            WowSim_Fight = iota
 	Fight_Juggernaut        WowSim_Fight = iota
+	// TODO highheal variant
 )
 
 type StatAndValue struct {

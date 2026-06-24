@@ -11,6 +11,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
+	"time"
 )
 
 const (
@@ -40,8 +41,8 @@ const (
 )
 
 func PaladinMultiRun(printer *util.PrintRecorder) {
-	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Medium)
-	// job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
+	// job := multi.MultiSetJob_Create(printer, simulate.RunSize_Medium)
+	job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
 
 	var generalUpgrade items.UpgradeLevel = 0
 	var forceUpgrade items.UpgradeLevel = 0
@@ -243,6 +244,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		105785, // burly bracer
 		103734, // zoid gauntlets
 		103826, // xifeng weapon
+		103735, // tar-coated gauntlets
+		103791, // gauntlet of discarded
+		103872, // bulwurk of fallen general
 	}
 	newTrinkets := []items.ItemId{
 		trinketThokTailCelestial,
@@ -396,8 +400,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
 	// job.RunNoPermutations_AllCommonAlternates()
-	job.RunForSolutionsPerPerumte(10)
-	// job.RunCullingSets(2000, time.Minute*60)
+	// job.RunForSolutionsPerPerumte(10)
+	job.RunCullingSets(2000, time.Minute*30)
 }
 
 func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {

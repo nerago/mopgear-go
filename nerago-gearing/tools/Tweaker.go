@@ -25,7 +25,8 @@ func Tweaker_Run(initialSet *SolvableItemSet, solvableOptionsMap *SolvableOption
 
 				if slot == Equip_Ring1 || slot == Equip_Ring2 || slot == Equip_Trinket1 || slot == Equip_Trinket2 {
 					pairItem := best.BestObject.Items().Get(slot.PairedSlot())
-					if items.UniqueEquipViolationSolve(replaceItem, pairItem) {
+					// TODO updated unique stuff
+					if items.UniqueEquipViolationSolve(replaceItem, pairItem, solvableOptionsMap) {
 						continue
 					}
 				}

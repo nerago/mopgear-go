@@ -38,17 +38,12 @@ func UniqueEquipViolation(a, b *FullItem) bool {
 	return false
 }
 
-// TODO should have the name collision items in UniqueItemIdSets
-func UniqueEquipViolationSolve(a, b *SolvableItem) bool {
+func UniqueEquipViolationSolve(a, b *SolvableItem, solvableOptionsMap *SolvableOptionsMap) bool {
 	if a == nil || b == nil {
 		return false
 	}
 
-	if a.ItemId() == b.ItemId() {
-		return true
-	}
-
-	for _, set := range UniqueItemIdSets {
+	for _, set := range solvableOptionsMap.uniqueEquippedSets {
 		if slices.Contains(set, a.ItemId()) && slices.Contains(set, b.ItemId()) {
 			return true
 		}

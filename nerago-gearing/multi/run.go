@@ -56,6 +56,8 @@ func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time
 	tracker.RunOuterTracking(len(job.params))
 	defer tracker.SetDone()
 
+	cancel := channel_op.CancelSignal_Make()
+
 	timer := time.AfterFunc(timeLimit, func() {
 		job.printer.Println("###################### TIME LIMIT EXPIRED ######################")
 		tracker.SetDone()
@@ -64,7 +66,7 @@ func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time
 
 	waitGroup := sync.WaitGroup{}
 	for param := range util.ForPointer(job.params) {
-		param.runCullingProcess(targetSolutionCount, &waitGroup, tracker.NewChild())
+		param.runCullingProcess(targetSolutionCount, &waitGroup, cancel, tracker.NewChild())
 	}
 
 	waitGroup.Wait()

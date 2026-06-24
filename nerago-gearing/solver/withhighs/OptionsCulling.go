@@ -6,6 +6,7 @@ import (
 	gear_model "paladin_gearing_go/model"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 	"slices"
 	"sync"
 	"sync/atomic"
@@ -43,7 +44,7 @@ func (process *OptionsCulling) Init(label string, targetResultCount int64, itemO
 	process.didRemove = make(map[items.ItemId]bool)
 }
 
-func (process *OptionsCulling) Run(shouldRun func() bool) <-chan items.SolvableItemSet {
+func (process *OptionsCulling) Run(cancel channel_op.CancelSignal) <-chan items.SolvableItemSet {
 	process.printer.Printf("Running culling\n")
 
 	resultChannel := make(chan items.SolvableItemSet, 8)
@@ -51,7 +52,7 @@ func (process *OptionsCulling) Run(shouldRun func() bool) <-chan items.SolvableI
 	waitGroup := sync.WaitGroup{}
 	for range c_cullThreadCount {
 		waitGroup.Go(func() {
-			for process.tasksCompleted.Load() < process.targetResultCount-c_cullThreadCount && shouldRun() {
+			for process.tasksCompleted.Load() < process.targetResultCount-c_cullThreadCount && !cancel.IsCancelled() {
 				process.runTask(resultChannel)
 			}
 			process.printer.Println("exit thread")
