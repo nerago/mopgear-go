@@ -38,7 +38,7 @@ func simResultAddToCSV(simResult stats.SimData, csv *util.CSVOutputByColumn) {
 
 func testBasicStatsGeneral(printer *util.PrintRecorder) {
 	// simSpeed := simulate.RunSize_QuickDirty
-	simSpeed := simulate.RunSize_SlowAccurate
+	simSpeed := simulate.RunSize_Common
 
 	// fight := stats.Fight_Animus
 	// spec := stats.Spec_PaladinProtMitigation
@@ -136,9 +136,10 @@ func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet item
 		str.WriteRune(' ')
 
 		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.NewChild())
-
+		
+		str.WriteString("   --> ")
+		simResult.CompactStringGeneralBuilder(&str)
 		innerPrint.PrintlnFromBuild(str)
-		innerPrint.Println("   --> " + simResult.CompactStringGeneral())
 
 		printer.AppendOther(innerPrint)
 
@@ -153,7 +154,7 @@ func generateRatingsInputFromArtificalStatOverrides_ForBasic(currentItemSet item
 
 func generateRatingsInputFromRealRandomSetsT5(printer *util.PrintRecorder) ([]stathighs.WeightInput, stats.SimData) {
 	makeSetCount := 2000
-	simSize := simulate.RunSize_Medium
+	simSize := simulate.RunSize_Common
 
 	model := model.Model_PallyProtMitigation_NoSet()
 	targetRatio := model.SimRatioWeighting

@@ -189,8 +189,10 @@ func checkHighs(printer *util.PrintRecorder) {
 
 func testSim(printer *util.PrintRecorder) {
 	// testSimA(printer)
-	testSimB(printer)
+	// testSimB(printer)
+	testSimEach()
 }
+
 func testSimA(printer *util.PrintRecorder) {
 	model := model.Model_PallyProtDps()
 	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtDps, &model, setup.MissingEnchant_Panic, printer)
@@ -214,8 +216,25 @@ func testSimB(printer *util.PrintRecorder) {
 		EnableTrackProgress: true,
 		Printer:             printer})
 	printer.Println("Running sim")
-	resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_Medium, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
+	resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_Common, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
+}
+func testSimEach() {
+	modelList := []model.Model{model.Model_PallyProtDps(), model.Model_PallyProtCompromise(), model.Model_PallyProtMitigation_NoSet(), model.Model_PallyProtMitigation_WithSet(), model.Model_PallyProtHeal()}
+	for model := range util.ForPointer(modelList) {
+		equipped := loaders.GearFileReader_Read(model.ReferenceGearFile)
+		equipSet := setup.OptionsSetup_ExactEquippedOnly(equipped, model, setup.MissingEnchant_Fix, util.PrintRecorder_HoldAll())
+		// itemOptions := setup.OptionsSetup_FromGearFile(model.ReferenceGearFile, model, setup.MissingEnchant_Panic, printer)
+		// output := solver.Solver(solver.SolveInput{
+		// 	ItemOptions:         &itemOptions,
+		// 	Model:               model,
+		// 	EnableTrackProgress: true,
+		// 	Printer:             printer})
+		// printer.Printf("Running sim\n")
+		// equipSet := output.FullSet.Items()
+		resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_QuickDirty, model, &equipSet, nil, util.TrackProgress_Start())
+		resultStats.Print(printer)
+	}
 }
 
 func slotRating(printer *util.PrintRecorder) {
@@ -270,8 +289,8 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 
 	output.Report(printer)
 
-	currentStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_SlowAccurate, &model, &currentEquip, nil, util.TrackProgress_Start())
-	resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_SlowAccurate, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
+	currentStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_VerySlow, &model, &currentEquip, nil, util.TrackProgress_Start())
+	resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_VerySlow, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
 
 	printer.Println("CURRENT STATS")
 	currentStats.Print(printer)
@@ -469,7 +488,7 @@ func trinketSims(printer *util.PrintRecorder) {
 			newEquip[items.Equip_Trinket2] = item
 			// fullSet := items.FullItemSet_FromMap(newEquip)
 
-			resultStats := simulate.WowSim_Execute_SpecifyAll(simulate.RunSize_Medium, model.SimSpeedUp, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
+			resultStats := simulate.WowSim_Execute_SpecifyAll(simulate.RunSize_Largish, model.SimSpeedUp, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
 			resultStats.Print(printer)
 			for _, statType := range stats.SimTypeList {
 				csv.AddFloat64(resultStats.GetFriendly(statType), 2)
@@ -500,7 +519,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		trinketVialCorruptCelestial,
 	}
 
-	fight := stats.Fight_Juggernaut
+	fight := stats.Fight_Juggernaut_LowHeal
 	simRun := simulate.RunSize_QuickDirty // Medium
 
 	type group struct {
@@ -532,7 +551,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 			"dps",
 			model.Model_PallyProtDps(),
 			files.GearFileProtDps,
-		}, 
+		},
 		// {
 		// 	"ret",
 		// 	model.Model_PallyProtDps(),

@@ -11,7 +11,6 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
-	"time"
 )
 
 const (
@@ -41,8 +40,8 @@ const (
 )
 
 func PaladinMultiRun(printer *util.PrintRecorder) {
-	// job := multi.MultiSetJob_Create(printer, simulate.RunSize_Medium)
-	job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
+	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Common)
+	// job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
 
 	var generalUpgrade items.UpgradeLevel = 0
 	var forceUpgrade items.UpgradeLevel = 0
@@ -245,7 +244,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		103734, // zoid gauntlets
 		103826, // xifeng weapon
 		103735, // tar-coated gauntlets
-		103791, // gauntlet of discarded
 		103872, // bulwurk of fallen general
 	}
 	newTrinkets := []items.ItemId{
@@ -279,35 +277,36 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		95535, // normal lightning legs - actually good despite the level
 		96533, // rein-binders fists heroic
 		96542, // tidal force treads
-		94820, // caustic spike bracers - moved from shared, decent 3rd
 		95140, // shado assault band (decent 3rd)
 		96468, // talonrender chest heroic
 		96657, // ret tier15 legs heroic
 	})
 
 	protCompromise.AddExtraItems([]items.ItemId{
-		86979, // heroic impaling treads
-		96478, // treads of the blind heroic
-		96373, // cloudbreaker belt heroic
-		94773, // centripetal shoulders normal - actually good despite the level
-		95535, // normal lightning legs - actually good despite the level
-		96533, // rein-binders fists heroic - actually good despite the level
-		96395, // bloodsoaked legplates
-		96542, // tidal force treads
-		96394, // frozen warlord bracer heroic (moved from shared lists was still 3rd)
-		95140, // shado assault band (decent 4th)
-		96468, // talonrender chest heroic
+		86979,  // heroic impaling treads
+		96478,  // treads of the blind heroic
+		96373,  // cloudbreaker belt heroic
+		94773,  // centripetal shoulders normal - actually good despite the level
+		95535,  // normal lightning legs - actually good despite the level
+		96533,  // rein-binders fists heroic - actually good despite the level
+		96395,  // bloodsoaked legplates
+		96542,  // tidal force treads
+		96394,  // frozen warlord bracer heroic (moved from shared lists was still 3rd)
+		95140,  // shado assault band (decent 4th)
+		96468,  // talonrender chest heroic
+		103791, // gauntlet of discarded
 	})
 
 	protMitigationNoSet.AddExtraItems([]items.ItemId{
-		96478, // treads of the blind heroic
-		96373, // cloudbreaker belt heroic
-		95535, // normal lightning legs
-		96533, // rein-binders fists heroic
-		96550, // doomed crown heroic
-		96395, // bloodsoaked legplates
-		96542, // tidal force treads
-		96394, // frozen warlord bracer heroic (moved from shared lists was still 3rd)
+		96478,  // treads of the blind heroic
+		96373,  // cloudbreaker belt heroic
+		95535,  // normal lightning legs
+		96533,  // rein-binders fists heroic
+		96550,  // doomed crown heroic
+		96395,  // bloodsoaked legplates
+		96542,  // tidal force treads
+		96394,  // frozen warlord bracer heroic (moved from shared lists was still 3rd)
+		103791, // gauntlet of discarded
 	})
 
 	protMitigationWithSet.AddExtraItems([]items.ItemId{
@@ -399,9 +398,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
-	// job.RunNoPermutations_AllCommonAlternates()
+	job.RunNoPermutations_AllCommonAlternates()
 	// job.RunForSolutionsPerPerumte(10)
-	job.RunCullingSets(2000, time.Minute*30)
+	// job.RunCullingSets(500, time.Minute*30)
 }
 
 func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {

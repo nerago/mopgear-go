@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	C_HighsToConsole     = true
+	C_HighsToConsole     = false
 	C_DebugHighs         = false
 	C_DiagnoseInfeasible = false
 	c_threads            = 6

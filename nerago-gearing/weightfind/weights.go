@@ -47,7 +47,7 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 
 	// SIMULATE STAT CHANGES
 	inputDataGrid := SimulateSteppedStatChangesForGrid(currentItemSet, printer, simSpeed, gearModel.SimSpeedUp, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions, tracker.NewChild())
-	inputDataReal := SimulateRealRandomSets(gearFile, substituteItems, gearModel, 200, simSpeed, false, printer, tracker.NewChild())
+	inputDataReal := SimulateRealRandomSets(gearFile, substituteItems, gearModel, len(inputDataGrid)/2, simSpeed, false, printer, tracker.NewChild())
 
 	// SOLVE FOR STAT WEIGHTS
 	process := stathighs.GridStatWeightProcess{}
@@ -62,7 +62,6 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 	tracker.NewChild().SetDone() // pretend we were tracking the linear process and mark done
 
 	// TWEAK weights see if dumb changes can do better than grid
-	// TODO look into ranking stats solver
 	mixedInputData := slices.Concat(inputDataGrid, inputDataReal)
 	weights = WeightTweaker(weights, TweakerChangeStats, ratios, mixedInputData, printer)
 	printer.Println(">>>>> Tweaked Weights:")

@@ -15,10 +15,13 @@ import (
 	"paladin_gearing_go/util/channel_op"
 )
 
+const max_grid_sim_count = 600
+const grid_sim_steps = 2
+
 func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, tracker *util.TrackProgress) []stathighs.WeightInput {
 	var incrementMin int32 = 0
-	var incrementMax int32 = 500
 	var incrementStep int32 = 250
+	var incrementMax int32 = incrementStep * grid_sim_steps
 
 	initialBaseStats := InitialBonusStatMap_fixRanges(printer, currentItemSet, incrementMax)
 
@@ -37,8 +40,14 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 		}
 		incrementOptions = append(incrementOptions, optionArray)
 	}
-
 	incrementPermutations := util.PermuteAll_Slice(incrementOptions)
+
+	printer.Printf("SimulateSteppedStatChangesForGrid incrementPermutations=%d\n", len(incrementPermutations))
+
+	// crude cut down to size
+	if len(incrementPermutations) > max_grid_sim_count {
+		incrementPermutations = incrementPermutations[0:max_grid_sim_count]
+	}
 
 	tracker.RunOuterTracking(len(incrementPermutations))
 	defer tracker.SetDone()
@@ -60,8 +69,9 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 
 		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.NewChild())
 
+		str.WriteString("   --> ")
+		simResult.CompactStringGeneralBuilder(&str)
 		innerPrint.PrintlnFromBuild(str)
-		innerPrint.Println("   --> " + simResult.CompactStringGeneral())
 
 		printer.AppendOther(innerPrint)
 
@@ -148,15 +158,24 @@ func fixBadHasteRange(printer *util.PrintRecorder, currentHaste uint32, plannedI
 	printer.Printf("Planned simulated gear haste %d-%d\n", min, max)
 
 	var fix int32
-	if max > c_hasteDiscontinuityStart {
+	if min >= c_hasteDiscontinuityEnd {
+		fix = 0
+	} else if max <= c_hasteDiscontinuityStart {
+		fix = 0
+	} else if (max - c_hasteDiscontinuityStart) < (c_hasteDiscontinuityEnd - min) {
 		fix = c_hasteDiscontinuityStart - max
-	} else if min < c_hasteDiscontinuityEnd {
+	} else {
 		fix = c_hasteDiscontinuityEnd - min
 	}
 
 	if fix != 0 {
 		printer.Printf("Corrected simulated gear haste %d-%d\n", min+fix, max+fix)
 	}
+
+	if !(min+fix >= c_hasteDiscontinuityEnd || max+fix <= c_hasteDiscontinuityStart) {
+		panic("didn't fix range")
+	}
+
 	return fix
 }
 

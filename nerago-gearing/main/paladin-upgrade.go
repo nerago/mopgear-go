@@ -172,7 +172,7 @@ func findUpgrades_Paladin(printer *util.PrintRecorder) {
 	// var simRunSize simulate.WowSim_RunSize = 3000
 	// var simRunSize simulate.WowSim_RunSize = 8000
 	// simRunSize := simulate.RunSize_QuickDirty
-	simRunSize := simulate.RunSize_Medium
+	simRunSize := simulate.RunSize_Common
 
 	substituteItemsDpsAndMiti := slices.Concat(substituteItemsDps, substituteItemsMiti)
 	substituteItemsDpsAndMiti = util.RemoveDuplicatesComparable(substituteItemsDpsAndMiti)

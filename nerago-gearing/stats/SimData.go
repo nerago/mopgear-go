@@ -96,6 +96,11 @@ func appendFloatSignedPercent(value float64, build *util.StringBuild2) {
 
 func (stats SimData) CompactStringGeneral() string {
 	var build util.StringBuild2
+	stats.CompactStringGeneralBuilder(&build)
+	return build.String()
+}
+
+func (stats SimData) CompactStringGeneralBuilder(build *util.StringBuild2) {
 	build.WriteString("dps=")
 	build.WriteFloat64_RightPadded(stats.DPS, 0, 6)
 	build.WriteString(" dtps=")
@@ -104,7 +109,6 @@ func (stats SimData) CompactStringGeneral() string {
 	build.WriteFloat64_RightPadded(stats.TMI, 2, 6)
 	build.WriteString(" death=")
 	build.WriteFloat64(stats.DEATH*100, 2)
-	return build.String()
 }
 
 func (stats SimData) IsEmpty() bool {

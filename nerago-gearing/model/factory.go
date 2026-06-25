@@ -16,7 +16,7 @@ func Model_PallyProtMitigation_WithSet() Model {
 	return Model{
 		Spec:              spec,
 		Goal:              goal,
-		SimulateAs:        Fight_Juggernaut,
+		SimulateAs:        Fight_Juggernaut_LowHeal,
 		SimRatioWeighting: SimRatio_malkrokWeight,
 		StatRatings:       weight,
 		StatRequirements:  StatRequirementsHitExpertise_ProtFlexibleParry(),
@@ -43,7 +43,7 @@ func Model_PallyProtHeal() Model {
 	return Model{
 		Spec:              spec,
 		Goal:              goal,
-		SimulateAs:        Fight_Juggernaut,
+		SimulateAs:        Fight_Juggernaut_LowHeal,
 		SimRatioWeighting: SimRatio_healWeight,
 		StatRatings:       weight,
 		StatRequirements:  StatRequirementsHitExpertise_ProtFlexibleParry(),
@@ -69,7 +69,7 @@ func Model_PallyProtMitigation_NoSet() Model {
 	return Model{
 		Spec:              spec,
 		Goal:              goal,
-		SimulateAs:        Fight_Juggernaut,
+		SimulateAs:        Fight_Juggernaut_LowHeal,
 		SimRatioWeighting: SimRatio_generalMiti,
 		StatRatings:       weight,
 		StatRequirements:  StatRequirementsHitExpertise_ProtFlexibleParry(),
@@ -92,7 +92,7 @@ func Model_PallyProtCompromise() Model {
 	return Model{
 		Spec:              spec,
 		Goal:              goal,
-		SimulateAs:        Fight_Juggernaut,
+		SimulateAs:        Fight_Juggernaut_HighHeal,
 		SimRatioWeighting: SimRatio_animusWeight,
 		StatRatings:       weight,
 		StatRequirements:  StatRequirementsHitExpertise_ProtFlexibleParry(),
@@ -180,24 +180,24 @@ func Model_Testing() Model {
 // now about noset - tortos, horridon, ironqon, jikun, durumu
 var SimRatio_generalMiti = stats.SimData{
 	DPS:   0.2,
-	DEATH: 0.1,
-	TMI:   0.3,
+	DEATH: 0.2,
+	TMI:   0.2,
 	DTPS:  0.4,
 }
 
 // for withset - malkrok
 var SimRatio_malkrokWeight = stats.SimData{
-	DPS:   0.15,
+	DPS:   0.10,
 	DEATH: 0.3,
 	TMI:   0.05,
-	DTPS:  0.5,
+	DTPS:  0.55,
 }
 
 // for compromise set - animus
 var SimRatio_animusWeight = stats.SimData{
-	DPS:   0.4,
+	DPS:   0.5,
 	DEATH: 0.1,
-	TMI:   0.4,
+	TMI:   0.3,
 	DTPS:  0.1,
 }
 
@@ -211,11 +211,11 @@ var SimRatio_dpsWeight = stats.SimData{
 
 // for heal set
 var SimRatio_healWeight = stats.SimData{
-	DPS:   0.1,
+	DPS:   0.05,
 	DEATH: 0.1,
 	TMI:   0.1,
 	DTPS:  0.3,
-	HPS:   0.4,
+	HPS:   0.45,
 }
 
 // for ret set

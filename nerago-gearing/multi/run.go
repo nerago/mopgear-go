@@ -60,7 +60,7 @@ func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time
 
 	timer := time.AfterFunc(timeLimit, func() {
 		job.printer.Println("###################### TIME LIMIT EXPIRED ######################")
-		tracker.SetDone()
+		cancel.Cancel()
 	})
 	defer timer.Stop()
 

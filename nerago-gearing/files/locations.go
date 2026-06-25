@@ -39,7 +39,7 @@ func SimFileFor(spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim
 		switch fight {
 		case stats.Fight_Horridon_HighHeal, stats.Fight_Horridon_LowHeal, stats.Fight_Animus:
 			return SimProtHorridon
-		case stats.Fight_Juggernaut:
+		case stats.Fight_Juggernaut_HighHeal, stats.Fight_Juggernaut_LowHeal:
 			return SimProtJuggernaut
 		default:
 			panic("unknown spec/fight")

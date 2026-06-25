@@ -21,10 +21,11 @@ import (
 type WowSim_RunSize int32
 
 const (
-	RunSize_TestOnly     WowSim_RunSize = 100
-	RunSize_QuickDirty   WowSim_RunSize = 20000
-	RunSize_Medium       WowSim_RunSize = 100000
-	RunSize_SlowAccurate WowSim_RunSize = 500000
+	RunSize_TestOnly   WowSim_RunSize = 100
+	RunSize_QuickDirty WowSim_RunSize = 5000
+	RunSize_Common     WowSim_RunSize = 20000
+	RunSize_Largish    WowSim_RunSize = 100000
+	RunSize_VerySlow   WowSim_RunSize = 500000
 )
 
 func WowSim_Execute_UseModel(runSize WowSim_RunSize, model *model.Model, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) stats.SimData {
@@ -187,19 +188,29 @@ func updateFight(input *wowsim_proto.RaidSimRequest, fight stats.WowSim_Fight) {
 	switch fight {
 	case stats.Fight_Horridon_HighHeal:
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 45000
+
 	case stats.Fight_Horridon_LowHeal:
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 0
 		for _, target := range input.Encounter.Targets {
 			target.MinBaseDamage *= 2.0
 		}
+
 	case stats.Fight_Animus:
 		for _, target := range input.Encounter.Targets {
 			target.SwingSpeed = 0.5
 			target.MinBaseDamage *= 1.3
 		}
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 220000
-	case stats.Fight_Juggernaut:
-		// nothing so far
+
+	case stats.Fight_Juggernaut_HighHeal:
+		input.Raid.Parties[0].Players[0].HealingModel.Hps = 600000
+
+	case stats.Fight_Juggernaut_LowHeal:
+		input.Raid.Parties[0].Players[0].HealingModel.Hps = 0
+		for _, target := range input.Encounter.Targets {
+			target.MinBaseDamage *= 2.5
+		}
+
 	default:
 		panic("unknown fight")
 	}
