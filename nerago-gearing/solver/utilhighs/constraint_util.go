@@ -222,6 +222,20 @@ func (build *LinearBuilder) AbsoluteValueFromDiffOneToConst(inputOneVar ColumnIn
 	positive.Build(build, C_MinusInf, constCompare)
 }
 
+func (build *LinearBuilder) AbsoluteValueFromSumTwoThenDiffToConst(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, constCompare float64, outputVar ColumnIndex, debug string) {
+	negative := ConstraintRow{Debug: debug + " AbsoluteValueNegative"}
+	negative.Add(inputOneVar, inputOneCoefficient)
+	negative.Add(inputTwoVar, inputTwoCoefficient)
+	negative.Add(outputVar, 1)
+	negative.Build(build, constCompare, C_PlusInf)
+
+	positive := ConstraintRow{Debug: debug + " AbsoluteValuePositive"}
+	positive.Add(inputOneVar, inputOneCoefficient)
+	positive.Add(inputTwoVar, inputTwoCoefficient)
+	positive.Add(outputVar, -1)
+	positive.Build(build, C_MinusInf, constCompare)
+}
+
 func (build *LinearBuilder) AbsoluteValueDiffTwoVarsThenDiffConst(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, diffConst float64, highRange float64, debug string) {
 	diffTwoVars := build.CreateColumnGeneral(highs.Continuous, C_MinusInf, C_PlusInf, DebugText(debug+" diffTwoVars"))
 

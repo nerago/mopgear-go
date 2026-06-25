@@ -76,7 +76,7 @@ func (form *FormulaStatWeightProcess) Run() WeightResult {
 }
 
 func (form *FormulaStatWeightProcess) chooseScaling() {
-	form.scaleSims = chooseSimScaling(form.inputData, form.printer)
+	form.scaleSims = chooseSimScalingUnfriendly(form.inputData, form.printer)
 	form.scaleStats = chooseStatScaling(form.inputData, form.printer)
 }
 

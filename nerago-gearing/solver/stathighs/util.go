@@ -16,7 +16,7 @@ type enumWithName interface {
 	Name() string
 }
 
-func chooseSimScaling(inputData []WeightInput, printer *util.PrintRecorder) map[stats.SimType]float64 {
+func chooseSimScalingUnfriendly(inputData []WeightInput, printer *util.PrintRecorder) map[stats.SimType]float64 {
 	return chooseScalingNumbers(inputData,
 		stats.SimTypeList,
 		func(data *WeightInput, simType stats.SimType) float64 { return data.SimResult.Get(simType) },

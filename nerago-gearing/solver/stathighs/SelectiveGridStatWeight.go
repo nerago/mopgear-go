@@ -71,7 +71,7 @@ func (selgrid *SelectiveGridStatWeightProcess) Init(printer *util.PrintRecorder)
 
 func (selgrid *SelectiveGridStatWeightProcess) SupplyData(inputData []WeightInput) {
 	selgrid.scaleStat = chooseStatScaling(inputData, selgrid.printer)
-	selgrid.scaleSim = chooseSimScaling(inputData, selgrid.printer)
+	selgrid.scaleSim = chooseSimScalingUnfriendly(inputData, selgrid.printer)
 	selgrid.inputData = inputData
 }
 
@@ -176,7 +176,7 @@ func (selgrid *SelectiveGridStatWeightProcess) prepareSample(statType stats.Stat
 	statDiff *= selgrid.scaleStat[statType]
 
 	for _, simType := range selgrid.requiredSims {
-		simValueDiff := high.SimResult.GetFriendly(simType) - low.SimResult.GetFriendly(simType)
+		simValueDiff := high.SimResult.Get(simType) - low.SimResult.Get(simType)
 		simValueDiff *= selgrid.scaleSim[simType]
 		if !simType.IsHighGood() {
 			simValueDiff *= -1
@@ -273,8 +273,8 @@ func (selgrid *SelectiveGridStatWeightProcess) reportOutputWeightsGrid(solution 
 	for simType := range weightValues.SeqKey2() {
 		strengthValue := weightValues.GetOrPanic(c_baseStatType, simType)
 		for statType := range weightValues.SeqKey1() {
-			weightValues.Apply(statType, simType, func(oldValue float64) float64 { 
-				value := oldValue / strengthValue * selgrid.targetRatios.Get(simType) 
+			weightValues.Apply(statType, simType, func(oldValue float64) float64 {
+				value := oldValue / strengthValue * selgrid.targetRatios.Get(simType)
 				// if !simType.IsHighGood() {
 				// 	value *= -1
 				// }

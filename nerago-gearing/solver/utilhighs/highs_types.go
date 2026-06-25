@@ -294,10 +294,9 @@ func (build *LinearBuilder) configureHighsUtil(solver *highs.Solver, logfile str
 
 func (build *LinearBuilder) configureHighsSolver(solver *highs.Solver) bool {
 	requestGpu := false
+	expectMip := false
 
 	switch build.Solver {
-	case Solver_NotSet:
-		panic("solver not specified")
 	case Solver_LP_CAN_GPU:
 		verifyNoError(solver.SetStringOption("solver", "hipdlp"))
 		requestGpu = true
@@ -317,10 +316,18 @@ func (build *LinearBuilder) configureHighsSolver(solver *highs.Solver) bool {
 			verifyNoError(solver.SetStringOption("mip_lp_solver", "choose"))
 			verifyNoError(solver.SetStringOption("mip_ipm_solver", "choose"))
 		}
+		expectMip = true
 	case Solver_MIP_Vertex:
 		verifyNoError(solver.SetStringOption("solver", "choose"))
 		verifyNoError(solver.SetStringOption("mip_lp_solver", "j"))
 		verifyNoError(solver.SetStringOption("mip_ipm_solver", "choose"))
+		expectMip = true
+	default:
+		panic("solver not specified")
+	}
+
+	if expectMip != build.isMIP() {
+		panic("solver wrong for MIP/non-MIP model")
 	}
 
 	return requestGpu
@@ -328,6 +335,16 @@ func (build *LinearBuilder) configureHighsSolver(solver *highs.Solver) bool {
 
 func (build *LinearBuilder) isLargeModel() bool {
 	return len(build.vars.colTypes) > 500 || len(build.mat.entries) > 500
+}
+
+func (build *LinearBuilder) isMIP() bool {
+	hasInt := false
+	for _, colType := range build.vars.colTypes {
+		if colType != highs.Continuous {
+			hasInt = true
+		}
+	}
+	return hasInt
 }
 
 func verifyNoError(err error) {
