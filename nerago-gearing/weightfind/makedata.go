@@ -18,14 +18,14 @@ import (
 const max_grid_sim_count = 600
 const grid_sim_steps = 2
 
-func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, tracker *util.TrackProgress) []stathighs.WeightInput {
+func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, requiredStats []stats.StatType, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, tracker *util.TrackProgress) []stathighs.WeightInput {
 	var incrementMin int32 = 0
 	var incrementStep int32 = 250
 	var incrementMax int32 = incrementStep * grid_sim_steps
 
 	initialBaseStats := InitialBonusStatMap_fixRanges(printer, currentItemSet, incrementMax)
 
-	statCheckList := stathighs.G_RequiredStats
+	statCheckList := requiredStats
 	type incrementStat struct {
 		stat  stats.StatType
 		value int32

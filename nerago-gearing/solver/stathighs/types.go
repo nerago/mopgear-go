@@ -6,10 +6,6 @@ import (
 	"paladin_gearing_go/util"
 )
 
-const (
-	c_baseStatType = stats.Stat_Strength
-)
-
 type WeightInput struct {
 	TotalStat stats.StatBlock
 	SimResult stats.SimData
@@ -69,13 +65,3 @@ func (wr *WeightResult) String() string {
 	return build.String()
 }
 
-var G_RequiredStats = []stats.StatType{
-	stats.Stat_Strength,
-	stats.Stat_Stamina,
-	stats.Stat_Crit,
-	stats.Stat_Haste,
-	stats.Stat_Expertise,
-	stats.Stat_Mastery,
-	stats.Stat_Dodge,
-	stats.Stat_Parry,
-}

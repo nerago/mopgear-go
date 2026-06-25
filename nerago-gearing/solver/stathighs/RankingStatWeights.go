@@ -19,6 +19,7 @@ type RankingStatWeightProcess struct {
 	printer *util.PrintRecorder
 
 	targetRatios stats.SimData
+	requiredStats []stats.StatType
 	requiredSims []stats.SimType
 	data         []rankEntry
 
@@ -59,6 +60,10 @@ func (ranker *RankingStatWeightProcess) SupplyData(inputData []WeightInput) {
 	})
 }
 
+func (ranker *RankingStatWeightProcess) SetRequiredStats(requiredStats []stats.StatType) {
+	ranker.requiredStats = requiredStats
+}
+
 func (ranker *RankingStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
 	ranker.targetRatios = targetRatios
 	ranker.requiredSims = targetRatios.NonZeroTypes()
@@ -94,7 +99,7 @@ func (ranker *RankingStatWeightProcess) createWeightColumns() {
 
 	sumWeights := utilhighs.ConstraintRow{}
 	ranker.weightColumns = make(map[stats.StatType]utilhighs.ColumnIndex)
-	for _, statType := range G_RequiredStats {
+	for _, statType := range ranker.requiredStats {
 		colDetailWeight := ranker.build.CreateColumnGeneral(highs.Continuous, lo, hi, utilhighs.DebugString{Text: "WEIGHT " + statType.Name()})
 		ranker.weightColumns[statType] = colDetailWeight
 		sumWeights.Add(colDetailWeight, 1)
@@ -193,7 +198,7 @@ func (ranker *RankingStatWeightProcess) processDataEntryOriginal(entry *rankEntr
 	entry.scoreColumn = ranker.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugText("score"))
 
 	scoreRow := utilhighs.ConstraintRow{}
-	for _, statType := range G_RequiredStats {
+	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statValue := entry.data.TotalStat.GetFloat(statType)
 		statScale := ranker.scaleStats[statType]
@@ -213,7 +218,7 @@ func (ranker *RankingStatWeightProcess) processDataEntryPlusRankCompareToExpecte
 	entry.scoreColumn = ranker.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugText("score-"+rankStr))
 
 	scoreRow := utilhighs.ConstraintRow{}
-	for _, statType := range G_RequiredStats {
+	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statValue := entry.data.TotalStat.GetFloat(statType)
 		statScale := ranker.scaleStats[statType]
@@ -246,7 +251,7 @@ func (ranker *RankingStatWeightProcess) processDataEntryForceScoreToRank(entry *
 	ranker.build.AbsoluteValue(offsetColumn, offsetAbs)
 
 	scoreRow := utilhighs.ConstraintRow{}
-	for _, statType := range G_RequiredStats {
+	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statValue := entry.data.TotalStat.GetFloat(statType)
 		statScale := ranker.scaleStats[statType]
@@ -296,7 +301,7 @@ func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs
 	ranker.printer.Println("WEIGHTS")
 
 	statWeightResult := WeightResult_Make()
-	for _, statType := range G_RequiredStats {
+	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statScale := ranker.scaleStats[statType]
 
@@ -307,7 +312,7 @@ func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs
 	}
 
 	divideBy := statWeightResult.Get(stats.Stat_Strength)
-	for _, statType := range G_RequiredStats {
+	for _, statType := range ranker.requiredStats {
 		statWeightResult.Put(statType, statWeightResult.Get(statType)/divideBy)
 	}
 

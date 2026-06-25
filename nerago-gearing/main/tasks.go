@@ -190,7 +190,7 @@ func checkHighs(printer *util.PrintRecorder) {
 func testSim(printer *util.PrintRecorder) {
 	// testSimA(printer)
 	// testSimB(printer)
-	testSimEach()
+	testSimEach(printer)
 }
 
 func testSimA(printer *util.PrintRecorder) {
@@ -219,7 +219,7 @@ func testSimB(printer *util.PrintRecorder) {
 	resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_Common, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
 }
-func testSimEach() {
+func testSimEach(printer *util.PrintRecorder) {
 	modelList := []model.Model{model.Model_PallyProtDps(), model.Model_PallyProtCompromise(), model.Model_PallyProtMitigation_NoSet(), model.Model_PallyProtMitigation_WithSet(), model.Model_PallyProtHeal()}
 	for model := range util.ForPointer(modelList) {
 		equipped := loaders.GearFileReader_Read(model.ReferenceGearFile)

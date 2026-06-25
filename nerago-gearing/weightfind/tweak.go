@@ -13,11 +13,7 @@ const (
 	c_tweak_iter_count = 1000 // limit to avoid infinite loop
 )
 
-var TweakerChangeStats = []stats.StatType{
-	stats.Stat_Stamina, stats.Stat_Crit, stats.Stat_Haste,
-	stats.Stat_Expertise, stats.Stat_Mastery, stats.Stat_Dodge, stats.Stat_Parry}
-
-func WeightTweaker(startWeight stathighs.WeightResult, changeStats []stats.StatType, targetRatio stats.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) stathighs.WeightResult {
+func WeightTweaker(startWeight stathighs.WeightResult, weightStats []stats.StatType, targetRatio stats.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) stathighs.WeightResult {
 	add := c_tweak_start
 	mult := 1 + add
 	bestWeight := startWeight.Clone()
@@ -25,7 +21,8 @@ func WeightTweaker(startWeight stathighs.WeightResult, changeStats []stats.StatT
 	for range c_tweak_iter_count {
 		best := util_rank.BestCollector1[stathighs.WeightResult]{}
 		best.Offer(&bestWeight, EvaluateAccuracy(bestWeight, inputData, targetRatio))
-		for _, stat := range changeStats {
+		for i := 1; i < len(weightStats); i++ {
+			stat := weightStats[i]
 			if bestWeight[stat] != 0 {
 				hi := bestWeight.Clone()
 				hi[stat] *= mult

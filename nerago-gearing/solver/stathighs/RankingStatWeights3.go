@@ -23,6 +23,7 @@ type RankingStatWeightProcess3 struct {
 	printer *util.PrintRecorder
 
 	targetRatios    stats.SimData
+	requiredStats []stats.StatType
 	requiredSims    []stats.SimType
 	dataAllOriginal []rankEntry3
 	dataSample      []rankEntry3
@@ -70,6 +71,10 @@ func (ranker *RankingStatWeightProcess3) SupplyData(inputData []WeightInput) {
 			// rankDiffColumn:    -1,
 		}
 	})
+}
+
+func (ranker *RankingStatWeightProcess3) SetRequiredStats(requiredStats []stats.StatType) {
+	ranker.requiredStats = requiredStats
 }
 
 func (ranker *RankingStatWeightProcess3) SetTargetRatios(targetRatios stats.SimData) {
@@ -187,7 +192,7 @@ func (ranker *RankingStatWeightProcess3) createWeightColumns() {
 
 	sumWeights := utilhighs.ConstraintRow{Debug: "sumWeights"}
 	ranker.weightColumns = make(map[stats.StatType]utilhighs.ColumnIndex)
-	for _, statType := range G_RequiredStats {
+	for _, statType := range ranker.requiredStats {
 		colWeight := ranker.build.CreateColumnGeneral(highs.Continuous, lo, hi, utilhighs.DebugString{Text: "WEIGHT " + statType.Name()})
 		ranker.weightColumns[statType] = colWeight
 		sumWeights.Add(colWeight, 1)
@@ -256,7 +261,7 @@ func (ranker *RankingStatWeightProcess3) makeEntryColumns(entry *rankEntry3, max
 	entry.scoreColumn = ranker.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugText("score-"+rankStr))
 
 	scoreRow := utilhighs.ConstraintRow{Debug: "scoreRow"}
-	for _, statType := range G_RequiredStats {
+	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statValue := entry.data.TotalStat.GetFloat(statType)
 		statScale := ranker.scaleStats[statType]
@@ -405,7 +410,7 @@ func (ranker *RankingStatWeightProcess3) extractAndReportSolution(solution *high
 	ranker.printer.Println("WEIGHTS")
 
 	statWeightResult := WeightResult_Make()
-	for _, statType := range G_RequiredStats {
+	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statScale := ranker.scaleStats[statType]
 
@@ -416,7 +421,7 @@ func (ranker *RankingStatWeightProcess3) extractAndReportSolution(solution *high
 	}
 
 	divideBy := statWeightResult.Get(stats.Stat_Strength)
-	for _, statType := range G_RequiredStats {
+	for _, statType := range ranker.requiredStats {
 		statWeightResult.Put(statType, statWeightResult.Get(statType)/divideBy)
 	}
 

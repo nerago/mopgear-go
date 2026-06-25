@@ -17,6 +17,7 @@ type GridStatWeightProcess2 struct {
 
 	DIFFINCLUDE  int
 	targetRatios stats.SimData
+	requiredStats []stats.StatType
 	requiredSims []stats.SimType
 	inputData    []WeightInput
 
@@ -44,6 +45,10 @@ func (grid2 *GridStatWeightProcess2) Init(printer *util.PrintRecorder) {
 
 func (grid2 *GridStatWeightProcess2) SupplyData(inputData []WeightInput) {
 	grid2.inputData = inputData
+}
+
+func (grid2 *GridStatWeightProcess2) SetRequiredStats(requiredStats []stats.StatType) {
+	grid2.requiredStats = requiredStats
 }
 
 func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios stats.SimData) {
@@ -81,7 +86,7 @@ func (grid2 *GridStatWeightProcess2) Run() WeightResult {
 
 func (grid2 *GridStatWeightProcess2) setupWeightVars() {
 	// create detail columns
-	for _, statType := range G_RequiredStats {
+	for _, statType := range grid2.requiredStats {
 		for _, simType := range grid2.requiredSims {
 			colDetailWeight := grid2.build.CreateColumnGeneral(highs.Continuous, -c_grid2_maxWeight, c_grid2_maxWeight, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
 			grid2.detailedWeights.Put(statType, simType, colDetailWeight)
@@ -89,8 +94,9 @@ func (grid2 *GridStatWeightProcess2) setupWeightVars() {
 	}
 
 	// strength column within each simtype is set to targetratio (0.4 etc)
+	baseStat := grid2.requiredStats[0]
 	for _, simType := range grid2.requiredSims {
-		colDetailWeight := grid2.detailedWeights.GetOrPanic(c_baseStatType, simType)
+		colDetailWeight := grid2.detailedWeights.GetOrPanic(baseStat, simType)
 		strAbs := grid2.build.CreateColumnGeneral(highs.Continuous, 0.001, utilhighs.C_PlusInf, nil)
 		grid2.build.AbsoluteValueFromDiffOneToConst(colDetailWeight, 1, 0, strAbs, "")
 	}
@@ -116,7 +122,7 @@ func (grid2 *GridStatWeightProcess2) chooseScalingX() {
 	}
 
 	grid2.scaleStats = make(map[stats.StatType]float64)
-	for _, statType := range G_RequiredStats {
+	for _, statType := range grid2.requiredStats {
 		listDiffs := make([]float64, 0)
 		for a := range grid2.inputData {
 			for b := a + 1; b < len(grid2.inputData); b++ {
@@ -203,7 +209,7 @@ func (grid2 *GridStatWeightProcess2) processInputData() {
 
 func (grid2 *GridStatWeightProcess2) checkForNumberStatDifferences(one, two *stats.StatBlock) (differenceCount int, diffStatA stats.StatType, diffStatB stats.StatType, diffStatC stats.StatType) {
 	// for stat := range one { // was doing fine in tests up until now, up to 89%
-	for _, stat := range G_RequiredStats {
+	for _, stat := range grid2.requiredStats {
 		if one[stat] != two[stat] {
 			switch differenceCount {
 			case 0:
@@ -350,7 +356,7 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 	// weight = usableweight * (simScale[type] / statScale[type])
 	// usableweight = weight * (statScale[type] / simScale[type])
 
-	for _, statType := range G_RequiredStats {
+	for _, statType := range grid2.requiredStats {
 		grid2.printer.Printf("%10s >>>>>\n", statType.Name())
 
 		sumIndividual := 0.0
@@ -375,7 +381,7 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 	}
 
 	divideBy := result[stats.Stat_Strength]
-	for _, statType := range G_RequiredStats {
+	for _, statType := range grid2.requiredStats {
 		result[statType] /= divideBy
 	}
 

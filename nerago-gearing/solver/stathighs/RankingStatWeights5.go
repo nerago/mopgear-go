@@ -52,6 +52,7 @@ type RankingStatWeightProcess5 struct {
 	printer *util.PrintRecorder
 
 	targetRatios   stats.SimData
+	requiredStats []stats.StatType
 	requiredSims []stats.SimType
 	initialWeights *WeightResult
 	dataAll        []WeightInput
@@ -99,6 +100,10 @@ func (process *RankingStatWeightProcess5) SupplyData(inputData []WeightInput) {
 
 func (process *RankingStatWeightProcess5) SupplyInitialWeights(initialWeights WeightResult) {
 	process.initialWeights = &initialWeights
+}
+
+func (ranker *RankingStatWeightProcess5) SetRequiredStats(requiredStats []stats.StatType) {
+	ranker.requiredStats = requiredStats
 }
 
 func (process *RankingStatWeightProcess5) SetTargetRatios(targetRatios stats.SimData) {
@@ -152,7 +157,7 @@ func (run *rankInternalRun5) run() (util.Optional[WeightResult], *highs.Solution
 func (run *rankInternalRun5) createWeightColumns() {
 	sumWeights := utilhighs.ConstraintRow{Debug: "sumWeights"}
 	run.weightColumns = make(map[stats.StatType]utilhighs.ColumnIndex)
-	for _, statType := range G_RequiredStats {
+	for _, statType := range run.process.requiredStats {
 		var colWeight utilhighs.ColumnIndex
 		colWeight = run.build.CreateColumnGeneral(highs.Continuous, c_rank5_weightLo, c_rank5_weightHi, utilhighs.DebugString{Text: "WEIGHT " + statType.Name()})
 		run.weightColumns[statType] = colWeight
@@ -247,7 +252,7 @@ func (run *rankInternalRun5) extractAndReportSolution(solution *highs.Solution) 
 	run.process.printer.Println("WEIGHTS")
 
 	statWeightResult := WeightResult_Make()
-	for _, statType := range G_RequiredStats {
+	for _, statType := range run.process.requiredStats {
 		weightColumn := run.weightColumns[statType]
 		statScale := run.scaleStats[statType]
 		// statScale := run.scaleStats
@@ -277,14 +282,14 @@ func (run *rankInternalRun5) extractAndReportSolution(solution *highs.Solution) 
 	// Duration = 4.4455988s
 
 	divideBy := statWeightResult.Get(stats.Stat_Strength)
-	for _, statType := range G_RequiredStats {
+	for _, statType := range run.process.requiredStats {
 		value := statWeightResult.Get(statType) / divideBy
 		statWeightResult.Put(statType, value)
 		run.process.printer.Printf("%10s %f\n", statType.Name(), value)
 	}
 
 	run.process.printer.Println("startWeight := stathighs.WeightResult{")
-	for _, statType := range G_RequiredStats {
+	for _, statType := range run.process.requiredStats {
 		value := statWeightResult.Get(statType)
 		run.process.printer.Printf("  stats.%s: %f,\n", statType.EnumName(), value)
 	}

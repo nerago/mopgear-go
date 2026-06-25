@@ -18,6 +18,7 @@ type FormulaStatWeightProcess struct {
 	printer *util.PrintRecorder
 
 	targetRatios stats.SimData
+	requiredStats []stats.StatType
 	requiredSims []stats.SimType
 	inputData    []WeightInput
 
@@ -41,6 +42,10 @@ func (form *FormulaStatWeightProcess) Init(printer *util.PrintRecorder) {
 
 func (form *FormulaStatWeightProcess) SupplyData(inputData []WeightInput) {
 	form.inputData = inputData
+}
+
+func (form *FormulaStatWeightProcess) SetRequiredStats(requiredStats []stats.StatType) {
+	form.requiredStats = requiredStats
 }
 
 func (form *FormulaStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
@@ -83,7 +88,7 @@ func (form *FormulaStatWeightProcess) chooseScaling() {
 func (form *FormulaStatWeightProcess) createWeightColumns() {
 	// minimumStrength := 0.0001
 
-	for _, statType := range G_RequiredStats {
+	for _, statType := range form.requiredStats {
 		for _, simType := range form.requiredSims {
 			lo := utilhighs.C_MinusInf
 			hi := utilhighs.C_PlusInf
@@ -131,7 +136,7 @@ func (form *FormulaStatWeightProcess) buildDataEquationForSim(stats *stats.StatB
 
 	// TODO is there a way to flip the division for TMI DEATH etc, fundamental problem is that they don't increase linearly with stats
 
-	for _, statType := range G_RequiredStats {
+	for _, statType := range form.requiredStats {
 		weightDetailCol := form.detailedWeightColumns.GetOrPanic(statType, simType)
 		statValue := stats.GetFloat(statType)
 		statScale := form.scaleStats[statType]
@@ -218,7 +223,7 @@ func (form *FormulaStatWeightProcess) reportExamples(detailWeightMap util.MapMap
 		for _, simType := range form.requiredSims {
 			statSum := 0.0
 			form.printer.Printf(" %10s", simType.Name())
-			for _, statType := range G_RequiredStats {
+			for _, statType := range form.requiredStats {
 				statValue := data.TotalStat.GetFloat(statType)
 				weight := detailWeightMap.GetOrPanic(statType, simType)
 				if !simType.IsHighGood() {

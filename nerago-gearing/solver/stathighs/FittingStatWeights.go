@@ -59,10 +59,11 @@ func (fitall *FittingAllStatWeightProcess) Init(printer *util.PrintRecorder) {
 type FittingEachStatWeightProcess struct {
 	printer *util.PrintRecorder
 
-	lazyMode     bool
-	inputData    []WeightInput
-	targetRatios stats.SimData
-	requiredSims []stats.SimType
+	lazyMode      bool
+	inputData     []WeightInput
+	targetRatios  stats.SimData
+	requiredStats []stats.StatType
+	requiredSims  []stats.SimType
 
 	each util.MapMap[stats.StatType, stats.SimType, *fittingEachFields]
 }
@@ -76,6 +77,10 @@ type fittingEachFields struct {
 
 func (fiteach *FittingEachStatWeightProcess) Init(printer *util.PrintRecorder) {
 	fiteach.printer = printer
+}
+
+func (fiteach *FittingEachStatWeightProcess) SetRequiredStats(requiredStats []stats.StatType) {
+	fiteach.requiredStats = requiredStats
 }
 
 func (fiteach *FittingEachStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
@@ -92,7 +97,7 @@ func (fiteach *FittingEachStatWeightProcess) SupplyDataFromStandard(inputData []
 }
 
 func (fiteach *FittingEachStatWeightProcess) RunDetailedResults() util.MapMap[stats.StatType, stats.SimType, map[StatRange]FittingSingleStatResult] {
-	for _, statType := range G_RequiredStats {
+	for _, statType := range fiteach.requiredStats {
 		for _, simType := range fiteach.requiredSims {
 			// TODO holding printer?
 			fields := fittingEachFields{statType: statType, simType: simType}
@@ -126,10 +131,11 @@ func (fiteach *FittingEachStatWeightProcess) Run() WeightResult {
 		return best.GetBestOrPanic().LineSlope
 	})
 
+	baseStat := fiteach.requiredStats[0]
 	standardResult := WeightResult_Make()
-	standardResult.Put(stats.Stat_Strength, 1)
-	for _, statType := range G_RequiredStats {
-		if statType != stats.Stat_Strength {
+	standardResult.Put(baseStat, 1)
+	for _, statType := range fiteach.requiredStats {
+		if statType != baseStat {
 			totalSum := 0.0
 			for _, simType := range fiteach.requiredSims {
 				thisRating := bestRatingEach.GetOrPanic(statType, simType)

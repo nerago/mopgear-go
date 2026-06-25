@@ -25,6 +25,7 @@ type RankingStatWeightProcess4 struct {
 	printer *util.PrintRecorder
 
 	targetRatios stats.SimData
+	requiredStats []stats.StatType
 	requiredSims []stats.SimType
 	dataAll      []WeightInput
 }
@@ -79,6 +80,10 @@ func (run *rankInternalRun4) supplyData(inputData []WeightInput) {
 			rankColumn:  -1,
 		}
 	})
+}
+
+func (ranker *RankingStatWeightProcess4) SetRequiredStats(requiredStats []stats.StatType) {
+	ranker.requiredStats = requiredStats
 }
 
 func (process *RankingStatWeightProcess4) SetTargetRatios(targetRatios stats.SimData) {
@@ -203,7 +208,7 @@ func (run *rankInternalRun4) createWeightColumns() {
 
 	sumWeights := utilhighs.ConstraintRow{Debug: "sumWeights"}
 	run.weightColumns = make(map[stats.StatType]utilhighs.ColumnIndex)
-	for _, statType := range G_RequiredStats {
+	for _, statType := range run.process.requiredStats {
 		var colWeight utilhighs.ColumnIndex
 		if statType == stats.Stat_Strength {
 			colWeight = run.build.CreateColumnGeneral(highs.Continuous, strengthMin, hi, utilhighs.DebugString{Text: "WEIGHT " + statType.Name()})
@@ -273,7 +278,7 @@ func (run *rankInternalRun4) makeEntryColumnRefs(entry *rankEntry4, maxRank floa
 	entry.scoreColumn = run.build.CreateColumnGeneral(highs.Continuous, -c_RankLimitScore, c_RankLimitScore, utilhighs.DebugText("score-"+rankStr))
 
 	scoreRow := utilhighs.ConstraintRow{Debug: "scoreRow"}
-	for _, statType := range G_RequiredStats {
+	for _, statType := range run.process.requiredStats {
 		weightColumn := run.weightColumns[statType]
 		statValue := entry.data.TotalStat.GetFloat(statType)
 		statScale := run.scaleStats[statType]
@@ -378,7 +383,7 @@ func (run *rankInternalRun4) extractAndReportSolution(solution *highs.Solution) 
 	run.process.printer.Println("WEIGHTS")
 
 	statWeightResult := WeightResult_Make()
-	for _, statType := range G_RequiredStats {
+	for _, statType := range run.process.requiredStats {
 		weightColumn := run.weightColumns[statType]
 		statScale := run.scaleStats[statType]
 
@@ -389,7 +394,7 @@ func (run *rankInternalRun4) extractAndReportSolution(solution *highs.Solution) 
 	}
 
 	divideBy := statWeightResult.Get(stats.Stat_Strength)
-	for _, statType := range G_RequiredStats {
+	for _, statType := range run.process.requiredStats {
 		value := statWeightResult.Get(statType) / divideBy
 		statWeightResult.Put(statType, value)
 		run.process.printer.Printf("%10s %f\n", statType.Name(), value)

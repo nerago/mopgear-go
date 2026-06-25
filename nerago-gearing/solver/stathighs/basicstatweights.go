@@ -11,6 +11,7 @@ import (
 type BasicStatWeightProcess struct {
 	printer *util.PrintRecorder
 
+requiredStats []stats.StatType
 	requiredSims []stats.SimType
 	targetRatios stats.SimData
 	simBase      stats.SimData
@@ -37,6 +38,10 @@ func (basic *BasicStatWeightProcess) Init(printer *util.PrintRecorder) {
 
 func (basic *BasicStatWeightProcess) SetBaseline(simBase stats.SimData) {
 	basic.simBase = simBase
+}
+
+func (basic *BasicStatWeightProcess) SetRequiredStats(requiredStats []stats.StatType) {
+	basic.requiredStats = requiredStats
 }
 
 func (basic *BasicStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
@@ -66,14 +71,14 @@ func (basic *BasicStatWeightProcess) AddSimData(statType stats.StatType, statVal
 // alternately we could baseline each other with a full array of +100 perumtations etc
 
 func (basic *BasicStatWeightProcess) Run() WeightResult {
-	for _, statType := range G_RequiredStats {
+	for _, statType := range basic.requiredStats {
 		colName := "FINAL WEIGHT: " + statType.Name()
 		colFinalWeight := basic.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: colName})
 		// colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, -c_finalWeightLimit, c_finalWeightLimit)
 		basic.finalWeights[statType] = colFinalWeight
 	}
 
-	for _, statType := range G_RequiredStats {
+	for _, statType := range basic.requiredStats {
 		for _, simType := range basic.requiredSims {
 			colName := "WEIGHT: " + statType.Name() + " " + simType.Name()
 			colDetailWeight := basic.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: colName})
@@ -81,9 +86,10 @@ func (basic *BasicStatWeightProcess) Run() WeightResult {
 		}
 	}
 
+	baseStat := basic.requiredStats[0]
 	for _, simType := range basic.requiredSims {
 		value := basic.targetRatios.Get(simType)
-		colDetailWeight := basic.detailedWeights.GetOrPanic(c_baseStatType, simType)
+		colDetailWeight := basic.detailedWeights.GetOrPanic(baseStat, simType)
 		strengthSetToRatio := utilhighs.ConstraintRow{}
 		strengthSetToRatio.Add(colDetailWeight, 1)
 		strengthSetToRatio.Build(&basic.build, value, value)
@@ -100,7 +106,7 @@ func (basic *BasicStatWeightProcess) Run() WeightResult {
 
 	basic.build.DebugPrintColumns(solution, basic.printer)
 
-	return reportOutputWeights(solution, basic.finalWeights, basic.printer)
+	return basic.reportOutputWeights(solution)
 }
 
 // this is a single diff value, ideally we want to push data in and average across multiple
@@ -132,11 +138,12 @@ func (basic *BasicStatWeightProcess) unitValuesToCalcDetailedRatings() {
 	// detailweight_dps_haste * unit_dps_str - detailweight_dps_str * unit_dps_haste = 0
 	// detailweight_dps_haste * unit_dps_str - detailweight_dps_str * unit_dps_haste + offset = 0  (allow small offset to optimise on)
 
+	baseStat := basic.requiredStats[0]
 	for simType, lookupStat := range basic.unitStatValues.SeqGroupsKey2Lookup() {
-		unitValueBase := lookupStat(c_baseStatType)
-		detailWeightBase := basic.detailedWeights.GetOrPanic(c_baseStatType, simType)
-		for _, thisStatType := range G_RequiredStats {
-			if thisStatType != c_baseStatType {
+		unitValueBase := lookupStat(baseStat)
+		detailWeightBase := basic.detailedWeights.GetOrPanic(baseStat, simType)
+		for _, thisStatType := range basic.requiredStats {
+			if thisStatType != baseStat {
 				thisUnitValue := lookupStat(thisStatType)
 				thisDetailWeight := basic.detailedWeights.GetOrPanic(thisStatType, simType)
 
@@ -165,7 +172,7 @@ func (basic *BasicStatWeightProcess) unitValuesToCalcDetailedRatings_single(unit
 }
 
 func (basic *BasicStatWeightProcess) calcTotalRatings() {
-	for _, statType := range G_RequiredStats {
+	for _, statType := range basic.requiredStats {
 		statFinalRow := utilhighs.ConstraintRow{}
 		for _, detailColumn := range basic.detailedWeights.SeqInnerWithKey1Value(statType) {
 			statFinalRow.Add(detailColumn, 1)
@@ -177,13 +184,13 @@ func (basic *BasicStatWeightProcess) calcTotalRatings() {
 	}
 }
 
-func reportOutputWeights(solution *highs.Solution, weightColumns map[stats.StatType]utilhighs.ColumnIndex, printer *util.PrintRecorder) WeightResult {
+func (basic *BasicStatWeightProcess) reportOutputWeights(solution *highs.Solution) WeightResult {
 	result := WeightResult_Make()
-	printer.Println("FINAL WEIGHTS:")
-	for _, statType := range G_RequiredStats {
-		columnIndex := weightColumns[statType]
+	basic.printer.Println("FINAL WEIGHTS:")
+	for _, statType := range basic.requiredStats {
+		columnIndex := basic.finalWeights[statType]
 		value := solution.ColValues[columnIndex]
-		printer.Printf("%10s %f\n", statType.Name(), value)
+		basic.printer.Printf("%10s %f\n", statType.Name(), value)
 		result.Put(statType, value)
 	}
 	return result

@@ -29,6 +29,7 @@ type Model struct {
 	SetBonusRequired  []ActiveSetCountsRequired
 	Professions       ProfessionInfo
 	SimRatioWeighting stats.SimData
+	StatsForWeighting []StatType
 	ReferenceGearFile string // should just be used by exporters etc
 }
 

@@ -44,6 +44,7 @@ type SelectiveGridStatWeightProcess struct {
 	printer *util.PrintRecorder
 
 	targetRatios            stats.SimData
+	requiredStats           []stats.StatType
 	requiredSims            []stats.SimType
 	inputData               []WeightInput
 	inputDataIncludeToggles []utilhighs.ColumnIndex
@@ -73,6 +74,10 @@ func (selgrid *SelectiveGridStatWeightProcess) SupplyData(inputData []WeightInpu
 	selgrid.scaleStat = chooseStatScaling(inputData, selgrid.printer)
 	selgrid.scaleSim = chooseSimScalingUnfriendly(inputData, selgrid.printer)
 	selgrid.inputData = inputData
+}
+
+func (selgrid *SelectiveGridStatWeightProcess) SetRequiredStats(requiredStats []stats.StatType) {
+	selgrid.requiredStats = requiredStats
 }
 
 func (selgrid *SelectiveGridStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
@@ -109,15 +114,16 @@ func (selgrid *SelectiveGridStatWeightProcess) Run() WeightResult {
 }
 
 func (selgrid *SelectiveGridStatWeightProcess) setupWeightVars() {
-	for _, statType := range G_RequiredStats {
+	for _, statType := range selgrid.requiredStats {
 		for _, simType := range selgrid.requiredSims {
 			colDetailWeight := selgrid.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
 			selgrid.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
 	}
 
+	baseStat := selgrid.requiredStats[0]
 	for _, simType := range selgrid.requiredSims {
-		colDetailWeight := selgrid.detailedWeights.GetOrPanic(c_baseStatType, simType)
+		colDetailWeight := selgrid.detailedWeights.GetOrPanic(baseStat, simType)
 		strengthSetToRatio := utilhighs.ConstraintRow{}
 		strengthSetToRatio.Add(colDetailWeight, 1)
 		strengthSetToRatio.Build(selgrid.build, 0.1, 100)
@@ -156,7 +162,7 @@ func (selgrid *SelectiveGridStatWeightProcess) dataSamplesFromPairs() {
 
 func (selgrid *SelectiveGridStatWeightProcess) checkForNumberStatDifferences(one, two *stats.StatBlock) (differenceCount int, diffStatA stats.StatType) {
 	// for stat := range one { // was doing fine in tests up until now, up to 89%
-	for _, stat := range G_RequiredStats {
+	for _, stat := range selgrid.requiredStats {
 		if one[stat] != two[stat] {
 			if differenceCount == 0 {
 				diffStatA = stats.StatType(stat)
@@ -196,10 +202,11 @@ func (selgrid *SelectiveGridStatWeightProcess) unitValuesToCalcDetailedRatings()
 	// detailweight_dps_haste * unit_dps_str - detailweight_dps_str * unit_dps_haste = 0
 	// detailweight_dps_haste * unit_dps_str - detailweight_dps_str * unit_dps_haste + offset = 0  (allow small offset to optimise on)
 
+	baseStat := selgrid.requiredStats[0]
 	for simType, lookupStat := range selgrid.unitStatValues.SeqGroupsKey2Lookup() {
-		unitValueBaseSeq := lookupStat(c_baseStatType)
-		for _, thisStatType := range G_RequiredStats {
-			if thisStatType != c_baseStatType {
+		unitValueBaseSeq := lookupStat(baseStat)
+		for _, thisStatType := range selgrid.requiredStats {
+			if thisStatType != baseStat {
 				thisUnitValueSeq := lookupStat(thisStatType)
 				selgrid.unitValuesCalcForGroup(simType, thisStatType, unitValueBaseSeq, thisUnitValueSeq)
 			}
@@ -209,7 +216,9 @@ func (selgrid *SelectiveGridStatWeightProcess) unitValuesToCalcDetailedRatings()
 
 func (selgrid *SelectiveGridStatWeightProcess) unitValuesCalcForGroup(simType stats.SimType, thisStatType stats.StatType, unitValueBaseSeq iter.Seq[selectiveGridDataSample], thisUnitValueSeq iter.Seq[selectiveGridDataSample]) {
 	debugText := simType.Name() + " " + thisStatType.Name()
-	baseDetailWeight := selgrid.detailedWeights.GetOrPanic(c_baseStatType, simType)
+
+	baseStat := selgrid.requiredStats[0]
+	baseDetailWeight := selgrid.detailedWeights.GetOrPanic(baseStat, simType)
 	thisDetailWeight := selgrid.detailedWeights.GetOrPanic(thisStatType, simType)
 
 	// look at multiple input values of each unitstat value
@@ -270,8 +279,9 @@ func (selgrid *SelectiveGridStatWeightProcess) reportOutputWeightsGrid(solution 
 			return solution.ColValues[weightCol] * scale
 		})
 
+	baseStat := selgrid.requiredStats[0]
 	for simType := range weightValues.SeqKey2() {
-		strengthValue := weightValues.GetOrPanic(c_baseStatType, simType)
+		strengthValue := weightValues.GetOrPanic(baseStat, simType)
 		for statType := range weightValues.SeqKey1() {
 			weightValues.Apply(statType, simType, func(oldValue float64) float64 {
 				value := oldValue / strengthValue * selgrid.targetRatios.Get(simType)

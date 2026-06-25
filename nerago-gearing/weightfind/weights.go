@@ -46,13 +46,14 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 	currentItemSet := items.FullItemSet_FromMap(currentEquip)
 
 	// SIMULATE STAT CHANGES
-	inputDataGrid := SimulateSteppedStatChangesForGrid(currentItemSet, printer, simSpeed, gearModel.SimSpeedUp, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions, tracker.NewChild())
+	inputDataGrid := SimulateSteppedStatChangesForGrid(currentItemSet, printer, simSpeed, gearModel.SimSpeedUp, gearModel.StatsForWeighting, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions, tracker.NewChild())
 	inputDataReal := SimulateRealRandomSets(gearFile, substituteItems, gearModel, len(inputDataGrid)/2, simSpeed, false, printer, tracker.NewChild())
 
 	// SOLVE FOR STAT WEIGHTS
 	process := stathighs.GridStatWeightProcess{}
 	process.Init(printer)
 	process.SetTargetRatios(ratios)
+	process.SetRequiredStats(gearModel.StatsForWeighting)
 	process.SetTestMode(simSpeed == simulate.RunSize_TestOnly)
 	process.SupplyData(inputDataGrid)
 	weights := process.Run()
@@ -63,7 +64,7 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 
 	// TWEAK weights see if dumb changes can do better than grid
 	mixedInputData := slices.Concat(inputDataGrid, inputDataReal)
-	weights = WeightTweaker(weights, TweakerChangeStats, ratios, mixedInputData, printer)
+	weights = WeightTweaker(weights, gearModel.StatsForWeighting, ratios, mixedInputData, printer)
 	printer.Println(">>>>> Tweaked Weights:")
 	pawn = tools.WritePawnString(weights, printer)
 

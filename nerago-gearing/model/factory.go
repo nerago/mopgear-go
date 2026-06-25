@@ -21,6 +21,7 @@ func Model_PallyProtMitigation_WithSet() Model {
 		StatRatings:       weight,
 		StatRequirements:  StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:      ReforgeRules_tank,
+		StatsForWeighting: StatsForWeighting_strengthTank,
 		EnchantChoice:     EnchantChoice_ForSpec(spec, goal),
 		GemChoice:         GemChoice_ForSpec(spec, goal),
 		SetBonus:          SetBonus_Named("Plate of the Lightning Emperor", "Plate of Winged Triumph"),
@@ -48,6 +49,7 @@ func Model_PallyProtHeal() Model {
 		StatRatings:       weight,
 		StatRequirements:  StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:      ReforgeRules_tank,
+		StatsForWeighting: StatsForWeighting_strengthTank,
 		EnchantChoice:     EnchantChoice_ForSpec(spec, goal),
 		GemChoice:         GemChoice_ForSpec(spec, goal),
 		SetBonus:          SetBonus_Named("Plate of Winged Triumph"),
@@ -74,6 +76,7 @@ func Model_PallyProtMitigation_NoSet() Model {
 		StatRatings:       weight,
 		StatRequirements:  StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:      ReforgeRules_tank,
+		StatsForWeighting: StatsForWeighting_strengthTank,
 		EnchantChoice:     EnchantChoice_ForSpec(spec, goal),
 		GemChoice:         GemChoice_ForSpec(spec, goal),
 		SetBonus:          SetBonus_Empty(),
@@ -97,6 +100,7 @@ func Model_PallyProtCompromise() Model {
 		StatRatings:       weight,
 		StatRequirements:  StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:      ReforgeRules_tank,
+		StatsForWeighting: StatsForWeighting_strengthTank,
 		EnchantChoice:     EnchantChoice_ForSpec(spec, goal),
 		GemChoice:         GemChoice_ForSpec(spec, goal),
 		SetBonus:          SetBonus_Empty(),
@@ -120,6 +124,7 @@ func Model_PallyProtDps() Model {
 		StatRatings:       weight,
 		StatRequirements:  StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:      ReforgeRules_tank,
+		StatsForWeighting: StatsForWeighting_strengthTank,
 		EnchantChoice:     EnchantChoice_ForSpec(spec, goal),
 		GemChoice:         GemChoice_ForSpec(spec, goal),
 		// SetBonus:         SetBonus_Named("Plate of the Lightning Emperor Prot Damage"),
@@ -144,6 +149,7 @@ func Model_PallyRet() Model {
 		SimSpeedUp:        8,
 		StatRatings:       weight,
 		StatRequirements:  StatRequirementsHitExpertise_RetWideCap(),
+		StatsForWeighting: StatsForWeighting_strengthMelee,
 		ReforgeRules:      ReforgeRules_melee,
 		EnchantChoice:     EnchantChoice_ForSpec(spec, goal),
 		GemChoice:         GemChoice_ForSpec(spec, goal),
@@ -160,15 +166,16 @@ func Model_Testing() Model {
 	spec := Spec_PaladinProt
 	goal := OptimiseGoal_Dps
 	return Model{
-		Spec:             spec,
-		Goal:             goal,
-		SimulateAs:       Fight_Horridon_HighHeal,
-		StatRatings:      StatRatingsWeights_Testing(),
-		StatRequirements: StatRequirementsHitExpertise_None(),
-		ReforgeRules:     ReforgeRules_tank,
-		EnchantChoice:    EnchantChoice_ForSpec(spec, goal),
-		GemChoice:        GemChoice_ForSpec(spec, goal),
-		SetBonus:         SetBonus_Empty(),
+		Spec:              spec,
+		Goal:              goal,
+		SimulateAs:        Fight_Horridon_HighHeal,
+		StatRatings:       StatRatingsWeights_Testing(),
+		StatRequirements:  StatRequirementsHitExpertise_None(),
+		StatsForWeighting: StatsForWeighting_strengthTank,
+		ReforgeRules:      ReforgeRules_tank,
+		EnchantChoice:     EnchantChoice_ForSpec(spec, goal),
+		GemChoice:         GemChoice_ForSpec(spec, goal),
+		SetBonus:          SetBonus_Empty(),
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,
@@ -221,4 +228,23 @@ var SimRatio_healWeight = stats.SimData{
 // for ret set
 var SimRatio_retWeight = stats.SimData{
 	DPS: 1,
+}
+
+var StatsForWeighting_strengthTank = []stats.StatType{
+	stats.Stat_Strength,
+	stats.Stat_Stamina,
+	stats.Stat_Crit,
+	stats.Stat_Haste,
+	stats.Stat_Expertise,
+	stats.Stat_Mastery,
+	stats.Stat_Dodge,
+	stats.Stat_Parry,
+}
+
+var StatsForWeighting_strengthMelee = []stats.StatType{
+	stats.Stat_Strength,
+	stats.Stat_Crit,
+	stats.Stat_Haste,
+	stats.Stat_Expertise,
+	stats.Stat_Mastery,
 }

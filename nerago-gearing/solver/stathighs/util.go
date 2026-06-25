@@ -25,26 +25,9 @@ func chooseSimScalingUnfriendly(inputData []WeightInput, printer *util.PrintReco
 
 func chooseStatScaling(inputData []WeightInput, printer *util.PrintRecorder) map[stats.StatType]float64 {
 	return chooseScalingNumbers(inputData,
-		G_RequiredStats,
+		stats.StatType_List,
 		func(data *WeightInput, statType stats.StatType) float64 { return data.TotalStat.GetFloat(statType) },
 		printer)
-}
-
-func chooseStatScalingAll(inputData []WeightInput, printer *util.PrintRecorder) float64 {
-	c_targetNumber := 1.0
-	max := 0.0
-	for _, data := range inputData {
-		for _, check := range G_RequiredStats {
-			value := data.TotalStat.GetFloat(check)
-			if value > max {
-				max = value
-			}
-		}
-	}
-
-	scale := c_targetNumber / max
-	printer.Printf("scale %e\n", scale)
-	return scale
 }
 
 func chooseScalingNumbers[E enumWithName](inputData []WeightInput, checkTypes []E, getValue func(*WeightInput, E) float64, printer *util.PrintRecorder) map[E]float64 {
