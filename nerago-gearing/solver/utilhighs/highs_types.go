@@ -537,6 +537,10 @@ func (row *ConstraintRow) Build(build *LinearBuilder, lowerBound float64, upperB
 		} else if len(row.entries) == 0 {
 			fmt.Printf("warn empty row\n")
 		}
+
+		if (0 < math.Abs(lowerBound) && math.Abs(lowerBound) < 1e-4) || (0 < math.Abs(upperBound) && math.Abs(upperBound) < 1e-4) {
+			panic("row bounds very small")
+		}
 	}
 
 	build.mat.addRow(row.entries, lowerBound, upperBound, row.Debug)

@@ -550,7 +550,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	// writeWeightInputsToFile(inputDataGrid, "sim-stats-compare-grid.json")
 	// writeWeightInputsToFile(inputDataRandom, "sim-stats-compare-rand.json")
 	// writeWeightBasicInputsToFile(inputDataBasic, basicSimBase, "sim-stats-compare-basic.json")
-	// inputDataBasic, basicSimBase := readWeightBasicInputsFile("sim-stats-compare-basic.json")
+	inputDataBasic, basicSimBase := readWeightBasicInputsFile("sim-stats-compare-basic.json")
 	inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
 	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
 	mixedInputDataFull := slices.Concat(inputDataGrid, inputDataRandom)
@@ -566,33 +566,33 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 
 	wg := sync.WaitGroup{}
 
-	// wg.Go(func() {
-	// 	printer.Println("################# BASIC ###################")
-	// 	start := time.Now()
-	// 	basic := stathighs.BasicStatWeightProcess{}
-	// 	basic.Init(printer)
-	// 	basic.SetTargetRatios(targetRatio)
-	// 	basic.SetBaseline(basicSimBase)
-	// 	for _, data := range inputDataBasic {
-	// 		basic.AddSimData(data.IncrementStat, uint32(data.IncrementValue), data.SimResult)
-	// 	}
-	// 	resultsByAlgorithm["basic"] = basic.Run()
-	// 	timesByAlgorithm["basic"] = time.Since(start)
-	// 	printer.Println("///////////////// BASIC /////////////////")
-	// })
+	wg.Go(func() {
+		printer.Println("################# BASIC ###################")
+		start := time.Now()
+		basic := stathighs.BasicStatWeightProcess{}
+		basic.Init(printer)
+		basic.SetTargetRatios(targetRatio)
+		basic.SetBaseline(basicSimBase)
+		for _, data := range inputDataBasic {
+			basic.AddSimData(data.IncrementStat, uint32(data.IncrementValue), data.SimResult)
+		}
+		resultsByAlgorithm["basic"] = basic.Run()
+		timesByAlgorithm["basic"] = time.Since(start)
+		printer.Println("///////////////// BASIC /////////////////")
+	})
 
-	// wg.Go(func() {
-	// 	printer.Println("################# FORMULA ###################")
-	// 	start := time.Now()
-	// 	comp := stathighs.FormulaStatWeightProcess{}
-	// 	comp.Init(printer)
-	// 	comp.SetTargetRatios(targetRatio)
-	// 	comp.SetMinimumIncludeRate(1)
-	// 	comp.SupplyData(slices.Clone(inputDataRandom))
-	// 	resultsByAlgorithm["form"] = comp.Run()
-	// 	timesByAlgorithm["form"] = time.Since(start)
-	// 	printer.Println("///////////////// FORMULA /////////////////")
-	// })
+	wg.Go(func() {
+		printer.Println("################# FORMULA ###################")
+		start := time.Now()
+		comp := stathighs.FormulaStatWeightProcess{}
+		comp.Init(printer)
+		comp.SetTargetRatios(targetRatio)
+		comp.SetMinimumIncludeRate(1)
+		comp.SupplyData(slices.Clone(inputDataRandom))
+		resultsByAlgorithm["form"] = comp.Run()
+		timesByAlgorithm["form"] = time.Since(start)
+		printer.Println("///////////////// FORMULA /////////////////")
+	})
 
 	// wg.Go(func() {
 	// 	printer.Println("################# FITTING ###################")
@@ -607,17 +607,17 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	// 	printer.Println("///////////////// FITTING /////////////////")
 	// })
 
-	// wg.Go(func() {
-	// 	printer.Println("################# GRID1 ###################")
-	// 	start := time.Now()
-	// 	grid1 := stathighs.GridStatWeightProcess{}
-	// 	grid1.Init(printer)
-	// 	grid1.SetTargetRatios(targetRatio)
-	// 	grid1.SupplyData(slices.Clone(inputDataGrid))
-	// 	resultsByAlgorithm["grid1"] = grid1.Run()
-	// 	timesByAlgorithm["grid1"] = time.Since(start)
-	// 	printer.Println("///////////////// GRID1 /////////////////")
-	// })
+	wg.Go(func() {
+		printer.Println("################# GRID1 ###################")
+		start := time.Now()
+		grid1 := stathighs.GridStatWeightProcess{}
+		grid1.Init(printer)
+		grid1.SetTargetRatios(targetRatio)
+		grid1.SupplyData(slices.Clone(inputDataGrid))
+		resultsByAlgorithm["grid1"] = grid1.Run()
+		timesByAlgorithm["grid1"] = time.Since(start)
+		printer.Println("///////////////// GRID1 /////////////////")
+	})
 
 	wg.Go(func() {
 		printer.Println("################# GRID2-1 ###################")

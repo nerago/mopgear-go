@@ -38,6 +38,7 @@ func (grid2 *GridStatWeightProcess2) Init(printer *util.PrintRecorder) {
 		grid2.build.Solver = utilhighs.Solver_MIP_Interior
 	} else {
 		grid2.build.Solver = utilhighs.Solver_LP_CAN_GPU
+		grid2.build.DisablePreSolve = true
 	}
 }
 
@@ -65,7 +66,6 @@ func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios stats.SimData)
 
 func (grid2 *GridStatWeightProcess2) Run() WeightResult {
 	grid2.setupWeightVars()
-	// grid2.chooseScaling()
 	grid2.chooseScalingX()
 	grid2.processInputData()
 
@@ -90,66 +90,58 @@ func (grid2 *GridStatWeightProcess2) setupWeightVars() {
 
 	// strength column within each simtype is set to targetratio (0.4 etc)
 	for _, simType := range grid2.requiredSims {
-		// value := grid2.targetRatios.Get(simType)
 		colDetailWeight := grid2.detailedWeights.GetOrPanic(c_baseStatType, simType)
-		// strengthMinimum := utilhighs.ConstraintRow{}
-		// strengthMinimum.Add(colDetailWeight, 1)
-		// strengthMinimum.Build(&grid2.build, value, value)
-		// strengthMinimum := utilhighs.ConstraintRow{}
-		// strengthMinimum.Add(colDetailWeight, 1)
-		// strengthMinimum.Build(&grid2.build, 0.001, utilhighs.C_PlusInf)
-
 		strAbs := grid2.build.CreateColumnGeneral(highs.Continuous, 0.001, utilhighs.C_PlusInf, nil)
 		grid2.build.AbsoluteValueFromDiffOneToConst(colDetailWeight, 1, 0, strAbs, "")
 	}
-
-
 }
-
-// func (grid2 *GridStatWeightProcess2) chooseScaling() {
-// 	grid2.scaleSims = chooseSimScaling(grid2.inputData, grid2.printer)
-// 	grid2.scaleStats = chooseStatScaling(grid2.inputData, grid2.printer)
-// }
 
 func (grid2 *GridStatWeightProcess2) chooseScalingX() {
 	grid2.scaleSims = make(map[stats.SimType]float64)
 	for _, simType := range grid2.requiredSims {
-		listA := make([]float64, 0)
-		listQ := make([]float64, 0)
+		listDiffs := make([]float64, 0)
 		for a := range grid2.inputData {
 			for b := a + 1; b < len(grid2.inputData); b++ {
 				one, two := &grid2.inputData[a], &grid2.inputData[b]
-				simDiffA := one.SimResult.GetFriendly(simType) - two.SimResult.GetFriendly(simType)
-				simDiffQ := simDiffA * grid2.scaleSims[simType]
-				listA = append(listA, math.Abs(simDiffA))
-				listQ = append(listQ, math.Abs(simDiffQ))
+				simDiff, goodDiff := grid2.calcSimDiff(one, two, simType)
+				if goodDiff {
+					listDiffs = append(listDiffs, math.Abs(simDiff))
+				}
 			}
 		}
-		grid2.printer.Printf("simDiffs %s min=%f avg=%f max=%f\n", simType.Name(), listMin(listA), listAvg(listA), listMax(listA))
-		// grid2.printer.Printf("listQ %s min=%f avg=%f max=%f\n", simType.Name(), listMin(listQ), listAvg(listQ), listMax(listQ))
+		grid2.printer.Printf("simDiffs %s min=%f avg=%f max=%f\n", simType.Name(), listMin(listDiffs), listAvg(listDiffs), listMax(listDiffs))
 
-		scaleRef := listAvg(listA)
-		scale := 1.0 / scaleRef
+		scale := 1.0 / listAvg(listDiffs) // TODO try max too
 		grid2.scaleSims[simType] = scale
 	}
 
 	grid2.scaleStats = make(map[stats.StatType]float64)
 	for _, statType := range G_RequiredStats {
-		listA := make([]float64, 0)
+		listDiffs := make([]float64, 0)
 		for a := range grid2.inputData {
 			for b := a + 1; b < len(grid2.inputData); b++ {
 				one, two := &grid2.inputData[a], &grid2.inputData[b]
 				statDiff := one.TotalStat.GetFloat(statType) - two.TotalStat.GetFloat(statType)
 				if statDiff != 0 {
-					listA = append(listA, math.Abs(statDiff))
+					listDiffs = append(listDiffs, math.Abs(statDiff))
 				}
 			}
 		}
-		grid2.printer.Printf("statDiffs %s min=%f avg=%f max=%f\n", statType.Name(), listMin(listA), listAvg(listA), listMax(listA))
+		grid2.printer.Printf("statDiffs %s min=%f avg=%f max=%f\n", statType.Name(), listMin(listDiffs), listAvg(listDiffs), listMax(listDiffs))
 
-		scaleRef := listAvg(listA)
+		scaleRef := listAvg(listDiffs)
 		scale := 1.0 / scaleRef
 		grid2.scaleStats[statType] = scale
+	}
+}
+
+func (grid2 *GridStatWeightProcess2) calcSimDiff(one *WeightInput, two *WeightInput, simType stats.SimType) (float64, bool) {
+	simOne := one.SimResult.GetFriendly(simType)
+	simTwo := two.SimResult.GetFriendly(simType)
+	if !utilhighs.FloatsApproxEquals(simOne, simTwo) {
+		return simOne - simTwo, true
+	} else {
+		return 0, false
 	}
 }
 
@@ -237,10 +229,11 @@ func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStats(one *Weight
 		debugText := "MISMATCH1 " + statType.Name() + " " + simType.Name()
 		mismatchCol := grid2.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
 
-		simDiff := two.SimResult.GetFriendly(simType) - one.SimResult.GetFriendly(simType)
-		simDiff *= grid2.scaleSims[simType]
-
-		grid2.build.AbsoluteValueFromDiffOneToConst(weightColumn, statDiff, simDiff, mismatchCol, debugText)
+		simDiff, goodDiff := grid2.calcSimDiff(two, one, simType)
+		if goodDiff {
+			simDiff *= grid2.scaleSims[simType]
+			grid2.build.AbsoluteValueFromDiffOneToConst(weightColumn, statDiff, simDiff, mismatchCol, debugText)
+		}
 	}
 }
 func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStatsX(one *WeightInput, two *WeightInput, statType stats.StatType) {
@@ -253,12 +246,9 @@ func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStatsX(one *Weigh
 		debugText := "MISMATCH1 " + statType.Name() + " " + simType.Name()
 		mismatchCol := grid2.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
 
-		simOne := one.SimResult.GetFriendly(simType)
-		simTwo := two.SimResult.GetFriendly(simType)
-		if !utilhighs.FloatsApproxEquals(simOne, simTwo) {
-			simDiff := simOne - simTwo
+		simDiff, goodDiff := grid2.calcSimDiff(one, two, simType)
+		if goodDiff {
 			simDiff *= grid2.scaleSims[simType]
-
 			grid2.build.AbsoluteValueFromDiffOneToConst(weightColumn, statDiff, simDiff, mismatchCol, debugText)
 		}
 	}
@@ -277,16 +267,17 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *Weight
 		debugText := "MISMATCH2 " + statTypeA.Name() + " " + statTypeB.Name() + " " + simType.Name()
 		mismatchCol := grid2.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
 
-		simDiff := two.SimResult.GetFriendly(simType) - one.SimResult.GetFriendly(simType)
-		simDiff *= grid2.scaleSims[simType]
-
-		grid2.build.AbsoluteValueDiffTwoVarsThenDiffConst(
-			weightColumnA, statDiffA,
-			weightColumnB, statDiffB,
-			mismatchCol,
-			simDiff,
-			c_grid2_highScore,
-			debugText)
+		simDiff, goodDiff := grid2.calcSimDiff(two, one, simType)
+		if goodDiff {
+			simDiff *= grid2.scaleSims[simType]
+			grid2.build.AbsoluteValueDiffTwoVarsThenDiffConst(
+				weightColumnA, statDiffA,
+				weightColumnB, statDiffB,
+				mismatchCol,
+				simDiff,
+				c_grid2_highScore,
+				debugText)
+		}
 	}
 }
 
@@ -303,15 +294,16 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStatsX(one *Weigh
 		debugText := "MISMATCH2 " + statTypeA.Name() + " " + statTypeB.Name() + " " + simType.Name()
 		mismatchCol := grid2.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
 
-		simDiff := one.SimResult.GetFriendly(simType) - two.SimResult.GetFriendly(simType)
-		simDiff *= grid2.scaleSims[simType]
-
-		grid2.build.AbsoluteValueFromSumTwoThenDiffToConst(
-			weightColumnA, statDiffA,
-			weightColumnB, statDiffB,
-			simDiff,
-			mismatchCol,
-			debugText)
+		simDiff, goodDiff := grid2.calcSimDiff(one, two, simType)
+		if goodDiff {
+			simDiff *= grid2.scaleSims[simType]
+			grid2.build.AbsoluteValueFromSumTwoThenDiffToConst(
+				weightColumnA, statDiffA,
+				weightColumnB, statDiffB,
+				simDiff,
+				mismatchCol,
+				debugText)
+		}
 	}
 }
 
@@ -328,21 +320,23 @@ func (grid2 *GridStatWeightProcess2) prepareSampleThreeDifferenceStatsX(one *Wei
 		weightColumnB := grid2.detailedWeights.GetOrPanic(statTypeB, simType)
 		weightColumnC := grid2.detailedWeights.GetOrPanic(statTypeC, simType)
 
-		simDiff := one.SimResult.GetFriendly(simType) - two.SimResult.GetFriendly(simType)
-		simDiff *= grid2.scaleSims[simType]
+		simDiff, goodDiff := grid2.calcSimDiff(one, two, simType)
+		if goodDiff {
+			simDiff *= grid2.scaleSims[simType]
 
-		debugText := "MISMATCH3 " + statTypeA.Name() + " " + statTypeB.Name() + " " + statTypeC.Name() + " " + simType.Name()
-		mismatchSignedCol := grid2.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, nil)
+			debugText := "MISMATCH3 " + statTypeA.Name() + " " + statTypeB.Name() + " " + statTypeC.Name() + " " + simType.Name()
+			mismatchSignedCol := grid2.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, nil)
 
-		rowEquate := utilhighs.ConstraintRow{}
-		rowEquate.Add(weightColumnA, statDiffA)
-		rowEquate.Add(weightColumnB, statDiffB)
-		rowEquate.Add(weightColumnC, statDiffC)
-		rowEquate.Add(mismatchSignedCol, 1)
-		rowEquate.Build(&grid2.build, simDiff, simDiff)
+			rowEquate := utilhighs.ConstraintRow{}
+			rowEquate.Add(weightColumnA, statDiffA)
+			rowEquate.Add(weightColumnB, statDiffB)
+			rowEquate.Add(weightColumnC, statDiffC)
+			rowEquate.Add(mismatchSignedCol, 1)
+			rowEquate.Build(&grid2.build, simDiff, simDiff)
 
-		mismatchCol := grid2.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
-		grid2.build.AbsoluteValue(mismatchSignedCol, mismatchCol)
+			mismatchCol := grid2.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: debugText})
+			grid2.build.AbsoluteValue(mismatchSignedCol, mismatchCol)
+		}
 	}
 }
 
