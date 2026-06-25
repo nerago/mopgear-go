@@ -13,6 +13,48 @@ import (
 	"slices"
 )
 
+var substituteItemsRet = []items.ItemId{
+	96394,  // frozen warlord bracer heroic
+	95281,  // ret tier15 gloves normal
+	95205,  // terra-cotta neck
+	96481,  // durumu tentacle heroic
+	95910,  // ret tier15 chest celestial
+	86955,  // heroic overwhelm assault belt
+	86957,  // heroic bladed tempest ring
+	95140,  // shado assault band
+	95141,  // shado assault loop
+	96500,  // scaled tyrant heroic
+	86979,  // heroic impaling treads
+	96373,  // cloudbreaker belt heroic
+	96468,  // talonrender chest heroic
+	94776,  // primal turtle amulet
+	96533,  // rein-binders fists heroic
+	94820,  // caustic spike bracers
+	94773,  // centripetal shoulders normal
+	// 96182,  // ultimate prot of the emperor thunder normal
+	// 94945,  // greatshield of the gloaming normal
+	// 96436,  // tortos shell heroic
+	// 96376,  // worldbreaker weapon
+	// 96534,  // qon's scimitar
+	// 86387,  // kilrak weapon
+	96478,  // treads of the blind heroic
+	95153,  // Tyrant King Battleplate
+	95282,  // ret tier15 normal head
+	95292,  // prot tier15 head normal
+	96657,  // ret tier15 legs heroic
+	96658,  // ret tier15 shoulder heroic
+	95142,  // striker's battletags
+	94776,  // primal turtle amulet
+	96436,  // tortos shell heroic
+	96420,  // talisman of angry spirits
+	101882, // cliffbreaker helm exp/mastery
+	// 101887, // timeless ring haste/mastery; random suffixes don't really work well in upgrade
+	103787, // poisonbinder girth
+	103742, // blood rage bracers
+	103738, // bubble bracers
+	105785, // burly bracer
+	103734, // zoid gauntlets
+}
 var substituteItemsDps = []items.ItemId{
 	96394,  // frozen warlord bracer heroic
 	95281,  // ret tier15 gloves normal

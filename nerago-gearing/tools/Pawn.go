@@ -8,7 +8,7 @@ import (
 
 func WritePawnString(weights stathighs.WeightResult, printer *util.PrintRecorder) string {
 	str := util.StringBuild2{}
-	str.WriteString("( Pawn: v1: \"Protection WoWSims Weights\": Class=Paladin,Strength=")
+	str.WriteString("( Pawn: v1: \"Gearing Weights\": Class=Paladin,Strength=")
 	str.WriteFloat64(weights.Get(stats.Stat_Strength), 10)
 	str.WriteString(",Stamina=")
 	str.WriteFloat64(weights.Get(stats.Stat_Stamina), 10)

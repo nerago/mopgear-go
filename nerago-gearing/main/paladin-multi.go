@@ -77,7 +77,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:                     "Prot-Mitigation-NoSet",
 		GearFile:                  files.GearFileProtMitigationNoSet,
 		Model:                     model.Model_PallyProtMitigation_NoSet(),
-		RequestRatingPercent:      0.45,
+		RequestRatingPercent:      0.40,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
 		MissingEnchant:            setup.MissingEnchant_Panic,
@@ -86,7 +86,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:                     "Prot-Mitigation-WithSet",
 		GearFile:                  files.GearFileProtMitigationWithSet,
 		Model:                     model.Model_PallyProtMitigation_WithSet(),
-		RequestRatingPercent:      0.25,
+		RequestRatingPercent:      0.30,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
 		MissingEnchant:            setup.MissingEnchant_Panic,
@@ -357,6 +357,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protHeal.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
 	protHeal.ForceSingleSlot(items.Equip_Trinket2, trinketZandSpark)
 
+	ret.ForceSingleSlot(items.Equip_Head, 98985)
+	ret.ForceSingleSlot(items.Equip_Chest, 99052)
+
 	// protCompromise.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{96376, 96534, 103826})
 	// protMitigationNoSet.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{96376, 96534, 103826})
 	// protMitigationWithSet.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{96376, 96534, 103826})
@@ -377,7 +380,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
 	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
 	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
-	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
+	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 
 	job.MakeRandomVariants(101887, 0, -365, -352)
 
@@ -398,8 +401,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
-	job.RunNoPermutations_AllCommonAlternates()
-	// job.RunForSolutionsPerPerumte(10)
+	// job.RunNoPermutations_AllCommonAlternates()
+	job.RunForSolutionsPerPerumte(1)
 	// job.RunCullingSets(500, time.Minute*30)
 }
 
