@@ -20,7 +20,8 @@ type GridStatWeightProcess1B struct {
 	requiredStats []stats.StatType
 	simTypes      []stats.SimType
 	testMode      bool
-	// EXTRAMODE     int
+	SCALEMODE     int
+	ROUNDMODE     int
 
 	build           utilhighs.LinearBuilder
 	unitStatValues  util.MapMapSlice[stats.StatType, stats.SimType, float64]
@@ -34,7 +35,7 @@ func (grid *GridStatWeightProcess1B) Init(printer *util.PrintRecorder) {
 	grid.build.Minimise = true
 	grid.build.Solver = utilhighs.Solver_LP_USE_GPU
 	grid.build.DisablePreSolve = true
-	grid.build.TimeLimitSeconds = 120
+	grid.build.TimeLimitSeconds = 25
 	grid.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }
 
@@ -159,12 +160,26 @@ func (grid *GridStatWeightProcess1B) prepareSample(statType stats.StatType, high
 
 	for _, simType := range grid.simTypes {
 		var simValueDiff float64
-		if simType.IsHighGood() {
+		var unitStatValue float64
+
+		switch grid.ROUNDMODE {
+		case 0:
+			if simType.IsHighGood() {
+				simValueDiff = high.SimResult.GetFriendly(simType) - low.SimResult.GetFriendly(simType)
+			} else {
+				simValueDiff = low.SimResult.GetFriendly(simType) - high.SimResult.GetFriendly(simType)
+			}
+			unitStatValue = simValueDiff / statDiff
+		case 1:
 			simValueDiff = high.SimResult.GetFriendly(simType) - low.SimResult.GetFriendly(simType)
-		} else {
-			simValueDiff = low.SimResult.GetFriendly(simType) - high.SimResult.GetFriendly(simType)
+			unitStatValue = simValueDiff / statDiff
+		case 2:
+			simValueDiff = math.Abs(high.SimResult.GetFriendly(simType) - low.SimResult.GetFriendly(simType))
+			unitStatValue = simValueDiff / statDiff
+		default:
+			simValueDiff = high.SimResult.GetFriendly(simType) - low.SimResult.GetFriendly(simType)
+			unitStatValue = math.Abs(simValueDiff / statDiff)
 		}
-		unitStatValue := simValueDiff / statDiff
 
 		grid.unitStatValues.Add(statType, simType, unitStatValue)
 	}
@@ -173,20 +188,67 @@ func (grid *GridStatWeightProcess1B) prepareSample(statType stats.StatType, high
 func (grid *GridStatWeightProcess1B) chooseScalesBySim() {
 	scaleTarget := 1.0
 	for _, simType := range grid.simTypes {
-		minValue, maxValue := math.MaxFloat64, 0.0
+		minPosValue, maxPosValue := math.MaxFloat64, 0.0
+		minNegValue, maxNegValue := math.MaxFloat64, 0.0
+		hasNeg, hasPos, hasZero := false, false, false
 		total := 0.0
 		count := 0
-		for value := range grid.unitStatValues.ValuesForKey2AsSeq(simType) {
-			value = math.Abs(value)
-			minValue = min(minValue, value)
-			maxValue = max(maxValue, value)
-			total += value
+		for valueRaw := range grid.unitStatValues.ValuesForKey2AsSeq(simType) {
+			if utilhighs.FloatEqualsZero(valueRaw) {
+				minNegValue = 0
+				minPosValue = 0
+				hasZero = true
+			} else if valueRaw > 0 {
+				minPosValue = min(minPosValue, valueRaw)
+				maxPosValue = max(maxPosValue, valueRaw)
+				hasPos = true
+			} else {
+				minNegValue = min(minNegValue, -valueRaw)
+				maxNegValue = max(maxNegValue, -valueRaw)
+				hasNeg = true
+			}
+			total += math.Abs(valueRaw)
 			count++
 		}
 
 		var scale float64
 		if count != 0 {
-			scale = scaleTarget / minValue
+			// scale = scaleTarget / minValue
+			switch grid.SCALEMODE {
+			case 0:
+				scale = 1
+			case 1:
+				average := total / float64(count)
+				scale = scaleTarget / average
+			case 2:
+				if hasPos && !hasNeg && !hasZero {
+					scale = scaleTarget / minPosValue
+				} else if hasPos && !hasNeg && hasZero {
+					scale = scaleTarget / maxPosValue
+				} else if !hasPos && hasNeg && !hasZero {
+					scale = scaleTarget / minNegValue
+				} else if !hasPos && hasNeg && hasZero {
+					scale = scaleTarget / maxNegValue
+				} else if hasPos && hasNeg {
+					superMax := max(maxNegValue, maxPosValue)
+					scale = scaleTarget / superMax
+				} else {
+					scale = 1
+				}
+			case 3:
+				if hasPos && !hasNeg {
+					scale = scaleTarget / maxPosValue
+				} else if !hasPos && hasNeg {
+					scale = scaleTarget / maxNegValue
+				} else if hasPos && hasNeg {
+					superMax := max(maxNegValue, maxPosValue)
+					scale = scaleTarget / superMax
+				} else {
+					scale = 1
+				}
+			default:
+				scale = scaleTarget / max(maxNegValue, maxPosValue)
+			}
 			scale = util.Clamp(scale, 1e-5, 1e5)
 		} else {
 			scale = 1
@@ -208,40 +270,40 @@ func (grid *GridStatWeightProcess1B) chooseScalesBySim() {
 	}
 }
 
-func (grid *GridStatWeightProcess1B) chooseScalesEachCombo() {
-	scaleTarget := 1.0
-	for group := range grid.unitStatValues.SeqGroupsKeysNestedValueSeq() {
-		minValue, maxValue := math.MaxFloat64, 0.0
-		total := 0.0
-		count := 0
-		for value := range group.ValueSeq {
-			value = math.Abs(value)
-			minValue = min(minValue, value)
-			maxValue = max(maxValue, value)
-			total += value
-			count++
-		}
+// func (grid *GridStatWeightProcess1B) chooseScalesEachCombo() {
+// 	scaleTarget := 1.0
+// 	for group := range grid.unitStatValues.SeqGroupsKeysNestedValueSeq() {
+// 		minValue, maxValue := math.MaxFloat64, 0.0
+// 		total := 0.0
+// 		count := 0
+// 		for valueRaw := range group.ValueSeq {
+// 			value := math.Abs(valueRaw)
+// 			minValue = min(minValue, value)
+// 			maxValue = max(maxValue, value)
+// 			total += value
+// 			count++
+// 		}
 
-		var scale float64
-		if count != 0 {
-			scale = scaleTarget / minValue
-			scale = util.Clamp(scale, 1e-5, 1e5)
-		} else {
-			scale = 1
-		}
+// 		var scale float64
+// 		if count != 0 {
+// 			scale = scaleTarget / minValue
+// 			scale = util.Clamp(scale, 1e-5, 1e5)
+// 		} else {
+// 			scale = 1
+// 		}
 
-		grid.scales.Put(group.Key1, group.Key2, scale)
+// 		grid.scales.Put(group.Key1, group.Key2, scale)
 
-		valueArray := slices.Collect(group.ValueSeq)
-		slices.Sort(valueArray)
-		grid.printer.Printf("[")
-		for i := range valueArray {
-			v := valueArray[i] * scale
-			grid.printer.Printf("%f ", v)
-		}
-		grid.printer.Println("]")
-	}
-}
+// 		valueArray := slices.Collect(group.ValueSeq)
+// 		slices.Sort(valueArray)
+// 		grid.printer.Printf("%s %s [", group.Key1.Name(), group.Key2.Name())
+// 		for i := range valueArray {
+// 			v := valueArray[i] * scale
+// 			grid.printer.Printf("%f ", v)
+// 		}
+// 		grid.printer.Println("]")
+// 	}
+// }
 
 func (grid *GridStatWeightProcess1B) unitValuesToCalcDetailedRatings() {
 	baseStat := grid.requiredStats[0]

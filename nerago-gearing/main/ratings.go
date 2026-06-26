@@ -3,8 +3,9 @@ package main
 import (
 	"cmp"
 	"encoding/json"
+	"fmt"
 	"maps"
-	"math/rand/v2"
+	"math/rand"
 	"os"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
@@ -565,7 +566,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	sampleSize := 80
 	inputDataGrid = takeDataSample_Random(inputDataGrid, sampleSize)
 	inputDataRandom = takeDataSample_Random(inputDataRandom, sampleSize)
-	mixedInputData := takeDataSample_Random(mixedInputDataFull, sampleSize)
+	// inputDataGrid = takeDataSample_Random_Seed(inputDataGrid, sampleSize, 1234)
+	// inputDataRandom = takeDataSample_Random_Seed(inputDataRandom, sampleSize, 1234)
+	// mixedInputData := takeDataSample_Random_Seed(mixedInputDataFull, sampleSize, 1234)
 	// mixedInputData := mixedInputDataFull
 
 	resultsByAlgorithm := make(map[string]stathighs.WeightResult)
@@ -629,25 +632,58 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		timesByAlgorithm["grid1"] = time.Since(start)
 		printer.Println("///////////////// GRID1 /////////////////")
 	})
-
 	wg.Go(func() {
-		printer.Println("################# GRID1B ###################")
+		printer.Println("################# GRID1 ###################")
 		start := time.Now()
-		grid1 := stathighs.GridStatWeightProcess1B{}
-		// grid1.EXTRAMODE = 0
+		grid1 := stathighs.GridStatWeightProcess{}
+		grid1.CHECKRANGE = 1
 		grid1.Init(printer)
 		grid1.SetRequiredStats(requiredStats)
 		grid1.SetTargetRatios(targetRatio)
 		grid1.SupplyData(slices.Clone(inputDataGrid))
-		resultsByAlgorithm["grid1b-0"] = grid1.Run()
-		timesByAlgorithm["grid1b-0"] = time.Since(start)
-		printer.Println("///////////////// GRID1B /////////////////")
+		resultsByAlgorithm["grid1-1"] = grid1.Run()
+		timesByAlgorithm["grid1-1"] = time.Since(start)
+		printer.Println("///////////////// GRID1 /////////////////")
 	})
+
+	for SCALEMODE := range 5 {
+		for ROUNDMODE := range 4 {
+
+			wg.Go(func() {
+				printer.Println("################# GRID1B ###################")
+				start := time.Now()
+				grid1 := stathighs.GridStatWeightProcess1B{}
+				grid1.SCALEMODE = SCALEMODE
+				grid1.ROUNDMODE = ROUNDMODE
+				grid1.Init(printer)
+				grid1.SetRequiredStats(requiredStats)
+				grid1.SetTargetRatios(targetRatio)
+				grid1.SupplyData(slices.Clone(inputDataGrid))
+				label := fmt.Sprintf("grid1b-%d-%d", SCALEMODE, ROUNDMODE)
+				resultsByAlgorithm[label] = grid1.Run()
+				timesByAlgorithm[label] = time.Since(start)
+				printer.Println("///////////////// GRID1B /////////////////")
+			})
+		}
+	}
 	// wg.Go(func() {
 	// 	printer.Println("################# GRID1B ###################")
 	// 	start := time.Now()
 	// 	grid1 := stathighs.GridStatWeightProcess1B{}
-	// 	grid1.EXTRAMODE = 1
+	// 	grid1.SCALEMODE = 0
+	// 	grid1.Init(printer)
+	// 	grid1.SetRequiredStats(requiredStats)
+	// 	grid1.SetTargetRatios(targetRatio)
+	// 	grid1.SupplyData(slices.Clone(inputDataGrid))
+	// 	resultsByAlgorithm["grid1b-0"] = grid1.Run()
+	// 	timesByAlgorithm["grid1b-0"] = time.Since(start)
+	// 	printer.Println("///////////////// GRID1B /////////////////")
+	// })
+	// wg.Go(func() {
+	// 	printer.Println("################# GRID1B ###################")
+	// 	start := time.Now()
+	// 	grid1 := stathighs.GridStatWeightProcess1B{}
+	// 	grid1.SCALEMODE = 1
 	// 	grid1.Init(printer)
 	// 	grid1.SetRequiredStats(requiredStats)
 	// 	grid1.SetTargetRatios(targetRatio)
@@ -660,13 +696,52 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	// 	printer.Println("################# GRID1B ###################")
 	// 	start := time.Now()
 	// 	grid1 := stathighs.GridStatWeightProcess1B{}
-	// 	grid1.EXTRAMODE = 2
+	// 	grid1.SCALEMODE = 2
 	// 	grid1.Init(printer)
 	// 	grid1.SetRequiredStats(requiredStats)
 	// 	grid1.SetTargetRatios(targetRatio)
 	// 	grid1.SupplyData(slices.Clone(inputDataGrid))
 	// 	resultsByAlgorithm["grid1b-2"] = grid1.Run()
 	// 	timesByAlgorithm["grid1b-2"] = time.Since(start)
+	// 	printer.Println("///////////////// GRID1B /////////////////")
+	// })
+	// wg.Go(func() {
+	// 	printer.Println("################# GRID1B ###################")
+	// 	start := time.Now()
+	// 	grid1 := stathighs.GridStatWeightProcess1B{}
+	// 	grid1.SCALEMODE = 3
+	// 	grid1.Init(printer)
+	// 	grid1.SetRequiredStats(requiredStats)
+	// 	grid1.SetTargetRatios(targetRatio)
+	// 	grid1.SupplyData(slices.Clone(inputDataGrid))
+	// 	resultsByAlgorithm["grid1b-3"] = grid1.Run()
+	// 	timesByAlgorithm["grid1b-3"] = time.Since(start)
+	// 	printer.Println("///////////////// GRID1B /////////////////")
+	// })
+	// wg.Go(func() {
+	// 	printer.Println("################# GRID1B ###################")
+	// 	start := time.Now()
+	// 	grid1 := stathighs.GridStatWeightProcess1B{}
+	// 	grid1.SCALEMODE = 4
+	// 	grid1.Init(printer)
+	// 	grid1.SetRequiredStats(requiredStats)
+	// 	grid1.SetTargetRatios(targetRatio)
+	// 	grid1.SupplyData(slices.Clone(inputDataGrid))
+	// 	resultsByAlgorithm["grid1b-4"] = grid1.Run()
+	// 	timesByAlgorithm["grid1b-4"] = time.Since(start)
+	// 	printer.Println("///////////////// GRID1B /////////////////")
+	// })
+	// wg.Go(func() {
+	// 	printer.Println("################# GRID1B ###################")
+	// 	start := time.Now()
+	// 	grid1 := stathighs.GridStatWeightProcess1B{}
+	// 	grid1.SCALEMODE = 5
+	// 	grid1.Init(printer)
+	// 	grid1.SetRequiredStats(requiredStats)
+	// 	grid1.SetTargetRatios(targetRatio)
+	// 	grid1.SupplyData(slices.Clone(inputDataGrid))
+	// 	resultsByAlgorithm["grid1b-5"] = grid1.Run()
+	// 	timesByAlgorithm["grid1b-5"] = time.Since(start)
 	// 	printer.Println("///////////////// GRID1B /////////////////")
 	// })
 
@@ -901,18 +976,18 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		row = append(row, timesByAlgorithm[label].String())
 		tab.AddRow(row)
 
-		weightTweak := weightfind.WeightTweaker(weight, requiredStats, targetRatio, mixedInputData, util.PrintRecorder_HoldAll())
-		accuracyTweak := weightfind.EvaluateAccuracy(weightTweak, mixedInputDataFull, targetRatio)
-		row = make([]string, 0)
-		row = append(row, label)
-		for _, stat := range requiredStats {
-			value := weightTweak.Get(stat)
-			row = append(row, strconv.FormatFloat(value, 'f', 4, 64))
-		}
-		row = append(row, "")
-		row = append(row, strconv.FormatFloat(accuracyTweak, 'f', 4, 64))
-		row = append(row, timesByAlgorithm[label].String())
-		tab.AddRow(row)
+		// weightTweak := weightfind.WeightTweaker(weight, requiredStats, targetRatio, mixedInputDataFull, util.PrintRecorder_HoldAll())
+		// accuracyTweak := weightfind.EvaluateAccuracy(weightTweak, mixedInputDataFull, targetRatio)
+		// row = make([]string, 0)
+		// row = append(row, label)
+		// for _, stat := range requiredStats {
+		// 	value := weightTweak.Get(stat)
+		// 	row = append(row, strconv.FormatFloat(value, 'f', 4, 64))
+		// }
+		// row = append(row, "")
+		// row = append(row, strconv.FormatFloat(accuracyTweak, 'f', 4, 64))
+		// row = append(row, timesByAlgorithm[label].String())
+		// tab.AddRow(row)
 	}
 	tab.Write(printer)
 }
@@ -977,6 +1052,18 @@ func takeDataSample_Random(slice []stathighs.WeightInput, size int) []stathighs.
 	} else {
 		copy := slices.Clone(slice)
 		rand.Shuffle(len(copy), func(a, b int) { copy[a], copy[b] = copy[b], copy[a] })
+		return copy[0:size]
+	}
+}
+
+func takeDataSample_Random_Seed(slice []stathighs.WeightInput, size int, seed int64) []stathighs.WeightInput {
+	if len(slice) < size {
+		return slice
+	} else {
+		rng := rand.New(rand.NewSource(seed))
+
+		copy := slices.Clone(slice)
+		rng.Shuffle(len(copy), func(a, b int) { copy[a], copy[b] = copy[b], copy[a] })
 		return copy[0:size]
 	}
 }

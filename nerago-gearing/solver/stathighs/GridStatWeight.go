@@ -13,6 +13,8 @@ import (
 type GridStatWeightProcess struct {
 	printer *util.PrintRecorder
 
+	CHECKRANGE int
+
 	targetRatios  stats.SimData
 	inputData     []WeightInput
 	requiredStats []stats.StatType
@@ -224,7 +226,12 @@ func (grid *GridStatWeightProcess) unitValuesCalcForGroup(simType stats.SimType,
 	index := 0
 	for baseUnitSample := range baseUnitValueSeq {
 		for thisUnitSample := range thisUnitValueSeq {
-			if isGoodValueRange(baseUnitSample.value) && isGoodValueRange(thisUnitSample.value) { // losing this check with no other changes is worse!
+			if grid.CHECKRANGE == 0 {
+				if isGoodValueRange(baseUnitSample.value) && isGoodValueRange(thisUnitSample.value) { // losing this check with no other changes is worse!
+					grid.unitValueCombinationAddToModel(baseUnitSample, baseDetailWeightCol, thisUnitSample, thisDetailWeightCol, debugText+" "+strconv.Itoa(index))
+					index++
+				}
+			} else {
 				grid.unitValueCombinationAddToModel(baseUnitSample, baseDetailWeightCol, thisUnitSample, thisDetailWeightCol, debugText+" "+strconv.Itoa(index))
 				index++
 			}
