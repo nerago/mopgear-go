@@ -2,9 +2,11 @@ package stathighs
 
 import (
 	"iter"
+	"math"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"slices"
 	"strconv"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -18,6 +20,7 @@ type GridStatWeightProcess1B struct {
 	requiredStats []stats.StatType
 	simTypes      []stats.SimType
 	testMode      bool
+	EXTRAMODE     int
 
 	build           utilhighs.LinearBuilder
 	unitStatValues  util.MapMapSlice[stats.StatType, stats.SimType, float64]
@@ -72,7 +75,7 @@ func (grid *GridStatWeightProcess1B) SetTestMode(testMode bool) {
 func (grid *GridStatWeightProcess1B) Run() WeightResult {
 	grid.setupWeightVars()
 	grid.dataSamplesFromPairs()
-	grid.chooseScales()
+	grid.chooseScalesBySim()
 	grid.unitValuesToCalcDetailedRatings()
 	grid.finalWeightVars()
 
@@ -167,20 +170,32 @@ func (grid *GridStatWeightProcess1B) prepareSample(statType stats.StatType, high
 	}
 }
 
-func (grid *GridStatWeightProcess1B) chooseScales() {
+func (grid *GridStatWeightProcess1B) chooseScalesBySim() {
 	scaleTarget := 1.0
 	for _, simType := range grid.simTypes {
+		minValue, maxValue := math.MaxFloat64, 0.0
 		total := 0.0
 		count := 0
 		for value := range grid.unitStatValues.ValuesForKey2AsSeq(simType) {
+			value = math.Abs(value)
+			minValue = min(minValue, value)
+			maxValue = max(maxValue, value)
 			total += value
 			count++
 		}
 
 		var scale float64
 		if count != 0 {
-			average := total / float64(count)
-			scale = scaleTarget / average
+			// average := total / float64(count)
+			switch grid.EXTRAMODE {
+			case 0:
+				average := total / float64(count)
+				scale = scaleTarget / average
+			case 1:
+				scale = scaleTarget / maxValue
+			default:
+				scale = scaleTarget / minValue
+			}
 			scale = util.Clamp(scale, 1e-5, 1e5)
 		} else {
 			scale = 1
@@ -190,28 +205,59 @@ func (grid *GridStatWeightProcess1B) chooseScales() {
 			grid.scales.Put(statType, simType, scale)
 			// grid.scales.Put(statType, simType, 10) // 100 range, marginally better, 0.001 marginally worse
 		}
+
+		valueArray := slices.Collect(grid.unitStatValues.ValuesForKey2AsSeq(simType))
+		slices.Sort(valueArray)
+		grid.printer.Printf("[")
+		for i := range valueArray {
+			v := valueArray[i] * scale
+			grid.printer.Printf("%f ", v)
+		}
+		grid.printer.Println("]")
 	}
 }
-func (grid *GridStatWeightProcess1B) chooseScales0() {
+
+func (grid *GridStatWeightProcess1B) chooseScalesEachCombo() {
 	scaleTarget := 1.0
 	for group := range grid.unitStatValues.SeqGroupsKeysNestedValueSeq() {
+		minValue, maxValue := math.MaxFloat64, 0.0
 		total := 0.0
 		count := 0
 		for value := range group.ValueSeq {
+			value = math.Abs(value)
+			minValue = min(minValue, value)
+			maxValue = max(maxValue, value)
 			total += value
 			count++
 		}
 
 		var scale float64
 		if count != 0 {
-			average := total / float64(count)
-			scale = scaleTarget / average
+			switch grid.EXTRAMODE {
+			case 0:
+				average := total / float64(count)
+				scale = scaleTarget / average
+			case 1:
+				scale = scaleTarget / maxValue
+			default:
+				scale = scaleTarget / minValue
+			}
+			scale = scaleTarget / minValue
 			scale = util.Clamp(scale, 1e-5, 1e5)
 		} else {
 			scale = 1
 		}
 
 		grid.scales.Put(group.Key1, group.Key2, scale)
+
+		valueArray := slices.Collect(group.ValueSeq)
+		slices.Sort(valueArray)
+		grid.printer.Printf("[")
+		for i := range valueArray {
+			v := valueArray[i] * scale
+			grid.printer.Printf("%f ", v)
+		}
+		grid.printer.Println("]")
 	}
 }
 
@@ -246,7 +292,7 @@ func (grid *GridStatWeightProcess1B) unitValuesCalcForGroup(simType stats.SimTyp
 			var debugText string = debugText + " " + strconv.Itoa(index)
 			offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "OFFSET ABS " + debugText})
 
-			grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, baseUnitSample*baseScale, baseDetailWeightCol, thisUnitSample*thisScale, offsetAbs, baseScale, "OFFSET ABS "+debugText)
+			grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, baseUnitSample*baseScale, baseDetailWeightCol, thisUnitSample*thisScale, offsetAbs, 1/baseScale, "OFFSET ABS "+debugText)
 
 			index++
 		}

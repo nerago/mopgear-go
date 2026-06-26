@@ -634,12 +634,39 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		printer.Println("################# GRID1B ###################")
 		start := time.Now()
 		grid1 := stathighs.GridStatWeightProcess1B{}
+		grid1.EXTRAMODE = 0
 		grid1.Init(printer)
 		grid1.SetRequiredStats(requiredStats)
 		grid1.SetTargetRatios(targetRatio)
 		grid1.SupplyData(slices.Clone(inputDataGrid))
-		resultsByAlgorithm["grid1b"] = grid1.Run()
-		timesByAlgorithm["grid1b"] = time.Since(start)
+		resultsByAlgorithm["grid1b-0"] = grid1.Run()
+		timesByAlgorithm["grid1b-0"] = time.Since(start)
+		printer.Println("///////////////// GRID1B /////////////////")
+	})
+	wg.Go(func() {
+		printer.Println("################# GRID1B ###################")
+		start := time.Now()
+		grid1 := stathighs.GridStatWeightProcess1B{}
+		grid1.EXTRAMODE = 1
+		grid1.Init(printer)
+		grid1.SetRequiredStats(requiredStats)
+		grid1.SetTargetRatios(targetRatio)
+		grid1.SupplyData(slices.Clone(inputDataGrid))
+		resultsByAlgorithm["grid1b-1"] = grid1.Run()
+		timesByAlgorithm["grid1b-1"] = time.Since(start)
+		printer.Println("///////////////// GRID1B /////////////////")
+	})
+	wg.Go(func() {
+		printer.Println("################# GRID1B ###################")
+		start := time.Now()
+		grid1 := stathighs.GridStatWeightProcess1B{}
+		grid1.EXTRAMODE = 2
+		grid1.Init(printer)
+		grid1.SetRequiredStats(requiredStats)
+		grid1.SetTargetRatios(targetRatio)
+		grid1.SupplyData(slices.Clone(inputDataGrid))
+		resultsByAlgorithm["grid1b-2"] = grid1.Run()
+		timesByAlgorithm["grid1b-2"] = time.Since(start)
 		printer.Println("///////////////// GRID1B /////////////////")
 	})
 
