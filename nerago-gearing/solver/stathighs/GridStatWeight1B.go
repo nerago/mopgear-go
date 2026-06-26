@@ -20,7 +20,7 @@ type GridStatWeightProcess1B struct {
 	requiredStats []stats.StatType
 	simTypes      []stats.SimType
 	testMode      bool
-	EXTRAMODE     int
+	// EXTRAMODE     int
 
 	build           utilhighs.LinearBuilder
 	unitStatValues  util.MapMapSlice[stats.StatType, stats.SimType, float64]
@@ -186,16 +186,7 @@ func (grid *GridStatWeightProcess1B) chooseScalesBySim() {
 
 		var scale float64
 		if count != 0 {
-			// average := total / float64(count)
-			switch grid.EXTRAMODE {
-			case 0:
-				average := total / float64(count)
-				scale = scaleTarget / average
-			case 1:
-				scale = scaleTarget / maxValue
-			default:
-				scale = scaleTarget / minValue
-			}
+			scale = scaleTarget / minValue
 			scale = util.Clamp(scale, 1e-5, 1e5)
 		} else {
 			scale = 1
@@ -233,15 +224,6 @@ func (grid *GridStatWeightProcess1B) chooseScalesEachCombo() {
 
 		var scale float64
 		if count != 0 {
-			switch grid.EXTRAMODE {
-			case 0:
-				average := total / float64(count)
-				scale = scaleTarget / average
-			case 1:
-				scale = scaleTarget / maxValue
-			default:
-				scale = scaleTarget / minValue
-			}
 			scale = scaleTarget / minValue
 			scale = util.Clamp(scale, 1e-5, 1e5)
 		} else {
