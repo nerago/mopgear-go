@@ -11,9 +11,9 @@ type MapMapSlice[J comparable, K comparable, V any] struct {
 }
 
 type MapMapSliceEntry[J comparable, K comparable, V any] struct {
-	key1  J
-	key2  K
-	value []V
+	Key1     J
+	Key2     K
+	ValueSeq iter.Seq[V]
 }
 
 func (mmapslice *MapMapSlice[J, K, V]) ValuesForKeyAsSlice(key1 J, key2 K) ([]V, bool) {
@@ -24,6 +24,30 @@ func (mmapslice *MapMapSlice[J, K, V]) ValuesForKeyAsSlice(key1 J, key2 K) ([]V,
 func (mmapslice *MapMapSlice[J, K, V]) ValuesForKeyAsSeq(key1 J, key2 K) iter.Seq[V] {
 	value := mmapslice.dataBy1[key1][key2]
 	return slices.Values(value)
+}
+
+func (mmapslice *MapMapSlice[J, K, V]) ValuesForKey1AsSeq(key1 J) iter.Seq[V] {
+	return func(yield func(V) bool) {
+		for _, slice := range mmapslice.dataBy1[key1] {
+			for _, value := range slice {
+				if !yield(value) {
+					return
+				}
+			}
+		}
+	}
+}
+
+func (mmapslice *MapMapSlice[J, K, V]) ValuesForKey2AsSeq(key2 K) iter.Seq[V] {
+	return func(yield func(V) bool) {
+		for _, slice := range mmapslice.dataBy2[key2] {
+			for _, value := range slice {
+				if !yield(value) {
+					return
+				}
+			}
+		}
+	}
 }
 
 func (mmapslice *MapMapSlice[J, K, V]) Clear() {
@@ -139,6 +163,18 @@ func (mmapslice *MapMapSlice[J, K, V]) SeqGroupsKey2Lookup() iter.Seq2[K, func(J
 
 			if !yield(key2, lookup) {
 				return
+			}
+		}
+	}
+}
+
+func (mmapslice *MapMapSlice[J, K, V]) SeqGroupsKeysNestedValueSeq() iter.Seq[MapMapSliceEntry[J, K, V]] {
+	return func(yield func(MapMapSliceEntry[J, K, V]) bool) {
+		for key1, inner := range mmapslice.dataBy1 {
+			for key2, slice := range inner {
+				if !yield(MapMapSliceEntry[J, K, V]{key1, key2, slices.Values(slice)}) {
+					return
+				}
 			}
 		}
 	}

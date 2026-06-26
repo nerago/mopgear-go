@@ -166,6 +166,24 @@ func (build *LinearBuilder) AbsoluteValueFromDiffTwoVars(inputOneVar ColumnIndex
 	positive.Build(build, C_MinusInf, 0)
 }
 
+func (build *LinearBuilder) AbsoluteValueFromDiffTwoVars_ScaleOutput(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, outputCoefficient float64, debug string) {
+	// one - two + out >= 0
+	// so if one - two < 0, out neeeds to pull it up
+	negative := ConstraintRow{Debug: debug + " AbsoluteValueNegative"}
+	negative.Add(inputOneVar, inputOneCoefficient)
+	negative.Add(inputTwoVar, -inputTwoCoefficient)
+	negative.Add(outputVar, outputCoefficient)
+	negative.Build(build, 0, C_PlusInf)
+
+	// one - two - out <= 0
+	// so if one - two > 0, out needed to pull it down
+	positive := ConstraintRow{Debug: debug + " AbsoluteValuePositive"}
+	positive.Add(inputOneVar, inputOneCoefficient)
+	positive.Add(inputTwoVar, -inputTwoCoefficient)
+	positive.Add(outputVar, -outputCoefficient)
+	positive.Build(build, C_MinusInf, 0)
+}
+
 func (build *LinearBuilder) AbsoluteValueFromDiffTwoVarsNonFree(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, highRange float64, debug string) {
 	isNegative := build.CreateColumnBool(DebugString{Text: debug + " isNegative"})
 

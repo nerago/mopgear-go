@@ -13,11 +13,11 @@ import (
 type GridStatWeightProcess struct {
 	printer *util.PrintRecorder
 
-	targetRatios stats.SimData
-	inputData    []WeightInput
+	targetRatios  stats.SimData
+	inputData     []WeightInput
 	requiredStats []stats.StatType
-	simTypes     []stats.SimType
-	testMode     bool
+	simTypes      []stats.SimType
+	testMode      bool
 
 	build           utilhighs.LinearBuilder
 	unitStatValues  util.MapMapSlice[stats.StatType, stats.SimType, gridDataSample]
@@ -36,7 +36,7 @@ type gridDataSample struct {
 func (grid *GridStatWeightProcess) Init(printer *util.PrintRecorder) {
 	grid.printer = printer
 	grid.build.Minimise = true
-	grid.build.Solver = utilhighs.Solver_LP_CAN_GPU
+	grid.build.Solver = utilhighs.Solver_LP_USE_GPU
 	grid.build.DisablePreSolve = true
 	grid.build.TimeLimitSeconds = 3600 * 2
 	grid.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
@@ -224,7 +224,7 @@ func (grid *GridStatWeightProcess) unitValuesCalcForGroup(simType stats.SimType,
 	index := 0
 	for baseUnitSample := range baseUnitValueSeq {
 		for thisUnitSample := range thisUnitValueSeq {
-			if isGoodValueRange(baseUnitSample.value) && isGoodValueRange(thisUnitSample.value) {
+			if isGoodValueRange(baseUnitSample.value) && isGoodValueRange(thisUnitSample.value) { // losing this check with no other changes is worse!
 				grid.unitValueCombinationAddToModel(baseUnitSample, baseDetailWeightCol, thisUnitSample, thisDetailWeightCol, debugText+" "+strconv.Itoa(index))
 				index++
 			}

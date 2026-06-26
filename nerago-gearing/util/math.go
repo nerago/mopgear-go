@@ -45,3 +45,13 @@ func AbsInt64Diff(a, b int64) int64 {
 		return b - a
 	}
 }
+
+func Clamp(value, min, max float64) float64 {
+	if value < min {
+		return min
+	} else if value > max {
+		return max
+	} else {
+		return value
+	}
+}

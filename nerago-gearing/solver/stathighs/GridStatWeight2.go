@@ -15,11 +15,11 @@ const c_grid2_highScore = 1000.0
 type GridStatWeightProcess2 struct {
 	printer *util.PrintRecorder
 
-	DIFFINCLUDE  int
-	targetRatios stats.SimData
+	DIFFINCLUDE   int
+	targetRatios  stats.SimData
 	requiredStats []stats.StatType
-	requiredSims []stats.SimType
-	inputData    []WeightInput
+	requiredSims  []stats.SimType
+	inputData     []WeightInput
 
 	scaleSims  map[stats.SimType]float64
 	scaleStats map[stats.StatType]float64
@@ -38,7 +38,7 @@ func (grid2 *GridStatWeightProcess2) Init(printer *util.PrintRecorder) {
 	if grid2.DIFFINCLUDE == 2 || grid2.DIFFINCLUDE == 12 {
 		grid2.build.Solver = utilhighs.Solver_MIP_Interior
 	} else {
-		grid2.build.Solver = utilhighs.Solver_LP_CAN_GPU
+		grid2.build.Solver = utilhighs.Solver_LP_USE_GPU
 		grid2.build.DisablePreSolve = true
 	}
 }

@@ -557,51 +557,51 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	// writeWeightInputsToFile(inputDataGrid, "sim-stats-compare-grid.json")
 	// writeWeightInputsToFile(inputDataRandom, "sim-stats-compare-rand.json")
 	// writeWeightBasicInputsToFile(inputDataBasic, basicSimBase, "sim-stats-compare-basic.json")
-	inputDataBasic, basicSimBase := readWeightBasicInputsFile("sim-stats-compare-basic.json")
+	// inputDataBasic, basicSimBase := readWeightBasicInputsFile("sim-stats-compare-basic.json")
 	inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
 	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
 	mixedInputDataFull := slices.Concat(inputDataGrid, inputDataRandom)
 
-	// sampleSize := 30
-	// inputDataGrid = takeDataSample_Random(inputDataGrid, sampleSize)
-	// inputDataRandom = takeDataSample_Random(inputDataRandom, sampleSize)
-	// mixedInputData := takeDataSample_Random(mixedInputDataFull, sampleSize)
-	mixedInputData := mixedInputDataFull
+	sampleSize := 80
+	inputDataGrid = takeDataSample_Random(inputDataGrid, sampleSize)
+	inputDataRandom = takeDataSample_Random(inputDataRandom, sampleSize)
+	mixedInputData := takeDataSample_Random(mixedInputDataFull, sampleSize)
+	// mixedInputData := mixedInputDataFull
 
 	resultsByAlgorithm := make(map[string]stathighs.WeightResult)
 	timesByAlgorithm := make(map[string]time.Duration)
 
 	wg := sync.WaitGroup{}
 
-	wg.Go(func() {
-		printer.Println("################# BASIC ###################")
-		start := time.Now()
-		basic := stathighs.BasicStatWeightProcess{}
-		basic.Init(printer)
-		basic.SetRequiredStats(requiredStats)
-		basic.SetTargetRatios(targetRatio)
-		basic.SetBaseline(basicSimBase)
-		for _, data := range inputDataBasic {
-			basic.AddSimData(data.IncrementStat, uint32(data.IncrementValue), data.SimResult)
-		}
-		resultsByAlgorithm["basic"] = basic.Run()
-		timesByAlgorithm["basic"] = time.Since(start)
-		printer.Println("///////////////// BASIC /////////////////")
-	})
+	// wg.Go(func() {
+	// 	printer.Println("################# BASIC ###################")
+	// 	start := time.Now()
+	// 	basic := stathighs.BasicStatWeightProcess{}
+	// 	basic.Init(printer)
+	// 	basic.SetRequiredStats(requiredStats)
+	// 	basic.SetTargetRatios(targetRatio)
+	// 	basic.SetBaseline(basicSimBase)
+	// 	for _, data := range inputDataBasic {
+	// 		basic.AddSimData(data.IncrementStat, uint32(data.IncrementValue), data.SimResult)
+	// 	}
+	// 	resultsByAlgorithm["basic"] = basic.Run()
+	// 	timesByAlgorithm["basic"] = time.Since(start)
+	// 	printer.Println("///////////////// BASIC /////////////////")
+	// })
 
-	wg.Go(func() {
-		printer.Println("################# FORMULA ###################")
-		start := time.Now()
-		comp := stathighs.FormulaStatWeightProcess{}
-		comp.Init(printer)
-		comp.SetRequiredStats(requiredStats)
-		comp.SetTargetRatios(targetRatio)
-		comp.SetMinimumIncludeRate(1)
-		comp.SupplyData(slices.Clone(inputDataRandom))
-		resultsByAlgorithm["form"] = comp.Run()
-		timesByAlgorithm["form"] = time.Since(start)
-		printer.Println("///////////////// FORMULA /////////////////")
-	})
+	// wg.Go(func() {
+	// 	printer.Println("################# FORMULA ###################")
+	// 	start := time.Now()
+	// 	comp := stathighs.FormulaStatWeightProcess{}
+	// 	comp.Init(printer)
+	// 	comp.SetRequiredStats(requiredStats)
+	// 	comp.SetTargetRatios(targetRatio)
+	// 	comp.SetMinimumIncludeRate(1)
+	// 	comp.SupplyData(slices.Clone(inputDataRandom))
+	// 	resultsByAlgorithm["form"] = comp.Run()
+	// 	timesByAlgorithm["form"] = time.Since(start)
+	// 	printer.Println("///////////////// FORMULA /////////////////")
+	// })
 
 	// wg.Go(func() {
 	// 	printer.Println("################# FITTING ###################")
@@ -631,18 +631,31 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	})
 
 	wg.Go(func() {
-		printer.Println("################# GRID2-1 ###################")
+		printer.Println("################# GRID1B ###################")
 		start := time.Now()
-		grid2 := stathighs.GridStatWeightProcess2{}
-		grid2.DIFFINCLUDE = 1
-		grid2.Init(printer)
-		grid2.SetRequiredStats(requiredStats)
-		grid2.SetTargetRatios(targetRatio)
-		grid2.SupplyData(slices.Clone(inputDataGrid))
-		resultsByAlgorithm["grid2-1"] = grid2.Run()
-		timesByAlgorithm["grid2-1"] = time.Since(start)
-		printer.Println("///////////////// GRID2-1 /////////////////")
+		grid1 := stathighs.GridStatWeightProcess1B{}
+		grid1.Init(printer)
+		grid1.SetRequiredStats(requiredStats)
+		grid1.SetTargetRatios(targetRatio)
+		grid1.SupplyData(slices.Clone(inputDataGrid))
+		resultsByAlgorithm["grid1b"] = grid1.Run()
+		timesByAlgorithm["grid1b"] = time.Since(start)
+		printer.Println("///////////////// GRID1B /////////////////")
 	})
+
+	// wg.Go(func() {
+	// 	printer.Println("################# GRID2-1 ###################")
+	// 	start := time.Now()
+	// 	grid2 := stathighs.GridStatWeightProcess2{}
+	// 	grid2.DIFFINCLUDE = 1
+	// 	grid2.Init(printer)
+	// 	grid2.SetRequiredStats(requiredStats)
+	// 	grid2.SetTargetRatios(targetRatio)
+	// 	grid2.SupplyData(slices.Clone(inputDataGrid))
+	// 	resultsByAlgorithm["grid2-1"] = grid2.Run()
+	// 	timesByAlgorithm["grid2-1"] = time.Since(start)
+	// 	printer.Println("///////////////// GRID2-1 /////////////////")
+	// })
 	// wg.Go(func() {
 	// 	printer.Println("################# GRID2-2 ###################")
 	// 	start := time.Now()
@@ -670,47 +683,47 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	// 	printer.Println("///////////////// GRID2-12 /////////////////")
 	// })
 
-	wg.Go(func() {
-		printer.Println("################# GRID2-1001 ###################")
-		start := time.Now()
-		grid2 := stathighs.GridStatWeightProcess2{}
-		grid2.DIFFINCLUDE = 1001
-		grid2.Init(printer)
-		grid2.SetRequiredStats(requiredStats)
-		grid2.SetTargetRatios(targetRatio)
-		grid2.SupplyData(slices.Clone(inputDataGrid))
-		resultsByAlgorithm["grid2-1001"] = grid2.Run()
-		timesByAlgorithm["grid2-1001"] = time.Since(start)
-		printer.Println("///////////////// GRID2-1001 /////////////////")
-	})
+	// wg.Go(func() {
+	// 	printer.Println("################# GRID2-1001 ###################")
+	// 	start := time.Now()
+	// 	grid2 := stathighs.GridStatWeightProcess2{}
+	// 	grid2.DIFFINCLUDE = 1001
+	// 	grid2.Init(printer)
+	// 	grid2.SetRequiredStats(requiredStats)
+	// 	grid2.SetTargetRatios(targetRatio)
+	// 	grid2.SupplyData(slices.Clone(inputDataGrid))
+	// 	resultsByAlgorithm["grid2-1001"] = grid2.Run()
+	// 	timesByAlgorithm["grid2-1001"] = time.Since(start)
+	// 	printer.Println("///////////////// GRID2-1001 /////////////////")
+	// })
 
-	wg.Go(func() {
-		printer.Println("################# GRID2-1002 ###################")
-		start := time.Now()
-		grid2 := stathighs.GridStatWeightProcess2{}
-		grid2.DIFFINCLUDE = 1002
-		grid2.Init(printer)
-		grid2.SetRequiredStats(requiredStats)
-		grid2.SetTargetRatios(targetRatio)
-		grid2.SupplyData(slices.Clone(inputDataGrid))
-		resultsByAlgorithm["grid2-1002"] = grid2.Run()
-		timesByAlgorithm["grid2-1002"] = time.Since(start)
-		printer.Println("///////////////// GRID2-1002 /////////////////")
-	})
+	// wg.Go(func() {
+	// 	printer.Println("################# GRID2-1002 ###################")
+	// 	start := time.Now()
+	// 	grid2 := stathighs.GridStatWeightProcess2{}
+	// 	grid2.DIFFINCLUDE = 1002
+	// 	grid2.Init(printer)
+	// 	grid2.SetRequiredStats(requiredStats)
+	// 	grid2.SetTargetRatios(targetRatio)
+	// 	grid2.SupplyData(slices.Clone(inputDataGrid))
+	// 	resultsByAlgorithm["grid2-1002"] = grid2.Run()
+	// 	timesByAlgorithm["grid2-1002"] = time.Since(start)
+	// 	printer.Println("///////////////// GRID2-1002 /////////////////")
+	// })
 
-	wg.Go(func() {
-		printer.Println("################# GRID2-1012 ###################")
-		start := time.Now()
-		grid2 := stathighs.GridStatWeightProcess2{}
-		grid2.DIFFINCLUDE = 1012
-		grid2.Init(printer)
-		grid2.SetRequiredStats(requiredStats)
-		grid2.SetTargetRatios(targetRatio)
-		grid2.SupplyData(slices.Clone(inputDataGrid))
-		resultsByAlgorithm["grid2-1012"] = grid2.Run()
-		timesByAlgorithm["grid2-1012"] = time.Since(start)
-		printer.Println("///////////////// GRID2-1012 /////////////////")
-	})
+	// wg.Go(func() {
+	// 	printer.Println("################# GRID2-1012 ###################")
+	// 	start := time.Now()
+	// 	grid2 := stathighs.GridStatWeightProcess2{}
+	// 	grid2.DIFFINCLUDE = 1012
+	// 	grid2.Init(printer)
+	// 	grid2.SetRequiredStats(requiredStats)
+	// 	grid2.SetTargetRatios(targetRatio)
+	// 	grid2.SupplyData(slices.Clone(inputDataGrid))
+	// 	resultsByAlgorithm["grid2-1012"] = grid2.Run()
+	// 	timesByAlgorithm["grid2-1012"] = time.Since(start)
+	// 	printer.Println("///////////////// GRID2-1012 /////////////////")
+	// })
 
 	// wg.Go(func() {
 	// 	printer.Println("################# RANKING0 ###################")

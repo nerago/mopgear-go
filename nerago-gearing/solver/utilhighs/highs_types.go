@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	C_HighsToConsole     = false
-	C_DebugHighs         = false
+	C_HighsToConsole     = true
+	C_DebugHighs         = true
 	C_DiagnoseInfeasible = false
 	c_threads            = 6
 )
@@ -51,7 +51,7 @@ type SolverMode int8
 
 const (
 	Solver_NotSet       SolverMode = iota
-	Solver_LP_CAN_GPU   SolverMode = iota
+	Solver_LP_USE_GPU   SolverMode = iota
 	Solver_LP_NO_GPU    SolverMode = iota
 	Solver_MIP_Interior SolverMode = iota
 	Solver_MIP_Vertex   SolverMode = iota
@@ -297,7 +297,7 @@ func (build *LinearBuilder) configureHighsSolver(solver *highs.Solver) bool {
 	expectMip := false
 
 	switch build.Solver {
-	case Solver_LP_CAN_GPU:
+	case Solver_LP_USE_GPU:
 		verifyNoError(solver.SetStringOption("solver", "hipdlp"))
 		requestGpu = true
 	case Solver_LP_NO_GPU:
@@ -540,6 +540,12 @@ func (row *ConstraintRow) Build(build *LinearBuilder, lowerBound float64, upperB
 
 		if (0 < math.Abs(lowerBound) && math.Abs(lowerBound) < 1e-4) || (0 < math.Abs(upperBound) && math.Abs(upperBound) < 1e-4) {
 			panic("row bounds very small")
+		}
+		for i := range row.entries {
+			value := row.entries[i].value
+			if value >= 1e+15 {
+				panic("matrix entry very large")
+			}
 		}
 	}
 
