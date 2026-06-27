@@ -356,11 +356,11 @@ func convertResult(finalResult *wowsim_proto.RaidSimResult) stats.SimData {
 func loadAnyProtoFile[T proto.Message](object T, filename string) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		log.Fatalf("failed to load input json file %q: %v", filename, err)
+		panic(err)
 	}
 
 	err = wowsim_protojson.UnmarshalOptions{DiscardUnknown: true}.Unmarshal(data, object)
 	if err != nil {
-		log.Fatalf("failed to load input json file: %s", err)
+		panic(err)
 	}
 }
