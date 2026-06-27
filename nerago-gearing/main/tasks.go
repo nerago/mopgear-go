@@ -519,7 +519,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		trinketVialCorruptCelestial,
 	}
 
-	fight := stats.Fight_Juggernaut_LowHeal
+	fight := stats.Fight_Juggernaut_NoExternalHeal
 	simRun := simulate.RunSize_QuickDirty // Medium
 
 	type group struct {

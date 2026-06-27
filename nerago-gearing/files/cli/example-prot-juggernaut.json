@@ -289,12 +289,12 @@
                 }
               }
             },
-            "talentsString": "313213",
+            "talentsString": "113213",
             "glyphs": {
-              "major1": 41101,
-              "major2": 45744,
-              "major3": 41096,
-              "minor1": 80581
+              "major1": 41101, // focused shield
+              "major2": 45744, // alabaster
+              "major3": 41096, // Divine Protection
+              "minor1": 80581 // focused wrath
             },
             "profession1": "Blacksmithing",
             "profession2": "Engineering",

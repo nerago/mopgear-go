@@ -29,7 +29,7 @@ const (
 	SimProtJuggernaut = `nerago-gearing/files/cli/example-prot-juggernaut.json`
 	SimRet            = `nerago-gearing/files/cli/example-ret.json`
 
-	PaladinProtRotation = `wowsim-external/ui/paladin/protection/apls/horridon.apl.json`
+	PaladinProtRotation = `wowsim-external/ui/paladin/protection/apls/iron_juggernaut.apl.json`
 	PaladinRetRotation  = `wowsim-external/ui/paladin/retribution/apls/default.apl.json`
 )
 
@@ -39,7 +39,7 @@ func SimFileFor(spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim
 		switch fight {
 		case stats.Fight_Horridon_HighHeal, stats.Fight_Horridon_LowHeal, stats.Fight_Animus:
 			return SimProtHorridon
-		case stats.Fight_Juggernaut_HighHeal, stats.Fight_Juggernaut_LowHeal:
+		case stats.Fight_Juggernaut_HighHeal, stats.Fight_Juggernaut_NoExternalHeal:
 			return SimProtJuggernaut
 		default:
 			panic("unknown spec/fight")

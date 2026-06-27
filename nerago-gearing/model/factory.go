@@ -16,7 +16,7 @@ func Model_PallyProtMitigation_WithSet() Model {
 	return Model{
 		Spec:              spec,
 		Goal:              goal,
-		SimulateAs:        Fight_Juggernaut_LowHeal,
+		SimulateAs:        Fight_Juggernaut_NoExternalHeal,
 		SimRatioWeighting: SimRatio_malkrokWeight,
 		StatRatings:       weight,
 		StatRequirements:  StatRequirementsHitExpertise_ProtFlexibleParry(),
@@ -44,7 +44,7 @@ func Model_PallyProtHeal() Model {
 	return Model{
 		Spec:              spec,
 		Goal:              goal,
-		SimulateAs:        Fight_Juggernaut_LowHeal,
+		SimulateAs:        Fight_Juggernaut_OffHealer,
 		SimRatioWeighting: SimRatio_healWeight,
 		StatRatings:       weight,
 		StatRequirements:  StatRequirementsHitExpertise_ProtFlexibleParry(),
@@ -71,7 +71,7 @@ func Model_PallyProtMitigation_NoSet() Model {
 	return Model{
 		Spec:              spec,
 		Goal:              goal,
-		SimulateAs:        Fight_Juggernaut_LowHeal,
+		SimulateAs:        Fight_Juggernaut_NoExternalHeal,
 		SimRatioWeighting: SimRatio_generalMiti,
 		StatRatings:       weight,
 		StatRequirements:  StatRequirementsHitExpertise_ProtFlexibleParry(),

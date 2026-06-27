@@ -14,23 +14,23 @@ import (
 )
 
 var substituteItemsRet = []items.ItemId{
-	96394,  // frozen warlord bracer heroic
-	95281,  // ret tier15 gloves normal
-	95205,  // terra-cotta neck
-	96481,  // durumu tentacle heroic
-	95910,  // ret tier15 chest celestial
-	86955,  // heroic overwhelm assault belt
-	86957,  // heroic bladed tempest ring
-	95140,  // shado assault band
-	95141,  // shado assault loop
-	96500,  // scaled tyrant heroic
-	86979,  // heroic impaling treads
-	96373,  // cloudbreaker belt heroic
-	96468,  // talonrender chest heroic
-	94776,  // primal turtle amulet
-	96533,  // rein-binders fists heroic
-	94820,  // caustic spike bracers
-	94773,  // centripetal shoulders normal
+	96394, // frozen warlord bracer heroic
+	95281, // ret tier15 gloves normal
+	95205, // terra-cotta neck
+	96481, // durumu tentacle heroic
+	95910, // ret tier15 chest celestial
+	86955, // heroic overwhelm assault belt
+	86957, // heroic bladed tempest ring
+	95140, // shado assault band
+	95141, // shado assault loop
+	96500, // scaled tyrant heroic
+	86979, // heroic impaling treads
+	96373, // cloudbreaker belt heroic
+	96468, // talonrender chest heroic
+	94776, // primal turtle amulet
+	96533, // rein-binders fists heroic
+	94820, // caustic spike bracers
+	94773, // centripetal shoulders normal
 	// 96182,  // ultimate prot of the emperor thunder normal
 	// 94945,  // greatshield of the gloaming normal
 	// 96436,  // tortos shell heroic
@@ -213,8 +213,8 @@ func findUpgrades_Paladin(printer *util.PrintRecorder) {
 	// var simRunSize simulate.WowSim_RunSize = 1500
 	// var simRunSize simulate.WowSim_RunSize = 3000
 	// var simRunSize simulate.WowSim_RunSize = 8000
-	// simRunSize := simulate.RunSize_QuickDirty
-	simRunSize := simulate.RunSize_Common
+	simRunSize := simulate.RunSize_QuickDirty
+	//simRunSize := simulate.RunSize_Common
 
 	substituteItemsDpsAndMiti := slices.Concat(substituteItemsDps, substituteItemsMiti)
 	substituteItemsDpsAndMiti = util.RemoveDuplicatesComparable(substituteItemsDpsAndMiti)
@@ -223,12 +223,12 @@ func findUpgrades_Paladin(printer *util.PrintRecorder) {
 	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
 	substituteEmptySlotOnly[items.Item_Ring] = 86957    // heroic bladed tempest ring
 
-	finder := func(_ stats.Difficulty) []*items.FullItem {
-		return []*items.FullItem{db.WowSimDB_ByIdAndUpgrade(103735, 0), db.WowSimDB_ByIdAndUpgrade(103791, 0), db.WowSimDB_ByIdAndUpgrade(103872, 0)}
-	}
+	//finder := func(_ stats.Difficulty) []*items.FullItem {
+	//	return []*items.FullItem{db.WowSimDB_ByIdAndUpgrade(103735, 0), db.WowSimDB_ByIdAndUpgrade(103791, 0), db.WowSimDB_ByIdAndUpgrade(103872, 0)}
+	//}
 	// finder := loaders.ItemFinder_SiegeStrengthPlateTank
 	// finder := loaders.ItemFinder_Ordos
-	// finder := loaders.ItemFinder_TimelessPlate
+	finder := loaders.ItemFinder_TimelessPlate
 	// finder := loaders.ItemFinder_BagsUpgraded
 
 	input := upgrades.FindUpgrades_MultiSpec_Sim{

@@ -180,11 +180,13 @@ func inputRequestFromScratch(equipMap *items.FullEquipMap, profession model.Prof
 	updateGear(&input, equipMap, profession)
 	updateBonus(&input, bonusStats)
 	updateRotation(&input, spec)
+	updateTalents(&input, spec, fight)
 
 	return &input
 }
 
 func updateFight(input *wowsim_proto.RaidSimRequest, fight stats.WowSim_Fight) {
+
 	switch fight {
 	case stats.Fight_Horridon_HighHeal:
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 45000
@@ -205,14 +207,55 @@ func updateFight(input *wowsim_proto.RaidSimRequest, fight stats.WowSim_Fight) {
 	case stats.Fight_Juggernaut_HighHeal:
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 600000
 
-	case stats.Fight_Juggernaut_LowHeal:
+	case stats.Fight_Juggernaut_NoExternalHeal:
+		if input.Raid.Parties[0].Players[0].TalentsString != "113213" {
+			panic("unexpected talent setup")
+		}
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 0
 		for _, target := range input.Encounter.Targets {
 			target.MinBaseDamage *= 2.5
 		}
 
+	case stats.Fight_Juggernaut_OffHealer:
+
+		input.Raid.Parties[0].Players[0].HealingModel.Hps = 0
+		for _, target := range input.Encounter.Targets {
+			target.MinBaseDamage *= 2
+		}
+
 	default:
 		panic("unknown fight")
+	}
+}
+
+func updateTalents(input *wowsim_proto.RaidSimRequest, spec stats.SpecType, fight stats.WowSim_Fight) {
+	switch spec {
+	case stats.Spec_PaladinProt:
+		if fight == stats.Fight_Juggernaut_OffHealer {
+			// sacred shield -> eternal flame, execution sentence -> light's hammer
+			input.Raid.Parties[0].Players[0].TalentsString = "112212"
+		} else {
+			input.Raid.Parties[0].Players[0].TalentsString = "113213"
+		}
+
+		// my usual
+		input.Raid.Parties[0].Players[0].Glyphs = &wowsim_proto.Glyphs{
+			Major1: 41104, // Final Wrath
+			Major2: 45744, // Alabaster Shield
+			Major3: 41096, // Divine Protection
+		}
+
+		// wowsim's suggested version
+		//input.Raid.Parties[0].Players[0].Glyphs = &wowsim_proto.Glyphs{
+		//	Major1: 41101, // Focused Shield
+		//	Major2: 45744, // Alabaster Shield
+		//	Major3: 41096, // Divine Protection
+		//}
+
+		// wowsim suggests minor glyph focused wrath, has no relevant effect in sims
+	case stats.Spec_PaladinRet:
+	default:
+		panic("don't know spec")
 	}
 }
 

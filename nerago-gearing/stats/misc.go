@@ -182,12 +182,13 @@ func (difficulty Difficulty) Name() string {
 type WowSim_Fight int8
 
 const (
-	Fight_Unknown             WowSim_Fight = iota
-	Fight_Horridon_HighHeal   WowSim_Fight = iota
-	Fight_Horridon_LowHeal    WowSim_Fight = iota
-	Fight_Animus              WowSim_Fight = iota
-	Fight_Juggernaut_HighHeal WowSim_Fight = iota
-	Fight_Juggernaut_LowHeal  WowSim_Fight = iota
+	Fight_Unknown                   WowSim_Fight = iota
+	Fight_Horridon_HighHeal         WowSim_Fight = iota
+	Fight_Horridon_LowHeal          WowSim_Fight = iota
+	Fight_Animus                    WowSim_Fight = iota
+	Fight_Juggernaut_HighHeal       WowSim_Fight = iota
+	Fight_Juggernaut_NoExternalHeal WowSim_Fight = iota
+	Fight_Juggernaut_OffHealer      WowSim_Fight = iota
 )
 
 type StatAndValue struct {

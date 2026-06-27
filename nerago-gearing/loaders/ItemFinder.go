@@ -54,13 +54,18 @@ func ItemFinder_TimelessPlate(_ stats.Difficulty) []*items.FullItem {
 		if (strings.Contains(item.BaseName(), "Cliffbreaker") || strings.Contains(item.BaseName(), "Elder Tortoiseshell")) && item.ItemLevel() == targetLevel {
 			onlyCoreStats(item)
 
-			var randomId items.RandomSuffix = -454         // haste/mastery
+			//var randomId items.RandomSuffix = -454         // haste/mastery
+			//item = item.MakeItemWithRandomSuffix(randomId) // give it haste
+			//result = append(result, item)
+
+			var randomId items.RandomSuffix = -340         // haste
 			item = item.MakeItemWithRandomSuffix(randomId) // give it haste
 			result = append(result, item)
 
-			randomId = -340                                // haste
-			item = item.MakeItemWithRandomSuffix(randomId) // give it haste
-			result = append(result, item)
+			for r := -460; r <= -441; r++ {
+				item = item.MakeItemWithRandomSuffix(items.RandomSuffix(r))
+				result = append(result, item)
+			}
 		}
 	}
 	return result
