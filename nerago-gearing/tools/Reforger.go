@@ -1,7 +1,6 @@
 package tools
 
 import (
-	"log"
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/model"
 	. "paladin_gearing_go/stats"
@@ -39,16 +38,16 @@ func Reforger_SinglePreset(baseItem *FullItem, recipe *ReforgeRecipe) *FullItem 
 	source := recipe.From
 	target := recipe.To
 	if source == target {
-		log.Panic("expected different stats")
+		panic("expected different stats")
 	}
 
 	originalValue := baseItem.StatBase().GetUInt(source)
 	if originalValue == 0 {
-		log.Panicf("expected item to have source stat %s on %s", source.Name(), baseItem.CreateString())
+		panic("expected item to have source stat " + source.Name() + " on " + baseItem.CreateString())
 	}
 
 	if baseItem.StatBase().GetUInt(target) != 0 {
-		log.Panicf("expected item to have zero target stat %s on %s", target.Name(), baseItem.CreateString())
+		panic("expected item to have zero target stat " + target.Name() + " on " + baseItem.CreateString())
 	}
 
 	reforgeQuantity := (originalValue * 4) / 10

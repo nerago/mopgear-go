@@ -1,7 +1,6 @@
 package simulate
 
 import (
-	"log"
 	"os"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"

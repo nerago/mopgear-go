@@ -2,7 +2,6 @@ package multi
 
 import (
 	"iter"
-	"log"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/stats"
@@ -145,7 +144,7 @@ func restrictItemOptionsToCommon(optionsInputList []commonOptionsInput, commonOp
 func validateCommons(commonOptions multi_types.CommonOptions) {
 	for itemRef, options := range commonOptions.SeqGroups() {
 		if len(options) == 0 {
-			log.Panicf("no common forge for %d", itemRef.ItemId)
+			panic("no common forge for " + itemRef.ItemId.String())
 		}
 	}
 }
