@@ -5,7 +5,8 @@ import "sync"
 type CancelSignal interface {
 	AddCancelHandler(func())
 	Cancel()
-	IsCancelled() bool
+	ShouldContinue() bool
+	ShouldFinish() bool
 }
 
 func ChainCancel(outer, inner CancelSignal) {
@@ -14,8 +15,8 @@ func ChainCancel(outer, inner CancelSignal) {
 
 type CancelSignalBasic struct {
 	isCancelled bool
-	onCancel    []func()
 	lock        sync.Mutex
+	onCancel    []func()
 }
 
 func CancelSignal_Make() CancelSignal {
@@ -24,28 +25,30 @@ func CancelSignal_Make() CancelSignal {
 
 func (cancel *CancelSignalBasic) AddCancelHandler(onCancel func()) {
 	cancel.lock.Lock()
-	defer cancel.lock.Unlock()
-
 	if cancel.isCancelled {
 		onCancel()
 	} else {
 		cancel.onCancel = append(cancel.onCancel, onCancel)
 	}
+	cancel.lock.Unlock()
 }
 
 func (cancel *CancelSignalBasic) Cancel() {
 	cancel.lock.Lock()
-	defer cancel.lock.Unlock()
-
 	if !cancel.isCancelled {
+		cancel.isCancelled = true
 		for i := range cancel.onCancel {
 			cancel.onCancel[i]()
 		}
 		cancel.onCancel = nil
-		cancel.isCancelled = true
 	}
+	cancel.lock.Unlock()
 }
 
-func (cancel *CancelSignalBasic) IsCancelled() bool {
+func (cancel *CancelSignalBasic) ShouldContinue() bool {
+	return !cancel.isCancelled
+}
+
+func (cancel *CancelSignalBasic) ShouldFinish() bool {
 	return cancel.isCancelled
 }

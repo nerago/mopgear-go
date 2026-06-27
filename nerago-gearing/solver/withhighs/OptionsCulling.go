@@ -52,7 +52,7 @@ func (process *OptionsCulling) Run(cancel channel_op.CancelSignal) <-chan items.
 	waitGroup := sync.WaitGroup{}
 	for range c_cullThreadCount {
 		waitGroup.Go(func() {
-			for process.tasksCompleted.Load() < process.targetResultCount-c_cullThreadCount && !cancel.IsCancelled() {
+			for process.tasksCompleted.Load() < process.targetResultCount-c_cullThreadCount && cancel.ShouldContinue() {
 				process.runTask(resultChannel)
 			}
 			process.printer.Println("exit thread")

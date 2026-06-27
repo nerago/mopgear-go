@@ -55,13 +55,13 @@ func MapMulti_ChannelToChannel_Cancellable[T any, R any](threadCount int, inputC
 	for range threadCount {
 		waitGroup.Go(func() {
 			for value := range inputChannel {
-				if cancel.IsCancelled() {
+				if cancel.ShouldFinish() {
 					break
 				}
 
 				mapper(value, outputChannel)
 
-				if cancel.IsCancelled() {
+				if cancel.ShouldFinish() {
 					break
 				}
 			}
@@ -107,13 +107,13 @@ func Map_ChannelToSlice_FutureCancellable[T any, R any](threadCount int, inputCh
 	for range threadCount {
 		waitGroup.Go(func() {
 			for value := range inputChannel {
-				if future.IsCancelled() {
+				if future.ShouldFinish() {
 					break
 				}
 
 				tempChannel <- mapper(value)
 
-				if future.IsCancelled() {
+				if future.ShouldFinish() {
 					break
 				}
 			}
@@ -199,9 +199,10 @@ func MapOptional_SliceToChannel_Cancellable[T any, R any](threadCount int, input
 	indexChannel := make(chan int, threadCount)
 	var waitGroup sync.WaitGroup
 
+	// TODO index channel gets stuck on cancel
 	go func() {
 		for index := range inputSlice {
-			if cancel.IsCancelled() {
+			if cancel.ShouldFinish() {
 				break
 			}
 
@@ -213,7 +214,7 @@ func MapOptional_SliceToChannel_Cancellable[T any, R any](threadCount int, input
 	for range threadCount {
 		waitGroup.Go(func() {
 			for index := range indexChannel {
-				if cancel.IsCancelled() {
+				if cancel.ShouldFinish() {
 					break
 				}
 
@@ -222,7 +223,7 @@ func MapOptional_SliceToChannel_Cancellable[T any, R any](threadCount int, input
 					outputChannel <- value
 				}
 
-				if cancel.IsCancelled() {
+				if cancel.ShouldFinish() {
 					break
 				}
 			}
