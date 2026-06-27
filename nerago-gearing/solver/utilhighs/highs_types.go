@@ -279,6 +279,7 @@ func (build *LinearBuilder) configureHighsSolver(solver *highs.Solver) bool {
 	switch build.Solver {
 	case Solver_LP_USE_GPU:
 		verifyNoError(solver.SetStringOption("solver", "hipdlp"))
+		verifyNoError(solver.SetStringOption("presolve", "on"))
 		requestGpu = true
 	case Solver_LP_NO_GPU:
 		if build.isLargeModel() {

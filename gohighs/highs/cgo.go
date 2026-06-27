@@ -1031,6 +1031,11 @@ func (s *Solver) WriteSolution(filename string, pretty bool) error {
 	return newError("WriteSolution", Status(status))
 }
 
+func (s *Solver) Presolve() error {
+	status := C.Highs_presolve(s.ptr)
+	return newError("Presolve", Status(status))
+}
+
 //export goHighsCallbackExportedBridge
 func goHighsCallbackExportedBridge(solverReference C.HighsInt, callbackType C.HighsInt) C.HighsInt {
 	solver := solverReferenceArray[solverReference]

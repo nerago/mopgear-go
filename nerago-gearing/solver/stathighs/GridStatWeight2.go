@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"slices"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
@@ -21,8 +22,8 @@ type GridStatWeightProcess2 struct {
 	requiredSims  []stats.SimType
 	inputData     []WeightInput
 
-	scaleSims  map[stats.SimType]float64
-	scaleStats map[stats.StatType]float64
+	scaleSims map[stats.SimType]float64
+	//scaleStats map[stats.StatType]float64
 
 	build           utilhighs.LinearBuilder
 	detailedWeights util.MapMap[stats.StatType, stats.SimType, utilhighs.ColumnIndex]
@@ -117,27 +118,8 @@ func (grid2 *GridStatWeightProcess2) chooseScalingX() {
 		}
 		grid2.printer.Printf("simDiffs %s min=%f avg=%f max=%f\n", simType.Name(), listMin(listDiffs), listAvg(listDiffs), listMax(listDiffs))
 
-		scale := 1.0 / listAvg(listDiffs) // TODO try max too
+		scale := chooseScale(slices.Values(listDiffs))
 		grid2.scaleSims[simType] = scale
-	}
-
-	grid2.scaleStats = make(map[stats.StatType]float64)
-	for _, statType := range grid2.requiredStats {
-		listDiffs := make([]float64, 0)
-		for a := range grid2.inputData {
-			for b := a + 1; b < len(grid2.inputData); b++ {
-				one, two := &grid2.inputData[a], &grid2.inputData[b]
-				statDiff := one.TotalStat.GetFloat(statType) - two.TotalStat.GetFloat(statType)
-				if statDiff != 0 {
-					listDiffs = append(listDiffs, math.Abs(statDiff))
-				}
-			}
-		}
-		grid2.printer.Printf("statDiffs %s min=%f avg=%f max=%f\n", statType.Name(), listMin(listDiffs), listAvg(listDiffs), listMax(listDiffs))
-
-		scaleRef := listAvg(listDiffs)
-		scale := 1.0 / scaleRef
-		grid2.scaleStats[statType] = scale
 	}
 }
 
@@ -227,7 +209,6 @@ func (grid2 *GridStatWeightProcess2) checkForNumberStatDifferences(one, two *sta
 
 func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStats(one *WeightInput, two *WeightInput, statType stats.StatType) {
 	statDiff := one.TotalStat.GetFloat(statType) - two.TotalStat.GetFloat(statType)
-	statDiff *= grid2.scaleStats[statType]
 
 	for _, simType := range grid2.requiredSims {
 		weightColumn := grid2.detailedWeights.GetOrPanic(statType, simType)
@@ -244,7 +225,6 @@ func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStats(one *Weight
 }
 func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStatsX(one *WeightInput, two *WeightInput, statType stats.StatType) {
 	statDiff := one.TotalStat.GetFloat(statType) - two.TotalStat.GetFloat(statType)
-	statDiff *= grid2.scaleStats[statType]
 
 	for _, simType := range grid2.requiredSims {
 		weightColumn := grid2.detailedWeights.GetOrPanic(statType, simType)
@@ -263,8 +243,6 @@ func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStatsX(one *Weigh
 func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *WeightInput, two *WeightInput, statTypeA stats.StatType, statTypeB stats.StatType) {
 	statDiffA := one.TotalStat.GetFloat(statTypeA) - two.TotalStat.GetFloat(statTypeA)
 	statDiffB := one.TotalStat.GetFloat(statTypeB) - two.TotalStat.GetFloat(statTypeB)
-	statDiffA *= grid2.scaleStats[statTypeA]
-	statDiffB *= grid2.scaleStats[statTypeB]
 
 	for _, simType := range grid2.requiredSims {
 		weightColumnA := grid2.detailedWeights.GetOrPanic(statTypeA, simType)
@@ -290,8 +268,6 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *Weight
 func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStatsX(one *WeightInput, two *WeightInput, statTypeA stats.StatType, statTypeB stats.StatType) {
 	statDiffA := one.TotalStat.GetFloat(statTypeA) - two.TotalStat.GetFloat(statTypeA)
 	statDiffB := one.TotalStat.GetFloat(statTypeB) - two.TotalStat.GetFloat(statTypeB)
-	statDiffA *= grid2.scaleStats[statTypeA]
-	statDiffB *= grid2.scaleStats[statTypeB]
 
 	for _, simType := range grid2.requiredSims {
 		weightColumnA := grid2.detailedWeights.GetOrPanic(statTypeA, simType)
@@ -315,11 +291,8 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStatsX(one *Weigh
 
 func (grid2 *GridStatWeightProcess2) prepareSampleThreeDifferenceStatsX(one *WeightInput, two *WeightInput, statTypeA stats.StatType, statTypeB stats.StatType, statTypeC stats.StatType) {
 	statDiffA := one.TotalStat.GetFloat(statTypeA) - two.TotalStat.GetFloat(statTypeA)
-	statDiffA *= grid2.scaleStats[statTypeA]
 	statDiffB := one.TotalStat.GetFloat(statTypeB) - two.TotalStat.GetFloat(statTypeB)
-	statDiffB *= grid2.scaleStats[statTypeB]
 	statDiffC := one.TotalStat.GetFloat(statTypeC) - two.TotalStat.GetFloat(statTypeC)
-	statDiffC *= grid2.scaleStats[statTypeC]
 
 	for _, simType := range grid2.requiredSims {
 		weightColumnA := grid2.detailedWeights.GetOrPanic(statTypeA, simType)
@@ -365,7 +338,7 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 			weight := solution.ColValues[detailWeightCol]
 
 			// usableWeight := weight * grid2.scaleStats[statType] / grid2.scaleSims[simType]
-			usableWeight := weight * grid2.scaleSims[simType] / grid2.scaleStats[statType]
+			usableWeight := weight * grid2.scaleSims[simType]
 
 			// if simType.IsHighGood() {
 			// 	usableWeight *= -1
