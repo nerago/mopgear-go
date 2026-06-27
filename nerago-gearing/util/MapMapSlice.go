@@ -97,7 +97,32 @@ func (mmapslice *MapMapSlice[J, K, V]) Add(key1 J, key2 K, value V) {
 	} else {
 		inner2[key1] = slice
 	}
+}
 
+func (mmapslice *MapMapSlice[J, K, V]) MapInternalSlice(key1 J, key2 K, mapper func([]V) []V) {
+	data1 := mmapslice.dataBy1
+	if data1 != nil {
+		inner1, hasInner1 := data1[key1]
+		if hasInner1 {
+			value1, hasValue1 := inner1[key2]
+			if hasValue1 {
+				newSlice := mapper(value1)
+				inner1[key2] = newSlice
+
+				data2 := mmapslice.dataBy2
+				if data2 == nil {
+					panic("keys not found")
+				} else if inner2, hasInner2 := data2[key2]; !hasInner2 {
+					panic("keys not found")
+				} else {
+					inner2[key1] = newSlice
+				}
+
+				return
+			}
+		}
+	}
+	panic("keys not found")
 }
 
 func (mmapslice *MapMapSlice[J, K, V]) SeqWithKeys() iter.Seq[MapMapEntry[J, K, V]] {
@@ -178,19 +203,4 @@ func (mmapslice *MapMapSlice[J, K, V]) SeqGroupsKeysNestedValueSeq() iter.Seq[Ma
 			}
 		}
 	}
-}
-
-func (mmapslice *MapMapSlice[J, K, V]) MapInternalSlice(key1 J, key2 K, mapper func([]V) []V) {
-	data := mmapslice.dataBy1
-	if data != nil {
-		inner, hasInner := data[key1]
-		if hasInner {
-			value, hasValue := inner[key2]
-			if hasValue {
-				inner[key2] = mapper(value)
-				return
-			}
-		}
-	}
-	panic("keys not found")
 }

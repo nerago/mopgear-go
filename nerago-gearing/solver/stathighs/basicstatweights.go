@@ -11,11 +11,11 @@ import (
 type BasicStatWeightProcess struct {
 	printer *util.PrintRecorder
 
-requiredStats []stats.StatType
-	requiredSims []stats.SimType
-	targetRatios stats.SimData
-	simBase      stats.SimData
-	simData      map[stats.StatType]basicDataEntry
+	requiredStats []stats.StatType
+	requiredSims  []stats.SimType
+	targetRatios  stats.SimData
+	simBase       stats.SimData
+	simData       map[stats.StatType]basicDataEntry
 
 	build           utilhighs.LinearBuilder
 	unitStatValues  util.MapMap[stats.StatType, stats.SimType, float64]
@@ -55,7 +55,7 @@ func (basic *BasicStatWeightProcess) SetTargetRatios(targetRatios stats.SimData)
 		}
 		sum += val
 	}
-	if !utilhighs.FloatEqualsOne(sum) {
+	if !util.FloatEqualsOne(sum) {
 		panic("ratios don't add to one")
 	}
 	basic.targetRatios = targetRatios

@@ -15,7 +15,7 @@ import (
 
 const (
 	C_HighsToConsole     = true
-	C_DebugHighs         = true
+	C_DebugHighs         = false
 	C_DiagnoseInfeasible = false
 	c_threads            = 6
 )
@@ -25,27 +25,6 @@ var (
 	C_MinusInf = math.Inf(-1)
 	C_PlusInf  = math.Inf(1)
 )
-
-func FloatEqualsOne(value float64) bool {
-	return 0.999999 <= value && value <= 1.000001
-}
-
-func FloatEqualsZero(value float64) bool {
-	return -0.000001 <= value && value <= 0.000001
-}
-
-func FloatsApproxEquals(a, b float64) bool {
-	if b != 0 {
-		ratio := a / b
-		return (0.99999 <= ratio && ratio <= 1.00001) || (math.Abs(a-b) < 0.00001)
-	} else {
-		return FloatEqualsZero(a)
-	}
-}
-
-func FloatsBetween(lo, val, hi float64) bool {
-	return lo-0.000001 <= val && val <= hi+0.000001
-}
 
 type SolverMode int8
 
@@ -214,6 +193,7 @@ func (*LinearBuilder) postHighsRun(solver *highs.Solver, logFilename string) *ut
 
 	// verifyNoError(solver.InterruptSupportDisable())
 
+	verifyNoError(solver.Clear())
 	G_HighsPool.Put(solver)
 
 	return printer
@@ -264,8 +244,8 @@ func (build *LinearBuilder) configureHighsMatrix(solver *highs.Solver) {
 }
 
 func (build *LinearBuilder) configureHighsUtil(solver *highs.Solver, logfile string) {
-	verifyNoError(solver.SetStringOption("parallel", "on"))
-	verifyNoError(solver.SetIntOption("threads", c_threads))
+	//verifyNoError(solver.SetStringOption("parallel", "on"))
+	//verifyNoError(solver.SetIntOption("threads", c_threads))
 
 	if build.TimeLimitSeconds != 0 {
 		verifyNoError(solver.SetFloatOption("time_limit", float64(build.TimeLimitSeconds)))
@@ -657,7 +637,7 @@ func (build *LinearBuilder) ValidateInitialSolutionState() {
 		}
 
 		if anyKnown && !anyUnknown {
-			if !FloatsBetween(lowerBound, sum, upperBound) {
+			if !util.FloatsBetween(lowerBound, sum, upperBound) {
 				panic("initial values don't fit row " + strconv.FormatInt(int64(rowIndex), 10) + " " + debug)
 			}
 		}

@@ -885,7 +885,7 @@ func TestColumnIsGreaterOrEqualThanConstant(test *testing.T) {
 			assertEqual(*expectOutputValue, boolOutput, test)
 		}
 		if solution.Status.HasSolution() {
-			assertEqual(colValue >= checkValue, FloatEqualsOne(boolOutput), test)
+			assertEqual(colValue >= checkValue, util.FloatEqualsOne(boolOutput), test)
 		}
 	}
 
@@ -934,7 +934,7 @@ func TestColumnIsLessOrEqualThanConstant(test *testing.T) {
 			assertEqual(*expectOutputValue, boolOutput, test)
 		}
 		if solution.Status.HasSolution() {
-			assertEqual(colValue <= checkValue, FloatEqualsOne(boolOutput), test)
+			assertEqual(colValue <= checkValue, util.FloatEqualsOne(boolOutput), test)
 		}
 	}
 
@@ -1137,7 +1137,7 @@ func TestColumnIsGreaterOrEqualColumn(test *testing.T) {
 			assertEqual(*expectOutputValue, boolOutput, test)
 		}
 		if solution.Status.HasSolution() {
-			assertEqual(oneValue >= twoValue, FloatEqualsOne(boolOutput), test)
+			assertEqual(oneValue >= twoValue, util.FloatEqualsOne(boolOutput), test)
 		}
 	}
 
@@ -1192,7 +1192,7 @@ func TestColumnIsLessOrEqualColumn(test *testing.T) {
 			assertEqual(*expectOutputValue, boolOutput, test)
 		}
 		if solution.Status.HasSolution() {
-			assertEqual(oneValue <= twoValue, FloatEqualsOne(boolOutput), test)
+			assertEqual(oneValue <= twoValue, util.FloatEqualsOne(boolOutput), test)
 		}
 	}
 
@@ -1334,7 +1334,7 @@ func assertEqual[T comparable](expect, actual T, test *testing.T) {
 
 func assertEqualFloat(expect, actual float64, test *testing.T) {
 	test.Helper()
-	if !FloatsApproxEquals(expect, actual) {
+	if !util.FloatsApproxEquals(expect, actual) {
 		test.Fatalf("assertEqual failed expect=%v actual=%v", expect, actual)
 	}
 }

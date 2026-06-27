@@ -19,6 +19,15 @@ func WeightResult_Make() WeightResult {
 	return make(map[stats.StatType]float64)
 }
 
+func (wr *WeightResult) IsEmpty() bool {
+	for _, weightValue := range *wr {
+		if !util.FloatEqualsZero(weightValue) {
+			return false
+		}
+	}
+	return true
+}
+
 func (wr *WeightResult) Get(statType stats.StatType) float64 {
 	return (*wr)[statType]
 }
@@ -64,4 +73,3 @@ func (wr *WeightResult) String() string {
 	}
 	return build.String()
 }
-

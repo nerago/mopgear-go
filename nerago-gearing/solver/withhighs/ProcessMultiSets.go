@@ -220,7 +220,7 @@ func (process *SolverHighsMultiProcess) extractCommonChoices(solution *highs.Sol
 	commonChosenColumns := make([]*columnInfo, 0, process.common.Size())
 	for _, jobColumn := range process.allColumns {
 		colValue := solution.ColValues[jobColumn.columnIndex]
-		if jobColumn.entryType == entry_multi_enable_forge && utilhighs.FloatEqualsOne(colValue) {
+		if jobColumn.entryType == entry_multi_enable_forge && util.FloatEqualsOne(colValue) {
 			commonChosenColumns = append(commonChosenColumns, jobColumn)
 			// seenItems[jobColumn.itemFull.ItemId()] = true
 		}

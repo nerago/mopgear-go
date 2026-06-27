@@ -17,10 +17,10 @@ const (
 type FormulaStatWeightProcess struct {
 	printer *util.PrintRecorder
 
-	targetRatios stats.SimData
+	targetRatios  stats.SimData
 	requiredStats []stats.StatType
-	requiredSims []stats.SimType
-	inputData    []WeightInput
+	requiredSims  []stats.SimType
+	inputData     []WeightInput
 
 	build *utilhighs.LinearBuilder
 
@@ -262,7 +262,7 @@ func (form *FormulaStatWeightProcess) computeFinalWeights(detailWeightMap util.M
 func (form *FormulaStatWeightProcess) reportInclude(solution *highs.Solution) {
 	var includeCount uint32 = 0
 	for _, col := range form.includeColumns {
-		if utilhighs.FloatEqualsOne(solution.ColValues[col]) {
+		if util.FloatEqualsOne(solution.ColValues[col]) {
 			includeCount++
 		}
 	}

@@ -183,12 +183,12 @@ func debugPrintColumnEntry(colEntry *columnInfo, columnIndex utilhighs.ColumnInd
 		printer.Printf("%d %f %s\n", columnIndex, outputValue, "initial item rating sum")
 	case entry_permutation_active:
 		printer.Printf("%d %f %s %s\n", columnIndex, outputValue, "permutation active", colEntry.permutation.debugStr())
-		if utilhighs.FloatEqualsOne(outputValue) && activeBonus != nil {
+		if util.FloatEqualsOne(outputValue) && activeBonus != nil {
 			*activeBonus += colEntry.permutation.debugStr()
 		}
 	case entry_permutation_output_weighted:
 		printer.Printf("%d %f %s %s %f\n", columnIndex, outputValue, "permutation weighted output", colEntry.permutation.debugStr(), colEntry.weight)
-		if !utilhighs.FloatEqualsZero(outputValue) && activeBonusWeight != nil {
+		if !util.FloatEqualsZero(outputValue) && activeBonusWeight != nil {
 			*activeBonusWeight += colEntry.weight
 		}
 	case entry_main_output:
@@ -546,7 +546,7 @@ func (setup *singleGearSetInputs) buildResultSet(solution *highs.Solution, itemO
 	itemSet := items.SolvableItemSet{}
 	for columnEntry := range setup.itemColumns.SeqValues() {
 		variableResult := solution.ColValues[columnEntry.columnIndex]
-		if columnEntry.entryType == entry_item && utilhighs.FloatEqualsOne(variableResult) {
+		if columnEntry.entryType == entry_item && util.FloatEqualsOne(variableResult) {
 			itemSet.AddItem_DeferCalc_ExpectEmpty(columnEntry.itemSlot, columnEntry.item)
 		}
 	}
@@ -578,7 +578,7 @@ func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOp
 
 func checkSetRatingIsObjective(solution *highs.Solution, itemSet *items.SolvableItemSet, gear_model *gear_model.Model) {
 	checkRating := gear_model.CalcRatingSolve(itemSet)
-	if !utilhighs.FloatsApproxEquals(solution.Objective*c_scaled_ratings, float64(checkRating)) {
+	if !util.FloatsApproxEquals(solution.Objective*c_scaled_ratings, float64(checkRating)) {
 		panic("rating inconsistent " + strconv.FormatFloat(solution.Objective, 'f', 0, 64) + " " + strconv.FormatFloat(float64(checkRating), 'f', 0, 32))
 	}
 }
@@ -589,7 +589,7 @@ func (setup *singleGearSetInputs) checkActivePermutation(solution *highs.Solutio
 
 		for _, permutation := range setup.allSetPermutation {
 			variableResult := solution.ColValues[permutation.activatingVar.columnIndex]
-			if utilhighs.FloatEqualsOne(variableResult) {
+			if util.FloatEqualsOne(variableResult) {
 				if activePermutation == nil {
 					activePermutation = &permutation
 				} else {

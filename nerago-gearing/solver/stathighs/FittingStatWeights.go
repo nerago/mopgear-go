@@ -503,7 +503,7 @@ func (fit *FittingSingleStatWeightProcess) buildResult(solution *highs.Solution)
 
 	var includeCount uint32 = 0
 	for _, col := range fit.includeColumns {
-		if utilhighs.FloatEqualsOne(solution.ColValues[col]) {
+		if util.FloatEqualsOne(solution.ColValues[col]) {
 			includeCount++
 		}
 	}

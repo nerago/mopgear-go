@@ -22,6 +22,7 @@ type GridStatWeightProcess1B struct {
 	testMode      bool
 	SCALEMODE     int
 	ROUNDMODE     int
+	OUTLIER       int
 
 	build           utilhighs.LinearBuilder
 	unitStatValues  util.MapMapSlice[stats.StatType, stats.SimType, float64]
@@ -33,9 +34,10 @@ type GridStatWeightProcess1B struct {
 func (grid *GridStatWeightProcess1B) Init(printer *util.PrintRecorder) {
 	grid.printer = printer
 	grid.build.Minimise = true
-	grid.build.Solver = utilhighs.Solver_LP_USE_GPU
+	//grid.build.Solver = utilhighs.Solver_LP_USE_GPU
+	grid.build.Solver = utilhighs.Solver_LP_NO_GPU
 	grid.build.DisablePreSolve = true
-	grid.build.TimeLimitSeconds = 25
+	grid.build.TimeLimitSeconds = 240
 	grid.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }
 
@@ -59,7 +61,7 @@ func (grid *GridStatWeightProcess1B) SetTargetRatios(targetRatios stats.SimData)
 		}
 		sum += ratio
 	}
-	if !utilhighs.FloatEqualsOne(sum) {
+	if !util.FloatEqualsOne(sum) {
 		panic("ratios don't add to one")
 	}
 
@@ -76,6 +78,7 @@ func (grid *GridStatWeightProcess1B) SetTestMode(testMode bool) {
 func (grid *GridStatWeightProcess1B) Run() WeightResult {
 	grid.setupWeightVars()
 	grid.dataSamplesFromPairs()
+	grid.removeOutliers()
 	grid.chooseScalesBySim()
 	grid.unitValuesToCalcDetailedRatings()
 	grid.finalWeightVars()
@@ -126,7 +129,6 @@ func (grid *GridStatWeightProcess1B) finalWeightVars() {
 	}
 }
 
-// lazy func, could avoid double processing and put in order, very N**2
 func (grid *GridStatWeightProcess1B) dataSamplesFromPairs() {
 	for a := range grid.inputData {
 		for b := a + 1; b < len(grid.inputData); b++ {
@@ -173,9 +175,6 @@ func (grid *GridStatWeightProcess1B) prepareSample(statType stats.StatType, high
 		case 1:
 			simValueDiff = high.SimResult.GetFriendly(simType) - low.SimResult.GetFriendly(simType)
 			unitStatValue = simValueDiff / statDiff
-		case 2:
-			simValueDiff = math.Abs(high.SimResult.GetFriendly(simType) - low.SimResult.GetFriendly(simType))
-			unitStatValue = simValueDiff / statDiff
 		default:
 			simValueDiff = high.SimResult.GetFriendly(simType) - low.SimResult.GetFriendly(simType)
 			unitStatValue = math.Abs(simValueDiff / statDiff)
@@ -194,7 +193,7 @@ func (grid *GridStatWeightProcess1B) chooseScalesBySim() {
 		total := 0.0
 		count := 0
 		for valueRaw := range grid.unitStatValues.ValuesForKey2AsSeq(simType) {
-			if utilhighs.FloatEqualsZero(valueRaw) {
+			if util.FloatEqualsZero(valueRaw) {
 				minNegValue = 0
 				minPosValue = 0
 				hasZero = true
@@ -235,19 +234,8 @@ func (grid *GridStatWeightProcess1B) chooseScalesBySim() {
 				} else {
 					scale = 1
 				}
-			case 3:
-				if hasPos && !hasNeg {
-					scale = scaleTarget / maxPosValue
-				} else if !hasPos && hasNeg {
-					scale = scaleTarget / maxNegValue
-				} else if hasPos && hasNeg {
-					superMax := max(maxNegValue, maxPosValue)
-					scale = scaleTarget / superMax
-				} else {
-					scale = 1
-				}
 			default:
-				scale = scaleTarget / max(maxNegValue, maxPosValue)
+				panic("unknown")
 			}
 			scale = util.Clamp(scale, 1e-5, 1e5)
 		} else {
@@ -259,14 +247,60 @@ func (grid *GridStatWeightProcess1B) chooseScalesBySim() {
 			// grid.scales.Put(statType, simType, 10) // 100 range, marginally better, 0.001 marginally worse
 		}
 
-		valueArray := slices.Collect(grid.unitStatValues.ValuesForKey2AsSeq(simType))
-		slices.Sort(valueArray)
-		grid.printer.Printf("[")
-		for i := range valueArray {
-			v := valueArray[i] * scale
-			grid.printer.Printf("%f ", v)
+		//valueArray := slices.Collect(grid.unitStatValues.ValuesForKey2AsSeq(simType))
+		//slices.Sort(valueArray)
+		//grid.printer.Printf("[")
+		//for i := range valueArray {
+		//	v := valueArray[i] * scale
+		//	grid.printer.Printf("%f ", v)
+		//}
+		//grid.printer.Println("]")
+	}
+}
+
+func (grid *GridStatWeightProcess1B) removeOutliers() {
+	if grid.OUTLIER != 0 {
+		for _, statType := range grid.requiredStats {
+			for _, simType := range grid.simTypes {
+				grid.unitStatValues.MapInternalSlice(statType, simType, func(dataSlice []float64) []float64 {
+					total := 0.0
+					count := 0
+					for _, value := range dataSlice {
+						total += value
+						count++
+					}
+
+					average := total / float64(count)
+
+					totalDiff := 0.0
+					for _, value := range dataSlice {
+						totalDiff += math.Abs(average - value)
+					}
+					stdDev := totalDiff / float64(count)
+
+					if grid.OUTLIER == 1 {
+						acceptDeviations := 2.0
+						util.FilterSliceInPlace(&dataSlice, func(value *float64) bool {
+							deviation := math.Abs(average-*value) / stdDev
+							return deviation <= acceptDeviations
+						})
+					} else if grid.OUTLIER == 2 {
+						acceptDeviations := 4.0
+						util.FilterSliceInPlace(&dataSlice, func(value *float64) bool {
+							deviation := math.Abs(average-*value) / stdDev
+							return deviation <= acceptDeviations
+						})
+					} else if grid.OUTLIER == 3 {
+						if len(dataSlice) >= 12 {
+							slices.Sort(dataSlice)
+							dataSlice = dataSlice[len(dataSlice)/6 : len(dataSlice)*5/6]
+						}
+					}
+
+					return dataSlice
+				})
+			}
 		}
-		grid.printer.Println("]")
 	}
 }
 
@@ -333,12 +367,25 @@ func (grid *GridStatWeightProcess1B) unitValuesCalcForGroup(simType stats.SimTyp
 	index := 0
 	for baseUnitSample := range baseUnitValueSeq {
 		for thisUnitSample := range thisUnitValueSeq {
-			var debugText string = debugText + " " + strconv.Itoa(index)
-			offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "OFFSET ABS " + debugText})
+			if grid.OUTLIER == 4 {
+				if isGoodValueRange(baseUnitSample) && isGoodValueRange(thisUnitSample) {
+					var debugText string = debugText + " " + strconv.Itoa(index)
+					offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "OFFSET ABS " + debugText})
 
-			grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, baseUnitSample*baseScale, baseDetailWeightCol, thisUnitSample*thisScale, offsetAbs, 1/baseScale, "OFFSET ABS "+debugText)
+					grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, baseUnitSample*baseScale, baseDetailWeightCol, thisUnitSample*thisScale, offsetAbs, 1/baseScale, "OFFSET ABS "+debugText)
 
-			index++
+					index++
+				}
+			} else {
+
+				var debugText string = debugText + " " + strconv.Itoa(index)
+				offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "OFFSET ABS " + debugText})
+
+				grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, baseUnitSample*baseScale, baseDetailWeightCol, thisUnitSample*thisScale, offsetAbs, 1/baseScale, "OFFSET ABS "+debugText)
+
+				index++
+			}
+
 		}
 	}
 }

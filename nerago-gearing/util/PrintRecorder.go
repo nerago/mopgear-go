@@ -22,7 +22,7 @@ func PrintRecorder_CreateLogFile(path string) *PrintRecorder {
 	logName := path + "output-" + timeStr + ".log"
 	file, err := os.Create(logName)
 	if err != nil {
-		panic("error creating log")
+		panic(err)
 	}
 	return &PrintRecorder{false, nil, file, nil, sync.Mutex{}}
 }
@@ -39,29 +39,50 @@ var _newline = []byte{'\n'}
 
 func (print *PrintRecorder) outputNewline() {
 	if print.file != nil {
-		print.file.Write(_newline)
+		_, err := print.file.Write(_newline)
+		if err != nil {
+			panic(err)
+		}
 	} else if print.test != nil {
 		print.test.Log()
 	}
-	os.Stdout.Write(_newline)
+
+	_, err := os.Stdout.Write(_newline)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (print *PrintRecorder) outputBytes(bytes []byte) {
 	if print.file != nil {
-		print.file.Write(bytes)
+		_, err := print.file.Write(bytes)
+		if err != nil {
+			panic(err)
+		}
 	} else if print.test != nil {
 		print.test.Log(bytes)
 	}
-	os.Stdout.Write(bytes)
+
+	_, err := os.Stdout.Write(bytes)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (print *PrintRecorder) outputString(str string) {
 	if print.file != nil {
-		print.file.WriteString(str)
+		_, err := print.file.WriteString(str)
+		if err != nil {
+			panic(err)
+		}
 	} else if print.test != nil {
 		print.test.Log(str)
 	}
-	os.Stdout.WriteString(str)
+
+	_, err := os.Stdout.WriteString(str)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (print *PrintRecorder) Println0() {
@@ -145,13 +166,17 @@ func (print *PrintRecorder) Close() {
 	print.mutex.Lock()
 	defer print.mutex.Unlock()
 
-	print.file.Close()
+	err := print.file.Close()
+	if err != nil {
+		panic(err)
+	}
+
 	deleteIfEmpty(print.file.Name())
 }
 
 func deleteIfEmpty(logName string) {
 	info, err := os.Stat(logName)
 	if err == nil && info.Size() == 0 {
-		os.Remove(logName)
+		_ = os.Remove(logName)
 	}
 }

@@ -91,7 +91,7 @@ func (selgrid *SelectiveGridStatWeightProcess) SetTargetRatios(targetRatios stat
 		}
 		sum += val
 	}
-	if !utilhighs.FloatEqualsOne(sum) {
+	if !util.FloatEqualsOne(sum) {
 		panic("ratios don't add to one")
 	}
 
@@ -304,7 +304,7 @@ func (selgrid *SelectiveGridStatWeightProcess) reportOutputWeightsGrid(solution 
 
 	included := 0
 	for _, colInclude := range selgrid.inputDataIncludeToggles {
-		if utilhighs.FloatEqualsOne(solution.ColValues[colInclude]) {
+		if util.FloatEqualsOne(solution.ColValues[colInclude]) {
 			included++
 		}
 	}
@@ -314,7 +314,7 @@ func (selgrid *SelectiveGridStatWeightProcess) reportOutputWeightsGrid(solution 
 	for colIndex := range solution.ColValues {
 		debug := selgrid.build.DebugTextFor(utilhighs.ColumnIndex(colIndex))
 		if strings.Contains(debug, "DATA TOGGLE") {
-			if utilhighs.FloatEqualsOne(solution.ColValues[colIndex]) {
+			if util.FloatEqualsOne(solution.ColValues[colIndex]) {
 				dataToggleOn++
 			}
 			dataToggleTotal++

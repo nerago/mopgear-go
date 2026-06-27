@@ -52,8 +52,8 @@ type RankingStatWeightProcess5 struct {
 	printer *util.PrintRecorder
 
 	targetRatios   stats.SimData
-	requiredStats []stats.StatType
-	requiredSims []stats.SimType
+	requiredStats  []stats.StatType
+	requiredSims   []stats.SimType
 	initialWeights *WeightResult
 	dataAll        []WeightInput
 }
@@ -298,7 +298,7 @@ func (run *rankInternalRun5) extractAndReportSolution(solution *highs.Solution) 
 	includeCount := 0
 	for entry := range util.ForPointer(run.runData) {
 		includeValue := solution.ColValues[entry.isInclude]
-		if utilhighs.FloatEqualsOne(includeValue) {
+		if util.FloatEqualsOne(includeValue) {
 			includeCount++
 		}
 	}

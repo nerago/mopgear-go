@@ -62,7 +62,7 @@ func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios stats.SimData)
 		}
 		sum += val
 	}
-	if !utilhighs.FloatEqualsOne(sum) {
+	if !util.FloatEqualsOne(sum) {
 		panic("ratios don't add to one")
 	}
 
@@ -144,7 +144,7 @@ func (grid2 *GridStatWeightProcess2) chooseScalingX() {
 func (grid2 *GridStatWeightProcess2) calcSimDiff(one *WeightInput, two *WeightInput, simType stats.SimType) (float64, bool) {
 	simOne := one.SimResult.GetFriendly(simType)
 	simTwo := two.SimResult.GetFriendly(simType)
-	if !utilhighs.FloatsApproxEquals(simOne, simTwo) {
+	if !util.FloatsApproxEquals(simOne, simTwo) {
 		return simOne - simTwo, true
 	} else {
 		return 0, false

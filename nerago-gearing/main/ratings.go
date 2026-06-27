@@ -563,12 +563,12 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
 	mixedInputDataFull := slices.Concat(inputDataGrid, inputDataRandom)
 
-	sampleSize := 80
+	sampleSize := 120
 	inputDataGrid = takeDataSample_Random(inputDataGrid, sampleSize)
 	inputDataRandom = takeDataSample_Random(inputDataRandom, sampleSize)
-	// inputDataGrid = takeDataSample_Random_Seed(inputDataGrid, sampleSize, 1234)
-	// inputDataRandom = takeDataSample_Random_Seed(inputDataRandom, sampleSize, 1234)
-	// mixedInputData := takeDataSample_Random_Seed(mixedInputDataFull, sampleSize, 1234)
+	//inputDataGrid = takeDataSample_Random_Seed(inputDataGrid, sampleSize, 1234)
+	//inputDataRandom = takeDataSample_Random_Seed(inputDataRandom, sampleSize, 1234)
+	//mixedInputData := takeDataSample_Random_Seed(mixedInputDataFull, sampleSize, 1234)
 	// mixedInputData := mixedInputDataFull
 
 	resultsByAlgorithm := make(map[string]stathighs.WeightResult)
@@ -646,24 +646,26 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		printer.Println("///////////////// GRID1 /////////////////")
 	})
 
-	for SCALEMODE := range 5 {
-		for ROUNDMODE := range 4 {
-
-			wg.Go(func() {
-				printer.Println("################# GRID1B ###################")
-				start := time.Now()
-				grid1 := stathighs.GridStatWeightProcess1B{}
-				grid1.SCALEMODE = SCALEMODE
-				grid1.ROUNDMODE = ROUNDMODE
-				grid1.Init(printer)
-				grid1.SetRequiredStats(requiredStats)
-				grid1.SetTargetRatios(targetRatio)
-				grid1.SupplyData(slices.Clone(inputDataGrid))
-				label := fmt.Sprintf("grid1b-%d-%d", SCALEMODE, ROUNDMODE)
-				resultsByAlgorithm[label] = grid1.Run()
-				timesByAlgorithm[label] = time.Since(start)
-				printer.Println("///////////////// GRID1B /////////////////")
-			})
+	for SCALEMODE := range 3 {
+		for ROUNDMODE := range 3 {
+			for OUTLIER := range 5 {
+				wg.Go(func() {
+					printer.Println("################# GRID1B ###################")
+					start := time.Now()
+					grid1 := stathighs.GridStatWeightProcess1B{}
+					grid1.SCALEMODE = SCALEMODE
+					grid1.ROUNDMODE = ROUNDMODE
+					grid1.OUTLIER = OUTLIER
+					grid1.Init(printer)
+					grid1.SetRequiredStats(requiredStats)
+					grid1.SetTargetRatios(targetRatio)
+					grid1.SupplyData(slices.Clone(inputDataGrid))
+					label := fmt.Sprintf("grid1b-outlier%d-scale%d-round%d", OUTLIER, SCALEMODE, ROUNDMODE)
+					resultsByAlgorithm[label] = grid1.Run()
+					timesByAlgorithm[label] = time.Since(start)
+					printer.Println("///////////////// GRID1B /////////////////")
+				})
+			}
 		}
 	}
 	// wg.Go(func() {

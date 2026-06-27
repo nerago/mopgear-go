@@ -7,8 +7,11 @@ import (
 )
 
 func EvaluateAccuracy(statWeights stathighs.WeightResult, inputData []stathighs.WeightInput, simRatios stats.SimData) float64 {
+	if statWeights.IsEmpty() {
+		return 0
+	}
 
-	// TODO take into acccoount sim's uncertainty ranges
+	// TODO take into account sim's uncertainty ranges
 	// make structures
 	type accuracyInfo struct {
 		input *stathighs.WeightInput

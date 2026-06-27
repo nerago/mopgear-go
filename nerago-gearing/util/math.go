@@ -55,3 +55,24 @@ func Clamp(value, min, max float64) float64 {
 		return value
 	}
 }
+
+func FloatEqualsOne(value float64) bool {
+	return 0.999999 <= value && value <= 1.000001
+}
+
+func FloatEqualsZero(value float64) bool {
+	return -0.000001 <= value && value <= 0.000001
+}
+
+func FloatsApproxEquals(a, b float64) bool {
+	if b != 0 {
+		ratio := a / b
+		return (0.99999 <= ratio && ratio <= 1.00001) || (math.Abs(a-b) < 0.00001)
+	} else {
+		return FloatEqualsZero(a)
+	}
+}
+
+func FloatsBetween(lo, val, hi float64) bool {
+	return lo-0.000001 <= val && val <= hi+0.000001
+}

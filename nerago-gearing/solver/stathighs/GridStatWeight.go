@@ -64,7 +64,7 @@ func (grid *GridStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
 		}
 		sum += ratio
 	}
-	if !utilhighs.FloatEqualsOne(sum) {
+	if !util.FloatEqualsOne(sum) {
 		panic("ratios don't add to one")
 	}
 
