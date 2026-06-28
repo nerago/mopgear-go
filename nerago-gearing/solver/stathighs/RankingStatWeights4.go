@@ -18,16 +18,16 @@ const (
 	c_RankInitialSample = 15
 	c_RankAddSample     = 5
 
-// c_RankLargeRank   = 10000.0
+	// c_RankLargeRank   = 10000.0
 )
 
 type RankingStatWeightProcess4 struct {
 	printer *util.PrintRecorder
 
-	targetRatios stats.SimData
+	targetRatios  stats.SimData
 	requiredStats []stats.StatType
-	requiredSims []stats.SimType
-	dataAll      []WeightInput
+	requiredSims  []stats.SimType
+	dataAll       []WeightInput
 }
 
 type rankInternalRun4 struct {
@@ -97,7 +97,7 @@ func (process *RankingStatWeightProcess4) Run(doRound2 bool) []WeightResult {
 	// FIRST ROUND: minimal data, dumb initial values
 	process.printer.Println("RankingStatWeightProcess4 FIRST ROUND")
 	run1 := rankInternalRun4_create(process)
-	run1.build.TimeLimitSeconds = 1000
+	run1.build.TimeLimitSeconds = 500
 	run1.supplyData(takeDataSample_Random(process.dataAll, c_RankInitialSample))
 	run1.prepareRankings()
 	run1.createWeightColumns()

@@ -18,10 +18,10 @@ const (
 type RankingStatWeightProcess struct {
 	printer *util.PrintRecorder
 
-	targetRatios stats.SimData
+	targetRatios  stats.SimData
 	requiredStats []stats.StatType
-	requiredSims []stats.SimType
-	data         []rankEntry
+	requiredSims  []stats.SimType
+	data          []rankEntry
 
 	build *utilhighs.LinearBuilder
 
@@ -76,7 +76,12 @@ func (ranker *RankingStatWeightProcess) SetTargetRatios(targetRatios stats.SimDa
 func (ranker *RankingStatWeightProcess) Run() WeightResult {
 	ranker.build = new(utilhighs.LinearBuilder)
 	ranker.build.Minimise = true
-	ranker.build.Solver = utilhighs.Solver_MIP_Interior
+	if ranker.RANKMODE == 0 || ranker.RANKMODE == 1 || ranker.RANKMODE == 2 {
+		ranker.build.Solver = utilhighs.Solver_LP_USE_GPU
+	} else {
+		ranker.build.Solver = utilhighs.Solver_MIP_Interior
+	}
+	ranker.build.TimeLimitSeconds = 2500
 	if ranker.RANKMODE != 3 {
 		ranker.build.DisablePreSolve = true
 	}
