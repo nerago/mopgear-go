@@ -16,6 +16,7 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_rank"
 	"slices"
+	"strconv"
 )
 
 func basicReforge(printer *util.PrintRecorder) {
@@ -512,7 +513,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		// 94508,                    // valor
 		// 103989, // timeless alacrity of xuen
 		// 103990, // timeless resolve of niuzao
-		103678, // time lost artifict
+		103678, // time lost artifact
 		trinketZandSpark,
 		trinketThokTailCelestial,
 		trinketFusionCoreCelestial,
@@ -520,7 +521,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 	}
 
 	fight := stats.Fight_Juggernaut_NoExternalHeal
-	simRun := simulate.RunSize_QuickDirty // Medium
+	simRun := simulate.RunSize_Common
 
 	type group struct {
 		label string
@@ -552,11 +553,11 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 			model.Model_PallyProtDps(),
 			files.GearFileProtDps,
 		},
-		// {
-		// 	"ret",
-		// 	model.Model_PallyProtDps(),
-		// 	files.GearFileProtDps,
-		// },
+		{
+			"ret",
+			model.Model_PallyProtDps(),
+			files.GearFileProtDps,
+		},
 	}
 
 	csv := util.CSVOutputByColumn{}
@@ -602,8 +603,10 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 				}
 				itemTwo := db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemIdTwo, upgrade, printer)
 
-				printer.Println(group.label + " " + itemOne.CreateFullName() + " " + itemTwo.CreateFullName())
-				csv.AddStringMany(group.label, itemOne.CreateFullName(), itemTwo.CreateFullName())
+				nameOne := itemOne.CreateFullName() + " " + strconv.FormatUint(uint64(itemOne.ItemLevel()), 10)
+				nameTwo := itemTwo.CreateFullName() + " " + strconv.FormatUint(uint64(itemTwo.ItemLevel()), 10)
+				printer.Println(group.label + " " + nameOne + " " + nameTwo)
+				csv.AddStringMany(group.label, nameOne, nameTwo)
 
 				var newEquip items.FullEquipMap = equipMap
 				newEquip[items.Equip_Trinket1] = itemOne

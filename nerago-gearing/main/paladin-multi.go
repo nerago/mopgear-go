@@ -8,7 +8,6 @@ import (
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
-	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
 )
@@ -53,7 +52,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		RequestRatingPercent:      0.01,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: 0,
-		MissingEnchant:            setup.MissingEnchant_Fix,
+		MissingEnchant:            setup.MissingEnchant_Panic,
+		//MissingEnchant:            setup.MissingEnchant_Fix,
 	}
 	protDps := multi_types.MultiSetParam{
 		Label:                     "Prot-Damage",
@@ -332,11 +332,11 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// predetermined choices
 	ret.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
 	ret.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
-	ret.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
+	ret.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
 	ret.ForceSingleSlot(items.Equip_Trinket2, trinketTwinsGaze)
 	// protDps.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
 	protDps.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
-	protDps.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
+	protDps.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
 	protDps.ForceSingleSlot(items.Equip_Trinket2, trinketTwinsGaze)
 	// protCompromise.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
 	protCompromise.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
@@ -346,19 +346,17 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
+	protMitigationNoSet.AddReportVariant(items.Equip_Trinket1, trinketZandSpark)
 	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
+	//protMitigationWithSet.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
-	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketTwinsGaze)
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketVialCorruptCelestial)
+	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketThokTailCelestial)
 	// protHeal.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
 	protHeal.ForceSingleSlot(items.Equip_Back, legendTankCloak)
-	protHeal.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
+	protHeal.ForceSingleSlot(items.Equip_Trinket1, trinketTwinsGaze)
 	protHeal.ForceSingleSlot(items.Equip_Trinket2, trinketZandSpark)
-
-	ret.ForceSingleSlot(items.Equip_Head, 98985)
-	ret.ForceSingleSlot(items.Equip_Chest, 99052)
 
 	// protCompromise.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{96376, 96534, 103826})
 	// protMitigationNoSet.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{96376, 96534, 103826})
@@ -374,22 +372,22 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 	blockHelmetsWithoutIndomitable(&protHeal)
 
-	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
+	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Expertise, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Hit, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
 	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
 	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
-	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
+	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 
 	job.MakeRandomVariants(101887, 0, -365, -352)
 
-	// ret.AddBagsExtra()
-	// protDps.AddBagsExtra()
-	// protCompromise.AddBagsExtra()
-	// protMitigationNoSet.AddBagsExtra()
-	// protMitigationWithSet.AddBagsExtra()
-	// protHeal.AddBagsExtra()
+	ret.AddBagsExtra()
+	protDps.AddBagsExtra()
+	protCompromise.AddBagsExtra()
+	protMitigationNoSet.AddBagsExtra()
+	protMitigationWithSet.AddBagsExtra()
+	protHeal.AddBagsExtra()
 
 	job.AddSetParam(ret)
 	job.AddSetParam(protDps)
@@ -402,7 +400,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
 	// job.RunNoPermutations_AllCommonAlternates()
-	job.RunForSolutionsPerPerumte(1)
+	job.RunForSolutionsPerPerumte(6)
 	// job.RunCullingSets(500, time.Minute*30)
 }
 
