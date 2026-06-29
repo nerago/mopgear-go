@@ -258,22 +258,9 @@ func (run *rankInternalRun4) makeDataListEntryColumns() {
 		sumRanksByPrime.Add(entry.rankColumn, primeMultiplier)
 		targetSum += float64(entry.targetRank) * primeMultiplier
 	}
-
-	// sumRanksByPrimeDiff := run.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugText("sumRanksByPrimeDiff"))
-	// sumRanksByPrime.Add(sumRanksByPrimeDiff, 1)
-	// sumRanksByPrime.Finish(run.input, targetSum, targetSum)
-
-	// sumRanksByPrimeDiffAbs := run.input.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugText("sumRanksByPrimeDiffAbs"))
-	// utilhighs.AbsoluteValue(run.input, sumRanksByPrimeDiff, sumRanksByPrimeDiffAbs)
-
-	// so with this we roughly score on correct ordering.
-	// individual ranks will have their own factors which could complicate things but probably not many ways to get exact sum
 }
 
 func (run *rankInternalRun4) makeEntryColumnRefs(entry *rankEntry4, maxRank float64) {
-	// these scores are meaningless in themselves, at least in value terms
-	// however their increasing sequence should correlate to combinedSimRankScore
-	// which is what we'll optimise for
 	rankStr := strconv.FormatInt(int64(entry.targetRank), 10)
 	entry.scoreColumn = run.build.CreateColumnGeneral(highs.Continuous, -c_Rank4LimitScore, c_Rank4LimitScore, utilhighs.DebugText("score-"+rankStr))
 
@@ -313,13 +300,7 @@ func (run *rankInternalRun4) makeDataListPairRules() {
 }
 
 func (run *rankInternalRun4) makeEntryPairScoreChecks(one *rankEntry4, two *rankEntry4, indexOne, indexTwo int) {
-	// so we could totally do a boolean thing where scoreA>scoreB then implies rankA>rankB
-	// would need all possible pairs connected, but would then force solver to make a full integer order
-
 	oneIsGreater := run.build.CreateColumnBool(utilhighs.DebugText("oneIsGreater"))
-	// twoIsGreater := run.input.CreateColumnBool(utilhighs.DebugText("twoIsGreater"))
-	// utilhighs.ColumnIsGreaterOrEqualColumn(run.input, two.scoreColumn, one.scoreColumn, oneIsGreater, c_RankLargeScore)
-	// utilhighs.ColumnIsGreaterOrEqualColumn(run.input, one.scoreColumn, two.scoreColumn, twoIsGreater, c_RankLargeScore)
 
 	oneGreaterRow := utilhighs.ConstraintRow{Debug: "oneGreaterRow"}
 	oneGreaterRow.Add(two.scoreColumn, -1)
@@ -327,29 +308,10 @@ func (run *rankInternalRun4) makeEntryPairScoreChecks(one *rankEntry4, two *rank
 	oneGreaterRow.Add(oneIsGreater, -c_Rank4LargeScore)
 	oneGreaterRow.Build(run.build, -c_Rank4LargeScore, 0)
 
-	// twoGreaterRow := utilhighs.ConstraintRowBuild{Debug: "twoGreaterRow"}
-	// twoGreaterRow.Add(one.scoreColumn, -1)
-	// twoGreaterRow.Add(two.scoreColumn, 1)
-	// twoGreaterRow.Add(twoIsGreater, -c_RankLargeScore)
-	// twoGreaterRow.Finish(run.input, -c_RankLargeScore, 0)
-
-	// utilhighs.ConstraintNot(run.input, oneIsGreater, twoIsGreater)
-
-	// -range <= two - one - w*range + n*range <= range
-	// if two>one: -range <= positive - w*range + n*range <= range   :::   -range <= positive - w*range + n*range   :::  w=01 n=01
-	//                                                                     positive - w*range + n*range <= range    :::  w=01 n=0
-	// mixRow := utilhighs.ConstraintRowBuild{Debug: ""}
-	// mixRow.Add(one.scoreColumn, -1)
-	// mixRow.Add(two.scoreColumn, 1)
-	// mixRow.Add(twoIsGreater, -c_RankLargeScore)
-	// mixRow.Add(oneIsGreater, c_RankLargeScore)
-	// mixRow.Finish(run.input, -c_RankLargeScore, c_RankLargeScore)
-
 	run.pairLinks.Put(indexOne, indexTwo, &rankPair4{
 		entryOne:     one,
 		entryTwo:     two,
 		oneIsGreater: oneIsGreater,
-		// twoIsGreater: twoIsGreater,
 	})
 }
 
@@ -394,7 +356,8 @@ func (run *rankInternalRun4) extractAndReportSolution(solution *highs.Solution) 
 		statWeightResult.Put(statType, usableWeight)
 	}
 
-	divideBy := statWeightResult.Get(stats.Stat_Strength)
+	baseStat := run.process.requiredStats[0]
+	divideBy := statWeightResult.Get(baseStat)
 	for _, statType := range run.process.requiredStats {
 		value := statWeightResult.Get(statType) / divideBy
 		statWeightResult.Put(statType, value)
@@ -405,17 +368,18 @@ func (run *rankInternalRun4) extractAndReportSolution(solution *highs.Solution) 
 }
 
 func (run *rankInternalRun4) setupInitialSolutionDumb1() {
+	baseStat := run.process.requiredStats[0]
 	for statType, colWeight := range run.weightColumns {
-		if statType == stats.Stat_Strength {
+		if statType == baseStat {
 			run.build.SetInitialSolutionValue(colWeight, 1)
 		} else {
 			run.build.SetInitialSolutionValue(colWeight, 0)
 		}
 	}
 
-	statScale := run.scaleStats[stats.Stat_Strength]
+	statScale := run.scaleStats[baseStat]
 	for entry := range util.ForPointer(run.runData) {
-		entry.initialStatScore = entry.data.TotalStat.GetFloat(stats.Stat_Strength) * statScale
+		entry.initialStatScore = entry.data.TotalStat.GetFloat(baseStat) * statScale
 	}
 
 	run.setupRemainingInitialSolution()

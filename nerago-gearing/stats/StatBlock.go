@@ -1,6 +1,7 @@
 package stats
 
 import (
+	"iter"
 	"paladin_gearing_go/util"
 )
 
@@ -158,4 +159,24 @@ func (block *StatBlock) AppendString(build *util.StringBuild2) {
 	}
 
 	build.WriteString("}")
+}
+
+func (block *StatBlock) SeqValues() iter.Seq[float64] {
+	return func(yield func(float64) bool) {
+		for i := range block {
+			if !yield(float64(block[i])) {
+				return
+			}
+		}
+	}
+}
+
+func (block *StatBlock) SeqPair() iter.Seq2[StatType, float64] {
+	return func(yield func(StatType, float64) bool) {
+		for i := range block {
+			if !yield(StatType(i), float64(block[i])) {
+				return
+			}
+		}
+	}
 }

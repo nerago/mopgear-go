@@ -170,7 +170,7 @@ type progressSnapshot struct {
 type trackProgressRoot struct {
 	lastPercent float64
 	startTime   time.Time
-	ringBuffer  RingBuffer[progressSnapshot]
+	ringBuffer  RingBufferCache[progressSnapshot]
 
 	activeLoopRunning  bool
 	activeLoopEndCheck context.Context
@@ -181,7 +181,7 @@ func trackProgressMakeRoot() *trackProgressRoot {
 	root := new(trackProgressRoot)
 	root.activeLoopEndCheck, root.activeLoopEndNow = context.WithCancel(context.Background())
 	root.startTime = time.Now()
-	root.ringBuffer = RingBuffer_Create(10, progressSnapshot{root.startTime, 0.0})
+	root.ringBuffer = RingBufferCache_Create(10, progressSnapshot{root.startTime, 0.0})
 	return root
 }
 

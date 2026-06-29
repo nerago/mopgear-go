@@ -14,8 +14,12 @@ const (
 )
 
 func WeightTweaker(startWeight stathighs.WeightResult, weightStats []stats.StatType, targetRatio stats.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) stathighs.WeightResult {
-	add := c_tweak_start
-	mult := 1 + add
+	return weightTweakerCustom(startWeight, c_tweak_start, weightStats, targetRatio, inputData, printer)
+}
+
+func weightTweakerCustom(startWeight stathighs.WeightResult, tweakStart float64, weightStats []stats.StatType, targetRatio stats.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) stathighs.WeightResult {
+	add := tweakStart
+	multiply := 1 + add
 	bestWeight := startWeight.Clone()
 
 	for range c_tweak_iter_count {
@@ -23,21 +27,21 @@ func WeightTweaker(startWeight stathighs.WeightResult, weightStats []stats.StatT
 		best.Offer(&bestWeight, EvaluateAccuracy(bestWeight, inputData, targetRatio))
 		for i := 1; i < len(weightStats); i++ {
 			stat := weightStats[i]
-			if bestWeight[stat] != 0 {
+			if !bestWeight.IsZero(stat) {
 				hi := bestWeight.Clone()
-				hi[stat] *= mult
+				hi.MultiplyEquals(stat, multiply)
 				best.Offer(&hi, EvaluateAccuracy(hi, inputData, targetRatio))
 
 				lo := bestWeight.Clone()
-				lo[stat] /= mult
+				lo.DivideEquals(stat, multiply)
 				best.Offer(&lo, EvaluateAccuracy(lo, inputData, targetRatio))
 			} else {
 				hi := bestWeight.Clone()
-				hi[stat] += add
+				hi.PlusEquals(stat, add)
 				best.Offer(&hi, EvaluateAccuracy(hi, inputData, targetRatio))
 
 				lo := bestWeight.Clone()
-				lo[stat] -= add
+				lo.MinusEquals(stat, add)
 				best.Offer(&lo, EvaluateAccuracy(lo, inputData, targetRatio))
 			}
 		}
@@ -45,7 +49,7 @@ func WeightTweaker(startWeight stathighs.WeightResult, weightStats []stats.StatT
 
 		if updateWeight.Equals(bestWeight) {
 			add /= 2
-			mult = 1 + add
+			multiply = 1 + add
 			if add <= c_tweak_limit {
 				printer.Printf("DONE\n")
 				break

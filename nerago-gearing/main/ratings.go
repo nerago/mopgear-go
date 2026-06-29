@@ -223,16 +223,15 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 	filteredInput := mixedInputData
 	printer.Printf("filteredInput size %d\n", len(filteredInput))
 
-	startWeight := stathighs.WeightResult{
-		stats.Stat_Strength:  1.000000,
-		stats.Stat_Stamina:   0.639290,
-		stats.Stat_Crit:      0.671679,
-		stats.Stat_Haste:     1.186655,
-		stats.Stat_Expertise: 0.858334,
-		stats.Stat_Mastery:   2.530013,
-		stats.Stat_Dodge:     0.671679,
-		stats.Stat_Parry:     1.186655,
-	}
+	startWeight := stathighs.WeightResult_Make()
+	startWeight.Put(stats.Stat_Strength, 1.0000)
+	startWeight.Put(stats.Stat_Stamina, 1.2309)
+	startWeight.Put(stats.Stat_Crit, 0.1167)
+	startWeight.Put(stats.Stat_Haste, 0.3614)
+	startWeight.Put(stats.Stat_Expertise, 0.0054)
+	startWeight.Put(stats.Stat_Mastery, 0.5866)
+	startWeight.Put(stats.Stat_Dodge, 0.0824)
+	startWeight.Put(stats.Stat_Parry, 0.0532)
 
 	ranking := stathighs.RankingStatWeightProcess5{}
 	ranking.Init(printer)
@@ -289,16 +288,15 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 		//}
 
 		// better than it thinks is optimal?
-		weights1 = stathighs.WeightResult{
-			stats.Stat_Strength:  1.000000,
-			stats.Stat_Stamina:   1.0877848527,
-			stats.Stat_Crit:      2.4071360469,
-			stats.Stat_Haste:     0.8057261904,
-			stats.Stat_Expertise: 3.4897523628,
-			stats.Stat_Mastery:   4.9061745410,
-			stats.Stat_Dodge:     2.3181400067,
-			stats.Stat_Parry:     3.2064183845,
-		}
+		weights1 = stathighs.WeightResult_Make()
+		weights1.Put(stats.Stat_Strength, 1.000000)
+		weights1.Put(stats.Stat_Stamina, 1.0877848527)
+		weights1.Put(stats.Stat_Crit, 2.4071360469)
+		weights1.Put(stats.Stat_Haste, 0.8057261904)
+		weights1.Put(stats.Stat_Expertise, 3.4897523628)
+		weights1.Put(stats.Stat_Mastery, 4.9061745410)
+		weights1.Put(stats.Stat_Dodge, 2.3181400067)
+		weights1.Put(stats.Stat_Parry, 3.2064183845)
 	}
 
 	//mixedInputData = takeDataSample_Random_Seed(mixedInputData, 20, 1234)
@@ -599,6 +597,27 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	//mixedInputData := takeDataSample_Random_Seed(mixedInputDataFull, sampleSize, 1234)
 	//mixedInputData := mixedInputDataFull
 
+	//weightsNearOptimal := stathighs.WeightResult_Make()
+	//weightsNearOptimal.Put(stats.Stat_Strength, 1.000000)
+	//weightsNearOptimal.Put(stats.Stat_Stamina, 1.0877848527)
+	//weightsNearOptimal.Put(stats.Stat_Crit, 2.4071360469)
+	//weightsNearOptimal.Put(stats.Stat_Haste, 0.8057261904)
+	//weightsNearOptimal.Put(stats.Stat_Expertise, 3.4897523628)
+	//weightsNearOptimal.Put(stats.Stat_Mastery, 4.9061745410)
+	//weightsNearOptimal.Put(stats.Stat_Dodge, 2.3181400067)
+	//weightsNearOptimal.Put(stats.Stat_Parry, 3.2064183845)
+
+	// weight value 87.7342
+	weightsMidRange := stathighs.WeightResult_Make()
+	weightsMidRange.Put(stats.Stat_Strength, 1.0000)
+	weightsMidRange.Put(stats.Stat_Stamina, 1.2309)
+	weightsMidRange.Put(stats.Stat_Crit, 0.1167)
+	weightsMidRange.Put(stats.Stat_Haste, 0.3614)
+	weightsMidRange.Put(stats.Stat_Expertise, 0.0054)
+	weightsMidRange.Put(stats.Stat_Mastery, 0.5866)
+	weightsMidRange.Put(stats.Stat_Dodge, 0.0824)
+	weightsMidRange.Put(stats.Stat_Parry, 0.0532)
+
 	resultsByAlgorithm := make(map[string]stathighs.WeightResult)
 	timesByAlgorithm := make(map[string]time.Duration)
 
@@ -883,7 +902,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		ranking.SetRequiredStats(requiredStats)
 		ranking.SetTargetRatios(targetRatio)
 		ranking.SupplyData(slices.Clone(mixedInputData))
-		weight := ranking.Run(stopwatch)
+		weight := ranking.RunUsingExternalStart(weightsMidRange, stopwatch)
 		label := fmt.Sprintf("ranking3a-false-1")
 		timesByAlgorithm[label] = stopwatch.Elapsed()
 		resultsByAlgorithm[label] = weight

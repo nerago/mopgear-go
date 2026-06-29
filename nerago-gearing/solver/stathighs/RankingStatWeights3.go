@@ -114,7 +114,7 @@ func (ranker *RankingStatWeightProcess3) Run(stopwatch *util.Stopwatch) WeightRe
 	ranker.prepareRankings()
 	ranker.createWeightColumns()
 	ranker.doAlgos()
-	//ranker.setupDumbInitialSolution()
+	ranker.setupDumbInitialSolution()
 	solution1 := ranker.build.RunHighs(ranker.printer, stopwatch)
 	_ = ranker.extractAndReportSolution(solution1)
 
@@ -131,27 +131,16 @@ func (ranker *RankingStatWeightProcess3) Run(stopwatch *util.Stopwatch) WeightRe
 	return weights2
 }
 
-//func (ranker *RankingStatWeightProcess3) RunUsingExternalStart(initialWeight WeightResult) util.Optional[WeightResult] {
-//	ranker.build = new(utilhighs.LinearBuilder)
-//	ranker.build.Minimise = true
-//	ranker.build.TimeLimitSeconds = 5000
-//	ranker.build.Solver = utilhighs.Solver_MIP_Interior
-//
-//	ranker.printer.Println("RankingStatWeightProcess3 FIRST ROUND")
-//	ranker.dataSample = ranker.dataAllOriginal
-//	ranker.prepareRankings()
-//	ranker.createWeightColumns()
-//	ranker.makeDataListEntryColumns()
-//	ranker.makeDataListPairRules()
-//	ranker.setupInitialSolutionFromExternal2(initialWeight)
-//	solution := ranker.build.RunHighs(ranker.printer)
-//	if solution.HasSolution() {
-//		weights := ranker.extractAndReportSolution(solution)
-//		return util.Optional_OfValue(weights)
-//	} else {
-//		return util.Optional_Empty[WeightResult]()
-//	}
-//}
+func (ranker *RankingStatWeightProcess3) RunUsingExternalStart(initialWeight WeightResult, stopwatch *util.Stopwatch) WeightResult {
+	ranker.dataSample = ranker.dataAllOriginal
+	ranker.makeBuilder()
+	ranker.prepareRankings()
+	ranker.createWeightColumns()
+	ranker.doAlgos()
+	ranker.setupInitialSolutionFromExternal2(initialWeight)
+	solution := ranker.build.RunHighs(ranker.printer, stopwatch)
+	return ranker.extractAndReportSolution(solution)
+}
 
 func (ranker *RankingStatWeightProcess3) createWeightColumns() {
 	lo := -c_Rank3_LargeWeight
@@ -349,11 +338,9 @@ func (ranker *RankingStatWeightProcess3) setupInitialSolutionFromPreviousWeightO
 func (ranker *RankingStatWeightProcess3) setupInitialSolutionFromExternal2(weights WeightResult) {
 	internalWeights := WeightResult_Make()
 	for statType, colWeight := range ranker.weightColumns {
-		basicValue := weights.Get(statType)
-		scale := ranker.scaleStats[statType]
-		scaledValue := basicValue * scale
-		ranker.build.SetInitialSolutionValue(colWeight, scaledValue)
-		internalWeights.Put(statType, scaledValue)
+		value := weights.Get(statType)
+		ranker.build.SetInitialSolutionValue(colWeight, value)
+		internalWeights.Put(statType, value)
 	}
 
 	ranker.setupInitialRemainingVariables(internalWeights)

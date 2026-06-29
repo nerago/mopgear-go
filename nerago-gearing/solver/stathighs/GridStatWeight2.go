@@ -356,9 +356,9 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 	}
 
 	baseStat := grid2.requiredStats[0]
-	divideBy := result[baseStat]
+	divideBy := result.Get(baseStat)
 	for _, statType := range grid2.requiredStats {
-		result[statType] /= divideBy
+		result.Put(statType, result.Get(statType)/divideBy)
 	}
 
 	return result
