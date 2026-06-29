@@ -15,7 +15,7 @@ import (
 const (
 	c_rank3_scaleTarget         = 10.0
 	c_rank3_initial_data_sample = 12
-	c_rank3_min_total_weight    = 0.0001
+	c_rank3_min_total_weight    = 1.0
 	c_rank3_time_limit          = 5000
 
 	c_Rank3_LargeWeight = 10.0
@@ -164,7 +164,7 @@ func (ranker *RankingStatWeightProcess3) createWeightColumns() {
 		sumWeights.Add(colWeight, 1)
 	}
 
-	sumWeights.Build(ranker.build, c_rank3_min_total_weight, utilhighs.C_PlusInf) // force positive and non-zero result. would use 1 but stat scaling confuses things
+	sumWeights.Build(ranker.build, c_rank3_min_total_weight, utilhighs.C_PlusInf)
 }
 
 func (ranker *RankingStatWeightProcess3) prepareRankings() {
@@ -415,7 +415,8 @@ func (ranker *RankingStatWeightProcess3) extractAndReportSolution(solution *high
 		statScale := ranker.scaleStats[statType]
 
 		modelWeight := solution.ColValues[weightColumn]
-		usableWeight := modelWeight / statScale
+		// TODO changed to multiply following analysis on other algorithms, not checked here
+		usableWeight := modelWeight * statScale
 
 		statWeightResult.Put(statType, usableWeight)
 	}

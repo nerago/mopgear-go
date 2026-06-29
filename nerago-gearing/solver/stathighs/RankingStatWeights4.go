@@ -388,7 +388,8 @@ func (run *rankInternalRun4) extractAndReportSolution(solution *highs.Solution) 
 		statScale := run.scaleStats[statType]
 
 		modelWeight := solution.ColValues[weightColumn]
-		usableWeight := modelWeight / statScale
+		// TODO changed to multiply following analysis on other algorithms, not checked here
+		usableWeight := modelWeight * statScale
 
 		statWeightResult.Put(statType, usableWeight)
 	}

@@ -256,12 +256,9 @@ func (run *rankInternalRun5) extractAndReportSolution(solution *highs.Solution) 
 	for _, statType := range run.process.requiredStats {
 		weightColumn := run.weightColumns[statType]
 		statScale := run.scaleStats[statType]
-		// statScale := run.scaleStats
 
 		modelWeight := solution.ColValues[weightColumn]
-		// usableWeight := modelWeight / statScale
 		usableWeight := modelWeight * statScale
-		// usableWeight := modelWeight
 
 		statWeightResult.Put(statType, usableWeight)
 	}

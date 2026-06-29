@@ -312,7 +312,8 @@ func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs
 		statScale := ranker.scaleStats[statType]
 
 		modelWeight := solution.ColValues[weightColumn]
-		usableWeight := modelWeight / statScale
+		// TODO changed to multiply following analysis on other algorithms, not checked here
+		usableWeight := modelWeight * statScale
 
 		statWeightResult.Put(statType, usableWeight)
 	}

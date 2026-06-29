@@ -306,7 +306,7 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 	ranking := stathighs.RankingStatWeightProcess3b{}
 	// 0 is all combinations, 1 is just adjacent
 	ranking.ALGO = 0
-	ranking.SCALE1 = true
+	ranking.SCALE1 = false
 	// ranking := stathighs.RankingStatWeightProcess4{}
 	ranking.Init(printer)
 	ranking.SetRequiredStats(requiredStats)

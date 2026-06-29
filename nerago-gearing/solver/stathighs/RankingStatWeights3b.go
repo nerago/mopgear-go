@@ -13,7 +13,7 @@ import (
 const (
 	c_rank3b_scaleTarget         = 10.0
 	c_rank3b_initial_data_sample = 12
-	c_rank3b_min_total_weight    = 0.0001
+	c_rank3b_min_total_weight    = 1.0
 	c_rank3b_time_limit          = 5000
 
 	c_Rank3b_LargeWeight = 10.0
@@ -147,7 +147,7 @@ func (ranker *RankingStatWeightProcess3b) createWeightColumns() {
 		sumWeights.Add(colWeight, 1)
 	}
 
-	sumWeights.Build(ranker.build, c_rank3_min_total_weight, utilhighs.C_PlusInf) // force positive and non-zero result. would use 1 but stat scaling confuses things
+	sumWeights.Build(ranker.build, c_rank3b_min_total_weight, utilhighs.C_PlusInf)
 }
 
 func (ranker *RankingStatWeightProcess3b) prepareRankings() {
@@ -178,13 +178,13 @@ func (ranker *RankingStatWeightProcess3b) doAlgos() {
 		ranker.makeDataListEntryColumns()
 		for baseIndex := range ranker.dataSample {
 			for compareTo := baseIndex + 1; compareTo < len(ranker.dataSample); compareTo++ {
-				ranker.makeEntryPairSequenceConstraintsStrictScoreOrderWithSlackVar(&ranker.dataSample[baseIndex], &ranker.dataSample[compareTo], baseIndex, compareTo)
+				ranker.makeEntryPairCheckScoreOrderMatchesTargetOrderWithSlackVar(&ranker.dataSample[baseIndex], &ranker.dataSample[compareTo], baseIndex, compareTo)
 			}
 		}
 	} else {
 		ranker.makeDataListEntryColumns()
 		for baseIndex := 0; baseIndex < len(ranker.dataSample)-1; baseIndex++ {
-			ranker.makeEntryPairSequenceConstraintsStrictScoreOrderWithSlackVar(&ranker.dataSample[baseIndex], &ranker.dataSample[baseIndex+1], baseIndex, baseIndex+1)
+			ranker.makeEntryPairCheckScoreOrderMatchesTargetOrderWithSlackVar(&ranker.dataSample[baseIndex], &ranker.dataSample[baseIndex+1], baseIndex, baseIndex+1)
 		}
 	}
 }
@@ -211,7 +211,7 @@ func (ranker *RankingStatWeightProcess3b) makeScoreColumn(entry *rankEntry3b, de
 	scoreRow.Build(ranker.build, 0, 0)
 }
 
-func (ranker *RankingStatWeightProcess3b) makeEntryPairSequenceConstraintsStrictScoreOrderWithSlackVar(one *rankEntry3b, two *rankEntry3b, indexOne, indexTwo int) {
+func (ranker *RankingStatWeightProcess3b) makeEntryPairCheckScoreOrderMatchesTargetOrderWithSlackVar(one *rankEntry3b, two *rankEntry3b, indexOne, indexTwo int) {
 	debug := fmt.Sprintf("-%d-%d", indexOne, indexTwo)
 	slack := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugText("slack"+debug))
 
@@ -322,6 +322,35 @@ func (ranker *RankingStatWeightProcess3b) setupInitialPairsDetail() {
 	}
 }
 
+/*
+		 ACTUAL RUNTIME:
+		 score = sum(stat1*scale1*weight1)
+		 score = sum(statB*scaleB*weightB + stat1*scale1*weight1 + stat2*scale2*weight2)
+
+		 WHAT WE WISH IT WERE
+		 pretendScore = sum(statB*usableWeightB + stat1*usableWeight1 + stat2*usableWeight2)
+		 finalWeight1 = usableWeight1/usableWeightB
+
+		 IS THERE an interesting ratio between score and pretendScore, common divisor that comes out of all the weights
+		 that could mean that messing with scales is wrong?
+		 no, if we're doing it right the score==pretendScore
+		 the only factor in the finalWeight will be rescaling by strength/etc
+
+	     THEN WE CAN EQUATE THEM
+	     sum(statB*scaleB*weightB + stat1*scale1*weight1 + stat2*scale2*weight2) = sum(statB*usableWeightB + stat1*usableWeight1 + stat2*usableWeight2)
+	     and be sure that usableWeightB=scaleB*weightB, usableWeight1=scale1*weight1
+	     finalWeight1=(scale1*weight1)/(scaleB*weightB)
+
+						   worked example
+						   statB= 110 stat1=50 stat2=180
+						   scale= 0.1 0.2 0.05
+					       scaledStats= 11 10 9
+						   runtimeWeights=0.16 0.69 0.2
+					       runtimeScore=10.46
+				           usableWeight=runtimeWeight*scale
+				           usableWeight=0.016 0.138 0.01
+			               finalWeights=1 8.625 0.625
+*/
 func (ranker *RankingStatWeightProcess3b) extractAndReportSolution(solution *highs.Solution) WeightResult {
 	ranker.build.DebugPrintColumns(solution, ranker.printer)
 
@@ -333,7 +362,7 @@ func (ranker *RankingStatWeightProcess3b) extractAndReportSolution(solution *hig
 		statScale := ranker.scaleStats[statType]
 
 		modelWeight := solution.ColValues[weightColumn]
-		usableWeight := modelWeight / statScale
+		usableWeight := modelWeight * statScale
 
 		statWeightResult.Put(statType, usableWeight)
 	}

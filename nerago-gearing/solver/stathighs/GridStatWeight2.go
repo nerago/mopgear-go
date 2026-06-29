@@ -339,6 +339,7 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 			weight := solution.ColValues[detailWeightCol]
 
 			// usableWeight := weight * grid2.scaleStats[statType] / grid2.scaleSims[simType]
+			// TODO we've generally found that multiplying by scaleStat is correct, but this is scaleSim, check
 			usableWeight := weight * grid2.scaleSims[simType]
 
 			// if simType.IsHighGood() {
