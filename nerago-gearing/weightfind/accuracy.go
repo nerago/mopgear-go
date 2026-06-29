@@ -74,3 +74,53 @@ func rangePercentDiff(one, two util.HiLoInt, fullLength int) float64 {
 	percentScore := 100.0 - (diffAsRatio * 100.0)
 	return percentScore
 }
+
+// doesn't understand ranges
+func EvaluateAccuracyOriginal(statWeights stathighs.WeightResult, inputData []stathighs.WeightInput, simRatios stats.SimData) float64 {
+	type accuracyInfo struct {
+		input *stathighs.WeightInput
+
+		simRankDetail        map[stats.SimType]int
+		combinedSimRankScore float64
+
+		statRank int
+		simRank  int
+	}
+	accuracyData := util.MapSliceAsNew(inputData, func(input *stathighs.WeightInput) accuracyInfo {
+		return accuracyInfo{
+			input:         input,
+			simRankDetail: make(map[stats.SimType]int),
+		}
+	})
+
+	// score stats
+	for entry, statRank := range util.CalculateRanking(true, accuracyData, func(x *accuracyInfo) float64 { return statWeights.CalcStatScore(x.input) }) {
+		entry.statRank = statRank
+	}
+
+	// score each sim
+	requiredSims := simRatios.NonZeroTypes()
+	for _, simType := range requiredSims {
+		for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), accuracyData, func(x *accuracyInfo) float64 { return x.input.SimResult.Get(simType) }) {
+			entry.simRankDetail[simType] = simDetailRank
+			entry.combinedSimRankScore += float64(simDetailRank) * simRatios.Get(simType)
+		}
+	}
+
+	// rank combined sims
+	for entry, simRank := range util.CalculateRanking(true, accuracyData, func(x *accuracyInfo) float64 { return x.combinedSimRankScore }) {
+		entry.simRank = simRank
+	}
+
+	// compute average difference between stat rank and sim rank
+	totalComparePercents := 0.0
+	for info := range util.ForPointer(accuracyData) {
+		// 100% if ranks are equal, 90% if average 10% difference, etc
+		diff := util.AbsIntDiff(info.simRank, info.statRank)
+		diffAsRatio := float64(diff) / float64(len(accuracyData))
+		percentScore := 100.0 - (diffAsRatio * 100.0)
+		totalComparePercents += percentScore
+	}
+
+	return totalComparePercents / float64(len(accuracyData))
+}

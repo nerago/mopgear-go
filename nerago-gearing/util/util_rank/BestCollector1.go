@@ -25,6 +25,11 @@ func (collect *BestCollector1[T]) GetBestOrPanic() T {
 	return *collect.BestObject
 }
 
+func (collect *BestCollector1[T]) GetBestPointerOrPanic() *T {
+	collect.CheckValidOrPanic()
+	return collect.BestObject
+}
+
 func (collect *BestCollector1[T]) GetBestOptional() util.Optional[T] {
 	if collect.hasBest {
 		return util.Optional_OfPointer(collect.BestObject)

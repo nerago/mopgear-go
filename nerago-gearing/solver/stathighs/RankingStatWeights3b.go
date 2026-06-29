@@ -31,6 +31,7 @@ type RankingStatWeightProcess3b struct {
 	dataSample      []rankEntry3b
 	SCALE1          bool
 	ALGO            int
+	FINAL           int
 
 	build *utilhighs.LinearBuilder
 
@@ -367,7 +368,14 @@ func (ranker *RankingStatWeightProcess3b) extractAndReportSolution(solution *hig
 		statScale := ranker.scaleStats[statType]
 
 		modelWeight := solution.ColValues[weightColumn]
-		usableWeight := modelWeight * statScale
+		var usableWeight float64
+		if ranker.FINAL == 0 {
+			usableWeight = modelWeight * statScale
+		} else if ranker.FINAL == 1 {
+			usableWeight = modelWeight
+		} else {
+			usableWeight = modelWeight / statScale
+		}
 
 		statWeightResult.Put(statType, usableWeight)
 	}

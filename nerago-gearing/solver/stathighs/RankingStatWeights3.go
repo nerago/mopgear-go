@@ -16,7 +16,7 @@ const (
 	c_rank3_scaleTarget         = 10.0
 	c_rank3_initial_data_sample = 12
 	c_rank3_min_total_weight    = 1.0
-	c_rank3_time_limit          = 5000
+	c_rank3_time_limit          = 800
 
 	c_Rank3_LargeWeight = 10.0
 	c_Rank3_LargeScore  = 500.0

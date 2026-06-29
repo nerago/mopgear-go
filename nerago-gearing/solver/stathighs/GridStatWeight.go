@@ -40,7 +40,7 @@ func (grid *GridStatWeightProcess) Init(printer *util.PrintRecorder) {
 	grid.build.Minimise = true
 	grid.build.Solver = utilhighs.Solver_LP_USE_GPU
 	grid.build.DisablePreSolve = true
-	grid.build.TimeLimitSeconds = 3600 * 2
+	grid.build.TimeLimitSeconds = 500
 	grid.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }
 

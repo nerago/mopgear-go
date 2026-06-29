@@ -40,5 +40,5 @@ func (sw *Stopwatch) Elapsed() time.Duration {
 }
 
 func (sw *Stopwatch) AddElapsedFrom(other *Stopwatch) {
-	sw.accumulated += other.accumulated
+	sw.accumulated += other.Elapsed()
 }

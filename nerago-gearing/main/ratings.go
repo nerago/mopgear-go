@@ -19,7 +19,6 @@ import (
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
-	"paladin_gearing_go/util/util_rank"
 	"paladin_gearing_go/weightfind"
 	"slices"
 	"strconv"
@@ -588,14 +587,14 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
 	mixedInputDataFull := slices.Concat(inputDataGrid, inputDataRandom)
 
-	sampleSize := 34
-	inputDataGrid = takeDataSample_Random(inputDataGrid, sampleSize)
-	inputDataRandom = takeDataSample_Random(inputDataRandom, sampleSize)
-	mixedInputData := takeDataSample_Random(mixedInputDataFull, sampleSize)
+	//sampleSize := 70
+	//inputDataGrid = takeDataSample_Random(inputDataGrid, sampleSize)
+	//inputDataRandom = takeDataSample_Random(inputDataRandom, sampleSize)
+	//mixedInputData := takeDataSample_Random(mixedInputDataFull, sampleSize)
 	//inputDataGrid = takeDataSample_Random_Seed(inputDataGrid, sampleSize, 1234)
 	//inputDataRandom = takeDataSample_Random_Seed(inputDataRandom, sampleSize, 1234)
 	//mixedInputData := takeDataSample_Random_Seed(mixedInputDataFull, sampleSize, 1234)
-	//mixedInputData := mixedInputDataFull
+	mixedInputData := mixedInputDataFull
 
 	//weightsNearOptimal := stathighs.WeightResult_Make()
 	//weightsNearOptimal.Put(stats.Stat_Strength, 1.000000)
@@ -892,6 +891,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	//})
 	//}
 
+	// had hope but being slow
 	tasks = append(tasks, func() {
 		printer.Println("################# RANKING3a-false-1 ###################")
 		stopwatch := util.StopwatchMakeStopped()
@@ -909,36 +909,40 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		printer.Println("///////////////// RANKING3a /////////////////")
 	})
 
-	tasks = append(tasks, func() {
-		printer.Println("################# RANKING3b ###################")
-		stopwatch := util.StopwatchMakeStopped()
-		ranking := stathighs.RankingStatWeightProcess3b{}
-		ranking.SCALE1 = false
-		ranking.Init(printer)
-		ranking.SetRequiredStats(requiredStats)
-		ranking.SetTargetRatios(targetRatio)
-		ranking.SupplyData(slices.Clone(mixedInputData))
-		weight := ranking.Run(nil, stopwatch)
-		label := fmt.Sprintf("ranking3b-scale_old")
-		timesByAlgorithm[label] = stopwatch.Elapsed()
-		resultsByAlgorithm[label] = weight
-		printer.Println("///////////////// RANKING3b /////////////////")
-	})
-	tasks = append(tasks, func() {
-		printer.Println("################# RANKING3b ###################")
-		stopwatch := util.StopwatchMakeStopped()
-		ranking := stathighs.RankingStatWeightProcess3b{}
-		ranking.SCALE1 = true
-		ranking.Init(printer)
-		ranking.SetRequiredStats(requiredStats)
-		ranking.SetTargetRatios(targetRatio)
-		ranking.SupplyData(slices.Clone(mixedInputData))
-		weight := ranking.Run(nil, stopwatch)
-		label := fmt.Sprintf("ranking3b-scale1")
-		timesByAlgorithm[label] = stopwatch.Elapsed()
-		resultsByAlgorithm[label] = weight
-		printer.Println("///////////////// RANKING3b /////////////////")
-	})
+	for FINAL := range 3 {
+		tasks = append(tasks, func() {
+			printer.Println("################# RANKING3b ###################")
+			stopwatch := util.StopwatchMakeStopped()
+			ranking := stathighs.RankingStatWeightProcess3b{}
+			ranking.SCALE1 = false
+			ranking.FINAL = FINAL
+			ranking.Init(printer)
+			ranking.SetRequiredStats(requiredStats)
+			ranking.SetTargetRatios(targetRatio)
+			ranking.SupplyData(slices.Clone(mixedInputData))
+			weight := ranking.RunSinglePassFromExternal(weightsMidRange, stopwatch)
+			label := fmt.Sprintf("ranking3b-scale_old-%d", FINAL)
+			timesByAlgorithm[label] = stopwatch.Elapsed()
+			resultsByAlgorithm[label] = weight
+			printer.Println("///////////////// RANKING3b /////////////////")
+		})
+		tasks = append(tasks, func() {
+			printer.Println("################# RANKING3b ###################")
+			stopwatch := util.StopwatchMakeStopped()
+			ranking := stathighs.RankingStatWeightProcess3b{}
+			ranking.SCALE1 = true
+			ranking.FINAL = FINAL
+			ranking.Init(printer)
+			ranking.SetRequiredStats(requiredStats)
+			ranking.SetTargetRatios(targetRatio)
+			ranking.SupplyData(slices.Clone(mixedInputData))
+			weight := ranking.RunSinglePassFromExternal(weightsMidRange, stopwatch)
+			label := fmt.Sprintf("ranking3b-scale1-%d", FINAL)
+			timesByAlgorithm[label] = stopwatch.Elapsed()
+			resultsByAlgorithm[label] = weight
+			printer.Println("///////////////// RANKING3b /////////////////")
+		})
+	}
 
 	//tasks = append(tasks, func() {
 	//	printer.Println("################# RANKING3 ###################")
@@ -968,14 +972,16 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		ranking.SetTargetRatios(targetRatio)
 		ranking.SupplyData(slices.Clone(inputDataRandom))
 
-		best := util_rank.BestCollector1[stathighs.WeightResult]{}
-		weightList := ranking.Run(stopwatch)
-		for i, weight := range weightList {
-			resultsByAlgorithm["ranking4-"+strconv.Itoa(i)] = weight
-			best.Offer(&weight, weightfind.EvaluateAccuracy(weight, mixedInputDataFull, targetRatio))
-		}
+		//best := util_rank.BestCollector1[stathighs.WeightResult]{}
+		//weightList := ranking.RunUsingExternalStart(weightsMidRange, stopwatch)
+		//for i, weight := range weightList {
+		//	resultsByAlgorithm["ranking4-"+strconv.Itoa(i)] = weight
+		//	best.Offer(&weight, weightfind.EvaluateAccuracy(weight, mixedInputDataFull, targetRatio))
+		//}
+		weight := ranking.RunUsingExternalStart(weightsMidRange, stopwatch)
 		timesByAlgorithm["ranking4"] = stopwatch.Elapsed()
-		resultsByAlgorithm["ranking4"] = best.GetBestOrPanic()
+		resultsByAlgorithm["ranking4"] = weight.GetOrPanic()
+		//resultsByAlgorithm["ranking4"] = best.GetBestOrPanic()
 		printer.Println("///////////////// RANKING4 /////////////////")
 	})
 

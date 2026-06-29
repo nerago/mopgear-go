@@ -23,10 +23,11 @@ type GridStatWeightProcess1C struct {
 	simTypes      []stats.SimType
 	testMode      bool
 	ROUNDMODE     int
+	FINAL         int
 
 	build           utilhighs.LinearBuilder
 	unitStatValues  util.MapMapSlice[stats.StatType, stats.SimType, float64]
-	scales          util.MapMap[stats.StatType, stats.SimType, float64]
+	scales          map[stats.SimType]float64
 	detailedWeights util.MapMap[stats.StatType, stats.SimType, utilhighs.ColumnIndex]
 	finalWeights    map[stats.StatType]utilhighs.ColumnIndex
 }
@@ -39,6 +40,7 @@ func (grid *GridStatWeightProcess1C) Init(printer *util.PrintRecorder) {
 	grid.build.DisablePreSolve = true
 	grid.build.TimeLimitSeconds = 240
 	grid.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
+	grid.scales = make(map[stats.SimType]float64)
 }
 
 func (grid *GridStatWeightProcess1C) SupplyData(inputData []WeightInput) {
@@ -187,10 +189,7 @@ func (grid *GridStatWeightProcess1C) prepareSample(statType stats.StatType, high
 func (grid *GridStatWeightProcess1C) chooseScalesBySim() {
 	for _, simType := range grid.simTypes {
 		scale := chooseScale(grid.unitStatValues.ValuesForKey2AsSeq(simType), c_grid1c_scaleTarget)
-
-		for _, statType := range grid.requiredStats {
-			grid.scales.Put(statType, simType, scale)
-		}
+		grid.scales[simType] = scale
 	}
 }
 
@@ -205,14 +204,6 @@ func (grid *GridStatWeightProcess1C) removeOutliers() {
 				return dataSlice
 			})
 		}
-	}
-}
-
-func (grid *GridStatWeightProcess1C) chooseScalesEachCombo() {
-	for group := range grid.unitStatValues.SeqGroupsKeysNestedValueSeq() {
-		scale := chooseScale(group.ValueSeq, c_grid1c_scaleTarget)
-
-		grid.scales.Put(group.Key1, group.Key2, scale)
 	}
 }
 
@@ -235,11 +226,7 @@ func (grid *GridStatWeightProcess1C) unitValuesCalcForGroup(simType stats.SimTyp
 	baseDetailWeightCol := grid.detailedWeights.GetOrPanic(baseStat, simType)
 	thisDetailWeightCol := grid.detailedWeights.GetOrPanic(thisStatType, simType)
 
-	baseScale := grid.scales.GetOrPanic(baseStat, simType)
-	thisScale := grid.scales.GetOrPanic(thisStatType, simType)
-	if baseScale != thisScale {
-		panic("what")
-	}
+	scale := grid.scales[simType]
 
 	index := 0
 	for baseUnitSample := range baseUnitValueSeq {
@@ -247,7 +234,7 @@ func (grid *GridStatWeightProcess1C) unitValuesCalcForGroup(simType stats.SimTyp
 			var debugText string = debugText + " " + strconv.Itoa(index)
 			offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, utilhighs.DebugString{Text: "OFFSET ABS " + debugText})
 
-			grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, baseUnitSample*baseScale, baseDetailWeightCol, thisUnitSample*thisScale, offsetAbs, 1/baseScale, "OFFSET ABS "+debugText)
+			grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, baseUnitSample*scale, baseDetailWeightCol, thisUnitSample*scale, offsetAbs, 1/scale, "OFFSET ABS "+debugText)
 
 			index++
 		}

@@ -625,7 +625,7 @@ func (build *LinearBuilder) ValidateInitialSolutionState() {
 	for colNum, value := range build.vars.partialSolution {
 		colValues[colNum] = value
 		if value < build.vars.colLower[colNum] || value > build.vars.colUpper[colNum] {
-			panic("initial value out of bounds")
+			panic(fmt.Sprintf("initial value out of bounds index=%d debug=%s", colNum, build.vars.debug[colNum]))
 		}
 		if build.vars.colTypes[colNum] == highs.Integer && math.Round(value) != value {
 			panic("initial value not integer")

@@ -14,51 +14,66 @@ const (
 )
 
 func WeightTweaker(startWeight stathighs.WeightResult, weightStats []stats.StatType, targetRatio stats.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) stathighs.WeightResult {
-	return weightTweakerCustom(startWeight, c_tweak_start, weightStats, targetRatio, inputData, printer)
+	updatedWeight, _ := weightTweakerInternal(startWeight, c_tweak_start, weightStats, targetRatio, inputData, printer)
+	return updatedWeight
 }
 
-func weightTweakerCustom(startWeight stathighs.WeightResult, tweakStart float64, weightStats []stats.StatType, targetRatio stats.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) stathighs.WeightResult {
-	add := tweakStart
-	multiply := 1 + add
-	bestWeight := startWeight.Clone()
+func weightTweakerInternal(startWeight stathighs.WeightResult, tweakStart float64, weightStats []stats.StatType, targetRatio stats.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) (stathighs.WeightResult, float64) {
+	increment := tweakStart
+	factor := 1 + increment
+
+	type weightAndAccuracy struct {
+		weight   stathighs.WeightResult
+		accuracy float64
+	}
+	bestEntry := &weightAndAccuracy{
+		startWeight.Clone(),
+		EvaluateAccuracy(startWeight, inputData, targetRatio),
+	}
 
 	for range c_tweak_iter_count {
-		best := util_rank.BestCollector1[stathighs.WeightResult]{}
-		best.Offer(&bestWeight, EvaluateAccuracy(bestWeight, inputData, targetRatio))
+		best := util_rank.BestCollector1[weightAndAccuracy]{}
+		best.Offer(bestEntry, bestEntry.accuracy)
+
 		for i := 1; i < len(weightStats); i++ {
 			stat := weightStats[i]
-			if !bestWeight.IsZero(stat) {
-				hi := bestWeight.Clone()
-				hi.MultiplyEquals(stat, multiply)
-				best.Offer(&hi, EvaluateAccuracy(hi, inputData, targetRatio))
 
-				lo := bestWeight.Clone()
-				lo.DivideEquals(stat, multiply)
-				best.Offer(&lo, EvaluateAccuracy(lo, inputData, targetRatio))
-			} else {
-				hi := bestWeight.Clone()
-				hi.PlusEquals(stat, add)
-				best.Offer(&hi, EvaluateAccuracy(hi, inputData, targetRatio))
+			if !bestEntry.weight.IsZero(stat) {
+				mul := bestEntry.weight.Clone()
+				mul.MultiplyEquals(stat, factor)
+				accuracyMul := EvaluateAccuracy(mul, inputData, targetRatio)
+				best.Offer(&weightAndAccuracy{mul, accuracyMul}, accuracyMul)
 
-				lo := bestWeight.Clone()
-				lo.MinusEquals(stat, add)
-				best.Offer(&lo, EvaluateAccuracy(lo, inputData, targetRatio))
+				div := bestEntry.weight.Clone()
+				div.DivideEquals(stat, factor)
+				accuracyDiv := EvaluateAccuracy(div, inputData, targetRatio)
+				best.Offer(&weightAndAccuracy{div, accuracyDiv}, accuracyDiv)
 			}
-		}
-		updateWeight := best.GetBestOrPanic()
 
-		if updateWeight.Equals(bestWeight) {
-			add /= 2
-			multiply = 1 + add
-			if add <= c_tweak_limit {
+			add := bestEntry.weight.Clone()
+			add.PlusEquals(stat, increment)
+			accuracyAdd := EvaluateAccuracy(add, inputData, targetRatio)
+			best.Offer(&weightAndAccuracy{add, accuracyAdd}, accuracyAdd)
+
+			sub := bestEntry.weight.Clone()
+			sub.MinusEquals(stat, increment)
+			accuracySub := EvaluateAccuracy(sub, inputData, targetRatio)
+			best.Offer(&weightAndAccuracy{sub, accuracySub}, accuracySub)
+		}
+
+		proposedEntry := best.GetBestPointerOrPanic()
+		if bestEntry.weight.Equals(proposedEntry.weight) {
+			increment /= 2
+			factor = 1 + increment
+			if increment <= c_tweak_limit {
 				printer.Printf("DONE\n")
 				break
 			}
 		} else {
-			printer.Printf("NEXT %s accuracy=%f\n", updateWeight.String(), EvaluateAccuracy(updateWeight, inputData, targetRatio))
-			bestWeight = updateWeight
+			printer.Printf("NEXT %s accuracy=%f\n", proposedEntry.weight.String(), proposedEntry.accuracy)
+			bestEntry = proposedEntry
 		}
 	}
 
-	return bestWeight
+	return bestEntry.weight, bestEntry.accuracy
 }
