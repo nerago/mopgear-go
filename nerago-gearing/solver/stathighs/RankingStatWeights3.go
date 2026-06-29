@@ -99,11 +99,7 @@ func (ranker *RankingStatWeightProcess3) Run() WeightResult {
 	ranker.build = new(utilhighs.LinearBuilder)
 	ranker.build.Minimise = true
 	ranker.build.TimeLimitSeconds = c_rank3_time_limit
-	if ranker.ALGO >= 2 {
-		ranker.build.Solver = utilhighs.Solver_LP_USE_GPU
-	} else {
-		ranker.build.Solver = utilhighs.Solver_MIP_Interior
-	}
+	ranker.build.Solver = utilhighs.Solver_LP_USE_GPU
 	ranker.prepareRankings()
 	ranker.createWeightColumns()
 	ranker.doAlgos()
@@ -207,20 +203,6 @@ func (ranker *RankingStatWeightProcess3) doAlgos() {
 				ranker.makeEntryPairSequenceConstraintsRequireEqualMode(&ranker.dataSample[baseIndex], &ranker.dataSample[compareTo], baseIndex, compareTo, 1)
 			}
 		}
-	case 2:
-		ranker.makeDataListEntryColumnsNoMIP()
-		for baseIndex := range ranker.dataSample {
-			for compareTo := baseIndex + 1; compareTo < len(ranker.dataSample); compareTo++ {
-				ranker.makeEntryPairSequenceConstraintsStrictScoreOrder(&ranker.dataSample[baseIndex], &ranker.dataSample[compareTo], baseIndex, compareTo)
-			}
-		}
-	case 3:
-		ranker.makeDataListEntryColumnsNoMIP()
-		for baseIndex := range ranker.dataSample {
-			for compareTo := baseIndex + 1; compareTo < len(ranker.dataSample); compareTo++ {
-				ranker.makeEntryPairSequenceConstraintsStrictScoreOrderWithSlackVar(&ranker.dataSample[baseIndex], &ranker.dataSample[compareTo], baseIndex, compareTo)
-			}
-		}
 	default:
 		panic("dunno")
 	}
@@ -312,54 +294,6 @@ func (ranker *RankingStatWeightProcess3) makeEntryPairSequenceConstraintsRequire
 		isGreaterScore: isGreaterScore,
 		isGreaterRank:  isGreaterRank,
 		isSequenceDiff: isSequenceDiff,
-	})
-}
-
-func (ranker *RankingStatWeightProcess3) makeEntryPairSequenceConstraintsStrictScoreOrder(one *rankEntry3, two *rankEntry3, indexOne, indexTwo int) {
-	if one.targetRank > two.targetRank {
-		row := utilhighs.ConstraintRow{Debug: "row"}
-		row.Add(one.scoreColumn, 1)
-		row.Add(two.scoreColumn, -1)
-		row.Build(ranker.build, 0, utilhighs.C_PlusInf)
-	} else if one.targetRank < two.targetRank {
-		row := utilhighs.ConstraintRow{Debug: "row"}
-		row.Add(one.scoreColumn, -1)
-		row.Add(two.scoreColumn, 1)
-		row.Build(ranker.build, 0, utilhighs.C_PlusInf)
-	} else {
-		// TODO overlapping ranks may be permitted
-		panic("unexpected equal ranks")
-	}
-
-	ranker.pairLinks.Put(indexOne, indexTwo, rankPair3{
-		indexOne: indexOne,
-		indexTwo: indexTwo,
-	})
-}
-
-func (ranker *RankingStatWeightProcess3) makeEntryPairSequenceConstraintsStrictScoreOrderWithSlackVar(one *rankEntry3, two *rankEntry3, indexOne, indexTwo int) {
-	slack := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, utilhighs.C_PlusInf, 1, nil)
-
-	if one.targetRank > two.targetRank {
-		row := utilhighs.ConstraintRow{Debug: "row"}
-		row.Add(one.scoreColumn, 1)
-		row.Add(two.scoreColumn, -1)
-		row.Add(slack, 1)
-		row.Build(ranker.build, 0, utilhighs.C_PlusInf)
-	} else if two.targetRank > one.targetRank {
-		row := utilhighs.ConstraintRow{Debug: "row"}
-		row.Add(two.scoreColumn, 1)
-		row.Add(one.scoreColumn, -1)
-		row.Add(slack, 1)
-		row.Build(ranker.build, 0, utilhighs.C_PlusInf)
-	} else {
-		// TODO overlapping ranks may be permitted
-		panic("unexpected equal ranks")
-	}
-
-	ranker.pairLinks.Put(indexOne, indexTwo, rankPair3{
-		indexOne: indexOne,
-		indexTwo: indexTwo,
 	})
 }
 

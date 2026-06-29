@@ -453,3 +453,22 @@ now we fix a bunch of bugs in constraint utils
 Duration = 33m24.9962718s
 
 
+################# FINAL RESULT ###################
+  algo                          str       stam       crit    haste    expert    master     dodge     parry  accuracy  accuracy_tweaked  time
+  ranking3a-scale_old-algo3     NaN        NaN        NaN      NaN       NaN       NaN       NaN       NaN  50.0913                     1h16m39.9805668s
+  ranking3a-scale_old-algo2     NaN        NaN        NaN      NaN       NaN       NaN       NaN       NaN  50.0913                     1h23m19.9660203s
+  ranking3a-scale1-algo2        NaN        NaN        NaN      NaN       NaN       NaN       NaN       NaN  50.0913                     2h33m20.245456s
+  ranking3a-scale1-algo3        NaN        NaN        NaN      NaN       NaN       NaN       NaN       NaN  50.0913                     1h12m6.0590131s
+  ranking3a-scale1-algo1     1.0000   -30.0213   -24.5494  -2.1033  -27.8533  -42.3727  -15.7861  -14.3674  50.5519                     1h29m27.8565854s
+  ranking3a-scale_old-algo0  1.0000  -338.7441    -7.4914  10.6733   -7.4452  -73.4360   -4.3025   -3.7540  51.2532                     1h27m54.2310766s
+  grid2-1                    1.0000     1.4010  -291.0198   0.0957    0.6870    3.2298    0.8180    0.6954  80.3384                     198.5546ms
+  grid2-2                    1.0000    -0.4104    -0.3994  -0.2010   -0.0000   -0.0000   -0.0000    0.0005  85.4532                     6m40.0446337s
+  ranking4-1                 1.0000     1.7102    -0.0239  -0.0374    0.0128    0.0946   -0.0196    0.0201  86.8138                     0s
+  ranking4                   1.0000     1.2309     0.1167   0.3614    0.0054    0.5866    0.0824    0.0532  87.7342                     16m40.3708582s
+  ranking4-0                 1.0000     1.2309     0.1167   0.3614    0.0054    0.5866    0.0824    0.0532  87.7342                     0s
+  ranking3a-scale_old-algo1  1.0000     4.8698     0.0261  -0.2823    0.2214    2.5328    0.0700    0.0625  88.8329                     1h34m3.3002289s
+  grid1                      1.0000     0.5629     0.6636   1.0635    1.1112    1.7911    0.3719    0.5298  90.5992                     342.9252ms
+  grid1c-round1              1.0000     0.5629     0.6635   1.0635    1.1123    1.7911    0.3719    0.5298  90.6006                     261.9736ms
+  ranking3a-scale1-algo0     1.0000     1.5646     1.6803  -0.3978    2.7260    4.9608    1.5676    2.0259  92.6653                     1h31m20.8786653s
+Duration = 2h40m0.3757495s
+Finished at Mon, 29 Jun 2026 05:09:54 AEST

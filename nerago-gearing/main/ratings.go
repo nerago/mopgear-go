@@ -888,7 +888,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	//	printer.Println("///////////////// RANKING2 /////////////////")
 	//})
 
-	for ALGO := range 4 {
+	for ALGO := range 2 {
 		tasks = append(tasks, func() {
 			printer.Println("################# RANKING3 ###################")
 			start := time.Now()
@@ -922,6 +922,37 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			printer.Println("///////////////// RANKING3 /////////////////")
 		})
 	}
+
+	tasks = append(tasks, func() {
+		printer.Println("################# RANKING3 ###################")
+		start := time.Now()
+		ranking := stathighs.RankingStatWeightProcess3b{}
+		ranking.SCALE1 = false
+		ranking.Init(printer)
+		ranking.SetRequiredStats(requiredStats)
+		ranking.SetTargetRatios(targetRatio)
+		ranking.SupplyData(slices.Clone(mixedInputData))
+		weight := ranking.Run()
+		label := fmt.Sprintf("ranking3b-scale_old")
+		timesByAlgorithm[label] = time.Since(start)
+		resultsByAlgorithm[label] = weight
+		printer.Println("///////////////// RANKING3 /////////////////")
+	})
+	tasks = append(tasks, func() {
+		printer.Println("################# RANKING3 ###################")
+		start := time.Now()
+		ranking := stathighs.RankingStatWeightProcess3b{}
+		ranking.SCALE1 = true
+		ranking.Init(printer)
+		ranking.SetRequiredStats(requiredStats)
+		ranking.SetTargetRatios(targetRatio)
+		ranking.SupplyData(slices.Clone(mixedInputData))
+		weight := ranking.Run()
+		label := fmt.Sprintf("ranking3b-scale1-algo")
+		timesByAlgorithm[label] = time.Since(start)
+		resultsByAlgorithm[label] = weight
+		printer.Println("///////////////// RANKING3 /////////////////")
+	})
 
 	//tasks = append(tasks, func() {
 	//	printer.Println("################# RANKING3 ###################")
