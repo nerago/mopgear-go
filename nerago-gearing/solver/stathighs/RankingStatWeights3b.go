@@ -89,7 +89,12 @@ func (ranker *RankingStatWeightProcess3b) newBuilder() {
 	ranker.build = new(utilhighs.LinearBuilder)
 	ranker.build.Minimise = true
 	ranker.build.TimeLimitSeconds = c_rank3b_time_limit
-	ranker.build.Solver = utilhighs.Solver_LP_NO_GPU
+	ranker.build.Solver = utilhighs.Solver_Force_IPX
+
+	// IPX Duration 1m1.4189406s		92.046912%
+	// simplex Duration 3m45.3631097s	92.047609%
+	// hipdlp stopped at 10m, stuck
+	// hipo fails, reverts to IPX		92.047145%
 }
 
 func (ranker *RankingStatWeightProcess3b) Run(optionalInitial *WeightResult, stopwatch *util.Stopwatch) WeightResult {

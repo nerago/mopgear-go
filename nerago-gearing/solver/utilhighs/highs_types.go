@@ -29,11 +29,13 @@ var (
 type SolverMode int8
 
 const (
-	Solver_NotSet       SolverMode = iota
-	Solver_LP_USE_GPU   SolverMode = iota
-	Solver_LP_NO_GPU    SolverMode = iota
-	Solver_MIP_Interior SolverMode = iota
-	Solver_MIP_Vertex   SolverMode = iota
+	Solver_NotSet        SolverMode = iota
+	Solver_LP_USE_GPU    SolverMode = iota
+	Solver_LP_NO_GPU     SolverMode = iota
+	Solver_MIP_Interior  SolverMode = iota
+	Solver_MIP_Vertex    SolverMode = iota
+	Solver_Force_Simplex SolverMode = iota
+	Solver_Force_IPX     SolverMode = iota
 )
 
 type ColumnIndex int32
@@ -278,9 +280,6 @@ func (build *LinearBuilder) configureHighsUtil(solver *highs.Solver, logfile str
 	} else {
 		verifyNoError(solver.SetStringOption("presolve", "on"))
 	}
-
-	// up from default of 1e-7, i don't care about dual
-	verifyNoError(solver.SetFloatOption("dual_residual_tolerance", 1e-4))
 }
 
 func (build *LinearBuilder) configureHighsSolver(solver *highs.Solver) bool {
@@ -298,6 +297,10 @@ func (build *LinearBuilder) configureHighsSolver(solver *highs.Solver) bool {
 		} else {
 			verifyNoError(solver.SetStringOption("solver", "choose"))
 		}
+	case Solver_Force_Simplex:
+		verifyNoError(solver.SetStringOption("solver", "simplex"))
+	case Solver_Force_IPX:
+		verifyNoError(solver.SetStringOption("solver", "ipx"))
 	case Solver_MIP_Interior:
 		if build.isLargeModel() {
 			verifyNoError(solver.SetStringOption("solver", "choose"))
@@ -311,7 +314,7 @@ func (build *LinearBuilder) configureHighsSolver(solver *highs.Solver) bool {
 		expectMip = true
 	case Solver_MIP_Vertex:
 		verifyNoError(solver.SetStringOption("solver", "choose"))
-		verifyNoError(solver.SetStringOption("mip_lp_solver", "j"))
+		verifyNoError(solver.SetStringOption("mip_lp_solver", "choose"))
 		verifyNoError(solver.SetStringOption("mip_ipm_solver", "choose"))
 		expectMip = true
 	default:
