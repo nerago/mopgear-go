@@ -95,14 +95,22 @@ func (ranker *RankingStatWeightProcess3) SetTargetRatios(targetRatios stats.SimD
 	ranker.requiredSims = targetRatios.NonZeroTypes()
 }
 
+func (ranker *RankingStatWeightProcess3) makeBuilder() {
+	ranker.build = new(utilhighs.LinearBuilder)
+	ranker.build.Minimise = true
+	ranker.build.TimeLimitSeconds = c_rank3_time_limit
+	if ranker.ALGO >= 2 {
+		ranker.build.Solver = utilhighs.Solver_LP_USE_GPU
+	} else {
+		ranker.build.Solver = utilhighs.Solver_MIP_Interior
+	}
+}
+
 func (ranker *RankingStatWeightProcess3) Run(stopwatch *util.Stopwatch) WeightResult {
 
 	// FIRST ROUND: minimal data, no initial values
 	ranker.dataSample = takeDataSample_Start(ranker.dataAllOriginal, c_rank3_initial_data_sample)
-	ranker.build = new(utilhighs.LinearBuilder)
-	ranker.build.Minimise = true
-	ranker.build.TimeLimitSeconds = c_rank3_time_limit
-	ranker.build.Solver = utilhighs.Solver_LP_USE_GPU
+	ranker.makeBuilder()
 	ranker.prepareRankings()
 	ranker.createWeightColumns()
 	ranker.doAlgos()
@@ -112,14 +120,7 @@ func (ranker *RankingStatWeightProcess3) Run(stopwatch *util.Stopwatch) WeightRe
 
 	// FULL RUN
 	ranker.dataSample = ranker.dataAllOriginal
-	ranker.build = new(utilhighs.LinearBuilder)
-	ranker.build.Minimise = true
-	ranker.build.TimeLimitSeconds = c_rank3_time_limit
-	if ranker.ALGO >= 2 {
-		ranker.build.Solver = utilhighs.Solver_LP_USE_GPU
-	} else {
-		ranker.build.Solver = utilhighs.Solver_MIP_Interior
-	}
+	ranker.makeBuilder()
 	ranker.prepareRankings()
 	ranker.createWeightColumns()
 	ranker.doAlgos()

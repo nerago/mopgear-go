@@ -120,8 +120,14 @@ func (fiteach *FittingEachStatWeightProcess) RunDetailedResults() util.MapMap[st
 	return resultMap
 }
 
-func (fiteach *FittingEachStatWeightProcess) Run() WeightResult {
+func (fiteach *FittingEachStatWeightProcess) Run(stopwatch *util.Stopwatch) WeightResult {
 	detailResult := fiteach.RunDetailedResults()
+
+	for byRange := range detailResult.SeqValues() {
+		for _, detail := range byRange {
+			stopwatch.AddElapsedFrom(&detail.StopwatchSolver)
+		}
+	}
 
 	bestRatingEach := util.MapMap_FromExitingMapMap_WithApply(&detailResult, func(byRange map[StatRange]FittingSingleStatResult) float64 {
 		best := util_rank.BestCollector1[FittingSingleStatResult]{}
