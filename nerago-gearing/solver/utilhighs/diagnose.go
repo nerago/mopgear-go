@@ -39,8 +39,8 @@ func diagnoseTryHalves(build *LinearBuilder, min, pivot, max int, printer *util.
 	cloneLower.mat.deleteRowRange(min, pivot-1)
 	cloneUpper.mat.deleteRowRange(pivot, max)
 
-	solutionLower := cloneLower.RunHighs(util.PrintRecorder_HoldAll())
-	solutionUpper := cloneUpper.RunHighs(util.PrintRecorder_HoldAll())
+	solutionLower := cloneLower.RunHighs(nil, nil)
+	solutionUpper := cloneUpper.RunHighs(nil, nil)
 
 	printer.Printf("Half minus(%d..%d)=%s, minus(%d..%d)=%s\n", min, pivot-1, solutionLower.Status.String(), pivot, max, solutionUpper.Status.String())
 
@@ -67,7 +67,7 @@ func diagnoseInfeasibleOneByOne(build *LinearBuilder, printer *util.PrintRecorde
 		clone.NoOutput = true
 		clone.mat.deleteRow(rowIndex)
 		innerPrint := util.PrintRecorder_HoldAll()
-		solution := clone.RunHighs(innerPrint)
+		solution := clone.RunHighs(innerPrint, nil)
 		printer.Printf("Removed row %4d (%s) []=%2d --> %s\n", rowIndex, build.mat.debug[rowIndex], len(build.mat.entries[rowIndex]), solution.Status.String())
 		if solution.Status == highs.ModelStatusOptimal {
 			printer.AppendOther(innerPrint)

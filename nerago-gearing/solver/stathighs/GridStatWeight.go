@@ -78,7 +78,7 @@ func (grid *GridStatWeightProcess) SetTestMode(testMode bool) {
 	}
 }
 
-func (grid *GridStatWeightProcess) Run() WeightResult {
+func (grid *GridStatWeightProcess) Run(stopwatch *util.Stopwatch) WeightResult {
 	grid.setupWeightVars()
 
 	grid.dataSamplesFromPairs()
@@ -86,7 +86,7 @@ func (grid *GridStatWeightProcess) Run() WeightResult {
 	grid.unitValuesToCalcDetailedRatings()
 	grid.calcTotalRatings()
 
-	solution := grid.build.RunHighs(grid.printer)
+	solution := grid.build.RunHighs(grid.printer, stopwatch)
 	grid.printer.Println(solution.Status.String())
 
 	grid.build.DebugPrintColumns(solution, grid.printer)

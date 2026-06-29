@@ -12,6 +12,8 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
+const c_grid1c_scaleTarget = 10.0
+
 type GridStatWeightProcess1C struct {
 	printer *util.PrintRecorder
 
@@ -73,7 +75,7 @@ func (grid *GridStatWeightProcess1C) SetTestMode(testMode bool) {
 	}
 }
 
-func (grid *GridStatWeightProcess1C) Run() WeightResult {
+func (grid *GridStatWeightProcess1C) Run(stopwatch *util.Stopwatch) WeightResult {
 	grid.setupWeightVars()
 	grid.dataSamplesFromPairs()
 	grid.removeOutliers()
@@ -81,7 +83,7 @@ func (grid *GridStatWeightProcess1C) Run() WeightResult {
 	grid.unitValuesToCalcDetailedRatings()
 	grid.finalWeightVars()
 
-	solution := grid.build.RunHighs(grid.printer)
+	solution := grid.build.RunHighs(grid.printer, stopwatch)
 	grid.printer.Println(solution.Status.String())
 
 	grid.build.DebugPrintColumns(solution, grid.printer)
@@ -183,56 +185,13 @@ func (grid *GridStatWeightProcess1C) prepareSample(statType stats.StatType, high
 }
 
 func (grid *GridStatWeightProcess1C) chooseScalesBySim() {
-
 	for _, simType := range grid.simTypes {
-		scale := chooseScale(grid.unitStatValues.ValuesForKey2AsSeq(simType))
+		scale := chooseScale(grid.unitStatValues.ValuesForKey2AsSeq(simType), c_grid1c_scaleTarget)
 
 		for _, statType := range grid.requiredStats {
 			grid.scales.Put(statType, simType, scale)
 		}
 	}
-}
-
-func chooseScale(seq iter.Seq[float64]) float64 {
-	scaleTarget := 1.0
-
-	minPosValue, maxPosValue := math.MaxFloat64, 0.0
-	minNegValue, maxNegValue := math.MaxFloat64, 0.0
-	hasNeg, hasPos, hasZero := false, false, false
-	for valueRaw := range seq {
-		if util.FloatEqualsZero(valueRaw) {
-			minNegValue = 0
-			minPosValue = 0
-			hasZero = true
-		} else if valueRaw > 0 {
-			minPosValue = min(minPosValue, valueRaw)
-			maxPosValue = max(maxPosValue, valueRaw)
-			hasPos = true
-		} else {
-			minNegValue = min(minNegValue, -valueRaw)
-			maxNegValue = max(maxNegValue, -valueRaw)
-			hasNeg = true
-		}
-	}
-
-	var scale float64
-	if hasPos && hasNeg {
-		superMax := max(maxNegValue, maxPosValue)
-		scale = scaleTarget / superMax
-	} else if hasPos && !hasZero {
-		scale = scaleTarget / minPosValue
-	} else if hasPos {
-		scale = scaleTarget / maxPosValue
-	} else if hasNeg && !hasZero {
-		scale = scaleTarget / minNegValue
-	} else if hasNeg {
-		scale = scaleTarget / maxNegValue
-	} else {
-		scale = 1
-	}
-
-	scale = util.Clamp(scale, 1e-5, 1e5)
-	return scale
 }
 
 func (grid *GridStatWeightProcess1C) removeOutliers() {
@@ -251,7 +210,7 @@ func (grid *GridStatWeightProcess1C) removeOutliers() {
 
 func (grid *GridStatWeightProcess1C) chooseScalesEachCombo() {
 	for group := range grid.unitStatValues.SeqGroupsKeysNestedValueSeq() {
-		scale := chooseScale(group.ValueSeq)
+		scale := chooseScale(group.ValueSeq, c_grid1c_scaleTarget)
 
 		grid.scales.Put(group.Key1, group.Key2, scale)
 	}

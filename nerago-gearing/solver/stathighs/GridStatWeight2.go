@@ -10,8 +10,9 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
-const c_grid2_maxWeight = 500.0
-const c_grid2_highScore = 1000.0
+const c_grid2_maxWeight = 5000.0
+const c_grid2_highScore = 10000.0
+const c_grid2_scaleTarget = 10.0
 
 type GridStatWeightProcess2 struct {
 	printer *util.PrintRecorder
@@ -70,14 +71,14 @@ func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios stats.SimData)
 	grid2.targetRatios = targetRatios
 }
 
-func (grid2 *GridStatWeightProcess2) Run() WeightResult {
+func (grid2 *GridStatWeightProcess2) Run(stopwatch *util.Stopwatch) WeightResult {
 	grid2.setupWeightVars()
 	grid2.chooseScalingX()
 	grid2.processInputData()
 
 	grid2.build.TimeLimitSeconds = 400
 
-	solution := grid2.build.RunHighs(grid2.printer)
+	solution := grid2.build.RunHighs(grid2.printer, stopwatch)
 	grid2.printer.Println(solution.Status.String())
 
 	grid2.build.DebugPrintColumns(solution, grid2.printer)
@@ -118,7 +119,7 @@ func (grid2 *GridStatWeightProcess2) chooseScalingX() {
 		}
 		grid2.printer.Printf("simDiffs %s min=%f avg=%f max=%f\n", simType.Name(), listMin(listDiffs), listAvg(listDiffs), listMax(listDiffs))
 
-		scale := chooseScale(slices.Values(listDiffs))
+		scale := chooseScale(slices.Values(listDiffs), c_grid2_scaleTarget)
 		grid2.scaleSims[simType] = scale
 	}
 }
@@ -195,11 +196,11 @@ func (grid2 *GridStatWeightProcess2) checkForNumberStatDifferences(one, two *sta
 		if one[stat] != two[stat] {
 			switch differenceCount {
 			case 0:
-				diffStatA = stats.StatType(stat)
+				diffStatA = stat
 			case 1:
-				diffStatB = stats.StatType(stat)
+				diffStatB = stat
 			case 2:
-				diffStatC = stats.StatType(stat)
+				diffStatC = stat
 			}
 			differenceCount++
 		}
@@ -353,7 +354,8 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 		result.Put(statType, sumIndividual)
 	}
 
-	divideBy := result[stats.Stat_Strength]
+	baseStat := grid2.requiredStats[0]
+	divideBy := result[baseStat]
 	for _, statType := range grid2.requiredStats {
 		result[statType] /= divideBy
 	}

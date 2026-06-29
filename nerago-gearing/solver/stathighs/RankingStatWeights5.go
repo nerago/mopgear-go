@@ -20,6 +20,7 @@ const (
 	c_rank5_timeLimit = 2000
 
 	c_rank5_computeScoreM = 100
+	c_rank5_scaleTarget   = 1.0
 )
 
 var (
@@ -111,7 +112,7 @@ func (process *RankingStatWeightProcess5) SetTargetRatios(targetRatios stats.Sim
 	process.requiredSims = targetRatios.NonZeroTypes()
 }
 
-func (process *RankingStatWeightProcess5) Run() []WeightResult {
+func (process *RankingStatWeightProcess5) Run(stopwatch *util.Stopwatch) []WeightResult {
 	weightResultList := make([]WeightResult, 0)
 	process.printer.Printf("RankingStatWeightProcess5 RunOptimisitic\n")
 	run := rankInternalRun5_create(process)
@@ -126,7 +127,7 @@ func (process *RankingStatWeightProcess5) Run() []WeightResult {
 	if process.initialWeights != nil {
 		run.setupInitialSolutionFromExternal(*process.initialWeights)
 	}
-	weights1, _ := run.run()
+	weights1, _ := run.run(stopwatch)
 	weights1.ApplyIfValue(func(w WeightResult) { weightResultList = append(weightResultList, w) })
 	return weightResultList
 }
@@ -144,8 +145,8 @@ func rankInternalRun5_create(process *RankingStatWeightProcess5) *rankInternalRu
 	return run
 }
 
-func (run *rankInternalRun5) run() (util.Optional[WeightResult], *highs.Solution) {
-	solution := run.build.RunHighs(run.process.printer)
+func (run *rankInternalRun5) run(stopwatch *util.Stopwatch) (util.Optional[WeightResult], *highs.Solution) {
+	solution := run.build.RunHighs(run.process.printer, stopwatch)
 	if solution.HasSolution() {
 		weights := run.extractAndReportSolution(solution)
 		return util.Optional_OfValue(weights), solution
@@ -170,7 +171,7 @@ func (run *rankInternalRun5) createWeightColumns() {
 }
 
 func (run *rankInternalRun5) supplyData(inputData []WeightInput) {
-	run.scaleStats = chooseStatScaling(inputData, run.process.printer)
+	run.scaleStats = chooseStatScaling(inputData, c_rank5_scaleTarget, run.process.printer)
 	run.runData = util.MapSliceAsNew(inputData, func(input *WeightInput) rankEntry5 {
 		return rankEntry5{
 			data: input,

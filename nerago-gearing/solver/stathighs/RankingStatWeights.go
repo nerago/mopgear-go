@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	c_RankLargeWeight = 50.0
-	c_RankLargeScore  = 500.0
-	c_RankLargeRank   = 10000.0
+	c_rank1_scaleTarget = 1.0
+	c_Rank1_LargeWeight = 50.0
+	c_Rank1_LargeScore  = 500.0
+	c_Rank1_LargeRank   = 10000.0
 )
 
 type RankingStatWeightProcess struct {
@@ -54,7 +55,7 @@ func (ranker *RankingStatWeightProcess) Init(printer *util.PrintRecorder) {
 }
 
 func (ranker *RankingStatWeightProcess) SupplyData(inputData []WeightInput) {
-	ranker.scaleStats = chooseStatScaling(inputData, ranker.printer)
+	ranker.scaleStats = chooseStatScaling(inputData, c_rank1_scaleTarget, ranker.printer)
 	ranker.data = util.MapSliceAsNew(inputData, func(input *WeightInput) rankEntry {
 		return rankEntry{data: input, simRanks: make(map[stats.SimType]int)}
 	})
@@ -73,7 +74,7 @@ func (ranker *RankingStatWeightProcess) SetTargetRatios(targetRatios stats.SimDa
 // 	ranker.minimumIncludeRate = percent
 // }
 
-func (ranker *RankingStatWeightProcess) Run() WeightResult {
+func (ranker *RankingStatWeightProcess) Run(stopwatch *util.Stopwatch) WeightResult {
 	ranker.build = new(utilhighs.LinearBuilder)
 	ranker.build.Minimise = true
 	if ranker.RANKMODE == 0 || ranker.RANKMODE == 1 || ranker.RANKMODE == 2 {
@@ -93,14 +94,14 @@ func (ranker *RankingStatWeightProcess) Run() WeightResult {
 
 	// ranker.includeCountRow.Finish(ranker.input, float64(len(ranker.inputData))*ranker.minimumIncludeRate, utilhighs.C_PlusInf)
 
-	solution := ranker.build.RunHighs(ranker.printer)
+	solution := ranker.build.RunHighs(ranker.printer, stopwatch)
 
 	return ranker.extractAndReportSolution(solution)
 }
 
 func (ranker *RankingStatWeightProcess) createWeightColumns() {
-	lo := -c_RankLargeWeight
-	hi := c_RankLargeWeight
+	lo := -c_Rank1_LargeWeight
+	hi := c_Rank1_LargeWeight
 
 	sumWeights := utilhighs.ConstraintRow{}
 	ranker.weightColumns = make(map[stats.StatType]utilhighs.ColumnIndex)
@@ -282,9 +283,9 @@ func (ranker *RankingStatWeightProcess) processEntrySequencePairToDerivedRank(on
 	// would need all possible pairs connected, but would then force solver to make a full integer order
 	isGreater := ranker.build.CreateColumnBool(utilhighs.DebugText("isGreater"))
 
-	ranker.build.ColumnIsGreaterOrEqualColumn(one.scoreColumn, two.scoreColumn, isGreater, c_RankLargeScore, 0.0001)
+	ranker.build.ColumnIsGreaterOrEqualColumn(one.scoreColumn, two.scoreColumn, isGreater, c_Rank1_LargeScore, 0.0001)
 
-	ranker.build.ColumnIsGreaterOrEqualColumn(one.rankColumn, two.rankColumn, isGreater, c_RankLargeRank, 1.0)
+	ranker.build.ColumnIsGreaterOrEqualColumn(one.rankColumn, two.rankColumn, isGreater, c_Rank1_LargeRank, 1.0)
 }
 
 // we want to optimise for higher.score > lower.score

@@ -68,9 +68,7 @@ func (basic *BasicStatWeightProcess) AddSimData(statType stats.StatType, statVal
 	basic.simData[statType] = basicDataEntry{statValue, sim}
 }
 
-// alternately we could baseline each other with a full array of +100 perumtations etc
-
-func (basic *BasicStatWeightProcess) Run() WeightResult {
+func (basic *BasicStatWeightProcess) Run(stopwatch *util.Stopwatch) WeightResult {
 	for _, statType := range basic.requiredStats {
 		colName := "FINAL WEIGHT: " + statType.Name()
 		colFinalWeight := basic.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: colName})
@@ -101,7 +99,7 @@ func (basic *BasicStatWeightProcess) Run() WeightResult {
 	basic.unitValuesToCalcDetailedRatings()
 	basic.calcTotalRatings()
 
-	solution := basic.build.RunHighs(basic.printer)
+	solution := basic.build.RunHighs(basic.printer, stopwatch)
 	basic.printer.Println(solution.Status.String())
 
 	basic.build.DebugPrintColumns(solution, basic.printer)

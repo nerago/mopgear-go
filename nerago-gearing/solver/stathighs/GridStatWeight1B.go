@@ -12,6 +12,8 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
+const c_grid1b_scaleTarget = 10.0
+
 type GridStatWeightProcess1B struct {
 	printer *util.PrintRecorder
 
@@ -75,7 +77,7 @@ func (grid *GridStatWeightProcess1B) SetTestMode(testMode bool) {
 	}
 }
 
-func (grid *GridStatWeightProcess1B) Run() WeightResult {
+func (grid *GridStatWeightProcess1B) Run(stopwatch *util.Stopwatch) WeightResult {
 	grid.setupWeightVars()
 	grid.dataSamplesFromPairs()
 	grid.removeOutliers()
@@ -87,7 +89,7 @@ func (grid *GridStatWeightProcess1B) Run() WeightResult {
 	grid.unitValuesToCalcDetailedRatings()
 	grid.finalWeightVars()
 
-	solution := grid.build.RunHighs(grid.printer)
+	solution := grid.build.RunHighs(grid.printer, stopwatch)
 	grid.printer.Println(solution.Status.String())
 
 	grid.build.DebugPrintColumns(solution, grid.printer)
@@ -310,7 +312,7 @@ func (grid *GridStatWeightProcess1B) removeOutliers() {
 
 func (grid *GridStatWeightProcess1B) chooseScalesEachCombo() {
 	for group := range grid.unitStatValues.SeqGroupsKeysNestedValueSeq() {
-		scale := chooseScale(group.ValueSeq)
+		scale := chooseScale(group.ValueSeq, c_grid1b_scaleTarget)
 
 		grid.scales.Put(group.Key1, group.Key2, scale)
 	}

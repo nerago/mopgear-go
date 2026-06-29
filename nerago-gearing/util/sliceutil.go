@@ -137,6 +137,17 @@ func MapSliceAsNew[T any, R any](slice []T, mapper func(x *T) R) []R {
 	return result
 }
 
+func MapSliceAsSeq[T any, R any](slice []T, mapper func(x *T) R) iter.Seq[R] {
+	return func(yield func(R) bool) {
+		for i := range slice {
+			value := mapper(&slice[i])
+			if !yield(value) {
+				return
+			}
+		}
+	}
+}
+
 func FilterSliceAsNew[T any](slice []T, filter func(x *T) bool) []T {
 	if slice == nil {
 		return slice

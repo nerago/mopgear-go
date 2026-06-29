@@ -15,7 +15,7 @@ import (
 
 const (
 	C_HighsToConsole     = true
-	C_DebugHighs         = false
+	C_DebugHighs         = true
 	C_DiagnoseInfeasible = false
 	c_threads            = 6
 )
@@ -128,8 +128,8 @@ func (build *LinearBuilder) GetInitialSolutionValue(columnNumber ColumnIndex) fl
 	return value
 }
 
-func (build *LinearBuilder) RunHighsThenDiagnose(printer *util.PrintRecorder) *highs.Solution {
-	solution := build.RunHighs(printer)
+func (build *LinearBuilder) RunHighsThenDiagnose(printer *util.PrintRecorder, stopwatch *util.Stopwatch) *highs.Solution {
+	solution := build.RunHighs(printer, stopwatch)
 
 	if solution.Status == highs.ModelStatusInfeasible {
 		diagnoseInfeasible(build, printer)
@@ -138,25 +138,29 @@ func (build *LinearBuilder) RunHighsThenDiagnose(printer *util.PrintRecorder) *h
 	return solution
 }
 
-func (build *LinearBuilder) RunHighs(printer *util.PrintRecorder) *highs.Solution {
-	solver, logFilename, requestGpu := build.prepareHighsRun()
+func (build *LinearBuilder) RunHighs(printer *util.PrintRecorder, stopwatch *util.Stopwatch) *highs.Solution {
+	if stopwatch == nil {
+		stopwatch = util.StopwatchMakeStopped()
+	}
 
-	solution, err := G_HighsPool.RunSolverUnderMutex(solver, requestGpu)
+	solver, logFilename, requestGpu := build.prepareHighsRun(printer != nil)
+
+	solution, err := G_HighsPool.RunSolverUnderMutex(solver, requestGpu, stopwatch)
 	verifyNoError(err)
 
-	log := build.postHighsRun(solver, logFilename)
-	printer.AppendOther(log)
+	build.postHighsRun(solver, logFilename, printer)
 
 	return solution
 }
 
 type LinearResult struct {
-	Solution *highs.Solution
-	Log      *util.PrintRecorder
+	Solution  *highs.Solution
+	Log       *util.PrintRecorder
+	Stopwatch *util.Stopwatch
 }
 
 func (build *LinearBuilder) RunHighsFuture() *channel_op.FutureCancellable[LinearResult] {
-	solver, logFilename, requestGpu := build.prepareHighsRun()
+	solver, logFilename, requestGpu := build.prepareHighsRun(true)
 
 	future := channel_op.FutureCancellable_Make[LinearResult]()
 	future.AddCancelHandler(func() {
@@ -164,49 +168,56 @@ func (build *LinearBuilder) RunHighsFuture() *channel_op.FutureCancellable[Linea
 	})
 
 	go func() {
-		solution, err := G_HighsPool.RunSolverUnderMutex(solver, requestGpu)
+		log := util.PrintRecorder_HoldAll()
+		timer := util.StopwatchMakeStopped()
+
+		solution, err := G_HighsPool.RunSolverUnderMutex(solver, requestGpu, timer)
 		verifyNoError(err)
 
-		log := build.postHighsRun(solver, logFilename)
-
-		future.SetResult(LinearResult{solution, log})
+		build.postHighsRun(solver, logFilename, log)
+		future.SetResult(LinearResult{solution, log, timer})
 	}()
 
 	return future
 }
 
-func (build *LinearBuilder) prepareHighsRun() (*highs.Solver, string, bool) {
-
+func (build *LinearBuilder) prepareHighsRun(needLog bool) (*highs.Solver, string, bool) {
 	solver := G_HighsPool.Get()
 
 	build.configureHighsMatrix(solver)
-	logFilename := makeTempFilename()
+
+	logFilename := ""
+	if needLog {
+		logFilename = makeTempFilename()
+	}
 	build.configureHighsUtil(solver, logFilename)
+
 	requestGpu := build.configureHighsSolver(solver)
 
 	return solver, logFilename, requestGpu
 }
 
-func (*LinearBuilder) postHighsRun(solver *highs.Solver, logFilename string) *util.PrintRecorder {
-	verifyNoError(solver.SetStringOption("log_file", "")) // flush log
-	printer := readLogfile(logFilename)
+func (*LinearBuilder) postHighsRun(solver *highs.Solver, logFilename string, printer *util.PrintRecorder) {
+	if logFilename != "" {
+		verifyNoError(solver.SetStringOption("log_file", "")) // flush log
+		readLogfile(logFilename, printer)
+	}
 
 	// verifyNoError(solver.InterruptSupportDisable())
 
 	verifyNoError(solver.Clear())
 	G_HighsPool.Put(solver)
-
-	return printer
 }
 
-func readLogfile(tempFilename string) *util.PrintRecorder {
-	printer := util.PrintRecorder_HoldAll()
-	if tempFilename != "" {
-		bytes, err := os.ReadFile(tempFilename)
+func readLogfile(tempFilename string, printer *util.PrintRecorder) {
+	if tempFilename != "" && printer != nil {
+		file, err := os.Open(tempFilename)
 		verifyNoError(err)
-		printer.PrintBytes(bytes)
+		defer file.Close()
+
+		_, err = file.WriteTo(printer)
+		verifyNoError(err)
 	}
-	return printer
 }
 
 func (build *LinearBuilder) configureHighsMatrix(solver *highs.Solver) {

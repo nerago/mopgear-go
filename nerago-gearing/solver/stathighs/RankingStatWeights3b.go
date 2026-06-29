@@ -10,6 +10,17 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
+const (
+	c_rank3b_scaleTarget         = 10.0
+	c_rank3b_initial_data_sample = 12
+	c_rank3b_min_total_weight    = 0.0001
+	c_rank3b_time_limit          = 5000
+
+	c_Rank3b_LargeWeight = 10.0
+	c_Rank3b_LargeScore  = 500.0
+	c_Rank3b_LargeRank   = 10000.0
+)
+
 type RankingStatWeightProcess3b struct {
 	printer *util.PrintRecorder
 
@@ -19,6 +30,7 @@ type RankingStatWeightProcess3b struct {
 	dataAllOriginal []rankEntry3b
 	dataSample      []rankEntry3b
 	SCALE1          bool
+	ALGO            int
 
 	build *utilhighs.LinearBuilder
 
@@ -49,10 +61,10 @@ func (ranker *RankingStatWeightProcess3b) SupplyData(inputData []WeightInput) {
 	if ranker.SCALE1 {
 		ranker.scaleStats = make(map[stats.StatType]float64)
 		for _, statType := range stats.StatType_List {
-			ranker.scaleStats[statType] = 1
+			ranker.scaleStats[statType] = c_rank3b_scaleTarget
 		}
 	} else {
-		ranker.scaleStats = chooseStatScaling(inputData, ranker.printer)
+		ranker.scaleStats = chooseStatScaling(inputData, c_rank3b_scaleTarget, ranker.printer)
 	}
 	ranker.dataAllOriginal = util.MapSliceAsNew(inputData, func(input *WeightInput) rankEntry3b {
 		return rankEntry3b{
@@ -73,40 +85,59 @@ func (ranker *RankingStatWeightProcess3b) SetTargetRatios(targetRatios stats.Sim
 	ranker.requiredSims = targetRatios.NonZeroTypes()
 }
 
-func (ranker *RankingStatWeightProcess3b) Run() WeightResult {
+func (ranker *RankingStatWeightProcess3b) newBuilder() {
+	ranker.build = new(utilhighs.LinearBuilder)
+	ranker.build.Minimise = true
+	ranker.build.TimeLimitSeconds = c_rank3b_time_limit
+	ranker.build.Solver = utilhighs.Solver_LP_NO_GPU
+}
+
+func (ranker *RankingStatWeightProcess3b) Run(optionalInitial *WeightResult, stopwatch *util.Stopwatch) WeightResult {
 
 	// FIRST ROUND: minimal data, no initial values
 	ranker.dataSample = takeDataSample_Start(ranker.dataAllOriginal, 12)
-	ranker.build = new(utilhighs.LinearBuilder)
-	ranker.build.Minimise = true
-	ranker.build.TimeLimitSeconds = c_rank3_time_limit
-	ranker.build.Solver = utilhighs.Solver_LP_USE_GPU
+	ranker.newBuilder()
 	ranker.prepareRankings()
 	ranker.createWeightColumns()
 	ranker.doAlgos()
-	ranker.setupDumbInitialSolution()
-	solution1 := ranker.build.RunHighs(ranker.printer)
+	if optionalInitial != nil {
+		ranker.setupInitialSolutionFromExternal(*optionalInitial)
+	} else {
+		ranker.setupDumbInitialSolution()
+	}
+	solution1 := ranker.build.RunHighs(ranker.printer, stopwatch)
 	_ = ranker.extractAndReportSolution(solution1)
 
 	// FULL RUN
 	ranker.dataSample = ranker.dataAllOriginal
-	ranker.build = new(utilhighs.LinearBuilder)
-	ranker.build.Minimise = true
-	ranker.build.TimeLimitSeconds = c_rank3_time_limit
-	ranker.build.Solver = utilhighs.Solver_LP_USE_GPU
+	ranker.newBuilder()
 	ranker.prepareRankings()
 	ranker.createWeightColumns()
 	ranker.doAlgos()
 	ranker.setupInitialSolutionFromPreviousWeightOnly(solution1)
-	solution2 := ranker.build.RunHighs(ranker.printer)
+	solution2 := ranker.build.RunHighs(ranker.printer, stopwatch)
+	weights2 := ranker.extractAndReportSolution(solution2)
+
+	return weights2
+}
+
+func (ranker *RankingStatWeightProcess3b) RunSinglePassFromExternal(initial WeightResult, stopwatch *util.Stopwatch) WeightResult {
+	// FULL RUN
+	ranker.dataSample = ranker.dataAllOriginal
+	ranker.newBuilder()
+	ranker.prepareRankings()
+	ranker.createWeightColumns()
+	ranker.doAlgos()
+	ranker.setupInitialSolutionFromExternal(initial)
+	solution2 := ranker.build.RunHighs(ranker.printer, stopwatch)
 	weights2 := ranker.extractAndReportSolution(solution2)
 
 	return weights2
 }
 
 func (ranker *RankingStatWeightProcess3b) createWeightColumns() {
-	lo := -c_RankLargeWeight
-	hi := c_RankLargeWeight
+	lo := -c_Rank3b_LargeWeight
+	hi := c_Rank3b_LargeWeight
 
 	sumWeights := utilhighs.ConstraintRow{Debug: "sumWeights"}
 	ranker.weightColumns = make(map[stats.StatType]utilhighs.ColumnIndex)
@@ -143,10 +174,17 @@ func (ranker *RankingStatWeightProcess3b) prepareRankings() {
 }
 
 func (ranker *RankingStatWeightProcess3b) doAlgos() {
-	ranker.makeDataListEntryColumns()
-	for baseIndex := range ranker.dataSample {
-		for compareTo := baseIndex + 1; compareTo < len(ranker.dataSample); compareTo++ {
-			ranker.makeEntryPairSequenceConstraintsStrictScoreOrderWithSlackVar(&ranker.dataSample[baseIndex], &ranker.dataSample[compareTo], baseIndex, compareTo)
+	if ranker.ALGO == 0 {
+		ranker.makeDataListEntryColumns()
+		for baseIndex := range ranker.dataSample {
+			for compareTo := baseIndex + 1; compareTo < len(ranker.dataSample); compareTo++ {
+				ranker.makeEntryPairSequenceConstraintsStrictScoreOrderWithSlackVar(&ranker.dataSample[baseIndex], &ranker.dataSample[compareTo], baseIndex, compareTo)
+			}
+		}
+	} else {
+		ranker.makeDataListEntryColumns()
+		for baseIndex := 0; baseIndex < len(ranker.dataSample)-1; baseIndex++ {
+			ranker.makeEntryPairSequenceConstraintsStrictScoreOrderWithSlackVar(&ranker.dataSample[baseIndex], &ranker.dataSample[baseIndex+1], baseIndex, baseIndex+1)
 		}
 	}
 }
@@ -236,14 +274,14 @@ func (ranker *RankingStatWeightProcess3b) setupInitialSolutionFromPreviousWeight
 	ranker.build.ValidateInitialSolutionState()
 }
 
-func (ranker *RankingStatWeightProcess3b) setupInitialSolutionFromExternal2(weights WeightResult) {
+func (ranker *RankingStatWeightProcess3b) setupInitialSolutionFromExternal(weights WeightResult) {
 	internalWeights := WeightResult_Make()
 	for statType, colWeight := range ranker.weightColumns {
 		basicValue := weights.Get(statType)
-		scale := ranker.scaleStats[statType]
-		scaledValue := basicValue * scale
-		ranker.build.SetInitialSolutionValue(colWeight, scaledValue)
-		internalWeights.Put(statType, scaledValue)
+		//scale := ranker.scaleStats[statType]
+		//scaledValue := basicValue * scale
+		ranker.build.SetInitialSolutionValue(colWeight, basicValue)
+		internalWeights.Put(statType, basicValue)
 	}
 
 	ranker.setupInitialRemainingVariables(internalWeights)
@@ -303,7 +341,9 @@ func (ranker *RankingStatWeightProcess3b) extractAndReportSolution(solution *hig
 	baseStat := ranker.requiredStats[0]
 	divideBy := statWeightResult.Get(baseStat)
 	for _, statType := range ranker.requiredStats {
-		statWeightResult.Put(statType, statWeightResult.Get(statType)/divideBy)
+		value := statWeightResult.Get(statType) / divideBy
+		statWeightResult.Put(statType, value)
+		ranker.printer.Printf("%10s %f\n", statType.Name(), value)
 	}
 
 	return statWeightResult

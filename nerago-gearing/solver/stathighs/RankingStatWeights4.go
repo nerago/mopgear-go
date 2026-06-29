@@ -12,13 +12,13 @@ import (
 )
 
 const (
-	// c_RankLargeWeight = 50.0
-	// c_RankLargeScore  = 500.0
-	c_RankLimitScore    = 200.0
-	c_RankInitialSample = 15
-	c_RankAddSample     = 5
-
-	// c_RankLargeRank   = 10000.0
+	c_Rank4LimitScore    = 200.0
+	c_Rank4InitialSample = 15
+	c_Rank4AddSample     = 5
+	c_Rank4ScaleTarget   = 1.0
+	c_Rank4LargeWeight   = 50.0
+	c_Rank4LargeScore    = 500.0
+	c_Rank4LargeRank     = 10000.0
 )
 
 type RankingStatWeightProcess4 struct {
@@ -70,7 +70,7 @@ func (process *RankingStatWeightProcess4) SupplyData(inputData []WeightInput) {
 }
 
 func (run *rankInternalRun4) supplyData(inputData []WeightInput) {
-	run.scaleStats = chooseStatScaling(inputData, run.process.printer)
+	run.scaleStats = chooseStatScaling(inputData, c_Rank4ScaleTarget, run.process.printer)
 	run.runData = util.MapSliceAsNew(inputData, func(input *WeightInput) rankEntry4 {
 		return rankEntry4{
 			data:        input,
@@ -82,8 +82,8 @@ func (run *rankInternalRun4) supplyData(inputData []WeightInput) {
 	})
 }
 
-func (ranker *RankingStatWeightProcess4) SetRequiredStats(requiredStats []stats.StatType) {
-	ranker.requiredStats = requiredStats
+func (process *RankingStatWeightProcess4) SetRequiredStats(requiredStats []stats.StatType) {
+	process.requiredStats = requiredStats
 }
 
 func (process *RankingStatWeightProcess4) SetTargetRatios(targetRatios stats.SimData) {
@@ -91,20 +91,20 @@ func (process *RankingStatWeightProcess4) SetTargetRatios(targetRatios stats.Sim
 	process.requiredSims = targetRatios.NonZeroTypes()
 }
 
-func (process *RankingStatWeightProcess4) Run(doRound2 bool) []WeightResult {
+func (process *RankingStatWeightProcess4) Run(overallStopwatch *util.Stopwatch) []WeightResult {
 	weightResultList := make([]WeightResult, 0)
 
 	// FIRST ROUND: minimal data, dumb initial values
 	process.printer.Println("RankingStatWeightProcess4 FIRST ROUND")
 	run1 := rankInternalRun4_create(process)
 	run1.build.TimeLimitSeconds = 500
-	run1.supplyData(takeDataSample_Random(process.dataAll, c_RankInitialSample))
+	run1.supplyData(takeDataSample_Random(process.dataAll, c_Rank4InitialSample))
 	run1.prepareRankings()
 	run1.createWeightColumns()
 	run1.makeDataListEntryColumns()
 	run1.makeDataListPairRules()
 	run1.setupInitialSolutionDumb2()
-	weights1, solution1 := run1.run()
+	weights1, solution1 := run1.run(overallStopwatch)
 	weights1.ApplyIfValue(func(w WeightResult) { weightResultList = append(weightResultList, w) })
 
 	// noinitial, sample25, accuracy = 85.238976, Duration = 5m40.3326511s
@@ -115,8 +115,8 @@ func (process *RankingStatWeightProcess4) Run(doRound2 bool) []WeightResult {
 	latestSolution := solution1
 
 	times := make(map[int]time.Duration)
-	for size := c_RankInitialSample + c_RankAddSample; size <= len(process.dataAll); size += c_RankAddSample {
-		startTime := time.Now()
+	for size := c_Rank4InitialSample + c_Rank4AddSample; size <= len(process.dataAll); size += c_Rank4AddSample {
+		roundTimer := util.StopwatchMakeStopped()
 
 		dataSample := takeDataSample_Random(process.dataAll, size)
 		process.printer.Println("RankingStatWeightProcess4 SECOND ROUND " + strconv.Itoa(size))
@@ -128,11 +128,11 @@ func (process *RankingStatWeightProcess4) Run(doRound2 bool) []WeightResult {
 		run2.makeDataListEntryColumns()
 		run2.makeDataListPairRules()
 		run2.setupInitialSolutionFromPrevious(latestRun, latestSolution)
-		weights2, solution2 := run2.run()
+		weights2, solution2 := run2.run(roundTimer)
 		weights2.ApplyIfValue(func(w WeightResult) { weightResultList = append(weightResultList, w) })
 
-		timeTaken := time.Since(startTime)
-		times[size] = timeTaken
+		times[size] = roundTimer.Elapsed()
+		overallStopwatch.AddElapsedFrom(roundTimer)
 
 		if solution2.HasSolution() {
 			latestRun = run2
@@ -151,7 +151,7 @@ func (process *RankingStatWeightProcess4) Run(doRound2 bool) []WeightResult {
 	return weightResultList
 }
 
-func (process *RankingStatWeightProcess4) RunUsingExternalStart(initialWeight WeightResult) util.Optional[WeightResult] {
+func (process *RankingStatWeightProcess4) RunUsingExternalStart(initialWeight WeightResult, stopwatch *util.Stopwatch) util.Optional[WeightResult] {
 	run2 := rankInternalRun4_create(process)
 	run2.build.TimeLimitSeconds = 2500
 	run2.supplyData(process.dataAll)
@@ -160,7 +160,7 @@ func (process *RankingStatWeightProcess4) RunUsingExternalStart(initialWeight We
 	run2.makeDataListEntryColumns()
 	run2.makeDataListPairRules()
 	run2.setupInitialSolutionFromExternal2(initialWeight)
-	weights2, _ := run2.run()
+	weights2, _ := run2.run(stopwatch)
 	return weights2
 }
 
@@ -191,8 +191,8 @@ func rankInternalRun4_create(process *RankingStatWeightProcess4) *rankInternalRu
 	return run
 }
 
-func (run *rankInternalRun4) run() (util.Optional[WeightResult], *highs.Solution) {
-	solution := run.build.RunHighs(run.process.printer)
+func (run *rankInternalRun4) run(stopwatch *util.Stopwatch) (util.Optional[WeightResult], *highs.Solution) {
+	solution := run.build.RunHighs(run.process.printer, stopwatch)
 	if solution.HasSolution() {
 		weights := run.extractAndReportSolution(solution)
 		return util.Optional_OfValue(weights), solution
@@ -202,8 +202,8 @@ func (run *rankInternalRun4) run() (util.Optional[WeightResult], *highs.Solution
 }
 
 func (run *rankInternalRun4) createWeightColumns() {
-	lo := -c_RankLargeWeight
-	hi := c_RankLargeWeight
+	lo := -c_Rank4LargeWeight
+	hi := c_Rank4LargeWeight
 	strengthMin := 0.01
 
 	sumWeights := utilhighs.ConstraintRow{Debug: "sumWeights"}
@@ -275,7 +275,7 @@ func (run *rankInternalRun4) makeEntryColumnRefs(entry *rankEntry4, maxRank floa
 	// however their increasing sequence should correlate to combinedSimRankScore
 	// which is what we'll optimise for
 	rankStr := strconv.FormatInt(int64(entry.targetRank), 10)
-	entry.scoreColumn = run.build.CreateColumnGeneral(highs.Continuous, -c_RankLimitScore, c_RankLimitScore, utilhighs.DebugText("score-"+rankStr))
+	entry.scoreColumn = run.build.CreateColumnGeneral(highs.Continuous, -c_Rank4LimitScore, c_Rank4LimitScore, utilhighs.DebugText("score-"+rankStr))
 
 	scoreRow := utilhighs.ConstraintRow{Debug: "scoreRow"}
 	for _, statType := range run.process.requiredStats {
@@ -324,8 +324,8 @@ func (run *rankInternalRun4) makeEntryPairScoreChecks(one *rankEntry4, two *rank
 	oneGreaterRow := utilhighs.ConstraintRow{Debug: "oneGreaterRow"}
 	oneGreaterRow.Add(two.scoreColumn, -1)
 	oneGreaterRow.Add(one.scoreColumn, 1)
-	oneGreaterRow.Add(oneIsGreater, -c_RankLargeScore)
-	oneGreaterRow.Build(run.build, -c_RankLargeScore, 0)
+	oneGreaterRow.Add(oneIsGreater, -c_Rank4LargeScore)
+	oneGreaterRow.Build(run.build, -c_Rank4LargeScore, 0)
 
 	// twoGreaterRow := utilhighs.ConstraintRowBuild{Debug: "twoGreaterRow"}
 	// twoGreaterRow.Add(one.scoreColumn, -1)

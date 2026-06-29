@@ -21,7 +21,7 @@ func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, gear_model *gear_m
 
 	setup := setupGearSet(&build, gear_model, itemOptions, 1)
 
-	solution := build.RunHighsThenDiagnose(printer)
+	solution := build.RunHighsThenDiagnose(printer, nil)
 	printer.Printf("SOLUTION STATUS = %s\n", solution.Status.String())
 
 	debugPrint(solution, setup, printer)

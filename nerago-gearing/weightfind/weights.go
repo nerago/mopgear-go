@@ -56,7 +56,7 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 	process.SetRequiredStats(gearModel.StatsForWeighting)
 	process.SetTestMode(simSpeed == simulate.RunSize_TestOnly)
 	process.SupplyData(inputDataGrid)
-	weights := process.Run()
+	weights := process.Run(nil)
 	printer.Println(">>>>> Grid Weights:")
 	pawn := tools.WritePawnString(weights, printer)
 

@@ -145,6 +145,12 @@ func (print *PrintRecorder) PrintBytes(bytes []byte) {
 	}
 }
 
+// Write for Writer interface
+func (print *PrintRecorder) Write(p []byte) (n int, err error) {
+	print.PrintBytes(p)
+	return len(p), nil
+}
+
 func (print *PrintRecorder) AppendOther(other *PrintRecorder) {
 	if !other.holdOutput {
 		panic("can't append printer that wasn't holding output")

@@ -1,6 +1,7 @@
 package channel_op
 
 import (
+	"paladin_gearing_go/util"
 	"sync"
 	"testing"
 	"time"
@@ -14,7 +15,7 @@ func TestFlowSetResult(t *testing.T) {
 		calledCancelHandler = true
 	})
 	waitGroup.Go(func() {
-		start := time.Now()
+		timer := util.StopwatchMakeStarted()
 		value, ok := future.WaitForResult()
 		if !ok {
 			t.Error("bad ok")
@@ -22,7 +23,7 @@ func TestFlowSetResult(t *testing.T) {
 		if value != 123 {
 			t.Error("bad value")
 		}
-		taken := time.Since(start)
+		taken := timer.Elapsed()
 		if taken < 2*time.Second {
 			t.Error("finished too fast")
 		}
@@ -72,7 +73,7 @@ func TestFlowSetEmpty(t *testing.T) {
 		calledCancelHandler = true
 	})
 	waitGroup.Go(func() {
-		start := time.Now()
+		timer := util.StopwatchMakeStarted()
 		value, ok := future.WaitForResult()
 		if ok {
 			t.Error("bad ok")
@@ -80,7 +81,7 @@ func TestFlowSetEmpty(t *testing.T) {
 		if value != 0 {
 			t.Error("bad value")
 		}
-		taken := time.Since(start)
+		taken := timer.Elapsed()
 		if taken < 2*time.Second {
 			t.Error("finished too fast")
 		}
@@ -130,7 +131,7 @@ func TestFlowCancel(t *testing.T) {
 		calledCancelHandler = true
 	})
 	waitGroup.Go(func() {
-		start := time.Now()
+		timer := util.StopwatchMakeStarted()
 		value, ok := future.WaitForResult()
 		if ok {
 			t.Error("bad ok")
@@ -138,7 +139,7 @@ func TestFlowCancel(t *testing.T) {
 		if value != 0 {
 			t.Error("bad value")
 		}
-		taken := time.Since(start)
+		taken := timer.Elapsed()
 		if taken < 2*time.Second {
 			t.Error("finished too fast")
 		}
@@ -188,7 +189,7 @@ func TestFlowCancelThenDone(t *testing.T) {
 		calledCancelHandler = true
 	})
 	waitGroup.Go(func() {
-		start := time.Now()
+		timer := util.StopwatchMakeStarted()
 		value, ok := future.WaitForResult()
 		if ok {
 			t.Error("bad ok")
@@ -196,7 +197,7 @@ func TestFlowCancelThenDone(t *testing.T) {
 		if value != 0 {
 			t.Error("bad value")
 		}
-		taken := time.Since(start)
+		taken := timer.Elapsed()
 		if taken < 1*time.Second {
 			t.Error("finished too fast")
 		}
@@ -254,7 +255,7 @@ func TestFlowDoneThenCancel(t *testing.T) {
 		calledCancelHandler = true
 	})
 	waitGroup.Go(func() {
-		start := time.Now()
+		timer := util.StopwatchMakeStarted()
 		value, ok := future.WaitForResult()
 		if !ok {
 			t.Error("bad ok")
@@ -262,7 +263,7 @@ func TestFlowDoneThenCancel(t *testing.T) {
 		if value != 123 {
 			t.Error("bad value")
 		}
-		taken := time.Since(start)
+		taken := timer.Elapsed()
 		if taken < 1*time.Second {
 			t.Error("finished too fast")
 		}

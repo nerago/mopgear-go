@@ -385,21 +385,21 @@ func statWeightsGridFromInitialT5(printer *util.PrintRecorder) {
 	gearModel = model.Model_PallyProtMitigation_WithSet()
 	priority = initialPriorityDeath
 	trinkets = [2]items.ItemId{trinketVialCorruptHeroic, trinketThokTailHeroic}
-	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight,  gearModel.SimRatioWeighting, weightFileOut, printer, simSpeed)
+	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, gearModel.SimRatioWeighting, weightFileOut, printer, simSpeed)
 
 	weightFileOut = files.WeightDpsFile
 	gearFile = files.GearFileProtDps
 	gearModel = model.Model_PallyProtDps()
 	priority = initialPriorityDps
 	trinkets = [2]items.ItemId{trinketCurseHubrisHeroic, trinketSkeerBloodHeroic}
-	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight,  gearModel.SimRatioWeighting, weightFileOut, printer, simSpeed)
+	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, gearModel.SimRatioWeighting, weightFileOut, printer, simSpeed)
 
 	weightFileOut = files.WeightCompromiseFile
 	gearFile = files.GearFileProtCompromise
 	gearModel = model.Model_PallyProtCompromise()
 	priority = initialPriorityCompromise
 	trinkets = [2]items.ItemId{trinketCurseHubrisHeroic, trinketThokTailHeroic}
-	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight,  gearModel.SimRatioWeighting, weightFileOut, printer, simSpeed)
+	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, gearModel.SimRatioWeighting, weightFileOut, printer, simSpeed)
 }
 
 func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.StatType, gearFile string, trinkets [2]items.ItemId, fight stats.WowSim_Fight, ratios stats.SimData, weightFileOut string, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize) {
@@ -442,7 +442,7 @@ func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.Stat
 		process.SetRequiredStats(model.StatsForWeighting)
 		process.SetTargetRatios(ratios)
 		process.SupplyData(inputData)
-		weights = process.Run()
+		weights = process.Run(nil)
 	}
 
 	pawn := tools.WritePawnString(weights, printer)

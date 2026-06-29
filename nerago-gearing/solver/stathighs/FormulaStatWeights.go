@@ -57,7 +57,7 @@ func (form *FormulaStatWeightProcess) SetMinimumIncludeRate(percent float64) {
 	form.minimumIncludeRate = percent
 }
 
-func (form *FormulaStatWeightProcess) Run() WeightResult {
+func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch) WeightResult {
 	form.build = new(utilhighs.LinearBuilder)
 	form.build.Minimise = true
 	form.build.Solver = utilhighs.Solver_MIP_Interior
@@ -75,14 +75,15 @@ func (form *FormulaStatWeightProcess) Run() WeightResult {
 
 	form.includeCountRow.Build(form.build, float64(len(form.inputData))*form.minimumIncludeRate, utilhighs.C_PlusInf)
 
-	solution := form.build.RunHighs(form.printer)
+	solution := form.build.RunHighs(form.printer, stopwatch)
 
 	return form.extractAndReportSolution(solution)
 }
 
 func (form *FormulaStatWeightProcess) chooseScaling() {
-	form.scaleSims = chooseSimScalingUnfriendly(form.inputData, form.printer)
-	form.scaleStats = chooseStatScaling(form.inputData, form.printer)
+	target := 1.0 // TODO consider non-unit range
+	form.scaleSims = chooseSimScalingUnfriendly(form.inputData, target, form.printer)
+	form.scaleStats = chooseStatScaling(form.inputData, target, form.printer)
 }
 
 func (form *FormulaStatWeightProcess) createWeightColumns() {

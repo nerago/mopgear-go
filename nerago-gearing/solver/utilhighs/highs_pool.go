@@ -1,6 +1,7 @@
 package utilhighs
 
 import (
+	"paladin_gearing_go/util"
 	"sync"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -39,18 +40,24 @@ func (pool *highsPoolType) Put(solver *highs.Solver) {
 	// pool.tryClosePending()
 }
 
-func (pool *highsPoolType) RunSolverUnderMutex(solver *highs.Solver, requestGpu bool) (solution *highs.Solution, err error) {
+func (pool *highsPoolType) RunSolverUnderMutex(solver *highs.Solver, requestGpu bool, stopwatch *util.Stopwatch) (solution *highs.Solution, err error) {
 	// pool.runMutex.RLock()
 	// defer pool.runMutex.RUnlock()
 
 	if requestGpu {
+		stopwatch.Start()
 		verifyNoError(solver.Presolve())
+		stopwatch.Stop()
 
 		pool.gpuMutex.Lock()
+		stopwatch.Start()
 		solution, err = solver.Run()
+		stopwatch.Stop()
 		pool.gpuMutex.Unlock()
 	} else {
+		stopwatch.Start()
 		solution, err = solver.Run()
+		stopwatch.Stop()
 	}
 
 	return solution, err

@@ -89,10 +89,10 @@ func core(printer *util.PrintRecorder) {
 	// statWeightsFitting2(printer)
 	// statWeightsComplex(printer)
 	// statWeightsRanking(printer)
-	// statWeightsGridIntoRanking(printer)
+	statWeightsGridIntoRanking(printer)
 	// statWeightsCustom(printer)
 
-	statWeights_CompareAlgorithms(printer)
+	//statWeights_CompareAlgorithms(printer)
 
 	// statWeightsGrid_updateAll(printer)
 

@@ -308,8 +308,9 @@ func (fitseg *FittingSingleStatSegmentsProcess) filterDataStatRange(inputData []
 ////////////////////////////////////////////////////////
 
 type FittingSingleStatWeightProcess struct {
-	printer *util.PrintRecorder
-	build   *utilhighs.LinearBuilder
+	printer   *util.PrintRecorder
+	stopwatch util.Stopwatch
+	build     *utilhighs.LinearBuilder
 
 	minimumIncludeRate float64
 	inputData          []fittingSample
@@ -328,12 +329,13 @@ type FittingSingleStatWeightProcess struct {
 }
 
 type FittingSingleStatResult struct {
-	LineSlope      float64
-	LineOffset     float64
-	Minimum        uint32
-	Maximum        uint32
-	IncludeCount   uint32
-	IncludePercent float64
+	LineSlope       float64
+	LineOffset      float64
+	Minimum         uint32
+	Maximum         uint32
+	IncludeCount    uint32
+	IncludePercent  float64
+	StopwatchSolver util.Stopwatch
 }
 
 type fittingSample struct {
@@ -441,7 +443,7 @@ func (fit *FittingSingleStatWeightProcess) Run() util.Optional[FittingSingleStat
 
 	fit.includeCountRow.Build(fit.build, float64(len(fit.inputData))*fit.minimumIncludeRate, utilhighs.C_PlusInf)
 
-	solution := fit.build.RunHighs(fit.printer)
+	solution := fit.build.RunHighs(fit.printer, &fit.stopwatch)
 	fit.printer.Println(solution.Status.String())
 
 	fit.build.DebugPrintColumns(solution, fit.printer)
@@ -519,6 +521,8 @@ func (fit *FittingSingleStatWeightProcess) buildResult(solution *highs.Solution)
 	for _, sample := range inputSorted {
 		fit.printer.Printf("INC %f %f\n", sample.statValue, solution.ColValues[sample.includeColumn])
 	}
+
+	result.StopwatchSolver = fit.stopwatch
 
 	return result
 }
