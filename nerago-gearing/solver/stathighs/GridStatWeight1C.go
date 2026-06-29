@@ -56,7 +56,7 @@ func (grid *GridStatWeightProcess1C) SetRequiredStats(requiredStats []stats.Stat
 func (grid *GridStatWeightProcess1C) SetTargetRatios(targetRatios stats.SimData) {
 	sum := 0.0
 	for simType, ratio := range targetRatios.Seq() {
-		if ratio >= 0 {
+		if ratio > 0 {
 			grid.simTypes = append(grid.simTypes, simType)
 		}
 		sum += ratio
@@ -197,7 +197,7 @@ func (grid *GridStatWeightProcess1C) chooseScalesBySim() {
 func (grid *GridStatWeightProcess1C) removeOutliers() {
 	for _, statType := range grid.requiredStats {
 		for _, simType := range grid.simTypes {
-			grid.unitStatValues.MapInternalSlice(statType, simType, func(dataSlice []float64) []float64 {
+			grid.unitStatValues.MapInternalSliceIfExists(statType, simType, func(dataSlice []float64) []float64 {
 				if len(dataSlice) >= 12 {
 					slices.Sort(dataSlice)
 					dataSlice = dataSlice[len(dataSlice)/6 : len(dataSlice)*5/6]

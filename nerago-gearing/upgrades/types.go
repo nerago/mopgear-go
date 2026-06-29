@@ -156,7 +156,7 @@ func (result upgradeItemResultWithSim) increaseSimStr(prefixNote bool) string {
 	return str
 }
 
-func (result upgradeItemResultWithSim) increaseSimBreakdown() stats.SimData {
+func (result upgradeItemResultWithSim) increaseSimBreakdown() *stats.SimData {
 	return result.sim.IncreaseSimBreakdown(&result.baseSim)
 }
 

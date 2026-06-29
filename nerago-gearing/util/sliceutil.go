@@ -298,7 +298,7 @@ func CalculateRanking[T any](highGood bool, inputData []T, toScore func(*T) floa
 	}
 
 	return func(yield func(*T, int) bool) {
-		for i := range len(inputData) {
+		for i := range rankArray {
 			entry := &rankArray[i]
 			if !yield(entry.pointer, i) {
 				return
@@ -333,6 +333,7 @@ func CalculateRankingRanges[T any](highGood bool, inputData []T, toScore func(*T
 	type internalEntry struct {
 		score   float64
 		pointer *T
+		hilo    *HiLoInt
 	}
 
 	rankArray := make([]internalEntry, len(inputData))
@@ -341,6 +342,7 @@ func CalculateRankingRanges[T any](highGood bool, inputData []T, toScore func(*T
 		rankArray[i] = internalEntry{
 			toScore(pointer),
 			pointer,
+			nil,
 		}
 	}
 
@@ -350,23 +352,24 @@ func CalculateRankingRanges[T any](highGood bool, inputData []T, toScore func(*T
 		slices.SortFunc(rankArray, func(a, b internalEntry) int { return cmp.Compare(b.score, a.score) })
 	}
 
-	grouped := make(map[float64]HiLoInt)
-	for rankIndex := range rankArray {
-		entryScore := rankArray[rankIndex].score
-		if hiLo, hasExisting := grouped[entryScore]; hasExisting {
-			hiLo.Hi = rankIndex
-			grouped[entryScore] = hiLo
+	prevScore := rankArray[0].score
+	prevHiLo := &HiLoInt{0, 0}
+	for index := range rankArray {
+		entry := &rankArray[index]
+		if FloatsApproxEquals(entry.score, prevScore) {
+			prevHiLo.Hi = index
+			entry.hilo = prevHiLo
 		} else {
-			grouped[entryScore] = HiLoInt{Lo: rankIndex, Hi: rankIndex}
+			prevHiLo = &HiLoInt{index, index}
+			entry.hilo = prevHiLo
 		}
 	}
 
 	return func(yield func(*T, HiLoInt) bool) {
 		for i := range rankArray {
 			entry := &rankArray[i]
-			score := entry.score
-			hiLo := grouped[score]
-			if !yield(entry.pointer, hiLo) {
+			hiLo := entry.hilo
+			if !yield(entry.pointer, *hiLo) {
 				return
 			}
 		}

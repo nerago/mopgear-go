@@ -150,10 +150,10 @@ func findT5TrinketPermutations(printer *util.PrintRecorder) {
 		name1 := db.WowSimDB_ByIdAndUpgrade(res.combo[1], 0).BaseName()
 		csv.AddString(name1)
 
-		csv.AddFloat64(res.sim.DPS, 0)
-		csv.AddFloat64(res.sim.DTPS, 0)
-		csv.AddFloat64(res.sim.TMI, 3)
-		csv.AddFloat64(res.sim.DEATH*100, 3)
+		csv.AddFloat64(res.sim.DPS(), 0)
+		csv.AddFloat64(res.sim.DTPS(), 0)
+		csv.AddFloat64(res.sim.TMI(), 3)
+		csv.AddFloat64(res.sim.DEATH()*100, 3)
 		csv.FinishColumn()
 	}
 

@@ -59,7 +59,7 @@ func (grid *GridStatWeightProcess) SetRequiredStats(requiredStats []stats.StatTy
 func (grid *GridStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
 	sum := 0.0
 	for simType, ratio := range targetRatios.Seq() {
-		if ratio >= 0 {
+		if ratio > 0 {
 			grid.simTypes = append(grid.simTypes, simType)
 		}
 		sum += ratio

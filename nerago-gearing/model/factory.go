@@ -185,50 +185,49 @@ func Model_Testing() Model {
 }
 
 // now about noset - tortos, horridon, ironqon, jikun, durumu
-var SimRatio_generalMiti = stats.SimData{
-	DPS:   0.2,
-	DEATH: 0.2,
-	TMI:   0.2,
-	DTPS:  0.4,
-}
+var SimRatio_generalMiti = stats.SimData_Make(
+	Sim_DPS, 0.2,
+	Sim_DEATH, 0.2,
+	Sim_TMI, 0.2,
+	Sim_DTPS, 0.4,
+)
 
 // for withset - malkrok
-var SimRatio_malkrokWeight = stats.SimData{
-	DPS:   0.10,
-	DEATH: 0.3,
-	TMI:   0.05,
-	DTPS:  0.55,
-}
+var SimRatio_malkrokWeight = stats.SimData_Make(
+	Sim_DPS, 0.10,
+	Sim_DEATH, 0.3,
+	Sim_TMI, 0.05,
+	Sim_DTPS, 0.55,
+)
 
 // for compromise set - animus
-var SimRatio_animusWeight = stats.SimData{
-	DPS:   0.5,
-	DEATH: 0.1,
-	TMI:   0.3,
-	DTPS:  0.1,
-}
+var SimRatio_animusWeight = stats.SimData_Make(
+	Sim_DPS, 0.5,
+	Sim_DEATH, 0.1,
+	Sim_TMI, 0.3,
+	Sim_DTPS, 0.1,
+)
 
 // for dps set
-var SimRatio_dpsWeight = stats.SimData{
-	DPS:   0.90,
-	DEATH: 0.03,
-	TMI:   0.03,
-	DTPS:  0.04,
-}
+var SimRatio_dpsWeight = stats.SimData_Make(
+	Sim_DPS, 0.90,
+	Sim_DEATH, 0.03,
+	Sim_TMI, 0.03,
+	Sim_DTPS, 0.04,
+)
 
 // for heal set
-var SimRatio_healWeight = stats.SimData{
-	DPS:   0.05,
-	DEATH: 0.1,
-	TMI:   0.1,
-	DTPS:  0.3,
-	HPS:   0.45,
-}
+var SimRatio_healWeight = stats.SimData_Make(
+	Sim_DEATH, 0.1,
+	Sim_TMI, 0.1,
+	Sim_DTPS, 0.3,
+	Sim_HPS, 0.5,
+)
 
 // for ret set
-var SimRatio_retWeight = stats.SimData{
-	DPS: 1,
-}
+var SimRatio_retWeight = stats.SimData_Make(
+	Sim_DPS, 1,
+)
 
 var StatsForWeighting_strengthTank = []stats.StatType{
 	stats.Stat_Strength,

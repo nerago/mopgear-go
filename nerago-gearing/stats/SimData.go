@@ -59,28 +59,43 @@ func (types SimType) Name() string {
 var SimTypeList = []SimType{Sim_DPS, Sim_TPS, Sim_DTPS, Sim_HPS, Sim_TMI, Sim_DEATH}
 
 type SimData struct {
-	DPS, TPS, DTPS, HPS, TMI, DEATH float64
+	data [6]float64
 }
 
-func (stats SimData) Print(printer *util.PrintRecorder) {
-	printer.Printf("DPS\t%.2f\n", stats.DPS)
-	printer.Printf("TPS\t%.2f\n", stats.TPS)
-	printer.Printf("DTPS\t%.2f\n", stats.DTPS)
-	printer.Printf("HPS\t%.2f\n", stats.HPS)
-	printer.Printf("TMI\t%.2f\n", stats.TMI)
-	printer.Printf("DEATH\t%.2f\n", stats.DEATH*100)
+func SimData_Make(parts ...any) SimData {
+	sim := SimData{}
+	for i := 0; i < len(parts); i += 2 {
+		simType := parts[i].(SimType)
+
+		switch value := parts[i+1].(type) {
+		case int:
+			sim.Set(simType, float64(value))
+		case float64:
+			sim.Set(simType, value)
+		}
+	}
+	return sim
 }
 
-func (stats SimData) CompactStringSignedPercent() string {
+func (sim *SimData) Print(printer *util.PrintRecorder) {
+	printer.Printf("DPS\t%.2f\n", sim.DPS())
+	printer.Printf("TPS\t%.2f\n", sim.TPS())
+	printer.Printf("DTPS\t%.2f\n", sim.DTPS())
+	printer.Printf("HPS\t%.2f\n", sim.HPS())
+	printer.Printf("TMI\t%.2f\n", sim.TMI())
+	printer.Printf("DEATH\t%.2f\n", sim.DEATH()*100)
+}
+
+func (sim *SimData) CompactStringSignedPercent() string {
 	var build util.StringBuild2
 	build.WriteString("dps=")
-	appendFloatSignedPercent(stats.DPS, &build)
+	appendFloatSignedPercent(sim.DPS(), &build)
 	build.WriteString("dtps=")
-	appendFloatSignedPercent(stats.DTPS, &build)
+	appendFloatSignedPercent(sim.DTPS(), &build)
 	build.WriteString("tmi=")
-	appendFloatSignedPercent(stats.TMI, &build)
+	appendFloatSignedPercent(sim.TMI(), &build)
 	build.WriteString("death=")
-	appendFloatSignedPercent(stats.DEATH*100, &build)
+	appendFloatSignedPercent(sim.DEATH()*100, &build)
 	return build.String()
 }
 
@@ -94,131 +109,108 @@ func appendFloatSignedPercent(value float64, build *util.StringBuild2) {
 	build.WriteFloat64_RightPadded(value, 1, padSize)
 }
 
-func (stats SimData) CompactStringGeneral() string {
+func (sim *SimData) CompactStringGeneral() string {
 	var build util.StringBuild2
-	stats.CompactStringGeneralBuilder(&build)
+	sim.CompactStringGeneralBuilder(&build)
 	return build.String()
 }
 
-func (stats SimData) CompactStringGeneralBuilder(build *util.StringBuild2) {
+func (sim *SimData) CompactStringGeneralBuilder(build *util.StringBuild2) {
 	build.WriteString("dps=")
-	build.WriteFloat64_RightPadded(stats.DPS, 0, 6)
+	build.WriteFloat64_RightPadded(sim.DPS(), 0, 6)
 	build.WriteString(" dtps=")
-	build.WriteFloat64_RightPadded(stats.DTPS, 0, 6)
+	build.WriteFloat64_RightPadded(sim.DTPS(), 0, 6)
 	build.WriteString(" tmi=")
-	build.WriteFloat64_RightPadded(stats.TMI, 2, 6)
+	build.WriteFloat64_RightPadded(sim.TMI(), 2, 6)
 	build.WriteString(" death=")
-	build.WriteFloat64(stats.DEATH*100, 2)
+	build.WriteFloat64(sim.DEATH()*100, 2)
 }
 
-func (stats SimData) IsEmpty() bool {
-	return stats.DPS == 0 && stats.TPS == 0 && stats.DTPS == 0 && stats.HPS == 0 && stats.TMI == 0 && stats.DEATH == 0
+func (sim *SimData) IsEmpty() bool {
+	return sim.DPS() == 0 && sim.TPS() == 0 && sim.DTPS() == 0 && sim.HPS() == 0 && sim.TMI() == 0 && sim.DEATH() == 0
 }
 
-func (stats SimData) Get(types SimType) float64 {
+func (sim *SimData) Get(types SimType) float64 {
+	return sim.data[types]
+}
+
+func (sim *SimData) DPS() float64   { return sim.Get(Sim_DPS) }
+func (sim *SimData) TPS() float64   { return sim.Get(Sim_TPS) }
+func (sim *SimData) DTPS() float64  { return sim.Get(Sim_DTPS) }
+func (sim *SimData) HPS() float64   { return sim.Get(Sim_HPS) }
+func (sim *SimData) TMI() float64   { return sim.Get(Sim_TMI) }
+func (sim *SimData) DEATH() float64 { return sim.Get(Sim_DEATH) }
+
+func (sim *SimData) GetFriendly(types SimType) float64 {
 	switch types {
 	case Sim_DPS:
-		return stats.DPS
+		return sim.DPS()
 	case Sim_TPS:
-		return stats.TPS
+		return sim.TPS()
 	case Sim_DTPS:
-		return stats.DTPS
+		return sim.DTPS()
 	case Sim_HPS:
-		return stats.HPS
+		return sim.HPS()
 	case Sim_TMI:
-		return stats.TMI
+		return sim.TMI()
 	case Sim_DEATH:
-		return stats.DEATH
+		return sim.DEATH() * 100
 	default:
 		panic("unknown value")
 	}
 }
 
-func (stats SimData) GetFriendly(types SimType) float64 {
-	switch types {
-	case Sim_DPS:
-		return stats.DPS
-	case Sim_TPS:
-		return stats.TPS
-	case Sim_DTPS:
-		return stats.DTPS
-	case Sim_HPS:
-		return stats.HPS
-	case Sim_TMI:
-		return stats.TMI
-	case Sim_DEATH:
-		return stats.DEATH * 100
-	default:
-		panic("unknown value")
-	}
+func (sim *SimData) Set(types SimType, value float64) {
+	sim.data[types] = value
 }
 
-func (stats *SimData) Set(types SimType, value float64) {
-	switch types {
-	case Sim_DPS:
-		stats.DPS = value
-	case Sim_TPS:
-		stats.TPS = value
-	case Sim_DTPS:
-		stats.DTPS = value
-	case Sim_HPS:
-		stats.HPS = value
-	case Sim_TMI:
-		stats.TMI = value
-	case Sim_DEATH:
-		stats.DEATH = value
-	default:
-		panic("unknown value")
-	}
-}
-
-func (stats *SimData) Seq() iter.Seq2[SimType, float64] {
+func (sim *SimData) Seq() iter.Seq2[SimType, float64] {
 	return func(yield func(SimType, float64) bool) {
-		if !yield(Sim_DPS, stats.DPS) {
+		if !yield(Sim_DPS, sim.DPS()) {
 			return
 		}
-		if !yield(Sim_TPS, stats.TPS) {
+		if !yield(Sim_TPS, sim.TPS()) {
 			return
 		}
-		if !yield(Sim_DTPS, stats.DTPS) {
+		if !yield(Sim_DTPS, sim.DTPS()) {
 			return
 		}
-		if !yield(Sim_HPS, stats.HPS) {
+		if !yield(Sim_HPS, sim.HPS()) {
 			return
 		}
-		if !yield(Sim_TMI, stats.TMI) {
+		if !yield(Sim_TMI, sim.TMI()) {
 			return
 		}
-		if !yield(Sim_DEATH, stats.DEATH) {
+		if !yield(Sim_DEATH, sim.DEATH()) {
 			return
 		}
 	}
 }
 
-func (stats *SimData) NonZeroTypes() []SimType {
+func (sim *SimData) NonZeroTypes() []SimType {
 	types := [6]SimType{}
 	index := 0
-	if stats.DPS != 0 {
+	if sim.DPS() != 0 {
 		types[index] = Sim_DPS
 		index++
 	}
-	if stats.TPS != 0 {
+	if sim.TPS() != 0 {
 		types[index] = Sim_TPS
 		index++
 	}
-	if stats.DTPS != 0 {
+	if sim.DTPS() != 0 {
 		types[index] = Sim_DTPS
 		index++
 	}
-	if stats.HPS != 0 {
+	if sim.HPS() != 0 {
 		types[index] = Sim_HPS
 		index++
 	}
-	if stats.TMI != 0 {
+	if sim.TMI() != 0 {
 		types[index] = Sim_TMI
 		index++
 	}
-	if stats.DEATH != 0 {
+	if sim.DEATH() != 0 {
 		types[index] = Sim_DEATH
 		index++
 	}
@@ -228,16 +220,16 @@ func (stats *SimData) NonZeroTypes() []SimType {
 	return types[0:index]
 }
 
-func (stats *SimData) IncreaseSimBreakdown(baseSim *SimData) SimData {
-	if stats.IsEmpty() || baseSim.IsEmpty() {
+func (sim *SimData) IncreaseSimBreakdown(baseSim *SimData) *SimData {
+	if sim.IsEmpty() || baseSim.IsEmpty() {
 		panic("empty sim shouldn't get called here")
 	}
 
 	increase := SimData{}
 	for _, resultType := range SimTypeList {
-		increase.Set(resultType, increaseForPart(stats, baseSim, resultType))
+		increase.Set(resultType, increaseForPart(sim, baseSim, resultType))
 	}
-	return increase
+	return &increase
 }
 
 func increaseForPart(sim, baseSim *SimData, part SimType) float64 {
@@ -259,15 +251,15 @@ func increaseForPart(sim, baseSim *SimData, part SimType) float64 {
 	return result
 }
 
-func (stats *SimData) IncreaseOf(baseSim *SimData, part SimType) float64 {
-	return increaseForPart(stats, baseSim, part)
+func (sim *SimData) IncreaseOf(baseSim *SimData, part SimType) float64 {
+	return increaseForPart(sim, baseSim, part)
 }
 
-func (stats *SimData) IncreaseMitigation(baseSim *SimData) float64 {
+func (sim *SimData) IncreaseMitigation(baseSim *SimData) float64 {
 	checkParts := []SimType{Sim_DPS, Sim_DTPS, Sim_TMI, Sim_DEATH}
 	var total float64
 	for _, part := range checkParts {
-		total += increaseForPart(stats, baseSim, part)
+		total += increaseForPart(sim, baseSim, part)
 	}
 	return total / float64(len(checkParts))
 }

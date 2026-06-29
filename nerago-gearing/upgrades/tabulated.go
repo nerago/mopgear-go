@@ -242,7 +242,7 @@ func bestSimOf(report *reportForItemWithSim) (stats.SimData, string) {
 		if value > best {
 			best = value
 			bestLabel = label
-			bestIncrease = result.increaseSimBreakdown()
+			bestIncrease = *result.increaseSimBreakdown()
 		}
 	}
 	return bestIncrease, bestLabel

@@ -620,33 +620,33 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		printer.Println("///////////////// BASIC /////////////////")
 	})
 
-	tasks = append(tasks, func() {
-		printer.Println("################# FORMULA ###################")
-		stopwatch := util.StopwatchMakeStopped()
-		comp := stathighs.FormulaStatWeightProcess{}
-		comp.Init(printer)
-		comp.SetRequiredStats(requiredStats)
-		comp.SetTargetRatios(targetRatio)
-		comp.SetMinimumIncludeRate(1)
-		comp.SupplyData(slices.Clone(inputDataRandom))
-		resultsByAlgorithm["form"] = comp.Run(stopwatch)
-		timesByAlgorithm["form"] = stopwatch.Elapsed()
-		printer.Println("///////////////// FORMULA /////////////////")
-	})
+	//tasks = append(tasks, func() {
+	//	printer.Println("################# FORMULA ###################")
+	//	stopwatch := util.StopwatchMakeStopped()
+	//	comp := stathighs.FormulaStatWeightProcess{}
+	//	comp.Init(printer)
+	//	comp.SetRequiredStats(requiredStats)
+	//	comp.SetTargetRatios(targetRatio)
+	//	comp.SetMinimumIncludeRate(1)
+	//	comp.SupplyData(slices.Clone(inputDataRandom))
+	//	resultsByAlgorithm["form"] = comp.Run(stopwatch)
+	//	timesByAlgorithm["form"] = stopwatch.Elapsed()
+	//	printer.Println("///////////////// FORMULA /////////////////")
+	//})
 
-	tasks = append(tasks, func() {
-		printer.Println("################# FITTING ###################")
-		stopwatch := util.StopwatchMakeStopped()
-		fitting := stathighs.FittingEachStatWeightProcess{}
-		fitting.Init(printer)
-		fitting.SetRequiredStats(requiredStats)
-		fitting.SetTargetRatios(targetRatio)
-		fitting.SetLazyMode(true)
-		fitting.SupplyDataFromStandard(inputDataRandom)
-		resultsByAlgorithm["fitting"] = fitting.Run(stopwatch)
-		timesByAlgorithm["fitting"] = stopwatch.Elapsed()
-		printer.Println("///////////////// FITTING /////////////////")
-	})
+	//tasks = append(tasks, func() {
+	//	printer.Println("################# FITTING ###################")
+	//	stopwatch := util.StopwatchMakeStopped()
+	//	fitting := stathighs.FittingEachStatWeightProcess{}
+	//	fitting.Init(printer)
+	//	fitting.SetRequiredStats(requiredStats)
+	//	fitting.SetTargetRatios(targetRatio)
+	//	fitting.SetLazyMode(true)
+	//	fitting.SupplyDataFromStandard(inputDataRandom)
+	//	resultsByAlgorithm["fitting"] = fitting.Run(stopwatch)
+	//	timesByAlgorithm["fitting"] = stopwatch.Elapsed()
+	//	printer.Println("///////////////// FITTING /////////////////")
+	//})
 
 	tasks = append(tasks, func() {
 		printer.Println("################# GRID1 ###################")
@@ -660,42 +660,42 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		timesByAlgorithm["grid1"] = stopwatch.Elapsed()
 		printer.Println("///////////////// GRID1 /////////////////")
 	})
-	tasks = append(tasks, func() {
-		printer.Println("################# GRID1 ###################")
-		stopwatch := util.StopwatchMakeStopped()
-		grid1 := stathighs.GridStatWeightProcess{}
-		grid1.CHECKRANGE = 1
-		grid1.Init(printer)
-		grid1.SetRequiredStats(requiredStats)
-		grid1.SetTargetRatios(targetRatio)
-		grid1.SupplyData(slices.Clone(inputDataGrid))
-		resultsByAlgorithm["grid1-1"] = grid1.Run(stopwatch)
-		timesByAlgorithm["grid1-1"] = stopwatch.Elapsed()
-		printer.Println("///////////////// GRID1 /////////////////")
-	})
+	//tasks = append(tasks, func() {
+	//	printer.Println("################# GRID1 ###################")
+	//	stopwatch := util.StopwatchMakeStopped()
+	//	grid1 := stathighs.GridStatWeightProcess{}
+	//	grid1.CHECKRANGE = 1
+	//	grid1.Init(printer)
+	//	grid1.SetRequiredStats(requiredStats)
+	//	grid1.SetTargetRatios(targetRatio)
+	//	grid1.SupplyData(slices.Clone(inputDataGrid))
+	//	resultsByAlgorithm["grid1-1"] = grid1.Run(stopwatch)
+	//	timesByAlgorithm["grid1-1"] = stopwatch.Elapsed()
+	//	printer.Println("///////////////// GRID1 /////////////////")
+	//})
 
-	for SCALEMODE := range 6 {
-		for ROUNDMODE := range 3 {
-			for OUTLIER := range 5 {
-				tasks = append(tasks, func() {
-					printer.Println("################# GRID1B ###################")
-					stopwatch := util.StopwatchMakeStopped()
-					grid1 := stathighs.GridStatWeightProcess1B{}
-					grid1.SCALEMODE = SCALEMODE
-					grid1.ROUNDMODE = ROUNDMODE
-					grid1.OUTLIER = OUTLIER
-					grid1.Init(printer)
-					grid1.SetRequiredStats(requiredStats)
-					grid1.SetTargetRatios(targetRatio)
-					grid1.SupplyData(slices.Clone(inputDataGrid))
-					label := fmt.Sprintf("grid1b-outlier%d-scale%d-round%d", OUTLIER, SCALEMODE, ROUNDMODE)
-					resultsByAlgorithm[label] = grid1.Run(stopwatch)
-					timesByAlgorithm[label] = stopwatch.Elapsed()
-					printer.Println("///////////////// GRID1B /////////////////")
-				})
-			}
-		}
-	}
+	//for SCALEMODE := range 6 {
+	//	for ROUNDMODE := range 3 {
+	//		for OUTLIER := range 5 {
+	//			tasks = append(tasks, func() {
+	//				printer.Println("################# GRID1B ###################")
+	//				stopwatch := util.StopwatchMakeStopped()
+	//				grid1 := stathighs.GridStatWeightProcess1B{}
+	//				grid1.SCALEMODE = SCALEMODE
+	//				grid1.ROUNDMODE = ROUNDMODE
+	//				grid1.OUTLIER = OUTLIER
+	//				grid1.Init(printer)
+	//				grid1.SetRequiredStats(requiredStats)
+	//				grid1.SetTargetRatios(targetRatio)
+	//				grid1.SupplyData(slices.Clone(inputDataGrid))
+	//				label := fmt.Sprintf("grid1b-outlier%d-scale%d-round%d", OUTLIER, SCALEMODE, ROUNDMODE)
+	//				resultsByAlgorithm[label] = grid1.Run(stopwatch)
+	//				timesByAlgorithm[label] = stopwatch.Elapsed()
+	//				printer.Println("///////////////// GRID1B /////////////////")
+	//			})
+	//		}
+	//	}
+	//}
 
 	for ROUNDMODE := range 3 {
 		tasks = append(tasks, func() {
@@ -714,32 +714,32 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		})
 	}
 
-	tasks = append(tasks, func() {
-		printer.Println("################# GRID2-1 ###################")
-		stopwatch := util.StopwatchMakeStopped()
-		grid2 := stathighs.GridStatWeightProcess2{}
-		grid2.DIFFINCLUDE = 1
-		grid2.Init(printer)
-		grid2.SetRequiredStats(requiredStats)
-		grid2.SetTargetRatios(targetRatio)
-		grid2.SupplyData(slices.Clone(inputDataGrid))
-		resultsByAlgorithm["grid2-1"] = grid2.Run(stopwatch)
-		timesByAlgorithm["grid2-1"] = stopwatch.Elapsed()
-		printer.Println("///////////////// GRID2-1 /////////////////")
-	})
-	tasks = append(tasks, func() {
-		printer.Println("################# GRID2-2 ###################")
-		stopwatch := util.StopwatchMakeStopped()
-		grid2 := stathighs.GridStatWeightProcess2{}
-		grid2.DIFFINCLUDE = 2
-		grid2.Init(printer)
-		grid2.SetRequiredStats(requiredStats)
-		grid2.SetTargetRatios(targetRatio)
-		grid2.SupplyData(slices.Clone(inputDataGrid))
-		resultsByAlgorithm["grid2-2"] = grid2.Run(stopwatch)
-		timesByAlgorithm["grid2-2"] = stopwatch.Elapsed()
-		printer.Println("///////////////// GRID2-2 /////////////////")
-	})
+	//tasks = append(tasks, func() {
+	//	printer.Println("################# GRID2-1 ###################")
+	//	stopwatch := util.StopwatchMakeStopped()
+	//	grid2 := stathighs.GridStatWeightProcess2{}
+	//	grid2.DIFFINCLUDE = 1
+	//	grid2.Init(printer)
+	//	grid2.SetRequiredStats(requiredStats)
+	//	grid2.SetTargetRatios(targetRatio)
+	//	grid2.SupplyData(slices.Clone(inputDataGrid))
+	//	resultsByAlgorithm["grid2-1"] = grid2.Run(stopwatch)
+	//	timesByAlgorithm["grid2-1"] = stopwatch.Elapsed()
+	//	printer.Println("///////////////// GRID2-1 /////////////////")
+	//})
+	//tasks = append(tasks, func() {
+	//	printer.Println("################# GRID2-2 ###################")
+	//	stopwatch := util.StopwatchMakeStopped()
+	//	grid2 := stathighs.GridStatWeightProcess2{}
+	//	grid2.DIFFINCLUDE = 2
+	//	grid2.Init(printer)
+	//	grid2.SetRequiredStats(requiredStats)
+	//	grid2.SetTargetRatios(targetRatio)
+	//	grid2.SupplyData(slices.Clone(inputDataGrid))
+	//	resultsByAlgorithm["grid2-2"] = grid2.Run(stopwatch)
+	//	timesByAlgorithm["grid2-2"] = stopwatch.Elapsed()
+	//	printer.Println("///////////////// GRID2-2 /////////////////")
+	//})
 	//tasks = append(tasks, func() {
 	//	printer.Println("################# GRID2-12 ###################")
 	//	stopwatch := util.StopwatchMakeStopped()
@@ -796,82 +796,99 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	// 	printer.Println("///////////////// GRID2-1012 /////////////////")
 	// })
 
+	//tasks = append(tasks, func() {
+	//	printer.Println("################# RANKING0 ###################")
+	//	stopwatch := util.StopwatchMakeStopped()
+	//	ranking := stathighs.RankingStatWeightProcess{}
+	//	ranking.Init(printer)
+	//	ranking.SetRequiredStats(requiredStats)
+	//	ranking.SetTargetRatios(targetRatio)
+	//	ranking.SupplyData(slices.Clone(mixedInputData))
+	//	ranking.RANKMODE = 0
+	//	resultsByAlgorithm["ranking0"] = ranking.Run(stopwatch)
+	//	timesByAlgorithm["ranking0"] = stopwatch.Elapsed()
+	//	printer.Println("///////////////// RANKING0 /////////////////")
+	//})
+
+	//tasks = append(tasks, func() {
+	//	printer.Println("################# RANKING1 ###################")
+	//	stopwatch := util.StopwatchMakeStopped()
+	//	ranking := stathighs.RankingStatWeightProcess{}
+	//	ranking.Init(printer)
+	//	ranking.SetRequiredStats(requiredStats)
+	//	ranking.SetTargetRatios(targetRatio)
+	//	ranking.SupplyData(slices.Clone(mixedInputData))
+	//	ranking.RANKMODE = 1
+	//	resultsByAlgorithm["ranking1"] = ranking.Run(stopwatch)
+	//	timesByAlgorithm["ranking1"] = stopwatch.Elapsed()
+	//	printer.Println("///////////////// RANKING1 /////////////////")
+	//})
+	//
+	//tasks = append(tasks, func() {
+	//	printer.Println("################# RANKING2 ###################")
+	//	stopwatch := util.StopwatchMakeStopped()
+	//	ranking := stathighs.RankingStatWeightProcess{}
+	//	ranking.Init(printer)
+	//	ranking.SetRequiredStats(requiredStats)
+	//	ranking.SetTargetRatios(targetRatio)
+	//	ranking.SupplyData(slices.Clone(mixedInputData))
+	//	ranking.RANKMODE = 2
+	//	resultsByAlgorithm["ranking2"] = ranking.Run(stopwatch)
+	//	timesByAlgorithm["ranking2"] = stopwatch.Elapsed()
+	//	printer.Println("///////////////// RANKING2 /////////////////")
+	//})
+
+	//for ALGO := range 2 {
+	//	tasks = append(tasks, func() {
+	//		printer.Println("################# RANKING3a ###################")
+	//		stopwatch := util.StopwatchMakeStopped()
+	//		ranking := stathighs.RankingStatWeightProcess3{}
+	//		ranking.ALGO = ALGO
+	//		ranking.SCALE1 = false
+	//		ranking.Init(printer)
+	//		ranking.SetRequiredStats(requiredStats)
+	//		ranking.SetTargetRatios(targetRatio)
+	//		ranking.SupplyData(slices.Clone(mixedInputData))
+	//		weight := ranking.Run(stopwatch)
+	//		label := fmt.Sprintf("ranking3a-scale_stat-algo%d", ALGO)
+	//		timesByAlgorithm[label] = stopwatch.Elapsed()
+	//		resultsByAlgorithm[label] = weight
+	//		printer.Println("///////////////// RANKING3a /////////////////")
+	//	})
+	//tasks = append(tasks, func() {
+	//	printer.Println("################# RANKING3a ###################")
+	//	stopwatch := util.StopwatchMakeStopped()
+	//	ranking := stathighs.RankingStatWeightProcess3{}
+	//	ranking.ALGO = ALGO
+	//	ranking.SCALE1 = true
+	//	ranking.Init(printer)
+	//	ranking.SetRequiredStats(requiredStats)
+	//	ranking.SetTargetRatios(targetRatio)
+	//	ranking.SupplyData(slices.Clone(mixedInputData))
+	//	weight := ranking.Run(stopwatch)
+	//	label := fmt.Sprintf("ranking3a-scale1-algo%d", ALGO)
+	//	timesByAlgorithm[label] = stopwatch.Elapsed()
+	//	resultsByAlgorithm[label] = weight
+	//	printer.Println("///////////////// RANKING3a /////////////////")
+	//})
+	//}
+
 	tasks = append(tasks, func() {
-		printer.Println("################# RANKING0 ###################")
+		printer.Println("################# RANKING3a-false-1 ###################")
 		stopwatch := util.StopwatchMakeStopped()
-		ranking := stathighs.RankingStatWeightProcess{}
+		ranking := stathighs.RankingStatWeightProcess3{}
+		ranking.ALGO = 1
+		ranking.SCALE1 = false
 		ranking.Init(printer)
 		ranking.SetRequiredStats(requiredStats)
 		ranking.SetTargetRatios(targetRatio)
 		ranking.SupplyData(slices.Clone(mixedInputData))
-		ranking.RANKMODE = 0
-		resultsByAlgorithm["ranking0"] = ranking.Run(stopwatch)
-		timesByAlgorithm["ranking0"] = stopwatch.Elapsed()
-		printer.Println("///////////////// RANKING0 /////////////////")
+		weight := ranking.Run(stopwatch)
+		label := fmt.Sprintf("ranking3a-false-1")
+		timesByAlgorithm[label] = stopwatch.Elapsed()
+		resultsByAlgorithm[label] = weight
+		printer.Println("///////////////// RANKING3a /////////////////")
 	})
-
-	tasks = append(tasks, func() {
-		printer.Println("################# RANKING1 ###################")
-		stopwatch := util.StopwatchMakeStopped()
-		ranking := stathighs.RankingStatWeightProcess{}
-		ranking.Init(printer)
-		ranking.SetRequiredStats(requiredStats)
-		ranking.SetTargetRatios(targetRatio)
-		ranking.SupplyData(slices.Clone(mixedInputData))
-		ranking.RANKMODE = 1
-		resultsByAlgorithm["ranking1"] = ranking.Run(stopwatch)
-		timesByAlgorithm["ranking1"] = stopwatch.Elapsed()
-		printer.Println("///////////////// RANKING1 /////////////////")
-	})
-
-	tasks = append(tasks, func() {
-		printer.Println("################# RANKING2 ###################")
-		stopwatch := util.StopwatchMakeStopped()
-		ranking := stathighs.RankingStatWeightProcess{}
-		ranking.Init(printer)
-		ranking.SetRequiredStats(requiredStats)
-		ranking.SetTargetRatios(targetRatio)
-		ranking.SupplyData(slices.Clone(mixedInputData))
-		ranking.RANKMODE = 2
-		resultsByAlgorithm["ranking2"] = ranking.Run(stopwatch)
-		timesByAlgorithm["ranking2"] = stopwatch.Elapsed()
-		printer.Println("///////////////// RANKING2 /////////////////")
-	})
-
-	for ALGO := range 2 {
-		tasks = append(tasks, func() {
-			printer.Println("################# RANKING3a ###################")
-			stopwatch := util.StopwatchMakeStopped()
-			ranking := stathighs.RankingStatWeightProcess3{}
-			ranking.ALGO = ALGO
-			ranking.SCALE1 = false
-			ranking.Init(printer)
-			ranking.SetRequiredStats(requiredStats)
-			ranking.SetTargetRatios(targetRatio)
-			ranking.SupplyData(slices.Clone(mixedInputData))
-			weight := ranking.Run(stopwatch)
-			label := fmt.Sprintf("ranking3a-scale_old-algo%d", ALGO)
-			timesByAlgorithm[label] = stopwatch.Elapsed()
-			resultsByAlgorithm[label] = weight
-			printer.Println("///////////////// RANKING3a /////////////////")
-		})
-		tasks = append(tasks, func() {
-			printer.Println("################# RANKING3a ###################")
-			stopwatch := util.StopwatchMakeStopped()
-			ranking := stathighs.RankingStatWeightProcess3{}
-			ranking.ALGO = ALGO
-			ranking.SCALE1 = true
-			ranking.Init(printer)
-			ranking.SetRequiredStats(requiredStats)
-			ranking.SetTargetRatios(targetRatio)
-			ranking.SupplyData(slices.Clone(mixedInputData))
-			weight := ranking.Run(stopwatch)
-			label := fmt.Sprintf("ranking3a-scale1-algo%d", ALGO)
-			timesByAlgorithm[label] = stopwatch.Elapsed()
-			resultsByAlgorithm[label] = weight
-			printer.Println("///////////////// RANKING3a /////////////////")
-		})
-	}
 
 	tasks = append(tasks, func() {
 		printer.Println("################# RANKING3b ###################")

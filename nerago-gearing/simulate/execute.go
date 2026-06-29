@@ -371,7 +371,15 @@ func convertResult(finalResult *wowsim_proto.RaidSimResult) stats.SimData {
 	} else if finalResult != nil && finalResult.RaidMetrics != nil && finalResult.RaidMetrics.Parties != nil && finalResult.RaidMetrics.Parties[0] != nil && finalResult.RaidMetrics.Parties[0].Players != nil && finalResult.RaidMetrics.Parties[0].Players[0] != nil {
 		playerMetrics := finalResult.RaidMetrics.Parties[0].Players[0]
 		WowSimRanDuringCurrentProcess = true
-		return stats.SimData{DPS: playerMetrics.Dps.Avg, TPS: playerMetrics.Threat.Avg, DTPS: playerMetrics.Dtps.Avg, TMI: playerMetrics.Tmi.Avg, HPS: playerMetrics.Hps.Avg, DEATH: playerMetrics.ChanceOfDeath}
+
+		simData := stats.SimData{}
+		simData.Set(stats.Sim_DPS, playerMetrics.Dps.Avg)
+		simData.Set(stats.Sim_TPS, playerMetrics.Threat.Avg)
+		simData.Set(stats.Sim_DTPS, playerMetrics.Dtps.Avg)
+		simData.Set(stats.Sim_TMI, playerMetrics.Tmi.Avg)
+		simData.Set(stats.Sim_HPS, playerMetrics.Hps.Avg)
+		simData.Set(stats.Sim_DEATH, playerMetrics.ChanceOfDeath)
+		return simData
 	} else {
 		panic("incomplete sim result")
 	}
