@@ -146,7 +146,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protT16 := []items.ItemId{
 		99126, // prot t16 chest normal
 		99128, // prot t16 head normal
-		99026, // prot t16 legs celestial
+		99129, // prot t16 legs normal
 		99027, // prot t16 shoulder celestial
 		99028, // prot t16 hand celestial
 	}

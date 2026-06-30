@@ -40,7 +40,7 @@ func Model_PallyProtMitigation_WithSet() Model {
 func Model_PallyProtHeal() Model {
 	spec := Spec_PaladinProt
 	goal := OptimiseGoal_HalfMitiHeal
-	weight := StatRatingsWeights_ReadFile(files.WeightHealFile, false, true, false) // TODO new file
+	weight := StatRatingsWeights_ReadFile(files.WeightHealFile, false, true, false)
 	return Model{
 		Spec:              spec,
 		Goal:              goal,
@@ -60,7 +60,7 @@ func Model_PallyProtHeal() Model {
 			IsBlacksmith: true,
 			IsEngineer:   true,
 		},
-		ReferenceGearFile: files.GearFileProtMitigationWithSet, // TODO new file
+		ReferenceGearFile: files.GearFileProtHeal,
 	}
 }
 
