@@ -52,6 +52,8 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 	inputDataReal := SimulateRealRandomSets(gearFile, substituteItems, gearModel, len(inputDataGrid), simSpeed, false, printer, tracker.NewChild())
 	mixedInputData := slices.Concat(inputDataGrid, inputDataReal)
 
+	// TODO avoid changing set bonuses
+
 	// SOLVE FOR STAT WEIGHTS
 	grid := stathighs.GridStatWeightProcess1B{}
 	grid.OUTLIER = 3
@@ -74,7 +76,12 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 	ranking.SetRequiredStats(gearModel.StatsForWeighting)
 	ranking.SetTargetRatios(ratios)
 	ranking.SupplyData(mixedInputData)
-	weightsRanking := ranking.RunSinglePassFromExternal(weightsGrid, nil)
+	var weightsRanking stathighs.WeightResult
+	if !weightsGrid.IsEmpty() {
+		weightsRanking = ranking.RunSinglePassFromExternal(weightsGrid, nil)
+	} else {
+		weightsRanking = ranking.RunMultiRound(nil)
+	}
 	printer.Println(">>>>> Ranking Weights:")
 	pawnRanking := tools.WritePawnString(weightsRanking, printer)
 	tracker.NewChild().SetDone() // mark stage done

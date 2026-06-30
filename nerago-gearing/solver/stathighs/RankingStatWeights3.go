@@ -107,23 +107,16 @@ func (ranker *RankingStatWeightProcess3) makeBuilder() {
 }
 
 func (ranker *RankingStatWeightProcess3) Run(stopwatch *util.Stopwatch) WeightResult {
-
 	// FIRST ROUND: minimal data, no initial values
 	ranker.dataSample = takeDataSample_Start(ranker.dataAllOriginal, c_rank3_initial_data_sample)
-	ranker.makeBuilder()
-	ranker.prepareRankings()
-	ranker.createWeightColumns()
-	ranker.doAlgos()
+	ranker.prepare()
 	ranker.setupDumbInitialSolution()
 	solution1 := ranker.build.RunHighs(ranker.printer, stopwatch)
 	_ = ranker.extractAndReportSolution(solution1)
 
 	// FULL RUN
 	ranker.dataSample = ranker.dataAllOriginal
-	ranker.makeBuilder()
-	ranker.prepareRankings()
-	ranker.createWeightColumns()
-	ranker.doAlgos()
+	ranker.prepare()
 	ranker.setupInitialSolutionFromPreviousWeightOnly(solution1)
 	solution2 := ranker.build.RunHighs(ranker.printer, stopwatch)
 	weights2 := ranker.extractAndReportSolution(solution2)
@@ -133,13 +126,17 @@ func (ranker *RankingStatWeightProcess3) Run(stopwatch *util.Stopwatch) WeightRe
 
 func (ranker *RankingStatWeightProcess3) RunUsingExternalStart(initialWeight WeightResult, stopwatch *util.Stopwatch) WeightResult {
 	ranker.dataSample = ranker.dataAllOriginal
+	ranker.prepare()
+	ranker.setupInitialSolutionFromExternal2(initialWeight)
+	solution := ranker.build.RunHighs(ranker.printer, stopwatch)
+	return ranker.extractAndReportSolution(solution)
+}
+
+func (ranker *RankingStatWeightProcess3) prepare() {
 	ranker.makeBuilder()
 	ranker.prepareRankings()
 	ranker.createWeightColumns()
 	ranker.doAlgos()
-	ranker.setupInitialSolutionFromExternal2(initialWeight)
-	solution := ranker.build.RunHighs(ranker.printer, stopwatch)
-	return ranker.extractAndReportSolution(solution)
 }
 
 func (ranker *RankingStatWeightProcess3) createWeightColumns() {
