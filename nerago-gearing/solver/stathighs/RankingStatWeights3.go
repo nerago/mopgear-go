@@ -300,8 +300,7 @@ func (ranker *RankingStatWeightProcess3) setupDumbInitialSolution() {
 
 	ranker.setupInitialRemainingVariables(internalWeights)
 
-	// TODO check if we even use pairs in dumb
-	ranker.setupInitialPairsDetail()
+	//ranker.setupInitialPairsDetail()
 
 	ranker.build.ValidateInitialSolutionState()
 }
@@ -365,32 +364,32 @@ func (ranker *RankingStatWeightProcess3) setupInitialRemainingVariables(internal
 	}
 }
 
-func (ranker *RankingStatWeightProcess3) setupInitialPairsDetail() {
-	for pair := range ranker.pairLinks.SeqValues() {
-		one, two := &ranker.dataSample[pair.indexOne], &ranker.dataSample[pair.indexTwo]
-		scoreOne, scoreTwo := ranker.build.GetInitialSolutionValue(one.scoreColumn), ranker.build.GetInitialSolutionValue(two.scoreColumn)
-		rankOne, rankTwo := ranker.build.GetInitialSolutionValue(one.rankColumn), ranker.build.GetInitialSolutionValue(two.rankColumn)
-		if scoreTwo >= scoreOne {
-			ranker.build.SetInitialSolutionValue(pair.isGreaterScore, 1)
-			if rankTwo >= rankOne {
-				ranker.build.SetInitialSolutionValue(pair.isGreaterRank, 1)
-				ranker.build.SetInitialSolutionValue(pair.isSequenceDiff, 0)
-			} else {
-				ranker.build.SetInitialSolutionValue(pair.isGreaterRank, 0)
-				ranker.build.SetInitialSolutionValue(pair.isSequenceDiff, 1)
-			}
-		} else {
-			ranker.build.SetInitialSolutionValue(pair.isGreaterScore, 0)
-			if rankTwo >= rankOne {
-				ranker.build.SetInitialSolutionValue(pair.isGreaterRank, 1)
-				ranker.build.SetInitialSolutionValue(pair.isSequenceDiff, 1)
-			} else {
-				ranker.build.SetInitialSolutionValue(pair.isGreaterRank, 0)
-				ranker.build.SetInitialSolutionValue(pair.isSequenceDiff, 0)
-			}
-		}
-	}
-}
+//func (ranker *RankingStatWeightProcess3) setupInitialPairsDetail() {
+//	for pair := range ranker.pairLinks.SeqValues() {
+//		one, two := &ranker.dataSample[pair.indexOne], &ranker.dataSample[pair.indexTwo]
+//		scoreOne, scoreTwo := ranker.build.GetInitialSolutionValue(one.scoreColumn), ranker.build.GetInitialSolutionValue(two.scoreColumn)
+//		rankOne, rankTwo := ranker.build.GetInitialSolutionValue(one.rankColumn), ranker.build.GetInitialSolutionValue(two.rankColumn)
+//		if scoreTwo >= scoreOne {
+//			ranker.build.SetInitialSolutionValue(pair.isGreaterScore, 1)
+//			if rankTwo >= rankOne {
+//				ranker.build.SetInitialSolutionValue(pair.isGreaterRank, 1)
+//				ranker.build.SetInitialSolutionValue(pair.isSequenceDiff, 0)
+//			} else {
+//				ranker.build.SetInitialSolutionValue(pair.isGreaterRank, 0)
+//				ranker.build.SetInitialSolutionValue(pair.isSequenceDiff, 1)
+//			}
+//		} else {
+//			ranker.build.SetInitialSolutionValue(pair.isGreaterScore, 0)
+//			if rankTwo >= rankOne {
+//				ranker.build.SetInitialSolutionValue(pair.isGreaterRank, 1)
+//				ranker.build.SetInitialSolutionValue(pair.isSequenceDiff, 1)
+//			} else {
+//				ranker.build.SetInitialSolutionValue(pair.isGreaterRank, 0)
+//				ranker.build.SetInitialSolutionValue(pair.isSequenceDiff, 0)
+//			}
+//		}
+//	}
+//}
 
 func (ranker *RankingStatWeightProcess3) extractAndReportSolution(solution *highs.Solution) WeightResult {
 	ranker.build.DebugPrintColumns(solution, ranker.printer)
@@ -403,10 +402,10 @@ func (ranker *RankingStatWeightProcess3) extractAndReportSolution(solution *high
 		statScale := ranker.scaleStats[statType]
 
 		modelWeight := solution.ColValues[weightColumn]
-		// TODO changed to multiply following analysis on other algorithms, not checked here
-		usableWeight := modelWeight * statScale
+		usableWeight := modelWeight / statScale
 
 		statWeightResult.Put(statType, usableWeight)
+
 	}
 
 	divideBy := statWeightResult.Get(stats.Stat_Strength)

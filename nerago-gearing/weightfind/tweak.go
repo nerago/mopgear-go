@@ -13,9 +13,9 @@ const (
 	c_tweak_iter_count = 1000 // limit to avoid infinite loop
 )
 
-func WeightTweaker(startWeight stathighs.WeightResult, weightStats []stats.StatType, targetRatio stats.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) stathighs.WeightResult {
-	updatedWeight, _ := weightTweakerInternal(startWeight, c_tweak_start, weightStats, targetRatio, inputData, printer)
-	return updatedWeight
+func WeightTweaker(startWeight stathighs.WeightResult, weightStats []stats.StatType, targetRatio stats.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) (stathighs.WeightResult, float64) {
+	updatedWeight, updatedAccuracy := weightTweakerInternal(startWeight, c_tweak_start, weightStats, targetRatio, inputData, printer)
+	return updatedWeight, updatedAccuracy
 }
 
 func weightTweakerInternal(startWeight stathighs.WeightResult, tweakStart float64, weightStats []stats.StatType, targetRatio stats.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) (stathighs.WeightResult, float64) {
@@ -30,6 +30,7 @@ func weightTweakerInternal(startWeight stathighs.WeightResult, tweakStart float6
 		startWeight.Clone(),
 		EvaluateAccuracy(startWeight, inputData, targetRatio),
 	}
+	printer.Printf("START %s accuracy=%f\n", bestEntry.weight.String(), bestEntry.accuracy)
 
 	for range c_tweak_iter_count {
 		best := util_rank.BestCollector1[weightAndAccuracy]{}

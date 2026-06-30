@@ -11,18 +11,14 @@ import (
 )
 
 const (
-	c_rank3b_scaleTarget         = 10.0
-	c_rank3b_initial_data_sample = 12
-	c_rank3b_min_total_weight    = 1.0
-	c_rank3b_time_limit          = 5000
-
-	c_Rank3b_LargeWeight = 10.0
-	c_Rank3b_LargeScore  = 500.0
-	c_Rank3b_LargeRank   = 10000.0
+	c_rank3b_scaleTarget      = 10.0
+	c_rank3b_min_total_weight = 1.0
+	c_Rank3b_largeWeight      = 10.0
 )
 
 type RankingStatWeightProcess3b struct {
-	printer *util.PrintRecorder
+	printer        *util.PrintRecorder
+	timeoutSeconds int
 
 	targetRatios    stats.SimData
 	requiredStats   []stats.StatType
@@ -54,8 +50,9 @@ type rankPair3b struct {
 	scoreSlackColumn   utilhighs.ColumnIndex
 }
 
-func (ranker *RankingStatWeightProcess3b) Init(printer *util.PrintRecorder) {
+func (ranker *RankingStatWeightProcess3b) Init(printer *util.PrintRecorder, timeoutSeconds int) {
 	ranker.printer = printer
+	ranker.timeoutSeconds = timeoutSeconds
 }
 
 func (ranker *RankingStatWeightProcess3b) SupplyData(inputData []WeightInput) {
@@ -89,7 +86,7 @@ func (ranker *RankingStatWeightProcess3b) SetTargetRatios(targetRatios stats.Sim
 func (ranker *RankingStatWeightProcess3b) newBuilder() {
 	ranker.build = new(utilhighs.LinearBuilder)
 	ranker.build.Minimise = true
-	ranker.build.TimeLimitSeconds = c_rank3b_time_limit
+	ranker.build.TimeLimitSeconds = ranker.timeoutSeconds
 	ranker.build.Solver = utilhighs.Solver_Force_IPX
 
 	// IPX Duration 1m1.4189406s		92.046912%
@@ -142,8 +139,8 @@ func (ranker *RankingStatWeightProcess3b) RunSinglePassFromExternal(initial Weig
 }
 
 func (ranker *RankingStatWeightProcess3b) createWeightColumns() {
-	lo := -c_Rank3b_LargeWeight
-	hi := c_Rank3b_LargeWeight
+	lo := -c_Rank3b_largeWeight
+	hi := c_Rank3b_largeWeight
 
 	sumWeights := utilhighs.ConstraintRow{Debug: "sumWeights"}
 	ranker.weightColumns = make(map[stats.StatType]utilhighs.ColumnIndex)

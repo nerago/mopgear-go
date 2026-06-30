@@ -15,6 +15,8 @@ import (
 	"sync"
 )
 
+const c_timeoutSolvers = 2000
+
 type WeightOptions struct {
 	WeightFileOut   string
 	GearFile        string
@@ -39,7 +41,7 @@ func StatWeights_updateAll(simSpeed simulate.WowSim_RunSize, printer *util.Print
 }
 
 func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios stats.SimData, weightFileOut string, substituteItems []items.ItemId, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, tracker *util.TrackProgress) {
-	tracker.RunOuterTracking(4)
+	tracker.RunOuterTracking(5)
 	defer tracker.SetDone()
 
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), gearModel, setup.MissingEnchant_Panic, printer)
@@ -47,29 +49,52 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 
 	// SIMULATE STAT CHANGES
 	inputDataGrid := SimulateSteppedStatChangesForGrid(currentItemSet, printer, simSpeed, gearModel.SimSpeedUp, gearModel.StatsForWeighting, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions, tracker.NewChild())
-	inputDataReal := SimulateRealRandomSets(gearFile, substituteItems, gearModel, len(inputDataGrid)/2, simSpeed, false, printer, tracker.NewChild())
+	inputDataReal := SimulateRealRandomSets(gearFile, substituteItems, gearModel, len(inputDataGrid), simSpeed, false, printer, tracker.NewChild())
+	mixedInputData := slices.Concat(inputDataGrid, inputDataReal)
 
 	// SOLVE FOR STAT WEIGHTS
-	process := stathighs.GridStatWeightProcess{}
-	process.Init(printer)
-	process.SetTargetRatios(ratios)
-	process.SetRequiredStats(gearModel.StatsForWeighting)
-	process.SetTestMode(simSpeed == simulate.RunSize_TestOnly)
-	process.SupplyData(inputDataGrid)
-	weights := process.Run(nil)
+	grid := stathighs.GridStatWeightProcess1B{}
+	grid.OUTLIER = 3
+	grid.ROUNDMODE = 2
+	grid.SCALEMODE = 1
+	grid.Init(printer, c_timeoutSolvers)
+	grid.SetTargetRatios(ratios)
+	grid.SetRequiredStats(gearModel.StatsForWeighting)
+	grid.SetTestMode(simSpeed == simulate.RunSize_TestOnly)
+	grid.SupplyData(inputDataGrid)
+	weightsGrid := grid.Run(nil)
 	printer.Println(">>>>> Grid Weights:")
-	pawn := tools.WritePawnString(weights, printer)
+	pawnGrid := tools.WritePawnString(weightsGrid, printer)
+	tracker.NewChild().SetDone() // mark stage done
 
-	tracker.NewChild().SetDone() // pretend we were tracking the linear process and mark done
+	ranking := stathighs.RankingStatWeightProcess3b{}
+	ranking.SCALE1 = false
+	ranking.FINAL = 0
+	ranking.Init(printer, c_timeoutSolvers)
+	ranking.SetRequiredStats(gearModel.StatsForWeighting)
+	ranking.SetTargetRatios(ratios)
+	ranking.SupplyData(mixedInputData)
+	weightsRanking := ranking.RunSinglePassFromExternal(weightsGrid, nil)
+	printer.Println(">>>>> Ranking Weights:")
+	pawnRanking := tools.WritePawnString(weightsRanking, printer)
+	tracker.NewChild().SetDone() // mark stage done
 
 	// TWEAK weights see if dumb changes can do better than grid
-	mixedInputData := slices.Concat(inputDataGrid, inputDataReal)
-	weights = WeightTweaker(weights, gearModel.StatsForWeighting, ratios, mixedInputData, printer)
-	printer.Println(">>>>> Tweaked Weights:")
-	pawn = tools.WritePawnString(weights, printer)
+	weightsGrid, accuracyGrid := WeightTweaker(weightsGrid, gearModel.StatsForWeighting, ratios, mixedInputData, printer)
+	printer.Println(">>>>> Tweaked Grid Weights:")
+	pawnGrid = tools.WritePawnString(weightsGrid, printer)
+
+	// TWEAK ranking weights
+	weightsRanking, accuracyRanking := WeightTweaker(weightsRanking, gearModel.StatsForWeighting, ratios, mixedInputData, printer)
+	printer.Println(">>>>> Tweaked Ranking Weights:")
+	pawnRanking = tools.WritePawnString(weightsRanking, printer)
 
 	// OVERWRITE WEIGHT FILE
-	writeFile(weightFileOut, pawn)
+	if accuracyGrid > accuracyRanking {
+		writeFile(weightFileOut, pawnGrid)
+	} else {
+		writeFile(weightFileOut, pawnRanking)
+	}
 }
 
 func writeFile(filename, content string) {

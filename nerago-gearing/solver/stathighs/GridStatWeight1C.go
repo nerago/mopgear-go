@@ -23,7 +23,7 @@ type GridStatWeightProcess1C struct {
 	simTypes      []stats.SimType
 	testMode      bool
 	ROUNDMODE     int
-	FINAL         int
+	RESCALE       int
 
 	build           utilhighs.LinearBuilder
 	unitStatValues  util.MapMapSlice[stats.StatType, stats.SimType, float64]
@@ -35,8 +35,7 @@ type GridStatWeightProcess1C struct {
 func (grid *GridStatWeightProcess1C) Init(printer *util.PrintRecorder) {
 	grid.printer = printer
 	grid.build.Minimise = true
-	//grid.build.Solver = utilhighs.Solver_LP_USE_GPU
-	grid.build.Solver = utilhighs.Solver_LP_NO_GPU
+	grid.build.Solver = utilhighs.Solver_LP_USE_GPU
 	grid.build.DisablePreSolve = true
 	grid.build.TimeLimitSeconds = 240
 	grid.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
@@ -120,9 +119,16 @@ func (grid *GridStatWeightProcess1C) finalWeightVars() {
 	for _, statType := range grid.requiredStats {
 		statFinalRow := utilhighs.ConstraintRow{}
 		for simType, detailColumn := range grid.detailedWeights.SeqInnerWithKey1Value(statType) {
-			_ = simType
-			// scale := grid.scales.GetOrPanic(statType, simType)
-			statFinalRow.Add(detailColumn, 1) // 1/scale[100] is too small, =scale[100] is too big. but all harmless when fixed like that
+			scale := grid.scales[simType]
+			var coeff float64
+			if grid.RESCALE == 0 {
+				coeff = 1
+			} else if grid.RESCALE == 1 {
+				coeff = scale
+			} else if grid.RESCALE == 2 {
+				coeff = 1 / scale
+			}
+			statFinalRow.Add(detailColumn, coeff) // 1/scale[100] is too small, =scale[100] is too big. but all harmless when fixed like that
 		}
 
 		finalWeightColumn := grid.finalWeights[statType]
