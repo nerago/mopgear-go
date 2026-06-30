@@ -369,15 +369,15 @@ func convertResult(finalResult *wowsim_proto.RaidSimResult) stats.SimData {
 	if finalResult.Error != nil {
 		panic("sim fail = " + finalResult.Error.Message)
 	} else if finalResult != nil && finalResult.RaidMetrics != nil && finalResult.RaidMetrics.Parties != nil && finalResult.RaidMetrics.Parties[0] != nil && finalResult.RaidMetrics.Parties[0].Players != nil && finalResult.RaidMetrics.Parties[0].Players[0] != nil {
-		playerMetrics := finalResult.RaidMetrics.Parties[0].Players[0]
 		WowSimRanDuringCurrentProcess = true
+		playerMetrics := finalResult.RaidMetrics.Parties[0].Players[0]
 
 		simData := stats.SimData{}
-		simData.Set(stats.Sim_DPS, playerMetrics.Dps.Avg)
-		simData.Set(stats.Sim_TPS, playerMetrics.Threat.Avg)
-		simData.Set(stats.Sim_DTPS, playerMetrics.Dtps.Avg)
-		simData.Set(stats.Sim_TMI, playerMetrics.Tmi.Avg)
-		simData.Set(stats.Sim_HPS, playerMetrics.Hps.Avg)
+		simData.SetDetailed(stats.Sim_DPS, playerMetrics.Dps.Avg, playerMetrics.Dps.Min, playerMetrics.Dps.Max, playerMetrics.Dps.Stdev)
+		simData.SetDetailed(stats.Sim_TPS, playerMetrics.Threat.Avg, playerMetrics.Threat.Min, playerMetrics.Threat.Max, playerMetrics.Threat.Stdev)
+		simData.SetDetailed(stats.Sim_DTPS, playerMetrics.Dtps.Avg, playerMetrics.Dtps.Min, playerMetrics.Dtps.Max, playerMetrics.Dtps.Stdev)
+		simData.SetDetailed(stats.Sim_TMI, playerMetrics.Tmi.Avg, playerMetrics.Tmi.Min, playerMetrics.Tmi.Max, playerMetrics.Tmi.Stdev)
+		simData.SetDetailed(stats.Sim_HPS, playerMetrics.Hps.Avg, playerMetrics.Hps.Min, playerMetrics.Hps.Max, playerMetrics.Hps.Stdev)
 		simData.Set(stats.Sim_DEATH, playerMetrics.ChanceOfDeath)
 		return simData
 	} else {

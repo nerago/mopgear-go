@@ -85,7 +85,7 @@ func core(printer *util.PrintRecorder) {
 	// forSpreadsheetGenerateRatingsDataFromSims(printer)
 	// statWeightsFromHighAndSim(printer)
 	// statWeightsBasic(printer)
-	// statWeightsGrid(printer)
+	//statWeightsGrid(printer)
 	// statWeightsFitting2(printer)
 	// statWeightsComplex(printer)
 	// statWeightsRanking(printer)
@@ -94,7 +94,7 @@ func core(printer *util.PrintRecorder) {
 
 	statWeights_CompareAlgorithms(printer)
 
-	// statWeightsGrid_updateAll(printer)
+	//statWeightsGrid_updateAll(printer)
 
 	//PaladinMultiRun(printer)
 

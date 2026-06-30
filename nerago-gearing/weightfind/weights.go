@@ -74,7 +74,7 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 
 func writeFile(filename, content string) {
 	bytes := []byte(content)
-	err := os.WriteFile(filename, bytes, 0)
+	err := os.WriteFile(filename, bytes, 0666)
 	if err != nil {
 		panic(err)
 	}

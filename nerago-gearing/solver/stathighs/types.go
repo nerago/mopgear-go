@@ -1,6 +1,7 @@
 package stathighs
 
 import (
+	"encoding/json"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
@@ -74,4 +75,12 @@ func (wr *WeightResult) Clone() WeightResult {
 
 func (wr *WeightResult) String() string {
 	return wr.content.CreateString(6)
+}
+
+func (wr *WeightResult) MarshalJSON() ([]byte, error) {
+	return json.Marshal(wr.content)
+}
+
+func (wr *WeightResult) UnmarshalJSON(bytes []byte) error {
+	return json.Unmarshal(bytes, &wr.content)
 }

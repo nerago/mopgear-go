@@ -53,11 +53,9 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 	defer tracker.SetDone()
 
 	inputList := channel_op.Map_SliceToSlice(6, incrementPermutations, func(increments *[]incrementStat) stathighs.WeightInput {
-		innerPrint := util.PrintRecorder_HoldAll()
-
 		bonusStat := maps.Clone(initialBaseStats)
 		str := util.StringBuild2{}
-		str.WriteString("STATS SCENARIO ")
+		str.WriteString("SIM ")
 		for _, inc := range *increments {
 			bonusStat[inc.stat] += inc.value
 
@@ -69,11 +67,9 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 
 		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.NewChild())
 
-		str.WriteString("   --> ")
+		str.WriteString("--> ")
 		simResult.CompactStringGeneralBuilder(&str)
-		innerPrint.PrintlnFromBuild(str)
-
-		printer.AppendOther(innerPrint)
+		printer.PrintlnFromBuild(str)
 
 		return stathighs.WeightInput{
 			TotalStat: addBonusStats(currentItemSet.Total(), bonusStat),
@@ -108,8 +104,23 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 			bonusStats = &bonusFix
 		}
 
+		var total stats.StatBlock
+		if bonusStats != nil {
+			total = addBonusStats(itemSet.Total(), *bonusStats)
+		} else {
+			total = *itemSet.Total()
+		}
+
 		simResult := simulate.WowSim_Execute_UseModel(simSize, model, itemSet.Items(), bonusStats, track.NewChild())
-		return stathighs.WeightInput{TotalStat: *itemSet.Total(), SimResult: simResult}
+
+		str := util.StringBuild2{}
+		str.WriteString("SIM ")
+		total.AppendString(&str)
+		str.WriteString(" --> ")
+		simResult.CompactStringGeneralBuilder(&str)
+		printer.PrintlnFromBuild(str)
+
+		return stathighs.WeightInput{TotalStat: total, SimResult: simResult}
 	})
 
 	return weightInputs
@@ -152,10 +163,8 @@ func checkBadExpertRange(printer *util.PrintRecorder, current uint32, decrementB
 }
 
 func fixBadHasteRange(printer *util.PrintRecorder, currentHaste uint32, plannedIncrementTestRange int32) int32 {
-	printer.Printf("Current gear haste %d\n", currentHaste)
 	min := int32(currentHaste)
 	max := int32(currentHaste) + plannedIncrementTestRange
-	printer.Printf("Planned simulated gear haste %d-%d\n", min, max)
 
 	var fix int32
 	if min >= c_hasteDiscontinuityEnd {
@@ -169,7 +178,7 @@ func fixBadHasteRange(printer *util.PrintRecorder, currentHaste uint32, plannedI
 	}
 
 	if fix != 0 {
-		printer.Printf("Corrected simulated gear haste %d-%d\n", min+fix, max+fix)
+		printer.Printf("Current gear haste %d, planned simulation %d-%d, corrected %d-%d\n", currentHaste, min, max, min+fix, max+fix)
 	}
 
 	if !(min+fix >= c_hasteDiscontinuityEnd || max+fix <= c_hasteDiscontinuityStart) {
@@ -180,10 +189,8 @@ func fixBadHasteRange(printer *util.PrintRecorder, currentHaste uint32, plannedI
 }
 
 func fixBadExpertRange(printer *util.PrintRecorder, currentExpert uint32, plannedIncrementTestRange int32) int32 {
-	printer.Printf("Current gear expertise %d\n", currentExpert)
 	min := int32(currentExpert)
 	max := int32(currentExpert) + plannedIncrementTestRange
-	printer.Printf("Planned simulated gear expertise %d-%d\n", min, max)
 
 	var fix int32
 	if max >= int32(requirements.TARGET_RATING_TANK) {
@@ -191,7 +198,7 @@ func fixBadExpertRange(printer *util.PrintRecorder, currentExpert uint32, planne
 	}
 
 	if fix != 0 {
-		printer.Printf("Corrected simulated gear expertise %d-%d\n", min+fix, max+fix)
+		printer.Printf("Current gear expertise %d, planned simulation %d-%d, corrected %d-%d\n", currentExpert, min, max, min+fix, max+fix)
 	}
 	return fix
 }

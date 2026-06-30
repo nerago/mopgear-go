@@ -299,7 +299,7 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 	printer.Println("NEW SET STATS")
 	resultStats.Print(printer)
 
-	resultStats.IncreaseSimBreakdown(&currentStats).Print(printer)
+	resultStats.QueryIncreaseOfEach(&currentStats).Print(printer)
 }
 
 func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
@@ -374,10 +374,10 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 			resultStats.Print(printer)
 
 			printer.Printf("INCREASE STATS (%s %s)\n", slotEquip.Name(), example.BaseName())
-			resultStats.IncreaseSimBreakdown(&currentStats).Print(printer)
+			resultStats.QueryIncreaseOfEach(&currentStats).Print(printer)
 
-			mitiInc := resultStats.IncreaseMitigation(&currentStats)
-			dpsInc := resultStats.IncreaseOf(&currentStats, stats.Sim_DPS)
+			mitiInc := resultStats.QueryIncreaseMitigation(&currentStats)
+			dpsInc := resultStats.QueryIncreaseOf(&currentStats, stats.Sim_DPS)
 			printer.Printf("INCREASE miti=%.3f dps=%.3f\n", mitiInc, dpsInc)
 
 			resultPairs = append(resultPairs, pair{mitiInc, dpsInc, example.BaseName()})

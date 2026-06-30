@@ -419,7 +419,7 @@ func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.Stat
 	if false {
 		// SIMULATE STAT CHANGES
 		// baseLine := simulate.WowSim_Execute_SpecifyAll(simSpeed, model.Spec, model.Goal, fight, model.Professions, baseItemSet.Items(), nil, nil)
-		// inputData := generateRatingsInputFromArtificalStatOverrides_ForBasic(baseItemSet, printer, simSpeed, model.Spec, model.Goal, fight, model.Professions)
+		// inputData := generateRatingsInputFromArtificialStatOverrides_ForBasic(baseItemSet, printer, simSpeed, model.Spec, model.Goal, fight, model.Professions)
 
 		// // SOLVE FOR STAT WEIGHTS
 		// process := stathighs.BasicStatWeightProcess{}
@@ -455,7 +455,7 @@ func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.Stat
 
 func writeFile(filename, content string) {
 	bytes := []byte(content)
-	err := os.WriteFile(filename, bytes, 0)
+	err := os.WriteFile(filename, bytes, 0666)
 	if err != nil {
 		panic(err)
 	}

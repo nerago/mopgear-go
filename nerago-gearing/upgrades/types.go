@@ -127,15 +127,15 @@ func (result upgradeItemResultWithSim) increaseSim() float64 {
 
 	switch result.goal {
 	case stats.OptimiseGoal_Dps:
-		return result.sim.IncreaseOf(&result.baseSim, stats.Sim_DPS)
+		return result.sim.QueryIncreaseOf(&result.baseSim, stats.Sim_DPS)
 	case stats.OptimiseGoal_Healing:
-		return result.sim.IncreaseOf(&result.baseSim, stats.Sim_HPS)
+		return result.sim.QueryIncreaseOf(&result.baseSim, stats.Sim_HPS)
 	case stats.OptimiseGoal_Mitigation:
-		return result.sim.IncreaseMitigation(&result.baseSim)
+		return result.sim.QueryIncreaseMitigation(&result.baseSim)
 	case stats.OptimiseGoal_HalfMitiDps:
-		return (result.sim.IncreaseMitigation(&result.baseSim) + result.sim.IncreaseOf(&result.baseSim, stats.Sim_DPS)) / 2.0
+		return (result.sim.QueryIncreaseMitigation(&result.baseSim) + result.sim.QueryIncreaseOf(&result.baseSim, stats.Sim_DPS)) / 2.0
 	case stats.OptimiseGoal_HalfMitiHeal:
-		return (result.sim.IncreaseMitigation(&result.baseSim) + result.sim.IncreaseOf(&result.baseSim, stats.Sim_HPS)) / 2.0
+		return (result.sim.QueryIncreaseMitigation(&result.baseSim) + result.sim.QueryIncreaseOf(&result.baseSim, stats.Sim_HPS)) / 2.0
 	default:
 		panic("unknown goal")
 	}
@@ -157,7 +157,7 @@ func (result upgradeItemResultWithSim) increaseSimStr(prefixNote bool) string {
 }
 
 func (result upgradeItemResultWithSim) increaseSimBreakdown() *stats.SimData {
-	return result.sim.IncreaseSimBreakdown(&result.baseSim)
+	return result.sim.QueryIncreaseOfEach(&result.baseSim)
 }
 
 // ################## reportGroup ##################

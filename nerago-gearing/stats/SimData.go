@@ -58,8 +58,17 @@ func (types SimType) Name() string {
 
 var SimTypeList = []SimType{Sim_DPS, Sim_TPS, Sim_DTPS, Sim_HPS, Sim_TMI, Sim_DEATH}
 
+const simTypeCount = 6
+
 type SimData struct {
-	data [6]float64
+	Values [simTypeCount]float64
+	Detail *[simTypeCount]SimDataDetail
+}
+
+type SimDataDetail struct {
+	Min    float64
+	Max    float64
+	StdDev float64
 }
 
 func SimData_Make(parts ...any) SimData {
@@ -131,57 +140,89 @@ func (sim *SimData) IsEmpty() bool {
 }
 
 func (sim *SimData) Get(types SimType) float64 {
-	return sim.data[types]
+	return sim.Values[types]
 }
 
-func (sim *SimData) DPS() float64   { return sim.Get(Sim_DPS) }
-func (sim *SimData) TPS() float64   { return sim.Get(Sim_TPS) }
-func (sim *SimData) DTPS() float64  { return sim.Get(Sim_DTPS) }
-func (sim *SimData) HPS() float64   { return sim.Get(Sim_HPS) }
-func (sim *SimData) TMI() float64   { return sim.Get(Sim_TMI) }
-func (sim *SimData) DEATH() float64 { return sim.Get(Sim_DEATH) }
-
 func (sim *SimData) GetFriendly(types SimType) float64 {
-	switch types {
-	case Sim_DPS:
-		return sim.DPS()
-	case Sim_TPS:
-		return sim.TPS()
-	case Sim_DTPS:
-		return sim.DTPS()
-	case Sim_HPS:
-		return sim.HPS()
-	case Sim_TMI:
-		return sim.TMI()
-	case Sim_DEATH:
-		return sim.DEATH() * 100
-	default:
-		panic("unknown value")
+	if types == Sim_DEATH {
+		return sim.Values[Sim_DEATH] * 100
+	} else {
+		return sim.Values[types]
 	}
 }
 
+func (sim *SimData) DEATH() float64 { return sim.Values[Sim_DEATH] }
+func (sim *SimData) TMI() float64   { return sim.Values[Sim_TMI] }
+func (sim *SimData) HPS() float64   { return sim.Values[Sim_HPS] }
+func (sim *SimData) DTPS() float64  { return sim.Values[Sim_DTPS] }
+func (sim *SimData) TPS() float64   { return sim.Values[Sim_TPS] }
+func (sim *SimData) DPS() float64   { return sim.Values[Sim_DPS] }
+
 func (sim *SimData) Set(types SimType, value float64) {
-	sim.data[types] = value
+	sim.Values[types] = value
+}
+
+func (sim *SimData) SetDetailed(types SimType, average, min, max, stdDev float64) {
+	sim.Values[types] = average
+	if sim.Detail == nil {
+		sim.Detail = new([simTypeCount]SimDataDetail)
+	}
+	sim.Detail[types] = SimDataDetail{
+		Min:    min,
+		Max:    max,
+		StdDev: stdDev,
+	}
+}
+
+func (sim *SimData) HasDetailedRanges() bool {
+	return sim.Detail != nil
+}
+
+func (sim *SimData) GetDetailed(types SimType) (hasAverage, hasDetail bool, average, min, max, stdDev float64) {
+	average = sim.Values[types]
+	if util.FloatEqualsZero(average) {
+		return
+	}
+	hasAverage = true
+
+	if sim.Detail != nil {
+		min = sim.Detail[types].Min
+		max = sim.Detail[types].Max
+		stdDev = sim.Detail[types].StdDev
+		if !util.FloatEqualsZero(min) || !util.FloatEqualsZero(max) {
+			hasDetail = true
+		}
+	}
+
+	return
+}
+
+func (sim *SimData) GetDetailed2(types SimType) *SimDataDetail {
+	if sim.Detail != nil {
+		return &sim.Detail[types]
+	} else {
+		return nil
+	}
 }
 
 func (sim *SimData) Seq() iter.Seq2[SimType, float64] {
 	return func(yield func(SimType, float64) bool) {
-		if !yield(Sim_DPS, sim.DPS()) {
+		if !yield(Sim_DPS, sim.Values[Sim_DPS]) {
 			return
 		}
-		if !yield(Sim_TPS, sim.TPS()) {
+		if !yield(Sim_TPS, sim.Values[Sim_TPS]) {
 			return
 		}
-		if !yield(Sim_DTPS, sim.DTPS()) {
+		if !yield(Sim_DTPS, sim.Values[Sim_DTPS]) {
 			return
 		}
-		if !yield(Sim_HPS, sim.HPS()) {
+		if !yield(Sim_HPS, sim.Values[Sim_HPS]) {
 			return
 		}
-		if !yield(Sim_TMI, sim.TMI()) {
+		if !yield(Sim_TMI, sim.Values[Sim_TMI]) {
 			return
 		}
-		if !yield(Sim_DEATH, sim.DEATH()) {
+		if !yield(Sim_DEATH, sim.Values[Sim_DEATH]) {
 			return
 		}
 	}
@@ -190,27 +231,27 @@ func (sim *SimData) Seq() iter.Seq2[SimType, float64] {
 func (sim *SimData) NonZeroTypes() []SimType {
 	types := [6]SimType{}
 	index := 0
-	if sim.DPS() != 0 {
+	if sim.Values[Sim_DPS] != 0 {
 		types[index] = Sim_DPS
 		index++
 	}
-	if sim.TPS() != 0 {
+	if sim.Values[Sim_TPS] != 0 {
 		types[index] = Sim_TPS
 		index++
 	}
-	if sim.DTPS() != 0 {
+	if sim.Values[Sim_DTPS] != 0 {
 		types[index] = Sim_DTPS
 		index++
 	}
-	if sim.HPS() != 0 {
+	if sim.Values[Sim_HPS] != 0 {
 		types[index] = Sim_HPS
 		index++
 	}
-	if sim.TMI() != 0 {
+	if sim.Values[Sim_TMI] != 0 {
 		types[index] = Sim_TMI
 		index++
 	}
-	if sim.DEATH() != 0 {
+	if sim.Values[Sim_DEATH] != 0 {
 		types[index] = Sim_DEATH
 		index++
 	}
@@ -220,7 +261,7 @@ func (sim *SimData) NonZeroTypes() []SimType {
 	return types[0:index]
 }
 
-func (sim *SimData) IncreaseSimBreakdown(baseSim *SimData) *SimData {
+func (sim *SimData) QueryIncreaseOfEach(baseSim *SimData) *SimData {
 	if sim.IsEmpty() || baseSim.IsEmpty() {
 		panic("empty sim shouldn't get called here")
 	}
@@ -251,11 +292,11 @@ func increaseForPart(sim, baseSim *SimData, part SimType) float64 {
 	return result
 }
 
-func (sim *SimData) IncreaseOf(baseSim *SimData, part SimType) float64 {
+func (sim *SimData) QueryIncreaseOf(baseSim *SimData, part SimType) float64 {
 	return increaseForPart(sim, baseSim, part)
 }
 
-func (sim *SimData) IncreaseMitigation(baseSim *SimData) float64 {
+func (sim *SimData) QueryIncreaseMitigation(baseSim *SimData) float64 {
 	checkParts := []SimType{Sim_DPS, Sim_DTPS, Sim_TMI, Sim_DEATH}
 	var total float64
 	for _, part := range checkParts {
