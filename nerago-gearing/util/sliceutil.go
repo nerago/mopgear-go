@@ -137,6 +137,18 @@ func MapSliceAsNew[T any, R any](slice []T, mapper func(x *T) R) []R {
 	return result
 }
 
+func MapSliceAsNew_NoPointer[T any, R any](slice []T, mapper func(x T) R) []R {
+	if slice == nil {
+		return nil
+	}
+
+	result := make([]R, len(slice))
+	for i := range slice {
+		result[i] = mapper(slice[i])
+	}
+	return result
+}
+
 func MapSliceAsSeq[T any, R any](slice []T, mapper func(x *T) R) iter.Seq[R] {
 	return func(yield func(R) bool) {
 		for i := range slice {
@@ -156,6 +168,20 @@ func FilterSliceAsNew[T any](slice []T, filter func(x *T) bool) []T {
 	result := make([]T, 0, len(slice))
 	for _, item := range slice {
 		if filter(&item) {
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+func FilterSliceAsNew_NoPointer[T any](slice []T, filter func(x T) bool) []T {
+	if slice == nil {
+		return slice
+	}
+
+	result := make([]T, 0, len(slice))
+	for _, item := range slice {
+		if filter(item) {
 			result = append(result, item)
 		}
 	}

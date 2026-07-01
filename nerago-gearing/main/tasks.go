@@ -506,7 +506,6 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 	itemIds := []items.ItemId{
 		94519, // crit prim rage
 		96793, // none fort zand
-		// 96555,                    // none soul barrier
 		94529, // none gaze twins
 		94527, // ji-kun
 		// 94507,                    // valor
@@ -530,29 +529,29 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 	}
 
 	groups := []group{
-		{
-			"heal",
-			model.Model_PallyProtHeal(),
-			files.GearFileProtHeal,
-		},
-		{
-			"with_set",
-			model.Model_PallyProtMitigation_WithSet(),
-			files.GearFileProtMitigationWithSet,
-		}, {
-			"no_set",
-			model.Model_PallyProtMitigation_NoSet(),
-			files.GearFileProtMitigationNoSet,
-		},
-		{
-			"compromise",
-			model.Model_PallyProtCompromise(),
-			files.GearFileProtCompromise,
-		}, {
-			"dps",
-			model.Model_PallyProtDps(),
-			files.GearFileProtDps,
-		},
+		//{
+		//	"heal",
+		//	model.Model_PallyProtHeal(),
+		//	files.GearFileProtHeal,
+		//},
+		//{
+		//	"with_set",
+		//	model.Model_PallyProtMitigation_WithSet(),
+		//	files.GearFileProtMitigationWithSet,
+		//}, {
+		//	"no_set",
+		//	model.Model_PallyProtMitigation_NoSet(),
+		//	files.GearFileProtMitigationNoSet,
+		//},
+		//{
+		//	"compromise",
+		//	model.Model_PallyProtCompromise(),
+		//	files.GearFileProtCompromise,
+		//}, {
+		//	"dps",
+		//	model.Model_PallyProtDps(),
+		//	files.GearFileProtDps,
+		//},
 		{
 			"ret",
 			model.Model_PallyProtDps(),
@@ -586,13 +585,23 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		equipped := loaders.GearFileReader_Read(file)
 		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_HoldAll())
 
-		for _, itemIdOne := range itemIds {
+		processItemIds := itemIds
+		if group.label == "ret" {
+			processItemIds = util.MapSliceAsNew_NoPointer(processItemIds, func(x items.ItemId) items.ItemId {
+				if x == trinketVialCorruptCelestial {
+					x = trinketEyeGalakrasCelestial
+				}
+				return x
+			})
+		}
+
+		for _, itemIdOne := range processItemIds {
 			var upgrade int32 = 0
 			if itemIdOne < 100000 {
 				upgrade = 2
 			}
 			itemOne := db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemIdOne, upgrade, printer)
-			for _, itemIdTwo := range itemIds {
+			for _, itemIdTwo := range processItemIds {
 				if itemIdTwo >= itemIdOne {
 					continue
 				}

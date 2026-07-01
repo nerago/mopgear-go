@@ -5,7 +5,6 @@ import (
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -63,9 +62,6 @@ func processSpec(input *FindUpgrades_SimInputs, spec *FindUpgrades_Spec, difficu
 	options := setup.OptionsSetup_FromGearFile(spec.GearFile, &spec.Model, setup.MissingEnchant_Panic, printer)
 
 	upgradeItems := spec.ItemFinder(difficulty)
-	if !input.IncludeRaden {
-		upgradeItems = loaders.ItemFinder_FilterOutRadenItems(upgradeItems)
-	}
 	upgradeItems = util.RemoveDuplicatesFunc(upgradeItems, func(a, b **items.FullItem) bool { return (*a).Equals(*b) })
 
 	group := reportGroup{spec.Label, difficulty}

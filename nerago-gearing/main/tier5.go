@@ -367,6 +367,17 @@ var initialPriorityDeath = []stats.StatType{
 	stats.Stat_Crit,
 }
 
+const (
+	trinketCurseHubrisHeroic  = 105645 // heroic warforged
+	trinketThokTailHeroic     = 105609 // heroic warforged
+	trinketFusionCoreHeroic   = 105459 // heroic warforged
+	trinketSkeerBloodHeroic   = 105632 // heroic warforged
+	trinketVialCorruptHeroic  = 105568 // heroic warforged
+	trinketRookUnluckyHeroic  = 105438 // heroic warforged
+	trinketJuggFocusingHeroic = 105514 // heroic warforged
+	trinketEyeGalakrasHeroic  = 102298
+)
+
 func statWeightsGridFromInitialT5(printer *util.PrintRecorder) {
 	// simSpeed := simulate.RunSize_TestOnly
 	simSpeed := simulate.RunSize_QuickDirty

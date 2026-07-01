@@ -78,7 +78,11 @@ func Model_PallyProtMitigation_NoSet() Model {
 		StatsForWeighting: StatsForWeighting_strengthTank,
 		EnchantChoice:     EnchantChoice_ForSpec(spec, goal),
 		GemChoice:         GemChoice_ForSpec(spec, goal),
-		SetBonus:          SetBonus_Empty(),
+		//SetBonus:          SetBonus_Named("Plate of Winged Triumph"),
+		//SetBonusRequired: []ActiveSetCountsRequired{
+		//	ActiveSetCountsRequiredMake(ActiveSet_Named("Plate of Winged Triumph"), 2),
+		//},
+		SetBonus: SetBonus_Empty(),
 		Professions: ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,

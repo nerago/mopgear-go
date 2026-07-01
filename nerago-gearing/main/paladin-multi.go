@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
 )
@@ -18,19 +19,11 @@ const (
 	trinketPrimRage  = 94519
 	trinketTwinsGaze = 94529
 
-	trinketCurseHubrisHeroic  = 105645 // heroic warforged
-	trinketThokTailHeroic     = 105609 // heroic warforged
-	trinketFusionCoreHeroic   = 105459 // heroic warforged
-	trinketSkeerBloodHeroic   = 105632 // heroic warforged
-	trinketVialCorruptHeroic  = 105568 // heroic warforged
-	trinketRookUnluckyHeroic  = 105438 // heroic warforged
-	trinketJuggFocusingHeroic = 105514 // heroic warforged
-	trinketEyeGalakrasHeroic  = 102298
-
 	trinketFusionCoreCelestial  = 104961
 	trinketThokTailCelestial    = 105111
 	trinketVialCorruptCelestial = 105070
 	trinketRookUnluckyNormal    = 102296
+	trinketEyeGalakrasCelestial = 104993
 
 	legendMeleeCloak = 102249
 	legendTankCloak  = 102250
@@ -76,7 +69,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:                     "Prot-Mitigation-NoSet",
 		GearFile:                  files.GearFileProtMitigationNoSet,
 		Model:                     model.Model_PallyProtMitigation_NoSet(),
-		RequestRatingPercent:      0.40,
+		RequestRatingPercent:      0.35,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
 		MissingEnchant:            setup.MissingEnchant_Panic,
@@ -94,7 +87,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:                     "Prot-Heal",
 		GearFile:                  files.GearFileProtMitigationWithSet,
 		Model:                     model.Model_PallyProtHeal(),
-		RequestRatingPercent:      0.05,
+		RequestRatingPercent:      0.10,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
 		MissingEnchant:            setup.MissingEnchant_Panic,
@@ -136,6 +129,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96666, // prot tier15 head heroic
 		96667, // prot tier15 leg heroic
 		96668, // prot tier15 shoulder heroic
+		95291, // prot tier15 hand normal
 	}
 	protCompromise.AddExtraItems(protT15)
 	protMitigationNoSet.AddExtraItems(protT15)
@@ -239,11 +233,14 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		103787, // poisonbinder girth
 		103742, // blood rage bracers
 		103738, // bubble bracers
-		105785, // burly bracer
+		105785, // vanguard burly bracer
 		103734, // zoid gauntlets
 		103826, // xifeng weapon
 		103735, // tar-coated gauntlets
 		103872, // bulwurk of fallen general
+		103916, // jugg ignition keys
+		103791, // gauntlet discarded time
+		104461, // rage-blind greathelm
 	}
 	newTrinkets := []items.ItemId{
 		trinketThokTailCelestial,
@@ -260,12 +257,13 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protHeal.AddExtraItems(newStuffP5)
 
 	ret.AddExtraItems([]items.ItemId{
-		96373, // cloudbreaker belt heroic - good 2nd belt
-		96395, // bloodsoaked legplates - decent 2nd legs, offset
-		96542, // tidal force treads
-		86386, // Shin'ka, Execution of Dominion
-		95281, // ret tier15 gloves normal (moved from shared lists was 7.7%)
-		96657, // ret tier15 legs heroic
+		96373,  // cloudbreaker belt heroic - good 2nd belt
+		96395,  // bloodsoaked legplates - decent 2nd legs, offset
+		96542,  // tidal force treads
+		86386,  // Shin'ka, Execution of Dominion
+		95281,  // ret tier15 gloves normal (moved from shared lists was 7.7%)
+		96657,  // ret tier15 legs heroic
+		104993, // ret cd trinket celestial
 	})
 
 	protDps.AddExtraItems([]items.ItemId{
@@ -315,7 +313,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96550, // doomed crown heroic
 		96395, // bloodsoaked legplates
 		96542, // tidal force treads
-		95291, // prot tier15 hand normal
 	})
 
 	protHeal.AddExtraItems([]items.ItemId{
@@ -333,26 +330,23 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	ret.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
 	ret.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
 	ret.ForceSingleSlot(items.Equip_Trinket2, trinketTwinsGaze)
-	// protDps.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
 	protDps.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
 	protDps.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
 	protDps.ForceSingleSlot(items.Equip_Trinket2, trinketTwinsGaze)
-	// protCompromise.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
+	protCompromise.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
 	protCompromise.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
 	protCompromise.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
 	protCompromise.AddReportVariant(items.Equip_Trinket2, trinketFortZand)
-	// protMitigationNoSet.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
+	protMitigationNoSet.ForceSingleSlot(items.Equip_Head, 104461) // temporary rule?
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
 	protMitigationNoSet.AddReportVariant(items.Equip_Trinket1, trinketZandSpark)
 	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
-	//protMitigationWithSet.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketVialCorruptCelestial)
 	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketThokTailCelestial)
-	// protHeal.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
 	protHeal.ForceSingleSlot(items.Equip_Back, legendTankCloak)
 	protHeal.ForceSingleSlot(items.Equip_Trinket1, trinketTwinsGaze)
 	protHeal.ForceSingleSlot(items.Equip_Trinket2, trinketZandSpark)
@@ -371,22 +365,22 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 	blockHelmetsWithoutIndomitable(&protHeal)
 
-	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
+	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Expertise, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Hit, 320))
 	// job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
-	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
-	// job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
+	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
+	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 
 	job.MakeRandomVariants(101887, 0, -365, -352)
 
-	ret.AddBagsExtra()
-	protDps.AddBagsExtra()
-	protCompromise.AddBagsExtra()
-	protMitigationNoSet.AddBagsExtra()
-	protMitigationWithSet.AddBagsExtra()
-	protHeal.AddBagsExtra()
+	//ret.AddBagsExtra()
+	//protDps.AddBagsExtra()
+	//protCompromise.AddBagsExtra()
+	//protMitigationNoSet.AddBagsExtra()
+	//protMitigationWithSet.AddBagsExtra()
+	//protHeal.AddBagsExtra()
 
 	job.AddSetParam(ret)
 	job.AddSetParam(protDps)
@@ -398,18 +392,19 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
-	// job.RunNoPermutations_AllCommonAlternates()
-	job.RunForSolutionsPerPerumte(6)
+	job.RunNoPermutations_AllCommonAlternates()
+	//job.RunForSolutionsPerPerumte(8)
 	// job.RunCullingSets(500, time.Minute*30)
 }
 
 func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {
-	param.BlockItem(87101) // white tiger helmet = prot gem
-	param.BlockItem(95292) // lightning emp faceguard = prot gem
-	param.BlockItem(95778) // golden golem celestial = ignore in all sets
-	param.BlockItem(96666) // lightning emp faceguard heroic = prot gem
-	param.BlockItem(96550) // doomed crown heroic = prot gem
-	param.BlockItem(99128) // winged faceguard = prot gem
+	param.BlockItem(87101)  // white tiger helmet = prot gem
+	param.BlockItem(95292)  // lightning emp faceguard = prot gem
+	param.BlockItem(95778)  // golden golem celestial = ignore in all sets
+	param.BlockItem(96666)  // lightning emp faceguard heroic = prot gem
+	param.BlockItem(96550)  // doomed crown heroic = prot gem
+	param.BlockItem(99128)  // winged faceguard = prot gem
+	param.BlockItem(104461) // rage-blind = prot gem
 	blockGeneral(param)
 }
 

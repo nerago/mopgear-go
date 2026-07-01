@@ -134,11 +134,13 @@ func (job *MultiSetJob) reportSimResults_One(result simulateMultiResult) {
 		output.Report(job.printer)
 		specResult.Print(job.printer)
 
-		for slot, itemId := range param.ReportVariant {
+		if len(param.ReportVariant) > 0 {
 			variantEquip := *output.FullSet.Items()
-			variantItem := job.findVariantItem(result, itemId, param)
-			variantEquip[slot] = variantItem
-			job.printer.Printf("\n---------------- %s %s ----------------\n", param.Label, variantItem.BaseName())
+			for slot, itemId := range param.ReportVariant {
+				variantItem := job.findVariantItem(result, itemId, param)
+				variantEquip[slot] = variantItem
+				job.printer.Printf("\n---------------- %s %s ----------------\n", param.Label, variantItem.BaseName())
+			}
 			tools.WowSimJson_Write(&variantEquip, &param.Model, job.printer)
 			job.printer.Println0()
 		}

@@ -10,12 +10,13 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
 	"strconv"
+	"time"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 	"github.com/google/uuid"
 )
 
-const c_timeLimit = 15 * 60 // 15 mins
+const c_timeLimit = 30 * time.Minute
 
 type SolverHighsMultiParam struct {
 	Label          string
@@ -254,7 +255,7 @@ func (process *SolverHighsMultiProcess) solutionToResult(solution *highs.Solutio
 
 func (process *SolverHighsMultiProcess) makeFullModel() {
 	process.build = &utilhighs.LinearBuilder{}
-	process.build.TimeLimitSeconds = c_timeLimit // an hour
+	process.build.TimeLimitSeconds = util.RoundToInt(c_timeLimit.Seconds())
 	process.build.Solver = utilhighs.Solver_MIP_Interior
 
 	entry := columnInfo{entryType: entry_multi_output}

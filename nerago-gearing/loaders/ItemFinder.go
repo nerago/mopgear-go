@@ -99,6 +99,20 @@ func ItemFinder_Ordos(_ stats.Difficulty) []*items.FullItem {
 	return result
 }
 
+func ItemFinder_HeroicBossFiltered(innerFinder func(stats.Difficulty) []*items.FullItem, heroicBossNames []string) func(stats.Difficulty) []*items.FullItem {
+	return func(difficulty stats.Difficulty) []*items.FullItem {
+		regularResult := innerFinder(difficulty)
+		if difficulty == stats.Difficulty_Celestial || difficulty == stats.Difficulty_Normal {
+			return regularResult
+		}
+
+		return util.FilterSliceAsNew_NoPointer(regularResult, func(item *items.FullItem) bool {
+			bossName := db.BossItemData_BossForItem(item)
+			return slices.Contains(heroicBossNames, bossName)
+		})
+	}
+}
+
 func ItemFinder_SiegeStrengthPlateTank(difficulty stats.Difficulty) []*items.FullItem {
 	return slices.Concat(
 		seigeClassGearSet(stats.Spec_PaladinProt, difficulty),
@@ -125,12 +139,6 @@ func ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff(difficulty stats.Diff
 	exclude := []items.ItemId{95513}
 	return util.FilterSliceAsNew(ItemFinder_ThroneStrengthPlateTank(difficulty), func(item **items.FullItem) bool {
 		return !slices.Contains(exclude, (*item).ItemId())
-	})
-}
-
-func ItemFinder_ThroneStrengthPlateTank_RadenOnly(difficulty stats.Difficulty) []*items.FullItem {
-	return util.FilterSliceAsNew(ItemFinder_ThroneStrengthPlateTank(difficulty), func(item **items.FullItem) bool {
-		return isRadenItem((*item).ItemId())
 	})
 }
 
@@ -280,18 +288,6 @@ func matchesThroneGearCriteria(item *items.FullItem, armor stats.ArmorType, prim
 		item.SlotItem() != items.Item_Trinket &&
 		item.PrimaryStat() == primary &&
 		!model.SetBonus_IsAnyKnownItem(item.ItemId())
-}
-
-var g_radenItems = []items.ItemId{95025, 95013, 95001, 95038, 95035, 95033, 95028, 95002, 94995, 95003, 95015, 95010, 95000, 95029, 95030, 95027, 95031, 95023, 95011, 94999, 95036, 95037, 95020, 95018, 95022, 95019, 95021, 95014, 95032, 95040, 95006, 95012, 95034, 95026, 95039, 95004, 94998, 95024, 95005, 95009, 95007, 94996, 95016, 95008, 94997, 95017}
-
-func isRadenItem(itemId items.ItemId) bool {
-	return slices.Contains(g_radenItems, itemId)
-}
-
-func ItemFinder_FilterOutRadenItems(upgradeItems []*items.FullItem) []*items.FullItem {
-	return util.FilterSliceAsNew(upgradeItems, func(item **items.FullItem) bool {
-		return !isRadenItem((*item).ItemId())
-	})
 }
 
 func trinketsForDifficulty(trinketIds []items.ItemId, difficulty stats.Difficulty, expectedItemLevelFunc func(stats.Difficulty) uint16) []*items.FullItem {

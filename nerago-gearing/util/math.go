@@ -76,3 +76,11 @@ func FloatsApproxEquals(a, b float64) bool {
 func FloatsBetween(lo, val, hi float64) bool {
 	return lo-0.000001 <= val && val <= hi+0.000001
 }
+
+func RoundToInt64(value float64) int64 {
+	return int64(math.Round(value))
+}
+
+func RoundToInt(value float64) int {
+	return int(math.Round(value))
+}
