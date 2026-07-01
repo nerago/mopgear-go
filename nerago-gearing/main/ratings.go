@@ -1203,12 +1203,12 @@ func statWeightsGrid_updateAll(printer *util.PrintRecorder) {
 			Model:           model.Model_PallyProtHeal(),
 			SubstituteItems: util.RemoveDuplicatesComparable(slices.Concat(substituteItemsDps, substituteItemsMiti)),
 		},
-		{
-			WeightFileOut:   files.WeightRetFile,
-			GearFile:        files.GearFileRet,
-			Model:           model.Model_PallyRet(),
-			SubstituteItems: substituteItemsRet,
-		},
+		//{
+		//	WeightFileOut:   files.WeightRetFile,
+		//	GearFile:        files.GearFileRet,
+		//	Model:           model.Model_PallyRet(),
+		//	SubstituteItems: substituteItemsRet,
+		//},
 	})
 }
 

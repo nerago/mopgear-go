@@ -41,7 +41,7 @@ func StatWeights_updateAll(simSpeed simulate.WowSim_RunSize, printer *util.Print
 }
 
 func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios stats.SimData, weightFileOut string, substituteItems []items.ItemId, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, tracker *util.TrackProgress) {
-	tracker.RunOuterTracking(5)
+	tracker.RunOuterTracking(3)
 	defer tracker.SetDone()
 
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), gearModel, setup.MissingEnchant_Panic, printer)
@@ -53,6 +53,7 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 	mixedInputData := slices.Concat(inputDataGrid, inputDataReal)
 
 	// TODO avoid changing set bonuses
+	// TODO tag in logs so can reconstruct
 
 	// SOLVE FOR STAT WEIGHTS
 	grid := stathighs.GridStatWeightProcess1B{}
@@ -67,7 +68,6 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 	weightsGrid := grid.Run(nil)
 	printer.Println(">>>>> Grid Weights:")
 	pawnGrid := tools.WritePawnString(weightsGrid, printer)
-	tracker.NewChild().SetDone() // mark stage done
 
 	ranking := stathighs.RankingStatWeightProcess3b{}
 	ranking.SCALE1 = false
@@ -84,7 +84,6 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 	}
 	printer.Println(">>>>> Ranking Weights:")
 	pawnRanking := tools.WritePawnString(weightsRanking, printer)
-	tracker.NewChild().SetDone() // mark stage done
 
 	// TWEAK weights see if dumb changes can do better than grid
 	weightsGrid, accuracyGrid := WeightTweaker(weightsGrid, gearModel.StatsForWeighting, ratios, mixedInputData, printer)

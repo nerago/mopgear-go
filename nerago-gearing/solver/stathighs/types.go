@@ -2,6 +2,7 @@ package stathighs
 
 import (
 	"encoding/json"
+	"math"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
@@ -67,6 +68,23 @@ func (wr *WeightResult) CalcStatScoreScaled(input *WeightInput, statScale map[st
 		total += input.TotalStat.GetFloat(statType) * wr.content.GetFloat(statType) * scale
 	}
 	return total
+}
+
+func (wr *WeightResult) ScaleBackToMax(weight float64) WeightResult {
+	biggest := 0.0
+	for value := range wr.content.SeqValues() {
+		biggest = max(biggest, math.Abs(value))
+	}
+
+	actualLimit := weight * 0.99 // rounding worries
+	if biggest < actualLimit {
+		return *wr
+	}
+
+	factor := actualLimit / biggest
+	rescaled := wr.Clone()
+	wr.content.MultiplyScalar(factor, &rescaled.content)
+	return rescaled
 }
 
 func (wr *WeightResult) Clone() WeightResult {

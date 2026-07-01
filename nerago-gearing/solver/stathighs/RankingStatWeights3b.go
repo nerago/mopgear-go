@@ -267,6 +267,8 @@ func (ranker *RankingStatWeightProcess3b) setupInitialSolutionFromExternal(weigh
 
 func (ranker *RankingStatWeightProcess3b) setupInitialFromInternalWeights(internalWeights WeightResult) {
 	if !internalWeights.IsEmpty() {
+		internalWeights = internalWeights.ScaleBackToMax(c_Rank3b_largeWeight)
+
 		for statType, colWeight := range ranker.weightColumns {
 			weight := internalWeights.Get(statType)
 			ranker.build.SetInitialSolutionValue(colWeight, weight)
