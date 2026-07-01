@@ -18,22 +18,36 @@ const (
 // let's say we have 8 stats
 // let's say we want to search about 1million samples, so 8th root = 5.62, about 6 samples per stat
 
-func WeightSearcher(weightStats []stats.StatType, targetRatio stats.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) stathighs.WeightResult {
+type WeightSearcher1 struct {
+	weightStats []stats.StatType
+	targetRatio stats.SimData
+	inputData   []stathighs.WeightInput
+	printer     *util.PrintRecorder
+}
+
+func (ws *WeightSearcher1) Init(weightStats []stats.StatType, targetRatio stats.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) {
+	ws.weightStats = weightStats
+	ws.targetRatio = targetRatio
+	ws.inputData = inputData
+	ws.printer = printer
+}
+
+func (ws *WeightSearcher1) Run() stathighs.WeightResult {
 	best := util_rank.BestCollector1[stathighs.WeightResult]{}
-	for initialWeight := range makeSpacedWeights(weightStats) {
-		updatedWeight, updatedAccuracy := weightTweakerInternal(initialWeight, c_search_tweak_start, weightStats, targetRatio, inputData, printer)
+	for initialWeight := range ws.makeSpacedWeights() {
+		updatedWeight, updatedAccuracy := weightTweakerInternal(initialWeight, c_search_tweak_start, ws.weightStats, ws.targetRatio, ws.inputData, ws.printer)
 		best.Offer(&updatedWeight, updatedAccuracy)
 	}
 	return best.GetBestOrPanic()
 }
 
-func makeSpacedWeights(weightStats []stats.StatType) iter.Seq[stathighs.WeightResult] {
+func (ws *WeightSearcher1) makeSpacedWeights() iter.Seq[stathighs.WeightResult] {
 	return func(yield func(stathighs.WeightResult) bool) {
-		buildSpacedWeightsRecur(weightStats, stathighs.WeightResult_Make(), yield)
+		ws.buildSpacedWeightsRecur(ws.weightStats, stathighs.WeightResult_Make(), yield)
 	}
 }
 
-func buildSpacedWeightsRecur(weightStats []stats.StatType, current stathighs.WeightResult, yield func(stathighs.WeightResult) bool) bool {
+func (ws *WeightSearcher1) buildSpacedWeightsRecur(weightStats []stats.StatType, current stathighs.WeightResult, yield func(stathighs.WeightResult) bool) bool {
 	if len(weightStats) == 0 {
 		return yield(current)
 	}
@@ -44,7 +58,7 @@ func buildSpacedWeightsRecur(weightStats []stats.StatType, current stathighs.Wei
 	for value := c_search_min; value <= c_search_max; value += c_search_step {
 		next := current.Clone()
 		next.Put(statAdd, value)
-		if !buildSpacedWeightsRecur(statsRemain, next, yield) {
+		if !ws.buildSpacedWeightsRecur(statsRemain, next, yield) {
 			return false
 		}
 	}

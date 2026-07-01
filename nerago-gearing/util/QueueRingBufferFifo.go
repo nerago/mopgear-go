@@ -1,18 +1,23 @@
 package util
 
-// FIFO queue
-type RingBufferQueue[T any] struct {
+type Queue[T any] interface {
+	Push(T)
+	Pop() (T, bool)
+	IsEmpty() bool
+}
+
+type QueueRingBufferFifo[T any] struct {
 	array      []T
 	readIndex  int
 	writeIndex int
 }
 
-func RingBufferQueue_Create[T any](allocateSize int) RingBufferQueue[T] {
+func QueueRingBufferFifo_Create[T any](allocateSize int) Queue[T] {
 	array := make([]T, allocateSize)
-	return RingBufferQueue[T]{array: array, readIndex: 0, writeIndex: 0}
+	return &QueueRingBufferFifo[T]{array: array, readIndex: 0, writeIndex: 0}
 }
 
-func (ring *RingBufferQueue[T]) Push(value T) {
+func (ring *QueueRingBufferFifo[T]) Push(value T) {
 	ring.array[ring.writeIndex] = value
 	ring.writeIndex = (ring.writeIndex + 1) % len(ring.array)
 
@@ -30,7 +35,7 @@ func (ring *RingBufferQueue[T]) Push(value T) {
 	}
 }
 
-func (ring *RingBufferQueue[T]) Pop() (T, bool) {
+func (ring *QueueRingBufferFifo[T]) Pop() (T, bool) {
 	if ring.readIndex == ring.writeIndex {
 		var nilValue T
 		return nilValue, false
@@ -39,4 +44,8 @@ func (ring *RingBufferQueue[T]) Pop() (T, bool) {
 	value := ring.array[ring.readIndex]
 	ring.readIndex = (ring.readIndex + 1) % len(ring.array)
 	return value, true
+}
+
+func (ring *QueueRingBufferFifo[T]) IsEmpty() bool {
+	return ring.readIndex == ring.writeIndex
 }
