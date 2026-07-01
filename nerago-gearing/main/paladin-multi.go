@@ -53,7 +53,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: 0,
 		MissingEnchant:            setup.MissingEnchant_Panic,
-		//MissingEnchant:            setup.MissingEnchant_Fix,
 	}
 	protDps := multi_types.MultiSetParam{
 		Label:                     "Prot-Damage",

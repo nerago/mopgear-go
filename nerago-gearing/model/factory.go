@@ -26,7 +26,6 @@ func Model_PallyProtMitigation_WithSet() Model {
 		GemChoice:         GemChoice_ForSpec(spec, goal),
 		SetBonus:          SetBonus_Named("Plate of the Lightning Emperor", "Plate of Winged Triumph"),
 		SetBonusRequired: []ActiveSetCountsRequired{
-			ActiveSetCountsRequiredMake(ActiveSet_Named("Plate of the Lightning Emperor"), 4),
 			ActiveSetCountsRequiredMake(ActiveSet_Named("Plate of the Lightning Emperor"), 2, ActiveSet_Named("Plate of Winged Triumph"), 2),
 		},
 		Professions: ProfessionInfo{

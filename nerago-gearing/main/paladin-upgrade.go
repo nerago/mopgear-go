@@ -213,8 +213,8 @@ func findUpgrades_Paladin(printer *util.PrintRecorder) {
 	// var simRunSize simulate.WowSim_RunSize = 1500
 	// var simRunSize simulate.WowSim_RunSize = 3000
 	// var simRunSize simulate.WowSim_RunSize = 8000
-	simRunSize := simulate.RunSize_QuickDirty
-	//simRunSize := simulate.RunSize_Common
+	//simRunSize := simulate.RunSize_QuickDirty
+	simRunSize := simulate.RunSize_Common
 
 	substituteItemsDpsAndMiti := slices.Concat(substituteItemsDps, substituteItemsMiti)
 	substituteItemsDpsAndMiti = util.RemoveDuplicatesComparable(substituteItemsDpsAndMiti)
@@ -227,9 +227,9 @@ func findUpgrades_Paladin(printer *util.PrintRecorder) {
 	//	return []*items.FullItem{db.WowSimDB_ByIdAndUpgrade(103735, 0), db.WowSimDB_ByIdAndUpgrade(103791, 0), db.WowSimDB_ByIdAndUpgrade(103872, 0)}
 	//}
 	// finder := loaders.ItemFinder_SiegeStrengthPlateTank
-	// finder := loaders.ItemFinder_Ordos
-	finder := loaders.ItemFinder_TimelessPlate
-	// finder := loaders.ItemFinder_BagsUpgraded
+	//finder := loaders.ItemFinder_Ordos
+	//finder := loaders.ItemFinder_TimelessPlate
+	finder := loaders.ItemFinder_BagsUpgraded
 
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{
