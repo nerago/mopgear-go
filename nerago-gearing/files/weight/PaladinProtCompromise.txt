@@ -1,1 +1,1 @@
-( Pawn: v1: "Protection WoWSims Weights": Class=Paladin,Strength=1.0000000000,Stamina=1.6888491615,CritRating=1.2480048171,HasteRating=2.8004454809,ExpertiseRating=0.9922619445,MasteryRating=0.5907270995,DodgeRating=0.3064229723,ParryRating=0.1387268650, )
+( Pawn: v1: "Gearing Weights": Class=Paladin,Strength=1.0000000000,Stamina=1.7366532658,CritRating=1.1804559155,HasteRating=1.7338152349,ExpertiseRating=0.3529729000,MasteryRating=0.7371212405,DodgeRating=0.6622605783,ParryRating=0.5970870137, )

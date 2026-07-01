@@ -1,7 +1,9 @@
 package weightfind
 
 import (
+	"encoding/json"
 	"os"
+	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/model"
@@ -18,6 +20,7 @@ import (
 const c_timeoutSolvers = 2000
 
 type WeightOptions struct {
+	Label           string
 	WeightFileOut   string
 	GearFile        string
 	Model           model.Model
@@ -31,7 +34,7 @@ func StatWeights_updateAll(simSpeed simulate.WowSim_RunSize, printer *util.Print
 
 	for _, option := range options {
 		waitGroup.Go(func() {
-			statWeightsGrid_updateOne(&option.Model, option.GearFile, option.Model.SimRatioWeighting, option.WeightFileOut,
+			statWeightsGrid_updateOne(option.Label, &option.Model, option.GearFile, option.Model.SimRatioWeighting, option.WeightFileOut,
 				option.SubstituteItems, printer, simSpeed, progress.NewChild())
 		})
 	}
@@ -40,7 +43,7 @@ func StatWeights_updateAll(simSpeed simulate.WowSim_RunSize, printer *util.Print
 	progress.SetDone()
 }
 
-func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios stats.SimData, weightFileOut string, substituteItems []items.ItemId, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, tracker *util.TrackProgress) {
+func statWeightsGrid_updateOne(label string, gearModel *model.Model, gearFile string, ratios stats.SimData, weightFileOut string, substituteItems []items.ItemId, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, tracker *util.TrackProgress) {
 	tracker.RunOuterTracking(3)
 	defer tracker.SetDone()
 
@@ -52,8 +55,11 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 	inputDataReal := SimulateRealRandomSets(gearFile, substituteItems, gearModel, len(inputDataGrid), simSpeed, false, printer, tracker.NewChild())
 	mixedInputData := slices.Concat(inputDataGrid, inputDataReal)
 
+	// SAVE SIM DATA IN CASE WE NEED TO RESTART
+	writeWeightInputsToFile(inputDataGrid, files.TempPath+"weightfind-sim-grid-"+label+".json")
+	writeWeightInputsToFile(inputDataReal, files.TempPath+"weightfind-sim-real-"+label+".json")
+
 	// TODO avoid changing set bonuses
-	// TODO tag in logs so can reconstruct
 
 	// SOLVE FOR STAT WEIGHTS
 	grid := stathighs.GridStatWeightProcess1B{}
@@ -66,7 +72,7 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 	grid.SetTestMode(simSpeed == simulate.RunSize_TestOnly)
 	grid.SupplyData(inputDataGrid)
 	weightsGrid := grid.Run(nil)
-	printer.Println(">>>>> Grid Weights:")
+	printer.Println("Grid Weights >>>>> " + label)
 	pawnGrid := tools.WritePawnString(weightsGrid, printer)
 
 	ranking := stathighs.RankingStatWeightProcess3b{}
@@ -82,17 +88,17 @@ func statWeightsGrid_updateOne(gearModel *model.Model, gearFile string, ratios s
 	} else {
 		weightsRanking = ranking.RunMultiRound(nil)
 	}
-	printer.Println(">>>>> Ranking Weights:")
+	printer.Println("Ranking Weights >>>>> " + label)
 	pawnRanking := tools.WritePawnString(weightsRanking, printer)
 
 	// TWEAK weights see if dumb changes can do better than grid
 	weightsGrid, accuracyGrid := WeightTweaker(weightsGrid, gearModel.StatsForWeighting, ratios, mixedInputData, printer)
-	printer.Println(">>>>> Tweaked Grid Weights:")
+	printer.Println("Tweaked Grid Weights >>>>> " + label)
 	pawnGrid = tools.WritePawnString(weightsGrid, printer)
 
 	// TWEAK ranking weights
 	weightsRanking, accuracyRanking := WeightTweaker(weightsRanking, gearModel.StatsForWeighting, ratios, mixedInputData, printer)
-	printer.Println(">>>>> Tweaked Ranking Weights:")
+	printer.Println("Tweaked Ranking Weights >>>>> " + label)
 	pawnRanking = tools.WritePawnString(weightsRanking, printer)
 
 	// OVERWRITE WEIGHT FILE
@@ -109,4 +115,28 @@ func writeFile(filename, content string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func writeWeightInputsToFile(weightInputs []stathighs.WeightInput, filename string) {
+	bytes, err := json.Marshal(weightInputs)
+	if err != nil {
+		panic(err)
+	}
+	err = os.WriteFile(filename, bytes, 0666)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func readWeightInputFile(filename string) []stathighs.WeightInput {
+	bytes, err := os.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+	var weightInputs []stathighs.WeightInput
+	err = json.Unmarshal(bytes, &weightInputs)
+	if err != nil {
+		panic(err)
+	}
+	return weightInputs
 }

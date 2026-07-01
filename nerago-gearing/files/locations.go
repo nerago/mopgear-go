@@ -8,6 +8,7 @@ const (
 
 	LogOutputPath = `output/`
 	ProfileDir    = `profile/`
+	TempPath      = `tempdata/`
 
 	WeightMitiNoSetFile   = `nerago-gearing/files/weight/PaladinProtMitigationNoSet.txt`
 	WeightMitiWithSetFile = `nerago-gearing/files/weight/PaladinProtMitigationWithSet.txt`

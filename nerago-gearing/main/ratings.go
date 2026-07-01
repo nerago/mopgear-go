@@ -1174,36 +1174,42 @@ func statWeightsGrid_updateAll(printer *util.PrintRecorder) {
 
 	weightfind.StatWeights_updateAll(simSpeed, printer, []weightfind.WeightOptions{
 		{
+			Label:           "Prot-Mitigation-NoSet",
 			WeightFileOut:   files.WeightMitiNoSetFile,
 			GearFile:        files.GearFileProtMitigationNoSet,
 			Model:           model.Model_PallyProtMitigation_NoSet(),
 			SubstituteItems: substituteItemsMiti,
 		},
 		{
+			Label:           "Prot-Mitigation-WithSet",
 			WeightFileOut:   files.WeightMitiWithSetFile,
 			GearFile:        files.GearFileProtMitigationWithSet,
 			Model:           model.Model_PallyProtMitigation_WithSet(),
 			SubstituteItems: substituteItemsMiti,
 		},
 		{
+			Label:           "Prot-Damage",
 			WeightFileOut:   files.WeightDpsFile,
 			GearFile:        files.GearFileProtDps,
 			Model:           model.Model_PallyProtDps(),
 			SubstituteItems: substituteItemsDps,
 		},
 		{
+			Label:           "Prot-Compromise",
 			WeightFileOut:   files.WeightCompromiseFile,
 			GearFile:        files.GearFileProtCompromise,
 			Model:           model.Model_PallyProtCompromise(),
 			SubstituteItems: util.RemoveDuplicatesComparable(slices.Concat(substituteItemsDps, substituteItemsMiti)),
 		},
 		{
+			Label:           "Prot-Heal",
 			WeightFileOut:   files.WeightHealFile,
 			GearFile:        files.GearFileProtHeal,
 			Model:           model.Model_PallyProtHeal(),
 			SubstituteItems: util.RemoveDuplicatesComparable(slices.Concat(substituteItemsDps, substituteItemsMiti)),
 		},
 		//{
+		//  Label:           "Ret",
 		//	WeightFileOut:   files.WeightRetFile,
 		//	GearFile:        files.GearFileRet,
 		//	Model:           model.Model_PallyRet(),
