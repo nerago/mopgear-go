@@ -14,6 +14,8 @@ type PrintRecorder struct {
 	builder    StringBuild2
 	file       *os.File
 	test       *testing.T
+	parent     *PrintRecorder
+	prefix     string
 	mutex      sync.Mutex
 }
 
@@ -24,15 +26,19 @@ func PrintRecorder_CreateLogFile(path string) *PrintRecorder {
 	if err != nil {
 		panic(err)
 	}
-	return &PrintRecorder{false, nil, file, nil, sync.Mutex{}}
+	return &PrintRecorder{false, nil, file, nil, nil, "", sync.Mutex{}}
 }
 
 func PrintRecorder_Testing(test *testing.T) *PrintRecorder {
-	return &PrintRecorder{false, nil, nil, test, sync.Mutex{}}
+	return &PrintRecorder{false, nil, nil, test, nil, "", sync.Mutex{}}
 }
 
 func PrintRecorder_HoldAll() *PrintRecorder {
-	return &PrintRecorder{true, nil, nil, nil, sync.Mutex{}}
+	return &PrintRecorder{true, nil, nil, nil, nil, "", sync.Mutex{}}
+}
+
+func (print *PrintRecorder) NewChildPrefixed(prefixLines string) *PrintRecorder {
+	return &PrintRecorder{false, nil, nil, nil, print, prefixLines, sync.Mutex{}}
 }
 
 var _newline = []byte{'\n'}
@@ -45,6 +51,9 @@ func (print *PrintRecorder) outputNewline() {
 		}
 	} else if print.test != nil {
 		print.test.Log()
+	} else if print.parent != nil {
+		print.parent.Println(print.prefix)
+		return
 	}
 
 	_, err := os.Stdout.Write(_newline)
@@ -61,6 +70,10 @@ func (print *PrintRecorder) outputBytes(bytes []byte) {
 		}
 	} else if print.test != nil {
 		print.test.Log(bytes)
+	} else if print.parent != nil {
+		//print.parent.Println(slices.Concat([]byte(print.prefix), bytes))
+		print.parent.Printf("%s %v", print.prefix, bytes)
+		return
 	}
 
 	_, err := os.Stdout.Write(bytes)
@@ -77,6 +90,9 @@ func (print *PrintRecorder) outputString(str string) {
 		}
 	} else if print.test != nil {
 		print.test.Log(str)
+	} else if print.parent != nil {
+		print.parent.Printf("%s %v", print.prefix, str)
+		return
 	}
 
 	_, err := os.Stdout.WriteString(str)
@@ -160,6 +176,10 @@ func (print *PrintRecorder) AppendOther(other *PrintRecorder) {
 	defer other.mutex.Unlock()
 	print.mutex.Lock()
 	defer print.mutex.Unlock()
+
+	if other.prefix != "" {
+		panic("can't add prefix, lines already written to buffer")
+	}
 
 	if print.holdOutput {
 		print.builder.WriteBuilder(other.builder)

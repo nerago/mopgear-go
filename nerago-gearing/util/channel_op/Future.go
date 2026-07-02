@@ -209,3 +209,19 @@ func (*FutureCancellable[T]) channelKeyPress() chan any {
 	}()
 	return channelForKey
 }
+
+func FutureCancellableMap[T any, R any](innerFuture *FutureCancellable[T], mapper func(T) (bool, R)) *FutureCancellable[R] {
+	outerFuture := FutureCancellable_Make[R]()
+	ChainCancel(outerFuture, innerFuture)
+
+	go func() {
+		value, hasValue := innerFuture.WaitForResult()
+		if hasValue {
+			outerFuture.SetResult(mapper(value))
+		} else {
+			outerFuture.SetResultEmpty()
+		}
+	}()
+
+	return outerFuture
+}

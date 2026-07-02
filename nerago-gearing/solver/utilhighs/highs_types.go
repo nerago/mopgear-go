@@ -130,31 +130,6 @@ func (build *LinearBuilder) GetInitialSolutionValue(columnNumber ColumnIndex) fl
 	return value
 }
 
-func (build *LinearBuilder) RunHighsThenDiagnose(printer *util.PrintRecorder, stopwatch *util.Stopwatch) *highs.Solution {
-	solution := build.RunHighs(printer, stopwatch)
-
-	if solution.Status == highs.ModelStatusInfeasible {
-		diagnoseInfeasible(build, printer)
-	}
-
-	return solution
-}
-
-func (build *LinearBuilder) RunHighs(printer *util.PrintRecorder, stopwatch *util.Stopwatch) *highs.Solution {
-	if stopwatch == nil {
-		stopwatch = util.StopwatchMakeStopped()
-	}
-
-	solver, logFilename, requestGpu := build.prepareHighsRun(printer != nil)
-
-	solution, err := G_HighsPool.RunSolverUnderMutex(solver, requestGpu, stopwatch)
-	verifyNoError(err)
-
-	build.postHighsRun(solver, logFilename, printer)
-
-	return solution
-}
-
 type LinearResult struct {
 	Solution  *highs.Solution
 	Log       *util.PrintRecorder
@@ -175,6 +150,10 @@ func (build *LinearBuilder) RunHighsFuture() *channel_op.FutureCancellable[Linea
 
 		solution, err := G_HighsPool.RunSolverUnderMutex(solver, requestGpu, timer)
 		verifyNoError(err)
+
+		if C_DebugHighs && C_DiagnoseInfeasible && solution.Status == highs.ModelStatusInfeasible {
+			diagnoseInfeasible(build, log)
+		}
 
 		build.postHighsRun(solver, logFilename, log)
 		future.SetResult(LinearResult{solution, log, timer})

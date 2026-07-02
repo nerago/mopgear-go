@@ -5,6 +5,7 @@ import (
 	gear_model "paladin_gearing_go/model"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 	"strconv"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -15,24 +16,28 @@ const (
 	c_setItemsCounts = c_maxSetItems + 1
 )
 
-func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, printer *util.PrintRecorder) util.Optional[items.SolvableItemSet] {
+func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.Model, printer *util.PrintRecorder) *channel_op.FutureCancellable[items.SolvableItemSet] {
 	build := utilhighs.LinearBuilder{}
 	build.Solver = utilhighs.Solver_MIP_Interior
 
 	setup := setupGearSet(&build, gear_model, itemOptions, 1)
 
-	solution := build.RunHighsThenDiagnose(printer, nil)
-	printer.Printf("SOLUTION STATUS = %s\n", solution.Status.String())
+	solutionFuture := build.RunHighsFuture()
 
-	debugPrint(solution, setup, printer)
+	return channel_op.FutureCancellableMap(solutionFuture, func(result utilhighs.LinearResult) (bool, items.SolvableItemSet) {
+		solution := result.Solution
 
-	if solution.HasSolution() {
-		result := setup.buildResultSet(solution, itemOptions, gear_model)
-		checkSetRatingIsObjective(solution, &result, gear_model)
-		return util.Optional_OfValue(result)
-	} else {
-		return util.Optional_Empty[items.SolvableItemSet]()
-	}
+		printer.Printf("SOLUTION STATUS = %s\n", solution.Status.String())
+		debugPrint(solution, setup, printer)
+
+		if solution.HasSolution() {
+			itemSet := setup.buildResultSet(solution, itemOptions, gear_model)
+			checkSetRatingIsObjective(solution, &itemSet, gear_model)
+			return true, itemSet
+		} else {
+			return false, items.SolvableItemSet{}
+		}
+	})
 }
 
 func setupGearSet(build *utilhighs.LinearBuilder, gear_model *gear_model.Model, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetInputs {
