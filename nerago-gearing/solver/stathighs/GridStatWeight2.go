@@ -34,9 +34,10 @@ type gridDataSample2 struct {
 	value float64
 }
 
-func (grid2 *GridStatWeightProcess2) Init(printer *util.PrintRecorder) {
+func (grid2 *GridStatWeightProcess2) Init(printer *util.PrintRecorder, timeout int) {
 	grid2.printer = printer
 	grid2.build.Minimise = true
+	grid2.build.TimeLimitSeconds = timeout
 	if grid2.DIFFINCLUDE == 2 || grid2.DIFFINCLUDE == 12 {
 		grid2.build.Solver = utilhighs.Solver_MIP_Interior
 	} else {
@@ -75,8 +76,6 @@ func (grid2 *GridStatWeightProcess2) Run(stopwatch *util.Stopwatch) WeightResult
 	grid2.setupWeightVars()
 	grid2.chooseScalingX()
 	grid2.processInputData()
-
-	grid2.build.TimeLimitSeconds = 400
 
 	solution := grid2.build.RunHighs(grid2.printer, stopwatch)
 	grid2.printer.Println(solution.Status.String())

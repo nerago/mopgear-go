@@ -32,12 +32,12 @@ type GridStatWeightProcess1C struct {
 	finalWeights    map[stats.StatType]utilhighs.ColumnIndex
 }
 
-func (grid *GridStatWeightProcess1C) Init(printer *util.PrintRecorder) {
+func (grid *GridStatWeightProcess1C) Init(printer *util.PrintRecorder, timeout int) {
 	grid.printer = printer
 	grid.build.Minimise = true
 	grid.build.Solver = utilhighs.Solver_LP_USE_GPU
 	grid.build.DisablePreSolve = true
-	grid.build.TimeLimitSeconds = 240
+	grid.build.TimeLimitSeconds = timeout
 	grid.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 	grid.scales = make(map[stats.SimType]float64)
 }

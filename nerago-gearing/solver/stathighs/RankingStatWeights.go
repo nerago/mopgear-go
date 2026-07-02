@@ -74,7 +74,7 @@ func (ranker *RankingStatWeightProcess) SetTargetRatios(targetRatios stats.SimDa
 // 	ranker.minimumIncludeRate = percent
 // }
 
-func (ranker *RankingStatWeightProcess) Run(stopwatch *util.Stopwatch) WeightResult {
+func (ranker *RankingStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int) WeightResult {
 	ranker.build = new(utilhighs.LinearBuilder)
 	ranker.build.Minimise = true
 	if ranker.RANKMODE == 0 || ranker.RANKMODE == 1 || ranker.RANKMODE == 2 {
@@ -82,11 +82,10 @@ func (ranker *RankingStatWeightProcess) Run(stopwatch *util.Stopwatch) WeightRes
 	} else {
 		ranker.build.Solver = utilhighs.Solver_MIP_Interior
 	}
-	ranker.build.TimeLimitSeconds = 2500
+	ranker.build.TimeLimitSeconds = timeout
 	if ranker.RANKMODE != 3 {
 		ranker.build.DisablePreSolve = true
 	}
-	// ranker.input.Solver = "hipdlp"
 
 	ranker.createWeightColumns()
 	ranker.prepareRankings()

@@ -57,10 +57,11 @@ func (form *FormulaStatWeightProcess) SetMinimumIncludeRate(percent float64) {
 	form.minimumIncludeRate = percent
 }
 
-func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch) WeightResult {
+func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int) WeightResult {
 	form.build = new(utilhighs.LinearBuilder)
 	form.build.Minimise = true
 	form.build.Solver = utilhighs.Solver_MIP_Interior
+	form.build.TimeLimitSeconds = timeout
 
 	// comp.linearEquationDiff = -1
 	// comp.linearInclude = -1

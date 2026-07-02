@@ -66,10 +66,11 @@ type selectiveGridDataSample struct {
 	includeToggles [2]utilhighs.ColumnIndex
 }
 
-func (grid *SelectiveGridStatWeightProcess) Init(printer *util.PrintRecorder) {
+func (grid *SelectiveGridStatWeightProcess) Init(printer *util.PrintRecorder, timeout int) {
 	grid.printer = printer
 	grid.build = new(utilhighs.LinearBuilder)
 	grid.build.Minimise = true
+	grid.build.TimeLimitSeconds = timeout
 	grid.build.Solver = utilhighs.Solver_MIP_Interior
 	// selgrid.build.DisablePreSolve = true
 }

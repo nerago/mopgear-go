@@ -91,13 +91,13 @@ func (process *RankingStatWeightProcess4) SetTargetRatios(targetRatios stats.Sim
 	process.requiredSims = targetRatios.NonZeroTypes()
 }
 
-func (process *RankingStatWeightProcess4) Run(overallStopwatch *util.Stopwatch) []WeightResult {
+func (process *RankingStatWeightProcess4) Run(overallStopwatch *util.Stopwatch, timeout int) []WeightResult {
 	weightResultList := make([]WeightResult, 0)
 
 	// FIRST ROUND: minimal data, dumb initial values
 	process.printer.Println("RankingStatWeightProcess4 FIRST ROUND")
 	run1 := rankInternalRun4_create(process)
-	run1.build.TimeLimitSeconds = 500
+	run1.build.TimeLimitSeconds = timeout / 4
 	run1.supplyData(takeDataSample_Random(process.dataAll, c_Rank4InitialSample))
 	run1.prepareRankings()
 	run1.createWeightColumns()
@@ -121,7 +121,7 @@ func (process *RankingStatWeightProcess4) Run(overallStopwatch *util.Stopwatch) 
 		dataSample := takeDataSample_Random(process.dataAll, size)
 		process.printer.Println("RankingStatWeightProcess4 SECOND ROUND " + strconv.Itoa(size))
 		run2 := rankInternalRun4_create(process)
-		run2.build.TimeLimitSeconds = 1000
+		run2.build.TimeLimitSeconds = timeout / 4
 		run2.supplyData(dataSample)
 		run2.prepareRankings()
 		run2.createWeightColumns()
@@ -132,6 +132,7 @@ func (process *RankingStatWeightProcess4) Run(overallStopwatch *util.Stopwatch) 
 		weights2.ApplyIfValue(func(w WeightResult) { weightResultList = append(weightResultList, w) })
 
 		times[size] = roundTimer.Elapsed()
+		timeout -= int(roundTimer.Elapsed())
 		overallStopwatch.AddElapsedFrom(roundTimer)
 
 		if solution2.HasSolution() {
@@ -139,7 +140,7 @@ func (process *RankingStatWeightProcess4) Run(overallStopwatch *util.Stopwatch) 
 			latestSolution = solution2
 		}
 
-		if solution2.Status == highs.ModelStatusTimeLimit {
+		if solution2.Status == highs.ModelStatusTimeLimit || timeout < 0 {
 			break
 		}
 	}
@@ -151,9 +152,9 @@ func (process *RankingStatWeightProcess4) Run(overallStopwatch *util.Stopwatch) 
 	return weightResultList
 }
 
-func (process *RankingStatWeightProcess4) RunUsingExternalStart(initialWeight WeightResult, stopwatch *util.Stopwatch) util.Optional[WeightResult] {
+func (process *RankingStatWeightProcess4) RunUsingExternalStart(initialWeight WeightResult, stopwatch *util.Stopwatch, timeout int) util.Optional[WeightResult] {
 	run2 := rankInternalRun4_create(process)
-	run2.build.TimeLimitSeconds = 2500
+	run2.build.TimeLimitSeconds = timeout
 	run2.supplyData(process.dataAll)
 	run2.prepareRankings()
 	run2.createWeightColumns()

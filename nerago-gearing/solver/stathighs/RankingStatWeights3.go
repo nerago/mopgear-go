@@ -16,7 +16,6 @@ const (
 	c_rank3_scaleTarget         = 10.0
 	c_rank3_initial_data_sample = 12
 	c_rank3_min_total_weight    = 1.0
-	c_rank3_time_limit          = 800
 
 	c_Rank3_LargeWeight = 10.0
 	c_Rank3_LargeScore  = 500.0
@@ -25,6 +24,7 @@ const (
 
 type RankingStatWeightProcess3 struct {
 	printer *util.PrintRecorder
+	timeout int
 
 	targetRatios    stats.SimData
 	requiredStats   []stats.StatType
@@ -60,8 +60,9 @@ type rankPair3 struct {
 	isSequenceDiff                utilhighs.ColumnIndex
 }
 
-func (ranker *RankingStatWeightProcess3) Init(printer *util.PrintRecorder) {
+func (ranker *RankingStatWeightProcess3) Init(printer *util.PrintRecorder, timeout int) {
 	ranker.printer = printer
+	ranker.timeout = timeout
 }
 
 func (ranker *RankingStatWeightProcess3) SupplyData(inputData []WeightInput) {
@@ -98,7 +99,7 @@ func (ranker *RankingStatWeightProcess3) SetTargetRatios(targetRatios stats.SimD
 func (ranker *RankingStatWeightProcess3) makeBuilder() {
 	ranker.build = new(utilhighs.LinearBuilder)
 	ranker.build.Minimise = true
-	ranker.build.TimeLimitSeconds = c_rank3_time_limit
+	ranker.build.TimeLimitSeconds = ranker.timeout
 	if ranker.ALGO >= 2 {
 		ranker.build.Solver = utilhighs.Solver_LP_USE_GPU
 	} else {

@@ -449,7 +449,7 @@ func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.Stat
 
 		// SOLVE FOR STAT WEIGHTS
 		process := stathighs.GridStatWeightProcess{}
-		process.Init(printer)
+		process.Init(printer, 2000)
 		process.SetRequiredStats(model.StatsForWeighting)
 		process.SetTargetRatios(ratios)
 		process.SupplyData(inputData)

@@ -16,8 +16,7 @@ import (
 // thus scores are 8*=  0.0 .. 80
 
 const (
-	c_rank5_sample    = 60
-	c_rank5_timeLimit = 2000
+	c_rank5_sample = 60
 
 	c_rank5_computeScoreM = 100
 	c_rank5_scaleTarget   = 1.0
@@ -112,11 +111,11 @@ func (process *RankingStatWeightProcess5) SetTargetRatios(targetRatios stats.Sim
 	process.requiredSims = targetRatios.NonZeroTypes()
 }
 
-func (process *RankingStatWeightProcess5) Run(stopwatch *util.Stopwatch) []WeightResult {
+func (process *RankingStatWeightProcess5) Run(stopwatch *util.Stopwatch, timeout int) []WeightResult {
 	weightResultList := make([]WeightResult, 0)
 	process.printer.Printf("RankingStatWeightProcess5 RunOptimisitic\n")
 	run := rankInternalRun5_create(process)
-	run.build.TimeLimitSeconds = c_rank5_timeLimit
+	run.build.TimeLimitSeconds = timeout
 	run.supplyData(takeDataSample_Random(process.dataAll, c_rank5_sample))
 	// run.supplyData(takeDataSample_Start(process.dataAll, c_rank5_sample))
 	// run.supplyData(process.dataAll)

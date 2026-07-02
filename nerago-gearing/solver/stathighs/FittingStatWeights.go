@@ -58,6 +58,7 @@ func (fitall *FittingAllStatWeightProcess) Init(printer *util.PrintRecorder) {
 
 type FittingEachStatWeightProcess struct {
 	printer *util.PrintRecorder
+	timeout int
 
 	lazyMode      bool
 	inputData     []WeightInput
@@ -75,8 +76,9 @@ type fittingEachFields struct {
 	resultMap map[StatRange]FittingSingleStatResult
 }
 
-func (fiteach *FittingEachStatWeightProcess) Init(printer *util.PrintRecorder) {
+func (fiteach *FittingEachStatWeightProcess) Init(printer *util.PrintRecorder, timeout int) {
 	fiteach.printer = printer
+	fiteach.timeout = timeout
 }
 
 func (fiteach *FittingEachStatWeightProcess) SetRequiredStats(requiredStats []stats.StatType) {
@@ -101,7 +103,7 @@ func (fiteach *FittingEachStatWeightProcess) RunDetailedResults() util.MapMap[st
 		for _, simType := range fiteach.requiredSims {
 			// TODO holding printer?
 			fields := fittingEachFields{statType: statType, simType: simType}
-			fields.process.Init(fiteach.printer, statType, simType)
+			fields.process.Init(fiteach.printer, statType, simType, fiteach.timeout)
 			fields.process.SetLazyMode(fiteach.lazyMode)
 			fields.process.SupplyDataFromStandard(fiteach.inputData)
 			fiteach.each.Put(statType, simType, &fields)
@@ -134,7 +136,12 @@ func (fiteach *FittingEachStatWeightProcess) Run(stopwatch *util.Stopwatch) Weig
 		for _, entry := range byRange {
 			best.Offer(&entry, float64(entry.IncludeCount))
 		}
-		return best.GetBestOrPanic().LineSlope
+		bestEntry := best.GetBestOptional()
+		if bestEntry.HasValue() {
+			return bestEntry.GetOrPanic().LineSlope
+		} else {
+			return 1
+		}
 	})
 
 	baseStat := fiteach.requiredStats[0]
@@ -165,6 +172,7 @@ type StatRange struct {
 type FittingSingleStatSegmentsProcess struct {
 	printer *util.PrintRecorder
 
+	timeout  int
 	lazyMode bool
 
 	inputDataOriginal       []*WeightInput
@@ -175,12 +183,13 @@ type FittingSingleStatSegmentsProcess struct {
 	segments map[StatRange]FittingSingleStatResult
 }
 
-func (fitseg *FittingSingleStatSegmentsProcess) Init(printer *util.PrintRecorder, stat stats.StatType, sim stats.SimType) {
+func (fitseg *FittingSingleStatSegmentsProcess) Init(printer *util.PrintRecorder, stat stats.StatType, sim stats.SimType, timeout int) {
 	fitseg.printer = printer
 	fitseg.segments = make(map[StatRange]FittingSingleStatResult)
 	fitseg.inputDataRemainingParts = make(map[StatRange][]*WeightInput)
 	fitseg.stat = stat
 	fitseg.sim = sim
+	fitseg.timeout = timeout
 }
 
 func (fitseg *FittingSingleStatSegmentsProcess) SetLazyMode(lazy bool) {
@@ -227,7 +236,7 @@ func percentRatio(value, total int) float64 {
 
 func (fitseg *FittingSingleStatSegmentsProcess) runFitAll() {
 	fit := FittingSingleStatWeightProcess{}
-	fit.Init(fitseg.printer)
+	fit.Init(fitseg.printer, fitseg.timeout)
 	fit.SetMinimumIncludeRate(1)
 	fit.SupplyDataFromStandard(fitseg.inputDataOriginal, fitseg.stat, fitseg.sim)
 	weightOptional := fit.Run()
@@ -239,7 +248,7 @@ func (fitseg *FittingSingleStatSegmentsProcess) runFitAll() {
 
 func (fitseg *FittingSingleStatSegmentsProcess) runInitial() {
 	fit := FittingSingleStatWeightProcess{}
-	fit.Init(fitseg.printer)
+	fit.Init(fitseg.printer, fitseg.timeout)
 	fit.SetMinimumIncludeRate(0.3)
 	fit.SupplyDataFromStandard(fitseg.inputDataOriginal, fitseg.stat, fitseg.sim)
 	weightOptional := fit.Run()
@@ -254,7 +263,7 @@ func (fitseg *FittingSingleStatSegmentsProcess) runInitial() {
 
 func (fitseg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []*WeightInput, inputRange StatRange, includeRate float64) {
 	fit := FittingSingleStatWeightProcess{}
-	fit.Init(fitseg.printer)
+	fit.Init(fitseg.printer, fitseg.timeout)
 	fit.SetMinimumIncludeRate(includeRate)
 	fit.SupplyDataFromStandard(inputData, fitseg.stat, fitseg.sim)
 	weightOptional := fit.Run()
@@ -350,11 +359,12 @@ type fittingSample struct {
 	includeColumn utilhighs.ColumnIndex
 }
 
-func (fit *FittingSingleStatWeightProcess) Init(printer *util.PrintRecorder) {
+func (fit *FittingSingleStatWeightProcess) Init(printer *util.PrintRecorder, timeout int) {
 	fit.printer = printer
 	fit.build = new(utilhighs.LinearBuilder)
 	fit.build.Minimise = true
 	fit.build.Solver = utilhighs.Solver_MIP_Interior
+	fit.build.TimeLimitSeconds = timeout
 
 	fit.lineSlope = fit.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "slope"})
 	fit.lineOffset = fit.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "offset"})

@@ -35,12 +35,12 @@ type gridDataSample struct {
 // ipx    - HiGHS run time      :        912.37
 // pldp   - HiGHS run time      :        594.94
 // hipdlp - HiGHS run time      :        414.98
-func (grid *GridStatWeightProcess) Init(printer *util.PrintRecorder) {
+func (grid *GridStatWeightProcess) Init(printer *util.PrintRecorder, timeout int) {
 	grid.printer = printer
 	grid.build.Minimise = true
 	grid.build.Solver = utilhighs.Solver_LP_USE_GPU
 	grid.build.DisablePreSolve = true
-	grid.build.TimeLimitSeconds = 500
+	grid.build.TimeLimitSeconds = timeout
 	grid.finalWeights = make(map[stats.StatType]utilhighs.ColumnIndex)
 }
 
