@@ -22,20 +22,21 @@ func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, gear_model *gear_m
 
 	setup := setupGearSet(&build, gear_model, itemOptions, 1)
 
-	solutionFuture := build.RunHighsFuture()
+	solutionFuture := build.RunHighsFuture(nil)
 
-	return channel_op.FutureCancellableMap(solutionFuture, func(result utilhighs.LinearResult) (bool, items.SolvableItemSet) {
+	return channel_op.FutureCancellable_Map(solutionFuture, func(result utilhighs.LinearResult) (items.SolvableItemSet, bool) {
 		solution := result.Solution
 
 		printer.Printf("SOLUTION STATUS = %s\n", solution.Status.String())
+		printer.AppendOther(result.Log)
 		debugPrint(solution, setup, printer)
 
 		if solution.HasSolution() {
 			itemSet := setup.buildResultSet(solution, itemOptions, gear_model)
 			checkSetRatingIsObjective(solution, &itemSet, gear_model)
-			return true, itemSet
+			return itemSet, true
 		} else {
-			return false, items.SolvableItemSet{}
+			return items.SolvableItemSet{}, false
 		}
 	})
 }

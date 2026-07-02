@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 	"slices"
 	"strconv"
 
@@ -111,8 +112,7 @@ func (process *RankingStatWeightProcess5) SetTargetRatios(targetRatios stats.Sim
 	process.requiredSims = targetRatios.NonZeroTypes()
 }
 
-func (process *RankingStatWeightProcess5) Run(stopwatch *util.Stopwatch, timeout int) []WeightResult {
-	weightResultList := make([]WeightResult, 0)
+func (process *RankingStatWeightProcess5) Run(stopwatch *util.Stopwatch, timeout int) *channel_op.FutureCancellable[WeightResult] {
 	process.printer.Printf("RankingStatWeightProcess5 RunOptimisitic\n")
 	run := rankInternalRun5_create(process)
 	run.build.TimeLimitSeconds = timeout
@@ -126,9 +126,7 @@ func (process *RankingStatWeightProcess5) Run(stopwatch *util.Stopwatch, timeout
 	if process.initialWeights != nil {
 		run.setupInitialSolutionFromExternal(*process.initialWeights)
 	}
-	weights1, _ := run.run(stopwatch)
-	weights1.ApplyIfValue(func(w WeightResult) { weightResultList = append(weightResultList, w) })
-	return weightResultList
+	return run.run(stopwatch)
 }
 
 func rankInternalRun5_create(process *RankingStatWeightProcess5) *rankInternalRun5 {
@@ -144,14 +142,17 @@ func rankInternalRun5_create(process *RankingStatWeightProcess5) *rankInternalRu
 	return run
 }
 
-func (run *rankInternalRun5) run(stopwatch *util.Stopwatch) (util.Optional[WeightResult], *highs.Solution) {
-	solution := run.build.RunHighs(run.process.printer, stopwatch)
-	if solution.HasSolution() {
-		weights := run.extractAndReportSolution(solution)
-		return util.Optional_OfValue(weights), solution
-	} else {
-		return util.Optional_Empty[WeightResult](), solution
-	}
+func (run *rankInternalRun5) run(stopwatch *util.Stopwatch) *channel_op.FutureCancellable[WeightResult] {
+	futureSolution := run.build.RunHighsFuture(stopwatch)
+	return channel_op.FutureCancellable_Map(futureSolution, func(linResult utilhighs.LinearResult) (WeightResult, bool) {
+		solution := linResult.Solution
+		run.process.printer.AppendOther(linResult.Log)
+		if solution.HasSolution() {
+			return run.extractAndReportSolution(solution), true
+		} else {
+			return WeightResult{}, false
+		}
+	})
 }
 
 func (run *rankInternalRun5) createWeightColumns() {
@@ -242,6 +243,8 @@ func (run *rankInternalRun5) makeEntryPairScoreChecks(lo *rankEntry5, hi *rankEn
 	compareScore.Add(hi.scoreIfIncluded, 1)
 	compareScore.Add(lo.scoreIfIncluded, -1)
 	compareScore.Build(run.build, 0, utilhighs.C_PlusInf)
+
+	// TODO this seems a bit off, can a run of includes ever end?
 
 	run.pairLinks.Put(indexLo, indexHi, &rankPair5{entryOne: lo, entryTwo: hi})
 }

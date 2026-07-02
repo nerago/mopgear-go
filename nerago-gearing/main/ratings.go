@@ -19,7 +19,6 @@ import (
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
-	"paladin_gearing_go/util/util_rank"
 	"paladin_gearing_go/weightfind"
 	"slices"
 	"strconv"
@@ -238,11 +237,10 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 	ranking.SetTargetRatios(targetRatio)
 	ranking.SupplyData(filteredInput)
 	ranking.SupplyInitialWeights(startWeight)
-	weightsList := ranking.Run(nil, 3000)
-	for _, weight := range weightsList {
-		tools.WritePawnString(weight, printer)
-		printer.Printf("accuracy = %f\n", weightfind.EvaluateAccuracy(weight, mixedInputData, targetRatio))
-	}
+	futureWeights := ranking.Run(nil, 3000)
+	weight, _ := futureWeights.WaitForResult()
+	tools.WritePawnString(weight, printer)
+	printer.Printf("accuracy = %f\n", weightfind.EvaluateAccuracy(weight, mixedInputData, targetRatio))
 }
 
 func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
@@ -1086,14 +1084,10 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(inputDataRandom))
-			weightList := ranking.Run(stopwatch, standardTimeout)
-			best := util_rank.BestCollector1[stathighs.WeightResult]{}
-			for i, weight := range weightList {
-				resultsByAlgorithm["ranking5-"+strconv.Itoa(i)] = weight
-				best.Offer(&weight, weightfind.EvaluateAccuracy(weight, mixedInputDataFull, targetRatio))
-			}
+			futureWeight := ranking.Run(stopwatch, standardTimeout)
+			weight, _ := futureWeight.WaitForResult()
 			timesByAlgorithm["ranking5"] = stopwatch.Elapsed()
-			resultsByAlgorithm["ranking5"] = best.GetBestOrPanic()
+			resultsByAlgorithm["ranking5"] = weight
 			printer.Println("///////////////// RANKING5 /////////////////")
 		})
 	}

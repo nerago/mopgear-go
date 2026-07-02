@@ -92,13 +92,13 @@ func core(printer *util.PrintRecorder) {
 	//statWeightsGridIntoRanking(printer)
 	// statWeightsCustom(printer)
 
-	statWeights_CompareAlgorithms(printer)
+	//statWeights_CompareAlgorithms(printer)
 
-	statWeightsGrid_updateAll(printer)
+	//statWeightsGrid_updateAll(printer)
 
 	//PaladinMultiRun(printer)
 
-	//findUpgrades_Paladin(printer)
+	findUpgrades_Paladin(printer)
 }
 
 func setupPallyMitigationSet() (items.FullOptionsMap, model.Model) {

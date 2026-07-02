@@ -60,6 +60,7 @@ func statWeightsGrid_updateOne(label string, gearModel *model.Model, gearFile st
 	writeWeightInputsToFile(inputDataReal, files.TempPath+"weightfind-sim-real-"+label+".json")
 
 	// TODO avoid changing set bonuses
+	// TODO report on accuracy rating of grid vs just inputDataGrid
 
 	// SOLVE FOR STAT WEIGHTS
 	grid := stathighs.GridStatWeightProcess1B{}
@@ -74,6 +75,9 @@ func statWeightsGrid_updateOne(label string, gearModel *model.Model, gearFile st
 	weightsGrid := grid.Run(nil)
 	printer.Println("Grid Weights >>>>> " + label)
 	pawnGrid := tools.WritePawnString(weightsGrid, printer)
+	accGridOnGridInput := EvaluateAccuracy(weightsGrid, inputDataGrid, ratios)
+	accGridOnRealInput := EvaluateAccuracy(weightsGrid, inputDataReal, ratios)
+	printer.Printf("Grid Weights accuracy %s gridInput=%f realInput=%f\n", label, accGridOnGridInput, accGridOnRealInput)
 
 	ranking := stathighs.RankingStatWeightProcess3b{}
 	ranking.SCALE1 = false

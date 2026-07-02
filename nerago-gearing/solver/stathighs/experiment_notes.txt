@@ -1324,7 +1324,7 @@ round2 is 9/12
   grid1b-outlier3-scale1-round2  1.0000   1.8026    0.7358     15.2208    0.7945   1.4059    0.8228   0.7010  84.3443                     84.3441       5.8376344s
   ranking3b-scale_full-0         1.0000   0.7120    3.5560      0.9861    0.0345   2.2426    3.2489   0.5954  85.4514                     85.4513       23.4513ms
   grid1b-outlier0-scale4-round2  1.0000   2.0782    5.8496      2.5768    0.6657   1.9269    0.5460   0.5558  85.5508                     85.5506       1m19.9277142s
-  ranking4                       1.0000   0.7134    3.5594      0.9874    0.0351   2.2448    2.8114   0.5958  86.2625                     86.2623       2h6m48.1810386s
+  ranking4                       1.0000   0.7134    3.5594      0.9874    0.0351   2.2448    2.8114   0.5958  86.2625                     86.2623       2h6m48.1810386s     timeout, even had a starting value but minimal progress
   ranking3b-scale_full-2         1.0000   2.1281    0.0038      0.1325    0.0008   0.1534    0.0021   0.0048  90.3668                     90.3666       26.1518ms
   fitting                        1.0000   0.4741   -0.0483      0.1990   -0.4229   0.2486    0.1611   0.1061  90.8440                     90.8440       37m25.5785273s
   ranking3b-scale1-2             1.0000   1.2309    0.1167      0.3614    0.0054   0.5866    0.0824   0.0532  91.3998                     91.3998       50.1259ms
@@ -1333,3 +1333,9 @@ round2 is 9/12
   ranking3b-scale1-0             1.0000   1.2309    0.1167      0.3614    0.0054   0.5866    0.0824   0.0532  91.3998                     91.3998       51.0131ms
   ranking5-0                     1.0000   1.7523    0.3995      2.6897   -0.1165   2.4972    1.0199   1.0415  91.9159                     91.9156       0s
   ranking5                       1.0000   1.7523    0.3995      2.6897   -0.1165   2.4972    1.0199   1.0415  91.9159                     91.9156       1h40m0.9134718s
+        >   even that result was only a 44.35% exploration 71.7% included
+        >   may have been selective sample
+        >   one innovation sumWeightCol that is minimised/maximised but has low-high bound
+        >   does multi objective progress
+        >   removed duplicate simscores
+  Duration = 6h13m24.0068276s

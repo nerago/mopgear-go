@@ -2,6 +2,7 @@ package channel_op
 
 import (
 	"os"
+	"paladin_gearing_go/util"
 	"sync"
 )
 
@@ -146,6 +147,27 @@ func (future *FutureCancellable[T]) WaitForResult() (T, bool) {
 	return result.value, result.hasValue
 }
 
+func (future *FutureCancellable[T]) WaitForResult_AsOptional() util.Optional[T] {
+	if future == nil || future.signalChannel == nil {
+		panic("invalid future")
+	} else if future.hasWaiter {
+		panic("duplicate waiter")
+	}
+	future.hasWaiter = true
+
+	result, channelOk := <-future.signalChannel
+	if !channelOk {
+		panic("signal channel closed")
+	}
+	close(future.signalChannel)
+
+	if result.hasValue {
+		return util.Optional_OfValue(result.value)
+	} else {
+		return util.Optional_Empty[T]()
+	}
+}
+
 func (future *FutureCancellable[T]) WaitForResultOrKeyPress() (T, bool) {
 	if future == nil || future.signalChannel == nil {
 		panic("invalid future")
@@ -210,14 +232,19 @@ func (*FutureCancellable[T]) channelKeyPress() chan any {
 	return channelForKey
 }
 
-func FutureCancellableMap[T any, R any](innerFuture *FutureCancellable[T], mapper func(T) (bool, R)) *FutureCancellable[R] {
+func FutureCancellable_Map[T any, R any](innerFuture *FutureCancellable[T], mapper func(T) (R, bool)) *FutureCancellable[R] {
 	outerFuture := FutureCancellable_Make[R]()
 	ChainCancel(outerFuture, innerFuture)
 
 	go func() {
 		value, hasValue := innerFuture.WaitForResult()
 		if hasValue {
-			outerFuture.SetResult(mapper(value))
+			newValue, hasNew := mapper(value)
+			if hasNew {
+				outerFuture.SetResult(newValue)
+			} else {
+				outerFuture.SetResultEmpty()
+			}
 		} else {
 			outerFuture.SetResultEmpty()
 		}

@@ -58,30 +58,21 @@ func (process *SolverHighsMultiProcess) SetCommon(common multi_types.CommonOptio
 func (process *SolverHighsMultiProcess) RunInterruptable(printer *util.PrintRecorder) *channel_op.FutureCancellable[HighsMultiResult] {
 	process.makeFullModel()
 
-	solveFuture := process.build.RunHighsFuture()
-	multiFuture := channel_op.FutureCancellable_Make[HighsMultiResult]()
-	channel_op.ChainCancel(multiFuture, solveFuture)
+	solveFuture := process.build.RunHighsFuture(nil)
+	return channel_op.FutureCancellable_Map(solveFuture, func(result utilhighs.LinearResult) (HighsMultiResult, bool) {
+		solution, log := result.Solution, result.Log
+		printer.AppendOther(log)
+		printer.Println("SOLUTION STATUS = " + solution.Status.String())
 
-	go func() {
-		result, gotResult := solveFuture.WaitForResult()
-		if gotResult {
-			solution, log := result.Solution, result.Log
-			printer.AppendOther(log)
-			printer.Println("SOLUTION STATUS = " + solution.Status.String())
+		debugPrintAll(solution, process, printer)
 
-			debugPrintAll(solution, process, printer)
-
-			if solution.HasSolution() {
-				multiResult := process.solutionToResult(solution, printer)
-				multiFuture.SetResult(multiResult)
-			} else {
-				multiFuture.SetResultEmpty()
-			}
+		if solution.HasSolution() {
+			multiResult := process.solutionToResult(solution, printer)
+			return multiResult, true
 		} else {
-			multiFuture.SetResultEmpty()
+			return HighsMultiResult{}, false
 		}
-	}()
-	return multiFuture
+	})
 }
 
 func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.PrintRecorder, outputTarget util.Optional[int], cancel channel_op.CancelSignal) <-chan HighsMultiResult {
@@ -115,7 +106,7 @@ func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.Print
 	printer.Printf("INITIAL MULTI run\n")
 
 	process.makeFullModel()
-	future := process.build.RunHighsFuture()
+	future := process.build.RunHighsFuture(nil)
 	channel_op.ChainCancel(cancel, future)
 
 	result, gotResult := future.WaitForResult()
@@ -171,7 +162,7 @@ func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariant_One(p
 }
 
 func (process *SolverHighsMultiProcess) runVariant(build *utilhighs.LinearBuilder, cancel channel_op.CancelSignal, innerPrint *util.PrintRecorder, printer *util.PrintRecorder) (HighsMultiResult, bool) {
-	future := build.RunHighsFuture()
+	future := build.RunHighsFuture(nil)
 	channel_op.ChainCancel(cancel, future)
 
 	result, gotResult := future.WaitForResult()
