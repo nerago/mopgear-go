@@ -4,6 +4,7 @@ import (
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 	"slices"
 	"strconv"
 	"time"
@@ -193,13 +194,23 @@ func rankInternalRun4_create(process *RankingStatWeightProcess4) *rankInternalRu
 }
 
 func (run *rankInternalRun4) run(stopwatch *util.Stopwatch) (util.Optional[WeightResult], *highs.Solution) {
-	solution := run.build.RunHighs(run.process.printer, stopwatch)
+	solutionFuture := run.build.RunHighsFuture(stopwatch)
+	linearResult := solutionFuture.WaitForResultOrPanic()
+	solution := linearResult.GetSolutionAndSaveLog(run.process.printer)
 	if solution.HasSolution() {
 		weights := run.extractAndReportSolution(solution)
 		return util.Optional_OfValue(weights), solution
 	} else {
 		return util.Optional_Empty[WeightResult](), solution
 	}
+}
+
+func (run *rankInternalRun4) runFuture(stopwatch *util.Stopwatch) *channel_op.FutureCancellable[WeightResult] {
+	solutionFuture := run.build.RunHighsFuture(stopwatch)
+	return channel_op.FutureCancellable_MapValue(solutionFuture, func(linearResult utilhighs.LinearResult) (WeightResult, bool) {
+		solution := linearResult.GetSolutionAndSaveLog(run.process.printer)
+		return run.extractAndReportSolution(solution), true
+	})
 }
 
 func (run *rankInternalRun4) createWeightColumns() {

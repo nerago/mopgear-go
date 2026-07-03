@@ -4,6 +4,7 @@ import (
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 	"strconv"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -74,7 +75,7 @@ func (ranker *RankingStatWeightProcess) SetTargetRatios(targetRatios stats.SimDa
 // 	ranker.minimumIncludeRate = percent
 // }
 
-func (ranker *RankingStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int) WeightResult {
+func (ranker *RankingStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int) *channel_op.FutureCancellable[WeightResult] {
 	ranker.build = new(utilhighs.LinearBuilder)
 	ranker.build.Minimise = true
 	if ranker.RANKMODE == 0 || ranker.RANKMODE == 1 || ranker.RANKMODE == 2 {
@@ -93,9 +94,11 @@ func (ranker *RankingStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout i
 
 	// ranker.includeCountRow.Finish(ranker.input, float64(len(ranker.inputData))*ranker.minimumIncludeRate, utilhighs.C_PlusInf)
 
-	solution := ranker.build.RunHighs(ranker.printer, stopwatch)
-
-	return ranker.extractAndReportSolution(solution)
+	solutionFuture := ranker.build.RunHighsFuture(stopwatch)
+	return channel_op.FutureCancellable_MapValue(solutionFuture, func(linearResult utilhighs.LinearResult) (WeightResult, bool) {
+		solution := linearResult.GetSolutionAndSaveLog(ranker.printer)
+		return ranker.extractAndReportSolution(solution), true
+	})
 }
 
 func (ranker *RankingStatWeightProcess) createWeightColumns() {

@@ -23,7 +23,7 @@ func Solver(input SolveInput) SolveOutput {
 	defer trackProgress.SetDone()
 
 	futureSolvedResult := withhighs.SingleGearSetMain(&solveOptions, input.Model, printer)
-	solvedResult := futureSolvedResult.WaitForResult_AsOptional()
+	solvedResult := futureSolvedResult.WaitForResultAsOptional()
 
 	return finaliseSolve(solvedResult, solveOptions, input, printer)
 }
@@ -31,7 +31,7 @@ func Solver(input SolveInput) SolveOutput {
 func Solver_Lite(itemOptions *items.FullOptionsMap, model *model.Model, printer *util.PrintRecorder) items.FullItemSet {
 	solveOptions := items.SolvableOptionsMap_of(itemOptions)
 	futureSolvedSet := withhighs.SingleGearSetMain(&solveOptions, model, printer)
-	solvedSet := futureSolvedSet.WaitForResult_AsOptional()
+	solvedSet := futureSolvedSet.WaitForResultAsOptional()
 	itemSet := items.FullItemSet_FromSolved(solvedSet.GetOrPanic(), itemOptions)
 	itemSet.DebugValidate()
 	itemSet.ValidateItemRules()

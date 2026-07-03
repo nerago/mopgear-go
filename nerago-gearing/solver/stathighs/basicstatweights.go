@@ -4,6 +4,7 @@ import (
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
@@ -68,7 +69,7 @@ func (basic *BasicStatWeightProcess) AddSimData(statType stats.StatType, statVal
 	basic.simData[statType] = basicDataEntry{statValue, sim}
 }
 
-func (basic *BasicStatWeightProcess) Run(stopwatch *util.Stopwatch) WeightResult {
+func (basic *BasicStatWeightProcess) Run(stopwatch *util.Stopwatch) *channel_op.FutureCancellable[WeightResult] {
 	for _, statType := range basic.requiredStats {
 		colName := "FINAL WEIGHT: " + statType.Name()
 		colFinalWeight := basic.build.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: colName})
@@ -99,12 +100,16 @@ func (basic *BasicStatWeightProcess) Run(stopwatch *util.Stopwatch) WeightResult
 	basic.unitValuesToCalcDetailedRatings()
 	basic.calcTotalRatings()
 
-	solution := basic.build.RunHighs(basic.printer, stopwatch)
-	basic.printer.Println(solution.Status.String())
+	solutionFuture := basic.build.RunHighsFuture(stopwatch)
 
-	basic.build.DebugPrintColumns(solution, basic.printer)
+	return channel_op.FutureCancellable_MapValue(solutionFuture, func(linearResult utilhighs.LinearResult) (WeightResult, bool) {
+		solution := linearResult.GetSolutionAndSaveLog(basic.printer)
 
-	return basic.reportOutputWeights(solution)
+		basic.printer.Println(solution.Status.String())
+		basic.build.DebugPrintColumns(solution, basic.printer)
+
+		return basic.reportOutputWeights(solution), true
+	})
 }
 
 // this is a single diff value, ideally we want to push data in and average across multiple

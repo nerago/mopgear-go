@@ -24,11 +24,10 @@ func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, gear_model *gear_m
 
 	solutionFuture := build.RunHighsFuture(nil)
 
-	return channel_op.FutureCancellable_Map(solutionFuture, func(result utilhighs.LinearResult) (items.SolvableItemSet, bool) {
-		solution := result.Solution
+	return channel_op.FutureCancellable_MapValue(solutionFuture, func(result utilhighs.LinearResult) (items.SolvableItemSet, bool) {
+		solution := result.GetSolutionAndSaveLog(printer)
 
 		printer.Printf("SOLUTION STATUS = %s\n", solution.Status.String())
-		printer.AppendOther(result.Log)
 		debugPrint(solution, setup, printer)
 
 		if solution.HasSolution() {

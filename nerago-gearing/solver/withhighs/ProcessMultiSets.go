@@ -59,9 +59,8 @@ func (process *SolverHighsMultiProcess) RunInterruptable(printer *util.PrintReco
 	process.makeFullModel()
 
 	solveFuture := process.build.RunHighsFuture(nil)
-	return channel_op.FutureCancellable_Map(solveFuture, func(result utilhighs.LinearResult) (HighsMultiResult, bool) {
-		solution, log := result.Solution, result.Log
-		printer.AppendOther(log)
+	return channel_op.FutureCancellable_MapValue(solveFuture, func(linearResult utilhighs.LinearResult) (HighsMultiResult, bool) {
+		solution := linearResult.GetSolutionAndSaveLog(printer)
 		printer.Println("SOLUTION STATUS = " + solution.Status.String())
 
 		debugPrintAll(solution, process, printer)
@@ -167,9 +166,8 @@ func (process *SolverHighsMultiProcess) runVariant(build *utilhighs.LinearBuilde
 
 	result, gotResult := future.WaitForResult()
 	if gotResult {
-		solution := result.Solution
+		solution := result.GetSolutionAndSaveLog(innerPrint)
 		innerPrint.Println("SOLUTION STATUS = " + solution.Status.String())
-		innerPrint.AppendOther(result.Log)
 
 		innerPrint.Println("############################################################################")
 		printer.AppendOther(innerPrint)

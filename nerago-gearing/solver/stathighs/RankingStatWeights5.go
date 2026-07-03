@@ -144,9 +144,8 @@ func rankInternalRun5_create(process *RankingStatWeightProcess5) *rankInternalRu
 
 func (run *rankInternalRun5) run(stopwatch *util.Stopwatch) *channel_op.FutureCancellable[WeightResult] {
 	futureSolution := run.build.RunHighsFuture(stopwatch)
-	return channel_op.FutureCancellable_Map(futureSolution, func(linResult utilhighs.LinearResult) (WeightResult, bool) {
-		solution := linResult.Solution
-		run.process.printer.AppendOther(linResult.Log)
+	return channel_op.FutureCancellable_MapValue(futureSolution, func(linResult utilhighs.LinearResult) (WeightResult, bool) {
+		solution := linResult.GetSolutionAndSaveLog(run.process.printer)
 		if solution.HasSolution() {
 			return run.extractAndReportSolution(solution), true
 		} else {

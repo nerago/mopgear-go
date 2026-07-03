@@ -39,22 +39,34 @@ func diagnoseTryHalves(build *LinearBuilder, min, pivot, max int, printer *util.
 	cloneLower.mat.deleteRowRange(min, pivot-1)
 	cloneUpper.mat.deleteRowRange(pivot, max)
 
-	solutionLower := cloneLower.RunHighs(nil, nil)
-	solutionUpper := cloneUpper.RunHighs(nil, nil)
+	solutionLowerFuture := cloneLower.RunHighsFuture(nil)
+	solutionUpperFuture := cloneUpper.RunHighsFuture(nil)
 
-	printer.Printf("Half minus(%d..%d)=%s, minus(%d..%d)=%s\n", min, pivot-1, solutionLower.Status.String(), pivot, max, solutionUpper.Status.String())
+	statusLower := highs.ModelStatusInfeasible
+	solutionLower, hasLowerResult := solutionLowerFuture.WaitForResult()
+	if hasLowerResult {
+		statusLower = solutionLower.GetSolutionAndDiscardLog().Status
+	}
 
-	if solutionLower.Status == highs.ModelStatusOptimal {
+	statusUpper := highs.ModelStatusInfeasible
+	solutionUpper, hasUpperResult := solutionUpperFuture.WaitForResult()
+	if hasUpperResult {
+		statusUpper = solutionUpper.GetSolutionAndDiscardLog().Status
+	}
+
+	printer.Printf("Half minus(%d..%d)=%s, minus(%d..%d)=%s\n", min, pivot-1, statusLower.String(), pivot, max, statusUpper.String())
+
+	if statusLower == highs.ModelStatusOptimal {
 		return -1
-	} else if solutionUpper.Status == highs.ModelStatusOptimal {
+	} else if statusUpper == highs.ModelStatusOptimal {
 		return 1
-	} else if solutionLower.Status == highs.ModelStatusInfeasible {
+	} else if statusLower == highs.ModelStatusInfeasible {
 		return -1
-	} else if solutionUpper.Status == highs.ModelStatusInfeasible {
+	} else if statusUpper == highs.ModelStatusInfeasible {
 		return 1
-	} else if solutionLower.Status == highs.ModelStatusUnboundedOrInfeasible {
+	} else if statusLower == highs.ModelStatusUnboundedOrInfeasible {
 		return -1
-	} else if solutionUpper.Status == highs.ModelStatusUnboundedOrInfeasible {
+	} else if statusUpper == highs.ModelStatusUnboundedOrInfeasible {
 		return 1
 	} else {
 		return 0
@@ -67,7 +79,8 @@ func diagnoseInfeasibleOneByOne(build *LinearBuilder, printer *util.PrintRecorde
 		clone.NoOutput = true
 		clone.mat.deleteRow(rowIndex)
 		innerPrint := util.PrintRecorder_HoldAll()
-		solution := clone.RunHighs(innerPrint, nil)
+		result := clone.RunHighsFuture(nil).WaitForResultOrPanic()
+		solution := result.GetSolutionAndSaveLog(printer)
 		printer.Printf("Removed row %4d (%s) []=%2d --> %s\n", rowIndex, build.mat.debug[rowIndex], len(build.mat.entries[rowIndex]), solution.Status.String())
 		if solution.Status == highs.ModelStatusOptimal {
 			printer.AppendOther(innerPrint)

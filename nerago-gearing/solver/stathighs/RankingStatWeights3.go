@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 	"slices"
 	"strconv"
 
@@ -107,30 +108,42 @@ func (ranker *RankingStatWeightProcess3) makeBuilder() {
 	}
 }
 
-func (ranker *RankingStatWeightProcess3) Run(stopwatch *util.Stopwatch) WeightResult {
+func (ranker *RankingStatWeightProcess3) Run(stopwatch *util.Stopwatch) *channel_op.FutureCancellable[WeightResult] {
 	// FIRST ROUND: minimal data, no initial values
 	ranker.dataSample = takeDataSample_Start(ranker.dataAllOriginal, c_rank3_initial_data_sample)
 	ranker.prepare()
 	ranker.setupDumbInitialSolution()
-	solution1 := ranker.build.RunHighs(ranker.printer, stopwatch)
-	_ = ranker.extractAndReportSolution(solution1)
 
-	// FULL RUN
-	ranker.dataSample = ranker.dataAllOriginal
-	ranker.prepare()
-	ranker.setupInitialSolutionFromPreviousWeightOnly(solution1)
-	solution2 := ranker.build.RunHighs(ranker.printer, stopwatch)
-	weights2 := ranker.extractAndReportSolution(solution2)
+	solution1Future := ranker.build.RunHighsFuture(stopwatch)
 
-	return weights2
+	solution2Future := channel_op.FutureCancellable_MapToFuture(solution1Future, func(linearResult1 utilhighs.LinearResult) *channel_op.FutureCancellable[utilhighs.LinearResult] {
+		solution1 := linearResult1.GetSolutionAndSaveLog(ranker.printer)
+		_ = ranker.extractAndReportSolution(solution1)
+
+		// FULL RUN
+		ranker.dataSample = ranker.dataAllOriginal
+		ranker.prepare()
+		if solution1.HasSolution() {
+			ranker.setupInitialSolutionFromPreviousWeightOnly(solution1)
+		}
+		return ranker.build.RunHighsFuture(stopwatch)
+	})
+
+	return channel_op.FutureCancellable_MapValue(solution2Future, func(linearResult2 utilhighs.LinearResult) (WeightResult, bool) {
+		solution2 := linearResult2.GetSolutionAndSaveLog(ranker.printer)
+		return ranker.extractAndReportSolution(solution2), true
+	})
 }
 
-func (ranker *RankingStatWeightProcess3) RunUsingExternalStart(initialWeight WeightResult, stopwatch *util.Stopwatch) WeightResult {
+func (ranker *RankingStatWeightProcess3) RunUsingExternalStart(initialWeight WeightResult, stopwatch *util.Stopwatch) *channel_op.FutureCancellable[WeightResult] {
 	ranker.dataSample = ranker.dataAllOriginal
 	ranker.prepare()
 	ranker.setupInitialSolutionFromExternal2(initialWeight)
-	solution := ranker.build.RunHighs(ranker.printer, stopwatch)
-	return ranker.extractAndReportSolution(solution)
+	solutionFuture := ranker.build.RunHighsFuture(stopwatch)
+	return channel_op.FutureCancellable_MapValue(solutionFuture, func(linearResult utilhighs.LinearResult) (WeightResult, bool) {
+		solution := linearResult.GetSolutionAndSaveLog(ranker.printer)
+		return ranker.extractAndReportSolution(solution), true
+	})
 }
 
 func (ranker *RankingStatWeightProcess3) prepare() {

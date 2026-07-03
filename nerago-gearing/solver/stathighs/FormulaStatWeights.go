@@ -4,6 +4,7 @@ import (
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
@@ -57,7 +58,7 @@ func (form *FormulaStatWeightProcess) SetMinimumIncludeRate(percent float64) {
 	form.minimumIncludeRate = percent
 }
 
-func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int) WeightResult {
+func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int) *channel_op.FutureCancellable[WeightResult] {
 	form.build = new(utilhighs.LinearBuilder)
 	form.build.Minimise = true
 	form.build.Solver = utilhighs.Solver_MIP_Interior
@@ -76,9 +77,11 @@ func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int
 
 	form.includeCountRow.Build(form.build, float64(len(form.inputData))*form.minimumIncludeRate, utilhighs.C_PlusInf)
 
-	solution := form.build.RunHighs(form.printer, stopwatch)
-
-	return form.extractAndReportSolution(solution)
+	solutionFuture := form.build.RunHighsFuture(stopwatch)
+	return channel_op.FutureCancellable_MapValue(solutionFuture, func(linearResult utilhighs.LinearResult) (WeightResult, bool) {
+		solution := linearResult.GetSolutionAndSaveLog(form.printer)
+		return form.extractAndReportSolution(solution), true
+	})
 }
 
 func (form *FormulaStatWeightProcess) chooseScaling() {

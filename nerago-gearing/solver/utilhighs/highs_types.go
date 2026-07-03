@@ -42,6 +42,20 @@ type ColumnIndex int32
 type ObjectiveIndex int32
 type RowIndex int32
 
+type LinearResult struct {
+	solution *highs.Solution
+	log      *util.PrintRecorder
+}
+
+func (lr *LinearResult) GetSolutionAndDiscardLog() *highs.Solution {
+	return lr.solution
+}
+
+func (lr *LinearResult) GetSolutionAndSaveLog(printer *util.PrintRecorder) *highs.Solution {
+	printer.AppendOther(lr.log)
+	return lr.solution
+}
+
 type LinearBuilder struct {
 	vars                 variableArrayBuilder
 	mat                  constraintMatrixBuilder
@@ -130,11 +144,6 @@ func (build *LinearBuilder) GetInitialSolutionValue(columnNumber ColumnIndex) fl
 	return value
 }
 
-type LinearResult struct {
-	Solution *highs.Solution
-	Log      *util.PrintRecorder
-}
-
 func (build *LinearBuilder) RunHighsFuture(stopwatch *util.Stopwatch) *channel_op.FutureCancellable[LinearResult] {
 	solver, logFilename, requestGpu := build.prepareHighsRun(true)
 
@@ -162,15 +171,6 @@ func (build *LinearBuilder) RunHighsFuture(stopwatch *util.Stopwatch) *channel_o
 	}()
 
 	return future
-}
-
-func (build *LinearBuilder) RunHighs(printer *util.PrintRecorder, stopwatch *util.Stopwatch) *highs.Solution {
-	future := build.RunHighsFuture(stopwatch)
-	result, _ := future.WaitForResult()
-	if printer != nil {
-		printer.AppendOther(result.Log)
-	}
-	return result.Solution
 }
 
 func (build *LinearBuilder) prepareHighsRun(needLog bool) (*highs.Solver, string, bool) {
@@ -255,7 +255,7 @@ func (build *LinearBuilder) configureHighsUtil(solver *highs.Solver, logfile str
 	} else {
 		verifyNoError(solver.SetFloatOption("time_limit", C_PlusInf))
 	}
-	// verifyNoError(solver.InterruptSupportEnable())
+	verifyNoError(solver.InterruptSupportEnable())
 
 	verifyNoError(solver.SetStringOption("log_file", logfile))
 	verifyNoError(solver.SetBoolOption("log_to_console", (C_DebugHighs || C_HighsToConsole) && !build.NoOutput))

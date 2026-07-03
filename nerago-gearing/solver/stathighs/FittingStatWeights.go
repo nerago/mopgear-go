@@ -239,7 +239,8 @@ func (fitseg *FittingSingleStatSegmentsProcess) runFitAll() {
 	fit.Init(fitseg.printer, fitseg.timeout)
 	fit.SetMinimumIncludeRate(1)
 	fit.SupplyDataFromStandard(fitseg.inputDataOriginal, fitseg.stat, fitseg.sim)
-	weightOptional := fit.Run()
+	weightOptionalFuture := fit.Run()
+	weightOptional := weightOptionalFuture.WaitForResultAsOptional()
 	if weight, hasWeight := weightOptional.GetWithFlag(); hasWeight {
 		statRange := StatRange{weight.Minimum, weight.Maximum}
 		fitseg.segments[statRange] = weight
@@ -251,7 +252,8 @@ func (fitseg *FittingSingleStatSegmentsProcess) runInitial() {
 	fit.Init(fitseg.printer, fitseg.timeout)
 	fit.SetMinimumIncludeRate(0.3)
 	fit.SupplyDataFromStandard(fitseg.inputDataOriginal, fitseg.stat, fitseg.sim)
-	weightOptional := fit.Run()
+	weightOptionalFuture := fit.Run()
+	weightOptional := weightOptionalFuture.WaitForResultAsOptional()
 	if weight, hasWeight := weightOptional.GetWithFlag(); hasWeight {
 		statRange := StatRange{weight.Minimum, weight.Maximum}
 		fitseg.segments[statRange] = weight
@@ -266,7 +268,8 @@ func (fitseg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []*Weig
 	fit.Init(fitseg.printer, fitseg.timeout)
 	fit.SetMinimumIncludeRate(includeRate)
 	fit.SupplyDataFromStandard(inputData, fitseg.stat, fitseg.sim)
-	weightOptional := fit.Run()
+	weightOptionalFuture := fit.Run()
+	weightOptional := weightOptionalFuture.WaitForResultAsOptional()
 	if weight, hasWeight := weightOptional.GetWithFlag(); hasWeight {
 		minimum := max(inputRange.Minimum, weight.Minimum)
 		maximum := min(inputRange.Maximum, weight.Maximum)
@@ -450,7 +453,7 @@ func scaleSimItem(value float64, sim stats.SimType) float64 {
 	addRow(lower_bound, upper_bound, nnz, index, value);
 */
 
-func (fit *FittingSingleStatWeightProcess) Run() util.Optional[FittingSingleStatResult] {
+func (fit *FittingSingleStatWeightProcess) Run() *channel_op.FutureCancellable[FittingSingleStatResult] {
 	fit.setupLinearObjectives()
 
 	for sample := range util.ForPointer(fit.inputData) {
@@ -459,16 +462,17 @@ func (fit *FittingSingleStatWeightProcess) Run() util.Optional[FittingSingleStat
 
 	fit.includeCountRow.Build(fit.build, float64(len(fit.inputData))*fit.minimumIncludeRate, utilhighs.C_PlusInf)
 
-	solution := fit.build.RunHighs(fit.printer, &fit.stopwatch)
-	fit.printer.Println(solution.Status.String())
-
-	fit.build.DebugPrintColumns(solution, fit.printer)
-
-	if solution.IsOptimal() {
-		return util.Optional_OfValue(fit.buildResult(solution))
-	} else {
-		return util.Optional_Empty[FittingSingleStatResult]()
-	}
+	solutionFuture := fit.build.RunHighsFuture(&fit.stopwatch)
+	return channel_op.FutureCancellable_MapValue(solutionFuture, func(linearResult utilhighs.LinearResult) (FittingSingleStatResult, bool) {
+		solution := linearResult.GetSolutionAndSaveLog(fit.printer)
+		fit.printer.Println(solution.Status.String())
+		fit.build.DebugPrintColumns(solution, fit.printer)
+		if solution.HasSolution() {
+			return fit.buildResult(solution), true
+		} else {
+			return FittingSingleStatResult{}, false
+		}
+	})
 }
 
 func (fit *FittingSingleStatWeightProcess) setupLinearObjectives() {

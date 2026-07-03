@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 	"slices"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -72,17 +73,21 @@ func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios stats.SimData)
 	grid2.targetRatios = targetRatios
 }
 
-func (grid2 *GridStatWeightProcess2) Run(stopwatch *util.Stopwatch) WeightResult {
+func (grid2 *GridStatWeightProcess2) Run(stopwatch *util.Stopwatch) *channel_op.FutureCancellable[WeightResult] {
 	grid2.setupWeightVars()
 	grid2.chooseScalingX()
 	grid2.processInputData()
 
-	solution := grid2.build.RunHighs(grid2.printer, stopwatch)
-	grid2.printer.Println(solution.Status.String())
+	solutionFuture := grid2.build.RunHighsFuture(stopwatch)
+	return channel_op.FutureCancellable_MapValue(solutionFuture, func(linearResult utilhighs.LinearResult) (WeightResult, bool) {
+		solution := linearResult.GetSolutionAndSaveLog(grid2.printer)
 
-	grid2.build.DebugPrintColumns(solution, grid2.printer)
+		grid2.printer.Println(solution.Status.String())
+		grid2.build.DebugPrintColumns(solution, grid2.printer)
 
-	return grid2.reportOutputWeightsGrid(solution)
+		return grid2.reportOutputWeightsGrid(solution), true
+	})
+
 }
 
 func (grid2 *GridStatWeightProcess2) setupWeightVars() {

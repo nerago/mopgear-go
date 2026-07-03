@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 	"strconv"
 	"strings"
 
@@ -103,19 +104,23 @@ func (grid *SelectiveGridStatWeightProcess) SetTargetRatios(targetRatios stats.S
 	grid.targetRatios = targetRatios
 }
 
-func (grid *SelectiveGridStatWeightProcess) Run(stopwatch *util.Stopwatch) WeightResult {
+func (grid *SelectiveGridStatWeightProcess) Run(stopwatch *util.Stopwatch) *channel_op.FutureCancellable[WeightResult] {
 	grid.setupWeightVars()
 
 	grid.createIncludeToggles()
 	grid.dataSamplesFromPairs()
 	grid.unitValuesToCalcDetailedRatings()
 
-	solution := grid.build.RunHighs(grid.printer, stopwatch)
-	grid.printer.Println(solution.Status.String())
+	solutionFuture := grid.build.RunHighsFuture(stopwatch)
+	return channel_op.FutureCancellable_MapValue(solutionFuture, func(linearResult utilhighs.LinearResult) (WeightResult, bool) {
+		solution := linearResult.GetSolutionAndSaveLog(grid.printer)
 
-	grid.build.DebugPrintColumns(solution, grid.printer)
+		grid.printer.Println(solution.Status.String())
+		grid.build.DebugPrintColumns(solution, grid.printer)
 
-	return grid.reportOutputWeightsGrid(solution)
+		return grid.reportOutputWeightsGrid(solution), true
+	})
+
 }
 
 func (grid *SelectiveGridStatWeightProcess) setupWeightVars() {
