@@ -77,8 +77,6 @@ func (process *SolverHighsMultiProcess) RunInterruptable(printer *util.PrintReco
 func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.PrintRecorder, outputTarget util.Optional[int], cancel channel_op.CancelSignal) <-chan HighsMultiResult {
 	resultChannel := make(chan HighsMultiResult, 8)
 
-	// process.common.Get()
-
 	go func() {
 		initialResult, bestCommonChoices, hasInitial := process.generateInitialMulti(printer, cancel)
 		if hasInitial {
@@ -110,9 +108,8 @@ func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.Print
 
 	result, gotResult := future.WaitForResult()
 	if gotResult {
-		solution := result.Solution
+		solution := result.GetSolutionAndSaveLog(printer)
 		printer.Println("SOLUTION STATUS = " + solution.Status.String())
-		printer.AppendOther(result.Log)
 		debugPrintAll(solution, process, printer)
 
 		if solution.HasSolution() {
@@ -125,8 +122,8 @@ func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.Print
 }
 
 func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariants(bestCommonChoices []*columnInfo, printer *util.PrintRecorder, cancel channel_op.CancelSignal) <-chan HighsMultiResult {
-	return channel_op.MapOptional_SliceToChannel_Cancellable(10, bestCommonChoices, cancel, func(changeColumn **columnInfo) (HighsMultiResult, bool) {
-		return process.generateWithDifferentCommonVariant_One(printer, *changeColumn, cancel)
+	return channel_op.MapFuture_SliceToChannel_Cancellable(10, bestCommonChoices, cancel, func(changeColumn **columnInfo) *channel_op.FutureCancellable[HighsMultiResult] {
+		return process.generateWithDifferentCommonVariant_One(printer, *changeColumn)
 	})
 }
 
@@ -148,7 +145,7 @@ func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariants(best
 // return process.runVariant(build, cancel, innerPrint, printer)
 // }
 
-func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariant_One(printer *util.PrintRecorder, changeColumn *columnInfo, cancel channel_op.CancelSignal) (HighsMultiResult, bool) {
+func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariant_One(printer *util.PrintRecorder, changeColumn *columnInfo) *channel_op.FutureCancellable[HighsMultiResult] {
 	innerPrint := util.PrintRecorder_HoldAll()
 	printer.Printf("COMMON VARIANT blocking %s\n", changeColumn.itemFull.CreateString())
 
@@ -157,16 +154,14 @@ func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariant_One(p
 	rowLimitCommon.Add(changeColumn.columnIndex, 1)
 	rowLimitCommon.Build(build, 0, 0)
 
-	return process.runVariant(build, cancel, innerPrint, printer)
+	return process.runVariant(build, innerPrint, printer)
 }
 
-func (process *SolverHighsMultiProcess) runVariant(build *utilhighs.LinearBuilder, cancel channel_op.CancelSignal, innerPrint *util.PrintRecorder, printer *util.PrintRecorder) (HighsMultiResult, bool) {
+func (process *SolverHighsMultiProcess) runVariant(build *utilhighs.LinearBuilder, innerPrint *util.PrintRecorder, printer *util.PrintRecorder) *channel_op.FutureCancellable[HighsMultiResult] {
 	future := build.RunHighsFuture(nil)
-	channel_op.ChainCancel(cancel, future)
 
-	result, gotResult := future.WaitForResult()
-	if gotResult {
-		solution := result.GetSolutionAndSaveLog(innerPrint)
+	return channel_op.FutureCancellable_MapValue(future, func(linearResult utilhighs.LinearResult) (HighsMultiResult, bool) {
+		solution := linearResult.GetSolutionAndSaveLog(innerPrint)
 		innerPrint.Println("SOLUTION STATUS = " + solution.Status.String())
 
 		innerPrint.Println("############################################################################")
@@ -174,9 +169,10 @@ func (process *SolverHighsMultiProcess) runVariant(build *utilhighs.LinearBuilde
 
 		if solution.HasSolution() {
 			return process.solutionToResult(solution, innerPrint), true
+		} else {
+			return HighsMultiResult{}, false
 		}
-	}
-	return HighsMultiResult{}, false
+	})
 }
 
 func debugPrintAll(solution *highs.Solution, job *SolverHighsMultiProcess, printer *util.PrintRecorder) {

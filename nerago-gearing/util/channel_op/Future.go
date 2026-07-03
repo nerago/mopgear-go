@@ -276,10 +276,7 @@ func (future *FutureCancellable[T]) ForwardAnyResultToChannel(resultChannel chan
 			panic("signal channel closed")
 		}
 		close(future.signalChannel)
-
-		if !future.isCancelled {
-			resultChannel <- result
-		}
+		resultChannel <- result
 	}()
 }
 
