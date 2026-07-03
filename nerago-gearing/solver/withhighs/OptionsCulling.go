@@ -53,7 +53,7 @@ func (process *OptionsCulling) Run(cancel channel_op.CancelSignal) <-chan items.
 	for range c_cullThreadCount {
 		waitGroup.Go(func() {
 			for process.tasksCompleted.Load() < process.targetResultCount-c_cullThreadCount && cancel.ShouldContinue() {
-				process.runTask(resultChannel)
+				process.runTask(resultChannel, cancel)
 			}
 			process.printer.Println("exit thread")
 		})
@@ -72,7 +72,7 @@ func (process *OptionsCulling) reportHowManyTried() {
 	process.printer.Printf("CULLING NUMS %s options=%d didRemove=%d\n", process.label, len(itemIdOptions), len(process.didRemove))
 }
 
-func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSet) {
+func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSet, cancel channel_op.CancelSignal) {
 	blockedItems := process.chooseRandomToRemove()
 	itemOptions, isUnusable := process.makeRestrictedItemOptions(blockedItems)
 	if isUnusable {
@@ -84,7 +84,12 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 	linearBuild.NoOutput = true
 
 	setup := setupGearSet(&linearBuild, process.model, &itemOptions, 1)
-	solution := linearBuild.RunHighs(process.printer, nil)
+
+	solutionFuture := linearBuild.RunHighsFuture(nil)
+	channel_op.ChainCancel(cancel, solutionFuture)
+	linearResult := solutionFuture.WaitForResultOrPanic()
+	solution := linearResult.GetSolutionAndSaveLog(process.printer)
+
 	if solution.Status == highs.ModelStatusOptimal {
 		percent := float64(process.tasksCompleted.Load()) / float64(process.targetResultCount) * 100
 		process.printer.Printf("TASK OK %s %.0f\n", process.label, percent)

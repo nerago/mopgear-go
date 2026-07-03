@@ -392,8 +392,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 
-	job.RunNoPermutations_AllCommonAlternates()
-	//job.RunForSolutionsPerPerumte(8)
+	//job.RunNoPermutations_AllCommonAlternates()
+	job.RunForSolutionsPerPerumte(1)
 	// job.RunCullingSets(500, time.Minute*30)
 }
 

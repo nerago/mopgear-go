@@ -13,6 +13,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 	"slices"
 	"sync"
 )
@@ -72,7 +73,8 @@ func statWeightsGrid_updateOne(label string, gearModel *model.Model, gearFile st
 	grid.SetRequiredStats(gearModel.StatsForWeighting)
 	grid.SetTestMode(simSpeed == simulate.RunSize_TestOnly)
 	grid.SupplyData(inputDataGrid)
-	weightsGrid := grid.Run(nil)
+	weightsGridFuture := grid.Run(nil)
+	weightsGrid := weightsGridFuture.WaitForResultOrPanic()
 	printer.Println("Grid Weights >>>>> " + label)
 	pawnGrid := tools.WritePawnString(weightsGrid, printer)
 	accGridOnGridInput := EvaluateAccuracy(weightsGrid, inputDataGrid, ratios)
@@ -86,12 +88,13 @@ func statWeightsGrid_updateOne(label string, gearModel *model.Model, gearFile st
 	ranking.SetRequiredStats(gearModel.StatsForWeighting)
 	ranking.SetTargetRatios(ratios)
 	ranking.SupplyData(mixedInputData)
-	var weightsRanking stathighs.WeightResult
+	var weightsRankingFuture *channel_op.FutureCancellable[stathighs.WeightResult]
 	if !weightsGrid.IsEmpty() {
-		weightsRanking = ranking.RunSinglePassFromExternal(weightsGrid, nil)
+		weightsRankingFuture = ranking.RunSinglePassFromExternal(weightsGrid, nil)
 	} else {
-		weightsRanking = ranking.RunMultiRound(nil)
+		weightsRankingFuture = ranking.RunMultiRound(nil)
 	}
+	weightsRanking := weightsRankingFuture.WaitForResultOrPanic()
 	printer.Println("Ranking Weights >>>>> " + label)
 	pawnRanking := tools.WritePawnString(weightsRanking, printer)
 

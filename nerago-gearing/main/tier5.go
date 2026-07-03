@@ -453,7 +453,7 @@ func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.Stat
 		process.SetRequiredStats(model.StatsForWeighting)
 		process.SetTargetRatios(ratios)
 		process.SupplyData(inputData)
-		weights = process.Run(nil)
+		weights = process.Run(nil).WaitForResultOrPanic()
 	}
 
 	pawn := tools.WritePawnString(weights, printer)
