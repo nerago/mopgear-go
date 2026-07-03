@@ -99,6 +99,7 @@ func Map_ChannelToSlice[T any, R any](threadCount int, inputChannel <-chan T, ma
 	return outputSlice
 }
 
+// TODO maybe onComplete should be a feature of Futures
 func Map_ChannelToSlice_FutureCancellable[T any, R any](threadCount int, inputChannel <-chan T, onComplete func(), mapper func(T) R) *FutureCancellable[[]R] {
 	future := FutureCancellable_Make[[]R]()
 	tempChannel := make(chan R)
@@ -195,36 +196,34 @@ func MapOptional_SliceToChannel[T any, R any](threadCount int, inputSlice []T, m
 }
 
 func MapOptional_SliceToChannel_Cancellable[T any, R any](threadCount int, inputSlice []T, cancel CancelSignal, mapper func(*T) (R, bool)) <-chan R {
-	outputChannel := makeOutputChannel[R]()
 	indexChannel := make(chan int, threadCount)
-	var waitGroup sync.WaitGroup
+	loopCancelChannel := make(chan any)
+	cancel.AddCancelHandler(func() {
+		close(loopCancelChannel)
+	})
 
-	// TODO index channel gets stuck on cancel
 	go func() {
 		for index := range inputSlice {
-			if cancel.ShouldFinish() {
+			select {
+			case indexChannel <- index:
+				// ok
+			case <-loopCancelChannel:
 				break
 			}
-
-			indexChannel <- index
 		}
 		close(indexChannel)
 	}()
 
+	outputChannel := makeOutputChannel[R]()
+	var waitGroup sync.WaitGroup
 	for range threadCount {
 		waitGroup.Go(func() {
 			for index := range indexChannel {
-				if cancel.ShouldFinish() {
-					break
-				}
-
-				value, isValid := mapper(&inputSlice[index])
-				if isValid {
-					outputChannel <- value
-				}
-
-				if cancel.ShouldFinish() {
-					break
+				if cancel.ShouldContinue() {
+					value, isValid := mapper(&inputSlice[index])
+					if isValid {
+						outputChannel <- value
+					}
 				}
 			}
 		})
@@ -235,6 +234,114 @@ func MapOptional_SliceToChannel_Cancellable[T any, R any](threadCount int, input
 		close(outputChannel)
 	}()
 	return outputChannel
+}
+
+func MapFuture_SliceToChannel_Cancellable[T any, R any](threadCount int, inputSlice []T, cancel CancelSignal, mapper func(*T) *FutureCancellable[R]) <-chan R {
+	indexChannel := make(chan int)
+	loopCancelChannel := make(chan any)
+	cancel.AddCancelHandler(func() {
+		close(loopCancelChannel)
+	})
+
+	go func() {
+		for index := range inputSlice {
+			select {
+			case indexChannel <- index: // send index to next routine
+			case <-loopCancelChannel: // break out on cancel
+				break
+			}
+		}
+		close(indexChannel)
+	}()
+
+	mutexFutures := sync.Mutex{}
+	sliceFutures := make([]FutureCancellable[R], 0, threadCount)
+
+	outputChannel := makeOutputChannel[R]()
+	itemCompleteChannel := make(chan bool)
+	for range threadCount {
+		go func() {
+			for index := range indexChannel {
+				future := mapper(&inputSlice[index])
+				if future != nil {
+					ChainCancel(cancel, future)
+					future.ForwardResultToChannelPlusCompletion(outputChannel, itemCompleteChannel)
+				} else {
+					itemCompleteChannel <- false
+				}
+			}
+		}()
+	}
+
+	go func() {
+		itemCountRemaining := len(inputSlice)
+
+	completionLoop:
+		for itemCountRemaining > 0 {
+			select {
+			case <-itemCompleteChannel:
+				itemCountRemaining--
+			case <-loopCancelChannel:
+				break completionLoop
+			}
+		}
+
+		close(outputChannel) // risk of closing this while item cancel not actioned
+	}()
+	return outputChannel
+}
+
+func MapFuture_SliceToSlice_FutureCancellable[T any, R any](threadCount int, inputSlice []T, mapper func(*T) *FutureCancellable[R]) *FutureCancellable[[]R] {
+	primaryFuture := FutureCancellable_Make[[]R]()
+	indexChannel := make(chan int)
+	loopCancelChannel := make(chan any)
+	primaryFuture.AddCancelHandler(func() {
+		close(loopCancelChannel)
+	})
+
+	go func() {
+		for index := range inputSlice {
+			select {
+			case indexChannel <- index: // send index to next routine
+			case <-loopCancelChannel: // break out on cancel
+				break
+			}
+		}
+		close(indexChannel)
+	}()
+
+	resultChannel := make(chan FutureResult[R], threadCount)
+	for range threadCount {
+		go func() {
+			for index := range indexChannel {
+				itemFuture := mapper(&inputSlice[index])
+				if itemFuture != nil {
+					// atomic add future count? still could hit cleanup before doing the add
+					ChainCancel(primaryFuture, itemFuture)
+					itemFuture.ForwardAnyResultToChannel(resultChannel)
+				} else {
+					resultChannel <- FutureResult[R]{HasValue: false}
+				}
+			}
+		}()
+	}
+
+	// do we need to know what itemFutures are alive?
+	// or else we risk sending to a closed/ignored channel
+
+	// if we can be SURE that the cancels have been delivered to itemFuture
+
+	go func() {
+		outputSlice := make([]R, 0)
+		for result := range resultChannel {
+			if result.HasValue {
+				outputSlice = append(outputSlice, result.Value)
+			}
+		}
+		primaryFuture.SetResult(outputSlice)
+	}()
+
+	return primaryFuture
 }
 
 func Map_SliceToSlice[T any, R any](threadCount int, inputSlice []T, mapper func(*T) R) []R {
