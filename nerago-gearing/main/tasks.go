@@ -408,7 +408,7 @@ func trinketSims(printer *util.PrintRecorder) {
 		103678,                   // time lost artifict
 		trinketThokTailCelestial, // thok trinket
 		trinketFusionCoreCelestial,
-		trinketVialCorruptCelestial,
+		trinketVialCorruptNormal,
 	}
 
 	// fight := stats.Fight_Animus
@@ -517,7 +517,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		trinketZandSpark,
 		trinketThokTailCelestial,
 		trinketFusionCoreCelestial,
-		trinketVialCorruptCelestial,
+		trinketVialCorruptNormal,
 	}
 
 	fight := stats.Fight_Juggernaut_NoExternalHeal
@@ -589,7 +589,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		processItemIds := itemIds
 		if group.label == "ret" {
 			processItemIds = util.MapSliceAsNew_NoPointer(processItemIds, func(x items.ItemId) items.ItemId {
-				if x == trinketVialCorruptCelestial {
+				if x == trinketVialCorruptNormal {
 					x = trinketEyeGalakrasCelestial
 				}
 				return x

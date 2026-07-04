@@ -142,6 +142,18 @@ func ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff(difficulty stats.Diff
 	})
 }
 
+func ItemFinder_ThroneStrengthPlateTank_RadenOnly(difficulty stats.Difficulty) []*items.FullItem {
+	result := util.FilterSliceAsNew(ItemFinder_ThroneStrengthPlateTank(difficulty), func(item **items.FullItem) bool {
+		return isRadenItem((*item).ItemId())
+	})
+	//for _, itemId := range g_radenItems {
+	//	item := db.WowSimDB_ByIdAndUpgrade(itemId, 0)
+	//	result = append(result, item)
+	//}
+	result = util.RemoveDuplicatesFunc(result, func(a, b **items.FullItem) bool { return (*a).Equals(*b) })
+	return result
+}
+
 func ItemFinder_CelestialCloak(difficulty stats.Difficulty) []*items.FullItem {
 	return []*items.FullItem{
 		db.WowSimDB_ByIdAndUpgrade(98147, 0),
@@ -288,6 +300,18 @@ func matchesThroneGearCriteria(item *items.FullItem, armor stats.ArmorType, prim
 		item.SlotItem() != items.Item_Trinket &&
 		item.PrimaryStat() == primary &&
 		!model.SetBonus_IsAnyKnownItem(item.ItemId())
+}
+
+var g_radenItems = []items.ItemId{95025, 95013, 95001, 95038, 95035, 95033, 95028, 95002, 94995, 95003, 95015, 95010, 95000, 95029, 95030, 95027, 95031, 95023, 95011, 94999, 95036, 95037, 95020, 95018, 95022, 95019, 95021, 95014, 95032, 95040, 95006, 95012, 95034, 95026, 95039, 95004, 94998, 95024, 95005, 95009, 95007, 94996, 95016, 95008, 94997, 95017}
+
+func isRadenItem(itemId items.ItemId) bool {
+	return slices.Contains(g_radenItems, itemId)
+}
+
+func ItemFinder_FilterOutRadenItems(upgradeItems []*items.FullItem) []*items.FullItem {
+	return util.FilterSliceAsNew(upgradeItems, func(item **items.FullItem) bool {
+		return !isRadenItem((*item).ItemId())
+	})
 }
 
 func trinketsForDifficulty(trinketIds []items.ItemId, difficulty stats.Difficulty, expectedItemLevelFunc func(stats.Difficulty) uint16) []*items.FullItem {
