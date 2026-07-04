@@ -22,6 +22,7 @@ type FormulaStatWeightProcess struct {
 	requiredStats []stats.StatType
 	requiredSims  []stats.SimType
 	inputData     []WeightInput
+	BLEND         int
 
 	build *utilhighs.LinearBuilder
 
@@ -67,9 +68,31 @@ func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int
 	// comp.linearEquationDiff = -1
 	// comp.linearInclude = -1
 
-	form.build.BlendMultiObjectives = false
-	form.objectiveEquationDiff = form.build.AddObjectivePrioritised(false, -1, 0.5, 2)
-	form.objectiveInclude = form.build.AddObjectivePrioritised(false, -1, -1, 1)
+	if form.BLEND == 0 {
+		form.build.BlendMultiObjectives = false
+		form.objectiveEquationDiff = form.build.AddObjectivePrioritised(false, -1, 0.5, 2)
+		form.objectiveInclude = form.build.AddObjectivePrioritised(false, -1, -1, 1)
+	} else if form.BLEND == 1 {
+		form.build.BlendMultiObjectives = false
+		form.objectiveEquationDiff = form.build.AddObjectivePrioritised(false, -1, 0.2, 2)
+		form.objectiveInclude = form.build.AddObjectivePrioritised(false, -1, -1, 1)
+	} else if form.BLEND == 2 {
+		form.build.BlendMultiObjectives = false
+		form.objectiveEquationDiff = form.build.AddObjectivePrioritised(false, -1, 0.01, 2)
+		form.objectiveInclude = form.build.AddObjectivePrioritised(false, -1, -1, 1)
+	} else if form.BLEND == 3 {
+		form.build.BlendMultiObjectives = true
+		form.objectiveEquationDiff = form.build.AddObjectiveBlended(1, 0)
+		form.objectiveInclude = form.build.AddObjectiveBlended(1, 0)
+	} else if form.BLEND == 4 {
+		form.build.BlendMultiObjectives = true
+		form.objectiveEquationDiff = form.build.AddObjectiveBlended(5, 0)
+		form.objectiveInclude = form.build.AddObjectiveBlended(1, 0)
+	} else {
+		form.build.BlendMultiObjectives = true
+		form.objectiveEquationDiff = form.build.AddObjectiveBlended(1, 0)
+		form.objectiveInclude = form.build.AddObjectiveBlended(5, 0)
+	}
 
 	form.chooseScaling()
 	form.createWeightColumns()

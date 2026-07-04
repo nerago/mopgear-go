@@ -197,10 +197,7 @@ func MapOptional_SliceToChannel[T any, R any](threadCount int, inputSlice []T, m
 
 func MapOptional_SliceToChannel_Cancellable[T any, R any](threadCount int, inputSlice []T, cancel CancelSignal, mapper func(*T) (R, bool)) <-chan R {
 	indexChannel := make(chan int, threadCount)
-	loopCancelChannel := make(chan any)
-	cancel.AddCancelHandler(func() {
-		close(loopCancelChannel)
-	})
+	loopCancelChannel := cancel.CancelSignalChannel()
 
 	go func() {
 		for index := range inputSlice {
@@ -278,6 +275,34 @@ func ForEach_Slice[T any](threadCount int, inputSlice []T, process func(*T)) {
 		close(indexChannel)
 	}()
 
+	for range threadCount {
+		waitGroup.Go(func() {
+			for index := range indexChannel {
+				process(&inputSlice[index])
+			}
+		})
+	}
+
+	waitGroup.Wait()
+}
+
+func ForEach_Slice_Cancellable[T any](threadCount int, inputSlice []T, cancel CancelSignal, process func(*T)) {
+	indexChannel := make(chan int)
+	loopCancelChannel := cancel.CancelSignalChannel()
+
+	go func() {
+		for index := range inputSlice {
+			select {
+			case indexChannel <- index:
+				// ok
+			case <-loopCancelChannel:
+				break
+			}
+		}
+		close(indexChannel)
+	}()
+
+	var waitGroup sync.WaitGroup
 	for range threadCount {
 		waitGroup.Go(func() {
 			for index := range indexChannel {

@@ -4,10 +4,7 @@ import "sync"
 
 func MapFuture_SliceToChannel_Cancellable[T any, R any](threadCount int, inputSlice []T, primaryCancel CancelSignal, mapper func(*T) *FutureCancellable[R]) <-chan R {
 	indexChannel := make(chan int)
-	loopCancelChannel := make(chan any)
-	primaryCancel.AddCancelHandler(func() {
-		close(loopCancelChannel)
-	})
+	loopCancelChannel := primaryCancel.CancelSignalChannel()
 
 	go func() {
 		for index := range inputSlice {
@@ -46,10 +43,7 @@ func MapFuture_SliceToChannel_Cancellable[T any, R any](threadCount int, inputSl
 
 func MapFuture_SliceToSlice_FutureCancellable[T any, R any](threadCount int, inputSlice []T, mapper func(*T) *FutureCancellable[R]) *FutureCancellable[[]R] {
 	primaryFuture := FutureCancellable_Make[[]R]()
-	loopCancelChannel := make(chan any)
-	primaryFuture.AddCancelHandler(func() {
-		close(loopCancelChannel)
-	})
+	loopCancelChannel := primaryFuture.CancelSignalChannel()
 
 	go func() {
 		launchIndex := 0
@@ -95,7 +89,7 @@ func mapAndLaunchAsFuture[T any, R any](entry *T, mapper func(*T) *FutureCancell
 	}()
 }
 
-func waitForRoutineCompletionOrCancel[R any](itemResultChannel chan FutureResult[R], loopCancelChannel chan any, outputSlice *[]R, activeFutureCount *int) bool {
+func waitForRoutineCompletionOrCancel[R any](itemResultChannel chan FutureResult[R], loopCancelChannel <-chan any, outputSlice *[]R, activeFutureCount *int) bool {
 	select {
 	case itemResult := <-itemResultChannel:
 		if itemResult.HasValue {

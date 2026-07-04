@@ -7,6 +7,7 @@ type CancelSignal interface {
 	Cancel()
 	ShouldContinue() bool
 	ShouldFinish() bool
+	CancelSignalChannel() <-chan any
 }
 
 func ChainCancel(outer, inner CancelSignal) {
@@ -14,13 +15,16 @@ func ChainCancel(outer, inner CancelSignal) {
 }
 
 type CancelSignalBasic struct {
-	isCancelled bool
-	lock        sync.Mutex
-	onCancel    []func()
+	isCancelled   bool
+	lock          sync.Mutex
+	onCancel      []func()
+	signalChannel chan any
 }
 
 func CancelSignal_Make() CancelSignal {
-	return &CancelSignalBasic{}
+	return &CancelSignalBasic{
+		signalChannel: make(chan any),
+	}
 }
 
 func (cancel *CancelSignalBasic) AddCancelHandler(onCancel func()) {
@@ -41,6 +45,7 @@ func (cancel *CancelSignalBasic) Cancel() {
 			cancel.onCancel[i]()
 		}
 		cancel.onCancel = nil
+		close(cancel.signalChannel)
 	}
 	cancel.lock.Unlock()
 }
@@ -51,4 +56,8 @@ func (cancel *CancelSignalBasic) ShouldContinue() bool {
 
 func (cancel *CancelSignalBasic) ShouldFinish() bool {
 	return cancel.isCancelled
+}
+
+func (cancel *CancelSignalBasic) CancelSignalChannel() <-chan any {
+	return cancel.signalChannel
 }

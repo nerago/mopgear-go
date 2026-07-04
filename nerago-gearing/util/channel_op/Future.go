@@ -103,17 +103,19 @@ func (future *Future[T]) WaitForResult() (T, bool) {
 // ########### FutureCancellable ###########
 
 type FutureCancellable[T any] struct {
-	isComplete    bool
-	isCancelled   bool
-	lock          sync.Mutex
-	signalChannel chan FutureResult[T]
-	hasWaiter     bool
-	onCancel      []func()
+	isComplete          bool
+	isCancelled         bool
+	lock                sync.Mutex
+	resultChannel       chan FutureResult[T]
+	cancelSignalChannel chan any
+	hasWaiter           bool
+	onCancel            []func()
 }
 
 func FutureCancellable_Make[T any]() *FutureCancellable[T] {
 	return &FutureCancellable[T]{
-		signalChannel: make(chan FutureResult[T], 1),
+		resultChannel:       make(chan FutureResult[T], 1),
+		cancelSignalChannel: make(chan any),
 	}
 }
 
@@ -122,7 +124,7 @@ func (future *FutureCancellable[T]) SetResult(value T) {
 	if !future.isComplete {
 		future.isComplete = true
 		future.onCancel = nil
-		future.signalChannel <- FutureResult[T]{Value: value, HasValue: true}
+		future.resultChannel <- FutureResult[T]{Value: value, HasValue: true}
 	}
 	future.lock.Unlock()
 }
@@ -132,7 +134,7 @@ func (future *FutureCancellable[T]) SetResultEmpty() {
 	if !future.isComplete {
 		future.isComplete = true
 		future.onCancel = nil
-		future.signalChannel <- FutureResult[T]{HasValue: false}
+		future.resultChannel <- FutureResult[T]{HasValue: false}
 	}
 	future.lock.Unlock()
 }
@@ -150,15 +152,24 @@ func (future *FutureCancellable[T]) AddCancelHandler(onCancel func()) {
 func (future *FutureCancellable[T]) Cancel() {
 	future.lock.Lock()
 	if !future.isComplete {
-		future.isComplete = true
-		future.isCancelled = true
-		for i := range future.onCancel {
-			future.onCancel[i]()
-		}
-		future.onCancel = nil
-		future.signalChannel <- FutureResult[T]{HasValue: false}
+		future.performCancel()
+		future.resultChannel <- FutureResult[T]{HasValue: false}
 	}
 	future.lock.Unlock()
+}
+
+func (future *FutureCancellable[T]) performCancel() {
+	future.isComplete = true
+	future.isCancelled = true
+	for i := range future.onCancel {
+		future.onCancel[i]()
+	}
+	future.onCancel = nil
+	close(future.cancelSignalChannel)
+}
+
+func (future *FutureCancellable[T]) CancelSignalChannel() <-chan any {
+	return future.cancelSignalChannel
 }
 
 func (future *FutureCancellable[T]) ShouldContinue() bool {
@@ -170,7 +181,7 @@ func (future *FutureCancellable[T]) ShouldFinish() bool {
 }
 
 func (future *FutureCancellable[T]) verifyCanWait() {
-	if future == nil || future.signalChannel == nil {
+	if future == nil || future.resultChannel == nil {
 		panic("invalid future")
 	} else if future.hasWaiter {
 		panic("duplicate waiter")
@@ -178,23 +189,23 @@ func (future *FutureCancellable[T]) verifyCanWait() {
 	future.hasWaiter = true
 }
 
-func (future *FutureCancellable[T]) resultFromSignal() (T, bool) {
-	result, channelOk := <-future.signalChannel
+func (future *FutureCancellable[T]) resultFromChannel() (T, bool) {
+	result, channelOk := <-future.resultChannel
 	if !channelOk {
 		panic("signal channel closed")
 	}
-	close(future.signalChannel)
+	close(future.resultChannel)
 	return result.Value, result.HasValue
 }
 
 func (future *FutureCancellable[T]) WaitForResult() (T, bool) {
 	future.verifyCanWait()
-	return future.resultFromSignal()
+	return future.resultFromChannel()
 }
 
 func (future *FutureCancellable[T]) WaitForResultOrPanic() T {
 	future.verifyCanWait()
-	value, hasValue := future.resultFromSignal()
+	value, hasValue := future.resultFromChannel()
 	if !hasValue {
 		panic("expected valid result")
 	}
@@ -203,11 +214,21 @@ func (future *FutureCancellable[T]) WaitForResultOrPanic() T {
 
 func (future *FutureCancellable[T]) WaitForResultAsOptional() util.Optional[T] {
 	future.verifyCanWait()
-	value, hasValue := future.resultFromSignal()
+	value, hasValue := future.resultFromChannel()
 	if hasValue {
 		return util.Optional_OfValue(value)
 	} else {
 		return util.Optional_Empty[T]()
+	}
+}
+
+func (future *FutureCancellable[T]) WaitForResultThenRun(onSuccess func(T), onFail func()) {
+	future.verifyCanWait()
+	value, hasValue := future.resultFromChannel()
+	if hasValue && onSuccess != nil {
+		onSuccess(value)
+	} else if !hasValue && onFail != nil {
+		onFail()
 	}
 }
 
@@ -217,11 +238,11 @@ func (future *FutureCancellable[T]) WaitForResultOrKeyPress() (T, bool) {
 	channelForKey := future.channelKeyPress()
 
 	select {
-	case result, channelOk := <-future.signalChannel:
+	case result, channelOk := <-future.resultChannel:
 		if !channelOk {
 			panic("signal channel closed")
 		}
-		close(future.signalChannel)
+		close(future.resultChannel)
 		return result.Value, result.HasValue
 
 	case <-channelForKey:
@@ -232,14 +253,14 @@ func (future *FutureCancellable[T]) WaitForResultOrKeyPress() (T, bool) {
 
 		// if we're here then no-one is listening for signal anymore, but someone could still have beaten us to lock
 		if future.isCancelled {
-			close(future.signalChannel)
+			close(future.resultChannel)
 			return nilValue, false
 		} else if future.isComplete {
-			result, channelOk := <-future.signalChannel
+			result, channelOk := <-future.resultChannel
 			if !channelOk {
 				panic("signal channel closed")
 			}
-			close(future.signalChannel)
+			close(future.resultChannel)
 			return result.Value, result.HasValue
 		}
 
@@ -248,12 +269,7 @@ func (future *FutureCancellable[T]) WaitForResultOrKeyPress() (T, bool) {
 			panic(err)
 		}
 
-		future.isComplete = true
-		future.isCancelled = true
-		for i := range future.onCancel {
-			future.onCancel[i]()
-		}
-		future.onCancel = nil
+		future.performCancel()
 		return nilValue, false
 	}
 }
@@ -261,7 +277,7 @@ func (future *FutureCancellable[T]) WaitForResultOrKeyPress() (T, bool) {
 func (future *FutureCancellable[T]) ForwardSuccessfulResultToChannel(resultChannel chan<- T) {
 	future.verifyCanWait()
 	go func() {
-		value, hasValue := future.resultFromSignal()
+		value, hasValue := future.resultFromChannel()
 		if hasValue {
 			resultChannel <- value
 		}
@@ -271,11 +287,11 @@ func (future *FutureCancellable[T]) ForwardSuccessfulResultToChannel(resultChann
 func (future *FutureCancellable[T]) ForwardAnyResultToChannel(resultChannel chan<- FutureResult[T]) {
 	future.verifyCanWait()
 	go func() {
-		result, channelOk := <-future.signalChannel
+		result, channelOk := <-future.resultChannel
 		if !channelOk {
 			panic("signal channel closed")
 		}
-		close(future.signalChannel)
+		close(future.resultChannel)
 		resultChannel <- result
 	}()
 }
