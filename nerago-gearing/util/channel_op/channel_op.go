@@ -410,18 +410,23 @@ func PeekChannel[T any](inputChannel <-chan T, apply func(*T)) <-chan T {
 	return outputChannel
 }
 
-func TeeChannelToSlice[T any](inputChannel <-chan T, slicePointer *[]T) <-chan T {
+func TeeChannelToSlice[T any](inputChannel <-chan T) (<-chan T, *Future[[]T]) {
+	future := Future_Make[[]T]()
 	outputChannel := makeOutputChannel[T]()
 
 	go func() {
+		slice := make([]T, 0)
+
 		for value := range inputChannel {
-			*slicePointer = append(*slicePointer, value)
+			slice = append(slice, value)
 			outputChannel <- value
 		}
 		close(outputChannel)
+
+		future.SetResult(slice)
 	}()
 
-	return outputChannel
+	return outputChannel, future
 }
 
 func Channel_RemoveDuplicatesComparable[T comparable](inputChannel <-chan T) <-chan T {

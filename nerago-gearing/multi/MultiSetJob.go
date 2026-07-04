@@ -16,14 +16,15 @@ const (
 )
 
 type MultiSetJob struct {
-	printer             *util.PrintRecorder
-	params              []multiSetParamInternal
-	fixedForge          map[items.ItemId]stats.ReforgeRecipe
-	distinctUsageGroups map[items.ItemId]distinctUsageGroups
-	alternateGemming    []stats.GemInfo
-	randomVariantItems  []randomVariantItem
-	bagsGear            loaders.EquippedArray
-	simRunSize          simulate.WowSim_RunSize
+	printer               *util.PrintRecorder
+	params                []multiSetParamInternal
+	fixedForge            map[items.ItemId]stats.ReforgeRecipe
+	distinctUsageGroups   map[items.ItemId]distinctUsageGroups
+	alternateGemming      []stats.GemInfo
+	randomVariantItems    []randomVariantItem
+	bagsGear              loaders.EquippedArray
+	simRunSize            simulate.WowSim_RunSize
+	minimumExtraItemLevel uint16
 }
 
 type distinctUsageGroups struct {
@@ -101,4 +102,21 @@ func (job *MultiSetJob) MakeRandomVariants(itemId items.ItemId, upgradeLevel ite
 	job.randomVariantItems = append(job.randomVariantItems,
 		randomVariantItem{itemId, upgradeLevel, randomSuffix},
 	)
+}
+
+func (job *MultiSetJob) SetMinimumExtraItemLevel(itemLevel uint16) {
+	job.minimumExtraItemLevel = itemLevel
+}
+
+func (job *MultiSetJob) VerifyNoExtraDuplicates() {
+	for param := range util.ForPointer(job.params) {
+		seen := make(map[items.ItemId]bool)
+		for _, itemId := range param.ExtraItems {
+			if seen[itemId] {
+				panic("duplicate item " + itemId.String())
+			} else {
+				seen[itemId] = true
+			}
+		}
+	}
 }

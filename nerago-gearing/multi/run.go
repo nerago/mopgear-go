@@ -2,7 +2,6 @@ package multi
 
 import (
 	"paladin_gearing_go/multi/multi_types"
-	"paladin_gearing_go/solver/withhighs"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
 	"sync"
@@ -12,41 +11,35 @@ import (
 func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates() {
 	job.checkNoPermutations()
 	job.prepareInitial()
-	highProcess := job.highProcessSetup()
 
-	cancel := channel_op.CancelSignal_Make()
+	cancelGenerate := channel_op.CancelSignal_Make()
+	channel_op.CancelOnKeyPress(cancelGenerate)
 
-	setResultChan := highProcess.RunForSeveral_CommonDifferent(job.printer, util.Optional_Empty[int](), cancel)
+	proposalChannel := job.proposalsAllCommonAlternates(cancelGenerate)
 
-	tracker := util.TrackProgress_Start()
-	defer tracker.SetDone()
+	futureSimResultList, futureProposalList := job.proposalsToSimResult(proposalChannel, util.TrackProgress_Nop())
 
-	proposalChannel := channel_op.Map_ChannelToChannel(4, setResultChan, func(setResult withhighs.HighsMultiResult) multi_types.MultiProposedOutput {
-		return job.makeOutputFromHighs(setResult, job.printer)
-	})
-
-	existingProposal := job.existingGearAsProposal()
-	combinedProposalChannel := channel_op.ChannelWithPrependedValues(proposalChannel, existingProposal)
-
-	// TODO tracker covers highs part too
-	job.proposalsToSimAndOutput(combinedProposalChannel, tracker, cancel)
-
-	// job.CullingReport()
+	proposalList, gotResult2 := futureProposalList.WaitForResult()
+	simResultList, gotResult1 := futureSimResultList.WaitForResult()
+	job.generalMultiReport(gotResult1 && gotResult2, proposalList, simResultList)
 }
 
-func (job *MultiSetJob) RunForSolutionsPerPerumte(solutionsPerPermute int) {
+func (job *MultiSetJob) RunForSolutionsPerPermute(solutionsPerPermute int) {
 	job.prepareInitial()
 
-	cancel := channel_op.CancelSignal_Make()
+	cancelGenerate := channel_op.CancelSignal_Make()
+	channel_op.CancelOnKeyPress(cancelGenerate)
+
 	tracker := util.TrackProgress_Start()
-	tracker.RunOuterTracking(2)
 	defer tracker.SetDone()
 
-	setResultChannel := job.proposalsUnderPermutation(tracker.NewChild(), solutionsPerPermute, cancel)
+	proposalChannel := job.proposalsUnderPermutation(tracker, solutionsPerPermute, cancelGenerate)
 
-	job.proposalsToSimAndOutput(setResultChannel, tracker.NewChild(), cancel)
+	futureSimResultList, futureProposalList := job.proposalsToSimResult(proposalChannel, util.TrackProgress_Nop())
 
-	// job.CullingReport()
+	proposalList, gotResult2 := futureProposalList.WaitForResult()
+	simResultList, gotResult1 := futureSimResultList.WaitForResult()
+	job.generalMultiReport(gotResult1 && gotResult2, proposalList, simResultList)
 }
 
 func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time.Duration) {
@@ -57,11 +50,7 @@ func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time
 	defer tracker.SetDone()
 
 	cancel := channel_op.CancelSignal_Make()
-
-	timer := time.AfterFunc(timeLimit, func() {
-		job.printer.Println("###################### TIME LIMIT EXPIRED ######################")
-		cancel.Cancel()
-	})
+	timer := channel_op.CancelAfterTimeout(cancel, timeLimit, job.printer)
 	defer timer.Stop()
 
 	waitGroup := sync.WaitGroup{}
@@ -72,4 +61,31 @@ func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time
 	waitGroup.Wait()
 
 	job.CullingReport()
+}
+
+func (job *MultiSetJob) proposalsToSimResult(proposalChannel <-chan multi_types.MultiProposedOutput, tracker *util.TrackProgress) (*channel_op.FutureCancellable[[]simulateJobResult], *channel_op.Future[[]multi_types.MultiProposedOutput]) {
+	proposalChannel = channel_op.Channel_RemoveDuplicatesFuncNotify(proposalChannel, func(a, b *multi_types.MultiProposedOutput) bool {
+		return a.Equals(b)
+	}, func(x *multi_types.MultiProposedOutput) {
+		job.printer.Printf("Remove Duplicate %s\n", x.Id)
+	})
+
+	proposalChannel = job.listInitialOutputs(proposalChannel)
+	proposalChannel, futureProposalList := channel_op.TeeChannelToSlice(proposalChannel)
+
+	simChannel := job.prepareSimList(proposalChannel)
+	futureSimResultList := job.runSims(simChannel, tracker, -1)
+	return futureSimResultList, futureProposalList
+}
+
+func (job *MultiSetJob) generalMultiReport(gotResult bool, proposalList []multi_types.MultiProposedOutput, simResultList []simulateJobResult) {
+	if gotResult {
+		simMultiResults := job.linkSimResults(proposalList, simResultList)
+		job.reportSimResults(simMultiResults)
+		job.reportAsCsv(simMultiResults)
+
+		job.suggestResultFromRankings(simMultiResults)
+	} else {
+		job.printer.Println("cancelled without result")
+	}
 }

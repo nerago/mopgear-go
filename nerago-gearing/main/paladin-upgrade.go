@@ -210,8 +210,8 @@ func findUpgrades_Paladin(printer *util.PrintRecorder) {
 	// var simRunSize simulate.WowSim_RunSize = 1500
 	// var simRunSize simulate.WowSim_RunSize = 3000
 	// var simRunSize simulate.WowSim_RunSize = 8000
-	simRunSize := simulate.RunSize_QuickDirty
-	//simRunSize := simulate.RunSize_Common
+	//simRunSize := simulate.RunSize_QuickDirty
+	simRunSize := simulate.RunSize_Common
 
 	substituteItemsDpsAndMiti := slices.Concat(substituteItemsDps, substituteItemsMiti)
 	substituteItemsDpsAndMiti = util.RemoveDuplicatesComparable(substituteItemsDpsAndMiti)
@@ -220,8 +220,8 @@ func findUpgrades_Paladin(printer *util.PrintRecorder) {
 	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
 	substituteEmptySlotOnly[items.Item_Ring] = 86957    // heroic bladed tempest ring
 
-	heroicBossesConsider := []string{"SoO Immerseus", "SoO Norushen", "SoO ShaofPride", "SoO FallenProtectors", "SoO Galakras", "SoO Nazgrim"}
-	finder := loaders.ItemFinder_HeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, heroicBossesConsider)
+	//heroicBossesConsider := []string{"SoO Immerseus", "SoO Norushen", "SoO ShaofPride", "SoO FallenProtectors", "SoO Galakras", "SoO Nazgrim"}
+	//finder := loaders.ItemFinder_HeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, heroicBossesConsider)
 
 	//finder := func(_ stats.Difficulty) []*items.FullItem {
 	//	return []*items.FullItem{db.WowSimDB_ByIdAndUpgrade(103735, 0), db.WowSimDB_ByIdAndUpgrade(103791, 0), db.WowSimDB_ByIdAndUpgrade(103872, 0)}
@@ -230,12 +230,13 @@ func findUpgrades_Paladin(printer *util.PrintRecorder) {
 	//finder := loaders.ItemFinder_Ordos
 	//finder := loaders.ItemFinder_TimelessPlate
 	//finder := loaders.ItemFinder_BagsUpgraded
+	finder := loaders.ItemFinder_ThroneStrengthPlateTank_RadenOnly
 
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
 				IncludeCelestial:   false,
-				IncludeNormal:      true,
+				IncludeNormal:      false,
 				IncludeHeroic:      true,
 				IgnoredItems:       ignoredItems,
 				TargetUpgradeLevel: 2,

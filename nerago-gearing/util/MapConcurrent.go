@@ -131,7 +131,7 @@ func (mc *MapConcurrent[K, V]) KeysAsSlice() []K {
 	mc.mutex.RLock()
 	defer mc.mutex.RUnlock()
 
-	slice := make([]K, len(mc.data))
+	slice := make([]K, 0, len(mc.data))
 	for k := range mc.data {
 		slice = append(slice, k)
 	}
@@ -153,6 +153,6 @@ func (mc *MapConcurrent[K, V]) SeqWithKeys_StaleInefficient() iter.Seq2[K, V] {
 	mc.mutex.RLock()
 	clone := maps.Clone(mc.data)
 	mc.mutex.RUnlock()
-	
+
 	return maps.All(clone)
 }

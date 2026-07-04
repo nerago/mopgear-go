@@ -13,6 +13,8 @@ func (job *MultiSetJob) CullingReport() {
 		job.params[paramIndex].cullingReportSeen()
 		job.params[paramIndex].cullingReportBags()
 		job.params[paramIndex].cullingReportOrphan()
+		job.printer.Println0()
+		job.printer.Println0()
 	}
 
 	job.cullReportAll()
@@ -65,7 +67,6 @@ func (param *multiSetParamInternal) cullingReportSeen() {
 			param.job.printer.Printf("%5d %d MISSING IN OPTIONS // %s\n", info.itemId, info.count, basicVersion.BaseName())
 		}
 	}
-	param.job.printer.Println0()
 }
 
 func (param *multiSetParamInternal) cullingReportBags() {
@@ -74,7 +75,7 @@ func (param *multiSetParamInternal) cullingReportBags() {
 		if seenCount > 0 {
 			item, itemFound := param.itemOptions.FindItemIdFirstOptional(itemId)
 			if itemFound {
-				param.job.printer.Printf("BAGS SUGGESTION %d %d %s; %s !!\n", itemId, seenCount, item.SlotItem().Name(), item.BaseName())
+				param.job.printer.Printf("BAGS SUGGESTION %d %d %s; %s\n", itemId, seenCount, item.SlotItem().Name(), item.BaseName())
 			} else {
 				param.job.printer.Printf("BAGS SUGGESTION %d %d BUT missing options?!?!?!?!\n", itemId, seenCount)
 			}
@@ -86,7 +87,8 @@ func (param *multiSetParamInternal) cullingReportOrphan() {
 	for itemId, seenCount := range param.seenInSolutions.content {
 		if seenCount > 0 {
 			if !slices.Contains(param.ExtraItems, itemId) && !slices.Contains(param.addedFromBags, itemId) {
-				param.job.printer.Printf("ORPHAN ITEM USED %d %d\n", itemId, seenCount)
+				name := db.WowSimDB_LookupNameByItemId(itemId)
+				param.job.printer.Printf("ORPHAN ITEM USED %d %d // %s\n", itemId, seenCount, name)
 			}
 		}
 	}

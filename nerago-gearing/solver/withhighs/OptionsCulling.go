@@ -87,21 +87,25 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 
 	solutionFuture := linearBuild.RunHighsFuture(nil)
 	channel_op.ChainCancel(cancel, solutionFuture)
-	linearResult := solutionFuture.WaitForResultOrPanic()
-	solution := linearResult.GetSolutionAndSaveLog(process.printer)
+	linearResult, hasResult := solutionFuture.WaitForResult()
+	if hasResult {
+		solution := linearResult.GetSolutionAndSaveLog(process.printer)
 
-	if solution.Status == highs.ModelStatusOptimal {
-		percent := float64(process.tasksCompleted.Load()) / float64(process.targetResultCount) * 100
-		process.printer.Printf("TASK OK %s %.0f\n", process.label, percent)
+		if solution.Status == highs.ModelStatusOptimal {
+			percent := float64(process.tasksCompleted.Load()) / float64(process.targetResultCount) * 100
+			process.printer.Printf("TASK OK %s %.0f\n", process.label, percent)
+		} else {
+			process.printer.Printf("TASK status = %s\n", solution.Status.String())
+		}
+
+		if solution.HasSolution() {
+			result := setup.buildResultSet(solution, &itemOptions, process.model)
+			checkSetRatingIsObjective(solution, &result, process.model)
+			resultChannel <- result
+			process.tasksCompleted.Add(1)
+		}
 	} else {
-		process.printer.Printf("TASK status = %s\n", solution.Status.String())
-	}
-
-	if solution.HasSolution() {
-		result := setup.buildResultSet(solution, &itemOptions, process.model)
-		checkSetRatingIsObjective(solution, &result, process.model)
-		resultChannel <- result
-		process.tasksCompleted.Add(1)
+		process.printer.Printf("TASK failed\n")
 	}
 }
 

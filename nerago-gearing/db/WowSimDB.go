@@ -68,6 +68,14 @@ func WowSimDB_ByIdAndUpgrade_AllowFallback(itemId items.ItemId, upgradeLevel int
 	return storedItem
 }
 
+func WowSimDB_LookupNameByItemId(itemId items.ItemId) string {
+	known := itemsById[itemId]
+	for _, item := range known {
+		return item.BaseName()
+	}
+	return "Unknown Item"
+}
+
 func WowSimDB_AllItems() iter.Seq[*items.FullItem] {
 	return func(yield func(*items.FullItem) bool) {
 		for _, subList := range itemsById {

@@ -1,6 +1,8 @@
 package channel_op
 
-import "sync"
+import (
+	"sync"
+)
 
 func MapFuture_SliceToChannel_Cancellable[T any, R any](threadCount int, inputSlice []T, primaryCancel CancelSignal, mapper func(*T) *FutureCancellable[R]) <-chan R {
 	indexChannel := make(chan int)

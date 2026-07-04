@@ -172,6 +172,9 @@ func (param *multiSetParamInternal) tryAddExtraFromBags(equipped *loaders.Equipp
 	if db.WowSimDB_HasItemId(equipped.ItemId) {
 		// bail early before considering full item stats/enchants/etc that might not fit spec
 		basicVersion := db.WowSimDB_ByIdAndUpgrade(equipped.ItemId, 0)
+		if basicVersion.ItemLevel() < param.job.minimumExtraItemLevel {
+			return
+		}
 		if param.itemOptions.CouldAddUpgrade_ItemSlot(basicVersion.SlotItem(), basicVersion, param.job.printer) != items.CanUpgrade_Yes {
 			return
 		}

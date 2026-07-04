@@ -50,7 +50,7 @@ func (fv *FutureVoid[T]) WaitForComplete() {
 type Future[T any] struct {
 	isComplete    bool
 	lock          sync.Mutex
-	signalChannel chan FutureResult[T]
+	resultChannel chan FutureResult[T]
 	hasWaiter     bool
 }
 
@@ -61,7 +61,7 @@ type FutureResult[T any] struct {
 
 func Future_Make[T any]() *Future[T] {
 	return &Future[T]{
-		signalChannel: make(chan FutureResult[T], 1),
+		resultChannel: make(chan FutureResult[T], 1),
 	}
 }
 
@@ -69,7 +69,7 @@ func (future *Future[T]) SetResult(value T) {
 	future.lock.Lock()
 	if !future.isComplete {
 		future.isComplete = true
-		future.signalChannel <- FutureResult[T]{Value: value, HasValue: true}
+		future.resultChannel <- FutureResult[T]{Value: value, HasValue: true}
 	}
 	future.lock.Unlock()
 }
@@ -78,26 +78,32 @@ func (future *Future[T]) SetResultEmpty() {
 	future.lock.Lock()
 	if !future.isComplete {
 		future.isComplete = true
-		future.signalChannel <- FutureResult[T]{HasValue: false}
+		future.resultChannel <- FutureResult[T]{HasValue: false}
 	}
 	future.lock.Unlock()
 }
 
-func (future *Future[T]) WaitForResult() (T, bool) {
-	if future == nil || future.signalChannel == nil {
+func (future *Future[T]) verifyCanWait() {
+	if future == nil || future.resultChannel == nil {
 		panic("invalid future")
 	} else if future.hasWaiter {
 		panic("duplicate waiter")
 	}
 	future.hasWaiter = true
+}
 
-	result, channelOk := <-future.signalChannel
+func (future *Future[T]) resultFromChannel() (T, bool) {
+	result, channelOk := <-future.resultChannel
 	if !channelOk {
 		panic("signal channel closed")
 	}
-	close(future.signalChannel)
-
+	close(future.resultChannel)
 	return result.Value, result.HasValue
+}
+
+func (future *Future[T]) WaitForResult() (T, bool) {
+	future.verifyCanWait()
+	return future.resultFromChannel()
 }
 
 // ########### FutureCancellable ###########

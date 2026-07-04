@@ -1158,14 +1158,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		})
 	}
 
-	go func() {
-		_, err := os.Stdin.Read([]byte{0})
-		if err != nil {
-			panic(err)
-		}
-		cancel.Cancel()
-	}()
-
+	channel_op.CancelOnKeyPress(cancel)
 	channel_op.ForEach_Slice_Cancellable(10, tasks, cancel, func(f *func()) {
 		(*f)()
 	})

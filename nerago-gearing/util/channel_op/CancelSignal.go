@@ -1,6 +1,11 @@
 package channel_op
 
-import "sync"
+import (
+	"os"
+	"paladin_gearing_go/util"
+	"sync"
+	"time"
+)
 
 type CancelSignal interface {
 	AddCancelHandler(func())
@@ -60,4 +65,21 @@ func (cancel *CancelSignalBasic) ShouldFinish() bool {
 
 func (cancel *CancelSignalBasic) CancelSignalChannel() <-chan any {
 	return cancel.signalChannel
+}
+
+func CancelOnKeyPress(cancel CancelSignal) {
+	go func() {
+		_, err := os.Stdin.Read([]byte{0})
+		if err != nil {
+			panic(err)
+		}
+		cancel.Cancel()
+	}()
+}
+
+func CancelAfterTimeout(cancel CancelSignal, timeout time.Duration, printer *util.PrintRecorder) *time.Timer {
+	return time.AfterFunc(timeout, func() {
+		printer.Println("###################### TIME LIMIT EXPIRED ######################")
+		cancel.Cancel()
+	})
 }
