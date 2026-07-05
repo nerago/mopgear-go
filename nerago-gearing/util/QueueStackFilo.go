@@ -10,34 +10,35 @@ func QueueStackFilo_Create[T any](allocateSize int) Queue[T] {
 	return &QueueStackFilo[T]{array: array, top: 0}
 }
 
-func (ring *QueueStackFilo[T]) IsEmpty() bool {
-	return ring.top == 0
+func (stack *QueueStackFilo[T]) IsEmpty() bool {
+	return stack.top == 0
 }
 
-func (ring *QueueStackFilo[T]) Push(value T) {
-	writeIndex := ring.top
-	if writeIndex < len(ring.array) {
-		ring.top = writeIndex + 1
-		ring.array[writeIndex] = value
-	} else if len(ring.array) > 0 {
-		newArray := make([]T, len(ring.array)*2)
-		copy(newArray, ring.array)
+func (stack *QueueStackFilo[T]) Push(value T) {
+	writeIndex := stack.top
+	if writeIndex < len(stack.array) {
+		stack.top = writeIndex + 1
+		stack.array[writeIndex] = value
+	} else if len(stack.array) > 0 {
+		newArray := make([]T, len(stack.array)*2)
+		copy(newArray, stack.array)
 		newArray[writeIndex] = value
-		ring.top = writeIndex + 1
-		ring.array = newArray
+		stack.top = writeIndex + 1
+		stack.array = newArray
 	} else {
-		ring.top = 1
-		ring.array = make([]T, 8)
+		stack.top = 1
+		stack.array = make([]T, 8)
+		stack.array[writeIndex] = value
 	}
 }
 
-func (ring *QueueStackFilo[T]) Pop() (T, bool) {
+func (stack *QueueStackFilo[T]) Pop() (T, bool) {
 	var nilValue T
-	readIndex := ring.top - 1
+	readIndex := stack.top - 1
 	if readIndex >= 0 {
-		value := ring.array[readIndex]
-		ring.array[readIndex] = nilValue
-		ring.top = readIndex
+		value := stack.array[readIndex]
+		stack.array[readIndex] = nilValue
+		stack.top = readIndex
 		return value, true
 	} else {
 		return nilValue, false

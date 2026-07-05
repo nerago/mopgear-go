@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	c_search1_min         = -0.5
-	c_search1_max         = 5.5
-	c_search1_step        = 0.5
+	c_search1_min         = -1.0
+	c_search1_max         = 10.0
+	c_search1_step        = 2.13
 	c_search1_tweak_start = 0.1
 )
 

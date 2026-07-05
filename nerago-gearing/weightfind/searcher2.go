@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	c_search2_largeGap    = 1.0
-	c_search2_marginalGap = 0.01
+	c_search2_largeGap    = 0.5
+	c_search2_marginalGap = 0.001
 )
 
 type opType int8
@@ -26,6 +26,7 @@ const (
 type WeightSearcher2 struct {
 	typeCount   int
 	statTypes   []stats.StatType
+	simTypes    []stats.SimType
 	targetRatio stats.SimData
 	inputData   []stathighs.WeightInput
 	printer     *util.PrintRecorder
@@ -46,6 +47,7 @@ type weightSearch2Bound struct {
 func (ws *WeightSearcher2) Init(statTypes []stats.StatType, targetRatio stats.SimData, printer *util.PrintRecorder) {
 	ws.typeCount = len(statTypes)
 	ws.statTypes = statTypes
+	ws.simTypes = targetRatio.NonZeroTypes()
 	ws.targetRatio = targetRatio
 	ws.printer = printer
 }
@@ -88,7 +90,7 @@ func (ws *WeightSearcher2) evaluateScore(weightArray []float64) float64 {
 	for i, statType := range ws.statTypes {
 		weights.Put(statType, weightArray[i])
 	}
-	accuracy := EvaluateAccuracy(weights, ws.inputData, ws.targetRatio)
+	accuracy := EvaluateAccuracyNoRangeInlined2(weights, ws.simTypes, ws.targetRatio, ws.inputData)
 	ws.bestResult.Offer(&weights, accuracy)
 	return accuracy
 }
@@ -122,6 +124,11 @@ func (ws *WeightSearcher2) opDivide1(bound *weightSearch2Bound) {
 	})
 }
 
+type indexAndAccuracy struct {
+	index    int
+	accuracy float64
+}
+
 /*
 	                    narrow          corners        side/top        extended
 	                    middle                                         corner
@@ -146,10 +153,6 @@ func (ws *WeightSearcher2) opSearch(bound *weightSearch2Bound) {
 	probes[4] = sliceMixEverySecond(probes[2], probes[1])
 
 	// evaluate each probe, sort descending so best are first
-	type indexAndAccuracy struct {
-		index    int
-		accuracy float64
-	}
 	var values [5]indexAndAccuracy
 	for i := range 5 {
 		values[i] = indexAndAccuracy{i, ws.evaluateScore(probes[i])}
@@ -159,7 +162,7 @@ func (ws *WeightSearcher2) opSearch(bound *weightSearch2Bound) {
 	// determine next step based on ranking of probes
 	if ws.marginalGap(values[0].accuracy, values[1].accuracy) {
 		// minimal gap between probes, perhaps nothing more to explore
-	} else if ws.largeGap(values[0].accuracy, values[1].accuracy) {
+	} else if ws.largeGap(values[0].accuracy, values[1].accuracy) || ws.firstGreaterThanEqualPair(&values) {
 		// something is best by a large margin
 		var rangeMin, rangeMax []float64
 		switch values[0].index {
@@ -179,6 +182,7 @@ func (ws *WeightSearcher2) opSearch(bound *weightSearch2Bound) {
 			rangeMin = sliceMixEverySecond(probes[0], bound.rangeMin)
 			rangeMax = sliceMixEverySecond(bound.rangeMax, probes[0])
 		}
+		debugVerifyInRange(rangeMin, rangeMax, probes[values[0].index])
 		ws.addSearchPlan(rangeMin, rangeMax)
 	} else if oneOfEqualsQuery(values[0].index, values[1].index, 0) {
 		// the two best includes the middle
@@ -202,32 +206,39 @@ func (ws *WeightSearcher2) opSearch(bound *weightSearch2Bound) {
 			rangeMin = sliceMixEverySecond(probes[3], bound.rangeMin)
 			rangeMax = sliceMixEverySecond(bound.rangeMax, probes[3])
 		}
+		debugVerifyInRange(rangeMin, rangeMax, probes[0])
+		debugVerifyInRange(rangeMin, rangeMax, probes[other])
 		ws.addSearchPlan(rangeMin, rangeMax)
 	} else if pairEqualsQueryPair(values[0].index, values[1].index, 1, 3) {
-		ws.addSearchPlan(
-			bound.rangeMin,
-			sliceMixEverySecond(probes[0], bound.rangeMax),
-		)
+		rangeMin := bound.rangeMin
+		rangeMax := sliceMixEverySecond(probes[0], bound.rangeMax)
+		debugVerifyInRange(rangeMin, rangeMax, probes[1])
+		debugVerifyInRange(rangeMin, rangeMax, probes[3])
+		ws.addSearchPlan(rangeMin, rangeMax)
 	} else if pairEqualsQueryPair(values[0].index, values[1].index, 1, 4) {
-		ws.addSearchPlan(
-			bound.rangeMin,
-			sliceMixEverySecond(bound.rangeMax, probes[0]),
-		)
+		rangeMin := bound.rangeMin
+		rangeMax := sliceMixEverySecond(bound.rangeMax, probes[0])
+		debugVerifyInRange(rangeMin, rangeMax, probes[1])
+		debugVerifyInRange(rangeMin, rangeMax, probes[4])
+		ws.addSearchPlan(rangeMin, rangeMax)
 	} else if pairEqualsQueryPair(values[0].index, values[1].index, 2, 3) {
-		ws.addSearchPlan(
-			sliceMixEverySecond(bound.rangeMin, probes[0]),
-			bound.rangeMax,
-		)
+		rangeMin := sliceMixEverySecond(bound.rangeMin, probes[0])
+		rangeMax := bound.rangeMax
+		debugVerifyInRange(rangeMin, rangeMax, probes[2])
+		debugVerifyInRange(rangeMin, rangeMax, probes[3])
+		ws.addSearchPlan(rangeMin, rangeMax)
 	} else if pairEqualsQueryPair(values[0].index, values[1].index, 2, 4) {
-		ws.addSearchPlan(
-			sliceMixEverySecond(probes[0], bound.rangeMin),
-			bound.rangeMax,
-		)
+		rangeMin := sliceMixEverySecond(probes[0], bound.rangeMin)
+		rangeMax := bound.rangeMax
+		debugVerifyInRange(rangeMin, rangeMax, probes[2])
+		debugVerifyInRange(rangeMin, rangeMax, probes[4])
+		ws.addSearchPlan(rangeMin, rangeMax)
 	} else {
 		// remaining two are not adjacent, queue them separately
 		for check := range 2 {
 			var rangeMin, rangeMax []float64
-			switch values[check].index {
+			index := values[check].index
+			switch index {
 			case 1:
 				rangeMin = bound.rangeMin
 				rangeMax = probes[0]
@@ -240,8 +251,21 @@ func (ws *WeightSearcher2) opSearch(bound *weightSearch2Bound) {
 			case 4:
 				rangeMin = sliceMixEverySecond(probes[0], bound.rangeMin)
 				rangeMax = sliceMixEverySecond(bound.rangeMax, probes[0])
+			default:
+				panic("logic error")
 			}
+			debugVerifyInRange(rangeMin, rangeMax, probes[index])
 			ws.addSearchPlan(rangeMin, rangeMax)
+		}
+	}
+}
+
+func debugVerifyInRange(rangeMin []float64, rangeMax []float64, probe []float64) {
+	for i := range probe {
+		if rangeMin[i] <= probe[i] && probe[i] <= rangeMax[i] {
+			// ok
+		} else {
+			panic("probe value isn't inside remaining range")
 		}
 	}
 }
@@ -263,7 +287,12 @@ func pairEqualsQueryPair(a, b int, query1, query2 int) bool {
 }
 
 func (ws *WeightSearcher2) largeGap(a, b float64) bool {
-	return math.Abs(a-b) < c_search2_largeGap
+	return math.Abs(a-b) >= c_search2_largeGap
+}
+
+func (ws *WeightSearcher2) firstGreaterThanEqualPair(values *[5]indexAndAccuracy) bool {
+	return !util.FloatsApproxEquals(values[0].accuracy, values[1].accuracy) &&
+		util.FloatsApproxEquals(values[1].accuracy, values[2].accuracy)
 }
 
 func (ws *WeightSearcher2) marginalGap(a, b float64) bool {

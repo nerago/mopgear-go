@@ -101,3 +101,37 @@ TEXT ·StatBlock_MultiplyForTotalSum(SB), NOSPLIT|NOFRAME, $0-24
     MOVSD              X0, ret+16(FP)
 
     RET
+
+TEXT ·StatBlock_StatBlockFloat_MultiplyForTotalSum(SB), NOSPLIT|NOFRAME, $0-24
+    MOVQ          a+0(FP), AX
+    MOVQ          b+8(FP), BX
+
+    // load the float64 vector in parts as float32
+    VCVTPD2PSY       (AX), X0
+    VCVTPD2PSY     32(AX), X1
+    VINSERTF128  $1, X0, Y1, Y1  // not sure about endian lineup
+    VCVTPD2PSY      64(AX), X3
+
+    // load the uint32 vector
+    VCVTDQ2PS        (BX), Y2
+    VCVTDQ2PS      32(BX), X4
+
+    // main dot products
+    // immediate value means read all inputs, write into lowest item in output only
+    VDPPS           $0xF1, Y1, Y2, Y5
+    VDPPS           $0xF1, X3, X4, X6
+
+    // convert subtotals to double
+    VEXTRACTF128       $1, Y5, X7 // grab Y5(top half)
+    VCVTSS2SD          X7, X7, X7 // convert top half to double
+    VCVTSS2SD          X5, X5, X5 // convert lower half to double, old junk may still remain in upper part of Y5, ignore
+    VCVTSS2SD          X6, X6, X6 // convert the single float to double
+
+    // add subtotals
+    VADDSD             X5, X6, X0 // add X6, Y5(low half)
+    VADDSD             X0, X7, X0 // add Y5(top half)
+
+    // result
+    MOVSD              X0, ret+16(FP)
+
+    RET

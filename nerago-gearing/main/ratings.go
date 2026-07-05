@@ -222,8 +222,10 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 	filteredInput := mixedInputData
 	printer.Printf("filteredInput size %d\n", len(filteredInput))
 
-	ranking := weightfind.WeightSearcher1{}
-	ranking.Init(weightStats, targetRatio, mixedInputData, printer)
+	ranking := weightfind.WeightSearcher2{}
+	ranking.Init(weightStats, targetRatio, printer)
+	ranking.SupplyData(mixedInputData)
+	ranking.SetRanges(-1.0, 10.0)
 	weight := ranking.Run()
 	tools.WritePawnString(weight, printer)
 	printer.Printf("accuracy = %f\n", weightfind.EvaluateAccuracy(weight, mixedInputData, targetRatio))
@@ -235,6 +237,9 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 	// fully blocky accuracy = 92.568800 //Duration = 26m57.7175777s. some background may have happenned
 	// inlined2, back to full pointers accuracy = 92.441813 //Duration = 13m10.6024466s
 	// all still had unnecessary internal printers
+
+	// Search2
+	// basically working: accuracy = 92.120870 Duration = 6.2703352s
 }
 
 func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
