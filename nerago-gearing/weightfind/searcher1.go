@@ -9,10 +9,10 @@ import (
 )
 
 const (
-	c_search_min         = -0.5
-	c_search_max         = 5.5
-	c_search_step        = 1.0
-	c_search_tweak_start = 0.1
+	c_search1_min         = -0.5
+	c_search1_max         = 5.5
+	c_search1_step        = 1.0
+	c_search1_tweak_start = 0.1
 )
 
 // let's say we have 8 stats
@@ -35,7 +35,7 @@ func (ws *WeightSearcher1) Init(weightStats []stats.StatType, targetRatio stats.
 func (ws *WeightSearcher1) Run() stathighs.WeightResult {
 	best := util_rank.BestCollector1[stathighs.WeightResult]{}
 	for initialWeight := range ws.makeSpacedWeights() {
-		updatedWeight, updatedAccuracy := weightTweakerInternal(initialWeight, c_search_tweak_start, ws.weightStats, ws.targetRatio, ws.inputData, ws.printer)
+		updatedWeight, updatedAccuracy := weightTweakerInternal(initialWeight, c_search1_tweak_start, ws.weightStats, ws.targetRatio, ws.inputData, ws.printer)
 		best.Offer(&updatedWeight, updatedAccuracy)
 	}
 	return best.GetBestOrPanic()
@@ -55,7 +55,7 @@ func (ws *WeightSearcher1) buildSpacedWeightsRecur(weightStats []stats.StatType,
 	statAdd := weightStats[0]
 	statsRemain := weightStats[1:]
 
-	for value := c_search_min; value <= c_search_max; value += c_search_step {
+	for value := c_search1_min; value <= c_search1_max; value += c_search1_step {
 		next := current.Clone()
 		next.Put(statAdd, value)
 		if !ws.buildSpacedWeightsRecur(statsRemain, next, yield) {

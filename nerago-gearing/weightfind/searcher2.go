@@ -1,6 +1,7 @@
 package weightfind
 
 import (
+	"cmp"
 	"paladin_gearing_go/solver/stathighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -9,9 +10,6 @@ import (
 )
 
 const ()
-
-// let's say we have 8 stats
-// let's say we want to search about 1million samples, so 8th root = 5.62, about 6 samples per stat
 
 type opType int8
 
@@ -74,19 +72,20 @@ func (ws *WeightSearcher2) Run() stathighs.WeightResult {
 			ws.opSearch(bound)
 		}
 	}
-
-	//best := util_rank.BestCollector1[stathighs.WeightResult]{}
-	//for initialWeight := range ws.makeSpacedWeights() {
-	//	updatedWeight, updatedAccuracy := weightTweakerInternal(initialWeight, c_search_tweak_start, ws.statTypes, ws.targetRatio, ws.inputData, ws.printer)
-	//	best.Offer(&updatedWeight, updatedAccuracy)
-	//}
 	return ws.bestResult.GetBestOrPanic()
 }
 
-func (ws *WeightSearcher2) evaluateScore(weights stathighs.WeightResult) float64 {
-	return EvaluateAccuracy(weights, ws.inputData, ws.targetRatio)
+func (ws *WeightSearcher2) evaluateScore(weightArray []float64) float64 {
+	weights := stathighs.WeightResult_Make()
+	for i, statType := range ws.statTypes {
+		weights.Put(statType, weightArray[i])
+	}
+	accuracy := EvaluateAccuracy(weights, ws.inputData, ws.targetRatio)
+	ws.bestResult.Offer(&weights, accuracy)
+	return accuracy
 }
 
+// dumb division in halves
 func (ws *WeightSearcher2) opDivide1(bound *weightSearch2Bound) {
 	axis := bound.axisFocus
 	mid := (bound.rangeMin[axis] + bound.rangeMax[axis]) / 2
@@ -115,22 +114,42 @@ func (ws *WeightSearcher2) opDivide1(bound *weightSearch2Bound) {
 	})
 }
 
-func (ws *WeightSearcher2) opSearch(bound *weightSearch2Bound) {
-	var probes [5][]float64
-	probes[1] = sliceInterpolate(bound.rangeMin, bound.rangeMax, 1.0/3.0)
-	probes[0] = sliceInterpolate(bound.rangeMin, bound.rangeMax, 1.0/2.0)
-	probes[4] = sliceInterpolate(bound.rangeMin, bound.rangeMax, 2.0/3.0)
+/*
+	0 > 1234        14 > 0124       13 > 0124       02 > 134
 
-	/*
-		                    0 > 1234        14 > 0124       13 > 0124       02 > 134
-		.............    .............   ......|......   ......|......   ..|..........
-		..1.......2..    ..?-------?..   ..1...|......   ..1...|......   ..?.......2..
-		.............    ..|.......|..   ......|......   ......|......   ..|..........
-		......0......    ..|...0...|..   ------?------   ......?......   ..|...0......
-		.............    ..|.......|..   ......|......   ......|......   ..|..........
-		..3.......4..    ..?-------?..   ......|...4..   ..3...|......   ..?-------?--
-		.............    .............   ......|......   ......|......   .............
-	*/
+.............    .............   ......|......   ......|......   ..|..........
+..1.......2..    ..?-------?..   ..1...|......   ..1...|......   ..?.......2..
+.............    ..|.......|..   ......|......   ......|......   ..|..........
+......0......    ..|...0...|..   ------?------   ......?......   ..|...0......
+.............    ..|.......|..   ......|......   ......|......   ..|..........
+..3.......4..    ..?-------?..   ......|...4..   ..3...|......   ..?-------?--
+.............    .............   ......|......   ......|......   .............
+*/
+func (ws *WeightSearcher2) opSearch(bound *weightSearch2Bound) {
+	// selected points throughout the sample space. could have more variety of axis points.
+	var probes [5][]float64
+	probes[0] = sliceInterpolate(bound.rangeMin, bound.rangeMax, 1.0/2.0)
+	probes[1] = sliceInterpolate(bound.rangeMin, bound.rangeMax, 1.0/4.0)
+	probes[4] = sliceInterpolate(bound.rangeMin, bound.rangeMax, 3.0/4.0)
+	probes[2] = sliceMixEverySecond(probes[1], probes[4])
+	probes[3] = sliceMixEverySecond(probes[4], probes[1])
+
+	// evaluate each probe
+	type indexAndAccuracy struct {
+		index    int
+		accuracy float64
+	}
+	var values [5]indexAndAccuracy
+	for i := range 5 {
+		values[i] = indexAndAccuracy{i, ws.evaluateScore(probes[i])}
+	}
+
+	// sort descending so best are first
+	slices.SortFunc(values[:], func(a, b indexAndAccuracy) int { return cmp.Compare(b.accuracy, a.accuracy) })
+
+	//if ws.largeGap(values[0].accuracy, values[1].accuracy) {
+	//
+	//}
 }
 
 func sliceInterpolate(rangeMin []float64, rangeMax []float64, ratio float64) []float64 {
@@ -138,6 +157,18 @@ func sliceInterpolate(rangeMin []float64, rangeMax []float64, ratio float64) []f
 	for i := range len(rangeMin) {
 		result[i] = rangeMin[i] + (rangeMax[i]-rangeMin[i])*ratio
 		//result[i] = (1-ratio)*rangeMin[i] + rangeMax[i]*ratio
+	}
+	return result
+}
+
+func sliceMixEverySecond(a, b []float64) []float64 {
+	result := make([]float64, len(a))
+	for i := range len(a) {
+		if i&1 == 0 {
+			result[i] = a[i]
+		} else {
+			result[i] = b[i]
+		}
 	}
 	return result
 }

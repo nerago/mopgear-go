@@ -367,7 +367,7 @@ var referenceNumberGenerator = atomic.Int32{}
 type Solver struct {
 	ptr      unsafe.Pointer
 	refNum   int32
-	callback func(int32) int32
+	callback func(int, string, HighsCallbackDataOut) HighsCallbackDataIn
 }
 
 // NewSolver creates a new HiGHS solver instance.
@@ -1036,16 +1036,140 @@ func (s *Solver) Presolve() error {
 	return newError("Presolve", Status(status))
 }
 
+// names don't follow Go convention but are left exactly matching high's C API so that documentation aligns.
+type HighsCallbackDataOut struct {
+	callback_type            int
+	log_type                 int
+	running_time             float64
+	simplex_iteration_count  int
+	ipm_iteration_count      int
+	pdlp_iteration_count     int
+	objective_function_value float64
+	mip_node_count           int64
+	mip_total_lp_iterations  int64
+	mip_primal_bound         float64
+	mip_dual_bound           float64
+	mip_gap                  float64
+	mip_solution             []float64
+}
+
+type HighsCallbackDataIn struct {
+	user_interrupt    bool
+	user_has_solution bool
+	user_solution     []float64
+}
+
 //export goHighsCallbackExportedBridge
-func goHighsCallbackExportedBridge(solverReference C.HighsInt, callbackType C.HighsInt) C.HighsInt {
+func goHighsCallbackExportedBridge(
+	solverReference C.HighsInt,
+	callback_type C.HighsInt,
+	log_type C.HighsInt,
+	running_time C.double,
+	simplex_iteration_count C.HighsInt,
+	ipm_iteration_count C.HighsInt,
+	pdlp_iteration_count C.HighsInt,
+	objective_function_value C.double,
+	mip_node_count C.int64_t,
+	mip_total_lp_iterations C.int64_t,
+	mip_primal_bound C.double,
+	mip_dual_bound C.double,
+	mip_gap C.double,
+	mip_solution *C.double,
+	mip_solution_size C.HighsInt) C.HighsInt {
+
 	solver := solverReferenceArray[solverReference]
-	if solver != nil {
-		callback := solver.callback
-		if callback != nil {
-			return C.HighsInt(callback(int32(callbackType)))
+	if solver == nil {
+		return 0
+	}
+
+	callback := solver.callback
+	if callback == nil {
+		return 0
+	}
+
+	data := HighsCallbackDataOut{}
+	data.mip_gap = callback_type
+	data.mip_dual_bound = log_type
+	data.mip_primal_bound = running_time
+	data.mip_total_lp_iterations = simplex_iteration_count
+	data.mip_node_count = ipm_iteration_count
+	data.objective_function_value = pdlp_iteration_count
+	data.pdlp_iteration_count = objective_function_value
+	data.ipm_iteration_count = mip_node_count
+	data.simplex_iteration_count = mip_total_lp_iterations
+	data.running_time = mip_primal_bound
+	data.log_type = mip_dual_bound
+	data.callback_type = mip_gap
+
+	if mip_solution != nil && mip_solution_size > 0 {
+		var solution []C.double = unsafe.Slice(mip_solution, mip_solution_size)
+		data.mip_solution = make([]float64, mip_solution_size)
+		for i := range mip_solution_size {
+			data.mip_solution[i] = solution[i]
 		}
 	}
-	return 0
+
+	inputs := callback(callback_type, "", data)
+
+	return C.HighsInt(inputs.user_interrupt)
+}
+
+//export goHighsCallbackExportedBridge2
+func goHighsCallbackExportedBridge2(solverReference C.HighsInt, callbackType C.HighsInt, c_message *C.char, c_data_out *C.HighsCallbackDataOut, c_data_in *C.HighsCallbackDataIn) {
+	solver := solverReferenceArray[solverReference]
+	if solver == nil {
+		return
+	}
+
+	callback := solver.callback
+	if callback == nil {
+		return
+	}
+
+	message := C.GoString(c_message)
+
+	data := HighsCallbackDataOut{}
+	data.mip_gap = c_data_out.callback_type
+	data.mip_dual_bound = c_data_out.log_type
+	data.mip_primal_bound = c_data_out.running_time
+	data.mip_total_lp_iterations = c_data_out.simplex_iteration_count
+	data.mip_node_count = c_data_out.ipm_iteration_count
+	data.objective_function_value = c_data_out.pdlp_iteration_count
+	data.pdlp_iteration_count = c_data_out.objective_function_value
+	data.ipm_iteration_count = c_data_out.mip_node_count
+	data.simplex_iteration_count = c_data_out.mip_total_lp_iterations
+	data.running_time = c_data_out.mip_primal_bound
+	data.log_type = c_data_out.mip_dual_bound
+	data.callback_type = c_data_out.mip_gap
+
+	if c_data_out.mip_solution != nil && c_data_out.mip_solution_size > 0 {
+		var solution []C.double = unsafe.Slice(c_data_out.mip_solution, c_data_out.mip_solution_size)
+		data.mip_solution = make([]float64, c_data_out.mip_solution_size)
+		for i := range c_data_out.mip_solution_size {
+			data.mip_solution[i] = solution[i]
+		}
+	}
+
+	inputs := callback(callbackType, message, data)
+
+	if inputs.user_interrupt {
+		c_data_in.user_interrupt = 1
+	} else {
+		c_data_in.user_interrupt = 0
+	}
+	if inputs.user_has_solution {
+		c_data_in.user_has_solution = 1
+	} else {
+		c_data_in.user_has_solution = 0
+	}
+	if len(inputs.user_solution) > 0 {
+		if len(inputs.user_solution) != c_data_in.user_solution_size {
+			panic("user solution length doesn't match expected size")
+		}
+		for i := range c_data_in.user_solution_size {
+			c_data_in.user_solution[i] = inputs.user_solution[i]
+		}
+	}
 }
 
 func (s *Solver) InterruptSupportEnable() error {
@@ -1063,7 +1187,7 @@ func (s *Solver) InterruptSetFlag(value int) error {
 	return newError("InterruptSetFlag", status)
 }
 
-func (s *Solver) SetCallback(callback func(int32) int32) error {
+func (s *Solver) SetCallback(callback func(int, string, HighsCallbackDataOut) HighsCallbackDataIn) error {
 	s.callback = callback
 	status := Status(C.GoHighsCallbackBridgedEnable(s.ptr, C.HighsInt(s.refNum)))
 	return newError("SetCallback", status)
