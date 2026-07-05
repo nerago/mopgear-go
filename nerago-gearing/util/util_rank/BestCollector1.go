@@ -54,6 +54,17 @@ func (collect *BestCollector1[T]) Offer(object *T, value float64) {
 	}
 }
 
+func (collect *BestCollector1[T]) OfferAndIsBetter(object *T, value float64) bool {
+	if collect.isBetter(value) || !collect.hasBest {
+		collect.BestObject = object
+		collect.BestValue = value
+		collect.hasBest = true
+		return true
+	} else {
+		return false
+	}
+}
+
 func (collect *BestCollector1[T]) OfferAndSwap(pointer **T, value float64) {
 	if collect.isBetter(value) || !collect.hasBest {
 		var prev *T = collect.BestObject

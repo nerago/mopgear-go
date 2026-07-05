@@ -63,7 +63,7 @@ func weightTweakerInternal(startWeight stathighs.WeightResult, tweakStart float6
 		}
 
 		proposedEntry := best.GetBestPointerOrPanic()
-		if bestEntry.weight.Equals(proposedEntry.weight) {
+		if bestEntry.weight.Equals(&proposedEntry.weight) {
 			increment /= 2
 			factor = 1 + increment
 			if increment <= c_tweak_limit {
@@ -77,4 +77,62 @@ func weightTweakerInternal(startWeight stathighs.WeightResult, tweakStart float6
 	}
 
 	return bestEntry.weight, bestEntry.accuracy
+}
+
+func weightTweakerInternal_FastNoRange(startWeight stathighs.WeightResult, tweakStart float64, weightStats []stats.StatType, simTypes []stats.SimType, targetRatio stats.SimData, inputData []stathighs.WeightInput) (stathighs.WeightResult, float64) {
+	increment := tweakStart
+	factor := 1 + increment
+
+	best := util_rank.BestCollector1[stathighs.WeightResult]{}
+	best.Offer(
+		&startWeight,
+		EvaluateAccuracyNoRangeInlined2(startWeight, simTypes, targetRatio, inputData),
+	)
+
+	for range c_tweak_iter_count {
+		foundImprovement := false
+		for i := 1; i < len(weightStats); i++ {
+			stat := weightStats[i]
+
+			if !best.BestObject.IsZero(stat) {
+				mul := best.BestObject.Clone()
+				mul.MultiplyEquals(stat, factor)
+				accuracyMul := EvaluateAccuracyNoRangeInlined2(mul, simTypes, targetRatio, inputData)
+				if best.OfferAndIsBetter(&mul, accuracyMul) {
+					foundImprovement = true
+				}
+
+				div := best.BestObject.Clone()
+				div.DivideEquals(stat, factor)
+				accuracyDiv := EvaluateAccuracyNoRangeInlined2(div, simTypes, targetRatio, inputData)
+				if best.OfferAndIsBetter(&div, accuracyDiv) {
+					foundImprovement = true
+				}
+			}
+
+			add := best.BestObject.Clone()
+			add.PlusEquals(stat, increment)
+			accuracyAdd := EvaluateAccuracyNoRangeInlined2(add, simTypes, targetRatio, inputData)
+			if best.OfferAndIsBetter(&add, accuracyAdd) {
+				foundImprovement = true
+			}
+
+			sub := best.BestObject.Clone()
+			sub.MinusEquals(stat, increment)
+			accuracySub := EvaluateAccuracyNoRangeInlined2(sub, simTypes, targetRatio, inputData)
+			if best.OfferAndIsBetter(&sub, accuracySub) {
+				foundImprovement = true
+			}
+		}
+
+		if !foundImprovement {
+			increment /= 2
+			factor = 1 + increment
+			if increment <= c_tweak_limit {
+				break
+			}
+		}
+	}
+
+	return best.GetBestOrPanic(), best.BestValue
 }

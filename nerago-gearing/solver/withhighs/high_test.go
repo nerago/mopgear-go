@@ -12,7 +12,8 @@ func TestSolverBasicRun(t *testing.T) {
 	const targetCount = util_test.TargetCountStandard
 	options, model := util_test.MakeTestOptions()
 
-	result := SingleGearSetMain(options, model, util.PrintRecorder_Testing(t))
+	resultFuture := SingleGearSetMain(options, model, util.PrintRecorder_Testing(t))
+	result := resultFuture.WaitForResultAsOptional()
 
 	expectEquip := util_test.MakeTestExpectedBest()
 	expectSet := items.SolvableItemSet_Of(expectEquip)

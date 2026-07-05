@@ -30,10 +30,14 @@ func (ws *WeightSearcher0) Init(weightStats []stats.StatType, targetRatio stats.
 }
 
 func (ws *WeightSearcher0) Run() stathighs.WeightResult {
+	simTypes := ws.targetRatio.NonZeroTypes()
 	best := util_rank.BestCollector1[stathighs.WeightResult]{}
-	for initialWeight := range ws.makeRandomWeights(1000000) {
-		updatedWeight, updatedAccuracy := weightTweakerInternal(initialWeight, c_search0_tweak_start, ws.weightStats, ws.targetRatio, ws.inputData, ws.printer)
+	progress := 0
+	for initialWeight := range ws.makeRandomWeights(1000) {
+		updatedWeight, updatedAccuracy := weightTweakerInternal_FastNoRange(initialWeight, c_search0_tweak_start, ws.weightStats, simTypes, ws.targetRatio, ws.inputData)
 		best.Offer(&updatedWeight, updatedAccuracy)
+		ws.printer.Printf("%6d %6.3f %6.3f\n", progress, updatedAccuracy, best.BestValue)
+		progress++
 	}
 	return best.GetBestOrPanic()
 }

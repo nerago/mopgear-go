@@ -11,7 +11,7 @@ import (
 const (
 	c_search1_min         = -0.5
 	c_search1_max         = 5.5
-	c_search1_step        = 1.0
+	c_search1_step        = 0.5
 	c_search1_tweak_start = 0.1
 )
 
@@ -33,12 +33,29 @@ func (ws *WeightSearcher1) Init(weightStats []stats.StatType, targetRatio stats.
 }
 
 func (ws *WeightSearcher1) Run() stathighs.WeightResult {
-	best := util_rank.BestCollector1[stathighs.WeightResult]{}
-	for initialWeight := range ws.makeSpacedWeights() {
-		updatedWeight, updatedAccuracy := weightTweakerInternal(initialWeight, c_search1_tweak_start, ws.weightStats, ws.targetRatio, ws.inputData, ws.printer)
-		best.Offer(&updatedWeight, updatedAccuracy)
+	progress := 0
+	requiredSims := ws.targetRatio.NonZeroTypes()
+
+	bestCandidates := util_rank.HighestCollector_ForN[stathighs.WeightResult](128, (*stathighs.WeightResult).Equals)
+	for possibleWeight := range ws.makeSpacedWeights() {
+		accuracy := EvaluateAccuracyNoRangeInlined2(possibleWeight, requiredSims, ws.targetRatio, ws.inputData)
+		bestCandidates.Offer(&possibleWeight, accuracy)
+		if progress%100 == 0 {
+			_, bestAccuracy := bestCandidates.GetBest1()
+			ws.printer.Printf("%6d %6.3f %6.3f\n", progress, accuracy, bestAccuracy)
+		}
+		progress++
 	}
-	return best.GetBestOrPanic()
+
+	progress = 0
+	bestResult := util_rank.BestCollector1[stathighs.WeightResult]{}
+	for checkWeight := range bestCandidates.ResultsSeq() {
+		updatedWeight, updatedAccuracy := weightTweakerInternal_FastNoRange(*checkWeight, c_search1_tweak_start, ws.weightStats, requiredSims, ws.targetRatio, ws.inputData)
+		bestResult.Offer(&updatedWeight, updatedAccuracy)
+		ws.printer.Printf("%6d %6.3f %6.3f\n", progress, updatedAccuracy, bestResult.BestValue)
+		progress++
+	}
+	return bestResult.GetBestOrPanic()
 }
 
 func (ws *WeightSearcher1) makeSpacedWeights() iter.Seq[stathighs.WeightResult] {

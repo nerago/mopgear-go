@@ -88,15 +88,14 @@ func core(printer *util.PrintRecorder) {
 	//statWeightsGrid(printer)
 	// statWeightsFitting2(printer)
 	// statWeightsComplex(printer)
-	// statWeightsRanking(printer)
 	//statWeightsGridIntoRanking(printer)
-	// statWeightsCustom(printer)
+	statWeightsCustom(printer)
 
 	//statWeights_CompareAlgorithms(printer)
 
 	//statWeightsGrid_updateAll(printer)
 
-	PaladinMultiRun(printer)
+	//PaladinMultiRun(printer)
 
 	//findUpgrades_Paladin(printer)
 }

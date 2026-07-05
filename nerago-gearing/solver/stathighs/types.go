@@ -54,7 +54,7 @@ func (wr *WeightResult) DivideEquals(statType stats.StatType, value float64) {
 	wr.content[statType] /= value
 }
 
-func (wr *WeightResult) Equals(other WeightResult) bool {
+func (wr *WeightResult) Equals(other *WeightResult) bool {
 	return wr.content.Equals(&other.content)
 }
 

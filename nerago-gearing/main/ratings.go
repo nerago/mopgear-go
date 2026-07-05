@@ -209,9 +209,10 @@ func statWeightsComplex(printer *util.PrintRecorder) {
 	tools.WritePawnString(weights, printer)
 }
 
-func statWeightsRanking(printer *util.PrintRecorder) {
+func statWeightsCustom(printer *util.PrintRecorder) {
 	// weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
 	targetRatio := model.SimRatio_generalMiti
+	weightStats := model.StatsForWeighting_strengthTank
 
 	inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
 	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
@@ -221,26 +222,19 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 	filteredInput := mixedInputData
 	printer.Printf("filteredInput size %d\n", len(filteredInput))
 
-	startWeight := stathighs.WeightResult_Make()
-	startWeight.Put(stats.Stat_Strength, 1.0000)
-	startWeight.Put(stats.Stat_Stamina, 1.2309)
-	startWeight.Put(stats.Stat_Crit, 0.1167)
-	startWeight.Put(stats.Stat_Haste, 0.3614)
-	startWeight.Put(stats.Stat_Expertise, 0.0054)
-	startWeight.Put(stats.Stat_Mastery, 0.5866)
-	startWeight.Put(stats.Stat_Dodge, 0.0824)
-	startWeight.Put(stats.Stat_Parry, 0.0532)
-
-	ranking := stathighs.RankingStatWeightProcess5{}
-	ranking.Init(printer)
-	ranking.SetRequiredStats(model.StatsForWeighting_strengthTank)
-	ranking.SetTargetRatios(targetRatio)
-	ranking.SupplyData(filteredInput)
-	ranking.SupplyInitialWeights(startWeight)
-	futureWeights := ranking.Run(nil, 3000)
-	weight, _ := futureWeights.WaitForResult()
+	ranking := weightfind.WeightSearcher1{}
+	ranking.Init(weightStats, targetRatio, mixedInputData, printer)
+	weight := ranking.Run()
 	tools.WritePawnString(weight, printer)
 	printer.Printf("accuracy = %f\n", weightfind.EvaluateAccuracy(weight, mixedInputData, targetRatio))
+
+	// WeightSearcher0:
+	// using nice version was accuracy = 92.464871 //Duration = 15m58.0662216s
+	// using first inline version accuracy = 92.461819 //Duration = 13m34.2183064s
+	// with one pointer level removed, after accuracy fix = 92.525906 Duration = 15m10.0442006s
+	// fully blocky accuracy = 92.568800 //Duration = 26m57.7175777s. some background may have happenned
+	// inlined2, back to full pointers accuracy = 92.441813 //Duration = 13m10.6024466s
+	// all still had unnecessary internal printers
 }
 
 func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
@@ -570,6 +564,7 @@ func readWeightBasicInputsFile(filename string) ([]basicStatInput, stats.SimData
 func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	targetRatio := model.SimRatio_generalMiti
 	requiredStats := model.StatsForWeighting_strengthTank
+	requiredSims := targetRatio.NonZeroTypes()
 
 	//simSpeed := simulate.RunSize_Common
 	//gearFile := files.GearFileProtMitigationNoSet
@@ -1192,7 +1187,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			row = append(row, strconv.FormatFloat(value, 'f', 4, 64))
 		}
 		accuracy := weightfind.EvaluateAccuracy(weight, mixedInputDataFull, targetRatio)
-		accuracyOld := weightfind.EvaluateAccuracyOriginal(weight, mixedInputDataFull, targetRatio)
+		accuracyOld := weightfind.EvaluateAccuracyNoRangeInlined2(weight, requiredSims, targetRatio, mixedInputDataFull)
 		row = append(row, strconv.FormatFloat(accuracy, 'f', 4, 64))
 		row = append(row, "")
 		row = append(row, strconv.FormatFloat(accuracyOld, 'f', 4, 64))
@@ -1202,7 +1197,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		if reportOnTweakedVersions {
 			weightTweak, _ := weightfind.WeightTweaker(weight, requiredStats, targetRatio, mixedInputDataFull, util.PrintRecorder_HoldAll())
 			accuracyTweak := weightfind.EvaluateAccuracy(weightTweak, mixedInputDataFull, targetRatio)
-			accuracyOld = weightfind.EvaluateAccuracyOriginal(weightTweak, mixedInputDataFull, targetRatio)
+			accuracyOld = weightfind.EvaluateAccuracyNoRangeInlined2(weightTweak, requiredSims, targetRatio, mixedInputDataFull)
 			row = make([]string, 0)
 			row = append(row, label)
 			for _, stat := range requiredStats {

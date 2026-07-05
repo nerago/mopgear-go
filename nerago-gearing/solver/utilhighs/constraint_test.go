@@ -30,7 +30,7 @@ func TestContraintIfBoolCopyValueElseZero(test *testing.T) {
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[outColumn]
@@ -94,7 +94,7 @@ func TestContraintIfBoolCopy(test *testing.T) {
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[outColumn]
@@ -182,7 +182,7 @@ func TestContraintAndBuilder(test *testing.T) {
 		if out != nil {
 			setColumnToConstant(build, outCol, *out)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[outCol]
@@ -268,7 +268,7 @@ func TestConstraintOrBuilder(test *testing.T) {
 		if out != nil {
 			setColumnToConstant(build, outCol, *out)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[outCol]
@@ -350,7 +350,7 @@ func TestConstraintNot(test *testing.T) {
 		if out != nil {
 			setColumnToConstant(build, outCol, *out)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[outCol]
@@ -387,7 +387,7 @@ func TestNotAsColumn(test *testing.T) {
 		if out != nil {
 			setColumnToConstant(build, outCol, *out)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[outCol]
@@ -427,7 +427,7 @@ func TestAbsoluteValue(test *testing.T) {
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[outColumn]
@@ -475,7 +475,7 @@ func TestAbsoluteValueFromDiffTwoVars(test *testing.T) {
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[outColumn]
@@ -542,7 +542,7 @@ func TestAbsoluteValueFromDiffTwoVarsNonFree(test *testing.T) {
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[outColumn]
@@ -624,7 +624,7 @@ func TestAbsoluteValueFromDiffOneToConst(test *testing.T) {
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[outColumn]
@@ -684,7 +684,7 @@ func TestAbsoluteValueDiffTwoVarsThenDiffConst(test *testing.T) {
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[outColumn]
@@ -751,7 +751,7 @@ func TestAbsoluteValue_WithToggle(test *testing.T) {
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[outColumn]
@@ -821,7 +821,7 @@ func TestIsXor(test *testing.T) {
 		if out != nil {
 			setColumnToConstant(build, outCol, *out)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[outCol]
@@ -875,7 +875,7 @@ func TestColumnIsGreaterOrEqualThanConstant(test *testing.T) {
 		if setBool != nil {
 			setColumnToConstant(build, isGreater, *setBool)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[isGreater]
@@ -924,7 +924,7 @@ func TestColumnIsLessOrEqualThanConstant(test *testing.T) {
 		if setBool != nil {
 			setColumnToConstant(build, isLess, *setBool)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[isLess]
@@ -978,7 +978,7 @@ func TestConstantIsBetweenColumns(test *testing.T) {
 		if setBool != nil {
 			setColumnToConstant(build, boolColumn, *setBool)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[boolColumn]
@@ -1066,7 +1066,7 @@ func TestColumnIsNotBetweenConstantsVerify(test *testing.T) {
 			test.Fatal("expected panic")
 		}
 
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		test.Logf("%s\n", solution.Status.String())
@@ -1127,7 +1127,7 @@ func TestColumnIsGreaterOrEqualColumn(test *testing.T) {
 		if setBool != nil {
 			setColumnToConstant(build, boolColumn, *setBool)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[boolColumn]
@@ -1182,7 +1182,7 @@ func TestColumnIsLessOrEqualColumn(test *testing.T) {
 		if setBool != nil {
 			setColumnToConstant(build, boolColumn, *setBool)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[boolColumn]
@@ -1236,7 +1236,7 @@ func TestColumnIsGreaterThanColumnEqualityFree(test *testing.T) {
 		if setBool != nil {
 			setColumnToConstant(build, boolColumn, *setBool)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[boolColumn]
@@ -1287,7 +1287,7 @@ func TestColumnIsLessThanColumnEqualityFree(test *testing.T) {
 		if setBool != nil {
 			setColumnToConstant(build, boolColumn, *setBool)
 		}
-		solution := build.RunHighs(util.PrintRecorder_Testing(test))
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
 		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
 
 		boolOutput := solution.ColValues[boolColumn]
@@ -1337,4 +1337,8 @@ func assertEqualFloat(expect, actual float64, test *testing.T) {
 	if !util.FloatsApproxEquals(expect, actual) {
 		test.Fatalf("assertEqual failed expect=%v actual=%v", expect, actual)
 	}
+}
+
+func runHighs(build *LinearBuilder, printer *util.PrintRecorder) *highs.Solution {
+	return build.RunHighsFuture(nil).WaitForResultOrPanic().solution
 }
