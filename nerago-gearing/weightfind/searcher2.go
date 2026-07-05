@@ -2,6 +2,7 @@ package weightfind
 
 import (
 	"cmp"
+	"math"
 	"paladin_gearing_go/solver/stathighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -9,7 +10,10 @@ import (
 	"slices"
 )
 
-const ()
+const (
+	c_search2_largeGap    = 1.0
+	c_search2_marginalGap = 0.01
+)
 
 type opType int8
 
@@ -65,6 +69,10 @@ func (ws *WeightSearcher2) Run() stathighs.WeightResult {
 		if !hasValue {
 			break
 		}
+
+		// TODO minimum dimensions
+		// potential single axis search
+
 		switch bound.plannedOp {
 		case opDivide1:
 			ws.opDivide1(bound)
@@ -115,14 +123,17 @@ func (ws *WeightSearcher2) opDivide1(bound *weightSearch2Bound) {
 }
 
 /*
-	0 > 1234        14 > 0124       13 > 0124       02 > 134
+	                    narrow          corners        side/top        extended
+	                    middle                                         corner
+		                0 > 1234        12 > 034       13 > 024         04 > 123
+	                                    34 > 012       ~14,23,24
 
 .............    .............   ......|......   ......|......   ..|..........
-..1.......2..    ..?-------?..   ..1...|......   ..1...|......   ..?.......2..
+..1.......4..    ..?-------?..   ..1...|......   ..1...|......   ..?.......4..
 .............    ..|.......|..   ......|......   ......|......   ..|..........
 ......0......    ..|...0...|..   ------?------   ......?......   ..|...0......
 .............    ..|.......|..   ......|......   ......|......   ..|..........
-..3.......4..    ..?-------?..   ......|...4..   ..3...|......   ..?-------?--
+..3.......2..    ..?-------?..   ......|...2..   ..3...|......   ..?-------?--
 .............    .............   ......|......   ......|......   .............
 */
 func (ws *WeightSearcher2) opSearch(bound *weightSearch2Bound) {
@@ -130,11 +141,11 @@ func (ws *WeightSearcher2) opSearch(bound *weightSearch2Bound) {
 	var probes [5][]float64
 	probes[0] = sliceInterpolate(bound.rangeMin, bound.rangeMax, 1.0/2.0)
 	probes[1] = sliceInterpolate(bound.rangeMin, bound.rangeMax, 1.0/4.0)
-	probes[4] = sliceInterpolate(bound.rangeMin, bound.rangeMax, 3.0/4.0)
-	probes[2] = sliceMixEverySecond(probes[1], probes[4])
-	probes[3] = sliceMixEverySecond(probes[4], probes[1])
+	probes[2] = sliceInterpolate(bound.rangeMin, bound.rangeMax, 3.0/4.0)
+	probes[3] = sliceMixEverySecond(probes[1], probes[2]) // first is the X on above diagrams, second the Y
+	probes[4] = sliceMixEverySecond(probes[2], probes[1])
 
-	// evaluate each probe
+	// evaluate each probe, sort descending so best are first
 	type indexAndAccuracy struct {
 		index    int
 		accuracy float64
@@ -143,13 +154,120 @@ func (ws *WeightSearcher2) opSearch(bound *weightSearch2Bound) {
 	for i := range 5 {
 		values[i] = indexAndAccuracy{i, ws.evaluateScore(probes[i])}
 	}
-
-	// sort descending so best are first
 	slices.SortFunc(values[:], func(a, b indexAndAccuracy) int { return cmp.Compare(b.accuracy, a.accuracy) })
 
-	//if ws.largeGap(values[0].accuracy, values[1].accuracy) {
-	//
-	//}
+	// determine next step based on ranking of probes
+	if ws.marginalGap(values[0].accuracy, values[1].accuracy) {
+		// minimal gap between probes, perhaps nothing more to explore
+	} else if ws.largeGap(values[0].accuracy, values[1].accuracy) {
+		// something is best by a large margin
+		var rangeMin, rangeMax []float64
+		switch values[0].index {
+		case 0:
+			rangeMin = probes[1]
+			rangeMax = probes[2]
+		case 1:
+			rangeMin = bound.rangeMin
+			rangeMax = probes[0]
+		case 2:
+			rangeMin = probes[0]
+			rangeMax = bound.rangeMax
+		case 3:
+			rangeMin = sliceMixEverySecond(bound.rangeMin, probes[0])
+			rangeMax = sliceMixEverySecond(probes[0], bound.rangeMax)
+		case 4:
+			rangeMin = sliceMixEverySecond(probes[0], bound.rangeMin)
+			rangeMax = sliceMixEverySecond(bound.rangeMax, probes[0])
+		}
+		ws.addSearchPlan(rangeMin, rangeMax)
+	} else if oneOfEqualsQuery(values[0].index, values[1].index, 0) {
+		// the two best includes the middle
+		other := values[0].index
+		if other == 0 {
+			other = values[1].index
+		}
+
+		var rangeMin, rangeMax []float64
+		switch other {
+		case 1:
+			rangeMin = bound.rangeMin
+			rangeMax = probes[2]
+		case 2:
+			rangeMin = probes[1]
+			rangeMax = bound.rangeMax
+		case 3:
+			rangeMin = sliceMixEverySecond(bound.rangeMin, probes[4])
+			rangeMax = sliceMixEverySecond(probes[4], bound.rangeMax)
+		case 4:
+			rangeMin = sliceMixEverySecond(probes[3], bound.rangeMin)
+			rangeMax = sliceMixEverySecond(bound.rangeMax, probes[3])
+		}
+		ws.addSearchPlan(rangeMin, rangeMax)
+	} else if pairEqualsQueryPair(values[0].index, values[1].index, 1, 3) {
+		ws.addSearchPlan(
+			bound.rangeMin,
+			sliceMixEverySecond(probes[0], bound.rangeMax),
+		)
+	} else if pairEqualsQueryPair(values[0].index, values[1].index, 1, 4) {
+		ws.addSearchPlan(
+			bound.rangeMin,
+			sliceMixEverySecond(bound.rangeMax, probes[0]),
+		)
+	} else if pairEqualsQueryPair(values[0].index, values[1].index, 2, 3) {
+		ws.addSearchPlan(
+			sliceMixEverySecond(bound.rangeMin, probes[0]),
+			bound.rangeMax,
+		)
+	} else if pairEqualsQueryPair(values[0].index, values[1].index, 2, 4) {
+		ws.addSearchPlan(
+			sliceMixEverySecond(probes[0], bound.rangeMin),
+			bound.rangeMax,
+		)
+	} else {
+		// remaining two are not adjacent, queue them separately
+		for check := range 2 {
+			var rangeMin, rangeMax []float64
+			switch values[check].index {
+			case 1:
+				rangeMin = bound.rangeMin
+				rangeMax = probes[0]
+			case 2:
+				rangeMin = probes[0]
+				rangeMax = bound.rangeMax
+			case 3:
+				rangeMin = sliceMixEverySecond(bound.rangeMin, probes[0])
+				rangeMax = sliceMixEverySecond(probes[0], bound.rangeMax)
+			case 4:
+				rangeMin = sliceMixEverySecond(probes[0], bound.rangeMin)
+				rangeMax = sliceMixEverySecond(bound.rangeMax, probes[0])
+			}
+			ws.addSearchPlan(rangeMin, rangeMax)
+		}
+	}
+}
+
+func (ws *WeightSearcher2) addSearchPlan(rangeMin []float64, rangeMax []float64) {
+	ws.queue.Push(&weightSearch2Bound{
+		plannedOp: opSearch,
+		rangeMin:  rangeMin,
+		rangeMax:  rangeMax,
+	})
+}
+
+func oneOfEqualsQuery(a, b int, query int) bool {
+	return a == query || b == query
+}
+
+func pairEqualsQueryPair(a, b int, query1, query2 int) bool {
+	return (a == query1 && b == query2) || (a == query2 && b == query1)
+}
+
+func (ws *WeightSearcher2) largeGap(a, b float64) bool {
+	return math.Abs(a-b) < c_search2_largeGap
+}
+
+func (ws *WeightSearcher2) marginalGap(a, b float64) bool {
+	return math.Abs(a-b) < c_search2_marginalGap
 }
 
 func sliceInterpolate(rangeMin []float64, rangeMax []float64, ratio float64) []float64 {
