@@ -9,11 +9,12 @@ func MapFuture_SliceToChannel_Cancellable[T any, R any](threadCount int, inputSl
 	loopCancelChannel := primaryCancel.CancelSignalChannel()
 
 	go func() {
+	indexLoop:
 		for index := range inputSlice {
 			select {
 			case indexChannel <- index: // send index to next routine
 			case <-loopCancelChannel: // break out on cancel
-				break
+				break indexLoop
 			}
 		}
 		close(indexChannel)
@@ -120,13 +121,11 @@ func drainCompletedFutures[R any](itemResultChannel chan FutureResult[R], output
 
 func waitForRemainingCompletionAndSetResult[R any](itemResultChannel chan FutureResult[R], outputSlice *[]R, activeFutureCount *int, primaryFuture *FutureCancellable[[]R]) {
 	for *activeFutureCount > 0 {
-		select {
-		case itemResult := <-itemResultChannel:
-			if itemResult.HasValue {
-				*outputSlice = append(*outputSlice, itemResult.Value)
-			}
-			*activeFutureCount--
+		itemResult := <-itemResultChannel
+		if itemResult.HasValue {
+			*outputSlice = append(*outputSlice, itemResult.Value)
 		}
+		*activeFutureCount--
 	}
 
 	primaryFuture.SetResult(*outputSlice)

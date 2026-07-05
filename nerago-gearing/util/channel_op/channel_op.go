@@ -200,12 +200,13 @@ func MapOptional_SliceToChannel_Cancellable[T any, R any](threadCount int, input
 	loopCancelChannel := cancel.CancelSignalChannel()
 
 	go func() {
+	indexLoop:
 		for index := range inputSlice {
 			select {
 			case indexChannel <- index:
 				// ok
 			case <-loopCancelChannel:
-				break
+				break indexLoop
 			}
 		}
 		close(indexChannel)
@@ -291,12 +292,13 @@ func ForEach_Slice_Cancellable[T any](threadCount int, inputSlice []T, cancel Ca
 	loopCancelChannel := cancel.CancelSignalChannel()
 
 	go func() {
+	indexLoop:
 		for index := range inputSlice {
 			select {
 			case indexChannel <- index:
 				// ok
 			case <-loopCancelChannel:
-				break
+				break indexLoop
 			}
 		}
 		close(indexChannel)

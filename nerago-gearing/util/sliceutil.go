@@ -389,6 +389,7 @@ func CalculateRankingRanges[T any](highGood bool, inputData []T, toScore func(*T
 			prevHiLo = &HiLoInt{index, index}
 			entry.hilo = prevHiLo
 		}
+		prevScore = entry.score
 	}
 
 	return func(yield func(*T, HiLoInt) bool) {
