@@ -54,6 +54,13 @@ var substituteItemsRet = []items.ItemId{
 	103738, // bubble bracers
 	105785, // burly bracer
 	103734, // zoid gauntlets
+	105122, // Asgorathian Blood Seal
+	105011, // Demolisher's Reinforced Belt
+	95011,  // lighting clawfeet
+	95020,  // ra-den contemplative loop
+	103735, // tar-coated gauntlets
+	103916, // jugg ignition keys
+	104461, // rage-blind greathelm
 }
 var substituteItemsDps = []items.ItemId{
 	96394,  // frozen warlord bracer heroic
@@ -96,6 +103,15 @@ var substituteItemsDps = []items.ItemId{
 	103738, // bubble bracers
 	105785, // burly bracer
 	103734, // zoid gauntlets
+	105122, // Asgorathian Blood Seal
+	105011, // Demolisher's Reinforced Belt
+	95011,  // lighting clawfeet
+	95020,  // ra-den contemplative loop
+	103826, // xifeng weapon
+	103735, // tar-coated gauntlets
+	103872, // bulwurk of fallen general
+	103916, // jugg ignition keys
+	104461, // rage-blind greathelm
 }
 var substituteItemsMiti = []items.ItemId{
 	95291,  // prot tier15 hand normal
@@ -143,6 +159,15 @@ var substituteItemsMiti = []items.ItemId{
 	105785, // burly bracer
 	103734, // zoid gauntlets
 	103826, // xifeng weapon
+	105122, // Asgorathian Blood Seal
+	105011, // Demolisher's Reinforced Belt
+	95011,  // lighting clawfeet
+	95020,  // ra-den contemplative loop
+	103826, // xifeng weapon
+	103735, // tar-coated gauntlets
+	103872, // bulwurk of fallen general
+	103916, // jugg ignition keys
+	104461, // rage-blind greathelm
 }
 
 var ignoredItems = []items.ItemId{
