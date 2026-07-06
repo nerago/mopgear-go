@@ -11,6 +11,7 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
+const c_grid2_minBaseWeight = 0.001
 const c_grid2_maxWeight = 5000.0
 const c_grid2_highScore = 10000.0
 const c_grid2_scaleTarget = 10.0
@@ -91,20 +92,18 @@ func (grid2 *GridStatWeightProcess2) Run(stopwatch *util.Stopwatch) *channel_op.
 }
 
 func (grid2 *GridStatWeightProcess2) setupWeightVars() {
+	baseStat := grid2.requiredStats[0]
+
 	// create detail columns
 	for _, statType := range grid2.requiredStats {
 		for _, simType := range grid2.requiredSims {
-			colDetailWeight := grid2.build.CreateColumnGeneral(highs.Continuous, -c_grid2_maxWeight, c_grid2_maxWeight, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
+			minWeight := -c_grid2_maxWeight
+			if statType == baseStat {
+				minWeight = c_grid2_minBaseWeight
+			}
+			colDetailWeight := grid2.build.CreateColumnGeneral(highs.Continuous, minWeight, c_grid2_maxWeight, utilhighs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
 			grid2.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
-	}
-
-	// strength column within each simtype is set to targetratio (0.4 etc)
-	baseStat := grid2.requiredStats[0]
-	for _, simType := range grid2.requiredSims {
-		colDetailWeight := grid2.detailedWeights.GetOrPanic(baseStat, simType)
-		strAbs := grid2.build.CreateColumnGeneral(highs.Continuous, 0.001, utilhighs.C_PlusInf, nil)
-		grid2.build.AbsoluteValueFromDiffOneToConst(colDetailWeight, 1, 0, strAbs, "")
 	}
 }
 

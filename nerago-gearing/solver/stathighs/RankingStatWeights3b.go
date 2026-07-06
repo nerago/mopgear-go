@@ -1,11 +1,13 @@
 package stathighs
 
 import (
+	"cmp"
 	"fmt"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
+	"slices"
 	"strconv"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -13,7 +15,7 @@ import (
 
 const (
 	c_rank3b_scaleTarget      = 10.0
-	c_rank3b_min_total_weight = 1.0
+	c_rank3b_min_total_weight = 0.01
 	c_Rank3b_largeWeight      = 10.0
 )
 
@@ -27,8 +29,9 @@ type RankingStatWeightProcess3b struct {
 	dataAllOriginal []rankEntry3b
 	dataSample      []rankEntry3b
 	SCALE1          bool
-	ALGO            int
 	FINAL           int
+	ALGO            int
+	TOTALWEIGHT     int
 
 	build *utilhighs.LinearBuilder
 
@@ -158,7 +161,14 @@ func (ranker *RankingStatWeightProcess3b) createWeightColumns() {
 		sumWeights.Add(colWeight, 1)
 	}
 
-	sumWeights.Build(ranker.build, c_rank3b_min_total_weight, utilhighs.C_PlusInf)
+	if ranker.TOTALWEIGHT == 0 {
+		sumWeights.Build(ranker.build, c_rank3b_min_total_weight, utilhighs.C_PlusInf)
+	} else {
+		maxWeight := c_Rank3b_largeWeight * float64(len(ranker.requiredStats))
+		sumWeightCol := ranker.build.CreateColumnWithOutput(highs.Continuous, c_rank3b_min_total_weight, maxWeight, 1, utilhighs.DebugText("sumWeightCol"))
+		sumWeights.Add(sumWeightCol, -1)
+		sumWeights.Build(ranker.build, 0, 0)
+	}
 }
 
 func (ranker *RankingStatWeightProcess3b) prepareRankings() {
@@ -182,6 +192,8 @@ func (ranker *RankingStatWeightProcess3b) prepareRankings() {
 	for entry, simRank := range util.CalculateRanking(true, ranker.dataSample, func(x *rankEntry3b) float64 { return x.simScore }) {
 		entry.targetRank = simRank
 	}
+
+	slices.SortFunc(ranker.dataSample, func(a, b rankEntry3b) int { return cmp.Compare(a.targetRank, b.targetRank) })
 }
 
 func (ranker *RankingStatWeightProcess3b) doAlgos() {

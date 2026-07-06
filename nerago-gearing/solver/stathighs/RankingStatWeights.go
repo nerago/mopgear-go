@@ -1,10 +1,12 @@
 package stathighs
 
 import (
+	"cmp"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
+	"slices"
 	"strconv"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -115,7 +117,7 @@ func (ranker *RankingStatWeightProcess) createWeightColumns() {
 
 	if ranker.RANKMODE == 0 || ranker.RANKMODE == 3 {
 		// TODO just doesn't seem right
-		sumWeights.Build(ranker.build, 1.0, utilhighs.C_PlusInf) // force positive and non-zero result
+		sumWeights.Build(ranker.build, 1, utilhighs.C_PlusInf) // force positive and non-zero result
 	}
 
 	// this assumes that a positive strength will work for the scoring system, should be true in most situations
@@ -138,6 +140,8 @@ func (ranker *RankingStatWeightProcess) prepareRankings() {
 	for entry, simRank := range util.CalculateRanking(true, ranker.data, func(x *rankEntry) float64 { return x.combinedSimScore }) {
 		entry.targetRank = simRank
 	}
+
+	slices.SortFunc(ranker.data, func(a, b rankEntry) int { return cmp.Compare(a.targetRank, b.targetRank) })
 }
 
 func (ranker *RankingStatWeightProcess) processData() {

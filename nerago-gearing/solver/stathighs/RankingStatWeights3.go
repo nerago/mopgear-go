@@ -189,6 +189,8 @@ func (ranker *RankingStatWeightProcess3) prepareRankings() {
 	for entry, simRank := range util.CalculateRanking(true, ranker.dataSample, func(x *rankEntry3) float64 { return x.simScore }) {
 		entry.targetRank = simRank
 	}
+
+	slices.SortFunc(ranker.dataSample, func(a, b rankEntry3) int { return cmp.Compare(a.targetRank, b.targetRank) })
 }
 
 func (ranker *RankingStatWeightProcess3) doAlgos() {

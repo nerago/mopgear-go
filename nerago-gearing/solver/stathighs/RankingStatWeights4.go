@@ -1,13 +1,13 @@
 package stathighs
 
 import (
+	"cmp"
 	"paladin_gearing_go/solver/utilhighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
 	"slices"
 	"strconv"
-	"time"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
@@ -92,66 +92,66 @@ func (process *RankingStatWeightProcess4) SetTargetRatios(targetRatios stats.Sim
 	process.requiredSims = targetRatios.NonZeroTypes()
 }
 
-func (process *RankingStatWeightProcess4) Run(overallStopwatch *util.Stopwatch, timeout int) []WeightResult {
-	weightResultList := make([]WeightResult, 0)
-
-	// FIRST ROUND: minimal data, dumb initial values
-	process.printer.Println("RankingStatWeightProcess4 FIRST ROUND")
-	run1 := rankInternalRun4_create(process)
-	run1.build.TimeLimitSeconds = timeout / 4
-	run1.supplyData(takeDataSample_Random(process.dataAll, c_Rank4InitialSample))
-	run1.prepareRankings()
-	run1.createWeightColumns()
-	run1.makeDataListEntryColumns()
-	run1.makeDataListPairRules()
-	run1.setupInitialSolutionDumb2()
-	weights1, solution1 := run1.run(overallStopwatch)
-	weights1.ApplyIfValue(func(w WeightResult) { weightResultList = append(weightResultList, w) })
-
-	// noinitial, sample25, accuracy = 85.238976, Duration = 5m40.3326511s
-	// dumb2, sample25, accuracy = 85.227590, Duration = 4m0.7662002s
-	// dumb1, sample25, accuracy = 85.225498 Duration = 4m32.3105105s
-
-	latestRun := run1
-	latestSolution := solution1
-
-	times := make(map[int]time.Duration)
-	for size := c_Rank4InitialSample + c_Rank4AddSample; size <= len(process.dataAll); size += c_Rank4AddSample {
-		roundTimer := util.StopwatchMakeStopped()
-
-		dataSample := takeDataSample_Random(process.dataAll, size)
-		process.printer.Println("RankingStatWeightProcess4 SECOND ROUND " + strconv.Itoa(size))
-		run2 := rankInternalRun4_create(process)
-		run2.build.TimeLimitSeconds = timeout / 4
-		run2.supplyData(dataSample)
-		run2.prepareRankings()
-		run2.createWeightColumns()
-		run2.makeDataListEntryColumns()
-		run2.makeDataListPairRules()
-		run2.setupInitialSolutionFromPrevious(latestRun, latestSolution)
-		weights2, solution2 := run2.run(roundTimer)
-		weights2.ApplyIfValue(func(w WeightResult) { weightResultList = append(weightResultList, w) })
-
-		times[size] = roundTimer.Elapsed()
-		timeout -= int(roundTimer.Elapsed())
-		overallStopwatch.AddElapsedFrom(roundTimer)
-
-		if solution2.HasSolution() {
-			latestRun = run2
-			latestSolution = solution2
-		}
-
-		if solution2.Status == highs.ModelStatusTimeLimit || timeout < 0 {
-			break
-		}
-	}
-
-	for size, duration := range times {
-		process.printer.Printf("%4d %s\n", size, duration)
-	}
-
-	return weightResultList
-}
+//func (process *RankingStatWeightProcess4) Run(overallStopwatch *util.Stopwatch, timeout int) []WeightResult {
+//	weightResultList := make([]WeightResult, 0)
+//
+//	// FIRST ROUND: minimal data, dumb initial values
+//	process.printer.Println("RankingStatWeightProcess4 FIRST ROUND")
+//	run1 := rankInternalRun4_create(process)
+//	run1.build.TimeLimitSeconds = timeout / 4
+//	run1.supplyData(takeDataSample_Random(process.dataAll, c_Rank4InitialSample))
+//	run1.prepareRankings()
+//	run1.createWeightColumns()
+//	run1.makeDataListEntryColumns()
+//	run1.makeDataListPairRules()
+//	run1.setupInitialSolutionDumb2()
+//	weights1, solution1 := run1.run(overallStopwatch)
+//	weights1.ApplyIfValue(func(w WeightResult) { weightResultList = append(weightResultList, w) })
+//
+//	// noinitial, sample25, accuracy = 85.238976, Duration = 5m40.3326511s
+//	// dumb2, sample25, accuracy = 85.227590, Duration = 4m0.7662002s
+//	// dumb1, sample25, accuracy = 85.225498 Duration = 4m32.3105105s
+//
+//	latestRun := run1
+//	latestSolution := solution1
+//
+//	times := make(map[int]time.Duration)
+//	for size := c_Rank4InitialSample + c_Rank4AddSample; size <= len(process.dataAll); size += c_Rank4AddSample {
+//		roundTimer := util.StopwatchMakeStopped()
+//
+//		dataSample := takeDataSample_Random(process.dataAll, size)
+//		process.printer.Println("RankingStatWeightProcess4 SECOND ROUND " + strconv.Itoa(size))
+//		run2 := rankInternalRun4_create(process)
+//		run2.build.TimeLimitSeconds = timeout / 4
+//		run2.supplyData(dataSample)
+//		run2.prepareRankings()
+//		run2.createWeightColumns()
+//		run2.makeDataListEntryColumns()
+//		run2.makeDataListPairRules()
+//		run2.setupInitialSolutionFromPrevious(latestRun, latestSolution)
+//		weights2, solution2 := run2.run(roundTimer)
+//		weights2.ApplyIfValue(func(w WeightResult) { weightResultList = append(weightResultList, w) })
+//
+//		times[size] = roundTimer.Elapsed()
+//		timeout -= int(roundTimer.Elapsed())
+//		overallStopwatch.AddElapsedFrom(roundTimer)
+//
+//		if solution2.HasSolution() {
+//			latestRun = run2
+//			latestSolution = solution2
+//		}
+//
+//		if solution2.Status == highs.ModelStatusTimeLimit || timeout < 0 {
+//			break
+//		}
+//	}
+//
+//	for size, duration := range times {
+//		process.printer.Printf("%4d %s\n", size, duration)
+//	}
+//
+//	return weightResultList
+//}
 
 func (process *RankingStatWeightProcess4) RunUsingExternalStart(initialWeight WeightResult, stopwatch *util.Stopwatch, timeout int) util.Optional[WeightResult] {
 	run2 := rankInternalRun4_create(process)
@@ -252,6 +252,8 @@ func (run *rankInternalRun4) prepareRankings() {
 	for entry, simRankHiLo := range util.CalculateRankingRanges(true, run.runData, func(x *rankEntry4) float64 { return x.simScore }) {
 		entry.targetRank = simRankHiLo.Lo
 	}
+
+	slices.SortFunc(run.runData, func(a, b rankEntry4) int { return cmp.Compare(a.targetRank, b.targetRank) })
 }
 
 func (run *rankInternalRun4) makeDataListEntryColumns() {
@@ -435,7 +437,7 @@ func (run *rankInternalRun4) setupInitialSolutionFromPrevious(previous *rankInte
 func (run *rankInternalRun4) setupInitialSolutionFromExternal(weights stats.StatBlock) {
 	internalWeights := WeightResult_Make()
 	for statType, colWeight := range run.weightColumns {
-		basicValue := weights.GetFloat(statType) / 1000.0 // NOTE reverse scale as used in StatRatingsWeights
+		basicValue := weights.GetFloat(statType)
 		// scale := run.scaleStats[statType]
 		scaledValue := basicValue
 		run.build.SetInitialSolutionValue(colWeight, scaledValue)

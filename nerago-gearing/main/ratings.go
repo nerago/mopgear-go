@@ -370,7 +370,7 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 	fitting.Init(printer, stats.Stat_Haste, stats.Sim_DPS, 3000)
 	fitting.SupplyDataFromStandard(weightInputs)
 
-	weightMap := fitting.Run()
+	weightMap := fitting.Run(channel_op.CancelSignal_Make())
 	printer.Printf("weightMap size %d\n", len(weightMap))
 	weightList := slices.SortedFunc(maps.Values(weightMap), func(a, b stathighs.FittingSingleStatResult) int { return cmp.Compare(a.Minimum, b.Minimum) })
 
@@ -421,7 +421,7 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 	fitting.Init(printer, 3000)
 	fitting.SupplyDataFromStandard(weightInputs)
 
-	weightMapMapMap := fitting.RunDetailedResults()
+	weightMapMapMap := fitting.RunDetailedResults(channel_op.CancelSignal_Make())
 	for entry := range weightMapMapMap.SeqWithKeys() {
 		weightMap := entry.Value
 
@@ -643,15 +643,15 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	shortTimeout := 800
 
 	runBasic := true
-	runFormulaVariants := true
-	runFitting := true
+	runFormulaVariants := false
+	runFitting := false
 
 	runGrid1Original := true
-	runGrid1Variants := true
+	runGrid1Variants := false
 	runGrid1VariantsFewer := true
 	runGrid1C := true
-	runGrid2 := true
-	runSelGrid := true
+	runGrid2 := false
+	runSelGrid := false
 
 	runRankingOlder := true
 	runRanking3aPreferred := true
@@ -802,7 +802,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			for ROUNDMODE := range 3 {
 				for OUTLIER := range 5 {
 					tasks = append(tasks, func() {
-						printer.Println("################# GRID1B ###################")
+						label := fmt.Sprintf("grid1b-outlier%d-scale%d-round%d", OUTLIER, SCALEMODE, ROUNDMODE)
+						printer.Println("################# " + label + " ###################")
 						stopwatch := util.StopwatchMakeStopped()
 						grid1 := stathighs.GridStatWeightProcess1B{}
 						grid1.SCALEMODE = SCALEMODE
@@ -812,12 +813,11 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 						grid1.SetRequiredStats(requiredStats)
 						grid1.SetTargetRatios(targetRatio)
 						grid1.SupplyData(slices.Clone(inputDataGrid))
-						label := fmt.Sprintf("grid1b-outlier%d-scale%d-round%d", OUTLIER, SCALEMODE, ROUNDMODE)
 						weightFuture := grid1.Run(stopwatch)
 						channel_op.ChainCancel(cancel, weightFuture)
 						resultsByAlgorithm.Put(label, weightFuture.WaitForResultOrNilValue())
 						timesByAlgorithm.Put(label, stopwatch.Elapsed())
-						printer.Println("///////////////// GRID1B /////////////////")
+						printer.Println("///////////////// " + label + " /////////////////")
 					})
 				}
 			}
@@ -825,7 +825,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	}
 	if runGrid1VariantsFewer {
 		for SCALEMODE := range 6 {
-			printer.Println("################# GRID1B ###################")
+			label := fmt.Sprintf("grid1b-outlier%d-scale%d-round%d", 3, SCALEMODE, 2)
+			printer.Println("################# " + label + " ###################")
 			stopwatch := util.StopwatchMakeStopped()
 			grid1 := stathighs.GridStatWeightProcess1B{}
 			grid1.SCALEMODE = SCALEMODE
@@ -835,12 +836,11 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			grid1.SetRequiredStats(requiredStats)
 			grid1.SetTargetRatios(targetRatio)
 			grid1.SupplyData(slices.Clone(inputDataGrid))
-			label := fmt.Sprintf("grid1b-outlier%d-scale%d-round%d", 3, SCALEMODE, 2)
 			weightFuture := grid1.Run(stopwatch)
 			channel_op.ChainCancel(cancel, weightFuture)
 			resultsByAlgorithm.Put(label, weightFuture.WaitForResultOrNilValue())
 			timesByAlgorithm.Put(label, stopwatch.Elapsed())
-			printer.Println("///////////////// GRID1B /////////////////")
+			printer.Println("///////////////// " + label + " /////////////////")
 		}
 	}
 
@@ -848,7 +848,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		for RESCALE := range 3 {
 			for ROUNDMODE := range 3 {
 				tasks = append(tasks, func() {
-					printer.Println("################# GRID1C ###################")
+					label := fmt.Sprintf("grid1c-round%d-rescale%d", ROUNDMODE, RESCALE)
+					printer.Println("################# " + label + " ###################")
 					stopwatch := util.StopwatchMakeStopped()
 					grid1 := stathighs.GridStatWeightProcess1C{}
 					grid1.ROUNDMODE = ROUNDMODE
@@ -857,12 +858,11 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 					grid1.SetRequiredStats(requiredStats)
 					grid1.SetTargetRatios(targetRatio)
 					grid1.SupplyData(slices.Clone(inputDataGrid))
-					label := fmt.Sprintf("grid1c-round%d-rescale%d", ROUNDMODE, RESCALE)
 					weightFuture := grid1.Run(stopwatch)
 					channel_op.ChainCancel(cancel, weightFuture)
 					resultsByAlgorithm.Put(label, weightFuture.WaitForResultOrNilValue())
 					timesByAlgorithm.Put(label, stopwatch.Elapsed())
-					printer.Println("///////////////// GRID1C /////////////////")
+					printer.Println("///////////////// " + label + " /////////////////")
 				})
 			}
 		}
@@ -1017,7 +1017,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	if runRanking3aVariants {
 		for ALGO := range 2 {
 			tasks = append(tasks, func() {
-				printer.Println("################# RANKING3a ###################")
+				label := fmt.Sprintf("ranking3a-scale_stat-algo%d", ALGO)
+				printer.Println("################# " + label + " ###################")
 				stopwatch := util.StopwatchMakeStopped()
 				ranking := stathighs.RankingStatWeightProcess3{}
 				ranking.ALGO = ALGO
@@ -1029,13 +1030,13 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 				weightFuture := ranking.Run(stopwatch)
 				channel_op.ChainCancel(cancel, weightFuture)
 				weight := weightFuture.WaitForResultOrNilValue()
-				label := fmt.Sprintf("ranking3a-scale_stat-algo%d", ALGO)
 				timesByAlgorithm.Put(label, stopwatch.Elapsed())
 				resultsByAlgorithm.Put(label, weight)
-				printer.Println("///////////////// RANKING3a /////////////////")
+				printer.Println("///////////////// " + label + " /////////////////")
 			})
 			tasks = append(tasks, func() {
-				printer.Println("################# RANKING3a ###################")
+				label := fmt.Sprintf("ranking3a-scale1-algo%d", ALGO)
+				printer.Println("################# " + label + " ###################")
 				stopwatch := util.StopwatchMakeStopped()
 				ranking := stathighs.RankingStatWeightProcess3{}
 				ranking.ALGO = ALGO
@@ -1047,17 +1048,17 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 				weightFuture := ranking.Run(stopwatch)
 				channel_op.ChainCancel(cancel, weightFuture)
 				weight := weightFuture.WaitForResultOrNilValue()
-				label := fmt.Sprintf("ranking3a-scale1-algo%d", ALGO)
 				timesByAlgorithm.Put(label, stopwatch.Elapsed())
 				resultsByAlgorithm.Put(label, weight)
-				printer.Println("///////////////// RANKING3a /////////////////")
+				printer.Println("///////////////// " + label + " /////////////////")
 			})
 		}
 	}
 
 	if runRanking3aPreferred {
 		tasks = append(tasks, func() {
-			printer.Println("################# RANKING3a-false-1 ###################")
+			label := fmt.Sprintf("ranking3a-false-1")
+			printer.Println("################# " + label + " ###################")
 			stopwatch := util.StopwatchMakeStopped()
 			ranking := stathighs.RankingStatWeightProcess3{}
 			ranking.ALGO = 1
@@ -1069,13 +1070,13 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			weightFuture := ranking.RunUsingExternalStart(weightsMidRange, stopwatch)
 			channel_op.ChainCancel(cancel, weightFuture)
 			weight := weightFuture.WaitForResultOrNilValue()
-			label := fmt.Sprintf("ranking3a-false-1")
 			timesByAlgorithm.Put(label, stopwatch.Elapsed())
 			resultsByAlgorithm.Put(label, weight)
-			printer.Println("///////////////// RANKING3a-false-1 /////////////////")
+			printer.Println("///////////////// " + label + " /////////////////")
 		})
 		tasks = append(tasks, func() {
-			printer.Println("################# RANKING3a-true-1 ###################")
+			label := fmt.Sprintf("ranking3a-true-1")
+			printer.Println("################# " + label + " ###################")
 			stopwatch := util.StopwatchMakeStopped()
 			ranking := stathighs.RankingStatWeightProcess3{}
 			ranking.ALGO = 1
@@ -1087,56 +1088,62 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			weightFuture := ranking.RunUsingExternalStart(weightsMidRange, stopwatch)
 			channel_op.ChainCancel(cancel, weightFuture)
 			weight := weightFuture.WaitForResultOrNilValue()
-			label := fmt.Sprintf("ranking3a-true-1")
 			timesByAlgorithm.Put(label, stopwatch.Elapsed())
 			resultsByAlgorithm.Put(label, weight)
-			printer.Println("///////////////// RANKING3a-true-1 /////////////////")
+			printer.Println("///////////////// " + label + " /////////////////")
 		})
 	}
 
 	if runRanking3bVariants {
 		for FINAL := range 3 {
-			tasks = append(tasks, func() {
-				printer.Println("################# RANKING3b ###################")
-				stopwatch := util.StopwatchMakeStopped()
-				ranking := stathighs.RankingStatWeightProcess3b{}
-				ranking.SCALE1 = false
-				ranking.FINAL = FINAL
-				ranking.Init(printer, shortTimeout)
-				ranking.SetRequiredStats(requiredStats)
-				ranking.SetTargetRatios(targetRatio)
-				ranking.SupplyData(slices.Clone(mixedInputData))
-				weightFuture := ranking.RunSinglePassFromExternal(weightsMidRange, stopwatch)
-				channel_op.ChainCancel(cancel, weightFuture)
-				weight := weightFuture.WaitForResultOrNilValue()
-				label := fmt.Sprintf("ranking3b-scale_full-%d", FINAL)
-				timesByAlgorithm.Put(label, stopwatch.Elapsed())
-				resultsByAlgorithm.Put(label, weight)
-				printer.Println("///////////////// RANKING3b /////////////////")
-			})
-			tasks = append(tasks, func() {
-				printer.Println("################# RANKING3b ###################")
-				stopwatch := util.StopwatchMakeStopped()
-				ranking := stathighs.RankingStatWeightProcess3b{}
-				ranking.SCALE1 = true
-				ranking.FINAL = FINAL
-				ranking.Init(printer, shortTimeout)
-				ranking.SetRequiredStats(requiredStats)
-				ranking.SetTargetRatios(targetRatio)
-				ranking.SupplyData(slices.Clone(mixedInputData))
-				weightFuture := ranking.RunSinglePassFromExternal(weightsMidRange, stopwatch)
-				channel_op.ChainCancel(cancel, weightFuture)
-				weight := weightFuture.WaitForResultOrNilValue()
-				label := fmt.Sprintf("ranking3b-scale1-%d", FINAL)
-				timesByAlgorithm.Put(label, stopwatch.Elapsed())
-				resultsByAlgorithm.Put(label, weight)
-				printer.Println("///////////////// RANKING3b /////////////////")
-			})
+			for TOTALWEIGHT := range 2 {
+				for ALGO := range 2 {
+					tasks = append(tasks, func() {
+						label := fmt.Sprintf("ranking3b-scale_full-%d-%d-%d", FINAL, TOTALWEIGHT, ALGO)
+						printer.Println("################# " + label + " ###################")
+						stopwatch := util.StopwatchMakeStopped()
+						ranking := stathighs.RankingStatWeightProcess3b{}
+						ranking.SCALE1 = false
+						ranking.FINAL = FINAL
+						ranking.TOTALWEIGHT = TOTALWEIGHT
+						ranking.Init(printer, shortTimeout)
+						ranking.SetRequiredStats(requiredStats)
+						ranking.SetTargetRatios(targetRatio)
+						ranking.SupplyData(slices.Clone(mixedInputData))
+						weightFuture := ranking.RunSinglePassFromExternal(weightsMidRange, stopwatch)
+						channel_op.ChainCancel(cancel, weightFuture)
+						weight := weightFuture.WaitForResultOrNilValue()
+						timesByAlgorithm.Put(label, stopwatch.Elapsed())
+						resultsByAlgorithm.Put(label, weight)
+						printer.Println("///////////////// " + label + " /////////////////")
+					})
+					tasks = append(tasks, func() {
+						label := fmt.Sprintf("ranking3b-no_scale-%d-%d-%d", FINAL, TOTALWEIGHT, ALGO)
+						printer.Println("################# " + label + " ###################")
+						stopwatch := util.StopwatchMakeStopped()
+						ranking := stathighs.RankingStatWeightProcess3b{}
+						ranking.SCALE1 = true
+						ranking.FINAL = FINAL
+						ranking.TOTALWEIGHT = TOTALWEIGHT
+						ranking.Init(printer, shortTimeout)
+						ranking.SetRequiredStats(requiredStats)
+						ranking.SetTargetRatios(targetRatio)
+						ranking.SupplyData(slices.Clone(mixedInputData))
+						weightFuture := ranking.RunSinglePassFromExternal(weightsMidRange, stopwatch)
+						channel_op.ChainCancel(cancel, weightFuture)
+						weight := weightFuture.WaitForResultOrNilValue()
+						timesByAlgorithm.Put(label, stopwatch.Elapsed())
+						resultsByAlgorithm.Put(label, weight)
+						printer.Println("///////////////// " + label + " /////////////////")
+					})
+				}
+			}
 		}
 	}
 	if runRanking3bPreferred {
 		tasks = append(tasks, func() {
-			printer.Println("################# RANKING3b ###################")
+			label := fmt.Sprintf("ranking3b-scale_full-%d", 0)
+			printer.Println("################# " + label + " ###################")
 			stopwatch := util.StopwatchMakeStopped()
 			ranking := stathighs.RankingStatWeightProcess3b{}
 			ranking.SCALE1 = false
@@ -1148,10 +1155,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			weightFuture := ranking.RunSinglePassFromExternal(weightsMidRange, stopwatch)
 			channel_op.ChainCancel(cancel, weightFuture)
 			weight := weightFuture.WaitForResultOrNilValue()
-			label := fmt.Sprintf("ranking3b-scale_full-%d", 0)
 			timesByAlgorithm.Put(label, stopwatch.Elapsed())
 			resultsByAlgorithm.Put(label, weight)
-			printer.Println("///////////////// RANKING3b /////////////////")
+			printer.Println("///////////////// " + label + " /////////////////")
 		})
 	}
 
