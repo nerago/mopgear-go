@@ -109,8 +109,8 @@ TEXT ·StatBlock_StatBlockFloat_MultiplyForTotalSum(SB), NOSPLIT|NOFRAME, $0-24
     // load the float64 vector in parts as float32
     VCVTPD2PSY       (AX), X0
     VCVTPD2PSY     32(AX), X1
-    VINSERTF128  $1, X0, Y1, Y1  // not sure about endian lineup
-    VCVTPD2PSY      64(AX), X3
+    VINSERTF128    $1, X0, Y1, Y1  // not sure about endian lineup
+    VCVTPD2PSY     64(AX), X3
 
     // load the uint32 vector
     VCVTDQ2PS        (BX), Y2

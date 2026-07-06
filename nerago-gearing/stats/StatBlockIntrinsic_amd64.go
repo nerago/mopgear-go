@@ -82,3 +82,26 @@ func StatBlock_StatBlockFloat_MultiplyForTotalSum2(a *StatBlockFloat, b *StatBlo
 
 	return parts[0] + parts[1] + parts[2] + parts[3]
 }
+
+func StatBlock_StatBlockFloat_MultiplyForTotalSum2_LowerAccuracy(a *StatBlockFloat, b *StatBlock) float32 {
+	a1 := archsimd.LoadFloat64x4Slice(a[0:4]).ConvertToFloat32()
+	a2 := archsimd.LoadFloat64x4Slice(a[4:8]).ConvertToFloat32()
+	a12 := archsimd.Float32x8{}
+	a12.SetLo(a1)
+	a12.SetHi(a2)
+	a3 := archsimd.LoadFloat64x4Slice(a[8:12]).ConvertToFloat32()
+
+	b1 := archsimd.LoadUint32x8Slice(b[0:8]).ConvertToFloat32()
+	b2 := archsimd.LoadUint32x4Slice(b[8:12]).ConvertToFloat32()
+
+	total1 := a12.Mul(b1)
+	total2 := archsimd.Float32x8{}
+	total2.SetLo(a3.Mul(b2))
+
+	total := total1.Add(total2)
+
+	parts := [8]float32{}
+	total.Store(&parts)
+
+	return parts[0] + parts[1] + parts[2] + parts[3] + parts[4] + parts[5] + parts[6] + parts[7]
+}

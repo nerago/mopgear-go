@@ -238,6 +238,11 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 	// inlined2, back to full pointers accuracy = 92.441813 //Duration = 13m10.6024466s
 	// all still had unnecessary internal printers
 
+	//( Pawn: v1: "Gearing Weights": Class=Paladin,Strength=5.3900000000,Stamina=7.4731250000,CritRating=2.6908057851,
+	//HasteRating=7.4200000000,ExpertiseRating=-0.5654897163,MasteryRating=8.0470000000,DodgeRating=4.8125000000,ParryRating=3.2600000000, )
+	//accuracy = 92.459276
+	//Duration = 11m6.0417638s
+
 	// Search2
 	// basically working: accuracy = 92.120870 Duration = 6.2703352s
 }
