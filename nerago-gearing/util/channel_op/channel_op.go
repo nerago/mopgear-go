@@ -8,6 +8,9 @@ import (
 func makeOutputChannel[R any]() chan R {
 	return make(chan R, 128)
 }
+func makeOutputChannelUnbuffered[R any]() chan R {
+	return make(chan R)
+}
 
 func Map_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T) R) <-chan R {
 	outputChannel := makeOutputChannel[R]()
@@ -392,6 +395,22 @@ func SeqToChannel[T any](seq iter.Seq[T]) <-chan T {
 	go func() {
 		for value := range seq {
 			outputChannel <- value
+		}
+		close(outputChannel)
+	}()
+	return outputChannel
+}
+
+func SeqToChannel_Cancellable[T any](seq iter.Seq[T], cancel CancelSignal) <-chan T {
+	outputChannel := makeOutputChannelUnbuffered[T]()
+	go func() {
+	outer:
+		for value := range seq {
+			select {
+			case outputChannel <- value:
+			case <-cancel.CancelSignalChannel():
+				break outer
+			}
 		}
 		close(outputChannel)
 	}()

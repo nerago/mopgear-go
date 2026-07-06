@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/solver/stathighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 	"paladin_gearing_go/util/util_rank"
 )
 
@@ -32,7 +33,7 @@ func (ws *WeightSearcher1) Init(weightStats []stats.StatType, targetRatio stats.
 	ws.printer = printer
 }
 
-func (ws *WeightSearcher1) Run() stathighs.WeightResult {
+func (ws *WeightSearcher1) Run(cancel channel_op.CancelSignal) stathighs.WeightResult {
 	progress := 0
 	requiredSims := ws.targetRatio.NonZeroTypes()
 
@@ -45,6 +46,10 @@ func (ws *WeightSearcher1) Run() stathighs.WeightResult {
 			ws.printer.Printf("%6d %6.3f %6.3f\n", progress, accuracy, bestAccuracy)
 		}
 		progress++
+
+		if cancel.ShouldFinish() {
+			break
+		}
 	}
 
 	progress = 0
@@ -54,8 +59,14 @@ func (ws *WeightSearcher1) Run() stathighs.WeightResult {
 		bestResult.Offer(&updatedWeight, updatedAccuracy)
 		ws.printer.Printf("%6d %6.3f %6.3f\n", progress, updatedAccuracy, bestResult.BestValue)
 		progress++
+
+		if cancel.ShouldFinish() {
+			break
+		}
 	}
-	return bestResult.GetBestOrPanic()
+
+	bestWeight := bestResult.GetBestOrNilValue()
+	return bestWeight.ScaleForBaseStat(ws.weightStats[0])
 }
 
 func (ws *WeightSearcher1) makeSpacedWeights() iter.Seq[stathighs.WeightResult] {

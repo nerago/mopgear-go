@@ -218,6 +218,17 @@ func (future *FutureCancellable[T]) WaitForResultOrPanic() T {
 	return value
 }
 
+func (future *FutureCancellable[T]) WaitForResultOrNilValue() T {
+	future.verifyCanWait()
+	value, hasValue := future.resultFromChannel()
+	if hasValue {
+		return value
+	} else {
+		var nilValue T
+		return nilValue
+	}
+}
+
 func (future *FutureCancellable[T]) WaitForResultAsOptional() util.Optional[T] {
 	future.verifyCanWait()
 	value, hasValue := future.resultFromChannel()

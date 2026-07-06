@@ -226,7 +226,7 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 	ranking.Init(weightStats, targetRatio, printer)
 	ranking.SupplyData(mixedInputData)
 	ranking.SetRanges(-1.0, 10.0)
-	weight := ranking.Run()
+	weight := ranking.Run(channel_op.CancelSignal_Make())
 	tools.WritePawnString(weight, printer)
 	printer.Printf("accuracy = %f\n", weightfind.EvaluateAccuracy(weight, mixedInputData, targetRatio))
 
@@ -639,27 +639,29 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	tasks := make([]func(), 0)
 
 	reportOnTweakedVersions := false
-	standardTimeout := 1000
-	shortTimeout := 400
+	standardTimeout := 2500
+	shortTimeout := 800
 
-	runBasic := false
+	runBasic := true
 	runFormulaVariants := true
-	runFitting := false
+	runFitting := true
 
-	runGrid1Original := false
-	runGrid1Variants := false
-	runGrid1VariantsFewer := false
-	runGrid1C := false
-	runGrid2 := false
-	runSelGrid := false
+	runGrid1Original := true
+	runGrid1Variants := true
+	runGrid1VariantsFewer := true
+	runGrid1C := true
+	runGrid2 := true
+	runSelGrid := true
 
-	runRankingOlder := false
-	runRanking3aPreferred := false
-	runRanking3aVariants := false
-	runRanking3bVariants := false
-	runRanking3bPreferred := false
-	runRanking4 := false
-	runRanking5 := false
+	runRankingOlder := true
+	runRanking3aPreferred := true
+	runRanking3aVariants := true
+	runRanking3bVariants := true
+	runRanking3bPreferred := true
+	runRanking4 := true
+	runRanking5 := true
+
+	runSearches := true
 
 	if runBasic {
 		tasks = append(tasks, func() {
@@ -673,7 +675,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			for _, data := range inputDataBasic {
 				basic.AddSimData(data.IncrementStat, uint32(data.IncrementValue), data.SimResult)
 			}
-			resultsByAlgorithm.Put("basic", basic.Run(stopwatch).WaitForResultOrPanic())
+			weightFuture := basic.Run(stopwatch)
+			channel_op.ChainCancel(cancel, weightFuture)
+			resultsByAlgorithm.Put("basic", weightFuture.WaitForResultOrNilValue())
 			timesByAlgorithm.Put("basic", stopwatch.Elapsed())
 			printer.Println("///////////////// BASIC /////////////////")
 		})
@@ -687,7 +691,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			comp.SetTargetRatios(targetRatio)
 			comp.SetMinimumIncludeRate(1)
 			comp.SupplyData(slices.Clone(inputDataRandom))
-			resultsByAlgorithm.Put("form", comp.Run(stopwatch, standardTimeout).WaitForResultOrPanic())
+			weightFuture := comp.Run(stopwatch, standardTimeout)
+			channel_op.ChainCancel(cancel, weightFuture)
+			resultsByAlgorithm.Put("form", weightFuture.WaitForResultOrNilValue())
 			timesByAlgorithm.Put("form", stopwatch.Elapsed())
 			printer.Println("///////////////// FORMULA /////////////////")
 		})
@@ -752,7 +758,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			fitting.SetTargetRatios(targetRatio)
 			fitting.SetLazyMode(true)
 			fitting.SupplyDataFromStandard(inputDataRandom)
-			resultsByAlgorithm.Put("fitting", fitting.Run(stopwatch))
+			resultsByAlgorithm.Put("fitting", fitting.Run(stopwatch, cancel))
 			timesByAlgorithm.Put("fitting", stopwatch.Elapsed())
 			printer.Println("///////////////// FITTING /////////////////")
 		})
@@ -767,7 +773,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			grid1.SetRequiredStats(requiredStats)
 			grid1.SetTargetRatios(targetRatio)
 			grid1.SupplyData(slices.Clone(inputDataGrid))
-			resultsByAlgorithm.Put("grid1", grid1.Run(stopwatch).WaitForResultOrPanic())
+			weightFuture := grid1.Run(stopwatch)
+			channel_op.ChainCancel(cancel, weightFuture)
+			resultsByAlgorithm.Put("grid1", weightFuture.WaitForResultOrNilValue())
 			timesByAlgorithm.Put("grid1", stopwatch.Elapsed())
 			printer.Println("///////////////// GRID1 /////////////////")
 		})
@@ -783,7 +791,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			grid1.SetRequiredStats(requiredStats)
 			grid1.SetTargetRatios(targetRatio)
 			grid1.SupplyData(slices.Clone(inputDataGrid))
-			resultsByAlgorithm.Put("grid1-1", grid1.Run(stopwatch).WaitForResultOrPanic())
+			weightFuture := grid1.Run(stopwatch)
+			channel_op.ChainCancel(cancel, weightFuture)
+			resultsByAlgorithm.Put("grid1-1", weightFuture.WaitForResultOrNilValue())
 			timesByAlgorithm.Put("grid1-1", stopwatch.Elapsed())
 			printer.Println("///////////////// GRID1 /////////////////")
 		})
@@ -803,7 +813,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 						grid1.SetTargetRatios(targetRatio)
 						grid1.SupplyData(slices.Clone(inputDataGrid))
 						label := fmt.Sprintf("grid1b-outlier%d-scale%d-round%d", OUTLIER, SCALEMODE, ROUNDMODE)
-						resultsByAlgorithm.Put(label, grid1.Run(stopwatch).WaitForResultOrPanic())
+						weightFuture := grid1.Run(stopwatch)
+						channel_op.ChainCancel(cancel, weightFuture)
+						resultsByAlgorithm.Put(label, weightFuture.WaitForResultOrNilValue())
 						timesByAlgorithm.Put(label, stopwatch.Elapsed())
 						printer.Println("///////////////// GRID1B /////////////////")
 					})
@@ -824,7 +836,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			grid1.SetTargetRatios(targetRatio)
 			grid1.SupplyData(slices.Clone(inputDataGrid))
 			label := fmt.Sprintf("grid1b-outlier%d-scale%d-round%d", 3, SCALEMODE, 2)
-			resultsByAlgorithm.Put(label, grid1.Run(stopwatch).WaitForResultOrPanic())
+			weightFuture := grid1.Run(stopwatch)
+			channel_op.ChainCancel(cancel, weightFuture)
+			resultsByAlgorithm.Put(label, weightFuture.WaitForResultOrNilValue())
 			timesByAlgorithm.Put(label, stopwatch.Elapsed())
 			printer.Println("///////////////// GRID1B /////////////////")
 		}
@@ -844,7 +858,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 					grid1.SetTargetRatios(targetRatio)
 					grid1.SupplyData(slices.Clone(inputDataGrid))
 					label := fmt.Sprintf("grid1c-round%d-rescale%d", ROUNDMODE, RESCALE)
-					resultsByAlgorithm.Put(label, grid1.Run(stopwatch).WaitForResultOrPanic())
+					weightFuture := grid1.Run(stopwatch)
+					channel_op.ChainCancel(cancel, weightFuture)
+					resultsByAlgorithm.Put(label, weightFuture.WaitForResultOrNilValue())
 					timesByAlgorithm.Put(label, stopwatch.Elapsed())
 					printer.Println("///////////////// GRID1C /////////////////")
 				})
@@ -862,7 +878,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			grid2.SetRequiredStats(requiredStats)
 			grid2.SetTargetRatios(targetRatio)
 			grid2.SupplyData(slices.Clone(inputDataGrid))
-			resultsByAlgorithm.Put("grid2-1", grid2.Run(stopwatch).WaitForResultOrPanic())
+			weightFuture := grid2.Run(stopwatch)
+			channel_op.ChainCancel(cancel, weightFuture)
+			resultsByAlgorithm.Put("grid2-1", weightFuture.WaitForResultOrNilValue())
 			timesByAlgorithm.Put("grid2-1", stopwatch.Elapsed())
 			printer.Println("///////////////// GRID2-1 /////////////////")
 		})
@@ -875,7 +893,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			grid2.SetRequiredStats(requiredStats)
 			grid2.SetTargetRatios(targetRatio)
 			grid2.SupplyData(slices.Clone(inputDataGrid))
-			resultsByAlgorithm.Put("grid2-2", grid2.Run(stopwatch).WaitForResultOrPanic())
+			weightFuture := grid2.Run(stopwatch)
+			channel_op.ChainCancel(cancel, weightFuture)
+			resultsByAlgorithm.Put("grid2-2", weightFuture.WaitForResultOrNilValue())
 			timesByAlgorithm.Put("grid2-2", stopwatch.Elapsed())
 			printer.Println("///////////////// GRID2-2 /////////////////")
 		})
@@ -888,7 +908,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			grid2.SetRequiredStats(requiredStats)
 			grid2.SetTargetRatios(targetRatio)
 			grid2.SupplyData(slices.Clone(inputDataGrid))
-			resultsByAlgorithm.Put("grid2-12", grid2.Run(stopwatch).WaitForResultOrPanic())
+			weightFuture := grid2.Run(stopwatch)
+			channel_op.ChainCancel(cancel, weightFuture)
+			resultsByAlgorithm.Put("grid2-12", weightFuture.WaitForResultOrNilValue())
 			timesByAlgorithm.Put("grid2-12", stopwatch.Elapsed())
 			printer.Println("///////////////// GRID2-12 /////////////////")
 		})
@@ -902,7 +924,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			grid2.SetRequiredStats(requiredStats)
 			grid2.SetTargetRatios(targetRatio)
 			grid2.SupplyData(slices.Clone(inputDataGrid))
-			resultsByAlgorithm.Put("grid2-1001", grid2.Run(stopwatch).WaitForResultOrPanic())
+			weightFuture := grid2.Run(stopwatch)
+			channel_op.ChainCancel(cancel, weightFuture)
+			resultsByAlgorithm.Put("grid2-1001", weightFuture.WaitForResultOrNilValue())
 			timesByAlgorithm.Put("grid2-1001", stopwatch.Elapsed())
 			printer.Println("///////////////// GRID2-1001 /////////////////")
 		})
@@ -916,7 +940,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			grid2.SetRequiredStats(requiredStats)
 			grid2.SetTargetRatios(targetRatio)
 			grid2.SupplyData(slices.Clone(inputDataGrid))
-			resultsByAlgorithm.Put("grid2-1002", grid2.Run(stopwatch).WaitForResultOrPanic())
+			weightFuture := grid2.Run(stopwatch)
+			channel_op.ChainCancel(cancel, weightFuture)
+			resultsByAlgorithm.Put("grid2-1002", weightFuture.WaitForResultOrNilValue())
 			timesByAlgorithm.Put("grid2-1002", stopwatch.Elapsed())
 			printer.Println("///////////////// GRID2-1002 /////////////////")
 		})
@@ -930,7 +956,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			grid2.SetRequiredStats(requiredStats)
 			grid2.SetTargetRatios(targetRatio)
 			grid2.SupplyData(slices.Clone(inputDataGrid))
-			resultsByAlgorithm.Put("grid2-1012", grid2.Run(stopwatch).WaitForResultOrPanic())
+			weightFuture := grid2.Run(stopwatch)
+			channel_op.ChainCancel(cancel, weightFuture)
+			resultsByAlgorithm.Put("grid2-1012", weightFuture.WaitForResultOrNilValue())
 			timesByAlgorithm.Put("grid2-1012", stopwatch.Elapsed())
 			printer.Println("///////////////// GRID2-1012 /////////////////")
 		})
@@ -946,7 +974,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(mixedInputData))
 			ranking.RANKMODE = 0
-			resultsByAlgorithm.Put("ranking0", ranking.Run(stopwatch, standardTimeout).WaitForResultOrPanic())
+			weightFuture := ranking.Run(stopwatch, standardTimeout)
+			channel_op.ChainCancel(cancel, weightFuture)
+			resultsByAlgorithm.Put("ranking0", weightFuture.WaitForResultOrNilValue())
 			timesByAlgorithm.Put("ranking0", stopwatch.Elapsed())
 			printer.Println("///////////////// RANKING0 /////////////////")
 		})
@@ -960,7 +990,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(mixedInputData))
 			ranking.RANKMODE = 1
-			resultsByAlgorithm.Put("ranking1", ranking.Run(stopwatch, standardTimeout).WaitForResultOrPanic())
+			weightFuture := ranking.Run(stopwatch, standardTimeout)
+			channel_op.ChainCancel(cancel, weightFuture)
+			resultsByAlgorithm.Put("ranking1", weightFuture.WaitForResultOrNilValue())
 			timesByAlgorithm.Put("ranking1", stopwatch.Elapsed())
 			printer.Println("///////////////// RANKING1 /////////////////")
 		})
@@ -974,7 +1006,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(mixedInputData))
 			ranking.RANKMODE = 2
-			resultsByAlgorithm.Put("ranking2", ranking.Run(stopwatch, standardTimeout).WaitForResultOrPanic())
+			weightFuture := ranking.Run(stopwatch, standardTimeout)
+			channel_op.ChainCancel(cancel, weightFuture)
+			resultsByAlgorithm.Put("ranking2", weightFuture.WaitForResultOrNilValue())
 			timesByAlgorithm.Put("ranking2", stopwatch.Elapsed())
 			printer.Println("///////////////// RANKING2 /////////////////")
 		})
@@ -992,7 +1026,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 				ranking.SetRequiredStats(requiredStats)
 				ranking.SetTargetRatios(targetRatio)
 				ranking.SupplyData(slices.Clone(mixedInputData))
-				weight := ranking.Run(stopwatch).WaitForResultOrPanic()
+				weightFuture := ranking.Run(stopwatch)
+				channel_op.ChainCancel(cancel, weightFuture)
+				weight := weightFuture.WaitForResultOrNilValue()
 				label := fmt.Sprintf("ranking3a-scale_stat-algo%d", ALGO)
 				timesByAlgorithm.Put(label, stopwatch.Elapsed())
 				resultsByAlgorithm.Put(label, weight)
@@ -1008,7 +1044,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 				ranking.SetRequiredStats(requiredStats)
 				ranking.SetTargetRatios(targetRatio)
 				ranking.SupplyData(slices.Clone(mixedInputData))
-				weight := ranking.Run(stopwatch).WaitForResultOrPanic()
+				weightFuture := ranking.Run(stopwatch)
+				channel_op.ChainCancel(cancel, weightFuture)
+				weight := weightFuture.WaitForResultOrNilValue()
 				label := fmt.Sprintf("ranking3a-scale1-algo%d", ALGO)
 				timesByAlgorithm.Put(label, stopwatch.Elapsed())
 				resultsByAlgorithm.Put(label, weight)
@@ -1028,7 +1066,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(mixedInputData))
-			weight := ranking.RunUsingExternalStart(weightsMidRange, stopwatch).WaitForResultOrPanic()
+			weightFuture := ranking.RunUsingExternalStart(weightsMidRange, stopwatch)
+			channel_op.ChainCancel(cancel, weightFuture)
+			weight := weightFuture.WaitForResultOrNilValue()
 			label := fmt.Sprintf("ranking3a-false-1")
 			timesByAlgorithm.Put(label, stopwatch.Elapsed())
 			resultsByAlgorithm.Put(label, weight)
@@ -1044,7 +1084,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(mixedInputData))
-			weight := ranking.RunUsingExternalStart(weightsMidRange, stopwatch).WaitForResultOrPanic()
+			weightFuture := ranking.RunUsingExternalStart(weightsMidRange, stopwatch)
+			channel_op.ChainCancel(cancel, weightFuture)
+			weight := weightFuture.WaitForResultOrNilValue()
 			label := fmt.Sprintf("ranking3a-true-1")
 			timesByAlgorithm.Put(label, stopwatch.Elapsed())
 			resultsByAlgorithm.Put(label, weight)
@@ -1064,7 +1106,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 				ranking.SetRequiredStats(requiredStats)
 				ranking.SetTargetRatios(targetRatio)
 				ranking.SupplyData(slices.Clone(mixedInputData))
-				weight := ranking.RunSinglePassFromExternal(weightsMidRange, stopwatch).WaitForResultOrPanic()
+				weightFuture := ranking.RunSinglePassFromExternal(weightsMidRange, stopwatch)
+				channel_op.ChainCancel(cancel, weightFuture)
+				weight := weightFuture.WaitForResultOrNilValue()
 				label := fmt.Sprintf("ranking3b-scale_full-%d", FINAL)
 				timesByAlgorithm.Put(label, stopwatch.Elapsed())
 				resultsByAlgorithm.Put(label, weight)
@@ -1080,7 +1124,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 				ranking.SetRequiredStats(requiredStats)
 				ranking.SetTargetRatios(targetRatio)
 				ranking.SupplyData(slices.Clone(mixedInputData))
-				weight := ranking.RunSinglePassFromExternal(weightsMidRange, stopwatch).WaitForResultOrPanic()
+				weightFuture := ranking.RunSinglePassFromExternal(weightsMidRange, stopwatch)
+				channel_op.ChainCancel(cancel, weightFuture)
+				weight := weightFuture.WaitForResultOrNilValue()
 				label := fmt.Sprintf("ranking3b-scale1-%d", FINAL)
 				timesByAlgorithm.Put(label, stopwatch.Elapsed())
 				resultsByAlgorithm.Put(label, weight)
@@ -1099,7 +1145,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(mixedInputData))
-			weight := ranking.RunSinglePassFromExternal(weightsMidRange, stopwatch).WaitForResultOrPanic()
+			weightFuture := ranking.RunSinglePassFromExternal(weightsMidRange, stopwatch)
+			channel_op.ChainCancel(cancel, weightFuture)
+			weight := weightFuture.WaitForResultOrNilValue()
 			label := fmt.Sprintf("ranking3b-scale_full-%d", 0)
 			timesByAlgorithm.Put(label, stopwatch.Elapsed())
 			resultsByAlgorithm.Put(label, weight)
@@ -1157,14 +1205,48 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			selgrid.SetRequiredStats(requiredStats)
 			selgrid.SetTargetRatios(targetRatio)
 			selgrid.SupplyData(inputDataGrid)
-			resultsByAlgorithm.Put("selgrid", selgrid.Run(stopwatch).WaitForResultOrPanic())
+			future := selgrid.Run(stopwatch)
+			channel_op.ChainCancel(cancel, future)
+			resultsByAlgorithm.Put("selgrid", future.WaitForResultOrNilValue())
 			timesByAlgorithm.Put("selgrid", stopwatch.Elapsed())
 			printer.Println("///////////////// SELECTIVE GRID /////////////////")
 		})
 	}
 
+	if runSearches {
+		tasks = append(tasks, func() {
+			printer.Println("################# SEARCH0 ###################")
+			stopwatch := util.StopwatchMakeStarted()
+			search := weightfind.WeightSearcher0{}
+			search.Init(requiredStats, targetRatio, mixedInputData, printer)
+			resultsByAlgorithm.Put("search0", search.Run(cancel))
+			timesByAlgorithm.Put("search0", stopwatch.Elapsed())
+			printer.Println("///////////////// SEARCH0 /////////////////")
+		})
+		tasks = append(tasks, func() {
+			printer.Println("################# SEARCH1 ###################")
+			stopwatch := util.StopwatchMakeStarted()
+			search := weightfind.WeightSearcher1{}
+			search.Init(requiredStats, targetRatio, mixedInputData, printer)
+			resultsByAlgorithm.Put("search1", search.Run(cancel))
+			timesByAlgorithm.Put("search1", stopwatch.Elapsed())
+			printer.Println("///////////////// SEARCH1 /////////////////")
+		})
+		tasks = append(tasks, func() {
+			printer.Println("################# SEARCH2 ###################")
+			stopwatch := util.StopwatchMakeStarted()
+			search := weightfind.WeightSearcher2{}
+			search.Init(requiredStats, targetRatio, printer)
+			search.SupplyData(mixedInputData)
+			search.SetRanges(-1.0, 10.0)
+			resultsByAlgorithm.Put("search2", search.Run(cancel))
+			timesByAlgorithm.Put("search2", stopwatch.Elapsed())
+			printer.Println("///////////////// SEARCH2 /////////////////")
+		})
+	}
+
 	channel_op.CancelOnKeyPress(cancel)
-	channel_op.ForEach_Slice_Cancellable(10, tasks, cancel, func(f *func()) {
+	channel_op.ForEach_Slice_Cancellable(5, tasks, cancel, func(f *func()) {
 		(*f)()
 	})
 

@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/solver/stathighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/channel_op"
 	"paladin_gearing_go/util/util_rank"
 	"slices"
 )
@@ -68,8 +69,8 @@ func (ws *WeightSearcher2) SetRanges(weightMin, weightMax float64) {
 	})
 }
 
-func (ws *WeightSearcher2) Run() stathighs.WeightResult {
-	for {
+func (ws *WeightSearcher2) Run(cancel channel_op.CancelSignal) stathighs.WeightResult {
+	for cancel.ShouldContinue() {
 		bound, hasValue := ws.queue.Pop()
 		if !hasValue {
 			break
@@ -86,7 +87,9 @@ func (ws *WeightSearcher2) Run() stathighs.WeightResult {
 			ws.opFinal(bound)
 		}
 	}
-	return ws.bestResult.GetBestOrPanic()
+
+	bestWeight := ws.bestResult.GetBestOrNilValue()
+	return bestWeight.ScaleForBaseStat(ws.statTypes[0])
 }
 
 func (ws *WeightSearcher2) evaluateScore(weightArray []float64) float64 {

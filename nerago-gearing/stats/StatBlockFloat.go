@@ -25,6 +25,10 @@ func StatBlockFloat_of2(statA StatType, valueA float64, statB StatType, valueB f
 	return block
 }
 
+func (block *StatBlockFloat) Clone() StatBlockFloat {
+	return *block
+}
+
 func (block *StatBlockFloat) MultiplyScalar(factor float64, out *StatBlockFloat) {
 	for i := range block {
 		out[i] = block[i] * factor

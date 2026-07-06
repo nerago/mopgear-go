@@ -87,8 +87,20 @@ func (wr *WeightResult) ScaleBackToMax(weight float64) WeightResult {
 	return rescaled
 }
 
+func (wr *WeightResult) ScaleForBaseStat(statType stats.StatType) WeightResult {
+	factor := 1.0
+	value := wr.Get(statType)
+	if value != 0 {
+		factor = 1.0 / value
+	}
+
+	rescaled := wr.Clone()
+	wr.content.MultiplyScalar(factor, &rescaled.content)
+	return rescaled
+}
+
 func (wr *WeightResult) Clone() WeightResult {
-	return WeightResult{wr.content}
+	return WeightResult{wr.content.Clone()}
 }
 
 func (wr *WeightResult) String() string {

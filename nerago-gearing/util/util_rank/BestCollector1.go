@@ -46,6 +46,15 @@ func (collect *BestCollector1[T]) GetBestOptional() util.Optional[T] {
 	}
 }
 
+func (collect *BestCollector1[T]) GetBestOrNilValue() T {
+	if collect.hasBest {
+		return *collect.BestObject
+	} else {
+		var nilValue T
+		return nilValue
+	}
+}
+
 func (collect *BestCollector1[T]) Offer(object *T, value float64) {
 	if collect.isBetter(value) || !collect.hasBest {
 		collect.BestObject = object

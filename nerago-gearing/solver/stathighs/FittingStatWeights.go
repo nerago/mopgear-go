@@ -98,7 +98,8 @@ func (fiteach *FittingEachStatWeightProcess) SupplyDataFromStandard(inputData []
 	fiteach.inputData = inputData
 }
 
-func (fiteach *FittingEachStatWeightProcess) RunDetailedResults() util.MapMap[stats.StatType, stats.SimType, map[StatRange]FittingSingleStatResult] {
+func (fiteach *FittingEachStatWeightProcess) RunDetailedResults(cancel channel_op.CancelSignal) util.MapMap[stats.StatType, stats.SimType, map[StatRange]FittingSingleStatResult] {
+outer:
 	for _, statType := range fiteach.requiredStats {
 		for _, simType := range fiteach.requiredSims {
 			// TODO holding printer?
@@ -107,12 +108,16 @@ func (fiteach *FittingEachStatWeightProcess) RunDetailedResults() util.MapMap[st
 			fields.process.SetLazyMode(fiteach.lazyMode)
 			fields.process.SupplyDataFromStandard(fiteach.inputData)
 			fiteach.each.Put(statType, simType, &fields)
+
+			if cancel.ShouldFinish() {
+				break outer
+			}
 		}
 	}
 
-	channelEach := channel_op.SeqToChannel(fiteach.each.SeqValues())
+	channelEach := channel_op.SeqToChannel_Cancellable(fiteach.each.SeqValues(), cancel)
 	channel_op.ForEach_Channel(10, channelEach, func(fields *fittingEachFields) {
-		fields.resultMap = fields.process.Run()
+		fields.resultMap = fields.process.Run(cancel)
 	})
 
 	resultMap := util.MapMap[stats.StatType, stats.SimType, map[StatRange]FittingSingleStatResult]{}
@@ -122,8 +127,8 @@ func (fiteach *FittingEachStatWeightProcess) RunDetailedResults() util.MapMap[st
 	return resultMap
 }
 
-func (fiteach *FittingEachStatWeightProcess) Run(stopwatch *util.Stopwatch) WeightResult {
-	detailResult := fiteach.RunDetailedResults()
+func (fiteach *FittingEachStatWeightProcess) Run(stopwatch *util.Stopwatch, cancel channel_op.CancelSignal) WeightResult {
+	detailResult := fiteach.RunDetailedResults(cancel)
 
 	for byRange := range detailResult.SeqValues() {
 		for _, detail := range byRange {
@@ -200,10 +205,10 @@ func (fitseg *FittingSingleStatSegmentsProcess) SupplyDataFromStandard(inputData
 	fitseg.inputDataOriginal = util.MapSliceAsNew(inputData, func(w *WeightInput) *WeightInput { return w })
 }
 
-func (fitseg *FittingSingleStatSegmentsProcess) Run() map[StatRange]FittingSingleStatResult {
+func (fitseg *FittingSingleStatSegmentsProcess) Run(cancel channel_op.CancelSignal) map[StatRange]FittingSingleStatResult {
 	// fitseg.runFitAll()
 
-	fitseg.runInitial()
+	fitseg.runInitial(cancel)
 	if fitseg.lazyMode {
 		return fitseg.segments
 	}
@@ -217,13 +222,13 @@ func (fitseg *FittingSingleStatSegmentsProcess) Run() map[StatRange]FittingSingl
 		if ratioOfOverall < 0.02 || len(nextData) < 3 {
 			// drop it
 		} else if ratioOfOverall < 0.05 || len(nextData) < 8 {
-			fitseg.runNextSegment(nextData, nextRange, 1)
+			fitseg.runNextSegment(nextData, nextRange, 1, cancel)
 		} else if ratioOfOverall < 0.15 || len(nextData) < 20 {
-			fitseg.runNextSegment(nextData, nextRange, 0.8)
+			fitseg.runNextSegment(nextData, nextRange, 0.8, cancel)
 		} else if ratioOfOverall < 0.30 {
-			fitseg.runNextSegment(nextData, nextRange, 0.4)
+			fitseg.runNextSegment(nextData, nextRange, 0.4, cancel)
 		} else {
-			fitseg.runNextSegment(nextData, nextRange, 0.2)
+			fitseg.runNextSegment(nextData, nextRange, 0.2, cancel)
 		}
 	}
 
@@ -247,12 +252,13 @@ func (fitseg *FittingSingleStatSegmentsProcess) runFitAll() {
 	}
 }
 
-func (fitseg *FittingSingleStatSegmentsProcess) runInitial() {
+func (fitseg *FittingSingleStatSegmentsProcess) runInitial(cancel channel_op.CancelSignal) {
 	fit := FittingSingleStatWeightProcess{}
 	fit.Init(fitseg.printer, fitseg.timeout)
 	fit.SetMinimumIncludeRate(0.3)
 	fit.SupplyDataFromStandard(fitseg.inputDataOriginal, fitseg.stat, fitseg.sim)
 	weightOptionalFuture := fit.Run()
+	channel_op.ChainCancel(cancel, weightOptionalFuture)
 	weightOptional := weightOptionalFuture.WaitForResultAsOptional()
 	if weight, hasWeight := weightOptional.GetWithFlag(); hasWeight {
 		statRange := StatRange{weight.Minimum, weight.Maximum}
@@ -263,12 +269,13 @@ func (fitseg *FittingSingleStatSegmentsProcess) runInitial() {
 	}
 }
 
-func (fitseg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []*WeightInput, inputRange StatRange, includeRate float64) {
+func (fitseg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []*WeightInput, inputRange StatRange, includeRate float64, cancel channel_op.CancelSignal) {
 	fit := FittingSingleStatWeightProcess{}
 	fit.Init(fitseg.printer, fitseg.timeout)
 	fit.SetMinimumIncludeRate(includeRate)
 	fit.SupplyDataFromStandard(inputData, fitseg.stat, fitseg.sim)
 	weightOptionalFuture := fit.Run()
+	channel_op.ChainCancel(cancel, weightOptionalFuture)
 	weightOptional := weightOptionalFuture.WaitForResultAsOptional()
 	if weight, hasWeight := weightOptional.GetWithFlag(); hasWeight {
 		minimum := max(inputRange.Minimum, weight.Minimum)
