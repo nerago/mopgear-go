@@ -1,5 +1,11 @@
 package util
 
+import (
+	"iter"
+	"slices"
+	"sync"
+)
+
 type QueueStackFilo[T any] struct {
 	array []T
 	top   int
@@ -47,4 +53,61 @@ func (stack *QueueStackFilo[T]) Pop() (T, bool) {
 	} else {
 		return nilValue, false
 	}
+}
+
+func (stack *QueueStackFilo[T]) ValueSeq() iter.Seq[T] {
+	return func(yield func(T) bool) {
+		for i := range stack.top {
+			if !yield(stack.array[i]) {
+				return
+			}
+		}
+	}
+}
+
+func (stack *QueueStackFilo[T]) ExportAsSlice() []T {
+	return slices.Clone(stack.array[0:stack.top])
+}
+
+func (stack *QueueStackFilo[T]) ResetFromSlice(content []T) {
+	if len(content) > len(stack.array) {
+		stack.array = make([]T, len(content)*2)
+	}
+
+	copy(stack.array, content)
+	stack.top = len(content)
+
+	var nilValue T
+	for i := stack.top; i < len(stack.array); i++ {
+		stack.array[i] = nilValue
+	}
+}
+
+type QueueStackFiloConcurrent[T any] struct {
+	inner QueueStackFilo[T]
+	mutex sync.Mutex
+}
+
+func (stack *QueueStackFiloConcurrent[T]) IsEmpty() bool {
+	stack.mutex.Lock()
+	defer stack.mutex.Unlock()
+	return stack.inner.IsEmpty()
+}
+
+func (stack *QueueStackFiloConcurrent[T]) Size() int {
+	stack.mutex.Lock()
+	defer stack.mutex.Unlock()
+	return stack.inner.Size()
+}
+
+func (stack *QueueStackFiloConcurrent[T]) Push(value T) {
+	stack.mutex.Lock()
+	defer stack.mutex.Unlock()
+	stack.inner.Push(value)
+}
+
+func (stack *QueueStackFiloConcurrent[T]) Pop() (T, bool) {
+	stack.mutex.Lock()
+	defer stack.mutex.Unlock()
+	return stack.inner.Pop()
 }

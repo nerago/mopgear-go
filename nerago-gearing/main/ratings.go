@@ -241,7 +241,7 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 
 	search := weightfind.WeightSearcher2{}
 	search.Init(weightStats, targetRatio, printer)
-	//search.Init(weightStats, targetRatio, util.PrintRecorder_Nop())
+	//search.Init(weightStats, targetRatio, nil)
 	search.SupplyData(mixedInputData)
 	search.SetRanges(-1.0, 10.0)
 

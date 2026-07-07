@@ -4,6 +4,7 @@ type Queue[T any] interface {
 	Push(T)
 	Pop() (T, bool)
 	IsEmpty() bool
+	Size() int
 }
 
 type QueueRingBufferFifo[T any] struct {
@@ -48,4 +49,14 @@ func (ring *QueueRingBufferFifo[T]) Pop() (T, bool) {
 
 func (ring *QueueRingBufferFifo[T]) IsEmpty() bool {
 	return ring.readIndex == ring.writeIndex
+}
+
+func (ring *QueueRingBufferFifo[T]) Size() int {
+	if ring.readIndex == ring.writeIndex {
+		return 0
+	} else if ring.readIndex < ring.writeIndex {
+		return ring.writeIndex - ring.readIndex
+	} else {
+		return ring.writeIndex - ring.readIndex + len(ring.array)
+	}
 }
