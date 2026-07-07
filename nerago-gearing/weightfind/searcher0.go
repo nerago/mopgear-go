@@ -38,7 +38,7 @@ func (ws *WeightSearcher0) Run(cancel channel_op.CancelSignal) stathighs.WeightR
 	best := util_rank.BestCollector1[stathighs.WeightResult]{}
 	progress := 0
 	for initialWeight := range ws.makeRandomWeights(100) {
-		updatedWeight, updatedAccuracy := weightTweakerInternal_FastNoRange(initialWeight, c_search0_tweak_start, ws.weightStats, simTypes, ws.targetRatio, ws.inputData)
+		updatedWeight, updatedAccuracy := weightTweakerInternal_Fast(initialWeight, c_search0_tweak_start, ws.weightStats, simTypes, ws.targetRatio, ws.inputData)
 		best.Offer(&updatedWeight, updatedAccuracy)
 		ws.printer.Printf("%6d %6.3f %6.3f\n", progress, updatedAccuracy, best.BestValue)
 		progress++

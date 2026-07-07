@@ -99,12 +99,12 @@ func statWeightsGrid_updateOne(label string, gearModel *model.Model, gearFile st
 	pawnRanking := tools.WritePawnString(weightsRanking, printer)
 
 	// TWEAK weights see if dumb changes can do better than grid
-	weightsGrid, accuracyGrid := WeightTweaker(weightsGrid, gearModel.StatsForWeighting, ratios, mixedInputData, printer)
+	weightsGrid, accuracyGrid := WeightTweakerWithLogging(weightsGrid, gearModel.StatsForWeighting, ratios, mixedInputData, printer)
 	printer.Println("Tweaked Grid Weights >>>>> " + label)
 	pawnGrid = tools.WritePawnString(weightsGrid, printer)
 
 	// TWEAK ranking weights
-	weightsRanking, accuracyRanking := WeightTweaker(weightsRanking, gearModel.StatsForWeighting, ratios, mixedInputData, printer)
+	weightsRanking, accuracyRanking := WeightTweakerWithLogging(weightsRanking, gearModel.StatsForWeighting, ratios, mixedInputData, printer)
 	printer.Println("Tweaked Ranking Weights >>>>> " + label)
 	pawnRanking = tools.WritePawnString(weightsRanking, printer)
 
