@@ -122,7 +122,7 @@ var simSortRangedCompares = [6]func(a, b *accuracyInfoSimStatRanged) int{
 		return cmp.Compare(b.dataSim.Get(stats.Sim_TMI), a.dataSim.Get(stats.Sim_TMI))
 	},
 	func(a, b *accuracyInfoSimStatRanged) int {
-		return cmp.Compare(b.dataSim.Get(stats.Sim_DEATH), b.dataSim.Get(stats.Sim_DEATH))
+		return cmp.Compare(b.dataSim.Get(stats.Sim_DEATH), a.dataSim.Get(stats.Sim_DEATH))
 	},
 }
 var simSortSimSingledCompares = [6]func(a, b *accuracyInfoSimOnly) int{
@@ -142,7 +142,7 @@ var simSortSimSingledCompares = [6]func(a, b *accuracyInfoSimOnly) int{
 		return cmp.Compare(b.dataSim.Get(stats.Sim_TMI), a.dataSim.Get(stats.Sim_TMI))
 	},
 	func(a, b *accuracyInfoSimOnly) int {
-		return cmp.Compare(b.dataSim.Get(stats.Sim_DEATH), b.dataSim.Get(stats.Sim_DEATH))
+		return cmp.Compare(b.dataSim.Get(stats.Sim_DEATH), a.dataSim.Get(stats.Sim_DEATH))
 	},
 }
 
@@ -229,7 +229,7 @@ func (ea *EvaluateAccuracyPrepared) EvaluateWeight(statWeights stathighs.WeightR
 	statRankRanges := ea.statRankRanges
 	statRankRanges[0] = &util.HiLoInt{Lo: 0, Hi: 0}
 	for i := 1; i < size; i++ {
-		if util.FloatsApproxEquals(prepared[i].statScore, prepared[i].statScore) {
+		if util.FloatsApproxEquals(prepared[i].statScore, prepared[i-1].statScore) {
 			prevRange := statRankRanges[i-1]
 			statRankRanges[i] = prevRange
 			prevRange.Hi = i

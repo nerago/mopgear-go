@@ -23,7 +23,6 @@ const (
 type WeightSearcher1 struct {
 	weightStats      []stats.StatType
 	targetRatio      stats.SimData
-	inputData        []stathighs.WeightInput
 	evaluateAccuracy EvaluateAccuracyPrepared
 	printer          *util.PrintRecorder
 }
@@ -35,17 +34,14 @@ func (ws *WeightSearcher1) Init(weightStats []stats.StatType, targetRatio stats.
 }
 
 func (ws *WeightSearcher1) SupplyData(inputData []stathighs.WeightInput) {
-	ws.inputData = inputData
 	ws.evaluateAccuracy.Init(inputData, ws.targetRatio)
 }
 
 func (ws *WeightSearcher1) Run(cancel channel_op.CancelSignal) stathighs.WeightResult {
 	progress := 0
-	//requiredSims := ws.targetRatio.NonZeroTypes()
 
 	bestCandidates := util_rank.HighestCollector_ForN[stathighs.WeightResult](128, (*stathighs.WeightResult).Equals)
 	for possibleWeight := range ws.makeSpacedWeights() {
-		//accuracy := EvaluateAccuracyRangeInner(possibleWeight, requiredSims, ws.targetRatio, ws.inputData)
 		accuracy := ws.evaluateAccuracy.EvaluateWeight(possibleWeight)
 		bestCandidates.Offer(&possibleWeight, accuracy)
 		if progress%100 == 0 {
@@ -63,7 +59,6 @@ func (ws *WeightSearcher1) Run(cancel channel_op.CancelSignal) stathighs.WeightR
 	bestResult := util_rank.BestCollector1[stathighs.WeightResult]{}
 	for checkWeight := range bestCandidates.ResultsSeq() {
 		updatedWeight, updatedAccuracy := weightTweaker_internal_FastCached(*checkWeight, c_search1_tweak_start, ws.weightStats, &ws.evaluateAccuracy)
-		//updatedWeight, updatedAccuracy := weightTweakerInternal_Fast(*checkWeight, c_search1_tweak_start, ws.weightStats, requiredSims, ws.targetRatio, ws.inputData)
 		bestResult.Offer(&updatedWeight, updatedAccuracy)
 		ws.printer.Printf("%6d %6.3f %6.3f\n", progress, updatedAccuracy, bestResult.BestValue)
 		progress++

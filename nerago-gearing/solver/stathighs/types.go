@@ -22,6 +22,14 @@ func WeightResult_Make() WeightResult {
 	return WeightResult{}
 }
 
+func WeightResult_Of(values []float64, statTypes []stats.StatType) WeightResult {
+	wr := WeightResult{}
+	for i, statType := range statTypes {
+		wr.Put(statType, values[i])
+	}
+	return wr
+}
+
 func (wr *WeightResult) IsEmpty() bool {
 	return wr.content.IsEmpty()
 }

@@ -222,14 +222,28 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 	filteredInput := mixedInputData
 	printer.Printf("filteredInput size %d\n", len(filteredInput))
 
-	search := weightfind.WeightSearcher1{}
-	search.Init(weightStats, targetRatio, util.PrintRecorder_Nop())
-	search.SupplyData(mixedInputData)
+	//search := weightfind.WeightSearcher0{}
+	//search.Init(weightStats, targetRatio, util.PrintRecorder_Nop())
+	//search.Init(weightStats, targetRatio, printer)
+	//search.SupplyData(mixedInputData)
 
-	//ranking := weightfind.WeightSearcher2{}
-	//ranking.Init(weightStats, targetRatio, util.PrintRecorder_Nop())
-	//ranking.SupplyData(mixedInputData)
-	//ranking.SetRanges(-1.0, 10.0)
+	var interest = []float64{ // accuracy = 92.633057
+		5.39,
+		8.659509862234,
+		3.433015580687,
+		8.603761881869,
+		-0.001056252428,
+		8.802300380181,
+		5.369767704147,
+		3.466234195963}
+	interestWR := stathighs.WeightResult_Of(interest, weightStats)
+	printer.Printf("interest = %f\n", weightfind.EvaluateAccuracyRanged(interestWR, targetRatio, mixedInputData))
+
+	search := weightfind.WeightSearcher2{}
+	search.Init(weightStats, targetRatio, printer)
+	//search.Init(weightStats, targetRatio, util.PrintRecorder_Nop())
+	search.SupplyData(mixedInputData)
+	search.SetRanges(-1.0, 10.0)
 
 	sw := util.StopwatchMakeStarted()
 	weight := search.Run(channel_op.CancelSignal_Make())
@@ -238,7 +252,10 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 	printer.Printf("accuracy = %f\n", weightfind.EvaluateAccuracyRanged(weight, targetRatio, mixedInputData))
 
 	//( Pawn: v1: "Gearing Weights": Class=Paladin,Strength=1.0000000000,Stamina=1.6065881006,CritRating=0.6369231133,HasteRating=1.5962452471,ExpertiseRating=-0.0001959652,MasteryRating=1.6330798479,DodgeRating=0.9962463273,ParryRating=0.6430861217, )
-	//accuracy = 92.632887
+	//accuracy = 92.632887 92.633057(updated)
+
+	//( Pawn: v1: "Gearing Weights": Class=Paladin,Strength=5.5997314453,Stamina=8.9848632812,CritRating=3.3398437500,HasteRating=8.7237148285,ExpertiseRating=0.0181579590,MasteryRating=8.9848632812,DodgeRating=5.6239013672,ParryRating=3.4168853760, )
+	//accuracy = 92.702569
 
 	// WeightSearcher0:
 	// using nice version was accuracy = 92.464871 //Duration = 15m58.0662216s
@@ -283,6 +300,13 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 
 	//latest accuracy = 92.595079 Duration = 39.9764841s
 	//cached 91.739231 8.0985595s
+
+	//accuracy = 84.631348 Duration = 4m4.8212136s
+	// fixed accuracy = 92.137316	Duration = 5m34.6080965s
+
+	// search2 accuracy = 92.488437 Duration = 5m4.0083467s ( Pawn: v1: "Gearing Weights": Class=Paladin,Strength=1.0000000000,Stamina=1.2485875706,CritRating=-0.0021186441,HasteRating=1.2485875706,ExpertiseRating=0.0056497175,MasteryRating=1.0000000000,DodgeRating=0.3785310734,ParryRating=0.3785310734, )
+	// accuracy = 92.488437( Pawn: v1: "Gearing Weights": Class=Paladin,Strength=5.5312500000,Stamina=6.9062500000,CritRating=-0.0117187500,HasteRating=6.9062500000,ExpertiseRating=0.0312500000,MasteryRating=5.5312500000,DodgeRating=2.0937500000,ParryRating=2.0937500000, )
+
 }
 
 func statWeightsGridIntoRanking(printer *util.PrintRecorder) {

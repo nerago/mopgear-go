@@ -17,10 +17,10 @@ const (
 )
 
 type WeightSearcher0 struct {
-	weightStats []stats.StatType
-	targetRatio stats.SimData
-	inputData   []stathighs.WeightInput
-	printer     *util.PrintRecorder
+	weightStats      []stats.StatType
+	targetRatio      stats.SimData
+	evaluateAccuracy EvaluateAccuracyPrepared
+	printer          *util.PrintRecorder
 }
 
 func (ws *WeightSearcher0) Init(weightStats []stats.StatType, targetRatio stats.SimData, printer *util.PrintRecorder) {
@@ -30,15 +30,14 @@ func (ws *WeightSearcher0) Init(weightStats []stats.StatType, targetRatio stats.
 }
 
 func (ws *WeightSearcher0) SupplyData(inputData []stathighs.WeightInput) {
-	ws.inputData = inputData
+	ws.evaluateAccuracy.Init(inputData, ws.targetRatio)
 }
 
 func (ws *WeightSearcher0) Run(cancel channel_op.CancelSignal) stathighs.WeightResult {
-	simTypes := ws.targetRatio.NonZeroTypes()
 	best := util_rank.BestCollector1[stathighs.WeightResult]{}
 	progress := 0
-	for initialWeight := range ws.makeRandomWeights(100) {
-		updatedWeight, updatedAccuracy := weightTweakerInternal_Fast(initialWeight, c_search0_tweak_start, ws.weightStats, simTypes, ws.targetRatio, ws.inputData)
+	for initialWeight := range ws.makeRandomWeights(20000) {
+		updatedWeight, updatedAccuracy := weightTweaker_internal_FastCached(initialWeight, c_search0_tweak_start, ws.weightStats, &ws.evaluateAccuracy)
 		best.Offer(&updatedWeight, updatedAccuracy)
 		ws.printer.Printf("%6d %6.3f %6.3f\n", progress, updatedAccuracy, best.BestValue)
 		progress++
@@ -53,8 +52,9 @@ func (ws *WeightSearcher0) Run(cancel channel_op.CancelSignal) stathighs.WeightR
 
 func (ws *WeightSearcher0) makeRandomWeights(count int) iter.Seq[stathighs.WeightResult] {
 	return func(yield func(stathighs.WeightResult) bool) {
+		rng := rand.New(rand.NewSource(rand.Int63()))
 		for range count {
-			weight := ws.buildWeightsRandom()
+			weight := ws.buildWeightsRandom(rng)
 			if !yield(weight) {
 				return
 			}
@@ -62,11 +62,15 @@ func (ws *WeightSearcher0) makeRandomWeights(count int) iter.Seq[stathighs.Weigh
 	}
 }
 
-func (ws *WeightSearcher0) buildWeightsRandom() stathighs.WeightResult {
+func (ws *WeightSearcher0) buildWeightsRandom(rng *rand.Rand) stathighs.WeightResult {
 	weight := stathighs.WeightResult_Make()
 	for _, statType := range ws.weightStats {
-		value := c_search0_min + rand.Float64()*(c_search0_max-c_search0_min)
+		value := c_search0_min + rng.Float64()*(c_search0_max-c_search0_min)
 		weight.Put(statType, value)
 	}
 	return weight
 }
+
+//accuracy = 84.770372
+//Duration = 4m16.736176s
+//88.901605 Duration = 4m9.1343515s

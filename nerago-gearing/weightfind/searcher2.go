@@ -9,12 +9,14 @@ import (
 	"paladin_gearing_go/util/channel_op"
 	"paladin_gearing_go/util/util_rank"
 	"slices"
+	"strconv"
 )
 
 const (
-	c_search2_largeAccuracyGap = 0.5
+	c_search2_abandonBranchAccuracyGap = 0.2
+	c_search2_largeAccuracyGap         = 0.5
 	//c_search2_marginalAccuracyGap = 0.005
-	c_search2_marginalAccuracyGap = 0.05
+	c_search2_marginalAccuracyGap = 0.005
 	c_search2_marginalWeightGap   = 0.01
 
 	c_search2_minRunEarlySizeCut = 4
@@ -36,12 +38,12 @@ const (
 )
 
 type WeightSearcher2 struct {
-	typeCount   int
-	statTypes   []stats.StatType
-	simTypes    []stats.SimType
-	targetRatio stats.SimData
-	inputData   []stathighs.WeightInput
-	printer     *util.PrintRecorder
+	typeCount        int
+	statTypes        []stats.StatType
+	simTypes         []stats.SimType
+	targetRatio      stats.SimData
+	evaluateAccuracy EvaluateAccuracyPrepared
+	printer          *util.PrintRecorder
 
 	queue      util.QueueStackFilo[*weightSearch2Bound]
 	bestResult util_rank.BestCollector1[stathighs.WeightResult]
@@ -65,7 +67,7 @@ func (ws *WeightSearcher2) Init(statTypes []stats.StatType, targetRatio stats.Si
 }
 
 func (ws *WeightSearcher2) SupplyData(inputData []stathighs.WeightInput) {
-	ws.inputData = inputData
+	ws.evaluateAccuracy.Init(inputData, ws.targetRatio)
 }
 
 func (ws *WeightSearcher2) SetRanges(weightMin, weightMax float64) {
@@ -85,6 +87,12 @@ func (ws *WeightSearcher2) Run(cancel channel_op.CancelSignal) stathighs.WeightR
 			break
 		}
 
+		if !checkInRange(bound.rangeMin, bound.rangeMax, interest) {
+			continue
+		}
+
+		printRange(bound.rangeMin, bound.rangeMax, "STEP "+strconv.FormatInt(int64(bound.plannedOp), 10)+" ", ws.printer)
+
 		switch bound.plannedOp {
 		case opDivide1:
 			ws.opDivide1(bound)
@@ -102,11 +110,8 @@ func (ws *WeightSearcher2) Run(cancel channel_op.CancelSignal) stathighs.WeightR
 }
 
 func (ws *WeightSearcher2) evaluateScore(weightArray []float64) float64 {
-	weights := stathighs.WeightResult_Make()
-	for i, statType := range ws.statTypes {
-		weights.Put(statType, weightArray[i])
-	}
-	accuracy := EvaluateAccuracyRangeInner(weights, ws.simTypes, ws.targetRatio, ws.inputData)
+	weights := stathighs.WeightResult_Of(weightArray, ws.statTypes)
+	accuracy := ws.evaluateAccuracy.EvaluateWeight(weights)
 	ws.bestResult.Offer(&weights, accuracy)
 	return accuracy
 }
@@ -160,10 +165,19 @@ func (ws *WeightSearcher2) opSearch2(bound *weightSearch2Bound) {
 	middle := sliceInterpolate(bound.rangeMin, bound.rangeMax, c_search2_probe_middle)
 	probes := ws.search2DoProbes(bound, middle)
 
+	if probes[0].accuracy < ws.bestResult.BestValue-c_search2_abandonBranchAccuracyGap {
+		ws.printer.Println("  -> ABANDON BRANCH")
+		return
+	} else {
+		ws.printer.Printf(" BRANCH? %f %f %f\n", probes[0].accuracy, ws.bestResult.BestValue, ws.bestResult.BestValue-c_search2_abandonBranchAccuracyGap)
+	}
+
 	if ws.marginalAccuracyGap(probes[0].accuracy, probes[len(probes)-1].accuracy) {
 		ws.printer.Println("  -> MARGINAL GAP STOP")
 		return
 	}
+
+	// TODO if all samples less than best
 
 	// TODO consider sub-cut into groups by accuracy, separate to hi/lo divides
 
@@ -302,6 +316,10 @@ func (ws *WeightSearcher2) search2MakeFollowupShrinkExceptAxis(bound *weightSear
 }
 
 func (ws *WeightSearcher2) search2MakeFollowupCommon(probes []probeAndAccuracy, bound *weightSearch2Bound, includeMiddle bool, middle []float64) {
+	ws.search2MakeFollowupCommon2(probes, bound, includeMiddle, middle)
+}
+
+func (ws *WeightSearcher2) search2MakeFollowupCommon1(probes []probeAndAccuracy, bound *weightSearch2Bound, includeMiddle bool, middle []float64) {
 	madeChangeOfSignificance := false
 	rangeMin := slices.Clone(bound.rangeMin)
 	rangeMax := slices.Clone(bound.rangeMax)
@@ -323,13 +341,44 @@ func (ws *WeightSearcher2) search2MakeFollowupCommon(probes []probeAndAccuracy, 
 			madeChangeOfSignificance = true
 		} else if !hasHi /* && !hasLo */ {
 			// NOTE considering that hi&&lo means keep full range, but !hi&&!lo could narrow
-			rangeMin[axis] = valueInterpolate(bound.rangeMin[axis], bound.rangeMax[axis], c_search2_probeA)
-			rangeMax[axis] = valueInterpolate(bound.rangeMin[axis], bound.rangeMax[axis], c_search2_probeB)
+			//rangeMin[axis] = valueInterpolate(bound.rangeMin[axis], bound.rangeMax[axis], c_search2_probeA)
+			//rangeMax[axis] = valueInterpolate(bound.rangeMin[axis], bound.rangeMax[axis], c_search2_probeB)
 		}
 	}
 
+	// NOTE don't like that we skip out on range of other var
+
 	if !madeChangeOfSignificance {
 		panic("logic fail, no significant change found")
+	}
+
+	ws.addSearchPlan(rangeMin, rangeMax, bound)
+}
+
+func (ws *WeightSearcher2) search2MakeFollowupCommon2(probes []probeAndAccuracy, bound *weightSearch2Bound, includeMiddle bool, middle []float64) {
+	rangeMin := slices.Clone(probes[0].point)
+	rangeMax := slices.Clone(probes[0].point)
+	for i := 1; i < len(probes); i++ {
+		point := probes[i].point
+		for axis := range len(rangeMin) {
+			rangeMin[axis] = min(rangeMin[axis], point[axis])
+			rangeMax[axis] = max(rangeMax[axis], point[axis])
+		}
+	}
+
+	for axis := range len(rangeMin) {
+		if rangeMin[axis] == rangeMax[axis] {
+			rangeMin[axis] = bound.rangeMin[axis]
+			rangeMax[axis] = bound.rangeMax[axis]
+		} else {
+			oldExtent := bound.rangeMax[axis] - bound.rangeMin[axis]
+			rangeMin[axis] -= c_search2_probeA * oldExtent
+			rangeMax[axis] += c_search2_probeA * oldExtent
+		}
+	}
+
+	if slices.Equal(bound.rangeMin, rangeMin) && slices.Equal(bound.rangeMax, rangeMax) {
+		panic("no change")
 	}
 
 	ws.addSearchPlan(rangeMin, rangeMax, bound)
@@ -350,7 +399,7 @@ func includesAxisEntry(probes []probeAndAccuracy, axis int) (bool, bool) {
 	return hasHi, hasLo
 }
 
-//	var interest = []float64{
+//	var old_interest = []float64{
 //		5.3900000000,
 //		7.4731250000,
 //		2.6908057851,
@@ -360,44 +409,54 @@ func includesAxisEntry(probes []probeAndAccuracy, axis int) (bool, bool) {
 //		4.8125000000,
 //		3.2600000000,
 //	}
-//
-//	func debugValueOfInterest(rangeMin []float64, rangeMax []float64, printer *util.PrintRecorder) {
-//		if checkInRange(rangeMin, rangeMax, interest) {
-//			printer.Println("INTEREST")
-//		}
-//	}
-//
-//	func checkInRange(rangeMin []float64, rangeMax []float64, probe []float64) bool {
-//		for i := range probe {
-//			if rangeMin[i] <= probe[i] && probe[i] <= rangeMax[i] {
-//				// ok
-//			} else {
-//				return false
-//			}
-//		}
-//		return true
-//	}
-//
-//	func debugVerifyInRange(rangeMin []float64, rangeMax []float64, probe []float64, printer *util.PrintRecorder) {
-//		if !checkInRange(rangeMin, rangeMax, probe) {
-//			panic("probe value isn't inside remaining range")
-//		}
-//
-//		printRange(rangeMin, rangeMax, "     = ", printer)
-//	}
-//
-//	func printRange(rangeMin []float64, rangeMax []float64, label string, printer *util.PrintRecorder) {
-//		printer.Printf(label)
-//		for i := range rangeMin {
-//			printer.Printf("%7.4f ", rangeMin[i])
-//		}
-//		printer.Println0()
-//		printer.Printf(label)
-//		for i := range rangeMax {
-//			printer.Printf("%7.4f ", rangeMax[i])
-//		}
-//		printer.Println0()
-//	}
+var interest = []float64{ // accuracy = 92.632887
+	5.39,
+	8.659509862234,
+	3.433015580687,
+	8.603761881869,
+	-0.001056252428,
+	8.802300380181,
+	5.369767704147,
+	3.466234195963}
+
+func debugValueOfInterest(rangeMin []float64, rangeMax []float64, printer *util.PrintRecorder) {
+	if checkInRange(rangeMin, rangeMax, interest) {
+		printer.Println("INTEREST")
+	}
+}
+
+func checkInRange(rangeMin []float64, rangeMax []float64, probe []float64) bool {
+	for i := range probe {
+		if rangeMin[i] <= probe[i] && probe[i] <= rangeMax[i] {
+			// ok
+		} else {
+			return false
+		}
+	}
+	return true
+}
+
+func debugVerifyInRange(rangeMin []float64, rangeMax []float64, probe []float64, printer *util.PrintRecorder) {
+	if !checkInRange(rangeMin, rangeMax, probe) {
+		panic("probe value isn't inside remaining range")
+	}
+
+	printRange(rangeMin, rangeMax, "     = ", printer)
+}
+
+func printRange(rangeMin []float64, rangeMax []float64, label string, printer *util.PrintRecorder) {
+	printer.Printf(label)
+	for i := range rangeMin {
+		printer.Printf("%7.4f ", rangeMin[i])
+	}
+	printer.Println0()
+	printer.Printf(label)
+	for i := range rangeMax {
+		printer.Printf("%7.4f ", rangeMax[i])
+	}
+	printer.Println0()
+}
+
 func (ws *WeightSearcher2) addSearchPlan(rangeMin []float64, rangeMax []float64, bound *weightSearch2Bound) {
 	if ws.rangeIsMarginal(rangeMin, rangeMax) || bound.nodeDepth >= c_max_node_depth {
 		ws.queue.Push(&weightSearch2Bound{
@@ -414,6 +473,8 @@ func (ws *WeightSearcher2) addSearchPlan(rangeMin []float64, rangeMax []float64,
 			nodeDepth: bound.nodeDepth + 1,
 		})
 	}
+
+	printRange(rangeMin, rangeMax, " = ", ws.printer)
 }
 
 func (ws *WeightSearcher2) rangeIsMarginal(rangeMin []float64, rangeMax []float64) bool {
