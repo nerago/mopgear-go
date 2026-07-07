@@ -235,7 +235,7 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 	weight := search.Run(channel_op.CancelSignal_Make())
 	printer.Printf("time = %s\n", sw.Elapsed().String())
 	tools.WritePawnString(weight, printer)
-	printer.Printf("accuracy = %f\n", weightfind.EvaluateAccuracy(weight, mixedInputData, targetRatio))
+	printer.Printf("accuracy = %f\n", weightfind.EvaluateAccuracyRanged(weight, targetRatio, mixedInputData))
 
 	//( Pawn: v1: "Gearing Weights": Class=Paladin,Strength=1.0000000000,Stamina=1.6065881006,CritRating=0.6369231133,HasteRating=1.5962452471,ExpertiseRating=-0.0001959652,MasteryRating=1.6330798479,DodgeRating=0.9962463273,ParryRating=0.6430861217, )
 	//accuracy = 92.632887
@@ -272,6 +272,13 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 	//just outer pointer, copy input 1m14.7939587s 1m18.7979703s
 	//use accuracyInfoX, back to both pointers 1m13.6677116s 1m20.990594s
 	//sortSimType funcs Duration = 49.0108431s
+	//sortSimType2 1m21.7422665s 1m25.5339404s
+	//sortSimType3 1m22.3571741s
+	//back to sortSimType  53.4168611s
+
+	//EvaluateAccuracyRanged0  0.923655 Duration = 47.67764s  0.923655 Duration = 49.843148s
+	//EvaluateAccuracyWithRange2  accuracy = 0.923655 Duration = 39.271139s 0.923655 Duration = 40.1025633s
+	//EvaluateAccuracyWithRangePartialRefactor3 0.923655 Duration = 43.9915364s time = 44.0702381s
 }
 
 func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
@@ -344,15 +351,15 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 	//weights2 := ranking.Run(nil)
 
 	tools.WritePawnString(weights1, printer)
-	printer.Printf("accuracy_initial = %f\n", weightfind.EvaluateAccuracy(weights1, mixedInputData, targetRatio))
+	printer.Printf("accuracy_initial = %f\n", weightfind.EvaluateAccuracyRanged(weights1, targetRatio, mixedInputData))
 
 	tools.WritePawnString(weights2, printer)
-	printer.Printf("accuracy_algo = %f\n", weightfind.EvaluateAccuracy(weights2, mixedInputData, targetRatio))
+	printer.Printf("accuracy_algo = %f\n", weightfind.EvaluateAccuracyRanged(weights2, targetRatio, mixedInputData))
 
 	weights3, _ := weightfind.WeightTweaker(weights2, requiredStats, targetRatio, mixedInputData, util.PrintRecorder_Nop())
 
 	tools.WritePawnString(weights3, printer)
-	printer.Printf("accuracy_tweak = %f\n", weightfind.EvaluateAccuracy(weights3, mixedInputData, targetRatio))
+	printer.Printf("accuracy_tweak = %f\n", weightfind.EvaluateAccuracyRanged(weights3, targetRatio, mixedInputData))
 
 	// ( Pawn: v1: "Protection WoWSims Weights": Class=Paladin,Strength=1.0000000000,Stamina=0.4805050000,CritRating=0.6462260000,HasteRating=0.8598560000,ExpertiseRating=0.6679750000,MasteryRating=1.9405810000,DodgeRating=0.6518220000,ParryRating=0.6243300000, )
 	// accuracy1 = 92.635522
@@ -519,7 +526,7 @@ func statWeightsGrid(printer *util.PrintRecorder) {
 			process.SupplyData(inputData)
 			weights := process.Run(nil).WaitForResultOrPanic()
 			tools.WritePawnString(weights, printer)
-			acc := weightfind.EvaluateAccuracy(weights, inputDataFull, targetRatio)
+			acc := weightfind.EvaluateAccuracyRanged(weights, targetRatio, inputDataFull)
 
 			printer.Printf("accuracy = %f\n", acc)
 			printer.Printf("############## DONE %d %d\n", ROUNDMODE, RESCALE)
@@ -1300,8 +1307,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	resultOrder := resultsByAlgorithm.KeysAsSlice()
 	slices.SortFunc(resultOrder, func(a, b string) int {
 		return cmp.Compare(
-			weightfind.EvaluateAccuracy(resultsByAlgorithm.GetOrNil(a), mixedInputDataFull, targetRatio),
-			weightfind.EvaluateAccuracy(resultsByAlgorithm.GetOrNil(b), mixedInputDataFull, targetRatio),
+			weightfind.EvaluateAccuracyRanged(resultsByAlgorithm.GetOrNil(a), targetRatio, mixedInputDataFull),
+			weightfind.EvaluateAccuracyRanged(resultsByAlgorithm.GetOrNil(b), targetRatio, mixedInputDataFull),
 		)
 	})
 
@@ -1313,8 +1320,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			value := weight.Get(stat)
 			row = append(row, strconv.FormatFloat(value, 'f', 4, 64))
 		}
-		accuracy := weightfind.EvaluateAccuracy(weight, mixedInputDataFull, targetRatio)
-		accuracyOld := weightfind.EvaluateAccuracyNoRangeAntiInline(weight, requiredSims, targetRatio, mixedInputDataFull)
+		accuracy := weightfind.EvaluateAccuracyRanged(weight, targetRatio, mixedInputDataFull)
+		accuracyOld := weightfind.EvaluateAccuracyNoRange(weight, requiredSims, targetRatio, mixedInputDataFull)
 		row = append(row, strconv.FormatFloat(accuracy, 'f', 4, 64))
 		row = append(row, "")
 		row = append(row, strconv.FormatFloat(accuracyOld, 'f', 4, 64))
@@ -1323,8 +1330,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 
 		if reportOnTweakedVersions {
 			weightTweak, _ := weightfind.WeightTweaker(weight, requiredStats, targetRatio, mixedInputDataFull, util.PrintRecorder_Nop())
-			accuracyTweak := weightfind.EvaluateAccuracy(weightTweak, mixedInputDataFull, targetRatio)
-			accuracyOld = weightfind.EvaluateAccuracyNoRangeAntiInline(weightTweak, requiredSims, targetRatio, mixedInputDataFull)
+			accuracyTweak := weightfind.EvaluateAccuracyRanged(weightTweak, targetRatio, mixedInputDataFull)
+			accuracyOld = weightfind.EvaluateAccuracyNoRange(weightTweak, requiredSims, targetRatio, mixedInputDataFull)
 			row = make([]string, 0)
 			row = append(row, label)
 			for _, stat := range requiredStats {

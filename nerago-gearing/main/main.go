@@ -9,7 +9,6 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/model"
 	"paladin_gearing_go/setup"
-	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/util"
 	"runtime/pprof"
 	"time"
@@ -43,9 +42,9 @@ func main() {
 		defer func() {
 			pprof.StopCPUProfile()
 			f.Close()
-			if simulate.WowSimRanDuringCurrentProcess {
-				os.Rename(f.Name(), files.ProfileDir+"main.pgo")
-			}
+			//if simulate.WowSimRanDuringCurrentProcess {
+			os.Rename(f.Name(), files.ProfileDir+"main.pgo")
+			//}
 		}()
 	}
 
@@ -89,9 +88,9 @@ func core(printer *util.PrintRecorder) {
 	// statWeightsFitting2(printer)
 	// statWeightsComplex(printer)
 	//statWeightsGridIntoRanking(printer)
-	//statWeightsCustom(printer)
+	statWeightsCustom(printer)
 
-	statWeights_CompareAlgorithms(printer)
+	//statWeights_CompareAlgorithms(printer)
 
 	//statWeightsGrid_updateAll(printer)
 

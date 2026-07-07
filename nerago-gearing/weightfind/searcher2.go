@@ -106,7 +106,7 @@ func (ws *WeightSearcher2) evaluateScore(weightArray []float64) float64 {
 	for i, statType := range ws.statTypes {
 		weights.Put(statType, weightArray[i])
 	}
-	accuracy := EvaluateAccuracyNoRangeAntiInline(weights, ws.simTypes, ws.targetRatio, ws.inputData)
+	accuracy := EvaluateAccuracyNoRange(weights, ws.simTypes, ws.targetRatio, ws.inputData)
 	ws.bestResult.Offer(&weights, accuracy)
 	return accuracy
 }

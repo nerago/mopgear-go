@@ -43,7 +43,7 @@ func (ws *WeightSearcher1) Run(cancel channel_op.CancelSignal) stathighs.WeightR
 
 	bestCandidates := util_rank.HighestCollector_ForN[stathighs.WeightResult](128, (*stathighs.WeightResult).Equals)
 	for possibleWeight := range ws.makeSpacedWeights() {
-		accuracy := EvaluateAccuracyNoRangeInlined1(possibleWeight, requiredSims, ws.targetRatio, ws.inputData)
+		accuracy := EvaluateAccuracyWithRangePartialRefactor3(possibleWeight, requiredSims, ws.targetRatio, ws.inputData)
 		bestCandidates.Offer(&possibleWeight, accuracy)
 		if progress%100 == 0 {
 			_, bestAccuracy := bestCandidates.GetBest1()

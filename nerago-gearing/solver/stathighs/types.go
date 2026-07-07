@@ -62,6 +62,10 @@ func (wr *WeightResult) CalcStatScore(input *WeightInput) float64 {
 	return wr.content.MultiplyForTotalSum2(&input.TotalStat)
 }
 
+func (wr *WeightResult) CalcStatScore2(stats *stats.StatBlock) float64 {
+	return wr.content.MultiplyForTotalSum2(stats)
+}
+
 func (wr *WeightResult) CalcStatScoreScaled(input *WeightInput, statScale map[stats.StatType]float64) float64 {
 	total := 0.0
 	for statType, scale := range statScale {

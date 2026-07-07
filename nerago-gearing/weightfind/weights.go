@@ -77,8 +77,8 @@ func statWeightsGrid_updateOne(label string, gearModel *model.Model, gearFile st
 	weightsGrid := weightsGridFuture.WaitForResultOrPanic()
 	printer.Println("Grid Weights >>>>> " + label)
 	pawnGrid := tools.WritePawnString(weightsGrid, printer)
-	accGridOnGridInput := EvaluateAccuracy(weightsGrid, inputDataGrid, ratios)
-	accGridOnRealInput := EvaluateAccuracy(weightsGrid, inputDataReal, ratios)
+	accGridOnGridInput := EvaluateAccuracyRanged(weightsGrid, ratios, inputDataGrid)
+	accGridOnRealInput := EvaluateAccuracyRanged(weightsGrid, ratios, inputDataReal)
 	printer.Printf("Grid Weights accuracy %s gridInput=%f realInput=%f\n", label, accGridOnGridInput, accGridOnRealInput)
 
 	ranking := stathighs.RankingStatWeightProcess3b{}

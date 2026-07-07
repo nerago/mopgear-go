@@ -8,12 +8,16 @@ import (
 	"slices"
 )
 
-func EvaluateAccuracy(statWeights stathighs.WeightResult, inputData []stathighs.WeightInput, simRatios stats.SimData) float64 {
+// TODO take into account sim's uncertainty ranges
+
+func EvaluateAccuracyRanged(statWeights stathighs.WeightResult, simRatios stats.SimData, inputData []stathighs.WeightInput) float64 {
+	return EvaluateAccuracyRanged0(statWeights, simRatios.NonZeroTypes(), simRatios, inputData)
+}
+
+func EvaluateAccuracyRanged0(statWeights stathighs.WeightResult, requiredSims []stats.SimType, simRatios stats.SimData, inputData []stathighs.WeightInput) float64 {
 	if statWeights.IsEmpty() {
 		return 0
 	}
-
-	// TODO take into account sim's uncertainty ranges
 	// make structures
 	type accuracyInfo struct {
 		input *stathighs.WeightInput
@@ -35,7 +39,6 @@ func EvaluateAccuracy(statWeights stathighs.WeightResult, inputData []stathighs.
 	}
 
 	// score each sim
-	requiredSims := simRatios.NonZeroTypes()
 	for _, simType := range requiredSims {
 		for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), accuracyData, func(x *accuracyInfo) float64 { return x.input.SimResult.Get(simType) }) {
 			entry.combinedSimRankScore += float64(simDetailRank) * simRatios.Get(simType)
@@ -50,17 +53,17 @@ func EvaluateAccuracy(statWeights stathighs.WeightResult, inputData []stathighs.
 	// compute average difference between stat rank and sim rank
 	totalComparePercents := 0.0
 	for info := range util.ForPointer(accuracyData) {
-		percentScore := rangePercentDiff(info.simRankRange, info.statRankRange, len(accuracyData))
+		percentScore := rangesToAccuracyRatio(info.simRankRange, info.statRankRange, len(accuracyData))
 		totalComparePercents += percentScore
 	}
 	return totalComparePercents / float64(len(accuracyData))
 }
 
 // 100% if ranks are equal, 90% if average 10% difference, etc
-func rangePercentDiff(one, two util.HiLoInt, fullLength int) float64 {
+func rangesToAccuracyRatio(one, two util.HiLoInt, fullLength int) float64 {
 	var diff int
 	if one.Overlap(two) {
-		return 100.0
+		return 1.0
 	} else if one.Hi < two.Lo {
 		diff = two.Lo - one.Hi
 	} else if two.Hi < one.Lo {
@@ -69,197 +72,258 @@ func rangePercentDiff(one, two util.HiLoInt, fullLength int) float64 {
 		panic("logic issue")
 	}
 
-	diffAsRatio := float64(fullLength-diff) / float64(fullLength)
-	percentScore := diffAsRatio * 100.0
-	return percentScore
+	return float64(fullLength-diff) / float64(fullLength)
 }
 
-func EvaluateAccuracyNoRangeInlined1(statWeights stathighs.WeightResult, requiredSims []stats.SimType, simRatios stats.SimData, inputData []stathighs.WeightInput) float64 {
-	//type accuracyInfo struct {
-	//	statScore float64
-	//	simScore  float64
-	//	statRank  int32
-	//	simRank   int32
-	//	input     stathighs.WeightInput
-	//}
-	accuracyData := make([]*accuracyInfoX, len(inputData))
-	for i := range len(inputData) {
-		input := &inputData[i]
-		accuracyData[i] = &accuracyInfoX{
-			input:     input,
+type accuracyInfoSimOnlySingles struct {
+	simScore float64
+	dataSim  *stats.SimData
+	dataStat *stats.StatBlock
+}
+
+type accuracyInfoSimStatSingles struct {
+	statScore float64
+	simScore  float64
+	statRank  int
+	dataSim   *stats.SimData
+}
+
+type accuracyInfoSimStatRanged struct {
+	statScore     float64
+	simScore      float64
+	statRankRange *util.HiLoInt
+	simRankRange  *util.HiLoInt
+	dataSim       *stats.SimData
+}
+
+func EvaluateAccuracyNoRange(statWeights stathighs.WeightResult, requiredSims []stats.SimType, simRatios stats.SimData, inputData []stathighs.WeightInput) float64 {
+	accuracyData := util.MapSliceAsNew(inputData, func(input *stathighs.WeightInput) *accuracyInfoSimStatSingles {
+		return &accuracyInfoSimStatSingles{
+			dataSim:   &input.SimResult,
 			statScore: statWeights.CalcStatScore(input),
+			simScore:  0,
+			statRank:  0,
 		}
-	}
+	})
 
 	// rank stats scores
-	slices.SortFunc(accuracyData, func(a, b *accuracyInfoX) int { return cmp.Compare(a.statScore, b.statScore) })
+	slices.SortFunc(accuracyData, func(a, b *accuracyInfoSimStatSingles) int {
+		return cmp.Compare(a.statScore, b.statScore)
+	})
 	for rank := range accuracyData {
-		entry := accuracyData[rank]
-		entry.statRank = int32(rank)
+		accuracyData[rank].statRank = rank
 	}
 
 	// score each sim
 	for _, simType := range requiredSims {
-		sortSimType(accuracyData, simType)
-		//if simType.IsHighGood() {
-		//	slices.SortFunc(accuracyData, func(a, b *accuracyInfoX) int {
-		//		return cmp.Compare(a.input.SimResult.Get(simType), b.input.SimResult.Get(simType))
-		//	})
-		//} else {
-		//	slices.SortFunc(accuracyData, func(a, b *accuracyInfoX) int {
-		//		return cmp.Compare(b.input.SimResult.Get(simType), a.input.SimResult.Get(simType))
-		//	})
-		//}
-
 		ratio := simRatios.Get(simType)
+		slices.SortFunc(accuracyData, simSortSingleCompares[simType])
 		for rank := range accuracyData {
-			entry := accuracyData[rank]
+			accuracyData[rank].simScore += float64(rank) * ratio
+		}
+	}
+
+	// rank combined sims
+	slices.SortFunc(accuracyData, func(a, b *accuracyInfoSimStatSingles) int {
+		return cmp.Compare(a.simScore, b.simScore)
+	})
+
+	// compute average difference between stat rank and sim rank.
+	// sim rank is just the current order.
+	size := len(accuracyData)
+	totalComparePercents := 0.0
+	for simRank := range accuracyData {
+		entry := accuracyData[simRank]
+		diff := util.AbsIntDiff(simRank, entry.statRank)
+		diffAsRatio := float64(size-diff) / float64(size)
+		totalComparePercents += diffAsRatio
+	}
+	averagePercent := 100.0 * totalComparePercents / float64(size)
+	return averagePercent
+}
+
+func EvaluateAccuracyWithRange2(statWeights stathighs.WeightResult, requiredSims []stats.SimType, simRatios stats.SimData, inputData []stathighs.WeightInput) float64 {
+	data := util.MapSliceAsNew(inputData, func(input *stathighs.WeightInput) *accuracyInfoSimStatRanged {
+		return &accuracyInfoSimStatRanged{
+			dataSim:       &input.SimResult,
+			statScore:     statWeights.CalcStatScore(input),
+			simScore:      0,
+			statRankRange: nil,
+			simRankRange:  nil,
+		}
+	})
+
+	// rank stats scores
+	slices.SortFunc(data, func(a, b *accuracyInfoSimStatRanged) int {
+		return cmp.Compare(a.statScore, b.statScore)
+	})
+	data[0].statRankRange = &util.HiLoInt{Lo: 0, Hi: 0}
+	for i := 1; i < len(data); i++ {
+		if util.FloatsApproxEquals(data[i].statScore, data[i-1].statScore) {
+			prevRange := data[i-1].statRankRange
+			data[i].statRankRange = prevRange
+			prevRange.Hi = i
+		} else {
+			data[i].statRankRange = &util.HiLoInt{Lo: i, Hi: i}
+		}
+	}
+
+	// score each sim
+	for _, simType := range requiredSims {
+		slices.SortFunc(data, simSortRangedCompares[simType])
+		ratio := simRatios.Get(simType)
+		for rank := range data {
+			entry := data[rank]
 			entry.simScore += float64(rank) * ratio
 		}
 	}
 
 	// rank combined sims
-	slices.SortFunc(accuracyData, func(a, b *accuracyInfoX) int { return cmp.Compare(a.simScore, b.simScore) })
-	for rank := range accuracyData {
-		entry := accuracyData[rank]
-		entry.simRank = int32(rank)
+	slices.SortFunc(data, func(a, b *accuracyInfoSimStatRanged) int {
+		return cmp.Compare(a.simScore, b.simScore)
+	})
+	data[0].simRankRange = &util.HiLoInt{Lo: 0, Hi: 0}
+	for i := 1; i < len(data); i++ {
+		if util.FloatsApproxEquals(data[i].simScore, data[i-1].simScore) {
+			prevRange := data[i-1].simRankRange
+			data[i].simRankRange = prevRange
+			prevRange.Hi = i
+		} else {
+			data[i].simRankRange = &util.HiLoInt{Lo: i, Hi: i}
+		}
 	}
 
 	// compute average difference between stat rank and sim rank
 	totalComparePercents := 0.0
-	for i := range accuracyData {
-		entry := accuracyData[i]
-		diff := util.AbsInt32Diff(entry.simRank, entry.statRank)
-		diffAsRatio := float64(int32(len(accuracyData))-diff) / float64(len(accuracyData))
-		percentScore := diffAsRatio
+	for i := range data {
+		entry := data[i]
+		percentScore := rangesToAccuracyRatio(*entry.simRankRange, *entry.statRankRange, len(data))
 		totalComparePercents += percentScore
 	}
-
-	return 100.0 * totalComparePercents / float64(len(accuracyData))
+	return 100.0 * totalComparePercents / float64(len(data))
 }
 
-type accuracyInfoX struct {
-	statScore float64
-	simScore  float64
-	statRank  int32
-	simRank   int32
-	input     *stathighs.WeightInput
-}
-
-func compareStatScores(a, b *accuracyInfoX) int { return cmp.Compare(a.statScore, b.statScore) }
-func compareSimScores(a, b *accuracyInfoX) int  { return cmp.Compare(a.simScore, b.simScore) }
-
-func EvaluateAccuracyNoRangeAntiInline(statWeights stathighs.WeightResult, requiredSims []stats.SimType, simRatios stats.SimData, inputData []stathighs.WeightInput) float64 {
-	accuracyData := buildAccuracySlice(statWeights, inputData)
+func EvaluateAccuracyWithRangePartialRefactor3(statWeights stathighs.WeightResult, requiredSims []stats.SimType, simRatios stats.SimData, inputData []stathighs.WeightInput) float64 {
+	data := util.MapSliceAsNew(inputData, func(input *stathighs.WeightInput) *accuracyInfoSimStatRanged {
+		return &accuracyInfoSimStatRanged{
+			dataSim:   &input.SimResult,
+			statScore: statWeights.CalcStatScore(input),
+		}
+	})
 
 	// rank stats scores
-	slices.SortFunc(accuracyData, compareStatScores)
-	calcStatRanks(accuracyData)
+	rankDataRanged(data,
+		func(a *accuracyInfoSimStatRanged) float64 { return a.statScore },
+		func(a *accuracyInfoSimStatRanged, hiLo *util.HiLoInt) { a.statRankRange = hiLo },
+	)
 
 	// score each sim
 	for _, simType := range requiredSims {
-		calcOneSim(simType, accuracyData, simRatios)
+		slices.SortFunc(data, simSortRangedCompares[simType])
+		ratio := simRatios.Get(simType)
+		for rank := range data {
+			data[rank].simScore += float64(rank) * ratio
+		}
 	}
 
 	// rank combined sims
-	slices.SortFunc(accuracyData, compareSimScores)
-	calcSimRanks(accuracyData)
+	rankDataRanged(data,
+		func(a *accuracyInfoSimStatRanged) float64 { return a.simScore },
+		func(a *accuracyInfoSimStatRanged, hiLo *util.HiLoInt) { a.simRankRange = hiLo },
+	)
 
 	// compute average difference between stat rank and sim rank
-	return finalResult(accuracyData)
-}
-
-func finalResult(accuracyData []*accuracyInfoX) float64 {
 	totalComparePercents := 0.0
-	for i := range accuracyData {
-		percentScore := calcDiff(accuracyData[i], len(accuracyData))
+	for i := range data {
+		entry := data[i]
+		percentScore := rangesToAccuracyRatio(*entry.simRankRange, *entry.statRankRange, len(data))
 		totalComparePercents += percentScore
 	}
-
-	return 100.0 * totalComparePercents / float64(len(accuracyData))
+	return 100.0 * totalComparePercents / float64(len(data))
 }
 
-func calcDiff(entry *accuracyInfoX, size int) float64 {
-	diff := util.AbsInt32Diff(entry.simRank, entry.statRank)
-	diffAsRatio := float64(int32(size)-diff) / float64(size)
-	percentScore := diffAsRatio
-	return percentScore
-}
+func rankDataRanged[T any](data []*T, toScore func(*T) float64, setRange func(*T, *util.HiLoInt)) {
+	sortDataRangedGeneric(data, toScore)
 
-func calcSimRanks(accuracyData []*accuracyInfoX) {
-	for rank := range accuracyData {
-		entry := accuracyData[rank]
-		entry.simRank = int32(rank)
-	}
-}
+	prevScore := toScore(data[0])
+	prevHiLo := &util.HiLoInt{Lo: 0, Hi: 0}
+	setRange(data[0], prevHiLo)
 
-func calcOneSim(simType stats.SimType, accuracyData []*accuracyInfoX, simRatios stats.SimData) {
-	sortSimType(accuracyData, simType)
-
-	addToSimScore(simRatios, simType, accuracyData)
-}
-
-var simSortCompares = [6]func(a, b *accuracyInfoX) int{
-	func(a, b *accuracyInfoX) int {
-		return cmp.Compare(a.input.SimResult.Get(stats.Sim_DPS), b.input.SimResult.Get(stats.Sim_DPS))
-	},
-	func(a, b *accuracyInfoX) int {
-		return cmp.Compare(a.input.SimResult.Get(stats.Sim_TPS), b.input.SimResult.Get(stats.Sim_TPS))
-	},
-	func(a, b *accuracyInfoX) int {
-		return cmp.Compare(b.input.SimResult.Get(stats.Sim_DTPS), a.input.SimResult.Get(stats.Sim_DTPS))
-	},
-	func(a, b *accuracyInfoX) int {
-		return cmp.Compare(a.input.SimResult.Get(stats.Sim_HPS), b.input.SimResult.Get(stats.Sim_HPS))
-	},
-	func(a, b *accuracyInfoX) int {
-		return cmp.Compare(b.input.SimResult.Get(stats.Sim_TMI), a.input.SimResult.Get(stats.Sim_TMI))
-	},
-	func(a, b *accuracyInfoX) int {
-		return cmp.Compare(b.input.SimResult.Get(stats.Sim_DEATH), b.input.SimResult.Get(stats.Sim_DEATH))
-	},
-}
-
-func sortSimType(accuracyData []*accuracyInfoX, simType stats.SimType) {
-	slices.SortFunc(accuracyData, simSortCompares[simType])
-}
-
-func addToSimScore(simRatios stats.SimData, simType stats.SimType, accuracyData []*accuracyInfoX) {
-	ratio := simRatios.Get(simType)
-	for rank := range accuracyData {
-		entry := accuracyData[rank]
-		entry.simScore += float64(rank) * ratio
-	}
-}
-
-func calcStatRanks(accuracyData []*accuracyInfoX) {
-	for rank := range accuracyData {
-		entry := accuracyData[rank]
-		entry.statRank = int32(rank)
-	}
-}
-
-func buildAccuracySlice(statWeights stathighs.WeightResult, inputData []stathighs.WeightInput) []*accuracyInfoX {
-	accuracyData := make([]*accuracyInfoX, len(inputData))
-	for i := range len(inputData) {
-		input := &inputData[i]
-		accuracyData[i] = &accuracyInfoX{
-			input:     input,
-			statScore: statWeights.CalcStatScore(input),
+	for index := 1; index < len(data); index++ {
+		if util.FloatsApproxEquals(toScore(data[index]), prevScore) {
+			prevHiLo.Hi = index
+		} else {
+			prevHiLo = &util.HiLoInt{Lo: index, Hi: index}
 		}
+		setRange(data[index], prevHiLo)
 	}
-	return accuracyData
 }
 
-func buildAccuracySliceNoStat(inputData []stathighs.WeightInput) []*accuracyInfoX {
-	accuracyData := make([]*accuracyInfoX, len(inputData))
-	for i := range len(inputData) {
-		input := &inputData[i]
-		accuracyData[i] = &accuracyInfoX{
-			input: input,
-		}
-	}
-	return accuracyData
+func sortDataRangedGeneric[T any](data []*T, toScore func(*T) float64) {
+	slices.SortFunc(data, func(a, b *T) int {
+		return cmp.Compare(toScore(a), toScore(b))
+	})
+}
+
+var simSortSingleCompares = [6]func(a, b *accuracyInfoSimStatSingles) int{
+	func(a, b *accuracyInfoSimStatSingles) int {
+		return cmp.Compare(a.dataSim.Get(stats.Sim_DPS), b.dataSim.Get(stats.Sim_DPS))
+	},
+	func(a, b *accuracyInfoSimStatSingles) int {
+		return cmp.Compare(a.dataSim.Get(stats.Sim_TPS), b.dataSim.Get(stats.Sim_TPS))
+	},
+	func(a, b *accuracyInfoSimStatSingles) int {
+		return cmp.Compare(b.dataSim.Get(stats.Sim_DTPS), a.dataSim.Get(stats.Sim_DTPS))
+	},
+	func(a, b *accuracyInfoSimStatSingles) int {
+		return cmp.Compare(a.dataSim.Get(stats.Sim_HPS), b.dataSim.Get(stats.Sim_HPS))
+	},
+	func(a, b *accuracyInfoSimStatSingles) int {
+		return cmp.Compare(b.dataSim.Get(stats.Sim_TMI), a.dataSim.Get(stats.Sim_TMI))
+	},
+	func(a, b *accuracyInfoSimStatSingles) int {
+		return cmp.Compare(b.dataSim.Get(stats.Sim_DEATH), b.dataSim.Get(stats.Sim_DEATH))
+	},
+}
+var simSortRangedCompares = [6]func(a, b *accuracyInfoSimStatRanged) int{
+	func(a, b *accuracyInfoSimStatRanged) int {
+		return cmp.Compare(a.dataSim.Get(stats.Sim_DPS), b.dataSim.Get(stats.Sim_DPS))
+	},
+	func(a, b *accuracyInfoSimStatRanged) int {
+		return cmp.Compare(a.dataSim.Get(stats.Sim_TPS), b.dataSim.Get(stats.Sim_TPS))
+	},
+	func(a, b *accuracyInfoSimStatRanged) int {
+		return cmp.Compare(b.dataSim.Get(stats.Sim_DTPS), a.dataSim.Get(stats.Sim_DTPS))
+	},
+	func(a, b *accuracyInfoSimStatRanged) int {
+		return cmp.Compare(a.dataSim.Get(stats.Sim_HPS), b.dataSim.Get(stats.Sim_HPS))
+	},
+	func(a, b *accuracyInfoSimStatRanged) int {
+		return cmp.Compare(b.dataSim.Get(stats.Sim_TMI), a.dataSim.Get(stats.Sim_TMI))
+	},
+	func(a, b *accuracyInfoSimStatRanged) int {
+		return cmp.Compare(b.dataSim.Get(stats.Sim_DEATH), b.dataSim.Get(stats.Sim_DEATH))
+	},
+}
+var simSortSimSingledCompares = [6]func(a, b *accuracyInfoSimOnlySingles) int{
+	func(a, b *accuracyInfoSimOnlySingles) int {
+		return cmp.Compare(a.dataSim.Get(stats.Sim_DPS), b.dataSim.Get(stats.Sim_DPS))
+	},
+	func(a, b *accuracyInfoSimOnlySingles) int {
+		return cmp.Compare(a.dataSim.Get(stats.Sim_TPS), b.dataSim.Get(stats.Sim_TPS))
+	},
+	func(a, b *accuracyInfoSimOnlySingles) int {
+		return cmp.Compare(b.dataSim.Get(stats.Sim_DTPS), a.dataSim.Get(stats.Sim_DTPS))
+	},
+	func(a, b *accuracyInfoSimOnlySingles) int {
+		return cmp.Compare(a.dataSim.Get(stats.Sim_HPS), b.dataSim.Get(stats.Sim_HPS))
+	},
+	func(a, b *accuracyInfoSimOnlySingles) int {
+		return cmp.Compare(b.dataSim.Get(stats.Sim_TMI), a.dataSim.Get(stats.Sim_TMI))
+	},
+	func(a, b *accuracyInfoSimOnlySingles) int {
+		return cmp.Compare(b.dataSim.Get(stats.Sim_DEATH), b.dataSim.Get(stats.Sim_DEATH))
+	},
 }
 
 func EvaluateAccuracyFullRangeInlined(statWeights stathighs.WeightResult, requiredSims []stats.SimType, simRatios stats.SimData, inputData []stathighs.WeightInput) float64 {
@@ -300,6 +364,7 @@ func EvaluateAccuracyFullRangeInlined(statWeights stathighs.WeightResult, requir
 
 	// score each sim
 	for _, simType := range requiredSims {
+		// TODO use sortSimType
 		if simType.IsHighGood() {
 			slices.SortFunc(accuracyData, func(a, b *accuracyInfo) int {
 				return cmp.Compare(a.input.SimResult.Get(simType), b.input.SimResult.Get(simType))
@@ -340,7 +405,7 @@ func EvaluateAccuracyFullRangeInlined(statWeights stathighs.WeightResult, requir
 	totalComparePercents := 0.0
 	for i := range accuracyData {
 		entry := accuracyData[i]
-		percentScore := rangePercentDiff(*entry.simRank, *entry.statRank, len(accuracyData))
+		percentScore := rangesToAccuracyRatio(*entry.simRank, *entry.statRank, len(accuracyData))
 		totalComparePercents += percentScore
 	}
 
@@ -348,42 +413,77 @@ func EvaluateAccuracyFullRangeInlined(statWeights stathighs.WeightResult, requir
 }
 
 type evaluatePreparedEntry struct {
+	statScore  float64
+	stats      *stats.StatBlock
 	targetRank int
-	stats      stats.StatBlock
 }
 
 type EvaluateAccuracyPrepared struct {
-	accuracyData []*accuracyInfoX
+	entries []*evaluatePreparedEntry
 }
 
 func (ea *EvaluateAccuracyPrepared) Init(inputData []stathighs.WeightInput, simRatios stats.SimData) {
-	accuracyData := buildAccuracySliceNoStat(inputData)
+	data := util.MapSliceAsNew(inputData, func(input *stathighs.WeightInput) *accuracyInfoSimOnlySingles {
+		return &accuracyInfoSimOnlySingles{
+			dataSim:  &input.SimResult,
+			dataStat: &input.TotalStat,
+		}
+	})
 
 	// score each sim
 	requiredSims := simRatios.NonZeroTypes()
 	for _, simType := range requiredSims {
-		calcOneSim(simType, accuracyData, simRatios)
+		ratio := simRatios.Get(simType)
+		slices.SortFunc(data, simSortSimSingledCompares[simType])
+		for rank := range data {
+			data[rank].simScore += float64(rank) * ratio
+		}
 	}
 
 	// rank combined sims
-	slices.SortFunc(accuracyData, compareSimScores)
-	calcSimRanks(accuracyData)
+	slices.SortFunc(data, func(a, b *accuracyInfoSimOnlySingles) int {
+		return cmp.Compare(a.simScore, b.simScore)
+	})
 
-	ea.accuracyData = accuracyData
+	// make ranked entries for later, recording the sim rank
+	prepare := make([]*evaluatePreparedEntry, len(data))
+	for simRank := range data {
+		entry := data[simRank]
+		prepare[simRank] = &evaluatePreparedEntry{targetRank: simRank, stats: entry.dataStat}
+	}
+	ea.entries = prepare
 }
 
-func (ea *EvaluateAccuracyPrepared) EvaluateWeight(statWeights stathighs.WeightResult) float64 {
-	accuracyData := ea.accuracyData
+func (ea *EvaluateAccuracyPrepared) Clone() *EvaluateAccuracyPrepared {
+	return &EvaluateAccuracyPrepared{util.MapSliceAsNew_NoPointer(ea.entries, func(x *evaluatePreparedEntry) *evaluatePreparedEntry {
+		return &evaluatePreparedEntry{targetRank: x.targetRank, stats: x.stats}
+	})}
+}
 
-	for i := range len(accuracyData) {
-		entry := accuracyData[i]
-		entry.statScore = statWeights.CalcStatScore(entry.input)
+// fundamentally not thread safe
+func (ea *EvaluateAccuracyPrepared) EvaluateWeight(statWeights stathighs.WeightResult) float64 {
+	entries := ea.entries
+
+	// calculate stat scores for given weights
+	for i := range len(entries) {
+		entries[i].statScore = statWeights.CalcStatScore2(entries[i].stats)
 	}
 
 	// rank stats scores
-	slices.SortFunc(accuracyData, compareStatScores)
-	calcStatRanks(accuracyData)
+	slices.SortFunc(entries, func(a, b *evaluatePreparedEntry) int {
+		return cmp.Compare(a.statScore, b.statScore)
+	})
 
-	// compute average difference between stat rank and sim rank
-	return finalResult(accuracyData)
+	// compute average difference between stat rank and sim rank.
+	// stat rank is just the current order.
+	size := len(entries)
+	totalComparePercents := 0.0
+	for statRank := range entries {
+		entry := entries[statRank]
+		diff := util.AbsIntDiff(entry.targetRank, statRank)
+		diffAsRatio := float64(size-diff) / float64(size)
+		totalComparePercents += diffAsRatio
+	}
+	averagePercent := 100.0 * totalComparePercents / float64(size)
+	return averagePercent
 }
