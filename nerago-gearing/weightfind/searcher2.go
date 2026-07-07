@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	c_search2_largeAccuracyGap    = 0.5
-	c_search2_marginalAccuracyGap = 0.005
-	c_search2_marginalWeightGap   = 0.001
+	c_search2_largeAccuracyGap = 0.5
+	//c_search2_marginalAccuracyGap = 0.005
+	c_search2_marginalAccuracyGap = 0.05
+	c_search2_marginalWeightGap   = 0.01
 
 	c_search2_minRunEarlySizeCut = 4
 	c_search2_minRunLateSizeCut  = 2
@@ -23,7 +24,7 @@ const (
 	c_search2_probe_middle = 0.5
 	c_search2_probeB       = 0.75
 
-	c_max_node_depth = 100
+	c_max_node_depth = 30
 )
 
 type opType int8
@@ -84,8 +85,6 @@ func (ws *WeightSearcher2) Run(cancel channel_op.CancelSignal) stathighs.WeightR
 			break
 		}
 
-		// potential single axis search
-
 		switch bound.plannedOp {
 		case opDivide1:
 			ws.opDivide1(bound)
@@ -94,6 +93,8 @@ func (ws *WeightSearcher2) Run(cancel channel_op.CancelSignal) stathighs.WeightR
 		case opFinal:
 			ws.opFinal(bound)
 		}
+
+		ws.printer.Printf("queue %d\n", ws.queue.Size())
 	}
 
 	bestWeight := ws.bestResult.GetBestOrNilValue()
@@ -105,7 +106,7 @@ func (ws *WeightSearcher2) evaluateScore(weightArray []float64) float64 {
 	for i, statType := range ws.statTypes {
 		weights.Put(statType, weightArray[i])
 	}
-	accuracy := EvaluateAccuracyNoRangeInlined2(weights, ws.simTypes, ws.targetRatio, ws.inputData)
+	accuracy := EvaluateAccuracyNoRangeAntiInline(weights, ws.simTypes, ws.targetRatio, ws.inputData)
 	ws.bestResult.Offer(&weights, accuracy)
 	return accuracy
 }
@@ -172,7 +173,7 @@ func (ws *WeightSearcher2) opSearch2(bound *weightSearch2Bound) {
 }
 
 func (ws *WeightSearcher2) search2DoProbes(bound *weightSearch2Bound, middle []float64) []probeAndAccuracy {
-	probes := make([]probeAndAccuracy, 0)
+	probes := make([]probeAndAccuracy, 1, ws.typeCount*2+1)
 	probes[0] = probeAndAccuracy{point: middle, axis: -1, accuracy: ws.evaluateScore(middle)}
 	for axis := range ws.typeCount {
 		lo := slices.Clone(middle)

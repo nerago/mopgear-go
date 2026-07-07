@@ -81,6 +81,10 @@ func FloatsApproxEquals(a, b float64) bool {
 	}
 }
 
+func FloatsApproxEqualsFast(a, b float64) bool {
+	return math.Abs(a-b) < 0.0000001
+}
+
 func FloatsBetween(lo, val, hi float64) bool {
 	return lo-0.000001 <= val && val <= hi+0.000001
 }

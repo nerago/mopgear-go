@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	c_search1_min         = -1.0
-	c_search1_max         = 10.0
-	c_search1_step        = 2.13
+	c_search1_min  = -1.0
+	c_search1_max  = 10.0
+	c_search1_step = 3.13
+	//c_search1_step        = 2.13
 	c_search1_tweak_start = 0.1
 )
 
@@ -26,11 +27,14 @@ type WeightSearcher1 struct {
 	printer     *util.PrintRecorder
 }
 
-func (ws *WeightSearcher1) Init(weightStats []stats.StatType, targetRatio stats.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) {
+func (ws *WeightSearcher1) Init(weightStats []stats.StatType, targetRatio stats.SimData, printer *util.PrintRecorder) {
 	ws.weightStats = weightStats
 	ws.targetRatio = targetRatio
-	ws.inputData = inputData
 	ws.printer = printer
+}
+
+func (ws *WeightSearcher1) SupplyData(inputData []stathighs.WeightInput) {
+	ws.inputData = inputData
 }
 
 func (ws *WeightSearcher1) Run(cancel channel_op.CancelSignal) stathighs.WeightResult {
@@ -39,7 +43,7 @@ func (ws *WeightSearcher1) Run(cancel channel_op.CancelSignal) stathighs.WeightR
 
 	bestCandidates := util_rank.HighestCollector_ForN[stathighs.WeightResult](128, (*stathighs.WeightResult).Equals)
 	for possibleWeight := range ws.makeSpacedWeights() {
-		accuracy := EvaluateAccuracyNoRangeInlined2(possibleWeight, requiredSims, ws.targetRatio, ws.inputData)
+		accuracy := EvaluateAccuracyNoRangeInlined1(possibleWeight, requiredSims, ws.targetRatio, ws.inputData)
 		bestCandidates.Offer(&possibleWeight, accuracy)
 		if progress%100 == 0 {
 			_, bestAccuracy := bestCandidates.GetBest1()

@@ -23,18 +23,21 @@ type WeightSearcher0 struct {
 	printer     *util.PrintRecorder
 }
 
-func (ws *WeightSearcher0) Init(weightStats []stats.StatType, targetRatio stats.SimData, inputData []stathighs.WeightInput, printer *util.PrintRecorder) {
+func (ws *WeightSearcher0) Init(weightStats []stats.StatType, targetRatio stats.SimData, printer *util.PrintRecorder) {
 	ws.weightStats = weightStats
 	ws.targetRatio = targetRatio
-	ws.inputData = inputData
 	ws.printer = printer
+}
+
+func (ws *WeightSearcher0) SupplyData(inputData []stathighs.WeightInput) {
+	ws.inputData = inputData
 }
 
 func (ws *WeightSearcher0) Run(cancel channel_op.CancelSignal) stathighs.WeightResult {
 	simTypes := ws.targetRatio.NonZeroTypes()
 	best := util_rank.BestCollector1[stathighs.WeightResult]{}
 	progress := 0
-	for initialWeight := range ws.makeRandomWeights(1000) {
+	for initialWeight := range ws.makeRandomWeights(100) {
 		updatedWeight, updatedAccuracy := weightTweakerInternal_FastNoRange(initialWeight, c_search0_tweak_start, ws.weightStats, simTypes, ws.targetRatio, ws.inputData)
 		best.Offer(&updatedWeight, updatedAccuracy)
 		ws.printer.Printf("%6d %6.3f %6.3f\n", progress, updatedAccuracy, best.BestValue)

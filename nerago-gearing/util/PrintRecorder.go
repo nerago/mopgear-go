@@ -10,13 +10,14 @@ import (
 )
 
 type PrintRecorder struct {
-	holdOutput bool
-	builder    StringBuild2
-	file       *os.File
-	test       *testing.T
-	parent     *PrintRecorder
-	prefix     string
-	mutex      sync.Mutex
+	holdOutput    bool
+	consoleOutput bool
+	builder       StringBuild2
+	file          *os.File
+	test          *testing.T
+	parent        *PrintRecorder
+	prefix        string
+	mutex         sync.Mutex
 }
 
 func PrintRecorder_CreateLogFile(path string) *PrintRecorder {
@@ -26,19 +27,23 @@ func PrintRecorder_CreateLogFile(path string) *PrintRecorder {
 	if err != nil {
 		panic(err)
 	}
-	return &PrintRecorder{false, nil, file, nil, nil, "", sync.Mutex{}}
+	return &PrintRecorder{false, true, nil, file, nil, nil, "", sync.Mutex{}}
 }
 
 func PrintRecorder_Testing(test *testing.T) *PrintRecorder {
-	return &PrintRecorder{false, nil, nil, test, nil, "", sync.Mutex{}}
+	return &PrintRecorder{false, true, nil, nil, test, nil, "", sync.Mutex{}}
 }
 
 func PrintRecorder_HoldAll() *PrintRecorder {
-	return &PrintRecorder{true, nil, nil, nil, nil, "", sync.Mutex{}}
+	return &PrintRecorder{true, false, nil, nil, nil, nil, "", sync.Mutex{}}
+}
+
+func PrintRecorder_Nop() *PrintRecorder {
+	return &PrintRecorder{false, false, nil, nil, nil, nil, "", sync.Mutex{}}
 }
 
 func (print *PrintRecorder) NewChildPrefixed(prefixLines string) *PrintRecorder {
-	return &PrintRecorder{false, nil, nil, nil, print, prefixLines, sync.Mutex{}}
+	return &PrintRecorder{false, false, nil, nil, nil, print, prefixLines, sync.Mutex{}}
 }
 
 var _newline = []byte{'\n'}
@@ -53,12 +58,13 @@ func (print *PrintRecorder) outputNewline() {
 		print.test.Log()
 	} else if print.parent != nil {
 		print.parent.Println(print.prefix)
-		return
 	}
 
-	_, err := os.Stdout.Write(_newline)
-	if err != nil {
-		panic(err)
+	if print.consoleOutput {
+		_, err := os.Stdout.Write(_newline)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -71,14 +77,25 @@ func (print *PrintRecorder) outputBytes(bytes []byte) {
 	} else if print.test != nil {
 		print.test.Log(bytes)
 	} else if print.parent != nil {
-		//print.parent.Println(slices.Concat([]byte(print.prefix), bytes))
-		print.parent.Printf("%s %v", print.prefix, bytes)
-		return
+		print.parent.mutex.Lock()
+		defer print.parent.mutex.Unlock()
+
+		if print.parent.holdOutput {
+			print.parent.builder.WriteString(print.prefix)
+			print.parent.builder.WriteRune(' ')
+			print.parent.builder.WriteBytes(bytes)
+		} else {
+			print.parent.outputString(print.prefix)
+			print.parent.outputString(" ")
+			print.parent.outputBytes(bytes)
+		}
 	}
 
-	_, err := os.Stdout.Write(bytes)
-	if err != nil {
-		panic(err)
+	if print.consoleOutput {
+		_, err := os.Stdout.Write(bytes)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -92,12 +109,13 @@ func (print *PrintRecorder) outputString(str string) {
 		print.test.Log(str)
 	} else if print.parent != nil {
 		print.parent.Printf("%s %v", print.prefix, str)
-		return
 	}
 
-	_, err := os.Stdout.WriteString(str)
-	if err != nil {
-		panic(err)
+	if print.consoleOutput {
+		_, err := os.Stdout.WriteString(str)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -157,7 +175,7 @@ func (print *PrintRecorder) PrintBytes(bytes []byte) {
 	if print.holdOutput {
 		print.builder.WriteBytes(bytes)
 	} else {
-		print.outputString(string(bytes))
+		print.outputBytes(bytes)
 	}
 }
 

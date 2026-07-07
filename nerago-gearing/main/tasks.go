@@ -225,7 +225,7 @@ func testSimEach(printer *util.PrintRecorder) {
 	modelList := []model.Model{model.Model_PallyProtDps(), model.Model_PallyProtCompromise(), model.Model_PallyProtMitigation_NoSet(), model.Model_PallyProtMitigation_WithSet(), model.Model_PallyProtHeal()}
 	for model := range util.ForPointer(modelList) {
 		equipped := loaders.GearFileReader_Read(model.ReferenceGearFile)
-		equipSet := setup.OptionsSetup_ExactEquippedOnly(equipped, model, setup.MissingEnchant_Fix, util.PrintRecorder_HoldAll())
+		equipSet := setup.OptionsSetup_ExactEquippedOnly(equipped, model, setup.MissingEnchant_Fix, util.PrintRecorder_Nop())
 		// itemOptions := setup.OptionsSetup_FromGearFile(model.ReferenceGearFile, model, setup.MissingEnchant_Panic, printer)
 		// output := solver.Solver(solver.SolveInput{
 		// 	ItemOptions:         &itemOptions,
@@ -457,7 +457,7 @@ func trinketSims(printer *util.PrintRecorder) {
 		file := group.file
 
 		equipped := loaders.GearFileReader_Read(file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_HoldAll())
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 		printer.Println(group.label + " CURRENT")
 		printer.Println(equipMap[items.Equip_Trinket1].CreateString())
 		printer.Println(equipMap[items.Equip_Trinket2].CreateString())
@@ -468,7 +468,7 @@ func trinketSims(printer *util.PrintRecorder) {
 		file := group.file
 
 		equipped := loaders.GearFileReader_Read(file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_HoldAll())
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 
 		for _, itemId := range itemIds {
 			var item *items.FullItem
@@ -573,7 +573,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		file := group.file
 
 		equipped := loaders.GearFileReader_Read(file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_HoldAll())
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 		printer.Println(group.label + " CURRENT")
 		printer.Println(equipMap[items.Equip_Trinket1].CreateString())
 		printer.Println(equipMap[items.Equip_Trinket2].CreateString())
@@ -584,7 +584,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		file := group.file
 
 		equipped := loaders.GearFileReader_Read(file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_HoldAll())
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 
 		processItemIds := itemIds
 		if group.label == "ret" {
@@ -692,7 +692,7 @@ func basicListRatingEach(printer *util.PrintRecorder) {
 
 	for _, group := range groups {
 		equipItems := loaders.GearFileReader_Read(group.file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, setup.MissingEnchant_Panic, util.PrintRecorder_HoldAll())
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 		itemSet := items.FullItemSet_FromMap(equipMap)
 		rating := group.model.CalcRatingFull(&itemSet)
 		tools.ReportSet(&group.model, &itemSet, rating, printer)
@@ -742,7 +742,7 @@ func solveForRatings(printer *util.PrintRecorder) {
 
 	for _, group := range groups {
 		equipItems := loaders.GearFileReader_Read(group.file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, setup.MissingEnchant_Panic, util.PrintRecorder_HoldAll())
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 		itemSet := items.FullItemSet_FromMap(equipMap)
 		rating := group.model.CalcRatingFull(&itemSet)
 		// solver.ReportSet(printer, itemSet, rating, &group.model)

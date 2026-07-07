@@ -14,6 +14,10 @@ func (stack *QueueStackFilo[T]) IsEmpty() bool {
 	return stack.top == 0
 }
 
+func (stack *QueueStackFilo[T]) Size() int {
+	return stack.top
+}
+
 func (stack *QueueStackFilo[T]) Push(value T) {
 	writeIndex := stack.top
 	if writeIndex < len(stack.array) {

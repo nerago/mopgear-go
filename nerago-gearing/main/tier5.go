@@ -457,7 +457,7 @@ func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.Stat
 	}
 
 	pawn := tools.WritePawnString(weights, printer)
-	gearJson := tools.WowSimJson_Write(baseItemSet.Items(), &model, util.PrintRecorder_HoldAll())
+	gearJson := tools.WowSimJson_Write(baseItemSet.Items(), &model, util.PrintRecorder_Nop())
 
 	writeFile(weightFileOut, pawn)
 	writeFile(gearFile, gearJson)
