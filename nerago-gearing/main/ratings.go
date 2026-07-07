@@ -240,8 +240,8 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 	printer.Printf("interest = %f\n", weightfind.EvaluateAccuracyRanged(interestWR, targetRatio, mixedInputData))
 
 	search := weightfind.WeightSearcher2{}
-	search.Init(weightStats, targetRatio, printer)
-	//search.Init(weightStats, targetRatio, nil)
+	//search.Init(weightStats, targetRatio, printer)
+	search.Init(weightStats, targetRatio, nil)
 	search.SupplyData(mixedInputData)
 	search.SetRanges(-1.0, 10.0)
 
@@ -717,11 +717,11 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 
 	runRankingOlder := true
 	runRanking3aPreferred := true
-	runRanking3aVariants := true
+	runRanking3aVariants := false
 	runRanking3bVariants := true
 	runRanking3bPreferred := true
-	runRanking4 := true
-	runRanking5 := true
+	runRanking4 := false
+	runRanking5 := false
 
 	runSearches := true
 
@@ -1210,6 +1210,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			ranking := stathighs.RankingStatWeightProcess3b{}
 			ranking.SCALE1 = false
 			ranking.FINAL = 0
+			ranking.TOTALWEIGHT = 0
 			ranking.Init(printer, shortTimeout)
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)

@@ -108,8 +108,20 @@ func statWeightsGrid_updateOne(label string, gearModel *model.Model, gearFile st
 	printer.Println("Tweaked Ranking Weights >>>>> " + label)
 	pawnRanking = tools.WritePawnString(weightsRanking, printer)
 
+	// SEARCH weights
+	search := WeightSearcher2{}
+	search.Init(gearModel.StatsForWeighting, ratios, nil)
+	search.SupplyData(mixedInputData)
+	search.SetRanges(-1.0, 10.0)
+	weightsSearch := search.Run(nil)
+	printer.Println("Search Weights >>>>> " + label)
+	pawnSearch := tools.WritePawnString(weightsSearch, printer)
+	accuracySearch := EvaluateAccuracyRanged(weightsSearch, ratios, inputDataGrid)
+
 	// OVERWRITE WEIGHT FILE
-	if accuracyGrid > accuracyRanking {
+	if accuracySearch > accuracyGrid && accuracySearch > accuracyRanking {
+		writeFile(weightFileOut, pawnSearch)
+	} else if accuracyGrid > accuracyRanking {
 		writeFile(weightFileOut, pawnGrid)
 	} else {
 		writeFile(weightFileOut, pawnRanking)

@@ -107,7 +107,7 @@ func (ws *WeightSearcher2) Run(cancel channel_op.CancelSignal) stathighs.WeightR
 		}
 
 		iterCount++
-		if c_search2_debug || iterCount%100 == 0 {
+		if (c_search2_debug || iterCount%100 == 0) && ws.printer != nil {
 			ws.printer.Printf("status i=%d q=%d b=%f\n", iterCount, ws.queue.Size(), ws.bestResult.BestValue)
 		}
 		if iterCount%10 == 0 {
