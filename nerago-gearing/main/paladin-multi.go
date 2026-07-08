@@ -8,7 +8,6 @@ import (
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
-	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
 )
@@ -33,8 +32,9 @@ const (
 
 func PaladinMultiRun(printer *util.PrintRecorder) {
 	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Common)
+	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
 	job.SetMinimumExtraItemLevel(463)
-	job.SetWriteBestToGearFiles()
+	//job.SetWriteBestToGearFiles()
 
 	var generalUpgrade items.UpgradeLevel = 0
 	var forceUpgrade items.UpgradeLevel = 0
@@ -79,7 +79,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:                     "Prot-Mitigation-WithSet",
 		GearFile:                  files.GearFileProtMitigationWithSet,
 		Model:                     model.Model_PallyProtMitigation_WithSet(),
-		RequestRatingPercent:      0.30,
+		RequestRatingPercent:      0.35,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
 		MissingEnchant:            setup.MissingEnchant_Panic,
@@ -88,7 +88,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:                     "Prot-Heal",
 		GearFile:                  files.GearFileProtMitigationWithSet,
 		Model:                     model.Model_PallyProtHeal(),
-		RequestRatingPercent:      0.10,
+		RequestRatingPercent:      0.05,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
 		MissingEnchant:            setup.MissingEnchant_Panic,
@@ -117,9 +117,10 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	retT16 := []items.ItemId{
 		// yes numbers don't line up, seems like the way it is
-		99052, // ret t16 chest celstial
-		99002, // ret t16 hand celstial
-		98985, // ret t16 head celstial
+		99052, // ret t16 chest celestial
+		99002, // ret t16 hand celestial
+		98985, // ret t16 head celestial
+		98986, // ret t16 legs celestial
 	}
 	ret.AddExtraItems(retT16)
 	protDps.AddExtraItems(retT16)
@@ -157,7 +158,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	throneRings := []items.ItemId{
 		96500, // scaled tyrant heroic
 		96377, // jinrohk soulcrystal
-		96481, // durumu tentacle heroic (not a tank ring, but ret likes?)
+		96481, // durumu tentacle heroic
 	}
 	ret.AddExtraItems(throneRings)
 	protDps.AddExtraItems(throneRings)
@@ -271,6 +272,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		105033, // Wolf-Rider Spurs
 		104938, // Sorrowpath Signet
 		95140,  // shado assault band
+		104981, // greatsword pride fall
 	})
 
 	protDps.AddExtraItems([]items.ItemId{
@@ -386,14 +388,14 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 	blockHelmetsWithoutIndomitable(&protHeal)
 
-	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
-	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Stamina, 120))
+	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
+	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Stamina, 120))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
 
-	job.MakeRandomVariants(101887, 0, -365, -352)
+	//job.MakeRandomVariants(101887, 0, -365, -352)
 
 	//ret.AddBagsExtra()
 	//protDps.AddBagsExtra()
@@ -414,8 +416,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	job.VerifyNoExtraDuplicates()
 
-	job.RunNoPermutations_AllCommonAlternates()
-	//job.RunForSolutionsPerPermute(1)
+	//job.RunNoPermutations_AllCommonAlternates()
+	job.RunForSolutionsPerPermute(12)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)
