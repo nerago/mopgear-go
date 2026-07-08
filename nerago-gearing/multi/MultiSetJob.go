@@ -25,6 +25,7 @@ type MultiSetJob struct {
 	bagsGear              loaders.EquippedArray
 	simRunSize            simulate.WowSim_RunSize
 	minimumExtraItemLevel uint16
+	writeBestToGearFiles  bool
 }
 
 type distinctUsageGroups struct {
@@ -119,4 +120,8 @@ func (job *MultiSetJob) VerifyNoExtraDuplicates() {
 			}
 		}
 	}
+}
+
+func (job *MultiSetJob) SetWriteBestToGearFiles() {
+	job.writeBestToGearFiles = true
 }

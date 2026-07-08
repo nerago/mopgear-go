@@ -32,9 +32,9 @@ const (
 )
 
 func PaladinMultiRun(printer *util.PrintRecorder) {
-	// job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
 	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Common)
 	job.SetMinimumExtraItemLevel(463)
+	job.SetWriteBestToGearFiles()
 
 	var generalUpgrade items.UpgradeLevel = 0
 	var forceUpgrade items.UpgradeLevel = 0
@@ -169,12 +169,10 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// TRINKET
 	trinketsDpsP3 := []items.ItemId{
 		trinketZandSpark,
-		// trinketJiKun, // culled
 		trinketTwinsGaze,
 		trinketPrimRage,
 	}
 	trinketsTankP3 := []items.ItemId{
-		// trinketSoulBarrier, // culled
 		trinketFortZand,
 	}
 	trinketsBothP3 := slices.Concat(trinketsDpsP3, trinketsTankP3)
@@ -200,7 +198,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	// NECK
 	miscNecksP3 := []items.ItemId{
-		// 95142, // striker's battletags (cull)
 		95205, // terra-cotta neck
 		94776, // primal turtle amulet
 	}
@@ -415,8 +412,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	job.VerifyNoExtraDuplicates()
 
-	//job.RunNoPermutations_AllCommonAlternates()
-	job.RunForSolutionsPerPermute(1)
+	job.RunNoPermutations_AllCommonAlternates()
+	//job.RunForSolutionsPerPermute(1)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)

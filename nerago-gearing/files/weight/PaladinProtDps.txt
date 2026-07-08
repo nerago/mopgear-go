@@ -1,1 +1,1 @@
-( Pawn: v1: "Gearing Weights": Class=Paladin,Strength=1.0000000000,Stamina=0.1152369056,CritRating=1.7168539405,HasteRating=1.4895352767,ExpertiseRating=1.2077684552,MasteryRating=0.2824373932,DodgeRating=0.1496124033,ParryRating=0.1285252250, )
+( Pawn: v1: "Gearing Weights": Class=Paladin,Strength=1.0000000000,Stamina=0.1180957065,CritRating=1.8680094649,HasteRating=1.4989387166,ExpertiseRating=1.1468510569,MasteryRating=0.2639594048,DodgeRating=0.1180957065,ParryRating=0.2331881589, )

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
@@ -459,15 +458,7 @@ func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.Stat
 	pawn := tools.WritePawnString(weights, printer)
 	gearJson := tools.WowSimJson_Write(baseItemSet.Items(), &model, util.PrintRecorder_Nop())
 
-	writeFile(weightFileOut, pawn)
-	writeFile(gearFile, gearJson)
+	util.WriteStringToFile(weightFileOut, pawn)
+	util.WriteStringToFile(gearFile, gearJson)
 	simpleItemList(baseItemSet, printer)
-}
-
-func writeFile(filename, content string) {
-	bytes := []byte(content)
-	err := os.WriteFile(filename, bytes, 0666)
-	if err != nil {
-		panic(err)
-	}
 }

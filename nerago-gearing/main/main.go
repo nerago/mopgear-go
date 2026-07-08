@@ -62,7 +62,7 @@ func core(printer *util.PrintRecorder) {
 
 	// slotRating(printer)
 	// basicReforge(printer)
-	// findT5BIS(printer)
+	//findT5BIS(printer)
 	// findT5TrinketPermutations(printer)
 	// findT5WeightPermutations(printer)
 	// statWeightsGridFromInitialT5(printer)
@@ -88,15 +88,15 @@ func core(printer *util.PrintRecorder) {
 	// statWeightsFitting2(printer)
 	// statWeightsComplex(printer)
 	//statWeightsGridIntoRanking(printer)
-	statWeightsCustom(printer)
+	//statWeightsCustom(printer)
 
-	statWeights_CompareAlgorithms(printer)
+	//statWeights_CompareAlgorithms(printer)
 
-	//statWeightsGrid_updateAll(printer)
+	statWeightsGrid_updateAll(printer)
 
-	//PaladinMultiRun(printer)
+	PaladinMultiRun(printer)
 
-	//findUpgrades_Paladin(printer)
+	findUpgrades_Paladin(printer)
 }
 
 func setupPallyMitigationSet() (items.FullOptionsMap, model.Model) {

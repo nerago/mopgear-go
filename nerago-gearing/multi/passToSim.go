@@ -243,12 +243,13 @@ func countRegem(multiProposed multi_types.MultiProposedOutput) int {
 	return countRegemmed
 }
 
+// TODO refactor with Accuracy code
 func (job *MultiSetJob) suggestResultFromRankings(results []simulateMultiResult) {
-	simResultTypeList := []stats.SimType{stats.Sim_DPS, stats.Sim_DTPS, stats.Sim_TMI, stats.Sim_DEATH}
 	rankInputArrays := util.MapMapSlice[int, stats.SimType, float64]{}
 	for _, result := range results {
 		for paramIndex, simStats := range result.result {
-			for _, simType := range simResultTypeList {
+			simTypeList := job.params[paramIndex].Model.SimRatioWeighting.NonZeroTypes()
+			for _, simType := range simTypeList {
 				value := simStats.Get(simType)
 				rankInputArrays.Add(paramIndex, simType, value)
 			}
@@ -256,7 +257,8 @@ func (job *MultiSetJob) suggestResultFromRankings(results []simulateMultiResult)
 	}
 
 	for paramIndex := range job.params {
-		for _, simType := range simResultTypeList {
+		simTypeList := job.params[paramIndex].Model.SimRatioWeighting.NonZeroTypes()
+		for _, simType := range simTypeList {
 			rankInputArrays.MapInternalSlice(paramIndex, simType, func(rankValues []float64) []float64 {
 				if simType.IsHighGood() {
 					slices.SortFunc(rankValues, func(a, b float64) int { return cmp.Compare(a, b) })
@@ -271,18 +273,38 @@ func (job *MultiSetJob) suggestResultFromRankings(results []simulateMultiResult)
 	best := util_rank.BestCollector1[simulateMultiResult]{}
 
 	for _, result := range results {
-		sumOfRanks := 0
+		sumOfRanks := 0.0
 		for paramIndex, simStats := range result.result {
-			for _, simType := range simResultTypeList {
+			ratingPercent := job.params[paramIndex].RequestRatingPercent
+			simTypeList := job.params[paramIndex].Model.SimRatioWeighting.NonZeroTypes()
+			for _, simType := range simTypeList {
+				simRatio := job.params[paramIndex].Model.SimRatioWeighting.Get(simType)
 				value := simStats.Get(simType)
 				rankArray, _ := rankInputArrays.ValuesForKeyAsSlice(paramIndex, simType)
 				valueRank := slices.Index(rankArray, value)
-				sumOfRanks += valueRank
+				sumOfRanks += float64(valueRank) * simRatio * ratingPercent
 			}
 		}
-		best.Offer(&result, float64(sumOfRanks))
+		best.Offer(&result, sumOfRanks)
 	}
 
 	job.printer.Println("Best ranked result")
-	job.reportSimResults_One(best.GetBestOrPanic())
+	bestMultiResult := best.GetBestOrPanic()
+	job.reportSimResults_One(bestMultiResult)
+
+	if job.writeBestToGearFiles {
+		job.writeToGearFiles(bestMultiResult)
+	}
+}
+
+func (job *MultiSetJob) writeToGearFiles(result simulateMultiResult) {
+	for paramIndex := range job.params {
+		param := &job.params[paramIndex]
+		gearFile := param.GearFile
+
+		itemSet := result.proposed.Parts[paramIndex].FullSet
+		gearJson := tools.WowSimJson_Write(itemSet.Items(), &param.Model, util.PrintRecorder_Nop())
+
+		util.WriteStringToFile(gearFile, gearJson)
+	}
 }

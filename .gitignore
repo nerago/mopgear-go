@@ -6,3 +6,4 @@ main.exe
 output/*
 output\*
 *.lscache
+tempdata/
