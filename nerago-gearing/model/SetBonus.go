@@ -349,10 +349,19 @@ type ActiveSetCountsRequired struct {
 }
 
 func ActiveSetCountsRequiredMake(init ...any) ActiveSetCountsRequired {
+	return activeSetsMakeInner(init)
+}
+
+func ActiveSetCountsRequiredMake_Pointer(init ...any) *ActiveSetCountsRequired {
+	acr := activeSetsMakeInner(init)
+	return &acr
+}
+
+func activeSetsMakeInner(init []any) ActiveSetCountsRequired {
 	acr := ActiveSetCountsRequired{}
 	for i := 0; i < len(init); i += 2 {
 		set := init[i].(ActiveSet)
-		count := init[i + 1].(int)
+		count := init[i+1].(int)
 		acr.sets = append(acr.sets, set)
 		acr.counts = append(acr.counts, uint8(count))
 	}
@@ -408,6 +417,16 @@ optionLoop:
 		return true
 	}
 	return false
+}
+
+func ActiveSetCountsMeetExact_FullItem(setReq ActiveSetCountsRequired, items *FullEquipMap) bool {
+	for active, needCount := range setReq.Pairs() {
+		haveCount := active.CountItemsFull(items)
+		if haveCount < needCount || haveCount > needCount+1 {
+			return false
+		}
+	}
+	return true
 }
 
 type ActiveSet interface {

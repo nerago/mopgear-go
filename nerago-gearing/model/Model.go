@@ -18,19 +18,20 @@ type Model struct {
 	StatRequirements StatRequirementsHitExpertise
 	StatRatings      StatRatingsWeights
 
-	Spec              SpecType
-	Goal              OptimiseGoal
-	SimulateAs        WowSim_Fight
-	SimSpeedUp        int
-	ReforgeRules      ReforgeRules
-	EnchantChoice     EnchantChoice
-	GemChoice         GemChoice
-	SetBonus          SetBonus
-	SetBonusRequired  []ActiveSetCountsRequired
-	Professions       ProfessionInfo
-	SimRatioWeighting stats.SimData
-	StatsForWeighting []StatType
-	ReferenceGearFile string // should just be used by exporters etc
+	Spec                 SpecType
+	Goal                 OptimiseGoal
+	SimulateAs           WowSim_Fight
+	SimSpeedUp           int
+	ReforgeRules         ReforgeRules
+	EnchantChoice        EnchantChoice
+	GemChoice            GemChoice
+	SetBonus             SetBonus
+	SetBonusRequired     []ActiveSetCountsRequired
+	FixedWeightsSetBonus *ActiveSetCountsRequired
+	Professions          ProfessionInfo
+	SimRatioWeighting    stats.SimData
+	StatsForWeighting    []StatType
+	ReferenceGearFile    string // should just be used by exporters etc
 }
 
 func (model *Model) Equals(other *Model) bool {
@@ -47,27 +48,35 @@ func (model *Model) Equals(other *Model) bool {
 
 // ////////// requirements
 func (model *Model) CheckSet(itemSet *SolvableItemSet) bool {
-	if model.StatRequirements.CheckSet(itemSet.Total()) {
-		if len(model.SetBonusRequired) > 0 {
-			return ActiveSetCountsMeetAny(model.SetBonusRequired, itemSet.Items())
-		} else {
-			return true
-		}
-	} else {
+	if !model.StatRequirements.CheckSet(itemSet.Total()) {
 		return false
 	}
+	if len(model.SetBonusRequired) > 0 {
+		return ActiveSetCountsMeetAny(model.SetBonusRequired, itemSet.Items())
+	}
+	return true
 }
 
 func (model *Model) CheckSetFull(itemSet *FullItemSet) bool {
-	if model.StatRequirements.CheckSet(itemSet.Total()) {
-		if len(model.SetBonusRequired) > 0 {
-			return ActiveSetCountsMeetAny_FullItem(model.SetBonusRequired, itemSet.Items())
-		} else {
-			return true
-		}
-	} else {
+	if !model.StatRequirements.CheckSet(itemSet.Total()) {
 		return false
 	}
+	if len(model.SetBonusRequired) > 0 {
+		return ActiveSetCountsMeetAny_FullItem(model.SetBonusRequired, itemSet.Items())
+	}
+	return true
+}
+
+func (model *Model) CheckSetFull_ForWeightProcess(itemSet *FullItemSet) bool {
+	if !model.StatRequirements.CheckSet(itemSet.Total()) {
+		return false
+	}
+	if model.FixedWeightsSetBonus != nil {
+		return ActiveSetCountsMeetExact_FullItem(*model.FixedWeightsSetBonus, itemSet.Items())
+	} else if len(model.SetBonusRequired) > 0 {
+		return ActiveSetCountsMeetAny_FullItem(model.SetBonusRequired, itemSet.Items())
+	}
+	return true
 }
 
 // ////////// set ratings

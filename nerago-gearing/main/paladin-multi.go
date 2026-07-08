@@ -225,6 +225,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	celestialRaden := []items.ItemId{
 		95011, // lighting clawfeet
 		95020, // ra-den contemplative loop
+		95022, // Ra-den's Ruinous Ring
+		95038, // carapace core
 	}
 	raidDrops := []items.ItemId{
 		103787, // poisonbinder girth
@@ -385,7 +387,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	blockHelmetsWithoutIndomitable(&protHeal)
 
 	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
-	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Stamina, 120))
+	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Stamina, 120))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))

@@ -159,7 +159,7 @@ func generateRatingsInputFromRealRandomSetsT5(printer *util.PrintRecorder) ([]st
 	_, itemOptions := allT5stuff(&model, files.GearFileProtMitigationNoSet, printer)
 
 	// setList := build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, &model, makeSetCount, printer, 14000)
-	setList := build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, &model, makeSetCount, printer, 0)
+	setList := build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, &model, makeSetCount, 0)
 
 	track := util.TrackProgress_Start()
 	track.RunOuterTracking(len(setList))
@@ -214,35 +214,37 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 	targetRatio := model.SimRatio_generalMiti
 	weightStats := model.StatsForWeighting_strengthTank
 
-	inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
-	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
+	//inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
+	//inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
+	inputDataGrid := readWeightInputFile("tempdata\\weightfind-sim-grid-Prot-Mitigation-NoSet.json")
+	inputDataRandom := readWeightInputFile("tempdata\\weightfind-sim-real-Prot-Mitigation-NoSet.json")
 	// mixedInputData := slices.Concat(inputDataGrid, inputDataRandom)
 	mixedInputData := slices.Concat(inputDataRandom, inputDataGrid)
 
 	filteredInput := mixedInputData
-	printer.Printf("filteredInput size %d\n", len(filteredInput))
+	printer.Printf("mixedInputData size %d\n", len(filteredInput))
 
 	//search := weightfind.WeightSearcher0{}
 	//search.Init(weightStats, targetRatio, util.PrintRecorder_Nop())
 	//search.Init(weightStats, targetRatio, printer)
 	//search.SupplyData(mixedInputData)
 
-	var interest = []float64{ // accuracy = 92.633057
-		5.39,
-		8.659509862234,
-		3.433015580687,
-		8.603761881869,
-		-0.001056252428,
-		8.802300380181,
-		5.369767704147,
-		3.466234195963}
-	interestWR := stathighs.WeightResult_Of(interest, weightStats)
-	printer.Printf("interest = %f\n", weightfind.EvaluateAccuracyRanged(interestWR, targetRatio, mixedInputData))
+	//var interest = []float64{ // accuracy = 92.633057
+	//	5.39,
+	//	8.659509862234,
+	//	3.433015580687,
+	//	8.603761881869,
+	//	-0.001056252428,
+	//	8.802300380181,
+	//	5.369767704147,
+	//	3.466234195963}
+	//interestWR := stathighs.WeightResult_Of(interest, weightStats)
+	//printer.Printf("interest = %f\n", weightfind.EvaluateAccuracyRanged(interestWR, targetRatio, mixedInputData))
 
 	search := weightfind.WeightSearcher2{}
 	//search.Init(weightStats, targetRatio, printer)
 	search.Init(weightStats, targetRatio, nil)
-	search.SupplyData(mixedInputData)
+	search.SupplyData(inputDataGrid)
 	search.SetRanges(-1.0, 10.0)
 
 	sw := util.StopwatchMakeStarted()
@@ -1389,41 +1391,41 @@ func statWeightsGrid_updateAll(printer *util.PrintRecorder) {
 			Model:           model.Model_PallyProtMitigation_NoSet(),
 			SubstituteItems: substituteItemsMiti,
 		},
-		{
-			Label:           "Prot-Mitigation-WithSet",
-			WeightFileOut:   files.WeightMitiWithSetFile,
-			GearFile:        files.GearFileProtMitigationWithSet,
-			Model:           model.Model_PallyProtMitigation_WithSet(),
-			SubstituteItems: substituteItemsMiti,
-		},
-		{
-			Label:           "Prot-Damage",
-			WeightFileOut:   files.WeightDpsFile,
-			GearFile:        files.GearFileProtDps,
-			Model:           model.Model_PallyProtDps(),
-			SubstituteItems: substituteItemsDps,
-		},
-		{
-			Label:           "Prot-Compromise",
-			WeightFileOut:   files.WeightCompromiseFile,
-			GearFile:        files.GearFileProtCompromise,
-			Model:           model.Model_PallyProtCompromise(),
-			SubstituteItems: util.RemoveDuplicatesComparable(slices.Concat(substituteItemsDps, substituteItemsMiti)),
-		},
-		{
-			Label:           "Prot-Heal",
-			WeightFileOut:   files.WeightHealFile,
-			GearFile:        files.GearFileProtHeal,
-			Model:           model.Model_PallyProtHeal(),
-			SubstituteItems: util.RemoveDuplicatesComparable(slices.Concat(substituteItemsDps, substituteItemsMiti)),
-		},
-		{
-			Label:           "Ret",
-			WeightFileOut:   files.WeightRetFile,
-			GearFile:        files.GearFileRet,
-			Model:           model.Model_PallyRet(),
-			SubstituteItems: substituteItemsRet,
-		},
+		//{
+		//	Label:           "Prot-Mitigation-WithSet",
+		//	WeightFileOut:   files.WeightMitiWithSetFile,
+		//	GearFile:        files.GearFileProtMitigationWithSet,
+		//	Model:           model.Model_PallyProtMitigation_WithSet(),
+		//	SubstituteItems: substituteItemsMiti,
+		//},
+		//{
+		//	Label:           "Prot-Damage",
+		//	WeightFileOut:   files.WeightDpsFile,
+		//	GearFile:        files.GearFileProtDps,
+		//	Model:           model.Model_PallyProtDps(),
+		//	SubstituteItems: substituteItemsDps,
+		//},
+		//{
+		//	Label:           "Prot-Compromise",
+		//	WeightFileOut:   files.WeightCompromiseFile,
+		//	GearFile:        files.GearFileProtCompromise,
+		//	Model:           model.Model_PallyProtCompromise(),
+		//	SubstituteItems: util.RemoveDuplicatesComparable(slices.Concat(substituteItemsDps, substituteItemsMiti)),
+		//},
+		//{
+		//	Label:           "Prot-Heal",
+		//	WeightFileOut:   files.WeightHealFile,
+		//	GearFile:        files.GearFileProtHeal,
+		//	Model:           model.Model_PallyProtHeal(),
+		//	SubstituteItems: util.RemoveDuplicatesComparable(slices.Concat(substituteItemsDps, substituteItemsMiti)),
+		//},
+		//{
+		//	Label:           "Ret",
+		//	WeightFileOut:   files.WeightRetFile,
+		//	GearFile:        files.GearFileRet,
+		//	Model:           model.Model_PallyRet(),
+		//	SubstituteItems: substituteItemsRet,
+		//},
 	})
 }
 

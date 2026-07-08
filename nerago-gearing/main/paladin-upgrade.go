@@ -61,6 +61,7 @@ var substituteItemsRet = []items.ItemId{
 	103735, // tar-coated gauntlets
 	103916, // jugg ignition keys
 	104461, // rage-blind greathelm
+	95038,  // carapace core
 }
 var substituteItemsDps = []items.ItemId{
 	96394,  // frozen warlord bracer heroic
@@ -112,6 +113,7 @@ var substituteItemsDps = []items.ItemId{
 	103872, // bulwurk of fallen general
 	103916, // jugg ignition keys
 	104461, // rage-blind greathelm
+	95038,  // carapace core
 }
 var substituteItemsMiti = []items.ItemId{
 	95291,  // prot tier15 hand normal
@@ -168,6 +170,7 @@ var substituteItemsMiti = []items.ItemId{
 	103872, // bulwurk of fallen general
 	103916, // jugg ignition keys
 	104461, // rage-blind greathelm
+	95038,  // carapace core
 }
 
 var ignoredItems = []items.ItemId{
@@ -248,14 +251,15 @@ func findUpgrades_Paladin(printer *util.PrintRecorder) {
 	//heroicBossesConsider := []string{"SoO Immerseus", "SoO Norushen", "SoO ShaofPride", "SoO FallenProtectors", "SoO Galakras", "SoO Nazgrim"}
 	//finder := loaders.ItemFinder_HeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, heroicBossesConsider)
 
-	//finder := func(_ stats.Difficulty) []*items.FullItem {
-	//	return []*items.FullItem{db.WowSimDB_ByIdAndUpgrade(103735, 0), db.WowSimDB_ByIdAndUpgrade(103791, 0), db.WowSimDB_ByIdAndUpgrade(103872, 0)}
-	//}
 	//finder := loaders.ItemFinder_SiegeStrengthPlateTank
 	//finder := loaders.ItemFinder_Ordos
 	//finder := loaders.ItemFinder_TimelessPlate
 	//finder := loaders.ItemFinder_BagsUpgraded
 	finder := loaders.ItemFinder_ThroneStrengthPlateTank_RadenOnly
+
+	//finder := func(_ stats.Difficulty) []*items.FullItem {
+	//	return []*items.FullItem{db.WowSimDB_ByIdAndUpgrade(103735, 0), db.WowSimDB_ByIdAndUpgrade(103791, 0), db.WowSimDB_ByIdAndUpgrade(103872, 0)}
+	//}
 
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{

@@ -8,39 +8,12 @@ import (
 	"paladin_gearing_go/util"
 )
 
-func SolverBuildRandom_MakeN(itemOptions *items.SolvableOptionsMap, model *model.Model, targetCount int, printer *util.PrintRecorder) []items.SolvableItemSet {
-	results := make([]items.SolvableItemSet, 0, targetCount)
-	rng := rand.New(rand.NewSource(int64(0)))
-	for len(results) < targetCount {
-		itemSet := makeSetFromRandom(itemOptions, rng)
-		if model.CheckSet(&itemSet) {
-			itemSet.DebugValidate()
-			results = append(results, itemSet)
-		}
-	}
-	return results
-}
-
-func makeSetFromRandom(itemOptions *items.SolvableOptionsMap, rng *rand.Rand) items.SolvableItemSet {
-	equip := items.SolvableEquipMap{}
-	for slot, options := range itemOptions.SlotSliceSeq() {
-		optionSize := len(options)
-		if optionSize > 0 {
-			index := rng.Intn(optionSize)
-			equip[slot] = &options[index]
-		}
-	}
-	return items.SolvableItemSet_Of(equip)
-}
-
-func SolverBuildRandom_MakeN_FullAndValidate(itemOptions *items.FullOptionsMap, model *model.Model, targetCount int, printer *util.PrintRecorder, minimumHaste uint32) []items.FullItemSet {
+func SolverBuildRandom_MakeN_FullAndValidate(itemOptions *items.FullOptionsMap, model *model.Model, targetCount int, minimumHaste uint32) []items.FullItemSet {
 	results := make([]items.FullItemSet, 0, targetCount)
 	rng := rand.New(rand.NewSource(int64(0)))
 	for len(results) < targetCount {
 		itemSet := makeSetFromRandomFull(itemOptions, rng)
-		if model.CheckSetFull(&itemSet) && checkPairedSlotsNoDuplicate(itemSet.Items()) &&
-			itemSet.Total().GetUInt(stats.Stat_Haste) >= minimumHaste {
-
+		if model.CheckSetFull_ForWeightProcess(&itemSet) && checkPairedSlotsNoDuplicate(itemSet.Items()) && itemSet.Total().GetUInt(stats.Stat_Haste) >= minimumHaste {
 			itemSet.DebugValidate()
 			itemSet.ValidateItemRules()
 			results = append(results, itemSet)

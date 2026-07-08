@@ -60,7 +60,6 @@ func statWeightsGrid_updateOne(label string, gearModel *model.Model, gearFile st
 	writeWeightInputsToFile(inputDataGrid, files.TempPath+"weightfind-sim-grid-"+label+".json")
 	writeWeightInputsToFile(inputDataReal, files.TempPath+"weightfind-sim-real-"+label+".json")
 
-	// TODO avoid changing set bonuses
 	// TODO report on accuracy rating of grid vs just inputDataGrid
 
 	// SOLVE FOR STAT WEIGHTS

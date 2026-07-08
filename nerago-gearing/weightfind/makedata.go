@@ -34,6 +34,7 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 	incrementOptions := make([][]incrementStat, 0)
 	for _, stat := range statCheckList {
 		optionArray := make([]incrementStat, 0)
+		// TODO this was maybe intended to be a less or equal? could greatly increase combos if done now
 		for value := incrementMin; value < incrementMax; value += incrementStep {
 			entry := incrementStat{stat, value}
 			optionArray = append(optionArray, entry)
@@ -92,7 +93,7 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 	}
 	itemOptions.RemoveDuplicates()
 
-	setList := build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, model, makeSetCount, printer, 0)
+	setList := build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, model, makeSetCount, 0)
 
 	track.RunOuterTracking(len(setList))
 	defer track.SetDone()

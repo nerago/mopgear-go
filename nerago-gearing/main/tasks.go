@@ -263,11 +263,14 @@ func slotRating(printer *util.PrintRecorder) {
 }
 
 func findSimpleUpgrade(printer *util.PrintRecorder) {
-	model := model.Model_PallyProtMitigation_WithSet()
+	model := model.Model_PallyProtMitigation_NoSet()
+	gearFile := files.GearFileProtMitigationNoSet
+	//model := model.Model_PallyProtCompromise()
+	//gearFile := files.GearFileProtCompromise
 
-	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(files.GearFileProtMitigationNoSet), &model, setup.MissingEnchant_Panic, printer)
+	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), &model, setup.MissingEnchant_Panic, printer)
 
-	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationNoSet, &model, setup.MissingEnchant_Panic, printer)
+	itemOptions := setup.OptionsSetup_FromGearFile(gearFile, &model, setup.MissingEnchant_Panic, printer)
 	for _, itemId := range substituteItemsMiti {
 		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 		itemOptions.AddSeveralOptions(example.SlotItem(), opts)
@@ -276,12 +279,16 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 	common := commonComboCurrent()
 	addGearFileToCommon(common, files.GearFileRet, &model, printer)
 	addGearFileToCommon(common, files.GearFileProtDps, &model, printer)
+	addGearFileToCommon(common, files.GearFileProtCompromise, &model, printer)
 	addGearFileToCommon(common, files.GearFileProtMitigationWithSet, &model, printer)
-	restrictOptionsToCommon(common, &itemOptions)
+	addGearFileToCommon(common, files.GearFileProtMitigationNoSet, &model, printer)
+	//restrictOptionsToCommon(common, &itemOptions)
 
-	restrictSlotToId(&itemOptions, items.Equip_Ring1, 96481)
-
-	// foreach substitute: force
+	addItems := []items.ItemId{95038, 95003, 95022, 95002, 95023}
+	for _, itemId := range addItems {
+		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
+		itemOptions.AddSeveralOptions(example.SlotItem(), opts)
+	}
 
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions:         &itemOptions,
