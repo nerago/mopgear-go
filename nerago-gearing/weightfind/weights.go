@@ -74,7 +74,7 @@ func statWeightsGrid_updateOne(label string, gearModel *model.Model, gearFile st
 	grid.SetTestMode(simSpeed == simulate.RunSize_TestOnly)
 	grid.SupplyData(inputDataGrid)
 	weightsGridFuture := grid.Run(nil)
-	weightsGrid := weightsGridFuture.WaitForResultOrPanic()
+	weightsGrid := weightsGridFuture.WaitForResultOrNilValue()
 	printer.Println("Grid Weights >>>>> " + label)
 	pawnGrid := tools.WritePawnString(weightsGrid, printer)
 	accGridOnGridInput := EvaluateAccuracyRanged(weightsGrid, ratios, inputDataGrid)
@@ -94,7 +94,7 @@ func statWeightsGrid_updateOne(label string, gearModel *model.Model, gearFile st
 	} else {
 		weightsRankingFuture = ranking.RunMultiRound(nil)
 	}
-	weightsRanking := weightsRankingFuture.WaitForResultOrPanic()
+	weightsRanking := weightsRankingFuture.WaitForResultOrNilValue()
 	printer.Println("Ranking Weights >>>>> " + label)
 	pawnRanking := tools.WritePawnString(weightsRanking, printer)
 
@@ -110,29 +110,21 @@ func statWeightsGrid_updateOne(label string, gearModel *model.Model, gearFile st
 
 	// SEARCH weights
 	search := WeightSearcher2{}
-	search.Init(gearModel.StatsForWeighting, ratios, nil)
+	search.Init(gearModel.StatsForWeighting, ratios, printer)
 	search.SupplyData(mixedInputData)
 	search.SetRanges(-1.0, 10.0)
-	weightsSearch := search.Run(nil)
+	weightsSearch := search.Run(channel_op.CancelSignal_Make())
 	printer.Println("Search Weights >>>>> " + label)
 	pawnSearch := tools.WritePawnString(weightsSearch, printer)
 	accuracySearch := EvaluateAccuracyRanged(weightsSearch, ratios, inputDataGrid)
 
 	// OVERWRITE WEIGHT FILE
 	if accuracySearch > accuracyGrid && accuracySearch > accuracyRanking {
-		writeFile(weightFileOut, pawnSearch)
+		util.WriteStringToFile(weightFileOut, pawnSearch)
 	} else if accuracyGrid > accuracyRanking {
-		writeFile(weightFileOut, pawnGrid)
+		util.WriteStringToFile(weightFileOut, pawnGrid)
 	} else {
-		writeFile(weightFileOut, pawnRanking)
-	}
-}
-
-func writeFile(filename, content string) {
-	bytes := []byte(content)
-	err := os.WriteFile(filename, bytes, 0666)
-	if err != nil {
-		panic(err)
+		util.WriteStringToFile(weightFileOut, pawnRanking)
 	}
 }
 

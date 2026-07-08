@@ -13,17 +13,16 @@ import (
 )
 
 const (
-	c_Rank4LimitScore    = 200.0
-	c_Rank4InitialSample = 15
-	c_Rank4AddSample     = 5
-	c_Rank4ScaleTarget   = 1.0
-	c_Rank4LargeWeight   = 50.0
-	c_Rank4LargeScore    = 500.0
-	c_Rank4LargeRank     = 10000.0
+	c_Rank4ScaleTarget    = 1.0
+	c_Rank4LargeWeight    = 50.0
+	c_Rank4WeightTotalSum = 10.0
+	c_Rank4LimitScore     = 200.0
+	c_Rank4LargeScore     = 500.0
 )
 
 type RankingStatWeightProcess4 struct {
-	printer *util.PrintRecorder
+	printer   *util.PrintRecorder
+	WEIGHTSUM int
 
 	targetRatios  stats.SimData
 	requiredStats []stats.StatType
@@ -231,7 +230,11 @@ func (run *rankInternalRun4) createWeightColumns() {
 		sumWeights.Add(colWeight, 1)
 	}
 
-	sumWeights.Build(run.build, 1.0, hi) // force positive and non-zero result
+	if run.process.WEIGHTSUM == 0 {
+		sumWeights.Build(run.build, 1.0, hi) // force positive and non-zero result
+	} else {
+		sumWeights.Build(run.build, c_Rank4WeightTotalSum, c_Rank4WeightTotalSum)
+	}
 }
 
 func (run *rankInternalRun4) prepareRankings() {

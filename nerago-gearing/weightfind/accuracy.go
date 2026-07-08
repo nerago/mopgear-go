@@ -15,6 +15,10 @@ func EvaluateAccuracyRanged(statWeights stathighs.WeightResult, simRatios stats.
 }
 
 func EvaluateAccuracyRangeInner(statWeights stathighs.WeightResult, requiredSims []stats.SimType, simRatios stats.SimData, inputData []stathighs.WeightInput) float64 {
+	if statWeights.IsEmpty() {
+		return 0
+	}
+
 	data := util.MapSliceAsNew(inputData, func(input *stathighs.WeightInput) *accuracyInfoSimStatRanged {
 		return &accuracyInfoSimStatRanged{
 			dataSim:       &input.SimResult,
@@ -213,6 +217,10 @@ func (ea *EvaluateAccuracyPrepared) Clone() *EvaluateAccuracyPrepared {
 
 // fundamentally not thread safe
 func (ea *EvaluateAccuracyPrepared) EvaluateWeight(statWeights stathighs.WeightResult) float64 {
+	if statWeights.IsEmpty() {
+		return 0
+	}
+
 	prepared := ea.prepared
 	size := len(prepared)
 

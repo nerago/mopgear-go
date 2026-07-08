@@ -16,7 +16,7 @@ import (
 const (
 	c_rank3_scaleTarget         = 10.0
 	c_rank3_initial_data_sample = 12
-	c_rank3_min_total_weight    = 1.0
+	c_rank3_target_total_weight = 1.0
 
 	c_Rank3_LargeWeight = 10.0
 	c_Rank3_LargeScore  = 500.0
@@ -165,7 +165,7 @@ func (ranker *RankingStatWeightProcess3) createWeightColumns() {
 		sumWeights.Add(colWeight, 1)
 	}
 
-	sumWeights.Build(ranker.build, c_rank3_min_total_weight, utilhighs.C_PlusInf)
+	sumWeights.Build(ranker.build, c_rank3_target_total_weight, c_rank3_target_total_weight)
 }
 
 func (ranker *RankingStatWeightProcess3) prepareRankings() {

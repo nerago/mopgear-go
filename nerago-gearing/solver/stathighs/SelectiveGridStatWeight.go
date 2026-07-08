@@ -13,12 +13,10 @@ import (
 )
 
 const (
-	c_selGrid_finalWeightLimit = 50.0
-	c_selGrid_formulaHigh      = 1000
-	c_selGrid_scaleTarget      = 10.0
-	c_selgrid_baseWeightLow    = 0.1
-	c_selgrid_baseWeightHigh   = 100
-	c_selGrid_MinimumInclude   = 0.5
+	c_selGrid_formulaHigh     = 1000
+	c_selGrid_scaleTarget     = 10.0
+	c_selGrid_baseWeightFixed = 1.0
+	c_selGrid_MinimumInclude  = 0.5
 )
 
 // we use unscaled sims and stats so
@@ -136,7 +134,7 @@ func (grid *SelectiveGridStatWeightProcess) setupWeightVars() {
 		colDetailWeight := grid.detailedWeights.GetOrPanic(baseStat, simType)
 		strengthSetToRatio := utilhighs.ConstraintRow{}
 		strengthSetToRatio.Add(colDetailWeight, 1)
-		strengthSetToRatio.Build(grid.build, c_selgrid_baseWeightLow, c_selgrid_baseWeightHigh)
+		strengthSetToRatio.Build(grid.build, c_selGrid_baseWeightFixed, c_selGrid_baseWeightFixed)
 	}
 }
 
@@ -295,9 +293,9 @@ func (grid *SelectiveGridStatWeightProcess) reportOutputWeightsGrid(solution *hi
 		for statType := range weightValues.SeqKey1() {
 			weightValues.Apply(statType, simType, func(oldValue float64) float64 {
 				value := oldValue / strengthValue * grid.targetRatios.Get(simType)
-				// if !simType.IsHighGood() {
-				// 	value *= -1
-				// }
+				if !simType.IsHighGood() {
+					value *= -1
+				}
 				return value
 			})
 		}

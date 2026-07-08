@@ -125,18 +125,19 @@ func (form *FormulaStatWeightProcess) createWeightColumns() {
 		}
 	}
 
-	// TODO do a positive sum for each?
-
 	// we don't want to be dealing with 0 strength since that's our base stat to scale against
-	// however could be rejecting some special situtations where it actually is true
+	// in general for this algorithm we're aiming for a direct equation again simValue
+	// so should be very rare unless it really seems like strength has zero contribution
+
+	// could resurrect old approach:
 	// for _, colDetailWeight := range comp.detailedWeightColumns.SeqInnerWithKey1Value(stats.Stat_Strength) {
 	// 	comp.makeNotBetween(colDetailWeight, -minimumStrength, minimumStrength)
 	// }
 }
 
-func (form *FormulaStatWeightProcess) makeNotBetween(checkColumn utilhighs.ColumnIndex, lo, hi float64) {
-	form.build.ColumnIsNotBetweenConstantsVerify(checkColumn, lo, hi, c_complexHighWeight)
-}
+//func (form *FormulaStatWeightProcess) makeNotBetween(checkColumn utilhighs.ColumnIndex, lo, hi float64) {
+//	form.build.ColumnIsNotBetweenConstantsVerify(checkColumn, lo, hi, c_complexHighWeight)
+//}
 
 func (form *FormulaStatWeightProcess) buildDataEquations() {
 	for data := range util.ForPointer(form.inputData) {

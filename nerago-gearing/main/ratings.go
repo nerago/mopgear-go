@@ -1158,7 +1158,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 
 	if runRanking3bVariants {
 		for FINAL := range 3 {
-			for TOTALWEIGHT := range 2 {
+			for TOTALWEIGHT := range 3 {
 				for ALGO := range 2 {
 					tasks = append(tasks, func() {
 						label := fmt.Sprintf("ranking3b-scale_full-%d-%d-%d", FINAL, TOTALWEIGHT, ALGO)

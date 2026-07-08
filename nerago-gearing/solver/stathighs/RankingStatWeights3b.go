@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	c_rank3b_scaleTarget      = 10.0
-	c_rank3b_min_total_weight = 0.01
-	c_Rank3b_largeWeight      = 10.0
+	c_rank3b_scaleTarget       = 10.0
+	c_rank3b_min_total_weight  = 0.01
+	c_rank3b_targetTotalWeight = 5.0
+	c_Rank3b_largeWeight       = 10.0
 )
 
 type RankingStatWeightProcess3b struct {
@@ -163,11 +164,13 @@ func (ranker *RankingStatWeightProcess3b) createWeightColumns() {
 
 	if ranker.TOTALWEIGHT == 0 {
 		sumWeights.Build(ranker.build, c_rank3b_min_total_weight, utilhighs.C_PlusInf)
-	} else {
+	} else if ranker.TOTALWEIGHT == 1 {
 		maxWeight := c_Rank3b_largeWeight * float64(len(ranker.requiredStats))
 		sumWeightCol := ranker.build.CreateColumnWithOutput(highs.Continuous, c_rank3b_min_total_weight, maxWeight, 1, utilhighs.DebugText("sumWeightCol"))
 		sumWeights.Add(sumWeightCol, -1)
 		sumWeights.Build(ranker.build, 0, 0)
+	} else {
+		sumWeights.Build(ranker.build, c_rank3b_targetTotalWeight, c_rank3b_targetTotalWeight)
 	}
 }
 

@@ -13,10 +13,11 @@ import (
 )
 
 const (
-	c_rank1_scaleTarget = 1.0
-	c_Rank1_LargeWeight = 50.0
-	c_Rank1_LargeScore  = 500.0
-	c_Rank1_LargeRank   = 10000.0
+	c_rank1_scaleTarget     = 1.0
+	c_Rank1_LargeWeight     = 50.0
+	c_Rank1_LargeScore      = 500.0
+	c_Rank1_LargeRank       = 10000.0
+	c_Rank1_TargetWeightSum = 10.0
 )
 
 type RankingStatWeightProcess struct {
@@ -29,15 +30,8 @@ type RankingStatWeightProcess struct {
 
 	build *utilhighs.LinearBuilder
 
-	// linearEquationDiff int
-	// linearInclude      int
-
 	scaleStats    map[stats.StatType]float64
 	weightColumns map[stats.StatType]utilhighs.ColumnIndex
-
-	// minimumIncludeRate float64
-	// includeColumns     []utilhighs.ColumnIndex
-	// includeCountRow    utilhighs.ConstraintRowBuild
 
 	RANKMODE int
 }
@@ -73,28 +67,16 @@ func (ranker *RankingStatWeightProcess) SetTargetRatios(targetRatios stats.SimDa
 	ranker.requiredSims = targetRatios.NonZeroTypes()
 }
 
-// func (ranker *RankStatWeightProcess) SetMinimumIncludeRate(percent float64) {
-// 	ranker.minimumIncludeRate = percent
-// }
-
 func (ranker *RankingStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int) *channel_op.FutureCancellable[WeightResult] {
 	ranker.build = new(utilhighs.LinearBuilder)
 	ranker.build.Minimise = true
-	if ranker.RANKMODE == 0 || ranker.RANKMODE == 1 || ranker.RANKMODE == 2 {
-		ranker.build.Solver = utilhighs.Solver_LP_USE_GPU
-	} else {
-		ranker.build.Solver = utilhighs.Solver_MIP_Interior
-	}
+	ranker.build.Solver = utilhighs.Solver_LP_USE_GPU
+	ranker.build.DisablePreSolve = true
 	ranker.build.TimeLimitSeconds = timeout
-	if ranker.RANKMODE != 3 {
-		ranker.build.DisablePreSolve = true
-	}
 
 	ranker.createWeightColumns()
 	ranker.prepareRankings()
 	ranker.processData()
-
-	// ranker.includeCountRow.Finish(ranker.input, float64(len(ranker.inputData))*ranker.minimumIncludeRate, utilhighs.C_PlusInf)
 
 	solutionFuture := ranker.build.RunHighsFuture(stopwatch)
 	return channel_op.FutureCancellable_MapValue(solutionFuture, func(linearResult utilhighs.LinearResult) (WeightResult, bool) {
@@ -115,19 +97,16 @@ func (ranker *RankingStatWeightProcess) createWeightColumns() {
 		sumWeights.Add(colDetailWeight, 1)
 	}
 
-	if ranker.RANKMODE == 0 || ranker.RANKMODE == 3 {
-		// TODO just doesn't seem right
-		sumWeights.Build(ranker.build, 1, utilhighs.C_PlusInf) // force positive and non-zero result
+	if ranker.RANKMODE == 0 {
+		sumWeights.Build(ranker.build, c_Rank1_TargetWeightSum, c_Rank1_TargetWeightSum)
+	} else {
+		sumWeights.Build(ranker.build, 0.001, utilhighs.C_PlusInf) // force positive and non-zero result
 	}
-
-	// this assumes that a positive strength will work for the scoring system, should be true in most situations
-	// if not then i'd be concerned more about garbage input data
-	// setStrength := utilhighs.ConstraintRowBuild{}
-	// setStrength.Add(ranker.weightColumns[stats.Stat_Strength], 1)
-	// setStrength.Finish(ranker.input, 1.0, 1.0)
 }
 
 func (ranker *RankingStatWeightProcess) prepareRankings() {
+	// TODO clean this up into a more standard method
+
 	// score each sim
 	for _, simType := range ranker.requiredSims {
 		for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), ranker.data, func(x *rankEntry) float64 { return x.data.SimResult.Get(simType) }) {
@@ -162,30 +141,6 @@ func (ranker *RankingStatWeightProcess) processData() {
 		for entry := range util.ForPointer(ranker.data) {
 			ranker.processDataEntryForceScoreToRank(entry)
 		}
-	case 3:
-		sumRanks := utilhighs.ConstraintRow{}
-		for entry := range util.ForPointer(ranker.data) {
-			ranker.processDataEntryPlusRankCompareToExpected(entry)
-			sumRanks.Add(entry.rankColumn, 1)
-		}
-		// QUERY does this add accuracy or speed, or both?
-		// check 10, accuracy with disabled: 87.1993%, Duration = 2m5.2630056s
-		// check 10, accuracy with enabled: 87.1993%, Duration = 1m48.1206008s
-		expectedSum := len(ranker.data) * (len(ranker.data) - 1) / 2
-		sumRanks.Build(ranker.build, float64(expectedSum), float64(expectedSum))
-
-		eachCheckCount := 2
-		for a := 0; a < len(ranker.data); a++ {
-			for b := a + 1; b < min(a+eachCheckCount, len(ranker.data)); b++ {
-				ranker.processEntrySequencePairToDerivedRank(&ranker.data[a], &ranker.data[b])
-			}
-		}
-		// check 10: 87.1993%, Duration = 1m48.1206008s
-		// check 4: 88.0098%, Duration = 1m16.4640117s
-		// check 3: 88.0145%, Duration = 49.6121775s
-		// check 2: 88.0154%, Duration = 28.5001548s
-		// check 1: 86.2758%, Duration = 27.303175s
-
 	}
 
 	// just adjacent samples
