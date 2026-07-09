@@ -1318,6 +1318,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		})
 	}
 
+	util.Shuffle(tasks)
+
 	channel_op.CancelOnKeyPress(cancel)
 	channel_op.ForEach_Slice_Cancellable(5, tasks, cancel, func(f *func()) {
 		(*f)()

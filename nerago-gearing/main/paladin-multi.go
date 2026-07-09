@@ -420,7 +420,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	job.VerifyNoExtraDuplicates()
 
-	job.RunNoPermutations_AllCommonAlternates()
+	job.RunNoPermutations_AllCommonAlternates(true)
 	//job.RunForSolutionsPerPermute(8)
 
 	//job.CullingReport()

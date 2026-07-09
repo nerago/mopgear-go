@@ -10,13 +10,12 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
 	"strconv"
-	"time"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 	"github.com/google/uuid"
 )
 
-const c_timeLimit = 30 * time.Minute
+const c_timeLimit = 4000 // seconds
 
 type SolverHighsMultiParam struct {
 	Label          string
@@ -81,29 +80,46 @@ func (process *SolverHighsMultiProcess) RunInterruptable(printer *util.PrintReco
 	})
 }
 
-func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.PrintRecorder, outputTarget util.Optional[int], cancel channel_op.CancelSignal) <-chan HighsMultiResult {
+func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.PrintRecorder, outputTarget util.Optional[int], cancel channel_op.CancelSignal, alsoDoFullItemBlocks bool) (resultChannelRead <-chan HighsMultiResult, expectedCount *channel_op.Future[int]) {
 	resultChannel := make(chan HighsMultiResult, 8)
+	expectedCount = channel_op.Future_Make[int]()
 
 	go func() {
 		initialResult, bestCommonChoices, hasInitial := process.generateInitialMulti(printer, cancel)
 		if hasInitial {
 			resultChannel <- initialResult
 
-			if target, hasTarget := outputTarget.GetWithFlag(); hasTarget && target < len(bestCommonChoices) {
-				util.Shuffle(bestCommonChoices)
-				bestCommonChoices = bestCommonChoices[0:target]
+			blockPlanList := make([]blockPlan, 0)
+			for _, commonColumn := range bestCommonChoices {
+				blockPlanList = append(blockPlanList, blockPlan{changeColumn: commonColumn})
+				if alsoDoFullItemBlocks {
+					itemId := commonColumn.ItemId()
+					blockPlanList = append(blockPlanList, blockPlan{forbiddenItem: &itemId})
+				}
 			}
 
-			printer.Printf("COMMON VARIANT count %d\n", len(bestCommonChoices))
+			util.Shuffle(blockPlanList)
+			if target, hasTarget := outputTarget.GetWithFlag(); hasTarget && target < len(blockPlanList) {
+				blockPlanList = blockPlanList[0:target]
+			}
 
-			innerChannel := process.generateWithDifferentCommonVariants(bestCommonChoices, printer, cancel)
+			count := len(blockPlanList)
+			expectedCount.SetResult(count)
+			printer.Printf("VARIANT COMMON count %d\n", len(blockPlanList))
+
+			innerChannel := process.generateWithDifferentCommonVariants(blockPlanList, printer, cancel)
 			channel_op.ChannelCopy(innerChannel, resultChannel)
 		} else {
 			close(resultChannel)
 		}
 	}()
 
-	return resultChannel
+	return resultChannel, expectedCount
+}
+
+type blockPlan struct {
+	forbiddenItem *items.ItemId
+	changeColumn  *columnInfo
 }
 
 func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.PrintRecorder, cancel channel_op.CancelSignal) (HighsMultiResult, []*columnInfo, bool) {
@@ -128,33 +144,39 @@ func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.Print
 	return HighsMultiResult{}, nil, false
 }
 
-func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariants(bestCommonChoices []*columnInfo, printer *util.PrintRecorder, cancel channel_op.CancelSignal) <-chan HighsMultiResult {
-	return channel_op.MapFuture_SliceToChannel_Cancellable(10, bestCommonChoices, cancel, func(changeColumn **columnInfo) *channel_op.FutureCancellable[HighsMultiResult] {
-		return process.generateWithDifferentCommonVariant_One(printer, *changeColumn)
+func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariants(blockPlans []blockPlan, printer *util.PrintRecorder, cancel channel_op.CancelSignal) <-chan HighsMultiResult {
+	return channel_op.MapFuture_SliceToChannel_Cancellable(10, blockPlans, cancel, func(block *blockPlan) *channel_op.FutureCancellable[HighsMultiResult] {
+		if block.changeColumn != nil {
+			return process.generateWithDifferentCommonVariant_One(printer, block.changeColumn)
+		} else if block.forbiddenItem != nil {
+			return process.generateWithBlockedItem_One(printer, *block.forbiddenItem)
+		} else {
+			panic("missing block")
+		}
 	})
 }
 
-// func (process *SolverHighsMultiProcess) generateWithForbiddenCommon_One(printer *util.PrintRecorder, forbiddenRef items.ItemRef, cancel channel_op.CancelSignal) (HighsMultiResult, bool) {
-// innerPrint := util.PrintRecorder_HoldAll()
-// printer.Printf("COMMON FORBIDDEN %s\n", forbiddenRef.String())
+func (process *SolverHighsMultiProcess) generateWithBlockedItem_One(printer *util.PrintRecorder, forbiddenId items.ItemId) *channel_op.FutureCancellable[HighsMultiResult] {
+	innerPrint := util.PrintRecorder_HoldAll()
+	printer.Printf("VARIANT COMMON blocking all %d\n", forbiddenId)
 
-// build := process.build.Clone()
-// rowLimitCommon := utilhighs.ConstraintRow{Debug: "rowLimitCommon"}
-// for _, part := range process.parts {
-// 		for column := range part.setup.itemColumns.ValuesForKeyAsSeq(forbiddenRef.ItemId) {
-// 			if column.item.EqualsFull(item) {
-// 			}
-// 		}
-// 	}
-// rowLimitCommon.Add(changeColumn.columnIndex, 1)
-// rowLimitCommon.Build(build, 0, 0)
+	build := process.build.Clone()
+	rowLimitCommon := utilhighs.ConstraintRow{Debug: "rowLimitAll"}
+	for _, part := range process.parts {
+		for column := range part.setup.itemColumns.ValuesForKeyAsSeq(forbiddenId) {
+			if column.ItemId() == forbiddenId {
+				rowLimitCommon.Add(column.columnIndex, 1)
+			}
+		}
+	}
+	rowLimitCommon.Build(build, 0, 0)
 
-// return process.runVariant(build, cancel, innerPrint, printer)
-// }
+	return process.runVariant(build, innerPrint, printer)
+}
 
 func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariant_One(printer *util.PrintRecorder, changeColumn *columnInfo) *channel_op.FutureCancellable[HighsMultiResult] {
 	innerPrint := util.PrintRecorder_HoldAll()
-	printer.Printf("COMMON VARIANT blocking %s\n", changeColumn.itemFull.CreateString())
+	printer.Printf("VARIANT COMMON blocking reforge %d\n", changeColumn.ItemId())
 
 	build := process.build.Clone()
 	rowLimitCommon := utilhighs.ConstraintRow{Debug: "rowLimitCommon"}
@@ -250,8 +272,8 @@ func (process *SolverHighsMultiProcess) solutionToResult(solution *highs.Solutio
 
 func (process *SolverHighsMultiProcess) makeFullModel() {
 	process.build = &utilhighs.LinearBuilder{}
-	process.build.TimeLimitSeconds = util.RoundToInt(c_timeLimit.Seconds())
-	process.build.Solver = utilhighs.Solver_MIP_Interior
+	process.build.TimeLimitSeconds = c_timeLimit
+	process.build.Solver = utilhighs.Solver_MIP_Interior // TODO check if actually best
 
 	entry := columnInfo{entryType: entry_multi_output}
 	entry.columnIndex = process.build.CreateColumnWithOutput(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, 1, &entry)

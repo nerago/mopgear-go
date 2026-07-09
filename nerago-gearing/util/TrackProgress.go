@@ -12,8 +12,9 @@ import (
 type TrackProgress struct {
 	root *trackProgressRoot
 
-	progressForParent func() float64
-	childList         []*TrackProgress
+	progressForParent  func() float64
+	childList          []*TrackProgress
+	expectedChildCount int
 
 	active        bool
 	cancelHandler func()
@@ -113,20 +114,32 @@ func (track *TrackProgress) PrepareForPush() func(float64) {
 }
 
 func (track *TrackProgress) RunOuterTracking(expectedChildCount int) {
-	if expectedChildCount != -1 {
-		track.childList = make([]*TrackProgress, 0, expectedChildCount)
-		track.run(func() float64 {
-			return track.sumNestedProgress(expectedChildCount)
-		})
-	} else {
-		track.childList = make([]*TrackProgress, 0)
-		track.run(track.sumNestedProgressUnknownSize)
+	track.mutex.Lock()
+	defer track.mutex.Unlock()
+
+	if expectedChildCount < 0 {
+		expectedChildCount = 0
 	}
+	track.expectedChildCount = expectedChildCount
+	track.childList = make([]*TrackProgress, 0, expectedChildCount)
+	track.run(track.sumNestedProgress)
 }
 
-func (track *TrackProgress) sumNestedProgress(expectedChildCount int) float64 {
+func (track *TrackProgress) UpdateExpectedChildCount(expectedChildCount int) {
+	track.mutex.Lock()
+	defer track.mutex.Unlock()
+
+	track.expectedChildCount = expectedChildCount
+}
+
+func (track *TrackProgress) sumNestedProgress() float64 {
 	track.mutex.RLock()
 	defer track.mutex.RUnlock()
+
+	currentCount := track.expectedChildCount
+	if currentCount == 0 {
+		currentCount = len(track.childList)
+	}
 
 	var overallPercent float64 = 0
 	for _, nested := range track.childList {
@@ -134,27 +147,7 @@ func (track *TrackProgress) sumNestedProgress(expectedChildCount int) float64 {
 			childFunc := nested.progressForParent
 			if childFunc != nil {
 				childRaw := childFunc()
-				overallPercent += childRaw / float64(expectedChildCount)
-			}
-		}
-	}
-
-	return overallPercent
-}
-
-func (track *TrackProgress) sumNestedProgressUnknownSize() float64 {
-	track.mutex.RLock()
-	defer track.mutex.RUnlock()
-
-	currentCount := float64(len(track.childList))
-
-	var overallPercent float64 = 0
-	for _, nested := range track.childList {
-		if nested != nil {
-			childFunc := nested.progressForParent
-			if childFunc != nil {
-				childRaw := childFunc()
-				overallPercent += childRaw / currentCount
+				overallPercent += childRaw / float64(currentCount)
 			}
 		}
 	}

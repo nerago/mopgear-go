@@ -645,6 +645,16 @@ type columnInfo struct {
 	weight      float64
 }
 
+func (colEntry columnInfo) ItemId() items.ItemId {
+	if colEntry.item != nil {
+		return colEntry.item.ItemId()
+	} else if colEntry.itemFull != nil {
+		return colEntry.itemFull.ItemId()
+	} else {
+		return 0
+	}
+}
+
 type setInfo struct {
 	activeSet gear_model.ActiveSet
 	setIndex  int

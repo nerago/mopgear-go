@@ -10,17 +10,20 @@ import (
 	"github.com/google/uuid"
 )
 
-func (job *MultiSetJob) proposalsAllCommonAlternates(cancelGenerate channel_op.CancelSignal) <-chan multi_types.MultiProposedOutput {
+func (job *MultiSetJob) proposalsAllCommonAlternates(cancelGenerate channel_op.CancelSignal, extendedAlternates bool) (<-chan multi_types.MultiProposedOutput, *channel_op.Future[int]) {
 	highProcess := job.highProcessSetup()
 
-	multiSolveChannel := highProcess.RunForSeveral_CommonDifferent(job.printer, util.Optional_Empty[int](), cancelGenerate)
+	multiSolveChannel, expectedCountFuture := highProcess.RunForSeveral_CommonDifferent(job.printer, util.Optional_Empty[int](), cancelGenerate, extendedAlternates)
 
 	proposalChannel := channel_op.Map_ChannelToChannel(4, multiSolveChannel, func(setResult withhighs.HighsMultiResult) multi_types.MultiProposedOutput {
 		return job.makeOutputFromHighs(setResult, job.printer)
 	})
 
 	existingProposal := job.existingGearAsProposal()
-	return channel_op.ChannelWithPrependedValues(proposalChannel, existingProposal)
+	proposalChannel = channel_op.ChannelWithPrependedValues(proposalChannel, existingProposal)
+	expectedCountFuture = expectedCountFuture.MapSameType(func(count int) (int, bool) { return count + 1, true })
+
+	return proposalChannel, expectedCountFuture
 }
 
 func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, solutionsPerPermute int, cancel channel_op.CancelSignal) <-chan multi_types.MultiProposedOutput {
@@ -57,7 +60,7 @@ func (job *MultiSetJob) runPermute(permuteSet permuteSet, solutionsPerPermute in
 			resultChannel <- job.makeOutputFromHighs(result, printer)
 		}
 	} else {
-		nextChan := highProcess.RunForSeveral_CommonDifferent(printer, util.Optional_OfValue(solutionsPerPermute), cancel)
+		nextChan := highProcess.RunForSeveral_CommonDifferent(printer, util.Optional_OfValue(solutionsPerPermute), cancel, false)
 		for result := range nextChan {
 			resultChannel <- job.makeOutputFromHighs(result, printer)
 		}

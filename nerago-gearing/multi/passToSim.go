@@ -78,13 +78,13 @@ func (job *MultiSetJob) prepareSimList(proposalList <-chan multi_types.MultiProp
 	return channel_op.Channel_RemoveDuplicatesFunc(jobChannel, (*simulateJob).Equals)
 }
 
-func (job *MultiSetJob) runSims(jobChan <-chan simulateJob, trackProgress *util.TrackProgress, expectCount int) *channel_op.FutureCancellable[[]simulateJobResult] {
-	job.printer.Printf("@@@@@@@@@@ RUN SIM JOBS %d @@@@@@@@@@\n", expectCount)
-	trackProgress.RunOuterTracking(expectCount)
+func (job *MultiSetJob) runSims(jobChan <-chan simulateJob, trackProgress *util.TrackProgress, expectedCount *channel_op.Future[int]) *channel_op.FutureCancellable[[]simulateJobResult] {
+	trackProgress.RunOuterTracking(0)
+	expectedCount.ForwardSuccessfulResultToCallback(func(count int) {
+		trackProgress.UpdateExpectedChildCount(count)
+	})
 
-	onComplete := trackProgress.SetDone
-
-	return channel_op.Map_ChannelToSlice_FutureCancellable(simThreadCount, jobChan, onComplete, func(sim simulateJob) simulateJobResult {
+	return channel_op.Map_ChannelToSlice_FutureCancellable(simThreadCount, jobChan, trackProgress.SetDone, func(sim simulateJob) simulateJobResult {
 		result := simulate.WowSim_Execute_SpecifyAll(job.simRunSize, sim.simSpeedUp, sim.spec, sim.goal, sim.fight, sim.professions, &sim.equip, nil, trackProgress.NewChild())
 		job.printer.Printf("sim %22s fight=%d %s\n", sim.spec.Name(), sim.fight, result.CompactStringGeneral())
 		return simulateJobResult{sim, result}

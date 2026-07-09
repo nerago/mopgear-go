@@ -106,6 +106,40 @@ func (future *Future[T]) WaitForResult() (T, bool) {
 	return future.resultFromChannel()
 }
 
+func (future *Future[T]) ForwardSuccessfulResultToCallback(apply func(T)) {
+	future.verifyCanWait()
+	go func() {
+		value, hasValue := future.resultFromChannel()
+		if hasValue {
+			apply(value)
+		}
+	}()
+}
+
+func (future *Future[T]) MapSameType(mapper func(T) (T, bool)) *Future[T] {
+	return Future_MapValue(future, mapper)
+}
+
+func Future_MapValue[T any, R any](innerFuture *Future[T], mapper func(T) (R, bool)) *Future[R] {
+	outerFuture := Future_Make[R]()
+
+	go func() {
+		value, hasValue := innerFuture.WaitForResult()
+		if hasValue {
+			newValue, hasNew := mapper(value)
+			if hasNew {
+				outerFuture.SetResult(newValue)
+			} else {
+				outerFuture.SetResultEmpty()
+			}
+		} else {
+			outerFuture.SetResultEmpty()
+		}
+	}()
+
+	return outerFuture
+}
+
 // ########### FutureCancellable ###########
 
 type FutureCancellable[T any] struct {
@@ -313,6 +347,16 @@ func (future *FutureCancellable[T]) ForwardAnyResultToChannel(resultChannel chan
 	}()
 }
 
+func (future *FutureCancellable[T]) ForwardSuccessfulResultToCallback(apply func(T)) {
+	future.verifyCanWait()
+	go func() {
+		value, hasValue := future.resultFromChannel()
+		if hasValue {
+			apply(value)
+		}
+	}()
+}
+
 func (*FutureCancellable[T]) channelKeyPress() chan any {
 	channelForKey := make(chan any)
 	go func() {
@@ -323,6 +367,10 @@ func (*FutureCancellable[T]) channelKeyPress() chan any {
 		channelForKey <- true
 	}()
 	return channelForKey
+}
+
+func (future *FutureCancellable[T]) MapSameType(mapper func(T) (T, bool)) *FutureCancellable[T] {
+	return FutureCancellable_MapValue(future, mapper)
 }
 
 func FutureCancellable_MapValue[T any, R any](innerFuture *FutureCancellable[T], mapper func(T) (R, bool)) *FutureCancellable[R] {
