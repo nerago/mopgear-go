@@ -114,7 +114,7 @@ func ItemFinder_HeroicBossFiltered(innerFinder func(stats.Difficulty) []*items.F
 }
 
 func ItemFinder_SiegeStrengthPlateTank(difficulty stats.Difficulty) []*items.FullItem {
-	return slices.Concat(
+	initial := slices.Concat(
 		seigeClassGearSet(stats.Spec_PaladinProt, difficulty),
 		seigeClassGearSet(stats.Spec_PaladinRet, difficulty),
 		seigeGearGeneric(stats.Armor_Plate, stats.PrimaryStat_Strength, difficulty),
@@ -122,6 +122,13 @@ func ItemFinder_SiegeStrengthPlateTank(difficulty stats.Difficulty) []*items.Ful
 		trinketsForDifficulty(G_siegeStrengthTrinkets, difficulty, stats.Difficulty.ExpectedItemLevelSiege),
 		// []*items.FullItem{db.WowSimDB_ByIdAndUpgrade(102249, 0), db.WowSimDB_ByIdAndUpgrade(102250, 0)},
 	)
+	// Visage of the Monstrous spirit/haste shield
+	if difficulty == stats.Difficulty_Normal {
+		initial = append(initial, db.WowSimDB_ByIdAndUpgrade(103848, 0))
+	} else if difficulty == stats.Difficulty_Heroic {
+		initial = append(initial, db.WowSimDB_ByIdAndUpgrade(104579, 0))
+	}
+	return initial
 }
 
 func ItemFinder_ThroneStrengthPlateTank(difficulty stats.Difficulty) []*items.FullItem {

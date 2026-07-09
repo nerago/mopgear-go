@@ -40,11 +40,14 @@ type SolverHighsMultiProcess struct {
 	outputRow    utilhighs.ConstraintRow
 
 	allColumns []*columnInfo
+
+	permuteLabel string
 }
 
 type HighsMultiResult struct {
-	ItemSets []items.FullItemSet
-	OutputId []string
+	ItemSets     []items.FullItemSet
+	OutputId     []string
+	PermuteLabel string
 }
 
 func (process *SolverHighsMultiProcess) AddSetParam(param SolverHighsMultiParam) {
@@ -53,6 +56,10 @@ func (process *SolverHighsMultiProcess) AddSetParam(param SolverHighsMultiParam)
 
 func (process *SolverHighsMultiProcess) SetCommon(common multi_types.CommonOptions) {
 	process.common = common
+}
+
+func (process *SolverHighsMultiProcess) SetPermuteLabel(permuteLabel string) {
+	process.permuteLabel = permuteLabel
 }
 
 func (process *SolverHighsMultiProcess) RunInterruptable(printer *util.PrintRecorder) *channel_op.FutureCancellable[HighsMultiResult] {
@@ -223,6 +230,8 @@ func (process *SolverHighsMultiProcess) extractCommonChoices(solution *highs.Sol
 }
 
 func (process *SolverHighsMultiProcess) solutionToResult(solution *highs.Solution, printer *util.PrintRecorder) HighsMultiResult {
+	printer.Printf("Permute = %s\n", process.permuteLabel)
+
 	resultList := make([]items.FullItemSet, len(process.parts))
 	idList := make([]string, len(process.parts))
 	for partIndex := range process.parts {
@@ -235,7 +244,8 @@ func (process *SolverHighsMultiProcess) solutionToResult(solution *highs.Solutio
 		printer.Printf("OutputId[%s] = %s\n", part.Label, outputId)
 		idList[partIndex] = outputId
 	}
-	return HighsMultiResult{resultList, idList}
+
+	return HighsMultiResult{resultList, idList, process.permuteLabel}
 }
 
 func (process *SolverHighsMultiProcess) makeFullModel() {

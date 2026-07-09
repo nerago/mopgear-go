@@ -11,8 +11,8 @@ import (
 	"slices"
 )
 
-const ReGem_GemAlternate = "GemAlternate"
-const ReGem_GemDefault = "GemDefault"
+const ReGem_GemAlternate = "re-gem-alternate"
+const ReGem_GemDefault = "re-gem-default"
 
 func (job *MultiSetJob) prepareInitial() {
 	job.printer.Println("LOADING BAGS")

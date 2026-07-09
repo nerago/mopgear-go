@@ -130,7 +130,7 @@ func (job *MultiSetJob) makeOutputFromHighs(multiResult withhighs.HighsMultiResu
 
 	if checkNoConflicts(outputs, job.printer) {
 		combo := multi_types.CommonCombo_FromProposed(outputs)
-		proposed := multi_types.MultiProposedOutput{Id: uuid.NewString(), TotalRatingSum: totalRatingSum, Parts: outputs, Combo: combo}
+		proposed := multi_types.MultiProposedOutput{Id: uuid.NewString(), TotalRatingSum: totalRatingSum, Parts: outputs, Combo: combo, PermuteLabel: multiResult.PermuteLabel}
 		return proposed
 	} else {
 		panic("conflicted items")

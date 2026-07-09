@@ -124,6 +124,9 @@ func (job *MultiSetJob) reportSimResults(multiResultList []simulateMultiResult) 
 
 func (job *MultiSetJob) reportSimResults_One(result simulateMultiResult) {
 	job.printer.Printf("&&&&&&&&&&&&& %s\n", result.proposed.Id)
+	if result.proposed.PermuteLabel != "" {
+		job.printer.Println(result.proposed.PermuteLabel)
+	}
 	result.proposed.Combo.Print(job.printer)
 
 	for specIndex, specResult := range result.result {
@@ -183,7 +186,10 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 		rowCount += len(simTypes)
 	}
 
-	// outputTypes := []stats.SimType{simulate.Sim_DPS, simulate.Sim_DTPS, simulate.Sim_TMI, simulate.Sim_DEATH}
+	needPermuteLine := simResultList[0].proposed.PermuteLabel != ""
+	if needPermuteLine {
+		rowCount++
+	}
 
 	csv := util.CSVOutputByColumn{}
 	csv.InitRows(rowCount + 2)
@@ -201,6 +207,9 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 		}
 	}
 	csv.AddString("regem")
+	if needPermuteLine {
+		csv.AddString("permute")
+	}
 	csv.FinishColumn()
 
 	for _, simResult := range simResultList {
@@ -219,6 +228,9 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 		}
 
 		csv.AddInt(countRegem(simResult.proposed))
+		if needPermuteLine {
+			csv.AddString("\"" + simResult.proposed.PermuteLabel + "\"")
+		}
 
 		csv.FinishColumn()
 	}

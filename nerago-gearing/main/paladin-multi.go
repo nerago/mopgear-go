@@ -18,6 +18,7 @@ const (
 	trinketPrimRage  = 94519
 	trinketTwinsGaze = 94529
 
+	//trinketSkeer // TODO
 	trinketFusionCoreCelestial  = 104961
 	trinketThokTailCelestial    = 105111
 	trinketVialCorruptNormal    = 102306
@@ -61,7 +62,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:                     "Prot-Compromise",
 		GearFile:                  files.GearFileProtCompromise,
 		Model:                     model.Model_PallyProtCompromise(),
-		RequestRatingPercent:      0.20,
+		RequestRatingPercent:      0.25,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
 		MissingEnchant:            setup.MissingEnchant_Panic,
@@ -70,7 +71,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		Label:                     "Prot-Mitigation-NoSet",
 		GearFile:                  files.GearFileProtMitigationNoSet,
 		Model:                     model.Model_PallyProtMitigation_NoSet(),
-		RequestRatingPercent:      0.35,
+		RequestRatingPercent:      0.30,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
 		MissingEnchant:            setup.MissingEnchant_Panic,
@@ -240,6 +241,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		103872, // bulwurk of fallen general
 		103916, // jugg ignition keys
 		104461, // rage-blind greathelm
+		104415, // bubble bracer heroic
+		103892, // tharnok helm
 	}
 	newTrinketsDamage := []items.ItemId{
 		trinketThokTailCelestial,
@@ -261,7 +264,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		96373,  // cloudbreaker belt heroic
 		96395,  // bloodsoaked legplates
 		96542,  // tidal force treads
-		86386,  // Shin'ka, Execution of Dominion
 		95281,  // ret tier15 gloves normal
 		96657,  // ret tier15 legs heroic
 		95535,  // normal lightning legs
@@ -349,6 +351,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	})
 
 	// predetermined choices
+	ret.ForceSingleSlot(items.Equip_Weapon, 104981) // greatsword pride fall
 	ret.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
 	//ret.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
 	ret.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
@@ -397,12 +400,12 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	//job.MakeRandomVariants(101887, 0, -365, -352)
 
-	//ret.AddBagsExtra()
-	//protDps.AddBagsExtra()
-	//protCompromise.AddBagsExtra()
-	//protMitigationNoSet.AddBagsExtra()
-	//protMitigationWithSet.AddBagsExtra()
-	//protHeal.AddBagsExtra()
+	ret.AddBagsExtra()
+	protDps.AddBagsExtra()
+	protCompromise.AddBagsExtra()
+	protMitigationNoSet.AddBagsExtra()
+	protMitigationWithSet.AddBagsExtra()
+	protHeal.AddBagsExtra()
 
 	job.AddSetParam(ret)
 	job.AddSetParam(protDps)
@@ -412,12 +415,13 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	job.AddSetParam(protHeal)
 
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
-	// job.AddItemDistinctUsageGroups(101882, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
+	//job.AddItemDistinctUsageGroups(103892, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet, protHeal})
+	//ret.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{104981, 86386})
 
 	job.VerifyNoExtraDuplicates()
 
-	//job.RunNoPermutations_AllCommonAlternates()
-	job.RunForSolutionsPerPermute(12)
+	job.RunNoPermutations_AllCommonAlternates()
+	//job.RunForSolutionsPerPermute(8)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)
@@ -440,6 +444,7 @@ func blockHelmetsWithoutIndomitable(param *multi_types.MultiSetParam) {
 	param.BlockItem(95778)  // golden golem celestial = ignore in all sets
 	param.BlockItem(101882) // cliffbreaker helm = capacitance
 	param.BlockItem(98985)  // ret helm = capacitance
+	param.BlockItem(103892) // thranok = capacitance
 	blockGeneral(param)
 }
 

@@ -15,6 +15,7 @@ type MultiProposedOutput struct {
 	TotalRatingSum float64
 	Parts          []SingleProposedOutput
 	Combo          CommonCombo
+	PermuteLabel   string
 }
 
 func (proposed *MultiProposedOutput) FindItemById(itemId items.ItemId) *items.FullItem {

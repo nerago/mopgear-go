@@ -6,7 +6,7 @@ import (
 )
 
 func makeOutputChannel[R any]() chan R {
-	return make(chan R, 128)
+	return make(chan R, 12)
 }
 func makeOutputChannelUnbuffered[R any]() chan R {
 	return make(chan R)

@@ -1,18 +1,18 @@
 package multi
 
 import (
+	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/solver/withhighs"
 	"paladin_gearing_go/util"
 	"slices"
 )
 
-type permuteEntryType int8
-
 type permuteEntryFixedForce struct {
 	paramIndex int
 	slot       items.SlotEquip
 	itemId     items.ItemId
+	isSingle   bool
 }
 
 type permuteEntryAllowGroup struct {
@@ -56,8 +56,9 @@ func (job *MultiSetJob) preparePermutations() <-chan permuteSet {
 		param := &job.params[paramIndex]
 		semiFixed := param.SemiFixedSlots
 		for slot, itemIdList := range semiFixed {
+			isSingle := len(itemIdList) == 1
 			entriesList := util.MapSliceAsNew(itemIdList, func(itemId *items.ItemId) permuteEntry {
-				return permuteEntry{fixed: &permuteEntryFixedForce{paramIndex, slot, *itemId}}
+				return permuteEntry{fixed: &permuteEntryFixedForce{paramIndex, slot, *itemId, isSingle}}
 			})
 			optionEntriesList = append(optionEntriesList, permuteOptions{options: entriesList})
 		}
@@ -121,35 +122,48 @@ func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, printe
 		itemOptionsEach[paramIndex] = job.params[paramIndex].itemOptions.Clone()
 	}
 
-	printer.Println("PERMUTE SET:")
+	build := util.StringBuild2{}
 	for _, entry := range permuteSet.choices {
 		if entry.fixed != nil {
 			fixed := entry.fixed
-			printer.Printf(" > %d %s %d\n", fixed.paramIndex, fixed.slot.Name(), fixed.itemId)
 			itemOptionsEach[fixed.paramIndex].ForceSlotOnlySpecifiedItemId(fixed.slot, fixed.itemId)
+			if !fixed.isSingle {
+				paramLabel := job.params[fixed.paramIndex].Label
+				build.WriteString(paramLabel)
+				build.WriteString("(Forced) ")
+
+				itemName := db.WowSimDB_LookupNameByItemId(fixed.itemId)
+				build.WriteString(itemName)
+			}
 		} else if entry.group != nil {
 			group := entry.group
-			build := util.StringBuild2{}
-			build.WriteString(" > ")
+
 			for paramIndex := range job.params {
+				paramLabel := job.params[paramIndex].Label
 				if group.forceIndex == paramIndex {
 					slot := itemOptionsEach[paramIndex].FindItemIdSlotUnique(group.itemId)
 					itemOptionsEach[paramIndex].ForceSlotOnlySpecifiedItemId(slot, group.itemId)
-					build.WriteUint32(uint32(paramIndex))
-					build.WriteString("! ")
+					build.WriteString(paramLabel)
+					build.WriteString("(Forced) ")
 				} else if slices.Contains(group.allowIndexList, paramIndex) {
-					build.WriteUint32(uint32(paramIndex))
-					build.WriteRune(' ')
+					build.WriteString(paramLabel)
+					build.WriteString("(Allowed) ")
 				} else {
 					itemOptionsEach[paramIndex].RemoveItemIdFromAll(group.itemId)
 				}
 			}
-			build.WriteUint32(uint32(group.itemId))
-			printer.PrintlnFromBuild(build)
+
+			itemName := db.WowSimDB_LookupNameByItemId(group.itemId)
+			build.WriteString(": ")
+			build.WriteString(itemName)
 		} else {
 			panic("empty entry")
 		}
 	}
+
+	printer.Println("PERMUTE SET:")
+	printer.PrintlnFromBuild(build)
+	highProcess.SetPermuteLabel(build.String())
 
 	optionsInputList := make([]commonOptionsInput, len(job.params))
 	for paramIndex := range job.params {

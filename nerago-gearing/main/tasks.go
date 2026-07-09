@@ -525,6 +525,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		trinketThokTailCelestial,
 		trinketFusionCoreCelestial,
 		trinketVialCorruptNormal,
+		//trinketSkeerTODO
 	}
 
 	fight := stats.Fight_Juggernaut_NoExternalHeal
