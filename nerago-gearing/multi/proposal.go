@@ -5,7 +5,6 @@ import (
 	"paladin_gearing_go/solver/withhighs"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/channel_op"
-	"sync/atomic"
 
 	"github.com/google/uuid"
 )
@@ -26,28 +25,30 @@ func (job *MultiSetJob) proposalsAllCommonAlternates(cancelGenerate channel_op.C
 	return proposalChannel, expectedCountFuture
 }
 
-func (job *MultiSetJob) proposalsUnderPermutation(tracker *util.TrackProgress, solutionsPerPermute int, cancel channel_op.CancelSignal) <-chan multi_types.MultiProposedOutput {
+func (job *MultiSetJob) proposalsUnderPermutation(solutionsPerPermute int, cancel channel_op.CancelSignal) (<-chan multi_types.MultiProposedOutput, *channel_op.Future[int]) {
 	estimate := job.estimateFixedPermutations()
 	job.printer.Printf("PERMUTE SET COUNT %d\n", estimate)
-
-	currentProgress := atomic.Uint64{}
-	tracker.RunFromAtomicInt(&currentProgress, estimate)
-	defer tracker.SetDone()
 
 	permuteChannel := job.preparePermutations()
 
 	proposalChannel := channel_op.MapMulti_ChannelToChannel_Cancellable(highsThreadCount, permuteChannel, cancel,
 		func(permuteSet permuteSet, resultChannel chan<- multi_types.MultiProposedOutput) {
-			job.runPermute(permuteSet, solutionsPerPermute, resultChannel, cancel)
-			currentProgress.Add(1)
+			// TODO don't ignore updated count
+			expectCount := channel_op.Future_Make[int]()
+			job.runPermute(permuteSet, solutionsPerPermute, expectCount, resultChannel, cancel)
 		},
 	)
 
+	expectedTotalCount := channel_op.Future_Make[int]()
+	expectedTotalCount.SetResult(estimate * solutionsPerPermute)
+
 	existingProposal := job.existingGearAsProposal()
-	return channel_op.ChannelWithPrependedValues(proposalChannel, existingProposal)
+	proposalChannel = channel_op.ChannelWithPrependedValues(proposalChannel, existingProposal)
+
+	return proposalChannel, expectedTotalCount
 }
 
-func (job *MultiSetJob) runPermute(permuteSet permuteSet, solutionsPerPermute int, resultChannel chan<- multi_types.MultiProposedOutput, cancel channel_op.CancelSignal) {
+func (job *MultiSetJob) runPermute(permuteSet permuteSet, solutionsPerPermute int, expectedCount *channel_op.Future[int], resultChannel chan<- multi_types.MultiProposedOutput, cancel channel_op.CancelSignal) {
 	printer := util.PrintRecorder_HoldAll()
 
 	highProcess := job.highProcessSetupForPermute(permuteSet, printer)
@@ -60,7 +61,8 @@ func (job *MultiSetJob) runPermute(permuteSet permuteSet, solutionsPerPermute in
 			resultChannel <- job.makeOutputFromHighs(result, printer)
 		}
 	} else {
-		nextChan := highProcess.RunForSeveral_CommonDifferent(printer, util.Optional_OfValue(solutionsPerPermute), cancel, false)
+		nextChan, expectedSubCount := highProcess.RunForSeveral_CommonDifferent(printer, util.Optional_OfValue(solutionsPerPermute), cancel, false)
+		expectedSubCount.ForwardResultToOtherFuture(expectedCount)
 		for result := range nextChan {
 			resultChannel <- job.makeOutputFromHighs(result, printer)
 		}

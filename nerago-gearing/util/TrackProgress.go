@@ -114,9 +114,6 @@ func (track *TrackProgress) PrepareForPush() func(float64) {
 }
 
 func (track *TrackProgress) RunOuterTracking(expectedChildCount int) {
-	track.mutex.Lock()
-	defer track.mutex.Unlock()
-
 	if expectedChildCount < 0 {
 		expectedChildCount = 0
 	}

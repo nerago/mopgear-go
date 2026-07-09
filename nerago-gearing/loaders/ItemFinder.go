@@ -351,8 +351,8 @@ func ItemFinder_BagsUpgraded(_ stats.Difficulty) []*items.FullItem {
 		item = item.MakeItemWithRandomSuffix(equip.RandomSuffix)
 		if item.UpgradeLevel() < items.MAX_UPGRADE_LEVEL {
 			upgraded := db.WowSimDB_ByIdAndUpgrade(equip.ItemId, int32(items.MAX_UPGRADE_LEVEL))
-			upgraded = upgraded.MakeItemWithRandomSuffix(equip.RandomSuffix)
 			if upgraded != nil && upgraded.ItemLevel() > item.ItemLevel() {
+				upgraded = upgraded.MakeItemWithRandomSuffix(equip.RandomSuffix)
 				result = append(result, upgraded)
 			}
 		}

@@ -33,9 +33,9 @@ func (job *MultiSetJob) RunForSolutionsPerPermute(solutionsPerPermute int) {
 	tracker := util.TrackProgress_Start()
 	defer tracker.SetDone()
 
-	proposalChannel := job.proposalsUnderPermutation(tracker, solutionsPerPermute, cancelGenerate)
+	proposalChannel, expectedCount := job.proposalsUnderPermutation(solutionsPerPermute, cancelGenerate)
 
-	futureSimResultList, futureProposalList := job.proposalsToSimResult(proposalChannel, util.TrackProgress_Nop())
+	futureSimResultList, futureProposalList := job.proposalsToSimResult(proposalChannel, tracker, expectedCount)
 
 	proposalList, gotResult2 := futureProposalList.WaitForResult()
 	simResultList, gotResult1 := futureSimResultList.WaitForResult()
@@ -72,6 +72,7 @@ func (job *MultiSetJob) proposalsToSimResult(proposalChannel <-chan multi_types.
 
 	proposalChannel = job.listInitialOutputs(proposalChannel)
 	proposalChannel, futureProposalList := channel_op.TeeChannelToSlice(proposalChannel)
+	expectedCount = expectedCount.MapSameType(func(multiSetCount int) (int, bool) { return multiSetCount * len(job.params), true })
 
 	simChannel := job.prepareSimList(proposalChannel)
 	futureSimResultList := job.runSims(simChannel, tracker, expectedCount)

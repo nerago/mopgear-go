@@ -34,17 +34,17 @@ type permuteSet struct {
 	choices []permuteEntry
 }
 
-func (job *MultiSetJob) estimateFixedPermutations() uint64 {
-	var count uint64 = 1
+func (job *MultiSetJob) estimateFixedPermutations() int {
+	var count = 1
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
 		semiFixed := param.SemiFixedSlots
 		for _, itemIdList := range semiFixed {
-			count *= uint64(len(itemIdList))
+			count *= len(itemIdList)
 		}
 	}
 	for _, group := range job.distinctUsageGroups {
-		count *= uint64(len(group.groupAIndexes) + len(group.groupBIndexes) + 2)
+		count *= len(group.groupAIndexes) + len(group.groupBIndexes) + 2
 	}
 	return count
 }

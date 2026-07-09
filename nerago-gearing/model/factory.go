@@ -96,7 +96,7 @@ func Model_PallyProtCompromise() Model {
 		Spec:                 spec,
 		Goal:                 goal,
 		SimulateAs:           Fight_Juggernaut_HighHeal,
-		SimRatioWeighting:    SimRatio_animusWeight,
+		SimRatioWeighting:    SimRatio_compromiseWeight,
 		StatRatings:          weight,
 		StatRequirements:     StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:         ReforgeRules_tank,
@@ -186,7 +186,7 @@ func Model_Testing() Model {
 	}
 }
 
-// now about noset - tortos, horridon, ironqon, jikun, durumu
+// for noset - juggernaut, shamans, siegecrafter
 var SimRatio_generalMiti = stats.SimData_Make(
 	Sim_DPS, 0.2,
 	Sim_DEATH, 0.2,
@@ -194,7 +194,7 @@ var SimRatio_generalMiti = stats.SimData_Make(
 	Sim_DTPS, 0.4,
 )
 
-// for withset - malkrok
+// for withset - malkrok, thok, nazgrim
 var SimRatio_malkrokWeight = stats.SimData_Make(
 	Sim_DPS, 0.10,
 	Sim_DEATH, 0.3,
@@ -202,23 +202,23 @@ var SimRatio_malkrokWeight = stats.SimData_Make(
 	Sim_DTPS, 0.55,
 )
 
-// for compromise set - animus
-var SimRatio_animusWeight = stats.SimData_Make(
-	Sim_DPS, 0.5,
-	Sim_DEATH, 0.1,
-	Sim_TMI, 0.3,
+// for compromise set - spoils, galakras, paragons, etc
+var SimRatio_compromiseWeight = stats.SimData_Make(
+	Sim_DPS, 0.4,
+	Sim_DEATH, 0.05,
+	Sim_TMI, 0.45,
 	Sim_DTPS, 0.1,
 )
 
 // for dps set
 var SimRatio_dpsWeight = stats.SimData_Make(
-	Sim_DPS, 0.90,
-	Sim_DEATH, 0.03,
+	Sim_DPS, 0.95,
+	Sim_DEATH, 0.01,
 	Sim_TMI, 0.03,
-	Sim_DTPS, 0.04,
+	Sim_DTPS, 0.01,
 )
 
-// for heal set
+// for heal set, garrosh, immerseus
 var SimRatio_healWeight = stats.SimData_Make(
 	Sim_DEATH, 0.1,
 	Sim_TMI, 0.1,

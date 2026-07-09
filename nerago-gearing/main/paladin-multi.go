@@ -243,6 +243,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		104461, // rage-blind greathelm
 		104415, // bubble bracer heroic
 		103892, // tharnok helm
+		103871, // tower shield
+		103915, // icy blood chest
 	}
 	newTrinketsDamage := []items.ItemId{
 		trinketThokTailCelestial,
@@ -353,7 +355,6 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	// predetermined choices
 	ret.ForceSingleSlot(items.Equip_Weapon, 104981) // greatsword pride fall
 	ret.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
-	//ret.ForceSingleSlot(items.Equip_Ring1, ringScaledTyrant)
 	ret.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
 	ret.ForceSingleSlot(items.Equip_Trinket2, trinketTwinsGaze)
 	protDps.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
@@ -362,12 +363,11 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	protCompromise.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
 	protCompromise.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
 	protCompromise.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
-	protCompromise.AddReportVariant(items.Equip_Trinket2, trinketFortZand)
-	//protMitigationNoSet.ForceSingleSlot(items.Equip_Head, 104461) // rage-blind greathelm
+	protCompromise.AddReportVariant(items.Equip_Trinket2, trinketVialCorruptNormal)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
-	protMitigationNoSet.AddReportVariant(items.Equip_Trinket1, trinketZandSpark)
+	protMitigationNoSet.AddReportVariant(items.Equip_Trinket1, trinketThokTailCelestial) // changed
 	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
@@ -420,8 +420,8 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	job.VerifyNoExtraDuplicates()
 
-	job.RunNoPermutations_AllCommonAlternates(true)
-	//job.RunForSolutionsPerPermute(8)
+	//job.RunNoPermutations_AllCommonAlternates(true)
+	job.RunForSolutionsPerPermute(6)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)

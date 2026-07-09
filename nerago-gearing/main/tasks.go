@@ -516,16 +516,22 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		96793, // none fort zand
 		94529, // none gaze twins
 		94527, // ji-kun
-		// 94507,                    // valor
-		// 94508,                    // valor
 		// 103989, // timeless alacrity of xuen
 		// 103990, // timeless resolve of niuzao
 		103678, // time lost artifact
 		trinketZandSpark,
-		trinketThokTailCelestial,
-		trinketFusionCoreCelestial,
-		trinketVialCorruptNormal,
-		//trinketSkeerTODO
+		trinketThokTailCelestial,   // up 2
+		trinketFusionCoreCelestial, // 528
+		trinketVialCorruptNormal,   // 567 (up 2)
+		//105134,                     // trinketSkeerBloodCelestial - don't have,
+	}
+
+	upLevel := func(id items.ItemId) int32 {
+		var upgrade int32 = 0
+		if id < 100000 || id == trinketVialCorruptNormal || id == trinketThokTailCelestial {
+			upgrade = 2
+		}
+		return upgrade
 	}
 
 	fight := stats.Fight_Juggernaut_NoExternalHeal
@@ -538,34 +544,34 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 	}
 
 	groups := []group{
-		//{
-		//	"heal",
-		//	model.Model_PallyProtHeal(),
-		//	files.GearFileProtHeal,
-		//},
-		//{
-		//	"with_set",
-		//	model.Model_PallyProtMitigation_WithSet(),
-		//	files.GearFileProtMitigationWithSet,
-		//}, {
-		//	"no_set",
-		//	model.Model_PallyProtMitigation_NoSet(),
-		//	files.GearFileProtMitigationNoSet,
-		//},
-		//{
-		//	"compromise",
-		//	model.Model_PallyProtCompromise(),
-		//	files.GearFileProtCompromise,
-		//}, {
-		//	"dps",
-		//	model.Model_PallyProtDps(),
-		//	files.GearFileProtDps,
-		//},
 		{
-			"ret",
+			"heal",
+			model.Model_PallyProtHeal(),
+			files.GearFileProtHeal,
+		},
+		{
+			"with_set",
+			model.Model_PallyProtMitigation_WithSet(),
+			files.GearFileProtMitigationWithSet,
+		}, {
+			"no_set",
+			model.Model_PallyProtMitigation_NoSet(),
+			files.GearFileProtMitigationNoSet,
+		},
+		{
+			"compromise",
+			model.Model_PallyProtCompromise(),
+			files.GearFileProtCompromise,
+		}, {
+			"dps",
 			model.Model_PallyProtDps(),
 			files.GearFileProtDps,
 		},
+		//{
+		//	"ret",
+		//	model.Model_PallyProtDps(),
+		//	files.GearFileProtDps,
+		//},
 	}
 
 	csv := util.CSVOutputByColumn{}
@@ -605,21 +611,15 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		}
 
 		for _, itemIdOne := range processItemIds {
-			var upgrade int32 = 0
-			if itemIdOne < 100000 {
-				upgrade = 2
-			}
+			upgrade := upLevel(itemIdOne)
 			itemOne := db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemIdOne, upgrade, printer)
 			for _, itemIdTwo := range processItemIds {
 				if itemIdTwo >= itemIdOne {
 					continue
 				}
 
-				var upgrade int32 = 0
-				if itemIdTwo < 100000 {
-					upgrade = 2
-				}
-				itemTwo := db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemIdTwo, upgrade, printer)
+				upgrade2 := upLevel(itemIdOne)
+				itemTwo := db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemIdTwo, upgrade2, printer)
 
 				nameOne := itemOne.CreateFullName() + " " + strconv.FormatUint(uint64(itemOne.ItemLevel()), 10)
 				nameTwo := itemTwo.CreateFullName() + " " + strconv.FormatUint(uint64(itemTwo.ItemLevel()), 10)

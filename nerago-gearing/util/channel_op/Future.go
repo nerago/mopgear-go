@@ -116,6 +116,18 @@ func (future *Future[T]) ForwardSuccessfulResultToCallback(apply func(T)) {
 	}()
 }
 
+func (future *Future[T]) ForwardResultToOtherFuture(other *Future[T]) {
+	future.verifyCanWait()
+	go func() {
+		value, hasValue := future.resultFromChannel()
+		if hasValue {
+			other.SetResult(value)
+		} else {
+			other.SetResultEmpty()
+		}
+	}()
+}
+
 func (future *Future[T]) MapSameType(mapper func(T) (T, bool)) *Future[T] {
 	return Future_MapValue(future, mapper)
 }
