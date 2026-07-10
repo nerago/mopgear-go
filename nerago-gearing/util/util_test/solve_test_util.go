@@ -1,8 +1,8 @@
 package util_test
 
 import (
+	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/model"
 	"paladin_gearing_go/stats"
 	"sync"
 	"testing"
@@ -16,13 +16,13 @@ const (
 	// TargetCountStandard = 8 // ends up with skip of 5, doesn't cycle shoulders properly since that matches a options size
 )
 
-func MakeTestOptions() (*items.SolvableOptionsMap, *model.Model) {
+func MakeTestOptions() (*items.SolvableOptionsMap, *gear_model.SpecModel) {
 	options := items.SolvableOptionsMap{}
 	options.Set(items.Equip_Head, []items.SolvableItem{testItem(100, 11)})
 	options.Set(items.Equip_Neck, []items.SolvableItem{testItem(200, 22), testItem(201, 23)})
 	options.Set(items.Equip_Shoulder, []items.SolvableItem{testItem(300, 31), testItem(301, 32), testItem(302, 33), testItem(303, 32), testItem(304, 31)})
 	options.Set(items.Equip_Back, []items.SolvableItem{testItem(400, 44), testItem(401, 43), testItem(402, 42), testItem(403, 41)})
-	model := model.Model_Testing()
+	model := gear_model.Model_Testing()
 	return &options, &model
 }
 

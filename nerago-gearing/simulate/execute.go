@@ -4,12 +4,12 @@ import (
 	"os"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
+	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/model"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/stats/extern_stats"
 	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/channel_op"
+	"paladin_gearing_go/util/util_async"
 
 	"github.com/google/uuid"
 	wowsim_core "github.com/wowsims/mop/sim/core"
@@ -31,11 +31,11 @@ const (
 
 var WowSimRanDuringCurrentProcess = false
 
-func WowSim_Execute_UseModel(runSize WowSim_RunSize, model *model.Model, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) stats.SimData {
+func WowSim_Execute_UseModel(runSize WowSim_RunSize, model *gear_model.SpecModel, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) stats.SimData {
 	return WowSim_Execute_SpecifyAll(runSize, model.SimSpeedUp, model.Spec, model.Goal, model.SimulateAs, model.Professions, equipMap, bonusStats, tracker)
 }
 
-func WowSim_Execute_SpecifyAll(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) stats.SimData {
+func WowSim_Execute_SpecifyAll(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) stats.SimData {
 	input, reporter, id := prepareSim(runSize, speedUp, spec, goal, fight, profession, equipMap, bonusStats)
 	wowsim_core.RunRaidSimConcurrentAsync(input, reporter, id)
 
@@ -43,11 +43,11 @@ func WowSim_Execute_SpecifyAll(runSize WowSim_RunSize, speedUp int, spec stats.S
 	return convertResult(finalResult)
 }
 
-func WowSim_Execute_SpecifyAll_Future(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) *channel_op.FutureCancellable[stats.SimData] {
+func WowSim_Execute_SpecifyAll_Future(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) *util_async.FutureCancellable[stats.SimData] {
 	input, reporter, id := prepareSim(runSize, speedUp, spec, goal, fight, profession, equipMap, bonusStats)
 	wowsim_core.RunRaidSimConcurrentAsync(input, reporter, id)
 
-	future := channel_op.FutureCancellable_Make[stats.SimData]()
+	future := util_async.FutureCancellable_Make[stats.SimData]()
 	future.AddCancelHandler(func() {
 		simsignals.AbortById(id)
 	})
@@ -61,7 +61,7 @@ func WowSim_Execute_SpecifyAll_Future(runSize WowSim_RunSize, speedUp int, spec 
 	return future
 }
 
-func prepareSim(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32) (*wowsim_proto.RaidSimRequest, chan *wowsim_proto.ProgressMetrics, string) {
+func prepareSim(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32) (*wowsim_proto.RaidSimRequest, chan *wowsim_proto.ProgressMetrics, string) {
 	if speedUp != 0 {
 		runSize /= WowSim_RunSize(speedUp)
 	}
@@ -76,7 +76,7 @@ func prepareSim(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal s
 	return input, reporter, id
 }
 
-func inputRequestFromTemplate(infile string, equipMap *items.FullEquipMap, profession model.ProfessionInfo, bonusStats *map[stats.StatType]int32, spec stats.SpecType, fight stats.WowSim_Fight, runSize WowSim_RunSize) *wowsim_proto.RaidSimRequest {
+func inputRequestFromTemplate(infile string, equipMap *items.FullEquipMap, profession gear_model.ProfessionInfo, bonusStats *map[stats.StatType]int32, spec stats.SpecType, fight stats.WowSim_Fight, runSize WowSim_RunSize) *wowsim_proto.RaidSimRequest {
 	var input wowsim_proto.RaidSimRequest
 	loadAnyProtoFile(&input, infile)
 
@@ -89,7 +89,7 @@ func inputRequestFromTemplate(infile string, equipMap *items.FullEquipMap, profe
 	return &input
 }
 
-func inputRequestFromScratch(equipMap *items.FullEquipMap, profession model.ProfessionInfo, bonusStats *map[stats.StatType]int32, spec stats.SpecType, fight stats.WowSim_Fight, runSize WowSim_RunSize) *wowsim_proto.RaidSimRequest {
+func inputRequestFromScratch(equipMap *items.FullEquipMap, profession gear_model.ProfessionInfo, bonusStats *map[stats.StatType]int32, spec stats.SpecType, fight stats.WowSim_Fight, runSize WowSim_RunSize) *wowsim_proto.RaidSimRequest {
 	input := wowsim_proto.RaidSimRequest{
 		Type: wowsim_proto.SimType_SimTypeIndividual,
 		SimOptions: &wowsim_proto.SimOptions{
@@ -297,7 +297,7 @@ func updateRotation(input *wowsim_proto.RaidSimRequest, spec stats.SpecType) {
 	input.Raid.Parties[0].Players[0].Rotation = &rotation
 }
 
-func updateGear(input *wowsim_proto.RaidSimRequest, equipMap *items.FullEquipMap, professions model.ProfessionInfo) {
+func updateGear(input *wowsim_proto.RaidSimRequest, equipMap *items.FullEquipMap, professions gear_model.ProfessionInfo) {
 	if equipMap == nil {
 		return
 	}

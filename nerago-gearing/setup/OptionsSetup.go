@@ -2,9 +2,9 @@ package setup
 
 import (
 	"paladin_gearing_go/db"
+	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
-	"paladin_gearing_go/model"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
@@ -18,12 +18,12 @@ const (
 	MissingEnchant_Ignore MissingEnchantMode = iota
 )
 
-func OptionsSetup_FromGearFile(filename string, model *model.Model, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) items.FullOptionsMap {
+func OptionsSetup_FromGearFile(filename string, model *gear_model.SpecModel, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) items.FullOptionsMap {
 	equipped := loaders.GearFileReader_Read(filename)
 	return OptionsSetup_FromEquipped(equipped, model, missingEnchant, printer)
 }
 
-func OptionsSetup_FromEquipped(equipped []loaders.EquippedItem, model *model.Model, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) items.FullOptionsMap {
+func OptionsSetup_FromEquipped(equipped []loaders.EquippedItem, model *gear_model.SpecModel, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) items.FullOptionsMap {
 	optionMap := items.FullOptionsMap{}
 	for _, equipItem := range equipped {
 		optionList, baseItem := OptionsSetup_Single_FromEquipped(equipItem, model, missingEnchant, printer)
@@ -32,19 +32,19 @@ func OptionsSetup_FromEquipped(equipped []loaders.EquippedItem, model *model.Mod
 	return optionMap
 }
 
-func OptionsSetup_Single_FromEquipped(equipItem loaders.EquippedItem, model *model.Model, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
+func OptionsSetup_Single_FromEquipped(equipItem loaders.EquippedItem, model *gear_model.SpecModel, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
 	item := *db.WowSimDB_LoadItemById_AllowFallback(equipItem.ItemId, equipItem.UpgradeStepOrItemLevel, printer)
 	item = addDetailFromEquip(item, equipItem, model, missingEnchant, printer)
 	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
 }
 
-func OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId items.ItemId, upgradeLevel items.UpgradeLevel, randomSuffix items.RandomSuffix, model *model.Model, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
+func OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId items.ItemId, upgradeLevel items.UpgradeLevel, randomSuffix items.RandomSuffix, model *gear_model.SpecModel, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
 	item := *db.WowSimDB_LoadItemById_AllowFallback(itemId, int32(upgradeLevel), printer)
 	item = addDetailUsingDefaults(item, randomSuffix, model)
 	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
 }
 
-func OptionsSetup_ExactEquippedOnly(equipped []loaders.EquippedItem, model *model.Model, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) items.FullEquipMap {
+func OptionsSetup_ExactEquippedOnly(equipped []loaders.EquippedItem, model *gear_model.SpecModel, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) items.FullEquipMap {
 	resultMap := items.FullEquipMap{}
 	for _, equipItem := range equipped {
 		item := OptionsSetup_ExactEquippedOnly_Item(equipItem, missingEnchant, model, printer)
@@ -55,7 +55,7 @@ func OptionsSetup_ExactEquippedOnly(equipped []loaders.EquippedItem, model *mode
 	return resultMap
 }
 
-func OptionsSetup_ExactEquippedOnly_Item(equipItem loaders.EquippedItem, missingEnchant MissingEnchantMode, model *model.Model, printer *util.PrintRecorder) items.FullItem {
+func OptionsSetup_ExactEquippedOnly_Item(equipItem loaders.EquippedItem, missingEnchant MissingEnchantMode, model *gear_model.SpecModel, printer *util.PrintRecorder) items.FullItem {
 	item := *db.WowSimDB_LoadItemById_AllowFallback(equipItem.ItemId, equipItem.UpgradeStepOrItemLevel, printer)
 	item = addDetailFromEquip(item, equipItem, model, missingEnchant, printer)
 
@@ -67,7 +67,7 @@ func OptionsSetup_ExactEquippedOnly_Item(equipItem loaders.EquippedItem, missing
 	return item
 }
 
-func addDetailUsingDefaults(item items.FullItem, randomSuffix items.RandomSuffix, model *model.Model) items.FullItem {
+func addDetailUsingDefaults(item items.FullItem, randomSuffix items.RandomSuffix, model *gear_model.SpecModel) items.FullItem {
 	item = *item.MakeItemWithRandomSuffix(randomSuffix)
 
 	if item.SlotItem() == items.Item_Trinket {
@@ -90,7 +90,7 @@ func addDetailUsingDefaults(item items.FullItem, randomSuffix items.RandomSuffix
 	return *item.NewWithEnchantDetails(socketSlots, gemChoice, enchantChoice, statEnchant)
 }
 
-func addDetailFromEquip(item items.FullItem, equipItem loaders.EquippedItem, model *model.Model, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) items.FullItem {
+func addDetailFromEquip(item items.FullItem, equipItem loaders.EquippedItem, model *gear_model.SpecModel, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) items.FullItem {
 	item = *item.MakeItemWithRandomSuffix(equipItem.RandomSuffix)
 
 	if item.SlotItem() == items.Item_Trinket {
@@ -134,7 +134,7 @@ func addDetailFromEquip(item items.FullItem, equipItem loaders.EquippedItem, mod
 	return *item.NewWithEnchantDetails(socketSlots, gemChoice, enchantChoice, statEnchant)
 }
 
-func addDefaultGems(statEnchant *stats.StatBlock, socketSlots []stats.SocketType, socketBonus *stats.StatBlock, model *model.Model) []stats.GemInfo {
+func addDefaultGems(statEnchant *stats.StatBlock, socketSlots []stats.SocketType, socketBonus *stats.StatBlock, model *gear_model.SpecModel) []stats.GemInfo {
 	socketBonusMet := true
 	gemChoice := make([]stats.GemInfo, 0, len(socketSlots))
 
@@ -178,7 +178,7 @@ func addSpecifiedGems(statEnchant *stats.StatBlock, socketSlots []stats.SocketTy
 	return gemChoice
 }
 
-func confirmSocketSlots(item items.FullItem, professions model.ProfessionInfo) []stats.SocketType {
+func confirmSocketSlots(item items.FullItem, professions gear_model.ProfessionInfo) []stats.SocketType {
 	existingSockets := item.SocketSlots()
 	if item.SlotItem().AlwaysBlacksmith() || (item.SlotItem().PossibleBlacksmith() && professions.IsBlacksmith) {
 		if len(existingSockets) == 0 || existingSockets[len(existingSockets)-1] != stats.Socket_General {
@@ -188,7 +188,7 @@ func confirmSocketSlots(item items.FullItem, professions model.ProfessionInfo) [
 	return existingSockets
 }
 
-func UpgradeAllOptionsToLevel2(optionsMap *items.FullOptionsMap, targetUpgrade items.UpgradeLevel, model *model.Model, printer *util.PrintRecorder) {
+func UpgradeAllOptionsToLevel2(optionsMap *items.FullOptionsMap, targetUpgrade items.UpgradeLevel, model *gear_model.SpecModel, printer *util.PrintRecorder) {
 	optionsMap.MapEachItem(func(currItem *items.FullItem) items.FullItem {
 		if currItem.UpgradeLevel() >= targetUpgrade {
 			return *currItem
@@ -198,7 +198,7 @@ func UpgradeAllOptionsToLevel2(optionsMap *items.FullOptionsMap, targetUpgrade i
 	})
 }
 
-func UpgradeExistingItemToTargetLevel(currItem *items.FullItem, targetUpgrade items.UpgradeLevel, professions model.ProfessionInfo, printer *util.PrintRecorder) *items.FullItem {
+func UpgradeExistingItemToTargetLevel(currItem *items.FullItem, targetUpgrade items.UpgradeLevel, professions gear_model.ProfessionInfo, printer *util.PrintRecorder) *items.FullItem {
 	upgradeItem := db.WowSimDB_LoadItemById(currItem.ItemId(), int32(targetUpgrade))
 	if upgradeItem == nil {
 		printer.Println("$ CAN'T UPGRADE " + currItem.CreateString())
@@ -211,7 +211,7 @@ func UpgradeExistingItemToTargetLevel(currItem *items.FullItem, targetUpgrade it
 	}
 }
 
-func copyDetails(oldItem *items.FullItem, upgradeItem *items.FullItem, professions model.ProfessionInfo) *items.FullItem {
+func copyDetails(oldItem *items.FullItem, upgradeItem *items.FullItem, professions gear_model.ProfessionInfo) *items.FullItem {
 	socketSlots := confirmSocketSlots(*upgradeItem, professions)
 	initial := upgradeItem.NewWithInstanceDetails(socketSlots, oldItem.Reforge(), oldItem.GemChoice(), oldItem.EnchantChoice(),
 		oldItem.RandomSuffix(), *oldItem.StatEnchant())

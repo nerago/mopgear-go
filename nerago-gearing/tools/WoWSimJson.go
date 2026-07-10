@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"os"
 	"paladin_gearing_go/db"
+	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/model"
 	"paladin_gearing_go/util"
 )
 
-func WowSimJson_Write(equip *items.FullEquipMap, model *model.Model, printer *util.PrintRecorder) string {
+func WowSimJson_Write(equip *items.FullEquipMap, model *gear_model.SpecModel, printer *util.PrintRecorder) string {
 	inputFile := model.ReferenceGearFile
 	allBytes, err := os.ReadFile(inputFile)
 	if err != nil {
@@ -48,7 +48,7 @@ func WowSimJson_Write(equip *items.FullEquipMap, model *model.Model, printer *ut
 	return asText
 }
 
-func makeItemObject(item *items.FullItem, profession model.ProfessionInfo) map[string]any {
+func makeItemObject(item *items.FullItem, profession gear_model.ProfessionInfo) map[string]any {
 	object := make(map[string]any)
 
 	object["id"] = item.ItemId()

@@ -2,60 +2,60 @@ package multi
 
 import (
 	"paladin_gearing_go/multi/multi_types"
-	"paladin_gearing_go/solver/withhighs"
+	"paladin_gearing_go/solver/solve_highs"
 	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/channel_op"
+	"paladin_gearing_go/util/util_async"
 
 	"github.com/google/uuid"
 )
 
-func (job *MultiSetJob) proposalsAllCommonAlternates(cancelGenerate channel_op.CancelSignal, extendedAlternates bool) (<-chan multi_types.MultiProposedOutput, *channel_op.Future[int]) {
+func (job *MultiSetJob) proposalsAllCommonAlternates(cancelGenerate util_async.CancelSignal, extendedAlternates bool) (<-chan multi_types.MultiProposedOutput, *util_async.Future[int]) {
 	highProcess := job.highProcessSetup()
 
 	multiSolveChannel, expectedCountFuture := highProcess.RunForSeveral_CommonDifferent(job.printer, util.Optional_Empty[int](), cancelGenerate, extendedAlternates)
 
-	proposalChannel := channel_op.Map_ChannelToChannel(4, multiSolveChannel, func(setResult withhighs.HighsMultiResult) multi_types.MultiProposedOutput {
+	proposalChannel := util_async.Map_ChannelToChannel(4, multiSolveChannel, func(setResult solve_highs.HighsMultiResult) multi_types.MultiProposedOutput {
 		return job.makeOutputFromHighs(setResult, job.printer)
 	})
 
 	existingProposal := job.existingGearAsProposal()
-	proposalChannel = channel_op.ChannelWithPrependedValues(proposalChannel, existingProposal)
+	proposalChannel = util_async.ChannelWithPrependedValues(proposalChannel, existingProposal)
 	expectedCountFuture = expectedCountFuture.MapSameType(func(count int) (int, bool) { return count + 1, true })
 
 	return proposalChannel, expectedCountFuture
 }
 
-func (job *MultiSetJob) proposalsUnderPermutation(solutionsPerPermute int, cancel channel_op.CancelSignal) (<-chan multi_types.MultiProposedOutput, *channel_op.Future[int]) {
+func (job *MultiSetJob) proposalsUnderPermutation(solutionsPerPermute int, cancel util_async.CancelSignal) (<-chan multi_types.MultiProposedOutput, *util_async.Future[int]) {
 	estimate := job.estimateFixedPermutations()
 	job.printer.Printf("PERMUTE SET COUNT %d\n", estimate)
 
 	permuteChannel := job.preparePermutations()
 
-	proposalChannel := channel_op.MapMulti_ChannelToChannel_Cancellable(highsThreadCount, permuteChannel, cancel,
+	proposalChannel := util_async.MapMulti_ChannelToChannel_Cancellable(highsThreadCount, permuteChannel, cancel,
 		func(permuteSet permuteSet, resultChannel chan<- multi_types.MultiProposedOutput) {
 			// TODO don't ignore updated count
-			expectCount := channel_op.Future_Make[int]()
+			expectCount := util_async.Future_Make[int]()
 			job.runPermute(permuteSet, solutionsPerPermute, expectCount, resultChannel, cancel)
 		},
 	)
 
-	expectedTotalCount := channel_op.Future_Make[int]()
+	expectedTotalCount := util_async.Future_Make[int]()
 	expectedTotalCount.SetResult(estimate * solutionsPerPermute)
 
 	existingProposal := job.existingGearAsProposal()
-	proposalChannel = channel_op.ChannelWithPrependedValues(proposalChannel, existingProposal)
+	proposalChannel = util_async.ChannelWithPrependedValues(proposalChannel, existingProposal)
 
 	return proposalChannel, expectedTotalCount
 }
 
-func (job *MultiSetJob) runPermute(permuteSet permuteSet, solutionsPerPermute int, expectedCount *channel_op.Future[int], resultChannel chan<- multi_types.MultiProposedOutput, cancel channel_op.CancelSignal) {
+func (job *MultiSetJob) runPermute(permuteSet permuteSet, solutionsPerPermute int, expectedCount *util_async.Future[int], resultChannel chan<- multi_types.MultiProposedOutput, cancel util_async.CancelSignal) {
 	printer := util.PrintRecorder_HoldAll()
 
 	highProcess := job.highProcessSetupForPermute(permuteSet, printer)
 
 	if solutionsPerPermute == 1 {
 		future := highProcess.RunInterruptable(printer)
-		channel_op.ChainCancel(cancel, future)
+		util_async.ChainCancel(cancel, future)
 		result, hasResult := future.WaitForResult()
 		if hasResult {
 			resultChannel <- job.makeOutputFromHighs(result, printer)
@@ -100,8 +100,8 @@ func (job *MultiSetJob) checkNoPermutations() {
 	}
 }
 
-func (job *MultiSetJob) highProcessSetup() withhighs.SolverHighsMultiProcess {
-	highProcess := withhighs.SolverHighsMultiProcess{}
+func (job *MultiSetJob) highProcessSetup() solve_highs.SolverHighsMultiProcess {
+	highProcess := solve_highs.SolverHighsMultiProcess{}
 
 	optionsInputList := util.MapSliceAsNew(job.params, func(param *multiSetParamInternal) commonOptionsInput {
 		return commonOptionsInput{param.Label, &param.itemOptions}
@@ -111,7 +111,7 @@ func (job *MultiSetJob) highProcessSetup() withhighs.SolverHighsMultiProcess {
 
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
-		highProcess.AddSetParam(withhighs.SolverHighsMultiParam{
+		highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
 			Label:          param.Label,
 			ItemOptions:    param.itemOptions,
 			Gear_model:     &param.Model,
@@ -121,7 +121,7 @@ func (job *MultiSetJob) highProcessSetup() withhighs.SolverHighsMultiProcess {
 	return highProcess
 }
 
-func (job *MultiSetJob) makeOutputFromHighs(multiResult withhighs.HighsMultiResult, printer *util.PrintRecorder) multi_types.MultiProposedOutput {
+func (job *MultiSetJob) makeOutputFromHighs(multiResult solve_highs.HighsMultiResult, printer *util.PrintRecorder) multi_types.MultiProposedOutput {
 	var totalRatingSum float64
 	outputs := make([]multi_types.SingleProposedOutput, len(job.params))
 
@@ -147,7 +147,7 @@ func (job *MultiSetJob) makeOutputFromHighs(multiResult withhighs.HighsMultiResu
 }
 
 func (job *MultiSetJob) listInitialOutputs(bestOutputs <-chan multi_types.MultiProposedOutput) <-chan multi_types.MultiProposedOutput {
-	return channel_op.PeekChannel(bestOutputs, func(best *multi_types.MultiProposedOutput) {
+	return util_async.PeekChannel(bestOutputs, func(best *multi_types.MultiProposedOutput) {
 		job.printer.Printf("::::::::: MULTI RATING %.0f :::::::: %s ::::::::\n", best.TotalRatingSum, best.Id)
 		for i, out := range best.Parts {
 			job.printer.Println(job.params[i].Label)

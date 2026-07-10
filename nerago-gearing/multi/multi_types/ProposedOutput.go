@@ -1,8 +1,8 @@
 package multi_types
 
 import (
+	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/model"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
@@ -47,7 +47,7 @@ type SingleProposedOutput struct {
 	Spec         stats.SpecType
 	OutputId     string
 	ResultRating float64
-	Model        *model.Model
+	Model        *gear_model.SpecModel
 }
 
 func SingleProposed_FromEquip(equipMap items.FullEquipMap, param *MultiSetParam) SingleProposedOutput {
@@ -55,7 +55,7 @@ func SingleProposed_FromEquip(equipMap items.FullEquipMap, param *MultiSetParam)
 	return SingleProposedOutput{Exists: true, Spec: param.Model.Spec, OutputId: uuid.NewString(), ResultRating: float64(param.Model.CalcRatingFull(&set)), FullSet: set, Model: &param.Model}
 }
 
-func SingleProposed_FromItemSet(itemSet items.FullItemSet, outputId string, model *model.Model) SingleProposedOutput {
+func SingleProposed_FromItemSet(itemSet items.FullItemSet, outputId string, model *gear_model.SpecModel) SingleProposedOutput {
 	return SingleProposedOutput{Exists: true, Spec: model.Spec, OutputId: outputId, ResultRating: float64(model.CalcRatingFull(&itemSet)), FullSet: itemSet, Model: model}
 }
 

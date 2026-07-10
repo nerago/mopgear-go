@@ -3,22 +3,22 @@ package weightfind
 import (
 	"maps"
 	"math"
+	"paladin_gearing_go/gear_model"
+	"paladin_gearing_go/gear_model/requirements"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/model"
-	"paladin_gearing_go/model/requirements"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
-	"paladin_gearing_go/solver/build"
-	"paladin_gearing_go/solver/stathighs"
+	"paladin_gearing_go/solver/solve_build"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/channel_op"
+	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/weightfind/weight_highs"
 )
 
 const max_grid_sim_count = 600
 const grid_sim_steps = 2
 
-func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, requiredStats []stats.StatType, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession model.ProfessionInfo, tracker *util.TrackProgress) []stathighs.WeightInput {
+func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, requiredStats []stats.StatType, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, tracker *util.TrackProgress) []weight_highs.WeightInput {
 	var incrementMin int32 = 0
 	var incrementStep int32 = 250
 	var incrementMax int32 = incrementStep * grid_sim_steps
@@ -53,7 +53,7 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 	tracker.RunOuterTracking(len(incrementPermutations))
 	defer tracker.SetDone()
 
-	inputList := channel_op.Map_SliceToSlice(6, incrementPermutations, func(increments *[]incrementStat) stathighs.WeightInput {
+	inputList := util_async.Map_SliceToSlice(6, incrementPermutations, func(increments *[]incrementStat) weight_highs.WeightInput {
 		bonusStat := maps.Clone(initialBaseStats)
 		str := util.StringBuild2{}
 		str.WriteString("SIM ")
@@ -72,7 +72,7 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 		simResult.CompactStringGeneralBuilder(&str)
 		printer.PrintlnFromBuild(str)
 
-		return stathighs.WeightInput{
+		return weight_highs.WeightInput{
 			TotalStat: addBonusStats(currentItemSet.Total(), bonusStat),
 			SimResult: simResult,
 		}
@@ -80,7 +80,7 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 	return inputList
 }
 
-func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, model *model.Model, makeSetCount int, simSize simulate.WowSim_RunSize, doFixRanges bool, printer *util.PrintRecorder, track *util.TrackProgress) []stathighs.WeightInput {
+func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, model *gear_model.SpecModel, makeSetCount int, simSize simulate.WowSim_RunSize, doFixRanges bool, printer *util.PrintRecorder, track *util.TrackProgress) []weight_highs.WeightInput {
 	itemOptions := setup.OptionsSetup_FromGearFile(gearFile, model, setup.MissingEnchant_Panic, printer)
 	for _, itemId := range substituteItems {
 		// TODO support for random suffix items
@@ -93,12 +93,12 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 	}
 	itemOptions.RemoveDuplicates()
 
-	setList := build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, model, makeSetCount, 0)
+	setList := solve_build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, model, makeSetCount, 0)
 
 	track.RunOuterTracking(len(setList))
 	defer track.SetDone()
 
-	weightInputs := channel_op.Map_SliceToSlice(6, setList, func(itemSet *items.FullItemSet) stathighs.WeightInput {
+	weightInputs := util_async.Map_SliceToSlice(6, setList, func(itemSet *items.FullItemSet) weight_highs.WeightInput {
 		var bonusStats *map[stats.StatType]int32 = nil
 		if doFixRanges {
 			bonusFix := InitialBonusStatMap_fixRanges(printer, *itemSet, 0)
@@ -121,7 +121,7 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 		simResult.CompactStringGeneralBuilder(&str)
 		printer.PrintlnFromBuild(str)
 
-		return stathighs.WeightInput{TotalStat: total, SimResult: simResult}
+		return weight_highs.WeightInput{TotalStat: total, SimResult: simResult}
 	})
 
 	return weightInputs

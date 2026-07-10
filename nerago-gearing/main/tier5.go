@@ -3,19 +3,19 @@ package main
 import (
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
+	"paladin_gearing_go/gear_model"
+	"paladin_gearing_go/gear_model/ratings"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
-	"paladin_gearing_go/model"
-	"paladin_gearing_go/model/ratings"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/solver"
-	"paladin_gearing_go/solver/stathighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/channel_op"
+	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/weightfind"
+	"paladin_gearing_go/weightfind/weight_highs"
 	"slices"
 	"sync/atomic"
 )
@@ -27,7 +27,7 @@ func findT5BIS(printer *util.PrintRecorder) {
 	// model := model.Model_PallyProtMitigation_WithSet()
 	// itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationSet, &model, setup.MissingEnchant_Panic, printer)
 
-	model := model.Model_PallyProtCompromise()
+	model := gear_model.Model_PallyProtCompromise()
 	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtCompromise, &model, setup.MissingEnchant_Panic, printer)
 
 	addExtrasT5Dumb(&itemOptions, &model, printer)
@@ -63,7 +63,7 @@ var throneTrinkets = []items.ItemId{
 	96398, // spark of zandalar
 }
 
-func addExtrasT5Dumb(itemOptions *items.FullOptionsMap, model *model.Model, printer *util.PrintRecorder) []items.ItemId {
+func addExtrasT5Dumb(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, printer *util.PrintRecorder) []items.ItemId {
 	allTrinkets := slices.Concat(throneTrinkets, loaders.G_siegeStrengthTrinkets, loaders.G_seigeTankTrinkets)
 	allTrinkets = util.RemoveDuplicatesComparable(allTrinkets)
 
@@ -89,7 +89,7 @@ func addExtrasT5Dumb(itemOptions *items.FullOptionsMap, model *model.Model, prin
 	return allTrinkets
 }
 
-func allT5stuff(model *model.Model, gearFile string, printer *util.PrintRecorder) ([]items.ItemId, items.FullOptionsMap) {
+func allT5stuff(model *gear_model.SpecModel, gearFile string, printer *util.PrintRecorder) ([]items.ItemId, items.FullOptionsMap) {
 	itemOptions := setup.OptionsSetup_FromGearFile(gearFile, model, setup.MissingEnchant_Panic, printer)
 
 	allTrinkets := addExtrasT5Dumb(&itemOptions, model, printer)
@@ -100,7 +100,7 @@ func allT5stuff(model *model.Model, gearFile string, printer *util.PrintRecorder
 }
 
 func findT5TrinketPermutations(printer *util.PrintRecorder) {
-	model := model.Model_PallyProtMitigation_NoSet()
+	model := gear_model.Model_PallyProtMitigation_NoSet()
 	allTrinkets, itemOptions := allT5stuff(&model, files.GearFileProtMitigationNoSet, printer)
 
 	baseItemSet := solver.Solver_Lite(&itemOptions, &model, printer)
@@ -123,7 +123,7 @@ func findT5TrinketPermutations(printer *util.PrintRecorder) {
 
 	progress := util.TrackProgress_Start()
 	progress.RunOuterTracking(len(trinkCombos))
-	results := channel_op.Map_SliceToSlice(6, trinkCombos, func(combo *[2]items.ItemId) trinkResult {
+	results := util_async.Map_SliceToSlice(6, trinkCombos, func(combo *[2]items.ItemId) trinkResult {
 		thisOptions := itemOptions.Clone()
 		thisOptions.ForceSlotOnlySpecifiedItemId(items.Equip_Trinket1, combo[0])
 		thisOptions.ForceSlotOnlySpecifiedItemId(items.Equip_Trinket2, combo[1])
@@ -163,7 +163,7 @@ func findT5WeightPermutations(printer *util.PrintRecorder) {
 	simRunSize := simulate.RunSize_QuickDirty
 	// simRunSize := simulate.RunSize_TestOnly
 
-	loadModel := model.Model_PallyProtMitigation_NoSet()
+	loadModel := gear_model.Model_PallyProtMitigation_NoSet()
 	_, itemOptions := allT5stuff(&loadModel, files.GearFileProtMitigationNoSet, printer)
 
 	// ALL
@@ -189,7 +189,7 @@ func findT5WeightPermutations(printer *util.PrintRecorder) {
 		order      []stats.StatType
 		orderText  string
 		itemSet    items.FullItemSet
-		alterModel model.Model
+		alterModel gear_model.SpecModel
 	}
 
 	type orderIntermediateGrouped struct {
@@ -205,8 +205,8 @@ func findT5WeightPermutations(printer *util.PrintRecorder) {
 	progress1 := util.TrackProgress_Start()
 	progress1Atom := atomic.Uint64{}
 	progress1.RunFromAtomicInt(&progress1Atom, uint64(len(allPossibleOrders)))
-	intermediates := channel_op.Map_SliceToSlice(10, allPossibleOrders, func(order *[]stats.StatType) orderIntermediate {
-		alterModel := model.Model_PallyProtMitigation_NoSet()
+	intermediates := util_async.Map_SliceToSlice(10, allPossibleOrders, func(order *[]stats.StatType) orderIntermediate {
+		alterModel := gear_model.Model_PallyProtMitigation_NoSet()
 		alterModel.StatRatings = ratings.StatRatingsWeights_FromPriorities(*order)
 
 		thisItemSet := solver.Solver_Lite(&itemOptions, &alterModel, printer)
@@ -242,7 +242,7 @@ outerIntermediateLoop:
 
 	progress2 := util.TrackProgress_Start()
 	progress2.RunOuterTracking(len(intermediatesGrouped))
-	results := channel_op.Map_SliceToSlice(10, intermediatesGrouped, func(group **orderIntermediateGrouped) orderResult {
+	results := util_async.Map_SliceToSlice(10, intermediatesGrouped, func(group **orderIntermediateGrouped) orderResult {
 		thisEquip := (*group).itemSet.Items()
 		alterModel := (*group).intermediates[0].alterModel // all models should be the same for passing basic info to sim
 
@@ -385,34 +385,34 @@ func statWeightsGridFromInitialT5(printer *util.PrintRecorder) {
 
 	weightFileOut := files.WeightMitiNoSetFile
 	gearFile := files.GearFileProtMitigationNoSet
-	gearModel := model.Model_PallyProtMitigation_NoSet()
+	gearModel := gear_model.Model_PallyProtMitigation_NoSet()
 	priority := initialPriorityTaken
 	trinkets := [2]items.ItemId{trinketFortZand, trinketThokTailHeroic}
 	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, gearModel.SimRatioWeighting, weightFileOut, printer, simSpeed)
 
 	weightFileOut = files.WeightMitiWithSetFile
 	gearFile = files.GearFileProtMitigationWithSet
-	gearModel = model.Model_PallyProtMitigation_WithSet()
+	gearModel = gear_model.Model_PallyProtMitigation_WithSet()
 	priority = initialPriorityDeath
 	trinkets = [2]items.ItemId{trinketVialCorruptHeroic, trinketThokTailHeroic}
 	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, gearModel.SimRatioWeighting, weightFileOut, printer, simSpeed)
 
 	weightFileOut = files.WeightDpsFile
 	gearFile = files.GearFileProtDps
-	gearModel = model.Model_PallyProtDps()
+	gearModel = gear_model.Model_PallyProtDps()
 	priority = initialPriorityDps
 	trinkets = [2]items.ItemId{trinketCurseHubrisHeroic, trinketSkeerBloodHeroic}
 	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, gearModel.SimRatioWeighting, weightFileOut, printer, simSpeed)
 
 	weightFileOut = files.WeightCompromiseFile
 	gearFile = files.GearFileProtCompromise
-	gearModel = model.Model_PallyProtCompromise()
+	gearModel = gear_model.Model_PallyProtCompromise()
 	priority = initialPriorityCompromise
 	trinkets = [2]items.ItemId{trinketCurseHubrisHeroic, trinketThokTailHeroic}
 	statWeightsGridFromInitialT5_inner(gearModel, priority, gearFile, trinkets, fight, gearModel.SimRatioWeighting, weightFileOut, printer, simSpeed)
 }
 
-func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.StatType, gearFile string, trinkets [2]items.ItemId, fight stats.WowSim_Fight, ratios stats.SimData, weightFileOut string, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize) {
+func statWeightsGridFromInitialT5_inner(model gear_model.SpecModel, priority []stats.StatType, gearFile string, trinkets [2]items.ItemId, fight stats.WowSim_Fight, ratios stats.SimData, weightFileOut string, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize) {
 	// INITIAL MODEL BASED ON PRIORITIES PREVIOUSLY GUESSED AT
 	model.StatRatings = ratings.StatRatingsWeights_FromPriorities(priority)
 
@@ -425,7 +425,7 @@ func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.Stat
 	printer.Println("BASELINE SET")
 	tools.ReportSetFewerParams(&model, &baseItemSet, printer)
 
-	var weights stathighs.WeightResult
+	var weights weight_highs.WeightResult
 	if false {
 		// SIMULATE STAT CHANGES
 		// baseLine := simulate.WowSim_Execute_SpecifyAll(simSpeed, model.Spec, model.Goal, fight, model.Professions, baseItemSet.Items(), nil, nil)
@@ -447,7 +447,7 @@ func statWeightsGridFromInitialT5_inner(model model.Model, priority []stats.Stat
 		inputData := weightfind.SimulateSteppedStatChangesForGrid(baseItemSet, printer, simSpeed, model.SimSpeedUp, model.StatsForWeighting, model.Spec, model.Goal, fight, model.Professions, util.TrackProgress_Start())
 
 		// SOLVE FOR STAT WEIGHTS
-		process := stathighs.GridStatWeightProcess{}
+		process := weight_highs.GridStatWeightProcess{}
 		process.Init(printer, 2000)
 		process.SetRequiredStats(model.StatsForWeighting)
 		process.SetTargetRatios(ratios)

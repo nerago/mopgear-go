@@ -2,7 +2,7 @@ package main
 
 import (
 	"paladin_gearing_go/files"
-	"paladin_gearing_go/model"
+	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/weightfind"
@@ -21,7 +21,7 @@ func statWeights_updateAll() {
 			Label:           "Prot-Mitigation-NoSet",
 			WeightFileOut:   files.WeightMitiNoSetFile,
 			GearFile:        files.GearFileProtMitigationNoSet,
-			Model:           model.Model_PallyProtMitigation_NoSet(),
+			Model:           gear_model.Model_PallyProtMitigation_NoSet(),
 			SubstituteItems: substituteItemsMiti,
 		},
 		//{

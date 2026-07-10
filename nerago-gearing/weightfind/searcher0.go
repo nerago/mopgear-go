@@ -3,11 +3,11 @@ package weightfind
 import (
 	"iter"
 	"math/rand"
-	"paladin_gearing_go/solver/stathighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/channel_op"
+	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_rank"
+	"paladin_gearing_go/weightfind/weight_highs"
 )
 
 const (
@@ -29,12 +29,12 @@ func (ws *WeightSearcher0) Init(weightStats []stats.StatType, targetRatio stats.
 	ws.printer = printer
 }
 
-func (ws *WeightSearcher0) SupplyData(inputData []stathighs.WeightInput) {
+func (ws *WeightSearcher0) SupplyData(inputData []weight_highs.WeightInput) {
 	ws.evaluateAccuracy.Init(inputData, ws.targetRatio)
 }
 
-func (ws *WeightSearcher0) Run(cancel channel_op.CancelSignal) stathighs.WeightResult {
-	best := util_rank.BestCollector1[stathighs.WeightResult]{}
+func (ws *WeightSearcher0) Run(cancel util_async.CancelSignal) weight_highs.WeightResult {
+	best := util_rank.BestCollector1[weight_highs.WeightResult]{}
 	progress := 0
 	for initialWeight := range ws.makeRandomWeights(20000) {
 		updatedWeight, updatedAccuracy := weightTweaker_internal_FastCached(initialWeight, c_search0_tweak_start, ws.weightStats, &ws.evaluateAccuracy)
@@ -50,8 +50,8 @@ func (ws *WeightSearcher0) Run(cancel channel_op.CancelSignal) stathighs.WeightR
 	return bestWeight.ScaleForBaseStat(ws.weightStats[0])
 }
 
-func (ws *WeightSearcher0) makeRandomWeights(count int) iter.Seq[stathighs.WeightResult] {
-	return func(yield func(stathighs.WeightResult) bool) {
+func (ws *WeightSearcher0) makeRandomWeights(count int) iter.Seq[weight_highs.WeightResult] {
+	return func(yield func(weight_highs.WeightResult) bool) {
 		rng := rand.New(rand.NewSource(rand.Int63()))
 		for range count {
 			weight := ws.buildWeightsRandom(rng)
@@ -62,8 +62,8 @@ func (ws *WeightSearcher0) makeRandomWeights(count int) iter.Seq[stathighs.Weigh
 	}
 }
 
-func (ws *WeightSearcher0) buildWeightsRandom(rng *rand.Rand) stathighs.WeightResult {
-	weight := stathighs.WeightResult_Make()
+func (ws *WeightSearcher0) buildWeightsRandom(rng *rand.Rand) weight_highs.WeightResult {
+	weight := weight_highs.WeightResult_Make()
 	for _, statType := range ws.weightStats {
 		value := c_search0_min + rng.Float64()*(c_search0_max-c_search0_min)
 		weight.Put(statType, value)

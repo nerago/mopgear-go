@@ -4,7 +4,7 @@ import (
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/setup"
-	"paladin_gearing_go/solver/withhighs"
+	"paladin_gearing_go/solver/solve_highs"
 	"paladin_gearing_go/util"
 	"slices"
 )
@@ -130,8 +130,8 @@ func permuteStep(inChannel <-chan permuteSet, options permuteOptions) <-chan per
 	return outputChannel
 }
 
-func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, printer *util.PrintRecorder) withhighs.SolverHighsMultiProcess {
-	highProcess := withhighs.SolverHighsMultiProcess{}
+func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, printer *util.PrintRecorder) solve_highs.SolverHighsMultiProcess {
+	highProcess := solve_highs.SolverHighsMultiProcess{}
 
 	itemOptionsEach := make([]items.FullOptionsMap, len(job.params))
 	for paramIndex := range job.params {
@@ -220,7 +220,7 @@ func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, printe
 
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
-		highProcess.AddSetParam(withhighs.SolverHighsMultiParam{
+		highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
 			Label:          param.Label,
 			ItemOptions:    itemOptionsEach[paramIndex],
 			Gear_model:     &param.Model,

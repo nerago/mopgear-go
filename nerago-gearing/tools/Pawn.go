@@ -1,12 +1,12 @@
 package tools
 
 import (
-	"paladin_gearing_go/solver/stathighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/weightfind/weight_highs"
 )
 
-func WritePawnString(weights stathighs.WeightResult, printer *util.PrintRecorder) string {
+func WritePawnString(weights weight_highs.WeightResult, printer *util.PrintRecorder) string {
 	str := util.StringBuild2{}
 	str.WriteString("( Pawn: v1: \"Gearing Weights\": Class=Paladin,Strength=")
 	str.WriteFloat64(weights.Get(stats.Stat_Strength), 10)

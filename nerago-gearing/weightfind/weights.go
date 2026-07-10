@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"os"
 	"paladin_gearing_go/files"
+	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
-	"paladin_gearing_go/model"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
-	"paladin_gearing_go/solver/stathighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/channel_op"
+	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/weightfind/weight_highs"
 	"slices"
 	"sync"
 )
@@ -24,7 +24,7 @@ type WeightOptions struct {
 	Label           string
 	WeightFileOut   string
 	GearFile        string
-	Model           model.Model
+	Model           gear_model.SpecModel
 	SubstituteItems []items.ItemId
 }
 
@@ -44,7 +44,7 @@ func StatWeights_updateAll(simSpeed simulate.WowSim_RunSize, printer *util.Print
 	progress.SetDone()
 }
 
-func statWeightsGrid_updateOne(label string, gearModel *model.Model, gearFile string, ratios stats.SimData, weightFileOut string, substituteItems []items.ItemId, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, tracker *util.TrackProgress) {
+func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, gearFile string, ratios stats.SimData, weightFileOut string, substituteItems []items.ItemId, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, tracker *util.TrackProgress) {
 	tracker.RunOuterTracking(3)
 	defer tracker.SetDone()
 
@@ -63,7 +63,7 @@ func statWeightsGrid_updateOne(label string, gearModel *model.Model, gearFile st
 	// TODO report on accuracy rating of grid vs just inputDataGrid
 
 	// SOLVE FOR STAT WEIGHTS
-	grid := stathighs.GridStatWeightProcess1B{}
+	grid := weight_highs.GridStatWeightProcess1B{}
 	grid.OUTLIER = 3
 	grid.ROUNDMODE = 2
 	grid.SCALEMODE = 1
@@ -80,14 +80,14 @@ func statWeightsGrid_updateOne(label string, gearModel *model.Model, gearFile st
 	accGridOnRealInput := EvaluateAccuracyRanged(weightsGrid, ratios, inputDataReal)
 	printer.Printf("Grid Weights accuracy %s gridInput=%f realInput=%f\n", label, accGridOnGridInput, accGridOnRealInput)
 
-	ranking := stathighs.RankingStatWeightProcess3b{}
+	ranking := weight_highs.RankingStatWeightProcess3b{}
 	ranking.SCALE1 = false
 	ranking.FINAL = 0
 	ranking.Init(printer, c_timeoutSolvers)
 	ranking.SetRequiredStats(gearModel.StatsForWeighting)
 	ranking.SetTargetRatios(ratios)
 	ranking.SupplyData(mixedInputData)
-	var weightsRankingFuture *channel_op.FutureCancellable[stathighs.WeightResult]
+	var weightsRankingFuture *util_async.FutureCancellable[weight_highs.WeightResult]
 	if !weightsGrid.IsEmpty() {
 		weightsRankingFuture = ranking.RunSinglePassFromExternal(weightsGrid, nil)
 	} else {
@@ -112,7 +112,7 @@ func statWeightsGrid_updateOne(label string, gearModel *model.Model, gearFile st
 	search.Init(gearModel.StatsForWeighting, ratios, printer)
 	search.SupplyData(mixedInputData)
 	search.SetRanges(-1.0, 10.0)
-	weightsSearch := search.Run(channel_op.CancelSignal_Make())
+	weightsSearch := search.Run(util_async.CancelSignal_Make())
 	printer.Println("Search Weights >>>>> " + label)
 	pawnSearch := tools.WritePawnString(weightsSearch, printer)
 	accuracySearch := EvaluateAccuracyRanged(weightsSearch, ratios, inputDataGrid)
@@ -127,7 +127,7 @@ func statWeightsGrid_updateOne(label string, gearModel *model.Model, gearFile st
 	}
 }
 
-func writeWeightInputsToFile(weightInputs []stathighs.WeightInput, filename string) {
+func writeWeightInputsToFile(weightInputs []weight_highs.WeightInput, filename string) {
 	bytes, err := json.Marshal(weightInputs)
 	if err != nil {
 		panic(err)
@@ -138,12 +138,12 @@ func writeWeightInputsToFile(weightInputs []stathighs.WeightInput, filename stri
 	}
 }
 
-func readWeightInputFile(filename string) []stathighs.WeightInput {
+func readWeightInputFile(filename string) []weight_highs.WeightInput {
 	bytes, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
-	var weightInputs []stathighs.WeightInput
+	var weightInputs []weight_highs.WeightInput
 	err = json.Unmarshal(bytes, &weightInputs)
 	if err != nil {
 		panic(err)

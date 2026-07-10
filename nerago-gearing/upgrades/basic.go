@@ -2,9 +2,9 @@ package upgrades
 
 import (
 	"paladin_gearing_go/db"
+	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
-	"paladin_gearing_go/model"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/stats"
@@ -13,7 +13,7 @@ import (
 	"slices"
 )
 
-func prepareUpgradeInfo(extraItems []loaders.ItemFoundRef, upgradeLevel items.UpgradeLevel, printer *util.PrintRecorder, input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, goal stats.OptimiseGoal, substituteItems []items.ItemId, model *model.Model) []upgradeItemTask {
+func prepareUpgradeInfo(extraItems []loaders.ItemFoundRef, upgradeLevel items.UpgradeLevel, printer *util.PrintRecorder, input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, goal stats.OptimiseGoal, substituteItems []items.ItemId, model *gear_model.SpecModel) []upgradeItemTask {
 	extraItems = changeUpgradeLevels(extraItems, upgradeLevel)
 	checkDuplicates(extraItems)
 	extraTasks := makeExtraTasks(input, extraItems, baseItems, printer, goal)
@@ -21,7 +21,7 @@ func prepareUpgradeInfo(extraItems []loaders.ItemFoundRef, upgradeLevel items.Up
 	return extraTasks
 }
 
-func findBaseLine(printer *util.PrintRecorder, baseItems *items.FullOptionsMap, model *model.Model, tracker *util.TrackProgress) (float64, *items.FullItemSet) {
+func findBaseLine(printer *util.PrintRecorder, baseItems *items.FullOptionsMap, model *gear_model.SpecModel, tracker *util.TrackProgress) (float64, *items.FullItemSet) {
 	printer.Println("FINDING BASELINE")
 	baseRating, baseSet := findBase(baseItems, model, printer, tracker)
 	tools.ReportSetFewerParams(model, baseSet, printer)
@@ -73,7 +73,7 @@ func makeExtraTasks(input *FindUpgrades_BasicInputs, extraItems []loaders.ItemFo
 	return taskList
 }
 
-func addSubstituteItems(optionsMap *items.FullOptionsMap, substituteItems []items.ItemId, model *model.Model, printer *util.PrintRecorder) {
+func addSubstituteItems(optionsMap *items.FullOptionsMap, substituteItems []items.ItemId, model *gear_model.SpecModel, printer *util.PrintRecorder) {
 	for _, itemId := range substituteItems {
 		if !optionsMap.IncludesItemId(itemId) {
 			// TODO system for random suffixes
@@ -101,7 +101,7 @@ func canPerformSpecifiedUpgrade(input *FindUpgrades_BasicInputs, extra *items.Fu
 	return items.CanUpgrade_Yes
 }
 
-func findBase(baseItems *items.FullOptionsMap, model *model.Model, printer *util.PrintRecorder, tracker *util.TrackProgress) (float64, *items.FullItemSet) {
+func findBase(baseItems *items.FullOptionsMap, model *gear_model.SpecModel, printer *util.PrintRecorder, tracker *util.TrackProgress) (float64, *items.FullItemSet) {
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions:        baseItems,
 		Model:              model,
@@ -117,7 +117,7 @@ func findBase(baseItems *items.FullOptionsMap, model *model.Model, printer *util
 	return float64(output.ResultRating), &output.FullSet
 }
 
-func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *model.Model, parentPrinter *util.PrintRecorder, outerTracker *util.TrackProgress, forceIncludeMost bool, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) upgradeItemResult {
+func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *gear_model.SpecModel, parentPrinter *util.PrintRecorder, outerTracker *util.TrackProgress, forceIncludeMost bool, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) upgradeItemResult {
 	slot := extraTask.slot
 	incompleteItem := extraTask.item // this "item" is from ItemFinder and not a full item
 	itemId := incompleteItem.ItemId
@@ -172,7 +172,7 @@ func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptions
 	return result
 }
 
-func removePairedSimilar(jobItems *items.FullOptionsMap, testSlot items.SlotEquip, testItem *items.FullItem, substituteEmptySlotOnly map[items.SlotItem]items.ItemId, model *model.Model, printer *util.PrintRecorder) {
+func removePairedSimilar(jobItems *items.FullOptionsMap, testSlot items.SlotEquip, testItem *items.FullItem, substituteEmptySlotOnly map[items.SlotItem]items.ItemId, model *gear_model.SpecModel, printer *util.PrintRecorder) {
 	pairedSlot := testSlot.PairedSlot()
 	if pairedSlot != -1 {
 		printer.Println("removePairedSimilar")

@@ -1,9 +1,9 @@
 package upgrades
 
 import (
+	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
-	"paladin_gearing_go/model"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
 )
@@ -34,7 +34,7 @@ type FindUpgrades_MultiSpec_Sim struct {
 
 type FindUpgrades_Spec struct {
 	Label                   string
-	Model                   model.Model
+	Model                   gear_model.SpecModel
 	GearFile                string
 	ItemFinder              func(stats.Difficulty) []loaders.ItemFoundRef
 	SubstituteItems         []items.ItemId

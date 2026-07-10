@@ -2,15 +2,15 @@ package multi
 
 import (
 	"cmp"
+	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/model"
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/channel_op"
+	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_rank"
 	"slices"
 	"strings"
@@ -51,7 +51,7 @@ type simulateJob struct {
 	fight       stats.WowSim_Fight
 	simSpeedUp  int
 	equip       items.FullEquipMap
-	professions model.ProfessionInfo
+	professions gear_model.ProfessionInfo
 }
 
 type simulateJobResult struct {
@@ -69,22 +69,22 @@ type simulateMultiResult struct {
 }
 
 func (job *MultiSetJob) prepareSimList(proposalList <-chan multi_types.MultiProposedOutput) <-chan simulateJob {
-	jobChannel := channel_op.MapMulti_ChannelToChannel(2, proposalList, func(proposal multi_types.MultiProposedOutput, nextChan chan<- simulateJob) {
+	jobChannel := util_async.MapMulti_ChannelToChannel(2, proposalList, func(proposal multi_types.MultiProposedOutput, nextChan chan<- simulateJob) {
 		for _, output := range proposal.Parts {
 			nextChan <- simulateJob{output.Spec, output.Model.Goal, output.Model.SimulateAs, output.Model.SimSpeedUp, *output.FullSet.Items(), output.Model.Professions}
 		}
 	})
 
-	return channel_op.Channel_RemoveDuplicatesFunc(jobChannel, (*simulateJob).Equals)
+	return util_async.Channel_RemoveDuplicatesFunc(jobChannel, (*simulateJob).Equals)
 }
 
-func (job *MultiSetJob) runSims(jobChan <-chan simulateJob, trackProgress *util.TrackProgress, expectedCount *channel_op.Future[int]) *channel_op.FutureCancellable[[]simulateJobResult] {
+func (job *MultiSetJob) runSims(jobChan <-chan simulateJob, trackProgress *util.TrackProgress, expectedCount *util_async.Future[int]) *util_async.FutureCancellable[[]simulateJobResult] {
 	trackProgress.RunOuterTracking(0)
 	expectedCount.ForwardSuccessfulResultToCallback(func(count int) {
 		trackProgress.UpdateExpectedChildCount(count)
 	})
 
-	return channel_op.Map_ChannelToSlice_FutureCancellable(simThreadCount, jobChan, trackProgress.SetDone, func(sim simulateJob) simulateJobResult {
+	return util_async.Map_ChannelToSlice_FutureCancellable(simThreadCount, jobChan, trackProgress.SetDone, func(sim simulateJob) simulateJobResult {
 		result := simulate.WowSim_Execute_SpecifyAll(job.simRunSize, sim.simSpeedUp, sim.spec, sim.goal, sim.fight, sim.professions, &sim.equip, nil, trackProgress.NewChild())
 		job.printer.Printf("sim %22s fight=%d %s\n", sim.spec.Name(), sim.fight, result.CompactStringGeneral())
 		return simulateJobResult{sim, result}

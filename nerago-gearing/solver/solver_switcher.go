@@ -1,9 +1,9 @@
 package solver
 
 import (
+	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/model"
-	"paladin_gearing_go/solver/withhighs"
+	"paladin_gearing_go/solver/solve_highs"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 
@@ -12,7 +12,7 @@ import (
 
 type SolveInput struct {
 	ItemOptions         *items.FullOptionsMap
-	Model               *model.Model
+	Model               *gear_model.SpecModel
 	EnableTrackProgress bool
 	OuterTrackProgress  *util.TrackProgress
 	Printer             *util.PrintRecorder
@@ -22,15 +22,15 @@ func Solver(input SolveInput) SolveOutput {
 	printer, trackProgress, solveOptions := prepareSolve(input)
 	defer trackProgress.SetDone()
 
-	futureSolvedResult := withhighs.SingleGearSetMain(&solveOptions, input.Model, printer)
+	futureSolvedResult := solve_highs.SingleGearSetMain(&solveOptions, input.Model, printer)
 	solvedResult := futureSolvedResult.WaitForResultAsOptional()
 
 	return finaliseSolve(solvedResult, solveOptions, input, printer)
 }
 
-func Solver_Lite(itemOptions *items.FullOptionsMap, model *model.Model, printer *util.PrintRecorder) items.FullItemSet {
+func Solver_Lite(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, printer *util.PrintRecorder) items.FullItemSet {
 	solveOptions := items.SolvableOptionsMap_of(itemOptions)
-	futureSolvedSet := withhighs.SingleGearSetMain(&solveOptions, model, printer)
+	futureSolvedSet := solve_highs.SingleGearSetMain(&solveOptions, model, printer)
 	solvedSet := futureSolvedSet.WaitForResultAsOptional()
 	itemSet := items.FullItemSet_FromSolved(solvedSet.GetOrPanic(), itemOptions)
 	itemSet.DebugValidate()

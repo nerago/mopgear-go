@@ -2,8 +2,8 @@ package main
 
 import (
 	"paladin_gearing_go/files"
+	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/model"
 	"paladin_gearing_go/multi"
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/setup"
@@ -44,7 +44,7 @@ func PaladinMultiRun() {
 	ret := multi_types.MultiSetParam{
 		Label:                     "Ret",
 		GearFile:                  files.GearFileRet,
-		Model:                     model.Model_PallyRet(),
+		Model:                     gear_model.Model_PallyRet(),
 		RequestRatingPercent:      0.01,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: 0,
@@ -53,7 +53,7 @@ func PaladinMultiRun() {
 	protDps := multi_types.MultiSetParam{
 		Label:                     "Prot-Damage",
 		GearFile:                  files.GearFileProtDps,
-		Model:                     model.Model_PallyProtDps(),
+		Model:                     gear_model.Model_PallyProtDps(),
 		RequestRatingPercent:      0.04,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
@@ -62,7 +62,7 @@ func PaladinMultiRun() {
 	protCompromise := multi_types.MultiSetParam{
 		Label:                     "Prot-Compromise",
 		GearFile:                  files.GearFileProtCompromise,
-		Model:                     model.Model_PallyProtCompromise(),
+		Model:                     gear_model.Model_PallyProtCompromise(),
 		RequestRatingPercent:      0.25,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
@@ -71,7 +71,7 @@ func PaladinMultiRun() {
 	protMitigationNoSet := multi_types.MultiSetParam{
 		Label:                     "Prot-Mitigation-NoSet",
 		GearFile:                  files.GearFileProtMitigationNoSet,
-		Model:                     model.Model_PallyProtMitigation_NoSet(),
+		Model:                     gear_model.Model_PallyProtMitigation_NoSet(),
 		RequestRatingPercent:      0.30,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
@@ -80,7 +80,7 @@ func PaladinMultiRun() {
 	protMitigationWithSet := multi_types.MultiSetParam{
 		Label:                     "Prot-Mitigation-WithSet",
 		GearFile:                  files.GearFileProtMitigationWithSet,
-		Model:                     model.Model_PallyProtMitigation_WithSet(),
+		Model:                     gear_model.Model_PallyProtMitigation_WithSet(),
 		RequestRatingPercent:      0.35,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
@@ -89,7 +89,7 @@ func PaladinMultiRun() {
 	protHeal := multi_types.MultiSetParam{
 		Label:                     "Prot-Heal",
 		GearFile:                  files.GearFileProtMitigationWithSet,
-		Model:                     model.Model_PallyProtHeal(),
+		Model:                     gear_model.Model_PallyProtHeal(),
 		RequestRatingPercent:      0.05,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
@@ -376,7 +376,7 @@ func PaladinMultiRun() {
 	job.VerifyNoExtraDuplicates()
 
 	//job.RunNoPermutations_AllCommonAlternates(true)
-	job.RunForSolutionsPerPermute(6)
+	job.RunForSolutionsPerPermute(4)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)

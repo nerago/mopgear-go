@@ -2,24 +2,24 @@ package weightfind
 
 import (
 	"cmp"
-	"paladin_gearing_go/solver/stathighs"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/weightfind/weight_highs"
 	"slices"
 )
 
 // TODO take into account sim's uncertainty ranges
 
-func EvaluateAccuracyRanged(statWeights stathighs.WeightResult, simRatios stats.SimData, inputData []stathighs.WeightInput) float64 {
+func EvaluateAccuracyRanged(statWeights weight_highs.WeightResult, simRatios stats.SimData, inputData []weight_highs.WeightInput) float64 {
 	return EvaluateAccuracyRangeInner(statWeights, simRatios.NonZeroTypes(), simRatios, inputData)
 }
 
-func EvaluateAccuracyRangeInner(statWeights stathighs.WeightResult, requiredSims []stats.SimType, simRatios stats.SimData, inputData []stathighs.WeightInput) float64 {
+func EvaluateAccuracyRangeInner(statWeights weight_highs.WeightResult, requiredSims []stats.SimType, simRatios stats.SimData, inputData []weight_highs.WeightInput) float64 {
 	if statWeights.IsEmpty() {
 		return 0
 	}
 
-	data := util.MapSliceAsNew(inputData, func(input *stathighs.WeightInput) *accuracyInfoSimStatRanged {
+	data := util.MapSliceAsNew(inputData, func(input *weight_highs.WeightInput) *accuracyInfoSimStatRanged {
 		return &accuracyInfoSimStatRanged{
 			dataSim:       &input.SimResult,
 			statScore:     statWeights.CalcStatScore(input),
@@ -161,8 +161,8 @@ type EvaluateAccuracyPrepared struct {
 	statRankRanges []*util.HiLoInt
 }
 
-func (ea *EvaluateAccuracyPrepared) Init(inputData []stathighs.WeightInput, simRatios stats.SimData) {
-	data := util.MapSliceAsNew(inputData, func(input *stathighs.WeightInput) *accuracyInfoSimOnly {
+func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_highs.WeightInput, simRatios stats.SimData) {
+	data := util.MapSliceAsNew(inputData, func(input *weight_highs.WeightInput) *accuracyInfoSimOnly {
 		return &accuracyInfoSimOnly{
 			dataSim:  &input.SimResult,
 			dataStat: &input.TotalStat,
@@ -216,7 +216,7 @@ func (ea *EvaluateAccuracyPrepared) Clone() *EvaluateAccuracyPrepared {
 }
 
 // fundamentally not thread safe
-func (ea *EvaluateAccuracyPrepared) EvaluateWeight(statWeights stathighs.WeightResult) float64 {
+func (ea *EvaluateAccuracyPrepared) EvaluateWeight(statWeights weight_highs.WeightResult) float64 {
 	if statWeights.IsEmpty() {
 		return 0
 	}

@@ -3,7 +3,7 @@ package multi
 import (
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/channel_op"
+	"paladin_gearing_go/util/util_async"
 	"sync"
 	"time"
 )
@@ -12,8 +12,8 @@ func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates(extendedAlternates
 	job.checkNoPermutations()
 	job.prepareInitial()
 
-	cancelGenerate := channel_op.CancelSignal_Make()
-	channel_op.CancelOnKeyPress(cancelGenerate)
+	cancelGenerate := util_async.CancelSignal_Make()
+	util_async.CancelOnKeyPress(cancelGenerate)
 
 	proposalChannel, expectedCount := job.proposalsAllCommonAlternates(cancelGenerate, extendedAlternates)
 
@@ -27,8 +27,8 @@ func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates(extendedAlternates
 func (job *MultiSetJob) RunForSolutionsPerPermute(solutionsPerPermute int) {
 	job.prepareInitial()
 
-	cancelGenerate := channel_op.CancelSignal_Make()
-	channel_op.CancelOnKeyPress(cancelGenerate)
+	cancelGenerate := util_async.CancelSignal_Make()
+	util_async.CancelOnKeyPress(cancelGenerate)
 
 	tracker := util.TrackProgress_Start()
 	defer tracker.SetDone()
@@ -49,8 +49,8 @@ func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time
 	tracker.RunOuterTracking(len(job.params))
 	defer tracker.SetDone()
 
-	cancel := channel_op.CancelSignal_Make()
-	timer := channel_op.CancelAfterTimeout(cancel, timeLimit, job.printer)
+	cancel := util_async.CancelSignal_Make()
+	timer := util_async.CancelAfterTimeout(cancel, timeLimit, job.printer)
 	defer timer.Stop()
 
 	waitGroup := sync.WaitGroup{}
@@ -63,15 +63,15 @@ func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time
 	job.CullingReport()
 }
 
-func (job *MultiSetJob) proposalsToSimResult(proposalChannel <-chan multi_types.MultiProposedOutput, tracker *util.TrackProgress, expectedCount *channel_op.Future[int]) (*channel_op.FutureCancellable[[]simulateJobResult], *channel_op.Future[[]multi_types.MultiProposedOutput]) {
-	proposalChannel = channel_op.Channel_RemoveDuplicatesFuncNotify(proposalChannel, func(a, b *multi_types.MultiProposedOutput) bool {
+func (job *MultiSetJob) proposalsToSimResult(proposalChannel <-chan multi_types.MultiProposedOutput, tracker *util.TrackProgress, expectedCount *util_async.Future[int]) (*util_async.FutureCancellable[[]simulateJobResult], *util_async.Future[[]multi_types.MultiProposedOutput]) {
+	proposalChannel = util_async.Channel_RemoveDuplicatesFuncNotify(proposalChannel, func(a, b *multi_types.MultiProposedOutput) bool {
 		return a.Equals(b)
 	}, func(x *multi_types.MultiProposedOutput) {
 		job.printer.Printf("Remove Duplicate %s\n", x.Id)
 	})
 
 	proposalChannel = job.listInitialOutputs(proposalChannel)
-	proposalChannel, futureProposalList := channel_op.TeeChannelToSlice(proposalChannel)
+	proposalChannel, futureProposalList := util_async.TeeChannelToSlice(proposalChannel)
 	expectedCount = expectedCount.MapSameType(func(multiSetCount int) (int, bool) { return multiSetCount * len(job.params), true })
 
 	simChannel := job.prepareSimList(proposalChannel)

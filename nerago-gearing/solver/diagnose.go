@@ -1,16 +1,16 @@
 package solver
 
 import (
+	"paladin_gearing_go/gear_model"
+	"paladin_gearing_go/gear_model/requirements"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/model"
-	"paladin_gearing_go/model/requirements"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_rank"
 	"strconv"
 )
 
-func diagnoseFailure(optionsMap *items.SolvableOptionsMap, model *model.Model) (util.Optional[items.SolvableItemSet], string) {
+func diagnoseFailure(optionsMap *items.SolvableOptionsMap, model *gear_model.SpecModel) (util.Optional[items.SolvableItemSet], string) {
 	proposedList := setsAtLimits(optionsMap)
 	accepatable := findAccepableSet(proposedList, model)
 	if accepatable.HasValue() {
@@ -67,7 +67,7 @@ func findMinMaxWithStat(options []items.SolvableItem, stat stats.StatType) (*ite
 	return min, max
 }
 
-func findAccepableSet(proposedList []items.SolvableItemSet, model *model.Model) util.Optional[items.SolvableItemSet] {
+func findAccepableSet(proposedList []items.SolvableItemSet, model *gear_model.SpecModel) util.Optional[items.SolvableItemSet] {
 	best := util_rank.BestCollector1[items.SolvableItemSet]{}
 	for _, set := range proposedList {
 		if model.CheckSet(&set) {

@@ -2,9 +2,9 @@ package main
 
 import (
 	"paladin_gearing_go/files"
+	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
-	"paladin_gearing_go/model"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/upgrades"
@@ -180,7 +180,7 @@ var ignoredItems = []items.ItemId{
 func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
 	simRunSize := simulate.RunSize_QuickDirty
 	goal := stats.OptimiseGoal_Dps
-	model := model.Model_PallyProtDps()
+	model := gear_model.Model_PallyProtDps()
 	gearFile := files.GearFileProtDps
 	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
 	upgradeItems := loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic)
@@ -198,7 +198,7 @@ func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
 func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 	simRunSize := simulate.RunSize_QuickDirty
 	goal := stats.OptimiseGoal_Mitigation
-	model := model.Model_PallyProtMitigation_WithSet()
+	model := gear_model.Model_PallyProtMitigation_WithSet()
 	gearFile := files.GearFileProtMitigationWithSet
 	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
 	// upgradeItems := loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic)
@@ -217,7 +217,7 @@ func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 	simRunSize := simulate.RunSize_QuickDirty
 	goal := stats.OptimiseGoal_Mitigation
-	model := model.Model_PallyProtMitigation_WithSet()
+	model := gear_model.Model_PallyProtMitigation_WithSet()
 	gearFile := files.GearFileProtMitigationWithSet
 	upgradeItems := loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Normal)
 	// upgradeItems := loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic)
@@ -274,7 +274,7 @@ func findUpgrades_Paladin() {
 		Specs: []upgrades.FindUpgrades_Spec{
 			{
 				Label:                   "dps",
-				Model:                   model.Model_PallyProtDps(),
+				Model:                   gear_model.Model_PallyProtDps(),
 				GearFile:                files.GearFileProtDps,
 				ItemFinder:              finder,
 				SubstituteItems:         substituteItemsDps,
@@ -282,7 +282,7 @@ func findUpgrades_Paladin() {
 			},
 			{
 				Label:                   "compromise",
-				Model:                   model.Model_PallyProtCompromise(),
+				Model:                   gear_model.Model_PallyProtCompromise(),
 				GearFile:                files.GearFileProtCompromise,
 				ItemFinder:              finder,
 				SubstituteItems:         substituteItemsDpsAndMiti,
@@ -290,7 +290,7 @@ func findUpgrades_Paladin() {
 			},
 			{
 				Label:                   "mit_noset",
-				Model:                   model.Model_PallyProtMitigation_NoSet(),
+				Model:                   gear_model.Model_PallyProtMitigation_NoSet(),
 				GearFile:                files.GearFileProtMitigationNoSet,
 				ItemFinder:              finder,
 				SubstituteItems:         substituteItemsMiti,
@@ -298,7 +298,7 @@ func findUpgrades_Paladin() {
 			},
 			{
 				Label:                   "mit_set",
-				Model:                   model.Model_PallyProtMitigation_WithSet(),
+				Model:                   gear_model.Model_PallyProtMitigation_WithSet(),
 				GearFile:                files.GearFileProtMitigationWithSet,
 				ItemFinder:              finder,
 				SubstituteItems:         substituteItemsMiti,
