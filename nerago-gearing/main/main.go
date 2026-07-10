@@ -6,8 +6,8 @@ import (
 	"os"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
+	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/model"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/util"
@@ -39,79 +39,82 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		pprof.StartCPUProfile(f)
+		err = pprof.StartCPUProfile(f)
+		if err != nil {
+			panic(err)
+		}
 		defer func() {
 			pprof.StopCPUProfile()
-			f.Close()
+			err := f.Close()
+			if err != nil {
+				panic(err)
+			}
 			if simulate.WowSimRanDuringCurrentProcess {
-				os.Rename(f.Name(), files.ProfileDir+"main.pgo")
+				err = os.Rename(f.Name(), files.ProfileDir+"main.pgo")
+				if err != nil {
+					panic(err)
+				}
 			}
 		}()
 	}
 
 	startTime := time.Now()
-	printer.Println("Started at " + startTime.Format(time.RFC1123))
+	printer.Println("Started at " + startTime.Format(time.DateTime))
 
 	core(printer)
 
 	timeTaken := time.Since(startTime)
 	printer.Println("Duration = " + timeTaken.String())
-	printer.Println("Finished at " + time.Now().Format(time.RFC1123))
+	printer.Println("Finished at " + time.Now().Format(time.DateTime))
 }
 
 func core(printer *util.PrintRecorder) {
-
-	// slotRating(printer)
-	// basicReforge(printer)
+	//slotRating(printer)
+	//basicReforge(printer)
 	//findT5BIS(printer)
-	// findT5TrinketPermutations(printer)
-	// findT5WeightPermutations(printer)
-	// statWeightsGridFromInitialT5(printer)
-	// basicListRatingEach(printer)
-	// solveForRatings(printer)
-	// findBestSubjectToCommon(printer)
-	// checkHighs(printer)
-	// checkHighsAcross(printer)
-
-	// testSim(printer)
-	// findUpgrades_Sim_PaladinMiti_Run(printer)
-	// findUpgrades_Sim_PaladinDps_Run(printer)
+	//findT5TrinketPermutations(printer)
+	//findT5WeightPermutations(printer)
+	//statWeightsGridFromInitialT5(printer)
+	//basicListRatingEach(printer)
+	//solveForRatings(printer)
+	//findBestSubjectToCommon(printer)
+	//checkHighs(printer)
+	//
+	//testSim(printer)
+	//findUpgrades_Sim_PaladinMiti_Run(printer)
+	//findUpgrades_Sim_PaladinDps_Run(printer)
 	//findSimpleUpgrade(printer)
-	// findSimpleUpgrade_ForceEach(printer)
-	// findMitigationWithCapicitance(printer)
-	// relativeRatingsCompromise(printer)
+	//findSimpleUpgrade_ForceEach(printer)
+	//relativeRatingsCompromise(printer)
 	//trinketSimsBoth(printer)
-
-	// forBasicStatsGenerateRatingsDataFromSims(printer)
-	// forSpreadsheetGenerateRatingsDataFromSims(printer)
-	// statWeightsFromHighAndSim(printer)
-	// statWeightsBasic(printer)
+	//
+	//statWeightsBasic(printer)
 	//statWeightsGrid(printer)
-	// statWeightsFitting2(printer)
-	// statWeightsComplex(printer)
+	//statWeightsFitting2(printer)
+	//statWeightsComplex(printer)
 	//statWeightsGridIntoRanking(printer)
 	//statWeightsCustom(printer)
 
-	//statWeights_CompareAlgorithms(printer)
+	//statWeights_CompareAlgorithms()
 
-	//statWeightsGrid_updateAll(printer)
+	//statWeights_updateAll()
 
-	//PaladinMultiRun(printer)
+	PaladinMultiRun()
 
-	findUpgrades_Paladin(printer)
+	//findUpgrades_Paladin()
 }
 
-func setupPallyMitigationSet() (items.FullOptionsMap, model.Model) {
-	model := model.Model_PallyProtMitigation_WithSet()
+func setupPallyMitigationSet() (items.FullOptionsMap, gear_model.SpecModel) {
+	model := gear_model.Model_PallyProtMitigation_WithSet()
 	return setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationWithSet, &model, setup.MissingEnchant_Panic, printer), model
 }
 
-func setupPallyMitigationNoSet() (items.FullOptionsMap, model.Model) {
-	model := model.Model_PallyProtMitigation_WithSet()
+func setupPallyMitigationNoSet() (items.FullOptionsMap, gear_model.SpecModel) {
+	model := gear_model.Model_PallyProtMitigation_WithSet()
 	return setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationNoSet, &model, setup.MissingEnchant_Panic, printer), model
 }
 
-func setupPallyDps() (items.FullOptionsMap, model.Model) {
-	model := model.Model_PallyProtDps()
+func setupPallyDps() (items.FullOptionsMap, gear_model.SpecModel) {
+	model := gear_model.Model_PallyProtDps()
 	return setup.OptionsSetup_FromGearFile(files.GearFileProtDps, &model, setup.MissingEnchant_Panic, printer), model
 }
