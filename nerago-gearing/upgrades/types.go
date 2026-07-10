@@ -2,7 +2,9 @@ package upgrades
 
 import (
 	"math"
+	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"strconv"
@@ -31,7 +33,7 @@ func formatIncreaseGeneric(percent float64) string {
 // ################## upgradeItemTask ##################
 
 type upgradeItemTask struct {
-	item       *items.FullItem
+	item       loaders.ItemFoundRef
 	slot       items.SlotEquip
 	goal       stats.OptimiseGoal
 	boss       string
@@ -58,13 +60,14 @@ func (task upgradeItemTask) Equals(other upgradeItemTask) bool {
 type upgradeItemResult struct {
 	upgradeItemTask
 	success  bool
+	fullItem *items.FullItem
 	itemSet  *items.FullItemSet
 	setBonus uint8
 	factor   util.Optional[float64]
 }
 
-func upgradeItemResult_OfFailure(task *upgradeItemTask) upgradeItemResult {
-	return upgradeItemResult{upgradeItemTask: *task, success: false, factor: util.Optional_Empty[float64]()}
+func upgradeItemResult_OfFailure(task *upgradeItemTask, fullItem *items.FullItem) upgradeItemResult {
+	return upgradeItemResult{upgradeItemTask: *task, success: false, fullItem: fullItem, factor: util.Optional_Empty[float64]()}
 }
 
 func (result upgradeItemResult) Equals(other upgradeItemResult) bool {
@@ -73,6 +76,22 @@ func (result upgradeItemResult) Equals(other upgradeItemResult) bool {
 		result.itemSet.EqualsAllowNil(other.itemSet) &&
 		result.setBonus == other.setBonus &&
 		result.factor == other.factor
+}
+
+func (result upgradeItemResultWithSim) ItemName() string {
+	if result.fullItem != nil {
+		return result.fullItem.BaseName()
+	} else {
+		return db.LookupItemNameByItemId(result.item.ItemId)
+	}
+}
+
+func (result upgradeItemResultWithSim) ItemLevel() uint16 {
+	if result.fullItem != nil {
+		return result.fullItem.ItemLevel()
+	} else {
+		return 0
+	}
 }
 
 func (result upgradeItemResult) increaseWeightsRaw() float64 {
@@ -170,19 +189,11 @@ type reportGroup struct {
 // ################## reportForItemWithSim ##################
 
 type reportForItemWithSim struct {
-	item    *items.FullItem
-	slot    items.SlotEquip
-	grouped map[string]upgradeItemResultWithSim
-}
-
-func makeReportSimForItem(mapSize int) func(*items.FullItem, items.SlotEquip) *reportForItemWithSim {
-	return func(item *items.FullItem, slot items.SlotEquip) *reportForItemWithSim {
-		report := new(reportForItemWithSim)
-		report.item = item
-		report.slot = slot
-		report.grouped = make(map[string]upgradeItemResultWithSim, mapSize)
-		return report
-	}
+	itemName  string
+	itemLevel uint16
+	boss      string
+	slot      items.SlotEquip
+	grouped   map[string]upgradeItemResultWithSim
 }
 
 func (report *reportForItemWithSim) Add(group reportGroup, result upgradeItemResultWithSim) {

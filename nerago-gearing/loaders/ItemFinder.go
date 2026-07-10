@@ -46,10 +46,25 @@ var legendCloaks = []items.ItemId{102249, 102250}
 
 var ordosItems = []items.ItemId{105804, 105766, 105758, 105782, 105776, 105784, 105789, 105765, 105795, 105792, 105793, 105791, 105810, 105787, 105774, 105771, 105806, 105809, 105808, 105778, 105754, 105805, 105800, 105790, 105798, 105799, 105775, 105783, 105760, 105767, 105779, 105807, 105759, 105772, 105755, 105811, 105769, 105786, 105768, 105761, 105788, 105763, 105756, 105777, 105764, 105796, 105797, 105757, 105762, 105801, 105794, 105803, 105773, 105785, 105781, 105780, 105802, 105770}
 
-func ItemFinder_TimelessPlate(_ stats.Difficulty) []*items.FullItem {
-	// var targetLevel uint16 = 496
+type ItemFoundRef struct {
+	ItemId       items.ItemId
+	RandomSuffix items.RandomSuffix
+	UpgradeLevel items.UpgradeLevel
+}
+
+func ItemFoundRef_Of(item *items.FullItem) ItemFoundRef {
+	return ItemFoundRef{
+		item.ItemId(), item.RandomSuffix(), item.UpgradeLevel(),
+	}
+}
+
+func (ref ItemFoundRef) Equals(other ItemFoundRef) bool {
+	return ref == other
+}
+
+func ItemFinder_TimelessPlate(_ stats.Difficulty) []ItemFoundRef {
 	var targetLevel uint16 = 535
-	result := make([]*items.FullItem, 0)
+	result := make([]ItemFoundRef, 0)
 	for item := range db.WowSimDB_AllItems() {
 		if (strings.Contains(item.BaseName(), "Cliffbreaker") || strings.Contains(item.BaseName(), "Elder Tortoiseshell")) && item.ItemLevel() == targetLevel {
 			onlyCoreStats(item)
@@ -58,13 +73,11 @@ func ItemFinder_TimelessPlate(_ stats.Difficulty) []*items.FullItem {
 			//item = item.MakeItemWithRandomSuffix(randomId) // give it haste
 			//result = append(result, item)
 
-			var randomId items.RandomSuffix = -340         // haste
-			item = item.MakeItemWithRandomSuffix(randomId) // give it haste
-			result = append(result, item)
+			var randomId items.RandomSuffix = -340 // haste
+			result = append(result, ItemFoundRef{ItemId: item.ItemId(), UpgradeLevel: item.UpgradeLevel(), RandomSuffix: randomId})
 
 			for r := -460; r <= -441; r++ {
-				item = item.MakeItemWithRandomSuffix(items.RandomSuffix(r))
-				result = append(result, item)
+				result = append(result, ItemFoundRef{ItemId: item.ItemId(), UpgradeLevel: item.UpgradeLevel(), RandomSuffix: items.RandomSuffix(r)})
 			}
 		}
 	}
@@ -86,97 +99,77 @@ func onlyCoreStats(item *items.FullItem) {
 	}
 }
 
-func ItemFinder_Ordos(_ stats.Difficulty) []*items.FullItem {
-	result := make([]*items.FullItem, 0)
+func ItemFinder_Ordos(_ stats.Difficulty) []ItemFoundRef {
+	result := make([]ItemFoundRef, 0)
 	for _, itemId := range ordosItems {
-		item := db.WowSimDB_ByIdAndUpgrade(itemId, 0)
+		item := db.WowSimDB_LoadItemById(itemId, 0)
 		if item.ArmorType() == stats.Armor_None || item.ArmorType() == stats.Armor_Plate || item.SlotItem() == items.Item_Back {
 			if item.PrimaryStat() == stats.PrimaryStat_None || item.PrimaryStat() == stats.PrimaryStat_Strength {
-				result = append(result, item)
+				result = append(result, ItemFoundRef_Of(item))
 			}
 		}
 	}
 	return result
 }
 
-func ItemFinder_HeroicBossFiltered(innerFinder func(stats.Difficulty) []*items.FullItem, heroicBossNames []string) func(stats.Difficulty) []*items.FullItem {
-	return func(difficulty stats.Difficulty) []*items.FullItem {
+func ItemFinder_HeroicBossFiltered(innerFinder func(stats.Difficulty) []ItemFoundRef, heroicBossNames []string) func(stats.Difficulty) []ItemFoundRef {
+	return func(difficulty stats.Difficulty) []ItemFoundRef {
 		regularResult := innerFinder(difficulty)
 		if difficulty == stats.Difficulty_Celestial || difficulty == stats.Difficulty_Normal {
 			return regularResult
 		}
 
-		return util.FilterSliceAsNew_NoPointer(regularResult, func(item *items.FullItem) bool {
-			bossName := db.BossItemData_BossForItem(item)
+		return util.FilterSliceAsNew_NoPointer(regularResult, func(item ItemFoundRef) bool {
+			bossName := db.BossItemData_BossForItemId(item.ItemId)
 			return slices.Contains(heroicBossNames, bossName)
 		})
 	}
 }
 
-func ItemFinder_SiegeStrengthPlateTank(difficulty stats.Difficulty) []*items.FullItem {
+func ItemFinder_SiegeStrengthPlateTank(difficulty stats.Difficulty) []ItemFoundRef {
 	initial := slices.Concat(
-		seigeClassGearSet(stats.Spec_PaladinProt, difficulty),
-		seigeClassGearSet(stats.Spec_PaladinRet, difficulty),
-		seigeGearGeneric(stats.Armor_Plate, stats.PrimaryStat_Strength, difficulty),
+		siegeClassGearSet(stats.Spec_PaladinProt, difficulty),
+		siegeClassGearSet(stats.Spec_PaladinRet, difficulty),
+		siegeGearGeneric(stats.Armor_Plate, stats.PrimaryStat_Strength, difficulty),
 		trinketsForDifficulty(G_seigeTankTrinkets, difficulty, stats.Difficulty.ExpectedItemLevelSiege),
 		trinketsForDifficulty(G_siegeStrengthTrinkets, difficulty, stats.Difficulty.ExpectedItemLevelSiege),
-		// []*items.FullItem{db.WowSimDB_ByIdAndUpgrade(102249, 0), db.WowSimDB_ByIdAndUpgrade(102250, 0)},
 	)
 	// Visage of the Monstrous spirit/haste shield
 	if difficulty == stats.Difficulty_Normal {
-		initial = append(initial, db.WowSimDB_ByIdAndUpgrade(103848, 0))
+		initial = append(initial, ItemFoundRef{ItemId: 103848})
 	} else if difficulty == stats.Difficulty_Heroic {
-		initial = append(initial, db.WowSimDB_ByIdAndUpgrade(104579, 0))
+		initial = append(initial, ItemFoundRef{ItemId: 104579})
 	}
 	return initial
 }
 
-func ItemFinder_ThroneStrengthPlateTank(difficulty stats.Difficulty) []*items.FullItem {
+func ItemFinder_ThroneStrengthPlateTank(difficulty stats.Difficulty) []ItemFoundRef {
 	return slices.Concat(
 		throneClassGearSet(stats.Spec_PaladinProt, difficulty),
 		throneClassGearSet(stats.Spec_PaladinRet, difficulty),
 		throneGearGeneric(stats.Armor_Plate, stats.PrimaryStat_Strength, difficulty),
 		trinketsForDifficulty(g_throneTankTrinkets, difficulty, stats.Difficulty.ExpectedItemLevelThrone),
 		trinketsForDifficulty(g_throneStrengthTrinkets, difficulty, stats.Difficulty.ExpectedItemLevelThrone),
-		[]*items.FullItem{db.WowSimDB_ByIdAndUpgrade(96436, 0)}, // Tortos' Discarded Shell; int/haste shield
+		[]ItemFoundRef{{ItemId: 96436}}, // Tortos' Discarded Shell; int/haste shield
 	)
 }
 
-func ItemFinder_ThroneStrengthPlateTank_MinusConflictStuff(difficulty stats.Difficulty) []*items.FullItem {
-	exclude := []items.ItemId{95513}
-	return util.FilterSliceAsNew(ItemFinder_ThroneStrengthPlateTank(difficulty), func(item **items.FullItem) bool {
-		return !slices.Contains(exclude, (*item).ItemId())
+func ItemFinder_ThroneStrengthPlateTank_RadenOnly(difficulty stats.Difficulty) []ItemFoundRef {
+	result := util.FilterSliceAsNew(ItemFinder_ThroneStrengthPlateTank(difficulty), func(item *ItemFoundRef) bool {
+		return isRadenItem(item.ItemId)
 	})
-}
-
-func ItemFinder_ThroneStrengthPlateTank_RadenOnly(difficulty stats.Difficulty) []*items.FullItem {
-	result := util.FilterSliceAsNew(ItemFinder_ThroneStrengthPlateTank(difficulty), func(item **items.FullItem) bool {
-		return isRadenItem((*item).ItemId())
-	})
-	//for _, itemId := range g_radenItems {
-	//	item := db.WowSimDB_ByIdAndUpgrade(itemId, 0)
-	//	result = append(result, item)
-	//}
-	result = util.RemoveDuplicatesFunc(result, func(a, b **items.FullItem) bool { return (*a).Equals(*b) })
+	result = util.RemoveDuplicatesComparable(result)
 	return result
 }
 
-func ItemFinder_CelestialCloak(difficulty stats.Difficulty) []*items.FullItem {
-	return []*items.FullItem{
-		db.WowSimDB_ByIdAndUpgrade(98147, 0),
-		db.WowSimDB_ByIdAndUpgrade(98335, 0),
-		db.WowSimDB_ByIdAndUpgrade(98146, 0),
-	}
-}
-
-func seigeClassGearSet(specType stats.SpecType, difficulty stats.Difficulty) []*items.FullItem {
-	result := make([]*items.FullItem, 0)
+func siegeClassGearSet(specType stats.SpecType, difficulty stats.Difficulty) []ItemFoundRef {
+	result := make([]ItemFoundRef, 0)
 	specBonus := model.SetBonus_ForSpec_AllowFallback(specType, stats.OptimiseGoal_Unknown, true)
 	targetLevel := difficulty.ExpectedItemLevelSiege()
 	for itemId := range specBonus.AllSetItemIds() {
-		item := db.WowSimDB_ByIdAndUpgrade(itemId, 0)
+		item := db.WowSimDB_LoadItemById(itemId, 0)
 		if item.ItemLevel() == targetLevel {
-			result = append(result, item)
+			result = append(result, ItemFoundRef_Of(item))
 		}
 	}
 	if len(result) != 5 {
@@ -185,14 +178,14 @@ func seigeClassGearSet(specType stats.SpecType, difficulty stats.Difficulty) []*
 	return result
 }
 
-func throneClassGearSet(specType stats.SpecType, difficulty stats.Difficulty) []*items.FullItem {
-	result := make([]*items.FullItem, 0)
+func throneClassGearSet(specType stats.SpecType, difficulty stats.Difficulty) []ItemFoundRef {
+	result := make([]ItemFoundRef, 0)
 	specBonus := model.SetBonus_ForSpec_AllowFallback(specType, stats.OptimiseGoal_Unknown, true)
 	targetLevel := difficulty.ExpectedItemLevelThrone()
 	for itemId := range specBonus.AllSetItemIds() {
-		item := db.WowSimDB_ByIdAndUpgrade(itemId, 0)
+		item := db.WowSimDB_LoadItemById(itemId, 0)
 		if item.ItemLevel() == targetLevel {
-			result = append(result, item)
+			result = append(result, ItemFoundRef_Of(item))
 		}
 	}
 	if len(result) != 5 {
@@ -201,31 +194,30 @@ func throneClassGearSet(specType stats.SpecType, difficulty stats.Difficulty) []
 	return result
 }
 
-func seigeGearGeneric(armor stats.ArmorType, primary stats.PrimaryStatType, difficulty stats.Difficulty) []*items.FullItem {
+func siegeGearGeneric(armor stats.ArmorType, primary stats.PrimaryStatType, difficulty stats.Difficulty) []ItemFoundRef {
 	groupByName := make(map[string][]*items.FullItem)
 	for item := range db.WowSimDB_AllItems() {
 		name := item.BaseName()
-		if matchesSeigeGearCriteria(item, armor, primary) {
+		if difficulty == stats.Difficulty_Celestial && item.ItemLevel() >= 555 {
+			continue
+		}
+		if matchesSiegeGearCriteria(item, armor, primary) {
 			groupByName[name] = append(groupByName[name], item)
 		}
 	}
 
-	result := make([]*items.FullItem, 0)
+	result := make([]ItemFoundRef, 0)
 	for _, groupList := range groupByName {
 		item := selectAppropriateDifficultyItem(groupList, difficulty, stats.Difficulty.ExpectedItemLevelSiege)
 		if item != nil {
-			result = append(result, item)
+			result = append(result, *item)
 		}
-	}
-
-	if difficulty == stats.Difficulty_Celestial {
-		result = util.FilterSliceAsNew(result, func(x **items.FullItem) bool { return (*x).ItemLevel() < 555 })
 	}
 
 	return result
 }
 
-func throneGearGeneric(armor stats.ArmorType, primary stats.PrimaryStatType, difficulty stats.Difficulty) []*items.FullItem {
+func throneGearGeneric(armor stats.ArmorType, primary stats.PrimaryStatType, difficulty stats.Difficulty) []ItemFoundRef {
 	groupByName := make(map[string][]*items.FullItem)
 	for item := range db.WowSimDB_AllItems() {
 		name := item.BaseName()
@@ -234,17 +226,27 @@ func throneGearGeneric(armor stats.ArmorType, primary stats.PrimaryStatType, dif
 		}
 	}
 
-	result := make([]*items.FullItem, 0)
+	result := make([]ItemFoundRef, 0)
 	for _, groupList := range groupByName {
 		item := selectAppropriateDifficultyItem(groupList, difficulty, stats.Difficulty.ExpectedItemLevelThrone)
 		if item != nil {
-			result = append(result, item)
+			result = append(result, *item)
 		}
 	}
 	return result
 }
 
-func selectAppropriateDifficultyItem(itemList []*items.FullItem, difficulty stats.Difficulty, expectedItemLevelFunc func(stats.Difficulty) uint16) *items.FullItem {
+func selectAppropriateDifficultyItem(itemList []*items.FullItem, difficulty stats.Difficulty, expectedItemLevelFunc func(stats.Difficulty) uint16) *ItemFoundRef {
+	item := selectAppropriateDifficultyItemFull(itemList, difficulty, expectedItemLevelFunc)
+	if item == nil {
+		return nil
+	} else {
+		ref := ItemFoundRef_Of(item)
+		return &ref
+	}
+}
+
+func selectAppropriateDifficultyItemFull(itemList []*items.FullItem, difficulty stats.Difficulty, expectedItemLevelFunc func(stats.Difficulty) uint16) *items.FullItem {
 	if len(itemList) == 1 {
 		return itemList[0]
 	}
@@ -287,11 +289,10 @@ func selectAppropriateDifficultyItem(itemList []*items.FullItem, difficulty stat
 	// panic("unknown item choice")
 }
 
-func matchesSeigeGearCriteria(item *items.FullItem, armor stats.ArmorType, primary stats.PrimaryStatType) bool {
+func matchesSiegeGearCriteria(item *items.FullItem, armor stats.ArmorType, primary stats.PrimaryStatType) bool {
 	return item.Phase() == 5 &&
 		item.UpgradeLevel() == 0 &&
 		!strings.Contains(item.BaseName(), "Gladiator") &&
-		// TODO how do weapons work here?
 		(item.ArmorType().Matches(armor) || item.SlotItem() == items.Item_Back) &&
 		item.SlotItem() != items.Item_Trinket &&
 		item.PrimaryStat() == primary &&
@@ -315,25 +316,19 @@ func isRadenItem(itemId items.ItemId) bool {
 	return slices.Contains(g_radenItems, itemId)
 }
 
-func ItemFinder_FilterOutRadenItems(upgradeItems []*items.FullItem) []*items.FullItem {
-	return util.FilterSliceAsNew(upgradeItems, func(item **items.FullItem) bool {
-		return !isRadenItem((*item).ItemId())
-	})
-}
-
-func trinketsForDifficulty(trinketIds []items.ItemId, difficulty stats.Difficulty, expectedItemLevelFunc func(stats.Difficulty) uint16) []*items.FullItem {
-	result := make([]*items.FullItem, 0)
+func trinketsForDifficulty(trinketIds []items.ItemId, difficulty stats.Difficulty, expectedItemLevelFunc func(stats.Difficulty) uint16) []ItemFoundRef {
+	result := make([]ItemFoundRef, 0)
 	for _, id := range trinketIds {
 		item := trinketForDifficulty(id, difficulty, expectedItemLevelFunc)
 		if item != nil {
-			result = append(result, item)
+			result = append(result, *item)
 		}
 	}
 	return result
 }
 
-func trinketForDifficulty(exampleItemId items.ItemId, difficulty stats.Difficulty, expectedItemLevelFunc func(stats.Difficulty) uint16) *items.FullItem {
-	itemName := db.WowSimDB_ByIdAndUpgrade(exampleItemId, 0).BaseName()
+func trinketForDifficulty(exampleItemId items.ItemId, difficulty stats.Difficulty, expectedItemLevelFunc func(stats.Difficulty) uint16) *ItemFoundRef {
+	itemName := db.LookupItemNameByItemId(exampleItemId)
 	candidates := make([]*items.FullItem, 0)
 	for item := range db.WowSimDB_AllItems() {
 		if item.BaseName() == itemName {
@@ -343,20 +338,20 @@ func trinketForDifficulty(exampleItemId items.ItemId, difficulty stats.Difficult
 	return selectAppropriateDifficultyItem(candidates, difficulty, expectedItemLevelFunc)
 }
 
-func ItemFinder_BagsUpgraded(_ stats.Difficulty) []*items.FullItem {
+func ItemFinder_BagsUpgraded(_ stats.Difficulty) []ItemFoundRef {
 	bagsItems := BagsFile_PlusPaladinGear_Read()
-	result := make([]*items.FullItem, 0, len(bagsItems))
+
+	result := make([]ItemFoundRef, 0, len(bagsItems))
 	for _, equip := range bagsItems {
-		item := db.WowSimDB_ByIdAndUpgrade(equip.ItemId, equip.UpgradeStepOrItemLevel)
-		item = item.MakeItemWithRandomSuffix(equip.RandomSuffix)
+		item := db.WowSimDB_LoadItemById(equip.ItemId, equip.UpgradeStepOrItemLevel)
 		if item.UpgradeLevel() < items.MAX_UPGRADE_LEVEL {
-			upgraded := db.WowSimDB_ByIdAndUpgrade(equip.ItemId, int32(items.MAX_UPGRADE_LEVEL))
+			upgraded := db.WowSimDB_LoadItemById(equip.ItemId, int32(items.MAX_UPGRADE_LEVEL))
 			if upgraded != nil && upgraded.ItemLevel() > item.ItemLevel() {
-				upgraded = upgraded.MakeItemWithRandomSuffix(equip.RandomSuffix)
-				result = append(result, upgraded)
+				result = append(result, ItemFoundRef_Of(upgraded))
 			}
 		}
 	}
-	result = util.RemoveDuplicatesFunc(result, func(a, b **items.FullItem) bool { return (*a).Equals(*b) })
+
+	result = util.RemoveDuplicatesComparable(result)
 	return result
 }

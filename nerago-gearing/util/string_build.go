@@ -82,3 +82,10 @@ func (sb *StringBuild2) WriteFloat64_RightPadded(value float64, decimalPlaces in
 		remainingPad--
 	}
 }
+
+func (sb *StringBuild2) Rewind(removeFromEnd int) {
+	if len(*sb) < removeFromEnd {
+		panic("can't rewind bytes that don't exist")
+	}
+	*sb = (*sb)[0 : len(*sb)-removeFromEnd]
+}

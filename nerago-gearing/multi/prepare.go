@@ -60,7 +60,7 @@ func (param *multiSetParamInternal) prepareStartingGear() {
 	param.exactEquippedGear = setup.OptionsSetup_ExactEquippedOnly(equipped, &param.Model, param.MissingEnchant, param.job.printer)
 	param.itemOptions = setup.OptionsSetup_FromEquipped(equipped, &param.Model, param.MissingEnchant, param.job.printer)
 
-	setup.UpgradeExistingToLevel2(&param.itemOptions, param.ForceUpgradeExistingItems, &param.Model, param.job.printer)
+	setup.UpgradeAllOptionsToLevel2(&param.itemOptions, param.ForceUpgradeExistingItems, &param.Model, param.job.printer)
 }
 
 func (param *multiSetParamInternal) prepareExtraItems() {
@@ -100,7 +100,7 @@ func (param *multiSetParamInternal) includeExtra(itemId items.ItemId) {
 		return
 	}
 
-	basicVersion := db.WowSimDB_ByIdAndUpgrade(itemId, 0)
+	basicVersion := db.WowSimDB_LoadItemById(itemId, 0)
 	if param.itemOptions.CouldAddUpgrade_ItemSlot(basicVersion.SlotItem(), basicVersion, param.job.printer) == items.CanUpgrade_InvalidAlways {
 		return
 	}
@@ -171,7 +171,7 @@ func (param *multiSetParamInternal) copyExtraFromBags(itemId items.ItemId) bool 
 func (param *multiSetParamInternal) tryAddExtraFromBags(equipped *loaders.EquippedItem) {
 	if db.WowSimDB_HasItemId(equipped.ItemId) {
 		// bail early before considering full item stats/enchants/etc that might not fit spec
-		basicVersion := db.WowSimDB_ByIdAndUpgrade(equipped.ItemId, 0)
+		basicVersion := db.WowSimDB_LoadItemById(equipped.ItemId, 0)
 		if basicVersion.ItemLevel() < param.job.minimumExtraItemLevel {
 			return
 		}

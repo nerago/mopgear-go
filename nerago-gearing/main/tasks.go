@@ -481,13 +481,13 @@ func trinketSims(printer *util.PrintRecorder) {
 			var item *items.FullItem
 			switch itemId {
 			case 945190:
-				item = db.WowSimDB_ByIdAndUpgrade_AllowFallback(94519, 2, printer)
+				item = db.WowSimDB_LoadItemById_AllowFallback(94519, 2, printer)
 				item = tools.Reforger_SinglePreset(item, stats.ReforgeRecipe_of_pointer(stats.Stat_Crit, stats.Stat_Mastery))
 			case 945270:
-				item = db.WowSimDB_ByIdAndUpgrade_AllowFallback(94527, 2, printer)
+				item = db.WowSimDB_LoadItemById_AllowFallback(94527, 2, printer)
 				item = tools.Reforger_SinglePreset(item, stats.ReforgeRecipe_of_pointer(stats.Stat_Expertise, stats.Stat_Crit))
 			default:
-				item = db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemId, 2, printer)
+				item = db.WowSimDB_LoadItemById_AllowFallback(itemId, 2, printer)
 			}
 
 			printer.Println(group.label + " " + item.CreateFullName())
@@ -612,14 +612,14 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 
 		for _, itemIdOne := range processItemIds {
 			upgrade := upLevel(itemIdOne)
-			itemOne := db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemIdOne, upgrade, printer)
+			itemOne := db.WowSimDB_LoadItemById_AllowFallback(itemIdOne, upgrade, printer)
 			for _, itemIdTwo := range processItemIds {
 				if itemIdTwo >= itemIdOne {
 					continue
 				}
 
 				upgrade2 := upLevel(itemIdOne)
-				itemTwo := db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemIdTwo, upgrade2, printer)
+				itemTwo := db.WowSimDB_LoadItemById_AllowFallback(itemIdTwo, upgrade2, printer)
 
 				nameOne := itemOne.CreateFullName() + " " + strconv.FormatUint(uint64(itemOne.ItemLevel()), 10)
 				nameTwo := itemTwo.CreateFullName() + " " + strconv.FormatUint(uint64(itemTwo.ItemLevel()), 10)

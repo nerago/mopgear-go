@@ -234,8 +234,9 @@ func (item *FullItem) MakeItemWithRandomSuffix(randomSuffix RandomSuffix) *FullI
 		newStats := stats.StatBlock{}
 		newStats.SetFromAddOthers(item.StatBase(), &wowSimStats)
 
-		item = item.NewWithChangedStatsSuffix(newStats, randomSuffix)
-		item.baseName += " " + suffix
+		result := item.NewWithChangedStatsSuffix(newStats, randomSuffix)
+		result.baseName += " " + suffix
+		return result
 	}
 
 	return item

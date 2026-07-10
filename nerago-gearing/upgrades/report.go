@@ -46,8 +46,8 @@ func reportBasicByBossSim(resultList []upgradeItemResultWithSim, printer *util.P
 				if result.sim.IsEmpty() {
 					tab.AddRow([]string{
 						result.slot.Name(),
-						strconv.FormatUint(uint64(result.item.ItemLevel()), 10),
-						result.item.BaseName(),
+						strconv.FormatUint(uint64(result.ItemLevel()), 10),
+						result.ItemName(),
 						strconv.FormatUint(uint64(result.setBonus), 10),
 						result.increaseWeightsStr(false),
 						"",
@@ -57,8 +57,8 @@ func reportBasicByBossSim(resultList []upgradeItemResultWithSim, printer *util.P
 				} else {
 					tab.AddRow([]string{
 						result.slot.Name(),
-						strconv.FormatUint(uint64(result.item.ItemLevel()), 10),
-						result.item.BaseName(),
+						strconv.FormatUint(uint64(result.ItemLevel()), 10),
+						result.ItemName(),
 						strconv.FormatUint(uint64(result.setBonus), 10),
 						result.increaseWeightsStr(false),
 						result.increaseSimStr(false),
@@ -97,8 +97,8 @@ func reportBasicBySlotSim(resultList []upgradeItemResultWithSim, printer *util.P
 			for result := range rank.OrderedResult() {
 				if result.sim.IsEmpty() {
 					tab.AddRow([]string{
-						strconv.FormatUint(uint64(result.item.ItemLevel()), 10),
-						result.item.BaseName(),
+						strconv.FormatUint(uint64(result.ItemLevel()), 10),
+						result.ItemName(),
 						result.boss,
 						strconv.FormatUint(uint64(result.setBonus), 10),
 						result.increaseWeightsStr(false),
@@ -108,8 +108,8 @@ func reportBasicBySlotSim(resultList []upgradeItemResultWithSim, printer *util.P
 					})
 				} else {
 					tab.AddRow([]string{
-						strconv.FormatUint(uint64(result.item.ItemLevel()), 10),
-						result.item.BaseName(),
+						strconv.FormatUint(uint64(result.ItemLevel()), 10),
+						result.ItemName(),
 						result.boss,
 						strconv.FormatUint(uint64(result.setBonus), 10),
 						result.increaseWeightsStr(false),
@@ -150,8 +150,8 @@ func reportBasicOverallRankSim(resultList []upgradeItemResultWithSim, printer *u
 		if result.sim.IsEmpty() {
 			tab.AddRow([]string{
 				result.slot.Name(),
-				strconv.FormatUint(uint64(result.item.ItemLevel()), 10),
-				result.item.BaseName(),
+				strconv.FormatUint(uint64(result.ItemLevel()), 10),
+				result.ItemName(),
 				result.boss,
 				strconv.FormatUint(uint64(result.setBonus), 10),
 				result.increaseWeightsStr(false),
@@ -162,8 +162,8 @@ func reportBasicOverallRankSim(resultList []upgradeItemResultWithSim, printer *u
 		} else {
 			tab.AddRow([]string{
 				result.slot.Name(),
-				strconv.FormatUint(uint64(result.item.ItemLevel()), 10),
-				result.item.BaseName(),
+				strconv.FormatUint(uint64(result.ItemLevel()), 10),
+				result.ItemName(),
 				result.boss,
 				strconv.FormatUint(uint64(result.setBonus), 10),
 				result.increaseWeightsStr(false),

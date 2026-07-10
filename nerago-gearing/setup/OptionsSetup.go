@@ -33,13 +33,13 @@ func OptionsSetup_FromEquipped(equipped []loaders.EquippedItem, model *model.Mod
 }
 
 func OptionsSetup_Single_FromEquipped(equipItem loaders.EquippedItem, model *model.Model, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
-	item := *db.WowSimDB_ByIdAndUpgrade_AllowFallback(equipItem.ItemId, equipItem.UpgradeStepOrItemLevel, printer)
+	item := *db.WowSimDB_LoadItemById_AllowFallback(equipItem.ItemId, equipItem.UpgradeStepOrItemLevel, printer)
 	item = addDetailFromEquip(item, equipItem, model, missingEnchant, printer)
 	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
 }
 
 func OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId items.ItemId, upgradeLevel items.UpgradeLevel, randomSuffix items.RandomSuffix, model *model.Model, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
-	item := *db.WowSimDB_ByIdAndUpgrade_AllowFallback(itemId, int32(upgradeLevel), printer)
+	item := *db.WowSimDB_LoadItemById_AllowFallback(itemId, int32(upgradeLevel), printer)
 	item = addDetailUsingDefaults(item, randomSuffix, model)
 	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
 }
@@ -56,7 +56,7 @@ func OptionsSetup_ExactEquippedOnly(equipped []loaders.EquippedItem, model *mode
 }
 
 func OptionsSetup_ExactEquippedOnly_Item(equipItem loaders.EquippedItem, missingEnchant MissingEnchantMode, model *model.Model, printer *util.PrintRecorder) items.FullItem {
-	item := *db.WowSimDB_ByIdAndUpgrade_AllowFallback(equipItem.ItemId, equipItem.UpgradeStepOrItemLevel, printer)
+	item := *db.WowSimDB_LoadItemById_AllowFallback(equipItem.ItemId, equipItem.UpgradeStepOrItemLevel, printer)
 	item = addDetailFromEquip(item, equipItem, model, missingEnchant, printer)
 
 	if equipItem.Reforging != 0 {
@@ -188,32 +188,32 @@ func confirmSocketSlots(item items.FullItem, professions model.ProfessionInfo) [
 	return existingSockets
 }
 
-func UpgradeExistingToLevel2(optionsMap *items.FullOptionsMap, targetUpgrade items.UpgradeLevel, model *model.Model, printer *util.PrintRecorder) {
-	printer.Println("$$$$ UPGRADE EXISTING ITEMS $$$$")
+func UpgradeAllOptionsToLevel2(optionsMap *items.FullOptionsMap, targetUpgrade items.UpgradeLevel, model *model.Model, printer *util.PrintRecorder) {
 	optionsMap.MapEachItem(func(currItem *items.FullItem) items.FullItem {
 		if currItem.UpgradeLevel() >= targetUpgrade {
 			return *currItem
 		} else {
-			return upgradeItemTo2(currItem, targetUpgrade, model, printer)
+			return *UpgradeExistingItemToTargetLevel(currItem, targetUpgrade, model.Professions, printer)
 		}
 	})
 }
 
-func upgradeItemTo2(currItem *items.FullItem, targetUpgrade items.UpgradeLevel, model *model.Model, printer *util.PrintRecorder) items.FullItem {
-	upgradeItem := db.WowSimDB_ByIdAndUpgrade(currItem.ItemId(), int32(targetUpgrade))
+func UpgradeExistingItemToTargetLevel(currItem *items.FullItem, targetUpgrade items.UpgradeLevel, professions model.ProfessionInfo, printer *util.PrintRecorder) *items.FullItem {
+	upgradeItem := db.WowSimDB_LoadItemById(currItem.ItemId(), int32(targetUpgrade))
 	if upgradeItem == nil {
 		printer.Println("$ CAN'T UPGRADE " + currItem.CreateString())
-		return *currItem
+		return currItem
 	} else {
-		upgradeItem = copyDetails(currItem, upgradeItem, model.Professions)
+		upgradeItem = copyDetails(currItem, upgradeItem, professions)
 		printer.Println("$ UPGRADE IN  << " + currItem.CreateString())
 		printer.Println("$ UPGRADE OUT >> " + upgradeItem.CreateString())
-		return *upgradeItem
+		return upgradeItem
 	}
 }
 
 func copyDetails(oldItem *items.FullItem, upgradeItem *items.FullItem, professions model.ProfessionInfo) *items.FullItem {
 	socketSlots := confirmSocketSlots(*upgradeItem, professions)
-	return upgradeItem.NewWithInstanceDetails(socketSlots, oldItem.Reforge(), oldItem.GemChoice(), oldItem.EnchantChoice(),
+	initial := upgradeItem.NewWithInstanceDetails(socketSlots, oldItem.Reforge(), oldItem.GemChoice(), oldItem.EnchantChoice(),
 		oldItem.RandomSuffix(), *oldItem.StatEnchant())
+	return initial.MakeItemWithRandomSuffix(oldItem.RandomSuffix())
 }

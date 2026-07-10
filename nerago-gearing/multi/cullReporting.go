@@ -63,8 +63,8 @@ func (param *multiSetParamInternal) cullingReportSeen() {
 				param.job.printer.Printf("%5d %6d // %s; %s\n", info.itemId, info.count, item.SlotItem().Name(), item.BaseName())
 			}
 		} else {
-			basicVersion := db.WowSimDB_ByIdAndUpgrade(info.itemId, 0)
-			param.job.printer.Printf("%5d %d MISSING IN OPTIONS // %s\n", info.itemId, info.count, basicVersion.BaseName())
+			itemName := db.LookupItemNameByItemId(info.itemId)
+			param.job.printer.Printf("%5d %d MISSING IN OPTIONS // %s\n", info.itemId, info.count, itemName)
 		}
 	}
 }
@@ -87,7 +87,7 @@ func (param *multiSetParamInternal) cullingReportOrphan() {
 	for itemId, seenCount := range param.seenInSolutions.content {
 		if seenCount > 0 {
 			if !slices.Contains(param.ExtraItems, itemId) && !slices.Contains(param.addedFromBags, itemId) {
-				name := db.WowSimDB_LookupNameByItemId(itemId)
+				name := db.LookupItemNameByItemId(itemId)
 				param.job.printer.Printf("ORPHAN ITEM USED %d %d // %s\n", itemId, seenCount, name)
 			}
 		}
@@ -143,8 +143,8 @@ func (job *MultiSetJob) cullReportAll() {
 	for _, entry := range lowEntries {
 		if entry.percent < 0.2 {
 			itemId := entry.itemId
-			basicVersion := db.WowSimDB_ByIdAndUpgrade(itemId, 0)
-			job.printer.Printf("%4.1f%% %6d %s\n", entry.percent*100, itemId, basicVersion.BaseName())
+			itemName := db.LookupItemNameByItemId(itemId)
+			job.printer.Printf("%4.1f%% %6d %s\n", entry.percent*100, itemId, itemName)
 		}
 	}
 	job.printer.Println0()

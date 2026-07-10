@@ -1,7 +1,6 @@
 package main
 
 import (
-	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
@@ -203,7 +202,7 @@ func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 	gearFile := files.GearFileProtMitigationWithSet
 	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
 	// upgradeItems := loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic)
-	upgradeItems := []*items.FullItem{db.WowSimDB_ByIdAndUpgrade_AllowFallback(96436, 2, printer)} // tortos shell heroic
+	upgradeItems := []loaders.ItemFoundRef{{ItemId: 96436, UpgradeLevel: 2}} // tortos shell heroic
 	input := upgrades.FindUpgrades_SimInputs{
 		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
 			IncludeNormal:      true,
@@ -233,7 +232,7 @@ func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsMiti, printer)
 }
 
-func findUpgrades_Paladin(printer *util.PrintRecorder) {
+func findUpgrades_Paladin() {
 	// simRunSize    = simulate.RunSize_TestOnly
 	// var simRunSize simulate.WowSim_RunSize = 1500
 	// var simRunSize simulate.WowSim_RunSize = 3000
@@ -307,5 +306,5 @@ func findUpgrades_Paladin(printer *util.PrintRecorder) {
 			},
 		},
 	}
-	upgrades.FindUpgrades_Sim_AllRaid_Run(&input, printer)
+	upgrades.FindUpgrades_Sim_AllRaid_Run(&input)
 }

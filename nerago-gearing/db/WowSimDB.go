@@ -37,7 +37,7 @@ func WowSimDB_HasItemId(itemId items.ItemId) bool {
 	return found
 }
 
-func WowSimDB_ByIdAndUpgrade(itemId items.ItemId, upgradeLevel int32) *items.FullItem {
+func WowSimDB_LoadItemById(itemId items.ItemId, upgradeLevel int32) *items.FullItem {
 	known := itemsById[itemId]
 	for _, item := range known {
 		// cater to bags file which currently doesn't use upgrade level as such, just current item level
@@ -51,11 +51,11 @@ func WowSimDB_ByIdAndUpgrade(itemId items.ItemId, upgradeLevel int32) *items.Ful
 	return nil
 }
 
-func WowSimDB_ByIdAndUpgrade_AllowFallback(itemId items.ItemId, upgradeLevel int32, printer *util.PrintRecorder) *items.FullItem {
-	storedItem := WowSimDB_ByIdAndUpgrade(itemId, upgradeLevel)
+func WowSimDB_LoadItemById_AllowFallback(itemId items.ItemId, upgradeLevel int32, printer *util.PrintRecorder) *items.FullItem {
+	storedItem := WowSimDB_LoadItemById(itemId, upgradeLevel)
 
 	if storedItem == nil && upgradeLevel > 0 {
-		storedItem = WowSimDB_ByIdAndUpgrade(itemId, 0)
+		storedItem = WowSimDB_LoadItemById(itemId, 0)
 		if storedItem != nil {
 			printer.Printf("NOT FOUND at specified upgrade %d = %s\n", upgradeLevel, storedItem.CreateString())
 		}
@@ -68,7 +68,7 @@ func WowSimDB_ByIdAndUpgrade_AllowFallback(itemId items.ItemId, upgradeLevel int
 	return storedItem
 }
 
-func WowSimDB_LookupNameByItemId(itemId items.ItemId) string {
+func LookupItemNameByItemId(itemId items.ItemId) string {
 	known := itemsById[itemId]
 	for _, item := range known {
 		return item.BaseName()

@@ -20,9 +20,19 @@ type PrintRecorder struct {
 	mutex         sync.Mutex
 }
 
-func PrintRecorder_CreateLogFile(path string) *PrintRecorder {
-	timeStr := strings.ReplaceAll(time.Now().Format(time.RFC3339), ":", "-")
-	logName := path + "output-" + timeStr + ".log"
+func PrintRecorder_CreateLogFile(directory string) *PrintRecorder {
+	timeStr := strings.ReplaceAll(time.Now().Format(time.DateTime), ":", "-")
+	logName := directory + "output-" + timeStr + ".log"
+	file, err := os.Create(logName)
+	if err != nil {
+		panic(err)
+	}
+	return &PrintRecorder{false, true, nil, file, nil, nil, "", sync.Mutex{}}
+}
+
+func PrintRecorder_CreateLogFileNamed(directory string, tag string) *PrintRecorder {
+	timeStr := strings.ReplaceAll(time.Now().Format(time.DateTime), ":", "-")
+	logName := directory + "output-" + timeStr + "-" + tag + ".log"
 	file, err := os.Create(logName)
 	if err != nil {
 		panic(err)

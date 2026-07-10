@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
-	"paladin_gearing_go/items"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -13,9 +12,10 @@ import (
 )
 
 // possible entry point
-func FindUpgrades_Sim_AllRaid_Run(input *FindUpgrades_MultiSpec_Sim, printer *util.PrintRecorder) {
+func FindUpgrades_Sim_AllRaid_Run(input *FindUpgrades_MultiSpec_Sim) {
 	outputMap, _ := findUpgrades_AllRaid(&input.FindUpgrades_SimInputs, input.Specs)
 
+	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "upgrade-report")
 	reportTabulatedSimResults_All(outputMap, input.Specs, printer, input.PositiveResultsOnly)
 	reportTabulatedSimResults_Boss(outputMap, input.Specs, printer, input.PositiveResultsOnly)
 }
@@ -56,13 +56,13 @@ func findUpgrades_AllRaid(input *FindUpgrades_SimInputs, specs []FindUpgrades_Sp
 }
 
 func processSpec(input *FindUpgrades_SimInputs, spec *FindUpgrades_Spec, difficulty stats.Difficulty, outputMap map[reportGroup][]upgradeItemResultWithSim, groups *[]reportGroup, tracker *util.TrackProgress) {
-	printer := util.PrintRecorder_CreateLogFile(files.LogOutputPath)
+	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "upgrade-"+spec.Label+"-"+difficulty.Name())
 	printer.Println("[[[[[[[[[[[[[[[[[[[[ " + spec.Label + " " + difficulty.Name() + " UPGRADES ]]]]]]]]]]]]]]]]]]]]")
 
 	options := setup.OptionsSetup_FromGearFile(spec.GearFile, &spec.Model, setup.MissingEnchant_Panic, printer)
 
 	upgradeItems := spec.ItemFinder(difficulty)
-	upgradeItems = util.RemoveDuplicatesFunc(upgradeItems, func(a, b **items.FullItem) bool { return (*a).Equals(*b) })
+	upgradeItems = util.RemoveDuplicatesComparable(upgradeItems)
 
 	group := reportGroup{spec.Label, difficulty}
 	*groups = append(*groups, group)
@@ -72,7 +72,7 @@ func processSpec(input *FindUpgrades_SimInputs, spec *FindUpgrades_Spec, difficu
 	printer.Close()
 }
 
-func groupByBossAndItem(outputMap map[reportGroup][]upgradeItemResultWithSim, makeGroup func(*items.FullItem, items.SlotEquip) *reportForItemWithSim) map[string]map[reportItemRef]*reportForItemWithSim {
+func groupByBossAndItem(outputMap map[reportGroup][]upgradeItemResultWithSim) map[string]map[reportItemRef]*reportForItemWithSim {
 	byBossThenItem := make(map[string]map[reportItemRef]*reportForItemWithSim)
 	for mode, resultList := range outputMap {
 		for _, result := range resultList {
@@ -82,10 +82,16 @@ func groupByBossAndItem(outputMap map[reportGroup][]upgradeItemResultWithSim, ma
 				byBossThenItem[result.boss] = itemMap
 			}
 
-			ref := reportItemRef{result.item.ItemId(), result.slot}
+			ref := reportItemRef{result.item.ItemId, result.slot}
 			report, exists := itemMap[ref]
 			if !exists {
-				report = makeGroup(result.item, result.slot)
+				report = &reportForItemWithSim{
+					result.ItemName(),
+					result.ItemLevel(),
+					result.boss,
+					result.slot,
+					make(map[string]upgradeItemResultWithSim),
+				}
 				itemMap[ref] = report
 			}
 
@@ -95,14 +101,20 @@ func groupByBossAndItem(outputMap map[reportGroup][]upgradeItemResultWithSim, ma
 	return byBossThenItem
 }
 
-func groupByItem(outputMap map[reportGroup][]upgradeItemResultWithSim, makeGroup func(*items.FullItem, items.SlotEquip) *reportForItemWithSim) map[reportItemRef]*reportForItemWithSim {
+func groupByItem(outputMap map[reportGroup][]upgradeItemResultWithSim) map[reportItemRef]*reportForItemWithSim {
 	byItem := make(map[reportItemRef]*reportForItemWithSim)
 	for mode, resultList := range outputMap {
 		for _, result := range resultList {
-			ref := reportItemRef{result.item.ItemId(), result.slot}
+			ref := reportItemRef{result.item.ItemId, result.slot}
 			report, exists := byItem[ref]
 			if !exists {
-				report = makeGroup(result.item, result.slot)
+				report = &reportForItemWithSim{
+					result.ItemName(),
+					result.ItemLevel(),
+					result.boss,
+					result.slot,
+					make(map[string]upgradeItemResultWithSim),
+				}
 				byItem[ref] = report
 			}
 
@@ -113,7 +125,7 @@ func groupByItem(outputMap map[reportGroup][]upgradeItemResultWithSim, makeGroup
 }
 
 func reportTabulatedSimResults_All(outputMap map[reportGroup][]upgradeItemResultWithSim, specs []FindUpgrades_Spec, printer *util.PrintRecorder, positiveResultsOnly bool) {
-	itemMap := groupByItem(outputMap, makeReportSimForItem(len(specs)))
+	itemMap := groupByItem(outputMap)
 	printer.Println("MULTISPEC RANKING ALL")
 	reportTabledSimResultItemMap(itemMap, positiveResultsOnly, specs, printer)
 	printer.Println("MULTISPEC RANKING ALL - sim percents only")
@@ -121,7 +133,7 @@ func reportTabulatedSimResults_All(outputMap map[reportGroup][]upgradeItemResult
 }
 
 func reportTabulatedSimResults_Boss(outputMap map[reportGroup][]upgradeItemResultWithSim, specs []FindUpgrades_Spec, printer *util.PrintRecorder, positiveResultsOnly bool) {
-	byBossThenItem := groupByBossAndItem(outputMap, makeReportSimForItem(len(specs)))
+	byBossThenItem := groupByBossAndItem(outputMap)
 
 	printer.Println("MULTISPEC RANKING BY BOSS")
 	for _, bossName := range db.BossItemData_NamesInOrder {
@@ -159,8 +171,8 @@ func reportTabledSimResultItemMap(itemMap map[reportItemRef]*reportForItemWithSi
 	for _, report := range reportList {
 		row := make([]string, 0, tab.ColumnCount())
 		row = append(row, report.slot.Name())
-		row = append(row, strconv.FormatUint(uint64(report.item.ItemLevel()), 10))
-		row = append(row, report.item.BaseName())
+		row = append(row, strconv.FormatUint(uint64(report.itemLevel), 10))
+		row = append(row, report.itemName)
 
 		for _, spec := range specs {
 			groupContent := report.grouped[spec.Label]
@@ -207,9 +219,9 @@ func reportTabledSimResultItemMap_NoWeight(itemMap map[reportItemRef]*reportForI
 	for _, report := range reportList {
 		row := make([]string, 0, tab.ColumnCount())
 		row = append(row, report.slot.Name())
-		row = append(row, strconv.FormatUint(uint64(report.item.ItemLevel()), 10))
-		row = append(row, report.item.BaseName())
-		row = append(row, db.BossItemData_BossForItem(report.item))
+		row = append(row, strconv.FormatUint(uint64(report.itemLevel), 10))
+		row = append(row, report.itemName)
+		row = append(row, report.boss)
 
 		for _, spec := range specs {
 			groupContent := report.grouped[spec.Label]

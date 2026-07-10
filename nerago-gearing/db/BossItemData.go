@@ -83,3 +83,12 @@ func BossItemData_BossForItem(item *items.FullItem) string {
 
 	return g_itemNameToBoss[item.BaseName()]
 }
+
+func BossItemData_BossForItemId(itemId items.ItemId) string {
+	if g_itemNameToBoss == nil {
+		load()
+	}
+
+	itemName := LookupItemNameByItemId(itemId)
+	return g_itemNameToBoss[itemName]
+}

@@ -68,8 +68,8 @@ func addExtrasT5Dumb(itemOptions *items.FullOptionsMap, model *model.Model, prin
 	allTrinkets = util.RemoveDuplicatesComparable(allTrinkets)
 
 	extraItemsCombined := slices.Concat(
-		util.MapSliceAsNew(loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic), func(x **items.FullItem) items.ItemId { return (*x).ItemId() }),
-		util.MapSliceAsNew(loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic), func(x **items.FullItem) items.ItemId { return (*x).ItemId() }),
+		util.MapSliceAsNew(loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic), func(x *loaders.ItemFoundRef) items.ItemId { return x.ItemId }),
+		util.MapSliceAsNew(loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic), func(x *loaders.ItemFoundRef) items.ItemId { return x.ItemId }),
 		allTrinkets,
 	)
 
@@ -143,10 +143,10 @@ func findT5TrinketPermutations(printer *util.PrintRecorder) {
 	csv.FinishColumn()
 
 	for _, res := range results {
-		name0 := db.WowSimDB_ByIdAndUpgrade(res.combo[0], 0).BaseName()
+		name0 := db.WowSimDB_LoadItemById(res.combo[0], 0).BaseName()
 		csv.AddString(name0)
 
-		name1 := db.WowSimDB_ByIdAndUpgrade(res.combo[1], 0).BaseName()
+		name1 := db.WowSimDB_LoadItemById(res.combo[1], 0).BaseName()
 		csv.AddString(name1)
 
 		csv.AddFloat64(res.sim.DPS(), 0)
