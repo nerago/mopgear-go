@@ -635,7 +635,9 @@ func readWeightBasicInputsFile(filename string) ([]basicStatInput, stats.SimData
 }
 
 //goland:noinspection GoBoolExpressions
-func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
+func statWeights_CompareAlgorithms() {
+	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "statWeights_CompareAlgorithms")
+
 	targetRatio := model.SimRatio_generalMiti
 	requiredStats := model.StatsForWeighting_strengthTank
 	requiredSims := targetRatio.NonZeroTypes()
@@ -703,27 +705,27 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	tasks := make([]func(), 0)
 
 	reportOnTweakedVersions := false
-	standardTimeout := 2500
-	shortTimeout := 800
+	standardTimeout := 6000
+	shortTimeout := 1400
 
 	runBasic := true
-	runFormulaVariants := false
+	runFormulaVariants := true
 	runFitting := false
 
 	runGrid1Original := true
-	runGrid1Variants := false
+	runGrid1Variants := true
 	runGrid1VariantsFewer := true
 	runGrid1C := true
-	runGrid2 := false
-	runSelGrid := false
+	runGrid2 := true
+	runSelGrid := true
 
 	runRankingOlder := true
 	runRanking3aPreferred := true
-	runRanking3aVariants := false
+	runRanking3aVariants := true
 	runRanking3bVariants := true
 	runRanking3bPreferred := true
-	runRanking4 := false
-	runRanking5 := false
+	runRanking4 := true
+	runRanking5 := true
 
 	runSearches := true
 
@@ -1377,58 +1379,6 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		}
 	}
 	tab.Write(printer)
-}
-
-func statWeightsGrid_updateAll(printer *util.PrintRecorder) {
-	//simSpeed := simulate.RunSize_TestOnly
-	//simSpeed := simulate.RunSize_QuickDirty
-	// simSpeed := simulate.RunSize_QuickDirty/10
-	simSpeed := simulate.RunSize_Common
-
-	weightfind.StatWeights_updateAll(simSpeed, printer, []weightfind.WeightOptions{
-		{
-			Label:           "Prot-Mitigation-NoSet",
-			WeightFileOut:   files.WeightMitiNoSetFile,
-			GearFile:        files.GearFileProtMitigationNoSet,
-			Model:           model.Model_PallyProtMitigation_NoSet(),
-			SubstituteItems: substituteItemsMiti,
-		},
-		//{
-		//	Label:           "Prot-Mitigation-WithSet",
-		//	WeightFileOut:   files.WeightMitiWithSetFile,
-		//	GearFile:        files.GearFileProtMitigationWithSet,
-		//	Model:           model.Model_PallyProtMitigation_WithSet(),
-		//	SubstituteItems: substituteItemsMiti,
-		//},
-		//{
-		//	Label:           "Prot-Damage",
-		//	WeightFileOut:   files.WeightDpsFile,
-		//	GearFile:        files.GearFileProtDps,
-		//	Model:           model.Model_PallyProtDps(),
-		//	SubstituteItems: substituteItemsDps,
-		//},
-		//{
-		//	Label:           "Prot-Compromise",
-		//	WeightFileOut:   files.WeightCompromiseFile,
-		//	GearFile:        files.GearFileProtCompromise,
-		//	Model:           model.Model_PallyProtCompromise(),
-		//	SubstituteItems: util.RemoveDuplicatesComparable(slices.Concat(substituteItemsDps, substituteItemsMiti)),
-		//},
-		//{
-		//	Label:           "Prot-Heal",
-		//	WeightFileOut:   files.WeightHealFile,
-		//	GearFile:        files.GearFileProtHeal,
-		//	Model:           model.Model_PallyProtHeal(),
-		//	SubstituteItems: util.RemoveDuplicatesComparable(slices.Concat(substituteItemsDps, substituteItemsMiti)),
-		//},
-		//{
-		//	Label:           "Ret",
-		//	WeightFileOut:   files.WeightRetFile,
-		//	GearFile:        files.GearFileRet,
-		//	Model:           model.Model_PallyRet(),
-		//	SubstituteItems: substituteItemsRet,
-		//},
-	})
 }
 
 func takeDataSample_Start(slice []stathighs.WeightInput, size int) []stathighs.WeightInput {

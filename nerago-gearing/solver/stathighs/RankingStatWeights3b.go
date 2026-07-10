@@ -294,7 +294,7 @@ func (ranker *RankingStatWeightProcess3b) setupInitialSolutionFromExternal(weigh
 
 func (ranker *RankingStatWeightProcess3b) setupInitialFromInternalWeights(internalWeights WeightResult) {
 	if !internalWeights.IsEmpty() {
-		internalWeights = internalWeights.ScaleBackToMax(c_Rank3b_largeWeight)
+		internalWeights = internalWeights.ScaleForTotalSum(c_rank3b_targetTotalWeight)
 
 		for statType, colWeight := range ranker.weightColumns {
 			weight := internalWeights.Get(statType)

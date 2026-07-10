@@ -21,36 +21,20 @@ const (
 
 	c_rank5_computeScoreM = 100
 	c_rank5_scaleTarget   = 1.0
-)
 
-var (
 	c_rank5_weightLo = -10.0
 	c_rank5_weightHi = 10.0
 
-	// last last commit
-	// c_rank5_computeScoreLo = utilhighs.C_MinusInf
-	// c_rank5_computeScoreHi = utilhighs.C_PlusInf
-	// c_rank5_weightTotalMin = 0.1
-	// c_rank5_weightTotalMax = utilhighs.C_PlusInf
-
-	// last commit
-	// c_rank5_computeScoreLo = utilhighs.C_MinusInf
-	// c_rank5_computeScoreHi = 800.0
-	// c_rank5_weightTotalMin = 0.1
-	// c_rank5_weightTotalMax = 800.0
-
-	// thought this was good
-	c_rank5_computeScoreLo = 0.0
-	// c_rank5_computeScoreLo = 0.1
-	c_rank5_computeScoreHi = 80.0
-	// c_rank5_computeScoreHi = utilhighs.C_PlusInf
-	c_rank5_weightTotalMin = 0.1
-	c_rank5_weightTotalMax = 80.0
-	// c_rank5_weightTotalMax = utilhighs.C_PlusInf
+	c_rank5_computeScoreLo    = 0.0
+	c_rank5_computeScoreHi    = 80.0
+	c_rank5_weightTotalMin    = 0.1
+	c_rank5_weightTotalMax    = 80.0
+	c_rank5_weightTotalTarget = 10.0
 )
 
 type RankingStatWeightProcess5 struct {
-	printer *util.PrintRecorder
+	printer   *util.PrintRecorder
+	WEIGHTSUM int
 
 	targetRatios   stats.SimData
 	requiredStats  []stats.StatType
@@ -164,9 +148,13 @@ func (run *rankInternalRun5) createWeightColumns() {
 		sumWeights.Add(colWeight, 1)
 	}
 
-	sumWeightCol := run.build.CreateColumnWithObjective(highs.Continuous, c_rank5_weightTotalMin, c_rank5_weightTotalMax, 1, run.objectiveWeight, utilhighs.DebugText("sumWeightCol"))
-	sumWeights.Add(sumWeightCol, -1)
-	sumWeights.Build(run.build, 0, 0)
+	if run.process.WEIGHTSUM == 0 {
+		sumWeightCol := run.build.CreateColumnWithObjective(highs.Continuous, c_rank5_weightTotalMin, c_rank5_weightTotalMax, 1, run.objectiveWeight, utilhighs.DebugText("sumWeightCol"))
+		sumWeights.Add(sumWeightCol, -1)
+		sumWeights.Build(run.build, 0, 0)
+	} else {
+		sumWeights.Build(run.build, c_rank5_weightTotalTarget, c_rank5_weightTotalTarget)
+	}
 }
 
 func (run *rankInternalRun5) supplyData(inputData []WeightInput) {
@@ -306,14 +294,9 @@ func (run *rankInternalRun5) extractAndReportSolution(solution *highs.Solution) 
 	return statWeightResult
 }
 
-func (run *rankInternalRun5) setupInitialSolutionFromExternal_DeriveOwnIncludes(weights WeightResult) {
-	for statType, colWeight := range run.weightColumns {
-		value := weights.Get(statType)
-		run.build.SetInitialSolutionValue(colWeight, value)
-	}
-}
-
 func (run *rankInternalRun5) setupInitialSolutionFromExternal(weights WeightResult) {
+	weights = weights.ScaleForTotalSum(c_rank5_weightTotalTarget)
+
 	for statType, colWeight := range run.weightColumns {
 		value := weights.Get(statType)
 		run.build.SetInitialSolutionValue(colWeight, value)

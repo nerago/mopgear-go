@@ -303,31 +303,16 @@ func (ranker *RankingStatWeightProcess3) makeEntryPairSequenceConstraintsRequire
 	})
 }
 
-// we do a complete ranking just on the strength stat
 func (ranker *RankingStatWeightProcess3) setupDumbInitialSolution() {
 	internalWeights := WeightResult_Make()
-	for statType, colWeight := range ranker.weightColumns {
-		ranker.build.SetInitialSolutionValue(colWeight, 1)
+	for statType := range ranker.weightColumns {
 		internalWeights.Put(statType, 1)
 	}
+	internalWeights = internalWeights.ScaleForTotalSum(c_rank3_target_total_weight)
 
-	ranker.setupInitialRemainingVariables(internalWeights)
-
-	//ranker.setupInitialPairsDetail()
-
-	ranker.build.ValidateInitialSolutionState()
+	ranker.setupFromInternalWeights(internalWeights)
 }
 
-func (ranker *RankingStatWeightProcess3) setupInitialSolutionFromPrevious(solution *highs.Solution) {
-	ranker.build.ClearInitialSolutionValue()
-	for i := range solution.ColValues {
-		ranker.build.SetInitialSolutionValue(utilhighs.ColumnIndex(i), solution.ColValues[i])
-	}
-
-	ranker.build.ValidateInitialSolutionState()
-}
-
-// data []rankEntry3, weights map[stats.StatType]float64
 func (ranker *RankingStatWeightProcess3) setupInitialSolutionFromPreviousWeightOnly(solution *highs.Solution) {
 	internalWeights := WeightResult_Make()
 	for statType, colWeight := range ranker.weightColumns {
@@ -335,27 +320,23 @@ func (ranker *RankingStatWeightProcess3) setupInitialSolutionFromPreviousWeightO
 		internalWeights.Put(statType, weight)
 	}
 
+	ranker.setupFromInternalWeights(internalWeights)
+}
+
+func (ranker *RankingStatWeightProcess3) setupInitialSolutionFromExternal2(weights WeightResult) {
+	internalWeights := weights.ScaleForTotalSum(c_rank3_target_total_weight)
+	ranker.setupFromInternalWeights(internalWeights)
+}
+
+func (ranker *RankingStatWeightProcess3) setupFromInternalWeights(internalWeights WeightResult) {
 	if !internalWeights.IsEmpty() {
 		for statType, colWeight := range ranker.weightColumns {
 			weight := internalWeights.Get(statType)
 			ranker.build.SetInitialSolutionValue(colWeight, weight)
 		}
+
+		ranker.setupInitialRemainingVariables(internalWeights)
 	}
-
-	//ranker.setupInitialRemainingVariables(internalWeights)
-
-	ranker.build.ValidateInitialSolutionState()
-}
-
-func (ranker *RankingStatWeightProcess3) setupInitialSolutionFromExternal2(weights WeightResult) {
-	internalWeights := WeightResult_Make()
-	for statType, colWeight := range ranker.weightColumns {
-		value := weights.Get(statType)
-		ranker.build.SetInitialSolutionValue(colWeight, value)
-		internalWeights.Put(statType, value)
-	}
-
-	ranker.setupInitialRemainingVariables(internalWeights)
 
 	ranker.build.ValidateInitialSolutionState()
 }

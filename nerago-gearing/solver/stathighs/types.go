@@ -111,6 +111,18 @@ func (wr *WeightResult) ScaleForBaseStat(statType stats.StatType) WeightResult {
 	return rescaled
 }
 
+func (wr *WeightResult) ScaleForTotalSum(targetTotal float64) WeightResult {
+	existingSum := 0.0
+	for value := range wr.content.SeqValues() {
+		existingSum += value
+	}
+
+	factor := targetTotal / existingSum
+	rescaled := wr.Clone()
+	wr.content.MultiplyScalar(factor, &rescaled.content)
+	return rescaled
+}
+
 func (wr *WeightResult) Clone() WeightResult {
 	return WeightResult{wr.content.Clone()}
 }

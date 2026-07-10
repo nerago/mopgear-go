@@ -384,86 +384,11 @@ func (run *rankInternalRun4) extractAndReportSolution(solution *highs.Solution) 
 	return statWeightResult
 }
 
-func (run *rankInternalRun4) setupInitialSolutionDumb1() {
-	baseStat := run.process.requiredStats[0]
-	for statType, colWeight := range run.weightColumns {
-		if statType == baseStat {
-			run.build.SetInitialSolutionValue(colWeight, 1)
-		} else {
-			run.build.SetInitialSolutionValue(colWeight, 0)
-		}
-	}
-
-	statScale := run.scaleStats[baseStat]
-	for entry := range util.ForPointer(run.runData) {
-		entry.initialStatScore = entry.data.TotalStat.GetFloat(baseStat) * statScale
-	}
-
-	run.setupRemainingInitialSolution()
-	run.build.ValidateInitialSolutionState()
-}
-
-func (run *rankInternalRun4) setupInitialSolutionDumb2() {
-	initialDumbValue := 0.2
-
-	dumbWeights := WeightResult_Make()
-	for statType, colWeight := range run.weightColumns {
-		run.build.SetInitialSolutionValue(colWeight, initialDumbValue)
-		dumbWeights.Put(statType, initialDumbValue)
-	}
-
-	for entry := range util.ForPointer(run.runData) {
-		entry.initialStatScore = dumbWeights.CalcStatScoreScaled(entry.data, run.scaleStats)
-	}
-
-	run.setupRemainingInitialSolution()
-	run.build.ValidateInitialSolutionState()
-}
-
-func (run *rankInternalRun4) setupInitialSolutionFromPrevious(previous *rankInternalRun4, solution *highs.Solution) {
-	internalWeights := WeightResult_Make()
-	for statType, oldWeightCol := range previous.weightColumns {
-		newWeightCol := run.weightColumns[statType]
-		oldWeightValue := solution.ColValues[oldWeightCol]
-		run.build.SetInitialSolutionValue(newWeightCol, oldWeightValue)
-		internalWeights.Put(statType, oldWeightValue)
-	}
-
-	for entry := range util.ForPointer(run.runData) {
-		entry.initialStatScore = internalWeights.CalcStatScoreScaled(entry.data, run.scaleStats)
-	}
-
-	run.setupRemainingInitialSolution()
-	run.build.ValidateInitialSolutionState()
-}
-
-func (run *rankInternalRun4) setupInitialSolutionFromExternal(weights stats.StatBlock) {
-	internalWeights := WeightResult_Make()
-	for statType, colWeight := range run.weightColumns {
-		basicValue := weights.GetFloat(statType)
-		// scale := run.scaleStats[statType]
-		scaledValue := basicValue
-		run.build.SetInitialSolutionValue(colWeight, scaledValue)
-		internalWeights.Put(statType, scaledValue)
-	}
-
-	for entry := range util.ForPointer(run.runData) {
-		entry.initialStatScore = internalWeights.CalcStatScoreScaled(entry.data, run.scaleStats)
-		run.build.SetInitialSolutionValue(entry.scoreColumn, entry.initialStatScore)
-	}
-
-	run.setupRemainingInitialSolution()
-	run.build.ValidateInitialSolutionState()
-}
-
 func (run *rankInternalRun4) setupInitialSolutionFromExternal2(weights WeightResult) {
-	internalWeights := WeightResult_Make()
+	internalWeights := weights.ScaleForTotalSum(c_Rank4WeightTotalSum)
 	for statType, colWeight := range run.weightColumns {
-		basicValue := weights.Get(statType)
-		// scale := run.scaleStats[statType]
-		scaledValue := basicValue
-		run.build.SetInitialSolutionValue(colWeight, scaledValue)
-		internalWeights.Put(statType, scaledValue)
+		basicValue := internalWeights.Get(statType)
+		run.build.SetInitialSolutionValue(colWeight, basicValue)
 	}
 
 	for entry := range util.ForPointer(run.runData) {
