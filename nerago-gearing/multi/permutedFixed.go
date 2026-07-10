@@ -3,6 +3,7 @@ package multi
 import (
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/setup"
 	"paladin_gearing_go/solver/withhighs"
 	"paladin_gearing_go/util"
 	"slices"
@@ -21,9 +22,14 @@ type permuteEntryAllowGroup struct {
 	itemId         items.ItemId
 }
 
+type permuteEntryUpgrade struct {
+	itemId items.ItemId
+}
+
 type permuteEntry struct {
-	fixed *permuteEntryFixedForce
-	group *permuteEntryAllowGroup
+	fixed   *permuteEntryFixedForce
+	group   *permuteEntryAllowGroup
+	upgrade *permuteEntryUpgrade
 }
 
 type permuteOptions struct {
@@ -45,6 +51,9 @@ func (job *MultiSetJob) estimateFixedPermutations() int {
 	}
 	for _, group := range job.distinctUsageGroups {
 		count *= len(group.groupAIndexes) + len(group.groupBIndexes) + 2
+	}
+	for _, group := range job.alternateUpgradeChoices {
+		count *= len(group)
 	}
 	return count
 }
@@ -74,6 +83,13 @@ func (job *MultiSetJob) preparePermutations() <-chan permuteSet {
 			entriesList = append(entriesList, permuteEntry{group: &permuteEntryAllowGroup{group.groupBIndexes, forceIdx, itemId}})
 		}
 		entriesList = append(entriesList, permuteEntry{group: &permuteEntryAllowGroup{group.groupBIndexes, -1, itemId}})
+		optionEntriesList = append(optionEntriesList, permuteOptions{options: entriesList})
+	}
+
+	for _, group := range job.alternateUpgradeChoices {
+		entriesList := util.MapSliceAsNew(group, func(itemId *items.ItemId) permuteEntry {
+			return permuteEntry{upgrade: &permuteEntryUpgrade{*itemId}}
+		})
 		optionEntriesList = append(optionEntriesList, permuteOptions{options: entriesList})
 	}
 
@@ -130,10 +146,11 @@ func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, printe
 			if !fixed.isSingle {
 				paramLabel := job.params[fixed.paramIndex].Label
 				build.WriteString(paramLabel)
-				build.WriteString("(Forced) ")
+				build.WriteString("(Forced) :")
 
-				itemName := db.WowSimDB_LookupNameByItemId(fixed.itemId)
+				itemName := db.LookupItemNameByItemId(fixed.itemId)
 				build.WriteString(itemName)
+				build.WriteString(" | ")
 			}
 		} else if entry.group != nil {
 			group := entry.group
@@ -153,14 +170,42 @@ func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, printe
 				}
 			}
 
-			itemName := db.WowSimDB_LookupNameByItemId(group.itemId)
+			itemName := db.LookupItemNameByItemId(group.itemId)
 			build.WriteString(": ")
 			build.WriteString(itemName)
+			build.WriteString(" | ")
+		} else if entry.upgrade != nil {
+			profession := job.params[0].Model.Professions
+			itemId := entry.upgrade.itemId
+
+			foundAny := false
+			for itemOpts := range util.ForPointer(itemOptionsEach) {
+				if itemOpts.IncludesItemId(itemId) {
+					itemOpts.MapEachItem(func(item *items.FullItem) items.FullItem {
+						if item.ItemId() == itemId {
+							return *setup.UpgradeExistingItemToTargetLevel(item, items.MAX_UPGRADE_LEVEL, profession, printer)
+						} else {
+							return *item
+						}
+					})
+					foundAny = true
+				}
+			}
+
+			if !foundAny {
+				panic("requested upgrade of item that isn't an option " + itemId.String())
+			}
+
+			itemName := db.LookupItemNameByItemId(itemId)
+			build.WriteString("UPGRADE: ")
+			build.WriteString(itemName)
+			build.WriteString(" | ")
 		} else {
 			panic("empty entry")
 		}
 	}
 
+	build.Rewind(3)
 	printer.Println("PERMUTE SET:")
 	printer.PrintlnFromBuild(build)
 	highProcess.SetPermuteLabel(build.String())

@@ -188,18 +188,18 @@ func Model_Testing() Model {
 
 // for noset - juggernaut, shamans, siegecrafter
 var SimRatio_generalMiti = stats.SimData_Make(
-	Sim_DPS, 0.2,
+	Sim_DPS, 0.1,
 	Sim_DEATH, 0.2,
-	Sim_TMI, 0.2,
+	Sim_TMI, 0.3,
 	Sim_DTPS, 0.4,
 )
 
 // for withset - malkrok, thok, nazgrim
 var SimRatio_malkrokWeight = stats.SimData_Make(
-	Sim_DPS, 0.10,
+	Sim_DPS, 0.05,
 	Sim_DEATH, 0.3,
 	Sim_TMI, 0.05,
-	Sim_DTPS, 0.55,
+	Sim_DTPS, 0.60,
 )
 
 // for compromise set - spoils, galakras, paragons, etc
@@ -222,8 +222,8 @@ var SimRatio_dpsWeight = stats.SimData_Make(
 var SimRatio_healWeight = stats.SimData_Make(
 	Sim_DEATH, 0.1,
 	Sim_TMI, 0.1,
-	Sim_DTPS, 0.3,
-	Sim_HPS, 0.5,
+	Sim_DTPS, 0.4,
+	Sim_HPS, 0.4,
 )
 
 // for ret set

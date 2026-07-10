@@ -16,16 +16,17 @@ const (
 )
 
 type MultiSetJob struct {
-	printer               *util.PrintRecorder
-	params                []multiSetParamInternal
-	fixedForge            map[items.ItemId]stats.ReforgeRecipe
-	distinctUsageGroups   map[items.ItemId]distinctUsageGroups
-	alternateGemming      []stats.GemInfo
-	randomVariantItems    []randomVariantItem
-	bagsGear              loaders.EquippedArray
-	simRunSize            simulate.WowSim_RunSize
-	minimumExtraItemLevel uint16
-	writeBestToGearFiles  bool
+	printer                 *util.PrintRecorder
+	params                  []multiSetParamInternal
+	fixedForge              map[items.ItemId]stats.ReforgeRecipe
+	distinctUsageGroups     map[items.ItemId]distinctUsageGroups
+	alternateUpgradeChoices [][]items.ItemId
+	alternateGemming        []stats.GemInfo
+	randomVariantItems      []randomVariantItem
+	bagsGear                loaders.EquippedArray
+	simRunSize              simulate.WowSim_RunSize
+	minimumExtraItemLevel   uint16
+	writeBestToGearFiles    bool
 }
 
 type distinctUsageGroups struct {
@@ -75,6 +76,10 @@ func (job *MultiSetJob) AddItemDistinctUsageGroups(itemId items.ItemId, groupA [
 		job.distinctUsageGroups = make(map[items.ItemId]distinctUsageGroups)
 	}
 	job.distinctUsageGroups[itemId] = usageGroups
+}
+
+func (job *MultiSetJob) AddAlternateUpgradeChoices(itemIdList ...items.ItemId) {
+	job.alternateUpgradeChoices = append(job.alternateUpgradeChoices, itemIdList)
 }
 
 func findLabelInParams(label string, group []multi_types.MultiSetParam) bool {

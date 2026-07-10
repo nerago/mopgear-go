@@ -86,6 +86,10 @@ func (job *MultiSetJob) checkNoPermutations() {
 		panic("usage groups will be ignored, may lead to confusing results")
 	}
 
+	if len(job.alternateUpgradeChoices) > 0 {
+		panic("alternate upgrades will be ignored, may lead to confusing results")
+	}
+
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
 		for _, itemArray := range param.SemiFixedSlots {
