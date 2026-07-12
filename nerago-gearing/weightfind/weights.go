@@ -50,6 +50,7 @@ func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, ge
 
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), gearModel, setup.MissingEnchant_Panic, printer)
 	currentItemSet := items.FullItemSet_FromMap(currentEquip)
+	simTypes := ratios.NonZeroTypes()
 
 	// SIMULATE STAT CHANGES
 	inputDataGrid := SimulateSteppedStatChangesForGrid(currentItemSet, printer, simSpeed, gearModel.SimSpeedUp, gearModel.StatsForWeighting, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions, tracker.NewChild())
@@ -76,8 +77,8 @@ func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, ge
 	weightsGrid := weightsGridFuture.WaitForResultOrNilValue()
 	printer.Println("Grid Weights >>>>> " + label)
 	pawnGrid := tools.WritePawnString(weightsGrid, printer)
-	accGridOnGridInput := EvaluateAccuracyRanged(weightsGrid, ratios, inputDataGrid)
-	accGridOnRealInput := EvaluateAccuracyRanged(weightsGrid, ratios, inputDataReal)
+	accGridOnGridInput := EvaluateAccuracyRanged(weightsGrid, simTypes, ratios, inputDataGrid)
+	accGridOnRealInput := EvaluateAccuracyRanged(weightsGrid, simTypes, ratios, inputDataReal)
 	printer.Printf("Grid Weights accuracy %s gridInput=%f realInput=%f\n", label, accGridOnGridInput, accGridOnRealInput)
 
 	ranking := weight_highs.RankingStatWeightProcess3b{}
@@ -115,7 +116,13 @@ func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, ge
 	weightsSearch := search.Run(util_async.CancelSignal_Make())
 	printer.Println("Search Weights >>>>> " + label)
 	pawnSearch := tools.WritePawnString(weightsSearch, printer)
-	accuracySearch := EvaluateAccuracyRanged(weightsSearch, ratios, inputDataGrid)
+	accuracySearch := EvaluateAccuracyRanged(weightsSearch, simTypes, ratios, inputDataGrid)
+
+	accuracyGridStat := EvaluateAccuracyStatisticalDeviations(weightsGrid, simTypes, ratios, inputDataGrid)
+	accuracyRankingStat := EvaluateAccuracyStatisticalDeviations(weightsRanking, simTypes, ratios, inputDataGrid)
+	accuracySearchStat := EvaluateAccuracyStatisticalDeviations(weightsSearch, simTypes, ratios, inputDataGrid)
+
+	printer.Printf("Weights Accuracy Summary ::::: "+label+" ::::: g=%f r=%f s=%f ::::: g=%f r=%f s=%f\n", accuracyGrid, accuracyRanking, accuracySearch, accuracyGridStat, accuracyRankingStat, accuracySearchStat)
 
 	// OVERWRITE WEIGHT FILE
 	if accuracySearch > accuracyGrid && accuracySearch > accuracyRanking {

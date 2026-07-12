@@ -21,6 +21,7 @@ type WeightSearcher0 struct {
 	targetRatio      stats.SimData
 	evaluateAccuracy EvaluateAccuracyPrepared
 	printer          *util.PrintRecorder
+	AccuracyMode     int
 }
 
 func (ws *WeightSearcher0) Init(weightStats []stats.StatType, targetRatio stats.SimData, printer *util.PrintRecorder) {
@@ -30,7 +31,7 @@ func (ws *WeightSearcher0) Init(weightStats []stats.StatType, targetRatio stats.
 }
 
 func (ws *WeightSearcher0) SupplyData(inputData []weight_highs.WeightInput) {
-	ws.evaluateAccuracy.Init(inputData, ws.targetRatio)
+	ws.evaluateAccuracy.Init(inputData, ws.targetRatio, ws.AccuracyMode)
 }
 
 func (ws *WeightSearcher0) Run(cancel util_async.CancelSignal) weight_highs.WeightResult {
@@ -39,7 +40,9 @@ func (ws *WeightSearcher0) Run(cancel util_async.CancelSignal) weight_highs.Weig
 	for initialWeight := range ws.makeRandomWeights(20000) {
 		updatedWeight, updatedAccuracy := weightTweaker_internal_FastCached(initialWeight, c_search0_tweak_start, ws.weightStats, &ws.evaluateAccuracy)
 		best.Offer(&updatedWeight, updatedAccuracy)
-		ws.printer.Printf("%6d %6.3f %6.3f\n", progress, updatedAccuracy, best.BestValue)
+		if progress%1000 == 0 {
+			ws.printer.Printf("%6d %6.3f %6.3f\n", progress, updatedAccuracy, best.BestValue)
+		}
 		progress++
 
 		if cancel.ShouldFinish() {

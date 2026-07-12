@@ -314,7 +314,7 @@ func (grid *GridStatWeightProcess1B) removeOutliers() {
 
 func (grid *GridStatWeightProcess1B) chooseScalesEachCombo() {
 	for group := range grid.unitStatValues.SeqGroupsKeysNestedValueSeq() {
-		scale := chooseScale(group.ValueSeq, c_grid1b_scaleTarget)
+		scale := chooseScale(group.ValueSeq, c_grid1b_scaleTarget, false)
 
 		grid.scales.Put(group.Key1, group.Key2, scale)
 	}

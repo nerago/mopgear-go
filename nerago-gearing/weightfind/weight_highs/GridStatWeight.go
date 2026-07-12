@@ -20,7 +20,6 @@ type GridStatWeightProcess struct {
 	inputData     []WeightInput
 	requiredStats []stats.StatType
 	simTypes      []stats.SimType
-	testMode      bool
 
 	build           util_highs.LinearBuilder
 	unitStatValues  util.MapMapSlice[stats.StatType, stats.SimType, gridDataSample]
@@ -46,11 +45,7 @@ func (grid *GridStatWeightProcess) Init(printer *util.PrintRecorder, timeout int
 }
 
 func (grid *GridStatWeightProcess) SupplyData(inputData []WeightInput) {
-	if grid.testMode {
-		grid.inputData = inputData[0:10]
-	} else {
-		grid.inputData = inputData
-	}
+	grid.inputData = inputData
 }
 
 func (grid *GridStatWeightProcess) SetRequiredStats(requiredStats []stats.StatType) {
@@ -70,13 +65,6 @@ func (grid *GridStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
 	}
 
 	grid.targetRatios = targetRatios
-}
-
-func (grid *GridStatWeightProcess) SetTestMode(testMode bool) {
-	grid.testMode = testMode
-	if testMode {
-		grid.build.TimeLimitSeconds = 60
-	}
 }
 
 func (grid *GridStatWeightProcess) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[WeightResult] {
@@ -194,9 +182,6 @@ func (grid *GridStatWeightProcess) checkSampleRange() {
 		// panic("many values have inconvenient range")
 		grid.printer.Println("many values have inconvenient range")
 	}
-
-	// TODO port scaling process from complex weighter
-	// TODO check per type rather than on all, or maybe mix. maybe post scaling
 }
 
 func (grid *GridStatWeightProcess) unitValuesToCalcDetailedRatings() {
@@ -218,8 +203,6 @@ func (grid *GridStatWeightProcess) unitValuesToCalcDetailedRatings() {
 			}
 		}
 	}
-
-	// TODO could be interesting experiment to setup all stat pairings, not just strength base
 }
 
 func (grid *GridStatWeightProcess) unitValuesCalcForGroup(simType stats.SimType, thisStatType stats.StatType, baseUnitValueSeq iter.Seq[gridDataSample], thisUnitValueSeq iter.Seq[gridDataSample], baseDetailWeightCol util_highs.ColumnIndex) {

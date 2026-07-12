@@ -254,15 +254,15 @@ func (build *LinearBuilder) AbsoluteValueFromSumTwoThenDiffToConst(inputOneVar C
 	positive.Build(build, C_MinusInf, constCompare)
 }
 
-func (build *LinearBuilder) AbsoluteValueDiffTwoVarsThenDiffConst(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, diffConst float64, highRange float64, debug string) {
+func (build *LinearBuilder) AbsoluteValueDiffTwoVarsThenDiffConst_NeedMIP(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, diffConst float64, highRange float64, debug string) {
 	diffTwoVars := build.CreateColumnGeneral(highs.Continuous, C_MinusInf, C_PlusInf, DebugText(debug+" diffTwoVars"))
 
 	isNegative := build.CreateColumnBool(DebugString{Text: debug + " isNegative"})
-	setisNegative := ConstraintRow{Debug: debug + " setisNegative"}
-	setisNegative.Add(inputOneVar, inputOneCoefficient)
-	setisNegative.Add(inputTwoVar, -inputTwoCoefficient)
-	setisNegative.Add(isNegative, highRange)
-	setisNegative.Build(build, 0, C_PlusInf)
+	setIsNegative := ConstraintRow{Debug: debug + " setIsNegative"}
+	setIsNegative.Add(inputOneVar, inputOneCoefficient)
+	setIsNegative.Add(inputTwoVar, -inputTwoCoefficient)
+	setIsNegative.Add(isNegative, highRange)
+	setIsNegative.Build(build, 0, C_PlusInf)
 	confirmIsNegative := ConstraintRow{Debug: debug + "confirmIsNegative"}
 	confirmIsNegative.Add(inputOneVar, inputOneCoefficient)
 	confirmIsNegative.Add(inputTwoVar, -inputTwoCoefficient)

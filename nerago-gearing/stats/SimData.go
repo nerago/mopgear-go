@@ -61,8 +61,9 @@ var SimTypeList = []SimType{Sim_DPS, Sim_TPS, Sim_DTPS, Sim_HPS, Sim_TMI, Sim_DE
 const simTypeCount = 6
 
 type SimData struct {
-	Values [simTypeCount]float64
-	Detail *[simTypeCount]SimDataDetail
+	Values        [simTypeCount]float64
+	Detail        *[simTypeCount]SimDataDetail
+	SimIterations int32
 }
 
 type SimDataDetail struct {
@@ -178,23 +179,21 @@ func (sim *SimData) HasDetailedRanges() bool {
 	return sim.Detail != nil
 }
 
-func (sim *SimData) GetDetailed(types SimType) (hasAverage, hasDetail bool, average, min, max, stdDev float64) {
+func (sim *SimData) GetDetailed(types SimType) (average, min, max, stdDev float64, hasDetail bool) {
+	if sim.Detail == nil {
+		return 0, 0, 0, 0, false
+	}
+
 	average = sim.Values[types]
-	if util.FloatEqualsZero(average) {
-		return
-	}
-	hasAverage = true
+	min = sim.Detail[types].Min
+	max = sim.Detail[types].Max
+	stdDev = sim.Detail[types].StdDev
 
-	if sim.Detail != nil {
-		min = sim.Detail[types].Min
-		max = sim.Detail[types].Max
-		stdDev = sim.Detail[types].StdDev
-		if !util.FloatEqualsZero(min) || !util.FloatEqualsZero(max) {
-			hasDetail = true
-		}
+	if util.FloatEqualsZero(average) || util.FloatEqualsZero(min) || util.FloatEqualsZero(max) {
+		return 0, 0, 0, 0, false
 	}
 
-	return
+	return average, min, max, stdDev, true
 }
 
 func (sim *SimData) GetDetailed2(types SimType) *SimDataDetail {

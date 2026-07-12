@@ -199,7 +199,7 @@ func (grid *GridStatWeightProcess1C) prepareSample(statType stats.StatType, high
 
 func (grid *GridStatWeightProcess1C) chooseScalesBySim() {
 	for _, simType := range grid.simTypes {
-		scale := chooseScale(grid.unitStatValues.ValuesForKey2AsSeq(simType), c_grid1c_scaleTarget)
+		scale := chooseScale(grid.unitStatValues.ValuesForKey2AsSeq(simType), c_grid1c_scaleTarget, false)
 		grid.scales[simType] = scale
 	}
 }

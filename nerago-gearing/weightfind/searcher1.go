@@ -25,6 +25,7 @@ type WeightSearcher1 struct {
 	targetRatio      stats.SimData
 	evaluateAccuracy EvaluateAccuracyPrepared
 	printer          *util.PrintRecorder
+	AccuracyMode     int
 }
 
 func (ws *WeightSearcher1) Init(weightStats []stats.StatType, targetRatio stats.SimData, printer *util.PrintRecorder) {
@@ -34,7 +35,7 @@ func (ws *WeightSearcher1) Init(weightStats []stats.StatType, targetRatio stats.
 }
 
 func (ws *WeightSearcher1) SupplyData(inputData []weight_highs.WeightInput) {
-	ws.evaluateAccuracy.Init(inputData, ws.targetRatio)
+	ws.evaluateAccuracy.Init(inputData, ws.targetRatio, ws.AccuracyMode)
 }
 
 func (ws *WeightSearcher1) Run(cancel util_async.CancelSignal) weight_highs.WeightResult {

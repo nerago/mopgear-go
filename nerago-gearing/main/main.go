@@ -89,7 +89,7 @@ func core(printer *util.PrintRecorder) {
 	//trinketSimsBoth(printer)
 	//
 	//statWeightsBasic(printer)
-	//statWeightsGrid(printer)
+	statWeightsGrid(printer)
 	//statWeightsFitting2(printer)
 	//statWeightsComplex(printer)
 	//statWeightsGridIntoRanking(printer)
@@ -99,7 +99,7 @@ func core(printer *util.PrintRecorder) {
 
 	//statWeights_updateAll()
 
-	PaladinMultiRun()
+	//PaladinMultiRun()
 
 	//findUpgrades_Paladin()
 }

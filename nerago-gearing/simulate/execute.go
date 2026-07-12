@@ -39,8 +39,8 @@ func WowSim_Execute_SpecifyAll(runSize WowSim_RunSize, speedUp int, spec stats.S
 	input, reporter, id := prepareSim(runSize, speedUp, spec, goal, fight, profession, equipMap, bonusStats)
 	wowsim_core.RunRaidSimConcurrentAsync(input, reporter, id)
 
-	finalResult := waitForResult(reporter, tracker)
-	return convertResult(finalResult)
+	finalResult, completedIterations := waitForResult(reporter, tracker)
+	return convertResult(finalResult, completedIterations)
 }
 
 func WowSim_Execute_SpecifyAll_Future(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *map[stats.StatType]int32, tracker *util.TrackProgress) *util_async.FutureCancellable[stats.SimData] {
@@ -53,8 +53,8 @@ func WowSim_Execute_SpecifyAll_Future(runSize WowSim_RunSize, speedUp int, spec 
 	})
 
 	go func() {
-		finalResult := waitForResult(reporter, tracker)
-		converted := convertResult(finalResult)
+		finalResult, completedIterations := waitForResult(reporter, tracker)
+		converted := convertResult(finalResult, completedIterations)
 		future.SetResult(converted)
 	}()
 
@@ -344,13 +344,13 @@ func updateBonus(input *wowsim_proto.RaidSimRequest, bonusStats *map[stats.StatT
 	input.Raid.Parties[0].Players[0].BonusStats = unitStats
 }
 
-func waitForResult(reporter chan *wowsim_proto.ProgressMetrics, tracker *util.TrackProgress) *wowsim_proto.RaidSimResult {
+func waitForResult(reporter chan *wowsim_proto.ProgressMetrics, tracker *util.TrackProgress) (*wowsim_proto.RaidSimResult, int32) {
 	if tracker != nil {
 		push := tracker.PrepareForPush()
 		for v := range reporter {
 			if v.FinalRaidResult != nil {
 				tracker.SetDone()
-				return v.FinalRaidResult
+				return v.FinalRaidResult, v.CompletedIterations
 			}
 			progress := float64(v.CompletedIterations) / float64(v.TotalIterations)
 			push(progress)
@@ -358,14 +358,14 @@ func waitForResult(reporter chan *wowsim_proto.ProgressMetrics, tracker *util.Tr
 	} else {
 		for v := range reporter {
 			if v.FinalRaidResult != nil {
-				return v.FinalRaidResult
+				return v.FinalRaidResult, v.CompletedIterations
 			}
 		}
 	}
 	panic("no final result")
 }
 
-func convertResult(finalResult *wowsim_proto.RaidSimResult) stats.SimData {
+func convertResult(finalResult *wowsim_proto.RaidSimResult, completedIterations int32) stats.SimData {
 	if finalResult.Error != nil {
 		panic("sim fail = " + finalResult.Error.Message)
 	} else if finalResult != nil && finalResult.RaidMetrics != nil && finalResult.RaidMetrics.Parties != nil && finalResult.RaidMetrics.Parties[0] != nil && finalResult.RaidMetrics.Parties[0].Players != nil && finalResult.RaidMetrics.Parties[0].Players[0] != nil {
@@ -379,6 +379,7 @@ func convertResult(finalResult *wowsim_proto.RaidSimResult) stats.SimData {
 		simData.SetDetailed(stats.Sim_TMI, playerMetrics.Tmi.Avg, playerMetrics.Tmi.Min, playerMetrics.Tmi.Max, playerMetrics.Tmi.Stdev)
 		simData.SetDetailed(stats.Sim_HPS, playerMetrics.Hps.Avg, playerMetrics.Hps.Min, playerMetrics.Hps.Max, playerMetrics.Hps.Stdev)
 		simData.Set(stats.Sim_DEATH, playerMetrics.ChanceOfDeath)
+		simData.SimIterations = playerMetrics.Dps.AggregatorData.N
 		return simData
 	} else {
 		panic("incomplete sim result")

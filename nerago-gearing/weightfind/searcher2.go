@@ -46,6 +46,7 @@ type WeightSearcher2 struct {
 	targetRatio      stats.SimData
 	evaluateAccuracy EvaluateAccuracyPrepared
 	printer          *util.PrintRecorder
+	AccuracyMode     int
 
 	queue      util.QueueStackFilo[*weightSearch2Bound]
 	bestResult util_rank.BestCollector1[weight_highs.WeightResult]
@@ -68,7 +69,7 @@ func (ws *WeightSearcher2) Init(statTypes []stats.StatType, targetRatio stats.Si
 }
 
 func (ws *WeightSearcher2) SupplyData(inputData []weight_highs.WeightInput) {
-	ws.evaluateAccuracy.Init(inputData, ws.targetRatio)
+	ws.evaluateAccuracy.Init(inputData, ws.targetRatio, ws.AccuracyMode)
 }
 
 func (ws *WeightSearcher2) SetRanges(weightMin, weightMax float64) {

@@ -17,30 +17,32 @@ type enumWithName interface {
 	Name() string
 }
 
-func chooseSimScalingUnfriendly(inputData []WeightInput, scaleTarget float64, printer *util.PrintRecorder) map[stats.SimType]float64 {
+func chooseSimScalingUnfriendly(inputData []WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[stats.SimType]float64 {
 	return chooseScalingNumbers(inputData,
 		stats.SimTypeList,
 		func(data *WeightInput, simType stats.SimType) float64 { return data.SimResult.Get(simType) },
 		scaleTarget,
+		keepUnderTarget,
 		printer)
 }
 
-func chooseStatScaling(inputData []WeightInput, scaleTarget float64, printer *util.PrintRecorder) map[stats.StatType]float64 {
+func chooseStatScaling(inputData []WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[stats.StatType]float64 {
 	return chooseScalingNumbers(inputData,
 		stats.StatType_List,
 		func(data *WeightInput, statType stats.StatType) float64 { return data.TotalStat.GetFloat(statType) },
 		scaleTarget,
+		keepUnderTarget,
 		printer)
 }
 
-func chooseScalingNumbers[E enumWithName](inputData []WeightInput, checkTypes []E, getValue func(*WeightInput, E) float64, scaleTarget float64, printer *util.PrintRecorder) map[E]float64 {
+func chooseScalingNumbers[E enumWithName](inputData []WeightInput, checkTypes []E, getValue func(*WeightInput, E) float64, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[E]float64 {
 	scaleMap := make(map[E]float64)
 	for _, check := range checkTypes {
 		valueSeq := util.MapSliceAsSeq(inputData, func(x *WeightInput) float64 {
 			return getValue(x, check)
 		})
 
-		scale := chooseScale(valueSeq, scaleTarget)
+		scale := chooseScale(valueSeq, scaleTarget, keepUnderTarget)
 		scaleMap[check] = scale
 
 		printer.Printf("scale %s %e\n", check.Name(), scaleMap[check])
@@ -48,7 +50,7 @@ func chooseScalingNumbers[E enumWithName](inputData []WeightInput, checkTypes []
 	return scaleMap
 }
 
-func chooseScale(seq iter.Seq[float64], scaleTarget float64) float64 {
+func chooseScale(seq iter.Seq[float64], scaleTarget float64, keepUnderTarget bool) float64 {
 	minPosValue, maxPosValue := math.MaxFloat64, 0.0
 	minNegValue, maxNegValue := math.MaxFloat64, 0.0
 	hasNeg, hasPos, hasZero := false, false, false
@@ -72,11 +74,11 @@ func chooseScale(seq iter.Seq[float64], scaleTarget float64) float64 {
 	if hasPos && hasNeg {
 		superMax := max(maxNegValue, maxPosValue)
 		scale = scaleTarget / superMax
-	} else if hasPos && !hasZero {
+	} else if hasPos && !hasZero && !keepUnderTarget {
 		scale = scaleTarget / minPosValue
 	} else if hasPos {
 		scale = scaleTarget / maxPosValue
-	} else if hasNeg && !hasZero {
+	} else if hasNeg && !hasZero && !keepUnderTarget {
 		scale = scaleTarget / minNegValue
 	} else if hasNeg {
 		scale = scaleTarget / maxNegValue
@@ -84,6 +86,6 @@ func chooseScale(seq iter.Seq[float64], scaleTarget float64) float64 {
 		scale = 1
 	}
 
-	scale = util.Clamp(scale, 1e-5, 1e5)
+	scale = util.Clamp(scale, 1e-10, 1e10)
 	return scale
 }

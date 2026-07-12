@@ -679,7 +679,7 @@ func TestAbsoluteValueDiffTwoVarsThenDiffConst(test *testing.T) {
 		twoColumn := build.CreateColumnGeneral(highs.Continuous, twoValue, twoValue, nil)
 		outColumn := build.CreateColumnWithOutput(highs.Continuous, -maxValue, maxValue, 1, nil)
 
-		build.AbsoluteValueDiffTwoVarsThenDiffConst(oneColumn, oneCoeff, twoColumn, twoCoeff, outColumn, offset, highRange, "")
+		build.AbsoluteValueDiffTwoVarsThenDiffConst_NeedMIP(oneColumn, oneCoeff, twoColumn, twoCoeff, outColumn, offset, highRange, "")
 
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)
