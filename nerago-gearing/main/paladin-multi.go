@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
 )
@@ -344,8 +345,8 @@ func PaladinMultiRun() {
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 	blockHelmetsWithoutIndomitable(&protHeal)
 
-	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
-	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Stamina, 120))
+	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
+	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Stamina, 120))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
@@ -354,12 +355,12 @@ func PaladinMultiRun() {
 	//job.MakeRandomVariants(101887, 0, -365, -352)
 
 	job.SetMinimumExtraItemLevel(463)
-	ret.AddBagsExtra()
-	protDps.AddBagsExtra()
-	protCompromise.AddBagsExtra()
-	protMitigationNoSet.AddBagsExtra()
-	protMitigationWithSet.AddBagsExtra()
-	protHeal.AddBagsExtra()
+	//ret.AddBagsExtra()
+	//protDps.AddBagsExtra()
+	//protCompromise.AddBagsExtra()
+	//protMitigationNoSet.AddBagsExtra()
+	//protMitigationWithSet.AddBagsExtra()
+	//protHeal.AddBagsExtra()
 
 	job.AddSetParam(ret)
 	job.AddSetParam(protDps)
@@ -371,7 +372,13 @@ func PaladinMultiRun() {
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 	//job.AddItemDistinctUsageGroups(103892, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet, protHeal})
 	//ret.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{104981, 86386})
-	job.AddAlternateUpgradeChoices(103915, 98986, 101887, 105122, 105033, 103871)
+	job.AddAlternateUpgradeChoices(
+		101887, // Cliffbreaker Seal
+		105122, // Asgorathian Blood Seal
+	)
+	job.AddAlternateUpgradeChoices(
+		103915, //Icy Blood Chestplate
+		103871) // Ancient Mogu Tower Shield
 
 	job.VerifyNoExtraDuplicates()
 

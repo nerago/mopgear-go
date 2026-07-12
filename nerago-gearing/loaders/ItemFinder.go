@@ -3,8 +3,8 @@ package loaders
 import (
 	"cmp"
 	"paladin_gearing_go/db"
-	"paladin_gearing_go/items"
 	"paladin_gearing_go/gear_model"
+	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
