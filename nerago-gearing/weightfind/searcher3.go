@@ -108,17 +108,17 @@ func (ws *WeightSearcher3) Run(cancel util_async.CancelSignal) weight_highs.Weig
 
 	startingQueue := queue.MakeChild()
 	startingProbesReused := ws.newProbeSlice()
-	ws.initialSplits(startingQueue, startingProbesReused, threadCount*2)
+	if ws.initialSplits(startingQueue, startingProbesReused, threadCount*2) {
+		waitGroup := sync.WaitGroup{}
+		for range threadCount - 1 {
+			waitGroup.Go(func() {
+				ws.threadLoop(cancel, queue.MakeChild(), ws.newProbeSlice())
+			})
+		}
 
-	waitGroup := sync.WaitGroup{}
-	for range threadCount - 1 {
-		waitGroup.Go(func() {
-			ws.threadLoop(cancel, queue.MakeChild(), ws.newProbeSlice())
-		})
+		ws.threadLoop(cancel, startingQueue, startingProbesReused)
+		waitGroup.Wait()
 	}
-
-	ws.threadLoop(cancel, startingQueue, startingProbesReused)
-	waitGroup.Wait()
 
 	bestWeight := ws.bestResult.GetBestOrNilValue()
 	return bestWeight.ScaleForBaseStat(ws.statTypes[0])
@@ -128,9 +128,10 @@ func (ws *WeightSearcher3) initialSplits(localQueue *util.QueueStackFiloPoolChil
 	localQueue.Push(ws.initialBound)
 	for localQueue.CountLocal() < targetCount {
 		if !ws.threadStep(localQueue, probesReused) {
-			break
+			return false
 		}
 	}
+	return true
 }
 
 func (ws *WeightSearcher3) threadLoop(cancel util_async.CancelSignal, localQueue *util.QueueStackFiloPoolChild[*weightSearch2FastBound], probesReused []*weightSearch2FastProbe) {

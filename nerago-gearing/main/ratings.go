@@ -1065,28 +1065,25 @@ func statWeights_CompareAlgorithms() {
 
 	if runRankingOlder {
 		for RANKMODE := range 3 {
-			for MULTIPLY := range 3 {
-				for WEIGHTSUM := range 3 {
-					tasks = append(tasks, func() {
-						label := fmt.Sprintf("rankorig-%d-%d-%d", RANKMODE, MULTIPLY, WEIGHTSUM)
-						printer.Println("################# RANKING0 ###################")
-						stopwatch := util.StopwatchMakeStopped()
-						ranking := weight_highs.RankingStatWeightProcess{}
-						ranking.MULTIPLY = MULTIPLY
-						ranking.RANKMODE = RANKMODE
-						ranking.WEIGHTSUM = WEIGHTSUM
-						ranking.Init(printer)
-						ranking.SetRequiredStats(requiredStats)
-						ranking.SetTargetRatios(targetRatio)
-						ranking.SupplyData(slices.Clone(mixedInputData))
-						ranking.RANKMODE = 0
-						weightFuture := ranking.Run(stopwatch, standardTimeout)
-						util_async.ChainCancel(cancel, weightFuture)
-						resultsByAlgorithm.Put(label, weightFuture.WaitForResultOrNilValue())
-						timesByAlgorithm.Put(label, stopwatch.Elapsed())
-						printer.Println("///////////////// RANKING0 /////////////////")
-					})
-				}
+			for WEIGHTSUM := range 3 {
+				tasks = append(tasks, func() {
+					label := fmt.Sprintf("rankorig-%d-%d", RANKMODE, WEIGHTSUM)
+					printer.Println("################# RANKING0 ###################")
+					stopwatch := util.StopwatchMakeStopped()
+					ranking := weight_highs.RankingStatWeightProcess{}
+					ranking.RANKMODE = RANKMODE
+					ranking.WEIGHTSUM = WEIGHTSUM
+					ranking.Init(printer)
+					ranking.SetRequiredStats(requiredStats)
+					ranking.SetTargetRatios(targetRatio)
+					ranking.SupplyData(slices.Clone(mixedInputData))
+					ranking.RANKMODE = 0
+					weightFuture := ranking.Run(stopwatch, standardTimeout)
+					util_async.ChainCancel(cancel, weightFuture)
+					resultsByAlgorithm.Put(label, weightFuture.WaitForResultOrNilValue())
+					timesByAlgorithm.Put(label, stopwatch.Elapsed())
+					printer.Println("///////////////// RANKING0 /////////////////")
+				})
 			}
 		}
 
@@ -1173,40 +1170,37 @@ func statWeights_CompareAlgorithms() {
 	}
 
 	if runRanking3bVariants {
-		for FINAL := range 3 {
-			for TOTALWEIGHT := range 3 {
-				for ALGO := range 2 {
-					tasks = append(tasks, func() {
-						label := fmt.Sprintf("ranking3b-%d-%d-%d", FINAL, TOTALWEIGHT, ALGO)
-						printer.Println("################# " + label + " ###################")
-						stopwatch := util.StopwatchMakeStopped()
-						ranking := weight_highs.RankingStatWeightProcess3b{}
-						ranking.FINAL = FINAL
-						ranking.TOTALWEIGHT = TOTALWEIGHT
-						ranking.ALGO = ALGO
-						ranking.Init(printer, shortTimeout)
-						ranking.SetRequiredStats(requiredStats)
-						ranking.SetTargetRatios(targetRatio)
-						ranking.SupplyData(slices.Clone(mixedInputData))
-						weightFuture := ranking.RunSinglePassFromExternal(weightsMidRange, stopwatch)
-						util_async.ChainCancel(cancel, weightFuture)
-						weight := weightFuture.WaitForResultOrNilValue()
-						timesByAlgorithm.Put(label, stopwatch.Elapsed())
-						resultsByAlgorithm.Put(label, weight)
-						printer.Println("///////////////// " + label + " /////////////////")
-					})
-				}
+		for TOTALWEIGHT := range 3 {
+			for ALGO := range 2 {
+				tasks = append(tasks, func() {
+					label := fmt.Sprintf("ranking3b-%d-%d", TOTALWEIGHT, ALGO)
+					printer.Println("################# " + label + " ###################")
+					stopwatch := util.StopwatchMakeStopped()
+					ranking := weight_highs.RankingStatWeightProcess3b{}
+					ranking.TOTALWEIGHT = TOTALWEIGHT
+					ranking.ALGO = ALGO
+					ranking.Init(printer, shortTimeout)
+					ranking.SetRequiredStats(requiredStats)
+					ranking.SetTargetRatios(targetRatio)
+					ranking.SupplyData(slices.Clone(mixedInputData))
+					weightFuture := ranking.RunSinglePassFromExternal(weightsMidRange, stopwatch)
+					util_async.ChainCancel(cancel, weightFuture)
+					weight := weightFuture.WaitForResultOrNilValue()
+					timesByAlgorithm.Put(label, stopwatch.Elapsed())
+					resultsByAlgorithm.Put(label, weight)
+					printer.Println("///////////////// " + label + " /////////////////")
+				})
 			}
 		}
 	}
 	if runRanking3bPreferred {
 		tasks = append(tasks, func() {
-			label := fmt.Sprintf("ranking3b-pref-%d", 0)
+			label := fmt.Sprintf("ranking3b-pref")
 			printer.Println("################# " + label + " ###################")
 			stopwatch := util.StopwatchMakeStopped()
 			ranking := weight_highs.RankingStatWeightProcess3b{}
-			ranking.FINAL = 0
 			ranking.TOTALWEIGHT = 0
+			ranking.ALGO = 1
 			ranking.Init(printer, shortTimeout)
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)

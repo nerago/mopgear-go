@@ -34,7 +34,6 @@ type RankingStatWeightProcess struct {
 	weightColumns map[stats.StatType]util_highs.ColumnIndex
 
 	RANKMODE  int
-	MULTIPLY  int
 	WEIGHTSUM int
 }
 
@@ -275,12 +274,7 @@ func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs
 		statScale := ranker.scaleStats[statType]
 
 		modelWeight := solution.ColValues[weightColumn]
-		usableWeight := modelWeight
-		if ranker.MULTIPLY == 1 {
-			usableWeight = modelWeight * statScale
-		} else if ranker.MULTIPLY == 2 {
-			usableWeight = modelWeight / statScale
-		}
+		usableWeight := modelWeight * statScale
 
 		statWeightResult.Put(statType, usableWeight)
 	}

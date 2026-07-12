@@ -82,7 +82,6 @@ func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, ge
 	printer.Printf("Grid Weights accuracy %s gridInput=%f realInput=%f\n", label, accGridOnGridInput, accGridOnRealInput)
 
 	ranking := weight_highs.RankingStatWeightProcess3b{}
-	ranking.FINAL = 0
 	ranking.Init(printer, c_timeoutSolvers)
 	ranking.SetRequiredStats(gearModel.StatsForWeighting)
 	ranking.SetTargetRatios(ratios)

@@ -72,11 +72,11 @@ func (ea *EvaluateAccuracyPrepared) scoreSimsStatistical(simRatios stats.SimData
 			slices.SortFunc(data, simSortSimSingledCompares[simType])
 		} else if simType.IsHighGood() {
 			slices.SortFunc(data, func(a, b *accuracyInfoPrePrepare) int {
-				return -1 * deviationCompareSims(a.dataSim, b.dataSim, simType)
+				return deviationCompareSims(a.dataSim, b.dataSim, simType)
 			})
 		} else {
 			slices.SortFunc(data, func(a, b *accuracyInfoPrePrepare) int {
-				return deviationCompareSims(a.dataSim, b.dataSim, simType)
+				return deviationCompareSims(b.dataSim, a.dataSim, simType)
 			})
 		}
 		ratio := simRatios.Get(simType)

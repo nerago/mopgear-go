@@ -29,7 +29,6 @@ type RankingStatWeightProcess3b struct {
 	requiredSims    []stats.SimType
 	dataAllOriginal []rankEntry3b
 	dataSample      []rankEntry3b
-	FINAL           int
 	ALGO            int
 	TOTALWEIGHT     int
 
@@ -367,19 +366,9 @@ func (ranker *RankingStatWeightProcess3b) extractAndReportSolution(solution *hig
 	statWeightResult := WeightResult_Make()
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
-		statScale := c_rank3b_scaleTarget
 
 		modelWeight := solution.ColValues[weightColumn]
-		var usableWeight float64
-		if ranker.FINAL == 0 {
-			usableWeight = modelWeight * statScale
-		} else if ranker.FINAL == 1 {
-			usableWeight = modelWeight
-		} else {
-			usableWeight = modelWeight / statScale
-		}
-
-		statWeightResult.Put(statType, usableWeight)
+		statWeightResult.Put(statType, modelWeight)
 	}
 
 	baseStat := ranker.requiredStats[0]

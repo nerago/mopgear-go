@@ -10,7 +10,7 @@ import (
 )
 
 // const c_accuracy_statistical_critical_value = 1.6449 // 1.6449 corresponds to 10% false equals cases
-const c_accuracy_statistical_critical_value = 0.5
+const c_accuracy_statistical_critical_value = 1.2
 
 type accuracyInfoSimStatRanged struct {
 	statScore     float64
@@ -122,11 +122,11 @@ func EvaluateAccuracyStatisticalDeviations(statWeights weight_highs.WeightResult
 			slices.SortFunc(data, simSortRangedCompares[stats.Sim_DEATH])
 		} else if simType.IsHighGood() {
 			slices.SortFunc(data, func(a, b *accuracyInfoSimStatRanged) int {
-				return -1 * deviationCompareSims(a.dataSim, b.dataSim, simType)
+				return deviationCompareSims(a.dataSim, b.dataSim, simType)
 			})
 		} else {
 			slices.SortFunc(data, func(a, b *accuracyInfoSimStatRanged) int {
-				return deviationCompareSims(a.dataSim, b.dataSim, simType)
+				return deviationCompareSims(b.dataSim, a.dataSim, simType)
 			})
 		}
 		ratio := simRatios.Get(simType)
