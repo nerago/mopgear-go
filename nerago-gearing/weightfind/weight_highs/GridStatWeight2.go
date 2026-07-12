@@ -13,7 +13,7 @@ import (
 
 const (
 	c_grid2_minBaseWeight = 0.01
-	c_grid2_maxWeight     = 10.0
+	c_grid2_maxWeight     = 100.0
 
 	c_grid2_simDiffTempCalcHighRange = 1000.0
 	c_grid2_simDiffScaleMax          = 100.0
@@ -23,11 +23,10 @@ const (
 type GridStatWeightProcess2 struct {
 	printer *util.PrintRecorder
 
-	IncludeDiffs1   bool
-	IncludeDiffs2   bool
-	MethodX         bool
-	MULTIPLY_OUTPUT int
-	SIM_HIGH        int
+	IncludeDiffs1 bool
+	IncludeDiffs2 bool
+	MethodX       bool
+	SIM_HIGH      int
 
 	targetRatios stats.SimData
 	statTypes    []stats.StatType
@@ -51,7 +50,7 @@ func (grid2 *GridStatWeightProcess2) initBuilder(timeout int) {
 	if grid2.IncludeDiffs2 && !grid2.MethodX {
 		grid2.build.Solver = util_highs.Solver_MIP_Interior
 	} else {
-		grid2.build.Solver = util_highs.Solver_LP_USE_GPU
+		grid2.build.Solver = util_highs.Solver_Force_IPX
 	}
 }
 
@@ -108,7 +107,7 @@ func (grid2 *GridStatWeightProcess2) RunOneTwo(stopwatch *util.Stopwatch) *util_
 	grid2.chooseSimDiffScaling()
 	grid2.processInputDataOnes()
 
-	grid2.build.Solver = util_highs.Solver_LP_USE_GPU
+	grid2.build.Solver = util_highs.Solver_Force_IPX
 	solutionFuture := grid2.build.RunHighsFuture(stopwatch)
 
 	futureNext := util_async.FutureCancellable_MapToFuture(solutionFuture, func(linearResult util_highs.LinearResult) *util_async.FutureCancellable[util_highs.LinearResult] {
@@ -159,6 +158,8 @@ func (grid2 *GridStatWeightProcess2) setupWeightVars() {
 func (grid2 *GridStatWeightProcess2) chooseSimDiffScaling() {
 	grid2.scaleSims = make(map[stats.SimType]float64)
 	for _, simType := range grid2.simTypes {
+		grid2.scaleSims[simType] = 1
+
 		listDiffs := make([]float64, 0)
 		for a := range grid2.inputData {
 			for b := a + 1; b < len(grid2.inputData); b++ {
@@ -188,6 +189,7 @@ func (grid2 *GridStatWeightProcess2) calcSimDiff(one *WeightInput, two *WeightIn
 			diff *= -1
 		}
 	}
+	diff *= grid2.scaleSims[simType]
 	if math.Abs(diff) >= c_grid2_simDiffMinimumUseful {
 		return diff, true
 	} else {
@@ -287,7 +289,6 @@ func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStats(one *Weight
 
 		simDiff, goodDiff := grid2.calcSimDiff(two, one, simType) // opposite, matches order in MIPNeeded two
 		if goodDiff {
-			simDiff *= grid2.scaleSims[simType]
 			grid2.build.AbsoluteValueFromDiffOneToConst(weightColumn, statDiff, simDiff, mismatchCol, debugText)
 		}
 	}
@@ -303,7 +304,6 @@ func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStatsX(one *Weigh
 
 		simDiff, goodDiff := grid2.calcSimDiff(one, two, simType) // opposite
 		if goodDiff {
-			simDiff *= grid2.scaleSims[simType]
 			grid2.build.AbsoluteValueFromDiffOneToConst(weightColumn, statDiff, simDiff, mismatchCol, debugText)
 		}
 	}
@@ -322,7 +322,6 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStatsMIPNeeded(on
 
 		simDiff, goodDiff := grid2.calcSimDiff(two, one, simType)
 		if goodDiff {
-			simDiff *= grid2.scaleSims[simType]
 			grid2.build.AbsoluteValueDiffTwoVarsThenDiffConst_NeedMIP(
 				weightColumnA, statDiffA,
 				weightColumnB, statDiffB,
@@ -347,7 +346,6 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStatsMIPFree(one 
 
 		simDiff, goodDiff := grid2.calcSimDiff(one, two, simType)
 		if goodDiff {
-			simDiff *= grid2.scaleSims[simType]
 			grid2.build.AbsoluteValueFromSumTwoThenDiffToConst(
 				weightColumnA, statDiffA,
 				weightColumnB, statDiffB,
@@ -370,8 +368,6 @@ func (grid2 *GridStatWeightProcess2) prepareSampleThreeDifferenceStatsX(one *Wei
 
 		simDiff, goodDiff := grid2.calcSimDiff(one, two, simType)
 		if goodDiff {
-			simDiff *= grid2.scaleSims[simType]
-
 			debugText := "MISMATCH3 " + statTypeA.Name() + " " + statTypeB.Name() + " " + statTypeC.Name() + " " + simType.Name()
 			mismatchSignedCol := grid2.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, nil)
 
@@ -405,17 +401,7 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 
 		for simType, detailWeightCol := range grid2.detailedWeights.SeqInnerWithKey1Value(statType) {
 			weight := solution.ColValues[detailWeightCol]
-
-			var usableWeight float64
-			switch grid2.MULTIPLY_OUTPUT {
-			case 0:
-				usableWeight = weight
-			case 1:
-				usableWeight = weight / grid2.scaleSims[simType]
-			case 2:
-				usableWeight = weight * grid2.scaleSims[simType]
-			}
-			// TODO we've generally found that multiplying by scaleStat is correct, but this is scaleSim, check
+			usableWeight := weight / grid2.scaleSims[simType]
 
 			if grid2.SIM_HIGH == 1 {
 				if simType.IsHighGood() {

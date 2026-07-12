@@ -2075,3 +2075,30 @@ could ranking methods benefit from scaling keepUnderTarget
   ranking3b-no_scale-1-1-0          1.0000       1.4837   0.3117      1.6450      0.1708      1.3753      0.8141      0.7619  97.4199                     97.2621        76.4657ms
   ranking3b-no_scale-0-2-1          1.0000       1.4837   0.3117      1.6450      0.1708      1.3753      0.8141      0.7619  97.4199                     97.2543        67.0234ms
 Duration = 13m52.7418031s
+
+
+sample 40:
+accuracy GRID2 X 0: grid data = 62.881470, rand data = 64.502335, data mix = 56.672838, stat mix = 95.372179
+accuracy GRID2 X 1: grid data = 85.096741, rand data = 79.457855, data mix = 89.220174, stat mix = 97.520447
+accuracy GRID2 X 2: grid data = 85.096741, rand data = 79.457855, data mix = 89.220174, stat mix = 97.520447
+accuracy GRID2 X 4: grid data = 53.503418, rand data = 57.791901, data mix = 52.025350, stat mix = 96.346198
+accuracy GRID2 X 3: grid data = 53.503418, rand data = 57.791901, data mix = 52.025350, stat mix = 96.346198
+accuracy GRID2 old 1: grid data = 86.167908, rand data = 75.952530, data mix = 87.780084, stat mix = 97.475009
+accuracy GRID2 old 0: grid data = 65.243530, rand data = 69.859695, data mix = 65.616353, stat mix = 95.267063
+accuracy GRID2 old 2: grid data = 86.167908, rand data = 75.952530, data mix = 87.780084, stat mix = 97.475009
+accuracy GRID2 old 3: grid data = 86.027527, rand data = 81.805038, data mix = 90.365262, stat mix = 97.790358
+accuracy GRID2 old 4: grid data = 86.027527, rand data = 81.805038, data mix = 90.365262, stat mix = 97.790358
+
+timeouts were 5000
+sample 30
+accuracy GRID2 X 2: grid data = 84.996033, rand data = 79.218674, data mix = 89.103021, stat mix = 97.536045
+accuracy GRID2 X 3: grid data = 53.532410, rand data = 58.008575, data mix = 52.051290, stat mix = 96.333483
+accuracy GRID2 X 4: grid data = 53.532410, rand data = 58.008575, data mix = 52.051290, stat mix = 96.333483
+accuracy GRID2 X 0: grid data = 62.902832, rand data = 64.462280, data mix = 55.735101, stat mix = 95.333523
+accuracy GRID2 X 1: grid data = 84.996033, rand data = 79.218674, data mix = 89.103021, stat mix = 97.536045
+accuracy GRID2 old 2: grid data = 77.774048, rand data = 71.556091, data mix = 84.893629, stat mix = 97.109985	timeout
+accuracy GRID2 old 0: grid data = 75.028992, rand data = 78.002548, data mix = 87.442186, stat mix = 97.278171	timeout
+accuracy GRID2 old 1: grid data = 77.774048, rand data = 71.556091, data mix = 84.893629, stat mix = 97.109985	timeout
+accuracy GRID2 old 4: grid data = 82.383728, rand data = 75.319290, data mix = 87.081401, stat mix = 97.327847	timeout
+accuracy GRID2 old 3: grid data = 82.383728, rand data = 75.319290, data mix = 87.081401, stat mix = 97.327847	timeout
+generally about 0.19% explored

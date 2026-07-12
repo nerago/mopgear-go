@@ -541,23 +541,22 @@ func statWeightsGrid(printer *util.PrintRecorder) {
 
 	inputDataFull := readWeightInputFile("sim-stats-compare-grid.json")
 	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
-	//inputData := takeDataSample_Random(inputDataFull, 64)
-	inputData := inputDataFull
+	inputData := takeDataSample_Random(inputDataFull, 30)
+	//inputData := inputDataFull
 
 	targetRatio := gear_model.SimRatio_generalMiti
 	requiredStats := gear_model.StatsForWeighting_strengthTank
 	simTypes := targetRatio.NonZeroTypes()
 
-	runOne := func(method, inc1, inc2 bool, multiply, simHigh int, label string) {
+	runOne := func(method, inc1, inc2 bool, simHigh int, label string) {
 		process := weight_highs.GridStatWeightProcess2{}
 		process.MethodX = method
 		process.IncludeDiffs1 = inc1
 		process.IncludeDiffs2 = inc2
-		process.MULTIPLY_OUTPUT = multiply
 		process.SIM_HIGH = simHigh
 
-		process.Init(printer, 100)
-		//process.Init(util.PrintRecorder_Nop(), 5000)
+		//process.Init(printer, 2000)
+		process.Init(util.PrintRecorder_Nop(), 5000)
 		process.SetRequiredStats(requiredStats)
 		process.SetTargetRatios(targetRatio)
 		process.SupplyData(inputData)
@@ -571,33 +570,27 @@ func statWeightsGrid(printer *util.PrintRecorder) {
 		printer.Printf("accuracy %s: grid data = %f, rand data = %f, data mix = %f, stat mix = %f\n", label, acc, acc2, acc3, acc4)
 	}
 
-	runOne(true, true, true, 1, 3, "select")
+	//runOne(true, true, true, 1, 3, "select")
 
-	//type optParam struct {
-	//	method            bool
-	//	multiply, simHigh int
-	//	label             string
-	//}
-	//optList := make([]optParam, 0)
-	//for multiply := range 3 {
-	//	for simHigh := range 5 {
-	//		label := fmt.Sprintf("GRID2 X %d %d", multiply, simHigh)
-	//		optList = append(optList, optParam{true, multiply, simHigh, label})
-	//	}
-	//}
-	//
-	//for multiply := range 3 {
-	//	for simHigh := range 5 {
-	//		label := fmt.Sprintf("GRID2 old %d %d\n", multiply, simHigh)
-	//		optList = append(optList, optParam{false, multiply, simHigh, label})
-	//		//runOne(false, false, true, multiply, simHigh)
-	//	}
-	//}
-	//
-	//util_async.ForEach_Slice(5, optList, func(o *optParam) {
-	//	runOne(o.method, false, true, o.multiply, o.simHigh, o.label)
-	//	printer.Println(o.label)
-	//})
+	type optParam struct {
+		method  bool
+		simHigh int
+		label   string
+	}
+	optList := make([]optParam, 0)
+	for simHigh := range 5 {
+		label := fmt.Sprintf("GRID2 X %d", simHigh)
+		optList = append(optList, optParam{true, simHigh, label})
+	}
+	for simHigh := range 5 {
+		label := fmt.Sprintf("GRID2 old %d", simHigh)
+		optList = append(optList, optParam{false, simHigh, label})
+	}
+
+	util_async.ForEach_Slice(5, optList, func(o *optParam) {
+		runOne(o.method, false, true, o.simHigh, o.label)
+		printer.Println(o.label)
+	})
 
 	//for simHigh := range 5 {
 	//	printer.Printf("version %d %d\n", 1, simHigh)
