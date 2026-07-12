@@ -2,8 +2,8 @@ package solve_highs
 
 import (
 	"math/rand/v2"
-	"paladin_gearing_go/items"
 	gear_model "paladin_gearing_go/gear_model"
+	"paladin_gearing_go/items"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_highs"

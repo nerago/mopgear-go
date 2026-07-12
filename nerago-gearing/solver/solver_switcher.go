@@ -106,16 +106,19 @@ func (output *SolveOutput) Equals(b *SolveOutput) bool {
 }
 
 func (output *SolveOutput) Report(printer *util.PrintRecorder) {
+	reportPrint := util.PrintRecorder_HoldAll()
 	if printer != output.Printer {
-		printer.AppendOther(output.Printer)
+		reportPrint.AppendOther(output.Printer)
 	}
 
 	if output.Success {
 		fullSet := output.FullSet
 		rating := output.ResultRating
-		printer.Println(output.OutputId)
-		tools.ReportSet(output.Input.Model, &fullSet, rating, printer)
+		reportPrint.Println(output.OutputId)
+		tools.ReportSet(output.Input.Model, &fullSet, rating, reportPrint)
 	} else {
-		printer.Printf("SET SOLVE FAILED\n")
+		reportPrint.Printf("SET SOLVE FAILED\n")
 	}
+
+	printer.AppendOther(reportPrint)
 }

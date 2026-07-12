@@ -186,7 +186,12 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 		rowCount += len(simTypes)
 	}
 
-	needPermuteLine := simResultList[0].proposed.PermuteLabel != ""
+	needPermuteLine := false
+	for _, simResult := range simResultList {
+		if simResult.proposed.PermuteLabel != "" {
+			needPermuteLine = true
+		}
+	}
 	if needPermuteLine {
 		rowCount++
 	}

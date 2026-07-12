@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_async"
 	"slices"
 )
 
@@ -46,9 +47,9 @@ func (job *MultiSetJob) prepareInitial() {
 		job.params[i].setupAlternateGemming(job.alternateGemming)
 	}
 
-	for i := range job.params {
-		job.params[i].runBaseline()
-	}
+	util_async.ForEach_Slice(6, job.params, func(param *multiSetParamInternal) {
+		param.runBaseline()
+	})
 
 	job.prepareRatingMultipliers()
 }
