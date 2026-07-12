@@ -1,6 +1,9 @@
 package util_rank
 
-import "paladin_gearing_go/util"
+import (
+	"paladin_gearing_go/util"
+	"sync"
+)
 
 // /////////////////////////////////////////////////////////
 type BestCollector1[T any] struct {
@@ -90,4 +93,29 @@ func (collect *BestCollector1[T]) isBetter(value float64) bool {
 	} else {
 		return value > collect.BestValue
 	}
+}
+
+type BestCollector1Concurrent[T any] struct {
+	inner BestCollector1[T]
+	mutex sync.RWMutex
+}
+
+func (bc *BestCollector1Concurrent[T]) GetBestValue() float64 {
+	bc.mutex.RLock()
+	defer bc.mutex.RUnlock()
+
+	return bc.inner.BestValue
+}
+
+func (bc *BestCollector1Concurrent[T]) Offer(object *T, value float64) {
+	bc.mutex.Lock()
+	bc.inner.Offer(object, value)
+	bc.mutex.Unlock()
+}
+
+func (bc *BestCollector1Concurrent[T]) GetBestOrNilValue() T {
+	bc.mutex.RLock()
+	defer bc.mutex.RUnlock()
+
+	return bc.inner.GetBestOrNilValue()
 }

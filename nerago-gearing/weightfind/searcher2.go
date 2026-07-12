@@ -26,7 +26,7 @@ const (
 	c_search2_probe_middle = 0.5
 	c_search2_probeB       = 0.75
 
-	c_search2_max_node_depth = 40
+	c_search2_max_node_depth = 20
 	c_search2_use_final_op   = false
 	c_search2_debug          = false
 )
@@ -108,8 +108,8 @@ func (ws *WeightSearcher2) Run(cancel util_async.CancelSignal) weight_highs.Weig
 		}
 
 		iterCount++
-		if (c_search2_debug || iterCount%100 == 0) && ws.printer != nil {
-			ws.printer.Printf("status i=%d q=%d b=%f\n", iterCount, ws.queue.Size(), ws.bestResult.BestValue)
+		if (c_search2_debug || iterCount%1000 == 0) && ws.printer != nil {
+			ws.printer.Printf("search i=%d q=%d b=%f\n", iterCount, ws.queue.Size(), ws.bestResult.BestValue)
 		}
 		if iterCount%10 == 0 {
 			ws.queueMaintenance()
@@ -413,43 +413,6 @@ func includesAxisEntry(probes []probeAndAccuracy, axis int) (bool, bool) {
 	return hasHi, hasLo
 }
 
-//	var old_interest = []float64{
-//		5.3900000000,
-//		7.4731250000,
-//		2.6908057851,
-//		7.4200000000,
-//		-0.5654897163,
-//		8.0470000000,
-//		4.8125000000,
-//		3.2600000000,
-//	}
-var interest = []float64{ // accuracy = 92.632887
-	5.39,
-	8.659509862234,
-	3.433015580687,
-	8.603761881869,
-	-0.001056252428,
-	8.802300380181,
-	5.369767704147,
-	3.466234195963}
-
-//func debugValueOfInterest(rangeMin []float64, rangeMax []float64, printer *util.PrintRecorder) {
-//	if checkInRange(rangeMin, rangeMax, interest) {
-//		printer.Println("INTEREST")
-//	}
-//}
-
-func checkInRange(rangeMin []float64, rangeMax []float64, probe []float64) bool {
-	for i := range probe {
-		if rangeMin[i] <= probe[i] && probe[i] <= rangeMax[i] {
-			// ok
-		} else {
-			return false
-		}
-	}
-	return true
-}
-
 func checkRangeIsSubrangeOf(outer, inner *weightSearch2Bound) bool {
 	for i := range outer.rangeMin {
 		if outer.rangeMin[i] <= inner.rangeMin[i] && inner.rangeMax[i] <= outer.rangeMax[i] {
@@ -460,14 +423,6 @@ func checkRangeIsSubrangeOf(outer, inner *weightSearch2Bound) bool {
 	}
 	return true
 }
-
-//func debugVerifyInRange(rangeMin []float64, rangeMax []float64, probe []float64, printer *util.PrintRecorder) {
-//	if !checkInRange(rangeMin, rangeMax, probe) {
-//		panic("probe value isn't inside remaining range")
-//	}
-//
-//	printRange(rangeMin, rangeMax, "     = ", printer)
-//}
 
 func printRange(rangeMin []float64, rangeMax []float64, label string, printer *util.PrintRecorder) {
 	printer.Printf(label)
@@ -499,11 +454,6 @@ func (ws *WeightSearcher2) addSearchPlan(rangeMin []float64, rangeMax []float64,
 			rangeMax:  rangeMax,
 			nodeDepth: bound.nodeDepth + 1,
 		}
-		//for existing := range ws.queue.ValueSeq() {
-		//	if checkRangeIsSubrangeOf(existing, add) {
-		//		return
-		//	}
-		//}
 		ws.queue.Push(add)
 	}
 
@@ -521,21 +471,10 @@ func (ws *WeightSearcher2) rangeIsMarginal(rangeMin []float64, rangeMax []float6
 	return true
 }
 
-//	func oneOfEqualsQuery(a, b int, query int) bool {
-//		return a == query || b == query
-//	}
-//
-//	func pairEqualsQueryPair(a, b int, query1, query2 int) bool {
-//		return (a == query1 && b == query2) || (a == query2 && b == query1)
-//	}
 func (ws *WeightSearcher2) largeAccuracyGap(a, b float64) bool {
 	return math.Abs(a-b) >= c_search2_largeAccuracyGap
 }
 
-//	func (ws *WeightSearcher2) firstGreaterThanEqualPair(values *[5]indexAndAccuracy) bool {
-//		return !util.FloatsApproxEquals(values[0].accuracy, values[1].accuracy) &&
-//			util.FloatsApproxEquals(values[1].accuracy, values[2].accuracy)
-//	}
 func (ws *WeightSearcher2) equalAccuracyGap(a, b float64) bool {
 	return math.Abs(a-b) < c_search2_equalAccuracyGap
 }
@@ -550,20 +489,8 @@ func sliceInterpolate(rangeMin []float64, rangeMax []float64, ratio float64) []f
 
 func valueInterpolate(rangeMin float64, rangeMax float64, ratio float64) float64 {
 	return rangeMin + (rangeMax-rangeMin)*ratio
-	//result = (1-ratio)*rangeMin + rangeMax*ratio
 }
 
-//	func sliceMixEverySecond(a, b []float64) []float64 {
-//		result := make([]float64, len(a))
-//		for i := range len(a) {
-//			if i&1 == 0 {
-//				result[i] = a[i]
-//			} else {
-//				result[i] = b[i]
-//			}
-//		}
-//		return result
-//	}
 func copyAndReplaceElement(slice []float64, index int, value float64) []float64 {
 	newSlice := slices.Clone(slice)
 	newSlice[index] = value
@@ -571,23 +498,24 @@ func copyAndReplaceElement(slice []float64, index int, value float64) []float64 
 }
 
 func (ws *WeightSearcher2) queueMaintenance() {
-	removed := 0
-	content := ws.queue.ExportAsSlice()
-	for a := range content {
-		for b := a + 1; b < len(content); b++ {
-			if checkRangeIsSubrangeOf(content[a], content[b]) {
-				content = removeIndex(content, b)
-				removed++
-			} else if checkRangeIsSubrangeOf(content[b], content[a]) {
-				content = removeIndex(content, a)
-				removed++
+	ws.queue.UpdateContents(func(content []*weightSearch2Bound) []*weightSearch2Bound {
+		removed := 0
+		for a := range content {
+			for b := a + 1; b < len(content); b++ {
+				if checkRangeIsSubrangeOf(content[a], content[b]) {
+					content = removeIndex(content, b)
+					removed++
+				} else if checkRangeIsSubrangeOf(content[b], content[a]) {
+					content = removeIndex(content, a)
+					removed++
+				}
 			}
 		}
-	}
-	ws.queue.ResetFromSlice(content)
-	if c_search2_debug {
-		ws.printer.Printf("removed queue elements %d\n", removed)
-	}
+		if c_search2_debug {
+			ws.printer.Printf("removed queue elements %d\n", removed)
+		}
+		return content
+	})
 }
 
 func removeIndex(slice []*weightSearch2Bound, index int) []*weightSearch2Bound {

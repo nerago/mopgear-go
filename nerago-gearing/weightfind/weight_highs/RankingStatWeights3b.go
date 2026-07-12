@@ -29,14 +29,12 @@ type RankingStatWeightProcess3b struct {
 	requiredSims    []stats.SimType
 	dataAllOriginal []rankEntry3b
 	dataSample      []rankEntry3b
-	SCALE1          bool
 	FINAL           int
 	ALGO            int
 	TOTALWEIGHT     int
 
 	build *util_highs.LinearBuilder
 
-	scaleStats    map[stats.StatType]float64
 	weightColumns map[stats.StatType]util_highs.ColumnIndex
 	pairLinks     util.MapMapDiagonal[int, rankPair3b]
 }
@@ -61,14 +59,6 @@ func (ranker *RankingStatWeightProcess3b) Init(printer *util.PrintRecorder, time
 }
 
 func (ranker *RankingStatWeightProcess3b) SupplyData(inputData []WeightInput) {
-	if ranker.SCALE1 {
-		ranker.scaleStats = make(map[stats.StatType]float64)
-		for _, statType := range stats.StatType_List {
-			ranker.scaleStats[statType] = c_rank3b_scaleTarget
-		}
-	} else {
-		ranker.scaleStats = chooseStatScaling(inputData, c_rank3b_scaleTarget, false, ranker.printer)
-	}
 	ranker.dataAllOriginal = util.MapSliceAsNew(inputData, func(input *WeightInput) rankEntry3b {
 		return rankEntry3b{
 			data:        input,
@@ -229,7 +219,7 @@ func (ranker *RankingStatWeightProcess3b) makeScoreColumn(entry *rankEntry3b, de
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statValue := entry.data.TotalStat.GetFloat(statType)
-		statScale := ranker.scaleStats[statType]
+		statScale := c_rank3b_scaleTarget
 
 		scoreRow.Add(weightColumn, statValue*statScale)
 	}
@@ -310,7 +300,7 @@ func (ranker *RankingStatWeightProcess3b) setupInitialFromInternalWeights(intern
 
 func (ranker *RankingStatWeightProcess3b) setupInitialRemainingVariables(internalWeights WeightResult) {
 	for entry := range util.ForPointer(ranker.dataSample) {
-		entry.initialStatScore = internalWeights.CalcStatScoreScaled(entry.data, ranker.scaleStats)
+		entry.initialStatScore = internalWeights.CalcStatScore(entry.data) * c_rank3b_scaleTarget
 		ranker.build.SetInitialSolutionValue(entry.scoreColumn, entry.initialStatScore)
 	}
 }
@@ -377,7 +367,7 @@ func (ranker *RankingStatWeightProcess3b) extractAndReportSolution(solution *hig
 	statWeightResult := WeightResult_Make()
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
-		statScale := ranker.scaleStats[statType]
+		statScale := c_rank3b_scaleTarget
 
 		modelWeight := solution.ColValues[weightColumn]
 		var usableWeight float64

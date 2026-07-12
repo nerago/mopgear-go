@@ -254,6 +254,26 @@ func (build *LinearBuilder) AbsoluteValueFromSumTwoThenDiffToConst(inputOneVar C
 	positive.Build(build, C_MinusInf, constCompare)
 }
 
+func (build *LinearBuilder) AbsoluteValueFromSumSeveralThenDiffToConst(inputVars []ColumnIndex, inputCoefficients []float64, constCompare float64, outputVar ColumnIndex, debug string) {
+	if len(inputVars) != len(inputCoefficients) {
+		panic("length mismatch")
+	}
+
+	negative := ConstraintRow{Debug: debug + " AbsoluteValueNegative"}
+	for i := range inputVars {
+		negative.Add(inputVars[i], inputCoefficients[i])
+	}
+	negative.Add(outputVar, 1)
+	negative.Build(build, constCompare, C_PlusInf)
+
+	positive := ConstraintRow{Debug: debug + " AbsoluteValuePositive"}
+	for i := range inputVars {
+		positive.Add(inputVars[i], inputCoefficients[i])
+	}
+	positive.Add(outputVar, -1)
+	positive.Build(build, C_MinusInf, constCompare)
+}
+
 func (build *LinearBuilder) AbsoluteValueDiffTwoVarsThenDiffConst_NeedMIP(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, diffConst float64, highRange float64, debug string) {
 	diffTwoVars := build.CreateColumnGeneral(highs.Continuous, C_MinusInf, C_PlusInf, DebugText(debug+" diffTwoVars"))
 

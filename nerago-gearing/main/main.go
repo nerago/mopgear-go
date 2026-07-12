@@ -89,13 +89,13 @@ func core(printer *util.PrintRecorder) {
 	//trinketSimsBoth(printer)
 	//
 	//statWeightsBasic(printer)
-	statWeightsGrid(printer)
+	//statWeightsGrid(printer)
 	//statWeightsFitting2(printer)
 	//statWeightsComplex(printer)
 	//statWeightsGridIntoRanking(printer)
 	//statWeightsCustom(printer)
 
-	//statWeights_CompareAlgorithms()
+	statWeights_CompareAlgorithms()
 
 	//statWeights_updateAll()
 

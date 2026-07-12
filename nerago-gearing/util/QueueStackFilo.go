@@ -2,7 +2,6 @@ package util
 
 import (
 	"iter"
-	"slices"
 	"sync"
 )
 
@@ -65,11 +64,15 @@ func (stack *QueueStackFilo[T]) ValueSeq() iter.Seq[T] {
 	}
 }
 
-func (stack *QueueStackFilo[T]) ExportAsSlice() []T {
-	return slices.Clone(stack.array[0:stack.top])
+func (stack *QueueStackFilo[T]) UpdateContents(apply func([]T) []T) {
+	stack.resetFromSlice(apply(stack.array[0:stack.top]))
 }
 
-func (stack *QueueStackFilo[T]) ResetFromSlice(content []T) {
+func (stack *QueueStackFilo[T]) ExamineContents(apply func([]T)) {
+	apply(stack.array[0:stack.top])
+}
+
+func (stack *QueueStackFilo[T]) resetFromSlice(content []T) {
 	if len(content) > len(stack.array) {
 		stack.array = make([]T, len(content)*2)
 	}
@@ -110,4 +113,70 @@ func (stack *QueueStackFiloConcurrent[T]) Pop() (T, bool) {
 	stack.mutex.Lock()
 	defer stack.mutex.Unlock()
 	return stack.inner.Pop()
+}
+
+type QueueStackFiloPoolParent[T any] struct {
+	children    []*QueueStackFiloPoolChild[T]
+	parentMutex sync.Mutex
+}
+
+func (parent *QueueStackFiloPoolParent[T]) MakeChild() *QueueStackFiloPoolChild[T] {
+	parent.parentMutex.Lock()
+	defer parent.parentMutex.Unlock()
+
+	child := &QueueStackFiloPoolChild[T]{parent: parent}
+	parent.children = append(parent.children, child)
+	return child
+}
+
+type QueueStackFiloPoolChild[T any] struct {
+	inner      QueueStackFilo[T]
+	parent     *QueueStackFiloPoolParent[T]
+	childMutex sync.Mutex
+}
+
+func (child *QueueStackFiloPoolChild[T]) CountLocal() int {
+	child.childMutex.Lock()
+	defer child.childMutex.Unlock()
+	return child.inner.Size()
+}
+
+func (child *QueueStackFiloPoolChild[T]) Push(value T) {
+	child.childMutex.Lock()
+	child.inner.Push(value)
+	child.childMutex.Unlock()
+}
+
+func (child *QueueStackFiloPoolChild[T]) Pop() (T, bool) {
+	// make sure  to let go of our own lock in case another thread holding parent lock and trying to acquire our child lock = deadlock
+	child.childMutex.Lock()
+	value, hasValue := child.inner.Pop()
+	child.childMutex.Unlock()
+	if hasValue {
+		return value, true
+	}
+
+	child.parent.parentMutex.Lock()
+	defer child.parent.parentMutex.Unlock()
+
+	for _, other := range child.parent.children {
+		if other != child {
+			other.childMutex.Lock()
+			value, hasValue = other.inner.Pop()
+			other.childMutex.Unlock()
+
+			if hasValue {
+				return value, true
+			}
+		}
+	}
+
+	var nilValue T
+	return nilValue, false
+}
+
+func (child *QueueStackFiloPoolChild[T]) ExamineContents(apply func(content []T)) {
+	child.childMutex.Lock()
+	child.inner.ExamineContents(apply)
+	child.childMutex.Unlock()
 }

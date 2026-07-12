@@ -33,7 +33,9 @@ type RankingStatWeightProcess struct {
 	scaleStats    map[stats.StatType]float64
 	weightColumns map[stats.StatType]util_highs.ColumnIndex
 
-	RANKMODE int
+	RANKMODE  int
+	MULTIPLY  int
+	WEIGHTSUM int
 }
 
 type rankEntry struct {
@@ -97,7 +99,7 @@ func (ranker *RankingStatWeightProcess) createWeightColumns() {
 		sumWeights.Add(colDetailWeight, 1)
 	}
 
-	if ranker.RANKMODE == 0 {
+	if ranker.WEIGHTSUM == 0 {
 		sumWeights.Build(ranker.build, c_Rank1_TargetWeightSum, c_Rank1_TargetWeightSum)
 	} else {
 		sumWeights.Build(ranker.build, 0.001, util_highs.C_PlusInf) // force positive and non-zero result
@@ -273,8 +275,12 @@ func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs
 		statScale := ranker.scaleStats[statType]
 
 		modelWeight := solution.ColValues[weightColumn]
-		// TODO changed to multiply following analysis on other algorithms, not checked here
-		usableWeight := modelWeight * statScale
+		usableWeight := modelWeight
+		if ranker.MULTIPLY == 1 {
+			usableWeight = modelWeight * statScale
+		} else if ranker.MULTIPLY == 2 {
+			usableWeight = modelWeight / statScale
+		}
 
 		statWeightResult.Put(statType, usableWeight)
 	}
