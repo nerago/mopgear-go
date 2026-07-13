@@ -1,6 +1,8 @@
 package ratings
 
 import (
+	"errors"
+	"io/fs"
 	"math"
 	"os"
 	. "paladin_gearing_go/stats"
@@ -68,8 +70,10 @@ func StatRatingsWeights_FromPriorities(priorities []StatType) StatRatingsWeights
 
 func StatRatingsWeights_ReadFile_IfExists(filename string, includeHit, includeExpertise, includeSpirit bool) (StatRatingsWeights, string, bool) {
 	bytes, err := os.ReadFile(filename)
-	if err != nil {
+	if errors.Is(err, fs.ErrNotExist) {
 		return StatRatingsWeights{}, "", false
+	} else if err != nil {
+		panic(err)
 	}
 	fullStr := string(bytes)
 

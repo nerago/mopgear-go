@@ -14,7 +14,6 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_rank"
 	"slices"
 	"strconv"
 )
@@ -237,29 +236,6 @@ func testSimEach(printer *util.PrintRecorder) {
 		resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_QuickDirty, model, &equipSet, nil, util.TrackProgress_Start())
 		resultStats.Print(printer)
 	}
-}
-
-func slotRating(printer *util.PrintRecorder) {
-	itemOptions, model := setupPallyMitigationNoSet()
-
-	itemArray := itemOptions[items.Equip_Chest]
-
-	printer.Println("RATINGS")
-	// printer.Println(model.StatRatings.(ratings.StatRatingsWeights).Weights())
-	printer.Println(model.StatRatings.Weights().CreateString())
-	printer.Println0()
-
-	best := util_rank.BestCollector1[items.FullItem]{}
-	for _, item := range itemArray {
-		rate := model.CalcRatingFullItem(&item)
-		printer.Println(item.CreateString())
-		printer.Printf("%.0f\n\n", rate)
-		best.Offer(&item, rate)
-	}
-
-	printer.Println0()
-	printer.Println("BEST")
-	printer.Println(best.BestObject.CreateString())
 }
 
 func findSimpleUpgrade(printer *util.PrintRecorder) {

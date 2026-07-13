@@ -147,12 +147,12 @@ func addToSummary(summary *util.StringBuild2, option *weightOption, prefix strin
 	summary.WriteString(") ")
 }
 
-func loadOldWeights(label string, weightFileOut string, simTypes []stats.SimType, ratios stats.SimData, inputDataGrid []weight_highs.WeightInput, printer *util.PrintRecorder) *weightOption {
+func loadOldWeights(label string, weightFileOut string, simTypes []stats.SimType, ratios stats.SimData, inputData []weight_highs.WeightInput, printer *util.PrintRecorder) *weightOption {
 	oldWeight, oldWeightString, oldWeightExists := ratings.StatRatingsWeights_ReadFile_IfExists(weightFileOut, true, true, true)
 	if oldWeightExists {
 		oldWeightAsResult := weight_highs.WeightResult_FromRatingsWeight(oldWeight)
-		accuracy := EvaluateAccuracyRanged(oldWeightAsResult, simTypes, ratios, inputDataGrid)
-		accuracyStat := EvaluateAccuracyStatisticalDeviations(oldWeightAsResult, simTypes, ratios, inputDataGrid)
+		accuracy := EvaluateAccuracyRanged(oldWeightAsResult, simTypes, ratios, inputData)
+		accuracyStat := EvaluateAccuracyStatisticalDeviations(oldWeightAsResult, simTypes, ratios, inputData)
 		printer.Printf("Old Weights accuracy %s normal=%f stat=%f\n", label, accuracy, accuracyStat)
 		return &weightOption{oldWeightAsResult, accuracy, accuracyStat, oldWeightString}
 	} else {
@@ -224,7 +224,8 @@ func solveSearchWeights(label string, gearModel *gear_model.SpecModel, ratios st
 	search.SetRanges(-1.0, 10.0)
 
 	cancel := util_async.CancelSignal_Make()
-	util_async.CancelAfterTimeout(cancel, time.Second*c_timeoutSolvers, printer)
+	timer := util_async.CancelAfterTimeout(cancel, time.Second*c_timeoutSolvers, printer)
+	defer timer.Stop()
 	weightsSearch := search.Run(cancel)
 
 	printer.Println("Search Weights >>>>> " + label)
