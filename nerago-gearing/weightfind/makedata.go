@@ -28,7 +28,7 @@ type incrementStat struct {
 
 type incrementStatCombo map[stats.StatType]int32
 
-func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, requiredStats []stats.StatType, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, tracker *util.TrackProgress) []weight_highs.WeightInput {
+func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, requiredStats []stats.StatType, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, tracker *util.TrackProgress, label string) []weight_highs.WeightInput {
 	var incrementStep int32 = grid_sim_step
 	var incrementMax int32 = incrementStep * grid_sim_max_steps
 	if len(requiredStats) == 8 {
@@ -41,6 +41,7 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 	tracker.RunOuterTracking(len(incrementPermutations))
 	defer tracker.SetDone()
 
+	printer.Printf("Running %d sims (part 1) for %s", len(incrementPermutations), label)
 	inputList := util_async.Map_SliceToSlice(6, incrementPermutations, func(increments *incrementStatCombo) weight_highs.WeightInput {
 		bonusStat := maps.Clone(initialBaseStats)
 		str := util.StringBuild2{}
@@ -65,6 +66,7 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 			SimResult: simResult,
 		}
 	})
+	printer.Printf("Done sims (part 1) for %s", label)
 	return inputList
 }
 
@@ -154,7 +156,7 @@ func makePermutationsForGridSim(statCheckList []stats.StatType, incrementMin int
 	})
 }
 
-func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, model *gear_model.SpecModel, makeSetCount int, simSize simulate.WowSim_RunSize, doFixRanges bool, printer *util.PrintRecorder, track *util.TrackProgress) []weight_highs.WeightInput {
+func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, model *gear_model.SpecModel, makeSetCount int, simSize simulate.WowSim_RunSize, doFixRanges bool, printer *util.PrintRecorder, track *util.TrackProgress, label string) []weight_highs.WeightInput {
 	itemOptions := setup.OptionsSetup_FromGearFile(gearFile, model, setup.MissingEnchant_Panic, printer)
 	for _, itemId := range substituteItems {
 		// TODO support for random suffix items
@@ -172,6 +174,7 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 	track.RunOuterTracking(len(setList))
 	defer track.SetDone()
 
+	printer.Printf("Running %d sims (part 2) for %s", len(setList), label)
 	weightInputs := util_async.Map_SliceToSlice(6, setList, func(itemSet *items.FullItemSet) weight_highs.WeightInput {
 		var bonusStats *map[stats.StatType]int32 = nil
 		if doFixRanges {
@@ -198,6 +201,7 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 		return weight_highs.WeightInput{TotalStat: total, SimResult: simResult}
 	})
 
+	printer.Printf("Done sims (part 2) for %s", label)
 	return weightInputs
 }
 

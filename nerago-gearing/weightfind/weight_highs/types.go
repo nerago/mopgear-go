@@ -32,9 +32,10 @@ func WeightResult_Of(values []float64, statTypes []stats.StatType) WeightResult 
 }
 
 func WeightResult_FromRatingsWeight(ratingWeight ratings.StatRatingsWeights) WeightResult {
-	statBlockInt := ratingWeight.Weights()
-	statBlockFloat := stats.StatBlockFloat_FromIntStatBlock(*statBlockInt, 1.0/ratings.C_floatWeightMultiplierForIntStatBlock)
-	return WeightResult{statBlockFloat}
+	result := WeightResult{}
+	statBlockFromRatings := ratingWeight.AsFloatBlock()
+	statBlockFromRatings.MultiplyScalar(1.0/ratings.C_weightMultiplierForRatings, &result.content)
+	return result
 }
 
 func (wr *WeightResult) IsEmpty() bool {

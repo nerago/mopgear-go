@@ -73,13 +73,13 @@ func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, ge
 
 	// SIMULATE STAT CHANGES, SAVE SIM DATA IN CASE WE NEED TO RESTART
 	if inputDataGrid == nil {
-		inputDataGrid = SimulateSteppedStatChangesForGrid(currentItemSet, printer, simSpeed, gearModel.SimSpeedUp, gearModel.StatsForWeighting, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions, tracker.NewChild())
+		inputDataGrid = SimulateSteppedStatChangesForGrid(currentItemSet, printer, simSpeed, gearModel.SimSpeedUp, gearModel.StatsForWeighting, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions, tracker.NewChild(), label)
 		writeWeightInputsToFile(inputDataGrid, files.TempPath+"weightfind-sim-grid-"+label+".json")
 	} else {
 		tracker.NewChild().SetDone()
 	}
 	if inputDataReal == nil {
-		inputDataReal = SimulateRealRandomSets(gearFile, substituteItems, gearModel, grid_sim_max_run_count, simSpeed, false, printer, tracker.NewChild())
+		inputDataReal = SimulateRealRandomSets(gearFile, substituteItems, gearModel, grid_sim_max_run_count, simSpeed, false, printer, tracker.NewChild(), label)
 		writeWeightInputsToFile(inputDataReal, files.TempPath+"weightfind-sim-real-"+label+".json")
 	} else {
 		tracker.NewChild().SetDone()

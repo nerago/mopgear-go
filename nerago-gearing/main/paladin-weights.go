@@ -11,19 +11,19 @@ import (
 func statWeights_updateAll() {
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "statWeightsGrid_updateAll")
 
-	//simSpeed := simulate.RunSize_TestOnly
+	simSpeed := simulate.RunSize_TestOnly
 	//simSpeed := simulate.RunSize_QuickDirty
 	// simSpeed := simulate.RunSize_QuickDirty/10
-	simSpeed := simulate.RunSize_Largish
+	//simSpeed := simulate.RunSize_Largish
 
 	weightfind.StatWeights_updateAll(simSpeed, printer, []weightfind.WeightOptions{
-		//{
-		//	Label:           "Prot-Mitigation-NoSet",
-		//	WeightFileOut:   files.WeightMitiNoSetFile,
-		//	GearFile:        files.GearFileProtMitigationNoSet,
-		//	Model:           gear_model.Model_PallyProtMitigation_NoSet(),
-		//	SubstituteItems: substituteItemsMiti,
-		//},
+		{
+			Label:           "Prot-Mitigation-NoSet",
+			WeightFileOut:   files.WeightMitiNoSetFile,
+			GearFile:        files.GearFileProtMitigationNoSet,
+			Model:           gear_model.Model_PallyProtMitigation_NoSet(),
+			SubstituteItems: substituteItemsMiti,
+		},
 		//{
 		//	Label:           "Prot-Mitigation-WithSet",
 		//	WeightFileOut:   files.WeightMitiWithSetFile,
@@ -52,12 +52,12 @@ func statWeights_updateAll() {
 		//	Model:           gear_model.Model_PallyProtHeal(),
 		//	SubstituteItems: util.RemoveDuplicatesComparable(slices.Concat(substituteItemsDps, substituteItemsMiti)),
 		//},
-		{
-			Label:           "Ret",
-			WeightFileOut:   files.WeightRetFile,
-			GearFile:        files.GearFileRet,
-			Model:           gear_model.Model_PallyRet(),
-			SubstituteItems: substituteItemsRet,
-		},
+		//{
+		//	Label:           "Ret",
+		//	WeightFileOut:   files.WeightRetFile,
+		//	GearFile:        files.GearFileRet,
+		//	Model:           gear_model.Model_PallyRet(),
+		//	SubstituteItems: substituteItemsRet,
+		//},
 	})
 }

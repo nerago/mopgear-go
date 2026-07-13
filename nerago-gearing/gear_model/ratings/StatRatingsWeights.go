@@ -11,22 +11,28 @@ import (
 	"strings"
 )
 
-const C_floatWeightMultiplierForIntStatBlock = 1000
+const C_weightMultiplierForRatings = 1000.0
 
 type StatRatingsWeights struct {
-	weight StatBlock
+	intWeight   StatBlock
+	floatWeight StatBlockFloat
 }
 
-func (rating *StatRatingsWeights) Weights() *StatBlock {
-	return &rating.weight
+func (rating *StatRatingsWeights) CreateString() string {
+	return rating.intWeight.CreateString()
 }
 
 func (rating *StatRatingsWeights) CalcRating(block *StatBlock) float64 {
-	return StatBlock_MultiplyForTotalSum(&rating.weight, block)
+	return StatBlock_StatBlockFloat_MultiplyForTotalSum2(&rating.floatWeight, block)
+}
+
+func (rating *StatRatingsWeights) AsFloatBlock() StatBlockFloat {
+	return rating.floatWeight
 }
 
 func validate(block StatBlock) {
-	// number is a bit arbitary, later steps are done in 64 so may not be needed
+	// number is a bit arbitrary, later steps are done in 64 so may not be needed
+	// that comment now obsolescent now, moving to floats mostly
 	for i := range block {
 		if block[i] > 0x0FFF_FFFF {
 			panic("watch out for overflow")
@@ -34,24 +40,29 @@ func validate(block StatBlock) {
 	}
 }
 
-func StatRatingsWeights_Mix(weightA StatRatingsWeights, multiplyA uint32, weightB StatRatingsWeights, multiplyB uint32, rescaleAround util.Optional[StatType]) StatRatingsWeights {
-	scaleA := StatBlock{}
-	weightA.weight.MultiplyScalar(multiplyA, &scaleA)
-	scaleB := StatBlock{}
-	weightB.weight.MultiplyScalar(multiplyB, &scaleB)
+func StatRatingsWeights_Mix(weightA StatRatingsWeights, multiplyA float64, weightB StatRatingsWeights, multiplyB float64, rescaleAround util.Optional[StatType]) StatRatingsWeights {
+	scaleA := StatBlockFloat{}
+	weightA.floatWeight.MultiplyScalar(multiplyA, &scaleA)
+	scaleB := StatBlockFloat{}
+	weightB.floatWeight.MultiplyScalar(multiplyB, &scaleB)
 
-	combined := StatBlock{}
-	StatBlock_Add_Into(&scaleA, &scaleB, &combined)
+	combined := StatBlockFloat{}
+	combined.SetFromAddOthers(&scaleA, &scaleB)
 
 	if statType, hasRescale := rescaleAround.GetWithFlag(); hasRescale {
-		div := combined[statType] / 1000
+		div := combined[statType] / C_weightMultiplierForRatings
 		for i := range combined {
 			combined[i] /= div
 		}
 	}
 
-	validate(combined)
-	return StatRatingsWeights{combined}
+	intBlock := StatBlock{}
+	for i := range combined {
+		intBlock[i] = uint32(math.Round(combined[i]))
+	}
+
+	validate(intBlock)
+	return StatRatingsWeights{intBlock, combined}
 }
 
 func StatRatingsWeights_FromPriorities(priorities []StatType) StatRatingsWeights {
@@ -61,11 +72,13 @@ func StatRatingsWeights_FromPriorities(priorities []StatType) StatRatingsWeights
 
 	var value uint32 = 1024
 	block := StatBlock{}
+	blockFloat := StatBlockFloat{}
 	for _, stat := range priorities {
 		block[stat] = value
+		blockFloat[stat] = float64(value)
 		value >>= 1
 	}
-	return StatRatingsWeights{block}
+	return StatRatingsWeights{block, blockFloat}
 }
 
 func StatRatingsWeights_ReadFile_IfExists(filename string, includeHit, includeExpertise, includeSpirit bool) (StatRatingsWeights, string, bool) {
@@ -93,67 +106,73 @@ func StatRatingsWeights_ReadFile(filename string, includeHit, includeExpertise, 
 
 func parseWeightFile(fullStr string, includeExpertise bool, includeHit bool, includeSpirit bool) StatRatingsWeights {
 	block := StatBlock{}
+	blockFloat := StatBlockFloat{}
 	for part := range strings.SplitSeq(fullStr, ",") {
 		key, value, isValid := strings.Cut(part, "=")
 		if isValid {
 			switch key {
 			case "Intellect":
-				addNum(&block, Stat_Intellect, value)
+				addNum(&block, &blockFloat, Stat_Intellect, value)
 			case "Strength":
-				addNum(&block, Stat_Strength, value)
+				addNum(&block, &blockFloat, Stat_Strength, value)
 			case "Agility":
-				addNum(&block, Stat_Agility, value)
+				addNum(&block, &blockFloat, Stat_Agility, value)
 			case "Stamina":
-				addNum(&block, Stat_Stamina, value)
+				addNum(&block, &blockFloat, Stat_Stamina, value)
 			case "Spirit":
-				addNum(&block, Stat_Spirit, value)
+				addNum(&block, &blockFloat, Stat_Spirit, value)
 			case "HitRating":
-				addNum(&block, Stat_Hit, value)
+				addNum(&block, &blockFloat, Stat_Hit, value)
 			case "CritRating":
-				addNum(&block, Stat_Crit, value)
+				addNum(&block, &blockFloat, Stat_Crit, value)
 			case "HasteRating":
-				addNum(&block, Stat_Haste, value)
+				addNum(&block, &blockFloat, Stat_Haste, value)
 			case "ExpertiseRating":
-				addNum(&block, Stat_Expertise, value)
+				addNum(&block, &blockFloat, Stat_Expertise, value)
 			case "MasteryRating":
-				addNum(&block, Stat_Mastery, value)
+				addNum(&block, &blockFloat, Stat_Mastery, value)
 			case "DodgeRating":
-				addNum(&block, Stat_Dodge, value)
+				addNum(&block, &blockFloat, Stat_Dodge, value)
 			case "ParryRating":
-				addNum(&block, Stat_Parry, value)
+				addNum(&block, &blockFloat, Stat_Parry, value)
 			}
 		}
 	}
 
 	if !includeExpertise {
 		block[Stat_Expertise] = 0
+		blockFloat[Stat_Expertise] = 0
 	}
 	if !includeHit {
 		block[Stat_Hit] = 0
+		blockFloat[Stat_Hit] = 0
 	}
 	if !includeSpirit {
 		block[Stat_Spirit] = 0
+		blockFloat[Stat_Spirit] = 0
 	}
 
 	validate(block)
-	return StatRatingsWeights{block}
+	return StatRatingsWeights{block, blockFloat}
 }
 
-func addNum(block *StatBlock, stat StatType, value string) {
+func addNum(block *StatBlock, blockFloat *StatBlockFloat, stat StatType, value string) {
 	num, err := strconv.ParseFloat(value, 64)
 	if err != nil {
 		panic(err)
 	}
 	if num > 0 {
-		// TODO temporary or move to signed/floats?
-		block[stat] = uint32(math.Round(num * C_floatWeightMultiplierForIntStatBlock))
+		block[stat] = uint32(math.Round(num * C_weightMultiplierForRatings))
+		blockFloat[stat] = num * C_weightMultiplierForRatings
 	}
 }
 
 func StatRatingsWeights_Testing() StatRatingsWeights {
 	block := StatBlock{}
+	blockFloat := StatBlockFloat{}
 	for i := range block {
 		block[i] = 1
+		blockFloat[i] = 1.0
 	}
-	return StatRatingsWeights{block}
+	return StatRatingsWeights{block, blockFloat}
 }

@@ -444,7 +444,7 @@ func statWeightsGridFromInitialT5_inner(model gear_model.SpecModel, priority []s
 
 	} else {
 		// SIMULATE STAT CHANGES
-		inputData := weightfind.SimulateSteppedStatChangesForGrid(baseItemSet, printer, simSpeed, model.SimSpeedUp, model.StatsForWeighting, model.Spec, model.Goal, fight, model.Professions, util.TrackProgress_Start())
+		inputData := weightfind.SimulateSteppedStatChangesForGrid(baseItemSet, printer, simSpeed, model.SimSpeedUp, model.StatsForWeighting, model.Spec, model.Goal, fight, model.Professions, util.TrackProgress_Start(), "tier5")
 
 		// SOLVE FOR STAT WEIGHTS
 		process := weight_highs.GridStatWeightProcess{}

@@ -681,7 +681,7 @@ func basicListRatingEach(printer *util.PrintRecorder) {
 		rating := group.model.CalcRatingFull(&itemSet)
 		tools.ReportSet(&group.model, &itemSet, rating, printer)
 
-		printer.Printf("%20s %10.0f %s\n", group.label, rating, group.model.StatRatings.Weights().CreateString())
+		printer.Printf("%20s %10.0f %s\n", group.label, rating, group.model.StatRatings.CreateString())
 	}
 
 	// for _, group := range groups {
@@ -733,7 +733,7 @@ func solveForRatings(printer *util.PrintRecorder) {
 
 		prescaleMult := prescaleTarget / rating
 
-		printer.Printf("%20s %10.0f %.4f %s\n", group.label, rating, rating*prescaleMult, group.model.StatRatings.Weights().CreateString())
+		printer.Printf("%20s %10.0f %.4f %s\n", group.label, rating, rating*prescaleMult, group.model.StatRatings.CreateString())
 	}
 
 	// for _, group := range groups {
