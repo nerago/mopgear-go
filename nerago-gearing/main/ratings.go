@@ -765,8 +765,8 @@ func statWeights_CompareAlgorithms() {
 	tasks := make([]func(), 0)
 
 	reportOnTweakedVersions := false
-	standardTimeout := 1000
-	shortTimeout := 500
+	standardTimeout := 400
+	shortTimeout := 300
 
 	runBasic := true
 	runFormulaVariants := false // best is about 87%, moderate time
@@ -774,19 +774,20 @@ func statWeights_CompareAlgorithms() {
 
 	runGrid1Original := true
 	runGrid1Variants := true
-	runGrid1VariantsFewer := false
+	//runGrid1VariantsFewer := false
 	runGrid1C := true
-	runGrid2 := true
+	runGrid2 := false
 
 	runRankingOlder := true
 	runRanking3aPreferred := false // broken
 	runRanking3aVariants := false  // broken
 	runRanking3bVariants := true
 	runRanking3bPreferred := true
-	runRanking4 := true  // very slow, no better when its worked
+	runRanking4 := true  // still a little slow, midrange 94% etc
 	runRanking5 := false // excellent but slow
 
 	runSearches := true
+	runSearch0 := false
 
 	if runBasic {
 		tasks = append(tasks, func() {
@@ -923,51 +924,54 @@ func statWeights_CompareAlgorithms() {
 			printer.Println("///////////////// GRID1 /////////////////")
 		})
 
-		for SCALEMODE := range 6 {
+		for SCALEMODE := range 5 {
 			for ROUNDMODE := range 3 {
 				for OUTLIER := range 5 {
-					tasks = append(tasks, func() {
-						label := fmt.Sprintf("grid1b-outlier%d-scale%d-round%d", OUTLIER, SCALEMODE, ROUNDMODE)
-						printer.Println("################# " + label + " ###################")
-						stopwatch := util.StopwatchMakeStopped()
-						grid1 := weight_highs.GridStatWeightProcess1B{}
-						grid1.SCALEMODE = SCALEMODE
-						grid1.ROUNDMODE = ROUNDMODE
-						grid1.OUTLIER = OUTLIER
-						grid1.Init(printer, shortTimeout)
-						grid1.SetRequiredStats(requiredStats)
-						grid1.SetTargetRatios(targetRatio)
-						grid1.SupplyData(slices.Clone(inputDataGrid))
-						weightFuture := grid1.Run(stopwatch)
-						util_async.ChainCancel(cancel, weightFuture)
-						resultsByAlgorithm.Put(label, weightFuture.WaitForResultOrNilValue())
-						timesByAlgorithm.Put(label, stopwatch.Elapsed())
-						printer.Println("///////////////// " + label + " /////////////////")
-					})
+					for CALCMODE := range 4 {
+						tasks = append(tasks, func() {
+							label := fmt.Sprintf("grid1b-outlier%d-scale%d-round%d-calc%d", OUTLIER, SCALEMODE, ROUNDMODE, CALCMODE)
+							printer.Println("################# " + label + " ###################")
+							stopwatch := util.StopwatchMakeStopped()
+							grid1 := weight_highs.GridStatWeightProcess1B{}
+							grid1.SCALEMODE = SCALEMODE
+							grid1.ROUNDMODE = ROUNDMODE
+							grid1.OUTLIER = OUTLIER
+							grid1.CALCMODE = CALCMODE
+							grid1.Init(printer, shortTimeout)
+							grid1.SetRequiredStats(requiredStats)
+							grid1.SetTargetRatios(targetRatio)
+							grid1.SupplyData(slices.Clone(inputDataGrid))
+							weightFuture := grid1.Run(stopwatch)
+							util_async.ChainCancel(cancel, weightFuture)
+							resultsByAlgorithm.Put(label, weightFuture.WaitForResultOrNilValue())
+							timesByAlgorithm.Put(label, stopwatch.Elapsed())
+							printer.Println("///////////////// " + label + " /////////////////")
+						})
+					}
 				}
 			}
 		}
 	}
-	if runGrid1VariantsFewer {
-		for SCALEMODE := range 6 {
-			label := fmt.Sprintf("grid1b-outlier%d-scale%d-round%d", 3, SCALEMODE, 2)
-			printer.Println("################# " + label + " ###################")
-			stopwatch := util.StopwatchMakeStopped()
-			grid1 := weight_highs.GridStatWeightProcess1B{}
-			grid1.SCALEMODE = SCALEMODE
-			grid1.ROUNDMODE = 2
-			grid1.OUTLIER = 3
-			grid1.Init(printer, shortTimeout)
-			grid1.SetRequiredStats(requiredStats)
-			grid1.SetTargetRatios(targetRatio)
-			grid1.SupplyData(slices.Clone(inputDataGrid))
-			weightFuture := grid1.Run(stopwatch)
-			util_async.ChainCancel(cancel, weightFuture)
-			resultsByAlgorithm.Put(label, weightFuture.WaitForResultOrNilValue())
-			timesByAlgorithm.Put(label, stopwatch.Elapsed())
-			printer.Println("///////////////// " + label + " /////////////////")
-		}
-	}
+	//if runGrid1VariantsFewer {
+	//	for SCALEMODE := range 5 {
+	//		label := fmt.Sprintf("grid1b-outlier%d-scale%d-round%d", 3, SCALEMODE, 2)
+	//		printer.Println("################# " + label + " ###################")
+	//		stopwatch := util.StopwatchMakeStopped()
+	//		grid1 := weight_highs.GridStatWeightProcess1B{}
+	//		grid1.SCALEMODE = SCALEMODE
+	//		grid1.ROUNDMODE = 2
+	//		grid1.OUTLIER = 3
+	//		grid1.Init(printer, shortTimeout)
+	//		grid1.SetRequiredStats(requiredStats)
+	//		grid1.SetTargetRatios(targetRatio)
+	//		grid1.SupplyData(slices.Clone(inputDataGrid))
+	//		weightFuture := grid1.Run(stopwatch)
+	//		util_async.ChainCancel(cancel, weightFuture)
+	//		resultsByAlgorithm.Put(label, weightFuture.WaitForResultOrNilValue())
+	//		timesByAlgorithm.Put(label, stopwatch.Elapsed())
+	//		printer.Println("///////////////// " + label + " /////////////////")
+	//	}
+	//}
 
 	if runGrid1C {
 		for RESCALE := range 3 {
@@ -1268,7 +1272,7 @@ func statWeights_CompareAlgorithms() {
 		})
 	}
 
-	if runSearches {
+	if runSearch0 {
 		tasks = append(tasks, func() {
 			printer.Println("################# SEARCH0 ###################")
 			stopwatch := util.StopwatchMakeStarted()
@@ -1280,6 +1284,19 @@ func statWeights_CompareAlgorithms() {
 			timesByAlgorithm.Put("search0-acc1", stopwatch.Elapsed())
 			printer.Println("///////////////// SEARCH0 /////////////////")
 		})
+		tasks = append(tasks, func() {
+			printer.Println("################# SEARCH0 ###################")
+			stopwatch := util.StopwatchMakeStarted()
+			search := weightfind.WeightSearcher0{}
+			search.AccuracyMode = 2
+			search.Init(requiredStats, targetRatio, printer)
+			search.SupplyData(mixedInputData)
+			resultsByAlgorithm.Put("search0-acc2", search.Run(cancel))
+			timesByAlgorithm.Put("search0-acc2", stopwatch.Elapsed())
+			printer.Println("///////////////// SEARCH0 /////////////////")
+		})
+	}
+	if runSearches {
 		tasks = append(tasks, func() {
 			printer.Println("################# SEARCH1 ###################")
 			stopwatch := util.StopwatchMakeStarted()
@@ -1316,17 +1333,6 @@ func statWeights_CompareAlgorithms() {
 			printer.Println("///////////////// SEARCH2 /////////////////")
 		})
 
-		tasks = append(tasks, func() {
-			printer.Println("################# SEARCH0 ###################")
-			stopwatch := util.StopwatchMakeStarted()
-			search := weightfind.WeightSearcher0{}
-			search.AccuracyMode = 2
-			search.Init(requiredStats, targetRatio, printer)
-			search.SupplyData(mixedInputData)
-			resultsByAlgorithm.Put("search0-acc2", search.Run(cancel))
-			timesByAlgorithm.Put("search0-acc2", stopwatch.Elapsed())
-			printer.Println("///////////////// SEARCH0 /////////////////")
-		})
 		tasks = append(tasks, func() {
 			printer.Println("################# SEARCH1 ###################")
 			stopwatch := util.StopwatchMakeStarted()

@@ -168,7 +168,7 @@ func (ea *EvaluateAccuracyPrepared) EvaluateWeight(statWeights weight_highs.Weig
 		sumRatioScores += ratioScore
 	}
 	averagePercent := 100.0 * sumRatioScores / float64(size)
-	return averagePercent
+	return checkValue(averagePercent)
 }
 
 //goland:noinspection DuplicatedCode

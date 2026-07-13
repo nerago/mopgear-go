@@ -3,6 +3,7 @@ package weight_highs
 import (
 	"encoding/json"
 	"math"
+	"paladin_gearing_go/gear_model/ratings"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
@@ -28,6 +29,12 @@ func WeightResult_Of(values []float64, statTypes []stats.StatType) WeightResult 
 		wr.Put(statType, values[i])
 	}
 	return wr
+}
+
+func WeightResult_FromRatingsWeight(ratingWeight ratings.StatRatingsWeights) WeightResult {
+	statBlockInt := ratingWeight.Weights()
+	statBlockFloat := stats.StatBlockFloat_FromIntStatBlock(*statBlockInt, 1/ratings.C_floatWeightMultiplierForIntStatBlock)
+	return WeightResult{statBlockFloat}
 }
 
 func (wr *WeightResult) IsEmpty() bool {

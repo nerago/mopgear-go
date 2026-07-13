@@ -25,6 +25,14 @@ func StatBlockFloat_of2(statA StatType, valueA float64, statB StatType, valueB f
 	return block
 }
 
+func StatBlockFloat_FromIntStatBlock(intBlock StatBlock, multiply float64) StatBlockFloat {
+	block := StatBlockFloat{}
+	for i := range block {
+		block[i] = float64(intBlock[i]) * multiply
+	}
+	return block
+}
+
 func (block *StatBlockFloat) Clone() StatBlockFloat {
 	return *block
 }

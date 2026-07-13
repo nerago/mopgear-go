@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+const C_floatWeightMultiplierForIntStatBlock = 1000
+
 type StatRatingsWeights struct {
 	weight StatBlock
 }
@@ -64,14 +66,28 @@ func StatRatingsWeights_FromPriorities(priorities []StatType) StatRatingsWeights
 	return StatRatingsWeights{block}
 }
 
+func StatRatingsWeights_ReadFile_IfExists(filename string, includeHit, includeExpertise, includeSpirit bool) (StatRatingsWeights, string, bool) {
+	bytes, err := os.ReadFile(filename)
+	if err != nil {
+		return StatRatingsWeights{}, "", false
+	}
+	fullStr := string(bytes)
+
+	weight := parseWeightFile(fullStr, includeExpertise, includeHit, includeSpirit)
+	return weight, fullStr, true
+}
+
 func StatRatingsWeights_ReadFile(filename string, includeHit, includeExpertise, includeSpirit bool) StatRatingsWeights {
 	bytes, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
-
 	fullStr := string(bytes)
 
+	return parseWeightFile(fullStr, includeExpertise, includeHit, includeSpirit)
+}
+
+func parseWeightFile(fullStr string, includeExpertise bool, includeHit bool, includeSpirit bool) StatRatingsWeights {
 	block := StatBlock{}
 	for part := range strings.SplitSeq(fullStr, ",") {
 		key, value, isValid := strings.Cut(part, "=")
@@ -126,7 +142,7 @@ func addNum(block *StatBlock, stat StatType, value string) {
 	}
 	if num > 0 {
 		// TODO temporary or move to signed/floats?
-		block[stat] = uint32(math.Round(num * 1000))
+		block[stat] = uint32(math.Round(num * C_floatWeightMultiplierForIntStatBlock))
 	}
 }
 

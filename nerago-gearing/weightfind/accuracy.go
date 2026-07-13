@@ -10,7 +10,7 @@ import (
 )
 
 // const c_accuracy_statistical_critical_value = 1.6449 // 1.6449 corresponds to 10% false equals cases
-const c_accuracy_statistical_critical_value = 1.2
+const c_accuracy_statistical_critical_value = 1.4
 
 type accuracyInfoSimStatRanged struct {
 	statScore     float64
@@ -82,7 +82,15 @@ func EvaluateAccuracyRanged(statWeights weight_highs.WeightResult, requiredSims 
 		ratioScore := rangesToAccuracyRatio(*entry.simRankRange, *entry.statRankRange, len(data))
 		sumRatioScores += ratioScore
 	}
-	return 100.0 * sumRatioScores / float64(len(data))
+
+	return checkValue(100.0 * sumRatioScores / float64(len(data)))
+}
+
+func checkValue(value float64) float64 {
+	if value < 0 || value >= 100.0 {
+		panic("accuracy value out of expected range")
+	}
+	return value
 }
 
 func EvaluateAccuracyStatisticalDeviations(statWeights weight_highs.WeightResult, requiredSims []stats.SimType, simRatios stats.SimData, inputData []weight_highs.WeightInput) float64 {
@@ -158,7 +166,8 @@ func EvaluateAccuracyStatisticalDeviations(statWeights weight_highs.WeightResult
 		ratioScore := rangesToAccuracyRatio(*entry.simRankRange, *entry.statRankRange, len(data))
 		sumRatioScores += ratioScore
 	}
-	return 100.0 * sumRatioScores / float64(len(data))
+
+	return checkValue(100.0 * sumRatioScores / float64(len(data)))
 }
 
 func deviationCompareSims(a *stats.SimData, b *stats.SimData, simType stats.SimType) int {
