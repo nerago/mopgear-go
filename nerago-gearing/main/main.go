@@ -95,9 +95,9 @@ func core(printer *util.PrintRecorder) {
 	//statWeightsGridIntoRanking(printer)
 	//statWeightsCustom(printer)
 
-	statWeights_CompareAlgorithms()
+	//statWeights_CompareAlgorithms()
 
-	//statWeights_updateAll()
+	statWeights_updateAll()
 
 	//PaladinMultiRun()
 

@@ -15,54 +15,42 @@ import (
 	"paladin_gearing_go/weightfind/weight_highs"
 )
 
-const max_grid_sim_count = 600
-const grid_sim_steps = 2
+const (
+	grid_sim_max_run_count = 400
+	grid_sim_max_steps     = 6
+	grid_sim_step          = 500
+)
+
+type incrementStat struct {
+	stat  stats.StatType
+	value int32
+}
+
+type incrementStatCombo map[stats.StatType]int32
 
 func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, requiredStats []stats.StatType, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, tracker *util.TrackProgress) []weight_highs.WeightInput {
-	var incrementMin int32 = 0
-	var incrementStep int32 = 250
-	var incrementMax int32 = incrementStep * grid_sim_steps
+	var incrementStep int32 = grid_sim_step
+	var incrementMax int32 = incrementStep * grid_sim_max_steps
+	if len(requiredStats) == 8 {
+		incrementMax = incrementStep * 2
+	}
 
 	initialBaseStats := InitialBonusStatMap_fixRanges(printer, currentItemSet, incrementMax)
 
-	statCheckList := requiredStats
-	type incrementStat struct {
-		stat  stats.StatType
-		value int32
-	}
-
-	incrementOptions := make([][]incrementStat, 0)
-	for _, stat := range statCheckList {
-		optionArray := make([]incrementStat, 0)
-		// TODO this was maybe intended to be a less or equal? could greatly increase combos if done now
-		for value := incrementMin; value < incrementMax; value += incrementStep {
-			entry := incrementStat{stat, value}
-			optionArray = append(optionArray, entry)
-		}
-		incrementOptions = append(incrementOptions, optionArray)
-	}
-	incrementPermutations := util.PermuteAll_Slice(incrementOptions)
-
-	printer.Printf("SimulateSteppedStatChangesForGrid incrementPermutations=%d\n", len(incrementPermutations))
-
-	// crude cut down to size
-	if len(incrementPermutations) > max_grid_sim_count {
-		incrementPermutations = incrementPermutations[0:max_grid_sim_count]
-	}
-
+	incrementPermutations := makePermutationsForGridSim2(requiredStats, incrementStep, incrementMax, printer)
 	tracker.RunOuterTracking(len(incrementPermutations))
 	defer tracker.SetDone()
 
-	inputList := util_async.Map_SliceToSlice(6, incrementPermutations, func(increments *[]incrementStat) weight_highs.WeightInput {
+	inputList := util_async.Map_SliceToSlice(6, incrementPermutations, func(increments *incrementStatCombo) weight_highs.WeightInput {
 		bonusStat := maps.Clone(initialBaseStats)
 		str := util.StringBuild2{}
 		str.WriteString("SIM ")
-		for _, inc := range *increments {
-			bonusStat[inc.stat] += inc.value
+		for statType, valueIncrease := range *increments {
+			bonusStat[statType] += valueIncrease
 
-			str.WriteString(inc.stat.Name())
+			str.WriteString(statType.Name())
 			str.WriteRune('=')
-			str.WriteInt32(bonusStat[inc.stat])
+			str.WriteInt32(bonusStat[statType])
 			str.WriteRune(' ')
 		}
 
@@ -78,6 +66,92 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 		}
 	})
 	return inputList
+}
+
+func makePermutationsForGridSim2(statList []stats.StatType, incrementStep int32, incrementMax int32, printer *util.PrintRecorder) []incrementStatCombo {
+	allCombos := make([]incrementStatCombo, 0)
+
+	var incrementLo int32 = 0
+	allCombos = append(allCombos, makeWithAllSameValue(statList, incrementLo))
+
+	var incrementHi int32 = incrementStep
+	for len(allCombos) < grid_sim_max_run_count && incrementHi <= incrementMax {
+		// add the high version first so make sure it's more likely to make it when we cut off the list
+		allCombos = append(allCombos, makeWithAllSameValue(statList, incrementHi))
+
+		// add all exact mixes for the two levels
+		levelCombos := makeAllMixesOf(statList, incrementLo, incrementHi)
+		allCombos = append(allCombos, levelCombos...)
+
+		incrementLo += incrementStep
+		incrementHi += incrementStep
+	}
+
+	if len(allCombos) > grid_sim_max_run_count {
+		allCombos = allCombos[0:grid_sim_max_run_count]
+	}
+
+	return allCombos
+}
+
+func makeAllMixesOf(statList []stats.StatType, valueOne int32, valueTwo int32) []incrementStatCombo {
+	slotCount := uint64(len(statList))
+	itemCount := 1 << slotCount
+	levelCombos := make([]incrementStatCombo, 0, itemCount-2)
+
+	// don't include the 00000 or 11111 entries since we want to add them specially
+	for index := 1; index < itemCount-1; index++ {
+		combo := make(incrementStatCombo)
+		for statNum, statType := range statList {
+			bitMask := 1 << statNum
+			if (index & bitMask) == 0 {
+				combo[statType] = valueOne
+			} else {
+				combo[statType] = valueTwo
+			}
+		}
+		levelCombos = append(levelCombos, combo)
+	}
+
+	// shuffle so we get a good mix
+	util.Shuffle(levelCombos)
+	return levelCombos
+}
+
+func makeWithAllSameValue(statList []stats.StatType, value int32) incrementStatCombo {
+	combo := make(incrementStatCombo)
+	for _, stat := range statList {
+		combo[stat] = value
+	}
+	return combo
+}
+
+func makePermutationsForGridSim(statCheckList []stats.StatType, incrementMin int32, incrementMax int32, incrementStep int32, printer *util.PrintRecorder) []incrementStatCombo {
+	incrementOptions := make([][]incrementStat, 0)
+	for _, stat := range statCheckList {
+		optionArray := make([]incrementStat, 0)
+		for value := incrementMin; value < incrementMax; value += incrementStep {
+			entry := incrementStat{stat, value}
+			optionArray = append(optionArray, entry)
+		}
+		incrementOptions = append(incrementOptions, optionArray)
+	}
+	incrementPermutations := util.PermuteAll_Slice(incrementOptions)
+
+	printer.Printf("SimulateSteppedStatChangesForGrid incrementPermutations=%d\n", len(incrementPermutations))
+
+	// crude cut down to size
+	if len(incrementPermutations) > grid_sim_max_run_count {
+		incrementPermutations = incrementPermutations[0:grid_sim_max_run_count]
+	}
+
+	return util.MapSliceAsNew(incrementPermutations, func(changes *[]incrementStat) incrementStatCombo {
+		combo := make(incrementStatCombo)
+		for _, entry := range *changes {
+			combo[entry.stat] = entry.value
+		}
+		return combo
+	})
 }
 
 func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, model *gear_model.SpecModel, makeSetCount int, simSize simulate.WowSim_RunSize, doFixRanges bool, printer *util.PrintRecorder, track *util.TrackProgress) []weight_highs.WeightInput {

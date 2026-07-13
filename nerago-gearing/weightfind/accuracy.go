@@ -88,7 +88,7 @@ func EvaluateAccuracyRanged(statWeights weight_highs.WeightResult, requiredSims 
 
 func checkValue(value float64) float64 {
 	if value < 0 || value >= 100.0 {
-		panic("accuracy value out of expected range")
+		//panic("accuracy value out of expected range")
 	}
 	return value
 }

@@ -2,6 +2,8 @@ package weightfind
 
 import (
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"os"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/gear_model"
@@ -55,7 +57,9 @@ type weightOption struct {
 }
 
 func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, gearFile string, ratios stats.SimData, weightFileOut string, substituteItems []items.ItemId, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, tracker *util.TrackProgress) {
-	tracker.RunOuterTracking(5)
+	// each simulator process is considered 1/3, then remaining solving is remaining third.
+	// only very small sim runs should be overpowered by solvers
+	tracker.RunOuterTracking(3)
 	defer tracker.SetDone()
 
 	// LOAD GEAR TO CHECK
@@ -63,14 +67,24 @@ func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, ge
 	currentItemSet := items.FullItemSet_FromMap(currentEquip)
 	simTypes := ratios.NonZeroTypes()
 
-	// SIMULATE STAT CHANGES
-	inputDataGrid := SimulateSteppedStatChangesForGrid(currentItemSet, printer, simSpeed, gearModel.SimSpeedUp, gearModel.StatsForWeighting, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions, tracker.NewChild())
-	inputDataReal := SimulateRealRandomSets(gearFile, substituteItems, gearModel, len(inputDataGrid), simSpeed, false, printer, tracker.NewChild())
-	mixedInputData := slices.Concat(inputDataGrid, inputDataReal)
+	// READ IN ANY RECENT DATA
+	inputDataGrid := readWeightInputFile(files.TempPath + "weightfind-sim-grid-" + label + ".json")
+	inputDataReal := readWeightInputFile(files.TempPath + "weightfind-sim-real-" + label + ".json")
 
-	// SAVE SIM DATA IN CASE WE NEED TO RESTART
-	writeWeightInputsToFile(inputDataGrid, files.TempPath+"weightfind-sim-grid-"+label+".json")
-	writeWeightInputsToFile(inputDataReal, files.TempPath+"weightfind-sim-real-"+label+".json")
+	// SIMULATE STAT CHANGES, SAVE SIM DATA IN CASE WE NEED TO RESTART
+	if inputDataGrid == nil {
+		inputDataGrid = SimulateSteppedStatChangesForGrid(currentItemSet, printer, simSpeed, gearModel.SimSpeedUp, gearModel.StatsForWeighting, gearModel.Spec, gearModel.Goal, gearModel.SimulateAs, gearModel.Professions, tracker.NewChild())
+		writeWeightInputsToFile(inputDataGrid, files.TempPath+"weightfind-sim-grid-"+label+".json")
+	} else {
+		tracker.NewChild().SetDone()
+	}
+	if inputDataReal == nil {
+		inputDataReal = SimulateRealRandomSets(gearFile, substituteItems, gearModel, grid_sim_max_run_count, simSpeed, false, printer, tracker.NewChild())
+		writeWeightInputsToFile(inputDataReal, files.TempPath+"weightfind-sim-real-"+label+".json")
+	} else {
+		tracker.NewChild().SetDone()
+	}
+	mixedInputData := slices.Concat(inputDataGrid, inputDataReal)
 
 	// START BUILDING REPORT
 	summary := util.StringBuild2{}
@@ -96,7 +110,6 @@ func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, ge
 		best.Offer(tweakOption, tweakOption.accuracy)
 		addToSummary(&summary, tweakOption, "TWEAK")
 	}
-	tracker.NewChild().SetDone()
 
 	// RANKING WEIGHTS
 	rankingOption := solveRankingWeight(label, gearModel, printer, ratios, simTypes, mixedInputData, best.GetBestOptional())
@@ -108,7 +121,6 @@ func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, ge
 		best.Offer(tweakOption, tweakOption.accuracy)
 		addToSummary(&summary, tweakOption, "TWEAK")
 	}
-	tracker.NewChild().SetDone()
 
 	// SEARCH weights
 	searchOption := solveSearchWeights(label, gearModel, ratios, printer, mixedInputData, simTypes, inputDataGrid)
@@ -116,7 +128,6 @@ func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, ge
 		best.Offer(searchOption, searchOption.accuracy)
 		addToSummary(&summary, searchOption, "SEARCH")
 	}
-	tracker.NewChild().SetDone()
 
 	// FINISH SUMMARY REPORT
 	printer.Println(summary.String())
@@ -151,10 +162,10 @@ func loadOldWeights(label string, weightFileOut string, simTypes []stats.SimType
 
 func solveGridWeights(label string, gearModel *gear_model.SpecModel, printer *util.PrintRecorder, ratios stats.SimData, inputDataGrid []weight_highs.WeightInput, simTypes []stats.SimType, inputDataReal []weight_highs.WeightInput) *weightOption {
 	grid := weight_highs.GridStatWeightProcess1B{}
-	grid.OUTLIER = 3
+	grid.OUTLIER = 0
 	grid.ROUNDMODE = 2
 	grid.SCALEMODE = 1
-	grid.CALCMODE = 0
+	grid.CALCMODE = 2
 	grid.Init(printer, c_timeoutSolvers)
 	grid.SetTargetRatios(ratios)
 	grid.SetRequiredStats(gearModel.StatsForWeighting)
@@ -243,14 +254,31 @@ func writeWeightInputsToFile(weightInputs []weight_highs.WeightInput, filename s
 }
 
 func readWeightInputFile(filename string) []weight_highs.WeightInput {
-	bytes, err := os.ReadFile(filename)
-	if err != nil {
+	statInfo, err := os.Stat(filename)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	} else if err != nil {
 		panic(err)
 	}
+
+	// only use data from "today"
+	since := time.Since(statInfo.ModTime())
+	if since > 24*time.Hour {
+		return nil
+	}
+
+	bytes, err := os.ReadFile(filename)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		panic(err)
+	}
+
 	var weightInputs []weight_highs.WeightInput
 	err = json.Unmarshal(bytes, &weightInputs)
 	if err != nil {
 		panic(err)
 	}
+
 	return weightInputs
 }
