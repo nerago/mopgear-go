@@ -1,6 +1,7 @@
 package core
 
 import (
+	"slices"
 	"time"
 )
 
@@ -37,8 +38,6 @@ type PendingAction struct {
 	cancelled bool
 	consumed  bool
 	canPool   bool // Flags the PA as safe to use in shared object pools.
-
-	nextLink, prevLink *PendingAction
 }
 
 func (pa *PendingAction) IsConsumed() bool {
@@ -57,14 +56,9 @@ func (pa *PendingAction) Cancel(sim *Simulation) {
 
 	pa.cancelled = true
 
-	if pa.prevLink != nil {
-		pa.prevLink.nextLink = pa.nextLink
+	if i := slices.Index(sim.pendingActions, pa); i != -1 {
+		sim.pendingActions = append(sim.pendingActions[:i], sim.pendingActions[i+1:]...)
 	}
-	if pa.nextLink != nil {
-		pa.nextLink.prevLink = pa.prevLink
-	}
-	pa.prevLink = nil
-	pa.nextLink = nil
 }
 
 func (pa *PendingAction) dispose(sim *Simulation) {
