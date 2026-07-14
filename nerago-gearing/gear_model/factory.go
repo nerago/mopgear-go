@@ -204,10 +204,10 @@ var SimRatio_malkrokWeight = stats.SimData_Make(
 
 // for compromise set - spoils, galakras, paragons, etc
 var SimRatio_compromiseWeight = stats.SimData_Make(
-	Sim_DPS, 0.4,
-	Sim_DEATH, 0.05,
-	Sim_TMI, 0.45,
-	Sim_DTPS, 0.1,
+	Sim_DPS, 0.40,
+	Sim_DEATH, 0.10,
+	Sim_TMI, 0.35,
+	Sim_DTPS, 0.15,
 )
 
 // for dps set
@@ -220,10 +220,10 @@ var SimRatio_dpsWeight = stats.SimData_Make(
 
 // for heal set, garrosh, immerseus
 var SimRatio_healWeight = stats.SimData_Make(
-	Sim_DEATH, 0.1,
-	Sim_TMI, 0.1,
+	Sim_DEATH, 0.15,
+	Sim_TMI, 0.15,
 	Sim_DTPS, 0.4,
-	Sim_HPS, 0.4,
+	Sim_HPS, 0.3,
 )
 
 // for ret set
