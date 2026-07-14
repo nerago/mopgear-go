@@ -81,7 +81,7 @@ func (ranker *RankingStatWeightProcess3b) newBuilder() {
 	ranker.build = new(util_highs.LinearBuilder)
 	ranker.build.Minimise = true
 	ranker.build.TimeLimitSeconds = ranker.timeoutSeconds
-	ranker.build.Solver = util_highs.Solver_Force_IPX
+	ranker.build.Solver = util_highs.Solver_Force_Simplex
 
 	// IPX Duration 1m1.4189406s		92.046912%
 	// simplex Duration 3m45.3631097s	92.047609%

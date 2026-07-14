@@ -159,7 +159,7 @@ func generateRatingsInputFromRealRandomSetsT5(printer *util.PrintRecorder) ([]we
 	_, itemOptions := allT5stuff(&model, files.GearFileProtMitigationNoSet, printer)
 
 	// setList := build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, &model, makeSetCount, printer, 14000)
-	setList := solve_build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, &model, makeSetCount, 0)
+	setList := solve_build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, &model, makeSetCount, "t5")
 
 	track := util.TrackProgress_Start()
 	track.RunOuterTracking(len(setList))

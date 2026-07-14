@@ -189,7 +189,7 @@ func (sim *SimData) GetDetailed(types SimType) (average, min, max, stdDev float6
 	max = sim.Detail[types].Max
 	stdDev = sim.Detail[types].StdDev
 
-	if util.FloatEqualsZero(average) || util.FloatEqualsZero(min) || util.FloatEqualsZero(max) {
+	if util.FloatEqualsZero(average) || util.FloatEqualsZero(max) {
 		return 0, 0, 0, 0, false
 	}
 

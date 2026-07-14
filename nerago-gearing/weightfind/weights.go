@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-const c_timeoutSolvers = 500
+const c_timeoutSolvers = 1000
 
 type WeightOptions struct {
 	Label           string
@@ -129,13 +129,16 @@ func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, ge
 		addToSummary(&summary, searchOption, "SEARCH")
 	}
 
-	// FINISH SUMMARY REPORT
-	printer.Println(summary.String())
-
 	// OVERWRITE WEIGHT FILE
 	if bestOption, hasBest := best.GetBestOptional().GetWithFlag(); hasBest {
 		util.WriteStringToFile(weightFileOut, bestOption.pawnString)
+
+		summary.WriteString(" ::::: ")
+		summary.WriteFloat64(bestOption.accuracy, 4)
 	}
+
+	// FINISH SUMMARY REPORT
+	printer.PrintlnFromBuild(summary)
 }
 
 func addToSummary(summary *util.StringBuild2, option *weightOption, prefix string) {

@@ -1,22 +1,31 @@
 package solve_build
 
 import (
+	"fmt"
 	"math/rand"
 	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
 
-func SolverBuildRandom_MakeN_FullAndValidate(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, targetCount int, minimumHaste uint32) []items.FullItemSet {
+func SolverBuildRandom_MakeN_FullAndValidate(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, targetCount int, label string) []items.FullItemSet {
+	attemptCount := 0
+	attemptLimit := targetCount * 10000
+
 	results := make([]items.FullItemSet, 0, targetCount)
 	rng := rand.New(rand.NewSource(int64(0)))
+
 	for len(results) < targetCount {
 		itemSet := makeSetFromRandomFull(itemOptions, rng)
-		if model.CheckSetFull_ForWeightProcess(&itemSet) && checkPairedSlotsNoDuplicate(itemSet.Items()) && itemSet.Total().GetUInt(stats.Stat_Haste) >= minimumHaste {
+		if model.CheckSetFull_ForWeightProcess(&itemSet) && checkPairedSlotsNoDuplicate(itemSet.Items()) {
 			itemSet.DebugValidate()
 			itemSet.ValidateItemRules()
 			results = append(results, itemSet)
+		}
+
+		attemptCount++
+		if attemptCount > attemptLimit {
+			panic(fmt.Sprintf("unable to reliably build valid sets for %s, made %d in %d attempts", label, len(results), attemptCount))
 		}
 	}
 	results = util.RemoveDuplicatesFunc(results, (*items.FullItemSet).Equals)

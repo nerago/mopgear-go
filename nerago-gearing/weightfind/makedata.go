@@ -41,11 +41,13 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 	tracker.RunOuterTracking(len(incrementPermutations))
 	defer tracker.SetDone()
 
-	printer.Printf("Running %d sims (part 1) for %s", len(incrementPermutations), label)
+	printer.Printf("Running %d sims (part 1) for %s\n", len(incrementPermutations), label)
 	inputList := util_async.Map_SliceToSlice(6, incrementPermutations, func(increments *incrementStatCombo) weight_highs.WeightInput {
 		bonusStat := maps.Clone(initialBaseStats)
 		str := util.StringBuild2{}
 		str.WriteString("SIM ")
+		str.WriteString(label)
+		str.WriteRune(' ')
 		for statType, valueIncrease := range *increments {
 			bonusStat[statType] += valueIncrease
 
@@ -66,7 +68,7 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 			SimResult: simResult,
 		}
 	})
-	printer.Printf("Done sims (part 1) for %s", label)
+	printer.Printf("Done sims (part 1) for %s\n", label)
 	return inputList
 }
 
@@ -128,34 +130,6 @@ func makeWithAllSameValue(statList []stats.StatType, value int32) incrementStatC
 	return combo
 }
 
-func makePermutationsForGridSim(statCheckList []stats.StatType, incrementMin int32, incrementMax int32, incrementStep int32, printer *util.PrintRecorder) []incrementStatCombo {
-	incrementOptions := make([][]incrementStat, 0)
-	for _, stat := range statCheckList {
-		optionArray := make([]incrementStat, 0)
-		for value := incrementMin; value < incrementMax; value += incrementStep {
-			entry := incrementStat{stat, value}
-			optionArray = append(optionArray, entry)
-		}
-		incrementOptions = append(incrementOptions, optionArray)
-	}
-	incrementPermutations := util.PermuteAll_Slice(incrementOptions)
-
-	printer.Printf("SimulateSteppedStatChangesForGrid incrementPermutations=%d\n", len(incrementPermutations))
-
-	// crude cut down to size
-	if len(incrementPermutations) > grid_sim_max_run_count {
-		incrementPermutations = incrementPermutations[0:grid_sim_max_run_count]
-	}
-
-	return util.MapSliceAsNew(incrementPermutations, func(changes *[]incrementStat) incrementStatCombo {
-		combo := make(incrementStatCombo)
-		for _, entry := range *changes {
-			combo[entry.stat] = entry.value
-		}
-		return combo
-	})
-}
-
 func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, model *gear_model.SpecModel, makeSetCount int, simSize simulate.WowSim_RunSize, doFixRanges bool, printer *util.PrintRecorder, track *util.TrackProgress, label string) []weight_highs.WeightInput {
 	itemOptions := setup.OptionsSetup_FromGearFile(gearFile, model, setup.MissingEnchant_Panic, printer)
 	for _, itemId := range substituteItems {
@@ -169,12 +143,12 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 	}
 	itemOptions.RemoveDuplicates()
 
-	setList := solve_build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, model, makeSetCount, 0)
+	setList := solve_build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, model, makeSetCount, label)
 
 	track.RunOuterTracking(len(setList))
 	defer track.SetDone()
 
-	printer.Printf("Running %d sims (part 2) for %s", len(setList), label)
+	printer.Printf("Running %d sims (part 2) for %s\n", len(setList), label)
 	weightInputs := util_async.Map_SliceToSlice(6, setList, func(itemSet *items.FullItemSet) weight_highs.WeightInput {
 		var bonusStats *map[stats.StatType]int32 = nil
 		if doFixRanges {
@@ -193,6 +167,8 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 
 		str := util.StringBuild2{}
 		str.WriteString("SIM ")
+		str.WriteString(label)
+		str.WriteRune(' ')
 		total.AppendString(&str)
 		str.WriteString(" --> ")
 		simResult.CompactStringGeneralBuilder(&str)
@@ -201,7 +177,7 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 		return weight_highs.WeightInput{TotalStat: total, SimResult: simResult}
 	})
 
-	printer.Printf("Done sims (part 2) for %s", label)
+	printer.Printf("Done sims (part 2) for %s\n", label)
 	return weightInputs
 }
 
