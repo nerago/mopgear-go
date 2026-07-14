@@ -24,6 +24,7 @@ import (
 )
 
 const c_timeoutSolvers = 1000
+const c_simDataAgeMax = 48 * time.Hour
 
 type WeightOptions struct {
 	Label           string
@@ -267,7 +268,7 @@ func readWeightInputFile(filename string) []weight_highs.WeightInput {
 
 	// only use data from "today"
 	since := time.Since(statInfo.ModTime())
-	if since > 24*time.Hour {
+	if since > c_simDataAgeMax {
 		return nil
 	}
 
