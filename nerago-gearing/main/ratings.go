@@ -538,12 +538,13 @@ func statWeightsGrid(printer *util.PrintRecorder) {
 	// inputData, targetRatio := generateRatingsInputFromArtificalStatOverrides(printer)
 	// writeWeightInputsToFile(inputData, "sim-stats-input-grid.json" )
 
-	inputDataFull := readWeightInputFile("sim-stats-compare-grid.json")
-	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
+	inputDataFull := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Damage.json")
+	inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Damage.json")
 	//inputData := takeDataSample_Random(inputDataFull, 30)
 	inputData := inputDataFull
 
-	targetRatio := gear_model.SimRatio_generalMiti
+	//targetRatio := gear_model.SimRatio_generalMiti
+	targetRatio := gear_model.SimRatio_dpsWeight
 	requiredStats := gear_model.StatsForWeighting_strengthTank
 	simTypes := targetRatio.NonZeroTypes()
 
@@ -554,7 +555,7 @@ func statWeightsGrid(printer *util.PrintRecorder) {
 		process.IncludeDiffs3 = inc3
 
 		//process.Init(printer, 2000)
-		process.Init(util.PrintRecorder_Nop(), 5000)
+		process.Init(util.PrintRecorder_Nop(), 500)
 		process.SetRequiredStats(requiredStats)
 		process.SetTargetRatios(targetRatio)
 		process.SupplyData(inputData)
@@ -698,7 +699,8 @@ func readWeightBasicInputsFile(filename string) ([]basicStatInput, stats.SimData
 func statWeights_CompareAlgorithms() {
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "statWeights_CompareAlgorithms")
 
-	targetRatio := gear_model.SimRatio_generalMiti
+	//targetRatio := gear_model.SimRatio_generalMiti
+	targetRatio := gear_model.SimRatio_dpsWeight
 	requiredStats := gear_model.StatsForWeighting_strengthTank
 	requiredSims := targetRatio.NonZeroTypes()
 
@@ -724,8 +726,10 @@ func statWeights_CompareAlgorithms() {
 	//writeWeightBasicInputsToFile(inputDataBasic, basicSimBase, "sim-stats-compare-basic.json")
 
 	inputDataBasic, basicSimBase := readWeightBasicInputsFile("sim-stats-compare-basic.json")
-	inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
-	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
+	inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Damage.json")
+	inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Damage.json")
+	//inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
+	//inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
 	mixedInputDataFull := slices.Concat(inputDataGrid, inputDataRandom)
 
 	//sampleSize := 50
@@ -765,10 +769,10 @@ func statWeights_CompareAlgorithms() {
 	tasks := make([]func(), 0)
 
 	reportOnTweakedVersions := false
-	standardTimeout := 400
-	shortTimeout := 300
+	standardTimeout := 300
+	shortTimeout := 200
 
-	runBasic := true
+	runBasic := false
 	runFormulaVariants := false // best is about 87%, moderate time
 	runFitting := false         // slow, low 90%
 
@@ -776,14 +780,14 @@ func statWeights_CompareAlgorithms() {
 	runGrid1Variants := true
 	//runGrid1VariantsFewer := false
 	runGrid1C := true
-	runGrid2 := false
+	runGrid2 := true
 
 	runRankingOlder := true
 	runRanking3aPreferred := false // broken
 	runRanking3aVariants := false  // broken
 	runRanking3bVariants := true
 	runRanking3bPreferred := true
-	runRanking4 := true  // still a little slow, midrange 94% etc
+	runRanking4 := false // still a little slow, midrange 94% etc
 	runRanking5 := false // excellent but slow
 
 	runSearches := true
@@ -1081,7 +1085,6 @@ func statWeights_CompareAlgorithms() {
 					ranking.SetRequiredStats(requiredStats)
 					ranking.SetTargetRatios(targetRatio)
 					ranking.SupplyData(slices.Clone(mixedInputData))
-					ranking.RANKMODE = 0
 					weightFuture := ranking.Run(stopwatch, standardTimeout)
 					util_async.ChainCancel(cancel, weightFuture)
 					resultsByAlgorithm.Put(label, weightFuture.WaitForResultOrNilValue())
