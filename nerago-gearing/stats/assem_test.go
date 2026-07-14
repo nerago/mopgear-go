@@ -235,6 +235,58 @@ func TestMultiplySum(test *testing.T) {
 	}
 }
 
+func TestMultiplySum0FloatA(test *testing.T) {
+	a := StatBlockFloat{1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	b := StatBlock{3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+	assertFloatEqual(test, 13, go_StatBlock_StatBlockFloat_MultiplyForTotalSum(&a, &b))
+	assertFloatEqual(test, 13, StatBlock_StatBlockFloat_MultiplyForTotalSum2(&a, &b))
+}
+
+func TestMultiplySum1FloatA(test *testing.T) {
+	a := StatBlockFloat{1, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0}
+	b := StatBlock{3, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0}
+
+	assertFloatEqual(test, 19, go_StatBlock_StatBlockFloat_MultiplyForTotalSum(&a, &b))
+	assertFloatEqual(test, 19, StatBlock_StatBlockFloat_MultiplyForTotalSum2(&a, &b))
+}
+
+func TestMultiplySum2FloatA(test *testing.T) {
+	a := StatBlockFloat{1, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0}
+	b := StatBlock{3, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0}
+
+	assertFloatEqual(test, 38, go_StatBlock_StatBlockFloat_MultiplyForTotalSum(&a, &b))
+	assertFloatEqual(test, 38, StatBlock_StatBlockFloat_MultiplyForTotalSum2(&a, &b))
+}
+
+func TestMultiplySum3FloatA(test *testing.T) {
+	a := StatBlockFloat{1.1, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0}
+	b := StatBlock{3, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0}
+
+	assertFloatEqual(test, 38.3, go_StatBlock_StatBlockFloat_MultiplyForTotalSum(&a, &b))
+	assertFloatEqual(test, 38.3, StatBlock_StatBlockFloat_MultiplyForTotalSum2(&a, &b))
+}
+
+func TestMultiplySumFloatA(test *testing.T) {
+	for range checkLoops {
+		a0 := StatBlockFloat_FromIntStatBlock(randStatBlockLimited(0x70000000), 1)
+		b0 := randStatBlockLimited(0x70000000)
+
+		a1 := a0
+		a2 := a0
+		b1 := b0
+		b2 := b0
+
+		test.Logf("%s\n%s", a1.CreateStringCSV(1), b1.CreateStringCSV())
+		assertFloatNearEqual(test, go_StatBlock_StatBlockFloat_MultiplyForTotalSum(&a1, &b1), StatBlock_StatBlockFloat_MultiplyForTotalSum2(&a2, &b2))
+
+		assertEqualsFloatBlock(test, &a0, &a1, "should be unchanged")
+		assertEqualsFloatBlock(test, &a0, &a2, "should be unchanged")
+		assertEquals(test, &b0, &b1, "should be unchanged")
+		assertEquals(test, &b0, &b2, "should be unchanged")
+	}
+}
+
 var resultFloat float64
 var resultInt uint64
 
@@ -261,6 +313,12 @@ func BenchmarkMultiplysAssemFloat(test *testing.B) {
 func assertEquals(test *testing.T, a, b *StatBlock, failMessage string) {
 	if *a != *b {
 		test.Fatalf("FAIL expect=%s actual=%s message=%s", a.CreateString(), b.CreateString(), failMessage)
+	}
+}
+
+func assertEqualsFloatBlock(test *testing.T, a, b *StatBlockFloat, failMessage string) {
+	if *a != *b {
+		test.Fatalf("FAIL expect=%s actual=%s message=%s", a.CreateString(1), b.CreateString(1), failMessage)
 	}
 }
 
@@ -340,6 +398,14 @@ func go_StatBlock_MultiplyForTotalSum_Float(a, b *StatBlock) float64 {
 	var result float64 = 0
 	for i := range a {
 		result += float64(a[i]) * float64(b[i])
+	}
+	return result
+}
+
+func go_StatBlock_StatBlockFloat_MultiplyForTotalSum(a *StatBlockFloat, b *StatBlock) float64 {
+	var result float64 = 0
+	for i := range a {
+		result += a[i] * float64(b[i])
 	}
 	return result
 }
