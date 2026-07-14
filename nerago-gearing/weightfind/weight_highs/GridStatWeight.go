@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_highs"
+	"paladin_gearing_go/weightfind/weight_types"
 	"strconv"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -17,7 +18,7 @@ type GridStatWeightProcess struct {
 	CHECKRANGE int
 
 	targetRatios  stats.SimData
-	inputData     []WeightInput
+	inputData     []weight_types.WeightInput
 	requiredStats []stats.StatType
 	simTypes      []stats.SimType
 
@@ -44,7 +45,7 @@ func (grid *GridStatWeightProcess) Init(printer *util.PrintRecorder, timeout int
 	grid.finalWeights = make(map[stats.StatType]util_highs.ColumnIndex)
 }
 
-func (grid *GridStatWeightProcess) SupplyData(inputData []WeightInput) {
+func (grid *GridStatWeightProcess) SupplyData(inputData []weight_types.WeightInput) {
 	grid.inputData = inputData
 }
 
@@ -67,7 +68,7 @@ func (grid *GridStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
 	grid.targetRatios = targetRatios
 }
 
-func (grid *GridStatWeightProcess) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[WeightResult] {
+func (grid *GridStatWeightProcess) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.WeightResult] {
 	grid.setupWeightVars()
 
 	grid.dataSamplesFromPairs()
@@ -76,7 +77,7 @@ func (grid *GridStatWeightProcess) Run(stopwatch *util.Stopwatch) *util_async.Fu
 	grid.calcTotalRatings()
 
 	solutionFuture := grid.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (WeightResult, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(grid.printer)
 
 		grid.printer.Println(solution.Status.String())
@@ -143,7 +144,7 @@ func (grid *GridStatWeightProcess) isGoodPair(blockHigh, blockLow *stats.StatBlo
 	return changedStat, foundChange
 }
 
-func (grid *GridStatWeightProcess) prepareSample(statType stats.StatType, high, low *WeightInput) {
+func (grid *GridStatWeightProcess) prepareSample(statType stats.StatType, high, low *weight_types.WeightInput) {
 	// basic approach (spreadsheet "build ratings miti_2")
 	// unit_dps_haste = (this_dps[haste] - base_dps) / this_haste_value
 	// detailweight_dps_haste = unit_dps_haste / unit_dps_str * detailweight_str
@@ -260,8 +261,8 @@ func (grid *GridStatWeightProcess) calcTotalRatings() {
 	}
 }
 
-func (grid *GridStatWeightProcess) reportOutputWeightsGrid(solution *highs.Solution, weightColumns map[stats.StatType]util_highs.ColumnIndex, printer *util.PrintRecorder) WeightResult {
-	result := WeightResult_Make()
+func (grid *GridStatWeightProcess) reportOutputWeightsGrid(solution *highs.Solution, weightColumns map[stats.StatType]util_highs.ColumnIndex, printer *util.PrintRecorder) weight_types.WeightResult {
+	result := weight_types.WeightResult_Make()
 	printer.Println("FINAL WEIGHTS:")
 	for _, statType := range grid.requiredStats {
 		columnIndex := weightColumns[statType]

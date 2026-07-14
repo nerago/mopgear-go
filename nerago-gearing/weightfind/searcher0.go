@@ -7,7 +7,7 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_rank"
-	"paladin_gearing_go/weightfind/weight_highs"
+	"paladin_gearing_go/weightfind/weight_types"
 )
 
 const (
@@ -30,12 +30,12 @@ func (ws *WeightSearcher0) Init(weightStats []stats.StatType, targetRatio stats.
 	ws.printer = printer
 }
 
-func (ws *WeightSearcher0) SupplyData(inputData []weight_highs.WeightInput) {
+func (ws *WeightSearcher0) SupplyData(inputData []weight_types.WeightInput) {
 	ws.evaluateAccuracy.Init(inputData, ws.targetRatio, ws.AccuracyMode)
 }
 
-func (ws *WeightSearcher0) Run(cancel util_async.CancelSignal) weight_highs.WeightResult {
-	best := util_rank.BestCollector1[weight_highs.WeightResult]{}
+func (ws *WeightSearcher0) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
+	best := util_rank.BestCollector1[weight_types.WeightResult]{}
 	progress := 0
 	for initialWeight := range ws.makeRandomWeights(20000) {
 		updatedWeight, updatedAccuracy := weightTweaker_internal_FastCached(initialWeight, c_search0_tweak_start, ws.weightStats, &ws.evaluateAccuracy)
@@ -53,8 +53,8 @@ func (ws *WeightSearcher0) Run(cancel util_async.CancelSignal) weight_highs.Weig
 	return bestWeight.ScaleForBaseStat(ws.weightStats[0])
 }
 
-func (ws *WeightSearcher0) makeRandomWeights(count int) iter.Seq[weight_highs.WeightResult] {
-	return func(yield func(weight_highs.WeightResult) bool) {
+func (ws *WeightSearcher0) makeRandomWeights(count int) iter.Seq[weight_types.WeightResult] {
+	return func(yield func(weight_types.WeightResult) bool) {
 		rng := rand.New(rand.NewSource(rand.Int63()))
 		for range count {
 			weight := ws.buildWeightsRandom(rng)
@@ -65,8 +65,8 @@ func (ws *WeightSearcher0) makeRandomWeights(count int) iter.Seq[weight_highs.We
 	}
 }
 
-func (ws *WeightSearcher0) buildWeightsRandom(rng *rand.Rand) weight_highs.WeightResult {
-	weight := weight_highs.WeightResult_Make()
+func (ws *WeightSearcher0) buildWeightsRandom(rng *rand.Rand) weight_types.WeightResult {
+	weight := weight_types.WeightResult_Make()
 	for _, statType := range ws.weightStats {
 		value := c_search0_min + rng.Float64()*(c_search0_max-c_search0_min)
 		weight.Put(statType, value)

@@ -4,45 +4,35 @@ import (
 	"cmp"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
-	"paladin_gearing_go/weightfind/weight_highs"
+	"paladin_gearing_go/weightfind/simrank"
+	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 )
 
 type EvaluateAccuracyPrepared struct {
-	prepared       []*accuracyPreparedEntry
+	prepared       []*weight_types.AccuracyPreparedEntry
 	statRankRanges []*util.HiLoInt
 	hiLoPool       []util.HiLoInt
 }
 
-type accuracyInfoPrePrepare struct {
-	simScore float64
-	dataSim  *stats.SimData
-	dataStat *stats.StatBlock
-}
-
-type accuracyPreparedEntry struct {
-	statScore    float64
-	stats        *stats.StatBlock
-	simRankRange *util.HiLoInt
-}
-
-func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_highs.WeightInput, simRatios stats.SimData, simCalcMode int) {
+func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, simRatios stats.SimData, simCalcMode int) {
 	if simCalcMode == 0 {
 		panic("mode not provided")
 	}
 
-	data := util.MapSliceAsNew(inputData, func(input *weight_highs.WeightInput) *accuracyInfoPrePrepare {
-		return &accuracyInfoPrePrepare{
-			dataSim:  &input.SimResult,
-			dataStat: &input.TotalStat,
-			simScore: 0,
+	data := util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.AccuracyInfoPrePrepare {
+		return &weight_types.AccuracyInfoPrePrepare{
+			DataSim:  &input.SimResult,
+			DataStat: &input.TotalStat,
+			SimScore: 0,
 		}
 	})
 
+	requiredSims := simRatios.NonZeroTypes()
 	if simCalcMode == 1 {
-		ea.scoreSimsBasic(simRatios, data)
+		simrank.RankSimsBasicForAccuracyPrepare(simRatios, data, requiredSims)
 	} else {
-		ea.scoreSimsStatistical(simRatios, data)
+		simrank.RankSimsStatisticalForAccuracyPrepare(simRatios, data, requiredSims)
 	}
 
 	ea.calcSimRankAndPrepare(data)
@@ -51,72 +41,18 @@ func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_highs.WeightInput, s
 	ea.hiLoPool = make([]util.HiLoInt, len(data))
 }
 
-func (ea *EvaluateAccuracyPrepared) scoreSimsBasic(simRatios stats.SimData, data []*accuracyInfoPrePrepare) {
-	// score each sim
-	requiredSims := simRatios.NonZeroTypes()
-	for _, simType := range requiredSims {
-		ratio := simRatios.Get(simType)
-		slices.SortFunc(data, simSortSimSingledCompares[simType])
-		for rank := range data {
-			data[rank].simScore += float64(rank) * ratio
-		}
-	}
-}
-
-func (ea *EvaluateAccuracyPrepared) scoreSimsStatistical(simRatios stats.SimData, data []*accuracyInfoPrePrepare) {
-	// score each sim
-	requiredSims := simRatios.NonZeroTypes()
-	for _, simType := range requiredSims {
-		if simType == stats.Sim_DEATH {
-			// death data never has detail
-			slices.SortFunc(data, simSortSimSingledCompares[simType])
-		} else if simType.IsHighGood() {
-			slices.SortFunc(data, func(a, b *accuracyInfoPrePrepare) int {
-				return deviationCompareSims(a.dataSim, b.dataSim, simType)
-			})
-		} else {
-			slices.SortFunc(data, func(a, b *accuracyInfoPrePrepare) int {
-				return deviationCompareSims(b.dataSim, a.dataSim, simType)
-			})
-		}
-		ratio := simRatios.Get(simType)
-		for rank := range data {
-			entry := data[rank]
-			entry.simScore += float64(rank) * ratio
-		}
-	}
-}
-
-func (ea *EvaluateAccuracyPrepared) calcSimRankAndPrepare(data []*accuracyInfoPrePrepare) {
-	// rank combined sims
-	slices.SortFunc(data, func(a, b *accuracyInfoPrePrepare) int {
-		return cmp.Compare(a.simScore, b.simScore)
-	})
-
+func (ea *EvaluateAccuracyPrepared) calcSimRankAndPrepare(data []*weight_types.AccuracyInfoPrePrepare) {
 	// make ranked entries for later, calculating the sim rank as we go
-	prepare := make([]*accuracyPreparedEntry, len(data))
-	prepare[0] = &accuracyPreparedEntry{
-		simRankRange: &util.HiLoInt{Lo: 0, Hi: 0},
-		stats:        data[0].dataStat,
-	}
-	for i := 1; i < len(data); i++ {
-		if util.FloatsApproxEquals(data[i].simScore, data[i-1].simScore) {
-			prevRange := prepare[i-1].simRankRange
-			prevRange.Hi = i
-			prepare[i] = &accuracyPreparedEntry{simRankRange: prevRange, stats: data[i].dataStat}
-		} else {
-			newRange := &util.HiLoInt{Lo: i, Hi: i}
-			prepare[i] = &accuracyPreparedEntry{simRankRange: newRange, stats: data[i].dataStat}
-		}
-	}
+	prepare := make([]*weight_types.AccuracyPreparedEntry, len(data))
+	simrank.CalcHiLoForAccuracyPrepare(data, prepare)
 
 	ea.prepared = prepare
 }
 
 func (ea *EvaluateAccuracyPrepared) Clone() *EvaluateAccuracyPrepared {
 	return &EvaluateAccuracyPrepared{
-		prepared: util.MapSliceAsNew_NoPointer(ea.prepared, func(x *accuracyPreparedEntry) *accuracyPreparedEntry {
-			return &accuracyPreparedEntry{simRankRange: x.simRankRange, stats: x.stats}
+		prepared: util.MapSliceAsNew_NoPointer(ea.prepared, func(x *weight_types.AccuracyPreparedEntry) *weight_types.AccuracyPreparedEntry {
+			return &weight_types.AccuracyPreparedEntry{SimRankRange: x.SimRankRange, Stats: x.Stats}
 		}),
 		statRankRanges: make([]*util.HiLoInt, len(ea.statRankRanges)),
 		hiLoPool:       make([]util.HiLoInt, len(ea.hiLoPool)),
@@ -124,7 +60,7 @@ func (ea *EvaluateAccuracyPrepared) Clone() *EvaluateAccuracyPrepared {
 }
 
 // fundamentally not thread safe
-func (ea *EvaluateAccuracyPrepared) EvaluateWeight(statWeights weight_highs.WeightResult) float64 {
+func (ea *EvaluateAccuracyPrepared) EvaluateWeight(statWeights weight_types.WeightResult) float64 {
 	if statWeights.IsEmpty() {
 		return 0
 	}
@@ -134,10 +70,10 @@ func (ea *EvaluateAccuracyPrepared) EvaluateWeight(statWeights weight_highs.Weig
 
 	// calculate stat scores for given weights
 	for i := range size {
-		prepared[i].statScore = statWeights.CalcStatScore2(prepared[i].stats)
+		prepared[i].StatScore = statWeights.CalcStatScore2(prepared[i].Stats)
 	}
-	slices.SortFunc(prepared, func(a, b *accuracyPreparedEntry) int {
-		return cmp.Compare(a.statScore, b.statScore)
+	slices.SortFunc(prepared, func(a, b *weight_types.AccuracyPreparedEntry) int {
+		return cmp.Compare(a.StatScore, b.StatScore)
 	})
 
 	// rank stats scores
@@ -148,7 +84,7 @@ func (ea *EvaluateAccuracyPrepared) EvaluateWeight(statWeights weight_highs.Weig
 	hiLoAlloc := 1
 
 	for rank := 1; rank < size; rank++ {
-		if util.FloatsApproxEquals(prepared[rank].statScore, prepared[rank-1].statScore) {
+		if util.FloatsApproxEquals(prepared[rank].StatScore, prepared[rank-1].StatScore) {
 			prevRange := statRankRanges[rank-1]
 			statRankRanges[rank] = prevRange
 			prevRange.Hi = rank
@@ -164,31 +100,9 @@ func (ea *EvaluateAccuracyPrepared) EvaluateWeight(statWeights weight_highs.Weig
 	// compute average difference between stat rank and sim rank.
 	sumRatioScores := 0.0
 	for i := range size {
-		ratioScore := rangesToAccuracyRatio(*prepared[i].simRankRange, *statRankRanges[i], size)
+		ratioScore := rangesToAccuracyRatio(*prepared[i].SimRankRange, *statRankRanges[i], size)
 		sumRatioScores += ratioScore
 	}
 	averagePercent := 100.0 * sumRatioScores / float64(size)
 	return checkValue(averagePercent)
-}
-
-//goland:noinspection DuplicatedCode
-var simSortSimSingledCompares = [6]func(a, b *accuracyInfoPrePrepare) int{
-	func(a, b *accuracyInfoPrePrepare) int {
-		return cmp.Compare(a.dataSim.Get(stats.Sim_DPS), b.dataSim.Get(stats.Sim_DPS))
-	},
-	func(a, b *accuracyInfoPrePrepare) int {
-		return cmp.Compare(a.dataSim.Get(stats.Sim_TPS), b.dataSim.Get(stats.Sim_TPS))
-	},
-	func(a, b *accuracyInfoPrePrepare) int {
-		return cmp.Compare(b.dataSim.Get(stats.Sim_DTPS), a.dataSim.Get(stats.Sim_DTPS))
-	},
-	func(a, b *accuracyInfoPrePrepare) int {
-		return cmp.Compare(a.dataSim.Get(stats.Sim_HPS), b.dataSim.Get(stats.Sim_HPS))
-	},
-	func(a, b *accuracyInfoPrePrepare) int {
-		return cmp.Compare(b.dataSim.Get(stats.Sim_TMI), a.dataSim.Get(stats.Sim_TMI))
-	},
-	func(a, b *accuracyInfoPrePrepare) int {
-		return cmp.Compare(b.dataSim.Get(stats.Sim_DEATH), a.dataSim.Get(stats.Sim_DEATH))
-	},
 }

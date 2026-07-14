@@ -16,6 +16,7 @@ import (
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/weightfind"
 	"paladin_gearing_go/weightfind/weight_highs"
+	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"sync/atomic"
 )
@@ -425,7 +426,7 @@ func statWeightsGridFromInitialT5_inner(model gear_model.SpecModel, priority []s
 	printer.Println("BASELINE SET")
 	tools.ReportSetFewerParams(&model, &baseItemSet, printer)
 
-	var weights weight_highs.WeightResult
+	var weights weight_types.WeightResult
 	if false {
 		// SIMULATE STAT CHANGES
 		// baseLine := simulate.WowSim_Execute_SpecifyAll(simSpeed, model.Spec, model.Goal, fight, model.Professions, baseItemSet.Items(), nil, nil)

@@ -7,7 +7,7 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_rank"
-	"paladin_gearing_go/weightfind/weight_highs"
+	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"sync"
 )
@@ -39,7 +39,7 @@ type WeightSearcher3 struct {
 	initialBound     *weightSearch2FastBound
 	AccuracyMode     int
 
-	bestResult util_rank.BestCollector1Concurrent[weight_highs.WeightResult]
+	bestResult util_rank.BestCollector1Concurrent[weight_types.WeightResult]
 
 	poolQueue typedPool[weightSearch2FastBound]
 }
@@ -87,7 +87,7 @@ func (ws *WeightSearcher3) Init(statTypes []stats.StatType, targetRatio stats.Si
 	ws.targetRatio = targetRatio
 }
 
-func (ws *WeightSearcher3) SupplyData(inputData []weight_highs.WeightInput) {
+func (ws *WeightSearcher3) SupplyData(inputData []weight_types.WeightInput) {
 	ws.evaluateAccuracy.Init(inputData, ws.targetRatio, ws.AccuracyMode)
 }
 
@@ -102,7 +102,7 @@ func (ws *WeightSearcher3) SetRanges(weightMin, weightMax float64) {
 	ws.initialBound = bound
 }
 
-func (ws *WeightSearcher3) Run(cancel util_async.CancelSignal) weight_highs.WeightResult {
+func (ws *WeightSearcher3) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
 	threadCount := 4
 	queue := util.QueueStackFiloPoolParent[*weightSearch2FastBound]{}
 
@@ -167,7 +167,7 @@ func (ws *WeightSearcher3) newProbeSlice() []*weightSearch2FastProbe {
 }
 
 func (ws *WeightSearcher3) evaluateScore(weightArray *weightSearch2FastPoint) float64 {
-	weights := weight_highs.WeightResult{}
+	weights := weight_types.WeightResult{}
 	for i, statType := range ws.statTypes {
 		weights.Put(statType, weightArray[i])
 	}

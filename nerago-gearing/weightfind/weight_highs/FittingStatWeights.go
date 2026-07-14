@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/util/util_rank"
+	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -61,7 +62,7 @@ type FittingEachStatWeightProcess struct {
 	timeout int
 
 	lazyMode      bool
-	inputData     []WeightInput
+	inputData     []weight_types.WeightInput
 	targetRatios  stats.SimData
 	requiredStats []stats.StatType
 	requiredSims  []stats.SimType
@@ -94,7 +95,7 @@ func (fiteach *FittingEachStatWeightProcess) SetLazyMode(lazy bool) {
 	fiteach.lazyMode = lazy
 }
 
-func (fiteach *FittingEachStatWeightProcess) SupplyDataFromStandard(inputData []WeightInput) {
+func (fiteach *FittingEachStatWeightProcess) SupplyDataFromStandard(inputData []weight_types.WeightInput) {
 	fiteach.inputData = inputData
 }
 
@@ -127,7 +128,7 @@ outer:
 	return resultMap
 }
 
-func (fiteach *FittingEachStatWeightProcess) Run(stopwatch *util.Stopwatch, cancel util_async.CancelSignal) WeightResult {
+func (fiteach *FittingEachStatWeightProcess) Run(stopwatch *util.Stopwatch, cancel util_async.CancelSignal) weight_types.WeightResult {
 	detailResult := fiteach.RunDetailedResults(cancel)
 
 	for byRange := range detailResult.SeqValues() {
@@ -150,7 +151,7 @@ func (fiteach *FittingEachStatWeightProcess) Run(stopwatch *util.Stopwatch, canc
 	})
 
 	baseStat := fiteach.requiredStats[0]
-	standardResult := WeightResult_Make()
+	standardResult := weight_types.WeightResult_Make()
 	standardResult.Put(baseStat, 1)
 	for _, statType := range fiteach.requiredStats {
 		if statType != baseStat {
@@ -180,8 +181,8 @@ type FittingSingleStatSegmentsProcess struct {
 	timeout  int
 	lazyMode bool
 
-	inputDataOriginal       []*WeightInput
-	inputDataRemainingParts map[StatRange][]*WeightInput
+	inputDataOriginal       []*weight_types.WeightInput
+	inputDataRemainingParts map[StatRange][]*weight_types.WeightInput
 	stat                    stats.StatType
 	sim                     stats.SimType
 
@@ -191,7 +192,7 @@ type FittingSingleStatSegmentsProcess struct {
 func (fitseg *FittingSingleStatSegmentsProcess) Init(printer *util.PrintRecorder, stat stats.StatType, sim stats.SimType, timeout int) {
 	fitseg.printer = printer
 	fitseg.segments = make(map[StatRange]FittingSingleStatResult)
-	fitseg.inputDataRemainingParts = make(map[StatRange][]*WeightInput)
+	fitseg.inputDataRemainingParts = make(map[StatRange][]*weight_types.WeightInput)
 	fitseg.stat = stat
 	fitseg.sim = sim
 	fitseg.timeout = timeout
@@ -201,8 +202,8 @@ func (fitseg *FittingSingleStatSegmentsProcess) SetLazyMode(lazy bool) {
 	fitseg.lazyMode = lazy
 }
 
-func (fitseg *FittingSingleStatSegmentsProcess) SupplyDataFromStandard(inputData []WeightInput) {
-	fitseg.inputDataOriginal = util.MapSliceAsNew(inputData, func(w *WeightInput) *WeightInput { return w })
+func (fitseg *FittingSingleStatSegmentsProcess) SupplyDataFromStandard(inputData []weight_types.WeightInput) {
+	fitseg.inputDataOriginal = util.MapSliceAsNew(inputData, func(w *weight_types.WeightInput) *weight_types.WeightInput { return w })
 }
 
 func (fitseg *FittingSingleStatSegmentsProcess) Run(cancel util_async.CancelSignal) map[StatRange]FittingSingleStatResult {
@@ -269,7 +270,7 @@ func (fitseg *FittingSingleStatSegmentsProcess) runInitial(cancel util_async.Can
 	}
 }
 
-func (fitseg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []*WeightInput, inputRange StatRange, includeRate float64, cancel util_async.CancelSignal) {
+func (fitseg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []*weight_types.WeightInput, inputRange StatRange, includeRate float64, cancel util_async.CancelSignal) {
 	fit := FittingSingleStatWeightProcess{}
 	fit.Init(fitseg.printer, fitseg.timeout)
 	fit.SetMinimumIncludeRate(includeRate)
@@ -290,13 +291,13 @@ func (fitseg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []*Weig
 	}
 }
 
-func (fitseg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData []*WeightInput, inputRange StatRange, removeRange StatRange) {
+func (fitseg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData []*weight_types.WeightInput, inputRange StatRange, removeRange StatRange) {
 	if removeRange.Minimum < inputRange.Minimum || removeRange.Maximum > inputRange.Maximum || removeRange.Minimum > removeRange.Maximum || inputRange.Minimum > inputRange.Maximum {
 		panic("range isn't within bounds")
 	}
 
-	loData := make([]*WeightInput, 0)
-	hiData := make([]*WeightInput, 0)
+	loData := make([]*weight_types.WeightInput, 0)
+	hiData := make([]*weight_types.WeightInput, 0)
 	for _, input := range processedData {
 		stat := input.TotalStat.GetUInt(fitseg.stat)
 		if stat < inputRange.Minimum {
@@ -323,8 +324,8 @@ func (fitseg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData
 	}
 }
 
-func (fitseg *FittingSingleStatSegmentsProcess) filterDataStatRange(inputData []WeightInput, lo, hi uint32) {
-	util.FilterSliceAsNew(inputData, func(in *WeightInput) bool {
+func (fitseg *FittingSingleStatSegmentsProcess) filterDataStatRange(inputData []weight_types.WeightInput, lo, hi uint32) {
+	util.FilterSliceAsNew(inputData, func(in *weight_types.WeightInput) bool {
 		value := in.TotalStat.GetUInt(fitseg.stat)
 		return lo <= value && value <= hi
 	})
@@ -391,8 +392,8 @@ func (fit *FittingSingleStatWeightProcess) SetMinimumIncludeRate(percent float64
 	fit.minimumIncludeRate = percent
 }
 
-func (fit *FittingSingleStatWeightProcess) SupplyDataFromStandard(inputData []*WeightInput, stat stats.StatType, sim stats.SimType) {
-	fit.inputData = util.MapSliceAsNew(inputData, func(input **WeightInput) fittingSample {
+func (fit *FittingSingleStatWeightProcess) SupplyDataFromStandard(inputData []*weight_types.WeightInput, stat stats.StatType, sim stats.SimType) {
+	fit.inputData = util.MapSliceAsNew(inputData, func(input **weight_types.WeightInput) fittingSample {
 		return fittingSample{
 			(*input).TotalStat.GetFloat(stat),
 			scaleSimItem((*input).SimResult.Get(sim), sim),

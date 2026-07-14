@@ -5,6 +5,7 @@ import (
 	"math"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/weightfind/weight_types"
 )
 
 func isGoodValueRange(value float64) bool {
@@ -17,28 +18,32 @@ type enumWithName interface {
 	Name() string
 }
 
-func chooseSimScalingUnfriendly(inputData []WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[stats.SimType]float64 {
+func chooseSimScalingUnfriendly(inputData []weight_types.WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[stats.SimType]float64 {
 	return chooseScalingNumbers(inputData,
 		stats.SimTypeList,
-		func(data *WeightInput, simType stats.SimType) float64 { return data.SimResult.Get(simType) },
+		func(data *weight_types.WeightInput, simType stats.SimType) float64 {
+			return data.SimResult.Get(simType)
+		},
 		scaleTarget,
 		keepUnderTarget,
 		printer)
 }
 
-func chooseStatScaling(inputData []WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[stats.StatType]float64 {
+func chooseStatScaling(inputData []weight_types.WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[stats.StatType]float64 {
 	return chooseScalingNumbers(inputData,
 		stats.StatType_List,
-		func(data *WeightInput, statType stats.StatType) float64 { return data.TotalStat.GetFloat(statType) },
+		func(data *weight_types.WeightInput, statType stats.StatType) float64 {
+			return data.TotalStat.GetFloat(statType)
+		},
 		scaleTarget,
 		keepUnderTarget,
 		printer)
 }
 
-func chooseScalingNumbers[E enumWithName](inputData []WeightInput, checkTypes []E, getValue func(*WeightInput, E) float64, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[E]float64 {
+func chooseScalingNumbers[E enumWithName](inputData []weight_types.WeightInput, checkTypes []E, getValue func(*weight_types.WeightInput, E) float64, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[E]float64 {
 	scaleMap := make(map[E]float64)
 	for _, check := range checkTypes {
-		valueSeq := util.MapSliceAsSeq(inputData, func(x *WeightInput) float64 {
+		valueSeq := util.MapSliceAsSeq(inputData, func(x *weight_types.WeightInput) float64 {
 			return getValue(x, check)
 		})
 

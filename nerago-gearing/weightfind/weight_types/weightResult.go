@@ -1,4 +1,4 @@
-package weight_highs
+package weight_types
 
 import (
 	"encoding/json"
@@ -8,16 +8,9 @@ import (
 	"paladin_gearing_go/util"
 )
 
-type WeightInput struct {
-	TotalStat stats.StatBlock
-	SimResult stats.SimData
-}
-
 type WeightResult struct {
 	content stats.StatBlockFloat
 }
-
-// type WeightResult struct{ values map[stats.StatType]float64 }
 
 func WeightResult_Make() WeightResult {
 	return WeightResult{}

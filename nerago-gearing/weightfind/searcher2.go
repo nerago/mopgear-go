@@ -7,7 +7,7 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_rank"
-	"paladin_gearing_go/weightfind/weight_highs"
+	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"strconv"
 )
@@ -49,7 +49,7 @@ type WeightSearcher2 struct {
 	AccuracyMode     int
 
 	queue      util.QueueStackFilo[*weightSearch2Bound]
-	bestResult util_rank.BestCollector1[weight_highs.WeightResult]
+	bestResult util_rank.BestCollector1[weight_types.WeightResult]
 }
 
 type weightSearch2Bound struct {
@@ -68,7 +68,7 @@ func (ws *WeightSearcher2) Init(statTypes []stats.StatType, targetRatio stats.Si
 	ws.printer = printer
 }
 
-func (ws *WeightSearcher2) SupplyData(inputData []weight_highs.WeightInput) {
+func (ws *WeightSearcher2) SupplyData(inputData []weight_types.WeightInput) {
 	ws.evaluateAccuracy.Init(inputData, ws.targetRatio, ws.AccuracyMode)
 }
 
@@ -82,7 +82,7 @@ func (ws *WeightSearcher2) SetRanges(weightMin, weightMax float64) {
 	})
 }
 
-func (ws *WeightSearcher2) Run(cancel util_async.CancelSignal) weight_highs.WeightResult {
+func (ws *WeightSearcher2) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
 	iterCount := 0
 	for cancel.ShouldContinue() {
 		bound, hasValue := ws.queue.Pop()
@@ -121,7 +121,7 @@ func (ws *WeightSearcher2) Run(cancel util_async.CancelSignal) weight_highs.Weig
 }
 
 func (ws *WeightSearcher2) evaluateScore(weightArray []float64) float64 {
-	weights := weight_highs.WeightResult_Of(weightArray, ws.statTypes)
+	weights := weight_types.WeightResult_Of(weightArray, ws.statTypes)
 	accuracy := ws.evaluateAccuracy.EvaluateWeight(weights)
 	ws.bestResult.Offer(&weights, accuracy)
 	return accuracy

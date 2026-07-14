@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_highs"
+	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -30,7 +31,7 @@ type GridStatWeightProcess2 struct {
 	targetRatios stats.SimData
 	statTypes    []stats.StatType
 	simTypes     []stats.SimType
-	inputData    []WeightInput
+	inputData    []weight_types.WeightInput
 
 	scaleSims map[stats.SimType]float64
 
@@ -49,7 +50,7 @@ func (grid2 *GridStatWeightProcess2) initBuilder(timeout int) {
 	grid2.build.Solver = util_highs.Solver_Force_IPX
 }
 
-func (grid2 *GridStatWeightProcess2) SupplyData(inputData []WeightInput) {
+func (grid2 *GridStatWeightProcess2) SupplyData(inputData []weight_types.WeightInput) {
 	grid2.inputData = inputData
 }
 
@@ -75,13 +76,13 @@ func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios stats.SimData)
 	grid2.targetRatios = targetRatios
 }
 
-func (grid2 *GridStatWeightProcess2) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[WeightResult] {
+func (grid2 *GridStatWeightProcess2) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.WeightResult] {
 	grid2.setupWeightVars()
 	grid2.chooseSimDiffScaling()
 	grid2.processInputData()
 
 	solutionFuture := grid2.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (WeightResult, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(grid2.printer)
 
 		grid2.printer.Println(solution.Status.String())
@@ -129,7 +130,7 @@ func (grid2 *GridStatWeightProcess2) chooseSimDiffScaling() {
 	}
 }
 
-func (grid2 *GridStatWeightProcess2) calcSimDiff(one *WeightInput, two *WeightInput, simType stats.SimType) (float64, bool) {
+func (grid2 *GridStatWeightProcess2) calcSimDiff(one *weight_types.WeightInput, two *weight_types.WeightInput, simType stats.SimType) (float64, bool) {
 	simOne := one.SimResult.GetFriendly(simType)
 	simTwo := two.SimResult.GetFriendly(simType)
 	diff := simOne - simTwo
@@ -183,7 +184,7 @@ func (grid2 *GridStatWeightProcess2) checkForNumberStatDifferences(one, two *sta
 	return differenceCount, diffStatA, diffStatB, diffStatC
 }
 
-func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStats(one *WeightInput, two *WeightInput, statType stats.StatType) {
+func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStats(one *weight_types.WeightInput, two *weight_types.WeightInput, statType stats.StatType) {
 	statDiff := one.TotalStat.GetFloat(statType) - two.TotalStat.GetFloat(statType)
 
 	for _, simType := range grid2.simTypes {
@@ -199,7 +200,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStats(one *Weight
 	}
 }
 
-func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *WeightInput, two *WeightInput, statTypeA stats.StatType, statTypeB stats.StatType) {
+func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *weight_types.WeightInput, two *weight_types.WeightInput, statTypeA stats.StatType, statTypeB stats.StatType) {
 	statDiffA := one.TotalStat.GetFloat(statTypeA) - two.TotalStat.GetFloat(statTypeA)
 	statDiffB := one.TotalStat.GetFloat(statTypeB) - two.TotalStat.GetFloat(statTypeB)
 
@@ -222,7 +223,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *Weight
 	}
 }
 
-func (grid2 *GridStatWeightProcess2) prepareSampleThreeDifferenceStats(one *WeightInput, two *WeightInput, statTypeA stats.StatType, statTypeB stats.StatType, statTypeC stats.StatType) {
+func (grid2 *GridStatWeightProcess2) prepareSampleThreeDifferenceStats(one *weight_types.WeightInput, two *weight_types.WeightInput, statTypeA stats.StatType, statTypeB stats.StatType, statTypeC stats.StatType) {
 	statDiffA := one.TotalStat.GetFloat(statTypeA) - two.TotalStat.GetFloat(statTypeA)
 	statDiffB := one.TotalStat.GetFloat(statTypeB) - two.TotalStat.GetFloat(statTypeB)
 	statDiffC := one.TotalStat.GetFloat(statTypeC) - two.TotalStat.GetFloat(statTypeC)
@@ -247,8 +248,8 @@ func (grid2 *GridStatWeightProcess2) prepareSampleThreeDifferenceStats(one *Weig
 	}
 }
 
-func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Solution) WeightResult {
-	result := WeightResult_Make()
+func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Solution) weight_types.WeightResult {
+	result := weight_types.WeightResult_Make()
 	grid2.printer.Println("FINAL WEIGHTS:")
 
 	// weight * (statOne - statTwo) * statScale[type] = (simOne - simTwo) * simScale[type]

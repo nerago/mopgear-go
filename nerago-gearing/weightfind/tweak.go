@@ -4,7 +4,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_rank"
-	"paladin_gearing_go/weightfind/weight_highs"
+	"paladin_gearing_go/weightfind/weight_types"
 )
 
 const (
@@ -13,18 +13,18 @@ const (
 	c_tweak_iter_count = 1000 // limit to avoid infinite loop
 )
 
-func WeightTweakerWithLogging(startWeight weight_highs.WeightResult, weightStats []stats.StatType, targetRatio stats.SimData, inputData []weight_highs.WeightInput, printer *util.PrintRecorder) (weight_highs.WeightResult, float64) {
+func WeightTweakerWithLogging(startWeight weight_types.WeightResult, weightStats []stats.StatType, targetRatio stats.SimData, inputData []weight_types.WeightInput, printer *util.PrintRecorder) (weight_types.WeightResult, float64) {
 	updatedWeight, updatedAccuracy := weightTweakerInternalLogged(startWeight, c_tweak_start, weightStats, targetRatio, inputData, printer)
 	return updatedWeight, updatedAccuracy
 }
 
-func weightTweakerInternalLogged(startWeight weight_highs.WeightResult, tweakStart float64, weightStats []stats.StatType, targetRatio stats.SimData, inputData []weight_highs.WeightInput, printer *util.PrintRecorder) (weight_highs.WeightResult, float64) {
+func weightTweakerInternalLogged(startWeight weight_types.WeightResult, tweakStart float64, weightStats []stats.StatType, targetRatio stats.SimData, inputData []weight_types.WeightInput, printer *util.PrintRecorder) (weight_types.WeightResult, float64) {
 	requiredSims := targetRatio.NonZeroTypes()
 	increment := tweakStart
 	factor := 1 + increment
 
 	type weightAndAccuracy struct {
-		weight   weight_highs.WeightResult
+		weight   weight_types.WeightResult
 		accuracy float64
 	}
 	bestEntry := &weightAndAccuracy{
@@ -81,11 +81,11 @@ func weightTweakerInternalLogged(startWeight weight_highs.WeightResult, tweakSta
 }
 
 // TODO compare logic
-func weightTweakerInternal_Fast(startWeight weight_highs.WeightResult, tweakStart float64, weightStats []stats.StatType, simTypes []stats.SimType, targetRatio stats.SimData, inputData []weight_highs.WeightInput) (weight_highs.WeightResult, float64) {
+func weightTweakerInternal_Fast(startWeight weight_types.WeightResult, tweakStart float64, weightStats []stats.StatType, simTypes []stats.SimType, targetRatio stats.SimData, inputData []weight_types.WeightInput) (weight_types.WeightResult, float64) {
 	increment := tweakStart
 	factor := 1 + increment
 
-	best := util_rank.BestCollector1[weight_highs.WeightResult]{}
+	best := util_rank.BestCollector1[weight_types.WeightResult]{}
 	best.Offer(
 		&startWeight,
 		EvaluateAccuracyRanged(startWeight, simTypes, targetRatio, inputData),
@@ -139,16 +139,16 @@ func weightTweakerInternal_Fast(startWeight weight_highs.WeightResult, tweakStar
 	return best.GetBestOrPanic(), best.BestValue
 }
 
-func WeightTweaker_FastCached(startWeight weight_highs.WeightResult, weightStats []stats.StatType, evaluate *EvaluateAccuracyPrepared) (weight_highs.WeightResult, float64) {
+func WeightTweaker_FastCached(startWeight weight_types.WeightResult, weightStats []stats.StatType, evaluate *EvaluateAccuracyPrepared) (weight_types.WeightResult, float64) {
 	updatedWeight, updatedAccuracy := weightTweaker_internal_FastCached(startWeight, c_tweak_start, weightStats, evaluate)
 	return updatedWeight, updatedAccuracy
 }
 
-func weightTweaker_internal_FastCached(startWeight weight_highs.WeightResult, tweakStart float64, weightStats []stats.StatType, evaluate *EvaluateAccuracyPrepared) (weight_highs.WeightResult, float64) {
+func weightTweaker_internal_FastCached(startWeight weight_types.WeightResult, tweakStart float64, weightStats []stats.StatType, evaluate *EvaluateAccuracyPrepared) (weight_types.WeightResult, float64) {
 	increment := tweakStart
 	factor := 1 + increment
 
-	best := util_rank.BestCollector1[weight_highs.WeightResult]{}
+	best := util_rank.BestCollector1[weight_types.WeightResult]{}
 	best.Offer(
 		&startWeight,
 		evaluate.EvaluateWeight(startWeight),

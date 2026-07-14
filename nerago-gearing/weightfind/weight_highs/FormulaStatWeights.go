@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_highs"
+	"paladin_gearing_go/weightfind/weight_types"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
@@ -21,7 +22,7 @@ type FormulaStatWeightProcess struct {
 	targetRatios  stats.SimData
 	requiredStats []stats.StatType
 	requiredSims  []stats.SimType
-	inputData     []WeightInput
+	inputData     []weight_types.WeightInput
 	BLEND         int
 
 	build *util_highs.LinearBuilder
@@ -42,7 +43,7 @@ func (form *FormulaStatWeightProcess) Init(printer *util.PrintRecorder) {
 	form.printer = printer
 }
 
-func (form *FormulaStatWeightProcess) SupplyData(inputData []WeightInput) {
+func (form *FormulaStatWeightProcess) SupplyData(inputData []weight_types.WeightInput) {
 	form.inputData = inputData
 }
 
@@ -59,7 +60,7 @@ func (form *FormulaStatWeightProcess) SetMinimumIncludeRate(percent float64) {
 	form.minimumIncludeRate = percent
 }
 
-func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int) *util_async.FutureCancellable[WeightResult] {
+func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int) *util_async.FutureCancellable[weight_types.WeightResult] {
 	form.build = new(util_highs.LinearBuilder)
 	form.build.Minimise = true
 	form.build.Solver = util_highs.Solver_MIP_Interior
@@ -101,7 +102,7 @@ func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int
 	form.includeCountRow.Build(form.build, float64(len(form.inputData))*form.minimumIncludeRate, util_highs.C_PlusInf)
 
 	solutionFuture := form.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (WeightResult, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(form.printer)
 		return form.extractAndReportSolution(solution), true
 	})
@@ -145,7 +146,7 @@ func (form *FormulaStatWeightProcess) buildDataEquations() {
 	}
 }
 
-func (form *FormulaStatWeightProcess) buildDataEquationForInput(data *WeightInput) {
+func (form *FormulaStatWeightProcess) buildDataEquationForInput(data *weight_types.WeightInput) {
 	includeColumn := form.sampleIncludeToggleColumn()
 	for _, simType := range form.requiredSims {
 		form.buildDataEquationForSim(&data.TotalStat, data.SimResult.Get(simType), simType, includeColumn)
@@ -185,7 +186,7 @@ func (form *FormulaStatWeightProcess) buildDataEquationForSim(stats *stats.StatB
 	matchSimValue.Build(form.build, scaledSimValue, scaledSimValue)
 }
 
-func (form *FormulaStatWeightProcess) extractAndReportSolution(solution *highs.Solution) WeightResult {
+func (form *FormulaStatWeightProcess) extractAndReportSolution(solution *highs.Solution) weight_types.WeightResult {
 	form.build.DebugPrintColumns(solution, form.printer)
 
 	form.printer.Println("WEIGHTS")
@@ -268,8 +269,8 @@ func (form *FormulaStatWeightProcess) reportExamples(detailWeightMap util.MapMap
 	}
 }
 
-func (form *FormulaStatWeightProcess) computeFinalWeights(detailWeightMap util.MapMap[stats.StatType, stats.SimType, float64]) WeightResult {
-	statWeightResult := WeightResult_Make()
+func (form *FormulaStatWeightProcess) computeFinalWeights(detailWeightMap util.MapMap[stats.StatType, stats.SimType, float64]) weight_types.WeightResult {
+	statWeightResult := weight_types.WeightResult_Make()
 	for statType, seqSimPairs := range detailWeightMap.SeqGroupsKey1NestedKeyValue() {
 		sumIndividual := 0.0
 

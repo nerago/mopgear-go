@@ -1,12 +1,12 @@
 package weight_highs
 
 import (
-	"cmp"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_highs"
-	"slices"
+	"paladin_gearing_go/weightfind/simrank"
+	"paladin_gearing_go/weightfind/weight_types"
 	"strconv"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -39,8 +39,8 @@ type RankingStatWeightProcess5 struct {
 	targetRatios   stats.SimData
 	requiredStats  []stats.StatType
 	requiredSims   []stats.SimType
-	initialWeights *WeightResult
-	dataAll        []WeightInput
+	initialWeights *weight_types.WeightResult
+	dataAll        []weight_types.WeightInput
 }
 
 type rankInternalRun5 struct {
@@ -48,7 +48,7 @@ type rankInternalRun5 struct {
 
 	build *util_highs.LinearBuilder
 
-	runData []rankEntry5
+	runData []weight_types.RankEntry5
 	// scaleStats float64
 	scaleStats map[stats.StatType]float64
 
@@ -59,31 +59,20 @@ type rankInternalRun5 struct {
 	objectiveWeight  util_highs.ObjectiveIndex
 }
 
-type rankEntry5 struct {
-	data *WeightInput
-
-	simScore   float64
-	targetRank int
-
-	scoreCompute    util_highs.ColumnIndex
-	scoreIfIncluded util_highs.ColumnIndex
-	isInclude       util_highs.ColumnIndex
-}
-
 type rankPair5 struct {
-	entryOne *rankEntry5
-	entryTwo *rankEntry5
+	entryOne *weight_types.RankEntry5
+	entryTwo *weight_types.RankEntry5
 }
 
 func (process *RankingStatWeightProcess5) Init(printer *util.PrintRecorder) {
 	process.printer = printer
 }
 
-func (process *RankingStatWeightProcess5) SupplyData(inputData []WeightInput) {
+func (process *RankingStatWeightProcess5) SupplyData(inputData []weight_types.WeightInput) {
 	process.dataAll = inputData
 }
 
-func (process *RankingStatWeightProcess5) SupplyInitialWeights(initialWeights WeightResult) {
+func (process *RankingStatWeightProcess5) SupplyInitialWeights(initialWeights weight_types.WeightResult) {
 	process.initialWeights = &initialWeights
 }
 
@@ -96,7 +85,7 @@ func (process *RankingStatWeightProcess5) SetTargetRatios(targetRatios stats.Sim
 	process.requiredSims = targetRatios.NonZeroTypes()
 }
 
-func (process *RankingStatWeightProcess5) Run(stopwatch *util.Stopwatch, timeout int) *util_async.FutureCancellable[WeightResult] {
+func (process *RankingStatWeightProcess5) Run(stopwatch *util.Stopwatch, timeout int) *util_async.FutureCancellable[weight_types.WeightResult] {
 	process.printer.Printf("RankingStatWeightProcess5 RunOptimisitic\n")
 	run := rankInternalRun5_create(process)
 	run.build.TimeLimitSeconds = timeout
@@ -126,14 +115,14 @@ func rankInternalRun5_create(process *RankingStatWeightProcess5) *rankInternalRu
 	return run
 }
 
-func (run *rankInternalRun5) run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[WeightResult] {
+func (run *rankInternalRun5) run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.WeightResult] {
 	futureSolution := run.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(futureSolution, func(linResult util_highs.LinearResult) (WeightResult, bool) {
+	return util_async.FutureCancellable_MapValue(futureSolution, func(linResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
 		solution := linResult.GetSolutionAndSaveLog(run.process.printer)
 		if solution.HasSolution() {
 			return run.extractAndReportSolution(solution), true
 		} else {
-			return WeightResult{}, false
+			return weight_types.WeightResult{}, false
 		}
 	})
 }
@@ -157,32 +146,20 @@ func (run *rankInternalRun5) createWeightColumns() {
 	}
 }
 
-func (run *rankInternalRun5) supplyData(inputData []WeightInput) {
+func (run *rankInternalRun5) supplyData(inputData []weight_types.WeightInput) {
 	run.scaleStats = chooseStatScaling(inputData, c_rank5_scaleTarget, false, run.process.printer)
-	run.runData = util.MapSliceAsNew(inputData, func(input *WeightInput) rankEntry5 {
-		return rankEntry5{
-			data: input,
+	run.runData = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) weight_types.RankEntry5 {
+		return weight_types.RankEntry5{
+			Data: input,
 		}
 	})
 }
 
 func (run *rankInternalRun5) prepareRankings() {
-	// score each sim
-	for _, simType := range run.process.requiredSims {
-		for entry, simDetailRankHiLo := range util.CalculateRankingRanges(simType.IsHighGood(), run.runData, func(x *rankEntry5) float64 { return x.data.SimResult.Get(simType) }) {
-			entry.simScore += float64(simDetailRankHiLo.Mid()) * run.process.targetRatios.Get(simType)
-		}
-	}
-
-	run.runData = util.RemoveDuplicatesFuncNotify(run.runData,
-		func(a, b *rankEntry5) bool { return a.simScore == b.simScore },
-		func(entry *rankEntry5) { run.process.printer.Println("removing duplicate score") },
-	)
-
-	slices.SortFunc(run.runData, func(a, b rankEntry5) int { return cmp.Compare(a.simScore, b.simScore) })
+	run.runData = simrank.RankWeights5RankSims(run.runData, run.process.requiredSims, run.process.targetRatios, run.process.printer)
 
 	for rank := range run.runData {
-		run.runData[rank].targetRank = rank
+		run.runData[rank].TargetRank = rank
 	}
 }
 
@@ -192,25 +169,25 @@ func (run *rankInternalRun5) makeDataListEntryColumns() {
 	}
 }
 
-func (run *rankInternalRun5) makeEntryColumnRefs(entry *rankEntry5) {
-	rankStr := strconv.FormatInt(int64(entry.targetRank), 10)
-	entry.scoreCompute = run.build.CreateColumnGeneral(highs.Continuous, c_rank5_computeScoreLo, c_rank5_computeScoreHi, util_highs.DebugText("scoreCompute-"+rankStr))
+func (run *rankInternalRun5) makeEntryColumnRefs(entry *weight_types.RankEntry5) {
+	rankStr := strconv.FormatInt(int64(entry.TargetRank), 10)
+	entry.ScoreCompute = run.build.CreateColumnGeneral(highs.Continuous, c_rank5_computeScoreLo, c_rank5_computeScoreHi, util_highs.DebugText("scoreCompute-"+rankStr))
 
 	scoreRow := util_highs.ConstraintRow{Debug: "scoreRow"}
 	for statType, weightColumn := range run.weightColumns {
-		statValue := entry.data.TotalStat.GetFloat(statType)
+		statValue := entry.Data.TotalStat.GetFloat(statType)
 		statScale := run.scaleStats[statType]
 		// statScale := run.scaleStats
 		scoreRow.Add(weightColumn, statValue*statScale)
 	}
-	scoreRow.Add(entry.scoreCompute, -1)
+	scoreRow.Add(entry.ScoreCompute, -1)
 	scoreRow.Build(run.build, 0, 0)
 
 	// TODO consider varying score, especially low end maybe?
-	entry.isInclude = run.build.CreateColumnBoolWithObjective(1, run.objectiveInclude, util_highs.DebugText("include-"+rankStr))
+	entry.IsInclude = run.build.CreateColumnBoolWithObjective(1, run.objectiveInclude, util_highs.DebugText("include-"+rankStr))
 
-	entry.scoreIfIncluded = run.build.CreateColumnGeneral(highs.Continuous, c_rank5_computeScoreLo, c_rank5_computeScoreHi, util_highs.DebugText("scoreIfIncluded-"+rankStr))
-	run.build.ContraintIfBoolCopy(entry.isInclude, entry.scoreCompute, 1, entry.scoreIfIncluded, c_rank5_computeScoreM)
+	entry.ScoreIfIncluded = run.build.CreateColumnGeneral(highs.Continuous, c_rank5_computeScoreLo, c_rank5_computeScoreHi, util_highs.DebugText("scoreIfIncluded-"+rankStr))
+	run.build.ContraintIfBoolCopy(entry.IsInclude, entry.ScoreCompute, 1, entry.ScoreIfIncluded, c_rank5_computeScoreM)
 }
 
 func (run *rankInternalRun5) makeDataListPairRules() {
@@ -223,12 +200,12 @@ func (run *rankInternalRun5) makeDataListPairRules() {
 	}
 }
 
-func (run *rankInternalRun5) makeEntryPairScoreChecks(lo *rankEntry5, hi *rankEntry5, indexLo, indexHi int) {
+func (run *rankInternalRun5) makeEntryPairScoreChecks(lo *weight_types.RankEntry5, hi *weight_types.RankEntry5, indexLo, indexHi int) {
 	indexText := strconv.FormatInt(int64(indexLo), 10)
 
 	compareScore := util_highs.ConstraintRow{Debug: "compareScore " + indexText}
-	compareScore.Add(hi.scoreIfIncluded, 1)
-	compareScore.Add(lo.scoreIfIncluded, -1)
+	compareScore.Add(hi.ScoreIfIncluded, 1)
+	compareScore.Add(lo.ScoreIfIncluded, -1)
 	compareScore.Build(run.build, 0, util_highs.C_PlusInf)
 
 	// TODO this seems a bit off, can a run of includes ever end?
@@ -236,12 +213,12 @@ func (run *rankInternalRun5) makeEntryPairScoreChecks(lo *rankEntry5, hi *rankEn
 	run.pairLinks.Put(indexLo, indexHi, &rankPair5{entryOne: lo, entryTwo: hi})
 }
 
-func (run *rankInternalRun5) extractAndReportSolution(solution *highs.Solution) WeightResult {
+func (run *rankInternalRun5) extractAndReportSolution(solution *highs.Solution) weight_types.WeightResult {
 	run.build.DebugPrintColumns(solution, run.process.printer)
 
 	run.process.printer.Println("WEIGHTS")
 
-	statWeightResult := WeightResult_Make()
+	statWeightResult := weight_types.WeightResult_Make()
 	for _, statType := range run.process.requiredStats {
 		weightColumn := run.weightColumns[statType]
 		statScale := run.scaleStats[statType]
@@ -284,7 +261,7 @@ func (run *rankInternalRun5) extractAndReportSolution(solution *highs.Solution) 
 
 	includeCount := 0
 	for entry := range util.ForPointer(run.runData) {
-		includeValue := solution.ColValues[entry.isInclude]
+		includeValue := solution.ColValues[entry.IsInclude]
 		if util.FloatEqualsOne(includeValue) {
 			includeCount++
 		}
@@ -294,7 +271,7 @@ func (run *rankInternalRun5) extractAndReportSolution(solution *highs.Solution) 
 	return statWeightResult
 }
 
-func (run *rankInternalRun5) setupInitialSolutionFromExternal(weights WeightResult) {
+func (run *rankInternalRun5) setupInitialSolutionFromExternal(weights weight_types.WeightResult) {
 	weights = weights.ScaleForTotalSum(c_rank5_weightTotalTarget)
 
 	for statType, colWeight := range run.weightColumns {
@@ -304,35 +281,35 @@ func (run *rankInternalRun5) setupInitialSolutionFromExternal(weights WeightResu
 
 	entryScores := make([]float64, len(run.runData))
 	for i, entry := range run.runData {
-		score := weights.CalcStatScoreScaled(entry.data, run.scaleStats)
+		score := weights.CalcStatScoreScaled(entry.Data, run.scaleStats)
 		// score := weights.CalcStatScore(entry.data)
 		// score *= run.scaleStats
 		entryScores[i] = score
-		run.build.SetInitialSolutionValue(entry.scoreCompute, score)
+		run.build.SetInitialSolutionValue(entry.ScoreCompute, score)
 	}
 
 	firstInclude, lastIndex := 0, len(run.runData)-1
-	run.build.SetInitialSolutionValue(run.runData[firstInclude].isInclude, 1)
-	run.build.SetInitialSolutionValue(run.runData[firstInclude].scoreIfIncluded, entryScores[firstInclude])
+	run.build.SetInitialSolutionValue(run.runData[firstInclude].IsInclude, 1)
+	run.build.SetInitialSolutionValue(run.runData[firstInclude].ScoreIfIncluded, entryScores[firstInclude])
 
 	for i := firstInclude + 1; i < lastIndex; i++ {
 		entry := &run.runData[i]
 		if entryScores[i-1] <= entryScores[i] && entryScores[i] <= entryScores[i+1] {
-			run.build.SetInitialSolutionValue(entry.isInclude, 1)
-			run.build.SetInitialSolutionValue(entry.scoreIfIncluded, entryScores[i])
+			run.build.SetInitialSolutionValue(entry.IsInclude, 1)
+			run.build.SetInitialSolutionValue(entry.ScoreIfIncluded, entryScores[i])
 		} else {
-			run.build.SetInitialSolutionValue(entry.isInclude, 0)
-			run.build.SetInitialSolutionValue(entry.scoreIfIncluded, entryScores[i-1])
+			run.build.SetInitialSolutionValue(entry.IsInclude, 0)
+			run.build.SetInitialSolutionValue(entry.ScoreIfIncluded, entryScores[i-1])
 			entryScores[i] = entryScores[i-1]
 		}
 	}
 
 	if entryScores[lastIndex-1] <= entryScores[lastIndex] {
-		run.build.SetInitialSolutionValue(run.runData[lastIndex].isInclude, 1)
-		run.build.SetInitialSolutionValue(run.runData[lastIndex].scoreIfIncluded, entryScores[lastIndex])
+		run.build.SetInitialSolutionValue(run.runData[lastIndex].IsInclude, 1)
+		run.build.SetInitialSolutionValue(run.runData[lastIndex].ScoreIfIncluded, entryScores[lastIndex])
 	} else {
-		run.build.SetInitialSolutionValue(run.runData[lastIndex].isInclude, 0)
-		run.build.SetInitialSolutionValue(run.runData[lastIndex].scoreIfIncluded, entryScores[lastIndex-1])
+		run.build.SetInitialSolutionValue(run.runData[lastIndex].IsInclude, 0)
+		run.build.SetInitialSolutionValue(run.runData[lastIndex].ScoreIfIncluded, entryScores[lastIndex-1])
 	}
 
 	run.build.ValidateInitialSolutionState()

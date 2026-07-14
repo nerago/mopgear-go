@@ -20,6 +20,7 @@ import (
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/weightfind"
 	"paladin_gearing_go/weightfind/weight_highs"
+	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"strconv"
 	"strings"
@@ -149,7 +150,7 @@ func generateRatingsInputFromArtificialStatOverrides_ForBasic(currentItemSet ite
 	return inputList, simBase
 }
 
-func generateRatingsInputFromRealRandomSetsT5(printer *util.PrintRecorder) ([]weight_highs.WeightInput, stats.SimData) {
+func generateRatingsInputFromRealRandomSetsT5(printer *util.PrintRecorder) ([]weight_types.WeightInput, stats.SimData) {
 	makeSetCount := 2000
 	simSize := simulate.RunSize_Common
 
@@ -165,9 +166,9 @@ func generateRatingsInputFromRealRandomSetsT5(printer *util.PrintRecorder) ([]we
 	track.RunOuterTracking(len(setList))
 	defer track.SetDone()
 
-	weightInputs := util_async.Map_SliceToSlice(6, setList, func(itemSet *items.FullItemSet) weight_highs.WeightInput {
+	weightInputs := util_async.Map_SliceToSlice(6, setList, func(itemSet *items.FullItemSet) weight_types.WeightInput {
 		simResult := simulate.WowSim_Execute_UseModel(simSize, &model, itemSet.Items(), nil, track.NewChild())
-		return weight_highs.WeightInput{TotalStat: *itemSet.Total(), SimResult: simResult}
+		return weight_types.WeightInput{TotalStat: *itemSet.Total(), SimResult: simResult}
 	})
 
 	writeWeightInputsToFile(weightInputs, "sim-stats-input-data2.json")
@@ -320,7 +321,7 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
 	mixedInputData := slices.Concat(inputDataRandom, inputDataGrid)
 
-	var weights1 weight_highs.WeightResult
+	var weights1 weight_types.WeightResult
 	if false {
 		grid := weight_highs.GridStatWeightProcess{}
 		grid.Init(printer, 3000)
@@ -354,7 +355,7 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 		//}
 
 		// better than it thinks is optimal?
-		weights1 = weight_highs.WeightResult_Make()
+		weights1 = weight_types.WeightResult_Make()
 		weights1.Put(stats.Stat_Strength, 1.000000)
 		weights1.Put(stats.Stat_Stamina, 1.0877848527)
 		weights1.Put(stats.Stat_Crit, 2.4071360469)
@@ -407,7 +408,7 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 	if err != nil {
 		panic(err)
 	}
-	var weightInputs []weight_highs.WeightInput
+	var weightInputs []weight_types.WeightInput
 	err = json.Unmarshal(bytes, &weightInputs)
 	if err != nil {
 		panic(err)
@@ -467,7 +468,7 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 	if err != nil {
 		panic(err)
 	}
-	var weightInputs []weight_highs.WeightInput
+	var weightInputs []weight_types.WeightInput
 	err = json.Unmarshal(bytes, &weightInputs)
 	if err != nil {
 		panic(err)
@@ -642,7 +643,7 @@ func parseSimStats(str string) stats.SimData {
 	return result
 }
 
-func writeWeightInputsToFile(weightInputs []weight_highs.WeightInput, filename string) {
+func writeWeightInputsToFile(weightInputs []weight_types.WeightInput, filename string) {
 	bytes, err := json.Marshal(weightInputs)
 	if err != nil {
 		panic(err)
@@ -653,12 +654,12 @@ func writeWeightInputsToFile(weightInputs []weight_highs.WeightInput, filename s
 	}
 }
 
-func readWeightInputFile(filename string) []weight_highs.WeightInput {
+func readWeightInputFile(filename string) []weight_types.WeightInput {
 	bytes, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
-	var weightInputs []weight_highs.WeightInput
+	var weightInputs []weight_types.WeightInput
 	err = json.Unmarshal(bytes, &weightInputs)
 	if err != nil {
 		panic(err)
@@ -700,7 +701,7 @@ func statWeights_CompareAlgorithms() {
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "statWeights_CompareAlgorithms")
 
 	//targetRatio := gear_model.SimRatio_generalMiti
-	targetRatio := gear_model.SimRatio_dpsWeight
+	targetRatio := gear_model.SimRatio_healWeight
 	requiredStats := gear_model.StatsForWeighting_strengthTank
 	requiredSims := targetRatio.NonZeroTypes()
 
@@ -726,8 +727,8 @@ func statWeights_CompareAlgorithms() {
 	//writeWeightBasicInputsToFile(inputDataBasic, basicSimBase, "sim-stats-compare-basic.json")
 
 	inputDataBasic, basicSimBase := readWeightBasicInputsFile("sim-stats-compare-basic.json")
-	inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Damage.json")
-	inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Damage.json")
+	inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Heal.json")
+	inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Heal.json")
 	//inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
 	//inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
 	mixedInputDataFull := slices.Concat(inputDataGrid, inputDataRandom)
@@ -752,7 +753,7 @@ func statWeights_CompareAlgorithms() {
 	//weightsNearOptimal.Put(stats.Stat_Parry, 3.2064183845)
 
 	// weight value 87.7342
-	weightsMidRange := weight_highs.WeightResult_Make()
+	weightsMidRange := weight_types.WeightResult_Make()
 	weightsMidRange.Put(stats.Stat_Strength, 1.0000)
 	weightsMidRange.Put(stats.Stat_Stamina, 1.2309)
 	weightsMidRange.Put(stats.Stat_Crit, 0.1167)
@@ -762,7 +763,7 @@ func statWeights_CompareAlgorithms() {
 	weightsMidRange.Put(stats.Stat_Dodge, 0.0824)
 	weightsMidRange.Put(stats.Stat_Parry, 0.0532)
 
-	resultsByAlgorithm := util.MapConcurrent[string, weight_highs.WeightResult]{}
+	resultsByAlgorithm := util.MapConcurrent[string, weight_types.WeightResult]{}
 	timesByAlgorithm := util.MapConcurrent[string, time.Duration]{}
 
 	cancel := util_async.CancelSignal_Make()
@@ -845,11 +846,11 @@ func statWeights_CompareAlgorithms() {
 				futureResult := comp.Run(stopwatch, standardTimeout)
 
 				util_async.ChainCancel(cancel, futureResult)
-				futureResult.WaitForResultThenRun(func(result weight_highs.WeightResult) {
+				futureResult.WaitForResultThenRun(func(result weight_types.WeightResult) {
 					resultsByAlgorithm.Put(label, result)
 					timesByAlgorithm.Put(label, stopwatch.Elapsed())
 				}, func() {
-					resultsByAlgorithm.Put(label, weight_highs.WeightResult{})
+					resultsByAlgorithm.Put(label, weight_types.WeightResult{})
 				})
 				printer.Println("///////////////// FORMULA /////////////////")
 			})
@@ -867,11 +868,11 @@ func statWeights_CompareAlgorithms() {
 				futureResult := comp.Run(stopwatch, standardTimeout)
 
 				util_async.ChainCancel(cancel, futureResult)
-				futureResult.WaitForResultThenRun(func(result weight_highs.WeightResult) {
+				futureResult.WaitForResultThenRun(func(result weight_types.WeightResult) {
 					resultsByAlgorithm.Put(label, result)
 					timesByAlgorithm.Put(label, stopwatch.Elapsed())
 				}, func() {
-					resultsByAlgorithm.Put(label, weight_highs.WeightResult{})
+					resultsByAlgorithm.Put(label, weight_types.WeightResult{})
 				})
 				printer.Println("///////////////// FORMULA /////////////////")
 			})
@@ -1436,7 +1437,7 @@ func statWeights_CompareAlgorithms() {
 	tab.Write(printer)
 }
 
-func takeDataSample_Start(slice []weight_highs.WeightInput, size int) []weight_highs.WeightInput {
+func takeDataSample_Start(slice []weight_types.WeightInput, size int) []weight_types.WeightInput {
 	if len(slice) < size {
 		return slice
 	} else {
@@ -1444,7 +1445,7 @@ func takeDataSample_Start(slice []weight_highs.WeightInput, size int) []weight_h
 	}
 }
 
-func takeDataSample_Random(slice []weight_highs.WeightInput, size int) []weight_highs.WeightInput {
+func takeDataSample_Random(slice []weight_types.WeightInput, size int) []weight_types.WeightInput {
 	if len(slice) < size {
 		return slice
 	} else {
@@ -1454,7 +1455,7 @@ func takeDataSample_Random(slice []weight_highs.WeightInput, size int) []weight_
 	}
 }
 
-func takeDataSample_Random_Seed(slice []weight_highs.WeightInput, size int, seed int64) []weight_highs.WeightInput {
+func takeDataSample_Random_Seed(slice []weight_types.WeightInput, size int, seed int64) []weight_types.WeightInput {
 	if len(slice) < size {
 		return slice
 	} else {

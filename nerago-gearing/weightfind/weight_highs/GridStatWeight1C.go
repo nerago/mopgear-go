@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_highs"
+	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"strconv"
 
@@ -19,7 +20,7 @@ type GridStatWeightProcess1C struct {
 	printer *util.PrintRecorder
 
 	targetRatios  stats.SimData
-	inputData     []WeightInput
+	inputData     []weight_types.WeightInput
 	requiredStats []stats.StatType
 	simTypes      []stats.SimType
 	testMode      bool
@@ -43,7 +44,7 @@ func (grid *GridStatWeightProcess1C) Init(printer *util.PrintRecorder, timeout i
 	grid.scales = make(map[stats.SimType]float64)
 }
 
-func (grid *GridStatWeightProcess1C) SupplyData(inputData []WeightInput) {
+func (grid *GridStatWeightProcess1C) SupplyData(inputData []weight_types.WeightInput) {
 	if grid.testMode {
 		grid.inputData = inputData[0:10]
 	} else {
@@ -77,7 +78,7 @@ func (grid *GridStatWeightProcess1C) SetTestMode(testMode bool) {
 	}
 }
 
-func (grid *GridStatWeightProcess1C) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[WeightResult] {
+func (grid *GridStatWeightProcess1C) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.WeightResult] {
 	grid.setupWeightVars()
 	grid.dataSamplesFromPairs()
 	grid.removeOutliers()
@@ -86,7 +87,7 @@ func (grid *GridStatWeightProcess1C) Run(stopwatch *util.Stopwatch) *util_async.
 	grid.finalWeightVars()
 
 	solutionFuture := grid.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (WeightResult, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(grid.printer)
 
 		grid.printer.Println(solution.Status.String())
@@ -170,7 +171,7 @@ func (grid *GridStatWeightProcess1C) hasOneStatDifferent(blockHigh, blockLow *st
 	return changedStat, foundChange
 }
 
-func (grid *GridStatWeightProcess1C) prepareSample(statType stats.StatType, high, low *WeightInput) {
+func (grid *GridStatWeightProcess1C) prepareSample(statType stats.StatType, high, low *weight_types.WeightInput) {
 	statDiff := high.TotalStat.GetFloat(statType) - low.TotalStat.GetFloat(statType)
 
 	for _, simType := range grid.simTypes {
@@ -252,8 +253,8 @@ func (grid *GridStatWeightProcess1C) unitValuesCalcForGroup(simType stats.SimTyp
 	}
 }
 
-func (grid *GridStatWeightProcess1C) reportOutputWeightsGrid(solution *highs.Solution, weightColumns map[stats.StatType]util_highs.ColumnIndex, printer *util.PrintRecorder) WeightResult {
-	result := WeightResult_Make()
+func (grid *GridStatWeightProcess1C) reportOutputWeightsGrid(solution *highs.Solution, weightColumns map[stats.StatType]util_highs.ColumnIndex, printer *util.PrintRecorder) weight_types.WeightResult {
+	result := weight_types.WeightResult_Make()
 	printer.Println("FINAL WEIGHTS:")
 	for _, statType := range grid.requiredStats {
 		columnIndex := weightColumns[statType]
