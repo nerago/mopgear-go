@@ -34,7 +34,7 @@ func findBestSubjectToCommon(printer *util.PrintRecorder) {
 
 	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationWithSet, &model, setup.MissingEnchant_Panic, printer)
 
-	for _, itemId := range substituteItemsMiti {
+	for _, itemId := range substituteItemsProt {
 		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 		itemOptions.AddSeveralOptions(example.SlotItem(), opts)
 	}
@@ -247,7 +247,7 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), &model, setup.MissingEnchant_Panic, printer)
 
 	itemOptions := setup.OptionsSetup_FromGearFile(gearFile, &model, setup.MissingEnchant_Panic, printer)
-	for _, itemId := range substituteItemsMiti {
+	for _, itemId := range substituteItemsProt {
 		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 		itemOptions.AddSeveralOptions(example.SlotItem(), opts)
 	}
@@ -300,7 +300,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 
 	printer.Println("SETUP options")
 	itemOptionsShared := setup.OptionsSetup_FromGearFile(startGear, &model, setup.MissingEnchant_Panic, printer)
-	for _, itemId := range substituteItemsMiti {
+	for _, itemId := range substituteItemsProt {
 		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 		itemOptionsShared.AddSeveralOptions(example.SlotItem(), opts)
 	}

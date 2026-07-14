@@ -12,165 +12,40 @@ import (
 	"slices"
 )
 
-var substituteItemsRet = []items.ItemId{
-	96394, // frozen warlord bracer heroic
-	95281, // ret tier15 gloves normal
-	95205, // terra-cotta neck
-	96481, // durumu tentacle heroic
-	95910, // ret tier15 chest celestial
-	86955, // heroic overwhelm assault belt
-	86957, // heroic bladed tempest ring
-	95140, // shado assault band
-	95141, // shado assault loop
-	96500, // scaled tyrant heroic
-	86979, // heroic impaling treads
-	96373, // cloudbreaker belt heroic
-	96468, // talonrender chest heroic
-	94776, // primal turtle amulet
-	96533, // rein-binders fists heroic
-	94820, // caustic spike bracers
-	94773, // centripetal shoulders normal
-	// 96182,  // ultimate prot of the emperor thunder normal
-	// 94945,  // greatshield of the gloaming normal
-	// 96436,  // tortos shell heroic
-	// 96376,  // worldbreaker weapon
-	// 96534,  // qon's scimitar
-	// 86387,  // kilrak weapon
-	96478,  // treads of the blind heroic
-	95153,  // Tyrant King Battleplate
-	95282,  // ret tier15 normal head
-	95292,  // prot tier15 head normal
-	96657,  // ret tier15 legs heroic
-	96658,  // ret tier15 shoulder heroic
-	95142,  // striker's battletags
-	94776,  // primal turtle amulet
-	96436,  // tortos shell heroic
-	96420,  // talisman of angry spirits
-	101882, // cliffbreaker helm exp/mastery
-	// 101887, // timeless ring haste/mastery; random suffixes don't really work well in upgrade
-	103787, // poisonbinder girth
-	103742, // blood rage bracers
-	103738, // bubble bracers
-	105785, // burly bracer
-	103734, // zoid gauntlets
-	105122, // Asgorathian Blood Seal
-	105011, // Demolisher's Reinforced Belt
-	95011,  // lighting clawfeet
-	95020,  // ra-den contemplative loop
-	103735, // tar-coated gauntlets
-	103916, // jugg ignition keys
-	104461, // rage-blind greathelm
-	95038,  // carapace core
+var extrasSetSpecific = []items.ItemId{
+	86979,
+	95142,
+	95153,
+	95281,
+	95291,
+	96375,
+	96550,
+	100644,
+	104993,
+	86955,
+	96657,
+	96667,
+	104938,
+	105090,
+	94773,
+	95140,
+	96394,
+	96447,
+	96468,
+	103791,
+	95535,
+	96478,
+	96533,
+	105033,
 }
-var substituteItemsDps = []items.ItemId{
-	96394,  // frozen warlord bracer heroic
-	95281,  // ret tier15 gloves normal
-	95205,  // terra-cotta neck
-	96481,  // durumu tentacle heroic
-	95910,  // ret tier15 chest celestial
-	86955,  // heroic overwhelm assault belt
-	86957,  // heroic bladed tempest ring
-	95140,  // shado assault band
-	95141,  // shado assault loop
-	96500,  // scaled tyrant heroic
-	86979,  // heroic impaling treads
-	96373,  // cloudbreaker belt heroic
-	96468,  // talonrender chest heroic
-	94776,  // primal turtle amulet
-	96533,  // rein-binders fists heroic
-	94820,  // caustic spike bracers
-	94773,  // centripetal shoulders normal
-	96182,  // ultimate prot of the emperor thunder normal
-	94945,  // greatshield of the gloaming normal
-	96436,  // tortos shell heroic
-	96376,  // worldbreaker weapon
-	96534,  // qon's scimitar
-	86387,  // kilrak weapon
-	96478,  // treads of the blind heroic
-	95153,  // Tyrant King Battleplate
-	95282,  // ret tier15 normal head
-	95292,  // prot tier15 head normal
-	96657,  // ret tier15 legs heroic
-	96658,  // ret tier15 shoulder heroic
-	95142,  // striker's battletags
-	94776,  // primal turtle amulet
-	96436,  // tortos shell heroic
-	96420,  // talisman of angry spirits
-	101882, // cliffbreaker helm exp/mastery
-	// 101887, // timeless ring haste/mastery; random suffixes don't really work well in upgrade
-	103787, // poisonbinder girth
-	103742, // blood rage bracers
-	103738, // bubble bracers
-	105785, // burly bracer
-	103734, // zoid gauntlets
-	105122, // Asgorathian Blood Seal
-	105011, // Demolisher's Reinforced Belt
-	95011,  // lighting clawfeet
-	95020,  // ra-den contemplative loop
-	103826, // xifeng weapon
-	103735, // tar-coated gauntlets
-	103872, // bulwurk of fallen general
-	103916, // jugg ignition keys
-	104461, // rage-blind greathelm
-	95038,  // carapace core
-}
-var substituteItemsMiti = []items.ItemId{
-	95291,  // prot tier15 hand normal
-	95290,  // prot tier15 chest normal
-	95292,  // prot tier15 head normal
-	96667,  // prot tier15 leg heroic
-	96668,  // prot tier15 shoulder heroic
-	96657,  // ret tier15 legs heroic
-	96658,  // ret tier15 shoulder heroic
-	95281,  // ret tier15 gloves normal
-	96394,  // frozen warlord bracer heroic
-	96373,  // cloudbreaker belt heroic
-	96478,  // treads of the blind heroic
-	95205,  // terra-cotta neck
-	95178,  // lootraptor amulet
-	96468,  // talonrender chest heroic
-	96533,  // rein-binders fists heroic
-	86957,  // heroic bladed tempest ring
-	86955,  // heroic overwhelm assault belt
-	87015,  // heroic clawfeet
-	96481,  // durumu tentacle heroic
-	95140,  // shado assault band
-	95141,  // shado assault loop
-	96500,  // scaled tyrant heroic
-	96182,  // ultimate prot of the emperor thunder normal
-	94945,  // greatshield of the gloaming normal
-	96436,  // tortos shell heroic
-	96428,  // shell-coated wrists
-	96447,  // rot-proof greatplate
-	96376,  // worldbreaker weapon
-	96534,  // qon's scimitar
-	86387,  // kilrak weapon
-	94776,  // primal turtle amulet
-	94820,  // caustic spike bracers
-	95141,  // shado assault loop
-	96420,  // talisman of angry spirits
-	101882, // cliffbreaker helm exp/mastery
-	103787, // poisonbinder girth
-	103742, // blood rage bracers
-	99126,  // prot t16 chest normal
-	103738, // bubble bracers
-	105092, // tower shield
-	105122, // blood seal
-	103738, // bubble bracers
-	105785, // burly bracer
-	103734, // zoid gauntlets
-	103826, // xifeng weapon
-	105122, // Asgorathian Blood Seal
-	105011, // Demolisher's Reinforced Belt
-	95011,  // lighting clawfeet
-	95020,  // ra-den contemplative loop
-	103826, // xifeng weapon
-	103735, // tar-coated gauntlets
-	103872, // bulwurk of fallen general
-	103916, // jugg ignition keys
-	104461, // rage-blind greathelm
-	95038,  // carapace core
-}
+
+var substituteItemsCommon = slices.Concat(
+	extrasSetSpecific,
+	legendCloaks, miscOtherP3,
+	retT15, retT16, protT15, protT16,
+	timeless, celestial, celestialRaden, orgRaidDrops)
+var substituteItemsRet = slices.Concat(substituteItemsCommon)
+var substituteItemsProt = slices.Concat(substituteItemsCommon, phase3OneHandAndShield, orgOneHandAndShield)
 
 var ignoredItems = []items.ItemId{
 	63207, // org port cloak
@@ -192,7 +67,7 @@ func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
 			TargetUpgradeLevel: 0,
 		},
 		SimSize: simRunSize}
-	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsDps, printer)
+	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsProt, printer)
 }
 
 func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
@@ -211,7 +86,7 @@ func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 			TargetUpgradeLevel: 0,
 		},
 		SimSize: simRunSize}
-	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsMiti, printer)
+	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsProt, printer)
 }
 
 func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
@@ -229,7 +104,7 @@ func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 			TargetUpgradeLevel: 0,
 		},
 		SimSize: simRunSize}
-	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsMiti, printer)
+	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsProt, printer)
 }
 
 func findUpgrades_Paladin() {
@@ -239,9 +114,6 @@ func findUpgrades_Paladin() {
 	// var simRunSize simulate.WowSim_RunSize = 8000
 	//simRunSize := simulate.RunSize_QuickDirty
 	simRunSize := simulate.RunSize_Common
-
-	substituteItemsDpsAndMiti := slices.Concat(substituteItemsDps, substituteItemsMiti)
-	substituteItemsDpsAndMiti = util.RemoveDuplicatesComparable(substituteItemsDpsAndMiti)
 
 	substituteEmptySlotOnly := make(map[items.SlotItem]items.ItemId)
 	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
@@ -277,7 +149,7 @@ func findUpgrades_Paladin() {
 				Model:                   gear_model.Model_PallyProtDps(),
 				GearFile:                files.GearFileProtDps,
 				ItemFinder:              finder,
-				SubstituteItems:         substituteItemsDps,
+				SubstituteItems:         substituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
@@ -285,7 +157,7 @@ func findUpgrades_Paladin() {
 				Model:                   gear_model.Model_PallyProtCompromise(),
 				GearFile:                files.GearFileProtCompromise,
 				ItemFinder:              finder,
-				SubstituteItems:         substituteItemsDpsAndMiti,
+				SubstituteItems:         substituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
@@ -293,7 +165,7 @@ func findUpgrades_Paladin() {
 				Model:                   gear_model.Model_PallyProtMitigation_NoSet(),
 				GearFile:                files.GearFileProtMitigationNoSet,
 				ItemFinder:              finder,
-				SubstituteItems:         substituteItemsMiti,
+				SubstituteItems:         substituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
@@ -301,7 +173,7 @@ func findUpgrades_Paladin() {
 				Model:                   gear_model.Model_PallyProtMitigation_WithSet(),
 				GearFile:                files.GearFileProtMitigationWithSet,
 				ItemFinder:              finder,
-				SubstituteItems:         substituteItemsMiti,
+				SubstituteItems:         substituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 		},

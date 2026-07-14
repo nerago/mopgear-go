@@ -32,6 +32,106 @@ const (
 	ringScaledTyrant = 96500
 )
 
+// TIER
+var retT15 = []items.ItemId{
+	95282, // ret tier15 normal head
+	96658, // ret tier15 shoulder heroic
+}
+var retT16 = []items.ItemId{
+	// yes numbers don't line up, seems like the way it is
+	99052, // ret t16 chest celestial
+	99002, // ret t16 hand celestial
+	98985, // ret t16 head celestial
+	98986, // ret t16 legs celestial
+}
+var protT15 = []items.ItemId{
+	96664, // prot tier15 chest heroic
+	96666, // prot tier15 head heroic
+	96668, // prot tier15 shoulder heroic
+}
+var protT16 = []items.ItemId{
+	99126, // prot t16 chest normal
+	99128, // prot t16 head normal
+	99129, // prot t16 legs normal
+	99026, // prot t16 legs celestial
+	99027, // prot t16 shoulder celestial
+	99028, // prot t16 hand celestial
+}
+
+// TRINKET
+var trinketsDpsP3 = []items.ItemId{
+	trinketZandSpark,
+	trinketTwinsGaze,
+	trinketPrimRage,
+}
+var trinketsTankP3 = []items.ItemId{
+	trinketFortZand,
+}
+var newTrinketsDamage = []items.ItemId{
+	trinketThokTailCelestial,
+	trinketFusionCoreCelestial,
+}
+var newTrinketsTank = []items.ItemId{
+	trinketVialCorruptNormal,
+	trinketRookUnluckyNormal,
+}
+
+// REMAINING P3
+var phase3OneHandAndShield = []items.ItemId{
+	96376, // worldbreaker weapon
+	96534, // qon's scimitar
+	94945, // greatshield of the gloaming normal
+	96182, // ultimate prot of the emperor thunder normal
+}
+var miscOtherP3 = []items.ItemId{
+	95205, // terra-cotta neck
+	94776, // primal turtle amulet
+	96420, // talisman of angry spirits
+	96373, // cloudbreaker belt heroic
+	96395, // bloodsoaked legplates
+	96542, // tidal force treads
+	96500, // scaled tyrant heroic
+	96377, // jinrohk soulcrystal
+	96481, // durumu tentacle heroic
+}
+
+// ORGRIMMAR
+var timeless = []items.ItemId{
+	101882, // cliffbreaker helm exp/mastery
+	101887, // timeless ring haste/mastery
+	101947, // timeless ring exp/mastery
+}
+var celestial = []items.ItemId{
+	105122, // Asgorathian Blood Seal
+	105011, // Demolisher's Reinforced Belt
+}
+var celestialRaden = []items.ItemId{
+	95011, // lighting clawfeet
+	95020, // ra-den contemplative loop
+	95022, // Ra-den's Ruinous Ring
+	95038, // carapace core
+}
+var orgRaidDrops = []items.ItemId{
+	103787, // poisonbinder girth
+	103742, // blood rage bracers
+	103738, // bubble bracers
+	105785, // vanguard burly bracer
+	103734, // zoid gauntlets
+	103735, // tar-coated gauntlets
+	103916, // jugg ignition keys
+	104461, // rage-blind greathelm
+	104415, // bubble bracer heroic
+	103892, // tharnok helm
+	103915, // icy blood chest
+}
+var orgOneHandAndShield = []items.ItemId{
+	103826, // xifeng weapon
+	103872, // bulwurk of fallen general
+	103871, // tower shield
+}
+
+var legendCloaks = []items.ItemId{legendTankCloak, legendMeleeCloak}
+
 func PaladinMultiRun() {
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "multi-set")
 
@@ -98,127 +198,28 @@ func PaladinMultiRun() {
 	}
 
 	// CLOAK: add the cloaks to all even though we often override
-	legendCloaks := []items.ItemId{legendTankCloak, legendMeleeCloak}
 	addExtrasToEach(legendCloaks, &ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
 
-	// TIER
-	retT15 := []items.ItemId{
-		95282, // ret tier15 normal head
-		96658, // ret tier15 shoulder heroic
-	}
 	addExtrasToEach(retT15, &ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
-
-	retT16 := []items.ItemId{
-		// yes numbers don't line up, seems like the way it is
-		99052, // ret t16 chest celestial
-		99002, // ret t16 hand celestial
-		98985, // ret t16 head celestial
-		98986, // ret t16 legs celestial
-	}
 	addExtrasToEach(retT16, &ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
 
-	protT15 := []items.ItemId{
-		96664, // prot tier15 chest heroic
-		96666, // prot tier15 head heroic
-		96668, // prot tier15 shoulder heroic
-	}
 	addExtrasToEach(protT15, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
-
-	protT16 := []items.ItemId{
-		99126, // prot t16 chest normal
-		99128, // prot t16 head normal
-		99129, // prot t16 legs normal
-		99026, // prot t16 legs celestial
-		99027, // prot t16 shoulder celestial
-		99028, // prot t16 hand celestial
-	}
 	addExtrasToEach(protT16, &ret, &protDps) // just ilevel temporary
 	addExtrasToEach(protT16, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
 
-	// RING
-	throneRings := []items.ItemId{
-		96500, // scaled tyrant heroic
-		96377, // jinrohk soulcrystal
-		96481, // durumu tentacle heroic
-	}
-	addExtrasToEach(throneRings, &ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
-
-	// TRINKET
-	trinketsDpsP3 := []items.ItemId{
-		trinketZandSpark,
-		trinketTwinsGaze,
-		trinketPrimRage,
-	}
-	trinketsTankP3 := []items.ItemId{
-		trinketFortZand,
-	}
 	addExtrasToEach(trinketsDpsP3, &ret, &protDps)
 	addExtrasToEach(trinketsDpsP3, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
 	addExtrasToEach(trinketsTankP3, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
 
-	// WEAPONS
-	oneHandAndShieldP3 := []items.ItemId{
-		96376, // worldbreaker weapon
-		96534, // qon's scimitar
-		94945, // greatshield of the gloaming normal
-		96182, // ultimate prot of the emperor thunder normal
-	}
-	addExtrasToEach(oneHandAndShieldP3, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
+	addExtrasToEach(phase3OneHandAndShield, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
+	addExtrasToEach(miscOtherP3, &ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
 
-	// NECK
-	miscNecksP3 := []items.ItemId{
-		95205, // terra-cotta neck
-		94776, // primal turtle amulet
-		96420, // talisman of angry spirits
-	}
-	addExtrasToEach(miscNecksP3, &ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
-
-	// ORGRIMMAR
-	timeless := []items.ItemId{
-		101882, // cliffbreaker helm exp/mastery
-		101887, // timeless ring haste/mastery
-		101947, // timeless ring exp/mastery
-	}
-	celestial := []items.ItemId{
-		105122, // Asgorathian Blood Seal
-		105011, // Demolisher's Reinforced Belt
-	}
-	celestialRaden := []items.ItemId{
-		95011, // lighting clawfeet
-		95020, // ra-den contemplative loop
-		95022, // Ra-den's Ruinous Ring
-		95038, // carapace core
-	}
-	raidDrops := []items.ItemId{
-		103787, // poisonbinder girth
-		103742, // blood rage bracers
-		103738, // bubble bracers
-		105785, // vanguard burly bracer
-		103734, // zoid gauntlets
-		103826, // xifeng weapon
-		103735, // tar-coated gauntlets
-		103872, // bulwurk of fallen general
-		103916, // jugg ignition keys
-		104461, // rage-blind greathelm
-		104415, // bubble bracer heroic
-		103892, // tharnok helm
-		103871, // tower shield
-		103915, // icy blood chest
-	}
-	newTrinketsDamage := []items.ItemId{
-		trinketThokTailCelestial,
-		trinketFusionCoreCelestial,
-	}
-	newTrinketsTank := []items.ItemId{
-		trinketVialCorruptNormal,
-		trinketRookUnluckyNormal,
-	}
-	newStuffP5 := slices.Concat(timeless, celestial, raidDrops, newTrinketsDamage, newTrinketsTank, celestialRaden)
+	newStuffP5 := slices.Concat(timeless, celestial, celestialRaden, orgRaidDrops, newTrinketsDamage)
 	addExtrasToEach(newStuffP5, &ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
+	addExtrasToEach(newTrinketsTank, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
+	addExtrasToEach(orgOneHandAndShield, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
 
 	ret.AddExtraItems([]items.ItemId{
-		96373,  // cloudbreaker belt heroic
-		96395,  // bloodsoaked legplates
 		96542,  // tidal force treads
 		95281,  // ret tier15 gloves normal
 		96657,  // ret tier15 legs heroic
@@ -235,8 +236,6 @@ func PaladinMultiRun() {
 
 	protDps.AddExtraItems([]items.ItemId{
 		86979,  // heroic impaling treads
-		96395,  // bloodsoaked legplates
-		96373,  // cloudbreaker belt heroic
 		94773,  // centripetal shoulders normal
 		95535,  // normal lightning legs
 		96533,  // rein-binders fists heroic
@@ -253,11 +252,9 @@ func PaladinMultiRun() {
 
 	protCompromise.AddExtraItems([]items.ItemId{
 		96478,  // treads of the blind heroic
-		96373,  // cloudbreaker belt heroic
 		94773,  // centripetal shoulders normal
 		95535,  // normal lightning legs
 		96533,  // rein-binders fists heroic
-		96395,  // bloodsoaked legplates
 		96542,  // tidal force treads
 		96394,  // frozen warlord bracer heroic
 		95140,  // shado assault band
@@ -270,11 +267,9 @@ func PaladinMultiRun() {
 
 	protMitigationNoSet.AddExtraItems([]items.ItemId{
 		96478,  // treads of the blind heroic
-		96373,  // cloudbreaker belt heroic
 		95535,  // normal lightning legs
 		96533,  // rein-binders fists heroic
 		96550,  // doomed crown heroic
-		96395,  // bloodsoaked legplates
 		96542,  // tidal force treads
 		96394,  // frozen warlord bracer heroic
 		103791, // gauntlet of discarded
@@ -287,8 +282,6 @@ func PaladinMultiRun() {
 
 	protMitigationWithSet.AddExtraItems([]items.ItemId{
 		96478,  // treads of the blind heroic
-		96373,  // cloudbreaker belt heroic
-		96395,  // bloodsoaked legplates
 		96542,  // tidal force treads
 		96667,  // prot tier15 leg heroic
 		95291,  // prot tier15 Lightning Emperor's Handguards
@@ -299,8 +292,6 @@ func PaladinMultiRun() {
 
 	protHeal.AddExtraItems([]items.ItemId{
 		96478, // treads of the blind heroic
-		96373, // cloudbreaker belt heroic
-		96395, // bloodsoaked legplates
 		96542, // tidal force treads
 		96394, // frozen warlord bracer heroic
 		95142, // Striker's Battletags
