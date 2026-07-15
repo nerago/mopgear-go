@@ -14,7 +14,11 @@ func (sb *StringBuild2) Reset() {
 }
 
 func (sb *StringBuild2) String() string {
-	return unsafe.String(unsafe.SliceData(*sb), len(*sb))
+	if len(*sb) > 0 {
+		return unsafe.String(unsafe.SliceData(*sb), len(*sb))
+	} else {
+		return ""
+	}
 }
 
 func (sb *StringBuild2) Len() int {

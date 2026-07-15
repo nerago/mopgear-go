@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
 )
@@ -124,11 +125,13 @@ var orgRaidDrops = []items.ItemId{
 	103892, // tharnok helm
 	103915, // icy blood chest
 	105767, // hoodrych chest ordos
+	104417, // corruption-rotted gauntlets
 }
 var orgOneHandAndShield = []items.ItemId{
 	103826, // xifeng weapon
 	103872, // bulwurk of fallen general
 	103871, // tower shield
+	104485, // shield of mockery
 }
 
 var legendCloaks = []items.ItemId{legendTankCloak, legendMeleeCloak}
@@ -331,7 +334,7 @@ func PaladinMultiRun() {
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 	blockHelmetsWithoutIndomitable(&protHeal)
 
-	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
+	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Stamina, 120))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
@@ -359,15 +362,21 @@ func PaladinMultiRun() {
 	//job.AddItemDistinctUsageGroups(103892, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet, protHeal})
 	//ret.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{104981, 86386})
 	//job.AddAlternateUpgradeChoices(
+	//	101947, // Elder Tortoiseshell Seal
 	//	103915, //Icy Blood Chestplate
+	//	104485, // Shield of Mockery
 	//	105122, // Asgorathian Blood Seal
-	//	103871) // Ancient Mogu Tower Shield
-	//job.AddAlternateUpgradeChoices(105767)
+	//	104994, // Galakrond Control Band
+	//	104938, // Sorrowpath Signet
+	//	98986,  // Legplates of Winged Triumph
+	//	105033, // Wolf-Rider Spurs
+	//)
+	//job.AddAlternateUpgradeChoices(104417) //gloves corrupt
 
 	job.VerifyNoExtraDuplicates()
 
 	job.RunNoPermutations_AllCommonAlternates(true)
-	//job.RunForSolutionsPerPermute(6)
+	//job.RunForSolutionsPerPermute(4)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)

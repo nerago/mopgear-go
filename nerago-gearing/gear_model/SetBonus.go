@@ -528,7 +528,7 @@ func buildSets() []setInfoCommon {
 	sets = append(sets, setInfoMake(Spec_PaladinProt, "White Tiger Plate", defaultBonus, defaultBonus, []uint32{85319, 85320, 85321, 85322, 85323, 86659, 86660, 86661, 86662, 86663, 87109, 87110, 87111, 87112, 87113}))
 	sets = append(sets, setInfoMake(Spec_PaladinProt, "Plate of Winged Triumph", defaultBonus, defaultBonus, []uint32{99026, 99027, 99028, 99029, 99031, 99126, 99127, 99128, 99129, 99130, 99364, 99368, 99369, 99370, 99371, 99593, 99594, 99595, 99596, 99598}))
 
-	sets = append(sets, setInfoMake(Spec_PaladinRet, "Battlegear of the Lightning Emperor", defaultBonus, defaultBonus, []uint32{95280, 95281, 95282, 95283, 95284, 95910, 95911, 95912, 95913, 95914, 96654, 96655, 96656, 96657, 96658}))
+	sets = append(sets, setInfoMake(Spec_PaladinRet, "Battlegear of the Lightning Emperor", defaultBonus, 1.04, []uint32{95280, 95281, 95282, 95283, 95284, 95910, 95911, 95912, 95913, 95914, 96654, 96655, 96656, 96657, 96658}))
 	sets = append(sets, setInfoMake(Spec_PaladinRet, "Battlegear of Winged Triumph", defaultBonus, defaultBonus, []uint32{98985, 98986, 98987, 99002, 99052, 99132, 99136, 99137, 99138, 99139, 99372, 99373, 99379, 99380, 99387, 99566, 99625, 99651, 99661, 99662}))
 	sets = append(sets, setInfoMake(Spec_PaladinHoly, "White Tiger Vestments", defaultBonus, defaultBonus, []uint32{85344, 85345, 85346, 85347, 85348, 86684, 86685, 86686, 86687, 86688, 87104, 87105, 87106, 87107, 87108}))
 	sets = append(sets, setInfoMake(Spec_PaladinHoly, "Vestments of the Lightning Emperor", defaultBonus, defaultBonus, []uint32{95285, 95286, 95287, 95288, 95289, 95915, 95916, 95917, 95918, 95919, 96659, 96660, 96661, 96662, 96663}))

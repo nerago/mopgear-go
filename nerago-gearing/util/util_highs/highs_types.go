@@ -75,6 +75,8 @@ func (build *LinearBuilder) Clone() *LinearBuilder {
 		Minimise:             build.Minimise,
 		BlendMultiObjectives: build.BlendMultiObjectives,
 		Solver:               build.Solver,
+		DisablePreSolve:      build.DisablePreSolve,
+		TimeLimitSeconds:     build.TimeLimitSeconds,
 	}
 }
 

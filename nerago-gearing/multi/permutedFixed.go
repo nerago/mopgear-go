@@ -205,9 +205,11 @@ func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, printe
 		}
 	}
 
-	build.Rewind(3)
-	printer.Println("PERMUTE SET:")
-	printer.PrintlnFromBuild(build)
+	if build.Len() > 0 {
+		build.Rewind(3)
+		printer.Println("PERMUTE SET:")
+		printer.PrintlnFromBuild(build)
+	}
 	highProcess.SetPermuteLabel(build.String())
 
 	optionsInputList := make([]commonOptionsInput, len(job.params))
