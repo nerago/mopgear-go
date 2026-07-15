@@ -162,6 +162,16 @@ func ItemFinder_ThroneStrengthPlateTank_RadenOnly(difficulty stats.Difficulty) [
 	return result
 }
 
+func SiegeClassGearSetMultiple(specType ...stats.SpecType) func(stats.Difficulty) []ItemFoundRef {
+	return func(difficulty stats.Difficulty) []ItemFoundRef {
+		result := make([]ItemFoundRef, 0)
+		for _, spec := range specType {
+			result = append(result, siegeClassGearSet(spec, difficulty)...)
+		}
+		return result
+	}
+}
+
 func siegeClassGearSet(specType stats.SpecType, difficulty stats.Difficulty) []ItemFoundRef {
 	result := make([]ItemFoundRef, 0)
 	specBonus := gear_model.SetBonus_ForSpec_AllowFallback(specType, stats.OptimiseGoal_Unknown, true)

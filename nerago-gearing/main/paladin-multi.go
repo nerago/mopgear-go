@@ -8,7 +8,6 @@ import (
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
-	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
 )
@@ -43,6 +42,7 @@ var retT16 = []items.ItemId{
 	99002, // ret t16 hand celestial
 	98985, // ret t16 head celestial
 	98986, // ret t16 legs celestial
+	98987, // ret t16 shoulder celestial
 }
 var protT15 = []items.ItemId{
 	96664, // prot tier15 chest heroic
@@ -123,6 +123,7 @@ var orgRaidDrops = []items.ItemId{
 	104415, // bubble bracer heroic
 	103892, // tharnok helm
 	103915, // icy blood chest
+	105767, // hoodrych chest ordos
 }
 var orgOneHandAndShield = []items.ItemId{
 	103826, // xifeng weapon
@@ -135,7 +136,8 @@ var legendCloaks = []items.ItemId{legendTankCloak, legendMeleeCloak}
 func PaladinMultiRun() {
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "multi-set")
 
-	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Common)
+	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Largish)
+	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_Common)
 	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
 	//job.SetWriteBestToGearFiles()
 
@@ -197,7 +199,6 @@ func PaladinMultiRun() {
 		MissingEnchant:            setup.MissingEnchant_Panic,
 	}
 
-	// CLOAK: add the cloaks to all even though we often override
 	addExtrasToEach(legendCloaks, &ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
 
 	addExtrasToEach(retT15, &ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
@@ -220,7 +221,6 @@ func PaladinMultiRun() {
 	addExtrasToEach(orgOneHandAndShield, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
 
 	ret.AddExtraItems([]items.ItemId{
-		96542,  // tidal force treads
 		95281,  // ret tier15 gloves normal
 		96657,  // ret tier15 legs heroic
 		95535,  // normal lightning legs
@@ -239,7 +239,6 @@ func PaladinMultiRun() {
 		94773,  // centripetal shoulders normal
 		95535,  // normal lightning legs
 		96533,  // rein-binders fists heroic
-		96542,  // tidal force treads
 		95140,  // shado assault band
 		96468,  // talonrender chest heroic
 		96657,  // ret tier15 legs heroic
@@ -255,7 +254,6 @@ func PaladinMultiRun() {
 		94773,  // centripetal shoulders normal
 		95535,  // normal lightning legs
 		96533,  // rein-binders fists heroic
-		96542,  // tidal force treads
 		96394,  // frozen warlord bracer heroic
 		95140,  // shado assault band
 		96468,  // talonrender chest heroic
@@ -270,7 +268,6 @@ func PaladinMultiRun() {
 		95535,  // normal lightning legs
 		96533,  // rein-binders fists heroic
 		96550,  // doomed crown heroic
-		96542,  // tidal force treads
 		96394,  // frozen warlord bracer heroic
 		103791, // gauntlet of discarded
 		96667,  // prot tier15 leg heroic
@@ -282,7 +279,6 @@ func PaladinMultiRun() {
 
 	protMitigationWithSet.AddExtraItems([]items.ItemId{
 		96478,  // treads of the blind heroic
-		96542,  // tidal force treads
 		96667,  // prot tier15 leg heroic
 		95291,  // prot tier15 Lightning Emperor's Handguards
 		96447,  // Rot-Proof Greatplate
@@ -292,7 +288,6 @@ func PaladinMultiRun() {
 
 	protHeal.AddExtraItems([]items.ItemId{
 		96478, // treads of the blind heroic
-		96542, // tidal force treads
 		96394, // frozen warlord bracer heroic
 		95142, // Striker's Battletags
 	})
@@ -336,8 +331,8 @@ func PaladinMultiRun() {
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 	blockHelmetsWithoutIndomitable(&protHeal)
 
-	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
-	job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Stamina, 120))
+	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
+	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Stamina, 120))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
@@ -346,12 +341,12 @@ func PaladinMultiRun() {
 	//job.MakeRandomVariants(101887, 0, -365, -352)
 
 	job.SetMinimumExtraItemLevel(463)
-	//ret.AddBagsExtra()
-	//protDps.AddBagsExtra()
-	//protCompromise.AddBagsExtra()
-	//protMitigationNoSet.AddBagsExtra()
-	//protMitigationWithSet.AddBagsExtra()
-	//protHeal.AddBagsExtra()
+	ret.AddBagsExtra()
+	protDps.AddBagsExtra()
+	protCompromise.AddBagsExtra()
+	protMitigationNoSet.AddBagsExtra()
+	protMitigationWithSet.AddBagsExtra()
+	protHeal.AddBagsExtra()
 
 	job.AddSetParam(ret)
 	job.AddSetParam(protDps)
@@ -363,18 +358,16 @@ func PaladinMultiRun() {
 	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
 	//job.AddItemDistinctUsageGroups(103892, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet, protHeal})
 	//ret.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{104981, 86386})
-	job.AddAlternateUpgradeChoices(
-		101887, // Cliffbreaker Seal
-		105122, // Asgorathian Blood Seal
-	)
-	job.AddAlternateUpgradeChoices(
-		103915, //Icy Blood Chestplate
-		103871) // Ancient Mogu Tower Shield
+	//job.AddAlternateUpgradeChoices(
+	//	103915, //Icy Blood Chestplate
+	//	105122, // Asgorathian Blood Seal
+	//	103871) // Ancient Mogu Tower Shield
+	//job.AddAlternateUpgradeChoices(105767)
 
 	job.VerifyNoExtraDuplicates()
 
-	//job.RunNoPermutations_AllCommonAlternates(true)
-	job.RunForSolutionsPerPermute(4)
+	job.RunNoPermutations_AllCommonAlternates(true)
+	//job.RunForSolutionsPerPermute(6)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)

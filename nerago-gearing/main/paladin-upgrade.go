@@ -113,7 +113,8 @@ func findUpgrades_Paladin() {
 	// var simRunSize simulate.WowSim_RunSize = 3000
 	// var simRunSize simulate.WowSim_RunSize = 8000
 	//simRunSize := simulate.RunSize_QuickDirty
-	simRunSize := simulate.RunSize_Common
+	//simRunSize := simulate.RunSize_Common
+	simRunSize := simulate.RunSize_Largish
 
 	substituteEmptySlotOnly := make(map[items.SlotItem]items.ItemId)
 	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
@@ -125,8 +126,8 @@ func findUpgrades_Paladin() {
 	//finder := loaders.ItemFinder_SiegeStrengthPlateTank
 	//finder := loaders.ItemFinder_Ordos
 	//finder := loaders.ItemFinder_TimelessPlate
-	finder := loaders.ItemFinder_BagsUpgraded
-	//finder := loaders.ItemFinder_ThroneStrengthPlateTank_RadenOnly
+	//finder := loaders.ItemFinder_BagsUpgraded
+	finder := loaders.SiegeClassGearSetMultiple(stats.Spec_PaladinProt, stats.Spec_PaladinRet)
 
 	//finder := func(_ stats.Difficulty) []*items.FullItem {
 	//	return []*items.FullItem{db.WowSimDB_ByIdAndUpgrade(103735, 0), db.WowSimDB_ByIdAndUpgrade(103791, 0), db.WowSimDB_ByIdAndUpgrade(103872, 0)}
@@ -137,7 +138,7 @@ func findUpgrades_Paladin() {
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
 				IncludeCelestial:   false,
 				IncludeNormal:      true,
-				IncludeHeroic:      true,
+				IncludeHeroic:      false,
 				IgnoredItems:       ignoredItems,
 				TargetUpgradeLevel: 2,
 			},
