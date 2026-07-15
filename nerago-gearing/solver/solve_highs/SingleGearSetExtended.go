@@ -3,6 +3,7 @@ package solve_highs
 import (
 	gear_model "paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_highs"
@@ -11,22 +12,20 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
-const (
-	c_maxSetItems    = 5 // fundamental in MoP gear sets
-	c_setItemsCounts = c_maxSetItems + 1
+type WeightExtended util.MapMap[stats.StatType, stats.SimType, float64]
+type StatRequiredExtended map[stats.StatType]util.HiLoInt
 
-	c_scaled_ratings = 10000000.0 // try to make highs happier
-	// example rating      178237915
-	//                     187513497
-	c_ratings_low_range  = 10000000.0 / c_scaled_ratings
-	c_ratings_high_range = 1000000000000.0 / c_scaled_ratings
-)
+type ExtendedModel struct {
+	weight    WeightExtended
+	require   StatRequiredExtended
+	gearModel *gear_model.SpecModel
+}
 
-func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.SpecModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
+func SingleGearSetExtendedMain(itemOptions *items.SolvableOptionsMap, model *ExtendedModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
 	build := util_highs.LinearBuilder{}
 	build.Solver = util_highs.Solver_MIP_Interior
 
-	setup := setupGearSet(&build, gear_model, itemOptions, 1)
+	setup := setupGearSetExtended(&build, model, itemOptions, 1)
 
 	solutionFuture := build.RunHighsFuture(nil)
 
@@ -37,8 +36,8 @@ func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, gear_model *gear_m
 		debugPrint(solution, setup.build, setup.allColumns, printer)
 
 		if solution.HasSolution() {
-			itemSet := setup.buildResultSet(solution, itemOptions, gear_model)
-			checkSetRatingIsObjective(solution, &itemSet, gear_model)
+			itemSet := setup.buildResultSet(solution, itemOptions, model)
+			//checkSetRatingIsObjective(solution, &itemSet, model) // TODO extended version
 			return itemSet, true
 		} else {
 			return items.SolvableItemSet{}, false
@@ -46,32 +45,33 @@ func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, gear_model *gear_m
 	})
 }
 
-func setupGearSet(build *util_highs.LinearBuilder, gear_model *gear_model.SpecModel, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetInputs {
-	setup := singleGearSetInputs{build: build}
+func setupGearSetExtended(build *util_highs.LinearBuilder, model *ExtendedModel, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetExtendedInputs {
+	setup := singleGearSetExtendedInputs{build: build}
 
 	setup.addMainOutputVariable(scaleOutputRating)
 	setup.addSumRatingVariable()
-	setup.prepareActiveSets(gear_model)
+	setup.prepareRequire(&model.require)
+	setup.prepareActiveSets(&model.gearModel.SetBonus)
 	setup.prepareUniqueEquipped(itemOptions)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
-		setup.addItem(slot, item, gear_model)
+		setup.addItem(slot, item, &model.weight, &model.require, &model.gearModel.SetBonus)
 	}
 
-	setup.finishItems(itemOptions, gear_model)
+	setup.finishItems(itemOptions, &model.require)
 
-	setup.addSetNeededCounts(gear_model)
+	setup.addSetNeededCounts(model.gearModel.SetBonusRequired)
 
 	return &setup
 }
 
-func (setup *singleGearSetInputs) addSetNeededCounts(gear_model *gear_model.SpecModel) {
-	if len(gear_model.SetBonusRequired) > 0 {
+func (setup *singleGearSetExtendedInputs) addSetNeededCounts(setBonusRequired []gear_model.ActiveSetCountsRequired) {
+	if len(setBonusRequired) > 0 {
 		if len(setup.setData) == 0 {
 			panic("no setdata to use from SetBonusRequired")
-		} else if len(setup.setData) == 1 && len(gear_model.SetBonusRequired) == 1 && gear_model.SetBonusRequired[0].Count() == 1 {
+		} else if len(setup.setData) == 1 && len(setBonusRequired) == 1 && setBonusRequired[0].Count() == 1 {
 			setCountCol := setup.setData[0].setTotalCountVar
-			_, needCount := gear_model.SetBonusRequired[0].PairsByIndex(0)
+			_, needCount := setBonusRequired[0].PairsByIndex(0)
 
 			rowSetCountRequired := util_highs.ConstraintRow{Debug: "rowSetCountRequired"}
 			rowSetCountRequired.Add(setCountCol.columnIndex, 1)
@@ -79,7 +79,7 @@ func (setup *singleGearSetInputs) addSetNeededCounts(gear_model *gear_model.Spec
 		} else {
 			oneOfTheseOptions := util_highs.ConstraintRow{}
 
-			for _, option := range gear_model.SetBonusRequired {
+			for _, option := range setBonusRequired {
 				optionParts := util_highs.ConstraintAndBuilder{}
 
 				for activeSet, needCount := range option.Pairs() {
@@ -102,17 +102,16 @@ func (setup *singleGearSetInputs) addSetNeededCounts(gear_model *gear_model.Spec
 	}
 }
 
-type singleGearSetInputs struct {
+type singleGearSetExtendedInputs struct {
 	build *util_highs.LinearBuilder
 
 	slotsOneEachRow [items.ITEM_SLOT_COUNT]util_highs.ConstraintRow // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
 
-	hitValueRow     util_highs.ConstraintRow // constrains values for the hits of each item
-	expertValueRow  util_highs.ConstraintRow // constrains values for the expertise of each item
-	minimumValueRow util_highs.ConstraintRow // when an extra minimum is specified
+	requireRows map[stats.StatType]*util_highs.ConstraintRow // constrains values for the hit/expertise/etc of each item
+	statTotals  map[stats.StatType]*util_highs.ConstraintRow
 
-	baseRatingSumRow util_highs.ConstraintRow // values for the ratings of each item
-	baseRatingSumVar *columnInfo              // sum of values for the ratings of selected items
+	//baseRatingSumRow util_highs.ConstraintRow // values for the ratings of each item
+	//baseRatingSumVar *columnInfo              // sum of values for the ratings of selected items
 
 	mainOutputRow util_highs.ConstraintRow // compute final output from set based alternatives
 	mainOutputVar *columnInfo              // output variable, to be used directly or scaled against other models
@@ -127,9 +126,9 @@ type singleGearSetInputs struct {
 	allColumns  []*columnInfo
 }
 
-func (setup *singleGearSetInputs) prepareActiveSets(gear_model *gear_model.SpecModel) {
+func (setup *singleGearSetExtendedInputs) prepareActiveSets(setBonus *gear_model.SetBonus) {
 	// constrain: exact item count in each active set
-	activeSets := gear_model.SetBonus.ActiveSets()
+	activeSets := setBonus.ActiveSets()
 	if len(activeSets) > 0 {
 		setup.setData = make([]setInfo, len(activeSets))
 		for setIndex, set := range activeSets {
@@ -149,12 +148,12 @@ func (setup *singleGearSetInputs) prepareActiveSets(gear_model *gear_model.SpecM
 	}
 }
 
-func (setup *singleGearSetInputs) buildSimpleNoSetsOutput() {
+func (setup *singleGearSetExtendedInputs) buildSimpleNoSetsOutput() {
 	// just copy initial rating sum into final if no sets
 	setup.mainOutputRow.Add(setup.baseRatingSumVar.columnIndex, 1)
 }
 
-func (setup *singleGearSetInputs) buildSetMultipliedOutput(permutation *setPermutation) {
+func (setup *singleGearSetExtendedInputs) buildSetMultipliedOutput(permutation *setPermutation) {
 	outputVar, weight := setup.buildSetWeightedOutputVar(permutation)
 	activatingVar := setup.buildPermutationActivatingVar(permutation)
 
@@ -169,7 +168,7 @@ func (setup *singleGearSetInputs) buildSetMultipliedOutput(permutation *setPermu
 	permutation.weight = weight
 }
 
-func (setup *singleGearSetInputs) buildSetWeightedOutputVar(permutation *setPermutation) (*columnInfo, float64) {
+func (setup *singleGearSetExtendedInputs) buildSetWeightedOutputVar(permutation *setPermutation) (*columnInfo, float64) {
 	totalWeight := 1.0
 	for _, setAndCount := range permutation.content {
 		bonusForCount := setAndCount.setInfo.activeSet.BonusForCount(uint8(setAndCount.count))
@@ -184,7 +183,7 @@ func (setup *singleGearSetInputs) buildSetWeightedOutputVar(permutation *setPerm
 	return &entry, totalWeight
 }
 
-func (setup *singleGearSetInputs) buildPermutationActivatingVar(permutation *setPermutation) *columnInfo {
+func (setup *singleGearSetExtendedInputs) buildPermutationActivatingVar(permutation *setPermutation) *columnInfo {
 	// we are effecively building a logical AND between these vars
 
 	permutationActiveBool := columnInfo{entryType: entry_permutation_active, permutation: permutation}
@@ -207,7 +206,7 @@ func (setup *singleGearSetInputs) buildPermutationActivatingVar(permutation *set
 	return &permutationActiveBool
 }
 
-func (setup *singleGearSetInputs) addSetItemCountVariable(info *setInfo) {
+func (setup *singleGearSetExtendedInputs) addSetItemCountVariable(info *setInfo) {
 	entry := columnInfo{entryType: entry_set_total_count, set: info.activeSet}
 
 	// set item actual count
@@ -222,7 +221,7 @@ func (setup *singleGearSetInputs) addSetItemCountVariable(info *setInfo) {
 	setup.allColumns = append(setup.allColumns, &entry)
 }
 
-func (setup *singleGearSetInputs) addSetItemsCountExactVariables(info *setInfo) {
+func (setup *singleGearSetExtendedInputs) addSetItemsCountExactVariables(info *setInfo) {
 	// compare total number of items previous computed into this constraint
 	compareRow := util_highs.ConstraintRow{Debug: "setItemsCompareRow"}
 	compareRow.Add(info.setTotalCountVar.columnIndex, -1)
@@ -249,7 +248,7 @@ func (setup *singleGearSetInputs) addSetItemsCountExactVariables(info *setInfo) 
 	singleFlagOnly.Build(setup.build, 1, 1) // sum of flags should be just one, should pull the zero flag up if no other set
 }
 
-func (setup *singleGearSetInputs) addMainOutputVariable(scaleOutputRating float64) {
+func (setup *singleGearSetExtendedInputs) addMainOutputVariable(scaleOutputRating float64) {
 	entry := columnInfo{entryType: entry_main_output}
 
 	// goes directly into overall rating, but could have an external scale applied
@@ -263,7 +262,7 @@ func (setup *singleGearSetInputs) addMainOutputVariable(scaleOutputRating float6
 	setup.allColumns = append(setup.allColumns, &entry)
 }
 
-func (setup *singleGearSetInputs) addSumRatingVariable() {
+func (setup *singleGearSetExtendedInputs) addSumRatingVariable() {
 	entry := columnInfo{entryType: entry_sum_rating}
 
 	// sum of individual selected item ratings
@@ -278,7 +277,7 @@ func (setup *singleGearSetInputs) addSumRatingVariable() {
 	setup.allColumns = append(setup.allColumns, &entry)
 }
 
-func (setup *singleGearSetInputs) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, gear_model *gear_model.SpecModel) util_highs.ColumnIndex {
+func (setup *singleGearSetExtendedInputs) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, weight *WeightExtended, require *StatRequiredExtended, setBonus *gear_model.SetBonus) util_highs.ColumnIndex {
 	entry := columnInfo{entryType: entry_item, itemSlot: itemSlot, item: item}
 
 	// boolean value to flag use of specific item
@@ -294,20 +293,15 @@ func (setup *singleGearSetInputs) addItem(itemSlot items.SlotEquip, item *items.
 	setup.baseRatingSumRow.Add(columnIndex, rating)
 
 	// specific hit/expertise values for hi/lo limits
-	setup.hitValueRow.Add(columnIndex, float64(item.Total().Hit()))
-	setup.expertValueRow.Add(columnIndex, float64(item.Total().Expertise()))
-
-	// additional minimum value (e.g. haste)
-	additionalMinimum := gear_model.StatRequirements.AdditionalMinimumRequirement
-	if additionalMinimum != nil {
-		setup.minimumValueRow.Add(columnIndex, item.Total().GetFloat(additionalMinimum.StatType))
+	for statType := range *require {
+		setup.requireRows[statType].Add(columnIndex, item.Total().GetFloat(statType))
 	}
 
 	// 1 for that slot that matches the item, so we can tell solver only one item per slot
 	setup.slotsOneEachRow[itemSlot].Add(columnIndex, 1.0)
 
 	// if this item belongs to any item set then flag with a 1
-	activeSetIndex, hasSet := gear_model.SetBonus.ActiveSetIndexForItem(item.ItemId())
+	activeSetIndex, hasSet := setBonus.ActiveSetIndexForItem(item.ItemId())
 	if hasSet {
 		setup.setData[activeSetIndex].countSetItemsRow.Add(columnIndex, 1)
 	}
@@ -321,7 +315,14 @@ func (setup *singleGearSetInputs) addItem(itemSlot items.SlotEquip, item *items.
 	return columnIndex
 }
 
-func (setup *singleGearSetInputs) finishItems(itemOptions *items.SolvableOptionsMap, gear_model *gear_model.SpecModel) {
+func (setup *singleGearSetExtendedInputs) prepareRequire(require *StatRequiredExtended) {
+	setup.requireRows = make(map[stats.StatType]*util_highs.ConstraintRow, len(*require))
+	for statType := range *require {
+		setup.requireRows[statType] = &util_highs.ConstraintRow{Debug: "require " + statType.Name()}
+	}
+}
+
+func (setup *singleGearSetExtendedInputs) finishItems(itemOptions *items.SolvableOptionsMap, require *StatRequiredExtended) {
 	// constrain: exactly one item for each slot
 	for slot, row := range setup.slotsOneEachRow {
 		slotEquip := items.SlotEquip(slot)
@@ -334,15 +335,9 @@ func (setup *singleGearSetInputs) finishItems(itemOptions *items.SolvableOptions
 	}
 
 	// constrain: total sum of hit/exp are within requested limits
-	setup.hitValueRow.Debug = "hitValueRow"
-	setup.hitValueRow.Build(setup.build, float64(gear_model.StatRequirements.HitMin()), float64(gear_model.StatRequirements.HitMax()))
-	setup.expertValueRow.Debug = "expertValueRow"
-	setup.expertValueRow.Build(setup.build, float64(gear_model.StatRequirements.ExpertMin()), float64(gear_model.StatRequirements.ExpertMax()))
-
-	// constrain: additional minimum value if specified has required minimum
-	additionalMinimum := gear_model.StatRequirements.AdditionalMinimumRequirement
-	if additionalMinimum != nil {
-		setup.minimumValueRow.Build(setup.build, float64(additionalMinimum.Value), util_highs.C_PlusInf)
+	for statType, hilo := range *require {
+		row := setup.requireRows[statType]
+		row.Build(setup.build, float64(hilo.Lo), float64(hilo.Hi))
 	}
 
 	// constrain: matching sum to individual ratings
@@ -366,7 +361,7 @@ func (setup *singleGearSetInputs) finishItems(itemOptions *items.SolvableOptions
 	setup.mainOutputRow.Build(setup.build, 0, 0)
 }
 
-func (setup *singleGearSetInputs) prepareUniqueEquipped(itemOptions *items.SolvableOptionsMap) {
+func (setup *singleGearSetExtendedInputs) prepareUniqueEquipped(itemOptions *items.SolvableOptionsMap) {
 	setup.uniqueEquipRowsById = make(map[items.ItemId]*util_highs.ConstraintRow)
 	setup.uniqueEquipRowsAll = make([]*util_highs.ConstraintRow, 0)
 	seen := make(map[items.ItemId]bool)
@@ -387,7 +382,7 @@ func (setup *singleGearSetInputs) prepareUniqueEquipped(itemOptions *items.Solva
 	}
 }
 
-func (setup *singleGearSetInputs) buildResultSet(solution *highs.Solution, itemOptions *items.SolvableOptionsMap, model *gear_model.SpecModel) items.SolvableItemSet {
+func (setup *singleGearSetExtendedInputs) buildResultSet(solution *highs.Solution, itemOptions *items.SolvableOptionsMap, model *ExtendedModel) items.SolvableItemSet {
 	itemSet := items.SolvableItemSet{}
 	for columnEntry := range setup.itemColumns.SeqValues() {
 		variableResult := solution.ColValues[columnEntry.columnIndex]
@@ -397,13 +392,13 @@ func (setup *singleGearSetInputs) buildResultSet(solution *highs.Solution, itemO
 	}
 	items.SolvableItemSet_RecalculateTotal(&itemSet)
 
-	validateNewSet(itemSet, itemOptions, model)
+	//validateNewSet(itemSet, itemOptions, model) TODO extended version
 	setup.checkActivePermutation(solution, &itemSet)
 
 	return itemSet
 }
 
-func (setup *singleGearSetInputs) checkActivePermutation(solution *highs.Solution, solvableItemSet *items.SolvableItemSet) {
+func (setup *singleGearSetExtendedInputs) checkActivePermutation(solution *highs.Solution, solvableItemSet *items.SolvableItemSet) {
 	if len(setup.allSetPermutation) > 0 {
 		var activePermutation *setPermutation
 
