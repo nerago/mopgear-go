@@ -330,10 +330,9 @@ func (param *multiSetParamInternal) makeRandomVariantItem(variantItem *randomVar
 func (param *multiSetParamInternal) runBaseline() {
 	param.job.printer.Printf("BASELINE for %s\n", param.Label)
 	param.baselineResult = solver.Solver(solver.SolveInput{
-		ItemOptions:         &param.itemOptions,
-		Model:               &param.Model,
-		EnableTrackProgress: true,
-		Printer:             param.job.printer})
+		ItemOptions: &param.itemOptions,
+		Model:       &param.Model,
+		Printer:     param.job.printer})
 
 	if !param.baselineResult.Success {
 		panic("failed to find baseline for " + param.Label)

@@ -10,6 +10,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_rank"
 )
 
 // possible entry point
@@ -26,20 +27,22 @@ func findUpgradeAndSim(input *FindUpgrades_SimInputs, baseItems *items.FullOptio
 
 	extraTasks := prepareUpgradeInfo(extraItems, input.TargetUpgradeLevel, printer, &input.FindUpgrades_BasicInputs, baseItems, goal, substituteItems, model)
 
-	tracker.RunOuterTracking((len(extraTasks) + 1) * 2)
+	tracker.RunOuterTracking(1 + len(extraTasks) + input.ExtraSimForTopResultsCount)
 	defer tracker.SetDone()
 
-	baseSim, baseRating := runBaselineAndSim(printer, baseItems, model, tracker, input, goal)
+	baseSim, baseRating := runBaselineAndSim(printer, baseItems, model, tracker.NewChild(), input, goal)
 
 	simResults := runEachUpgradeTaskAndSim(printer, extraTasks, baseItems, baseRating, model, tracker, substituteEmptySlotOnly, input, goal, baseSim)
+
+	runMoreDetailedSimForBestN(simResults, input.ExtraSimForTopResultsCount, input.ExtraSimForTopResultsSimSize, model, goal, tracker)
 
 	reportBasicResultsSim(simResults, printer, input.PositiveResultsOnly)
 	return simResults
 }
 
 func runBaselineAndSim(printer *util.PrintRecorder, baseItems *items.FullOptionsMap, model *gear_model.SpecModel, tracker *util.TrackProgress, input *FindUpgrades_SimInputs, goal stats.OptimiseGoal) (stats.SimData, float64) {
-	baseRating, baseSet := findBaseLine(printer, baseItems, model, tracker.NewChild())
-	baseSim := simulate.WowSim_Execute_SpecifyAll(input.SimSize, model.SimSpeedUp, model.Spec, goal, model.SimulateAs, model.Professions, baseSet.Items(), nil, tracker.NewChild())
+	baseRating, baseSet := findBaseLine(printer, baseItems, model)
+	baseSim := simulate.WowSim_Execute_SpecifyAll(input.SimSizeBaseline, model.SimSpeedUp, model.Spec, goal, model.SimulateAs, model.Professions, baseSet.Items(), nil, tracker)
 	printer.Println("SIM *BASELINE*")
 	baseSim.Print(printer)
 	return baseSim, baseRating
@@ -49,9 +52,9 @@ func runEachUpgradeTaskAndSim(printer *util.PrintRecorder, extraTasks []upgradeI
 	printer.Println("TRYING ITEMS")
 	simResults := util_async.Map_SliceToSlice(c_upgradeEachThreads+c_simThreads, extraTasks, func(task *upgradeItemTask) upgradeItemResultWithSim {
 		itemName := db.LookupItemNameByItemId(task.item.ItemId)
-		initial := performUpgradeTask(task, baseItems, baseRating, model, printer, tracker.NewChild(), true, substituteEmptySlotOnly)
+		initial := performUpgradeTask(task, baseItems, baseRating, model, printer, true, substituteEmptySlotOnly)
 		if initial.success {
-			simResult := simulate.WowSim_Execute_SpecifyAll(input.SimSize, model.SimSpeedUp, model.Spec, goal, model.SimulateAs, model.Professions, initial.itemSet.Items(), nil, tracker.NewChild())
+			simResult := simulate.WowSim_Execute_SpecifyAll(input.SimSizeItemInitial, model.SimSpeedUp, model.Spec, goal, model.SimulateAs, model.Professions, initial.itemSet.Items(), nil, tracker.NewChild())
 
 			printer.Println("SIM " + itemName)
 			simResult.Print(printer)
@@ -61,4 +64,23 @@ func runEachUpgradeTaskAndSim(printer *util.PrintRecorder, extraTasks []upgradeI
 		}
 	})
 	return simResults
+}
+
+func runMoreDetailedSimForBestN(resultList []upgradeItemResultWithSim, topResultsCount int, extraSimSize simulate.WowSim_RunSize, model *gear_model.SpecModel, goal stats.OptimiseGoal, tracker *util.TrackProgress) {
+	topN := util_rank.HighestCollector_ForN[*upgradeItemResultWithSim](
+		uint64(topResultsCount),
+		func(a, b **upgradeItemResultWithSim) bool { return (*a).Equals(**b) },
+	)
+	for result := range util.ForPointer(resultList) {
+		topN.Offer(&result, result.increaseSim())
+	}
+
+	for result := range topN.ResultsSeq() {
+		runMoreDetailedSimFor(*result, extraSimSize, model, goal, tracker.NewChild())
+	}
+}
+
+func runMoreDetailedSimFor(result *upgradeItemResultWithSim, extraSimSize simulate.WowSim_RunSize, model *gear_model.SpecModel, goal stats.OptimiseGoal, tracker *util.TrackProgress) {
+	updatedSimResult := simulate.WowSim_Execute_SpecifyAll(extraSimSize, model.SimSpeedUp, model.Spec, goal, model.SimulateAs, model.Professions, result.itemSet.Items(), nil, tracker)
+	result.sim = updatedSimResult
 }

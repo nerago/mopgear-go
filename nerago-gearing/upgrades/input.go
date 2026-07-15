@@ -19,7 +19,10 @@ type FindUpgrades_BasicInputs struct {
 
 type FindUpgrades_SimInputs struct {
 	FindUpgrades_BasicInputs
-	SimSize simulate.WowSim_RunSize
+	SimSizeBaseline              simulate.WowSim_RunSize
+	SimSizeItemInitial           simulate.WowSim_RunSize
+	ExtraSimForTopResultsCount   int
+	ExtraSimForTopResultsSimSize simulate.WowSim_RunSize
 }
 
 type FindUpgrades_MultiSpec struct {

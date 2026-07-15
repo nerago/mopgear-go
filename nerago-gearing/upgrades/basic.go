@@ -21,9 +21,9 @@ func prepareUpgradeInfo(extraItems []loaders.ItemFoundRef, upgradeLevel items.Up
 	return extraTasks
 }
 
-func findBaseLine(printer *util.PrintRecorder, baseItems *items.FullOptionsMap, model *gear_model.SpecModel, tracker *util.TrackProgress) (float64, *items.FullItemSet) {
+func findBaseLine(printer *util.PrintRecorder, baseItems *items.FullOptionsMap, model *gear_model.SpecModel) (float64, *items.FullItemSet) {
 	printer.Println("FINDING BASELINE")
-	baseRating, baseSet := findBase(baseItems, model, printer, tracker)
+	baseRating, baseSet := findBase(baseItems, model, printer)
 	tools.ReportSetFewerParams(model, baseSet, printer)
 	return baseRating, baseSet
 }
@@ -101,12 +101,11 @@ func canPerformSpecifiedUpgrade(input *FindUpgrades_BasicInputs, extra *items.Fu
 	return items.CanUpgrade_Yes
 }
 
-func findBase(baseItems *items.FullOptionsMap, model *gear_model.SpecModel, printer *util.PrintRecorder, tracker *util.TrackProgress) (float64, *items.FullItemSet) {
+func findBase(baseItems *items.FullOptionsMap, model *gear_model.SpecModel, printer *util.PrintRecorder) (float64, *items.FullItemSet) {
 	output := solver.Solver(solver.SolveInput{
-		ItemOptions:        baseItems,
-		Model:              model,
-		OuterTrackProgress: tracker,
-		Printer:            printer,
+		ItemOptions: baseItems,
+		Model:       model,
+		Printer:     printer,
 	})
 
 	if !output.Success {
@@ -114,10 +113,10 @@ func findBase(baseItems *items.FullOptionsMap, model *gear_model.SpecModel, prin
 	}
 
 	printer.Printf("\n%s\nBASE RATING    = %.0f\n\n", output.SolvedSet.Total().CreateString(), output.ResultRating)
-	return float64(output.ResultRating), &output.FullSet
+	return output.ResultRating, &output.FullSet
 }
 
-func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *gear_model.SpecModel, parentPrinter *util.PrintRecorder, outerTracker *util.TrackProgress, forceIncludeMost bool, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) upgradeItemResult {
+func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *gear_model.SpecModel, parentPrinter *util.PrintRecorder, forceIncludeMost bool, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) upgradeItemResult {
 	slot := extraTask.slot
 	incompleteItem := extraTask.item // this "item" is from ItemFinder and not a full item
 	itemId := incompleteItem.ItemId
@@ -144,10 +143,9 @@ func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptions
 	}
 
 	output := solver.Solver(solver.SolveInput{
-		ItemOptions:        &jobItems,
-		Model:              model,
-		OuterTrackProgress: outerTracker,
-		Printer:            printer,
+		ItemOptions: &jobItems,
+		Model:       model,
+		Printer:     printer,
 	})
 
 	var result upgradeItemResult
@@ -155,7 +153,7 @@ func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptions
 		printer.Printf("SET STATS %s\n", output.SolvedSet.Total().CreateString())
 		output.Report(printer) // verbose
 
-		factor := float64(output.ResultRating) / baseRating
+		factor := output.ResultRating / baseRating
 		printer.Printf("UPGRADE RATING = %.0f FACTOR = %1.3f\n", output.ResultRating, factor)
 
 		setBonus := model.SetBonus.CountInAnySet(output.FullSet.Items())

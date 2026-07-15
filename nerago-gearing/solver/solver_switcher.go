@@ -11,16 +11,13 @@ import (
 )
 
 type SolveInput struct {
-	ItemOptions         *items.FullOptionsMap
-	Model               *gear_model.SpecModel
-	EnableTrackProgress bool
-	OuterTrackProgress  *util.TrackProgress
-	Printer             *util.PrintRecorder
+	ItemOptions *items.FullOptionsMap
+	Model       *gear_model.SpecModel
+	Printer     *util.PrintRecorder
 }
 
 func Solver(input SolveInput) SolveOutput {
-	printer, trackProgress, solveOptions := prepareSolve(input)
-	defer trackProgress.SetDone()
+	printer, solveOptions := prepareSolve(input)
 
 	futureSolvedResult := solve_highs.SingleGearSetMain(&solveOptions, input.Model, printer)
 	solvedResult := futureSolvedResult.WaitForResultAsOptional()
@@ -38,23 +35,14 @@ func Solver_Lite(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel,
 	return itemSet
 }
 
-func prepareSolve(input SolveInput) (*util.PrintRecorder, *util.TrackProgress, items.SolvableOptionsMap) {
+func prepareSolve(input SolveInput) (*util.PrintRecorder, items.SolvableOptionsMap) {
 	printer := input.Printer
 	if printer == nil {
 		printer = util.PrintRecorder_HoldAll()
 	}
 
-	var trackProgress *util.TrackProgress
-	if input.OuterTrackProgress != nil {
-		trackProgress = input.OuterTrackProgress.NewChild()
-	} else if input.EnableTrackProgress {
-		trackProgress = util.TrackProgress_Start()
-	} else {
-		trackProgress = util.TrackProgress_Nop()
-	}
-
 	solveOptions := items.SolvableOptionsMap_of(input.ItemOptions)
-	return printer, trackProgress, solveOptions
+	return printer, solveOptions
 }
 
 func finaliseSolve(solvedResult util.Optional[items.SolvableItemSet], solveOptions items.SolvableOptionsMap, input SolveInput, printer *util.PrintRecorder) SolveOutput {

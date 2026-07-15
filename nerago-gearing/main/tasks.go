@@ -22,10 +22,9 @@ func basicReforge(printer *util.PrintRecorder) {
 	itemOptions, model := setupPallyMitigationSet()
 
 	output := solver.Solver(solver.SolveInput{
-		ItemOptions:         &itemOptions,
-		Model:               &model,
-		EnableTrackProgress: true,
-		Printer:             nil})
+		ItemOptions: &itemOptions,
+		Model:       &model,
+		Printer:     nil})
 	output.Report(printer)
 }
 
@@ -49,10 +48,9 @@ func findBestSubjectToCommon(printer *util.PrintRecorder) {
 	restrictSlotToId(&itemOptions, items.Equip_Ring1, 96481)
 
 	output := solver.Solver(solver.SolveInput{
-		ItemOptions:         &itemOptions,
-		Model:               &model,
-		EnableTrackProgress: true,
-		Printer:             printer})
+		ItemOptions: &itemOptions,
+		Model:       &model,
+		Printer:     printer})
 
 	output.Report(printer)
 }
@@ -200,10 +198,9 @@ func testSimA(printer *util.PrintRecorder) {
 	// itemOptionsMit := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigation, &model, setup.MissingEnchant_Panic, printer)
 	// itemOptions[items.Equip_Trinket2] = itemOptionsMit[items.Equip_Trinket2]
 	output := solver.Solver(solver.SolveInput{
-		ItemOptions:         &itemOptions,
-		Model:               &model,
-		EnableTrackProgress: true,
-		Printer:             printer})
+		ItemOptions: &itemOptions,
+		Model:       &model,
+		Printer:     printer})
 	printer.Println("Running sim")
 	resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_QuickDirty, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
@@ -212,10 +209,9 @@ func testSimB(printer *util.PrintRecorder) {
 	model := gear_model.Model_PallyProtMitigation_WithSet()
 	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationWithSet, &model, setup.MissingEnchant_Panic, printer)
 	output := solver.Solver(solver.SolveInput{
-		ItemOptions:         &itemOptions,
-		Model:               &model,
-		EnableTrackProgress: true,
-		Printer:             printer})
+		ItemOptions: &itemOptions,
+		Model:       &model,
+		Printer:     printer})
 	printer.Println("Running sim")
 	resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_Common, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
@@ -267,10 +263,9 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 	}
 
 	output := solver.Solver(solver.SolveInput{
-		ItemOptions:         &itemOptions,
-		Model:               &model,
-		EnableTrackProgress: true,
-		Printer:             printer})
+		ItemOptions: &itemOptions,
+		Model:       &model,
+		Printer:     printer})
 
 	output.Report(printer)
 
@@ -343,10 +338,9 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 			restrictSlotToId(&itemOptionsSpecific, slotEquip, itemId)
 
 			output := solver.Solver(solver.SolveInput{
-				ItemOptions:         &itemOptionsSpecific,
-				Model:               &model,
-				EnableTrackProgress: true,
-				Printer:             printer})
+				ItemOptions: &itemOptionsSpecific,
+				Model:       &model,
+				Printer:     printer})
 			output.Report(printer)
 
 			resultStats := simulate.WowSim_Execute_UseModel(simSize, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())

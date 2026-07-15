@@ -185,6 +185,15 @@ type reportGroup struct {
 	specLabel  string
 	difficulty stats.Difficulty
 }
+type upgradeGroupTask struct {
+	spec       *FindUpgrades_Spec
+	difficulty stats.Difficulty
+}
+type upgradeGroupResult struct {
+	task       upgradeGroupTask
+	group      reportGroup
+	resultList []upgradeItemResultWithSim
+}
 
 // ################## reportForItemWithSim ##################
 

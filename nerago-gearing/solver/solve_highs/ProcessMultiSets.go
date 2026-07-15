@@ -5,7 +5,6 @@ import (
 	gear_model "paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/multi/multi_types"
-	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_highs"
@@ -25,8 +24,6 @@ type SolverHighsMultiParam struct {
 
 	setup        *singleGearSetInputs
 	solveOptions items.SolvableOptionsMap
-
-	withMinimum *stats.StatAndValue
 }
 
 type SolverHighsMultiProcess struct {

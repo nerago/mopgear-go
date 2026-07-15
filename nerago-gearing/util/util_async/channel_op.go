@@ -143,7 +143,7 @@ func Map_ChannelToSlice_FutureCancellable[T any, R any](threadCount int, inputCh
 
 func Map_SliceToChannel[T any, R any](threadCount int, inputSlice []T, mapper func(*T) R) <-chan R {
 	outputChannel := makeOutputChannel[R]()
-	indexChannel := make(chan int, threadCount)
+	indexChannel := make(chan int)
 	var waitGroup sync.WaitGroup
 
 	go func() {
@@ -170,7 +170,7 @@ func Map_SliceToChannel[T any, R any](threadCount int, inputSlice []T, mapper fu
 
 func MapOptional_SliceToChannel[T any, R any](threadCount int, inputSlice []T, mapper func(*T) (R, bool)) <-chan R {
 	outputChannel := makeOutputChannel[R]()
-	indexChannel := make(chan int, threadCount)
+	indexChannel := make(chan int)
 	var waitGroup sync.WaitGroup
 
 	go func() {
@@ -199,7 +199,7 @@ func MapOptional_SliceToChannel[T any, R any](threadCount int, inputSlice []T, m
 }
 
 func MapOptional_SliceToChannel_Cancellable[T any, R any](threadCount int, inputSlice []T, cancel CancelSignal, mapper func(*T) (R, bool)) <-chan R {
-	indexChannel := make(chan int, threadCount)
+	indexChannel := make(chan int)
 	loopCancelChannel := cancel.CancelSignalChannel()
 
 	go func() {
@@ -238,7 +238,7 @@ func MapOptional_SliceToChannel_Cancellable[T any, R any](threadCount int, input
 }
 
 func Map_SliceToSlice[T any, R any](threadCount int, inputSlice []T, mapper func(*T) R) []R {
-	indexChannel := make(chan int, threadCount)
+	indexChannel := make(chan int)
 	resultChannel := make(chan R, threadCount)
 	var waitGroup sync.WaitGroup
 
@@ -268,8 +268,48 @@ func Map_SliceToSlice[T any, R any](threadCount int, inputSlice []T, mapper func
 	return outputSlice
 }
 
+func Map_SliceToSlice_Cancellable[T any, R any](threadCount int, inputSlice []T, cancel CancelSignal, mapper func(*T) R) []R {
+	indexChannel := make(chan int)
+	loopCancelChannel := cancel.CancelSignalChannel()
+
+	go func() {
+	indexLoop:
+		for index := range inputSlice {
+			select {
+			case indexChannel <- index:
+				// ok
+			case <-loopCancelChannel:
+				break indexLoop
+			}
+		}
+		close(indexChannel)
+	}()
+
+	resultChannel := make(chan R, threadCount)
+	var waitGroup sync.WaitGroup
+	for range threadCount {
+		waitGroup.Go(func() {
+			for index := range indexChannel {
+				if cancel.ShouldContinue() {
+					resultChannel <- mapper(&inputSlice[index])
+				}
+			}
+		})
+	}
+	go func() {
+		waitGroup.Wait()
+		close(resultChannel)
+	}()
+
+	outputSlice := make([]R, 0, len(inputSlice))
+	for item := range resultChannel {
+		outputSlice = append(outputSlice, item)
+	}
+	return outputSlice
+}
+
 func ForEach_Slice[T any](threadCount int, inputSlice []T, process func(*T)) {
-	indexChannel := make(chan int, threadCount)
+	indexChannel := make(chan int)
 	var waitGroup sync.WaitGroup
 
 	go func() {

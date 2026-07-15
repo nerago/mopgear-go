@@ -9,6 +9,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/upgrades"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_async"
 	"slices"
 )
 
@@ -66,7 +67,8 @@ func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
 			IgnoredItems:       ignoredItems,
 			TargetUpgradeLevel: 0,
 		},
-		SimSize: simRunSize}
+		SimSizeBaseline:    simRunSize,
+		SimSizeItemInitial: simRunSize}
 	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsProt, printer)
 }
 
@@ -85,7 +87,8 @@ func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 			IgnoredItems:       ignoredItems,
 			TargetUpgradeLevel: 0,
 		},
-		SimSize: simRunSize}
+		SimSizeBaseline:    simRunSize,
+		SimSizeItemInitial: simRunSize}
 	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsProt, printer)
 }
 
@@ -103,46 +106,49 @@ func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 			IgnoredItems:       ignoredItems,
 			TargetUpgradeLevel: 0,
 		},
-		SimSize: simRunSize}
+		SimSizeBaseline:    simRunSize,
+		SimSizeItemInitial: simRunSize}
 	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsProt, printer)
 }
 
 func findUpgrades_Paladin() {
-	// simRunSize    = simulate.RunSize_TestOnly
-	// var simRunSize simulate.WowSim_RunSize = 1500
-	// var simRunSize simulate.WowSim_RunSize = 3000
-	// var simRunSize simulate.WowSim_RunSize = 8000
-	//simRunSize := simulate.RunSize_QuickDirty
-	//simRunSize := simulate.RunSize_Common
-	simRunSize := simulate.RunSize_Largish
+	simSizeBaseline := simulate.RunSize_VerySlow
+	simSizeTopN := simulate.RunSize_VerySlow
+	//simSizePerItem := simulate.RunSize_QuickDirty
+	simSizePerItem := simulate.RunSize_Common
+	//simSizePerItem := simulate.RunSize_Largish
+
+	//simSizeBaseline := simulate.RunSize_TestOnly
+	//simSizeTopN := simulate.RunSize_TestOnly
+	//simSizePerItem := simulate.RunSize_TestOnly
 
 	substituteEmptySlotOnly := make(map[items.SlotItem]items.ItemId)
 	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
 	substituteEmptySlotOnly[items.Item_Ring] = 86957    // heroic bladed tempest ring
 
-	//heroicBossesConsider := []string{"SoO Immerseus", "SoO Norushen", "SoO ShaofPride", "SoO FallenProtectors", "SoO Galakras", "SoO Nazgrim"}
-	//finder := loaders.ItemFinder_HeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, heroicBossesConsider)
+	heroicBossesConsider := []string{"SoO Immerseus", "SoO Norushen", "SoO ShaofPride", "SoO FallenProtectors", "SoO Galakras", "SoO Nazgrim"}
+	finder := loaders.ItemFinder_HeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, heroicBossesConsider)
 
 	//finder := loaders.ItemFinder_SiegeStrengthPlateTank
 	//finder := loaders.ItemFinder_Ordos
 	//finder := loaders.ItemFinder_TimelessPlate
 	//finder := loaders.ItemFinder_BagsUpgraded
-	finder := loaders.SiegeClassGearSetMultiple(stats.Spec_PaladinProt, stats.Spec_PaladinRet)
-
-	//finder := func(_ stats.Difficulty) []*items.FullItem {
-	//	return []*items.FullItem{db.WowSimDB_ByIdAndUpgrade(103735, 0), db.WowSimDB_ByIdAndUpgrade(103791, 0), db.WowSimDB_ByIdAndUpgrade(103872, 0)}
-	//}
+	//finder := loaders.SiegeClassGearSetMultiple(stats.Spec_PaladinProt, stats.Spec_PaladinRet)
+	//finder := func(_ stats.Difficulty) []loaders.ItemFoundRef { return []loaders.ItemFoundRef{{ItemId: 103735}, {ItemId: 103791}, {ItemId: 103872}}	}
 
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
 				IncludeCelestial:   false,
 				IncludeNormal:      true,
-				IncludeHeroic:      false,
+				IncludeHeroic:      true,
 				IgnoredItems:       ignoredItems,
 				TargetUpgradeLevel: 2,
 			},
-			SimSize: simRunSize,
+			SimSizeBaseline:              simSizeBaseline,
+			SimSizeItemInitial:           simSizePerItem,
+			ExtraSimForTopResultsCount:   4,
+			ExtraSimForTopResultsSimSize: simSizeTopN,
 		},
 		Specs: []upgrades.FindUpgrades_Spec{
 			{
@@ -177,7 +183,19 @@ func findUpgrades_Paladin() {
 				SubstituteItems:         substituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
+			{
+				Label:                   "heal",
+				Model:                   gear_model.Model_PallyProtHeal(),
+				GearFile:                files.GearFileProtHeal,
+				ItemFinder:              finder,
+				SubstituteItems:         substituteItemsProt,
+				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
+			},
 		},
 	}
-	upgrades.FindUpgrades_Sim_AllRaid_Run(&input)
+
+	cancel := util_async.CancelSignal_Make()
+	util_async.CancelOnKeyPress(cancel)
+
+	upgrades.FindUpgrades_Sim_AllRaid_Run(&input, cancel)
 }
