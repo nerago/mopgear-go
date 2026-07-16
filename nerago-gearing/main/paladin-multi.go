@@ -8,7 +8,6 @@ import (
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
-	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
 )
@@ -38,12 +37,12 @@ var retT15 = []items.ItemId{
 	96658, // ret tier15 shoulder heroic
 }
 var retT16 = []items.ItemId{
-	// yes numbers don't line up, seems like the way it is
 	99052, // ret t16 chest celestial
 	99002, // ret t16 hand celestial
 	98985, // ret t16 head celestial
 	98986, // ret t16 legs celestial
 	98987, // ret t16 shoulder celestial
+	99139, // ret t16 legs normal
 }
 var protT15 = []items.ItemId{
 	96664, // prot tier15 chest heroic
@@ -54,6 +53,7 @@ var protT16 = []items.ItemId{
 	99126, // prot t16 chest normal
 	99128, // prot t16 head normal
 	99129, // prot t16 legs normal
+	99130, // prot t16 shoulder normal
 	99026, // prot t16 legs celestial
 	99027, // prot t16 shoulder celestial
 	99028, // prot t16 hand celestial
@@ -235,6 +235,7 @@ func PaladinMultiRun() {
 		104938, // Sorrowpath Signet
 		95140,  // shado assault band
 		104981, // greatsword pride fall
+		103968, // britomart pike
 	})
 
 	protDps.AddExtraItems([]items.ItemId{
@@ -296,7 +297,7 @@ func PaladinMultiRun() {
 	})
 
 	// predetermined choices
-	ret.ForceSingleSlot(items.Equip_Weapon, 104981) // greatsword pride fall
+	ret.ForceSingleSlot(items.Equip_Weapon, 103968) // britomark
 	ret.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
 	ret.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
 	ret.ForceSingleSlot(items.Equip_Trinket2, trinketTwinsGaze)
@@ -334,13 +335,13 @@ func PaladinMultiRun() {
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 	blockHelmetsWithoutIndomitable(&protHeal)
 
-	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
+	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Stamina, 120))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
-	job.ActivateAlternateGemmingAsPermute()
+	//job.ActivateAlternateGemmingAsPermute()
 
 	//job.MakeRandomVariants(101887, 0, -365, -352)
 
@@ -377,7 +378,7 @@ func PaladinMultiRun() {
 	job.VerifyNoExtraDuplicates()
 
 	//job.RunNoPermutations_AllCommonAlternates(true)
-	job.RunForSolutionsPerPermute(16)
+	job.RunForSolutionsPerPermute(5)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)

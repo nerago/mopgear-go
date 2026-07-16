@@ -202,7 +202,7 @@ func (job *MultiSetJob) listInitialOutputs(bestOutputs <-chan multi_types.MultiP
 }
 
 func (job *MultiSetJob) existingGearAsProposal() multi_types.MultiProposedOutput {
-	proposal := multi_types.MultiProposedOutput{Id: "00000000-0000-0000-0000-000000000000"}
+	proposal := multi_types.MultiProposedOutput{Id: "Existing-Gear"}
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
 		single := multi_types.SingleProposed_FromEquip(param.exactEquippedGear, &param.MultiSetParam)
@@ -225,7 +225,7 @@ func (job *MultiSetJob) additionalProposalsFromSpecOptimum(cancel util_async.Can
 
 		var output multi_types.MultiProposedOutput
 		if hasResult {
-			proposalId := fakeIdNumber(param.paramIndex + 1)
+			proposalId := "With-Best-" + param.Label
 			output = job.makeOutputFromHighs(result, printer, proposalId)
 		}
 

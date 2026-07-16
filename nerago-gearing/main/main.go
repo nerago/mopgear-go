@@ -87,6 +87,7 @@ func core(printer *util.PrintRecorder) {
 	//findSimpleUpgrade_ForceEach(printer)
 	//relativeRatingsCompromise(printer)
 	//trinketSimsBoth(printer)
+	//currentSimGear(printer)
 	//
 	//statWeightsBasic(printer)
 	//statWeightsGrid(printer)

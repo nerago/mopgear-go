@@ -614,6 +614,75 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 	csv.Write(printer)
 }
 
+func currentSimGear(printer *util.PrintRecorder) {
+	fight := stats.Fight_Juggernaut_NoExternalHeal
+	simRun := simulate.RunSize_Largish
+
+	type group struct {
+		label string
+		model gear_model.SpecModel
+		file  string
+	}
+
+	groups := []group{
+		{
+			"heal",
+			gear_model.Model_PallyProtHeal(),
+			files.GearFileProtHeal,
+		},
+		{
+			"with_set",
+			gear_model.Model_PallyProtMitigation_WithSet(),
+			files.GearFileProtMitigationWithSet,
+		}, {
+			"no_set",
+			gear_model.Model_PallyProtMitigation_NoSet(),
+			files.GearFileProtMitigationNoSet,
+		},
+		{
+			"compromise",
+			gear_model.Model_PallyProtCompromise(),
+			files.GearFileProtCompromise,
+		}, {
+			"dps",
+			gear_model.Model_PallyProtDps(),
+			files.GearFileProtDps,
+		},
+		//{
+		//	"ret",
+		//	model.Model_PallyProtDps(),
+		//	files.GearFileProtDps,
+		//},
+	}
+
+	csv := util.CSVOutputByColumn{}
+	csv.InitRows(7)
+	csv.AddStringMany("set")
+	for _, statType := range stats.SimTypeList {
+		csv.AddString(statType.Name())
+	}
+	csv.FinishColumn()
+
+	for _, group := range groups {
+		model := group.model
+		file := group.file
+		csv.AddString(group.label)
+
+		equipped := loaders.GearFileReader_Read(file)
+		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
+
+		resultStats := simulate.WowSim_Execute_SpecifyAll(simRun, model.SimSpeedUp, model.Spec, model.Goal, fight, model.Professions, &equipMap, nil, util.TrackProgress_Nop())
+		resultStats.Print(printer)
+		for _, statType := range stats.SimTypeList {
+			csv.AddFloat64(resultStats.GetFriendly(statType), 2)
+		}
+
+		csv.FinishColumn()
+	}
+
+	csv.Write(printer)
+}
+
 func addGearFileToCommon(common map[items.ItemId]stats.ReforgeRecipe, gearFile string, model *gear_model.SpecModel, printer *util.PrintRecorder) {
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), model, setup.MissingEnchant_Panic, printer)
 	for item := range currentEquip.AllItemSeq() {
