@@ -3,6 +3,7 @@ package solve_highs
 import (
 	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_highs"
 )
@@ -19,12 +20,15 @@ const (
 	entry_main_output                 entryType = iota
 	entry_multi_enable_forge          entryType = iota
 	entry_multi_output                entryType = iota
+	entry_stat_total                  entryType = iota
+	entry_sim_rating                  entryType = iota
 )
 
 type columnInfo struct {
 	entryType   entryType
 	columnIndex util_highs.ColumnIndex
 
+	statType stats.StatType
 	itemSlot items.SlotEquip
 	item     *items.SolvableItem
 	itemFull *items.FullItem

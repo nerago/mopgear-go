@@ -180,3 +180,13 @@ func (block *StatBlock) SeqPair() iter.Seq2[StatType, float64] {
 		}
 	}
 }
+
+func (block *StatBlock) SeqPairInt() iter.Seq2[StatType, uint32] {
+	return func(yield func(StatType, uint32) bool) {
+		for i := range block {
+			if !yield(StatType(i), block[i]) {
+				return
+			}
+		}
+	}
+}

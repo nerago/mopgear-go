@@ -160,11 +160,45 @@ func (form *FormulaStatWeightProcess) sampleIncludeToggleColumn() util_highs.Col
 	return includeColumn
 }
 
+// TODO is there a way to flip the division for TMI DEATH etc, fundamental problem is that they don't increase linearly with stats
+
+// for normal dps/hps/tps etc.
 // equation is: weightA*scaledStatA + weightB*scaledStatB = scaledSimValue - diff
+
+// if we were to say they decrease linearly:
+// death = 100% - weightA*scaledStatA - weightB*scaledStatB
+// easy to change in solve, not entirely sure would end up with significantly different result or not, negative already sort of allowed
+// but could easily go negative, would need to cap, might add MIP steps later on
+// tmi/dtps are harder to scale
+
+// but if they were more multiplicative:
+// death = 100 * ratioA * ratioB
+// solve for: how much ratioA change would lead to 10% less death
+//         (100 * ratioA * ratioB) * 0.9
+//       = 100 * (ratioA*0.9) * ratioB
+//        ratioANew = ratioA*0.9
+//                  = ratioA*(1/1.111...)
+//        ratioA = 1 / (1+stat*weight)
+// ideally the equation is then death = 100 * 1 / (1 + statA * weightA) * 1 / (1 + statB * weightB)
+// can't do that in linear equations really
+
+// if we solve prior 100 * 1 / (1 + statA * weightA) * 1 / (1 + statB * weightB)
+//                 = 100 / ((1 + statA * weightA) * (1 + statB * weightB))
+//                 = 100 / (1 + (statA * weightA) + (statB * weightB) + (statA * weightA) * (statB * weightB))
+//                 = 100 / (1 + (statA * weightA) + (statB * weightB) + (statA * statB * weightA * weightB))
+//                   looking even less linear
+
+// not really equivalent but could have similar effect
+// what about death = 100 * 1 / (1 + statA * weightA + statB * weightB)
+//            death = 100 / (1 + statA * weightA + statB * weightB)
+//      100 / death = (1 + statA * weightA + statB * weightB)
+//                0 = (1 + statA * weightA + statB * weightB) - (100 / death)
+//               -1 = statA * weightA + statB * weightB - 0.01 * death           [possible formula]
+//                        or
+//  100 / death - 1 = statA * weightA + statB * weightB                          [possible formula here since death const]
+
 func (form *FormulaStatWeightProcess) buildDataEquationForSim(stats *stats.StatBlock, simValue float64, simType stats.SimType, includeColumn util_highs.ColumnIndex) {
 	matchSimValue := util_highs.ConstraintRow{}
-
-	// TODO is there a way to flip the division for TMI DEATH etc, fundamental problem is that they don't increase linearly with stats
 
 	for _, statType := range form.requiredStats {
 		weightDetailCol := form.detailedWeightColumns.GetOrPanic(statType, simType)

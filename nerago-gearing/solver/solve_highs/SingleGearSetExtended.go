@@ -12,7 +12,10 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
-type WeightExtended util.MapMap[stats.StatType, stats.SimType, float64]
+type WeightExtended struct {
+	DetailedWeights   util.MapMap[stats.StatType, stats.SimType, float64]
+	SimRatioWeighting stats.SimData
+}
 type StatRequiredExtended map[stats.StatType]util.HiLoInt
 
 type ExtendedModel struct {
@@ -49,20 +52,53 @@ func setupGearSetExtended(build *util_highs.LinearBuilder, model *ExtendedModel,
 	setup := singleGearSetExtendedInputs{build: build}
 
 	setup.addMainOutputVariable(scaleOutputRating)
-	setup.addSumRatingVariable()
+	setup.prepareStats()
 	setup.prepareRequire(&model.require)
 	setup.prepareActiveSets(&model.gearModel.SetBonus)
 	setup.prepareUniqueEquipped(itemOptions)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
-		setup.addItem(slot, item, &model.weight, &model.require, &model.gearModel.SetBonus)
+		setup.addItem(slot, item, &model.require, &model.gearModel.SetBonus)
 	}
 
 	setup.finishItems(itemOptions, &model.require)
-
+	setup.calcRatingsFromTotals(&model.weight)
 	setup.addSetNeededCounts(model.gearModel.SetBonusRequired)
 
 	return &setup
+}
+
+// TODO set multipliers per sim would be better
+
+// CALCULATION:
+// itemColumns * statTotalRows -> statTotalColumns
+// ??
+// combinedRatingVar * entry_permutation_active(column) -> entry_permutation_output_weighted(column)
+// entry_permutation_output_weighted(column) * permutation.weight -> mainOutputRow
+
+type singleGearSetExtendedInputs struct {
+	build *util_highs.LinearBuilder
+
+	slotsOneEachRow [items.ITEM_SLOT_COUNT]util_highs.ConstraintRow // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
+
+	requireRows      map[stats.StatType]*util_highs.ConstraintRow // constrains values for the hit/expertise/etc of each item
+	statTotalRows    map[stats.StatType]*util_highs.ConstraintRow
+	statTotalColumns map[stats.StatType]*columnInfo
+
+	//baseRatingSumRow util_highs.ConstraintRow // values for the ratings of each item
+	combinedRatingVar *columnInfo // sum of values for the ratings of selected items
+
+	mainOutputRow util_highs.ConstraintRow // compute final output from set based alternatives
+	mainOutputVar *columnInfo              // output variable, to be used directly or scaled against other models
+
+	uniqueEquipRowsById map[items.ItemId]*util_highs.ConstraintRow // lookup by id, may have multiple mappings for an item so need pointers
+	uniqueEquipRowsAll  []*util_highs.ConstraintRow                // definitive copy of each unique equip row constraint
+
+	setData           []setInfo
+	allSetPermutation []setPermutation
+
+	itemColumns util.MapSlice[items.ItemId, *columnInfo]
+	allColumns  []*columnInfo
 }
 
 func (setup *singleGearSetExtendedInputs) addSetNeededCounts(setBonusRequired []gear_model.ActiveSetCountsRequired) {
@@ -102,30 +138,6 @@ func (setup *singleGearSetExtendedInputs) addSetNeededCounts(setBonusRequired []
 	}
 }
 
-type singleGearSetExtendedInputs struct {
-	build *util_highs.LinearBuilder
-
-	slotsOneEachRow [items.ITEM_SLOT_COUNT]util_highs.ConstraintRow // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
-
-	requireRows map[stats.StatType]*util_highs.ConstraintRow // constrains values for the hit/expertise/etc of each item
-	statTotals  map[stats.StatType]*util_highs.ConstraintRow
-
-	//baseRatingSumRow util_highs.ConstraintRow // values for the ratings of each item
-	//baseRatingSumVar *columnInfo              // sum of values for the ratings of selected items
-
-	mainOutputRow util_highs.ConstraintRow // compute final output from set based alternatives
-	mainOutputVar *columnInfo              // output variable, to be used directly or scaled against other models
-
-	uniqueEquipRowsById map[items.ItemId]*util_highs.ConstraintRow // lookup by id, may have multiple mappings for an item so need pointers
-	uniqueEquipRowsAll  []*util_highs.ConstraintRow                // definitive copy of each unique equip row constraint
-
-	setData           []setInfo
-	allSetPermutation []setPermutation
-
-	itemColumns util.MapSlice[items.ItemId, *columnInfo]
-	allColumns  []*columnInfo
-}
-
 func (setup *singleGearSetExtendedInputs) prepareActiveSets(setBonus *gear_model.SetBonus) {
 	// constrain: exact item count in each active set
 	activeSets := setBonus.ActiveSets()
@@ -150,41 +162,36 @@ func (setup *singleGearSetExtendedInputs) prepareActiveSets(setBonus *gear_model
 
 func (setup *singleGearSetExtendedInputs) buildSimpleNoSetsOutput() {
 	// just copy initial rating sum into final if no sets
-	setup.mainOutputRow.Add(setup.baseRatingSumVar.columnIndex, 1)
+	setup.mainOutputRow.Add(setup.combinedRatingVar.columnIndex, 1)
 }
 
 func (setup *singleGearSetExtendedInputs) buildSetMultipliedOutput(permutation *setPermutation) {
-	outputVar, weight := setup.buildSetWeightedOutputVar(permutation)
 	activatingVar := setup.buildPermutationActivatingVar(permutation)
 
-	// copy regular rating sum to column if flag is set
-	setup.build.ContraintIfBoolCopyValueElseZero(activatingVar.columnIndex, setup.baseRatingSumVar.columnIndex, outputVar.columnIndex, c_ratings_low_range, c_ratings_high_range)
-
-	// add scaled rating to final computation
-	setup.mainOutputRow.Add(outputVar.columnIndex, weight)
-
-	permutation.outputVar = outputVar
-	permutation.activatingVar = activatingVar
-	permutation.weight = weight
-}
-
-func (setup *singleGearSetExtendedInputs) buildSetWeightedOutputVar(permutation *setPermutation) (*columnInfo, float64) {
 	totalWeight := 1.0
 	for _, setAndCount := range permutation.content {
 		bonusForCount := setAndCount.setInfo.activeSet.BonusForCount(uint8(setAndCount.count))
-		totalWeight *= float64(bonusForCount)
+		totalWeight *= bonusForCount
 	}
 
 	// the actual output variable from this permutation, applies relevant set related multipliers
-	entry := columnInfo{entryType: entry_permutation_output_weighted, permutation: permutation, weight: totalWeight}
-	entry.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, &entry)
+	permutationOutput := columnInfo{entryType: entry_permutation_output_weighted, permutation: permutation, weight: totalWeight}
+	permutationOutput.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, &permutationOutput)
+	setup.allColumns = append(setup.allColumns, &permutationOutput)
 
-	setup.allColumns = append(setup.allColumns, &entry)
-	return &entry, totalWeight
+	// copy regular rating sum to column if flag is set
+	setup.build.ContraintIfBoolCopyValueElseZero(activatingVar.columnIndex, setup.combinedRatingVar.columnIndex, permutationOutput.columnIndex, c_ratings_low_range, c_ratings_high_range)
+
+	// add scaled rating to final computation
+	setup.mainOutputRow.Add(permutationOutput.columnIndex, totalWeight)
+
+	permutation.outputVar = &permutationOutput
+	permutation.activatingVar = activatingVar
+	permutation.weight = totalWeight
 }
 
 func (setup *singleGearSetExtendedInputs) buildPermutationActivatingVar(permutation *setPermutation) *columnInfo {
-	// we are effecively building a logical AND between these vars
+	// we are effectively building a logical AND between these vars
 
 	permutationActiveBool := columnInfo{entryType: entry_permutation_active, permutation: permutation}
 	permutationActiveBool.columnIndex = setup.build.CreateColumnBool(&permutationActiveBool)
@@ -262,37 +269,23 @@ func (setup *singleGearSetExtendedInputs) addMainOutputVariable(scaleOutputRatin
 	setup.allColumns = append(setup.allColumns, &entry)
 }
 
-func (setup *singleGearSetExtendedInputs) addSumRatingVariable() {
-	entry := columnInfo{entryType: entry_sum_rating}
-
-	// sum of individual selected item ratings
-	// doesen't go directly into output rating
-	entry.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.C_PlusInf, &entry)
-
-	// main action of this variable: derive value to match rest of rest of row sum
-	setup.baseRatingSumRow.Add(entry.columnIndex, -1)
-
-	// save reference
-	setup.baseRatingSumVar = &entry
-	setup.allColumns = append(setup.allColumns, &entry)
-}
-
-func (setup *singleGearSetExtendedInputs) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, weight *WeightExtended, require *StatRequiredExtended, setBonus *gear_model.SetBonus) util_highs.ColumnIndex {
+func (setup *singleGearSetExtendedInputs) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, require *StatRequiredExtended, setBonus *gear_model.SetBonus) util_highs.ColumnIndex {
 	entry := columnInfo{entryType: entry_item, itemSlot: itemSlot, item: item}
 
-	// boolean value to flag use of specific item
-	// contributes 0 to final rating itself, but via additional summation and calcs
+	// boolean value to flag use of specific item, in exact reforge/gem state
 	columnIndex := setup.build.CreateColumnBool(&entry)
 	entry.columnIndex = columnIndex
 	setup.allColumns = append(setup.allColumns, &entry)
 	setup.itemColumns.Add(item.ItemId(), &entry)
 
-	// add rating via a summation condition
-	// scale down ratings to keep numbers small for solver stability
-	rating := float64(gear_model.CalcRatingSolveItem(item)) / c_scaled_ratings
-	setup.baseRatingSumRow.Add(columnIndex, rating)
+	// add to stats via a summation condition
+	for statType, value := range item.Total().SeqPairInt() {
+		if value != 0 {
+			setup.statTotalRows[statType].Add(columnIndex, float64(value))
+		}
+	}
 
-	// specific hit/expertise values for hi/lo limits
+	// specific hit/expertise/etc values for hi/lo limits
 	for statType := range *require {
 		setup.requireRows[statType].Add(columnIndex, item.Total().GetFloat(statType))
 	}
@@ -322,6 +315,19 @@ func (setup *singleGearSetExtendedInputs) prepareRequire(require *StatRequiredEx
 	}
 }
 
+func (setup *singleGearSetExtendedInputs) prepareStats() {
+	setup.statTotalRows = make(map[stats.StatType]*util_highs.ConstraintRow)
+	setup.statTotalColumns = make(map[stats.StatType]*columnInfo)
+	for _, statType := range stats.StatType_List {
+		entry := columnInfo{entryType: entry_stat_total, statType: statType}
+		entry.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.C_PlusInf, util_highs.DebugText("statTotal "+statType.Name()))
+		setup.statTotalColumns[statType] = &entry
+		setup.allColumns = append(setup.allColumns, &entry)
+
+		setup.statTotalRows[statType] = &util_highs.ConstraintRow{Debug: "statTotal " + statType.Name()}
+	}
+}
+
 func (setup *singleGearSetExtendedInputs) finishItems(itemOptions *items.SolvableOptionsMap, require *StatRequiredExtended) {
 	// constrain: exactly one item for each slot
 	for slot, row := range setup.slotsOneEachRow {
@@ -340,9 +346,13 @@ func (setup *singleGearSetExtendedInputs) finishItems(itemOptions *items.Solvabl
 		row.Build(setup.build, float64(hilo.Lo), float64(hilo.Hi))
 	}
 
-	// constrain: matching sum to individual ratings
-	setup.baseRatingSumRow.Debug = "baseRatingSumRow"
-	setup.baseRatingSumRow.Build(setup.build, 0, 0)
+	// constrain: total sum of each stat for input to weights
+	for _, statType := range stats.StatType_List {
+		column := setup.statTotalColumns[statType]
+		row := setup.statTotalRows[statType]
+		row.Add(column.columnIndex, -1)
+		row.Build(setup.build, 0, 0)
+	}
 
 	// constrain: matching number of items from each given set
 	for _, setInfo := range setup.setData {
@@ -359,6 +369,32 @@ func (setup *singleGearSetExtendedInputs) finishItems(itemOptions *items.Solvabl
 	// constrain: whichever alternate set output into final
 	setup.mainOutputRow.Debug = "mainOutputRow"
 	setup.mainOutputRow.Build(setup.build, 0, 0)
+}
+
+func (setup *singleGearSetExtendedInputs) calcRatingsFromTotals(weight *WeightExtended) {
+	// weighted sum of each sim rating
+	combinedRatingColumn := columnInfo{entryType: entry_sum_rating}
+	combinedRatingColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.C_PlusInf, &combinedRatingColumn)
+	setup.combinedRatingVar = &combinedRatingColumn
+	setup.allColumns = append(setup.allColumns, &combinedRatingColumn)
+
+	combinedRatingRow := util_highs.ConstraintRow{}
+
+	simRatingSum := make(map[stats.SimType]columnInfo)
+	for simType, nested := range weight.DetailedWeights.SeqGroupsKey2NestedKeyValue() {
+		simRatingColumn := columnInfo{entryType: entry_sim_rating}
+		simRatingColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, &simRatingColumn)
+
+		simRatio := weight.SimRatioWeighting.Get(simType)
+		combinedRatingRow.Add(simRatingColumn.columnIndex, simRatio)
+	}
+
+	//statTotalColumns map[stats.StatType]*columnInfo
+
+	// main action of this variable: derive value to match sum of sim ratings
+	combinedRatingRow.Add(combinedRatingColumn.columnIndex, -1)
+	combinedRatingRow.Build(setup.build, 0, 0)
+
 }
 
 func (setup *singleGearSetExtendedInputs) prepareUniqueEquipped(itemOptions *items.SolvableOptionsMap) {
