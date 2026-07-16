@@ -13,7 +13,6 @@ import (
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_rank"
 	"slices"
-	"strings"
 )
 
 func checkNoConflicts(outputSet []multi_types.SingleProposedOutput, printer *util.PrintRecorder) bool {
@@ -31,18 +30,6 @@ func checkNoConflicts(outputSet []multi_types.SingleProposedOutput, printer *uti
 		}
 	}
 	return true
-}
-
-func (job *MultiSetJob) existingGearAsProposal() multi_types.MultiProposedOutput {
-	proposal := multi_types.MultiProposedOutput{Id: "00000000-0000-4000-8000-000000000000"}
-	for paramIndex := range job.params {
-		param := &job.params[paramIndex]
-		single := multi_types.SingleProposed_FromEquip(param.exactEquippedGear, &param.MultiSetParam)
-		proposal.Parts = append(proposal.Parts, single)
-		proposal.TotalRatingSum += single.ResultRating
-	}
-	proposal.Combo = multi_types.CommonCombo_FromProposed(proposal.Parts)
-	return proposal
 }
 
 type simulateJob struct {
@@ -252,8 +239,7 @@ func countRegem(multiProposed multi_types.MultiProposedOutput) int {
 
 	countRegemmed := 0
 	for _, item := range allItems {
-		name := item.CreateFullName()
-		if strings.Contains(name, ReGem_GemAlternate) || strings.Contains(name, ReGem_GemDefault) {
+		if item.HasBeenRegemmed() {
 			countRegemmed++
 		}
 	}

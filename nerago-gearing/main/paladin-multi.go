@@ -139,8 +139,8 @@ var legendCloaks = []items.ItemId{legendTankCloak, legendMeleeCloak}
 func PaladinMultiRun() {
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "multi-set")
 
-	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Largish)
-	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_Common)
+	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_Largish)
+	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Common)
 	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
 	//job.SetWriteBestToGearFiles()
 
@@ -340,16 +340,17 @@ func PaladinMultiRun() {
 	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
+	job.ActivateAlternateGemmingAsPermute()
 
 	//job.MakeRandomVariants(101887, 0, -365, -352)
 
 	job.SetMinimumExtraItemLevel(463)
-	ret.AddBagsExtra()
-	protDps.AddBagsExtra()
-	protCompromise.AddBagsExtra()
-	protMitigationNoSet.AddBagsExtra()
-	protMitigationWithSet.AddBagsExtra()
-	protHeal.AddBagsExtra()
+	//ret.AddBagsExtra()
+	//protDps.AddBagsExtra()
+	//protCompromise.AddBagsExtra()
+	//protMitigationNoSet.AddBagsExtra()
+	//protMitigationWithSet.AddBagsExtra()
+	//protHeal.AddBagsExtra()
 
 	job.AddSetParam(ret)
 	job.AddSetParam(protDps)
@@ -375,8 +376,8 @@ func PaladinMultiRun() {
 
 	job.VerifyNoExtraDuplicates()
 
-	job.RunNoPermutations_AllCommonAlternates(true)
-	//job.RunForSolutionsPerPermute(4)
+	//job.RunNoPermutations_AllCommonAlternates(true)
+	job.RunForSolutionsPerPermute(16)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)

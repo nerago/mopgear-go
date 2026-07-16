@@ -26,10 +26,15 @@ type permuteEntryUpgrade struct {
 	itemId items.ItemId
 }
 
+type permuteEntryGems struct {
+	allowAlternates bool
+}
+
 type permuteEntry struct {
 	fixed   *permuteEntryFixedForce
 	group   *permuteEntryAllowGroup
 	upgrade *permuteEntryUpgrade
+	gems    *permuteEntryGems
 }
 
 type permuteOptions struct {
@@ -54,6 +59,9 @@ func (job *MultiSetJob) estimateFixedPermutations() int {
 	}
 	for _, group := range job.alternateUpgradeChoices {
 		count *= len(group)
+	}
+	if job.alternateGemmingAsPermute {
+		count *= 2
 	}
 	return count
 }
@@ -90,6 +98,14 @@ func (job *MultiSetJob) preparePermutations() <-chan permuteSet {
 		entriesList := util.MapSliceAsNew(group, func(itemId *items.ItemId) permuteEntry {
 			return permuteEntry{upgrade: &permuteEntryUpgrade{*itemId}}
 		})
+		optionEntriesList = append(optionEntriesList, permuteOptions{options: entriesList})
+	}
+
+	if job.alternateGemmingAsPermute {
+		entriesList := []permuteEntry{
+			{gems: &permuteEntryGems{true}},
+			{gems: &permuteEntryGems{false}},
+		}
 		optionEntriesList = append(optionEntriesList, permuteOptions{options: entriesList})
 	}
 
@@ -130,105 +146,122 @@ func permuteStep(inChannel <-chan permuteSet, options permuteOptions) <-chan per
 	return outputChannel
 }
 
-func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, printer *util.PrintRecorder) solve_highs.SolverHighsMultiProcess {
-	highProcess := solve_highs.SolverHighsMultiProcess{}
+func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, printer *util.PrintRecorder) *solve_highs.SolverHighsMultiProcess {
+	itemOptionsEach, strBuild := job.processSetupItemOptionsForPermute(permuteSet, printer)
 
-	itemOptionsEach := make([]items.FullOptionsMap, len(job.params))
-	for paramIndex := range job.params {
-		itemOptionsEach[paramIndex] = job.params[paramIndex].itemOptions.Clone()
+	highProcess := new(solve_highs.SolverHighsMultiProcess)
+
+	if strBuild.Len() > 0 {
+		strBuild.Rewind(3)
+		printer.Println("PERMUTE SET:")
+		printer.PrintlnFromBuild(strBuild)
 	}
+	highProcess.SetPermuteLabel(strBuild.String())
 
-	build := util.StringBuild2{}
+	job.highProcessSetup_addOptions(highProcess, itemOptionsEach)
+	return highProcess
+}
+
+func (job *MultiSetJob) processSetupItemOptionsForPermute(permuteSet permuteSet, printer *util.PrintRecorder) ([]items.FullOptionsMap, util.StringBuild2) {
+	itemOptionsEach := util.MapSliceAsNew(job.params, func(param *multiSetParamInternal) items.FullOptionsMap {
+		return param.itemOptions.Clone()
+	})
+
+	strBuild := util.StringBuild2{}
 	for _, entry := range permuteSet.choices {
 		if entry.fixed != nil {
 			fixed := entry.fixed
-			itemOptionsEach[fixed.paramIndex].ForceSlotOnlySpecifiedItemId(fixed.slot, fixed.itemId)
-			if !fixed.isSingle {
-				paramLabel := job.params[fixed.paramIndex].Label
-				build.WriteString(paramLabel)
-				build.WriteString("(Forced) :")
-
-				itemName := db.LookupItemNameByItemId(fixed.itemId)
-				build.WriteString(itemName)
-				build.WriteString(" | ")
-			}
+			job.applyPermuteFixed(fixed, &itemOptionsEach, &strBuild)
 		} else if entry.group != nil {
 			group := entry.group
-
-			for paramIndex := range job.params {
-				paramLabel := job.params[paramIndex].Label
-				if group.forceIndex == paramIndex {
-					slot := itemOptionsEach[paramIndex].FindItemIdSlotUnique(group.itemId)
-					itemOptionsEach[paramIndex].ForceSlotOnlySpecifiedItemId(slot, group.itemId)
-					build.WriteString(paramLabel)
-					build.WriteString("(Forced) ")
-				} else if slices.Contains(group.allowIndexList, paramIndex) {
-					build.WriteString(paramLabel)
-					build.WriteString("(Allowed) ")
-				} else {
-					itemOptionsEach[paramIndex].RemoveItemIdFromAll(group.itemId)
-				}
-			}
-
-			itemName := db.LookupItemNameByItemId(group.itemId)
-			build.WriteString(": ")
-			build.WriteString(itemName)
-			build.WriteString(" | ")
+			job.applyPermuteGroup(group, &itemOptionsEach, &strBuild)
 		} else if entry.upgrade != nil {
-			profession := job.params[0].Model.Professions
 			itemId := entry.upgrade.itemId
-
-			foundAny := false
-			for itemOpts := range util.ForPointer(itemOptionsEach) {
-				if itemOpts.IncludesItemId(itemId) {
-					itemOpts.MapEachItem(func(item *items.FullItem) items.FullItem {
-						if item.ItemId() == itemId {
-							return *setup.UpgradeExistingItemToTargetLevel(item, items.MAX_UPGRADE_LEVEL, profession, printer)
-						} else {
-							return *item
-						}
-					})
-					foundAny = true
-				}
-			}
-
-			if !foundAny {
-				panic("requested upgrade of item that isn't an option " + itemId.String())
-			}
-
-			itemName := db.LookupItemNameByItemId(itemId)
-			build.WriteString("UPGRADE: ")
-			build.WriteString(itemName)
-			build.WriteString(" | ")
+			job.applyPermuteItemUpgrade(itemId, &itemOptionsEach, printer, &strBuild)
+		} else if entry.gems != nil {
+			job.applyPermuteGems(entry.gems, &itemOptionsEach, &strBuild)
 		} else {
 			panic("empty entry")
 		}
 	}
 
-	if build.Len() > 0 {
-		build.Rewind(3)
-		printer.Println("PERMUTE SET:")
-		printer.PrintlnFromBuild(build)
-	}
-	highProcess.SetPermuteLabel(build.String())
+	return itemOptionsEach, strBuild
+}
 
-	optionsInputList := make([]commonOptionsInput, len(job.params))
+func (job *MultiSetJob) applyPermuteFixed(fixed *permuteEntryFixedForce, itemOptionsEach *[]items.FullOptionsMap, strBuild *util.StringBuild2) {
+	(*itemOptionsEach)[fixed.paramIndex].ForceSlotOnlySpecifiedItemId(fixed.slot, fixed.itemId)
+	if !fixed.isSingle {
+		paramLabel := job.params[fixed.paramIndex].Label
+		strBuild.WriteString(paramLabel)
+		strBuild.WriteString("(Forced) :")
+
+		itemName := db.LookupItemNameByItemId(fixed.itemId)
+		strBuild.WriteString(itemName)
+		strBuild.WriteString(" | ")
+	}
+}
+
+func (job *MultiSetJob) applyPermuteGroup(group *permuteEntryAllowGroup, itemOptionsEach *[]items.FullOptionsMap, strBuild *util.StringBuild2) {
 	for paramIndex := range job.params {
-		param := &job.params[paramIndex]
-		optionsInputList[paramIndex] = commonOptionsInput{param.Label, &itemOptionsEach[paramIndex]}
-	}
-	commonOptions := job.determineCommon(optionsInputList)
-	highProcess.SetCommon(commonOptions)
-
-	for paramIndex := range job.params {
-		param := &job.params[paramIndex]
-		highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
-			Label:          param.Label,
-			ItemOptions:    itemOptionsEach[paramIndex],
-			Gear_model:     &param.Model,
-			RatingMultiply: param.ratingMultiply,
-		})
+		paramLabel := job.params[paramIndex].Label
+		if group.forceIndex == paramIndex {
+			slot := (*itemOptionsEach)[paramIndex].FindItemIdSlotUnique(group.itemId)
+			(*itemOptionsEach)[paramIndex].ForceSlotOnlySpecifiedItemId(slot, group.itemId)
+			strBuild.WriteString(paramLabel)
+			strBuild.WriteString("(Forced) ")
+		} else if slices.Contains(group.allowIndexList, paramIndex) {
+			strBuild.WriteString(paramLabel)
+			strBuild.WriteString("(Allowed) ")
+		} else {
+			(*itemOptionsEach)[paramIndex].RemoveItemIdFromAll(group.itemId)
+		}
 	}
 
-	return highProcess
+	itemName := db.LookupItemNameByItemId(group.itemId)
+	strBuild.WriteString(": ")
+	strBuild.WriteString(itemName)
+	strBuild.WriteString(" | ")
+}
+
+func (job *MultiSetJob) applyPermuteItemUpgrade(itemId items.ItemId, itemOptionsEach *[]items.FullOptionsMap, printer *util.PrintRecorder, strBuild *util.StringBuild2) {
+	profession := job.params[0].Model.Professions
+	foundAny := false
+	for itemOpts := range util.ForPointer(*itemOptionsEach) {
+		if itemOpts.IncludesItemId(itemId) {
+			itemOpts.MapEachItem(func(item *items.FullItem) items.FullItem {
+				if item.ItemId() == itemId {
+					return *setup.UpgradeExistingItemToTargetLevel(item, items.MAX_UPGRADE_LEVEL, profession, printer)
+				} else {
+					return *item
+				}
+			})
+			foundAny = true
+		}
+	}
+
+	if !foundAny {
+		panic("requested upgrade of item that isn't an option " + itemId.String())
+	}
+
+	itemName := db.LookupItemNameByItemId(itemId)
+	strBuild.WriteString("UPGRADE: ")
+	strBuild.WriteString(itemName)
+	strBuild.WriteString(" | ")
+}
+
+func (job *MultiSetJob) applyPermuteGems(gems *permuteEntryGems, itemOptionsEach *[]items.FullOptionsMap, strBuild *util.StringBuild2) {
+	if !gems.allowAlternates {
+		for itemOpts := range util.ForPointer(*itemOptionsEach) {
+			itemOpts.FilterAllItems(func(item *items.FullItem) bool {
+				return !item.HasBeenRegemmed()
+			})
+		}
+	}
+
+	if gems.allowAlternates {
+		strBuild.WriteString("All Gems")
+	} else {
+		strBuild.WriteString("Original Gems")
+	}
+	strBuild.WriteString(" | ")
 }

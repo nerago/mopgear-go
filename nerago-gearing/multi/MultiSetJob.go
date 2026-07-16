@@ -16,17 +16,18 @@ const (
 )
 
 type MultiSetJob struct {
-	printer                 *util.PrintRecorder
-	params                  []multiSetParamInternal
-	fixedForge              map[items.ItemId]stats.ReforgeRecipe
-	distinctUsageGroups     map[items.ItemId]distinctUsageGroups
-	alternateUpgradeChoices [][]items.ItemId
-	alternateGemming        []stats.GemInfo
-	randomVariantItems      []randomVariantItem
-	bagsGear                loaders.EquippedArray
-	simRunSize              simulate.WowSim_RunSize
-	minimumExtraItemLevel   uint16
-	writeBestToGearFiles    bool
+	printer                   *util.PrintRecorder
+	params                    []multiSetParamInternal
+	fixedForge                map[items.ItemId]stats.ReforgeRecipe
+	distinctUsageGroups       map[items.ItemId]distinctUsageGroups
+	alternateUpgradeChoices   [][]items.ItemId
+	alternateGemming          []stats.GemInfo
+	randomVariantItems        []randomVariantItem
+	bagsGear                  loaders.EquippedArray
+	simRunSize                simulate.WowSim_RunSize
+	minimumExtraItemLevel     uint16
+	writeBestToGearFiles      bool
+	alternateGemmingAsPermute bool
 }
 
 type distinctUsageGroups struct {
@@ -129,4 +130,8 @@ func (job *MultiSetJob) VerifyNoExtraDuplicates() {
 
 func (job *MultiSetJob) SetWriteBestToGearFiles() {
 	job.writeBestToGearFiles = true
+}
+
+func (job *MultiSetJob) ActivateAlternateGemmingAsPermute() {
+	job.alternateGemmingAsPermute = true
 }

@@ -17,6 +17,9 @@ func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates(extendedAlternates
 
 	proposalChannel, expectedCount := job.proposalsAllCommonAlternates(cancelGenerate, extendedAlternates)
 
+	additional := job.additionalProposalsFromSpecOptimum(cancelGenerate)
+	proposalChannel = util_async.MixChannels(proposalChannel, additional)
+
 	futureSimResultList, futureProposalList := job.proposalsToSimResult(proposalChannel, util.TrackProgress_Start(), expectedCount)
 
 	proposalList, gotResult2 := futureProposalList.WaitForResult()
@@ -34,6 +37,9 @@ func (job *MultiSetJob) RunForSolutionsPerPermute(solutionsPerPermute int) {
 	defer tracker.SetDone()
 
 	proposalChannel, expectedCount := job.proposalsUnderPermutation(solutionsPerPermute, cancelGenerate)
+
+	additional := job.additionalProposalsFromSpecOptimum(cancelGenerate)
+	proposalChannel = util_async.MixChannels(proposalChannel, additional)
 
 	futureSimResultList, futureProposalList := job.proposalsToSimResult(proposalChannel, tracker, expectedCount)
 

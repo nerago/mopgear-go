@@ -3,6 +3,7 @@ package items
 import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"strings"
 )
 
 // /////////////////////////////////////////////////////////////
@@ -240,4 +241,11 @@ func (item *FullItem) MakeItemWithRandomSuffix(randomSuffix RandomSuffix) *FullI
 	}
 
 	return item
+}
+
+const ReGem_GemAlternate = "re-gem-alternate"
+const ReGem_GemDefault = "re-gem-default"
+
+func (item *FullItem) HasBeenRegemmed() bool {
+	return strings.Contains(item.tagName, ReGem_GemAlternate) || strings.Contains(item.tagName, ReGem_GemDefault)
 }

@@ -32,6 +32,14 @@ func OptionsSetup_FromEquipped(equipped []loaders.EquippedItem, model *gear_mode
 	return optionMap
 }
 
+func OptionsSetup_FromItemSet(itemSet *items.FullItemSet) items.FullOptionsMap {
+	optionMap := items.FullOptionsMap{}
+	for item := range itemSet.Items().AllItemSeq() {
+		optionMap.FillSlot_ExpectedEmpty(item.SlotItem(), []items.FullItem{*item})
+	}
+	return optionMap
+}
+
 func OptionsSetup_Single_FromEquipped(equipItem loaders.EquippedItem, model *gear_model.SpecModel, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
 	item := *db.WowSimDB_LoadItemById_AllowFallback(equipItem.ItemId, equipItem.UpgradeStepOrItemLevel, printer)
 	item = addDetailFromEquip(item, equipItem, model, missingEnchant, printer)

@@ -1,7 +1,9 @@
 package multi
 
 import (
+	"paladin_gearing_go/items"
 	"paladin_gearing_go/multi/multi_types"
+	"paladin_gearing_go/setup"
 	"paladin_gearing_go/solver/solve_highs"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
@@ -15,7 +17,7 @@ func (job *MultiSetJob) proposalsAllCommonAlternates(cancelGenerate util_async.C
 	multiSolveChannel, expectedCountFuture := highProcess.RunForSeveral_CommonDifferent(job.printer, util.Optional_Empty[int](), cancelGenerate, extendedAlternates)
 
 	proposalChannel := util_async.Map_ChannelToChannel(4, multiSolveChannel, func(setResult solve_highs.HighsMultiResult) multi_types.MultiProposedOutput {
-		return job.makeOutputFromHighs(setResult, job.printer)
+		return job.makeOutputFromHighs(setResult, job.printer, uuid.NewString())
 	})
 
 	existingProposal := job.existingGearAsProposal()
@@ -35,7 +37,8 @@ func (job *MultiSetJob) proposalsUnderPermutation(solutionsPerPermute int, cance
 		func(permuteSet permuteSet, resultChannel chan<- multi_types.MultiProposedOutput) {
 			// TODO don't ignore updated count
 			expectCount := util_async.Future_Make[int]()
-			job.runPermute(permuteSet, solutionsPerPermute, expectCount, resultChannel, cancel)
+			job.
+				runPermute(permuteSet, solutionsPerPermute, expectCount, resultChannel, cancel)
 		},
 	)
 
@@ -58,13 +61,13 @@ func (job *MultiSetJob) runPermute(permuteSet permuteSet, solutionsPerPermute in
 		util_async.ChainCancel(cancel, future)
 		result, hasResult := future.WaitForResult()
 		if hasResult {
-			resultChannel <- job.makeOutputFromHighs(result, printer)
+			resultChannel <- job.makeOutputFromHighs(result, printer, uuid.NewString())
 		}
 	} else {
 		nextChan, expectedSubCount := highProcess.RunForSeveral_CommonDifferent(printer, util.Optional_OfValue(solutionsPerPermute), cancel, false)
 		expectedSubCount.ForwardResultToOtherFuture(expectedCount)
 		for result := range nextChan {
-			resultChannel <- job.makeOutputFromHighs(result, printer)
+			resultChannel <- job.makeOutputFromHighs(result, printer, uuid.NewString())
 		}
 	}
 
@@ -90,6 +93,10 @@ func (job *MultiSetJob) checkNoPermutations() {
 		panic("alternate upgrades will be ignored, may lead to confusing results")
 	}
 
+	if job.alternateGemmingAsPermute {
+		panic("alternate gemming always applied, may lead to confusing results")
+	}
+
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
 		for _, itemArray := range param.SemiFixedSlots {
@@ -100,28 +107,66 @@ func (job *MultiSetJob) checkNoPermutations() {
 	}
 }
 
-func (job *MultiSetJob) highProcessSetup() solve_highs.SolverHighsMultiProcess {
-	highProcess := solve_highs.SolverHighsMultiProcess{}
-
-	optionsInputList := util.MapSliceAsNew(job.params, func(param *multiSetParamInternal) commonOptionsInput {
-		return commonOptionsInput{param.Label, &param.itemOptions}
+func (job *MultiSetJob) highProcessSetup() *solve_highs.SolverHighsMultiProcess {
+	itemOptionsEach := util.MapSliceAsNew(job.params, func(param *multiSetParamInternal) items.FullOptionsMap {
+		return param.itemOptions.Clone()
 	})
+
+	highProcess := new(solve_highs.SolverHighsMultiProcess)
+	job.highProcessSetup_addOptions(highProcess, itemOptionsEach)
+	return highProcess
+}
+
+func (job *MultiSetJob) highProcessSetupRestrictedOnBaseline(baselineParam *multiSetParamInternal) *solve_highs.SolverHighsMultiProcess {
+	itemOptionsEach := util.MapSliceAsNew(job.params, func(checkParam *multiSetParamInternal) items.FullOptionsMap {
+		if checkParam.paramIndex == baselineParam.paramIndex {
+			return setup.OptionsSetup_FromItemSet(&baselineParam.baselineResult.FullSet)
+		} else {
+			itemOptions := checkParam.itemOptions.Clone()
+			job.restrictOptionsToVersionsInSet(&itemOptions, &baselineParam.baselineResult.FullSet)
+			return itemOptions
+		}
+	})
+
+	highProcess := new(solve_highs.SolverHighsMultiProcess)
+	job.highProcessSetup_addOptions(highProcess, itemOptionsEach)
+	return highProcess
+}
+
+func (job *MultiSetJob) restrictOptionsToVersionsInSet(itemOptions *items.FullOptionsMap, baselineSet *items.FullItemSet) {
+	itemOptions.FilterAllItems(func(check *items.FullItem) bool {
+		// NOTE assumes unique equipped
+		baseItem := baselineSet.Items().FindItemId(check.ItemId())
+		if baseItem != nil {
+			return baseItem.Equals(check)
+		} else {
+			return true
+		}
+	})
+}
+
+func (job *MultiSetJob) highProcessSetup_addOptions(highProcess *solve_highs.SolverHighsMultiProcess, itemOptionsEach []items.FullOptionsMap) {
+	optionsInputList := make([]commonOptionsInput, len(job.params))
+	for paramIndex := range job.params {
+		param := &job.params[paramIndex]
+		optionsInputList[paramIndex] = commonOptionsInput{param.Label, &itemOptionsEach[paramIndex]}
+	}
 	commonOptions := job.determineCommon(optionsInputList)
+
 	highProcess.SetCommon(commonOptions)
 
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
 		highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
 			Label:          param.Label,
-			ItemOptions:    param.itemOptions,
+			ItemOptions:    itemOptionsEach[paramIndex],
 			Gear_model:     &param.Model,
 			RatingMultiply: param.ratingMultiply,
 		})
 	}
-	return highProcess
 }
 
-func (job *MultiSetJob) makeOutputFromHighs(multiResult solve_highs.HighsMultiResult, printer *util.PrintRecorder) multi_types.MultiProposedOutput {
+func (job *MultiSetJob) makeOutputFromHighs(multiResult solve_highs.HighsMultiResult, printer *util.PrintRecorder, proposalId string) multi_types.MultiProposedOutput {
 	var totalRatingSum float64
 	outputs := make([]multi_types.SingleProposedOutput, len(job.params))
 
@@ -139,7 +184,7 @@ func (job *MultiSetJob) makeOutputFromHighs(multiResult solve_highs.HighsMultiRe
 
 	if checkNoConflicts(outputs, job.printer) {
 		combo := multi_types.CommonCombo_FromProposed(outputs)
-		proposed := multi_types.MultiProposedOutput{Id: uuid.NewString(), TotalRatingSum: totalRatingSum, Parts: outputs, Combo: combo, PermuteLabel: multiResult.PermuteLabel}
+		proposed := multi_types.MultiProposedOutput{Id: proposalId, TotalRatingSum: totalRatingSum, Parts: outputs, Combo: combo, PermuteLabel: multiResult.PermuteLabel}
 		return proposed
 	} else {
 		panic("conflicted items")
@@ -154,4 +199,66 @@ func (job *MultiSetJob) listInitialOutputs(bestOutputs <-chan multi_types.MultiP
 			out.Report(job.printer)
 		}
 	})
+}
+
+func (job *MultiSetJob) existingGearAsProposal() multi_types.MultiProposedOutput {
+	proposal := multi_types.MultiProposedOutput{Id: "00000000-0000-0000-0000-000000000000"}
+	for paramIndex := range job.params {
+		param := &job.params[paramIndex]
+		single := multi_types.SingleProposed_FromEquip(param.exactEquippedGear, &param.MultiSetParam)
+		proposal.Parts = append(proposal.Parts, single)
+		proposal.TotalRatingSum += single.ResultRating
+	}
+	proposal.Combo = multi_types.CommonCombo_FromProposed(proposal.Parts)
+	return proposal
+}
+
+func (job *MultiSetJob) additionalProposalsFromSpecOptimum(cancel util_async.CancelSignal) <-chan multi_types.MultiProposedOutput {
+	return util_async.MapOptional_SliceToChannel_Cancellable(2, job.params, cancel, func(param *multiSetParamInternal) (multi_types.MultiProposedOutput, bool) {
+		printer := util.PrintRecorder_HoldAll()
+
+		highProcess := job.highProcessSetupRestrictedOnBaseline(param)
+
+		future := highProcess.RunInterruptable(printer)
+		util_async.ChainCancel(cancel, future)
+		result, hasResult := future.WaitForResult()
+
+		var output multi_types.MultiProposedOutput
+		if hasResult {
+			proposalId := fakeIdNumber(param.paramIndex + 1)
+			output = job.makeOutputFromHighs(result, printer, proposalId)
+		}
+
+		job.printer.AppendOther(printer)
+		return output, hasResult
+	})
+}
+
+func fakeIdNumber(index int) string {
+	build := util.StringBuild2{}
+	if index >= 0 && index <= 9 {
+		for range 8 {
+			build.WriteInt(index)
+		}
+		build.WriteRune('-')
+		for range 4 {
+			build.WriteInt(index)
+		}
+		build.WriteRune('-')
+		for range 4 {
+			build.WriteInt(index)
+		}
+		build.WriteRune('-')
+		for range 4 {
+			build.WriteInt(index)
+		}
+		build.WriteRune('-')
+		for range 12 {
+			build.WriteInt(index)
+		}
+	} else {
+		build.WriteString("PROPOSAL-ID-")
+		build.WriteInt(index)
+	}
+	return build.String()
 }

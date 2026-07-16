@@ -170,6 +170,8 @@ func (build *LinearBuilder) RunHighsFuture(stopwatch *util.Stopwatch) *util_asyn
 
 		build.postHighsRun(solver, logFilename, log)
 		future.SetResult(LinearResult{solution, log})
+
+		G_HighsPool.Put(solver)
 	}()
 
 	return future
@@ -197,10 +199,8 @@ func (*LinearBuilder) postHighsRun(solver *highs.Solver, logFilename string, pri
 		readLogfile(logFilename, printer)
 	}
 
-	// verifyNoError(solver.InterruptSupportDisable())
-
+	verifyNoError(solver.InterruptSupportDisable())
 	verifyNoError(solver.Clear())
-	G_HighsPool.Put(solver)
 }
 
 func readLogfile(tempFilename string, printer *util.PrintRecorder) {
