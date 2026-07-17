@@ -60,7 +60,7 @@ func processSpecUpgradeGroupTask(input *FindUpgrades_SimInputs, spec *FindUpgrad
 	options := setup.OptionsSetup_FromGearFile(spec.GearFile, &spec.Model, setup.MissingEnchant_Panic, printer)
 
 	upgradeItems := spec.ItemFinder(difficulty)
-	upgradeItems = util.RemoveDuplicatesComparable(upgradeItems)
+	upgradeItems = util.RemoveDuplicatesComparable_NewIfChanged(upgradeItems)
 
 	return findUpgradeAndSim(input, &options, upgradeItems, &spec.Model, printer, tracker, spec.Model.Goal, spec.SubstituteItems, spec.SubstituteEmptySlotOnly)
 }

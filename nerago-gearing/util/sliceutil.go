@@ -7,7 +7,7 @@ import (
 	"slices"
 )
 
-func RemoveDuplicatesFunc[T any](slice []T, equals func(a, b *T) bool) []T {
+func RemoveDuplicatesFunc_NewIfChanged[T any](slice []T, equals func(a, b *T) bool) []T {
 	if slice == nil {
 		return nil
 	}
@@ -37,7 +37,7 @@ outerLoop:
 	return result
 }
 
-func RemoveDuplicatesInPlaceFunc[T any](slice *[]T, equals func(a, b *T) bool) {
+func RemoveDuplicatesFunc_InPlace[T any, S ~[]T](slice *S, equals func(a, b *T) bool) {
 	if slice == nil || *slice == nil {
 		return
 	}
@@ -67,7 +67,7 @@ outerLoop:
 	*slice = (*slice)[0:write]
 }
 
-func RemoveDuplicatesFuncNotify[T any](slice []T, equals func(a, b *T) bool, removedNotify func(x *T)) []T {
+func RemoveDuplicatesFunc_AsNew_Notify[T any](slice []T, equals func(a, b *T) bool, removedNotify func(x *T)) []T {
 	if slice == nil {
 		return nil
 	}
@@ -87,23 +87,59 @@ outer:
 	return result
 }
 
-func RemoveDuplicatesComparable[T comparable](slice []T) []T {
-	if slice == nil {
-		return slice
+func RemoveDuplicatesComparable_InPlace[T comparable, S ~[]T](slice *S) {
+	if slice == nil || *slice == nil {
+		return
 	}
 
-	mapSet := make(map[T]bool, len(slice))
-	for _, item := range slice {
+	mapSet := make(map[T]bool, len(*slice))
+	for _, item := range *slice {
 		mapSet[item] = true
 	}
 
 	index := 0
 	for k := range mapSet {
-		slice[index] = k
+		(*slice)[index] = k
 		index++
 	}
 
-	return slice[:index]
+	*slice = (*slice)[:index]
+}
+
+func RemoveDuplicatesComparable_NewIfChanged[T comparable](slice []T) []T {
+	if slice == nil {
+		return slice
+	}
+
+	mapSet := make(map[T]bool, len(slice))
+	var readIndex int
+	for readIndex = range slice {
+		item := slice[readIndex]
+		if mapSet[item] {
+			goto changed
+		} else {
+			mapSet[item] = true
+		}
+	}
+	return slice
+
+changed:
+	result := make([]T, readIndex, len(slice)-1)
+	copy(result, slice)
+
+	readIndex++
+	for readIndex < len(slice) {
+		item := slice[readIndex]
+		readIndex++
+
+		if !mapSet[item] {
+			result = append(result, item)
+			mapSet[item] = true
+		}
+
+	}
+
+	return result
 }
 
 func Shuffle[T any](slice []T) {

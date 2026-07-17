@@ -1,7 +1,6 @@
 package db
 
 import (
-	"paladin_gearing_go/stats"
 	. "paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"strconv"
@@ -98,13 +97,18 @@ func GemData_ById(id uint32) GemInfo {
 	return gem
 }
 
-func GemData_ByStat(stats *stats.StatBlock) GemInfo {
+func GemData_ByStat(stats *StatBlock) GemInfo {
 	for _, gem := range allGems {
 		if gem.Stats.Equals(stats) {
 			return gem
 		}
 	}
 	panic("unknown gem")
+}
+
+func GemData_IsMeta(gem *GemInfo) bool {
+	_, exists := metaGems[gem.Id]
+	return exists
 }
 
 // NOTE only needed with WowHead lookup

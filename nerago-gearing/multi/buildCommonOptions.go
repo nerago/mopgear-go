@@ -46,10 +46,10 @@ func searchItemOptions(optionsInputList []commonOptionsInput) (multi_types.Commo
 	}
 
 	commonOptions.ApplyToAllSlices(func(slice []items.FullItem) []items.FullItem {
-		return util.RemoveDuplicatesFunc(slice, (*items.FullItem).Equals)
+		return util.RemoveDuplicatesFunc_NewIfChanged(slice, (*items.FullItem).Equals)
 	})
 	for itemRef := range seenIn {
-		seenIn[itemRef] = util.RemoveDuplicatesComparable(seenIn[itemRef])
+		seenIn[itemRef] = util.RemoveDuplicatesComparable_NewIfChanged(seenIn[itemRef])
 	}
 
 	return commonOptions, seenIn

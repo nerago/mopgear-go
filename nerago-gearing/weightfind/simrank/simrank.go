@@ -159,7 +159,7 @@ func RankWeights5RankSims(runData []weight_types.RankEntry5, requiredSims []stat
 		}
 	}
 
-	runData = util.RemoveDuplicatesFuncNotify(runData,
+	runData = util.RemoveDuplicatesFunc_AsNew_Notify(runData,
 		func(a, b *weight_types.RankEntry5) bool { return a.SimScore == b.SimScore },
 		func(entry *weight_types.RankEntry5) { printer.Println("removing duplicate score") },
 	)

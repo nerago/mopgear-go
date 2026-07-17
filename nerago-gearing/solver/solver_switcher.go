@@ -29,10 +29,9 @@ func Solver_Lite(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel,
 	solveOptions := items.SolvableOptionsMap_of(itemOptions)
 	futureSolvedSet := solve_highs.SingleGearSetMain(&solveOptions, model, printer)
 	solvedSet := futureSolvedSet.WaitForResultAsOptional()
-	itemSet := items.FullItemSet_FromSolved(solvedSet.GetOrPanic(), itemOptions)
-	itemSet.DebugValidate()
-	itemSet.ValidateItemRules()
-	return itemSet
+	fullSet := items.FullItemSet_FromSolved(solvedSet.GetOrPanic(), itemOptions)
+	model.ValidateSet(&fullSet)
+	return fullSet
 }
 
 func prepareSolve(input SolveInput) (*util.PrintRecorder, items.SolvableOptionsMap) {
@@ -65,8 +64,7 @@ func finaliseSolve(solvedResult util.Optional[items.SolvableItemSet], solveOptio
 	// solvedSet.DebugValidate()
 
 	fullItem := items.FullItemSet_FromSolved(solvedSet, input.ItemOptions)
-	fullItem.DebugValidate()
-	fullItem.ValidateItemRules()
+	input.Model.ValidateSet(&fullItem)
 
 	return SolveOutput{
 		Success:      true,

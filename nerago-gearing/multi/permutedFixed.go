@@ -83,14 +83,19 @@ func (job *MultiSetJob) preparePermutations() <-chan permuteSet {
 
 	for itemId, group := range job.distinctUsageGroups {
 		entriesList := make([]permuteEntry, 0)
-		for _, forceIdx := range group.groupAIndexes {
-			entriesList = append(entriesList, permuteEntry{group: &permuteEntryAllowGroup{group.groupAIndexes, forceIdx, itemId}})
-		}
+
 		entriesList = append(entriesList, permuteEntry{group: &permuteEntryAllowGroup{group.groupAIndexes, -1, itemId}})
-		for _, forceIdx := range group.groupBIndexes {
-			entriesList = append(entriesList, permuteEntry{group: &permuteEntryAllowGroup{group.groupBIndexes, forceIdx, itemId}})
-		}
 		entriesList = append(entriesList, permuteEntry{group: &permuteEntryAllowGroup{group.groupBIndexes, -1, itemId}})
+
+		if group.forceTryInEachParam {
+			for _, forceIdx := range group.groupAIndexes {
+				entriesList = append(entriesList, permuteEntry{group: &permuteEntryAllowGroup{group.groupAIndexes, forceIdx, itemId}})
+			}
+			for _, forceIdx := range group.groupBIndexes {
+				entriesList = append(entriesList, permuteEntry{group: &permuteEntryAllowGroup{group.groupBIndexes, forceIdx, itemId}})
+			}
+		}
+
 		optionEntriesList = append(optionEntriesList, permuteOptions{options: entriesList})
 	}
 

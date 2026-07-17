@@ -66,7 +66,7 @@ var throneTrinkets = []items.ItemId{
 
 func addExtrasT5Dumb(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, printer *util.PrintRecorder) []items.ItemId {
 	allTrinkets := slices.Concat(throneTrinkets, loaders.G_siegeStrengthTrinkets, loaders.G_seigeTankTrinkets)
-	allTrinkets = util.RemoveDuplicatesComparable(allTrinkets)
+	util.RemoveDuplicatesComparable_InPlace(&allTrinkets)
 
 	extraItemsCombined := slices.Concat(
 		util.MapSliceAsNew(loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic), func(x *loaders.ItemFoundRef) items.ItemId { return x.ItemId }),
@@ -95,8 +95,8 @@ func allT5stuff(model *gear_model.SpecModel, gearFile string, printer *util.Prin
 
 	allTrinkets := addExtrasT5Dumb(&itemOptions, model, printer)
 
-	itemOptions[items.Equip_Trinket1] = util.RemoveDuplicatesFunc(itemOptions[items.Equip_Trinket1], (*items.FullItem).Equals)
-	itemOptions[items.Equip_Trinket2] = util.RemoveDuplicatesFunc(itemOptions[items.Equip_Trinket2], (*items.FullItem).Equals)
+	util.RemoveDuplicatesFunc_InPlace(&itemOptions[items.Equip_Trinket1], (*items.FullItem).Equals)
+	util.RemoveDuplicatesFunc_InPlace(&itemOptions[items.Equip_Trinket2], (*items.FullItem).Equals)
 	return allTrinkets, itemOptions
 }
 

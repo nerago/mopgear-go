@@ -98,6 +98,11 @@ func (param *multiSetParamInternal) includeExtra(itemId items.ItemId) {
 		return
 	}
 
+	if slices.Contains(param.BlockedItems, itemId) {
+		param.job.printer.Printf("BLOCKED %d\n", itemId)
+		return
+	}
+
 	basicVersion := db.WowSimDB_LoadItemById(itemId, 0)
 	if param.itemOptions.CouldAddUpgrade_ItemSlot(basicVersion.SlotItem(), basicVersion, param.job.printer) == items.CanUpgrade_InvalidAlways {
 		return
@@ -139,12 +144,12 @@ func (param *multiSetParamInternal) copyExtraFromOtherSpec(itemId items.ItemId) 
 		}
 	}
 
-	options = util.RemoveDuplicatesFunc(options, (*items.FullItem).Equals)
+	util.RemoveDuplicatesFunc_InPlace(&options, (*items.FullItem).Equals)
 
 	// NOTE these may not copy with the model's reforge preferences etc
 
 	if len(options) > 0 {
-		param.itemOptions.AddSeveralOptions(options[0].SlotItem(), options)
+		param.addItemOptionsWithValidate(options[0].SlotItem(), options)
 		param.job.printer.Printf("OPTION from other spec %s\n", options[0].CreateString())
 		return true
 	} else {
@@ -159,7 +164,7 @@ func (param *multiSetParamInternal) copyExtraFromBags(itemId items.ItemId) bool 
 		loaders.BagsFileItemSetExtraDefaults(equipped, param.ExtraUpgradeLevel)
 
 		options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &param.Model, setup.MissingEnchant_Fix, param.job.printer)
-		param.itemOptions.AddSeveralOptions(example.SlotItem(), options)
+		param.addItemOptionsWithValidate(example.SlotItem(), options)
 		param.job.printer.Printf("OPTION from bags %s\n", example.CreateString())
 		return true
 	}
@@ -167,45 +172,52 @@ func (param *multiSetParamInternal) copyExtraFromBags(itemId items.ItemId) bool 
 }
 
 func (param *multiSetParamInternal) tryAddExtraFromBags(equipped *loaders.EquippedItem) {
-	if db.WowSimDB_HasItemId(equipped.ItemId) {
-		// bail early before considering full item stats/enchants/etc that might not fit spec
-		basicVersion := db.WowSimDB_LoadItemById(equipped.ItemId, 0)
-		if basicVersion.ItemLevel() < param.job.minimumExtraItemLevel {
-			return
-		}
-		if param.itemOptions.CouldAddUpgrade_ItemSlot(basicVersion.SlotItem(), basicVersion, param.job.printer) != items.CanUpgrade_Yes {
-			return
-		}
-
-		if param.copyExtraFromOtherSpec(equipped.ItemId) {
-			return
-		}
-
-		// bags file doesn't have upgrade steps
-		loaders.BagsFileItemSetExtraDefaults(equipped, param.ExtraUpgradeLevel)
-
-		options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &param.Model, setup.MissingEnchant_Fix, param.job.printer)
-
-		added := false
-		for _, slot := range example.SlotItem().ToSlotEquipOptions() {
-			if param.itemOptions.CouldAddUpgrade_EquipSlot(slot, example, param.job.printer) == items.CanUpgrade_Yes {
-				param.job.printer.Printf("ADDITIONAL EXTRA OPTION from bags %s\n", example.CreateString())
-				param.itemOptions.AddSeveralOptionsSpecific(slot, options)
-				added = true
-			}
-		}
-
-		if added {
-			param.addedFromBags = append(param.addedFromBags, equipped.ItemId)
-		}
-	} else {
+	if !db.WowSimDB_HasItemId(equipped.ItemId) {
 		param.job.printer.Printf("UNKNOWN itemid IN bags %d\n", equipped.ItemId)
+		return
+	} else if param.itemOptions.IncludesItemId(equipped.ItemId) {
+		param.job.printer.Printf("EXTRA already included %d\n", equipped.ItemId)
+		return
+	} else if slices.Contains(param.BlockedItems, equipped.ItemId) {
+		param.job.printer.Printf("BLOCKED %d\n", equipped.ItemId)
+		return
+	}
+
+	// bail early before considering full item stats/enchants/etc that might not fit spec
+	basicVersion := db.WowSimDB_LoadItemById(equipped.ItemId, 0)
+	if basicVersion.ItemLevel() < param.job.minimumExtraItemLevel {
+		return
+	}
+	if param.itemOptions.CouldAddUpgrade_ItemSlot(basicVersion.SlotItem(), basicVersion, param.job.printer) != items.CanUpgrade_Yes {
+		return
+	}
+
+	if param.copyExtraFromOtherSpec(equipped.ItemId) {
+		return
+	}
+
+	// bags file doesn't have upgrade steps
+	loaders.BagsFileItemSetExtraDefaults(equipped, param.ExtraUpgradeLevel)
+
+	options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &param.Model, setup.MissingEnchant_Fix, param.job.printer)
+
+	added := false
+	for _, slot := range example.SlotItem().ToSlotEquipOptions() {
+		if param.itemOptions.CouldAddUpgrade_EquipSlot(slot, example, param.job.printer) == items.CanUpgrade_Yes {
+			param.job.printer.Printf("ADDITIONAL EXTRA OPTION from bags %s\n", example.CreateString())
+			param.addItemOptionsSpecificWithValidate(slot, options)
+			added = true
+		}
+	}
+
+	if added {
+		param.addedFromBags = append(param.addedFromBags, equipped.ItemId)
 	}
 }
 
 func (param *multiSetParamInternal) extraLoadAndGenerate(itemId items.ItemId, randomSuffix items.RandomSuffix) {
 	options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, param.ExtraUpgradeLevel, randomSuffix, &param.Model, param.job.printer)
-	param.itemOptions.AddSeveralOptions(example.SlotItem(), options)
+	param.addItemOptionsWithValidate(example.SlotItem(), options)
 	param.job.printer.Printf("OPTION %s\n", example.CreateString())
 }
 
@@ -248,11 +260,11 @@ func (param *multiSetParamInternal) setupAlternateGemming(alternateGemList []sta
 			for _, item := range existing {
 				for _, alternateGem := range alternateGemList {
 					alternateItem := param.regemAlternate(item, alternateGem)
-					param.itemOptions.AddSeveralOptionsSpecific_WhereNotExist(slot, []items.FullItem{alternateItem})
+					param.addItemOptionsWithValidate_WhereNotExist(slot, []items.FullItem{alternateItem})
 				}
 
 				defaultItem := param.regemDefault(item)
-				param.itemOptions.AddSeveralOptionsSpecific_WhereNotExist(slot, []items.FullItem{defaultItem})
+				param.addItemOptionsWithValidate_WhereNotExist(slot, []items.FullItem{defaultItem})
 			}
 		}
 		param.itemOptions.RemoveDuplicates()
@@ -352,7 +364,7 @@ func (job *MultiSetJob) prepareRatingMultipliers() {
 
 func (param *multiSetParamInternal) prepareRatingMultiplier() {
 	var targetCombined float64 = 100000000.0
-	baselineRating := float64(param.baselineResult.ResultRating)
+	baselineRating := param.baselineResult.ResultRating
 
 	targetForThis := targetCombined * param.RequestRatingPercent
 	multiplyRatingsBy := targetForThis / baselineRating
@@ -363,4 +375,27 @@ func (param *multiSetParamInternal) prepareRatingMultiplier() {
 		baselineRating*param.ratingMultiply,
 		baselineRating*param.ratingMultiply/targetCombined*100,
 	)
+}
+
+func (param *multiSetParamInternal) addItemOptionsWithValidate(slot items.SlotItem, options []items.FullItem) {
+	param.validateAddOptions(slot.ToSlotEquipOptions()[0], options)
+	param.itemOptions.AddSeveralOptions(slot, options)
+}
+
+func (param *multiSetParamInternal) addItemOptionsSpecificWithValidate(slot items.SlotEquip, options []items.FullItem) {
+	param.validateAddOptions(slot, options)
+	param.itemOptions.AddSeveralOptionsSpecific(slot, options)
+}
+
+func (param *multiSetParamInternal) addItemOptionsWithValidate_WhereNotExist(slot items.SlotEquip, options []items.FullItem) {
+	param.validateAddOptions(slot, options)
+	param.itemOptions.AddSeveralOptionsSpecific_WhereNotExist(slot, options)
+}
+
+func (param *multiSetParamInternal) validateAddOptions(slot items.SlotEquip, options []items.FullItem) {
+	if slot == items.Equip_Head {
+		for item := range util.ForPointer(options) {
+			param.Model.GemChoice.ValidateMetaGemInItem(item)
+		}
+	}
 }

@@ -235,7 +235,7 @@ func countRegem(multiProposed multi_types.MultiProposedOutput) int {
 	for part := range util.ForPointer(multiProposed.Parts) {
 		allItems = slices.AppendSeq(allItems, part.FullSet.Items().AllItemSeq())
 	}
-	allItems = util.RemoveDuplicatesFunc(allItems, func(a, b **items.FullItem) bool { return (*a).Equals(*b) })
+	util.RemoveDuplicatesFunc_InPlace(&allItems, func(a, b **items.FullItem) bool { return (*a).Equals(*b) })
 
 	countRegemmed := 0
 	for _, item := range allItems {

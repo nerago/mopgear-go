@@ -31,8 +31,9 @@ type MultiSetJob struct {
 }
 
 type distinctUsageGroups struct {
-	groupAIndexes []int
-	groupBIndexes []int
+	groupAIndexes       []int
+	groupBIndexes       []int
+	forceTryInEachParam bool
 }
 
 func MultiSetJob_Create(printer *util.PrintRecorder, simRunSize simulate.WowSim_RunSize) MultiSetJob {
@@ -55,8 +56,8 @@ func (job *MultiSetJob) AddFixedForge(itemId items.ItemId, reforge stats.Reforge
 	job.fixedForge[itemId] = reforge
 }
 
-func (job *MultiSetJob) AddItemDistinctUsageGroups(itemId items.ItemId, groupA []multi_types.MultiSetParam, groupB []multi_types.MultiSetParam) {
-	usageGroups := distinctUsageGroups{}
+func (job *MultiSetJob) AddItemDistinctUsageGroups(itemId items.ItemId, forceTryInEachParam bool, groupA []multi_types.MultiSetParam, groupB []multi_types.MultiSetParam) {
+	usageGroups := distinctUsageGroups{forceTryInEachParam: forceTryInEachParam}
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
 
@@ -76,7 +77,44 @@ func (job *MultiSetJob) AddItemDistinctUsageGroups(itemId items.ItemId, groupA [
 	if job.distinctUsageGroups == nil {
 		job.distinctUsageGroups = make(map[items.ItemId]distinctUsageGroups)
 	}
+	job.validateAddUsageGroups(itemId, usageGroups)
 	job.distinctUsageGroups[itemId] = usageGroups
+}
+
+func (job *MultiSetJob) validateAddUsageGroups(addItemId items.ItemId, addGroup distinctUsageGroups) {
+	if !addGroup.forceTryInEachParam {
+		// only have trouble with duplicate forces
+		return
+	}
+
+	addItem := db.WowSimDB_LoadItemById(addItemId, 0)
+	for otherItemId, otherGroup := range job.distinctUsageGroups {
+		if otherGroup.forceTryInEachParam {
+			otherItem := db.WowSimDB_LoadItemById(otherItemId, 0)
+			if addItem.SlotItem() == otherItem.SlotItem() {
+				if anyInCommon(addGroup.groupAIndexes, otherGroup.groupAIndexes, otherGroup.groupBIndexes) ||
+					anyInCommon(addGroup.groupBIndexes, otherGroup.groupAIndexes, otherGroup.groupBIndexes) {
+					panic("same slot forced in multiple items/groups, try forceTryInEachParam=false")
+				}
+			}
+		}
+	}
+}
+
+func anyInCommon(checkSlice []int, otherASlice []int, otherBSlice []int) bool {
+	for _, check := range checkSlice {
+		for _, a := range otherASlice {
+			if check == a {
+				return true
+			}
+		}
+		for _, b := range otherBSlice {
+			if check == b {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (job *MultiSetJob) AddAlternateUpgradeChoices(itemIdList ...items.ItemId) {
@@ -125,6 +163,12 @@ func (job *MultiSetJob) VerifyNoExtraDuplicates() {
 				seen[itemId] = true
 			}
 		}
+	}
+}
+
+func (job *MultiSetJob) RemoveAnyExtraDuplicates() {
+	for param := range util.ForPointer(job.params) {
+		util.RemoveDuplicatesComparable_InPlace(&param.ExtraItems)
 	}
 }
 

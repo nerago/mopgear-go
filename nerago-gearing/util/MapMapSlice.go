@@ -107,15 +107,26 @@ func (mms *MapMapSlice[J, K, V]) MapInternalSlice(key1 J, key2 K, mapper func([]
 			value1, hasValue1 := inner1[key2]
 			if hasValue1 {
 				newSlice := mapper(value1)
-				inner1[key2] = newSlice
+				if len(newSlice) > 0 {
+					inner1[key2] = newSlice
 
-				data2 := mms.dataBy2
-				if data2 == nil {
-					panic("keys not found")
-				} else if inner2, hasInner2 := data2[key2]; !hasInner2 {
-					panic("keys not found")
+					data2 := mms.dataBy2
+					if data2 == nil {
+						panic("keys not found")
+					} else if inner2, hasInner2 := data2[key2]; !hasInner2 {
+						panic("keys not found")
+					} else {
+						inner2[key1] = newSlice
+					}
 				} else {
-					inner2[key1] = newSlice
+					delete(inner1, key2)
+
+					data2 := mms.dataBy2
+					if data2 != nil {
+						if inner2, hasInner2 := data2[key2]; hasInner2 {
+							delete(inner2, key1)
+						}
+					}
 				}
 
 				return
@@ -133,15 +144,26 @@ func (mms *MapMapSlice[J, K, V]) MapInternalSliceIfExists(key1 J, key2 K, mapper
 			value1, hasValue1 := inner1[key2]
 			if hasValue1 {
 				newSlice := mapper(value1)
-				inner1[key2] = newSlice
+				if len(newSlice) > 0 {
+					inner1[key2] = newSlice
 
-				data2 := mms.dataBy2
-				if data2 == nil {
-					panic("inconsistent internals")
-				} else if inner2, hasInner2 := data2[key2]; !hasInner2 {
-					panic("inconsistent internals")
+					data2 := mms.dataBy2
+					if data2 == nil {
+						panic("inconsistent internals")
+					} else if inner2, hasInner2 := data2[key2]; !hasInner2 {
+						panic("inconsistent internals")
+					} else {
+						inner2[key1] = newSlice
+					}
 				} else {
-					inner2[key1] = newSlice
+					delete(inner1, key2)
+
+					data2 := mms.dataBy2
+					if data2 != nil {
+						if inner2, hasInner2 := data2[key2]; hasInner2 {
+							delete(inner2, key1)
+						}
+					}
 				}
 
 				return true

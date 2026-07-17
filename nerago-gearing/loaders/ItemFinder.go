@@ -158,7 +158,7 @@ func ItemFinder_ThroneStrengthPlateTank_RadenOnly(difficulty stats.Difficulty) [
 	result := util.FilterSliceAsNew(ItemFinder_ThroneStrengthPlateTank(difficulty), func(item *ItemFoundRef) bool {
 		return isRadenItem(item.ItemId)
 	})
-	result = util.RemoveDuplicatesComparable(result)
+	util.RemoveDuplicatesComparable_InPlace(&result)
 	return result
 }
 
@@ -362,6 +362,6 @@ func ItemFinder_BagsUpgraded(_ stats.Difficulty) []ItemFoundRef {
 		}
 	}
 
-	result = util.RemoveDuplicatesComparable(result)
+	util.RemoveDuplicatesComparable_InPlace(&result)
 	return result
 }

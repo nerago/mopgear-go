@@ -36,7 +36,7 @@ func BagsFile_PlusPaladinGear_Read() EquippedArray {
 		gear := GearFileReader_Read(filename)
 		equippedItems = append(equippedItems, gear...)
 	}
-	equippedItems = util.RemoveDuplicatesFunc(equippedItems, (*EquippedItem).Equals)
+	util.RemoveDuplicatesFunc_InPlace(&equippedItems, (*EquippedItem).Equals)
 	return equippedItems
 }
 

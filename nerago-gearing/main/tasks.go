@@ -180,8 +180,7 @@ func checkHighs(printer *util.PrintRecorder) {
 		printer.Println("FAILED SOLVE")
 	} else {
 		fullItemSet = items.FullItemSet_FromSolved(solvedSet.GetOrPanic(), &itemOptions)
-		fullItemSet.DebugValidate()
-		fullItemSet.ValidateItemRules()
+		model.ValidateSet(&fullItemSet)
 		tools.ReportSetFewerParams(&model, &fullItemSet, printer)
 	}
 }

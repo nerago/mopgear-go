@@ -4,10 +4,12 @@ import (
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/multi"
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
 )
@@ -105,6 +107,7 @@ var timeless = []items.ItemId{
 var celestial = []items.ItemId{
 	105122, // Asgorathian Blood Seal
 	105011, // Demolisher's Reinforced Belt
+	105077, // Visage of the Monstrous (haste shield)
 }
 var celestialRaden = []items.ItemId{
 	95011, // lighting clawfeet
@@ -144,8 +147,8 @@ func PaladinMultiRun() {
 	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
 	//job.SetWriteBestToGearFiles()
 
-	var generalUpgrade items.UpgradeLevel = 0
-	var forceUpgrade items.UpgradeLevel = 0
+	var generalUpgrade items.UpgradeLevel = 2
+	var forceUpgrade items.UpgradeLevel = 2
 
 	ret := multi_types.MultiSetParam{
 		Label:                     "Ret",
@@ -353,6 +356,9 @@ func PaladinMultiRun() {
 	//protMitigationWithSet.AddBagsExtra()
 	//protHeal.AddBagsExtra()
 
+	addExtrasFromFinder(loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic),
+		&ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
+
 	job.AddSetParam(ret)
 	job.AddSetParam(protDps)
 	job.AddSetParam(protCompromise)
@@ -360,8 +366,15 @@ func PaladinMultiRun() {
 	job.AddSetParam(protMitigationWithSet)
 	job.AddSetParam(protHeal)
 
-	// job.AddItemDistinctUsageGroups(96550, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet})
-	//job.AddItemDistinctUsageGroups(103892, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet, protHeal})
+	capacitanceSets := []multi_types.MultiSetParam{ret, protDps, protCompromise}
+	indomitableSets := []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet, protHeal}
+	job.AddItemDistinctUsageGroups(104590, false, capacitanceSets, indomitableSets)
+	job.AddItemDistinctUsageGroups(104647, false, capacitanceSets, indomitableSets)
+	job.AddItemDistinctUsageGroups(105807, false, capacitanceSets, indomitableSets)
+	job.AddItemDistinctUsageGroups(99379, false, capacitanceSets, indomitableSets)
+	job.AddItemDistinctUsageGroups(104492, false, capacitanceSets, indomitableSets)
+
+	//job.AddItemDistinctUsageGroups(103892, true, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet, protHeal})
 	//ret.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{104981, 86386})
 	//job.AddAlternateUpgradeChoices(
 	//	101947, // Elder Tortoiseshell Seal
@@ -375,10 +388,11 @@ func PaladinMultiRun() {
 	//)
 	//job.AddAlternateUpgradeChoices(104417) //gloves corrupt
 
-	job.VerifyNoExtraDuplicates()
+	//job.VerifyNoExtraDuplicates()
+	job.RemoveAnyExtraDuplicates()
 
 	//job.RunNoPermutations_AllCommonAlternates(true)
-	job.RunForSolutionsPerPermute(5)
+	job.RunForSolutionsPerPermute(3)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)
@@ -393,18 +407,20 @@ func addExtrasToEach(itemIdList []items.ItemId, params ...*multi_types.MultiSetP
 func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {
 	param.BlockItem(87101)  // white tiger helmet = prot gem
 	param.BlockItem(95292)  // lightning emp faceguard = prot gem
-	param.BlockItem(95778)  // golden golem celestial = ignore in all sets
 	param.BlockItem(96666)  // lightning emp faceguard heroic = prot gem
 	param.BlockItem(96550)  // doomed crown heroic = prot gem
 	param.BlockItem(99128)  // winged faceguard = prot gem
 	param.BlockItem(104461) // rage-blind = prot gem
+
+	param.BlockItem(99370)  // Faceguard of Winged Triumph
+	param.BlockItem(105805) // Dominik's Casque of Raging Flame
+
 	blockGeneral(param)
 }
 
 func blockHelmetsWithoutIndomitable(param *multi_types.MultiSetParam) {
 	param.BlockItem(87024)  // nullification greathelm = capacitance
 	param.BlockItem(95282)  // lightning emp helmet = capacitance
-	param.BlockItem(95778)  // golden golem celestial = ignore in all sets
 	param.BlockItem(101882) // cliffbreaker helm = capacitance
 	param.BlockItem(98985)  // ret helm = capacitance
 	param.BlockItem(103892) // thranok = capacitance
@@ -412,5 +428,15 @@ func blockHelmetsWithoutIndomitable(param *multi_types.MultiSetParam) {
 }
 
 func blockGeneral(param *multi_types.MultiSetParam) {
-	param.BlockItem(95513) // normal ring
+	param.BlockItem(95513)  // normal ring
+	param.BlockItem(95778)  // golden golem celestial
+	param.BlockItem(101942) // Elder Tortoiseshell Helm (just blocking to gem bis runs done, don't have one)
+}
+
+func addExtrasFromFinder(foundList []loaders.ItemFoundRef, params ...*multi_types.MultiSetParam) {
+	for _, itemRef := range foundList {
+		for _, param := range params {
+			param.AddExtraItem(itemRef.ItemId)
+		}
+	}
 }

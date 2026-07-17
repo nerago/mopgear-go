@@ -85,6 +85,12 @@ func (model *SpecModel) CheckSetFull_ForWeightProcess(itemSet *FullItemSet) bool
 	return true
 }
 
+func (model *SpecModel) ValidateSet(itemSet *FullItemSet) {
+	itemSet.DebugValidate()
+	itemSet.ValidateItemRules()
+	model.GemChoice.ValidateMetaGemInItemSet(itemSet)
+}
+
 // ////////// set ratings
 func (model *SpecModel) CalcRatingSolve(itemSet *SolvableItemSet) float64 {
 	baseRating := model.StatRatings.CalcRating(itemSet.Total())

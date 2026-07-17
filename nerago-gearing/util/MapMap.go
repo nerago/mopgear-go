@@ -17,18 +17,18 @@ type MapMapEntry[J comparable, K comparable, V any] struct {
 }
 
 // optional
-func (mapmap *MapMap[J, K, V]) Init(size int) {
-	mapmap.dataBy1 = make(map[J]map[K]V, size)
-	mapmap.dataBy2 = make(map[K]map[J]V, size)
+func (mm *MapMap[J, K, V]) Init(size int) {
+	mm.dataBy1 = make(map[J]map[K]V, size)
+	mm.dataBy2 = make(map[K]map[J]V, size)
 }
 
-func (mapmap *MapMap[J, K, V]) Get(key1 J, key2 K) (V, bool) {
-	value, hasValue := mapmap.dataBy1[key1][key2]
+func (mm *MapMap[J, K, V]) Get(key1 J, key2 K) (V, bool) {
+	value, hasValue := mm.dataBy1[key1][key2]
 	return value, hasValue
 }
 
-func (mapmap *MapMap[J, K, V]) GetOrPanic(key1 J, key2 K) V {
-	value, hasValue := mapmap.dataBy1[key1][key2]
+func (mm *MapMap[J, K, V]) GetOrPanic(key1 J, key2 K) V {
+	value, hasValue := mm.dataBy1[key1][key2]
 	if hasValue {
 		return value
 	} else {
@@ -36,44 +36,44 @@ func (mapmap *MapMap[J, K, V]) GetOrPanic(key1 J, key2 K) V {
 	}
 }
 
-func (mapmap *MapMap[J, K, V]) Has(key1 J, key2 K) bool {
-	_, hasValue := mapmap.dataBy1[key1][key2]
+func (mm *MapMap[J, K, V]) Has(key1 J, key2 K) bool {
+	_, hasValue := mm.dataBy1[key1][key2]
 	return hasValue
 }
 
-func (mapmap MapMap[J, K, V]) HasKey1(key1 J) bool {
-	_, hasValue := mapmap.dataBy1[key1]
+func (mm *MapMap[J, K, V]) HasKey1(key1 J) bool {
+	_, hasValue := mm.dataBy1[key1]
 	return hasValue
 }
 
-func (mapmap MapMap[J, K, V]) HasKey2(key2 K) bool {
-	_, hasValue := mapmap.dataBy2[key2]
+func (mm *MapMap[J, K, V]) HasKey2(key2 K) bool {
+	_, hasValue := mm.dataBy2[key2]
 	return hasValue
 }
 
-func (mapmap *MapMap[J, K, V]) Clear() {
-	clear(mapmap.dataBy1)
-	clear(mapmap.dataBy2)
+func (mm *MapMap[J, K, V]) Clear() {
+	clear(mm.dataBy1)
+	clear(mm.dataBy2)
 }
 
-func (mapmap MapMap[J, K, V]) Size() int {
+func (mm *MapMap[J, K, V]) Size() int {
 	size := 0
-	for _, inner := range mapmap.dataBy1 {
+	for _, inner := range mm.dataBy1 {
 		size += len(inner)
 	}
 	return size
 }
 
 // uses assumtion that empty inner maps don't exist, no maps therefore no data
-func (mapmap MapMap[J, K, V]) IsEmpty() bool {
-	return len(mapmap.dataBy1) == 0
+func (mm *MapMap[J, K, V]) IsEmpty() bool {
+	return len(mm.dataBy1) == 0
 }
 
-func (mapmap *MapMap[J, K, V]) Put(key1 J, key2 K, value V) {
-	data1 := mapmap.dataBy1
+func (mm *MapMap[J, K, V]) Put(key1 J, key2 K, value V) {
+	data1 := mm.dataBy1
 	if data1 == nil {
 		data1 = make(map[J]map[K]V)
-		mapmap.dataBy1 = data1
+		mm.dataBy1 = data1
 	}
 	inner1, hasInner1 := data1[key1]
 	if !hasInner1 {
@@ -82,10 +82,10 @@ func (mapmap *MapMap[J, K, V]) Put(key1 J, key2 K, value V) {
 	}
 	inner1[key2] = value
 
-	data2 := mapmap.dataBy2
+	data2 := mm.dataBy2
 	if data2 == nil {
 		data2 = make(map[K]map[J]V)
-		mapmap.dataBy2 = data2
+		mm.dataBy2 = data2
 	}
 	inner2, hasInner2 := data2[key2]
 	if !hasInner2 {
@@ -96,8 +96,8 @@ func (mapmap *MapMap[J, K, V]) Put(key1 J, key2 K, value V) {
 }
 
 // removes nested inner maps when last item removed, if changing this check IsEmpty etc
-func (mapmap *MapMap[J, K, V]) Delete(key1 J, key2 K) {
-	data1 := mapmap.dataBy1
+func (mm *MapMap[J, K, V]) Delete(key1 J, key2 K) {
+	data1 := mm.dataBy1
 	if data1 != nil {
 		inner1, hasInner1 := data1[key1]
 		if hasInner1 {
@@ -108,7 +108,7 @@ func (mapmap *MapMap[J, K, V]) Delete(key1 J, key2 K) {
 		}
 	}
 
-	data2 := mapmap.dataBy2
+	data2 := mm.dataBy2
 	if data2 != nil {
 		inner2, hasInner2 := data2[key2]
 		if hasInner2 {
@@ -120,37 +120,37 @@ func (mapmap *MapMap[J, K, V]) Delete(key1 J, key2 K) {
 	}
 }
 
-func (mapmap *MapMap[J, K, V]) DeleteAllForKey1(key1 J) {
-	for key2 := range mapmap.dataBy1[key1] {
-		inner2, hasInner2 := mapmap.dataBy2[key2]
+func (mm *MapMap[J, K, V]) DeleteAllForKey1(key1 J) {
+	for key2 := range mm.dataBy1[key1] {
+		inner2, hasInner2 := mm.dataBy2[key2]
 		if hasInner2 {
 			delete(inner2, key1)
 			if len(inner2) == 0 {
-				delete(mapmap.dataBy2, key2)
+				delete(mm.dataBy2, key2)
 			}
 		}
 	}
-	delete(mapmap.dataBy1, key1)
+	delete(mm.dataBy1, key1)
 }
 
-func (mapmap *MapMap[J, K, V]) DeleteAllForKey2(key2 K) {
-	for key1 := range mapmap.dataBy2[key2] {
-		inner1, hasInner1 := mapmap.dataBy1[key1]
+func (mm *MapMap[J, K, V]) DeleteAllForKey2(key2 K) {
+	for key1 := range mm.dataBy2[key2] {
+		inner1, hasInner1 := mm.dataBy1[key1]
 		if hasInner1 {
 			delete(inner1, key2)
 			if len(inner1) == 0 {
-				delete(mapmap.dataBy1, key1)
+				delete(mm.dataBy1, key1)
 			}
 		}
 	}
-	delete(mapmap.dataBy2, key2)
+	delete(mm.dataBy2, key2)
 }
 
-func (mapmap *MapMap[J, K, V]) Apply(key1 J, key2 K, apply func(oldValue V) V) {
-	data1 := mapmap.dataBy1
+func (mm *MapMap[J, K, V]) Apply(key1 J, key2 K, apply func(oldValue V) V) {
+	data1 := mm.dataBy1
 	if data1 == nil {
 		data1 = make(map[J]map[K]V)
-		mapmap.dataBy1 = data1
+		mm.dataBy1 = data1
 	}
 	inner1, hasInner1 := data1[key1]
 	if !hasInner1 {
@@ -166,10 +166,10 @@ func (mapmap *MapMap[J, K, V]) Apply(key1 J, key2 K, apply func(oldValue V) V) {
 	}
 	inner1[key2] = value
 
-	data2 := mapmap.dataBy2
+	data2 := mm.dataBy2
 	if data2 == nil {
 		data2 = make(map[K]map[J]V)
-		mapmap.dataBy2 = data2
+		mm.dataBy2 = data2
 	}
 	inner2, hasInner2 := data2[key2]
 	if !hasInner2 {
@@ -179,31 +179,31 @@ func (mapmap *MapMap[J, K, V]) Apply(key1 J, key2 K, apply func(oldValue V) V) {
 	inner2[key1] = value
 }
 
-func (mapmap *MapMap[J, K, V]) FirstKey1() J {
-	for x := range mapmap.dataBy1 {
+func (mm *MapMap[J, K, V]) FirstKey1() J {
+	for x := range mm.dataBy1 {
 		return x
 	}
 	panic("empty map")
 }
 
-func (mapmap *MapMap[J, K, V]) FirstKey2() K {
-	for x := range mapmap.dataBy2 {
+func (mm *MapMap[J, K, V]) FirstKey2() K {
+	for x := range mm.dataBy2 {
 		return x
 	}
 	panic("empty map")
 }
 
-func (mapmap *MapMap[J, K, V]) SeqKey1() iter.Seq[J] {
-	return maps.Keys(mapmap.dataBy1)
+func (mm *MapMap[J, K, V]) SeqKey1() iter.Seq[J] {
+	return maps.Keys(mm.dataBy1)
 }
 
-func (mapmap *MapMap[J, K, V]) SeqKey2() iter.Seq[K] {
-	return maps.Keys(mapmap.dataBy2)
+func (mm *MapMap[J, K, V]) SeqKey2() iter.Seq[K] {
+	return maps.Keys(mm.dataBy2)
 }
 
-func (mapmap *MapMap[J, K, V]) SeqValues() iter.Seq[V] {
+func (mm *MapMap[J, K, V]) SeqValues() iter.Seq[V] {
 	return func(yield func(V) bool) {
-		for _, inner := range mapmap.dataBy1 {
+		for _, inner := range mm.dataBy1 {
 			for _, value := range inner {
 				if !yield(value) {
 					return
@@ -213,9 +213,9 @@ func (mapmap *MapMap[J, K, V]) SeqValues() iter.Seq[V] {
 	}
 }
 
-func (mapmap *MapMap[J, K, V]) SeqWithKeys() iter.Seq[MapMapEntry[J, K, V]] {
+func (mm *MapMap[J, K, V]) SeqWithKeys() iter.Seq[MapMapEntry[J, K, V]] {
 	return func(yield func(MapMapEntry[J, K, V]) bool) {
-		for key1, inner := range mapmap.dataBy1 {
+		for key1, inner := range mm.dataBy1 {
 			for key2, value := range inner {
 				if !yield(MapMapEntry[J, K, V]{key1, key2, value}) {
 					return
@@ -225,9 +225,9 @@ func (mapmap *MapMap[J, K, V]) SeqWithKeys() iter.Seq[MapMapEntry[J, K, V]] {
 	}
 }
 
-func (mapmap *MapMap[J, K, V]) SeqWithKeysOtherOrder() iter.Seq[MapMapEntry[J, K, V]] {
+func (mm *MapMap[J, K, V]) SeqWithKeysOtherOrder() iter.Seq[MapMapEntry[J, K, V]] {
 	return func(yield func(MapMapEntry[J, K, V]) bool) {
-		for key2, inner := range mapmap.dataBy2 {
+		for key2, inner := range mm.dataBy2 {
 			for key1, value := range inner {
 				if !yield(MapMapEntry[J, K, V]{key1, key2, value}) {
 					return
@@ -237,17 +237,17 @@ func (mapmap *MapMap[J, K, V]) SeqWithKeysOtherOrder() iter.Seq[MapMapEntry[J, K
 	}
 }
 
-func (mapmap *MapMap[J, K, V]) ForeachWithKeys(apply func(key1 J, key2 K, value V)) {
-	for key1, inner := range mapmap.dataBy1 {
+func (mm *MapMap[J, K, V]) ForeachWithKeys(apply func(key1 J, key2 K, value V)) {
+	for key1, inner := range mm.dataBy1 {
 		for key2, value := range inner {
 			apply(key1, key2, value)
 		}
 	}
 }
 
-func (mapmap *MapMap[J, K, V]) SeqInnerWithKey1Value(key1 J) iter.Seq2[K, V] {
+func (mm *MapMap[J, K, V]) SeqInnerWithKey1Value(key1 J) iter.Seq2[K, V] {
 	return func(yield func(K, V) bool) {
-		for key2, value := range mapmap.dataBy1[key1] {
+		for key2, value := range mm.dataBy1[key1] {
 			if !yield(key2, value) {
 				return
 			}
@@ -256,9 +256,9 @@ func (mapmap *MapMap[J, K, V]) SeqInnerWithKey1Value(key1 J) iter.Seq2[K, V] {
 
 }
 
-func (mapmap *MapMap[J, K, V]) SeqInnerWithKey2Value(key2 K) iter.Seq2[J, V] {
+func (mm *MapMap[J, K, V]) SeqInnerWithKey2Value(key2 K) iter.Seq2[J, V] {
 	return func(yield func(J, V) bool) {
-		for key1, value := range mapmap.dataBy2[key2] {
+		for key1, value := range mm.dataBy2[key2] {
 			if !yield(key1, value) {
 				return
 			}
@@ -266,9 +266,9 @@ func (mapmap *MapMap[J, K, V]) SeqInnerWithKey2Value(key2 K) iter.Seq2[J, V] {
 	}
 }
 
-func (mapmap *MapMap[J, K, V]) SeqGroupsKey1Lookup() iter.Seq2[J, func(K) V] {
+func (mm *MapMap[J, K, V]) SeqGroupsKey1Lookup() iter.Seq2[J, func(K) V] {
 	return func(yield func(J, func(K) V) bool) {
-		for key1, inner := range mapmap.dataBy1 {
+		for key1, inner := range mm.dataBy1 {
 			lookup := func(key2 K) V {
 				value, hasValue := inner[key2]
 				if hasValue {
@@ -285,9 +285,9 @@ func (mapmap *MapMap[J, K, V]) SeqGroupsKey1Lookup() iter.Seq2[J, func(K) V] {
 	}
 }
 
-func (mapmap *MapMap[J, K, V]) SeqGroupsKey2Lookup() iter.Seq2[K, func(J) V] {
+func (mm *MapMap[J, K, V]) SeqGroupsKey2Lookup() iter.Seq2[K, func(J) V] {
 	return func(yield func(K, func(J) V) bool) {
-		for key2, inner := range mapmap.dataBy2 {
+		for key2, inner := range mm.dataBy2 {
 			lookup := func(key1 J) V {
 				value, hasValue := inner[key1]
 				if hasValue {
@@ -304,9 +304,9 @@ func (mapmap *MapMap[J, K, V]) SeqGroupsKey2Lookup() iter.Seq2[K, func(J) V] {
 	}
 }
 
-func (mapmap *MapMap[J, K, V]) SeqGroupsKey1NestedKeyValue() iter.Seq2[J, iter.Seq2[K, V]] {
+func (mm *MapMap[J, K, V]) SeqGroupsKey1NestedKeyValue() iter.Seq2[J, iter.Seq2[K, V]] {
 	return func(yield func(J, iter.Seq2[K, V]) bool) {
-		for key1, inner := range mapmap.dataBy1 {
+		for key1, inner := range mm.dataBy1 {
 			if !yield(key1, maps.All(inner)) {
 				return
 			}
@@ -314,9 +314,9 @@ func (mapmap *MapMap[J, K, V]) SeqGroupsKey1NestedKeyValue() iter.Seq2[J, iter.S
 	}
 }
 
-func (mapmap *MapMap[J, K, V]) SeqGroupsKey2NestedKeyValue() iter.Seq2[K, iter.Seq2[J, V]] {
+func (mm *MapMap[J, K, V]) SeqGroupsKey2NestedKeyValue() iter.Seq2[K, iter.Seq2[J, V]] {
 	return func(yield func(K, iter.Seq2[J, V]) bool) {
-		for key2, inner := range mapmap.dataBy2 {
+		for key2, inner := range mm.dataBy2 {
 			if !yield(key2, maps.All(inner)) {
 				return
 			}
@@ -324,9 +324,9 @@ func (mapmap *MapMap[J, K, V]) SeqGroupsKey2NestedKeyValue() iter.Seq2[K, iter.S
 	}
 }
 
-func (mapmap *MapMap[J, K, V]) SeqKey1Key2Nested() iter.Seq2[J, iter.Seq[K]] {
+func (mm *MapMap[J, K, V]) SeqKey1Key2Nested() iter.Seq2[J, iter.Seq[K]] {
 	return func(yield func(J, iter.Seq[K]) bool) {
-		for key1, inner := range mapmap.dataBy1 {
+		for key1, inner := range mm.dataBy1 {
 			if !yield(key1, maps.Keys(inner)) {
 				return
 			}
@@ -334,9 +334,9 @@ func (mapmap *MapMap[J, K, V]) SeqKey1Key2Nested() iter.Seq2[J, iter.Seq[K]] {
 	}
 }
 
-func (mapmap *MapMap[J, K, V]) SeqKey2Key1Nested() iter.Seq2[K, iter.Seq[J]] {
+func (mm *MapMap[J, K, V]) SeqKey2Key1Nested() iter.Seq2[K, iter.Seq[J]] {
 	return func(yield func(K, iter.Seq[J]) bool) {
-		for key2, inner := range mapmap.dataBy2 {
+		for key2, inner := range mm.dataBy2 {
 			if !yield(key2, maps.Keys(inner)) {
 				return
 			}

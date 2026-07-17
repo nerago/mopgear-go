@@ -18,8 +18,7 @@ func SolverBuildRandom_MakeN_FullAndValidate(itemOptions *items.FullOptionsMap, 
 	for len(results) < targetCount {
 		itemSet := makeSetFromRandomFull(itemOptions, rng)
 		if model.CheckSetFull_ForWeightProcess(&itemSet) && checkPairedSlotsNoDuplicate(itemSet.Items()) {
-			itemSet.DebugValidate()
-			itemSet.ValidateItemRules()
+			model.ValidateSet(&itemSet)
 			results = append(results, itemSet)
 		}
 
@@ -28,7 +27,7 @@ func SolverBuildRandom_MakeN_FullAndValidate(itemOptions *items.FullOptionsMap, 
 			panic(fmt.Sprintf("unable to reliably build valid sets for %s, made %d in %d attempts", label, len(results), attemptCount))
 		}
 	}
-	results = util.RemoveDuplicatesFunc(results, (*items.FullItemSet).Equals)
+	util.RemoveDuplicatesFunc_InPlace(&results, (*items.FullItemSet).Equals)
 	return results
 }
 
