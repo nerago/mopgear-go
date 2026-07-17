@@ -15,6 +15,25 @@ type WeightExtended struct {
 	DetailedWeights   util.MapMap[stats.StatType, stats.SimType, float64]
 	SimRatioWeighting stats.SimData
 }
+
+type WeightExtended2Ranged struct {
+	StatWeights    util.MapMapSlice[stats.StatType, stats.SimType, WeightExtendedStatEntry]
+	SimMultipliers map[stats.SimType]WeightExtendedSimEntry
+}
+type WeightExtendedStatEntry struct {
+	StatWeight     float64
+	RangeMinimum   uint32
+	RangeMaximum   uint32
+	TotalIfGreater float64
+}
+type WeightExtendedSimEntry struct {
+	// calculated so that range of values is consistent (e.g. 0-100)
+	// is offset needed, would give more real values for tmi/death, but would that change result
+	Offset   float64
+	Scale    float64
+	Minimise bool
+}
+
 type StatRequiredExtended map[stats.StatType]util.HiLoInt
 
 type ExtendedModel struct {
@@ -61,7 +80,9 @@ func setupGearSetExtended(build *util_highs.LinearBuilder, model *ExtendedModel,
 	setup.finishItemsCommon(itemOptions)
 	setup.finishStats(&model.require)
 
-	setup.calcRatingsFromTotals(&model.weight)
+	var weight *WeightExtended = &model.weight
+	setup.calcSimValues(weight)
+	setup.calcCombinedSimRating(weight)
 	setup.addMainOutputVariable(scaleOutputRating)
 	setup.multiplyRatingsByActiveSetCombo(&model.gearModel.SetBonus, setup.combinedRatingVar)
 	setup.addSetNeededCounts(model.gearModel.SetBonusRequired)
@@ -73,18 +94,19 @@ func setupGearSetExtended(build *util_highs.LinearBuilder, model *ExtendedModel,
 
 // CALCULATION:
 // itemColumns * statTotalRows -> statTotalColumns
-// ??
+// statTotalColumns * detailedWeights -> simValueTotalColumns
+// simValueTotalColumns * simRatioWeighting ->
 // combinedRatingVar * entry_permutation_active(column) -> entry_permutation_output_weighted(column)
 // entry_permutation_output_weighted(column) * permutation.weight -> mainOutputRow
 
 type singleGearSetExtended struct {
 	singleGearSetShared
 
-	requireRows      map[stats.StatType]*util_highs.ConstraintRow // constrains values for the hit/expertise/etc of each item
-	statTotalRows    map[stats.StatType]*util_highs.ConstraintRow
-	statTotalColumns map[stats.StatType]*columnInfo
-
-	combinedRatingVar *columnInfo // sum of values for the ratings of selected items
+	requireRows          map[stats.StatType]*util_highs.ConstraintRow // constrains values for the hit/expertise/etc of each item
+	statTotalRows        map[stats.StatType]*util_highs.ConstraintRow
+	statTotalColumns     map[stats.StatType]*columnInfo
+	simValueTotalColumns map[stats.SimType]*columnInfo
+	combinedRatingVar    *columnInfo // sum of values for the ratings of selected items
 }
 
 func (setup *singleGearSetExtended) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, require *StatRequiredExtended, setBonus *gear_model.SetBonus) util_highs.ColumnIndex {
@@ -141,13 +163,13 @@ func (setup *singleGearSetExtended) finishStats(require *StatRequiredExtended) {
 	}
 }
 
-func (setup *singleGearSetExtended) calcRatingsFromTotals(weight *WeightExtended) {
+func (setup *singleGearSetExtended) calcSimValues(weight *WeightExtended) {
 	// calculate each sim value from stats
-	simValueTotalColumns := make(map[stats.SimType]*columnInfo)
+	setup.simValueTotalColumns = make(map[stats.SimType]*columnInfo)
 	for simType, nestedWeights := range weight.DetailedWeights.SeqGroupsKey2NestedKeyValue() {
 		simValueColumn := columnInfo{entryType: entry_sim_value}
 		simValueColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, &simValueColumn)
-		simValueTotalColumns[simType] = &simValueColumn
+		setup.simValueTotalColumns[simType] = &simValueColumn
 		setup.allColumns = append(setup.allColumns, &simValueColumn)
 
 		simValueFromStatRow := util_highs.ConstraintRow{}
@@ -158,7 +180,9 @@ func (setup *singleGearSetExtended) calcRatingsFromTotals(weight *WeightExtended
 		simValueFromStatRow.Add(simValueColumn.columnIndex, -1)
 		simValueFromStatRow.Build(setup.build, 0, 0)
 	}
+}
 
+func (setup *singleGearSetExtended) calcCombinedSimRating(weight *WeightExtended) {
 	// weighted sum of each sim value
 	combinedRatingColumn := columnInfo{entryType: entry_sum_rating}
 	combinedRatingColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.C_PlusInf, &combinedRatingColumn)
@@ -167,7 +191,7 @@ func (setup *singleGearSetExtended) calcRatingsFromTotals(weight *WeightExtended
 
 	// add up the sim values, multiplying corresponding ratio
 	combinedRatingRow := util_highs.ConstraintRow{}
-	for simType, simValueColumn := range simValueTotalColumns {
+	for simType, simValueColumn := range setup.simValueTotalColumns {
 		simRatio := weight.SimRatioWeighting.Get(simType)
 		combinedRatingRow.Add(simValueColumn.columnIndex, simRatio)
 	}
