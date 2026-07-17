@@ -372,29 +372,37 @@ func (setup *singleGearSetExtendedInputs) finishItems(itemOptions *items.Solvabl
 }
 
 func (setup *singleGearSetExtendedInputs) calcRatingsFromTotals(weight *WeightExtended) {
-	// weighted sum of each sim rating
+	// calculate each sim value from stats
+	simValueTotalColumns := make(map[stats.SimType]*columnInfo)
+	for simType, nestedWeights := range weight.DetailedWeights.SeqGroupsKey2NestedKeyValue() {
+		simValueColumn := columnInfo{entryType: entry_sim_value}
+		simValueColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, &simValueColumn)
+		simValueTotalColumns[simType] = &simValueColumn
+		setup.allColumns = append(setup.allColumns, &simValueColumn)
+
+		simValueFromStatRow := util_highs.ConstraintRow{}
+		for statType, weightValue := range nestedWeights {
+			statColumn := setup.statTotalColumns[statType]
+			simValueFromStatRow.Add(statColumn.columnIndex, weightValue)
+		}
+		simValueFromStatRow.Add(simValueColumn.columnIndex, -1)
+		simValueFromStatRow.Build(setup.build, 0, 0)
+	}
+
+	// weighted sum of each sim value
 	combinedRatingColumn := columnInfo{entryType: entry_sum_rating}
 	combinedRatingColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.C_PlusInf, &combinedRatingColumn)
 	setup.combinedRatingVar = &combinedRatingColumn
 	setup.allColumns = append(setup.allColumns, &combinedRatingColumn)
 
+	// add up the sim values, multiplying corresponding ratio
 	combinedRatingRow := util_highs.ConstraintRow{}
-
-	simRatingSum := make(map[stats.SimType]columnInfo)
-	for simType, nested := range weight.DetailedWeights.SeqGroupsKey2NestedKeyValue() {
-		simRatingColumn := columnInfo{entryType: entry_sim_rating}
-		simRatingColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, &simRatingColumn)
-
+	for simType, simValueColumn := range simValueTotalColumns {
 		simRatio := weight.SimRatioWeighting.Get(simType)
-		combinedRatingRow.Add(simRatingColumn.columnIndex, simRatio)
+		combinedRatingRow.Add(simValueColumn.columnIndex, simRatio)
 	}
-
-	//statTotalColumns map[stats.StatType]*columnInfo
-
-	// main action of this variable: derive value to match sum of sim ratings
 	combinedRatingRow.Add(combinedRatingColumn.columnIndex, -1)
 	combinedRatingRow.Build(setup.build, 0, 0)
-
 }
 
 func (setup *singleGearSetExtendedInputs) prepareUniqueEquipped(itemOptions *items.SolvableOptionsMap) {

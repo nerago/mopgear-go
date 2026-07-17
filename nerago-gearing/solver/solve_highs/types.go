@@ -21,7 +21,7 @@ const (
 	entry_multi_enable_forge          entryType = iota
 	entry_multi_output                entryType = iota
 	entry_stat_total                  entryType = iota
-	entry_sim_rating                  entryType = iota
+	entry_sim_value                   entryType = iota
 )
 
 type columnInfo struct {
