@@ -24,7 +24,7 @@ func WeightResult_Of(values []float64, statTypes []stats.StatType) WeightResult 
 	return wr
 }
 
-func WeightResult_FromRatingsWeight(ratingWeight ratings.StatRatingsWeights) WeightResult {
+func WeightResult_FromRatingsWeight(ratingWeight *ratings.StatRatingsWeights) WeightResult {
 	result := WeightResult{}
 	statBlockFromRatings := ratingWeight.AsFloatBlock()
 	statBlockFromRatings.MultiplyScalar(1.0/ratings.C_weightMultiplierForRatings, &result.content)

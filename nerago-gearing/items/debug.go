@@ -22,9 +22,9 @@ func (set *SolvableItemSet) DebugValidate() {
 	}
 }
 
-func (set *FullItemSet) DebugValidate() {
-	equipMap := set.items
-	previousTotal := set.total
+func (itemSet *FullItemSet) DebugValidate() {
+	equipMap := itemSet.items
+	previousTotal := itemSet.total
 
 	recalcTotal := StatBlock{}
 	for item := range equipMap.AllItemSeq() {

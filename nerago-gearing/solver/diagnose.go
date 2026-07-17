@@ -2,7 +2,6 @@ package solver
 
 import (
 	"paladin_gearing_go/gear_model"
-	"paladin_gearing_go/gear_model/requirements"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -16,7 +15,7 @@ func diagnoseFailure(optionsMap *items.SolvableOptionsMap, model *gear_model.Spe
 	if accepatable.HasValue() {
 		return accepatable, ""
 	} else {
-		message := discoverCommonProblem(proposedList, &model.StatRequirements)
+		message := discoverCommonProblem(proposedList, model.StatRequirements)
 		setsAtLimits(optionsMap)
 		return util.Optional_Empty[items.SolvableItemSet](), message
 	}
@@ -78,7 +77,7 @@ func findAccepableSet(proposedList []items.SolvableItemSet, model *gear_model.Sp
 	return best.GetBestOptional()
 }
 
-func discoverCommonProblem(proposedList []items.SolvableItemSet, require *requirements.StatRequirementsHitExpertise) string {
+func discoverCommonProblem(proposedList []items.SolvableItemSet, require gear_model.StatRequirements) string {
 	var hitLow, hitHigh, expLow, expHigh int
 	for _, set := range proposedList {
 		if require.IsLow(stats.Stat_Hit, set.Total().Hit()) {

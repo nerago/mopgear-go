@@ -303,3 +303,14 @@ func (sim *SimData) QueryIncreaseMitigation(baseSim *SimData) float64 {
 	}
 	return total / float64(len(checkParts))
 }
+
+func (sim *SimData) Equals(other *SimData) bool {
+	// ignores detailed stats
+	return sim.Values == other.Values
+}
+
+func (sim *SimData) EqualsIncludingDetail(other *SimData) bool {
+	return sim.Values == other.Values &&
+		util.NilSafeEqualComparable(sim.Detail, other.Detail) &&
+		sim.SimIterations == other.SimIterations
+}

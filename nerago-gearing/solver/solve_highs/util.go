@@ -9,6 +9,7 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
+// TODO make extended version
 func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOptionsMap, model *gear_model.SpecModel) {
 	itemSet.DebugValidate()
 	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
@@ -34,20 +35,20 @@ func checkSetRatingIsObjective(solution *highs.Solution, itemSet *items.Solvable
 	}
 }
 
-func makeSetPermutations(setData []setInfo) []setPermutation {
-	allSetPermutation := make([]setPermutation, 0, len(setData)*c_maxSetItems) // lower bound on size, not often right
-	return makeSetPermutationsRecur(allSetPermutation, setData, 0, 0, []setWithCount{})
+func makeSetPermutations(setData []bonusInfo) []bonusCombo {
+	allSetPermutation := make([]bonusCombo, 0, len(setData)*c_maxSetItems) // lower bound on size, not often right
+	return makeSetPermutationsRecur(allSetPermutation, setData, 0, 0, []bonusWithCount{})
 }
 
-func makeSetPermutationsRecur(allSetPermutation []setPermutation, setData []setInfo, setIndex int, totalCount int, built []setWithCount) []setPermutation {
+func makeSetPermutationsRecur(allSetPermutation []bonusCombo, setData []bonusInfo, setIndex int, totalCount int, built []bonusWithCount) []bonusCombo {
 	if setIndex == len(setData) {
-		return append(allSetPermutation, setPermutation{content: built})
+		return append(allSetPermutation, bonusCombo{content: built})
 	}
 
 	addSet := setData[setIndex]
 	for itemCount := 0; itemCount <= c_maxSetItems; itemCount++ {
 		if totalCount+itemCount <= c_maxSetItems {
-			next := setWithCount{addSet, itemCount}
+			next := bonusWithCount{addSet, itemCount}
 			progress := util.CopyAndAppend(built, next)
 			allSetPermutation = makeSetPermutationsRecur(allSetPermutation, setData, setIndex+1, totalCount+itemCount, progress)
 		}

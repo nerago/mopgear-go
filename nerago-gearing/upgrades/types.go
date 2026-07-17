@@ -73,7 +73,7 @@ func upgradeItemResult_OfFailure(task *upgradeItemTask, fullItem *items.FullItem
 func (result upgradeItemResult) Equals(other upgradeItemResult) bool {
 	return result.upgradeItemTask.Equals(other.upgradeItemTask) &&
 		result.success == other.success &&
-		result.itemSet.EqualsAllowNil(other.itemSet) &&
+		util.NilSafeEqualPointers(result.itemSet, other.itemSet, (*items.FullItemSet).Equals) &&
 		result.setBonus == other.setBonus &&
 		result.factor == other.factor
 }

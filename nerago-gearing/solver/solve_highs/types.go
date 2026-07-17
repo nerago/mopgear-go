@@ -35,7 +35,7 @@ type columnInfo struct {
 
 	set         gear_model.ActiveSet
 	itemCount   int
-	permutation *setPermutation
+	permutation *bonusCombo
 	weight      float64
 }
 
@@ -49,7 +49,7 @@ func (colEntry columnInfo) ItemId() items.ItemId {
 	}
 }
 
-type setInfo struct {
+type bonusInfo struct {
 	activeSet gear_model.ActiveSet
 	setIndex  int
 
@@ -58,26 +58,26 @@ type setInfo struct {
 	setExactCountVars [c_setItemsCounts]*columnInfo // specific bools for different counts
 }
 
-type setPermutation struct {
-	content []setWithCount
+type bonusWithCount struct {
+	setInfo bonusInfo
+	count   int
+}
+
+type bonusCombo struct {
+	content []bonusWithCount
 
 	outputVar     *columnInfo
 	activatingVar *columnInfo
 	weight        float64
 }
 
-func (perm setPermutation) debugStr() string {
+func (combo bonusCombo) debugStr() string {
 	build := util.StringBuild2{}
-	for _, set := range perm.content {
+	for _, set := range combo.content {
 		build.WriteString(set.setInfo.activeSet.Name())
 		build.WriteRune('=')
 		build.WriteInt64(int64(set.count))
 		build.WriteRune(' ')
 	}
 	return build.String()
-}
-
-type setWithCount struct {
-	setInfo setInfo
-	count   int
 }

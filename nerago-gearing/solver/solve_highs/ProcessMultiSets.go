@@ -22,7 +22,7 @@ type SolverHighsMultiParam struct {
 	Gear_model     *gear_model.SpecModel
 	RatingMultiply float64
 
-	setup        *singleGearSetInputs
+	setup        *singleGearSetBasic
 	solveOptions items.SolvableOptionsMap
 }
 
@@ -255,7 +255,8 @@ func (process *SolverHighsMultiProcess) solutionToResult(solution *highs.Solutio
 	idList := make([]string, len(process.parts))
 	for partIndex := range process.parts {
 		part := process.parts[partIndex]
-		solvedSet := part.setup.buildResultSet(solution, &part.solveOptions, part.Gear_model)
+		solvedSet := part.setup.buildResultSet(solution)
+		validateNewSet(solvedSet, &part.solveOptions, part.Gear_model)
 		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &part.ItemOptions)
 		resultList[partIndex] = fullItemSet
 
