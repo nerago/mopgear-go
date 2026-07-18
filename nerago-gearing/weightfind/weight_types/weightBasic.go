@@ -3,79 +3,79 @@ package weight_types
 import (
 	"encoding/json"
 	"math"
-	"paladin_gearing_go/gear_model/ratings"
+	"paladin_gearing_go/gear_model/ratings_old"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 )
 
-type WeightResult struct {
+type WeightBasic struct {
 	content stats.StatBlockFloat
 }
 
-func WeightResult_Make() WeightResult {
-	return WeightResult{}
+func WeightBasic_Make() WeightBasic {
+	return WeightBasic{}
 }
 
-func WeightResult_Of(values []float64, statTypes []stats.StatType) WeightResult {
-	wr := WeightResult{}
+func WeightBasic_Of(values []float64, statTypes []stats.StatType) WeightBasic {
+	wr := WeightBasic{}
 	for i, statType := range statTypes {
 		wr.Put(statType, values[i])
 	}
 	return wr
 }
 
-func WeightResult_FromRatingsWeight(ratingWeight *ratings.StatRatingsWeights) WeightResult {
-	result := WeightResult{}
+func WeightBasic_FromRatingsWeight(ratingWeight *ratings_old.StatRatingsWeightsOld) WeightBasic {
+	result := WeightBasic{}
 	statBlockFromRatings := ratingWeight.AsFloatBlock()
-	statBlockFromRatings.MultiplyScalar(1.0/ratings.C_weightMultiplierForRatings, &result.content)
+	statBlockFromRatings.MultiplyScalar(1.0/ratings_old.C_weightMultiplierForRatings, &result.content)
 	return result
 }
 
-func (wr *WeightResult) IsEmpty() bool {
+func (wr *WeightBasic) IsEmpty() bool {
 	return wr.content.IsEmpty()
 }
 
-func (wr *WeightResult) Get(statType stats.StatType) float64 {
+func (wr *WeightBasic) Get(statType stats.StatType) float64 {
 	return wr.content.GetFloat(statType)
 }
 
-func (wr *WeightResult) IsZero(statType stats.StatType) bool {
+func (wr *WeightBasic) IsZero(statType stats.StatType) bool {
 	return util.FloatEqualsZero(wr.content.GetFloat(statType))
 }
 
-func (wr *WeightResult) Put(statType stats.StatType, value float64) {
+func (wr *WeightBasic) Put(statType stats.StatType, value float64) {
 	wr.content[statType] = value
 }
 
-func (wr *WeightResult) PlusEquals(statType stats.StatType, value float64) {
+func (wr *WeightBasic) PlusEquals(statType stats.StatType, value float64) {
 	wr.content[statType] += value
 }
 
-func (wr *WeightResult) MinusEquals(statType stats.StatType, value float64) {
+func (wr *WeightBasic) MinusEquals(statType stats.StatType, value float64) {
 	wr.content[statType] -= value
 }
 
-func (wr *WeightResult) MultiplyEquals(statType stats.StatType, value float64) {
+func (wr *WeightBasic) MultiplyEquals(statType stats.StatType, value float64) {
 	wr.content[statType] *= value
 }
 
-func (wr *WeightResult) DivideEquals(statType stats.StatType, value float64) {
+func (wr *WeightBasic) DivideEquals(statType stats.StatType, value float64) {
 	wr.content[statType] /= value
 }
 
-func (wr *WeightResult) Equals(other *WeightResult) bool {
+func (wr *WeightBasic) Equals(other *WeightBasic) bool {
 	return wr.content.Equals(&other.content)
 }
 
-func (wr *WeightResult) CalcStatScore(input *WeightInput) float64 {
+func (wr *WeightBasic) CalcStatScore(input *WeightInput) float64 {
 	return wr.content.MultiplyForTotalSum2(&input.TotalStat)
 }
 
-func (wr *WeightResult) CalcStatScore2(stats *stats.StatBlock) float64 {
+func (wr *WeightBasic) CalcStatScore2(stats *stats.StatBlock) float64 {
 	return wr.content.MultiplyForTotalSum2(stats)
 }
 
-func (wr *WeightResult) CalcStatScoreScaled(input *WeightInput, statScale map[stats.StatType]float64) float64 {
+func (wr *WeightBasic) CalcStatScoreScaled(input *WeightInput, statScale map[stats.StatType]float64) float64 {
 	total := 0.0
 	for statType, scale := range statScale {
 		total += input.TotalStat.GetFloat(statType) * wr.content.GetFloat(statType) * scale
@@ -83,7 +83,7 @@ func (wr *WeightResult) CalcStatScoreScaled(input *WeightInput, statScale map[st
 	return total
 }
 
-func (wr *WeightResult) ScaleBackToMax(weight float64) WeightResult {
+func (wr *WeightBasic) ScaleBackToMax(weight float64) WeightBasic {
 	biggest := 0.0
 	for value := range wr.content.SeqValues() {
 		biggest = max(biggest, math.Abs(value))
@@ -100,7 +100,7 @@ func (wr *WeightResult) ScaleBackToMax(weight float64) WeightResult {
 	return rescaled
 }
 
-func (wr *WeightResult) ScaleForBaseStat(statType stats.StatType) WeightResult {
+func (wr *WeightBasic) ScaleForBaseStat(statType stats.StatType) WeightBasic {
 	factor := 1.0
 	value := wr.Get(statType)
 	if value != 0 {
@@ -112,7 +112,7 @@ func (wr *WeightResult) ScaleForBaseStat(statType stats.StatType) WeightResult {
 	return rescaled
 }
 
-func (wr *WeightResult) ScaleForTotalSum(targetTotal float64) WeightResult {
+func (wr *WeightBasic) ScaleForTotalSum(targetTotal float64) WeightBasic {
 	existingSum := 0.0
 	for value := range wr.content.SeqValues() {
 		existingSum += value
@@ -124,18 +124,18 @@ func (wr *WeightResult) ScaleForTotalSum(targetTotal float64) WeightResult {
 	return rescaled
 }
 
-func (wr *WeightResult) Clone() WeightResult {
-	return WeightResult{wr.content.Clone()}
+func (wr *WeightBasic) Clone() WeightBasic {
+	return WeightBasic{wr.content.Clone()}
 }
 
-func (wr *WeightResult) String() string {
+func (wr *WeightBasic) String() string {
 	return wr.content.CreateString(6)
 }
 
-func (wr *WeightResult) MarshalJSON() ([]byte, error) {
+func (wr *WeightBasic) MarshalJSON() ([]byte, error) {
 	return json.Marshal(wr.content)
 }
 
-func (wr *WeightResult) UnmarshalJSON(bytes []byte) error {
+func (wr *WeightBasic) UnmarshalJSON(bytes []byte) error {
 	return json.Unmarshal(bytes, &wr.content)
 }

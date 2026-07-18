@@ -321,7 +321,7 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 	inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
 	mixedInputData := slices.Concat(inputDataRandom, inputDataGrid)
 
-	var weights1 weight_types.WeightResult
+	var weights1 weight_types.WeightBasic
 	if false {
 		grid := weight_highs.GridStatWeightProcess{}
 		grid.Init(printer, 3000)
@@ -355,7 +355,7 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 		//}
 
 		// better than it thinks is optimal?
-		weights1 = weight_types.WeightResult_Make()
+		weights1 = weight_types.WeightBasic_Make()
 		weights1.Put(stats.Stat_Strength, 1.000000)
 		weights1.Put(stats.Stat_Stamina, 1.0877848527)
 		weights1.Put(stats.Stat_Crit, 2.4071360469)
@@ -753,7 +753,7 @@ func statWeights_CompareAlgorithms() {
 	//weightsNearOptimal.Put(stats.Stat_Parry, 3.2064183845)
 
 	// weight value 87.7342
-	weightsMidRange := weight_types.WeightResult_Make()
+	weightsMidRange := weight_types.WeightBasic_Make()
 	weightsMidRange.Put(stats.Stat_Strength, 1.0000)
 	weightsMidRange.Put(stats.Stat_Stamina, 1.2309)
 	weightsMidRange.Put(stats.Stat_Crit, 0.1167)
@@ -763,7 +763,7 @@ func statWeights_CompareAlgorithms() {
 	weightsMidRange.Put(stats.Stat_Dodge, 0.0824)
 	weightsMidRange.Put(stats.Stat_Parry, 0.0532)
 
-	resultsByAlgorithm := util.MapConcurrent[string, weight_types.WeightResult]{}
+	resultsByAlgorithm := util.MapConcurrent[string, weight_types.WeightBasic]{}
 	timesByAlgorithm := util.MapConcurrent[string, time.Duration]{}
 
 	cancel := util_async.CancelSignal_Make()
@@ -846,11 +846,11 @@ func statWeights_CompareAlgorithms() {
 				futureResult := comp.Run(stopwatch, standardTimeout)
 
 				util_async.ChainCancel(cancel, futureResult)
-				futureResult.WaitForResultThenRun(func(result weight_types.WeightResult) {
+				futureResult.WaitForResultThenRun(func(result weight_types.WeightBasic) {
 					resultsByAlgorithm.Put(label, result)
 					timesByAlgorithm.Put(label, stopwatch.Elapsed())
 				}, func() {
-					resultsByAlgorithm.Put(label, weight_types.WeightResult{})
+					resultsByAlgorithm.Put(label, weight_types.WeightBasic{})
 				})
 				printer.Println("///////////////// FORMULA /////////////////")
 			})
@@ -868,11 +868,11 @@ func statWeights_CompareAlgorithms() {
 				futureResult := comp.Run(stopwatch, standardTimeout)
 
 				util_async.ChainCancel(cancel, futureResult)
-				futureResult.WaitForResultThenRun(func(result weight_types.WeightResult) {
+				futureResult.WaitForResultThenRun(func(result weight_types.WeightBasic) {
 					resultsByAlgorithm.Put(label, result)
 					timesByAlgorithm.Put(label, stopwatch.Elapsed())
 				}, func() {
-					resultsByAlgorithm.Put(label, weight_types.WeightResult{})
+					resultsByAlgorithm.Put(label, weight_types.WeightBasic{})
 				})
 				printer.Println("///////////////// FORMULA /////////////////")
 			})

@@ -4,7 +4,7 @@ import (
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/gear_model"
-	"paladin_gearing_go/gear_model/ratings"
+	"paladin_gearing_go/gear_model/ratings_old"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/setup"
@@ -208,7 +208,7 @@ func findT5WeightPermutations(printer *util.PrintRecorder) {
 	progress1.RunFromAtomicInt(&progress1Atom, uint64(len(allPossibleOrders)))
 	intermediates := util_async.Map_SliceToSlice(10, allPossibleOrders, func(order *[]stats.StatType) orderIntermediate {
 		alterModel := gear_model.Model_PallyProtMitigation_NoSet()
-		alterModel.StatRatings = ratings.StatRatingsWeights_FromPriorities(*order)
+		alterModel.StatRatings = ratings_old.StatRatingsWeights_FromPriorities(*order)
 
 		thisItemSet := solver.Solver_Lite(&itemOptions, &alterModel, printer)
 
@@ -415,7 +415,7 @@ func statWeightsGridFromInitialT5(printer *util.PrintRecorder) {
 
 func statWeightsGridFromInitialT5_inner(model gear_model.SpecModel, priority []stats.StatType, gearFile string, trinkets [2]items.ItemId, fight stats.WowSim_Fight, ratios stats.SimData, weightFileOut string, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize) {
 	// INITIAL MODEL BASED ON PRIORITIES PREVIOUSLY GUESSED AT
-	model.StatRatings = ratings.StatRatingsWeights_FromPriorities(priority)
+	model.StatRatings = ratings_old.StatRatingsWeights_FromPriorities(priority)
 
 	// COME UP WITH A GEAR SET BASED ON THAT INITIAL MODEL
 	_, itemOptions := allT5stuff(&model, gearFile, printer)
@@ -426,7 +426,7 @@ func statWeightsGridFromInitialT5_inner(model gear_model.SpecModel, priority []s
 	printer.Println("BASELINE SET")
 	tools.ReportSetFewerParams(&model, &baseItemSet, printer)
 
-	var weights weight_types.WeightResult
+	var weights weight_types.WeightBasic
 	if false {
 		// SIMULATE STAT CHANGES
 		// baseLine := simulate.WowSim_Execute_SpecifyAll(simSpeed, model.Spec, model.Goal, fight, model.Professions, baseItemSet.Items(), nil, nil)

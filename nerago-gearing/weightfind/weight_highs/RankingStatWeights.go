@@ -69,7 +69,7 @@ func (ranker *RankingStatWeightProcess) SetTargetRatios(targetRatios stats.SimDa
 	ranker.requiredSims = targetRatios.NonZeroTypes()
 }
 
-func (ranker *RankingStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int) *util_async.FutureCancellable[weight_types.WeightResult] {
+func (ranker *RankingStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int) *util_async.FutureCancellable[weight_types.WeightBasic] {
 	ranker.build = new(util_highs.LinearBuilder)
 	ranker.build.Minimise = true
 	ranker.build.Solver = util_highs.Solver_LP_USE_GPU
@@ -81,7 +81,7 @@ func (ranker *RankingStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout i
 	ranker.processData()
 
 	solutionFuture := ranker.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightBasic, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(ranker.printer)
 		return ranker.extractAndReportSolution(solution), true
 	})
@@ -264,12 +264,12 @@ func (ranker *RankingStatWeightProcess) processEntrySequencePairOriginal(lower *
 	compareRow.Build(ranker.build, 0, util_highs.C_PlusInf)
 }
 
-func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs.Solution) weight_types.WeightResult {
+func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs.Solution) weight_types.WeightBasic {
 	ranker.build.DebugPrintColumns(solution, ranker.printer)
 
 	ranker.printer.Println("WEIGHTS")
 
-	statWeightResult := weight_types.WeightResult_Make()
+	statWeightResult := weight_types.WeightBasic_Make()
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statScale := ranker.scaleStats[statType]
@@ -290,7 +290,7 @@ func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs
 	return statWeightResult
 }
 
-func (ranker *RankingStatWeightProcess) reportRankingOfInputs(statWeightResult weight_types.WeightResult) {
+func (ranker *RankingStatWeightProcess) reportRankingOfInputs(statWeightResult weight_types.WeightBasic) {
 	ranker.printer.Println("INPUT CHECK (index, combinedSimRank, calcStat)")
 	for i, entry := range ranker.data {
 		ranker.printer.Printf("%4d %8f %8f\n", i, entry.combinedSimScore, statWeightResult.CalcStatScore(entry.data))

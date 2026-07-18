@@ -2,7 +2,7 @@ package gear_model
 
 import (
 	"paladin_gearing_go/files"
-	. "paladin_gearing_go/gear_model/ratings"
+	. "paladin_gearing_go/gear_model/ratings_old"
 	. "paladin_gearing_go/gear_model/requirements"
 	"paladin_gearing_go/stats"
 	. "paladin_gearing_go/stats"

@@ -49,7 +49,7 @@ type WeightSearcher2 struct {
 	AccuracyMode     int
 
 	queue      util.QueueStackFilo[*weightSearch2Bound]
-	bestResult util_rank.BestCollector1[weight_types.WeightResult]
+	bestResult util_rank.BestCollector1[weight_types.WeightBasic]
 }
 
 type weightSearch2Bound struct {
@@ -82,7 +82,7 @@ func (ws *WeightSearcher2) SetRanges(weightMin, weightMax float64) {
 	})
 }
 
-func (ws *WeightSearcher2) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
+func (ws *WeightSearcher2) Run(cancel util_async.CancelSignal) weight_types.WeightBasic {
 	iterCount := 0
 	for cancel.ShouldContinue() {
 		bound, hasValue := ws.queue.Pop()
@@ -121,7 +121,7 @@ func (ws *WeightSearcher2) Run(cancel util_async.CancelSignal) weight_types.Weig
 }
 
 func (ws *WeightSearcher2) evaluateScore(weightArray []float64) float64 {
-	weights := weight_types.WeightResult_Of(weightArray, ws.statTypes)
+	weights := weight_types.WeightBasic_Of(weightArray, ws.statTypes)
 	accuracy := ws.evaluateAccuracy.EvaluateWeight(weights)
 	ws.bestResult.Offer(&weights, accuracy)
 	return accuracy

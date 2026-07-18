@@ -128,7 +128,7 @@ outer:
 	return resultMap
 }
 
-func (fiteach *FittingEachStatWeightProcess) Run(stopwatch *util.Stopwatch, cancel util_async.CancelSignal) weight_types.WeightResult {
+func (fiteach *FittingEachStatWeightProcess) Run(stopwatch *util.Stopwatch, cancel util_async.CancelSignal) weight_types.WeightBasic {
 	detailResult := fiteach.RunDetailedResults(cancel)
 
 	for byRange := range detailResult.SeqValues() {
@@ -151,7 +151,7 @@ func (fiteach *FittingEachStatWeightProcess) Run(stopwatch *util.Stopwatch, canc
 	})
 
 	baseStat := fiteach.requiredStats[0]
-	standardResult := weight_types.WeightResult_Make()
+	standardResult := weight_types.WeightBasic_Make()
 	standardResult.Put(baseStat, 1)
 	for _, statType := range fiteach.requiredStats {
 		if statType != baseStat {

@@ -11,29 +11,6 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
-type WeightExtended struct {
-	DetailedWeights   util.MapMap[stats.StatType, stats.SimType, float64]
-	SimRatioWeighting stats.SimData
-}
-
-type WeightExtended2Ranged struct {
-	StatWeights    util.MapMapSlice[stats.StatType, stats.SimType, WeightExtendedStatEntry]
-	SimMultipliers map[stats.SimType]WeightExtendedSimEntry
-}
-type WeightExtendedStatEntry struct {
-	StatWeight     float64
-	RangeMinimum   uint32
-	RangeMaximum   uint32
-	TotalIfGreater float64
-}
-type WeightExtendedSimEntry struct {
-	// calculated so that range of values is consistent (e.g. 0-100)
-	// is offset needed, would give more real values for tmi/death, but would that change result
-	Offset   float64
-	Scale    float64
-	Minimise bool
-}
-
 type StatRequiredExtended map[stats.StatType]util.HiLoInt
 
 type ExtendedModel struct {

@@ -78,7 +78,7 @@ func (grid *GridStatWeightProcess1C) SetTestMode(testMode bool) {
 	}
 }
 
-func (grid *GridStatWeightProcess1C) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.WeightResult] {
+func (grid *GridStatWeightProcess1C) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.WeightBasic] {
 	grid.setupWeightVars()
 	grid.dataSamplesFromPairs()
 	grid.removeOutliers()
@@ -87,7 +87,7 @@ func (grid *GridStatWeightProcess1C) Run(stopwatch *util.Stopwatch) *util_async.
 	grid.finalWeightVars()
 
 	solutionFuture := grid.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightBasic, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(grid.printer)
 
 		grid.printer.Println(solution.Status.String())
@@ -253,8 +253,8 @@ func (grid *GridStatWeightProcess1C) unitValuesCalcForGroup(simType stats.SimTyp
 	}
 }
 
-func (grid *GridStatWeightProcess1C) reportOutputWeightsGrid(solution *highs.Solution, weightColumns map[stats.StatType]util_highs.ColumnIndex, printer *util.PrintRecorder) weight_types.WeightResult {
-	result := weight_types.WeightResult_Make()
+func (grid *GridStatWeightProcess1C) reportOutputWeightsGrid(solution *highs.Solution, weightColumns map[stats.StatType]util_highs.ColumnIndex, printer *util.PrintRecorder) weight_types.WeightBasic {
+	result := weight_types.WeightBasic_Make()
 	printer.Println("FINAL WEIGHTS:")
 	for _, statType := range grid.requiredStats {
 		columnIndex := weightColumns[statType]

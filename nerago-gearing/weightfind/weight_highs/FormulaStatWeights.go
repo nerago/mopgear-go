@@ -60,7 +60,7 @@ func (form *FormulaStatWeightProcess) SetMinimumIncludeRate(percent float64) {
 	form.minimumIncludeRate = percent
 }
 
-func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int) *util_async.FutureCancellable[weight_types.WeightResult] {
+func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int) *util_async.FutureCancellable[weight_types.WeightBasic] {
 	form.build = new(util_highs.LinearBuilder)
 	form.build.Minimise = true
 	form.build.Solver = util_highs.Solver_MIP_Interior
@@ -102,7 +102,7 @@ func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int
 	form.includeCountRow.Build(form.build, float64(len(form.inputData))*form.minimumIncludeRate, util_highs.C_PlusInf)
 
 	solutionFuture := form.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightBasic, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(form.printer)
 		return form.extractAndReportSolution(solution), true
 	})
@@ -220,7 +220,7 @@ func (form *FormulaStatWeightProcess) buildDataEquationForSim(stats *stats.StatB
 	matchSimValue.Build(form.build, scaledSimValue, scaledSimValue)
 }
 
-func (form *FormulaStatWeightProcess) extractAndReportSolution(solution *highs.Solution) weight_types.WeightResult {
+func (form *FormulaStatWeightProcess) extractAndReportSolution(solution *highs.Solution) weight_types.WeightBasic {
 	form.build.DebugPrintColumns(solution, form.printer)
 
 	form.printer.Println("WEIGHTS")
@@ -303,8 +303,8 @@ func (form *FormulaStatWeightProcess) reportExamples(detailWeightMap util.MapMap
 	}
 }
 
-func (form *FormulaStatWeightProcess) computeFinalWeights(detailWeightMap util.MapMap[stats.StatType, stats.SimType, float64]) weight_types.WeightResult {
-	statWeightResult := weight_types.WeightResult_Make()
+func (form *FormulaStatWeightProcess) computeFinalWeights(detailWeightMap util.MapMap[stats.StatType, stats.SimType, float64]) weight_types.WeightBasic {
+	statWeightResult := weight_types.WeightBasic_Make()
 	for statType, seqSimPairs := range detailWeightMap.SeqGroupsKey1NestedKeyValue() {
 		sumIndividual := 0.0
 

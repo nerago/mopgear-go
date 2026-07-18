@@ -198,7 +198,7 @@ func (job *MultiSetJob) applyPermuteFixed(fixed *permuteEntryFixedForce, itemOpt
 	if !fixed.isSingle {
 		paramLabel := job.params[fixed.paramIndex].Label
 		strBuild.WriteString(paramLabel)
-		strBuild.WriteString("(Forced) :")
+		strBuild.WriteString("(Forced) : ")
 
 		itemName := db.LookupItemNameByItemId(fixed.itemId)
 		strBuild.WriteString(itemName)

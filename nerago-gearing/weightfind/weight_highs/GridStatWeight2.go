@@ -76,13 +76,13 @@ func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios stats.SimData)
 	grid2.targetRatios = targetRatios
 }
 
-func (grid2 *GridStatWeightProcess2) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.WeightResult] {
+func (grid2 *GridStatWeightProcess2) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.WeightBasic] {
 	grid2.setupWeightVars()
 	grid2.chooseSimDiffScaling()
 	grid2.processInputData()
 
 	solutionFuture := grid2.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightBasic, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(grid2.printer)
 
 		grid2.printer.Println(solution.Status.String())
@@ -248,8 +248,8 @@ func (grid2 *GridStatWeightProcess2) prepareSampleThreeDifferenceStats(one *weig
 	}
 }
 
-func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Solution) weight_types.WeightResult {
-	result := weight_types.WeightResult_Make()
+func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Solution) weight_types.WeightBasic {
+	result := weight_types.WeightBasic_Make()
 	grid2.printer.Println("FINAL WEIGHTS:")
 
 	// weight * (statOne - statTwo) * statScale[type] = (simOne - simTwo) * simScale[type]

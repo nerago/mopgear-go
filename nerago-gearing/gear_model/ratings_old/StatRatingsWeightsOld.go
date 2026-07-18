@@ -1,4 +1,4 @@
-package ratings
+package ratings_old
 
 import (
 	"errors"
@@ -13,20 +13,20 @@ import (
 
 const C_weightMultiplierForRatings = 1000.0
 
-type StatRatingsWeights struct {
+type StatRatingsWeightsOld struct {
 	intWeight   StatBlock
 	floatWeight StatBlockFloat
 }
 
-func (rating *StatRatingsWeights) CreateString() string {
+func (rating *StatRatingsWeightsOld) CreateString() string {
 	return rating.intWeight.CreateString()
 }
 
-func (rating *StatRatingsWeights) CalcRating(block *StatBlock) float64 {
+func (rating *StatRatingsWeightsOld) CalcRating(block *StatBlock) float64 {
 	return StatBlock_StatBlockFloat_MultiplyForTotalSum2(&rating.floatWeight, block)
 }
 
-func (rating *StatRatingsWeights) AsFloatBlock() StatBlockFloat {
+func (rating *StatRatingsWeightsOld) AsFloatBlock() StatBlockFloat {
 	return rating.floatWeight
 }
 
@@ -40,7 +40,7 @@ func validate(block StatBlock) {
 	}
 }
 
-func StatRatingsWeights_Mix(weightA StatRatingsWeights, multiplyA float64, weightB StatRatingsWeights, multiplyB float64, rescaleAround util.Optional[StatType]) *StatRatingsWeights {
+func StatRatingsWeights_Mix(weightA StatRatingsWeightsOld, multiplyA float64, weightB StatRatingsWeightsOld, multiplyB float64, rescaleAround util.Optional[StatType]) *StatRatingsWeightsOld {
 	scaleA := StatBlockFloat{}
 	weightA.floatWeight.MultiplyScalar(multiplyA, &scaleA)
 	scaleB := StatBlockFloat{}
@@ -62,10 +62,10 @@ func StatRatingsWeights_Mix(weightA StatRatingsWeights, multiplyA float64, weigh
 	}
 
 	validate(intBlock)
-	return &StatRatingsWeights{intBlock, combined}
+	return &StatRatingsWeightsOld{intBlock, combined}
 }
 
-func StatRatingsWeights_FromPriorities(priorities []StatType) *StatRatingsWeights {
+func StatRatingsWeights_FromPriorities(priorities []StatType) *StatRatingsWeightsOld {
 	// normal range from file load is 1..2500 approx
 	// so we could use about 11 bits of multiplier
 	// normally have about 8 of them
@@ -78,10 +78,10 @@ func StatRatingsWeights_FromPriorities(priorities []StatType) *StatRatingsWeight
 		blockFloat[stat] = float64(value)
 		value >>= 1
 	}
-	return &StatRatingsWeights{block, blockFloat}
+	return &StatRatingsWeightsOld{block, blockFloat}
 }
 
-func StatRatingsWeights_ReadFile_IfExists(filename string, includeHit, includeExpertise, includeSpirit bool) (*StatRatingsWeights, string, bool) {
+func StatRatingsWeights_ReadFile_IfExists(filename string, includeHit, includeExpertise, includeSpirit bool) (*StatRatingsWeightsOld, string, bool) {
 	bytes, err := os.ReadFile(filename)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, "", false
@@ -94,7 +94,7 @@ func StatRatingsWeights_ReadFile_IfExists(filename string, includeHit, includeEx
 	return weight, fullStr, true
 }
 
-func StatRatingsWeights_ReadFile(filename string, includeHit, includeExpertise, includeSpirit bool) *StatRatingsWeights {
+func StatRatingsWeights_ReadFile(filename string, includeHit, includeExpertise, includeSpirit bool) *StatRatingsWeightsOld {
 	bytes, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
@@ -104,7 +104,7 @@ func StatRatingsWeights_ReadFile(filename string, includeHit, includeExpertise, 
 	return parseWeightFile(fullStr, includeExpertise, includeHit, includeSpirit)
 }
 
-func parseWeightFile(fullStr string, includeExpertise bool, includeHit bool, includeSpirit bool) *StatRatingsWeights {
+func parseWeightFile(fullStr string, includeExpertise bool, includeHit bool, includeSpirit bool) *StatRatingsWeightsOld {
 	block := StatBlock{}
 	blockFloat := StatBlockFloat{}
 	for part := range strings.SplitSeq(fullStr, ",") {
@@ -153,7 +153,7 @@ func parseWeightFile(fullStr string, includeExpertise bool, includeHit bool, inc
 	}
 
 	validate(block)
-	return &StatRatingsWeights{block, blockFloat}
+	return &StatRatingsWeightsOld{block, blockFloat}
 }
 
 func addNum(block *StatBlock, blockFloat *StatBlockFloat, stat StatType, value string) {
@@ -167,12 +167,12 @@ func addNum(block *StatBlock, blockFloat *StatBlockFloat, stat StatType, value s
 	}
 }
 
-func StatRatingsWeights_Testing() *StatRatingsWeights {
+func StatRatingsWeights_Testing() *StatRatingsWeightsOld {
 	block := StatBlock{}
 	blockFloat := StatBlockFloat{}
 	for i := range block {
 		block[i] = 1
 		blockFloat[i] = 1.0
 	}
-	return &StatRatingsWeights{block, blockFloat}
+	return &StatRatingsWeightsOld{block, blockFloat}
 }
