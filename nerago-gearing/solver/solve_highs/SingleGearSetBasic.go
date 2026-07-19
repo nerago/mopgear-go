@@ -1,9 +1,10 @@
 package solve_highs
 
 import (
+	"math"
 	gear_model "paladin_gearing_go/gear_model"
-	"paladin_gearing_go/gear_model/requirements"
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_highs"
@@ -53,13 +54,13 @@ func setupGearSet(build *util_highs.LinearBuilder, model *gear_model.SpecModel, 
 	setup.prepareRatingSum()
 	setup.prepareActiveSetCombos(&model.SetBonus)
 	setup.prepareUniqueEquipped(itemOptions)
+	setup.prepareRequiredStats(model.StatRequirements)
 
-	require := model.StatRequirements.(*requirements.StatRequirementsHitExpertise)
 	for slot, item := range itemOptions.AllItemSlotSeq() {
-		setup.addItem(slot, item, model, require)
+		setup.addItem(slot, item, model)
 	}
 	setup.finishItemsCommon(itemOptions)
-	setup.finishRequiredStats(require)
+	setup.finishRequiredStats(model.StatRequirements)
 	setup.finishBaseRating()
 
 	setup.addMainOutputVariable(scaleOutputRating)
@@ -72,9 +73,10 @@ func setupGearSet(build *util_highs.LinearBuilder, model *gear_model.SpecModel, 
 type singleGearSetBasic struct {
 	singleGearSetShared
 
-	hitValueRow     util_highs.ConstraintRow // constrains values for the hits of each item
-	expertValueRow  util_highs.ConstraintRow // constrains values for the expertise of each item
-	minimumValueRow util_highs.ConstraintRow // when an extra minimum is specified
+	hitValueRow      util_highs.ConstraintRow // constrains values for the hits of each item
+	expertValueRow   util_highs.ConstraintRow // constrains values for the expertise of each item
+	minimumValueType stats.StatType
+	minimumValueRow  util_highs.ConstraintRow // when an extra minimum is specified
 
 	baseRatingSumRow util_highs.ConstraintRow // values for the ratings of each item
 	baseRatingSumVar *columnInfo              // sum of values for the ratings of selected items
@@ -95,7 +97,7 @@ func (setup *singleGearSetBasic) prepareRatingSum() {
 	setup.allColumns = append(setup.allColumns, &entry)
 }
 
-func (setup *singleGearSetBasic) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, model *gear_model.SpecModel, require *requirements.StatRequirementsHitExpertise) util_highs.ColumnIndex {
+func (setup *singleGearSetBasic) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, model *gear_model.SpecModel) util_highs.ColumnIndex {
 	columnIndex := setup.addItemCommon(itemSlot, item, &model.SetBonus)
 
 	// add rating via a summation condition
@@ -108,9 +110,8 @@ func (setup *singleGearSetBasic) addItem(itemSlot items.SlotEquip, item *items.S
 	setup.expertValueRow.Add(columnIndex, float64(item.Total().Expertise()))
 
 	// additional minimum value (e.g. haste)
-	additionalMinimum := require.AdditionalMinimumRequirement
-	if additionalMinimum != nil {
-		setup.minimumValueRow.Add(columnIndex, item.Total().GetFloat(additionalMinimum.StatType))
+	if setup.minimumValueType != stats.Stat_Invalid {
+		setup.minimumValueRow.Add(columnIndex, item.Total().GetFloat(setup.minimumValueType))
 	}
 
 	return columnIndex
@@ -122,16 +123,42 @@ func (setup *singleGearSetBasic) finishBaseRating() {
 	setup.baseRatingSumRow.Build(setup.build, 0, 0)
 }
 
-func (setup *singleGearSetBasic) finishRequiredStats(require *requirements.StatRequirementsHitExpertise) {
+func (setup *singleGearSetBasic) finishRequiredStats(require gear_model.StatRequirements) {
 	// constrain: total sum of hit/exp are within requested limits
 	setup.hitValueRow.Debug = "hitValueRow"
-	setup.hitValueRow.Build(setup.build, float64(require.HitMin()), float64(require.HitMax()))
+	setup.hitValueRow.Build(setup.build,
+		float64(require.GetLow(stats.Stat_Hit)),
+		convertHigh(require.GetHigh(stats.Stat_Hit)))
 	setup.expertValueRow.Debug = "expertValueRow"
-	setup.expertValueRow.Build(setup.build, float64(require.ExpertMin()), float64(require.ExpertMax()))
+	setup.expertValueRow.Build(setup.build,
+		float64(require.GetLow(stats.Stat_Expertise)),
+		convertHigh(require.GetHigh(stats.Stat_Expertise)))
 
 	// constrain: additional minimum value if specified has required minimum
-	additionalMinimum := require.AdditionalMinimumRequirement
-	if additionalMinimum != nil {
-		setup.minimumValueRow.Build(setup.build, float64(additionalMinimum.Value), util_highs.C_PlusInf)
+	if setup.minimumValueType != stats.Stat_Invalid {
+		setup.minimumValueRow.Build(setup.build,
+			float64(require.GetLow(setup.minimumValueType)),
+			convertHigh(require.GetHigh(setup.minimumValueType)))
+	}
+}
+
+func convertHigh(high uint32) float64 {
+	if high == math.MaxUint32 {
+		return util_highs.C_PlusInf
+	} else {
+		return float64(high)
+	}
+}
+
+func (setup *singleGearSetBasic) prepareRequiredStats(statRequirements gear_model.StatRequirements) {
+	setup.minimumValueType = stats.Stat_Invalid
+	for statType := range statRequirements.AsMap() {
+		if statType != stats.Stat_Hit && statType != stats.Stat_Expertise {
+			if setup.minimumValueType == stats.Stat_Invalid {
+				setup.minimumValueType = statType
+			} else {
+				panic("multiple additional required stats not supported in basic weights mode")
+			}
+		}
 	}
 }

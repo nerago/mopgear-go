@@ -369,17 +369,46 @@ func CalculateRanking[T any](highGood bool, inputData []T, toScore func(*T) floa
 	}
 }
 
+type HiLoUInt32 struct {
+	Lo uint32
+	Hi uint32
+}
+
+func (hilo HiLoUInt32) Mid() uint32 {
+	return hilo.Lo + (hilo.Hi-hilo.Lo)/2
+}
+
+func (hilo HiLoUInt32) Overlap(other HiLoUInt32) bool {
+	if hilo.Lo > other.Hi {
+		return false
+	} else if other.Lo > hilo.Hi {
+		return false
+	} else {
+		return true
+	}
+}
+
+func (hilo HiLoUInt32) Between(check uint32) bool {
+	return hilo.Lo <= check && check <= hilo.Hi
+}
+
 type HiLoInt struct {
 	Lo int
 	Hi int
 }
 
 func (hilo HiLoInt) Mid() int {
-	return (hilo.Hi + hilo.Lo) / 2
+	return hilo.Lo + (hilo.Hi-hilo.Lo)/2
 }
 
 func (hilo HiLoInt) Overlap(other HiLoInt) bool {
-	return hilo.Between(other.Lo) || hilo.Between(other.Hi) || other.Between(hilo.Lo) || other.Between(hilo.Hi)
+	if hilo.Lo > other.Hi {
+		return false
+	} else if other.Lo > hilo.Hi {
+		return false
+	} else {
+		return true
+	}
 }
 
 func (hilo HiLoInt) Between(check int) bool {

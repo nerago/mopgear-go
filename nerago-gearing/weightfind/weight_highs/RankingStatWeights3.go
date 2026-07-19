@@ -109,7 +109,7 @@ func (ranker *RankingStatWeightProcess3) makeBuilder() {
 	}
 }
 
-func (ranker *RankingStatWeightProcess3) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.WeightBasic] {
+func (ranker *RankingStatWeightProcess3) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.Weight1Basic] {
 	// FIRST ROUND: minimal data, no initial values
 	ranker.dataSample = takeDataSample_Start(ranker.dataAllOriginal, c_rank3_initial_data_sample)
 	ranker.prepare()
@@ -130,18 +130,18 @@ func (ranker *RankingStatWeightProcess3) Run(stopwatch *util.Stopwatch) *util_as
 		return ranker.build.RunHighsFuture(stopwatch)
 	})
 
-	return util_async.FutureCancellable_MapValue(solution2Future, func(linearResult2 util_highs.LinearResult) (weight_types.WeightBasic, bool) {
+	return util_async.FutureCancellable_MapValue(solution2Future, func(linearResult2 util_highs.LinearResult) (weight_types.Weight1Basic, bool) {
 		solution2 := linearResult2.GetSolutionAndSaveLog(ranker.printer)
 		return ranker.extractAndReportSolution(solution2), true
 	})
 }
 
-func (ranker *RankingStatWeightProcess3) RunUsingExternalStart(initialWeight weight_types.WeightBasic, stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.WeightBasic] {
+func (ranker *RankingStatWeightProcess3) RunUsingExternalStart(initialWeight weight_types.Weight1Basic, stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.Weight1Basic] {
 	ranker.dataSample = ranker.dataAllOriginal
 	ranker.prepare()
 	ranker.setupInitialSolutionFromExternal2(initialWeight)
 	solutionFuture := ranker.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightBasic, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.Weight1Basic, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(ranker.printer)
 		return ranker.extractAndReportSolution(solution), true
 	})
@@ -305,7 +305,7 @@ func (ranker *RankingStatWeightProcess3) makeEntryPairSequenceConstraintsRequire
 }
 
 func (ranker *RankingStatWeightProcess3) setupDumbInitialSolution() {
-	internalWeights := weight_types.WeightBasic_Make()
+	internalWeights := weight_types.Weight1Basic_Make()
 	for statType := range ranker.weightColumns {
 		internalWeights.Put(statType, 1)
 	}
@@ -315,7 +315,7 @@ func (ranker *RankingStatWeightProcess3) setupDumbInitialSolution() {
 }
 
 func (ranker *RankingStatWeightProcess3) setupInitialSolutionFromPreviousWeightOnly(solution *highs.Solution) {
-	internalWeights := weight_types.WeightBasic_Make()
+	internalWeights := weight_types.Weight1Basic_Make()
 	for statType, colWeight := range ranker.weightColumns {
 		weight := solution.ColValues[colWeight]
 		internalWeights.Put(statType, weight)
@@ -324,12 +324,12 @@ func (ranker *RankingStatWeightProcess3) setupInitialSolutionFromPreviousWeightO
 	ranker.setupFromInternalWeights(internalWeights)
 }
 
-func (ranker *RankingStatWeightProcess3) setupInitialSolutionFromExternal2(weights weight_types.WeightBasic) {
+func (ranker *RankingStatWeightProcess3) setupInitialSolutionFromExternal2(weights weight_types.Weight1Basic) {
 	internalWeights := weights.ScaleForTotalSum(c_rank3_target_total_weight)
 	ranker.setupFromInternalWeights(internalWeights)
 }
 
-func (ranker *RankingStatWeightProcess3) setupFromInternalWeights(internalWeights weight_types.WeightBasic) {
+func (ranker *RankingStatWeightProcess3) setupFromInternalWeights(internalWeights weight_types.Weight1Basic) {
 	if !internalWeights.IsEmpty() {
 		for statType, colWeight := range ranker.weightColumns {
 			weight := internalWeights.Get(statType)
@@ -342,7 +342,7 @@ func (ranker *RankingStatWeightProcess3) setupFromInternalWeights(internalWeight
 	ranker.build.ValidateInitialSolutionState()
 }
 
-func (ranker *RankingStatWeightProcess3) setupInitialRemainingVariables(internalWeights weight_types.WeightBasic) {
+func (ranker *RankingStatWeightProcess3) setupInitialRemainingVariables(internalWeights weight_types.Weight1Basic) {
 	for entry := range util.ForPointer(ranker.dataSample) {
 		entry.initialStatScore = internalWeights.CalcStatScoreScaled(entry.data, ranker.scaleStats)
 	}
@@ -386,12 +386,12 @@ func (ranker *RankingStatWeightProcess3) setupInitialRemainingVariables(internal
 //	}
 //}
 
-func (ranker *RankingStatWeightProcess3) extractAndReportSolution(solution *highs.Solution) weight_types.WeightBasic {
+func (ranker *RankingStatWeightProcess3) extractAndReportSolution(solution *highs.Solution) weight_types.Weight1Basic {
 	ranker.build.DebugPrintColumns(solution, ranker.printer)
 
 	ranker.printer.Println("WEIGHTS")
 
-	statWeightResult := weight_types.WeightBasic_Make()
+	statWeightResult := weight_types.Weight1Basic_Make()
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statScale := ranker.scaleStats[statType]
@@ -403,7 +403,7 @@ func (ranker *RankingStatWeightProcess3) extractAndReportSolution(solution *high
 
 	}
 
-	divideBy := statWeightResult.Get(stats.Stat_Strength)
+	divideBy := statWeightResult.Get(ranker.requiredStats[0])
 	for _, statType := range ranker.requiredStats {
 		value := statWeightResult.Get(statType) / divideBy
 		statWeightResult.Put(statType, value)
@@ -415,7 +415,7 @@ func (ranker *RankingStatWeightProcess3) extractAndReportSolution(solution *high
 	return statWeightResult
 }
 
-func (ranker *RankingStatWeightProcess3) reportRankingOfInputs(statWeightResult weight_types.WeightBasic, solution *highs.Solution) {
+func (ranker *RankingStatWeightProcess3) reportRankingOfInputs(statWeightResult weight_types.Weight1Basic, solution *highs.Solution) {
 	if ranker.ALGO != 0 {
 		return
 	}

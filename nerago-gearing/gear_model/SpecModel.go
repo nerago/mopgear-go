@@ -9,14 +9,8 @@ import (
 )
 
 type SpecModel struct {
-	// interface
-	StatRequirements StatRequirements
-	StatRatings      StatRatings
-
-	// hardcode implementation
-	//StatRequirements StatRequirementsHitExpertise
-	//StatRatings      StatRatingsWeights
-
+	StatRequirements     StatRequirements
+	StatRatings          StatRatings
 	Spec                 SpecType
 	Goal                 OptimiseGoal
 	SimulateAs           WowSim_Fight

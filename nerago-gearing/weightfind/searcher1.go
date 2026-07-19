@@ -38,10 +38,10 @@ func (ws *WeightSearcher1) SupplyData(inputData []weight_types.WeightInput) {
 	ws.evaluateAccuracy.Init(inputData, ws.targetRatio, ws.AccuracyMode)
 }
 
-func (ws *WeightSearcher1) Run(cancel util_async.CancelSignal) weight_types.WeightBasic {
+func (ws *WeightSearcher1) Run(cancel util_async.CancelSignal) weight_types.Weight1Basic {
 	progress := 0
 
-	bestCandidates := util_rank.HighestCollector_ForN[weight_types.WeightBasic](128, (*weight_types.WeightBasic).Equals)
+	bestCandidates := util_rank.HighestCollector_ForN[weight_types.Weight1Basic](128, (*weight_types.Weight1Basic).Equals)
 	for possibleWeight := range ws.makeSpacedWeights() {
 		accuracy := ws.evaluateAccuracy.EvaluateWeight(possibleWeight)
 		bestCandidates.Offer(&possibleWeight, accuracy)
@@ -57,7 +57,7 @@ func (ws *WeightSearcher1) Run(cancel util_async.CancelSignal) weight_types.Weig
 	}
 
 	progress = 0
-	bestResult := util_rank.BestCollector1[weight_types.WeightBasic]{}
+	bestResult := util_rank.BestCollector1[weight_types.Weight1Basic]{}
 	for checkWeight := range bestCandidates.ResultsSeq() {
 		updatedWeight, updatedAccuracy := weightTweaker_internal_FastCached(*checkWeight, c_search1_tweak_start, ws.weightStats, &ws.evaluateAccuracy)
 		bestResult.Offer(&updatedWeight, updatedAccuracy)
@@ -73,13 +73,13 @@ func (ws *WeightSearcher1) Run(cancel util_async.CancelSignal) weight_types.Weig
 	return bestWeight.ScaleForBaseStat(ws.weightStats[0])
 }
 
-func (ws *WeightSearcher1) makeSpacedWeights() iter.Seq[weight_types.WeightBasic] {
-	return func(yield func(weight_types.WeightBasic) bool) {
-		ws.buildSpacedWeightsRecur(ws.weightStats, weight_types.WeightBasic_Make(), yield)
+func (ws *WeightSearcher1) makeSpacedWeights() iter.Seq[weight_types.Weight1Basic] {
+	return func(yield func(weight_types.Weight1Basic) bool) {
+		ws.buildSpacedWeightsRecur(ws.weightStats, weight_types.Weight1Basic_Make(), yield)
 	}
 }
 
-func (ws *WeightSearcher1) buildSpacedWeightsRecur(weightStats []stats.StatType, current weight_types.WeightBasic, yield func(weight_types.WeightBasic) bool) bool {
+func (ws *WeightSearcher1) buildSpacedWeightsRecur(weightStats []stats.StatType, current weight_types.Weight1Basic, yield func(weight_types.Weight1Basic) bool) bool {
 	if len(weightStats) == 0 {
 		return yield(current)
 	}

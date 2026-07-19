@@ -314,3 +314,21 @@ func (sim *SimData) EqualsIncludingDetail(other *SimData) bool {
 		util.NilSafeEqualComparable(sim.Detail, other.Detail) &&
 		sim.SimIterations == other.SimIterations
 }
+
+func (sim *SimData) ScaleForTotalSum(targetTotal float64) *SimData {
+	if sim.Detail != nil {
+		panic("don't know how to scale details")
+	}
+
+	currentTotal := 0.0
+	for i := range sim.Values {
+		currentTotal += sim.Values[i]
+	}
+	scale := targetTotal / currentTotal
+
+	result := new(SimData)
+	for i := range sim.Values {
+		result.Values[i] = sim.Values[i] * scale
+	}
+	return result
+}

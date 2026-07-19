@@ -15,6 +15,8 @@ const (
 	Stat_Dodge     StatType = 9
 	Stat_Parry     StatType = 10
 	Stat_Mastery   StatType = 11
+
+	Stat_Invalid StatType = 255
 )
 
 var StatType_List = []StatType{

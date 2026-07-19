@@ -34,8 +34,8 @@ func (ws *WeightSearcher0) SupplyData(inputData []weight_types.WeightInput) {
 	ws.evaluateAccuracy.Init(inputData, ws.targetRatio, ws.AccuracyMode)
 }
 
-func (ws *WeightSearcher0) Run(cancel util_async.CancelSignal) weight_types.WeightBasic {
-	best := util_rank.BestCollector1[weight_types.WeightBasic]{}
+func (ws *WeightSearcher0) Run(cancel util_async.CancelSignal) weight_types.Weight1Basic {
+	best := util_rank.BestCollector1[weight_types.Weight1Basic]{}
 	progress := 0
 	for initialWeight := range ws.makeRandomWeights(20000) {
 		updatedWeight, updatedAccuracy := weightTweaker_internal_FastCached(initialWeight, c_search0_tweak_start, ws.weightStats, &ws.evaluateAccuracy)
@@ -53,8 +53,8 @@ func (ws *WeightSearcher0) Run(cancel util_async.CancelSignal) weight_types.Weig
 	return bestWeight.ScaleForBaseStat(ws.weightStats[0])
 }
 
-func (ws *WeightSearcher0) makeRandomWeights(count int) iter.Seq[weight_types.WeightBasic] {
-	return func(yield func(weight_types.WeightBasic) bool) {
+func (ws *WeightSearcher0) makeRandomWeights(count int) iter.Seq[weight_types.Weight1Basic] {
+	return func(yield func(weight_types.Weight1Basic) bool) {
 		rng := rand.New(rand.NewSource(rand.Int63()))
 		for range count {
 			weight := ws.buildWeightsRandom(rng)
@@ -65,8 +65,8 @@ func (ws *WeightSearcher0) makeRandomWeights(count int) iter.Seq[weight_types.We
 	}
 }
 
-func (ws *WeightSearcher0) buildWeightsRandom(rng *rand.Rand) weight_types.WeightBasic {
-	weight := weight_types.WeightBasic_Make()
+func (ws *WeightSearcher0) buildWeightsRandom(rng *rand.Rand) weight_types.Weight1Basic {
+	weight := weight_types.Weight1Basic_Make()
 	for _, statType := range ws.weightStats {
 		value := c_search0_min + rng.Float64()*(c_search0_max-c_search0_min)
 		weight.Put(statType, value)

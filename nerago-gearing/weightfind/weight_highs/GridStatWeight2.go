@@ -76,13 +76,13 @@ func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios stats.SimData)
 	grid2.targetRatios = targetRatios
 }
 
-func (grid2 *GridStatWeightProcess2) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.WeightBasic] {
+func (grid2 *GridStatWeightProcess2) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.Weight2Extended] {
 	grid2.setupWeightVars()
 	grid2.chooseSimDiffScaling()
 	grid2.processInputData()
 
 	solutionFuture := grid2.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightBasic, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.Weight2Extended, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(grid2.printer)
 
 		grid2.printer.Println(solution.Status.String())
@@ -248,8 +248,8 @@ func (grid2 *GridStatWeightProcess2) prepareSampleThreeDifferenceStats(one *weig
 	}
 }
 
-func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Solution) weight_types.WeightBasic {
-	result := weight_types.WeightBasic_Make()
+func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Solution) weight_types.Weight2Extended {
+	result := weight_types.Weight2Extended_Make(grid2.targetRatios)
 	grid2.printer.Println("FINAL WEIGHTS:")
 
 	// weight * (statOne - statTwo) * statScale[type] = (simOne - simTwo) * simScale[type]
@@ -261,29 +261,14 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 	for _, statType := range grid2.statTypes {
 		grid2.printer.Printf("%10s >>>>>\n", statType.Name())
 
-		sumIndividual := 0.0
-
 		for simType, detailWeightCol := range grid2.detailedWeights.SeqInnerWithKey1Value(statType) {
 			weight := solution.ColValues[detailWeightCol]
 			usableWeight := weight / grid2.scaleSims[simType]
 
-			if !simType.IsHighGood() {
-				usableWeight *= -1
-			}
+			result.Put(statType, simType, usableWeight)
 
 			grid2.printer.Printf("         %5s > %f %f\n", simType.Name(), weight, usableWeight)
-
-			sumIndividual += usableWeight * grid2.targetRatios.Get(simType)
 		}
-
-		grid2.printer.Printf("             === %f\n", sumIndividual)
-		result.Put(statType, sumIndividual)
-	}
-
-	baseStat := grid2.statTypes[0]
-	divideBy := result.Get(baseStat)
-	for _, statType := range grid2.statTypes {
-		result.Put(statType, result.Get(statType)/divideBy)
 	}
 
 	return result

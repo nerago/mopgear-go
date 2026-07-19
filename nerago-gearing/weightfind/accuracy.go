@@ -9,7 +9,7 @@ import (
 	"slices"
 )
 
-func EvaluateAccuracyRanged(statWeights weight_types.WeightBasic, requiredSims []stats.SimType, simRatios stats.SimData, inputData []weight_types.WeightInput) float64 {
+func EvaluateAccuracyRanged(statWeights weight_types.Weight1Basic, requiredSims []stats.SimType, simRatios stats.SimData, inputData []weight_types.WeightInput) float64 {
 	if statWeights.IsEmpty() {
 		return 0
 	}
@@ -59,7 +59,7 @@ func checkValue(value float64) float64 {
 	return value
 }
 
-func EvaluateAccuracyStatisticalDeviations(statWeights weight_types.WeightBasic, requiredSims []stats.SimType, simRatios stats.SimData, inputData []weight_types.WeightInput) float64 {
+func EvaluateAccuracyStatisticalDeviations(statWeights weight_types.Weight1Basic, requiredSims []stats.SimType, simRatios stats.SimData, inputData []weight_types.WeightInput) float64 {
 	if statWeights.IsEmpty() {
 		return 0
 	}

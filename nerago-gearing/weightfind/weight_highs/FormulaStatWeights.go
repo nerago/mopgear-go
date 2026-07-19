@@ -60,7 +60,7 @@ func (form *FormulaStatWeightProcess) SetMinimumIncludeRate(percent float64) {
 	form.minimumIncludeRate = percent
 }
 
-func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int) *util_async.FutureCancellable[weight_types.WeightBasic] {
+func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int) *util_async.FutureCancellable[weight_types.Weight2Extended] {
 	form.build = new(util_highs.LinearBuilder)
 	form.build.Minimise = true
 	form.build.Solver = util_highs.Solver_MIP_Interior
@@ -102,7 +102,7 @@ func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int
 	form.includeCountRow.Build(form.build, float64(len(form.inputData))*form.minimumIncludeRate, util_highs.C_PlusInf)
 
 	solutionFuture := form.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightBasic, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.Weight2Extended, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(form.printer)
 		return form.extractAndReportSolution(solution), true
 	})
@@ -220,22 +220,21 @@ func (form *FormulaStatWeightProcess) buildDataEquationForSim(stats *stats.StatB
 	matchSimValue.Build(form.build, scaledSimValue, scaledSimValue)
 }
 
-func (form *FormulaStatWeightProcess) extractAndReportSolution(solution *highs.Solution) weight_types.WeightBasic {
+func (form *FormulaStatWeightProcess) extractAndReportSolution(solution *highs.Solution) weight_types.Weight2Extended {
 	form.build.DebugPrintColumns(solution, form.printer)
 
 	form.printer.Println("WEIGHTS")
-	detailWeightMap := form.extractDetailWeights(solution)
-	statWeightResult := form.computeFinalWeights(detailWeightMap)
+	weightExtended := form.extractDetailWeights(solution)
 
-	form.reportExamples(detailWeightMap)
+	form.reportExamples(&weightExtended)
 	form.reportInclude(solution)
 
-	return statWeightResult
+	return weightExtended
 }
 
-func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solution) util.MapMap[stats.StatType, stats.SimType, float64] {
+func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solution) weight_types.Weight2Extended {
 	// extract and report on detail weights
-	detailWeightMap := util.MapMap[stats.StatType, stats.SimType, float64]{}
+	weightExtended := weight_types.Weight2Extended_Make(form.targetRatios)
 	for entry := range form.detailedWeightColumns.SeqWithKeys() {
 		statType := entry.Key1
 		simType := entry.Key2
@@ -261,25 +260,21 @@ func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solut
 		scaleFix := form.scaleSims[simType] / form.scaleStats[statType]
 		usableWeight := modelWeight / scaleFix
 
-		if !simType.IsHighGood() {
-			usableWeight *= -1
-		}
-
-		detailWeightMap.Put(statType, simType, usableWeight)
+		weightExtended.Put(statType, simType, usableWeight)
 
 		form.printer.Printf("%10s %10s %11.8f (%5.2e) %11.8f (%5.2e)\n", statType.Name(), simType.Name(), modelWeight, modelWeight, usableWeight, usableWeight)
 	}
 	form.printer.Println0()
 
-	for entry := range detailWeightMap.SeqWithKeysOtherOrder() {
+	for entry := range weightExtended.SeqBySimThenStat() {
 		usableWeight := entry.Value
 		form.printer.Printf("%10s %10s %11.8f (%5.2e)\n", entry.Key1.Name(), entry.Key2.Name(), usableWeight, usableWeight)
 	}
 	form.printer.Println0()
-	return detailWeightMap
+	return weightExtended
 }
 
-func (form *FormulaStatWeightProcess) reportExamples(detailWeightMap util.MapMap[stats.StatType, stats.SimType, float64]) {
+func (form *FormulaStatWeightProcess) reportExamples(weightExtended *weight_types.Weight2Extended) {
 	for i := range min(20, len(form.inputData)) {
 		data := form.inputData[i]
 		form.printer.Println("EXAMPLE")
@@ -289,10 +284,7 @@ func (form *FormulaStatWeightProcess) reportExamples(detailWeightMap util.MapMap
 			form.printer.Printf(" %10s", simType.Name())
 			for _, statType := range form.requiredStats {
 				statValue := data.TotalStat.GetFloat(statType)
-				weight := detailWeightMap.GetOrPanic(statType, simType)
-				if !simType.IsHighGood() {
-					weight *= -1 // unflip so equation appears matches what the model saw
-				}
+				weight := weightExtended.GetOrPanic(statType, simType)
 				form.printer.Printf(" {%s %.2f * %.4e = %.4f}", statType.Name(), statValue, weight, statValue*weight)
 				statSum += statValue * weight
 			}
@@ -301,26 +293,6 @@ func (form *FormulaStatWeightProcess) reportExamples(detailWeightMap util.MapMap
 
 		form.printer.Println0()
 	}
-}
-
-func (form *FormulaStatWeightProcess) computeFinalWeights(detailWeightMap util.MapMap[stats.StatType, stats.SimType, float64]) weight_types.WeightBasic {
-	statWeightResult := weight_types.WeightBasic_Make()
-	for statType, seqSimPairs := range detailWeightMap.SeqGroupsKey1NestedKeyValue() {
-		sumIndividual := 0.0
-
-		for simType, thisDetailWeight := range seqSimPairs {
-			strengthDetailWeight := detailWeightMap.GetOrPanic(stats.Stat_Strength, simType)
-			targetRatio := form.targetRatios.Get(simType)
-
-			componentValue := targetRatio * thisDetailWeight / strengthDetailWeight
-
-			sumIndividual += componentValue
-		}
-
-		statWeightResult.Put(statType, sumIndividual)
-	}
-
-	return statWeightResult
 }
 
 func (form *FormulaStatWeightProcess) reportInclude(solution *highs.Solution) {

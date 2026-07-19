@@ -7,14 +7,15 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_highs"
+	"paladin_gearing_go/weightfind/weight_types"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
-type StatRequiredExtended map[stats.StatType]util.HiLoInt
+type StatRequiredExtended map[stats.StatType]util.HiLoUInt32
 
 type ExtendedModel struct {
-	weight    WeightExtended
+	weight    weight_types.Weight2Extended
 	require   StatRequiredExtended
 	gearModel *gear_model.SpecModel
 }
@@ -57,7 +58,7 @@ func setupGearSetExtended(build *util_highs.LinearBuilder, model *ExtendedModel,
 	setup.finishItemsCommon(itemOptions)
 	setup.finishStats(&model.require)
 
-	var weight *WeightExtended = &model.weight
+	weight := &model.weight
 	setup.calcSimValues(weight)
 	setup.calcCombinedSimRating(weight)
 	setup.addMainOutputVariable(scaleOutputRating)
@@ -128,7 +129,7 @@ func (setup *singleGearSetExtended) finishStats(require *StatRequiredExtended) {
 	// constrain: total sum of hit/exp/etc are within requested limits
 	for statType, hilo := range *require {
 		row := setup.requireRows[statType]
-		row.Build(setup.build, float64(hilo.Lo), float64(hilo.Hi))
+		row.Build(setup.build, float64(hilo.Lo), convertHigh(hilo.Hi))
 	}
 
 	// constrain: total sum of each stat for input to weights
@@ -140,7 +141,7 @@ func (setup *singleGearSetExtended) finishStats(require *StatRequiredExtended) {
 	}
 }
 
-func (setup *singleGearSetExtended) calcSimValues(weight *WeightExtended) {
+func (setup *singleGearSetExtended) calcSimValues(weight *weight_types.Weight2Extended) {
 	// calculate each sim value from stats
 	setup.simValueTotalColumns = make(map[stats.SimType]*columnInfo)
 	for simType, nestedWeights := range weight.DetailedWeights.SeqGroupsKey2NestedKeyValue() {
@@ -159,7 +160,7 @@ func (setup *singleGearSetExtended) calcSimValues(weight *WeightExtended) {
 	}
 }
 
-func (setup *singleGearSetExtended) calcCombinedSimRating(weight *WeightExtended) {
+func (setup *singleGearSetExtended) calcCombinedSimRating(weight *weight_types.Weight2Extended) {
 	// weighted sum of each sim value
 	combinedRatingColumn := columnInfo{entryType: entry_sum_rating}
 	combinedRatingColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.C_PlusInf, &combinedRatingColumn)

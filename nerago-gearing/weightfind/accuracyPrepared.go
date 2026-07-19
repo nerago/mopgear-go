@@ -60,7 +60,7 @@ func (ea *EvaluateAccuracyPrepared) Clone() *EvaluateAccuracyPrepared {
 }
 
 // fundamentally not thread safe
-func (ea *EvaluateAccuracyPrepared) EvaluateWeight(statWeights weight_types.WeightBasic) float64 {
+func (ea *EvaluateAccuracyPrepared) EvaluateWeight(statWeights weight_types.Weight1Basic) float64 {
 	if statWeights.IsEmpty() {
 		return 0
 	}

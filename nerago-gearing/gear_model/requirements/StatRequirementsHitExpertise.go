@@ -3,6 +3,7 @@ package requirements
 import (
 	"math"
 	"paladin_gearing_go/stats"
+	"paladin_gearing_go/util"
 )
 
 type StatRequirementsHitExpertise struct {
@@ -10,43 +11,68 @@ type StatRequirementsHitExpertise struct {
 	expMin, expMax uint32
 
 	AdditionalMinimumRequirement *stats.StatAndValue
+
+	asMap map[stats.StatType]util.HiLoUInt32
 }
 
 const (
 	// RATING_PER_PERCENT    float64 = 339.9534
 	// TARGET_PERCENT_MELEE  float64 = 7.5
-	TARGET_RATING_MELEE      uint32 = 2550
-	TARGET_RATING_TANK       uint32 = 5100
-	TARGET_RATING_CAST       uint32 = 5100
-	DEFAULT_CAP_ALLOW_EXCEED uint32 = 400
+	TARGET_RATING_MELEE uint32 = 2550
+	TARGET_RATING_TANK  uint32 = 5100
+	TARGET_RATING_CAST  uint32 = 5100
+	DEFAULT_CAP_EXCEED  uint32 = 600
+	EXTREME_CAP_EXCEED  uint32 = 2000
 )
 
 func StatRequirementsHitExpertise_RetWideCap() *StatRequirementsHitExpertise {
-	return &StatRequirementsHitExpertise{
-		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED*5,
-		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED*5, nil}
+	inst := &StatRequirementsHitExpertise{
+		TARGET_RATING_MELEE, TARGET_RATING_MELEE + EXTREME_CAP_EXCEED,
+		TARGET_RATING_MELEE, TARGET_RATING_MELEE + EXTREME_CAP_EXCEED,
+		nil, nil}
+	inst.asMap = mapOf(inst)
+	return inst
 }
 
 func StatRequirementsHitExpertise_ProtFullExpertise() *StatRequirementsHitExpertise {
-	return &StatRequirementsHitExpertise{
-		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED,
-		TARGET_RATING_TANK, TARGET_RATING_TANK + DEFAULT_CAP_ALLOW_EXCEED, nil}
+	inst := &StatRequirementsHitExpertise{
+		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_EXCEED,
+		TARGET_RATING_TANK, TARGET_RATING_TANK + DEFAULT_CAP_EXCEED,
+		nil, nil}
+	inst.asMap = mapOf(inst)
+	return inst
 }
 
 func StatRequirementsHitExpertise_ProtFlexibleParry() *StatRequirementsHitExpertise {
-	return &StatRequirementsHitExpertise{
-		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED*4,
-		TARGET_RATING_MELEE, TARGET_RATING_TANK, nil}
+	inst := &StatRequirementsHitExpertise{
+		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_EXCEED,
+		TARGET_RATING_MELEE, TARGET_RATING_TANK, // TODO review this when we get falloff of value
+		nil, nil}
+	inst.asMap = mapOf(inst)
+	return inst
 }
 
 func StatRequirementsHitExpertise_ProtFlexibleParry_PlusAdditional(additional *stats.StatAndValue) *StatRequirementsHitExpertise {
-	return &StatRequirementsHitExpertise{
-		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_ALLOW_EXCEED*4,
-		TARGET_RATING_MELEE, TARGET_RATING_TANK, additional}
+	inst := &StatRequirementsHitExpertise{
+		TARGET_RATING_MELEE, TARGET_RATING_MELEE + DEFAULT_CAP_EXCEED,
+		TARGET_RATING_MELEE, TARGET_RATING_TANK,
+		additional, nil}
+	inst.asMap = mapOf(inst)
+	return inst
 }
 
 func StatRequirementsHitExpertise_None() *StatRequirementsHitExpertise {
-	return &StatRequirementsHitExpertise{0, math.MaxUint32, 0, math.MaxUint32, nil}
+	return &StatRequirementsHitExpertise{0, math.MaxUint32, 0, math.MaxUint32, nil, nil}
+}
+
+func mapOf(inst *StatRequirementsHitExpertise) map[stats.StatType]util.HiLoUInt32 {
+	asMap := make(map[stats.StatType]util.HiLoUInt32, 3)
+	asMap[stats.Stat_Hit] = util.HiLoUInt32{Lo: inst.hitMin, Hi: inst.hitMax}
+	asMap[stats.Stat_Expertise] = util.HiLoUInt32{Lo: inst.expMin, Hi: inst.expMax}
+	if inst.AdditionalMinimumRequirement != nil {
+		asMap[inst.AdditionalMinimumRequirement.StatType] = util.HiLoUInt32{Lo: inst.AdditionalMinimumRequirement.Value, Hi: math.MaxUint32}
+	}
+	return asMap
 }
 
 func (inst *StatRequirementsHitExpertise) CheckSet(block *stats.StatBlock) bool {
@@ -82,26 +108,54 @@ func (inst *StatRequirementsHitExpertise) Equals(other any) bool {
 	}
 }
 
-func (inst *StatRequirementsHitExpertise) IsLow(stat stats.StatType, value uint32) bool {
-	switch stat {
+func (inst *StatRequirementsHitExpertise) IsLow(statType stats.StatType, value uint32) bool {
+	switch statType {
 	case stats.Stat_Hit:
 		return value < inst.hitMin
 	case stats.Stat_Expertise:
 		return value < inst.expMin
-	default:
-		return false
 	}
+
+	if inst.AdditionalMinimumRequirement != nil && inst.AdditionalMinimumRequirement.StatType == statType {
+		return value < inst.AdditionalMinimumRequirement.Value
+	}
+
+	return false
 }
 
-func (inst *StatRequirementsHitExpertise) IsHigh(stat stats.StatType, value uint32) bool {
-	switch stat {
+func (inst *StatRequirementsHitExpertise) IsHigh(statType stats.StatType, value uint32) bool {
+	switch statType {
 	case stats.Stat_Hit:
 		return value > inst.hitMax
 	case stats.Stat_Expertise:
 		return value > inst.expMax
-	default:
-		return false
 	}
+	return false
+}
+
+func (inst *StatRequirementsHitExpertise) GetLow(statType stats.StatType) uint32 {
+	switch statType {
+	case stats.Stat_Hit:
+		return inst.hitMin
+	case stats.Stat_Expertise:
+		return inst.expMin
+	}
+
+	if inst.AdditionalMinimumRequirement != nil && inst.AdditionalMinimumRequirement.StatType == statType {
+		return inst.AdditionalMinimumRequirement.Value
+	}
+
+	return 0
+}
+
+func (inst *StatRequirementsHitExpertise) GetHigh(statType stats.StatType) uint32 {
+	switch statType {
+	case stats.Stat_Hit:
+		return inst.hitMax
+	case stats.Stat_Expertise:
+		return inst.expMax
+	}
+	return math.MaxUint32
 }
 
 func (inst *StatRequirementsHitExpertise) HitMin() uint32 {
@@ -118,4 +172,8 @@ func (inst *StatRequirementsHitExpertise) ExpertMin() uint32 {
 
 func (inst *StatRequirementsHitExpertise) ExpertMax() uint32 {
 	return inst.expMax
+}
+
+func (inst *StatRequirementsHitExpertise) AsMap() map[stats.StatType]util.HiLoUInt32 {
+	return inst.asMap
 }

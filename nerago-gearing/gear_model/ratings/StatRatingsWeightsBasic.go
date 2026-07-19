@@ -5,5 +5,5 @@ import (
 )
 
 type StatRatingsWeightsBasic struct {
-	weight weight_types.WeightBasic
+	weight weight_types.Weight1Basic
 }

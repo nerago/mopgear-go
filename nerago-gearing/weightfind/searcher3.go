@@ -39,7 +39,7 @@ type WeightSearcher3 struct {
 	initialBound     *weightSearch2FastBound
 	AccuracyMode     int
 
-	bestResult util_rank.BestCollector1Concurrent[weight_types.WeightBasic]
+	bestResult util_rank.BestCollector1Concurrent[weight_types.Weight1Basic]
 
 	poolQueue typedPool[weightSearch2FastBound]
 }
@@ -102,7 +102,7 @@ func (ws *WeightSearcher3) SetRanges(weightMin, weightMax float64) {
 	ws.initialBound = bound
 }
 
-func (ws *WeightSearcher3) Run(cancel util_async.CancelSignal) weight_types.WeightBasic {
+func (ws *WeightSearcher3) Run(cancel util_async.CancelSignal) weight_types.Weight1Basic {
 	threadCount := 4
 	queue := util.QueueStackFiloPoolParent[*weightSearch2FastBound]{}
 
@@ -167,7 +167,7 @@ func (ws *WeightSearcher3) newProbeSlice() []*weightSearch2FastProbe {
 }
 
 func (ws *WeightSearcher3) evaluateScore(weightArray *weightSearch2FastPoint) float64 {
-	weights := weight_types.WeightBasic{}
+	weights := weight_types.Weight1Basic{}
 	for i, statType := range ws.statTypes {
 		weights.Put(statType, weightArray[i])
 	}

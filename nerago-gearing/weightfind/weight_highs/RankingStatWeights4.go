@@ -82,7 +82,7 @@ func (process *RankingStatWeightProcess4) SetTargetRatios(targetRatios stats.Sim
 	process.requiredSims = targetRatios.NonZeroTypes()
 }
 
-func (process *RankingStatWeightProcess4) RunUsingExternalStart(initialWeight weight_types.WeightBasic, stopwatch *util.Stopwatch, timeout int) util.Optional[weight_types.WeightBasic] {
+func (process *RankingStatWeightProcess4) RunUsingExternalStart(initialWeight weight_types.Weight1Basic, stopwatch *util.Stopwatch, timeout int) util.Optional[weight_types.Weight1Basic] {
 	run2 := rankInternalRun4_create(process)
 	run2.build.TimeLimitSeconds = timeout
 	run2.supplyData(process.dataAll)
@@ -122,7 +122,7 @@ func rankInternalRun4_create(process *RankingStatWeightProcess4) *rankInternalRu
 	return run
 }
 
-func (run *rankInternalRun4) run(stopwatch *util.Stopwatch) (util.Optional[weight_types.WeightBasic], *highs.Solution) {
+func (run *rankInternalRun4) run(stopwatch *util.Stopwatch) (util.Optional[weight_types.Weight1Basic], *highs.Solution) {
 	solutionFuture := run.build.RunHighsFuture(stopwatch)
 	linearResult := solutionFuture.WaitForResultOrPanic()
 	solution := linearResult.GetSolutionAndSaveLog(run.process.printer)
@@ -130,13 +130,13 @@ func (run *rankInternalRun4) run(stopwatch *util.Stopwatch) (util.Optional[weigh
 		weights := run.extractAndReportSolution(solution)
 		return util.Optional_OfValue(weights), solution
 	} else {
-		return util.Optional_Empty[weight_types.WeightBasic](), solution
+		return util.Optional_Empty[weight_types.Weight1Basic](), solution
 	}
 }
 
-func (run *rankInternalRun4) runFuture(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.WeightBasic] {
+func (run *rankInternalRun4) runFuture(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.Weight1Basic] {
 	solutionFuture := run.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightBasic, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.Weight1Basic, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(run.process.printer)
 		return run.extractAndReportSolution(solution), true
 	})
@@ -266,12 +266,12 @@ func (run *rankInternalRun4) makeRankDerivation(mainIndex int, mainEntry *weight
 	sumCompareFlags.Build(run.build, rowSumTarget, rowSumTarget)
 }
 
-func (run *rankInternalRun4) extractAndReportSolution(solution *highs.Solution) weight_types.WeightBasic {
+func (run *rankInternalRun4) extractAndReportSolution(solution *highs.Solution) weight_types.Weight1Basic {
 	run.build.DebugPrintColumns(solution, run.process.printer)
 
 	run.process.printer.Println("WEIGHTS")
 
-	statWeightResult := weight_types.WeightBasic_Make()
+	statWeightResult := weight_types.Weight1Basic_Make()
 	for _, statType := range run.process.requiredStats {
 		weightColumn := run.weightColumns[statType]
 		statScale := run.scaleStats[statType]
@@ -298,7 +298,7 @@ func (run *rankInternalRun4) extractAndReportSolution(solution *highs.Solution) 
 	return statWeightResult
 }
 
-func (run *rankInternalRun4) setupInitialSolutionFromExternal2(weights weight_types.WeightBasic) {
+func (run *rankInternalRun4) setupInitialSolutionFromExternal2(weights weight_types.Weight1Basic) {
 	internalWeights := weights.ScaleForTotalSum(c_Rank4WeightTotalSum)
 	for statType, colWeight := range run.weightColumns {
 		basicValue := internalWeights.Get(statType)
