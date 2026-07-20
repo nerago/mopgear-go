@@ -70,51 +70,53 @@ func (mm *MapMap[J, K, V]) IsEmpty() bool {
 }
 
 func (mm *MapMap[J, K, V]) Put(key1 J, key2 K, value V) {
-	data1 := mm.dataBy1
-	if data1 == nil {
-		data1 = make(map[J]map[K]V)
-		mm.dataBy1 = data1
-	}
-	inner1, hasInner1 := data1[key1]
-	if !hasInner1 {
-		inner1 = make(map[K]V)
+	if mm.dataBy1 == nil {
+		data1 := make(map[J]map[K]V)
+		inner1 := make(map[K]V)
+		inner1[key2] = value
 		data1[key1] = inner1
+		mm.dataBy1 = data1
+	} else if inner1, hasInner1 := mm.dataBy1[key1]; !hasInner1 {
+		inner1 = make(map[K]V)
+		inner1[key2] = value
+		mm.dataBy1[key1] = inner1
+	} else {
+		inner1[key2] = value
 	}
-	inner1[key2] = value
 
-	data2 := mm.dataBy2
-	if data2 == nil {
-		data2 = make(map[K]map[J]V)
-		mm.dataBy2 = data2
-	}
-	inner2, hasInner2 := data2[key2]
-	if !hasInner2 {
-		inner2 = make(map[J]V)
+	if mm.dataBy2 == nil {
+		data2 := make(map[K]map[J]V)
+		inner2 := make(map[J]V)
+		inner2[key1] = value
 		data2[key2] = inner2
+		mm.dataBy2 = data2
+	} else if inner2, hasInner2 := mm.dataBy2[key2]; !hasInner2 {
+		inner2 = make(map[J]V)
+		inner2[key1] = value
+		mm.dataBy2[key2] = inner2
+	} else {
+		inner2[key1] = value
 	}
-	inner2[key1] = value
 }
 
 // removes nested inner maps when last item removed, if changing this check IsEmpty etc
 func (mm *MapMap[J, K, V]) Delete(key1 J, key2 K) {
-	data1 := mm.dataBy1
-	if data1 != nil {
-		inner1, hasInner1 := data1[key1]
+	if mm.dataBy1 != nil {
+		inner1, hasInner1 := mm.dataBy1[key1]
 		if hasInner1 {
 			delete(inner1, key2)
 			if len(inner1) == 0 {
-				delete(data1, key1)
+				delete(mm.dataBy1, key1)
 			}
 		}
 	}
 
-	data2 := mm.dataBy2
-	if data2 != nil {
-		inner2, hasInner2 := data2[key2]
+	if mm.dataBy2 != nil {
+		inner2, hasInner2 := mm.dataBy2[key2]
 		if hasInner2 {
 			delete(inner2, key1)
 			if len(inner2) == 0 {
-				delete(data2, key2)
+				delete(mm.dataBy2, key2)
 			}
 		}
 	}
@@ -147,36 +149,42 @@ func (mm *MapMap[J, K, V]) DeleteAllForKey2(key2 K) {
 }
 
 func (mm *MapMap[J, K, V]) Apply(key1 J, key2 K, apply func(oldValue V) V) {
-	data1 := mm.dataBy1
-	if data1 == nil {
-		data1 = make(map[J]map[K]V)
-		mm.dataBy1 = data1
-	}
-	inner1, hasInner1 := data1[key1]
-	if !hasInner1 {
-		inner1 = make(map[K]V)
-		data1[key1] = inner1
-	}
-	value, hasValue := inner1[key2]
-	if hasValue {
-		value = apply(value)
-	} else {
-		var nilValue V
-		value = apply(nilValue)
-	}
-	inner1[key2] = value
+	var value V
 
-	data2 := mm.dataBy2
-	if data2 == nil {
-		data2 = make(map[K]map[J]V)
-		mm.dataBy2 = data2
+	if mm.dataBy1 == nil {
+		data1 := make(map[J]map[K]V)
+		inner1 := make(map[K]V)
+
+		value = apply(value)
+		inner1[key2] = value
+
+		data1[key1] = inner1
+		mm.dataBy1 = data1
+	} else if inner1, hasInner1 := mm.dataBy1[key1]; !hasInner1 {
+		inner1 = make(map[K]V)
+
+		value = apply(value)
+		inner1[key2] = value
+
+		mm.dataBy1[key1] = inner1
+	} else {
+		value = apply(inner1[key2])
+		inner1[key2] = value
 	}
-	inner2, hasInner2 := data2[key2]
-	if !hasInner2 {
-		inner2 = make(map[J]V)
+
+	if mm.dataBy2 == nil {
+		data2 := make(map[K]map[J]V)
+		inner2 := make(map[J]V)
+		inner2[key1] = value
 		data2[key2] = inner2
+		mm.dataBy2 = data2
+	} else if inner2, hasInner2 := mm.dataBy2[key2]; !hasInner2 {
+		inner2 = make(map[J]V)
+		inner2[key1] = value
+		mm.dataBy2[key2] = inner2
+	} else {
+		inner2[key1] = value
 	}
-	inner2[key1] = value
 }
 
 func (mm *MapMap[J, K, V]) FirstKey1() J {

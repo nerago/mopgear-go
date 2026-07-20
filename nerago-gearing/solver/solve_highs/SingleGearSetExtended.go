@@ -141,11 +141,20 @@ func (setup *singleGearSetExtended) finishStats(require *StatRequiredExtended) {
 	}
 }
 
+// for extended stats planned calculation is:
+// statA*weight1A + statB*weight1B + statC*weight1C = sim1
+// statA*weight2A + statB*weight2B + statC*weight2C = sim2
+// sim1*scale1+offset = 0-100 (better is higher)
+
+// statA*weight1A + statB*weight1B + statC*weight1C = simValue
+// (statA*weight1A + statB*weight1B + statC*weight1C)*scale + offset = simValue
+// (statA*weight1A + statB*weight1B + statC*weight1C)*scale - simValue = -offset
+// statA*weight1A + statB*weight1B + statC*weight1C - simValue/scale = -offset/scale
 func (setup *singleGearSetExtended) calcSimValues(weight *weight_types.Weight2Extended) {
 	// calculate each sim value from stats
 	setup.simValueTotalColumns = make(map[stats.SimType]*columnInfo)
-	for simType, nestedWeights := range weight.DetailedWeights.SeqGroupsKey2NestedKeyValue() {
-		simValueColumn := columnInfo{entryType: entry_sim_value}
+	for simType, nestedWeights := range weight.SeqBySimNestedPairs() {
+		simValueColumn := columnInfo{entryType: entry_sim_value, simType: simType}
 		simValueColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, &simValueColumn)
 		setup.simValueTotalColumns[simType] = &simValueColumn
 		setup.allColumns = append(setup.allColumns, &simValueColumn)
@@ -155,8 +164,11 @@ func (setup *singleGearSetExtended) calcSimValues(weight *weight_types.Weight2Ex
 			statColumn := setup.statTotalColumns[statType]
 			simValueFromStatRow.Add(statColumn.columnIndex, weightValue)
 		}
-		simValueFromStatRow.Add(simValueColumn.columnIndex, -1)
-		simValueFromStatRow.Build(setup.build, 0, 0)
+
+		simEntry := weight.SimPriority().GetOrPanic(simType)
+		offset := -simEntry.Offset / simEntry.Scale
+		simValueFromStatRow.Add(simValueColumn.columnIndex, -1.0/simEntry.Scale)
+		simValueFromStatRow.Build(setup.build, offset, offset)
 	}
 }
 
@@ -169,9 +181,8 @@ func (setup *singleGearSetExtended) calcCombinedSimRating(weight *weight_types.W
 
 	// add up the sim values, multiplying corresponding ratio
 	combinedRatingRow := util_highs.ConstraintRow{}
-	for simType, simValueColumn := range setup.simValueTotalColumns {
-		simRatio := weight.SimRatioWeighting.Get(simType)
-		combinedRatingRow.Add(simValueColumn.columnIndex, simRatio)
+	for _, simValueColumn := range setup.simValueTotalColumns {
+		combinedRatingRow.Add(simValueColumn.columnIndex, 1)
 	}
 	combinedRatingRow.Add(combinedRatingColumn.columnIndex, -1)
 	combinedRatingRow.Build(setup.build, 0, 0)
