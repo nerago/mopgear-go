@@ -36,7 +36,7 @@ type RankingStatWeightProcess5 struct {
 	printer   *util.PrintRecorder
 	WEIGHTSUM int
 
-	targetRatios   stats.SimData
+	targetRatios   weight_types.SimPriorityBasic
 	requiredStats  []stats.StatType
 	requiredSims   []stats.SimType
 	initialWeights *weight_types.Weight1Basic
@@ -80,9 +80,9 @@ func (ranker *RankingStatWeightProcess5) SetRequiredStats(requiredStats []stats.
 	ranker.requiredStats = requiredStats
 }
 
-func (process *RankingStatWeightProcess5) SetTargetRatios(targetRatios stats.SimData) {
+func (process *RankingStatWeightProcess5) SetTargetRatios(targetRatios weight_types.SimPriorityBasic) {
 	process.targetRatios = targetRatios
-	process.requiredSims = targetRatios.NonZeroTypes()
+	process.requiredSims = targetRatios.SimTypes()
 }
 
 func (process *RankingStatWeightProcess5) Run(stopwatch *util.Stopwatch, timeout int) *util_async.FutureCancellable[weight_types.Weight1Basic] {
@@ -218,7 +218,7 @@ func (run *rankInternalRun5) extractAndReportSolution(solution *highs.Solution) 
 
 	run.process.printer.Println("WEIGHTS")
 
-	statWeightResult := weight_types.Weight1Basic_Make()
+	statWeightResult := weight_types.Weight1Basic_Make(run.process.targetRatios)
 	for _, statType := range run.process.requiredStats {
 		weightColumn := run.weightColumns[statType]
 		statScale := run.scaleStats[statType]

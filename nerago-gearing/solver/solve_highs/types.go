@@ -29,6 +29,7 @@ type columnInfo struct {
 	columnIndex util_highs.ColumnIndex
 
 	statType stats.StatType
+	simType  stats.SimType
 	itemSlot items.SlotEquip
 	item     *items.SolvableItem
 	itemFull *items.FullItem

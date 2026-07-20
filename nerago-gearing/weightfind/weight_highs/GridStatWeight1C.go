@@ -19,7 +19,7 @@ const c_grid1c_scaleTarget = 10.0
 type GridStatWeightProcess1C struct {
 	printer *util.PrintRecorder
 
-	targetRatios  stats.SimData
+	targetRatios  weight_types.SimPriorityBasic
 	inputData     []weight_types.WeightInput
 	requiredStats []stats.StatType
 	simTypes      []stats.SimType
@@ -56,18 +56,9 @@ func (grid *GridStatWeightProcess1C) SetRequiredStats(requiredStats []stats.Stat
 	grid.requiredStats = requiredStats
 }
 
-func (grid *GridStatWeightProcess1C) SetTargetRatios(targetRatios stats.SimData) {
-	sum := 0.0
-	for simType, ratio := range targetRatios.Seq() {
-		if ratio > 0 {
-			grid.simTypes = append(grid.simTypes, simType)
-		}
-		sum += ratio
-	}
-	if !util.FloatEqualsOne(sum) {
-		panic("ratios don't add to one")
-	}
-
+func (grid *GridStatWeightProcess1C) SetTargetRatios(targetRatios weight_types.SimPriorityBasic) {
+	targetRatios.ValidateRatioAddsToOne()
+	grid.simTypes = targetRatios.SimTypes()
 	grid.targetRatios = targetRatios
 }
 
@@ -113,7 +104,7 @@ func (grid *GridStatWeightProcess1C) setupWeightVars() {
 
 	baseStat := grid.requiredStats[0]
 	for _, simType := range grid.simTypes {
-		value := grid.targetRatios.Get(simType)
+		value := grid.targetRatios.GetOrPanic(simType)
 		colDetailWeight := grid.detailedWeights.GetOrPanic(baseStat, simType)
 		strengthSetToRatio := util_highs.ConstraintRow{}
 		strengthSetToRatio.Add(colDetailWeight, 1)
@@ -254,7 +245,7 @@ func (grid *GridStatWeightProcess1C) unitValuesCalcForGroup(simType stats.SimTyp
 }
 
 func (grid *GridStatWeightProcess1C) reportOutputWeightsGrid(solution *highs.Solution, weightColumns map[stats.StatType]util_highs.ColumnIndex, printer *util.PrintRecorder) weight_types.Weight1Basic {
-	result := weight_types.Weight1Basic_Make()
+	result := weight_types.Weight1Basic_Make(grid.targetRatios)
 	printer.Println("FINAL WEIGHTS:")
 	for _, statType := range grid.requiredStats {
 		columnIndex := weightColumns[statType]

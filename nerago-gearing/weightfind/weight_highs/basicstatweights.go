@@ -15,7 +15,7 @@ type BasicStatWeightProcess struct {
 
 	requiredStats []stats.StatType
 	requiredSims  []stats.SimType
-	targetRatios  stats.SimData
+	targetRatios  weight_types.SimPriorityBasic
 	simBase       stats.SimData
 	simData       map[stats.StatType]basicDataEntry
 
@@ -46,20 +46,9 @@ func (basic *BasicStatWeightProcess) SetRequiredStats(requiredStats []stats.Stat
 	basic.requiredStats = requiredStats
 }
 
-func (basic *BasicStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
-	basic.requiredSims = targetRatios.NonZeroTypes()
-
-	sum := 0.0
-	for _, simType := range basic.requiredSims {
-		val := targetRatios.Get(simType)
-		if val <= 0 {
-			panic("missing ratio")
-		}
-		sum += val
-	}
-	if !util.FloatEqualsOne(sum) {
-		panic("ratios don't add to one")
-	}
+func (basic *BasicStatWeightProcess) SetTargetRatios(targetRatios weight_types.SimPriorityBasic) {
+	targetRatios.ValidateRatioAddsToOne()
+	basic.requiredSims = targetRatios.SimTypes()
 	basic.targetRatios = targetRatios
 }
 
@@ -88,7 +77,7 @@ func (basic *BasicStatWeightProcess) Run(stopwatch *util.Stopwatch) *util_async.
 
 	baseStat := basic.requiredStats[0]
 	for _, simType := range basic.requiredSims {
-		value := basic.targetRatios.Get(simType)
+		value := basic.targetRatios.GetOrPanic(simType)
 		colDetailWeight := basic.detailedWeights.GetOrPanic(baseStat, simType)
 		strengthSetToRatio := util_highs.ConstraintRow{}
 		strengthSetToRatio.Add(colDetailWeight, 1)
@@ -189,7 +178,7 @@ func (basic *BasicStatWeightProcess) calcTotalRatings() {
 }
 
 func (basic *BasicStatWeightProcess) reportOutputWeights(solution *highs.Solution) weight_types.Weight1Basic {
-	result := weight_types.Weight1Basic_Make()
+	result := weight_types.Weight1Basic_Make(basic.targetRatios)
 	basic.printer.Println("FINAL WEIGHTS:")
 	for _, statType := range basic.requiredStats {
 		columnIndex := basic.finalWeights[statType]

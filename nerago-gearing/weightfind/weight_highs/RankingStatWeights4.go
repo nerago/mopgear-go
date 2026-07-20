@@ -26,7 +26,7 @@ type RankingStatWeightProcess4 struct {
 	printer  *util.PrintRecorder
 	MULTIPLY int
 
-	targetRatios  stats.SimData
+	targetRatios  weight_types.SimPriorityBasic
 	requiredStats []stats.StatType
 	requiredSims  []stats.SimType
 	dataAll       []weight_types.WeightInput
@@ -77,9 +77,9 @@ func (process *RankingStatWeightProcess4) SetRequiredStats(requiredStats []stats
 	process.requiredStats = requiredStats
 }
 
-func (process *RankingStatWeightProcess4) SetTargetRatios(targetRatios stats.SimData) {
+func (process *RankingStatWeightProcess4) SetTargetRatios(targetRatios weight_types.SimPriorityBasic) {
 	process.targetRatios = targetRatios
-	process.requiredSims = targetRatios.NonZeroTypes()
+	process.requiredSims = targetRatios.SimTypes()
 }
 
 func (process *RankingStatWeightProcess4) RunUsingExternalStart(initialWeight weight_types.Weight1Basic, stopwatch *util.Stopwatch, timeout int) util.Optional[weight_types.Weight1Basic] {
@@ -271,7 +271,7 @@ func (run *rankInternalRun4) extractAndReportSolution(solution *highs.Solution) 
 
 	run.process.printer.Println("WEIGHTS")
 
-	statWeightResult := weight_types.Weight1Basic_Make()
+	statWeightResult := weight_types.Weight1Basic_Make(run.process.targetRatios)
 	for _, statType := range run.process.requiredStats {
 		weightColumn := run.weightColumns[statType]
 		statScale := run.scaleStats[statType]

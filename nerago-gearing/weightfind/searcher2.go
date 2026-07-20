@@ -43,7 +43,7 @@ type WeightSearcher2 struct {
 	typeCount        int
 	statTypes        []stats.StatType
 	simTypes         []stats.SimType
-	targetRatio      stats.SimData
+	targetRatio      weight_types.SimPriorityBasic
 	evaluateAccuracy EvaluateAccuracyPrepared
 	printer          *util.PrintRecorder
 	AccuracyMode     int
@@ -60,10 +60,10 @@ type weightSearch2Bound struct {
 	nodeDepth int
 }
 
-func (ws *WeightSearcher2) Init(statTypes []stats.StatType, targetRatio stats.SimData, printer *util.PrintRecorder) {
+func (ws *WeightSearcher2) Init(statTypes []stats.StatType, targetRatio weight_types.SimPriorityBasic, printer *util.PrintRecorder) {
 	ws.typeCount = len(statTypes)
 	ws.statTypes = statTypes
-	ws.simTypes = targetRatio.NonZeroTypes()
+	ws.simTypes = targetRatio.SimTypes()
 	ws.targetRatio = targetRatio
 	ws.printer = printer
 }

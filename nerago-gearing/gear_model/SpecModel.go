@@ -2,9 +2,9 @@ package gear_model
 
 import (
 	. "paladin_gearing_go/items"
-	"paladin_gearing_go/stats"
 	. "paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 )
 
@@ -22,7 +22,7 @@ type SpecModel struct {
 	SetBonusRequired     []ActiveSetCountsRequired
 	FixedWeightsSetBonus *ActiveSetCountsRequired
 	Professions          ProfessionInfo
-	SimRatioWeighting    stats.SimData
+	SimPriority          weight_types.SimPriorityBasic
 	StatsForWeighting    []StatType
 	ReferenceGearFile    string // should just be used by exporters etc
 }
@@ -41,7 +41,7 @@ func (model *SpecModel) Equals(other *SpecModel) bool {
 		slices.EqualFunc(model.SetBonusRequired, other.SetBonusRequired, ActiveSetCountsRequired.Equals) &&
 		util.NilSafeEqual(model.FixedWeightsSetBonus, other.FixedWeightsSetBonus, ActiveSetCountsRequired.Equals) &&
 		model.Professions == other.Professions &&
-		model.SimRatioWeighting.Equals(&other.SimRatioWeighting) &&
+		model.SimPriority.Equals(&other.SimPriority) &&
 		slices.Equal(model.StatsForWeighting, other.StatsForWeighting) &&
 		model.ReferenceGearFile == other.ReferenceGearFile
 }

@@ -8,11 +8,11 @@ import (
 	"slices"
 )
 
-func RankSimsRegularForAccuracyRanged(requiredSims []stats.SimType, data []*weight_types.AccuracyInfoSimStatRanged, simRatios stats.SimData) {
+func RankSimsRegularForAccuracyRanged(requiredSims []stats.SimType, data []*weight_types.AccuracyInfoSimStatRanged, simRatios weight_types.SimPriorityBasic) {
 	// score each sim
 	for _, simType := range requiredSims {
 		slices.SortFunc(data, simSortRangedCompares[simType])
-		ratio := simRatios.Get(simType)
+		ratio := simRatios.GetOrPanic(simType)
 		for rank := range data {
 			entry := data[rank]
 			entry.SimScore += float64(rank) * ratio
@@ -35,7 +35,7 @@ func RankSimsRegularForAccuracyRanged(requiredSims []stats.SimType, data []*weig
 	}
 }
 
-func RankSimsStatisticalForAccuracyRanged(requiredSims []stats.SimType, data []*weight_types.AccuracyInfoSimStatRanged, simRatios stats.SimData) {
+func RankSimsStatisticalForAccuracyRanged(requiredSims []stats.SimType, data []*weight_types.AccuracyInfoSimStatRanged, simRatios weight_types.SimPriorityBasic) {
 	// score each sim
 	for _, simType := range requiredSims {
 		if simType == stats.Sim_DEATH {
@@ -50,7 +50,7 @@ func RankSimsStatisticalForAccuracyRanged(requiredSims []stats.SimType, data []*
 				return deviationCompareSims(b.DataSim, a.DataSim, simType)
 			})
 		}
-		ratio := simRatios.Get(simType)
+		ratio := simRatios.GetOrPanic(simType)
 		for rank := range data {
 			entry := data[rank]
 			entry.SimScore += float64(rank) * ratio
@@ -73,7 +73,7 @@ func RankSimsStatisticalForAccuracyRanged(requiredSims []stats.SimType, data []*
 	}
 }
 
-func RankSimsStatisticalForAccuracyPrepare(simRatios stats.SimData, data []*weight_types.AccuracyInfoPrePrepare, requiredSims []stats.SimType) {
+func RankSimsStatisticalForAccuracyPrepare(simRatios weight_types.SimPriorityBasic, data []*weight_types.AccuracyInfoPrePrepare, requiredSims []stats.SimType) {
 	for _, simType := range requiredSims {
 		if simType == stats.Sim_DEATH {
 			// death data never has detail
@@ -87,7 +87,7 @@ func RankSimsStatisticalForAccuracyPrepare(simRatios stats.SimData, data []*weig
 				return deviationCompareSims(b.DataSim, a.DataSim, simType)
 			})
 		}
-		ratio := simRatios.Get(simType)
+		ratio := simRatios.GetOrPanic(simType)
 		for rank := range data {
 			entry := data[rank]
 			entry.SimScore += float64(rank) * ratio
@@ -100,9 +100,9 @@ func RankSimsStatisticalForAccuracyPrepare(simRatios stats.SimData, data []*weig
 	})
 }
 
-func RankSimsBasicForAccuracyPrepare(simRatios stats.SimData, data []*weight_types.AccuracyInfoPrePrepare, requiredSims []stats.SimType) {
+func RankSimsBasicForAccuracyPrepare(simRatios weight_types.SimPriorityBasic, data []*weight_types.AccuracyInfoPrePrepare, requiredSims []stats.SimType) {
 	for _, simType := range requiredSims {
-		ratio := simRatios.Get(simType)
+		ratio := simRatios.GetOrPanic(simType)
 		slices.SortFunc(data, simSortSimSingledCompares[simType])
 		for rank := range data {
 			data[rank].SimScore += float64(rank) * ratio
@@ -132,7 +132,7 @@ func CalcHiLoForAccuracyPrepare(data []*weight_types.AccuracyInfoPrePrepare, pre
 	}
 }
 
-func RankingWeight4RankSims(runData []weight_types.RankEntry4, requiredSims []stats.SimType, targetRatios stats.SimData) { // reset values
+func RankingWeight4RankSims(runData []weight_types.RankEntry4, requiredSims []stats.SimType, targetRatios weight_types.SimPriorityBasic) { // reset values
 	for i := range runData {
 		runData[i].SimScore = 0
 		runData[i].TargetRank = 0
@@ -141,7 +141,7 @@ func RankingWeight4RankSims(runData []weight_types.RankEntry4, requiredSims []st
 	// score each sim
 	for _, simType := range requiredSims {
 		for entry, simDetailRankHiLo := range util.CalculateRankingRanges(simType.IsHighGood(), runData, func(x *weight_types.RankEntry4) float64 { return x.Data.SimResult.Get(simType) }) {
-			entry.SimScore += float64(simDetailRankHiLo.Mid()) * targetRatios.Get(simType)
+			entry.SimScore += float64(simDetailRankHiLo.Mid()) * targetRatios.GetOrPanic(simType)
 		}
 	}
 
@@ -151,11 +151,11 @@ func RankingWeight4RankSims(runData []weight_types.RankEntry4, requiredSims []st
 	}
 }
 
-func RankWeights5RankSims(runData []weight_types.RankEntry5, requiredSims []stats.SimType, targetRatios stats.SimData, printer *util.PrintRecorder) []weight_types.RankEntry5 {
+func RankWeights5RankSims(runData []weight_types.RankEntry5, requiredSims []stats.SimType, targetRatios weight_types.SimPriorityBasic, printer *util.PrintRecorder) []weight_types.RankEntry5 {
 	// score each sim
 	for _, simType := range requiredSims {
 		for entry, simDetailRankHiLo := range util.CalculateRankingRanges(simType.IsHighGood(), runData, func(x *weight_types.RankEntry5) float64 { return x.Data.SimResult.Get(simType) }) {
-			entry.SimScore += float64(simDetailRankHiLo.Mid()) * targetRatios.Get(simType)
+			entry.SimScore += float64(simDetailRankHiLo.Mid()) * targetRatios.GetOrPanic(simType)
 		}
 	}
 
@@ -167,4 +167,40 @@ func RankWeights5RankSims(runData []weight_types.RankEntry5, requiredSims []stat
 	slices.SortFunc(runData, func(a, b weight_types.RankEntry5) int { return cmp.Compare(a.SimScore, b.SimScore) })
 
 	return runData
+}
+
+func RankingWeights1aPrepareRankings(requiredSims []stats.SimType, inputData []weight_types.RankEntry, priority weight_types.SimPriorityBasic) {
+	// score each sim
+	for _, simType := range requiredSims {
+		for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), inputData, func(x *weight_types.RankEntry) float64 { return x.Data.SimResult.Get(simType) }) {
+			entry.SimRanks[simType] = simDetailRank
+			entry.CombinedSimScore += float64(simDetailRank) * priority.GetOrPanic(simType)
+		}
+	}
+
+	// rank combined sims
+	for entry, simRank := range util.CalculateRanking(true, inputData, func(x *weight_types.RankEntry) float64 { return x.CombinedSimScore }) {
+		entry.TargetRank = simRank
+	}
+
+	slices.SortFunc(inputData, func(a, b weight_types.RankEntry) int { return cmp.Compare(a.TargetRank, b.TargetRank) })
+}
+
+func PrepareRankingWeights3(simList []stats.SimType, dataSample []weight_types.RankEntry3, simPriority weight_types.SimPriorityBasic) {
+	// score each sim
+	for _, simType := range simList {
+		for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), dataSample, func(x *weight_types.RankEntry3) float64 { return x.Data.SimResult.Get(simType) }) {
+			entry.SimScore += float64(simDetailRank) * simPriority.GetOrPanic(simType)
+		}
+	}
+
+	// TODO ranking ranges
+	// TODO alternately deny duplicates, either on simScore, or full detail
+
+	// rank combined sims
+	for entry, simRank := range util.CalculateRanking(true, dataSample, func(x *weight_types.RankEntry3) float64 { return x.SimScore }) {
+		entry.TargetRank = simRank
+	}
+
+	slices.SortFunc(dataSample, func(a, b weight_types.RankEntry3) int { return cmp.Compare(a.TargetRank, b.TargetRank) })
 }

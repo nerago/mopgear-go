@@ -6,6 +6,7 @@ import (
 	. "paladin_gearing_go/gear_model/requirements"
 	"paladin_gearing_go/stats"
 	. "paladin_gearing_go/stats"
+	"paladin_gearing_go/weightfind/weight_types"
 )
 
 // ////////// standard model builders
@@ -17,7 +18,7 @@ func Model_PallyProtMitigation_WithSet() SpecModel {
 		Spec:              spec,
 		Goal:              goal,
 		SimulateAs:        Fight_Juggernaut_NoExternalHeal,
-		SimRatioWeighting: SimRatio_malkrokWeight,
+		SimPriority:       SimPriority_withSet,
 		StatRatings:       weight,
 		StatRequirements:  StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:      ReforgeRules_tank,
@@ -44,7 +45,7 @@ func Model_PallyProtHeal() SpecModel {
 		Spec:              spec,
 		Goal:              goal,
 		SimulateAs:        Fight_Juggernaut_OffHealer,
-		SimRatioWeighting: SimRatio_healWeight,
+		SimPriority:       SimPriority_heal,
 		StatRatings:       weight,
 		StatRequirements:  StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:      ReforgeRules_tank,
@@ -71,7 +72,7 @@ func Model_PallyProtMitigation_NoSet() SpecModel {
 		Spec:                 spec,
 		Goal:                 goal,
 		SimulateAs:           Fight_Juggernaut_NoExternalHeal,
-		SimRatioWeighting:    SimRatio_generalMiti,
+		SimPriority:          SimPriority_generalMiti,
 		StatRatings:          weight,
 		StatRequirements:     StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:         ReforgeRules_tank,
@@ -96,7 +97,7 @@ func Model_PallyProtCompromise() SpecModel {
 		Spec:                 spec,
 		Goal:                 goal,
 		SimulateAs:           Fight_Juggernaut_HighHeal,
-		SimRatioWeighting:    SimRatio_compromiseWeight,
+		SimPriority:          SimPriority_compromise,
 		StatRatings:          weight,
 		StatRequirements:     StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:         ReforgeRules_tank,
@@ -121,7 +122,7 @@ func Model_PallyProtDps() SpecModel {
 		Spec:                 spec,
 		Goal:                 goal,
 		SimulateAs:           Fight_Horridon_HighHeal,
-		SimRatioWeighting:    SimRatio_dpsWeight,
+		SimPriority:          SimPriority_dps,
 		StatRatings:          weight,
 		StatRequirements:     StatRequirementsHitExpertise_ProtFlexibleParry(),
 		ReforgeRules:         ReforgeRules_tank,
@@ -146,7 +147,7 @@ func Model_PallyRet() SpecModel {
 		Spec:                 spec,
 		Goal:                 goal,
 		SimulateAs:           Fight_Horridon_HighHeal,
-		SimRatioWeighting:    SimRatio_retWeight,
+		SimPriority:          SimPriority_ret,
 		SimSpeedUp:           8,
 		StatRatings:          weight,
 		StatRequirements:     StatRequirementsHitExpertise_RetWideCap(),
@@ -187,7 +188,7 @@ func Model_Testing() SpecModel {
 }
 
 // for noset - juggernaut, shamans, siegecrafter
-var SimRatio_generalMiti = stats.SimData_Make(
+var SimPriority_generalMiti = weight_types.SimPriorityBasic_Make(
 	Sim_DPS, 0.1,
 	Sim_DEATH, 0.2,
 	Sim_TMI, 0.3,
@@ -195,7 +196,7 @@ var SimRatio_generalMiti = stats.SimData_Make(
 )
 
 // for withset - malkrok, thok, nazgrim
-var SimRatio_malkrokWeight = stats.SimData_Make(
+var SimPriority_withSet = weight_types.SimPriorityBasic_Make(
 	Sim_DPS, 0.05,
 	Sim_DEATH, 0.3,
 	Sim_TMI, 0.05,
@@ -203,7 +204,7 @@ var SimRatio_malkrokWeight = stats.SimData_Make(
 )
 
 // for compromise set - spoils, galakras, paragons, etc
-var SimRatio_compromiseWeight = stats.SimData_Make(
+var SimPriority_compromise = weight_types.SimPriorityBasic_Make(
 	Sim_DPS, 0.40,
 	Sim_DEATH, 0.10,
 	Sim_TMI, 0.35,
@@ -211,7 +212,7 @@ var SimRatio_compromiseWeight = stats.SimData_Make(
 )
 
 // for dps set
-var SimRatio_dpsWeight = stats.SimData_Make(
+var SimPriority_dps = weight_types.SimPriorityBasic_Make(
 	Sim_DPS, 0.95,
 	Sim_DEATH, 0.01,
 	Sim_TMI, 0.03,
@@ -219,7 +220,7 @@ var SimRatio_dpsWeight = stats.SimData_Make(
 )
 
 // for heal set, garrosh, immerseus
-var SimRatio_healWeight = stats.SimData_Make(
+var SimPriority_heal = weight_types.SimPriorityBasic_Make(
 	Sim_DEATH, 0.15,
 	Sim_TMI, 0.15,
 	Sim_DTPS, 0.4,
@@ -227,7 +228,7 @@ var SimRatio_healWeight = stats.SimData_Make(
 )
 
 // for ret set
-var SimRatio_retWeight = stats.SimData_Make(
+var SimPriority_ret = weight_types.SimPriorityBasic_Make(
 	Sim_DPS, 1,
 )
 

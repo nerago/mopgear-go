@@ -28,7 +28,7 @@ type GridStatWeightProcess2 struct {
 	IncludeDiffs2 bool
 	IncludeDiffs3 bool
 
-	targetRatios stats.SimData
+	targetRatios weight_types.SimPriorityBasic
 	statTypes    []stats.StatType
 	simTypes     []stats.SimType
 	inputData    []weight_types.WeightInput
@@ -58,21 +58,9 @@ func (grid2 *GridStatWeightProcess2) SetRequiredStats(requiredStats []stats.Stat
 	grid2.statTypes = requiredStats
 }
 
-func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios stats.SimData) {
-	grid2.simTypes = targetRatios.NonZeroTypes()
+func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios weight_types.SimPriorityBasic) {
 
-	sum := 0.0
-	for _, simType := range grid2.simTypes {
-		val := targetRatios.Get(simType)
-		if val <= 0 {
-			panic("missing ratio")
-		}
-		sum += val
-	}
-	if !util.FloatEqualsOne(sum) {
-		panic("ratios don't add to one")
-	}
-
+	grid2.simTypes = targetRatios.SimTypes()
 	grid2.targetRatios = targetRatios
 }
 
@@ -249,7 +237,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleThreeDifferenceStats(one *weig
 }
 
 func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Solution) weight_types.Weight2Extended {
-	result := weight_types.Weight2Extended_Make(grid2.targetRatios)
+	result := weight_types.Weight2Extended_Make(grid2.statTypes, grid2.simTypes)
 	grid2.printer.Println("FINAL WEIGHTS:")
 
 	// weight * (statOne - statTwo) * statScale[type] = (simOne - simTwo) * simScale[type]
@@ -265,11 +253,12 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 			weight := solution.ColValues[detailWeightCol]
 			usableWeight := weight / grid2.scaleSims[simType]
 
-			result.Put(statType, simType, usableWeight)
+			result.PutWeight(statType, simType, usableWeight)
 
 			grid2.printer.Printf("         %5s > %f %f\n", simType.Name(), weight, usableWeight)
 		}
 	}
 
-	return result
+	result.FinishAndValidate()
+	return *result
 }

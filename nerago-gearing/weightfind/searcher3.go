@@ -34,7 +34,7 @@ type WeightSearcher3 struct {
 	typeCount        int
 	statTypes        []stats.StatType
 	simTypes         []stats.SimType
-	targetRatio      stats.SimData
+	targetRatio      weight_types.SimPriorityBasic
 	evaluateAccuracy EvaluateAccuracyPrepared
 	initialBound     *weightSearch2FastBound
 	AccuracyMode     int
@@ -77,13 +77,13 @@ type weightSearch2FastProbe struct {
 	point    weightSearch2FastPoint
 }
 
-func (ws *WeightSearcher3) Init(statTypes []stats.StatType, targetRatio stats.SimData) {
+func (ws *WeightSearcher3) Init(statTypes []stats.StatType, targetRatio weight_types.SimPriorityBasic) {
 	ws.typeCount = len(statTypes)
 	ws.statTypes = statTypes
 	if len(statTypes) > c_search3_max_stats {
 		panic("don't support that many stats")
 	}
-	ws.simTypes = targetRatio.NonZeroTypes()
+	ws.simTypes = targetRatio.SimTypes()
 	ws.targetRatio = targetRatio
 }
 

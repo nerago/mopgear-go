@@ -7,7 +7,6 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_highs"
-	"paladin_gearing_go/util/util_rank"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 
@@ -48,7 +47,6 @@ type FittingEachStatWeightProcess struct {
 
 	lazyMode      bool
 	inputData     []weight_types.WeightInput
-	targetRatios  stats.SimData
 	requiredStats []stats.StatType
 	requiredSims  []stats.SimType
 
@@ -67,13 +65,9 @@ func (fiteach *FittingEachStatWeightProcess) Init(printer *util.PrintRecorder, t
 	fiteach.timeout = timeout
 }
 
-func (fiteach *FittingEachStatWeightProcess) SetRequiredStats(requiredStats []stats.StatType) {
+func (fiteach *FittingEachStatWeightProcess) SetRequiredStats(requiredStats []stats.StatType, requiredSims []stats.SimType) {
 	fiteach.requiredStats = requiredStats
-}
-
-func (fiteach *FittingEachStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
-	fiteach.targetRatios = targetRatios
-	fiteach.requiredSims = targetRatios.NonZeroTypes()
+	fiteach.requiredSims = requiredSims
 }
 
 func (fiteach *FittingEachStatWeightProcess) SetLazyMode(lazy bool) {
@@ -84,7 +78,7 @@ func (fiteach *FittingEachStatWeightProcess) SupplyDataFromStandard(inputData []
 	fiteach.inputData = inputData
 }
 
-func (fiteach *FittingEachStatWeightProcess) RunDetailedResults(cancel util_async.CancelSignal) weight_types.Weight3ExtendedRanged {
+func (fiteach *FittingEachStatWeightProcess) RunDetailedResults(stopwatch *util.Stopwatch, cancel util_async.CancelSignal) weight_types.Weight3ExtendedRanged {
 outer:
 	for _, statType := range fiteach.requiredStats {
 		for _, simType := range fiteach.requiredSims {
@@ -106,17 +100,13 @@ outer:
 		fields.resultMap = fields.process.Run(cancel)
 	})
 
-	weights := weight_types.Weight3ExtendedRanged_Make()
+	weights := weight_types.Weight3ExtendedRanged_Make(fiteach.requiredStats, fiteach.requiredSims)
 	fiteach.each.ForeachWithKeys(func(statType stats.StatType, simType stats.SimType, value *fittingEachFields) {
 		for statRange, detail := range value.resultMap {
-			weights.Add(simType, statType, statRange, detail.LineSlope, detail.LineOffset, detail.IncludePercent)
+			weights.AddDetailWeight(simType, statType, statRange, detail.LineSlope, detail.LineOffset, detail.IncludePercent)
 		}
 	})
-	return weights
-}
-
-func (fiteach *FittingEachStatWeightProcess) Run(stopwatch *util.Stopwatch, cancel util_async.CancelSignal) weight_types.Weight1Basic {
-	detailResult := fiteach.RunDetailedResults(cancel)
+	weights.FinishAndValidate()
 
 	for fields := range fiteach.each.SeqValues() {
 		for _, detail := range fields.resultMap {
@@ -124,35 +114,7 @@ func (fiteach *FittingEachStatWeightProcess) Run(stopwatch *util.Stopwatch, canc
 		}
 	}
 
-	bestRatingEach := util.MapMap_FromExitingMapMap_WithApply(&detailResult, func(byRange map[weight_types.StatRange]FittingSingleStatResult) float64 {
-		best := util_rank.BestCollector1[FittingSingleStatResult]{}
-		for _, entry := range byRange {
-			best.Offer(&entry, float64(entry.IncludeCount))
-		}
-		bestEntry := best.GetBestOptional()
-		if bestEntry.HasValue() {
-			return bestEntry.GetOrPanic().LineSlope
-		} else {
-			return 1
-		}
-	})
-
-	baseStat := fiteach.requiredStats[0]
-	standardResult := weight_types.Weight1Basic_Make()
-	standardResult.Put(baseStat, 1)
-	for _, statType := range fiteach.requiredStats {
-		if statType != baseStat {
-			totalSum := 0.0
-			for _, simType := range fiteach.requiredSims {
-				thisRating := bestRatingEach.GetOrPanic(simType, statType)
-				strengthRating := bestRatingEach.GetOrPanic(baseStat, simType)
-				relative := thisRating / strengthRating * fiteach.targetRatios.Get(simType)
-				totalSum += relative
-			}
-			standardResult.Put(statType, totalSum)
-		}
-	}
-	return standardResult
+	return *weights
 }
 
 ////////////////////////////////////////////////////////

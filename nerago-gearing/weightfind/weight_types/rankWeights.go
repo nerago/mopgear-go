@@ -1,8 +1,20 @@
 package weight_types
 
 import (
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util/util_highs"
 )
+
+type RankEntry struct {
+	Data *WeightInput
+
+	SimRanks         map[stats.SimType]int
+	CombinedSimScore float64
+	TargetRank       int
+
+	ScoreColumn util_highs.ColumnIndex
+	RankColumn  util_highs.ColumnIndex
+}
 
 type RankEntry4 struct {
 	Data *WeightInput
@@ -24,4 +36,16 @@ type RankEntry5 struct {
 	ScoreCompute    util_highs.ColumnIndex
 	ScoreIfIncluded util_highs.ColumnIndex
 	IsInclude       util_highs.ColumnIndex
+}
+
+type RankEntry3 struct {
+	Data *WeightInput
+
+	InitialStatScore float64
+	SimScore         float64
+	TargetRank       int
+
+	ScoreColumn       util_highs.ColumnIndex
+	RankColumn        util_highs.ColumnIndex
+	RankDiffAbsColumn util_highs.ColumnIndex
 }

@@ -19,7 +19,7 @@ const (
 type FormulaStatWeightProcess struct {
 	printer *util.PrintRecorder
 
-	targetRatios  stats.SimData
+	targetRatios  weight_types.SimPriorityBasic
 	requiredStats []stats.StatType
 	requiredSims  []stats.SimType
 	inputData     []weight_types.WeightInput
@@ -51,9 +51,9 @@ func (form *FormulaStatWeightProcess) SetRequiredStats(requiredStats []stats.Sta
 	form.requiredStats = requiredStats
 }
 
-func (form *FormulaStatWeightProcess) SetTargetRatios(targetRatios stats.SimData) {
+func (form *FormulaStatWeightProcess) SetTargetRatios(targetRatios weight_types.SimPriorityBasic) {
 	form.targetRatios = targetRatios
-	form.requiredSims = targetRatios.NonZeroTypes()
+	form.requiredSims = targetRatios.SimTypes()
 }
 
 func (form *FormulaStatWeightProcess) SetMinimumIncludeRate(percent float64) {
@@ -234,7 +234,7 @@ func (form *FormulaStatWeightProcess) extractAndReportSolution(solution *highs.S
 
 func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solution) weight_types.Weight2Extended {
 	// extract and report on detail weights
-	weightExtended := weight_types.Weight2Extended_Make(form.targetRatios)
+	weightExtended := weight_types.Weight2Extended_Make(form.requiredStats, form.requiredSims)
 	for entry := range form.detailedWeightColumns.SeqWithKeys() {
 		statType := entry.Key1
 		simType := entry.Key2
@@ -260,7 +260,7 @@ func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solut
 		scaleFix := form.scaleSims[simType] / form.scaleStats[statType]
 		usableWeight := modelWeight / scaleFix
 
-		weightExtended.Put(statType, simType, usableWeight)
+		weightExtended.PutWeight(statType, simType, usableWeight)
 
 		form.printer.Printf("%10s %10s %11.8f (%5.2e) %11.8f (%5.2e)\n", statType.Name(), simType.Name(), modelWeight, modelWeight, usableWeight, usableWeight)
 	}
@@ -271,7 +271,9 @@ func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solut
 		form.printer.Printf("%10s %10s %11.8f (%5.2e)\n", entry.Key1.Name(), entry.Key2.Name(), usableWeight, usableWeight)
 	}
 	form.printer.Println0()
-	return weightExtended
+
+	weightExtended.FinishAndValidate()
+	return *weightExtended
 }
 
 func (form *FormulaStatWeightProcess) reportExamples(weightExtended *weight_types.Weight2Extended) {
@@ -284,7 +286,7 @@ func (form *FormulaStatWeightProcess) reportExamples(weightExtended *weight_type
 			form.printer.Printf(" %10s", simType.Name())
 			for _, statType := range form.requiredStats {
 				statValue := data.TotalStat.GetFloat(statType)
-				weight := weightExtended.GetOrPanic(statType, simType)
+				weight := weightExtended.GetWeightOrPanic(statType, simType)
 				form.printer.Printf(" {%s %.2f * %.4e = %.4f}", statType.Name(), statValue, weight, statValue*weight)
 				statSum += statValue * weight
 			}

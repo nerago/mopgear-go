@@ -22,13 +22,13 @@ const (
 
 type WeightSearcher1 struct {
 	weightStats      []stats.StatType
-	targetRatio      stats.SimData
+	targetRatio      weight_types.SimPriorityBasic
 	evaluateAccuracy EvaluateAccuracyPrepared
 	printer          *util.PrintRecorder
 	AccuracyMode     int
 }
 
-func (ws *WeightSearcher1) Init(weightStats []stats.StatType, targetRatio stats.SimData, printer *util.PrintRecorder) {
+func (ws *WeightSearcher1) Init(weightStats []stats.StatType, targetRatio weight_types.SimPriorityBasic, printer *util.PrintRecorder) {
 	ws.weightStats = weightStats
 	ws.targetRatio = targetRatio
 	ws.printer = printer
@@ -75,7 +75,7 @@ func (ws *WeightSearcher1) Run(cancel util_async.CancelSignal) weight_types.Weig
 
 func (ws *WeightSearcher1) makeSpacedWeights() iter.Seq[weight_types.Weight1Basic] {
 	return func(yield func(weight_types.Weight1Basic) bool) {
-		ws.buildSpacedWeightsRecur(ws.weightStats, weight_types.Weight1Basic_Make(), yield)
+		ws.buildSpacedWeightsRecur(ws.weightStats, weight_types.Weight1Basic_Make(ws.targetRatio), yield)
 	}
 }
 

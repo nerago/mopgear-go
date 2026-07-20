@@ -168,7 +168,7 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 	outputTypesByParam := make([][]stats.SimType, len(job.params))
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
-		simTypes := param.Model.SimRatioWeighting.NonZeroTypes()
+		simTypes := param.Model.SimPriority.SimTypes()
 		outputTypesByParam[paramIndex] = simTypes
 		rowCount += len(simTypes)
 	}
@@ -251,7 +251,7 @@ func (job *MultiSetJob) suggestResultFromRankings(results []simulateMultiResult)
 	rankInputArrays := util.MapMapSlice[int, stats.SimType, float64]{}
 	for _, result := range results {
 		for paramIndex, simStats := range result.result {
-			simTypeList := job.params[paramIndex].Model.SimRatioWeighting.NonZeroTypes()
+			simTypeList := job.params[paramIndex].Model.SimPriority.SimTypes()
 			for _, simType := range simTypeList {
 				value := simStats.Get(simType)
 				rankInputArrays.Add(paramIndex, simType, value)
@@ -260,7 +260,7 @@ func (job *MultiSetJob) suggestResultFromRankings(results []simulateMultiResult)
 	}
 
 	for paramIndex := range job.params {
-		simTypeList := job.params[paramIndex].Model.SimRatioWeighting.NonZeroTypes()
+		simTypeList := job.params[paramIndex].Model.SimPriority.SimTypes()
 		for _, simType := range simTypeList {
 			rankInputArrays.MapInternalSlice(paramIndex, simType, func(rankValues []float64) []float64 {
 				if simType.IsHighGood() {
@@ -279,9 +279,9 @@ func (job *MultiSetJob) suggestResultFromRankings(results []simulateMultiResult)
 		sumOfRanks := 0.0
 		for paramIndex, simStats := range result.result {
 			ratingPercent := job.params[paramIndex].RequestRatingPercent
-			simTypeList := job.params[paramIndex].Model.SimRatioWeighting.NonZeroTypes()
+			simTypeList := job.params[paramIndex].Model.SimPriority.SimTypes()
 			for _, simType := range simTypeList {
-				simRatio := job.params[paramIndex].Model.SimRatioWeighting.Get(simType)
+				simRatio := job.params[paramIndex].Model.SimPriority.GetOrPanic(simType)
 				value := simStats.Get(simType)
 				rankArray, _ := rankInputArrays.ValuesForKeyAsSlice(paramIndex, simType)
 				valueRank := slices.Index(rankArray, value)

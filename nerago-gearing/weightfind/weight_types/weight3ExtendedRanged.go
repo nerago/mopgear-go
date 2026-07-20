@@ -11,8 +11,10 @@ import (
 
 // Weight3ExtendedRanged
 type Weight3ExtendedRanged struct {
-	StatWeights    util.MapMapSlice[stats.SimType, stats.StatType, Weight3ExtendedStatEntry]
-	SimMultipliers map[stats.SimType]Weight3ExtendedSimEntry
+	StatWeights util.MapMapSlice[stats.SimType, stats.StatType, Weight3ExtendedStatEntry]
+	SimRatio    SimPriorityExtended
+	StatList    []stats.StatType
+	SimList     []stats.SimType
 }
 
 type Weight3ExtendedStatEntry struct {
@@ -23,19 +25,14 @@ type Weight3ExtendedStatEntry struct {
 	EstimationQuality float64 // higher is better
 }
 
-type Weight3ExtendedSimEntry struct {
-	// calculated so that range of values is consistent (e.g. 0-100)
-	// is offset needed, would give more real values for tmi/death, but would that change result
-	Scale    float64
-	Offset   float64
-	Minimise bool
+func Weight3ExtendedRanged_Make(statList []stats.StatType, simList []stats.SimType) *Weight3ExtendedRanged {
+	return &Weight3ExtendedRanged{
+		StatList: statList,
+		SimList:  simList,
+	}
 }
 
-func Weight3ExtendedRanged_Make() Weight3ExtendedRanged {
-	return Weight3ExtendedRanged{}
-}
-
-func (wer *Weight3ExtendedRanged) Add(simType stats.SimType, statType stats.StatType, statRange StatRange, ratingWeight, ratingOffset, estimationQuality float64) {
+func (wer *Weight3ExtendedRanged) AddDetailWeight(simType stats.SimType, statType stats.StatType, statRange StatRange, ratingWeight, ratingOffset, estimationQuality float64) {
 	wer.StatWeights.Add(simType, statType, Weight3ExtendedStatEntry{
 		StatRange:         statRange,
 		RatingWeight:      ratingWeight,
@@ -52,17 +49,21 @@ func (wer *Weight3ExtendedRanged) Add(simType stats.SimType, statType stats.Stat
 	})
 }
 
-func (wer *Weight3ExtendedRanged) Validate() {
+func (wer *Weight3ExtendedRanged) AddSimScale(simType stats.SimType, scale, offset float64) {
+	wer.SimRatio.AddSimScale(simType, scale, offset)
+}
+
+func (wer *Weight3ExtendedRanged) FinishAndValidate() {
 	// no gaps etc
 }
 
-func (wer *Weight3ExtendedRanged) ConvertToWeight2() Weight2Extended {
-	simRatio := wer.makeEquivalentSimRatio()
-
-	weight2 := Weight2Extended_Make(simRatio)
+func (wer *Weight3ExtendedRanged) ConvertToWeight2() *Weight2Extended {
+	weight2 := Weight2Extended_Make(wer.StatList, wer.SimList)
 	for entry := range wer.StatWeights.SeqGroupsKeysNestedValueSeq() {
-		weight2.Put(entry.Key2, entry.Key1, chooseBest(entry.ValueSeq))
+		bestValue := chooseBest(entry.ValueSeq)
+		weight2.PutWeight(entry.Key2, entry.Key1, bestValue)
 	}
+	weight2.FinishAndValidate()
 	return weight2
 }
 
@@ -74,13 +75,4 @@ func chooseBest(statEntrySeq iter.Seq[Weight3ExtendedStatEntry]) float64 {
 
 	bestEntry := best.GetBestOrPanic()
 	return bestEntry.RatingWeight
-}
-
-func (wer *Weight3ExtendedRanged) makeEquivalentSimRatio() stats.SimData {
-	simRatio := stats.SimData{}
-	for simType, entry := range wer.SimMultipliers {
-		simRatio.Set(simType, entry.Scale)
-	}
-	simRatio = *simRatio.ScaleForTotalSum(1.0)
-	return simRatio
 }

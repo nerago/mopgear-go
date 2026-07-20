@@ -57,6 +57,7 @@ func (types SimType) Name() string {
 }
 
 var SimTypeList = []SimType{Sim_DPS, Sim_TPS, Sim_DTPS, Sim_HPS, Sim_TMI, Sim_DEATH}
+var SimTypeEnum = util.EnumType[SimType]{Values: SimTypeList}
 
 const simTypeCount = 6
 
@@ -70,21 +71,6 @@ type SimDataDetail struct {
 	Min    float64
 	Max    float64
 	StdDev float64
-}
-
-func SimData_Make(parts ...any) SimData {
-	sim := SimData{}
-	for i := 0; i < len(parts); i += 2 {
-		simType := parts[i].(SimType)
-
-		switch value := parts[i+1].(type) {
-		case int:
-			sim.Set(simType, float64(value))
-		case float64:
-			sim.Set(simType, value)
-		}
-	}
-	return sim
 }
 
 func (sim *SimData) Print(printer *util.PrintRecorder) {
@@ -227,39 +213,6 @@ func (sim *SimData) Seq() iter.Seq2[SimType, float64] {
 	}
 }
 
-func (sim *SimData) NonZeroTypes() []SimType {
-	types := [6]SimType{}
-	index := 0
-	if sim.Values[Sim_DPS] != 0 {
-		types[index] = Sim_DPS
-		index++
-	}
-	if sim.Values[Sim_TPS] != 0 {
-		types[index] = Sim_TPS
-		index++
-	}
-	if sim.Values[Sim_DTPS] != 0 {
-		types[index] = Sim_DTPS
-		index++
-	}
-	if sim.Values[Sim_HPS] != 0 {
-		types[index] = Sim_HPS
-		index++
-	}
-	if sim.Values[Sim_TMI] != 0 {
-		types[index] = Sim_TMI
-		index++
-	}
-	if sim.Values[Sim_DEATH] != 0 {
-		types[index] = Sim_DEATH
-		index++
-	}
-	if index == 0 {
-		panic("empty SimData")
-	}
-	return types[0:index]
-}
-
 func (sim *SimData) QueryIncreaseOfEach(baseSim *SimData) *SimData {
 	if sim.IsEmpty() || baseSim.IsEmpty() {
 		panic("empty sim shouldn't get called here")
@@ -313,22 +266,4 @@ func (sim *SimData) EqualsIncludingDetail(other *SimData) bool {
 	return sim.Values == other.Values &&
 		util.NilSafeEqualComparable(sim.Detail, other.Detail) &&
 		sim.SimIterations == other.SimIterations
-}
-
-func (sim *SimData) ScaleForTotalSum(targetTotal float64) *SimData {
-	if sim.Detail != nil {
-		panic("don't know how to scale details")
-	}
-
-	currentTotal := 0.0
-	for i := range sim.Values {
-		currentTotal += sim.Values[i]
-	}
-	scale := targetTotal / currentTotal
-
-	result := new(SimData)
-	for i := range sim.Values {
-		result.Values[i] = sim.Values[i] * scale
-	}
-	return result
 }

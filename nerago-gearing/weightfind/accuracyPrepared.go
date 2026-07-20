@@ -2,7 +2,6 @@ package weightfind
 
 import (
 	"cmp"
-	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/weightfind/simrank"
 	"paladin_gearing_go/weightfind/weight_types"
@@ -15,7 +14,7 @@ type EvaluateAccuracyPrepared struct {
 	hiLoPool       []util.HiLoInt
 }
 
-func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, simRatios stats.SimData, simCalcMode int) {
+func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, simRatios weight_types.SimPriorityBasic, simCalcMode int) {
 	if simCalcMode == 0 {
 		panic("mode not provided")
 	}
@@ -28,7 +27,7 @@ func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, s
 		}
 	})
 
-	requiredSims := simRatios.NonZeroTypes()
+	requiredSims := simRatios.SimTypes()
 	if simCalcMode == 1 {
 		simrank.RankSimsBasicForAccuracyPrepare(simRatios, data, requiredSims)
 	} else {
