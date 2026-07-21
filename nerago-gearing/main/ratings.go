@@ -176,7 +176,7 @@ func statWeightsFormula(printer *util.PrintRecorder) {
 	comp.Init(printer)
 	comp.SetRequiredStats(gear_model.StatsForWeighting_strengthTank)
 	comp.SetTargetRatios(gear_model.SimPriority_generalMiti)
-	comp.SetMinimumIncludeRate(0.7)
+	comp.SetMinimumIncludeRate(1.0)
 	comp.SupplyData(filteredInput)
 	weights2 := comp.Run(nil, 3000).WaitForResultOrPanic()
 	weights1 := weights2.ConvertToWeight1()

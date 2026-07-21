@@ -12,9 +12,9 @@ import (
 // Weight3ExtendedRanged
 type Weight3ExtendedRanged struct {
 	StatWeights util.MapMapSlice[stats.SimType, stats.StatType, Weight3ExtendedStatEntry]
-	SimRatio    SimPriorityExtended
 	StatList    []stats.StatType
 	SimList     []stats.SimType
+	SimPriority SimPriorityExtended
 }
 
 type Weight3ExtendedStatEntry struct {
@@ -27,8 +27,9 @@ type Weight3ExtendedStatEntry struct {
 
 func Weight3ExtendedRanged_Make(statList []stats.StatType, simList []stats.SimType) *Weight3ExtendedRanged {
 	return &Weight3ExtendedRanged{
-		StatList: statList,
-		SimList:  simList,
+		StatList:    statList,
+		SimList:     simList,
+		SimPriority: SimPriorityExtended_Make(),
 	}
 }
 
@@ -50,7 +51,7 @@ func (wer *Weight3ExtendedRanged) AddDetailWeight(simType stats.SimType, statTyp
 }
 
 func (wer *Weight3ExtendedRanged) AddSimScale(simType stats.SimType, scale, offset float64) {
-	wer.SimRatio.AddSimScale(simType, scale, offset)
+	wer.SimPriority.SetSimScale(simType, scale, offset)
 }
 
 func (wer *Weight3ExtendedRanged) FinishAndValidate() {

@@ -337,6 +337,38 @@ func FindWith[T any](slice []T, check func(T) bool) T {
 	panic("not found")
 }
 
+func FindMinFunc[T any, V Number](slice []T, toValue func(*T) V) *T {
+	if len(slice) == 0 {
+		panic("empty slice")
+	}
+	minElement := &slice[0]
+	minValue := toValue(minElement)
+	for i := 1; i < len(slice); i++ {
+		value := toValue(&slice[i])
+		if value < minValue {
+			minValue = value
+			minElement = &slice[i]
+		}
+	}
+	return minElement
+}
+
+func FindMaxFunc[T any, V Number](slice []T, toValue func(*T) V) *T {
+	if len(slice) == 0 {
+		panic("empty slice")
+	}
+	maxElement := &slice[0]
+	maxValue := toValue(maxElement)
+	for i := 1; i < len(slice); i++ {
+		value := toValue(&slice[i])
+		if value > maxValue {
+			maxValue = value
+			maxElement = &slice[i]
+		}
+	}
+	return maxElement
+}
+
 // guarantees that each ranking number is used in range, even given duplicate numbers
 func CalculateRanking[T any](highGood bool, inputData []T, toScore func(*T) float64) iter.Seq2[*T, int] {
 	type internalEntry struct {

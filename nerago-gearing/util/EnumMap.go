@@ -18,10 +18,10 @@ func (et EnumType[E]) Validate() {
 }
 
 type EnumMap[E ~uint8, V any] struct {
-	content  []V
-	isSet    []bool
-	len      int
-	enumType EnumType[E]
+	content []V
+	isSet   []bool
+	len     int
+	//enumType EnumType[E]
 }
 
 func EnumMapMake[E ~uint8, V any](enumType EnumType[E]) EnumMap[E, V] {
@@ -30,8 +30,12 @@ func EnumMapMake[E ~uint8, V any](enumType EnumType[E]) EnumMap[E, V] {
 		make([]V, len(enumType.Values)),
 		make([]bool, len(enumType.Values)),
 		0,
-		enumType,
+		//enumType,
 	}
+}
+
+func (em *EnumMap[E, V]) IsUninitialized() bool {
+	return em.content == nil || em.isSet == nil /*|| em.enumType.Values == nil*/
 }
 
 func (em *EnumMap[E, V]) Clone() *EnumMap[E, V] {
@@ -39,7 +43,7 @@ func (em *EnumMap[E, V]) Clone() *EnumMap[E, V] {
 		slices.Clone(em.content),
 		slices.Clone(em.isSet),
 		em.len,
-		em.enumType,
+		//em.enumType,
 	}
 }
 
@@ -66,6 +70,14 @@ func (em *EnumMap[E, V]) Has(key E) bool {
 
 func (em *EnumMap[E, V]) Get(key E) (V, bool) {
 	return em.content[key], em.isSet[key]
+}
+
+func (em *EnumMap[E, V]) GetOrPanic(key E) V {
+	if em.isSet[key] {
+		return em.content[key]
+	} else {
+		panic("key not set")
+	}
 }
 
 func (em *EnumMap[E, V]) Put(key E, value V) {

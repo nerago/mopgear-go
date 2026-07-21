@@ -17,6 +17,11 @@ type SimPriorityBasic struct {
 	content util.EnumMap[stats.SimType, float64]
 }
 
+func SimPriorityBasic_MakeEmpty(parts ...any) SimPriorityBasic {
+	return SimPriorityBasic{
+		content: util.EnumMapMake[stats.SimType, float64](stats.SimTypeEnum),
+	}
+}
 func SimPriorityBasic_Make(parts ...any) SimPriorityBasic {
 	sim := SimPriorityBasic{
 		content: util.EnumMapMake[stats.SimType, float64](stats.SimTypeEnum),
@@ -88,25 +93,37 @@ func (sr *SimPriorityBasic) ValidateRatioAddsToOne() {
 // for extended stats planned calculation is:
 // statA*weight1A + statB*weight1B + statC*weight1C = sim1
 // statA*weight2A + statB*weight2B + statC*weight2C = sim2
-// sim1*scale1+offset = 0-100 (better is higher)
+// (sim1+offset1)*scale1 = 0-1.0 (better is higher)
 type SimPriorityExtended struct {
 	entries util.EnumMap[stats.SimType, SimPriorityEntry]
 }
 type SimPriorityEntry struct {
-	// calculated so that range of values is consistent (e.g. 0-100)
-	Scale  float64
-	Offset float64
+	RangingScale  float64 // calculates values so that range is consistent (e.g. 0-1.0)
+	RangingOffset float64
+	RatioScale    float64 // relative factor to other sim entries to establish priority
+}
+
+func (se SimPriorityEntry) Apply(subtotal float64) float64 {
+	return (subtotal + se.RangingOffset) * se.RangingScale * se.RatioScale
 }
 
 func SimPriorityExtended_Make() SimPriorityExtended {
 	return SimPriorityExtended{util.EnumMapMake[stats.SimType, SimPriorityEntry](stats.SimTypeEnum)}
 }
 
+func (sre *SimPriorityExtended) checkInitialized() {
+	if sre == nil || sre.entries.IsUninitialized() {
+		panic("SimPriorityExtended not initialized")
+	}
+}
+
 func (sre *SimPriorityExtended) Get(simType stats.SimType) (SimPriorityEntry, bool) {
+	sre.checkInitialized()
 	return sre.entries.Get(simType)
 }
 
 func (sre *SimPriorityExtended) GetOrPanic(simType stats.SimType) SimPriorityEntry {
+	sre.checkInitialized()
 	entry, hasEntry := sre.entries.Get(simType)
 	if !hasEntry {
 		panic("missing entry")
@@ -114,28 +131,27 @@ func (sre *SimPriorityExtended) GetOrPanic(simType stats.SimType) SimPriorityEnt
 	return entry
 }
 
-func (sre *SimPriorityExtended) AddSimScale(simType stats.SimType, scale float64, offset float64) {
+func (sre *SimPriorityExtended) SetSimScale(simType stats.SimType, rangingScale, rangingOffset, ratioScale float64) {
+	sre.checkInitialized()
 	if sre.entries.Has(simType) {
 		panic("duplicate")
 	}
 	sre.entries.Put(simType, SimPriorityEntry{
-		Scale:  scale,
-		Offset: offset,
+		RangingScale:  rangingScale,
+		RangingOffset: rangingOffset,
+		RatioScale:    ratioScale,
 	})
 }
 
 func (sre *SimPriorityExtended) Validate() {
-
+	sre.checkInitialized()
 }
 
 func (sre *SimPriorityExtended) ConvertToBasic() SimPriorityBasic {
-	simRatio := SimPriorityBasic{}
+	sre.checkInitialized()
+	simRatio := SimPriorityBasic_MakeEmpty()
 	for simType, entry := range sre.entries.SeqKeyValue() {
-		value := entry.Scale
-		if value < 0 {
-			value *= -1
-		}
-		simRatio.Set(simType, entry.Scale)
+		simRatio.Set(simType, entry.RatioScale)
 	}
 	simRatio = *simRatio.ScaleForTotalSum(1.0)
 	return simRatio

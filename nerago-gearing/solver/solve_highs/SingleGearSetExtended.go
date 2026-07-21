@@ -165,8 +165,8 @@ func (setup *singleGearSetExtended) calcSimValues(weight *weight_types.Weight2Ex
 			simValueFromStatRow.Add(statColumn.columnIndex, weightValue)
 		}
 
-		simEntry := weight.SimPriority().GetOrPanic(simType)
-		offset := -simEntry.Offset / simEntry.Scale
+		simEntry := weight.GetSimPriority().GetOrPanic(simType)
+		offset := -simEntry.RangingOffset / simEntry.Scale
 		simValueFromStatRow.Add(simValueColumn.columnIndex, -1.0/simEntry.Scale)
 		simValueFromStatRow.Build(setup.build, offset, offset)
 	}

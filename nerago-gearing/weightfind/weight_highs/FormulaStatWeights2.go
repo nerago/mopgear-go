@@ -11,12 +11,12 @@ import (
 )
 
 const (
-	c_formulaHighWeight       = 50.0
-	c_formulaHighDiff         = 1000.0
-	c_formulaOutputPerInclude = -0.1
+	c_formula2HighDiff         = 1000.0
+	c_formula2OutputPerInclude = -0.1
+	c_formula2ScaleTarget      = 1.0
 )
 
-type FormulaStatWeightProcess struct {
+type FormulaStatWeightProcess2 struct {
 	printer *util.PrintRecorder
 
 	targetRatios  weight_types.SimPriorityBasic
@@ -33,34 +33,35 @@ type FormulaStatWeightProcess struct {
 	scaleSims             map[stats.SimType]float64
 	scaleStats            map[stats.StatType]float64
 	detailedWeightColumns util.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
+	offsetColumns         map[stats.SimType]util_highs.ColumnIndex
 
 	minimumIncludeRate float64
 	includeColumns     []util_highs.ColumnIndex
 	includeCountRow    util_highs.ConstraintRow
 }
 
-func (form *FormulaStatWeightProcess) Init(printer *util.PrintRecorder) {
+func (form *FormulaStatWeightProcess2) Init(printer *util.PrintRecorder) {
 	form.printer = printer
 }
 
-func (form *FormulaStatWeightProcess) SupplyData(inputData []weight_types.WeightInput) {
+func (form *FormulaStatWeightProcess2) SupplyData(inputData []weight_types.WeightInput) {
 	form.inputData = inputData
 }
 
-func (form *FormulaStatWeightProcess) SetRequiredStats(requiredStats []stats.StatType) {
+func (form *FormulaStatWeightProcess2) SetRequiredStats(requiredStats []stats.StatType) {
 	form.requiredStats = requiredStats
 }
 
-func (form *FormulaStatWeightProcess) SetTargetRatios(targetRatios weight_types.SimPriorityBasic) {
+func (form *FormulaStatWeightProcess2) SetTargetRatios(targetRatios weight_types.SimPriorityBasic) {
 	form.targetRatios = targetRatios
 	form.requiredSims = targetRatios.SimTypes()
 }
 
-func (form *FormulaStatWeightProcess) SetMinimumIncludeRate(percent float64) {
+func (form *FormulaStatWeightProcess2) SetMinimumIncludeRate(percent float64) {
 	form.minimumIncludeRate = percent
 }
 
-func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int) *util_async.FutureCancellable[weight_types.Weight2Extended] {
+func (form *FormulaStatWeightProcess2) Run(stopwatch *util.Stopwatch, timeout int) *util_async.FutureCancellable[weight_types.Weight2Extended] {
 	form.build = new(util_highs.LinearBuilder)
 	form.build.Minimise = true
 	form.build.Solver = util_highs.Solver_MIP_Interior
@@ -108,57 +109,44 @@ func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int
 	})
 }
 
-func (form *FormulaStatWeightProcess) chooseScaling() {
-	target := 1.0 // TODO consider non-unit range
-	form.scaleSims = chooseSimScalingUnfriendly(form.inputData, target, false, form.printer)
-	form.scaleStats = chooseStatScaling(form.inputData, target, false, form.printer)
+func (form *FormulaStatWeightProcess2) chooseScaling() {
+	target := c_formula2ScaleTarget
+	form.scaleStats = chooseStatScaling(form.inputData, target, true, form.printer)
+	form.scaleSims = chooseSimScalingUnfriendly(form.inputData, target, true, form.printer)
 }
 
-func (form *FormulaStatWeightProcess) createWeightColumns() {
+func (form *FormulaStatWeightProcess2) createWeightColumns() {
 	for _, statType := range form.requiredStats {
 		for _, simType := range form.requiredSims {
-			lo := util_highs.C_MinusInf
-			hi := util_highs.C_PlusInf
-			colDetailWeight := form.build.CreateColumnGeneral(highs.Continuous, lo, hi, util_highs.DebugString{Text: "WEIGHT " + statType.Name() + " " + simType.Name()})
+			colDetailWeight := form.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "WEIGHT " + statType.Name() + " " + simType.Name()})
 			form.detailedWeightColumns.Put(statType, simType, colDetailWeight)
 		}
 	}
 
-	// we don't want to be dealing with 0 strength since that's our base stat to scale against
-	// in general for this algorithm we're aiming for a direct equation again simValue
-	// so should be very rare unless it really seems like strength has zero contribution
-
-	// could resurrect old approach:
-	// for _, colDetailWeight := range comp.detailedWeightColumns.SeqInnerWithKey1Value(stats.Stat_Strength) {
-	// 	comp.makeNotBetween(colDetailWeight, -minimumStrength, minimumStrength)
-	// }
+	for _, simType := range form.requiredSims {
+		form.offsetColumns[simType] = form.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "OFFSET " + simType.Name()})
+	}
 }
 
-//func (form *FormulaStatWeightProcess) makeNotBetween(checkColumn utilhighs.ColumnIndex, lo, hi float64) {
-//	form.build.ColumnIsNotBetweenConstantsVerify(checkColumn, lo, hi, c_complexHighWeight)
-//}
-
-func (form *FormulaStatWeightProcess) buildDataEquations() {
+func (form *FormulaStatWeightProcess2) buildDataEquations() {
 	for data := range util.ForPointer(form.inputData) {
 		form.buildDataEquationForInput(data)
 	}
 }
 
-func (form *FormulaStatWeightProcess) buildDataEquationForInput(data *weight_types.WeightInput) {
+func (form *FormulaStatWeightProcess2) buildDataEquationForInput(data *weight_types.WeightInput) {
 	includeColumn := form.sampleIncludeToggleColumn()
 	for _, simType := range form.requiredSims {
 		form.buildDataEquationForSim(&data.TotalStat, data.SimResult.Get(simType), simType, includeColumn)
 	}
 }
 
-func (form *FormulaStatWeightProcess) sampleIncludeToggleColumn() util_highs.ColumnIndex {
-	includeColumn := form.build.CreateColumnBoolWithObjective(c_formulaOutputPerInclude, form.objectiveInclude, util_highs.DebugString{Text: "include"})
+func (form *FormulaStatWeightProcess2) sampleIncludeToggleColumn() util_highs.ColumnIndex {
+	includeColumn := form.build.CreateColumnBoolWithObjective(c_formula2OutputPerInclude, form.objectiveInclude, util_highs.DebugString{Text: "include"})
 	form.includeCountRow.Add(includeColumn, 1)
 	form.includeColumns = append(form.includeColumns, includeColumn)
 	return includeColumn
 }
-
-// TODO is there a way to flip the division for TMI DEATH etc, fundamental problem is that they don't increase linearly with stats
 
 // for normal dps/hps/tps etc.
 // equation is: weightA*scaledStatA + weightB*scaledStatB = scaledSimValue - diff
@@ -195,7 +183,14 @@ func (form *FormulaStatWeightProcess) sampleIncludeToggleColumn() util_highs.Col
 //                        or
 //  100 / death - 1 = statA * weightA + statB * weightB                          [possible formula here since death const]
 
-func (form *FormulaStatWeightProcess) buildDataEquationForSim(stats *stats.StatBlock, simValue float64, simType stats.SimType, includeColumn util_highs.ColumnIndex) {
+// another alternative is ignoring this complexity and going back closer to standard
+// weights*stats = simValue
+// that that only works for the positive model
+// the better starting point is: death = 100% - weightA*scaledStatA - weightB*scaledStatB
+// in more generic form:         simValue = sharedOffset + weightA*scaledStatA + weightB*scaledStatB  (allowing stats weights to go negative as much as they need)
+// advantage is this form can be used for everything
+
+func (form *FormulaStatWeightProcess2) buildDataEquationForSim(stats *stats.StatBlock, simValue float64, simType stats.SimType, includeColumn util_highs.ColumnIndex) {
 	matchSimValue := util_highs.ConstraintRow{}
 
 	for _, statType := range form.requiredStats {
@@ -207,18 +202,21 @@ func (form *FormulaStatWeightProcess) buildDataEquationForSim(stats *stats.StatB
 		matchSimValue.Add(weightDetailCol, scaledStatValue)
 	}
 
-	diffSigned := form.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "diffSigned"})
-	matchSimValue.Add(diffSigned, 1)
+	deviationSigned := form.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "deviationSigned"})
+	deviationAbsOutput := form.build.CreateColumnWithObjective(highs.Continuous, 0, c_formula2HighDiff, 1, form.objectiveEquationDiff, util_highs.DebugString{Text: "deviationAbsOutput"})
 
-	diffOutput := form.build.CreateColumnWithObjective(highs.Continuous, 0, c_formulaHighDiff, 1, form.objectiveEquationDiff, util_highs.DebugString{Text: "diffOutput"})
-	form.build.AbsoluteValue_WithToggle(diffSigned, diffOutput, includeColumn, c_formulaHighDiff)
+	matchSimValue.Add(deviationSigned, 1)
+	form.build.AbsoluteValue_WithToggle(deviationSigned, deviationAbsOutput, includeColumn, c_formula2HighDiff)
+
+	sharedOffsetCol := form.offsetColumns[simType]
+	matchSimValue.Add(sharedOffsetCol, 1)
 
 	simScale := form.scaleSims[simType]
 	scaledSimValue := simValue * simScale
 	matchSimValue.Build(form.build, scaledSimValue, scaledSimValue)
 }
 
-func (form *FormulaStatWeightProcess) extractAndReportSolution(solution *highs.Solution) weight_types.Weight2Extended {
+func (form *FormulaStatWeightProcess2) extractAndReportSolution(solution *highs.Solution) weight_types.Weight2Extended {
 	form.build.DebugPrintColumns(solution, form.printer)
 
 	form.printer.Println("WEIGHTS")
@@ -230,7 +228,7 @@ func (form *FormulaStatWeightProcess) extractAndReportSolution(solution *highs.S
 	return weightExtended
 }
 
-func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solution) weight_types.Weight2Extended {
+func (form *FormulaStatWeightProcess2) extractDetailWeights(solution *highs.Solution) weight_types.Weight2Extended {
 	// extract and report on detail weights
 	weightExtended := weight_types.Weight2Extended_Make(form.requiredStats, form.requiredSims)
 	for entry := range form.detailedWeightColumns.SeqWithKeys() {
@@ -239,21 +237,6 @@ func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solut
 		column := entry.Value
 
 		modelWeight := solution.ColValues[column]
-
-		// basic equation is: weightA*scaledStatA + weightB*scaledStatB = scaledSim - diff
-		// taking one component: modelWeight * scaledStat = scaledSimValue
-		// substitute in scaledStat = stat * statScale, scaledSim = sim * simScale, modelWeight = usableWeight * scaleFix
-		//   -->   (usableWeight * scaleFix) * (stat * statScale) = (sim * simScale)
-		//   -->   (usableWeight * scaleFix) = (sim * simScale) / (stat * statScale)
-		//   -->     usableWeight * scaleFix = (sim * simScale) / (stat * statScale)
-		//   -->                    scaleFix = ( (sim * simScale) / (stat * statScale) ) / usableWeight
-		//   -->                    scaleFix = (sim / stat) * (simScale / statScale) / usableWeight
-		// the essential equation we're kinda working on is weight = sim / stat, so that can cancel out
-		//   -->                    scaleFix = (sim / stat) * (simScale / statScale) / (sim / stat)
-		//   -->                    scaleFix = simScale / statScale
-		// substituting back in: modelWeight = usableWeight * scaleFix
-		//   --> modelWeight = usableWeight * scaleFix
-		//   --> usableWeight = modelWeight / scaleFix
 
 		scaleFix := form.scaleSims[simType] / form.scaleStats[statType]
 		usableWeight := modelWeight / scaleFix
@@ -274,7 +257,7 @@ func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solut
 	return *weightExtended
 }
 
-func (form *FormulaStatWeightProcess) reportExamples(weightExtended *weight_types.Weight2Extended) {
+func (form *FormulaStatWeightProcess2) reportExamples(weightExtended *weight_types.Weight2Extended) {
 	for i := range min(20, len(form.inputData)) {
 		data := form.inputData[i]
 		form.printer.Println("EXAMPLE")
@@ -295,7 +278,7 @@ func (form *FormulaStatWeightProcess) reportExamples(weightExtended *weight_type
 	}
 }
 
-func (form *FormulaStatWeightProcess) reportInclude(solution *highs.Solution) {
+func (form *FormulaStatWeightProcess2) reportInclude(solution *highs.Solution) {
 	var includeCount uint32 = 0
 	for _, col := range form.includeColumns {
 		if util.FloatEqualsOne(solution.ColValues[col]) {

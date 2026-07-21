@@ -20,10 +20,9 @@ const (
 	c_threads            = 6
 )
 
-// not really consts but would be nice
-var (
-	C_MinusInf = math.Inf(-1)
-	C_PlusInf  = math.Inf(1)
+const (
+	C_PlusInf  float64 = 0x7FF0000000000000
+	C_MinusInf float64 = 0xFFF0000000000000
 )
 
 type SolverMode int8

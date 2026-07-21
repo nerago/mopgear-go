@@ -2,6 +2,10 @@ package util
 
 import "math"
 
+type Number interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64
+}
+
 func MaxIgnoreNaN(a, b float64) float64 {
 	if math.IsNaN(a) {
 		return b
@@ -30,7 +34,7 @@ func MaxIgnoreNaN3(a, b, c float64) float64 {
 	}
 }
 
-func AbsIntDiff(a, b int) int {
+func AbsDiff[N Number](a, b N) N {
 	if a > b {
 		return a - b
 	} else {
@@ -38,23 +42,7 @@ func AbsIntDiff(a, b int) int {
 	}
 }
 
-func AbsInt32Diff(a, b int32) int32 {
-	if a > b {
-		return a - b
-	} else {
-		return b - a
-	}
-}
-
-func AbsInt64Diff(a, b int64) int64 {
-	if a > b {
-		return a - b
-	} else {
-		return b - a
-	}
-}
-
-func Clamp(value, min, max float64) float64 {
+func Clamp[N Number](value, min, max N) N {
 	if value < min {
 		return min
 	} else if value > max {
