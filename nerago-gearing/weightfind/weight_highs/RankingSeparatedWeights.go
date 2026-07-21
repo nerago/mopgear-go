@@ -6,17 +6,18 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_highs"
+	"paladin_gearing_go/weightfind/simrank"
 	"paladin_gearing_go/weightfind/weight_types"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 const (
-	c_rank_sep_maxWeight = 1000.0
-	c_rank_sep_scoreMin  = 0.0
-	c_rank_sep_scoreMax  = 1.0
-	//c_rank_sep_score_unequal_gap = 0.001 // needs to fit N samples within scoreMax
-	c_rank_sep_score_unequal_gap = 0.0 // needs to fit N samples within scoreMax
+	c_rank_sep_maxWeight         = 1000.0
+	c_rank_sep_scoreMin          = 0.0
+	c_rank_sep_scoreMax          = 1.0
+	c_rank_sep_score_unequal_gap = 0.001 // needs to fit N samples within scoreMax
+	//c_rank_sep_score_unequal_gap = 0.0 // needs to fit N samples within scoreMax
 )
 
 type RankingSeparatedWeights struct {
@@ -26,7 +27,7 @@ type RankingSeparatedWeights struct {
 	targetRatios  weight_types.SimPriorityBasic
 	requiredStats []stats.StatType
 	requiredSims  []stats.SimType
-	dataEntries   []RankEntrySeparated
+	dataEntries   []*rankEntrySeparated
 
 	build *util_highs.LinearBuilder
 
@@ -34,14 +35,29 @@ type RankingSeparatedWeights struct {
 	offsetColumns         map[stats.SimType]util_highs.ColumnIndex
 }
 
-type RankEntrySeparated struct {
-	Data  *weight_types.WeightInput
-	BySim util.EnumMap[stats.SimType, RankDetailSeparated]
+type rankEntrySeparated struct {
+	data  *weight_types.WeightInput
+	bySim util.EnumMap[stats.SimType, rankDetailSeparated]
 }
 
-type RankDetailSeparated struct {
-	TargetRank  int
-	ScoreColumn util_highs.ColumnIndex
+func (r *rankEntrySeparated) GetSimData() *stats.SimData {
+	return &r.data.SimResult
+}
+
+func (r *rankEntrySeparated) GetTargetRankBySim(simType stats.SimType) int {
+	return r.bySim.GetOrPanic(simType).targetRank
+}
+
+func (r *rankEntrySeparated) SetTargetRankBySim(simType stats.SimType, targetRank int) {
+	r.bySim.Put(simType, rankDetailSeparated{
+		targetRank:  targetRank,
+		scoreColumn: -1,
+	})
+}
+
+type rankDetailSeparated struct {
+	targetRank  int
+	scoreColumn util_highs.ColumnIndex
 }
 
 func (ranker *RankingSeparatedWeights) Init(printer *util.PrintRecorder, timeoutSeconds int) {
@@ -50,11 +66,11 @@ func (ranker *RankingSeparatedWeights) Init(printer *util.PrintRecorder, timeout
 }
 
 func (ranker *RankingSeparatedWeights) SupplyData(inputData []weight_types.WeightInput) {
-	inputData = takeDataSample_Random(inputData, 20)
-	ranker.dataEntries = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) RankEntrySeparated {
-		return RankEntrySeparated{
-			Data:  input,
-			BySim: util.EnumMapMake[stats.SimType, RankDetailSeparated](stats.SimTypeEnum),
+	inputData = takeDataSample_Random(inputData, 100)
+	ranker.dataEntries = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntrySeparated {
+		return &rankEntrySeparated{
+			data:  input,
+			bySim: util.EnumMapMake[stats.SimType, rankDetailSeparated](stats.SimTypeEnum),
 		}
 	})
 }
@@ -81,7 +97,7 @@ func (ranker *RankingSeparatedWeights) Run(stopwatch *util.Stopwatch) *util_asyn
 	ranker.newBuilder()
 	ranker.prepareRankings()
 	ranker.createWeightColumns()
-	ranker.doAlgos()
+	ranker.processData()
 	solutionFuture := ranker.build.RunHighsFuture(stopwatch)
 
 	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.Weight2Extended, bool) {
@@ -119,80 +135,71 @@ func (ranker *RankingSeparatedWeights) createOffsetColumn(simType stats.SimType)
 }
 
 func (ranker *RankingSeparatedWeights) prepareRankings() {
-	// score each sim
-	RankSimsForRankingSeparated(ranker.requiredSims, ranker.dataEntries)
-	//TODO use simrank
+	simrank.RankSimsForRankingSeparated(ranker.requiredSims, ranker.dataEntries)
 }
 
-func RankSimsForRankingSeparated(requiredSims []stats.SimType, dataEntries []RankEntrySeparated) {
-	for _, simType := range requiredSims {
-		for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), dataEntries, func(x *RankEntrySeparated) float64 { return x.Data.SimResult.Get(simType) }) {
-			entry.BySim.Put(simType, RankDetailSeparated{
-				TargetRank:  simDetailRank,
-				ScoreColumn: -1,
-			})
-		}
-	}
-}
-
-func (ranker *RankingSeparatedWeights) doAlgos() {
+func (ranker *RankingSeparatedWeights) processData() {
 	for _, simType := range ranker.requiredSims {
-		ranker.makeDataListEntryColumns(simType)
-
-		for baseIndex := range ranker.dataEntries {
-			for compareTo := baseIndex + 1; compareTo < len(ranker.dataEntries); compareTo++ {
-				ranker.makeEntryPair(
-					ranker.dataEntries[baseIndex].BySim.GetOrPanic(simType),
-					ranker.dataEntries[compareTo].BySim.GetOrPanic(simType),
-				)
-			}
-		}
-
-		minRankEntry := util.FindMinFunc(ranker.dataEntries, func(e *RankEntrySeparated) int { return e.BySim.GetOrPanic(simType).TargetRank })
-		ranker.makeEntryRankExact(0.0, minRankEntry.BySim.GetOrPanic(simType))
-		maxRankEntry := util.FindMaxFunc(ranker.dataEntries, func(e *RankEntrySeparated) int { return e.BySim.GetOrPanic(simType).TargetRank })
-		ranker.makeEntryRankExact(1.0, maxRankEntry.BySim.GetOrPanic(simType))
+		ranker.processDataForSim(simType)
 	}
+}
+
+func (ranker *RankingSeparatedWeights) processDataForSim(simType stats.SimType) {
+	ranker.makeDataListEntryColumns(simType)
+
+	for baseIndex := range ranker.dataEntries {
+		for compareTo := baseIndex + 1; compareTo < len(ranker.dataEntries); compareTo++ {
+			ranker.makeEntryPair(
+				ranker.dataEntries[baseIndex].bySim.GetOrPanic(simType),
+				ranker.dataEntries[compareTo].bySim.GetOrPanic(simType),
+			)
+		}
+	}
+
+	minRankEntry := util.FindMinFunc(ranker.dataEntries, func(e *rankEntrySeparated) int { return e.bySim.GetOrPanic(simType).targetRank })
+	ranker.makeEntryRankExact(0.0, minRankEntry.bySim.GetOrPanic(simType))
+	maxRankEntry := util.FindMaxFunc(ranker.dataEntries, func(e *rankEntrySeparated) int { return e.bySim.GetOrPanic(simType).targetRank })
+	ranker.makeEntryRankExact(1.0, maxRankEntry.bySim.GetOrPanic(simType))
 }
 
 func (ranker *RankingSeparatedWeights) makeDataListEntryColumns(simType stats.SimType) {
-	for entry := range util.ForPointer(ranker.dataEntries) {
-		detail := entry.BySim.GetOrPanic(simType)
+	for _, entry := range ranker.dataEntries {
+		detail := entry.bySim.GetOrPanic(simType)
 		ranker.setupScoreColumn(&detail, entry, simType)
-		entry.BySim.Put(simType, detail)
+		entry.bySim.Put(simType, detail)
 	}
 }
 
-func (ranker *RankingSeparatedWeights) setupScoreColumn(detail *RankDetailSeparated, entry *RankEntrySeparated, simType stats.SimType) {
-	debugStr := fmt.Sprintf("score-%s-%d", simType.Name(), detail.TargetRank)
-	detail.ScoreColumn = ranker.build.CreateColumnGeneral(highs.Continuous, c_rank_sep_scoreMin, c_rank_sep_scoreMax, util_highs.DebugText(debugStr))
+func (ranker *RankingSeparatedWeights) setupScoreColumn(detail *rankDetailSeparated, entry *rankEntrySeparated, simType stats.SimType) {
+	debugStr := fmt.Sprintf("score-%s-%d", simType.Name(), detail.targetRank)
+	detail.scoreColumn = ranker.build.CreateColumnGeneral(highs.Continuous, c_rank_sep_scoreMin, c_rank_sep_scoreMax, util_highs.DebugText(debugStr))
 
 	scoreRow := util_highs.ConstraintRow{Debug: "scoreRow-" + debugStr}
 	for statType, weightColumn := range ranker.detailedWeightColumns.SeqInnerWithKey2Value(simType) {
-		statValue := entry.Data.TotalStat.GetFloat(statType)
+		statValue := entry.data.TotalStat.GetFloat(statType)
 		scoreRow.Add(weightColumn, statValue)
 	}
 
 	offsetCol := ranker.offsetColumns[simType]
 	scoreRow.Add(offsetCol, 1)
 
-	scoreRow.Add(detail.ScoreColumn, -1)
+	scoreRow.Add(detail.scoreColumn, -1)
 	scoreRow.Build(ranker.build, 0, 0)
 }
 
-func (ranker *RankingSeparatedWeights) makeEntryPair(one RankDetailSeparated, two RankDetailSeparated) {
+func (ranker *RankingSeparatedWeights) makeEntryPair(one rankDetailSeparated, two rankDetailSeparated) {
 	slack := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugText("slack"))
 
-	if one.TargetRank > two.TargetRank {
+	if one.targetRank > two.targetRank {
 		row := util_highs.ConstraintRow{}
-		row.Add(one.ScoreColumn, 1)
-		row.Add(two.ScoreColumn, -1)
+		row.Add(one.scoreColumn, 1)
+		row.Add(two.scoreColumn, -1)
 		row.Add(slack, 1)
 		row.Build(ranker.build, c_rank_sep_score_unequal_gap, util_highs.C_PlusInf)
-	} else if two.TargetRank > one.TargetRank {
+	} else if two.targetRank > one.targetRank {
 		row := util_highs.ConstraintRow{}
-		row.Add(two.ScoreColumn, 1)
-		row.Add(one.ScoreColumn, -1)
+		row.Add(two.scoreColumn, 1)
+		row.Add(one.scoreColumn, -1)
 		row.Add(slack, 1)
 		row.Build(ranker.build, c_rank_sep_score_unequal_gap, util_highs.C_PlusInf)
 	} else {
@@ -201,11 +208,11 @@ func (ranker *RankingSeparatedWeights) makeEntryPair(one RankDetailSeparated, tw
 	}
 }
 
-func (ranker *RankingSeparatedWeights) makeEntryRankExact(targetScore float64, detail RankDetailSeparated) {
+func (ranker *RankingSeparatedWeights) makeEntryRankExact(targetScore float64, detail rankDetailSeparated) {
 	slackEnd := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugText("slack-end"))
 
 	ranker.build.AbsoluteValueFromDiffOneToConst(
-		detail.ScoreColumn, 1,
+		detail.scoreColumn, 1,
 		targetScore,
 		slackEnd,
 		"end",
@@ -242,7 +249,7 @@ func (ranker *RankingSeparatedWeights) reportExamples(weightExtended *weight_typ
 			rowScore := 0.0
 			ranker.printer.Printf(" %10s", simType.Name())
 			for _, statType := range ranker.requiredStats {
-				statValue := data.Data.TotalStat.GetFloat(statType)
+				statValue := data.data.TotalStat.GetFloat(statType)
 				weight := weightExtended.GetWeightOrPanic(statType, simType)
 				ranker.printer.Printf(" {%s %.0f * %.2e = %.4e}", statType.Name(), statValue, weight, statValue*weight)
 				rowScore += statValue * weight
@@ -252,7 +259,7 @@ func (ranker *RankingSeparatedWeights) reportExamples(weightExtended *weight_typ
 			offset := priorityEntry.RangingOffset
 
 			rowScore += offset
-			simValue := data.Data.SimResult.Get(simType)
+			simValue := data.data.SimResult.Get(simType)
 
 			ranker.printer.Printf(" + {offset %.4e} = %.4f {sim %.6f}\n", offset, rowScore, simValue)
 		}

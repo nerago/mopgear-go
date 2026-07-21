@@ -26,7 +26,7 @@ type RankingStatWeightProcess struct {
 	targetRatios  weight_types.SimPriorityBasic
 	requiredStats []stats.StatType
 	requiredSims  []stats.SimType
-	data          []*weight_types.RankEntry
+	data          []*rankEntry1
 
 	build *util_highs.LinearBuilder
 
@@ -37,15 +37,22 @@ type RankingStatWeightProcess struct {
 	WEIGHTSUM int
 }
 
+type rankEntry1 struct {
+	weight_types.RankStatWeightsCommon
+
+	ScoreColumn util_highs.ColumnIndex
+	RankColumn  util_highs.ColumnIndex
+}
+
 func (ranker *RankingStatWeightProcess) Init(printer *util.PrintRecorder) {
 	ranker.printer = printer
 }
 
 func (ranker *RankingStatWeightProcess) SupplyData(inputData []weight_types.WeightInput) {
 	ranker.scaleStats = chooseStatScalingBasic(inputData, c_rank1_scaleTarget, false, ranker.printer)
-	ranker.data = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.RankEntry {
-		return &weight_types.RankEntry{
-			RankEntryCommon: weight_types.RankEntryCommon{
+	ranker.data = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntry1 {
+		return &rankEntry1{
+			RankStatWeightsCommon: weight_types.RankStatWeightsCommon{
 				Data:       input,
 				SimScore:   -1,
 				TargetRank: -1,
@@ -139,7 +146,7 @@ func (ranker *RankingStatWeightProcess) processData() {
 	// problem is we don't really penalise greater divergence specifically
 }
 
-func (ranker *RankingStatWeightProcess) processDataEntryOriginal(entry *weight_types.RankEntry) {
+func (ranker *RankingStatWeightProcess) processDataEntryOriginal(entry *rankEntry1) {
 	// these scores are meaningless in themselves, at least in value terms
 	// however their increasing sequence should correlate to combinedSimRankScore
 	// which is what we'll optimise for
@@ -158,7 +165,7 @@ func (ranker *RankingStatWeightProcess) processDataEntryOriginal(entry *weight_t
 	scoreRow.Build(ranker.build, 0, 0)
 }
 
-func (ranker *RankingStatWeightProcess) processDataEntryPlusRankCompareToExpected(entry *weight_types.RankEntry) {
+func (ranker *RankingStatWeightProcess) processDataEntryPlusRankCompareToExpected(entry *rankEntry1) {
 	// these scores are meaningless in themselves, at least in value terms
 	// however their increasing sequence should correlate to combinedSimRankScore
 	// which is what we'll optimise for
@@ -193,7 +200,7 @@ func (ranker *RankingStatWeightProcess) processDataEntryPlusRankCompareToExpecte
 }
 
 // one thing to try might be just to say that stats->score should calculate a rank directly. then can do a direct compare to targetRank
-func (ranker *RankingStatWeightProcess) processDataEntryForceScoreToRank(entry *weight_types.RankEntry) {
+func (ranker *RankingStatWeightProcess) processDataEntryForceScoreToRank(entry *rankEntry1) {
 	offsetColumn := ranker.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugText("offset"))
 	offsetAbs := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugText("offset"))
 	ranker.build.AbsoluteValue(offsetColumn, offsetAbs)
@@ -220,7 +227,7 @@ func (ranker *RankingStatWeightProcess) processDataEntryForceScoreToRank(entry *
 }
 
 // parameters don't imply order
-func (ranker *RankingStatWeightProcess) processEntrySequencePairToDerivedRank(one *weight_types.RankEntry, two *weight_types.RankEntry) {
+func (ranker *RankingStatWeightProcess) processEntrySequencePairToDerivedRank(one *rankEntry1, two *rankEntry1) {
 	// so we could totally do a boolean thing where scoreA>scoreB then implies rankA>rankB
 	// would need all possible pairs connected, but would then force solver to make a full integer order
 	isGreater := ranker.build.CreateColumnBool(util_highs.DebugText("isGreater"))
@@ -231,7 +238,7 @@ func (ranker *RankingStatWeightProcess) processEntrySequencePairToDerivedRank(on
 }
 
 // we want to optimise for higher.score > lower.score
-func (ranker *RankingStatWeightProcess) processEntrySequencePairOriginal(lower *weight_types.RankEntry, higher *weight_types.RankEntry) {
+func (ranker *RankingStatWeightProcess) processEntrySequencePairOriginal(lower *rankEntry1, higher *rankEntry1) {
 	offsetColumn := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugText("offset"))
 
 	// if lower <= higher then it will trivially pass the >= 0 check. offset will be free but under minimise pressure so effectively zero

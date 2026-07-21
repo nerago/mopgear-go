@@ -115,7 +115,7 @@ func sortAccuracyPrepareWithDeviation(simType stats.SimType, inputData []*weight
 	}
 }
 
-func sortGeneral[T weight_types.IRankEntryCommon](simType stats.SimType, inputData []T) {
+func sortGenericBasic[T weight_types.IRankEntry](simType stats.SimType, inputData []T) {
 	switch simType {
 	case stats.Sim_DPS:
 		slices.SortFunc(inputData, func(a, b T) int {

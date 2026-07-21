@@ -45,7 +45,7 @@ type RankingStatWeightProcess3 struct {
 }
 
 type rankEntry3 struct {
-	weight_types.RankEntryCommon
+	weight_types.RankStatWeightsCommon
 
 	InitialStatScore float64
 
@@ -76,7 +76,7 @@ func (ranker *RankingStatWeightProcess3) SupplyData(inputData []weight_types.Wei
 	}
 	ranker.dataAllOriginal = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntry3 {
 		return &rankEntry3{
-			RankEntryCommon: weight_types.RankEntryCommon{
+			RankStatWeightsCommon: weight_types.RankStatWeightsCommon{
 				Data:       input,
 				SimScore:   -1,
 				TargetRank: -1,

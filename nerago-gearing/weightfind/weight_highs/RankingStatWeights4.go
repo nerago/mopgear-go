@@ -44,7 +44,7 @@ type rankInternalRun4 struct {
 }
 
 type rankEntry4 struct {
-	weight_types.RankEntryCommon
+	weight_types.RankStatWeightsCommon
 
 	InitialStatScore float64
 
@@ -72,7 +72,7 @@ func (run *rankInternalRun4) supplyData(inputData []weight_types.WeightInput) {
 	run.scaleStats = chooseStatScalingBasic(inputData, c_Rank4ScaleTarget, false, run.process.printer)
 	run.runData = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntry4 {
 		return &rankEntry4{
-			RankEntryCommon: weight_types.RankEntryCommon{
+			RankStatWeightsCommon: weight_types.RankStatWeightsCommon{
 				Data:       input,
 				SimScore:   0,
 				TargetRank: 0,

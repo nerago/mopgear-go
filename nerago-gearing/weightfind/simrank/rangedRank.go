@@ -11,13 +11,13 @@ import (
 func RankSimsRegularForAccuracyRanged(requiredSims []stats.SimType, data []*weight_types.AccuracyInfoSimStatRanged, simRatios *weight_types.SimPriorityBasic) {
 	simScoringBasicFastForAccuracy(requiredSims, simRatios, data)
 	sortSimScores(data)
-	arrayRankToSetSimRank(data)
+	arrayRankToSetSimRankRange(data)
 }
 
 func RankSimsStatisticalForAccuracyRanged(requiredSims []stats.SimType, data []*weight_types.AccuracyInfoSimStatRanged, simRatios *weight_types.SimPriorityBasic) {
 	simScoringStatisticalForAccuracy(requiredSims, simRatios, data)
 	sortSimScores(data)
-	arrayRankToSetSimRank(data)
+	arrayRankToSetSimRankRange(data)
 }
 
 func sortSimScores(data []*weight_types.AccuracyInfoSimStatRanged) {
@@ -27,7 +27,7 @@ func sortSimScores(data []*weight_types.AccuracyInfoSimStatRanged) {
 	})
 }
 
-func arrayRankToSetSimRank(data []*weight_types.AccuracyInfoSimStatRanged) {
+func arrayRankToSetSimRankRange(data []*weight_types.AccuracyInfoSimStatRanged) {
 	data[0].SimRankRange = &util.HiLoInt{Lo: 0, Hi: 0}
 	for i := 1; i < len(data); i++ {
 		if util.FloatsApproxEquals(data[i].SimScore, data[i-1].SimScore) {

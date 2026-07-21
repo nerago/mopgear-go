@@ -15,7 +15,7 @@ import (
 
 const (
 	C_HighsToConsole     = true
-	C_DebugHighs         = false
+	C_DebugHighs         = true
 	C_DiagnoseInfeasible = false
 	c_threads            = 6
 )
@@ -379,7 +379,7 @@ func (build *LinearBuilder) DebugPrintColumns(solution *highs.Solution, printer 
 }
 func (build *LinearBuilder) debugPrintColumnsForce(solution *highs.Solution, printer *util.PrintRecorder) {
 	for i, x := range solution.ColValues {
-		printer.Printf("%3d %14f %s\n", i, x, debugText(build.vars.debug[i]))
+		printer.Printf("%6d %10.6f %12.4e %s\n", i, x, x, debugText(build.vars.debug[i]))
 	}
 }
 

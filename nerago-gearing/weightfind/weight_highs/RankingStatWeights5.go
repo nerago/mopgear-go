@@ -61,7 +61,7 @@ type rankInternalRun5 struct {
 }
 
 type rankEntry5 struct {
-	weight_types.RankEntryCommon
+	weight_types.RankStatWeightsCommon
 
 	ScoreCompute    util_highs.ColumnIndex
 	ScoreIfIncluded util_highs.ColumnIndex
@@ -159,7 +159,7 @@ func (run *rankInternalRun5) supplyData(inputData []weight_types.WeightInput) {
 	run.scaleStats = chooseStatScalingBasic(inputData, c_rank5_scaleTarget, false, run.process.printer)
 	run.runData = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntry5 {
 		return &rankEntry5{
-			RankEntryCommon: weight_types.RankEntryCommon{
+			RankStatWeightsCommon: weight_types.RankStatWeightsCommon{
 				Data: input,
 			},
 		}

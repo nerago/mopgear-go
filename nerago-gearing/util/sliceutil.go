@@ -337,33 +337,33 @@ func FindWith[T any](slice []T, check func(T) bool) T {
 	panic("not found")
 }
 
-func FindMinFunc[T any, V Number](slice []T, toValue func(*T) V) *T {
+func FindMinFunc[X any, T *X, V Number](slice []T, toValue func(T) V) T {
 	if len(slice) == 0 {
 		panic("empty slice")
 	}
-	minElement := &slice[0]
+	minElement := slice[0]
 	minValue := toValue(minElement)
 	for i := 1; i < len(slice); i++ {
-		value := toValue(&slice[i])
+		value := toValue(slice[i])
 		if value < minValue {
 			minValue = value
-			minElement = &slice[i]
+			minElement = slice[i]
 		}
 	}
 	return minElement
 }
 
-func FindMaxFunc[T any, V Number](slice []T, toValue func(*T) V) *T {
+func FindMaxFunc[X any, T *X, V Number](slice []T, toValue func(T) V) T {
 	if len(slice) == 0 {
 		panic("empty slice")
 	}
-	maxElement := &slice[0]
+	maxElement := slice[0]
 	maxValue := toValue(maxElement)
 	for i := 1; i < len(slice); i++ {
-		value := toValue(&slice[i])
+		value := toValue(slice[i])
 		if value > maxValue {
 			maxValue = value
-			maxElement = &slice[i]
+			maxElement = slice[i]
 		}
 	}
 	return maxElement
