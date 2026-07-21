@@ -1334,11 +1334,36 @@ func statWeights_CompareAlgorithms() {
 		(*f)()
 	})
 
-	for label, weight := range resultsByAlgorithm3.SeqWithKeys_StaleInefficient() {
-		resultsByAlgorithm2.Put(label, *weight.ConvertToWeight2())
+	type algorithmReport struct {
+		weight3         *weight_types.Weight3ExtendedRanged
+		weight2         *weight_types.Weight2Extended
+		weight1         *weight_types.Weight1Basic
+		initialAccuracy float64
 	}
-	for label, weight := range resultsByAlgorithm2.SeqWithKeys_StaleInefficient() {
-		resultsByAlgorithm.Put(label, weight.ConvertToWeight1())
+	reportByAlgorithm := make(map[string]algorithmReport)
+	for label, weight3 := range resultsByAlgorithm3.SeqWithKeys_StaleInefficient() {
+		weight2 := weight3.ConvertToWeight2()
+		weight1 := weight2.ConvertToWeight1()
+		reportByAlgorithm[label] = algorithmReport{
+			weight3:         &weight3,
+			weight2:         weight2,
+			weight1:         &weight1,
+			initialAccuracy: weightfind.EvaluateAccuracyRanged2(*weight2, requiredSims, &targetRatio, mixedInputDataFull),
+		}
+	}
+	for label, weight2 := range resultsByAlgorithm2.SeqWithKeys_StaleInefficient() {
+		weight1 := weight2.ConvertToWeight1()
+		reportByAlgorithm[label] = algorithmReport{
+			weight2:         &weight2,
+			weight1:         &weight1,
+			initialAccuracy: weightfind.EvaluateAccuracyRanged2(weight2, requiredSims, &targetRatio, mixedInputDataFull),
+		}
+	}
+	for label, weight1 := range resultsByAlgorithm.SeqWithKeys_StaleInefficient() {
+		reportByAlgorithm[label] = algorithmReport{
+			weight1:         &weight1,
+			initialAccuracy: weightfind.EvaluateAccuracyRanged(weight1, requiredSims, &targetRatio, mixedInputDataFull),
+		}
 	}
 
 	printer.Println("################# FINAL RESULT ###################")
@@ -1353,24 +1378,21 @@ func statWeights_CompareAlgorithms() {
 	tab.AddColumnHeader("accuracy_stat", false)
 	tab.AddColumnHeader("time", false)
 
-	resultOrder := resultsByAlgorithm.KeysAsSlice()
+	resultOrder := slices.Collect(maps.Keys(reportByAlgorithm))
 	slices.SortFunc(resultOrder, func(a, b string) int {
-		return cmp.Compare(
-			weightfind.EvaluateAccuracyRanged(resultsByAlgorithm.GetOrNil(a), requiredSims, &targetRatio, mixedInputDataFull),
-			weightfind.EvaluateAccuracyRanged(resultsByAlgorithm.GetOrNil(b), requiredSims, &targetRatio, mixedInputDataFull),
-		)
+		return cmp.Compare(reportByAlgorithm[a].initialAccuracy, reportByAlgorithm[b].initialAccuracy)
 	})
 
 	for _, label := range resultOrder {
-		weight := resultsByAlgorithm.GetOrNil(label)
+		report := reportByAlgorithm[label]
 		row := make([]string, 0)
 		row = append(row, label)
 		for _, stat := range requiredStats {
-			value := weight.Get(stat)
+			value := report.weight1.Get(stat)
 			row = append(row, strconv.FormatFloat(value, 'f', 4, 64))
 		}
-		accuracy := weightfind.EvaluateAccuracyRanged(weight, requiredSims, &targetRatio, mixedInputDataFull)
-		accuracyStat := weightfind.EvaluateAccuracyStatisticalDeviations(weight, requiredSims, &targetRatio, mixedInputDataFull)
+		accuracy := report.initialAccuracy
+		accuracyStat := weightfind.EvaluateAccuracyStatisticalDeviations(*report.weight1, requiredSims, &targetRatio, mixedInputDataFull)
 		row = append(row, strconv.FormatFloat(accuracy, 'f', 4, 64))
 		row = append(row, "")
 		row = append(row, strconv.FormatFloat(accuracyStat, 'f', 4, 64))
@@ -1378,7 +1400,7 @@ func statWeights_CompareAlgorithms() {
 		tab.AddRow(row)
 
 		if reportOnTweakedVersions {
-			weightTweak, _ := weightfind.WeightTweakerWithLogging(weight, requiredStats, &targetRatio, mixedInputDataFull, util.PrintRecorder_Nop())
+			weightTweak, _ := weightfind.WeightTweakerWithLogging(*report.weight1, requiredStats, &targetRatio, mixedInputDataFull, util.PrintRecorder_Nop())
 			accuracyTweak := weightfind.EvaluateAccuracyRanged(weightTweak, requiredSims, &targetRatio, mixedInputDataFull)
 			accuracyTweakStat := weightfind.EvaluateAccuracyStatisticalDeviations(weightTweak, requiredSims, &targetRatio, mixedInputDataFull)
 			row = make([]string, 0)

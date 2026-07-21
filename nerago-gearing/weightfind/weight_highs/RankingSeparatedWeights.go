@@ -1,23 +1,25 @@
 package weight_highs
 
 import (
+	"cmp"
 	"fmt"
+	"math"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/simrank"
 	"paladin_gearing_go/weightfind/weight_types"
+	"slices"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 const (
-	c_rank_sep_maxWeight         = 1000.0
-	c_rank_sep_scoreMin          = 0.0
-	c_rank_sep_scoreMax          = 1.0
-	c_rank_sep_score_unequal_gap = 0.001 // needs to fit N samples within scoreMax
-	//c_rank_sep_score_unequal_gap = 0.0 // needs to fit N samples within scoreMax
+	c_rank_sep_scoreMin  = 0.0
+	c_rank_sep_scoreMax  = 1.0
+	c_scoreSpacingFactor = 0.8  // can give it some extra slack
+	c_rangeSlackLimit    = 0.05 // 5% off the end values
 )
 
 type RankingSeparatedWeights struct {
@@ -31,8 +33,10 @@ type RankingSeparatedWeights struct {
 
 	build *util_highs.LinearBuilder
 
+	desiredScoreSpacing   float64
 	detailedWeightColumns util.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
 	offsetColumns         map[stats.SimType]util_highs.ColumnIndex
+	slackBottom, slackTop map[stats.SimType]util_highs.ColumnIndex
 }
 
 type rankEntrySeparated struct {
@@ -66,7 +70,7 @@ func (ranker *RankingSeparatedWeights) Init(printer *util.PrintRecorder, timeout
 }
 
 func (ranker *RankingSeparatedWeights) SupplyData(inputData []weight_types.WeightInput) {
-	inputData = takeDataSample_Random(inputData, 100)
+	//inputData = takeDataSample_Random(inputData, 100)
 	ranker.dataEntries = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntrySeparated {
 		return &rankEntrySeparated{
 			data:  input,
@@ -88,12 +92,14 @@ func (ranker *RankingSeparatedWeights) newBuilder() {
 	ranker.build = new(util_highs.LinearBuilder)
 	ranker.build.Minimise = true
 	ranker.build.TimeLimitSeconds = ranker.timeoutSeconds
-	//ranker.build.Solver = util_highs.Solver_LP_NO_GPU	// 400+s
-	ranker.build.Solver = util_highs.Solver_Force_Simplex
+
+	// good objective is 6.03701658e+04
+	//ranker.build.Solver = util_highs.Solver_LP_USE_GPU
+	ranker.build.Solver = util_highs.Solver_LP_NO_GPU // HIPO has dual/primal matched region but didn't like something. stopped after 15m was onto simplex
+	//ranker.build.Solver = util_highs.Solver_Force_Simplex // 4 min little progress
 }
 
 func (ranker *RankingSeparatedWeights) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.Weight2Extended] {
-	// FULL RUN
 	ranker.newBuilder()
 	ranker.prepareRankings()
 	ranker.createWeightColumns()
@@ -108,6 +114,8 @@ func (ranker *RankingSeparatedWeights) Run(stopwatch *util.Stopwatch) *util_asyn
 
 func (ranker *RankingSeparatedWeights) createWeightColumns() {
 	ranker.offsetColumns = make(map[stats.SimType]util_highs.ColumnIndex)
+	ranker.slackBottom = make(map[stats.SimType]util_highs.ColumnIndex)
+	ranker.slackTop = make(map[stats.SimType]util_highs.ColumnIndex)
 	for _, simType := range ranker.requiredSims {
 		ranker.createWeightColumnsForSim(simType)
 		ranker.createOffsetColumn(simType)
@@ -139,6 +147,9 @@ func (ranker *RankingSeparatedWeights) prepareRankings() {
 }
 
 func (ranker *RankingSeparatedWeights) processData() {
+	ranker.desiredScoreSpacing = (c_rank_sep_scoreMax - c_rank_sep_scoreMin) / float64(len(ranker.dataEntries))
+	ranker.desiredScoreSpacing *= c_scoreSpacingFactor
+
 	for _, simType := range ranker.requiredSims {
 		ranker.processDataForSim(simType)
 	}
@@ -157,9 +168,9 @@ func (ranker *RankingSeparatedWeights) processDataForSim(simType stats.SimType) 
 	}
 
 	minRankEntry := util.FindMinFunc(ranker.dataEntries, func(e *rankEntrySeparated) int { return e.bySim.GetOrPanic(simType).targetRank })
-	ranker.makeEntryRankExact(0.0, minRankEntry.bySim.GetOrPanic(simType))
+	ranker.slackBottom[simType] = ranker.makeEntryRankExact(0.0, minRankEntry.bySim.GetOrPanic(simType))
 	maxRankEntry := util.FindMaxFunc(ranker.dataEntries, func(e *rankEntrySeparated) int { return e.bySim.GetOrPanic(simType).targetRank })
-	ranker.makeEntryRankExact(1.0, maxRankEntry.bySim.GetOrPanic(simType))
+	ranker.slackTop[simType] = ranker.makeEntryRankExact(1.0, maxRankEntry.bySim.GetOrPanic(simType))
 }
 
 func (ranker *RankingSeparatedWeights) makeDataListEntryColumns(simType stats.SimType) {
@@ -190,25 +201,27 @@ func (ranker *RankingSeparatedWeights) setupScoreColumn(detail *rankDetailSepara
 func (ranker *RankingSeparatedWeights) makeEntryPair(one rankDetailSeparated, two rankDetailSeparated) {
 	slack := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugText("slack"))
 
+	desiredPairSpacing := ranker.desiredScoreSpacing * float64(util.AbsDiff(one.targetRank, two.targetRank))
+
 	if one.targetRank > two.targetRank {
 		row := util_highs.ConstraintRow{}
 		row.Add(one.scoreColumn, 1)
 		row.Add(two.scoreColumn, -1)
 		row.Add(slack, 1)
-		row.Build(ranker.build, c_rank_sep_score_unequal_gap, util_highs.C_PlusInf)
+		row.Build(ranker.build, desiredPairSpacing, util_highs.C_PlusInf)
 	} else if two.targetRank > one.targetRank {
 		row := util_highs.ConstraintRow{}
 		row.Add(two.scoreColumn, 1)
 		row.Add(one.scoreColumn, -1)
 		row.Add(slack, 1)
-		row.Build(ranker.build, c_rank_sep_score_unequal_gap, util_highs.C_PlusInf)
+		row.Build(ranker.build, desiredPairSpacing, util_highs.C_PlusInf)
 	} else {
 		// TODO overlapping ranks may be permitted
 		panic("unexpected equal ranks")
 	}
 }
 
-func (ranker *RankingSeparatedWeights) makeEntryRankExact(targetScore float64, detail rankDetailSeparated) {
+func (ranker *RankingSeparatedWeights) makeEntryRankExact(targetScore float64, detail rankDetailSeparated) util_highs.ColumnIndex {
 	slackEnd := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugText("slack-end"))
 
 	ranker.build.AbsoluteValueFromDiffOneToConst(
@@ -217,6 +230,8 @@ func (ranker *RankingSeparatedWeights) makeEntryRankExact(targetScore float64, d
 		slackEnd,
 		"end",
 	)
+
+	return slackEnd
 }
 
 func (ranker *RankingSeparatedWeights) extractAndReportSolution(solution *highs.Solution) weight_types.Weight2Extended {
@@ -237,6 +252,17 @@ func (ranker *RankingSeparatedWeights) extractAndReportSolution(solution *highs.
 
 	statWeightResult.Print(ranker.printer)
 	ranker.reportExamples(statWeightResult)
+	ranker.reportCompleteRanges(statWeightResult)
+
+	slackLimit := (c_rank_sep_scoreMax - c_rank_sep_scoreMin) * c_rangeSlackLimit
+	for _, simType := range ranker.requiredSims {
+		slackBottom := solution.ColValues[ranker.slackBottom[simType]]
+		slackTop := solution.ColValues[ranker.slackTop[simType]]
+		if math.Abs(slackBottom) > slackLimit || math.Abs(slackTop) > slackLimit {
+			panic(fmt.Sprintf("solution didn't fill range properly slacks=%e %e", slackBottom, slackTop))
+		}
+	}
+
 	return *statWeightResult
 }
 
@@ -266,4 +292,39 @@ func (ranker *RankingSeparatedWeights) reportExamples(weightExtended *weight_typ
 
 		ranker.printer.Println0()
 	}
+}
+
+func (ranker *RankingSeparatedWeights) reportCompleteRanges(weightExtended *weight_types.Weight2Extended) {
+	type simAndScore struct {
+		sim, score float64
+	}
+
+	for _, simType := range ranker.requiredSims {
+		typeResults := make([]simAndScore, len(ranker.dataEntries))
+		for i := range len(ranker.dataEntries) {
+			data := ranker.dataEntries[i]
+
+			rowScore := 0.0
+			for _, statType := range ranker.requiredStats {
+				statValue := data.data.TotalStat.GetFloat(statType)
+				weight := weightExtended.GetWeightOrPanic(statType, simType)
+				rowScore += statValue * weight
+			}
+			priorityEntry := weightExtended.GetSimPriority().GetOrPanic(simType)
+			offset := priorityEntry.RangingOffset
+			rowScore += offset
+			simValue := data.data.SimResult.Get(simType)
+			typeResults[i] = simAndScore{simValue, rowScore}
+		}
+
+		ranker.printer.Println("RANGE " + simType.Name())
+		slices.SortFunc(typeResults, func(a, b simAndScore) int { return cmp.Compare(a.sim, b.sim) })
+		ranker.printer.Printf("   sim lo: sim=%e score=%e\n", typeResults[0].sim, typeResults[0].score)
+		ranker.printer.Printf("   sim hi: sim=%e score=%e\n", typeResults[len(typeResults)-1].sim, typeResults[len(typeResults)-1].score)
+		slices.SortFunc(typeResults, func(a, b simAndScore) int { return cmp.Compare(a.score, b.score) })
+		ranker.printer.Printf(" score lo: sim=%e score=%e\n", typeResults[0].sim, typeResults[0].score)
+		ranker.printer.Printf(" score hi: sim=%e score=%e\n", typeResults[len(typeResults)-1].sim, typeResults[len(typeResults)-1].score)
+	}
+
+	ranker.printer.Println("EXAMPLE")
 }
