@@ -270,6 +270,10 @@ func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solut
 	}
 	form.printer.Println0()
 
+	for _, simType := range form.requiredSims {
+		weightExtended.SetSimScale(simType, 1, 0, form.targetRatios.GetOrPanic(simType))
+	}
+
 	weightExtended.FinishAndValidate()
 	return *weightExtended
 }

@@ -685,14 +685,14 @@ func statWeights_CompareAlgorithms() {
 	//inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
 	mixedInputDataFull := slices.Concat(inputDataGrid, inputDataRandom)
 
-	//sampleSize := 50
-	//inputDataGrid = takeDataSample_Random(inputDataGrid, sampleSize)
-	//inputDataRandom = takeDataSample_Random(inputDataRandom, sampleSize)
-	//mixedInputData := takeDataSample_Random(mixedInputDataFull, sampleSize)
+	sampleSize := 50
+	inputDataGrid = takeDataSample_Random(inputDataGrid, sampleSize)
+	inputDataRandom = takeDataSample_Random(inputDataRandom, sampleSize)
+	mixedInputData := takeDataSample_Random(mixedInputDataFull, sampleSize)
 	//inputDataGrid = takeDataSample_Random_Seed(inputDataGrid, sampleSize, 1234)
 	//inputDataRandom = takeDataSample_Random_Seed(inputDataRandom, sampleSize, 1234)
 	//mixedInputData := takeDataSample_Random_Seed(mixedInputDataFull, sampleSize, 1234)
-	mixedInputData := mixedInputDataFull
+	//mixedInputData := mixedInputDataFull
 
 	//weightsNearOptimal := stathighs.WeightResult_Make()
 	//weightsNearOptimal.Put(stats.Stat_Strength, 1.000000)
@@ -725,15 +725,15 @@ func statWeights_CompareAlgorithms() {
 
 	reportOnTweakedVersions := false
 	standardTimeout := 300
-	shortTimeout := 200
+	shortTimeout := 150
 
 	runBasic := false
-	runFormulaVariants := false // best is about 87%, moderate time
-	runFitting := false         // slow, low 90%
+	runFormulaVariants := true // best is about 87%, moderate time
+	runFitting := false        // slow, low 90%
 
 	runGrid1Original := true
-	runGrid1Variants := true
-	//runGrid1VariantsFewer := false
+	runGrid1Variants := false
+	runGrid1VariantsFewer := true
 	runGrid1C := true
 	runGrid2 := true
 
@@ -747,6 +747,9 @@ func statWeights_CompareAlgorithms() {
 
 	runSearches := true
 	runSearch0 := false
+
+	runRankingSep := true
+	runFormula2 := true
 
 	if runBasic {
 		tasks = append(tasks, func() {
@@ -910,26 +913,27 @@ func statWeights_CompareAlgorithms() {
 			}
 		}
 	}
-	//if runGrid1VariantsFewer {
-	//	for SCALEMODE := range 5 {
-	//		label := fmt.Sprintf("grid1b-outlier%d-scale%d-round%d", 3, SCALEMODE, 2)
-	//		printer.Println("################# " + label + " ###################")
-	//		stopwatch := util.StopwatchMakeStopped()
-	//		grid1 := weight_highs.GridStatWeightProcess1B{}
-	//		grid1.SCALEMODE = SCALEMODE
-	//		grid1.ROUNDMODE = 2
-	//		grid1.OUTLIER = 3
-	//		grid1.Init(printer, shortTimeout)
-	//		grid1.SetRequiredStats(requiredStats)
-	//		grid1.SetTargetRatios(targetRatio)
-	//		grid1.SupplyData(slices.Clone(inputDataGrid))
-	//		weightFuture := grid1.Run(stopwatch)
-	//		util_async.ChainCancel(cancel, weightFuture)
-	//		resultsByAlgorithm.Put(label, weightFuture.WaitForResultOrNilValue())
-	//		timesByAlgorithm.Put(label, stopwatch.Elapsed())
-	//		printer.Println("///////////////// " + label + " /////////////////")
-	//	}
-	//}
+	if runGrid1VariantsFewer {
+		for OUTLIER := range 5 {
+			label := fmt.Sprintf("grid1b-outlier%d-scale1-round2-calc2", OUTLIER)
+			printer.Println("################# " + label + " ###################")
+			stopwatch := util.StopwatchMakeStopped()
+			grid1 := weight_highs.GridStatWeightProcess1B{}
+			grid1.OUTLIER = OUTLIER
+			grid1.SCALEMODE = 1
+			grid1.ROUNDMODE = 2
+			grid1.CALCMODE = 2
+			grid1.Init(printer, shortTimeout)
+			grid1.SetRequiredStats(requiredStats)
+			grid1.SetTargetRatios(targetRatio)
+			grid1.SupplyData(slices.Clone(inputDataGrid))
+			weightFuture := grid1.Run(stopwatch)
+			util_async.ChainCancel(cancel, weightFuture)
+			resultsByAlgorithm.Put(label, weightFuture.WaitForResultOrNilValue())
+			timesByAlgorithm.Put(label, stopwatch.Elapsed())
+			printer.Println("///////////////// " + label + " /////////////////")
+		}
+	}
 
 	if runGrid1C {
 		for RESCALE := range 3 {
@@ -1325,6 +1329,37 @@ func statWeights_CompareAlgorithms() {
 			timesByAlgorithm.Put("search3-acc2", stopwatch.Elapsed())
 			printer.Println("///////////////// SEARCH3 /////////////////")
 		})
+	}
+
+	if runRankingSep {
+		label := "ranking-sep"
+		printer.Println("################# " + label + " ###################")
+		stopwatch := util.StopwatchMakeStopped()
+		comp := weight_highs.RankingSeparatedWeights{}
+		comp.Init(printer, standardTimeout)
+		comp.SetRequiredStats(requiredStats, requiredSims)
+		comp.SetTargetRatios(targetRatio)
+		comp.SupplyData(mixedInputData)
+		weights2 := comp.Run(nil).WaitForResultOrPanic()
+		resultsByAlgorithm2.Put(label, weights2)
+		timesByAlgorithm.Put(label, stopwatch.Elapsed())
+		printer.Println("///////////////// " + label + " /////////////////")
+	}
+	if runFormula2 {
+		label := "formula2"
+		printer.Println("################# " + label + " ###################")
+		stopwatch := util.StopwatchMakeStopped()
+		comp := weight_highs.FormulaStatWeightProcess2{}
+		// comp.BLEND if SetMinimumIncludeRate < 1.0
+		comp.Init(printer)
+		comp.SetRequiredStats(requiredStats)
+		comp.SetTargetRatios(targetRatio)
+		comp.SetMinimumIncludeRate(1.0)
+		comp.SupplyData(mixedInputData)
+		weights2 := comp.Run(stopwatch, standardTimeout).WaitForResultOrPanic()
+		resultsByAlgorithm2.Put(label, weights2)
+		timesByAlgorithm.Put(label, stopwatch.Elapsed())
+		printer.Println("///////////////// " + label + " /////////////////")
 	}
 
 	util.Shuffle(tasks)

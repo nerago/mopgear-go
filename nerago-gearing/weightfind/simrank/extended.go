@@ -12,6 +12,14 @@ func RankSimsForRankingSeparated[T weight_types.IRankEntryExtendedSingle](requir
 	}
 }
 
+func RankSimsForRangedRankSeparated[T weight_types.IRankEntryExtendedSingle](requiredSims []stats.SimType, inputData []T) {
+	for _, simType := range requiredSims {
+		sortGenericWithDeviation(simType, inputData)
+		//arrayRankToSetSimSpecificSimRank(simType, inputData)
+		panic("TODO")
+	}
+}
+
 func arrayRankToSetSimSpecificSimRank[T weight_types.IRankEntryExtendedSingle](simType stats.SimType, inputData []T) {
 	for rank := range inputData {
 		inputData[rank].SetTargetRankBySim(simType, rank)

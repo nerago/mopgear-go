@@ -93,10 +93,10 @@ func (ranker *RankingSeparatedWeights) newBuilder() {
 	ranker.build.Minimise = true
 	ranker.build.TimeLimitSeconds = ranker.timeoutSeconds
 
-	// good objective is 6.03701658e+04
-	//ranker.build.Solver = util_highs.Solver_LP_USE_GPU
-	ranker.build.Solver = util_highs.Solver_LP_NO_GPU // HIPO has dual/primal matched region but didn't like something. stopped after 15m was onto simplex
-	//ranker.build.Solver = util_highs.Solver_Force_Simplex // 4 min little progress
+	//ranker.build.Solver = util_highs.Solver_Force_Simplex
+	//ranker.build.Solver = util_highs.Solver_Force_IPX // 15m35.9345904s
+	//ranker.build.Solver = util_highs.Solver_LP_USE_GPU // wanders quite a bit
+	ranker.build.Solver = util_highs.Solver_LP_NO_GPU // 3m48.0360506s
 }
 
 func (ranker *RankingSeparatedWeights) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.Weight2Extended] {

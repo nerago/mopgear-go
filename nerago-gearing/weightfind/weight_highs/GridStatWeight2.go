@@ -259,6 +259,10 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 		}
 	}
 
+	for _, simType := range grid2.simTypes {
+		result.SetSimScale(simType, 1, 0, grid2.targetRatios.GetOrPanic(simType))
+	}
+
 	result.FinishAndValidate()
 	return *result
 }
