@@ -35,6 +35,7 @@ const (
 type RankingStatWeightProcess5 struct {
 	printer   *util.PrintRecorder
 	WEIGHTSUM int
+	SIMRANK   int
 
 	targetRatios   weight_types.SimPriorityBasic
 	requiredStats  []stats.StatType
@@ -150,16 +151,20 @@ func (run *rankInternalRun5) supplyData(inputData []weight_types.WeightInput) {
 	run.scaleStats = chooseStatScalingBasic(inputData, c_rank5_scaleTarget, false, run.process.printer)
 	run.runData = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) weight_types.RankEntry5 {
 		return weight_types.RankEntry5{
-			Data: input,
+			RankEntryCommon: weight_types.RankEntryCommon{
+				Data: input,
+			},
 		}
 	})
 }
 
 func (run *rankInternalRun5) prepareRankings() {
-	run.runData = simrank.RankWeights5RankSims(run.runData, run.process.requiredSims, run.process.targetRatios, run.process.printer)
-
-	for rank := range run.runData {
-		run.runData[rank].TargetRank = rank
+	if run.process.SIMRANK == 1 {
+		run.runData = simrank.RankingWeightsPrepareBasicRankingsRemoveDuplicates(run.process.requiredSims, run.runData, run.process.targetRatios)
+	} else if run.process.SIMRANK == 2 {
+		run.runData = simrank.RankingWeightsPrepareUsingMidRangeRemoveDuplicates(run.process.requiredSims, run.runData, run.process.targetRatios)
+	} else {
+		panic("SIMRANK not specified")
 	}
 }
 

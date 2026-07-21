@@ -1,7 +1,6 @@
 package weight_highs
 
 import (
-	"cmp"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
@@ -64,9 +63,11 @@ func (run *rankInternalRun4) supplyData(inputData []weight_types.WeightInput) {
 	run.scaleStats = chooseStatScalingBasic(inputData, c_Rank4ScaleTarget, false, run.process.printer)
 	run.runData = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) weight_types.RankEntry4 {
 		return weight_types.RankEntry4{
-			Data:        input,
-			SimScore:    -1,
-			TargetRank:  -1,
+			RankEntryCommon: weight_types.RankEntryCommon{
+				Data:       input,
+				SimScore:   0,
+				TargetRank: 0,
+			},
 			ScoreColumn: -1,
 			RankColumn:  -1,
 		}
@@ -164,9 +165,7 @@ func (run *rankInternalRun4) createWeightColumns() {
 }
 
 func (run *rankInternalRun4) prepareRankings() {
-	simrank.RankingWeight4RankSims(run.runData, run.process.requiredSims, run.process.targetRatios)
-
-	slices.SortFunc(run.runData, func(a, b weight_types.RankEntry4) int { return cmp.Compare(a.TargetRank, b.TargetRank) })
+	simrank.RankingWeightsPrepareUsingMidRange(run.process.requiredSims, run.runData, run.process.targetRatios)
 }
 
 func (run *rankInternalRun4) makeDataListEntryColumns() {

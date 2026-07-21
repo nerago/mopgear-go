@@ -132,75 +132,63 @@ func CalcHiLoForAccuracyPrepare(data []*weight_types.AccuracyInfoPrePrepare, pre
 	}
 }
 
-func RankingWeight4RankSims(runData []weight_types.RankEntry4, requiredSims []stats.SimType, targetRatios weight_types.SimPriorityBasic) { // reset values
-	for i := range runData {
-		runData[i].SimScore = 0
-		runData[i].TargetRank = 0
-	}
-
-	// score each sim
-	for _, simType := range requiredSims {
-		for entry, simDetailRankHiLo := range util.CalculateRankingRanges(simType.IsHighGood(), runData, func(x *weight_types.RankEntry4) float64 { return x.Data.SimResult.Get(simType) }) {
-			entry.SimScore += float64(simDetailRankHiLo.Mid()) * targetRatios.GetOrPanic(simType)
-		}
-	}
-
-	// rank combined sims
-	for entry, simRankHiLo := range util.CalculateRankingRanges(true, runData, func(x *weight_types.RankEntry4) float64 { return x.SimScore }) {
-		entry.TargetRank = simRankHiLo.Lo
-	}
-}
-
-func RankWeights5RankSims(runData []weight_types.RankEntry5, requiredSims []stats.SimType, targetRatios weight_types.SimPriorityBasic, printer *util.PrintRecorder) []weight_types.RankEntry5 {
-	// score each sim
-	for _, simType := range requiredSims {
-		for entry, simDetailRankHiLo := range util.CalculateRankingRanges(simType.IsHighGood(), runData, func(x *weight_types.RankEntry5) float64 { return x.Data.SimResult.Get(simType) }) {
-			entry.SimScore += float64(simDetailRankHiLo.Mid()) * targetRatios.GetOrPanic(simType)
-		}
-	}
-
-	runData = util.RemoveDuplicatesFunc_AsNew_Notify(runData,
-		func(a, b *weight_types.RankEntry5) bool { return a.SimScore == b.SimScore },
-		func(entry *weight_types.RankEntry5) { printer.Println("removing duplicate score") },
-	)
-
-	slices.SortFunc(runData, func(a, b weight_types.RankEntry5) int { return cmp.Compare(a.SimScore, b.SimScore) })
-
-	return runData
-}
-
-func RankingWeights1aPrepareRankings(requiredSims []stats.SimType, inputData []weight_types.RankEntry, priority weight_types.SimPriorityBasic) {
-	// score each sim
-	for _, simType := range requiredSims {
-		for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), inputData, func(x *weight_types.RankEntry) float64 { return x.Data.SimResult.Get(simType) }) {
-			entry.SimRanks[simType] = simDetailRank
-			entry.CombinedSimScore += float64(simDetailRank) * priority.GetOrPanic(simType)
-		}
-	}
-
-	// rank combined sims
-	for entry, simRank := range util.CalculateRanking(true, inputData, func(x *weight_types.RankEntry) float64 { return x.CombinedSimScore }) {
-		entry.TargetRank = simRank
-	}
-
-	slices.SortFunc(inputData, func(a, b weight_types.RankEntry) int { return cmp.Compare(a.TargetRank, b.TargetRank) })
-}
-
-func PrepareRankingWeights3(simList []stats.SimType, dataSample []weight_types.RankEntry3, simPriority weight_types.SimPriorityBasic) {
+func simScoringBasic[T weight_types.IRankEntryHasCommon](simList []stats.SimType, inputData []T, priority weight_types.SimPriorityBasic) {
 	// score each sim
 	for _, simType := range simList {
-		for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), dataSample, func(x *weight_types.RankEntry3) float64 { return x.Data.SimResult.Get(simType) }) {
-			entry.SimScore += float64(simDetailRank) * simPriority.GetOrPanic(simType)
+		for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), inputData, func(x *T) float64 { return (*x).ToCommon().Data.SimResult.Get(simType) }) {
+			(*entry).ToCommon().SimScore += float64(simDetailRank) * priority.GetOrPanic(simType)
 		}
 	}
+}
 
-	// TODO ranking ranges
-	// TODO alternately deny duplicates, either on simScore, or full detail
-
+func rankOrderBasic[T weight_types.IRankEntryHasCommon](inputData []T) {
 	// rank combined sims
-	for entry, simRank := range util.CalculateRanking(true, dataSample, func(x *weight_types.RankEntry3) float64 { return x.SimScore }) {
-		entry.TargetRank = simRank
+	for entry, simRank := range util.CalculateRanking(true, inputData, func(x *T) float64 { return (*x).ToCommon().SimScore }) {
+		(*entry).ToCommon().TargetRank = simRank
 	}
 
-	slices.SortFunc(dataSample, func(a, b weight_types.RankEntry3) int { return cmp.Compare(a.TargetRank, b.TargetRank) })
+	slices.SortFunc(inputData, func(a, b T) int { return cmp.Compare(a.ToCommon().TargetRank, b.ToCommon().TargetRank) })
+}
+
+func RankingWeightsPrepareBasicRankings[T weight_types.IRankEntryHasCommon](simList []stats.SimType, inputData []T, priority weight_types.SimPriorityBasic) {
+	simScoringBasic(simList, inputData, priority)
+	rankOrderBasic(inputData)
+}
+
+// currently just in Rank5
+func RankingWeightsPrepareBasicRankingsRemoveDuplicates[T weight_types.IRankEntryHasCommon](simList []stats.SimType, inputData []T, priority weight_types.SimPriorityBasic) []T {
+	simScoringBasic(simList, inputData, priority)
+	inputData = util.RemoveDuplicatesFunc_NewIfChanged(inputData, func(a, b *T) bool { return (*a).ToCommon().SimScore == (*b).ToCommon().SimScore })
+	rankOrderBasic(inputData)
+	return inputData
+}
+
+func simScoringMidRange[T weight_types.IRankEntryHasCommon](simList []stats.SimType, inputData []T, priority weight_types.SimPriorityBasic) {
+	// score each sim
+	for _, simType := range simList {
+		for entry, simDetailRankHiLo := range util.CalculateRankingRanges(simType.IsHighGood(), inputData, func(x *T) float64 { return (*x).ToCommon().Data.SimResult.Get(simType) }) {
+			(*entry).ToCommon().SimScore += float64(simDetailRankHiLo.Mid()) * priority.GetOrPanic(simType)
+		}
+	}
+}
+
+// this is weird, used in RankingStatWeights4 only
+func RankingWeightsPrepareUsingMidRange[T weight_types.IRankEntryHasCommon](simList []stats.SimType, inputData []T, priority weight_types.SimPriorityBasic) { // reset values
+	simScoringMidRange(simList, inputData, priority)
+
+	// rank combined sims
+	for entry, simRankHiLo := range util.CalculateRankingRanges(true, inputData, func(x *T) float64 { return (*x).ToCommon().SimScore }) {
+		// not sure if this intentional or a normal rank would be fine too
+		(*entry).ToCommon().TargetRank = simRankHiLo.Lo
+	}
+
+	slices.SortFunc(inputData, func(a, b T) int { return cmp.Compare(a.ToCommon().TargetRank, b.ToCommon().TargetRank) })
+}
+
+// currently just in Rank5
+func RankingWeightsPrepareUsingMidRangeRemoveDuplicates[T weight_types.IRankEntryHasCommon](simList []stats.SimType, inputData []T, priority weight_types.SimPriorityBasic) []T {
+	simScoringMidRange(simList, inputData, priority)
+	inputData = util.RemoveDuplicatesFunc_NewIfChanged(inputData, func(a, b *T) bool { return (*a).ToCommon().SimScore == (*b).ToCommon().SimScore })
+	rankOrderBasic(inputData)
+	return inputData
 }

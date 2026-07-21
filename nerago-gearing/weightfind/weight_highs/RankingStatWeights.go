@@ -44,7 +44,13 @@ func (ranker *RankingStatWeightProcess) Init(printer *util.PrintRecorder) {
 func (ranker *RankingStatWeightProcess) SupplyData(inputData []weight_types.WeightInput) {
 	ranker.scaleStats = chooseStatScalingBasic(inputData, c_rank1_scaleTarget, false, ranker.printer)
 	ranker.data = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) weight_types.RankEntry {
-		return weight_types.RankEntry{Data: input, SimRanks: make(map[stats.SimType]int)}
+		return weight_types.RankEntry{
+			RankEntryCommon: weight_types.RankEntryCommon{
+				Data:       input,
+				SimScore:   -1,
+				TargetRank: -1,
+			},
+		}
 	})
 }
 
@@ -95,7 +101,7 @@ func (ranker *RankingStatWeightProcess) createWeightColumns() {
 }
 
 func (ranker *RankingStatWeightProcess) prepareRankings() {
-	simrank.RankingWeights1aPrepareRankings(ranker.requiredSims, ranker.data, ranker.targetRatios)
+	simrank.RankingWeightsPrepareBasicRankings(ranker.requiredSims, ranker.data, ranker.targetRatios)
 }
 
 func (ranker *RankingStatWeightProcess) processData() {
@@ -208,7 +214,7 @@ func (ranker *RankingStatWeightProcess) processDataEntryForceScoreToRank(entry *
 		targetNum := float64(entry.TargetRank)
 		scoreRow.Build(ranker.build, targetNum, targetNum)
 	case 2:
-		targetNum := entry.CombinedSimScore
+		targetNum := entry.SimScore
 		scoreRow.Build(ranker.build, targetNum, targetNum)
 	}
 }
@@ -266,6 +272,6 @@ func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs
 func (ranker *RankingStatWeightProcess) reportRankingOfInputs(statWeightResult weight_types.Weight1Basic) {
 	ranker.printer.Println("INPUT CHECK (index, combinedSimRank, calcStat)")
 	for i, entry := range ranker.data {
-		ranker.printer.Printf("%4d %8f %8f\n", i, entry.CombinedSimScore, statWeightResult.CalcStatScore(entry.Data))
+		ranker.printer.Printf("%4d %8f %8f\n", i, entry.SimScore, statWeightResult.CalcStatScore(entry.Data))
 	}
 }
