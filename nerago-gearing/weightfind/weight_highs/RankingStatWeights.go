@@ -26,7 +26,7 @@ type RankingStatWeightProcess struct {
 	targetRatios  weight_types.SimPriorityBasic
 	requiredStats []stats.StatType
 	requiredSims  []stats.SimType
-	data          []weight_types.RankEntry
+	data          []*weight_types.RankEntry
 
 	build *util_highs.LinearBuilder
 
@@ -43,8 +43,8 @@ func (ranker *RankingStatWeightProcess) Init(printer *util.PrintRecorder) {
 
 func (ranker *RankingStatWeightProcess) SupplyData(inputData []weight_types.WeightInput) {
 	ranker.scaleStats = chooseStatScalingBasic(inputData, c_rank1_scaleTarget, false, ranker.printer)
-	ranker.data = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) weight_types.RankEntry {
-		return weight_types.RankEntry{
+	ranker.data = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.RankEntry {
+		return &weight_types.RankEntry{
 			RankEntryCommon: weight_types.RankEntryCommon{
 				Data:       input,
 				SimScore:   -1,
@@ -101,13 +101,13 @@ func (ranker *RankingStatWeightProcess) createWeightColumns() {
 }
 
 func (ranker *RankingStatWeightProcess) prepareRankings() {
-	simrank.RankingWeightsPrepareBasicRankings(ranker.requiredSims, ranker.data, ranker.targetRatios)
+	simrank.RankingWeightsPrepareBasicRankings(ranker.requiredSims, &ranker.targetRatios, ranker.data)
 }
 
 func (ranker *RankingStatWeightProcess) processData() {
 	switch ranker.RANKMODE {
 	case 0:
-		for entry := range util.ForPointer(ranker.data) {
+		for _, entry := range ranker.data {
 			ranker.processDataEntryOriginal(entry)
 		}
 
@@ -115,11 +115,11 @@ func (ranker *RankingStatWeightProcess) processData() {
 		eachCheckCount := 50
 		for a := 0; a < len(ranker.data); a++ {
 			for b := a + 1; b < min(a+eachCheckCount, len(ranker.data)); b++ {
-				ranker.processEntrySequencePairOriginal(&ranker.data[a], &ranker.data[b])
+				ranker.processEntrySequencePairOriginal(ranker.data[a], ranker.data[b])
 			}
 		}
 	case 1, 2:
-		for entry := range util.ForPointer(ranker.data) {
+		for _, entry := range ranker.data {
 			ranker.processDataEntryForceScoreToRank(entry)
 		}
 	}

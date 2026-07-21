@@ -49,7 +49,7 @@ type rankInternalRun5 struct {
 
 	build *util_highs.LinearBuilder
 
-	runData []weight_types.RankEntry5
+	runData []*rankEntry5
 	// scaleStats float64
 	scaleStats map[stats.StatType]float64
 
@@ -60,9 +60,17 @@ type rankInternalRun5 struct {
 	objectiveWeight  util_highs.ObjectiveIndex
 }
 
+type rankEntry5 struct {
+	weight_types.RankEntryCommon
+
+	ScoreCompute    util_highs.ColumnIndex
+	ScoreIfIncluded util_highs.ColumnIndex
+	IsInclude       util_highs.ColumnIndex
+}
+
 type rankPair5 struct {
-	entryOne *weight_types.RankEntry5
-	entryTwo *weight_types.RankEntry5
+	entryOne *rankEntry5
+	entryTwo *rankEntry5
 }
 
 func (process *RankingStatWeightProcess5) Init(printer *util.PrintRecorder) {
@@ -77,8 +85,8 @@ func (process *RankingStatWeightProcess5) SupplyInitialWeights(initialWeights we
 	process.initialWeights = &initialWeights
 }
 
-func (ranker *RankingStatWeightProcess5) SetRequiredStats(requiredStats []stats.StatType) {
-	ranker.requiredStats = requiredStats
+func (process *RankingStatWeightProcess5) SetRequiredStats(requiredStats []stats.StatType) {
+	process.requiredStats = requiredStats
 }
 
 func (process *RankingStatWeightProcess5) SetTargetRatios(targetRatios weight_types.SimPriorityBasic) {
@@ -87,7 +95,7 @@ func (process *RankingStatWeightProcess5) SetTargetRatios(targetRatios weight_ty
 }
 
 func (process *RankingStatWeightProcess5) Run(stopwatch *util.Stopwatch, timeout int) *util_async.FutureCancellable[weight_types.Weight1Basic] {
-	process.printer.Printf("RankingStatWeightProcess5 RunOptimisitic\n")
+	process.printer.Printf("RankingStatWeightProcess5 RunOptimistic\n")
 	run := rankInternalRun5_create(process)
 	run.build.TimeLimitSeconds = timeout
 	run.supplyData(takeDataSample_Random(process.dataAll, c_rank5_sample))
@@ -149,8 +157,8 @@ func (run *rankInternalRun5) createWeightColumns() {
 
 func (run *rankInternalRun5) supplyData(inputData []weight_types.WeightInput) {
 	run.scaleStats = chooseStatScalingBasic(inputData, c_rank5_scaleTarget, false, run.process.printer)
-	run.runData = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) weight_types.RankEntry5 {
-		return weight_types.RankEntry5{
+	run.runData = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntry5 {
+		return &rankEntry5{
 			RankEntryCommon: weight_types.RankEntryCommon{
 				Data: input,
 			},
@@ -160,21 +168,21 @@ func (run *rankInternalRun5) supplyData(inputData []weight_types.WeightInput) {
 
 func (run *rankInternalRun5) prepareRankings() {
 	if run.process.SIMRANK == 1 {
-		run.runData = simrank.RankingWeightsPrepareBasicRankingsRemoveDuplicates(run.process.requiredSims, run.runData, run.process.targetRatios)
+		run.runData = simrank.RankingWeightsPrepareBasicRankingsRemoveDuplicates(run.process.requiredSims, &run.process.targetRatios, run.runData)
 	} else if run.process.SIMRANK == 2 {
-		run.runData = simrank.RankingWeightsPrepareUsingMidRangeRemoveDuplicates(run.process.requiredSims, run.runData, run.process.targetRatios)
+		run.runData = simrank.RankingWeightsPrepareUsingMidRangeRemoveDuplicates(run.process.requiredSims, &run.process.targetRatios, run.runData)
 	} else {
 		panic("SIMRANK not specified")
 	}
 }
 
 func (run *rankInternalRun5) makeDataListEntryColumns() {
-	for entry := range util.ForPointer(run.runData) {
+	for _, entry := range run.runData {
 		run.makeEntryColumnRefs(entry)
 	}
 }
 
-func (run *rankInternalRun5) makeEntryColumnRefs(entry *weight_types.RankEntry5) {
+func (run *rankInternalRun5) makeEntryColumnRefs(entry *rankEntry5) {
 	rankStr := strconv.FormatInt(int64(entry.TargetRank), 10)
 	entry.ScoreCompute = run.build.CreateColumnGeneral(highs.Continuous, c_rank5_computeScoreLo, c_rank5_computeScoreHi, util_highs.DebugText("scoreCompute-"+rankStr))
 
@@ -197,7 +205,7 @@ func (run *rankInternalRun5) makeEntryColumnRefs(entry *weight_types.RankEntry5)
 
 func (run *rankInternalRun5) makeDataListPairRules() {
 	for a := 0; a < len(run.runData)-1; a++ {
-		run.makeEntryPairScoreChecks(&run.runData[a], &run.runData[a+1], a, a+1)
+		run.makeEntryPairScoreChecks(run.runData[a], run.runData[a+1], a, a+1)
 	}
 
 	if run.pairLinks.Size() != len(run.runData)-1 {
@@ -205,7 +213,7 @@ func (run *rankInternalRun5) makeDataListPairRules() {
 	}
 }
 
-func (run *rankInternalRun5) makeEntryPairScoreChecks(lo *weight_types.RankEntry5, hi *weight_types.RankEntry5, indexLo, indexHi int) {
+func (run *rankInternalRun5) makeEntryPairScoreChecks(lo *rankEntry5, hi *rankEntry5, indexLo, indexHi int) {
 	indexText := strconv.FormatInt(int64(indexLo), 10)
 
 	compareScore := util_highs.ConstraintRow{Debug: "compareScore " + indexText}
@@ -265,7 +273,7 @@ func (run *rankInternalRun5) extractAndReportSolution(solution *highs.Solution) 
 	run.process.printer.Println("}")
 
 	includeCount := 0
-	for entry := range util.ForPointer(run.runData) {
+	for _, entry := range run.runData {
 		includeValue := solution.ColValues[entry.IsInclude]
 		if util.FloatEqualsOne(includeValue) {
 			includeCount++
@@ -298,7 +306,7 @@ func (run *rankInternalRun5) setupInitialSolutionFromExternal(weights weight_typ
 	run.build.SetInitialSolutionValue(run.runData[firstInclude].ScoreIfIncluded, entryScores[firstInclude])
 
 	for i := firstInclude + 1; i < lastIndex; i++ {
-		entry := &run.runData[i]
+		entry := run.runData[i]
 		if entryScores[i-1] <= entryScores[i] && entryScores[i] <= entryScores[i+1] {
 			run.build.SetInitialSolutionValue(entry.IsInclude, 1)
 			run.build.SetInitialSolutionValue(entry.ScoreIfIncluded, entryScores[i])

@@ -32,8 +32,8 @@ type RankingStatWeightProcess3 struct {
 	targetRatios    weight_types.SimPriorityBasic
 	requiredStats   []stats.StatType
 	requiredSims    []stats.SimType
-	dataAllOriginal []weight_types.RankEntry3
-	dataSample      []weight_types.RankEntry3
+	dataAllOriginal []*rankEntry3
+	dataSample      []*rankEntry3
 	SCALE1          bool
 	ALGO            int
 
@@ -42,6 +42,16 @@ type RankingStatWeightProcess3 struct {
 	scaleStats    map[stats.StatType]float64
 	weightColumns map[stats.StatType]util_highs.ColumnIndex
 	pairLinks     util.MapMap[int, int, rankPair3]
+}
+
+type rankEntry3 struct {
+	weight_types.RankEntryCommon
+
+	InitialStatScore float64
+
+	ScoreColumn       util_highs.ColumnIndex
+	RankColumn        util_highs.ColumnIndex
+	RankDiffAbsColumn util_highs.ColumnIndex
 }
 
 type rankPair3 struct {
@@ -64,8 +74,8 @@ func (ranker *RankingStatWeightProcess3) SupplyData(inputData []weight_types.Wei
 	} else {
 		ranker.scaleStats = chooseStatScalingBasic(inputData, c_rank3_scaleTarget, false, ranker.printer)
 	}
-	ranker.dataAllOriginal = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) weight_types.RankEntry3 {
-		return weight_types.RankEntry3{
+	ranker.dataAllOriginal = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntry3 {
+		return &rankEntry3{
 			RankEntryCommon: weight_types.RankEntryCommon{
 				Data:       input,
 				SimScore:   -1,
@@ -165,12 +175,7 @@ func (ranker *RankingStatWeightProcess3) prepareRankings() {
 		ranker.dataSample[i].SimScore = 0
 		ranker.dataSample[i].TargetRank = 0
 	}
-
-	dataSample := ranker.dataSample
-	simList := ranker.requiredSims
-	simPriority := ranker.targetRatios
-
-	simrank.PrepareRankingWeights3(simList, dataSample, simPriority)
+	simrank.RankingWeightsPrepareBasicRankings(ranker.requiredSims, &ranker.targetRatios, ranker.dataSample)
 }
 
 func (ranker *RankingStatWeightProcess3) doAlgos() {
@@ -179,14 +184,14 @@ func (ranker *RankingStatWeightProcess3) doAlgos() {
 		ranker.makeDataListEntryColumns()
 		for baseIndex := range ranker.dataSample {
 			for compareTo := baseIndex + 1; compareTo < len(ranker.dataSample); compareTo++ {
-				ranker.makeEntryPairSequenceConstraints(&ranker.dataSample[baseIndex], &ranker.dataSample[compareTo], baseIndex, compareTo)
+				ranker.makeEntryPairSequenceConstraints(ranker.dataSample[baseIndex], ranker.dataSample[compareTo], baseIndex, compareTo)
 			}
 		}
 	case 1:
 		ranker.makeDataListEntryColumns()
 		for baseIndex := range ranker.dataSample {
 			for compareTo := baseIndex + 1; compareTo < len(ranker.dataSample); compareTo++ {
-				ranker.makeEntryPairSequenceConstraintsRequireEqualMode(&ranker.dataSample[baseIndex], &ranker.dataSample[compareTo], baseIndex, compareTo, 1)
+				ranker.makeEntryPairSequenceConstraintsRequireEqualMode(ranker.dataSample[baseIndex], ranker.dataSample[compareTo], baseIndex, compareTo, 1)
 			}
 		}
 	default:
@@ -198,7 +203,7 @@ func (ranker *RankingStatWeightProcess3) makeDataListEntryColumns() {
 	maxRank := float64(len(ranker.dataSample) - 1)
 
 	sumRanks := util_highs.ConstraintRow{Debug: "sumRanks"}
-	for entry := range util.ForPointer(ranker.dataSample) {
+	for _, entry := range ranker.dataSample {
 		debugStr := strconv.FormatInt(int64(entry.TargetRank), 10)
 		ranker.makeScoreColumn(entry, debugStr)
 		ranker.makeRankColumnAndDiff(entry, maxRank, debugStr)
@@ -210,13 +215,13 @@ func (ranker *RankingStatWeightProcess3) makeDataListEntryColumns() {
 }
 
 func (ranker *RankingStatWeightProcess3) makeDataListEntryColumnsNoMIP() {
-	for entry := range util.ForPointer(ranker.dataSample) {
+	for _, entry := range ranker.dataSample {
 		debugStr := strconv.FormatInt(int64(entry.TargetRank), 10)
 		ranker.makeScoreColumn(entry, debugStr)
 	}
 }
 
-func (ranker *RankingStatWeightProcess3) makeRankColumnAndDiff(entry *weight_types.RankEntry3, maxRank float64, debugStr string) {
+func (ranker *RankingStatWeightProcess3) makeRankColumnAndDiff(entry *rankEntry3, maxRank float64, debugStr string) {
 	entry.RankColumn = ranker.build.CreateColumnGeneral(highs.Integer, 0, maxRank, util_highs.DebugText("derivedRank-"+debugStr))
 	entry.RankDiffAbsColumn = ranker.build.CreateColumnWithOutput(highs.Integer, 0, util_highs.C_PlusInf, 1, util_highs.DebugText("rankDiffAbs-"+debugStr))
 
@@ -224,7 +229,7 @@ func (ranker *RankingStatWeightProcess3) makeRankColumnAndDiff(entry *weight_typ
 	ranker.build.AbsoluteValueFromDiffOneToConst(entry.RankColumn, 1, targetRank, entry.RankDiffAbsColumn, "diffRankToTarget")
 }
 
-func (ranker *RankingStatWeightProcess3) makeScoreColumn(entry *weight_types.RankEntry3, debugStr string) {
+func (ranker *RankingStatWeightProcess3) makeScoreColumn(entry *rankEntry3, debugStr string) {
 	entry.ScoreColumn = ranker.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugText("score-"+debugStr))
 
 	scoreRow := util_highs.ConstraintRow{Debug: "scoreRow-" + debugStr}
@@ -239,7 +244,7 @@ func (ranker *RankingStatWeightProcess3) makeScoreColumn(entry *weight_types.Ran
 	scoreRow.Build(ranker.build, 0, 0)
 }
 
-func (ranker *RankingStatWeightProcess3) makeEntryPairSequenceConstraints(one *weight_types.RankEntry3, two *weight_types.RankEntry3, indexOne, indexTwo int) {
+func (ranker *RankingStatWeightProcess3) makeEntryPairSequenceConstraints(one *rankEntry3, two *rankEntry3, indexOne, indexTwo int) {
 	// so we could totally do a boolean thing where scoreA>scoreB then implies rankA>rankB
 	// would need all possible pairs connected, but would then force solver to make a full integer order
 	isGreaterScore := ranker.build.CreateColumnBool(util_highs.DebugText("isGreaterScore"))
@@ -259,7 +264,7 @@ func (ranker *RankingStatWeightProcess3) makeEntryPairSequenceConstraints(one *w
 	})
 }
 
-func (ranker *RankingStatWeightProcess3) makeEntryPairSequenceConstraintsRequireEqualMode(one *weight_types.RankEntry3, two *weight_types.RankEntry3, indexOne, indexTwo int, scaleDiffOutput float64) {
+func (ranker *RankingStatWeightProcess3) makeEntryPairSequenceConstraintsRequireEqualMode(one *rankEntry3, two *rankEntry3, indexOne, indexTwo int, scaleDiffOutput float64) {
 	// so we could totally do a boolean thing where scoreA>scoreB then implies rankA>rankB
 	// would need all possible pairs connected, but would then force solver to make a full integer order
 	isGreaterScore := ranker.build.CreateColumnBool(util_highs.DebugText("isGreaterScore"))
@@ -322,11 +327,12 @@ func (ranker *RankingStatWeightProcess3) setupFromInternalWeights(internalWeight
 }
 
 func (ranker *RankingStatWeightProcess3) setupInitialRemainingVariables(internalWeights weight_types.Weight1Basic) {
-	for entry := range util.ForPointer(ranker.dataSample) {
+	for _, entry := range ranker.dataSample {
 		entry.InitialStatScore = internalWeights.CalcStatScoreScaled(entry.Data, ranker.scaleStats)
 	}
 
-	for entry, calcRank := range util.CalculateRanking(true, ranker.dataSample, func(x *weight_types.RankEntry3) float64 { return x.InitialStatScore }) {
+	for entryPointer, calcRank := range util.CalculateRanking(true, ranker.dataSample, func(x **rankEntry3) float64 { return (*x).InitialStatScore }) {
+		entry := *entryPointer
 		ranker.build.SetInitialSolutionValue(entry.ScoreColumn, entry.InitialStatScore)
 		if entry.RankColumn != -1 {
 			ranker.build.SetInitialSolutionValue(entry.RankColumn, float64(calcRank))
@@ -409,13 +415,14 @@ func (ranker *RankingStatWeightProcess3) reportRankingOfInputs(statWeightResult 
 		colRank    float64
 	}
 
-	check := util.MapSliceAsNew(ranker.dataSample, func(x *weight_types.RankEntry3) entryCheck {
+	check := util.MapSliceAsNew(ranker.dataSample, func(x **rankEntry3) entryCheck {
+		e := *x
 		return entryCheck{
-			x.SimScore,
-			x.TargetRank,
-			statWeightResult.CalcStatScore(x.Data),
-			solution.ColValues[x.ScoreColumn],
-			solution.ColValues[x.RankColumn],
+			e.SimScore,
+			e.TargetRank,
+			statWeightResult.CalcStatScore(e.Data),
+			solution.ColValues[e.ScoreColumn],
+			solution.ColValues[e.RankColumn],
 		}
 	})
 

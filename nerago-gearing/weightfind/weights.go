@@ -46,7 +46,7 @@ func StatWeights_updateAll(simSpeed simulate.WowSim_RunSize, printer *util.Print
 		summaryStringFutures = append(summaryStringFutures, summaryFuture)
 
 		waitGroup.Go(func() {
-			statWeightsGrid_updateOne(option.Label, &option.Model, option.GearFile, option.Model.SimPriority, option.WeightFileOut,
+			statWeightsGrid_updateOne(option.Label, &option.Model, option.GearFile, &option.Model.SimPriority, option.WeightFileOut,
 				option.SubstituteItems, printer, simSpeed, progress.NewChild(), summaryFuture)
 		})
 	}
@@ -69,7 +69,7 @@ type weightOption struct {
 	pawnString   string
 }
 
-func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, gearFile string, simPriority weight_types.SimPriorityBasic, weightFileOut string, substituteItems []items.ItemId, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, tracker *util.TrackProgress, futureSummary *util_async.Future[string]) {
+func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, gearFile string, simPriority *weight_types.SimPriorityBasic, weightFileOut string, substituteItems []items.ItemId, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, tracker *util.TrackProgress, futureSummary *util_async.Future[string]) {
 	// each simulator process is considered 1/3, then remaining solving is remaining third.
 	// only very small sim runs should be overpowered by solvers
 	tracker.RunOuterTracking(3)
@@ -170,7 +170,7 @@ func addToSummary(summary *util.StringBuild2, option *weightOption, prefix strin
 	summary.WriteString(") ")
 }
 
-func loadOldWeights(label string, weightFileOut string, simTypes []stats.SimType, ratios weight_types.SimPriorityBasic, inputData []weight_types.WeightInput, printer *util.PrintRecorder) *weightOption {
+func loadOldWeights(label string, weightFileOut string, simTypes []stats.SimType, ratios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput, printer *util.PrintRecorder) *weightOption {
 	oldWeight, oldWeightString, oldWeightExists := ratings_old.StatRatingsWeights_ReadFile_IfExists(weightFileOut, true, true, true)
 	if oldWeightExists {
 		oldWeightAsResult := weight_types.Weight1Basic_FromRatingsWeight(oldWeight)
@@ -183,14 +183,14 @@ func loadOldWeights(label string, weightFileOut string, simTypes []stats.SimType
 	}
 }
 
-func solveGridWeights(gridOutlierSetting int, label string, gearModel *gear_model.SpecModel, printer *util.PrintRecorder, ratios weight_types.SimPriorityBasic, inputDataGrid []weight_types.WeightInput, simTypes []stats.SimType, inputDataReal []weight_types.WeightInput) *weightOption {
+func solveGridWeights(gridOutlierSetting int, label string, gearModel *gear_model.SpecModel, printer *util.PrintRecorder, ratios *weight_types.SimPriorityBasic, inputDataGrid []weight_types.WeightInput, simTypes []stats.SimType, inputDataReal []weight_types.WeightInput) *weightOption {
 	grid := weight_highs.GridStatWeightProcess1B{}
 	grid.OUTLIER = gridOutlierSetting
 	grid.SCALEMODE = 1
 	grid.ROUNDMODE = 2
 	grid.CALCMODE = 2
 	grid.Init(printer, c_timeoutSolvers)
-	grid.SetTargetRatios(ratios)
+	grid.SetTargetRatios(*ratios)
 	grid.SetRequiredStats(gearModel.StatsForWeighting)
 	grid.SupplyData(inputDataGrid)
 	weightsGridFuture := grid.Run(nil)
@@ -199,7 +199,7 @@ func solveGridWeights(gridOutlierSetting int, label string, gearModel *gear_mode
 	return finishGridWeight(gridOutlierSetting, label, weightsGridOptional, printer, simTypes, ratios, inputDataGrid, inputDataReal)
 }
 
-func finishGridWeight(gridOutlierSetting int, label string, weightsGridOptional util.Optional[weight_types.Weight1Basic], printer *util.PrintRecorder, simTypes []stats.SimType, ratios weight_types.SimPriorityBasic, inputDataGrid []weight_types.WeightInput, inputDataReal []weight_types.WeightInput) *weightOption {
+func finishGridWeight(gridOutlierSetting int, label string, weightsGridOptional util.Optional[weight_types.Weight1Basic], printer *util.PrintRecorder, simTypes []stats.SimType, ratios *weight_types.SimPriorityBasic, inputDataGrid []weight_types.WeightInput, inputDataReal []weight_types.WeightInput) *weightOption {
 	if weightsGridOptional.HasValue() {
 		weightsGrid := weightsGridOptional.GetOrPanic()
 		printer.Printf("Grid Weights %d >>>>> %s\n", gridOutlierSetting, label)
@@ -214,7 +214,7 @@ func finishGridWeight(gridOutlierSetting int, label string, weightsGridOptional 
 	}
 }
 
-func solveRankingWeight(rankMode int, label string, gearModel *gear_model.SpecModel, printer *util.PrintRecorder, ratios weight_types.SimPriorityBasic, simTypes []stats.SimType, mixedInputData []weight_types.WeightInput, bestWeightsSoFar util.Optional[weightOption]) *weightOption {
+func solveRankingWeight(rankMode int, label string, gearModel *gear_model.SpecModel, printer *util.PrintRecorder, ratios *weight_types.SimPriorityBasic, simTypes []stats.SimType, mixedInputData []weight_types.WeightInput, bestWeightsSoFar util.Optional[weightOption]) *weightOption {
 	var weightsRankingFuture *util_async.FutureCancellable[weight_types.Weight1Basic]
 
 	if rankMode == 0 {
@@ -223,7 +223,7 @@ func solveRankingWeight(rankMode int, label string, gearModel *gear_model.SpecMo
 		ranking.ALGO = 0
 		ranking.Init(printer, c_timeoutSolvers)
 		ranking.SetRequiredStats(gearModel.StatsForWeighting)
-		ranking.SetTargetRatios(ratios)
+		ranking.SetTargetRatios(*ratios)
 		ranking.SupplyData(mixedInputData)
 		if !bestWeightsSoFar.IsEmpty() {
 			weightsRankingFuture = ranking.RunSinglePassFromExternal(bestWeightsSoFar.GetOrPanic().weight, nil)
@@ -236,7 +236,7 @@ func solveRankingWeight(rankMode int, label string, gearModel *gear_model.SpecMo
 		ranking.WEIGHTSUM = 0
 		ranking.Init(printer)
 		ranking.SetRequiredStats(gearModel.StatsForWeighting)
-		ranking.SetTargetRatios(ratios)
+		ranking.SetTargetRatios(*ratios)
 		ranking.SupplyData(slices.Clone(mixedInputData))
 		weightsRankingFuture = ranking.Run(nil, c_timeoutSolvers)
 	}
@@ -244,7 +244,7 @@ func solveRankingWeight(rankMode int, label string, gearModel *gear_model.SpecMo
 	return finishRankWeight(rankMode, label, weightsRankingFuture, printer, simTypes, ratios, mixedInputData)
 }
 
-func finishRankWeight(rankMode int, label string, weightsRankingFuture *util_async.FutureCancellable[weight_types.Weight1Basic], printer *util.PrintRecorder, simTypes []stats.SimType, ratios weight_types.SimPriorityBasic, mixedInputData []weight_types.WeightInput) *weightOption {
+func finishRankWeight(rankMode int, label string, weightsRankingFuture *util_async.FutureCancellable[weight_types.Weight1Basic], printer *util.PrintRecorder, simTypes []stats.SimType, ratios *weight_types.SimPriorityBasic, mixedInputData []weight_types.WeightInput) *weightOption {
 	weightsRankingOptional := weightsRankingFuture.WaitForResultAsOptional()
 	if weightsRankingOptional.HasValue() {
 		weightsRanking := weightsRankingOptional.GetOrPanic()
@@ -258,7 +258,7 @@ func finishRankWeight(rankMode int, label string, weightsRankingFuture *util_asy
 	}
 }
 
-func solveSearchWeights(searchMode int, label string, gearModel *gear_model.SpecModel, ratios weight_types.SimPriorityBasic, printer *util.PrintRecorder, mixedInputData []weight_types.WeightInput, simTypes []stats.SimType, inputDataGrid []weight_types.WeightInput) *weightOption {
+func solveSearchWeights(searchMode int, label string, gearModel *gear_model.SpecModel, ratios *weight_types.SimPriorityBasic, printer *util.PrintRecorder, mixedInputData []weight_types.WeightInput, simTypes []stats.SimType, inputDataGrid []weight_types.WeightInput) *weightOption {
 	cancel := util_async.CancelSignal_Make()
 	timer := util_async.CancelAfterTimeout(cancel, time.Second*c_timeoutSolvers, printer)
 	defer timer.Stop()
@@ -267,14 +267,14 @@ func solveSearchWeights(searchMode int, label string, gearModel *gear_model.Spec
 	if searchMode == 0 {
 		search := WeightSearcher2{}
 		search.AccuracyMode = 1
-		search.Init(gearModel.StatsForWeighting, ratios, printer)
+		search.Init(gearModel.StatsForWeighting, *ratios, printer)
 		search.SupplyData(mixedInputData)
 		search.SetRanges(-1.0, 10.0)
 		weightsSearch = search.Run(cancel)
 	} else {
 		search := WeightSearcher3{}
 		search.AccuracyMode = 2
-		search.Init(gearModel.StatsForWeighting, ratios)
+		search.Init(gearModel.StatsForWeighting, *ratios)
 		search.SupplyData(mixedInputData)
 		search.SetRanges(-1.0, 10.0)
 		weightsSearch = search.Run(cancel)
@@ -287,7 +287,7 @@ func solveSearchWeights(searchMode int, label string, gearModel *gear_model.Spec
 	return &weightOption{weightsSearch, accuracySearch, accuracySearchStat, pawnSearch}
 }
 
-func tweakedWeight(label string, gearModel *gear_model.SpecModel, startWeight weight_types.Weight1Basic, ratios weight_types.SimPriorityBasic, mixedInputData []weight_types.WeightInput, simTypes []stats.SimType, printer *util.PrintRecorder) *weightOption {
+func tweakedWeight(label string, gearModel *gear_model.SpecModel, startWeight weight_types.Weight1Basic, ratios *weight_types.SimPriorityBasic, mixedInputData []weight_types.WeightInput, simTypes []stats.SimType, printer *util.PrintRecorder) *weightOption {
 	weightsTweaked, accuracyTweaked := WeightTweakerWithLogging(startWeight, gearModel.StatsForWeighting, ratios, mixedInputData, printer)
 	printer.Println("Tweaked Weights >>>>> " + label)
 	pawnTweak := tools.WritePawnString(weightsTweaked, printer)

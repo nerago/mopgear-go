@@ -9,7 +9,7 @@ import (
 	"slices"
 )
 
-func EvaluateAccuracyRanged(statWeights weight_types.Weight1Basic, requiredSims []stats.SimType, simRatios weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
+func EvaluateAccuracyRanged(statWeights weight_types.Weight1Basic, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
 	if statWeights.IsEmpty() {
 		return 0
 	}
@@ -19,7 +19,7 @@ func EvaluateAccuracyRanged(statWeights weight_types.Weight1Basic, requiredSims 
 	return calcAverageDifference(data)
 }
 
-func EvaluateAccuracyRanged2(statWeights weight_types.Weight2Extended, requiredSims []stats.SimType, simRatios weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
+func EvaluateAccuracyRanged2(statWeights weight_types.Weight2Extended, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
 	if statWeights.IsEmpty() {
 		return 0
 	}
@@ -29,7 +29,7 @@ func EvaluateAccuracyRanged2(statWeights weight_types.Weight2Extended, requiredS
 	return calcAverageDifference(data)
 }
 
-func EvaluateAccuracyStatisticalDeviations(statWeights weight_types.Weight1Basic, requiredSims []stats.SimType, simRatios weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
+func EvaluateAccuracyStatisticalDeviations(statWeights weight_types.Weight1Basic, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
 	if statWeights.IsEmpty() {
 		return 0
 	}

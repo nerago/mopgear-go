@@ -14,7 +14,7 @@ type EvaluateAccuracyPrepared struct {
 	hiLoPool       []util.HiLoInt
 }
 
-func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, simRatios weight_types.SimPriorityBasic, simCalcMode int) {
+func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, simRatios *weight_types.SimPriorityBasic, simCalcMode int) {
 	if simCalcMode == 0 {
 		panic("mode not provided")
 	}
@@ -27,25 +27,19 @@ func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, s
 		}
 	})
 
-	requiredSims := simRatios.SimTypes()
-	if simCalcMode == 1 {
-		simrank.RankSimsBasicForAccuracyPrepare(simRatios, data, requiredSims)
-	} else {
-		simrank.RankSimsStatisticalForAccuracyPrepare(simRatios, data, requiredSims)
-	}
-
-	ea.calcSimRankAndPrepare(data)
+	ea.calcSimRankAndPrepare(data, simRatios, simCalcMode)
 
 	ea.statRankRanges = make([]*util.HiLoInt, len(data))
 	ea.hiLoPool = make([]util.HiLoInt, len(data))
 }
 
-func (ea *EvaluateAccuracyPrepared) calcSimRankAndPrepare(data []*weight_types.AccuracyInfoPrePrepare) {
-	// make ranked entries for later, calculating the sim rank as we go
-	prepare := make([]*weight_types.AccuracyPreparedEntry, len(data))
-	simrank.CalcHiLoForAccuracyPrepare(data, prepare)
-
-	ea.prepared = prepare
+func (ea *EvaluateAccuracyPrepared) calcSimRankAndPrepare(data []*weight_types.AccuracyInfoPrePrepare, simRatios *weight_types.SimPriorityBasic, simCalcMode int) {
+	requiredSims := simRatios.SimTypes()
+	if simCalcMode == 1 {
+		ea.prepared = simrank.AccuracyPrepareRankSimsBasic(requiredSims, simRatios, data)
+	} else {
+		ea.prepared = simrank.RankSimsStatisticalForAccuracyPrepare(requiredSims, simRatios, data)
+	}
 }
 
 func (ea *EvaluateAccuracyPrepared) Clone() *EvaluateAccuracyPrepared {

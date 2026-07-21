@@ -13,12 +13,12 @@ const (
 	c_tweak_iter_count = 1000 // limit to avoid infinite loop
 )
 
-func WeightTweakerWithLogging(startWeight weight_types.Weight1Basic, weightStats []stats.StatType, targetRatio weight_types.SimPriorityBasic, inputData []weight_types.WeightInput, printer *util.PrintRecorder) (weight_types.Weight1Basic, float64) {
+func WeightTweakerWithLogging(startWeight weight_types.Weight1Basic, weightStats []stats.StatType, targetRatio *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput, printer *util.PrintRecorder) (weight_types.Weight1Basic, float64) {
 	updatedWeight, updatedAccuracy := weightTweakerInternalLogged(startWeight, c_tweak_start, weightStats, targetRatio, inputData, printer)
 	return updatedWeight, updatedAccuracy
 }
 
-func weightTweakerInternalLogged(startWeight weight_types.Weight1Basic, tweakStart float64, weightStats []stats.StatType, targetRatio weight_types.SimPriorityBasic, inputData []weight_types.WeightInput, printer *util.PrintRecorder) (weight_types.Weight1Basic, float64) {
+func weightTweakerInternalLogged(startWeight weight_types.Weight1Basic, tweakStart float64, weightStats []stats.StatType, targetRatio *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput, printer *util.PrintRecorder) (weight_types.Weight1Basic, float64) {
 	requiredSims := targetRatio.SimTypes()
 	increment := tweakStart
 	factor := 1 + increment
@@ -81,7 +81,7 @@ func weightTweakerInternalLogged(startWeight weight_types.Weight1Basic, tweakSta
 }
 
 // TODO compare logic
-func weightTweakerInternal_Fast(startWeight weight_types.Weight1Basic, tweakStart float64, weightStats []stats.StatType, simTypes []stats.SimType, targetRatio weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) (weight_types.Weight1Basic, float64) {
+func weightTweakerInternal_Fast(startWeight weight_types.Weight1Basic, tweakStart float64, weightStats []stats.StatType, simTypes []stats.SimType, targetRatio *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) (weight_types.Weight1Basic, float64) {
 	increment := tweakStart
 	factor := 1 + increment
 

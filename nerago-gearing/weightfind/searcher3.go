@@ -88,7 +88,7 @@ func (ws *WeightSearcher3) Init(statTypes []stats.StatType, targetRatio weight_t
 }
 
 func (ws *WeightSearcher3) SupplyData(inputData []weight_types.WeightInput) {
-	ws.evaluateAccuracy.Init(inputData, ws.targetRatio, ws.AccuracyMode)
+	ws.evaluateAccuracy.Init(inputData, &ws.targetRatio, ws.AccuracyMode)
 }
 
 func (ws *WeightSearcher3) SetRanges(weightMin, weightMax float64) {
