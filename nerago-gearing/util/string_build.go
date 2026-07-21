@@ -73,6 +73,10 @@ func (sb *StringBuild2) WriteFloat32(value float32, decimalPlaces int) {
 	*sb = strconv.AppendFloat(*sb, float64(value), 'f', decimalPlaces, 32)
 }
 
+func (sb *StringBuild2) WriteFloatScientific64(value float64) {
+	*sb = strconv.AppendFloat(*sb, value, 'e', 6, 64)
+}
+
 func (sb *StringBuild2) WriteFloat64_RightPadded(value float64, decimalPlaces int, pad int) {
 	*sb = slices.Grow(*sb, pad)
 

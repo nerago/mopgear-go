@@ -183,6 +183,20 @@ func statWeightsFormula(printer *util.PrintRecorder) {
 	tools.WritePawnString(weights1, printer)
 }
 
+func statWeightsRanking(printer *util.PrintRecorder) {
+	weightInputs := readWeightInputFile("sim-stats-compare-rand.json")
+
+	comp := weight_highs.RankingSeparatedWeights{}
+
+	comp.Init(printer, 3000)
+	comp.SetRequiredStats(gear_model.StatsForWeighting_strengthTank, gear_model.SimPriority_generalMiti.SimTypes())
+	comp.SetTargetRatios(gear_model.SimPriority_generalMiti)
+	comp.SupplyData(weightInputs)
+	weights2 := comp.Run(nil).WaitForResultOrPanic()
+	weights1 := weights2.ConvertToWeight1()
+	tools.WritePawnString(weights1, printer)
+}
+
 func statWeightsCustom(printer *util.PrintRecorder) {
 	// weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
 	targetRatio := gear_model.SimPriority_generalMiti

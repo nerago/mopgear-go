@@ -153,3 +153,33 @@ func (we *Weight2Extended) ConvertToWeight1() Weight1Basic {
 
 	return weight1.ScaleForBaseStat(we.StatList[0])
 }
+
+func (we *Weight2Extended) Print(printer *util.PrintRecorder) {
+	sb := util.StringBuild2{}
+	we.AppendString(&sb)
+	printer.PrintlnFromBuild(sb)
+}
+
+func (we *Weight2Extended) AppendString(sb *util.StringBuild2) {
+	sb.WriteString("(")
+	for _, simType := range we.SimList {
+		priority := we.SimPriority.GetOrPanic(simType)
+		sb.WriteString(simType.Name())
+		sb.WriteString("(scale1=")
+		sb.WriteFloatScientific64(priority.RatioScale)
+		sb.WriteString(",scale2=")
+		sb.WriteFloatScientific64(priority.RangingScale)
+		sb.WriteString(",offset=")
+		sb.WriteFloatScientific64(priority.RangingOffset)
+		sb.WriteRune(',')
+		for statType, value := range we.DetailedWeights.SeqInnerWithKey2Value(simType) {
+			sb.WriteString(statType.Name())
+			sb.WriteRune('=')
+			sb.WriteFloatScientific64(value)
+			sb.WriteRune(',')
+		}
+		sb.Rewind(1)
+		sb.WriteRune(')')
+	}
+	sb.WriteRune(')')
+}
