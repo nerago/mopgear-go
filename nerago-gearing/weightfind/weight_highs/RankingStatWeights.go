@@ -42,7 +42,7 @@ func (ranker *RankingStatWeightProcess) Init(printer *util.PrintRecorder) {
 }
 
 func (ranker *RankingStatWeightProcess) SupplyData(inputData []weight_types.WeightInput) {
-	ranker.scaleStats = chooseStatScaling(inputData, c_rank1_scaleTarget, false, ranker.printer)
+	ranker.scaleStats = chooseStatScalingBasic(inputData, c_rank1_scaleTarget, false, ranker.printer)
 	ranker.data = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) weight_types.RankEntry {
 		return weight_types.RankEntry{Data: input, SimRanks: make(map[stats.SimType]int)}
 	})

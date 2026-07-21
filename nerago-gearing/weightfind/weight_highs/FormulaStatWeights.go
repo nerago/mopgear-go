@@ -110,8 +110,8 @@ func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int
 
 func (form *FormulaStatWeightProcess) chooseScaling() {
 	target := 1.0 // TODO consider non-unit range
-	form.scaleSims = chooseSimScalingUnfriendly(form.inputData, target, false, form.printer)
-	form.scaleStats = chooseStatScaling(form.inputData, target, false, form.printer)
+	form.scaleSims = chooseSimUnfriendlyScalingBasic(form.inputData, target, false, form.printer)
+	form.scaleStats = chooseStatScalingBasic(form.inputData, target, false, form.printer)
 }
 
 func (form *FormulaStatWeightProcess) createWeightColumns() {

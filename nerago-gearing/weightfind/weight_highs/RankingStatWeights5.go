@@ -147,7 +147,7 @@ func (run *rankInternalRun5) createWeightColumns() {
 }
 
 func (run *rankInternalRun5) supplyData(inputData []weight_types.WeightInput) {
-	run.scaleStats = chooseStatScaling(inputData, c_rank5_scaleTarget, false, run.process.printer)
+	run.scaleStats = chooseStatScalingBasic(inputData, c_rank5_scaleTarget, false, run.process.printer)
 	run.runData = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) weight_types.RankEntry5 {
 		return weight_types.RankEntry5{
 			Data: input,

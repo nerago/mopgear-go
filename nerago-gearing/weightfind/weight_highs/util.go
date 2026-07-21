@@ -18,8 +18,8 @@ type enumWithName interface {
 	Name() string
 }
 
-func chooseSimScalingUnfriendly(inputData []weight_types.WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[stats.SimType]float64 {
-	return chooseScalingNumbers(inputData,
+func chooseSimUnfriendlyScalingBasic(inputData []weight_types.WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[stats.SimType]float64 {
+	return chooseScalingBasicScale(inputData,
 		stats.SimTypeList,
 		func(data *weight_types.WeightInput, simType stats.SimType) float64 {
 			return data.SimResult.Get(simType)
@@ -29,8 +29,8 @@ func chooseSimScalingUnfriendly(inputData []weight_types.WeightInput, scaleTarge
 		printer)
 }
 
-func chooseStatScaling(inputData []weight_types.WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[stats.StatType]float64 {
-	return chooseScalingNumbers(inputData,
+func chooseStatScalingBasic(inputData []weight_types.WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[stats.StatType]float64 {
+	return chooseScalingBasicScale(inputData,
 		stats.StatType_List,
 		func(data *weight_types.WeightInput, statType stats.StatType) float64 {
 			return data.TotalStat.GetFloat(statType)
@@ -40,7 +40,7 @@ func chooseStatScaling(inputData []weight_types.WeightInput, scaleTarget float64
 		printer)
 }
 
-func chooseScalingNumbers[E enumWithName](inputData []weight_types.WeightInput, checkTypes []E, getValue func(*weight_types.WeightInput, E) float64, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[E]float64 {
+func chooseScalingBasicScale[E enumWithName](inputData []weight_types.WeightInput, checkTypes []E, getValue func(*weight_types.WeightInput, E) float64, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[E]float64 {
 	scaleMap := make(map[E]float64)
 	for _, check := range checkTypes {
 		valueSeq := util.MapSliceAsSeq(inputData, func(x *weight_types.WeightInput) float64 {
@@ -56,24 +56,7 @@ func chooseScalingNumbers[E enumWithName](inputData []weight_types.WeightInput, 
 }
 
 func chooseScale(seq iter.Seq[float64], scaleTarget float64, keepUnderTarget bool) float64 {
-	minPosValue, maxPosValue := math.MaxFloat64, 0.0
-	minNegValue, maxNegValue := math.MaxFloat64, 0.0
-	hasNeg, hasPos, hasZero := false, false, false
-	for valueRaw := range seq {
-		if util.FloatEqualsZero(valueRaw) {
-			minNegValue = 0
-			minPosValue = 0
-			hasZero = true
-		} else if valueRaw > 0 {
-			minPosValue = min(minPosValue, valueRaw)
-			maxPosValue = max(maxPosValue, valueRaw)
-			hasPos = true
-		} else {
-			minNegValue = min(minNegValue, -valueRaw)
-			maxNegValue = max(maxNegValue, -valueRaw)
-			hasNeg = true
-		}
-	}
+	minPosValue, maxPosValue, minNegValue, maxNegValue, hasNeg, hasPos, hasZero := sequenceMetrics(seq)
 
 	var scale float64
 	if hasPos && hasNeg {
@@ -93,4 +76,102 @@ func chooseScale(seq iter.Seq[float64], scaleTarget float64, keepUnderTarget boo
 
 	scale = util.Clamp(scale, 1e-10, 1e10)
 	return scale
+}
+
+func sequenceMetrics(seq iter.Seq[float64]) (minPosValue, maxPosValue, minNegValue, maxNegValue float64, hasNeg, hasPos, hasZero bool) {
+	minPosValue, maxPosValue = math.MaxFloat64, 0.0
+	minNegValue, maxNegValue = math.MaxFloat64, 0.0
+	hasNeg, hasPos, hasZero = false, false, false
+	for valueRaw := range seq {
+		if util.FloatEqualsZero(valueRaw) {
+			minNegValue = 0
+			minPosValue = 0
+			hasZero = true
+		} else if valueRaw > 0 {
+			minPosValue = min(minPosValue, valueRaw)
+			maxPosValue = max(maxPosValue, valueRaw)
+			hasPos = true
+		} else {
+			minNegValue = min(minNegValue, -valueRaw)
+			maxNegValue = max(maxNegValue, -valueRaw)
+			hasNeg = true
+		}
+	}
+	return minPosValue, maxPosValue, minNegValue, maxNegValue, hasNeg, hasPos, hasZero
+}
+
+type scaleAndOffset struct {
+	scale  float64
+	offset float64
+}
+
+func (so scaleAndOffset) Apply(value float64) float64 {
+	return (value + so.offset) * so.scale
+}
+
+func chooseSimUnfriendlyUnitScaleAndOffset(inputData []weight_types.WeightInput, simTypeList []stats.SimType) util.EnumMap[stats.SimType, scaleAndOffset] {
+	scaleMap := util.EnumMapMake[stats.SimType, scaleAndOffset](stats.SimTypeEnum)
+	for _, simType := range simTypeList {
+		valueSeq := util.MapSliceAsSeq(inputData, func(x *weight_types.WeightInput) float64 {
+			return x.SimResult.Get(simType)
+		})
+
+		params := chooseUnitScaleAndOffset(valueSeq, simType.IsHighGood())
+		scaleMap.Put(simType, params)
+	}
+	return scaleMap
+}
+
+func chooseUnitScaleAndOffset(seq iter.Seq[float64], isHighGood bool) scaleAndOffset {
+	minPosValue, maxPosValue, minNegValue, maxNegValue, hasNeg, hasPos, hasZero := sequenceMetrics(seq)
+
+	var bestActual, worstActual float64
+	// initially worked out based on isHighGood=true, so best is closest to +inf
+	if hasPos && hasNeg {
+		bestActual = maxPosValue
+		worstActual = -maxNegValue
+	} else if hasPos && hasZero {
+		bestActual = maxPosValue
+		worstActual = 0
+	} else if hasPos {
+		bestActual = maxPosValue
+		worstActual = minPosValue
+	} else if hasNeg && hasZero {
+		bestActual = 0
+		worstActual = -maxNegValue
+	} else if hasNeg {
+		bestActual = -minNegValue
+		worstActual = -maxNegValue
+	} else {
+		panic("can't determine value range for all zeros")
+	}
+
+	if !isHighGood {
+		// flip meaning so that best is closest to -inf
+		bestActual, worstActual = worstActual, bestActual
+	}
+
+	worstTarget := 0.0
+	bestTarget := 1.0
+
+	// scaleAndOffset logic: output = (input + so.offset) * so.scale
+	// worstTarget = (worstActual + offset) * scale
+	//   -> worstTarget = worstActual*scale + offset*scale
+	//   -> worstTarget - worstActual*scale = offset*scale
+	// bestTarget = (bestActual + offset) * scale
+	//   -> bestTarget = bestActual*scale + offset*scale
+	//   -> bestTarget = bestActual*scale + (worstTarget - worstActual*scale)
+	//   -> bestTarget - worstTarget = bestActual*scale - worstActual*scale
+	//   -> bestTarget - worstTarget = (bestActual - worstActual) * scale
+	//   -> (bestTarget - worstTarget) / (bestActual - worstActual) = scale
+	// bestTarget = (bestActual + offset) * scale
+	//   -> bestTarget / scale = bestActual + offset
+	//   -> bestTarget / scale - bestActual = offset
+
+	scale := (bestTarget - worstTarget) / (bestActual - worstActual)
+	offset := (bestTarget / scale) - bestActual
+	return scaleAndOffset{
+		scale:  scale,
+		offset: offset,
+	}
 }

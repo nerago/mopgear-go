@@ -30,7 +30,7 @@ type FormulaStatWeightProcess2 struct {
 	objectiveEquationDiff util_highs.ObjectiveIndex
 	objectiveInclude      util_highs.ObjectiveIndex
 
-	scaleSims             map[stats.SimType]float64
+	scaleSims             util.EnumMap[stats.SimType, scaleAndOffset]
 	scaleStats            map[stats.StatType]float64
 	detailedWeightColumns util.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
 	offsetColumns         map[stats.SimType]util_highs.ColumnIndex
@@ -115,8 +115,8 @@ func (form *FormulaStatWeightProcess2) Run(stopwatch *util.Stopwatch, timeout in
 
 func (form *FormulaStatWeightProcess2) chooseScaling() {
 	target := c_formula2ScaleTarget
-	form.scaleStats = chooseStatScaling(form.inputData, target, true, form.printer)
-	form.scaleSims = chooseSimScalingUnfriendly(form.inputData, target, true, form.printer)
+	form.scaleStats = chooseStatScalingBasic(form.inputData, target, true, form.printer)
+	form.scaleSims = chooseSimUnfriendlyUnitScaleAndOffset(form.inputData, form.requiredSims)
 }
 
 func (form *FormulaStatWeightProcess2) createWeightColumns() {
@@ -196,6 +196,8 @@ func (form *FormulaStatWeightProcess2) sampleIncludeToggleColumn() util_highs.Co
 // in more generic form:         simValue = sharedOffset + weightA*scaledStatA + weightB*scaledStatB  (allowing stats weights to go negative as much as they need)
 // advantage is this form can be used for everything
 
+// however this ends up with
+
 func (form *FormulaStatWeightProcess2) buildDataEquationForSim(stats *stats.StatBlock, simValue float64, simType stats.SimType, includeColumn util_highs.ColumnIndex) {
 	matchSimValue := util_highs.ConstraintRow{}
 
@@ -217,8 +219,8 @@ func (form *FormulaStatWeightProcess2) buildDataEquationForSim(stats *stats.Stat
 	sharedOffsetCol := form.offsetColumns[simType]
 	matchSimValue.Add(sharedOffsetCol, 1)
 
-	simScale := form.scaleSims[simType]
-	scaledSimValue := simValue * simScale
+	simScale := form.scaleSims.GetOrPanic(simType)
+	scaledSimValue := simScale.Apply(simValue)
 	matchSimValue.Build(form.build, scaledSimValue, scaledSimValue)
 }
 
@@ -254,10 +256,10 @@ func (form *FormulaStatWeightProcess2) extractDetailWeights(solution *highs.Solu
 	form.printer.Println0()
 
 	for simType, offsetColumn := range form.offsetColumns {
-		simScale := form.scaleSims[simType]
+		//simScale := form.scaleSims[simType]
 		offsetValue := solution.ColValues[offsetColumn]
 		ratio := form.targetRatios.GetOrPanic(simType)
-		weightExtended.SetSimScale(simType, simScale, offsetValue, ratio)
+		weightExtended.SetSimScale(simType, 1, offsetValue, ratio)
 	}
 
 	for entry := range weightExtended.SeqBySimThenStat() {
@@ -287,12 +289,12 @@ func (form *FormulaStatWeightProcess2) reportExamples(weightExtended *weight_typ
 
 			priorityEntry := weightExtended.GetSimPriority().GetOrPanic(simType)
 			offset := priorityEntry.RangingOffset
-			simScale := priorityEntry.RangingScale
+			simScale := form.scaleSims.GetOrPanic(simType)
 
 			rowSum += offset
 			simValue := data.SimResult.Get(simType)
 
-			form.printer.Printf(" + {offset %.4f} = %.4f {expect %.4f * %.2e = %.4f}\n", offset, rowSum, simValue, simScale, simValue*simScale)
+			form.printer.Printf(" + {offset %.4f} = %.4f {expect %.4f + %.2e * %.2e = %.4f}\n", offset, rowSum, simValue, simScale.offset, simScale.scale, simScale.Apply(simValue))
 		}
 
 		form.printer.Println0()

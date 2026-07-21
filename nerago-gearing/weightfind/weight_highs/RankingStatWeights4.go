@@ -61,7 +61,7 @@ func (process *RankingStatWeightProcess4) SupplyData(inputData []weight_types.We
 }
 
 func (run *rankInternalRun4) supplyData(inputData []weight_types.WeightInput) {
-	run.scaleStats = chooseStatScaling(inputData, c_Rank4ScaleTarget, false, run.process.printer)
+	run.scaleStats = chooseStatScalingBasic(inputData, c_Rank4ScaleTarget, false, run.process.printer)
 	run.runData = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) weight_types.RankEntry4 {
 		return weight_types.RankEntry4{
 			Data:        input,

@@ -62,7 +62,7 @@ func (ranker *RankingStatWeightProcess3) SupplyData(inputData []weight_types.Wei
 			ranker.scaleStats[statType] = 1
 		}
 	} else {
-		ranker.scaleStats = chooseStatScaling(inputData, c_rank3_scaleTarget, false, ranker.printer)
+		ranker.scaleStats = chooseStatScalingBasic(inputData, c_rank3_scaleTarget, false, ranker.printer)
 	}
 	ranker.dataAllOriginal = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) weight_types.RankEntry3 {
 		return weight_types.RankEntry3{
