@@ -221,7 +221,7 @@ func (ranker *RankingSeparatedWeights) extractAndReportSolution(solution *highs.
 	for simType, offsetCol := range ranker.offsetColumns {
 		offsetValue := solution.ColValues[offsetCol]
 		ratio := ranker.targetRatios.GetOrPanic(simType)
-		statWeightResult.SimPriority.SetSimScale(simType, 1, offsetValue, ratio)
+		statWeightResult.SetSimScale(simType, 1, offsetValue, ratio)
 	}
 	statWeightResult.FinishAndValidate()
 

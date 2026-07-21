@@ -55,7 +55,7 @@ func evaluateStatScore2AndCreateStructure(statWeights weight_types.Weight2Extend
 	return util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.AccuracyInfoSimStatRanged {
 		return &weight_types.AccuracyInfoSimStatRanged{
 			DataSim:       &input.SimResult,
-			StatScore:     statWeights.CalcStatScore(input),
+			StatScore:     statWeights.CalcStatScoreForInput(input),
 			SimScore:      0,
 			StatRankRange: nil,
 			SimRankRange:  nil,

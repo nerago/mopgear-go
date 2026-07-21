@@ -67,14 +67,14 @@ func (sr *SimPriorityBasic) ScaleForTotalSum(targetTotal float64) *SimPriorityBa
 	}
 	scale := targetTotal / currentTotal
 
-	result := new(SimPriorityBasic)
+	result := SimPriorityBasic_MakeEmpty()
 	for simType := range sr.content.SeqKey() {
 		value, hasValue := sr.content.Get(simType)
 		if hasValue {
 			result.content.Put(simType, value*scale)
 		}
 	}
-	return result
+	return &result
 }
 
 func (sr *SimPriorityBasic) ValidateRatioAddsToOne() {

@@ -171,7 +171,7 @@ func statWeightsFormula(printer *util.PrintRecorder) {
 	filteredInput := weightInputs
 	printer.Printf("filteredInput size %d\n", len(filteredInput))
 
-	comp := weight_highs.FormulaStatWeightProcess{}
+	comp := weight_highs.FormulaStatWeightProcess2{}
 
 	comp.Init(printer)
 	comp.SetRequiredStats(gear_model.StatsForWeighting_strengthTank)

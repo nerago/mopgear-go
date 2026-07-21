@@ -4,12 +4,12 @@ import "iter"
 
 type BitSet []uint32
 
-func BitSetMake(maxIndex int) BitSet {
+func BitSetMake(maxIndex uint32) BitSet {
 	elementCount := (maxIndex + 32) / 32
 	return make([]uint32, elementCount)
 }
 
-func (bs *BitSet) IsSet(index int) bool {
+func (bs *BitSet) IsSet(index uint32) bool {
 	i := index >> 5
 	b := index & 0x1f
 	element := (*bs)[i]
@@ -18,31 +18,31 @@ func (bs *BitSet) IsSet(index int) bool {
 	return value != 0
 }
 
-func (bs *BitSet) Set(index int) {
+func (bs *BitSet) Set(index uint32) {
 	i := index >> 5
 	b := index & 0x1f
 
-	mod := 1 << b
+	var mod uint32 = 1 << b
 	(*bs)[i] |= mod
 }
 
-func (bs *BitSet) Clear(index int) {
+func (bs *BitSet) Clear(index uint32) {
 	i := index >> 5
 	b := index & 0x1f
 
-	mod := ^(1 << b)
+	var mod uint32 = ^(1 << b)
 	(*bs)[i] &= mod
 }
 
-func (bs *BitSet) SeqIsSet() iter.Seq[int] {
-	return func(yield func(int) bool) {
+func (bs *BitSet) SeqIsSet() iter.Seq[uint32] {
+	return func(yield func(uint32) bool) {
 		for i, value := range *bs {
 			for b := range 32 {
 				if value == 0 {
 					break
 				} else if (value & 0x1) != 0 {
 					index := i*32 + b
-					if !yield(index) {
+					if !yield(uint32(index)) {
 						return
 					}
 				}

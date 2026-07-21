@@ -2,6 +2,7 @@ package util
 
 import (
 	"iter"
+	"slices"
 )
 
 type EnumMapMap[J ~uint8, K ~uint8, V any] struct {
@@ -18,11 +19,15 @@ func EnumMapMapMake[J ~uint8, K ~uint8, V any](enumType1 EnumType[J], enumType2 
 	arraySize := len(enumType1.Values) * len(enumType2.Values)
 	return EnumMapMap[J, K, V]{
 		make([]V, arraySize),
-		BitSetMake(arraySize - 1),
+		BitSetMake(uint32(arraySize - 1)),
 		0,
 		enumType1,
 		enumType2,
 	}
+}
+
+func (em *EnumMapMap[J, K, V]) keyIndex(key1 J, key2 K) uint32 {
+	return uint32(len(em.enumType2.Values))*uint32(key1) + uint32(key2)
 }
 
 func (em *EnumMapMap[J, K, V]) IsUninitialized() bool {
@@ -68,12 +73,12 @@ func (em *EnumMapMap[J, K, V]) IsEmpty() bool {
 }
 
 func (em *EnumMapMap[J, K, V]) Has(key1 J, key2 K) bool {
-	index := len(em.enumType2.Values)*int(key1) + int(key2)
+	index := em.keyIndex(key1, key2)
 	return em.isSet.IsSet(index)
 }
 
 func (em *EnumMapMap[J, K, V]) Get(key1 J, key2 K) (V, bool) {
-	index := len(em.enumType2.Values)*int(key1) + int(key2)
+	index := em.keyIndex(key1, key2)
 
 	if em.isSet.IsSet(index) {
 		return em.content[index], true
@@ -84,7 +89,7 @@ func (em *EnumMapMap[J, K, V]) Get(key1 J, key2 K) (V, bool) {
 }
 
 func (em *EnumMapMap[J, K, V]) GetOrPanic(key1 J, key2 K) V {
-	index := len(em.enumType2.Values)*int(key1) + int(key2)
+	index := em.keyIndex(key1, key2)
 
 	if em.isSet.IsSet(index) {
 		return em.content[index]
@@ -95,7 +100,7 @@ func (em *EnumMapMap[J, K, V]) GetOrPanic(key1 J, key2 K) V {
 
 func (em *EnumMapMap[J, K, V]) HasKey1(key1 J) bool {
 	for key2 := range len(em.enumType2.Values) {
-		index := len(em.enumType2.Values)*int(key1) + key2
+		index := em.keyIndex(key1, K(key2))
 		if em.isSet.IsSet(index) {
 			return true
 		}
@@ -105,7 +110,7 @@ func (em *EnumMapMap[J, K, V]) HasKey1(key1 J) bool {
 
 func (em *EnumMapMap[J, K, V]) HasKey2(key2 K) bool {
 	for key1 := range len(em.enumType1.Values) {
-		index := len(em.enumType2.Values)*key1 + int(key2)
+		index := em.keyIndex(J(key1), key2)
 		// TODO make a ranged isSet method
 		if em.isSet.IsSet(index) {
 			return true
@@ -126,14 +131,14 @@ func (em *EnumMapMap[J, K, V]) Clear() {
 }
 
 func (em *EnumMapMap[J, K, V]) Put(key1 J, key2 K, value V) {
-	index := len(em.enumType2.Values)*int(key1) + int(key2)
+	index := em.keyIndex(key1, key2)
 	em.isSet.Set(index)
 	em.content[index] = value
 }
 
 func (em *EnumMapMap[J, K, V]) Delete(key1 J, key2 K) {
 	var nilValue V
-	index := len(em.enumType2.Values)*int(key1) + int(key2)
+	index := em.keyIndex(key1, key2)
 	em.isSet.Clear(index)
 	em.content[index] = nilValue
 }
@@ -141,7 +146,7 @@ func (em *EnumMapMap[J, K, V]) Delete(key1 J, key2 K) {
 func (em *EnumMapMap[J, K, V]) DeleteAllForKey1(key1 J) {
 	var nilValue V
 	for key2 := range len(em.enumType2.Values) {
-		index := len(em.enumType2.Values)*int(key1) + key2
+		index := em.keyIndex(key1, K(key2))
 		em.isSet.Clear(index)
 		em.content[index] = nilValue
 	}
@@ -150,14 +155,14 @@ func (em *EnumMapMap[J, K, V]) DeleteAllForKey1(key1 J) {
 func (em *EnumMapMap[J, K, V]) DeleteAllForKey2(key2 K) {
 	var nilValue V
 	for key1 := range len(em.enumType1.Values) {
-		index := len(em.enumType2.Values)*key1 + int(key2)
+		index := em.keyIndex(J(key1), key2)
 		em.isSet.Clear(index)
 		em.content[index] = nilValue
 	}
 }
 
 func (em *EnumMapMap[J, K, V]) Apply(key1 J, key2 K, apply func(oldValue V) V) {
-	index := len(em.enumType2.Values)*int(key1) + int(key2)
+	index := em.keyIndex(key1, key2)
 	em.isSet.Set(index)
 	em.content[index] = apply(em.content[index])
 }
@@ -166,8 +171,8 @@ func (em *EnumMapMap[J, K, V]) FirstKey1() J {
 	// TODO make a ranged isSet method
 	for key1 := range len(em.enumType1.Values) {
 		for key2 := range len(em.enumType2.Values) {
-			index := len(em.enumType2.Values)*key1 + key2
-			if em.isSet(index) {
+			index := em.keyIndex(J(key1), K(key2))
+			if em.isSet.IsSet(index) {
 				return J(key1)
 			}
 		}

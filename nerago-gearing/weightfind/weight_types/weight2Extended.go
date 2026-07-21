@@ -67,9 +67,13 @@ func (we *Weight2Extended) GetSimPriority() *SimPriorityExtended {
 	return &we.SimPriority
 }
 
+func (we *Weight2Extended) SetSimScale(simType stats.SimType, rangingScale, rangingOffset, ratioScale float64) {
+	we.SimPriority.SetSimScale(simType, rangingScale, rangingOffset, ratioScale)
+}
+
 func (we *Weight2Extended) FinishAndValidate() {
 	we.validate()
-	we.scaleEachSimForBase()
+	//we.scaleEachSimForBase()
 }
 
 func (we *Weight2Extended) CalcStatScoreForInput(input *WeightInput) float64 {
@@ -121,17 +125,17 @@ func (we *Weight2Extended) validate() {
 	}
 }
 
-func (we *Weight2Extended) scaleEachSimForBase() {
-	baseStat := we.StatList[0]
-	for _, simType := range we.SimList {
-		baseValue := we.DetailedWeights.GetOrPanic(baseStat, simType)
-		for _, statType := range we.StatList {
-			we.DetailedWeights.Apply(statType, simType, func(oldValue float64) float64 {
-				return oldValue / baseValue
-			})
-		}
-	}
-}
+//func (we *Weight2Extended) scaleEachSimForBase() {
+//	baseStat := we.StatList[0]
+//	for _, simType := range we.SimList {
+//		baseValue := we.DetailedWeights.GetOrPanic(baseStat, simType)
+//		for _, statType := range we.StatList {
+//			we.DetailedWeights.Apply(statType, simType, func(oldValue float64) float64 {
+//				return oldValue / baseValue
+//			})
+//		}
+//	}
+//}
 
 func (we *Weight2Extended) ConvertToWeight1() Weight1Basic {
 	// NOTE: assuming that scaleEachSimForBase has run, all on equal basis
