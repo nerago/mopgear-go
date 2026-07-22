@@ -35,7 +35,7 @@ type WeightOptions struct {
 	SubstituteItems []items.ItemId
 }
 
-func StatWeights_updateAll(simSpeed simulate.WowSim_RunSize, printer *util.PrintRecorder, options []WeightOptions) {
+func StatWeights_updateAll(simSpeed simulate.WowSim_RunSize, forceSkipSim bool, printer *util.PrintRecorder, options []WeightOptions) {
 	waitGroup := sync.WaitGroup{}
 	progress := util.TrackProgress_Start()
 	progress.RunOuterTracking(len(options))
@@ -47,7 +47,7 @@ func StatWeights_updateAll(simSpeed simulate.WowSim_RunSize, printer *util.Print
 
 		waitGroup.Go(func() {
 			statWeightsGrid_updateOne(option.Label, &option.Model, option.GearFile, &option.Model.SimPriority, option.WeightFileOut,
-				option.SubstituteItems, printer, simSpeed, progress.NewChild(), summaryFuture)
+				option.SubstituteItems, printer, simSpeed, forceSkipSim, progress.NewChild(), summaryFuture)
 		})
 	}
 
@@ -69,7 +69,7 @@ type weightOption struct {
 	pawnString   string
 }
 
-func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, gearFile string, simPriority *weight_types.SimPriorityBasic, weightFileOut string, substituteItems []items.ItemId, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, tracker *util.TrackProgress, futureSummary *util_async.Future[string]) {
+func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, gearFile string, simPriority *weight_types.SimPriorityBasic, weightFileOut string, substituteItems []items.ItemId, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, forceSkipSim bool, tracker *util.TrackProgress, futureSummary *util_async.Future[string]) {
 	// each simulator process is considered 1/3, then remaining solving is remaining third.
 	// only very small sim runs should be overpowered by solvers
 	tracker.RunOuterTracking(3)
@@ -81,8 +81,16 @@ func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, ge
 	simTypes := simPriority.SimTypes()
 
 	// READ IN ANY RECENT DATA
-	inputDataGrid := readWeightInputFile(files.TempPath + "weightfind-sim-grid-" + label + ".json")
-	inputDataReal := readWeightInputFile(files.TempPath + "weightfind-sim-real-" + label + ".json")
+	inputDataGrid, dataAge := readWeightInputFile(files.TempPath + "weightfind-sim-grid-" + label + ".json")
+	inputDataReal, dataAge2 := readWeightInputFile(files.TempPath + "weightfind-sim-real-" + label + ".json")
+
+	// DO WE ACCEPT THE OLD DATA
+	if dataAge > c_simDataAgeMax && !forceSkipSim {
+		inputDataGrid = nil
+	}
+	if dataAge2 > c_simDataAgeMax && !forceSkipSim {
+		inputDataReal = nil
+	}
 
 	// SIMULATE STAT CHANGES, SAVE SIM DATA IN CASE WE NEED TO RESTART
 	if inputDataGrid == nil {
@@ -137,6 +145,17 @@ func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, ge
 			best.Offer(tweakOption, tweakOption.accuracy)
 			addToSummary(&summary, tweakOption, "TWEAK")
 		}
+	}
+
+	// FORMULA2 WEIGHTS
+	formulaOption := solveFormulaWeight(label, gearModel, printer, simPriority, simTypes, mixedInputData)
+	if formulaOption != nil {
+		best.Offer(formulaOption, formulaOption.accuracy)
+		addToSummary(&summary, formulaOption, "FORM2")
+
+		tweakOption := tweakedWeight(label, gearModel, formulaOption.weight, simPriority, mixedInputData, simTypes, printer)
+		best.Offer(tweakOption, tweakOption.accuracy)
+		addToSummary(&summary, tweakOption, "TWEAK")
 	}
 
 	// SEARCH weights
@@ -258,6 +277,32 @@ func finishRankWeight(rankMode int, label string, weightsRankingFuture *util_asy
 	}
 }
 
+func solveFormulaWeight(label string, gearModel *gear_model.SpecModel, printer *util.PrintRecorder, ratios *weight_types.SimPriorityBasic, simTypes []stats.SimType, mixedInputData []weight_types.WeightInput) *weightOption {
+	comp := weight_highs.FormulaStatWeightProcess2{}
+	comp.Init(printer)
+	comp.SetRequiredStats(gearModel.StatsForWeighting)
+	comp.SetTargetRatios(*ratios)
+	comp.SetMinimumIncludeRate(1.0)
+	comp.SupplyData(mixedInputData)
+	weights2Future := comp.Run(nil, c_timeoutSolvers)
+
+	weights2Optional := weights2Future.WaitForResultAsOptional()
+	if weights2Optional.HasValue() {
+		weights2 := weights2Optional.GetOrPanic()
+		weights1 := weights2.ConvertToWeight1()
+		printer.Printf("Formula Weights2 >>>>> %s\n", label)
+		pawnRanking := tools.WritePawnString(weights1, printer)
+		// for now needs to actually produce ranking weights v1
+		accuracyAs1 := EvaluateAccuracyRanged(weights1, simTypes, ratios, mixedInputData)
+		accuracyAs2 := EvaluateAccuracyRanged2(weights2, simTypes, ratios, mixedInputData)
+		accuracyStats := EvaluateAccuracyStatisticalDeviations(weights1, simTypes, ratios, mixedInputData)
+		printer.Printf("Formula Weights2 %s accuracy2=%f accuracy1=%f stat1=%f\n", label, accuracyAs2, accuracyAs1, accuracyStats)
+		return &weightOption{weights1, accuracyAs1, accuracyStats, pawnRanking}
+	} else {
+		return nil
+	}
+}
+
 func solveSearchWeights(searchMode int, label string, gearModel *gear_model.SpecModel, ratios *weight_types.SimPriorityBasic, printer *util.PrintRecorder, mixedInputData []weight_types.WeightInput, simTypes []stats.SimType, inputDataGrid []weight_types.WeightInput) *weightOption {
 	cancel := util_async.CancelSignal_Make()
 	timer := util_async.CancelAfterTimeout(cancel, time.Second*c_timeoutSolvers, printer)
@@ -306,23 +351,20 @@ func writeWeightInputsToFile(weightInputs []weight_types.WeightInput, filename s
 	}
 }
 
-func readWeightInputFile(filename string) []weight_types.WeightInput {
+func readWeightInputFile(filename string) ([]weight_types.WeightInput, time.Duration) {
 	statInfo, err := os.Stat(filename)
 	if errors.Is(err, fs.ErrNotExist) {
-		return nil
+		return nil, 0
 	} else if err != nil {
 		panic(err)
 	}
 
 	// only use data from "today"
-	since := time.Since(statInfo.ModTime())
-	if since > c_simDataAgeMax {
-		return nil
-	}
+	dataAge := time.Since(statInfo.ModTime())
 
 	bytes, err := os.ReadFile(filename)
 	if errors.Is(err, fs.ErrNotExist) {
-		return nil
+		return nil, 0
 	} else if err != nil {
 		panic(err)
 	}
@@ -333,5 +375,5 @@ func readWeightInputFile(filename string) []weight_types.WeightInput {
 		panic(err)
 	}
 
-	return weightInputs
+	return weightInputs, dataAge
 }

@@ -25,6 +25,14 @@ func (a *AccuracyInfoSimStatRanged) IncrementSimScore(add float64) {
 	a.SimScore += add
 }
 
+func (a *AccuracyInfoSimStatRanged) SetSimRankRange(targetRange *util.HiLoInt) {
+	a.SimRankRange = targetRange
+}
+
+func (a *AccuracyInfoSimStatRanged) GetSimRankRange() *util.HiLoInt {
+	return a.SimRankRange
+}
+
 type AccuracyInfoPrePrepare struct {
 	SimScore float64
 	DataSim  *stats.SimData

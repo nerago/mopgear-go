@@ -51,15 +51,22 @@ func arrayRankToIncrementSimScore[T weight_types.IRankEntryFlat](simType stats.S
 	}
 }
 
-func rankOrderBasic[T weight_types.IRankEntryFlatSingle](inputData []T) {
-	// TODO doesn't this just order twice
-
+func sortSimScores[T weight_types.IRankEntryFlat](data []T) {
 	// rank combined sims
-	for entry, simRank := range util.CalculateRanking(true, inputData, func(x *T) float64 { return (*x).GetSimScore() }) {
-		(*entry).SetTargetRank(simRank)
-	}
+	slices.SortFunc(data, func(a, b T) int {
+		return cmp.Compare(a.GetSimScore(), b.GetSimScore())
+	})
+}
 
-	slices.SortFunc(inputData, func(a, b T) int { return cmp.Compare(a.GetTargetRank(), b.GetTargetRank()) })
+func rankOrderBasic[T weight_types.IRankEntryFlatSingle](inputData []T) {
+	sortSimScores(inputData)
+	arrayRankToSetSimBasicSimRank(inputData)
+}
+
+func arrayRankToSetSimBasicSimRank[T weight_types.IRankEntryFlatSingle](inputData []T) {
+	for rank := range inputData {
+		inputData[rank].SetSimRank(rank)
+	}
 }
 
 func RankingWeightsPrepareBasicRankings[T weight_types.IRankEntryFlatSingle](simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []T) {
@@ -92,10 +99,10 @@ func RankingWeightsPrepareUsingMidRange[T weight_types.IRankEntryFlatSingle](sim
 	// rank combined sims
 	for entry, simRankHiLo := range calculateRankingRanges(true, inputData, func(x T) float64 { return x.GetSimScore() }) {
 		// not sure if this intentional or a normal rank would be fine too
-		entry.SetTargetRank(simRankHiLo.Lo)
+		entry.SetSimRank(simRankHiLo.Lo)
 	}
 
-	slices.SortFunc(inputData, func(a, b T) int { return cmp.Compare(a.GetTargetRank(), b.GetTargetRank()) })
+	slices.SortFunc(inputData, func(a, b T) int { return cmp.Compare(a.GetSimRank(), b.GetSimRank()) })
 }
 
 // currently just in Rank5

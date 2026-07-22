@@ -685,14 +685,14 @@ func statWeights_CompareAlgorithms() {
 	//inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
 	mixedInputDataFull := slices.Concat(inputDataGrid, inputDataRandom)
 
-	sampleSize := 50
-	inputDataGrid = takeDataSample_Random(inputDataGrid, sampleSize)
-	inputDataRandom = takeDataSample_Random(inputDataRandom, sampleSize)
-	mixedInputData := takeDataSample_Random(mixedInputDataFull, sampleSize)
+	//sampleSize := 50
+	//inputDataGrid = takeDataSample_Random(inputDataGrid, sampleSize)
+	//inputDataRandom = takeDataSample_Random(inputDataRandom, sampleSize)
+	//mixedInputData := takeDataSample_Random(mixedInputDataFull, sampleSize)
 	//inputDataGrid = takeDataSample_Random_Seed(inputDataGrid, sampleSize, 1234)
 	//inputDataRandom = takeDataSample_Random_Seed(inputDataRandom, sampleSize, 1234)
 	//mixedInputData := takeDataSample_Random_Seed(mixedInputDataFull, sampleSize, 1234)
-	//mixedInputData := mixedInputDataFull
+	mixedInputData := mixedInputDataFull
 
 	//weightsNearOptimal := stathighs.WeightResult_Make()
 	//weightsNearOptimal.Put(stats.Stat_Strength, 1.000000)
@@ -724,17 +724,17 @@ func statWeights_CompareAlgorithms() {
 	tasks := make([]func(), 0)
 
 	reportOnTweakedVersions := false
-	standardTimeout := 300
-	shortTimeout := 150
+	standardTimeout := 1000
+	shortTimeout := 500
 
 	runBasic := false
-	runFormulaVariants := true // best is about 87%, moderate time
-	runFitting := false        // slow, low 90%
+	runFormulaVariants := false // best is about 87%, moderate time
+	runFitting := false         // slow, low 90%
 
 	runGrid1Original := true
 	runGrid1Variants := false
 	runGrid1VariantsFewer := true
-	runGrid1C := true
+	runGrid1C := false
 	runGrid2 := true
 
 	runRankingOlder := true
@@ -1340,7 +1340,7 @@ func statWeights_CompareAlgorithms() {
 		comp.SetRequiredStats(requiredStats, requiredSims)
 		comp.SetTargetRatios(targetRatio)
 		comp.SupplyData(mixedInputData)
-		weights2 := comp.Run(nil).WaitForResultOrPanic()
+		weights2 := comp.Run(stopwatch).WaitForResultOrPanic()
 		resultsByAlgorithm2.Put(label, weights2)
 		timesByAlgorithm.Put(label, stopwatch.Elapsed())
 		printer.Println("///////////////// " + label + " /////////////////")

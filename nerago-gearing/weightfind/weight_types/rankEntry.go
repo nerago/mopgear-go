@@ -17,14 +17,14 @@ type IRankEntryFlat interface {
 
 type IRankEntrySingle interface {
 	IRankEntry
-	SetTargetRank(targetRank int)
-	GetTargetRank() int
+	SetSimRank(targetRank int)
+	GetSimRank() int
 }
 
 type IRankEntryRange interface {
 	IRankEntry
-	SetTargetRange(targetRange *util.HiLoInt)
-	GetTargetRange() *util.HiLoInt
+	SetSimRankRange(targetRange *util.HiLoInt)
+	GetSimRankRange() *util.HiLoInt
 }
 
 type IRankEntryFlatSingle interface {
@@ -39,14 +39,14 @@ type IRankEntryFlatRange interface {
 
 type IRankEntryExtendedSingle interface {
 	IRankEntry
-	GetTargetRankBySim(simType stats.SimType) int
-	SetTargetRankBySim(simType stats.SimType, targetRank int)
+	GetSimRankByType(simType stats.SimType) int
+	SetSimRankByType(simType stats.SimType, targetRank int)
 }
 
 type IRankEntryExtendedRange interface {
 	IRankEntry
-	GetTargetRangeBySim(simType stats.SimType) *util.HiLoInt
-	SetTargetRangeBySim(simType stats.SimType, targetRank *util.HiLoInt)
+	GetSimRankRangeByType(simType stats.SimType) *util.HiLoInt
+	SetSimRankRangeByType(simType stats.SimType, targetRank *util.HiLoInt)
 }
 
 type RankStatWeightsCommon struct {
@@ -64,9 +64,9 @@ func (rc *RankStatWeightsCommon) GetSimScore() float64 {
 func (rc *RankStatWeightsCommon) IncrementSimScore(add float64) {
 	rc.SimScore += add
 }
-func (rc *RankStatWeightsCommon) SetTargetRank(targetRank int) {
+func (rc *RankStatWeightsCommon) SetSimRank(targetRank int) {
 	rc.TargetRank = targetRank
 }
-func (rc *RankStatWeightsCommon) GetTargetRank() int {
+func (rc *RankStatWeightsCommon) GetSimRank() int {
 	return rc.TargetRank
 }
