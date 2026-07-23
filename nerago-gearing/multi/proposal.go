@@ -11,6 +11,15 @@ import (
 	"github.com/google/uuid"
 )
 
+func (job *MultiSetJob) proposalSingleBest() *util_async.FutureCancellable[multi_types.MultiProposedOutput] {
+	highProcess := job.highProcessSetup()
+	futureResult := highProcess.RunInterruptable(job.printer)
+
+	return util_async.FutureCancellable_MapValue(futureResult, func(result solve_highs.HighsMultiResult) (multi_types.MultiProposedOutput, bool) {
+		return job.makeOutputFromHighs(result, job.printer, uuid.NewString()), true
+	})
+}
+
 func (job *MultiSetJob) proposalsAllCommonAlternates(cancelGenerate util_async.CancelSignal, extendedAlternates bool) (<-chan multi_types.MultiProposedOutput, *util_async.Future[int]) {
 	highProcess := job.highProcessSetup()
 

@@ -8,6 +8,49 @@ import (
 	"time"
 )
 
+func (job *MultiSetJob) RunNoPermutations_BestOnly(alsoExistingEquipped bool, alsoSpecOptimums bool) {
+	job.checkNoPermutations()
+	job.prepareInitial()
+
+	cancelGenerate := util_async.CancelSignal_Make()
+	util_async.CancelOnKeyPress(cancelGenerate)
+
+	proposalFuture := job.proposalSingleBest()
+	util_async.ChainCancel(cancelGenerate, proposalFuture)
+
+	expectedCount := 1
+	proposalChannel := make(chan multi_types.MultiProposedOutput, 8)
+	if alsoExistingEquipped {
+		proposalChannel <- job.existingGearAsProposal()
+		expectedCount++
+	}
+
+	proposalFuture.ForwardResultToRelevantCallback(func(proposal multi_types.MultiProposedOutput) {
+		proposalChannel <- proposal
+		close(proposalChannel)
+	}, func() {
+		close(proposalChannel)
+	})
+
+	var mixedChannel <-chan multi_types.MultiProposedOutput
+	if alsoSpecOptimums {
+		additionalChannel := job.additionalProposalsFromSpecOptimum(cancelGenerate)
+		mixedChannel = util_async.MixChannels(proposalChannel, additionalChannel)
+		expectedCount += len(job.params)
+	} else {
+		mixedChannel = proposalChannel
+	}
+
+	futureExpectedCount := util_async.Future_Make[int]()
+	futureExpectedCount.SetResult(expectedCount)
+
+	futureSimResultList, futureProposalList := job.proposalsToSimResult(mixedChannel, util.TrackProgress_Start(), futureExpectedCount)
+
+	proposalList, gotResult2 := futureProposalList.WaitForResult()
+	simResultList, gotResult1 := futureSimResultList.WaitForResult()
+	job.generalMultiReport(gotResult1 && gotResult2, proposalList, simResultList)
+}
+
 func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates(extendedAlternates bool) {
 	job.checkNoPermutations()
 	job.prepareInitial()

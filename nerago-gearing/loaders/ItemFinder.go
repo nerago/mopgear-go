@@ -112,6 +112,25 @@ func ItemFinder_Ordos(_ stats.Difficulty) []ItemFoundRef {
 	return result
 }
 
+func ItemFinder_NormalHeroicBossFiltered(innerFinder func(stats.Difficulty) []ItemFoundRef, normalBossNames []string, heroicBossNames []string) func(stats.Difficulty) []ItemFoundRef {
+	return func(difficulty stats.Difficulty) []ItemFoundRef {
+		regularResult := innerFinder(difficulty)
+		if difficulty == stats.Difficulty_Celestial {
+			return regularResult
+		} else if difficulty == stats.Difficulty_Normal {
+			return util.FilterSliceAsNew_NoPointer(regularResult, func(item ItemFoundRef) bool {
+				bossName := db.BossItemData_BossForItemId(item.ItemId)
+				return slices.Contains(normalBossNames, bossName)
+			})
+		} else {
+			return util.FilterSliceAsNew_NoPointer(regularResult, func(item ItemFoundRef) bool {
+				bossName := db.BossItemData_BossForItemId(item.ItemId)
+				return slices.Contains(heroicBossNames, bossName)
+			})
+		}
+	}
+}
+
 func ItemFinder_HeroicBossFiltered(innerFinder func(stats.Difficulty) []ItemFoundRef, heroicBossNames []string) func(stats.Difficulty) []ItemFoundRef {
 	return func(difficulty stats.Difficulty) []ItemFoundRef {
 		regularResult := innerFinder(difficulty)

@@ -126,14 +126,37 @@ func (job *MultiSetJob) reportSimResults_One(result simulateMultiResult) {
 
 		if len(param.ReportVariant) > 0 {
 			variantEquip := *output.FullSet.Items()
+			stringBuild := util.StringBuild2{}
+			stringBuild.WriteString("---------------- ")
+			stringBuild.WriteString(param.Label)
+			stringBuild.WriteRune(' ')
 			for slot, itemId := range param.ReportVariant {
 				variantItem := job.findVariantItem(result, itemId, param)
 				variantEquip[slot] = variantItem
-				job.printer.Printf("\n---------------- %s %s ----------------\n", param.Label, variantItem.BaseName())
+				stringBuild.WriteString(variantItem.BaseName())
+				stringBuild.WriteRune(' ')
 			}
+			stringBuild.WriteString(" ----------------")
+			job.printer.PrintlnFromBuild(stringBuild)
 			tools.WowSimJson_Write(&variantEquip, &param.Model, job.printer)
 			job.printer.Println0()
 		}
+	}
+
+	regemmedItems := listRegem(result.proposed)
+	if len(regemmedItems) > 0 {
+		stringBuild := util.StringBuild2{}
+		stringBuild.WriteString("....... REGEM .......")
+		for _, item := range regemmedItems {
+			item.AppendFullName(&stringBuild)
+			stringBuild.WriteString(" : ")
+			for _, gem := range item.GemChoice() {
+				gem.AppendString(&stringBuild)
+			}
+			stringBuild.WriteRune('\n')
+		}
+
+		job.printer.PrintlnFromBuild(stringBuild)
 	}
 
 	job.printer.Println0()
@@ -244,6 +267,18 @@ func countRegem(multiProposed multi_types.MultiProposedOutput) int {
 		}
 	}
 	return countRegemmed
+}
+
+func listRegem(multiProposed multi_types.MultiProposedOutput) []*items.FullItem {
+	itemSlice := make([]*items.FullItem, 0)
+	for part := range util.ForPointer(multiProposed.Parts) {
+		itemSlice = slices.AppendSeq(itemSlice, part.FullSet.Items().AllItemSeq())
+	}
+	util.FilterSliceInPlace(&itemSlice, func(item **items.FullItem) bool {
+		return (*item).HasBeenRegemmed()
+	})
+	util.RemoveDuplicatesFunc_InPlace(&itemSlice, func(a, b **items.FullItem) bool { return (*a).Equals(*b) })
+	return itemSlice
 }
 
 // TODO refactor with Accuracy code
