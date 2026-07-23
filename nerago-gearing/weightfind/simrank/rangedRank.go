@@ -18,8 +18,6 @@ func RankSimsStatisticalForAccuracyRanged(requiredSims []stats.SimType, data []*
 	arrayRankToSetSimRankRange(data)
 }
 
-// TODO new algo that doesn't overextend range, especially for stat based
-
 func arrayRankToSetSimRankRange[T weight_types.IRankEntryFlatRange](data []T) {
 	data[0].SetSimRankRange(&util.HiLoInt{Lo: 0, Hi: 0})
 	for rank := 1; rank < len(data); rank++ {
@@ -29,6 +27,48 @@ func arrayRankToSetSimRankRange[T weight_types.IRankEntryFlatRange](data []T) {
 			prevRange.Hi = rank
 		} else {
 			data[rank].SetSimRankRange(&util.HiLoInt{Lo: rank, Hi: rank})
+		}
+	}
+}
+
+func arrayRankToSetSimRankRangeComplicated[T weight_types.IRankEntryFlatRange](data []T) {
+	for runStart := 0; runStart < len(data); {
+		countChainedRun := 1
+		countEqualFirstRun := 1
+
+		firstScore := data[runStart].GetSimScore()
+		prevScore := firstScore
+
+		for check := runStart + 1; check < len(data); check++ {
+			currScore := data[check].GetSimScore()
+			if util.FloatsApproxEquals(currScore, firstScore) {
+				countEqualFirstRun++
+				countChainedRun++
+			} else if util.FloatsApproxEquals(currScore, prevScore) {
+				countChainedRun++
+			} else {
+				break
+			}
+			prevScore = currScore
+		}
+
+		if countChainedRun == 1 {
+			data[runStart].SetSimRankRange(&util.HiLoInt{Lo: runStart, Hi: runStart})
+			runStart++
+		} else {
+			var end int
+			if countChainedRun == countEqualFirstRun || countChainedRun <= 4 || countEqualFirstRun >= countChainedRun*3/4 {
+				end = runStart + countChainedRun - 1
+			} else {
+				end = runStart + countEqualFirstRun - 1
+			}
+
+			hilo := &util.HiLoInt{Lo: runStart, Hi: end}
+			for i := runStart; i <= end; i++ {
+				data[i].SetSimRankRange(hilo)
+			}
+
+			runStart = end + 1
 		}
 	}
 }

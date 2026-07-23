@@ -11,6 +11,7 @@
       <option name="experiments">
         <array>
           <option value="simd" />
+          <option value="jsonv2" />
         </array>
       </option>
     </buildTags>

@@ -52,29 +52,34 @@ func Clamp[N Number](value, min, max N) N {
 	}
 }
 
+const c_float_equal_delta = 0.000001
+
 func FloatEqualsOne(value float64) bool {
-	return 0.999999 <= value && value <= 1.000001
+	return math.Abs(value-1.0) < c_float_equal_delta
 }
 
 func FloatEqualsZero(value float64) bool {
-	return -0.000001 <= value && value <= 0.000001
+	return math.Abs(value) < c_float_equal_delta
 }
 
 func FloatsApproxEquals(a, b float64) bool {
 	if b != 0 {
 		ratio := a / b
-		return (0.99999 <= ratio && ratio <= 1.00001) || (math.Abs(a-b) < 0.0000001)
-	} else {
-		return FloatEqualsZero(a)
+		if FloatEqualsOne(ratio) {
+			return true
+		}
 	}
+	diff := a - b
+	return FloatEqualsZero(diff)
 }
 
 func FloatsApproxEqualsFast(a, b float64) bool {
-	return math.Abs(a-b) < 0.0000001
+	diff := a - b
+	return FloatEqualsZero(diff)
 }
 
 func FloatsBetween(lo, val, hi float64) bool {
-	return lo-0.000001 <= val && val <= hi+0.000001
+	return lo-c_float_equal_delta <= val && val <= hi+c_float_equal_delta
 }
 
 func RoundToInt64(value float64) int64 {
