@@ -2,7 +2,7 @@ package items
 
 import (
 	"iter"
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"slices"
 )
 
@@ -14,7 +14,7 @@ type SolvableOptionsMap struct {
 func SolvableOptionsMap_of(fullMap *FullOptionsMap) SolvableOptionsMap {
 	result := SolvableOptionsMap{}
 	for slot := range fullMap {
-		result.array[slot] = util.MapSliceAsNew(fullMap[slot], SolvableItem_Of)
+		result.array[slot] = util_collection.MapSliceAsNew(fullMap[slot], SolvableItem_Of)
 	}
 	result.uniqueEquippedSets = UniqueEquipSetsInOptions(fullMap)
 	return result
@@ -46,7 +46,7 @@ func (optionsMap *SolvableOptionsMap) Clone() SolvableOptionsMap {
 func (optionsMap *SolvableOptionsMap) RemoveItemIdFromAll(itemId ItemId) (makesSlotEmpty bool) {
 	for slot := range optionsMap.array {
 		if len(optionsMap.array[slot]) > 0 {
-			util.FilterSliceInPlace(&optionsMap.array[slot], func(x *SolvableItem) bool { return x.ItemId() != itemId })
+			util_collection.FilterSliceInPlace(&optionsMap.array[slot], func(x *SolvableItem) bool { return x.ItemId() != itemId })
 			if len(optionsMap.array[slot]) == 0 {
 				return true
 			}

@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"slices"
 	"strconv"
 )
@@ -60,7 +61,7 @@ func processSpecUpgradeGroupTask(input *FindUpgrades_SimInputs, spec *FindUpgrad
 	options := setup.OptionsSetup_FromGearFile(spec.GearFile, &spec.Model, setup.MissingEnchant_Panic, printer)
 
 	upgradeItems := spec.ItemFinder(difficulty)
-	upgradeItems = util.RemoveDuplicatesComparable_NewIfChanged(upgradeItems)
+	upgradeItems = util_collection.RemoveDuplicatesComparable_NewIfChanged(upgradeItems)
 
 	return findUpgradeAndSim(input, &options, upgradeItems, &spec.Model, printer, tracker, spec.Model.Goal, spec.SubstituteItems, spec.SubstituteEmptySlotOnly)
 }

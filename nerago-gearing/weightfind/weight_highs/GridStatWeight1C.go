@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
@@ -28,9 +29,9 @@ type GridStatWeightProcess1C struct {
 	RESCALE       int
 
 	build           util_highs.LinearBuilder
-	unitStatValues  util.MapMapSlice[stats.StatType, stats.SimType, float64]
+	unitStatValues  util_collection.MapMapSlice[stats.StatType, stats.SimType, float64]
 	scales          map[stats.SimType]float64
-	detailedWeights util.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
+	detailedWeights util_collection.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
 	finalWeights    map[stats.StatType]util_highs.ColumnIndex
 }
 

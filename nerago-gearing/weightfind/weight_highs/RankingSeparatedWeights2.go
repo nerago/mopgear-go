@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/simrank"
 	"paladin_gearing_go/weightfind/weight_types"
@@ -34,25 +35,25 @@ type RankingSeparatedWeights2 struct {
 	build *util_highs.LinearBuilder
 
 	desiredScoreSpacing   float64
-	detailedWeightColumns util.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
+	detailedWeightColumns util_collection.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
 	offsetColumns         map[stats.SimType]util_highs.ColumnIndex
 	slackBottom, slackTop map[stats.SimType]util_highs.ColumnIndex
 }
 
 type rankEntrySeparated2 struct {
 	data  *weight_types.WeightInput
-	bySim util.EnumMap[stats.SimType, rankDetailSeparated2]
+	bySim util_collection.EnumMap[stats.SimType, rankDetailSeparated2]
 }
 
 func (r *rankEntrySeparated2) GetSimData() *stats.SimData {
 	return &r.data.SimResult
 }
 
-func (r *rankEntrySeparated2) GetSimRankRangeByType(simType stats.SimType) *util.HiLoInt {
+func (r *rankEntrySeparated2) GetSimRankRangeByType(simType stats.SimType) *util_collection.HiLoInt {
 	return r.bySim.GetOrPanic(simType).targetRankRange
 }
 
-func (r *rankEntrySeparated2) SetSimRankRangeByType(simType stats.SimType, targetRankRange *util.HiLoInt) {
+func (r *rankEntrySeparated2) SetSimRankRangeByType(simType stats.SimType, targetRankRange *util_collection.HiLoInt) {
 	r.bySim.Put(simType, rankDetailSeparated2{
 		targetRankRange: targetRankRange,
 		scoreColumn:     -1,
@@ -60,7 +61,7 @@ func (r *rankEntrySeparated2) SetSimRankRangeByType(simType stats.SimType, targe
 }
 
 type rankDetailSeparated2 struct {
-	targetRankRange *util.HiLoInt
+	targetRankRange *util_collection.HiLoInt
 	scoreColumn     util_highs.ColumnIndex
 }
 
@@ -71,10 +72,10 @@ func (ranker *RankingSeparatedWeights2) Init(printer *util.PrintRecorder, timeou
 
 func (ranker *RankingSeparatedWeights2) SupplyData(inputData []weight_types.WeightInput) {
 	//inputData = takeDataSample_Random(inputData, 100)
-	ranker.dataEntries = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntrySeparated2 {
+	ranker.dataEntries = util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntrySeparated2 {
 		return &rankEntrySeparated2{
 			data:  input,
-			bySim: util.EnumMapMake[stats.SimType, rankDetailSeparated2](stats.SimTypeEnum),
+			bySim: util_collection.EnumMapMake[stats.SimType, rankDetailSeparated2](stats.SimTypeEnum),
 		}
 	})
 }

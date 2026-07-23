@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"strconv"
 
@@ -77,7 +78,7 @@ func (process *SolverHighsMultiProcess) RunInterruptable(printer *util.PrintReco
 	})
 }
 
-func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.PrintRecorder, outputTarget util.Optional[int], cancel util_async.CancelSignal, alsoDoFullItemBlocks bool) (resultChannelRead <-chan HighsMultiResult, expectedCount *util_async.Future[int]) {
+func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.PrintRecorder, outputTarget util_collection.Optional[int], cancel util_async.CancelSignal, alsoDoFullItemBlocks bool) (resultChannelRead <-chan HighsMultiResult, expectedCount *util_async.Future[int]) {
 	resultChannel := make(chan HighsMultiResult, 8)
 	expectedCount = util_async.Future_Make[int]()
 
@@ -95,7 +96,7 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *u
 				}
 			}
 
-			util.Shuffle(blockPlanList)
+			util_collection.Shuffle(blockPlanList)
 			if target, hasTarget := outputTarget.GetWithFlag(); hasTarget && target < len(blockPlanList) {
 				blockPlanList = blockPlanList[0:target]
 			}

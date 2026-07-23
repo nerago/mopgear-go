@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"slices"
 	"sync"
@@ -155,7 +156,7 @@ func distinctItemIdsAll(itemOptions *items.SolvableOptionsMap) []items.ItemId {
 	for item := range itemOptions.AllItemSeq() {
 		distinct[item.ItemId()] = true
 	}
-	return util.KeysToSlice(distinct)
+	return util_collection.KeysToSlice(distinct)
 }
 
 func randomSampleSlice(sharedSlice []items.ItemId, sampleCount int) []items.ItemId {
@@ -164,6 +165,6 @@ func randomSampleSlice(sharedSlice []items.ItemId, sampleCount int) []items.Item
 	}
 
 	copiedSlice := slices.Clone(sharedSlice)
-	util.Shuffle(copiedSlice)
+	util_collection.Shuffle(copiedSlice)
 	return copiedSlice[0:sampleCount]
 }

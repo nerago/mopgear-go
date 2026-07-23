@@ -2,7 +2,7 @@ package items
 
 import (
 	"maps"
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"slices"
 )
 
@@ -67,8 +67,8 @@ func UniqueEquipSetsInOptions(itemOptions *FullOptionsMap) [][]ItemId {
 	}
 
 	// build unique lookup maps for all names and ids
-	groupedByName := util.MapMap[string, ItemId, bool]{}
-	groupedById := util.MapMap[ItemId, string, bool]{}
+	groupedByName := util_collection.MapMap[string, ItemId, bool]{}
+	groupedById := util_collection.MapMap[ItemId, string, bool]{}
 	for _, slotEquip := range PairedSlotList {
 		for item := range itemOptions.SlotItemSeq(slotEquip) {
 			if !predefined[item.ItemId()] {

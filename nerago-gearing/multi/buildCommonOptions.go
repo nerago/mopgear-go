@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"strconv"
 	"strings"
 )
@@ -46,10 +47,10 @@ func searchItemOptions(optionsInputList []commonOptionsInput) (multi_types.Commo
 	}
 
 	commonOptions.ApplyToAllSlices(func(slice []items.FullItem) []items.FullItem {
-		return util.RemoveDuplicatesFunc_NewIfChanged(slice, (*items.FullItem).Equals)
+		return util_collection.RemoveDuplicatesFunc_NewIfChanged(slice, (*items.FullItem).Equals)
 	})
 	for itemRef := range seenIn {
-		seenIn[itemRef] = util.RemoveDuplicatesComparable_NewIfChanged(seenIn[itemRef])
+		seenIn[itemRef] = util_collection.RemoveDuplicatesComparable_NewIfChanged(seenIn[itemRef])
 	}
 
 	return commonOptions, seenIn
@@ -133,7 +134,7 @@ func restrictItemOptionsToCommon(optionsInputList []commonOptionsInput, commonOp
 			ref := items.ItemRef_Of(item)
 			commonVersions, isCommon := commonOptions.Get(ref)
 			if isCommon {
-				return util.ContainsFunc_Pointer(commonVersions, item.Equals)
+				return util_collection.ContainsFunc_Pointer(commonVersions, item.Equals)
 			} else {
 				return true
 			}

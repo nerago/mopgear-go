@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_rank"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
@@ -48,7 +49,7 @@ type WeightSearcher2 struct {
 	printer          *util.PrintRecorder
 	AccuracyMode     int
 
-	queue      util.QueueStackFilo[*weightSearch2Bound]
+	queue      util_collection.QueueStackFilo[*weightSearch2Bound]
 	bestResult util_rank.BestCollector1[weight_types.Weight1Basic]
 }
 
@@ -76,8 +77,8 @@ func (ws *WeightSearcher2) SetRanges(weightMin, weightMax float64) {
 	ws.queue.Push(&weightSearch2Bound{
 		plannedOp: opDivide1,
 		axisFocus: 0,
-		rangeMin:  util.RepeatValue(weightMin, ws.typeCount),
-		rangeMax:  util.RepeatValue(weightMax, ws.typeCount),
+		rangeMin:  util_collection.RepeatValue(weightMin, ws.typeCount),
+		rangeMax:  util_collection.RepeatValue(weightMax, ws.typeCount),
 		nodeDepth: 0,
 	})
 }

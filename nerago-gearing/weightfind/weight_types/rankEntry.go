@@ -2,7 +2,7 @@ package weight_types
 
 import (
 	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 )
 
 type IRankEntry interface {
@@ -23,8 +23,8 @@ type IRankEntrySingle interface {
 
 type IRankEntryRange interface {
 	IRankEntry
-	SetSimRankRange(targetRange *util.HiLoInt)
-	GetSimRankRange() *util.HiLoInt
+	SetSimRankRange(targetRange *util_collection.HiLoInt)
+	GetSimRankRange() *util_collection.HiLoInt
 }
 
 type IRankEntryFlatSingle interface {
@@ -45,8 +45,8 @@ type IRankEntryExtendedSingle interface {
 
 type IRankEntryExtendedRange interface {
 	IRankEntry
-	GetSimRankRangeByType(simType stats.SimType) *util.HiLoInt
-	SetSimRankRangeByType(simType stats.SimType, targetRank *util.HiLoInt)
+	GetSimRankRangeByType(simType stats.SimType) *util_collection.HiLoInt
+	SetSimRankRangeByType(simType stats.SimType, targetRank *util_collection.HiLoInt)
 }
 
 type RankStatWeightsCommon struct {

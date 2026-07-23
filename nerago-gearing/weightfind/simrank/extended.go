@@ -2,7 +2,7 @@ package simrank
 
 import (
 	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/weightfind/weight_types"
 )
 
@@ -22,7 +22,7 @@ func RankSimsForRangedRankSeparated[T weight_types.IRankEntryExtendedRange](requ
 					average: entry.GetSimData().Get(simType),
 					stdDev:  entry.GetSimData().GetStdDevOrZero(simType),
 				}
-			}, func(entry T, hiLo *util.HiLoInt) {
+			}, func(entry T, hiLo *util_collection.HiLoInt) {
 				entry.SetSimRankRangeByType(simType, hiLo)
 			})
 	}

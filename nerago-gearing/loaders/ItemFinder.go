@@ -6,7 +6,7 @@ import (
 	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"slices"
 	"strings"
 )
@@ -118,12 +118,12 @@ func ItemFinder_NormalHeroicBossFiltered(innerFinder func(stats.Difficulty) []It
 		if difficulty == stats.Difficulty_Celestial {
 			return regularResult
 		} else if difficulty == stats.Difficulty_Normal {
-			return util.FilterSliceAsNew_NoPointer(regularResult, func(item ItemFoundRef) bool {
+			return util_collection.FilterSliceAsNew_NoPointer(regularResult, func(item ItemFoundRef) bool {
 				bossName := db.BossItemData_BossForItemId(item.ItemId)
 				return slices.Contains(normalBossNames, bossName)
 			})
 		} else {
-			return util.FilterSliceAsNew_NoPointer(regularResult, func(item ItemFoundRef) bool {
+			return util_collection.FilterSliceAsNew_NoPointer(regularResult, func(item ItemFoundRef) bool {
 				bossName := db.BossItemData_BossForItemId(item.ItemId)
 				return slices.Contains(heroicBossNames, bossName)
 			})
@@ -138,7 +138,7 @@ func ItemFinder_HeroicBossFiltered(innerFinder func(stats.Difficulty) []ItemFoun
 			return regularResult
 		}
 
-		return util.FilterSliceAsNew_NoPointer(regularResult, func(item ItemFoundRef) bool {
+		return util_collection.FilterSliceAsNew_NoPointer(regularResult, func(item ItemFoundRef) bool {
 			bossName := db.BossItemData_BossForItemId(item.ItemId)
 			return slices.Contains(heroicBossNames, bossName)
 		})
@@ -174,10 +174,10 @@ func ItemFinder_ThroneStrengthPlateTank(difficulty stats.Difficulty) []ItemFound
 }
 
 func ItemFinder_ThroneStrengthPlateTank_RadenOnly(difficulty stats.Difficulty) []ItemFoundRef {
-	result := util.FilterSliceAsNew(ItemFinder_ThroneStrengthPlateTank(difficulty), func(item *ItemFoundRef) bool {
+	result := util_collection.FilterSliceAsNew(ItemFinder_ThroneStrengthPlateTank(difficulty), func(item *ItemFoundRef) bool {
 		return isRadenItem(item.ItemId)
 	})
-	util.RemoveDuplicatesComparable_InPlace(&result)
+	util_collection.RemoveDuplicatesComparable_InPlace(&result)
 	return result
 }
 
@@ -381,6 +381,6 @@ func ItemFinder_BagsUpgraded(_ stats.Difficulty) []ItemFoundRef {
 		}
 	}
 
-	util.RemoveDuplicatesComparable_InPlace(&result)
+	util_collection.RemoveDuplicatesComparable_InPlace(&result)
 	return result
 }

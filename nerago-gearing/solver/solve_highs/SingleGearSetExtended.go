@@ -6,13 +6,14 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/weight_types"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
-type StatRequiredExtended map[stats.StatType]util.HiLoUInt32
+type StatRequiredExtended map[stats.StatType]util_collection.HiLoUInt32
 
 type ExtendedModel struct {
 	weight    weight_types.Weight2Extended

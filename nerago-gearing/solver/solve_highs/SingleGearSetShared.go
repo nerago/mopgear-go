@@ -4,6 +4,7 @@ import (
 	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"strconv"
 
@@ -24,7 +25,7 @@ type singleGearSetShared struct {
 	bonusData   []bonusInfo
 	bonusCombos []bonusCombo
 
-	itemColumns util.MapSlice[items.ItemId, *columnInfo]
+	itemColumns util_collection.MapSlice[items.ItemId, *columnInfo]
 	allColumns  []*columnInfo
 }
 
@@ -173,7 +174,7 @@ func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []gear_mod
 				optionParts := util_highs.ConstraintAndBuilder{}
 
 				for activeSet, needCount := range option.Pairs() {
-					setInfo := util.FindWith(setup.bonusData, func(x bonusInfo) bool { return x.activeSet.Equals(activeSet) })
+					setInfo := util_collection.FindWith(setup.bonusData, func(x bonusInfo) bool { return x.activeSet.Equals(activeSet) })
 					setCountCol := setInfo.setTotalCountVar
 
 					inRange := setup.build.ColumnIsGreaterOrEqualThanConstant(setCountCol.columnIndex, float64(needCount), 10, 1.0)

@@ -4,7 +4,7 @@ import (
 	"cmp"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"slices"
 )
 
@@ -96,7 +96,7 @@ func (param *multiSetParamInternal) cullingReportOrphan() {
 
 func (job *MultiSetJob) cullReportAll() {
 	maxCountForParam := make([]uint32, len(job.params))
-	for param := range util.ForPointer(job.params) {
+	for param := range util_collection.ForPointer(job.params) {
 		for _, count := range param.seenInSolutions.content {
 			maxCountForParam[param.paramIndex] = max(maxCountForParam[param.paramIndex], count)
 		}
@@ -105,7 +105,7 @@ func (job *MultiSetJob) cullReportAll() {
 	combinedCount := make(map[items.ItemId]uint32)
 	bestPercent := make(map[items.ItemId]float64)
 	seen := make(map[items.ItemId]bool)
-	for param := range util.ForPointer(job.params) {
+	for param := range util_collection.ForPointer(job.params) {
 		maxCount := float64(maxCountForParam[param.paramIndex])
 		for _, itemId := range param.ExtraItems {
 			seenCount := param.seenInSolutions.content[itemId]
@@ -116,7 +116,7 @@ func (job *MultiSetJob) cullReportAll() {
 		}
 	}
 
-	for param := range util.ForPointer(job.params) {
+	for param := range util_collection.ForPointer(job.params) {
 		for item := range param.exactEquippedGear.AllItemSeq() {
 			itemId := item.ItemId()
 			bestPercent[itemId] = 1.0

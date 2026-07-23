@@ -3,12 +3,12 @@ package multi_types
 import (
 	"iter"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 )
 
 type CommonOptions struct {
-	byRef   util.MapSlice[items.ItemRef, items.FullItem]
-	idToRef util.MapMap[items.ItemId, items.ItemRef, bool]
+	byRef   util_collection.MapSlice[items.ItemRef, items.FullItem]
+	idToRef util_collection.MapMap[items.ItemId, items.ItemRef, bool]
 }
 
 func CommonOptions_Make() CommonOptions {

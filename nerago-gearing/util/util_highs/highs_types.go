@@ -7,6 +7,7 @@ import (
 	"os"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"slices"
 	"strconv"
 
@@ -470,7 +471,7 @@ func (vars *variableArrayBuilder) clone() variableArrayBuilder {
 		colLower:   slices.Clone(vars.colLower),
 		colUpper:   slices.Clone(vars.colUpper),
 		debug:      slices.Clone(vars.debug),
-		objectives: util.MapSliceAsNew(vars.objectives, (*objectiveFields).clone),
+		objectives: util_collection.MapSliceAsNew(vars.objectives, (*objectiveFields).clone),
 	}
 }
 
@@ -547,7 +548,7 @@ type constraintMatrixBuilder struct {
 
 func (mat *constraintMatrixBuilder) clone() constraintMatrixBuilder {
 	return constraintMatrixBuilder{
-		entries: util.MapSliceAsNew(mat.entries, func(subSlice *[]indexAndValue) []indexAndValue {
+		entries: util_collection.MapSliceAsNew(mat.entries, func(subSlice *[]indexAndValue) []indexAndValue {
 			return slices.Clone(*subSlice)
 		}),
 		lowerBound: slices.Clone(mat.lowerBound),
@@ -566,10 +567,10 @@ func (mat *constraintMatrixBuilder) addRow(entries []indexAndValue, lowerBound f
 }
 
 func (mat *constraintMatrixBuilder) deleteRow(rowIndex int) {
-	mat.entries = util.DeleteIndexInPlace(mat.entries, rowIndex)
-	mat.lowerBound = util.DeleteIndexInPlace(mat.lowerBound, rowIndex)
-	mat.upperBound = util.DeleteIndexInPlace(mat.upperBound, rowIndex)
-	mat.debug = util.DeleteIndexInPlace(mat.debug, rowIndex)
+	mat.entries = util_collection.DeleteIndexInPlace(mat.entries, rowIndex)
+	mat.lowerBound = util_collection.DeleteIndexInPlace(mat.lowerBound, rowIndex)
+	mat.upperBound = util_collection.DeleteIndexInPlace(mat.upperBound, rowIndex)
+	mat.debug = util_collection.DeleteIndexInPlace(mat.debug, rowIndex)
 }
 
 func (mat *constraintMatrixBuilder) deleteRowRange(firstDelete, lastDelete int) {

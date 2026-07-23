@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
@@ -29,9 +30,9 @@ type GridStatWeightProcess1B struct {
 	CALCMODE      int
 
 	build           util_highs.LinearBuilder
-	unitStatValues  util.MapMapSlice[stats.StatType, stats.SimType, float64]
-	scales          util.MapMap[stats.StatType, stats.SimType, float64]
-	detailedWeights util.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
+	unitStatValues  util_collection.MapMapSlice[stats.StatType, stats.SimType, float64]
+	scales          util_collection.MapMap[stats.StatType, stats.SimType, float64]
+	detailedWeights util_collection.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
 	finalWeights    map[stats.StatType]util_highs.ColumnIndex
 }
 
@@ -269,13 +270,13 @@ func (grid *GridStatWeightProcess1B) removeOutliers() {
 
 					if grid.OUTLIER == 1 {
 						acceptDeviations := 2.0
-						util.FilterSliceInPlace(&dataSlice, func(value *float64) bool {
+						util_collection.FilterSliceInPlace(&dataSlice, func(value *float64) bool {
 							deviation := math.Abs(average-*value) / stdDev
 							return deviation <= acceptDeviations
 						})
 					} else if grid.OUTLIER == 2 {
 						acceptDeviations := 4.0
-						util.FilterSliceInPlace(&dataSlice, func(value *float64) bool {
+						util_collection.FilterSliceInPlace(&dataSlice, func(value *float64) bool {
 							deviation := math.Abs(average-*value) / stdDev
 							return deviation <= acceptDeviations
 						})

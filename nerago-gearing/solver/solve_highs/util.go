@@ -4,6 +4,7 @@ import (
 	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"strconv"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -49,7 +50,7 @@ func makeSetPermutationsRecur(allSetPermutation []bonusCombo, setData []bonusInf
 	for itemCount := 0; itemCount <= c_maxSetItems; itemCount++ {
 		if totalCount+itemCount <= c_maxSetItems {
 			next := bonusWithCount{addSet, itemCount}
-			progress := util.CopyAndAppend(built, next)
+			progress := util_collection.CopyAndAppend(built, next)
 			allSetPermutation = makeSetPermutationsRecur(allSetPermutation, setData, setIndex+1, totalCount+itemCount, progress)
 		}
 	}

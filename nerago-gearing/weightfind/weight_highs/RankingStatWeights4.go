@@ -4,6 +4,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/simrank"
 	"paladin_gearing_go/weightfind/weight_types"
@@ -40,7 +41,7 @@ type rankInternalRun4 struct {
 	scaleStats map[stats.StatType]float64
 
 	weightColumns map[stats.StatType]util_highs.ColumnIndex
-	pairLinks     util.MapMapDiagonal[int, *rankPair4]
+	pairLinks     util_collection.MapMapDiagonal[int, *rankPair4]
 }
 
 type rankEntry4 struct {
@@ -70,7 +71,7 @@ func (process *RankingStatWeightProcess4) SupplyData(inputData []weight_types.We
 
 func (run *rankInternalRun4) supplyData(inputData []weight_types.WeightInput) {
 	run.scaleStats = chooseStatScalingBasic(inputData, c_Rank4ScaleTarget, false, run.process.printer)
-	run.runData = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntry4 {
+	run.runData = util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntry4 {
 		return &rankEntry4{
 			RankStatWeightsCommon: weight_types.RankStatWeightsCommon{
 				Data:       input,
@@ -92,7 +93,7 @@ func (process *RankingStatWeightProcess4) SetTargetRatios(targetRatios weight_ty
 	process.requiredSims = targetRatios.SimTypes()
 }
 
-func (process *RankingStatWeightProcess4) RunUsingExternalStart(initialWeight weight_types.Weight1Basic, stopwatch *util.Stopwatch, timeout int) util.Optional[weight_types.Weight1Basic] {
+func (process *RankingStatWeightProcess4) RunUsingExternalStart(initialWeight weight_types.Weight1Basic, stopwatch *util.Stopwatch, timeout int) util_collection.Optional[weight_types.Weight1Basic] {
 	run2 := rankInternalRun4_create(process)
 	run2.build.TimeLimitSeconds = timeout
 	run2.supplyData(process.dataAll)
@@ -118,7 +119,7 @@ func takeDataSample_Random[T any](slice []T, size int) []T {
 		return slice
 	} else {
 		copy := slices.Clone(slice)
-		util.Shuffle(copy)
+		util_collection.Shuffle(copy)
 		return copy[0:size]
 	}
 }
@@ -132,15 +133,15 @@ func rankInternalRun4_create(process *RankingStatWeightProcess4) *rankInternalRu
 	return run
 }
 
-func (run *rankInternalRun4) run(stopwatch *util.Stopwatch) (util.Optional[weight_types.Weight1Basic], *highs.Solution) {
+func (run *rankInternalRun4) run(stopwatch *util.Stopwatch) (util_collection.Optional[weight_types.Weight1Basic], *highs.Solution) {
 	solutionFuture := run.build.RunHighsFuture(stopwatch)
 	linearResult := solutionFuture.WaitForResultOrPanic()
 	solution := linearResult.GetSolutionAndSaveLog(run.process.printer)
 	if solution.HasSolution() {
 		weights := run.extractAndReportSolution(solution)
-		return util.Optional_OfValue(weights), solution
+		return util_collection.Optional_OfValue(weights), solution
 	} else {
-		return util.Optional_Empty[weight_types.Weight1Basic](), solution
+		return util_collection.Optional_Empty[weight_types.Weight1Basic](), solution
 	}
 }
 

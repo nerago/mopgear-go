@@ -3,7 +3,7 @@ package simrank
 import (
 	"cmp"
 	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 )
@@ -71,7 +71,7 @@ func RankingWeightsPrepareBasicRankings[T weight_types.IRankEntryFlatSingle](sim
 // currently just in Rank5
 func RankingWeightsPrepareBasicRankingsRemoveDuplicates[T weight_types.IRankEntryFlatSingle](simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []T) []T {
 	simScoringBasic(simList, priority, inputData)
-	inputData = util.RemoveDuplicatesFunc_NewIfChanged(inputData, func(a, b *T) bool { return (*a).GetSimScore() == (*b).GetSimScore() })
+	inputData = util_collection.RemoveDuplicatesFunc_NewIfChanged(inputData, func(a, b *T) bool { return (*a).GetSimScore() == (*b).GetSimScore() })
 	rankOrderBasic(inputData)
 	return inputData
 }
@@ -102,7 +102,7 @@ func RankingWeightsPrepareUsingMidRange[T weight_types.IRankEntryFlatSingle](sim
 // currently just in Rank5
 func RankingWeightsPrepareUsingMidRangeRemoveDuplicates[T weight_types.IRankEntryFlatSingle](simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []T) []T {
 	simScoringMidRange(simList, priority, inputData)
-	inputData = util.RemoveDuplicatesFunc_NewIfChanged(inputData, func(a, b *T) bool { return (*a).GetSimScore() == (*b).GetSimScore() })
+	inputData = util_collection.RemoveDuplicatesFunc_NewIfChanged(inputData, func(a, b *T) bool { return (*a).GetSimScore() == (*b).GetSimScore() })
 	rankOrderBasic(inputData)
 	return inputData
 }

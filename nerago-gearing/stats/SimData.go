@@ -4,6 +4,7 @@ import (
 	"iter"
 	"math"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 )
 
 type SimType uint8
@@ -57,7 +58,7 @@ func (types SimType) Name() string {
 }
 
 var SimTypeList = []SimType{Sim_DPS, Sim_TPS, Sim_DTPS, Sim_HPS, Sim_TMI, Sim_DEATH}
-var SimTypeEnum = util.EnumType[SimType]{Values: SimTypeList}
+var SimTypeEnum = util_collection.EnumType[SimType]{Values: SimTypeList}
 
 const simTypeCount = 6
 

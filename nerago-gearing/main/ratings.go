@@ -17,6 +17,7 @@ import (
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/weightfind"
 	"paladin_gearing_go/weightfind/weight_highs"
 	"paladin_gearing_go/weightfind/weight_types"
@@ -715,10 +716,10 @@ func statWeights_CompareAlgorithms() {
 	weightsMidRange.Put(stats.Stat_Dodge, 0.0824)
 	weightsMidRange.Put(stats.Stat_Parry, 0.0532)
 
-	resultsByAlgorithm := util.MapConcurrent[string, weight_types.Weight1Basic]{}
-	resultsByAlgorithm2 := util.MapConcurrent[string, weight_types.Weight2Extended]{}
-	resultsByAlgorithm3 := util.MapConcurrent[string, weight_types.Weight3ExtendedRanged]{}
-	timesByAlgorithm := util.MapConcurrent[string, time.Duration]{}
+	resultsByAlgorithm := util_collection.MapConcurrent[string, weight_types.Weight1Basic]{}
+	resultsByAlgorithm2 := util_collection.MapConcurrent[string, weight_types.Weight2Extended]{}
+	resultsByAlgorithm3 := util_collection.MapConcurrent[string, weight_types.Weight3ExtendedRanged]{}
+	timesByAlgorithm := util_collection.MapConcurrent[string, time.Duration]{}
 
 	cancel := util_async.CancelSignal_Make()
 	tasks := make([]func(), 0)
@@ -1362,7 +1363,7 @@ func statWeights_CompareAlgorithms() {
 		printer.Println("///////////////// " + label + " /////////////////")
 	}
 
-	util.Shuffle(tasks)
+	util_collection.Shuffle(tasks)
 
 	util_async.CancelOnKeyPress(cancel)
 	util_async.ForEach_Slice_Cancellable(5, tasks, cancel, func(f *func()) {

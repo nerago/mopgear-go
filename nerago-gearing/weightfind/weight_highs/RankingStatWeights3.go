@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/simrank"
 	"paladin_gearing_go/weightfind/weight_types"
@@ -41,7 +42,7 @@ type RankingStatWeightProcess3 struct {
 
 	scaleStats    map[stats.StatType]float64
 	weightColumns map[stats.StatType]util_highs.ColumnIndex
-	pairLinks     util.MapMap[int, int, rankPair3]
+	pairLinks     util_collection.MapMap[int, int, rankPair3]
 }
 
 type rankEntry3 struct {
@@ -74,7 +75,7 @@ func (ranker *RankingStatWeightProcess3) SupplyData(inputData []weight_types.Wei
 	} else {
 		ranker.scaleStats = chooseStatScalingBasic(inputData, c_rank3_scaleTarget, false, ranker.printer)
 	}
-	ranker.dataAllOriginal = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntry3 {
+	ranker.dataAllOriginal = util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntry3 {
 		return &rankEntry3{
 			RankStatWeightsCommon: weight_types.RankStatWeightsCommon{
 				Data:       input,
@@ -331,7 +332,7 @@ func (ranker *RankingStatWeightProcess3) setupInitialRemainingVariables(internal
 		entry.InitialStatScore = internalWeights.CalcStatScoreScaled(entry.Data, ranker.scaleStats)
 	}
 
-	for entryPointer, calcRank := range util.CalculateRanking(true, ranker.dataSample, func(x **rankEntry3) float64 { return (*x).InitialStatScore }) {
+	for entryPointer, calcRank := range util_collection.CalculateRanking(true, ranker.dataSample, func(x **rankEntry3) float64 { return (*x).InitialStatScore }) {
 		entry := *entryPointer
 		ranker.build.SetInitialSolutionValue(entry.ScoreColumn, entry.InitialStatScore)
 		if entry.RankColumn != -1 {
@@ -415,7 +416,7 @@ func (ranker *RankingStatWeightProcess3) reportRankingOfInputs(statWeightResult 
 		colRank    float64
 	}
 
-	check := util.MapSliceAsNew(ranker.dataSample, func(x **rankEntry3) entryCheck {
+	check := util_collection.MapSliceAsNew(ranker.dataSample, func(x **rankEntry3) entryCheck {
 		e := *x
 		return entryCheck{
 			e.SimScore,

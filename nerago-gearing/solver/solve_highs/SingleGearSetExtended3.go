@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/weight_types"
 
@@ -16,7 +17,7 @@ import (
 const c_gearExtended3StatHigh = 100000
 const c_gearExtended3ScoreHigh = 10
 
-type StatRequiredExtended3 map[stats.StatType]util.HiLoUInt32
+type StatRequiredExtended3 map[stats.StatType]util_collection.HiLoUInt32
 
 type ExtendedModel3 struct {
 	weight    weight_types.Weight3ExtendedRanged

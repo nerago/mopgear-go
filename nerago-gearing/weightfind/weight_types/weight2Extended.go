@@ -4,6 +4,7 @@ import (
 	"iter"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"slices"
 )
 
@@ -33,7 +34,7 @@ import (
 
 // Weight2Extended
 type Weight2Extended struct {
-	DetailedWeights util.MapMap[stats.StatType, stats.SimType, float64]
+	DetailedWeights util_collection.MapMap[stats.StatType, stats.SimType, float64]
 	StatList        []stats.StatType
 	SimList         []stats.SimType
 	SimPriority     SimPriorityExtended
@@ -55,7 +56,7 @@ func (we *Weight2Extended) GetWeightOrPanic(statType stats.StatType, simType sta
 	return we.DetailedWeights.GetOrPanic(statType, simType)
 }
 
-func (we *Weight2Extended) SeqBySimThenStat() iter.Seq[util.MapMapEntry[stats.StatType, stats.SimType, float64]] {
+func (we *Weight2Extended) SeqBySimThenStat() iter.Seq[util_collection.MapMapEntry[stats.StatType, stats.SimType, float64]] {
 	return we.DetailedWeights.SeqWithKeysOtherOrder()
 }
 

@@ -4,8 +4,8 @@ import (
 	"cmp"
 	"math"
 	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_rank"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
@@ -104,7 +104,7 @@ func (ws *WeightSearcher3) SetRanges(weightMin, weightMax float64) {
 
 func (ws *WeightSearcher3) Run(cancel util_async.CancelSignal) weight_types.Weight1Basic {
 	threadCount := 4
-	queue := util.QueueStackFiloPoolParent[*weightSearch2FastBound]{}
+	queue := util_collection.QueueStackFiloPoolParent[*weightSearch2FastBound]{}
 
 	startingQueue := queue.MakeChild()
 	startingProbesReused := ws.newProbeSlice()
@@ -124,7 +124,7 @@ func (ws *WeightSearcher3) Run(cancel util_async.CancelSignal) weight_types.Weig
 	return bestWeight.ScaleForBaseStat(ws.statTypes[0])
 }
 
-func (ws *WeightSearcher3) initialSplits(localQueue *util.QueueStackFiloPoolChild[*weightSearch2FastBound], probesReused []*weightSearch2FastProbe, targetCount int) bool {
+func (ws *WeightSearcher3) initialSplits(localQueue *util_collection.QueueStackFiloPoolChild[*weightSearch2FastBound], probesReused []*weightSearch2FastProbe, targetCount int) bool {
 	localQueue.Push(ws.initialBound)
 	for localQueue.CountLocal() < targetCount {
 		if !ws.threadStep(localQueue, probesReused) {
@@ -134,7 +134,7 @@ func (ws *WeightSearcher3) initialSplits(localQueue *util.QueueStackFiloPoolChil
 	return true
 }
 
-func (ws *WeightSearcher3) threadLoop(cancel util_async.CancelSignal, localQueue *util.QueueStackFiloPoolChild[*weightSearch2FastBound], probesReused []*weightSearch2FastProbe) {
+func (ws *WeightSearcher3) threadLoop(cancel util_async.CancelSignal, localQueue *util_collection.QueueStackFiloPoolChild[*weightSearch2FastBound], probesReused []*weightSearch2FastProbe) {
 	for cancel.ShouldContinue() {
 		if !ws.threadStep(localQueue, probesReused) {
 			break
@@ -142,7 +142,7 @@ func (ws *WeightSearcher3) threadLoop(cancel util_async.CancelSignal, localQueue
 	}
 }
 
-func (ws *WeightSearcher3) threadStep(localQueue *util.QueueStackFiloPoolChild[*weightSearch2FastBound], probesReused []*weightSearch2FastProbe) bool {
+func (ws *WeightSearcher3) threadStep(localQueue *util_collection.QueueStackFiloPoolChild[*weightSearch2FastBound], probesReused []*weightSearch2FastProbe) bool {
 	entry, hasEntry := localQueue.Pop()
 	if !hasEntry {
 		return false
@@ -177,7 +177,7 @@ func (ws *WeightSearcher3) evaluateScore(weightArray *weightSearch2FastPoint) fl
 }
 
 // dumb division in halves
-func (ws *WeightSearcher3) opDivide(bound *weightSearch2FastBound, localQueue *util.QueueStackFiloPoolChild[*weightSearch2FastBound]) {
+func (ws *WeightSearcher3) opDivide(bound *weightSearch2FastBound, localQueue *util_collection.QueueStackFiloPoolChild[*weightSearch2FastBound]) {
 	axis := bound.divideAxis
 	mid := valueInterpolate(bound.rangeMin[axis], bound.rangeMax[axis], c_search3_probe_middle)
 
@@ -205,7 +205,7 @@ func (ws *WeightSearcher3) opDivide(bound *weightSearch2FastBound, localQueue *u
 	localQueue.Push(loBound)
 }
 
-func (ws *WeightSearcher3) opSearch(bound *weightSearch2FastBound, probes []*weightSearch2FastProbe, localQueue *util.QueueStackFiloPoolChild[*weightSearch2FastBound]) {
+func (ws *WeightSearcher3) opSearch(bound *weightSearch2FastBound, probes []*weightSearch2FastProbe, localQueue *util_collection.QueueStackFiloPoolChild[*weightSearch2FastBound]) {
 	probes = ws.createAndSetProbes(bound, probes)
 
 	if bound.nodeDepth >= c_search3_max_node_depth {
@@ -282,7 +282,7 @@ func (ws *WeightSearcher3) chooseCut(probes []*weightSearch2FastProbe) int {
 	return len(probes) / 4
 }
 
-func (ws *WeightSearcher3) chooseSplitMode(probes []*weightSearch2FastProbe, bound *weightSearch2FastBound, localQueue *util.QueueStackFiloPoolChild[*weightSearch2FastBound]) {
+func (ws *WeightSearcher3) chooseSplitMode(probes []*weightSearch2FastProbe, bound *weightSearch2FastBound, localQueue *util_collection.QueueStackFiloPoolChild[*weightSearch2FastBound]) {
 	includeMiddle := false
 	hiSlice := make([]*weightSearch2FastProbe, 0, len(probes))
 	loSlice := make([]*weightSearch2FastProbe, 0, len(probes))
@@ -327,7 +327,7 @@ func (ws *WeightSearcher3) chooseSplitMode(probes []*weightSearch2FastProbe, bou
 	}
 }
 
-func (ws *WeightSearcher3) search2MakeFollowupShrink(bound *weightSearch2FastBound, localQueue *util.QueueStackFiloPoolChild[*weightSearch2FastBound]) {
+func (ws *WeightSearcher3) search2MakeFollowupShrink(bound *weightSearch2FastBound, localQueue *util_collection.QueueStackFiloPoolChild[*weightSearch2FastBound]) {
 	add := ws.poolQueue.Get()
 	add.divideAxis = -1
 	add.nodeDepth = bound.nodeDepth + 1
@@ -342,7 +342,7 @@ func (ws *WeightSearcher3) search2MakeFollowupShrink(bound *weightSearch2FastBou
 	}
 }
 
-func (ws *WeightSearcher3) search2MakeFollowupShrinkExceptAxis(bound *weightSearch2FastBound, axis int, localQueue *util.QueueStackFiloPoolChild[*weightSearch2FastBound]) {
+func (ws *WeightSearcher3) search2MakeFollowupShrinkExceptAxis(bound *weightSearch2FastBound, axis int, localQueue *util_collection.QueueStackFiloPoolChild[*weightSearch2FastBound]) {
 	add := ws.poolQueue.Get()
 	add.divideAxis = -1
 	add.nodeDepth = bound.nodeDepth + 1
@@ -359,7 +359,7 @@ func (ws *WeightSearcher3) search2MakeFollowupShrinkExceptAxis(bound *weightSear
 	}
 }
 
-func (ws *WeightSearcher3) search2MakeFollowupCommon2(probes []*weightSearch2FastProbe, bound *weightSearch2FastBound, localQueue *util.QueueStackFiloPoolChild[*weightSearch2FastBound]) {
+func (ws *WeightSearcher3) search2MakeFollowupCommon2(probes []*weightSearch2FastProbe, bound *weightSearch2FastBound, localQueue *util_collection.QueueStackFiloPoolChild[*weightSearch2FastBound]) {
 	add := ws.poolQueue.Get()
 	add.divideAxis = -1
 	add.nodeDepth = bound.nodeDepth + 1
@@ -428,7 +428,7 @@ func (ws *WeightSearcher3) sliceInterpolate(rangeMin *weightSearch2FastPoint, ra
 	}
 }
 
-func (ws *WeightSearcher3) containedByAnotherQueueEntry(add *weightSearch2FastBound, localQueue *util.QueueStackFiloPoolChild[*weightSearch2FastBound]) bool {
+func (ws *WeightSearcher3) containedByAnotherQueueEntry(add *weightSearch2FastBound, localQueue *util_collection.QueueStackFiloPoolChild[*weightSearch2FastBound]) bool {
 	foundContainingRange := false
 	localQueue.ExamineContents(func(content []*weightSearch2FastBound) {
 		for i := range content {

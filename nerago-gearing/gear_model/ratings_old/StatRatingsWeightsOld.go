@@ -6,7 +6,7 @@ import (
 	"math"
 	"os"
 	. "paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"strconv"
 	"strings"
 )
@@ -40,7 +40,7 @@ func validate(block StatBlock) {
 	}
 }
 
-func StatRatingsWeights_Mix(weightA StatRatingsWeightsOld, multiplyA float64, weightB StatRatingsWeightsOld, multiplyB float64, rescaleAround util.Optional[StatType]) *StatRatingsWeightsOld {
+func StatRatingsWeights_Mix(weightA StatRatingsWeightsOld, multiplyA float64, weightB StatRatingsWeightsOld, multiplyB float64, rescaleAround util_collection.Optional[StatType]) *StatRatingsWeightsOld {
 	scaleA := StatBlockFloat{}
 	weightA.floatWeight.MultiplyScalar(multiplyA, &scaleA)
 	scaleB := StatBlockFloat{}

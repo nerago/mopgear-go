@@ -10,6 +10,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_rank"
 )
 
@@ -71,7 +72,7 @@ func runMoreDetailedSimForBestN(resultList []upgradeItemResultWithSim, topResult
 		uint64(topResultsCount),
 		func(a, b **upgradeItemResultWithSim) bool { return (*a).Equals(**b) },
 	)
-	for result := range util.ForPointer(resultList) {
+	for result := range util_collection.ForPointer(resultList) {
 		topN.Offer(&result, result.increaseSim())
 	}
 

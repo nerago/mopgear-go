@@ -4,14 +4,14 @@ import (
 	"cmp"
 	"iter"
 	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_rank"
 	"slices"
 )
 
 // Weight3ExtendedRanged
 type Weight3ExtendedRanged struct {
-	StatWeights util.MapMapSlice[stats.SimType, stats.StatType, Weight3ExtendedStatEntry]
+	StatWeights util_collection.MapMapSlice[stats.SimType, stats.StatType, Weight3ExtendedStatEntry]
 	StatList    []stats.StatType
 	SimList     []stats.SimType
 	SimPriority SimPriorityExtended

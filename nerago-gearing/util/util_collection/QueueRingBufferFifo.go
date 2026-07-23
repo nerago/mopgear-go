@@ -1,4 +1,4 @@
-package util
+package util_collection
 
 type Queue[T any] interface {
 	Push(T)

@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 )
 
 const (
@@ -154,7 +155,7 @@ func (job *MultiSetJob) SetMinimumExtraItemLevel(itemLevel uint16) {
 }
 
 func (job *MultiSetJob) VerifyNoExtraDuplicates() {
-	for param := range util.ForPointer(job.params) {
+	for param := range util_collection.ForPointer(job.params) {
 		seen := make(map[items.ItemId]bool)
 		for _, itemId := range param.ExtraItems {
 			if seen[itemId] {
@@ -167,8 +168,8 @@ func (job *MultiSetJob) VerifyNoExtraDuplicates() {
 }
 
 func (job *MultiSetJob) RemoveAnyExtraDuplicates() {
-	for param := range util.ForPointer(job.params) {
-		util.RemoveDuplicatesComparable_InPlace(&param.ExtraItems)
+	for param := range util_collection.ForPointer(job.params) {
+		util_collection.RemoveDuplicatesComparable_InPlace(&param.ExtraItems)
 	}
 }
 

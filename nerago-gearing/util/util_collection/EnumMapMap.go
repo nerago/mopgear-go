@@ -1,4 +1,4 @@
-package util
+package util_collection
 
 import (
 	"iter"
@@ -14,24 +14,32 @@ type EnumMapMap[J ~uint8, K ~uint8, V any] struct {
 }
 
 func EnumMapMapMake[J ~uint8, K ~uint8, V any](enumType1 EnumType[J], enumType2 EnumType[K]) EnumMapMap[J, K, V] {
-	enumType1.Validate()
-	enumType2.Validate()
-	arraySize := len(enumType1.Values) * len(enumType2.Values)
+	if enumType1.IsUninitialized() || enumType2.IsUninitialized() {
+		panic("type not initialized")
+	}
+
+	arraySize := enumType1.NumValues() * enumType2.NumValues()
 	return EnumMapMap[J, K, V]{
 		make([]V, arraySize),
-		BitSetMake(uint32(arraySize - 1)),
+		BitSetMake(arraySize - 1),
 		0,
 		enumType1,
 		enumType2,
 	}
 }
 
-func (em *EnumMapMap[J, K, V]) keyIndex(key1 J, key2 K) uint32 {
-	return uint32(len(em.enumType2.Values))*uint32(key1) + uint32(key2)
+func (em *EnumMapMap[J, K, V]) keyToIndex(key1 J, key2 K) uint32 {
+	return em.enumType2.NumValues()*uint32(key1) + uint32(key2)
+}
+
+func (em *EnumMapMap[J, K, V]) indexToKeys(index uint32) (key1 J, key2 K) {
+	key1 = J(index / em.enumType2.NumValues())
+	key2 = K(index % em.enumType2.NumValues())
+	return
 }
 
 func (em *EnumMapMap[J, K, V]) IsUninitialized() bool {
-	return em.content == nil || em.isSet == nil || em.enumType1.Values == nil || em.enumType2.Values == nil
+	return em.content == nil || em.isSet == nil || em.enumType1.IsUninitialized() || em.enumType2.IsUninitialized()
 }
 
 func (em *EnumMapMap[J, K, V]) Clone() *EnumMapMap[J, K, V] {
@@ -73,12 +81,12 @@ func (em *EnumMapMap[J, K, V]) IsEmpty() bool {
 }
 
 func (em *EnumMapMap[J, K, V]) Has(key1 J, key2 K) bool {
-	index := em.keyIndex(key1, key2)
+	index := em.keyToIndex(key1, key2)
 	return em.isSet.IsSet(index)
 }
 
 func (em *EnumMapMap[J, K, V]) Get(key1 J, key2 K) (V, bool) {
-	index := em.keyIndex(key1, key2)
+	index := em.keyToIndex(key1, key2)
 
 	if em.isSet.IsSet(index) {
 		return em.content[index], true
@@ -89,7 +97,7 @@ func (em *EnumMapMap[J, K, V]) Get(key1 J, key2 K) (V, bool) {
 }
 
 func (em *EnumMapMap[J, K, V]) GetOrPanic(key1 J, key2 K) V {
-	index := em.keyIndex(key1, key2)
+	index := em.keyToIndex(key1, key2)
 
 	if em.isSet.IsSet(index) {
 		return em.content[index]
@@ -99,22 +107,18 @@ func (em *EnumMapMap[J, K, V]) GetOrPanic(key1 J, key2 K) V {
 }
 
 func (em *EnumMapMap[J, K, V]) HasKey1(key1 J) bool {
-	for key2 := range len(em.enumType2.Values) {
-		index := em.keyIndex(key1, K(key2))
-		if em.isSet.IsSet(index) {
-			return true
-		}
-	}
-	return false
+	minIndex := em.keyToIndex(key1, em.enumType2.First())
+	maxIndex := em.keyToIndex(key1, em.enumType2.Last())
+	return em.isSet.IsAnySetInRange(minIndex, maxIndex)
 }
 
 func (em *EnumMapMap[J, K, V]) HasKey2(key2 K) bool {
-	for key1 := range len(em.enumType1.Values) {
-		index := em.keyIndex(J(key1), key2)
-		// TODO make a ranged isSet method
+	index := em.keyToIndex(em.enumType1.First(), key2)
+	for range em.enumType1.NumValues() {
 		if em.isSet.IsSet(index) {
 			return true
 		}
+		index += em.enumType2.NumValues()
 	}
 	return false
 }
@@ -125,64 +129,79 @@ func (em *EnumMapMap[J, K, V]) Clear() {
 		em.content[index] = nilValue
 	}
 
-	for i := range em.isSet {
-		em.isSet[i] = 0
-	}
+	em.isSet.ClearAll()
 }
 
 func (em *EnumMapMap[J, K, V]) Put(key1 J, key2 K, value V) {
-	index := em.keyIndex(key1, key2)
+	index := em.keyToIndex(key1, key2)
 	em.isSet.Set(index)
 	em.content[index] = value
 }
 
 func (em *EnumMapMap[J, K, V]) Delete(key1 J, key2 K) {
 	var nilValue V
-	index := em.keyIndex(key1, key2)
+	index := em.keyToIndex(key1, key2)
 	em.isSet.Clear(index)
 	em.content[index] = nilValue
 }
 
 func (em *EnumMapMap[J, K, V]) DeleteAllForKey1(key1 J) {
 	var nilValue V
-	for key2 := range len(em.enumType2.Values) {
-		index := em.keyIndex(key1, K(key2))
-		em.isSet.Clear(index)
-		em.content[index] = nilValue
+
+	minIndex := em.keyToIndex(key1, em.enumType2.First())
+	maxIndex := em.keyToIndex(key1, em.enumType2.Last())
+	for i := minIndex; i <= maxIndex; i++ {
+		em.content[i] = nilValue
 	}
+
+	em.isSet.ClearInRange(minIndex, maxIndex)
 }
 
 func (em *EnumMapMap[J, K, V]) DeleteAllForKey2(key2 K) {
 	var nilValue V
-	for key1 := range len(em.enumType1.Values) {
-		index := em.keyIndex(J(key1), key2)
+	index := em.keyToIndex(em.enumType1.First(), key2)
+	for range em.enumType1.NumValues() {
 		em.isSet.Clear(index)
 		em.content[index] = nilValue
+		index += em.enumType2.NumValues()
 	}
 }
 
 func (em *EnumMapMap[J, K, V]) Apply(key1 J, key2 K, apply func(oldValue V) V) {
-	index := em.keyIndex(key1, key2)
+	index := em.keyToIndex(key1, key2)
 	em.isSet.Set(index)
 	em.content[index] = apply(em.content[index])
 }
 
 func (em *EnumMapMap[J, K, V]) FirstKey1() J {
-	// TODO make a ranged isSet method
-	for key1 := range len(em.enumType1.Values) {
-		for key2 := range len(em.enumType2.Values) {
-			index := em.keyIndex(J(key1), K(key2))
-			if em.isSet.IsSet(index) {
-				return J(key1)
-			}
-		}
+	firstIndex, hasIndex := em.isSet.FirstIndexIsSet()
+	if hasIndex {
+		key1, _ := em.indexToKeys(firstIndex)
+		return key1
+	} else {
+		panic("no key")
 	}
-	panic("no key")
+
+	//minIndex := em.keyIndex(em.enumType1.First(), em.enumType2.First())
+	//maxIndex := em.keyIndex(em.enumType1.First(), em.enumType2.Last())
+	//for key1 := range em.enumType1.NumValues() {
+	//	if em.isSet.IsAnySetInRange(minIndex, maxIndex) {
+	//		return J(key1)
+	//	}
+	//	minIndex += em.enumType2.NumValues()
+	//	maxIndex += em.enumType2.NumValues()
+	//}
+	//panic("no key")
 }
 
 func (em *EnumMapMap[J, K, V]) FirstKey2() K {
-	//TODO implement me
-	panic("implement me")
+	firstIndex, hasIndex := em.isSet.FirstIndexIsSet()
+	if hasIndex {
+		_, key2 := em.indexToKeys(firstIndex)
+		return key2
+	} else {
+		panic("no key")
+	}
 }
 
 func (em *EnumMapMap[J, K, V]) SeqKey1() iter.Seq[J] {

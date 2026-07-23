@@ -10,6 +10,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"slices"
 )
 
@@ -29,7 +30,7 @@ func findBaseLine(printer *util.PrintRecorder, baseItems *items.FullOptionsMap, 
 }
 
 func changeUpgradeLevels(extraItems []loaders.ItemFoundRef, upgradeLevel items.UpgradeLevel) []loaders.ItemFoundRef {
-	return util.MapSliceAsNew(extraItems, func(ref *loaders.ItemFoundRef) loaders.ItemFoundRef {
+	return util_collection.MapSliceAsNew(extraItems, func(ref *loaders.ItemFoundRef) loaders.ItemFoundRef {
 		if upgradeLevel > ref.UpgradeLevel {
 			return loaders.ItemFoundRef{
 				ItemId:       ref.ItemId,
@@ -158,7 +159,7 @@ func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptions
 
 		setBonus := model.SetBonus.CountInAnySet(output.FullSet.Items())
 
-		result = upgradeItemResult{upgradeItemTask: *extraTask, success: true, itemSet: &output.FullSet, fullItem: exampleItem, factor: util.Optional_OfValue(factor), setBonus: setBonus}
+		result = upgradeItemResult{upgradeItemTask: *extraTask, success: true, itemSet: &output.FullSet, fullItem: exampleItem, factor: util_collection.Optional_OfValue(factor), setBonus: setBonus}
 	} else {
 		printer.Println("UPGRADE SET NOT FOUND")
 		return upgradeItemResult_OfFailure(extraTask, exampleItem)

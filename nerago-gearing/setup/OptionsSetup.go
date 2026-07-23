@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 )
 
 type MissingEnchantMode int8
@@ -190,7 +191,7 @@ func confirmSocketSlots(item items.FullItem, professions gear_model.ProfessionIn
 	existingSockets := item.SocketSlots()
 	if item.SlotItem().AlwaysBlacksmith() || (item.SlotItem().PossibleBlacksmith() && professions.IsBlacksmith) {
 		if len(existingSockets) == 0 || existingSockets[len(existingSockets)-1] != stats.Socket_General {
-			return util.CopyAndAppend(existingSockets, stats.Socket_General)
+			return util_collection.CopyAndAppend(existingSockets, stats.Socket_General)
 		}
 	}
 	return existingSockets

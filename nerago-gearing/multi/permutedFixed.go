@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/solver/solve_highs"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"slices"
 )
 
@@ -74,7 +75,7 @@ func (job *MultiSetJob) preparePermutations() <-chan permuteSet {
 		semiFixed := param.SemiFixedSlots
 		for slot, itemIdList := range semiFixed {
 			isSingle := len(itemIdList) == 1
-			entriesList := util.MapSliceAsNew(itemIdList, func(itemId *items.ItemId) permuteEntry {
+			entriesList := util_collection.MapSliceAsNew(itemIdList, func(itemId *items.ItemId) permuteEntry {
 				return permuteEntry{fixed: &permuteEntryFixedForce{paramIndex, slot, *itemId, isSingle}}
 			})
 			optionEntriesList = append(optionEntriesList, permuteOptions{options: entriesList})
@@ -100,7 +101,7 @@ func (job *MultiSetJob) preparePermutations() <-chan permuteSet {
 	}
 
 	for _, group := range job.alternateUpgradeChoices {
-		entriesList := util.MapSliceAsNew(group, func(itemId *items.ItemId) permuteEntry {
+		entriesList := util_collection.MapSliceAsNew(group, func(itemId *items.ItemId) permuteEntry {
 			return permuteEntry{upgrade: &permuteEntryUpgrade{*itemId}}
 		})
 		optionEntriesList = append(optionEntriesList, permuteOptions{options: entriesList})
@@ -143,7 +144,7 @@ func permuteStep(inChannel <-chan permuteSet, options permuteOptions) <-chan per
 	go func() {
 		for currSet := range inChannel {
 			for _, value := range options.options {
-				outputChannel <- permuteSet{choices: util.CopyAndAppend(currSet.choices, value)}
+				outputChannel <- permuteSet{choices: util_collection.CopyAndAppend(currSet.choices, value)}
 			}
 		}
 		close(outputChannel)
@@ -168,7 +169,7 @@ func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, printe
 }
 
 func (job *MultiSetJob) processSetupItemOptionsForPermute(permuteSet permuteSet, printer *util.PrintRecorder) ([]items.FullOptionsMap, util.StringBuild2) {
-	itemOptionsEach := util.MapSliceAsNew(job.params, func(param *multiSetParamInternal) items.FullOptionsMap {
+	itemOptionsEach := util_collection.MapSliceAsNew(job.params, func(param *multiSetParamInternal) items.FullOptionsMap {
 		return param.itemOptions.Clone()
 	})
 
@@ -231,7 +232,7 @@ func (job *MultiSetJob) applyPermuteGroup(group *permuteEntryAllowGroup, itemOpt
 func (job *MultiSetJob) applyPermuteItemUpgrade(itemId items.ItemId, itemOptionsEach *[]items.FullOptionsMap, printer *util.PrintRecorder, strBuild *util.StringBuild2) {
 	profession := job.params[0].Model.Professions
 	foundAny := false
-	for itemOpts := range util.ForPointer(*itemOptionsEach) {
+	for itemOpts := range util_collection.ForPointer(*itemOptionsEach) {
 		if itemOpts.IncludesItemId(itemId) {
 			itemOpts.MapEachItem(func(item *items.FullItem) items.FullItem {
 				if item.ItemId() == itemId {
@@ -256,7 +257,7 @@ func (job *MultiSetJob) applyPermuteItemUpgrade(itemId items.ItemId, itemOptions
 
 func (job *MultiSetJob) applyPermuteGems(gems *permuteEntryGems, itemOptionsEach *[]items.FullOptionsMap, strBuild *util.StringBuild2) {
 	if !gems.allowAlternates {
-		for itemOpts := range util.ForPointer(*itemOptionsEach) {
+		for itemOpts := range util_collection.ForPointer(*itemOptionsEach) {
 			itemOpts.FilterAllItems(func(item *items.FullItem) bool {
 				return !item.HasBeenRegemmed()
 			})

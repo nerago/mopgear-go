@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/weightfind/simrank"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
@@ -40,7 +41,7 @@ func EvaluateAccuracyStatisticalDeviations(statWeights weight_types.Weight1Basic
 }
 
 func evaluateStatScoreAndCreateStructure(statWeights weight_types.Weight1Basic, inputData []weight_types.WeightInput) []*weight_types.AccuracyInfoSimStatRanged {
-	return util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.AccuracyInfoSimStatRanged {
+	return util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.AccuracyInfoSimStatRanged {
 		return &weight_types.AccuracyInfoSimStatRanged{
 			DataSim:       &input.SimResult,
 			StatScore:     statWeights.CalcStatScore(input),
@@ -52,7 +53,7 @@ func evaluateStatScoreAndCreateStructure(statWeights weight_types.Weight1Basic, 
 }
 
 func evaluateStatScore2AndCreateStructure(statWeights weight_types.Weight2Extended, inputData []weight_types.WeightInput) []*weight_types.AccuracyInfoSimStatRanged {
-	return util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.AccuracyInfoSimStatRanged {
+	return util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.AccuracyInfoSimStatRanged {
 		return &weight_types.AccuracyInfoSimStatRanged{
 			DataSim:       &input.SimResult,
 			StatScore:     statWeights.CalcStatScoreForInput(input),
@@ -68,14 +69,14 @@ func deriveStatRanks(data []*weight_types.AccuracyInfoSimStatRanged) {
 	slices.SortFunc(data, func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
 		return cmp.Compare(a.StatScore, b.StatScore)
 	})
-	data[0].StatRankRange = &util.HiLoInt{Lo: 0, Hi: 0}
+	data[0].StatRankRange = &util_collection.HiLoInt{Lo: 0, Hi: 0}
 	for i := 1; i < len(data); i++ {
 		if util.FloatsApproxEquals(data[i].StatScore, data[i-1].StatScore) {
 			prevRange := data[i-1].StatRankRange
 			data[i].StatRankRange = prevRange
 			prevRange.Hi = i
 		} else {
-			data[i].StatRankRange = &util.HiLoInt{Lo: i, Hi: i}
+			data[i].StatRankRange = &util_collection.HiLoInt{Lo: i, Hi: i}
 		}
 	}
 }
@@ -99,7 +100,7 @@ func checkValue(value float64) float64 {
 }
 
 // 100% if ranks are equal, 90% if average 10% difference, etc
-func rangesToAccuracyRatio(one, two util.HiLoInt, fullLength int) float64 {
+func rangesToAccuracyRatio(one, two util_collection.HiLoInt, fullLength int) float64 {
 	var diff int
 	if one.Overlap(two) {
 		return 1.0

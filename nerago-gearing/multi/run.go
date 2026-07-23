@@ -4,6 +4,7 @@ import (
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"sync"
 	"time"
 )
@@ -103,7 +104,7 @@ func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time
 	defer timer.Stop()
 
 	waitGroup := sync.WaitGroup{}
-	for param := range util.ForPointer(job.params) {
+	for param := range util_collection.ForPointer(job.params) {
 		param.runCullingProcess(targetSolutionCount, &waitGroup, cancel, tracker.NewChild())
 	}
 

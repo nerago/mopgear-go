@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
@@ -50,7 +51,7 @@ type FittingEachStatWeightProcess struct {
 	requiredStats []stats.StatType
 	requiredSims  []stats.SimType
 
-	each util.MapMap[stats.StatType, stats.SimType, *fittingEachFields]
+	each util_collection.MapMap[stats.StatType, stats.SimType, *fittingEachFields]
 }
 
 type fittingEachFields struct {
@@ -147,7 +148,7 @@ func (fitseg *FittingSingleStatSegmentsProcess) SetLazyMode(lazy bool) {
 }
 
 func (fitseg *FittingSingleStatSegmentsProcess) SupplyDataFromStandard(inputData []weight_types.WeightInput) {
-	fitseg.inputDataOriginal = util.MapSliceAsNew(inputData, func(w *weight_types.WeightInput) *weight_types.WeightInput { return w })
+	fitseg.inputDataOriginal = util_collection.MapSliceAsNew(inputData, func(w *weight_types.WeightInput) *weight_types.WeightInput { return w })
 }
 
 func (fitseg *FittingSingleStatSegmentsProcess) Run(cancel util_async.CancelSignal) map[weight_types.StatRange]FittingSingleStatResult {
@@ -160,7 +161,7 @@ func (fitseg *FittingSingleStatSegmentsProcess) Run(cancel util_async.CancelSign
 
 	overallSize := len(fitseg.inputDataOriginal)
 	for len(fitseg.inputDataRemainingParts) > 0 {
-		nextRange, nextData := util.MapFirstEntry(fitseg.inputDataRemainingParts)
+		nextRange, nextData := util_collection.MapFirstEntry(fitseg.inputDataRemainingParts)
 		delete(fitseg.inputDataRemainingParts, nextRange)
 
 		ratioOfOverall := percentRatio(len(nextData), overallSize)
@@ -269,7 +270,7 @@ func (fitseg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData
 }
 
 func (fitseg *FittingSingleStatSegmentsProcess) filterDataStatRange(inputData []weight_types.WeightInput, lo, hi uint32) {
-	util.FilterSliceAsNew(inputData, func(in *weight_types.WeightInput) bool {
+	util_collection.FilterSliceAsNew(inputData, func(in *weight_types.WeightInput) bool {
 		value := in.TotalStat.GetUInt(fitseg.stat)
 		return lo <= value && value <= hi
 	})
@@ -337,7 +338,7 @@ func (fit *FittingSingleStatWeightProcess) SetMinimumIncludeRate(percent float64
 }
 
 func (fit *FittingSingleStatWeightProcess) SupplyDataFromStandard(inputData []*weight_types.WeightInput, stat stats.StatType, sim stats.SimType) {
-	fit.inputData = util.MapSliceAsNew(inputData, func(input **weight_types.WeightInput) fittingSample {
+	fit.inputData = util_collection.MapSliceAsNew(inputData, func(input **weight_types.WeightInput) fittingSample {
 		return fittingSample{
 			(*input).TotalStat.GetFloat(stat),
 			scaleSimItem((*input).SimResult.Get(sim), sim),
@@ -408,7 +409,7 @@ func scaleSimItem(value float64, sim stats.SimType) float64 {
 func (fit *FittingSingleStatWeightProcess) Run() *util_async.FutureCancellable[FittingSingleStatResult] {
 	fit.setupLinearObjectives()
 
-	for sample := range util.ForPointer(fit.inputData) {
+	for sample := range util_collection.ForPointer(fit.inputData) {
 		fit.addSample(sample)
 	}
 

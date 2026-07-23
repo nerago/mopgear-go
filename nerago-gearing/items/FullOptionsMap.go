@@ -2,7 +2,7 @@ package items
 
 import (
 	"iter"
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"slices"
 )
 
@@ -156,7 +156,7 @@ func (optionsMap *FullOptionsMap) AddSeveralOptionsSpecific(slotEquip SlotEquip,
 
 func (optionsMap *FullOptionsMap) AddSeveralOptionsSpecific_WhereNotExist(slotEquip SlotEquip, options []FullItem) {
 	for _, newItem := range options {
-		if !util.ContainsFunc_Pointer(optionsMap[slotEquip], newItem.Equals) {
+		if !util_collection.ContainsFunc_Pointer(optionsMap[slotEquip], newItem.Equals) {
 			optionsMap[slotEquip] = append(optionsMap[slotEquip], newItem)
 		}
 	}
@@ -274,14 +274,14 @@ func (equipMap *FullEquipMap) FillSlot_ExpectedEmpty(slotItem SlotItem, item *Fu
 
 func (optionsMap *FullOptionsMap) MapEachItem(mapper func(*FullItem) FullItem) {
 	for i := range optionsMap {
-		optionsMap[i] = util.MapSliceAsNew(optionsMap[i], mapper)
+		optionsMap[i] = util_collection.MapSliceAsNew(optionsMap[i], mapper)
 	}
 }
 
 func (optionsMap *FullOptionsMap) FilterAllItems(filter func(*FullItem) bool) {
 	for i := range optionsMap {
 		if len(optionsMap[i]) > 0 {
-			optionsMap[i] = util.FilterSliceAsNew(optionsMap[i], filter)
+			optionsMap[i] = util_collection.FilterSliceAsNew(optionsMap[i], filter)
 			if len(optionsMap[i]) == 0 {
 				panic("removing items leaves slot empty")
 			}
@@ -291,7 +291,7 @@ func (optionsMap *FullOptionsMap) FilterAllItems(filter func(*FullItem) bool) {
 
 func (optionsMap *FullOptionsMap) FilterSlot(slot SlotEquip, filter func(*FullItem) bool) {
 	if len(optionsMap[slot]) > 0 {
-		optionsMap[slot] = util.FilterSliceAsNew(optionsMap[slot], filter)
+		optionsMap[slot] = util_collection.FilterSliceAsNew(optionsMap[slot], filter)
 		if len(optionsMap[slot]) == 0 {
 			panic("removing items leaves slot empty " + slot.Name())
 		}
@@ -300,14 +300,14 @@ func (optionsMap *FullOptionsMap) FilterSlot(slot SlotEquip, filter func(*FullIt
 
 func (optionsMap *FullOptionsMap) FilterSlotNoValidate(slot SlotEquip, filter func(*FullItem) bool) {
 	if len(optionsMap[slot]) > 0 {
-		optionsMap[slot] = util.FilterSliceAsNew(optionsMap[slot], filter)
+		optionsMap[slot] = util_collection.FilterSliceAsNew(optionsMap[slot], filter)
 	}
 }
 
 func (optionsMap *FullOptionsMap) RemoveItemIdFromAll(itemId ItemId) {
 	for slot := range optionsMap {
 		if len(optionsMap[slot]) > 0 {
-			optionsMap[slot] = util.FilterSliceAsNew(optionsMap[slot], func(x *FullItem) bool { return x.ItemId() != itemId })
+			optionsMap[slot] = util_collection.FilterSliceAsNew(optionsMap[slot], func(x *FullItem) bool { return x.ItemId() != itemId })
 			if len(optionsMap[slot]) == 0 {
 				panic("removing items leaves slot empty")
 			}
@@ -317,7 +317,7 @@ func (optionsMap *FullOptionsMap) RemoveItemIdFromAll(itemId ItemId) {
 
 func (optionsMap *FullOptionsMap) RemoveItemIdFromSlot(slot SlotEquip, itemId ItemId) {
 	if len(optionsMap[slot]) > 0 {
-		optionsMap[slot] = util.FilterSliceAsNew(optionsMap[slot], func(x *FullItem) bool { return x.ItemId() != itemId })
+		optionsMap[slot] = util_collection.FilterSliceAsNew(optionsMap[slot], func(x *FullItem) bool { return x.ItemId() != itemId })
 		if len(optionsMap[slot]) == 0 {
 			panic("removing items leaves slot empty " + slot.Name())
 		}
@@ -326,7 +326,7 @@ func (optionsMap *FullOptionsMap) RemoveItemIdFromSlot(slot SlotEquip, itemId It
 
 func (optionsMap *FullOptionsMap) ForceSlotOnlySpecifiedItemId(slot SlotEquip, itemId ItemId) {
 	if len(optionsMap[slot]) > 0 {
-		optionsMap[slot] = util.FilterSliceAsNew(optionsMap[slot], func(x *FullItem) bool { return x.ItemId() == itemId })
+		optionsMap[slot] = util_collection.FilterSliceAsNew(optionsMap[slot], func(x *FullItem) bool { return x.ItemId() == itemId })
 		if len(optionsMap[slot]) == 0 {
 			panic("removing items leaves slot empty " + slot.Name())
 		}
@@ -336,7 +336,7 @@ func (optionsMap *FullOptionsMap) ForceSlotOnlySpecifiedItemId(slot SlotEquip, i
 func (optionsMap *FullOptionsMap) RemoveDuplicates() {
 	for slot := range optionsMap {
 		if len(optionsMap[slot]) > 0 {
-			optionsMap[slot] = util.RemoveDuplicatesFunc_NewIfChanged(optionsMap[slot], (*FullItem).Equals)
+			optionsMap[slot] = util_collection.RemoveDuplicatesFunc_NewIfChanged(optionsMap[slot], (*FullItem).Equals)
 		}
 	}
 }

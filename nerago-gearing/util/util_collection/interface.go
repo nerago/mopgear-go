@@ -1,6 +1,8 @@
-package util
+package util_collection
 
-import "iter"
+import (
+	"iter"
+)
 
 type IMapMap[J comparable, K comparable, V any] interface {
 	Get(key1 J, key2 K) (V, bool)

@@ -4,6 +4,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/weight_types"
 
@@ -30,9 +31,9 @@ type FormulaStatWeightProcess2 struct {
 	objectiveEquationDiff util_highs.ObjectiveIndex
 	objectiveInclude      util_highs.ObjectiveIndex
 
-	scaleSims             util.EnumMap[stats.SimType, scaleAndOffset]
+	scaleSims             util_collection.EnumMap[stats.SimType, scaleAndOffset]
 	scaleStats            map[stats.StatType]float64
-	detailedWeightColumns util.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
+	detailedWeightColumns util_collection.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
 	offsetColumns         map[stats.SimType]util_highs.ColumnIndex
 
 	minimumIncludeRate float64
@@ -134,7 +135,7 @@ func (form *FormulaStatWeightProcess2) createWeightColumns() {
 }
 
 func (form *FormulaStatWeightProcess2) buildDataEquations() {
-	for data := range util.ForPointer(form.inputData) {
+	for data := range util_collection.ForPointer(form.inputData) {
 		form.buildDataEquationForInput(data)
 	}
 }

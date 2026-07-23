@@ -1,4 +1,4 @@
-package util
+package util_collection
 
 import (
 	"cmp"
@@ -6,6 +6,10 @@ import (
 	"math/rand"
 	"slices"
 )
+
+type Number interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64
+}
 
 func RemoveDuplicatesFunc_NewIfChanged[T any](slice []T, equals func(a, b *T) bool) []T {
 	if slice == nil {
@@ -146,19 +150,19 @@ func Shuffle[T any](slice []T) {
 	rand.Shuffle(len(slice), func(a, b int) { slice[a], slice[b] = slice[b], slice[a] })
 }
 
-func DeleteIndexInPlace[T any](slice []T, index int) []T {
+func DeleteIndexInPlace[T any](slice *[]T, index int) {
+	var nilValue T
 	if index == 0 {
-		clear(slice[0:1])
-		return slice[1:]
-	} else if len := len(slice); index == len-1 {
-		clear(slice[index:len])
-		return slice[:index]
+		(*slice)[0] = nilValue
+		*slice = (*slice)[1:]
+	} else if index == len(*slice)-1 {
+		(*slice)[index] = nilValue
+		*slice = (*slice)[:index]
 	} else {
-		copy(slice[index:], slice[index+1:])
-		clear(slice[len-1 : len])
-		return slice[:len-1]
+		copy((*slice)[index:], (*slice)[index+1:])
+		(*slice)[len(*slice)-1] = nilValue
+		*slice = (*slice)[:len(*slice)-1]
 	}
-	// return slices.Delete(slice, index, index+1)
 }
 
 func MapSliceAsNew[T any, R any](slice []T, mapper func(x *T) R) []R {
@@ -399,50 +403,4 @@ func CalculateRanking[T any](highGood bool, inputData []T, toScore func(*T) floa
 			}
 		}
 	}
-}
-
-type HiLoUInt32 struct {
-	Lo uint32
-	Hi uint32
-}
-
-func (hilo HiLoUInt32) Mid() uint32 {
-	return hilo.Lo + (hilo.Hi-hilo.Lo)/2
-}
-
-func (hilo HiLoUInt32) Overlap(other HiLoUInt32) bool {
-	if hilo.Lo > other.Hi {
-		return false
-	} else if other.Lo > hilo.Hi {
-		return false
-	} else {
-		return true
-	}
-}
-
-func (hilo HiLoUInt32) Between(check uint32) bool {
-	return hilo.Lo <= check && check <= hilo.Hi
-}
-
-type HiLoInt struct {
-	Lo int
-	Hi int
-}
-
-func (hilo HiLoInt) Mid() int {
-	return hilo.Lo + (hilo.Hi-hilo.Lo)/2
-}
-
-func (hilo HiLoInt) Overlap(other HiLoInt) bool {
-	if hilo.Lo > other.Hi {
-		return false
-	} else if other.Lo > hilo.Hi {
-		return false
-	} else {
-		return true
-	}
-}
-
-func (hilo HiLoInt) Between(check int) bool {
-	return hilo.Lo <= check && check <= hilo.Hi
 }

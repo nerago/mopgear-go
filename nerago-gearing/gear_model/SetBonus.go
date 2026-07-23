@@ -6,6 +6,7 @@ import (
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"slices"
 )
 
@@ -632,7 +633,7 @@ func (sets *SetBonus) ActiveSetIndexForItem(itemId ItemId) (index int, hasSet bo
 }
 
 func (sets *SetBonus) ActiveSets() []ActiveSet {
-	return util.MapSliceAsNew(sets.activeSets, func(s *setInfoActive) ActiveSet { return s })
+	return util_collection.MapSliceAsNew(sets.activeSets, func(s *setInfoActive) ActiveSet { return s })
 }
 
 func SetBonus_IsAnyKnownItem(itemId ItemId) bool {

@@ -3,6 +3,7 @@ package weight_types
 import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 )
 
 //type WeightAlternateSimPriority struct {
@@ -14,17 +15,17 @@ import (
 //}
 
 type SimPriorityBasic struct {
-	content util.EnumMap[stats.SimType, float64]
+	content util_collection.EnumMap[stats.SimType, float64]
 }
 
 func SimPriorityBasic_MakeEmpty(parts ...any) SimPriorityBasic {
 	return SimPriorityBasic{
-		content: util.EnumMapMake[stats.SimType, float64](stats.SimTypeEnum),
+		content: util_collection.EnumMapMake[stats.SimType, float64](stats.SimTypeEnum),
 	}
 }
 func SimPriorityBasic_Make(parts ...any) SimPriorityBasic {
 	sim := SimPriorityBasic{
-		content: util.EnumMapMake[stats.SimType, float64](stats.SimTypeEnum),
+		content: util_collection.EnumMapMake[stats.SimType, float64](stats.SimTypeEnum),
 	}
 	for i := 0; i < len(parts); i += 2 {
 		simType := parts[i].(stats.SimType)
@@ -95,7 +96,7 @@ func (sr *SimPriorityBasic) ValidateRatioAddsToOne() {
 // statA*weight2A + statB*weight2B + statC*weight2C = sim2
 // (sim1+offset1)*scale1 = 0-1.0 (better is higher)
 type SimPriorityExtended struct {
-	entries util.EnumMap[stats.SimType, SimPriorityEntry]
+	entries util_collection.EnumMap[stats.SimType, SimPriorityEntry]
 }
 type SimPriorityEntry struct {
 	RangingScale  float64 // calculates values so that range is consistent (e.g. 0-1.0)
@@ -108,7 +109,7 @@ func (se SimPriorityEntry) Apply(subtotal float64) float64 {
 }
 
 func SimPriorityExtended_Make() SimPriorityExtended {
-	return SimPriorityExtended{util.EnumMapMake[stats.SimType, SimPriorityEntry](stats.SimTypeEnum)}
+	return SimPriorityExtended{util_collection.EnumMapMake[stats.SimType, SimPriorityEntry](stats.SimTypeEnum)}
 }
 
 func (sre *SimPriorityExtended) checkInitialized() {

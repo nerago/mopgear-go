@@ -3,7 +3,7 @@ package requirements
 import (
 	"math"
 	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 )
 
 type StatRequirementsHitExpertise struct {
@@ -12,7 +12,7 @@ type StatRequirementsHitExpertise struct {
 
 	AdditionalMinimumRequirement *stats.StatAndValue
 
-	asMap map[stats.StatType]util.HiLoUInt32
+	asMap map[stats.StatType]util_collection.HiLoUInt32
 }
 
 const (
@@ -65,12 +65,12 @@ func StatRequirementsHitExpertise_None() *StatRequirementsHitExpertise {
 	return &StatRequirementsHitExpertise{0, math.MaxUint32, 0, math.MaxUint32, nil, nil}
 }
 
-func mapOf(inst *StatRequirementsHitExpertise) map[stats.StatType]util.HiLoUInt32 {
-	asMap := make(map[stats.StatType]util.HiLoUInt32, 3)
-	asMap[stats.Stat_Hit] = util.HiLoUInt32{Lo: inst.hitMin, Hi: inst.hitMax}
-	asMap[stats.Stat_Expertise] = util.HiLoUInt32{Lo: inst.expMin, Hi: inst.expMax}
+func mapOf(inst *StatRequirementsHitExpertise) map[stats.StatType]util_collection.HiLoUInt32 {
+	asMap := make(map[stats.StatType]util_collection.HiLoUInt32, 3)
+	asMap[stats.Stat_Hit] = util_collection.HiLoUInt32{Lo: inst.hitMin, Hi: inst.hitMax}
+	asMap[stats.Stat_Expertise] = util_collection.HiLoUInt32{Lo: inst.expMin, Hi: inst.expMax}
 	if inst.AdditionalMinimumRequirement != nil {
-		asMap[inst.AdditionalMinimumRequirement.StatType] = util.HiLoUInt32{Lo: inst.AdditionalMinimumRequirement.Value, Hi: math.MaxUint32}
+		asMap[inst.AdditionalMinimumRequirement.StatType] = util_collection.HiLoUInt32{Lo: inst.AdditionalMinimumRequirement.Value, Hi: math.MaxUint32}
 	}
 	return asMap
 }
@@ -174,6 +174,6 @@ func (inst *StatRequirementsHitExpertise) ExpertMax() uint32 {
 	return inst.expMax
 }
 
-func (inst *StatRequirementsHitExpertise) AsMap() map[stats.StatType]util.HiLoUInt32 {
+func (inst *StatRequirementsHitExpertise) AsMap() map[stats.StatType]util_collection.HiLoUInt32 {
 	return inst.asMap
 }

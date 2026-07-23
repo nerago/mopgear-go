@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 )
 
 func SolverBuildRandom_MakeN_FullAndValidate(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, targetCount int, label string) []items.FullItemSet {
@@ -27,7 +27,7 @@ func SolverBuildRandom_MakeN_FullAndValidate(itemOptions *items.FullOptionsMap, 
 			panic(fmt.Sprintf("unable to reliably build valid sets for %s, made %d in %d attempts", label, len(results), attemptCount))
 		}
 	}
-	util.RemoveDuplicatesFunc_InPlace(&results, (*items.FullItemSet).Equals)
+	util_collection.RemoveDuplicatesFunc_InPlace(&results, (*items.FullItemSet).Equals)
 	return results
 }
 

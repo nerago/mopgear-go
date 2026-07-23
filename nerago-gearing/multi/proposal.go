@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/solver/solve_highs"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 
 	"github.com/google/uuid"
 )
@@ -23,7 +24,7 @@ func (job *MultiSetJob) proposalSingleBest() *util_async.FutureCancellable[multi
 func (job *MultiSetJob) proposalsAllCommonAlternates(cancelGenerate util_async.CancelSignal, extendedAlternates bool) (<-chan multi_types.MultiProposedOutput, *util_async.Future[int]) {
 	highProcess := job.highProcessSetup()
 
-	multiSolveChannel, expectedCountFuture := highProcess.RunForSeveral_CommonDifferent(job.printer, util.Optional_Empty[int](), cancelGenerate, extendedAlternates)
+	multiSolveChannel, expectedCountFuture := highProcess.RunForSeveral_CommonDifferent(job.printer, util_collection.Optional_Empty[int](), cancelGenerate, extendedAlternates)
 
 	proposalChannel := util_async.Map_ChannelToChannel(4, multiSolveChannel, func(setResult solve_highs.HighsMultiResult) multi_types.MultiProposedOutput {
 		return job.makeOutputFromHighs(setResult, job.printer, uuid.NewString())
@@ -73,7 +74,7 @@ func (job *MultiSetJob) runPermute(permuteSet permuteSet, solutionsPerPermute in
 			resultChannel <- job.makeOutputFromHighs(result, printer, uuid.NewString())
 		}
 	} else {
-		nextChan, expectedSubCount := highProcess.RunForSeveral_CommonDifferent(printer, util.Optional_OfValue(solutionsPerPermute), cancel, false)
+		nextChan, expectedSubCount := highProcess.RunForSeveral_CommonDifferent(printer, util_collection.Optional_OfValue(solutionsPerPermute), cancel, false)
 		expectedSubCount.ForwardResultToOtherFuture(expectedCount)
 		for result := range nextChan {
 			resultChannel <- job.makeOutputFromHighs(result, printer, uuid.NewString())
@@ -117,7 +118,7 @@ func (job *MultiSetJob) checkNoPermutations() {
 }
 
 func (job *MultiSetJob) highProcessSetup() *solve_highs.SolverHighsMultiProcess {
-	itemOptionsEach := util.MapSliceAsNew(job.params, func(param *multiSetParamInternal) items.FullOptionsMap {
+	itemOptionsEach := util_collection.MapSliceAsNew(job.params, func(param *multiSetParamInternal) items.FullOptionsMap {
 		return param.itemOptions.Clone()
 	})
 
@@ -127,7 +128,7 @@ func (job *MultiSetJob) highProcessSetup() *solve_highs.SolverHighsMultiProcess 
 }
 
 func (job *MultiSetJob) highProcessSetupRestrictedOnBaseline(baselineParam *multiSetParamInternal) *solve_highs.SolverHighsMultiProcess {
-	itemOptionsEach := util.MapSliceAsNew(job.params, func(checkParam *multiSetParamInternal) items.FullOptionsMap {
+	itemOptionsEach := util_collection.MapSliceAsNew(job.params, func(checkParam *multiSetParamInternal) items.FullOptionsMap {
 		if checkParam.paramIndex == baselineParam.paramIndex {
 			return setup.OptionsSetup_FromItemSet(&baselineParam.baselineResult.FullSet)
 		} else {

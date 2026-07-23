@@ -14,6 +14,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"slices"
 	"strconv"
 )
@@ -217,7 +218,7 @@ func testSimB(printer *util.PrintRecorder) {
 }
 func testSimEach(printer *util.PrintRecorder) {
 	modelList := []gear_model.SpecModel{gear_model.Model_PallyProtDps(), gear_model.Model_PallyProtCompromise(), gear_model.Model_PallyProtMitigation_NoSet(), gear_model.Model_PallyProtMitigation_WithSet(), gear_model.Model_PallyProtHeal()}
-	for model := range util.ForPointer(modelList) {
+	for model := range util_collection.ForPointer(modelList) {
 		equipped := loaders.GearFileReader_Read(model.ReferenceGearFile)
 		equipSet := setup.OptionsSetup_ExactEquippedOnly(equipped, model, setup.MissingEnchant_Fix, util.PrintRecorder_Nop())
 		// itemOptions := setup.OptionsSetup_FromGearFile(model.ReferenceGearFile, model, setup.MissingEnchant_Panic, printer)
@@ -571,7 +572,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 
 		processItemIds := itemIds
 		if group.label == "ret" {
-			processItemIds = util.MapSliceAsNew_NoPointer(processItemIds, func(x items.ItemId) items.ItemId {
+			processItemIds = util_collection.MapSliceAsNew_NoPointer(processItemIds, func(x items.ItemId) items.ItemId {
 				if x == trinketVialCorruptNormal {
 					x = trinketEyeGalakrasCelestial
 				}

@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
@@ -36,7 +37,7 @@ type RankingStatWeightProcess3b struct {
 	build *util_highs.LinearBuilder
 
 	weightColumns map[stats.StatType]util_highs.ColumnIndex
-	pairLinks     util.MapMapDiagonal[int, rankPair3b]
+	pairLinks     util_collection.MapMapDiagonal[int, rankPair3b]
 }
 
 type rankEntry3b struct {
@@ -59,7 +60,7 @@ func (ranker *RankingStatWeightProcess3b) Init(printer *util.PrintRecorder, time
 }
 
 func (ranker *RankingStatWeightProcess3b) SupplyData(inputData []weight_types.WeightInput) {
-	ranker.dataAllOriginal = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) rankEntry3b {
+	ranker.dataAllOriginal = util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) rankEntry3b {
 		return rankEntry3b{
 			data:        input,
 			simScore:    -1,
@@ -173,7 +174,7 @@ func (ranker *RankingStatWeightProcess3b) prepareRankings() {
 
 	// score each sim
 	for _, simType := range ranker.requiredSims {
-		for entry, simDetailRank := range util.CalculateRanking(simType.IsHighGood(), ranker.dataSample, func(x *rankEntry3b) float64 { return x.data.SimResult.Get(simType) }) {
+		for entry, simDetailRank := range util_collection.CalculateRanking(simType.IsHighGood(), ranker.dataSample, func(x *rankEntry3b) float64 { return x.data.SimResult.Get(simType) }) {
 			entry.simScore += float64(simDetailRank) * ranker.targetRatios.GetOrPanic(simType)
 		}
 	}
@@ -182,7 +183,7 @@ func (ranker *RankingStatWeightProcess3b) prepareRankings() {
 	// TODO alternately deny duplicates, either on simScore, or full detail
 
 	// rank combined sims
-	for entry, simRank := range util.CalculateRanking(true, ranker.dataSample, func(x *rankEntry3b) float64 { return x.simScore }) {
+	for entry, simRank := range util_collection.CalculateRanking(true, ranker.dataSample, func(x *rankEntry3b) float64 { return x.simScore }) {
 		entry.targetRank = simRank
 	}
 
@@ -206,7 +207,7 @@ func (ranker *RankingStatWeightProcess3b) doAlgos() {
 }
 
 func (ranker *RankingStatWeightProcess3b) makeDataListEntryColumns() {
-	for entry := range util.ForPointer(ranker.dataSample) {
+	for entry := range util_collection.ForPointer(ranker.dataSample) {
 		debugStr := strconv.FormatInt(int64(entry.targetRank), 10)
 		ranker.makeScoreColumn(entry, debugStr)
 	}
@@ -299,7 +300,7 @@ func (ranker *RankingStatWeightProcess3b) setupInitialFromInternalWeights(intern
 }
 
 func (ranker *RankingStatWeightProcess3b) setupInitialRemainingVariables(internalWeights weight_types.Weight1Basic) {
-	for entry := range util.ForPointer(ranker.dataSample) {
+	for entry := range util_collection.ForPointer(ranker.dataSample) {
 		entry.initialStatScore = internalWeights.CalcStatScore(entry.data) * c_rank3b_scaleTarget
 		ranker.build.SetInitialSolutionValue(entry.scoreColumn, entry.initialStatScore)
 	}

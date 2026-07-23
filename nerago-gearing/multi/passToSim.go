@@ -11,6 +11,7 @@ import (
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_rank"
 	"slices"
 )
@@ -255,10 +256,10 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 
 func countRegem(multiProposed multi_types.MultiProposedOutput) int {
 	allItems := make([]*items.FullItem, 0)
-	for part := range util.ForPointer(multiProposed.Parts) {
+	for part := range util_collection.ForPointer(multiProposed.Parts) {
 		allItems = slices.AppendSeq(allItems, part.FullSet.Items().AllItemSeq())
 	}
-	util.RemoveDuplicatesFunc_InPlace(&allItems, func(a, b **items.FullItem) bool { return (*a).Equals(*b) })
+	util_collection.RemoveDuplicatesFunc_InPlace(&allItems, func(a, b **items.FullItem) bool { return (*a).Equals(*b) })
 
 	countRegemmed := 0
 	for _, item := range allItems {
@@ -271,19 +272,19 @@ func countRegem(multiProposed multi_types.MultiProposedOutput) int {
 
 func listRegem(multiProposed multi_types.MultiProposedOutput) []*items.FullItem {
 	itemSlice := make([]*items.FullItem, 0)
-	for part := range util.ForPointer(multiProposed.Parts) {
+	for part := range util_collection.ForPointer(multiProposed.Parts) {
 		itemSlice = slices.AppendSeq(itemSlice, part.FullSet.Items().AllItemSeq())
 	}
-	util.FilterSliceInPlace(&itemSlice, func(item **items.FullItem) bool {
+	util_collection.FilterSliceInPlace(&itemSlice, func(item **items.FullItem) bool {
 		return (*item).HasBeenRegemmed()
 	})
-	util.RemoveDuplicatesFunc_InPlace(&itemSlice, func(a, b **items.FullItem) bool { return (*a).Equals(*b) })
+	util_collection.RemoveDuplicatesFunc_InPlace(&itemSlice, func(a, b **items.FullItem) bool { return (*a).Equals(*b) })
 	return itemSlice
 }
 
 // TODO refactor with Accuracy code
 func (job *MultiSetJob) suggestResultFromRankings(results []simulateMultiResult) {
-	rankInputArrays := util.MapMapSlice[int, stats.SimType, float64]{}
+	rankInputArrays := util_collection.MapMapSlice[int, stats.SimType, float64]{}
 	for _, result := range results {
 		for paramIndex, simStats := range result.result {
 			simTypeList := job.params[paramIndex].Model.SimPriority.SimTypes()

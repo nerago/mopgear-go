@@ -7,8 +7,8 @@ import (
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"slices"
 )
 
@@ -144,7 +144,7 @@ func (param *multiSetParamInternal) copyExtraFromOtherSpec(itemId items.ItemId) 
 		}
 	}
 
-	util.RemoveDuplicatesFunc_InPlace(&options, (*items.FullItem).Equals)
+	util_collection.RemoveDuplicatesFunc_InPlace(&options, (*items.FullItem).Equals)
 
 	// NOTE these may not copy with the model's reforge preferences etc
 
@@ -294,7 +294,7 @@ func (param *multiSetParamInternal) regemDefault(item items.FullItem) items.Full
 }
 
 func (param *multiSetParamInternal) makeRandomVariantItems(variantItems []randomVariantItem) {
-	for variantItem := range util.ForPointer(variantItems) {
+	for variantItem := range util_collection.ForPointer(variantItems) {
 		for slot := range param.itemOptions {
 			slotOptions := param.itemOptions[slot]
 			slotOptions = param.makeRandomVariantItem(variantItem, slotOptions)
@@ -306,7 +306,7 @@ func (param *multiSetParamInternal) makeRandomVariantItems(variantItems []random
 func (param *multiSetParamInternal) makeRandomVariantItem(variantItem *randomVariantItem, slotOptions []items.FullItem) []items.FullItem {
 	hasAny := false
 	hasVersion := make([]bool, len(variantItem.randomSuffixList))
-	for item := range util.ForPointer(slotOptions) {
+	for item := range util_collection.ForPointer(slotOptions) {
 		if item.ItemId() == variantItem.itemId {
 			hasAny = true
 
@@ -328,7 +328,7 @@ func (param *multiSetParamInternal) makeRandomVariantItem(variantItem *randomVar
 			}
 		}
 
-		slotOptions = util.FilterSliceAsNew(slotOptions, func(x *items.FullItem) bool {
+		slotOptions = util_collection.FilterSliceAsNew(slotOptions, func(x *items.FullItem) bool {
 			return x.ItemId() != variantItem.itemId || slices.Contains(variantItem.randomSuffixList, x.RandomSuffix())
 		})
 	}
@@ -394,7 +394,7 @@ func (param *multiSetParamInternal) addItemOptionsWithValidate_WhereNotExist(slo
 
 func (param *multiSetParamInternal) validateAddOptions(slot items.SlotEquip, options []items.FullItem) {
 	if slot == items.Equip_Head {
-		for item := range util.ForPointer(options) {
+		for item := range util_collection.ForPointer(options) {
 			param.Model.GemChoice.ValidateMetaGemInItem(item)
 		}
 	}

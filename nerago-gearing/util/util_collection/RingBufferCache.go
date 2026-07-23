@@ -1,4 +1,4 @@
-package util
+package util_collection
 
 type RingBufferCache[T any] struct {
 	array                      []T

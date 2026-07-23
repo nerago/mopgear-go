@@ -12,6 +12,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/weightfind/weight_types"
 )
 
@@ -118,7 +119,7 @@ func makeAllMixesOf(statList []stats.StatType, valueOne int32, valueTwo int32) [
 	}
 
 	// shuffle so we get a good mix
-	util.Shuffle(levelCombos)
+	util_collection.Shuffle(levelCombos)
 	return levelCombos
 }
 

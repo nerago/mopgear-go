@@ -2,7 +2,7 @@ package gear_model
 
 import (
 	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 )
 
 type StatRequirements interface {
@@ -14,7 +14,7 @@ type StatRequirements interface {
 	GetLow(statType stats.StatType) uint32
 	GetHigh(statType stats.StatType) uint32
 
-	AsMap() map[stats.StatType]util.HiLoUInt32
+	AsMap() map[stats.StatType]util_collection.HiLoUInt32
 }
 
 type StatRatings interface {

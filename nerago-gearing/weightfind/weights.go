@@ -16,6 +16,7 @@ import (
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_rank"
 	"paladin_gearing_go/weightfind/weight_highs"
 	"paladin_gearing_go/weightfind/weight_types"
@@ -218,7 +219,7 @@ func solveGridWeights(gridOutlierSetting int, label string, gearModel *gear_mode
 	return finishGridWeight(gridOutlierSetting, label, weightsGridOptional, printer, simTypes, ratios, inputDataGrid, inputDataReal)
 }
 
-func finishGridWeight(gridOutlierSetting int, label string, weightsGridOptional util.Optional[weight_types.Weight1Basic], printer *util.PrintRecorder, simTypes []stats.SimType, ratios *weight_types.SimPriorityBasic, inputDataGrid []weight_types.WeightInput, inputDataReal []weight_types.WeightInput) *weightOption {
+func finishGridWeight(gridOutlierSetting int, label string, weightsGridOptional util_collection.Optional[weight_types.Weight1Basic], printer *util.PrintRecorder, simTypes []stats.SimType, ratios *weight_types.SimPriorityBasic, inputDataGrid []weight_types.WeightInput, inputDataReal []weight_types.WeightInput) *weightOption {
 	if weightsGridOptional.HasValue() {
 		weightsGrid := weightsGridOptional.GetOrPanic()
 		printer.Printf("Grid Weights %d >>>>> %s\n", gridOutlierSetting, label)
@@ -233,7 +234,7 @@ func finishGridWeight(gridOutlierSetting int, label string, weightsGridOptional 
 	}
 }
 
-func solveRankingWeight(rankMode int, label string, gearModel *gear_model.SpecModel, printer *util.PrintRecorder, ratios *weight_types.SimPriorityBasic, simTypes []stats.SimType, mixedInputData []weight_types.WeightInput, bestWeightsSoFar util.Optional[weightOption]) *weightOption {
+func solveRankingWeight(rankMode int, label string, gearModel *gear_model.SpecModel, printer *util.PrintRecorder, ratios *weight_types.SimPriorityBasic, simTypes []stats.SimType, mixedInputData []weight_types.WeightInput, bestWeightsSoFar util_collection.Optional[weightOption]) *weightOption {
 	var weightsRankingFuture *util_async.FutureCancellable[weight_types.Weight1Basic]
 
 	if rankMode == 0 {

@@ -2,7 +2,7 @@ package util_async
 
 import (
 	"os"
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"sync"
 )
 
@@ -275,13 +275,13 @@ func (future *FutureCancellable[T]) WaitForResultOrNilValue() T {
 	}
 }
 
-func (future *FutureCancellable[T]) WaitForResultAsOptional() util.Optional[T] {
+func (future *FutureCancellable[T]) WaitForResultAsOptional() util_collection.Optional[T] {
 	future.verifyCanWait()
 	value, hasValue := future.resultFromChannel()
 	if hasValue {
-		return util.Optional_OfValue(value)
+		return util_collection.Optional_OfValue(value)
 	} else {
-		return util.Optional_Empty[T]()
+		return util_collection.Optional_Empty[T]()
 	}
 }
 

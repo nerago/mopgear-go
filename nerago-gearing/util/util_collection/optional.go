@@ -1,4 +1,4 @@
-package util
+package util_collection
 
 type Optional[T any] struct {
 	exists bool

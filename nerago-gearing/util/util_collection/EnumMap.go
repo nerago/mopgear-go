@@ -1,4 +1,4 @@
-package util
+package util_collection
 
 import (
 	"iter"
@@ -6,15 +6,32 @@ import (
 )
 
 type EnumType[E ~uint8] struct {
-	Values []E
+	numValues uint8
 }
 
-func (et EnumType[E]) Validate() {
-	for i := 0; i < len(et.Values); i++ {
-		if et.Values[i] != E(i) {
+func (et EnumType[E]) IsUninitialized() bool {
+	return et.numValues == 0
+}
+
+func EnumTypeMake[E ~uint8](values []E) EnumType[E] {
+	for i := 0; i < len(values); i++ {
+		if values[i] != E(i) {
 			panic("expected iota enum in order")
 		}
 	}
+	return EnumType[E]{uint8(len(values))}
+}
+
+func (et EnumType[E]) NumValues() uint32 {
+	return uint32(et.numValues)
+}
+
+func (et EnumType[E]) First() E {
+	return E(0)
+}
+
+func (et EnumType[E]) Last() E {
+	return E(et.numValues - 1)
 }
 
 type EnumMap[E ~uint8, V any] struct {
@@ -25,10 +42,12 @@ type EnumMap[E ~uint8, V any] struct {
 }
 
 func EnumMapMake[E ~uint8, V any](enumType EnumType[E]) EnumMap[E, V] {
-	enumType.Validate()
+	if enumType.IsUninitialized() {
+		panic("type not initialized")
+	}
 	return EnumMap[E, V]{
-		make([]V, len(enumType.Values)),
-		make([]bool, len(enumType.Values)),
+		make([]V, enumType.NumValues()),
+		make([]bool, enumType.NumValues()),
 		0,
 		//enumType,
 	}

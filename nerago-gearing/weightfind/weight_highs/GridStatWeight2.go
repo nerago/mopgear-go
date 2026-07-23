@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
@@ -36,7 +37,7 @@ type GridStatWeightProcess2 struct {
 	scaleSims map[stats.SimType]float64
 
 	build           util_highs.LinearBuilder
-	detailedWeights util.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
+	detailedWeights util_collection.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
 }
 
 func (grid2 *GridStatWeightProcess2) Init(printer *util.PrintRecorder, timeout int) {

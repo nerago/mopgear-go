@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/solver/solve_highs"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 
 	"github.com/google/uuid"
 )
@@ -44,7 +45,7 @@ func prepareSolve(input SolveInput) (*util.PrintRecorder, items.SolvableOptionsM
 	return printer, solveOptions
 }
 
-func finaliseSolve(solvedResult util.Optional[items.SolvableItemSet], solveOptions items.SolvableOptionsMap, input SolveInput, printer *util.PrintRecorder) SolveOutput {
+func finaliseSolve(solvedResult util_collection.Optional[items.SolvableItemSet], solveOptions items.SolvableOptionsMap, input SolveInput, printer *util.PrintRecorder) SolveOutput {
 	var solvedSet items.SolvableItemSet
 	if solvedResult.IsEmpty() {
 		fallbackSet, failureSummary := diagnoseFailure(&solveOptions, input.Model)

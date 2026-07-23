@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/simrank"
 	"paladin_gearing_go/weightfind/weight_types"
@@ -34,14 +35,14 @@ type RankingSeparatedWeights struct {
 	build *util_highs.LinearBuilder
 
 	desiredScoreSpacing   float64
-	detailedWeightColumns util.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
+	detailedWeightColumns util_collection.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
 	offsetColumns         map[stats.SimType]util_highs.ColumnIndex
 	slackBottom, slackTop map[stats.SimType]util_highs.ColumnIndex
 }
 
 type rankEntrySeparated struct {
 	data  *weight_types.WeightInput
-	bySim util.EnumMap[stats.SimType, rankDetailSeparated]
+	bySim util_collection.EnumMap[stats.SimType, rankDetailSeparated]
 }
 
 func (r *rankEntrySeparated) GetSimData() *stats.SimData {
@@ -71,10 +72,10 @@ func (ranker *RankingSeparatedWeights) Init(printer *util.PrintRecorder, timeout
 
 func (ranker *RankingSeparatedWeights) SupplyData(inputData []weight_types.WeightInput) {
 	//inputData = takeDataSample_Random(inputData, 100)
-	ranker.dataEntries = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntrySeparated {
+	ranker.dataEntries = util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntrySeparated {
 		return &rankEntrySeparated{
 			data:  input,
-			bySim: util.EnumMapMake[stats.SimType, rankDetailSeparated](stats.SimTypeEnum),
+			bySim: util_collection.EnumMapMake[stats.SimType, rankDetailSeparated](stats.SimTypeEnum),
 		}
 	})
 }
@@ -167,9 +168,9 @@ func (ranker *RankingSeparatedWeights) processDataForSim(simType stats.SimType) 
 		}
 	}
 
-	minRankEntry := util.FindMinFunc(ranker.dataEntries, func(e *rankEntrySeparated) int { return e.bySim.GetOrPanic(simType).targetRank })
+	minRankEntry := util_collection.FindMinFunc(ranker.dataEntries, func(e *rankEntrySeparated) int { return e.bySim.GetOrPanic(simType).targetRank })
 	ranker.slackBottom[simType] = ranker.makeEntryRankExact(0.0, minRankEntry.bySim.GetOrPanic(simType))
-	maxRankEntry := util.FindMaxFunc(ranker.dataEntries, func(e *rankEntrySeparated) int { return e.bySim.GetOrPanic(simType).targetRank })
+	maxRankEntry := util_collection.FindMaxFunc(ranker.dataEntries, func(e *rankEntrySeparated) int { return e.bySim.GetOrPanic(simType).targetRank })
 	ranker.slackTop[simType] = ranker.makeEntryRankExact(1.0, maxRankEntry.bySim.GetOrPanic(simType))
 }
 

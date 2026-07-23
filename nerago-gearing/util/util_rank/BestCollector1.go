@@ -1,7 +1,7 @@
 package util_rank
 
 import (
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"sync"
 )
 
@@ -41,11 +41,11 @@ func (collect *BestCollector1[T]) GetBestPointerOrPanic() *T {
 	return collect.BestObject
 }
 
-func (collect *BestCollector1[T]) GetBestOptional() util.Optional[T] {
+func (collect *BestCollector1[T]) GetBestOptional() util_collection.Optional[T] {
 	if collect.hasBest {
-		return util.Optional_OfPointer(collect.BestObject)
+		return util_collection.Optional_OfPointer(collect.BestObject)
 	} else {
-		return util.Optional_Empty[T]()
+		return util_collection.Optional_Empty[T]()
 	}
 }
 

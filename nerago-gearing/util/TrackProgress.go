@@ -3,6 +3,7 @@ package util
 import (
 	"context"
 	"fmt"
+	"paladin_gearing_go/util/util_collection"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -160,7 +161,7 @@ type progressSnapshot struct {
 type trackProgressRoot struct {
 	lastPercent float64
 	startTime   time.Time
-	ringBuffer  RingBufferCache[progressSnapshot]
+	ringBuffer  util_collection.RingBufferCache[progressSnapshot]
 
 	activeLoopRunning  bool
 	activeLoopEndCheck context.Context
@@ -171,7 +172,7 @@ func trackProgressMakeRoot() *trackProgressRoot {
 	root := new(trackProgressRoot)
 	root.activeLoopEndCheck, root.activeLoopEndNow = context.WithCancel(context.Background())
 	root.startTime = time.Now()
-	root.ringBuffer = RingBufferCache_Create(10, progressSnapshot{root.startTime, 0.0})
+	root.ringBuffer = util_collection.RingBufferCache_Create(10, progressSnapshot{root.startTime, 0.0})
 	return root
 }
 

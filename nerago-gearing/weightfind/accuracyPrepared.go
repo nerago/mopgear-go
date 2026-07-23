@@ -3,6 +3,7 @@ package weightfind
 import (
 	"cmp"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/weightfind/simrank"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
@@ -10,8 +11,8 @@ import (
 
 type EvaluateAccuracyPrepared struct {
 	prepared       []*weight_types.AccuracyPreparedEntry
-	statRankRanges []*util.HiLoInt
-	hiLoPool       []util.HiLoInt
+	statRankRanges []*util_collection.HiLoInt
+	hiLoPool       []util_collection.HiLoInt
 }
 
 func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, simRatios *weight_types.SimPriorityBasic, simCalcMode int) {
@@ -19,7 +20,7 @@ func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, s
 		panic("mode not provided")
 	}
 
-	data := util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.AccuracyInfoPrePrepare {
+	data := util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.AccuracyInfoPrePrepare {
 		return &weight_types.AccuracyInfoPrePrepare{
 			DataSim:  &input.SimResult,
 			DataStat: &input.TotalStat,
@@ -29,8 +30,8 @@ func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, s
 
 	ea.calcSimRankAndPrepare(data, simRatios, simCalcMode)
 
-	ea.statRankRanges = make([]*util.HiLoInt, len(data))
-	ea.hiLoPool = make([]util.HiLoInt, len(data))
+	ea.statRankRanges = make([]*util_collection.HiLoInt, len(data))
+	ea.hiLoPool = make([]util_collection.HiLoInt, len(data))
 }
 
 func (ea *EvaluateAccuracyPrepared) calcSimRankAndPrepare(data []*weight_types.AccuracyInfoPrePrepare, simRatios *weight_types.SimPriorityBasic, simCalcMode int) {
@@ -44,11 +45,11 @@ func (ea *EvaluateAccuracyPrepared) calcSimRankAndPrepare(data []*weight_types.A
 
 func (ea *EvaluateAccuracyPrepared) Clone() *EvaluateAccuracyPrepared {
 	return &EvaluateAccuracyPrepared{
-		prepared: util.MapSliceAsNew_NoPointer(ea.prepared, func(x *weight_types.AccuracyPreparedEntry) *weight_types.AccuracyPreparedEntry {
+		prepared: util_collection.MapSliceAsNew_NoPointer(ea.prepared, func(x *weight_types.AccuracyPreparedEntry) *weight_types.AccuracyPreparedEntry {
 			return &weight_types.AccuracyPreparedEntry{SimRankRange: x.SimRankRange, Stats: x.Stats}
 		}),
-		statRankRanges: make([]*util.HiLoInt, len(ea.statRankRanges)),
-		hiLoPool:       make([]util.HiLoInt, len(ea.hiLoPool)),
+		statRankRanges: make([]*util_collection.HiLoInt, len(ea.statRankRanges)),
+		hiLoPool:       make([]util_collection.HiLoInt, len(ea.hiLoPool)),
 	}
 }
 

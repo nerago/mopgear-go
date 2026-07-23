@@ -5,6 +5,7 @@ import (
 	"math"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/weightfind/weight_types"
 )
 
@@ -43,7 +44,7 @@ func chooseStatScalingBasic(inputData []weight_types.WeightInput, scaleTarget fl
 func chooseScalingBasicScale[E enumWithName](inputData []weight_types.WeightInput, checkTypes []E, getValue func(*weight_types.WeightInput, E) float64, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[E]float64 {
 	scaleMap := make(map[E]float64)
 	for _, check := range checkTypes {
-		valueSeq := util.MapSliceAsSeq(inputData, func(x *weight_types.WeightInput) float64 {
+		valueSeq := util_collection.MapSliceAsSeq(inputData, func(x *weight_types.WeightInput) float64 {
 			return getValue(x, check)
 		})
 
@@ -109,10 +110,10 @@ func (so scaleAndOffset) Apply(value float64) float64 {
 	return (value + so.offset) * so.scale
 }
 
-func chooseSimUnfriendlyUnitScaleAndOffset(inputData []weight_types.WeightInput, simTypeList []stats.SimType) util.EnumMap[stats.SimType, scaleAndOffset] {
-	scaleMap := util.EnumMapMake[stats.SimType, scaleAndOffset](stats.SimTypeEnum)
+func chooseSimUnfriendlyUnitScaleAndOffset(inputData []weight_types.WeightInput, simTypeList []stats.SimType) util_collection.EnumMap[stats.SimType, scaleAndOffset] {
+	scaleMap := util_collection.EnumMapMake[stats.SimType, scaleAndOffset](stats.SimTypeEnum)
 	for _, simType := range simTypeList {
-		valueSeq := util.MapSliceAsSeq(inputData, func(x *weight_types.WeightInput) float64 {
+		valueSeq := util_collection.MapSliceAsSeq(inputData, func(x *weight_types.WeightInput) float64 {
 			return x.SimResult.Get(simType)
 		})
 

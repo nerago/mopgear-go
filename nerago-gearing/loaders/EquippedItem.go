@@ -4,7 +4,7 @@ import (
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"slices"
 )
 
@@ -33,7 +33,7 @@ func EquippedItem_FromFull(full *items.FullItem) EquippedItem {
 	}
 	return EquippedItem{
 		ItemId:                 full.ItemId(),
-		GemChoice:              util.MapSliceAsNew(full.GemChoice(), func(x *stats.GemInfo) uint32 { return x.Id }),
+		GemChoice:              util_collection.MapSliceAsNew(full.GemChoice(), func(x *stats.GemInfo) uint32 { return x.Id }),
 		EnchantChoice:          full.EnchantChoice(),
 		RandomSuffix:           full.RandomSuffix(),
 		UpgradeStepOrItemLevel: int32(full.UpgradeLevel()),

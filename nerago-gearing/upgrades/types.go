@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"strconv"
 )
 
@@ -63,11 +64,11 @@ type upgradeItemResult struct {
 	fullItem *items.FullItem
 	itemSet  *items.FullItemSet
 	setBonus uint8
-	factor   util.Optional[float64]
+	factor   util_collection.Optional[float64]
 }
 
 func upgradeItemResult_OfFailure(task *upgradeItemTask, fullItem *items.FullItem) upgradeItemResult {
-	return upgradeItemResult{upgradeItemTask: *task, success: false, fullItem: fullItem, factor: util.Optional_Empty[float64]()}
+	return upgradeItemResult{upgradeItemTask: *task, success: false, fullItem: fullItem, factor: util_collection.Optional_Empty[float64]()}
 }
 
 func (result upgradeItemResult) Equals(other upgradeItemResult) bool {

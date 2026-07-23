@@ -4,6 +4,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/simrank"
 	"paladin_gearing_go/weightfind/weight_types"
@@ -54,7 +55,7 @@ type rankInternalRun5 struct {
 	scaleStats map[stats.StatType]float64
 
 	weightColumns map[stats.StatType]util_highs.ColumnIndex
-	pairLinks     util.MapMapDiagonal[int, *rankPair5]
+	pairLinks     util_collection.MapMapDiagonal[int, *rankPair5]
 
 	objectiveInclude util_highs.ObjectiveIndex
 	objectiveWeight  util_highs.ObjectiveIndex
@@ -157,7 +158,7 @@ func (run *rankInternalRun5) createWeightColumns() {
 
 func (run *rankInternalRun5) supplyData(inputData []weight_types.WeightInput) {
 	run.scaleStats = chooseStatScalingBasic(inputData, c_rank5_scaleTarget, false, run.process.printer)
-	run.runData = util.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntry5 {
+	run.runData = util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntry5 {
 		return &rankEntry5{
 			RankStatWeightsCommon: weight_types.RankStatWeightsCommon{
 				Data: input,
