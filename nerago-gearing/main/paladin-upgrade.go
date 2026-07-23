@@ -129,14 +129,14 @@ func findUpgrades_Paladin() {
 	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
 	substituteEmptySlotOnly[items.Item_Ring] = 86957    // heroic bladed tempest ring
 
-	//heroicBossesConsider := []string{"SoO Immerseus", "SoO Norushen", "SoO ShaofPride", "SoO FallenProtectors", "SoO Galakras", "SoO Nazgrim"}
-	//finder := loaders.ItemFinder_HeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, heroicBossesConsider)
+	heroicBossesConsider := []string{"SoO Immerseus", "SoO Norushen", "SoO ShaofPride", "SoO FallenProtectors", "SoO Galakras", "SoO Nazgrim"}
+	finder := loaders.ItemFinder_HeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, heroicBossesConsider)
 
 	//finder := loaders.ItemFinder_SiegeStrengthPlateTank
 	//finder := loaders.ItemFinder_Ordos
 	//finder := loaders.ItemFinder_TimelessPlate
 	//finder := loaders.ItemFinder_BagsUpgraded
-	finder := loaders.SiegeClassGearSetMultiple(stats.Spec_PaladinProt, stats.Spec_PaladinRet)
+	//finder := loaders.SiegeClassGearSetMultiple(stats.Spec_PaladinProt, stats.Spec_PaladinRet)
 	//finder := func(_ stats.Difficulty) []loaders.ItemFoundRef { return []loaders.ItemFoundRef{{ItemId: 103735}, {ItemId: 103791}, {ItemId: 103872}}	}
 
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
@@ -144,7 +144,7 @@ func findUpgrades_Paladin() {
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
 				IncludeCelestial:   false,
 				IncludeNormal:      true,
-				IncludeHeroic:      false,
+				IncludeHeroic:      true,
 				IgnoredItems:       ignoredItems,
 				TargetUpgradeLevel: 2,
 			},

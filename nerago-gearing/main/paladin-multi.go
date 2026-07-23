@@ -129,6 +129,7 @@ var orgRaidDrops = []items.ItemId{
 	103915, // icy blood chest
 	105767, // hoodrych chest ordos
 	104417, // corruption-rotted gauntlets
+	104416, // chest congealed corruption heroic
 }
 var orgOneHandAndShield = []items.ItemId{
 	103826, // xifeng weapon
@@ -147,8 +148,8 @@ func PaladinMultiRun() {
 	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
 	//job.SetWriteBestToGearFiles()
 
-	var generalUpgrade items.UpgradeLevel = 2
-	var forceUpgrade items.UpgradeLevel = 2
+	var generalUpgrade items.UpgradeLevel = 0
+	var forceUpgrade items.UpgradeLevel = 0
 
 	ret := multi_types.MultiSetParam{
 		Label:                     "Ret",
@@ -338,7 +339,7 @@ func PaladinMultiRun() {
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 	blockHelmetsWithoutIndomitable(&protHeal)
 
-	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
+	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Stamina, 120))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
@@ -356,8 +357,8 @@ func PaladinMultiRun() {
 	//protMitigationWithSet.AddBagsExtra()
 	//protHeal.AddBagsExtra()
 
-	addExtrasFromFinder(loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic),
-		&ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
+	//addExtrasFromFinder(loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic),
+	//	&ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
 
 	job.AddSetParam(ret)
 	job.AddSetParam(protDps)
@@ -366,33 +367,35 @@ func PaladinMultiRun() {
 	job.AddSetParam(protMitigationWithSet)
 	job.AddSetParam(protHeal)
 
-	capacitanceSets := []multi_types.MultiSetParam{ret, protDps, protCompromise}
-	indomitableSets := []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet, protHeal}
-	job.AddItemDistinctUsageGroups(104590, false, capacitanceSets, indomitableSets)
-	job.AddItemDistinctUsageGroups(104647, false, capacitanceSets, indomitableSets)
-	job.AddItemDistinctUsageGroups(105807, false, capacitanceSets, indomitableSets)
-	job.AddItemDistinctUsageGroups(99379, false, capacitanceSets, indomitableSets)
-	job.AddItemDistinctUsageGroups(104492, false, capacitanceSets, indomitableSets)
+	// as part of BIS calcs try each meta as needed
+	//capacitanceSets := []multi_types.MultiSetParam{ret, protDps, protCompromise}
+	//indomitableSets := []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet, protHeal}
+	//job.AddItemDistinctUsageGroups(104590, false, capacitanceSets, indomitableSets)
+	//job.AddItemDistinctUsageGroups(104647, false, capacitanceSets, indomitableSets)
+	//job.AddItemDistinctUsageGroups(105807, false, capacitanceSets, indomitableSets)
+	//job.AddItemDistinctUsageGroups(99379, false, capacitanceSets, indomitableSets)
+	//job.AddItemDistinctUsageGroups(104492, false, capacitanceSets, indomitableSets)
 
 	//job.AddItemDistinctUsageGroups(103892, true, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet, protHeal})
 	//ret.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{104981, 86386})
 	//job.AddAlternateUpgradeChoices(
-	//	101947, // Elder Tortoiseshell Seal
-	//	103915, //Icy Blood Chestplate
-	//	104485, // Shield of Mockery
-	//	105122, // Asgorathian Blood Seal
 	//	104994, // Galakrond Control Band
 	//	104938, // Sorrowpath Signet
-	//	98986,  // Legplates of Winged Triumph
+	//	101947, // Elder Tortoiseshell Seal
+	//	99130,  // Shoulderguards of Winged Triumph
+	//	99139,  // Legplates of Winged Triumph
+	//	103915, // Icy Blood Chestplate
+	//	105122, // Asgorathian Blood Seal
 	//	105033, // Wolf-Rider Spurs
+	//	99028,  // Handguards of Winged Triumph celestial
 	//)
 	//job.AddAlternateUpgradeChoices(104417) //gloves corrupt
 
-	//job.VerifyNoExtraDuplicates()
-	job.RemoveAnyExtraDuplicates()
+	job.VerifyNoExtraDuplicates()
+	//job.RemoveAnyExtraDuplicates()
 
-	//job.RunNoPermutations_AllCommonAlternates(true)
-	job.RunForSolutionsPerPermute(3)
+	job.RunNoPermutations_AllCommonAlternates(true)
+	//job.RunForSolutionsPerPermute(4)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)
