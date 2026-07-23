@@ -9,7 +9,6 @@ import (
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/simulate"
-	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"slices"
 )
@@ -136,6 +135,7 @@ var orgOneHandAndShield = []items.ItemId{
 	103872, // bulwurk of fallen general
 	103871, // tower shield
 	104485, // shield of mockery
+	103972,
 }
 
 var legendCloaks = []items.ItemId{legendTankCloak, legendMeleeCloak}
@@ -339,7 +339,7 @@ func PaladinMultiRun() {
 	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
 	blockHelmetsWithoutIndomitable(&protHeal)
 
-	job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
+	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Stamina, 120))
 	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
 	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
@@ -394,8 +394,9 @@ func PaladinMultiRun() {
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()
 
-	job.RunNoPermutations_AllCommonAlternates(true)
-	//job.RunForSolutionsPerPermute(4)
+	//job.RunNoPermutations_AllCommonAlternates(true)
+	job.RunNoPermutations_BestOnly(true, false)
+	//job.RunForSolutionsPerPermute(1)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)

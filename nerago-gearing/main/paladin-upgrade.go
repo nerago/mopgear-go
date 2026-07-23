@@ -114,8 +114,10 @@ func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 func findUpgrades_Paladin() {
 	//simSizeBaseline := simulate.RunSize_VerySlow
 	//simSizeTopN := simulate.RunSize_VerySlow
-	simSizeBaseline := simulate.RunSize_Largish
-	simSizeTopN := simulate.RunSize_Largish
+	//simSizeBaseline := simulate.RunSize_Largish
+	//simSizeTopN := simulate.RunSize_Largish
+	simSizeBaseline := simulate.RunSize_Common
+	simSizeTopN := simulate.RunSize_Common
 
 	simSizePerItem := simulate.RunSize_QuickDirty
 	//simSizePerItem := simulate.RunSize_Common
@@ -129,8 +131,30 @@ func findUpgrades_Paladin() {
 	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
 	substituteEmptySlotOnly[items.Item_Ring] = 86957    // heroic bladed tempest ring
 
-	heroicBossesConsider := []string{"SoO Immerseus", "SoO Norushen", "SoO ShaofPride", "SoO FallenProtectors", "SoO Galakras", "SoO Nazgrim"}
-	finder := loaders.ItemFinder_HeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, heroicBossesConsider)
+	normalBossesConsider := []string{
+		//"SoO Immerseus",
+		//"SoO FallenProtectors",
+		//"SoO Norushen",
+		//"SoO ShaofPride",
+		"SoO Galakras",
+		"SoO IronJuggernaut",
+		"SoO DarkShaman",
+		"SoO Nazgrim",
+		"SoO Malkorok",
+		"SoO Spoils",
+		"SoO Thok",
+		"SoO Blackfuse",
+		"SoO Paragons",
+		"SoO Garrosh"}
+	heroicBossesConsider := []string{
+		//"SoO Immerseus",
+		//"SoO Norushen",
+		//"SoO ShaofPride",
+		//"SoO FallenProtectors",
+		"SoO Galakras",
+		"SoO Nazgrim"}
+	//finder := loaders.ItemFinder_HeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, heroicBossesConsider)
+	finder := loaders.ItemFinder_NormalHeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, normalBossesConsider, heroicBossesConsider)
 
 	//finder := loaders.ItemFinder_SiegeStrengthPlateTank
 	//finder := loaders.ItemFinder_Ordos
