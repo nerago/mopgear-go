@@ -45,7 +45,10 @@ func SingleGearSetExtendedMain(itemOptions *items.SolvableOptionsMap, model *Ext
 }
 
 func setupGearSetExtended(build *util_highs.LinearBuilder, model *ExtendedModel, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetExtended {
-	setup := singleGearSetExtended{singleGearSetShared: singleGearSetShared{build: build}}
+	setup := singleGearSetExtended{
+		singleGearSetShared: singleGearSetShared{build: build},
+		model:               model,
+	}
 
 	setup.prepareStats()
 	setup.prepareRequire(&model.require)
@@ -58,9 +61,8 @@ func setupGearSetExtended(build *util_highs.LinearBuilder, model *ExtendedModel,
 	setup.finishItemsCommon(itemOptions)
 	setup.finishStats(&model.require)
 
-	weight := &model.weight
-	setup.calcSimValues(weight)
-	setup.calcCombinedSimRating(weight)
+	setup.calcSimValues()
+	setup.calcCombinedSimRating()
 	setup.addMainOutputVariable(scaleOutputRating)
 	setup.multiplyRatingsByActiveSetCombo(&model.gearModel.SetBonus, setup.combinedRatingVar)
 	setup.addSetNeededCounts(model.gearModel.SetBonusRequired)
@@ -79,6 +81,8 @@ func setupGearSetExtended(build *util_highs.LinearBuilder, model *ExtendedModel,
 
 type singleGearSetExtended struct {
 	singleGearSetShared
+
+	model *ExtendedModel
 
 	requireRows          map[stats.StatType]*util_highs.ConstraintRow // constrains values for the hit/expertise/etc of each item
 	statTotalRows        map[stats.StatType]*util_highs.ConstraintRow
@@ -133,8 +137,7 @@ func (setup *singleGearSetExtended) finishStats(require *StatRequiredExtended) {
 	}
 
 	// constrain: total sum of each stat for input to weights
-	for _, statType := range stats.StatType_List {
-		column := setup.statTotalColumns[statType]
+	for statType, column := range setup.statTotalColumns {
 		row := setup.statTotalRows[statType]
 		row.Add(column.columnIndex, -1)
 		row.Build(setup.build, 0, 0)
@@ -151,7 +154,8 @@ func (setup *singleGearSetExtended) finishStats(require *StatRequiredExtended) {
 // (statA*weight1A + statB*weight1B + statC*weight1C)+offset = simValue/scales
 // statA*weight1A + statB*weight1B + statC*weight1C = simValue/scales - offset
 // statA*weight1A + statB*weight1B + statC*weight1C - simValue/scales = -offset
-func (setup *singleGearSetExtended) calcSimValues(weight *weight_types.Weight2Extended) {
+func (setup *singleGearSetExtended) calcSimValues() {
+	weight := setup.model.weight
 	// calculate each sim value from stats
 	setup.simValueTotalColumns = make(map[stats.SimType]*columnInfo)
 	for simType, nestedWeights := range weight.SeqBySimNestedPairs() {
@@ -174,7 +178,7 @@ func (setup *singleGearSetExtended) calcSimValues(weight *weight_types.Weight2Ex
 	}
 }
 
-func (setup *singleGearSetExtended) calcCombinedSimRating(weight *weight_types.Weight2Extended) {
+func (setup *singleGearSetExtended) calcCombinedSimRating() {
 	// weighted sum of each sim value
 	combinedRatingColumn := columnInfo{entryType: entry_sum_rating}
 	combinedRatingColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.C_PlusInf, &combinedRatingColumn)

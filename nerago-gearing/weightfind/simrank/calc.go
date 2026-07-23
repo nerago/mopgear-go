@@ -8,6 +8,7 @@ import (
 )
 
 // guarantees that each ranking number is used in range, even given duplicate numbers
+// consider obsolete mostly, use sort/ranking methods on main slices
 func calculateRankingRanges[T any](highGood bool, inputData []T, toScore func(T) float64) iter.Seq2[T, util.HiLoInt] {
 	if len(inputData) == 0 {
 		return func(yield func(T, util.HiLoInt) bool) {}

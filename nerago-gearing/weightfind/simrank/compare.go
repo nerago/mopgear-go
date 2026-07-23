@@ -63,23 +63,23 @@ func sortAccuracyWithDeviation(simType stats.SimType, inputData []*weight_types.
 	switch simType {
 	case stats.Sim_DPS:
 		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
-			return deviationCompareSims(a.DataSim, b.DataSim, stats.Sim_DPS)
+			return compareSimsStatisticalByType(a.DataSim, b.DataSim, stats.Sim_DPS)
 		})
 	case stats.Sim_TPS:
 		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
-			return deviationCompareSims(a.DataSim, b.DataSim, stats.Sim_TPS)
+			return compareSimsStatisticalByType(a.DataSim, b.DataSim, stats.Sim_TPS)
 		})
 	case stats.Sim_DTPS:
 		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
-			return deviationCompareSims(b.DataSim, a.DataSim, stats.Sim_DTPS)
+			return compareSimsStatisticalByType(b.DataSim, a.DataSim, stats.Sim_DTPS)
 		})
 	case stats.Sim_HPS:
 		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
-			return deviationCompareSims(a.DataSim, b.DataSim, stats.Sim_HPS)
+			return compareSimsStatisticalByType(a.DataSim, b.DataSim, stats.Sim_HPS)
 		})
 	case stats.Sim_TMI:
 		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
-			return deviationCompareSims(b.DataSim, a.DataSim, stats.Sim_TMI)
+			return compareSimsStatisticalByType(b.DataSim, a.DataSim, stats.Sim_TMI)
 		})
 	case stats.Sim_DEATH:
 		// death data never has detail
@@ -91,23 +91,23 @@ func sortAccuracyPrepareWithDeviation(simType stats.SimType, inputData []*weight
 	switch simType {
 	case stats.Sim_DPS:
 		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoPrePrepare) int {
-			return deviationCompareSims(a.DataSim, b.DataSim, stats.Sim_DPS)
+			return compareSimsStatisticalByType(a.DataSim, b.DataSim, stats.Sim_DPS)
 		})
 	case stats.Sim_TPS:
 		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoPrePrepare) int {
-			return deviationCompareSims(a.DataSim, b.DataSim, stats.Sim_TPS)
+			return compareSimsStatisticalByType(a.DataSim, b.DataSim, stats.Sim_TPS)
 		})
 	case stats.Sim_DTPS:
 		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoPrePrepare) int {
-			return deviationCompareSims(b.DataSim, a.DataSim, stats.Sim_DTPS)
+			return compareSimsStatisticalByType(b.DataSim, a.DataSim, stats.Sim_DTPS)
 		})
 	case stats.Sim_HPS:
 		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoPrePrepare) int {
-			return deviationCompareSims(a.DataSim, b.DataSim, stats.Sim_HPS)
+			return compareSimsStatisticalByType(a.DataSim, b.DataSim, stats.Sim_HPS)
 		})
 	case stats.Sim_TMI:
 		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoPrePrepare) int {
-			return deviationCompareSims(b.DataSim, a.DataSim, stats.Sim_TMI)
+			return compareSimsStatisticalByType(b.DataSim, a.DataSim, stats.Sim_TMI)
 		})
 	case stats.Sim_DEATH:
 		// death data never has detail
@@ -119,23 +119,23 @@ func sortGenericWithDeviation[T weight_types.IRankEntry](simType stats.SimType, 
 	switch simType {
 	case stats.Sim_DPS:
 		slices.SortFunc(inputData, func(a, b T) int {
-			return deviationCompareSims(a.GetSimData(), b.GetSimData(), stats.Sim_DPS)
+			return compareSimsStatisticalByType(a.GetSimData(), b.GetSimData(), stats.Sim_DPS)
 		})
 	case stats.Sim_TPS:
 		slices.SortFunc(inputData, func(a, b T) int {
-			return deviationCompareSims(b.GetSimData(), a.GetSimData(), stats.Sim_TPS)
+			return compareSimsStatisticalByType(b.GetSimData(), a.GetSimData(), stats.Sim_TPS)
 		})
 	case stats.Sim_DTPS:
 		slices.SortFunc(inputData, func(a, b T) int {
-			return deviationCompareSims(b.GetSimData(), a.GetSimData(), stats.Sim_DTPS)
+			return compareSimsStatisticalByType(b.GetSimData(), a.GetSimData(), stats.Sim_DTPS)
 		})
 	case stats.Sim_HPS:
 		slices.SortFunc(inputData, func(a, b T) int {
-			return deviationCompareSims(a.GetSimData(), b.GetSimData(), stats.Sim_HPS)
+			return compareSimsStatisticalByType(a.GetSimData(), b.GetSimData(), stats.Sim_HPS)
 		})
 	case stats.Sim_TMI:
 		slices.SortFunc(inputData, func(a, b T) int {
-			return deviationCompareSims(b.GetSimData(), a.GetSimData(), stats.Sim_TMI)
+			return compareSimsStatisticalByType(b.GetSimData(), a.GetSimData(), stats.Sim_TMI)
 		})
 	case stats.Sim_DEATH:
 		slices.SortFunc(inputData, func(a, b T) int {

@@ -369,6 +369,18 @@ func (future *FutureCancellable[T]) ForwardSuccessfulResultToCallback(apply func
 	}()
 }
 
+func (future *FutureCancellable[T]) ForwardResultToRelevantCallback(onSuccess func(T), onFail func()) {
+	future.verifyCanWait()
+	go func() {
+		value, hasValue := future.resultFromChannel()
+		if hasValue {
+			onSuccess(value)
+		} else {
+			onFail()
+		}
+	}()
+}
+
 func (*FutureCancellable[T]) channelKeyPress() chan any {
 	channelForKey := make(chan any)
 	go func() {

@@ -63,12 +63,6 @@ func rankOrderBasic[T weight_types.IRankEntryFlatSingle](inputData []T) {
 	arrayRankToSetSimBasicSimRank(inputData)
 }
 
-func arrayRankToSetSimBasicSimRank[T weight_types.IRankEntryFlatSingle](inputData []T) {
-	for rank := range inputData {
-		inputData[rank].SetSimRank(rank)
-	}
-}
-
 func RankingWeightsPrepareBasicRankings[T weight_types.IRankEntryFlatSingle](simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []T) {
 	simScoringBasic(simList, priority, inputData)
 	rankOrderBasic(inputData)

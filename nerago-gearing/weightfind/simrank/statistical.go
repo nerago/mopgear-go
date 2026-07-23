@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"math"
 	"paladin_gearing_go/stats"
+	"paladin_gearing_go/util"
 )
 
 // const c_accuracy_statistical_critical_value = 1.6449 // 1.6449 corresponds to 10% false equals cases
@@ -27,22 +28,33 @@ const c_accuracy_statistical_critical_value = 1.4
 //zScore := (averageA - averageB) / math.Sqrt((stdDevA*stdDevA)/iterationsA+(stdDevB*stdDevB)/iterationsB)
 
 // values are more sensible and as expected without the iterations division which may be redundant anyway since we usually have the same sample size
-func deviationCompareSims(a *stats.SimData, b *stats.SimData, simType stats.SimType) int {
+func compareSimsStatisticalByType(a *stats.SimData, b *stats.SimData, simType stats.SimType) int {
 	averageA, _, _, stdDevA, hasDetailA := a.GetDetailed(simType)
 	averageB, _, _, stdDevB, hasDetailB := b.GetDetailed(simType)
-	iterationsA, iterationsB := float64(a.SimIterations), float64(b.SimIterations)
+	//iterationsA, iterationsB := float64(a.SimIterations), float64(b.SimIterations)
 
-	if !hasDetailA || !hasDetailB || iterationsA == 0 || iterationsB == 0 {
+	if !hasDetailA || !hasDetailB {
 		panic("missing sim detail")
 	}
 
-	zScore := (averageA - averageB) / math.Sqrt((stdDevA*stdDevA)+(stdDevB*stdDevB))
+	if equalSimsDetailStatistical(averageA, stdDevA, averageB, stdDevB) {
+		return 0
+	} else {
+		return cmp.Compare(averageA, averageB)
+	}
+}
 
+func equalSimsDetailStatistical(averageA, stdDevA, averageB, stdDevB float64) bool {
+	if stdDevA == 0 || stdDevB == 0 {
+		return util.FloatsApproxEquals(averageA, averageB)
+	}
+
+	zScore := (averageA - averageB) / math.Sqrt((stdDevA*stdDevA)+(stdDevB*stdDevB))
 	if math.Abs(zScore) > c_accuracy_statistical_critical_value {
 		// exceed z score, these sims are different
-		return cmp.Compare(averageA, averageB)
+		return false
 	} else {
 		// null hypothesis accepted, these sim results are equal
-		return 0
+		return true
 	}
 }

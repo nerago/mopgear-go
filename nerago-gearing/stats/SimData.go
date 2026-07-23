@@ -190,6 +190,14 @@ func (sim *SimData) GetDetailed2(types SimType) *SimDataDetail {
 	}
 }
 
+func (sim *SimData) GetStdDevOrZero(simType SimType) float64 {
+	if sim.Detail != nil {
+		return sim.Detail[simType].StdDev
+	} else {
+		return 0
+	}
+}
+
 func (sim *SimData) Seq() iter.Seq2[SimType, float64] {
 	return func(yield func(SimType, float64) bool) {
 		if !yield(Sim_DPS, sim.Values[Sim_DPS]) {
