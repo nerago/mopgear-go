@@ -91,7 +91,7 @@ func core(printer *util.PrintRecorder) {
 	//
 	//statWeightsBasic(printer)
 	//statWeightsGrid(printer)
-	//statWeightsFitting2(printer)
+	statWeightsFitting(printer)
 	//statWeightsFormula(printer)
 	//statWeightsRanking(printer)
 	//statWeightsGridIntoRanking(printer)
@@ -101,7 +101,7 @@ func core(printer *util.PrintRecorder) {
 
 	//statWeights_updateAll()
 
-	PaladinMultiRun()
+	//PaladinMultiRun()
 
 	//findUpgrades_Paladin()
 }

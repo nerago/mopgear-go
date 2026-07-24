@@ -135,7 +135,7 @@ var orgOneHandAndShield = []items.ItemId{
 	103872, // bulwurk of fallen general
 	103871, // tower shield
 	104485, // shield of mockery
-	103972,
+	103972, // new sword
 }
 
 var legendCloaks = []items.ItemId{legendTankCloak, legendMeleeCloak}
