@@ -125,3 +125,98 @@ func (bs *BitSet) SeqIsSet() iter.Seq[uint32] {
 		}
 	}
 }
+
+func (bs *BitSet) SeqIsSetBetween(minIndex, maxIndex uint32) iter.Seq[uint32] {
+	minElementNum := minIndex >> 5
+	maxElementNum := maxIndex >> 5
+	minBitNum := minIndex & 0x1f
+	maxBitNum := maxIndex & 0x1f
+	return func(yield func(uint32) bool) {
+		if minElementNum == maxElementNum {
+			value := (*bs)[minElementNum]
+			value >>= minBitNum
+			for b := minBitNum; b <= maxBitNum; b++ {
+				if value == 0 {
+					break
+				} else if (value & 0x1) != 0 {
+					index := minElementNum*32 + b
+					if !yield(index) {
+						return
+					}
+				}
+				value >>= 1
+			}
+		} else {
+			valueMin := (*bs)[minElementNum]
+			valueMin >>= minBitNum
+			for b := minBitNum; b <= 31; b++ {
+				if valueMin == 0 {
+					break
+				} else if (valueMin & 0x1) != 0 {
+					index := minElementNum*32 + b
+					if !yield(index) {
+						return
+					}
+				}
+				valueMin >>= 1
+			}
+
+			for i := minElementNum + 1; i < maxElementNum; i++ {
+				value := (*bs)[i]
+				for b := range 32 {
+					if value == 0 {
+						break
+					} else if (value & 0x1) != 0 {
+						index := i*32 + uint32(b)
+						if !yield(index) {
+							return
+						}
+					}
+					value >>= 1
+				}
+			}
+
+			valueMax := (*bs)[maxElementNum]
+			for b := uint32(0); b <= maxBitNum; b++ {
+				if valueMax == 0 {
+					break
+				} else if (valueMax & 0x1) != 0 {
+					index := minElementNum*32 + b
+					if !yield(index) {
+						return
+					}
+				}
+				valueMax >>= 1
+			}
+		}
+	}
+}
+
+func (bs *BitSet) SeqIsSetSkipScan(startIndex, skip uint32) iter.Seq[uint32] {
+	return func(yield func(uint32) bool) {
+		for index := startIndex; index < uint32(len(*bs)); index += skip {
+			i := index >> 5
+			b := index & 0x1f
+			element := (*bs)[i]
+
+			shifted := element >> b
+			if shifted&0x1 != 0 {
+				if !yield(index) {
+					return
+				}
+			}
+
+			b += skip
+			for b < 32 {
+				shifted >>= skip
+				index += skip
+
+				if !yield(index) {
+					return
+				}
+
+				b += skip
+			}
+		}
+	}
+}

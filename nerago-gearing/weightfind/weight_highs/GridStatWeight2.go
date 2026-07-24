@@ -250,7 +250,7 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 	for _, statType := range grid2.statTypes {
 		grid2.printer.Printf("%10s >>>>>\n", statType.Name())
 
-		for simType, detailWeightCol := range grid2.detailedWeights.SeqInnerWithKey1Value(statType) {
+		for simType, detailWeightCol := range grid2.detailedWeights.SeqKey2ValueWithKey1(statType) {
 			weight := solution.ColValues[detailWeightCol]
 			usableWeight := weight / grid2.scaleSims[simType]
 

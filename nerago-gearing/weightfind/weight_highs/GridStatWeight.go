@@ -186,12 +186,13 @@ func (grid *GridStatWeightProcess) unitValuesToCalcDetailedRatings() {
 	// detailweight_dps_haste * unit_dps_str - detailweight_dps_str * unit_dps_haste + offset = 0  (allow small offset to optimise on)
 
 	baseStat := grid.requiredStats[0]
-	for simType, lookupStat := range grid.unitStatValues.SeqGroupsKey2Lookup() {
-		unitValueBaseSeq := lookupStat(baseStat)
+
+	for _, simType := range grid.simTypes {
+		unitValueBaseSeq := grid.unitStatValues.GetAsSeq(baseStat, simType)
 		detailWeightBase := grid.detailedWeights.GetOrPanic(baseStat, simType)
 		for _, thisStatType := range grid.requiredStats {
 			if thisStatType != baseStat {
-				thisUnitValueSeq := lookupStat(thisStatType)
+				thisUnitValueSeq := grid.unitStatValues.GetAsSeq(thisStatType, simType)
 				grid.unitValuesCalcForGroup(simType, thisStatType, unitValueBaseSeq, thisUnitValueSeq, detailWeightBase)
 			}
 		}
@@ -243,7 +244,7 @@ func (grid *GridStatWeightProcess) unitValueCombinationAddToModel(baseUnitSample
 func (grid *GridStatWeightProcess) calcTotalRatings() {
 	for _, statType := range grid.requiredStats {
 		statFinalRow := util_highs.ConstraintRow{}
-		for _, detailColumn := range grid.detailedWeights.SeqInnerWithKey1Value(statType) {
+		for _, detailColumn := range grid.detailedWeights.SeqKey2ValueWithKey1(statType) {
 			statFinalRow.Add(detailColumn, 1)
 		}
 

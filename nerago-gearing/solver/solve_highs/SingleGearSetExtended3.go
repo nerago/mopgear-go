@@ -165,7 +165,7 @@ func (setup *singleGearSetExtended3) calcSimValueForType(simType stats.SimType, 
 		contributeScoreSimStat := setup.makeContributeScoreSimStatColumn(simType, statType)
 
 		totalRatingSoFar := 0.0
-		for entry := range weight.StatWeights.ValuesForKeyAsSeq(simType, statType) {
+		for entry := range weight.StatWeights.GetAsSeq(simType, statType) {
 			// essentially if stat total fits into this range then copy a score to contributeScoreSimStat
 			if entry.StatRange.Maximum < math.MaxUint32 {
 				setup.calcScoreFromEntryIfStatFits(entry, contributeScoreSimStat, simType, statType, statTotalColumn, totalRatingSoFar)

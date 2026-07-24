@@ -116,7 +116,7 @@ func (grid *GridStatWeightProcess1C) setupWeightVars() {
 func (grid *GridStatWeightProcess1C) finalWeightVars() {
 	for _, statType := range grid.requiredStats {
 		statFinalRow := util_highs.ConstraintRow{}
-		for simType, detailColumn := range grid.detailedWeights.SeqInnerWithKey1Value(statType) {
+		for simType, detailColumn := range grid.detailedWeights.SeqKey2ValueWithKey1(statType) {
 			scale := grid.scales[simType]
 			var coeff float64
 			if grid.RESCALE == 0 {
@@ -192,7 +192,7 @@ func (grid *GridStatWeightProcess1C) prepareSample(statType stats.StatType, high
 
 func (grid *GridStatWeightProcess1C) chooseScalesBySim() {
 	for _, simType := range grid.simTypes {
-		scale := chooseScale(grid.unitStatValues.ValuesForKey2AsSeq(simType), c_grid1c_scaleTarget, false)
+		scale := chooseScale(grid.unitStatValues.SeqValuesWithKey2(simType), c_grid1c_scaleTarget, false)
 		grid.scales[simType] = scale
 	}
 }
@@ -213,11 +213,11 @@ func (grid *GridStatWeightProcess1C) removeOutliers() {
 
 func (grid *GridStatWeightProcess1C) unitValuesToCalcDetailedRatings() {
 	baseStat := grid.requiredStats[0]
-	for simType, lookupStat := range grid.unitStatValues.SeqGroupsKey2Lookup() {
-		unitValueBaseSeq := lookupStat(baseStat)
+	for _, simType := range grid.simTypes {
+		unitValueBaseSeq := grid.unitStatValues.GetAsSeq(baseStat, simType)
 		for _, thisStatType := range grid.requiredStats {
 			if thisStatType != baseStat {
-				thisUnitValueSeq := lookupStat(thisStatType)
+				thisUnitValueSeq := grid.unitStatValues.GetAsSeq(thisStatType, simType)
 				grid.unitValuesCalcForGroup(simType, thisStatType, unitValueBaseSeq, thisUnitValueSeq)
 			}
 		}

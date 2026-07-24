@@ -187,7 +187,7 @@ func (ranker *RankingSeparatedWeights) setupScoreColumn(detail *rankDetailSepara
 	detail.scoreColumn = ranker.build.CreateColumnGeneral(highs.Continuous, c_rank_sep_scoreMin, c_rank_sep_scoreMax, util_highs.DebugText(debugStr))
 
 	scoreRow := util_highs.ConstraintRow{Debug: "scoreRow-" + debugStr}
-	for statType, weightColumn := range ranker.detailedWeightColumns.SeqInnerWithKey2Value(simType) {
+	for statType, weightColumn := range ranker.detailedWeightColumns.SeqKey1ValueWithKey2(simType) {
 		statValue := entry.data.TotalStat.GetFloat(statType)
 		scoreRow.Add(weightColumn, statValue)
 	}
@@ -239,7 +239,7 @@ func (ranker *RankingSeparatedWeights) extractAndReportSolution(solution *highs.
 	ranker.build.DebugPrintColumns(solution, ranker.printer)
 
 	statWeightResult := weight_types.Weight2Extended_Make(ranker.requiredStats, ranker.requiredSims)
-	for entry := range ranker.detailedWeightColumns.SeqWithKeys() {
+	for entry := range ranker.detailedWeightColumns.SeqKey1Key2ValueEntries() {
 		weightColumn := entry.Value
 		weightValue := solution.ColValues[weightColumn]
 		statWeightResult.PutWeight(entry.Key1, entry.Key2, weightValue)

@@ -234,7 +234,7 @@ func (form *FormulaStatWeightProcess) extractAndReportSolution(solution *highs.S
 func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solution) weight_types.Weight2Extended {
 	// extract and report on detail weights
 	weightExtended := weight_types.Weight2Extended_Make(form.requiredStats, form.requiredSims)
-	for entry := range form.detailedWeightColumns.SeqWithKeys() {
+	for entry := range form.detailedWeightColumns.SeqKey1Key2ValueEntries() {
 		statType := entry.Key1
 		simType := entry.Key2
 		column := entry.Value

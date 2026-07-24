@@ -1,5 +1,7 @@
 package stats
 
+import "paladin_gearing_go/util/util_collection"
+
 type StatType uint8
 
 const (
@@ -23,6 +25,8 @@ var StatType_List = []StatType{
 	Stat_Strength, Stat_Agility, Stat_Stamina, Stat_Intellect,
 	Stat_Spirit, Stat_Hit, Stat_Crit, Stat_Haste,
 	Stat_Expertise, Stat_Dodge, Stat_Parry, Stat_Mastery}
+
+var StatTypeEnum = util_collection.EnumTypeMake[StatType](StatType_List)
 
 func (stat StatType) Name() string {
 	switch stat {

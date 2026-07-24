@@ -567,10 +567,10 @@ func (mat *constraintMatrixBuilder) addRow(entries []indexAndValue, lowerBound f
 }
 
 func (mat *constraintMatrixBuilder) deleteRow(rowIndex int) {
-	mat.entries = util_collection.DeleteIndexInPlace(mat.entries, rowIndex)
-	mat.lowerBound = util_collection.DeleteIndexInPlace(mat.lowerBound, rowIndex)
-	mat.upperBound = util_collection.DeleteIndexInPlace(mat.upperBound, rowIndex)
-	mat.debug = util_collection.DeleteIndexInPlace(mat.debug, rowIndex)
+	util_collection.DeleteIndexInPlace(&mat.entries, rowIndex)
+	util_collection.DeleteIndexInPlace(&mat.lowerBound, rowIndex)
+	util_collection.DeleteIndexInPlace(&mat.upperBound, rowIndex)
+	util_collection.DeleteIndexInPlace(&mat.debug, rowIndex)
 }
 
 func (mat *constraintMatrixBuilder) deleteRowRange(firstDelete, lastDelete int) {

@@ -48,7 +48,7 @@ func (co *CommonOptions) ApplyToSlicesByItemRef(itemRef items.ItemRef, apply fun
 }
 
 func (co *CommonOptions) ApplyToSlicesByItemId(itemId items.ItemId, apply func(options []items.FullItem) []items.FullItem) {
-	for itemRef := range co.idToRef.SeqInnerWithKey1Value(itemId) {
+	for itemRef := range co.idToRef.SeqKey2ValueWithKey1(itemId) {
 		co.ApplyToSlicesByItemRef(itemRef, apply)
 	}
 }

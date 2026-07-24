@@ -133,12 +133,12 @@ func (basic *BasicStatWeightProcess) unitValuesToCalcDetailedRatings() {
 	// detailweight_dps_haste * unit_dps_str - detailweight_dps_str * unit_dps_haste + offset = 0  (allow small offset to optimise on)
 
 	baseStat := basic.requiredStats[0]
-	for simType, lookupStat := range basic.unitStatValues.SeqGroupsKey2Lookup() {
-		unitValueBase := lookupStat(baseStat)
+	for _, simType := range basic.requiredSims {
+		unitValueBase := basic.unitStatValues.GetOrPanic(baseStat, simType)
 		detailWeightBase := basic.detailedWeights.GetOrPanic(baseStat, simType)
 		for _, thisStatType := range basic.requiredStats {
 			if thisStatType != baseStat {
-				thisUnitValue := lookupStat(thisStatType)
+				thisUnitValue := basic.unitStatValues.GetOrPanic(thisStatType, simType)
 				thisDetailWeight := basic.detailedWeights.GetOrPanic(thisStatType, simType)
 
 				basic.unitValuesToCalcDetailedRatings_single(unitValueBase, detailWeightBase, thisUnitValue, thisDetailWeight, simType, thisStatType)
@@ -168,7 +168,7 @@ func (basic *BasicStatWeightProcess) unitValuesToCalcDetailedRatings_single(unit
 func (basic *BasicStatWeightProcess) calcTotalRatings() {
 	for _, statType := range basic.requiredStats {
 		statFinalRow := util_highs.ConstraintRow{}
-		for _, detailColumn := range basic.detailedWeights.SeqInnerWithKey1Value(statType) {
+		for _, detailColumn := range basic.detailedWeights.SeqKey2ValueWithKey1(statType) {
 			statFinalRow.Add(detailColumn, 1)
 		}
 

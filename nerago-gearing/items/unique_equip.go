@@ -91,7 +91,7 @@ func UniqueEquipSetsInOptions(itemOptions *FullOptionsMap) [][]ItemId {
 			foundMore := false
 
 			for name := range namesFound {
-				for id := range groupedByName.SeqInnerWithKey1Value(name) {
+				for id := range groupedByName.SeqKey2ValueWithKey1(name) {
 					if !idsFound[id] {
 						idsFound[id] = true
 						foundMore = true
@@ -100,7 +100,7 @@ func UniqueEquipSetsInOptions(itemOptions *FullOptionsMap) [][]ItemId {
 			}
 
 			for id := range idsFound {
-				for name := range groupedById.SeqInnerWithKey1Value(id) {
+				for name := range groupedById.SeqKey2ValueWithKey1(id) {
 					if !namesFound[name] {
 						namesFound[name] = true
 						foundMore = true

@@ -120,6 +120,7 @@ func (em *EnumMapMap[J, K, V]) HasKey2(key2 K) bool {
 		}
 		index += em.enumType2.NumValues()
 	}
+	// TODO SeqIsSetSkipScan
 	return false
 }
 
@@ -165,6 +166,7 @@ func (em *EnumMapMap[J, K, V]) DeleteAllForKey2(key2 K) {
 		em.content[index] = nilValue
 		index += em.enumType2.NumValues()
 	}
+	// TODO SeqIsSetSkipScan
 }
 
 func (em *EnumMapMap[J, K, V]) Apply(key1 J, key2 K, apply func(oldValue V) V) {
@@ -182,16 +184,6 @@ func (em *EnumMapMap[J, K, V]) FirstKey1() J {
 		panic("no key")
 	}
 
-	//minIndex := em.keyIndex(em.enumType1.First(), em.enumType2.First())
-	//maxIndex := em.keyIndex(em.enumType1.First(), em.enumType2.Last())
-	//for key1 := range em.enumType1.NumValues() {
-	//	if em.isSet.IsAnySetInRange(minIndex, maxIndex) {
-	//		return J(key1)
-	//	}
-	//	minIndex += em.enumType2.NumValues()
-	//	maxIndex += em.enumType2.NumValues()
-	//}
-	//panic("no key")
 }
 
 func (em *EnumMapMap[J, K, V]) FirstKey2() K {
@@ -205,71 +197,161 @@ func (em *EnumMapMap[J, K, V]) FirstKey2() K {
 }
 
 func (em *EnumMapMap[J, K, V]) SeqKey1() iter.Seq[J] {
-	//TODO implement me
-	panic("implement me")
+	return func(yield func(J) bool) {
+		minIndex := em.keyToIndex(em.enumType1.First(), em.enumType2.First())
+		maxIndex := em.keyToIndex(em.enumType1.First(), em.enumType2.Last())
+		for key1 := range em.enumType1.NumValues() {
+			if em.isSet.IsAnySetInRange(minIndex, maxIndex) {
+				if !yield(J(key1)) {
+					return
+				}
+			}
+			minIndex += em.enumType2.NumValues()
+			maxIndex += em.enumType2.NumValues()
+		}
+	}
 }
 
 func (em *EnumMapMap[J, K, V]) SeqKey2() iter.Seq[K] {
-	//TODO implement me
-	panic("implement me")
+	keyIsSet := make([]bool, em.enumType2.NumValues())
+	for index := range em.isSet.SeqIsSet() {
+		_, key2 := em.indexToKeys(index)
+		keyIsSet[key2] = true
+	}
+	return func(yield func(K) bool) {
+		for k, b := range keyIsSet {
+			if b {
+				if !yield(K(k)) {
+					return
+				}
+			}
+		}
+	}
 }
 
 func (em *EnumMapMap[J, K, V]) SeqValues() iter.Seq[V] {
-	//TODO implement me
-	panic("implement me")
+	return func(yield func(V) bool) {
+		for index := range em.isSet.SeqIsSet() {
+			value := em.content[index]
+			if !yield(value) {
+				return
+			}
+		}
+	}
 }
 
-func (em *EnumMapMap[J, K, V]) SeqWithKeys() iter.Seq[MapMapEntry[J, K, V]] {
-	//TODO implement me
-	panic("implement me")
+func (em *EnumMapMap[J, K, V]) SeqKey1Key2ValueEntries() iter.Seq[MapMapEntry[J, K, V]] {
+	return func(yield func(MapMapEntry[J, K, V]) bool) {
+		for index := range em.isSet.SeqIsSet() {
+			value := em.content[index]
+			key1, key2 := em.indexToKeys(index)
+			if !yield(MapMapEntry[J, K, V]{Key1: key1, Key2: key2, Value: value}) {
+				return
+			}
+		}
+	}
 }
 
-func (em *EnumMapMap[J, K, V]) SeqWithKeysOtherOrder() iter.Seq[MapMapEntry[J, K, V]] {
-	//TODO implement me
-	panic("implement me")
+func (em *EnumMapMap[J, K, V]) SeqKey2Key1ValueEntries() iter.Seq[MapMapEntry[J, K, V]] {
+	return func(yield func(MapMapEntry[J, K, V]) bool) {
+		for key2 := range em.enumType2.NumValues() {
+			index := em.keyToIndex(em.enumType1.First(), K(key2))
+			// TODO SeqIsSetSkipScan/SeqIsSetInRange
+			for key1 := range em.enumType1.NumValues() {
+				if em.isSet.IsSet(index) {
+					value := em.content[index]
+					if !yield(MapMapEntry[J, K, V]{Key1: J(key1), Key2: K(key2), Value: value}) {
+						return
+					}
+				}
+			}
+			index += em.enumType2.NumValues()
+		}
+	}
+}
+
+func (em *EnumMapMap[J, K, V]) SeqKey1Key2() iter.Seq2[J, iter.Seq[K]] {
+	return func(yield func(J, iter.Seq[K]) bool) {
+		for key1 := range em.enumType1.NumValues() {
+			key1J := J(key1)
+			if !yield(key1J, func(yieldInner func(K) bool) {
+				minIndex := em.keyToIndex(key1J, em.enumType2.First())
+				maxIndex := em.keyToIndex(key1J, em.enumType2.Last())
+				for index := range em.isSet.SeqIsSetBetween(minIndex, maxIndex) {
+					_, key2 := em.indexToKeys(index)
+					if !yieldInner(key2) {
+						return
+					}
+				}
+			}) {
+				return
+			}
+		}
+	}
+}
+
+func (em *EnumMapMap[J, K, V]) SeqKey2Key1() iter.Seq2[K, iter.Seq[J]] {
+	return func(yield func(K, iter.Seq[J]) bool) {
+		for key2 := range em.enumType2.NumValues() {
+			if !yield(K(key2), func(yieldInner func(J) bool) {
+				startIndex := em.keyToIndex(em.enumType1.First(), K(key2))
+				for index := range em.isSet.SeqIsSetSkipScan(startIndex, em.enumType2.NumValues()) {
+					key1, _ := em.indexToKeys(index)
+					if !yieldInner(key1) {
+						return
+					}
+				}
+			}) {
+				return
+			}
+		}
+	}
 }
 
 func (em *EnumMapMap[J, K, V]) ForeachWithKeys(apply func(key1 J, key2 K, value V)) {
+	for index := range em.isSet.SeqIsSet() {
+		value := em.content[index]
+		key1, key2 := em.indexToKeys(index)
+		apply(key1, key2, value)
+	}
+}
+
+func (em *EnumMapMap[J, K, V]) SeqKey2ValueWithKey1(key1 J) iter.Seq2[K, V] {
+	return func(yield func(K, V) bool) {
+		minIndex := em.keyToIndex(key1, em.enumType2.First())
+		maxIndex := em.keyToIndex(key1, em.enumType2.Last())
+		for index := range em.isSet.SeqIsSetBetween(minIndex, maxIndex) {
+			_, key2 := em.indexToKeys(index)
+			value := em.content[index]
+			if !yield(key2, value) {
+				return
+			}
+		}
+	}
+}
+
+func (em *EnumMapMap[J, K, V]) SeqKey1ValueWithKey2(key2 K) iter.Seq2[J, V] {
+	return func(yield func(J, V) bool) {
+		index := em.keyToIndex(em.enumType1.First(), key2)
+		for key1 := range em.enumType1.NumValues() {
+			if em.isSet.IsSet(index) {
+				value := em.content[index]
+				if !yield(J(key1), value) {
+					return
+				}
+			}
+			index += em.enumType2.NumValues()
+			// TODO SeqIsSetSkipScan
+		}
+	}
+}
+
+func (em *EnumMapMap[J, K, V]) SeqKey1NestedKey2Value() iter.Seq2[J, iter.Seq2[K, V]] {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (em *EnumMapMap[J, K, V]) SeqInnerWithKey1Value(key1 J) iter.Seq2[K, V] {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (em *EnumMapMap[J, K, V]) SeqInnerWithKey2Value(key2 K) iter.Seq2[J, V] {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (em *EnumMapMap[J, K, V]) SeqGroupsKey1Lookup() iter.Seq2[J, func(K) V] {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (em *EnumMapMap[J, K, V]) SeqGroupsKey2Lookup() iter.Seq2[K, func(J) V] {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (em *EnumMapMap[J, K, V]) SeqGroupsKey1NestedKeyValue() iter.Seq2[J, iter.Seq2[K, V]] {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (em *EnumMapMap[J, K, V]) SeqGroupsKey2NestedKeyValue() iter.Seq2[K, iter.Seq2[J, V]] {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (em *EnumMapMap[J, K, V]) SeqKey1Key2Nested() iter.Seq2[J, iter.Seq[K]] {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (em *EnumMapMap[J, K, V]) SeqKey2Key1Nested() iter.Seq2[K, iter.Seq[J]] {
+func (em *EnumMapMap[J, K, V]) SeqKey2NestedKey1Value() iter.Seq2[K, iter.Seq2[J, V]] {
 	//TODO implement me
 	panic("implement me")
 }

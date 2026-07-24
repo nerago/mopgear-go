@@ -38,7 +38,6 @@ type EnumMap[E ~uint8, V any] struct {
 	content []V
 	isSet   []bool
 	len     int
-	//enumType EnumType[E]
 }
 
 func EnumMapMake[E ~uint8, V any](enumType EnumType[E]) EnumMap[E, V] {
@@ -49,7 +48,6 @@ func EnumMapMake[E ~uint8, V any](enumType EnumType[E]) EnumMap[E, V] {
 		make([]V, enumType.NumValues()),
 		make([]bool, enumType.NumValues()),
 		0,
-		//enumType,
 	}
 }
 
@@ -62,7 +60,6 @@ func (em *EnumMap[E, V]) Clone() *EnumMap[E, V] {
 		slices.Clone(em.content),
 		slices.Clone(em.isSet),
 		em.len,
-		//em.enumType,
 	}
 }
 
@@ -128,7 +125,7 @@ func (em *EnumMap[E, V]) SeqKeyValue() iter.Seq2[E, V] {
 	}
 }
 
-func (em *EnumMap[E, V]) SeqValue() iter.Seq[V] {
+func (em *EnumMap[E, V]) SeqValues() iter.Seq[V] {
 	return func(yield func(V) bool) {
 		for i, isSet := range em.isSet {
 			if isSet {

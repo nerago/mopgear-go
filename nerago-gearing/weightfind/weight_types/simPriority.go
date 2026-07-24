@@ -63,7 +63,7 @@ func (sr *SimPriorityBasic) Equals(other *SimPriorityBasic) bool {
 
 func (sr *SimPriorityBasic) ScaleForTotalSum(targetTotal float64) *SimPriorityBasic {
 	currentTotal := 0.0
-	for value := range sr.content.SeqValue() {
+	for value := range sr.content.SeqValues() {
 		currentTotal += value
 	}
 	scale := targetTotal / currentTotal
@@ -80,7 +80,7 @@ func (sr *SimPriorityBasic) ScaleForTotalSum(targetTotal float64) *SimPriorityBa
 
 func (sr *SimPriorityBasic) ValidateRatioAddsToOne() {
 	currentTotal := 0.0
-	for value := range sr.content.SeqValue() {
+	for value := range sr.content.SeqValues() {
 		if value < 0 {
 			panic("negative sim ratio not supported")
 		}

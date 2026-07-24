@@ -107,7 +107,7 @@ func (grid *GridStatWeightProcess1B) setupWeightVars() {
 func (grid *GridStatWeightProcess1B) finalWeightVars() {
 	for _, statType := range grid.requiredStats {
 		statFinalRow := util_highs.ConstraintRow{}
-		for simType, detailColumn := range grid.detailedWeights.SeqInnerWithKey1Value(statType) {
+		for simType, detailColumn := range grid.detailedWeights.SeqKey2ValueWithKey1(statType) {
 			_ = simType
 			// scale := grid.scales.GetOrPanic(statType, simType)
 			statFinalRow.Add(detailColumn, 1) // 1/scale[100] is too small, =scale[100] is too big. but all harmless when fixed like that
@@ -182,7 +182,7 @@ func (grid *GridStatWeightProcess1B) chooseScalesBySim() {
 		hasNeg, hasPos, hasZero := false, false, false
 		total := 0.0
 		count := 0
-		for valueRaw := range grid.unitStatValues.ValuesForKey2AsSeq(simType) {
+		for valueRaw := range grid.unitStatValues.SeqValuesWithKey2(simType) {
 			if util.FloatEqualsZero(valueRaw) {
 				minNegValue = 0
 				minPosValue = 0
@@ -295,7 +295,7 @@ func (grid *GridStatWeightProcess1B) removeOutliers() {
 }
 
 func (grid *GridStatWeightProcess1B) chooseScalesEachCombo() {
-	for group := range grid.unitStatValues.SeqGroupsKeysNestedValueSeq() {
+	for group := range grid.unitStatValues.SeqKey1Key2ValueSeqEntries() {
 		if grid.SCALEMODE == 3 {
 			scale := chooseScale(group.ValueSeq, c_grid1b_scaleTarget, false)
 			grid.scales.Put(group.Key1, group.Key2, scale)
@@ -343,11 +343,11 @@ func (grid *GridStatWeightProcess1B) chooseScalesEachCombo() {
 
 func (grid *GridStatWeightProcess1B) unitValuesToCalcDetailedRatings() {
 	baseStat := grid.requiredStats[0]
-	for simType, lookupStat := range grid.unitStatValues.SeqGroupsKey2Lookup() {
-		unitValueBaseSeq := lookupStat(baseStat)
+	for _, simType := range grid.simTypes {
+		unitValueBaseSeq := grid.unitStatValues.GetAsSeq(baseStat, simType)
 		for _, thisStatType := range grid.requiredStats {
 			if thisStatType != baseStat {
-				thisUnitValueSeq := lookupStat(thisStatType)
+				thisUnitValueSeq := grid.unitStatValues.GetAsSeq(thisStatType, simType)
 				grid.unitValuesCalcForGroup(simType, thisStatType, unitValueBaseSeq, thisUnitValueSeq)
 			}
 		}

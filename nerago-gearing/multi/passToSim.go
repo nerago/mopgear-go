@@ -298,7 +298,7 @@ func (job *MultiSetJob) suggestResultFromRankings(results []simulateMultiResult)
 	for paramIndex := range job.params {
 		simTypeList := job.params[paramIndex].Model.SimPriority.SimTypes()
 		for _, simType := range simTypeList {
-			rankInputArrays.MapInternalSlice(paramIndex, simType, func(rankValues []float64) []float64 {
+			rankInputArrays.MapInternalSliceOrPanic(paramIndex, simType, func(rankValues []float64) []float64 {
 				if simType.IsHighGood() {
 					slices.SortFunc(rankValues, func(a, b float64) int { return cmp.Compare(a, b) })
 				} else {
@@ -319,7 +319,7 @@ func (job *MultiSetJob) suggestResultFromRankings(results []simulateMultiResult)
 			for _, simType := range simTypeList {
 				simRatio := job.params[paramIndex].Model.SimPriority.GetOrPanic(simType)
 				value := simStats.Get(simType)
-				rankArray, _ := rankInputArrays.ValuesForKeyAsSlice(paramIndex, simType)
+				rankArray, _ := rankInputArrays.GetAsSliceInternal(paramIndex, simType)
 				valueRank := slices.Index(rankArray, value)
 				sumOfRanks += float64(valueRank) * simRatio * ratingPercent
 			}

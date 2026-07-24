@@ -42,7 +42,7 @@ func (wer *Weight3ExtendedRanged) AddDetailWeight(simType stats.SimType, statTyp
 		EstimationQuality: estimationQuality,
 	})
 
-	wer.StatWeights.MapInternalSlice(simType, statType, func(entries []Weight3ExtendedStatEntry) []Weight3ExtendedStatEntry {
+	wer.StatWeights.MapInternalSliceOrPanic(simType, statType, func(entries []Weight3ExtendedStatEntry) []Weight3ExtendedStatEntry {
 		slices.SortStableFunc(entries, func(a, b Weight3ExtendedStatEntry) int {
 			return cmp.Compare(a.StatRange.Minimum, b.StatRange.Minimum)
 		})
@@ -60,7 +60,7 @@ func (wer *Weight3ExtendedRanged) FinishAndValidate() {
 
 func (wer *Weight3ExtendedRanged) ConvertToWeight2() *Weight2Extended {
 	weight2 := Weight2Extended_Make(wer.StatList, wer.SimList)
-	for entry := range wer.StatWeights.SeqGroupsKeysNestedValueSeq() {
+	for entry := range wer.StatWeights.SeqKey1Key2ValueSeqEntries() {
 		bestValue := chooseBest(entry.ValueSeq)
 		weight2.PutWeight(entry.Key2, entry.Key1, bestValue)
 	}

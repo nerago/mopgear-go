@@ -57,11 +57,11 @@ func (we *Weight2Extended) GetWeightOrPanic(statType stats.StatType, simType sta
 }
 
 func (we *Weight2Extended) SeqBySimThenStat() iter.Seq[util_collection.MapMapEntry[stats.StatType, stats.SimType, float64]] {
-	return we.DetailedWeights.SeqWithKeysOtherOrder()
+	return we.DetailedWeights.SeqKey2Key1ValueEntries()
 }
 
 func (we *Weight2Extended) SeqBySimNestedPairs() iter.Seq2[stats.SimType, iter.Seq2[stats.StatType, float64]] {
-	return we.DetailedWeights.SeqGroupsKey2NestedKeyValue()
+	return we.DetailedWeights.SeqKey2NestedKey1Value()
 }
 
 func (we *Weight2Extended) GetSimPriority() *SimPriorityExtended {
@@ -83,7 +83,7 @@ func (we *Weight2Extended) CalcStatScoreForInput(input *WeightInput) float64 {
 
 func (we *Weight2Extended) CalcStatScore(statBlock *stats.StatBlock) float64 {
 	totalSum := 0.0
-	for simType, nested := range we.DetailedWeights.SeqGroupsKey2NestedKeyValue() {
+	for simType, nested := range we.DetailedWeights.SeqKey2NestedKey1Value() {
 		subTotal := scoreForSim2(nested, statBlock, we.SimPriority.GetOrPanic(simType))
 		totalSum += subTotal
 	}
@@ -144,7 +144,7 @@ func (we *Weight2Extended) ConvertToWeight1() Weight1Basic {
 
 	for _, statType := range we.StatList {
 		sumForStat := 0.0
-		for simType, detailWeight := range we.DetailedWeights.SeqInnerWithKey1Value(statType) {
+		for simType, detailWeight := range we.DetailedWeights.SeqKey2ValueWithKey1(statType) {
 			simEntry := we.SimPriority.GetOrPanic(simType)
 			componentValue := detailWeight * simEntry.RangingScale * simEntry.RatioScale
 			sumForStat += componentValue
@@ -173,7 +173,7 @@ func (we *Weight2Extended) AppendString(sb *util.StringBuild2) {
 		sb.WriteString(",offset=")
 		sb.WriteFloatScientific64(priority.RangingOffset)
 		sb.WriteRune(',')
-		for statType, value := range we.DetailedWeights.SeqInnerWithKey2Value(simType) {
+		for statType, value := range we.DetailedWeights.SeqKey1ValueWithKey2(simType) {
 			sb.WriteString(statType.Name())
 			sb.WriteRune('=')
 			sb.WriteFloatScientific64(value)
