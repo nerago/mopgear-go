@@ -32,7 +32,7 @@ type FormulaStatWeightProcess2 struct {
 	objectiveInclude      util_highs.ObjectiveIndex
 
 	scaleSims             util_collection.EnumMap[stats.SimType, scaleAndOffset]
-	scaleStats            map[stats.StatType]float64
+	scaleStats            util_collection.EnumMap[stats.StatType, float64]
 	detailedWeightColumns util_collection.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
 	offsetColumns         map[stats.SimType]util_highs.ColumnIndex
 

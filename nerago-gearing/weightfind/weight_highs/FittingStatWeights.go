@@ -15,17 +15,30 @@ import (
 )
 
 const (
+	c_fitting_each_threadCount = 8
 
-	// STR example: 30554
-	c_statRangeHigh = 50000
+	c_fitting_statScaledRangeHigh    = 1.0
+	c_fitting_simScaledRangeHigh     = 1.0
+	c_fitting_statUnscaledHigh       = 50000
+	c_fitting_statScaledUnequalDelta = c_fitting_statScaledRangeHigh / float64(c_fitting_statUnscaledHigh)
 
-	c_scaleBigSim = 1000
-	// TPS example:  1957667
-	c_simRangeHigh = 5000000 / c_scaleBigSim // we try to scale values like above towards nicer range
+	c_fitting_outputDifference        = 1
+	c_fitting_outputFittingPerInclude = -1
 
-	c_outputFittingDifference = 1
-	c_outputFittingPerInclude = -1
+	c_fitting_minimum_stat_coverage       = 100
+	c_fitting_permitted_overlap_fix       = 5
+	c_fitting_number_nice_number_interval = 5
 )
+
+type fittingSample struct {
+	statValue float64
+	simResult float64
+}
+
+type statRangeFloat struct {
+	Minimum float64
+	Maximum float64
+}
 
 // so we want to define a line of best fit for each stat/sim
 // but also only for certain ranges of each stat, others excluded
@@ -46,76 +59,215 @@ type FittingEachStatWeightProcess struct {
 	printer *util.PrintRecorder
 	timeout int
 
-	lazyMode      bool
-	inputData     []weight_types.WeightInput
-	requiredStats []stats.StatType
-	requiredSims  []stats.SimType
+	onlyComputeSingleSegmentEach bool
+	inputData                    []weight_types.WeightInput
+	requiredStats                []stats.StatType
+	requiredSims                 []stats.SimType
+
+	scaleSims  util_collection.EnumMap[stats.SimType, scaleAndOffset]
+	scaleStats util_collection.EnumMap[stats.StatType, float64]
 
 	each util_collection.MapMap[stats.StatType, stats.SimType, *fittingEachFields]
 }
 
 type fittingEachFields struct {
-	statType  stats.StatType
-	simType   stats.SimType
-	process   FittingSingleStatSegmentsProcess
-	resultMap map[weight_types.StatRange]FittingSingleStatResult
+	statType    stats.StatType
+	simType     stats.SimType
+	process     FittingSingleStatSegmentsProcess
+	resultSlice []FittingInterimResult
 }
 
-func (fiteach *FittingEachStatWeightProcess) Init(printer *util.PrintRecorder, timeout int) {
-	fiteach.printer = printer
-	fiteach.timeout = timeout
+func (fe *FittingEachStatWeightProcess) Init(printer *util.PrintRecorder, timeout int) {
+	fe.printer = printer
+	fe.timeout = timeout
 }
 
-func (fiteach *FittingEachStatWeightProcess) SetRequiredStats(requiredStats []stats.StatType, requiredSims []stats.SimType) {
-	fiteach.requiredStats = requiredStats
-	fiteach.requiredSims = requiredSims
+func (fe *FittingEachStatWeightProcess) SetRequiredStats(requiredStats []stats.StatType, requiredSims []stats.SimType) {
+	fe.requiredStats = requiredStats
+	fe.requiredSims = requiredSims
 }
 
-func (fiteach *FittingEachStatWeightProcess) SetLazyMode(lazy bool) {
-	fiteach.lazyMode = lazy
+// if just converting directly to weights1
+func (fe *FittingEachStatWeightProcess) SetOnlyComputeSingleSegmentEach(lazy bool) {
+	fe.onlyComputeSingleSegmentEach = lazy
 }
 
-func (fiteach *FittingEachStatWeightProcess) SupplyDataFromStandard(inputData []weight_types.WeightInput) {
-	fiteach.inputData = inputData
+func (fe *FittingEachStatWeightProcess) SupplyData(inputData []weight_types.WeightInput) {
+	fe.inputData = inputData
 }
 
-func (fiteach *FittingEachStatWeightProcess) RunDetailedResults(stopwatch *util.Stopwatch, cancel util_async.CancelSignal) weight_types.Weight3ExtendedRanged {
-outer:
-	for _, statType := range fiteach.requiredStats {
-		for _, simType := range fiteach.requiredSims {
-			// TODO holding printer?
-			fields := fittingEachFields{statType: statType, simType: simType}
-			fields.process.Init(fiteach.printer, statType, simType, fiteach.timeout)
-			fields.process.SetLazyMode(fiteach.lazyMode)
-			fields.process.SupplyDataFromStandard(fiteach.inputData)
-			fiteach.each.Put(statType, simType, &fields)
+func (fe *FittingEachStatWeightProcess) Run(stopwatch *util.Stopwatch, cancel util_async.CancelSignal) weight_types.Weight3ExtendedRanged {
+	fe.chooseScaling()
+	fe.launchEachNested(cancel)
+	weights := fe.buildResult()
+	fe.calcMetrics(stopwatch)
+	return *weights
+}
 
-			if cancel.ShouldFinish() {
-				break outer
-			}
-		}
-	}
-
-	channelEach := util_async.SeqToChannel_Cancellable(fiteach.each.SeqValues(), cancel)
-	util_async.ForEach_Channel(10, channelEach, func(fields *fittingEachFields) {
-		fields.resultMap = fields.process.Run(cancel)
-	})
-
-	weights := weight_types.Weight3ExtendedRanged_Make(fiteach.requiredStats, fiteach.requiredSims)
-	fiteach.each.ForeachWithKeys(func(statType stats.StatType, simType stats.SimType, value *fittingEachFields) {
-		for statRange, detail := range value.resultMap {
-			weights.AddDetailWeight(simType, statType, statRange, detail.LineSlope, detail.LineOffset, detail.IncludePercent)
-		}
-	})
-	weights.FinishAndValidate()
-
-	for fields := range fiteach.each.SeqValues() {
-		for _, detail := range fields.resultMap {
+func (fe *FittingEachStatWeightProcess) calcMetrics(stopwatch *util.Stopwatch) {
+	for fields := range fe.each.SeqValues() {
+		for _, detail := range fields.resultSlice {
 			stopwatch.AddElapsedFrom(&detail.StopwatchSolver)
 		}
 	}
+}
 
-	return *weights
+func (fe *FittingEachStatWeightProcess) buildResult() *weight_types.Weight3ExtendedRanged {
+	weights := weight_types.Weight3ExtendedRanged_Make(fe.requiredStats, fe.requiredSims)
+	fe.each.ForeachWithKeys(func(statType stats.StatType, simType stats.SimType, value *fittingEachFields) {
+		for _, detail := range value.resultSlice {
+			weights.AddDetailWeight(simType, statType, detail.StatRange, detail.LineSlope, detail.LineOffset, detail.IncludePercent)
+		}
+	})
+	weights.FinishAndValidate()
+	return weights
+}
+
+func (fe *FittingEachStatWeightProcess) launchEachNested(cancel util_async.CancelSignal) {
+	for _, statType := range fe.requiredStats {
+		for _, simType := range fe.requiredSims {
+			printer := util.PrintRecorder_HoldAll()
+			fields := fittingEachFields{statType: statType, simType: simType}
+			fields.process.Init(printer, fe.timeout)
+			fields.process.SetOnlyComputeSingleSegment(fe.onlyComputeSingleSegmentEach)
+			fields.process.SupplyData(fe.prepareSamples(statType, simType))
+			fe.each.Put(statType, simType, &fields)
+		}
+	}
+
+	channelEach := util_async.SeqToChannel_Cancellable(fe.each.SeqValues(), cancel)
+	util_async.ForEach_Channel(c_fitting_each_threadCount, channelEach, func(fields *fittingEachFields) {
+		initialResult := fields.process.Run(cancel)
+		fe.rescaleAndCleanup(initialResult, fields)
+	})
+}
+
+func (fe *FittingEachStatWeightProcess) chooseScaling() {
+	fe.scaleStats = chooseStatScalingBasic(fe.inputData, c_fitting_statScaledRangeHigh, true, fe.printer)
+	fe.scaleSims = chooseSimUnfriendlyUnitScaleAndOffset(fe.inputData, fe.requiredSims)
+}
+
+func (fe *FittingEachStatWeightProcess) prepareSamples(statType stats.StatType, simType stats.SimType) []fittingSample {
+	scaleStat := fe.scaleStats.GetOrPanic(statType)
+	scaleSim := fe.scaleSims.GetOrPanic(simType)
+
+	samples := make([]fittingSample, len(fe.inputData))
+	for i := range fe.inputData {
+		statValue := fe.inputData[i].TotalStat.GetFloat(statType)
+		simResult := fe.inputData[i].SimResult.Get(simType)
+		samples[i] = fittingSample{
+			statValue: statValue * scaleStat,
+			simResult: scaleSim.Apply(simResult),
+		}
+	}
+	return samples
+}
+
+// inner process ran: simScaled = lineSlopeInternal*statScaled + lineOffsetInternal
+// for the sake of Weight3 we want to retain the simScaling, but undo the stats
+//
+//	want to end up with: simScaled = lineSlopeUsable * stat + lineOffsetUsable
+//
+// expanding on the first one: simScaled = lineSlopeInternal*(stat*scaleStat) + lineOffsetInternal
+// when stat=0: simScaled = lineOffsetInternal. not sure if it's a true equality, but doesn't seem to need scale at least
+// to fix the stat scale lineSlopeUsable * stat = lineSlopeInternal * (stat * scaleStat)
+//
+//	lineSlopeUsable = lineSlopeInternal * scaleStat
+func (fe *FittingEachStatWeightProcess) rescaleAndCleanup(initialMap map[statRangeFloat]FittingSingleStatResult, fields *fittingEachFields) {
+	fields.resultSlice = fe.convertAndScaleResult(initialMap, fields.statType)
+	fields.resultSlice = fe.cleanupRanges(fields.resultSlice)
+}
+
+func (fe *FittingEachStatWeightProcess) convertAndScaleResult(initialMap map[statRangeFloat]FittingSingleStatResult, statType stats.StatType) []FittingInterimResult {
+	scaleStat := fe.scaleStats.GetOrPanic(statType)
+
+	resultSlice := make([]FittingInterimResult, 0, len(initialMap))
+	for rangeScaled, resultInitial := range initialMap {
+		interim := FittingInterimResult{
+			LineSlope:  resultInitial.LineSlope * scaleStat,
+			LineOffset: resultInitial.LineOffset,
+			StatRange: weight_types.StatRange{
+				Minimum: uint32(math.Round(rangeScaled.Minimum / scaleStat)),
+				Maximum: uint32(math.Round(rangeScaled.Maximum / scaleStat)),
+			},
+			IncludeCount:    resultInitial.IncludeCount,
+			IncludePercent:  resultInitial.IncludePercent,
+			StopwatchSolver: resultInitial.StopwatchSolver,
+		}
+		resultSlice = append(resultSlice, interim)
+	}
+	return resultSlice
+}
+
+func (fe *FittingEachStatWeightProcess) cleanupRanges(results []FittingInterimResult) []FittingInterimResult {
+	slices.SortFunc(results, func(a, b FittingInterimResult) int {
+		return cmp.Or(cmp.Compare(a.StatRange.Minimum, b.StatRange.Minimum), cmp.Compare(a.StatRange.Maximum, b.StatRange.Maximum))
+	})
+
+	results[0].StatRange.Minimum = 0
+	results[len(results)-1].StatRange.Maximum = math.MaxUint32
+
+	for i := range len(results) - 1 {
+		if fe.updateBreakpoint(&results[i], &results[i+1]) {
+			util_collection.DeleteIndexInPlace(&results, i+1)
+		}
+	}
+
+	return results
+}
+
+func (fe *FittingEachStatWeightProcess) updateBreakpoint(one, two *FittingInterimResult) (deleteSecond bool) {
+	if one.StatRange.RangeSize() < c_fitting_minimum_stat_coverage || two.StatRange.RangeSize() < c_fitting_minimum_stat_coverage {
+		// if covers less than 100 stat numbers, merge them
+		if one.StatRange.RangeSize() < two.StatRange.RangeSize() {
+			one.LineSlope = two.LineSlope
+			one.LineOffset = two.LineOffset
+		}
+		one.StatRange.Maximum = two.StatRange.Maximum
+		one.IncludePercent += two.IncludePercent
+		one.IncludeCount += two.IncludeCount
+		one.StopwatchSolver.AddElapsedFrom(&two.StopwatchSolver)
+		return true
+	} else if one.StatRange.Maximum >= two.StatRange.Minimum && one.StatRange.Maximum <= two.StatRange.Minimum+c_fitting_permitted_overlap_fix {
+		// if maximum has small overlap into next minimum, fix
+		newMinimum := fe.chooseNicerNumber(one.StatRange.Maximum-1, two.StatRange.Minimum+1)
+		two.StatRange.Minimum = newMinimum
+		one.StatRange.Maximum = newMinimum - 1
+	} else if one.StatRange.Overlap(two.StatRange) {
+		// more overlap than threshold in previous, fail
+		// shouldn't happen, anything more than exact equality due to scaling and rounding shouldn't either
+		panic("overlapping ranges created")
+	} else if one.StatRange.Maximum < two.StatRange.Minimum-1 {
+		// part of range got dropped earlier
+		newMinimum := fe.chooseNicerNumber(one.StatRange.Maximum-1, two.StatRange.Minimum+1)
+		two.StatRange.Minimum = newMinimum
+		one.StatRange.Maximum = newMinimum - 1
+	} else if one.StatRange.Minimum < one.StatRange.Maximum && one.StatRange.Maximum+1 == two.StatRange.Minimum && two.StatRange.Minimum < two.StatRange.Maximum {
+		// passes all expected conditions
+	} else {
+		panic("internal logic error in updateBreakpoint")
+	}
+	return false
+}
+
+func (fe *FittingEachStatWeightProcess) chooseNicerNumber(lo uint32, hi uint32) uint32 {
+	if lo > hi {
+		lo, hi = hi, lo
+	}
+
+	if hi-lo > c_fitting_number_nice_number_interval {
+		mid := lo + (hi-lo)/2
+		mid -= mid % c_fitting_number_nice_number_interval
+		return mid
+	} else {
+		for v := lo; v <= hi; v++ {
+			if v%c_fitting_number_nice_number_interval == 0 {
+				return v
+			}
+		}
+		mid := lo + (hi-lo)/2
+		return mid
+	}
 }
 
 ////////////////////////////////////////////////////////
@@ -123,128 +275,114 @@ outer:
 type FittingSingleStatSegmentsProcess struct {
 	printer *util.PrintRecorder
 
-	timeout  int
-	lazyMode bool
+	timeout                  int
+	onlyComputeSingleSegment bool
 
-	inputDataOriginal       []*weight_types.WeightInput
-	inputDataRemainingParts map[weight_types.StatRange][]*weight_types.WeightInput
-	stat                    stats.StatType
-	sim                     stats.SimType
+	inputSamplesOriginal       []fittingSample
+	inputSamplesRemainingParts map[statRangeFloat][]fittingSample
 
-	segments map[weight_types.StatRange]FittingSingleStatResult
+	foundSegments map[statRangeFloat]FittingSingleStatResult
 }
 
-func (fitseg *FittingSingleStatSegmentsProcess) Init(printer *util.PrintRecorder, stat stats.StatType, sim stats.SimType, timeout int) {
-	fitseg.printer = printer
-	fitseg.segments = make(map[weight_types.StatRange]FittingSingleStatResult)
-	fitseg.inputDataRemainingParts = make(map[weight_types.StatRange][]*weight_types.WeightInput)
-	fitseg.stat = stat
-	fitseg.sim = sim
-	fitseg.timeout = timeout
+func (fg *FittingSingleStatSegmentsProcess) Init(printer *util.PrintRecorder, timeout int) {
+	fg.printer = printer
+	fg.timeout = timeout
+	fg.foundSegments = make(map[statRangeFloat]FittingSingleStatResult)
+	fg.inputSamplesRemainingParts = make(map[statRangeFloat][]fittingSample)
 }
 
-func (fitseg *FittingSingleStatSegmentsProcess) SetLazyMode(lazy bool) {
-	fitseg.lazyMode = lazy
+func (fg *FittingSingleStatSegmentsProcess) SetOnlyComputeSingleSegment(lazy bool) {
+	fg.onlyComputeSingleSegment = lazy
 }
 
-func (fitseg *FittingSingleStatSegmentsProcess) SupplyDataFromStandard(inputData []weight_types.WeightInput) {
-	fitseg.inputDataOriginal = util_collection.MapSliceAsNew(inputData, func(w *weight_types.WeightInput) *weight_types.WeightInput { return w })
+func (fg *FittingSingleStatSegmentsProcess) SupplyData(inputData []fittingSample) {
+	fg.inputSamplesOriginal = slices.Clone(inputData)
 }
 
-func (fitseg *FittingSingleStatSegmentsProcess) Run(cancel util_async.CancelSignal) map[weight_types.StatRange]FittingSingleStatResult {
-	// fitseg.runFitAll()
-
-	fitseg.runInitial(cancel)
-	if fitseg.lazyMode {
-		return fitseg.segments
+func (fg *FittingSingleStatSegmentsProcess) Run(cancel util_async.CancelSignal) map[statRangeFloat]FittingSingleStatResult {
+	fg.runInitial(cancel)
+	if fg.onlyComputeSingleSegment {
+		return fg.foundSegments
 	}
 
-	overallSize := len(fitseg.inputDataOriginal)
-	for len(fitseg.inputDataRemainingParts) > 0 {
-		nextRange, nextData := util_collection.MapFirstEntry(fitseg.inputDataRemainingParts)
-		delete(fitseg.inputDataRemainingParts, nextRange)
+	overallSize := len(fg.inputSamplesOriginal)
+	for len(fg.inputSamplesRemainingParts) > 0 {
+		nextRange, nextData := util_collection.MapFirstEntry(fg.inputSamplesRemainingParts)
+		delete(fg.inputSamplesRemainingParts, nextRange)
 
-		ratioOfOverall := percentRatio(len(nextData), overallSize)
+		ratioOfOverall := float64(len(nextData)) / float64(overallSize)
 		if ratioOfOverall < 0.02 || len(nextData) < 3 {
 			// drop it
+			// TODO consider adding this range to an adjacent if exists
 		} else if ratioOfOverall < 0.05 || len(nextData) < 8 {
-			fitseg.runNextSegment(nextData, nextRange, 1, cancel)
+			fg.runNextSegment(nextData, nextRange, 1, cancel)
 		} else if ratioOfOverall < 0.15 || len(nextData) < 20 {
-			fitseg.runNextSegment(nextData, nextRange, 0.8, cancel)
+			fg.runNextSegment(nextData, nextRange, 0.8, cancel)
 		} else if ratioOfOverall < 0.30 {
-			fitseg.runNextSegment(nextData, nextRange, 0.4, cancel)
+			fg.runNextSegment(nextData, nextRange, 0.4, cancel)
 		} else {
-			fitseg.runNextSegment(nextData, nextRange, 0.2, cancel)
+			fg.runNextSegment(nextData, nextRange, 0.2, cancel)
 		}
+
+		// TODO possible to merge adjacent
 	}
 
-	return fitseg.segments
+	return fg.foundSegments
 }
 
-func percentRatio(value, total int) float64 {
-	return float64(value) / float64(total)
-}
-
-func (fitseg *FittingSingleStatSegmentsProcess) runFitAll() {
+func (fg *FittingSingleStatSegmentsProcess) runInitial(cancel util_async.CancelSignal) {
 	fit := FittingSingleStatWeightProcess{}
-	fit.Init(fitseg.printer, fitseg.timeout)
-	fit.SetMinimumIncludeRate(1)
-	fit.SupplyDataFromStandard(fitseg.inputDataOriginal, fitseg.stat, fitseg.sim)
-	weightOptionalFuture := fit.Run()
-	weightOptional := weightOptionalFuture.WaitForResultAsOptional()
-	if weight, hasWeight := weightOptional.GetWithFlag(); hasWeight {
-		statRange := weight_types.StatRange{weight.Minimum, weight.Maximum}
-		fitseg.segments[statRange] = weight
-	}
-}
-
-func (fitseg *FittingSingleStatSegmentsProcess) runInitial(cancel util_async.CancelSignal) {
-	fit := FittingSingleStatWeightProcess{}
-	fit.Init(fitseg.printer, fitseg.timeout)
+	fit.Init(fg.printer, fg.timeout)
 	fit.SetMinimumIncludeRate(0.3)
-	fit.SupplyDataFromStandard(fitseg.inputDataOriginal, fitseg.stat, fitseg.sim)
+	fit.SupplySamples(fg.inputSamplesOriginal)
+
 	weightOptionalFuture := fit.Run()
 	util_async.ChainCancel(cancel, weightOptionalFuture)
+
 	weightOptional := weightOptionalFuture.WaitForResultAsOptional()
 	if weight, hasWeight := weightOptional.GetWithFlag(); hasWeight {
-		statRange := weight_types.StatRange{weight.Minimum, weight.Maximum}
-		fitseg.segments[statRange] = weight
+		statRange := statRangeFloat{Minimum: weight.Minimum, Maximum: weight.Maximum}
+		fg.foundSegments[statRange] = weight
 
-		totalRange := weight_types.StatRange{0, c_statRangeHigh}
-		fitseg.addToRemainingData(fitseg.inputDataOriginal, totalRange, statRange)
+		totalRange := statRangeFloat{Minimum: 0, Maximum: c_fitting_statScaledRangeHigh}
+		fg.addToRemainingData(fg.inputSamplesOriginal, totalRange, statRange)
+	} else {
+		panic("failed to get any useful stat fit")
 	}
 }
 
-func (fitseg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []*weight_types.WeightInput, inputRange weight_types.StatRange, includeRate float64, cancel util_async.CancelSignal) {
+func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []fittingSample, inputRange statRangeFloat, includeRate float64, cancel util_async.CancelSignal) {
 	fit := FittingSingleStatWeightProcess{}
-	fit.Init(fitseg.printer, fitseg.timeout)
+	fit.Init(fg.printer, fg.timeout)
 	fit.SetMinimumIncludeRate(includeRate)
-	fit.SupplyDataFromStandard(inputData, fitseg.stat, fitseg.sim)
+	fit.SupplySamples(inputData)
+
 	weightOptionalFuture := fit.Run()
 	util_async.ChainCancel(cancel, weightOptionalFuture)
 	weightOptional := weightOptionalFuture.WaitForResultAsOptional()
+
 	if weight, hasWeight := weightOptional.GetWithFlag(); hasWeight {
 		minimum := max(inputRange.Minimum, weight.Minimum)
 		maximum := min(inputRange.Maximum, weight.Maximum)
 
-		statRange := weight_types.StatRange{Minimum: minimum, Maximum: maximum}
+		statRange := statRangeFloat{Minimum: minimum, Maximum: maximum}
 		weight.Minimum = minimum
 		weight.Maximum = maximum
-		fitseg.segments[statRange] = weight
+		fg.foundSegments[statRange] = weight
 
-		fitseg.addToRemainingData(inputData, inputRange, statRange)
+		fg.addToRemainingData(inputData, inputRange, statRange)
 	}
 }
 
-func (fitseg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData []*weight_types.WeightInput, inputRange weight_types.StatRange, removeRange weight_types.StatRange) {
+func (fg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData []fittingSample, inputRange statRangeFloat, removeRange statRangeFloat) {
 	if removeRange.Minimum < inputRange.Minimum || removeRange.Maximum > inputRange.Maximum || removeRange.Minimum > removeRange.Maximum || inputRange.Minimum > inputRange.Maximum {
 		panic("range isn't within bounds")
 	}
 
-	loData := make([]*weight_types.WeightInput, 0)
-	hiData := make([]*weight_types.WeightInput, 0)
+	loData := make([]fittingSample, 0)
+	hiData := make([]fittingSample, 0)
 	for _, input := range processedData {
-		stat := input.TotalStat.GetUInt(fitseg.stat)
+		stat := input.statValue
 		if stat < inputRange.Minimum {
 			panic("sample isn't within bounds")
 		} else if inputRange.Minimum <= stat && stat < removeRange.Minimum {
@@ -259,21 +397,14 @@ func (fitseg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData
 	}
 
 	if len(loData) > 0 {
-		loRange := weight_types.StatRange{Minimum: inputRange.Minimum, Maximum: removeRange.Minimum - 1}
-		fitseg.inputDataRemainingParts[loRange] = loData
+		loRange := statRangeFloat{Minimum: inputRange.Minimum, Maximum: removeRange.Minimum - c_fitting_statScaledUnequalDelta}
+		fg.inputSamplesRemainingParts[loRange] = loData
 	}
 
 	if len(hiData) > 0 {
-		hiRange := weight_types.StatRange{Minimum: removeRange.Maximum + 1, Maximum: inputRange.Maximum}
-		fitseg.inputDataRemainingParts[hiRange] = hiData
+		hiRange := statRangeFloat{Minimum: removeRange.Maximum + c_fitting_statScaledUnequalDelta, Maximum: inputRange.Maximum}
+		fg.inputSamplesRemainingParts[hiRange] = hiData
 	}
-}
-
-func (fitseg *FittingSingleStatSegmentsProcess) filterDataStatRange(inputData []weight_types.WeightInput, lo, hi uint32) {
-	util_collection.FilterSliceAsNew(inputData, func(in *weight_types.WeightInput) bool {
-		value := in.TotalStat.GetUInt(fitseg.stat)
-		return lo <= value && value <= hi
-	})
 }
 
 ////////////////////////////////////////////////////////
@@ -285,7 +416,6 @@ type FittingSingleStatWeightProcess struct {
 
 	minimumIncludeRate float64
 	inputData          []fittingSample
-	inputDataSimScale  float64
 
 	objectiveLineDiff util_highs.ObjectiveIndex
 	objectiveInclude  util_highs.ObjectiveIndex
@@ -294,249 +424,164 @@ type FittingSingleStatWeightProcess struct {
 	lineOffset       util_highs.ColumnIndex
 	minimumThreshold util_highs.ColumnIndex
 	maximumThreshold util_highs.ColumnIndex
-	includeColumns   []util_highs.ColumnIndex
 
+	includeColumns  []util_highs.ColumnIndex
 	includeCountRow util_highs.ConstraintRow
 }
 
 type FittingSingleStatResult struct {
 	LineSlope       float64
 	LineOffset      float64
-	Minimum         uint32
-	Maximum         uint32
+	Minimum         float64
+	Maximum         float64
+	IncludeCount    uint32
+	IncludePercent  float64
+	StopwatchSolver util.Stopwatch
+}
+type FittingInterimResult struct {
+	LineSlope       float64
+	LineOffset      float64
+	StatRange       weight_types.StatRange
 	IncludeCount    uint32
 	IncludePercent  float64
 	StopwatchSolver util.Stopwatch
 }
 
-type fittingSample struct {
-	statValue     float64
-	simResult     float64
-	includeColumn util_highs.ColumnIndex
+func (fw *FittingSingleStatWeightProcess) Init(printer *util.PrintRecorder, timeout int) {
+	fw.printer = printer
+	fw.build = new(util_highs.LinearBuilder)
+	fw.build.Minimise = true
+	fw.build.Solver = util_highs.Solver_MIP_Interior
+	fw.build.TimeLimitSeconds = timeout
+
+	fw.lineSlope = fw.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "slope"})
+	fw.lineOffset = fw.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "offset"})
+	fw.minimumThreshold = fw.build.CreateColumnGeneral(highs.Continuous, 0, c_fitting_statScaledRangeHigh, util_highs.DebugString{Text: "minimum"})
+	fw.maximumThreshold = fw.build.CreateColumnGeneral(highs.Continuous, 0, c_fitting_statScaledRangeHigh, util_highs.DebugString{Text: "maximum"})
+
+	fw.build.ColumnIsGreaterOrEqualColumnEnforce(fw.minimumThreshold, fw.maximumThreshold)
 }
 
-func (fit *FittingSingleStatWeightProcess) Init(printer *util.PrintRecorder, timeout int) {
-	fit.printer = printer
-	fit.build = new(util_highs.LinearBuilder)
-	fit.build.Minimise = true
-	fit.build.Solver = util_highs.Solver_MIP_Interior
-	fit.build.TimeLimitSeconds = timeout
-
-	fit.lineSlope = fit.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "slope"})
-	fit.lineOffset = fit.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "offset"})
-	fit.minimumThreshold = fit.build.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, util_highs.DebugString{Text: "minimum"})
-	fit.maximumThreshold = fit.build.CreateColumnGeneral(highs.Continuous, 0, c_statRangeHigh, util_highs.DebugString{Text: "maximum"})
-
-	maxVsMin := util_highs.ConstraintRow{}
-	maxVsMin.Add(fit.minimumThreshold, -1)
-	maxVsMin.Add(fit.maximumThreshold, 1)
-	maxVsMin.Build(fit.build, 0, util_highs.C_PlusInf)
+func (fw *FittingSingleStatWeightProcess) SetMinimumIncludeRate(percent float64) {
+	fw.minimumIncludeRate = percent
 }
 
-func (fit *FittingSingleStatWeightProcess) SetMinimumIncludeRate(percent float64) {
-	fit.minimumIncludeRate = percent
+func (fw *FittingSingleStatWeightProcess) SupplySamples(inputData []fittingSample) {
+	fw.inputData = inputData
 }
 
-func (fit *FittingSingleStatWeightProcess) SupplyDataFromStandard(inputData []*weight_types.WeightInput, stat stats.StatType, sim stats.SimType) {
-	fit.inputData = util_collection.MapSliceAsNew(inputData, func(input **weight_types.WeightInput) fittingSample {
-		return fittingSample{
-			(*input).TotalStat.GetFloat(stat),
-			scaleSimItem((*input).SimResult.Get(sim), sim),
-			-1,
-		}
-	})
-	fit.inputDataSimScale = scaleSimItem(1, sim)
-}
+func (fw *FittingSingleStatWeightProcess) Run() *util_async.FutureCancellable[FittingSingleStatResult] {
+	fw.setupLinearObjectives()
 
-func scaleSimItem(value float64, sim stats.SimType) float64 {
-	// example values 1671858.348 10396269.605 117613.197 217148.877 180.467 21.1
-	// with scaleBig  1671.858    10396.269    117.613197 217.148877
-	switch sim {
-	case stats.Sim_DPS, stats.Sim_TPS, stats.Sim_DTPS, stats.Sim_HPS:
-		return value / c_scaleBigSim
-	case stats.Sim_TMI:
-		return value
-	case stats.Sim_DEATH:
-		return value * 100
-	default:
-		panic("unknown type")
-	}
-}
-
-/*
-
-  if (this->options_.blend_multi_objectives) {
-    HighsLinearObjective& multi_linear_objective = this->multi_linear_objective_[iObj];
-    lp.col_cost_[iCol] += multi_linear_objective.weight * multi_linear_objective.coefficients[iCol];
-    lp.sense_ = ObjSense::kMinimize;
-
-  ELSE PRIORITIES
-
-  for (HighsInt iObj = 0; iObj < num_linear_objective; iObj++)
-    priority_objective.push_back(std::make_pair(this->multi_linear_objective_[iObj].priority, iObj));
-  std::sort(priority_objective.begin(), priority_objective.end(), comparison);
-
-  for (HighsInt iIx = 0; iIx < num_linear_objective; iIx++) {
-    lp.col_cost_ = linear_objective.coefficients;
-	lp.sense_ = linear_objective.weight > 0 ? ObjSense::kMinimize : ObjSense::kMaximize;
-	use previous round's solution as start, needs to be valid for this too
-    HighsStatus optimize_model_status = this->optimizeModel();
-	if (lp.isMip())
-		save col values for next
-
-  	std::vector<HighsInt> index(lp.num_col_);
-  	std::vector<double> value(lp.num_col_);
-	for (HighsInt iCol = 0; iCol < lp.num_col_; iCol++) {
-      if (lp.col_cost_[iCol]) {
-        index[nnz] = iCol;
-        value[nnz] = lp.col_cost_[iCol];
-        nnz++;
-      }
-
-	double lower_bound = -kHighsInf;
-    double upper_bound = kHighsInf;
-	if (lp.sense_ == ObjSense::kMinimize)
-	  if (linear_objective.abs_tolerance >= 0)
-        upper_bound = objective + linear_objective.abs_tolerance;
-      if (linear_objective.rel_tolerance >= 0) {
-	    if (objective >= 0) {
-		  upper_bound = std::min(objective * (1.0 + linear_objective.rel_tolerance), upper_bound);
-		else
-		  upper_bound = std::min(objective * (1.0 - linear_objective.rel_tolerance), upper_bound);
-	addRow(lower_bound, upper_bound, nnz, index, value);
-*/
-
-func (fit *FittingSingleStatWeightProcess) Run() *util_async.FutureCancellable[FittingSingleStatResult] {
-	fit.setupLinearObjectives()
-
-	for sample := range util_collection.ForPointer(fit.inputData) {
-		fit.addSample(sample)
+	for _, sample := range fw.inputData {
+		fw.addSample(sample)
 	}
 
-	fit.includeCountRow.Build(fit.build, float64(len(fit.inputData))*fit.minimumIncludeRate, util_highs.C_PlusInf)
+	fw.includeCountRow.Build(fw.build, float64(len(fw.inputData))*fw.minimumIncludeRate, util_highs.C_PlusInf)
 
-	solutionFuture := fit.build.RunHighsFuture(&fit.stopwatch)
+	solutionFuture := fw.build.RunHighsFuture(&fw.stopwatch)
 	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (FittingSingleStatResult, bool) {
-		solution := linearResult.GetSolutionAndSaveLog(fit.printer)
-		fit.printer.Println(solution.Status.String())
-		fit.build.DebugPrintColumns(solution, fit.printer)
+		solution := linearResult.GetSolution2AndSaveLog(fw.printer)
+		solution.DebugPrint(fw.printer)
 		if solution.HasSolution() {
-			return fit.buildResult(solution), true
+			return fw.buildResult(solution), true
 		} else {
 			return FittingSingleStatResult{}, false
 		}
 	})
 }
 
-func (fit *FittingSingleStatWeightProcess) setupLinearObjectives() {
-
-	// var scaleIncludeObjective float64
-	// scaleIncludeObjective = 20 // 20 used previously for the 256 samples, maybe a touch too high
-	// scaleIncludeObjective = 19 // 15 is too low for 256, 19 about right
-	// scaleIncludeObjective = 12 // for 2000: 10-12 is a bit low. 15 was nice maybe too high? ideal range somewhere 13-14, but runs take 1H
-	// these numbers are just too finicky
-
-	// fit.input.BlendMultiObjectives = true
-	// fit.linearInclude = fit.input.AddLinearObjective(scaleIncludeObjective, 0, 1000, 1, 1)
-	// fit.linearLineDiff = fit.input.AddLinearObjective(1, 0, 10000, 5, 2)
-
-	// averageIncludedDifference := 14 // based on data, haste_dps. rather not use this
-
-	fit.build.BlendMultiObjectives = false
+func (fw *FittingSingleStatWeightProcess) setupLinearObjectives() {
+	fw.build.BlendMultiObjectives = false
 
 	var relativeToleranceParam float64
-	if fit.minimumIncludeRate < 1 {
+	if fw.minimumIncludeRate < 1 {
 		// first linear step find a regular solution to the line fit
 		// will probably follow the minimum required include
 		// will get us a positive initial result from the sum of differenceAbs
 		// let it expand to full coverage if it wants, but without worsening the average difference
-		multiplierToFullCoverage := 1 / fit.minimumIncludeRate
-		// add consider a bit of factor to this, only 80% etc, otherwise might get too greedy
-		multiplierToFullCoverage *= 0.5
-		// highs logic is "objective * (1.0 + linear_objective.rel_tolerance)", so need to minus one in compenstation
+		multiplierToFullCoverage := 1 / fw.minimumIncludeRate
+		// add a bit of factor to this, only 80%, otherwise might get too greedy
+		multiplierToFullCoverage *= 0.8
+		// highs logic is "objective * (1.0 + linear_objective.rel_tolerance)", so need to minus one in compensation
 		// don't let it go negative or below a small value
 		relativeToleranceParam = max(multiplierToFullCoverage-1, 0.1)
 	} else {
 		relativeToleranceParam = 0
 	}
-	fit.objectiveLineDiff = fit.build.AddObjectivePrioritised(false, -1, relativeToleranceParam, 2)
+	fw.objectiveLineDiff = fw.build.AddObjectivePrioritised(false, -1, relativeToleranceParam, 2)
 
 	// second priority is sum of includeColumn which are negative one each, can lead to negative total objective
-	// but we don't need to care about offsets much since its the last one, highs shouldn't even look at them
-	fit.objectiveInclude = fit.build.AddObjectivePrioritised(false, -1, -1, 1)
-
-	// we might want to increase c_outputIncludePerInclude a bit since average at least for our first test case is 3-10
-	// but actually unless we combine the objectives then they aren't getting scaled against each other anyway
+	// but we don't need to care about offsets much since it's the last one, highs shouldn't even look at them
+	fw.objectiveInclude = fw.build.AddObjectivePrioritised(false, -1, -1, 1)
 }
 
-func (fit *FittingSingleStatWeightProcess) buildResult(solution *highs.Solution) FittingSingleStatResult {
+func (fw *FittingSingleStatWeightProcess) buildResult(solution *util_highs.Solution2) FittingSingleStatResult {
 	result := FittingSingleStatResult{}
-	result.LineSlope = solution.ColValues[fit.lineSlope] / fit.inputDataSimScale
-	result.LineOffset = solution.ColValues[fit.lineOffset] / fit.inputDataSimScale
-	result.Minimum = uint32(math.Round(solution.ColValues[fit.minimumThreshold]))
-	result.Maximum = uint32(math.Round(solution.ColValues[fit.maximumThreshold]))
+	result.LineSlope = solution.GetValue(fw.lineSlope)
+	result.LineOffset = solution.GetValue(fw.lineOffset)
+	result.Minimum = solution.GetValue(fw.minimumThreshold)
+	result.Maximum = solution.GetValue(fw.maximumThreshold)
 
 	var includeCount uint32 = 0
-	for _, col := range fit.includeColumns {
-		if util.FloatEqualsOne(solution.ColValues[col]) {
+	for _, col := range fw.includeColumns {
+		if solution.ValueIsOne(col) {
 			includeCount++
 		}
 	}
 	result.IncludeCount = includeCount
-	result.IncludePercent = float64(includeCount) / float64(len(fit.inputData))
+	result.IncludePercent = float64(includeCount) / float64(len(fw.inputData))
 
 	if includeCount == 0 {
 		panic("shouldn't this have failed in model")
 	}
 
-	inputSorted := slices.Clone(fit.inputData)
-	slices.SortFunc(inputSorted, func(a, b fittingSample) int { return cmp.Compare(a.statValue, b.statValue) })
-	for _, sample := range inputSorted {
-		fit.printer.Printf("INC %f %f\n", sample.statValue, solution.ColValues[sample.includeColumn])
-	}
-
-	result.StopwatchSolver = fit.stopwatch
-
+	result.StopwatchSolver = fw.stopwatch
 	return result
 }
 
-func (fit *FittingSingleStatWeightProcess) addSample(sample *fittingSample) {
-	includeColumn := fit.sampleIncludeToggleColumn(sample)
-	fit.sampleToFitLine(sample, includeColumn)
+func (fw *FittingSingleStatWeightProcess) addSample(sample fittingSample) {
+	includeColumn := fw.sampleIncludeToggleColumn(sample)
+	fw.sampleToFitLine(sample, includeColumn)
 }
 
-func (fit *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample *fittingSample) util_highs.ColumnIndex {
-	includeColumn := fit.build.CreateColumnBoolWithObjective(c_outputFittingPerInclude, fit.objectiveInclude, util_highs.DebugString{Text: "include"})
-	fit.includeCountRow.Add(includeColumn, 1)
-	fit.includeColumns = append(fit.includeColumns, includeColumn)
-	sample.includeColumn = includeColumn
+func (fw *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample fittingSample) util_highs.ColumnIndex {
+	includeColumn := fw.build.CreateColumnBoolWithObjective(c_fitting_outputFittingPerInclude, fw.objectiveInclude, util_highs.DebugString{Text: "include"})
+	fw.includeCountRow.Add(includeColumn, 1)
+	fw.includeColumns = append(fw.includeColumns, includeColumn)
 
-	fit.build.ConstantIsBetweenColumns(fit.minimumThreshold, fit.maximumThreshold, includeColumn, sample.statValue, c_statRangeHigh, 1.0)
-
-	// another thought, samples could be presorted and indexed, then we setup relationships between adjactent pairs,
-	// they pull each other up, until we reach a sample marked as THE high/low cutoff
+	fw.build.ConstantIsBetweenColumns_NoSequenceCheck(fw.minimumThreshold, fw.maximumThreshold, includeColumn, sample.statValue, c_fitting_statScaledRangeHigh, c_fitting_statScaledUnequalDelta)
 
 	return includeColumn
 }
 
-func (fit *FittingSingleStatWeightProcess) sampleToFitLine(sample *fittingSample, toggle util_highs.ColumnIndex) {
-	difference := fit.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "difference"})
-	differenceAbs := fit.build.CreateColumnWithObjective(highs.Continuous, 0, util_highs.C_PlusInf, c_outputFittingDifference, fit.objectiveLineDiff, util_highs.DebugString{Text: "differenceAbs"})
+// Want lineSlope to look like sim/stat
+// basic line formula:       y = lineSlope * x + lineOffset
+//
+//	            y - lineOffset = lineSlope * x
+//	        y/x - lineOffset/x = lineSlope
+//	sim/stat - lineOffset/stat = lineSlope
+//	                  sim/stat = lineSlope + lineOffset/stat
+//	                       sim = lineSlope*stat + lineOffset
+func (fw *FittingSingleStatWeightProcess) sampleToFitLine(sample fittingSample, toggle util_highs.ColumnIndex) {
+	difference := fw.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "difference"})
+	differenceAbs := fw.build.CreateColumnWithObjective(highs.Continuous, 0, util_highs.C_PlusInf, c_fitting_outputDifference, fw.objectiveLineDiff, util_highs.DebugString{Text: "differenceAbs"})
 
-	// i'd like lineSlope to look like sim/stat
-	// i don't really care what lineOffset looks like, don't expect to use it at all
-	// basic line formula:               y = lineSlope * x + lineOffset
-	//                      y - lineOffset = lineSlope * x
-	//                  y/x - lineOffset/x = lineSlope
-	//          sim/stat - lineOffset/stat = lineSlope
-	//                            sim/stat = lineSlope + lineOffset/stat
-	//                                 sim = lineSlope*stat + lineOffset
 	sampleRow := util_highs.ConstraintRow{Debug: "sampleRow"}
-	sampleRow.Add(fit.lineSlope, sample.statValue)
-	sampleRow.Add(fit.lineOffset, 1)
-	sampleRow.Add(difference, 1) // now technically this is a "vertical" difference, not a anything squared, but hopefully proportional...
-	sampleRow.Build(fit.build, sample.simResult, sample.simResult)
+	sampleRow.Add(fw.lineSlope, sample.statValue)
+	sampleRow.Add(fw.lineOffset, 1)
+	sampleRow.Add(difference, 1) // this is vertical difference, not true minimum distance. would be proportional within similar slope ranges only
+	sampleRow.Build(fw.build, sample.simResult, sample.simResult)
 
-	// new absolute val with toggle, this is its test
-	fit.build.AbsoluteValue_WithToggle(difference, differenceAbs, toggle, c_simRangeHigh)
+	fw.build.AbsoluteValue_WithToggle_NoExtraCheck(difference, differenceAbs, toggle, c_fitting_simScaledRangeHigh)
 }
+
+// what would be the ideal form
+// distance would be perpendicular to line right?
+// that distance is not necessarily proportional to the vertical distance, which could be inflated for a steep line.
+// thus existing algorithm favors shallower lines
+
+// we have coords x1,y1 line is y=mx+c
+// if m=2, rises from 0,0 to 1,2 tan says 63degrees, with another 90 degrees, m=-0.5, rise=-1/run=2.
+// so basically perpendicular line is mb=-1/m
+// then we'd have to compute an intercept, a bit more to that

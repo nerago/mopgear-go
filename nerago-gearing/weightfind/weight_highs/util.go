@@ -14,12 +14,7 @@ func isGoodValueRange(value float64) bool {
 	return 1e-6 <= value && value <= 1e6
 }
 
-type enumWithName interface {
-	~uint8
-	Name() string
-}
-
-func chooseSimUnfriendlyScalingBasic(inputData []weight_types.WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[stats.SimType]float64 {
+func chooseSimUnfriendlyScalingBasic(inputData []weight_types.WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) util_collection.EnumMap[stats.SimType, float64] {
 	return chooseScalingBasicScale(inputData,
 		stats.SimTypeList,
 		func(data *weight_types.WeightInput, simType stats.SimType) float64 {
@@ -27,10 +22,11 @@ func chooseSimUnfriendlyScalingBasic(inputData []weight_types.WeightInput, scale
 		},
 		scaleTarget,
 		keepUnderTarget,
-		printer)
+		printer,
+		stats.SimTypeEnum)
 }
 
-func chooseStatScalingBasic(inputData []weight_types.WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[stats.StatType]float64 {
+func chooseStatScalingBasic(inputData []weight_types.WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) util_collection.EnumMap[stats.StatType, float64] {
 	return chooseScalingBasicScale(inputData,
 		stats.StatType_List,
 		func(data *weight_types.WeightInput, statType stats.StatType) float64 {
@@ -38,20 +34,21 @@ func chooseStatScalingBasic(inputData []weight_types.WeightInput, scaleTarget fl
 		},
 		scaleTarget,
 		keepUnderTarget,
-		printer)
+		printer,
+		stats.StatTypeEnum)
 }
 
-func chooseScalingBasicScale[E enumWithName](inputData []weight_types.WeightInput, checkTypes []E, getValue func(*weight_types.WeightInput, E) float64, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) map[E]float64 {
-	scaleMap := make(map[E]float64)
+func chooseScalingBasicScale[E util_collection.EnumBaseType](inputData []weight_types.WeightInput, checkTypes []E, getValue func(*weight_types.WeightInput, E) float64, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder, enumType util_collection.EnumType[E]) util_collection.EnumMap[E, float64] {
+	scaleMap := util_collection.EnumMapMake[E, float64](enumType)
 	for _, check := range checkTypes {
 		valueSeq := util_collection.MapSliceAsSeq(inputData, func(x *weight_types.WeightInput) float64 {
 			return getValue(x, check)
 		})
 
 		scale := chooseScale(valueSeq, scaleTarget, keepUnderTarget)
-		scaleMap[check] = scale
+		scaleMap.Put(check, scale)
 
-		printer.Printf("scale %s %e\n", check.Name(), scaleMap[check])
+		printer.Printf("scale %s %e\n", check.Name(), scaleMap.GetOrPanic(check))
 	}
 	return scaleMap
 }

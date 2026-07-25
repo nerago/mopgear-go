@@ -391,7 +391,7 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 func statWeightsFitting(printer *util.PrintRecorder) {
 	// generateRatingsInputFromRealRandomSets(printer)
 
-	bytes, err := os.ReadFile("sim-stats-input-data2.json")
+	bytes, err := os.ReadFile("sim-stats-compare-rand.json")
 	// bytes, err := os.ReadFile("sim-stats-input-data.json")
 	if err != nil {
 		panic(err)
@@ -421,7 +421,7 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 	fitting := weight_highs.FittingSingleStatSegmentsProcess{}
 	// fitting.Init(printer, stats.Stat_Crit, simulate.Result_DPS)
 	fitting.Init(printer, stats.Stat_Haste, stats.Sim_DPS, 3000)
-	fitting.SupplyDataFromStandard(weightInputs)
+	fitting.SupplyData(weightInputs)
 
 	weightMap := fitting.Run(util_async.CancelSignal_Make())
 	printer.Printf("weightMap size %d\n", len(weightMap))
@@ -472,10 +472,10 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 
 	fitting := weight_highs.FittingEachStatWeightProcess{}
 	fitting.Init(printer, 3000)
-	fitting.SupplyDataFromStandard(weightInputs)
+	fitting.SupplyData(weightInputs)
 
-	weight3 := fitting.RunDetailedResults(util.StopwatchMakeStopped(), util_async.CancelSignal_Make())
-	for entry := range weight3.StatWeights.SeqGroupsKeysNestedValueSeq() {
+	weight3 := fitting.Run(util.StopwatchMakeStopped(), util_async.CancelSignal_Make())
+	for entry := range weight3.StatWeights.SeqKey1Key2ValueSeqEntries() {
 		weightSeq := entry.ValueSeq
 
 		printer.Printf("################### %s %s ###################\n", entry.Key1.Name(), entry.Key2.Name())
@@ -844,9 +844,9 @@ func statWeights_CompareAlgorithms() {
 			fitting := weight_highs.FittingEachStatWeightProcess{}
 			fitting.Init(printer, shortTimeout)
 			fitting.SetRequiredStats(requiredStats, requiredSims)
-			fitting.SetLazyMode(true)
-			fitting.SupplyDataFromStandard(inputDataRandom)
-			resultsByAlgorithm3.Put("fitting", fitting.RunDetailedResults(stopwatch, cancel))
+			fitting.SetOnlyComputeSingleSegmentEach(true)
+			fitting.SupplyData(inputDataRandom)
+			resultsByAlgorithm3.Put("fitting", fitting.Run(stopwatch, cancel))
 			timesByAlgorithm.Put("fitting", stopwatch.Elapsed())
 			printer.Println("///////////////// FITTING /////////////////")
 		})
