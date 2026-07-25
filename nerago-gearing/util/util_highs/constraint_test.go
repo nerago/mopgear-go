@@ -25,7 +25,7 @@ func TestContraintIfBoolCopyValueElseZero(test *testing.T) {
 		setColumnToConstant(build, oneColumn, oneValue)
 		setColumnToConstant(build, toggleColumn, toggleValue)
 
-		build.ContraintIfBoolCopyValueElseZero(toggleColumn, oneColumn, outColumn, rangeLow, rangeHigh)
+		build.ConstraintIfBoolCopyValueElseZero(toggleColumn, oneColumn, outColumn, rangeLow, rangeHigh)
 
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)
@@ -89,7 +89,7 @@ func TestContraintIfBoolCopy(test *testing.T) {
 		setColumnToConstant(build, oneColumn, oneValue)
 		setColumnToConstant(build, toggleColumn, toggleValue)
 
-		build.ContraintIfBoolCopy(toggleColumn, oneColumn, oneCoeff, outColumn, rangeHigh)
+		build.ConstraintIfBoolCopy(toggleColumn, oneColumn, oneCoeff, outColumn, rangeHigh)
 
 		if outValueSet != nil {
 			setColumnToConstant(build, outColumn, *outValueSet)

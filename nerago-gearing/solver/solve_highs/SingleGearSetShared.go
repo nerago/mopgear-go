@@ -132,7 +132,7 @@ func (setup *singleGearSetShared) buildSetMultipliedOutput(permutation *bonusCom
 	setup.allColumns = append(setup.allColumns, &permutationOutput)
 
 	// copy regular rating sum to column if flag is set
-	setup.build.ContraintIfBoolCopyValueElseZero(activatingVar.columnIndex, combinedRatingVar.columnIndex, permutationOutput.columnIndex, c_ratings_low_range, c_ratings_high_range)
+	setup.build.ConstraintIfBoolCopyValueElseZero(activatingVar.columnIndex, combinedRatingVar.columnIndex, permutationOutput.columnIndex, c_ratings_low_range, c_ratings_high_range)
 
 	// add scaled rating to final computation
 	setup.mainOutputRow.Add(permutationOutput.columnIndex, totalWeight)

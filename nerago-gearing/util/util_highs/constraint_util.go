@@ -6,7 +6,7 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
-func (build *LinearBuilder) ContraintIfBoolCopyValueElseZero(boolSwitchVar, sourceVar, targetVar ColumnIndex, rangeLow, rangeHigh float64) {
+func (build *LinearBuilder) ConstraintIfBoolCopyValueElseZero(boolSwitchVar, sourceVar, targetVar ColumnIndex, rangeLow, rangeHigh float64) {
 	// based on https://medium.com/data-science/a-comprehensive-guide-to-modeling-techniques-in-mixed-integer-linear-programming-3e96cc1bc03d
 
 	valueHigh := ConstraintRow{Debug: "ContraintIfBoolCopyValueElseZero_ValueHigh"}
@@ -32,7 +32,7 @@ func (build *LinearBuilder) ContraintIfBoolCopyValueElseZero(boolSwitchVar, sour
 	zeroLow.Build(build, C_MinusInf, 0)
 }
 
-func (build *LinearBuilder) ContraintIfBoolCopy(boolSwitchVar, sourceVar ColumnIndex, sourceCoefficient float64, targetVar ColumnIndex, rangeHigh float64) {
+func (build *LinearBuilder) ConstraintIfBoolCopy(boolSwitchVar, sourceVar ColumnIndex, sourceCoefficient float64, targetVar ColumnIndex, rangeHigh float64) {
 	valueHigh := ConstraintRow{Debug: "ContraintIfBoolCopy_ValueHigh"}
 	valueHigh.Add(targetVar, -1)
 	valueHigh.Add(sourceVar, sourceCoefficient)
@@ -73,13 +73,13 @@ func (and *ConstraintAndBuilder) Build(build *LinearBuilder) {
 		copyRow.Add(and.inputVars[0], 1)
 		copyRow.Build(build, 0, 0)
 	} else {
-		sumRow := ConstraintRow{Debug: "ContraintAndBuilder_sumRow"}
+		sumRow := ConstraintRow{Debug: "ConstraintAndBuilder_sumRow"}
 		sumRow.Add(and.outputVar, -1)
 
 		for _, inputVar := range and.inputVars {
 			sumRow.Add(inputVar, 1)
 
-			pullDown := ConstraintRow{Debug: "ContraintAndBuilder_pullDown"}
+			pullDown := ConstraintRow{Debug: "ConstraintAndBuilder_pullDown"}
 			pullDown.Add(inputVar, -1)
 			pullDown.Add(and.outputVar, 1)
 			pullDown.Build(build, C_MinusInf, 0)
@@ -343,6 +343,20 @@ func (build *LinearBuilder) AbsoluteValue_WithToggle(inputVar, outputVar, toggle
 	zeroMinimum.Build(build, 0, C_PlusInf)
 }
 
+func (build *LinearBuilder) AbsoluteValue_WithToggle_NoExtraCheck(inputVar, outputVar, toggleVar ColumnIndex, rangeHigh float64) {
+	setIfNegative := ConstraintRow{}
+	setIfNegative.Add(inputVar, 1)
+	setIfNegative.Add(outputVar, 1)
+	setIfNegative.Add(toggleVar, -rangeHigh)
+	setIfNegative.Build(build, -rangeHigh, C_PlusInf)
+
+	setIfPositive := ConstraintRow{}
+	setIfPositive.Add(inputVar, 1)
+	setIfPositive.Add(outputVar, -1)
+	setIfPositive.Add(toggleVar, rangeHigh)
+	setIfPositive.Build(build, C_MinusInf, rangeHigh)
+}
+
 // basic logic: output = one xor two
 // however output is free when condition not met, should ideally put output under minimise pressure
 // similar to absolute value, just intended for int vars
@@ -414,6 +428,17 @@ func (build *LinearBuilder) ConstantIsBetweenColumns(minimumColumn, maximumColum
 	checkSequence.Add(maximumColumn, 1)
 	checkSequence.Add(minimumColumn, -1)
 	checkSequence.Build(build, 0, C_PlusInf)
+}
+
+func (build *LinearBuilder) ConstantIsBetweenColumns_NoSequenceCheck(minimumColumn, maximumColumn, targetBoolColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) {
+	isOverMinimum := build.ColumnIsLessOrEqualThanConstant(minimumColumn, constValue, rangeHigh, equalDelta)
+	isUnderMaximum := build.ColumnIsGreaterOrEqualThanConstant(maximumColumn, constValue, rangeHigh, equalDelta)
+
+	and := ConstraintAndBuilder{}
+	and.AddInput(isOverMinimum)
+	and.AddInput(isUnderMaximum)
+	and.SetOutput(targetBoolColumn)
+	and.Build(build)
 }
 
 func (build *LinearBuilder) ColumnIsNotBetweenConstantsVerify(checkColumn ColumnIndex, lo, hi float64, rangeHigh float64) {
@@ -509,4 +534,18 @@ func (build *LinearBuilder) ColumnIsLessOrEqualColumn(leftSideCol, rightSideCol,
 	confirm.Add(rightSideCol, -1)
 	confirm.Add(boolIsLess, rangeHigh)
 	confirm.Build(build, C_MinusInf, rangeHigh)
+}
+
+func (build *LinearBuilder) ColumnIsGreaterOrEqualColumnEnforce(lowCol, highCol ColumnIndex) {
+	row := ConstraintRow{Debug: "ColumnIsGreaterOrEqualColumnEnforce"}
+	row.Add(lowCol, -1)
+	row.Add(highCol, 1)
+	row.Build(build, 0, C_PlusInf)
+}
+
+func (build *LinearBuilder) ColumnIsLessOrEqualColumnEnforce(lowCol, highCol ColumnIndex) {
+	row := ConstraintRow{Debug: "ColumnIsLessOrEqualColumnEnforce"}
+	row.Add(lowCol, -1)
+	row.Add(highCol, 1)
+	row.Build(build, C_MinusInf, 0)
 }
