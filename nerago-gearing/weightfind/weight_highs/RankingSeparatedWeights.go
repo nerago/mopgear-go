@@ -168,9 +168,9 @@ func (ranker *RankingSeparatedWeights) processDataForSim(simType stats.SimType) 
 		}
 	}
 
-	minRankEntry := util_collection.FindMinFunc(ranker.dataEntries, func(e *rankEntrySeparated) int { return e.bySim.GetOrPanic(simType).targetRank })
+	minRankEntry := util_collection.FindElementWithMinFunc(ranker.dataEntries, func(e *rankEntrySeparated) int { return e.bySim.GetOrPanic(simType).targetRank })
 	ranker.slackBottom[simType] = ranker.makeEntryRankExact(0.0, minRankEntry.bySim.GetOrPanic(simType))
-	maxRankEntry := util_collection.FindMaxFunc(ranker.dataEntries, func(e *rankEntrySeparated) int { return e.bySim.GetOrPanic(simType).targetRank })
+	maxRankEntry := util_collection.FindElementWithMaxFunc(ranker.dataEntries, func(e *rankEntrySeparated) int { return e.bySim.GetOrPanic(simType).targetRank })
 	ranker.slackTop[simType] = ranker.makeEntryRankExact(1.0, maxRankEntry.bySim.GetOrPanic(simType))
 }
 

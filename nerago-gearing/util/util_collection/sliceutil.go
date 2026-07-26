@@ -341,7 +341,7 @@ func FindWith[T any](slice []T, check func(T) bool) T {
 	panic("not found")
 }
 
-func FindMinFunc[X any, T *X, V Number](slice []T, toValue func(T) V) T {
+func FindElementWithMinFunc[X any, T *X, V Number](slice []T, toValue func(T) V) T {
 	if len(slice) == 0 {
 		panic("empty slice")
 	}
@@ -357,7 +357,7 @@ func FindMinFunc[X any, T *X, V Number](slice []T, toValue func(T) V) T {
 	return minElement
 }
 
-func FindMaxFunc[X any, T *X, V Number](slice []T, toValue func(T) V) T {
+func FindElementWithMaxFunc[X any, T *X, V Number](slice []T, toValue func(T) V) T {
 	if len(slice) == 0 {
 		panic("empty slice")
 	}
@@ -371,6 +371,34 @@ func FindMaxFunc[X any, T *X, V Number](slice []T, toValue func(T) V) T {
 		}
 	}
 	return maxElement
+}
+
+func FindMinFunc[T any, V Number](slice []T, toValue func(T) V) V {
+	if len(slice) == 0 {
+		panic("empty slice")
+	}
+	minValue := toValue(slice[0])
+	for i := 1; i < len(slice); i++ {
+		value := toValue(slice[i])
+		if value < minValue {
+			minValue = value
+		}
+	}
+	return minValue
+}
+
+func FindMaxFunc[T any, V Number](slice []T, toValue func(T) V) V {
+	if len(slice) == 0 {
+		panic("empty slice")
+	}
+	maxValue := toValue(slice[0])
+	for i := 1; i < len(slice); i++ {
+		value := toValue(slice[i])
+		if value > maxValue {
+			maxValue = value
+		}
+	}
+	return maxValue
 }
 
 // guarantees that each ranking number is used in range, even given duplicate numbers

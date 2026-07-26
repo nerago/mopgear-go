@@ -22,8 +22,9 @@ const (
 	c_fitting_statUnscaledHigh       = 50000
 	c_fitting_statScaledUnequalDelta = c_fitting_statScaledRangeHigh / float64(c_fitting_statUnscaledHigh)
 
-	c_fitting_outputDifference        = 1
-	c_fitting_outputFittingPerInclude = -1
+	c_fitting_outputDifference              = 1
+	c_fitting_outputFittingPerInclude       = -1
+	c_fitting_objectiveSlackForFullCoverage = 0.8
 
 	c_fitting_minimum_stat_coverage       = 100
 	c_fitting_permitted_overlap_fix       = 5
@@ -116,7 +117,7 @@ func (fe *FittingEachStatWeightProcess) buildResult() *weight_types.Weight3Exten
 	weights := weight_types.Weight3ExtendedRanged_Make(fe.requiredStats, fe.requiredSims)
 	fe.each.ForeachWithKeys(func(statType stats.StatType, simType stats.SimType, value *fittingEachFields) {
 		for _, detail := range value.resultSlice {
-			weights.AddDetailWeight(simType, statType, detail.StatRange, detail.LineSlope, detail.LineOffset, detail.IncludePercent)
+			weights.AddDetailWeight(simType, statType, detail.StatRange, detail.LineSlope, detail.LineOffset, detail.IncludePercentOfTotal)
 		}
 	})
 	weights.FinishAndValidate()
@@ -190,9 +191,11 @@ func (fe *FittingEachStatWeightProcess) convertAndScaleResult(initialMap map[sta
 				Minimum: uint32(math.Round(rangeScaled.Minimum / scaleStat)),
 				Maximum: uint32(math.Round(rangeScaled.Maximum / scaleStat)),
 			},
-			IncludeCount:    resultInitial.IncludeCount,
-			IncludePercent:  resultInitial.IncludePercent,
-			StopwatchSolver: resultInitial.StopwatchSolver,
+			IncludeCount:               resultInitial.IncludeCount,
+			IncludePercentOfTotal:      float64(resultInitial.IncludeCount) / float64(len(fe.inputData)),
+			IncludePercentOfStageInput: resultInitial.IncludePercentOfStageInput,
+			BuiltSequence:              []int{resultInitial.BuiltSequence},
+			StopwatchSolver:            resultInitial.StopwatchSolver,
 		}
 		resultSlice = append(resultSlice, interim)
 	}
@@ -224,8 +227,10 @@ func (fe *FittingEachStatWeightProcess) updateBreakpoint(one, two *FittingInteri
 			one.LineOffset = two.LineOffset
 		}
 		one.StatRange.Maximum = two.StatRange.Maximum
-		one.IncludePercent += two.IncludePercent
+		one.IncludePercentOfStageInput += two.IncludePercentOfStageInput
+		one.IncludePercentOfTotal += two.IncludePercentOfTotal
 		one.IncludeCount += two.IncludeCount
+		one.BuiltSequence = slices.Concat(one.BuiltSequence, two.BuiltSequence)
 		one.StopwatchSolver.AddElapsedFrom(&two.StopwatchSolver)
 		return true
 	} else if one.StatRange.Maximum >= two.StatRange.Minimum && one.StatRange.Maximum <= two.StatRange.Minimum+c_fitting_permitted_overlap_fix {
@@ -278,8 +283,8 @@ type FittingSingleStatSegmentsProcess struct {
 	timeout                  int
 	onlyComputeSingleSegment bool
 
-	inputSamplesOriginal       []FittingSample
-	inputSamplesRemainingParts map[statRangeFloat][]FittingSample
+	samplesOriginal       []FittingSample
+	samplesRemainingParts map[statRangeFloat][]FittingSample
 
 	foundSegments map[statRangeFloat]FittingSingleStatResult
 }
@@ -288,7 +293,7 @@ func (fg *FittingSingleStatSegmentsProcess) Init(printer *util.PrintRecorder, ti
 	fg.printer = printer
 	fg.timeout = timeout
 	fg.foundSegments = make(map[statRangeFloat]FittingSingleStatResult)
-	fg.inputSamplesRemainingParts = make(map[statRangeFloat][]FittingSample)
+	fg.samplesRemainingParts = make(map[statRangeFloat][]FittingSample)
 }
 
 func (fg *FittingSingleStatSegmentsProcess) SetOnlyComputeSingleSegment(lazy bool) {
@@ -296,7 +301,7 @@ func (fg *FittingSingleStatSegmentsProcess) SetOnlyComputeSingleSegment(lazy boo
 }
 
 func (fg *FittingSingleStatSegmentsProcess) SupplyData(inputData []FittingSample) {
-	fg.inputSamplesOriginal = slices.Clone(inputData)
+	fg.samplesOriginal = slices.Clone(inputData)
 }
 
 func (fg *FittingSingleStatSegmentsProcess) Run(cancel util_async.CancelSignal) map[statRangeFloat]FittingSingleStatResult {
@@ -305,15 +310,16 @@ func (fg *FittingSingleStatSegmentsProcess) Run(cancel util_async.CancelSignal) 
 		return fg.foundSegments
 	}
 
-	overallSize := len(fg.inputSamplesOriginal)
-	for len(fg.inputSamplesRemainingParts) > 0 {
-		nextRange, nextData := util_collection.MapFirstEntry(fg.inputSamplesRemainingParts)
-		delete(fg.inputSamplesRemainingParts, nextRange)
+	overallSize := len(fg.samplesOriginal)
+	for len(fg.samplesRemainingParts) > 0 {
+		fg.mergeAnyPossibleRemainingSamples()
+
+		nextRange, nextData := util_collection.MapFirstEntry(fg.samplesRemainingParts)
+		delete(fg.samplesRemainingParts, nextRange)
 
 		ratioOfOverall := float64(len(nextData)) / float64(overallSize)
 		if ratioOfOverall < 0.02 || len(nextData) < 3 {
 			// drop it
-			// TODO consider adding this range to an adjacent if exists
 		} else if ratioOfOverall < 0.05 || len(nextData) < 8 {
 			fg.runNextSegment(nextData, nextRange, 1, cancel)
 		} else if ratioOfOverall < 0.15 || len(nextData) < 20 {
@@ -323,29 +329,65 @@ func (fg *FittingSingleStatSegmentsProcess) Run(cancel util_async.CancelSignal) 
 		} else {
 			fg.runNextSegment(nextData, nextRange, 0.2, cancel)
 		}
-
-		// TODO possible to merge adjacent
 	}
 
 	return fg.foundSegments
+}
+
+func (fg *FittingSingleStatSegmentsProcess) mergeAnyPossibleRemainingSamples() {
+	type statRangeFlagged struct {
+		statRange statRangeFloat
+		remain    bool
+	}
+	flaggedSegments := make([]statRangeFlagged, 0)
+	for key := range fg.samplesRemainingParts {
+		flaggedSegments = append(flaggedSegments, statRangeFlagged{
+			key,
+			true,
+		})
+	}
+	for key := range fg.foundSegments {
+		flaggedSegments = append(flaggedSegments, statRangeFlagged{
+			key,
+			false,
+		})
+	}
+
+	slices.SortFunc(flaggedSegments, func(a, b statRangeFlagged) int { return cmp.Compare(a.statRange.Minimum, b.statRange.Minimum) })
+	for i := range len(flaggedSegments) - 1 {
+		a := flaggedSegments[i]
+		b := flaggedSegments[i+1]
+		if a.remain && b.remain {
+			combinedData := slices.Concat(fg.samplesRemainingParts[a.statRange], fg.samplesRemainingParts[b.statRange])
+			combinedRange := statRangeFloat{
+				Minimum: min(a.statRange.Minimum, b.statRange.Minimum),
+				Maximum: max(a.statRange.Maximum, b.statRange.Maximum),
+			}
+
+			delete(fg.samplesRemainingParts, a.statRange)
+			delete(fg.samplesRemainingParts, b.statRange)
+			fg.samplesRemainingParts[combinedRange] = combinedData
+		}
+	}
 }
 
 func (fg *FittingSingleStatSegmentsProcess) runInitial(cancel util_async.CancelSignal) {
 	fit := FittingSingleStatWeightProcess{}
 	fit.Init(fg.printer, fg.timeout)
 	fit.SetMinimumIncludeRate(0.3)
-	fit.SupplySamples(fg.inputSamplesOriginal)
+	fit.SupplySamples(fg.samplesOriginal)
 
-	weightOptionalFuture := fit.Run()
-	util_async.ChainCancel(cancel, weightOptionalFuture)
+	resultOptionalFuture := fit.Run()
+	util_async.ChainCancel(cancel, resultOptionalFuture)
 
-	weightOptional := weightOptionalFuture.WaitForResultAsOptional()
-	if weight, hasWeight := weightOptional.GetWithFlag(); hasWeight {
-		statRange := statRangeFloat{Minimum: weight.Minimum, Maximum: weight.Maximum}
-		fg.foundSegments[statRange] = weight
+	resultOptional := resultOptionalFuture.WaitForResultAsOptional()
+	if segmentResult, hasResult := resultOptional.GetWithFlag(); hasResult {
+		statRange := statRangeFloat{Minimum: segmentResult.Minimum, Maximum: segmentResult.Maximum}
+		segmentResult.BuiltSequence = 0
+		fg.foundSegments[statRange] = segmentResult
 
 		totalRange := statRangeFloat{Minimum: 0, Maximum: c_fitting_statScaledRangeHigh}
-		fg.addToRemainingData(fg.inputSamplesOriginal, totalRange, statRange)
+		fg.addToRemainingData(fg.samplesOriginal, totalRange, statRange)
 	} else {
 		panic("failed to get any useful stat fit")
 	}
@@ -357,18 +399,19 @@ func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []FittingSa
 	fit.SetMinimumIncludeRate(includeRate)
 	fit.SupplySamples(inputData)
 
-	weightOptionalFuture := fit.Run()
-	util_async.ChainCancel(cancel, weightOptionalFuture)
-	weightOptional := weightOptionalFuture.WaitForResultAsOptional()
+	resultOptionalFuture := fit.Run()
+	util_async.ChainCancel(cancel, resultOptionalFuture)
+	resultOptional := resultOptionalFuture.WaitForResultAsOptional()
 
-	if weight, hasWeight := weightOptional.GetWithFlag(); hasWeight {
-		minimum := max(inputRange.Minimum, weight.Minimum)
-		maximum := min(inputRange.Maximum, weight.Maximum)
+	if segmentResult, hasResult := resultOptional.GetWithFlag(); hasResult {
+		minimum := max(inputRange.Minimum, segmentResult.Minimum)
+		maximum := min(inputRange.Maximum, segmentResult.Maximum)
 
 		statRange := statRangeFloat{Minimum: minimum, Maximum: maximum}
-		weight.Minimum = minimum
-		weight.Maximum = maximum
-		fg.foundSegments[statRange] = weight
+		segmentResult.Minimum = minimum
+		segmentResult.Maximum = maximum
+		segmentResult.BuiltSequence = len(fg.foundSegments)
+		fg.foundSegments[statRange] = segmentResult
 
 		fg.addToRemainingData(inputData, inputRange, statRange)
 	}
@@ -398,12 +441,12 @@ func (fg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData []F
 
 	if len(loData) > 0 {
 		loRange := statRangeFloat{Minimum: inputRange.Minimum, Maximum: removeRange.Minimum - c_fitting_statScaledUnequalDelta}
-		fg.inputSamplesRemainingParts[loRange] = loData
+		fg.samplesRemainingParts[loRange] = loData
 	}
 
 	if len(hiData) > 0 {
 		hiRange := statRangeFloat{Minimum: removeRange.Maximum + c_fitting_statScaledUnequalDelta, Maximum: inputRange.Maximum}
-		fg.inputSamplesRemainingParts[hiRange] = hiData
+		fg.samplesRemainingParts[hiRange] = hiData
 	}
 }
 
@@ -430,21 +473,24 @@ type FittingSingleStatWeightProcess struct {
 }
 
 type FittingSingleStatResult struct {
-	LineSlope       float64
-	LineOffset      float64
-	Minimum         float64
-	Maximum         float64
-	IncludeCount    uint32
-	IncludePercent  float64
-	StopwatchSolver util.Stopwatch
+	LineSlope                  float64
+	LineOffset                 float64
+	Minimum                    float64
+	Maximum                    float64
+	IncludeCount               uint32
+	IncludePercentOfStageInput float64
+	BuiltSequence              int
+	StopwatchSolver            util.Stopwatch
 }
 type FittingInterimResult struct {
-	LineSlope       float64
-	LineOffset      float64
-	StatRange       weight_types.StatRange
-	IncludeCount    uint32
-	IncludePercent  float64
-	StopwatchSolver util.Stopwatch
+	LineSlope                  float64
+	LineOffset                 float64
+	StatRange                  weight_types.StatRange
+	IncludeCount               uint32
+	IncludePercentOfStageInput float64
+	IncludePercentOfTotal      float64
+	BuiltSequence              []int
+	StopwatchSolver            util.Stopwatch
 }
 
 func (fw *FittingSingleStatWeightProcess) Init(printer *util.PrintRecorder, timeout int) {
@@ -502,7 +548,7 @@ func (fw *FittingSingleStatWeightProcess) setupLinearObjectives() {
 		// let it expand to full coverage if it wants, but without worsening the average difference
 		multiplierToFullCoverage := 1 / fw.minimumIncludeRate
 		// add a bit of factor to this, only 80%, otherwise might get too greedy
-		multiplierToFullCoverage *= 0.8
+		multiplierToFullCoverage *= c_fitting_objectiveSlackForFullCoverage
 		// highs logic is "objective * (1.0 + linear_objective.rel_tolerance)", so need to minus one in compensation
 		// don't let it go negative or below a small value
 		relativeToleranceParam = max(multiplierToFullCoverage-1, 0.1)
@@ -530,7 +576,7 @@ func (fw *FittingSingleStatWeightProcess) buildResult(solution *util_highs.Solut
 		}
 	}
 	result.IncludeCount = includeCount
-	result.IncludePercent = float64(includeCount) / float64(len(fw.inputData))
+	result.IncludePercentOfStageInput = float64(includeCount) / float64(len(fw.inputData))
 
 	if includeCount == 0 {
 		panic("shouldn't this have failed in model")
@@ -541,6 +587,10 @@ func (fw *FittingSingleStatWeightProcess) buildResult(solution *util_highs.Solut
 }
 
 func (fw *FittingSingleStatWeightProcess) addSample(sample FittingSample) {
+	if sample.SimResult < 0 || sample.SimResult > 1 || sample.StatValue < 0 || sample.StatValue > 1 {
+		panic("sample out of range")
+	}
+
 	includeColumn := fw.sampleIncludeToggleColumn(sample)
 	fw.sampleToFitLine(sample, includeColumn)
 }
