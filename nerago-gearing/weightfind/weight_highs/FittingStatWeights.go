@@ -29,6 +29,18 @@ const (
 	c_fitting_minimum_stat_coverage       = 100
 	c_fitting_permitted_overlap_fix       = 5
 	c_fitting_number_nice_number_interval = 5
+
+	c_fitting_initial_range_required    = 0.35
+	c_fitting_large_range_threshold     = 0.50
+	c_fitting_large_range_required      = 0.20
+	c_fitting_medium_range_threshold    = 0.25
+	c_fitting_medium_range_required     = 0.10
+	c_fitting_small_range_threshold     = 0.15
+	c_fitting_small_range_required      = 0.10
+	c_fitting_tiny_range_threshold      = 0.05
+	c_fitting_tiny_range_over_required  = 0.80
+	c_fitting_tiny_range_under_required = 0.95
+	c_fitting_dropped_range_threshold   = 0.02
 )
 
 type FittingSample struct {
@@ -303,23 +315,6 @@ func (fg *FittingSingleStatSegmentsProcess) SetOnlyComputeSingleSegment(lazy boo
 func (fg *FittingSingleStatSegmentsProcess) SupplyData(inputData []FittingSample) {
 	fg.samplesOriginal = slices.Clone(inputData)
 }
-
-const c_fitting_initial_range_required = 0.35
-
-const c_fitting_large_range_threshold = 0.50
-const c_fitting_large_range_required = 0.20
-
-const c_fitting_medium_range_threshold = 0.25
-const c_fitting_medium_range_required = 0.10
-
-const c_fitting_small_range_threshold = 0.15
-const c_fitting_small_range_required = 0.10
-
-const c_fitting_tiny_range_threshold = 0.05
-const c_fitting_tiny_range_over_required = 0.80
-const c_fitting_tiny_range_under_required = 0.95
-
-const c_fitting_dropped_range_threshold = 0.02
 
 // let's say a standard output is about 4 line segments
 // each segment thus should cover on average 25%
