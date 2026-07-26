@@ -1,6 +1,7 @@
 package weight_highs
 
 import (
+	"cmp"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_highs"
@@ -15,9 +16,9 @@ const (
 	c_fitting2_statScaledRangeHigh = 1.0
 	c_fitting2_simScaledRangeHigh  = 1.0
 
-	c_fitting2_maxStatsGapBetweenSegments          = 0.02 // similar to dropped range in fitting1
-	c_fitting2_maxStatsAllowOverlapBetweenSegments = 0.01 // 1% is about 150 stat given standard 15000 range
-	c_fitting2_output_thresholdCompareSlack        = 1
+	c_fitting2_minStatsRequireOverlapBetweenSegments = 0.001 // need a bit of overlap (zero maybe ok) to fix the common entries as line meeting points
+	c_fitting2_maxStatsAllowOverlapBetweenSegments   = 0.01  // 1% is about 150 stat given standard 15000 range
+	c_fitting2_output_thresholdCompareSlack          = 1
 	c_fitting2_outputFittingPerInclude
 
 	c_fitting2_statUnscaledHigh       = 50000
@@ -34,19 +35,20 @@ type FittingSingleStatSegmentsProcess2 struct {
 
 	segments []*fittingSingleSegment2
 
-	objectiveLineDiff   util_highs.ObjectiveIndex
-	objectiveInclude    util_highs.ObjectiveIndex
-	objectiveThresholds util_highs.ObjectiveIndex
+	objectiveLineDiff    util_highs.ObjectiveIndex
+	objectiveInclude     util_highs.ObjectiveIndex
+	objectiveThresholds  util_highs.ObjectiveIndex
+	objectiveLineOverlap util_highs.ObjectiveIndex
 }
 
 type fittingSingleSegment2 struct {
-	process          *FittingSingleStatSegmentsProcess2
-	lineSlope        util_highs.ColumnIndex
-	lineOffset       util_highs.ColumnIndex
-	minimumThreshold util_highs.ColumnIndex
-	maximumThreshold util_highs.ColumnIndex
-	includeColumns   []util_highs.ColumnIndex
-	includeCountRow  util_highs.ConstraintRow
+	process             *FittingSingleStatSegmentsProcess2
+	lineSlope           util_highs.ColumnIndex
+	lineOffset          util_highs.ColumnIndex
+	minimumThreshold    util_highs.ColumnIndex
+	maximumThreshold    util_highs.ColumnIndex
+	includeSampleCount  util_highs.ConstraintRow
+	includeOverlapCount util_highs.ConstraintRow
 }
 
 type Fitting2InterimResult struct {
@@ -80,9 +82,7 @@ func (fg *FittingSingleStatSegmentsProcess2) Run() *util_async.FutureCancellable
 	}
 	fg.enforceLastSegment(fg.segments[len(fg.segments)-1])
 
-	for _, sample := range fg.inputData {
-		fg.addSample(sample)
-	}
+	fg.processData()
 
 	//fw.includeCountRow.Build(fw.build, float64(len(fw.inputData))*fw.minimumIncludeRate, util_highs.C_PlusInf)
 	return nil
@@ -92,9 +92,9 @@ func (fg *FittingSingleStatSegmentsProcess2) addSegment() {
 	fs := &fittingSingleSegment2{}
 	fs.lineSlope = fg.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "slope"})
 	fs.lineOffset = fg.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "offset"})
+
 	fs.minimumThreshold = fg.build.CreateColumnGeneral(highs.Continuous, 0, c_fitting2_statScaledRangeHigh, util_highs.DebugString{Text: "minimum"})
 	fs.maximumThreshold = fg.build.CreateColumnGeneral(highs.Continuous, 0, c_fitting2_statScaledRangeHigh, util_highs.DebugString{Text: "maximum"})
-
 	// TODO this condition could also enforce a minimum range if we want one
 	fg.build.ColumnIsGreaterOrEqualColumnEnforce(fs.minimumThreshold, fs.maximumThreshold)
 
@@ -102,10 +102,10 @@ func (fg *FittingSingleStatSegmentsProcess2) addSegment() {
 }
 
 func (fg *FittingSingleStatSegmentsProcess2) enforceCrossSegmentRules(one *fittingSingleSegment2, two *fittingSingleSegment2) {
-	thresholdCompareSlack := fg.build.CreateColumnGeneral(highs.Continuous, c_fitting2_maxStatsGapBetweenSegments, c_fitting2_maxStatsAllowOverlapBetweenSegments, util_highs.DebugString{Text: "thresholdCompareSlack"})
+	thresholdCompareSlack := fg.build.CreateColumnGeneral(highs.Continuous, c_fitting2_minStatsRequireOverlapBetweenSegments, c_fitting2_maxStatsAllowOverlapBetweenSegments, util_highs.DebugString{Text: "thresholdCompareSlack"})
 	compareThreshold := util_highs.ConstraintRow{}
-	compareThreshold.Add(one.maximumThreshold, -1)
-	compareThreshold.Add(two.minimumThreshold, 1)
+	compareThreshold.Add(one.maximumThreshold, 1)
+	compareThreshold.Add(two.minimumThreshold, -1)
 	compareThreshold.Add(thresholdCompareSlack, 1)
 	compareThreshold.Build(fg.build, 0, 0)
 
@@ -170,27 +170,67 @@ func (fg *FittingSingleStatSegmentsProcess2) enforceLastSegment(segment *fitting
 	rowLimit.Build(fg.build, c_fitting2_statScaledRangeHigh, c_fitting2_statScaledRangeHigh)
 }
 
-func (fg *FittingSingleStatSegmentsProcess2) addSample(sample FittingSample) {
+func (fg *FittingSingleStatSegmentsProcess2) processData() {
+	slices.SortFunc(fg.inputData, func(a, b FittingSample) int {
+		return cmp.Compare(a.StatValue, b.StatValue)
+	})
+
+	for _, sample := range fg.inputData {
+		fg.addSample(sample)
+	}
+}
+
+func validateSample(sample FittingSample) {
 	if sample.SimResult < 0 || sample.SimResult > 1 || sample.StatValue < 0 || sample.StatValue > 1 {
 		panic("sample out of range")
 	}
+}
 
-	for _, segment := range fg.segments {
+func (fg *FittingSingleStatSegmentsProcess2) addSample(sample FittingSample) {
+	validateSample(sample)
+
+	includeInSegments := make([]util_highs.ColumnIndex, len(fg.segments))
+	for segIndex, segment := range fg.segments {
 		includeColumn := fg.sampleIncludeToggleColumn(sample, segment)
+		includeInSegments[segIndex] = includeColumn
+
 		fg.sampleToFitLine(sample, segment, includeColumn)
+	}
+
+	for i := range len(fg.segments) - 1 {
+		fg.prepareAsPotentialThreshold(fg.segments[i], fg.segments[i+1], includeInSegments[i], includeInSegments[i+1], sample)
 	}
 }
 
 func (fg *FittingSingleStatSegmentsProcess2) sampleIncludeToggleColumn(sample FittingSample, segment *fittingSingleSegment2) util_highs.ColumnIndex {
 	includeColumn := fg.build.CreateColumnBoolWithObjective(c_fitting2_outputFittingPerInclude, fg.objectiveInclude, util_highs.DebugString{Text: "include"})
-	segment.includeCountRow.Add(includeColumn, 1)
-	segment.includeColumns = append(segment.includeColumns, includeColumn)
 
 	fg.build.ConstantIsBetweenColumns_NoSequenceCheck(segment.minimumThreshold, segment.maximumThreshold, includeColumn, sample.StatValue, c_fitting2_statScaledRangeHigh, c_fitting2_statScaledUnequalDelta)
+
+	segment.includeSampleCount.Add(includeColumn, 1)
 	return includeColumn
 }
 
-func (fg *FittingSingleStatSegmentsProcess2) sampleToFitLine(sample FittingSample, segment *fittingSingleSegment2, toggle util_highs.ColumnIndex) {
+func (fg *FittingSingleStatSegmentsProcess2) prepareAsPotentialThreshold(seg1, seg2 *fittingSingleSegment2, include1, include2 util_highs.ColumnIndex, sample FittingSample) {
+	includeBoth := fg.build.CreateColumnBool(util_highs.DebugText("includeBoth"))
+	fg.build.ConstraintAnd(includeBoth, include1, include2)
+
+	differenceSigned := fg.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "differenceSigned"})
+	difference := fg.build.CreateColumnWithObjective(highs.Continuous, 0, util_highs.C_PlusInf, c_fitting_outputDifference, fg.objectiveLineOverlap, util_highs.DebugString{Text: "difference"})
+
+	// overlapRow: one.lineSlope*StatValue + one.lineOffset - two.lineSlope*StatValue - two.lineOffset + difference = 0
+	overlapRow := util_highs.ConstraintRow{Debug: "overlapRow"}
+	overlapRow.Add(seg1.lineSlope, sample.StatValue)
+	overlapRow.Add(seg1.lineOffset, 1)
+	overlapRow.Add(seg2.lineSlope, -sample.StatValue)
+	overlapRow.Add(seg2.lineOffset, -1)
+	overlapRow.Add(differenceSigned, 1)
+	overlapRow.Build(fg.build, 0, 0)
+
+	fg.build.AbsoluteValue_WithToggle_NoExtraCheck(differenceSigned, difference, includeBoth, c_fitting_simScaledRangeHigh)
+}
+
+func (fg *FittingSingleStatSegmentsProcess2) sampleToFitLine(sample FittingSample, segment *fittingSingleSegment2, include util_highs.ColumnIndex) {
 	//// this would need another way to include toggle AbsoluteValueFromSumTwoDiffConst_WithToggle may be possible
 	//difference := fg.build.CreateColumnWithObjective(highs.Continuous, 0, util_highs.C_PlusInf, c_fitting_outputDifference, fg.objectiveLineDiff, util_highs.DebugString{Text: "difference"})
 	//fg.build.AbsoluteValueFromSumTwoThenDiffToConst(
@@ -210,5 +250,5 @@ func (fg *FittingSingleStatSegmentsProcess2) sampleToFitLine(sample FittingSampl
 	sampleRow.Add(difference, 1)
 	sampleRow.Build(fg.build, sample.SimResult, sample.SimResult)
 
-	fg.build.AbsoluteValue_WithToggle_NoExtraCheck(differenceSigned, difference, toggle, c_fitting_simScaledRangeHigh)
+	fg.build.AbsoluteValue_WithToggle_NoExtraCheck(differenceSigned, difference, include, c_fitting_simScaledRangeHigh)
 }

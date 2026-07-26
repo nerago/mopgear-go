@@ -46,6 +46,24 @@ func (build *LinearBuilder) ConstraintIfBoolCopy(boolSwitchVar, sourceVar Column
 	valueLow.Build(build, C_MinusInf, rangeHigh)
 }
 
+func (build *LinearBuilder) ConstraintAnd(outputVar ColumnIndex, inputVars ...ColumnIndex) {
+	and := ConstraintAndBuilder{}
+	and.SetOutput(outputVar)
+	for _, input := range inputVars {
+		and.AddInput(input)
+	}
+	and.Build(build)
+}
+
+func (build *LinearBuilder) ConstraintOr(outputVar ColumnIndex, inputVars ...ColumnIndex) {
+	or := ConstraintOrBuilder{}
+	or.SetOutput(outputVar)
+	for _, input := range inputVars {
+		or.AddInput(input)
+	}
+	or.Build(build)
+}
+
 // https://medium.com/data-science/a-comprehensive-guide-to-modeling-techniques-in-mixed-integer-linear-programming-3e96cc1bc03d
 type ConstraintAndBuilder struct {
 	outputVar ColumnIndex
