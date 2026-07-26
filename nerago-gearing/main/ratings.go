@@ -426,6 +426,7 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 		}
 	})
 
+	statMin := util_collection.FindMinFunc(sampleDataPreScale, func(s weight_highs.FittingSample) float64 { return s.StatValue })
 	statMax := util_collection.FindMaxFunc(sampleDataPreScale, func(s weight_highs.FittingSample) float64 { return s.StatValue })
 	simMax := util_collection.FindMaxFunc(sampleDataPreScale, func(s weight_highs.FittingSample) float64 { return s.SimResult })
 	sampleData := util_collection.MapSliceAsNew(sampleDataPreScale, func(sample *weight_highs.FittingSample) weight_highs.FittingSample {
@@ -471,15 +472,51 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 	}
 	tab.Write(printer)
 
+	printer.Printf("stat,target,")
+	for _, oneWeight := range weightList {
+		printer.Printf("weight%d,", oneWeight.BuiltSequence)
+	}
+	printer.Println0()
+
+	skip := uint32(250)
+	startVal := float64((uint32(statMin) / skip) * skip)
+	for stat := startVal; stat < statMax; stat += float64(skip) {
+		sampleDataPreScale = append(sampleDataPreScale, weight_highs.FittingSample{
+			StatValue: stat,
+			SimResult: 0,
+		})
+	}
+	slices.SortFunc(sampleDataPreScale, func(a, b weight_highs.FittingSample) int {
+		return cmp.Compare(a.StatValue, b.StatValue)
+	})
 	for _, sample := range sampleDataPreScale {
-		printer.Printf("%.0f,%.0f,", sample.StatValue, sample.SimResult)
+		printer.Printf("%.0f,", sample.StatValue)
+		if sample.SimResult != 0 {
+			printer.Printf("%.0f,", sample.SimResult)
+		} else {
+			printer.Printf(",")
+		}
 		for _, oneWeight := range weightList {
 			statValue := sample.StatValue / statMax
 			guessSim := statValue*oneWeight.LineSlope + oneWeight.LineOffset
-			printer.Printf("%.0f,", guessSim*simMax)
+			if statValue >= oneWeight.Minimum && statValue <= oneWeight.Maximum {
+				printer.Printf("%.0f,", guessSim*simMax)
+			} else {
+				printer.Printf(",")
+			}
 		}
 		printer.Println0()
 	}
+
+	//for _, sample := range sampleDataPreScale {
+	//	printer.Printf("%.0f,%.0f,", sample.StatValue, sample.SimResult)
+	//	for _, oneWeight := range weightList {
+	//		statValue := sample.StatValue / statMax
+	//		guessSim := statValue*oneWeight.LineSlope + oneWeight.LineOffset
+	//		printer.Printf("%.0f,", guessSim*simMax)
+	//	}
+	//	printer.Println0()
+	//}
 	//for _, sample := range sampleDataPreScale {
 	//	printer.Printf("%.0f,%.6f,", sample.StatValue, sample.SimResult/simMax)
 	//	for _, oneWeight := range weightList {

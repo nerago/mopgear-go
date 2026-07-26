@@ -304,6 +304,27 @@ func (fg *FittingSingleStatSegmentsProcess) SupplyData(inputData []FittingSample
 	fg.samplesOriginal = slices.Clone(inputData)
 }
 
+const c_fitting_initial_range_required = 0.35
+
+const c_fitting_large_range_threshold = 0.50
+const c_fitting_large_range_required = 0.20
+
+const c_fitting_medium_range_threshold = 0.25
+const c_fitting_medium_range_required = 0.10
+
+const c_fitting_small_range_threshold = 0.15
+const c_fitting_small_range_required = 0.10
+
+const c_fitting_tiny_range_threshold = 0.05
+const c_fitting_tiny_range_over_required = 0.80
+const c_fitting_tiny_range_under_required = 0.95
+
+const c_fitting_dropped_range_threshold = 0.02
+
+// let's say a standard output is about 4 line segments
+// each segment thus should cover on average 25%
+// initial range is a stronger requirement of at least 35%, assume remaining actually 60% (20% each)
+// next ones we want to give them some slack but hoping for 15-30%
 func (fg *FittingSingleStatSegmentsProcess) Run(cancel util_async.CancelSignal) map[statRangeFloat]FittingSingleStatResult {
 	fg.runInitial(cancel)
 	if fg.onlyComputeSingleSegment {
@@ -317,18 +338,28 @@ func (fg *FittingSingleStatSegmentsProcess) Run(cancel util_async.CancelSignal) 
 		nextRange, nextData := util_collection.MapFirstEntry(fg.samplesRemainingParts)
 		delete(fg.samplesRemainingParts, nextRange)
 
-		ratioOfOverall := float64(len(nextData)) / float64(overallSize)
-		if ratioOfOverall < 0.02 || len(nextData) < 3 {
-			// drop it
-		} else if ratioOfOverall < 0.05 || len(nextData) < 8 {
-			fg.runNextSegment(nextData, nextRange, 1, cancel)
-		} else if ratioOfOverall < 0.15 || len(nextData) < 20 {
-			fg.runNextSegment(nextData, nextRange, 0.8, cancel)
-		} else if ratioOfOverall < 0.30 {
-			fg.runNextSegment(nextData, nextRange, 0.4, cancel)
+		processRatioOfOverall := float64(len(nextData)) / float64(overallSize)
+		targetInclude := 0.0
+
+		if processRatioOfOverall < c_fitting_dropped_range_threshold || len(nextData) <= 8 {
+			// drop it, can't get good results from small sample
+			continue
+		} else if processRatioOfOverall >= c_fitting_large_range_threshold {
+			targetRatioOfOverall := c_fitting_large_range_required
+			targetInclude = targetRatioOfOverall / processRatioOfOverall
+		} else if processRatioOfOverall >= c_fitting_medium_range_threshold {
+			targetRatioOfOverall := c_fitting_medium_range_required
+			targetInclude = targetRatioOfOverall / processRatioOfOverall
+		} else if processRatioOfOverall >= c_fitting_small_range_threshold {
+			targetRatioOfOverall := c_fitting_small_range_required
+			targetInclude = targetRatioOfOverall / processRatioOfOverall
+		} else if processRatioOfOverall >= c_fitting_tiny_range_threshold {
+			targetInclude = c_fitting_tiny_range_over_required
 		} else {
-			fg.runNextSegment(nextData, nextRange, 0.2, cancel)
+			targetInclude = c_fitting_tiny_range_under_required
 		}
+
+		fg.runNextSegment(nextData, nextRange, targetInclude, cancel)
 	}
 
 	return fg.foundSegments
@@ -374,7 +405,7 @@ func (fg *FittingSingleStatSegmentsProcess) mergeAnyPossibleRemainingSamples() {
 func (fg *FittingSingleStatSegmentsProcess) runInitial(cancel util_async.CancelSignal) {
 	fit := FittingSingleStatWeightProcess{}
 	fit.Init(fg.printer, fg.timeout)
-	fit.SetMinimumIncludeRate(0.3)
+	fit.SetMinimumIncludeRate(c_fitting_initial_range_required)
 	fit.SupplySamples(fg.samplesOriginal)
 
 	resultOptionalFuture := fit.Run()
@@ -535,6 +566,13 @@ func (fw *FittingSingleStatWeightProcess) Run() *util_async.FutureCancellable[Fi
 			return FittingSingleStatResult{}, false
 		}
 	})
+}
+
+func (fw *FittingSingleStatWeightProcess) setupLinearObjectives0() {
+	fw.build.BlendMultiObjectives = true
+
+	fw.objectiveLineDiff = fw.build.AddObjectiveBlended(5, 0)
+	fw.objectiveInclude = fw.build.AddObjectiveBlended(1, 0)
 }
 
 func (fw *FittingSingleStatWeightProcess) setupLinearObjectives() {
