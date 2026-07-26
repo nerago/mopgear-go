@@ -224,14 +224,14 @@ func (ranker *RankingStatWeightProcess3) makeDataListEntryColumnsNoMIP() {
 
 func (ranker *RankingStatWeightProcess3) makeRankColumnAndDiff(entry *rankEntry3, maxRank float64, debugStr string) {
 	entry.RankColumn = ranker.build.CreateColumnGeneral(highs.Integer, 0, maxRank, util_highs.DebugText("derivedRank-"+debugStr))
-	entry.RankDiffAbsColumn = ranker.build.CreateColumnWithOutput(highs.Integer, 0, util_highs.C_PlusInf, 1, util_highs.DebugText("rankDiffAbs-"+debugStr))
+	entry.RankDiffAbsColumn = ranker.build.CreateColumnWithOutput(highs.Integer, 0, util_highs.InfPos(), 1, util_highs.DebugText("rankDiffAbs-"+debugStr))
 
 	targetRank := float64(entry.TargetRank)
 	ranker.build.AbsoluteValueFromDiffOneToConst(entry.RankColumn, 1, targetRank, entry.RankDiffAbsColumn, "diffRankToTarget")
 }
 
 func (ranker *RankingStatWeightProcess3) makeScoreColumn(entry *rankEntry3, debugStr string) {
-	entry.ScoreColumn = ranker.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugText("score-"+debugStr))
+	entry.ScoreColumn = ranker.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugText("score-"+debugStr))
 
 	scoreRow := util_highs.ConstraintRow{Debug: "scoreRow-" + debugStr}
 	for _, statType := range ranker.requiredStats {

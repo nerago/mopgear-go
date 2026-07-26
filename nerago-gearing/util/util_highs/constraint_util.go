@@ -13,23 +13,23 @@ func (build *LinearBuilder) ConstraintIfBoolCopyValueElseZero(boolSwitchVar, sou
 	valueHigh.Add(targetVar, -1)
 	valueHigh.Add(sourceVar, 1)
 	valueHigh.Add(boolSwitchVar, rangeHigh)
-	valueHigh.Build(build, C_MinusInf, rangeHigh)
+	valueHigh.Build(build, InfNeg(), rangeHigh)
 
 	valueLow := ConstraintRow{Debug: "ContraintIfBoolCopyValueElseZero_ValueLow"}
 	valueLow.Add(targetVar, 1)
 	valueLow.Add(sourceVar, -1)
 	valueLow.Add(boolSwitchVar, -rangeLow)
-	valueLow.Build(build, C_MinusInf, -rangeLow)
+	valueLow.Build(build, InfNeg(), -rangeLow)
 
 	zeroHigh := ConstraintRow{Debug: "ContraintIfBoolCopyValueElseZero_ZeroHigh"}
 	zeroHigh.Add(targetVar, 1)
 	zeroHigh.Add(boolSwitchVar, -rangeHigh)
-	zeroHigh.Build(build, C_MinusInf, 0)
+	zeroHigh.Build(build, InfNeg(), 0)
 
 	zeroLow := ConstraintRow{Debug: "ContraintIfBoolCopyValueElseZero_ZeroLow"}
 	zeroLow.Add(targetVar, -1)
 	zeroLow.Add(boolSwitchVar, rangeLow)
-	zeroLow.Build(build, C_MinusInf, 0)
+	zeroLow.Build(build, InfNeg(), 0)
 }
 
 func (build *LinearBuilder) ConstraintIfBoolCopy(boolSwitchVar, sourceVar ColumnIndex, sourceCoefficient float64, targetVar ColumnIndex, rangeHigh float64) {
@@ -37,13 +37,13 @@ func (build *LinearBuilder) ConstraintIfBoolCopy(boolSwitchVar, sourceVar Column
 	valueHigh.Add(targetVar, -1)
 	valueHigh.Add(sourceVar, sourceCoefficient)
 	valueHigh.Add(boolSwitchVar, rangeHigh)
-	valueHigh.Build(build, C_MinusInf, rangeHigh)
+	valueHigh.Build(build, InfNeg(), rangeHigh)
 
 	valueLow := ConstraintRow{Debug: "ContraintIfBoolCopy_ValueLow"}
 	valueLow.Add(targetVar, 1)
 	valueLow.Add(sourceVar, -sourceCoefficient)
 	valueLow.Add(boolSwitchVar, rangeHigh)
-	valueLow.Build(build, C_MinusInf, rangeHigh)
+	valueLow.Build(build, InfNeg(), rangeHigh)
 }
 
 func (build *LinearBuilder) ConstraintAnd(outputVar ColumnIndex, inputVars ...ColumnIndex) {
@@ -100,11 +100,11 @@ func (and *ConstraintAndBuilder) Build(build *LinearBuilder) {
 			pullDown := ConstraintRow{Debug: "ConstraintAndBuilder_pullDown"}
 			pullDown.Add(inputVar, -1)
 			pullDown.Add(and.outputVar, 1)
-			pullDown.Build(build, C_MinusInf, 0)
+			pullDown.Build(build, InfNeg(), 0)
 		}
 
 		targetNum := len(and.inputVars) - 1
-		sumRow.Build(build, C_MinusInf, float64(targetNum))
+		sumRow.Build(build, InfNeg(), float64(targetNum))
 	}
 }
 
@@ -138,7 +138,7 @@ func (or *ConstraintOrBuilder) Build(build *LinearBuilder) {
 
 	// maxNum := len(build.inputVars) - 1
 	// sumRow.finish(input, 0, float64(maxNum))
-	zeroIfNone.Build(build, 0, C_PlusInf)
+	zeroIfNone.Build(build, 0, InfPos())
 }
 
 func (build *LinearBuilder) ConstraintNot(inputVar, outputVar ColumnIndex) {
@@ -158,12 +158,12 @@ func (build *LinearBuilder) AbsoluteValue(inputVar, outputVar ColumnIndex) {
 	negative := ConstraintRow{Debug: "AbsoluteValueNegative"}
 	negative.Add(inputVar, 1)
 	negative.Add(outputVar, 1)
-	negative.Build(build, 0, C_PlusInf)
+	negative.Build(build, 0, InfPos())
 
 	positive := ConstraintRow{Debug: "AbsoluteValuePositive"}
 	positive.Add(inputVar, 1)
 	positive.Add(outputVar, -1)
-	positive.Build(build, C_MinusInf, 0)
+	positive.Build(build, InfNeg(), 0)
 }
 
 func (build *LinearBuilder) AbsoluteValueFromDiffTwoVars(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, debug string) {
@@ -173,7 +173,7 @@ func (build *LinearBuilder) AbsoluteValueFromDiffTwoVars(inputOneVar ColumnIndex
 	negative.Add(inputOneVar, inputOneCoefficient)
 	negative.Add(inputTwoVar, -inputTwoCoefficient)
 	negative.Add(outputVar, 1)
-	negative.Build(build, 0, C_PlusInf)
+	negative.Build(build, 0, InfPos())
 
 	// one - two - out <= 0
 	// so if one - two > 0, out needed to pull it down
@@ -181,7 +181,7 @@ func (build *LinearBuilder) AbsoluteValueFromDiffTwoVars(inputOneVar ColumnIndex
 	positive.Add(inputOneVar, inputOneCoefficient)
 	positive.Add(inputTwoVar, -inputTwoCoefficient)
 	positive.Add(outputVar, -1)
-	positive.Build(build, C_MinusInf, 0)
+	positive.Build(build, InfNeg(), 0)
 }
 
 func (build *LinearBuilder) AbsoluteValueFromDiffTwoVars_ScaleOutput(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, outputCoefficient float64, debug string) {
@@ -191,7 +191,7 @@ func (build *LinearBuilder) AbsoluteValueFromDiffTwoVars_ScaleOutput(inputOneVar
 	negative.Add(inputOneVar, inputOneCoefficient)
 	negative.Add(inputTwoVar, -inputTwoCoefficient)
 	negative.Add(outputVar, outputCoefficient)
-	negative.Build(build, 0, C_PlusInf)
+	negative.Build(build, 0, InfPos())
 
 	// one - two - out <= 0
 	// so if one - two > 0, out needed to pull it down
@@ -199,7 +199,7 @@ func (build *LinearBuilder) AbsoluteValueFromDiffTwoVars_ScaleOutput(inputOneVar
 	positive.Add(inputOneVar, inputOneCoefficient)
 	positive.Add(inputTwoVar, -inputTwoCoefficient)
 	positive.Add(outputVar, -outputCoefficient)
-	positive.Build(build, C_MinusInf, 0)
+	positive.Build(build, InfNeg(), 0)
 }
 
 func (build *LinearBuilder) AbsoluteValueFromDiffTwoVarsNonFree(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, highRange float64, debug string) {
@@ -209,53 +209,53 @@ func (build *LinearBuilder) AbsoluteValueFromDiffTwoVarsNonFree(inputOneVar Colu
 	setisNegative.Add(inputOneVar, inputOneCoefficient)
 	setisNegative.Add(inputTwoVar, -inputTwoCoefficient)
 	setisNegative.Add(isNegative, highRange)
-	setisNegative.Build(build, 0, C_PlusInf)
+	setisNegative.Build(build, 0, InfPos())
 
 	confirmIsNegative := ConstraintRow{Debug: debug + "confirmIsNegative"}
 	confirmIsNegative.Add(inputOneVar, inputOneCoefficient)
 	confirmIsNegative.Add(inputTwoVar, -inputTwoCoefficient)
 	confirmIsNegative.Add(isNegative, highRange)
-	confirmIsNegative.Build(build, C_MinusInf, highRange)
+	confirmIsNegative.Build(build, InfNeg(), highRange)
 
 	copyNegativeHigh := ConstraintRow{Debug: debug + " copyNegativeHigh"}
 	copyNegativeHigh.Add(inputOneVar, -inputOneCoefficient)
 	copyNegativeHigh.Add(inputTwoVar, inputTwoCoefficient)
 	copyNegativeHigh.Add(isNegative, highRange)
 	copyNegativeHigh.Add(outputVar, -1)
-	copyNegativeHigh.Build(build, C_MinusInf, highRange)
+	copyNegativeHigh.Build(build, InfNeg(), highRange)
 
 	copyNegativeLow := ConstraintRow{Debug: debug + " copyNegativeLow"}
 	copyNegativeLow.Add(inputOneVar, inputOneCoefficient)
 	copyNegativeLow.Add(inputTwoVar, -inputTwoCoefficient)
 	copyNegativeLow.Add(isNegative, highRange)
 	copyNegativeLow.Add(outputVar, 1)
-	copyNegativeLow.Build(build, C_MinusInf, highRange)
+	copyNegativeLow.Build(build, InfNeg(), highRange)
 
 	copyPositiveHigh := ConstraintRow{Debug: debug + " copyPositiveHigh"}
 	copyPositiveHigh.Add(inputOneVar, inputOneCoefficient)
 	copyPositiveHigh.Add(inputTwoVar, -inputTwoCoefficient)
 	copyPositiveHigh.Add(isNegative, -highRange)
 	copyPositiveHigh.Add(outputVar, -1)
-	copyPositiveHigh.Build(build, C_MinusInf, 0)
+	copyPositiveHigh.Build(build, InfNeg(), 0)
 
 	copyPositiveLow := ConstraintRow{Debug: debug + " copyPositiveLow"}
 	copyPositiveLow.Add(inputOneVar, -inputOneCoefficient)
 	copyPositiveLow.Add(inputTwoVar, inputTwoCoefficient)
 	copyPositiveLow.Add(isNegative, -highRange)
 	copyPositiveLow.Add(outputVar, 1)
-	copyPositiveLow.Build(build, C_MinusInf, 0)
+	copyPositiveLow.Build(build, InfNeg(), 0)
 }
 
 func (build *LinearBuilder) AbsoluteValueFromDiffOneToConst(inputOneVar ColumnIndex, inputOneCoefficient float64, constCompare float64, outputVar ColumnIndex, debug string) {
 	negative := ConstraintRow{Debug: debug + " AbsoluteValueNegative"}
 	negative.Add(inputOneVar, inputOneCoefficient)
 	negative.Add(outputVar, 1)
-	negative.Build(build, constCompare, C_PlusInf)
+	negative.Build(build, constCompare, InfPos())
 
 	positive := ConstraintRow{Debug: debug + " AbsoluteValuePositive"}
 	positive.Add(inputOneVar, inputOneCoefficient)
 	positive.Add(outputVar, -1)
-	positive.Build(build, C_MinusInf, constCompare)
+	positive.Build(build, InfNeg(), constCompare)
 }
 
 func (build *LinearBuilder) AbsoluteValueFromSumTwoThenDiffToConst(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, constCompare float64, outputVar ColumnIndex, debug string) {
@@ -263,13 +263,13 @@ func (build *LinearBuilder) AbsoluteValueFromSumTwoThenDiffToConst(inputOneVar C
 	negative.Add(inputOneVar, inputOneCoefficient)
 	negative.Add(inputTwoVar, inputTwoCoefficient)
 	negative.Add(outputVar, 1)
-	negative.Build(build, constCompare, C_PlusInf)
+	negative.Build(build, constCompare, InfPos())
 
 	positive := ConstraintRow{Debug: debug + " AbsoluteValuePositive"}
 	positive.Add(inputOneVar, inputOneCoefficient)
 	positive.Add(inputTwoVar, inputTwoCoefficient)
 	positive.Add(outputVar, -1)
-	positive.Build(build, C_MinusInf, constCompare)
+	positive.Build(build, InfNeg(), constCompare)
 }
 
 func (build *LinearBuilder) AbsoluteValueFromSumSeveralThenDiffToConst(inputVars []ColumnIndex, inputCoefficients []float64, constCompare float64, outputVar ColumnIndex, debug string) {
@@ -282,64 +282,64 @@ func (build *LinearBuilder) AbsoluteValueFromSumSeveralThenDiffToConst(inputVars
 		negative.Add(inputVars[i], inputCoefficients[i])
 	}
 	negative.Add(outputVar, 1)
-	negative.Build(build, constCompare, C_PlusInf)
+	negative.Build(build, constCompare, InfPos())
 
 	positive := ConstraintRow{Debug: debug + " AbsoluteValuePositive"}
 	for i := range inputVars {
 		positive.Add(inputVars[i], inputCoefficients[i])
 	}
 	positive.Add(outputVar, -1)
-	positive.Build(build, C_MinusInf, constCompare)
+	positive.Build(build, InfNeg(), constCompare)
 }
 
 func (build *LinearBuilder) AbsoluteValueDiffTwoVarsThenDiffConst_NeedMIP(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, diffConst float64, highRange float64, debug string) {
-	diffTwoVars := build.CreateColumnGeneral(highs.Continuous, C_MinusInf, C_PlusInf, DebugText(debug+" diffTwoVars"))
+	diffTwoVars := build.CreateColumnGeneral(highs.Continuous, InfNeg(), InfPos(), DebugText(debug+" diffTwoVars"))
 
 	isNegative := build.CreateColumnBool(DebugString{Text: debug + " isNegative"})
 	setIsNegative := ConstraintRow{Debug: debug + " setIsNegative"}
 	setIsNegative.Add(inputOneVar, inputOneCoefficient)
 	setIsNegative.Add(inputTwoVar, -inputTwoCoefficient)
 	setIsNegative.Add(isNegative, highRange)
-	setIsNegative.Build(build, 0, C_PlusInf)
+	setIsNegative.Build(build, 0, InfPos())
 	confirmIsNegative := ConstraintRow{Debug: debug + "confirmIsNegative"}
 	confirmIsNegative.Add(inputOneVar, inputOneCoefficient)
 	confirmIsNegative.Add(inputTwoVar, -inputTwoCoefficient)
 	confirmIsNegative.Add(isNegative, highRange)
-	confirmIsNegative.Build(build, C_MinusInf, highRange)
+	confirmIsNegative.Build(build, InfNeg(), highRange)
 
 	copyNegativeHigh := ConstraintRow{Debug: debug + " copyNegativeHigh"}
 	copyNegativeHigh.Add(inputOneVar, -inputOneCoefficient)
 	copyNegativeHigh.Add(inputTwoVar, inputTwoCoefficient)
 	copyNegativeHigh.Add(isNegative, highRange)
 	copyNegativeHigh.Add(diffTwoVars, -1)
-	copyNegativeHigh.Build(build, C_MinusInf, highRange)
+	copyNegativeHigh.Build(build, InfNeg(), highRange)
 	copyNegativeLow := ConstraintRow{Debug: debug + " copyNegativeLow"}
 	copyNegativeLow.Add(inputOneVar, inputOneCoefficient)
 	copyNegativeLow.Add(inputTwoVar, -inputTwoCoefficient)
 	copyNegativeLow.Add(isNegative, highRange)
 	copyNegativeLow.Add(diffTwoVars, 1)
-	copyNegativeLow.Build(build, C_MinusInf, highRange)
+	copyNegativeLow.Build(build, InfNeg(), highRange)
 	copyPositiveHigh := ConstraintRow{Debug: debug + " copyPositiveHigh"}
 	copyPositiveHigh.Add(inputOneVar, inputOneCoefficient)
 	copyPositiveHigh.Add(inputTwoVar, -inputTwoCoefficient)
 	copyPositiveHigh.Add(isNegative, -highRange)
 	copyPositiveHigh.Add(diffTwoVars, -1)
-	copyPositiveHigh.Build(build, C_MinusInf, 0)
+	copyPositiveHigh.Build(build, InfNeg(), 0)
 	copyPositiveLow := ConstraintRow{Debug: debug + " copyPositiveLow"}
 	copyPositiveLow.Add(inputOneVar, -inputOneCoefficient)
 	copyPositiveLow.Add(inputTwoVar, inputTwoCoefficient)
 	copyPositiveLow.Add(isNegative, -highRange)
 	copyPositiveLow.Add(diffTwoVars, 1)
-	copyPositiveLow.Build(build, C_MinusInf, 0)
+	copyPositiveLow.Build(build, InfNeg(), 0)
 
 	diffConstNegative := ConstraintRow{Debug: debug + " diffConstNegative"}
 	diffConstNegative.Add(diffTwoVars, 1)
 	diffConstNegative.Add(outputVar, 1)
-	diffConstNegative.Build(build, diffConst, C_PlusInf)
+	diffConstNegative.Build(build, diffConst, InfPos())
 	diffConstPositive := ConstraintRow{Debug: debug + " diffConstPositive"}
 	diffConstPositive.Add(diffTwoVars, 1)
 	diffConstPositive.Add(outputVar, -1)
-	diffConstPositive.Build(build, C_MinusInf, diffConst)
+	diffConstPositive.Build(build, InfNeg(), diffConst)
 }
 
 func (build *LinearBuilder) AbsoluteValue_WithToggle(inputVar, outputVar, toggleVar ColumnIndex, rangeHigh float64) {
@@ -347,18 +347,18 @@ func (build *LinearBuilder) AbsoluteValue_WithToggle(inputVar, outputVar, toggle
 	setIfNegative.Add(inputVar, 1)
 	setIfNegative.Add(outputVar, 1)
 	setIfNegative.Add(toggleVar, -rangeHigh)
-	setIfNegative.Build(build, -rangeHigh, C_PlusInf)
+	setIfNegative.Build(build, -rangeHigh, InfPos())
 
 	setIfPositive := ConstraintRow{}
 	setIfPositive.Add(inputVar, 1)
 	setIfPositive.Add(outputVar, -1)
 	setIfPositive.Add(toggleVar, rangeHigh)
-	setIfPositive.Build(build, C_MinusInf, rangeHigh)
+	setIfPositive.Build(build, InfNeg(), rangeHigh)
 
 	// ideally outputVar should be limited to zero already
 	zeroMinimum := ConstraintRow{}
 	zeroMinimum.Add(outputVar, 1)
-	zeroMinimum.Build(build, 0, C_PlusInf)
+	zeroMinimum.Build(build, 0, InfPos())
 }
 
 func (build *LinearBuilder) AbsoluteValue_WithToggle_NoExtraCheck(inputVar, outputVar, toggleVar ColumnIndex, rangeHigh float64) {
@@ -366,13 +366,13 @@ func (build *LinearBuilder) AbsoluteValue_WithToggle_NoExtraCheck(inputVar, outp
 	setIfNegative.Add(inputVar, 1)
 	setIfNegative.Add(outputVar, 1)
 	setIfNegative.Add(toggleVar, -rangeHigh)
-	setIfNegative.Build(build, -rangeHigh, C_PlusInf)
+	setIfNegative.Build(build, -rangeHigh, InfPos())
 
 	setIfPositive := ConstraintRow{}
 	setIfPositive.Add(inputVar, 1)
 	setIfPositive.Add(outputVar, -1)
 	setIfPositive.Add(toggleVar, rangeHigh)
-	setIfPositive.Build(build, C_MinusInf, rangeHigh)
+	setIfPositive.Build(build, InfNeg(), rangeHigh)
 }
 
 // basic logic: output = one xor two
@@ -401,12 +401,12 @@ func (build *LinearBuilder) ColumnIsGreaterOrEqualThanConstant(compareColumn Col
 	set := ConstraintRow{Debug: "ColumnIsGreaterOrEqualThanConstant_set"}
 	set.Add(compareColumn, 1)
 	set.Add(isGreaterEqual, -rangeHigh)
-	set.Build(build, C_MinusInf, constValue-equalDelta)
+	set.Build(build, InfNeg(), constValue-equalDelta)
 
 	confirm := ConstraintRow{Debug: "ColumnIsGreaterOrEqualThanConstant_confirm"}
 	confirm.Add(isGreaterEqual, constValue)
 	confirm.Add(compareColumn, -1)
-	confirm.Build(build, C_MinusInf, 0)
+	confirm.Build(build, InfNeg(), 0)
 
 	return isGreaterEqual
 }
@@ -420,12 +420,12 @@ func (build *LinearBuilder) ColumnIsLessOrEqualThanConstant(compareColumn Column
 	set := ConstraintRow{Debug: "ColumnIsLessOrEqualThanConstant_set"}
 	set.Add(compareColumn, 1)
 	set.Add(isLessEqual, rangeHigh)
-	set.Build(build, constValue+equalDelta, C_PlusInf)
+	set.Build(build, constValue+equalDelta, InfPos())
 
 	confirm := ConstraintRow{Debug: "ColumnIsLessOrEqualThanConstant_confirm"}
 	confirm.Add(isLessEqual, rangeHigh)
 	confirm.Add(compareColumn, 1)
-	confirm.Build(build, C_MinusInf, rangeHigh+constValue)
+	confirm.Build(build, InfNeg(), rangeHigh+constValue)
 
 	return isLessEqual
 }
@@ -445,7 +445,7 @@ func (build *LinearBuilder) ConstantIsBetweenColumns(minimumColumn, maximumColum
 	checkSequence := ConstraintRow{}
 	checkSequence.Add(maximumColumn, 1)
 	checkSequence.Add(minimumColumn, -1)
-	checkSequence.Build(build, 0, C_PlusInf)
+	checkSequence.Build(build, 0, InfPos())
 }
 
 func (build *LinearBuilder) ConstantIsBetweenColumns_NoSequenceCheck(minimumColumn, maximumColumn, targetBoolColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) {
@@ -530,13 +530,13 @@ func (build *LinearBuilder) ColumnIsGreaterOrEqualColumn(leftSideCol, rightSideC
 	set.Add(leftSideCol, 1)
 	set.Add(rightSideCol, -1)
 	set.Add(boolIsGreater, -rangeHigh)
-	set.Build(build, C_MinusInf, -equalDelta)
+	set.Build(build, InfNeg(), -equalDelta)
 
 	confirm := ConstraintRow{Debug: "ColumnIsGreaterOrEqualColumn_confirm"}
 	confirm.Add(leftSideCol, -1)
 	confirm.Add(rightSideCol, 1)
 	confirm.Add(boolIsGreater, rangeHigh)
-	confirm.Build(build, C_MinusInf, rangeHigh)
+	confirm.Build(build, InfNeg(), rangeHigh)
 }
 
 // logic: leftSideCol <= rightSideCol
@@ -545,25 +545,25 @@ func (build *LinearBuilder) ColumnIsLessOrEqualColumn(leftSideCol, rightSideCol,
 	set.Add(leftSideCol, 1)
 	set.Add(rightSideCol, -1)
 	set.Add(boolIsLess, rangeHigh)
-	set.Build(build, equalDelta, C_PlusInf)
+	set.Build(build, equalDelta, InfPos())
 
 	confirm := ConstraintRow{Debug: "ColumnIsLessOrEqualColumn_confirm"}
 	confirm.Add(leftSideCol, 1)
 	confirm.Add(rightSideCol, -1)
 	confirm.Add(boolIsLess, rangeHigh)
-	confirm.Build(build, C_MinusInf, rangeHigh)
+	confirm.Build(build, InfNeg(), rangeHigh)
 }
 
 func (build *LinearBuilder) ColumnIsGreaterOrEqualColumnEnforce(lowCol, highCol ColumnIndex) {
 	row := ConstraintRow{Debug: "ColumnIsGreaterOrEqualColumnEnforce"}
 	row.Add(lowCol, -1)
 	row.Add(highCol, 1)
-	row.Build(build, 0, C_PlusInf)
+	row.Build(build, 0, InfPos())
 }
 
 func (build *LinearBuilder) ColumnIsLessOrEqualColumnEnforce(lowCol, highCol ColumnIndex) {
 	row := ConstraintRow{Debug: "ColumnIsLessOrEqualColumnEnforce"}
 	row.Add(lowCol, -1)
 	row.Add(highCol, 1)
-	row.Build(build, C_MinusInf, 0)
+	row.Build(build, InfNeg(), 0)
 }

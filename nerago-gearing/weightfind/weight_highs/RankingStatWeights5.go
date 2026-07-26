@@ -218,7 +218,7 @@ func (run *rankInternalRun5) makeEntryPairScoreChecks(lo *rankEntry5, hi *rankEn
 	compareScore := util_highs.ConstraintRow{Debug: "compareScore " + indexText}
 	compareScore.Add(hi.ScoreIfIncluded, 1)
 	compareScore.Add(lo.ScoreIfIncluded, -1)
-	compareScore.Build(run.build, 0, util_highs.C_PlusInf)
+	compareScore.Build(run.build, 0, util_highs.InfPos())
 
 	// TODO this seems a bit off, can a run of includes ever end?
 

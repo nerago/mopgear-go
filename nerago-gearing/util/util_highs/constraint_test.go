@@ -19,9 +19,9 @@ func TestContraintIfBoolCopyValueElseZero(test *testing.T) {
 
 		build := new(LinearBuilder)
 		build.NoOutput = true
-		oneColumn := build.CreateColumnGeneral(highs.Continuous, C_MinusInf, C_PlusInf, nil)
+		oneColumn := build.CreateColumnGeneral(highs.Continuous, InfNeg(), InfPos(), nil)
 		toggleColumn := build.CreateColumnBool(nil)
-		outColumn := build.CreateColumnGeneral(highs.Continuous, C_MinusInf, C_PlusInf, nil)
+		outColumn := build.CreateColumnGeneral(highs.Continuous, InfNeg(), InfPos(), nil)
 		setColumnToConstant(build, oneColumn, oneValue)
 		setColumnToConstant(build, toggleColumn, toggleValue)
 
@@ -83,9 +83,9 @@ func TestContraintIfBoolCopy(test *testing.T) {
 
 		build := new(LinearBuilder)
 		build.NoOutput = true
-		oneColumn := build.CreateColumnGeneral(highs.Continuous, C_MinusInf, C_PlusInf, nil)
+		oneColumn := build.CreateColumnGeneral(highs.Continuous, InfNeg(), InfPos(), nil)
 		toggleColumn := build.CreateColumnBool(nil)
-		outColumn := build.CreateColumnGeneral(highs.Continuous, C_MinusInf, C_PlusInf, nil)
+		outColumn := build.CreateColumnGeneral(highs.Continuous, InfNeg(), InfPos(), nil)
 		setColumnToConstant(build, oneColumn, oneValue)
 		setColumnToConstant(build, toggleColumn, toggleValue)
 
@@ -740,9 +740,9 @@ func TestAbsoluteValue_WithToggle(test *testing.T) {
 
 		build := new(LinearBuilder)
 		build.NoOutput = true
-		oneColumn := build.CreateColumnGeneral(highs.Continuous, C_MinusInf, C_PlusInf, nil)
+		oneColumn := build.CreateColumnGeneral(highs.Continuous, InfNeg(), InfPos(), nil)
 		toggleColumn := build.CreateColumnBool(nil)
-		outColumn := build.CreateColumnGeneral(highs.Continuous, C_MinusInf, C_PlusInf, nil)
+		outColumn := build.CreateColumnGeneral(highs.Continuous, InfNeg(), InfPos(), nil)
 		setColumnToConstant(build, oneColumn, oneValue)
 		setColumnToConstant(build, toggleColumn, toggleValue)
 

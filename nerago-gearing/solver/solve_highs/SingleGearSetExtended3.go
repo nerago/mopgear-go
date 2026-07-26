@@ -124,7 +124,7 @@ func (setup *singleGearSetExtended3) prepareStats() {
 	setup.statTotalColumns = make(map[stats.StatType]*columnInfo)
 	for _, statType := range stats.StatType_List {
 		entry := columnInfo{entryType: entry_stat_total, statType: statType}
-		entry.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.C_PlusInf, util_highs.DebugText("statTotal "+statType.Name()))
+		entry.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), util_highs.DebugText("statTotal "+statType.Name()))
 		setup.statTotalColumns[statType] = &entry
 		setup.allColumns = append(setup.allColumns, &entry)
 
@@ -215,7 +215,7 @@ func (setup *singleGearSetExtended3) calcScoreFromLastEntryIfGreater(entry weigh
 
 func (setup *singleGearSetExtended3) makeSimValueColumn(simType stats.SimType) columnInfo {
 	simValueColumn := columnInfo{entryType: entry_sim_value, simType: simType}
-	simValueColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, &simValueColumn)
+	simValueColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), &simValueColumn)
 	setup.simValueTotalColumns[simType] = &simValueColumn
 	setup.allColumns = append(setup.allColumns, &simValueColumn)
 	return simValueColumn
@@ -223,7 +223,7 @@ func (setup *singleGearSetExtended3) makeSimValueColumn(simType stats.SimType) c
 
 func (setup *singleGearSetExtended3) makeContributeScoreSimStatColumn(simType stats.SimType, statType stats.StatType) columnInfo {
 	simStatValueColumn := columnInfo{entryType: entry_sim_stat_value, simType: simType, statType: statType}
-	simStatValueColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, &simStatValueColumn)
+	simStatValueColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), &simStatValueColumn)
 	//setup.simValueTotalColumns[simType] = &simValueColumn
 	setup.allColumns = append(setup.allColumns, &simStatValueColumn)
 	return simStatValueColumn
@@ -232,7 +232,7 @@ func (setup *singleGearSetExtended3) makeContributeScoreSimStatColumn(simType st
 func (setup *singleGearSetExtended3) calcCombinedSimRating() {
 	// weighted sum of each sim value
 	combinedRatingColumn := columnInfo{entryType: entry_sum_rating}
-	combinedRatingColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.C_PlusInf, &combinedRatingColumn)
+	combinedRatingColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), &combinedRatingColumn)
 	setup.combinedRatingVar = &combinedRatingColumn
 	setup.allColumns = append(setup.allColumns, &combinedRatingColumn)
 

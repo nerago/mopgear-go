@@ -105,7 +105,7 @@ func (form *FormulaStatWeightProcess2) Run(stopwatch *util.Stopwatch, timeout in
 	form.createWeightColumns()
 	form.buildDataEquations()
 
-	form.includeCountRow.Build(form.build, float64(len(form.inputData))*form.minimumIncludeRate, util_highs.C_PlusInf)
+	form.includeCountRow.Build(form.build, float64(len(form.inputData))*form.minimumIncludeRate, util_highs.InfPos())
 
 	solutionFuture := form.build.RunHighsFuture(stopwatch)
 	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.Weight2Extended, bool) {
@@ -123,14 +123,14 @@ func (form *FormulaStatWeightProcess2) chooseScaling() {
 func (form *FormulaStatWeightProcess2) createWeightColumns() {
 	for _, statType := range form.requiredStats {
 		for _, simType := range form.requiredSims {
-			colDetailWeight := form.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "WEIGHT " + statType.Name() + " " + simType.Name()})
+			colDetailWeight := form.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "WEIGHT " + statType.Name() + " " + simType.Name()})
 			form.detailedWeightColumns.Put(statType, simType, colDetailWeight)
 		}
 	}
 
 	form.offsetColumns = make(map[stats.SimType]util_highs.ColumnIndex)
 	for _, simType := range form.requiredSims {
-		form.offsetColumns[simType] = form.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "OFFSET " + simType.Name()})
+		form.offsetColumns[simType] = form.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "OFFSET " + simType.Name()})
 	}
 }
 
@@ -211,7 +211,7 @@ func (form *FormulaStatWeightProcess2) buildDataEquationForSim(stats *stats.Stat
 		matchSimValue.Add(weightDetailCol, scaledStatValue)
 	}
 
-	deviationSigned := form.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "deviationSigned"})
+	deviationSigned := form.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "deviationSigned"})
 	deviationAbsOutput := form.build.CreateColumnWithObjective(highs.Continuous, 0, c_formula2HighDiff, 1, form.objectiveEquationDiff, util_highs.DebugString{Text: "deviationAbsOutput"})
 
 	matchSimValue.Add(deviationSigned, 1)

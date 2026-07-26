@@ -128,7 +128,7 @@ func (setup *singleGearSetShared) buildSetMultipliedOutput(permutation *bonusCom
 
 	// the actual output variable from this permutation, applies relevant set related multipliers
 	permutationOutput := columnInfo{entryType: entry_permutation_output_weighted, permutation: permutation, weight: totalWeight}
-	permutationOutput.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, &permutationOutput)
+	permutationOutput.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), &permutationOutput)
 	setup.allColumns = append(setup.allColumns, &permutationOutput)
 
 	// copy regular rating sum to column if flag is set
@@ -146,7 +146,7 @@ func (setup *singleGearSetShared) addMainOutputVariable(scaleOutputRating float6
 	entry := columnInfo{entryType: entry_main_output}
 
 	// goes directly into overall rating, but could have an external scale applied
-	entry.columnIndex = setup.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, scaleOutputRating, &entry)
+	entry.columnIndex = setup.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), scaleOutputRating, &entry)
 
 	// derive value based on whichever setup bonus permutation is active
 	setup.mainOutputRow.Add(entry.columnIndex, -1)
@@ -166,7 +166,7 @@ func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []gear_mod
 
 			rowSetCountRequired := util_highs.ConstraintRow{Debug: "rowSetCountRequired"}
 			rowSetCountRequired.Add(setCountCol.columnIndex, 1)
-			rowSetCountRequired.Build(setup.build, float64(needCount), util_highs.C_PlusInf)
+			rowSetCountRequired.Build(setup.build, float64(needCount), util_highs.InfPos())
 		} else {
 			oneOfTheseOptions := util_highs.ConstraintRow{}
 
@@ -188,7 +188,7 @@ func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []gear_mod
 				oneOfTheseOptions.Add(optionActive, 1)
 			}
 
-			oneOfTheseOptions.Build(setup.build, 1, util_highs.C_PlusInf)
+			oneOfTheseOptions.Build(setup.build, 1, util_highs.InfPos())
 		}
 	}
 }

@@ -81,14 +81,14 @@ func (grid *GridStatWeightProcess) Run(stopwatch *util.Stopwatch) *util_async.Fu
 
 func (grid *GridStatWeightProcess) setupWeightVars() {
 	for _, statType := range grid.requiredStats {
-		colFinalWeight := grid.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "FINAL WEIGHT: " + statType.Name()})
+		colFinalWeight := grid.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "FINAL WEIGHT: " + statType.Name()})
 		// colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, -c_finalWeightLimit, c_finalWeightLimit)
 		grid.finalWeights[statType] = colFinalWeight
 	}
 
 	for _, statType := range grid.requiredStats {
 		for _, simType := range grid.simTypes {
-			colDetailWeight := grid.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
+			colDetailWeight := grid.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
 			grid.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
 	}
@@ -225,7 +225,7 @@ func (grid *GridStatWeightProcess) unitValueCombinationAddToModel(baseUnitSample
 
 	// detailweight_dps_haste * unit_dps_base - detailweight_dps_base * unit_dps_haste + offset = 0
 	// detailweight_dps_haste / unit_dps_haste  - detailweight_dps_base   / unit_dps_base + offset / unit_dps_base / unit_dps_haste = 0
-	// offsetSigned := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf, utilhighs.C_PlusInf, utilhighs.DebugString{Text: "OFFSET SIGNED " + debugText})
+	// offsetSigned := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf(), utilhighs.C_PlusInf(), utilhighs.DebugString{Text: "OFFSET SIGNED " + debugText})
 	// weightRow := utilhighs.ConstraintRowBuild{}
 	// weightRow.Add(thisDetailWeight, baseUnitSample.value)  // OLD
 	// weightRow.Add(detailWeightBase, -thisUnitSample.value) // OLD
@@ -235,7 +235,7 @@ func (grid *GridStatWeightProcess) unitValueCombinationAddToModel(baseUnitSample
 	// weightRow.Finish(&grid.input, 0, 0)
 
 	// take absolute value, output for objective function
-	offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
+	offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
 	// utilhighs.AbsoluteValueFromDiff(&grid.input, offsetSigned, offsetAbs)
 
 	grid.build.AbsoluteValueFromDiffTwoVars(thisDetailWeightCol, baseUnitSample.value, baseDetailWeightCol, thisUnitSample.value, offsetAbs, "OFFSET ABS "+debugText)

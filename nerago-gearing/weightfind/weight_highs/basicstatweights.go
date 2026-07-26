@@ -63,7 +63,7 @@ func (basic *BasicStatWeightProcess) AddSimData(statType stats.StatType, statVal
 func (basic *BasicStatWeightProcess) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.Weight1Basic] {
 	for _, statType := range basic.requiredStats {
 		colName := "FINAL WEIGHT: " + statType.Name()
-		colFinalWeight := basic.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: colName})
+		colFinalWeight := basic.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: colName})
 		// colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, -c_finalWeightLimit, c_finalWeightLimit)
 		basic.finalWeights[statType] = colFinalWeight
 	}
@@ -71,7 +71,7 @@ func (basic *BasicStatWeightProcess) Run(stopwatch *util.Stopwatch) *util_async.
 	for _, statType := range basic.requiredStats {
 		for _, simType := range basic.requiredSims {
 			colName := "WEIGHT: " + statType.Name() + " " + simType.Name()
-			colDetailWeight := basic.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: colName})
+			colDetailWeight := basic.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: colName})
 			basic.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
 	}
@@ -151,10 +151,10 @@ func (basic *BasicStatWeightProcess) unitValuesToCalcDetailedRatings_single(unit
 	thisUnitValue float64, thisdetailWeight util_highs.ColumnIndex, simType stats.SimType, statType stats.StatType) {
 
 	colName := "OFFSET SIGNED " + simType.Name() + " " + statType.Name()
-	offsetSigned := basic.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: colName})
+	offsetSigned := basic.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: colName})
 
 	colName = "OFFSET ABS " + simType.Name() + " " + statType.Name()
-	offsetAbs := basic.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugString{Text: colName}) // outputs for objective function
+	offsetAbs := basic.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: colName}) // outputs for objective function
 	basic.build.AbsoluteValue(offsetSigned, offsetAbs)
 
 	// detailweight_dps_haste * unit_dps_base - detailweight_dps_base * unit_dps_haste + offset = 0

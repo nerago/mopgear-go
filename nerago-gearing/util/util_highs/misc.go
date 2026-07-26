@@ -13,10 +13,12 @@ const (
 	C_DiagnoseInfeasible = false
 )
 
-var (
-	C_PlusInf  float64 = math.Inf(1)
-	C_MinusInf float64 = math.Inf(-1)
-)
+func InfPos() float64 {
+	return math.Inf(1)
+}
+func InfNeg() float64 {
+	return math.Inf(-1)
+}
 
 type SolverMode int8
 

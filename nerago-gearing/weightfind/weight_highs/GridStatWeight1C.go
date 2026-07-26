@@ -92,13 +92,13 @@ func (grid *GridStatWeightProcess1C) Run(stopwatch *util.Stopwatch) *util_async.
 
 func (grid *GridStatWeightProcess1C) setupWeightVars() {
 	for _, statType := range grid.requiredStats {
-		colFinalWeight := grid.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "FINAL WEIGHT: " + statType.Name()})
+		colFinalWeight := grid.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "FINAL WEIGHT: " + statType.Name()})
 		grid.finalWeights[statType] = colFinalWeight
 	}
 
 	for _, statType := range grid.requiredStats {
 		for _, simType := range grid.simTypes {
-			colDetailWeight := grid.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
+			colDetailWeight := grid.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
 			grid.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
 	}
@@ -236,7 +236,7 @@ func (grid *GridStatWeightProcess1C) unitValuesCalcForGroup(simType stats.SimTyp
 	for baseUnitSample := range baseUnitValueSeq {
 		for thisUnitSample := range thisUnitValueSeq {
 			var debugText string = debugText + " " + strconv.Itoa(index)
-			offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
+			offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
 
 			grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, baseUnitSample*scale, baseDetailWeightCol, thisUnitSample*scale, offsetAbs, 1/scale, "OFFSET ABS "+debugText)
 

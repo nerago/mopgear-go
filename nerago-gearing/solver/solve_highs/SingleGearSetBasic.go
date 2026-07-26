@@ -87,7 +87,7 @@ func (setup *singleGearSetBasic) prepareRatingSum() {
 
 	// sum of individual selected item ratings
 	// doesen't go directly into output rating
-	entry.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.C_PlusInf, &entry)
+	entry.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), &entry)
 
 	// main action of this variable: derive value to match rest of rest of row sum
 	setup.baseRatingSumRow.Add(entry.columnIndex, -1)
@@ -144,7 +144,7 @@ func (setup *singleGearSetBasic) finishRequiredStats(require gear_model.StatRequ
 
 func convertHigh(high uint32) float64 {
 	if high == math.MaxUint32 {
-		return util_highs.C_PlusInf
+		return util_highs.InfPos()
 	} else {
 		return float64(high)
 	}

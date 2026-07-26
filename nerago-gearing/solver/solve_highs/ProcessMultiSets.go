@@ -275,7 +275,7 @@ func (process *SolverHighsMultiProcess) makeFullModel() {
 	process.build.Solver = util_highs.Solver_MIP_Interior // TODO check if actually best
 
 	entry := columnInfo{entryType: entry_multi_output}
-	entry.columnIndex = process.build.CreateColumnWithOutput(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, 1, &entry)
+	entry.columnIndex = process.build.CreateColumnWithOutput(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), 1, &entry)
 	process.allColumns = append(process.allColumns, &entry)
 
 	process.outputColumn = entry.columnIndex

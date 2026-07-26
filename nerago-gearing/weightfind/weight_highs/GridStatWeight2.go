@@ -182,7 +182,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleOneDifferenceStats(one *weight
 		simDiff, goodDiff := grid2.calcSimDiff(one, two, simType)
 		if goodDiff {
 			debugText := "MISMATCH1 " + statType.Name() + " " + simType.Name()
-			mismatchCol := grid2.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugString{Text: debugText})
+			mismatchCol := grid2.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: debugText})
 
 			grid2.build.AbsoluteValueFromDiffOneToConst(weightColumn, statDiff, simDiff, mismatchCol, debugText)
 		}
@@ -200,7 +200,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleTwoDifferenceStats(one *weight
 		simDiff, goodDiff := grid2.calcSimDiff(one, two, simType)
 		if goodDiff {
 			debugText := "MISMATCH2 " + statTypeA.Name() + " " + statTypeB.Name() + " " + simType.Name()
-			mismatchCol := grid2.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugString{Text: debugText})
+			mismatchCol := grid2.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: debugText})
 
 			grid2.build.AbsoluteValueFromSumTwoThenDiffToConst(
 				weightColumnA, statDiffA,
@@ -225,7 +225,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleThreeDifferenceStats(one *weig
 		simDiff, goodDiff := grid2.calcSimDiff(one, two, simType)
 		if goodDiff {
 			debugText := "MISMATCH3 " + statTypeA.Name() + " " + statTypeB.Name() + " " + statTypeC.Name() + " " + simType.Name()
-			mismatchCol := grid2.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugString{Text: debugText})
+			mismatchCol := grid2.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: debugText})
 
 			grid2.build.AbsoluteValueFromSumSeveralThenDiffToConst(
 				[]util_highs.ColumnIndex{weightColumnA, weightColumnB, weightColumnC},

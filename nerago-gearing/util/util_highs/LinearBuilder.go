@@ -198,7 +198,7 @@ func (build *LinearBuilder) configureHighsUtil(solver *highs.Solver, logfile str
 	if build.TimeLimitSeconds != 0 {
 		verifyNoError(solver.SetFloatOption("time_limit", float64(build.TimeLimitSeconds)))
 	} else {
-		verifyNoError(solver.SetFloatOption("time_limit", C_PlusInf))
+		verifyNoError(solver.SetFloatOption("time_limit", InfPos()))
 	}
 	verifyNoError(solver.InterruptSupportEnable())
 

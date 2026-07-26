@@ -154,7 +154,7 @@ func (ranker *RankingStatWeightProcess3b) createWeightColumns() {
 	}
 
 	if ranker.TOTALWEIGHT == 0 {
-		sumWeights.Build(ranker.build, c_rank3b_min_total_weight, util_highs.C_PlusInf)
+		sumWeights.Build(ranker.build, c_rank3b_min_total_weight, util_highs.InfPos())
 	} else if ranker.TOTALWEIGHT == 1 {
 		maxWeight := c_Rank3b_largeWeight * float64(len(ranker.requiredStats))
 		sumWeightCol := ranker.build.CreateColumnWithOutput(highs.Continuous, c_rank3b_min_total_weight, maxWeight, 1, util_highs.DebugText("sumWeightCol"))
@@ -214,7 +214,7 @@ func (ranker *RankingStatWeightProcess3b) makeDataListEntryColumns() {
 }
 
 func (ranker *RankingStatWeightProcess3b) makeScoreColumn(entry *rankEntry3b, debugStr string) {
-	entry.scoreColumn = ranker.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugText("score-"+debugStr))
+	entry.scoreColumn = ranker.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugText("score-"+debugStr))
 
 	scoreRow := util_highs.ConstraintRow{Debug: "scoreRow-" + debugStr}
 	for _, statType := range ranker.requiredStats {
@@ -230,20 +230,20 @@ func (ranker *RankingStatWeightProcess3b) makeScoreColumn(entry *rankEntry3b, de
 
 func (ranker *RankingStatWeightProcess3b) makeEntryPairCheckScoreOrderMatchesTargetOrderWithSlackVar(one *rankEntry3b, two *rankEntry3b, indexOne, indexTwo int) {
 	debug := fmt.Sprintf("-%d-%d", indexOne, indexTwo)
-	slack := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugText("slack"+debug))
+	slack := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugText("slack"+debug))
 
 	if one.targetRank > two.targetRank {
 		row := util_highs.ConstraintRow{Debug: "row" + debug}
 		row.Add(one.scoreColumn, 1)
 		row.Add(two.scoreColumn, -1)
 		row.Add(slack, 1)
-		row.Build(ranker.build, 0, util_highs.C_PlusInf)
+		row.Build(ranker.build, 0, util_highs.InfPos())
 	} else if two.targetRank > one.targetRank {
 		row := util_highs.ConstraintRow{Debug: "row" + debug}
 		row.Add(two.scoreColumn, 1)
 		row.Add(one.scoreColumn, -1)
 		row.Add(slack, 1)
-		row.Build(ranker.build, 0, util_highs.C_PlusInf)
+		row.Build(ranker.build, 0, util_highs.InfPos())
 	} else {
 		// TODO overlapping ranks may be permitted
 		panic("unexpected equal ranks")

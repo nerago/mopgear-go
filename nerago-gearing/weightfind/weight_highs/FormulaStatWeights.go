@@ -100,7 +100,7 @@ func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int
 	form.createWeightColumns()
 	form.buildDataEquations()
 
-	form.includeCountRow.Build(form.build, float64(len(form.inputData))*form.minimumIncludeRate, util_highs.C_PlusInf)
+	form.includeCountRow.Build(form.build, float64(len(form.inputData))*form.minimumIncludeRate, util_highs.InfPos())
 
 	solutionFuture := form.build.RunHighsFuture(stopwatch)
 	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.Weight2Extended, bool) {
@@ -118,8 +118,8 @@ func (form *FormulaStatWeightProcess) chooseScaling() {
 func (form *FormulaStatWeightProcess) createWeightColumns() {
 	for _, statType := range form.requiredStats {
 		for _, simType := range form.requiredSims {
-			lo := util_highs.C_MinusInf
-			hi := util_highs.C_PlusInf
+			lo := util_highs.InfNeg()
+			hi := util_highs.InfPos()
 			colDetailWeight := form.build.CreateColumnGeneral(highs.Continuous, lo, hi, util_highs.DebugString{Text: "WEIGHT " + statType.Name() + " " + simType.Name()})
 			form.detailedWeightColumns.Put(statType, simType, colDetailWeight)
 		}
@@ -208,7 +208,7 @@ func (form *FormulaStatWeightProcess) buildDataEquationForSim(stats *stats.StatB
 		matchSimValue.Add(weightDetailCol, scaledStatValue)
 	}
 
-	diffSigned := form.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "diffSigned"})
+	diffSigned := form.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "diffSigned"})
 	matchSimValue.Add(diffSigned, 1)
 
 	diffOutput := form.build.CreateColumnWithObjective(highs.Continuous, 0, c_formulaHighDiff, 1, form.objectiveEquationDiff, util_highs.DebugString{Text: "diffOutput"})

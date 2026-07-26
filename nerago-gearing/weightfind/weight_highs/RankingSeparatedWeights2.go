@@ -125,13 +125,13 @@ func (ranker *RankingSeparatedWeights2) createWeightColumns() {
 
 func (ranker *RankingSeparatedWeights2) createWeightColumnsForSim(simType stats.SimType) {
 	for _, statType := range ranker.requiredStats {
-		colWeight := ranker.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "WEIGHT " + simType.Name() + " " + statType.Name()})
+		colWeight := ranker.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "WEIGHT " + simType.Name() + " " + statType.Name()})
 		ranker.detailedWeightColumns.Put(statType, simType, colWeight)
 	}
 }
 
 func (ranker *RankingSeparatedWeights2) createOffsetColumn(simType stats.SimType) {
-	ranker.offsetColumns[simType] = ranker.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugText("offset-"+simType.Name()))
+	ranker.offsetColumns[simType] = ranker.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugText("offset-"+simType.Name()))
 }
 
 func (ranker *RankingSeparatedWeights2) prepareRankings() {
@@ -204,7 +204,7 @@ func (ranker *RankingSeparatedWeights2) setupScoreColumn(detail *rankDetailSepar
 }
 
 func (ranker *RankingSeparatedWeights2) makeEntryPair(one rankDetailSeparated2, two rankDetailSeparated2) {
-	slack := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugText("slack"))
+	slack := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugText("slack"))
 
 	targetRankOne := one.targetRankRange
 	targetRankTwo := two.targetRankRange
@@ -216,7 +216,7 @@ func (ranker *RankingSeparatedWeights2) makeEntryPair(one rankDetailSeparated2, 
 		row.Add(one.scoreColumn, 1)
 		row.Add(two.scoreColumn, -1)
 		row.Add(slack, 1)
-		row.Build(ranker.build, desiredPairSpacing, util_highs.C_PlusInf)
+		row.Build(ranker.build, desiredPairSpacing, util_highs.InfPos())
 	} else if targetRankTwo.Lo > targetRankOne.Hi {
 		// range two entirely greater
 		gapSize := targetRankTwo.Lo - targetRankOne.Hi
@@ -225,14 +225,14 @@ func (ranker *RankingSeparatedWeights2) makeEntryPair(one rankDetailSeparated2, 
 		row.Add(two.scoreColumn, 1)
 		row.Add(one.scoreColumn, -1)
 		row.Add(slack, 1)
-		row.Build(ranker.build, desiredPairSpacing, util_highs.C_PlusInf)
+		row.Build(ranker.build, desiredPairSpacing, util_highs.InfPos())
 	} else {
 		// overlapping range, no constraint
 	}
 }
 
 func (ranker *RankingSeparatedWeights2) makeEntryRankExact(targetScore float64, detail rankDetailSeparated2) util_highs.ColumnIndex {
-	slackEnd := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugText("slack-end"))
+	slackEnd := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugText("slack-end"))
 
 	ranker.build.AbsoluteValueFromDiffOneToConst(
 		detail.scoreColumn, 1,

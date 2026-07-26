@@ -83,13 +83,13 @@ func (grid *GridStatWeightProcess1B) Run(stopwatch *util.Stopwatch) *util_async.
 
 func (grid *GridStatWeightProcess1B) setupWeightVars() {
 	for _, statType := range grid.requiredStats {
-		colFinalWeight := grid.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "FINAL WEIGHT: " + statType.Name()})
+		colFinalWeight := grid.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "FINAL WEIGHT: " + statType.Name()})
 		grid.finalWeights[statType] = colFinalWeight
 	}
 
 	for _, statType := range grid.requiredStats {
 		for _, simType := range grid.simTypes {
-			colDetailWeight := grid.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
+			colDetailWeight := grid.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
 			grid.detailedWeights.Put(statType, simType, colDetailWeight)
 		}
 	}
@@ -374,22 +374,22 @@ func (grid *GridStatWeightProcess1B) unitValuesCalcForGroup(simType stats.SimTyp
 
 			if grid.CALCMODE == 0 {
 				var debugText string = debugText + " " + strconv.Itoa(index)
-				offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
+				offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
 				grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, baseUnitSample*thisScale, baseDetailWeightCol, thisUnitSample*baseScale, offsetAbs, 1/baseScale, "OFFSET ABS "+debugText)
 				index++
 			} else if grid.CALCMODE == 1 {
 				var debugText string = debugText + " " + strconv.Itoa(index)
-				offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
+				offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
 				grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, thisUnitSample*thisScale, baseDetailWeightCol, baseUnitSample*baseScale, offsetAbs, 1/baseScale, "OFFSET ABS "+debugText)
 				index++
 			} else if grid.CALCMODE == 2 {
 				var debugText string = debugText + " " + strconv.Itoa(index)
-				offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
+				offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
 				grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, baseUnitSample*baseScale, baseDetailWeightCol, thisUnitSample*thisScale, offsetAbs, 1/baseScale, "OFFSET ABS "+debugText)
 				index++
 			} else {
 				var debugText string = debugText + " " + strconv.Itoa(index)
-				offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
+				offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
 				grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, thisUnitSample*baseScale, baseDetailWeightCol, baseUnitSample*thisScale, offsetAbs, 1/baseScale, "OFFSET ABS "+debugText)
 				index++
 			}

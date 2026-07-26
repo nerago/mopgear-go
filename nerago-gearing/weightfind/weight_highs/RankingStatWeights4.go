@@ -213,7 +213,7 @@ func (run *rankInternalRun4) makeEntryColumnRefs(entry *rankEntry4, maxRank floa
 
 	entry.RankColumn = run.build.CreateColumnGeneral(highs.Integer, 0, maxRank, util_highs.DebugText("derivedRank-"+rankStr))
 
-	rankDiff := run.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.C_PlusInf, 1, util_highs.DebugText("rankDiff"))
+	rankDiff := run.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugText("rankDiff"))
 	run.build.AbsoluteValueFromDiffOneToConst(entry.RankColumn, 1, float64(entry.TargetRank), rankDiff, "rankDiff")
 }
 

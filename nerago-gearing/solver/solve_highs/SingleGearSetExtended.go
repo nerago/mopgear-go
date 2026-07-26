@@ -122,7 +122,7 @@ func (setup *singleGearSetExtended) prepareStats() {
 	setup.statTotalColumns = make(map[stats.StatType]*columnInfo)
 	for _, statType := range stats.StatType_List {
 		entry := columnInfo{entryType: entry_stat_total, statType: statType}
-		entry.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.C_PlusInf, util_highs.DebugText("statTotal "+statType.Name()))
+		entry.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), util_highs.DebugText("statTotal "+statType.Name()))
 		setup.statTotalColumns[statType] = &entry
 		setup.allColumns = append(setup.allColumns, &entry)
 
@@ -161,7 +161,7 @@ func (setup *singleGearSetExtended) calcSimValues() {
 	setup.simValueTotalColumns = make(map[stats.SimType]*columnInfo)
 	for simType, nestedWeights := range weight.SeqBySimNestedPairs() {
 		simValueColumn := columnInfo{entryType: entry_sim_value, simType: simType}
-		simValueColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, &simValueColumn)
+		simValueColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), &simValueColumn)
 		setup.simValueTotalColumns[simType] = &simValueColumn
 		setup.allColumns = append(setup.allColumns, &simValueColumn)
 
@@ -182,7 +182,7 @@ func (setup *singleGearSetExtended) calcSimValues() {
 func (setup *singleGearSetExtended) calcCombinedSimRating() {
 	// weighted sum of each sim value
 	combinedRatingColumn := columnInfo{entryType: entry_sum_rating}
-	combinedRatingColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.C_PlusInf, &combinedRatingColumn)
+	combinedRatingColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), &combinedRatingColumn)
 	setup.combinedRatingVar = &combinedRatingColumn
 	setup.allColumns = append(setup.allColumns, &combinedRatingColumn)
 
