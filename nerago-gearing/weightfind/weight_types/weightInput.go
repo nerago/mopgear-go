@@ -25,3 +25,8 @@ func (rn StatRange) Overlap(other StatRange) bool {
 func (rn StatRange) RangeSize() uint32 {
 	return rn.Maximum - rn.Minimum + 1
 }
+
+type StatRangeFloat struct {
+	Minimum float64
+	Maximum float64
+}

@@ -529,6 +529,149 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 }
 
 func statWeightsFitting2(printer *util.PrintRecorder) {
+	// generateRatingsInputFromRealRandomSets(printer)
+
+	bytes, err := os.ReadFile("sim-stats-compare-rand.json")
+	// bytes, err := os.ReadFile("sim-stats-input-data.json")
+	if err != nil {
+		panic(err)
+	}
+	var weightInputs []weight_types.WeightInput
+	err = json.Unmarshal(bytes, &weightInputs)
+	if err != nil {
+		panic(err)
+	}
+
+	// for _, entry := range weightInputs {
+	// 	if hasteInDiscontinuityRange(entry.TotalStat.GetUInt(stats.Stat_Haste)) {
+	// 		printer.Println("haste in discontinuity range")
+	// 	}
+	// }
+
+	printer.Printf("Initial weight input size = %d\n", len(weightInputs))
+
+	// fitting := stathighs.FittingSingleStatWeightProcess{}
+	// fitting.Init(printer)
+	// fitting.SetMinimumIncludeRate(0.2)
+	// fitting.SupplyDataFromStandard(weightInputs[0:32], stats.Stat_Crit, simulate.Result_DPS)
+	// oneWeight := fitting.Run()
+	// printer.Printf("%f %f %f %f %f\n", oneWeight.LineSlope, oneWeight.LineOffset, oneWeight.Minimum, oneWeight.Maximum, oneWeight.IncludePercent)
+	// tools.WritePawnString(weights, printer)
+
+	sampleDataPreScale := util_collection.MapSliceAsNew(weightInputs, func(input *weight_types.WeightInput) weight_highs.FittingSample {
+		return weight_highs.FittingSample{
+			StatValue: input.TotalStat.GetFloat(stats.Stat_Haste),
+			SimResult: input.SimResult.Get(stats.Sim_DPS),
+		}
+	})
+
+	statMin := util_collection.FindMinFunc(sampleDataPreScale, func(s weight_highs.FittingSample) float64 { return s.StatValue })
+	statMax := util_collection.FindMaxFunc(sampleDataPreScale, func(s weight_highs.FittingSample) float64 { return s.StatValue })
+	simMax := util_collection.FindMaxFunc(sampleDataPreScale, func(s weight_highs.FittingSample) float64 { return s.SimResult })
+	sampleData := util_collection.MapSliceAsNew(sampleDataPreScale, func(sample *weight_highs.FittingSample) weight_highs.FittingSample {
+		return weight_highs.FittingSample{
+			StatValue: sample.StatValue / statMax,
+			SimResult: sample.SimResult / simMax,
+		}
+	})
+
+	fitting := weight_highs.FittingSingleStatSegmentsProcess2{}
+	fitting.Init(printer, 3000)
+	fitting.SupplyData(sampleData)
+
+	weightMapCancel := fitting.Run()
+	weightMap := weightMapCancel.WaitForResultOrPanic()
+	printer.Printf("weightMap size %d\n", len(weightMap.Segments))
+	weightList := weightMap.Segments
+	slices.SortFunc(weightList, func(a, b weight_highs.Fitting2InterimSegment) int {
+		return cmp.Compare(a.StatRange.Minimum, b.StatRange.Minimum)
+	})
+
+	tab := util.TabulateOutput{}
+	tab.SetColumnSpacing(1)
+	tab.AddColumnHeader("minF", true)
+	tab.AddColumnHeader("maxF", false)
+	tab.AddColumnHeader("min", true)
+	tab.AddColumnHeader("max", false)
+	tab.AddColumnHeader("m", true)
+	tab.AddColumnHeader("c", false)
+	tab.AddColumnHeader("used", true)
+	tab.AddColumnHeader("used%", false)
+	tab.AddColumnHeader("total%", false)
+	tab.AddColumnHeader("sequence", false)
+	for _, oneWeight := range weightList {
+		tab.AddRow([]string{
+			strconv.FormatFloat(oneWeight.StatRange.Minimum, 'f', 6, 64),
+			strconv.FormatFloat(oneWeight.StatRange.Maximum, 'f', 6, 64),
+			strconv.FormatUint(uint64(math.Round(oneWeight.StatRange.Minimum*statMax)), 10),
+			strconv.FormatUint(uint64(math.Round(oneWeight.StatRange.Maximum*statMax)), 10),
+			strconv.FormatFloat(oneWeight.LineSlope, 'f', 8, 64),
+			strconv.FormatFloat(oneWeight.LineOffset, 'f', 5, 64),
+			strconv.FormatUint(uint64(oneWeight.IncludeCount), 10),
+			"", //strconv.FormatFloat(oneWeight.IncludePercentOfStageInput*100, 'f', 1, 64),
+			strconv.FormatFloat(float64(oneWeight.IncludeCount)/float64(len(sampleData))*100, 'f', 1, 64),
+			"", //strconv.FormatUint(uint64(oneWeight.BuiltSequence), 10),
+		})
+	}
+	tab.Write(printer)
+
+	printer.Printf("stat,target,")
+	for i := range weightList {
+		printer.Printf("weight%d,", i)
+	}
+	printer.Println0()
+
+	skip := uint32(250)
+	startVal := float64((uint32(statMin) / skip) * skip)
+	for stat := startVal; stat < statMax; stat += float64(skip) {
+		sampleDataPreScale = append(sampleDataPreScale, weight_highs.FittingSample{
+			StatValue: stat,
+			SimResult: 0,
+		})
+	}
+	slices.SortFunc(sampleDataPreScale, func(a, b weight_highs.FittingSample) int {
+		return cmp.Compare(a.StatValue, b.StatValue)
+	})
+	for _, sample := range sampleDataPreScale {
+		printer.Printf("%.0f,", sample.StatValue)
+		if sample.SimResult != 0 {
+			printer.Printf("%.0f,", sample.SimResult)
+		} else {
+			printer.Printf(",")
+		}
+		for _, oneWeight := range weightList {
+			statValue := sample.StatValue / statMax
+			guessSim := statValue*oneWeight.LineSlope + oneWeight.LineOffset
+			if statValue >= oneWeight.StatRange.Minimum && statValue <= oneWeight.StatRange.Maximum {
+				printer.Printf("%.0f,", guessSim*simMax)
+			} else {
+				printer.Printf(",")
+			}
+		}
+		printer.Println0()
+	}
+
+	//for _, sample := range sampleDataPreScale {
+	//	printer.Printf("%.0f,%.0f,", sample.StatValue, sample.SimResult)
+	//	for _, oneWeight := range weightList {
+	//		statValue := sample.StatValue / statMax
+	//		guessSim := statValue*oneWeight.LineSlope + oneWeight.LineOffset
+	//		printer.Printf("%.0f,", guessSim*simMax)
+	//	}
+	//	printer.Println0()
+	//}
+	//for _, sample := range sampleDataPreScale {
+	//	printer.Printf("%.0f,%.6f,", sample.StatValue, sample.SimResult/simMax)
+	//	for _, oneWeight := range weightList {
+	//		statValue := sample.StatValue / statMax
+	//		effective := statValue*oneWeight.LineSlope + oneWeight.LineOffset
+	//		printer.Printf("%.6f,", effective)
+	//	}
+	//	printer.Println0()
+	//}
+}
+
+func statWeightsFitting1a(printer *util.PrintRecorder) {
 	bytes, err := os.ReadFile("sim-stats-input-data2.json")
 	// bytes, err := os.ReadFile("sim-stats-input-data.json")
 	if err != nil {

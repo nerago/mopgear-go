@@ -48,11 +48,6 @@ type FittingSample struct {
 	SimResult float64
 }
 
-type statRangeFloat struct {
-	Minimum float64
-	Maximum float64
-}
-
 // so we want to define a line of best fit for each stat/sim
 // but also only for certain ranges of each stat, others excluded
 
@@ -186,12 +181,12 @@ func (fe *FittingEachStatWeightProcess) prepareSamples(statType stats.StatType, 
 // to fix the stat scale lineSlopeUsable * stat = lineSlopeInternal * (stat * scaleStat)
 //
 //	lineSlopeUsable = lineSlopeInternal * scaleStat
-func (fe *FittingEachStatWeightProcess) rescaleAndCleanup(initialMap map[statRangeFloat]FittingSingleStatResult, fields *fittingEachFields) {
+func (fe *FittingEachStatWeightProcess) rescaleAndCleanup(initialMap map[weight_types.StatRangeFloat]FittingSingleStatResult, fields *fittingEachFields) {
 	fields.resultSlice = fe.convertAndScaleResult(initialMap, fields.statType)
 	fields.resultSlice = fe.cleanupRanges(fields.resultSlice)
 }
 
-func (fe *FittingEachStatWeightProcess) convertAndScaleResult(initialMap map[statRangeFloat]FittingSingleStatResult, statType stats.StatType) []FittingInterimResult {
+func (fe *FittingEachStatWeightProcess) convertAndScaleResult(initialMap map[weight_types.StatRangeFloat]FittingSingleStatResult, statType stats.StatType) []FittingInterimResult {
 	scaleStat := fe.scaleStats.GetOrPanic(statType)
 
 	resultSlice := make([]FittingInterimResult, 0, len(initialMap))
@@ -296,16 +291,16 @@ type FittingSingleStatSegmentsProcess struct {
 	onlyComputeSingleSegment bool
 
 	samplesOriginal       []FittingSample
-	samplesRemainingParts map[statRangeFloat][]FittingSample
+	samplesRemainingParts map[weight_types.StatRangeFloat][]FittingSample
 
-	foundSegments map[statRangeFloat]FittingSingleStatResult
+	foundSegments map[weight_types.StatRangeFloat]FittingSingleStatResult
 }
 
 func (fg *FittingSingleStatSegmentsProcess) Init(printer *util.PrintRecorder, timeout int) {
 	fg.printer = printer
 	fg.timeout = timeout
-	fg.foundSegments = make(map[statRangeFloat]FittingSingleStatResult)
-	fg.samplesRemainingParts = make(map[statRangeFloat][]FittingSample)
+	fg.foundSegments = make(map[weight_types.StatRangeFloat]FittingSingleStatResult)
+	fg.samplesRemainingParts = make(map[weight_types.StatRangeFloat][]FittingSample)
 }
 
 func (fg *FittingSingleStatSegmentsProcess) SetOnlyComputeSingleSegment(lazy bool) {
@@ -320,7 +315,7 @@ func (fg *FittingSingleStatSegmentsProcess) SupplyData(inputData []FittingSample
 // each segment thus should cover on average 25%
 // initial range is a stronger requirement of at least 35%, assume remaining actually 60% (20% each)
 // next ones we want to give them some slack but hoping for 15-30%
-func (fg *FittingSingleStatSegmentsProcess) Run(cancel util_async.CancelSignal) map[statRangeFloat]FittingSingleStatResult {
+func (fg *FittingSingleStatSegmentsProcess) Run(cancel util_async.CancelSignal) map[weight_types.StatRangeFloat]FittingSingleStatResult {
 	fg.runInitial(cancel)
 	if fg.onlyComputeSingleSegment {
 		return fg.foundSegments
@@ -362,7 +357,7 @@ func (fg *FittingSingleStatSegmentsProcess) Run(cancel util_async.CancelSignal) 
 
 func (fg *FittingSingleStatSegmentsProcess) mergeAnyPossibleRemainingSamples() {
 	type statRangeFlagged struct {
-		statRange statRangeFloat
+		statRange weight_types.StatRangeFloat
 		remain    bool
 	}
 	flaggedSegments := make([]statRangeFlagged, 0)
@@ -385,7 +380,7 @@ func (fg *FittingSingleStatSegmentsProcess) mergeAnyPossibleRemainingSamples() {
 		b := flaggedSegments[i+1]
 		if a.remain && b.remain {
 			combinedData := slices.Concat(fg.samplesRemainingParts[a.statRange], fg.samplesRemainingParts[b.statRange])
-			combinedRange := statRangeFloat{
+			combinedRange := weight_types.StatRangeFloat{
 				Minimum: min(a.statRange.Minimum, b.statRange.Minimum),
 				Maximum: max(a.statRange.Maximum, b.statRange.Maximum),
 			}
@@ -408,18 +403,18 @@ func (fg *FittingSingleStatSegmentsProcess) runInitial(cancel util_async.CancelS
 
 	resultOptional := resultOptionalFuture.WaitForResultAsOptional()
 	if segmentResult, hasResult := resultOptional.GetWithFlag(); hasResult {
-		statRange := statRangeFloat{Minimum: segmentResult.Minimum, Maximum: segmentResult.Maximum}
+		statRange := weight_types.StatRangeFloat{Minimum: segmentResult.Minimum, Maximum: segmentResult.Maximum}
 		segmentResult.BuiltSequence = 0
 		fg.foundSegments[statRange] = segmentResult
 
-		totalRange := statRangeFloat{Minimum: 0, Maximum: c_fitting_statScaledRangeHigh}
+		totalRange := weight_types.StatRangeFloat{Minimum: 0, Maximum: c_fitting_statScaledRangeHigh}
 		fg.addToRemainingData(fg.samplesOriginal, totalRange, statRange)
 	} else {
 		panic("failed to get any useful stat fit")
 	}
 }
 
-func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []FittingSample, inputRange statRangeFloat, includeRate float64, cancel util_async.CancelSignal) {
+func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []FittingSample, inputRange weight_types.StatRangeFloat, includeRate float64, cancel util_async.CancelSignal) {
 	fit := FittingSingleStatWeightProcess{}
 	fit.Init(fg.printer, fg.timeout)
 	fit.SetMinimumIncludeRate(includeRate)
@@ -433,7 +428,7 @@ func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []FittingSa
 		minimum := max(inputRange.Minimum, segmentResult.Minimum)
 		maximum := min(inputRange.Maximum, segmentResult.Maximum)
 
-		statRange := statRangeFloat{Minimum: minimum, Maximum: maximum}
+		statRange := weight_types.StatRangeFloat{Minimum: minimum, Maximum: maximum}
 		segmentResult.Minimum = minimum
 		segmentResult.Maximum = maximum
 		segmentResult.BuiltSequence = len(fg.foundSegments)
@@ -443,7 +438,7 @@ func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []FittingSa
 	}
 }
 
-func (fg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData []FittingSample, inputRange statRangeFloat, removeRange statRangeFloat) {
+func (fg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData []FittingSample, inputRange weight_types.StatRangeFloat, removeRange weight_types.StatRangeFloat) {
 	if removeRange.Minimum < inputRange.Minimum || removeRange.Maximum > inputRange.Maximum || removeRange.Minimum > removeRange.Maximum || inputRange.Minimum > inputRange.Maximum {
 		panic("range isn't within bounds")
 	}
@@ -466,12 +461,12 @@ func (fg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData []F
 	}
 
 	if len(loData) > 0 {
-		loRange := statRangeFloat{Minimum: inputRange.Minimum, Maximum: removeRange.Minimum - c_fitting_statScaledUnequalDelta}
+		loRange := weight_types.StatRangeFloat{Minimum: inputRange.Minimum, Maximum: removeRange.Minimum - c_fitting_statScaledUnequalDelta}
 		fg.samplesRemainingParts[loRange] = loData
 	}
 
 	if len(hiData) > 0 {
-		hiRange := statRangeFloat{Minimum: removeRange.Maximum + c_fitting_statScaledUnequalDelta, Maximum: inputRange.Maximum}
+		hiRange := weight_types.StatRangeFloat{Minimum: removeRange.Maximum + c_fitting_statScaledUnequalDelta, Maximum: inputRange.Maximum}
 		fg.samplesRemainingParts[hiRange] = hiData
 	}
 }
@@ -526,8 +521,8 @@ func (fw *FittingSingleStatWeightProcess) Init(printer *util.PrintRecorder, time
 	fw.build.Solver = util_highs.Solver_MIP_Interior
 	fw.build.TimeLimitSeconds = timeout
 
-	fw.lineSlope = fw.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "slope"})
-	fw.lineOffset = fw.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "offset"})
+	fw.lineSlope = fw.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "slope"})
+	fw.lineOffset = fw.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "offset"})
 	fw.minimumThreshold = fw.build.CreateColumnGeneral(highs.Continuous, 0, c_fitting_statScaledRangeHigh, util_highs.DebugString{Text: "minimum"})
 	fw.maximumThreshold = fw.build.CreateColumnGeneral(highs.Continuous, 0, c_fitting_statScaledRangeHigh, util_highs.DebugString{Text: "maximum"})
 
@@ -549,7 +544,7 @@ func (fw *FittingSingleStatWeightProcess) Run() *util_async.FutureCancellable[Fi
 		fw.addSample(sample)
 	}
 
-	fw.includeCountRow.Build(fw.build, float64(len(fw.inputData))*fw.minimumIncludeRate, util_highs.C_PlusInf)
+	fw.includeCountRow.Build(fw.build, float64(len(fw.inputData))*fw.minimumIncludeRate, util_highs.InfPos())
 
 	solutionFuture := fw.build.RunHighsFuture(&fw.stopwatch)
 	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (FittingSingleStatResult, bool) {
@@ -647,8 +642,8 @@ func (fw *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample Fitti
 //	                  sim/stat = lineSlope + lineOffset/stat
 //	                       sim = lineSlope*stat + lineOffset
 func (fw *FittingSingleStatWeightProcess) sampleToFitLine(sample FittingSample, toggle util_highs.ColumnIndex) {
-	difference := fw.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "difference"})
-	differenceAbs := fw.build.CreateColumnWithObjective(highs.Continuous, 0, util_highs.C_PlusInf, c_fitting_outputDifference, fw.objectiveLineDiff, util_highs.DebugString{Text: "differenceAbs"})
+	difference := fw.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "difference"})
+	differenceAbs := fw.build.CreateColumnWithObjective(highs.Continuous, 0, util_highs.InfPos(), c_fitting_outputDifference, fw.objectiveLineDiff, util_highs.DebugString{Text: "differenceAbs"})
 
 	sampleRow := util_highs.ConstraintRow{Debug: "sampleRow"}
 	sampleRow.Add(fw.lineSlope, sample.StatValue)
