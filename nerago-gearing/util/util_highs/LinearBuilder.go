@@ -123,7 +123,7 @@ func (build *LinearBuilder) RunHighsFuture(stopwatch *util.Stopwatch) *util_asyn
 		}
 
 		build.postHighsRun(solver, logFilename, log)
-		future.SetResult(LinearResult{solution, log})
+		future.SetResult(LinearResult{solution, build, log})
 
 		G_HighsPool.Put(solver)
 	}()

@@ -31,7 +31,7 @@ type RankingStatWeightProcess struct {
 
 	build *util_highs.LinearBuilder
 
-	scaleStats    map[stats.StatType]float64
+	scaleStats    util_collection.EnumMap[stats.StatType, float64]
 	weightColumns map[stats.StatType]util_highs.ColumnIndex
 
 	RANKMODE  int
@@ -157,7 +157,7 @@ func (ranker *RankingStatWeightProcess) processDataEntryOriginal(entry *rankEntr
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statValue := entry.Data.TotalStat.GetFloat(statType)
-		statScale := ranker.scaleStats[statType]
+		statScale := ranker.scaleStats.GetOrPanic(statType)
 
 		scoreRow.Add(weightColumn, statValue*statScale)
 	}
@@ -177,7 +177,7 @@ func (ranker *RankingStatWeightProcess) processDataEntryPlusRankCompareToExpecte
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statValue := entry.Data.TotalStat.GetFloat(statType)
-		statScale := ranker.scaleStats[statType]
+		statScale := ranker.scaleStats.GetOrPanic(statType)
 
 		scoreRow.Add(weightColumn, statValue*statScale)
 	}
@@ -210,7 +210,7 @@ func (ranker *RankingStatWeightProcess) processDataEntryForceScoreToRank(entry *
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statValue := entry.Data.TotalStat.GetFloat(statType)
-		statScale := ranker.scaleStats[statType]
+		statScale := ranker.scaleStats.GetOrPanic(statType)
 
 		scoreRow.Add(weightColumn, statValue*statScale)
 	}
@@ -259,7 +259,7 @@ func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs
 	statWeightResult := weight_types.Weight1Basic_Make(ranker.targetRatios)
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
-		statScale := ranker.scaleStats[statType]
+		statScale := ranker.scaleStats.GetOrPanic(statType)
 
 		modelWeight := solution.ColValues[weightColumn]
 		usableWeight := modelWeight * statScale

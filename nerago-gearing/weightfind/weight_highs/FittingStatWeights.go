@@ -30,9 +30,9 @@ const (
 	c_fitting_number_nice_number_interval = 5
 )
 
-type fittingSample struct {
-	statValue float64
-	simResult float64
+type FittingSample struct {
+	StatValue float64
+	SimResult float64
 }
 
 type statRangeFloat struct {
@@ -147,17 +147,17 @@ func (fe *FittingEachStatWeightProcess) chooseScaling() {
 	fe.scaleSims = chooseSimUnfriendlyUnitScaleAndOffset(fe.inputData, fe.requiredSims)
 }
 
-func (fe *FittingEachStatWeightProcess) prepareSamples(statType stats.StatType, simType stats.SimType) []fittingSample {
+func (fe *FittingEachStatWeightProcess) prepareSamples(statType stats.StatType, simType stats.SimType) []FittingSample {
 	scaleStat := fe.scaleStats.GetOrPanic(statType)
 	scaleSim := fe.scaleSims.GetOrPanic(simType)
 
-	samples := make([]fittingSample, len(fe.inputData))
+	samples := make([]FittingSample, len(fe.inputData))
 	for i := range fe.inputData {
 		statValue := fe.inputData[i].TotalStat.GetFloat(statType)
 		simResult := fe.inputData[i].SimResult.Get(simType)
-		samples[i] = fittingSample{
-			statValue: statValue * scaleStat,
-			simResult: scaleSim.Apply(simResult),
+		samples[i] = FittingSample{
+			StatValue: statValue * scaleStat,
+			SimResult: scaleSim.Apply(simResult),
 		}
 	}
 	return samples
@@ -278,8 +278,8 @@ type FittingSingleStatSegmentsProcess struct {
 	timeout                  int
 	onlyComputeSingleSegment bool
 
-	inputSamplesOriginal       []fittingSample
-	inputSamplesRemainingParts map[statRangeFloat][]fittingSample
+	inputSamplesOriginal       []FittingSample
+	inputSamplesRemainingParts map[statRangeFloat][]FittingSample
 
 	foundSegments map[statRangeFloat]FittingSingleStatResult
 }
@@ -288,14 +288,14 @@ func (fg *FittingSingleStatSegmentsProcess) Init(printer *util.PrintRecorder, ti
 	fg.printer = printer
 	fg.timeout = timeout
 	fg.foundSegments = make(map[statRangeFloat]FittingSingleStatResult)
-	fg.inputSamplesRemainingParts = make(map[statRangeFloat][]fittingSample)
+	fg.inputSamplesRemainingParts = make(map[statRangeFloat][]FittingSample)
 }
 
 func (fg *FittingSingleStatSegmentsProcess) SetOnlyComputeSingleSegment(lazy bool) {
 	fg.onlyComputeSingleSegment = lazy
 }
 
-func (fg *FittingSingleStatSegmentsProcess) SupplyData(inputData []fittingSample) {
+func (fg *FittingSingleStatSegmentsProcess) SupplyData(inputData []FittingSample) {
 	fg.inputSamplesOriginal = slices.Clone(inputData)
 }
 
@@ -351,7 +351,7 @@ func (fg *FittingSingleStatSegmentsProcess) runInitial(cancel util_async.CancelS
 	}
 }
 
-func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []fittingSample, inputRange statRangeFloat, includeRate float64, cancel util_async.CancelSignal) {
+func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []FittingSample, inputRange statRangeFloat, includeRate float64, cancel util_async.CancelSignal) {
 	fit := FittingSingleStatWeightProcess{}
 	fit.Init(fg.printer, fg.timeout)
 	fit.SetMinimumIncludeRate(includeRate)
@@ -374,15 +374,15 @@ func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []fittingSa
 	}
 }
 
-func (fg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData []fittingSample, inputRange statRangeFloat, removeRange statRangeFloat) {
+func (fg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData []FittingSample, inputRange statRangeFloat, removeRange statRangeFloat) {
 	if removeRange.Minimum < inputRange.Minimum || removeRange.Maximum > inputRange.Maximum || removeRange.Minimum > removeRange.Maximum || inputRange.Minimum > inputRange.Maximum {
 		panic("range isn't within bounds")
 	}
 
-	loData := make([]fittingSample, 0)
-	hiData := make([]fittingSample, 0)
+	loData := make([]FittingSample, 0)
+	hiData := make([]FittingSample, 0)
 	for _, input := range processedData {
-		stat := input.statValue
+		stat := input.StatValue
 		if stat < inputRange.Minimum {
 			panic("sample isn't within bounds")
 		} else if inputRange.Minimum <= stat && stat < removeRange.Minimum {
@@ -415,7 +415,7 @@ type FittingSingleStatWeightProcess struct {
 	build     *util_highs.LinearBuilder
 
 	minimumIncludeRate float64
-	inputData          []fittingSample
+	inputData          []FittingSample
 
 	objectiveLineDiff util_highs.ObjectiveIndex
 	objectiveInclude  util_highs.ObjectiveIndex
@@ -466,7 +466,7 @@ func (fw *FittingSingleStatWeightProcess) SetMinimumIncludeRate(percent float64)
 	fw.minimumIncludeRate = percent
 }
 
-func (fw *FittingSingleStatWeightProcess) SupplySamples(inputData []fittingSample) {
+func (fw *FittingSingleStatWeightProcess) SupplySamples(inputData []FittingSample) {
 	fw.inputData = inputData
 }
 
@@ -540,17 +540,17 @@ func (fw *FittingSingleStatWeightProcess) buildResult(solution *util_highs.Solut
 	return result
 }
 
-func (fw *FittingSingleStatWeightProcess) addSample(sample fittingSample) {
+func (fw *FittingSingleStatWeightProcess) addSample(sample FittingSample) {
 	includeColumn := fw.sampleIncludeToggleColumn(sample)
 	fw.sampleToFitLine(sample, includeColumn)
 }
 
-func (fw *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample fittingSample) util_highs.ColumnIndex {
+func (fw *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample FittingSample) util_highs.ColumnIndex {
 	includeColumn := fw.build.CreateColumnBoolWithObjective(c_fitting_outputFittingPerInclude, fw.objectiveInclude, util_highs.DebugString{Text: "include"})
 	fw.includeCountRow.Add(includeColumn, 1)
 	fw.includeColumns = append(fw.includeColumns, includeColumn)
 
-	fw.build.ConstantIsBetweenColumns_NoSequenceCheck(fw.minimumThreshold, fw.maximumThreshold, includeColumn, sample.statValue, c_fitting_statScaledRangeHigh, c_fitting_statScaledUnequalDelta)
+	fw.build.ConstantIsBetweenColumns_NoSequenceCheck(fw.minimumThreshold, fw.maximumThreshold, includeColumn, sample.StatValue, c_fitting_statScaledRangeHigh, c_fitting_statScaledUnequalDelta)
 
 	return includeColumn
 }
@@ -563,15 +563,15 @@ func (fw *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample fitti
 //	sim/stat - lineOffset/stat = lineSlope
 //	                  sim/stat = lineSlope + lineOffset/stat
 //	                       sim = lineSlope*stat + lineOffset
-func (fw *FittingSingleStatWeightProcess) sampleToFitLine(sample fittingSample, toggle util_highs.ColumnIndex) {
+func (fw *FittingSingleStatWeightProcess) sampleToFitLine(sample FittingSample, toggle util_highs.ColumnIndex) {
 	difference := fw.build.CreateColumnGeneral(highs.Continuous, util_highs.C_MinusInf, util_highs.C_PlusInf, util_highs.DebugString{Text: "difference"})
 	differenceAbs := fw.build.CreateColumnWithObjective(highs.Continuous, 0, util_highs.C_PlusInf, c_fitting_outputDifference, fw.objectiveLineDiff, util_highs.DebugString{Text: "differenceAbs"})
 
 	sampleRow := util_highs.ConstraintRow{Debug: "sampleRow"}
-	sampleRow.Add(fw.lineSlope, sample.statValue)
+	sampleRow.Add(fw.lineSlope, sample.StatValue)
 	sampleRow.Add(fw.lineOffset, 1)
 	sampleRow.Add(difference, 1) // this is vertical difference, not true minimum distance. would be proportional within similar slope ranges only
-	sampleRow.Build(fw.build, sample.simResult, sample.simResult)
+	sampleRow.Build(fw.build, sample.SimResult, sample.SimResult)
 
 	fw.build.AbsoluteValue_WithToggle_NoExtraCheck(difference, differenceAbs, toggle, c_fitting_simScaledRangeHigh)
 }

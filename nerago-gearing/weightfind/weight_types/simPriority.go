@@ -112,19 +112,11 @@ func SimPriorityExtended_Make() SimPriorityExtended {
 	return SimPriorityExtended{util_collection.EnumMapMake[stats.SimType, SimPriorityEntry](stats.SimTypeEnum)}
 }
 
-func (sre *SimPriorityExtended) checkInitialized() {
-	if sre == nil || sre.entries.IsUninitialized() {
-		panic("SimPriorityExtended not initialized")
-	}
-}
-
 func (sre *SimPriorityExtended) Get(simType stats.SimType) (SimPriorityEntry, bool) {
-	sre.checkInitialized()
 	return sre.entries.Get(simType)
 }
 
 func (sre *SimPriorityExtended) GetOrPanic(simType stats.SimType) SimPriorityEntry {
-	sre.checkInitialized()
 	entry, hasEntry := sre.entries.Get(simType)
 	if !hasEntry {
 		panic("missing entry")
@@ -133,7 +125,6 @@ func (sre *SimPriorityExtended) GetOrPanic(simType stats.SimType) SimPriorityEnt
 }
 
 func (sre *SimPriorityExtended) SetSimScale(simType stats.SimType, rangingScale, rangingOffset, ratioScale float64) {
-	sre.checkInitialized()
 	if sre.entries.Has(simType) {
 		panic("duplicate")
 	}
@@ -145,11 +136,9 @@ func (sre *SimPriorityExtended) SetSimScale(simType stats.SimType, rangingScale,
 }
 
 func (sre *SimPriorityExtended) Validate() {
-	sre.checkInitialized()
 }
 
 func (sre *SimPriorityExtended) ConvertToBasic() SimPriorityBasic {
-	sre.checkInitialized()
 	simRatio := SimPriorityBasic_MakeEmpty()
 	for simType, entry := range sre.entries.SeqKeyValue() {
 		simRatio.Set(simType, entry.RatioScale)

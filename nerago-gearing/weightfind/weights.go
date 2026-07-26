@@ -47,7 +47,7 @@ func StatWeights_updateAll(simSpeed simulate.WowSim_RunSize, forceSkipSim bool, 
 		summaryStringFutures = append(summaryStringFutures, summaryFuture)
 
 		waitGroup.Go(func() {
-			statWeightsGrid_updateOne(option.Label, &option.Model, option.GearFile, &option.Model.SimPriority, option.WeightFileOut,
+			statWeights_updateOne(option.Label, &option.Model, option.GearFile, &option.Model.SimPriority, option.WeightFileOut,
 				option.SubstituteItems, printer, simSpeed, forceSkipSim, progress.NewChild(), summaryFuture)
 		})
 	}
@@ -70,7 +70,7 @@ type weightOption struct {
 	pawnString   string
 }
 
-func statWeightsGrid_updateOne(label string, gearModel *gear_model.SpecModel, gearFile string, simPriority *weight_types.SimPriorityBasic, weightFileOut string, substituteItems []items.ItemId, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, forceSkipSim bool, tracker *util.TrackProgress, futureSummary *util_async.Future[string]) {
+func statWeights_updateOne(label string, gearModel *gear_model.SpecModel, gearFile string, simPriority *weight_types.SimPriorityBasic, weightFileOut string, substituteItems []items.ItemId, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, forceSkipSim bool, tracker *util.TrackProgress, futureSummary *util_async.Future[string]) {
 	// each simulator process is considered 1/3, then remaining solving is remaining third.
 	// only very small sim runs should be overpowered by solvers
 	tracker.RunOuterTracking(3)

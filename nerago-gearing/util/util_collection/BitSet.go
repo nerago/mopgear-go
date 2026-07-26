@@ -3,6 +3,7 @@ package util_collection
 import (
 	"iter"
 	"math"
+	"slices"
 )
 
 type BitSet []uint32
@@ -10,6 +11,10 @@ type BitSet []uint32
 func BitSetMake(maxIndex uint32) BitSet {
 	elementCount := (maxIndex + 32) / 32
 	return make([]uint32, elementCount)
+}
+
+func (bs *BitSet) Clone() BitSet {
+	return slices.Clone(*bs)
 }
 
 func (bs *BitSet) IsSet(index uint32) bool {
@@ -75,16 +80,39 @@ func (bs *BitSet) Set(index uint32) {
 	i := index >> 5
 	b := index & 0x1f
 
-	var mod uint32 = 1 << b
-	(*bs)[i] |= mod
+	mask := uint32(1) << b
+	(*bs)[i] |= mask
+}
+
+func (bs *BitSet) SetReturningOld(index uint32) bool {
+	i := index >> 5
+	b := index & 0x1f
+
+	mask := uint32(1) << b
+	oldValue := (*bs)[i] & mask
+	(*bs)[i] |= mask
+
+	return oldValue != 0
 }
 
 func (bs *BitSet) Clear(index uint32) {
 	i := index >> 5
 	b := index & 0x1f
 
-	var mod uint32 = ^(1 << b)
-	(*bs)[i] &= mod
+	mask := ^(uint32(1) << b)
+	(*bs)[i] &= mask
+}
+
+func (bs *BitSet) ClearReturningOld(index uint32) bool {
+	i := index >> 5
+	b := index & 0x1f
+
+	check := uint32(1) << b
+	mask := ^check
+	oldValue := (*bs)[i] & check
+	(*bs)[i] &= mask
+
+	return oldValue != 0
 }
 
 func (bs *BitSet) ClearAll() {
@@ -192,6 +220,76 @@ func (bs *BitSet) SeqIsSetBetween(minIndex, maxIndex uint32) iter.Seq[uint32] {
 	}
 }
 
+func (bs *BitSet) SeqIsSetBetweenClearing(minIndex, maxIndex uint32) iter.Seq[uint32] {
+	minElementNum := minIndex >> 5
+	maxElementNum := maxIndex >> 5
+	minBitNum := minIndex & 0x1f
+	maxBitNum := maxIndex & 0x1f
+	return func(yield func(uint32) bool) {
+		if minElementNum == maxElementNum {
+			value := (*bs)[minElementNum] >> minBitNum
+			mask := uint32(1) << minBitNum
+			for b := minBitNum; b <= maxBitNum; b++ {
+				if value == 0 {
+					break
+				} else if (value & 0x1) != 0 {
+					(*bs)[minElementNum] ^= mask
+					index := minElementNum*32 + b
+					if !yield(index) {
+						return
+					}
+				}
+				value >>= 1
+				mask <<= 1
+			}
+		} else {
+			valueMin := (*bs)[minElementNum] >> minBitNum
+			for b := minBitNum; b <= 31; b++ {
+				if valueMin == 0 {
+					break
+				} else if (valueMin & 0x1) != 0 {
+					(*bs)[minElementNum] ^= uint32(1) << b
+					index := minElementNum*32 + b
+					if !yield(index) {
+						return
+					}
+				}
+				valueMin >>= 1
+			}
+
+			for element := minElementNum + 1; element < maxElementNum; element++ {
+				value := (*bs)[element]
+				for b := range 32 {
+					if value == 0 {
+						break
+					} else if (value & 0x1) != 0 {
+						index := element*32 + uint32(b)
+						if !yield(index) {
+							return
+						}
+					}
+					value >>= 1
+				}
+				(*bs)[element] = 0
+			}
+
+			valueMax := (*bs)[maxElementNum]
+			for b := uint32(0); b <= maxBitNum; b++ {
+				if valueMax == 0 {
+					break
+				} else if (valueMax & 0x1) != 0 {
+					(*bs)[maxElementNum] ^= uint32(1) << b
+					index := maxElementNum*32 + b
+					if !yield(index) {
+						return
+					}
+				}
+				valueMax >>= 1
+			}
+		}
+	}
+}
+
 func (bs *BitSet) SeqIsSetSkipScan(startIndex, skip uint32) iter.Seq[uint32] {
 	return func(yield func(uint32) bool) {
 		for index := startIndex; index < uint32(len(*bs)); index += skip {
@@ -211,8 +309,43 @@ func (bs *BitSet) SeqIsSetSkipScan(startIndex, skip uint32) iter.Seq[uint32] {
 				shifted >>= skip
 				index += skip
 
+				if shifted&0x1 != 0 {
+					if !yield(index) {
+						return
+					}
+				}
+
+				b += skip
+			}
+		}
+	}
+}
+
+func (bs *BitSet) SeqIsSetSkipScanClearing(startIndex, skip uint32) iter.Seq[uint32] {
+	return func(yield func(uint32) bool) {
+		for index := startIndex; index < uint32(len(*bs)); index += skip {
+			i := index >> 5
+			b := index & 0x1f
+			element := (*bs)[i]
+
+			shifted := element >> b
+			if shifted&0x1 != 0 {
+				(*bs)[i] ^= 1 << b
 				if !yield(index) {
 					return
+				}
+			}
+
+			b += skip
+			for b < 32 {
+				shifted >>= skip
+				index += skip
+
+				if shifted&0x1 != 0 {
+					(*bs)[i] ^= 1 << b
+					if !yield(index) {
+						return
+					}
 				}
 
 				b += skip

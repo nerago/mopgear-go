@@ -1,8 +1,10 @@
 package util_highs
 
 import (
+	"cmp"
 	"fmt"
 	"math"
+	"slices"
 )
 
 type indexAndValue struct {

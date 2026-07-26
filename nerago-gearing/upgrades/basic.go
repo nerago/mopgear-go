@@ -173,7 +173,7 @@ func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptions
 
 func removePairedSimilar(jobItems *items.FullOptionsMap, testSlot items.SlotEquip, testItem *items.FullItem, substituteEmptySlotOnly map[items.SlotItem]items.ItemId, model *gear_model.SpecModel, printer *util.PrintRecorder) {
 	pairedSlot := testSlot.PairedSlot()
-	if pairedSlot != -1 {
+	if pairedSlot != items.SlotEquip_Invalid {
 		printer.Println("removePairedSimilar")
 		for _, z := range jobItems[pairedSlot] {
 			printer.Println("---" + z.CreateString())

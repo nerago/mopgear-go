@@ -420,8 +420,13 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 
 	fitting := weight_highs.FittingSingleStatSegmentsProcess{}
 	// fitting.Init(printer, stats.Stat_Crit, simulate.Result_DPS)
-	fitting.Init(printer, stats.Stat_Haste, stats.Sim_DPS, 3000)
-	fitting.SupplyData(weightInputs)
+	fitting.Init(printer, 3000)
+	fitting.SupplyData(util_collection.MapSliceAsNew(weightInputs, func(input *weight_types.WeightInput) weight_highs.FittingSample {
+		return weight_highs.FittingSample{
+			StatValue: input.TotalStat.GetFloat(stats.Stat_Haste),
+			SimResult: input.SimResult.Get(stats.Sim_DPS),
+		}
+	}))
 
 	weightMap := fitting.Run(util_async.CancelSignal_Make())
 	printer.Printf("weightMap size %d\n", len(weightMap))

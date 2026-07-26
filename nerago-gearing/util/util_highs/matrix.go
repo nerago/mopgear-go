@@ -1,6 +1,9 @@
 package util_highs
 
-import "paladin_gearing_go/util/util_collection"
+import (
+	"paladin_gearing_go/util/util_collection"
+	"slices"
+)
 
 type constraintMatrixBuilder struct {
 	entries    [][]indexAndValue

@@ -145,6 +145,7 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 	itemOptions.RemoveDuplicates()
 
 	setList := solve_build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, model, makeSetCount, label)
+	setList = append(setList, solve_build.SolverBuildBestWorst(&itemOptions, model)...)
 
 	track.RunOuterTracking(len(setList))
 	defer track.SetDone()

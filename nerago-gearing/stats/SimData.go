@@ -60,6 +60,10 @@ func (types SimType) Name() string {
 var SimTypeList = []SimType{Sim_DPS, Sim_TPS, Sim_DTPS, Sim_HPS, Sim_TMI, Sim_DEATH}
 var SimTypeEnum = util_collection.EnumTypeMake[SimType](SimTypeList)
 
+func (types SimType) EnumNumValues() uint8 {
+	return simTypeCount
+}
+
 const simTypeCount = 6
 
 type SimData struct {

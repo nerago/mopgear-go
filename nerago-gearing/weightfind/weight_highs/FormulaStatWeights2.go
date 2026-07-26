@@ -205,7 +205,7 @@ func (form *FormulaStatWeightProcess2) buildDataEquationForSim(stats *stats.Stat
 	for _, statType := range form.requiredStats {
 		weightDetailCol := form.detailedWeightColumns.GetOrPanic(statType, simType)
 		statValue := stats.GetFloat(statType)
-		statScale := form.scaleStats[statType]
+		statScale := form.scaleStats.GetOrPanic(statType)
 
 		scaledStatValue := statValue * statScale
 		matchSimValue.Add(weightDetailCol, scaledStatValue)
@@ -247,7 +247,7 @@ func (form *FormulaStatWeightProcess2) extractDetailWeights(solution *highs.Solu
 
 		modelWeight := solution.ColValues[column]
 
-		scaleStat := form.scaleStats[statType]
+		scaleStat := form.scaleStats.GetOrPanic(statType)
 		usableWeight := modelWeight * scaleStat
 
 		weightExtended.PutWeight(statType, simType, usableWeight)

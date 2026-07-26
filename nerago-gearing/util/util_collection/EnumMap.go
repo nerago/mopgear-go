@@ -1,75 +1,62 @@
 package util_collection
 
 import (
+	"bytes"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
+	"errors"
 	"iter"
 	"slices"
 )
 
-type EnumType[E ~uint8] struct {
-	numValues uint8
+type EnumMap[E EnumBaseType, V any] struct {
+	content  []V
+	isSet    BitSet
+	len      int
+	enumType EnumType[E]
 }
 
-func (et EnumType[E]) IsUninitialized() bool {
-	return et.numValues == 0
-}
-
-func EnumTypeMake[E ~uint8](values []E) EnumType[E] {
-	for i := 0; i < len(values); i++ {
-		if values[i] != E(i) {
-			panic("expected iota enum in order")
-		}
-	}
-	return EnumType[E]{uint8(len(values))}
-}
-
-func (et EnumType[E]) NumValues() uint32 {
-	return uint32(et.numValues)
-}
-
-func (et EnumType[E]) First() E {
-	return E(0)
-}
-
-func (et EnumType[E]) Last() E {
-	return E(et.numValues - 1)
-}
-
-type EnumMap[E ~uint8, V any] struct {
-	content []V
-	isSet   []bool
-	len     int
-}
-
-func EnumMapMake[E ~uint8, V any](enumType EnumType[E]) EnumMap[E, V] {
-	if enumType.IsUninitialized() {
-		panic("type not initialized")
-	}
+func EnumMapMake[E EnumBaseType, V any](enumType EnumType[E]) EnumMap[E, V] {
 	return EnumMap[E, V]{
 		make([]V, enumType.NumValues()),
-		make([]bool, enumType.NumValues()),
+		BitSetMake(uint32(enumType.NumValues() - 1)),
 		0,
+		enumType,
 	}
 }
 
-func (em *EnumMap[E, V]) IsUninitialized() bool {
-	return em.content == nil || em.isSet == nil /*|| em.enumType.Values == nil*/
+func (em *EnumMap[E, V]) initInternal() {
+	if em.content == nil || em.isSet == nil {
+		numValues := E(0).EnumNumValues()
+		em.content = make([]V, numValues)
+		em.isSet = BitSetMake(uint32(numValues - 1))
+	}
 }
 
 func (em *EnumMap[E, V]) Clone() *EnumMap[E, V] {
 	return &EnumMap[E, V]{
 		slices.Clone(em.content),
-		slices.Clone(em.isSet),
+		em.isSet.Clone(),
 		em.len,
+		em.enumType,
 	}
 }
 
 func (em *EnumMap[E, V]) Equals(other *EnumMap[E, V], elementEqual func(*V, *V) bool) bool {
 	if em.len != other.len {
 		return false
+	} else if em.len == 0 && other.len == 0 {
+		return true
 	}
 
 	for i := range em.isSet {
-		if em.isSet[i] != other.isSet[i] || !elementEqual(&em.content[i], &other.content[i]) {
+		if em.isSet[i] != other.isSet[i] {
+			return false
+		}
+	}
+
+	for i := range em.content {
+		if !elementEqual(&em.content[i], &other.content[i]) {
 			return false
 		}
 	}
@@ -81,15 +68,23 @@ func (em *EnumMap[E, V]) Len() int {
 }
 
 func (em *EnumMap[E, V]) Has(key E) bool {
-	return em.isSet[key]
+	if em.isSet == nil {
+		return false
+	}
+	return em.isSet.IsSet(uint32(key))
 }
 
 func (em *EnumMap[E, V]) Get(key E) (V, bool) {
-	return em.content[key], em.isSet[key]
+	if em.isSet != nil && em.isSet.IsSet(uint32(key)) {
+		return em.content[key], true
+	} else {
+		var nilValue V
+		return nilValue, false
+	}
 }
 
 func (em *EnumMap[E, V]) GetOrPanic(key E) V {
-	if em.isSet[key] {
+	if em.isSet != nil && em.isSet.IsSet(uint32(key)) {
 		return em.content[key]
 	} else {
 		panic("key not set")
@@ -97,17 +92,16 @@ func (em *EnumMap[E, V]) GetOrPanic(key E) V {
 }
 
 func (em *EnumMap[E, V]) Put(key E, value V) {
-	if !em.isSet[key] {
-		em.isSet[key] = true
+	em.initInternal()
+	if !em.isSet.SetReturningOld(uint32(key)) {
 		em.len++
 	}
 	em.content[key] = value
 }
 
 func (em *EnumMap[E, V]) Delete(key E) {
-	if em.isSet[key] {
+	if em.isSet != nil && em.isSet.ClearReturningOld(uint32(key)) {
 		var nilValue V
-		em.isSet[key] = false
 		em.content[key] = nilValue
 		em.len--
 	}
@@ -115,11 +109,9 @@ func (em *EnumMap[E, V]) Delete(key E) {
 
 func (em *EnumMap[E, V]) SeqKeyValue() iter.Seq2[E, V] {
 	return func(yield func(E, V) bool) {
-		for i, isSet := range em.isSet {
-			if isSet {
-				if !yield(E(i), em.content[i]) {
-					return
-				}
+		for index := range em.isSet.SeqIsSet() {
+			if !yield(E(index), em.content[index]) {
+				return
 			}
 		}
 	}
@@ -127,11 +119,9 @@ func (em *EnumMap[E, V]) SeqKeyValue() iter.Seq2[E, V] {
 
 func (em *EnumMap[E, V]) SeqValues() iter.Seq[V] {
 	return func(yield func(V) bool) {
-		for i, isSet := range em.isSet {
-			if isSet {
-				if !yield(em.content[i]) {
-					return
-				}
+		for index := range em.isSet.SeqIsSet() {
+			if !yield(em.content[index]) {
+				return
 			}
 		}
 	}
@@ -139,11 +129,9 @@ func (em *EnumMap[E, V]) SeqValues() iter.Seq[V] {
 
 func (em *EnumMap[E, V]) SeqKey() iter.Seq[E] {
 	return func(yield func(E) bool) {
-		for i, isSet := range em.isSet {
-			if isSet {
-				if !yield(E(i)) {
-					return
-				}
+		for index := range em.isSet.SeqIsSet() {
+			if !yield(E(index)) {
+				return
 			}
 		}
 	}
@@ -152,11 +140,102 @@ func (em *EnumMap[E, V]) SeqKey() iter.Seq[E] {
 func (em *EnumMap[E, V]) KeySlice() []E {
 	slice := make([]E, em.len)
 	write := 0
-	for i, isSet := range em.isSet {
-		if isSet {
-			slice[write] = E(i)
-			write++
+	for index := range em.isSet.SeqIsSet() {
+		slice[write] = E(index)
+		write++
+	}
+	return slice[:write]
+}
+
+func (em *EnumMap[E, V]) MarshalJSONTo(outputEncoder *jsontext.Encoder) error {
+	buffer := bytes.Buffer{}
+	innerEncoder := jsontext.NewEncoder(&buffer)
+	err := em.marshalToEncoder(innerEncoder)
+	if err != nil {
+		return err
+	}
+	return outputEncoder.WriteValue(buffer.Bytes())
+}
+
+func (em *EnumMap[E, V]) UnmarshalJSONFrom(inputDecoder *jsontext.Decoder) error {
+	value, err := inputDecoder.ReadValue()
+	if err != nil {
+		return err
+	}
+	buffer := bytes.Buffer{}
+	buffer.Write(value)
+	decoder := jsontext.NewDecoder(&buffer)
+	return em.unmarshalFromDecoder(decoder)
+}
+
+func (em *EnumMap[E, V]) marshalToEncoder(encoder *jsontext.Encoder) error {
+	err := encoder.WriteToken(jsontext.BeginObject)
+	if err != nil {
+		return err
+	}
+
+	for index := range em.isSet.SeqIsSet() {
+		key := E(index)
+		value := em.content[index]
+
+		err = encoder.WriteToken(jsontext.String(key.Name()))
+		if err != nil {
+			return err
+		}
+
+		err = json.MarshalEncode(encoder, value)
+		if err != nil {
+			return err
 		}
 	}
-	return slice
+
+	err = encoder.WriteToken(jsontext.EndObject)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (em *EnumMap[E, V]) unmarshalFromDecoder(decoder *jsontext.Decoder) error {
+	em.initInternal()
+
+	token, err := decoder.ReadToken()
+	if err != nil {
+		return err
+	}
+	if token.Kind() != jsontext.KindBeginObject {
+		return errors.New("expected object start")
+	}
+
+	for {
+		token, err = decoder.ReadToken()
+		if err != nil {
+			return err
+		}
+
+		var key E
+		if token.Kind() == jsontext.KindEndObject {
+			break
+		} else if token.Kind() == jsontext.KindString {
+			enumName := token.String()
+			enumValue, foundValue := em.enumType.WithName(enumName)
+			if !foundValue {
+				return errors.New("invalid enum value name")
+			}
+			key = enumValue
+		} else {
+			return errors.New("expected key or object end")
+		}
+
+		var value V
+		err = json.UnmarshalDecode(decoder, &value)
+		if err != nil {
+			return err
+		}
+
+		em.Put(key, value)
+	}
+
+	return nil
 }

@@ -1,5 +1,7 @@
 package items
 
+import "paladin_gearing_go/util/util_collection"
+
 type SlotItem int8
 
 const (
@@ -84,7 +86,7 @@ func (slot SlotItem) CanEnchant() bool {
 	}
 }
 
-type SlotEquip int8
+type SlotEquip uint8
 
 const (
 	Equip_Head     SlotEquip = iota
@@ -107,8 +109,10 @@ const (
 	Equip_Weapon   SlotEquip = iota
 	Equip_Offhand  SlotEquip = iota
 
-	Equip_Iter_First = Equip_Head
-	Equip_Iter_Last  = Equip_Offhand
+	Equip_Iter_First  = Equip_Head
+	Equip_Iter_Last   = Equip_Offhand
+	SlotEquip_Count   = 16
+	SlotEquip_Invalid = 255
 )
 
 func (slot SlotEquip) Name() string {
@@ -150,6 +154,19 @@ func (slot SlotEquip) Name() string {
 	}
 }
 
+var SlotEquip_List = []SlotEquip{
+	Equip_Head, Equip_Neck, Equip_Shoulder, Equip_Back,
+	Equip_Chest, Equip_Wrist, Equip_Hand, Equip_Belt,
+	Equip_Leg, Equip_Foot, Equip_Ring1, Equip_Ring2,
+	Equip_Trinket1, Equip_Trinket2, Equip_Weapon, Equip_Offhand,
+}
+
+var SlotEquipEnum = util_collection.EnumTypeMake[SlotEquip](SlotEquip_List)
+
+func (slot SlotEquip) EnumNumValues() uint8 {
+	return SlotEquip_Count
+}
+
 var equipOptionsMap [20][]SlotEquip = makeToSlotEquipOptions()
 
 func makeToSlotEquipOptions() [20][]SlotEquip {
@@ -189,7 +206,7 @@ func (slot SlotEquip) PairedSlot() SlotEquip {
 	case Equip_Trinket2:
 		return Equip_Trinket1
 	default:
-		return -1
+		return SlotEquip_Invalid
 	}
 }
 

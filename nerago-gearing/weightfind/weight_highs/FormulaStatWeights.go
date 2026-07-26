@@ -31,8 +31,8 @@ type FormulaStatWeightProcess struct {
 	objectiveEquationDiff util_highs.ObjectiveIndex
 	objectiveInclude      util_highs.ObjectiveIndex
 
-	scaleSims             map[stats.SimType]float64
-	scaleStats            map[stats.StatType]float64
+	scaleSims             util_collection.EnumMap[stats.SimType, float64]
+	scaleStats            util_collection.EnumMap[stats.StatType, float64]
 	detailedWeightColumns util_collection.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
 
 	minimumIncludeRate float64
@@ -202,7 +202,7 @@ func (form *FormulaStatWeightProcess) buildDataEquationForSim(stats *stats.StatB
 	for _, statType := range form.requiredStats {
 		weightDetailCol := form.detailedWeightColumns.GetOrPanic(statType, simType)
 		statValue := stats.GetFloat(statType)
-		statScale := form.scaleStats[statType]
+		statScale := form.scaleStats.GetOrPanic(statType)
 
 		scaledStatValue := statValue * statScale
 		matchSimValue.Add(weightDetailCol, scaledStatValue)
@@ -214,7 +214,7 @@ func (form *FormulaStatWeightProcess) buildDataEquationForSim(stats *stats.StatB
 	diffOutput := form.build.CreateColumnWithObjective(highs.Continuous, 0, c_formulaHighDiff, 1, form.objectiveEquationDiff, util_highs.DebugString{Text: "diffOutput"})
 	form.build.AbsoluteValue_WithToggle(diffSigned, diffOutput, includeColumn, c_formulaHighDiff)
 
-	simScale := form.scaleSims[simType]
+	simScale := form.scaleSims.GetOrPanic(simType)
 	scaledSimValue := simValue * simScale
 	matchSimValue.Build(form.build, scaledSimValue, scaledSimValue)
 }
@@ -256,7 +256,7 @@ func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solut
 		//   --> modelWeight = usableWeight * scaleFix
 		//   --> usableWeight = modelWeight / scaleFix
 
-		scaleFix := form.scaleSims[simType] / form.scaleStats[statType]
+		scaleFix := form.scaleSims.GetOrPanic(simType) / form.scaleStats.GetOrPanic(statType)
 		usableWeight := modelWeight / scaleFix
 
 		weightExtended.PutWeight(statType, simType, usableWeight)

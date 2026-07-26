@@ -40,7 +40,7 @@ type RankingStatWeightProcess3 struct {
 
 	build *util_highs.LinearBuilder
 
-	scaleStats    map[stats.StatType]float64
+	scaleStats    util_collection.EnumMap[stats.StatType, float64]
 	weightColumns map[stats.StatType]util_highs.ColumnIndex
 	pairLinks     util_collection.MapMap[int, int, rankPair3]
 }
@@ -68,9 +68,9 @@ func (ranker *RankingStatWeightProcess3) Init(printer *util.PrintRecorder, timeo
 
 func (ranker *RankingStatWeightProcess3) SupplyData(inputData []weight_types.WeightInput) {
 	if ranker.SCALE1 {
-		ranker.scaleStats = make(map[stats.StatType]float64)
+		ranker.scaleStats = util_collection.EnumMapMake[stats.StatType, float64](stats.StatTypeEnum)
 		for _, statType := range stats.StatType_List {
-			ranker.scaleStats[statType] = 1
+			ranker.scaleStats.Put(statType, 1)
 		}
 	} else {
 		ranker.scaleStats = chooseStatScalingBasic(inputData, c_rank3_scaleTarget, false, ranker.printer)
@@ -237,7 +237,7 @@ func (ranker *RankingStatWeightProcess3) makeScoreColumn(entry *rankEntry3, debu
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statValue := entry.Data.TotalStat.GetFloat(statType)
-		statScale := ranker.scaleStats[statType]
+		statScale := ranker.scaleStats.GetOrPanic(statType)
 
 		scoreRow.Add(weightColumn, statValue*statScale)
 	}
@@ -380,7 +380,7 @@ func (ranker *RankingStatWeightProcess3) extractAndReportSolution(solution *high
 	statWeightResult := weight_types.Weight1Basic_Make(ranker.targetRatios)
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
-		statScale := ranker.scaleStats[statType]
+		statScale := ranker.scaleStats.GetOrPanic(statType)
 
 		modelWeight := solution.ColValues[weightColumn]
 		usableWeight := modelWeight / statScale

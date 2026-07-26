@@ -38,7 +38,7 @@ type rankInternalRun4 struct {
 	build *util_highs.LinearBuilder
 
 	runData    []*rankEntry4
-	scaleStats map[stats.StatType]float64
+	scaleStats util_collection.EnumMap[stats.StatType, float64]
 
 	weightColumns map[stats.StatType]util_highs.ColumnIndex
 	pairLinks     util_collection.MapMapDiagonal[int, *rankPair4]
@@ -204,7 +204,7 @@ func (run *rankInternalRun4) makeEntryColumnRefs(entry *rankEntry4, maxRank floa
 	for _, statType := range run.process.requiredStats {
 		weightColumn := run.weightColumns[statType]
 		statValue := entry.Data.TotalStat.GetFloat(statType)
-		statScale := run.scaleStats[statType]
+		statScale := run.scaleStats.GetOrPanic(statType)
 
 		scoreRow.Add(weightColumn, statValue*statScale)
 	}
@@ -283,7 +283,7 @@ func (run *rankInternalRun4) extractAndReportSolution(solution *highs.Solution) 
 	statWeightResult := weight_types.Weight1Basic_Make(run.process.targetRatios)
 	for _, statType := range run.process.requiredStats {
 		weightColumn := run.weightColumns[statType]
-		statScale := run.scaleStats[statType]
+		statScale := run.scaleStats.GetOrPanic(statType)
 
 		modelWeight := solution.ColValues[weightColumn]
 		usableWeight := modelWeight
