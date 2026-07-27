@@ -576,7 +576,7 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 	})
 
 	fitting := weight_highs.FittingSingleStatSegmentsProcess2{}
-	fitting.Init(printer, 3000)
+	fitting.Init(printer, 300)
 	fitting.SupplyData(sampleData)
 
 	weightMapCancel := fitting.Run()

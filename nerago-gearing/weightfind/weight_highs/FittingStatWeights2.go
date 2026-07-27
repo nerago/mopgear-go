@@ -70,6 +70,7 @@ func (fg *FittingSingleStatSegmentsProcess2) Init(printer *util.PrintRecorder, t
 	fg.build = new(util_highs.LinearBuilder)
 	fg.build.Minimise = true
 	fg.build.Solver = util_highs.Solver_MIP_Interior
+	//fg.build.DisablePreSolve = true
 	fg.build.TimeLimitSeconds = timeout
 	fg.build.BlendMultiObjectives = true
 
@@ -108,6 +109,7 @@ func (fg *FittingSingleStatSegmentsProcess2) Run() *util_async.FutureCancellable
 	future := fg.build.RunHighsFuture(&fg.stopwatch)
 	return util_async.FutureCancellable_MapValue(future, func(res util_highs.LinearResult) (Fitting2InterimResultSet, bool) {
 		solution := res.GetSolution2AndSaveLog(fg.printer)
+		solution.DebugPrint(fg.printer)
 		if solution.HasSolution() {
 			return fg.prepareResult(solution), true
 		} else {
@@ -140,21 +142,36 @@ func (fg *FittingSingleStatSegmentsProcess2) finishSegment(segment *fitting2Segm
 }
 
 func (fg *FittingSingleStatSegmentsProcess2) enforceCrossSegmentRules(one *fitting2SegmentVars, two *fitting2SegmentVars) {
-	thresholdCompareSlack := fg.build.CreateColumnGeneral(highs.Continuous, c_fitting2_minStatsRequireOverlapBetweenSegments, c_fitting2_maxStatsAllowOverlapBetweenSegments, util_highs.DebugString{Text: "thresholdCompareSlack"})
-	compareThreshold := util_highs.ConstraintRow{}
-	compareThreshold.Add(one.maximumThreshold, 1)
-	compareThreshold.Add(two.minimumThreshold, -1)
-	compareThreshold.Add(thresholdCompareSlack, 1)
-	compareThreshold.Build(fg.build, 0, 0)
+	//thresholdCompareSlack := fg.build.CreateColumnGeneral(highs.Continuous, c_fitting2_minStatsRequireOverlapBetweenSegments, c_fitting2_maxStatsAllowOverlapBetweenSegments, util_highs.DebugString{Text: "thresholdCompareSlack"})
+	//thresholdCompareSlack := fg.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "thresholdCompareSlack"})
+	//thresholdCompareSlackOutput := fg.build.CreateColumnWithObjective(highs.Continuous, 0, util_highs.InfPos(), 1, fg.objectiveThresholds, util_highs.DebugString{Text: "thresholdCompareSlackOutput"})
 
-	thresholdCompareSlackOutput := fg.build.CreateColumnWithObjective(highs.Continuous, 0, util_highs.InfPos(), 1, fg.objectiveThresholds, util_highs.DebugString{Text: "thresholdCompareSlackOutput"})
-	fg.build.AbsoluteValue(thresholdCompareSlack, thresholdCompareSlackOutput)
+	//fg.build.AbsoluteValueFromDiffTwoVars(
+	//	one.maximumThreshold, 1,
+	//	two.minimumThreshold, 1,
+	//	thresholdCompareSlackOutput,
+	//	"compareThreshold")
+
+	//compareThreshold := util_highs.ConstraintRow{}
+	//compareThreshold.Add(one.maximumThreshold, 1)
+	//compareThreshold.Add(two.minimumThreshold, -1)
+	////compareThreshold.Add(thresholdCompareSlack, 1)
+	//compareThreshold.Build(fg.build, 0, 0)
+
+	compareThreshold := util_highs.ConstraintRow{}
+	compareThreshold.Add(one.maximumThreshold, -1)
+	compareThreshold.Add(two.minimumThreshold, 1)
+	//compareThreshold.Add(thresholdCompareSlack, 1)
+	compareThreshold.Build(fg.build, 0, util_highs.InfPos())
+
+	//thresholdCompareSlackOutput := fg.build.CreateColumnWithObjective(highs.Continuous, 0, util_highs.InfPos(), 1, fg.objectiveThresholds, util_highs.DebugString{Text: "thresholdCompareSlackOutput"})
+	//fg.build.AbsoluteValue(thresholdCompareSlack, thresholdCompareSlackOutput)
 }
 
 func (fg *FittingSingleStatSegmentsProcess2) enforceFirstSegment(segment *fitting2SegmentVars) {
 	rowLimit := util_highs.ConstraintRow{}
 	rowLimit.Add(segment.minimumThreshold, 1)
-	rowLimit.Build(fg.build, 0, 0)
+	//rowLimit.Build(fg.build, 0, 0)
 }
 
 func (fg *FittingSingleStatSegmentsProcess2) enforceLastSegment(segment *fitting2SegmentVars) {
@@ -232,7 +249,7 @@ func (fg *FittingSingleStatSegmentsProcess2) sampleToFitLine(sample FittingSampl
 	sampleRow := util_highs.ConstraintRow{Debug: "sampleRow"}
 	sampleRow.Add(segment.lineSlope, sample.StatValue)
 	sampleRow.Add(segment.lineOffset, 1)
-	sampleRow.Add(difference, 1)
+	sampleRow.Add(differenceSigned, 1)
 	sampleRow.Build(fg.build, sample.SimResult, sample.SimResult)
 
 	fg.build.AbsoluteValue_WithToggle_NoExtraCheck(differenceSigned, difference, include, c_fitting_simScaledRangeHigh)
