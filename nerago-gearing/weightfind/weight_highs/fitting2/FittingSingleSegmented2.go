@@ -1,13 +1,12 @@
-package weight_highs
+package fitting2
 
 import (
 	"cmp"
 	"math"
-	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
-	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
+	"paladin_gearing_go/weightfind/util_weight"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 
@@ -28,241 +27,34 @@ const (
 	c_fitting2_statUnscaledHigh       = 50000
 	c_fitting2_statScaledUnequalDelta = c_fitting2_statScaledMaxValue / float64(c_fitting2_statUnscaledHigh)
 
-	c_fitting2_segmentSizeMinimumStats = 600
-	c_fitting2_segmentSizeMinimumCount = 0.05
+	c_fitting2_segmentSizeMinimumStats = 1000
+	c_fitting2_segmentSizeMinimumCount = 0.10
 
 	c_fitting2_minimum_stat_coverage       = 100
 	c_fitting2_permitted_overlap_fix       = 50
 	c_fitting2_number_nice_number_interval = 5
 )
 
-type FittingEachStatWeightProcess2 struct {
-	printer *util.PrintRecorder
-	timeout int
-
-	targetSegmentCount int
-	inputData          []weight_types.WeightInput
-	requiredStats      []stats.StatType
-	requiredSims       []stats.SimType
-
-	scaleSims  util_collection.EnumMap[stats.SimType, scaleAndOffset]
-	scaleStats util_collection.EnumMap[stats.StatType, float64]
-
-	each util_collection.MapMap[stats.StatType, stats.SimType, *fitting2EachFields]
-}
-
-type fitting2EachFields struct {
-	statType stats.StatType
-	simType  stats.SimType
-	process  FittingSingleStatSegmentsProcess2
-	//resultSet Fitting2InitialResultSet
-	resultSlice []FittingInterimResult
-}
-
-func (fe *FittingEachStatWeightProcess2) Init(targetSegmentCount int, printer *util.PrintRecorder, timeout int) {
-	fe.targetSegmentCount = targetSegmentCount
-	fe.printer = printer
-	fe.timeout = timeout
-}
-
-func (fe *FittingEachStatWeightProcess2) SetRequiredStats(requiredStats []stats.StatType, requiredSims []stats.SimType) {
-	fe.requiredStats = requiredStats
-	fe.requiredSims = requiredSims
-}
-
-func (fe *FittingEachStatWeightProcess2) SupplyData(inputData []weight_types.WeightInput) {
-	fe.inputData = inputData
-}
-
-func (fe *FittingEachStatWeightProcess2) Run(stopwatch *util.Stopwatch, cancel util_async.CancelSignal) weight_types.Weight3ExtendedRanged {
-	fe.chooseScaling()
-	fe.launchEachNested(cancel)
-	weights := fe.buildResult()
-	fe.calcMetrics(stopwatch)
-	return *weights
-}
-
-func (fe *FittingEachStatWeightProcess2) calcMetrics(stopwatch *util.Stopwatch) {
-	for fields := range fe.each.SeqValues() {
-		for _, detail := range fields.resultSlice {
-			stopwatch.AddElapsedFrom(&detail.StopwatchSolver)
-		}
-	}
-}
-
-func (fe *FittingEachStatWeightProcess2) buildResult() *weight_types.Weight3ExtendedRanged {
-	weights := weight_types.Weight3ExtendedRanged_Make(fe.requiredStats, fe.requiredSims)
-	fe.each.ForeachWithKeys(func(statType stats.StatType, simType stats.SimType, value *fitting2EachFields) {
-		for _, detail := range value.resultSlice {
-			weights.AddDetailWeight(simType, statType, detail.StatRange, detail.LineSlope, detail.LineOffset, detail.IncludePercentOfTotal)
-		}
-	})
-	weights.FinishAndValidate()
-	return weights
-}
-
-func (fe *FittingEachStatWeightProcess2) launchEachNested(cancel util_async.CancelSignal) {
-	for _, statType := range fe.requiredStats {
-		for _, simType := range fe.requiredSims {
-			printer := util.PrintRecorder_HoldAll()
-			fields := fitting2EachFields{statType: statType, simType: simType}
-			scaleStat := fe.scaleStats.GetOrPanic(statType)
-			fields.process.Init(fe.targetSegmentCount, scaleStat, printer, fe.timeout)
-			fields.process.SupplyData(fe.prepareSamples(statType, simType))
-			fe.each.Put(statType, simType, &fields)
-		}
-	}
-
-	channelEach := util_async.SeqToChannel_Cancellable(fe.each.SeqValues(), cancel)
-	util_async.ForEach_Channel(c_fitting2_each_threadCount, channelEach, func(fields *fitting2EachFields) {
-		initialResultFuture := fields.process.Run()
-		initialResult := initialResultFuture.WaitForResultOrPanic()
-		fe.rescaleAndCleanup(initialResult, fields)
-	})
-}
-
-func (fe *FittingEachStatWeightProcess2) chooseScaling() {
-	fe.scaleStats = chooseStatScalingBasic(fe.inputData, c_fitting2_statScaledMaxValue, true, fe.printer)
-	fe.scaleSims = chooseSimUnfriendlyUnitScaleAndOffset(fe.inputData, fe.requiredSims)
-}
-
-func (fe *FittingEachStatWeightProcess2) prepareSamples(statType stats.StatType, simType stats.SimType) []FittingSample {
-	scaleStat := fe.scaleStats.GetOrPanic(statType)
-	scaleSim := fe.scaleSims.GetOrPanic(simType)
-
-	samples := make([]FittingSample, len(fe.inputData))
-	for i := range fe.inputData {
-		statValue := fe.inputData[i].TotalStat.GetFloat(statType)
-		simResult := fe.inputData[i].SimResult.Get(simType)
-		samples[i] = FittingSample{
-			StatValue: statValue * scaleStat,
-			SimResult: scaleSim.Apply(simResult),
-		}
-	}
-	return samples
-}
-
-func (fe *FittingEachStatWeightProcess2) rescaleAndCleanup(initialSet Fitting2InitialResultSet, fields *fitting2EachFields) {
-	fields.resultSlice = fe.convertAndScaleResult(initialSet, fields.statType)
-	fields.resultSlice = fe.cleanupRanges(fields.resultSlice)
-}
-
-func (fe *FittingEachStatWeightProcess2) convertAndScaleResult(initialSet Fitting2InitialResultSet, statType stats.StatType) []FittingInterimResult {
-	scaleStat := fe.scaleStats.GetOrPanic(statType)
-
-	resultSlice := make([]FittingInterimResult, 0, len(initialSet.Segments))
-	for i, resultInitial := range initialSet.Segments {
-		interim := FittingInterimResult{
-			LineSlope:  resultInitial.LineSlope * scaleStat,
-			LineOffset: resultInitial.LineOffset,
-			StatRange: weight_types.StatRange{
-				Minimum: uint32(math.Round(resultInitial.StatRange.Minimum / scaleStat)),
-				Maximum: uint32(math.Round(resultInitial.StatRange.Maximum / scaleStat)),
-			},
-			IncludeCount:               resultInitial.IncludeCount,
-			IncludePercentOfTotal:      resultInitial.IncludePercentOfTotal,
-			IncludePercentOfStageInput: 0,
-			BuiltSequence:              []int{i},
-			StopwatchSolver:            resultInitial.StopwatchSolver,
-		}
-		resultSlice = append(resultSlice, interim)
-	}
-	return resultSlice
-}
-
-func (fe *FittingEachStatWeightProcess2) cleanupRanges(results []FittingInterimResult) []FittingInterimResult {
-	slices.SortFunc(results, func(a, b FittingInterimResult) int {
-		return cmp.Or(cmp.Compare(a.StatRange.Minimum, b.StatRange.Minimum), cmp.Compare(a.StatRange.Maximum, b.StatRange.Maximum))
-	})
-
-	results[0].StatRange.Minimum = 0
-	results[len(results)-1].StatRange.Maximum = math.MaxUint32
-
-	for i := range len(results) - 1 {
-		if fe.updateBreakpoint(&results[i], &results[i+1]) {
-			util_collection.DeleteIndexInPlace(&results, i+1)
-		}
-	}
-
-	return results
-}
-
-func (fe *FittingEachStatWeightProcess2) updateBreakpoint(one, two *FittingInterimResult) (deleteSecond bool) {
-	// TODO similar rules with very low include count
-	if one.StatRange.RangeSize() < c_fitting2_minimum_stat_coverage || two.StatRange.RangeSize() < c_fitting2_minimum_stat_coverage {
-		// if covers less than 100 stat numbers, merge them
-		if one.StatRange.RangeSize() < two.StatRange.RangeSize() {
-			one.LineSlope = two.LineSlope
-			one.LineOffset = two.LineOffset
-		}
-		one.StatRange.Maximum = two.StatRange.Maximum
-		one.IncludePercentOfStageInput += two.IncludePercentOfStageInput
-		one.IncludePercentOfTotal += two.IncludePercentOfTotal
-		one.IncludeCount += two.IncludeCount
-		one.BuiltSequence = slices.Concat(one.BuiltSequence, two.BuiltSequence)
-		one.StopwatchSolver.AddElapsedFrom(&two.StopwatchSolver)
-		return true
-	} else if one.StatRange.Maximum >= two.StatRange.Minimum && one.StatRange.Maximum <= two.StatRange.Minimum+c_fitting2_permitted_overlap_fix {
-		// if maximum has small overlap into next minimum, fix
-		newMinimum := fe.chooseNicerNumber(one.StatRange.Maximum-1, two.StatRange.Minimum+1)
-		two.StatRange.Minimum = newMinimum
-		one.StatRange.Maximum = newMinimum - 1
-	} else if one.StatRange.Overlap(two.StatRange) {
-		// more overlap than threshold in previous, fail
-		panic("overlapping ranges created")
-	} else if one.StatRange.Maximum < two.StatRange.Minimum-1 {
-		// part of range got dropped earlier
-		newMinimum := fe.chooseNicerNumber(one.StatRange.Maximum-1, two.StatRange.Minimum+1)
-		two.StatRange.Minimum = newMinimum
-		one.StatRange.Maximum = newMinimum - 1
-	} else if one.StatRange.Minimum < one.StatRange.Maximum && one.StatRange.Maximum+1 == two.StatRange.Minimum && two.StatRange.Minimum < two.StatRange.Maximum {
-		// passes all expected conditions
-	} else {
-		panic("internal logic error in updateBreakpoint")
-	}
-	return false
-}
-
-func (fe *FittingEachStatWeightProcess2) chooseNicerNumber(lo uint32, hi uint32) uint32 {
-	if lo > hi {
-		lo, hi = hi, lo
-	}
-
-	if hi-lo > c_fitting2_number_nice_number_interval {
-		mid := lo + (hi-lo)/2
-		mid -= mid % c_fitting2_number_nice_number_interval
-		return mid
-	} else {
-		for v := lo; v <= hi; v++ {
-			if v%c_fitting2_number_nice_number_interval == 0 {
-				return v
-			}
-		}
-		mid := lo + (hi-lo)/2
-		return mid
-	}
-}
-
 // //////////////////////////////////////////////////////
-type FittingSingleStatSegmentsProcess2 struct {
+type SingleSegmented2 struct {
 	printer   *util.PrintRecorder
 	stopwatch util.Stopwatch
 	build     *util_highs.LinearBuilder
 	timeout   int
 
 	scaleStat float64
-	inputData []FittingSample
+	inputData []util_weight.FittingSample
 
 	targetSegmentCount int
-	segments           []*fitting2SegmentVars
+	segments           []*segmentVars
 
 	objectiveLineFitSlack util_highs.ObjectiveIndex
 	objectiveThresholds   util_highs.ObjectiveIndex
 	objectiveLineOverlap  util_highs.ObjectiveIndex
 }
 
-type fitting2SegmentVars struct {
-	process           *FittingSingleStatSegmentsProcess2
+type segmentVars struct {
+	process           *SingleSegmented2
 	lineSlope         util_highs.ColumnIndex
 	lineOffset        util_highs.ColumnIndex
 	minimumThreshold  util_highs.ColumnIndex
@@ -273,11 +65,11 @@ type fitting2SegmentVars struct {
 	isFirst, isLast   bool
 }
 
-type Fitting2InitialResultSet struct {
-	Segments []Fitting2InitialSegment
+type InitialResultSet struct {
+	Segments []InitialSegment
 }
 
-type Fitting2InitialSegment struct {
+type InitialSegment struct {
 	LineSlope             float64
 	LineOffset            float64
 	StatRange             weight_types.StatRangeFloat
@@ -286,7 +78,7 @@ type Fitting2InitialSegment struct {
 	StopwatchSolver       util.Stopwatch
 }
 
-func (fg *FittingSingleStatSegmentsProcess2) Init(targetSegmentCount int, scaleStat float64, printer *util.PrintRecorder, timeout int) {
+func (fg *SingleSegmented2) Init(targetSegmentCount int, scaleStat float64, printer *util.PrintRecorder, timeout int) {
 	fg.targetSegmentCount = targetSegmentCount
 	if targetSegmentCount <= 1 {
 		panic("don't use this for 1 segment")
@@ -303,7 +95,7 @@ func (fg *FittingSingleStatSegmentsProcess2) Init(targetSegmentCount int, scaleS
 	fg.setupObjectives()
 }
 
-func (fg *FittingSingleStatSegmentsProcess2) setupObjectives() {
+func (fg *SingleSegmented2) setupObjectives() {
 	fg.build.BlendMultiObjectives = true
 	// regular line fitting, compare to scaled sim, average 0.01 but multiplied by 500(N), so expect total about 5.0
 	fg.objectiveLineFitSlack = fg.build.AddObjectiveBlended(1, 0)
@@ -313,7 +105,7 @@ func (fg *FittingSingleStatSegmentsProcess2) setupObjectives() {
 	fg.objectiveThresholds = fg.build.AddObjectiveBlended(1000, 0)
 }
 
-func (fg *FittingSingleStatSegmentsProcess2) setupObjectives2() {
+func (fg *SingleSegmented2) setupObjectives2() {
 	fg.build.BlendMultiObjectives = false
 
 	// regular line fitting, compare to scaled sim, average 0.01 but multiplied by 500(N), so expect total about 5.0
@@ -324,14 +116,14 @@ func (fg *FittingSingleStatSegmentsProcess2) setupObjectives2() {
 	fg.objectiveLineOverlap = fg.build.AddObjectivePrioritised(false, -1, -1, 1)
 }
 
-func (fg *FittingSingleStatSegmentsProcess2) SupplyData(inputData []FittingSample) {
+func (fg *SingleSegmented2) SupplyData(inputData []util_weight.FittingSample) {
 	fg.inputData = slices.Clone(inputData)
-	slices.SortFunc(fg.inputData, func(a, b FittingSample) int {
+	slices.SortFunc(fg.inputData, func(a, b util_weight.FittingSample) int {
 		return cmp.Compare(a.StatValue, b.StatValue)
 	})
 }
 
-func (fg *FittingSingleStatSegmentsProcess2) Run() *util_async.FutureCancellable[Fitting2InitialResultSet] {
+func (fg *SingleSegmented2) Run() *util_async.FutureCancellable[InitialResultSet] {
 	for i := range fg.targetSegmentCount {
 		if i == 0 {
 			fg.addSegment(true, false, nil)
@@ -349,19 +141,19 @@ func (fg *FittingSingleStatSegmentsProcess2) Run() *util_async.FutureCancellable
 	}
 
 	future := fg.build.RunHighsFuture(&fg.stopwatch)
-	return util_async.FutureCancellable_MapValue(future, func(res util_highs.LinearResult) (Fitting2InitialResultSet, bool) {
+	return util_async.FutureCancellable_MapValue(future, func(res util_highs.LinearResult) (InitialResultSet, bool) {
 		solution := res.GetSolution2AndSaveLog(fg.printer)
 		solution.DebugPrint(fg.printer)
 		if solution.HasSolution() {
 			return fg.prepareResult(solution), true
 		} else {
-			return Fitting2InitialResultSet{}, false
+			return InitialResultSet{}, false
 		}
 	})
 }
 
-func (fg *FittingSingleStatSegmentsProcess2) addSegment(first, last bool, prev *fitting2SegmentVars) {
-	fs := &fitting2SegmentVars{isFirst: first, isLast: last}
+func (fg *SingleSegmented2) addSegment(first, last bool, prev *segmentVars) {
+	fs := &segmentVars{isFirst: first, isLast: last}
 	fs.lineSlope = fg.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "slope"})
 	fs.lineOffset = fg.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "offset"})
 
@@ -404,29 +196,29 @@ func (fg *FittingSingleStatSegmentsProcess2) addSegment(first, last bool, prev *
 	segmentSizeRow := util_highs.ConstraintRow{Debug: "segmentSizeRow"}
 	segmentSizeRow.Add(fs.minimumThreshold, -1)
 	segmentSizeRow.Add(fs.maximumThreshold, 1)
-	segmentSizeRow.Build(fg.build, 0, util_highs.InfPos())
-	//segmentSizeRow.Build(fg.build, c_fitting2_segmentSizeMinimumStats*fg.scaleStat, util_highs.InfPos())
+	//segmentSizeRow.Build(fg.build, 0, util_highs.InfPos())
+	segmentSizeRow.Build(fg.build, c_fitting2_segmentSizeMinimumStats*fg.scaleStat, util_highs.InfPos())
 
 	fg.segments = append(fg.segments, fs)
 }
 
-func (fg *FittingSingleStatSegmentsProcess2) finishSegment(segment *fitting2SegmentVars, isLast bool) {
+func (fg *SingleSegmented2) finishSegment(segment *segmentVars, isLast bool) {
 	if !isLast {
 		segment.includeOverlapRow.Build(fg.build, 1, 1)
 	}
 
 	// I want this but makes infeasible
-	//minimumColumnCount := c_fitting2_segmentSizeMinimumCount * float64(len(fg.inputData))
-	//segment.includeColumnRow.Build(fg.build, math.Round(minimumColumnCount), util_highs.InfPos())
+	minimumColumnCount := c_fitting2_segmentSizeMinimumCount * float64(len(fg.inputData))
+	segment.includeColumnRow.Build(fg.build, math.Round(minimumColumnCount), util_highs.InfPos())
 }
 
-func validateSample(sample FittingSample) {
+func validateSample(sample util_weight.FittingSample) {
 	if sample.SimResult < 0 || sample.SimResult > 1 || sample.StatValue < 0 || sample.StatValue > 1 {
 		panic("sample out of range")
 	}
 }
 
-func (fg *FittingSingleStatSegmentsProcess2) addSample(sample FittingSample) {
+func (fg *SingleSegmented2) addSample(sample util_weight.FittingSample) {
 	validateSample(sample)
 
 	includeInSegments := make([]util_highs.ColumnIndex, len(fg.segments))
@@ -448,7 +240,7 @@ func (fg *FittingSingleStatSegmentsProcess2) addSample(sample FittingSample) {
 	rowIncludeInOne.Build(fg.build, 1, 2)
 }
 
-func (fg *FittingSingleStatSegmentsProcess2) sampleIncludeToggleColumn(sample FittingSample, segment *fitting2SegmentVars) util_highs.ColumnIndex {
+func (fg *SingleSegmented2) sampleIncludeToggleColumn(sample util_weight.FittingSample, segment *segmentVars) util_highs.ColumnIndex {
 	includeColumn := fg.build.CreateColumnBool(util_highs.DebugString{Text: "include"})
 
 	//unequalDelta := fg.scaleStat * 0
@@ -469,7 +261,7 @@ func (fg *FittingSingleStatSegmentsProcess2) sampleIncludeToggleColumn(sample Fi
 	return includeColumn
 }
 
-func (fg *FittingSingleStatSegmentsProcess2) prepareAsPotentialThreshold(seg1, seg2 *fitting2SegmentVars, include1, include2 util_highs.ColumnIndex, sample FittingSample) {
+func (fg *SingleSegmented2) prepareAsPotentialThreshold(seg1, seg2 *segmentVars, include1, include2 util_highs.ColumnIndex, sample util_weight.FittingSample) {
 	includeBoth := fg.build.CreateColumnBool(util_highs.DebugText("includeBoth"))
 	seg1.includeOverlapRow.Add(includeBoth, 1)
 	fg.build.ConstraintAnd(includeBoth, include1, include2)
@@ -490,7 +282,7 @@ func (fg *FittingSingleStatSegmentsProcess2) prepareAsPotentialThreshold(seg1, s
 	fg.build.AbsoluteValue_WithToggle_NoExtraCheck(differenceSigned, difference, includeBoth, c_fitting2_simScaledHighM)
 }
 
-func (fg *FittingSingleStatSegmentsProcess2) sampleToFitLine(sample FittingSample, segment *fitting2SegmentVars, include util_highs.ColumnIndex) {
+func (fg *SingleSegmented2) sampleToFitLine(sample util_weight.FittingSample, segment *segmentVars, include util_highs.ColumnIndex) {
 	differenceSigned := fg.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "differenceSigned"})
 	difference := fg.build.CreateColumnWithObjective(highs.Continuous, 0, util_highs.InfPos(), 1, fg.objectiveLineFitSlack, util_highs.DebugString{Text: "difference"})
 
@@ -504,8 +296,8 @@ func (fg *FittingSingleStatSegmentsProcess2) sampleToFitLine(sample FittingSampl
 	fg.build.AbsoluteValue_WithToggle_NoExtraCheck(differenceSigned, difference, include, c_fitting2_simScaledHighM)
 }
 
-func (fg *FittingSingleStatSegmentsProcess2) prepareResult(solution *util_highs.Solution2) Fitting2InitialResultSet {
-	resultSet := Fitting2InitialResultSet{}
+func (fg *SingleSegmented2) prepareResult(solution *util_highs.Solution2) InitialResultSet {
+	resultSet := InitialResultSet{}
 
 	for _, segment := range fg.segments {
 		var statRange weight_types.StatRangeFloat
@@ -519,7 +311,7 @@ func (fg *FittingSingleStatSegmentsProcess2) prepareResult(solution *util_highs.
 		}
 
 		includeSampleCount := fg.countSamples(segment, solution)
-		interim := Fitting2InitialSegment{
+		interim := InitialSegment{
 			LineSlope:             solution.GetValue(segment.lineSlope),
 			LineOffset:            solution.GetValue(segment.lineOffset),
 			StatRange:             statRange,
@@ -534,7 +326,7 @@ func (fg *FittingSingleStatSegmentsProcess2) prepareResult(solution *util_highs.
 	return resultSet
 }
 
-func (fg *FittingSingleStatSegmentsProcess2) countSamples(segment *fitting2SegmentVars, solution *util_highs.Solution2) int {
+func (fg *SingleSegmented2) countSamples(segment *segmentVars, solution *util_highs.Solution2) int {
 	count := 0
 	for _, column := range segment.includeColumns {
 		if solution.ValueIsOne(column) {

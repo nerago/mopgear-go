@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
+	"paladin_gearing_go/weightfind/util_weight"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"strconv"
@@ -297,10 +298,10 @@ func (grid *GridStatWeightProcess1B) removeOutliers() {
 func (grid *GridStatWeightProcess1B) chooseScalesEachCombo() {
 	for group := range grid.unitStatValues.SeqKey1Key2ValueSeqEntries() {
 		if grid.SCALEMODE == 3 {
-			scale := chooseScale(group.ValueSeq, c_grid1b_scaleTarget, false)
+			scale := util_weight.ChooseScale(group.ValueSeq, c_grid1b_scaleTarget, false)
 			grid.scales.Put(group.Key1, group.Key2, scale)
 		} else {
-			scale := chooseScale(group.ValueSeq, c_grid1b_scaleTarget, true)
+			scale := util_weight.ChooseScale(group.ValueSeq, c_grid1b_scaleTarget, true)
 			grid.scales.Put(group.Key1, group.Key2, scale)
 		}
 	}

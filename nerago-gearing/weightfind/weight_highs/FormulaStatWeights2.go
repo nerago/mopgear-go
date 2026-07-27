@@ -6,6 +6,8 @@ import (
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
+	"paladin_gearing_go/weightfind/util_weight"
+	util_weight2 "paladin_gearing_go/weightfind/util_weight"
 	"paladin_gearing_go/weightfind/weight_types"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -31,7 +33,7 @@ type FormulaStatWeightProcess2 struct {
 	objectiveEquationDiff util_highs.ObjectiveIndex
 	objectiveInclude      util_highs.ObjectiveIndex
 
-	scaleSims             util_collection.EnumMap[stats.SimType, scaleAndOffset]
+	scaleSims             util_collection.EnumMap[stats.SimType, util_weight.ScaleAndOffset]
 	scaleStats            util_collection.EnumMap[stats.StatType, float64]
 	detailedWeightColumns util_collection.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
 	offsetColumns         map[stats.SimType]util_highs.ColumnIndex
@@ -116,8 +118,8 @@ func (form *FormulaStatWeightProcess2) Run(stopwatch *util.Stopwatch, timeout in
 
 func (form *FormulaStatWeightProcess2) chooseScaling() {
 	target := c_formula2ScaleTarget
-	form.scaleStats = chooseStatScalingBasic(form.inputData, target, true, form.printer)
-	form.scaleSims = chooseSimUnfriendlyUnitScaleAndOffset(form.inputData, form.requiredSims)
+	form.scaleStats = util_weight2.ChooseStatScalingBasic(form.inputData, target, true, form.printer)
+	form.scaleSims = util_weight2.ChooseSimUnfriendlyUnitScaleAndOffset(form.inputData, form.requiredSims)
 }
 
 func (form *FormulaStatWeightProcess2) createWeightColumns() {
@@ -295,7 +297,7 @@ func (form *FormulaStatWeightProcess2) reportExamples(weightExtended *weight_typ
 			rowSum += offset
 			simValue := data.SimResult.Get(simType)
 
-			form.printer.Printf(" + {offset %.4f} = %.4f {expect %.4f + %.2e * %.2e = %.4f}\n", offset, rowSum, simValue, simScale.offset, simScale.scale, simScale.Apply(simValue))
+			form.printer.Printf(" + {offset %.4f} = %.4f {expect %.4f + %.2e * %.2e = %.4f}\n", offset, rowSum, simValue, simScale.Offset, simScale.Scale, simScale.Apply(simValue))
 		}
 
 		form.printer.Println0()

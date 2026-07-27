@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
+	"paladin_gearing_go/weightfind/util_weight"
 	"paladin_gearing_go/weightfind/weight_types"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -111,8 +112,8 @@ func (form *FormulaStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int
 
 func (form *FormulaStatWeightProcess) chooseScaling() {
 	target := 1.0 // TODO consider non-unit range
-	form.scaleSims = chooseSimUnfriendlyScalingBasic(form.inputData, target, false, form.printer)
-	form.scaleStats = chooseStatScalingBasic(form.inputData, target, false, form.printer)
+	form.scaleSims = util_weight.ChooseSimUnfriendlyScalingBasic(form.inputData, target, false, form.printer)
+	form.scaleStats = util_weight.ChooseStatScalingBasic(form.inputData, target, false, form.printer)
 }
 
 func (form *FormulaStatWeightProcess) createWeightColumns() {

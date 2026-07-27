@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/simrank"
+	"paladin_gearing_go/weightfind/util_weight"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"strconv"
@@ -70,7 +71,7 @@ func (process *RankingStatWeightProcess4) SupplyData(inputData []weight_types.We
 }
 
 func (run *rankInternalRun4) supplyData(inputData []weight_types.WeightInput) {
-	run.scaleStats = chooseStatScalingBasic(inputData, c_Rank4ScaleTarget, false, run.process.printer)
+	run.scaleStats = util_weight.ChooseStatScalingBasic(inputData, c_Rank4ScaleTarget, false, run.process.printer)
 	run.runData = util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntry4 {
 		return &rankEntry4{
 			RankStatWeightsCommon: weight_types.RankStatWeightsCommon{

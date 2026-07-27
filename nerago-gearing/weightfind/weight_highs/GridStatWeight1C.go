@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
+	"paladin_gearing_go/weightfind/util_weight"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"strconv"
@@ -192,7 +193,7 @@ func (grid *GridStatWeightProcess1C) prepareSample(statType stats.StatType, high
 
 func (grid *GridStatWeightProcess1C) chooseScalesBySim() {
 	for _, simType := range grid.simTypes {
-		scale := chooseScale(grid.unitStatValues.SeqValuesWithKey2(simType), c_grid1c_scaleTarget, false)
+		scale := util_weight.ChooseScale(grid.unitStatValues.SeqValuesWithKey2(simType), c_grid1c_scaleTarget, false)
 		grid.scales[simType] = scale
 	}
 }

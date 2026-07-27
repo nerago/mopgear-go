@@ -1,4 +1,4 @@
-package weight_highs
+package fitting3
 
 import (
 	"paladin_gearing_go/util/util_highs"
@@ -7,6 +7,20 @@ import (
 )
 
 const c_fitting3_std_deviation_accept = 1.0
+
+const c_fitting2_simScaledHighM = 2.0
+
+type fitting2SegmentVars struct {
+	//process           *FittingSingleStatSegmentsProcess2
+	lineSlope         util_highs.ColumnIndex
+	lineOffset        util_highs.ColumnIndex
+	minimumThreshold  util_highs.ColumnIndex
+	maximumThreshold  util_highs.ColumnIndex
+	includeColumns    []util_highs.ColumnIndex
+	includeColumnRow  util_highs.ConstraintRow
+	includeOverlapRow util_highs.ConstraintRow
+	isFirst, isLast   bool
+}
 
 type FittingSample3 struct {
 	StatValue float64

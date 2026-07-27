@@ -9,6 +9,7 @@ import (
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/simrank"
+	"paladin_gearing_go/weightfind/util_weight"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"strconv"
@@ -73,7 +74,7 @@ func (ranker *RankingStatWeightProcess3) SupplyData(inputData []weight_types.Wei
 			ranker.scaleStats.Put(statType, 1)
 		}
 	} else {
-		ranker.scaleStats = chooseStatScalingBasic(inputData, c_rank3_scaleTarget, false, ranker.printer)
+		ranker.scaleStats = util_weight.ChooseStatScalingBasic(inputData, c_rank3_scaleTarget, false, ranker.printer)
 	}
 	ranker.dataAllOriginal = util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntry3 {
 		return &rankEntry3{

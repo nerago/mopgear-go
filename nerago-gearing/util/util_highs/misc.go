@@ -9,8 +9,8 @@ import (
 
 const (
 	C_HighsToConsole     = true
-	C_DebugHighs         = false
-	C_DiagnoseInfeasible = false
+	C_DebugHighs         = true
+	C_DiagnoseInfeasible = true
 )
 
 func InfPos() float64 {

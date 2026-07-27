@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
+	"paladin_gearing_go/weightfind/util_weight"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 
@@ -114,7 +115,7 @@ func (grid2 *GridStatWeightProcess2) chooseSimDiffScaling() {
 			}
 		}
 
-		scale := chooseScale(slices.Values(listDiffs), c_grid2_simDiffScaleMax, true)
+		scale := util_weight.ChooseScale(slices.Values(listDiffs), c_grid2_simDiffScaleMax, true)
 		grid2.scaleSims[simType] = scale
 	}
 }

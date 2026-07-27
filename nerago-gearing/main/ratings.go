@@ -20,7 +20,10 @@ import (
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/weightfind"
+	"paladin_gearing_go/weightfind/util_weight"
 	"paladin_gearing_go/weightfind/weight_highs"
+	"paladin_gearing_go/weightfind/weight_highs/fitting1"
+	"paladin_gearing_go/weightfind/weight_highs/fitting2"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"strconv"
@@ -419,30 +422,30 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 	// printer.Printf("%f %f %f %f %f\n", oneWeight.LineSlope, oneWeight.LineOffset, oneWeight.Minimum, oneWeight.Maximum, oneWeight.IncludePercent)
 	// tools.WritePawnString(weights, printer)
 
-	sampleDataPreScale := util_collection.MapSliceAsNew(weightInputs, func(input *weight_types.WeightInput) weight_highs.FittingSample {
-		return weight_highs.FittingSample{
+	sampleDataPreScale := util_collection.MapSliceAsNew(weightInputs, func(input *weight_types.WeightInput) util_weight.FittingSample {
+		return util_weight.FittingSample{
 			StatValue: input.TotalStat.GetFloat(stats.Stat_Haste),
 			SimResult: input.SimResult.Get(stats.Sim_DPS),
 		}
 	})
 
-	statMin := util_collection.FindMinFunc(sampleDataPreScale, func(s weight_highs.FittingSample) float64 { return s.StatValue })
-	statMax := util_collection.FindMaxFunc(sampleDataPreScale, func(s weight_highs.FittingSample) float64 { return s.StatValue })
-	simMax := util_collection.FindMaxFunc(sampleDataPreScale, func(s weight_highs.FittingSample) float64 { return s.SimResult })
-	sampleData := util_collection.MapSliceAsNew(sampleDataPreScale, func(sample *weight_highs.FittingSample) weight_highs.FittingSample {
-		return weight_highs.FittingSample{
+	statMin := util_collection.FindMinFunc(sampleDataPreScale, func(s util_weight.FittingSample) float64 { return s.StatValue })
+	statMax := util_collection.FindMaxFunc(sampleDataPreScale, func(s util_weight.FittingSample) float64 { return s.StatValue })
+	simMax := util_collection.FindMaxFunc(sampleDataPreScale, func(s util_weight.FittingSample) float64 { return s.SimResult })
+	sampleData := util_collection.MapSliceAsNew(sampleDataPreScale, func(sample *util_weight.FittingSample) util_weight.FittingSample {
+		return util_weight.FittingSample{
 			StatValue: sample.StatValue / statMax,
 			SimResult: sample.SimResult / simMax,
 		}
 	})
 
-	fitting := weight_highs.FittingSingleStatSegmentsProcess{}
+	fitting := fitting1.FittingSingleStatSegmentsProcess{}
 	fitting.Init(printer, 3000)
 	fitting.SupplyData(sampleData)
 
 	weightMap := fitting.Run(util_async.CancelSignal_Make())
 	printer.Printf("weightMap size %d\n", len(weightMap))
-	weightList := slices.SortedFunc(maps.Values(weightMap), func(a, b weight_highs.FittingSingleStatResult) int { return cmp.Compare(a.Minimum, b.Minimum) })
+	weightList := slices.SortedFunc(maps.Values(weightMap), func(a, b fitting1.FittingSingleStatResult) int { return cmp.Compare(a.Minimum, b.Minimum) })
 
 	tab := util.TabulateOutput{}
 	tab.SetColumnSpacing(1)
@@ -481,12 +484,12 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 	skip := uint32(250)
 	startVal := float64((uint32(statMin) / skip) * skip)
 	for stat := startVal; stat < statMax; stat += float64(skip) {
-		sampleDataPreScale = append(sampleDataPreScale, weight_highs.FittingSample{
+		sampleDataPreScale = append(sampleDataPreScale, util_weight.FittingSample{
 			StatValue: stat,
 			SimResult: 0,
 		})
 	}
-	slices.SortFunc(sampleDataPreScale, func(a, b weight_highs.FittingSample) int {
+	slices.SortFunc(sampleDataPreScale, func(a, b util_weight.FittingSample) int {
 		return cmp.Compare(a.StatValue, b.StatValue)
 	})
 	for _, sample := range sampleDataPreScale {
@@ -558,25 +561,27 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 	// printer.Printf("%f %f %f %f %f\n", oneWeight.LineSlope, oneWeight.LineOffset, oneWeight.Minimum, oneWeight.Maximum, oneWeight.IncludePercent)
 	// tools.WritePawnString(weights, printer)
 
-	sampleDataPreScale := util_collection.MapSliceAsNew(weightInputs, func(input *weight_types.WeightInput) weight_highs.FittingSample {
-		return weight_highs.FittingSample{
+	weightInputs = weightInputs[0:400]
+
+	sampleDataPreScale := util_collection.MapSliceAsNew(weightInputs, func(input *weight_types.WeightInput) util_weight.FittingSample {
+		return util_weight.FittingSample{
 			StatValue: input.TotalStat.GetFloat(stats.Stat_Haste),
 			SimResult: input.SimResult.Get(stats.Sim_DPS),
 		}
 	})
 
-	statMin := util_collection.FindMinFunc(sampleDataPreScale, func(s weight_highs.FittingSample) float64 { return s.StatValue })
-	statMax := util_collection.FindMaxFunc(sampleDataPreScale, func(s weight_highs.FittingSample) float64 { return s.StatValue })
-	simMax := util_collection.FindMaxFunc(sampleDataPreScale, func(s weight_highs.FittingSample) float64 { return s.SimResult })
-	sampleData := util_collection.MapSliceAsNew(sampleDataPreScale, func(sample *weight_highs.FittingSample) weight_highs.FittingSample {
-		return weight_highs.FittingSample{
+	statMin := util_collection.FindMinFunc(sampleDataPreScale, func(s util_weight.FittingSample) float64 { return s.StatValue })
+	statMax := util_collection.FindMaxFunc(sampleDataPreScale, func(s util_weight.FittingSample) float64 { return s.StatValue })
+	simMax := util_collection.FindMaxFunc(sampleDataPreScale, func(s util_weight.FittingSample) float64 { return s.SimResult })
+	sampleData := util_collection.MapSliceAsNew(sampleDataPreScale, func(sample *util_weight.FittingSample) util_weight.FittingSample {
+		return util_weight.FittingSample{
 			StatValue: sample.StatValue / statMax,
 			SimResult: sample.SimResult / simMax,
 		}
 	})
 	scaleStat := 1.0 / statMax
 
-	fitting := weight_highs.FittingSingleStatSegmentsProcess2{}
+	fitting := fitting2.SingleSegmented2{}
 	fitting.Init(3, scaleStat, printer, 5000)
 	fitting.SupplyData(sampleData)
 
@@ -584,10 +589,35 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 	weightMap := weightMapCancel.WaitForResultOrPanic()
 	printer.Printf("weightMap size %d\n", len(weightMap.Segments))
 	weightList := weightMap.Segments
-	slices.SortFunc(weightList, func(a, b weight_highs.Fitting2InitialSegment) int {
+	slices.SortFunc(weightList, func(a, b fitting2.InitialSegment) int {
 		return cmp.Compare(a.StatRange.Minimum, b.StatRange.Minimum)
 	})
 
+	fittingCsvDataReport(printer, weightList, statMin, statMax, sampleDataPreScale, simMax)
+
+	fittingTableReport(printer, weightList, statMax, sampleData)
+
+	//for _, sample := range sampleDataPreScale {
+	//	printer.Printf("%.0f,%.0f,", sample.StatValue, sample.SimResult)
+	//	for _, oneWeight := range weightList {
+	//		statValue := sample.StatValue / statMax
+	//		guessSim := statValue*oneWeight.LineSlope + oneWeight.LineOffset
+	//		printer.Printf("%.0f,", guessSim*simMax)
+	//	}
+	//	printer.Println0()
+	//}
+	//for _, sample := range sampleDataPreScale {
+	//	printer.Printf("%.0f,%.6f,", sample.StatValue, sample.SimResult/simMax)
+	//	for _, oneWeight := range weightList {
+	//		statValue := sample.StatValue / statMax
+	//		effective := statValue*oneWeight.LineSlope + oneWeight.LineOffset
+	//		printer.Printf("%.6f,", effective)
+	//	}
+	//	printer.Println0()
+	//}
+}
+
+func fittingTableReport(printer *util.PrintRecorder, weightList []fitting2.InitialSegment, statMax float64, sampleData []util_weight.FittingSample) {
 	tab := util.TabulateOutput{}
 	tab.SetColumnSpacing(1)
 	tab.AddColumnHeader("minF", true)
@@ -615,7 +645,9 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 		})
 	}
 	tab.Write(printer)
+}
 
+func fittingCsvDataReport(printer *util.PrintRecorder, weightList []fitting2.InitialSegment, statMin float64, statMax float64, sampleDataPreScale []util_weight.FittingSample, simMax float64) {
 	printer.Printf("stat,target,")
 	for i := range weightList {
 		printer.Printf("weight%d,", i)
@@ -625,12 +657,12 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 	skip := uint32(250)
 	startVal := float64((uint32(statMin) / skip) * skip)
 	for stat := startVal; stat < statMax; stat += float64(skip) {
-		sampleDataPreScale = append(sampleDataPreScale, weight_highs.FittingSample{
+		sampleDataPreScale = append(sampleDataPreScale, util_weight.FittingSample{
 			StatValue: stat,
 			SimResult: 0,
 		})
 	}
-	slices.SortFunc(sampleDataPreScale, func(a, b weight_highs.FittingSample) int {
+	slices.SortFunc(sampleDataPreScale, func(a, b util_weight.FittingSample) int {
 		return cmp.Compare(a.StatValue, b.StatValue)
 	})
 	for _, sample := range sampleDataPreScale {
@@ -651,25 +683,6 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 		}
 		printer.Println0()
 	}
-
-	//for _, sample := range sampleDataPreScale {
-	//	printer.Printf("%.0f,%.0f,", sample.StatValue, sample.SimResult)
-	//	for _, oneWeight := range weightList {
-	//		statValue := sample.StatValue / statMax
-	//		guessSim := statValue*oneWeight.LineSlope + oneWeight.LineOffset
-	//		printer.Printf("%.0f,", guessSim*simMax)
-	//	}
-	//	printer.Println0()
-	//}
-	//for _, sample := range sampleDataPreScale {
-	//	printer.Printf("%.0f,%.6f,", sample.StatValue, sample.SimResult/simMax)
-	//	for _, oneWeight := range weightList {
-	//		statValue := sample.StatValue / statMax
-	//		effective := statValue*oneWeight.LineSlope + oneWeight.LineOffset
-	//		printer.Printf("%.6f,", effective)
-	//	}
-	//	printer.Println0()
-	//}
 }
 
 func statWeightsFitting1a(printer *util.PrintRecorder) {
@@ -692,7 +705,7 @@ func statWeightsFitting1a(printer *util.PrintRecorder) {
 
 	printer.Printf("Initial weight input size = %d\n", len(weightInputs))
 
-	fitting := weight_highs.FittingEachStatWeightProcess{}
+	fitting := fitting1.FittingEachStatWeightProcess{}
 	fitting.Init(printer, 3000)
 	fitting.SupplyData(weightInputs)
 
@@ -1063,7 +1076,7 @@ func statWeights_CompareAlgorithms() {
 		tasks = append(tasks, func() {
 			printer.Println("################# FITTING ###################")
 			stopwatch := util.StopwatchMakeStopped()
-			fitting := weight_highs.FittingEachStatWeightProcess{}
+			fitting := fitting1.FittingEachStatWeightProcess{}
 			fitting.Init(printer, shortTimeout)
 			fitting.SetRequiredStats(requiredStats, requiredSims)
 			fitting.SetOnlyComputeSingleSegmentEach(true)
