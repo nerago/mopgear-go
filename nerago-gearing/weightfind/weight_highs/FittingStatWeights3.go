@@ -50,5 +50,5 @@ func (fg *FittingSingleStatSegmentsProcess3) sampleToFitLine(sample FittingSampl
 	sampleRow.Add(differenceSigned, 1)
 	sampleRow.Build(fg.build, lo, hi)
 
-	fg.build.AbsoluteValue_WithToggle_NoExtraCheck(differenceSigned, difference, include, c_fitting2_simScaledRangeHigh)
+	fg.build.AbsoluteValue_WithToggle_NoExtraCheck(differenceSigned, difference, include, c_fitting2_simScaledHighM)
 }

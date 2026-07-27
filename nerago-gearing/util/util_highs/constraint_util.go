@@ -397,7 +397,11 @@ func (build *LinearBuilder) IsXor(boolOne ColumnIndex, boolTwo ColumnIndex, outp
 // logic: colValue >= constValue
 func (build *LinearBuilder) ColumnIsGreaterOrEqualThanConstant(compareColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) ColumnIndex {
 	isGreaterEqual := build.CreateColumnBool(DebugString{Text: "isGreaterEqual"})
+	build.ColumnIsGreaterOrEqualThanConstant_Supplied(isGreaterEqual, compareColumn, constValue, rangeHigh, equalDelta)
+	return isGreaterEqual
+}
 
+func (build *LinearBuilder) ColumnIsGreaterOrEqualThanConstant_Supplied(isGreaterEqual ColumnIndex, compareColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) {
 	set := ConstraintRow{Debug: "ColumnIsGreaterOrEqualThanConstant_set"}
 	set.Add(compareColumn, 1)
 	set.Add(isGreaterEqual, -rangeHigh)
@@ -407,8 +411,6 @@ func (build *LinearBuilder) ColumnIsGreaterOrEqualThanConstant(compareColumn Col
 	confirm.Add(isGreaterEqual, constValue)
 	confirm.Add(compareColumn, -1)
 	confirm.Build(build, InfNeg(), 0)
-
-	return isGreaterEqual
 }
 
 // rangeHigh should be bigger than any possible value
@@ -416,7 +418,11 @@ func (build *LinearBuilder) ColumnIsGreaterOrEqualThanConstant(compareColumn Col
 // logic: colValue <= constValue
 func (build *LinearBuilder) ColumnIsLessOrEqualThanConstant(compareColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) ColumnIndex {
 	isLessEqual := build.CreateColumnBool(DebugString{Text: "isLessEqual"})
+	build.ColumnIsLessOrEqualThanConstant_Supplied(isLessEqual, compareColumn, constValue, rangeHigh, equalDelta)
+	return isLessEqual
+}
 
+func (build *LinearBuilder) ColumnIsLessOrEqualThanConstant_Supplied(isLessEqual ColumnIndex, compareColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) {
 	set := ConstraintRow{Debug: "ColumnIsLessOrEqualThanConstant_set"}
 	set.Add(compareColumn, 1)
 	set.Add(isLessEqual, rangeHigh)
@@ -426,8 +432,6 @@ func (build *LinearBuilder) ColumnIsLessOrEqualThanConstant(compareColumn Column
 	confirm.Add(isLessEqual, rangeHigh)
 	confirm.Add(compareColumn, 1)
 	confirm.Build(build, InfNeg(), rangeHigh+constValue)
-
-	return isLessEqual
 }
 
 func (build *LinearBuilder) ConstantIsBetweenColumns(minimumColumn, maximumColumn, targetBoolColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) {
