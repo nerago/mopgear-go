@@ -28,6 +28,9 @@ const (
 	c_fitting2_statUnscaledHigh       = 50000
 	c_fitting2_statScaledUnequalDelta = c_fitting2_statScaledMaxValue / float64(c_fitting2_statUnscaledHigh)
 
+	c_fitting2_segmentSizeMinimumStats = 600
+	c_fitting2_segmentSizeMinimumCount = 0.05
+
 	c_fitting2_minimum_stat_coverage       = 100
 	c_fitting2_permitted_overlap_fix       = 50
 	c_fitting2_number_nice_number_interval = 5
@@ -103,7 +106,8 @@ func (fe *FittingEachStatWeightProcess2) launchEachNested(cancel util_async.Canc
 		for _, simType := range fe.requiredSims {
 			printer := util.PrintRecorder_HoldAll()
 			fields := fitting2EachFields{statType: statType, simType: simType}
-			fields.process.Init(fe.targetSegmentCount, printer, fe.timeout)
+			scaleStat := fe.scaleStats.GetOrPanic(statType)
+			fields.process.Init(fe.targetSegmentCount, scaleStat, printer, fe.timeout)
 			fields.process.SupplyData(fe.prepareSamples(statType, simType))
 			fe.each.Put(statType, simType, &fields)
 		}
@@ -184,6 +188,7 @@ func (fe *FittingEachStatWeightProcess2) cleanupRanges(results []FittingInterimR
 }
 
 func (fe *FittingEachStatWeightProcess2) updateBreakpoint(one, two *FittingInterimResult) (deleteSecond bool) {
+	// TODO similar rules with very low include count
 	if one.StatRange.RangeSize() < c_fitting2_minimum_stat_coverage || two.StatRange.RangeSize() < c_fitting2_minimum_stat_coverage {
 		// if covers less than 100 stat numbers, merge them
 		if one.StatRange.RangeSize() < two.StatRange.RangeSize() {
@@ -245,26 +250,25 @@ type FittingSingleStatSegmentsProcess2 struct {
 	build     *util_highs.LinearBuilder
 	timeout   int
 
+	scaleStat float64
 	inputData []FittingSample
 
 	targetSegmentCount int
 	segments           []*fitting2SegmentVars
 
 	objectiveLineFitSlack util_highs.ObjectiveIndex
-	objectiveInclude      util_highs.ObjectiveIndex
 	objectiveThresholds   util_highs.ObjectiveIndex
 	objectiveLineOverlap  util_highs.ObjectiveIndex
 }
 
 type fitting2SegmentVars struct {
-	process          *FittingSingleStatSegmentsProcess2
-	lineSlope        util_highs.ColumnIndex
-	lineOffset       util_highs.ColumnIndex
-	minimumThreshold util_highs.ColumnIndex
-	maximumThreshold util_highs.ColumnIndex
-	//includeSampleRow   util_highs.ConstraintRow
-	//includeSampleCount util_highs.ColumnIndex
+	process           *FittingSingleStatSegmentsProcess2
+	lineSlope         util_highs.ColumnIndex
+	lineOffset        util_highs.ColumnIndex
+	minimumThreshold  util_highs.ColumnIndex
+	maximumThreshold  util_highs.ColumnIndex
 	includeColumns    []util_highs.ColumnIndex
+	includeColumnRow  util_highs.ConstraintRow
 	includeOverlapRow util_highs.ConstraintRow
 	isFirst, isLast   bool
 }
@@ -282,8 +286,13 @@ type Fitting2InitialSegment struct {
 	StopwatchSolver       util.Stopwatch
 }
 
-func (fg *FittingSingleStatSegmentsProcess2) Init(targetSegmentCount int, printer *util.PrintRecorder, timeout int) {
+func (fg *FittingSingleStatSegmentsProcess2) Init(targetSegmentCount int, scaleStat float64, printer *util.PrintRecorder, timeout int) {
 	fg.targetSegmentCount = targetSegmentCount
+	if targetSegmentCount <= 1 {
+		panic("don't use this for 1 segment")
+	}
+
+	fg.scaleStat = scaleStat
 	fg.printer = printer
 
 	fg.build = new(util_highs.LinearBuilder)
@@ -302,8 +311,6 @@ func (fg *FittingSingleStatSegmentsProcess2) setupObjectives() {
 	fg.objectiveLineOverlap = fg.build.AddObjectiveBlended(500, 0)
 	// smallish numbers need a boost up to 0.01 just per segment, and is important
 	fg.objectiveThresholds = fg.build.AddObjectiveBlended(1000, 0)
-	// negative weight for includes since we want to maximize, should slightly overpower the fitting cost of them
-	fg.objectiveInclude = fg.build.AddObjectiveBlended(-0.05, 0)
 }
 
 func (fg *FittingSingleStatSegmentsProcess2) setupObjectives2() {
@@ -311,8 +318,6 @@ func (fg *FittingSingleStatSegmentsProcess2) setupObjectives2() {
 
 	// regular line fitting, compare to scaled sim, average 0.01 but multiplied by 500(N), so expect total about 5.0
 	fg.objectiveLineFitSlack = fg.build.AddObjectivePrioritised(false, -1, 0.3, 4)
-	// negative weight for includes since we want to maximize, should slightly overpower the fitting cost of them
-	fg.objectiveInclude = fg.build.AddObjectivePrioritised(true, -1, 0.1, 3)
 	// smallish numbers need a boost up to 0.01 just per segment, and is important
 	fg.objectiveThresholds = fg.build.AddObjectivePrioritised(false, -1, 0.1, 2)
 	// similar scale numbers to regular line fitting, only one per segment, but only moderate importance
@@ -321,25 +326,24 @@ func (fg *FittingSingleStatSegmentsProcess2) setupObjectives2() {
 
 func (fg *FittingSingleStatSegmentsProcess2) SupplyData(inputData []FittingSample) {
 	fg.inputData = slices.Clone(inputData)
+	slices.SortFunc(fg.inputData, func(a, b FittingSample) int {
+		return cmp.Compare(a.StatValue, b.StatValue)
+	})
 }
 
 func (fg *FittingSingleStatSegmentsProcess2) Run() *util_async.FutureCancellable[Fitting2InitialResultSet] {
 	for i := range fg.targetSegmentCount {
-		if i == 0 && fg.targetSegmentCount == 1 {
-			fg.addSegment(true, true, nil)
-		} else if i == 0 {
+		if i == 0 {
 			fg.addSegment(true, false, nil)
 		} else if i == fg.targetSegmentCount-1 {
 			fg.addSegment(false, true, fg.segments[i-1])
 		} else {
 			fg.addSegment(false, false, fg.segments[i-1])
 		}
-		//fg.addSegment(i == 0, i == fg.targetSegmentCount-1)
 	}
-	for i := range len(fg.segments) - 1 {
-		fg.enforceCrossSegmentRules(fg.segments[i], fg.segments[i+1])
+	for _, sample := range fg.inputData {
+		fg.addSample(sample)
 	}
-	fg.processData()
 	for i := range len(fg.segments) {
 		fg.finishSegment(fg.segments[i], i == len(fg.segments)-1)
 	}
@@ -361,32 +365,47 @@ func (fg *FittingSingleStatSegmentsProcess2) addSegment(first, last bool, prev *
 	fs.lineSlope = fg.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "slope"})
 	fs.lineOffset = fg.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "offset"})
 
-	if first && last {
-		fs.minimumThreshold = -1
-		fs.maximumThreshold = -1
-	} else if first {
-		fs.minimumThreshold = -1
+	//if first {
+	//	fs.minimumThreshold = -1
+	//	fs.maximumThreshold = fg.build.CreateColumnGeneral(highs.Continuous, 0, c_fitting2_statScaledMaxValue, util_highs.DebugString{Text: "maximum"})
+	//} else if last {
+	//	fs.minimumThreshold = prev.maximumThreshold
+	//	fs.maximumThreshold = -1
+	//} else {
+	//	fs.minimumThreshold = prev.maximumThreshold
+	//	fs.maximumThreshold = fg.build.CreateColumnGeneral(highs.Continuous, 0, c_fitting2_statScaledMaxValue, util_highs.DebugString{Text: "maximum"})
+
+	if first {
+		//fs.minimumThreshold = fg.build.CreateColumnGeneral(highs.Continuous, 0, 0, util_highs.DebugString{Text: "minimum"})
+		fs.minimumThreshold = fg.build.CreateColumnGeneral(highs.Continuous, 0, c_fitting2_statScaledMaxValue, util_highs.DebugString{Text: "minimum"})
 		fs.maximumThreshold = fg.build.CreateColumnGeneral(highs.Continuous, 0, c_fitting2_statScaledMaxValue, util_highs.DebugString{Text: "maximum"})
 	} else if last {
 		fs.minimumThreshold = prev.maximumThreshold
-		fs.maximumThreshold = -1
+		//fs.maximumThreshold = fg.build.CreateColumnGeneral(highs.Continuous, c_fitting2_statScaledMaxValue, c_fitting2_statScaledMaxValue, util_highs.DebugString{Text: "maximum"})
+		fs.maximumThreshold = fg.build.CreateColumnGeneral(highs.Continuous, 0, c_fitting2_statScaledMaxValue, util_highs.DebugString{Text: "maximum"})
 	} else {
 		fs.minimumThreshold = prev.maximumThreshold
 		fs.maximumThreshold = fg.build.CreateColumnGeneral(highs.Continuous, 0, c_fitting2_statScaledMaxValue, util_highs.DebugString{Text: "maximum"})
-		fg.build.ColumnIsGreaterOrEqualColumnEnforce(fs.minimumThreshold, fs.maximumThreshold)
+
+		//fg.build.ColumnIsGreaterOrEqualColumnEnforce(fs.minimumThreshold, fs.maximumThreshold)
+
+		//row := util_highs.ConstraintRow{Debug: "ColumnIsGreaterOrEqualColumnEnforce"}
+		//row.Add(fs.minimumThreshold, -1)
+		//row.Add(fs.maximumThreshold, 1)
+		//row.Build(fg.build, 0, util_highs.InfPos())
+
+		//segmentSizeRow := util_highs.ConstraintRow{Debug: "segmentSizeRow"}
+		//segmentSizeRow.Add(fs.minimumThreshold, -1)
+		//segmentSizeRow.Add(fs.maximumThreshold, 1)
+		////segmentSizeRow.Build(fg.build, 0, util_highs.InfPos())
+		//segmentSizeRow.Build(fg.build, c_fitting2_segmentSizeMinimumStats*fg.scaleStat, util_highs.InfPos())
 	}
 
-	//if first {
-	//	fs.minimumThreshold = fg.build.CreateColumnGeneral(highs.Continuous, 0, 0, util_highs.DebugString{Text: "minimum"})
-	//} else {
-	//	fs.minimumThreshold = fg.build.CreateColumnGeneral(highs.Continuous, 0, c_fitting2_statScaledMaxValue, util_highs.DebugString{Text: "minimum"})
-	//}
-	//if last {
-	//	fs.maximumThreshold = fg.build.CreateColumnGeneral(highs.Continuous, c_fitting2_statScaledMaxValue, c_fitting2_statScaledMaxValue, util_highs.DebugString{Text: "maximum"})
-	//} else {
-	//	fs.maximumThreshold = fg.build.CreateColumnGeneral(highs.Continuous, 0, c_fitting2_statScaledMaxValue, util_highs.DebugString{Text: "maximum"})
-	//}
-	//fg.build.ColumnIsGreaterOrEqualColumnEnforce(fs.minimumThreshold, fs.maximumThreshold)
+	segmentSizeRow := util_highs.ConstraintRow{Debug: "segmentSizeRow"}
+	segmentSizeRow.Add(fs.minimumThreshold, -1)
+	segmentSizeRow.Add(fs.maximumThreshold, 1)
+	segmentSizeRow.Build(fg.build, 0, util_highs.InfPos())
+	//segmentSizeRow.Build(fg.build, c_fitting2_segmentSizeMinimumStats*fg.scaleStat, util_highs.InfPos())
 
 	fg.segments = append(fg.segments, fs)
 }
@@ -396,50 +415,9 @@ func (fg *FittingSingleStatSegmentsProcess2) finishSegment(segment *fitting2Segm
 		segment.includeOverlapRow.Build(fg.build, 1, 1)
 	}
 
-	//segment.includeSampleCount = fg.build.CreateColumnGeneral(highs.Integer, 0, util_highs.InfPos(), util_highs.DebugText("includeSampleCount"))
-	//segment.includeSampleRow.Add(segment.includeSampleCount, -1)
-	//segment.includeSampleRow.Build(fg.build, 0, 0)
-}
-
-func (fg *FittingSingleStatSegmentsProcess2) enforceCrossSegmentRules(one *fitting2SegmentVars, two *fitting2SegmentVars) {
-	//thresholdCompareSlack := fg.build.CreateColumnWithObjective(highs.Continuous, c_fitting2_minStatsRequireOverlapBetweenSegments, c_fitting2_maxStatsAllowOverlapBetweenSegments, 1, fg.objectiveThresholds, util_highs.DebugString{Text: "thresholdCompareSlack"})
-	//compareThreshold := util_highs.ConstraintRow{}
-	//compareThreshold.Add(one.maximumThreshold, 1)
-	//compareThreshold.Add(two.minimumThreshold, -1)
-	//compareThreshold.Add(thresholdCompareSlack, -1)
-	//compareThreshold.Build(fg.build, 0, 0)
-
-	// enforce some range between segments
-	//compareThreshold := util_highs.ConstraintRow{}
-	//compareThreshold.Add(one.maximumThreshold, 1)
-	//compareThreshold.Add(two.minimumThreshold, -1)
-	//compareThreshold.Build(fg.build, c_fitting2_minStatsRequireOverlapBetweenSegments, c_fitting2_maxStatsAllowOverlapBetweenSegments)
-
-	// two>one
-	//compareThreshold := util_highs.ConstraintRow{}
-	//compareThreshold.Add(one.maximumThreshold, -1)
-	//compareThreshold.Add(two.minimumThreshold, 1)
-	//compareThreshold.Build(fg.build, 0, util_highs.InfPos())
-
-	// simple equality
-	//compareThreshold := util_highs.ConstraintRow{}
-	//compareThreshold.Add(one.maximumThreshold, -1)
-	//compareThreshold.Add(two.minimumThreshold, 1)
-	//compareThreshold.Build(fg.build, 0, 0)
-
-	if one.maximumThreshold != -1 && two.minimumThreshold != -1 && one.maximumThreshold != two.minimumThreshold {
-		panic("columns wrong")
-	}
-}
-
-func (fg *FittingSingleStatSegmentsProcess2) processData() {
-	slices.SortFunc(fg.inputData, func(a, b FittingSample) int {
-		return cmp.Compare(a.StatValue, b.StatValue)
-	})
-
-	for _, sample := range fg.inputData {
-		fg.addSample(sample)
-	}
+	// I want this but makes infeasible
+	//minimumColumnCount := c_fitting2_segmentSizeMinimumCount * float64(len(fg.inputData))
+	//segment.includeColumnRow.Build(fg.build, math.Round(minimumColumnCount), util_highs.InfPos())
 }
 
 func validateSample(sample FittingSample) {
@@ -471,21 +449,22 @@ func (fg *FittingSingleStatSegmentsProcess2) addSample(sample FittingSample) {
 }
 
 func (fg *FittingSingleStatSegmentsProcess2) sampleIncludeToggleColumn(sample FittingSample, segment *fitting2SegmentVars) util_highs.ColumnIndex {
-	//includeColumn := fg.build.CreateColumnBoolWithObjective(1, fg.objectiveInclude, util_highs.DebugString{Text: "include"})
 	includeColumn := fg.build.CreateColumnBool(util_highs.DebugString{Text: "include"})
 
-	if segment.isFirst && segment.isLast {
-		row := util_highs.ConstraintRow{}
-		row.Add(includeColumn, 1)
-		row.Build(fg.build, 1, 1)
-	} else if segment.isFirst {
-		fg.build.ColumnIsGreaterOrEqualThanConstant_Supplied(includeColumn, segment.maximumThreshold, sample.StatValue, c_fitting2_statScaledHighM, c_fitting2_statScaledUnequalDelta)
-	} else if segment.isLast {
-		fg.build.ColumnIsLessOrEqualThanConstant_Supplied(includeColumn, segment.minimumThreshold, sample.StatValue, c_fitting2_statScaledHighM, c_fitting2_statScaledUnequalDelta)
-	} else {
-		fg.build.ConstantIsBetweenColumns_NoSequenceCheck(segment.minimumThreshold, segment.maximumThreshold, includeColumn, sample.StatValue, c_fitting2_statScaledHighM, c_fitting2_statScaledUnequalDelta)
-	}
+	//unequalDelta := fg.scaleStat * 0
+	unequalDelta := fg.scaleStat * 0.1
+	//unequalDelta := c_fitting2_statScaledUnequalDelta
 
+	//if segment.isFirst {
+	//	fg.build.ColumnIsGreaterOrEqualThanConstant_Supplied(includeColumn, segment.maximumThreshold, sample.StatValue, c_fitting2_statScaledHighM, unequalDelta)
+	//} else if segment.isLast {
+	//	fg.build.ColumnIsLessOrEqualThanConstant_Supplied(includeColumn, segment.minimumThreshold, sample.StatValue, c_fitting2_statScaledHighM, unequalDelta)
+	//} else {
+	//	fg.build.ConstantIsBetweenColumns_NoSequenceCheck(segment.minimumThreshold, segment.maximumThreshold, includeColumn, sample.StatValue, c_fitting2_statScaledHighM, unequalDelta)
+	//}
+	fg.build.ConstantIsBetweenColumns_NoSequenceCheck(segment.minimumThreshold, segment.maximumThreshold, includeColumn, sample.StatValue, c_fitting2_statScaledHighM, unequalDelta)
+
+	segment.includeColumnRow.Add(includeColumn, 1)
 	segment.includeColumns = append(segment.includeColumns, includeColumn)
 	return includeColumn
 }

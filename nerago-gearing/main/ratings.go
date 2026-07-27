@@ -574,9 +574,10 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 			SimResult: sample.SimResult / simMax,
 		}
 	})
+	scaleStat := 1.0 / statMax
 
 	fitting := weight_highs.FittingSingleStatSegmentsProcess2{}
-	fitting.Init(4, printer, 5000)
+	fitting.Init(3, scaleStat, printer, 5000)
 	fitting.SupplyData(sampleData)
 
 	weightMapCancel := fitting.Run()
