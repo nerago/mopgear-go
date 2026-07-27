@@ -576,14 +576,14 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 	})
 
 	fitting := weight_highs.FittingSingleStatSegmentsProcess2{}
-	fitting.Init(printer, 1000)
+	fitting.Init(4, printer, 1000)
 	fitting.SupplyData(sampleData)
 
 	weightMapCancel := fitting.Run()
 	weightMap := weightMapCancel.WaitForResultOrPanic()
 	printer.Printf("weightMap size %d\n", len(weightMap.Segments))
 	weightList := weightMap.Segments
-	slices.SortFunc(weightList, func(a, b weight_highs.Fitting2InterimSegment) int {
+	slices.SortFunc(weightList, func(a, b weight_highs.Fitting2InitialSegment) int {
 		return cmp.Compare(a.StatRange.Minimum, b.StatRange.Minimum)
 	})
 

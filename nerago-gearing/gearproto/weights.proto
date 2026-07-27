@@ -1,0 +1,90 @@
+syntax = "proto3";
+package gearproto;
+
+option go_package = "./gearproto";
+
+message Weight1Basic {
+  repeated Weight1Entry weight     = 1;
+  repeated Priority1Entry priority = 2;
+}
+
+message Weight2Extended {
+//  repeated StatType stat_type        = 1;
+//  repeated SimType sim_type          = 2;
+  repeated Weight2Entry weights      = 3;
+  repeated Priority2Entry priority   = 4;
+}
+
+message Weight3Extended {
+//  repeated StatType stat_type        = 1;
+//  repeated SimType sim_type          = 2;
+  repeated Weight3Group weights      = 3;
+  repeated Priority2Entry priority   = 4;
+}
+
+message Weight1Entry {
+  StatType stat_type   = 1;
+  uint32 rating_weight = 2;
+}
+
+message Weight2Entry {
+  StatType stat_type   = 1;
+  SimType sim_type     = 2;
+  double rating_weight = 3;
+}
+
+message Weight3Group {
+  SimType stat_type             = 1;
+  SimType sim_type              = 2;
+  repeated Weight3Entry entries = 3;
+}
+
+message Weight3Entry {
+  StatRange stat_range  = 1;
+  double rating_weight  = 2;
+  double rating_offset  = 3;
+}
+
+message StatRange {
+  uint32 Minimum = 1;
+  uint32 Maximum = 2;
+}
+
+message Priority1Entry {
+  SimType sim_type   = 1;
+  uint32 ratio_scale = 2;
+}
+
+message Priority2Entry {
+  SimType sim_type      = 1;
+  double ranging_scale  = 2;
+  double ranging_offset = 3;
+  double ratio_scale    = 4;
+}
+
+enum StatType {
+  Strength   = 0;
+  Agility    = 1;
+  Stamina    = 2;
+  Intellect  = 3;
+  Spirit     = 4;
+  Hit        = 5;
+  Crit       = 6;
+  Haste      = 7;
+  Expertise  = 8;
+  Dodge      = 9;
+  Parry      = 10;
+  Mastery    = 11;
+}
+
+enum SimType {
+  DPS   = 0;
+  TPS   = 1;
+  DTPS  = 2;
+  HPS   = 3;
+  TMI   = 4;
+  DEATH = 5;
+  TTO   = 6;
+}
+
+
