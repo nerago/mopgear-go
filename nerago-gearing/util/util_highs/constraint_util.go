@@ -571,3 +571,92 @@ func (build *LinearBuilder) ColumnIsLessOrEqualColumnEnforce(lowCol, highCol Col
 	row.Add(highCol, 1)
 	row.Build(build, InfNeg(), 0)
 }
+
+func (build *LinearBuilder) ColumnIsNotEqualConstant(checkColumn, boolIsUnequal ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) {
+	isUnder := build.CreateColumnBool(DebugString{Text: "isUnderMin"})
+	isOver := build.CreateColumnBool(DebugString{Text: "isOverMax"})
+
+	under := ConstraintRow{Debug: ""}
+	under.Add(checkColumn, 1)
+	under.Add(isUnder, rangeHigh)
+	under.Build(build, constValue, constValue+rangeHigh-equalDelta)
+
+	over := ConstraintRow{Debug: ""}
+	over.Add(checkColumn, 1)
+	over.Add(isOver, -rangeHigh)
+	over.Build(build, constValue-rangeHigh+equalDelta, constValue)
+
+	or := ConstraintRow{}
+	or.Add(isUnder, 1)
+	or.Add(isOver, 1)
+	or.Add(boolIsUnequal, -1)
+	or.Build(build, 0, 0)
+}
+
+func (build *LinearBuilder) ColumnIsEqualConstant(checkColumn, boolIsEqual ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) {
+	isUnder := build.CreateColumnBool(DebugString{Text: "isUnderMin"})
+	isOver := build.CreateColumnBool(DebugString{Text: "isOverMax"})
+
+	under := ConstraintRow{Debug: ""}
+	under.Add(checkColumn, 1)
+	under.Add(isUnder, rangeHigh)
+	under.Build(build, constValue, constValue+rangeHigh-equalDelta)
+	// const <= under*range + check <= const+range-delta
+
+	over := ConstraintRow{Debug: ""}
+	over.Add(checkColumn, 1)
+	over.Add(isOver, -rangeHigh)
+	over.Build(build, constValue-rangeHigh+equalDelta, constValue)
+	// const-range+delta <= check - over*range <= const
+	// -(const-range+delta) >= -(check - over*range) >= -const
+	// -const <= over*range - check <= range-const-delta
+
+	// const <= under*range + check <= const+range-delta
+	// const-range+delta <= check - over*range <= const
+
+	nor := ConstraintRow{}
+	nor.Add(isUnder, 1)
+	nor.Add(isOver, 1)
+	nor.Add(boolIsEqual, 1)
+	nor.Build(build, 1, 1)
+}
+
+// lazy, can enforce based on bool, but not reliably set bool
+func (build *LinearBuilder) ColumnIsEqualConstant_OneWayEnforceNotSet(checkColumn, boolIsEqual ColumnIndex, constValue, rangeHigh float64) {
+	// https://hegyhati.github.io/IMOLS/pages/modelling_bigM.html
+	//If y=1 then LHS=RHS: LHS≥RHS−M⋅(1−y)
+	//                     LHS≤RHS+M⋅(1−y)
+	//   LHS>=RHS−M*(1−y)  --> check >= const - M(1-bool)
+	//                     --> check >= const - M1 + M*bool
+	//                     --> check - M*bool >= const - M
+	//   LHS<=RHS+M*(1−y)  --> check <= const + M(1-bool)
+	//                     --> check <= const + M1 - M*bool
+	//                     --> check + M*bool <= const + M
+
+	over := ConstraintRow{Debug: ""}
+	over.Add(checkColumn, 1)
+	over.Add(boolIsEqual, -rangeHigh)
+	over.Build(build, constValue-rangeHigh, InfPos())
+
+	under := ConstraintRow{Debug: ""}
+	under.Add(checkColumn, 1)
+	under.Add(boolIsEqual, rangeHigh)
+	under.Build(build, InfNeg(), constValue+rangeHigh)
+}
+
+func (build *LinearBuilder) ColumnIsNotEqualConstant_OneWayEnforceNotSet(checkColumn, boolIsNotEqual ColumnIndex, constValue, rangeHigh float64) {
+	//   LHS>=RHS−M*y      --> check >= const - M*bool
+	//                     --> check + M*bool >= const
+	//   LHS<=RHS+M*y      --> check <= const + M*bool
+	//                     --> check - M*bool <= const
+
+	over := ConstraintRow{Debug: ""}
+	over.Add(checkColumn, 1)
+	over.Add(boolIsNotEqual, rangeHigh)
+	over.Build(build, constValue, InfPos())
+
+	under := ConstraintRow{Debug: ""}
+	under.Add(checkColumn, 1)
+	under.Add(boolIsNotEqual, -rangeHigh)
+	under.Build(build, InfNeg(), constValue)
+}

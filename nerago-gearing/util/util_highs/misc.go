@@ -9,8 +9,8 @@ import (
 
 const (
 	C_HighsToConsole     = true
-	C_DebugHighs         = true
-	C_DiagnoseInfeasible = true
+	C_DebugHighs         = false
+	C_DiagnoseInfeasible = false
 )
 
 func InfPos() float64 {
@@ -30,6 +30,7 @@ const (
 	Solver_MIP_Vertex    SolverMode = iota
 	Solver_Force_Simplex SolverMode = iota
 	Solver_Force_IPX     SolverMode = iota
+	Solver_Flexible      SolverMode = iota
 )
 
 type ColumnIndex int32

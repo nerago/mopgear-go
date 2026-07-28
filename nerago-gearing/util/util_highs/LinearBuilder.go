@@ -252,6 +252,11 @@ func (build *LinearBuilder) configureHighsSolver(solver *highs.Solver) bool {
 		verifyNoError(solver.SetStringOption("mip_lp_solver", "choose"))
 		verifyNoError(solver.SetStringOption("mip_ipm_solver", "choose"))
 		expectMip = true
+	case Solver_Flexible:
+		verifyNoError(solver.SetStringOption("solver", "choose"))
+		verifyNoError(solver.SetStringOption("mip_lp_solver", "choose"))
+		verifyNoError(solver.SetStringOption("mip_ipm_solver", "choose"))
+		return false
 	default:
 		panic("solver not specified")
 	}

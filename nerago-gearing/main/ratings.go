@@ -561,7 +561,7 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 	// printer.Printf("%f %f %f %f %f\n", oneWeight.LineSlope, oneWeight.LineOffset, oneWeight.Minimum, oneWeight.Maximum, oneWeight.IncludePercent)
 	// tools.WritePawnString(weights, printer)
 
-	weightInputs = weightInputs[0:400]
+	//weightInputs = weightInputs[0:400]
 
 	sampleDataPreScale := util_collection.MapSliceAsNew(weightInputs, func(input *weight_types.WeightInput) util_weight.FittingSample {
 		return util_weight.FittingSample{

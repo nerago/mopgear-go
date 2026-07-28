@@ -7,7 +7,7 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
-func TestContraintIfBoolCopyValueElseZero(test *testing.T) {
+func TestConstraintIfBoolCopyValueElseZero(test *testing.T) {
 	rangeLow := -200.0
 	rangeHigh := 200.0
 
@@ -72,7 +72,7 @@ func TestContraintIfBoolCopyValueElseZero(test *testing.T) {
 	testValues(-5.5, 0, ptr(-5.6), highs.ModelStatusInfeasible, nil)
 }
 
-func TestContraintIfBoolCopy(test *testing.T) {
+func TestConstraintIfBoolCopy(test *testing.T) {
 	rangeHigh := 200.0
 
 	testValues := func(oneValue, oneCoeff, toggleValue float64, outValueSet *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
@@ -156,7 +156,7 @@ func TestContraintIfBoolCopy(test *testing.T) {
 	testValues(5, 0, 0, ptr(0.1), highs.ModelStatusOptimal, ptr(0.1))
 }
 
-func TestContraintAndBuilder(test *testing.T) {
+func TestConstraintAndBuilder(test *testing.T) {
 	testValues := func(values []float64, out *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
 		test.Logf("CASE:")
 		for _, val := range values {
@@ -1315,6 +1315,211 @@ func TestColumnIsLessThanColumnEqualityFree(test *testing.T) {
 	testValues(51, 50, one, highs.ModelStatusInfeasible, nil)
 }
 
+func TestColumnIsEqualConstant(test *testing.T) {
+	maxValue := 100.0
+	rangeHigh := 200.0
+	equalDelta := 1.0
+
+	testValues := func(colValue, checkValue float64, setBool *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: col=%f check=%f", colValue, checkValue)
+		if setBool != nil {
+			test.Logf("bool=%f", *setBool)
+		}
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		compareColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
+		boolColumn := build.CreateColumnBool(nil)
+		setColumnToConstant(build, compareColumn, colValue)
+		if setBool != nil {
+			setColumnToConstant(build, boolColumn, *setBool)
+		}
+
+		build.ColumnIsEqualConstant(compareColumn, boolColumn, checkValue, rangeHigh, equalDelta)
+
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[boolColumn]
+		test.Logf("%s %f %v\n", solution.Status.String(), boolOutput, colValue <= checkValue)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqual(*expectOutputValue, boolOutput, test)
+		}
+		if solution.Status.HasSolution() {
+			assertEqual(colValue == checkValue, util.FloatEqualsOne(boolOutput), test)
+		}
+	}
+
+	zero := ptr(0.0)
+	one := ptr(1.0)
+
+	testValues(49, 50, nil, highs.ModelStatusOptimal, zero)
+	testValues(49, 50, zero, highs.ModelStatusOptimal, zero)
+	testValues(49, 50, one, highs.ModelStatusInfeasible, nil)
+
+	testValues(50, 50, nil, highs.ModelStatusOptimal, one)
+	testValues(50, 50, zero, highs.ModelStatusInfeasible, nil)
+	testValues(50, 50, one, highs.ModelStatusOptimal, one)
+
+	testValues(51, 50, nil, highs.ModelStatusOptimal, zero)
+	testValues(51, 50, zero, highs.ModelStatusOptimal, zero)
+	testValues(51, 50, one, highs.ModelStatusInfeasible, nil)
+}
+
+func TestColumnIsEqualConstant_OneWayEnforceNotSet(test *testing.T) {
+	maxValue := 100.0
+	rangeHigh := 200.0
+
+	testValues := func(colValue, checkValue float64, setBool *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: col=%f check=%f", colValue, checkValue)
+		if setBool != nil {
+			test.Logf("bool=%f", *setBool)
+		}
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		compareColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
+		boolColumn := build.CreateColumnBool(nil)
+		setColumnToConstant(build, compareColumn, colValue)
+		if setBool != nil {
+			setColumnToConstant(build, boolColumn, *setBool)
+		}
+
+		build.ColumnIsEqualConstant_OneWayEnforceNotSet(compareColumn, boolColumn, checkValue, rangeHigh)
+
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[boolColumn]
+		test.Logf("%s %f %v\n", solution.Status.String(), boolOutput, colValue <= checkValue)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqual(*expectOutputValue, boolOutput, test)
+		}
+		if solution.Status.HasSolution() {
+			//assertEqual(colValue == checkValue, util.FloatEqualsOne(boolOutput), test)
+		}
+	}
+
+	zero := ptr(0.0)
+	one := ptr(1.0)
+
+	testValues(49, 50, nil, highs.ModelStatusOptimal, zero)
+	testValues(49, 50, zero, highs.ModelStatusOptimal, zero)
+	testValues(49, 50, one, highs.ModelStatusInfeasible, nil)
+
+	// lazy behaviour check
+	testValues(50, 50, nil, highs.ModelStatusOptimal, zero)
+	testValues(50, 50, zero, highs.ModelStatusOptimal, zero)
+	testValues(50, 50, one, highs.ModelStatusOptimal, one)
+
+	testValues(51, 50, nil, highs.ModelStatusOptimal, zero)
+	testValues(51, 50, zero, highs.ModelStatusOptimal, zero)
+	testValues(51, 50, one, highs.ModelStatusInfeasible, nil)
+}
+
+func TestColumnIsNotEqualConstant(test *testing.T) {
+	maxValue := 100.0
+	rangeHigh := 200.0
+	equalDelta := 1.0
+
+	testValues := func(colValue, checkValue float64, setBool *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: col=%f check=%f", colValue, checkValue)
+		if setBool != nil {
+			test.Logf("bool=%f", *setBool)
+		}
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		compareColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
+		boolColumn := build.CreateColumnBool(nil)
+		setColumnToConstant(build, compareColumn, colValue)
+		if setBool != nil {
+			setColumnToConstant(build, boolColumn, *setBool)
+		}
+
+		build.ColumnIsNotEqualConstant(compareColumn, boolColumn, checkValue, rangeHigh, equalDelta)
+
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[boolColumn]
+		test.Logf("%s %f %v\n", solution.Status.String(), boolOutput, colValue <= checkValue)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqual(*expectOutputValue, boolOutput, test)
+		}
+		if solution.Status.HasSolution() {
+			assertEqual(colValue != checkValue, util.FloatEqualsOne(boolOutput), test)
+		}
+	}
+
+	zero := ptr(0.0)
+	one := ptr(1.0)
+
+	testValues(49, 50, nil, highs.ModelStatusOptimal, one)
+	testValues(49, 50, zero, highs.ModelStatusInfeasible, nil)
+	testValues(49, 50, one, highs.ModelStatusOptimal, one)
+
+	testValues(50, 50, nil, highs.ModelStatusOptimal, zero)
+	testValues(50, 50, zero, highs.ModelStatusOptimal, zero)
+	testValues(50, 50, one, highs.ModelStatusInfeasible, nil)
+
+	testValues(51, 50, nil, highs.ModelStatusOptimal, one)
+	testValues(51, 50, zero, highs.ModelStatusInfeasible, nil)
+	testValues(51, 50, one, highs.ModelStatusOptimal, one)
+}
+
+func TestColumnIsNotEqualConstant_OneWayEnforceNotSet(test *testing.T) {
+	maxValue := 100.0
+	rangeHigh := 200.0
+
+	testValues := func(colValue, checkValue float64, setBool *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: col=%f check=%f", colValue, checkValue)
+		if setBool != nil {
+			test.Logf("bool=%f", *setBool)
+		}
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		compareColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
+		boolColumn := build.CreateColumnBool(nil)
+		setColumnToConstant(build, compareColumn, colValue)
+		if setBool != nil {
+			setColumnToConstant(build, boolColumn, *setBool)
+		}
+
+		build.ColumnIsNotEqualConstant_OneWayEnforceNotSet(compareColumn, boolColumn, checkValue, rangeHigh)
+
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[boolColumn]
+		test.Logf("%s %f %v\n", solution.Status.String(), boolOutput, colValue <= checkValue)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqual(*expectOutputValue, boolOutput, test)
+		}
+	}
+
+	zero := ptr(0.0)
+	one := ptr(1.0)
+
+	testValues(49, 50, nil, highs.ModelStatusOptimal, one)
+	testValues(49, 50, zero, highs.ModelStatusInfeasible, nil)
+	testValues(49, 50, one, highs.ModelStatusOptimal, one)
+
+	// lazy check
+	testValues(50, 50, nil, highs.ModelStatusOptimal, zero)
+	testValues(50, 50, zero, highs.ModelStatusOptimal, zero)
+	testValues(50, 50, one, highs.ModelStatusOptimal, one)
+
+	testValues(51, 50, nil, highs.ModelStatusOptimal, one)
+	testValues(51, 50, zero, highs.ModelStatusInfeasible, nil)
+	testValues(51, 50, one, highs.ModelStatusOptimal, one)
+}
+
 func setColumnToConstant(build *LinearBuilder, column ColumnIndex, value float64) {
 	row := ConstraintRow{}
 	row.Add(column, 1)
@@ -1340,5 +1545,6 @@ func assertEqualFloat(expect, actual float64, test *testing.T) {
 }
 
 func runHighs(build *LinearBuilder, printer *util.PrintRecorder) *highs.Solution {
+	build.Solver = Solver_Flexible
 	return build.RunHighsFuture(nil).WaitForResultOrPanic().solution
 }

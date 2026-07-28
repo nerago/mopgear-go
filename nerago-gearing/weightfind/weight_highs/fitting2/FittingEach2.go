@@ -7,9 +7,17 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
-	util_weight2 "paladin_gearing_go/weightfind/util_weight"
+	"paladin_gearing_go/weightfind/util_weight"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
+)
+
+const (
+	c_fitting2_each_threadCount = 8
+
+	c_fitting2_minimum_stat_coverage       = 100
+	c_fitting2_permitted_overlap_fix       = 50
+	c_fitting2_number_nice_number_interval = 5
 )
 
 type FittingEachStatWeightProcess2 struct {
@@ -21,7 +29,7 @@ type FittingEachStatWeightProcess2 struct {
 	requiredStats      []stats.StatType
 	requiredSims       []stats.SimType
 
-	scaleSims  util_collection.EnumMap[stats.SimType, util_weight2.ScaleAndOffset]
+	scaleSims  util_collection.EnumMap[stats.SimType, util_weight.ScaleAndOffset]
 	scaleStats util_collection.EnumMap[stats.StatType, float64]
 
 	each util_collection.MapMap[stats.StatType, stats.SimType, *fitting2EachFields]
@@ -32,7 +40,7 @@ type fitting2EachFields struct {
 	simType  stats.SimType
 	process  SingleSegmented2
 	//resultSet InitialResultSet
-	resultSlice []util_weight2.FittingInterimResult
+	resultSlice []util_weight.FittingInterimResult
 }
 
 func (fe *FittingEachStatWeightProcess2) Init(targetSegmentCount int, printer *util.PrintRecorder, timeout int) {
@@ -98,19 +106,19 @@ func (fe *FittingEachStatWeightProcess2) launchEachNested(cancel util_async.Canc
 }
 
 func (fe *FittingEachStatWeightProcess2) chooseScaling() {
-	fe.scaleStats = util_weight2.ChooseStatScalingBasic(fe.inputData, c_fitting2_statScaledMaxValue, true, fe.printer)
-	fe.scaleSims = util_weight2.ChooseSimUnfriendlyUnitScaleAndOffset(fe.inputData, fe.requiredSims)
+	fe.scaleStats = util_weight.ChooseStatScalingBasic(fe.inputData, c_fitting2_statScaledMaxValue, true, fe.printer)
+	fe.scaleSims = util_weight.ChooseSimUnfriendlyUnitScaleAndOffset(fe.inputData, fe.requiredSims)
 }
 
-func (fe *FittingEachStatWeightProcess2) prepareSamples(statType stats.StatType, simType stats.SimType) []util_weight2.FittingSample {
+func (fe *FittingEachStatWeightProcess2) prepareSamples(statType stats.StatType, simType stats.SimType) []util_weight.FittingSample {
 	scaleStat := fe.scaleStats.GetOrPanic(statType)
 	scaleSim := fe.scaleSims.GetOrPanic(simType)
 
-	samples := make([]util_weight2.FittingSample, len(fe.inputData))
+	samples := make([]util_weight.FittingSample, len(fe.inputData))
 	for i := range fe.inputData {
 		statValue := fe.inputData[i].TotalStat.GetFloat(statType)
 		simResult := fe.inputData[i].SimResult.Get(simType)
-		samples[i] = util_weight2.FittingSample{
+		samples[i] = util_weight.FittingSample{
 			StatValue: statValue * scaleStat,
 			SimResult: scaleSim.Apply(simResult),
 		}
@@ -123,12 +131,12 @@ func (fe *FittingEachStatWeightProcess2) rescaleAndCleanup(initialSet InitialRes
 	fields.resultSlice = fe.cleanupRanges(fields.resultSlice)
 }
 
-func (fe *FittingEachStatWeightProcess2) convertAndScaleResult(initialSet InitialResultSet, statType stats.StatType) []util_weight2.FittingInterimResult {
+func (fe *FittingEachStatWeightProcess2) convertAndScaleResult(initialSet InitialResultSet, statType stats.StatType) []util_weight.FittingInterimResult {
 	scaleStat := fe.scaleStats.GetOrPanic(statType)
 
-	resultSlice := make([]util_weight2.FittingInterimResult, 0, len(initialSet.Segments))
+	resultSlice := make([]util_weight.FittingInterimResult, 0, len(initialSet.Segments))
 	for i, resultInitial := range initialSet.Segments {
-		interim := util_weight2.FittingInterimResult{
+		interim := util_weight.FittingInterimResult{
 			LineSlope:  resultInitial.LineSlope * scaleStat,
 			LineOffset: resultInitial.LineOffset,
 			StatRange: weight_types.StatRange{
@@ -146,8 +154,8 @@ func (fe *FittingEachStatWeightProcess2) convertAndScaleResult(initialSet Initia
 	return resultSlice
 }
 
-func (fe *FittingEachStatWeightProcess2) cleanupRanges(results []util_weight2.FittingInterimResult) []util_weight2.FittingInterimResult {
-	slices.SortFunc(results, func(a, b util_weight2.FittingInterimResult) int {
+func (fe *FittingEachStatWeightProcess2) cleanupRanges(results []util_weight.FittingInterimResult) []util_weight.FittingInterimResult {
+	slices.SortFunc(results, func(a, b util_weight.FittingInterimResult) int {
 		return cmp.Or(cmp.Compare(a.StatRange.Minimum, b.StatRange.Minimum), cmp.Compare(a.StatRange.Maximum, b.StatRange.Maximum))
 	})
 
@@ -163,7 +171,7 @@ func (fe *FittingEachStatWeightProcess2) cleanupRanges(results []util_weight2.Fi
 	return results
 }
 
-func (fe *FittingEachStatWeightProcess2) updateBreakpoint(one, two *util_weight2.FittingInterimResult) (deleteSecond bool) {
+func (fe *FittingEachStatWeightProcess2) updateBreakpoint(one, two *util_weight.FittingInterimResult) (deleteSecond bool) {
 	// TODO similar rules with very low include count
 	if one.StatRange.RangeSize() < c_fitting2_minimum_stat_coverage || two.StatRange.RangeSize() < c_fitting2_minimum_stat_coverage {
 		// if covers less than 100 stat numbers, merge them
