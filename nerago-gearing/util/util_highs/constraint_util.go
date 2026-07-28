@@ -1,6 +1,7 @@
 package util_highs
 
 import (
+	"paladin_gearing_go/util/util_collection"
 	"slices"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -115,6 +116,11 @@ type ConstraintOrBuilder struct {
 
 func (or *ConstraintOrBuilder) SetOutput(column ColumnIndex) {
 	or.outputVar = column
+}
+
+func (or *ConstraintOrBuilder) AddInputs(columns []ColumnIndex) {
+	or.inputVars = append(or.inputVars, columns...)
+	util_collection.RemoveDuplicatesComparable_InPlace(&or.inputVars)
 }
 
 func (or *ConstraintOrBuilder) AddInput(column ColumnIndex) {

@@ -38,15 +38,16 @@ type SingleSegmented2 struct {
 }
 
 type segmentVars struct {
-	process           *SingleSegmented2
-	lineSlope         util_highs.ColumnIndex
-	lineOffset        util_highs.ColumnIndex
-	minimumThreshold  util_highs.ColumnIndex
-	maximumThreshold  util_highs.ColumnIndex
-	includeColumns    []util_highs.ColumnIndex
-	includeColumnRow  util_highs.ConstraintRow
-	includeOverlapRow util_highs.ConstraintRow
-	isFirst, isLast   bool
+	process             *SingleSegmented2
+	lineSlope           util_highs.ColumnIndex
+	lineOffset          util_highs.ColumnIndex
+	minimumThreshold    util_highs.ColumnIndex
+	maximumThreshold    util_highs.ColumnIndex
+	includeColumns      []util_highs.ColumnIndex
+	thresholdColumns    []util_highs.ColumnIndex
+	includeColumnRow    util_highs.ConstraintRow
+	includeThresholdRow util_highs.ConstraintRow
+	isFirst, isLast     bool
 }
 
 type InitialResultSet struct {
@@ -98,6 +99,7 @@ func (fg *SingleSegmented2) Run() *util_async.FutureCancellable[InitialResultSet
 	for _, sample := range fg.inputData {
 		fg.addSample(sample)
 	}
+	fg.includeLinking()
 	for i := range len(fg.segments) {
 		fg.finishSegment(fg.segments[i], i == len(fg.segments)-1)
 	}
@@ -141,7 +143,7 @@ func (fg *SingleSegmented2) addSegment(first, last bool, prev *segmentVars) {
 func (fg *SingleSegmented2) finishSegment(segment *segmentVars, isLast bool) {
 	if !isLast {
 		// in theory only have one overlap, but needs to be freer due to duplicates
-		segment.includeOverlapRow.Build(fg.build, 1, util_highs.InfPos())
+		segment.includeThresholdRow.Build(fg.build, 1, util_highs.InfPos())
 	}
 
 	minimumColumnCount := c_fitting2_segmentSizeMinimumCount * float64(len(fg.inputData))
@@ -157,45 +159,40 @@ func validateSample(sample util_weight.FittingSample) {
 func (fg *SingleSegmented2) addSample(sample util_weight.FittingSample) {
 	validateSample(sample)
 
-	includeInSegments := make([]util_highs.ColumnIndex, len(fg.segments))
-	for segIndex, segment := range fg.segments {
-		includeColumn := fg.sampleIncludeToggleColumn(sample, segment)
-		includeInSegments[segIndex] = includeColumn
-
-		fg.sampleToFitLine(sample, segment, includeColumn)
-	}
-
-	for i := range len(fg.segments) - 1 {
-		fg.prepareAsPotentialThreshold(fg.segments[i], fg.segments[i+1], includeInSegments[i], includeInSegments[i+1], sample)
-	}
-
 	rowIncludeInOne := util_highs.ConstraintRow{}
-	for _, col := range includeInSegments {
-		rowIncludeInOne.Add(col, 1)
+	for _, segment := range fg.segments {
+		includeColumn := fg.sampleIncludeToggleColumn(sample, segment)
+		fg.sampleToFitLine(sample, segment, includeColumn)
+		rowIncludeInOne.Add(includeColumn, 1)
 	}
 	rowIncludeInOne.Build(fg.build, 1, 2)
+
+	for i := range len(fg.segments) - 1 {
+		fg.prepareAsPotentialThreshold(fg.segments[i], fg.segments[i+1], sample)
+	}
 }
 
 func (fg *SingleSegmented2) sampleIncludeToggleColumn(sample util_weight.FittingSample, segment *segmentVars) util_highs.ColumnIndex {
 	includeColumn := fg.build.CreateColumnBool(util_highs.DebugString{Text: "include"})
 
-	if segment.isFirst {
-		fg.build.ColumnIsGreaterOrEqualThanConstant_Supplied(includeColumn, segment.maximumThreshold, sample.StatValue, c_fitting2_statScaledHighM, fg.unequalStatDelta)
-	} else if segment.isLast {
-		fg.build.ColumnIsLessOrEqualThanConstant_Supplied(includeColumn, segment.minimumThreshold, sample.StatValue, c_fitting2_statScaledHighM, fg.unequalStatDelta)
-	} else {
-		fg.build.ConstantIsBetweenColumns_NoSequenceCheck(segment.minimumThreshold, segment.maximumThreshold, includeColumn, sample.StatValue, c_fitting2_statScaledHighM, fg.unequalStatDelta)
-	}
+	//if segment.isFirst {
+	//	fg.build.ColumnIsGreaterOrEqualThanConstant_Supplied(includeColumn, segment.maximumThreshold, sample.StatValue, c_fitting2_statScaledHighM, fg.unequalStatDelta)
+	//} else if segment.isLast {
+	//	fg.build.ColumnIsLessOrEqualThanConstant_Supplied(includeColumn, segment.minimumThreshold, sample.StatValue, c_fitting2_statScaledHighM, fg.unequalStatDelta)
+	//} else {
+	//	fg.build.ConstantIsBetweenColumns_NoSequenceCheck(segment.minimumThreshold, segment.maximumThreshold, includeColumn, sample.StatValue, c_fitting2_statScaledHighM, fg.unequalStatDelta)
+	//}
 
 	segment.includeColumnRow.Add(includeColumn, 1)
 	segment.includeColumns = append(segment.includeColumns, includeColumn)
 	return includeColumn
 }
 
-func (fg *SingleSegmented2) prepareAsPotentialThreshold(seg1, seg2 *segmentVars, include1, include2 util_highs.ColumnIndex, sample util_weight.FittingSample) {
-	isOverlap := fg.build.CreateColumnBool(util_highs.DebugText("isOverlap"))
-	fg.build.ColumnIsEqualConstant(seg1.maximumThreshold, isOverlap, sample.StatValue, c_fitting2_statScaledHighM, fg.unequalStatDelta)
-	seg1.includeOverlapRow.Add(isOverlap, 1)
+func (fg *SingleSegmented2) prepareAsPotentialThreshold(seg1, seg2 *segmentVars, sample util_weight.FittingSample) {
+	isThreshold := fg.build.CreateColumnBool(util_highs.DebugText("isThreshold"))
+	fg.build.ColumnIsEqualConstant(seg1.maximumThreshold, isThreshold, sample.StatValue, c_fitting2_statScaledHighM, fg.unequalStatDelta)
+	seg1.includeThresholdRow.Add(isThreshold, 1)
+	seg1.thresholdColumns = append(seg1.thresholdColumns, isThreshold)
 
 	difference := fg.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "difference"})
 
@@ -203,7 +200,7 @@ func (fg *SingleSegmented2) prepareAsPotentialThreshold(seg1, seg2 *segmentVars,
 		[]util_highs.ColumnIndex{seg1.lineSlope, seg1.lineOffset, seg2.lineSlope, seg2.lineOffset},
 		[]float64{sample.StatValue, 1, -sample.StatValue, -1},
 		0,
-		isOverlap,
+		isThreshold,
 		difference,
 		c_fitting2_simScaledHighM,
 	)
@@ -220,6 +217,52 @@ func (fg *SingleSegmented2) sampleToFitLine(sample util_weight.FittingSample, se
 		difference,
 		c_fitting2_simScaledHighM,
 	)
+}
+
+func (fg *SingleSegmented2) includeLinking() {
+	for segmentIndex, segment := range fg.segments {
+		var prevSegment *segmentVars = nil
+		if segmentIndex > 0 {
+			prevSegment = fg.segments[segmentIndex-1]
+		}
+
+		for sampleIndex := range fg.inputData {
+			include := segment.includeColumns[sampleIndex]
+			fg.sampleLinkagesInSegment(prevSegment, segment, sampleIndex, include)
+		}
+	}
+}
+
+func (fg *SingleSegmented2) sampleLinkagesInSegment(prevSegment, segment *segmentVars, sampleIndex int, include util_highs.ColumnIndex) {
+	includeConditions := util_highs.ConstraintAndBuilder{}
+
+	// be sure to include current column, may be its own threshold
+	if prevSegment != nil && prevSegment.thresholdColumns != nil {
+		startThresholdFromPrevious := prevSegment.thresholdColumns[:sampleIndex+1]
+		prevIncludeColumn := fg.build.CreateColumnBool(nil)
+
+		or := util_highs.ConstraintOrBuilder{}
+		or.AddInputs(startThresholdFromPrevious)
+		or.SetOutput(prevIncludeColumn)
+		or.Build(fg.build)
+
+		includeConditions.AddInput(prevIncludeColumn)
+	}
+	
+	if segment != nil && segment.thresholdColumns != nil {
+		laterThresholdsInSegment := segment.thresholdColumns[sampleIndex:]
+		nextIncludeColumn := fg.build.CreateColumnBool(nil)
+
+		or := util_highs.ConstraintOrBuilder{}
+		or.AddInputs(laterThresholdsInSegment)
+		or.SetOutput(nextIncludeColumn)
+		or.Build(fg.build)
+
+		includeConditions.AddInput(nextIncludeColumn)
+	}
+
+	includeConditions.SetOutput(include)
+	includeConditions.Build(fg.build)
 }
 
 func (fg *SingleSegmented2) prepareResult(solution *util_highs.Solution2) InitialResultSet {
