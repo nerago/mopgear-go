@@ -9,7 +9,6 @@ import (
 	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/setup"
-	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/util"
 	"runtime/pprof"
 	"time"
@@ -49,12 +48,12 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			if simulate.WowSimRanDuringCurrentProcess {
-				err = os.Rename(f.Name(), files.ProfileDir+"main.pgo")
-				if err != nil {
-					panic(err)
-				}
+			//if simulate.WowSimRanDuringCurrentProcess {
+			err = os.Rename(f.Name(), files.ProfileDir+"main.pgo")
+			if err != nil {
+				panic(err)
 			}
+			//}
 		}()
 	}
 

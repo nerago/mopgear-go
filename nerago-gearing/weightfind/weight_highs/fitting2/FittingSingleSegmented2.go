@@ -29,8 +29,9 @@ type SingleSegmented2 struct {
 	build     *util_highs.LinearBuilder
 	timeout   int
 
-	scaleStat float64
-	inputData []util_weight.FittingSample
+	scaleStat        float64
+	unequalStatDelta float64
+	inputData        []util_weight.FittingSample
 
 	targetSegmentCount int
 	segments           []*segmentVars
@@ -68,6 +69,7 @@ func (fg *SingleSegmented2) Init(targetSegmentCount int, scaleStat float64, prin
 	}
 
 	fg.scaleStat = scaleStat
+	fg.unequalStatDelta = fg.scaleStat * 0.1
 	fg.printer = printer
 
 	fg.build = new(util_highs.LinearBuilder)
@@ -177,14 +179,12 @@ func (fg *SingleSegmented2) addSample(sample util_weight.FittingSample) {
 func (fg *SingleSegmented2) sampleIncludeToggleColumn(sample util_weight.FittingSample, segment *segmentVars) util_highs.ColumnIndex {
 	includeColumn := fg.build.CreateColumnBool(util_highs.DebugString{Text: "include"})
 
-	unequalDelta := fg.scaleStat * 0.1
-
 	if segment.isFirst {
-		fg.build.ColumnIsGreaterOrEqualThanConstant_Supplied(includeColumn, segment.maximumThreshold, sample.StatValue, c_fitting2_statScaledHighM, unequalDelta)
+		fg.build.ColumnIsGreaterOrEqualThanConstant_Supplied(includeColumn, segment.maximumThreshold, sample.StatValue, c_fitting2_statScaledHighM, fg.unequalStatDelta)
 	} else if segment.isLast {
-		fg.build.ColumnIsLessOrEqualThanConstant_Supplied(includeColumn, segment.minimumThreshold, sample.StatValue, c_fitting2_statScaledHighM, unequalDelta)
+		fg.build.ColumnIsLessOrEqualThanConstant_Supplied(includeColumn, segment.minimumThreshold, sample.StatValue, c_fitting2_statScaledHighM, fg.unequalStatDelta)
 	} else {
-		fg.build.ConstantIsBetweenColumns_NoSequenceCheck(segment.minimumThreshold, segment.maximumThreshold, includeColumn, sample.StatValue, c_fitting2_statScaledHighM, unequalDelta)
+		fg.build.ConstantIsBetweenColumns_NoSequenceCheck(segment.minimumThreshold, segment.maximumThreshold, includeColumn, sample.StatValue, c_fitting2_statScaledHighM, fg.unequalStatDelta)
 	}
 
 	segment.includeColumnRow.Add(includeColumn, 1)
@@ -193,40 +193,33 @@ func (fg *SingleSegmented2) sampleIncludeToggleColumn(sample util_weight.Fitting
 }
 
 func (fg *SingleSegmented2) prepareAsPotentialThreshold(seg1, seg2 *segmentVars, include1, include2 util_highs.ColumnIndex, sample util_weight.FittingSample) {
-	includeBoth := fg.build.CreateColumnBool(util_highs.DebugText("includeBoth"))
-	seg1.includeOverlapRow.Add(includeBoth, 1)
-	fg.build.ConstraintAnd(includeBoth, include1, include2)
+	isOverlap := fg.build.CreateColumnBool(util_highs.DebugText("isOverlap"))
+	fg.build.ColumnIsEqualConstant(seg1.maximumThreshold, isOverlap, sample.StatValue, c_fitting2_statScaledHighM, fg.unequalStatDelta)
+	seg1.includeOverlapRow.Add(isOverlap, 1)
 
-	// TODO can this be simplified further depending
-	// would mean === column
-
-	differenceSigned := fg.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "differenceSigned"})
 	difference := fg.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "difference"})
 
-	// overlapRow: one.lineSlope*StatValue + one.lineOffset - two.lineSlope*StatValue - two.lineOffset + difference = 0
-	overlapRow := util_highs.ConstraintRow{Debug: "overlapRow"}
-	overlapRow.Add(seg1.lineSlope, sample.StatValue)
-	overlapRow.Add(seg1.lineOffset, 1)
-	overlapRow.Add(seg2.lineSlope, -sample.StatValue)
-	overlapRow.Add(seg2.lineOffset, -1)
-	overlapRow.Add(differenceSigned, 1)
-	overlapRow.Build(fg.build, 0, 0)
-
-	fg.build.AbsoluteValue_WithToggle_NoExtraCheck(differenceSigned, difference, includeBoth, c_fitting2_simScaledHighM)
+	fg.build.AbsoluteValueFromSumSeveral_WithToggle(
+		[]util_highs.ColumnIndex{seg1.lineSlope, seg1.lineOffset, seg2.lineSlope, seg2.lineOffset},
+		[]float64{sample.StatValue, 1, -sample.StatValue, -1},
+		0,
+		isOverlap,
+		difference,
+		c_fitting2_simScaledHighM,
+	)
 }
 
 func (fg *SingleSegmented2) sampleToFitLine(sample util_weight.FittingSample, segment *segmentVars, include util_highs.ColumnIndex) {
-	differenceSigned := fg.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "differenceSigned"})
 	difference := fg.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "difference"})
 
-	// sampleRow: one.lineSlope*StatValue + one.lineOffset + difference = simResult
-	sampleRow := util_highs.ConstraintRow{Debug: "sampleRow"}
-	sampleRow.Add(segment.lineSlope, sample.StatValue)
-	sampleRow.Add(segment.lineOffset, 1)
-	sampleRow.Add(differenceSigned, 1)
-	sampleRow.Build(fg.build, sample.SimResult, sample.SimResult)
-
-	fg.build.AbsoluteValue_WithToggle_NoExtraCheck(differenceSigned, difference, include, c_fitting2_simScaledHighM)
+	fg.build.AbsoluteValueFromSumTwoThenDiffToConst_WithToggle(
+		segment.lineSlope, sample.StatValue,
+		segment.lineOffset, 1,
+		sample.SimResult,
+		include,
+		difference,
+		c_fitting2_simScaledHighM,
+	)
 }
 
 func (fg *SingleSegmented2) prepareResult(solution *util_highs.Solution2) InitialResultSet {

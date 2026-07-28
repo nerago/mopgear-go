@@ -375,6 +375,60 @@ func (build *LinearBuilder) AbsoluteValue_WithToggle_NoExtraCheck(inputVar, outp
 	setIfPositive.Build(build, InfNeg(), rangeHigh)
 }
 
+func (build *LinearBuilder) AbsoluteValueFromDiffTwoVars_WithToggle(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, toggleVar ColumnIndex, outputVar ColumnIndex, rangeHigh float64) {
+	negative := ConstraintRow{}
+	negative.Add(inputOneVar, inputOneCoefficient)
+	negative.Add(inputTwoVar, -inputTwoCoefficient)
+	negative.Add(outputVar, 1)
+	negative.Add(toggleVar, -rangeHigh)
+	negative.Build(build, -rangeHigh, InfPos())
+
+	positive := ConstraintRow{}
+	positive.Add(inputOneVar, inputOneCoefficient)
+	positive.Add(inputTwoVar, -inputTwoCoefficient)
+	positive.Add(outputVar, -1)
+	positive.Add(toggleVar, rangeHigh)
+	positive.Build(build, InfNeg(), rangeHigh)
+}
+
+func (build *LinearBuilder) AbsoluteValueFromSumTwoThenDiffToConst_WithToggle(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, constCompare float64, toggleVar ColumnIndex, outputVar ColumnIndex, rangeHigh float64) {
+	negative := ConstraintRow{}
+	negative.Add(inputOneVar, inputOneCoefficient)
+	negative.Add(inputTwoVar, inputTwoCoefficient)
+	negative.Add(outputVar, 1)
+	negative.Add(toggleVar, -rangeHigh)
+	negative.Build(build, constCompare-rangeHigh, InfPos())
+
+	positive := ConstraintRow{}
+	positive.Add(inputOneVar, inputOneCoefficient)
+	positive.Add(inputTwoVar, inputTwoCoefficient)
+	positive.Add(outputVar, -1)
+	positive.Add(toggleVar, rangeHigh)
+	positive.Build(build, InfNeg(), constCompare+rangeHigh)
+}
+
+func (build *LinearBuilder) AbsoluteValueFromSumSeveral_WithToggle(inputVars []ColumnIndex, inputCoefficients []float64, constCompare float64, toggleVar ColumnIndex, outputVar ColumnIndex, rangeHigh float64) {
+	if len(inputVars) != len(inputCoefficients) {
+		panic("length mismatch")
+	}
+
+	negative := ConstraintRow{}
+	for i := range inputVars {
+		negative.Add(inputVars[i], inputCoefficients[i])
+	}
+	negative.Add(outputVar, 1)
+	negative.Add(toggleVar, -rangeHigh)
+	negative.Build(build, constCompare-rangeHigh, InfPos())
+
+	positive := ConstraintRow{}
+	for i := range inputVars {
+		positive.Add(inputVars[i], inputCoefficients[i])
+	}
+	positive.Add(outputVar, -1)
+	positive.Add(toggleVar, rangeHigh)
+	positive.Build(build, InfNeg(), constCompare+rangeHigh)
+}
+
 // basic logic: output = one xor two
 // however output is free when condition not met, should ideally put output under minimise pressure
 // similar to absolute value, just intended for int vars
