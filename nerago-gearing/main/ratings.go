@@ -565,7 +565,8 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 
 	sampleDataPreScale := util_collection.MapSliceAsNew(weightInputs, func(input *weight_types.WeightInput) util_weight.FittingSample {
 		return util_weight.FittingSample{
-			StatValue: input.TotalStat.GetFloat(stats.Stat_Haste),
+			//StatValue: input.TotalStat.GetFloat(stats.Stat_Haste),
+			StatValue: input.TotalStat.GetFloat(stats.Stat_Crit),
 			SimResult: input.SimResult.Get(stats.Sim_DPS),
 		}
 	})

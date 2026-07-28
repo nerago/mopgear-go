@@ -164,15 +164,13 @@ func (setup *singleGearSetExtended3) calcSimValueForType(simType stats.SimType, 
 		statTotalColumn := setup.statTotalColumns[statType]
 		contributeScoreSimStat := setup.makeContributeScoreSimStatColumn(simType, statType)
 
-		totalRatingSoFar := 0.0
 		for entry := range weight.StatWeights.GetAsSeq(simType, statType) {
 			// essentially if stat total fits into this range then copy a score to contributeScoreSimStat
 			if entry.StatRange.Maximum < math.MaxUint32 {
-				setup.calcScoreFromEntryIfStatFits(entry, contributeScoreSimStat, simType, statType, statTotalColumn, totalRatingSoFar)
+				setup.calcScoreFromEntryIfStatFits(entry, contributeScoreSimStat, simType, statType, statTotalColumn)
 			} else {
-				setup.calcScoreFromLastEntryIfGreater(entry, contributeScoreSimStat, simType, statType, statTotalColumn, totalRatingSoFar)
+				setup.calcScoreFromLastEntryIfGreater(entry, contributeScoreSimStat, simType, statType, statTotalColumn)
 			}
-			totalRatingSoFar += entry.TotalIfGreater
 		}
 
 		simValueFromStatRow.Add(contributeScoreSimStat.columnIndex, 1)
@@ -185,23 +183,18 @@ func (setup *singleGearSetExtended3) calcSimValueForType(simType stats.SimType, 
 	simValueFromStatRow.Build(setup.build, offset, offset)
 }
 
-func (setup *singleGearSetExtended3) calcScoreFromEntryIfStatFits(entry weight_types.Weight3ExtendedStatEntry, contributeScoreSimStat columnInfo, simType stats.SimType, statType stats.StatType, statTotalColumn *columnInfo, totalRatingSoFar float64) {
+func (setup *singleGearSetExtended3) calcScoreFromEntryIfStatFits(entry weight_types.Weight3ExtendedStatEntry, contributeScoreSimStat columnInfo, simType stats.SimType, statType stats.StatType, statTotalColumn *columnInfo) {
 	entryValue := setup.makeContributeScoreSimStatColumn(simType, statType) // need another entry type
 	isBetween := setup.statIsBetween(statTotalColumn, entry.StatRange)
 	setup.build.ConstraintIfBoolCopy(isBetween, entryValue.columnIndex, 1, contributeScoreSimStat.columnIndex, c_gearExtended3ScoreHigh)
 
-	// value = totalRatingSoFar + ratingWeight * (statTotal - thisRangeMinimum)
-	// value = totalRatingSoFar + ratingWeight * statTotal - ratingWeight * thisRangeMinimum
-	// ratingWeight * thisRangeMinimum - totalRatingSoFar = ratingWeight * statTotal - value
-
 	row := util_highs.ConstraintRow{}
 	row.Add(statTotalColumn.columnIndex, entry.RatingWeight)
 	row.Add(entryValue.columnIndex, -1)
-	targetValue := entry.RatingWeight*float64(entry.StatRange.Minimum) - totalRatingSoFar
-	row.Build(setup.build, targetValue, targetValue)
+	row.Build(setup.build, -entry.RatingOffset, -entry.RatingOffset)
 }
 
-func (setup *singleGearSetExtended3) calcScoreFromLastEntryIfGreater(entry weight_types.Weight3ExtendedStatEntry, contributeScoreSimStat columnInfo, simType stats.SimType, statType stats.StatType, statTotalColumn *columnInfo, totalRatingSoFar float64) {
+func (setup *singleGearSetExtended3) calcScoreFromLastEntryIfGreater(entry weight_types.Weight3ExtendedStatEntry, contributeScoreSimStat columnInfo, simType stats.SimType, statType stats.StatType, statTotalColumn *columnInfo) {
 	entryValue := setup.makeContributeScoreSimStatColumn(simType, statType) // need another entry type
 	isOverMinimum := setup.build.ColumnIsGreaterOrEqualThanConstant(statTotalColumn.columnIndex, float64(entry.StatRange.Minimum), c_gearExtended3StatHigh, 1.0)
 	setup.build.ConstraintIfBoolCopy(isOverMinimum, entryValue.columnIndex, 1, contributeScoreSimStat.columnIndex, c_gearExtended3ScoreHigh)
@@ -209,8 +202,7 @@ func (setup *singleGearSetExtended3) calcScoreFromLastEntryIfGreater(entry weigh
 	row := util_highs.ConstraintRow{}
 	row.Add(statTotalColumn.columnIndex, entry.RatingWeight)
 	row.Add(entryValue.columnIndex, -1)
-	targetValue := entry.RatingWeight*float64(entry.StatRange.Minimum) - totalRatingSoFar
-	row.Build(setup.build, targetValue, targetValue)
+	row.Build(setup.build, -entry.RatingOffset, -entry.RatingOffset)
 }
 
 func (setup *singleGearSetExtended3) makeSimValueColumn(simType stats.SimType) columnInfo {

@@ -21,7 +21,6 @@ type Weight3ExtendedStatEntry struct {
 	RatingWeight      float64
 	RatingOffset      float64
 	StatRange         StatRange
-	TotalIfGreater    float64
 	EstimationQuality float64 // higher is better
 }
 
@@ -38,7 +37,6 @@ func (wer *Weight3ExtendedRanged) AddDetailWeight(simType stats.SimType, statTyp
 		StatRange:         statRange,
 		RatingWeight:      ratingWeight,
 		RatingOffset:      ratingOffset,
-		TotalIfGreater:    float64(statRange.RangeSize()) * ratingWeight,
 		EstimationQuality: estimationQuality,
 	})
 
