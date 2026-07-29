@@ -28,6 +28,7 @@ type FittingEachStatWeightProcess2 struct {
 	inputData          []weight_types.WeightInput
 	requiredStats      []stats.StatType
 	requiredSims       []stats.SimType
+	targetRatios       weight_types.SimPriorityBasic
 
 	scaleSims  util_collection.EnumMap[stats.SimType, util_weight.ScaleAndOffset]
 	scaleStats util_collection.EnumMap[stats.StatType, float64]
@@ -40,7 +41,7 @@ type fitting2EachFields struct {
 	simType  stats.SimType
 	process  SingleSegmented2
 	//resultSet InitialResultSet
-	resultSlice []util_weight.FittingInterimResult
+	resultSlice []util_weight.FittingInterimResult2
 }
 
 func (fe *FittingEachStatWeightProcess2) Init(targetSegmentCount int, printer *util.PrintRecorder, timeout int) {
@@ -52,6 +53,10 @@ func (fe *FittingEachStatWeightProcess2) Init(targetSegmentCount int, printer *u
 func (fe *FittingEachStatWeightProcess2) SetRequiredStats(requiredStats []stats.StatType, requiredSims []stats.SimType) {
 	fe.requiredStats = requiredStats
 	fe.requiredSims = requiredSims
+}
+
+func (fe *FittingEachStatWeightProcess2) SetTargetRatios(targetRatios weight_types.SimPriorityBasic) {
+	fe.targetRatios = targetRatios
 }
 
 func (fe *FittingEachStatWeightProcess2) SupplyData(inputData []weight_types.WeightInput) {
@@ -68,9 +73,7 @@ func (fe *FittingEachStatWeightProcess2) Run(stopwatch *util.Stopwatch, cancel u
 
 func (fe *FittingEachStatWeightProcess2) calcMetrics(stopwatch *util.Stopwatch) {
 	for fields := range fe.each.SeqValues() {
-		for _, detail := range fields.resultSlice {
-			stopwatch.AddElapsedFrom(&detail.StopwatchSolver)
-		}
+		stopwatch.AddElapsedFrom(&fields.process.stopwatch)
 	}
 }
 
@@ -81,6 +84,10 @@ func (fe *FittingEachStatWeightProcess2) buildResult() *weight_types.Weight3Exte
 			weights.AddDetailWeight(simType, statType, detail.StatRange, detail.LineSlope, detail.LineOffset, detail.IncludePercentOfTotal)
 		}
 	})
+	for _, simType := range fe.requiredSims {
+		ratio := fe.targetRatios.GetOrPanic(simType)
+		weights.AddSimScale(simType, 1, 0, ratio)
+	}
 	weights.FinishAndValidate()
 	return weights
 }
@@ -131,13 +138,13 @@ func (fe *FittingEachStatWeightProcess2) rescaleAndCleanup(initialSet InitialRes
 	fields.resultSlice = fe.cleanupRanges(fields.resultSlice)
 }
 
-func (fe *FittingEachStatWeightProcess2) convertAndScaleResult(initialSet InitialResultSet, statType stats.StatType) []util_weight.FittingInterimResult {
+func (fe *FittingEachStatWeightProcess2) convertAndScaleResult(initialSet InitialResultSet, statType stats.StatType) []util_weight.FittingInterimResult2 {
 	scaleStat := fe.scaleStats.GetOrPanic(statType)
 
-	resultSlice := make([]util_weight.FittingInterimResult, 0, len(initialSet.Segments))
+	resultSlice := make([]util_weight.FittingInterimResult2, 0, len(initialSet.Segments))
 	for i, resultInitial := range initialSet.Segments {
-		interim := util_weight.FittingInterimResult{
-			LineSlope:  resultInitial.LineSlope * scaleStat,
+		interim := util_weight.FittingInterimResult2{
+			LineSlope:  resultInitial.LineSlope,
 			LineOffset: resultInitial.LineOffset,
 			StatRange: weight_types.StatRange{
 				Minimum: uint32(math.Round(resultInitial.StatRange.Minimum / scaleStat)),
@@ -147,15 +154,14 @@ func (fe *FittingEachStatWeightProcess2) convertAndScaleResult(initialSet Initia
 			IncludePercentOfTotal:      resultInitial.IncludePercentOfTotal,
 			IncludePercentOfStageInput: 0,
 			BuiltSequence:              []int{i},
-			StopwatchSolver:            resultInitial.StopwatchSolver,
 		}
 		resultSlice = append(resultSlice, interim)
 	}
 	return resultSlice
 }
 
-func (fe *FittingEachStatWeightProcess2) cleanupRanges(results []util_weight.FittingInterimResult) []util_weight.FittingInterimResult {
-	slices.SortFunc(results, func(a, b util_weight.FittingInterimResult) int {
+func (fe *FittingEachStatWeightProcess2) cleanupRanges(results []util_weight.FittingInterimResult2) []util_weight.FittingInterimResult2 {
+	slices.SortFunc(results, func(a, b util_weight.FittingInterimResult2) int {
 		return cmp.Or(cmp.Compare(a.StatRange.Minimum, b.StatRange.Minimum), cmp.Compare(a.StatRange.Maximum, b.StatRange.Maximum))
 	})
 
@@ -171,7 +177,7 @@ func (fe *FittingEachStatWeightProcess2) cleanupRanges(results []util_weight.Fit
 	return results
 }
 
-func (fe *FittingEachStatWeightProcess2) updateBreakpoint(one, two *util_weight.FittingInterimResult) (deleteSecond bool) {
+func (fe *FittingEachStatWeightProcess2) updateBreakpoint(one, two *util_weight.FittingInterimResult2) (deleteSecond bool) {
 	// TODO similar rules with very low include count
 	if one.StatRange.RangeSize() < c_fitting2_minimum_stat_coverage || two.StatRange.RangeSize() < c_fitting2_minimum_stat_coverage {
 		// if covers less than 100 stat numbers, merge them
@@ -184,7 +190,6 @@ func (fe *FittingEachStatWeightProcess2) updateBreakpoint(one, two *util_weight.
 		one.IncludePercentOfTotal += two.IncludePercentOfTotal
 		one.IncludeCount += two.IncludeCount
 		one.BuiltSequence = slices.Concat(one.BuiltSequence, two.BuiltSequence)
-		one.StopwatchSolver.AddElapsedFrom(&two.StopwatchSolver)
 		return true
 	} else if one.StatRange.Maximum >= two.StatRange.Minimum && one.StatRange.Maximum <= two.StatRange.Minimum+c_fitting2_permitted_overlap_fix {
 		// if maximum has small overlap into next minimum, fix

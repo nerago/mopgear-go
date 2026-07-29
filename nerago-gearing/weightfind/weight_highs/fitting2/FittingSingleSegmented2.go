@@ -2,6 +2,7 @@ package fitting2
 
 import (
 	"cmp"
+	"fmt"
 	"math"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
@@ -63,7 +64,6 @@ type InitialSegment struct {
 	StatRange             weight_types.StatRangeFloat
 	IncludeCount          uint32
 	IncludePercentOfTotal float64
-	StopwatchSolver       util.Stopwatch
 }
 
 func (fg *SingleSegmented2) Init(targetSegmentCount int, scaleStat float64, printer *util.PrintRecorder, timeout int) {
@@ -153,8 +153,9 @@ func (fg *SingleSegmented2) finishSegment(segment *segmentVars, isLast bool) {
 }
 
 func validateSample(sample util_weight.FittingSample) {
-	if sample.SimResult < 0 || sample.SimResult > 1 || sample.StatValue < 0 || sample.StatValue > 1 {
-		panic("sample out of range")
+	slack := 0.000001
+	if sample.SimResult < -slack || sample.SimResult > 1+slack || sample.StatValue < -slack || sample.StatValue > 1+slack {
+		panic(fmt.Sprintf("sample out of range %e %e", sample.SimResult, sample.StatValue))
 	}
 }
 
@@ -242,7 +243,6 @@ func (fg *SingleSegmented2) prepareResult(solution *util_highs.Solution2) Initia
 			StatRange:             statRange,
 			IncludeCount:          uint32(includeSampleCount),
 			IncludePercentOfTotal: float64(includeSampleCount) / float64(len(fg.inputData)),
-			StopwatchSolver:       util.Stopwatch{},
 		}
 
 		resultSet.Segments = append(resultSet.Segments, interim)

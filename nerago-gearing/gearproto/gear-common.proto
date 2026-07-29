@@ -1,0 +1,19 @@
+syntax = "proto3";
+package gearproto;
+
+option go_package = "./gearproto";
+
+enum StatType {
+  Strength   = 0;
+  Agility    = 1;
+  Stamina    = 2;
+  Intellect  = 3;
+  Spirit     = 4;
+  Hit        = 5;
+  Crit       = 6;
+  Haste      = 7;
+  Expertise  = 8;
+  Dodge      = 9;
+  Parry      = 10;
+  Mastery    = 11;
+}

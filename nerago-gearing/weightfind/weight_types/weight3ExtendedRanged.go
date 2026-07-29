@@ -53,7 +53,36 @@ func (wer *Weight3ExtendedRanged) AddSimScale(simType stats.SimType, rangingScal
 }
 
 func (wer *Weight3ExtendedRanged) FinishAndValidate() {
-	// no gaps etc
+	for statType := range wer.StatWeights.SeqKey2() {
+		if !slices.Contains(wer.StatList, statType) {
+			panic("weight given for unlisted stat")
+		}
+	}
+	for simType := range wer.StatWeights.SeqKey1() {
+		if !slices.Contains(wer.SimList, simType) {
+			panic("weight given for unlisted sim")
+		}
+	}
+
+	for _, simType := range wer.SimList {
+		for _, statType := range wer.StatList {
+			if !wer.StatWeights.Has(simType, statType) {
+				panic("missing weight for " + statType.Name() + " " + simType.Name())
+			}
+		}
+	}
+
+	for simType := range wer.SimPriority.entries.SeqKey() {
+		if !slices.Contains(wer.SimList, simType) {
+			panic("priority given for unlisted sim")
+		}
+	}
+	for _, simType := range wer.SimList {
+		_, hasValue := wer.SimPriority.Get(simType)
+		if !hasValue {
+			panic("priority missing for " + simType.Name())
+		}
+	}
 }
 
 func (wer *Weight3ExtendedRanged) ConvertToWeight2() *Weight2Extended {
@@ -62,6 +91,7 @@ func (wer *Weight3ExtendedRanged) ConvertToWeight2() *Weight2Extended {
 		bestValue := chooseBest(entry.ValueSeq)
 		weight2.PutWeight(entry.Key2, entry.Key1, bestValue)
 	}
+	weight2.SimPriority = wer.SimPriority.Clone()
 	weight2.FinishAndValidate()
 	return weight2
 }

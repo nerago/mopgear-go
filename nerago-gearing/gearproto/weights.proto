@@ -3,6 +3,8 @@ package gearproto;
 
 option go_package = "./gearproto";
 
+import "gear-common.proto";
+
 message Weight1Basic {
   repeated Weight1Entry weight     = 1;
   repeated Priority1Entry priority = 2;
@@ -34,7 +36,7 @@ message Weight2Entry {
 }
 
 message Weight3Group {
-  SimType stat_type             = 1;
+  StatType stat_type             = 1;
   SimType sim_type              = 2;
   repeated Weight3Entry entries = 3;
 }
@@ -60,21 +62,6 @@ message Priority2Entry {
   double ranging_scale  = 2;
   double ranging_offset = 3;
   double ratio_scale    = 4;
-}
-
-enum StatType {
-  Strength   = 0;
-  Agility    = 1;
-  Stamina    = 2;
-  Intellect  = 3;
-  Spirit     = 4;
-  Hit        = 5;
-  Crit       = 6;
-  Haste      = 7;
-  Expertise  = 8;
-  Dodge      = 9;
-  Parry      = 10;
-  Mastery    = 11;
 }
 
 enum SimType {

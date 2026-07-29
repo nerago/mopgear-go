@@ -1,1 +1,1 @@
-protoc --go_out=.. multi.proto
+protoc --go_out=.. .\*.proto

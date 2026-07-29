@@ -65,14 +65,14 @@ func TestProtoVersioning(t *testing.T) {
 	}
 
 	if breakingChangeDetected && (newVersionNumber == deployedVersionNumber) {
-		t.Fatalf("Breaking proto change detected without corresponding API version increase!\n%s\nEither fix your proto change so that it remains backwards-compatible, or increment the current_version_number option within the ProtoVersion message in proto/common.proto.\nIf you choose the latter route, then you must also modify the updateProtoVersion() method of any affected classes in the front-end code!\nThis ensures that saved browser data and old sim links will be automatically migrated to the new schema.", out)
+		t.Fatalf("Breaking proto change detected without corresponding API version increase!\n%s\nEither fix your proto change so that it remains backwards-compatible, or increment the current_version_number option within the ProtoVersion message in proto/gear-common.proto.\nIf you choose the latter route, then you must also modify the updateProtoVersion() method of any affected classes in the front-end code!\nThis ensures that saved browser data and old sim links will be automatically migrated to the new schema.", out)
 	} else if !breakingChangeDetected && (newVersionNumber != deployedVersionNumber) {
-		t.Fatal("API version increase detected without any breaking changes to protos!\nIf your proto changes are indeed backwards-compatible as detected, then revert the current_version_number option that you incremented in proto/common.proto back to its old value.\nIf your proto changes do in fact break saved browser data or old sim links, then make the breakage more explicit, such as by renaming an affected field.")
+		t.Fatal("API version increase detected without any breaking changes to protos!\nIf your proto changes are indeed backwards-compatible as detected, then revert the current_version_number option that you incremented in proto/gear-common.proto back to its old value.\nIf your proto changes do in fact break saved browser data or old sim links, then make the breakage more explicit, such as by renaming an affected field.")
 	}
 
 	// If the above checks passed, then read in the actual results file for this test, which
 	// stores the local (pre-deployment) value of the version number. If necessary, force the
-	// developer to run make update-tests to keep this file in sync with proto/common.proto .
+	// developer to run make update-tests to keep this file in sync with proto/gear-common.proto .
 	// This results file will be automatically copied into .deployedprotoversion as part of
 	// the build-and-deploy workflow.
 	localVersionNumber, err := readExpectedProtoVersion("TestProtoVersioning.results", false)
@@ -82,7 +82,7 @@ func TestProtoVersioning(t *testing.T) {
 	}
 
 	if localVersionNumber != newVersionNumber {
-		t.Logf("API version numbers in proto/common.proto and sim/core/TestProtoVersioning.results do not match: expected %d but was %d.\nIf you intentionally incremented the current_version_number option within the ProtoVersion message due to a breaking proto change, then the mismatch here is normal.\nIf this is the case, then simply update the results file by running make update-tests.\nThis will allow the test to pass, and also ensures that the .deployedprotoversion file is automatically updated during deployment.", localVersionNumber, newVersionNumber)
+		t.Logf("API version numbers in proto/gear-common.proto and sim/core/TestProtoVersioning.results do not match: expected %d but was %d.\nIf you intentionally incremented the current_version_number option within the ProtoVersion message due to a breaking proto change, then the mismatch here is normal.\nIf this is the case, then simply update the results file by running make update-tests.\nThis will allow the test to pass, and also ensures that the .deployedprotoversion file is automatically updated during deployment.", localVersionNumber, newVersionNumber)
 		t.Fail()
 	}
 

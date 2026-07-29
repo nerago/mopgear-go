@@ -20,3 +20,13 @@ type FittingInterimResult struct {
 	BuiltSequence              []int
 	StopwatchSolver            util.Stopwatch
 }
+
+type FittingInterimResult2 struct {
+	LineSlope                  float64
+	LineOffset                 float64
+	StatRange                  weight_types.StatRange
+	IncludeCount               uint32
+	IncludePercentOfStageInput float64
+	IncludePercentOfTotal      float64
+	BuiltSequence              []int
+}

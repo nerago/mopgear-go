@@ -112,6 +112,10 @@ func SimPriorityExtended_Make() SimPriorityExtended {
 	return SimPriorityExtended{util_collection.EnumMapMake[stats.SimType, SimPriorityEntry](stats.SimTypeEnum)}
 }
 
+func (sre *SimPriorityExtended) Clone() SimPriorityExtended {
+	return SimPriorityExtended{*sre.entries.Clone()}
+}
+
 func (sre *SimPriorityExtended) Get(simType stats.SimType) (SimPriorityEntry, bool) {
 	return sre.entries.Get(simType)
 }
