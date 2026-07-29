@@ -12,7 +12,7 @@ import (
 type EnumMap[E EnumBaseType, V any] struct {
 	content  []V
 	isSet    BitSet
-	len      int
+	len      uint8
 	enumType EnumType[E]
 }
 
@@ -42,6 +42,22 @@ func (em *EnumMap[E, V]) Clone() *EnumMap[E, V] {
 	}
 }
 
+func (em *EnumMap[E, V]) Clear() {
+	var nilValue V
+	for index := range em.isSet.SeqIsSet() {
+		em.content[index] = nilValue
+	}
+	em.isSet.ClearAll()
+}
+
+func (em *EnumMap[E, V]) Size() int {
+	return int(em.len)
+}
+
+func (em *EnumMap[E, V]) IsEmpty() bool {
+	return em.len == 0
+}
+
 func (em *EnumMap[E, V]) Equals(other *EnumMap[E, V], elementEqual func(*V, *V) bool) bool {
 	if em.len != other.len {
 		return false
@@ -63,8 +79,12 @@ func (em *EnumMap[E, V]) Equals(other *EnumMap[E, V], elementEqual func(*V, *V) 
 	return true
 }
 
-func (em *EnumMap[E, V]) Len() int {
-	return em.len
+func (em *EnumMap[E, V]) EqualsInterface(other IMap[E, V], elementEqual func(*V, *V) bool) bool {
+	if asType, isType := other.(*EnumMap[E, V]); isType {
+		return em.Equals(asType, elementEqual)
+	} else {
+		return IMapEquals(em, other, elementEqual)
+	}
 }
 
 func (em *EnumMap[E, V]) Has(key E) bool {

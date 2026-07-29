@@ -10,6 +10,20 @@ type ICollection interface {
 	IsEmpty() bool
 }
 
+type IMap[K comparable, V any] interface {
+	ICollection
+	EqualsInterface(other IMap[K, V], elementEqual func(*V, *V) bool) bool
+	Has(key K) bool
+	Get(key K) (V, bool)
+	GetOrPanic(key K) V
+	Put(key K, value V)
+	Delete(key K)
+	SeqKeyValue() iter.Seq2[K, V]
+	SeqValues() iter.Seq[V]
+	SeqKey() iter.Seq[K]
+	KeySlice() []K
+}
+
 type IMapMapCommon[J comparable, K comparable, V any] interface {
 	ICollection
 	Has(key1 J, key2 K) bool
@@ -59,3 +73,21 @@ type IMapMapSlice[J comparable, K comparable, V any] interface {
 
 var mm IMapMap[int, int, int] = &MapMap[int, int, int]{}
 var mms IMapMapSlice[int, int, int] = &MapMapSlice[int, int, int]{}
+var em IMap[Sample, int] = &EnumMap[Sample, int]{}
+
+func IMapEquals[K comparable, V any](a IMap[K, V], b IMap[K, V], elementEqual func(*V, *V) bool) bool {
+	if a.Size() != b.Size() {
+		return false
+	} else if a.Size() == 0 && b.Size() == 0 {
+		return true
+	}
+
+	for k, v := range a.SeqKeyValue() {
+		v2, hasV2 := b.Get(k)
+		if !hasV2 || !elementEqual(&v, &v2) {
+			return false
+		}
+	}
+
+	return true
+}
