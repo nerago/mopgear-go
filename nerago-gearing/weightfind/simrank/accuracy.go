@@ -7,7 +7,7 @@ import (
 	"slices"
 )
 
-func RankSimsStatisticalForAccuracyPrepare(simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []*weight_types.AccuracyInfoPrePrepare) []*weight_types.AccuracyPreparedEntry {
+func RankSimsStatisticalForAccuracyPrepare(simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []*weight_types.AccuracyInfoPrePrepare) []*weight_types.AccuracyInfoPrepared {
 	simScoringStatisticalForAccuracyPrepare(simList, priority, inputData)
 
 	// rank combined sims
@@ -18,7 +18,7 @@ func RankSimsStatisticalForAccuracyPrepare(simList []stats.SimType, priority *we
 	return AccuracyPrepareCalcHiLo(inputData)
 }
 
-func AccuracyPrepareRankSimsBasic(simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []*weight_types.AccuracyInfoPrePrepare) []*weight_types.AccuracyPreparedEntry {
+func AccuracyPrepareRankSimsBasic(simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []*weight_types.AccuracyInfoPrePrepare) []*weight_types.AccuracyInfoPrepared {
 	simScoringBasicFastForAccuracyPrepare(simList, priority, inputData)
 
 	// rank combined sims

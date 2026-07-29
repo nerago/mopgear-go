@@ -103,10 +103,10 @@ func arrayApplyChainFunc[T weight_types.IRankEntry](data []T, runStart int, coun
 
 // make ranked entries for later, calculating the sim rank as we go
 // this uses the input array to make a new one, generic form would be a mapping operation
-func AccuracyPrepareCalcHiLo(inputData []*weight_types.AccuracyInfoPrePrepare) []*weight_types.AccuracyPreparedEntry {
-	prepare := make([]*weight_types.AccuracyPreparedEntry, len(inputData))
+func AccuracyPrepareCalcHiLo(inputData []*weight_types.AccuracyInfoPrePrepare) []*weight_types.AccuracyInfoPrepared {
+	prepare := make([]*weight_types.AccuracyInfoPrepared, len(inputData))
 
-	prepare[0] = &weight_types.AccuracyPreparedEntry{
+	prepare[0] = &weight_types.AccuracyInfoPrepared{
 		SimRankRange: &util_collection.HiLoInt{Lo: 0, Hi: 0},
 		Stats:        inputData[0].DataStat,
 	}
@@ -114,10 +114,10 @@ func AccuracyPrepareCalcHiLo(inputData []*weight_types.AccuracyInfoPrePrepare) [
 		if util.FloatsApproxEquals(inputData[i].SimScore, inputData[i-1].SimScore) {
 			prevRange := prepare[i-1].SimRankRange
 			prevRange.Hi = i
-			prepare[i] = &weight_types.AccuracyPreparedEntry{SimRankRange: prevRange, Stats: inputData[i].DataStat}
+			prepare[i] = &weight_types.AccuracyInfoPrepared{SimRankRange: prevRange, Stats: inputData[i].DataStat}
 		} else {
 			newRange := &util_collection.HiLoInt{Lo: i, Hi: i}
-			prepare[i] = &weight_types.AccuracyPreparedEntry{SimRankRange: newRange, Stats: inputData[i].DataStat}
+			prepare[i] = &weight_types.AccuracyInfoPrepared{SimRankRange: newRange, Stats: inputData[i].DataStat}
 		}
 	}
 

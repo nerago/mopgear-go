@@ -41,13 +41,13 @@ const (
 )
 
 type WeightSearcher2 struct {
-	typeCount        int
-	statTypes        []stats.StatType
-	simTypes         []stats.SimType
-	targetRatio      weight_types.SimPriorityBasic
-	evaluateAccuracy EvaluateAccuracyPrepared
-	printer          *util.PrintRecorder
-	AccuracyMode     int
+	typeCount           int
+	statTypes           []stats.StatType
+	simTypes            []stats.SimType
+	targetRatio         weight_types.SimPriorityBasic
+	evaluateAccuracy    EvaluateAccuracyPrepared
+	printer             *util.PrintRecorder
+	AccuracyStatistical bool
 
 	queue      util_collection.QueueStackFilo[*weightSearch2Bound]
 	bestResult util_rank.BestCollector1[weight_types.Weight1Basic]
@@ -70,7 +70,7 @@ func (ws *WeightSearcher2) Init(statTypes []stats.StatType, targetRatio weight_t
 }
 
 func (ws *WeightSearcher2) SupplyData(inputData []weight_types.WeightInput) {
-	ws.evaluateAccuracy.Init(inputData, &ws.targetRatio, ws.AccuracyMode)
+	ws.evaluateAccuracy.Init(inputData, &ws.targetRatio, ws.AccuracyStatistical)
 }
 
 func (ws *WeightSearcher2) SetRanges(weightMin, weightMax float64) {
@@ -123,7 +123,7 @@ func (ws *WeightSearcher2) Run(cancel util_async.CancelSignal) weight_types.Weig
 
 func (ws *WeightSearcher2) evaluateScore(weightArray []float64) float64 {
 	weights := weight_types.Weight1Basic_Of(weightArray, ws.statTypes)
-	accuracy := ws.evaluateAccuracy.EvaluateWeight(weights)
+	accuracy := ws.evaluateAccuracy.EvaluateWeight1(&weights)
 	ws.bestResult.Offer(&weights, accuracy)
 	return accuracy
 }

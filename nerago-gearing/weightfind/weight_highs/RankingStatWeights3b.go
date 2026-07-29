@@ -301,7 +301,7 @@ func (ranker *RankingStatWeightProcess3b) setupInitialFromInternalWeights(intern
 
 func (ranker *RankingStatWeightProcess3b) setupInitialRemainingVariables(internalWeights weight_types.Weight1Basic) {
 	for entry := range util_collection.ForPointer(ranker.dataSample) {
-		entry.initialStatScore = internalWeights.CalcStatScore(entry.data) * c_rank3b_scaleTarget
+		entry.initialStatScore = internalWeights.CalcStatScore(&entry.data.TotalStat) * c_rank3b_scaleTarget
 		ranker.build.SetInitialSolutionValue(entry.scoreColumn, entry.initialStatScore)
 	}
 }

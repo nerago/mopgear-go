@@ -29,7 +29,7 @@ func weightTweakerInternalLogged(startWeight weight_types.Weight1Basic, tweakSta
 	}
 	bestEntry := &weightAndAccuracy{
 		startWeight.Clone(),
-		EvaluateAccuracyRanged(startWeight, requiredSims, targetRatio, inputData),
+		EvaluateAccuracy(&startWeight, requiredSims, targetRatio, inputData),
 	}
 	printer.Printf("START %s accuracy=%f\n", bestEntry.weight.String(), bestEntry.accuracy)
 
@@ -43,23 +43,23 @@ func weightTweakerInternalLogged(startWeight weight_types.Weight1Basic, tweakSta
 			if !bestEntry.weight.IsZero(stat) {
 				mul := bestEntry.weight.Clone()
 				mul.MultiplyEquals(stat, factor)
-				accuracyMul := EvaluateAccuracyRanged(startWeight, requiredSims, targetRatio, inputData)
+				accuracyMul := EvaluateAccuracy(&mul, requiredSims, targetRatio, inputData)
 				best.Offer(&weightAndAccuracy{mul, accuracyMul}, accuracyMul)
 
 				div := bestEntry.weight.Clone()
 				div.DivideEquals(stat, factor)
-				accuracyDiv := EvaluateAccuracyRanged(startWeight, requiredSims, targetRatio, inputData)
+				accuracyDiv := EvaluateAccuracy(&div, requiredSims, targetRatio, inputData)
 				best.Offer(&weightAndAccuracy{div, accuracyDiv}, accuracyDiv)
 			}
 
 			add := bestEntry.weight.Clone()
 			add.PlusEquals(stat, increment)
-			accuracyAdd := EvaluateAccuracyRanged(startWeight, requiredSims, targetRatio, inputData)
+			accuracyAdd := EvaluateAccuracy(&add, requiredSims, targetRatio, inputData)
 			best.Offer(&weightAndAccuracy{add, accuracyAdd}, accuracyAdd)
 
 			sub := bestEntry.weight.Clone()
 			sub.MinusEquals(stat, increment)
-			accuracySub := EvaluateAccuracyRanged(startWeight, requiredSims, targetRatio, inputData)
+			accuracySub := EvaluateAccuracy(&sub, requiredSims, targetRatio, inputData)
 			best.Offer(&weightAndAccuracy{sub, accuracySub}, accuracySub)
 		}
 
@@ -88,7 +88,7 @@ func weightTweakerInternal_Fast(startWeight weight_types.Weight1Basic, tweakStar
 	best := util_rank.BestCollector1[weight_types.Weight1Basic]{}
 	best.Offer(
 		&startWeight,
-		EvaluateAccuracyRanged(startWeight, simTypes, targetRatio, inputData),
+		EvaluateAccuracy(&startWeight, simTypes, targetRatio, inputData),
 	)
 
 	for range c_tweak_iter_count {
@@ -99,14 +99,14 @@ func weightTweakerInternal_Fast(startWeight weight_types.Weight1Basic, tweakStar
 			if !best.BestObject.IsZero(stat) {
 				mul := best.BestObject.Clone()
 				mul.MultiplyEquals(stat, factor)
-				accuracyMul := EvaluateAccuracyRanged(startWeight, simTypes, targetRatio, inputData)
+				accuracyMul := EvaluateAccuracy(&mul, simTypes, targetRatio, inputData)
 				if best.OfferAndIsBetter(&mul, accuracyMul) {
 					foundImprovement = true
 				}
 
 				div := best.BestObject.Clone()
 				div.DivideEquals(stat, factor)
-				accuracyDiv := EvaluateAccuracyRanged(startWeight, simTypes, targetRatio, inputData)
+				accuracyDiv := EvaluateAccuracy(&div, simTypes, targetRatio, inputData)
 				if best.OfferAndIsBetter(&div, accuracyDiv) {
 					foundImprovement = true
 				}
@@ -114,14 +114,14 @@ func weightTweakerInternal_Fast(startWeight weight_types.Weight1Basic, tweakStar
 
 			add := best.BestObject.Clone()
 			add.PlusEquals(stat, increment)
-			accuracyAdd := EvaluateAccuracyRanged(startWeight, simTypes, targetRatio, inputData)
+			accuracyAdd := EvaluateAccuracy(&add, simTypes, targetRatio, inputData)
 			if best.OfferAndIsBetter(&add, accuracyAdd) {
 				foundImprovement = true
 			}
 
 			sub := best.BestObject.Clone()
 			sub.MinusEquals(stat, increment)
-			accuracySub := EvaluateAccuracyRanged(startWeight, simTypes, targetRatio, inputData)
+			accuracySub := EvaluateAccuracy(&sub, simTypes, targetRatio, inputData)
 			if best.OfferAndIsBetter(&sub, accuracySub) {
 				foundImprovement = true
 			}
@@ -151,7 +151,7 @@ func weightTweaker_internal_FastCached(startWeight weight_types.Weight1Basic, tw
 	best := util_rank.BestCollector1[weight_types.Weight1Basic]{}
 	best.Offer(
 		&startWeight,
-		evaluate.EvaluateWeight(startWeight),
+		evaluate.EvaluateWeight1(&startWeight),
 	)
 
 	for range c_tweak_iter_count {
@@ -162,14 +162,14 @@ func weightTweaker_internal_FastCached(startWeight weight_types.Weight1Basic, tw
 			if !best.BestObject.IsZero(stat) {
 				mul := best.BestObject.Clone()
 				mul.MultiplyEquals(stat, factor)
-				accuracyMul := evaluate.EvaluateWeight(startWeight)
+				accuracyMul := evaluate.EvaluateWeight1(&mul)
 				if best.OfferAndIsBetter(&mul, accuracyMul) {
 					foundImprovement = true
 				}
 
 				div := best.BestObject.Clone()
 				div.DivideEquals(stat, factor)
-				accuracyDiv := evaluate.EvaluateWeight(startWeight)
+				accuracyDiv := evaluate.EvaluateWeight1(&div)
 				if best.OfferAndIsBetter(&div, accuracyDiv) {
 					foundImprovement = true
 				}
@@ -177,14 +177,14 @@ func weightTweaker_internal_FastCached(startWeight weight_types.Weight1Basic, tw
 
 			add := best.BestObject.Clone()
 			add.PlusEquals(stat, increment)
-			accuracyAdd := evaluate.EvaluateWeight(startWeight)
+			accuracyAdd := evaluate.EvaluateWeight1(&add)
 			if best.OfferAndIsBetter(&add, accuracyAdd) {
 				foundImprovement = true
 			}
 
 			sub := best.BestObject.Clone()
 			sub.MinusEquals(stat, increment)
-			accuracySub := evaluate.EvaluateWeight(startWeight)
+			accuracySub := evaluate.EvaluateWeight1(&sub)
 			if best.OfferAndIsBetter(&sub, accuracySub) {
 				foundImprovement = true
 			}

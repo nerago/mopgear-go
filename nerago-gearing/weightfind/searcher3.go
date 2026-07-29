@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"math"
 	"paladin_gearing_go/stats"
+	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_rank"
@@ -31,34 +32,17 @@ const (
 )
 
 type WeightSearcher3 struct {
-	typeCount        int
-	statTypes        []stats.StatType
-	simTypes         []stats.SimType
-	targetRatio      weight_types.SimPriorityBasic
-	evaluateAccuracy EvaluateAccuracyPrepared
-	initialBound     *weightSearch2FastBound
-	AccuracyMode     int
+	typeCount           int
+	statTypes           []stats.StatType
+	simTypes            []stats.SimType
+	targetRatio         weight_types.SimPriorityBasic
+	evaluateAccuracy    EvaluateAccuracyPrepared
+	initialBound        *weightSearch2FastBound
+	AccuracyStatistical bool
 
 	bestResult util_rank.BestCollector1Concurrent[weight_types.Weight1Basic]
 
-	poolQueue typedPool[weightSearch2FastBound]
-}
-
-type typedPool[T any] struct {
-	pool sync.Pool
-}
-
-func (p *typedPool[T]) Get() *T {
-	value := p.pool.Get()
-	if value != nil {
-		return value.(*T)
-	} else {
-		return new(T)
-	}
-}
-
-func (p *typedPool[T]) Put(instance *T) {
-	p.pool.Put(instance)
+	poolQueue util.TypedPool[weightSearch2FastBound]
 }
 
 type weightSearch2FastPoint [c_search3_max_stats]float64
@@ -88,7 +72,7 @@ func (ws *WeightSearcher3) Init(statTypes []stats.StatType, targetRatio weight_t
 }
 
 func (ws *WeightSearcher3) SupplyData(inputData []weight_types.WeightInput) {
-	ws.evaluateAccuracy.Init(inputData, &ws.targetRatio, ws.AccuracyMode)
+	ws.evaluateAccuracy.Init(inputData, &ws.targetRatio, ws.AccuracyStatistical)
 }
 
 func (ws *WeightSearcher3) SetRanges(weightMin, weightMax float64) {
@@ -171,7 +155,7 @@ func (ws *WeightSearcher3) evaluateScore(weightArray *weightSearch2FastPoint) fl
 	for i, statType := range ws.statTypes {
 		weights.Put(statType, weightArray[i])
 	}
-	accuracy := ws.evaluateAccuracy.EvaluateWeight(weights)
+	accuracy := ws.evaluateAccuracy.EvaluateWeight1(&weights)
 	ws.bestResult.Offer(&weights, accuracy)
 	return accuracy
 }

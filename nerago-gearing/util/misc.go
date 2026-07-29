@@ -1,5 +1,7 @@
 package util
 
+import "sync"
+
 func NilSafeEqual[T any](one *T, two *T, equals func(T, T) bool) bool {
 	if one != nil && two != nil {
 		return equals(*one, *two)
@@ -28,4 +30,21 @@ func NilSafeEqualComparable[T comparable](one *T, two *T) bool {
 	} else {
 		return false
 	}
+}
+
+type TypedPool[T any] struct {
+	pool sync.Pool
+}
+
+func (p *TypedPool[T]) Get() *T {
+	value := p.pool.Get()
+	if value != nil {
+		return value.(*T)
+	} else {
+		return new(T)
+	}
+}
+
+func (p *TypedPool[T]) Put(instance *T) {
+	p.pool.Put(instance)
 }

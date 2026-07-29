@@ -161,6 +161,12 @@ func (we *Weight2Extended) Print(printer *util.PrintRecorder) {
 	printer.PrintlnFromBuild(sb)
 }
 
+func (we *Weight2Extended) String() string {
+	sb := util.StringBuild2{}
+	we.AppendString(&sb)
+	return sb.String()
+}
+
 func (we *Weight2Extended) AppendString(sb *util.StringBuild2) {
 	sb.WriteString("(")
 	for _, simType := range we.SimList {

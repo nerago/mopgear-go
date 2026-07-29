@@ -194,8 +194,8 @@ func loadOldWeights(label string, weightFileOut string, simTypes []stats.SimType
 	oldWeight, oldWeightString, oldWeightExists := ratings_old.StatRatingsWeights_ReadFile_IfExists(weightFileOut, true, true, true)
 	if oldWeightExists {
 		oldWeightAsResult := weight_types.Weight1Basic_FromRatingsWeight(oldWeight)
-		accuracy := EvaluateAccuracyRanged(oldWeightAsResult, simTypes, ratios, inputData)
-		accuracyStat := EvaluateAccuracyStatisticalDeviations(oldWeightAsResult, simTypes, ratios, inputData)
+		accuracy := EvaluateAccuracy(&oldWeightAsResult, simTypes, ratios, inputData)
+		accuracyStat := EvaluateAccuracyStatistical(&oldWeightAsResult, simTypes, ratios, inputData)
 		printer.Printf("Old Weights accuracy %s normal=%f stat=%f\n", label, accuracy, accuracyStat)
 		return &weightOption{oldWeightAsResult, accuracy, accuracyStat, oldWeightString}
 	} else {
@@ -224,9 +224,9 @@ func finishGridWeight(gridOutlierSetting int, label string, weightsGridOptional 
 		weightsGrid := weightsGridOptional.GetOrPanic()
 		printer.Printf("Grid Weights %d >>>>> %s\n", gridOutlierSetting, label)
 		pawnGrid := tools.WritePawnString(weightsGrid, printer)
-		accGridOnGridInput := EvaluateAccuracyRanged(weightsGrid, simTypes, ratios, inputDataGrid)
-		accGridOnMixedInput := EvaluateAccuracyRanged(weightsGrid, simTypes, ratios, slices.Concat(inputDataReal, inputDataGrid))
-		accStats := EvaluateAccuracyStatisticalDeviations(weightsGrid, simTypes, ratios, slices.Concat(inputDataReal, inputDataGrid))
+		accGridOnGridInput := EvaluateAccuracy(&weightsGrid, simTypes, ratios, inputDataGrid)
+		accGridOnMixedInput := EvaluateAccuracy(&weightsGrid, simTypes, ratios, slices.Concat(inputDataReal, inputDataGrid))
+		accStats := EvaluateAccuracyStatistical(&weightsGrid, simTypes, ratios, slices.Concat(inputDataReal, inputDataGrid))
 		printer.Printf("Grid Weights %d accuracy %s gridInput=%f mixInput=%f\n", gridOutlierSetting, label, accGridOnGridInput, accGridOnMixedInput)
 		return &weightOption{weightsGrid, accGridOnMixedInput, accStats, pawnGrid}
 	} else {
@@ -270,8 +270,8 @@ func finishRankWeight(rankMode int, label string, weightsRankingFuture *util_asy
 		weightsRanking := weightsRankingOptional.GetOrPanic()
 		printer.Printf("Ranking Weights %d >>>>> %s\n", rankMode, label)
 		pawnRanking := tools.WritePawnString(weightsRanking, printer)
-		accuracy := EvaluateAccuracyRanged(weightsRanking, simTypes, ratios, mixedInputData)
-		accuracyStats := EvaluateAccuracyStatisticalDeviations(weightsRanking, simTypes, ratios, mixedInputData)
+		accuracy := EvaluateAccuracy(&weightsRanking, simTypes, ratios, mixedInputData)
+		accuracyStats := EvaluateAccuracyStatistical(&weightsRanking, simTypes, ratios, mixedInputData)
 		return &weightOption{weightsRanking, accuracy, accuracyStats, pawnRanking}
 	} else {
 		return nil
@@ -294,9 +294,9 @@ func solveFormulaWeight(label string, gearModel *gear_model.SpecModel, printer *
 		printer.Printf("Formula Weights2 >>>>> %s\n", label)
 		pawnRanking := tools.WritePawnString(weights1, printer)
 		// for now needs to actually produce ranking weights v1
-		accuracyAs1 := EvaluateAccuracyRanged(weights1, simTypes, ratios, mixedInputData)
-		accuracyAs2 := EvaluateAccuracyRanged2(weights2, simTypes, ratios, mixedInputData)
-		accuracyStats := EvaluateAccuracyStatisticalDeviations(weights1, simTypes, ratios, mixedInputData)
+		accuracyAs1 := EvaluateAccuracy(&weights1, simTypes, ratios, mixedInputData)
+		accuracyAs2 := EvaluateAccuracy(&weights2, simTypes, ratios, mixedInputData)
+		accuracyStats := EvaluateAccuracyStatistical(&weights1, simTypes, ratios, mixedInputData)
 		printer.Printf("Formula Weights2 %s accuracy2=%f accuracy1=%f stat1=%f\n", label, accuracyAs2, accuracyAs1, accuracyStats)
 		return &weightOption{weights1, accuracyAs1, accuracyStats, pawnRanking}
 	} else {
@@ -312,14 +312,14 @@ func solveSearchWeights(searchMode int, label string, gearModel *gear_model.Spec
 	var weightsSearch weight_types.Weight1Basic
 	if searchMode == 0 {
 		search := WeightSearcher2{}
-		search.AccuracyMode = 1
+		search.AccuracyStatistical = false
 		search.Init(gearModel.StatsForWeighting, *ratios, printer)
 		search.SupplyData(mixedInputData)
 		search.SetRanges(-1.0, 10.0)
 		weightsSearch = search.Run(cancel)
 	} else {
 		search := WeightSearcher3{}
-		search.AccuracyMode = 2
+		search.AccuracyStatistical = true
 		search.Init(gearModel.StatsForWeighting, *ratios)
 		search.SupplyData(mixedInputData)
 		search.SetRanges(-1.0, 10.0)
@@ -328,8 +328,8 @@ func solveSearchWeights(searchMode int, label string, gearModel *gear_model.Spec
 
 	printer.Printf("Search Weights %d >>>>> %s\n", searchMode, label)
 	pawnSearch := tools.WritePawnString(weightsSearch, printer)
-	accuracySearch := EvaluateAccuracyRanged(weightsSearch, simTypes, ratios, inputDataGrid)
-	accuracySearchStat := EvaluateAccuracyStatisticalDeviations(weightsSearch, simTypes, ratios, inputDataGrid)
+	accuracySearch := EvaluateAccuracy(&weightsSearch, simTypes, ratios, inputDataGrid)
+	accuracySearchStat := EvaluateAccuracyStatistical(&weightsSearch, simTypes, ratios, inputDataGrid)
 	return &weightOption{weightsSearch, accuracySearch, accuracySearchStat, pawnSearch}
 }
 
@@ -337,7 +337,7 @@ func tweakedWeight(label string, gearModel *gear_model.SpecModel, startWeight we
 	weightsTweaked, accuracyTweaked := WeightTweakerWithLogging(startWeight, gearModel.StatsForWeighting, ratios, mixedInputData, printer)
 	printer.Println("Tweaked Weights >>>>> " + label)
 	pawnTweak := tools.WritePawnString(weightsTweaked, printer)
-	accuracyStat := EvaluateAccuracyStatisticalDeviations(weightsTweaked, simTypes, ratios, mixedInputData)
+	accuracyStat := EvaluateAccuracyStatistical(&weightsTweaked, simTypes, ratios, mixedInputData)
 	return &weightOption{weightsTweaked, accuracyTweaked, accuracyStat, pawnTweak}
 }
 

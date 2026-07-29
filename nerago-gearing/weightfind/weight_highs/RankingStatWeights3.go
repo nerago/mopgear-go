@@ -422,7 +422,7 @@ func (ranker *RankingStatWeightProcess3) reportRankingOfInputs(statWeightResult 
 		return entryCheck{
 			e.SimScore,
 			e.TargetRank,
-			statWeightResult.CalcStatScore(e.Data),
+			statWeightResult.CalcStatScore(&e.Data.TotalStat),
 			solution.ColValues[e.ScoreColumn],
 			solution.ColValues[e.RankColumn],
 		}

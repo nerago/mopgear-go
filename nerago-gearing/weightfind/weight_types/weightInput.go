@@ -26,6 +26,10 @@ func (rn StatRange) RangeSize() uint32 {
 	return rn.Maximum - rn.Minimum + 1
 }
 
+func (rn StatRange) Contains(value uint32) bool {
+	return rn.Minimum <= value && value <= rn.Maximum
+}
+
 type StatRangeFloat struct {
 	Minimum float64
 	Maximum float64

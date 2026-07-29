@@ -245,7 +245,7 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 	weight := search.Run(util_async.CancelSignal_Make())
 	printer.Printf("time = %s\n", sw.Elapsed().String())
 	tools.WritePawnString(weight, printer)
-	printer.Printf("accuracy = %f\n", weightfind.EvaluateAccuracyRanged(weight, targetRatio.SimTypes(), &targetRatio, mixedInputData))
+	printer.Printf("accuracy = %f\n", weightfind.EvaluateAccuracy(&weight, targetRatio.SimTypes(), &targetRatio, mixedInputData))
 
 	//( Pawn: v1: "Gearing Weights": Class=Paladin,Strength=1.0000000000,Stamina=1.6065881006,CritRating=0.6369231133,HasteRating=1.5962452471,ExpertiseRating=-0.0001959652,MasteryRating=1.6330798479,DodgeRating=0.9962463273,ParryRating=0.6430861217, )
 	//accuracy = 92.632887 92.633057(updated)
@@ -375,15 +375,15 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 	//weights2 := ranking.Run(nil)
 
 	tools.WritePawnString(weights1, printer)
-	printer.Printf("accuracy_initial = %f\n", weightfind.EvaluateAccuracyRanged(weights1, simTypes, &targetRatio, mixedInputData))
+	printer.Printf("accuracy_initial = %f\n", weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, mixedInputData))
 
 	tools.WritePawnString(weights2, printer)
-	printer.Printf("accuracy_algo = %f\n", weightfind.EvaluateAccuracyRanged(weights2, simTypes, &targetRatio, mixedInputData))
+	printer.Printf("accuracy_algo = %f\n", weightfind.EvaluateAccuracy(&weights2, simTypes, &targetRatio, mixedInputData))
 
 	weights3, _ := weightfind.WeightTweakerWithLogging(weights2, requiredStats, &targetRatio, mixedInputData, util.PrintRecorder_Nop())
 
 	tools.WritePawnString(weights3, printer)
-	printer.Printf("accuracy_tweak = %f\n", weightfind.EvaluateAccuracyRanged(weights3, simTypes, &targetRatio, mixedInputData))
+	printer.Printf("accuracy_tweak = %f\n", weightfind.EvaluateAccuracy(&weights3, simTypes, &targetRatio, mixedInputData))
 
 	// ( Pawn: v1: "Protection WoWSims Weights": Class=Paladin,Strength=1.0000000000,Stamina=0.4805050000,CritRating=0.6462260000,HasteRating=0.8598560000,ExpertiseRating=0.6679750000,MasteryRating=1.9405810000,DodgeRating=0.6518220000,ParryRating=0.6243300000, )
 	// accuracy1 = 92.635522
@@ -896,10 +896,10 @@ func statWeightsGrid(printer *util.PrintRecorder) {
 		weights1 := weights2.ConvertToWeight1()
 		tools.WritePawnString(weights1, printer)
 
-		acc := weightfind.EvaluateAccuracyRanged(weights1, simTypes, &targetRatio, inputDataFull)
-		acc2 := weightfind.EvaluateAccuracyRanged(weights1, simTypes, &targetRatio, inputDataRandom)
-		acc3 := weightfind.EvaluateAccuracyRanged(weights1, simTypes, &targetRatio, slices.Concat(inputDataFull, inputDataRandom))
-		acc4 := weightfind.EvaluateAccuracyStatisticalDeviations(weights1, simTypes, &targetRatio, slices.Concat(inputDataFull, inputDataRandom))
+		acc := weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, inputDataFull)
+		acc2 := weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, inputDataRandom)
+		acc3 := weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, slices.Concat(inputDataFull, inputDataRandom))
+		acc4 := weightfind.EvaluateAccuracyStatistical(&weights1, simTypes, &targetRatio, slices.Concat(inputDataFull, inputDataRandom))
 		printer.Printf("accuracy %s: grid data = %f, rand data = %f, data mix = %f, stat mix = %f\n", label, acc, acc2, acc3, acc4)
 	}
 
@@ -1622,22 +1622,22 @@ func statWeights_CompareAlgorithms() {
 			printer.Println("################# SEARCH0 ###################")
 			stopwatch := util.StopwatchMakeStarted()
 			search := weightfind.WeightSearcher0{}
-			search.AccuracyMode = 1
+			search.AccuracyStatistical = false
 			search.Init(requiredStats, targetRatio, printer)
 			search.SupplyData(mixedInputData)
-			resultsByAlgorithm.Put("search0-acc1", search.Run(cancel))
-			timesByAlgorithm.Put("search0-acc1", stopwatch.Elapsed())
+			resultsByAlgorithm.Put("search0-accF", search.Run(cancel))
+			timesByAlgorithm.Put("search0-accF", stopwatch.Elapsed())
 			printer.Println("///////////////// SEARCH0 /////////////////")
 		})
 		tasks = append(tasks, func() {
 			printer.Println("################# SEARCH0 ###################")
 			stopwatch := util.StopwatchMakeStarted()
 			search := weightfind.WeightSearcher0{}
-			search.AccuracyMode = 2
+			search.AccuracyStatistical = true
 			search.Init(requiredStats, targetRatio, printer)
 			search.SupplyData(mixedInputData)
-			resultsByAlgorithm.Put("search0-acc2", search.Run(cancel))
-			timesByAlgorithm.Put("search0-acc2", stopwatch.Elapsed())
+			resultsByAlgorithm.Put("search0-accT", search.Run(cancel))
+			timesByAlgorithm.Put("search0-accT", stopwatch.Elapsed())
 			printer.Println("///////////////// SEARCH0 /////////////////")
 		})
 	}
@@ -1646,71 +1646,71 @@ func statWeights_CompareAlgorithms() {
 			printer.Println("################# SEARCH1 ###################")
 			stopwatch := util.StopwatchMakeStarted()
 			search := weightfind.WeightSearcher1{}
-			search.AccuracyMode = 1
+			search.AccuracyStatistical = false
 			search.Init(requiredStats, targetRatio, printer)
 			search.SupplyData(mixedInputData)
-			resultsByAlgorithm.Put("search1-acc1", search.Run(cancel))
-			timesByAlgorithm.Put("search1-acc1", stopwatch.Elapsed())
+			resultsByAlgorithm.Put("search1-accF", search.Run(cancel))
+			timesByAlgorithm.Put("search1-accF", stopwatch.Elapsed())
 			printer.Println("///////////////// SEARCH1 /////////////////")
 		})
 		tasks = append(tasks, func() {
 			printer.Println("################# SEARCH2 ###################")
 			stopwatch := util.StopwatchMakeStarted()
 			search := weightfind.WeightSearcher2{}
-			search.AccuracyMode = 1
+			search.AccuracyStatistical = false
 			search.Init(requiredStats, targetRatio, printer)
 			search.SupplyData(mixedInputData)
 			search.SetRanges(-1.0, 10.0)
-			resultsByAlgorithm.Put("search2-acc1", search.Run(cancel))
-			timesByAlgorithm.Put("search2-acc1", stopwatch.Elapsed())
-			printer.Println("///////////////// SEARCH2 /////////////////")
-		})
-		tasks = append(tasks, func() {
-			printer.Println("################# SEARCH2 ###################")
-			stopwatch := util.StopwatchMakeStarted()
-			search := weightfind.WeightSearcher3{}
-			search.AccuracyMode = 1
-			search.Init(requiredStats, targetRatio)
-			search.SupplyData(mixedInputData)
-			search.SetRanges(-1.0, 10.0)
-			resultsByAlgorithm.Put("search2fast-acc1", search.Run(cancel))
-			timesByAlgorithm.Put("search2fast-acc1", stopwatch.Elapsed())
-			printer.Println("///////////////// SEARCH2 /////////////////")
-		})
-
-		tasks = append(tasks, func() {
-			printer.Println("################# SEARCH1 ###################")
-			stopwatch := util.StopwatchMakeStarted()
-			search := weightfind.WeightSearcher1{}
-			search.AccuracyMode = 2
-			search.Init(requiredStats, targetRatio, printer)
-			search.SupplyData(mixedInputData)
-			resultsByAlgorithm.Put("search1-acc2", search.Run(cancel))
-			timesByAlgorithm.Put("search1-acc2", stopwatch.Elapsed())
-			printer.Println("///////////////// SEARCH1 /////////////////")
-		})
-		tasks = append(tasks, func() {
-			printer.Println("################# SEARCH2 ###################")
-			stopwatch := util.StopwatchMakeStarted()
-			search := weightfind.WeightSearcher2{}
-			search.AccuracyMode = 2
-			search.Init(requiredStats, targetRatio, printer)
-			search.SupplyData(mixedInputData)
-			search.SetRanges(-1.0, 10.0)
-			resultsByAlgorithm.Put("search2-acc2", search.Run(cancel))
-			timesByAlgorithm.Put("search2-acc2", stopwatch.Elapsed())
+			resultsByAlgorithm.Put("search2-accF", search.Run(cancel))
+			timesByAlgorithm.Put("search2-accF", stopwatch.Elapsed())
 			printer.Println("///////////////// SEARCH2 /////////////////")
 		})
 		tasks = append(tasks, func() {
 			printer.Println("################# SEARCH3 ###################")
 			stopwatch := util.StopwatchMakeStarted()
 			search := weightfind.WeightSearcher3{}
-			search.AccuracyMode = 2
+			search.AccuracyStatistical = false
 			search.Init(requiredStats, targetRatio)
 			search.SupplyData(mixedInputData)
 			search.SetRanges(-1.0, 10.0)
-			resultsByAlgorithm.Put("search3-acc2", search.Run(cancel))
-			timesByAlgorithm.Put("search3-acc2", stopwatch.Elapsed())
+			resultsByAlgorithm.Put("search3-accF", search.Run(cancel))
+			timesByAlgorithm.Put("search3-accF", stopwatch.Elapsed())
+			printer.Println("///////////////// SEARCH3 /////////////////")
+		})
+
+		tasks = append(tasks, func() {
+			printer.Println("################# SEARCH1 ###################")
+			stopwatch := util.StopwatchMakeStarted()
+			search := weightfind.WeightSearcher1{}
+			search.AccuracyStatistical = true
+			search.Init(requiredStats, targetRatio, printer)
+			search.SupplyData(mixedInputData)
+			resultsByAlgorithm.Put("search1-accT", search.Run(cancel))
+			timesByAlgorithm.Put("search1-accT", stopwatch.Elapsed())
+			printer.Println("///////////////// SEARCH1 /////////////////")
+		})
+		tasks = append(tasks, func() {
+			printer.Println("################# SEARCH2 ###################")
+			stopwatch := util.StopwatchMakeStarted()
+			search := weightfind.WeightSearcher2{}
+			search.AccuracyStatistical = true
+			search.Init(requiredStats, targetRatio, printer)
+			search.SupplyData(mixedInputData)
+			search.SetRanges(-1.0, 10.0)
+			resultsByAlgorithm.Put("search2-accT", search.Run(cancel))
+			timesByAlgorithm.Put("search2-accT", stopwatch.Elapsed())
+			printer.Println("///////////////// SEARCH2 /////////////////")
+		})
+		tasks = append(tasks, func() {
+			printer.Println("################# SEARCH3 ###################")
+			stopwatch := util.StopwatchMakeStarted()
+			search := weightfind.WeightSearcher3{}
+			search.AccuracyStatistical = true
+			search.Init(requiredStats, targetRatio)
+			search.SupplyData(mixedInputData)
+			search.SetRanges(-1.0, 10.0)
+			resultsByAlgorithm.Put("search3-accT", search.Run(cancel))
+			timesByAlgorithm.Put("search3-accT", stopwatch.Elapsed())
 			printer.Println("///////////////// SEARCH3 /////////////////")
 		})
 	}
@@ -1767,7 +1767,7 @@ func statWeights_CompareAlgorithms() {
 			weight3:         &weight3,
 			weight2:         weight2,
 			weight1:         &weight1,
-			initialAccuracy: weightfind.EvaluateAccuracyRanged2(*weight2, requiredSims, &targetRatio, mixedInputDataFull),
+			initialAccuracy: weightfind.EvaluateAccuracy(&weight3, requiredSims, &targetRatio, mixedInputDataFull),
 		}
 	}
 	for label, weight2 := range resultsByAlgorithm2.SeqWithKeys_StaleInefficient() {
@@ -1775,13 +1775,13 @@ func statWeights_CompareAlgorithms() {
 		reportByAlgorithm[label] = algorithmReport{
 			weight2:         &weight2,
 			weight1:         &weight1,
-			initialAccuracy: weightfind.EvaluateAccuracyRanged2(weight2, requiredSims, &targetRatio, mixedInputDataFull),
+			initialAccuracy: weightfind.EvaluateAccuracy(&weight2, requiredSims, &targetRatio, mixedInputDataFull),
 		}
 	}
 	for label, weight1 := range resultsByAlgorithm.SeqWithKeys_StaleInefficient() {
 		reportByAlgorithm[label] = algorithmReport{
 			weight1:         &weight1,
-			initialAccuracy: weightfind.EvaluateAccuracyRanged(weight1, requiredSims, &targetRatio, mixedInputDataFull),
+			initialAccuracy: weightfind.EvaluateAccuracy(&weight1, requiredSims, &targetRatio, mixedInputDataFull),
 		}
 	}
 
@@ -1811,7 +1811,7 @@ func statWeights_CompareAlgorithms() {
 			row = append(row, strconv.FormatFloat(value, 'f', 4, 64))
 		}
 		accuracy := report.initialAccuracy
-		accuracyStat := weightfind.EvaluateAccuracyStatisticalDeviations(*report.weight1, requiredSims, &targetRatio, mixedInputDataFull)
+		accuracyStat := weightfind.EvaluateAccuracyStatistical(report.weight1, requiredSims, &targetRatio, mixedInputDataFull)
 		row = append(row, strconv.FormatFloat(accuracy, 'f', 4, 64))
 		row = append(row, "")
 		row = append(row, strconv.FormatFloat(accuracyStat, 'f', 4, 64))
@@ -1820,8 +1820,8 @@ func statWeights_CompareAlgorithms() {
 
 		if reportOnTweakedVersions {
 			weightTweak, _ := weightfind.WeightTweakerWithLogging(*report.weight1, requiredStats, &targetRatio, mixedInputDataFull, util.PrintRecorder_Nop())
-			accuracyTweak := weightfind.EvaluateAccuracyRanged(weightTweak, requiredSims, &targetRatio, mixedInputDataFull)
-			accuracyTweakStat := weightfind.EvaluateAccuracyStatisticalDeviations(weightTweak, requiredSims, &targetRatio, mixedInputDataFull)
+			accuracyTweak := weightfind.EvaluateAccuracy(&weightTweak, requiredSims, &targetRatio, mixedInputDataFull)
+			accuracyTweakStat := weightfind.EvaluateAccuracyStatistical(&weightTweak, requiredSims, &targetRatio, mixedInputDataFull)
 			row = make([]string, 0)
 			row = append(row, label)
 			for _, stat := range requiredStats {

@@ -9,6 +9,12 @@ import (
 	"paladin_gearing_go/util/util_collection"
 )
 
+type IWeight interface {
+	IsEmpty() bool
+	CalcStatScore(stats *stats.StatBlock) float64
+	String() string
+}
+
 type Weight1Basic struct {
 	content stats.StatBlockFloat
 	ratio   SimPriorityBasic
@@ -69,11 +75,7 @@ func (wr *Weight1Basic) Equals(other *Weight1Basic) bool {
 	return wr.content.Equals(&other.content)
 }
 
-func (wr *Weight1Basic) CalcStatScore(input *WeightInput) float64 {
-	return wr.content.MultiplyForTotalSum2(&input.TotalStat)
-}
-
-func (wr *Weight1Basic) CalcStatScore2(stats *stats.StatBlock) float64 {
+func (wr *Weight1Basic) CalcStatScore(stats *stats.StatBlock) float64 {
 	return wr.content.MultiplyForTotalSum2(stats)
 }
 

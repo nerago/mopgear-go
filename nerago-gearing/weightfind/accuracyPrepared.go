@@ -10,16 +10,12 @@ import (
 )
 
 type EvaluateAccuracyPrepared struct {
-	prepared       []*weight_types.AccuracyPreparedEntry
+	prepared       []*weight_types.AccuracyInfoPrepared
 	statRankRanges []*util_collection.HiLoInt
 	hiLoPool       []util_collection.HiLoInt
 }
 
-func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, simRatios *weight_types.SimPriorityBasic, simCalcMode int) {
-	if simCalcMode == 0 {
-		panic("mode not provided")
-	}
-
+func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, simRatios *weight_types.SimPriorityBasic, simStatistical bool) {
 	data := util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.AccuracyInfoPrePrepare {
 		return &weight_types.AccuracyInfoPrePrepare{
 			DataSim:  &input.SimResult,
@@ -28,25 +24,21 @@ func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, s
 		}
 	})
 
-	ea.calcSimRankAndPrepare(data, simRatios, simCalcMode)
+	requiredSims := simRatios.SimTypes()
+	if !simStatistical {
+		ea.prepared = simrank.AccuracyPrepareRankSimsBasic(requiredSims, simRatios, data)
+	} else {
+		ea.prepared = simrank.RankSimsStatisticalForAccuracyPrepare(requiredSims, simRatios, data)
+	}
 
 	ea.statRankRanges = make([]*util_collection.HiLoInt, len(data))
 	ea.hiLoPool = make([]util_collection.HiLoInt, len(data))
 }
 
-func (ea *EvaluateAccuracyPrepared) calcSimRankAndPrepare(data []*weight_types.AccuracyInfoPrePrepare, simRatios *weight_types.SimPriorityBasic, simCalcMode int) {
-	requiredSims := simRatios.SimTypes()
-	if simCalcMode == 1 {
-		ea.prepared = simrank.AccuracyPrepareRankSimsBasic(requiredSims, simRatios, data)
-	} else {
-		ea.prepared = simrank.RankSimsStatisticalForAccuracyPrepare(requiredSims, simRatios, data)
-	}
-}
-
 func (ea *EvaluateAccuracyPrepared) Clone() *EvaluateAccuracyPrepared {
 	return &EvaluateAccuracyPrepared{
-		prepared: util_collection.MapSliceAsNew_NoPointer(ea.prepared, func(x *weight_types.AccuracyPreparedEntry) *weight_types.AccuracyPreparedEntry {
-			return &weight_types.AccuracyPreparedEntry{SimRankRange: x.SimRankRange, Stats: x.Stats}
+		prepared: util_collection.MapSliceAsNew_NoPointer(ea.prepared, func(x *weight_types.AccuracyInfoPrepared) *weight_types.AccuracyInfoPrepared {
+			return &weight_types.AccuracyInfoPrepared{SimRankRange: x.SimRankRange, Stats: x.Stats}
 		}),
 		statRankRanges: make([]*util_collection.HiLoInt, len(ea.statRankRanges)),
 		hiLoPool:       make([]util_collection.HiLoInt, len(ea.hiLoPool)),
@@ -54,7 +46,17 @@ func (ea *EvaluateAccuracyPrepared) Clone() *EvaluateAccuracyPrepared {
 }
 
 // fundamentally not thread safe
-func (ea *EvaluateAccuracyPrepared) EvaluateWeight(statWeights weight_types.Weight1Basic) float64 {
+func (ea *EvaluateAccuracyPrepared) EvaluateWeight1(statWeights *weight_types.Weight1Basic) float64 {
+	return evaluateWeightGeneral(ea, statWeights)
+}
+func (ea *EvaluateAccuracyPrepared) EvaluateWeight2(statWeights *weight_types.Weight2Extended) float64 {
+	return evaluateWeightGeneral(ea, statWeights)
+}
+func (ea *EvaluateAccuracyPrepared) EvaluateWeight3(statWeights *weight_types.Weight3ExtendedRanged) float64 {
+	return evaluateWeightGeneral(ea, statWeights)
+}
+
+func evaluateWeightGeneral[W weight_types.IWeight](ea *EvaluateAccuracyPrepared, statWeights W) float64 {
 	if statWeights.IsEmpty() {
 		return 0
 	}
@@ -64,9 +66,9 @@ func (ea *EvaluateAccuracyPrepared) EvaluateWeight(statWeights weight_types.Weig
 
 	// calculate stat scores for given weights
 	for i := range size {
-		prepared[i].StatScore = statWeights.CalcStatScore2(prepared[i].Stats)
+		prepared[i].StatScore = statWeights.CalcStatScore(prepared[i].Stats)
 	}
-	slices.SortFunc(prepared, func(a, b *weight_types.AccuracyPreparedEntry) int {
+	slices.SortFunc(prepared, func(a, b *weight_types.AccuracyInfoPrepared) int {
 		return cmp.Compare(a.StatScore, b.StatScore)
 	})
 

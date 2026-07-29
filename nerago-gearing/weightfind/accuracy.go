@@ -10,7 +10,7 @@ import (
 	"slices"
 )
 
-func EvaluateAccuracyRanged(statWeights weight_types.Weight1Basic, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
+func EvaluateAccuracy[W weight_types.IWeight](statWeights W, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
 	if statWeights.IsEmpty() {
 		return 0
 	}
@@ -20,17 +20,7 @@ func EvaluateAccuracyRanged(statWeights weight_types.Weight1Basic, requiredSims 
 	return calcAverageDifference(data)
 }
 
-func EvaluateAccuracyRanged2(statWeights weight_types.Weight2Extended, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
-	if statWeights.IsEmpty() {
-		return 0
-	}
-	data := evaluateStatScore2AndCreateStructure(statWeights, inputData)
-	deriveStatRanks(data)
-	simrank.RankSimsRegularForAccuracyRanged(requiredSims, data, simRatios)
-	return calcAverageDifference(data)
-}
-
-func EvaluateAccuracyStatisticalDeviations(statWeights weight_types.Weight1Basic, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
+func EvaluateAccuracyStatistical[W weight_types.IWeight](statWeights W, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
 	if statWeights.IsEmpty() {
 		return 0
 	}
@@ -40,11 +30,11 @@ func EvaluateAccuracyStatisticalDeviations(statWeights weight_types.Weight1Basic
 	return calcAverageDifference(data)
 }
 
-func evaluateStatScoreAndCreateStructure(statWeights weight_types.Weight1Basic, inputData []weight_types.WeightInput) []*weight_types.AccuracyInfoSimStatRanged {
-	return util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.AccuracyInfoSimStatRanged {
-		return &weight_types.AccuracyInfoSimStatRanged{
+func evaluateStatScoreAndCreateStructure[W weight_types.IWeight](statWeights W, inputData []weight_types.WeightInput) []*weight_types.AccuracyInfo {
+	return util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.AccuracyInfo {
+		return &weight_types.AccuracyInfo{
 			DataSim:       &input.SimResult,
-			StatScore:     statWeights.CalcStatScore(input),
+			StatScore:     statWeights.CalcStatScore(&input.TotalStat),
 			SimScore:      0,
 			StatRankRange: nil,
 			SimRankRange:  nil,
@@ -52,21 +42,9 @@ func evaluateStatScoreAndCreateStructure(statWeights weight_types.Weight1Basic, 
 	})
 }
 
-func evaluateStatScore2AndCreateStructure(statWeights weight_types.Weight2Extended, inputData []weight_types.WeightInput) []*weight_types.AccuracyInfoSimStatRanged {
-	return util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.AccuracyInfoSimStatRanged {
-		return &weight_types.AccuracyInfoSimStatRanged{
-			DataSim:       &input.SimResult,
-			StatScore:     statWeights.CalcStatScoreForInput(input),
-			SimScore:      0,
-			StatRankRange: nil,
-			SimRankRange:  nil,
-		}
-	})
-}
-
-func deriveStatRanks(data []*weight_types.AccuracyInfoSimStatRanged) {
+func deriveStatRanks(data []*weight_types.AccuracyInfo) {
 	// rank stats scores
-	slices.SortFunc(data, func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
+	slices.SortFunc(data, func(a, b *weight_types.AccuracyInfo) int {
 		return cmp.Compare(a.StatScore, b.StatScore)
 	})
 	data[0].StatRankRange = &util_collection.HiLoInt{Lo: 0, Hi: 0}
@@ -81,7 +59,7 @@ func deriveStatRanks(data []*weight_types.AccuracyInfoSimStatRanged) {
 	}
 }
 
-func calcAverageDifference(data []*weight_types.AccuracyInfoSimStatRanged) float64 {
+func calcAverageDifference(data []*weight_types.AccuracyInfo) float64 {
 	// compute average difference between stat rank and sim rank
 	sumRatioScores := 0.0
 	for i := range data {

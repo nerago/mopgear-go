@@ -21,11 +21,11 @@ const (
 // let's say we want to search about 1million samples, so 8th root = 5.62, about 6 samples per stat
 
 type WeightSearcher1 struct {
-	weightStats      []stats.StatType
-	targetRatio      weight_types.SimPriorityBasic
-	evaluateAccuracy EvaluateAccuracyPrepared
-	printer          *util.PrintRecorder
-	AccuracyMode     int
+	weightStats         []stats.StatType
+	targetRatio         weight_types.SimPriorityBasic
+	evaluateAccuracy    EvaluateAccuracyPrepared
+	printer             *util.PrintRecorder
+	AccuracyStatistical bool
 }
 
 func (ws *WeightSearcher1) Init(weightStats []stats.StatType, targetRatio weight_types.SimPriorityBasic, printer *util.PrintRecorder) {
@@ -35,7 +35,7 @@ func (ws *WeightSearcher1) Init(weightStats []stats.StatType, targetRatio weight
 }
 
 func (ws *WeightSearcher1) SupplyData(inputData []weight_types.WeightInput) {
-	ws.evaluateAccuracy.Init(inputData, &ws.targetRatio, ws.AccuracyMode)
+	ws.evaluateAccuracy.Init(inputData, &ws.targetRatio, ws.AccuracyStatistical)
 }
 
 func (ws *WeightSearcher1) Run(cancel util_async.CancelSignal) weight_types.Weight1Basic {
@@ -43,7 +43,7 @@ func (ws *WeightSearcher1) Run(cancel util_async.CancelSignal) weight_types.Weig
 
 	bestCandidates := util_rank.HighestCollector_ForN[weight_types.Weight1Basic](128, (*weight_types.Weight1Basic).Equals)
 	for possibleWeight := range ws.makeSpacedWeights() {
-		accuracy := ws.evaluateAccuracy.EvaluateWeight(possibleWeight)
+		accuracy := ws.evaluateAccuracy.EvaluateWeight1(&possibleWeight)
 		bestCandidates.Offer(&possibleWeight, accuracy)
 		if progress%100 == 0 {
 			_, bestAccuracy := bestCandidates.GetBest1()

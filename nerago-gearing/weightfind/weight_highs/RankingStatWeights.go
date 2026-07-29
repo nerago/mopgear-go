@@ -281,6 +281,6 @@ func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs
 func (ranker *RankingStatWeightProcess) reportRankingOfInputs(statWeightResult weight_types.Weight1Basic) {
 	ranker.printer.Println("INPUT CHECK (index, combinedSimRank, calcStat)")
 	for i, entry := range ranker.data {
-		ranker.printer.Printf("%4d %8f %8f\n", i, entry.SimScore, statWeightResult.CalcStatScore(entry.Data))
+		ranker.printer.Printf("%4d %8f %8f\n", i, entry.SimScore, statWeightResult.CalcStatScore(&entry.Data.TotalStat))
 	}
 }

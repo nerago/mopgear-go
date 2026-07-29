@@ -311,3 +311,23 @@ func (mms *MapMapSlice[J, K, V]) SeqKey2Key1ValueSeqEntries() iter.Seq[MapMapSli
 		}
 	}
 }
+
+func (mms *MapMapSlice[J, K, V]) SeqKey1ValueSeqWithKey2(key2 K) iter.Seq2[J, iter.Seq[V]] {
+	return func(yield func(J, iter.Seq[V]) bool) {
+		for key1, slice := range mms.dataBy2[key2] {
+			if !yield(key1, slices.Values(slice)) {
+				return
+			}
+		}
+	}
+}
+
+func (mms *MapMapSlice[J, K, V]) SeqKey2ValueSeqWithKey1(key1 J) iter.Seq2[K, iter.Seq[V]] {
+	return func(yield func(K, iter.Seq[V]) bool) {
+		for key2, slice := range mms.dataBy1[key1] {
+			if !yield(key2, slices.Values(slice)) {
+				return
+			}
+		}
+	}
+}

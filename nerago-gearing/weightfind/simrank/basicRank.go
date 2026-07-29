@@ -15,7 +15,7 @@ func simScoringBasic[T weight_types.IRankEntryFlatSingle](simList []stats.SimTyp
 	}
 }
 
-func simScoringBasicFastForAccuracy(simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []*weight_types.AccuracyInfoSimStatRanged) {
+func simScoringBasicFastForAccuracy(simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []*weight_types.AccuracyInfo) {
 	for _, simType := range simList {
 		sortAccuracyFast(inputData, simType)
 		arrayRankToIncrementSimScore(simType, priority, inputData)
@@ -29,7 +29,7 @@ func simScoringBasicFastForAccuracyPrepare(simList []stats.SimType, priority *we
 	}
 }
 
-func simScoringStatisticalForAccuracy(simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []*weight_types.AccuracyInfoSimStatRanged) {
+func simScoringStatisticalForAccuracy(simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []*weight_types.AccuracyInfo) {
 	for _, simType := range simList {
 		sortAccuracyWithDeviation(simType, inputData)
 		arrayRankToIncrementSimScore(simType, priority, inputData)

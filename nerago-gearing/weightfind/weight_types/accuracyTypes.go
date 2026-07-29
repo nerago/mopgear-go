@@ -5,7 +5,7 @@ import (
 	"paladin_gearing_go/util/util_collection"
 )
 
-type AccuracyInfoSimStatRanged struct {
+type AccuracyInfo struct {
 	StatScore     float64
 	SimScore      float64
 	StatRankRange *util_collection.HiLoInt
@@ -13,23 +13,23 @@ type AccuracyInfoSimStatRanged struct {
 	DataSim       *stats.SimData
 }
 
-func (a *AccuracyInfoSimStatRanged) GetSimData() *stats.SimData {
+func (a *AccuracyInfo) GetSimData() *stats.SimData {
 	return a.DataSim
 }
 
-func (a *AccuracyInfoSimStatRanged) GetSimScore() float64 {
+func (a *AccuracyInfo) GetSimScore() float64 {
 	return a.SimScore
 }
 
-func (a *AccuracyInfoSimStatRanged) IncrementSimScore(add float64) {
+func (a *AccuracyInfo) IncrementSimScore(add float64) {
 	a.SimScore += add
 }
 
-func (a *AccuracyInfoSimStatRanged) SetSimRankRange(targetRange *util_collection.HiLoInt) {
+func (a *AccuracyInfo) SetSimRankRange(targetRange *util_collection.HiLoInt) {
 	a.SimRankRange = targetRange
 }
 
-func (a *AccuracyInfoSimStatRanged) GetSimRankRange() *util_collection.HiLoInt {
+func (a *AccuracyInfo) GetSimRankRange() *util_collection.HiLoInt {
 	return a.SimRankRange
 }
 
@@ -51,7 +51,7 @@ func (a *AccuracyInfoPrePrepare) IncrementSimScore(add float64) {
 	a.SimScore += add
 }
 
-type AccuracyPreparedEntry struct {
+type AccuracyInfoPrepared struct {
 	StatScore    float64
 	Stats        *stats.StatBlock
 	SimRankRange *util_collection.HiLoInt

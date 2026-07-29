@@ -8,28 +8,28 @@ import (
 )
 
 //goland:noinspection DuplicatedCode
-var simSortRangedCompares = [6]func(a, b *weight_types.AccuracyInfoSimStatRanged) int{
-	func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
+var simSortRangedCompares = [6]func(a, b *weight_types.AccuracyInfo) int{
+	func(a, b *weight_types.AccuracyInfo) int {
 		return cmp.Compare(a.DataSim.Get(stats.Sim_DPS), b.DataSim.Get(stats.Sim_DPS))
 	},
-	func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
+	func(a, b *weight_types.AccuracyInfo) int {
 		return cmp.Compare(a.DataSim.Get(stats.Sim_TPS), b.DataSim.Get(stats.Sim_TPS))
 	},
-	func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
+	func(a, b *weight_types.AccuracyInfo) int {
 		return cmp.Compare(b.DataSim.Get(stats.Sim_DTPS), a.DataSim.Get(stats.Sim_DTPS))
 	},
-	func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
+	func(a, b *weight_types.AccuracyInfo) int {
 		return cmp.Compare(a.DataSim.Get(stats.Sim_HPS), b.DataSim.Get(stats.Sim_HPS))
 	},
-	func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
+	func(a, b *weight_types.AccuracyInfo) int {
 		return cmp.Compare(b.DataSim.Get(stats.Sim_TMI), a.DataSim.Get(stats.Sim_TMI))
 	},
-	func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
+	func(a, b *weight_types.AccuracyInfo) int {
 		return cmp.Compare(b.DataSim.Get(stats.Sim_DEATH), a.DataSim.Get(stats.Sim_DEATH))
 	},
 }
 
-func sortAccuracyFast(inputData []*weight_types.AccuracyInfoSimStatRanged, simType stats.SimType) {
+func sortAccuracyFast(inputData []*weight_types.AccuracyInfo, simType stats.SimType) {
 	slices.SortFunc(inputData, simSortRangedCompares[simType])
 }
 
@@ -59,26 +59,26 @@ func sortAccuracyPrepareFast(inputData []*weight_types.AccuracyInfoPrePrepare, s
 	slices.SortFunc(inputData, simSortSimSingledCompares[simType])
 }
 
-func sortAccuracyWithDeviation(simType stats.SimType, inputData []*weight_types.AccuracyInfoSimStatRanged) {
+func sortAccuracyWithDeviation(simType stats.SimType, inputData []*weight_types.AccuracyInfo) {
 	switch simType {
 	case stats.Sim_DPS:
-		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
+		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfo) int {
 			return compareSimsStatisticalByType(a.DataSim, b.DataSim, stats.Sim_DPS)
 		})
 	case stats.Sim_TPS:
-		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
+		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfo) int {
 			return compareSimsStatisticalByType(a.DataSim, b.DataSim, stats.Sim_TPS)
 		})
 	case stats.Sim_DTPS:
-		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
+		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfo) int {
 			return compareSimsStatisticalByType(b.DataSim, a.DataSim, stats.Sim_DTPS)
 		})
 	case stats.Sim_HPS:
-		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
+		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfo) int {
 			return compareSimsStatisticalByType(a.DataSim, b.DataSim, stats.Sim_HPS)
 		})
 	case stats.Sim_TMI:
-		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoSimStatRanged) int {
+		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfo) int {
 			return compareSimsStatisticalByType(b.DataSim, a.DataSim, stats.Sim_TMI)
 		})
 	case stats.Sim_DEATH:
