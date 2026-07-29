@@ -44,16 +44,16 @@ func changeUpgradeLevels(extraItems []loaders.ItemFoundRef, upgradeLevel items.U
 }
 
 func checkDuplicates(extraItems []loaders.ItemFoundRef) {
-	byName := make(map[string]loaders.ItemFoundRef)
-	for _, itemRef := range extraItems {
-		itemName := db.LookupItemNameByItemId(itemRef.ItemId)
-		_, alreadySeen := byName[itemName]
-		if alreadySeen {
-			panic("duplicate item for " + itemName)
-		} else {
-			byName[itemName] = itemRef
-		}
-	}
+	//byName := make(map[string]loaders.ItemFoundRef)
+	//for _, itemRef := range extraItems {
+	//	itemName := db.LookupItemNameByItemId(itemRef.ItemId)
+	//	_, alreadySeen := byName[itemName]
+	//	if alreadySeen {
+	//		panic("duplicate item for " + itemName)
+	//	} else {
+	//		byName[itemName] = itemRef
+	//	}
+	//}
 }
 
 func makeExtraTasks(input *FindUpgrades_BasicInputs, extraItems []loaders.ItemFoundRef, baseItems *items.FullOptionsMap, printer *util.PrintRecorder, goal stats.OptimiseGoal) []upgradeItemTask {

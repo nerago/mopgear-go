@@ -135,7 +135,7 @@ var orgOneHandAndShield = []items.ItemId{
 	103872, // bulwurk of fallen general
 	103871, // tower shield
 	104485, // shield of mockery
-	103972, // new sword
+	103972, // kilruk sword
 }
 
 var legendCloaks = []items.ItemId{legendTankCloak, legendMeleeCloak}
@@ -146,7 +146,7 @@ func PaladinMultiRun() {
 	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_Largish)
 	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Common)
 	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
-	//job.SetWriteBestToGearFiles()
+	job.SetWriteBestToGearFiles()
 
 	var generalUpgrade items.UpgradeLevel = 0
 	var forceUpgrade items.UpgradeLevel = 0
@@ -379,24 +379,21 @@ func PaladinMultiRun() {
 	//job.AddItemDistinctUsageGroups(103892, true, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet, protHeal})
 	//ret.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{104981, 86386})
 	//job.AddAlternateUpgradeChoices(
-	//	104994, // Galakrond Control Band
-	//	104938, // Sorrowpath Signet
 	//	101947, // Elder Tortoiseshell Seal
-	//	99130,  // Shoulderguards of Winged Triumph
-	//	99139,  // Legplates of Winged Triumph
-	//	103915, // Icy Blood Chestplate
-	//	105122, // Asgorathian Blood Seal
-	//	105033, // Wolf-Rider Spurs
 	//	99028,  // Handguards of Winged Triumph celestial
+	//	103972, // kilruk sword
+	//	105122, // Asgorathian Blood Seal
+	//	103915, // Icy Blood Chestplate
+	//	105033, // Wolf-Rider Spurs
 	//)
 	//job.AddAlternateUpgradeChoices(104417) //gloves corrupt
 
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()
 
-	//job.RunNoPermutations_AllCommonAlternates(true)
-	job.RunNoPermutations_BestOnly(true, false)
-	//job.RunForSolutionsPerPermute(1)
+	job.RunNoPermutations_AllCommonAlternates(true)
+	//job.RunNoPermutations_BestOnly(true, false)
+	//job.RunForSolutionsPerPermute(3)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)

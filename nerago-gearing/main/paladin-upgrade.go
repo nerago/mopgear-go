@@ -114,10 +114,10 @@ func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 func findUpgrades_Paladin() {
 	//simSizeBaseline := simulate.RunSize_VerySlow
 	//simSizeTopN := simulate.RunSize_VerySlow
-	//simSizeBaseline := simulate.RunSize_Largish
-	//simSizeTopN := simulate.RunSize_Largish
-	simSizeBaseline := simulate.RunSize_Common
-	simSizeTopN := simulate.RunSize_Common
+	simSizeBaseline := simulate.RunSize_Largish
+	simSizeTopN := simulate.RunSize_Largish
+	//simSizeBaseline := simulate.RunSize_Common
+	//simSizeTopN := simulate.RunSize_Common
 
 	simSizePerItem := simulate.RunSize_QuickDirty
 	//simSizePerItem := simulate.RunSize_Common
@@ -132,10 +132,10 @@ func findUpgrades_Paladin() {
 	substituteEmptySlotOnly[items.Item_Ring] = 86957    // heroic bladed tempest ring
 
 	normalBossesConsider := []string{
-		//"SoO Immerseus",
-		//"SoO FallenProtectors",
-		//"SoO Norushen",
-		//"SoO ShaofPride",
+		"SoO Immerseus",
+		"SoO FallenProtectors",
+		"SoO Norushen",
+		"SoO ShaofPride",
 		"SoO Galakras",
 		"SoO IronJuggernaut",
 		"SoO DarkShaman",
@@ -147,12 +147,16 @@ func findUpgrades_Paladin() {
 		"SoO Paragons",
 		"SoO Garrosh"}
 	heroicBossesConsider := []string{
-		//"SoO Immerseus",
-		//"SoO Norushen",
-		//"SoO ShaofPride",
-		//"SoO FallenProtectors",
+		"SoO Immerseus",
+		"SoO Norushen",
+		"SoO ShaofPride",
+		"SoO FallenProtectors",
 		"SoO Galakras",
-		"SoO Nazgrim"}
+		"SoO IronJuggernaut",
+		"SoO Nazgrim",
+		"SoO Malkorok",
+		"SoO Spoils",
+	}
 	//finder := loaders.ItemFinder_HeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, heroicBossesConsider)
 	finder := loaders.ItemFinder_NormalHeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, normalBossesConsider, heroicBossesConsider)
 
@@ -168,7 +172,7 @@ func findUpgrades_Paladin() {
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
 				IncludeCelestial:   false,
 				IncludeNormal:      true,
-				IncludeHeroic:      true,
+				IncludeHeroic:      false,
 				IgnoredItems:       ignoredItems,
 				TargetUpgradeLevel: 2,
 			},

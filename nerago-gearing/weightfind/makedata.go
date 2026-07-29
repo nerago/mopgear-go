@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	grid_sim_max_run_count = 400
+	grid_sim_max_run_count = 600
 	grid_sim_max_steps     = 6
 	grid_sim_step          = 500
 )

@@ -16,7 +16,7 @@ func statWeights_updateAll() {
 	//simSpeed := simulate.RunSize_QuickDirty
 	simSpeed := simulate.RunSize_Common
 	//simSpeed := simulate.RunSize_Largish
-	forceSkipSim := true
+	forceSkipSim := false
 
 	weightfind.StatWeights_updateAll(simSpeed, forceSkipSim, printer, []weightfind.WeightOptions{
 		{

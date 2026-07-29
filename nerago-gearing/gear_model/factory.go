@@ -189,10 +189,10 @@ func Model_Testing() SpecModel {
 
 // for noset - juggernaut, shamans, siegecrafter
 var SimPriority_generalMiti = weight_types.SimPriorityBasic_Make(
-	Sim_DPS, 0.15,
-	Sim_DEATH, 0.2,
+	Sim_DPS, 0.2,
+	Sim_DEATH, 0.1,
 	Sim_TMI, 0.3,
-	Sim_DTPS, 0.35,
+	Sim_DTPS, 0.4,
 )
 
 // for withset - malkrok, thok, nazgrim
@@ -221,10 +221,11 @@ var SimPriority_dps = weight_types.SimPriorityBasic_Make(
 
 // for heal set, garrosh, immerseus
 var SimPriority_heal = weight_types.SimPriorityBasic_Make(
+	Sim_DPS, 0.10,
+	Sim_HPS, 0.20,
 	Sim_DEATH, 0.10,
 	Sim_TMI, 0.15,
 	Sim_DTPS, 0.45,
-	Sim_HPS, 0.3,
 )
 
 // for ret set
