@@ -6,9 +6,6 @@ import (
 	"os"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
-	"paladin_gearing_go/gear_model"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/setup"
 	"paladin_gearing_go/util"
 	"runtime/pprof"
 	"time"
@@ -34,7 +31,7 @@ func main() {
 	log.SetOutput(io.Discard) // ignore wowsim's internal progress logs
 
 	if enableProfiling {
-		f, err := os.Create(files.ProfileDir + "main-new.pgo")
+		f, err := os.CreateTemp("", "main-new.pgo")
 		if err != nil {
 			panic(err)
 		}
@@ -101,24 +98,9 @@ func core(printer *util.PrintRecorder) {
 
 	//statWeights_CompareAlgorithms()
 
-	statWeights_updateAll()
+	//statWeights_updateAll()
 
-	PaladinMultiRun()
+	//PaladinMultiRun()
 
-	//findUpgrades_Paladin()
-}
-
-func setupPallyMitigationSet() (items.FullOptionsMap, gear_model.SpecModel) {
-	model := gear_model.Model_PallyProtMitigation_WithSet()
-	return setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationWithSet, &model, setup.MissingEnchant_Panic, printer), model
-}
-
-func setupPallyMitigationNoSet() (items.FullOptionsMap, gear_model.SpecModel) {
-	model := gear_model.Model_PallyProtMitigation_WithSet()
-	return setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationNoSet, &model, setup.MissingEnchant_Panic, printer), model
-}
-
-func setupPallyDps() (items.FullOptionsMap, gear_model.SpecModel) {
-	model := gear_model.Model_PallyProtDps()
-	return setup.OptionsSetup_FromGearFile(files.GearFileProtDps, &model, setup.MissingEnchant_Panic, printer), model
+	findUpgrades_Paladin()
 }

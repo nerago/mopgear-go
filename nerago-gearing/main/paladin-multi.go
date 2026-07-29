@@ -136,6 +136,7 @@ var orgOneHandAndShield = []items.ItemId{
 	103871, // tower shield
 	104485, // shield of mockery
 	103972, // kilruk sword
+	104464, // xifeng heroic
 }
 
 var legendCloaks = []items.ItemId{legendTankCloak, legendMeleeCloak}
@@ -225,7 +226,7 @@ func PaladinMultiRun() {
 	newStuffP5 := slices.Concat(timeless, celestial, celestialRaden, orgRaidDrops, newTrinketsDamage)
 	addExtrasToEach(newStuffP5, &ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
 	addExtrasToEach(newTrinketsTank, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
-	addExtrasToEach(orgOneHandAndShield, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
+	addExtrasToEach(orgOneHandAndShield, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
 
 	ret.AddExtraItems([]items.ItemId{
 		95281,  // ret tier15 gloves normal
@@ -391,8 +392,8 @@ func PaladinMultiRun() {
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()
 
-	job.RunNoPermutations_AllCommonAlternates(true)
-	//job.RunNoPermutations_BestOnly(true, false)
+	//job.RunNoPermutations_AllCommonAlternates(true)
+	job.RunNoPermutations_BestOnly(false, true)
 	//job.RunForSolutionsPerPermute(3)
 
 	//job.CullingReport()

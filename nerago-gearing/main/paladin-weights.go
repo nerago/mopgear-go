@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/weightfind"
 )
 
+//goland:noinspection GoBoolExpressions
 func statWeights_updateAll() {
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "statWeightsGrid_updateAll")
 
@@ -16,7 +17,7 @@ func statWeights_updateAll() {
 	//simSpeed := simulate.RunSize_QuickDirty
 	simSpeed := simulate.RunSize_Common
 	//simSpeed := simulate.RunSize_Largish
-	forceSkipSim := false
+	forceSkipSim := true
 
 	weightfind.StatWeights_updateAll(simSpeed, forceSkipSim, printer, []weightfind.WeightOptions{
 		{
