@@ -24,6 +24,7 @@ import (
 	"paladin_gearing_go/weightfind/weight_highs"
 	"paladin_gearing_go/weightfind/weight_highs/fitting1"
 	"paladin_gearing_go/weightfind/weight_highs/fitting2"
+	"paladin_gearing_go/weightfind/weight_highs/fitting3"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"strconv"
@@ -538,7 +539,8 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 	//bytes, err := os.ReadFile("tempdata/weightfind-sim-grid-Prot-Heal.json")
 	//bytes, err := os.ReadFile("sim-stats-compare-rand.json")
 	// bytes, err := os.ReadFile("sim-stats-input-data.json")
-	weightInputs := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Heal.json")
+	//weightInputs := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Heal.json")
+	weightInputs := readWeightInputFile("sim-stats-compare-rand.json")
 
 	// for _, entry := range weightInputs {
 	// 	if hasteInDiscontinuityRange(entry.TotalStat.GetUInt(stats.Stat_Haste)) {
@@ -561,7 +563,7 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 	sampleDataPreScale := util_collection.MapSliceAsNew(weightInputs, func(input *weight_types.WeightInput) util_weight.FittingSample {
 		return util_weight.FittingSample{
 			//StatValue: input.TotalStat.GetFloat(stats.Stat_Haste),
-			StatValue: input.TotalStat.GetFloat(stats.Stat_Strength),
+			StatValue: input.TotalStat.GetFloat(stats.Stat_Dodge),
 			SimResult: input.SimResult.Get(stats.Sim_DEATH),
 		}
 	})
@@ -658,7 +660,9 @@ func statWeightsFitting2each(printer *util.PrintRecorder) {
 }
 
 func statWeightsFitting2eachProper(printer *util.PrintRecorder) {
-	weightInputs := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Heal.json")
+	//bytes, err := os.ReadFile("")
+	weightInputs := readWeightInputFile("sim-stats-compare-rand.json")
+	//weightInputs := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Heal.json")
 	weightInputs = weightInputs[0:30]
 	simTypes := gear_model.SimPriority_heal.SimTypes()
 	statTypes := gear_model.StatsForWeighting_strengthTank
@@ -704,6 +708,77 @@ func fittingTableReport(printer *util.PrintRecorder, weightList []fitting2.Initi
 	tab.Write(printer)
 }
 
+func statWeightsFitting3(printer *util.PrintRecorder) {
+	//weightInputs := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Heal.json")
+	weightInputs := readWeightInputFile("sim-stats-compare-rand.json")
+	checkSimType := stats.Sim_TMI
+	checkStatType := stats.Stat_Dodge
+
+	printer.Printf("Initial weight input size = %d\n", len(weightInputs))
+
+	//weightInputs = weightInputs[0:400]
+
+	scaleStats := util_weight.ChooseStatScalingBasic(weightInputs, 1.0, true, printer)
+	scaleStat := scaleStats.GetOrPanic(checkStatType)
+	scaleSims := util_weight.ChooseSimDetailUnitScaleAndOffset(weightInputs, []stats.SimType{checkSimType})
+	scaleSim := scaleSims.GetOrPanic(checkSimType)
+
+	sampleData := util_collection.MapSliceAsNew(weightInputs, func(input *weight_types.WeightInput) util_weight.FittingSample3 {
+		detail := input.SimResult.GetDetailed2(checkSimType)
+		sim := util_weight.FittingSimDetail{
+			Average:   scaleSim.Apply(input.SimResult.Get(checkSimType)),
+			Min:       scaleSim.Apply(detail.Min),
+			Max:       scaleSim.Apply(detail.Max),
+			StdDev:    scaleSim.Scale * detail.StdDev,
+			HasDetail: true,
+		}
+		sim.FlipMinMaxAsNeeded()
+		return util_weight.FittingSample3{
+			StatValue: input.TotalStat.GetFloat(stats.Stat_Dodge),
+			SimResult: sim,
+		}
+	})
+
+	//statMin := util_collection.FindMinFunc(weightInputs, func(s weight_types.WeightInput) float64 { return s.TotalStat.GetFloat(checkStatType) })
+	//statMax := util_collection.FindMaxFunc(weightInputs, func(s weight_types.WeightInput) float64 { return s.TotalStat.GetFloat(checkStatType) })
+	//simMax := util_collection.FindMaxFunc(weightInputs, func(s weight_types.WeightInput) float64 { return s.SimResult })
+
+	fitting := fitting3.FittingSingleSegmented3{}
+	fitting.Init(3, scaleStat, printer, 5000)
+	fitting.SupplyData(sampleData)
+
+	weightMapCancel := fitting.Run()
+	weightMap := weightMapCancel.WaitForResultOrPanic()
+	printer.Printf("weightMap size %d\n", len(weightMap.Segments))
+	weightList := weightMap.Segments
+	slices.SortFunc(weightList, func(a, b fitting2.InitialSegment) int {
+		return cmp.Compare(a.StatRange.Minimum, b.StatRange.Minimum)
+	})
+
+	//fittingCsvDataReport(printer, weightList, statMin, statMax, sampleDataPreScale, simMax)
+	//
+	//fittingTableReport(printer, weightList, statMax, sampleData)
+
+	//for _, sample := range sampleDataPreScale {
+	//	printer.Printf("%.0f,%.0f,", sample.StatValue, sample.SimResult)
+	//	for _, oneWeight := range weightList {
+	//		statValue := sample.StatValue / statMax
+	//		guessSim := statValue*oneWeight.LineSlope + oneWeight.LineOffset
+	//		printer.Printf("%.0f,", guessSim*simMax)
+	//	}
+	//	printer.Println0()
+	//}
+	//for _, sample := range sampleDataPreScale {
+	//	printer.Printf("%.0f,%.6f,", sample.StatValue, sample.SimResult/simMax)
+	//	for _, oneWeight := range weightList {
+	//		statValue := sample.StatValue / statMax
+	//		effective := statValue*oneWeight.LineSlope + oneWeight.LineOffset
+	//		printer.Printf("%.6f,", effective)
+	//	}
+	//	printer.Println0()
+	//}
+}
+
 func fittingCsvDataReport(printer *util.PrintRecorder, weightList []fitting2.InitialSegment, statMin float64, statMax float64, sampleDataPreScale []util_weight.FittingSample, simMax float64) {
 	printer.Printf("stat,target,")
 	for i := range weightList {
@@ -725,7 +800,7 @@ func fittingCsvDataReport(printer *util.PrintRecorder, weightList []fitting2.Ini
 	for _, sample := range sampleDataPreScale {
 		printer.Printf("%.0f,", sample.StatValue)
 		if sample.SimResult != 0 {
-			printer.Printf("%.0f,", sample.SimResult)
+			printer.Printf("%e,", sample.SimResult)
 		} else {
 			printer.Printf(",")
 		}
@@ -733,7 +808,7 @@ func fittingCsvDataReport(printer *util.PrintRecorder, weightList []fitting2.Ini
 			statValue := sample.StatValue / statMax
 			guessSim := statValue*oneWeight.LineSlope + oneWeight.LineOffset
 			if statValue >= oneWeight.StatRange.Minimum && statValue <= oneWeight.StatRange.Maximum {
-				printer.Printf("%.0f,", guessSim*simMax)
+				printer.Printf("%e,", guessSim*simMax)
 			} else {
 				printer.Printf(",")
 			}

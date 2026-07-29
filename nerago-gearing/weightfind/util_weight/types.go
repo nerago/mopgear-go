@@ -10,6 +10,25 @@ type FittingSample struct {
 	SimResult float64
 }
 
+type FittingSample3 struct {
+	StatValue float64
+	SimResult FittingSimDetail
+}
+
+type FittingSimDetail struct {
+	Average   float64
+	Min       float64
+	Max       float64
+	StdDev    float64
+	HasDetail bool
+}
+
+func (d FittingSimDetail) FlipMinMaxAsNeeded() {
+	if d.Min >= d.Average && d.Average >= d.Max {
+		d.Max, d.Min = d.Min, d.Max
+	}
+}
+
 type FittingInterimResult struct {
 	LineSlope                  float64
 	LineOffset                 float64

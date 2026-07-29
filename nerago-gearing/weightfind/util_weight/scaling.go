@@ -115,6 +115,31 @@ func ChooseSimUnfriendlyUnitScaleAndOffset(inputData []weight_types.WeightInput,
 	return scaleMap
 }
 
+func ChooseSimDetailUnitScaleAndOffset(inputData []weight_types.WeightInput, simTypeList []stats.SimType) util_collection.EnumMap[stats.SimType, ScaleAndOffset] {
+	scaleMap := util_collection.EnumMapMake[stats.SimType, ScaleAndOffset](stats.SimTypeEnum)
+	for _, simType := range simTypeList {
+		var valueSeq iter.Seq[float64]
+
+		if simType.ExpectDetail() {
+			valueSeqMin := util_collection.MapSliceAsSeq(inputData, func(x *weight_types.WeightInput) float64 {
+				return x.SimResult.GetDetailed2(simType).Min
+			})
+			valueSeqMax := util_collection.MapSliceAsSeq(inputData, func(x *weight_types.WeightInput) float64 {
+				return x.SimResult.GetDetailed2(simType).Max
+			})
+			valueSeq = util_collection.ConcatSeq2(valueSeqMin, valueSeqMax)
+		} else {
+			valueSeq = util_collection.MapSliceAsSeq(inputData, func(x *weight_types.WeightInput) float64 {
+				return x.SimResult.Get(simType)
+			})
+		}
+
+		params := chooseUnitScaleAndOffset(valueSeq, simType.IsHighGood())
+		scaleMap.Put(simType, params)
+	}
+	return scaleMap
+}
+
 func chooseUnitScaleAndOffset(seq iter.Seq[float64], isHighGood bool) ScaleAndOffset {
 	minPosValue, maxPosValue, minNegValue, maxNegValue, hasNeg, hasPos, hasZero := sequenceMetrics(seq)
 

@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-const c_timeoutSolvers = 1000
+const c_timeoutSolvers = 3000
 const c_simDataAgeMax = 48 * time.Hour
 
 type WeightOptions struct {

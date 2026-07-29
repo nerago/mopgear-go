@@ -20,7 +20,8 @@ import (
 )
 
 func basicReforge(printer *util.PrintRecorder) {
-	itemOptions, model := setupPallyMitigationSet()
+	model2 := gear_model.Model_PallyProtMitigation_WithSet()
+	itemOptions, model := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationWithSet, &model2, setup.MissingEnchant_Panic, printer), model2
 
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions: &itemOptions,

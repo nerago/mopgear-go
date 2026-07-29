@@ -38,6 +38,26 @@ func (types SimType) IsHighGood() bool {
 		panic("unknown value")
 	}
 }
+
+func (types SimType) ExpectDetail() bool {
+	switch types {
+	case Sim_DPS:
+		return true
+	case Sim_TPS:
+		return true
+	case Sim_DTPS:
+		return true
+	case Sim_HPS:
+		return true
+	case Sim_TMI:
+		return true
+	case Sim_DEATH:
+		return false
+	default:
+		panic("unknown value")
+	}
+}
+
 func (types SimType) Name() string {
 	switch types {
 	case Sim_DPS:
