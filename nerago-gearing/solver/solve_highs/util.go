@@ -5,9 +5,8 @@ import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_collection"
+	"paladin_gearing_go/util/util_highs"
 	"strconv"
-
-	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 // TODO make extended version
@@ -29,10 +28,10 @@ func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOp
 	}
 }
 
-func checkSetRatingIsObjective(solution *highs.Solution, itemSet *items.SolvableItemSet, gear_model *gear_model.SpecModel) {
+func checkSetRatingIsObjective(solution *util_highs.Solution2, itemSet *items.SolvableItemSet, gear_model *gear_model.SpecModel) {
 	checkRating := gear_model.CalcRatingSolve(itemSet)
-	if !util.FloatsApproxEquals(solution.Objective*c_scaled_ratings, float64(checkRating)) {
-		panic("rating inconsistent " + strconv.FormatFloat(solution.Objective, 'f', 0, 64) + " " + strconv.FormatFloat(float64(checkRating), 'f', 0, 32))
+	if !util.FloatsApproxEquals(solution.Objective()*c_scaled_ratings, float64(checkRating)) {
+		panic("rating inconsistent " + strconv.FormatFloat(solution.Objective(), 'f', 0, 64) + " " + strconv.FormatFloat(float64(checkRating), 'f', 0, 32))
 	}
 }
 

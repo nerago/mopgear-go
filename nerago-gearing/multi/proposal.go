@@ -21,10 +21,10 @@ func (job *MultiSetJob) proposalSingleBest() *util_async.FutureCancellable[multi
 	})
 }
 
-func (job *MultiSetJob) proposalsAllCommonAlternates(cancelGenerate util_async.CancelSignal, extendedAlternates bool) (<-chan multi_types.MultiProposedOutput, *util_async.Future[int]) {
+func (job *MultiSetJob) proposalsAllCommonAlternates(cancelGenerate util_async.CancelSignal, extendedAlternates bool, includeInterimResults bool) (<-chan multi_types.MultiProposedOutput, *util_async.Future[int]) {
 	highProcess := job.highProcessSetup()
 
-	multiSolveChannel, expectedCountFuture := highProcess.RunForSeveral_CommonDifferent(job.printer, util_collection.Optional_Empty[int](), cancelGenerate, extendedAlternates)
+	multiSolveChannel, expectedCountFuture := highProcess.RunForSeveral_CommonDifferent(job.printer, util_collection.Optional_Empty[int](), cancelGenerate, extendedAlternates, includeInterimResults)
 
 	proposalChannel := util_async.Map_ChannelToChannel(4, multiSolveChannel, func(setResult solve_highs.HighsMultiResult) multi_types.MultiProposedOutput {
 		return job.makeOutputFromHighs(setResult, job.printer, uuid.NewString())
@@ -74,7 +74,7 @@ func (job *MultiSetJob) runPermute(permuteSet permuteSet, solutionsPerPermute in
 			resultChannel <- job.makeOutputFromHighs(result, printer, uuid.NewString())
 		}
 	} else {
-		nextChan, expectedSubCount := highProcess.RunForSeveral_CommonDifferent(printer, util_collection.Optional_OfValue(solutionsPerPermute), cancel, false)
+		nextChan, expectedSubCount := highProcess.RunForSeveral_CommonDifferent(printer, util_collection.Optional_OfValue(solutionsPerPermute), cancel, false, false)
 		expectedSubCount.ForwardResultToOtherFuture(expectedCount)
 		for result := range nextChan {
 			resultChannel <- job.makeOutputFromHighs(result, printer, uuid.NewString())
@@ -190,6 +190,10 @@ func (job *MultiSetJob) makeOutputFromHighs(multiResult solve_highs.HighsMultiRe
 		param.seenInSolutions.Add(&itemSet)
 		outputs[paramIndex] = single
 		totalRatingSum += single.ResultRating * param.ratingMultiply
+	}
+
+	if multiResult.InterimResult {
+		proposalId += "-interim"
 	}
 
 	if checkNoConflicts(outputs, job.printer) {

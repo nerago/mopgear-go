@@ -196,7 +196,7 @@ func (m *Model) Solve(opts ...SolveOption) (*Solution, error) {
 			return nil, err
 		}
 		finished := context.AfterFunc(cfg.ctx, func() {
-			err := solver.InterruptSetFlag(1)
+			err := solver.InterruptSetFlag(true)
 			if err != nil {
 				panic(err)
 			}

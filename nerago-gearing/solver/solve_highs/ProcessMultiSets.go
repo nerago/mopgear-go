@@ -42,9 +42,10 @@ type SolverHighsMultiProcess struct {
 }
 
 type HighsMultiResult struct {
-	ItemSets     []items.FullItemSet
-	OutputId     []string
-	PermuteLabel string
+	ItemSets      []items.FullItemSet
+	OutputId      []string
+	PermuteLabel  string
+	InterimResult bool
 }
 
 func (process *SolverHighsMultiProcess) AddSetParam(param SolverHighsMultiParam) {
@@ -64,13 +65,12 @@ func (process *SolverHighsMultiProcess) RunInterruptable(printer *util.PrintReco
 
 	solveFuture := process.build.RunHighsFuture(nil)
 	return util_async.FutureCancellable_MapValue(solveFuture, func(linearResult util_highs.LinearResult) (HighsMultiResult, bool) {
-		solution := linearResult.GetSolutionAndSaveLog(printer)
-		printer.Println("SOLUTION STATUS = " + solution.Status.String())
+		solution := linearResult.GetSolution2AndSaveLog(printer)
 
 		debugPrintAll(solution, process, printer)
 
 		if solution.HasSolution() {
-			multiResult := process.solutionToResult(solution, printer)
+			multiResult := process.solutionToResult(solution, printer, false)
 			return multiResult, true
 		} else {
 			return HighsMultiResult{}, false
@@ -78,12 +78,17 @@ func (process *SolverHighsMultiProcess) RunInterruptable(printer *util.PrintReco
 	})
 }
 
-func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.PrintRecorder, outputTarget util_collection.Optional[int], cancel util_async.CancelSignal, alsoDoFullItemBlocks bool) (resultChannelRead <-chan HighsMultiResult, expectedCount *util_async.Future[int]) {
+func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.PrintRecorder, outputTarget util_collection.Optional[int], cancel util_async.CancelSignal, alsoDoFullItemBlocks bool, includeInterimResults bool) (resultChannelRead <-chan HighsMultiResult, expectedCount *util_async.Future[int]) {
 	resultChannel := make(chan HighsMultiResult, 8)
 	expectedCount = util_async.Future_Make[int]()
 
+	var interimChannel chan HighsMultiResult
+	if includeInterimResults {
+		interimChannel = resultChannel
+	}
+
 	go func() {
-		initialResult, bestCommonChoices, hasInitial := process.generateInitialMulti(printer, cancel)
+		initialResult, bestCommonChoices, hasInitial := process.generateInitialMulti(printer, cancel, interimChannel)
 		if hasInitial {
 			resultChannel <- initialResult
 
@@ -105,11 +110,9 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *u
 			expectedCount.SetResult(count)
 			printer.Printf("VARIANT COMMON count %d\n", len(blockPlanList))
 
-			innerChannel := process.generateWithDifferentCommonVariants(blockPlanList, printer, cancel)
-			util_async.ChannelCopy(innerChannel, resultChannel)
-		} else {
-			close(resultChannel)
+			process.generateWithDifferentCommonVariants(blockPlanList, printer, cancel, resultChannel, includeInterimResults)
 		}
+		close(resultChannel)
 	}()
 
 	return resultChannel, expectedCount
@@ -120,21 +123,30 @@ type blockPlan struct {
 	changeColumn  *columnInfo
 }
 
-func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.PrintRecorder, cancel util_async.CancelSignal) (HighsMultiResult, []*columnInfo, bool) {
+func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.PrintRecorder, cancel util_async.CancelSignal, interimResults chan<- HighsMultiResult) (HighsMultiResult, []*columnInfo, bool) {
 	printer.Printf("INITIAL MULTI run\n")
 
 	process.makeFullModel()
+
+	var doneFunc func()
+	if interimResults != nil {
+		doneFunc = process.forwardInterimResultsToChannel(process.build, interimResults, printer)
+	}
+
 	future := process.build.RunHighsFuture(nil)
 	util_async.ChainCancel(cancel, future)
 
 	result, gotResult := future.WaitForResult()
 	if gotResult {
-		solution := result.GetSolutionAndSaveLog(printer)
-		printer.Println("SOLUTION STATUS = " + solution.Status.String())
+		solution := result.GetSolution2AndSaveLog(printer)
 		debugPrintAll(solution, process, printer)
 
+		if doneFunc != nil {
+			doneFunc()
+		}
+
 		if solution.HasSolution() {
-			initialResult := process.solutionToResult(solution, printer)
+			initialResult := process.solutionToResult(solution, printer, false)
 			bestCommonChoices := process.extractCommonChoices(solution)
 			return initialResult, bestCommonChoices, true
 		}
@@ -142,19 +154,30 @@ func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.Print
 	return HighsMultiResult{}, nil, false
 }
 
-func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariants(blockPlans []blockPlan, printer *util.PrintRecorder, cancel util_async.CancelSignal) <-chan HighsMultiResult {
-	return util_async.MapFuture_SliceToChannel_Cancellable(10, blockPlans, cancel, func(block *blockPlan) *util_async.FutureCancellable[HighsMultiResult] {
-		if block.changeColumn != nil {
-			return process.generateWithDifferentCommonVariant_One(printer, block.changeColumn)
-		} else if block.forbiddenItem != nil {
-			return process.generateWithBlockedItem_One(printer, *block.forbiddenItem)
+func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariants(blockPlans []blockPlan, printer *util.PrintRecorder, cancel util_async.CancelSignal, resultChannel chan<- HighsMultiResult, includeInterimResults bool) {
+	expectedResults := util_async.MapFuture_SliceToChannel_Cancellable(10, blockPlans, cancel, func(block *blockPlan) *util_async.FutureCancellable[HighsMultiResult] {
+		if includeInterimResults {
+			if block.changeColumn != nil {
+				return process.generateWithDifferentCommonVariant_One(printer, block.changeColumn, resultChannel)
+			} else if block.forbiddenItem != nil {
+				return process.generateWithBlockedItem_One(printer, *block.forbiddenItem, resultChannel)
+			} else {
+				panic("missing block")
+			}
 		} else {
-			panic("missing block")
+			if block.changeColumn != nil {
+				return process.generateWithDifferentCommonVariant_One(printer, block.changeColumn, nil)
+			} else if block.forbiddenItem != nil {
+				return process.generateWithBlockedItem_One(printer, *block.forbiddenItem, nil)
+			} else {
+				panic("missing block")
+			}
 		}
 	})
+	util_async.ChannelCopy(expectedResults, resultChannel)
 }
 
-func (process *SolverHighsMultiProcess) generateWithBlockedItem_One(printer *util.PrintRecorder, forbiddenId items.ItemId) *util_async.FutureCancellable[HighsMultiResult] {
+func (process *SolverHighsMultiProcess) generateWithBlockedItem_One(printer *util.PrintRecorder, forbiddenId items.ItemId, interimChannel chan<- HighsMultiResult) *util_async.FutureCancellable[HighsMultiResult] {
 	innerPrint := util.PrintRecorder_HoldAll()
 	printer.Printf("VARIANT COMMON blocking all %d\n", forbiddenId)
 
@@ -169,10 +192,10 @@ func (process *SolverHighsMultiProcess) generateWithBlockedItem_One(printer *uti
 	}
 	rowLimitCommon.Build(build, 0, 0)
 
-	return process.runVariant(build, innerPrint, printer)
+	return process.runVariant(build, innerPrint, printer, interimChannel)
 }
 
-func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariant_One(printer *util.PrintRecorder, changeColumn *columnInfo) *util_async.FutureCancellable[HighsMultiResult] {
+func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariant_One(printer *util.PrintRecorder, changeColumn *columnInfo, interimChannel chan<- HighsMultiResult) *util_async.FutureCancellable[HighsMultiResult] {
 	innerPrint := util.PrintRecorder_HoldAll()
 	printer.Printf("VARIANT COMMON blocking reforge %d\n", changeColumn.ItemId())
 
@@ -181,38 +204,68 @@ func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariant_One(p
 	rowLimitCommon.Add(changeColumn.columnIndex, 1)
 	rowLimitCommon.Build(build, 0, 0)
 
-	return process.runVariant(build, innerPrint, printer)
+	return process.runVariant(build, innerPrint, printer, interimChannel)
 }
 
-func (process *SolverHighsMultiProcess) runVariant(build *util_highs.LinearBuilder, innerPrint *util.PrintRecorder, printer *util.PrintRecorder) *util_async.FutureCancellable[HighsMultiResult] {
+func (process *SolverHighsMultiProcess) runVariant(build *util_highs.LinearBuilder, innerPrint *util.PrintRecorder, printer *util.PrintRecorder, interimChannel chan<- HighsMultiResult) *util_async.FutureCancellable[HighsMultiResult] {
+	var doneFunc func()
+	if interimChannel != nil {
+		doneFunc = process.forwardInterimResultsToChannel(build, interimChannel, innerPrint)
+	}
+
 	future := build.RunHighsFuture(nil)
 
 	return util_async.FutureCancellable_MapValue(future, func(linearResult util_highs.LinearResult) (HighsMultiResult, bool) {
-		solution := linearResult.GetSolutionAndSaveLog(innerPrint)
-		innerPrint.Println("SOLUTION STATUS = " + solution.Status.String())
+		solution := linearResult.GetSolution2AndSaveLog(innerPrint)
+
+		if doneFunc != nil {
+			doneFunc()
+		}
 
 		innerPrint.Println("############################################################################")
 		printer.AppendOther(innerPrint)
 
 		if solution.HasSolution() {
-			return process.solutionToResult(solution, innerPrint), true
+			return process.solutionToResult(solution, innerPrint, false), true
 		} else {
 			return HighsMultiResult{}, false
 		}
 	})
 }
 
-func debugPrintAll(solution *highs.Solution, job *SolverHighsMultiProcess, printer *util.PrintRecorder) {
+func (process *SolverHighsMultiProcess) prepareCallbackForInterimSolutions(build *util_highs.LinearBuilder, interimChannel chan<- util_highs.InterimSolution) {
+	build.SetCallback([]highs.CallbackType{highs.CallbackTypeMipImprovingSolution},
+		func(callbackType highs.CallbackType, str string, out highs.HighsCallbackDataOut) highs.HighsCallbackDataIn {
+			if callbackType == highs.CallbackTypeMipImprovingSolution {
+				interim := util_highs.InterimSolutionFromCallback(out)
+				interimChannel <- interim
+			}
+			return highs.HighsCallbackDataIn{}
+		},
+	)
+}
+
+func (process *SolverHighsMultiProcess) forwardInterimResultsToChannel(build *util_highs.LinearBuilder, resultChannel chan<- HighsMultiResult, printer *util.PrintRecorder) func() {
+	interimChannel := make(chan util_highs.InterimSolution)
+	process.prepareCallbackForInterimSolutions(build, interimChannel)
+	go func() {
+		for solution := range interimChannel {
+			resultChannel <- process.solutionToResult(solution, printer, true)
+		}
+	}()
+	return func() { close(interimChannel) }
+}
+
+func debugPrintAll(solution *util_highs.Solution2, job *SolverHighsMultiProcess, printer *util.PrintRecorder) {
 	if !util_highs.C_DebugHighs {
 		return
 	}
 
-	printer.Printf("OBJECTIVE VALUE %f \n", solution.Objective*c_scaled_ratings)
+	printer.Println("SOLUTION STATUS = " + solution.Status().String())
+	printer.Printf("OBJECTIVE VALUE %f \n", solution.Objective()*c_scaled_ratings)
 
 columnLoop:
-	for colIndex, outputValue := range solution.ColValues {
-		columnIndex := util_highs.ColumnIndex(colIndex)
-
+	for columnIndex, outputValue := range solution.ColValuesSeq() {
 		if debugPrintColumn(job.allColumns, columnIndex, outputValue, nil, nil, printer) {
 			continue columnLoop
 		}
@@ -228,28 +281,18 @@ columnLoop:
 	}
 }
 
-func (process *SolverHighsMultiProcess) extractCommonChoices(solution *highs.Solution) []*columnInfo {
-	// seenItems := make(map[items.ItemId]bool)
+func (process *SolverHighsMultiProcess) extractCommonChoices(solution *util_highs.Solution2) []*columnInfo {
 	commonChosenColumns := make([]*columnInfo, 0, process.common.Size())
 	for _, jobColumn := range process.allColumns {
-		colValue := solution.ColValues[jobColumn.columnIndex]
+		colValue := solution.GetValue(jobColumn.columnIndex)
 		if jobColumn.entryType == entry_multi_enable_forge && util.FloatEqualsOne(colValue) {
 			commonChosenColumns = append(commonChosenColumns, jobColumn)
-			// seenItems[jobColumn.itemFull.ItemId()] = true
 		}
 	}
-
-	// TODO could further and block every item used in a set
-	// for _, part := range process.parts {
-	// 	for itemId, seqColumns := range part.setup.itemColumns.SeqGroupsNestedKeyValue() {
-
-	// 	}
-	// }
-
 	return commonChosenColumns
 }
 
-func (process *SolverHighsMultiProcess) solutionToResult(solution *highs.Solution, printer *util.PrintRecorder) HighsMultiResult {
+func (process *SolverHighsMultiProcess) solutionToResult(solution util_highs.ISolution, printer *util.PrintRecorder, interim bool) HighsMultiResult {
 	printer.Printf("Permute = %s\n", process.permuteLabel)
 
 	resultList := make([]items.FullItemSet, len(process.parts))
@@ -262,11 +305,14 @@ func (process *SolverHighsMultiProcess) solutionToResult(solution *highs.Solutio
 		resultList[partIndex] = fullItemSet
 
 		outputId := uuid.NewString()
+		if interim {
+			outputId += "-interim"
+		}
 		printer.Printf("OutputId[%s] = %s\n", part.Label, outputId)
 		idList[partIndex] = outputId
 	}
 
-	return HighsMultiResult{resultList, idList, process.permuteLabel}
+	return HighsMultiResult{resultList, idList, process.permuteLabel, interim}
 }
 
 func (process *SolverHighsMultiProcess) makeFullModel() {

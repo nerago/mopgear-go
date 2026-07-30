@@ -5,6 +5,8 @@ import (
 	"math"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
+	"slices"
 	"strconv"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -19,6 +21,8 @@ type LinearBuilder struct {
 	Solver               SolverMode
 	DisablePreSolve      bool
 	TimeLimitSeconds     int
+	Callback             highs.HighsCallback
+	CallbackTypes        []highs.CallbackType
 }
 
 func (build *LinearBuilder) Clone() *LinearBuilder {
@@ -105,7 +109,7 @@ func (build *LinearBuilder) RunHighsFuture(stopwatch *util.Stopwatch) *util_asyn
 
 	future := util_async.FutureCancellable_Make[LinearResult]()
 	future.AddCancelHandler(func() {
-		verifyNoError(solver.InterruptSetFlag(1))
+		verifyNoError(solver.InterruptSetFlag(true))
 	})
 
 	if stopwatch == nil {
@@ -147,13 +151,17 @@ func (build *LinearBuilder) prepareHighsRun(needLog bool) (*highs.Solver, string
 	return solver, logFilename, requestGpu
 }
 
-func (*LinearBuilder) postHighsRun(solver *highs.Solver, logFilename string, printer *util.PrintRecorder) {
+func (build *LinearBuilder) postHighsRun(solver *highs.Solver, logFilename string, printer *util.PrintRecorder) {
 	if logFilename != "" {
 		verifyNoError(solver.SetStringOption("log_file", "")) // flush log
 		readLogfile(logFilename, printer)
 	}
 
-	verifyNoError(solver.InterruptSupportDisable())
+	if build.Callback != nil {
+		verifyNoError(solver.ClearCallback())
+	} else {
+		verifyNoError(solver.InterruptSupportDisable())
+	}
 	verifyNoError(solver.Clear())
 }
 
@@ -200,7 +208,26 @@ func (build *LinearBuilder) configureHighsUtil(solver *highs.Solver, logfile str
 	} else {
 		verifyNoError(solver.SetFloatOption("time_limit", InfPos()))
 	}
-	verifyNoError(solver.InterruptSupportEnable())
+
+	if build.Callback != nil {
+		// TODO move this into gohighs
+		interruptTypes := []highs.CallbackType{
+			highs.CallbackTypeSimplexInterrupt,
+			highs.CallbackTypeIpmInterrupt,
+			highs.CallbackTypeMipInterrupt,
+		}
+		callbackTypes := slices.Concat(build.CallbackTypes, interruptTypes)
+		util_collection.RemoveDuplicatesComparable_InPlace(&callbackTypes)
+		verifyNoError(solver.SetCallback(func(callbackType highs.CallbackType, str string, out highs.HighsCallbackDataOut) highs.HighsCallbackDataIn {
+			result := build.Callback(callbackType, str, out)
+			if slices.Contains(interruptTypes, callbackType) {
+				result.User_interrupt = solver.Interrupted
+			}
+			return result
+		}, build.CallbackTypes))
+	} else {
+		verifyNoError(solver.InterruptSupportEnable())
+	}
 
 	verifyNoError(solver.SetStringOption("log_file", logfile))
 	verifyNoError(solver.SetBoolOption("log_to_console", (C_DebugHighs || C_HighsToConsole) && !build.NoOutput))
@@ -319,4 +346,9 @@ func (build *LinearBuilder) ValidateInitialSolutionState() {
 			}
 		}
 	}
+}
+
+func (build *LinearBuilder) SetCallback(callbackTypes []highs.CallbackType, callback highs.HighsCallback) {
+	build.Callback = callback
+	build.CallbackTypes = callbackTypes
 }

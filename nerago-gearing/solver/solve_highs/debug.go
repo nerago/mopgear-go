@@ -3,23 +3,21 @@ package solve_highs
 import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_highs"
-
-	"github.com/bartolsthoorn/gohighs/highs"
 )
 
-func debugPrint(solution *highs.Solution, build *util_highs.LinearBuilder, allColumns []*columnInfo, printer *util.PrintRecorder) {
+func debugPrint(solution *util_highs.Solution2, build *util_highs.LinearBuilder, allColumns []*columnInfo, printer *util.PrintRecorder) {
 	if !util_highs.C_DebugHighs {
 		return
 	}
 
-	printer.Printf("OBJECTIVE VALUE = %f\n", solution.Objective*c_scaled_ratings)
+	printer.Printf("OBJECTIVE VALUE = %f\n", solution.Objective()*c_scaled_ratings)
 
 	activeBonus := ""
 	activeBonusWeight := 0.0
 
-	for colIndex, outputValue := range solution.ColValues {
-		if !debugPrintColumn(allColumns, util_highs.ColumnIndex(colIndex), outputValue, &activeBonus, &activeBonusWeight, printer) {
-			text := build.DebugTextFor(util_highs.ColumnIndex(colIndex))
+	for colIndex, outputValue := range solution.ColValuesSeq() {
+		if !debugPrintColumn(allColumns, colIndex, outputValue, &activeBonus, &activeBonusWeight, printer) {
+			text := build.DebugTextFor(colIndex)
 			printer.Printf("%d %f %s\n", colIndex, outputValue, text)
 		}
 	}

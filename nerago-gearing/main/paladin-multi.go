@@ -392,8 +392,8 @@ func PaladinMultiRun() {
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()
 
-	//job.RunNoPermutations_AllCommonAlternates(true)
-	job.RunNoPermutations_BestOnly(false, true)
+	job.RunNoPermutations_AllCommonAlternates(true, true)
+	//job.RunNoPermutations_BestOnly(false, true)
 	//job.RunForSolutionsPerPermute(3)
 
 	//job.CullingReport()

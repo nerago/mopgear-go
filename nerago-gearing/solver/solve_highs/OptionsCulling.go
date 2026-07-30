@@ -90,13 +90,13 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 	util_async.ChainCancel(cancel, solutionFuture)
 	linearResult, hasResult := solutionFuture.WaitForResult()
 	if hasResult {
-		solution := linearResult.GetSolutionAndSaveLog(process.printer)
+		solution := linearResult.GetSolution2AndSaveLog(process.printer)
 
-		if solution.Status == highs.ModelStatusOptimal {
+		if solution.Status() == highs.ModelStatusOptimal {
 			percent := float64(process.tasksCompleted.Load()) / float64(process.targetResultCount) * 100
 			process.printer.Printf("TASK OK %s %.0f\n", process.label, percent)
 		} else {
-			process.printer.Printf("TASK status = %s\n", solution.Status.String())
+			process.printer.Printf("TASK status = %s\n", solution.Status().String())
 		}
 
 		if solution.HasSolution() {

@@ -95,7 +95,14 @@ func RemoveDuplicatesComparable_InPlace[T comparable, S ~[]T](slice *S) {
 	if slice == nil || *slice == nil {
 		return
 	}
+	if len(*slice) > 8 {
+		removeDuplicatesComparableInPlaceLarge(slice)
+	} else {
+		removeDuplicatesComparableInPlaceSmall(slice)
+	}
+}
 
+func removeDuplicatesComparableInPlaceLarge[T comparable, S ~[]T](slice *S) {
 	mapSet := make(map[T]bool, len(*slice))
 	for _, item := range *slice {
 		mapSet[item] = true
@@ -108,6 +115,32 @@ func RemoveDuplicatesComparable_InPlace[T comparable, S ~[]T](slice *S) {
 	}
 
 	*slice = (*slice)[:index]
+}
+
+func removeDuplicatesComparableInPlaceSmall[T comparable, S ~[]T](slice *S) {
+	var a, b int
+	for a = 0; a < len(*slice); a++ {
+		for b = a + 1; b < len(*slice); b++ {
+			if (*slice)[a] != (*slice)[b] {
+				goto changed
+			}
+		}
+	}
+	return
+
+changed:
+	write := a
+outerLoop:
+	for a = a + 1; a < len(*slice); a++ {
+		for b = a + 1; b < len(*slice); b++ {
+			if (*slice)[a] == (*slice)[b] {
+				continue outerLoop
+			}
+		}
+		(*slice)[write] = (*slice)[a]
+		write++
+	}
+	*slice = (*slice)[0:write]
 }
 
 func RemoveDuplicatesComparable_NewIfChanged[T comparable](slice []T) []T {

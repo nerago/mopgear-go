@@ -461,9 +461,10 @@ var referenceNumberGenerator = atomic.Int32{}
 //	solver, _ := NewSolver()
 //	defer solver.Close()
 type Solver struct {
-	ptr      unsafe.Pointer
-	refNum   int32
-	callback HighsCallback
+	ptr         unsafe.Pointer
+	refNum      int32
+	callback    HighsCallback
+	Interrupted bool
 }
 
 // NewSolver creates a new HiGHS solver instance.
@@ -490,6 +491,8 @@ func NewSolver() (*Solver, error) {
 // Clear resets the solver to its initial state, clearing
 // the model and resetting options to defaults.
 func (s *Solver) Clear() error {
+	s.callback = nil
+	s.Interrupted = false
 	status := Status(C.Highs_clear(s.ptr))
 	return newError("Clear", status)
 }
@@ -1148,67 +1151,77 @@ func goHighsCallbackExportedBridge(solverReference C.HighsInt, c_callback_type C
 	message := C.GoString(c_message)
 
 	data := HighsCallbackDataOut{}
-	data.callback_type = callback_type
-	data.log_type = int32(c_data_out.log_type)
-	data.running_time = float64(c_data_out.running_time)
-	data.simplex_iteration_count = int32(c_data_out.simplex_iteration_count)
-	data.ipm_iteration_count = int32(c_data_out.ipm_iteration_count)
-	data.pdlp_iteration_count = int32(c_data_out.pdlp_iteration_count)
-	data.objective_function_value = float64(c_data_out.objective_function_value)
-	data.mip_node_count = int64(c_data_out.mip_node_count)
-	data.mip_total_lp_iterations = int64(c_data_out.mip_total_lp_iterations)
-	data.mip_primal_bound = float64(c_data_out.mip_primal_bound)
-	data.mip_dual_bound = float64(c_data_out.mip_dual_bound)
-	data.mip_gap = float64(c_data_out.mip_gap)
+	data.Callback_type = callback_type
+	data.Log_type = int32(c_data_out.log_type)
+	data.Running_time = float64(c_data_out.running_time)
+	data.Simplex_iteration_count = int32(c_data_out.simplex_iteration_count)
+	data.Ipm_iteration_count = int32(c_data_out.ipm_iteration_count)
+	data.Pdlp_iteration_count = int32(c_data_out.pdlp_iteration_count)
+	data.Objective_function_value = float64(c_data_out.objective_function_value)
+	data.Mip_node_count = int64(c_data_out.mip_node_count)
+	data.Mip_total_lp_iterations = int64(c_data_out.mip_total_lp_iterations)
+	data.Mip_primal_bound = float64(c_data_out.mip_primal_bound)
+	data.Mip_dual_bound = float64(c_data_out.mip_dual_bound)
+	data.Mip_gap = float64(c_data_out.mip_gap)
 
 	if c_data_out.mip_solution != nil && c_data_out.mip_solution_size > 0 {
 		var solution []C.double = unsafe.Slice(c_data_out.mip_solution, c_data_out.mip_solution_size)
-		data.mip_solution = make([]float64, c_data_out.mip_solution_size)
+		data.Mip_solution = make([]float64, c_data_out.mip_solution_size)
 		for i := range c_data_out.mip_solution_size {
-			data.mip_solution[i] = float64(solution[i])
+			data.Mip_solution[i] = float64(solution[i])
 		}
 	}
 
 	inputs := callback(callback_type, message, data)
 
-	if inputs.user_interrupt {
+	if inputs.User_interrupt {
 		c_data_in.user_interrupt = 1
 	} else {
 		c_data_in.user_interrupt = 0
 	}
-	if inputs.user_has_solution {
+	if inputs.User_has_solution {
 		c_data_in.user_has_solution = 1
 	} else {
 		c_data_in.user_has_solution = 0
 	}
-	if len(inputs.user_solution) > 0 {
-		if len(inputs.user_solution) != int(c_data_in.user_solution_size) {
+	if len(inputs.User_solution) > 0 {
+		if len(inputs.User_solution) != int(c_data_in.user_solution_size) {
 			panic("user solution length doesn't match expected size")
 		}
 		var solution []C.double = unsafe.Slice(c_data_in.user_solution, c_data_in.user_solution_size)
 		for i := range c_data_in.user_solution_size {
-			solution[i] = C.double(inputs.user_solution[i])
+			solution[i] = C.double(inputs.User_solution[i])
 		}
 	}
 }
 
 func (s *Solver) InterruptSupportEnable() error {
+	s.callback = nil
+	s.Interrupted = false
 	status := Status(C.GoHighsInterruptEnable(s.ptr, C.HighsInt(s.refNum)))
 	return newError("EnableInterruptSupport", status)
 }
 
 func (s *Solver) InterruptSupportDisable() error {
+	s.callback = nil
+	s.Interrupted = false
 	status := Status(C.GoHighsInterruptDisable(s.ptr, C.HighsInt(s.refNum)))
 	return newError("DisableInterruptSupport", status)
 }
 
-func (s *Solver) InterruptSetFlag(value int) error {
-	status := Status(C.GoHighsInterruptSetFlag(s.ptr, C.HighsInt(s.refNum), C.HighsInt(value)))
+func (s *Solver) InterruptSetFlag(value bool) error {
+	s.Interrupted = value
+	var cValue C.HighsInt = 0
+	if value {
+		cValue = 1
+	}
+	status := Status(C.GoHighsInterruptSetFlag(s.ptr, C.HighsInt(s.refNum), cValue))
 	return newError("InterruptSetFlag", status)
 }
 
 func (s *Solver) SetCallback(callback HighsCallback, callbackTypes []CallbackType) error {
 	s.callback = callback
+	s.Interrupted = false
 
 	var cCallbackTypes []C.HighsInt
 	var pCallbackTypes *C.HighsInt
@@ -1225,18 +1238,9 @@ func (s *Solver) SetCallback(callback HighsCallback, callbackTypes []CallbackTyp
 	return newError("SetCallback", status)
 }
 
-//var cIntegrality []C.HighsInt
-//var pIntegrality *C.HighsInt
-//if len(integrality) > 0 {
-//cIntegrality = make([]C.HighsInt, len(integrality))
-//for i, vt := range integrality {
-//cIntegrality[i] = vt.toC()
-//}
-//pIntegrality = &cIntegrality[0]
-//}
-
 func (s *Solver) ClearCallback() error {
 	s.callback = nil
+	s.Interrupted = false
 	status := Status(C.GoHighsCallbackBridgedDisable(s.ptr, C.HighsInt(s.refNum)))
 	return newError("ClearCallback", status)
 }

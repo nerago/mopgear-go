@@ -30,9 +30,9 @@ func SingleGearSetExtendedMain(itemOptions *items.SolvableOptionsMap, model *Ext
 	solutionFuture := build.RunHighsFuture(nil)
 
 	return util_async.FutureCancellable_MapValue(solutionFuture, func(result util_highs.LinearResult) (items.SolvableItemSet, bool) {
-		solution := result.GetSolutionAndSaveLog(printer)
+		solution := result.GetSolution2AndSaveLog(printer)
 
-		printer.Printf("SOLUTION STATUS = %s\n", solution.Status.String())
+		printer.Printf("SOLUTION STATUS = %s\n", solution.Status().String())
 		debugPrint(solution, setup.build, setup.allColumns, printer)
 
 		if solution.HasSolution() {

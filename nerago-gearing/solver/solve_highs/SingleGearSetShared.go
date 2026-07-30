@@ -279,12 +279,12 @@ func (setup *singleGearSetShared) prepareUniqueEquipped(itemOptions *items.Solva
 	}
 }
 
-func (setup *singleGearSetShared) checkActivePermutation(solution *highs.Solution, solvableItemSet *items.SolvableItemSet) {
+func (setup *singleGearSetShared) checkActivePermutation(solution util_highs.ISolution, solvableItemSet *items.SolvableItemSet) {
 	if len(setup.bonusCombos) > 0 {
 		var activePermutation *bonusCombo
 
 		for _, permutation := range setup.bonusCombos {
-			variableResult := solution.ColValues[permutation.activatingVar.columnIndex]
+			variableResult := solution.GetValue(permutation.activatingVar.columnIndex)
 			if util.FloatEqualsOne(variableResult) {
 				if activePermutation == nil {
 					activePermutation = &permutation
@@ -308,10 +308,10 @@ func (setup *singleGearSetShared) checkActivePermutation(solution *highs.Solutio
 	}
 }
 
-func (setup *singleGearSetShared) buildResultSet(solution *highs.Solution) items.SolvableItemSet {
+func (setup *singleGearSetShared) buildResultSet(solution util_highs.ISolution) items.SolvableItemSet {
 	itemSet := items.SolvableItemSet{}
 	for columnEntry := range setup.itemColumns.SeqValues() {
-		variableResult := solution.ColValues[columnEntry.columnIndex]
+		variableResult := solution.GetValue(columnEntry.columnIndex)
 		if columnEntry.entryType == entry_item && util.FloatEqualsOne(variableResult) {
 			itemSet.AddItem_DeferCalc_ExpectEmpty(columnEntry.itemSlot, columnEntry.item)
 		}

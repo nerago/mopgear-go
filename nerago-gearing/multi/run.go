@@ -52,14 +52,14 @@ func (job *MultiSetJob) RunNoPermutations_BestOnly(alsoExistingEquipped bool, al
 	job.generalMultiReport(gotResult1 && gotResult2, proposalList, simResultList)
 }
 
-func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates(extendedAlternates bool) {
+func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates(extendedAlternates bool, includeInterimResults bool) {
 	job.checkNoPermutations()
 	job.prepareInitial()
 
 	cancelGenerate := util_async.CancelSignal_Make()
 	util_async.CancelOnKeyPress(cancelGenerate)
 
-	proposalChannel, expectedCount := job.proposalsAllCommonAlternates(cancelGenerate, extendedAlternates)
+	proposalChannel, expectedCount := job.proposalsAllCommonAlternates(cancelGenerate, extendedAlternates, includeInterimResults)
 
 	additional := job.additionalProposalsFromSpecOptimum(cancelGenerate)
 	proposalChannel = util_async.MixChannels(proposalChannel, additional)
