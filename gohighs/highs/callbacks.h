@@ -5,7 +5,7 @@
 
 #define GoHighsMaxSolverReference 1023
 
-HighsInt GoHighsCallbackBridgedEnable(void* highs, HighsInt solverReference);
+HighsInt GoHighsCallbackBridgedEnable(void* highs, HighsInt solverReference, HighsInt num_callback_types, HighsInt* callback_types);
 HighsInt GoHighsCallbackBridgedDisable(void* highs, HighsInt solverReference);
 HighsInt GoHighsInterruptEnable(void* highs, HighsInt solverReference);
 HighsInt GoHighsInterruptDisable(void* highs, HighsInt solverReference);

@@ -1,6 +1,10 @@
 package highs
 
-import "math"
+import (
+	"context"
+	"errors"
+	"math"
+)
 
 // Model represents a high-level optimization model.
 // It provides a convenient way to define LP, MIP, and QP problems
@@ -179,8 +183,44 @@ func (m *Model) Solve(opts ...SolveOption) (*Solution, error) {
 		opt(cfg)
 	}
 
-	if err := cfg.apply(solver); err != nil {
+	if err = cfg.apply(solver); err != nil {
 		return nil, err
+	}
+
+	if cfg.ctx != nil && cfg.callback != nil {
+		return nil, errors.New("unsupported configuration with both callback and context")
+	}
+
+	if cfg.ctx != nil {
+		if err = solver.InterruptSupportEnable(); err != nil {
+			return nil, err
+		}
+		finished := context.AfterFunc(cfg.ctx, func() {
+			err := solver.InterruptSetFlag(1)
+			if err != nil {
+				panic(err)
+			}
+		})
+		defer func() {
+			finished()
+			err := solver.InterruptSupportDisable()
+			if err != nil {
+				panic(err)
+			}
+		}()
+	}
+
+	if cfg.callback != nil {
+		err = solver.SetCallback(cfg.callback, cfg.callbackTypes)
+		if err != nil {
+			return nil, err
+		}
+		defer func() {
+			err := solver.ClearCallback()
+			if err != nil {
+				panic(err)
+			}
+		}()
 	}
 
 	// Determine dimensions
@@ -262,16 +302,19 @@ func (m *Model) Solve(opts ...SolveOption) (*Solution, error) {
 type SolveOption func(*solveConfig)
 
 type solveConfig struct {
-	output      *bool
-	timeLimit   *float64
-	mipAbsGap   *float64
-	mipRelGap   *float64
-	threads     *int
-	presolve    *string
-	extraBool   map[string]bool
-	extraInt    map[string]int
-	extraFloat  map[string]float64
-	extraString map[string]string
+	output        *bool
+	timeLimit     *float64
+	mipAbsGap     *float64
+	mipRelGap     *float64
+	threads       *int
+	presolve      *string
+	ctx           context.Context
+	callback      HighsCallback
+	callbackTypes []CallbackType
+	extraBool     map[string]bool
+	extraInt      map[string]int
+	extraFloat    map[string]float64
+	extraString   map[string]string
 }
 
 func defaultSolveConfig() *solveConfig {
@@ -348,6 +391,21 @@ func WithOutput(enabled bool) SolveOption {
 func WithTimeLimit(seconds float64) SolveOption {
 	return func(c *solveConfig) {
 		c.timeLimit = &seconds
+	}
+}
+
+// WithContext sets a context that can cancel the solver.
+func WithContext(ctx context.Context) SolveOption {
+	return func(c *solveConfig) {
+		c.ctx = ctx
+	}
+}
+
+// WithCallback sets a context that can cancel the solver.
+func WithCallback(callback HighsCallback, callbackTypes []CallbackType) SolveOption {
+	return func(c *solveConfig) {
+		c.callback = callback
+		c.callbackTypes = callbackTypes
 	}
 }
 

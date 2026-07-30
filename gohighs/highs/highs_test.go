@@ -1,6 +1,7 @@
 package highs
 
 import (
+	"context"
 	"math"
 	"testing"
 )
@@ -327,6 +328,86 @@ func TestInfeasible(t *testing.T) {
 
 	if !sol.IsInfeasible() {
 		t.Errorf("Expected infeasible, got %s", sol.Status)
+	}
+}
+
+// TestCancel tests cancel via context.
+func TestCancel(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	model := Model{
+		Maximize: true,
+		Offset:   3.0,
+		ColCosts: []float64{1.0, 1.0},
+		ColLower: []float64{0.0, 1.0},
+		ColUpper: []float64{4.0, 1e30},
+		ConstMatrix: []Nonzero{
+			{0, 1, 1.0},
+			{1, 0, 1.0},
+			{1, 1, 2.0},
+			{2, 0, 3.0},
+			{2, 1, 2.0},
+		},
+		RowLower: []float64{-1e30, 5.0, 6.0},
+		RowUpper: []float64{7.0, 15.0, 1e30},
+		VarTypes: []VariableType{Integer, Integer},
+	}
+
+	sol, err := model.Solve(WithOutput(false), WithContext(ctx))
+	if err != nil {
+		t.Fatalf("Solve failed: %v", err)
+	}
+
+	if sol.Status != ModelStatusUnknown {
+		t.Errorf("Expected unknown, got %s", sol.Status)
+	}
+}
+
+// TestCancel tests cancel via context.
+func TestCallback(t *testing.T) {
+	callbackReceivedTypes := make([]CallbackType, 0)
+	callbackReceivedMessages := make([]string, 0)
+	callback := func(callbackType CallbackType, message string, dataOut HighsCallbackDataOut) HighsCallbackDataIn {
+		callbackReceivedTypes = append(callbackReceivedTypes, callbackType)
+		callbackReceivedMessages = append(callbackReceivedMessages, message)
+		return HighsCallbackDataIn{}
+	}
+	requestedCallbackTypes := []CallbackType{CallbackTypeMipInterrupt, CallbackTypeMipSolution}
+
+	model := Model{
+		Maximize: true,
+		Offset:   3.0,
+		ColCosts: []float64{1.0, 1.0},
+		ColLower: []float64{0.0, 1.0},
+		ColUpper: []float64{4.0, 1e30},
+		ConstMatrix: []Nonzero{
+			{0, 1, 1.0},
+			{1, 0, 1.0},
+			{1, 1, 2.0},
+			{2, 0, 3.0},
+			{2, 1, 2.0},
+		},
+		RowLower: []float64{-1e30, 5.0, 6.0},
+		RowUpper: []float64{7.0, 15.0, 1e30},
+		VarTypes: []VariableType{Integer, Integer},
+	}
+
+	sol, err := model.Solve(WithOutput(false), WithCallback(callback, requestedCallbackTypes))
+	if err != nil {
+		t.Fatalf("Solve failed: %v", err)
+	}
+
+	if sol.Status != ModelStatusOptimal {
+		t.Errorf("Expected optimal, got %s", sol.Status)
+	}
+
+	if len(callbackReceivedTypes) == 0 || len(callbackReceivedMessages) == 0 {
+		t.Error("Callback not called")
+	} else {
+		for i := range callbackReceivedTypes {
+			t.Logf("%s: %s", callbackReceivedTypes[i], callbackReceivedMessages[i])
+		}
 	}
 }
 

@@ -11,13 +11,11 @@ void goHighsCallbackForBridge(int callback_type, const char* message, const High
 	goHighsCallbackExportedBridge(solverReference, callback_type, (char*) message, (HighsCallbackDataOut*) data_out, data_in);
 }
 
-HighsInt GoHighsCallbackBridgedEnable(void* highs, HighsInt solverReference) {
+HighsInt GoHighsCallbackBridgedEnable(void* highs, HighsInt solverReference, HighsInt num_callback_types, HighsInt* callback_types) {
     HighsInt err = Highs_setCallback(highs, goHighsCallbackForBridge, (void*)(uintptr_t) solverReference);
-    err |= Highs_startCallback(highs, kHighsCallbackSimplexInterrupt);
-    err |= Highs_startCallback(highs, kHighsCallbackIpmInterrupt);
-    err |= Highs_startCallback(highs, kHighsCallbackMipInterrupt);
-    err |= Highs_startCallback(highs, kHighsCallbackMipSolution);
-    err |= Highs_startCallback(highs, kHighsCallbackMipImprovingSolution);
+    for (int i = 0; i < num_callback_types; i++) {
+        err |= Highs_startCallback(highs, callback_types[i]);
+    }
     return err;
 }
 

@@ -308,6 +308,102 @@ func basisStatusFromC(status C.HighsInt) BasisStatus {
 	}
 }
 
+type CallbackType int
+
+const (
+	CallbackTypeLogging CallbackType = iota
+	CallbackTypeSimplexInterrupt
+	CallbackTypeIpmInterrupt
+	CallbackTypeMipSolution
+	CallbackTypeMipImprovingSolution
+	CallbackTypeMipLogging
+	CallbackTypeMipInterrupt
+	CallbackTypeMipGetCutPool
+	CallbackTypeMipDefineLazyConstraints
+	CallbackTypeMipUserSolution
+)
+
+func (c CallbackType) String() string {
+	switch c {
+	case CallbackTypeLogging:
+		return "Logging"
+	case CallbackTypeSimplexInterrupt:
+		return "SimplexInterrupt"
+	case CallbackTypeIpmInterrupt:
+		return "IpmInterrupt"
+	case CallbackTypeMipSolution:
+		return "MipSolution"
+	case CallbackTypeMipImprovingSolution:
+		return "MipImprovingSolution"
+	case CallbackTypeMipLogging:
+		return "MipLogging "
+	case CallbackTypeMipInterrupt:
+		return "MipInterrupt"
+	case CallbackTypeMipGetCutPool:
+		return "MipGetCutPool"
+	case CallbackTypeMipDefineLazyConstraints:
+		return "MipDefineLazyConstraints"
+	case CallbackTypeMipUserSolution:
+		return "MipUserSolution"
+	default:
+		return "Unknown"
+	}
+}
+
+func (c CallbackType) toC() C.HighsInt {
+	switch c {
+	case CallbackTypeLogging:
+		return C.kHighsCallbackLogging
+	case CallbackTypeSimplexInterrupt:
+		return C.kHighsCallbackSimplexInterrupt
+	case CallbackTypeIpmInterrupt:
+		return C.kHighsCallbackIpmInterrupt
+	case CallbackTypeMipSolution:
+		return C.kHighsCallbackMipSolution
+	case CallbackTypeMipImprovingSolution:
+		return C.kHighsCallbackMipImprovingSolution
+	case CallbackTypeMipLogging:
+		return C.kHighsCallbackMipLogging
+	case CallbackTypeMipInterrupt:
+		return C.kHighsCallbackMipInterrupt
+	case CallbackTypeMipGetCutPool:
+		return C.kHighsCallbackMipGetCutPool
+	case CallbackTypeMipDefineLazyConstraints:
+		return C.kHighsCallbackMipDefineLazyConstraints
+	case CallbackTypeMipUserSolution:
+		return C.kHighsCallbackCallbackMipUserSolution
+	default:
+		return C.kHighsCallbackLogging
+	}
+}
+
+func callbackTypeFromC(status C.HighsInt) CallbackType {
+	switch status {
+	case C.kHighsCallbackLogging:
+		return CallbackTypeLogging
+	case C.kHighsCallbackSimplexInterrupt:
+		return CallbackTypeSimplexInterrupt
+	case C.kHighsCallbackIpmInterrupt:
+		return CallbackTypeIpmInterrupt
+	case C.kHighsCallbackMipSolution:
+		return CallbackTypeMipSolution
+	case C.kHighsCallbackMipImprovingSolution:
+		return CallbackTypeMipImprovingSolution
+	case C.kHighsCallbackMipLogging:
+		return CallbackTypeMipLogging
+	case C.kHighsCallbackMipInterrupt:
+		return CallbackTypeMipInterrupt
+	case C.kHighsCallbackMipGetCutPool:
+		return CallbackTypeMipGetCutPool
+	case C.kHighsCallbackMipDefineLazyConstraints:
+		return CallbackTypeMipDefineLazyConstraints
+	case C.kHighsCallbackCallbackMipUserSolution:
+		return CallbackTypeMipUserSolution
+	default:
+		return CallbackTypeLogging
+	}
+}
+
 // Nonzero represents a non-zero entry in a sparse matrix.
 // Row and Col are zero-indexed.
 type Nonzero struct {
@@ -367,7 +463,7 @@ var referenceNumberGenerator = atomic.Int32{}
 type Solver struct {
 	ptr      unsafe.Pointer
 	refNum   int32
-	callback func(int32, string, HighsCallbackDataOut) HighsCallbackDataIn
+	callback HighsCallback
 }
 
 // NewSolver creates a new HiGHS solver instance.
@@ -1036,29 +1132,6 @@ func (s *Solver) Presolve() error {
 	return newError("Presolve", Status(status))
 }
 
-// names don't follow Go convention but are left exactly matching high's C API so that documentation aligns.
-type HighsCallbackDataOut struct {
-	callback_type            int32
-	log_type                 int32
-	running_time             float64
-	simplex_iteration_count  int32
-	ipm_iteration_count      int32
-	pdlp_iteration_count     int32
-	objective_function_value float64
-	mip_node_count           int64
-	mip_total_lp_iterations  int64
-	mip_primal_bound         float64
-	mip_dual_bound           float64
-	mip_gap                  float64
-	mip_solution             []float64
-}
-
-type HighsCallbackDataIn struct {
-	user_interrupt    bool
-	user_has_solution bool
-	user_solution     []float64
-}
-
 //export goHighsCallbackExportedBridge
 func goHighsCallbackExportedBridge(solverReference C.HighsInt, c_callback_type C.HighsInt, c_message *C.char, c_data_out *C.HighsCallbackDataOut, c_data_in *C.HighsCallbackDataIn) {
 	solver := solverReferenceArray[solverReference]
@@ -1071,10 +1144,11 @@ func goHighsCallbackExportedBridge(solverReference C.HighsInt, c_callback_type C
 		return
 	}
 
-	callback_type := int32(c_callback_type)
+	callback_type := callbackTypeFromC(c_callback_type)
 	message := C.GoString(c_message)
 
 	data := HighsCallbackDataOut{}
+	data.callback_type = callback_type
 	data.log_type = int32(c_data_out.log_type)
 	data.running_time = float64(c_data_out.running_time)
 	data.simplex_iteration_count = int32(c_data_out.simplex_iteration_count)
@@ -1133,11 +1207,33 @@ func (s *Solver) InterruptSetFlag(value int) error {
 	return newError("InterruptSetFlag", status)
 }
 
-func (s *Solver) SetCallback(callback func(int32, string, HighsCallbackDataOut) HighsCallbackDataIn) error {
+func (s *Solver) SetCallback(callback HighsCallback, callbackTypes []CallbackType) error {
 	s.callback = callback
-	status := Status(C.GoHighsCallbackBridgedEnable(s.ptr, C.HighsInt(s.refNum)))
+
+	var cCallbackTypes []C.HighsInt
+	var pCallbackTypes *C.HighsInt
+	if len(callbackTypes) > 0 {
+		cCallbackTypes = make([]C.HighsInt, len(callbackTypes))
+		for i, cb := range callbackTypes {
+			cCallbackTypes[i] = cb.toC()
+		}
+		pCallbackTypes = (*C.HighsInt)(&cCallbackTypes[0])
+	}
+
+	status := Status(C.GoHighsCallbackBridgedEnable(s.ptr, C.HighsInt(s.refNum),
+		C.HighsInt(len(callbackTypes)), pCallbackTypes))
 	return newError("SetCallback", status)
 }
+
+//var cIntegrality []C.HighsInt
+//var pIntegrality *C.HighsInt
+//if len(integrality) > 0 {
+//cIntegrality = make([]C.HighsInt, len(integrality))
+//for i, vt := range integrality {
+//cIntegrality[i] = vt.toC()
+//}
+//pIntegrality = &cIntegrality[0]
+//}
 
 func (s *Solver) ClearCallback() error {
 	s.callback = nil
