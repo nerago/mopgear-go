@@ -41,12 +41,23 @@ var extrasSetSpecific = []items.ItemId{
 }
 
 var substituteItemsCommon = slices.Concat(
-	extrasSetSpecific,
+	//extrasSetSpecific,
 	legendCloaks, miscOtherP3,
-	retT15, retT16, protT15, protT16,
-	timeless, celestial, celestialRaden, orgRaidDrops)
+	retT15,
+	retT16,
+	protT15,
+	protT16,
+	//timeless,
+	celestial, celestialRaden,
+	//orgRaidDrops,
+)
 var substituteItemsRet = slices.Concat(substituteItemsCommon)
-var substituteItemsProt = slices.Concat(substituteItemsCommon, phase3OneHandAndShield, orgOneHandAndShield)
+
+var substituteItemsProt = slices.Concat(substituteItemsCommon, phase3OneHandAndShield)
+
+//orgOneHandAndShield,
+
+//var substituteItemsProt = make([]items.ItemId, 0)
 
 var ignoredItems = []items.ItemId{
 	63207, // org port cloak
@@ -132,10 +143,10 @@ func findUpgrades_Paladin() {
 	substituteEmptySlotOnly[items.Item_Ring] = 86957    // heroic bladed tempest ring
 
 	//normalBossesConsider := []string{
-	//	"SoO Immerseus",
-	//	"SoO FallenProtectors",
-	//	"SoO Norushen",
-	//	"SoO ShaofPride",
+	//	//"SoO Immerseus",
+	//	//"SoO FallenProtectors",
+	//	//"SoO Norushen",
+	//	//"SoO ShaofPride",
 	//	"SoO Galakras",
 	//	"SoO IronJuggernaut",
 	//	"SoO DarkShaman",
@@ -147,23 +158,23 @@ func findUpgrades_Paladin() {
 	//	"SoO Paragons",
 	//	"SoO Garrosh"}
 	//heroicBossesConsider := []string{
-	//	"SoO Immerseus",
-	//	"SoO Norushen",
+	//	//"SoO Immerseus"
+	//	//"SoO FallenProtectors",,
+	//	//"SoO Norushen",
 	//	"SoO ShaofPride",
-	//	"SoO FallenProtectors",
 	//	"SoO Galakras",
-	//	"SoO IronJuggernaut",
+	//	//"SoO IronJuggernaut",
 	//	"SoO Nazgrim",
 	//	"SoO Malkorok",
-	//	"SoO Spoils",
+	//	//"SoO Spoils",
 	//}
 	//finder := loaders.ItemFinder_HeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, heroicBossesConsider)
 	//finder := loaders.ItemFinder_NormalHeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, normalBossesConsider, heroicBossesConsider)
 
 	//finder := loaders.ItemFinder_SiegeStrengthPlateTank
 	//finder := loaders.ItemFinder_Ordos
-	finder := loaders.ItemFinder_TimelessPlate
-	//finder := loaders.ItemFinder_BagsUpgraded
+	//finder := loaders.ItemFinder_TimelessPlate
+	finder := loaders.ItemFinder_BagsUpgraded
 	//finder := loaders.SiegeClassGearSetMultiple(stats.Spec_PaladinProt, stats.Spec_PaladinRet)
 	//finder := func(_ stats.Difficulty) []loaders.ItemFoundRef { return []loaders.ItemFoundRef{{ItemId: 103735}, {ItemId: 103791}, {ItemId: 103872}}	}
 

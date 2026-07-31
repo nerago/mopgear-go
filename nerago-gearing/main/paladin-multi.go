@@ -129,6 +129,7 @@ var orgRaidDrops = []items.ItemId{
 	105767, // hoodrych chest ordos
 	104417, // corruption-rotted gauntlets
 	104416, // chest congealed corruption heroic
+	103796, // seal kings norm
 }
 var orgOneHandAndShield = []items.ItemId{
 	103826, // xifeng weapon
@@ -144,8 +145,8 @@ var legendCloaks = []items.ItemId{legendTankCloak, legendMeleeCloak}
 func PaladinMultiRun() {
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "multi-set")
 
-	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_Largish)
-	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Common)
+	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Largish)
+	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_Common)
 	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
 	job.SetWriteBestToGearFiles()
 

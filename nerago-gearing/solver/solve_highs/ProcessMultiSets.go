@@ -92,30 +92,34 @@ func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *u
 		if hasInitial {
 			resultChannel <- initialResult
 
-			blockPlanList := make([]blockPlan, 0)
-			for _, commonColumn := range bestCommonChoices {
-				blockPlanList = append(blockPlanList, blockPlan{changeColumn: commonColumn})
-				if alsoDoFullItemBlocks {
-					itemId := commonColumn.ItemId()
-					blockPlanList = append(blockPlanList, blockPlan{forbiddenItem: &itemId})
-				}
-			}
-
-			util_collection.Shuffle(blockPlanList)
-			if target, hasTarget := outputTarget.GetWithFlag(); hasTarget && target < len(blockPlanList) {
-				blockPlanList = blockPlanList[0:target]
-			}
-
-			count := len(blockPlanList)
-			expectedCount.SetResult(count)
-			printer.Printf("VARIANT COMMON count %d\n", len(blockPlanList))
-
-			process.generateWithDifferentCommonVariants(blockPlanList, printer, cancel, resultChannel, includeInterimResults)
+			blockPlanList := process.chooseVariantsToRun(bestCommonChoices, alsoDoFullItemBlocks, outputTarget, expectedCount, printer)
+			process.generateWithDifferentVariants(blockPlanList, printer, cancel, resultChannel, includeInterimResults)
 		}
 		close(resultChannel)
 	}()
 
 	return resultChannel, expectedCount
+}
+
+func (process *SolverHighsMultiProcess) chooseVariantsToRun(bestCommonChoices []*columnInfo, alsoDoFullItemBlocks bool, outputTarget util_collection.Optional[int], expectedCount *util_async.Future[int], printer *util.PrintRecorder) []blockPlan {
+	blockPlanList := make([]blockPlan, 0)
+	for _, commonColumn := range bestCommonChoices {
+		blockPlanList = append(blockPlanList, blockPlan{changeColumn: commonColumn})
+		if alsoDoFullItemBlocks {
+			itemId := commonColumn.ItemId()
+			blockPlanList = append(blockPlanList, blockPlan{forbiddenItem: &itemId})
+		}
+	}
+
+	util_collection.Shuffle(blockPlanList)
+	if target, hasTarget := outputTarget.GetWithFlag(); hasTarget && target < len(blockPlanList) {
+		blockPlanList = blockPlanList[0:target]
+	}
+
+	count := len(blockPlanList)
+	expectedCount.SetResult(count)
+	printer.Printf("VARIANT COMMON count %d\n", len(blockPlanList))
+	return blockPlanList
 }
 
 type blockPlan struct {
@@ -131,6 +135,7 @@ func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.Print
 	var doneFunc func()
 	if interimResults != nil {
 		doneFunc = process.forwardInterimResultsToChannel(process.build, interimResults, printer)
+		defer doneFunc()
 	}
 
 	future := process.build.RunHighsFuture(nil)
@@ -141,10 +146,6 @@ func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.Print
 		solution := result.GetSolution2AndSaveLog(printer)
 		debugPrintAll(solution, process, printer)
 
-		if doneFunc != nil {
-			doneFunc()
-		}
-
 		if solution.HasSolution() {
 			initialResult := process.solutionToResult(solution, printer, false)
 			bestCommonChoices := process.extractCommonChoices(solution)
@@ -154,57 +155,50 @@ func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.Print
 	return HighsMultiResult{}, nil, false
 }
 
-func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariants(blockPlans []blockPlan, printer *util.PrintRecorder, cancel util_async.CancelSignal, resultChannel chan<- HighsMultiResult, includeInterimResults bool) {
-	expectedResults := util_async.MapFuture_SliceToChannel_Cancellable(10, blockPlans, cancel, func(block *blockPlan) *util_async.FutureCancellable[HighsMultiResult] {
-		if includeInterimResults {
-			if block.changeColumn != nil {
-				return process.generateWithDifferentCommonVariant_One(printer, block.changeColumn, resultChannel)
-			} else if block.forbiddenItem != nil {
-				return process.generateWithBlockedItem_One(printer, *block.forbiddenItem, resultChannel)
-			} else {
-				panic("missing block")
-			}
+func (process *SolverHighsMultiProcess) generateWithDifferentVariants(blockPlans []blockPlan, printer *util.PrintRecorder, cancel util_async.CancelSignal, resultChannel chan<- HighsMultiResult, includeInterimResults bool) {
+	expectedResults := util_async.MapMulti_SliceToChannel_Cancellable(10, blockPlans, cancel, func(block *blockPlan) *util_async.FutureCancellable[HighsMultiResult] {
+		innerPrint := util.PrintRecorder_HoldAll()
+
+		var build *util_highs.LinearBuilder
+		if block.changeColumn != nil {
+			build = process.prepareWithDifferentCommonVariant_One(printer, block.changeColumn)
+		} else if block.forbiddenItem != nil {
+			build = process.prepareVariantWithBlockedItem_One(printer, *block.forbiddenItem)
 		} else {
-			if block.changeColumn != nil {
-				return process.generateWithDifferentCommonVariant_One(printer, block.changeColumn, nil)
-			} else if block.forbiddenItem != nil {
-				return process.generateWithBlockedItem_One(printer, *block.forbiddenItem, nil)
-			} else {
-				panic("missing block")
-			}
+			panic("missing block")
+		}
+
+		if includeInterimResults {
+			return process.runVariant(build, innerPrint, printer, resultChannel)
+		} else {
+			return process.runVariant(build, innerPrint, printer, nil)
 		}
 	})
 	util_async.ChannelCopy(expectedResults, resultChannel)
 }
 
-func (process *SolverHighsMultiProcess) generateWithBlockedItem_One(printer *util.PrintRecorder, forbiddenId items.ItemId, interimChannel chan<- HighsMultiResult) *util_async.FutureCancellable[HighsMultiResult] {
-	innerPrint := util.PrintRecorder_HoldAll()
+func (process *SolverHighsMultiProcess) prepareVariantWithBlockedItem_One(printer *util.PrintRecorder, forbiddenId items.ItemId) *util_highs.LinearBuilder {
 	printer.Printf("VARIANT COMMON blocking all %d\n", forbiddenId)
 
 	build := process.build.Clone()
 	rowLimitCommon := util_highs.ConstraintRow{Debug: "rowLimitAll"}
 	for _, part := range process.parts {
 		for column := range part.setup.itemColumns.ValuesForKeyAsSeq(forbiddenId) {
-			if column.ItemId() == forbiddenId {
-				rowLimitCommon.Add(column.columnIndex, 1)
-			}
+			rowLimitCommon.Add(column.columnIndex, 1)
 		}
 	}
 	rowLimitCommon.Build(build, 0, 0)
-
-	return process.runVariant(build, innerPrint, printer, interimChannel)
+	return build
 }
 
-func (process *SolverHighsMultiProcess) generateWithDifferentCommonVariant_One(printer *util.PrintRecorder, changeColumn *columnInfo, interimChannel chan<- HighsMultiResult) *util_async.FutureCancellable[HighsMultiResult] {
-	innerPrint := util.PrintRecorder_HoldAll()
+func (process *SolverHighsMultiProcess) prepareWithDifferentCommonVariant_One(printer *util.PrintRecorder, changeColumn *columnInfo) *util_highs.LinearBuilder {
 	printer.Printf("VARIANT COMMON blocking reforge %d\n", changeColumn.ItemId())
 
 	build := process.build.Clone()
 	rowLimitCommon := util_highs.ConstraintRow{Debug: "rowLimitCommon"}
 	rowLimitCommon.Add(changeColumn.columnIndex, 1)
 	rowLimitCommon.Build(build, 0, 0)
-
-	return process.runVariant(build, innerPrint, printer, interimChannel)
+	return build
 }
 
 func (process *SolverHighsMultiProcess) runVariant(build *util_highs.LinearBuilder, innerPrint *util.PrintRecorder, printer *util.PrintRecorder, interimChannel chan<- HighsMultiResult) *util_async.FutureCancellable[HighsMultiResult] {
