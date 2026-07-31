@@ -1020,8 +1020,8 @@ func readWeightBasicInputsFile(filename string) ([]basicStatInput, stats.SimData
 func statWeights_CompareAlgorithms() {
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "statWeights_CompareAlgorithms")
 
-	//targetRatio := gear_model.SimRatio_generalMiti
-	targetRatio := gear_model.SimPriority_heal
+	targetRatio := gear_model.SimPriority_generalMiti
+	//targetRatio := gear_model.SimPriority_heal
 	requiredStats := gear_model.StatsForWeighting_strengthTank
 	requiredSims := targetRatio.SimTypes()
 
@@ -1047,20 +1047,20 @@ func statWeights_CompareAlgorithms() {
 	//writeWeightBasicInputsToFile(inputDataBasic, basicSimBase, "sim-stats-compare-basic.json")
 
 	inputDataBasic, basicSimBase := readWeightBasicInputsFile("sim-stats-compare-basic.json")
-	inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Heal.json")
-	inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Heal.json")
+	inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Mitigation-NoSet.json")
+	inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
 	//inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
 	//inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
 	mixedInputDataFull := slices.Concat(inputDataGrid, inputDataRandom)
 
-	sampleSize := 50
-	inputDataGrid = takeDataSample_Random(inputDataGrid, sampleSize)
-	inputDataRandom = takeDataSample_Random(inputDataRandom, sampleSize)
-	mixedInputData := takeDataSample_Random(mixedInputDataFull, sampleSize)
+	//sampleSize := 50
+	//inputDataGrid = takeDataSample_Random(inputDataGrid, sampleSize)
+	//inputDataRandom = takeDataSample_Random(inputDataRandom, sampleSize)
+	//mixedInputData := takeDataSample_Random(mixedInputDataFull, sampleSize)
 	//inputDataGrid = takeDataSample_Random_Seed(inputDataGrid, sampleSize, 1234)
 	//inputDataRandom = takeDataSample_Random_Seed(inputDataRandom, sampleSize, 1234)
 	//mixedInputData := takeDataSample_Random_Seed(mixedInputDataFull, sampleSize, 1234)
-	//mixedInputData := mixedInputDataFull
+	mixedInputData := mixedInputDataFull
 
 	//weightsNearOptimal := stathighs.WeightResult_Make()
 	//weightsNearOptimal.Put(stats.Stat_Strength, 1.000000)
@@ -1092,30 +1092,30 @@ func statWeights_CompareAlgorithms() {
 	tasks := make([]func(), 0)
 
 	reportOnTweakedVersions := false
-	standardTimeout := 1000
-	shortTimeout := 500
+	standardTimeout := 6000
+	shortTimeout := 1200
 
-	runBasic := false
-	runFormulaVariants := false // best is about 87%, moderate time
-	runFitting1 := false        // slow, low 90%
+	runBasic := true
+	runFormulaVariants := true // best is about 87%, moderate time
+	runFitting1 := false       // slow, low 90%
 	runFitting2 := true
 
 	runGrid1Original := true
-	runGrid1Variants := false
+	runGrid1Variants := true
 	runGrid1VariantsFewer := true
-	runGrid1C := false
+	runGrid1C := true
 	runGrid2 := true
 
 	runRankingOlder := true
 	runRanking3aPreferred := false // broken
 	runRanking3aVariants := false  // broken
-	runRanking3bVariants := false
+	runRanking3bVariants := true
 	runRanking3bPreferred := true
-	runRanking4 := false // still a little slow, midrange 94% etc
+	runRanking4 := true  // still a little slow, midrange 94% etc
 	runRanking5 := false // excellent but slow
 
 	runSearches := true
-	runSearch0 := false
+	runSearch0 := true
 
 	runRankingSep := true
 	runFormula2 := true
@@ -1170,14 +1170,13 @@ func statWeights_CompareAlgorithms() {
 				comp.SupplyData(slices.Clone(inputDataRandom))
 				label := fmt.Sprintf("form-blend%d-inc70", BLEND)
 				futureResult := comp.Run(stopwatch, standardTimeout)
-
 				util_async.ChainCancel(cancel, futureResult)
-				futureResult.WaitForResultThenRun(func(result weight_types.Weight2Extended) {
+				if result, hasResult := futureResult.WaitForResult(); hasResult {
 					resultsByAlgorithm2.Put(label, result)
 					timesByAlgorithm.Put(label, stopwatch.Elapsed())
-				}, func() {
+				} else {
 					resultsByAlgorithm2.Put(label, weight_types.Weight2Extended{})
-				})
+				}
 				printer.Println("///////////////// FORMULA /////////////////")
 			})
 			tasks = append(tasks, func() {
@@ -1194,12 +1193,13 @@ func statWeights_CompareAlgorithms() {
 				futureResult := comp.Run(stopwatch, standardTimeout)
 
 				util_async.ChainCancel(cancel, futureResult)
-				futureResult.WaitForResultThenRun(func(result weight_types.Weight2Extended) {
+				if result, hasResult := futureResult.WaitForResult(); hasResult {
 					resultsByAlgorithm2.Put(label, result)
 					timesByAlgorithm.Put(label, stopwatch.Elapsed())
-				}, func() {
-					resultsByAlgorithm.Put(label, weight_types.Weight1Basic{})
-				})
+				} else {
+					resultsByAlgorithm2.Put(label, weight_types.Weight2Extended{})
+				}
+
 				printer.Println("///////////////// FORMULA /////////////////")
 			})
 		}
