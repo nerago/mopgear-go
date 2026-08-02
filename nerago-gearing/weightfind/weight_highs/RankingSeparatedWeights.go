@@ -98,6 +98,9 @@ func (ranker *RankingSeparatedWeights) newBuilder() {
 	//ranker.build.Solver = util_highs.Solver_Force_IPX // 15m35.9345904s
 	//ranker.build.Solver = util_highs.Solver_LP_USE_GPU // wanders quite a bit
 	ranker.build.Solver = util_highs.Solver_LP_NO_GPU // 3m48.0360506s
+
+	// total objective is sampleCount**2 * slack(0.0-1.0), total of approx 1e6
+	ranker.build.SetEachTolerance(1e-2)
 }
 
 func (ranker *RankingSeparatedWeights) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.Weight2Extended] {

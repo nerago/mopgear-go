@@ -46,6 +46,22 @@ func (build *LinearBuilder) AddOptionFloat(name string, value float64) {
 	build.FloatOptions[name] = value
 }
 
+func (build *LinearBuilder) SetEachTolerance(value float64) {
+	if build.FloatOptions == nil {
+		build.FloatOptions = make(map[string]float64)
+	}
+	build.FloatOptions["primal_feasibility_tolerance"] = value
+	build.FloatOptions["dual_feasibility_tolerance"] = value
+	build.FloatOptions["primal_residual_tolerance"] = value
+	build.FloatOptions["dual_residual_tolerance"] = value
+	build.FloatOptions["optimality_tolerance"] = value
+	build.FloatOptions["kkt_tolerance"] = value
+	build.FloatOptions["mip_feasibility_tolerance"] = value
+	build.FloatOptions["mip_abs_gap"] = value
+	build.FloatOptions["ipm_optimality_tolerance"] = value
+	build.FloatOptions["pdlp_optimality_tolerance"] = value
+}
+
 func (build *LinearBuilder) AddObjectiveBlended(weight float64, offset float64) ObjectiveIndex {
 	if !build.BlendMultiObjectives {
 		panic("wrong linear type")
@@ -208,8 +224,9 @@ func (build *LinearBuilder) configureHighsMatrix(solver *highs.Solver) {
 }
 
 func (build *LinearBuilder) configureHighsUtil(solver *highs.Solver, logfile string) {
-	//verifyNoError(solver.SetStringOption("parallel", "on"))
-	//verifyNoError(solver.SetIntOption("threads", c_threads))
+	for name, value := range build.FloatOptions {
+		verifyNoError(solver.SetFloatOption(name, value))
+	}
 
 	if build.TimeLimitSeconds != 0 {
 		verifyNoError(solver.SetFloatOption("time_limit", float64(build.TimeLimitSeconds)))

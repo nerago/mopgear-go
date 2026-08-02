@@ -234,7 +234,7 @@ func (grid *GridStatWeightProcess1B) chooseScalesBySim() {
 		}
 
 		if scale >= 1 {
-			grid.build.AddOptionFloat("pdlp_optimality_tolerance", 1e-3)
+			grid.build.SetEachTolerance(1e-3)
 		}
 
 		for _, statType := range grid.requiredStats {

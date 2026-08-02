@@ -42,7 +42,7 @@ func (grid *GridStatWeightProcess) Init(printer *util.PrintRecorder, timeout int
 	grid.build.Minimise = true
 	grid.build.Solver = util_highs.Solver_LP_USE_GPU
 	grid.build.TimeLimitSeconds = timeout
-	grid.build.AddOptionFloat("pdlp_optimality_tolerance", 1e-3)
+	grid.build.SetEachTolerance(1e-3)
 	grid.finalWeights = make(map[stats.StatType]util_highs.ColumnIndex)
 }
 
