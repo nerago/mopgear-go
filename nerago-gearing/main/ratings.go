@@ -1761,7 +1761,7 @@ func statWeights_CompareAlgorithms() {
 		initialAccuracy float64
 	}
 	reportByAlgorithm := make(map[string]algorithmReport)
-	for label, weight3 := range resultsByAlgorithm3.SeqWithKeys_StaleInefficient() {
+	for label, weight3 := range resultsByAlgorithm3.SeqWithKeys_ThreadSafeCopy() {
 		weight2 := weight3.ConvertToWeight2()
 		weight1 := weight2.ConvertToWeight1()
 		reportByAlgorithm[label] = algorithmReport{
@@ -1771,7 +1771,7 @@ func statWeights_CompareAlgorithms() {
 			initialAccuracy: weightfind.EvaluateAccuracy(&weight3, requiredSims, &targetRatio, mixedInputDataFull),
 		}
 	}
-	for label, weight2 := range resultsByAlgorithm2.SeqWithKeys_StaleInefficient() {
+	for label, weight2 := range resultsByAlgorithm2.SeqWithKeys_ThreadSafeCopy() {
 		weight1 := weight2.ConvertToWeight1()
 		reportByAlgorithm[label] = algorithmReport{
 			weight2:         &weight2,
@@ -1779,7 +1779,7 @@ func statWeights_CompareAlgorithms() {
 			initialAccuracy: weightfind.EvaluateAccuracy(&weight2, requiredSims, &targetRatio, mixedInputDataFull),
 		}
 	}
-	for label, weight1 := range resultsByAlgorithm.SeqWithKeys_StaleInefficient() {
+	for label, weight1 := range resultsByAlgorithm.SeqWithKeys_ThreadSafeCopy() {
 		reportByAlgorithm[label] = algorithmReport{
 			weight1:         &weight1,
 			initialAccuracy: weightfind.EvaluateAccuracy(&weight1, requiredSims, &targetRatio, mixedInputDataFull),

@@ -1,6 +1,7 @@
 package util_async
 
 import (
+	"context"
 	"os"
 	"paladin_gearing_go/util"
 	"sync"
@@ -12,7 +13,7 @@ type CancelSignal interface {
 	Cancel()
 	ShouldContinue() bool
 	ShouldFinish() bool
-	CancelSignalChannel() <-chan any
+	CancelSignalChannel() <-chan struct{}
 }
 
 func ChainCancel(outer, inner CancelSignal) {
@@ -23,12 +24,12 @@ type CancelSignalBasic struct {
 	isCancelled   bool
 	lock          sync.Mutex
 	onCancel      []func()
-	signalChannel chan any
+	signalChannel chan struct{}
 }
 
 func CancelSignal_Make() CancelSignal {
 	return &CancelSignalBasic{
-		signalChannel: make(chan any),
+		signalChannel: make(chan struct{}),
 	}
 }
 
@@ -63,18 +64,22 @@ func (cancel *CancelSignalBasic) ShouldFinish() bool {
 	return cancel.isCancelled
 }
 
-func (cancel *CancelSignalBasic) CancelSignalChannel() <-chan any {
+func (cancel *CancelSignalBasic) CancelSignalChannel() <-chan struct{} {
 	return cancel.signalChannel
 }
 
 func CancelOnKeyPress(cancel CancelSignal) {
 	go func() {
-		_, err := os.Stdin.Read([]byte{0})
-		if err != nil {
-			panic(err)
-		}
+		waitForKeyPress()
 		cancel.Cancel()
 	}()
+}
+
+func waitForKeyPress() {
+	_, err := os.Stdin.Read([]byte{0})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func CancelAfterTimeout(cancel CancelSignal, timeout time.Duration, printer *util.PrintRecorder) *time.Timer {
@@ -82,4 +87,48 @@ func CancelAfterTimeout(cancel CancelSignal, timeout time.Duration, printer *uti
 		printer.Println("###################### TIME LIMIT EXPIRED ######################")
 		cancel.Cancel()
 	})
+}
+
+type CancelSignalContext struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+}
+
+func CancelSignalContextMake(ctx context.Context, cancel context.CancelFunc) CancelSignalContext {
+	return CancelSignalContext{ctx, cancel}
+}
+
+func CancelSignalContextMakeFromParent(parentContext context.Context) CancelSignalContext {
+	ctx, cancel := context.WithCancel(parentContext)
+	return CancelSignalContext{ctx, cancel}
+}
+
+func (c CancelSignalContext) AddCancelHandler(onCancel func()) {
+	context.AfterFunc(c.ctx, onCancel)
+}
+
+func (c CancelSignalContext) Cancel() {
+	c.cancel()
+}
+
+func (c CancelSignalContext) ShouldContinue() bool {
+	select {
+	case <-c.ctx.Done():
+		return false
+	default:
+		return true
+	}
+}
+
+func (c CancelSignalContext) ShouldFinish() bool {
+	select {
+	case <-c.ctx.Done():
+		return true
+	default:
+		return false
+	}
+}
+
+func (c CancelSignalContext) CancelSignalChannel() <-chan struct{} {
+	return c.ctx.Done()
 }

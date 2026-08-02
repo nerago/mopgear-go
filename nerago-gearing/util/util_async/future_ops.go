@@ -92,7 +92,7 @@ func mapAndLaunchAsFuture[T any, R any](entry *T, mapper func(*T) *FutureCancell
 	}()
 }
 
-func waitForRoutineCompletionOrCancel[R any](itemResultChannel chan FutureResult[R], loopCancelChannel <-chan any, outputSlice *[]R, activeFutureCount *int) bool {
+func waitForRoutineCompletionOrCancel[R any](itemResultChannel chan FutureResult[R], loopCancelChannel <-chan struct{}, outputSlice *[]R, activeFutureCount *int) bool {
 	select {
 	case itemResult := <-itemResultChannel:
 		if itemResult.HasValue {
