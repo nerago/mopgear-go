@@ -287,6 +287,58 @@ func TestMultiplySumFloatA(test *testing.T) {
 	}
 }
 
+func TestMultiplySum0FloatB(test *testing.T) {
+	a := StatBlockFloat{1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	b := StatBlock{3, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+	assertFloatEqual(test, 13, go_StatBlock_StatBlockFloat_MultiplyForTotalSum(&a, &b))
+	assertFloatEqual(test, 13, StatBlock_StatBlockFloat_MultiplyForTotalSum3(&a, &b))
+}
+
+func TestMultiplySum1FloatB(test *testing.T) {
+	a := StatBlockFloat{1, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0}
+	b := StatBlock{3, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0}
+
+	assertFloatEqual(test, 19, go_StatBlock_StatBlockFloat_MultiplyForTotalSum(&a, &b))
+	assertFloatEqual(test, 19, StatBlock_StatBlockFloat_MultiplyForTotalSum3(&a, &b))
+}
+
+func TestMultiplySum2FloatB(test *testing.T) {
+	a := StatBlockFloat{1, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0}
+	b := StatBlock{3, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0}
+
+	assertFloatEqual(test, 38, go_StatBlock_StatBlockFloat_MultiplyForTotalSum(&a, &b))
+	assertFloatEqual(test, 38, StatBlock_StatBlockFloat_MultiplyForTotalSum3(&a, &b))
+}
+
+func TestMultiplySum3FloatB(test *testing.T) {
+	a := StatBlockFloat{1.1, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0}
+	b := StatBlock{3, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0}
+
+	assertFloatEqual(test, 38.3, go_StatBlock_StatBlockFloat_MultiplyForTotalSum(&a, &b))
+	assertFloatEqual(test, 38.3, StatBlock_StatBlockFloat_MultiplyForTotalSum3(&a, &b))
+}
+
+func TestMultiplySumFloatB(test *testing.T) {
+	for range checkLoops {
+		a0 := StatBlockFloat_FromIntStatBlock(randStatBlockLimited(0x70000000), 1)
+		b0 := randStatBlockLimited(0x70000000)
+
+		a1 := a0
+		a2 := a0
+		b1 := b0
+		b2 := b0
+
+		test.Logf("%s\n%s", a1.CreateStringCSV(1), b1.CreateStringCSV())
+		assertFloatNearEqual(test, go_StatBlock_StatBlockFloat_MultiplyForTotalSum(&a1, &b1), StatBlock_StatBlockFloat_MultiplyForTotalSum3(&a2, &b2))
+
+		assertEqualsFloatBlock(test, &a0, &a1, "should be unchanged")
+		assertEqualsFloatBlock(test, &a0, &a2, "should be unchanged")
+		assertEquals(test, &b0, &b1, "should be unchanged")
+		assertEquals(test, &b0, &b2, "should be unchanged")
+	}
+}
+
 var resultFloat float64
 var resultInt uint64
 

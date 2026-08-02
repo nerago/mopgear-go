@@ -15,7 +15,7 @@ func StatBlock_AddAndSubtract_Into(add1, add2, subtract, out *StatBlock)
 
 func StatBlock_MultiplyForTotalSum(a, b *StatBlock) float64
 
-func StatBlock_StatBlockFloat_MultiplyForTotalSum_NotReady(a *StatBlockFloat, b *StatBlock) float64
+func StatBlock_StatBlockFloat_MultiplyForTotalSum3(a *StatBlockFloat, b *StatBlock) float64
 
 func StatBlock_Add_Into_Experiment(a, b, out *StatBlock) {
 	a1 := archsimd.LoadUint32x8Slice(a[0:8])
