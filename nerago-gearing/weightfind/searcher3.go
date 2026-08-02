@@ -23,12 +23,12 @@ const (
 	c_search3_minRunEarlySizeCut = 4
 	c_search3_minRunLateSizeCut  = 2
 
-	c_search3_probeA       = 0.25
-	c_search3_probe_middle = 0.5
-	c_search3_probeB       = 0.75
+	c_search3_probeA      = 0.25
+	c_search3_probeMiddle = 0.5
+	c_search3_probeB      = 0.75
 
-	c_search3_max_node_depth = 50
-	c_search3_max_stats      = 8
+	c_search3_maxNodeDepth = 50
+	c_search3_maxStats     = 8
 )
 
 type WeightSearcher3 struct {
@@ -45,7 +45,7 @@ type WeightSearcher3 struct {
 	poolQueue util.TypedPool[weightSearch2FastBound]
 }
 
-type weightSearch2FastPoint [c_search3_max_stats]float64
+type weightSearch2FastPoint [c_search3_maxStats]float64
 
 type weightSearch2FastBound struct {
 	rangeMin   weightSearch2FastPoint
@@ -64,7 +64,7 @@ type weightSearch2FastProbe struct {
 func (ws *WeightSearcher3) Init(statTypes []stats.StatType, targetRatio weight_types.SimPriorityBasic) {
 	ws.typeCount = len(statTypes)
 	ws.statTypes = statTypes
-	if len(statTypes) > c_search3_max_stats {
+	if len(statTypes) > c_search3_maxStats {
 		panic("don't support that many stats")
 	}
 	ws.simTypes = targetRatio.SimTypes()
@@ -163,7 +163,7 @@ func (ws *WeightSearcher3) evaluateScore(weightArray *weightSearch2FastPoint) fl
 // dumb division in halves
 func (ws *WeightSearcher3) opDivide(bound *weightSearch2FastBound, localQueue *util_collection.QueueStackFiloPoolChild[*weightSearch2FastBound]) {
 	axis := bound.divideAxis
-	mid := valueInterpolate(bound.rangeMin[axis], bound.rangeMax[axis], c_search3_probe_middle)
+	mid := valueInterpolate(bound.rangeMin[axis], bound.rangeMax[axis], c_search3_probeMiddle)
 
 	var nextAxis int
 	if axis < ws.typeCount-1 {
@@ -192,7 +192,7 @@ func (ws *WeightSearcher3) opDivide(bound *weightSearch2FastBound, localQueue *u
 func (ws *WeightSearcher3) opSearch(bound *weightSearch2FastBound, probes []*weightSearch2FastProbe, localQueue *util_collection.QueueStackFiloPoolChild[*weightSearch2FastBound]) {
 	probes = ws.createAndSetProbes(bound, probes)
 
-	if bound.nodeDepth >= c_search3_max_node_depth {
+	if bound.nodeDepth >= c_search3_maxNodeDepth {
 		// done
 	} else if probes[0].accuracy < ws.bestResult.GetBestValue()-c_search3_abandonBranchAccuracyGap {
 		// done
@@ -207,7 +207,7 @@ func (ws *WeightSearcher3) opSearch(bound *weightSearch2FastBound, probes []*wei
 
 func (ws *WeightSearcher3) createAndSetProbes(bound *weightSearch2FastBound, probes []*weightSearch2FastProbe) []*weightSearch2FastProbe {
 	middle := probes[0]
-	ws.sliceInterpolate(&bound.rangeMin, &bound.rangeMax, c_search3_probe_middle, &middle.point)
+	ws.sliceInterpolate(&bound.rangeMin, &bound.rangeMax, c_search3_probeMiddle, &middle.point)
 	middle.accuracy = ws.evaluateScore(&middle.point)
 	middle.axis = -1
 
@@ -351,9 +351,9 @@ func (ws *WeightSearcher3) search2MakeFollowupCommon2(probes []*weightSearch2Fas
 	add.rangeMax = probes[0].point
 
 	rangeMin := &add.rangeMin
-	rangeMax := &add.rangeMin
+	rangeMax := &add.rangeMax
 	for i := 1; i < len(probes); i++ {
-		point := probes[i].point
+		point := &probes[i].point
 		for axis := range ws.typeCount {
 			rangeMin[axis] = min(rangeMin[axis], point[axis])
 			rangeMax[axis] = max(rangeMax[axis], point[axis])

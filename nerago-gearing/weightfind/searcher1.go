@@ -10,11 +10,10 @@ import (
 )
 
 const (
-	c_search1_min  = -1.0
-	c_search1_max  = 10.0
-	c_search1_step = 3.13
-	//c_search1_step        = 2.13
-	c_search1_tweak_start = 0.1
+	c_search1_min        = -1.0
+	c_search1_max        = 10.0
+	c_search1_step       = 3.13
+	c_search1_tweakStart = 0.1
 )
 
 // let's say we have 8 stats
@@ -59,7 +58,7 @@ func (ws *WeightSearcher1) Run(cancel util_async.CancelSignal) weight_types.Weig
 	progress = 0
 	bestResult := util_rank.BestCollector1[weight_types.Weight1Basic]{}
 	for checkWeight := range bestCandidates.ResultsSeq() {
-		updatedWeight, updatedAccuracy := weightTweaker_internal_FastCached(*checkWeight, c_search1_tweak_start, ws.weightStats, &ws.evaluateAccuracy)
+		updatedWeight, updatedAccuracy := weightTweaker_internal_FastCached(*checkWeight, c_search1_tweakStart, ws.weightStats, &ws.evaluateAccuracy)
 		bestResult.Offer(&updatedWeight, updatedAccuracy)
 		ws.printer.Printf("%6d %6.3f %6.3f\n", progress, updatedAccuracy, bestResult.BestValue)
 		progress++

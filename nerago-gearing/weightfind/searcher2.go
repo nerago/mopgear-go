@@ -23,13 +23,13 @@ const (
 	c_search2_minRunEarlySizeCut = 4
 	c_search2_minRunLateSizeCut  = 2
 
-	c_search2_probeA       = 0.25
-	c_search2_probe_middle = 0.5
-	c_search2_probeB       = 0.75
+	c_search2_probeA      = 0.25
+	c_search2_probeMiddle = 0.5
+	c_search2_probeB      = 0.75
 
-	c_search2_max_node_depth = 20
-	c_search2_use_final_op   = false
-	c_search2_debug          = false
+	c_search2_maxNodeDepth = 20
+	c_search2_useFinalOp   = false
+	c_search2_debug        = false
 )
 
 type opType int8
@@ -131,7 +131,7 @@ func (ws *WeightSearcher2) evaluateScore(weightArray []float64) float64 {
 // dumb division in halves
 func (ws *WeightSearcher2) opDivide1(bound *weightSearch2Bound) {
 	axis := bound.axisFocus
-	mid := valueInterpolate(bound.rangeMin[axis], bound.rangeMax[axis], c_search2_probe_middle)
+	mid := valueInterpolate(bound.rangeMin[axis], bound.rangeMax[axis], c_search2_probeMiddle)
 
 	var nextOp opType
 	var nextAxis int
@@ -160,7 +160,7 @@ func (ws *WeightSearcher2) opDivide1(bound *weightSearch2Bound) {
 }
 
 func (ws *WeightSearcher2) opFinal(bound *weightSearch2Bound) {
-	middle := sliceInterpolate(bound.rangeMin, bound.rangeMax, c_search2_probe_middle)
+	middle := sliceInterpolate(bound.rangeMin, bound.rangeMax, c_search2_probeMiddle)
 	ws.evaluateScore(middle)
 	if c_search2_debug {
 		ws.printer.Println("opFinal STOP")
@@ -176,7 +176,7 @@ type probeAndAccuracy struct {
 }
 
 func (ws *WeightSearcher2) opSearch2(bound *weightSearch2Bound) {
-	middle := sliceInterpolate(bound.rangeMin, bound.rangeMax, c_search2_probe_middle)
+	middle := sliceInterpolate(bound.rangeMin, bound.rangeMax, c_search2_probeMiddle)
 	probes := ws.search2DoProbes(bound, middle)
 
 	if probes[0].accuracy < ws.bestResult.BestValue-c_search2_abandonBranchAccuracyGap {
@@ -439,8 +439,8 @@ func printRange(rangeMin []float64, rangeMax []float64, label string, printer *u
 }
 
 func (ws *WeightSearcher2) addSearchPlan(rangeMin []float64, rangeMax []float64, bound *weightSearch2Bound) {
-	if ws.rangeIsMarginal(rangeMin, rangeMax) || bound.nodeDepth >= c_search2_max_node_depth {
-		if c_search2_use_final_op {
+	if ws.rangeIsMarginal(rangeMin, rangeMax) || bound.nodeDepth >= c_search2_maxNodeDepth {
+		if c_search2_useFinalOp {
 			ws.queue.Push(&weightSearch2Bound{
 				plannedOp: opFinal,
 				rangeMin:  rangeMin,

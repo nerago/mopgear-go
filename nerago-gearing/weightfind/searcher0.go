@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	c_search0_min         = -0.5
-	c_search0_max         = 5.5
-	c_search0_tweak_start = 0.1
+	c_search0_min        = -0.5
+	c_search0_max        = 5.5
+	c_search0_tweakStart = 0.1
 )
 
 type WeightSearcher0 struct {
@@ -38,7 +38,7 @@ func (ws *WeightSearcher0) Run(cancel util_async.CancelSignal) weight_types.Weig
 	best := util_rank.BestCollector1[weight_types.Weight1Basic]{}
 	progress := 0
 	for initialWeight := range ws.makeRandomWeights(20000) {
-		updatedWeight, updatedAccuracy := weightTweaker_internal_FastCached(initialWeight, c_search0_tweak_start, ws.weightStats, &ws.evaluateAccuracy)
+		updatedWeight, updatedAccuracy := weightTweaker_internal_FastCached(initialWeight, c_search0_tweakStart, ws.weightStats, &ws.evaluateAccuracy)
 		best.Offer(&updatedWeight, updatedAccuracy)
 		if progress%1000 == 0 {
 			ws.printer.Printf("%6d %6.3f %6.3f\n", progress, updatedAccuracy, best.BestValue)
