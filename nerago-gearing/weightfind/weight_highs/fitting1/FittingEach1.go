@@ -71,7 +71,7 @@ func (fe *FittingEachStatWeightProcess) calcMetrics(stopwatch *util.Stopwatch) {
 
 func (fe *FittingEachStatWeightProcess) buildResult() *weight_types.Weight3ExtendedRanged {
 	weights := weight_types.Weight3ExtendedRanged_Make(fe.requiredStats, fe.requiredSims)
-	fe.each.ForeachWithKeys(func(statType stats.StatType, simType stats.SimType, value *fittingEachFields) {
+	fe.each.Foreach(func(statType stats.StatType, simType stats.SimType, value *fittingEachFields) {
 		for _, detail := range value.resultSlice {
 			weights.AddDetailWeight(simType, statType, detail.StatRange, detail.LineSlope, detail.LineOffset, detail.IncludePercentOfTotal)
 		}

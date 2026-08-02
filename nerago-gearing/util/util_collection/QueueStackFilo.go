@@ -10,9 +10,17 @@ type QueueStackFilo[T any] struct {
 	top   int
 }
 
-func QueueStackFilo_Create[T any](allocateSize int) Queue[T] {
+func QueueStackFilo_Create[T any](allocateSize int) IQueue[T] {
 	array := make([]T, allocateSize)
 	return &QueueStackFilo[T]{array: array, top: 0}
+}
+
+func (stack *QueueStackFilo[T]) Clear() {
+	var nilValue T
+	for i := range stack.top {
+		stack.array[i] = nilValue
+	}
+	stack.top = 0
 }
 
 func (stack *QueueStackFilo[T]) IsEmpty() bool {

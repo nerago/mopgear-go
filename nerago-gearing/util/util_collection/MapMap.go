@@ -233,7 +233,7 @@ func (mm *MapMap[J, K, V]) SeqKey2Key1ValueEntries() iter.Seq[MapMapEntry[J, K, 
 	}
 }
 
-func (mm *MapMap[J, K, V]) ForeachWithKeys(apply func(key1 J, key2 K, value V)) {
+func (mm *MapMap[J, K, V]) Foreach(apply func(key1 J, key2 K, value V)) {
 	for key1, inner := range mm.dataBy1 {
 		for key2, value := range inner {
 			apply(key1, key2, value)

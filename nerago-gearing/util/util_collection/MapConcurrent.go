@@ -11,6 +11,8 @@ type MapConcurrent[K comparable, V any] struct {
 	mutex sync.RWMutex
 }
 
+var _ IMap[int, int] = &MapConcurrent[int, int]{}
+
 // optional
 func (mc *MapConcurrent[K, V]) Init(size int) {
 	mc.mutex.Lock()
@@ -78,6 +80,10 @@ func (mc *MapConcurrent[K, V]) IsEmpty() bool {
 	return len(mc.data) == 0
 }
 
+func (mc *MapConcurrent[K, V]) EqualsInterface(other IMap[K, V], elementEqual func(*V, *V) bool) bool {
+	return IMapEquals(mc, other, elementEqual)
+}
+
 func (mc *MapConcurrent[K, V]) Put(key K, value V) {
 	mc.mutex.Lock()
 	defer mc.mutex.Unlock()
@@ -127,7 +133,8 @@ func (mc *MapConcurrent[K, V]) FirstKey() K {
 	panic("empty map")
 }
 
-func (mc *MapConcurrent[K, V]) KeysAsSlice() []K {
+// KeySlice is thread safe
+func (mc *MapConcurrent[K, V]) KeySlice() []K {
 	mc.mutex.RLock()
 	defer mc.mutex.RUnlock()
 
@@ -138,7 +145,8 @@ func (mc *MapConcurrent[K, V]) KeysAsSlice() []K {
 	return slice
 }
 
-func (mc *MapConcurrent[K, V]) ValuesAsSlice() []V {
+// ValueSlice is thread safe
+func (mc *MapConcurrent[K, V]) ValueSlice() []V {
 	mc.mutex.RLock()
 	defer mc.mutex.RUnlock()
 
@@ -149,10 +157,63 @@ func (mc *MapConcurrent[K, V]) ValuesAsSlice() []V {
 	return slice
 }
 
-func (mc *MapConcurrent[K, V]) SeqWithKeys_StaleInefficient() iter.Seq2[K, V] {
+// Foreach is thread safe
+func (mc *MapConcurrent[K, V]) Foreach(apply func(key K, value V)) {
+	mc.mutex.RLock()
+	mc.mutex.RUnlock()
+
+	for k, v := range mc.data {
+		apply(k, v)
+	}
+}
+
+// SeqWithKeys_ThreadSafeCopy is thread safe
+func (mc *MapConcurrent[K, V]) SeqWithKeys_ThreadSafeCopy() iter.Seq2[K, V] {
 	mc.mutex.RLock()
 	clone := maps.Clone(mc.data)
 	mc.mutex.RUnlock()
 
 	return maps.All(clone)
+}
+
+// SeqKeyValue present to satisfy IMap, unsure on thread safety
+func (mc *MapConcurrent[K, V]) SeqKeyValue() iter.Seq2[K, V] {
+	return func(yield func(K, V) bool) {
+		mc.mutex.RLock()
+		defer mc.mutex.RUnlock()
+
+		for k, v := range mc.data {
+			if !yield(k, v) {
+				return
+			}
+		}
+	}
+}
+
+// SeqValues present to satisfy IMap, unsure on thread safety
+func (mc *MapConcurrent[K, V]) SeqValues() iter.Seq[V] {
+	return func(yield func(V) bool) {
+		mc.mutex.RLock()
+		defer mc.mutex.RUnlock()
+
+		for _, v := range mc.data {
+			if !yield(v) {
+				return
+			}
+		}
+	}
+}
+
+// SeqKey present to satisfy IMap, unsure on thread safety
+func (mc *MapConcurrent[K, V]) SeqKey() iter.Seq[K] {
+	return func(yield func(K) bool) {
+		mc.mutex.RLock()
+		defer mc.mutex.RUnlock()
+
+		for k := range mc.data {
+			if !yield(k) {
+				return
+			}
+		}
+	}
 }

@@ -1,8 +1,8 @@
 package util_collection
 
-type Sample uint8
+type sample uint8
 
-func (s Sample) Name() string {
+func (s sample) Name() string {
 	switch s {
 	case Sample_One:
 		return "one"
@@ -14,22 +14,22 @@ func (s Sample) Name() string {
 	return ""
 }
 
-func (s Sample) EnumNumValues() uint8 {
-	return uint8(len(SampleList))
+func (s sample) EnumNumValues() uint8 {
+	return uint8(len(sampleList))
 }
 
 const (
-	Sample_One      Sample = iota
-	Sample_Two      Sample = iota
-	Sample_Three    Sample = iota
+	Sample_One      sample = iota
+	Sample_Two      sample = iota
+	Sample_Three    sample = iota
 	Sample_EnumSize        = 3
 )
 
-var SampleList = []Sample{Sample_One, Sample_Two, Sample_Three}
-var SampleEnum = EnumTypeMake(SampleList)
+var sampleList = []sample{Sample_One, Sample_Two, Sample_Three}
+var sampleEnum = EnumTypeMake(sampleList)
 
-type EnumMap2Sample[V any] struct {
-	EnumMap2[Sample, V, [Sample_EnumSize]V, [Sample_EnumSize]bool]
+type enumMap2Sample[V any] struct {
+	EnumMap2[sample, V, [Sample_EnumSize]V, [Sample_EnumSize]bool]
 }
 
 type EnumMap2[E EnumBaseType, V any, A ArrayTinyParam[V], B ArrayTinyParam[bool]] struct {

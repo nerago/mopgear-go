@@ -278,7 +278,7 @@ func (mms *MapMapSlice[J, K, V]) SeqValues() iter.Seq[V] {
 	}
 }
 
-func (mms *MapMapSlice[J, K, V]) ForeachWithKeys(apply func(key1 J, key2 K, value V)) {
+func (mms *MapMapSlice[J, K, V]) Foreach(apply func(key1 J, key2 K, value V)) {
 	for key1, inner := range mms.dataBy1 {
 		for key2, slice := range inner {
 			for _, value := range slice {

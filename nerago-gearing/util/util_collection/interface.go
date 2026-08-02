@@ -10,18 +10,67 @@ type ICollection interface {
 	IsEmpty() bool
 }
 
+type ISet[E any] interface {
+	ICollection
+	Has(value E) bool
+	Add(value E) (wasMember bool)
+	Delete(value E)
+	SeqValues() iter.Seq[E]
+}
+
+type IQueue[T any] interface {
+	ICollection
+	Push(T)
+	Pop() (T, bool)
+}
+
+type IListRead[E any] interface {
+	ICollection
+	Get(index int) E
+	ContainsFunc(predicate func(*E) bool) bool
+	ContainsFuncNoPointer(predicate func(E) bool) bool
+	SeqIndexAndValues() iter.Seq2[int, E]
+	SeqValues() iter.Seq[E]
+}
+
+type IListSort[E any] interface {
+	ICollection
+	SortFunc(compare func(*E, *E) int)
+	Shuffle()
+	Swap(indexA, indexB int)
+}
+
+type IListReadWrite[E any] interface {
+	ICollection
+	IListSort[E]
+	Put(index int, value E)
+	Append(E)
+	DeleteIndex(index int)
+	RemoveDuplicatesFunc(equals func(a, b *E) bool)
+}
+
+type IList[E any] interface {
+	IListRead[E]
+	IListSort[E]
+	IListReadWrite[E]
+	SubList(firstIndex, lastIndex int) IListRead[E]
+}
+
 type IMap[K comparable, V any] interface {
 	ICollection
 	EqualsInterface(other IMap[K, V], elementEqual func(*V, *V) bool) bool
 	Has(key K) bool
+	FirstKey() K
 	Get(key K) (V, bool)
 	GetOrPanic(key K) V
 	Put(key K, value V)
 	Delete(key K)
+	Foreach(apply func(key K, value V))
 	SeqKeyValue() iter.Seq2[K, V]
 	SeqValues() iter.Seq[V]
 	SeqKey() iter.Seq[K]
 	KeySlice() []K
+	ValueSlice() []V
 }
 
 type IMapMapCommon[J comparable, K comparable, V any] interface {
@@ -33,7 +82,7 @@ type IMapMapCommon[J comparable, K comparable, V any] interface {
 	FirstKey2() K
 	DeleteAllForKey1(key1 J)
 	DeleteAllForKey2(key2 K)
-	ForeachWithKeys(apply func(key1 J, key2 K, value V))
+	Foreach(apply func(key1 J, key2 K, value V))
 	SeqKey1() iter.Seq[J]
 	SeqKey2() iter.Seq[K]
 	SeqValues() iter.Seq[V]
@@ -71,11 +120,19 @@ type IMapMapSlice[J comparable, K comparable, V any] interface {
 	SeqKey2Key1ValueSeqEntries() iter.Seq[MapMapSliceEntry[J, K, V]]
 }
 
-var mm IMapMap[int, int, int] = &MapMap[int, int, int]{}
-var mms IMapMapSlice[int, int, int] = &MapMapSlice[int, int, int]{}
-var em IMap[Sample, int] = &EnumMap[Sample, int]{}
+var _ IMapMap[int, int, int] = &MapMap[int, int, int]{}
+var _ IMapMapSlice[int, int, int] = &MapMapSlice[int, int, int]{}
 
 func IMapEquals[K comparable, V any](a IMap[K, V], b IMap[K, V], elementEqual func(*V, *V) bool) bool {
+	if concurA, isConcurA := a.(*MapConcurrent[K, V]); isConcurA {
+		concurA.mutex.RLock()
+		defer concurA.mutex.RUnlock()
+	}
+	if concurB, isConcurB := b.(*MapConcurrent[K, V]); isConcurB {
+		concurB.mutex.RLock()
+		defer concurB.mutex.RUnlock()
+	}
+
 	if a.Size() != b.Size() {
 		return false
 	} else if a.Size() == 0 && b.Size() == 0 {

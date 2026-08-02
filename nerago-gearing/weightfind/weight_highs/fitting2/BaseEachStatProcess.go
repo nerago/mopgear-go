@@ -55,12 +55,13 @@ func (be *BaseEachStatProcess[F]) SupplyData(inputData []weight_types.WeightInpu
 func (be *BaseEachStatProcess[F]) CalcMetrics(stopwatch *util.Stopwatch) {
 	for fields := range be.Each.SeqValues() {
 		stopwatch.AddElapsedFrom(fields.Stopwatch())
+		be.Printer.AppendOther(fields.InnerPrinter())
 	}
 }
 
 func (be *BaseEachStatProcess[F]) BuildResult() *weight_types.Weight3ExtendedRanged {
 	weights := weight_types.Weight3ExtendedRanged_Make(be.RequiredStats, be.RequiredSims)
-	be.Each.ForeachWithKeys(func(statType stats.StatType, simType stats.SimType, value F) {
+	be.Each.Foreach(func(statType stats.StatType, simType stats.SimType, value F) {
 		for detail := range value.Results() {
 			weights.AddDetailWeight(simType, statType, detail.StatRange, detail.LineSlope, detail.LineOffset, detail.IncludePercentOfTotal)
 		}

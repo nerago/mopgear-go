@@ -1,7 +1,6 @@
 package util_collection
 
 import (
-	"bytes"
 	"encoding/json/jsontext"
 	"encoding/json/v2"
 	"errors"
@@ -15,6 +14,8 @@ type EnumMap[E EnumBaseType, V any] struct {
 	len      uint8
 	enumType EnumType[E]
 }
+
+var _ IMap[sample, int] = &EnumMap[sample, int]{}
 
 func EnumMapMake[E EnumBaseType, V any](enumType EnumType[E]) EnumMap[E, V] {
 	return EnumMap[E, V]{
@@ -127,6 +128,12 @@ func (em *EnumMap[E, V]) Delete(key E) {
 	}
 }
 
+func (em *EnumMap[E, V]) Foreach(apply func(key1 E, value V)) {
+	for index := range em.isSet.SeqIsSet() {
+		apply(E(index), em.content[index])
+	}
+}
+
 func (em *EnumMap[E, V]) SeqKeyValue() iter.Seq2[E, V] {
 	return func(yield func(E, V) bool) {
 		for index := range em.isSet.SeqIsSet() {
@@ -157,6 +164,13 @@ func (em *EnumMap[E, V]) SeqKey() iter.Seq[E] {
 	}
 }
 
+func (em *EnumMap[E, V]) FirstKey() E {
+	for index := range em.isSet.SeqIsSet() {
+		return E(index)
+	}
+	panic("no key found")
+}
+
 func (em *EnumMap[E, V]) KeySlice() []E {
 	slice := make([]E, em.len)
 	write := 0
@@ -167,25 +181,39 @@ func (em *EnumMap[E, V]) KeySlice() []E {
 	return slice[:write]
 }
 
-func (em *EnumMap[E, V]) MarshalJSONTo(outputEncoder *jsontext.Encoder) error {
-	buffer := bytes.Buffer{}
-	innerEncoder := jsontext.NewEncoder(&buffer)
-	err := em.marshalToEncoder(innerEncoder)
-	if err != nil {
-		return err
+func (em *EnumMap[E, V]) ValueSlice() []V {
+	slice := make([]V, em.len)
+	write := 0
+	for index := range em.isSet.SeqIsSet() {
+		slice[write] = em.content[index]
+		write++
 	}
-	return outputEncoder.WriteValue(buffer.Bytes())
+	return slice[:write]
+}
+
+func (em *EnumMap[E, V]) MarshalJSONTo(outputEncoder *jsontext.Encoder) error {
+	//buffer := bytes.Buffer{}
+	//innerEncoder := jsontext.NewEncoder(&buffer)
+	//err := em.marshalToEncoder(innerEncoder)
+	//if err != nil {
+	//	return err
+	//}
+	//return outputEncoder.WriteValue(buffer.Bytes())
+
+	return em.marshalToEncoder(outputEncoder)
 }
 
 func (em *EnumMap[E, V]) UnmarshalJSONFrom(inputDecoder *jsontext.Decoder) error {
-	value, err := inputDecoder.ReadValue()
-	if err != nil {
-		return err
-	}
-	buffer := bytes.Buffer{}
-	buffer.Write(value)
-	decoder := jsontext.NewDecoder(&buffer)
-	return em.unmarshalFromDecoder(decoder)
+	//value, err := inputDecoder.ReadValue()
+	//if err != nil {
+	//	return err
+	//}
+	//buffer := bytes.Buffer{}
+	//buffer.Write(value)
+	//decoder := jsontext.NewDecoder(&buffer)
+	//return em.unmarshalFromDecoder(decoder)
+
+	return em.unmarshalFromDecoder(inputDecoder)
 }
 
 func (em *EnumMap[E, V]) marshalToEncoder(encoder *jsontext.Encoder) error {

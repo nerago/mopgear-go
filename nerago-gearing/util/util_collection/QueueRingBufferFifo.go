@@ -1,19 +1,12 @@
 package util_collection
 
-type Queue[T any] interface {
-	Push(T)
-	Pop() (T, bool)
-	IsEmpty() bool
-	Size() int
-}
-
 type QueueRingBufferFifo[T any] struct {
 	array      []T
 	readIndex  int
 	writeIndex int
 }
 
-func QueueRingBufferFifo_Create[T any](allocateSize int) Queue[T] {
+func QueueRingBufferFifo_Create[T any](allocateSize int) IQueue[T] {
 	array := make([]T, allocateSize)
 	return &QueueRingBufferFifo[T]{array: array, readIndex: 0, writeIndex: 0}
 }
@@ -45,6 +38,12 @@ func (ring *QueueRingBufferFifo[T]) Pop() (T, bool) {
 	value := ring.array[ring.readIndex]
 	ring.readIndex = (ring.readIndex + 1) % len(ring.array)
 	return value, true
+}
+
+func (ring *QueueRingBufferFifo[T]) Clear() {
+	clear(ring.array)
+	ring.readIndex = 0
+	ring.writeIndex = 0
 }
 
 func (ring *QueueRingBufferFifo[T]) IsEmpty() bool {

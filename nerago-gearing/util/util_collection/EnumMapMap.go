@@ -13,6 +13,8 @@ type EnumMapMap[J EnumBaseType, K EnumBaseType, V any] struct {
 	enumType2 EnumType[K]
 }
 
+var _ IMapMap[sample, sample, int] = &EnumMapMap[sample, sample, int]{}
+
 func EnumMapMapMake[J EnumBaseType, K EnumBaseType, V any](enumType1 EnumType[J], enumType2 EnumType[K]) EnumMapMap[J, K, V] {
 	arraySize := uint32(enumType1.NumValues()) * uint32(enumType2.NumValues())
 	return EnumMapMap[J, K, V]{
@@ -292,7 +294,7 @@ func (em *EnumMapMap[J, K, V]) SeqKey2Key1() iter.Seq2[K, iter.Seq[J]] {
 	}
 }
 
-func (em *EnumMapMap[J, K, V]) ForeachWithKeys(apply func(key1 J, key2 K, value V)) {
+func (em *EnumMapMap[J, K, V]) Foreach(apply func(key1 J, key2 K, value V)) {
 	for index := range em.isSet.SeqIsSet() {
 		value := em.content[index]
 		key1, key2 := em.indexToKeys(index)
@@ -321,6 +323,31 @@ func (em *EnumMapMap[J, K, V]) SeqKey1ValueWithKey2(key2 K) iter.Seq2[J, V] {
 			key1, _ := em.indexToKeys(index)
 			value := em.content[index]
 			if !yield(key1, value) {
+				return
+			}
+		}
+	}
+}
+
+func (em *EnumMapMap[J, K, V]) SeqValuesWithKey1(key1 J) iter.Seq[V] {
+	return func(yield func(V) bool) {
+		minIndex := em.keyToIndex(key1, em.enumType2.First())
+		maxIndex := em.keyToIndex(key1, em.enumType2.Last())
+		for index := range em.isSet.SeqIsSetBetween(minIndex, maxIndex) {
+			value := em.content[index]
+			if !yield(value) {
+				return
+			}
+		}
+	}
+}
+
+func (em *EnumMapMap[J, K, V]) SeqValuesWithKey2(key2 K) iter.Seq[V] {
+	return func(yield func(V) bool) {
+		startIndex := em.keyToIndex(em.enumType1.First(), key2)
+		for index := range em.isSet.SeqIsSetSkipScan(startIndex, uint32(em.enumType2.NumValues())) {
+			value := em.content[index]
+			if !yield(value) {
 				return
 			}
 		}
