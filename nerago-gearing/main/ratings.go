@@ -10,6 +10,7 @@ import (
 	"os"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/gear_model"
+	"paladin_gearing_go/gear_model/model_factory"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/setup"
@@ -54,7 +55,7 @@ func testBasicStatsGeneral(printer *util.PrintRecorder) {
 	fight := stats.Fight_Horridon_LowHeal
 	spec := stats.Spec_PaladinProt
 	startGear := files.GearFileProtMitigationWithSet
-	modelEquipOnly := gear_model.Model_PallyProtMitigation_WithSet()
+	modelEquipOnly := model_factory.Model_PallyProtMitigation_WithSet()
 	targetRatio := modelEquipOnly.SimPriority
 	goal := stats.OptimiseGoal_Mitigation
 
@@ -71,7 +72,7 @@ func testBasicStatsGeneral(printer *util.PrintRecorder) {
 
 	process := weight_highs.BasicStatWeightProcess{}
 	process.Init(printer)
-	process.SetRequiredStats(gear_model.StatsForWeighting_strengthTank)
+	process.SetRequiredStats(model_factory.StatsForWeighting_strengthTank)
 	process.SetTargetRatios(targetRatio)
 	process.SetBaseline(simBase)
 	for _, data := range inputData {
@@ -82,11 +83,11 @@ func testBasicStatsGeneral(printer *util.PrintRecorder) {
 
 // oldish code, may sometimes want to mix basic ratings??
 func relativeRatingsCompromise(printer *util.PrintRecorder) {
-	modelMitiNoSet := gear_model.Model_PallyProtMitigation_NoSet()
+	modelMitiNoSet := model_factory.Model_PallyProtMitigation_NoSet()
 	gearMitiNoSet := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(files.GearFileProtMitigationNoSet), &modelMitiNoSet, setup.MissingEnchant_Panic, printer)
 	itemSetMitiNoSet := items.FullItemSet_FromMap(gearMitiNoSet)
 
-	modelDps := gear_model.Model_PallyProtDps()
+	modelDps := model_factory.Model_PallyProtDps()
 	gearDps := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(files.GearFileProtDps), &modelDps, setup.MissingEnchant_Panic, printer)
 	itemSetDps := items.FullItemSet_FromMap(gearDps)
 
@@ -180,8 +181,8 @@ func statWeightsFormula(printer *util.PrintRecorder) {
 	comp := weight_highs.FormulaStatWeightProcess2{}
 
 	comp.Init(printer)
-	comp.SetRequiredStats(gear_model.StatsForWeighting_strengthTank)
-	comp.SetTargetRatios(gear_model.SimPriority_generalMiti)
+	comp.SetRequiredStats(model_factory.StatsForWeighting_strengthTank)
+	comp.SetTargetRatios(model_factory.SimPriority_generalMiti)
 	comp.SetMinimumIncludeRate(1.0)
 	comp.SupplyData(filteredInput)
 	weights2 := comp.Run(nil, 3000).WaitForResultOrPanic()
@@ -195,8 +196,8 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 	comp := weight_highs.RankingSeparatedWeights{}
 
 	comp.Init(printer, 3000)
-	comp.SetRequiredStats(gear_model.StatsForWeighting_strengthTank, gear_model.SimPriority_generalMiti.SimTypes())
-	comp.SetTargetRatios(gear_model.SimPriority_generalMiti)
+	comp.SetRequiredStats(model_factory.StatsForWeighting_strengthTank, model_factory.SimPriority_generalMiti.SimTypes())
+	comp.SetTargetRatios(model_factory.SimPriority_generalMiti)
 	comp.SupplyData(weightInputs)
 	weights2 := comp.Run(nil).WaitForResultOrPanic()
 	weights1 := weights2.ConvertToWeight1()
@@ -205,8 +206,8 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 
 func statWeightsCustom(printer *util.PrintRecorder) {
 	// weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
-	targetRatio := gear_model.SimPriority_generalMiti
-	weightStats := gear_model.StatsForWeighting_strengthTank
+	targetRatio := model_factory.SimPriority_generalMiti
+	weightStats := model_factory.StatsForWeighting_strengthTank
 
 	//inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
 	//inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
@@ -306,8 +307,8 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 }
 
 func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
-	targetRatio := gear_model.SimPriority_generalMiti
-	requiredStats := gear_model.StatsForWeighting_strengthTank
+	targetRatio := model_factory.SimPriority_generalMiti
+	requiredStats := model_factory.StatsForWeighting_strengthTank
 	simTypes := targetRatio.SimTypes()
 
 	inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
@@ -651,9 +652,9 @@ func statWeightsFitting2each(printer *util.PrintRecorder) {
 		fittingTableReport(printer, weightList, statMax, sampleData)
 	}
 
-	simTypes := gear_model.SimPriority_heal.SimTypes()
+	simTypes := model_factory.SimPriority_heal.SimTypes()
 	util_async.ForEach_Slice(8, simTypes, func(sim *stats.SimType) {
-		for _, statType := range gear_model.StatsForWeighting_strengthTank {
+		for _, statType := range model_factory.StatsForWeighting_strengthTank {
 			task(*sim, statType)
 		}
 	})
@@ -664,9 +665,9 @@ func statWeightsFitting2eachProper(printer *util.PrintRecorder) {
 	weightInputs := readWeightInputFile("sim-stats-compare-rand.json")
 	//weightInputs := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Heal.json")
 	weightInputs = weightInputs[0:30]
-	simTypes := gear_model.SimPriority_heal.SimTypes()
-	statTypes := gear_model.StatsForWeighting_strengthTank
-	targetRatio := gear_model.SimPriority_heal
+	simTypes := model_factory.SimPriority_heal.SimTypes()
+	statTypes := model_factory.StatsForWeighting_strengthTank
+	targetRatio := model_factory.SimPriority_heal
 
 	fitting := fitting2.FittingEachStatWeightProcess2{}
 	fitting.Init(3, printer, 1000)
@@ -877,8 +878,8 @@ func statWeightsGrid(printer *util.PrintRecorder) {
 	inputData := inputDataFull
 
 	//targetRatio := gear_model.SimRatio_generalMiti
-	targetRatio := gear_model.SimPriority_dps
-	requiredStats := gear_model.StatsForWeighting_strengthTank
+	targetRatio := model_factory.SimPriority_dps
+	requiredStats := model_factory.StatsForWeighting_strengthTank
 	simTypes := targetRatio.SimTypes()
 
 	runOne := func(inc1, inc2, inc3 bool, label string) {
@@ -1020,9 +1021,9 @@ func readWeightBasicInputsFile(filename string) ([]basicStatInput, stats.SimData
 func statWeights_CompareAlgorithms() {
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "statWeights_CompareAlgorithms")
 
-	targetRatio := gear_model.SimPriority_generalMiti
+	targetRatio := model_factory.SimPriority_generalMiti
 	//targetRatio := gear_model.SimPriority_heal
-	requiredStats := gear_model.StatsForWeighting_strengthTank
+	requiredStats := model_factory.StatsForWeighting_strengthTank
 	requiredSims := targetRatio.SimTypes()
 
 	//simSpeed := simulate.RunSize_Common

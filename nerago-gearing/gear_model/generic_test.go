@@ -2,6 +2,7 @@ package gear_model
 
 import (
 	"math/rand/v2"
+	"paladin_gearing_go/gear_model/model_factory"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
 	"testing"
@@ -10,7 +11,7 @@ import (
 var resultFloat float64
 
 func BenchmarkCalcSetSpecific(test *testing.B) {
-	model := Model_PallyProtMitigation_WithSet()
+	model := model_factory.Model_PallyProtMitigation_WithSet()
 	set := makeSet()
 	var v float64
 	for test.Loop() {

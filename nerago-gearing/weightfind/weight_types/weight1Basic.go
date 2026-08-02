@@ -3,7 +3,6 @@ package weight_types
 import (
 	"encoding/json"
 	"math"
-	"paladin_gearing_go/gear_model/ratings_old"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_collection"
@@ -32,10 +31,8 @@ func Weight1Basic_Of(values []float64, statTypes []stats.StatType) Weight1Basic 
 	return wr
 }
 
-func Weight1Basic_FromRatingsWeight(ratingWeight *ratings_old.StatRatingsWeightsOld) Weight1Basic {
-	result := Weight1Basic{}
-	statBlockFromRatings := ratingWeight.AsFloatBlock()
-	statBlockFromRatings.MultiplyScalar(1.0/ratings_old.C_weightMultiplierForRatings, &result.content)
+func Weight1Basic_FromBlock(ratingWeight stats.StatBlockFloat) Weight1Basic {
+	result := Weight1Basic{content: ratingWeight}
 	return result
 }
 

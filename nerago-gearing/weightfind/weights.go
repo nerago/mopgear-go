@@ -7,7 +7,6 @@ import (
 	"os"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/gear_model"
-	"paladin_gearing_go/gear_model/ratings_old"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/setup"
@@ -191,9 +190,9 @@ func addToSummary(summary *util.StringBuild2, option *weightOption, prefix strin
 }
 
 func loadOldWeights(label string, weightFileOut string, simTypes []stats.SimType, ratios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput, printer *util.PrintRecorder) *weightOption {
-	oldWeight, oldWeightString, oldWeightExists := ratings_old.StatRatingsWeights_ReadFile_IfExists(weightFileOut, true, true, true)
+	oldWeight, oldWeightString, oldWeightExists := tools.PawnWeightReadFile(weightFileOut)
 	if oldWeightExists {
-		oldWeightAsResult := weight_types.Weight1Basic_FromRatingsWeight(oldWeight)
+		oldWeightAsResult := weight_types.Weight1Basic_FromBlock(oldWeight)
 		accuracy := EvaluateAccuracy(&oldWeightAsResult, simTypes, ratios, inputData)
 		accuracyStat := EvaluateAccuracyStatistical(&oldWeightAsResult, simTypes, ratios, inputData)
 		printer.Printf("Old Weights accuracy %s normal=%f stat=%f\n", label, accuracy, accuracyStat)

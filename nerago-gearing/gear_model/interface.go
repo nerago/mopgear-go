@@ -1,6 +1,9 @@
 package gear_model
 
 import (
+	"paladin_gearing_go/gear_model/ratings"
+	"paladin_gearing_go/gear_model/ratings_old"
+	"paladin_gearing_go/gear_model/requirements"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util/util_collection"
 )
@@ -17,7 +20,12 @@ type StatRequirements interface {
 	AsMap() map[stats.StatType]util_collection.HiLoUInt32
 }
 
-type StatRatings interface {
+type StatWeights interface {
 	CalcRating(block *stats.StatBlock) float64
 	CreateString() string
 }
+
+var _ StatWeights = &ratings_old.StatRatingsWeightsOld{}
+var _ StatWeights = &ratings.StatRatingsWeightsGeneric{}
+var _ StatRequirements = &requirements.StatRequirementsGeneral{}
+var _ StatRequirements = &requirements.StatRequirementsHitExpertise{}

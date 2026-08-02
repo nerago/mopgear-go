@@ -10,7 +10,7 @@ import (
 
 type SpecModel struct {
 	StatRequirements     StatRequirements
-	StatRatings          StatRatings
+	StatWeights          StatWeights
 	Spec                 SpecType
 	Goal                 OptimiseGoal
 	SimulateAs           WowSim_Fight
@@ -29,7 +29,7 @@ type SpecModel struct {
 
 func (model *SpecModel) Equals(other *SpecModel) bool {
 	return model.StatRequirements.Equals(other.StatRequirements) &&
-		model.StatRatings == other.StatRatings &&
+		model.StatWeights == other.StatWeights &&
 		model.Spec == other.Spec &&
 		model.Goal == other.Goal &&
 		model.SimulateAs == other.SimulateAs &&
@@ -87,24 +87,24 @@ func (model *SpecModel) ValidateSet(itemSet *FullItemSet) {
 
 // ////////// set ratings
 func (model *SpecModel) CalcRatingSolve(itemSet *SolvableItemSet) float64 {
-	baseRating := model.StatRatings.CalcRating(itemSet.Total())
+	baseRating := model.StatWeights.CalcRating(itemSet.Total())
 	setRating := model.SetBonus.CalcBonusSolve(itemSet.Items())
 	return baseRating * setRating
 }
 
 func (model *SpecModel) CalcRatingFull(itemSet *FullItemSet) float64 {
-	baseRating := model.StatRatings.CalcRating(itemSet.Total())
+	baseRating := model.StatWeights.CalcRating(itemSet.Total())
 	setRating := model.SetBonus.CalcBonusFull(itemSet.Items())
 	return baseRating * setRating
 }
 
 // ////////// items ratings
 func (model *SpecModel) CalcRatingSolveItem(item *SolvableItem) float64 {
-	return model.StatRatings.CalcRating(item.Total())
+	return model.StatWeights.CalcRating(item.Total())
 }
 
 func (model *SpecModel) CalcRatingFullItem(item *FullItem) float64 {
-	return model.StatRatings.CalcRating(item.Total())
+	return model.StatWeights.CalcRating(item.Total())
 }
 
 // ////////// ProfessionInfo

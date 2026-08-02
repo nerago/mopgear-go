@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/gear_model"
+	"paladin_gearing_go/gear_model/model_factory"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/setup"
@@ -20,7 +21,7 @@ import (
 )
 
 func basicReforge(printer *util.PrintRecorder) {
-	model2 := gear_model.Model_PallyProtMitigation_WithSet()
+	model2 := model_factory.Model_PallyProtMitigation_WithSet()
 	itemOptions, model := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationWithSet, &model2, setup.MissingEnchant_Panic, printer), model2
 
 	output := solver.Solver(solver.SolveInput{
@@ -31,7 +32,7 @@ func basicReforge(printer *util.PrintRecorder) {
 }
 
 func findBestSubjectToCommon(printer *util.PrintRecorder) {
-	model := gear_model.Model_PallyProtMitigation_WithSet()
+	model := model_factory.Model_PallyProtMitigation_WithSet()
 
 	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationWithSet, &model, setup.MissingEnchant_Panic, printer)
 
@@ -87,7 +88,7 @@ func checkHighs(printer *util.PrintRecorder) {
 	// model := model.Model_PallyRet()
 	// itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileRet, &model, setup.MissingEnchant_Panic, printer)
 
-	model := gear_model.Model_PallyProtDps()
+	model := model_factory.Model_PallyProtDps()
 	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtDps, &model, setup.MissingEnchant_Panic, printer)
 
 	// extraItemsCombined := slices.Concat(substituteItemsMiti, allSetItems, miscRings)
@@ -194,7 +195,7 @@ func testSim(printer *util.PrintRecorder) {
 }
 
 func testSimA(printer *util.PrintRecorder) {
-	model := gear_model.Model_PallyProtDps()
+	model := model_factory.Model_PallyProtDps()
 	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtDps, &model, setup.MissingEnchant_Panic, printer)
 	// itemOptionsMit := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigation, &model, setup.MissingEnchant_Panic, printer)
 	// itemOptions[items.Equip_Trinket2] = itemOptionsMit[items.Equip_Trinket2]
@@ -207,7 +208,7 @@ func testSimA(printer *util.PrintRecorder) {
 	resultStats.Print(printer)
 }
 func testSimB(printer *util.PrintRecorder) {
-	model := gear_model.Model_PallyProtMitigation_WithSet()
+	model := model_factory.Model_PallyProtMitigation_WithSet()
 	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationWithSet, &model, setup.MissingEnchant_Panic, printer)
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions: &itemOptions,
@@ -218,7 +219,7 @@ func testSimB(printer *util.PrintRecorder) {
 	resultStats.Print(printer)
 }
 func testSimEach(printer *util.PrintRecorder) {
-	modelList := []gear_model.SpecModel{gear_model.Model_PallyProtDps(), gear_model.Model_PallyProtCompromise(), gear_model.Model_PallyProtMitigation_NoSet(), gear_model.Model_PallyProtMitigation_WithSet(), gear_model.Model_PallyProtHeal()}
+	modelList := []gear_model.SpecModel{model_factory.Model_PallyProtDps(), model_factory.Model_PallyProtCompromise(), model_factory.Model_PallyProtMitigation_NoSet(), model_factory.Model_PallyProtMitigation_WithSet(), model_factory.Model_PallyProtHeal()}
 	for model := range util_collection.ForPointer(modelList) {
 		equipped := loaders.GearFileReader_Read(model.ReferenceGearFile)
 		equipSet := setup.OptionsSetup_ExactEquippedOnly(equipped, model, setup.MissingEnchant_Fix, util.PrintRecorder_Nop())
@@ -236,7 +237,7 @@ func testSimEach(printer *util.PrintRecorder) {
 }
 
 func findSimpleUpgrade(printer *util.PrintRecorder) {
-	model := gear_model.Model_PallyProtMitigation_NoSet()
+	model := model_factory.Model_PallyProtMitigation_NoSet()
 	gearFile := files.GearFileProtMitigationNoSet
 	//model := model.Model_PallyProtCompromise()
 	//gearFile := files.GearFileProtCompromise
@@ -287,7 +288,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 	simSize := simulate.RunSize_QuickDirty
 
 	// model := model.Model_PallyProtMitigation_NoSet()
-	model := gear_model.Model_PallyProtMitigation_WithSet()
+	model := model_factory.Model_PallyProtMitigation_WithSet()
 	startGear := files.GearFileProtMitigationWithSet
 
 	printer.Println("READ existing")
@@ -401,23 +402,23 @@ func trinketSims(printer *util.PrintRecorder) {
 	groups := []group{
 		{
 			"with_set",
-			gear_model.Model_PallyProtMitigation_WithSet(),
+			model_factory.Model_PallyProtMitigation_WithSet(),
 			files.GearFileProtMitigationWithSet,
 		}, {
 			"no_set",
-			gear_model.Model_PallyProtMitigation_NoSet(),
+			model_factory.Model_PallyProtMitigation_NoSet(),
 			files.GearFileProtMitigationNoSet,
 		}, {
 			"compromise",
-			gear_model.Model_PallyProtCompromise(),
+			model_factory.Model_PallyProtCompromise(),
 			files.GearFileProtCompromise,
 		}, {
 			"dps",
-			gear_model.Model_PallyProtDps(),
+			model_factory.Model_PallyProtDps(),
 			files.GearFileProtDps,
 		}, {
 			"ret",
-			gear_model.Model_PallyProtDps(),
+			model_factory.Model_PallyProtDps(),
 			files.GearFileProtDps,
 		},
 	}
@@ -517,25 +518,25 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 	groups := []group{
 		{
 			"heal",
-			gear_model.Model_PallyProtHeal(),
+			model_factory.Model_PallyProtHeal(),
 			files.GearFileProtHeal,
 		},
 		{
 			"with_set",
-			gear_model.Model_PallyProtMitigation_WithSet(),
+			model_factory.Model_PallyProtMitigation_WithSet(),
 			files.GearFileProtMitigationWithSet,
 		}, {
 			"no_set",
-			gear_model.Model_PallyProtMitigation_NoSet(),
+			model_factory.Model_PallyProtMitigation_NoSet(),
 			files.GearFileProtMitigationNoSet,
 		},
 		{
 			"compromise",
-			gear_model.Model_PallyProtCompromise(),
+			model_factory.Model_PallyProtCompromise(),
 			files.GearFileProtCompromise,
 		}, {
 			"dps",
-			gear_model.Model_PallyProtDps(),
+			model_factory.Model_PallyProtDps(),
 			files.GearFileProtDps,
 		},
 		//{
@@ -628,25 +629,25 @@ func currentSimGear(printer *util.PrintRecorder) {
 	groups := []group{
 		{
 			"heal",
-			gear_model.Model_PallyProtHeal(),
+			model_factory.Model_PallyProtHeal(),
 			files.GearFileProtHeal,
 		},
 		{
 			"with_set",
-			gear_model.Model_PallyProtMitigation_WithSet(),
+			model_factory.Model_PallyProtMitigation_WithSet(),
 			files.GearFileProtMitigationWithSet,
 		}, {
 			"no_set",
-			gear_model.Model_PallyProtMitigation_NoSet(),
+			model_factory.Model_PallyProtMitigation_NoSet(),
 			files.GearFileProtMitigationNoSet,
 		},
 		{
 			"compromise",
-			gear_model.Model_PallyProtCompromise(),
+			model_factory.Model_PallyProtCompromise(),
 			files.GearFileProtCompromise,
 		}, {
 			"dps",
-			gear_model.Model_PallyProtDps(),
+			model_factory.Model_PallyProtDps(),
 			files.GearFileProtDps,
 		},
 		//{
@@ -716,24 +717,24 @@ func basicListRatingEach(printer *util.PrintRecorder) {
 	groups := []group{
 		{
 			"ret",
-			gear_model.Model_PallyRet(),
+			model_factory.Model_PallyRet(),
 			files.GearFileRet,
 		}, {
 			"dps",
-			gear_model.Model_PallyProtDps(),
+			model_factory.Model_PallyProtDps(),
 			files.GearFileProtDps,
 		}, {
 			"compromise",
-			gear_model.Model_PallyProtCompromise(),
+			model_factory.Model_PallyProtCompromise(),
 			files.GearFileProtCompromise,
 		}, {
 			"no_set",
-			gear_model.Model_PallyProtMitigation_NoSet(),
+			model_factory.Model_PallyProtMitigation_NoSet(),
 			files.GearFileProtMitigationNoSet,
 		},
 		{
 			"with_set",
-			gear_model.Model_PallyProtMitigation_WithSet(),
+			model_factory.Model_PallyProtMitigation_WithSet(),
 			files.GearFileProtMitigationWithSet,
 		},
 	}
@@ -745,7 +746,7 @@ func basicListRatingEach(printer *util.PrintRecorder) {
 		rating := group.model.CalcRatingFull(&itemSet)
 		tools.ReportSet(&group.model, &itemSet, rating, printer)
 
-		printer.Printf("%20s %10.0f %s\n", group.label, rating, group.model.StatRatings.CreateString())
+		printer.Printf("%20s %10.0f %s\n", group.label, rating, group.model.StatWeights.CreateString())
 	}
 
 	// for _, group := range groups {
@@ -766,24 +767,24 @@ func solveForRatings(printer *util.PrintRecorder) {
 	groups := []group{
 		{
 			"ret",
-			gear_model.Model_PallyRet(),
+			model_factory.Model_PallyRet(),
 			files.GearFileRet,
 		}, {
 			"dps",
-			gear_model.Model_PallyProtDps(),
+			model_factory.Model_PallyProtDps(),
 			files.GearFileProtDps,
 		}, {
 			"compromise",
-			gear_model.Model_PallyProtCompromise(),
+			model_factory.Model_PallyProtCompromise(),
 			files.GearFileProtCompromise,
 		}, {
 			"no_set",
-			gear_model.Model_PallyProtMitigation_NoSet(),
+			model_factory.Model_PallyProtMitigation_NoSet(),
 			files.GearFileProtMitigationNoSet,
 		},
 		{
 			"with_set",
-			gear_model.Model_PallyProtMitigation_WithSet(),
+			model_factory.Model_PallyProtMitigation_WithSet(),
 			files.GearFileProtMitigationWithSet,
 		},
 	}
@@ -797,7 +798,7 @@ func solveForRatings(printer *util.PrintRecorder) {
 
 		prescaleMult := prescaleTarget / rating
 
-		printer.Printf("%20s %10.0f %.4f %s\n", group.label, rating, rating*prescaleMult, group.model.StatRatings.CreateString())
+		printer.Printf("%20s %10.0f %.4f %s\n", group.label, rating, rating*prescaleMult, group.model.StatWeights.CreateString())
 	}
 
 	// for _, group := range groups {

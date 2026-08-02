@@ -2,7 +2,7 @@ package main
 
 import (
 	"paladin_gearing_go/files"
-	"paladin_gearing_go/gear_model"
+	"paladin_gearing_go/gear_model/model_factory"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/weightfind"
@@ -24,42 +24,42 @@ func statWeights_updateAll() {
 			Label:           "Prot-Mitigation-NoSet",
 			WeightFileOut:   files.WeightMitiNoSetFile,
 			GearFile:        files.GearFileProtMitigationNoSet,
-			Model:           gear_model.Model_PallyProtMitigation_NoSet(),
+			Model:           model_factory.Model_PallyProtMitigation_NoSet(),
 			SubstituteItems: substituteItemsProt,
 		},
 		{
 			Label:           "Prot-Mitigation-WithSet",
 			WeightFileOut:   files.WeightMitiWithSetFile,
 			GearFile:        files.GearFileProtMitigationWithSet,
-			Model:           gear_model.Model_PallyProtMitigation_WithSet(),
+			Model:           model_factory.Model_PallyProtMitigation_WithSet(),
 			SubstituteItems: substituteItemsProt,
 		},
 		{
 			Label:           "Prot-Damage",
 			WeightFileOut:   files.WeightDpsFile,
 			GearFile:        files.GearFileProtDps,
-			Model:           gear_model.Model_PallyProtDps(),
+			Model:           model_factory.Model_PallyProtDps(),
 			SubstituteItems: substituteItemsProt,
 		},
 		{
 			Label:           "Prot-Compromise",
 			WeightFileOut:   files.WeightCompromiseFile,
 			GearFile:        files.GearFileProtCompromise,
-			Model:           gear_model.Model_PallyProtCompromise(),
+			Model:           model_factory.Model_PallyProtCompromise(),
 			SubstituteItems: substituteItemsProt,
 		},
 		{
 			Label:           "Prot-Heal",
 			WeightFileOut:   files.WeightHealFile,
 			GearFile:        files.GearFileProtHeal,
-			Model:           gear_model.Model_PallyProtHeal(),
+			Model:           model_factory.Model_PallyProtHeal(),
 			SubstituteItems: substituteItemsProt,
 		},
 		{
 			Label:           "Ret",
 			WeightFileOut:   files.WeightRetFile,
 			GearFile:        files.GearFileRet,
-			Model:           gear_model.Model_PallyRet(),
+			Model:           model_factory.Model_PallyRet(),
 			SubstituteItems: substituteItemsRet,
 		},
 	})
