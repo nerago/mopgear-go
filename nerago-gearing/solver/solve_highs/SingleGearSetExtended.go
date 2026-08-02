@@ -1,6 +1,7 @@
 package solve_highs
 
 import (
+	"iter"
 	gear_model "paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
@@ -12,6 +13,16 @@ import (
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
+
+// TODO set multipliers per sim would be better
+
+// CALCULATION:
+// itemColumns * statTotalRows -> statTotalColumns
+// statTotalColumns * detailedWeights[sim][stat] -> simValueTotalColumns
+// simValueTotalColumns -> combinedRatingVar
+// combinedRatingVar * entry_permutation_active(column) -> entry_permutation_output_weighted(column)
+// entry_permutation_output_weighted(column) * permutation.weight -> mainOutputRow
+// mainOutputRow -> mainOutputVar
 
 type StatRequiredExtended map[stats.StatType]util_collection.HiLoUInt32
 
@@ -70,15 +81,6 @@ func setupGearSetExtended(build *util_highs.LinearBuilder, model *ExtendedModel,
 
 	return &setup
 }
-
-// TODO set multipliers per sim would be better
-
-// CALCULATION:
-// itemColumns * statTotalRows -> statTotalColumns
-// statTotalColumns * detailedWeights -> simValueTotalColumns
-// simValueTotalColumns * simRatioWeighting ->
-// combinedRatingVar * entry_permutation_active(column) -> entry_permutation_output_weighted(column)
-// entry_permutation_output_weighted(column) * permutation.weight -> mainOutputRow
 
 type singleGearSetExtended struct {
 	singleGearSetShared
@@ -160,23 +162,27 @@ func (setup *singleGearSetExtended) calcSimValues() {
 	// calculate each sim value from stats
 	setup.simValueTotalColumns = make(map[stats.SimType]*columnInfo)
 	for simType, nestedWeights := range weight.SeqBySimNestedPairs() {
-		simValueColumn := columnInfo{entryType: entry_sim_value, simType: simType}
-		simValueColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), &simValueColumn)
-		setup.simValueTotalColumns[simType] = &simValueColumn
-		setup.allColumns = append(setup.allColumns, &simValueColumn)
-
-		simValueFromStatRow := util_highs.ConstraintRow{}
-		for statType, weightValue := range nestedWeights {
-			statColumn := setup.statTotalColumns[statType]
-			simValueFromStatRow.Add(statColumn.columnIndex, weightValue)
-		}
-
 		simEntry := weight.GetSimPriority().GetOrPanic(simType)
-		offset := -simEntry.RangingOffset
-		valueScale := -1.0 / (simEntry.RangingScale * simEntry.RatioScale)
-		simValueFromStatRow.Add(simValueColumn.columnIndex, valueScale)
-		simValueFromStatRow.Build(setup.build, offset, offset)
+		setup.calcSimValue(simType, nestedWeights, simEntry)
 	}
+}
+
+func (setup *singleGearSetExtended) calcSimValue(simType stats.SimType, nestedWeights iter.Seq2[stats.StatType, float64], simEntry weight_types.SimPriorityEntry) {
+	simValueColumn := &columnInfo{entryType: entry_sim_value, simType: simType}
+	simValueColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), simValueColumn)
+	setup.simValueTotalColumns[simType] = simValueColumn
+	setup.allColumns = append(setup.allColumns, simValueColumn)
+
+	simValueFromStatRow := util_highs.ConstraintRow{}
+	for statType, weightValue := range nestedWeights {
+		statColumn := setup.statTotalColumns[statType]
+		simValueFromStatRow.Add(statColumn.columnIndex, weightValue)
+	}
+
+	offset := -simEntry.RangingOffset
+	valueScale := -1.0 / (simEntry.RangingScale * simEntry.RatioScale)
+	simValueFromStatRow.Add(simValueColumn.columnIndex, valueScale)
+	simValueFromStatRow.Build(setup.build, offset, offset)
 }
 
 func (setup *singleGearSetExtended) calcCombinedSimRating() {

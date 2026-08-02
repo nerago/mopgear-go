@@ -17,6 +17,19 @@ import (
 const c_gearExtended3StatHigh = 100000
 const c_gearExtended3ScoreHigh = 10
 
+// TODO set multipliers per sim would be better
+// TODO make process to generate better multipliers
+
+// CALCULATION:
+// itemColumns * statTotalRows -> statTotalColumns
+// statTotalColumns * rangeWeight -> simStatOptionColumn[]
+// simStatOptionColumn[] -> simStatValueColumn
+// simStatValueColumn -> simValueColumn
+// simValueColumn * simRatioWeighting -> combinedRatingVar
+// combinedRatingVar * entry_permutation_active(column) -> entry_permutation_output_weighted(column)
+// entry_permutation_output_weighted(column) * permutation.weight -> mainOutputRow
+// mainOutputRow -> mainOutputVar
+
 type ExtendedModel3 struct {
 	weight    weight_types.Weight3ExtendedRanged
 	gearModel *gear_model.SpecModel
@@ -69,16 +82,6 @@ func setupGearSetExtended3(build *util_highs.LinearBuilder, model *ExtendedModel
 
 	return &setup
 }
-
-// TODO set multipliers per sim would be better
-// TODO make process to generate better multipliers
-
-// CALCULATION:
-// itemColumns * statTotalRows -> statTotalColumns
-// statTotalColumns * detailedWeights -> simValueTotalColumns
-// simValueTotalColumns * simRatioWeighting ->
-// combinedRatingVar * entry_permutation_active(column) -> entry_permutation_output_weighted(column)
-// entry_permutation_output_weighted(column) * permutation.weight -> mainOutputRow
 
 type singleGearSetExtended3 struct {
 	singleGearSetShared
