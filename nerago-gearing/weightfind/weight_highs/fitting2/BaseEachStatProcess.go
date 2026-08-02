@@ -25,11 +25,13 @@ type BaseEachStatProcess[F IEachFields] struct {
 	ScaleSims  util_collection.EnumMap[stats.SimType, util_weight.ScaleAndOffset]
 	ScaleStats util_collection.EnumMap[stats.StatType, float64]
 
-	Each util_collection.MapMap[stats.StatType, stats.SimType, F]
+	Each   util_collection.MapMap[stats.StatType, stats.SimType, F]
+	Failed bool
 }
 
 type IEachFields interface {
 	Stopwatch() *util.Stopwatch
+	InnerPrinter() *util.PrintRecorder
 	Results() iter.Seq[util_weight.FittingInterimResult2]
 }
 
@@ -104,7 +106,7 @@ func (be *BaseEachStatProcess[F]) CleanupRanges(results []util_weight.FittingInt
 	results[0].StatRange.Minimum = 0
 	results[len(results)-1].StatRange.Maximum = math.MaxUint32
 
-	for i := range len(results) - 1 {
+	for i := 0; i < len(results)-1; i++ {
 		if be.updateBreakpoint(&results[i], &results[i+1]) {
 			util_collection.DeleteIndexInPlace(&results, i+1)
 		}

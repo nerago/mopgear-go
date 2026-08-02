@@ -674,7 +674,7 @@ func statWeightsFitting2eachProper(printer *util.PrintRecorder) {
 	fitting.SetRequiredStats(statTypes, simTypes)
 	fitting.SetTargetRatios(targetRatio)
 	fitting.SupplyData(weightInputs)
-	weight3 := fitting.Run(util.StopwatchMakeStopped(), util_async.CancelSignal_Make())
+	weight3 := fitting.Run(util.StopwatchMakeStopped(), util_async.CancelSignal_Make()).GetOrPanic()
 
 	tools.WriteWeight3String(weight3, printer)
 }
@@ -1093,16 +1093,16 @@ func statWeights_CompareAlgorithms() {
 	tasks := make([]func(), 0)
 
 	reportOnTweakedVersions := false
-	standardTimeout := 6000
-	shortTimeout := 1200
+	standardTimeout := 3000
+	shortTimeout := 800
 
 	runBasic := true
 	runFormulaVariants := true // best is about 87%, moderate time
-	runFitting1 := false       // slow, low 90%
+	runFitting1 := true        // slow, low 90%
 	runFitting2 := true
 
 	runGrid1Original := true
-	runGrid1Variants := true
+	runGrid1Variants := false
 	runGrid1VariantsFewer := true
 	runGrid1C := true
 	runGrid2 := true
@@ -1229,7 +1229,7 @@ func statWeights_CompareAlgorithms() {
 			fitting.SetRequiredStats(requiredStats, requiredSims)
 			fitting.SetTargetRatios(targetRatio)
 			fitting.SupplyData(inputDataRandom)
-			weight3 := fitting.Run(stopwatch, cancel)
+			weight3 := fitting.Run(stopwatch, cancel).GetOrPanic()
 			resultsByAlgorithm3.Put("fitting2", weight3)
 			timesByAlgorithm.Put("fitting2", stopwatch.Elapsed())
 			printer.Println("///////////////// FITTING2 /////////////////")

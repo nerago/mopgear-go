@@ -233,6 +233,10 @@ func (grid *GridStatWeightProcess1B) chooseScalesBySim() {
 			scale = 1
 		}
 
+		if scale >= 1 {
+			grid.build.AddOptionFloat("pdlp_optimality_tolerance", 1e-3)
+		}
+
 		for _, statType := range grid.requiredStats {
 			grid.scales.Put(statType, simType, scale)
 			// grid.scales.Put(statType, simType, 10) // 100 range, marginally better, 0.001 marginally worse

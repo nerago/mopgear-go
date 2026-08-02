@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/weightfind/util_weight"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
@@ -29,6 +30,10 @@ type fitting2EachFields struct {
 	resultSlice []util_weight.FittingInterimResult2
 }
 
+func (f fitting2EachFields) InnerPrinter() *util.PrintRecorder {
+	return f.process.Printer
+}
+
 func (f fitting2EachFields) Stopwatch() *util.Stopwatch {
 	return &f.process.Stopwatch
 }
@@ -37,12 +42,16 @@ func (f fitting2EachFields) Results() iter.Seq[util_weight.FittingInterimResult2
 	return slices.Values(f.resultSlice)
 }
 
-func (fe *FittingEachStatWeightProcess2) Run(stopwatch *util.Stopwatch, cancel util_async.CancelSignal) weight_types.Weight3ExtendedRanged {
+func (fe *FittingEachStatWeightProcess2) Run(stopwatch *util.Stopwatch, cancel util_async.CancelSignal) util_collection.Optional[weight_types.Weight3ExtendedRanged] {
 	fe.ChooseScaling()
 	fe.launchEachNested(cancel)
-	weights := fe.BuildResult()
 	fe.CalcMetrics(stopwatch)
-	return *weights
+	if !fe.Failed {
+		weights := fe.BuildResult()
+		return util_collection.Optional_OfValue(*weights)
+	} else {
+		return util_collection.Optional_Empty[weight_types.Weight3ExtendedRanged]()
+	}
 }
 
 func (fe *FittingEachStatWeightProcess2) ChooseScaling() {
@@ -69,10 +78,10 @@ func (fe *FittingEachStatWeightProcess2) prepareSamples(statType stats.StatType,
 func (fe *FittingEachStatWeightProcess2) launchEachNested(cancel util_async.CancelSignal) {
 	for _, statType := range fe.RequiredStats {
 		for _, simType := range fe.RequiredSims {
-			printer := util.PrintRecorder_HoldAll()
+			innerPrinter := util.PrintRecorder_HoldAll()
 			fields := fitting2EachFields{statType: statType, simType: simType}
 			scaleStat := fe.ScaleStats.GetOrPanic(statType)
-			fields.process.Init(fe.TargetSegmentCount, scaleStat, printer, fe.Timeout)
+			fields.process.Init(fe.TargetSegmentCount, scaleStat, innerPrinter, fe.Timeout)
 			fields.process.SupplyData(fe.prepareSamples(statType, simType))
 			fe.Each.Put(statType, simType, &fields)
 		}
@@ -81,8 +90,13 @@ func (fe *FittingEachStatWeightProcess2) launchEachNested(cancel util_async.Canc
 	channelEach := util_async.SeqToChannel_Cancellable(fe.Each.SeqValues(), cancel)
 	util_async.ForEach_Channel(c_fitting2_each_threadCount, channelEach, func(fields *fitting2EachFields) {
 		initialResultFuture := fields.process.Run()
-		initialResult := initialResultFuture.WaitForResultOrPanic()
-		fe.rescaleAndCleanup(initialResult, fields)
+		initialResult, hasResult := initialResultFuture.WaitForResult()
+		if hasResult && len(initialResult.Segments) > 0 {
+			fe.rescaleAndCleanup(initialResult, fields)
+		} else {
+			fe.Printer.Printf("FAILED FITTING for %s %s\n", fields.statType.Name(), fields.simType.Name())
+			fe.Failed = true
+		}
 	})
 }
 

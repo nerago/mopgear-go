@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/weightfind/util_weight"
 	"paladin_gearing_go/weightfind/weight_highs/fitting2"
 	"paladin_gearing_go/weightfind/weight_types"
@@ -30,6 +31,10 @@ type fitting3EachFields struct {
 	resultSlice []util_weight.FittingInterimResult2
 }
 
+func (f fitting3EachFields) InnerPrinter() *util.PrintRecorder {
+	return f.process.Printer
+}
+
 func (f fitting3EachFields) Stopwatch() *util.Stopwatch {
 	return &f.process.Stopwatch
 }
@@ -38,12 +43,16 @@ func (f fitting3EachFields) Results() iter.Seq[util_weight.FittingInterimResult2
 	return slices.Values(f.resultSlice)
 }
 
-func (fe *FittingEachStatWeightProcess3) Run(stopwatch *util.Stopwatch, cancel util_async.CancelSignal) weight_types.Weight3ExtendedRanged {
+func (fe *FittingEachStatWeightProcess3) Run(stopwatch *util.Stopwatch, cancel util_async.CancelSignal) util_collection.Optional[weight_types.Weight3ExtendedRanged] {
 	fe.ChooseScaling()
 	fe.launchEachNested(cancel)
-	weights := fe.BuildResult()
 	fe.CalcMetrics(stopwatch)
-	return *weights
+	if !fe.Failed {
+		weights := fe.BuildResult()
+		return util_collection.Optional_OfValue(*weights)
+	} else {
+		return util_collection.Optional_Empty[weight_types.Weight3ExtendedRanged]()
+	}
 }
 
 func (fe *FittingEachStatWeightProcess3) ChooseScaling() {
@@ -103,8 +112,13 @@ func (fe *FittingEachStatWeightProcess3) launchEachNested(cancel util_async.Canc
 	channelEach := util_async.SeqToChannel_Cancellable(fe.Each.SeqValues(), cancel)
 	util_async.ForEach_Channel(c_fitting3_each_threadCount, channelEach, func(fields *fitting3EachFields) {
 		initialResultFuture := fields.process.Run()
-		initialResult := initialResultFuture.WaitForResultOrPanic()
-		fe.rescaleAndCleanup(initialResult, fields)
+		initialResult, hasResult := initialResultFuture.WaitForResult()
+		if hasResult && len(initialResult.Segments) > 0 {
+			fe.rescaleAndCleanup(initialResult, fields)
+		} else {
+			fe.Printer.Printf("FAILED FITTING for %s %s\n", fields.statType.Name(), fields.simType.Name())
+			fe.Failed = true
+		}
 	})
 }
 

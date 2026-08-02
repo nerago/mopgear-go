@@ -11,7 +11,7 @@ import (
 )
 
 type BaseSingleSegmented[S any] struct {
-	printer   *util.PrintRecorder
+	Printer   *util.PrintRecorder
 	Stopwatch util.Stopwatch
 	Build     *util_highs.LinearBuilder
 	timeout   int
@@ -57,7 +57,7 @@ func (bss *BaseSingleSegmented[S]) Init(targetSegmentCount int, scaleStat float6
 
 	bss.scaleStat = scaleStat
 	bss.unequalStatDelta = bss.scaleStat * 0.1
-	bss.printer = printer
+	bss.Printer = printer
 
 	bss.Build = new(util_highs.LinearBuilder)
 	bss.Build.Minimise = true
@@ -86,8 +86,8 @@ func (bss *BaseSingleSegmented[S]) FinishSegments() {
 func (bss *BaseSingleSegmented[S]) RunSolve() *util_async.FutureCancellable[InitialResultSet] {
 	future := bss.Build.RunHighsFuture(&bss.Stopwatch)
 	return util_async.FutureCancellable_MapValue(future, func(res util_highs.LinearResult) (InitialResultSet, bool) {
-		solution := res.GetSolution2AndSaveLog(bss.printer)
-		solution.DebugPrint(bss.printer)
+		solution := res.GetSolution2AndSaveLog(bss.Printer)
+		solution.DebugPrint(bss.Printer)
 		if solution.HasSolution() {
 			return bss.prepareResult(solution), true
 		} else {

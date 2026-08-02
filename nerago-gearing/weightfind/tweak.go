@@ -23,6 +23,10 @@ func weightTweakerInternalLogged(startWeight weight_types.Weight1Basic, tweakSta
 	increment := tweakStart
 	factor := 1 + increment
 
+	if startWeight.IsEmpty() {
+		return startWeight, EvaluateAccuracy(&startWeight, requiredSims, targetRatio, inputData)
+	}
+
 	type weightAndAccuracy struct {
 		weight   weight_types.Weight1Basic
 		accuracy float64
@@ -80,71 +84,11 @@ func weightTweakerInternalLogged(startWeight weight_types.Weight1Basic, tweakSta
 	return bestEntry.weight, bestEntry.accuracy
 }
 
-// TODO compare logic
-func weightTweakerInternal_Fast(startWeight weight_types.Weight1Basic, tweakStart float64, weightStats []stats.StatType, simTypes []stats.SimType, targetRatio *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) (weight_types.Weight1Basic, float64) {
-	increment := tweakStart
-	factor := 1 + increment
-
-	best := util_rank.BestCollector1[weight_types.Weight1Basic]{}
-	best.Offer(
-		&startWeight,
-		EvaluateAccuracy(&startWeight, simTypes, targetRatio, inputData),
-	)
-
-	for range c_tweak_iter_count {
-		foundImprovement := false
-		for i := 1; i < len(weightStats); i++ {
-			stat := weightStats[i]
-
-			if !best.BestObject.IsZero(stat) {
-				mul := best.BestObject.Clone()
-				mul.MultiplyEquals(stat, factor)
-				accuracyMul := EvaluateAccuracy(&mul, simTypes, targetRatio, inputData)
-				if best.OfferAndIsBetter(&mul, accuracyMul) {
-					foundImprovement = true
-				}
-
-				div := best.BestObject.Clone()
-				div.DivideEquals(stat, factor)
-				accuracyDiv := EvaluateAccuracy(&div, simTypes, targetRatio, inputData)
-				if best.OfferAndIsBetter(&div, accuracyDiv) {
-					foundImprovement = true
-				}
-			}
-
-			add := best.BestObject.Clone()
-			add.PlusEquals(stat, increment)
-			accuracyAdd := EvaluateAccuracy(&add, simTypes, targetRatio, inputData)
-			if best.OfferAndIsBetter(&add, accuracyAdd) {
-				foundImprovement = true
-			}
-
-			sub := best.BestObject.Clone()
-			sub.MinusEquals(stat, increment)
-			accuracySub := EvaluateAccuracy(&sub, simTypes, targetRatio, inputData)
-			if best.OfferAndIsBetter(&sub, accuracySub) {
-				foundImprovement = true
-			}
-		}
-
-		if !foundImprovement {
-			increment /= 2
-			factor = 1 + increment
-			if increment <= c_tweak_limit {
-				break
-			}
-		}
+func weightTweaker_internal_FastCached(startWeight weight_types.Weight1Basic, tweakStart float64, weightStats []stats.StatType, evaluate *EvaluateAccuracyPrepared) (weight_types.Weight1Basic, float64) {
+	if startWeight.IsEmpty() {
+		return startWeight, evaluate.EvaluateWeight1(&startWeight)
 	}
 
-	return best.GetBestOrPanic(), best.BestValue
-}
-
-func WeightTweaker_FastCached(startWeight weight_types.Weight1Basic, weightStats []stats.StatType, evaluate *EvaluateAccuracyPrepared) (weight_types.Weight1Basic, float64) {
-	updatedWeight, updatedAccuracy := weightTweaker_internal_FastCached(startWeight, c_tweak_start, weightStats, evaluate)
-	return updatedWeight, updatedAccuracy
-}
-
-func weightTweaker_internal_FastCached(startWeight weight_types.Weight1Basic, tweakStart float64, weightStats []stats.StatType, evaluate *EvaluateAccuracyPrepared) (weight_types.Weight1Basic, float64) {
 	increment := tweakStart
 	factor := 1 + increment
 

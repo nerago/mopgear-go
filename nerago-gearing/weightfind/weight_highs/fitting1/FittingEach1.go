@@ -76,6 +76,10 @@ func (fe *FittingEachStatWeightProcess) buildResult() *weight_types.Weight3Exten
 			weights.AddDetailWeight(simType, statType, detail.StatRange, detail.LineSlope, detail.LineOffset, detail.IncludePercentOfTotal)
 		}
 	})
+	// TODO final weight multipliers as needed
+	for _, simType := range fe.requiredSims {
+		weights.AddSimScale(simType, 1, 0, 1)
+	}
 	weights.FinishAndValidate()
 	return weights
 }

@@ -23,6 +23,7 @@ type LinearBuilder struct {
 	TimeLimitSeconds     int
 	Callback             highs.Callback
 	CallbackTypes        []highs.CallbackType
+	FloatOptions         map[string]float64
 }
 
 func (build *LinearBuilder) Clone() *LinearBuilder {
@@ -36,6 +37,13 @@ func (build *LinearBuilder) Clone() *LinearBuilder {
 		DisablePreSolve:      build.DisablePreSolve,
 		TimeLimitSeconds:     build.TimeLimitSeconds,
 	}
+}
+
+func (build *LinearBuilder) AddOptionFloat(name string, value float64) {
+	if build.FloatOptions == nil {
+		build.FloatOptions = make(map[string]float64)
+	}
+	build.FloatOptions[name] = value
 }
 
 func (build *LinearBuilder) AddObjectiveBlended(weight float64, offset float64) ObjectiveIndex {

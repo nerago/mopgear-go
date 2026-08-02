@@ -2,6 +2,7 @@ package stats
 
 import (
 	"iter"
+	"math"
 	"paladin_gearing_go/util"
 )
 
@@ -88,7 +89,7 @@ func (block *StatBlockFloat) Equals(other *StatBlockFloat) bool {
 
 func (block *StatBlockFloat) IsEmpty() bool {
 	for i := range block {
-		if !util.FloatEqualsZero(block[i]) {
+		if !util.FloatEqualsZero(block[i]) && !math.IsNaN(block[i]) {
 			return false
 		}
 	}
