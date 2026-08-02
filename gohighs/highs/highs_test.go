@@ -368,10 +368,10 @@ func TestCancel(t *testing.T) {
 func TestCallback(t *testing.T) {
 	callbackReceivedTypes := make([]CallbackType, 0)
 	callbackReceivedMessages := make([]string, 0)
-	callback := func(callbackType CallbackType, message string, dataOut HighsCallbackDataOut) HighsCallbackDataIn {
+	callback := func(callbackType CallbackType, message string, dataOut CallbackData) HighsCallbackResult {
 		callbackReceivedTypes = append(callbackReceivedTypes, callbackType)
 		callbackReceivedMessages = append(callbackReceivedMessages, message)
-		return HighsCallbackDataIn{}
+		return HighsCallbackResult{}
 	}
 	requestedCallbackTypes := []CallbackType{CallbackTypeMipInterrupt, CallbackTypeMipSolution}
 

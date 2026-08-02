@@ -46,9 +46,9 @@ func (mat *constraintMatrixBuilder) deleteRowRange(firstDelete, lastDelete int) 
 	mat.debug = slices.Delete(mat.debug, firstDelete, lastDelete+1)
 }
 
-func (mat *constraintMatrixBuilder) createSolverInputArrays() (numRows int32, lowerBound []float64, upperBound []float64, startArray []int32, indexArray []int32, valuesArray []float64) {
-	numRows = int32(len(mat.entries))
-	if int32(len(mat.lowerBound)) != numRows || int32(len(mat.upperBound)) != numRows {
+func (mat *constraintMatrixBuilder) createSolverInputArrays() (numRows int, lowerBound []float64, upperBound []float64, startArray []int, indexArray []int, valuesArray []float64) {
+	numRows = len(mat.entries)
+	if len(mat.lowerBound) != numRows || len(mat.upperBound) != numRows {
 		panic("inconsistent row count")
 	}
 
@@ -60,16 +60,16 @@ func (mat *constraintMatrixBuilder) createSolverInputArrays() (numRows int32, lo
 		panic("completely empty model")
 	}
 
-	startArray = make([]int32, numRows)
-	indexArray = make([]int32, valueCount)
+	startArray = make([]int, numRows)
+	indexArray = make([]int, valueCount)
 	valuesArray = make([]float64, valueCount)
 
 	var insertIndex int32 = 0
 	for rowNum, rowEntries := range mat.entries {
-		startArray[rowNum] = insertIndex
+		startArray[rowNum] = int(insertIndex)
 
 		for _, entry := range rowEntries {
-			indexArray[insertIndex] = int32(entry.columnNumber)
+			indexArray[insertIndex] = int(entry.columnNumber)
 			valuesArray[insertIndex] = entry.value
 			insertIndex++
 		}

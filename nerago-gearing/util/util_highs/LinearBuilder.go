@@ -21,7 +21,7 @@ type LinearBuilder struct {
 	Solver               SolverMode
 	DisablePreSolve      bool
 	TimeLimitSeconds     int
-	Callback             highs.HighsCallback
+	Callback             highs.Callback
 	CallbackTypes        []highs.CallbackType
 }
 
@@ -167,8 +167,8 @@ func (build *LinearBuilder) postHighsRun(solver *highs.Solver, logFilename strin
 
 func (build *LinearBuilder) configureHighsMatrix(solver *highs.Solver) {
 	numRows, lowerBound, upperBound, startArray, indexArray, valuesArray := build.mat.createSolverInputArrays()
-	verifyNoError(solver.PassModel2(
-		int32(len(build.vars.colTypes)),
+	verifyNoError(solver.PassModel(
+		len(build.vars.colTypes),
 		numRows,
 		build.vars.colCosts, build.vars.colLower, build.vars.colUpper,
 		lowerBound, upperBound,
@@ -218,10 +218,10 @@ func (build *LinearBuilder) configureHighsUtil(solver *highs.Solver, logfile str
 		}
 		callbackTypes := slices.Concat(build.CallbackTypes, interruptTypes)
 		util_collection.RemoveDuplicatesComparable_InPlace(&callbackTypes)
-		verifyNoError(solver.SetCallback(func(callbackType highs.CallbackType, str string, out highs.HighsCallbackDataOut) highs.HighsCallbackDataIn {
+		verifyNoError(solver.SetCallback(func(callbackType highs.CallbackType, str string, out highs.CallbackData) highs.CallbackResult {
 			result := build.Callback(callbackType, str, out)
 			if slices.Contains(interruptTypes, callbackType) {
-				result.User_interrupt = solver.Interrupted
+				result.UserInterrupt = solver.Interrupted
 			}
 			return result
 		}, build.CallbackTypes))
@@ -348,7 +348,7 @@ func (build *LinearBuilder) ValidateInitialSolutionState() {
 	}
 }
 
-func (build *LinearBuilder) SetCallback(callbackTypes []highs.CallbackType, callback highs.HighsCallback) {
+func (build *LinearBuilder) SetCallback(callbackTypes []highs.CallbackType, callback highs.Callback) {
 	build.Callback = callback
 	build.CallbackTypes = callbackTypes
 }

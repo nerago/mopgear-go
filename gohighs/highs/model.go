@@ -309,7 +309,7 @@ type solveConfig struct {
 	threads       *int
 	presolve      *string
 	ctx           context.Context
-	callback      HighsCallback
+	callback      Callback
 	callbackTypes []CallbackType
 	extraBool     map[string]bool
 	extraInt      map[string]int
@@ -401,8 +401,8 @@ func WithContext(ctx context.Context) SolveOption {
 	}
 }
 
-// WithCallback sets a context that can cancel the solver.
-func WithCallback(callback HighsCallback, callbackTypes []CallbackType) SolveOption {
+// WithCallback sets a callback that can intercept solver events.
+func WithCallback(callback Callback, callbackTypes []CallbackType) SolveOption {
 	return func(c *solveConfig) {
 		c.callback = callback
 		c.callbackTypes = callbackTypes

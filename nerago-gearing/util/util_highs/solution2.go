@@ -72,13 +72,13 @@ type InterimSolution struct {
 	MipGap         float64
 }
 
-func InterimSolutionFromCallback(out highs.HighsCallbackDataOut) InterimSolution {
+func InterimSolutionFromCallback(out highs.CallbackData) InterimSolution {
 	interim := InterimSolution{
-		ObjectiveValue: out.Objective_function_value,
-		MipPrimal:      out.Mip_primal_bound,
-		MipDual:        out.Mip_dual_bound,
-		MipGap:         out.Mip_gap,
-		ColValues:      out.Mip_solution,
+		ObjectiveValue: out.ObjectiveFunctionValue,
+		MipPrimal:      out.MIPPrimalBound,
+		MipDual:        out.MIPDualBound,
+		MipGap:         out.MIPGap,
+		ColValues:      out.MIPSolution,
 	}
 	return interim
 }

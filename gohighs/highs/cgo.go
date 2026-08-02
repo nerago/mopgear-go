@@ -308,102 +308,6 @@ func basisStatusFromC(status C.HighsInt) BasisStatus {
 	}
 }
 
-type CallbackType int
-
-const (
-	CallbackTypeLogging CallbackType = iota
-	CallbackTypeSimplexInterrupt
-	CallbackTypeIpmInterrupt
-	CallbackTypeMipSolution
-	CallbackTypeMipImprovingSolution
-	CallbackTypeMipLogging
-	CallbackTypeMipInterrupt
-	CallbackTypeMipGetCutPool
-	CallbackTypeMipDefineLazyConstraints
-	CallbackTypeMipUserSolution
-)
-
-func (c CallbackType) String() string {
-	switch c {
-	case CallbackTypeLogging:
-		return "Logging"
-	case CallbackTypeSimplexInterrupt:
-		return "SimplexInterrupt"
-	case CallbackTypeIpmInterrupt:
-		return "IpmInterrupt"
-	case CallbackTypeMipSolution:
-		return "MipSolution"
-	case CallbackTypeMipImprovingSolution:
-		return "MipImprovingSolution"
-	case CallbackTypeMipLogging:
-		return "MipLogging "
-	case CallbackTypeMipInterrupt:
-		return "MipInterrupt"
-	case CallbackTypeMipGetCutPool:
-		return "MipGetCutPool"
-	case CallbackTypeMipDefineLazyConstraints:
-		return "MipDefineLazyConstraints"
-	case CallbackTypeMipUserSolution:
-		return "MipUserSolution"
-	default:
-		return "Unknown"
-	}
-}
-
-func (c CallbackType) toC() C.HighsInt {
-	switch c {
-	case CallbackTypeLogging:
-		return C.kHighsCallbackLogging
-	case CallbackTypeSimplexInterrupt:
-		return C.kHighsCallbackSimplexInterrupt
-	case CallbackTypeIpmInterrupt:
-		return C.kHighsCallbackIpmInterrupt
-	case CallbackTypeMipSolution:
-		return C.kHighsCallbackMipSolution
-	case CallbackTypeMipImprovingSolution:
-		return C.kHighsCallbackMipImprovingSolution
-	case CallbackTypeMipLogging:
-		return C.kHighsCallbackMipLogging
-	case CallbackTypeMipInterrupt:
-		return C.kHighsCallbackMipInterrupt
-	case CallbackTypeMipGetCutPool:
-		return C.kHighsCallbackMipGetCutPool
-	case CallbackTypeMipDefineLazyConstraints:
-		return C.kHighsCallbackMipDefineLazyConstraints
-	case CallbackTypeMipUserSolution:
-		return C.kHighsCallbackCallbackMipUserSolution
-	default:
-		return C.kHighsCallbackLogging
-	}
-}
-
-func callbackTypeFromC(status C.HighsInt) CallbackType {
-	switch status {
-	case C.kHighsCallbackLogging:
-		return CallbackTypeLogging
-	case C.kHighsCallbackSimplexInterrupt:
-		return CallbackTypeSimplexInterrupt
-	case C.kHighsCallbackIpmInterrupt:
-		return CallbackTypeIpmInterrupt
-	case C.kHighsCallbackMipSolution:
-		return CallbackTypeMipSolution
-	case C.kHighsCallbackMipImprovingSolution:
-		return CallbackTypeMipImprovingSolution
-	case C.kHighsCallbackMipLogging:
-		return CallbackTypeMipLogging
-	case C.kHighsCallbackMipInterrupt:
-		return CallbackTypeMipInterrupt
-	case C.kHighsCallbackMipGetCutPool:
-		return CallbackTypeMipGetCutPool
-	case C.kHighsCallbackMipDefineLazyConstraints:
-		return CallbackTypeMipDefineLazyConstraints
-	case C.kHighsCallbackCallbackMipUserSolution:
-		return CallbackTypeMipUserSolution
-	default:
-		return CallbackTypeLogging
-	}
-}
-
 // Nonzero represents a non-zero entry in a sparse matrix.
 // Row and Col are zero-indexed.
 type Nonzero struct {
@@ -463,7 +367,7 @@ var referenceNumberGenerator = atomic.Int32{}
 type Solver struct {
 	ptr         unsafe.Pointer
 	refNum      int32
-	callback    HighsCallback
+	callback    Callback
 	Interrupted bool
 }
 
@@ -859,77 +763,6 @@ func (s *Solver) PassModel(
 	return newError("PassModel", status)
 }
 
-func (s *Solver) PassModel2(
-	numCol, numRow int32,
-	colCost, colLower, colUpper []float64,
-	rowLower, rowUpper []float64,
-	aStart, aIndex []int32,
-	aValue []float64,
-	integrality []VariableType,
-	maximize bool,
-	offset float64,
-) error {
-	// Convert to C types
-	sense := C.kHighsObjSenseMinimize
-	if maximize {
-		sense = C.kHighsObjSenseMaximize
-	}
-
-	// Convert integrality
-	var cIntegrality []C.HighsInt
-	var pIntegrality *C.HighsInt
-	if len(integrality) > 0 {
-		cIntegrality = make([]C.HighsInt, len(integrality))
-		for i, vt := range integrality {
-			cIntegrality[i] = vt.toC()
-		}
-		pIntegrality = &cIntegrality[0]
-	}
-
-	// Get pointers
-	var pColCost, pColLower, pColUpper *C.double
-	var pRowLower, pRowUpper *C.double
-	var pAStart, pAIndex *C.HighsInt
-	var pAValue *C.double
-
-	if len(colCost) > 0 {
-		pColCost = (*C.double)(&colCost[0])
-	}
-	if len(colLower) > 0 {
-		pColLower = (*C.double)(&colLower[0])
-	}
-	if len(colUpper) > 0 {
-		pColUpper = (*C.double)(&colUpper[0])
-	}
-	if len(rowLower) > 0 {
-		pRowLower = (*C.double)(&rowLower[0])
-	}
-	if len(rowUpper) > 0 {
-		pRowUpper = (*C.double)(&rowUpper[0])
-	}
-	if len(aStart) > 0 {
-		pAStart = (*C.HighsInt)(&aStart[0])
-	}
-	if len(aIndex) > 0 {
-		pAIndex = (*C.HighsInt)(&aIndex[0])
-	}
-	if len(aValue) > 0 {
-		pAValue = (*C.double)(&aValue[0])
-	}
-
-	status := Status(C.Highs_passModel(s.ptr,
-		C.HighsInt(numCol), C.HighsInt(numRow),
-		C.HighsInt(len(aValue)), 0, // num_nz, q_num_nz
-		C.kHighsMatrixFormatRowwise, C.kHighsHessianFormatTriangular,
-		C.HighsInt(sense), C.double(offset),
-		pColCost, pColLower, pColUpper,
-		pRowLower, pRowUpper,
-		pAStart, pAIndex, pAValue,
-		nil, nil, nil, // Hessian pointers
-		pIntegrality))
-	return newError("PassModel", status)
-}
-
 // PassHessian sets the Hessian matrix for quadratic programming.
 // The Hessian must be provided in upper-triangular compressed sparse column format.
 func (s *Solver) PassHessian(dim int, start, index []int, value []float64) error {
@@ -1130,117 +963,8 @@ func (s *Solver) WriteSolution(filename string, pretty bool) error {
 	return newError("WriteSolution", Status(status))
 }
 
+// Presolve explicitly runs the presolve step, normally included as part of Run.
 func (s *Solver) Presolve() error {
 	status := C.Highs_presolve(s.ptr)
 	return newError("Presolve", Status(status))
-}
-
-//export goHighsCallbackExportedBridge
-func goHighsCallbackExportedBridge(solverReference C.HighsInt, c_callback_type C.HighsInt, c_message *C.char, c_data_out *C.HighsCallbackDataOut, c_data_in *C.HighsCallbackDataIn) {
-	solver := solverReferenceArray[solverReference]
-	if solver == nil {
-		return
-	}
-
-	callback := solver.callback
-	if callback == nil {
-		return
-	}
-
-	callback_type := callbackTypeFromC(c_callback_type)
-	message := C.GoString(c_message)
-
-	data := HighsCallbackDataOut{}
-	data.Callback_type = callback_type
-	data.Log_type = int32(c_data_out.log_type)
-	data.Running_time = float64(c_data_out.running_time)
-	data.Simplex_iteration_count = int32(c_data_out.simplex_iteration_count)
-	data.Ipm_iteration_count = int32(c_data_out.ipm_iteration_count)
-	data.Pdlp_iteration_count = int32(c_data_out.pdlp_iteration_count)
-	data.Objective_function_value = float64(c_data_out.objective_function_value)
-	data.Mip_node_count = int64(c_data_out.mip_node_count)
-	data.Mip_total_lp_iterations = int64(c_data_out.mip_total_lp_iterations)
-	data.Mip_primal_bound = float64(c_data_out.mip_primal_bound)
-	data.Mip_dual_bound = float64(c_data_out.mip_dual_bound)
-	data.Mip_gap = float64(c_data_out.mip_gap)
-
-	if c_data_out.mip_solution != nil && c_data_out.mip_solution_size > 0 {
-		var solution []C.double = unsafe.Slice(c_data_out.mip_solution, c_data_out.mip_solution_size)
-		data.Mip_solution = make([]float64, c_data_out.mip_solution_size)
-		for i := range c_data_out.mip_solution_size {
-			data.Mip_solution[i] = float64(solution[i])
-		}
-	}
-
-	inputs := callback(callback_type, message, data)
-
-	if inputs.User_interrupt {
-		c_data_in.user_interrupt = 1
-	} else {
-		c_data_in.user_interrupt = 0
-	}
-	if inputs.User_has_solution {
-		c_data_in.user_has_solution = 1
-	} else {
-		c_data_in.user_has_solution = 0
-	}
-	if len(inputs.User_solution) > 0 {
-		if len(inputs.User_solution) != int(c_data_in.user_solution_size) {
-			panic("user solution length doesn't match expected size")
-		}
-		var solution []C.double = unsafe.Slice(c_data_in.user_solution, c_data_in.user_solution_size)
-		for i := range c_data_in.user_solution_size {
-			solution[i] = C.double(inputs.User_solution[i])
-		}
-	}
-}
-
-func (s *Solver) InterruptSupportEnable() error {
-	s.callback = nil
-	s.Interrupted = false
-	status := Status(C.GoHighsInterruptEnable(s.ptr, C.HighsInt(s.refNum)))
-	return newError("EnableInterruptSupport", status)
-}
-
-func (s *Solver) InterruptSupportDisable() error {
-	s.callback = nil
-	s.Interrupted = false
-	status := Status(C.GoHighsInterruptDisable(s.ptr, C.HighsInt(s.refNum)))
-	return newError("DisableInterruptSupport", status)
-}
-
-func (s *Solver) InterruptSetFlag(value bool) error {
-	s.Interrupted = value
-	var cValue C.HighsInt = 0
-	if value {
-		cValue = 1
-	}
-	status := Status(C.GoHighsInterruptSetFlag(s.ptr, C.HighsInt(s.refNum), cValue))
-	return newError("InterruptSetFlag", status)
-}
-
-func (s *Solver) SetCallback(callback HighsCallback, callbackTypes []CallbackType) error {
-	s.callback = callback
-	s.Interrupted = false
-
-	var cCallbackTypes []C.HighsInt
-	var pCallbackTypes *C.HighsInt
-	if len(callbackTypes) > 0 {
-		cCallbackTypes = make([]C.HighsInt, len(callbackTypes))
-		for i, cb := range callbackTypes {
-			cCallbackTypes[i] = cb.toC()
-		}
-		pCallbackTypes = (*C.HighsInt)(&cCallbackTypes[0])
-	}
-
-	status := Status(C.GoHighsCallbackBridgedEnable(s.ptr, C.HighsInt(s.refNum),
-		C.HighsInt(len(callbackTypes)), pCallbackTypes))
-	return newError("SetCallback", status)
-}
-
-func (s *Solver) ClearCallback() error {
-	s.callback = nil
-	s.Interrupted = false
-	status := Status(C.GoHighsCallbackBridgedDisable(s.ptr, C.HighsInt(s.refNum)))
-	return newError("ClearCallback", status)
 }
