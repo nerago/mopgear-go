@@ -17,11 +17,8 @@ import (
 const c_gearExtended3StatHigh = 100000
 const c_gearExtended3ScoreHigh = 10
 
-type StatRequiredExtended3 map[stats.StatType]util_collection.HiLoUInt32
-
 type ExtendedModel3 struct {
 	weight    weight_types.Weight3ExtendedRanged
-	require   StatRequiredExtended3
 	gearModel *gear_model.SpecModel
 }
 
@@ -51,17 +48,18 @@ func SingleGearSetExtended3Main(itemOptions *items.SolvableOptionsMap, model *Ex
 
 func setupGearSetExtended3(build *util_highs.LinearBuilder, model *ExtendedModel3, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetExtended3 {
 	setup := singleGearSetExtended3{singleGearSetShared: singleGearSetShared{build: build}}
+	require := model.gearModel.StatRequirements.AsMap()
 
 	setup.prepareStats()
-	setup.prepareRequire(&model.require)
+	setup.prepareRequire(require)
 	setup.prepareActiveSetCombos(&model.gearModel.SetBonus)
 	setup.prepareUniqueEquipped(itemOptions)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
-		setup.addItem(slot, item, &model.require, &model.gearModel.SetBonus)
+		setup.addItem(slot, item, require, &model.gearModel.SetBonus)
 	}
 	setup.finishItemsCommon(itemOptions)
-	setup.finishStats(&model.require)
+	setup.finishStats(require)
 
 	setup.calcSimValues()
 	setup.calcCombinedSimRating()
@@ -94,7 +92,7 @@ type singleGearSetExtended3 struct {
 	combinedRatingVar    *columnInfo // sum of values for the ratings of selected items
 }
 
-func (setup *singleGearSetExtended3) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, require *StatRequiredExtended3, setBonus *gear_model.SetBonus) util_highs.ColumnIndex {
+func (setup *singleGearSetExtended3) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, require map[stats.StatType]util_collection.HiLoUInt32, setBonus *gear_model.SetBonus) util_highs.ColumnIndex {
 	columnIndex := setup.addItemCommon(itemSlot, item, setBonus)
 
 	// add to stats via a summation condition
@@ -105,16 +103,16 @@ func (setup *singleGearSetExtended3) addItem(itemSlot items.SlotEquip, item *ite
 	}
 
 	// specific hit/expertise/etc values for hi/lo limits
-	for statType := range *require {
+	for statType := range require {
 		setup.requireRows[statType].Add(columnIndex, item.Total().GetFloat(statType))
 	}
 
 	return columnIndex
 }
 
-func (setup *singleGearSetExtended3) prepareRequire(require *StatRequiredExtended3) {
-	setup.requireRows = make(map[stats.StatType]*util_highs.ConstraintRow, len(*require))
-	for statType := range *require {
+func (setup *singleGearSetExtended3) prepareRequire(require map[stats.StatType]util_collection.HiLoUInt32) {
+	setup.requireRows = make(map[stats.StatType]*util_highs.ConstraintRow, len(require))
+	for statType := range require {
 		setup.requireRows[statType] = &util_highs.ConstraintRow{Debug: "require " + statType.Name()}
 	}
 }
@@ -132,9 +130,9 @@ func (setup *singleGearSetExtended3) prepareStats() {
 	}
 }
 
-func (setup *singleGearSetExtended3) finishStats(require *StatRequiredExtended3) {
+func (setup *singleGearSetExtended3) finishStats(require map[stats.StatType]util_collection.HiLoUInt32) {
 	// constrain: total sum of hit/exp/etc are within requested limits
-	for statType, hilo := range *require {
+	for statType, hilo := range require {
 		row := setup.requireRows[statType]
 		row.Build(setup.build, float64(hilo.Lo), convertHigh(hilo.Hi))
 	}
@@ -152,28 +150,17 @@ func (setup *singleGearSetExtended3) calcSimValues() {
 
 	setup.simValueTotalColumns = make(map[stats.SimType]*columnInfo)
 	for _, simType := range weight.SimList {
-		setup.calcSimValueForType(simType, weight)
+		setup.calcValueForSimType(simType, weight)
 	}
 }
 
-func (setup *singleGearSetExtended3) calcSimValueForType(simType stats.SimType, weight weight_types.Weight3ExtendedRanged) {
+func (setup *singleGearSetExtended3) calcValueForSimType(simType stats.SimType, weight weight_types.Weight3ExtendedRanged) {
 	simValueColumn := setup.makeSimValueColumn(simType)
 	simValueFromStatRow := util_highs.ConstraintRow{}
 
 	for _, statType := range weight.StatList {
-		statTotalColumn := setup.statTotalColumns[statType]
-		contributeScoreSimStat := setup.makeContributeScoreSimStatColumn(simType, statType)
-
-		for entry := range weight.StatWeights.GetAsSeq(simType, statType) {
-			// essentially if stat total fits into this range then copy a score to contributeScoreSimStat
-			if entry.StatRange.Maximum < math.MaxUint32 {
-				setup.calcScoreFromEntryIfStatFits(entry, contributeScoreSimStat, simType, statType, statTotalColumn)
-			} else {
-				setup.calcScoreFromLastEntryIfGreater(entry, contributeScoreSimStat, simType, statType, statTotalColumn)
-			}
-		}
-
-		simValueFromStatRow.Add(contributeScoreSimStat.columnIndex, 1)
+		chosenSimStatContribution := setup.calcValueForSimAndStatType(simType, statType, weight)
+		simValueFromStatRow.Add(chosenSimStatContribution.columnIndex, 1)
 	}
 
 	simEntry := weight.SimPriority.GetOrPanic(simType)
@@ -183,22 +170,32 @@ func (setup *singleGearSetExtended3) calcSimValueForType(simType stats.SimType, 
 	simValueFromStatRow.Build(setup.build, offset, offset)
 }
 
-func (setup *singleGearSetExtended3) calcScoreFromEntryIfStatFits(entry weight_types.Weight3ExtendedStatEntry, contributeScoreSimStat columnInfo, simType stats.SimType, statType stats.StatType, statTotalColumn *columnInfo) {
-	entryValue := setup.makeContributeScoreSimStatColumn(simType, statType) // need another entry type
-	isBetween := setup.statIsBetween(statTotalColumn, entry.StatRange)
-	setup.build.ConstraintIfBoolCopy(isBetween, entryValue.columnIndex, 1, contributeScoreSimStat.columnIndex, c_gearExtended3ScoreHigh)
+func (setup *singleGearSetExtended3) calcValueForSimAndStatType(simType stats.SimType, statType stats.StatType, weight weight_types.Weight3ExtendedRanged) columnInfo {
+	chosenSimStatContribution := setup.makeSimStatValueColumn(simType, statType)
+	statTotalColumn := setup.statTotalColumns[statType]
 
-	row := util_highs.ConstraintRow{}
-	row.Add(statTotalColumn.columnIndex, entry.RatingWeight)
-	row.Add(entryValue.columnIndex, -1)
-	row.Build(setup.build, -entry.RatingOffset, -entry.RatingOffset)
+	checkSingleRangeActive := util_highs.ConstraintRow{}
+	for entry := range weight.StatWeights.GetAsSeq(simType, statType) {
+		// check if stat total fits into this range
+		var rangeCondition util_highs.ColumnIndex
+		if entry.StatRange.Maximum < math.MaxUint32 {
+			rangeCondition = setup.statIsBetween(statTotalColumn, entry.StatRange)
+		} else {
+			rangeCondition = setup.build.ColumnIsGreaterOrEqualThanConstant(statTotalColumn.columnIndex, float64(entry.StatRange.Minimum), c_gearExtended3StatHigh, 1.0)
+		}
+		checkSingleRangeActive.Add(rangeCondition, 1)
+
+		// then copy a score to contributeScoreSimStat
+		optionValueCol := setup.makeSimStatOptionColumn(simType, statType, entry.StatRange)
+		setup.calcValueForEntry(statTotalColumn, entry, optionValueCol)
+		setup.build.ConstraintIfBoolCopy(rangeCondition, optionValueCol.columnIndex, 1, chosenSimStatContribution.columnIndex, c_gearExtended3ScoreHigh)
+	}
+	checkSingleRangeActive.Build(setup.build, 1, 1)
+
+	return chosenSimStatContribution
 }
 
-func (setup *singleGearSetExtended3) calcScoreFromLastEntryIfGreater(entry weight_types.Weight3ExtendedStatEntry, contributeScoreSimStat columnInfo, simType stats.SimType, statType stats.StatType, statTotalColumn *columnInfo) {
-	entryValue := setup.makeContributeScoreSimStatColumn(simType, statType) // need another entry type
-	isOverMinimum := setup.build.ColumnIsGreaterOrEqualThanConstant(statTotalColumn.columnIndex, float64(entry.StatRange.Minimum), c_gearExtended3StatHigh, 1.0)
-	setup.build.ConstraintIfBoolCopy(isOverMinimum, entryValue.columnIndex, 1, contributeScoreSimStat.columnIndex, c_gearExtended3ScoreHigh)
-
+func (setup *singleGearSetExtended3) calcValueForEntry(statTotalColumn *columnInfo, entry weight_types.Weight3ExtendedStatEntry, entryValue columnInfo) {
 	row := util_highs.ConstraintRow{}
 	row.Add(statTotalColumn.columnIndex, entry.RatingWeight)
 	row.Add(entryValue.columnIndex, -1)
@@ -213,12 +210,18 @@ func (setup *singleGearSetExtended3) makeSimValueColumn(simType stats.SimType) c
 	return simValueColumn
 }
 
-func (setup *singleGearSetExtended3) makeContributeScoreSimStatColumn(simType stats.SimType, statType stats.StatType) columnInfo {
+func (setup *singleGearSetExtended3) makeSimStatValueColumn(simType stats.SimType, statType stats.StatType) columnInfo {
 	simStatValueColumn := columnInfo{entryType: entry_sim_stat_value, simType: simType, statType: statType}
 	simStatValueColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), &simStatValueColumn)
-	//setup.simValueTotalColumns[simType] = &simValueColumn
 	setup.allColumns = append(setup.allColumns, &simStatValueColumn)
 	return simStatValueColumn
+}
+
+func (setup *singleGearSetExtended3) makeSimStatOptionColumn(simType stats.SimType, statType stats.StatType, statRange weight_types.StatRange) columnInfo {
+	valueOptionColumn := columnInfo{entryType: entry_sim_stat_value_option, simType: simType, statType: statType, statRange: statRange}
+	valueOptionColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), &valueOptionColumn)
+	setup.allColumns = append(setup.allColumns, &valueOptionColumn)
+	return valueOptionColumn
 }
 
 func (setup *singleGearSetExtended3) calcCombinedSimRating() {

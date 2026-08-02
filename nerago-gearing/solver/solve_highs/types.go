@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_highs"
+	"paladin_gearing_go/weightfind/weight_types"
 )
 
 type entryType int8
@@ -23,6 +24,7 @@ const (
 	entry_stat_total                  entryType = iota
 	entry_sim_value                   entryType = iota
 	entry_sim_stat_value              entryType = iota
+	entry_sim_stat_value_option       entryType = iota
 )
 
 type columnInfo struct {
@@ -39,6 +41,7 @@ type columnInfo struct {
 	itemCount   int
 	permutation *bonusCombo
 	weight      float64
+	statRange   weight_types.StatRange
 }
 
 func (colEntry columnInfo) ItemId() items.ItemId {
