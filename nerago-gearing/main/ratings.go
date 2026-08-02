@@ -1093,8 +1093,8 @@ func statWeights_CompareAlgorithms() {
 	tasks := make([]func(), 0)
 
 	reportOnTweakedVersions := false
-	standardTimeout := 3000
-	shortTimeout := 800
+	standardTimeout := 300
+	shortTimeout := 100
 
 	runBasic := true
 	runFormulaVariants := true // best is about 87%, moderate time

@@ -10,7 +10,7 @@ import (
 
 //goland:noinspection GoBoolExpressions
 func statWeights_updateAll() {
-	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "statWeightsGrid_updateAll")
+	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "statWeights_updateAll")
 
 	//simSpeed := simulate.RunSize_TestOnly
 	// simSpeed := simulate.RunSize_QuickDirty/10
