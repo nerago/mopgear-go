@@ -77,7 +77,7 @@ func testBasicStatsGeneral(printer *util.PrintRecorder) {
 	for _, data := range inputData {
 		process.AddSimData(data.IncrementStat, uint32(data.IncrementValue), data.SimResult)
 	}
-	process.Run(nil)
+	process.Run()
 }
 
 // oldish code, may sometimes want to mix basic ratings??
@@ -184,9 +184,14 @@ func statWeightsFormula(printer *util.PrintRecorder) {
 	comp.SetTargetRatios(model_factory.SimPriority_generalMiti)
 	comp.SetMinimumIncludeRate(1.0)
 	comp.SupplyData(filteredInput)
-	weights2 := comp.Run(nil, 3000).WaitForResultOrPanic()
-	weights1 := weights2.ConvertToWeight1()
-	tools.WritePawnString(weights1, printer)
+	weightResult := comp.Run(3000).WaitForResultOrPanic()
+	//weights2 := weightResult.Weight
+	weights1 := weightResult.AsWeight1()
+	if weights1 != nil {
+		tools.WritePawnString(*weights1, printer)
+	} else {
+		printer.Println("MISSING WEIGHT")
+	}
 }
 
 func statWeightsRanking(printer *util.PrintRecorder) {
@@ -198,9 +203,13 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 	comp.SetRequiredStats(model_factory.StatsForWeighting_strengthTank, model_factory.SimPriority_generalMiti.SimTypes())
 	comp.SetTargetRatios(model_factory.SimPriority_generalMiti)
 	comp.SupplyData(weightInputs)
-	weights2 := comp.Run(nil).WaitForResultOrPanic()
-	weights1 := weights2.ConvertToWeight1()
-	tools.WritePawnString(weights1, printer)
+	weightResult := comp.Run().WaitForResultOrPanic()
+	weights1 := weightResult.AsWeight1()
+	if weights1 != nil {
+		tools.WritePawnString(*weights1, printer)
+	} else {
+		printer.Println("MISSING WEIGHT")
+	}
 }
 
 func statWeightsCustom(printer *util.PrintRecorder) {
@@ -229,9 +238,9 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 	search.SupplyData(inputDataGrid)
 	search.SetRanges(-1.0, 10.0)
 
-	sw := util.StopwatchMakeStarted()
-	weight := search.Run(util_async.CancelSignal_Make())
-	printer.Printf("time = %s\n", sw.Elapsed().String())
+	weightResult := search.Run(util_async.CancelSignal_Make())
+	printer.Printf("time = %s\n", weightResult.SolveTime)
+	weight := *weightResult.AsWeight1()
 	tools.WritePawnString(weight, printer)
 	printer.Printf("accuracy = %f\n", weightfind.EvaluateAccuracy(&weight, targetRatio.SimTypes(), &targetRatio, mixedInputData))
 
@@ -309,7 +318,8 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 		grid.SetRequiredStats(requiredStats)
 		grid.SetTargetRatios(targetRatio)
 		grid.SupplyData(inputDataGrid)
-		weights1 = grid.Run(nil).WaitForResultOrPanic()
+		weightResult := grid.Run().WaitForResultOrPanic()
+		weights1 = *weightResult.AsWeight1()
 		tools.WritePawnString(weights1, printer)
 	} else {
 		//  Pawn: v1: "Protection WoWSims Weights": Class=Paladin,Strength=1.0000000000,Stamina=0.4804976439,CritRating=0.6462171056,HasteRating=0.8598561605,ExpertiseRating=0.6679862341,MasteryRating=1.9405533853,DodgeRating=0.6518112608,ParryRating=0.6243298125, )
@@ -346,9 +356,8 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 	ranking.SetTargetRatios(targetRatio)
 	//ranking.SupplyData(mixedInputData)
 	ranking.SupplyData(mixedInputData)
-	weights2 := ranking.RunSinglePassFromExternal(weights1, nil).WaitForResultOrPanic()
-	//weights2 := ranking.Run(&weights1)
-	//weights2 := ranking.Run(nil)
+	weightsResult2 := ranking.RunSinglePassFromExternal(weights1).WaitForResultOrPanic()
+	weights2 := *weightsResult2.AsWeight1()
 
 	tools.WritePawnString(weights1, printer)
 	printer.Printf("accuracy_initial = %f\n", weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, mixedInputData))
@@ -649,9 +658,10 @@ func statWeightsFitting2eachProper(printer *util.PrintRecorder) {
 	fitting.SetRequiredStats(statTypes, simTypes)
 	fitting.SetTargetRatios(targetRatio)
 	fitting.SupplyData(weightInputs)
-	weight3 := fitting.Run(util.StopwatchMakeStopped(), util_async.CancelSignal_Make()).GetOrPanic()
+	weightResult := fitting.Run(util_async.CancelSignal_Make())
+	weight3 := weightResult.Weight.(*weight_types.Weight3ExtendedRanged)
 
-	tools.WriteWeight3String(weight3, printer)
+	tools.WriteWeight3String(*weight3, printer)
 }
 
 func fittingTableReport(printer *util.PrintRecorder, weightList []fitting2.InitialSegment, statMax float64, sampleData []util_weight.FittingSample) {
@@ -817,7 +827,8 @@ func statWeightsFitting1a(printer *util.PrintRecorder) {
 	fitting.Init(printer, 3000)
 	fitting.SupplyData(weightInputs)
 
-	weight3 := fitting.Run(util.StopwatchMakeStopped(), util_async.CancelSignal_Make())
+	weightResult := fitting.Run(util_async.CancelSignal_Make())
+	weight3 := weightResult.Weight.(*weight_types.Weight3ExtendedRanged)
 	for entry := range weight3.StatWeights.SeqKey1Key2ValueSeqEntries() {
 		weightSeq := entry.ValueSeq
 
@@ -866,7 +877,8 @@ func statWeightsGrid1Orig(printer *util.PrintRecorder) {
 		process.SetRequiredStats(requiredStats)
 		process.SetTargetRatios(targetRatio)
 		process.SupplyData(inputData)
-		weights1 := process.Run(nil).WaitForResultOrNilValue()
+		weightsResult := process.Run().WaitForResultOrNilValue()
+		weights1 := *weightsResult.AsWeight1()
 		tools.WritePawnString(weights1, printer)
 
 		acc := weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, inputDataGrid)
@@ -954,8 +966,8 @@ func statWeightsGrid(printer *util.PrintRecorder) {
 		process.SetRequiredStats(requiredStats)
 		process.SetTargetRatios(targetRatio)
 		process.SupplyData(inputData)
-		weights2 := process.Run(nil).WaitForResultOrNilValue()
-		weights1 := weights2.ConvertToWeight1()
+		weightsResult := process.Run().WaitForResultOrNilValue()
+		weights1 := *weightsResult.AsWeight1()
 		tools.WritePawnString(weights1, printer)
 
 		acc := weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, inputDataGrid)

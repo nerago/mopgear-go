@@ -91,7 +91,7 @@ func (ranker *RankingStatWeightProcess3b) newBuilder() {
 	// hipo fails, reverts to IPX		92.047145%
 }
 
-func (ranker *RankingStatWeightProcess3b) RunMultiRound(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.Weight1Basic] {
+func (ranker *RankingStatWeightProcess3b) RunMultiRound() *util_async.FutureCancellable[weight_types.WeightResult] {
 
 	// FIRST ROUND: minimal data, no initial values
 	ranker.dataSample = takeDataSample_Start(ranker.dataAllOriginal, 12)
@@ -101,6 +101,7 @@ func (ranker *RankingStatWeightProcess3b) RunMultiRound(stopwatch *util.Stopwatc
 	ranker.doAlgos()
 	ranker.setupDumbInitialSolution()
 
+	stopwatch := util.StopwatchMakeStopped()
 	solution1Future := ranker.build.RunHighsFuture(stopwatch)
 
 	solution2Future := util_async.FutureCancellable_MapToFuture(solution1Future, func(linearResult1 util_highs.LinearResult) *util_async.FutureCancellable[util_highs.LinearResult] {
@@ -119,9 +120,10 @@ func (ranker *RankingStatWeightProcess3b) RunMultiRound(stopwatch *util.Stopwatc
 		return ranker.build.RunHighsFuture(stopwatch)
 	})
 
-	return util_async.FutureCancellable_MapValue(solution2Future, func(linearResult2 util_highs.LinearResult) (weight_types.Weight1Basic, bool) {
+	return util_async.FutureCancellable_MapValue(solution2Future, func(linearResult2 util_highs.LinearResult) (weight_types.WeightResult, bool) {
 		solution2 := linearResult2.GetSolutionAndSaveLog(ranker.printer)
-		return ranker.extractAndReportSolution(solution2), true
+		weight := ranker.extractAndReportSolution(solution2)
+		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution2.Status}, true
 	})
 }
 

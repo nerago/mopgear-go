@@ -86,6 +86,7 @@ func core(printer *util.PrintRecorder) {
 	//currentSimGear(printer)
 	//
 	//statWeightsBasic(printer)
+	//statWeightsGrid1Orig(printer)
 	//statWeightsGrid(printer)
 	//statWeightsFitting(printer)
 	//statWeightsFitting2(printer)
@@ -96,11 +97,11 @@ func core(printer *util.PrintRecorder) {
 	//statWeightsGridIntoRanking(printer)
 	//statWeightsCustom(printer)
 
-	//statWeights_CompareAlgorithms()
-
+	statWeights_CompareAlgorithms()
+	//
 	//statWeights_updateAll()
 
-	PaladinMultiRun()
+	//PaladinMultiRun()
 
 	//findUpgrades_Paladin()
 }

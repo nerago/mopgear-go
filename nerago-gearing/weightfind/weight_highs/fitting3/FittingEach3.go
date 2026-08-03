@@ -5,11 +5,12 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
-	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/weightfind/util_weight"
 	"paladin_gearing_go/weightfind/weight_highs/fitting2"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
+
+	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 const (
@@ -43,15 +44,15 @@ func (f fitting3EachFields) Results() iter.Seq[util_weight.FittingInterimResult2
 	return slices.Values(f.resultSlice)
 }
 
-func (fe *FittingEachStatWeightProcess3) Run(stopwatch *util.Stopwatch, cancel util_async.CancelSignal) util_collection.Optional[weight_types.Weight3ExtendedRanged] {
+func (fe *FittingEachStatWeightProcess3) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
 	fe.ChooseScaling()
 	fe.launchEachNested(cancel)
-	fe.CalcMetrics(stopwatch)
+	stopwatch := fe.CalcMetrics()
 	if !fe.Failed {
 		weights := fe.BuildResult()
-		return util_collection.Optional_OfValue(*weights)
+		return weight_types.WeightResult{Weight: weights, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusOptimal}
 	} else {
-		return util_collection.Optional_Empty[weight_types.Weight3ExtendedRanged]()
+		return weight_types.WeightResult{SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusModelError}
 	}
 }
 

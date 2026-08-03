@@ -87,9 +87,19 @@ func (block *StatBlockFloat) Equals(other *StatBlockFloat) bool {
 	return true
 }
 
+func isUsefulWeightNumber(num float64) bool {
+	if math.IsInf(num, 0) || math.IsNaN(num) {
+		return false
+	}
+	if util.FloatEqualsZero(num) {
+		return false
+	}
+	return true
+}
+
 func (block *StatBlockFloat) IsEmpty() bool {
 	for i := range block {
-		if !util.FloatEqualsZero(block[i]) && !math.IsNaN(block[i]) {
+		if isUsefulWeightNumber(block[i]) {
 			return false
 		}
 	}
