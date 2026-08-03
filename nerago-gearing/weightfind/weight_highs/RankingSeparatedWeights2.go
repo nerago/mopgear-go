@@ -246,22 +246,22 @@ func (ranker *RankingSeparatedWeights2) makeEntryRankExact(targetScore float64, 
 func (ranker *RankingSeparatedWeights2) extractAndReportSolution(solution *highs.Solution) weight_types.Weight2Extended {
 	ranker.build.DebugPrintColumns(solution, ranker.printer)
 
-	statWeightResult := weight_types.Weight2Extended_Make(ranker.requiredStats, ranker.requiredSims)
+	weight := weight_types.Weight2Extended_Make(ranker.requiredStats, ranker.requiredSims)
 	for entry := range ranker.detailedWeightColumns.SeqKey1Key2ValueEntries() {
 		weightColumn := entry.Value
 		weightValue := solution.ColValues[weightColumn]
-		statWeightResult.PutWeight(entry.Key1, entry.Key2, weightValue)
+		weight.PutWeight(entry.Key1, entry.Key2, weightValue)
 	}
 	for simType, offsetCol := range ranker.offsetColumns {
 		offsetValue := solution.ColValues[offsetCol]
 		ratio := ranker.targetRatios.GetOrPanic(simType)
-		statWeightResult.SetSimScale(simType, 1, offsetValue, ratio)
+		weight.SetSimScale(simType, 1, offsetValue, ratio)
 	}
-	statWeightResult.FinishAndValidate()
+	weight.FinishAndValidate()
 
-	statWeightResult.Print(ranker.printer)
-	ranker.reportExamples(statWeightResult)
-	ranker.reportCompleteRanges(statWeightResult)
+	weight.Print(ranker.printer)
+	ranker.reportExamples(weight)
+	ranker.reportCompleteRanges(weight)
 
 	slackLimit := (c_rank_sep2_scoreMax - c_rank_sep2_scoreMin) * c_rank_sep2_rangeSlackLimit
 	for _, simType := range ranker.requiredSims {
@@ -272,7 +272,7 @@ func (ranker *RankingSeparatedWeights2) extractAndReportSolution(solution *highs
 		}
 	}
 
-	return *statWeightResult
+	return *weight
 }
 
 func (ranker *RankingSeparatedWeights2) reportExamples(weightExtended *weight_types.Weight2Extended) {

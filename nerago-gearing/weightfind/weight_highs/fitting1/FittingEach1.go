@@ -10,6 +10,8 @@ import (
 	util_weight2 "paladin_gearing_go/weightfind/util_weight"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
+
+	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 type FittingEachStatWeightProcess struct {
@@ -53,20 +55,22 @@ func (fe *FittingEachStatWeightProcess) SupplyData(inputData []weight_types.Weig
 	fe.inputData = inputData
 }
 
-func (fe *FittingEachStatWeightProcess) Run(stopwatch *util.Stopwatch, cancel util_async.CancelSignal) weight_types.Weight3ExtendedRanged {
+func (fe *FittingEachStatWeightProcess) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
 	fe.chooseScaling()
 	fe.launchEachNested(cancel)
-	weights := fe.buildResult()
-	fe.calcMetrics(stopwatch)
-	return *weights
+	weight := fe.buildResult()
+	stopwatch := fe.calcMetrics()
+	return weight_types.WeightResult{Weight: weight, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusUnknown}
 }
 
-func (fe *FittingEachStatWeightProcess) calcMetrics(stopwatch *util.Stopwatch) {
+func (fe *FittingEachStatWeightProcess) calcMetrics() *util.Stopwatch {
+	stopwatch := util.StopwatchMakeStopped()
 	for fields := range fe.each.SeqValues() {
 		for _, detail := range fields.resultSlice {
 			stopwatch.AddElapsedFrom(&detail.StopwatchSolver)
 		}
 	}
+	return stopwatch
 }
 
 func (fe *FittingEachStatWeightProcess) buildResult() *weight_types.Weight3ExtendedRanged {

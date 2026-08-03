@@ -64,7 +64,7 @@ func (mm *MapMap[J, K, V]) Size() int {
 	return size
 }
 
-// uses assumtion that empty inner maps don't exist, no maps therefore no data
+// uses assumption that empty inner maps don't exist, no maps therefore no data
 func (mm *MapMap[J, K, V]) IsEmpty() bool {
 	return len(mm.dataBy1) == 0
 }

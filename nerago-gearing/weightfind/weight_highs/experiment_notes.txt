@@ -14600,11 +14600,11 @@ Weights Accuracy Summary ::::: Prot-Compromise ::::: OLD=95.7252 (97.1195) GRID=
 Weights Accuracy Summary ::::: Prot-Heal ::::: OLD=92.5104 (98.1464) GRID=89.4670 (97.8296) TWEAK=89.4670 (97.8296) GRID=89.4787 (98.2360) TWEAK=89.4787 (98.2360) RANK=79.6951 (96.7047) TWEAK=79.6951 (96.7047) RANK=50.3078 (98.1541) TWEAK=50.3078 (98.1541) FORM2=92.4280 (89.8109) TWEAK=92.4280 (89.8109) SEARCH=75.3593 (98.2330) SEARCH=77.1022 (98.5980)  ::::: 92.5104
 Weights Accuracy Summary ::::: Ret ::::: OLD=88.9686 (94.0359) GRID=88.3842 (95.7274) TWEAK=88.3842 (95.7274) GRID=88.3768 (93.6142) TWEAK=88.3768 (93.6142) RANK=91.0985 (98.2995) TWEAK=91.0985 (98.2995) RANK=88.2055 (95.0061) TWEAK=88.2055 (95.0061) FORM2=91.6424 (96.8682) TWEAK=91.6424 (96.8682) SEARCH=96.4540 (100.0000) SEARCH=97.5779 (100.0000)  ::::: 97.5779
 
+actual process often failing there was GridStatWeightProcess1B-x122
 
-TODO fix
-grid2 - fast empty weight
+grid2 - fast empty weight. something is up with stopwatch? but was just too tight a timeout
 grid1c - fail, except one weird
-grid1 - unusual result 1,0,0 
-rankorig - fail
-fitting2 - bad score
-auto include in ranking a basic strength 1-0-0 variant etc
+grid1 - unusual result 1,0,0
+rankorig - fail - timeout just in presolve
+TODO fitting2 - bad score
+TODO auto include in ranking a basic strength 1-0-0 variant etc

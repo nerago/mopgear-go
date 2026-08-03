@@ -111,12 +111,13 @@ func (ranker *RankingStatWeightProcess3) makeBuilder() {
 	}
 }
 
-func (ranker *RankingStatWeightProcess3) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.Weight1Basic] {
+func (ranker *RankingStatWeightProcess3) Run() *util_async.FutureCancellable[weight_types.WeightResult] {
 	// FIRST ROUND: minimal data, no initial values
 	ranker.dataSample = takeDataSample_Start(ranker.dataAllOriginal, c_rank3_initial_data_sample)
 	ranker.prepare()
 	ranker.setupDumbInitialSolution()
 
+	stopwatch := util.StopwatchMakeStopped()
 	solution1Future := ranker.build.RunHighsFuture(stopwatch)
 
 	solution2Future := util_async.FutureCancellable_MapToFuture(solution1Future, func(linearResult1 util_highs.LinearResult) *util_async.FutureCancellable[util_highs.LinearResult] {
@@ -132,20 +133,24 @@ func (ranker *RankingStatWeightProcess3) Run(stopwatch *util.Stopwatch) *util_as
 		return ranker.build.RunHighsFuture(stopwatch)
 	})
 
-	return util_async.FutureCancellable_MapValue(solution2Future, func(linearResult2 util_highs.LinearResult) (weight_types.Weight1Basic, bool) {
+	return util_async.FutureCancellable_MapValue(solution2Future, func(linearResult2 util_highs.LinearResult) (weight_types.WeightResult, bool) {
 		solution2 := linearResult2.GetSolutionAndSaveLog(ranker.printer)
-		return ranker.extractAndReportSolution(solution2), true
+		weight := ranker.extractAndReportSolution(solution2)
+		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution2.Status}, true
 	})
 }
 
-func (ranker *RankingStatWeightProcess3) RunUsingExternalStart(initialWeight weight_types.Weight1Basic, stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.Weight1Basic] {
+func (ranker *RankingStatWeightProcess3) RunUsingExternalStart(initialWeight weight_types.Weight1Basic) *util_async.FutureCancellable[weight_types.WeightResult] {
 	ranker.dataSample = ranker.dataAllOriginal
 	ranker.prepare()
 	ranker.setupInitialSolutionFromExternal2(initialWeight)
+
+	stopwatch := util.StopwatchMakeStopped()
 	solutionFuture := ranker.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.Weight1Basic, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(ranker.printer)
-		return ranker.extractAndReportSolution(solution), true
+		weight := ranker.extractAndReportSolution(solution)
+		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution.Status}, true
 	})
 }
 
@@ -378,7 +383,7 @@ func (ranker *RankingStatWeightProcess3) extractAndReportSolution(solution *high
 
 	ranker.printer.Println("WEIGHTS")
 
-	statWeightResult := weight_types.Weight1Basic_Make(ranker.targetRatios)
+	weight := weight_types.Weight1Basic_Make(ranker.targetRatios)
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statScale := ranker.scaleStats.GetOrPanic(statType)
@@ -386,23 +391,23 @@ func (ranker *RankingStatWeightProcess3) extractAndReportSolution(solution *high
 		modelWeight := solution.ColValues[weightColumn]
 		usableWeight := modelWeight / statScale
 
-		statWeightResult.Put(statType, usableWeight)
+		weight.Put(statType, usableWeight)
 
 	}
 
-	divideBy := statWeightResult.Get(ranker.requiredStats[0])
+	divideBy := weight.Get(ranker.requiredStats[0])
 	for _, statType := range ranker.requiredStats {
-		value := statWeightResult.Get(statType) / divideBy
-		statWeightResult.Put(statType, value)
+		value := weight.Get(statType) / divideBy
+		weight.Put(statType, value)
 		ranker.printer.Printf("%10s %f\n", statType.Name(), value)
 	}
 
-	ranker.reportRankingOfInputs(statWeightResult, solution)
+	ranker.reportRankingOfInputs(weight, solution)
 
-	return statWeightResult
+	return weight
 }
 
-func (ranker *RankingStatWeightProcess3) reportRankingOfInputs(statWeightResult weight_types.Weight1Basic, solution *highs.Solution) {
+func (ranker *RankingStatWeightProcess3) reportRankingOfInputs(weight weight_types.Weight1Basic, solution *highs.Solution) {
 	if ranker.ALGO != 0 {
 		return
 	}
@@ -422,7 +427,7 @@ func (ranker *RankingStatWeightProcess3) reportRankingOfInputs(statWeightResult 
 		return entryCheck{
 			e.SimScore,
 			e.TargetRank,
-			statWeightResult.CalcStatScore(&e.Data.TotalStat),
+			weight.CalcStatScore(&e.Data.TotalStat),
 			solution.ColValues[e.ScoreColumn],
 			solution.ColValues[e.RankColumn],
 		}

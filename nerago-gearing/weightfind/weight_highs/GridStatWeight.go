@@ -33,16 +33,15 @@ type gridDataSample struct {
 	value float64
 }
 
-// default solver - dual simplex - HiGHS run time      :        812.56 (s)
-// ipx    - HiGHS run time      :        912.37
-// pldp   - HiGHS run time      :        594.94
-// hipdlp - HiGHS run time      :        414.98
 func (grid *GridStatWeightProcess) Init(printer *util.PrintRecorder, timeout int) {
 	grid.printer = printer
 	grid.build.Minimise = true
 	grid.build.Solver = util_highs.Solver_LP_USE_GPU
 	grid.build.TimeLimitSeconds = timeout
-	grid.build.SetEachTolerance(1e-3)
+	// -3 is very quickly resolved (~5s in main)
+	// -5 takes about a minute, 8 significant figures, unknown status due to relative issues
+	// -7 takes about 3 minutes, 10 significant figures, still unknown status, weight accuracy no better
+	grid.build.SetEachTolerance(1e-6)
 	grid.finalWeights = make(map[stats.StatType]util_highs.ColumnIndex)
 }
 
@@ -60,7 +59,7 @@ func (grid *GridStatWeightProcess) SetTargetRatios(targetRatios weight_types.Sim
 	grid.targetRatios = targetRatios
 }
 
-func (grid *GridStatWeightProcess) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.Weight1Basic] {
+func (grid *GridStatWeightProcess) Run() *util_async.FutureCancellable[weight_types.WeightResult] {
 	grid.setupWeightVars()
 
 	grid.dataSamplesFromPairs()
@@ -68,14 +67,16 @@ func (grid *GridStatWeightProcess) Run(stopwatch *util.Stopwatch) *util_async.Fu
 	grid.unitValuesToCalcDetailedRatings()
 	grid.calcTotalRatings()
 
+	stopwatch := util.StopwatchMakeStopped()
 	solutionFuture := grid.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.Weight1Basic, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(grid.printer)
 
 		grid.printer.Println(solution.Status.String())
 		grid.build.DebugPrintColumns(solution, grid.printer)
 
-		return grid.reportOutputWeightsGrid(solution, grid.finalWeights, grid.printer), true
+		weight := grid.reportOutputWeightsGrid(solution, grid.finalWeights, grid.printer)
+		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution.Status}, true
 	})
 }
 

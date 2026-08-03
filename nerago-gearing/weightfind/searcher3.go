@@ -11,6 +11,8 @@ import (
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"sync"
+
+	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 const (
@@ -86,7 +88,8 @@ func (ws *WeightSearcher3) SetRanges(weightMin, weightMax float64) {
 	ws.initialBound = bound
 }
 
-func (ws *WeightSearcher3) Run(cancel util_async.CancelSignal) weight_types.Weight1Basic {
+func (ws *WeightSearcher3) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
+	stopwatch := util.StopwatchMakeStarted()
 	threadCount := 4
 	queue := util_collection.QueueStackFiloPoolParent[*weightSearch2FastBound]{}
 
@@ -105,7 +108,8 @@ func (ws *WeightSearcher3) Run(cancel util_async.CancelSignal) weight_types.Weig
 	}
 
 	bestWeight := ws.bestResult.GetBestOrNilValue()
-	return bestWeight.ScaleForBaseStat(ws.statTypes[0])
+	resultWeight := bestWeight.ScaleForBaseStat(ws.statTypes[0])
+	return weight_types.WeightResult{Weight: &resultWeight, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusOptimal}
 }
 
 func (ws *WeightSearcher3) initialSplits(localQueue *util_collection.QueueStackFiloPoolChild[*weightSearch2FastBound], probesReused []*weightSearch2FastProbe, targetCount int) bool {

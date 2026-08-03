@@ -66,19 +66,21 @@ func (grid2 *GridStatWeightProcess2) SetTargetRatios(targetRatios weight_types.S
 	grid2.targetRatios = targetRatios
 }
 
-func (grid2 *GridStatWeightProcess2) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.Weight2Extended] {
+func (grid2 *GridStatWeightProcess2) Run() *util_async.FutureCancellable[weight_types.WeightResult] {
 	grid2.setupWeightVars()
 	grid2.chooseSimDiffScaling()
 	grid2.processInputData()
 
+	stopwatch := util.StopwatchMakeStopped()
 	solutionFuture := grid2.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.Weight2Extended, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(grid2.printer)
 
 		grid2.printer.Println(solution.Status.String())
 		grid2.build.DebugPrintColumns(solution, grid2.printer)
 
-		return grid2.reportOutputWeightsGrid(solution), true
+		weight := grid2.reportOutputWeightsGrid(solution)
+		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution.Status}, true
 	})
 }
 

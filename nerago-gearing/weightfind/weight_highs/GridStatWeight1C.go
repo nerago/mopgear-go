@@ -71,7 +71,7 @@ func (grid *GridStatWeightProcess1C) SetTestMode(testMode bool) {
 	}
 }
 
-func (grid *GridStatWeightProcess1C) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.Weight1Basic] {
+func (grid *GridStatWeightProcess1C) Run() *util_async.FutureCancellable[weight_types.WeightResult] {
 	grid.setupWeightVars()
 	grid.dataSamplesFromPairs()
 	grid.removeOutliers()
@@ -79,14 +79,16 @@ func (grid *GridStatWeightProcess1C) Run(stopwatch *util.Stopwatch) *util_async.
 	grid.unitValuesToCalcDetailedRatings()
 	grid.finalWeightVars()
 
+	stopwatch := util.StopwatchMakeStopped()
 	solutionFuture := grid.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.Weight1Basic, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(grid.printer)
 
 		grid.printer.Println(solution.Status.String())
 		grid.build.DebugPrintColumns(solution, grid.printer)
 
-		return grid.reportOutputWeightsGrid(solution, grid.finalWeights, grid.printer), true
+		weight := grid.reportOutputWeightsGrid(solution, grid.finalWeights, grid.printer)
+		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution.Status}, true
 	})
 
 }

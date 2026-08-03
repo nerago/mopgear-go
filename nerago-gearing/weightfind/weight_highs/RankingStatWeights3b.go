@@ -125,7 +125,7 @@ func (ranker *RankingStatWeightProcess3b) RunMultiRound(stopwatch *util.Stopwatc
 	})
 }
 
-func (ranker *RankingStatWeightProcess3b) RunSinglePassFromExternal(initial weight_types.Weight1Basic, stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.Weight1Basic] {
+func (ranker *RankingStatWeightProcess3b) RunSinglePassFromExternal(initial weight_types.Weight1Basic) *util_async.FutureCancellable[weight_types.WeightResult] {
 	// FULL RUN
 	ranker.dataSample = ranker.dataAllOriginal
 	ranker.newBuilder()
@@ -133,11 +133,14 @@ func (ranker *RankingStatWeightProcess3b) RunSinglePassFromExternal(initial weig
 	ranker.createWeightColumns()
 	ranker.doAlgos()
 	ranker.setupInitialSolutionFromExternal(initial)
+
+	stopwatch := util.StopwatchMakeStopped()
 	solutionFuture := ranker.build.RunHighsFuture(stopwatch)
 
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult2 util_highs.LinearResult) (weight_types.Weight1Basic, bool) {
-		solution2 := linearResult2.GetSolutionAndSaveLog(ranker.printer)
-		return ranker.extractAndReportSolution(solution2), true
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult2 util_highs.LinearResult) (weight_types.WeightResult, bool) {
+		solution := linearResult2.GetSolutionAndSaveLog(ranker.printer)
+		weight := ranker.extractAndReportSolution(solution)
+		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution.Status}, true
 	})
 }
 
@@ -365,21 +368,21 @@ func (ranker *RankingStatWeightProcess3b) extractAndReportSolution(solution *hig
 
 	ranker.printer.Println("WEIGHTS")
 
-	statWeightResult := weight_types.Weight1Basic_Make(ranker.targetRatios)
+	weight := weight_types.Weight1Basic_Make(ranker.targetRatios)
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 
 		modelWeight := solution.ColValues[weightColumn]
-		statWeightResult.Put(statType, modelWeight)
+		weight.Put(statType, modelWeight)
 	}
 
 	baseStat := ranker.requiredStats[0]
-	divideBy := statWeightResult.Get(baseStat)
+	divideBy := weight.Get(baseStat)
 	for _, statType := range ranker.requiredStats {
-		value := statWeightResult.Get(statType) / divideBy
-		statWeightResult.Put(statType, value)
+		value := weight.Get(statType) / divideBy
+		weight.Put(statType, value)
 		ranker.printer.Printf("%10s %f\n", statType.Name(), value)
 	}
 
-	return statWeightResult
+	return weight
 }

@@ -54,11 +54,13 @@ func (be *BaseEachStatProcess[F]) SupplyData(inputData []weight_types.WeightInpu
 	be.InputData = inputData
 }
 
-func (be *BaseEachStatProcess[F]) CalcMetrics(stopwatch *util.Stopwatch) {
+func (be *BaseEachStatProcess[F]) CalcMetrics() *util.Stopwatch {
+	stopwatch := util.StopwatchMakeStopped()
 	for fields := range be.Each.SeqValues() {
 		stopwatch.AddElapsedFrom(fields.Stopwatch())
 		be.Printer.AppendOther(fields.InnerPrinter())
 	}
+	return stopwatch
 }
 
 func (be *BaseEachStatProcess[F]) BuildResult() *weight_types.Weight3ExtendedRanged {

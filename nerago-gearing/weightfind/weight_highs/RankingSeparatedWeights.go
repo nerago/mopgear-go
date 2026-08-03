@@ -103,16 +103,19 @@ func (ranker *RankingSeparatedWeights) newBuilder() {
 	ranker.build.SetEachTolerance(1e-2)
 }
 
-func (ranker *RankingSeparatedWeights) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.Weight2Extended] {
+func (ranker *RankingSeparatedWeights) Run() *util_async.FutureCancellable[weight_types.WeightResult] {
 	ranker.newBuilder()
 	ranker.prepareRankings()
 	ranker.createWeightColumns()
 	ranker.processData()
+
+	stopwatch := util.StopwatchMakeStopped()
 	solutionFuture := ranker.build.RunHighsFuture(stopwatch)
 
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.Weight2Extended, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(ranker.printer)
-		return ranker.extractAndReportSolution(solution), true
+		weight := ranker.extractAndReportSolution(solution)
+		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution.Status}, true
 	})
 }
 
@@ -241,22 +244,22 @@ func (ranker *RankingSeparatedWeights) makeEntryRankExact(targetScore float64, d
 func (ranker *RankingSeparatedWeights) extractAndReportSolution(solution *highs.Solution) weight_types.Weight2Extended {
 	ranker.build.DebugPrintColumns(solution, ranker.printer)
 
-	statWeightResult := weight_types.Weight2Extended_Make(ranker.requiredStats, ranker.requiredSims)
+	weight := weight_types.Weight2Extended_Make(ranker.requiredStats, ranker.requiredSims)
 	for entry := range ranker.detailedWeightColumns.SeqKey1Key2ValueEntries() {
 		weightColumn := entry.Value
 		weightValue := solution.ColValues[weightColumn]
-		statWeightResult.PutWeight(entry.Key1, entry.Key2, weightValue)
+		weight.PutWeight(entry.Key1, entry.Key2, weightValue)
 	}
 	for simType, offsetCol := range ranker.offsetColumns {
 		offsetValue := solution.ColValues[offsetCol]
 		ratio := ranker.targetRatios.GetOrPanic(simType)
-		statWeightResult.SetSimScale(simType, 1, offsetValue, ratio)
+		weight.SetSimScale(simType, 1, offsetValue, ratio)
 	}
-	statWeightResult.FinishAndValidate()
+	weight.FinishAndValidate()
 
-	statWeightResult.Print(ranker.printer)
-	ranker.reportExamples(statWeightResult)
-	ranker.reportCompleteRanges(statWeightResult)
+	weight.Print(ranker.printer)
+	ranker.reportExamples(weight)
+	ranker.reportCompleteRanges(weight)
 
 	slackLimit := (c_rank_sep_scoreMax - c_rank_sep_scoreMin) * c_rank_sep_rangeSlackLimit
 	for _, simType := range ranker.requiredSims {
@@ -267,7 +270,7 @@ func (ranker *RankingSeparatedWeights) extractAndReportSolution(solution *highs.
 		}
 	}
 
-	return *statWeightResult
+	return *weight
 }
 
 func (ranker *RankingSeparatedWeights) reportExamples(weightExtended *weight_types.Weight2Extended) {

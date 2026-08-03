@@ -25,6 +25,9 @@ func (sw *Stopwatch) Start() {
 }
 
 func (sw *Stopwatch) Stop() {
+	if !sw.running {
+		panic("Timer not running")
+	}
 	sw.accumulated += time.Since(sw.startTime)
 	sw.startTime = time.Time{}
 	sw.running = false

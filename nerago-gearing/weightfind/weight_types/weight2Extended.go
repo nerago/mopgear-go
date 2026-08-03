@@ -138,7 +138,7 @@ func (we *Weight2Extended) validate() {
 //	}
 //}
 
-func (we *Weight2Extended) ConvertToWeight1() Weight1Basic {
+func (we *Weight2Extended) ConvertToWeight1() *Weight1Basic {
 	// NOTE: assuming that scaleEachSimForBase has run, all on equal basis
 	weight1 := Weight1Basic_Make(we.SimPriority.ConvertToBasic())
 
@@ -152,7 +152,8 @@ func (we *Weight2Extended) ConvertToWeight1() Weight1Basic {
 		weight1.Put(statType, sumForStat)
 	}
 
-	return weight1.ScaleForBaseStat(we.StatList[0])
+	weight1 = weight1.ScaleForBaseStat(we.StatList[0])
+	return &weight1
 }
 
 func (we *Weight2Extended) Print(printer *util.PrintRecorder) {

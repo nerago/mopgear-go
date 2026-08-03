@@ -11,6 +11,8 @@ import (
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"strconv"
+
+	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 const (
@@ -83,7 +85,8 @@ func (ws *WeightSearcher2) SetRanges(weightMin, weightMax float64) {
 	})
 }
 
-func (ws *WeightSearcher2) Run(cancel util_async.CancelSignal) weight_types.Weight1Basic {
+func (ws *WeightSearcher2) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
+	stopwatch := util.StopwatchMakeStarted()
 	iterCount := 0
 	for cancel.ShouldContinue() {
 		bound, hasValue := ws.queue.Pop()
@@ -118,7 +121,8 @@ func (ws *WeightSearcher2) Run(cancel util_async.CancelSignal) weight_types.Weig
 	}
 
 	bestWeight := ws.bestResult.GetBestOrNilValue()
-	return bestWeight.ScaleForBaseStat(ws.statTypes[0])
+	resultWeight := bestWeight.ScaleForBaseStat(ws.statTypes[0])
+	return weight_types.WeightResult{Weight: &resultWeight, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusOptimal}
 }
 
 func (ws *WeightSearcher2) evaluateScore(weightArray []float64) float64 {

@@ -7,6 +7,8 @@ import (
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_rank"
 	"paladin_gearing_go/weightfind/weight_types"
+
+	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 const (
@@ -37,8 +39,9 @@ func (ws *WeightSearcher1) SupplyData(inputData []weight_types.WeightInput) {
 	ws.evaluateAccuracy.Init(inputData, &ws.targetRatio, ws.AccuracyStatistical)
 }
 
-func (ws *WeightSearcher1) Run(cancel util_async.CancelSignal) weight_types.Weight1Basic {
+func (ws *WeightSearcher1) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
 	progress := 0
+	stopwatch := util.StopwatchMakeStarted()
 
 	bestCandidates := util_rank.HighestCollector_ForN[weight_types.Weight1Basic](128, (*weight_types.Weight1Basic).Equals)
 	for possibleWeight := range ws.makeSpacedWeights() {
@@ -69,7 +72,8 @@ func (ws *WeightSearcher1) Run(cancel util_async.CancelSignal) weight_types.Weig
 	}
 
 	bestWeight := bestResult.GetBestOrNilValue()
-	return bestWeight.ScaleForBaseStat(ws.weightStats[0])
+	resultWeight := bestWeight.ScaleForBaseStat(ws.weightStats[0])
+	return weight_types.WeightResult{Weight: &resultWeight, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusOptimal}
 }
 
 func (ws *WeightSearcher1) makeSpacedWeights() iter.Seq[weight_types.Weight1Basic] {

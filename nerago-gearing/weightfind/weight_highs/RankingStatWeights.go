@@ -72,7 +72,7 @@ func (ranker *RankingStatWeightProcess) SetTargetRatios(targetRatios weight_type
 	ranker.requiredSims = targetRatios.SimTypes()
 }
 
-func (ranker *RankingStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout int) *util_async.FutureCancellable[weight_types.Weight1Basic] {
+func (ranker *RankingStatWeightProcess) Run(timeout int) *util_async.FutureCancellable[weight_types.WeightResult] {
 	ranker.build = new(util_highs.LinearBuilder)
 	ranker.build.Minimise = true
 	ranker.build.Solver = util_highs.Solver_LP_USE_GPU
@@ -83,10 +83,12 @@ func (ranker *RankingStatWeightProcess) Run(stopwatch *util.Stopwatch, timeout i
 	ranker.prepareRankings()
 	ranker.processData()
 
+	stopwatch := util.StopwatchMakeStopped()
 	solutionFuture := ranker.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.Weight1Basic, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(ranker.printer)
-		return ranker.extractAndReportSolution(solution), true
+		weight := ranker.extractAndReportSolution(solution)
+		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution.Status}, true
 	})
 }
 
@@ -257,7 +259,7 @@ func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs
 
 	ranker.printer.Println("WEIGHTS")
 
-	statWeightResult := weight_types.Weight1Basic_Make(ranker.targetRatios)
+	weight := weight_types.Weight1Basic_Make(ranker.targetRatios)
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statScale := ranker.scaleStats.GetOrPanic(statType)
@@ -265,22 +267,23 @@ func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs
 		modelWeight := solution.ColValues[weightColumn]
 		usableWeight := modelWeight * statScale
 
-		statWeightResult.Put(statType, usableWeight)
+		weight.Put(statType, usableWeight)
 	}
 
-	divideBy := statWeightResult.Get(stats.Stat_Strength)
+	baseStat := ranker.requiredStats[0]
+	divideBy := weight.Get(baseStat)
 	for _, statType := range ranker.requiredStats {
-		statWeightResult.Put(statType, statWeightResult.Get(statType)/divideBy)
+		weight.Put(statType, weight.Get(statType)/divideBy)
 	}
 
-	ranker.reportRankingOfInputs(statWeightResult)
+	ranker.reportRankingOfInputs(weight)
 
-	return statWeightResult
+	return weight
 }
 
-func (ranker *RankingStatWeightProcess) reportRankingOfInputs(statWeightResult weight_types.Weight1Basic) {
+func (ranker *RankingStatWeightProcess) reportRankingOfInputs(weight weight_types.Weight1Basic) {
 	ranker.printer.Println("INPUT CHECK (index, combinedSimRank, calcStat)")
 	for i, entry := range ranker.data {
-		ranker.printer.Printf("%4d %8f %8f\n", i, entry.SimScore, statWeightResult.CalcStatScore(&entry.Data.TotalStat))
+		ranker.printer.Printf("%4d %8f %8f\n", i, entry.SimScore, weight.CalcStatScore(&entry.Data.TotalStat))
 	}
 }
