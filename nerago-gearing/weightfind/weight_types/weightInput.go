@@ -2,6 +2,7 @@ package weight_types
 
 import (
 	"paladin_gearing_go/stats"
+	"paladin_gearing_go/util"
 	"time"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -56,4 +57,13 @@ func (rn StatRange) Contains(value uint32) bool {
 type StatRangeFloat struct {
 	Minimum float64
 	Maximum float64
+}
+
+func (rf StatRangeFloat) IsValid() bool {
+	return rf.Minimum < rf.Maximum
+}
+
+func (rf StatRangeFloat) ContainsOtherRangeFloatAllowance(other StatRangeFloat) bool {
+	return util.FloatApproxLessThanOrEqual(rf.Minimum, other.Minimum) &&
+		util.FloatApproxLessThanOrEqual(other.Maximum, rf.Maximum)
 }

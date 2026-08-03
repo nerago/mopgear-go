@@ -2,6 +2,7 @@ package weight_types
 
 import (
 	"encoding/json"
+	"iter"
 	"math"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -130,6 +131,10 @@ func (wr *Weight1Basic) Clone() Weight1Basic {
 
 func (wr *Weight1Basic) String() string {
 	return wr.content.CreateString(6)
+}
+
+func (wr *Weight1Basic) SeqPair() iter.Seq2[stats.StatType, float64] {
+	return wr.content.SeqPair()
 }
 
 func (wr *Weight1Basic) MarshalJSON() ([]byte, error) {

@@ -230,11 +230,13 @@ func (spec *WeightSpec) evaluateWeightFuture(choiceName string, weightResultFutu
 }
 
 func (spec *WeightSpec) evaluateWeight(choiceName string, weight1 *weight_types.Weight1Basic, weightOrig weight_types.IWeight) {
-	pawnString := tools.WritePawnString(*weight1, spec.process.printer)
-
 	accuracyOrig := EvaluateAccuracy(weightOrig, spec.simTypes, &spec.targetRatio, spec.dataAll)
 	accuracy1 := EvaluateAccuracy(weight1, spec.simTypes, &spec.targetRatio, spec.dataAll)
 	accuracy1Stat := EvaluateAccuracyStatistical(weight1, spec.simTypes, &spec.targetRatio, spec.dataAll)
+
+	pawnString := tools.WritePawnString(*weight1, spec.process.printer)
+	spec.process.printer.Println(weightOrig.String())
+	tools.WriteWeightString(weightOrig, spec.process.printer)
 
 	if weight1.IsEmpty() || weightOrig.IsEmpty() {
 		spec.process.printer.Printf("Weights accuracy %s %s EMPTY normal=%f pref=%f stat=%f\n", spec.Label, choiceName, accuracy1, accuracyOrig, accuracy1Stat)
@@ -248,7 +250,7 @@ func (spec *WeightSpec) evaluateWeight(choiceName string, weight1 *weight_types.
 func (spec *WeightSpec) bestWeightChoice() (weightChoice, bool) {
 	best := util_rank.BestCollector1[weightChoice]{}
 	for _, choice := range spec.choices {
-		best.Offer(&choice, choice.accuracy)
+		best.Offer(&choice, choice.accuracyStat)
 	}
 	return best.GetBestOptional().GetWithFlag()
 }

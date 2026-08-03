@@ -2,6 +2,7 @@ package fitting1
 
 import (
 	"cmp"
+	"fmt"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
@@ -165,24 +166,28 @@ func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []util_weig
 }
 
 func (fg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData []util_weight2.FittingSample, inputRange weight_types.StatRangeFloat, removeRange weight_types.StatRangeFloat) {
-	if removeRange.Minimum < inputRange.Minimum || removeRange.Maximum > inputRange.Maximum || removeRange.Minimum > removeRange.Maximum || inputRange.Minimum > inputRange.Maximum {
-		panic("range isn't within bounds")
+	if !inputRange.ContainsOtherRangeFloatAllowance(removeRange) {
+		panic(fmt.Sprintf("range isn't within bounds %e %e %e %e", removeRange.Minimum, inputRange.Minimum, removeRange.Maximum, inputRange.Maximum))
+	}
+	if !removeRange.IsValid() {
+		panic("invalid remove range")
+	}
+	if !inputRange.IsValid() {
+		panic("invalid input range")
 	}
 
 	loData := make([]util_weight2.FittingSample, 0)
 	hiData := make([]util_weight2.FittingSample, 0)
 	for _, input := range processedData {
 		stat := input.StatValue
-		if stat < inputRange.Minimum {
-			panic("sample isn't within bounds")
-		} else if inputRange.Minimum <= stat && stat < removeRange.Minimum {
+		if util.FloatsBetween(inputRange.Minimum, stat, removeRange.Minimum) {
 			loData = append(loData, input)
-		} else if removeRange.Minimum <= stat && stat <= removeRange.Maximum {
-			// drop
-		} else if removeRange.Maximum < stat && stat <= inputRange.Maximum {
+		} else if util.FloatsBetween(removeRange.Maximum, stat, inputRange.Maximum) {
 			hiData = append(hiData, input)
+		} else if util.FloatsBetween(inputRange.Minimum, stat, inputRange.Maximum) {
+			// drop
 		} else {
-			panic("sample isn't within bounds")
+			panic(fmt.Sprintf("sample isn't within bounds %e %e %e", inputRange.Minimum, stat, inputRange.Maximum))
 		}
 	}
 

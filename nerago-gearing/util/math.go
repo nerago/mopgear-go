@@ -86,6 +86,10 @@ func FloatsBetween(lo, val, hi float64) bool {
 	return lo-c_float_equal_delta <= val && val <= hi+c_float_equal_delta
 }
 
+func FloatApproxLessThanOrEqual(lower float64, higher float64) bool {
+	return lower <= higher+c_float_equal_delta
+}
+
 func RoundToInt64(value float64) int64 {
 	return int64(math.Round(value))
 }

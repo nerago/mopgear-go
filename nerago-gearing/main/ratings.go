@@ -675,6 +675,38 @@ func statWeightsFitting2eachProper(printer *util.PrintRecorder) {
 
 }
 
+func statWeightsFitting1eachProper(printer *util.PrintRecorder) {
+	//bytes, err := os.ReadFile("")
+	//weightInputs := readWeightInputFile("sim-stats-compare-rand.json")
+	//weightInputs := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Heal.json")
+	weightInputs := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Mitigation-WithSet.json")
+	//weightInputs = weightInputs[0:10]
+	statTypes := model_factory.StatsForWeighting_strengthTank
+	targetRatio := model_factory.SimPriority_withSet
+	simTypes := targetRatio.SimTypes()
+
+	fitting := fitting1.FittingEachStatWeightProcess{}
+	fitting.Init(printer, 1000)
+	fitting.SetRequiredStats(statTypes, simTypes)
+	fitting.SetOnlyComputeSingleSegmentEach(true)
+	fitting.SupplyData(weightInputs)
+	weightResult := fitting.Run(util_async.CancelSignal_Make())
+	weight3 := weightResult.Weight.(*weight_types.Weight3ExtendedRanged)
+
+	tools.WriteWeight3String(*weight3, printer)
+	printer.Printf("weight3 isempty = %v\n", weight3.IsEmpty())
+	printer.Printf("weight2 isempty = %v\n", weight3.ConvertToWeight2().IsEmpty())
+	printer.Printf("weight1 isempty = %v\n", weight3.ConvertToWeight2().ConvertToWeight1().IsEmpty())
+
+	acc3 := weightfind.EvaluateAccuracy(weight3, simTypes, &targetRatio, weightInputs)
+	acc2 := weightfind.EvaluateAccuracy(weight3.ConvertToWeight2(), simTypes, &targetRatio, weightInputs)
+	acc1 := weightfind.EvaluateAccuracy(weight3.ConvertToWeight2().ConvertToWeight1(), simTypes, &targetRatio, weightInputs)
+	printer.Printf("weight3 acc = %v\n", acc3)
+	printer.Printf("weight2 acc = %v\n", acc2)
+	printer.Printf("weight1 acc = %v\n", acc1)
+
+}
+
 func fittingTableReport(printer *util.PrintRecorder, weightList []fitting2.InitialSegment, statMax float64, sampleData []util_weight.FittingSample) {
 	tab := util.TabulateOutput{}
 	tab.SetColumnSpacing(1)

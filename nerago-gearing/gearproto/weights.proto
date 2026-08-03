@@ -6,27 +6,26 @@ option go_package = "./gearproto";
 import "gear-common.proto";
 
 message Weight1Basic {
-  repeated Weight1Entry weight     = 1;
-  repeated Priority1Entry priority = 2;
+  int32 weightType  = 1;
+  repeated Weight1Entry weight     = 2;
+  repeated Priority1Entry priority = 3;
 }
 
 message Weight2Extended {
-//  repeated StatType stat_type        = 1;
-//  repeated SimType sim_type          = 2;
-  repeated Weight2Entry weights      = 3;
-  repeated Priority2Entry priority   = 4;
+  int32 weightType  = 1;
+  repeated Weight2Entry weights      = 2;
+  repeated Priority2Entry priority   = 3;
 }
 
 message Weight3Extended {
-//  repeated StatType stat_type        = 1;
-//  repeated SimType sim_type          = 2;
-  repeated Weight3Group weights      = 3;
-  repeated Priority2Entry priority   = 4;
+  int32 weightType  = 1;
+  repeated Weight3Group weights      = 2;
+  repeated Priority2Entry priority   = 3;
 }
 
 message Weight1Entry {
   StatType stat_type   = 1;
-  uint32 rating_weight = 2;
+  double rating_weight = 2;
 }
 
 message Weight2Entry {
@@ -36,7 +35,7 @@ message Weight2Entry {
 }
 
 message Weight3Group {
-  StatType stat_type             = 1;
+  StatType stat_type            = 1;
   SimType sim_type              = 2;
   repeated Weight3Entry entries = 3;
 }
