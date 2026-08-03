@@ -112,6 +112,17 @@ func SimPriorityExtended_Make() SimPriorityExtended {
 	return SimPriorityExtended{util_collection.EnumMapMake[stats.SimType, SimPriorityEntry](stats.SimTypeEnum)}
 }
 
+func (sre *SimPriorityExtended) IsEmpty() bool {
+	for entry := range sre.entries.SeqValues() {
+		if stats.IsUsefulWeightNumber(entry.RatioScale) &&
+			stats.IsUsefulWeightNumber(entry.RangingScale) &&
+			stats.IsValidWeightNumber(entry.RangingOffset) {
+			return false
+		}
+	}
+	return true
+}
+
 func (sre *SimPriorityExtended) Clone() SimPriorityExtended {
 	return SimPriorityExtended{*sre.entries.Clone()}
 }

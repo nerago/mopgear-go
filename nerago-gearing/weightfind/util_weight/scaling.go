@@ -143,51 +143,61 @@ func ChooseSimDetailUnitScaleAndOffset(inputData []weight_types.WeightInput, sim
 func chooseUnitScaleAndOffset(seq iter.Seq[float64], isHighGood bool) ScaleAndOffset {
 	minPosValue, maxPosValue, minNegValue, maxNegValue, hasNeg, hasPos, hasZero := sequenceMetrics(seq)
 
-	var bestActual, worstActual float64
+	// TODO not sure if flipping negatives makes sense, rarely comes up though probably
+
+	var highestActual, lowestActual float64
 	// initially worked out based on isHighGood=true, so best is closest to +inf
 	if hasPos && hasNeg {
-		bestActual = maxPosValue
-		worstActual = -maxNegValue
+		highestActual = maxPosValue
+		lowestActual = -maxNegValue
 	} else if hasPos && hasZero {
-		bestActual = maxPosValue
-		worstActual = 0
+		highestActual = maxPosValue
+		lowestActual = 0
 	} else if hasPos {
-		bestActual = maxPosValue
-		worstActual = minPosValue
+		highestActual = maxPosValue
+		lowestActual = minPosValue
 	} else if hasNeg && hasZero {
-		bestActual = 0
-		worstActual = -maxNegValue
+		highestActual = 0
+		lowestActual = -maxNegValue
 	} else if hasNeg {
-		bestActual = -minNegValue
-		worstActual = -maxNegValue
+		highestActual = -minNegValue
+		lowestActual = -maxNegValue
 	} else {
 		panic("can't determine value range for all zeros")
 	}
 
+	return CalcScaleOffsetForUnitRange(isHighGood, highestActual, lowestActual)
+}
+
+// scaleAndOffset logic: output = (input + so.offset) * so.scale
+// worstTarget = (worstActual + offset) * scale
+//
+//	-> worstTarget = worstActual*scale + offset*scale
+//	-> worstTarget - worstActual*scale = offset*scale
+//
+// bestTarget = (bestActual + offset) * scale
+//
+//	-> bestTarget = bestActual*scale + offset*scale
+//	-> bestTarget = bestActual*scale + (worstTarget - worstActual*scale)
+//	-> bestTarget - worstTarget = bestActual*scale - worstActual*scale
+//	-> bestTarget - worstTarget = (bestActual - worstActual) * scale
+//	-> (bestTarget - worstTarget) / (bestActual - worstActual) = scale
+//
+// bestTarget = (bestActual + offset) * scale
+//
+//	-> bestTarget / scale = bestActual + offset
+//	-> bestTarget / scale - bestActual = offset
+func CalcScaleOffsetForUnitRange(isHighGood bool, highestActual float64, lowestActual float64) ScaleAndOffset {
 	if !isHighGood {
 		// flip meaning so that best is closest to -inf
-		bestActual, worstActual = worstActual, bestActual
+		highestActual, lowestActual = lowestActual, highestActual
 	}
 
 	worstTarget := 0.0
 	bestTarget := 1.0
 
-	// scaleAndOffset logic: output = (input + so.offset) * so.scale
-	// worstTarget = (worstActual + offset) * scale
-	//   -> worstTarget = worstActual*scale + offset*scale
-	//   -> worstTarget - worstActual*scale = offset*scale
-	// bestTarget = (bestActual + offset) * scale
-	//   -> bestTarget = bestActual*scale + offset*scale
-	//   -> bestTarget = bestActual*scale + (worstTarget - worstActual*scale)
-	//   -> bestTarget - worstTarget = bestActual*scale - worstActual*scale
-	//   -> bestTarget - worstTarget = (bestActual - worstActual) * scale
-	//   -> (bestTarget - worstTarget) / (bestActual - worstActual) = scale
-	// bestTarget = (bestActual + offset) * scale
-	//   -> bestTarget / scale = bestActual + offset
-	//   -> bestTarget / scale - bestActual = offset
-
-	scale := (bestTarget - worstTarget) / (bestActual - worstActual)
-	offset := (bestTarget / scale) - bestActual
+	scale := (bestTarget - worstTarget) / (highestActual - lowestActual)
+	offset := (bestTarget / scale) - highestActual
 	return ScaleAndOffset{
 		Scale:  scale,
 		Offset: offset,

@@ -233,7 +233,7 @@ func (run *rankInternalRun5) extractAndReportSolution(solution *highs.Solution) 
 
 	run.process.printer.Println("WEIGHTS")
 
-	weight := weight_types.Weight1Basic_Make(run.process.targetRatios)
+	weight := weight_types.Weight1Basic_Make()
 	for _, statType := range run.process.requiredStats {
 		weightColumn := run.weightColumns[statType]
 		statScale := run.scaleStats.GetOrPanic(statType)

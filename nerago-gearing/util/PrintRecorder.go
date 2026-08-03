@@ -230,7 +230,7 @@ func (print *PrintRecorder) Close() {
 
 func deleteIfEmpty(logName string) {
 	info, err := os.Stat(logName)
-	if err == nil && info.Size() == 0 {
+	if err == nil && info.Size() <= 32 {
 		_ = os.Remove(logName)
 	}
 }

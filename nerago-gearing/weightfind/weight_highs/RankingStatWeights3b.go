@@ -263,7 +263,7 @@ func (ranker *RankingStatWeightProcess3b) makeEntryPairCheckScoreOrderMatchesTar
 
 // we do a complete ranking using all weights set equal
 func (ranker *RankingStatWeightProcess3b) setupDumbInitialSolution() {
-	internalWeights := weight_types.Weight1Basic_Make(ranker.targetRatios)
+	internalWeights := weight_types.Weight1Basic_Make()
 	for _, statType := range ranker.requiredStats {
 		internalWeights.Put(statType, 1)
 	}
@@ -271,7 +271,7 @@ func (ranker *RankingStatWeightProcess3b) setupDumbInitialSolution() {
 }
 
 func (ranker *RankingStatWeightProcess3b) setupInitialSolutionFromPreviousSolutionWeights(solution *highs.Solution) {
-	internalWeights := weight_types.Weight1Basic_Make(ranker.targetRatios)
+	internalWeights := weight_types.Weight1Basic_Make()
 	for statType, colWeight := range ranker.weightColumns {
 		weight := solution.ColValues[colWeight]
 		internalWeights.Put(statType, weight)
@@ -280,7 +280,7 @@ func (ranker *RankingStatWeightProcess3b) setupInitialSolutionFromPreviousSoluti
 }
 
 func (ranker *RankingStatWeightProcess3b) setupInitialSolutionFromExternal(weights weight_types.Weight1Basic) {
-	internalWeights := weight_types.Weight1Basic_Make(ranker.targetRatios)
+	internalWeights := weight_types.Weight1Basic_Make()
 	for _, statType := range ranker.requiredStats {
 		value := weights.Get(statType)
 		internalWeights.Put(statType, value)
@@ -370,7 +370,7 @@ func (ranker *RankingStatWeightProcess3b) extractAndReportSolution(solution *hig
 
 	ranker.printer.Println("WEIGHTS")
 
-	weight := weight_types.Weight1Basic_Make(ranker.targetRatios)
+	weight := weight_types.Weight1Basic_Make()
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 

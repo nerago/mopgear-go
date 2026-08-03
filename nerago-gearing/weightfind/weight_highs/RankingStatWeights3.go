@@ -296,7 +296,7 @@ func (ranker *RankingStatWeightProcess3) makeEntryPairSequenceConstraintsRequire
 }
 
 func (ranker *RankingStatWeightProcess3) setupDumbInitialSolution() {
-	internalWeights := weight_types.Weight1Basic_Make(ranker.targetRatios)
+	internalWeights := weight_types.Weight1Basic_Make()
 	for statType := range ranker.weightColumns {
 		internalWeights.Put(statType, 1)
 	}
@@ -306,7 +306,7 @@ func (ranker *RankingStatWeightProcess3) setupDumbInitialSolution() {
 }
 
 func (ranker *RankingStatWeightProcess3) setupInitialSolutionFromPreviousWeightOnly(solution *highs.Solution) {
-	internalWeights := weight_types.Weight1Basic_Make(ranker.targetRatios)
+	internalWeights := weight_types.Weight1Basic_Make()
 	for statType, colWeight := range ranker.weightColumns {
 		weight := solution.ColValues[colWeight]
 		internalWeights.Put(statType, weight)
@@ -383,7 +383,7 @@ func (ranker *RankingStatWeightProcess3) extractAndReportSolution(solution *high
 
 	ranker.printer.Println("WEIGHTS")
 
-	weight := weight_types.Weight1Basic_Make(ranker.targetRatios)
+	weight := weight_types.Weight1Basic_Make()
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statScale := ranker.scaleStats.GetOrPanic(statType)

@@ -182,7 +182,7 @@ func (basic *BasicStatWeightProcess) calcTotalRatings() {
 }
 
 func (basic *BasicStatWeightProcess) reportOutputWeights(solution *highs.Solution) weight_types.Weight1Basic {
-	result := weight_types.Weight1Basic_Make(basic.targetRatios)
+	result := weight_types.Weight1Basic_Make()
 	basic.printer.Println("FINAL WEIGHTS:")
 	for _, statType := range basic.requiredStats {
 		columnIndex := basic.finalWeights[statType]

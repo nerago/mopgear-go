@@ -45,7 +45,12 @@ func Weight2Extended_Make(statList []stats.StatType, simList []stats.SimType) *W
 }
 
 func (we *Weight2Extended) IsEmpty() bool {
-	return we.DetailedWeights.IsEmpty()
+	for value := range we.DetailedWeights.SeqValues() {
+		if stats.IsUsefulWeightNumber(value) {
+			return false
+		}
+	}
+	return true
 }
 
 func (we *Weight2Extended) PutWeight(statType stats.StatType, simType stats.SimType, weight float64) {
@@ -140,7 +145,7 @@ func (we *Weight2Extended) validate() {
 
 func (we *Weight2Extended) ConvertToWeight1() *Weight1Basic {
 	// NOTE: assuming that scaleEachSimForBase has run, all on equal basis
-	weight1 := Weight1Basic_Make(we.SimPriority.ConvertToBasic())
+	weight1 := Weight1Basic_Make()
 
 	for _, statType := range we.StatList {
 		sumForStat := 0.0

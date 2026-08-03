@@ -17,13 +17,16 @@ import (
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"strconv"
+
+	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 //goland:noinspection GoBoolExpressions
 func statWeights_CompareAlgorithms() {
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "statWeights_CompareAlgorithms")
 
-	targetRatio := model_factory.SimPriority_generalMiti
+	targetRatio := model_factory.SimPriority_withSet
+	//targetRatio := model_factory.SimPriority_generalMiti
 	//targetRatio := gear_model.SimPriority_heal
 	requiredStats := model_factory.StatsForWeighting_strengthTank
 	requiredSims := targetRatio.SimTypes()
@@ -50,8 +53,10 @@ func statWeights_CompareAlgorithms() {
 	//writeWeightBasicInputsToFile(inputDataBasic, basicSimBase, "sim-stats-compare-basic.json")
 
 	inputDataBasic, basicSimBase := readWeightBasicInputsFile("sim-stats-compare-basic.json")
-	inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Mitigation-NoSet.json")
-	inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
+	//inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Mitigation-NoSet.json")
+	//inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
+	inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Mitigation-WithSet.json")
+	inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Mitigation-WithSet.json")
 	//inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
 	//inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
 	mixedInputDataFull := slices.Concat(inputDataGrid, inputDataRandom)
@@ -66,7 +71,7 @@ func statWeights_CompareAlgorithms() {
 	mixedInputData := mixedInputDataFull
 
 	// weight value 87.7342
-	weightsMidRange := weight_types.Weight1Basic_Make(targetRatio)
+	weightsMidRange := weight_types.Weight1Basic_Make()
 	weightsMidRange.Put(stats.Stat_Strength, 1.0000)
 	weightsMidRange.Put(stats.Stat_Stamina, 1.2309)
 	weightsMidRange.Put(stats.Stat_Crit, 0.1167)
@@ -81,12 +86,15 @@ func statWeights_CompareAlgorithms() {
 
 	taskMap := make(map[string]func() weight_types.WeightResult)
 	addTask := func(label string, run func() weight_types.WeightResult) {
+		if taskMap[label] != nil {
+			panic("duplicate")
+		}
 		taskMap[label] = run
 	}
 
 	reportOnTweakedVersions := false
-	standardTimeout := 900
-	shortTimeout := 500
+	standardTimeout := 3000
+	shortTimeout := 1000
 
 	runBasic := true
 	runFormulaVariants := true // best is about 87%, moderate time
@@ -94,8 +102,8 @@ func statWeights_CompareAlgorithms() {
 	runFitting2 := true
 
 	runGrid1Original := true
-	runGrid1Variants := false
-	runGrid1VariantsFewer := true
+	runGrid1Variants := true
+	runGrid1VariantsFewer := false
 	runGrid1C := true
 	runGrid2 := true
 
@@ -112,6 +120,16 @@ func statWeights_CompareAlgorithms() {
 
 	runRankingSep := true
 	runFormula2 := true
+
+	addTask("itemLevel", func() weight_types.WeightResult {
+		weight := weight_types.Weight1Basic_Make()
+		weight.Put(requiredStats[0], 1)
+		return weight_types.WeightResult{
+			Weight:    &weight,
+			SolveTime: 0,
+			Status:    highs.ModelStatusOptimal,
+		}
+	})
 
 	if runBasic {
 		addTask("basic", func() weight_types.WeightResult {
@@ -594,72 +612,89 @@ func statWeights_CompareAlgorithms() {
 		outputByAlgorithm.Put(*taskLabel, weightResult)
 	})
 
-	type algorithmReport struct {
-		//weight3         *weight_types.Weight3ExtendedRanged
-		//weight2         *weight_types.Weight2Extended
-		weight1         *weight_types.Weight1Basic
-		initialAccuracy float64
-		weightResult    weight_types.WeightResult
-	}
 	reportByAlgorithm := make(map[string]algorithmReport)
 	for label, weightResult := range outputByAlgorithm.SeqWithKeys_ThreadSafeCopy() {
 		accuracy := weightfind.EvaluateAccuracy(weightResult.Weight, requiredSims, &targetRatio, mixedInputDataFull)
+		accuracyStat := weightfind.EvaluateAccuracyStatistical(weightResult.Weight, requiredSims, &targetRatio, mixedInputDataFull)
 		weight1 := weightResult.AsWeight1()
 		reportByAlgorithm[label] = algorithmReport{
 			weight1,
 			accuracy,
+			accuracyStat,
 			weightResult,
 		}
 	}
 
+	resultOrder := slices.Collect(maps.Keys(reportByAlgorithm))
+
+	slices.SortFunc(resultOrder, func(a, b string) int {
+		return cmp.Compare(reportByAlgorithm[a].statAccuracy, reportByAlgorithm[b].statAccuracy)
+	})
+	compareReport(requiredStats, resultOrder, reportByAlgorithm, requiredSims, targetRatio, mixedInputDataFull, reportOnTweakedVersions, printer)
+
+	slices.SortFunc(resultOrder, func(a, b string) int {
+		return cmp.Compare(reportByAlgorithm[a].initialAccuracy, reportByAlgorithm[b].initialAccuracy)
+	})
+	compareReport(requiredStats, resultOrder, reportByAlgorithm, requiredSims, targetRatio, mixedInputDataFull, reportOnTweakedVersions, printer)
+}
+
+type algorithmReport struct {
+	//weight3         *weight_types.Weight3ExtendedRanged
+	//weight2         *weight_types.Weight2Extended
+	weight1         *weight_types.Weight1Basic
+	initialAccuracy float64
+	statAccuracy    float64
+	weightResult    weight_types.WeightResult
+}
+
+func compareReport(requiredStats []stats.StatType, resultOrder []string, reportByAlgorithm map[string]algorithmReport, requiredSims []stats.SimType, targetRatio weight_types.SimPriorityBasic, mixedInputDataFull []weight_types.WeightInput, reportOnTweakedVersions bool, printer *util.PrintRecorder) {
 	tab := util.TabulateOutput{}
 	tab.SetColumnSpacing(2)
 	tab.AddColumnHeader("algo", false)
 	for _, stat := range requiredStats {
 		tab.AddColumnHeader(stat.Name(), true)
 	}
-	tab.AddColumnHeader("accuracy", false)
-	tab.AddColumnHeader("accuracy_stat", false)
+	tab.AddColumnHeader("accX", false)
+	tab.AddColumnHeader("accX_stat", false)
+	tab.AddColumnHeader("acc1", false)
+	tab.AddColumnHeader("acc1_stat", false)
 	tab.AddColumnHeader("time", false)
 	tab.AddColumnHeader("status", false)
 
-	resultOrder := slices.Collect(maps.Keys(reportByAlgorithm))
-	slices.SortFunc(resultOrder, func(a, b string) int {
-		return cmp.Compare(reportByAlgorithm[a].initialAccuracy, reportByAlgorithm[b].initialAccuracy)
-	})
-
 	for _, label := range resultOrder {
 		report := reportByAlgorithm[label]
-		row := make([]string, 0)
+		row := make([]string, 0, tab.ColumnCount())
 		row = append(row, label)
 		for _, stat := range requiredStats {
 			value := report.weight1.Get(stat)
 			row = append(row, strconv.FormatFloat(value, 'f', 4, 64))
 		}
-		accuracy := report.initialAccuracy
+		accuracy := weightfind.EvaluateAccuracy(report.weight1, requiredSims, &targetRatio, mixedInputDataFull)
 		accuracyStat := weightfind.EvaluateAccuracyStatistical(report.weight1, requiredSims, &targetRatio, mixedInputDataFull)
+		row = append(row, strconv.FormatFloat(report.initialAccuracy, 'f', 4, 64))
+		row = append(row, strconv.FormatFloat(report.statAccuracy, 'f', 4, 64))
 		row = append(row, strconv.FormatFloat(accuracy, 'f', 4, 64))
 		row = append(row, strconv.FormatFloat(accuracyStat, 'f', 4, 64))
 		row = append(row, report.weightResult.SolveTime.String())
 		row = append(row, report.weightResult.Status.String())
 		tab.AddRow(row)
 
-		if reportOnTweakedVersions {
-			weightTweak, _ := weightfind.WeightTweakerWithLogging(*report.weight1, requiredStats, &targetRatio, mixedInputDataFull, util.PrintRecorder_Nop())
-			accuracyTweak := weightfind.EvaluateAccuracy(&weightTweak, requiredSims, &targetRatio, mixedInputDataFull)
-			accuracyTweakStat := weightfind.EvaluateAccuracyStatistical(&weightTweak, requiredSims, &targetRatio, mixedInputDataFull)
-			row = make([]string, 0)
-			row = append(row, label)
-			for _, stat := range requiredStats {
-				value := weightTweak.Get(stat)
-				row = append(row, strconv.FormatFloat(value, 'f', 4, 64))
-			}
-			row = append(row, strconv.FormatFloat(accuracyTweak, 'f', 4, 64))
-			row = append(row, strconv.FormatFloat(accuracyTweakStat, 'f', 4, 64))
-			row = append(row, report.weightResult.SolveTime.String())
-			row = append(row, report.weightResult.Status.String())
-			tab.AddRow(row)
-		}
+		//if reportOnTweakedVersions {
+		//	weightTweak, _ := weightfind.WeightTweakerWithLogging(*report.weight1, requiredStats, &targetRatio, mixedInputDataFull, util.PrintRecorder_Nop())
+		//	accuracyTweak := weightfind.EvaluateAccuracy(&weightTweak, requiredSims, &targetRatio, mixedInputDataFull)
+		//	accuracyTweakStat := weightfind.EvaluateAccuracyStatistical(&weightTweak, requiredSims, &targetRatio, mixedInputDataFull)
+		//	row = make([]string, 0)
+		//	row = append(row, label)
+		//	for _, stat := range requiredStats {
+		//		value := weightTweak.Get(stat)
+		//		row = append(row, strconv.FormatFloat(value, 'f', 4, 64))
+		//	}
+		//	row = append(row, strconv.FormatFloat(accuracyTweak, 'f', 4, 64))
+		//	row = append(row, strconv.FormatFloat(accuracyTweakStat, 'f', 4, 64))
+		//	row = append(row, report.weightResult.SolveTime.String())
+		//	row = append(row, report.weightResult.Status.String())
+		//	tab.AddRow(row)
+		//}
 	}
 	tab.Write(printer)
 }

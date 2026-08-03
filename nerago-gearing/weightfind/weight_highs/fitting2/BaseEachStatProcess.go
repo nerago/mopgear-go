@@ -84,7 +84,7 @@ func (be *BaseEachStatProcess[F]) ConvertAndScaleResult(initialSet InitialResult
 	resultSlice := make([]util_weight.FittingInterimResult2, 0, len(initialSet.Segments))
 	for i, resultInitial := range initialSet.Segments {
 		interim := util_weight.FittingInterimResult2{
-			LineSlope:  resultInitial.LineSlope,
+			LineSlope:  resultInitial.LineSlope * scaleStat,
 			LineOffset: resultInitial.LineOffset,
 			StatRange: weight_types.StatRange{
 				Minimum: uint32(math.Round(resultInitial.StatRange.Minimum / scaleStat)),

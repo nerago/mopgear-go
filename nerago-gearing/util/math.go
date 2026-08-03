@@ -62,6 +62,10 @@ func FloatEqualsZero(value float64) bool {
 	return math.Abs(value) < c_float_equal_delta
 }
 
+func FloatNonZero(value float64) bool {
+	return math.Abs(value) >= c_float_equal_delta
+}
+
 func FloatsApproxEquals(a, b float64) bool {
 	if b != 0 {
 		ratio := a / b

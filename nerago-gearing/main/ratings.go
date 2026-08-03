@@ -334,7 +334,7 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 		//      parry 0.624330
 
 		// better than it thinks is optimal?
-		weights1 = weight_types.Weight1Basic_Make(targetRatio)
+		weights1 = weight_types.Weight1Basic_Make()
 		weights1.Put(stats.Stat_Strength, 1.000000)
 		weights1.Put(stats.Stat_Stamina, 1.0877848527)
 		weights1.Put(stats.Stat_Crit, 2.4071360469)
@@ -648,7 +648,7 @@ func statWeightsFitting2eachProper(printer *util.PrintRecorder) {
 	//bytes, err := os.ReadFile("")
 	weightInputs := readWeightInputFile("sim-stats-compare-rand.json")
 	//weightInputs := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Heal.json")
-	weightInputs = weightInputs[0:30]
+	weightInputs = weightInputs[0:10]
 	simTypes := model_factory.SimPriority_heal.SimTypes()
 	statTypes := model_factory.StatsForWeighting_strengthTank
 	targetRatio := model_factory.SimPriority_heal
@@ -662,6 +662,17 @@ func statWeightsFitting2eachProper(printer *util.PrintRecorder) {
 	weight3 := weightResult.Weight.(*weight_types.Weight3ExtendedRanged)
 
 	tools.WriteWeight3String(*weight3, printer)
+	printer.Printf("weight3 isempty = %v\n", weight3.IsEmpty())
+	printer.Printf("weight2 isempty = %v\n", weight3.ConvertToWeight2().IsEmpty())
+	printer.Printf("weight1 isempty = %v\n", weight3.ConvertToWeight2().ConvertToWeight1().IsEmpty())
+
+	acc3 := weightfind.EvaluateAccuracy(weight3, simTypes, &targetRatio, weightInputs)
+	acc2 := weightfind.EvaluateAccuracy(weight3.ConvertToWeight2(), simTypes, &targetRatio, weightInputs)
+	acc1 := weightfind.EvaluateAccuracy(weight3.ConvertToWeight2().ConvertToWeight1(), simTypes, &targetRatio, weightInputs)
+	printer.Printf("weight3 acc = %v\n", acc3)
+	printer.Printf("weight2 acc = %v\n", acc2)
+	printer.Printf("weight1 acc = %v\n", acc1)
+
 }
 
 func fittingTableReport(printer *util.PrintRecorder, weightList []fitting2.InitialSegment, statMax float64, sampleData []util_weight.FittingSample) {
@@ -863,8 +874,8 @@ func statWeightsGrid1Orig(printer *util.PrintRecorder) {
 	//inputData := takeDataSample_Random(inputDataFull, 30)
 	inputData := inputDataGrid
 
-	//targetRatio := gear_model.SimRatio_generalMiti
-	targetRatio := model_factory.SimPriority_dps
+	targetRatio := model_factory.SimPriority_generalMiti
+	//targetRatio := model_factory.SimPriority_dps
 	requiredStats := model_factory.StatsForWeighting_strengthTank
 	simTypes := targetRatio.SimTypes()
 
@@ -873,7 +884,7 @@ func statWeightsGrid1Orig(printer *util.PrintRecorder) {
 		process.CHECKRANGE = inc1
 
 		//process.Init(printer, 2000)
-		process.Init(util.PrintRecorder_Nop(), 500)
+		process.Init(util.PrintRecorder_Nop(), 1500)
 		process.SetRequiredStats(requiredStats)
 		process.SetTargetRatios(targetRatio)
 		process.SupplyData(inputData)
@@ -941,7 +952,7 @@ func statWeightsGrid1Orig(printer *util.PrintRecorder) {
 	//}
 }
 
-func statWeightsGrid(printer *util.PrintRecorder) {
+func statWeightsGrid2(printer *util.PrintRecorder) {
 	// inputData, targetRatio := generateRatingsInputFromArtificalStatOverrides(printer)
 	// writeWeightInputsToFile(inputData, "sim-stats-input-grid.json" )
 
@@ -977,8 +988,6 @@ func statWeightsGrid(printer *util.PrintRecorder) {
 		printer.Printf("accuracy %s: grid data = %f, rand data = %f, data mix = %f, stat mix = %f\n", label, acc, acc2, acc3, acc4)
 	}
 
-	//runOne(true, true, true, 1, 3, "select")
-
 	type optParam struct {
 		inc1, inc2, inc3 bool
 		label            string
@@ -1000,41 +1009,65 @@ func statWeightsGrid(printer *util.PrintRecorder) {
 		runOne(o.inc1, o.inc2, o.inc3, o.label)
 		printer.Println(o.label)
 	})
+}
 
-	//for simHigh := range 5 {
-	//	printer.Printf("version %d %d\n", 1, simHigh)
-	//	runOne(false, true, false, 1, simHigh)
-	//}
+func statWeightsGrid1b(printer *util.PrintRecorder) {
+	// inputData, targetRatio := generateRatingsInputFromArtificalStatOverrides(printer)
+	// writeWeightInputsToFile(inputData, "sim-stats-input-grid.json" )
 
-	// so for old method @1, worse is multiply=2, best is multiply=1
-	//  simHigh only really makes much difference once we're in multiply=1
-	//  anything that isn't version 0 is fine, I like 3/4
+	inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Mitigation-NoSet.json")
+	inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
+	//inputData := takeDataSample_Random(inputDataFull, 30)
+	inputData := inputDataGrid
 
-	// so for new method @1, [1 1], [1 2] by far the best
+	targetRatio := model_factory.SimPriority_generalMiti
+	//targetRatio := model_factory.SimPriority_dps
+	requiredStats := model_factory.StatsForWeighting_strengthTank
+	simTypes := targetRatio.SimTypes()
 
-	// old method @2, yay slow
+	runOne := func(a, b, c, d int, label string) {
+		grid := weight_highs.GridStatWeightProcess1B{}
+		grid.OUTLIER = a
+		grid.SCALEMODE = b
+		grid.ROUNDMODE = c
+		grid.CALCMODE = d
+		grid.Init(printer, 1000)
+		grid.SetTargetRatios(targetRatio)
+		grid.SetRequiredStats(requiredStats)
+		grid.SupplyData(inputData)
+		weightsFuture := grid.Run()
+		weightResult := weightsFuture.WaitForResultOrPanic()
+		weights1 := *weightResult.AsWeight1()
 
-	//for ROUNDMODE := range 3 {
-	//	for RESCALE := range 3 {
-	//		process := weight_highs.GridStatWeightProcess1C{}
-	//		process.ROUNDMODE = ROUNDMODE
-	//		process.RESCALE = RESCALE
-	//		process.Init(printer, 3000)
-	//		process.SetRequiredStats(requiredStats)
-	//		process.SetTargetRatios(targetRatio)
-	//		process.SupplyData(inputData)
-	//		weights := process.Run(nil).WaitForResultOrPanic()
-	//		tools.WritePawnString(weights, printer)
-	//		acc := weightfind.EvaluateAccuracyRanged(weights, simTypes, targetRatio, inputDataFull)
-	//
-	//		printer.Printf("accuracy = %f\n", acc)
-	//		printer.Printf("############## DONE %d %d\n", ROUNDMODE, RESCALE)
-	//
-	//		//weights2, _ := weightfind.WeightTweaker(weights, requiredStats, targetRatio, inputDataFull, printer)
-	//		//acc2 := weightfind.EvaluateAccuracy(weights2, inputDataFull, targetRatio)
-	//		//printer.Printf("accuracy_tweak = %f\n", acc2)
-	//	}
-	//}
+		acc := weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, inputDataGrid)
+		acc2 := weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, inputDataRandom)
+		acc3 := weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, slices.Concat(inputDataGrid, inputDataRandom))
+		acc4 := weightfind.EvaluateAccuracyStatistical(&weights1, simTypes, &targetRatio, slices.Concat(inputDataGrid, inputDataRandom))
+		printer.Printf("accuracy %s: grid data = %f, rand data = %f, data mix = %f, stat mix = %f\n", label, acc, acc2, acc3, acc4)
+	}
+
+	//runOne(1, 1, 2, 2, "select")
+
+	type optParam struct {
+		a, b, c, d int
+		label      string
+	}
+	optList := make([]optParam, 0)
+	for a := range 5 {
+		for b := range 5 {
+			for c := range 3 {
+				for d := range 4 {
+					label := fmt.Sprintf("GRID1 %d %d %d %d", a, b, c, d)
+					optList = append(optList, optParam{a, b, c, d, label})
+				}
+			}
+		}
+	}
+
+	util_async.ForEach_Slice(5, optList, func(o *optParam) {
+		runOne(o.a, o.b, o.c, o.d, o.label)
+		printer.Println(o.label)
+	})
 }
 
 func writeWeightInputsToFile(weightInputs []weight_types.WeightInput, filename string) {

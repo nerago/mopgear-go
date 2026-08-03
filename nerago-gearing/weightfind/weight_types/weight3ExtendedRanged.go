@@ -34,7 +34,15 @@ func Weight3ExtendedRanged_Make(statList []stats.StatType, simList []stats.SimTy
 }
 
 func (wer *Weight3ExtendedRanged) IsEmpty() bool {
-	return wer.StatWeights.IsEmpty()
+	if wer.SimPriority.IsEmpty() {
+		return true
+	}
+	for entry := range wer.StatWeights.SeqValues() {
+		if stats.IsUsefulWeightNumber(entry.RatingWeight) && stats.IsUsefulWeightNumber(entry.RatingOffset) {
+			return false
+		}
+	}
+	return true
 }
 
 func (wer *Weight3ExtendedRanged) AddDetailWeight(simType stats.SimType, statType stats.StatType, statRange StatRange, ratingWeight, ratingOffset, estimationQuality float64) {
@@ -93,29 +101,35 @@ func (wer *Weight3ExtendedRanged) FinishAndValidate() {
 func (wer *Weight3ExtendedRanged) CalcStatScore(stats *stats.StatBlock) float64 {
 	totalSum := 0.0
 	for _, simType := range wer.SimList {
-		simSubTotal := 0.0
-
-		for statType, entrySeq := range wer.StatWeights.SeqKey2ValueSeqWithKey1(simType) {
-			statValue := stats.GetUInt(statType)
-
-			var entry *Weight3ExtendedStatEntry
-			for e := range entrySeq {
-				if e.StatRange.Contains(statValue) {
-					entry = &e
-				}
-			}
-			if entry == nil {
-				panic("no matching range")
-			}
-
-			calc := float64(statValue)*entry.RatingWeight + entry.RatingOffset
-			simSubTotal += calc
-		}
+		simSubTotal := wer.CalcSingleSimScoreUnscaled(stats, simType)
 
 		simEntry := wer.SimPriority.GetOrPanic(simType)
 		totalSum += simEntry.Apply(simSubTotal)
 	}
 	return totalSum
+}
+
+func (wer *Weight3ExtendedRanged) CalcSingleSimScoreUnscaled(stats *stats.StatBlock, simType stats.SimType) float64 {
+	simSubTotal := 0.0
+
+	for statType, entrySeq := range wer.StatWeights.SeqKey2ValueSeqWithKey1(simType) {
+		statValue := stats.GetUInt(statType)
+
+		var entry *Weight3ExtendedStatEntry
+		for e := range entrySeq {
+			if e.StatRange.Contains(statValue) {
+				entry = &e
+				break
+			}
+		}
+		if entry == nil {
+			panic("no matching range")
+		}
+
+		calc := float64(statValue)*entry.RatingWeight + entry.RatingOffset
+		simSubTotal += calc
+	}
+	return simSubTotal
 }
 
 func (wer *Weight3ExtendedRanged) ConvertToWeight2() *Weight2Extended {

@@ -70,7 +70,7 @@ func (ws *WeightSearcher0) makeRandomWeights(count int) iter.Seq[weight_types.We
 }
 
 func (ws *WeightSearcher0) buildWeightsRandom(rng *rand.Rand) weight_types.Weight1Basic {
-	weight := weight_types.Weight1Basic_Make(ws.targetRatio)
+	weight := weight_types.Weight1Basic_Make()
 	for _, statType := range ws.weightStats {
 		value := c_search0_min + rng.Float64()*(c_search0_max-c_search0_min)
 		weight.Put(statType, value)

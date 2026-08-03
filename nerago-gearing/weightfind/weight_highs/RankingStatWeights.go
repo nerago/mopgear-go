@@ -259,7 +259,7 @@ func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs
 
 	ranker.printer.Println("WEIGHTS")
 
-	weight := weight_types.Weight1Basic_Make(ranker.targetRatios)
+	weight := weight_types.Weight1Basic_Make()
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns[statType]
 		statScale := ranker.scaleStats.GetOrPanic(statType)

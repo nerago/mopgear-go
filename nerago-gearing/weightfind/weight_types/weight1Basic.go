@@ -16,11 +16,10 @@ type IWeight interface {
 
 type Weight1Basic struct {
 	content stats.StatBlockFloat
-	ratio   SimPriorityBasic
 }
 
-func Weight1Basic_Make(ratio SimPriorityBasic) Weight1Basic {
-	return Weight1Basic{ratio: ratio}
+func Weight1Basic_Make() Weight1Basic {
+	return Weight1Basic{}
 }
 
 func Weight1Basic_Of(values []float64, statTypes []stats.StatType) Weight1Basic {
@@ -126,7 +125,7 @@ func (wr *Weight1Basic) ScaleForTotalSum(targetTotal float64) Weight1Basic {
 }
 
 func (wr *Weight1Basic) Clone() Weight1Basic {
-	return Weight1Basic{wr.content.Clone(), wr.ratio}
+	return Weight1Basic{wr.content.Clone()}
 }
 
 func (wr *Weight1Basic) String() string {
