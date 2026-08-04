@@ -112,6 +112,7 @@ func statWeights_CompareAlgorithms() {
 	runRanking3aVariants := false  // broken
 	runRanking3bVariants := true
 	runRanking3bPreferred := true
+	runRanking3c := true
 	runRanking4 := true  // still a little slow, midrange 94% etc
 	runRanking5 := false // excellent but slow
 
@@ -462,6 +463,19 @@ func statWeights_CompareAlgorithms() {
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(mixedInputData))
 			weightFuture := ranking.RunSinglePassFromExternal(weightsMidRange)
+			util_async.ChainCancel(cancel, weightFuture)
+			return weightFuture.WaitForResultOrNilValue()
+		})
+	}
+
+	if runRanking3c {
+		addTask("ranking3c", func() weight_types.WeightResult {
+			ranking := weight_highs.RankingStatWeightProcess3c{}
+			ranking.Init(printer, shortTimeout)
+			ranking.SetRequiredStats(requiredStats)
+			ranking.SetTargetRatios(targetRatio)
+			ranking.SupplyData(slices.Clone(mixedInputData))
+			weightFuture := ranking.RunMultiRound()
 			util_async.ChainCancel(cancel, weightFuture)
 			return weightFuture.WaitForResultOrNilValue()
 		})

@@ -12,6 +12,7 @@ type IRankEntry interface {
 type IRankEntryFlat interface {
 	IRankEntry
 	GetSimScore() float64
+	ResetSimScore()
 	IncrementSimScore(add float64)
 }
 
@@ -63,6 +64,9 @@ func (rc *RankStatWeightsCommon) GetSimScore() float64 {
 }
 func (rc *RankStatWeightsCommon) IncrementSimScore(add float64) {
 	rc.SimScore += add
+}
+func (rc *RankStatWeightsCommon) ResetSimScore() {
+	rc.SimScore = 0
 }
 func (rc *RankStatWeightsCommon) SetSimRank(targetRank int) {
 	rc.TargetRank = targetRank

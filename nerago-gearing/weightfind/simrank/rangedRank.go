@@ -16,3 +16,9 @@ func RankSimsStatisticalForAccuracyRanged(requiredSims []stats.SimType, data []*
 	sortSimScores(data)
 	arrayRankToSetSimRankRange(data)
 }
+
+func RankSimsStatisticalForRanged[T weight_types.IRankEntryFlatRange](requiredSims []stats.SimType, data []T, simRatios *weight_types.SimPriorityBasic) {
+	simScoringStatistical(requiredSims, simRatios, data)
+	sortSimScores(data)
+	arrayRankToSetSimRankRange(data)
+}

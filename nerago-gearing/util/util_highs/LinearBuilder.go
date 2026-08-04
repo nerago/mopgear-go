@@ -24,6 +24,7 @@ type LinearBuilder struct {
 	Callback             highs.Callback
 	CallbackTypes        []highs.CallbackType
 	FloatOptions         map[string]float64
+	StringOptions        map[string]string
 }
 
 func (build *LinearBuilder) Clone() *LinearBuilder {
@@ -44,6 +45,13 @@ func (build *LinearBuilder) AddOptionFloat(name string, value float64) {
 		build.FloatOptions = make(map[string]float64)
 	}
 	build.FloatOptions[name] = value
+}
+
+func (build *LinearBuilder) AddOptionString(name string, value string) {
+	if build.StringOptions == nil {
+		build.StringOptions = make(map[string]string)
+	}
+	build.StringOptions[name] = value
 }
 
 func (build *LinearBuilder) SetEachTolerance(value float64) {
@@ -227,6 +235,9 @@ func (build *LinearBuilder) configureHighsUtil(solver *highs.Solver, logfile str
 	for name, value := range build.FloatOptions {
 		verifyNoError(solver.SetFloatOption(name, value))
 	}
+	for name, value := range build.StringOptions {
+		verifyNoError(solver.SetStringOption(name, value))
+	}
 
 	if build.TimeLimitSeconds != 0 {
 		verifyNoError(solver.SetFloatOption("time_limit", float64(build.TimeLimitSeconds)))
@@ -338,8 +349,9 @@ func (build *LinearBuilder) ValidateInitialSolutionState() {
 	colValues := make(map[ColumnIndex]float64)
 	for colNum, value := range build.vars.partialSolution {
 		colValues[colNum] = value
-		if value < build.vars.colLower[colNum] || value > build.vars.colUpper[colNum] {
-			panic(fmt.Sprintf("initial value out of bounds index=%d debug=%s", colNum, build.vars.debug[colNum]))
+		if !util.FloatsBetween(build.vars.colLower[colNum], value, build.vars.colUpper[colNum]) {
+			panic(fmt.Sprintf("initial value out of bounds index=%d debug=%s values=%e<%e<%e", colNum, build.vars.debug[colNum],
+				build.vars.colLower[colNum], value, build.vars.colUpper[colNum]))
 		}
 		if build.vars.colTypes[colNum] == highs.Integer && math.Round(value) != value {
 			panic("initial value not integer")

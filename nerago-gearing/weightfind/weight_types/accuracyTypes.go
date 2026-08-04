@@ -25,6 +25,10 @@ func (a *AccuracyInfo) IncrementSimScore(add float64) {
 	a.SimScore += add
 }
 
+func (a *AccuracyInfo) ResetSimScore() {
+	a.SimScore = 0
+}
+
 func (a *AccuracyInfo) SetSimRankRange(targetRange *util_collection.HiLoInt) {
 	a.SimRankRange = targetRange
 }
@@ -49,6 +53,10 @@ func (a *AccuracyInfoPrePrepare) GetSimScore() float64 {
 
 func (a *AccuracyInfoPrePrepare) IncrementSimScore(add float64) {
 	a.SimScore += add
+}
+
+func (a *AccuracyInfoPrePrepare) ResetSimScore() {
+	a.SimScore = 0
 }
 
 type AccuracyInfoPrepared struct {

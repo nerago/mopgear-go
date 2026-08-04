@@ -1,6 +1,7 @@
 package weightfind
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,16 +17,18 @@ import (
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_rank"
 	"paladin_gearing_go/weightfind/weight_highs"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
+	"strconv"
 	"time"
 )
 
-const c_timeoutSolvers = 3000
+const c_timeoutSolvers = 2000
 const c_simDataAgeMax = 48 * time.Hour
-const c_updateThreadCount = 8
+const c_updateThreadCount = 4
 
 type WeightUpdateProcess struct {
 	simSpeed     simulate.WowSim_RunSize
@@ -54,11 +57,15 @@ type WeightSpec struct {
 }
 
 type weightChoice struct {
-	choiceName   string
-	weight       weight_types.Weight1Basic
-	accuracy     float64
-	accuracyStat float64
-	pawnString   string
+	choiceName    string
+	weight        weight_types.Weight1Basic
+	hadExtended   bool
+	accuracy1     float64
+	accuracy1Stat float64
+	accuracyX     float64
+	accuracyXStat float64
+	pawnString    string
+	weightResult  *weight_types.WeightResult
 }
 
 func (wup *WeightUpdateProcess) Init(simSpeed simulate.WowSim_RunSize, forceSkipSim bool, printer *util.PrintRecorder) {
@@ -69,6 +76,7 @@ func (wup *WeightUpdateProcess) Init(simSpeed simulate.WowSim_RunSize, forceSkip
 
 func (wup *WeightUpdateProcess) AddSpec(spec *WeightSpec) {
 	wup.specs = append(wup.specs, spec)
+	spec.process = wup
 }
 
 func (wup *WeightUpdateProcess) Run(cancel util_async.CancelSignal) {
@@ -83,6 +91,50 @@ func (wup *WeightUpdateProcess) Run(cancel util_async.CancelSignal) {
 	for _, summary := range summaries {
 		wup.printer.Println(summary)
 	}
+
+	for _, spec := range wup.specs {
+		spec.tabularReport()
+	}
+}
+
+func (spec *WeightSpec) tabularReport() {
+	tab := util.TabulateOutput{}
+	tab.SetColumnSpacing(2)
+	tab.AddColumnHeader("algo", false)
+	tab.AddColumnHeader("acc1", false)
+	tab.AddColumnHeader("acc1_stat", false)
+	tab.AddColumnHeader("accX", false)
+	tab.AddColumnHeader("accX_stat", false)
+	tab.AddColumnHeader("time", false)
+	tab.AddColumnHeader("status", false)
+	tab.AddColumnHeader("pawn", false)
+
+	slices.SortFunc(spec.choices, func(a, b weightChoice) int {
+		return cmp.Compare(a.accuracy1Stat, b.accuracy1Stat)
+	})
+	for choice := range util_collection.ForPointer(spec.choices) {
+		row := make([]string, 0, tab.ColumnCount())
+		row = append(row, choice.choiceName)
+		row = append(row, strconv.FormatFloat(choice.accuracy1, 'f', 4, 64))
+		row = append(row, strconv.FormatFloat(choice.accuracy1Stat, 'f', 4, 64))
+		if choice.hadExtended {
+			row = append(row, strconv.FormatFloat(choice.accuracyX, 'f', 4, 64))
+			row = append(row, strconv.FormatFloat(choice.accuracyXStat, 'f', 4, 64))
+		} else {
+			row = append(row, "", "")
+		}
+		if choice.weightResult != nil {
+			row = append(row, choice.weightResult.SolveTime.String())
+			row = append(row, choice.weightResult.Status.String())
+		} else {
+			row = append(row, "", "")
+		}
+		row = append(row, choice.pawnString)
+		tab.AddRow(row)
+	}
+
+	spec.process.printer.Printf("TABLE %s\n", spec.Label)
+	tab.Write(spec.process.printer)
 }
 
 func (spec *WeightSpec) updateOne(tracker *util.TrackProgress) string {
@@ -106,21 +158,21 @@ func (spec *WeightSpec) updateOne(tracker *util.TrackProgress) string {
 	// LOAD OLD WEIGHT VALUES
 	spec.loadOldWeights()
 
-	// GRID WEIGHTS
+	// GRID WEIGHTS - GPU*2
 	for gridMode := range 2 {
 		spec.solveGridWeights(gridMode)
 	}
 
-	// FORMULA2 WEIGHTS
+	// FORMULA2 WEIGHTS - MIP
 	spec.solveFormulaWeight()
 
-	// SEARCH weights
+	// SEARCH weights - Non-Highs
 	for searchMode := range 2 {
 		spec.solveSearchWeights(searchMode)
 	}
 
-	// RANKING WEIGHTS - late in order so can use a good start point
-	for rankMode := range 2 {
+	// RANKING WEIGHTS - simplex*2, IPX*2
+	for rankMode := range 4 {
 		spec.solveRankingWeight(rankMode)
 	}
 
@@ -134,7 +186,14 @@ func (spec *WeightSpec) updateOne(tracker *util.TrackProgress) string {
 		spec.summary.WriteString(" ::::: ")
 		spec.summary.WriteString(bestChoice.choiceName)
 		spec.summary.WriteRune(' ')
-		spec.summary.WriteFloat64(bestChoice.accuracy, 4)
+		spec.summary.WriteFloat64(bestChoice.accuracy1, 4)
+		spec.summary.WriteString(" (")
+		spec.summary.WriteFloat64(bestChoice.accuracy1Stat, 4)
+		spec.summary.WriteString(") ")
+		spec.summary.WriteFloat64(bestChoice.accuracyX, 4)
+		spec.summary.WriteString(" (")
+		spec.summary.WriteFloat64(bestChoice.accuracyXStat, 4)
+		spec.summary.WriteString(") ")
 	}
 
 	// FINISH SUMMARY REPORT
@@ -189,9 +248,9 @@ func (spec *WeightSpec) addChoice(choice weightChoice) {
 func (spec *WeightSpec) addToSummary(option weightChoice) {
 	spec.summary.WriteString(option.choiceName)
 	spec.summary.WriteString("=")
-	spec.summary.WriteFloat64(option.accuracy, 4)
+	spec.summary.WriteFloat64(option.accuracy1, 4)
 	spec.summary.WriteString(" (")
-	spec.summary.WriteFloat64(option.accuracyStat, 4)
+	spec.summary.WriteFloat64(option.accuracy1Stat, 4)
 	spec.summary.WriteString(") ")
 }
 
@@ -199,7 +258,7 @@ func (spec *WeightSpec) loadOldWeights() {
 	oldWeightBlock, _, oldWeightExists := tools.PawnWeightReadFile(spec.WeightFileOut)
 	if oldWeightExists {
 		oldWeight := weight_types.Weight1Basic_FromBlock(oldWeightBlock)
-		spec.evaluateWeight("OLD", &oldWeight, &oldWeight)
+		spec.evaluateWeight("OLD", &oldWeight, &oldWeight, nil)
 	}
 }
 
@@ -215,7 +274,7 @@ func (spec *WeightSpec) solveGridWeights(gridOutlierSetting int) {
 	grid.SupplyData(spec.dataGrid)
 	weightsFuture := grid.Run()
 
-	choiceName := fmt.Sprintf("grid %d", gridOutlierSetting)
+	choiceName := fmt.Sprintf("GRID%d", gridOutlierSetting)
 	spec.evaluateWeightFuture(choiceName, weightsFuture)
 }
 
@@ -224,13 +283,21 @@ func (spec *WeightSpec) evaluateWeightFuture(choiceName string, weightResultFutu
 		weightOrig := weightResult.Weight
 		weight1 := weightResult.AsWeight1()
 		if weightOrig != nil && weight1 != nil {
-			spec.evaluateWeight(choiceName, weight1, weightOrig)
+			spec.evaluateWeight(choiceName, weight1, weightOrig, &weightResult)
 		}
 	}
 }
 
-func (spec *WeightSpec) evaluateWeight(choiceName string, weight1 *weight_types.Weight1Basic, weightOrig weight_types.IWeight) {
-	accuracyOrig := EvaluateAccuracy(weightOrig, spec.simTypes, &spec.targetRatio, spec.dataAll)
+func (spec *WeightSpec) evaluateWeight(choiceName string, weight1 *weight_types.Weight1Basic, weightOrig weight_types.IWeight, weightResult *weight_types.WeightResult) {
+	var accuracyX, accuracyXStat float64
+	var hadExtended bool
+	if _, isOne := weightOrig.(*weight_types.Weight1Basic); isOne {
+		hadExtended = false
+	} else {
+		accuracyX = EvaluateAccuracy(weightOrig, spec.simTypes, &spec.targetRatio, spec.dataAll)
+		accuracyXStat = EvaluateAccuracyStatistical(weightOrig, spec.simTypes, &spec.targetRatio, spec.dataAll)
+		hadExtended = true
+	}
 	accuracy1 := EvaluateAccuracy(weight1, spec.simTypes, &spec.targetRatio, spec.dataAll)
 	accuracy1Stat := EvaluateAccuracyStatistical(weight1, spec.simTypes, &spec.targetRatio, spec.dataAll)
 
@@ -239,18 +306,21 @@ func (spec *WeightSpec) evaluateWeight(choiceName string, weight1 *weight_types.
 	tools.WriteWeightString(weightOrig, spec.process.printer)
 
 	if weight1.IsEmpty() || weightOrig.IsEmpty() {
-		spec.process.printer.Printf("Weights accuracy %s %s EMPTY normal=%f pref=%f stat=%f\n", spec.Label, choiceName, accuracy1, accuracyOrig, accuracy1Stat)
-		spec.addChoice(weightChoice{choiceName, *weight1, 0, 0, pawnString})
+		spec.process.printer.Printf("Weights accuracy %s %s EMPTY a1=%f a1s=%f aX=%f aXs=%f\n", spec.Label, choiceName, accuracy1, accuracy1Stat, accuracyX, accuracyXStat)
+		spec.addChoice(weightChoice{choiceName: choiceName, weight: *weight1, pawnString: pawnString, weightResult: weightResult})
 	} else {
-		spec.process.printer.Printf("Weights accuracy %s %s normal=%f pref=%f stat=%f\n", spec.Label, choiceName, accuracy1, accuracyOrig, accuracy1Stat)
-		spec.addChoice(weightChoice{choiceName, *weight1, accuracy1, accuracy1Stat, pawnString})
+		spec.process.printer.Printf("Weights accuracy %s %s a1=%f a1s=%f aX=%f aXs=%f\n", spec.Label, choiceName, accuracy1, accuracy1Stat, accuracyX, accuracyXStat)
+		spec.addChoice(weightChoice{choiceName, *weight1, hadExtended,
+			accuracy1, accuracy1Stat,
+			accuracyX, accuracyXStat,
+			pawnString, weightResult})
 	}
 }
 
 func (spec *WeightSpec) bestWeightChoice() (weightChoice, bool) {
 	best := util_rank.BestCollector1[weightChoice]{}
 	for _, choice := range spec.choices {
-		best.Offer(&choice, choice.accuracyStat)
+		best.Offer(&choice, choice.accuracy1Stat)
 	}
 	return best.GetBestOptional().GetWithFlag()
 }
@@ -265,13 +335,28 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int) {
 		ranking.SetTargetRatios(spec.targetRatio)
 		ranking.SupplyData(spec.dataAll)
 		var weightsFuture *util_async.FutureCancellable[weight_types.WeightResult]
-		if bestWeightsSoFar, hasBest := spec.bestWeightChoice(); hasBest {
-			weightsFuture = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
-		} else {
-			weightsFuture = ranking.RunMultiRound()
-		}
-		spec.evaluateWeightFuture("RANK3", weightsFuture)
-	} else {
+		//if bestWeightsSoFar, hasBest := spec.bestWeightChoice(); hasBest {
+		//	weightsFuture = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
+		//} else {
+		weightsFuture = ranking.RunMultiRound()
+		//}
+		spec.evaluateWeightFuture("RANK3-2-0", weightsFuture)
+	} else if rankMode == 1 {
+		ranking := weight_highs.RankingStatWeightProcess3b{}
+		ranking.TOTALWEIGHT = 2
+		ranking.ALGO = 1
+		ranking.Init(spec.process.printer, c_timeoutSolvers)
+		ranking.SetRequiredStats(spec.statTypes)
+		ranking.SetTargetRatios(spec.targetRatio)
+		ranking.SupplyData(spec.dataAll)
+		var weightsFuture *util_async.FutureCancellable[weight_types.WeightResult]
+		//if bestWeightsSoFar, hasBest := spec.bestWeightChoice(); hasBest {
+		//	weightsFuture = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
+		//} else {
+		weightsFuture = ranking.RunMultiRound()
+		//}
+		spec.evaluateWeightFuture("RANK3-2-1", weightsFuture)
+	} else if rankMode == 2 {
 		ranking := weight_highs.RankingStatWeightProcess{}
 		ranking.RANKMODE = 0
 		ranking.WEIGHTSUM = 0
@@ -280,7 +365,17 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int) {
 		ranking.SetTargetRatios(spec.targetRatio)
 		ranking.SupplyData(spec.dataAll)
 		weightsFuture := ranking.Run(c_timeoutSolvers)
-		spec.evaluateWeightFuture("RANK1", weightsFuture)
+		spec.evaluateWeightFuture("RANK1-0", weightsFuture)
+	} else {
+		ranking := weight_highs.RankingStatWeightProcess{}
+		ranking.RANKMODE = 0
+		ranking.WEIGHTSUM = 1
+		ranking.Init(spec.process.printer)
+		ranking.SetRequiredStats(spec.statTypes)
+		ranking.SetTargetRatios(spec.targetRatio)
+		ranking.SupplyData(spec.dataAll)
+		weightsFuture := ranking.Run(c_timeoutSolvers)
+		spec.evaluateWeightFuture("RANK1-1", weightsFuture)
 	}
 }
 
@@ -308,7 +403,7 @@ func (spec *WeightSpec) solveSearchWeights(searchMode int) {
 		search.SupplyData(spec.dataAll)
 		search.SetRanges(-1.0, 10.0)
 		weightResult = search.Run(cancel)
-		spec.evaluateWeight("SEARCH2", weightResult.AsWeight1(), weightResult.Weight)
+		spec.evaluateWeight("SEARCH2", weightResult.AsWeight1(), weightResult.Weight, &weightResult)
 	} else {
 		search := WeightSearcher3{}
 		search.AccuracyStatistical = true
@@ -316,7 +411,7 @@ func (spec *WeightSpec) solveSearchWeights(searchMode int) {
 		search.SupplyData(spec.dataAll)
 		search.SetRanges(-1.0, 10.0)
 		weightResult = search.Run(cancel)
-		spec.evaluateWeight("SEARCH3", weightResult.AsWeight1(), weightResult.Weight)
+		spec.evaluateWeight("SEARCH3", weightResult.AsWeight1(), weightResult.Weight, &weightResult)
 	}
 }
 
@@ -326,7 +421,7 @@ func (spec *WeightSpec) tweakEachWeight() {
 		choice := spec.choices[i]
 		if !choice.weight.IsEmpty() {
 			weightsTweaked, _ := WeightTweakerWithLogging(choice.weight, spec.statTypes, &spec.targetRatio, spec.dataAll, spec.process.printer)
-			spec.evaluateWeight(choice.choiceName+"_TWEAK", &weightsTweaked, &weightsTweaked)
+			spec.evaluateWeight(choice.choiceName+"_TWEAK", &weightsTweaked, &weightsTweaked, nil)
 		}
 	}
 }

@@ -195,18 +195,72 @@ func statWeightsFormula(printer *util.PrintRecorder) {
 }
 
 func statWeightsRanking(printer *util.PrintRecorder) {
-	weightInputs := readWeightInputFile("sim-stats-compare-rand.json")
+	//weightInputs := readWeightInputFile("sim-stats-compare-rand.json")
+	weightInputs1 := readWeightInputFile("tempdata\\weightfind-sim-real-Prot-Heal.json")
+	weightInputs2 := readWeightInputFile("tempdata\\weightfind-sim-grid-Prot-Heal.json")
+	weightInputs := slices.Concat(weightInputs1, weightInputs2)
 
-	comp := weight_highs.RankingSeparatedWeights{}
+	statList := model_factory.StatsForWeighting_strengthTank
+	ratio := model_factory.SimPriority_heal
 
-	comp.Init(printer, 3000)
-	comp.SetRequiredStats(model_factory.StatsForWeighting_strengthTank, model_factory.SimPriority_generalMiti.SimTypes())
-	comp.SetTargetRatios(model_factory.SimPriority_generalMiti)
-	comp.SupplyData(weightInputs)
-	weightResult := comp.Run().WaitForResultOrPanic()
+	//comp := weight_highs.RankingSeparatedWeights{}
+	//comp.Init(printer, 3000)
+	//comp.SetRequiredStats(model_factory.StatsForWeighting_strengthTank, model_factory.SimPriority_generalMiti.SimTypes())
+	//comp.SetTargetRatios(model_factory.SimPriority_generalMiti)
+	//comp.SupplyData(weightInputs)
+	//weightResult := comp.Run().WaitForResultOrPanic()
+	//weights1 := weightResult.AsWeight1()
+	//if weights1 != nil {
+	//	tools.WritePawnString(*weights1, printer)
+	//} else {
+	//	printer.Println("MISSING WEIGHT")
+	//}
+
+	ranking := weight_highs.RankingStatWeightProcess{}
+	ranking.RANKMODE = 0
+	ranking.WEIGHTSUM = 0 // or 1
+	ranking.Init(printer)
+	ranking.SetRequiredStats(statList)
+	ranking.SetTargetRatios(ratio)
+	ranking.SupplyData(weightInputs)
+	weightResult := ranking.Run(1000).WaitForResultOrPanic()
 	weights1 := weightResult.AsWeight1()
 	if weights1 != nil {
 		tools.WritePawnString(*weights1, printer)
+	} else {
+		printer.Println("MISSING WEIGHT")
+	}
+}
+
+func statWeightsRanking3b(printer *util.PrintRecorder) {
+	//weightInputs := readWeightInputFile("sim-stats-compare-rand.json")
+	//weightInputs1 := readWeightInputFile("tempdata\\weightfind-sim-real-Prot-Heal.json")
+	//weightInputs2 := readWeightInputFile("tempdata\\weightfind-sim-grid-Prot-Heal.json")
+	weightInputs1 := readWeightInputFile("tempdata\\weightfind-sim-real-Prot-Mitigation-NoSet.json")
+	weightInputs2 := readWeightInputFile("tempdata\\weightfind-sim-grid-Prot-Mitigation-NoSet.json")
+	weightInputs := slices.Concat(weightInputs1, weightInputs2)
+
+	statList := model_factory.StatsForWeighting_strengthTank
+	//ratio := model_factory.SimPriority_heal
+	ratio := model_factory.SimPriority_generalMiti
+
+	ranking := weight_highs.RankingStatWeightProcess3c{}
+	//ranking := weight_highs.RankingStatWeightProcess3b{}
+	//ranking.TOTALWEIGHT = 2
+	//ranking.ALGO = 0
+	ranking.Init(printer, 1000)
+	ranking.SetRequiredStats(statList)
+	ranking.SetTargetRatios(ratio)
+	ranking.SupplyData(weightInputs)
+	//weightsFuture = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
+	weightsFuture := ranking.RunMultiRound()
+	//weightsFuture := ranking.RunSinglePassRaw() // 8m35.3713307s Objective value 2.4803613132e+08
+	weightResult := weightsFuture.WaitForResultOrPanic()
+	weights1 := weightResult.AsWeight1()
+	if weights1 != nil {
+		tools.WritePawnString(*weights1, printer)
+		acc := weightfind.EvaluateAccuracy(weights1, ratio.SimTypes(), &ratio, weightInputs)
+		printer.Printf("acc %f\n", acc)
 	} else {
 		printer.Println("MISSING WEIGHT")
 	}
@@ -661,7 +715,7 @@ func statWeightsFitting2eachProper(printer *util.PrintRecorder) {
 	weightResult := fitting.Run(util_async.CancelSignal_Make())
 	weight3 := weightResult.Weight.(*weight_types.Weight3ExtendedRanged)
 
-	tools.WriteWeight3String(*weight3, printer)
+	tools.WriteWeightString(weight3, printer)
 	printer.Printf("weight3 isempty = %v\n", weight3.IsEmpty())
 	printer.Printf("weight2 isempty = %v\n", weight3.ConvertToWeight2().IsEmpty())
 	printer.Printf("weight1 isempty = %v\n", weight3.ConvertToWeight2().ConvertToWeight1().IsEmpty())
@@ -693,7 +747,7 @@ func statWeightsFitting1eachProper(printer *util.PrintRecorder) {
 	weightResult := fitting.Run(util_async.CancelSignal_Make())
 	weight3 := weightResult.Weight.(*weight_types.Weight3ExtendedRanged)
 
-	tools.WriteWeight3String(*weight3, printer)
+	tools.WriteWeightString(weight3, printer)
 	printer.Printf("weight3 isempty = %v\n", weight3.IsEmpty())
 	printer.Printf("weight2 isempty = %v\n", weight3.ConvertToWeight2().IsEmpty())
 	printer.Printf("weight1 isempty = %v\n", weight3.ConvertToWeight2().ConvertToWeight1().IsEmpty())

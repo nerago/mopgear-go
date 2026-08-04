@@ -8,9 +8,18 @@ import (
 	"slices"
 )
 
-func simScoringBasic[T weight_types.IRankEntryFlatSingle](simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []T) {
+func simScoringBasic[T weight_types.IRankEntryFlat](simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []T) {
+	resetSimScores(inputData)
 	for _, simType := range simList {
 		sortGenericBasic(simType, inputData)
+		arrayRankToIncrementSimScore(simType, priority, inputData)
+	}
+}
+
+func simScoringStatistical[T weight_types.IRankEntryFlat](simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []T) {
+	resetSimScores(inputData)
+	for _, simType := range simList {
+		sortGenericWithDeviation(simType, inputData)
 		arrayRankToIncrementSimScore(simType, priority, inputData)
 	}
 }
@@ -40,6 +49,12 @@ func simScoringStatisticalForAccuracyPrepare(simList []stats.SimType, priority *
 	for _, simType := range simList {
 		sortAccuracyPrepareWithDeviation(simType, inputData)
 		arrayRankToIncrementSimScore(simType, priority, inputData)
+	}
+}
+
+func resetSimScores[T weight_types.IRankEntryFlat](inputData []T) {
+	for _, entry := range inputData {
+		entry.ResetSimScore()
 	}
 }
 
@@ -78,6 +93,7 @@ func RankingWeightsPrepareBasicRankingsRemoveDuplicates[T weight_types.IRankEntr
 
 func simScoringMidRange[T weight_types.IRankEntryFlatSingle](simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []T) {
 	// score each sim
+	resetSimScores(inputData)
 	for _, simType := range simList {
 		for entry, simDetailRankHiLo := range calculateRankingRanges(simType.IsHighGood(), inputData, func(x T) float64 { return x.GetSimData().Get(simType) }) {
 			increment := float64(simDetailRankHiLo.Mid()) * priority.GetOrPanic(simType)

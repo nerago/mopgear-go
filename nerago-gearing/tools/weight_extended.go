@@ -18,7 +18,7 @@ func WriteWeightString(weight weight_types.IWeight, printer *util.PrintRecorder)
 	} else if weightCast3, isCast3 := weight.(*weight_types.Weight3ExtendedRanged); isCast3 {
 		str = FormatWeight3String(weightCast3)
 	} else {
-		str = ""
+		str = "missing weight"
 	}
 
 	printer.Println(str)
@@ -52,10 +52,12 @@ func FormatWeight3String(weight3 *weight_types.Weight3ExtendedRanged) string {
 func convertWeight1Details(weight1 *weight_types.Weight1Basic) []*gearproto.Weight1Entry {
 	weight := make([]*gearproto.Weight1Entry, 0)
 	for statType, value := range weight1.SeqPair() {
-		weight = append(weight, &gearproto.Weight1Entry{
-			StatType:     convertStatType(statType),
-			RatingWeight: value,
-		})
+		if util.FloatNonZero(value) {
+			weight = append(weight, &gearproto.Weight1Entry{
+				StatType:     convertStatType(statType),
+				RatingWeight: value,
+			})
+		}
 	}
 	return weight
 }
