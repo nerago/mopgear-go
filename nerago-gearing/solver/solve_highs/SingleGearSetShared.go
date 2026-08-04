@@ -1,6 +1,7 @@
 package solve_highs
 
 import (
+	"iter"
 	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/util"
@@ -27,6 +28,18 @@ type singleGearSetShared struct {
 
 	itemColumns util_collection.MapSlice[items.ItemId, *columnInfo]
 	allColumns  []*columnInfo
+}
+
+func (setup *singleGearSetShared) ColumnsForItemId(itemId items.ItemId) iter.Seq[*columnInfo] {
+	return setup.itemColumns.ValuesForKeyAsSeq(itemId)
+}
+
+func (setup *singleGearSetShared) AllColumns() []*columnInfo {
+	return setup.allColumns
+}
+
+func (setup *singleGearSetShared) MainOutputVar() *columnInfo {
+	return setup.mainOutputVar
 }
 
 func (setup *singleGearSetShared) addItemCommon(itemSlot items.SlotEquip, item *items.SolvableItem, setBonus *gear_model.SetBonus) util_highs.ColumnIndex {

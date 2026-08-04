@@ -24,19 +24,11 @@ import (
 // entry_permutation_output_weighted(column) * permutation.weight -> mainOutputRow
 // mainOutputRow -> mainOutputVar
 
-type StatRequiredExtended map[stats.StatType]util_collection.HiLoUInt32
-
-type ExtendedModel struct {
-	weight    weight_types.Weight2Extended
-	require   StatRequiredExtended
-	gearModel *gear_model.SpecModel
-}
-
-func SingleGearSetExtendedMain(itemOptions *items.SolvableOptionsMap, model *ExtendedModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
+func SingleGearSetExtendedMain(itemOptions *items.SolvableOptionsMap, weight2 *weight_types.Weight2Extended, gearModel *gear_model.SpecModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
 	build := util_highs.LinearBuilder{}
 	build.Solver = util_highs.Solver_MIP_Interior
 
-	setup := setupGearSetExtended(&build, model, itemOptions, 1)
+	setup := makeGearSetExtended2(&build, weight2, gearModel, itemOptions, 1)
 
 	solutionFuture := build.RunHighsFuture(nil)
 
@@ -56,28 +48,28 @@ func SingleGearSetExtendedMain(itemOptions *items.SolvableOptionsMap, model *Ext
 	})
 }
 
-func setupGearSetExtended(build *util_highs.LinearBuilder, model *ExtendedModel, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetExtended {
+func makeGearSetExtended2(build *util_highs.LinearBuilder, weight2 *weight_types.Weight2Extended, gearModel *gear_model.SpecModel, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetExtended {
 	setup := singleGearSetExtended{
 		singleGearSetShared: singleGearSetShared{build: build},
-		model:               model,
 	}
+	require := gearModel.StatRequirements.AsMap()
 
 	setup.prepareStats()
-	setup.prepareRequire(&model.require)
-	setup.prepareActiveSetCombos(&model.gearModel.SetBonus)
+	setup.prepareRequire(require)
+	setup.prepareActiveSetCombos(&gearModel.SetBonus)
 	setup.prepareUniqueEquipped(itemOptions)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
-		setup.addItem(slot, item, &model.require, &model.gearModel.SetBonus)
+		setup.addItem(slot, item, require, &gearModel.SetBonus)
 	}
 	setup.finishItemsCommon(itemOptions)
-	setup.finishStats(&model.require)
+	setup.finishStats(require)
 
-	setup.calcSimValues()
+	setup.calcSimValues(weight2)
 	setup.calcCombinedSimRating()
 	setup.addMainOutputVariable(scaleOutputRating)
-	setup.multiplyRatingsByActiveSetCombo(&model.gearModel.SetBonus, setup.combinedRatingVar)
-	setup.addSetNeededCounts(model.gearModel.SetBonusRequired)
+	setup.multiplyRatingsByActiveSetCombo(&gearModel.SetBonus, setup.combinedRatingVar)
+	setup.addSetNeededCounts(gearModel.SetBonusRequired)
 
 	return &setup
 }
@@ -85,7 +77,7 @@ func setupGearSetExtended(build *util_highs.LinearBuilder, model *ExtendedModel,
 type singleGearSetExtended struct {
 	singleGearSetShared
 
-	model *ExtendedModel
+	//model *ExtendedModel
 
 	requireRows          map[stats.StatType]*util_highs.ConstraintRow // constrains values for the hit/expertise/etc of each item
 	statTotalRows        map[stats.StatType]*util_highs.ConstraintRow
@@ -94,7 +86,7 @@ type singleGearSetExtended struct {
 	combinedRatingVar    *columnInfo // sum of values for the ratings of selected items
 }
 
-func (setup *singleGearSetExtended) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, require *StatRequiredExtended, setBonus *gear_model.SetBonus) util_highs.ColumnIndex {
+func (setup *singleGearSetExtended) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, require map[stats.StatType]util_collection.HiLoUInt32, setBonus *gear_model.SetBonus) util_highs.ColumnIndex {
 	columnIndex := setup.addItemCommon(itemSlot, item, setBonus)
 
 	// add to stats via a summation condition
@@ -105,16 +97,16 @@ func (setup *singleGearSetExtended) addItem(itemSlot items.SlotEquip, item *item
 	}
 
 	// specific hit/expertise/etc values for hi/lo limits
-	for statType := range *require {
+	for statType := range require {
 		setup.requireRows[statType].Add(columnIndex, item.Total().GetFloat(statType))
 	}
 
 	return columnIndex
 }
 
-func (setup *singleGearSetExtended) prepareRequire(require *StatRequiredExtended) {
-	setup.requireRows = make(map[stats.StatType]*util_highs.ConstraintRow, len(*require))
-	for statType := range *require {
+func (setup *singleGearSetExtended) prepareRequire(require map[stats.StatType]util_collection.HiLoUInt32) {
+	setup.requireRows = make(map[stats.StatType]*util_highs.ConstraintRow, len(require))
+	for statType := range require {
 		setup.requireRows[statType] = &util_highs.ConstraintRow{Debug: "require " + statType.Name()}
 	}
 }
@@ -132,9 +124,9 @@ func (setup *singleGearSetExtended) prepareStats() {
 	}
 }
 
-func (setup *singleGearSetExtended) finishStats(require *StatRequiredExtended) {
+func (setup *singleGearSetExtended) finishStats(require map[stats.StatType]util_collection.HiLoUInt32) {
 	// constrain: total sum of hit/exp/etc are within requested limits
-	for statType, hilo := range *require {
+	for statType, hilo := range require {
 		row := setup.requireRows[statType]
 		row.Build(setup.build, float64(hilo.Lo), convertHigh(hilo.Hi))
 	}
@@ -157,12 +149,11 @@ func (setup *singleGearSetExtended) finishStats(require *StatRequiredExtended) {
 // (statA*weight1A + statB*weight1B + statC*weight1C)+offset = simValue/scales
 // statA*weight1A + statB*weight1B + statC*weight1C = simValue/scales - offset
 // statA*weight1A + statB*weight1B + statC*weight1C - simValue/scales = -offset
-func (setup *singleGearSetExtended) calcSimValues() {
-	weight := setup.model.weight
+func (setup *singleGearSetExtended) calcSimValues(weight2 *weight_types.Weight2Extended) {
 	// calculate each sim value from stats
 	setup.simValueTotalColumns = make(map[stats.SimType]*columnInfo)
-	for simType, nestedWeights := range weight.SeqBySimNestedPairs() {
-		simEntry := weight.GetSimPriority().GetOrPanic(simType)
+	for simType, nestedWeights := range weight2.SeqBySimNestedPairs() {
+		simEntry := weight2.GetSimPriority().GetOrPanic(simType)
 		setup.calcSimValue(simType, nestedWeights, simEntry)
 	}
 }

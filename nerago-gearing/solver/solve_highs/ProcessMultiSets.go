@@ -9,6 +9,7 @@ import (
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
+	"paladin_gearing_go/weightfind/weight_types"
 	"strconv"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -23,8 +24,8 @@ type SolverHighsMultiParam struct {
 	Gear_model     *gear_model.SpecModel
 	RatingMultiply float64
 
-	setup        *singleGearSetBasic
-	solveOptions items.SolvableOptionsMap
+	singleGearSet ISingleGearSet
+	solveOptions  items.SolvableOptionsMap
 }
 
 type SolverHighsMultiProcess struct {
@@ -191,7 +192,7 @@ func (process *SolverHighsMultiProcess) prepareVariantWithBlockedItem_One(printe
 	build := process.build.Clone()
 	rowLimitCommon := util_highs.ConstraintRow{Debug: "rowLimitAll"}
 	for _, part := range process.parts {
-		for column := range part.setup.itemColumns.ValuesForKeyAsSeq(forbiddenId) {
+		for column := range part.singleGearSet.ColumnsForItemId(forbiddenId) {
 			rowLimitCommon.Add(column.columnIndex, 1)
 		}
 	}
@@ -272,7 +273,7 @@ columnLoop:
 		}
 
 		for _, part := range job.parts {
-			if debugPrintColumn(part.setup.allColumns, columnIndex, outputValue, nil, nil, printer) {
+			if debugPrintColumn(part.singleGearSet.AllColumns(), columnIndex, outputValue, nil, nil, printer) {
 				continue columnLoop
 			}
 		}
@@ -300,7 +301,7 @@ func (process *SolverHighsMultiProcess) solutionToResult(solution util_highs.ISo
 	idList := make([]string, len(process.parts))
 	for partIndex := range process.parts {
 		part := process.parts[partIndex]
-		solvedSet := part.setup.buildResultSet(solution)
+		solvedSet := part.singleGearSet.buildResultSet(solution)
 		validateNewSet(solvedSet, &part.solveOptions, part.Gear_model)
 		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &part.ItemOptions)
 		resultList[partIndex] = fullItemSet
@@ -329,7 +330,7 @@ func (process *SolverHighsMultiProcess) makeFullModel() {
 	process.outputRow.Add(process.outputColumn, -1)
 
 	for partIndex := range process.parts {
-		process.parts[partIndex].doSetup(process.build, process)
+		process.parts[partIndex].makeSingleGearSet(process.build, process)
 	}
 
 	process.addCommonConstraints(process.build)
@@ -337,10 +338,18 @@ func (process *SolverHighsMultiProcess) makeFullModel() {
 	process.outputRow.Build(process.build, 0, 0)
 }
 
-func (param *SolverHighsMultiParam) doSetup(build *util_highs.LinearBuilder, job *SolverHighsMultiProcess) {
+func (param *SolverHighsMultiParam) makeSingleGearSet(build *util_highs.LinearBuilder, job *SolverHighsMultiProcess) {
 	param.solveOptions = items.SolvableOptionsMap_of(&param.ItemOptions)
-	param.setup = setupGearSet(build, param.Gear_model, &param.solveOptions, 0)
-	job.outputRow.Add(param.setup.mainOutputVar.columnIndex, param.RatingMultiply)
+
+	if weight3, hasWeight3 := param.Gear_model.StatWeightsExtended.(*weight_types.Weight3ExtendedRanged); hasWeight3 {
+		param.singleGearSet = makeGearSetExtended3(build, weight3, param.Gear_model, &param.solveOptions, 0)
+	} else if weight2, hasWeight2 := param.Gear_model.StatWeightsExtended.(*weight_types.Weight2Extended); hasWeight2 {
+		param.singleGearSet = makeGearSetExtended2(build, weight2, param.Gear_model, &param.solveOptions, 0)
+	} else {
+		param.singleGearSet = makeGearSetBasic(build, param.Gear_model, &param.solveOptions, 0)
+	}
+
+	job.outputRow.Add(param.singleGearSet.MainOutputVar().columnIndex, param.RatingMultiply)
 }
 
 func (process *SolverHighsMultiProcess) addCommonConstraints(build *util_highs.LinearBuilder) {
@@ -375,7 +384,7 @@ func (process *SolverHighsMultiProcess) addCommonConstraintsForItemRef(build *ut
 func (process *SolverHighsMultiProcess) findMatchingItemColumnsForCommon(item *items.FullItem) iter.Seq[util_highs.ColumnIndex] {
 	return func(yield func(util_highs.ColumnIndex) bool) {
 		for _, part := range process.parts {
-			for column := range part.setup.itemColumns.ValuesForKeyAsSeq(item.ItemId()) {
+			for column := range part.singleGearSet.ColumnsForItemId(item.ItemId()) {
 				// doesn't technically compare on RandomSuffix, but stats compare should be fine
 				if column.item.EqualsFull(item) {
 					if !yield(column.columnIndex) {

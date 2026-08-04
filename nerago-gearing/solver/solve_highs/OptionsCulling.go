@@ -84,7 +84,7 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 	linearBuild.Solver = util_highs.Solver_MIP_Interior
 	linearBuild.NoOutput = true
 
-	setup := setupGearSet(&linearBuild, process.model, &itemOptions, 1)
+	setup := makeGearSetBasic(&linearBuild, process.model, &itemOptions, 1)
 
 	solutionFuture := linearBuild.RunHighsFuture(nil)
 	util_async.ChainCancel(cancel, solutionFuture)

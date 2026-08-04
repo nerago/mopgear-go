@@ -1,6 +1,7 @@
 package solve_highs
 
 import (
+	"iter"
 	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
@@ -8,6 +9,13 @@ import (
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/weight_types"
 )
+
+type ISingleGearSet interface {
+	ColumnsForItemId(id items.ItemId) iter.Seq[*columnInfo]
+	AllColumns() []*columnInfo
+	buildResultSet(solution util_highs.ISolution) items.SolvableItemSet
+	MainOutputVar() *columnInfo
+}
 
 type entryType int8
 

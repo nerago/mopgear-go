@@ -27,7 +27,7 @@ func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, gear_model *gear_m
 	build := util_highs.LinearBuilder{}
 	build.Solver = util_highs.Solver_MIP_Interior
 
-	setup := setupGearSet(&build, gear_model, itemOptions, 1)
+	setup := makeGearSetBasic(&build, gear_model, itemOptions, 1)
 
 	solutionFuture := build.RunHighsFuture(nil)
 
@@ -48,7 +48,7 @@ func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, gear_model *gear_m
 	})
 }
 
-func setupGearSet(build *util_highs.LinearBuilder, model *gear_model.SpecModel, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetBasic {
+func makeGearSetBasic(build *util_highs.LinearBuilder, model *gear_model.SpecModel, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetBasic {
 	setup := singleGearSetBasic{singleGearSetShared: singleGearSetShared{build: build}}
 
 	setup.prepareRatingSum()

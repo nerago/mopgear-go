@@ -30,16 +30,11 @@ const c_gearExtended3ScoreHigh = 10
 // entry_permutation_output_weighted(column) * permutation.weight -> mainOutputRow
 // mainOutputRow -> mainOutputVar
 
-type ExtendedModel3 struct {
-	weight    weight_types.Weight3ExtendedRanged
-	gearModel *gear_model.SpecModel
-}
-
-func SingleGearSetExtended3Main(itemOptions *items.SolvableOptionsMap, model *ExtendedModel3, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
+func SingleGearSetExtended3Main(itemOptions *items.SolvableOptionsMap, weight3 *weight_types.Weight3ExtendedRanged, gearModel *gear_model.SpecModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
 	build := util_highs.LinearBuilder{}
 	build.Solver = util_highs.Solver_MIP_Interior
 
-	setup := setupGearSetExtended3(&build, model, itemOptions, 1)
+	setup := makeGearSetExtended3(&build, weight3, gearModel, itemOptions, 1)
 
 	solutionFuture := build.RunHighsFuture(nil)
 
@@ -59,34 +54,34 @@ func SingleGearSetExtended3Main(itemOptions *items.SolvableOptionsMap, model *Ex
 	})
 }
 
-func setupGearSetExtended3(build *util_highs.LinearBuilder, model *ExtendedModel3, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetExtended3 {
-	setup := singleGearSetExtended3{singleGearSetShared: singleGearSetShared{build: build}}
-	require := model.gearModel.StatRequirements.AsMap()
+func makeGearSetExtended3(build *util_highs.LinearBuilder, weight3 *weight_types.Weight3ExtendedRanged, gearModel *gear_model.SpecModel, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetExtended3 {
+	setup := singleGearSetExtended3{
+		singleGearSetShared: singleGearSetShared{build: build},
+	}
+	require := gearModel.StatRequirements.AsMap()
 
 	setup.prepareStats()
 	setup.prepareRequire(require)
-	setup.prepareActiveSetCombos(&model.gearModel.SetBonus)
+	setup.prepareActiveSetCombos(&gearModel.SetBonus)
 	setup.prepareUniqueEquipped(itemOptions)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
-		setup.addItem(slot, item, require, &model.gearModel.SetBonus)
+		setup.addItem(slot, item, require, &gearModel.SetBonus)
 	}
 	setup.finishItemsCommon(itemOptions)
 	setup.finishStats(require)
 
-	setup.calcSimValues()
-	setup.calcCombinedSimRating()
+	setup.calcSimValues(weight3)
+	setup.calcCombinedSimRating(weight3)
 	setup.addMainOutputVariable(scaleOutputRating)
-	setup.multiplyRatingsByActiveSetCombo(&model.gearModel.SetBonus, setup.combinedRatingVar)
-	setup.addSetNeededCounts(model.gearModel.SetBonusRequired)
+	setup.multiplyRatingsByActiveSetCombo(&gearModel.SetBonus, setup.combinedRatingVar)
+	setup.addSetNeededCounts(gearModel.SetBonusRequired)
 
 	return &setup
 }
 
 type singleGearSetExtended3 struct {
 	singleGearSetShared
-
-	model *ExtendedModel3
 
 	requireRows          map[stats.StatType]*util_highs.ConstraintRow // constrains values for the hit/expertise/etc of each item
 	statTotalRows        map[stats.StatType]*util_highs.ConstraintRow
@@ -148,16 +143,14 @@ func (setup *singleGearSetExtended3) finishStats(require map[stats.StatType]util
 	}
 }
 
-func (setup *singleGearSetExtended3) calcSimValues() {
-	weight := setup.model.weight
-
+func (setup *singleGearSetExtended3) calcSimValues(weight3 *weight_types.Weight3ExtendedRanged) {
 	setup.simValueTotalColumns = make(map[stats.SimType]*columnInfo)
-	for _, simType := range weight.SimList {
-		setup.calcValueForSimType(simType, weight)
+	for _, simType := range weight3.SimList {
+		setup.calcValueForSimType(simType, weight3)
 	}
 }
 
-func (setup *singleGearSetExtended3) calcValueForSimType(simType stats.SimType, weight weight_types.Weight3ExtendedRanged) {
+func (setup *singleGearSetExtended3) calcValueForSimType(simType stats.SimType, weight *weight_types.Weight3ExtendedRanged) {
 	simValueColumn := setup.makeSimValueColumn(simType)
 	simValueFromStatRow := util_highs.ConstraintRow{}
 
@@ -173,7 +166,7 @@ func (setup *singleGearSetExtended3) calcValueForSimType(simType stats.SimType, 
 	simValueFromStatRow.Build(setup.build, offset, offset)
 }
 
-func (setup *singleGearSetExtended3) calcValueForSimAndStatType(simType stats.SimType, statType stats.StatType, weight weight_types.Weight3ExtendedRanged) columnInfo {
+func (setup *singleGearSetExtended3) calcValueForSimAndStatType(simType stats.SimType, statType stats.StatType, weight *weight_types.Weight3ExtendedRanged) columnInfo {
 	chosenSimStatContribution := setup.makeSimStatValueColumn(simType, statType)
 	statTotalColumn := setup.statTotalColumns[statType]
 
@@ -227,7 +220,7 @@ func (setup *singleGearSetExtended3) makeSimStatOptionColumn(simType stats.SimTy
 	return valueOptionColumn
 }
 
-func (setup *singleGearSetExtended3) calcCombinedSimRating() {
+func (setup *singleGearSetExtended3) calcCombinedSimRating(weight *weight_types.Weight3ExtendedRanged) {
 	// weighted sum of each sim value
 	combinedRatingColumn := columnInfo{entryType: entry_sum_rating}
 	combinedRatingColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), &combinedRatingColumn)
@@ -237,7 +230,7 @@ func (setup *singleGearSetExtended3) calcCombinedSimRating() {
 	// add up the sim values, multiplying corresponding ratio
 	combinedRatingRow := util_highs.ConstraintRow{}
 	for simType, simValueColumn := range setup.simValueTotalColumns {
-		simEntry := setup.model.weight.SimPriority.GetOrPanic(simType)
+		simEntry := weight.SimPriority.GetOrPanic(simType)
 		combinedRatingRow.Add(simValueColumn.columnIndex, simEntry.RatioScale)
 	}
 	combinedRatingRow.Add(combinedRatingColumn.columnIndex, -1)
