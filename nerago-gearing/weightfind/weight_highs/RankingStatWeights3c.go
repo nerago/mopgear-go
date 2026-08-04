@@ -124,9 +124,10 @@ func (ranker *RankingStatWeightProcess3c) RunMultiRound() *util_async.FutureCanc
 		ranker.prepareRankings()
 		ranker.createWeightColumns()
 		ranker.doAlgos()
-		if solution1.HasSolution() {
+		if solution1.IsOptimal() {
 			ranker.setupInitialSolutionFromPreviousSolutionWeights(solution1)
 		} else {
+			ranker.printer.Printf("Giving up on RunMultiRound with solution status %s\n", solution1.Status)
 			return nil
 		}
 		return ranker.build.RunHighsFuture(stopwatch)

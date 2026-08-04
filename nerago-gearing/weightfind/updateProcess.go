@@ -66,6 +66,7 @@ type weightChoice struct {
 	accuracyXStat float64
 	pawnString    string
 	weightResult  *weight_types.WeightResult
+	weightOrig    weight_types.IWeight
 }
 
 func (wup *WeightUpdateProcess) Init(simSpeed simulate.WowSim_RunSize, forceSkipSim bool, printer *util.PrintRecorder) {
@@ -172,7 +173,7 @@ func (spec *WeightSpec) updateOne(tracker *util.TrackProgress) string {
 	}
 
 	// RANKING WEIGHTS - simplex*2, IPX*2
-	for rankMode := range 4 {
+	for rankMode := range 5 {
 		spec.solveRankingWeight(rankMode)
 	}
 
@@ -180,7 +181,7 @@ func (spec *WeightSpec) updateOne(tracker *util.TrackProgress) string {
 	spec.tweakEachWeight()
 
 	// OVERWRITE WEIGHT FILE
-	if bestChoice, hasBest := spec.bestWeightChoice(); hasBest {
+	if bestChoice, hasBest := spec.bestWeightChoice1(); hasBest {
 		util.WriteStringToFile(spec.WeightFileOut, bestChoice.pawnString)
 
 		spec.summary.WriteString(" ::::: ")
@@ -195,6 +196,12 @@ func (spec *WeightSpec) updateOne(tracker *util.TrackProgress) string {
 		spec.summary.WriteFloat64(bestChoice.accuracyXStat, 4)
 		spec.summary.WriteString(") ")
 	}
+
+	spec.writeExtendedWeights()
+
+	spec.dataGrid = nil
+	spec.dataRand = nil
+	spec.dataAll = nil
 
 	// FINISH SUMMARY REPORT
 	spec.process.printer.PrintlnFromBuild(spec.summary)
@@ -313,11 +320,11 @@ func (spec *WeightSpec) evaluateWeight(choiceName string, weight1 *weight_types.
 		spec.addChoice(weightChoice{choiceName, *weight1, hadExtended,
 			accuracy1, accuracy1Stat,
 			accuracyX, accuracyXStat,
-			pawnString, weightResult})
+			pawnString, weightResult, weightOrig})
 	}
 }
 
-func (spec *WeightSpec) bestWeightChoice() (weightChoice, bool) {
+func (spec *WeightSpec) bestWeightChoice1() (weightChoice, bool) {
 	best := util_rank.BestCollector1[weightChoice]{}
 	for _, choice := range spec.choices {
 		best.Offer(&choice, choice.accuracy1Stat)
@@ -325,8 +332,36 @@ func (spec *WeightSpec) bestWeightChoice() (weightChoice, bool) {
 	return best.GetBestOptional().GetWithFlag()
 }
 
+func (spec *WeightSpec) bestWeightChoiceExtended() (util_collection.Optional[weight_types.Weight2Extended], util_collection.Optional[weight_types.Weight3ExtendedRanged]) {
+	best2 := util_rank.BestCollector1[weight_types.Weight2Extended]{}
+	best3 := util_rank.BestCollector1[weight_types.Weight3ExtendedRanged]{}
+	for _, choice := range spec.choices {
+		weightOrig := choice.weightOrig
+		if weightCast3, isCast3 := weightOrig.(*weight_types.Weight3ExtendedRanged); isCast3 {
+			acc3 := EvaluateAccuracyStatistical(weightCast3, spec.simTypes, &spec.targetRatio, spec.dataAll)
+			best3.Offer(weightCast3, acc3)
+
+			weightConvert2 := weightCast3.ConvertToWeight2()
+			acc2 := EvaluateAccuracyStatistical(weightConvert2, spec.simTypes, &spec.targetRatio, spec.dataAll)
+			best2.Offer(weightConvert2, acc2)
+		} else if weightCast2, isCast2 := weightOrig.(*weight_types.Weight2Extended); isCast2 {
+			acc2 := EvaluateAccuracyStatistical(weightCast2, spec.simTypes, &spec.targetRatio, spec.dataAll)
+			best2.Offer(weightCast2, acc2)
+		}
+	}
+	return best2.GetBestOptional(), best3.GetBestOptional()
+}
+
 func (spec *WeightSpec) solveRankingWeight(rankMode int) {
 	if rankMode == 0 {
+		ranking := weight_highs.RankingStatWeightProcess3c{}
+		ranking.Init(spec.process.printer, c_timeoutSolvers)
+		ranking.SetRequiredStats(spec.statTypes)
+		ranking.SetTargetRatios(spec.targetRatio)
+		ranking.SupplyData(spec.dataAll)
+		weightsFuture := ranking.RunMultiRound()
+		spec.evaluateWeightFuture("RANK3C", weightsFuture)
+	} else if rankMode == 1 {
 		ranking := weight_highs.RankingStatWeightProcess3b{}
 		ranking.TOTALWEIGHT = 2
 		ranking.ALGO = 0
@@ -341,7 +376,7 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int) {
 		weightsFuture = ranking.RunMultiRound()
 		//}
 		spec.evaluateWeightFuture("RANK3-2-0", weightsFuture)
-	} else if rankMode == 1 {
+	} else if rankMode == 2 {
 		ranking := weight_highs.RankingStatWeightProcess3b{}
 		ranking.TOTALWEIGHT = 2
 		ranking.ALGO = 1
@@ -356,7 +391,7 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int) {
 		weightsFuture = ranking.RunMultiRound()
 		//}
 		spec.evaluateWeightFuture("RANK3-2-1", weightsFuture)
-	} else if rankMode == 2 {
+	} else if rankMode == 3 {
 		ranking := weight_highs.RankingStatWeightProcess{}
 		ranking.RANKMODE = 0
 		ranking.WEIGHTSUM = 0
@@ -423,6 +458,20 @@ func (spec *WeightSpec) tweakEachWeight() {
 			weightsTweaked, _ := WeightTweakerWithLogging(choice.weight, spec.statTypes, &spec.targetRatio, spec.dataAll, spec.process.printer)
 			spec.evaluateWeight(choice.choiceName+"_TWEAK", &weightsTweaked, &weightsTweaked, nil)
 		}
+	}
+}
+
+func (spec *WeightSpec) writeExtendedWeights() {
+	weight2Opt, weight3Opt := spec.bestWeightChoiceExtended()
+
+	if weight2, hasWeight2 := weight2Opt.GetWithFlag(); hasWeight2 {
+		str := tools.FormatWeight2String(&weight2)
+		util.WriteStringToFile(spec.WeightFileOut+".v2", str)
+	}
+
+	if weight3, hasWeight3 := weight3Opt.GetWithFlag(); hasWeight3 {
+		str := tools.FormatWeight3String(&weight3)
+		util.WriteStringToFile(spec.WeightFileOut+".v3", str)
 	}
 }
 

@@ -103,12 +103,25 @@ func (wr *Weight1Basic) ScaleBackToMax(weight float64) Weight1Basic {
 
 func (wr *Weight1Basic) NormalizeForBase(requiredStats []stats.StatType) {
 	factor := 1.0
+	foundBase := false
 
 	for _, tryBaseStat := range requiredStats {
 		value := wr.Get(tryBaseStat)
 		if util.FloatNonZero(value) && value > 0 {
 			factor = 1.0 / value
+			foundBase = true
 			break
+		}
+	}
+
+	if !foundBase {
+		for _, tryBaseStat := range requiredStats {
+			value := wr.Get(tryBaseStat)
+			if value > 0 {
+				factor = 1.0 / value
+				foundBase = true
+				break
+			}
 		}
 	}
 

@@ -1,6 +1,7 @@
 package util_highs
 
 import (
+	"math"
 	"paladin_gearing_go/util/util_collection"
 	"slices"
 
@@ -190,9 +191,36 @@ func (build *LinearBuilder) AbsoluteValueFromDiffTwoVars(inputOneVar ColumnIndex
 	positive.Build(build, InfNeg(), 0)
 }
 
+const c_minimumAcceptable = 1e-9
+
+func isTiny(coefficient float64) bool {
+	pos := math.Abs(coefficient)
+	return 0 < pos && pos < c_minimumAcceptable
+}
+func chooseTinyValueScale(a float64, b float64, c float64) float64 {
+	value := c_minimumAcceptable
+	if isTiny(a) {
+		value = min(value, math.Abs(a))
+	}
+	if isTiny(b) {
+		value = min(value, math.Abs(b))
+	}
+	if isTiny(c) {
+		value = min(value, math.Abs(c))
+	}
+	return c_minimumAcceptable / value * 2
+}
+
 func (build *LinearBuilder) AbsoluteValueFromDiffTwoVars_ScaleOutput(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, outputCoefficient float64, debug string) {
+	if isTiny(inputOneCoefficient) || isTiny(inputTwoCoefficient) || isTiny(outputCoefficient) {
+		scale := chooseTinyValueScale(inputOneCoefficient, inputTwoCoefficient, outputCoefficient)
+		inputOneCoefficient *= scale
+		inputTwoCoefficient *= scale
+		outputCoefficient *= scale
+	}
+
 	// one - two + out >= 0
-	// so if one - two < 0, out neeeds to pull it up
+	// so if one - two < 0, out needs to pull it up
 	negative := ConstraintRow{Debug: debug + " AbsoluteValueNegative"}
 	negative.Add(inputOneVar, inputOneCoefficient)
 	negative.Add(inputTwoVar, -inputTwoCoefficient)

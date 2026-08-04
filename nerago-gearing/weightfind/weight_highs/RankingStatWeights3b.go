@@ -84,7 +84,8 @@ func (ranker *RankingStatWeightProcess3b) newBuilder() {
 	ranker.build = new(util_highs.LinearBuilder)
 	ranker.build.Minimise = true
 	ranker.build.TimeLimitSeconds = ranker.timeoutSeconds
-	ranker.build.Solver = util_highs.Solver_Force_Simplex
+	//ranker.build.Solver = util_highs.Solver_Force_Simplex
+	ranker.build.Solver = util_highs.Solver_LP_USE_GPU
 	// others can be faster but often fails, then eventually end up in simplex anyway
 }
 
@@ -111,9 +112,10 @@ func (ranker *RankingStatWeightProcess3b) RunMultiRound() *util_async.FutureCanc
 		ranker.prepareRankings()
 		ranker.createWeightColumns()
 		ranker.doAlgos()
-		if solution1.HasSolution() {
+		if solution1.IsOptimal() {
 			ranker.setupInitialSolutionFromPreviousSolutionWeights(solution1)
 		} else {
+			ranker.printer.Printf("Giving up on RunMultiRound with solution status %s\n", solution1.Status)
 			return nil
 		}
 		return ranker.build.RunHighsFuture(stopwatch)

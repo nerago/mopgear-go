@@ -199,13 +199,19 @@ func (build *LinearBuilder) postHighsRun(solver *highs.Solver, logFilename strin
 
 func (build *LinearBuilder) configureHighsMatrix(solver *highs.Solver) {
 	numRows, lowerBound, upperBound, startArray, indexArray, valuesArray := build.mat.createSolverInputArrays()
+
+	var colTypes []highs.VariableType
+	if build.isMIP() {
+		colTypes = build.vars.colTypes
+	}
+
 	verifyNoError(solver.PassModel(
-		len(build.vars.colTypes),
+		len(build.vars.colCosts),
 		numRows,
 		build.vars.colCosts, build.vars.colLower, build.vars.colUpper,
 		lowerBound, upperBound,
 		startArray, indexArray, valuesArray,
-		build.vars.colTypes, !build.Minimise, 0))
+		colTypes, !build.Minimise, 0))
 
 	verifyNoError(solver.ClearLinearObjectives())
 	for linearObjectiveIndex := range build.vars.objectives {
@@ -336,13 +342,12 @@ func (build *LinearBuilder) isLargeModel() bool {
 }
 
 func (build *LinearBuilder) isMIP() bool {
-	hasInt := false
 	for _, colType := range build.vars.colTypes {
 		if colType != highs.Continuous {
-			hasInt = true
+			return true
 		}
 	}
-	return hasInt
+	return false
 }
 
 func (build *LinearBuilder) ValidateInitialSolutionState() {

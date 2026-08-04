@@ -76,7 +76,9 @@ func (ranker *RankingStatWeightProcess) SetTargetRatios(targetRatios weight_type
 func (ranker *RankingStatWeightProcess) Run(timeout int) *util_async.FutureCancellable[weight_types.WeightResult] {
 	ranker.build = new(util_highs.LinearBuilder)
 	ranker.build.Minimise = true
-	ranker.build.Solver = util_highs.Solver_Force_IPX
+	//ranker.build.Solver = util_highs.Solver_Force_IPX
+	//ranker.build.Solver = util_highs.Solver_LP_USE_GPU
+	ranker.build.Solver = util_highs.Solver_LP_NO_GPU
 	ranker.build.TimeLimitSeconds = timeout
 
 	ranker.createWeightColumns()
