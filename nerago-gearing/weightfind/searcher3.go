@@ -108,8 +108,8 @@ func (ws *WeightSearcher3) Run(cancel util_async.CancelSignal) weight_types.Weig
 	}
 
 	bestWeight := ws.bestResult.GetBestOrNilValue()
-	resultWeight := bestWeight.ScaleForBaseStat(ws.statTypes[0])
-	return weight_types.WeightResult{Weight: &resultWeight, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusOptimal}
+	bestWeight.NormalizeForBase(ws.statTypes)
+	return weight_types.WeightResult{Weight: &bestWeight, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusOptimal}
 }
 
 func (ws *WeightSearcher3) initialSplits(localQueue *util_collection.QueueStackFiloPoolChild[*weightSearch2FastBound], probesReused []*weightSearch2FastProbe, targetCount int) bool {

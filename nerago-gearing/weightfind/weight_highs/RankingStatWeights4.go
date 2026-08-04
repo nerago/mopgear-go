@@ -2,6 +2,7 @@ package weight_highs
 
 import (
 	"paladin_gearing_go/stats"
+	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
@@ -146,14 +147,16 @@ func (run *rankInternalRun4) runFuture() *util_async.FutureCancellable[weight_ty
 func (run *rankInternalRun4) createWeightColumns() {
 	lo := -c_Rank4LargeWeight
 	hi := c_Rank4LargeWeight
-	strengthMin := 0.01
+
+	baseMin := 0.01 // TODO assumes base stat is positive
+	baseStat := run.process.requiredStats[0]
 
 	sumWeights := util_highs.ConstraintRow{Debug: "sumWeights"}
 	run.weightColumns = make(map[stats.StatType]util_highs.ColumnIndex)
 	for _, statType := range run.process.requiredStats {
 		var colWeight util_highs.ColumnIndex
-		if statType == stats.Stat_Strength {
-			colWeight = run.build.CreateColumnGeneral(highs.Continuous, strengthMin, hi, util_highs.DebugString{Text: "WEIGHT " + statType.Name()})
+		if statType == baseStat {
+			colWeight = run.build.CreateColumnGeneral(highs.Continuous, baseMin, hi, util_highs.DebugString{Text: "WEIGHT " + statType.Name()})
 		} else {
 			colWeight = run.build.CreateColumnGeneral(highs.Continuous, lo, hi, util_highs.DebugString{Text: "WEIGHT " + statType.Name()})
 		}
@@ -286,14 +289,8 @@ func (run *rankInternalRun4) extractAndReportSolution(solution *highs.Solution) 
 		weight.Put(statType, usableWeight)
 	}
 
-	baseStat := run.process.requiredStats[0]
-	divideBy := weight.Get(baseStat)
-	for _, statType := range run.process.requiredStats {
-		value := weight.Get(statType) / divideBy
-		weight.Put(statType, value)
-		run.process.printer.Printf("%10s %f\n", statType.Name(), value)
-	}
-
+	weight.NormalizeForBase(run.process.requiredStats)
+	tools.WriteWeightString(&weight, run.process.printer)
 	return weight
 }
 

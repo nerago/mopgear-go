@@ -3,6 +3,7 @@ package weight_highs
 import (
 	"fmt"
 	"paladin_gearing_go/stats"
+	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
@@ -314,13 +315,7 @@ func (ranker *RankingStatWeightProcess3c) extractAndReportSolution(solution *hig
 		weight.Put(statType, modelWeight)
 	}
 
-	//baseStat := ranker.requiredStats[0]
-	//divideBy := weight.Get(baseStat)
-	//for _, statType := range ranker.requiredStats {
-	//	value := weight.Get(statType) / divideBy
-	//	weight.Put(statType, value)
-	//	ranker.printer.Printf("%10s %f\n", statType.Name(), value)
-	//}
-
+	weight.NormalizeForBase(ranker.requiredStats)
+	tools.WriteWeightString(&weight, ranker.printer)
 	return weight
 }

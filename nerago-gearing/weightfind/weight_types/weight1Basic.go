@@ -90,7 +90,7 @@ func (wr *Weight1Basic) ScaleBackToMax(weight float64) Weight1Basic {
 		biggest = max(biggest, math.Abs(value))
 	}
 
-	actualLimit := weight * 0.99 // rounding worries
+	actualLimit := weight * 0.999999 // rounding worries
 	if biggest < actualLimit {
 		return *wr
 	}
@@ -101,16 +101,18 @@ func (wr *Weight1Basic) ScaleBackToMax(weight float64) Weight1Basic {
 	return rescaled
 }
 
-func (wr *Weight1Basic) ScaleForBaseStat(statType stats.StatType) Weight1Basic {
+func (wr *Weight1Basic) NormalizeForBase(requiredStats []stats.StatType) {
 	factor := 1.0
-	value := wr.Get(statType)
-	if value != 0 {
-		factor = 1.0 / value
+
+	for _, tryBaseStat := range requiredStats {
+		value := wr.Get(tryBaseStat)
+		if util.FloatNonZero(value) && value > 0 {
+			factor = 1.0 / value
+			break
+		}
 	}
 
-	rescaled := wr.Clone()
-	wr.content.MultiplyScalar(factor, &rescaled.content)
-	return rescaled
+	wr.content.MultiplyScalar(factor, &wr.content)
 }
 
 func (wr *Weight1Basic) ScaleForTotalSum(targetTotal float64) Weight1Basic {

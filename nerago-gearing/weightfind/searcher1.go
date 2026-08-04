@@ -72,8 +72,8 @@ func (ws *WeightSearcher1) Run(cancel util_async.CancelSignal) weight_types.Weig
 	}
 
 	bestWeight := bestResult.GetBestOrNilValue()
-	resultWeight := bestWeight.ScaleForBaseStat(ws.weightStats[0])
-	return weight_types.WeightResult{Weight: &resultWeight, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusOptimal}
+	bestWeight.NormalizeForBase(ws.weightStats)
+	return weight_types.WeightResult{Weight: &bestWeight, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusOptimal}
 }
 
 func (ws *WeightSearcher1) makeSpacedWeights() iter.Seq[weight_types.Weight1Basic] {

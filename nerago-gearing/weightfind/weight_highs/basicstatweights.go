@@ -76,6 +76,7 @@ func (basic *BasicStatWeightProcess) Run() *util_async.FutureCancellable[weight_
 		}
 	}
 
+	// TODO assumes base stat is positive
 	baseStat := basic.requiredStats[0]
 	for _, simType := range basic.requiredSims {
 		value := basic.targetRatios.GetOrPanic(simType)
@@ -101,7 +102,7 @@ func (basic *BasicStatWeightProcess) Run() *util_async.FutureCancellable[weight_
 		basic.build.DebugPrintColumns(solution, basic.printer)
 
 		weight := basic.reportOutputWeights(solution)
-		
+
 		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution.Status}, true
 	})
 }

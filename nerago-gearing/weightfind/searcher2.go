@@ -121,8 +121,8 @@ func (ws *WeightSearcher2) Run(cancel util_async.CancelSignal) weight_types.Weig
 	}
 
 	bestWeight := ws.bestResult.GetBestOrNilValue()
-	resultWeight := bestWeight.ScaleForBaseStat(ws.statTypes[0])
-	return weight_types.WeightResult{Weight: &resultWeight, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusOptimal}
+	bestWeight.NormalizeForBase(ws.statTypes)
+	return weight_types.WeightResult{Weight: &bestWeight, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusOptimal}
 }
 
 func (ws *WeightSearcher2) evaluateScore(weightArray []float64) float64 {

@@ -97,6 +97,7 @@ func (grid *GridStatWeightProcess1B) setupWeightVars() {
 		}
 	}
 
+	// TODO assumes base stat is positive
 	baseStat := grid.requiredStats[0]
 	for _, simType := range grid.simTypes {
 		value := grid.targetRatios.GetOrPanic(simType)

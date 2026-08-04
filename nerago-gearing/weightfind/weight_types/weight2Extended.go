@@ -157,7 +157,7 @@ func (we *Weight2Extended) ConvertToWeight1() *Weight1Basic {
 		weight1.Put(statType, sumForStat)
 	}
 
-	weight1 = weight1.ScaleForBaseStat(we.StatList[0])
+	weight1.NormalizeForBase(we.StatList)
 	return &weight1
 }
 

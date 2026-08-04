@@ -237,18 +237,18 @@ var SimPriority_ret = weight_types.SimPriorityBasic_Make(
 var StatsForWeighting_strengthTank = []stats.StatType{
 	stats.Stat_Strength,
 	stats.Stat_Stamina,
-	stats.Stat_Crit,
 	stats.Stat_Haste,
-	stats.Stat_Expertise,
 	stats.Stat_Mastery,
+	stats.Stat_Crit,
 	stats.Stat_Dodge,
 	stats.Stat_Parry,
+	stats.Stat_Expertise,
 }
 
 var StatsForWeighting_strengthMelee = []stats.StatType{
 	stats.Stat_Strength,
-	stats.Stat_Crit,
 	stats.Stat_Haste,
-	stats.Stat_Expertise,
 	stats.Stat_Mastery,
+	stats.Stat_Crit,
+	stats.Stat_Expertise,
 }

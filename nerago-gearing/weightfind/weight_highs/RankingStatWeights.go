@@ -2,6 +2,7 @@ package weight_highs
 
 import (
 	"paladin_gearing_go/stats"
+	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
@@ -269,11 +270,8 @@ func (ranker *RankingStatWeightProcess) extractAndReportSolution(solution *highs
 		weight.Put(statType, usableWeight)
 	}
 
-	baseStat := ranker.requiredStats[0]
-	divideBy := weight.Get(baseStat)
-	for _, statType := range ranker.requiredStats {
-		weight.Put(statType, weight.Get(statType)/divideBy)
-	}
+	weight.NormalizeForBase(ranker.requiredStats)
+	tools.WriteWeightString(&weight, ranker.printer)
 
 	ranker.reportRankingOfInputs(weight)
 

@@ -2,6 +2,7 @@ package weight_highs
 
 import (
 	"paladin_gearing_go/stats"
+	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
@@ -260,13 +261,8 @@ func (run *rankInternalRun5) extractAndReportSolution(solution *highs.Solution) 
 	// accuracy = 89.380391
 	// Duration = 4.4455988s
 
-	baseStat := run.process.requiredStats[0]
-	divideBy := weight.Get(baseStat)
-	for _, statType := range run.process.requiredStats {
-		value := weight.Get(statType) / divideBy
-		weight.Put(statType, value)
-		run.process.printer.Printf("%10s %f\n", statType.Name(), value)
-	}
+	weight.NormalizeForBase(run.process.requiredStats)
+	tools.WriteWeightString(&weight, run.process.printer)
 
 	run.process.printer.Println("{")
 	for _, statType := range run.process.requiredStats {
