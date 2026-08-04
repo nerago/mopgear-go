@@ -87,7 +87,6 @@ func core(printer *util.PrintRecorder) {
 	//
 	//statWeightsBasic(printer)
 	//statWeightsGrid1Orig(printer)
-	//statWeightsGrid1Orig(printer)
 	//statWeightsGrid1b(printer)
 	//statWeightsFitting(printer)
 	//statWeightsFitting1eachProper(printer)
@@ -96,15 +95,15 @@ func core(printer *util.PrintRecorder) {
 	//statWeightsFitting2each(printer)
 	//statWeightsFormula(printer)
 	//statWeightsRanking(printer)
-	statWeightsRanking3b(printer)
+	//statWeightsRanking3b(printer)
 	//statWeightsGridIntoRanking(printer)
 	//statWeightsCustom(printer)
 
 	//statWeights_CompareAlgorithms()
-	//
+
 	//statWeights_updateAll()
 
 	//PaladinMultiRun()
 
-	//findUpgrades_Paladin()
+	findUpgrades_Paladin()
 }

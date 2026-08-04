@@ -11,6 +11,7 @@ import (
 type SpecModel struct {
 	StatRequirements     StatRequirements
 	StatWeights          StatWeights
+	StatWeightsExtended  weight_types.IWeight
 	Spec                 SpecType
 	Goal                 OptimiseGoal
 	SimulateAs           WowSim_Fight

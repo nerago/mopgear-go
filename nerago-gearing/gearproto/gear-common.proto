@@ -4,16 +4,120 @@ package gearproto;
 option go_package = "./gearproto";
 
 enum StatType {
-  Strength   = 0;
-  Agility    = 1;
-  Stamina    = 2;
-  Intellect  = 3;
-  Spirit     = 4;
-  Hit        = 5;
-  Crit       = 6;
-  Haste      = 7;
-  Expertise  = 8;
-  Dodge      = 9;
-  Parry      = 10;
-  Mastery    = 11;
+  StatType_Unknown = 0;
+  Strength = 1;
+  Agility = 2;
+  Stamina = 3;
+  Intellect = 4;
+  Spirit = 5;
+  Hit = 6;
+  Crit = 7;
+  Haste = 8;
+  Expertise = 9;
+  Dodge = 10;
+  Parry = 11;
+  Mastery = 12;
+}
+
+enum SimType {
+  SimType_Unknown = 0;
+  DPS = 1;
+  TPS = 2;
+  DTPS = 3;
+  HPS = 4;
+  TMI = 5;
+  DEATH = 6;
+  TTO = 7;
+}
+
+enum SpecType {
+  SpecType_Unknown = 0;
+  SpecType_PaladinProt = 1;
+  SpecType_PaladinRet = 2;
+  SpecType_PaladinHoly =3;
+  SpecType_WarriorProt = 4;
+  SpecType_WarriorArms = 5;
+  SpecType_DruidBear = 6;
+  SpecType_DruidTree = 7;
+  SpecType_DruidBoom = 8;
+  SpecType_DruidFeral = 9;
+  SpecType_MageFrost = 10;
+  SpecType_PriestShadow = 11;
+  SpecType_PriestHoly = 12;
+  SpecType_Rogue = 13;
+  SpecType_Warlock = 14;
+  SpecType_ShamanRestoration = 15;
+  SpecType_ShamanElemental = 16;
+  SpecType_ShamanEnhance = 17;
+  SpecType_Hunter = 18;
+  SpecType_MonkBrewmaster = 19;
+  SpecType_MonkMistweaver = 20;
+  SpecType_MonkDps = 21;
+  SpecType_DeathKnightDps = 22;
+  SpecType_DeathKnightBlood = 23;
+}
+
+enum OptimiseGoal {
+  OptimiseGoal_Unknown = 0;
+  OptimiseGoal_Dps = 1;
+  OptimiseGoal_Mitigation = 2;
+  OptimiseGoal_HalfMitiDps = 3;
+  OptimiseGoal_Healing = 4;
+}
+
+enum Fight {
+  Fight_Unknown = 0;
+  Fight_Horridon_HighHeal = 1;
+  Fight_Horridon_LowHeal = 2;
+  Fight_Animus = 3;
+}
+
+enum SlotItem {
+  SlotItem_Unknown = 0;
+  SlotItem_Head = 1;
+  SlotItem_Neck = 2;
+  SlotItem_Shoulder = 3;
+  SlotItem_Back = 4;
+  SlotItem_Chest = 5;
+  SlotItem_Wrist = 6;
+  SlotItem_Hand = 7;
+  SlotItem_Belt = 8;
+  SlotItem_Leg = 9;
+  SlotItem_Foot = 10;
+  SlotItem_Ring = 11;
+  SlotItem_Trinket = 12;
+  SlotItem_Weapon1H = 13;
+  SlotItem_Weapon2H = 14;
+  SlotItem_Offhand = 15;
+}
+
+enum SlotEquip {
+  SlotEquip_Unknown = 0;
+  SlotEquip_Head = 1;
+  SlotEquip_Neck = 2;
+  SlotEquip_Shoulder = 3;
+  SlotEquip_Back = 4;
+  SlotEquip_Chest = 5;
+  SlotEquip_Wrist = 6;
+  SlotEquip_Hand = 7;
+  SlotEquip_Belt = 8;
+  SlotEquip_Leg = 9;
+  SlotEquip_Foot = 10;
+  SlotEquip_Ring1 = 11;
+  SlotEquip_Ring2 = 12;
+  SlotEquip_Trinket1 = 13;
+  SlotEquip_Trinket2 = 14;
+  SlotEquip_Weapon = 15;
+  SlotEquip_Offhand = 16;
+}
+
+enum SocketType {
+  SocketType_Unknown = 0;
+  SocketType_Meta = 1;
+  SocketType_Red = 2;
+  SocketType_Blue = 3;
+  SocketType_Yellow = 4;
+  SocketType_General = 5;
+  SocketType_Engineering = 6;
+  SocketType_Sha = 7;
 }

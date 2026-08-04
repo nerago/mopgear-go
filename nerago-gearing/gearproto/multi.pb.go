@@ -21,450 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type SpecType int32
-
-const (
-	SpecType_PaladinProt       SpecType = 0
-	SpecType_PaladinRet        SpecType = 1
-	SpecType_PaladinHoly       SpecType = 2
-	SpecType_WarriorProt       SpecType = 3
-	SpecType_WarriorArms       SpecType = 4
-	SpecType_DruidBear         SpecType = 5
-	SpecType_DruidTree         SpecType = 6
-	SpecType_DruidBoom         SpecType = 7
-	SpecType_DruidFeral        SpecType = 8
-	SpecType_MageFrost         SpecType = 9
-	SpecType_PriestShadow      SpecType = 10
-	SpecType_PriestHoly        SpecType = 11
-	SpecType_Rogue             SpecType = 12
-	SpecType_Warlock           SpecType = 13
-	SpecType_ShamanRestoration SpecType = 14
-	SpecType_ShamanElemental   SpecType = 15
-	SpecType_ShamanEnhance     SpecType = 16
-	SpecType_Hunter            SpecType = 17
-	SpecType_MonkBrewmaster    SpecType = 18
-	SpecType_MonkMistweaver    SpecType = 19
-	SpecType_MonkDps           SpecType = 20
-	SpecType_DeathKnightDps    SpecType = 21
-	SpecType_DeathKnightBlood  SpecType = 22
-)
-
-// Enum value maps for SpecType.
-var (
-	SpecType_name = map[int32]string{
-		0:  "PaladinProt",
-		1:  "PaladinRet",
-		2:  "PaladinHoly",
-		3:  "WarriorProt",
-		4:  "WarriorArms",
-		5:  "DruidBear",
-		6:  "DruidTree",
-		7:  "DruidBoom",
-		8:  "DruidFeral",
-		9:  "MageFrost",
-		10: "PriestShadow",
-		11: "PriestHoly",
-		12: "Rogue",
-		13: "Warlock",
-		14: "ShamanRestoration",
-		15: "ShamanElemental",
-		16: "ShamanEnhance",
-		17: "Hunter",
-		18: "MonkBrewmaster",
-		19: "MonkMistweaver",
-		20: "MonkDps",
-		21: "DeathKnightDps",
-		22: "DeathKnightBlood",
-	}
-	SpecType_value = map[string]int32{
-		"PaladinProt":       0,
-		"PaladinRet":        1,
-		"PaladinHoly":       2,
-		"WarriorProt":       3,
-		"WarriorArms":       4,
-		"DruidBear":         5,
-		"DruidTree":         6,
-		"DruidBoom":         7,
-		"DruidFeral":        8,
-		"MageFrost":         9,
-		"PriestShadow":      10,
-		"PriestHoly":        11,
-		"Rogue":             12,
-		"Warlock":           13,
-		"ShamanRestoration": 14,
-		"ShamanElemental":   15,
-		"ShamanEnhance":     16,
-		"Hunter":            17,
-		"MonkBrewmaster":    18,
-		"MonkMistweaver":    19,
-		"MonkDps":           20,
-		"DeathKnightDps":    21,
-		"DeathKnightBlood":  22,
-	}
-)
-
-func (x SpecType) Enum() *SpecType {
-	p := new(SpecType)
-	*p = x
-	return p
-}
-
-func (x SpecType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (SpecType) Descriptor() protoreflect.EnumDescriptor {
-	return file_multi_proto_enumTypes[0].Descriptor()
-}
-
-func (SpecType) Type() protoreflect.EnumType {
-	return &file_multi_proto_enumTypes[0]
-}
-
-func (x SpecType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use SpecType.Descriptor instead.
-func (SpecType) EnumDescriptor() ([]byte, []int) {
-	return file_multi_proto_rawDescGZIP(), []int{0}
-}
-
-type OptimiseGoal int32
-
-const (
-	OptimiseGoal_Dps         OptimiseGoal = 0
-	OptimiseGoal_Mitigation  OptimiseGoal = 1
-	OptimiseGoal_HalfMitiDps OptimiseGoal = 2
-	OptimiseGoal_Healing     OptimiseGoal = 3
-)
-
-// Enum value maps for OptimiseGoal.
-var (
-	OptimiseGoal_name = map[int32]string{
-		0: "Dps",
-		1: "Mitigation",
-		2: "HalfMitiDps",
-		3: "Healing",
-	}
-	OptimiseGoal_value = map[string]int32{
-		"Dps":         0,
-		"Mitigation":  1,
-		"HalfMitiDps": 2,
-		"Healing":     3,
-	}
-)
-
-func (x OptimiseGoal) Enum() *OptimiseGoal {
-	p := new(OptimiseGoal)
-	*p = x
-	return p
-}
-
-func (x OptimiseGoal) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (OptimiseGoal) Descriptor() protoreflect.EnumDescriptor {
-	return file_multi_proto_enumTypes[1].Descriptor()
-}
-
-func (OptimiseGoal) Type() protoreflect.EnumType {
-	return &file_multi_proto_enumTypes[1]
-}
-
-func (x OptimiseGoal) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use OptimiseGoal.Descriptor instead.
-func (OptimiseGoal) EnumDescriptor() ([]byte, []int) {
-	return file_multi_proto_rawDescGZIP(), []int{1}
-}
-
-type Fight int32
-
-const (
-	Fight_Horridon_HighHeal Fight = 0
-	Fight_Horridon_LowHeal  Fight = 1
-	Fight_Animus            Fight = 2
-)
-
-// Enum value maps for Fight.
-var (
-	Fight_name = map[int32]string{
-		0: "Horridon_HighHeal",
-		1: "Horridon_LowHeal",
-		2: "Animus",
-	}
-	Fight_value = map[string]int32{
-		"Horridon_HighHeal": 0,
-		"Horridon_LowHeal":  1,
-		"Animus":            2,
-	}
-)
-
-func (x Fight) Enum() *Fight {
-	p := new(Fight)
-	*p = x
-	return p
-}
-
-func (x Fight) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (Fight) Descriptor() protoreflect.EnumDescriptor {
-	return file_multi_proto_enumTypes[2].Descriptor()
-}
-
-func (Fight) Type() protoreflect.EnumType {
-	return &file_multi_proto_enumTypes[2]
-}
-
-func (x Fight) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use Fight.Descriptor instead.
-func (Fight) EnumDescriptor() ([]byte, []int) {
-	return file_multi_proto_rawDescGZIP(), []int{2}
-}
-
-type SlotItem int32
-
-const (
-	SlotItem_Item_Head     SlotItem = 0
-	SlotItem_Item_Neck     SlotItem = 1
-	SlotItem_Item_Shoulder SlotItem = 2
-	SlotItem_Item_Back     SlotItem = 3
-	SlotItem_Item_Chest    SlotItem = 4
-	SlotItem_Item_Wrist    SlotItem = 5
-	SlotItem_Item_Hand     SlotItem = 6
-	SlotItem_Item_Belt     SlotItem = 7
-	SlotItem_Item_Leg      SlotItem = 8
-	SlotItem_Item_Foot     SlotItem = 9
-	SlotItem_Item_Ring     SlotItem = 10
-	SlotItem_Item_Trinket  SlotItem = 11
-	SlotItem_Item_Weapon1H SlotItem = 12
-	SlotItem_Item_Weapon2H SlotItem = 13
-	SlotItem_Item_Offhand  SlotItem = 14
-)
-
-// Enum value maps for SlotItem.
-var (
-	SlotItem_name = map[int32]string{
-		0:  "Item_Head",
-		1:  "Item_Neck",
-		2:  "Item_Shoulder",
-		3:  "Item_Back",
-		4:  "Item_Chest",
-		5:  "Item_Wrist",
-		6:  "Item_Hand",
-		7:  "Item_Belt",
-		8:  "Item_Leg",
-		9:  "Item_Foot",
-		10: "Item_Ring",
-		11: "Item_Trinket",
-		12: "Item_Weapon1H",
-		13: "Item_Weapon2H",
-		14: "Item_Offhand",
-	}
-	SlotItem_value = map[string]int32{
-		"Item_Head":     0,
-		"Item_Neck":     1,
-		"Item_Shoulder": 2,
-		"Item_Back":     3,
-		"Item_Chest":    4,
-		"Item_Wrist":    5,
-		"Item_Hand":     6,
-		"Item_Belt":     7,
-		"Item_Leg":      8,
-		"Item_Foot":     9,
-		"Item_Ring":     10,
-		"Item_Trinket":  11,
-		"Item_Weapon1H": 12,
-		"Item_Weapon2H": 13,
-		"Item_Offhand":  14,
-	}
-)
-
-func (x SlotItem) Enum() *SlotItem {
-	p := new(SlotItem)
-	*p = x
-	return p
-}
-
-func (x SlotItem) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (SlotItem) Descriptor() protoreflect.EnumDescriptor {
-	return file_multi_proto_enumTypes[3].Descriptor()
-}
-
-func (SlotItem) Type() protoreflect.EnumType {
-	return &file_multi_proto_enumTypes[3]
-}
-
-func (x SlotItem) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use SlotItem.Descriptor instead.
-func (SlotItem) EnumDescriptor() ([]byte, []int) {
-	return file_multi_proto_rawDescGZIP(), []int{3}
-}
-
-type SlotEquip int32
-
-const (
-	SlotEquip_Equip_Head     SlotEquip = 0
-	SlotEquip_Equip_Neck     SlotEquip = 1
-	SlotEquip_Equip_Shoulder SlotEquip = 2
-	SlotEquip_Equip_Back     SlotEquip = 3
-	SlotEquip_Equip_Chest    SlotEquip = 4
-	SlotEquip_Equip_Wrist    SlotEquip = 5
-	SlotEquip_Equip_Hand     SlotEquip = 6
-	SlotEquip_Equip_Belt     SlotEquip = 7
-	SlotEquip_Equip_Leg      SlotEquip = 8
-	SlotEquip_Equip_Foot     SlotEquip = 9
-	SlotEquip_Equip_Ring1    SlotEquip = 10
-	SlotEquip_Equip_Ring2    SlotEquip = 11
-	SlotEquip_Equip_Trinket1 SlotEquip = 12
-	SlotEquip_Equip_Trinket2 SlotEquip = 13
-	SlotEquip_Equip_Weapon   SlotEquip = 14
-	SlotEquip_Equip_Offhand  SlotEquip = 15
-)
-
-// Enum value maps for SlotEquip.
-var (
-	SlotEquip_name = map[int32]string{
-		0:  "Equip_Head",
-		1:  "Equip_Neck",
-		2:  "Equip_Shoulder",
-		3:  "Equip_Back",
-		4:  "Equip_Chest",
-		5:  "Equip_Wrist",
-		6:  "Equip_Hand",
-		7:  "Equip_Belt",
-		8:  "Equip_Leg",
-		9:  "Equip_Foot",
-		10: "Equip_Ring1",
-		11: "Equip_Ring2",
-		12: "Equip_Trinket1",
-		13: "Equip_Trinket2",
-		14: "Equip_Weapon",
-		15: "Equip_Offhand",
-	}
-	SlotEquip_value = map[string]int32{
-		"Equip_Head":     0,
-		"Equip_Neck":     1,
-		"Equip_Shoulder": 2,
-		"Equip_Back":     3,
-		"Equip_Chest":    4,
-		"Equip_Wrist":    5,
-		"Equip_Hand":     6,
-		"Equip_Belt":     7,
-		"Equip_Leg":      8,
-		"Equip_Foot":     9,
-		"Equip_Ring1":    10,
-		"Equip_Ring2":    11,
-		"Equip_Trinket1": 12,
-		"Equip_Trinket2": 13,
-		"Equip_Weapon":   14,
-		"Equip_Offhand":  15,
-	}
-)
-
-func (x SlotEquip) Enum() *SlotEquip {
-	p := new(SlotEquip)
-	*p = x
-	return p
-}
-
-func (x SlotEquip) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (SlotEquip) Descriptor() protoreflect.EnumDescriptor {
-	return file_multi_proto_enumTypes[4].Descriptor()
-}
-
-func (SlotEquip) Type() protoreflect.EnumType {
-	return &file_multi_proto_enumTypes[4]
-}
-
-func (x SlotEquip) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use SlotEquip.Descriptor instead.
-func (SlotEquip) EnumDescriptor() ([]byte, []int) {
-	return file_multi_proto_rawDescGZIP(), []int{4}
-}
-
-type SocketType int32
-
-const (
-	SocketType_Meta        SocketType = 0
-	SocketType_Red         SocketType = 1
-	SocketType_Blue        SocketType = 2
-	SocketType_Yellow      SocketType = 3
-	SocketType_General     SocketType = 4
-	SocketType_Engineering SocketType = 5
-	SocketType_Sha         SocketType = 6
-)
-
-// Enum value maps for SocketType.
-var (
-	SocketType_name = map[int32]string{
-		0: "Meta",
-		1: "Red",
-		2: "Blue",
-		3: "Yellow",
-		4: "General",
-		5: "Engineering",
-		6: "Sha",
-	}
-	SocketType_value = map[string]int32{
-		"Meta":        0,
-		"Red":         1,
-		"Blue":        2,
-		"Yellow":      3,
-		"General":     4,
-		"Engineering": 5,
-		"Sha":         6,
-	}
-)
-
-func (x SocketType) Enum() *SocketType {
-	p := new(SocketType)
-	*p = x
-	return p
-}
-
-func (x SocketType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (SocketType) Descriptor() protoreflect.EnumDescriptor {
-	return file_multi_proto_enumTypes[5].Descriptor()
-}
-
-func (SocketType) Type() protoreflect.EnumType {
-	return &file_multi_proto_enumTypes[5]
-}
-
-func (x SocketType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use SocketType.Descriptor instead.
-func (SocketType) EnumDescriptor() ([]byte, []int) {
-	return file_multi_proto_rawDescGZIP(), []int{5}
-}
-
 type MultiSetJob struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SimRunSize    int32                  `protobuf:"varint,1,opt,name=simRunSize,proto3" json:"simRunSize,omitempty"`
@@ -738,21 +294,21 @@ func (x *Model) GetSpec() SpecType {
 	if x != nil {
 		return x.Spec
 	}
-	return SpecType_PaladinProt
+	return SpecType_SpecType_Unknown
 }
 
 func (x *Model) GetGoal() OptimiseGoal {
 	if x != nil {
 		return x.Goal
 	}
-	return OptimiseGoal_Dps
+	return OptimiseGoal_OptimiseGoal_Unknown
 }
 
 func (x *Model) GetFight() Fight {
 	if x != nil {
 		return x.Fight
 	}
-	return Fight_Horridon_HighHeal
+	return Fight_Fight_Unknown
 }
 
 func (x *Model) GetReforgeRules() *ReforgeRules {
@@ -871,7 +427,7 @@ func (x *StatRequirements) GetAdditionalStat() StatType {
 	if x != nil {
 		return x.AdditionalStat
 	}
-	return StatType_Strength
+	return StatType_StatType_Unknown
 }
 
 func (x *StatRequirements) GetAdditionalValue() uint32 {
@@ -1040,7 +596,7 @@ func (x *Enchant) GetSlot() SlotItem {
 	if x != nil {
 		return x.Slot
 	}
-	return SlotItem_Item_Head
+	return SlotItem_SlotItem_Unknown
 }
 
 func (x *Enchant) GetSpecify() isEnchant_Specify {
@@ -1130,7 +686,7 @@ func (x *Gem) GetSocket() SocketType {
 	if x != nil {
 		return x.Socket
 	}
-	return SocketType_Meta
+	return SocketType_SocketType_Unknown
 }
 
 func (x *Gem) GetSpecify() isGem_Specify {
@@ -1389,14 +945,14 @@ func (x *FixedForge) GetFrom() StatType {
 	if x != nil {
 		return x.From
 	}
-	return StatType_Strength
+	return StatType_StatType_Unknown
 }
 
 func (x *FixedForge) GetTo() StatType {
 	if x != nil {
 		return x.To
 	}
-	return StatType_Strength
+	return StatType_StatType_Unknown
 }
 
 type DistinctUsageGroups struct {
@@ -1501,7 +1057,7 @@ func (x *ItemInSlot) GetSlot() SlotEquip {
 	if x != nil {
 		return x.Slot
 	}
-	return SlotEquip_Equip_Head
+	return SlotEquip_SlotEquip_Unknown
 }
 
 func (x *ItemInSlot) GetItemId() uint32 {
@@ -1553,7 +1109,7 @@ func (x *ItemListInSlot) GetSlot() SlotEquip {
 	if x != nil {
 		return x.Slot
 	}
-	return SlotEquip_Equip_Head
+	return SlotEquip_SlotEquip_Unknown
 }
 
 func (x *ItemListInSlot) GetItemId() []uint32 {
@@ -1605,7 +1161,7 @@ func (x *StatValue) GetStatType() StatType {
 	if x != nil {
 		return x.StatType
 	}
-	return StatType_Strength
+	return StatType_StatType_Unknown
 }
 
 func (x *StatValue) GetValue() uint32 {
@@ -1712,100 +1268,7 @@ const file_multi_proto_rawDesc = "" +
 	"\x06itemId\x18\x02 \x03(\rR\x06itemId\"R\n" +
 	"\tStatValue\x12/\n" +
 	"\bstatType\x18\x01 \x01(\x0e2\x13.gearproto.StatTypeR\bstatType\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\rR\x05value*\x8e\x03\n" +
-	"\bSpecType\x12\x0f\n" +
-	"\vPaladinProt\x10\x00\x12\x0e\n" +
-	"\n" +
-	"PaladinRet\x10\x01\x12\x0f\n" +
-	"\vPaladinHoly\x10\x02\x12\x0f\n" +
-	"\vWarriorProt\x10\x03\x12\x0f\n" +
-	"\vWarriorArms\x10\x04\x12\r\n" +
-	"\tDruidBear\x10\x05\x12\r\n" +
-	"\tDruidTree\x10\x06\x12\r\n" +
-	"\tDruidBoom\x10\a\x12\x0e\n" +
-	"\n" +
-	"DruidFeral\x10\b\x12\r\n" +
-	"\tMageFrost\x10\t\x12\x10\n" +
-	"\fPriestShadow\x10\n" +
-	"\x12\x0e\n" +
-	"\n" +
-	"PriestHoly\x10\v\x12\t\n" +
-	"\x05Rogue\x10\f\x12\v\n" +
-	"\aWarlock\x10\r\x12\x15\n" +
-	"\x11ShamanRestoration\x10\x0e\x12\x13\n" +
-	"\x0fShamanElemental\x10\x0f\x12\x11\n" +
-	"\rShamanEnhance\x10\x10\x12\n" +
-	"\n" +
-	"\x06Hunter\x10\x11\x12\x12\n" +
-	"\x0eMonkBrewmaster\x10\x12\x12\x12\n" +
-	"\x0eMonkMistweaver\x10\x13\x12\v\n" +
-	"\aMonkDps\x10\x14\x12\x12\n" +
-	"\x0eDeathKnightDps\x10\x15\x12\x14\n" +
-	"\x10DeathKnightBlood\x10\x16*E\n" +
-	"\fOptimiseGoal\x12\a\n" +
-	"\x03Dps\x10\x00\x12\x0e\n" +
-	"\n" +
-	"Mitigation\x10\x01\x12\x0f\n" +
-	"\vHalfMitiDps\x10\x02\x12\v\n" +
-	"\aHealing\x10\x03*@\n" +
-	"\x05Fight\x12\x15\n" +
-	"\x11Horridon_HighHeal\x10\x00\x12\x14\n" +
-	"\x10Horridon_LowHeal\x10\x01\x12\n" +
-	"\n" +
-	"\x06Animus\x10\x02*\xfe\x01\n" +
-	"\bSlotItem\x12\r\n" +
-	"\tItem_Head\x10\x00\x12\r\n" +
-	"\tItem_Neck\x10\x01\x12\x11\n" +
-	"\rItem_Shoulder\x10\x02\x12\r\n" +
-	"\tItem_Back\x10\x03\x12\x0e\n" +
-	"\n" +
-	"Item_Chest\x10\x04\x12\x0e\n" +
-	"\n" +
-	"Item_Wrist\x10\x05\x12\r\n" +
-	"\tItem_Hand\x10\x06\x12\r\n" +
-	"\tItem_Belt\x10\a\x12\f\n" +
-	"\bItem_Leg\x10\b\x12\r\n" +
-	"\tItem_Foot\x10\t\x12\r\n" +
-	"\tItem_Ring\x10\n" +
-	"\x12\x10\n" +
-	"\fItem_Trinket\x10\v\x12\x11\n" +
-	"\rItem_Weapon1H\x10\f\x12\x11\n" +
-	"\rItem_Weapon2H\x10\r\x12\x10\n" +
-	"\fItem_Offhand\x10\x0e*\x9f\x02\n" +
-	"\tSlotEquip\x12\x0e\n" +
-	"\n" +
-	"Equip_Head\x10\x00\x12\x0e\n" +
-	"\n" +
-	"Equip_Neck\x10\x01\x12\x12\n" +
-	"\x0eEquip_Shoulder\x10\x02\x12\x0e\n" +
-	"\n" +
-	"Equip_Back\x10\x03\x12\x0f\n" +
-	"\vEquip_Chest\x10\x04\x12\x0f\n" +
-	"\vEquip_Wrist\x10\x05\x12\x0e\n" +
-	"\n" +
-	"Equip_Hand\x10\x06\x12\x0e\n" +
-	"\n" +
-	"Equip_Belt\x10\a\x12\r\n" +
-	"\tEquip_Leg\x10\b\x12\x0e\n" +
-	"\n" +
-	"Equip_Foot\x10\t\x12\x0f\n" +
-	"\vEquip_Ring1\x10\n" +
-	"\x12\x0f\n" +
-	"\vEquip_Ring2\x10\v\x12\x12\n" +
-	"\x0eEquip_Trinket1\x10\f\x12\x12\n" +
-	"\x0eEquip_Trinket2\x10\r\x12\x10\n" +
-	"\fEquip_Weapon\x10\x0e\x12\x11\n" +
-	"\rEquip_Offhand\x10\x0f*\\\n" +
-	"\n" +
-	"SocketType\x12\b\n" +
-	"\x04Meta\x10\x00\x12\a\n" +
-	"\x03Red\x10\x01\x12\b\n" +
-	"\x04Blue\x10\x02\x12\n" +
-	"\n" +
-	"\x06Yellow\x10\x03\x12\v\n" +
-	"\aGeneral\x10\x04\x12\x0f\n" +
-	"\vEngineering\x10\x05\x12\a\n" +
-	"\x03Sha\x10\x06B\rZ\v./gearprotob\x06proto3"
+	"\x05value\x18\x02 \x01(\rR\x05valueB\rZ\v./gearprotob\x06proto3"
 
 var (
 	file_multi_proto_rawDescOnce sync.Once
@@ -1819,65 +1282,64 @@ func file_multi_proto_rawDescGZIP() []byte {
 	return file_multi_proto_rawDescData
 }
 
-var file_multi_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
 var file_multi_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_multi_proto_goTypes = []any{
-	(SpecType)(0),               // 0: gearproto.SpecType
-	(OptimiseGoal)(0),           // 1: gearproto.OptimiseGoal
-	(Fight)(0),                  // 2: gearproto.Fight
-	(SlotItem)(0),               // 3: gearproto.SlotItem
-	(SlotEquip)(0),              // 4: gearproto.SlotEquip
-	(SocketType)(0),             // 5: gearproto.SocketType
-	(*MultiSetJob)(nil),         // 6: gearproto.MultiSetJob
-	(*MultiSetParam)(nil),       // 7: gearproto.MultiSetParam
-	(*Model)(nil),               // 8: gearproto.Model
-	(*StatRequirements)(nil),    // 9: gearproto.StatRequirements
-	(*StatRatings)(nil),         // 10: gearproto.StatRatings
-	(*ReforgeRules)(nil),        // 11: gearproto.ReforgeRules
-	(*Enchant)(nil),             // 12: gearproto.Enchant
-	(*Gem)(nil),                 // 13: gearproto.Gem
-	(*Professions)(nil),         // 14: gearproto.Professions
-	(*SetBonus)(nil),            // 15: gearproto.SetBonus
-	(*StatBlock)(nil),           // 16: gearproto.StatBlock
-	(*FixedForge)(nil),          // 17: gearproto.FixedForge
-	(*DistinctUsageGroups)(nil), // 18: gearproto.DistinctUsageGroups
-	(*ItemInSlot)(nil),          // 19: gearproto.ItemInSlot
-	(*ItemListInSlot)(nil),      // 20: gearproto.ItemListInSlot
-	(*StatValue)(nil),           // 21: gearproto.StatValue
-	(StatType)(0),               // 22: gearproto.StatType
+	(*MultiSetJob)(nil),         // 0: gearproto.MultiSetJob
+	(*MultiSetParam)(nil),       // 1: gearproto.MultiSetParam
+	(*Model)(nil),               // 2: gearproto.Model
+	(*StatRequirements)(nil),    // 3: gearproto.StatRequirements
+	(*StatRatings)(nil),         // 4: gearproto.StatRatings
+	(*ReforgeRules)(nil),        // 5: gearproto.ReforgeRules
+	(*Enchant)(nil),             // 6: gearproto.Enchant
+	(*Gem)(nil),                 // 7: gearproto.Gem
+	(*Professions)(nil),         // 8: gearproto.Professions
+	(*SetBonus)(nil),            // 9: gearproto.SetBonus
+	(*StatBlock)(nil),           // 10: gearproto.StatBlock
+	(*FixedForge)(nil),          // 11: gearproto.FixedForge
+	(*DistinctUsageGroups)(nil), // 12: gearproto.DistinctUsageGroups
+	(*ItemInSlot)(nil),          // 13: gearproto.ItemInSlot
+	(*ItemListInSlot)(nil),      // 14: gearproto.ItemListInSlot
+	(*StatValue)(nil),           // 15: gearproto.StatValue
+	(SpecType)(0),               // 16: gearproto.SpecType
+	(OptimiseGoal)(0),           // 17: gearproto.OptimiseGoal
+	(Fight)(0),                  // 18: gearproto.Fight
+	(StatType)(0),               // 19: gearproto.StatType
+	(SlotItem)(0),               // 20: gearproto.SlotItem
+	(SocketType)(0),             // 21: gearproto.SocketType
+	(SlotEquip)(0),              // 22: gearproto.SlotEquip
 }
 var file_multi_proto_depIdxs = []int32{
-	7,  // 0: gearproto.MultiSetJob.param:type_name -> gearproto.MultiSetParam
-	17, // 1: gearproto.MultiSetJob.fixed_forge:type_name -> gearproto.FixedForge
-	18, // 2: gearproto.MultiSetJob.usage_groups:type_name -> gearproto.DistinctUsageGroups
-	8,  // 3: gearproto.MultiSetParam.Model:type_name -> gearproto.Model
-	19, // 4: gearproto.MultiSetParam.ForceSingle:type_name -> gearproto.ItemInSlot
-	20, // 5: gearproto.MultiSetParam.ForceTryAll:type_name -> gearproto.ItemListInSlot
-	19, // 6: gearproto.MultiSetParam.ReportVariant:type_name -> gearproto.ItemInSlot
-	9,  // 7: gearproto.Model.StatRequirements:type_name -> gearproto.StatRequirements
-	10, // 8: gearproto.Model.StatRatings:type_name -> gearproto.StatRatings
-	0,  // 9: gearproto.Model.Spec:type_name -> gearproto.SpecType
-	1,  // 10: gearproto.Model.Goal:type_name -> gearproto.OptimiseGoal
-	2,  // 11: gearproto.Model.Fight:type_name -> gearproto.Fight
-	11, // 12: gearproto.Model.ReforgeRules:type_name -> gearproto.ReforgeRules
-	12, // 13: gearproto.Model.Enchant:type_name -> gearproto.Enchant
-	13, // 14: gearproto.Model.Gem:type_name -> gearproto.Gem
-	14, // 15: gearproto.Model.Professions:type_name -> gearproto.Professions
-	15, // 16: gearproto.Model.SetBonus:type_name -> gearproto.SetBonus
-	22, // 17: gearproto.StatRequirements.additionalStat:type_name -> gearproto.StatType
-	22, // 18: gearproto.StatRatings.priority:type_name -> gearproto.StatType
-	16, // 19: gearproto.StatRatings.values:type_name -> gearproto.StatBlock
-	22, // 20: gearproto.ReforgeRules.source:type_name -> gearproto.StatType
-	22, // 21: gearproto.ReforgeRules.target:type_name -> gearproto.StatType
-	3,  // 22: gearproto.Enchant.slot:type_name -> gearproto.SlotItem
-	5,  // 23: gearproto.Gem.socket:type_name -> gearproto.SocketType
-	16, // 24: gearproto.Gem.stats:type_name -> gearproto.StatBlock
-	21, // 25: gearproto.StatBlock.values:type_name -> gearproto.StatValue
-	22, // 26: gearproto.FixedForge.from:type_name -> gearproto.StatType
-	22, // 27: gearproto.FixedForge.to:type_name -> gearproto.StatType
-	4,  // 28: gearproto.ItemInSlot.slot:type_name -> gearproto.SlotEquip
-	4,  // 29: gearproto.ItemListInSlot.slot:type_name -> gearproto.SlotEquip
-	22, // 30: gearproto.StatValue.statType:type_name -> gearproto.StatType
+	1,  // 0: gearproto.MultiSetJob.param:type_name -> gearproto.MultiSetParam
+	11, // 1: gearproto.MultiSetJob.fixed_forge:type_name -> gearproto.FixedForge
+	12, // 2: gearproto.MultiSetJob.usage_groups:type_name -> gearproto.DistinctUsageGroups
+	2,  // 3: gearproto.MultiSetParam.Model:type_name -> gearproto.Model
+	13, // 4: gearproto.MultiSetParam.ForceSingle:type_name -> gearproto.ItemInSlot
+	14, // 5: gearproto.MultiSetParam.ForceTryAll:type_name -> gearproto.ItemListInSlot
+	13, // 6: gearproto.MultiSetParam.ReportVariant:type_name -> gearproto.ItemInSlot
+	3,  // 7: gearproto.Model.StatRequirements:type_name -> gearproto.StatRequirements
+	4,  // 8: gearproto.Model.StatRatings:type_name -> gearproto.StatRatings
+	16, // 9: gearproto.Model.Spec:type_name -> gearproto.SpecType
+	17, // 10: gearproto.Model.Goal:type_name -> gearproto.OptimiseGoal
+	18, // 11: gearproto.Model.Fight:type_name -> gearproto.Fight
+	5,  // 12: gearproto.Model.ReforgeRules:type_name -> gearproto.ReforgeRules
+	6,  // 13: gearproto.Model.Enchant:type_name -> gearproto.Enchant
+	7,  // 14: gearproto.Model.Gem:type_name -> gearproto.Gem
+	8,  // 15: gearproto.Model.Professions:type_name -> gearproto.Professions
+	9,  // 16: gearproto.Model.SetBonus:type_name -> gearproto.SetBonus
+	19, // 17: gearproto.StatRequirements.additionalStat:type_name -> gearproto.StatType
+	19, // 18: gearproto.StatRatings.priority:type_name -> gearproto.StatType
+	10, // 19: gearproto.StatRatings.values:type_name -> gearproto.StatBlock
+	19, // 20: gearproto.ReforgeRules.source:type_name -> gearproto.StatType
+	19, // 21: gearproto.ReforgeRules.target:type_name -> gearproto.StatType
+	20, // 22: gearproto.Enchant.slot:type_name -> gearproto.SlotItem
+	21, // 23: gearproto.Gem.socket:type_name -> gearproto.SocketType
+	10, // 24: gearproto.Gem.stats:type_name -> gearproto.StatBlock
+	15, // 25: gearproto.StatBlock.values:type_name -> gearproto.StatValue
+	19, // 26: gearproto.FixedForge.from:type_name -> gearproto.StatType
+	19, // 27: gearproto.FixedForge.to:type_name -> gearproto.StatType
+	22, // 28: gearproto.ItemInSlot.slot:type_name -> gearproto.SlotEquip
+	22, // 29: gearproto.ItemListInSlot.slot:type_name -> gearproto.SlotEquip
+	19, // 30: gearproto.StatValue.statType:type_name -> gearproto.StatType
 	31, // [31:31] is the sub-list for method output_type
 	31, // [31:31] is the sub-list for method input_type
 	31, // [31:31] is the sub-list for extension type_name
@@ -1904,14 +1366,13 @@ func file_multi_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_multi_proto_rawDesc), len(file_multi_proto_rawDesc)),
-			NumEnums:      6,
+			NumEnums:      0,
 			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_multi_proto_goTypes,
 		DependencyIndexes: file_multi_proto_depIdxs,
-		EnumInfos:         file_multi_proto_enumTypes,
 		MessageInfos:      file_multi_proto_msgTypes,
 	}.Build()
 	File_multi_proto = out.File

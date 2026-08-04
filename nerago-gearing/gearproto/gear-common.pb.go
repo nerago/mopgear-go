@@ -24,49 +24,52 @@ const (
 type StatType int32
 
 const (
-	StatType_Strength  StatType = 0
-	StatType_Agility   StatType = 1
-	StatType_Stamina   StatType = 2
-	StatType_Intellect StatType = 3
-	StatType_Spirit    StatType = 4
-	StatType_Hit       StatType = 5
-	StatType_Crit      StatType = 6
-	StatType_Haste     StatType = 7
-	StatType_Expertise StatType = 8
-	StatType_Dodge     StatType = 9
-	StatType_Parry     StatType = 10
-	StatType_Mastery   StatType = 11
+	StatType_StatType_Unknown StatType = 0
+	StatType_Strength         StatType = 1
+	StatType_Agility          StatType = 2
+	StatType_Stamina          StatType = 3
+	StatType_Intellect        StatType = 4
+	StatType_Spirit           StatType = 5
+	StatType_Hit              StatType = 6
+	StatType_Crit             StatType = 7
+	StatType_Haste            StatType = 8
+	StatType_Expertise        StatType = 9
+	StatType_Dodge            StatType = 10
+	StatType_Parry            StatType = 11
+	StatType_Mastery          StatType = 12
 )
 
 // Enum value maps for StatType.
 var (
 	StatType_name = map[int32]string{
-		0:  "Strength",
-		1:  "Agility",
-		2:  "Stamina",
-		3:  "Intellect",
-		4:  "Spirit",
-		5:  "Hit",
-		6:  "Crit",
-		7:  "Haste",
-		8:  "Expertise",
-		9:  "Dodge",
-		10: "Parry",
-		11: "Mastery",
+		0:  "StatType_Unknown",
+		1:  "Strength",
+		2:  "Agility",
+		3:  "Stamina",
+		4:  "Intellect",
+		5:  "Spirit",
+		6:  "Hit",
+		7:  "Crit",
+		8:  "Haste",
+		9:  "Expertise",
+		10: "Dodge",
+		11: "Parry",
+		12: "Mastery",
 	}
 	StatType_value = map[string]int32{
-		"Strength":  0,
-		"Agility":   1,
-		"Stamina":   2,
-		"Intellect": 3,
-		"Spirit":    4,
-		"Hit":       5,
-		"Crit":      6,
-		"Haste":     7,
-		"Expertise": 8,
-		"Dodge":     9,
-		"Parry":     10,
-		"Mastery":   11,
+		"StatType_Unknown": 0,
+		"Strength":         1,
+		"Agility":          2,
+		"Stamina":          3,
+		"Intellect":        4,
+		"Spirit":           5,
+		"Hit":              6,
+		"Crit":             7,
+		"Haste":            8,
+		"Expertise":        9,
+		"Dodge":            10,
+		"Parry":            11,
+		"Mastery":          12,
 	}
 )
 
@@ -97,26 +100,646 @@ func (StatType) EnumDescriptor() ([]byte, []int) {
 	return file_gear_common_proto_rawDescGZIP(), []int{0}
 }
 
+type SimType int32
+
+const (
+	SimType_SimType_Unknown SimType = 0
+	SimType_DPS             SimType = 1
+	SimType_TPS             SimType = 2
+	SimType_DTPS            SimType = 3
+	SimType_HPS             SimType = 4
+	SimType_TMI             SimType = 5
+	SimType_DEATH           SimType = 6
+	SimType_TTO             SimType = 7
+)
+
+// Enum value maps for SimType.
+var (
+	SimType_name = map[int32]string{
+		0: "SimType_Unknown",
+		1: "DPS",
+		2: "TPS",
+		3: "DTPS",
+		4: "HPS",
+		5: "TMI",
+		6: "DEATH",
+		7: "TTO",
+	}
+	SimType_value = map[string]int32{
+		"SimType_Unknown": 0,
+		"DPS":             1,
+		"TPS":             2,
+		"DTPS":            3,
+		"HPS":             4,
+		"TMI":             5,
+		"DEATH":           6,
+		"TTO":             7,
+	}
+)
+
+func (x SimType) Enum() *SimType {
+	p := new(SimType)
+	*p = x
+	return p
+}
+
+func (x SimType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SimType) Descriptor() protoreflect.EnumDescriptor {
+	return file_gear_common_proto_enumTypes[1].Descriptor()
+}
+
+func (SimType) Type() protoreflect.EnumType {
+	return &file_gear_common_proto_enumTypes[1]
+}
+
+func (x SimType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SimType.Descriptor instead.
+func (SimType) EnumDescriptor() ([]byte, []int) {
+	return file_gear_common_proto_rawDescGZIP(), []int{1}
+}
+
+type SpecType int32
+
+const (
+	SpecType_SpecType_Unknown           SpecType = 0
+	SpecType_SpecType_PaladinProt       SpecType = 1
+	SpecType_SpecType_PaladinRet        SpecType = 2
+	SpecType_SpecType_PaladinHoly       SpecType = 3
+	SpecType_SpecType_WarriorProt       SpecType = 4
+	SpecType_SpecType_WarriorArms       SpecType = 5
+	SpecType_SpecType_DruidBear         SpecType = 6
+	SpecType_SpecType_DruidTree         SpecType = 7
+	SpecType_SpecType_DruidBoom         SpecType = 8
+	SpecType_SpecType_DruidFeral        SpecType = 9
+	SpecType_SpecType_MageFrost         SpecType = 10
+	SpecType_SpecType_PriestShadow      SpecType = 11
+	SpecType_SpecType_PriestHoly        SpecType = 12
+	SpecType_SpecType_Rogue             SpecType = 13
+	SpecType_SpecType_Warlock           SpecType = 14
+	SpecType_SpecType_ShamanRestoration SpecType = 15
+	SpecType_SpecType_ShamanElemental   SpecType = 16
+	SpecType_SpecType_ShamanEnhance     SpecType = 17
+	SpecType_SpecType_Hunter            SpecType = 18
+	SpecType_SpecType_MonkBrewmaster    SpecType = 19
+	SpecType_SpecType_MonkMistweaver    SpecType = 20
+	SpecType_SpecType_MonkDps           SpecType = 21
+	SpecType_SpecType_DeathKnightDps    SpecType = 22
+	SpecType_SpecType_DeathKnightBlood  SpecType = 23
+)
+
+// Enum value maps for SpecType.
+var (
+	SpecType_name = map[int32]string{
+		0:  "SpecType_Unknown",
+		1:  "SpecType_PaladinProt",
+		2:  "SpecType_PaladinRet",
+		3:  "SpecType_PaladinHoly",
+		4:  "SpecType_WarriorProt",
+		5:  "SpecType_WarriorArms",
+		6:  "SpecType_DruidBear",
+		7:  "SpecType_DruidTree",
+		8:  "SpecType_DruidBoom",
+		9:  "SpecType_DruidFeral",
+		10: "SpecType_MageFrost",
+		11: "SpecType_PriestShadow",
+		12: "SpecType_PriestHoly",
+		13: "SpecType_Rogue",
+		14: "SpecType_Warlock",
+		15: "SpecType_ShamanRestoration",
+		16: "SpecType_ShamanElemental",
+		17: "SpecType_ShamanEnhance",
+		18: "SpecType_Hunter",
+		19: "SpecType_MonkBrewmaster",
+		20: "SpecType_MonkMistweaver",
+		21: "SpecType_MonkDps",
+		22: "SpecType_DeathKnightDps",
+		23: "SpecType_DeathKnightBlood",
+	}
+	SpecType_value = map[string]int32{
+		"SpecType_Unknown":           0,
+		"SpecType_PaladinProt":       1,
+		"SpecType_PaladinRet":        2,
+		"SpecType_PaladinHoly":       3,
+		"SpecType_WarriorProt":       4,
+		"SpecType_WarriorArms":       5,
+		"SpecType_DruidBear":         6,
+		"SpecType_DruidTree":         7,
+		"SpecType_DruidBoom":         8,
+		"SpecType_DruidFeral":        9,
+		"SpecType_MageFrost":         10,
+		"SpecType_PriestShadow":      11,
+		"SpecType_PriestHoly":        12,
+		"SpecType_Rogue":             13,
+		"SpecType_Warlock":           14,
+		"SpecType_ShamanRestoration": 15,
+		"SpecType_ShamanElemental":   16,
+		"SpecType_ShamanEnhance":     17,
+		"SpecType_Hunter":            18,
+		"SpecType_MonkBrewmaster":    19,
+		"SpecType_MonkMistweaver":    20,
+		"SpecType_MonkDps":           21,
+		"SpecType_DeathKnightDps":    22,
+		"SpecType_DeathKnightBlood":  23,
+	}
+)
+
+func (x SpecType) Enum() *SpecType {
+	p := new(SpecType)
+	*p = x
+	return p
+}
+
+func (x SpecType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SpecType) Descriptor() protoreflect.EnumDescriptor {
+	return file_gear_common_proto_enumTypes[2].Descriptor()
+}
+
+func (SpecType) Type() protoreflect.EnumType {
+	return &file_gear_common_proto_enumTypes[2]
+}
+
+func (x SpecType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SpecType.Descriptor instead.
+func (SpecType) EnumDescriptor() ([]byte, []int) {
+	return file_gear_common_proto_rawDescGZIP(), []int{2}
+}
+
+type OptimiseGoal int32
+
+const (
+	OptimiseGoal_OptimiseGoal_Unknown     OptimiseGoal = 0
+	OptimiseGoal_OptimiseGoal_Dps         OptimiseGoal = 1
+	OptimiseGoal_OptimiseGoal_Mitigation  OptimiseGoal = 2
+	OptimiseGoal_OptimiseGoal_HalfMitiDps OptimiseGoal = 3
+	OptimiseGoal_OptimiseGoal_Healing     OptimiseGoal = 4
+)
+
+// Enum value maps for OptimiseGoal.
+var (
+	OptimiseGoal_name = map[int32]string{
+		0: "OptimiseGoal_Unknown",
+		1: "OptimiseGoal_Dps",
+		2: "OptimiseGoal_Mitigation",
+		3: "OptimiseGoal_HalfMitiDps",
+		4: "OptimiseGoal_Healing",
+	}
+	OptimiseGoal_value = map[string]int32{
+		"OptimiseGoal_Unknown":     0,
+		"OptimiseGoal_Dps":         1,
+		"OptimiseGoal_Mitigation":  2,
+		"OptimiseGoal_HalfMitiDps": 3,
+		"OptimiseGoal_Healing":     4,
+	}
+)
+
+func (x OptimiseGoal) Enum() *OptimiseGoal {
+	p := new(OptimiseGoal)
+	*p = x
+	return p
+}
+
+func (x OptimiseGoal) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (OptimiseGoal) Descriptor() protoreflect.EnumDescriptor {
+	return file_gear_common_proto_enumTypes[3].Descriptor()
+}
+
+func (OptimiseGoal) Type() protoreflect.EnumType {
+	return &file_gear_common_proto_enumTypes[3]
+}
+
+func (x OptimiseGoal) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use OptimiseGoal.Descriptor instead.
+func (OptimiseGoal) EnumDescriptor() ([]byte, []int) {
+	return file_gear_common_proto_rawDescGZIP(), []int{3}
+}
+
+type Fight int32
+
+const (
+	Fight_Fight_Unknown           Fight = 0
+	Fight_Fight_Horridon_HighHeal Fight = 1
+	Fight_Fight_Horridon_LowHeal  Fight = 2
+	Fight_Fight_Animus            Fight = 3
+)
+
+// Enum value maps for Fight.
+var (
+	Fight_name = map[int32]string{
+		0: "Fight_Unknown",
+		1: "Fight_Horridon_HighHeal",
+		2: "Fight_Horridon_LowHeal",
+		3: "Fight_Animus",
+	}
+	Fight_value = map[string]int32{
+		"Fight_Unknown":           0,
+		"Fight_Horridon_HighHeal": 1,
+		"Fight_Horridon_LowHeal":  2,
+		"Fight_Animus":            3,
+	}
+)
+
+func (x Fight) Enum() *Fight {
+	p := new(Fight)
+	*p = x
+	return p
+}
+
+func (x Fight) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Fight) Descriptor() protoreflect.EnumDescriptor {
+	return file_gear_common_proto_enumTypes[4].Descriptor()
+}
+
+func (Fight) Type() protoreflect.EnumType {
+	return &file_gear_common_proto_enumTypes[4]
+}
+
+func (x Fight) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Fight.Descriptor instead.
+func (Fight) EnumDescriptor() ([]byte, []int) {
+	return file_gear_common_proto_rawDescGZIP(), []int{4}
+}
+
+type SlotItem int32
+
+const (
+	SlotItem_SlotItem_Unknown  SlotItem = 0
+	SlotItem_SlotItem_Head     SlotItem = 1
+	SlotItem_SlotItem_Neck     SlotItem = 2
+	SlotItem_SlotItem_Shoulder SlotItem = 3
+	SlotItem_SlotItem_Back     SlotItem = 4
+	SlotItem_SlotItem_Chest    SlotItem = 5
+	SlotItem_SlotItem_Wrist    SlotItem = 6
+	SlotItem_SlotItem_Hand     SlotItem = 7
+	SlotItem_SlotItem_Belt     SlotItem = 8
+	SlotItem_SlotItem_Leg      SlotItem = 9
+	SlotItem_SlotItem_Foot     SlotItem = 10
+	SlotItem_SlotItem_Ring     SlotItem = 11
+	SlotItem_SlotItem_Trinket  SlotItem = 12
+	SlotItem_SlotItem_Weapon1H SlotItem = 13
+	SlotItem_SlotItem_Weapon2H SlotItem = 14
+	SlotItem_SlotItem_Offhand  SlotItem = 15
+)
+
+// Enum value maps for SlotItem.
+var (
+	SlotItem_name = map[int32]string{
+		0:  "SlotItem_Unknown",
+		1:  "SlotItem_Head",
+		2:  "SlotItem_Neck",
+		3:  "SlotItem_Shoulder",
+		4:  "SlotItem_Back",
+		5:  "SlotItem_Chest",
+		6:  "SlotItem_Wrist",
+		7:  "SlotItem_Hand",
+		8:  "SlotItem_Belt",
+		9:  "SlotItem_Leg",
+		10: "SlotItem_Foot",
+		11: "SlotItem_Ring",
+		12: "SlotItem_Trinket",
+		13: "SlotItem_Weapon1H",
+		14: "SlotItem_Weapon2H",
+		15: "SlotItem_Offhand",
+	}
+	SlotItem_value = map[string]int32{
+		"SlotItem_Unknown":  0,
+		"SlotItem_Head":     1,
+		"SlotItem_Neck":     2,
+		"SlotItem_Shoulder": 3,
+		"SlotItem_Back":     4,
+		"SlotItem_Chest":    5,
+		"SlotItem_Wrist":    6,
+		"SlotItem_Hand":     7,
+		"SlotItem_Belt":     8,
+		"SlotItem_Leg":      9,
+		"SlotItem_Foot":     10,
+		"SlotItem_Ring":     11,
+		"SlotItem_Trinket":  12,
+		"SlotItem_Weapon1H": 13,
+		"SlotItem_Weapon2H": 14,
+		"SlotItem_Offhand":  15,
+	}
+)
+
+func (x SlotItem) Enum() *SlotItem {
+	p := new(SlotItem)
+	*p = x
+	return p
+}
+
+func (x SlotItem) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SlotItem) Descriptor() protoreflect.EnumDescriptor {
+	return file_gear_common_proto_enumTypes[5].Descriptor()
+}
+
+func (SlotItem) Type() protoreflect.EnumType {
+	return &file_gear_common_proto_enumTypes[5]
+}
+
+func (x SlotItem) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SlotItem.Descriptor instead.
+func (SlotItem) EnumDescriptor() ([]byte, []int) {
+	return file_gear_common_proto_rawDescGZIP(), []int{5}
+}
+
+type SlotEquip int32
+
+const (
+	SlotEquip_SlotEquip_Unknown  SlotEquip = 0
+	SlotEquip_SlotEquip_Head     SlotEquip = 1
+	SlotEquip_SlotEquip_Neck     SlotEquip = 2
+	SlotEquip_SlotEquip_Shoulder SlotEquip = 3
+	SlotEquip_SlotEquip_Back     SlotEquip = 4
+	SlotEquip_SlotEquip_Chest    SlotEquip = 5
+	SlotEquip_SlotEquip_Wrist    SlotEquip = 6
+	SlotEquip_SlotEquip_Hand     SlotEquip = 7
+	SlotEquip_SlotEquip_Belt     SlotEquip = 8
+	SlotEquip_SlotEquip_Leg      SlotEquip = 9
+	SlotEquip_SlotEquip_Foot     SlotEquip = 10
+	SlotEquip_SlotEquip_Ring1    SlotEquip = 11
+	SlotEquip_SlotEquip_Ring2    SlotEquip = 12
+	SlotEquip_SlotEquip_Trinket1 SlotEquip = 13
+	SlotEquip_SlotEquip_Trinket2 SlotEquip = 14
+	SlotEquip_SlotEquip_Weapon   SlotEquip = 15
+	SlotEquip_SlotEquip_Offhand  SlotEquip = 16
+)
+
+// Enum value maps for SlotEquip.
+var (
+	SlotEquip_name = map[int32]string{
+		0:  "SlotEquip_Unknown",
+		1:  "SlotEquip_Head",
+		2:  "SlotEquip_Neck",
+		3:  "SlotEquip_Shoulder",
+		4:  "SlotEquip_Back",
+		5:  "SlotEquip_Chest",
+		6:  "SlotEquip_Wrist",
+		7:  "SlotEquip_Hand",
+		8:  "SlotEquip_Belt",
+		9:  "SlotEquip_Leg",
+		10: "SlotEquip_Foot",
+		11: "SlotEquip_Ring1",
+		12: "SlotEquip_Ring2",
+		13: "SlotEquip_Trinket1",
+		14: "SlotEquip_Trinket2",
+		15: "SlotEquip_Weapon",
+		16: "SlotEquip_Offhand",
+	}
+	SlotEquip_value = map[string]int32{
+		"SlotEquip_Unknown":  0,
+		"SlotEquip_Head":     1,
+		"SlotEquip_Neck":     2,
+		"SlotEquip_Shoulder": 3,
+		"SlotEquip_Back":     4,
+		"SlotEquip_Chest":    5,
+		"SlotEquip_Wrist":    6,
+		"SlotEquip_Hand":     7,
+		"SlotEquip_Belt":     8,
+		"SlotEquip_Leg":      9,
+		"SlotEquip_Foot":     10,
+		"SlotEquip_Ring1":    11,
+		"SlotEquip_Ring2":    12,
+		"SlotEquip_Trinket1": 13,
+		"SlotEquip_Trinket2": 14,
+		"SlotEquip_Weapon":   15,
+		"SlotEquip_Offhand":  16,
+	}
+)
+
+func (x SlotEquip) Enum() *SlotEquip {
+	p := new(SlotEquip)
+	*p = x
+	return p
+}
+
+func (x SlotEquip) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SlotEquip) Descriptor() protoreflect.EnumDescriptor {
+	return file_gear_common_proto_enumTypes[6].Descriptor()
+}
+
+func (SlotEquip) Type() protoreflect.EnumType {
+	return &file_gear_common_proto_enumTypes[6]
+}
+
+func (x SlotEquip) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SlotEquip.Descriptor instead.
+func (SlotEquip) EnumDescriptor() ([]byte, []int) {
+	return file_gear_common_proto_rawDescGZIP(), []int{6}
+}
+
+type SocketType int32
+
+const (
+	SocketType_SocketType_Unknown     SocketType = 0
+	SocketType_SocketType_Meta        SocketType = 1
+	SocketType_SocketType_Red         SocketType = 2
+	SocketType_SocketType_Blue        SocketType = 3
+	SocketType_SocketType_Yellow      SocketType = 4
+	SocketType_SocketType_General     SocketType = 5
+	SocketType_SocketType_Engineering SocketType = 6
+	SocketType_SocketType_Sha         SocketType = 7
+)
+
+// Enum value maps for SocketType.
+var (
+	SocketType_name = map[int32]string{
+		0: "SocketType_Unknown",
+		1: "SocketType_Meta",
+		2: "SocketType_Red",
+		3: "SocketType_Blue",
+		4: "SocketType_Yellow",
+		5: "SocketType_General",
+		6: "SocketType_Engineering",
+		7: "SocketType_Sha",
+	}
+	SocketType_value = map[string]int32{
+		"SocketType_Unknown":     0,
+		"SocketType_Meta":        1,
+		"SocketType_Red":         2,
+		"SocketType_Blue":        3,
+		"SocketType_Yellow":      4,
+		"SocketType_General":     5,
+		"SocketType_Engineering": 6,
+		"SocketType_Sha":         7,
+	}
+)
+
+func (x SocketType) Enum() *SocketType {
+	p := new(SocketType)
+	*p = x
+	return p
+}
+
+func (x SocketType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SocketType) Descriptor() protoreflect.EnumDescriptor {
+	return file_gear_common_proto_enumTypes[7].Descriptor()
+}
+
+func (SocketType) Type() protoreflect.EnumType {
+	return &file_gear_common_proto_enumTypes[7]
+}
+
+func (x SocketType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SocketType.Descriptor instead.
+func (SocketType) EnumDescriptor() ([]byte, []int) {
+	return file_gear_common_proto_rawDescGZIP(), []int{7}
+}
+
 var File_gear_common_proto protoreflect.FileDescriptor
 
 const file_gear_common_proto_rawDesc = "" +
 	"\n" +
-	"\x11gear-common.proto\x12\tgearproto*\x9d\x01\n" +
-	"\bStatType\x12\f\n" +
-	"\bStrength\x10\x00\x12\v\n" +
-	"\aAgility\x10\x01\x12\v\n" +
-	"\aStamina\x10\x02\x12\r\n" +
-	"\tIntellect\x10\x03\x12\n" +
+	"\x11gear-common.proto\x12\tgearproto*\xb3\x01\n" +
+	"\bStatType\x12\x14\n" +
+	"\x10StatType_Unknown\x10\x00\x12\f\n" +
+	"\bStrength\x10\x01\x12\v\n" +
+	"\aAgility\x10\x02\x12\v\n" +
+	"\aStamina\x10\x03\x12\r\n" +
+	"\tIntellect\x10\x04\x12\n" +
 	"\n" +
-	"\x06Spirit\x10\x04\x12\a\n" +
-	"\x03Hit\x10\x05\x12\b\n" +
-	"\x04Crit\x10\x06\x12\t\n" +
-	"\x05Haste\x10\a\x12\r\n" +
-	"\tExpertise\x10\b\x12\t\n" +
-	"\x05Dodge\x10\t\x12\t\n" +
-	"\x05Parry\x10\n" +
-	"\x12\v\n" +
-	"\aMastery\x10\vB\rZ\v./gearprotob\x06proto3"
+	"\x06Spirit\x10\x05\x12\a\n" +
+	"\x03Hit\x10\x06\x12\b\n" +
+	"\x04Crit\x10\a\x12\t\n" +
+	"\x05Haste\x10\b\x12\r\n" +
+	"\tExpertise\x10\t\x12\t\n" +
+	"\x05Dodge\x10\n" +
+	"\x12\t\n" +
+	"\x05Parry\x10\v\x12\v\n" +
+	"\aMastery\x10\f*`\n" +
+	"\aSimType\x12\x13\n" +
+	"\x0fSimType_Unknown\x10\x00\x12\a\n" +
+	"\x03DPS\x10\x01\x12\a\n" +
+	"\x03TPS\x10\x02\x12\b\n" +
+	"\x04DTPS\x10\x03\x12\a\n" +
+	"\x03HPS\x10\x04\x12\a\n" +
+	"\x03TMI\x10\x05\x12\t\n" +
+	"\x05DEATH\x10\x06\x12\a\n" +
+	"\x03TTO\x10\a*\xf3\x04\n" +
+	"\bSpecType\x12\x14\n" +
+	"\x10SpecType_Unknown\x10\x00\x12\x18\n" +
+	"\x14SpecType_PaladinProt\x10\x01\x12\x17\n" +
+	"\x13SpecType_PaladinRet\x10\x02\x12\x18\n" +
+	"\x14SpecType_PaladinHoly\x10\x03\x12\x18\n" +
+	"\x14SpecType_WarriorProt\x10\x04\x12\x18\n" +
+	"\x14SpecType_WarriorArms\x10\x05\x12\x16\n" +
+	"\x12SpecType_DruidBear\x10\x06\x12\x16\n" +
+	"\x12SpecType_DruidTree\x10\a\x12\x16\n" +
+	"\x12SpecType_DruidBoom\x10\b\x12\x17\n" +
+	"\x13SpecType_DruidFeral\x10\t\x12\x16\n" +
+	"\x12SpecType_MageFrost\x10\n" +
+	"\x12\x19\n" +
+	"\x15SpecType_PriestShadow\x10\v\x12\x17\n" +
+	"\x13SpecType_PriestHoly\x10\f\x12\x12\n" +
+	"\x0eSpecType_Rogue\x10\r\x12\x14\n" +
+	"\x10SpecType_Warlock\x10\x0e\x12\x1e\n" +
+	"\x1aSpecType_ShamanRestoration\x10\x0f\x12\x1c\n" +
+	"\x18SpecType_ShamanElemental\x10\x10\x12\x1a\n" +
+	"\x16SpecType_ShamanEnhance\x10\x11\x12\x13\n" +
+	"\x0fSpecType_Hunter\x10\x12\x12\x1b\n" +
+	"\x17SpecType_MonkBrewmaster\x10\x13\x12\x1b\n" +
+	"\x17SpecType_MonkMistweaver\x10\x14\x12\x14\n" +
+	"\x10SpecType_MonkDps\x10\x15\x12\x1b\n" +
+	"\x17SpecType_DeathKnightDps\x10\x16\x12\x1d\n" +
+	"\x19SpecType_DeathKnightBlood\x10\x17*\x93\x01\n" +
+	"\fOptimiseGoal\x12\x18\n" +
+	"\x14OptimiseGoal_Unknown\x10\x00\x12\x14\n" +
+	"\x10OptimiseGoal_Dps\x10\x01\x12\x1b\n" +
+	"\x17OptimiseGoal_Mitigation\x10\x02\x12\x1c\n" +
+	"\x18OptimiseGoal_HalfMitiDps\x10\x03\x12\x18\n" +
+	"\x14OptimiseGoal_Healing\x10\x04*e\n" +
+	"\x05Fight\x12\x11\n" +
+	"\rFight_Unknown\x10\x00\x12\x1b\n" +
+	"\x17Fight_Horridon_HighHeal\x10\x01\x12\x1a\n" +
+	"\x16Fight_Horridon_LowHeal\x10\x02\x12\x10\n" +
+	"\fFight_Animus\x10\x03*\xd0\x02\n" +
+	"\bSlotItem\x12\x14\n" +
+	"\x10SlotItem_Unknown\x10\x00\x12\x11\n" +
+	"\rSlotItem_Head\x10\x01\x12\x11\n" +
+	"\rSlotItem_Neck\x10\x02\x12\x15\n" +
+	"\x11SlotItem_Shoulder\x10\x03\x12\x11\n" +
+	"\rSlotItem_Back\x10\x04\x12\x12\n" +
+	"\x0eSlotItem_Chest\x10\x05\x12\x12\n" +
+	"\x0eSlotItem_Wrist\x10\x06\x12\x11\n" +
+	"\rSlotItem_Hand\x10\a\x12\x11\n" +
+	"\rSlotItem_Belt\x10\b\x12\x10\n" +
+	"\fSlotItem_Leg\x10\t\x12\x11\n" +
+	"\rSlotItem_Foot\x10\n" +
+	"\x12\x11\n" +
+	"\rSlotItem_Ring\x10\v\x12\x14\n" +
+	"\x10SlotItem_Trinket\x10\f\x12\x15\n" +
+	"\x11SlotItem_Weapon1H\x10\r\x12\x15\n" +
+	"\x11SlotItem_Weapon2H\x10\x0e\x12\x14\n" +
+	"\x10SlotItem_Offhand\x10\x0f*\xf6\x02\n" +
+	"\tSlotEquip\x12\x15\n" +
+	"\x11SlotEquip_Unknown\x10\x00\x12\x12\n" +
+	"\x0eSlotEquip_Head\x10\x01\x12\x12\n" +
+	"\x0eSlotEquip_Neck\x10\x02\x12\x16\n" +
+	"\x12SlotEquip_Shoulder\x10\x03\x12\x12\n" +
+	"\x0eSlotEquip_Back\x10\x04\x12\x13\n" +
+	"\x0fSlotEquip_Chest\x10\x05\x12\x13\n" +
+	"\x0fSlotEquip_Wrist\x10\x06\x12\x12\n" +
+	"\x0eSlotEquip_Hand\x10\a\x12\x12\n" +
+	"\x0eSlotEquip_Belt\x10\b\x12\x11\n" +
+	"\rSlotEquip_Leg\x10\t\x12\x12\n" +
+	"\x0eSlotEquip_Foot\x10\n" +
+	"\x12\x13\n" +
+	"\x0fSlotEquip_Ring1\x10\v\x12\x13\n" +
+	"\x0fSlotEquip_Ring2\x10\f\x12\x16\n" +
+	"\x12SlotEquip_Trinket1\x10\r\x12\x16\n" +
+	"\x12SlotEquip_Trinket2\x10\x0e\x12\x14\n" +
+	"\x10SlotEquip_Weapon\x10\x0f\x12\x15\n" +
+	"\x11SlotEquip_Offhand\x10\x10*\xc1\x01\n" +
+	"\n" +
+	"SocketType\x12\x16\n" +
+	"\x12SocketType_Unknown\x10\x00\x12\x13\n" +
+	"\x0fSocketType_Meta\x10\x01\x12\x12\n" +
+	"\x0eSocketType_Red\x10\x02\x12\x13\n" +
+	"\x0fSocketType_Blue\x10\x03\x12\x15\n" +
+	"\x11SocketType_Yellow\x10\x04\x12\x16\n" +
+	"\x12SocketType_General\x10\x05\x12\x1a\n" +
+	"\x16SocketType_Engineering\x10\x06\x12\x12\n" +
+	"\x0eSocketType_Sha\x10\aB\rZ\v./gearprotob\x06proto3"
 
 var (
 	file_gear_common_proto_rawDescOnce sync.Once
@@ -130,9 +753,16 @@ func file_gear_common_proto_rawDescGZIP() []byte {
 	return file_gear_common_proto_rawDescData
 }
 
-var file_gear_common_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_gear_common_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
 var file_gear_common_proto_goTypes = []any{
-	(StatType)(0), // 0: gearproto.StatType
+	(StatType)(0),     // 0: gearproto.StatType
+	(SimType)(0),      // 1: gearproto.SimType
+	(SpecType)(0),     // 2: gearproto.SpecType
+	(OptimiseGoal)(0), // 3: gearproto.OptimiseGoal
+	(Fight)(0),        // 4: gearproto.Fight
+	(SlotItem)(0),     // 5: gearproto.SlotItem
+	(SlotEquip)(0),    // 6: gearproto.SlotEquip
+	(SocketType)(0),   // 7: gearproto.SocketType
 }
 var file_gear_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -152,7 +782,7 @@ func file_gear_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gear_common_proto_rawDesc), len(file_gear_common_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      8,
 			NumMessages:   0,
 			NumExtensions: 0,
 			NumServices:   0,

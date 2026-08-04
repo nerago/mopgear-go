@@ -218,7 +218,7 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 
 	ranking := weight_highs.RankingStatWeightProcess{}
 	ranking.RANKMODE = 0
-	ranking.WEIGHTSUM = 0 // or 1
+	ranking.WEIGHTSUM = 1 // 0 or 1
 	ranking.Init(printer)
 	ranking.SetRequiredStats(statList)
 	ranking.SetTargetRatios(ratio)
@@ -227,6 +227,8 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 	weights1 := weightResult.AsWeight1()
 	if weights1 != nil {
 		tools.WritePawnString(*weights1, printer)
+		acc := weightfind.EvaluateAccuracy(weights1, ratio.SimTypes(), &ratio, weightInputs)
+		printer.Printf("acc %f\n", acc)
 	} else {
 		printer.Println("MISSING WEIGHT")
 	}
@@ -1132,28 +1134,28 @@ func statWeightsGrid1b(printer *util.PrintRecorder) {
 		printer.Printf("accuracy %s: grid data = %f, rand data = %f, data mix = %f, stat mix = %f\n", label, acc, acc2, acc3, acc4)
 	}
 
-	//runOne(1, 1, 2, 2, "select")
+	runOne(0, 1, 2, 2, "select")
 
-	type optParam struct {
-		a, b, c, d int
-		label      string
-	}
-	optList := make([]optParam, 0)
-	for a := range 5 {
-		for b := range 5 {
-			for c := range 3 {
-				for d := range 4 {
-					label := fmt.Sprintf("GRID1 %d %d %d %d", a, b, c, d)
-					optList = append(optList, optParam{a, b, c, d, label})
-				}
-			}
-		}
-	}
-
-	util_async.ForEach_Slice(5, optList, func(o *optParam) {
-		runOne(o.a, o.b, o.c, o.d, o.label)
-		printer.Println(o.label)
-	})
+	//type optParam struct {
+	//	a, b, c, d int
+	//	label      string
+	//}
+	//optList := make([]optParam, 0)
+	//for a := range 5 {
+	//	for b := range 5 {
+	//		for c := range 3 {
+	//			for d := range 4 {
+	//				label := fmt.Sprintf("GRID1 %d %d %d %d", a, b, c, d)
+	//				optList = append(optList, optParam{a, b, c, d, label})
+	//			}
+	//		}
+	//	}
+	//}
+	//
+	//util_async.ForEach_Slice(5, optList, func(o *optParam) {
+	//	runOne(o.a, o.b, o.c, o.d, o.label)
+	//	printer.Println(o.label)
+	//})
 }
 
 func writeWeightInputsToFile(weightInputs []weight_types.WeightInput, filename string) {

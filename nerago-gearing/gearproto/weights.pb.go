@@ -21,67 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type SimType int32
-
-const (
-	SimType_DPS   SimType = 0
-	SimType_TPS   SimType = 1
-	SimType_DTPS  SimType = 2
-	SimType_HPS   SimType = 3
-	SimType_TMI   SimType = 4
-	SimType_DEATH SimType = 5
-	SimType_TTO   SimType = 6
-)
-
-// Enum value maps for SimType.
-var (
-	SimType_name = map[int32]string{
-		0: "DPS",
-		1: "TPS",
-		2: "DTPS",
-		3: "HPS",
-		4: "TMI",
-		5: "DEATH",
-		6: "TTO",
-	}
-	SimType_value = map[string]int32{
-		"DPS":   0,
-		"TPS":   1,
-		"DTPS":  2,
-		"HPS":   3,
-		"TMI":   4,
-		"DEATH": 5,
-		"TTO":   6,
-	}
-)
-
-func (x SimType) Enum() *SimType {
-	p := new(SimType)
-	*p = x
-	return p
-}
-
-func (x SimType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (SimType) Descriptor() protoreflect.EnumDescriptor {
-	return file_weights_proto_enumTypes[0].Descriptor()
-}
-
-func (SimType) Type() protoreflect.EnumType {
-	return &file_weights_proto_enumTypes[0]
-}
-
-func (x SimType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use SimType.Descriptor instead.
-func (SimType) EnumDescriptor() ([]byte, []int) {
-	return file_weights_proto_rawDescGZIP(), []int{0}
-}
-
 type Weight1Basic struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	WeightType    int32                  `protobuf:"varint,1,opt,name=weightType,proto3" json:"weightType,omitempty"`
@@ -304,7 +243,7 @@ func (x *Weight1Entry) GetStatType() StatType {
 	if x != nil {
 		return x.StatType
 	}
-	return StatType_Strength
+	return StatType_StatType_Unknown
 }
 
 func (x *Weight1Entry) GetRatingWeight() float64 {
@@ -357,14 +296,14 @@ func (x *Weight2Entry) GetStatType() StatType {
 	if x != nil {
 		return x.StatType
 	}
-	return StatType_Strength
+	return StatType_StatType_Unknown
 }
 
 func (x *Weight2Entry) GetSimType() SimType {
 	if x != nil {
 		return x.SimType
 	}
-	return SimType_DPS
+	return SimType_SimType_Unknown
 }
 
 func (x *Weight2Entry) GetRatingWeight() float64 {
@@ -417,14 +356,14 @@ func (x *Weight3Group) GetStatType() StatType {
 	if x != nil {
 		return x.StatType
 	}
-	return StatType_Strength
+	return StatType_StatType_Unknown
 }
 
 func (x *Weight3Group) GetSimType() SimType {
 	if x != nil {
 		return x.SimType
 	}
-	return SimType_DPS
+	return SimType_SimType_Unknown
 }
 
 func (x *Weight3Group) GetEntries() []*Weight3Entry {
@@ -588,7 +527,7 @@ func (x *Priority1Entry) GetSimType() SimType {
 	if x != nil {
 		return x.SimType
 	}
-	return SimType_DPS
+	return SimType_SimType_Unknown
 }
 
 func (x *Priority1Entry) GetRatioScale() uint32 {
@@ -642,7 +581,7 @@ func (x *Priority2Entry) GetSimType() SimType {
 	if x != nil {
 		return x.SimType
 	}
-	return SimType_DPS
+	return SimType_SimType_Unknown
 }
 
 func (x *Priority2Entry) GetRangingScale() float64 {
@@ -717,15 +656,7 @@ const file_weights_proto_rawDesc = "" +
 	"\rranging_scale\x18\x02 \x01(\x01R\frangingScale\x12%\n" +
 	"\x0eranging_offset\x18\x03 \x01(\x01R\rrangingOffset\x12\x1f\n" +
 	"\vratio_scale\x18\x04 \x01(\x01R\n" +
-	"ratioScale*K\n" +
-	"\aSimType\x12\a\n" +
-	"\x03DPS\x10\x00\x12\a\n" +
-	"\x03TPS\x10\x01\x12\b\n" +
-	"\x04DTPS\x10\x02\x12\a\n" +
-	"\x03HPS\x10\x03\x12\a\n" +
-	"\x03TMI\x10\x04\x12\t\n" +
-	"\x05DEATH\x10\x05\x12\a\n" +
-	"\x03TTO\x10\x06B\rZ\v./gearprotob\x06proto3"
+	"ratioScaleB\rZ\v./gearprotob\x06proto3"
 
 var (
 	file_weights_proto_rawDescOnce sync.Once
@@ -739,38 +670,37 @@ func file_weights_proto_rawDescGZIP() []byte {
 	return file_weights_proto_rawDescData
 }
 
-var file_weights_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_weights_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_weights_proto_goTypes = []any{
-	(SimType)(0),            // 0: gearproto.SimType
-	(*Weight1Basic)(nil),    // 1: gearproto.Weight1Basic
-	(*Weight2Extended)(nil), // 2: gearproto.Weight2Extended
-	(*Weight3Extended)(nil), // 3: gearproto.Weight3Extended
-	(*Weight1Entry)(nil),    // 4: gearproto.Weight1Entry
-	(*Weight2Entry)(nil),    // 5: gearproto.Weight2Entry
-	(*Weight3Group)(nil),    // 6: gearproto.Weight3Group
-	(*Weight3Entry)(nil),    // 7: gearproto.Weight3Entry
-	(*StatRange)(nil),       // 8: gearproto.StatRange
-	(*Priority1Entry)(nil),  // 9: gearproto.Priority1Entry
-	(*Priority2Entry)(nil),  // 10: gearproto.Priority2Entry
-	(StatType)(0),           // 11: gearproto.StatType
+	(*Weight1Basic)(nil),    // 0: gearproto.Weight1Basic
+	(*Weight2Extended)(nil), // 1: gearproto.Weight2Extended
+	(*Weight3Extended)(nil), // 2: gearproto.Weight3Extended
+	(*Weight1Entry)(nil),    // 3: gearproto.Weight1Entry
+	(*Weight2Entry)(nil),    // 4: gearproto.Weight2Entry
+	(*Weight3Group)(nil),    // 5: gearproto.Weight3Group
+	(*Weight3Entry)(nil),    // 6: gearproto.Weight3Entry
+	(*StatRange)(nil),       // 7: gearproto.StatRange
+	(*Priority1Entry)(nil),  // 8: gearproto.Priority1Entry
+	(*Priority2Entry)(nil),  // 9: gearproto.Priority2Entry
+	(StatType)(0),           // 10: gearproto.StatType
+	(SimType)(0),            // 11: gearproto.SimType
 }
 var file_weights_proto_depIdxs = []int32{
-	4,  // 0: gearproto.Weight1Basic.weight:type_name -> gearproto.Weight1Entry
-	9,  // 1: gearproto.Weight1Basic.priority:type_name -> gearproto.Priority1Entry
-	5,  // 2: gearproto.Weight2Extended.weights:type_name -> gearproto.Weight2Entry
-	10, // 3: gearproto.Weight2Extended.priority:type_name -> gearproto.Priority2Entry
-	6,  // 4: gearproto.Weight3Extended.weights:type_name -> gearproto.Weight3Group
-	10, // 5: gearproto.Weight3Extended.priority:type_name -> gearproto.Priority2Entry
-	11, // 6: gearproto.Weight1Entry.stat_type:type_name -> gearproto.StatType
-	11, // 7: gearproto.Weight2Entry.stat_type:type_name -> gearproto.StatType
-	0,  // 8: gearproto.Weight2Entry.sim_type:type_name -> gearproto.SimType
-	11, // 9: gearproto.Weight3Group.stat_type:type_name -> gearproto.StatType
-	0,  // 10: gearproto.Weight3Group.sim_type:type_name -> gearproto.SimType
-	7,  // 11: gearproto.Weight3Group.entries:type_name -> gearproto.Weight3Entry
-	8,  // 12: gearproto.Weight3Entry.stat_range:type_name -> gearproto.StatRange
-	0,  // 13: gearproto.Priority1Entry.sim_type:type_name -> gearproto.SimType
-	0,  // 14: gearproto.Priority2Entry.sim_type:type_name -> gearproto.SimType
+	3,  // 0: gearproto.Weight1Basic.weight:type_name -> gearproto.Weight1Entry
+	8,  // 1: gearproto.Weight1Basic.priority:type_name -> gearproto.Priority1Entry
+	4,  // 2: gearproto.Weight2Extended.weights:type_name -> gearproto.Weight2Entry
+	9,  // 3: gearproto.Weight2Extended.priority:type_name -> gearproto.Priority2Entry
+	5,  // 4: gearproto.Weight3Extended.weights:type_name -> gearproto.Weight3Group
+	9,  // 5: gearproto.Weight3Extended.priority:type_name -> gearproto.Priority2Entry
+	10, // 6: gearproto.Weight1Entry.stat_type:type_name -> gearproto.StatType
+	10, // 7: gearproto.Weight2Entry.stat_type:type_name -> gearproto.StatType
+	11, // 8: gearproto.Weight2Entry.sim_type:type_name -> gearproto.SimType
+	10, // 9: gearproto.Weight3Group.stat_type:type_name -> gearproto.StatType
+	11, // 10: gearproto.Weight3Group.sim_type:type_name -> gearproto.SimType
+	6,  // 11: gearproto.Weight3Group.entries:type_name -> gearproto.Weight3Entry
+	7,  // 12: gearproto.Weight3Entry.stat_range:type_name -> gearproto.StatRange
+	11, // 13: gearproto.Priority1Entry.sim_type:type_name -> gearproto.SimType
+	11, // 14: gearproto.Priority2Entry.sim_type:type_name -> gearproto.SimType
 	15, // [15:15] is the sub-list for method output_type
 	15, // [15:15] is the sub-list for method input_type
 	15, // [15:15] is the sub-list for extension type_name
@@ -789,14 +719,13 @@ func file_weights_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_weights_proto_rawDesc), len(file_weights_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      0,
 			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_weights_proto_goTypes,
 		DependencyIndexes: file_weights_proto_depIdxs,
-		EnumInfos:         file_weights_proto_enumTypes,
 		MessageInfos:      file_weights_proto_msgTypes,
 	}.Build()
 	File_weights_proto = out.File

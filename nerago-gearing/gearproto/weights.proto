@@ -6,44 +6,44 @@ option go_package = "./gearproto";
 import "gear-common.proto";
 
 message Weight1Basic {
-  int32 weightType  = 1;
-  repeated Weight1Entry weight     = 2;
+  int32 weightType = 1;
+  repeated Weight1Entry weight = 2;
   repeated Priority1Entry priority = 3;
 }
 
 message Weight2Extended {
-  int32 weightType  = 1;
-  repeated Weight2Entry weights      = 2;
-  repeated Priority2Entry priority   = 3;
+  int32 weightType = 1;
+  repeated Weight2Entry weights = 2;
+  repeated Priority2Entry priority = 3;
 }
 
 message Weight3Extended {
-  int32 weightType  = 1;
-  repeated Weight3Group weights      = 2;
-  repeated Priority2Entry priority   = 3;
+  int32 weightType = 1;
+  repeated Weight3Group weights = 2;
+  repeated Priority2Entry priority = 3;
 }
 
 message Weight1Entry {
-  StatType stat_type   = 1;
+  StatType stat_type = 1;
   double rating_weight = 2;
 }
 
 message Weight2Entry {
-  StatType stat_type   = 1;
-  SimType sim_type     = 2;
+  StatType stat_type = 1;
+  SimType sim_type = 2;
   double rating_weight = 3;
 }
 
 message Weight3Group {
-  StatType stat_type            = 1;
-  SimType sim_type              = 2;
+  StatType stat_type = 1;
+  SimType sim_type = 2;
   repeated Weight3Entry entries = 3;
 }
 
 message Weight3Entry {
-  StatRange stat_range  = 1;
-  double rating_weight  = 2;
-  double rating_offset  = 3;
+  StatRange stat_range = 1;
+  double rating_weight = 2;
+  double rating_offset = 3;
 }
 
 message StatRange {
@@ -52,25 +52,14 @@ message StatRange {
 }
 
 message Priority1Entry {
-  SimType sim_type   = 1;
+  SimType sim_type = 1;
   uint32 ratio_scale = 2;
 }
 
 message Priority2Entry {
-  SimType sim_type      = 1;
-  double ranging_scale  = 2;
+  SimType sim_type = 1;
+  double ranging_scale = 2;
   double ranging_offset = 3;
-  double ratio_scale    = 4;
+  double ratio_scale = 4;
 }
-
-enum SimType {
-  DPS   = 0;
-  TPS   = 1;
-  DTPS  = 2;
-  HPS   = 3;
-  TMI   = 4;
-  DEATH = 5;
-  TTO   = 6;
-}
-
 
