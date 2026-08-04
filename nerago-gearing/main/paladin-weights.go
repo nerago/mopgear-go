@@ -64,5 +64,8 @@ func statWeights_updateAll() {
 		Model:           model_factory.Model_PallyRet(),
 		SubstituteItems: substituteItemsRet,
 	})
-	process.Run(util_async.CancelSignal_Make())
+
+	cancel := util_async.CancelSignal_Make()
+	util_async.CancelOnKeyPress(cancel)
+	process.Run(cancel)
 }

@@ -86,7 +86,7 @@ func (wup *WeightUpdateProcess) Run(cancel util_async.CancelSignal) {
 	defer progress.SetDone()
 
 	summaries := util_async.Map_SliceToSlice_Cancellable(c_updateThreadCount, wup.specs, cancel, func(spec **WeightSpec) string {
-		return (*spec).updateOne(progress.NewChild())
+		return (*spec).updateOne(progress.NewChild(), cancel)
 	})
 
 	for _, summary := range summaries {
@@ -138,7 +138,7 @@ func (spec *WeightSpec) tabularReport() {
 	tab.Write(spec.process.printer)
 }
 
-func (spec *WeightSpec) updateOne(tracker *util.TrackProgress) string {
+func (spec *WeightSpec) updateOne(tracker *util.TrackProgress, cancel util_async.CancelSignal) string {
 	// each simulator process is considered 1/3, then remaining solving is remaining third.
 	// only very small sim runs should be overpowered by solvers
 	tracker.RunOuterTracking(3)
@@ -149,7 +149,7 @@ func (spec *WeightSpec) updateOne(tracker *util.TrackProgress) string {
 	spec.targetRatio = spec.Model.SimPriority
 
 	// READ OLD DATA AND/OR RUN SIM
-	spec.prepareSimData(tracker)
+	spec.prepareSimData(tracker, cancel)
 
 	// START BUILDING REPORT
 	spec.summary.WriteString("Weights Accuracy Summary ::::: ")
@@ -161,20 +161,20 @@ func (spec *WeightSpec) updateOne(tracker *util.TrackProgress) string {
 
 	// GRID WEIGHTS - GPU*2
 	for gridMode := range 2 {
-		spec.solveGridWeights(gridMode)
+		spec.solveGridWeights(gridMode, cancel)
 	}
 
 	// FORMULA2 WEIGHTS - MIP
-	spec.solveFormulaWeight()
+	spec.solveFormulaWeight(cancel)
 
 	// SEARCH weights - Non-Highs
 	for searchMode := range 2 {
-		spec.solveSearchWeights(searchMode)
+		spec.solveSearchWeights(searchMode, cancel)
 	}
 
 	// RANKING WEIGHTS - simplex*2, IPX*2
 	for rankMode := range 5 {
-		spec.solveRankingWeight(rankMode)
+		spec.solveRankingWeight(rankMode, cancel)
 	}
 
 	// TWEAK EACH
@@ -208,7 +208,7 @@ func (spec *WeightSpec) updateOne(tracker *util.TrackProgress) string {
 	return spec.summary.String()
 }
 
-func (spec *WeightSpec) prepareSimData(tracker *util.TrackProgress) {
+func (spec *WeightSpec) prepareSimData(tracker *util.TrackProgress, cancel util_async.CancelSignal) {
 	// READ IN ANY RECENT DATA
 	tempPathGrid := files.TempPath + "weightfind-sim-grid-" + spec.Label + ".json"
 	tempPathReal := files.TempPath + "weightfind-sim-real-" + spec.Label + ".json"
@@ -229,14 +229,14 @@ func (spec *WeightSpec) prepareSimData(tracker *util.TrackProgress) {
 		currentItemSet := items.FullItemSet_FromMap(currentEquip)
 		inputDataGrid = SimulateSteppedStatChangesForGrid(currentItemSet, spec.process.printer, spec.process.simSpeed,
 			spec.Model.SimSpeedUp, spec.Model.StatsForWeighting, spec.Model.Spec, spec.Model.Goal, spec.Model.SimulateAs,
-			spec.Model.Professions, tracker.NewChild(), spec.Label)
+			spec.Model.Professions, tracker.NewChild(), spec.Label, cancel)
 		writeWeightInputsToFile(inputDataGrid, tempPathGrid)
 	} else {
 		tracker.NewChild().SetDone()
 	}
 	if inputDataReal == nil {
 		inputDataReal = SimulateRealRandomSets(spec.GearFile, spec.SubstituteItems, &spec.Model, grid_sim_max_run_count,
-			spec.process.simSpeed, false, spec.process.printer, tracker.NewChild(), spec.Label)
+			spec.process.simSpeed, false, spec.process.printer, tracker.NewChild(), spec.Label, cancel)
 		writeWeightInputsToFile(inputDataReal, tempPathReal)
 	} else {
 		tracker.NewChild().SetDone()
@@ -269,7 +269,7 @@ func (spec *WeightSpec) loadOldWeights() {
 	}
 }
 
-func (spec *WeightSpec) solveGridWeights(gridOutlierSetting int) {
+func (spec *WeightSpec) solveGridWeights(gridOutlierSetting int, cancel util_async.CancelSignal) {
 	grid := weight_highs.GridStatWeightProcess1B{}
 	grid.OUTLIER = gridOutlierSetting
 	grid.SCALEMODE = 1
@@ -280,6 +280,7 @@ func (spec *WeightSpec) solveGridWeights(gridOutlierSetting int) {
 	grid.SetRequiredStats(spec.statTypes)
 	grid.SupplyData(spec.dataGrid)
 	weightsFuture := grid.Run()
+	util_async.ChainCancel(cancel, weightsFuture)
 
 	choiceName := fmt.Sprintf("GRID%d", gridOutlierSetting)
 	spec.evaluateWeightFuture(choiceName, weightsFuture)
@@ -352,7 +353,7 @@ func (spec *WeightSpec) bestWeightChoiceExtended() (util_collection.Optional[wei
 	return best2.GetBestOptional(), best3.GetBestOptional()
 }
 
-func (spec *WeightSpec) solveRankingWeight(rankMode int) {
+func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.CancelSignal) {
 	if rankMode == 0 {
 		ranking := weight_highs.RankingStatWeightProcess3c{}
 		ranking.Init(spec.process.printer, c_timeoutSolvers)
@@ -360,6 +361,7 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int) {
 		ranking.SetTargetRatios(spec.targetRatio)
 		ranking.SupplyData(spec.dataAll)
 		weightsFuture := ranking.RunMultiRound()
+		util_async.ChainCancel(cancel, weightsFuture)
 		spec.evaluateWeightFuture("RANK3C", weightsFuture)
 	} else if rankMode == 1 {
 		ranking := weight_highs.RankingStatWeightProcess3b{}
@@ -375,6 +377,7 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int) {
 		//} else {
 		weightsFuture = ranking.RunMultiRound()
 		//}
+		util_async.ChainCancel(cancel, weightsFuture)
 		spec.evaluateWeightFuture("RANK3-2-0", weightsFuture)
 	} else if rankMode == 2 {
 		ranking := weight_highs.RankingStatWeightProcess3b{}
@@ -390,6 +393,7 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int) {
 		//} else {
 		weightsFuture = ranking.RunMultiRound()
 		//}
+		util_async.ChainCancel(cancel, weightsFuture)
 		spec.evaluateWeightFuture("RANK3-2-1", weightsFuture)
 	} else if rankMode == 3 {
 		ranking := weight_highs.RankingStatWeightProcess{}
@@ -400,6 +404,7 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int) {
 		ranking.SetTargetRatios(spec.targetRatio)
 		ranking.SupplyData(spec.dataAll)
 		weightsFuture := ranking.Run(c_timeoutSolvers)
+		util_async.ChainCancel(cancel, weightsFuture)
 		spec.evaluateWeightFuture("RANK1-0", weightsFuture)
 	} else {
 		ranking := weight_highs.RankingStatWeightProcess{}
@@ -410,11 +415,12 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int) {
 		ranking.SetTargetRatios(spec.targetRatio)
 		ranking.SupplyData(spec.dataAll)
 		weightsFuture := ranking.Run(c_timeoutSolvers)
+		util_async.ChainCancel(cancel, weightsFuture)
 		spec.evaluateWeightFuture("RANK1-1", weightsFuture)
 	}
 }
 
-func (spec *WeightSpec) solveFormulaWeight() {
+func (spec *WeightSpec) solveFormulaWeight(cancel util_async.CancelSignal) {
 	comp := weight_highs.FormulaStatWeightProcess2{}
 	comp.Init(spec.process.printer)
 	comp.SetRequiredStats(spec.statTypes)
@@ -422,12 +428,14 @@ func (spec *WeightSpec) solveFormulaWeight() {
 	comp.SetMinimumIncludeRate(1.0) // TODO can we experiment
 	comp.SupplyData(spec.dataAll)
 	weights2Future := comp.Run(c_timeoutSolvers)
+	util_async.ChainCancel(cancel, weights2Future)
 	spec.evaluateWeightFuture("FORM2", weights2Future)
 }
 
-func (spec *WeightSpec) solveSearchWeights(searchMode int) {
-	cancel := util_async.CancelSignal_Make()
-	timer := util_async.CancelAfterTimeout(cancel, time.Second*c_timeoutSolvers, spec.process.printer)
+func (spec *WeightSpec) solveSearchWeights(searchMode int, cancel util_async.CancelSignal) {
+	innerCancel := util_async.CancelSignal_Make()
+	timer := util_async.CancelAfterTimeout(innerCancel, time.Second*c_timeoutSolvers, spec.process.printer)
+	util_async.ChainCancel(cancel, innerCancel)
 	defer timer.Stop()
 
 	var weightResult weight_types.WeightResult
@@ -437,7 +445,7 @@ func (spec *WeightSpec) solveSearchWeights(searchMode int) {
 		search.Init(spec.statTypes, spec.targetRatio, spec.process.printer)
 		search.SupplyData(spec.dataAll)
 		search.SetRanges(-1.0, 10.0)
-		weightResult = search.Run(cancel)
+		weightResult = search.Run(innerCancel)
 		spec.evaluateWeight("SEARCH2", weightResult.AsWeight1(), weightResult.Weight, &weightResult)
 	} else {
 		search := WeightSearcher3{}
@@ -445,7 +453,7 @@ func (spec *WeightSpec) solveSearchWeights(searchMode int) {
 		search.Init(spec.statTypes, spec.targetRatio)
 		search.SupplyData(spec.dataAll)
 		search.SetRanges(-1.0, 10.0)
-		weightResult = search.Run(cancel)
+		weightResult = search.Run(innerCancel)
 		spec.evaluateWeight("SEARCH3", weightResult.AsWeight1(), weightResult.Weight, &weightResult)
 	}
 }

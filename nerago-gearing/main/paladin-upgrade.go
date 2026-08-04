@@ -172,11 +172,13 @@ func findUpgrades_Paladin() {
 	//finder := loaders.ItemFinder_NormalHeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, normalBossesConsider, heroicBossesConsider)
 
 	//finder := loaders.ItemFinder_SiegeStrengthPlateTank
-	//finder := loaders.ItemFinder_Ordos
+	finder := loaders.ItemFinder_Ordos
 	//finder := loaders.ItemFinder_TimelessPlate
-	finder := loaders.ItemFinder_BagsUpgraded
+	//finder := loaders.ItemFinder_BagsUpgraded
 	//finder := loaders.SiegeClassGearSetMultiple(stats.Spec_PaladinProt, stats.Spec_PaladinRet)
-	//finder := func(_ stats.Difficulty) []loaders.ItemFoundRef { return []loaders.ItemFoundRef{{ItemId: 103735}, {ItemId: 103791}, {ItemId: 103872}}	}
+	//finder := func(_ stats.Difficulty) []loaders.ItemFoundRef {
+	//	return []loaders.ItemFoundRef{{ItemId: 99127}, {ItemId: 99137}}
+	//}
 
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{

@@ -45,9 +45,9 @@ func (pool *highsPoolType) RunSolverUnderMutex(solver *highs.Solver, requestGpu 
 	// defer pool.runMutex.RUnlock()
 
 	if requestGpu {
-		stopwatch.Start()
-		verifyNoError(solver.Presolve())
-		stopwatch.Stop()
+		//stopwatch.Start()
+		//verifyNoError(solver.Presolve())
+		//stopwatch.Stop()
 
 		pool.gpuMutex.Lock()
 		stopwatch.Start()
