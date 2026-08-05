@@ -25,6 +25,7 @@ const (
 	trinketVialCorruptNormal    = 102306
 	trinketRookUnluckyNormal    = 102296
 	trinketEyeGalakrasCelestial = 104993
+	trinketSkeerBloodCelestial  = 105134
 
 	legendMeleeCloak = 102249
 	legendTankCloak  = 102250
@@ -145,8 +146,8 @@ var legendCloaks = []items.ItemId{legendTankCloak, legendMeleeCloak}
 func PaladinMultiRun() {
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "multi-set")
 
-	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Largish)
-	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_Common)
+	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_Largish)
+	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Common)
 	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
 	job.SetWriteBestToGearFiles()
 
@@ -157,7 +158,7 @@ func PaladinMultiRun() {
 		Label:                     "Ret",
 		GearFile:                  files.GearFileRet,
 		Model:                     model_factory.Model_PallyRet(),
-		RequestRatingPercent:      0.01,
+		RequestRatingPercent:      0.04,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: 0,
 		MissingEnchant:            setup.MissingEnchant_Panic,
@@ -166,7 +167,7 @@ func PaladinMultiRun() {
 		Label:                     "Prot-Damage",
 		GearFile:                  files.GearFileProtDps,
 		Model:                     model_factory.Model_PallyProtDps(),
-		RequestRatingPercent:      0.04,
+		RequestRatingPercent:      0.01,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
 		MissingEnchant:            setup.MissingEnchant_Panic,
@@ -184,7 +185,7 @@ func PaladinMultiRun() {
 		Label:                     "Prot-Mitigation-NoSet",
 		GearFile:                  files.GearFileProtMitigationNoSet,
 		Model:                     model_factory.Model_PallyProtMitigation_NoSet(),
-		RequestRatingPercent:      0.30,
+		RequestRatingPercent:      0.35,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
 		MissingEnchant:            setup.MissingEnchant_Panic,
@@ -193,7 +194,7 @@ func PaladinMultiRun() {
 		Label:                     "Prot-Mitigation-WithSet",
 		GearFile:                  files.GearFileProtMitigationWithSet,
 		Model:                     model_factory.Model_PallyProtMitigation_WithSet(),
-		RequestRatingPercent:      0.35,
+		RequestRatingPercent:      0.30,
 		ExtraUpgradeLevel:         generalUpgrade,
 		ForceUpgradeExistingItems: forceUpgrade,
 		MissingEnchant:            setup.MissingEnchant_Panic,
@@ -306,25 +307,26 @@ func PaladinMultiRun() {
 	ret.ForceSingleSlot(items.Equip_Weapon, 103968) // britomark
 	ret.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
 	ret.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	ret.ForceSingleSlot(items.Equip_Trinket2, trinketTwinsGaze)
+	ret.ForceSingleSlot(items.Equip_Trinket2, trinketEyeGalakrasCelestial)
 	protDps.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
 	protDps.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	protDps.ForceSingleSlot(items.Equip_Trinket2, trinketTwinsGaze)
+	protDps.ForceSingleSlot(items.Equip_Trinket2, trinketSkeerBloodCelestial)
 	protCompromise.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
 	protCompromise.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	protCompromise.ForceSingleSlot(items.Equip_Trinket2, trinketPrimRage)
-	protCompromise.AddReportVariant(items.Equip_Trinket2, trinketFortZand)
+	protCompromise.ForceSingleSlot(items.Equip_Trinket2, trinketSkeerBloodCelestial)
+	protCompromise.AddReportVariant(items.Equip_Trinket2, trinketVialCorruptNormal)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
 	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
-	protMitigationNoSet.AddReportVariant(items.Equip_Trinket1, trinketThokTailCelestial) // changed
-	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketPrimRage)
+	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketZandSpark)
+	protMitigationNoSet.AddReportVariant(items.Equip_Trinket1, trinketThokTailCelestial)
+	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketSkeerBloodCelestial)
 	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketZandSpark)
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketVialCorruptNormal)
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
+	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
+	protMitigationWithSet.AddReportVariant(items.Equip_Trinket1, trinketSkeerBloodCelestial)
 	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketThokTailCelestial)
 	protHeal.ForceSingleSlot(items.Equip_Back, legendTankCloak)
-	protHeal.ForceSingleSlot(items.Equip_Trinket1, trinketTwinsGaze)
+	protHeal.ForceSingleSlot(items.Equip_Trinket1, trinketSkeerBloodCelestial)
 	protHeal.ForceSingleSlot(items.Equip_Trinket2, trinketZandSpark)
 
 	// protCompromise.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{96376, 96534, 103826})
@@ -380,22 +382,30 @@ func PaladinMultiRun() {
 
 	//job.AddItemDistinctUsageGroups(103892, true, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet, protHeal})
 	//ret.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{104981, 86386})
-	//job.AddAlternateUpgradeChoices(
-	//	101947, // Elder Tortoiseshell Seal
-	//	99028,  // Handguards of Winged Triumph celestial
-	//	103972, // kilruk sword
-	//	105122, // Asgorathian Blood Seal
-	//	103915, // Icy Blood Chestplate
-	//	105033, // Wolf-Rider Spurs
-	//)
+	job.AddAlternateUpgradeChoices(
+		99028,                      // Handguards of Winged Triumph celestial
+		105090,                     // Ominous Mogu Greatboots
+		105122,                     // Asgorathian Blood Seal
+		105033,                     // Wolf-Rider Spurs
+		103972,                     // kilruk sword
+		101947,                     // Elder Tortoiseshell Seal
+		99026,                      // Legguards of Winged Triumph celestial
+		103915,                     // Icy Blood Chestplate
+		104938,                     // Sorrowpath Signet celestial
+		98986,                      // Legplates of Winged Triumph celestial
+		trinketSkeerBloodCelestial, // trinketSkeerBloodCelestial - str/crit
+		trinketFusionCoreCelestial, // str/crit
+	)
 	//job.AddAlternateUpgradeChoices(104417) //gloves corrupt
+
+	//Trinket2  542   Fusion-Fire Core               SoO Norushen          b -1.22%    b -1.52%   b -0.91%  b +1.39%  b -0.07%     mit_set  dps=+1.5  dtps=+4.0  tmi=+0.0  death=-0.0
 
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()
 
-	job.RunNoPermutations_AllCommonAlternates(true, true)
+	//job.RunNoPermutations_AllCommonAlternates(true, true)
 	//job.RunNoPermutations_BestOnly(false, true)
-	//job.RunForSolutionsPerPermute(3)
+	job.RunForSolutionsPerPermute(2, true)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)
