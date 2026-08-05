@@ -483,24 +483,26 @@ func trinketSims(printer *util.PrintRecorder) {
 }
 
 func trinketSimsBoth(printer *util.PrintRecorder) {
+	// 103989, // timeless alacrity of xuen
+	// 103990, // timeless resolve of niuzao
+	// 94527,  // ji-kun
+
 	itemIds := []items.ItemId{
-		94519, // crit prim rage
-		96793, // none fort zand
-		94529, // none gaze twins
-		94527, // ji-kun
-		// 103989, // timeless alacrity of xuen
-		// 103990, // timeless resolve of niuzao
+		94519,  // crit prim rage
+		96793,  // none fort zand
+		94529,  // none gaze twins
 		103678, // time lost artifact
 		trinketZandSpark,
 		trinketThokTailCelestial,   // up 2
 		trinketFusionCoreCelestial, // 528
 		trinketVialCorruptNormal,   // 567 (up 2)
-		//105134,                     // trinketSkeerBloodCelestial - don't have,
+		trinketRookUnluckyNormal,
+		105134, // trinketSkeerBloodCelestial - don't have,
 	}
 
 	upLevel := func(id items.ItemId) int32 {
 		var upgrade int32 = 0
-		if id < 100000 || id == trinketVialCorruptNormal || id == trinketThokTailCelestial {
+		if id < 100000 || id == trinketVialCorruptNormal || id == trinketThokTailCelestial || id == trinketRookUnluckyNormal {
 			upgrade = 2
 		}
 		return upgrade
@@ -539,11 +541,11 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 			model_factory.Model_PallyProtDps(),
 			files.GearFileProtDps,
 		},
-		//{
-		//	"ret",
-		//	model.Model_PallyProtDps(),
-		//	files.GearFileProtDps,
-		//},
+		{
+			"ret",
+			model_factory.Model_PallyRet(),
+			files.GearFileRet,
+		},
 	}
 
 	csv := util.CSVOutputByColumn{}
