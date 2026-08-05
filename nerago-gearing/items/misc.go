@@ -6,6 +6,7 @@ import (
 )
 
 const (
+	MOP_DUNGEON_ITEM_LEVELS_THRESHOLD                   = 463
 	LOW_HIGH_MOP_ITEM_LEVELS_THRESHOLD                  = 522
 	LOW_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL               = 4
 	HIGH_MOP_ITEM_LEVELS_PER_UPGRADE_LEVEL              = 3
@@ -29,6 +30,8 @@ func CalcUpgradeLevel(itemLevel uint16, itemLevelBase uint16) UpgradeLevel {
 		return -1
 	} else if diff == 0 {
 		return 0
+	} else if itemLevelBase <= MOP_DUNGEON_ITEM_LEVELS_THRESHOLD && diff == 8 {
+		return 1
 	} else if diff == 4 || diff == 7 {
 		return 1
 	} else if diff == 8 || diff == 14 {

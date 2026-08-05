@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -37,7 +38,7 @@ func (job *MultiSetJob) proposalsAllCommonAlternates(cancelGenerate util_async.C
 	return proposalChannel, expectedCountFuture
 }
 
-func (job *MultiSetJob) proposalsUnderPermutation(solutionsPerPermute int, cancel util_async.CancelSignal) (<-chan multi_types.MultiProposedOutput, *util_async.Future[int]) {
+func (job *MultiSetJob) proposalsUnderPermutation(solutionsPerPermute int, includeInterimResults bool, cancel util_async.CancelSignal) (<-chan multi_types.MultiProposedOutput, *util_async.Future[int]) {
 	estimate := job.estimateFixedPermutations()
 	job.printer.Printf("PERMUTE SET COUNT %d\n", estimate)
 
@@ -48,7 +49,7 @@ func (job *MultiSetJob) proposalsUnderPermutation(solutionsPerPermute int, cance
 			// TODO don't ignore updated count
 			expectCount := util_async.Future_Make[int]()
 			job.
-				runPermute(permuteSet, solutionsPerPermute, expectCount, resultChannel, cancel)
+				runPermute(permuteSet, solutionsPerPermute, expectCount, resultChannel, cancel, includeInterimResults)
 		},
 	)
 
@@ -61,12 +62,12 @@ func (job *MultiSetJob) proposalsUnderPermutation(solutionsPerPermute int, cance
 	return proposalChannel, expectedTotalCount
 }
 
-func (job *MultiSetJob) runPermute(permuteSet permuteSet, solutionsPerPermute int, expectedCount *util_async.Future[int], resultChannel chan<- multi_types.MultiProposedOutput, cancel util_async.CancelSignal) {
+func (job *MultiSetJob) runPermute(permuteSet permuteSet, solutionsPerPermute int, expectedCount *util_async.Future[int], resultChannel chan<- multi_types.MultiProposedOutput, cancel util_async.CancelSignal, includeInterimResults bool) {
 	printer := util.PrintRecorder_HoldAll()
 
 	highProcess := job.highProcessSetupForPermute(permuteSet, printer)
 
-	if solutionsPerPermute == 1 {
+	if solutionsPerPermute == 1 && !includeInterimResults {
 		future := highProcess.RunInterruptable(printer)
 		util_async.ChainCancel(cancel, future)
 		result, hasResult := future.WaitForResult()
@@ -74,7 +75,7 @@ func (job *MultiSetJob) runPermute(permuteSet permuteSet, solutionsPerPermute in
 			resultChannel <- job.makeOutputFromHighs(result, printer, uuid.NewString())
 		}
 	} else {
-		nextChan, expectedSubCount := highProcess.RunForSeveral_CommonDifferent(printer, util_collection.Optional_OfValue(solutionsPerPermute), cancel, false, false)
+		nextChan, expectedSubCount := highProcess.RunForSeveral_CommonDifferent(printer, util_collection.Optional_OfValue(solutionsPerPermute), cancel, false, includeInterimResults)
 		expectedSubCount.ForwardResultToOtherFuture(expectedCount)
 		for result := range nextChan {
 			resultChannel <- job.makeOutputFromHighs(result, printer, uuid.NewString())
@@ -239,7 +240,7 @@ func (job *MultiSetJob) additionalProposalsFromSpecOptimum(cancel util_async.Can
 
 		var output multi_types.MultiProposedOutput
 		if hasResult {
-			proposalId := "With-Best-" + param.Label
+			proposalId := "With-Best-" + param.Label + time.Now().Format("2006-01-02-15-04-05")
 			output = job.makeOutputFromHighs(result, printer, proposalId)
 		}
 

@@ -109,8 +109,8 @@ func (process *SolverHighsMultiProcess) chooseVariantsToRun(bestCommonChoices []
 	}
 
 	util_collection.Shuffle(blockPlanList)
-	if target, hasTarget := outputTarget.GetWithFlag(); hasTarget && target < len(blockPlanList) {
-		blockPlanList = blockPlanList[0:target]
+	if target, hasTarget := outputTarget.GetWithFlag(); hasTarget && target-1 < len(blockPlanList) {
+		blockPlanList = blockPlanList[0 : target-1]
 	}
 
 	count := len(blockPlanList)

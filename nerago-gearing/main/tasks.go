@@ -497,7 +497,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		trinketFusionCoreCelestial, // 528
 		trinketVialCorruptNormal,   // 567 (up 2)
 		trinketRookUnluckyNormal,
-		105134, // trinketSkeerBloodCelestial - don't have,
+		trinketSkeerBloodCelestial,
 	}
 
 	upLevel := func(id items.ItemId) int32 {

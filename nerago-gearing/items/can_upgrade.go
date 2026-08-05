@@ -2,6 +2,7 @@ package items
 
 import (
 	"paladin_gearing_go/util"
+	"slices"
 )
 
 type CanUpgradeResult int8
@@ -44,10 +45,10 @@ func (can CanUpgradeResult) TextAbbrev() string {
 	}
 }
 
-func (optionsMap *FullOptionsMap) CouldAddUpgrade_ItemSlot(slot SlotItem, extra *FullItem, printer *util.PrintRecorder) CanUpgradeResult {
+func (optionsMap *FullOptionsMap) CouldAddUpgrade_ItemSlot(slot SlotItem, extra *FullItem, printer *util.PrintRecorder, specificIncompatibleList []ItemId) CanUpgradeResult {
 	result := CanUpgrade_InvalidAlways
 	for _, slotEquip := range slot.ToSlotEquipOptions() {
-		result = optionsMap.CouldAddUpgrade_EquipSlot(slotEquip, extra, printer)
+		result = optionsMap.CouldAddUpgrade_EquipSlot(slotEquip, extra, printer, specificIncompatibleList)
 		if result == CanUpgrade_Yes {
 			return result
 		}
@@ -55,9 +56,14 @@ func (optionsMap *FullOptionsMap) CouldAddUpgrade_ItemSlot(slot SlotItem, extra 
 	return result
 }
 
-func (optionsMap *FullOptionsMap) CouldAddUpgrade_EquipSlot(slot SlotEquip, extra *FullItem, printer *util.PrintRecorder) CanUpgradeResult {
+func (optionsMap *FullOptionsMap) CouldAddUpgrade_EquipSlot(slot SlotEquip, extra *FullItem, printer *util.PrintRecorder, specificIncompatibleList []ItemId) CanUpgradeResult {
 	if !optionsMap.Has(slot) {
 		printer.Println("SLOT NOT USED IN CURRENT SET " + extra.CreateString())
+		return CanUpgrade_InvalidAlways
+	}
+
+	if slices.Contains(specificIncompatibleList, extra.ItemId()) {
+		printer.Println("NOT COMPATIBLE WITH SPEC " + extra.CreateString())
 		return CanUpgrade_InvalidAlways
 	}
 

@@ -9,23 +9,24 @@ import (
 )
 
 type SpecModel struct {
-	StatRequirements     StatRequirements
-	StatWeights          StatWeights
-	StatWeightsExtended  weight_types.IWeight
-	Spec                 SpecType
-	Goal                 OptimiseGoal
-	SimulateAs           WowSim_Fight
-	SimSpeedUp           int
-	ReforgeRules         ReforgeRules
-	EnchantChoice        EnchantChoice
-	GemChoice            GemChoice
-	SetBonus             SetBonus
-	SetBonusRequired     []ActiveSetCountsRequired
-	FixedWeightsSetBonus *ActiveSetCountsRequired
-	Professions          ProfessionInfo
-	SimPriority          weight_types.SimPriorityBasic
-	StatsForWeighting    []StatType
-	ReferenceGearFile    string // should just be used by exporters etc
+	StatRequirements         StatRequirements
+	StatWeights              StatWeights
+	StatWeightsExtended      weight_types.IWeight
+	Spec                     SpecType
+	Goal                     OptimiseGoal
+	SimulateAs               WowSim_Fight
+	SimSpeedUp               int
+	ReforgeRules             ReforgeRules
+	EnchantChoice            EnchantChoice
+	GemChoice                GemChoice
+	SetBonus                 SetBonus
+	SetBonusRequired         []ActiveSetCountsRequired
+	FixedWeightsSetBonus     *ActiveSetCountsRequired
+	Professions              ProfessionInfo
+	SimPriority              weight_types.SimPriorityBasic
+	StatsForWeighting        []StatType
+	SpecificIncompatibleList []ItemId
+	ReferenceGearFile        string // should just be used by exporters etc
 }
 
 func (model *SpecModel) Equals(other *SpecModel) bool {

@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/gear_model/ratings_old"
 	"paladin_gearing_go/gear_model/requirements"
+	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/weightfind/weight_types"
@@ -34,7 +35,8 @@ func Model_PallyProtMitigation_WithSet() gear_model.SpecModel {
 			IsBlacksmith: true,
 			IsEngineer:   true,
 		},
-		ReferenceGearFile: files.GearFileProtMitigationWithSet,
+		ReferenceGearFile:        files.GearFileProtMitigationWithSet,
+		SpecificIncompatibleList: trinketsStrengthMeleeOnly,
 	}
 }
 
@@ -61,7 +63,8 @@ func Model_PallyProtHeal() gear_model.SpecModel {
 			IsBlacksmith: true,
 			IsEngineer:   true,
 		},
-		ReferenceGearFile: files.GearFileProtHeal,
+		ReferenceGearFile:        files.GearFileProtHeal,
+		SpecificIncompatibleList: trinketsStrengthMeleeOnly,
 	}
 }
 
@@ -86,7 +89,8 @@ func Model_PallyProtMitigation_NoSet() gear_model.SpecModel {
 			IsBlacksmith: true,
 			IsEngineer:   true,
 		},
-		ReferenceGearFile: files.GearFileProtMitigationNoSet,
+		ReferenceGearFile:        files.GearFileProtMitigationNoSet,
+		SpecificIncompatibleList: trinketsStrengthMeleeOnly,
 	}
 }
 
@@ -111,7 +115,8 @@ func Model_PallyProtCompromise() gear_model.SpecModel {
 			IsBlacksmith: true,
 			IsEngineer:   true,
 		},
-		ReferenceGearFile: files.GearFileProtCompromise,
+		ReferenceGearFile:        files.GearFileProtCompromise,
+		SpecificIncompatibleList: trinketsStrengthMeleeOnly,
 	}
 }
 
@@ -136,7 +141,8 @@ func Model_PallyProtDps() gear_model.SpecModel {
 			IsBlacksmith: true,
 			IsEngineer:   true,
 		},
-		ReferenceGearFile: files.GearFileProtDps,
+		ReferenceGearFile:        files.GearFileProtDps,
+		SpecificIncompatibleList: trinketsStrengthMeleeOnly,
 	}
 }
 
@@ -162,7 +168,8 @@ func Model_PallyRet() gear_model.SpecModel {
 			IsBlacksmith: true,
 			IsEngineer:   true,
 		},
-		ReferenceGearFile: files.GearFileRet,
+		ReferenceGearFile:        files.GearFileRet,
+		SpecificIncompatibleList: trinketsStrengthTankOnly,
 	}
 }
 
@@ -251,4 +258,12 @@ var StatsForWeighting_strengthMelee = []stats.StatType{
 	stats.Stat_Mastery,
 	stats.Stat_Crit,
 	stats.Stat_Expertise,
+}
+
+var trinketsStrengthTankOnly = []items.ItemId{
+	104572, 105568, 105070, 102306, 105319, 104821, // Vial of Living Corruption
+}
+
+var trinketsStrengthMeleeOnly = []items.ItemId{
+	102298, 104993, 104495, 105491, 104744, 105242, // Evil Eye of Galakras
 }

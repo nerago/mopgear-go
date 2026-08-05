@@ -17,7 +17,7 @@ import (
 func prepareUpgradeInfo(extraItems []loaders.ItemFoundRef, upgradeLevel items.UpgradeLevel, printer *util.PrintRecorder, input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, goal stats.OptimiseGoal, substituteItems []items.ItemId, model *gear_model.SpecModel) []upgradeItemTask {
 	extraItems = changeUpgradeLevels(extraItems, upgradeLevel)
 	checkDuplicates(extraItems)
-	extraTasks := makeExtraTasks(input, extraItems, baseItems, printer, goal)
+	extraTasks := makeExtraTasks(input, extraItems, baseItems, printer, goal, model)
 	addSubstituteItems(baseItems, substituteItems, model, printer)
 	return extraTasks
 }
@@ -56,7 +56,7 @@ func checkDuplicates(extraItems []loaders.ItemFoundRef) {
 	//}
 }
 
-func makeExtraTasks(input *FindUpgrades_BasicInputs, extraItems []loaders.ItemFoundRef, baseItems *items.FullOptionsMap, printer *util.PrintRecorder, goal stats.OptimiseGoal) []upgradeItemTask {
+func makeExtraTasks(input *FindUpgrades_BasicInputs, extraItems []loaders.ItemFoundRef, baseItems *items.FullOptionsMap, printer *util.PrintRecorder, goal stats.OptimiseGoal, model *gear_model.SpecModel) []upgradeItemTask {
 	bagsFile := loaders.BagsFile_PlusPaladinGear_Read()
 
 	taskList := make([]upgradeItemTask, 0, len(extraItems))
@@ -64,7 +64,7 @@ func makeExtraTasks(input *FindUpgrades_BasicInputs, extraItems []loaders.ItemFo
 		boss := db.BossItemData_BossForItemId(extra.ItemId)
 		tempItem := db.WowSimDB_LoadItemById(extra.ItemId, 0)
 		for _, slot := range tempItem.SlotItem().ToSlotEquipOptions() {
-			canUpgrade := canPerformSpecifiedUpgrade(input, tempItem, slot, baseItems, bagsFile, printer)
+			canUpgrade := canPerformSpecifiedUpgrade(input, tempItem, slot, baseItems, bagsFile, printer, model)
 			switch canUpgrade {
 			case items.CanUpgrade_Yes, items.CanUpgrade_Equipped, items.CanUpgrade_Equipped_Similar, items.CanUpgrade_AvailableInBags:
 				taskList = append(taskList, upgradeItemTask{item: extra, slot: slot, goal: goal, boss: boss, canUpgrade: canUpgrade})
@@ -85,12 +85,12 @@ func addSubstituteItems(optionsMap *items.FullOptionsMap, substituteItems []item
 	}
 }
 
-func canPerformSpecifiedUpgrade(input *FindUpgrades_BasicInputs, extra *items.FullItem, slot items.SlotEquip, baseItems *items.FullOptionsMap, bagsFile loaders.EquippedArray, printer *util.PrintRecorder) items.CanUpgradeResult {
+func canPerformSpecifiedUpgrade(input *FindUpgrades_BasicInputs, extra *items.FullItem, slot items.SlotEquip, baseItems *items.FullOptionsMap, bagsFile loaders.EquippedArray, printer *util.PrintRecorder, model *gear_model.SpecModel) items.CanUpgradeResult {
 	if slices.Contains(input.IgnoredItems, extra.ItemId()) {
 		return items.CanUpgrade_InvalidAlways
 	}
 
-	if result := baseItems.CouldAddUpgrade_EquipSlot(slot, extra, printer); result != items.CanUpgrade_Yes {
+	if result := baseItems.CouldAddUpgrade_EquipSlot(slot, extra, printer, model.SpecificIncompatibleList); result != items.CanUpgrade_Yes {
 		return result
 	}
 

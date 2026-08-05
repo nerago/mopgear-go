@@ -83,134 +83,13 @@ func inputRequestFromTemplate(infile string, equipMap *items.FullEquipMap, profe
 	updateGear(&input, equipMap, profession)
 	updateBonus(&input, bonusStats)
 	updateRotation(&input, spec)
-	updateFight(&input, fight)
+	updateFight(&input, fight, spec)
 	input.SimOptions.Iterations = int32(runSize)
 	input.SimOptions.RandomSeed = 0
 	return &input
 }
 
-func inputRequestFromScratch(equipMap *items.FullEquipMap, profession gear_model.ProfessionInfo, bonusStats *map[stats.StatType]int32, spec stats.SpecType, fight stats.WowSim_Fight, runSize WowSim_RunSize) *wowsim_proto.RaidSimRequest {
-	input := wowsim_proto.RaidSimRequest{
-		Type: wowsim_proto.SimType_SimTypeIndividual,
-		SimOptions: &wowsim_proto.SimOptions{
-			Iterations:          int32(runSize),
-			RandomSeed:          1485465806, // meaningless number but gets consistent out
-			DebugFirstIteration: false,
-		},
-	}
-
-	input.Encounter = &wowsim_proto.Encounter{
-		Duration:             93,
-		DurationVariation:    23,
-		ExecuteProportion_20: 0.20,
-		ExecuteProportion_25: 0.25,
-		ExecuteProportion_35: 0.35,
-		ExecuteProportion_45: 0.45,
-		ExecuteProportion_90: 0.90,
-		Targets: []*wowsim_proto.Target{
-			{
-				Id:            68476,
-				Name:          "Horridon 10 H",
-				Level:         93,
-				MobType:       wowsim_proto.MobType_MobTypeBeast,
-				Stats:         []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24835, 0, 654205500, 0, 0},
-				MinBaseDamage: 491480,
-				DamageSpread:  0.5508,
-				SwingSpeed:    2,
-			},
-			{
-				Id:            69374,
-				Name:          "War-God Jalak 10 H",
-				Level:         93,
-				MobType:       wowsim_proto.MobType_MobTypeHumanoid,
-				Stats:         []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24835, 0, 26168220, 0, 0},
-				MinBaseDamage: 423170,
-				DamageSpread:  0.4668,
-				SwingSpeed:    2,
-			},
-		},
-	}
-	updateFight(&input, fight)
-
-	input.Raid = wowsim_core.SinglePlayerRaidProto(
-		wowsim_core.WithSpec(
-			&wowsim_proto.Player{
-				Race:          wowsim_proto.Race_RaceBloodElf,
-				Class:         wowsim_proto.Class_ClassPaladin,
-				TalentsString: "313213",
-				Glyphs: &wowsim_proto.Glyphs{
-					Major1: 41101,
-					Major2: 45744,
-					Major3: 41096,
-					Minor1: 80581,
-				},
-				Consumables: &wowsim_proto.ConsumesSpec{
-					PotId:      76090,
-					FlaskId:    76087,
-					FoodId:     74656,
-					ConjuredId: 5512,
-				},
-				Buffs: &wowsim_proto.IndividualBuffs{
-					TricksOfTheTrade:     true,
-					DevotionAuraCount:    2,
-					VigilanceCount:       2,
-					RallyingCryCount:     1,
-					ShatteringThrowCount: 1,
-				},
-				HealingModel: &wowsim_proto.HealingModel{
-					Hps:              5000,
-					CadenceSeconds:   0.37,
-					CadenceVariation: 1.31,
-					AbsorbFrac:       0.14,
-					BurstWindow:      6,
-				},
-				Cooldowns: &wowsim_proto.Cooldowns{
-					HpPercentForDefensives: 0.3,
-				},
-				Profession1:        wowsim_proto.Profession_Engineering,
-				Profession2:        wowsim_proto.Profession_Blacksmithing,
-				DistanceFromTarget: 10,
-				InFrontOfTarget:    true,
-				ReactionTimeMs:     400,
-				ChannelClipDelayMs: 50,
-				Equipment:          nil, // added below
-				Rotation:           nil, // added below
-			},
-			&wowsim_proto.ProtectionPaladin_Options{
-				ClassOptions: &wowsim_proto.PaladinOptions{
-					Seal: wowsim_proto.PaladinSeal_Insight,
-				},
-			},
-		),
-		&wowsim_proto.PartyBuffs{},
-		&wowsim_proto.RaidBuffs{
-			TrueshotAura:        true,
-			SerpentsSwiftness:   true,
-			ArcaneBrilliance:    true,
-			ElementalOath:       true,
-			BlessingOfMight:     true,
-			BlessingOfKings:     true,
-			PowerWordFortitude:  true,
-			Bloodlust:           true,
-			StormlashTotemCount: 2,
-			SkullBannerCount:    2,
-		},
-		&wowsim_proto.Debuffs{
-			WeakenedBlows:         true,
-			PhysicalVulnerability: true,
-			WeakenedArmor:         true,
-			CurseOfElements:       true,
-		})
-
-	updateGear(&input, equipMap, profession)
-	updateBonus(&input, bonusStats)
-	updateRotation(&input, spec)
-	updateTalents(&input, spec, fight)
-
-	return &input
-}
-
-func updateFight(input *wowsim_proto.RaidSimRequest, fight stats.WowSim_Fight) {
+func updateFight(input *wowsim_proto.RaidSimRequest, fight stats.WowSim_Fight, spec stats.SpecType) {
 
 	switch fight {
 	case stats.Fight_Horridon_HighHeal:
@@ -233,7 +112,7 @@ func updateFight(input *wowsim_proto.RaidSimRequest, fight stats.WowSim_Fight) {
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 600000
 
 	case stats.Fight_Juggernaut_NoExternalHeal:
-		if input.Raid.Parties[0].Players[0].TalentsString != "113213" {
+		if spec == stats.Spec_PaladinProt && input.Raid.Parties[0].Players[0].TalentsString != "113213" {
 			panic("unexpected talent setup")
 		}
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 0

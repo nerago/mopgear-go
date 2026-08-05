@@ -246,7 +246,8 @@ func (job *MultiSetJob) applyPermuteItemUpgrade(itemId items.ItemId, itemOptions
 	}
 
 	if !foundAny {
-		panic("requested upgrade of item that isn't an option " + itemId.String())
+		//panic("requested upgrade of item that isn't an option " + itemId.String())
+		job.printer.Println("requested upgrade of item that isn't an option " + itemId.String())
 	}
 
 	itemName := db.LookupItemNameByItemId(itemId)

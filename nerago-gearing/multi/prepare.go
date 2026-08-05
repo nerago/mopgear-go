@@ -104,7 +104,7 @@ func (param *multiSetParamInternal) includeExtra(itemId items.ItemId) {
 	}
 
 	basicVersion := db.WowSimDB_LoadItemById(itemId, 0)
-	if param.itemOptions.CouldAddUpgrade_ItemSlot(basicVersion.SlotItem(), basicVersion, param.job.printer) == items.CanUpgrade_InvalidAlways {
+	if param.itemOptions.CouldAddUpgrade_ItemSlot(basicVersion.SlotItem(), basicVersion, param.job.printer, param.Model.SpecificIncompatibleList) == items.CanUpgrade_InvalidAlways {
 		return
 	}
 
@@ -188,7 +188,7 @@ func (param *multiSetParamInternal) tryAddExtraFromBags(equipped *loaders.Equipp
 	if basicVersion.ItemLevel() < param.job.minimumExtraItemLevel {
 		return
 	}
-	if param.itemOptions.CouldAddUpgrade_ItemSlot(basicVersion.SlotItem(), basicVersion, param.job.printer) != items.CanUpgrade_Yes {
+	if param.itemOptions.CouldAddUpgrade_ItemSlot(basicVersion.SlotItem(), basicVersion, param.job.printer, param.Model.SpecificIncompatibleList) != items.CanUpgrade_Yes {
 		return
 	}
 
@@ -203,7 +203,7 @@ func (param *multiSetParamInternal) tryAddExtraFromBags(equipped *loaders.Equipp
 
 	added := false
 	for _, slot := range example.SlotItem().ToSlotEquipOptions() {
-		if param.itemOptions.CouldAddUpgrade_EquipSlot(slot, example, param.job.printer) == items.CanUpgrade_Yes {
+		if param.itemOptions.CouldAddUpgrade_EquipSlot(slot, example, param.job.printer, param.Model.SpecificIncompatibleList) == items.CanUpgrade_Yes {
 			param.job.printer.Printf("ADDITIONAL EXTRA OPTION from bags %s\n", example.CreateString())
 			param.addItemOptionsSpecificWithValidate(slot, options)
 			added = true

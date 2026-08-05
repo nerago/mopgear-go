@@ -71,7 +71,7 @@ func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates(extendedAlternates
 	job.generalMultiReport(gotResult1 && gotResult2, proposalList, simResultList)
 }
 
-func (job *MultiSetJob) RunForSolutionsPerPermute(solutionsPerPermute int) {
+func (job *MultiSetJob) RunForSolutionsPerPermute(solutionsPerPermute int, includeInterimResults bool) {
 	job.prepareInitial()
 
 	cancelGenerate := util_async.CancelSignal_Make()
@@ -80,7 +80,7 @@ func (job *MultiSetJob) RunForSolutionsPerPermute(solutionsPerPermute int) {
 	tracker := util.TrackProgress_Start()
 	defer tracker.SetDone()
 
-	proposalChannel, expectedCount := job.proposalsUnderPermutation(solutionsPerPermute, cancelGenerate)
+	proposalChannel, expectedCount := job.proposalsUnderPermutation(solutionsPerPermute, includeInterimResults, cancelGenerate)
 
 	additional := job.additionalProposalsFromSpecOptimum(cancelGenerate)
 	proposalChannel = util_async.MixChannels(proposalChannel, additional)
