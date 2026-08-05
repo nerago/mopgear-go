@@ -125,13 +125,13 @@ func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 func findUpgrades_Paladin() {
 	//simSizeBaseline := simulate.RunSize_VerySlow
 	//simSizeTopN := simulate.RunSize_VerySlow
-	simSizeBaseline := simulate.RunSize_Largish
-	simSizeTopN := simulate.RunSize_Largish
-	//simSizeBaseline := simulate.RunSize_Common
-	//simSizeTopN := simulate.RunSize_Common
+	//simSizeBaseline := simulate.RunSize_Largish
+	//simSizeTopN := simulate.RunSize_Largish
+	simSizeBaseline := simulate.RunSize_Common
+	simSizeTopN := simulate.RunSize_Common
 
-	//simSizePerItem := simulate.RunSize_QuickDirty
-	simSizePerItem := simulate.RunSize_Common
+	simSizePerItem := simulate.RunSize_QuickDirty
+	//simSizePerItem := simulate.RunSize_Common
 	//simSizePerItem := simulate.RunSize_Largish
 
 	//simSizeBaseline := simulate.RunSize_TestOnly
@@ -142,39 +142,39 @@ func findUpgrades_Paladin() {
 	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
 	substituteEmptySlotOnly[items.Item_Ring] = 86957    // heroic bladed tempest ring
 
-	//normalBossesConsider := []string{
-	//	//"SoO Immerseus",
-	//	//"SoO FallenProtectors",
-	//	//"SoO Norushen",
-	//	//"SoO ShaofPride",
-	//	"SoO Galakras",
-	//	"SoO IronJuggernaut",
-	//	"SoO DarkShaman",
-	//	"SoO Nazgrim",
-	//	"SoO Malkorok",
-	//	"SoO Spoils",
-	//	"SoO Thok",
-	//	"SoO Blackfuse",
-	//	"SoO Paragons",
-	//	"SoO Garrosh"}
-	//heroicBossesConsider := []string{
-	//	//"SoO Immerseus"
-	//	//"SoO FallenProtectors",,
-	//	//"SoO Norushen",
-	//	"SoO ShaofPride",
-	//	"SoO Galakras",
-	//	//"SoO IronJuggernaut",
-	//	"SoO Nazgrim",
-	//	"SoO Malkorok",
-	//	//"SoO Spoils",
-	//}
+	normalBossesConsider := []string{
+		"SoO Immerseus",
+		"SoO FallenProtectors",
+		"SoO Norushen",
+		"SoO ShaofPride",
+		"SoO Galakras",
+		"SoO IronJuggernaut",
+		"SoO DarkShaman",
+		"SoO Nazgrim",
+		"SoO Malkorok",
+		"SoO Spoils",
+		"SoO Thok",
+		"SoO Blackfuse",
+		"SoO Paragons",
+		"SoO Garrosh"}
+	heroicBossesConsider := []string{
+		"SoO Immerseus",
+		"SoO FallenProtectors",
+		"SoO Norushen",
+		"SoO ShaofPride",
+		"SoO Galakras",
+		"SoO IronJuggernaut",
+		"SoO Nazgrim",
+		"SoO Malkorok",
+		"SoO Spoils",
+	}
 	//finder := loaders.ItemFinder_HeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, heroicBossesConsider)
-	//finder := loaders.ItemFinder_NormalHeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, normalBossesConsider, heroicBossesConsider)
+	finder := loaders.ItemFinder_NormalHeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, normalBossesConsider, heroicBossesConsider)
 
 	//finder := loaders.ItemFinder_SiegeStrengthPlateTank
 	//finder := loaders.ItemFinder_Ordos
 	//finder := loaders.ItemFinder_TimelessPlate
-	finder := loaders.ItemFinder_BagsUpgraded
+	//finder := loaders.ItemFinder_BagsUpgraded
 	//finder := loaders.SiegeClassGearSetMultiple(stats.Spec_PaladinProt, stats.Spec_PaladinRet)
 	//finder := func(_ stats.Difficulty) []loaders.ItemFoundRef {
 	//	return []loaders.ItemFoundRef{{ItemId: 99127}, {ItemId: 99137}}
@@ -185,7 +185,7 @@ func findUpgrades_Paladin() {
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
 				IncludeCelestial:   false,
 				IncludeNormal:      true,
-				IncludeHeroic:      false,
+				IncludeHeroic:      true,
 				IgnoredItems:       ignoredItems,
 				TargetUpgradeLevel: 2,
 			},
