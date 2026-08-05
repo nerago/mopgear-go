@@ -72,7 +72,7 @@ func (be *BaseEachStatProcess[F]) BuildResult() *weight_types.Weight3ExtendedRan
 	})
 	for _, simType := range be.RequiredSims {
 		ratio := be.targetRatios.GetOrPanic(simType)
-		weights.AddSimScale(simType, 1, 0, ratio)
+		weights.SetSimScale(simType, 1, 0, ratio)
 	}
 	weights.FinishAndValidate()
 	return weights

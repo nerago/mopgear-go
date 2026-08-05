@@ -61,7 +61,7 @@ func (wer *Weight3ExtendedRanged) AddDetailWeight(simType stats.SimType, statTyp
 	})
 }
 
-func (wer *Weight3ExtendedRanged) AddSimScale(simType stats.SimType, rangingScale, rangingOffset, ratioScale float64) {
+func (wer *Weight3ExtendedRanged) SetSimScale(simType stats.SimType, rangingScale, rangingOffset, ratioScale float64) {
 	wer.SimPriority.SetSimScale(simType, rangingScale, rangingOffset, ratioScale)
 }
 

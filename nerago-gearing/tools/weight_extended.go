@@ -1,10 +1,14 @@
 package tools
 
 import (
+	"errors"
+	"io/fs"
+	"os"
 	"paladin_gearing_go/gearproto"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/weightfind/weight_types"
+	"slices"
 
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -25,10 +29,43 @@ func WriteWeightString(weight weight_types.IWeight, printer *util.PrintRecorder)
 	return str
 }
 
+func ReadWeight2File(filename string) (*weight_types.Weight2Extended, bool) {
+	bytes, err := os.ReadFile(filename)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, false
+	} else if err != nil {
+		panic(err)
+	}
+
+	protoWeight := gearproto.Weight2Extended{}
+	err = protojson.UnmarshalOptions{}.Unmarshal(bytes, &protoWeight)
+	if err != nil {
+		panic(err)
+	}
+
+	return buildGearWeight2(&protoWeight), true
+}
+
+func ReadWeight3File(filename string) (*weight_types.Weight3ExtendedRanged, bool) {
+	bytes, err := os.ReadFile(filename)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, false
+	} else if err != nil {
+		panic(err)
+	}
+
+	protoWeight := gearproto.Weight3Extended{}
+	err = protojson.UnmarshalOptions{}.Unmarshal(bytes, &protoWeight)
+	if err != nil {
+		panic(err)
+	}
+
+	return buildGearWeight3(&protoWeight), true
+}
+
 func FormatWeight1String(weight1 *weight_types.Weight1Basic) string {
 	protoWeight := gearproto.Weight1Basic{WeightType: 1}
-	weight := convertWeight1Details(weight1)
-	protoWeight.Weight = weight
+	protoWeight.Weight = convertWeight1Details(weight1)
 
 	return protojson.MarshalOptions{}.Format(&protoWeight)
 }
@@ -74,6 +111,24 @@ func convertWeight2Details(weight2 *weight_types.Weight2Extended) []*gearproto.W
 	return weights
 }
 
+func buildGearWeight2(protoWeight *gearproto.Weight2Extended) *weight_types.Weight2Extended {
+	weight2 := &weight_types.Weight2Extended{}
+	for _, ent := range protoWeight.GetWeights() {
+		weight2.PutWeight(
+			convertStatTypeReverse(ent.StatType),
+			convertSimTypeReverse(ent.SimType),
+			ent.RatingWeight,
+		)
+	}
+	for _, pri := range protoWeight.GetPriority() {
+		weight2.SetSimScale(convertSimTypeReverse(pri.SimType), pri.RangingScale, pri.RangingOffset, pri.RatioScale)
+	}
+	weight2.StatList = slices.Collect(weight2.DetailedWeights.SeqKey1())
+	weight2.SimList = slices.Collect(weight2.DetailedWeights.SeqKey2())
+	weight2.FinishAndValidate()
+	return weight2
+}
+
 func convertWeight3Details(weight3 *weight_types.Weight3ExtendedRanged) []*gearproto.Weight3Group {
 	weights := make([]*gearproto.Weight3Group, 0)
 	for weightEntry := range weight3.StatWeights.SeqKey1Key2ValueSeqEntries() {
@@ -94,6 +149,29 @@ func convertWeight3Details(weight3 *weight_types.Weight3ExtendedRanged) []*gearp
 		weights = append(weights, &group)
 	}
 	return weights
+}
+
+func buildGearWeight3(protoWeight *gearproto.Weight3Extended) *weight_types.Weight3ExtendedRanged {
+	weight3 := &weight_types.Weight3ExtendedRanged{}
+	for _, group := range protoWeight.GetWeights() {
+		for _, ent := range group.Entries {
+			weight3.AddDetailWeight(
+				convertSimTypeReverse(group.SimType),
+				convertStatTypeReverse(group.StatType),
+				weight_types.StatRange{Minimum: ent.StatRange.Minimum, Maximum: ent.StatRange.Maximum},
+				ent.RatingWeight,
+				ent.RatingOffset,
+				0,
+			)
+		}
+	}
+	for _, pri := range protoWeight.GetPriority() {
+		weight3.SetSimScale(convertSimTypeReverse(pri.SimType), pri.RangingScale, pri.RangingOffset, pri.RatioScale)
+	}
+	weight3.StatList = slices.Collect(weight3.StatWeights.SeqKey2())
+	weight3.SimList = slices.Collect(weight3.StatWeights.SeqKey1())
+	weight3.FinishAndValidate()
+	return weight3
 }
 
 func convertPriority(simPriority *weight_types.SimPriorityExtended, simList []stats.SimType) []*gearproto.Priority2Entry {
@@ -155,6 +233,56 @@ func convertSimType(sim stats.SimType) gearproto.SimType {
 		return gearproto.SimType_TMI
 	case stats.Sim_DEATH:
 		return gearproto.SimType_DEATH
+	default:
+		panic("invalid SimType")
+	}
+}
+
+func convertStatTypeReverse(stat gearproto.StatType) stats.StatType {
+	switch stat {
+	case gearproto.StatType_Strength:
+		return stats.Stat_Strength
+	case gearproto.StatType_Agility:
+		return stats.Stat_Agility
+	case gearproto.StatType_Stamina:
+		return stats.Stat_Stamina
+	case gearproto.StatType_Intellect:
+		return stats.Stat_Intellect
+	case gearproto.StatType_Spirit:
+		return stats.Stat_Spirit
+	case gearproto.StatType_Hit:
+		return stats.Stat_Hit
+	case gearproto.StatType_Crit:
+		return stats.Stat_Crit
+	case gearproto.StatType_Haste:
+		return stats.Stat_Haste
+	case gearproto.StatType_Expertise:
+		return stats.Stat_Expertise
+	case gearproto.StatType_Dodge:
+		return stats.Stat_Dodge
+	case gearproto.StatType_Parry:
+		return stats.Stat_Parry
+	case gearproto.StatType_Mastery:
+		return stats.Stat_Mastery
+	default:
+		panic("invalid StatType")
+	}
+}
+
+func convertSimTypeReverse(sim gearproto.SimType) stats.SimType {
+	switch sim {
+	case gearproto.SimType_DPS:
+		return stats.Sim_DPS
+	case gearproto.SimType_TPS:
+		return stats.Sim_TPS
+	case gearproto.SimType_DTPS:
+		return stats.Sim_DTPS
+	case gearproto.SimType_HPS:
+		return stats.Sim_HPS
+	case gearproto.SimType_TMI:
+		return stats.Sim_TMI
+	case gearproto.SimType_DEATH:
+		return stats.Sim_DEATH
 	default:
 		panic("invalid SimType")
 	}

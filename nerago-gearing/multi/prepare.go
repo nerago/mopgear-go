@@ -13,6 +13,9 @@ import (
 )
 
 func (job *MultiSetJob) prepareInitial() {
+	// TODO load extended weights
+	//job.loadExtendedWeights()
+
 	job.printer.Println("LOADING BAGS")
 	job.bagsGear = loaders.BagsFileReader_Read()
 
@@ -398,4 +401,14 @@ func (param *multiSetParamInternal) validateAddOptions(slot items.SlotEquip, opt
 			param.Model.GemChoice.ValidateMetaGemInItem(item)
 		}
 	}
+}
+
+func (job *MultiSetJob) loadExtendedWeights() {
+	for param := range util_collection.ForPointer(job.params) {
+		param.loadExtendedWeights()
+	}
+}
+
+func (param *multiSetParamInternal) loadExtendedWeights() {
+	//tools.FormatWeight1String()
 }
