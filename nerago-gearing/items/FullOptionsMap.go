@@ -1,6 +1,7 @@
 package items
 
 import (
+	"fmt"
 	"iter"
 	"paladin_gearing_go/util/util_collection"
 	"slices"
@@ -283,7 +284,7 @@ func (optionsMap *FullOptionsMap) FilterAllItems(filter func(*FullItem) bool) {
 		if len(optionsMap[i]) > 0 {
 			optionsMap[i] = util_collection.FilterSliceAsNew(optionsMap[i], filter)
 			if len(optionsMap[i]) == 0 {
-				panic("removing items leaves slot empty")
+				panic(fmt.Sprintf("removing items leaves slot %s empty", SlotEquip(i).Name()))
 			}
 		}
 	}

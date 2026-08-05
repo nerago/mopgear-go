@@ -211,7 +211,9 @@ func (item *FullItem) AppendString(build *util.StringBuild2) {
 	build.WriteUint16(item.itemLevel)
 	build.WriteRune(' ')
 
-	item.statBase.AppendString(build)
+	if !item.statBase.IsEmpty() {
+		item.statBase.AppendString(build)
+	}
 
 	if !item.statEnchant.IsEmpty() {
 		build.WriteString(" ENCHANT ")

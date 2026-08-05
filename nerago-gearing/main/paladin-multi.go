@@ -73,6 +73,7 @@ var trinketsTankP3 = []items.ItemId{
 var newTrinketsDamage = []items.ItemId{
 	trinketThokTailCelestial,
 	trinketFusionCoreCelestial,
+	trinketSkeerBloodCelestial,
 }
 var newTrinketsTank = []items.ItemId{
 	trinketVialCorruptNormal,
@@ -209,7 +210,8 @@ func PaladinMultiRun() {
 		MissingEnchant:            setup.MissingEnchant_Panic,
 	}
 
-	addExtrasToEach(legendCloaks, &ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
+	ret.AddExtraItem(legendMeleeCloak) // TODO need a better solution, common reforge apply to baseline?
+	addExtrasToEach(legendCloaks, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
 
 	addExtrasToEach(retT15, &ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
 	addExtrasToEach(retT16, &ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
@@ -255,7 +257,7 @@ func PaladinMultiRun() {
 		96657,  // ret tier15 legs heroic
 		96375,  // Bracers of Constant Implosion
 		100644, // Grievous Gladiator's Warboots of Cruelty
-		104938, // Sorrowpath Signet
+		104938, // Sorrowpath Signet celestial
 		105033, // Wolf-Rider Spurs
 		95153,  // Tyrant King Battleplate
 	})
@@ -382,30 +384,28 @@ func PaladinMultiRun() {
 
 	//job.AddItemDistinctUsageGroups(103892, true, []multi_types.MultiSetParam{ret, protDps, protCompromise}, []multi_types.MultiSetParam{protMitigationNoSet, protMitigationWithSet, protHeal})
 	//ret.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{104981, 86386})
-	job.AddAlternateUpgradeChoices(
-		99028,                      // Handguards of Winged Triumph celestial
-		105090,                     // Ominous Mogu Greatboots
-		105122,                     // Asgorathian Blood Seal
-		105033,                     // Wolf-Rider Spurs
-		103972,                     // kilruk sword
-		101947,                     // Elder Tortoiseshell Seal
-		99026,                      // Legguards of Winged Triumph celestial
-		103915,                     // Icy Blood Chestplate
-		104938,                     // Sorrowpath Signet celestial
-		98986,                      // Legplates of Winged Triumph celestial
-		trinketSkeerBloodCelestial, // trinketSkeerBloodCelestial - str/crit
-		trinketFusionCoreCelestial, // str/crit
-	)
-	//job.AddAlternateUpgradeChoices(104417) //gloves corrupt
-
-	//Trinket2  542   Fusion-Fire Core               SoO Norushen          b -1.22%    b -1.52%   b -0.91%  b +1.39%  b -0.07%     mit_set  dps=+1.5  dtps=+4.0  tmi=+0.0  death=-0.0
+	//job.AddAlternateUpgradeChoices(
+	//	99028,  // Handguards of Winged Triumph celestial
+	//	105090, // Ominous Mogu Greatboots
+	//	105122, // Asgorathian Blood Seal
+	//	105033, // Wolf-Rider Spurs
+	//	//103972,                     // kilruk sword
+	//	101947,                     // Elder Tortoiseshell Seal
+	//	99026,                      // Legguards of Winged Triumph celestial
+	//	103915,                     // Icy Blood Chestplate
+	//	104938,                     // Sorrowpath Signet celestial
+	//	98986,                      // Legplates of Winged Triumph celestial
+	//	trinketSkeerBloodCelestial, // trinketSkeerBloodCelestial - str/crit
+	//	trinketFusionCoreCelestial, // str/crit
+	//)
+	job.AddAlternateUpgradeChoices(trinketSkeerBloodCelestial)
 
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()
 
 	//job.RunNoPermutations_AllCommonAlternates(true, true)
 	//job.RunNoPermutations_BestOnly(false, true)
-	job.RunForSolutionsPerPermute(2, true)
+	job.RunForSolutionsPerPermute(12, true)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)

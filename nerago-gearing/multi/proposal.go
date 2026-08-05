@@ -240,7 +240,7 @@ func (job *MultiSetJob) additionalProposalsFromSpecOptimum(cancel util_async.Can
 
 		var output multi_types.MultiProposedOutput
 		if hasResult {
-			proposalId := "With-Best-" + param.Label + time.Now().Format("2006-01-02-15-04-05")
+			proposalId := "With-Best-" + param.Label + "-" + time.Now().Format("2006-01-02-15-04-05")
 			output = job.makeOutputFromHighs(result, printer, proposalId)
 		}
 
