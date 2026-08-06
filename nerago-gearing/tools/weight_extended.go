@@ -15,14 +15,16 @@ import (
 
 func WriteWeightString(weight weight_types.IWeight, printer *util.PrintRecorder) string {
 	var str string
-	if weightCast1, isCast1 := weight.(*weight_types.Weight1Basic); isCast1 {
-		str = FormatWeight1String(weightCast1)
-	} else if weightCast2, isCast2 := weight.(*weight_types.Weight2Extended); isCast2 {
-		str = FormatWeight2String(weightCast2)
-	} else if weightCast3, isCast3 := weight.(*weight_types.Weight3ExtendedRanged); isCast3 {
-		str = FormatWeight3String(weightCast3)
-	} else {
-		str = "missing weight"
+
+	switch cast := weight.(type) {
+	case *weight_types.Weight1Basic:
+		str = FormatWeight1String(cast)
+	case *weight_types.Weight2Extended:
+		str = FormatWeight2String(cast)
+	case *weight_types.Weight3ExtendedRanged:
+		str = FormatWeight3String(cast)
+	default:
+		panic("unknown weight type")
 	}
 
 	printer.Println(str)

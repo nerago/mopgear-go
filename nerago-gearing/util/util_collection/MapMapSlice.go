@@ -331,3 +331,43 @@ func (mms *MapMapSlice[J, K, V]) SeqKey2ValueSeqWithKey1(key1 J) iter.Seq2[K, it
 		}
 	}
 }
+
+func (mms *MapMapSlice[J, K, V]) Equals(other *MapMapSlice[J, K, V], valueEqual func(*V, *V) bool) bool {
+	if len(mms.dataBy1) != len(other.dataBy1) {
+		return false
+	}
+	for key1, inner := range mms.dataBy1 {
+		otherInner, hasOtherInner := other.dataBy1[key1]
+		if hasOtherInner && len(inner) == len(otherInner) {
+			for key2, slice := range inner {
+				otherSlice, hasOtherSlice := otherInner[key2]
+				if !hasOtherSlice || !EqualFunc_Pointer(slice, otherSlice, valueEqual) {
+					return false
+				}
+			}
+		} else {
+			return false
+		}
+	}
+	return true
+}
+
+func (mms *MapMapSlice[J, K, V]) Equals_IgnoreOrder(other *MapMapSlice[J, K, V], valueEqual func(*V, *V) bool) bool {
+	if len(mms.dataBy1) != len(other.dataBy1) {
+		return false
+	}
+	for key1, inner := range mms.dataBy1 {
+		otherInner, hasOtherInner := other.dataBy1[key1]
+		if hasOtherInner && len(inner) == len(otherInner) {
+			for key2, slice := range inner {
+				otherSlice, hasOtherSlice := otherInner[key2]
+				if !hasOtherSlice || !EqualFunc_IgnoreOrder_Pointer(slice, otherSlice, valueEqual) {
+					return false
+				}
+			}
+		} else {
+			return false
+		}
+	}
+	return true
+}

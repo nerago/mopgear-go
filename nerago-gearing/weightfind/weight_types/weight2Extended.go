@@ -131,17 +131,12 @@ func (we *Weight2Extended) validate() {
 	}
 }
 
-//func (we *Weight2Extended) scaleEachSimForBase() {
-//	baseStat := we.StatList[0]
-//	for _, simType := range we.SimList {
-//		baseValue := we.DetailedWeights.GetOrPanic(baseStat, simType)
-//		for _, statType := range we.StatList {
-//			we.DetailedWeights.Apply(statType, simType, func(oldValue float64) float64 {
-//				return oldValue / baseValue
-//			})
-//		}
-//	}
-//}
+func (we *Weight2Extended) Equals(other *Weight2Extended) bool {
+	return slices.Equal(we.StatList, other.StatList) &&
+		slices.Equal(we.SimList, other.SimList) &&
+		we.SimPriority.Equals(&other.SimPriority) &&
+		we.DetailedWeights.Equals(&other.DetailedWeights, func(a *float64, b *float64) bool { return *a == *b })
+}
 
 func (we *Weight2Extended) ConvertToWeight1() *Weight1Basic {
 	// NOTE: assuming that scaleEachSimForBase has run, all on equal basis

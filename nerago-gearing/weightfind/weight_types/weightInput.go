@@ -20,15 +20,16 @@ type WeightResult struct {
 }
 
 func (wr *WeightResult) AsWeight1() *Weight1Basic {
-	var weight1 *Weight1Basic
-	if weightCast1, isCast1 := wr.Weight.(*Weight1Basic); isCast1 {
-		weight1 = weightCast1
-	} else if weightCast2, isCast2 := wr.Weight.(*Weight2Extended); isCast2 {
-		weight1 = weightCast2.ConvertToWeight1()
-	} else if weightCast3, isCast3 := wr.Weight.(*Weight3ExtendedRanged); isCast3 {
-		weight1 = weightCast3.ConvertToWeight2().ConvertToWeight1()
+	switch cast := wr.Weight.(type) {
+	case *Weight1Basic:
+		return cast
+	case *Weight2Extended:
+		return cast.ConvertToWeight1()
+	case *Weight3ExtendedRanged:
+		return cast.ConvertToWeight2().ConvertToWeight1()
+	default:
+		panic("unknown weight type")
 	}
-	return weight1
 }
 
 type StatRange struct {

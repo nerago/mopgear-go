@@ -4,22 +4,15 @@ import (
 	"errors"
 	"io/fs"
 	"os"
-	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/gear_model/ratings"
-	"paladin_gearing_go/gear_model/ratings_old"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/weightfind/weight_types"
 	"strconv"
 	"strings"
 )
 
-func StatRatingsWeights_ReadFile(filename string, includeHit, includeExpertise, includeSpirit bool) gear_model.StatWeights {
+func StatRatingsWeights_ReadFile(filename string) ratings.StatRatingsWeightsExtended {
 	return StatRatingsWeightsExtended_ReadFile(filename)
-}
-
-func StatRatingsWeightsOld_ReadFile(filename string, includeHit, includeExpertise, includeSpirit bool) *ratings_old.StatRatingsWeightsOld {
-	statRatings := pawnWeightToBlock(filename)
-	return ratings_old.StatRatingsWeights_FromBlock(statRatings, includeExpertise, includeHit, includeSpirit)
 }
 
 func pawnWeightToBlock(filename string) stats.StatBlockFloat {
@@ -33,7 +26,7 @@ func pawnWeightToBlock(filename string) stats.StatBlockFloat {
 	return statRatings
 }
 
-func StatRatingsWeightsExtended_ReadFile(filename string) *ratings.StatRatingsWeightsExtended {
+func StatRatingsWeightsExtended_ReadFile(filename string) ratings.StatRatingsWeightsExtended {
 	weight1 := weight_types.Weight1Basic_FromBlock(pawnWeightToBlock(filename))
 	weight2, ok2 := ReadWeight2File(filename + ".v2")
 
@@ -41,7 +34,7 @@ func StatRatingsWeightsExtended_ReadFile(filename string) *ratings.StatRatingsWe
 		panic("missing weight")
 	}
 
-	return &ratings.StatRatingsWeightsExtended{
+	return ratings.StatRatingsWeightsExtended{
 		Weight1: weight1,
 		Weight2: *weight2,
 	}
@@ -97,4 +90,14 @@ func addNum(blockFloat *stats.StatBlockFloat, stat stats.StatType, value string)
 		panic(err)
 	}
 	blockFloat[stat] = num
+}
+
+func StatRatingsWeights_Testing() ratings.StatRatingsWeightsExtended {
+	blockFloat := stats.StatBlockFloat{}
+	for i := range blockFloat {
+		blockFloat[i] = 1.0
+	}
+	return ratings.StatRatingsWeightsExtended{
+		Weight1: weight_types.Weight1Basic_FromBlock(blockFloat),
+	}
 }

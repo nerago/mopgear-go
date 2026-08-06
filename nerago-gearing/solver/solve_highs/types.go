@@ -4,7 +4,6 @@ import (
 	"iter"
 	"math"
 	"paladin_gearing_go/gear_model"
-	"paladin_gearing_go/gear_model/ratings"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -134,20 +133,19 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType int) *SolverModel 
 		SetBonusIndexForItem:   model.SetBonus.ActiveSetIndexForItem,
 	}
 
-	if weightExt, isExt := model.StatWeights.(*ratings.StatRatingsWeightsExtended); isExt {
-		switch weightType {
-		case 1:
-			solveModel.Weights1 = &weightExt.Weight1
-			solveModel.WeightsGeneric = &weightExt.Weight1
-		case 2:
-			solveModel.Weights2 = &weightExt.Weight2
-			solveModel.WeightsGeneric = &weightExt.Weight2
-		case 3:
-			solveModel.Weights3 = &weightExt.Weight3
-			solveModel.WeightsGeneric = &weightExt.Weight3
-		default:
-			panic("invalid weight number")
-		}
+	weightExt := model.StatWeights
+	switch weightType {
+	case 1:
+		solveModel.Weights1 = &weightExt.Weight1
+		solveModel.WeightsGeneric = &weightExt.Weight1
+	case 2:
+		solveModel.Weights2 = &weightExt.Weight2
+		solveModel.WeightsGeneric = &weightExt.Weight2
+	case 3:
+		solveModel.Weights3 = &weightExt.Weight3
+		solveModel.WeightsGeneric = &weightExt.Weight3
+	default:
+		panic("invalid weight number")
 	}
 
 	if solveModel.WeightsGeneric.IsEmpty() {
@@ -176,8 +174,6 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType int) *SolverModel 
 		},
 	)
 
-	//SetBonusCountItems:     nil,
-	//	SetBonusMultipliers:    nil,
 	return solveModel
 }
 

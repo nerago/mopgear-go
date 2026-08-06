@@ -17,7 +17,10 @@ func BagsFileReader_Read() EquippedArray {
 	}
 
 	var inputObject map[string]any
-	json.Unmarshal(allBytes, &inputObject)
+	err = json.Unmarshal(allBytes, &inputObject)
+	if err != nil {
+		panic(err)
+	}
 
 	itemArray := inputObject["items"].([]any)
 	for _, element := range itemArray {

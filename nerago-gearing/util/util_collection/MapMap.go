@@ -301,6 +301,26 @@ func (mm *MapMap[J, K, V]) SeqKey2Key1() iter.Seq2[K, iter.Seq[J]] {
 	}
 }
 
+func (mm *MapMap[J, K, V]) Equals(other *MapMap[J, K, V], valueEqual func(*V, *V) bool) bool {
+	if len(mm.dataBy1) != len(other.dataBy1) {
+		return false
+	}
+	for key1, inner := range mm.dataBy1 {
+		otherInner, hasOtherInner := other.dataBy1[key1]
+		if hasOtherInner && len(inner) == len(otherInner) {
+			for key2, value := range inner {
+				otherValue, hasOtherValue := otherInner[key2]
+				if !hasOtherValue || !valueEqual(&value, &otherValue) {
+					return false
+				}
+			}
+		} else {
+			return false
+		}
+	}
+	return true
+}
+
 // a "map operation" in map/reduce terms, but too many uses for the word "map" here
 func MapMap_FromExistingMapMap_WithApply[J comparable, K comparable, V any, R any](mm *MapMap[J, K, V], apply func(V) R) *MapMap[J, K, R] {
 	return MapMap_FromExistingMapMap_WithApplyPlusKeys[J, K, V, R](mm, func(j J, k K, v V) R {

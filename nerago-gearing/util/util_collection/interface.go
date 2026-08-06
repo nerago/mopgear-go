@@ -4,28 +4,36 @@ import (
 	"iter"
 )
 
-type ICollection interface {
+type IEquatable[T IEquatable[T]] interface {
+	Equals(other *T) bool
+}
+
+type IEquatableByElement[T IEquatableByElement[T, E], E any] interface {
+	Equals(other *T, valueEquals func(*E, *E) bool) bool
+}
+
+type ICollection[E any] interface {
 	Clear()
 	Size() int
 	IsEmpty() bool
 }
 
 type ISet[E any] interface {
-	ICollection
+	ICollection[E]
 	Has(value E) bool
 	Add(value E) (wasMember bool)
 	Delete(value E)
 	SeqValues() iter.Seq[E]
 }
 
-type IQueue[T any] interface {
-	ICollection
-	Push(T)
-	Pop() (T, bool)
+type IQueue[E any] interface {
+	ICollection[E]
+	Push(E)
+	Pop() (E, bool)
 }
 
 type IListRead[E any] interface {
-	ICollection
+	ICollection[E]
 	Get(index int) E
 	ContainsFunc(predicate func(*E) bool) bool
 	ContainsFuncNoPointer(predicate func(E) bool) bool
@@ -34,14 +42,14 @@ type IListRead[E any] interface {
 }
 
 type IListSort[E any] interface {
-	ICollection
+	ICollection[E]
 	SortFunc(compare func(*E, *E) int)
 	Shuffle()
 	Swap(indexA, indexB int)
 }
 
 type IListReadWrite[E any] interface {
-	ICollection
+	ICollection[E]
 	IListSort[E]
 	Put(index int, value E)
 	Append(E)
@@ -57,7 +65,7 @@ type IList[E any] interface {
 }
 
 type IMap[K comparable, V any] interface {
-	ICollection
+	ICollection[V]
 	EqualsInterface(other IMap[K, V], elementEqual func(*V, *V) bool) bool
 	Has(key K) bool
 	FirstKey() K
@@ -74,7 +82,7 @@ type IMap[K comparable, V any] interface {
 }
 
 type IMapMapCommon[J comparable, K comparable, V any] interface {
-	ICollection
+	ICollection[V]
 	Has(key1 J, key2 K) bool
 	HasKey1(key1 J) bool
 	HasKey2(key2 K) bool
@@ -120,6 +128,7 @@ type IMapMapSlice[J comparable, K comparable, V any] interface {
 	SeqKey2Key1ValueSeqEntries() iter.Seq[MapMapSliceEntry[J, K, V]]
 }
 
+var _ IMap[int, int] = &MapConcurrent[int, int]{}
 var _ IMapMap[int, int, int] = &MapMap[int, int, int]{}
 var _ IMapMapSlice[int, int, int] = &MapMapSlice[int, int, int]{}
 

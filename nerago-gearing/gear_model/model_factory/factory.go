@@ -3,7 +3,6 @@ package model_factory
 import (
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/gear_model"
-	"paladin_gearing_go/gear_model/ratings_old"
 	"paladin_gearing_go/gear_model/requirements"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
@@ -15,7 +14,7 @@ import (
 func Model_PallyProtMitigation_WithSet() gear_model.SpecModel {
 	spec := stats.Spec_PaladinProt
 	goal := stats.OptimiseGoal_Mitigation
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightMitiWithSetFile, false, true, false)
+	weight := tools.StatRatingsWeights_ReadFile(files.WeightMitiWithSetFile)
 	return gear_model.SpecModel{
 		Spec:              spec,
 		Goal:              goal,
@@ -43,7 +42,7 @@ func Model_PallyProtMitigation_WithSet() gear_model.SpecModel {
 func Model_PallyProtHeal() gear_model.SpecModel {
 	spec := stats.Spec_PaladinProt
 	goal := stats.OptimiseGoal_HalfMitiHeal
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightHealFile, false, true, false)
+	weight := tools.StatRatingsWeights_ReadFile(files.WeightHealFile)
 	return gear_model.SpecModel{
 		Spec:              spec,
 		Goal:              goal,
@@ -71,7 +70,7 @@ func Model_PallyProtHeal() gear_model.SpecModel {
 func Model_PallyProtMitigation_NoSet() gear_model.SpecModel {
 	spec := stats.Spec_PaladinProt
 	goal := stats.OptimiseGoal_Mitigation
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightMitiNoSetFile, false, true, false)
+	weight := tools.StatRatingsWeights_ReadFile(files.WeightMitiNoSetFile)
 	return gear_model.SpecModel{
 		Spec:                 spec,
 		Goal:                 goal,
@@ -97,7 +96,7 @@ func Model_PallyProtMitigation_NoSet() gear_model.SpecModel {
 func Model_PallyProtCompromise() gear_model.SpecModel {
 	spec := stats.Spec_PaladinProt
 	goal := stats.OptimiseGoal_HalfMitiDps
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightCompromiseFile, false, true, false)
+	weight := tools.StatRatingsWeights_ReadFile(files.WeightCompromiseFile)
 	return gear_model.SpecModel{
 		Spec:                 spec,
 		Goal:                 goal,
@@ -123,7 +122,7 @@ func Model_PallyProtCompromise() gear_model.SpecModel {
 func Model_PallyProtDps() gear_model.SpecModel {
 	spec := stats.Spec_PaladinProt
 	goal := stats.OptimiseGoal_Dps
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightDpsFile, false, true, false)
+	weight := tools.StatRatingsWeights_ReadFile(files.WeightDpsFile)
 	return gear_model.SpecModel{
 		Spec:                 spec,
 		Goal:                 goal,
@@ -180,7 +179,7 @@ func Model_Testing() gear_model.SpecModel {
 		Spec:              spec,
 		Goal:              goal,
 		SimulateAs:        stats.Fight_Horridon_HighHeal,
-		StatWeights:       ratings_old.StatRatingsWeights_Testing(),
+		StatWeights:       tools.StatRatingsWeights_Testing(),
 		StatRequirements:  requirements.StatRequirementsHitExpertise_None(),
 		StatsForWeighting: StatsForWeighting_strengthTank,
 		ReforgeRules:      gear_model.ReforgeRules_tank,

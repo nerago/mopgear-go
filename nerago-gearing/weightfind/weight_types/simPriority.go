@@ -104,7 +104,13 @@ type SimPriorityEntry struct {
 	RatioScale    float64 // relative factor to other sim entries to establish priority
 }
 
-func (se SimPriorityEntry) Apply(subtotal float64) float64 {
+func (se *SimPriorityEntry) Equals(other *SimPriorityEntry) bool {
+	return se.RangingScale == other.RangingScale &&
+		se.RangingOffset == other.RangingOffset &&
+		se.RatioScale == other.RatioScale
+}
+
+func (se *SimPriorityEntry) Apply(subtotal float64) float64 {
 	return (subtotal + se.RangingOffset) * se.RangingScale * se.RatioScale
 }
 
@@ -160,4 +166,8 @@ func (sre *SimPriorityExtended) ConvertToBasic() SimPriorityBasic {
 	}
 	simRatio = *simRatio.ScaleForTotalSum(1.0)
 	return simRatio
+}
+
+func (sre *SimPriorityExtended) Equals(other *SimPriorityExtended) bool {
+	return sre.entries.Equals(&other.entries, (*SimPriorityEntry).Equals)
 }

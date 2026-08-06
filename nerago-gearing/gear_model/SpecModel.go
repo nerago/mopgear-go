@@ -1,6 +1,7 @@
 package gear_model
 
 import (
+	"paladin_gearing_go/gear_model/ratings"
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -10,7 +11,7 @@ import (
 
 type SpecModel struct {
 	StatRequirements         StatRequirements
-	StatWeights              StatWeights
+	StatWeights              ratings.StatRatingsWeightsExtended
 	Spec                     SpecType
 	Goal                     OptimiseGoal
 	SimulateAs               WowSim_Fight
@@ -32,7 +33,7 @@ func (model *SpecModel) Equals(other *SpecModel) bool {
 	return model.Spec == other.Spec &&
 		model.Goal == other.Goal &&
 		model.StatRequirements.Equals(other.StatRequirements) &&
-		model.StatWeights == other.StatWeights &&
+		model.StatWeights.Equals(&other.StatWeights) &&
 		model.SimulateAs == other.SimulateAs &&
 		model.SimSpeedUp == other.SimSpeedUp &&
 		model.ReforgeRules.Equals(&other.ReforgeRules) &&
@@ -72,6 +73,8 @@ func (model *SpecModel) CloneShallow(other *SpecModel) *SpecModel {
 
 // ////////// requirements
 func (model *SpecModel) CheckSet(itemSet *SolvableItemSet) bool {
+	//TODO CheckSetWithFailMessage
+
 	if !model.StatRequirements.CheckSet(itemSet.Total()) {
 		return false
 	}

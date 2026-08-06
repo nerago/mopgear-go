@@ -309,6 +309,26 @@ func EqualFunc_Pointer[T any](one []T, two []T, equal func(a, b *T) bool) bool {
 	return true
 }
 
+func EqualFunc_IgnoreOrder_Pointer[T any](one []T, two []T, equals func(a, b *T) bool) bool {
+	if len(one) != len(two) {
+		return false
+	}
+
+	twoConsumed := make([]bool, len(two))
+outer:
+	for a := range one {
+		for b := range two {
+			if !twoConsumed[b] && equals(&one[a], &two[b]) {
+				twoConsumed[b] = true
+				continue outer
+			}
+		}
+		return false
+	}
+
+	return true
+}
+
 func RepeatValue[T any](value T, count int) []T {
 	result := make([]T, count)
 	for i := range count {

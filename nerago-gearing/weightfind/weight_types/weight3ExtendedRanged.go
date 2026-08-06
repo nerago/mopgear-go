@@ -25,6 +25,12 @@ type Weight3ExtendedStatEntry struct {
 	EstimationQuality float64 // higher is better
 }
 
+func (ese *Weight3ExtendedStatEntry) Equals(other *Weight3ExtendedStatEntry) bool {
+	return ese.RatingWeight == other.RatingWeight &&
+		ese.RatingOffset == other.RatingOffset &&
+		ese.StatRange == other.StatRange
+}
+
 func Weight3ExtendedRanged_Make(statList []stats.StatType, simList []stats.SimType) *Weight3ExtendedRanged {
 	return &Weight3ExtendedRanged{
 		StatList:    statList,
@@ -130,6 +136,13 @@ func (wer *Weight3ExtendedRanged) CalcSingleSimScoreUnscaled(stats *stats.StatBl
 		simSubTotal += calc
 	}
 	return simSubTotal
+}
+
+func (wer *Weight3ExtendedRanged) Equals(other *Weight3ExtendedRanged) bool {
+	return slices.Equal(wer.StatList, other.StatList) &&
+		slices.Equal(wer.SimList, other.SimList) &&
+		wer.SimPriority.Equals(&other.SimPriority) &&
+		wer.StatWeights.Equals(&other.StatWeights, (*Weight3ExtendedStatEntry).Equals)
 }
 
 func (wer *Weight3ExtendedRanged) ConvertToWeight2() *Weight2Extended {

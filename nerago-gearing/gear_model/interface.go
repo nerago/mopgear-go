@@ -2,7 +2,6 @@ package gear_model
 
 import (
 	"paladin_gearing_go/gear_model/ratings"
-	"paladin_gearing_go/gear_model/ratings_old"
 	"paladin_gearing_go/gear_model/requirements"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util/util_collection"
@@ -25,7 +24,6 @@ type StatWeights interface {
 	CreateString() string
 }
 
-var _ StatWeights = &ratings_old.StatRatingsWeightsOld{}
-var _ StatWeights = &ratings.StatRatingsWeightsGeneric{}
+var _ StatWeights = &ratings.StatRatingsWeightsExtended{}
 var _ StatRequirements = &requirements.StatRequirementsGeneral{}
 var _ StatRequirements = &requirements.StatRequirementsHitExpertise{}
