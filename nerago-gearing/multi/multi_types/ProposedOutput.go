@@ -52,11 +52,11 @@ type SingleProposedOutput struct {
 
 func SingleProposed_FromEquip(equipMap items.FullEquipMap, param *MultiSetParam) SingleProposedOutput {
 	set := items.FullItemSet_FromMap(equipMap)
-	return SingleProposedOutput{Exists: true, Spec: param.Model.Spec, OutputId: uuid.NewString(), ResultRating: float64(param.Model.CalcRatingFull(&set)), FullSet: set, Model: &param.Model}
+	return SingleProposedOutput{Exists: true, Spec: param.Model.Spec, OutputId: uuid.NewString(), ResultRating: param.Model.CalcRatingFull(&set), FullSet: set, Model: &param.Model}
 }
 
 func SingleProposed_FromItemSet(itemSet items.FullItemSet, outputId string, model *gear_model.SpecModel) SingleProposedOutput {
-	return SingleProposedOutput{Exists: true, Spec: model.Spec, OutputId: outputId, ResultRating: float64(model.CalcRatingFull(&itemSet)), FullSet: itemSet, Model: model}
+	return SingleProposedOutput{Exists: true, Spec: model.Spec, OutputId: outputId, ResultRating: model.CalcRatingFull(&itemSet), FullSet: itemSet, Model: model}
 }
 
 func (single *SingleProposedOutput) Equals(b *SingleProposedOutput) bool {

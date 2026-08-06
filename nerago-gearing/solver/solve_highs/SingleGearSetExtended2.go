@@ -25,7 +25,7 @@ const c_gearExtended2ScoreHigh = 10
 // entry_combo_output_weighted(column) * combo.multiply -> mainOutputRow
 // mainOutputRow -> mainOutputVar
 
-func SingleGearSetExtendedMain(itemOptions *items.SolvableOptionsMap, model *SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
+func SingleGearSetExtended2Main(itemOptions *items.SolvableOptionsMap, model *SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
 	build := util_highs.LinearBuilder{}
 	build.Solver = util_highs.Solver_MIP_Interior
 
@@ -56,7 +56,7 @@ func makeGearSetExtended2(build *util_highs.LinearBuilder, model *SolverModel, i
 
 	setup.prepareStats()
 	setup.prepareRequire(&model.StatRequirements)
-	setup.prepareActiveSetCombos(model.SetBonusTotalCount)
+	setup.prepareActiveSetCombos(model)
 	setup.prepareUniqueEquipped(itemOptions)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {

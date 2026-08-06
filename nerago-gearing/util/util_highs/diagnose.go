@@ -10,6 +10,7 @@ import (
 func diagnoseInfeasible(build *LinearBuilder, printer *util.PrintRecorder) {
 	printer.Println("INFEASIBLE MODEL TRYING TO FIND PROBLEM ROW")
 	// diagnoseSearchRange(input, printer)
+	printer.DebugEnableConsole()
 	diagnoseInfeasibleOneByOne(build, printer)
 }
 
@@ -80,7 +81,7 @@ func diagnoseInfeasibleOneByOne(build *LinearBuilder, printer *util.PrintRecorde
 		clone.mat.deleteRow(rowIndex)
 		innerPrint := util.PrintRecorder_HoldAll()
 		result := clone.RunHighsFuture(nil).WaitForResultOrPanic()
-		solution := result.GetSolutionAndSaveLog(printer)
+		solution := result.GetSolutionAndSaveLog(innerPrint)
 		printer.Printf("Removed row %4d (%s) []=%2d --> %s\n", rowIndex, build.mat.debug[rowIndex], len(build.mat.entries[rowIndex]), solution.Status.String())
 		if solution.Status == highs.ModelStatusOptimal {
 			printer.AppendOther(innerPrint)

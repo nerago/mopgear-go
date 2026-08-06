@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/solver/solve_highs"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
 
 	"github.com/google/uuid"
@@ -22,20 +23,33 @@ func Solver(input SolveInput) SolveOutput {
 	printer, solveOptions := prepareSolve(input)
 
 	solveModel := solve_highs.SolverModelBuild(input.Model, input.WeightType)
-	futureSolvedResult := solve_highs.SingleGearSetMain(&solveOptions, solveModel, printer)
-	solvedResult := futureSolvedResult.WaitForResultAsOptional()
+	futureSolvedSet := launchSolve(solveOptions, solveModel, printer, input.WeightType)
+	solvedResult := futureSolvedSet.WaitForResultAsOptional()
 
 	return finaliseSolve(solvedResult, solveOptions, input, printer)
 }
 
 func Solver_Lite(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, weightType int, printer *util.PrintRecorder) items.FullItemSet {
 	solveOptions := items.SolvableOptionsMap_of(itemOptions)
-	solveModel := solve_highs.SolverModelBuild(model, 1)
-	futureSolvedSet := solve_highs.SingleGearSetMain(&solveOptions, solveModel, printer)
+	solveModel := solve_highs.SolverModelBuild(model, weightType)
+	futureSolvedSet := launchSolve(solveOptions, solveModel, printer, weightType)
 	solvedSet := futureSolvedSet.WaitForResultAsOptional()
 	fullSet := items.FullItemSet_FromSolved(solvedSet.GetOrPanic(), itemOptions)
 	model.ValidateSet(&fullSet)
 	return fullSet
+}
+
+func launchSolve(solveOptions items.SolvableOptionsMap, solveModel *solve_highs.SolverModel, printer *util.PrintRecorder, weightType int) *util_async.FutureCancellable[items.SolvableItemSet] {
+	switch weightType {
+	case 1:
+		return solve_highs.SingleGearSetMain(&solveOptions, solveModel, printer)
+	case 2:
+		return solve_highs.SingleGearSetExtended2Main(&solveOptions, solveModel, printer)
+	case 3:
+		return solve_highs.SingleGearSetExtended3Main(&solveOptions, solveModel, printer)
+	default:
+		panic("invalid weight type")
+	}
 }
 
 func prepareSolve(input SolveInput) (*util.PrintRecorder, items.SolvableOptionsMap) {

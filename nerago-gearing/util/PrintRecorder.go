@@ -12,6 +12,7 @@ import (
 type PrintRecorder struct {
 	holdOutput    bool
 	consoleOutput bool
+	debugConsole  bool
 	builder       StringBuild2
 	file          *os.File
 	test          *testing.T
@@ -27,7 +28,7 @@ func PrintRecorder_CreateLogFile(directory string) *PrintRecorder {
 	if err != nil {
 		panic(err)
 	}
-	return &PrintRecorder{false, true, nil, file, nil, nil, "", sync.Mutex{}}
+	return &PrintRecorder{false, true, false, nil, file, nil, nil, "", sync.Mutex{}}
 }
 
 func PrintRecorder_CreateLogFileNamed(directory string, tag string) *PrintRecorder {
@@ -37,23 +38,27 @@ func PrintRecorder_CreateLogFileNamed(directory string, tag string) *PrintRecord
 	if err != nil {
 		panic(err)
 	}
-	return &PrintRecorder{false, true, nil, file, nil, nil, "", sync.Mutex{}}
+	return &PrintRecorder{false, true, false, nil, file, nil, nil, "", sync.Mutex{}}
 }
 
 func PrintRecorder_Testing(test *testing.T) *PrintRecorder {
-	return &PrintRecorder{false, true, nil, nil, test, nil, "", sync.Mutex{}}
+	return &PrintRecorder{false, true, false, nil, nil, test, nil, "", sync.Mutex{}}
 }
 
 func PrintRecorder_HoldAll() *PrintRecorder {
-	return &PrintRecorder{true, false, nil, nil, nil, nil, "", sync.Mutex{}}
+	return &PrintRecorder{true, false, false, nil, nil, nil, nil, "", sync.Mutex{}}
 }
 
 func PrintRecorder_Nop() *PrintRecorder {
-	return &PrintRecorder{false, false, nil, nil, nil, nil, "", sync.Mutex{}}
+	return &PrintRecorder{false, false, false, nil, nil, nil, nil, "", sync.Mutex{}}
 }
 
 func (print *PrintRecorder) NewChildPrefixed(prefixLines string) *PrintRecorder {
-	return &PrintRecorder{false, false, nil, nil, nil, print, prefixLines, sync.Mutex{}}
+	return &PrintRecorder{false, false, false, nil, nil, nil, print, prefixLines, sync.Mutex{}}
+}
+
+func (print *PrintRecorder) DebugEnableConsole() {
+	print.debugConsole = true
 }
 
 var _newline = []byte{'\n'}
@@ -138,6 +143,10 @@ func (print *PrintRecorder) Println0() {
 	} else {
 		print.outputNewline()
 	}
+
+	if print.debugConsole {
+		_, _ = os.Stdout.Write([]byte{'\n'})
+	}
 }
 
 func (print *PrintRecorder) Println(str string) {
@@ -150,6 +159,10 @@ func (print *PrintRecorder) Println(str string) {
 	} else {
 		print.outputString(str)
 		print.outputNewline()
+	}
+
+	if print.debugConsole {
+		_, _ = os.Stdout.WriteString(str)
 	}
 }
 
@@ -164,6 +177,10 @@ func (print *PrintRecorder) PrintlnFromBuild(strBuild StringBuild2) {
 		print.outputString(strBuild.String())
 		print.outputNewline()
 	}
+
+	if print.debugConsole {
+		_, _ = os.Stdout.WriteString(strBuild.String())
+	}
 }
 
 func (print *PrintRecorder) Printf(format string, args ...any) {
@@ -176,6 +193,10 @@ func (print *PrintRecorder) Printf(format string, args ...any) {
 	} else {
 		print.outputString(str)
 	}
+
+	if print.debugConsole {
+		_, _ = os.Stdout.WriteString(str)
+	}
 }
 
 func (print *PrintRecorder) PrintBytes(bytes []byte) {
@@ -186,6 +207,10 @@ func (print *PrintRecorder) PrintBytes(bytes []byte) {
 		print.builder.WriteBytes(bytes)
 	} else {
 		print.outputBytes(bytes)
+	}
+
+	if print.debugConsole {
+		_, _ = os.Stdout.Write(bytes)
 	}
 }
 

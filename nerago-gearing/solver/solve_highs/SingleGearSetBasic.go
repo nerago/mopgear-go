@@ -48,7 +48,7 @@ func makeGearSetBasic(build *util_highs.LinearBuilder, model *SolverModel, itemO
 	setup := singleGearSetBasic{singleGearSetShared: singleGearSetShared{build: build}}
 
 	setup.prepareRatingSum()
-	setup.prepareActiveSetCombos(model.SetBonusTotalCount)
+	setup.prepareActiveSetCombos(model)
 	setup.prepareUniqueEquipped(itemOptions)
 	setup.prepareRequiredStats(&model.StatRequirements)
 

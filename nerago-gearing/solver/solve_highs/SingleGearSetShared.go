@@ -92,12 +92,16 @@ func (setup *singleGearSetShared) finishItemsCommon(itemOptions *items.SolvableO
 	}
 }
 
-func (setup *singleGearSetShared) prepareActiveSetCombos(activeSetCount int) {
+func (setup *singleGearSetShared) prepareActiveSetCombos(model *SolverModel) {
 	// constrain: exact item count in each active set
-	if activeSetCount > 0 {
-		setup.bonusData = make([]bonusInfo, activeSetCount)
-		for setIndex := range activeSetCount {
-			info := bonusInfo{setIndex: setBonusIndex(setIndex)}
+	if model.SetBonusTotalCount > 0 {
+		setup.bonusData = make([]bonusInfo, model.SetBonusTotalCount)
+		for setIndex := range model.SetBonusTotalCount {
+			info := bonusInfo{
+				setIndex:       setBonusIndex(setIndex),
+				setCountItems:  model.SetBonusCountItems[setIndex],
+				setMultipliers: model.SetBonusMultipliers[setIndex],
+			}
 			info.countSetItemsRow.Debug = "countSetItemsRow" + strconv.Itoa(setIndex)
 			setup.addSetItemCountVariable(&info)
 			setup.addSetItemsCountExactVariables(&info)

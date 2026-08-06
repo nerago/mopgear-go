@@ -101,6 +101,14 @@ func debugPrintColumnEntry(colEntry *columnInfo, columnIndex util_highs.ColumnIn
 		printer.Printf("%d %f %s %d\n", columnIndex, outputValue, "multi enable forge", colEntry.itemFull.ItemId())
 	case entry_multi_output:
 		printer.Printf("%d %f %s\n", columnIndex, outputValue, "multi output")
+	case entry_stat_total:
+		printer.Printf("%d %f %s %s\n", columnIndex, outputValue, "stat total", colEntry.statType.Name())
+	case entry_sim_value:
+		printer.Printf("%d %f %s %s\n", columnIndex, outputValue, "sim value", colEntry.simType.Name())
+	case entry_sim_stat_value:
+		printer.Printf("%d %f %s %s %s\n", columnIndex, outputValue, "sim stat value", colEntry.simType.Name(), colEntry.statType.Name())
+	case entry_sim_stat_value_option:
+		printer.Printf("%d %f %s %s %s %d %d\n", columnIndex, outputValue, "sim stat option", colEntry.simType.Name(), colEntry.statType.Name(), colEntry.statRange.Minimum, colEntry.statRange.Maximum)
 	default:
 		panic("unknown column")
 	}

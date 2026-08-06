@@ -366,7 +366,7 @@ func (job *MultiSetJob) prepareRatingMultipliers() {
 }
 
 func (param *multiSetParamInternal) prepareRatingMultiplier() {
-	var targetCombined float64 = 100000000.0
+	var targetCombined float64 = 10.0
 	baselineRating := param.baselineResult.ResultRating
 
 	targetForThis := targetCombined * param.RequestRatingPercent

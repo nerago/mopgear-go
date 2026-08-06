@@ -434,11 +434,14 @@ func ActiveSetCountsMeetExact_FullItem(setReq ActiveSetCountsRequired, items *Fu
 type ActiveSet interface {
 	Name() string
 	BonusForCount(uint8) float64
+	BonusByCount() SetBonusMultiplierByCount
 	ContainsItem(items.ItemId) bool
 	CountItems(*SolvableEquipMap) uint8
 	CountItemsFull(*FullEquipMap) uint8
 	Equals(ActiveSet) bool
 }
+
+type SetBonusMultiplierByCount [6]float64
 
 func (set *setInfoActive) Name() string {
 	return set.name
@@ -446,6 +449,10 @@ func (set *setInfoActive) Name() string {
 
 func (set *setInfoActive) BonusForCount(count uint8) float64 {
 	return set.bonuses[count]
+}
+
+func (set *setInfoActive) BonusByCount() SetBonusMultiplierByCount {
+	return set.bonuses
 }
 
 func (set *setInfoActive) ContainsItem(itemId items.ItemId) bool {

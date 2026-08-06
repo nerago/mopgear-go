@@ -121,13 +121,14 @@ type SolverModel struct {
 	SetBonusRequiredCounts []setBonusRequiredCounts
 	SetBonusTotalCount     int
 	SetBonusIndexForItem   func(id items.ItemId) (int, bool)
+	SetBonusCountItems     []func(*items.SolvableEquipMap) uint8
+	SetBonusMultipliers    []setBonusMultiplierByCount
 }
 
 func SolverModelBuild(model *gear_model.SpecModel, weightType int) *SolverModel {
 	solveModel := &SolverModel{
-		CheckSet:         model.CheckSet,
-		StatRequirements: toEnumMap(model.StatRequirements.AsMap()),
-
+		CheckSet:               model.CheckSet,
+		StatRequirements:       toEnumMap(model.StatRequirements.AsMap()),
 		SetBonusRequiredCounts: convertBonusRequired(model.SetBonusRequired, model.SetBonus.ActiveSets()),
 		SetBonusTotalCount:     len(model.SetBonus.ActiveSets()),
 		SetBonusIndexForItem:   model.SetBonus.ActiveSetIndexForItem,
@@ -161,6 +162,22 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType int) *SolverModel 
 		return model.CalcRatingSolveItemForGivenWeight(item, solveModel.WeightsGeneric)
 	}
 
+	solveModel.SetBonusCountItems = util_collection.MapSliceAsNew_NoPointer(
+		model.SetBonus.ActiveSets(),
+		func(set gear_model.ActiveSet) func(*items.SolvableEquipMap) uint8 {
+			return set.CountItems
+		},
+	)
+
+	solveModel.SetBonusMultipliers = util_collection.MapSliceAsNew_NoPointer(
+		model.SetBonus.ActiveSets(),
+		func(set gear_model.ActiveSet) setBonusMultiplierByCount {
+			return setBonusMultiplierByCount(set.BonusByCount())
+		},
+	)
+
+	//SetBonusCountItems:     nil,
+	//	SetBonusMultipliers:    nil,
 	return solveModel
 }
 

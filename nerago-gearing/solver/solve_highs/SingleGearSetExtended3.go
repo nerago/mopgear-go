@@ -60,7 +60,7 @@ func makeGearSetExtended3(build *util_highs.LinearBuilder, model *SolverModel, i
 
 	setup.prepareStats()
 	setup.prepareRequire(&model.StatRequirements)
-	setup.prepareActiveSetCombos(model.SetBonusTotalCount)
+	setup.prepareActiveSetCombos(model)
 	setup.prepareUniqueEquipped(itemOptions)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
