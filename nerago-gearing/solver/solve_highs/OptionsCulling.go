@@ -24,6 +24,7 @@ type OptionsCulling struct {
 	label       string
 	itemOptions items.SolvableOptionsMap
 	model       *gear_model.SpecModel
+	solveModel  *SolverModel
 	printer     *util.PrintRecorder
 
 	allItemIds []items.ItemId
@@ -41,6 +42,7 @@ func (process *OptionsCulling) Init(label string, targetResultCount int64, itemO
 	process.itemOptions = itemOptions
 	process.allItemIds = distinctItemIdsAll(&itemOptions)
 	process.model = model
+	process.solveModel = SolverModelBuild(model, 1)
 	process.printer = printer
 	process.didRemove = make(map[items.ItemId]bool)
 }
@@ -84,7 +86,7 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 	linearBuild.Solver = util_highs.Solver_MIP_Interior
 	linearBuild.NoOutput = true
 
-	setup := makeGearSetBasic(&linearBuild, process.model, &itemOptions, 1)
+	setup := makeGearSetBasic(&linearBuild, process.solveModel, &itemOptions, 1)
 
 	solutionFuture := linearBuild.RunHighsFuture(nil)
 	util_async.ChainCancel(cancel, solutionFuture)
@@ -101,8 +103,8 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 
 		if solution.HasSolution() {
 			result := setup.buildResultSet(solution)
-			validateNewSet(result, &itemOptions, process.model)
-			checkSetRatingIsObjective(solution, &result, process.model)
+			validateNewSet(result, &itemOptions, process.solveModel.CheckSet)
+			checkSetRatingIsObjective(solution, &result, process.solveModel.CalcRatingSet, c_single_basic_scaled_ratings)
 			resultChannel <- result
 			process.tasksCompleted.Add(1)
 		}

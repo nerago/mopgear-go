@@ -25,8 +25,8 @@ const c_gearExtended3ScoreHigh = 10
 // simStatOptionColumn[] -> simStatValueColumn
 // simStatValueColumn -> simValueColumn
 // simValueColumn * simRatioWeighting -> combinedRatingVar
-// combinedRatingVar * entry_permutation_active(column) -> entry_permutation_output_weighted(column)
-// entry_permutation_output_weighted(column) * permutation.weight -> mainOutputRow
+// combinedRatingVar * entry_combo_active(column) -> entry_combo_output_weighted(column)
+// entry_combo_output_weighted(column) * combo.multiply -> mainOutputRow
 // mainOutputRow -> mainOutputVar
 
 func SingleGearSetExtended3Main(itemOptions *items.SolvableOptionsMap, model *SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
@@ -45,7 +45,7 @@ func SingleGearSetExtended3Main(itemOptions *items.SolvableOptionsMap, model *So
 
 		if solution.HasSolution() {
 			itemSet := setup.buildResultSet(solution)
-			checkSetRatingIsObjective(solution, &itemSet, model, 1)
+			checkSetRatingIsObjective(solution, &itemSet, model.CalcRatingSet, 1)
 			return itemSet, true
 		} else {
 			return items.SolvableItemSet{}, false

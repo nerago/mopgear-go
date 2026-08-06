@@ -261,7 +261,7 @@ func debugPrintAll(solution *util_highs.Solution2, job *SolverHighsMultiProcess,
 	}
 
 	printer.Println("SOLUTION STATUS = " + solution.Status().String())
-	printer.Printf("OBJECTIVE VALUE %f \n", solution.Objective()*c_scaled_ratings)
+	printer.Printf("OBJECTIVE VALUE %f \n", solution.Objective())
 
 columnLoop:
 	for columnIndex, outputValue := range solution.ColValuesSeq() {

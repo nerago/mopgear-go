@@ -312,9 +312,7 @@ func CopyAndAppend[T any](curr []T, item T) []T {
 		list[len(curr)] = item
 		return list
 	} else {
-		list := make([]T, 1)
-		list[0] = item
-		return list
+		return []T{item}
 	}
 }
 

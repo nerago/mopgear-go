@@ -33,7 +33,7 @@ const (
 	entry_set_total_count       entryType = iota
 	entry_set_exact_count       entryType = iota
 	entry_sum_rating            entryType = iota
-	entry_permutation_active    entryType = iota
+	entry_combo_active          entryType = iota
 	entry_combo_output_weighted entryType = iota
 	entry_main_output           entryType = iota
 	entry_multi_enable_forge    entryType = iota
@@ -54,11 +54,11 @@ type columnInfo struct {
 	item     *items.SolvableItem
 	itemFull *items.FullItem
 
-	setIndex  setBonusIndex
-	itemCount int
-	combo     *bonusCombo
-	weight    float64
-	statRange weight_types.StatRange
+	setIndex   setBonusIndex
+	itemCount  int
+	combo      *bonusCombo
+	multiplier float64
+	statRange  weight_types.StatRange
 }
 
 func (colEntry columnInfo) ItemId() items.ItemId {
@@ -76,7 +76,6 @@ type setBonusRequiredCounts []uint8
 type setBonusMultiplierByCount [6]float64
 
 type bonusInfo struct {
-	//activeSet gear_model.ActiveSet
 	setCountItems  func(*items.SolvableEquipMap) uint8
 	setMultipliers setBonusMultiplierByCount
 	setIndex       setBonusIndex
@@ -87,7 +86,7 @@ type bonusInfo struct {
 }
 
 type bonusWithCount struct {
-	setInfo bonusInfo
+	setInfo *bonusInfo
 	count   int
 }
 
@@ -126,7 +125,7 @@ type SolverModel struct {
 	SetBonusIndexForItem   func(id items.ItemId) (int, bool)
 }
 
-func SolverModelBuild(model gear_model.SpecModel, weightType int) *SolverModel {
+func SolverModelBuild(model *gear_model.SpecModel, weightType int) *SolverModel {
 	solveModel := &SolverModel{
 		CheckSet:         model.CheckSet,
 		StatRequirements: toEnumMap(model.StatRequirements.AsMap()),

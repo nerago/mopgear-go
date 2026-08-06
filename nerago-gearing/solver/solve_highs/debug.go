@@ -10,7 +10,7 @@ func debugPrint(solution *util_highs.Solution2, build *util_highs.LinearBuilder,
 		return
 	}
 
-	printer.Printf("OBJECTIVE VALUE = %f\n", solution.Objective()*c_scaled_ratings)
+	printer.Printf("OBJECTIVE VALUE = %f\n", solution.Objective())
 
 	activeBonus := ""
 	activeBonusWeight := 0.0
@@ -54,22 +54,22 @@ func (colEntry columnInfo) DebugText() string {
 		colEntry.item.Total().AppendString(&strBuild)
 	case entry_set_total_count:
 		strBuild.WriteString("set total count ")
-		strBuild.WriteString(colEntry.set.Name())
+		strBuild.WriteInt32(int32(colEntry.setIndex))
 	case entry_set_exact_count:
 		strBuild.WriteString("set exact count flag ")
-		strBuild.WriteString(colEntry.set.Name())
+		strBuild.WriteInt32(int32(colEntry.setIndex))
 		strBuild.WriteRune(' ')
 		strBuild.WriteInt64(int64(colEntry.itemCount))
 	case entry_sum_rating:
 		strBuild.WriteString("initial item rating sum")
-	case entry_permutation_active:
-		strBuild.WriteString("permutation active ")
+	case entry_combo_active:
+		strBuild.WriteString("combo active ")
 		strBuild.WriteString(colEntry.combo.debugStr())
 	case entry_combo_output_weighted:
-		strBuild.WriteString("permutation weighted output ")
+		strBuild.WriteString("combo weighted output ")
 		strBuild.WriteString(colEntry.combo.debugStr())
 		strBuild.WriteRune(' ')
-		strBuild.WriteFloat64(colEntry.weight, 2)
+		strBuild.WriteFloat64(colEntry.multiplier, 2)
 	case entry_main_output:
 		strBuild.WriteString("final value ")
 	case entry_multi_enable_forge:
@@ -90,20 +90,20 @@ func debugPrintColumnEntry(colEntry *columnInfo, columnIndex util_highs.ColumnIn
 	case entry_item:
 		printer.Printf("%d %f %s %s %d\n", columnIndex, outputValue, "item", colEntry.itemSlot.Name(), colEntry.item.ItemId())
 	case entry_set_total_count:
-		printer.Printf("%d %f %s %s\n", columnIndex, outputValue, "set total count", colEntry.set.Name())
+		printer.Printf("%d %f %s %d\n", columnIndex, outputValue, "set total count", colEntry.setIndex)
 	case entry_set_exact_count:
-		printer.Printf("%d %f %s %s %d\n", columnIndex, outputValue, "set exact count flag", colEntry.set.Name(), colEntry.itemCount)
+		printer.Printf("%d %f %s %d %d\n", columnIndex, outputValue, "set exact count flag", colEntry.setIndex, colEntry.itemCount)
 	case entry_sum_rating:
 		printer.Printf("%d %f %s\n", columnIndex, outputValue, "initial item rating sum")
-	case entry_permutation_active:
-		printer.Printf("%d %f %s %s\n", columnIndex, outputValue, "permutation active", colEntry.combo.debugStr())
+	case entry_combo_active:
+		printer.Printf("%d %f %s %s\n", columnIndex, outputValue, "combo active", colEntry.combo.debugStr())
 		if util.FloatEqualsOne(outputValue) && activeBonus != nil {
 			*activeBonus += colEntry.combo.debugStr()
 		}
 	case entry_combo_output_weighted:
-		printer.Printf("%d %f %s %s %f\n", columnIndex, outputValue, "permutation weighted output", colEntry.combo.debugStr(), colEntry.weight)
+		printer.Printf("%d %f %s %s %f\n", columnIndex, outputValue, "combo weighted output", colEntry.combo.debugStr(), colEntry.multiplier)
 		if !util.FloatEqualsZero(outputValue) && activeBonusWeight != nil {
-			*activeBonusWeight += colEntry.weight
+			*activeBonusWeight += colEntry.multiplier
 		}
 	case entry_main_output:
 		printer.Printf("%d %f %s\n", columnIndex, outputValue, "final value")
