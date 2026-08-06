@@ -37,7 +37,8 @@ func ActiveSet_Named(name string) ActiveSet {
 	for _, common := range g_setData {
 		for _, variant := range common.variants {
 			if variant.name == name {
-				return activeSetMake(common, variant)
+				activeSet := activeSetMake(common, variant)
+				return &activeSet
 			}
 		}
 	}
@@ -140,7 +141,7 @@ func (sets *SetBonus) initMap() {
 }
 
 func (sets *SetBonus) Equals(other *SetBonus) bool {
-	return slices.EqualFunc(sets.activeSets, other.activeSets, setInfoActive.EqualsTyped)
+	return util_collection.EqualFunc_Pointer(sets.activeSets, other.activeSets, (*setInfoActive).EqualsTyped)
 }
 
 // ########################### CalcBonus ###########################
@@ -332,12 +333,12 @@ func activeSetMake(common setInfoCommon, variant setInfoVariant) setInfoActive {
 	}
 }
 
-func (set setInfoActive) EqualsTyped(other setInfoActive) bool {
+func (set *setInfoActive) EqualsTyped(other *setInfoActive) bool {
 	return set.bonuses == other.bonuses && slices.Equal(set.items, other.items) && set.name == other.name
 }
 
-func (set setInfoActive) Equals(other ActiveSet) bool {
-	if otherSet, isType := other.(setInfoActive); isType {
+func (set *setInfoActive) Equals(other ActiveSet) bool {
+	if otherSet, isType := other.(*setInfoActive); isType {
 		return set.EqualsTyped(otherSet)
 	} else {
 		return false
@@ -439,33 +440,33 @@ type ActiveSet interface {
 	Equals(ActiveSet) bool
 }
 
-func (set setInfoActive) Name() string {
+func (set *setInfoActive) Name() string {
 	return set.name
 }
 
-func (set setInfoActive) BonusForCount(count uint8) float64 {
+func (set *setInfoActive) BonusForCount(count uint8) float64 {
 	return set.bonuses[count]
 }
 
-func (set setInfoActive) ContainsItem(itemId items.ItemId) bool {
+func (set *setInfoActive) ContainsItem(itemId items.ItemId) bool {
 	return slices.Contains(set.items, uint32(itemId))
 }
 
-func (set setInfoActive) containsItem(item *SolvableItem) bool {
+func (set *setInfoActive) containsItem(item *SolvableItem) bool {
 	if item != nil {
 		return slices.Contains(set.items, uint32(item.ItemId()))
 	}
 	return false
 }
 
-func (set setInfoActive) containsItemFull(item *FullItem) bool {
+func (set *setInfoActive) containsItemFull(item *FullItem) bool {
 	if item != nil {
 		return slices.Contains(set.items, uint32(item.ItemId()))
 	}
 	return false
 }
 
-func (set setInfoActive) CountItems(equip *SolvableEquipMap) uint8 {
+func (set *setInfoActive) CountItems(equip *SolvableEquipMap) uint8 {
 	var count uint8
 	if set.containsItem(equip[Equip_Head]) {
 		count++
@@ -485,7 +486,7 @@ func (set setInfoActive) CountItems(equip *SolvableEquipMap) uint8 {
 	return count
 }
 
-func (set setInfoActive) CountItemsFull(equip *FullEquipMap) uint8 {
+func (set *setInfoActive) CountItemsFull(equip *FullEquipMap) uint8 {
 	var count uint8
 	if set.containsItemFull(equip[Equip_Head]) {
 		count++

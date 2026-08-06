@@ -13,6 +13,8 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
+const c_gearExtended2ScoreHigh = 10
+
 // TODO set multipliers per sim would be better
 
 // CALCULATION:
@@ -64,9 +66,9 @@ func makeGearSetExtended2(build *util_highs.LinearBuilder, model *SolverModel, i
 	setup.finishStats(&model.StatRequirements)
 
 	setup.calcSimValues(model.Weights2)
-	setup.calcCombinedSimRating()
+	setup.calcCombinedSimRating(model.Weights2)
 	setup.addMainOutputVariable(scaleOutputRating)
-	setup.multiplyRatingsByActiveSetCombo(setup.combinedRatingVar)
+	setup.multiplyRatingsByActiveSetCombo(setup.combinedRatingVar, c_gearExtended2ScoreHigh)
 	setup.addSetNeededCounts(model.SetBonusRequiredCounts)
 
 	return &setup
@@ -169,12 +171,12 @@ func (setup *singleGearSetExtended2) calcSimValue(simType stats.SimType, nestedW
 	}
 
 	offset := -simEntry.RangingOffset
-	valueScale := -1.0 / (simEntry.RangingScale * simEntry.RatioScale)
+	valueScale := -1.0 / simEntry.RangingScale
 	simValueFromStatRow.Add(simValueColumn.columnIndex, valueScale)
 	simValueFromStatRow.Build(setup.build, offset, offset)
 }
 
-func (setup *singleGearSetExtended2) calcCombinedSimRating() {
+func (setup *singleGearSetExtended2) calcCombinedSimRating(weight *weight_types.Weight2Extended) {
 	// weighted sum of each sim value
 	combinedRatingColumn := columnInfo{entryType: entry_sum_rating}
 	combinedRatingColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), &combinedRatingColumn)
@@ -183,8 +185,9 @@ func (setup *singleGearSetExtended2) calcCombinedSimRating() {
 
 	// add up the sim values, multiplying corresponding ratio
 	combinedRatingRow := util_highs.ConstraintRow{}
-	for _, simValueColumn := range setup.simValueTotalColumns {
-		combinedRatingRow.Add(simValueColumn.columnIndex, 1)
+	for simType, simValueColumn := range setup.simValueTotalColumns {
+		simEntry := weight.SimPriority.GetOrPanic(simType)
+		combinedRatingRow.Add(simValueColumn.columnIndex, simEntry.RatioScale)
 	}
 	combinedRatingRow.Add(combinedRatingColumn.columnIndex, -1)
 	combinedRatingRow.Build(setup.build, 0, 0)

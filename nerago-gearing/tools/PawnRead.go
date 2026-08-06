@@ -4,6 +4,8 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"paladin_gearing_go/gear_model"
+	"paladin_gearing_go/gear_model/ratings"
 	"paladin_gearing_go/gear_model/ratings_old"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/weightfind/weight_types"
@@ -11,7 +13,16 @@ import (
 	"strings"
 )
 
-func StatRatingsWeights_ReadFile(filename string, includeHit, includeExpertise, includeSpirit bool) *ratings_old.StatRatingsWeightsOld {
+func StatRatingsWeights_ReadFile(filename string, includeHit, includeExpertise, includeSpirit bool) gear_model.StatWeights {
+	return StatRatingsWeightsExtended_ReadFile(filename)
+}
+
+func StatRatingsWeightsOld_ReadFile(filename string, includeHit, includeExpertise, includeSpirit bool) *ratings_old.StatRatingsWeightsOld {
+	statRatings := pawnWeightToBlock(filename)
+	return ratings_old.StatRatingsWeights_FromBlock(statRatings, includeExpertise, includeHit, includeSpirit)
+}
+
+func pawnWeightToBlock(filename string) stats.StatBlockFloat {
 	blockFloat, _, found := PawnWeightReadFile(filename)
 	if !found {
 		panic("missing weights file " + filename)
@@ -19,8 +30,21 @@ func StatRatingsWeights_ReadFile(filename string, includeHit, includeExpertise, 
 
 	statRatings := stats.StatBlockFloat{}
 	blockFloat.MultiplyScalar(weight_types.C_weightMultiplierForRatings, &statRatings)
+	return statRatings
+}
 
-	return ratings_old.StatRatingsWeights_FromBlock(statRatings, includeExpertise, includeHit, includeSpirit)
+func StatRatingsWeightsExtended_ReadFile(filename string) *ratings.StatRatingsWeightsExtended {
+	weight1 := weight_types.Weight1Basic_FromBlock(pawnWeightToBlock(filename))
+	weight2, ok2 := ReadWeight2File(filename + ".v2")
+
+	if !ok2 || weight1.IsEmpty() || weight2.IsEmpty() {
+		panic("missing weight")
+	}
+
+	return &ratings.StatRatingsWeightsExtended{
+		Weight1: weight1,
+		Weight2: *weight2,
+	}
 }
 
 func PawnWeightReadFile(filename string) (stats.StatBlockFloat, string, bool) {

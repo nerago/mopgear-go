@@ -13,8 +13,7 @@ import (
 )
 
 func (job *MultiSetJob) prepareInitial() {
-	// TODO load extended weights
-	//job.loadExtendedWeights()
+	job.loadExtendedWeights()
 
 	job.printer.Println("LOADING BAGS")
 	job.bagsGear = loaders.BagsFileReader_Read()
@@ -344,6 +343,7 @@ func (param *multiSetParamInternal) runBaseline() {
 	param.baselineResult = solver.Solver(solver.SolveInput{
 		ItemOptions: &param.itemOptions,
 		Model:       &param.Model,
+		WeightType:  param.job.weightType,
 		Printer:     param.job.printer})
 
 	if !param.baselineResult.Success {
@@ -410,5 +410,5 @@ func (job *MultiSetJob) loadExtendedWeights() {
 }
 
 func (param *multiSetParamInternal) loadExtendedWeights() {
-	//tools.FormatWeight1String()
+	//tools.ReadWeight2File()
 }

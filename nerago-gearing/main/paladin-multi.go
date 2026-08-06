@@ -147,10 +147,14 @@ var legendCloaks = []items.ItemId{legendTankCloak, legendMeleeCloak}
 func PaladinMultiRun() {
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "multi-set")
 
-	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_Largish)
-	job := multi.MultiSetJob_Create(printer, simulate.RunSize_Common)
-	//job := multi.MultiSetJob_Create(printer, simulate.RunSize_QuickDirty)
-	job.SetWriteBestToGearFiles()
+	//simSize := simulate.RunSize_Largish
+	simSize := simulate.RunSize_Common
+	//simSize := simulate.RunSize_QuickDirty
+
+	job := multi.MultiSetJob_Create(printer, simSize)
+	job.SetWeightType(2)
+	//job.SetReforingCommonOnly() // TODO
+	//job.SetWriteBestToGearFiles()
 
 	var generalUpgrade items.UpgradeLevel = 0
 	var forceUpgrade items.UpgradeLevel = 0
@@ -398,14 +402,14 @@ func PaladinMultiRun() {
 	//	trinketSkeerBloodCelestial, // trinketSkeerBloodCelestial - str/crit
 	//	trinketFusionCoreCelestial, // str/crit
 	//)
-	job.AddAlternateUpgradeChoices(trinketSkeerBloodCelestial)
+	//job.AddAlternateUpgradeChoices(trinketSkeerBloodCelestial)
 
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()
 
 	//job.RunNoPermutations_AllCommonAlternates(true, true)
-	//job.RunNoPermutations_BestOnly(false, true)
-	job.RunForSolutionsPerPermute(12, true)
+	job.RunNoPermutations_BestOnly(false, false)
+	//job.RunForSolutionsPerPermute(12, true)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)

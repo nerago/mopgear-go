@@ -29,12 +29,12 @@ type ISingleGearSet interface {
 type entryType int8
 
 const (
-	entry_item                  entryType = iota
-	entry_set_total_count       entryType = iota
-	entry_set_exact_count       entryType = iota
-	entry_sum_rating            entryType = iota
-	entry_combo_active          entryType = iota
-	entry_combo_output_weighted entryType = iota
+	entry_item            entryType = iota
+	entry_set_total_count entryType = iota
+	entry_set_exact_count entryType = iota
+	entry_sum_rating      entryType = iota
+	entry_combo_active    entryType = iota
+	//entry_combo_output_weighted entryType = iota
 	entry_main_output           entryType = iota
 	entry_multi_enable_forge    entryType = iota
 	entry_multi_output          entryType = iota
@@ -91,15 +91,13 @@ type bonusWithCount struct {
 }
 
 type bonusCombo struct {
-	content []bonusWithCount
-
-	outputVar     *columnInfo
+	condition     []bonusWithCount
 	activatingVar *columnInfo
 }
 
 func (combo bonusCombo) debugStr() string {
 	build := util.StringBuild2{}
-	for _, set := range combo.content {
+	for _, set := range combo.condition {
 		build.WriteInt32(int32(set.setInfo.setIndex))
 		build.WriteRune('=')
 		build.WriteInt64(int64(set.count))
@@ -146,7 +144,13 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType int) *SolverModel 
 		case 3:
 			solveModel.Weights3 = &weightExt.Weight3
 			solveModel.WeightsGeneric = &weightExt.Weight3
+		default:
+			panic("invalid weight number")
 		}
+	}
+
+	if solveModel.WeightsGeneric.IsEmpty() {
+		panic("requested weight missing")
 	}
 
 	solveModel.CalcRatingSet = func(itemSet *items.SolvableItemSet) float64 {

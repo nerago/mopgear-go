@@ -65,11 +65,6 @@ func (colEntry columnInfo) DebugText() string {
 	case entry_combo_active:
 		strBuild.WriteString("combo active ")
 		strBuild.WriteString(colEntry.combo.debugStr())
-	case entry_combo_output_weighted:
-		strBuild.WriteString("combo weighted output ")
-		strBuild.WriteString(colEntry.combo.debugStr())
-		strBuild.WriteRune(' ')
-		strBuild.WriteFloat64(colEntry.multiplier, 2)
 	case entry_main_output:
 		strBuild.WriteString("final value ")
 	case entry_multi_enable_forge:
@@ -99,11 +94,6 @@ func debugPrintColumnEntry(colEntry *columnInfo, columnIndex util_highs.ColumnIn
 		printer.Printf("%d %f %s %s\n", columnIndex, outputValue, "combo active", colEntry.combo.debugStr())
 		if util.FloatEqualsOne(outputValue) && activeBonus != nil {
 			*activeBonus += colEntry.combo.debugStr()
-		}
-	case entry_combo_output_weighted:
-		printer.Printf("%d %f %s %s %f\n", columnIndex, outputValue, "combo weighted output", colEntry.combo.debugStr(), colEntry.multiplier)
-		if !util.FloatEqualsZero(outputValue) && activeBonusWeight != nil {
-			*activeBonusWeight += colEntry.multiplier
 		}
 	case entry_main_output:
 		printer.Printf("%d %f %s\n", columnIndex, outputValue, "final value")

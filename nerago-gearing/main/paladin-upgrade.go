@@ -188,6 +188,7 @@ func findUpgrades_Paladin() {
 				IncludeHeroic:      true,
 				IgnoredItems:       ignoredItems,
 				TargetUpgradeLevel: 2,
+				WeightType:         1,
 			},
 			SimSizeBaseline:              simSizeBaseline,
 			SimSizeItemInitial:           simSizePerItem,

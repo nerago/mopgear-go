@@ -14,10 +14,9 @@ import (
 
 const (
 	c_single_basic_scaled_ratings = 10000000.0 // try to make highs happier
-	// example rating      178237915
-	//                     187513497
-	c_single_basic_ratings_low_range  = 10000000.0 / c_single_basic_scaled_ratings
-	c_single_basic_ratings_high_range = 1000000000000.0 / c_single_basic_scaled_ratings
+	// example rating                           178237915
+	//                                          187513497
+	c_single_basic_ratings_high_range = 10000000000.0 / c_single_basic_scaled_ratings
 )
 
 func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, model *SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
@@ -61,7 +60,7 @@ func makeGearSetBasic(build *util_highs.LinearBuilder, model *SolverModel, itemO
 	setup.finishBaseRating()
 
 	setup.addMainOutputVariable(scaleOutputRating)
-	setup.multiplyRatingsByActiveSetCombo(setup.baseRatingSumVar)
+	setup.multiplyRatingsByActiveSetCombo(setup.baseRatingSumVar, c_single_basic_ratings_high_range)
 	setup.addSetNeededCounts(model.SetBonusRequiredCounts)
 
 	return &setup

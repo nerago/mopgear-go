@@ -22,9 +22,9 @@ func prepareUpgradeInfo(extraItems []loaders.ItemFoundRef, upgradeLevel items.Up
 	return extraTasks
 }
 
-func findBaseLine(printer *util.PrintRecorder, baseItems *items.FullOptionsMap, model *gear_model.SpecModel) (float64, *items.FullItemSet) {
+func findBaseLine(printer *util.PrintRecorder, baseItems *items.FullOptionsMap, model *gear_model.SpecModel, input *FindUpgrades_SimInputs) (float64, *items.FullItemSet) {
 	printer.Println("FINDING BASELINE")
-	baseRating, baseSet := findBase(baseItems, model, printer)
+	baseRating, baseSet := findBase(baseItems, model, input, printer)
 	tools.ReportSetFewerParams(model, baseSet, printer)
 	return baseRating, baseSet
 }
@@ -102,10 +102,11 @@ func canPerformSpecifiedUpgrade(input *FindUpgrades_BasicInputs, extra *items.Fu
 	return items.CanUpgrade_Yes
 }
 
-func findBase(baseItems *items.FullOptionsMap, model *gear_model.SpecModel, printer *util.PrintRecorder) (float64, *items.FullItemSet) {
+func findBase(baseItems *items.FullOptionsMap, model *gear_model.SpecModel, input *FindUpgrades_SimInputs, printer *util.PrintRecorder) (float64, *items.FullItemSet) {
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions: baseItems,
 		Model:       model,
+		WeightType:  input.WeightType,
 		Printer:     printer,
 	})
 

@@ -14,21 +14,24 @@ import (
 type SolveInput struct {
 	ItemOptions *items.FullOptionsMap
 	Model       *gear_model.SpecModel
+	WeightType  int
 	Printer     *util.PrintRecorder
 }
 
 func Solver(input SolveInput) SolveOutput {
 	printer, solveOptions := prepareSolve(input)
 
-	futureSolvedResult := solve_highs.SingleGearSetMain(&solveOptions, input.Model, printer)
+	solveModel := solve_highs.SolverModelBuild(input.Model, input.WeightType)
+	futureSolvedResult := solve_highs.SingleGearSetMain(&solveOptions, solveModel, printer)
 	solvedResult := futureSolvedResult.WaitForResultAsOptional()
 
 	return finaliseSolve(solvedResult, solveOptions, input, printer)
 }
 
-func Solver_Lite(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, printer *util.PrintRecorder) items.FullItemSet {
+func Solver_Lite(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, weightType int, printer *util.PrintRecorder) items.FullItemSet {
 	solveOptions := items.SolvableOptionsMap_of(itemOptions)
-	futureSolvedSet := solve_highs.SingleGearSetMain(&solveOptions, model, printer)
+	solveModel := solve_highs.SolverModelBuild(model, 1)
+	futureSolvedSet := solve_highs.SingleGearSetMain(&solveOptions, solveModel, printer)
 	solvedSet := futureSolvedSet.WaitForResultAsOptional()
 	fullSet := items.FullItemSet_FromSolved(solvedSet.GetOrPanic(), itemOptions)
 	model.ValidateSet(&fullSet)

@@ -2,7 +2,6 @@ package solve_highs
 
 import (
 	"math/rand/v2"
-	gear_model "paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
@@ -23,7 +22,6 @@ const (
 type OptionsCulling struct {
 	label       string
 	itemOptions items.SolvableOptionsMap
-	model       *gear_model.SpecModel
 	solveModel  *SolverModel
 	printer     *util.PrintRecorder
 
@@ -36,13 +34,12 @@ type OptionsCulling struct {
 	didRemove     map[items.ItemId]bool
 }
 
-func (process *OptionsCulling) Init(label string, targetResultCount int64, itemOptions items.SolvableOptionsMap, model *gear_model.SpecModel, printer *util.PrintRecorder) {
+func (process *OptionsCulling) Init(label string, targetResultCount int64, itemOptions items.SolvableOptionsMap, model *SolverModel, printer *util.PrintRecorder) {
 	process.label = label
 	process.targetResultCount = targetResultCount
 	process.itemOptions = itemOptions
 	process.allItemIds = distinctItemIdsAll(&itemOptions)
-	process.model = model
-	process.solveModel = SolverModelBuild(model, 1)
+	process.solveModel = model
 	process.printer = printer
 	process.didRemove = make(map[items.ItemId]bool)
 }

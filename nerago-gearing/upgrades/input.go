@@ -13,6 +13,7 @@ type FindUpgrades_BasicInputs struct {
 	IncludeNormal       bool
 	IncludeHeroic       bool
 	PositiveResultsOnly bool
+	WeightType          int
 	TargetUpgradeLevel  items.UpgradeLevel
 	IgnoredItems        []items.ItemId
 }

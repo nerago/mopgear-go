@@ -72,7 +72,7 @@ func makeGearSetExtended3(build *util_highs.LinearBuilder, model *SolverModel, i
 	setup.calcSimValues(model.Weights3)
 	setup.calcCombinedSimRating(model.Weights3)
 	setup.addMainOutputVariable(scaleOutputRating)
-	setup.multiplyRatingsByActiveSetCombo(setup.combinedRatingVar)
+	setup.multiplyRatingsByActiveSetCombo(setup.combinedRatingVar, c_gearExtended3ScoreHigh)
 	setup.addSetNeededCounts(model.SetBonusRequiredCounts)
 
 	return &setup
@@ -182,7 +182,7 @@ func (setup *singleGearSetExtended3) calcValueForSimAndStatType(simType stats.Si
 		// then copy a score to contributeScoreSimStat
 		optionValueCol := setup.makeSimStatOptionColumn(simType, statType, entry.StatRange)
 		setup.calcValueForEntry(statTotalColumn, entry, optionValueCol)
-		setup.build.ConstraintIfBoolCopy(rangeCondition, optionValueCol.columnIndex, 1, chosenSimStatContribution.columnIndex, c_gearExtended3ScoreHigh)
+		setup.build.ConstraintCopyIfBool(rangeCondition, optionValueCol.columnIndex, 1, chosenSimStatContribution.columnIndex, c_gearExtended3ScoreHigh)
 	}
 	checkSingleRangeActive.Build(setup.build, 1, 1)
 

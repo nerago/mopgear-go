@@ -171,7 +171,7 @@ func (job *MultiSetJob) highProcessSetup_addOptions(highProcess *solve_highs.Sol
 		highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
 			Label:          param.Label,
 			ItemOptions:    itemOptionsEach[paramIndex],
-			Gear_model:     &param.Model,
+			SolverModel:    *solve_highs.SolverModelBuild(&param.Model, job.weightType),
 			RatingMultiply: param.ratingMultiply,
 		})
 	}

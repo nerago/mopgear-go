@@ -297,6 +297,18 @@ func ContainsFunc_Pointer[T any](slice []T, predicate func(*T) bool) bool {
 	return false
 }
 
+func EqualFunc_Pointer[T any](one []T, two []T, equal func(a, b *T) bool) bool {
+	if len(one) != len(two) {
+		return false
+	}
+	for i := range one {
+		if !equal(&one[i], &two[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func RepeatValue[T any](value T, count int) []T {
 	result := make([]T, count)
 	for i := range count {

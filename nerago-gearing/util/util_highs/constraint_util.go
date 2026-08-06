@@ -8,7 +8,14 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
-func (build *LinearBuilder) ConstraintIfBoolCopyValueElseZero(boolSwitchVar, sourceVar, targetVar ColumnIndex, rangeLow, rangeHigh float64) {
+func (build *LinearBuilder) ConstraintCopy(sourceVar ColumnIndex, sourceCoefficient float64, targetVar ColumnIndex, debug string) {
+	rowCopy := ConstraintRow{Debug: debug}
+	rowCopy.Add(sourceVar, sourceCoefficient)
+	rowCopy.Add(targetVar, -1)
+	rowCopy.Build(build, 0, 0)
+}
+
+func (build *LinearBuilder) ConstraintCopyIfBoolElseZero(boolSwitchVar, sourceVar, targetVar ColumnIndex, rangeLow, rangeHigh float64) {
 	// based on https://medium.com/data-science/a-comprehensive-guide-to-modeling-techniques-in-mixed-integer-linear-programming-3e96cc1bc03d
 
 	valueHigh := ConstraintRow{Debug: "ContraintIfBoolCopyValueElseZero_ValueHigh"}
@@ -34,7 +41,7 @@ func (build *LinearBuilder) ConstraintIfBoolCopyValueElseZero(boolSwitchVar, sou
 	zeroLow.Build(build, InfNeg(), 0)
 }
 
-func (build *LinearBuilder) ConstraintIfBoolCopy(boolSwitchVar, sourceVar ColumnIndex, sourceCoefficient float64, targetVar ColumnIndex, rangeHigh float64) {
+func (build *LinearBuilder) ConstraintCopyIfBool(boolSwitchVar, sourceVar ColumnIndex, sourceCoefficient float64, targetVar ColumnIndex, rangeHigh float64) {
 	valueHigh := ConstraintRow{Debug: "ContraintIfBoolCopy_ValueHigh"}
 	valueHigh.Add(targetVar, -1)
 	valueHigh.Add(sourceVar, sourceCoefficient)

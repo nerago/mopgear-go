@@ -16,7 +16,8 @@ func (param *multiSetParamInternal) runCullingProcess(targetNum int64, waitGroup
 	waitGroup.Go(func() {
 		highCull := solve_highs.OptionsCulling{}
 		solveOptions := items.SolvableOptionsMap_of(&param.itemOptions)
-		highCull.Init(param.Label, targetNum, solveOptions, &param.Model, param.job.printer)
+		solverModel := solve_highs.SolverModelBuild(&param.Model, param.job.weightType)
+		highCull.Init(param.Label, targetNum, solveOptions, solverModel, param.job.printer)
 
 		resultChannel := highCull.Run(cancel)
 

@@ -15,8 +15,8 @@ type singleGearSetShared struct {
 
 	slotsOneEachRow [items.ITEM_SLOT_COUNT]util_highs.ConstraintRow // 1 or 0 where the slot matches the item, so we can tell solver only one item per slot
 
-	mainOutputRow util_highs.ConstraintRow // compute final output from set based alternatives
-	mainOutputVar *columnInfo              // output variable, to be used directly or scaled against other models
+	//mainOutputRow util_highs.ConstraintRow // compute final output from set based alternatives
+	mainOutputVar *columnInfo // output variable, to be used directly or scaled against other models
 
 	uniqueEquipRowsById map[items.ItemId]*util_highs.ConstraintRow // lookup by id, may have multiple mappings for an item so need pointers
 	uniqueEquipRowsAll  []*util_highs.ConstraintRow                // definitive copy of each unique equip row constraint
@@ -106,19 +106,19 @@ func (setup *singleGearSetShared) prepareActiveSetCombos(activeSetCount int) {
 	}
 }
 
-func (setup *singleGearSetShared) multiplyRatingsByActiveSetCombo(combinedRatingVar *columnInfo) {
+func (setup *singleGearSetShared) multiplyRatingsByActiveSetCombo(combinedRatingVar *columnInfo, rangeHigh float64) {
 	if len(setup.bonusData) > 0 {
 		setup.makeSetCombos()
-		for permIndex := range setup.bonusCombos {
-			setup.buildSetMultipliedOutput(&setup.bonusCombos[permIndex], combinedRatingVar)
+
+		checkSingleCombo := util_highs.ConstraintRow{}
+		for i := range setup.bonusCombos {
+			comboActiveVar := setup.buildSetMultipliedOutput(&setup.bonusCombos[i], combinedRatingVar, rangeHigh)
+			checkSingleCombo.Add(comboActiveVar.columnIndex, 1)
 		}
+		checkSingleCombo.Build(setup.build, 1, 1)
 	} else {
 		setup.buildSimpleNoSetsOutput(combinedRatingVar)
 	}
-
-	// constrain: whichever alternate set output into final
-	setup.mainOutputRow.Debug = "mainOutputRow"
-	setup.mainOutputRow.Build(setup.build, 0, 0)
 }
 
 func (setup *singleGearSetShared) makeSetCombos() {
@@ -127,7 +127,7 @@ func (setup *singleGearSetShared) makeSetCombos() {
 
 func (setup *singleGearSetShared) makeSetCombosRecur(setData []bonusInfo, built []bonusWithCount, builtComboItemCount int) {
 	if len(setData) == 0 || builtComboItemCount == c_maxSetItems {
-		setup.bonusCombos = append(setup.bonusCombos, bonusCombo{content: built})
+		setup.bonusCombos = append(setup.bonusCombos, bonusCombo{condition: built})
 	} else {
 		addSet := &setData[0]
 		for itemCount := 0; itemCount <= c_maxSetItems-builtComboItemCount; itemCount++ {
@@ -140,34 +140,30 @@ func (setup *singleGearSetShared) makeSetCombosRecur(setData []bonusInfo, built 
 
 func (setup *singleGearSetShared) buildSimpleNoSetsOutput(combinedRatingVar *columnInfo) {
 	// just copy initial rating sum into final if no sets
-	setup.mainOutputRow.Add(combinedRatingVar.columnIndex, 1)
+	setup.build.ConstraintCopy(
+		combinedRatingVar.columnIndex, 1,
+		setup.mainOutputVar.columnIndex,
+		"nullComboCopy",
+	)
 }
 
-func (setup *singleGearSetShared) buildSetMultipliedOutput(combo *bonusCombo, combinedRatingVar *columnInfo) {
+func (setup *singleGearSetShared) buildSetMultipliedOutput(combo *bonusCombo, combinedRatingVar *columnInfo, rangeHigh float64) *columnInfo {
 	activatingVar := setup.buildCombinationActivatingVar(combo)
 
 	bonusMultiplier := 1.0
-	for _, setAndCount := range combo.content {
+	for _, setAndCount := range combo.condition {
 		bonusForCount := setAndCount.setInfo.setMultipliers[setAndCount.count]
 		bonusMultiplier *= bonusForCount
 	}
 
-	// the actual output variable from this combo, applies relevant set related multipliers
-	comboOutput := columnInfo{entryType: entry_combo_output_weighted, combo: combo, multiplier: bonusMultiplier}
-	comboOutput.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), &comboOutput)
-	setup.allColumns = append(setup.allColumns, &comboOutput)
-
-	// copy regular rating sum to column if flag is set
-	setup.build.ConstraintIfBoolCopyValueElseZero(
+	setup.build.ConstraintCopyIfBool(
 		activatingVar.columnIndex,
-		combinedRatingVar.columnIndex, comboOutput.columnIndex,
-		c_ratings_low_range, c_ratings_high_range)
+		combinedRatingVar.columnIndex, bonusMultiplier,
+		setup.mainOutputVar.columnIndex,
+		rangeHigh,
+	)
 
-	// add scaled rating to final computation
-	setup.mainOutputRow.Add(comboOutput.columnIndex, bonusMultiplier)
-
-	combo.outputVar = &comboOutput
-	combo.activatingVar = activatingVar
+	return activatingVar
 }
 
 func (setup *singleGearSetShared) addMainOutputVariable(scaleOutputRating float64) {
@@ -175,9 +171,6 @@ func (setup *singleGearSetShared) addMainOutputVariable(scaleOutputRating float6
 
 	// goes directly into overall rating, but could have an external scale applied
 	entry.columnIndex = setup.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), scaleOutputRating, &entry)
-
-	// derive value based on whichever setup bonus combo is active
-	setup.mainOutputRow.Add(entry.columnIndex, -1)
 
 	// save reference
 	setup.mainOutputVar = &entry
@@ -221,27 +214,24 @@ func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []setBonus
 	}
 }
 
+// logical AND between exact count vars
 func (setup *singleGearSetShared) buildCombinationActivatingVar(combo *bonusCombo) *columnInfo {
-	// logical AND between exact count vars
-
-	comboActiveBool := columnInfo{entryType: entry_combo_active, combo: combo}
-	comboActiveBool.columnIndex = setup.build.CreateColumnBool(&comboActiveBool)
+	comboActiveBool := &columnInfo{entryType: entry_combo_active, combo: combo}
+	comboActiveBool.columnIndex = setup.build.CreateColumnBool(comboActiveBool)
+	combo.activatingVar = comboActiveBool
+	setup.allColumns = append(setup.allColumns, comboActiveBool)
 
 	buildAnd := util_highs.ConstraintAndBuilder{}
 	buildAnd.SetOutput(comboActiveBool.columnIndex)
-
-	for _, setAndCount := range combo.content {
+	for _, setAndCount := range combo.condition {
 		setInfo := setAndCount.setInfo
 		count := setAndCount.count
 		specificExactBool := setInfo.setExactCountVars[count]
 		buildAnd.AddInput(specificExactBool.columnIndex)
 	}
-
 	buildAnd.Build(setup.build)
 
-	setup.allColumns = append(setup.allColumns, &comboActiveBool)
-
-	return &comboActiveBool
+	return comboActiveBool
 }
 
 func (setup *singleGearSetShared) addSetItemCountVariable(info *bonusInfo) {
@@ -321,7 +311,7 @@ func (setup *singleGearSetShared) checkActiveCombo(solution util_highs.ISolution
 		}
 
 		if activeCombo != nil {
-			for _, entry := range activeCombo.content {
+			for _, entry := range activeCombo.condition {
 				actualCount := entry.setInfo.setCountItems(solvableItemSet.Items())
 				if actualCount != uint8(entry.count) {
 					panic("number of items not what solver returned")

@@ -42,7 +42,7 @@ func findUpgradeAndSim(input *FindUpgrades_SimInputs, baseItems *items.FullOptio
 }
 
 func runBaselineAndSim(printer *util.PrintRecorder, baseItems *items.FullOptionsMap, model *gear_model.SpecModel, tracker *util.TrackProgress, input *FindUpgrades_SimInputs, goal stats.OptimiseGoal) (stats.SimData, float64) {
-	baseRating, baseSet := findBaseLine(printer, baseItems, model)
+	baseRating, baseSet := findBaseLine(printer, baseItems, model, input)
 	baseSim := simulate.WowSim_Execute_SpecifyAll(input.SimSizeBaseline, model.SimSpeedUp, model.Spec, goal, model.SimulateAs, model.Professions, baseSet.Items(), nil, tracker)
 	printer.Println("SIM *BASELINE*")
 	baseSim.Print(printer)

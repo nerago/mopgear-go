@@ -19,7 +19,7 @@ const (
 type MultiSetJob struct {
 	printer                   *util.PrintRecorder
 	params                    []multiSetParamInternal
-	weightTypes               []int
+	weightType                int
 	fixedForge                map[items.ItemId]stats.ReforgeRecipe
 	distinctUsageGroups       map[items.ItemId]distinctUsageGroups
 	alternateUpgradeChoices   [][]items.ItemId
@@ -182,6 +182,6 @@ func (job *MultiSetJob) ActivateAlternateGemmingAsPermute() {
 	job.alternateGemmingAsPermute = true
 }
 
-func (job *MultiSetJob) SetWeightTypes(weightTypes []int) {
-	job.weightTypes = weightTypes
+func (job *MultiSetJob) SetWeightType(weightType int) {
+	job.weightType = weightType
 }
