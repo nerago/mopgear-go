@@ -2,7 +2,6 @@ package solve_highs
 
 import (
 	"iter"
-	gear_model "paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -24,11 +23,11 @@ import (
 // entry_permutation_output_weighted(column) * permutation.weight -> mainOutputRow
 // mainOutputRow -> mainOutputVar
 
-func SingleGearSetExtendedMain(itemOptions *items.SolvableOptionsMap, weight2 *weight_types.Weight2Extended, gearModel *gear_model.SpecModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
+func SingleGearSetExtendedMain(itemOptions *items.SolvableOptionsMap, model *SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
 	build := util_highs.LinearBuilder{}
 	build.Solver = util_highs.Solver_MIP_Interior
 
-	setup := makeGearSetExtended2(&build, weight2, gearModel, itemOptions, 1)
+	setup := makeGearSetExtended2(&build, model, itemOptions, 1)
 
 	solutionFuture := build.RunHighsFuture(nil)
 
@@ -40,7 +39,7 @@ func SingleGearSetExtendedMain(itemOptions *items.SolvableOptionsMap, weight2 *w
 
 		if solution.HasSolution() {
 			itemSet := setup.buildResultSet(solution)
-			//checkSetRatingIsObjective(solution, &itemSet, model) // TODO extended version
+			checkSetRatingIsObjective(solution, &itemSet, model.CalcRatingSet, 1)
 			return itemSet, true
 		} else {
 			return items.SolvableItemSet{}, false
@@ -48,33 +47,32 @@ func SingleGearSetExtendedMain(itemOptions *items.SolvableOptionsMap, weight2 *w
 	})
 }
 
-func makeGearSetExtended2(build *util_highs.LinearBuilder, weight2 *weight_types.Weight2Extended, gearModel *gear_model.SpecModel, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetExtended {
-	setup := singleGearSetExtended{
+func makeGearSetExtended2(build *util_highs.LinearBuilder, model *SolverModel, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetExtended2 {
+	setup := singleGearSetExtended2{
 		singleGearSetShared: singleGearSetShared{build: build},
 	}
-	require := gearModel.StatRequirements.AsMap()
 
 	setup.prepareStats()
-	setup.prepareRequire(require)
-	setup.prepareActiveSetCombos(&gearModel.SetBonus)
+	setup.prepareRequire(&model.StatRequirements)
+	setup.prepareActiveSetCombos(model.SetBonusTotalCount)
 	setup.prepareUniqueEquipped(itemOptions)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
-		setup.addItem(slot, item, require, &gearModel.SetBonus)
+		setup.addItem(slot, item, &model.StatRequirements, model.SetBonusIndexForItem)
 	}
 	setup.finishItemsCommon(itemOptions)
-	setup.finishStats(require)
+	setup.finishStats(&model.StatRequirements)
 
-	setup.calcSimValues(weight2)
+	setup.calcSimValues(model.Weights2)
 	setup.calcCombinedSimRating()
 	setup.addMainOutputVariable(scaleOutputRating)
-	setup.multiplyRatingsByActiveSetCombo(&gearModel.SetBonus, setup.combinedRatingVar)
-	setup.addSetNeededCounts(gearModel.SetBonusRequired)
+	setup.multiplyRatingsByActiveSetCombo(setup.combinedRatingVar)
+	setup.addSetNeededCounts(model.SetBonusRequiredCounts)
 
 	return &setup
 }
 
-type singleGearSetExtended struct {
+type singleGearSetExtended2 struct {
 	singleGearSetShared
 
 	//model *ExtendedModel
@@ -86,8 +84,8 @@ type singleGearSetExtended struct {
 	combinedRatingVar    *columnInfo // sum of values for the ratings of selected items
 }
 
-func (setup *singleGearSetExtended) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, require map[stats.StatType]util_collection.HiLoUInt32, setBonus *gear_model.SetBonus) util_highs.ColumnIndex {
-	columnIndex := setup.addItemCommon(itemSlot, item, setBonus)
+func (setup *singleGearSetExtended2) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, require *util_collection.EnumMap[stats.StatType, weight_types.StatRangeFloat], activeSet func(id items.ItemId) (int, bool)) util_highs.ColumnIndex {
+	columnIndex := setup.addItemCommon(itemSlot, item, activeSet)
 
 	// add to stats via a summation condition
 	for statType, value := range item.Total().SeqPairInt() {
@@ -97,21 +95,21 @@ func (setup *singleGearSetExtended) addItem(itemSlot items.SlotEquip, item *item
 	}
 
 	// specific hit/expertise/etc values for hi/lo limits
-	for statType := range require {
+	for statType := range require.SeqKey() {
 		setup.requireRows[statType].Add(columnIndex, item.Total().GetFloat(statType))
 	}
 
 	return columnIndex
 }
 
-func (setup *singleGearSetExtended) prepareRequire(require map[stats.StatType]util_collection.HiLoUInt32) {
-	setup.requireRows = make(map[stats.StatType]*util_highs.ConstraintRow, len(require))
-	for statType := range require {
+func (setup *singleGearSetExtended2) prepareRequire(require *util_collection.EnumMap[stats.StatType, weight_types.StatRangeFloat]) {
+	setup.requireRows = make(map[stats.StatType]*util_highs.ConstraintRow, require.Size())
+	for statType := range require.SeqKey() {
 		setup.requireRows[statType] = &util_highs.ConstraintRow{Debug: "require " + statType.Name()}
 	}
 }
 
-func (setup *singleGearSetExtended) prepareStats() {
+func (setup *singleGearSetExtended2) prepareStats() {
 	setup.statTotalRows = make(map[stats.StatType]*util_highs.ConstraintRow)
 	setup.statTotalColumns = make(map[stats.StatType]*columnInfo)
 	for _, statType := range stats.StatType_List {
@@ -124,11 +122,11 @@ func (setup *singleGearSetExtended) prepareStats() {
 	}
 }
 
-func (setup *singleGearSetExtended) finishStats(require map[stats.StatType]util_collection.HiLoUInt32) {
+func (setup *singleGearSetExtended2) finishStats(require *util_collection.EnumMap[stats.StatType, weight_types.StatRangeFloat]) {
 	// constrain: total sum of hit/exp/etc are within requested limits
-	for statType, hilo := range require {
+	for statType, hilo := range require.SeqKeyValue() {
 		row := setup.requireRows[statType]
-		row.Build(setup.build, float64(hilo.Lo), convertHigh(hilo.Hi))
+		row.Build(setup.build, hilo.Minimum, hilo.Maximum)
 	}
 
 	// constrain: total sum of each stat for input to weights
@@ -149,7 +147,7 @@ func (setup *singleGearSetExtended) finishStats(require map[stats.StatType]util_
 // (statA*weight1A + statB*weight1B + statC*weight1C)+offset = simValue/scales
 // statA*weight1A + statB*weight1B + statC*weight1C = simValue/scales - offset
 // statA*weight1A + statB*weight1B + statC*weight1C - simValue/scales = -offset
-func (setup *singleGearSetExtended) calcSimValues(weight2 *weight_types.Weight2Extended) {
+func (setup *singleGearSetExtended2) calcSimValues(weight2 *weight_types.Weight2Extended) {
 	// calculate each sim value from stats
 	setup.simValueTotalColumns = make(map[stats.SimType]*columnInfo)
 	for simType, nestedWeights := range weight2.SeqBySimNestedPairs() {
@@ -158,7 +156,7 @@ func (setup *singleGearSetExtended) calcSimValues(weight2 *weight_types.Weight2E
 	}
 }
 
-func (setup *singleGearSetExtended) calcSimValue(simType stats.SimType, nestedWeights iter.Seq2[stats.StatType, float64], simEntry weight_types.SimPriorityEntry) {
+func (setup *singleGearSetExtended2) calcSimValue(simType stats.SimType, nestedWeights iter.Seq2[stats.StatType, float64], simEntry weight_types.SimPriorityEntry) {
 	simValueColumn := &columnInfo{entryType: entry_sim_value, simType: simType}
 	simValueColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), simValueColumn)
 	setup.simValueTotalColumns[simType] = simValueColumn
@@ -176,7 +174,7 @@ func (setup *singleGearSetExtended) calcSimValue(simType stats.SimType, nestedWe
 	simValueFromStatRow.Build(setup.build, offset, offset)
 }
 
-func (setup *singleGearSetExtended) calcCombinedSimRating() {
+func (setup *singleGearSetExtended2) calcCombinedSimRating() {
 	// weighted sum of each sim value
 	combinedRatingColumn := columnInfo{entryType: entry_sum_rating}
 	combinedRatingColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), &combinedRatingColumn)

@@ -64,10 +64,10 @@ func (colEntry columnInfo) DebugText() string {
 		strBuild.WriteString("initial item rating sum")
 	case entry_permutation_active:
 		strBuild.WriteString("permutation active ")
-		strBuild.WriteString(colEntry.permutation.debugStr())
-	case entry_permutation_output_weighted:
+		strBuild.WriteString(colEntry.combo.debugStr())
+	case entry_combo_output_weighted:
 		strBuild.WriteString("permutation weighted output ")
-		strBuild.WriteString(colEntry.permutation.debugStr())
+		strBuild.WriteString(colEntry.combo.debugStr())
 		strBuild.WriteRune(' ')
 		strBuild.WriteFloat64(colEntry.weight, 2)
 	case entry_main_output:
@@ -96,12 +96,12 @@ func debugPrintColumnEntry(colEntry *columnInfo, columnIndex util_highs.ColumnIn
 	case entry_sum_rating:
 		printer.Printf("%d %f %s\n", columnIndex, outputValue, "initial item rating sum")
 	case entry_permutation_active:
-		printer.Printf("%d %f %s %s\n", columnIndex, outputValue, "permutation active", colEntry.permutation.debugStr())
+		printer.Printf("%d %f %s %s\n", columnIndex, outputValue, "permutation active", colEntry.combo.debugStr())
 		if util.FloatEqualsOne(outputValue) && activeBonus != nil {
-			*activeBonus += colEntry.permutation.debugStr()
+			*activeBonus += colEntry.combo.debugStr()
 		}
-	case entry_permutation_output_weighted:
-		printer.Printf("%d %f %s %s %f\n", columnIndex, outputValue, "permutation weighted output", colEntry.permutation.debugStr(), colEntry.weight)
+	case entry_combo_output_weighted:
+		printer.Printf("%d %f %s %s %f\n", columnIndex, outputValue, "permutation weighted output", colEntry.combo.debugStr(), colEntry.weight)
 		if !util.FloatEqualsZero(outputValue) && activeBonusWeight != nil {
 			*activeBonusWeight += colEntry.weight
 		}

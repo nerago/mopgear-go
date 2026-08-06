@@ -11,7 +11,6 @@ import (
 type SpecModel struct {
 	StatRequirements         StatRequirements
 	StatWeights              StatWeights
-	StatWeightsExtended      weight_types.IWeight
 	Spec                     SpecType
 	Goal                     OptimiseGoal
 	SimulateAs               WowSim_Fight
@@ -30,10 +29,10 @@ type SpecModel struct {
 }
 
 func (model *SpecModel) Equals(other *SpecModel) bool {
-	return model.StatRequirements.Equals(other.StatRequirements) &&
-		model.StatWeights == other.StatWeights &&
-		model.Spec == other.Spec &&
+	return model.Spec == other.Spec &&
 		model.Goal == other.Goal &&
+		model.StatRequirements.Equals(other.StatRequirements) &&
+		model.StatWeights == other.StatWeights &&
 		model.SimulateAs == other.SimulateAs &&
 		model.SimSpeedUp == other.SimSpeedUp &&
 		model.ReforgeRules.Equals(&other.ReforgeRules) &&
@@ -45,7 +44,30 @@ func (model *SpecModel) Equals(other *SpecModel) bool {
 		model.Professions == other.Professions &&
 		model.SimPriority.Equals(&other.SimPriority) &&
 		slices.Equal(model.StatsForWeighting, other.StatsForWeighting) &&
+		slices.Equal(model.SpecificIncompatibleList, other.SpecificIncompatibleList) &&
 		model.ReferenceGearFile == other.ReferenceGearFile
+}
+
+func (model *SpecModel) CloneShallow(other *SpecModel) *SpecModel {
+	return &SpecModel{
+		StatRequirements:         other.StatRequirements,
+		StatWeights:              other.StatWeights,
+		Spec:                     other.Spec,
+		Goal:                     other.Goal,
+		SimulateAs:               other.SimulateAs,
+		SimSpeedUp:               other.SimSpeedUp,
+		ReforgeRules:             other.ReforgeRules,
+		EnchantChoice:            other.EnchantChoice,
+		GemChoice:                other.GemChoice,
+		SetBonus:                 other.SetBonus,
+		SetBonusRequired:         other.SetBonusRequired,
+		FixedWeightsSetBonus:     other.FixedWeightsSetBonus,
+		Professions:              other.Professions,
+		SimPriority:              other.SimPriority,
+		StatsForWeighting:        other.StatsForWeighting,
+		SpecificIncompatibleList: other.SpecificIncompatibleList,
+		ReferenceGearFile:        other.ReferenceGearFile,
+	}
 }
 
 // ////////// requirements
@@ -100,6 +122,12 @@ func (model *SpecModel) CalcRatingFull(itemSet *FullItemSet) float64 {
 	return baseRating * setRating
 }
 
+func (model *SpecModel) CalcRatingSolveForGivenWeight(itemSet *SolvableItemSet, weight weight_types.IWeight) float64 {
+	baseRating := weight.CalcStatScore(itemSet.Total())
+	setRating := model.SetBonus.CalcBonusSolve(itemSet.Items())
+	return baseRating * setRating
+}
+
 // ////////// items ratings
 func (model *SpecModel) CalcRatingSolveItem(item *SolvableItem) float64 {
 	return model.StatWeights.CalcRating(item.Total())
@@ -107,6 +135,10 @@ func (model *SpecModel) CalcRatingSolveItem(item *SolvableItem) float64 {
 
 func (model *SpecModel) CalcRatingFullItem(item *FullItem) float64 {
 	return model.StatWeights.CalcRating(item.Total())
+}
+
+func (model *SpecModel) CalcRatingSolveItemForGivenWeight(item *SolvableItem, weight weight_types.IWeight) float64 {
+	return weight.CalcStatScore(item.Total())
 }
 
 // ////////// ProfessionInfo

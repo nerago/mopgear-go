@@ -2,7 +2,6 @@ package solve_highs
 
 import (
 	"iter"
-	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_collection"
@@ -42,7 +41,7 @@ func (setup *singleGearSetShared) MainOutputVar() *columnInfo {
 	return setup.mainOutputVar
 }
 
-func (setup *singleGearSetShared) addItemCommon(itemSlot items.SlotEquip, item *items.SolvableItem, setBonus *gear_model.SetBonus) util_highs.ColumnIndex {
+func (setup *singleGearSetShared) addItemCommon(itemSlot items.SlotEquip, item *items.SolvableItem, activeSet func(id items.ItemId) (int, bool)) util_highs.ColumnIndex {
 	entry := columnInfo{entryType: entry_item, itemSlot: itemSlot, item: item}
 
 	// boolean value to flag use of specific item, in exact reforge/gem state
@@ -55,7 +54,7 @@ func (setup *singleGearSetShared) addItemCommon(itemSlot items.SlotEquip, item *
 	setup.slotsOneEachRow[itemSlot].Add(columnIndex, 1.0)
 
 	// if this item belongs to any item set then flag with a 1
-	activeSetIndex, hasSet := setBonus.ActiveSetIndexForItem(item.ItemId())
+	activeSetIndex, hasSet := activeSet(item.ItemId())
 	if hasSet {
 		setup.bonusData[activeSetIndex].countSetItemsRow.Add(columnIndex, 1)
 	}
@@ -94,13 +93,12 @@ func (setup *singleGearSetShared) finishItemsCommon(itemOptions *items.SolvableO
 	}
 }
 
-func (setup *singleGearSetShared) prepareActiveSetCombos(setBonus *gear_model.SetBonus) {
+func (setup *singleGearSetShared) prepareActiveSetCombos(activeSetCount int) {
 	// constrain: exact item count in each active set
-	activeSets := setBonus.ActiveSets()
-	if len(activeSets) > 0 {
-		setup.bonusData = make([]bonusInfo, len(activeSets))
-		for setIndex, set := range activeSets {
-			info := bonusInfo{activeSet: set, setIndex: setIndex}
+	if activeSetCount > 0 {
+		setup.bonusData = make([]bonusInfo, activeSetCount)
+		for setIndex := range activeSetCount {
+			info := bonusInfo{setIndex: setBonusIndex(setIndex)}
 			info.countSetItemsRow.Debug = "countSetItemsRow" + strconv.Itoa(setIndex)
 			setup.addSetItemCountVariable(&info)
 			setup.addSetItemsCountExactVariables(&info)
@@ -109,9 +107,8 @@ func (setup *singleGearSetShared) prepareActiveSetCombos(setBonus *gear_model.Se
 	}
 }
 
-func (setup *singleGearSetShared) multiplyRatingsByActiveSetCombo(setBonus *gear_model.SetBonus, combinedRatingVar *columnInfo) {
-	activeSets := setBonus.ActiveSets()
-	if len(activeSets) > 0 {
+func (setup *singleGearSetShared) multiplyRatingsByActiveSetCombo(combinedRatingVar *columnInfo) {
+	if len(setup.bonusData) > 0 {
 		setup.bonusCombos = makeSetPermutations(setup.bonusData)
 		for permIndex := range setup.bonusCombos {
 			setup.buildSetMultipliedOutput(&setup.bonusCombos[permIndex], combinedRatingVar)
@@ -130,29 +127,31 @@ func (setup *singleGearSetShared) buildSimpleNoSetsOutput(combinedRatingVar *col
 	setup.mainOutputRow.Add(combinedRatingVar.columnIndex, 1)
 }
 
-func (setup *singleGearSetShared) buildSetMultipliedOutput(permutation *bonusCombo, combinedRatingVar *columnInfo) {
-	activatingVar := setup.buildPermutationActivatingVar(permutation)
+func (setup *singleGearSetShared) buildSetMultipliedOutput(combo *bonusCombo, combinedRatingVar *columnInfo) {
+	activatingVar := setup.buildCombinationActivatingVar(combo)
 
-	totalWeight := 1.0
-	for _, setAndCount := range permutation.content {
-		bonusForCount := setAndCount.setInfo.activeSet.BonusForCount(uint8(setAndCount.count))
-		totalWeight *= bonusForCount
+	totalMultiplier := 1.0
+	for _, setAndCount := range combo.content {
+		bonusForCount := setAndCount.setInfo.setMultipliers[setAndCount.count]
+		totalMultiplier *= bonusForCount
 	}
 
 	// the actual output variable from this permutation, applies relevant set related multipliers
-	permutationOutput := columnInfo{entryType: entry_permutation_output_weighted, permutation: permutation, weight: totalWeight}
-	permutationOutput.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), &permutationOutput)
-	setup.allColumns = append(setup.allColumns, &permutationOutput)
+	comboOutput := columnInfo{entryType: entry_combo_output_weighted, combo: combo, weight: totalMultiplier}
+	comboOutput.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), &comboOutput)
+	setup.allColumns = append(setup.allColumns, &comboOutput)
 
 	// copy regular rating sum to column if flag is set
-	setup.build.ConstraintIfBoolCopyValueElseZero(activatingVar.columnIndex, combinedRatingVar.columnIndex, permutationOutput.columnIndex, c_ratings_low_range, c_ratings_high_range)
+	setup.build.ConstraintIfBoolCopyValueElseZero(
+		activatingVar.columnIndex,
+		combinedRatingVar.columnIndex, comboOutput.columnIndex,
+		c_ratings_low_range, c_ratings_high_range)
 
 	// add scaled rating to final computation
-	setup.mainOutputRow.Add(permutationOutput.columnIndex, totalWeight)
+	setup.mainOutputRow.Add(comboOutput.columnIndex, totalMultiplier)
 
-	permutation.outputVar = &permutationOutput
-	permutation.activatingVar = activatingVar
-	permutation.weight = totalWeight
+	combo.outputVar = &comboOutput
+	combo.activatingVar = activatingVar
 }
 
 func (setup *singleGearSetShared) addMainOutputVariable(scaleOutputRating float64) {
@@ -169,13 +168,13 @@ func (setup *singleGearSetShared) addMainOutputVariable(scaleOutputRating float6
 	setup.allColumns = append(setup.allColumns, &entry)
 }
 
-func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []gear_model.ActiveSetCountsRequired) {
+func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []setBonusRequiredCounts) {
 	if len(setBonusRequired) > 0 {
 		if len(setup.bonusData) == 0 {
 			panic("no setdata to use from SetBonusRequired")
-		} else if len(setup.bonusData) == 1 && len(setBonusRequired) == 1 && setBonusRequired[0].Count() == 1 {
+		} else if len(setup.bonusData) == 1 && len(setBonusRequired) == 1 && len(setBonusRequired[0]) == 1 {
 			setCountCol := setup.bonusData[0].setTotalCountVar
-			_, needCount := setBonusRequired[0].PairsByIndex(0)
+			needCount := setBonusRequired[0][0]
 
 			rowSetCountRequired := util_highs.ConstraintRow{Debug: "rowSetCountRequired"}
 			rowSetCountRequired.Add(setCountCol.columnIndex, 1)
@@ -186,8 +185,8 @@ func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []gear_mod
 			for _, option := range setBonusRequired {
 				optionParts := util_highs.ConstraintAndBuilder{}
 
-				for activeSet, needCount := range option.Pairs() {
-					setInfo := util_collection.FindWith(setup.bonusData, func(x bonusInfo) bool { return x.activeSet.Equals(activeSet) })
+				for setIndex, needCount := range option {
+					setInfo := setup.bonusData[setIndex]
 					setCountCol := setInfo.setTotalCountVar
 
 					inRange := setup.build.ColumnIsGreaterOrEqualThanConstant(setCountCol.columnIndex, float64(needCount), 10, 1.0)
@@ -206,10 +205,10 @@ func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []gear_mod
 	}
 }
 
-func (setup *singleGearSetShared) buildPermutationActivatingVar(permutation *bonusCombo) *columnInfo {
+func (setup *singleGearSetShared) buildCombinationActivatingVar(permutation *bonusCombo) *columnInfo {
 	// we are effectively building a logical AND between these vars
 
-	permutationActiveBool := columnInfo{entryType: entry_permutation_active, permutation: permutation}
+	permutationActiveBool := columnInfo{entryType: entry_permutation_active, combo: permutation}
 	permutationActiveBool.columnIndex = setup.build.CreateColumnBool(&permutationActiveBool)
 
 	buildAnd := util_highs.ConstraintAndBuilder{}
@@ -230,7 +229,7 @@ func (setup *singleGearSetShared) buildPermutationActivatingVar(permutation *bon
 }
 
 func (setup *singleGearSetShared) addSetItemCountVariable(info *bonusInfo) {
-	entry := columnInfo{entryType: entry_set_total_count, set: info.activeSet}
+	entry := columnInfo{entryType: entry_set_total_count, setIndex: info.setIndex}
 
 	// set item actual count
 	entry.columnIndex = setup.build.CreateColumnGeneral(highs.Integer, 0, c_maxSetItems, &entry)
@@ -254,7 +253,7 @@ func (setup *singleGearSetShared) addSetItemsCountExactVariables(info *bonusInfo
 
 	// make a bool for each possible count in range 0..5
 	for itemCount := 0; itemCount <= c_maxSetItems; itemCount++ {
-		boolColumn := columnInfo{entryType: entry_set_exact_count, set: info.activeSet, itemCount: itemCount}
+		boolColumn := columnInfo{entryType: entry_set_exact_count, setIndex: info.setIndex, itemCount: itemCount}
 		boolColumn.columnIndex = setup.build.CreateColumnBool(&boolColumn)
 
 		// should activate this flag which will match the total count
@@ -309,8 +308,7 @@ func (setup *singleGearSetShared) checkActivePermutation(solution util_highs.ISo
 
 		if activePermutation != nil {
 			for _, entry := range activePermutation.content {
-				activeSet := entry.setInfo.activeSet
-				actualCount := activeSet.CountItems(solvableItemSet.Items())
+				actualCount := entry.setInfo.setCountItems(solvableItemSet.Items())
 				if actualCount != uint8(entry.count) {
 					panic("number of items not what solver returned")
 				}

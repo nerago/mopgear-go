@@ -1,7 +1,6 @@
 package solve_highs
 
 import (
-	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_collection"
@@ -9,8 +8,8 @@ import (
 	"strconv"
 )
 
-// TODO make extended version
-func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOptionsMap, model *gear_model.SpecModel) {
+// TODO make extended version. e.g. checkSetWithMessage
+func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOptionsMap, checkSet func(itemSet *items.SolvableItemSet) bool) {
 	itemSet.DebugValidate()
 	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
 		if itemOptions.Has(slot) != itemSet.Items().Has(slot) {
@@ -18,7 +17,7 @@ func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOp
 		}
 	}
 
-	if !model.CheckSet(&itemSet) {
+	if !checkSet(&itemSet) {
 		sb := util.StringBuild2{}
 		sb.WriteString("set fails CheckSet ")
 		sb.WriteUint32(itemSet.Total().Hit())
@@ -28,10 +27,10 @@ func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOp
 	}
 }
 
-func checkSetRatingIsObjective(solution *util_highs.Solution2, itemSet *items.SolvableItemSet, gear_model *gear_model.SpecModel) {
-	checkRating := gear_model.CalcRatingSolve(itemSet)
-	if !util.FloatsApproxEquals(solution.Objective()*c_scaled_ratings, float64(checkRating)) {
-		panic("rating inconsistent " + strconv.FormatFloat(solution.Objective(), 'f', 0, 64) + " " + strconv.FormatFloat(float64(checkRating), 'f', 0, 32))
+func checkSetRatingIsObjective(solution *util_highs.Solution2, itemSet *items.SolvableItemSet, calcRating func(item *items.SolvableItemSet) float64, ratingScale float64) {
+	checkRating := calcRating(itemSet)
+	if !util.FloatsApproxEquals(solution.Objective()*ratingScale, checkRating) {
+		panic("rating inconsistent " + strconv.FormatFloat(solution.Objective(), 'f', 0, 64) + " " + strconv.FormatFloat(checkRating, 'f', 0, 32))
 	}
 }
 

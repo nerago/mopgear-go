@@ -2,14 +2,12 @@ package solve_highs
 
 import (
 	"iter"
-	gear_model "paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
-	"paladin_gearing_go/weightfind/weight_types"
 	"strconv"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -21,11 +19,10 @@ const c_timeLimit = 4000 // seconds
 type SolverHighsMultiParam struct {
 	Label          string
 	ItemOptions    items.FullOptionsMap
-	Gear_model     *gear_model.SpecModel
 	RatingMultiply float64
-
-	singleGearSet ISingleGearSet
-	solveOptions  items.SolvableOptionsMap
+	SolverModel    SolverModel
+	singleGearSet  ISingleGearSet
+	solveOptions   items.SolvableOptionsMap
 }
 
 type SolverHighsMultiProcess struct {
@@ -302,7 +299,7 @@ func (process *SolverHighsMultiProcess) solutionToResult(solution util_highs.ISo
 	for partIndex := range process.parts {
 		part := process.parts[partIndex]
 		solvedSet := part.singleGearSet.buildResultSet(solution)
-		validateNewSet(solvedSet, &part.solveOptions, part.Gear_model)
+		validateNewSet(solvedSet, &part.solveOptions, part.SolverModel.CheckSet)
 		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &part.ItemOptions)
 		resultList[partIndex] = fullItemSet
 
@@ -341,12 +338,12 @@ func (process *SolverHighsMultiProcess) makeFullModel() {
 func (param *SolverHighsMultiParam) makeSingleGearSet(build *util_highs.LinearBuilder, job *SolverHighsMultiProcess) {
 	param.solveOptions = items.SolvableOptionsMap_of(&param.ItemOptions)
 
-	if weight3, hasWeight3 := param.Gear_model.StatWeightsExtended.(*weight_types.Weight3ExtendedRanged); hasWeight3 {
-		param.singleGearSet = makeGearSetExtended3(build, weight3, param.Gear_model, &param.solveOptions, 0)
-	} else if weight2, hasWeight2 := param.Gear_model.StatWeightsExtended.(*weight_types.Weight2Extended); hasWeight2 {
-		param.singleGearSet = makeGearSetExtended2(build, weight2, param.Gear_model, &param.solveOptions, 0)
-	} else {
-		param.singleGearSet = makeGearSetBasic(build, param.Gear_model, &param.solveOptions, 0)
+	if param.SolverModel.Weights3 != nil {
+		param.singleGearSet = makeGearSetExtended3(build, &param.SolverModel, &param.solveOptions, 0)
+	} else if param.SolverModel.Weights2 != nil {
+		param.singleGearSet = makeGearSetExtended2(build, &param.SolverModel, &param.solveOptions, 0)
+	} else if param.SolverModel.Weights1 != nil {
+		param.singleGearSet = makeGearSetBasic(build, &param.SolverModel, &param.solveOptions, 0)
 	}
 
 	job.outputRow.Add(param.singleGearSet.MainOutputVar().columnIndex, param.RatingMultiply)
