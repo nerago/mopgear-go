@@ -2,6 +2,8 @@ package util_async
 
 import (
 	"iter"
+	"paladin_gearing_go/util/util_collection"
+	"reflect"
 	"sync"
 )
 
@@ -14,15 +16,33 @@ func makeOutputChannelUnbuffered[R any]() chan R {
 
 func Map_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T) R) <-chan R {
 	outputChannel := makeOutputChannel[R]()
-	waitGroup := makeThreadsMapValuesChannelToChannel(threadCount, inputChannel, mapper, outputChannel)
-	closeChannelOnGroupFinished(waitGroup, outputChannel)
+	if threadCount > 1 {
+		waitGroup := makeThreadsMapValuesChannelToChannel(threadCount, inputChannel, mapper, outputChannel)
+		closeChannelOnGroupFinished(waitGroup, outputChannel)
+	} else {
+		go func() {
+			for value := range inputChannel {
+				outputChannel <- mapper(value)
+			}
+			close(outputChannel)
+		}()
+	}
 	return outputChannel
 }
 
 func MapMulti_ChannelToChannel[T any, R any](threadCount int, inputChannel <-chan T, mapper func(T, chan<- R)) <-chan R {
 	outputChannel := makeOutputChannel[R]()
-	waitGroup := makeThreadsMapMultiChannelToChannel(threadCount, inputChannel, mapper, outputChannel)
-	closeChannelOnGroupFinished(waitGroup, outputChannel)
+	if threadCount > 1 {
+		waitGroup := makeThreadsMapMultiChannelToChannel(threadCount, inputChannel, mapper, outputChannel)
+		closeChannelOnGroupFinished(waitGroup, outputChannel)
+	} else {
+		go func() {
+			for value := range inputChannel {
+				mapper(value, outputChannel)
+			}
+			close(outputChannel)
+		}()
+	}
 	return outputChannel
 }
 
@@ -66,9 +86,18 @@ func Map_ChannelToSlice_FutureCancellable[T any, R any](threadCount int, inputCh
 
 func Map_SliceToChannel[T any, R any](threadCount int, inputSlice []T, mapper func(*T) R) <-chan R {
 	outputChannel := makeOutputChannel[R]()
-	indexChannel := makeIndexChannel(inputSlice)
-	waitGroup := makeThreadsMapSliceToChannel(threadCount, inputSlice, mapper, indexChannel, outputChannel)
-	closeChannelOnGroupFinished(waitGroup, outputChannel)
+	if threadCount > 1 {
+		indexChannel := makeIndexChannel(inputSlice)
+		waitGroup := makeThreadsMapSliceToChannel(threadCount, inputSlice, mapper, indexChannel, outputChannel)
+		closeChannelOnGroupFinished(waitGroup, outputChannel)
+	} else {
+		go func() {
+			for i := range inputSlice {
+				outputChannel <- mapper(&inputSlice[i])
+			}
+			close(outputChannel)
+		}()
+	}
 	return outputChannel
 }
 
@@ -89,11 +118,15 @@ func MapOptional_SliceToChannel_Cancellable[T any, R any](threadCount int, input
 }
 
 func Map_SliceToSlice[T any, R any](threadCount int, inputSlice []T, mapper func(*T) R) []R {
-	resultChannel := make(chan R, threadCount)
-	indexChannel := makeIndexChannel(inputSlice)
-	waitGroup := makeThreadsMapSliceToChannel(threadCount, inputSlice, mapper, indexChannel, resultChannel)
-	closeChannelOnGroupFinished(waitGroup, resultChannel)
-	return channelToSliceKnownSize(resultChannel, len(inputSlice))
+	if threadCount > 1 {
+		resultChannel := make(chan R, threadCount)
+		indexChannel := makeIndexChannel(inputSlice)
+		waitGroup := makeThreadsMapSliceToChannel(threadCount, inputSlice, mapper, indexChannel, resultChannel)
+		closeChannelOnGroupFinished(waitGroup, resultChannel)
+		return channelToSliceKnownSize(resultChannel, len(inputSlice))
+	} else {
+		return util_collection.MapSliceAsNew(inputSlice, mapper)
+	}
 }
 
 func Map_SliceToSlice_Cancellable[T any, R any](threadCount int, inputSlice []T, cancel CancelSignal, mapper func(*T) R) []R {
@@ -105,9 +138,15 @@ func Map_SliceToSlice_Cancellable[T any, R any](threadCount int, inputSlice []T,
 }
 
 func ForEach_Slice[T any](threadCount int, inputSlice []T, process func(*T)) {
-	indexChannel := makeIndexChannel(inputSlice)
-	waitGroup := makeThreadsForEachSlice(threadCount, inputSlice, process, indexChannel)
-	waitGroup.Wait()
+	if threadCount > 1 {
+		indexChannel := makeIndexChannel(inputSlice)
+		waitGroup := makeThreadsForEachSlice(threadCount, inputSlice, process, indexChannel)
+		waitGroup.Wait()
+	} else {
+		for i := range inputSlice {
+			process(&inputSlice[i])
+		}
+	}
 }
 
 func ForEach_Slice_Cancellable[T any](threadCount int, inputSlice []T, cancel CancelSignal, process func(*T)) {
@@ -325,6 +364,33 @@ func MixChannels[T any](channelOne <-chan T, channelTwo <-chan T) <-chan T {
 				} else {
 					channelTwo = nil
 				}
+			}
+		}
+		close(outputChannel)
+	}()
+
+	return outputChannel
+}
+
+func MixChannelsMany[T any](inputChannels []<-chan T) <-chan T {
+	outputChannel := makeOutputChannel[T]()
+
+	cases := make([]reflect.SelectCase, len(inputChannels))
+	for i := range inputChannels {
+		cases[i] = reflect.SelectCase{
+			Dir:  reflect.SelectRecv,
+			Chan: reflect.ValueOf(inputChannels[i]),
+		}
+	}
+
+	go func() {
+		for len(cases) > 0 {
+			chosen, reflectValue, hasValue := reflect.Select(cases)
+			if hasValue {
+				value := reflectValue.Interface().(T)
+				outputChannel <- value
+			} else {
+				util_collection.DeleteIndexInPlace(&cases, chosen)
 			}
 		}
 		close(outputChannel)

@@ -16,6 +16,24 @@ import (
 	"slices"
 )
 
+func (job *MultiSetJob) proposalsToSimResult(proposalChannel <-chan multi_types.MultiProposedOutput, tracker *util.TrackProgress, expectedCount <-chan int) (*util_async.FutureCancellable[[]simulateJobResult], *util_async.Future[[]multi_types.MultiProposedOutput]) {
+	proposalChannel = util_async.Channel_RemoveDuplicatesFuncNotify(proposalChannel, func(a, b *multi_types.MultiProposedOutput) bool {
+		return a.Equals(b)
+	}, func(x *multi_types.MultiProposedOutput) {
+		job.printer.Printf("Remove Duplicate %s\n", x.Id)
+	})
+
+	proposalChannel = job.listInitialOutputs(proposalChannel)
+	proposalChannel, futureProposalList := util_async.TeeChannelToSlice(proposalChannel)
+	simChannel := job.prepareSimList(proposalChannel)
+
+	simsPerProposal := len(job.itemPrep)
+	expectedCount = util_async.Map_ChannelToChannel(1, expectedCount, func(x int) int { return x * simsPerProposal })
+
+	futureSimResultList := job.runSims(simChannel, tracker, expectedCount)
+	return futureSimResultList, futureProposalList
+}
+
 func checkNoConflicts(outputSet []multi_types.SingleProposedOutput, printer *util.PrintRecorder) bool {
 	itemByRef := make(map[items.ItemRef]*items.FullItem)
 	for outputIndex := range outputSet {
@@ -48,7 +66,11 @@ type simulateJobResult struct {
 }
 
 func (simJob *simulateJob) Equals(other *simulateJob) bool {
-	return simJob.spec == other.spec && simJob.fight == other.fight && simJob.equip.Equals(&other.equip) && simJob.professions == other.professions
+	return simJob.spec == other.spec &&
+		simJob.goal == other.goal &&
+		simJob.fight == other.fight &&
+		simJob.equip.Equals(&other.equip) &&
+		simJob.professions == other.professions
 }
 
 type simulateMultiResult struct {
@@ -57,23 +79,34 @@ type simulateMultiResult struct {
 }
 
 func (job *MultiSetJob) prepareSimList(proposalList <-chan multi_types.MultiProposedOutput) <-chan simulateJob {
-	jobChannel := util_async.MapMulti_ChannelToChannel(2, proposalList, func(proposal multi_types.MultiProposedOutput, nextChan chan<- simulateJob) {
-		for _, output := range proposal.Parts {
-			nextChan <- simulateJob{output.Spec, output.Model.Goal, output.Model.SimulateAs, output.Model.SimSpeedUp, *output.FullSet.Items(), output.Model.Professions}
+	jobChannel := util_async.MapMulti_ChannelToChannel(1, proposalList, func(proposal multi_types.MultiProposedOutput, nextChan chan<- simulateJob) {
+		for _, single := range proposal.Parts {
+			label := single.SpecLabel
+			prep := job.itemPrep[label]
+			nextChan <- simulateJob{
+				spec:        single.Spec,
+				goal:        prep.model.Goal,
+				fight:       prep.model.SimulateAs,
+				simSpeedUp:  prep.model.SimSpeedUp,
+				professions: prep.model.Professions,
+				equip:       *single.FullSet.Items()}
 		}
 	})
 
 	return util_async.Channel_RemoveDuplicatesFunc(jobChannel, (*simulateJob).Equals)
 }
 
-func (job *MultiSetJob) runSims(jobChan <-chan simulateJob, trackProgress *util.TrackProgress, expectedCount *util_async.Future[int]) *util_async.FutureCancellable[[]simulateJobResult] {
+func (job *MultiSetJob) runSims(jobChan <-chan simulateJob, trackProgress *util.TrackProgress, expectedCount <-chan int) *util_async.FutureCancellable[[]simulateJobResult] {
 	trackProgress.RunOuterTracking(0)
-	expectedCount.ForwardSuccessfulResultToCallback(func(count int) {
-		trackProgress.UpdateExpectedChildCount(count)
-	})
 
-	return util_async.Map_ChannelToSlice_FutureCancellable(simThreadCount, jobChan, trackProgress.SetDone, func(sim simulateJob) simulateJobResult {
-		result := simulate.WowSim_Execute_SpecifyAll(job.simRunSize, sim.simSpeedUp, sim.spec, sim.goal, sim.fight, sim.professions, &sim.equip, nil, trackProgress.NewChild())
+	go func() {
+		for newCount := range expectedCount {
+			trackProgress.UpdateExpectedChildCount(newCount)
+		}
+	}()
+
+	return util_async.Map_ChannelToSlice_FutureCancellable(c_simThreadCount, jobChan, trackProgress.SetDone, func(sim simulateJob) simulateJobResult {
+		result := simulate.WowSim_Execute_SpecifyAll(job.input.SimRunSize, sim.simSpeedUp, sim.spec, sim.goal, sim.fight, sim.professions, &sim.equip, nil, trackProgress.NewChild())
 		job.printer.Printf("sim %22s fight=%d %s\n", sim.spec.Name(), sim.fight, result.CompactStringGeneral())
 		return simulateJobResult{sim, result}
 	})

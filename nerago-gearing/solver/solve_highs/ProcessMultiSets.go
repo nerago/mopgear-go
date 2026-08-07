@@ -40,10 +40,14 @@ type SolverHighsMultiProcess struct {
 }
 
 type HighsMultiResult struct {
-	ItemSets      []items.FullItemSet
-	OutputId      []string
+	Entries       map[string]HighsMultiResultEntry
 	PermuteLabel  string
 	InterimResult bool
+}
+
+type HighsMultiResultEntry struct {
+	ItemSet  items.FullItemSet
+	OutputId string
 }
 
 func (process *SolverHighsMultiProcess) AddSetParam(param SolverHighsMultiParam) {
@@ -294,24 +298,23 @@ func (process *SolverHighsMultiProcess) extractCommonChoices(solution *util_high
 func (process *SolverHighsMultiProcess) solutionToResult(solution util_highs.ISolution, printer *util.PrintRecorder, interim bool) HighsMultiResult {
 	printer.Printf("Permute = %s\n", process.permuteLabel)
 
-	resultList := make([]items.FullItemSet, len(process.parts))
-	idList := make([]string, len(process.parts))
+	resultMap := make(map[string]HighsMultiResultEntry)
 	for partIndex := range process.parts {
 		part := process.parts[partIndex]
 		solvedSet := part.singleGearSet.buildResultSet(solution)
 		validateNewSet(solvedSet, &part.solveOptions, part.SolverModel.CheckSet)
 		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &part.ItemOptions)
-		resultList[partIndex] = fullItemSet
 
 		outputId := uuid.NewString()
 		if interim {
 			outputId += "-interim"
 		}
 		printer.Printf("OutputId[%s] = %s\n", part.Label, outputId)
-		idList[partIndex] = outputId
+
+		resultMap[part.Label] = HighsMultiResultEntry{fullItemSet, outputId}
 	}
 
-	return HighsMultiResult{resultList, idList, process.permuteLabel, interim}
+	return HighsMultiResult{resultMap, process.permuteLabel, interim}
 }
 
 func (process *SolverHighsMultiProcess) makeFullModel() {

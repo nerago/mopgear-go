@@ -109,10 +109,8 @@ func (output *SolveOutput) Report(printer *util.PrintRecorder) {
 	}
 
 	if output.Success {
-		fullSet := output.FullSet
-		rating := output.ResultRating
 		reportPrint.Println(output.OutputId)
-		tools.ReportSet(output.Input.Model, &fullSet, rating, reportPrint)
+		tools.ReportSet(output.Input.Model, &output.FullSet, reportPrint)
 	} else {
 		reportPrint.Printf("SET SOLVE FAILED\n")
 	}

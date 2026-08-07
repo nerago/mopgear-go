@@ -7,23 +7,19 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_collection"
+	"slices"
 	"strconv"
 	"strings"
 )
 
-type commonOptionsInput struct {
-	label       string
-	itemOptions *items.FullOptionsMap
-}
+func (job *MultiSetJob) determineCommon(optionsInputMap map[string]*items.FullOptionsMap, reforgingAllowNonCommon bool) multi_types.CommonOptions {
+	commonOptions, seenIn := searchItemOptions(optionsInputMap, reforgingAllowNonCommon)
 
-func (job *MultiSetJob) determineCommon(optionsInputList []commonOptionsInput) multi_types.CommonOptions {
-	commonOptions, seenIn := searchItemOptions(optionsInputList)
+	applyFixedForges(job.input.ItemInput.FixedForge, &commonOptions, job.printer)
 
-	applyFixedForges(job.fixedForge, &commonOptions, job.printer)
+	removeSingleSetItems(seenIn, &commonOptions, job.input.ItemInput.FixedForge)
 
-	removeSingleSetItems(seenIn, &commonOptions, job.fixedForge)
-
-	restrictItemOptionsToCommon(optionsInputList, commonOptions)
+	restrictItemOptionsToCommon(optionsInputMap, commonOptions)
 
 	validateCommons(commonOptions)
 	// printCommons(seenIn, commonOptions, job.printer)
@@ -31,18 +27,24 @@ func (job *MultiSetJob) determineCommon(optionsInputList []commonOptionsInput) m
 	return commonOptions
 }
 
-func searchItemOptions(optionsInputList []commonOptionsInput) (multi_types.CommonOptions, map[items.ItemRef][]string) {
+func searchItemOptions(optionsInputList map[string]*items.FullOptionsMap, reforgingAllowNonCommon bool) (multi_types.CommonOptions, map[items.ItemRef][]string) {
 	commonOptions := multi_types.CommonOptions_Make()
 	seenIn := make(map[items.ItemRef][]string)
 
-	for paramIndex := range optionsInputList {
-		input := &optionsInputList[paramIndex]
-		grouped := groupById(input.itemOptions.AllItems())
+	for label, itemOptions := range optionsInputList {
+		grouped := groupById(itemOptions.AllItems())
 		for itemRef, options := range grouped {
-			seenIn[itemRef] = append(seenIn[itemRef], input.label)
-			commonOptions.ApplyToSlicesByItemRef(itemRef, func(prior []items.FullItem) []items.FullItem {
-				return filterCommonForges(prior, options)
-			})
+			seenIn[itemRef] = append(seenIn[itemRef], label)
+			if reforgingAllowNonCommon {
+				commonOptions.ApplyToSlicesByItemRef(itemRef, func(prior []items.FullItem) []items.FullItem {
+					return unionCommonForges(prior, options)
+				})
+
+			} else {
+				commonOptions.ApplyToSlicesByItemRef(itemRef, func(prior []items.FullItem) []items.FullItem {
+					return intersectCommonForges(prior, options)
+				})
+			}
 		}
 	}
 
@@ -65,7 +67,29 @@ func groupById(itemSeq iter.Seq[*items.FullItem]) map[items.ItemRef][]items.Full
 	return grouped
 }
 
-func filterCommonForges(prior []items.FullItem, newOptions []items.FullItem) []items.FullItem {
+func unionCommonForges(prior []items.FullItem, newOptions []items.FullItem) []items.FullItem {
+	if prior == nil {
+		return newOptions
+	}
+
+	result := slices.Clone(prior)
+outer:
+	for a := range newOptions {
+		one := &newOptions[a]
+		for b := range prior {
+			two := &prior[b]
+			if one.Equals(two) {
+				continue outer
+			} else if one.ItemId() == two.ItemId() && one.ItemLevel() != two.ItemLevel() {
+				panic("inconsistent item levels " + one.CreateString() + " and " + two.CreateString())
+			}
+		}
+		result = append(result, *one)
+	}
+	return result
+}
+
+func intersectCommonForges(prior []items.FullItem, newOptions []items.FullItem) []items.FullItem {
 	if prior == nil {
 		return newOptions
 	}
@@ -127,9 +151,8 @@ func removeSingleSetItems(seenIn map[items.ItemRef][]string, commonOptions *mult
 	}
 }
 
-func restrictItemOptionsToCommon(optionsInputList []commonOptionsInput, commonOptions multi_types.CommonOptions) {
-	for paramIndex := range optionsInputList {
-		itemOptions := optionsInputList[paramIndex].itemOptions
+func restrictItemOptionsToCommon(optionsInputMap map[string]*items.FullOptionsMap, commonOptions multi_types.CommonOptions) {
+	for _, itemOptions := range optionsInputMap {
 		itemOptions.FilterAllItems(func(item *items.FullItem) bool {
 			ref := items.ItemRef_Of(item)
 			commonVersions, isCommon := commonOptions.Get(ref)

@@ -34,7 +34,7 @@ func SolverBuildBestWorst(itemOptions *items.FullOptionsMap, model *gear_model.S
 func chooseBest(options []items.FullItem, model *gear_model.SpecModel) []*items.FullItem {
 	best := util_rank.HighestCollector_ForN[items.FullItem](2, (*items.FullItem).Equals)
 	for _, item := range options {
-		rating := model.CalcRatingFullItem(&item)
+		rating := model.CalcRatingFullItem(&item, 1)
 		best.Offer(&item, rating)
 	}
 	return slices.Collect(best.ResultsSeq())
@@ -43,7 +43,7 @@ func chooseBest(options []items.FullItem, model *gear_model.SpecModel) []*items.
 func chooseWorst(options []items.FullItem, model *gear_model.SpecModel) []*items.FullItem {
 	best := util_rank.LowestCollector_ForN[items.FullItem](2, (*items.FullItem).Equals)
 	for _, item := range options {
-		rating := model.CalcRatingFullItem(&item)
+		rating := model.CalcRatingFullItem(&item, 1)
 		best.Offer(&item, rating)
 	}
 	return slices.Collect(best.ResultsSeq())

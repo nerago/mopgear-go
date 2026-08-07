@@ -101,9 +101,9 @@ func core(printer *util.PrintRecorder) {
 
 	//statWeights_CompareAlgorithms()
 
-	//statWeights_updateAll()
+	statWeights_updateAll()
 
 	//PaladinMultiRun()
 
-	findUpgrades_Paladin()
+	//findUpgrades_Paladin()
 }

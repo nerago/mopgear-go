@@ -164,7 +164,18 @@ func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, printe
 	}
 	highProcess.SetPermuteLabel(strBuild.String())
 
-	job.highProcessSetup_addOptions(highProcess, itemOptionsEach)
+	commonOptions := job.determineCommon(itemOptionsEach, job.input.ItemInput.ReforgingAllowNonCommon)
+
+	highProcess.SetCommon(commonOptions)
+
+	for label, itemOptions := range itemOptionsEach {
+		highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
+			Label:          label,
+			ItemOptions:    *itemOptions,
+			SolverModel:    *solve_highs.SolverModelBuild(&working.itemPrep.model, working.weightType),
+			RatingMultiply: param.ratingMultiply,
+		})
+	}
 	return highProcess
 }
 

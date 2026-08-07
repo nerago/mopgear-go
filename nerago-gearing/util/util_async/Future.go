@@ -279,26 +279,6 @@ func (future *Future[T]) MapSameType(mapper func(T) (T, bool)) *Future[T] {
 	return Future_MapValue(future, mapper)
 }
 
-func Future_MapValue[T any, R any](innerFuture *Future[T], mapper func(T) (R, bool)) *Future[R] {
-	outerFuture := Future_Make[R]()
-
-	go func() {
-		value, hasValue := innerFuture.WaitForResult()
-		if hasValue {
-			newValue, hasNew := mapper(value)
-			if hasNew {
-				outerFuture.SetResult(newValue)
-			} else {
-				outerFuture.SetResultEmpty()
-			}
-		} else {
-			outerFuture.SetResultEmpty()
-		}
-	}()
-
-	return outerFuture
-}
-
 // ########### FutureCancellable ###########
 
 type FutureCancellable[T any] struct {

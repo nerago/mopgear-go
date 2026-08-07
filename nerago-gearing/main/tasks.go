@@ -615,7 +615,7 @@ func basicListRatingEach(printer *util.PrintRecorder) {
 		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 		itemSet := items.FullItemSet_FromMap(equipMap)
 		rating := group.model.CalcRatingFull(&itemSet)
-		tools.ReportSet(&group.model, &itemSet, rating, printer)
+		tools.ReportSet(&group.model, &itemSet, printer)
 
 		printer.Printf("%20s %10.0f %s\n", group.label, rating, group.model.StatWeights.CreateString())
 	}

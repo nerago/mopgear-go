@@ -156,7 +156,7 @@ func PaladinMultiRun() {
 	job := multi_types.JobInputs{}
 	job.SetWeightTypes(2)
 	job.SetSimSize(simSize)
-	//job.SetReforingCommonOnly() // TODO
+	job.SetReforgingAllowNonCommon()
 	//job.SetWriteBestToGearFiles()
 
 	var generalUpgrade items.UpgradeLevel = 0

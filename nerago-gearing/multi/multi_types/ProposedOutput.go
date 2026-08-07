@@ -6,8 +6,6 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
-
-	"github.com/google/uuid"
 )
 
 type MultiProposedOutput struct {
@@ -45,27 +43,22 @@ type SingleProposedOutput struct {
 	FullSet      items.FullItemSet
 	Exists       bool
 	Spec         stats.SpecType
+	SpecLabel    string
 	OutputId     string
 	ResultRating float64
-	Model        *gear_model.SpecModel
 }
 
-func SingleProposed_FromEquip(equipMap items.FullEquipMap, param *SpecParam) SingleProposedOutput {
-	set := items.FullItemSet_FromMap(equipMap)
-	return SingleProposedOutput{Exists: true, Spec: param.Model.Spec, OutputId: uuid.NewString(), ResultRating: param.Model.CalcRatingFull(&set), FullSet: set, Model: &param.Model}
-}
-
-func SingleProposed_FromItemSet(itemSet items.FullItemSet, outputId string, model *gear_model.SpecModel) SingleProposedOutput {
-	return SingleProposedOutput{Exists: true, Spec: model.Spec, OutputId: outputId, ResultRating: model.CalcRatingFull(&itemSet), FullSet: itemSet, Model: model}
+func SingleProposed_FromItemSet(itemSet items.FullItemSet, outputId string, spec stats.SpecType, label string, rating float64) SingleProposedOutput {
+	return SingleProposedOutput{Exists: true, Spec: spec, OutputId: outputId, ResultRating: rating, FullSet: itemSet, SpecLabel: label}
 }
 
 func (single *SingleProposedOutput) Equals(b *SingleProposedOutput) bool {
 	return single.Exists == b.Exists && single.ResultRating == b.ResultRating && single.FullSet.Equals(&b.FullSet)
 }
 
-func (single *SingleProposedOutput) Report(printer *util.PrintRecorder) {
+func (single *SingleProposedOutput) Report(model *gear_model.SpecModel, printer *util.PrintRecorder) {
 	if single.OutputId != "" {
 		printer.Println(single.OutputId)
 	}
-	tools.ReportSet(single.Model, &single.FullSet, single.ResultRating, printer)
+	tools.ReportSet(model, &single.FullSet, printer)
 }

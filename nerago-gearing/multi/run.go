@@ -16,36 +16,36 @@ func (job *MultiSetJob) RunNoPermutations_BestOnly(alsoExistingEquipped bool, al
 	cancelGenerate := util_async.CancelSignal_Make()
 	util_async.CancelOnKeyPress(cancelGenerate)
 
-	proposalFuture := job.proposalSingleBest()
-	util_async.ChainCancel(cancelGenerate, proposalFuture)
+	proposalMix := util_async.FutureChannelMixerMake[multi_types.MultiProposedOutput]()
+	expectedCount := 0
 
-	expectedCount := 1
-	proposalChannel := make(chan multi_types.MultiProposedOutput, 8)
-	if alsoExistingEquipped {
-		proposalChannel <- job.existingGearAsProposal()
+	for _, weightType := range job.input.WeightTypeList {
+		proposalFuture := job.proposalSingleBest(weightType)
+		util_async.ChainCancel(cancelGenerate, proposalFuture)
+
+		proposalMix.AddFuture(proposalFuture)
 		expectedCount++
 	}
 
-	proposalFuture.ForwardResultToRelevantCallback(func(proposal multi_types.MultiProposedOutput) {
-		proposalChannel <- proposal
-		close(proposalChannel)
-	}, func() {
-		close(proposalChannel)
-	})
-
-	var mixedChannel <-chan multi_types.MultiProposedOutput
-	if alsoSpecOptimums {
-		additionalChannel := job.additionalProposalsFromSpecOptimum(cancelGenerate)
-		mixedChannel = util_async.MixChannels(proposalChannel, additionalChannel)
-		expectedCount += job.working.Size()
-	} else {
-		mixedChannel = proposalChannel
+	if alsoExistingEquipped {
+		for _, weightType := range job.input.WeightTypeList {
+			existingProposal := job.existingGearAsProposal(weightType)
+			proposalMix.AddValue(existingProposal)
+			expectedCount++
+		}
 	}
 
-	futureExpectedCount := util_async.Future_Make[int]()
-	futureExpectedCount.SetResult(expectedCount)
+	if alsoSpecOptimums {
+		additionalChannel, additionalCount := job.additionalProposalsFromSpecOptimalBaseline(cancelGenerate)
+		proposalMix.AddChannel(additionalChannel)
+		expectedCount += additionalCount
+	}
 
-	futureSimResultList, futureProposalList := job.proposalsToSimResult(mixedChannel, util.TrackProgress_Start(), futureExpectedCount)
+	expectedCountChannel := make(chan int, 1)
+	expectedCountChannel <- expectedCount
+
+	proposalChannel := proposalMix.ReadyUpAndPrepareChannel()
+	futureSimResultList, futureProposalList := job.proposalsToSimResult(proposalChannel, util.TrackProgress_Start(), expectedCountChannel)
 
 	proposalList, gotResult2 := futureProposalList.WaitForResult()
 	simResultList, gotResult1 := futureSimResultList.WaitForResult()
@@ -60,11 +60,14 @@ func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates(extendedAlternates
 	cancelGenerate := util_async.CancelSignal_Make()
 	util_async.CancelOnKeyPress(cancelGenerate)
 
-	proposalChannel, expectedCount := job.proposalsAllCommonAlternates(cancelGenerate, extendedAlternates, includeInterimResults)
+	proposalMixer, futureCountAdder := job.proposalsAllCommonAlternates(cancelGenerate, extendedAlternates, includeInterimResults)
 
-	additional := job.additionalProposalsFromSpecOptimum(cancelGenerate)
-	proposalChannel = util_async.MixChannels(proposalChannel, additional)
+	additionalChannel, additionalCount := job.additionalProposalsFromSpecOptimalBaseline(cancelGenerate)
+	proposalMixer.AddChannel(additionalChannel)
+	futureCountAdder.AddValueImmediate(func(x int) int { return x + additionalCount })
 
+	proposalChannel := proposalMixer.ReadyUpAndPrepareChannel()
+	expectedCount := futureCountAdder.ReadyUpAndPrepareChannel()
 	futureSimResultList, futureProposalList := job.proposalsToSimResult(proposalChannel, util.TrackProgress_Start(), expectedCount)
 
 	proposalList, gotResult2 := futureProposalList.WaitForResult()
@@ -82,12 +85,14 @@ func (job *MultiSetJob) RunForSolutionsPerPermute(solutionsPerPermute int, inclu
 	tracker := util.TrackProgress_Start()
 	defer tracker.SetDone()
 
-	proposalChannel, expectedCount := job.proposalsUnderPermutation(solutionsPerPermute, includeInterimResults, cancelGenerate)
+	proposalChannel, expectedCountAdder := job.proposalsUnderPermutation(solutionsPerPermute, includeInterimResults, cancelGenerate)
 
-	additional := job.additionalProposalsFromSpecOptimum(cancelGenerate)
-	proposalChannel = util_async.MixChannels(proposalChannel, additional)
+	additionalChannel, additionalCount := job.additionalProposalsFromSpecOptimalBaseline(cancelGenerate)
+	proposalChannel = util_async.MixChannels(proposalChannel, additionalChannel)
+	expectedCountAdder.AddValueImmediate(func(x int) int { return x + additionalCount })
 
-	futureSimResultList, futureProposalList := job.proposalsToSimResult(proposalChannel, tracker, expectedCount)
+	expectedCountChannel := expectedCountAdder.ReadyUpAndPrepareChannel()
+	futureSimResultList, futureProposalList := job.proposalsToSimResult(proposalChannel, tracker, expectedCountChannel)
 
 	proposalList, gotResult2 := futureProposalList.WaitForResult()
 	simResultList, gotResult1 := futureSimResultList.WaitForResult()
@@ -108,28 +113,12 @@ func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time
 
 	waitGroup := sync.WaitGroup{}
 	for work := range job.working.SeqValues() {
-		work.runCullingProcess(targetSolutionCount, &waitGroup, cancel, tracker.NewChild())
+		work.runCullingProcess(targetSolutionCount, &waitGroup, cancel, tracker.NewChild(), job.printer)
 	}
 
 	waitGroup.Wait()
 
 	job.CullingReport()
-}
-
-func (job *MultiSetJob) proposalsToSimResult(proposalChannel <-chan multi_types.MultiProposedOutput, tracker *util.TrackProgress, expectedCount *util_async.Future[int]) (*util_async.FutureCancellable[[]simulateJobResult], *util_async.Future[[]multi_types.MultiProposedOutput]) {
-	proposalChannel = util_async.Channel_RemoveDuplicatesFuncNotify(proposalChannel, func(a, b *multi_types.MultiProposedOutput) bool {
-		return a.Equals(b)
-	}, func(x *multi_types.MultiProposedOutput) {
-		job.printer.Printf("Remove Duplicate %s\n", x.Id)
-	})
-
-	proposalChannel = job.listInitialOutputs(proposalChannel)
-	proposalChannel, futureProposalList := util_async.TeeChannelToSlice(proposalChannel)
-	expectedCount = expectedCount.MapSameType(func(multiSetCount int) (int, bool) { return multiSetCount * len(job.params), true })
-
-	simChannel := job.prepareSimList(proposalChannel)
-	futureSimResultList := job.runSims(simChannel, tracker, expectedCount)
-	return futureSimResultList, futureProposalList
 }
 
 func (job *MultiSetJob) generalMultiReport(gotResult bool, proposalList []multi_types.MultiProposedOutput, simResultList []simulateJobResult) {

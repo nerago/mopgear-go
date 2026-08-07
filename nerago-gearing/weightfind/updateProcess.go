@@ -20,6 +20,7 @@ import (
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_rank"
 	"paladin_gearing_go/weightfind/weight_highs"
+	"paladin_gearing_go/weightfind/weight_highs/fitting3"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"strconv"
@@ -166,6 +167,9 @@ func (spec *WeightSpec) updateOne(tracker *util.TrackProgress, cancel util_async
 
 	// FORMULA2 WEIGHTS - MIP
 	spec.solveFormulaWeight(cancel)
+
+	// FITTING
+	spec.solveFittingWeight(cancel)
 
 	// SEARCH weights - Non-Highs
 	for searchMode := range 2 {
@@ -430,6 +434,16 @@ func (spec *WeightSpec) solveFormulaWeight(cancel util_async.CancelSignal) {
 	weights2Future := comp.Run(c_timeoutSolvers)
 	util_async.ChainCancel(cancel, weights2Future)
 	spec.evaluateWeightFuture("FORM2", weights2Future)
+}
+
+func (spec *WeightSpec) solveFittingWeight(cancel util_async.CancelSignal) {
+	comp := fitting3.FittingEachStatWeightProcess3{}
+	comp.Init(3, spec.process.printer, c_timeoutSolvers*2)
+	comp.SetRequiredStats(spec.statTypes, spec.simTypes)
+	comp.SetTargetRatios(spec.targetRatio)
+	comp.SupplyData(spec.dataAll)
+	weights3 := comp.Run(cancel)
+	spec.evaluateWeight("FITTING3", weights3.AsWeight1(), weights3.Weight, &weights3)
 }
 
 func (spec *WeightSpec) solveSearchWeights(searchMode int, cancel util_async.CancelSignal) {

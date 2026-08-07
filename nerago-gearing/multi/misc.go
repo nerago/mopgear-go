@@ -6,9 +6,11 @@ import (
 )
 
 const (
-	c_prepThreadCount  = 8
-	c_simThreadCount   = 4
-	c_highsThreadCount = 10
+	c_prepThreadCount                = 8
+	c_simThreadCount                 = 4
+	c_highsThreadCount               = 10
+	c_permuteThreadCount             = 4
+	c_additionalProposal_threadCount = 4
 )
 
 type seenMap struct {
