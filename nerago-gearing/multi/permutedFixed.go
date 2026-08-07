@@ -67,7 +67,7 @@ func (job *MultiSetJob) estimateFixedPermutations() int {
 	return count
 }
 
-func (job *MultiSetJob) preparePermutations() <-chan permuteSet {
+func (job *MultiSetJob) buildPermutations() <-chan permuteSet {
 	optionEntriesList := make([]permuteOptions, 0)
 
 	for paramIndex := range job.params {

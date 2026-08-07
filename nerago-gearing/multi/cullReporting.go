@@ -36,7 +36,7 @@ func (param *multiSetParamInternal) cullingReportSeen() {
 		added[itemId] = true
 	}
 
-	for item := range param.exactEquippedGear.AllItemSeq() {
+	for item := range param.itemPrep.exactEquippedGear.AllItemSeq() {
 		itemId := item.ItemId()
 		if !added[itemId] {
 			seenCount := param.seenInSolutions.content[itemId]
@@ -55,7 +55,7 @@ func (param *multiSetParamInternal) cullingReportSeen() {
 		if slices.Contains(param.BlockedItems, info.itemId) {
 			continue
 		}
-		item, itemFound := param.itemOptions.FindItemIdFirstOptional(info.itemId)
+		item, itemFound := param.itemPrep.itemOptions.FindItemIdFirstOptional(info.itemId)
 		if itemFound {
 			if info.count == 0 {
 				param.job.printer.Printf("%5d 0 NONE // %s; %s\n", info.itemId, item.SlotItem().Name(), item.BaseName())

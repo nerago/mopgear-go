@@ -62,10 +62,3 @@ func (equippedArray *EquippedArray) GetWithItemId(itemId items.ItemId) *Equipped
 	}
 	return nil
 }
-
-func BagsFileItemSetExtraDefaults(equip *EquippedItem, upgradeLevelSuggested items.UpgradeLevel) {
-	// shouldn't be needed now we had an alternate export
-	if equip.UpgradeStepOrItemLevel == 0 {
-		equip.UpgradeStepOrItemLevel = int32(upgradeLevelSuggested)
-	}
-}

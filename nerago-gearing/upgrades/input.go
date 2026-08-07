@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/loaders"
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/stats"
+	"paladin_gearing_go/weightfind/weight_types"
 )
 
 type FindUpgrades_BasicInputs struct {
@@ -13,7 +14,7 @@ type FindUpgrades_BasicInputs struct {
 	IncludeNormal       bool
 	IncludeHeroic       bool
 	PositiveResultsOnly bool
-	WeightType          int
+	WeightType          weight_types.WeightType
 	TargetUpgradeLevel  items.UpgradeLevel
 	IgnoredItems        []items.ItemId
 }

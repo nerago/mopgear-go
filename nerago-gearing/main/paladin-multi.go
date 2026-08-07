@@ -153,67 +153,80 @@ func PaladinMultiRun() {
 	simSize := simulate.RunSize_Common
 	//simSize := simulate.RunSize_QuickDirty
 
-	job := multi.MultiSetJob_Create(printer, simSize)
-	job.SetWeightType(2)
+	job := multi_types.JobInputs{}
+	job.SetWeightTypes(2)
+	job.SetSimSize(simSize)
 	//job.SetReforingCommonOnly() // TODO
 	//job.SetWriteBestToGearFiles()
 
 	var generalUpgrade items.UpgradeLevel = 0
 	var forceUpgrade items.UpgradeLevel = 0
 
-	ret := multi_types.MultiSetParam{
-		Label:                     "Ret",
-		GearFile:                  files.GearFileRet,
-		Model:                     model_factory.Model_PallyRet(),
-		RequestRatingPercent:      0.04,
-		ExtraUpgradeLevel:         generalUpgrade,
-		ForceUpgradeExistingItems: 0,
-		MissingEnchant:            setup.MissingEnchant_Panic,
+	ret := multi_types.SpecParam{
+		Label: "Ret",
+		Model: model_factory.Model_PallyRet(),
+		ItemInputs: multi_types.ItemInputs{
+			GearFile:                  files.GearFileRet,
+			RequestRatingPercent:      0.04,
+			ExtraUpgradeLevel:         generalUpgrade,
+			ForceUpgradeExistingItems: 0,
+			MissingEnchant:            setup.MissingEnchant_Panic,
+		},
 	}
-	protDps := multi_types.MultiSetParam{
-		Label:                     "Prot-Damage",
-		GearFile:                  files.GearFileProtDps,
-		Model:                     model_factory.Model_PallyProtDps(),
-		RequestRatingPercent:      0.01,
-		ExtraUpgradeLevel:         generalUpgrade,
-		ForceUpgradeExistingItems: forceUpgrade,
-		MissingEnchant:            setup.MissingEnchant_Panic,
+	protDps := multi_types.SpecParam{
+		Label: "Prot-Damage",
+		Model: model_factory.Model_PallyProtDps(),
+		ItemInputs: multi_types.ItemInputs{
+			GearFile:                  files.GearFileProtDps,
+			RequestRatingPercent:      0.01,
+			ExtraUpgradeLevel:         generalUpgrade,
+			ForceUpgradeExistingItems: forceUpgrade,
+			MissingEnchant:            setup.MissingEnchant_Panic,
+		},
 	}
-	protCompromise := multi_types.MultiSetParam{
-		Label:                     "Prot-Compromise",
-		GearFile:                  files.GearFileProtCompromise,
-		Model:                     model_factory.Model_PallyProtCompromise(),
-		RequestRatingPercent:      0.25,
-		ExtraUpgradeLevel:         generalUpgrade,
-		ForceUpgradeExistingItems: forceUpgrade,
-		MissingEnchant:            setup.MissingEnchant_Panic,
+	protCompromise := multi_types.SpecParam{
+		Label: "Prot-Compromise",
+		Model: model_factory.Model_PallyProtCompromise(),
+		ItemInputs: multi_types.ItemInputs{
+			GearFile:                  files.GearFileProtCompromise,
+			RequestRatingPercent:      0.25,
+			ExtraUpgradeLevel:         generalUpgrade,
+			ForceUpgradeExistingItems: forceUpgrade,
+			MissingEnchant:            setup.MissingEnchant_Panic,
+		},
 	}
-	protMitigationNoSet := multi_types.MultiSetParam{
-		Label:                     "Prot-Mitigation-NoSet",
-		GearFile:                  files.GearFileProtMitigationNoSet,
-		Model:                     model_factory.Model_PallyProtMitigation_NoSet(),
-		RequestRatingPercent:      0.35,
-		ExtraUpgradeLevel:         generalUpgrade,
-		ForceUpgradeExistingItems: forceUpgrade,
-		MissingEnchant:            setup.MissingEnchant_Panic,
+	protMitigationNoSet := multi_types.SpecParam{
+		Label: "Prot-Mitigation-NoSet",
+		Model: model_factory.Model_PallyProtMitigation_NoSet(),
+		ItemInputs: multi_types.ItemInputs{
+			GearFile:                  files.GearFileProtMitigationNoSet,
+			RequestRatingPercent:      0.35,
+			ExtraUpgradeLevel:         generalUpgrade,
+			ForceUpgradeExistingItems: forceUpgrade,
+			MissingEnchant:            setup.MissingEnchant_Panic,
+		},
 	}
-	protMitigationWithSet := multi_types.MultiSetParam{
-		Label:                     "Prot-Mitigation-WithSet",
-		GearFile:                  files.GearFileProtMitigationWithSet,
-		Model:                     model_factory.Model_PallyProtMitigation_WithSet(),
-		RequestRatingPercent:      0.30,
-		ExtraUpgradeLevel:         generalUpgrade,
-		ForceUpgradeExistingItems: forceUpgrade,
-		MissingEnchant:            setup.MissingEnchant_Panic,
+	protMitigationWithSet := multi_types.SpecParam{
+		Label: "Prot-Mitigation-WithSet",
+		Model: model_factory.Model_PallyProtMitigation_WithSet(),
+		ItemInputs: multi_types.ItemInputs{
+			GearFile:                  files.GearFileProtMitigationWithSet,
+			RequestRatingPercent:      0.30,
+			ExtraUpgradeLevel:         generalUpgrade,
+			ForceUpgradeExistingItems: forceUpgrade,
+			MissingEnchant:            setup.MissingEnchant_Panic,
+		},
 	}
-	protHeal := multi_types.MultiSetParam{
-		Label:                     "Prot-Heal",
-		GearFile:                  files.GearFileProtMitigationWithSet,
-		Model:                     model_factory.Model_PallyProtHeal(),
-		RequestRatingPercent:      0.05,
-		ExtraUpgradeLevel:         generalUpgrade,
-		ForceUpgradeExistingItems: forceUpgrade,
-		MissingEnchant:            setup.MissingEnchant_Panic,
+	protHeal := multi_types.SpecParam{
+		Label: "Prot-Heal",
+		Model: model_factory.Model_PallyProtHeal(),
+		ItemInputs: multi_types.ItemInputs{
+			GearFile:                  files.GearFileProtMitigationWithSet,
+			RequestRatingPercent:      0.05,
+			ExtraUpgradeLevel:         generalUpgrade,
+			ForceUpgradeExistingItems: forceUpgrade,
+			MissingEnchant:            setup.MissingEnchant_Panic,
+		},
 	}
 
 	ret.AddExtraItem(legendMeleeCloak) // TODO need a better solution, common reforge apply to baseline?
@@ -409,21 +422,23 @@ func PaladinMultiRun() {
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()
 
+	run := multi.JobCreate(printer, job)
+
 	//job.RunNoPermutations_AllCommonAlternates(true, true)
-	job.RunNoPermutations_BestOnly(false, false)
+	run.RunNoPermutations_BestOnly(false, false)
 	//job.RunForSolutionsPerPermute(12, true)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)
 }
 
-func addExtrasToEach(itemIdList []items.ItemId, params ...*multi_types.MultiSetParam) {
+func addExtrasToEach(itemIdList []items.ItemId, params ...*multi_types.SpecParam) {
 	for _, param := range params {
 		param.AddExtraItems(itemIdList)
 	}
 }
 
-func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {
+func blockHelmetsWithoutCapacitance(param *multi_types.SpecParam) {
 	param.BlockItem(87101)  // white tiger helmet = prot gem
 	param.BlockItem(95292)  // lightning emp faceguard = prot gem
 	param.BlockItem(96666)  // lightning emp faceguard heroic = prot gem
@@ -437,7 +452,7 @@ func blockHelmetsWithoutCapacitance(param *multi_types.MultiSetParam) {
 	blockGeneral(param)
 }
 
-func blockHelmetsWithoutIndomitable(param *multi_types.MultiSetParam) {
+func blockHelmetsWithoutIndomitable(param *multi_types.SpecParam) {
 	param.BlockItem(87024)  // nullification greathelm = capacitance
 	param.BlockItem(95282)  // lightning emp helmet = capacitance
 	param.BlockItem(101882) // cliffbreaker helm = capacitance
@@ -446,13 +461,13 @@ func blockHelmetsWithoutIndomitable(param *multi_types.MultiSetParam) {
 	blockGeneral(param)
 }
 
-func blockGeneral(param *multi_types.MultiSetParam) {
+func blockGeneral(param *multi_types.SpecParam) {
 	param.BlockItem(95513)  // normal ring
 	param.BlockItem(95778)  // golden golem celestial
 	param.BlockItem(101942) // Elder Tortoiseshell Helm (just blocking to gem bis runs done, don't have one)
 }
 
-func addExtrasFromFinder(foundList []loaders.ItemFoundRef, params ...*multi_types.MultiSetParam) {
+func addExtrasFromFinder(foundList []loaders.ItemFoundRef, params ...*multi_types.SpecParam) {
 	for _, itemRef := range foundList {
 		for _, param := range params {
 			param.AddExtraItem(itemRef.ItemId)

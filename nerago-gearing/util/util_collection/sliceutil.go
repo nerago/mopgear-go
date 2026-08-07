@@ -233,6 +233,20 @@ func MapSliceAsSeq[T any, R any](slice []T, mapper func(x *T) R) iter.Seq[R] {
 	}
 }
 
+func SliceToMap[T any, K comparable, V any](slice []T, toKey func(*T) K, toValue func(*T) V) map[K]V {
+	if slice == nil {
+		return nil
+	}
+
+	result := make(map[K]V, len(slice))
+	for i := range slice {
+		key := toKey(&slice[i])
+		value := toValue(&slice[i])
+		result[key] = value
+	}
+	return result
+}
+
 func FilterSliceAsNew[T any](slice []T, filter func(x *T) bool) []T {
 	if slice == nil {
 		return slice

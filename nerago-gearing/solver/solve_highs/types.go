@@ -124,7 +124,7 @@ type SolverModel struct {
 	SetBonusMultipliers    []setBonusMultiplierByCount
 }
 
-func SolverModelBuild(model *gear_model.SpecModel, weightType int) *SolverModel {
+func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.WeightType) *SolverModel {
 	solveModel := &SolverModel{
 		CheckSet:               model.CheckSet,
 		StatRequirements:       toEnumMap(model.StatRequirements.AsMap()),

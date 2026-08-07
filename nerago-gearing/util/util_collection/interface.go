@@ -157,3 +157,7 @@ func IMapEquals[K comparable, V any](a IMap[K, V], b IMap[K, V], elementEqual fu
 
 	return true
 }
+
+func IdentityFunc[T any](value T) T {
+	return value
+}

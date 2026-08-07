@@ -9,12 +9,6 @@ import (
 	"paladin_gearing_go/util/util_collection"
 )
 
-type IWeight interface {
-	IsEmpty() bool
-	CalcStatScore(stats *stats.StatBlock) float64
-	String() string
-}
-
 type Weight1Basic struct {
 	content stats.StatBlockFloat
 }

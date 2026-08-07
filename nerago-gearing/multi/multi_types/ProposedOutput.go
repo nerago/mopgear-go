@@ -50,7 +50,7 @@ type SingleProposedOutput struct {
 	Model        *gear_model.SpecModel
 }
 
-func SingleProposed_FromEquip(equipMap items.FullEquipMap, param *MultiSetParam) SingleProposedOutput {
+func SingleProposed_FromEquip(equipMap items.FullEquipMap, param *SpecParam) SingleProposedOutput {
 	set := items.FullItemSet_FromMap(equipMap)
 	return SingleProposedOutput{Exists: true, Spec: param.Model.Spec, OutputId: uuid.NewString(), ResultRating: param.Model.CalcRatingFull(&set), FullSet: set, Model: &param.Model}
 }

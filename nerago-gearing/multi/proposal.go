@@ -42,7 +42,7 @@ func (job *MultiSetJob) proposalsUnderPermutation(solutionsPerPermute int, inclu
 	estimate := job.estimateFixedPermutations()
 	job.printer.Printf("PERMUTE SET COUNT %d\n", estimate)
 
-	permuteChannel := job.preparePermutations()
+	permuteChannel := job.buildPermutations()
 
 	proposalChannel := util_async.MapMulti_ChannelToChannel_Cancellable(highsThreadCount, permuteChannel, cancel,
 		func(permuteSet permuteSet, resultChannel chan<- multi_types.MultiProposedOutput) {
@@ -220,7 +220,7 @@ func (job *MultiSetJob) existingGearAsProposal() multi_types.MultiProposedOutput
 	proposal := multi_types.MultiProposedOutput{Id: "Existing-Gear"}
 	for paramIndex := range job.params {
 		param := &job.params[paramIndex]
-		single := multi_types.SingleProposed_FromEquip(param.exactEquippedGear, &param.MultiSetParam)
+		single := multi_types.SingleProposed_FromEquip(param.itemPrep.exactEquippedGear, &param.MultiSetParam)
 		proposal.Parts = append(proposal.Parts, single)
 		proposal.TotalRatingSum += single.ResultRating
 	}

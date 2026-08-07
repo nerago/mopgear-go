@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
+	"paladin_gearing_go/weightfind/weight_types"
 
 	"github.com/google/uuid"
 )
@@ -15,31 +16,21 @@ import (
 type SolveInput struct {
 	ItemOptions *items.FullOptionsMap
 	Model       *gear_model.SpecModel
-	WeightType  int
+	WeightType  weight_types.WeightType
 	Printer     *util.PrintRecorder
 }
 
 func Solver(input SolveInput) SolveOutput {
 	printer, solveOptions := prepareSolve(input)
-
 	solveModel := solve_highs.SolverModelBuild(input.Model, input.WeightType)
+
 	futureSolvedSet := launchSolve(solveOptions, solveModel, printer, input.WeightType)
 	solvedResult := futureSolvedSet.WaitForResultAsOptional()
 
 	return finaliseSolve(solvedResult, solveOptions, input, printer)
 }
 
-func Solver_Lite(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, weightType int, printer *util.PrintRecorder) items.FullItemSet {
-	solveOptions := items.SolvableOptionsMap_of(itemOptions)
-	solveModel := solve_highs.SolverModelBuild(model, weightType)
-	futureSolvedSet := launchSolve(solveOptions, solveModel, printer, weightType)
-	solvedSet := futureSolvedSet.WaitForResultAsOptional()
-	fullSet := items.FullItemSet_FromSolved(solvedSet.GetOrPanic(), itemOptions)
-	model.ValidateSet(&fullSet)
-	return fullSet
-}
-
-func launchSolve(solveOptions items.SolvableOptionsMap, solveModel *solve_highs.SolverModel, printer *util.PrintRecorder, weightType int) *util_async.FutureCancellable[items.SolvableItemSet] {
+func launchSolve(solveOptions items.SolvableOptionsMap, solveModel *solve_highs.SolverModel, printer *util.PrintRecorder, weightType weight_types.WeightType) *util_async.FutureCancellable[items.SolvableItemSet] {
 	switch weightType {
 	case 1:
 		return solve_highs.SingleGearSetMain(&solveOptions, solveModel, printer)
@@ -84,13 +75,15 @@ func finaliseSolve(solvedResult util_collection.Optional[items.SolvableItemSet],
 	fullItem := items.FullItemSet_FromSolved(solvedSet, input.ItemOptions)
 	input.Model.ValidateSet(&fullItem)
 
+	rating := input.Model.CalcRatingSolve(&solvedSet, input.WeightType)
+
 	return SolveOutput{
 		Success:      true,
 		OutputId:     uuid.NewString(),
 		Input:        &input,
 		SolvedSet:    solvedSet,
 		FullSet:      fullItem,
-		ResultRating: input.Model.CalcRatingSolve(&solvedSet),
+		ResultRating: rating,
 		Printer:      printer}
 }
 

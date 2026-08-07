@@ -24,3 +24,23 @@ func (sw *StatRatingsWeightsExtended) Equals(other *StatRatingsWeightsExtended) 
 		sw.Weight2.Equals(&other.Weight2) &&
 		sw.Weight3.Equals(&other.Weight3)
 }
+
+func (sw *StatRatingsWeightsExtended) GetByWeightType(weightType weight_types.WeightType) weight_types.IWeight {
+	var weight weight_types.IWeight
+	switch weightType {
+	case 1:
+		weight = &sw.Weight1
+	case 2:
+		weight = &sw.Weight2
+	case 3:
+		weight = &sw.Weight3
+	default:
+		panic("invalid weight type")
+	}
+
+	if weight.IsEmpty() {
+		panic("missing weight")
+	}
+
+	return weight
+}

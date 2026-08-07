@@ -113,14 +113,14 @@ func (model *SpecModel) ValidateSet(itemSet *FullItemSet) {
 }
 
 // ////////// set ratings
-func (model *SpecModel) CalcRatingSolve(itemSet *SolvableItemSet) float64 {
-	baseRating := model.StatWeights.CalcRating(itemSet.Total())
+func (model *SpecModel) CalcRatingSolve(itemSet *SolvableItemSet, weightType weight_types.WeightType) float64 {
+	baseRating := model.StatWeights.GetByWeightType(weightType).CalcStatScore(itemSet.Total())
 	setRating := model.SetBonus.CalcBonusSolve(itemSet.Items())
 	return baseRating * setRating
 }
 
-func (model *SpecModel) CalcRatingFull(itemSet *FullItemSet) float64 {
-	baseRating := model.StatWeights.CalcRating(itemSet.Total())
+func (model *SpecModel) CalcRatingFull(itemSet *FullItemSet, weightType weight_types.WeightType) float64 {
+	baseRating := model.StatWeights.GetByWeightType(weightType).CalcStatScore(itemSet.Total())
 	setRating := model.SetBonus.CalcBonusFull(itemSet.Items())
 	return baseRating * setRating
 }
@@ -132,12 +132,12 @@ func (model *SpecModel) CalcRatingSolveForGivenWeight(itemSet *SolvableItemSet, 
 }
 
 // ////////// items ratings
-func (model *SpecModel) CalcRatingSolveItem(item *SolvableItem) float64 {
-	return model.StatWeights.CalcRating(item.Total())
+func (model *SpecModel) CalcRatingSolveItem(item *SolvableItem, weightType weight_types.WeightType) float64 {
+	return model.StatWeights.GetByWeightType(weightType).CalcStatScore(item.Total())
 }
 
-func (model *SpecModel) CalcRatingFullItem(item *FullItem) float64 {
-	return model.StatWeights.CalcRating(item.Total())
+func (model *SpecModel) CalcRatingFullItem(item *FullItem, weightType weight_types.WeightType) float64 {
+	return model.StatWeights.GetByWeightType(weightType).CalcStatScore(item.Total())
 }
 
 func (model *SpecModel) CalcRatingSolveItemForGivenWeight(item *SolvableItem, weight weight_types.IWeight) float64 {

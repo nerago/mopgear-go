@@ -9,21 +9,21 @@ import (
 	"sync/atomic"
 )
 
-func (param *multiSetParamInternal) runCullingProcess(targetNum int64, waitGroup *sync.WaitGroup, cancel util_async.CancelSignal, tracker *util.TrackProgress) {
+func (work *specWorking) runCullingProcess(targetNum int64, waitGroup *sync.WaitGroup, cancel util_async.CancelSignal, tracker *util.TrackProgress, printer *util.PrintRecorder) {
 	currentNum := atomic.Uint64{}
 	tracker.RunFromAtomicInt(&currentNum, uint64(targetNum))
 
 	waitGroup.Go(func() {
 		highCull := solve_highs.OptionsCulling{}
-		solveOptions := items.SolvableOptionsMap_of(&param.itemOptions)
-		solverModel := solve_highs.SolverModelBuild(&param.Model, param.job.weightType)
-		highCull.Init(param.Label, targetNum, solveOptions, solverModel, param.job.printer)
+		solveOptions := items.SolvableOptionsMap_of(&work.itemPrep.itemOptions)
+		solverModel := solve_highs.SolverModelBuild(&work.itemPrep.model, work.weightType)
+		highCull.Init(work.itemPrep.label, targetNum, solveOptions, solverModel, printer)
 
 		resultChannel := highCull.Run(cancel)
 
 		for solvedSet := range resultChannel {
-			fullSet := items.FullItemSet_FromSolved(solvedSet, &param.itemOptions)
-			param.seenInSolutions.Add(&fullSet)
+			fullSet := items.FullItemSet_FromSolved(solvedSet, &work.itemPrep.itemOptions)
+			work.seenInSolutions.Add(new(fullSet))
 			currentNum.Add(1)
 		}
 

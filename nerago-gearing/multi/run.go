@@ -4,14 +4,14 @@ import (
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
-	"paladin_gearing_go/util/util_collection"
 	"sync"
 	"time"
 )
 
 func (job *MultiSetJob) RunNoPermutations_BestOnly(alsoExistingEquipped bool, alsoSpecOptimums bool) {
 	job.checkNoPermutations()
-	job.prepareInitial()
+	job.prepareItems()
+	job.prepareWorking()
 
 	cancelGenerate := util_async.CancelSignal_Make()
 	util_async.CancelOnKeyPress(cancelGenerate)
@@ -37,7 +37,7 @@ func (job *MultiSetJob) RunNoPermutations_BestOnly(alsoExistingEquipped bool, al
 	if alsoSpecOptimums {
 		additionalChannel := job.additionalProposalsFromSpecOptimum(cancelGenerate)
 		mixedChannel = util_async.MixChannels(proposalChannel, additionalChannel)
-		expectedCount += len(job.params)
+		expectedCount += job.working.Size()
 	} else {
 		mixedChannel = proposalChannel
 	}
@@ -54,7 +54,8 @@ func (job *MultiSetJob) RunNoPermutations_BestOnly(alsoExistingEquipped bool, al
 
 func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates(extendedAlternates bool, includeInterimResults bool) {
 	job.checkNoPermutations()
-	job.prepareInitial()
+	job.prepareItems()
+	job.prepareWorking()
 
 	cancelGenerate := util_async.CancelSignal_Make()
 	util_async.CancelOnKeyPress(cancelGenerate)
@@ -72,7 +73,8 @@ func (job *MultiSetJob) RunNoPermutations_AllCommonAlternates(extendedAlternates
 }
 
 func (job *MultiSetJob) RunForSolutionsPerPermute(solutionsPerPermute int, includeInterimResults bool) {
-	job.prepareInitial()
+	job.prepareItems()
+	job.prepareWorking()
 
 	cancelGenerate := util_async.CancelSignal_Make()
 	util_async.CancelOnKeyPress(cancelGenerate)
@@ -93,10 +95,11 @@ func (job *MultiSetJob) RunForSolutionsPerPermute(solutionsPerPermute int, inclu
 }
 
 func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time.Duration) {
-	job.prepareInitial()
+	job.prepareItems()
+	job.prepareWorking()
 
 	tracker := util.TrackProgress_Start()
-	tracker.RunOuterTracking(len(job.params))
+	tracker.RunOuterTracking(job.working.Size())
 	defer tracker.SetDone()
 
 	cancel := util_async.CancelSignal_Make()
@@ -104,8 +107,8 @@ func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time
 	defer timer.Stop()
 
 	waitGroup := sync.WaitGroup{}
-	for param := range util_collection.ForPointer(job.params) {
-		param.runCullingProcess(targetSolutionCount, &waitGroup, cancel, tracker.NewChild())
+	for work := range job.working.SeqValues() {
+		work.runCullingProcess(targetSolutionCount, &waitGroup, cancel, tracker.NewChild())
 	}
 
 	waitGroup.Wait()
