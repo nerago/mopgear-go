@@ -148,17 +148,18 @@ func Model_PallyProtDps() gear_model.SpecModel {
 func Model_PallyRet() gear_model.SpecModel {
 	spec := stats.Spec_PaladinRet
 	goal := stats.OptimiseGoal_Dps
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightRetFile, false, false, false)
+	weight := tools.StatRatingsWeights_ReadFile(files.WeightRetFile)
 	return gear_model.SpecModel{
-		Spec:                 spec,
-		Goal:                 goal,
-		SimulateAs:           stats.Fight_Horridon_HighHeal,
-		SimPriority:          SimPriority_ret,
-		SimSpeedUp:           8,
-		StatWeights:          weight,
-		StatRequirements:     requirements.StatRequirementsHitExpertise_RetWideCap(),
-		StatsForWeighting:    StatsForWeighting_strengthMelee,
-		ReforgeRules:         gear_model.ReforgeRules_melee,
+		Spec:              spec,
+		Goal:              goal,
+		SimulateAs:        stats.Fight_Horridon_HighHeal,
+		SimPriority:       SimPriority_ret,
+		SimSpeedUp:        8,
+		StatWeights:       weight,
+		StatRequirements:  requirements.StatRequirementsHitExpertise_RetWideCap(),
+		StatsForWeighting: StatsForWeighting_strengthMelee,
+		ReforgeRules:      gear_model.ReforgeRules_tank, // TODO remove hack
+		//ReforgeRules:         gear_model.ReforgeRules_melee,
 		EnchantChoice:        gear_model.EnchantChoice_ForSpec(spec, goal),
 		GemChoice:            gear_model.GemChoice_ForSpec(spec, goal),
 		SetBonus:             gear_model.SetBonus_Named("Battlegear of the Lightning Emperor", "Battlegear of Winged Triumph"),

@@ -132,6 +132,8 @@ var orgRaidDrops = []items.ItemId{
 	104417, // corruption-rotted gauntlets
 	104416, // chest congealed corruption heroic
 	103796, // seal kings norm
+	103798, // bloodclaw band
+	103737, // breastplate shaman mirror
 }
 var orgOneHandAndShield = []items.ItemId{
 	103826, // xifeng weapon
