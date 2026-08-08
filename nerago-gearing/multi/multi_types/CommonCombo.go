@@ -7,18 +7,18 @@ import (
 
 type CommonCombo map[items.ItemRef]*items.FullItem
 
-func CommonCombo_FromProposed(outputs []SingleProposedOutput) CommonCombo {
+func CommonCombo_FromProposed(outputs map[string]SingleProposedOutput) CommonCombo {
 	combo := make(CommonCombo)
 	itemSeen := make(map[items.ItemRef]*items.FullItem)
 
-	for index := range outputs {
-		for item := range outputs[index].FullSet.Items().AllItemSeq() {
+	for _, single := range outputs {
+		for item := range single.FullSet.Items().AllItemSeq() {
 			ref := items.ItemRef_Of(item)
 			previousVersion, hasPrevious := itemSeen[ref]
 			if hasPrevious && previousVersion.Equals(item) {
 				combo.AddItem(ref, item)
 			} else if hasPrevious {
-				panic("inconsisent version of item " + item.CreateString())
+				panic("inconsistent version of item " + item.CreateString())
 			} else {
 				itemSeen[ref] = item
 			}

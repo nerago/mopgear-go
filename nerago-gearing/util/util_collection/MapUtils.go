@@ -28,3 +28,11 @@ func MapFirstEntry[K comparable, V any](m map[K]V) (K, V) {
 	}
 	panic("empty map")
 }
+
+func MapBasicMap[K comparable, V any, R any](input map[K]V, mapper func(V) R) map[K]R {
+	result := make(map[K]R, len(input))
+	for k, v := range input {
+		result[k] = mapper(v)
+	}
+	return result
+}

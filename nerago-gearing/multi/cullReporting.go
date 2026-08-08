@@ -4,15 +4,15 @@ import (
 	"cmp"
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/util/util_collection"
+	"paladin_gearing_go/util"
 	"slices"
 )
 
 func (job *MultiSetJob) CullingReport() {
-	for paramIndex := range job.params {
-		job.params[paramIndex].cullingReportSeen()
-		job.params[paramIndex].cullingReportBags()
-		job.params[paramIndex].cullingReportOrphan()
+	for _, prep := range job.itemPrep {
+		prep.cullingReportSeen(job.printer)
+		prep.cullingReportBags(job.printer)
+		prep.cullingReportOrphan(job.printer)
 		job.printer.Println0()
 		job.printer.Println0()
 	}
@@ -20,7 +20,7 @@ func (job *MultiSetJob) CullingReport() {
 	job.cullReportAll()
 }
 
-func (param *multiSetParamInternal) cullingReportSeen() {
+func (prep *specItemPrep) cullingReportSeen(printer *util.PrintRecorder) {
 	type extraInfoStruct struct {
 		itemId items.ItemId
 		count  uint32
@@ -28,18 +28,18 @@ func (param *multiSetParamInternal) cullingReportSeen() {
 
 	added := make(map[items.ItemId]bool)
 
-	extraInfo := make([]extraInfoStruct, 0, len(param.ExtraItems))
-	for _, itemId := range param.ExtraItems {
-		seenCount := param.seenInSolutions.content[itemId]
+	extraInfo := make([]extraInfoStruct, 0, len(prep.inputs.ExtraItems))
+	for _, itemId := range prep.inputs.ExtraItems {
+		seenCount := prep.seenInSolutions.content[itemId]
 		info := extraInfoStruct{itemId: itemId, count: seenCount}
 		extraInfo = append(extraInfo, info)
 		added[itemId] = true
 	}
 
-	for item := range param.itemPrep.exactEquippedGear.AllItemSeq() {
+	for item := range prep.exactEquippedGear.AllItemSeq() {
 		itemId := item.ItemId()
 		if !added[itemId] {
-			seenCount := param.seenInSolutions.content[itemId]
+			seenCount := prep.seenInSolutions.content[itemId]
 			info := extraInfoStruct{itemId: itemId, count: seenCount}
 			extraInfo = append(extraInfo, info)
 			added[itemId] = true
@@ -50,95 +50,101 @@ func (param *multiSetParamInternal) cullingReportSeen() {
 		return cmp.Or(cmp.Compare(a.count, b.count), cmp.Compare(a.itemId, b.itemId))
 	})
 
-	param.job.printer.Printf("EXTRAS USED %s\n", param.Label)
+	printer.Printf("EXTRAS USED %s\n", prep.label)
 	for _, info := range extraInfo {
-		if slices.Contains(param.BlockedItems, info.itemId) {
+		if slices.Contains(prep.inputs.BlockedItems, info.itemId) {
 			continue
 		}
-		item, itemFound := param.itemPrep.itemOptions.FindItemIdFirstOptional(info.itemId)
+		item, itemFound := prep.itemOptions.FindItemIdFirstOptional(info.itemId)
 		if itemFound {
 			if info.count == 0 {
-				param.job.printer.Printf("%5d 0 NONE // %s; %s\n", info.itemId, item.SlotItem().Name(), item.BaseName())
+				printer.Printf("%5d 0 NONE // %s; %s\n", info.itemId, item.SlotItem().Name(), item.BaseName())
 			} else {
-				param.job.printer.Printf("%5d %6d // %s; %s\n", info.itemId, info.count, item.SlotItem().Name(), item.BaseName())
+				printer.Printf("%5d %6d // %s; %s\n", info.itemId, info.count, item.SlotItem().Name(), item.BaseName())
 			}
 		} else {
 			itemName := db.LookupItemNameByItemId(info.itemId)
-			param.job.printer.Printf("%5d %d MISSING IN OPTIONS // %s\n", info.itemId, info.count, itemName)
+			printer.Printf("%5d %d MISSING IN OPTIONS // %s\n", info.itemId, info.count, itemName)
 		}
 	}
 }
 
-func (param *multiSetParamInternal) cullingReportBags() {
-	for _, itemId := range param.addedFromBags {
-		seenCount := param.seenInSolutions.content[itemId]
+func (prep *specItemPrep) cullingReportBags(printer *util.PrintRecorder) {
+	for _, itemId := range prep.addedFromBags {
+		seenCount := prep.seenInSolutions.content[itemId]
 		if seenCount > 0 {
-			item, itemFound := param.itemOptions.FindItemIdFirstOptional(itemId)
+			item, itemFound := prep.itemOptions.FindItemIdFirstOptional(itemId)
 			if itemFound {
-				param.job.printer.Printf("BAGS SUGGESTION %d %d %s; %s\n", itemId, seenCount, item.SlotItem().Name(), item.BaseName())
+				printer.Printf("BAGS SUGGESTION %d %d %s; %s\n", itemId, seenCount, item.SlotItem().Name(), item.BaseName())
 			} else {
-				param.job.printer.Printf("BAGS SUGGESTION %d %d BUT missing options?!?!?!?!\n", itemId, seenCount)
+				printer.Printf("BAGS SUGGESTION %d %d BUT missing options?!?!?!?!\n", itemId, seenCount)
 			}
 		}
 	}
 }
 
-func (param *multiSetParamInternal) cullingReportOrphan() {
-	for itemId, seenCount := range param.seenInSolutions.content {
+func (prep *specItemPrep) cullingReportOrphan(printer *util.PrintRecorder) {
+	for itemId, seenCount := range prep.seenInSolutions.content {
 		if seenCount > 0 {
-			if !slices.Contains(param.ExtraItems, itemId) && !slices.Contains(param.addedFromBags, itemId) {
+			if !slices.Contains(prep.inputs.ExtraItems, itemId) && !slices.Contains(prep.addedFromBags, itemId) {
 				name := db.LookupItemNameByItemId(itemId)
-				param.job.printer.Printf("ORPHAN ITEM USED %d %d // %s\n", itemId, seenCount, name)
+				printer.Printf("ORPHAN ITEM USED %d %d // %s\n", itemId, seenCount, name)
 			}
 		}
 	}
 }
 
 func (job *MultiSetJob) cullReportAll() {
-	maxCountForParam := make([]uint32, len(job.params))
-	for param := range util_collection.ForPointer(job.params) {
-		for _, count := range param.seenInSolutions.content {
-			maxCountForParam[param.paramIndex] = max(maxCountForParam[param.paramIndex], count)
+	// highest count per label
+	maxCountForParam := make(map[string]uint32)
+	for _, prep := range job.itemPrep {
+		for _, count := range prep.seenInSolutions.content {
+			maxCountForParam[prep.label] = max(maxCountForParam[prep.label], count)
 		}
 	}
 
+	// highest ratio per itemId
 	combinedCount := make(map[items.ItemId]uint32)
-	bestPercent := make(map[items.ItemId]float64)
+	bestRatio := make(map[items.ItemId]float64)
 	seen := make(map[items.ItemId]bool)
-	for param := range util_collection.ForPointer(job.params) {
-		maxCount := float64(maxCountForParam[param.paramIndex])
-		for _, itemId := range param.ExtraItems {
-			seenCount := param.seenInSolutions.content[itemId]
-			percent := float64(seenCount) / maxCount
-			bestPercent[itemId] = max(bestPercent[itemId], percent)
+	for _, prep := range job.itemPrep {
+		maxCount := float64(maxCountForParam[prep.label])
+		for _, itemId := range prep.inputs.ExtraItems {
+			seenCount := prep.seenInSolutions.content[itemId]
+			ratio := float64(seenCount) / maxCount
+			bestRatio[itemId] = max(bestRatio[itemId], ratio)
 			combinedCount[itemId] += seenCount
 			seen[itemId] = true
 		}
 	}
 
-	for param := range util_collection.ForPointer(job.params) {
-		for item := range param.exactEquippedGear.AllItemSeq() {
+	// equipped gear is forced to top rating
+	for _, prep := range job.itemPrep {
+		for item := range prep.exactEquippedGear.AllItemSeq() {
 			itemId := item.ItemId()
-			bestPercent[itemId] = 1.0
+			bestRatio[itemId] = 1.0
 			combinedCount[itemId] += 1000
 			seen[itemId] = true
 		}
 	}
 
+	// copy ratios into nice sortable structure
 	type lowEntry struct {
 		itemId  items.ItemId
 		percent float64
 	}
 	lowEntries := make([]lowEntry, 0)
 	for itemId := range seen {
-		entry := lowEntry{itemId, bestPercent[itemId]}
+		entry := lowEntry{itemId, bestRatio[itemId]}
 		lowEntries = append(lowEntries, entry)
 	}
 
+	// sort by increasing percent/ratio used
 	slices.SortFunc(lowEntries, func(a, b lowEntry) int {
 		return cmp.Or(cmp.Compare(a.percent, b.percent), cmp.Compare(a.itemId, b.itemId))
 	})
 
+	// list anything under 20%
 	job.printer.Printf("EXTRAS LOW RATE ACROSS SETS:\n")
 	for _, entry := range lowEntries {
 		if entry.percent < 0.2 {

@@ -19,6 +19,8 @@ type specItemPrep struct {
 	exactEquippedGear items.FullEquipMap
 	itemOptions       items.FullOptionsMap
 	addedFromBags     []items.ItemId
+	inputs            *multi_types.ItemInputs
+	seenInSolutions   *seenMap
 }
 
 func (job *MultiSetJob) prepareItems() {
@@ -28,7 +30,12 @@ func (job *MultiSetJob) prepareItems() {
 	job.printer.Println("PREPARING STARTING GEAR")
 	params := job.input.Param
 	itemPrepSlice := util_collection.MapSliceAsNew(params, func(param *multi_types.SpecParam) specItemPrep {
-		prep := specItemPrep{label: param.Label, model: param.Model}
+		prep := specItemPrep{
+			label:           param.Label,
+			model:           param.Model,
+			inputs:          &param.ItemInputs,
+			seenInSolutions: &seenMap{content: make(map[items.ItemId]uint32)},
+		}
 		prep.prepareStartingGear(&param.ItemInputs, &param.Model, job.printer)
 		return prep
 	})
@@ -57,6 +64,12 @@ func (job *MultiSetJob) prepareItems() {
 		prep.makeRandomVariantItems(job.input.ItemInput.RandomVariantItems, input, job.printer)
 		prep.setupAlternateGems(job.input.ItemInput.AlternateGemming, job.printer)
 	}
+}
+
+func (job *MultiSetJob) paramOrderSlice() []string {
+	return util_collection.MapSliceAsNew(job.input.Param, func(param *multi_types.SpecParam) string {
+		return param.Label
+	})
 }
 
 type extraRefs struct {

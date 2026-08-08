@@ -50,19 +50,17 @@ func (job *MultiSetJob) proposalsAllCommonAlternates(cancelGenerate util_async.C
 	return proposalMix, futureAdder
 }
 
-func (job *MultiSetJob) proposalsUnderPermutation(solutionsPerPermute int, includeInterimResults bool, cancel util_async.CancelSignal) (<-chan multi_types.MultiProposedOutput, *util_async.FutureValueAdder[int]) {
+func (job *MultiSetJob) proposalsUnderPermutation(solutionsPerPermute int, includeInterimResults bool, cancel util_async.CancelSignal) (<-chan multi_types.MultiProposedOutput, *util_async.FutureValueAdderInt) {
 	estimate := job.estimateFixedPermutations()
 	job.printer.Printf("PERMUTE SET COUNT %d\n", estimate)
-	futureAdder := util_async.FutureValueAdderMake(0, func(a int, b int) int { return a + b })
+	futureAdder := util_async.FutureValueAdderIntMake(0)
 
 	permuteChannel := job.buildPermutations()
 
 	proposalChannel := util_async.MapMulti_ChannelToChannel_Cancellable(c_permuteThreadCount, permuteChannel, cancel,
 		func(permuteSet permuteSet, resultChannel chan<- multi_types.MultiProposedOutput) {
 			for _, weightType := range job.input.WeightTypeList {
-				expectCount := util_async.Future_Make[int]()
-				job.runPermute(permuteSet, weightType, solutionsPerPermute, expectCount, resultChannel, cancel, includeInterimResults)
-				futureAdder.AddFuture(expectCount)
+				job.runPermute(permuteSet, weightType, solutionsPerPermute, futureAdder, resultChannel, cancel, includeInterimResults)
 			}
 		},
 	)
@@ -70,30 +68,36 @@ func (job *MultiSetJob) proposalsUnderPermutation(solutionsPerPermute int, inclu
 	for _, weightType := range job.input.WeightTypeList {
 		existingProposal := job.existingGearAsProposal(weightType)
 		proposalChannel = util_async.ChannelWithPrependedValues(proposalChannel, existingProposal)
-		futureAdder.AddValueImmediate(func(x int) int { return x + 1 })
+		futureAdder.AddValueImmediate(1)
 	}
 
 	return proposalChannel, futureAdder
 }
 
-func (job *MultiSetJob) runPermute(permuteSet permuteSet, weightType weight_types.WeightType, solutionsPerPermute int, expectedCount *util_async.Future[int], resultChannel chan<- multi_types.MultiProposedOutput, cancel util_async.CancelSignal, includeInterimResults bool) {
+func (job *MultiSetJob) runPermute(permuteSet permuteSet, weightType weight_types.WeightType, solutionsPerPermute int, expectedCount *util_async.FutureValueAdderInt, resultChannel chan<- multi_types.MultiProposedOutput, cancel util_async.CancelSignal, includeInterimResults bool) {
 	printer := util.PrintRecorder_HoldAll()
 
-	highProcess := job.highProcessSetupForPermute(permuteSet, printer)
+	highProcessList := job.highProcessSetupForPermute(permuteSet, printer)
 
 	if solutionsPerPermute == 1 && !includeInterimResults {
-		future := highProcess.RunInterruptable(printer)
-		expectedCount.SetResult(1)
-		util_async.ChainCancel(cancel, future)
-		result, hasResult := future.WaitForResult()
-		if hasResult {
-			resultChannel <- job.makeProposalFromHighs(result, printer, uuid.NewString(), weightType)
+		for _, highProcess := range highProcessList {
+			future := highProcess.RunInterruptable(printer)
+			util_async.ChainCancel(cancel, future)
+			result, hasResult := future.WaitForResult()
+			if hasResult {
+				resultChannel <- job.makeProposalFromHighs(result, printer, uuid.NewString(), weightType)
+			}
 		}
+		expectedCount.AddValueImmediate(len(highProcessList))
 	} else {
-		nextChan, expectedSubCount := highProcess.RunForSeveral_CommonDifferent(printer, util_collection.Optional_OfValue(solutionsPerPermute), cancel, false, includeInterimResults)
-		expectedSubCount.ForwardResultToOtherFuture(expectedCount)
-		for result := range nextChan {
-			resultChannel <- job.makeProposalFromHighs(result, printer, uuid.NewString(), weightType)
+		for _, highProcess := range highProcessList {
+			nextChan, expectedSubCount := highProcess.RunForSeveral_CommonDifferent(printer,
+				util_collection.Optional_OfValue(solutionsPerPermute), cancel,
+				false, includeInterimResults)
+			expectedCount.AddFuture(expectedSubCount)
+			for result := range nextChan {
+				resultChannel <- job.makeProposalFromHighs(result, printer, uuid.NewString(), weightType)
+			}
 		}
 	}
 
@@ -109,7 +113,7 @@ func (job *MultiSetJob) checkNoPermutations() {
 		panic("alternate upgrades will be ignored, may lead to confusing results")
 	}
 
-	if job.input.ItemInput.AlternateGemsAsPermute {
+	if job.input.ItemInput.AlternateGemsEnableAsPermute {
 		panic("alternate gems always applied, may lead to confusing results")
 	}
 
@@ -189,7 +193,7 @@ func (job *MultiSetJob) restrictOptionsToVersionsInSet(itemOptions *items.FullOp
 
 func (job *MultiSetJob) makeProposalFromHighs(multiResult solve_highs.HighsMultiResult, printer *util.PrintRecorder, proposalId string, weightType weight_types.WeightType) multi_types.MultiProposedOutput {
 	totalRatingSum := 0.0
-	outputs := make([]multi_types.SingleProposedOutput, len(multiResult.Entries))
+	outputs := make(map[string]multi_types.SingleProposedOutput, len(multiResult.Entries))
 
 	for label, work := range job.working.SeqKey1ValueWithKey2(weightType) {
 		resultEntry := multiResult.Entries[label]
@@ -198,9 +202,9 @@ func (job *MultiSetJob) makeProposalFromHighs(multiResult solve_highs.HighsMulti
 		totalRatingSum += rating * work.ratingMultiply
 
 		single := multi_types.SingleProposed_FromItemSet(resultEntry.ItemSet, resultEntry.OutputId, work.itemPrep.model.Spec, label, rating)
-		outputs = append(outputs, single)
+		outputs[label] = single
 
-		work.seenInSolutions.Add(&resultEntry.ItemSet)
+		work.itemPrep.seenInSolutions.Add(&resultEntry.ItemSet)
 
 		printer.Printf("LABEL %s\n", label)
 		single.Report(&work.itemPrep.model, printer)
@@ -222,10 +226,10 @@ func (job *MultiSetJob) makeProposalFromHighs(multiResult solve_highs.HighsMulti
 func (job *MultiSetJob) listInitialOutputs(bestOutputs <-chan multi_types.MultiProposedOutput) <-chan multi_types.MultiProposedOutput {
 	return util_async.PeekChannel(bestOutputs, func(prop *multi_types.MultiProposedOutput) {
 		job.printer.Printf("::::::::: PROPOSED %.0f :::::::: %s ::::::::\n", prop.TotalRatingSum, prop.Id)
-		for _, out := range prop.Parts {
-			job.printer.Println(out.SpecLabel)
-			input := job.input.GetSetParam(out.SpecLabel) // shouldn't really be going back to inputs
-			out.Report(&input.Model, job.printer)
+		for label, out := range prop.Parts {
+			prep := job.itemPrep[label]
+			job.printer.Println(label)
+			out.Report(&prep.model, job.printer)
 		}
 	})
 }
@@ -239,8 +243,7 @@ func (job *MultiSetJob) existingGearAsProposal(weightType weight_types.WeightTyp
 		proposal.TotalRatingSum += rating
 
 		single := multi_types.SingleProposed_FromItemSet(set, uuid.NewString(), work.itemPrep.model.Spec, label, rating)
-
-		proposal.Parts = append(proposal.Parts, single)
+		proposal.Parts[label] = single
 	}
 	proposal.Combo = multi_types.CommonCombo_FromProposed(proposal.Parts)
 	return proposal

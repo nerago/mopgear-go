@@ -89,7 +89,7 @@ func (job *MultiSetJob) RunForSolutionsPerPermute(solutionsPerPermute int, inclu
 
 	additionalChannel, additionalCount := job.additionalProposalsFromSpecOptimalBaseline(cancelGenerate)
 	proposalChannel = util_async.MixChannels(proposalChannel, additionalChannel)
-	expectedCountAdder.AddValueImmediate(func(x int) int { return x + additionalCount })
+	expectedCountAdder.AddValueImmediate(additionalCount)
 
 	expectedCountChannel := expectedCountAdder.ReadyUpAndPrepareChannel()
 	futureSimResultList, futureProposalList := job.proposalsToSimResult(proposalChannel, tracker, expectedCountChannel)

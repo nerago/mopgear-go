@@ -1,6 +1,8 @@
 package util_async
 
 import (
+	"paladin_gearing_go/util/util_collection"
+	"reflect"
 	"sync"
 )
 
@@ -227,6 +229,19 @@ func (fa *FutureValueAdder[T]) processFail() {
 	}
 }
 
+type FutureValueAdderInt struct {
+	FutureValueAdder[int]
+}
+
+func FutureValueAdderIntMake(initialValue int) *FutureValueAdderInt {
+	return &FutureValueAdderInt{
+		FutureValueAdder: FutureValueAdder[int]{total: initialValue, combiner: func(a int, b int) int { return a + b }, channel: make(chan int)}}
+}
+
+func (fa *FutureValueAdderInt) AddValueImmediate(value int) {
+	fa.FutureValueAdder.AddValueImmediate(func(x int) int { return x + value })
+}
+
 type FutureChannelMixer[T any] struct {
 	mutex         sync.Mutex
 	activeSources int
@@ -313,5 +328,124 @@ func (fc *FutureChannelMixer[T]) sourceFinished() {
 	if fc.activeSources <= 0 && fc.ready {
 		close(fc.outputChannel)
 		fc.outputChannel = nil
+	}
+}
+
+type FutureChannelMixer2[T any] struct {
+	mutex               sync.Mutex
+	activeSources       int
+	outputChannel       chan T
+	ready               bool
+	sourceFutures       []*Future[T]
+	sourceFuturesCancel []*FutureCancellable[T]
+	sourceChannels      []<-chan T
+	sourceValues        []T
+}
+
+func (fc *FutureChannelMixer2[T]) AddFuture(future *Future[T]) {
+	if fc.ready {
+		panic("can't add source after ready")
+	}
+	fc.mutex.Lock()
+	fc.sourceFutures = append(fc.sourceFutures, future)
+	fc.mutex.Unlock()
+}
+
+func (fc *FutureChannelMixer2[T]) AddFutureCancellable(future *FutureCancellable[T]) {
+	if fc.ready {
+		panic("can't add source after ready")
+	}
+	fc.mutex.Lock()
+	fc.sourceFuturesCancel = append(fc.sourceFuturesCancel, future)
+	fc.mutex.Unlock()
+}
+
+func (fc *FutureChannelMixer2[T]) AddChannel(inputChannel <-chan T) {
+	if fc.ready {
+		panic("can't add source after ready")
+	}
+	fc.mutex.Lock()
+	fc.sourceChannels = append(fc.sourceChannels, inputChannel)
+	fc.mutex.Unlock()
+}
+
+// adding directly to channel with a big buffer might be fairly reliable, but run inside a goroutine to ensure no block
+func (fc *FutureChannelMixer2[T]) AddValue(value T) {
+	if fc.ready {
+		panic("can't add source after ready")
+	}
+	fc.mutex.Lock()
+	fc.sourceValues = append(fc.sourceValues, value)
+	fc.mutex.Unlock()
+}
+
+// confirm most of the expected futures have been added
+// more can be added safely but may not be processed
+func (fc *FutureChannelMixer2[T]) ReadyUpAndPrepareChannel() <-chan T {
+	fc.mutex.Lock()
+	defer fc.mutex.Unlock()
+
+	fc.ready = true
+	if len(fc.sourceChannels) == 0 && len(fc.sourceFutures) == 0 && len(fc.sourceFuturesCancel) == 0 {
+		fc.outputChannel = make(chan T, len(fc.sourceValues))
+		fc.drainValues()
+		close(fc.outputChannel)
+		return fc.outputChannel
+	}
+
+	fc.outputChannel = make(chan T)
+	go func() {
+		fc.drainValues()
+		fc.selectLoop()
+		close(fc.outputChannel)
+	}()
+	return fc.outputChannel
+}
+
+func (fc *FutureChannelMixer2[T]) drainValues() {
+	for _, value := range fc.sourceValues {
+		fc.outputChannel <- value
+	}
+	fc.sourceValues = nil
+}
+
+func (fc *FutureChannelMixer2[T]) selectLoop() {
+	count := len(fc.sourceChannels) + len(fc.sourceFutures) + len(fc.sourceFuturesCancel)
+	cases := make([]reflect.SelectCase, 0, count)
+	for _, channel := range fc.sourceChannels {
+		cases = append(cases, reflect.SelectCase{
+			Dir:  reflect.SelectRecv,
+			Chan: reflect.ValueOf(channel),
+		})
+	}
+	for _, future := range fc.sourceFutures {
+		cases = append(cases, reflect.SelectCase{
+			Dir:  reflect.SelectRecv,
+			Chan: reflect.ValueOf(future.resultChannel),
+		})
+	}
+	for _, future := range fc.sourceFuturesCancel {
+		cases = append(cases, reflect.SelectCase{
+			Dir:  reflect.SelectRecv,
+			Chan: reflect.ValueOf(future.resultChannel),
+		})
+	}
+
+	for len(cases) > 0 {
+		chosen, reflectValue, hasValue := reflect.Select(cases)
+		if hasValue {
+			switch value := reflectValue.Interface().(type) {
+			case FutureResult[T]:
+				if value.HasValue {
+					fc.outputChannel <- value.Value
+				}
+				cases[chosen].Chan.Close()
+				util_collection.DeleteIndexInPlace(&cases, chosen)
+			case T:
+				fc.outputChannel <- value
+			}
+		} else {
+			util_collection.DeleteIndexInPlace(&cases, chosen)
+		}
 	}
 }

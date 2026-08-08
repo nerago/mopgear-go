@@ -11,9 +11,9 @@ import (
 
 func diagnoseFailure(optionsMap *items.SolvableOptionsMap, model *gear_model.SpecModel) (util_collection.Optional[items.SolvableItemSet], string) {
 	proposedList := setsAtLimits(optionsMap)
-	accepatable := findAccepableSet(proposedList, model)
-	if accepatable.HasValue() {
-		return accepatable, ""
+	acceptable := findAcceptableSet(proposedList, model)
+	if acceptable.HasValue() {
+		return acceptable, ""
 	} else {
 		message := discoverCommonProblem(proposedList, model.StatRequirements)
 		setsAtLimits(optionsMap)
@@ -66,11 +66,11 @@ func findMinMaxWithStat(options []items.SolvableItem, stat stats.StatType) (*ite
 	return min, max
 }
 
-func findAccepableSet(proposedList []items.SolvableItemSet, model *gear_model.SpecModel) util_collection.Optional[items.SolvableItemSet] {
+func findAcceptableSet(proposedList []items.SolvableItemSet, model *gear_model.SpecModel) util_collection.Optional[items.SolvableItemSet] {
 	best := util_rank.BestCollector1[items.SolvableItemSet]{}
 	for _, set := range proposedList {
 		if model.CheckSet(&set) {
-			rate := model.CalcRatingSolve(&set)
+			rate := model.CalcRatingSolve(&set, 1)
 			best.Offer(&set, rate)
 		}
 	}

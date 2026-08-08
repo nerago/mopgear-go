@@ -23,7 +23,7 @@ func (work *specWorking) runCullingProcess(targetNum int64, waitGroup *sync.Wait
 
 		for solvedSet := range resultChannel {
 			fullSet := items.FullItemSet_FromSolved(solvedSet, &work.itemPrep.itemOptions)
-			work.seenInSolutions.Add(new(fullSet))
+			work.itemPrep.seenInSolutions.Add(new(fullSet))
 			currentNum.Add(1)
 		}
 

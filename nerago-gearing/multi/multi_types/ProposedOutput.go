@@ -1,6 +1,7 @@
 package multi_types
 
 import (
+	"maps"
 	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
@@ -11,7 +12,7 @@ import (
 type MultiProposedOutput struct {
 	Id             string
 	TotalRatingSum float64
-	Parts          []SingleProposedOutput
+	Parts          map[string]SingleProposedOutput
 	Combo          CommonCombo
 	PermuteLabel   string
 }
@@ -30,13 +31,9 @@ func (proposed *MultiProposedOutput) Equals(other *MultiProposedOutput) bool {
 	if proposed.TotalRatingSum != other.TotalRatingSum {
 		return false
 	}
-
-	for i := range proposed.Parts {
-		if !proposed.Parts[i].Equals(&other.Parts[i]) {
-			return false
-		}
-	}
-	return true
+	return maps.EqualFunc(proposed.Parts, other.Parts, func(a, b SingleProposedOutput) bool {
+		return a.Equals(&b)
+	})
 }
 
 type SingleProposedOutput struct {
@@ -53,7 +50,7 @@ func SingleProposed_FromItemSet(itemSet items.FullItemSet, outputId string, spec
 }
 
 func (single *SingleProposedOutput) Equals(b *SingleProposedOutput) bool {
-	return single.Exists == b.Exists && single.ResultRating == b.ResultRating && single.FullSet.Equals(&b.FullSet)
+	return single.Exists == b.Exists && single.Spec == b.Spec && single.ResultRating == b.ResultRating && single.FullSet.Equals(&b.FullSet)
 }
 
 func (single *SingleProposedOutput) Report(model *gear_model.SpecModel, printer *util.PrintRecorder) {

@@ -2,7 +2,6 @@ package multi
 
 import (
 	"iter"
-	"paladin_gearing_go/items"
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
@@ -11,20 +10,18 @@ import (
 
 type specWorking struct {
 	//job             *MultiSetJob
-	itemPrep        *specItemPrep
-	weightType      weight_types.WeightType
-	baselineResult  solver.SolveOutput
-	ratingMultiply  float64
-	seenInSolutions *seenMap
+	itemPrep       *specItemPrep
+	weightType     weight_types.WeightType
+	baselineResult solver.SolveOutput
+	ratingMultiply float64
 }
 
 func (job *MultiSetJob) prepareWorking() {
 	for label, prep := range job.itemPrep {
 		for _, weightType := range job.input.WeightTypeList {
 			job.working.Put(label, weightType, &specWorking{
-				itemPrep:        prep,
-				weightType:      weightType,
-				seenInSolutions: &seenMap{content: make(map[items.ItemId]uint32)},
+				itemPrep:   prep,
+				weightType: weightType,
 			})
 		}
 	}
@@ -51,18 +48,14 @@ func (work *specWorking) runBaseline(printer *util.PrintRecorder) {
 		panic("failed to find baseline for " + work.itemPrep.label)
 	}
 	work.baselineResult.Report(printer)
-	work.seenInSolutions.Add(&work.baselineResult.FullSet)
+	work.itemPrep.seenInSolutions.Add(&work.baselineResult.FullSet)
 }
 
 func (job *MultiSetJob) prepareRatingMultipliersGroup(nested iter.Seq2[string, *specWorking], printer *util.PrintRecorder) {
 	var totalPercent float64
-	for label, work := range nested {
-		param := job.input.GetSetParam(label)
-		if param == nil {
-			panic("couldn't find param " + label)
-		}
-
-		requestRatingPercent := param.ItemInputs.RequestRatingPercent
+	for _, work := range nested {
+		param := work.itemPrep.inputs
+		requestRatingPercent := param.RequestRatingPercent
 		totalPercent += requestRatingPercent
 
 		work.prepareRatingMultiplier(requestRatingPercent, printer)

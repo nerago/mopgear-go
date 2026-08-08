@@ -123,7 +123,7 @@ func sortGenericWithDeviation[T weight_types.IRankEntry](simType stats.SimType, 
 		})
 	case stats.Sim_TPS:
 		slices.SortFunc(inputData, func(a, b T) int {
-			return compareSimsStatisticalByType(b.GetSimData(), a.GetSimData(), stats.Sim_TPS)
+			return compareSimsStatisticalByType(a.GetSimData(), b.GetSimData(), stats.Sim_TPS)
 		})
 	case stats.Sim_DTPS:
 		slices.SortFunc(inputData, func(a, b T) int {

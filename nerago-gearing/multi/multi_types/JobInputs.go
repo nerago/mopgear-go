@@ -18,14 +18,14 @@ type JobInputs struct {
 }
 
 type ItemInputShared struct {
-	FixedForge              map[items.ItemId]stats.ReforgeRecipe
-	DistinctUsageGroups     map[items.ItemId]DistinctUsageGroups
-	AlternateUpgradeChoices [][]items.ItemId
-	AlternateGemming        []stats.GemInfo
-	RandomVariantItems      []RandomVariantItem
-	MinimumExtraItemLevel   uint16
-	AlternateGemsAsPermute  bool
-	ReforgingAllowNonCommon bool
+	FixedForge                   map[items.ItemId]stats.ReforgeRecipe
+	DistinctUsageGroups          map[items.ItemId]DistinctUsageGroups
+	AlternateUpgradeChoices      [][]items.ItemId
+	AlternateGemming             []stats.GemInfo
+	RandomVariantItems           []RandomVariantItem
+	MinimumExtraItemLevel        uint16
+	AlternateGemsEnableAsPermute bool
+	ReforgingAllowNonCommon      bool
 }
 
 type DistinctUsageGroups struct {
@@ -181,8 +181,8 @@ func (ji *JobInputs) SetWriteBestToGearFiles() {
 	ji.WriteBestToGearFiles = true
 }
 
-func (ji *JobInputs) ActivateAlternateGemmingAsPermute() {
-	ji.ItemInput.AlternateGemsAsPermute = true
+func (ji *JobInputs) ActivateAlternateGemsEnableAsPermute() {
+	ji.ItemInput.AlternateGemsEnableAsPermute = true
 }
 
 func (ji *JobInputs) SetWeightTypes(weightTypeList ...weight_types.WeightType) {
