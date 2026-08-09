@@ -40,11 +40,11 @@ func (pool *highsPoolType) Put(solver *highs.Solver) {
 	// pool.tryClosePending()
 }
 
-func (pool *highsPoolType) RunSolverUnderMutex(solver *highs.Solver, requestGpu bool, stopwatch *util.Stopwatch) (solution *highs.Solution, err error) {
+func (pool *highsPoolType) RunSolverUnderMutex(solver *highs.Solver, requireGpu, optionalGpu bool, stopwatch *util.Stopwatch) (solution *highs.Solution, err error) {
 	// pool.runMutex.RLock()
 	// defer pool.runMutex.RUnlock()
 
-	if requestGpu {
+	if requireGpu {
 		//stopwatch.Start()
 		//verifyNoError(solver.Presolve())
 		//stopwatch.Stop()
@@ -54,6 +54,16 @@ func (pool *highsPoolType) RunSolverUnderMutex(solver *highs.Solver, requestGpu 
 		solution, err = solver.Run()
 		stopwatch.Stop()
 		pool.gpuMutex.Unlock()
+	} else if optionalGpu {
+		if pool.gpuMutex.TryLock() {
+			defer pool.gpuMutex.Unlock()
+		} else {
+			verifyNoError(solver.SetStringOption("solver", "choose"))
+		}
+
+		stopwatch.Start()
+		solution, err = solver.Run()
+		stopwatch.Stop()
 	} else {
 		stopwatch.Start()
 		solution, err = solver.Run()

@@ -27,7 +27,7 @@ type CancelSignalBasic struct {
 	signalChannel chan struct{}
 }
 
-func CancelSignal_Make() CancelSignal {
+func CancelSignal_Make() *CancelSignalBasic {
 	return &CancelSignalBasic{
 		signalChannel: make(chan struct{}),
 	}

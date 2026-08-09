@@ -137,7 +137,7 @@ func (build *LinearBuilder) GetInitialSolutionValue(columnNumber ColumnIndex) fl
 }
 
 func (build *LinearBuilder) RunHighsFuture(stopwatch *util.Stopwatch) *util_async.FutureCancellable[LinearResult] {
-	solver, logFilename, requestGpu := build.prepareHighsRun(true)
+	solver, logFilename, requireGpu, optionalGpu := build.prepareHighsRun(true)
 
 	future := util_async.FutureCancellable_Make[LinearResult]()
 	future.AddCancelHandler(func() {
@@ -151,7 +151,7 @@ func (build *LinearBuilder) RunHighsFuture(stopwatch *util.Stopwatch) *util_asyn
 	go func() {
 		log := util.PrintRecorder_HoldAll()
 
-		solution, err := G_HighsPool.RunSolverUnderMutex(solver, requestGpu, stopwatch)
+		solution, err := G_HighsPool.RunSolverUnderMutex(solver, requireGpu, optionalGpu, stopwatch)
 		verifyNoError(err)
 
 		if C_DebugHighs && C_DiagnoseInfeasible && solution.Status == highs.ModelStatusInfeasible {
@@ -167,7 +167,7 @@ func (build *LinearBuilder) RunHighsFuture(stopwatch *util.Stopwatch) *util_asyn
 	return future
 }
 
-func (build *LinearBuilder) prepareHighsRun(needLog bool) (*highs.Solver, string, bool) {
+func (build *LinearBuilder) prepareHighsRun(needLog bool) (*highs.Solver, string, bool, bool) {
 	solver := G_HighsPool.Get()
 
 	build.configureHighsMatrix(solver)
@@ -178,9 +178,9 @@ func (build *LinearBuilder) prepareHighsRun(needLog bool) (*highs.Solver, string
 	}
 	build.configureHighsUtil(solver, logFilename)
 
-	requestGpu := build.configureHighsSolver(solver)
+	requireGpu, optionalGpu := build.configureHighsSolver(solver)
 
-	return solver, logFilename, requestGpu
+	return solver, logFilename, requireGpu, optionalGpu
 }
 
 func (build *LinearBuilder) postHighsRun(solver *highs.Solver, logFilename string, printer *util.PrintRecorder) {
@@ -286,15 +286,20 @@ func (build *LinearBuilder) configureHighsUtil(solver *highs.Solver, logfile str
 	}
 }
 
-func (build *LinearBuilder) configureHighsSolver(solver *highs.Solver) bool {
-	requestGpu := false
+func (build *LinearBuilder) configureHighsSolver(solver *highs.Solver) (bool, bool) {
+	requireGpu := false
+	optionalGpu := false
 	expectMip := false
 
 	switch build.Solver {
 	case Solver_LP_USE_GPU:
 		verifyNoError(solver.SetStringOption("solver", "hipdlp"))
 		verifyNoError(solver.SetStringOption("presolve", "on"))
-		requestGpu = true
+		requireGpu = true
+	case Solver_LP_GPU_IF_FREE:
+		verifyNoError(solver.SetStringOption("solver", "hipdlp"))
+		verifyNoError(solver.SetStringOption("presolve", "on"))
+		optionalGpu = true
 	case Solver_LP_NO_GPU:
 		if build.isLargeModel() {
 			verifyNoError(solver.SetStringOption("solver", "hipo"))
@@ -325,7 +330,7 @@ func (build *LinearBuilder) configureHighsSolver(solver *highs.Solver) bool {
 		verifyNoError(solver.SetStringOption("solver", "choose"))
 		verifyNoError(solver.SetStringOption("mip_lp_solver", "choose"))
 		verifyNoError(solver.SetStringOption("mip_ipm_solver", "choose"))
-		return false
+		return false, false
 	default:
 		panic("solver not specified")
 	}
@@ -334,7 +339,7 @@ func (build *LinearBuilder) configureHighsSolver(solver *highs.Solver) bool {
 		panic("solver wrong for MIP/non-MIP model")
 	}
 
-	return requestGpu
+	return requireGpu, optionalGpu
 }
 
 func (build *LinearBuilder) isLargeModel() bool {

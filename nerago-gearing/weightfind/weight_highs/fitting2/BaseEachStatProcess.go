@@ -6,6 +6,7 @@ import (
 	"math"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/weightfind/util_weight"
 	"paladin_gearing_go/weightfind/weight_types"
@@ -25,8 +26,9 @@ type BaseEachStatProcess[F IEachFields] struct {
 	ScaleSims  util_collection.EnumMap[stats.SimType, util_weight.ScaleAndOffset]
 	ScaleStats util_collection.EnumMap[stats.StatType, float64]
 
-	Each   util_collection.MapMap[stats.StatType, stats.SimType, F]
-	Failed bool
+	Each           util_collection.MapMap[stats.StatType, stats.SimType, F]
+	Failed         bool
+	CancelInternal util_async.CancelSignalBasic
 }
 
 type IEachFields interface {
@@ -39,6 +41,7 @@ func (be *BaseEachStatProcess[F]) Init(targetSegmentCount int, printer *util.Pri
 	be.TargetSegmentCount = targetSegmentCount
 	be.Printer = printer
 	be.Timeout = timeout
+	be.CancelInternal = *util_async.CancelSignal_Make()
 }
 
 func (be *BaseEachStatProcess[F]) SetRequiredStats(requiredStats []stats.StatType, requiredSims []stats.SimType) {

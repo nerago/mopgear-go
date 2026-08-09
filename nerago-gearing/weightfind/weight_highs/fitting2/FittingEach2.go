@@ -44,8 +44,9 @@ func (f fitting2EachFields) Results() iter.Seq[util_weight.FittingInterimResult2
 }
 
 func (fe *FittingEachStatWeightProcess2) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
+	util_async.ChainCancel(cancel, &fe.CancelInternal)
 	fe.ChooseScaling()
-	fe.launchEachNested(cancel)
+	fe.launchEachNested()
 	stopwatch := fe.CalcMetrics()
 	if !fe.Failed {
 		weights := fe.BuildResult()
@@ -76,7 +77,7 @@ func (fe *FittingEachStatWeightProcess2) prepareSamples(statType stats.StatType,
 	return samples
 }
 
-func (fe *FittingEachStatWeightProcess2) launchEachNested(cancel util_async.CancelSignal) {
+func (fe *FittingEachStatWeightProcess2) launchEachNested() {
 	for _, statType := range fe.RequiredStats {
 		for _, simType := range fe.RequiredSims {
 			innerPrinter := util.PrintRecorder_HoldAll()
@@ -88,15 +89,17 @@ func (fe *FittingEachStatWeightProcess2) launchEachNested(cancel util_async.Canc
 		}
 	}
 
-	channelEach := util_async.SeqToChannel_Cancellable(fe.Each.SeqValues(), cancel)
+	channelEach := util_async.SeqToChannel_Cancellable(fe.Each.SeqValues(), &fe.CancelInternal)
 	util_async.ForEach_Channel(c_fitting2_each_threadCount, channelEach, func(fields *fitting2EachFields) {
 		initialResultFuture := fields.process.Run()
+		util_async.ChainCancel(&fe.CancelInternal, initialResultFuture)
 		initialResult, hasResult := initialResultFuture.WaitForResult()
 		if hasResult && len(initialResult.Segments) > 0 {
 			fe.rescaleAndCleanup(initialResult, fields)
 		} else {
 			fe.Printer.Printf("FAILED FITTING for %s %s\n", fields.statType.Name(), fields.simType.Name())
 			fe.Failed = true
+			fe.CancelInternal.Cancel()
 		}
 	})
 }

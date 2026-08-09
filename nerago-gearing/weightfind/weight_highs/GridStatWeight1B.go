@@ -40,7 +40,7 @@ type GridStatWeightProcess1B struct {
 func (grid *GridStatWeightProcess1B) Init(printer *util.PrintRecorder, timeoutSeconds int) {
 	grid.printer = printer
 	grid.build.Minimise = true
-	grid.build.Solver = util_highs.Solver_LP_USE_GPU
+	grid.build.Solver = util_highs.Solver_LP_GPU_IF_FREE
 	grid.build.TimeLimitSeconds = timeoutSeconds
 	//grid.build.AddOptionFloat("small_matrix_value", 1e-12)
 	grid.finalWeights = make(map[stats.StatType]util_highs.ColumnIndex)

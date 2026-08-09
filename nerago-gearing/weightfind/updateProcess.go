@@ -28,8 +28,9 @@ import (
 )
 
 const c_timeoutSolvers = 2000
+const c_timeoutSolversFit = 6000
 const c_simDataAgeMax = 48 * time.Hour
-const c_updateThreadCount = 4
+const c_updateThreadCount = 3
 
 type WeightUpdateProcess struct {
 	simSpeed     simulate.WowSim_RunSize
@@ -301,6 +302,12 @@ func (spec *WeightSpec) evaluateWeightFuture(choiceName string, weightResultFutu
 }
 
 func (spec *WeightSpec) evaluateWeight(choiceName string, weight1 *weight_types.Weight1Basic, weightOrig weight_types.IWeight, weightResult *weight_types.WeightResult) {
+	if weight1 == nil || weightOrig == nil {
+		spec.process.printer.Printf("Weights accuracy %s %s NULL\n", spec.Label, choiceName)
+		spec.addChoice(weightChoice{choiceName: choiceName, weightResult: weightResult})
+		return
+	}
+
 	var accuracyX, accuracyXStat float64
 	var hadExtended bool
 	if _, isOne := weightOrig.(*weight_types.Weight1Basic); isOne {
@@ -342,16 +349,17 @@ func (spec *WeightSpec) bestWeightChoiceExtended() (util_collection.Optional[wei
 	best3 := util_rank.BestCollector1[weight_types.Weight3ExtendedRanged]{}
 	for _, choice := range spec.choices {
 		weightOrig := choice.weightOrig
-		if weightCast3, isCast3 := weightOrig.(*weight_types.Weight3ExtendedRanged); isCast3 {
-			acc3 := EvaluateAccuracyStatistical(weightCast3, spec.simTypes, &spec.targetRatio, spec.dataAll)
-			best3.Offer(weightCast3, acc3)
+		switch weightCast := weightOrig.(type) {
+		case *weight_types.Weight2Extended:
+			acc2 := EvaluateAccuracyStatistical(weightCast, spec.simTypes, &spec.targetRatio, spec.dataAll)
+			best2.Offer(weightCast, acc2)
+		case *weight_types.Weight3ExtendedRanged:
+			acc3 := EvaluateAccuracyStatistical(weightCast, spec.simTypes, &spec.targetRatio, spec.dataAll)
+			best3.Offer(weightCast, acc3)
 
-			weightConvert2 := weightCast3.ConvertToWeight2()
+			weightConvert2 := weightCast.ConvertToWeight2()
 			acc2 := EvaluateAccuracyStatistical(weightConvert2, spec.simTypes, &spec.targetRatio, spec.dataAll)
 			best2.Offer(weightConvert2, acc2)
-		} else if weightCast2, isCast2 := weightOrig.(*weight_types.Weight2Extended); isCast2 {
-			acc2 := EvaluateAccuracyStatistical(weightCast2, spec.simTypes, &spec.targetRatio, spec.dataAll)
-			best2.Offer(weightCast2, acc2)
 		}
 	}
 	return best2.GetBestOptional(), best3.GetBestOptional()
@@ -438,7 +446,7 @@ func (spec *WeightSpec) solveFormulaWeight(cancel util_async.CancelSignal) {
 
 func (spec *WeightSpec) solveFittingWeight(cancel util_async.CancelSignal) {
 	comp := fitting3.FittingEachStatWeightProcess3{}
-	comp.Init(3, spec.process.printer, c_timeoutSolvers*2)
+	comp.Init(3, spec.process.printer, c_timeoutSolversFit)
 	comp.SetRequiredStats(spec.statTypes, spec.simTypes)
 	comp.SetTargetRatios(spec.targetRatio)
 	comp.SupplyData(spec.dataAll)

@@ -80,36 +80,6 @@ func testBasicStatsGeneral(printer *util.PrintRecorder) {
 	process.Run()
 }
 
-// oldish code, may sometimes want to mix basic ratings??
-func relativeRatingsCompromise(printer *util.PrintRecorder) {
-	modelMitiNoSet := model_factory.Model_PallyProtMitigation_NoSet()
-	gearMitiNoSet := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(files.GearFileProtMitigationNoSet), &modelMitiNoSet, setup.MissingEnchant_Panic, printer)
-	itemSetMitiNoSet := items.FullItemSet_FromMap(gearMitiNoSet)
-
-	modelDps := model_factory.Model_PallyProtDps()
-	gearDps := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(files.GearFileProtDps), &modelDps, setup.MissingEnchant_Panic, printer)
-	itemSetDps := items.FullItemSet_FromMap(gearDps)
-
-	var targetCombined = 10000000000.0
-	targetRatio := 0.7
-
-	rateA1 := modelMitiNoSet.CalcRatingFull(&itemSetMitiNoSet)
-	rateA2 := modelDps.CalcRatingFull(&itemSetMitiNoSet)
-	printer.Printf("A %f %f\n", rateA1, rateA2)
-	multA1 := targetCombined * targetRatio / rateA1
-	multA2 := targetCombined * (1 - targetRatio) / rateA2
-	printer.Printf("* %f %f\n", multA1, multA2)
-	printer.Printf("? %f %f\n", multA1*rateA1/targetCombined, multA2*rateA2/targetCombined)
-
-	rateB1 := modelMitiNoSet.CalcRatingFull(&itemSetDps)
-	rateB2 := modelDps.CalcRatingFull(&itemSetDps)
-	printer.Printf("B %f %f\n", rateB1, rateB2)
-	multB1 := targetCombined * targetRatio / rateB1
-	multB2 := targetCombined * (1 - targetRatio) / rateB2
-	printer.Printf("* %f %f\n", multB1, multB2)
-	printer.Printf("? %f %f\n", multB1*rateB1/targetCombined, multB2*rateB2/(targetCombined))
-}
-
 type basicStatInput struct {
 	IncrementStat  stats.StatType
 	IncrementValue int32

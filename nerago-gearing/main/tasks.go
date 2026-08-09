@@ -15,6 +15,7 @@ import (
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_collection"
+	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"strconv"
 )
@@ -610,11 +611,13 @@ func basicListRatingEach(printer *util.PrintRecorder) {
 		},
 	}
 
+	weightType := weight_types.WeightType(1)
+
 	for _, group := range groups {
 		equipItems := loaders.GearFileReader_Read(group.file)
 		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 		itemSet := items.FullItemSet_FromMap(equipMap)
-		rating := group.model.CalcRatingFull(&itemSet)
+		rating := group.model.CalcRatingFull(&itemSet, weightType)
 		tools.ReportSet(&group.model, &itemSet, printer)
 
 		printer.Printf("%20s %10.0f %s\n", group.label, rating, group.model.StatWeights.CreateString())
@@ -660,20 +663,17 @@ func solveForRatings(printer *util.PrintRecorder) {
 		},
 	}
 
+	weightType := weight_types.WeightType(1)
+
 	for _, group := range groups {
 		equipItems := loaders.GearFileReader_Read(group.file)
 		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 		itemSet := items.FullItemSet_FromMap(equipMap)
-		rating := group.model.CalcRatingFull(&itemSet)
+		rating := group.model.CalcRatingFull(&itemSet, weightType)
 		// solver.ReportSet(printer, itemSet, rating, &group.model)
 
 		prescaleMult := prescaleTarget / rating
 
 		printer.Printf("%20s %10.0f %.4f %s\n", group.label, rating, rating*prescaleMult, group.model.StatWeights.CreateString())
 	}
-
-	// for _, group := range groups {
-	// 	rating := group.model.CalcRatingFull(itemSet)
-
-	// }
 }

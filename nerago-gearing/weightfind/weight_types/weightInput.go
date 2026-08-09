@@ -28,7 +28,7 @@ func (wr *WeightResult) AsWeight1() *Weight1Basic {
 	case *Weight3ExtendedRanged:
 		return cast.ConvertToWeight2().ConvertToWeight1()
 	default:
-		panic("unknown weight type")
+		return nil
 	}
 }
 
