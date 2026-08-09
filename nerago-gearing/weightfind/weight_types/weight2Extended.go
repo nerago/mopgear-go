@@ -89,19 +89,38 @@ func (we *Weight2Extended) CalcStatScoreForInput(input *WeightInput) float64 {
 func (we *Weight2Extended) CalcStatScore(statBlock *stats.StatBlock) float64 {
 	totalSum := 0.0
 	for simType, nested := range we.DetailedWeights.SeqKey2NestedKey1Value() {
-		subTotal := scoreForSim2(nested, statBlock, we.SimPriority.GetOrPanic(simType))
+		subTotal := scoreForSim2(nested, statBlock)
+
+		priorityEntry := we.SimPriority.GetOrPanic(simType)
+		subTotal = priorityEntry.Apply(subTotal)
+
 		totalSum += subTotal
 	}
 	return totalSum
 }
 
-func scoreForSim2(nested iter.Seq2[stats.StatType, float64], statBlock *stats.StatBlock, priority SimPriorityEntry) float64 {
+func (we *Weight2Extended) CalcStatScoreWithBonus(statBlock *stats.StatBlock, simBonus *stats.SimTypeMap[float64]) float64 {
+	totalSum := 0.0
+	for simType, nested := range we.DetailedWeights.SeqKey2NestedKey1Value() {
+		subTotal := scoreForSim2(nested, statBlock)
+
+		priorityEntry := we.SimPriority.GetOrPanic(simType)
+		subTotal = priorityEntry.Apply(subTotal)
+
+		subTotal *= simBonus.GetOrDefault(simType, 1)
+
+		totalSum += subTotal
+	}
+	return totalSum
+}
+
+func scoreForSim2(nested iter.Seq2[stats.StatType, float64], statBlock *stats.StatBlock) float64 {
 	subTotal := 0.0
 	for statType, detailWeight := range nested {
 		specificValue := detailWeight * statBlock.GetFloat(statType)
 		subTotal += specificValue
 	}
-	return priority.Apply(subTotal)
+	return subTotal
 }
 
 func (we *Weight2Extended) validate() {

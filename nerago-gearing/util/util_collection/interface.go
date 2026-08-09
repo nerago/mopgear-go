@@ -70,6 +70,8 @@ type IMap[K comparable, V any] interface {
 	Has(key K) bool
 	FirstKey() K
 	Get(key K) (V, bool)
+	GetOrNilValue(key K) V
+	GetOrDefault(key K, defaultValue V) V
 	GetOrPanic(key K) V
 	Put(key K, value V)
 	Delete(key K)
@@ -127,10 +129,6 @@ type IMapMapSlice[J comparable, K comparable, V any] interface {
 	SeqKey1Key2ValueSeqEntries() iter.Seq[MapMapSliceEntry[J, K, V]]
 	SeqKey2Key1ValueSeqEntries() iter.Seq[MapMapSliceEntry[J, K, V]]
 }
-
-var _ IMap[int, int] = &MapConcurrent[int, int]{}
-var _ IMapMap[int, int, int] = &MapMap[int, int, int]{}
-var _ IMapMapSlice[int, int, int] = &MapMapSlice[int, int, int]{}
 
 func IMapEquals[K comparable, V any](a IMap[K, V], b IMap[K, V], elementEqual func(*V, *V) bool) bool {
 	if concurA, isConcurA := a.(*MapConcurrent[K, V]); isConcurA {

@@ -4,6 +4,7 @@ import (
 	"iter"
 	"math"
 	"paladin_gearing_go/gear_model"
+	"paladin_gearing_go/gear_model/bonus_set"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
@@ -76,7 +77,7 @@ type setBonusMultiplierByCount [6]float64
 
 type bonusInfo struct {
 	setCountItems  func(*items.SolvableEquipMap) uint8
-	setMultipliers setBonusMultiplierByCount
+	setMultipliers bonus_set.BonusByCountFlat
 	setIndex       setBonusIndex
 
 	countSetItemsRow  util_highs.ConstraintRow      // use to count items used from this set, has 1 or 0 flags
@@ -111,26 +112,27 @@ type SolverModel struct {
 	Weights2       *weight_types.Weight2Extended
 	Weights3       *weight_types.Weight3ExtendedRanged
 
-	CheckSet       func(itemSet *items.SolvableItemSet) bool
+	CheckSet       func(itemSet *items.SolvableItemSet) (bool, string)
 	CalcRatingItem func(item *items.SolvableItem) float64
 	CalcRatingSet  func(item *items.SolvableItemSet) float64
 
-	StatRequirements util_collection.EnumMap[stats.StatType, weight_types.StatRangeFloat]
+	StatRequirements stats.StatTypeMap[weight_types.StatRangeFloat]
 
-	SetBonusRequiredCounts []setBonusRequiredCounts
-	SetBonusTotalCount     int
-	SetBonusIndexForItem   func(id items.ItemId) (int, bool)
-	SetBonusCountItems     []func(*items.SolvableEquipMap) uint8
-	SetBonusMultipliers    []setBonusMultiplierByCount
+	SetBonusRequiredCounts   []setBonusRequiredCounts
+	SetBonusTotalCount       int
+	SetBonusIndexForItem     func(id items.ItemId) (int, bool)
+	SetBonusCountItems       []func(*items.SolvableEquipMap) uint8
+	SetBonusMultipliersFlat  []bonus_set.BonusByCountFlat
+	SetBonusMultipliersBySim []bonus_set.BonusByCountBySim
 }
 
 func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.WeightType) *SolverModel {
 	solveModel := &SolverModel{
-		CheckSet:               model.CheckSet,
+		CheckSet:               model.CheckSetForSolver,
 		StatRequirements:       toEnumMap(model.StatRequirements.AsMap()),
-		SetBonusRequiredCounts: convertBonusRequired(model.SetBonusRequired, model.SetBonus.BonusSets()),
-		SetBonusTotalCount:     len(model.SetBonus.BonusSets()),
-		SetBonusIndexForItem:   model.SetBonus.BonusSetIndexForItem,
+		SetBonusRequiredCounts: convertBonusRequired(model.BonusRequiredSolve, model.BonusEnabled.EnabledSets),
+		SetBonusTotalCount:     len(model.BonusEnabled.EnabledSets),
+		SetBonusIndexForItem:   model.BonusEnabled.BonusSetIndexForItem,
 	}
 
 	weightExt := model.StatWeights
@@ -153,35 +155,29 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.Weigh
 	}
 
 	solveModel.CalcRatingSet = func(itemSet *items.SolvableItemSet) float64 {
-		return model.CalcRatingSolveForGivenWeight(itemSet, solveModel.WeightsGeneric)
+		return model.CalcRatingSolve(itemSet, weightType)
 	}
 
 	solveModel.CalcRatingItem = func(item *items.SolvableItem) float64 {
-		return model.CalcRatingSolveItemForGivenWeight(item, solveModel.WeightsGeneric)
+		return model.CalcRatingSolveItem(item, weightType)
 	}
 
-	solveModel.SetBonusCountItems = util_collection.MapSliceAsNew_NoPointer(
-		model.SetBonus.BonusSets(),
-		func(set gear_model.BonusSet) func(*items.SolvableEquipMap) uint8 {
-			return set.CountItems
-		},
-	)
-
-	solveModel.SetBonusMultipliers = util_collection.MapSliceAsNew_NoPointer(
-		model.SetBonus.BonusSets(),
-		func(set gear_model.BonusSet) setBonusMultiplierByCount {
-			return setBonusMultiplierByCount(set.BonusByCount())
-		},
-	)
+	for _, prepBonus := range model.BonusEnabled.EnabledSets {
+		solveModel.SetBonusCountItems = append(solveModel.SetBonusCountItems, prepBonus.CountItemsSolve)
+		solveModel.SetBonusMultipliersFlat = append(solveModel.SetBonusMultipliersFlat, prepBonus.BonusByCount())
+		solveModel.SetBonusMultipliersBySim = append(solveModel.SetBonusMultipliersBySim, prepBonus.BonusByCountBySim())
+	}
 
 	return solveModel
 }
 
-func convertBonusRequired(required []gear_model.BonusSetCountsRequired, activeSets []gear_model.BonusSet) []setBonusRequiredCounts {
-	return util_collection.MapSliceAsNew(required, func(setCounts *gear_model.BonusSetCountsRequired) setBonusRequiredCounts {
-		countsAsSlice := make(setBonusRequiredCounts, len(activeSets))
+func convertBonusRequired(required bonus_set.ItemCountsRequiredOptions, enabledSets []bonus_set.PreparedBonus) []setBonusRequiredCounts {
+	return util_collection.MapSliceAsNew(required, func(setCounts *bonus_set.ItemCountsRequired) setBonusRequiredCounts {
+		countsAsSlice := make(setBonusRequiredCounts, len(enabledSets))
 		for set, count := range setCounts.Pairs() {
-			setIndex := slices.IndexFunc(activeSets, set.Equals)
+			setIndex := slices.IndexFunc(enabledSets, func(bonus bonus_set.PreparedBonus) bool {
+				return bonus.Name() == set.Name()
+			})
 			if setIndex == -1 {
 				panic("set not found")
 			}
@@ -191,8 +187,8 @@ func convertBonusRequired(required []gear_model.BonusSetCountsRequired, activeSe
 	})
 }
 
-func toEnumMap(goMap map[stats.StatType]util_collection.HiLoUInt32) util_collection.EnumMap[stats.StatType, weight_types.StatRangeFloat] {
-	enumMap := util_collection.EnumMapMake[stats.StatType, weight_types.StatRangeFloat](stats.StatTypeEnum)
+func toEnumMap(goMap map[stats.StatType]util_collection.HiLoUInt32) stats.StatTypeMap[weight_types.StatRangeFloat] {
+	enumMap := stats.StatTypeMap[weight_types.StatRangeFloat]{}
 	for stat, hiLo := range goMap {
 		enumMap.Put(stat, weight_types.StatRangeFloat{Minimum: float64(hiLo.Lo), Maximum: convertHigh(hiLo.Hi)})
 	}

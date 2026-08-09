@@ -16,6 +16,7 @@ const (
 	Sim_HPS   SimType = iota
 	Sim_TMI   SimType = iota
 	Sim_DEATH SimType = iota
+	Sim_Count         = 6
 )
 
 const c_nullIncrease = -100.0
@@ -80,15 +81,21 @@ func (types SimType) Name() string {
 var SimTypeList = []SimType{Sim_DPS, Sim_TPS, Sim_DTPS, Sim_HPS, Sim_TMI, Sim_DEATH}
 var SimTypeEnum = util_collection.EnumTypeMake[SimType](SimTypeList)
 
-func (types SimType) EnumNumValues() uint8 {
-	return simTypeCount
+type SimTypeMap[V any] struct {
+	util_collection.EnumMapTiny[SimType, V, [Sim_Count]V]
 }
 
-const simTypeCount = 6
+func (m *SimTypeMap[V]) Clone() *SimTypeMap[V] {
+	return &SimTypeMap[V]{m.EnumMapTiny.Clone()}
+}
+
+func (types SimType) EnumNumValues() uint8 {
+	return Sim_Count
+}
 
 type SimData struct {
-	Values        [simTypeCount]float64
-	Detail        *[simTypeCount]SimDataDetail
+	Values        [Sim_Count]float64
+	Detail        *[Sim_Count]SimDataDetail
 	SimIterations int32
 }
 
@@ -177,7 +184,7 @@ func (sim *SimData) Set(types SimType, value float64) {
 func (sim *SimData) SetDetailed(types SimType, average, min, max, stdDev float64) {
 	sim.Values[types] = average
 	if sim.Detail == nil {
-		sim.Detail = new([simTypeCount]SimDataDetail)
+		sim.Detail = new([Sim_Count]SimDataDetail)
 	}
 	sim.Detail[types] = SimDataDetail{
 		Min:    min,

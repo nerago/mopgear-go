@@ -2,7 +2,6 @@ package extern_stats
 
 import (
 	gear_stat "paladin_gearing_go/stats"
-	"paladin_gearing_go/util/util_collection"
 	"strconv"
 
 	wowsim_proto "github.com/wowsims/mop/sim/core/proto"
@@ -30,7 +29,7 @@ func GearStatBlockToUnitStats(block *gear_stat.StatBlock) *wowsim_proto.UnitStat
 	return unitStats
 }
 
-func GearStatMapToUnitStats(statMap util_collection.EnumMap[gear_stat.StatType, int32]) *wowsim_proto.UnitStats {
+func GearStatMapToUnitStats(statMap gear_stat.StatTypeMap[int32]) *wowsim_proto.UnitStats {
 	unitStats := &wowsim_proto.UnitStats{}
 	unitStats.Stats = make([]float64, 12)
 	for gearStat, value := range statMap.SeqKeyValue() {

@@ -2,46 +2,14 @@ package util_collection
 
 import "iter"
 
-type sample uint8
-
-func (s sample) Name() string {
-	switch s {
-	case Sample_One:
-		return "one"
-	case Sample_Two:
-		return "two"
-	case Sample_Three:
-		return "three"
-	default:
-		return ""
-	}
-}
-
-func (s sample) EnumNumValues() uint8 {
-	return uint8(len(sampleList))
-}
-
-const (
-	Sample_One      sample = iota
-	Sample_Two      sample = iota
-	Sample_Three    sample = iota
-	Sample_EnumSize        = 3
-)
-
-var sampleList = []sample{Sample_One, Sample_Two, Sample_Three}
-var sampleEnum = EnumTypeMake(sampleList)
-
-type enumMap2Sample[V any] struct {
-	EnumMapTiny[sample, V, [Sample_EnumSize]V]
-}
-
-var _ IMap[sample, int] = &enumMap2Sample[int]{}
-
 type EnumMapTiny[E EnumBaseType, V any, A ArrayTinyParam[V]] struct {
-	content  A
-	isSet    uint16
-	len      uint8
-	enumType EnumType[E]
+	content A
+	isSet   uint16
+	len     uint8
+}
+
+func (em *EnumMapTiny[E, V, A]) Clone() EnumMapTiny[E, V, A] {
+	return EnumMapTiny[E, V, A]{em.content, em.isSet, em.len}
 }
 
 func (em *EnumMapTiny[E, V, A]) Clear() {
@@ -55,6 +23,10 @@ func (em *EnumMapTiny[E, V, A]) Clear() {
 
 func (em *EnumMapTiny[E, V, A]) IsEmpty() bool {
 	return em.isSet == 0
+}
+
+func (em *EnumMapTiny[E, V, A]) Size() int {
+	return int(em.len)
 }
 
 func (em *EnumMapTiny[E, V, A]) Has(key E) bool {
@@ -83,15 +55,28 @@ func (em *EnumMapTiny[E, V, A]) Get(key E) (V, bool) {
 	}
 }
 
-func (em *EnumMapTiny[E, V, A]) Size() int {
-	return int(em.len)
-}
-
 func (em *EnumMapTiny[E, V, A]) GetOrPanic(key E) V {
 	if (em.isSet & (1 << key)) != 0 {
 		return em.content[key]
 	} else {
 		panic("key not set")
+	}
+}
+
+func (em *EnumMapTiny[E, V, A]) GetOrNilValue(key E) V {
+	if (em.isSet & (1 << key)) != 0 {
+		return em.content[key]
+	} else {
+		var nilValue V
+		return nilValue
+	}
+}
+
+func (em *EnumMapTiny[E, V, A]) GetOrDefault(key E, defaultValue V) V {
+	if (em.isSet & (1 << key)) != 0 {
+		return em.content[key]
+	} else {
+		return defaultValue
 	}
 }
 

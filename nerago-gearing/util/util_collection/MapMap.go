@@ -10,6 +10,8 @@ type MapMap[J comparable, K comparable, V any] struct {
 	dataBy2 map[K]map[J]V
 }
 
+var _ IMapMap[int, int, int] = &MapMap[int, int, int]{}
+
 type MapMapEntry[J comparable, K comparable, V any] struct {
 	Key1  J
 	Key2  K

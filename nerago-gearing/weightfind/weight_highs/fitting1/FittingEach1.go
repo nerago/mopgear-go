@@ -24,7 +24,7 @@ type FittingEachStatWeightProcess struct {
 	requiredSims                 []stats.SimType
 
 	scaleSims  util_collection.EnumMap[stats.SimType, util_weight2.ScaleAndOffset]
-	scaleStats util_collection.EnumMap[stats.StatType, float64]
+	scaleStats stats.StatTypeMap[float64]
 
 	each util_collection.MapMap[stats.StatType, stats.SimType, *fittingEachFields]
 }

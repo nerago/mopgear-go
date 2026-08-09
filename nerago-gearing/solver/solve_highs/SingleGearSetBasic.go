@@ -5,7 +5,6 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
-	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/weight_types"
 
@@ -119,7 +118,7 @@ func (setup *singleGearSetBasic) finishBaseRating() {
 	setup.baseRatingSumRow.Build(setup.build, 0, 0)
 }
 
-func (setup *singleGearSetBasic) finishRequiredStats(require *util_collection.EnumMap[stats.StatType, weight_types.StatRangeFloat]) {
+func (setup *singleGearSetBasic) finishRequiredStats(require *stats.StatTypeMap[weight_types.StatRangeFloat]) {
 	// constrain: total sum of hit/exp are within requested limits
 	if hitRange, hasHit := require.Get(stats.Stat_Hit); hasHit {
 		setup.hitValueRow.Debug = "hitValueRow"
@@ -138,7 +137,7 @@ func (setup *singleGearSetBasic) finishRequiredStats(require *util_collection.En
 	}
 }
 
-func (setup *singleGearSetBasic) prepareRequiredStats(statRequirements *util_collection.EnumMap[stats.StatType, weight_types.StatRangeFloat]) {
+func (setup *singleGearSetBasic) prepareRequiredStats(statRequirements *stats.StatTypeMap[weight_types.StatRangeFloat]) {
 	setup.minimumValueType = stats.Stat_Invalid
 	for statType := range statRequirements.SeqKey() {
 		if statType != stats.Stat_Hit && statType != stats.Stat_Expertise {

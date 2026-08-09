@@ -11,6 +11,8 @@ type MapMapSlice[J comparable, K comparable, V any] struct {
 	dataBy2 map[K]map[J][]V
 }
 
+var _ IMapMapSlice[int, int, int] = &MapMapSlice[int, int, int]{}
+
 type MapMapSliceEntry[J comparable, K comparable, V any] struct {
 	Key1     J
 	Key2     K

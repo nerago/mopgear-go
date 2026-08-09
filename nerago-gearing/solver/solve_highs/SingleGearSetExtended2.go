@@ -6,7 +6,6 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
-	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/weight_types"
 
@@ -86,7 +85,7 @@ type singleGearSetExtended2 struct {
 	combinedRatingVar    *columnInfo // sum of values for the ratings of selected items
 }
 
-func (setup *singleGearSetExtended2) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, require *util_collection.EnumMap[stats.StatType, weight_types.StatRangeFloat], activeSet func(id items.ItemId) (int, bool)) util_highs.ColumnIndex {
+func (setup *singleGearSetExtended2) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, require *stats.StatTypeMap[weight_types.StatRangeFloat], activeSet func(id items.ItemId) (int, bool)) util_highs.ColumnIndex {
 	columnIndex := setup.addItemCommon(itemSlot, item, activeSet)
 
 	// add to stats via a summation condition
@@ -104,7 +103,7 @@ func (setup *singleGearSetExtended2) addItem(itemSlot items.SlotEquip, item *ite
 	return columnIndex
 }
 
-func (setup *singleGearSetExtended2) prepareRequire(require *util_collection.EnumMap[stats.StatType, weight_types.StatRangeFloat]) {
+func (setup *singleGearSetExtended2) prepareRequire(require *stats.StatTypeMap[weight_types.StatRangeFloat]) {
 	setup.requireRows = make(map[stats.StatType]*util_highs.ConstraintRow, require.Size())
 	for statType := range require.SeqKey() {
 		setup.requireRows[statType] = &util_highs.ConstraintRow{Debug: "require " + statType.Name()}
@@ -124,7 +123,7 @@ func (setup *singleGearSetExtended2) prepareStats() {
 	}
 }
 
-func (setup *singleGearSetExtended2) finishStats(require *util_collection.EnumMap[stats.StatType, weight_types.StatRangeFloat]) {
+func (setup *singleGearSetExtended2) finishStats(require *stats.StatTypeMap[weight_types.StatRangeFloat]) {
 	// constrain: total sum of hit/exp/etc are within requested limits
 	for statType, hilo := range require.SeqKeyValue() {
 		row := setup.requireRows[statType]

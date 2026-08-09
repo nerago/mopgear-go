@@ -62,13 +62,15 @@ func (inst *StatRequirementsGeneral) addRange(statType stats.StatType, lo uint32
 	inst.hi[statType] = hi
 }
 
-func (inst *StatRequirementsGeneral) CheckSet(block *stats.StatBlock) bool {
+func (inst *StatRequirementsGeneral) CheckSet(block *stats.StatBlock) (bool, string) {
 	for i := range block {
-		if block[i] < inst.lo[i] || block[i] > inst.hi[i] {
-			return false
+		if block[i] < inst.lo[i] {
+			return false, stats.StatType(i).Name() + " too low"
+		} else if block[i] > inst.hi[i] {
+			return false, stats.StatType(i).Name() + " too high"
 		}
 	}
-	return true
+	return true, ""
 }
 
 func (inst *StatRequirementsGeneral) EqualsTyped(other *StatRequirementsGeneral) bool {

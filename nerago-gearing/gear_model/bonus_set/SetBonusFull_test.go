@@ -1,7 +1,8 @@
-package gear_model
+package bonus_set
 
 import (
 	"math/rand/v2"
+	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 )
 
@@ -55,11 +56,11 @@ func makeEquipFullForBonus() *items.FullEquipMap {
 
 func makeItemFull() *items.FullItem {
 	id := rand.Uint32N(10000)
-	item := items.FullItem_ForTest(items.ItemId(id), items.Item_Head, randStatBlock())
+	item := items.FullItem_ForTest(items.ItemId(id), items.Item_Head, gear_model.randStatBlock())
 	return &item
 }
 
 func makeItemForFullBonus(id uint32) *items.FullItem {
-	item := items.FullItem_ForTest(items.ItemId(id), items.Item_Head, randStatBlock())
+	item := items.FullItem_ForTest(items.ItemId(id), items.Item_Head, gear_model.randStatBlock())
 	return &item
 }

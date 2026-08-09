@@ -100,7 +100,7 @@ func (setup *singleGearSetShared) prepareActiveSetCombos(model *SolverModel) {
 			info := bonusInfo{
 				setIndex:       setBonusIndex(setIndex),
 				setCountItems:  model.SetBonusCountItems[setIndex],
-				setMultipliers: model.SetBonusMultipliers[setIndex],
+				setMultipliers: model.SetBonusMultipliersFlat[setIndex],
 			}
 			info.countSetItemsRow.Debug = "countSetItemsRow" + strconv.Itoa(setIndex)
 			setup.addSetItemCountVariable(&info)

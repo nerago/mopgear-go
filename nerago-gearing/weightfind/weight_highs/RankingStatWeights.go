@@ -33,7 +33,7 @@ type RankingStatWeightProcess struct {
 
 	build *util_highs.LinearBuilder
 
-	scaleStats    util_collection.EnumMap[stats.StatType, float64]
+	scaleStats    stats.StatTypeMap[float64]
 	weightColumns map[stats.StatType]util_highs.ColumnIndex
 
 	RANKMODE  int

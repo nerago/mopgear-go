@@ -24,7 +24,7 @@ type BaseEachStatProcess[F IEachFields] struct {
 	targetRatios       weight_types.SimPriorityBasic
 
 	ScaleSims  util_collection.EnumMap[stats.SimType, util_weight.ScaleAndOffset]
-	ScaleStats util_collection.EnumMap[stats.StatType, float64]
+	ScaleStats stats.StatTypeMap[float64]
 
 	Each           util_collection.MapMap[stats.StatType, stats.SimType, F]
 	Failed         bool

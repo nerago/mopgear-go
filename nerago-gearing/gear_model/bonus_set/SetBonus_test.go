@@ -1,8 +1,9 @@
-package gear_model
+package bonus_set
 
 import (
 	"fmt"
 	"math/rand/v2"
+	"paladin_gearing_go/gear_model"
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/stats"
 	"testing"
@@ -32,7 +33,7 @@ func makeEquipFetch() loopedFetch {
 }
 
 func makeEquipFetch2(a, b *SetBonus) loopedFetch {
-	allInfo := []setInfoBonus{}
+	allInfo := []BonusLookup{}
 	allInfo = append(allInfo, a.activeSets...)
 	allInfo = append(allInfo, b.activeSets...)
 
@@ -65,7 +66,7 @@ func BenchmarkCalcBonusSolve(test *testing.B) {
 		v += b.CalcBonusSolve(equip)
 		v += c.CalcBonusSolve(equip)
 	}
-	resultFloat = float64(v)
+	gear_model.resultFloat = float64(v)
 }
 
 // func BenchmarkCalcBonusSolveC(test *testing.B) {
@@ -196,7 +197,7 @@ var g_setBonusSlots = [5]SlotEquip{Equip_Head, Equip_Shoulder, Equip_Chest, Equi
 func makeEquipForBonus(numInSet int) *SolvableEquipMap {
 	equip := SolvableEquipMap{}
 	for slot := range equip {
-		equip[slot] = makeItem()
+		equip[slot] = gear_model.makeItem()
 	}
 
 	setItems := []uint32{86659, 86660, 86661, 86662, 86663}
@@ -208,10 +209,10 @@ func makeEquipForBonus(numInSet int) *SolvableEquipMap {
 	return &equip
 }
 
-func makeEquipForBonus2(a, b *setInfoBonus, x, y int) *SolvableEquipMap {
+func makeEquipForBonus2(a, b *BonusLookup, x, y int) *SolvableEquipMap {
 	equip := SolvableEquipMap{}
 	for slot := range equip {
-		equip[slot] = makeItem()
+		equip[slot] = gear_model.makeItem()
 	}
 
 	for _, slot := range g_setBonusSlots {
@@ -234,6 +235,6 @@ func randChoice(slice []uint32) uint32 {
 }
 
 func makeItemForBonus(id uint32) *SolvableItem {
-	item := SolvableItem_ForTest(ItemId(id), randStatBlock())
+	item := SolvableItem_ForTest(ItemId(id), gear_model.randStatBlock())
 	return &item
 }

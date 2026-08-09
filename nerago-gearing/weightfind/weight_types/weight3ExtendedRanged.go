@@ -107,15 +107,32 @@ func (wer *Weight3ExtendedRanged) FinishAndValidate() {
 func (wer *Weight3ExtendedRanged) CalcStatScore(stats *stats.StatBlock) float64 {
 	totalSum := 0.0
 	for _, simType := range wer.SimList {
-		simSubTotal := wer.CalcSingleSimScoreUnscaled(stats, simType)
+		subTotal := wer.calcSingleSimScoreUnscaled(stats, simType)
 
-		simEntry := wer.SimPriority.GetOrPanic(simType)
-		totalSum += simEntry.Apply(simSubTotal)
+		priorityEntry := wer.SimPriority.GetOrPanic(simType)
+		subTotal = priorityEntry.Apply(subTotal)
+
+		totalSum += subTotal
 	}
 	return totalSum
 }
 
-func (wer *Weight3ExtendedRanged) CalcSingleSimScoreUnscaled(stats *stats.StatBlock, simType stats.SimType) float64 {
+func (wer *Weight3ExtendedRanged) CalcStatScoreWithBonus(stats *stats.StatBlock, simBonus *stats.SimTypeMap[float64]) float64 {
+	totalSum := 0.0
+	for _, simType := range wer.SimList {
+		subTotal := wer.calcSingleSimScoreUnscaled(stats, simType)
+
+		priorityEntry := wer.SimPriority.GetOrPanic(simType)
+		subTotal = priorityEntry.Apply(subTotal)
+
+		subTotal *= simBonus.GetOrDefault(simType, 1)
+
+		totalSum += subTotal
+	}
+	return totalSum
+}
+
+func (wer *Weight3ExtendedRanged) calcSingleSimScoreUnscaled(stats *stats.StatBlock, simType stats.SimType) float64 {
 	simSubTotal := 0.0
 
 	for statType, entrySeq := range wer.StatWeights.SeqKey2ValueSeqWithKey1(simType) {
@@ -135,6 +152,7 @@ func (wer *Weight3ExtendedRanged) CalcSingleSimScoreUnscaled(stats *stats.StatBl
 		calc := float64(statValue)*entry.RatingWeight + entry.RatingOffset
 		simSubTotal += calc
 	}
+
 	return simSubTotal
 }
 

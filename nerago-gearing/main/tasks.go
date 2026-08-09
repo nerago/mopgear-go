@@ -5,6 +5,7 @@ import (
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/gear_model"
+	"paladin_gearing_go/gear_model/bonus_set"
 	"paladin_gearing_go/gear_model/model_factory"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/loaders"
@@ -682,16 +683,17 @@ func solveForRatings(printer *util.PrintRecorder) {
 
 type standardisedItemSet struct {
 	itemSet    items.FullItemSet
-	bonusStats util_collection.EnumMap[stats.StatType, int32]
+	bonusStats stats.StatTypeMap[int32]
 }
 type standardisedItemSetGroup struct {
 	zero, two, four standardisedItemSet
 }
 
 func determineSetBonusValueBySim() {
-	optionCount := 16
-	runSize := simulate.RunSize_QuickDirty
+	//runSize := simulate.RunSize_QuickDirty
+	optionCount := 10
 	//runSize := simulate.RunSize_Largish
+	//optionCount := 128
 
 	//goal := stats.OptimiseGoal_Mitigation
 	goal := stats.OptimiseGoal_HalfMitiHeal
@@ -705,9 +707,9 @@ func determineSetBonusValueBySim() {
 
 	gearFile := files.GearFileProtMitigationNoSet
 	model := model_factory.Model_PallyProtMitigation_NoSet()
-	model.SetBonus = gear_model.SetBonus_Named("Plate of Winged Triumph")
-	model.SetBonusRequired = []gear_model.BonusSetCountsRequired{model_factory.BonusItems_ZeroAll}
-	model.SetBonusFixedWeights = nil
+	model.BonusEnabled = bonus_set.SpecSetsEnableNamed("Plate of Winged Triumph")
+	model.BonusRequiredSolve = bonus_set.ItemCountsRequiredOptions{model_factory.BonusItems_ZeroAll}
+	model.BonusRequiredWeight = nil
 
 	initialSets, itemOptions := weightfind.GenerateRandomSets(gearFile, substituteItemsProt, &model, optionCount, printer, "")
 
@@ -720,7 +722,7 @@ func determineSetBonusValueBySim() {
 
 	preparedSetGroups := util_collection.MapSliceAsNew(initialSets, func(itemSet *items.FullItemSet) standardisedItemSetGroup {
 		return standardisedItemSetGroup{
-			standardisedItemSet{*itemSet, util_collection.EnumMap[stats.StatType, int32]{}},
+			standardisedItemSet{*itemSet, stats.StatTypeMap[int32]{}},
 			replaceWithEquivalentSetItems(itemSet, setItems, 2),
 			replaceWithEquivalentSetItems(itemSet, setItems, 4),
 		}
@@ -783,7 +785,7 @@ func replaceWithEquivalentSetItems(baseSet *items.FullItemSet, bonusItems []*ite
 	}
 	substitutedSet := items.FullItemSet_FromMap(substitutedEquip)
 
-	bonusStats := util_collection.EnumMapMake[stats.StatType, int32](stats.StatTypeEnum)
+	bonusStats := stats.StatTypeMap[int32]{}
 	for _, statType := range stats.StatType_List {
 		baseValue := baseSet.Total().GetUInt(statType)
 		subValue := substitutedSet.Total().GetUInt(statType)

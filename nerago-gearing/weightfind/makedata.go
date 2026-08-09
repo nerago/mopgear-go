@@ -183,7 +183,7 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 	return weightInputs
 }
 
-func addBonusStats(base *stats.StatBlock, bonusStat *util_collection.EnumMap[stats.StatType, int32]) stats.StatBlock {
+func addBonusStats(base *stats.StatBlock, bonusStat *stats.StatTypeMap[int32]) stats.StatBlock {
 	resultBlock := *base
 	for stat, add := range bonusStat.SeqKeyValue() {
 		value := int64(resultBlock[stat]) + int64(add)
@@ -277,8 +277,8 @@ func InitialBonusStatMap(printer *util.PrintRecorder, currentItemSet items.FullI
 	return initialBaseStats
 }
 
-func InitialBonusStatMap_fixRanges(printer *util.PrintRecorder, currentItemSet items.FullItemSet, plannedIncrementTestRange int32, fixMode weight_types.FixStatsRangeMode, isForGrid bool) *util_collection.EnumMap[stats.StatType, int32] {
-	initialBaseStats := new(util_collection.EnumMapMake[stats.StatType, int32](stats.StatTypeEnum))
+func InitialBonusStatMap_fixRanges(printer *util.PrintRecorder, currentItemSet items.FullItemSet, plannedIncrementTestRange int32, fixMode weight_types.FixStatsRangeMode, isForGrid bool) *stats.StatTypeMap[int32] {
+	initialBaseStats := &stats.StatTypeMap[int32]{}
 
 	if fixMode == weight_types.FixStatsRangeMode_NotSet {
 		panic("fixMode not specified")

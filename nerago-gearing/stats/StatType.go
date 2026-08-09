@@ -93,6 +93,14 @@ var StatType_List = []StatType{
 
 var StatTypeEnum = util_collection.EnumTypeMake[StatType](StatType_List)
 
+type StatTypeMap[V any] struct {
+	util_collection.EnumMapTiny[StatType, V, [Stat_Count]V]
+}
+
+func (m *StatTypeMap[V]) Clone() *StatTypeMap[V] {
+	return &StatTypeMap[V]{m.EnumMapTiny.Clone()}
+}
+
 func (stat StatType) EnumNumValues() uint8 {
 	return Stat_Count
 }

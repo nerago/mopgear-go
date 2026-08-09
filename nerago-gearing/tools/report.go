@@ -2,6 +2,7 @@ package tools
 
 import (
 	"paladin_gearing_go/gear_model"
+	"paladin_gearing_go/gear_model/bonus_set"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/util"
 )
@@ -14,8 +15,8 @@ func ReportSetFewerParams(model *gear_model.SpecModel, fullSet *items.FullItemSe
 
 func ReportSet(model_obj *gear_model.SpecModel, fullSet *items.FullItemSet, printer *util.PrintRecorder) {
 	//printer.Printf("SET rating %.0f\n", rating)
-	printer.Printf("BONUS counts %s\n", gear_model.AllBonusesText(fullSet.Items()))
-	printer.Printf("BONUS multiply %f\n", model_obj.SetBonus.CalcBonusFull(fullSet.Items()))
+	printer.Printf("BONUS counts %s\n", bonus_set.AllBonusesText(fullSet.Items()))
+	printer.Printf("BONUS multiply %f\n", model_obj.BonusEnabled.CalcBonusFullFlat(fullSet.Items(), model_obj.SimPriority))
 	fullSet.PrintStats(printer)
 	printEquipMap(fullSet.Items(), printer)
 

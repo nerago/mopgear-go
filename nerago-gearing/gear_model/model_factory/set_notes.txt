@@ -6,6 +6,7 @@ Prot-Mitigation-NoSet	ignore[!!]	nil         prot16=2        p16[2]
 Prot-Mitigation-WithSet	prot&prot   2&2         nil             p15[2],p16[2]
 Prot-Heal               prot16      4           nil             p16[4]
 
+Teir 16 Prot, regular fight and spec
 BONUS 2 DPS 0.999999
 BONUS 2 TPS 0.999999
 BONUS 2 DTPS 0.999331

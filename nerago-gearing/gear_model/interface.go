@@ -8,7 +8,7 @@ import (
 )
 
 type StatRequirements interface {
-	CheckSet(block *stats.StatBlock) bool
+	CheckSet(block *stats.StatBlock) (bool, string)
 	Equals(other any) bool
 
 	IsLow(statType stats.StatType, value uint32) bool

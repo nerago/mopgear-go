@@ -69,7 +69,8 @@ func findMinMaxWithStat(options []items.SolvableItem, stat stats.StatType) (*ite
 func findAcceptableSet(proposedList []items.SolvableItemSet, model *gear_model.SpecModel) util_collection.Optional[items.SolvableItemSet] {
 	best := util_rank.BestCollector1[items.SolvableItemSet]{}
 	for _, set := range proposedList {
-		if model.CheckSet(&set) {
+		ok, _ := model.CheckSetForSolver(&set)
+		if ok {
 			rate := model.CalcRatingSolve(&set, 1)
 			best.Offer(&set, rate)
 		}

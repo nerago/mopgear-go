@@ -6,7 +6,6 @@ import (
 	"math"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_collection"
 )
 
 type Weight1Basic struct {
@@ -70,7 +69,11 @@ func (wr *Weight1Basic) CalcStatScore(stats *stats.StatBlock) float64 {
 	return wr.content.MultiplyForTotalSum2(stats)
 }
 
-func (wr *Weight1Basic) CalcStatScoreScaled(input *WeightInput, statScale util_collection.EnumMap[stats.StatType, float64]) float64 {
+func (wr *Weight1Basic) CalcStatScoreWithBonus(_ *stats.StatBlock, _ *stats.SimTypeMap[float64]) float64 {
+	panic("Weight1Basic 1 can't handle bonus map")
+}
+
+func (wr *Weight1Basic) CalcStatScoreScaled(input *WeightInput, statScale stats.StatTypeMap[float64]) float64 {
 	total := 0.0
 	for statType, scale := range statScale.SeqKeyValue() {
 		total += input.TotalStat.GetFloat(statType) * wr.content.GetFloat(statType) * scale

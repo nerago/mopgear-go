@@ -3,7 +3,7 @@ package loaders
 import (
 	"cmp"
 	"paladin_gearing_go/db"
-	"paladin_gearing_go/gear_model"
+	"paladin_gearing_go/gear_model/bonus_set"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util/util_collection"
@@ -193,9 +193,9 @@ func SiegeClassGearSetMultiple(specType ...stats.SpecType) func(stats.Difficulty
 
 func siegeClassGearSet(specType stats.SpecType, difficulty stats.Difficulty) []ItemFoundRef {
 	result := make([]ItemFoundRef, 0)
-	specBonus := gear_model.SetBonus_ForSpec_AllowFallback(specType, stats.OptimiseGoal_Unknown, true)
+	specBonus := bonus_set.SpecSetsEnableForSpec_AllowFallback(specType, stats.OptimiseGoal_Unknown, true)
 	targetLevel := difficulty.ExpectedItemLevelSiege()
-	for itemId := range specBonus.AllSetItemIds() {
+	for itemId := range specBonus.AllItemIds() {
 		item := db.WowSimDB_LoadItemById(itemId, 0)
 		if item.ItemLevel() == targetLevel {
 			result = append(result, ItemFoundRef_Of(item))
@@ -209,9 +209,9 @@ func siegeClassGearSet(specType stats.SpecType, difficulty stats.Difficulty) []I
 
 func throneClassGearSet(specType stats.SpecType, difficulty stats.Difficulty) []ItemFoundRef {
 	result := make([]ItemFoundRef, 0)
-	specBonus := gear_model.SetBonus_ForSpec_AllowFallback(specType, stats.OptimiseGoal_Unknown, true)
+	specBonus := bonus_set.SpecSetsEnableForSpec_AllowFallback(specType, stats.OptimiseGoal_Unknown, true)
 	targetLevel := difficulty.ExpectedItemLevelThrone()
-	for itemId := range specBonus.AllSetItemIds() {
+	for itemId := range specBonus.AllItemIds() {
 		item := db.WowSimDB_LoadItemById(itemId, 0)
 		if item.ItemLevel() == targetLevel {
 			result = append(result, ItemFoundRef_Of(item))
@@ -326,7 +326,7 @@ func matchesSiegeGearCriteria(item *items.FullItem, armor stats.ArmorType, prima
 		item.SlotItem() != items.Item_Trinket &&
 		item.PrimaryStat() == primary &&
 		item.ItemLevel() > 500 &&
-		!gear_model.SetBonus_IsAnyKnownItem(item.ItemId())
+		!bonus_set.IsAnyKnownItem(item.ItemId())
 }
 
 func matchesThroneGearCriteria(item *items.FullItem, armor stats.ArmorType, primary stats.PrimaryStatType) bool {
@@ -336,7 +336,7 @@ func matchesThroneGearCriteria(item *items.FullItem, armor stats.ArmorType, prim
 		(item.ArmorType().Matches(armor) || item.SlotItem() == items.Item_Back) &&
 		item.SlotItem() != items.Item_Trinket &&
 		item.PrimaryStat() == primary &&
-		!gear_model.SetBonus_IsAnyKnownItem(item.ItemId())
+		!bonus_set.IsAnyKnownItem(item.ItemId())
 }
 
 var g_radenItems = []items.ItemId{95025, 95013, 95001, 95038, 95035, 95033, 95028, 95002, 94995, 95003, 95015, 95010, 95000, 95029, 95030, 95027, 95031, 95023, 95011, 94999, 95036, 95037, 95020, 95018, 95022, 95019, 95021, 95014, 95032, 95040, 95006, 95012, 95034, 95026, 95039, 95004, 94998, 95024, 95005, 95009, 95007, 94996, 95016, 95008, 94997, 95017}

@@ -40,7 +40,7 @@ type rankInternalRun4 struct {
 	build *util_highs.LinearBuilder
 
 	runData    []*rankEntry4
-	scaleStats util_collection.EnumMap[stats.StatType, float64]
+	scaleStats stats.StatTypeMap[float64]
 
 	weightColumns map[stats.StatType]util_highs.ColumnIndex
 	pairLinks     util_collection.MapMapDiagonal[int, *rankPair4]

@@ -1,6 +1,7 @@
 package gear_model
 
 import (
+	"paladin_gearing_go/gear_model/bonus_set"
 	"paladin_gearing_go/gear_model/ratings"
 	. "paladin_gearing_go/items"
 	. "paladin_gearing_go/stats"
@@ -19,9 +20,9 @@ type SpecModel struct {
 	ReforgeRules             ReforgeRules
 	EnchantChoice            EnchantChoice
 	GemChoice                GemChoice
-	SetBonus                 SetBonus
-	SetBonusRequired         []BonusSetCountsRequired
-	SetBonusFixedWeights     *BonusSetCountsRequired
+	BonusEnabled             *bonus_set.SpecSetsEnable
+	BonusRequiredSolve       bonus_set.ItemCountsRequiredOptions
+	BonusRequiredWeight      *bonus_set.ItemCountsRequired
 	Professions              ProfessionInfo
 	SimPriority              weight_types.SimPriorityBasic
 	StatsForWeighting        []StatType
@@ -39,9 +40,9 @@ func (model *SpecModel) Equals(other *SpecModel) bool {
 		model.ReforgeRules.Equals(&other.ReforgeRules) &&
 		model.EnchantChoice.Equals(other.EnchantChoice) &&
 		model.GemChoice.Equals(other.GemChoice) &&
-		model.SetBonus.Equals(&other.SetBonus) &&
-		slices.EqualFunc(model.SetBonusRequired, other.SetBonusRequired, BonusSetCountsRequired.Equals) &&
-		util.NilSafeEqual(model.SetBonusFixedWeights, other.SetBonusFixedWeights, BonusSetCountsRequired.Equals) &&
+		model.BonusEnabled.Equals(other.BonusEnabled) &&
+		slices.EqualFunc(model.BonusRequiredSolve, other.BonusRequiredSolve, bonus_set.ItemCountsRequired.Equals) &&
+		util.NilSafeEqual(model.BonusRequiredWeight, other.BonusRequiredWeight, bonus_set.ItemCountsRequired.Equals) &&
 		model.Professions == other.Professions &&
 		model.SimPriority.Equals(&other.SimPriority) &&
 		slices.Equal(model.StatsForWeighting, other.StatsForWeighting) &&
@@ -60,9 +61,9 @@ func (model *SpecModel) CloneShallow(other *SpecModel) *SpecModel {
 		ReforgeRules:             other.ReforgeRules,
 		EnchantChoice:            other.EnchantChoice,
 		GemChoice:                other.GemChoice,
-		SetBonus:                 other.SetBonus,
-		SetBonusRequired:         other.SetBonusRequired,
-		SetBonusFixedWeights:     other.SetBonusFixedWeights,
+		BonusEnabled:             other.BonusEnabled,
+		BonusRequiredSolve:       other.BonusRequiredSolve,
+		BonusRequiredWeight:      other.BonusRequiredWeight,
 		Professions:              other.Professions,
 		SimPriority:              other.SimPriority,
 		StatsForWeighting:        other.StatsForWeighting,
@@ -72,36 +73,27 @@ func (model *SpecModel) CloneShallow(other *SpecModel) *SpecModel {
 }
 
 // ////////// requirements
-func (model *SpecModel) CheckSet(itemSet *SolvableItemSet) bool {
-	//TODO CheckSetWithFailMessage
+func (model *SpecModel) CheckSetForSolver(itemSet *SolvableItemSet) (bool, string) {
+	if isStatOk, message := model.StatRequirements.CheckSet(itemSet.Total()); !isStatOk {
+		return false, message
+	}
 
-	if !model.StatRequirements.CheckSet(itemSet.Total()) {
-		return false
+	if isBonusOk, message := model.BonusRequiredSolve.ItemsMatchAnyRuleSolve(itemSet.Items()); !isBonusOk {
+		return false, message
 	}
-	if len(model.SetBonusRequired) > 0 {
-		return BonusSetCountsMeetAny(model.SetBonusRequired, itemSet.Items())
-	}
-	return true
-}
 
-func (model *SpecModel) CheckSetFull(itemSet *FullItemSet) bool {
-	if !model.StatRequirements.CheckSet(itemSet.Total()) {
-		return false
-	}
-	if len(model.SetBonusRequired) > 0 {
-		return BonusSetCountsMeetAny_FullItem(model.SetBonusRequired, itemSet.Items())
-	}
-	return true
+	return true, ""
 }
 
 func (model *SpecModel) CheckSetFull_ForWeightProcess(itemSet *FullItemSet) bool {
-	if !model.StatRequirements.CheckSet(itemSet.Total()) {
+	isStatOk, _ := model.StatRequirements.CheckSet(itemSet.Total())
+	if !isStatOk {
 		return false
 	}
-	if model.SetBonusFixedWeights != nil {
-		return BonusSetCountsMeetExact_FullItem(*model.SetBonusFixedWeights, itemSet.Items())
-	} else if len(model.SetBonusRequired) > 0 {
-		return BonusSetCountsMeetAny_FullItem(model.SetBonusRequired, itemSet.Items())
+	if model.BonusRequiredWeight != nil {
+		return model.BonusRequiredWeight.ItemsMatchRuleFull(itemSet.Items())
+	} else if len(model.BonusRequiredSolve) > 0 {
+		return model.BonusRequiredSolve.ItemsMatchAnyRuleFull(itemSet.Items())
 	}
 	return true
 }
@@ -114,21 +106,27 @@ func (model *SpecModel) ValidateSet(itemSet *FullItemSet) {
 
 // ////////// set ratings
 func (model *SpecModel) CalcRatingSolve(itemSet *SolvableItemSet, weightType weight_types.WeightType) float64 {
-	baseRating := model.StatWeights.GetByWeightType(weightType).CalcStatScore(itemSet.Total())
-	setRating := model.SetBonus.CalcBonusSolve(itemSet.Items())
-	return baseRating * setRating
+	weight := model.StatWeights.GetByWeightType(weightType)
+	if weightType == 1 {
+		baseRating := weight.CalcStatScore(itemSet.Total())
+		setRating := model.BonusEnabled.CalcBonusSolveFlat(itemSet.Items(), model.SimPriority)
+		return baseRating * setRating
+	} else {
+		bonusMap := model.BonusEnabled.CalcBonusSolveBySim(itemSet.Items())
+		return weight.CalcStatScoreWithBonus(itemSet.Total(), bonusMap)
+	}
 }
 
 func (model *SpecModel) CalcRatingFull(itemSet *FullItemSet, weightType weight_types.WeightType) float64 {
-	baseRating := model.StatWeights.GetByWeightType(weightType).CalcStatScore(itemSet.Total())
-	setRating := model.SetBonus.CalcBonusFull(itemSet.Items())
-	return baseRating * setRating
-}
-
-func (model *SpecModel) CalcRatingSolveForGivenWeight(itemSet *SolvableItemSet, weight weight_types.IWeight) float64 {
-	baseRating := weight.CalcStatScore(itemSet.Total())
-	setRating := model.SetBonus.CalcBonusSolve(itemSet.Items())
-	return baseRating * setRating
+	weight := model.StatWeights.GetByWeightType(weightType)
+	if weightType == 1 {
+		baseRating := weight.CalcStatScore(itemSet.Total())
+		setRating := model.BonusEnabled.CalcBonusFullFlat(itemSet.Items(), model.SimPriority)
+		return baseRating * setRating
+	} else {
+		bonusMap := model.BonusEnabled.CalcBonusFullBySim(itemSet.Items())
+		return weight.CalcStatScoreWithBonus(itemSet.Total(), bonusMap)
+	}
 }
 
 // ////////// items ratings
@@ -138,10 +136,6 @@ func (model *SpecModel) CalcRatingSolveItem(item *SolvableItem, weightType weigh
 
 func (model *SpecModel) CalcRatingFullItem(item *FullItem, weightType weight_types.WeightType) float64 {
 	return model.StatWeights.GetByWeightType(weightType).CalcStatScore(item.Total())
-}
-
-func (model *SpecModel) CalcRatingSolveItemForGivenWeight(item *SolvableItem, weight weight_types.IWeight) float64 {
-	return weight.CalcStatScore(item.Total())
 }
 
 // ////////// ProfessionInfo

@@ -10,8 +10,6 @@ type EnumSet[E EnumBaseType] struct {
 	enumType EnumType[E]
 }
 
-var _ ISet[sample] = &EnumSet[sample]{}
-
 func EnumSetMake[E EnumBaseType](enumType EnumType[E]) EnumSet[E] {
 	return EnumSet[E]{
 		BitSetMake(uint32(enumType.NumValues() - 1)),

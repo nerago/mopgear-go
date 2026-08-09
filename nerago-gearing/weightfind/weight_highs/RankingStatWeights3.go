@@ -42,8 +42,8 @@ type RankingStatWeightProcess3 struct {
 
 	build *util_highs.LinearBuilder
 
-	scaleStats    util_collection.EnumMap[stats.StatType, float64]
-	weightColumns map[stats.StatType]util_highs.ColumnIndex
+	scaleStats    stats.StatTypeMap[float64]
+	weightColumns stats.StatTypeMap[util_highs.ColumnIndex]
 	pairLinks     util_collection.MapMap[int, int, rankPair3]
 }
 
@@ -70,7 +70,7 @@ func (ranker *RankingStatWeightProcess3) Init(printer *util.PrintRecorder, timeo
 
 func (ranker *RankingStatWeightProcess3) SupplyData(inputData []weight_types.WeightInput) {
 	if ranker.SCALE1 {
-		ranker.scaleStats = util_collection.EnumMapMake[stats.StatType, float64](stats.StatTypeEnum)
+		ranker.scaleStats = stats.StatTypeMap[float64]{}
 		for _, statType := range stats.StatType_List {
 			ranker.scaleStats.Put(statType, 1)
 		}
@@ -167,10 +167,9 @@ func (ranker *RankingStatWeightProcess3) createWeightColumns() {
 	hi := c_Rank3_LargeWeight
 
 	sumWeights := util_highs.ConstraintRow{Debug: "sumWeights"}
-	ranker.weightColumns = make(map[stats.StatType]util_highs.ColumnIndex)
 	for _, statType := range ranker.requiredStats {
 		colWeight := ranker.build.CreateColumnGeneral(highs.Continuous, lo, hi, util_highs.DebugString{Text: "WEIGHT " + statType.Name()})
-		ranker.weightColumns[statType] = colWeight
+		ranker.weightColumns.Put(statType, colWeight)
 		sumWeights.Add(colWeight, 1)
 	}
 
@@ -242,7 +241,7 @@ func (ranker *RankingStatWeightProcess3) makeScoreColumn(entry *rankEntry3, debu
 
 	scoreRow := util_highs.ConstraintRow{Debug: "scoreRow-" + debugStr}
 	for _, statType := range ranker.requiredStats {
-		weightColumn := ranker.weightColumns[statType]
+		weightColumn := ranker.weightColumns.GetOrPanic(statType)
 		statValue := entry.Data.TotalStat.GetFloat(statType)
 		statScale := ranker.scaleStats.GetOrPanic(statType)
 
@@ -298,7 +297,7 @@ func (ranker *RankingStatWeightProcess3) makeEntryPairSequenceConstraintsRequire
 
 func (ranker *RankingStatWeightProcess3) setupDumbInitialSolution() {
 	internalWeights := weight_types.Weight1Basic_Make()
-	for statType := range ranker.weightColumns {
+	for statType := range ranker.weightColumns.SeqKey() {
 		internalWeights.Put(statType, 1)
 	}
 	internalWeights = internalWeights.ScaleForTotalSum(c_rank3_target_total_weight)
@@ -308,7 +307,7 @@ func (ranker *RankingStatWeightProcess3) setupDumbInitialSolution() {
 
 func (ranker *RankingStatWeightProcess3) setupInitialSolutionFromPreviousWeightOnly(solution *highs.Solution) {
 	internalWeights := weight_types.Weight1Basic_Make()
-	for statType, colWeight := range ranker.weightColumns {
+	for statType, colWeight := range ranker.weightColumns.SeqKeyValue() {
 		weight := solution.ColValues[colWeight]
 		internalWeights.Put(statType, weight)
 	}
@@ -323,7 +322,7 @@ func (ranker *RankingStatWeightProcess3) setupInitialSolutionFromExternal2(weigh
 
 func (ranker *RankingStatWeightProcess3) setupFromInternalWeights(internalWeights weight_types.Weight1Basic) {
 	if !internalWeights.IsEmpty() {
-		for statType, colWeight := range ranker.weightColumns {
+		for statType, colWeight := range ranker.weightColumns.SeqKeyValue() {
 			weight := internalWeights.Get(statType)
 			ranker.build.SetInitialSolutionValue(colWeight, weight)
 		}
@@ -386,7 +385,7 @@ func (ranker *RankingStatWeightProcess3) extractAndReportSolution(solution *high
 
 	weight := weight_types.Weight1Basic_Make()
 	for _, statType := range ranker.requiredStats {
-		weightColumn := ranker.weightColumns[statType]
+		weightColumn := ranker.weightColumns.GetOrPanic(statType)
 		statScale := ranker.scaleStats.GetOrPanic(statType)
 
 		modelWeight := solution.ColValues[weightColumn]

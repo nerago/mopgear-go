@@ -13,8 +13,6 @@ type EnumMapMap[J EnumBaseType, K EnumBaseType, V any] struct {
 	enumType2 EnumType[K]
 }
 
-var _ IMapMap[sample, sample, int] = &EnumMapMap[sample, sample, int]{}
-
 func EnumMapMapMake[J EnumBaseType, K EnumBaseType, V any](enumType1 EnumType[J], enumType2 EnumType[K]) EnumMapMap[J, K, V] {
 	arraySize := uint32(enumType1.NumValues()) * uint32(enumType2.NumValues())
 	return EnumMapMap[J, K, V]{

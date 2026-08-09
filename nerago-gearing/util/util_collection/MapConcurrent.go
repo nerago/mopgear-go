@@ -31,12 +31,24 @@ func (mc *MapConcurrent[K, V]) Get(key K) (V, bool) {
 	return value, hasValue
 }
 
-func (mc *MapConcurrent[K, V]) GetOrNil(key K) V {
+func (mc *MapConcurrent[K, V]) GetOrNilValue(key K) V {
 	mc.mutex.RLock()
 	defer mc.mutex.RUnlock()
 
 	value := mc.data[key]
 	return value
+}
+
+func (mc *MapConcurrent[E, V]) GetOrDefault(key E, defaultValue V) V {
+	mc.mutex.RLock()
+	defer mc.mutex.RUnlock()
+
+	value, hasValue := mc.data[key]
+	if hasValue {
+		return value
+	} else {
+		return defaultValue
+	}
 }
 
 func (mc *MapConcurrent[K, V]) GetOrPanic(key K) V {

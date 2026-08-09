@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOptionsMap, checkSet func(itemSet *items.SolvableItemSet) bool) {
+func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOptionsMap, checkSet func(itemSet *items.SolvableItemSet) (bool, string)) {
 	itemSet.DebugValidate()
 	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
 		if itemOptions.Has(slot) != itemSet.Items().Has(slot) {
@@ -15,13 +15,8 @@ func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOp
 		}
 	}
 
-	if !checkSet(&itemSet) {
-		sb := util.StringBuild2{}
-		sb.WriteString("set fails CheckSet ")
-		sb.WriteUint32(itemSet.Total().Hit())
-		sb.WriteRune(' ')
-		sb.WriteUint32(itemSet.Total().Expertise())
-		panic(sb.String())
+	if isOk, message := checkSet(&itemSet); !isOk {
+		panic("set fails CheckSet " + message)
 	}
 }
 

@@ -9,8 +9,11 @@ import (
 	"paladin_gearing_go/weightfind/weight_types"
 )
 
-func ChooseSimUnfriendlyScalingBasic(inputData []weight_types.WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) util_collection.EnumMap[stats.SimType, float64] {
-	return ChooseScalingBasicScale(inputData,
+func ChooseSimUnfriendlyScalingBasic(inputData []weight_types.WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) stats.SimTypeMap[float64] {
+	scaleMap := stats.SimTypeMap[float64]{}
+	chooseScalingBasicScale(
+		&scaleMap,
+		inputData,
 		stats.SimTypeList,
 		func(data *weight_types.WeightInput, simType stats.SimType) float64 {
 			return data.SimResult.Get(simType)
@@ -18,11 +21,15 @@ func ChooseSimUnfriendlyScalingBasic(inputData []weight_types.WeightInput, scale
 		scaleTarget,
 		keepUnderTarget,
 		printer,
-		stats.SimTypeEnum)
+	)
+	return scaleMap
 }
 
-func ChooseStatScalingBasic(inputData []weight_types.WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) util_collection.EnumMap[stats.StatType, float64] {
-	return ChooseScalingBasicScale(inputData,
+func ChooseStatScalingBasic(inputData []weight_types.WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) stats.StatTypeMap[float64] {
+	scaleMap := stats.StatTypeMap[float64]{}
+	chooseScalingBasicScale(
+		&scaleMap,
+		inputData,
 		stats.StatType_List,
 		func(data *weight_types.WeightInput, statType stats.StatType) float64 {
 			return data.TotalStat.GetFloat(statType)
@@ -30,11 +37,11 @@ func ChooseStatScalingBasic(inputData []weight_types.WeightInput, scaleTarget fl
 		scaleTarget,
 		keepUnderTarget,
 		printer,
-		stats.StatTypeEnum)
+	)
+	return scaleMap
 }
 
-func ChooseScalingBasicScale[E util_collection.EnumBaseType](inputData []weight_types.WeightInput, checkTypes []E, getValue func(*weight_types.WeightInput, E) float64, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder, enumType util_collection.EnumType[E]) util_collection.EnumMap[E, float64] {
-	scaleMap := util_collection.EnumMapMake[E, float64](enumType)
+func chooseScalingBasicScale[E util_collection.EnumBaseType, M util_collection.IMap[E, float64]](scaleMap M, inputData []weight_types.WeightInput, checkTypes []E, getValue func(*weight_types.WeightInput, E) float64, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) {
 	for _, check := range checkTypes {
 		valueSeq := util_collection.MapSliceAsSeq(inputData, func(x *weight_types.WeightInput) float64 {
 			return getValue(x, check)
@@ -45,7 +52,6 @@ func ChooseScalingBasicScale[E util_collection.EnumBaseType](inputData []weight_
 
 		printer.Printf("scale %s %e\n", check.Name(), scaleMap.GetOrPanic(check))
 	}
-	return scaleMap
 }
 
 func ChooseScale(seq iter.Seq[float64], scaleTarget float64, keepUnderTarget bool) float64 {

@@ -75,17 +75,25 @@ func mapOf(inst *StatRequirementsHitExpertise) map[stats.StatType]util_collectio
 	return asMap
 }
 
-func (inst *StatRequirementsHitExpertise) CheckSet(block *stats.StatBlock) bool {
+func (inst *StatRequirementsHitExpertise) CheckSet(block *stats.StatBlock) (bool, string) {
 	hit := block.Hit()
 	exp := block.Expertise()
-	if inst.hitMin <= hit && hit <= inst.hitMax && inst.expMin <= exp && exp <= inst.expMax {
-		if inst.AdditionalMinimumRequirement != nil {
-			return block.GetUInt(inst.AdditionalMinimumRequirement.StatType) >= inst.AdditionalMinimumRequirement.Value
+	if inst.hitMin <= hit && hit <= inst.hitMax {
+		if inst.expMin <= exp && exp <= inst.expMax {
+			if inst.AdditionalMinimumRequirement != nil {
+				if block.GetUInt(inst.AdditionalMinimumRequirement.StatType) >= inst.AdditionalMinimumRequirement.Value {
+					return true, ""
+				} else {
+					return false, "additional minimum stat too low"
+				}
+			} else {
+				return true, ""
+			}
 		} else {
-			return true
+			return false, "expertise out of range"
 		}
 	} else {
-		return false
+		return false, "hit out of range"
 	}
 }
 

@@ -15,8 +15,6 @@ type EnumMap[E EnumBaseType, V any] struct {
 	enumType EnumType[E]
 }
 
-var _ IMap[sample, int] = &EnumMap[sample, int]{}
-
 func EnumMapMake[E EnumBaseType, V any](enumType EnumType[E]) EnumMap[E, V] {
 	return EnumMap[E, V]{
 		make([]V, enumType.NumValues()),
@@ -118,6 +116,14 @@ func (em *EnumMap[E, V]) GetOrNilValue(key E) V {
 	} else {
 		var nilValue V
 		return nilValue
+	}
+}
+
+func (em *EnumMap[E, V]) GetOrDefault(key E, defaultValue V) V {
+	if em.isSet != nil && em.isSet.IsSet(uint32(key)) {
+		return em.content[key]
+	} else {
+		return defaultValue
 	}
 }
 

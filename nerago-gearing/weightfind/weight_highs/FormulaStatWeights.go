@@ -32,8 +32,8 @@ type FormulaStatWeightProcess struct {
 	objectiveEquationDiff util_highs.ObjectiveIndex
 	objectiveInclude      util_highs.ObjectiveIndex
 
-	scaleSims             util_collection.EnumMap[stats.SimType, float64]
-	scaleStats            util_collection.EnumMap[stats.StatType, float64]
+	scaleSims             stats.SimTypeMap[float64]
+	scaleStats            stats.StatTypeMap[float64]
 	detailedWeightColumns util_collection.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
 
 	minimumIncludeRate float64

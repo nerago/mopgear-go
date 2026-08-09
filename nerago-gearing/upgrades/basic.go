@@ -158,7 +158,7 @@ func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptions
 		factor := output.ResultRating / baseRating
 		printer.Printf("UPGRADE RATING = %.0f FACTOR = %1.3f\n", output.ResultRating, factor)
 
-		setBonus := model.SetBonus.CountInAnySet(output.FullSet.Items())
+		setBonus := model.BonusEnabled.CountInAnySet(output.FullSet.Items())
 
 		result = upgradeItemResult{upgradeItemTask: *extraTask, success: true, itemSet: &output.FullSet, fullItem: exampleItem, factor: util_collection.Optional_OfValue(factor), setBonus: setBonus}
 	} else {
