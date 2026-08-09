@@ -89,7 +89,8 @@ type basicStatInput struct {
 func generateRatingsInputFromArtificialStatOverrides_ForBasic(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, requiredStats []stats.StatType, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, tracker *util.TrackProgress) ([]basicStatInput, stats.SimData) {
 	var incrementValue int32 = 250
 
-	initialBaseStats := weightfind.InitialBonusStatMap_fixRanges(printer, currentItemSet, incrementValue)
+	initialBaseStats := weightfind.InitialBonusStatMap_fixRanges(printer, currentItemSet, incrementValue,
+		weight_types.FixStatsRangeMode_ExpertiseAlways|weight_types.FixStatsRangeMode_HasteHigherOnly, false)
 	tracker.RunOuterTracking(len(requiredStats) + 1)
 	defer tracker.SetDone()
 
@@ -98,16 +99,16 @@ func generateRatingsInputFromArtificialStatOverrides_ForBasic(currentItemSet ite
 	inputList := util_async.Map_SliceToSlice(len(requiredStats), requiredStats, func(incStat *stats.StatType) basicStatInput {
 		innerPrint := util.PrintRecorder_HoldAll()
 
-		bonusStat := maps.Clone(initialBaseStats)
+		bonusStat := initialBaseStats.Clone()
 		str := util.StringBuild2{}
 		str.WriteString("STATS SCENARIO ")
-		bonusStat[*incStat] += incrementValue
+		bonusStat.Put(*incStat, bonusStat.GetOrPanic(*incStat)+incrementValue)
 		str.WriteString(incStat.Name())
 		str.WriteRune('=')
-		str.WriteInt32(bonusStat[*incStat])
+		str.WriteInt32(bonusStat.GetOrPanic(*incStat))
 		str.WriteRune(' ')
 
-		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), &bonusStat, tracker.NewChild())
+		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), bonusStat, tracker.NewChild())
 
 		str.WriteString("   --> ")
 		simResult.CompactStringGeneralBuilder(&str)

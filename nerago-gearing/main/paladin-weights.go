@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/weightfind"
+	"paladin_gearing_go/weightfind/weight_types"
 )
 
 //goland:noinspection GoBoolExpressions
@@ -19,6 +20,7 @@ func statWeights_updateAll() {
 	simSpeed := simulate.RunSize_Common
 	//simSpeed := simulate.RunSize_Largish
 	forceSkipSim := true
+	fixStats := weight_types.FixStatsRangeMode_ExpertiseAlways | weight_types.FixStatsRangeMode_HasteGridOnly | weight_types.FixStatsRangeMode_HasteHigherOnly
 
 	process := weightfind.WeightUpdateProcess{}
 	process.Init(simSpeed, forceSkipSim, printer)
@@ -28,6 +30,7 @@ func statWeights_updateAll() {
 		GearFile:        files.GearFileProtMitigationNoSet,
 		Model:           model_factory.Model_PallyProtMitigation_NoSet(),
 		SubstituteItems: substituteItemsProt,
+		FixStatsMode:    fixStats,
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Mitigation-WithSet",
@@ -35,6 +38,7 @@ func statWeights_updateAll() {
 		GearFile:        files.GearFileProtMitigationWithSet,
 		Model:           model_factory.Model_PallyProtMitigation_WithSet(),
 		SubstituteItems: substituteItemsProt,
+		FixStatsMode:    fixStats,
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Damage",
@@ -42,6 +46,7 @@ func statWeights_updateAll() {
 		GearFile:        files.GearFileProtDps,
 		Model:           model_factory.Model_PallyProtDps(),
 		SubstituteItems: substituteItemsProt,
+		FixStatsMode:    fixStats,
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Compromise",
@@ -49,6 +54,7 @@ func statWeights_updateAll() {
 		GearFile:        files.GearFileProtCompromise,
 		Model:           model_factory.Model_PallyProtCompromise(),
 		SubstituteItems: substituteItemsProt,
+		FixStatsMode:    fixStats,
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Heal",
@@ -56,6 +62,7 @@ func statWeights_updateAll() {
 		GearFile:        files.GearFileProtHeal,
 		Model:           model_factory.Model_PallyProtHeal(),
 		SubstituteItems: substituteItemsProt,
+		FixStatsMode:    fixStats,
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Ret",
@@ -63,6 +70,7 @@ func statWeights_updateAll() {
 		GearFile:        files.GearFileRet,
 		Model:           model_factory.Model_PallyRet(),
 		SubstituteItems: substituteItemsRet,
+		FixStatsMode:    weight_types.FixStatsRangeMode_None,
 	})
 
 	cancel := util_async.CancelSignal_Make()

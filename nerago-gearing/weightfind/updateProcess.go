@@ -44,6 +44,7 @@ type WeightSpec struct {
 	WeightFileOut   string
 	GearFile        string
 	Model           gear_model.SpecModel
+	FixStatsMode    weight_types.FixStatsRangeMode
 	SubstituteItems []items.ItemId
 
 	process *WeightUpdateProcess
@@ -234,14 +235,14 @@ func (spec *WeightSpec) prepareSimData(tracker *util.TrackProgress, cancel util_
 		currentItemSet := items.FullItemSet_FromMap(currentEquip)
 		inputDataGrid = SimulateSteppedStatChangesForGrid(currentItemSet, spec.process.printer, spec.process.simSpeed,
 			spec.Model.SimSpeedUp, spec.Model.StatsForWeighting, spec.Model.Spec, spec.Model.Goal, spec.Model.SimulateAs,
-			spec.Model.Professions, tracker.NewChild(), spec.Label, cancel)
+			spec.Model.Professions, tracker.NewChild(), spec.Label, cancel, spec.FixStatsMode)
 		writeWeightInputsToFile(inputDataGrid, tempPathGrid)
 	} else {
 		tracker.NewChild().SetDone()
 	}
 	if inputDataReal == nil {
 		inputDataReal = SimulateRealRandomSets(spec.GearFile, spec.SubstituteItems, &spec.Model, grid_sim_max_run_count,
-			spec.process.simSpeed, false, spec.process.printer, tracker.NewChild(), spec.Label, cancel)
+			spec.process.simSpeed, spec.FixStatsMode, spec.process.printer, tracker.NewChild(), spec.Label, cancel)
 		writeWeightInputsToFile(inputDataReal, tempPathReal)
 	} else {
 		tracker.NewChild().SetDone()
