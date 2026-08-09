@@ -103,12 +103,17 @@ func convertWeight1Details(weight1 *weight_types.Weight1Basic) []*gearproto.Weig
 
 func convertWeight2Details(weight2 *weight_types.Weight2Extended) []*gearproto.Weight2Entry {
 	weights := make([]*gearproto.Weight2Entry, 0)
-	for weightEntry := range weight2.DetailedWeights.SeqKey1Key2ValueEntries() {
-		protoEntry := gearproto.Weight2Entry{}
-		protoEntry.SimType = convertSimType(weightEntry.Key2)
-		protoEntry.StatType = convertStatType(weightEntry.Key1)
-		protoEntry.RatingWeight = weightEntry.Value
-		weights = append(weights, &protoEntry)
+	for _, simType := range weight2.SimList {
+		for _, statType := range weight2.StatList {
+			weightEntry, hasEntry := weight2.DetailedWeights.Get(statType, simType)
+			if hasEntry {
+				protoEntry := gearproto.Weight2Entry{}
+				protoEntry.SimType = convertSimType(simType)
+				protoEntry.StatType = convertStatType(statType)
+				protoEntry.RatingWeight = weightEntry
+				weights = append(weights, &protoEntry)
+			}
+		}
 	}
 	return weights
 }
@@ -133,22 +138,27 @@ func buildGearWeight2(protoWeight *gearproto.Weight2Extended) *weight_types.Weig
 
 func convertWeight3Details(weight3 *weight_types.Weight3ExtendedRanged) []*gearproto.Weight3Group {
 	weights := make([]*gearproto.Weight3Group, 0)
-	for weightEntry := range weight3.StatWeights.SeqKey1Key2ValueSeqEntries() {
-		group := gearproto.Weight3Group{}
-		group.SimType = convertSimType(weightEntry.Key1)
-		group.StatType = convertStatType(weightEntry.Key2)
-		group.Entries = make([]*gearproto.Weight3Entry, 0)
-		for entry := range weightEntry.ValueSeq {
-			group.Entries = append(group.Entries, &gearproto.Weight3Entry{
-				StatRange: &gearproto.StatRange{
-					Minimum: entry.StatRange.Minimum,
-					Maximum: entry.StatRange.Maximum,
-				},
-				RatingWeight: entry.RatingWeight,
-				RatingOffset: entry.RatingOffset,
-			})
+	for _, simType := range weight3.SimList {
+		for _, statType := range weight3.StatList {
+			weightEntry, hasEntry := weight3.StatWeights.GetAsSliceClone(simType, statType)
+			if hasEntry {
+				group := gearproto.Weight3Group{}
+				group.SimType = convertSimType(simType)
+				group.StatType = convertStatType(statType)
+				group.Entries = make([]*gearproto.Weight3Entry, 0)
+				for _, entry := range weightEntry {
+					group.Entries = append(group.Entries, &gearproto.Weight3Entry{
+						StatRange: &gearproto.StatRange{
+							Minimum: entry.StatRange.Minimum,
+							Maximum: entry.StatRange.Maximum,
+						},
+						RatingWeight: entry.RatingWeight,
+						RatingOffset: entry.RatingOffset,
+					})
+				}
+				weights = append(weights, &group)
+			}
 		}
-		weights = append(weights, &group)
 	}
 	return weights
 }

@@ -30,8 +30,9 @@ func (job *MultiSetJob) reportSimResults_One(result *simulateMultiResult) {
 	}
 	//result.proposed.Combo.Print(job.printer)
 
-	for label, simData := range result.simMap {
+	for _, label := range job.paramOrderSlice() {
 		prep := job.itemPrep[label]
+		simData := result.simMap[label]
 		output := result.proposed.Parts[label]
 		input := prep.inputs
 
