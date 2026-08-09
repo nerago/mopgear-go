@@ -34,7 +34,7 @@ const (
 	PaladinRetRotation  = `wowsim-external/ui/paladin/retribution/apls/default.apl.json`
 )
 
-func SimFileFor(spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight) string {
+func SimFileFor(spec stats.SpecType, fight stats.WowSim_Fight) string {
 	switch spec {
 	case stats.Spec_PaladinProt:
 		switch fight {

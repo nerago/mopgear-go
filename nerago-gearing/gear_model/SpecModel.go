@@ -20,8 +20,8 @@ type SpecModel struct {
 	EnchantChoice            EnchantChoice
 	GemChoice                GemChoice
 	SetBonus                 SetBonus
-	SetBonusRequired         []ActiveSetCountsRequired
-	FixedWeightsSetBonus     *ActiveSetCountsRequired
+	SetBonusRequired         []BonusSetCountsRequired
+	SetBonusFixedWeights     *BonusSetCountsRequired
 	Professions              ProfessionInfo
 	SimPriority              weight_types.SimPriorityBasic
 	StatsForWeighting        []StatType
@@ -40,8 +40,8 @@ func (model *SpecModel) Equals(other *SpecModel) bool {
 		model.EnchantChoice.Equals(other.EnchantChoice) &&
 		model.GemChoice.Equals(other.GemChoice) &&
 		model.SetBonus.Equals(&other.SetBonus) &&
-		slices.EqualFunc(model.SetBonusRequired, other.SetBonusRequired, ActiveSetCountsRequired.Equals) &&
-		util.NilSafeEqual(model.FixedWeightsSetBonus, other.FixedWeightsSetBonus, ActiveSetCountsRequired.Equals) &&
+		slices.EqualFunc(model.SetBonusRequired, other.SetBonusRequired, BonusSetCountsRequired.Equals) &&
+		util.NilSafeEqual(model.SetBonusFixedWeights, other.SetBonusFixedWeights, BonusSetCountsRequired.Equals) &&
 		model.Professions == other.Professions &&
 		model.SimPriority.Equals(&other.SimPriority) &&
 		slices.Equal(model.StatsForWeighting, other.StatsForWeighting) &&
@@ -62,7 +62,7 @@ func (model *SpecModel) CloneShallow(other *SpecModel) *SpecModel {
 		GemChoice:                other.GemChoice,
 		SetBonus:                 other.SetBonus,
 		SetBonusRequired:         other.SetBonusRequired,
-		FixedWeightsSetBonus:     other.FixedWeightsSetBonus,
+		SetBonusFixedWeights:     other.SetBonusFixedWeights,
 		Professions:              other.Professions,
 		SimPriority:              other.SimPriority,
 		StatsForWeighting:        other.StatsForWeighting,
@@ -79,7 +79,7 @@ func (model *SpecModel) CheckSet(itemSet *SolvableItemSet) bool {
 		return false
 	}
 	if len(model.SetBonusRequired) > 0 {
-		return ActiveSetCountsMeetAny(model.SetBonusRequired, itemSet.Items())
+		return BonusSetCountsMeetAny(model.SetBonusRequired, itemSet.Items())
 	}
 	return true
 }
@@ -89,7 +89,7 @@ func (model *SpecModel) CheckSetFull(itemSet *FullItemSet) bool {
 		return false
 	}
 	if len(model.SetBonusRequired) > 0 {
-		return ActiveSetCountsMeetAny_FullItem(model.SetBonusRequired, itemSet.Items())
+		return BonusSetCountsMeetAny_FullItem(model.SetBonusRequired, itemSet.Items())
 	}
 	return true
 }
@@ -98,10 +98,10 @@ func (model *SpecModel) CheckSetFull_ForWeightProcess(itemSet *FullItemSet) bool
 	if !model.StatRequirements.CheckSet(itemSet.Total()) {
 		return false
 	}
-	if model.FixedWeightsSetBonus != nil {
-		return ActiveSetCountsMeetExact_FullItem(*model.FixedWeightsSetBonus, itemSet.Items())
+	if model.SetBonusFixedWeights != nil {
+		return BonusSetCountsMeetExact_FullItem(*model.SetBonusFixedWeights, itemSet.Items())
 	} else if len(model.SetBonusRequired) > 0 {
-		return ActiveSetCountsMeetAny_FullItem(model.SetBonusRequired, itemSet.Items())
+		return BonusSetCountsMeetAny_FullItem(model.SetBonusRequired, itemSet.Items())
 	}
 	return true
 }

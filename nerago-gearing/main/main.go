@@ -84,6 +84,7 @@ func core(printer *util.PrintRecorder) {
 	//relativeRatingsCompromise(printer)
 	//trinketSimsBoth(printer)
 	//currentSimGear(printer)
+	determineSetBonusValueBySim()
 	//
 	//statWeightsBasic(printer)
 	//statWeightsGrid1Orig(printer)
@@ -101,7 +102,7 @@ func core(printer *util.PrintRecorder) {
 
 	//statWeights_CompareAlgorithms()
 
-	statWeights_updateAll()
+	//statWeights_updateAll()
 
 	//PaladinMultiRun()
 

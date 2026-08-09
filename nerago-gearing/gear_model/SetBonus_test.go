@@ -32,7 +32,7 @@ func makeEquipFetch() loopedFetch {
 }
 
 func makeEquipFetch2(a, b *SetBonus) loopedFetch {
-	allInfo := []setInfoActive{}
+	allInfo := []setInfoBonus{}
 	allInfo = append(allInfo, a.activeSets...)
 	allInfo = append(allInfo, b.activeSets...)
 
@@ -208,7 +208,7 @@ func makeEquipForBonus(numInSet int) *SolvableEquipMap {
 	return &equip
 }
 
-func makeEquipForBonus2(a, b *setInfoActive, x, y int) *SolvableEquipMap {
+func makeEquipForBonus2(a, b *setInfoBonus, x, y int) *SolvableEquipMap {
 	equip := SolvableEquipMap{}
 	for slot := range equip {
 		equip[slot] = makeItem()

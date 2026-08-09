@@ -1,0 +1,20 @@
+			            DEFAULT     SOLVE		WEIGHT		    CURR
+Ret			            ret&ret		nil         2&2             r16[2]
+Prot-Damage		        ignore      nil         all=0           r16[1]
+Prot-Compromise		    ignore      nil         prot16=2[!!]    r16[1],p16[1]
+Prot-Mitigation-NoSet	ignore[!!]	nil         prot16=2        p16[2]
+Prot-Mitigation-WithSet	prot&prot   2&2         nil             p15[2],p16[2]
+Prot-Heal               prot16      4           nil             p16[4]
+
+BONUS 2 DPS 0.999999
+BONUS 2 TPS 0.999999
+BONUS 2 DTPS 0.999331
+BONUS 2 HPS 1.051782
+BONUS 2 TMI 0.999996
+BONUS 2 DEATH 0.935771
+BONUS 4 DPS 1.000000
+BONUS 4 TPS 1.000000
+BONUS 4 DTPS 0.997911
+BONUS 4 HPS 0.999736
+BONUS 4 TMI 0.997948
+BONUS 4 DEATH 0.992226

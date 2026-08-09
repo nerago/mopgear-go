@@ -58,6 +58,13 @@ func (itemSet *FullItemSet) Equals(other *FullItemSet) bool {
 	return stats.StatBlock_Equals(&itemSet.total, &other.total) && itemSet.items.Equals(&other.items)
 }
 
+func (itemSet *FullItemSet) Clone() FullItemSet {
+	return FullItemSet{
+		itemSet.items,
+		itemSet.total,
+	}
+}
+
 func (itemSet *FullItemSet) ValidateItemRules() {
 	weapon := itemSet.items.Get(Equip_Weapon)
 	if weapon == nil {

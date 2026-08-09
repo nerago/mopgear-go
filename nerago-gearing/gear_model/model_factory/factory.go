@@ -26,10 +26,11 @@ func Model_PallyProtMitigation_WithSet() gear_model.SpecModel {
 		StatsForWeighting: StatsForWeighting_strengthTank,
 		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
 		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
-		SetBonus:          gear_model.SetBonus_Named("Plate of the Lightning Emperor", "Plate of Winged Triumph"),
-		SetBonusRequired: []gear_model.ActiveSetCountsRequired{
-			gear_model.ActiveSetCountsRequiredMake(gear_model.ActiveSet_Named("Plate of the Lightning Emperor"), 2, gear_model.ActiveSet_Named("Plate of Winged Triumph"), 2),
-		},
+
+		SetBonus:             gear_model.SetBonus_Named("Plate of the Lightning Emperor", "Plate of Winged Triumph"),
+		SetBonusRequired:     []gear_model.BonusSetCountsRequired{BonusItems_Prot15_Prot16_2pcEach},
+		SetBonusFixedWeights: nil,
+
 		Professions: gear_model.ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,
@@ -54,10 +55,11 @@ func Model_PallyProtHeal() gear_model.SpecModel {
 		StatsForWeighting: StatsForWeighting_strengthTank,
 		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
 		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
-		SetBonus:          gear_model.SetBonus_Named("Plate of Winged Triumph"),
-		SetBonusRequired: []gear_model.ActiveSetCountsRequired{
-			gear_model.ActiveSetCountsRequiredMake(gear_model.ActiveSet_Named("Plate of Winged Triumph"), 4),
-		},
+
+		SetBonus:             gear_model.SetBonus_Named("Plate of Winged Triumph"),
+		SetBonusRequired:     []gear_model.BonusSetCountsRequired{BonusItems_Prot16_4pc},
+		SetBonusFixedWeights: nil,
+
 		Professions: gear_model.ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,
@@ -72,18 +74,21 @@ func Model_PallyProtMitigation_NoSet() gear_model.SpecModel {
 	goal := stats.OptimiseGoal_Mitigation
 	weight := tools.StatRatingsWeights_ReadFile(files.WeightMitiNoSetFile)
 	return gear_model.SpecModel{
-		Spec:                 spec,
-		Goal:                 goal,
-		SimulateAs:           stats.Fight_Juggernaut_NoExternalHeal,
-		SimPriority:          SimPriority_generalMiti,
-		StatWeights:          weight,
-		StatRequirements:     requirements.StatRequirementsHitExpertise_ProtFlexibleParry(),
-		ReforgeRules:         gear_model.ReforgeRules_tank,
-		StatsForWeighting:    StatsForWeighting_strengthTank,
-		EnchantChoice:        gear_model.EnchantChoice_ForSpec(spec, goal),
-		GemChoice:            gear_model.GemChoice_ForSpec(spec, goal),
+		Spec:              spec,
+		Goal:              goal,
+		SimulateAs:        stats.Fight_Juggernaut_NoExternalHeal,
+		SimPriority:       SimPriority_generalMiti,
+		StatWeights:       weight,
+		StatRequirements:  requirements.StatRequirementsHitExpertise_ProtFlexibleParry(),
+		ReforgeRules:      gear_model.ReforgeRules_tank,
+		StatsForWeighting: StatsForWeighting_strengthTank,
+		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
+		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
+
 		SetBonus:             gear_model.SetBonus_Empty(),
-		FixedWeightsSetBonus: gear_model.ActiveSetCountsRequiredMake_Pointer(gear_model.ActiveSet_Named("Plate of Winged Triumph"), 2),
+		SetBonusRequired:     nil,
+		SetBonusFixedWeights: &BonusItems_Prot16_2pcOnly,
+
 		Professions: gear_model.ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,
@@ -98,18 +103,21 @@ func Model_PallyProtCompromise() gear_model.SpecModel {
 	goal := stats.OptimiseGoal_HalfMitiDps
 	weight := tools.StatRatingsWeights_ReadFile(files.WeightCompromiseFile)
 	return gear_model.SpecModel{
-		Spec:                 spec,
-		Goal:                 goal,
-		SimulateAs:           stats.Fight_Juggernaut_HighHeal,
-		SimPriority:          SimPriority_compromise,
-		StatWeights:          weight,
-		StatRequirements:     requirements.StatRequirementsHitExpertise_ProtFlexibleParry(),
-		ReforgeRules:         gear_model.ReforgeRules_tank,
-		StatsForWeighting:    StatsForWeighting_strengthTank,
-		EnchantChoice:        gear_model.EnchantChoice_ForSpec(spec, goal),
-		GemChoice:            gear_model.GemChoice_ForSpec(spec, goal),
+		Spec:              spec,
+		Goal:              goal,
+		SimulateAs:        stats.Fight_Juggernaut_HighHeal,
+		SimPriority:       SimPriority_compromise,
+		StatWeights:       weight,
+		StatRequirements:  requirements.StatRequirementsHitExpertise_ProtFlexibleParry(),
+		ReforgeRules:      gear_model.ReforgeRules_tank,
+		StatsForWeighting: StatsForWeighting_strengthTank,
+		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
+		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
+
 		SetBonus:             gear_model.SetBonus_Empty(),
-		FixedWeightsSetBonus: gear_model.ActiveSetCountsRequiredMake_Pointer(gear_model.ActiveSet_Named("Plate of Winged Triumph"), 2),
+		SetBonusRequired:     nil,
+		SetBonusFixedWeights: &BonusItems_Prot16_2pcOnly,
+
 		Professions: gear_model.ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,
@@ -123,19 +131,23 @@ func Model_PallyProtDps() gear_model.SpecModel {
 	spec := stats.Spec_PaladinProt
 	goal := stats.OptimiseGoal_Dps
 	weight := tools.StatRatingsWeights_ReadFile(files.WeightDpsFile)
+
 	return gear_model.SpecModel{
-		Spec:                 spec,
-		Goal:                 goal,
-		SimulateAs:           stats.Fight_Horridon_HighHeal,
-		SimPriority:          SimPriority_dps,
-		StatWeights:          weight,
-		StatRequirements:     requirements.StatRequirementsHitExpertise_ProtFlexibleParry(),
-		ReforgeRules:         gear_model.ReforgeRules_tank,
-		StatsForWeighting:    StatsForWeighting_strengthTank,
-		EnchantChoice:        gear_model.EnchantChoice_ForSpec(spec, goal),
-		GemChoice:            gear_model.GemChoice_ForSpec(spec, goal),
-		FixedWeightsSetBonus: gear_model.ActiveSetCountsRequiredMake_Pointer(gear_model.ActiveSet_Named("Plate of Winged Triumph"), 0),
+		Spec:              spec,
+		Goal:              goal,
+		SimulateAs:        stats.Fight_Horridon_HighHeal,
+		SimPriority:       SimPriority_dps,
+		StatWeights:       weight,
+		StatRequirements:  requirements.StatRequirementsHitExpertise_ProtFlexibleParry(),
+		ReforgeRules:      gear_model.ReforgeRules_tank,
+		StatsForWeighting: StatsForWeighting_strengthTank,
+		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
+		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
+
 		SetBonus:             gear_model.SetBonus_Empty(),
+		SetBonusRequired:     nil,
+		SetBonusFixedWeights: &BonusItems_ZeroAll,
+
 		Professions: gear_model.ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,
@@ -149,6 +161,7 @@ func Model_PallyRet() gear_model.SpecModel {
 	spec := stats.Spec_PaladinRet
 	goal := stats.OptimiseGoal_Dps
 	weight := tools.StatRatingsWeights_ReadFile(files.WeightRetFile)
+
 	return gear_model.SpecModel{
 		Spec:              spec,
 		Goal:              goal,
@@ -158,12 +171,14 @@ func Model_PallyRet() gear_model.SpecModel {
 		StatWeights:       weight,
 		StatRequirements:  requirements.StatRequirementsHitExpertise_RetWideCap(),
 		StatsForWeighting: StatsForWeighting_strengthMelee,
-		ReforgeRules:      gear_model.ReforgeRules_tank, // TODO remove hack
-		//ReforgeRules:         gear_model.ReforgeRules_melee,
-		EnchantChoice:        gear_model.EnchantChoice_ForSpec(spec, goal),
-		GemChoice:            gear_model.GemChoice_ForSpec(spec, goal),
+		ReforgeRules:      gear_model.ReforgeRules_melee,
+		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
+		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
+
 		SetBonus:             gear_model.SetBonus_Named("Battlegear of the Lightning Emperor", "Battlegear of Winged Triumph"),
-		FixedWeightsSetBonus: gear_model.ActiveSetCountsRequiredMake_Pointer(gear_model.ActiveSet_Named("Battlegear of the Lightning Emperor"), 2, gear_model.ActiveSet_Named("Battlegear of Winged Triumph"), 0),
+		SetBonusRequired:     nil,
+		SetBonusFixedWeights: &BonusItems_Ret15_Ret16_2pcEach,
+
 		Professions: gear_model.ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,
@@ -194,6 +209,34 @@ func Model_Testing() gear_model.SpecModel {
 		ReferenceGearFile: files.GearFileProtDps,
 	}
 }
+
+var BonusItems_ZeroAll = gear_model.BonusSetCountsRequiredMake(
+	gear_model.BonusSet_Named("Plate of Winged Triumph"), 0,
+	gear_model.BonusSet_Named("Plate of the Lightning Emperor"), 0,
+	gear_model.BonusSet_Named("Battlegear of the Lightning Emperor"), 0,
+	gear_model.BonusSet_Named("Battlegear of Winged Triumph"), 0,
+)
+
+var BonusItems_Prot16_2pcOnly = gear_model.BonusSetCountsRequiredMake(
+	gear_model.BonusSet_Named("Plate of Winged Triumph"), 2,
+	gear_model.BonusSet_Named("Plate of the Lightning Emperor"), 0,
+	gear_model.BonusSet_Named("Battlegear of the Lightning Emperor"), 0,
+	gear_model.BonusSet_Named("Battlegear of Winged Triumph"), 0,
+)
+
+var BonusItems_Prot16_4pc = gear_model.BonusSetCountsRequiredMake(
+	gear_model.BonusSet_Named("Plate of Winged Triumph"), 4,
+)
+
+var BonusItems_Prot15_Prot16_2pcEach = gear_model.BonusSetCountsRequiredMake(
+	gear_model.BonusSet_Named("Plate of the Lightning Emperor"), 2,
+	gear_model.BonusSet_Named("Plate of Winged Triumph"), 2,
+)
+
+var BonusItems_Ret15_Ret16_2pcEach = gear_model.BonusSetCountsRequiredMake(
+	gear_model.BonusSet_Named("Battlegear of the Lightning Emperor"), 2,
+	gear_model.BonusSet_Named("Battlegear of Winged Triumph"), 2,
+)
 
 // for noset - juggernaut, shamans, siegecrafter
 var SimPriority_generalMiti = weight_types.SimPriorityBasic_Make(

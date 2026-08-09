@@ -128,9 +128,9 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.Weigh
 	solveModel := &SolverModel{
 		CheckSet:               model.CheckSet,
 		StatRequirements:       toEnumMap(model.StatRequirements.AsMap()),
-		SetBonusRequiredCounts: convertBonusRequired(model.SetBonusRequired, model.SetBonus.ActiveSets()),
-		SetBonusTotalCount:     len(model.SetBonus.ActiveSets()),
-		SetBonusIndexForItem:   model.SetBonus.ActiveSetIndexForItem,
+		SetBonusRequiredCounts: convertBonusRequired(model.SetBonusRequired, model.SetBonus.BonusSets()),
+		SetBonusTotalCount:     len(model.SetBonus.BonusSets()),
+		SetBonusIndexForItem:   model.SetBonus.BonusSetIndexForItem,
 	}
 
 	weightExt := model.StatWeights
@@ -161,15 +161,15 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.Weigh
 	}
 
 	solveModel.SetBonusCountItems = util_collection.MapSliceAsNew_NoPointer(
-		model.SetBonus.ActiveSets(),
-		func(set gear_model.ActiveSet) func(*items.SolvableEquipMap) uint8 {
+		model.SetBonus.BonusSets(),
+		func(set gear_model.BonusSet) func(*items.SolvableEquipMap) uint8 {
 			return set.CountItems
 		},
 	)
 
 	solveModel.SetBonusMultipliers = util_collection.MapSliceAsNew_NoPointer(
-		model.SetBonus.ActiveSets(),
-		func(set gear_model.ActiveSet) setBonusMultiplierByCount {
+		model.SetBonus.BonusSets(),
+		func(set gear_model.BonusSet) setBonusMultiplierByCount {
 			return setBonusMultiplierByCount(set.BonusByCount())
 		},
 	)
@@ -177,8 +177,8 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.Weigh
 	return solveModel
 }
 
-func convertBonusRequired(required []gear_model.ActiveSetCountsRequired, activeSets []gear_model.ActiveSet) []setBonusRequiredCounts {
-	return util_collection.MapSliceAsNew(required, func(setCounts *gear_model.ActiveSetCountsRequired) setBonusRequiredCounts {
+func convertBonusRequired(required []gear_model.BonusSetCountsRequired, activeSets []gear_model.BonusSet) []setBonusRequiredCounts {
+	return util_collection.MapSliceAsNew(required, func(setCounts *gear_model.BonusSetCountsRequired) setBonusRequiredCounts {
 		countsAsSlice := make(setBonusRequiredCounts, len(activeSets))
 		for set, count := range setCounts.Pairs() {
 			setIndex := slices.IndexFunc(activeSets, set.Equals)

@@ -14,7 +14,9 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
+	"paladin_gearing_go/weightfind"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"strconv"
@@ -676,4 +678,120 @@ func solveForRatings(printer *util.PrintRecorder) {
 
 		printer.Printf("%20s %10.0f %.4f %s\n", group.label, rating, rating*prescaleMult, group.model.StatWeights.CreateString())
 	}
+}
+
+type standardisedItemSet struct {
+	itemSet    items.FullItemSet
+	bonusStats util_collection.EnumMap[stats.StatType, int32]
+}
+type standardisedItemSetGroup struct {
+	zero, two, four standardisedItemSet
+}
+
+func determineSetBonusValueBySim() {
+	optionCount := 16
+	runSize := simulate.RunSize_QuickDirty
+	//runSize := simulate.RunSize_Largish
+
+	//goal := stats.OptimiseGoal_Mitigation
+	goal := stats.OptimiseGoal_HalfMitiHeal
+	fight := stats.Fight_Juggernaut_NoExternalHeal
+	spec := stats.Spec_PaladinProt
+	profession := gear_model.ProfessionInfo{IsBlacksmith: true, IsEngineer: true}
+
+	//startGear := files.GearFileProtMitigationWithSet
+	//modelEquipOnly := model_factory.Model_PallyProtMitigation_WithSet()
+	//targetRatio := modelEquipOnly.SimPriority
+
+	gearFile := files.GearFileProtMitigationNoSet
+	model := model_factory.Model_PallyProtMitigation_NoSet()
+	model.SetBonus = gear_model.SetBonus_Named("Plate of Winged Triumph")
+	model.SetBonusRequired = []gear_model.BonusSetCountsRequired{model_factory.BonusItems_ZeroAll}
+	model.SetBonusFixedWeights = nil
+
+	initialSets, itemOptions := weightfind.GenerateRandomSets(gearFile, substituteItemsProt, &model, optionCount, printer, "")
+
+	setItems := []*items.FullItem{
+		itemOptions.FindItemIdFirst(99126),
+		itemOptions.FindItemIdFirst(99128),
+		itemOptions.FindItemIdFirst(99129),
+		itemOptions.FindItemIdFirst(99130),
+	}
+
+	preparedSetGroups := util_collection.MapSliceAsNew(initialSets, func(itemSet *items.FullItemSet) standardisedItemSetGroup {
+		return standardisedItemSetGroup{
+			standardisedItemSet{*itemSet, util_collection.EnumMap[stats.StatType, int32]{}},
+			replaceWithEquivalentSetItems(itemSet, setItems, 2),
+			replaceWithEquivalentSetItems(itemSet, setItems, 4),
+		}
+	})
+
+	tracker := util.TrackProgress_Start()
+	tracker.RunOuterTracking(len(preparedSetGroups) * 3)
+
+	bonusData := util_async.Map_SliceToSlice(4, preparedSetGroups, func(group *standardisedItemSetGroup) bonuses {
+		dataZero := simulate.WowSim_Execute_SpecifyAll(runSize, 0, spec, goal, fight, profession,
+			group.zero.itemSet.Items(), nil,
+			tracker.NewChild())
+		dataTwo := simulate.WowSim_Execute_SpecifyAll(runSize, 0, spec, goal, fight, profession,
+			group.two.itemSet.Items(), &group.two.bonusStats,
+			tracker.NewChild())
+		dataFour := simulate.WowSim_Execute_SpecifyAll(runSize, 0, spec, goal, fight, profession,
+			group.four.itemSet.Items(), &group.four.bonusStats,
+			tracker.NewChild())
+
+		return bonuses{
+			twoPiece:  makeBonusDiff(dataZero, dataTwo),
+			fourPiece: makeBonusDiff(dataTwo, dataFour),
+		}
+	})
+
+	for simType := range stats.SimTypeEnum.ValueSeq() {
+		average2 := util_collection.FindAverageFunc(bonusData, func(x bonuses) float64 {
+			return x.twoPiece.GetOrPanic(simType)
+		})
+		printer.Printf("BONUS 2 %s %f\n", simType.Name(), average2)
+	}
+	for simType := range stats.SimTypeEnum.ValueSeq() {
+		average4 := util_collection.FindAverageFunc(bonusData, func(x bonuses) float64 {
+			return x.fourPiece.GetOrPanic(simType)
+		})
+		printer.Printf("BONUS 4 %s %f\n", simType.Name(), average4)
+	}
+}
+
+func makeBonusDiff(lo stats.SimData, hi stats.SimData) util_collection.EnumMap[stats.SimType, float64] {
+	result := util_collection.EnumMapMake[stats.SimType, float64](stats.SimTypeEnum)
+	for simType := range stats.SimTypeEnum.ValueSeq() {
+		ratio := hi.Get(simType) / lo.Get(simType)
+		result.Put(simType, ratio)
+	}
+	return result
+}
+
+type bonuses struct {
+	twoPiece  util_collection.EnumMap[stats.SimType, float64]
+	fourPiece util_collection.EnumMap[stats.SimType, float64]
+}
+
+func replaceWithEquivalentSetItems(baseSet *items.FullItemSet, bonusItems []*items.FullItem, bonusCount int) standardisedItemSet {
+	var substitutedEquip items.FullEquipMap = *baseSet.Items()
+	for i := range bonusCount {
+		item := bonusItems[i]
+		slot := item.SlotItem().ToSlotEquipOptions()[0]
+		substitutedEquip[slot] = item
+	}
+	substitutedSet := items.FullItemSet_FromMap(substitutedEquip)
+
+	bonusStats := util_collection.EnumMapMake[stats.StatType, int32](stats.StatTypeEnum)
+	for _, statType := range stats.StatType_List {
+		baseValue := baseSet.Total().GetUInt(statType)
+		subValue := substitutedSet.Total().GetUInt(statType)
+		diff := int32(baseValue) - int32(subValue)
+		if diff != 0 {
+			bonusStats.Put(statType, diff)
+		}
+	}
+
+	return standardisedItemSet{substitutedSet, bonusStats}
 }

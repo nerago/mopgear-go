@@ -1,5 +1,7 @@
 package util_collection
 
+import "iter"
+
 type EnumBaseType interface {
 	~uint8
 	Name() string
@@ -38,4 +40,14 @@ func (et EnumType[E]) WithName(name string) (E, bool) {
 		}
 	}
 	return E(0), false
+}
+
+func (et EnumType[E]) ValueSeq() iter.Seq[E] {
+	return func(yield func(E) bool) {
+		for i := range E(0).EnumNumValues() {
+			if !yield(E(i)) {
+				return
+			}
+		}
+	}
 }

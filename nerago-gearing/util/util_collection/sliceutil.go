@@ -504,6 +504,18 @@ func FindMaxFunc[T any, V Number](slice []T, toValue func(T) V) V {
 	return maxValue
 }
 
+func FindAverageFunc[T any, V Number](slice []T, toValue func(T) V) V {
+	if len(slice) == 0 {
+		panic("empty slice")
+	}
+	total := V(0)
+	for i := range slice {
+		value := toValue(slice[i])
+		total += value
+	}
+	return total / V(len(slice))
+}
+
 // guarantees that each ranking number is used in range, even given duplicate numbers
 func CalculateRanking[T any](highGood bool, inputData []T, toScore func(*T) float64) iter.Seq2[*T, int] {
 	type internalEntry struct {

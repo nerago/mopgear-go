@@ -112,6 +112,15 @@ func (em *EnumMap[E, V]) GetOrPanic(key E) V {
 	}
 }
 
+func (em *EnumMap[E, V]) GetOrNilValue(key E) V {
+	if em.isSet != nil && em.isSet.IsSet(uint32(key)) {
+		return em.content[key]
+	} else {
+		var nilValue V
+		return nilValue
+	}
+}
+
 func (em *EnumMap[E, V]) Put(key E, value V) {
 	em.initInternal()
 	if !em.isSet.SetReturningOld(uint32(key)) {

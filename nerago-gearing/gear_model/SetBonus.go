@@ -11,7 +11,7 @@ import (
 )
 
 type SetBonus struct {
-	activeSets        []setInfoActive
+	activeSets        []setInfoBonus
 	activeFlatBonuses []float64
 	itemToSet         []uint8
 }
@@ -33,11 +33,11 @@ const (
 	plate_lightning_bonus_4_dps = 1.010 // sim result for horridon h10 was 1.027 but higher than i believe in
 )
 
-func ActiveSet_Named(name string) ActiveSet {
+func BonusSet_Named(name string) BonusSet {
 	for _, common := range g_setData {
 		for _, variant := range common.variants {
 			if variant.name == name {
-				activeSet := activeSetMake(common, variant)
+				activeSet := bonusSetMake(common, variant)
 				return &activeSet
 			}
 		}
@@ -52,7 +52,7 @@ func SetBonus_Named(names ...string) SetBonus {
 		for _, common := range g_setData {
 			for _, variant := range common.variants {
 				if variant.name == name {
-					sets.activeSets = append(sets.activeSets, activeSetMake(common, variant))
+					sets.activeSets = append(sets.activeSets, bonusSetMake(common, variant))
 					found = true
 				}
 			}
@@ -79,21 +79,21 @@ mainEntry:
 	for _, common := range g_setData {
 		if len(common.variants) == 1 {
 			if common.variants[0].spec == spec {
-				sets.activeSets = append(sets.activeSets, activeSetMake(common, common.variants[0]))
+				sets.activeSets = append(sets.activeSets, bonusSetMake(common, common.variants[0]))
 				continue mainEntry
 			}
 		} else if len(common.variants) > 1 {
 			// exact spec+goal match
 			for _, variant := range common.variants {
 				if variant.spec == spec && variant.goal == goal {
-					sets.activeSets = append(sets.activeSets, activeSetMake(common, common.variants[0]))
+					sets.activeSets = append(sets.activeSets, bonusSetMake(common, common.variants[0]))
 					continue mainEntry
 				}
 			}
 			// fallback entry for spec
 			for _, variant := range common.variants {
 				if variant.spec == spec && variant.goal == OptimiseGoal_Unknown {
-					sets.activeSets = append(sets.activeSets, activeSetMake(common, common.variants[0]))
+					sets.activeSets = append(sets.activeSets, bonusSetMake(common, common.variants[0]))
 					continue mainEntry
 				}
 			}
@@ -101,7 +101,7 @@ mainEntry:
 			if fallback {
 				for _, variant := range common.variants {
 					if variant.spec == spec {
-						sets.activeSets = append(sets.activeSets, activeSetMake(common, common.variants[0]))
+						sets.activeSets = append(sets.activeSets, bonusSetMake(common, common.variants[0]))
 						continue mainEntry
 					}
 				}
@@ -141,7 +141,7 @@ func (sets *SetBonus) initMap() {
 }
 
 func (sets *SetBonus) Equals(other *SetBonus) bool {
-	return util_collection.EqualFunc_Pointer(sets.activeSets, other.activeSets, (*setInfoActive).EqualsTyped)
+	return util_collection.EqualFunc_Pointer(sets.activeSets, other.activeSets, (*setInfoBonus).EqualsTyped)
 }
 
 // ########################### CalcBonus ###########################
@@ -290,7 +290,7 @@ type setInfoVariant struct {
 	bonus4 float64
 }
 
-type setInfoActive struct {
+type setInfoBonus struct {
 	bonuses [6]float64
 	items   []uint32
 	name    string
@@ -318,8 +318,8 @@ func setInfoMakeSpecial(variants []setInfoVariant, items []uint32) setInfoCommon
 	}
 }
 
-func activeSetMake(common setInfoCommon, variant setInfoVariant) setInfoActive {
-	return setInfoActive{
+func bonusSetMake(common setInfoCommon, variant setInfoVariant) setInfoBonus {
+	return setInfoBonus{
 		[6]float64{
 			1.0,
 			1.0,
@@ -333,36 +333,36 @@ func activeSetMake(common setInfoCommon, variant setInfoVariant) setInfoActive {
 	}
 }
 
-func (set *setInfoActive) EqualsTyped(other *setInfoActive) bool {
+func (set *setInfoBonus) EqualsTyped(other *setInfoBonus) bool {
 	return set.bonuses == other.bonuses && slices.Equal(set.items, other.items) && set.name == other.name
 }
 
-func (set *setInfoActive) Equals(other ActiveSet) bool {
-	if otherSet, isType := other.(*setInfoActive); isType {
+func (set *setInfoBonus) Equals(other BonusSet) bool {
+	if otherSet, isType := other.(*setInfoBonus); isType {
 		return set.EqualsTyped(otherSet)
 	} else {
 		return false
 	}
 }
 
-type ActiveSetCountsRequired struct {
-	sets   []ActiveSet
+type BonusSetCountsRequired struct {
+	sets   []BonusSet
 	counts []uint8
 }
 
-func ActiveSetCountsRequiredMake(init ...any) ActiveSetCountsRequired {
-	return activeSetsMakeInner(init)
+func BonusSetCountsRequiredMake(init ...any) BonusSetCountsRequired {
+	return bonusSetsMakeInner(init)
 }
 
-func ActiveSetCountsRequiredMake_Pointer(init ...any) *ActiveSetCountsRequired {
-	acr := activeSetsMakeInner(init)
+func BonusSetCountsRequiredMake_Pointer(init ...any) *BonusSetCountsRequired {
+	acr := bonusSetsMakeInner(init)
 	return &acr
 }
 
-func activeSetsMakeInner(init []any) ActiveSetCountsRequired {
-	acr := ActiveSetCountsRequired{}
+func bonusSetsMakeInner(init []any) BonusSetCountsRequired {
+	acr := BonusSetCountsRequired{}
 	for i := 0; i < len(init); i += 2 {
-		set := init[i].(ActiveSet)
+		set := init[i].(BonusSet)
 		count := init[i+1].(int)
 		acr.sets = append(acr.sets, set)
 		acr.counts = append(acr.counts, uint8(count))
@@ -370,13 +370,13 @@ func activeSetsMakeInner(init []any) ActiveSetCountsRequired {
 	return acr
 }
 
-func (acr ActiveSetCountsRequired) Equals(other ActiveSetCountsRequired) bool {
-	return slices.EqualFunc(acr.sets, other.sets, ActiveSet.Equals) &&
+func (acr BonusSetCountsRequired) Equals(other BonusSetCountsRequired) bool {
+	return slices.EqualFunc(acr.sets, other.sets, BonusSet.Equals) &&
 		slices.Equal(acr.counts, other.counts)
 }
 
-func (acr ActiveSetCountsRequired) Pairs() iter.Seq2[ActiveSet, uint8] {
-	return func(yield func(ActiveSet, uint8) bool) {
+func (acr BonusSetCountsRequired) Pairs() iter.Seq2[BonusSet, uint8] {
+	return func(yield func(BonusSet, uint8) bool) {
 		for i := range acr.sets {
 			if !yield(acr.sets[i], acr.counts[i]) {
 				return
@@ -385,15 +385,15 @@ func (acr ActiveSetCountsRequired) Pairs() iter.Seq2[ActiveSet, uint8] {
 	}
 }
 
-func (acr ActiveSetCountsRequired) PairsByIndex(index int) (ActiveSet, uint8) {
+func (acr BonusSetCountsRequired) PairsByIndex(index int) (BonusSet, uint8) {
 	return acr.sets[index], acr.counts[index]
 }
 
-func (acr ActiveSetCountsRequired) Count() int {
+func (acr BonusSetCountsRequired) Count() int {
 	return len(acr.sets)
 }
 
-func ActiveSetCountsMeetAny(setOptions []ActiveSetCountsRequired, items *SolvableEquipMap) bool {
+func BonusSetCountsMeetAny(setOptions []BonusSetCountsRequired, items *SolvableEquipMap) bool {
 optionLoop:
 	for _, option := range setOptions {
 		for active, needCount := range option.Pairs() {
@@ -407,7 +407,7 @@ optionLoop:
 	return false
 }
 
-func ActiveSetCountsMeetAny_FullItem(setOptions []ActiveSetCountsRequired, items *FullEquipMap) bool {
+func BonusSetCountsMeetAny_FullItem(setOptions []BonusSetCountsRequired, items *FullEquipMap) bool {
 optionLoop:
 	for _, option := range setOptions {
 		for active, needCount := range option.Pairs() {
@@ -421,7 +421,7 @@ optionLoop:
 	return false
 }
 
-func ActiveSetCountsMeetExact_FullItem(setReq ActiveSetCountsRequired, items *FullEquipMap) bool {
+func BonusSetCountsMeetExact_FullItem(setReq BonusSetCountsRequired, items *FullEquipMap) bool {
 	for active, needCount := range setReq.Pairs() {
 		haveCount := active.CountItemsFull(items)
 		if haveCount < needCount || haveCount > needCount+1 {
@@ -431,49 +431,49 @@ func ActiveSetCountsMeetExact_FullItem(setReq ActiveSetCountsRequired, items *Fu
 	return true
 }
 
-type ActiveSet interface {
+type BonusSet interface {
 	Name() string
 	BonusForCount(uint8) float64
 	BonusByCount() SetBonusMultiplierByCount
 	ContainsItem(items.ItemId) bool
 	CountItems(*SolvableEquipMap) uint8
 	CountItemsFull(*FullEquipMap) uint8
-	Equals(ActiveSet) bool
+	Equals(BonusSet) bool
 }
 
 type SetBonusMultiplierByCount [6]float64
 
-func (set *setInfoActive) Name() string {
+func (set *setInfoBonus) Name() string {
 	return set.name
 }
 
-func (set *setInfoActive) BonusForCount(count uint8) float64 {
+func (set *setInfoBonus) BonusForCount(count uint8) float64 {
 	return set.bonuses[count]
 }
 
-func (set *setInfoActive) BonusByCount() SetBonusMultiplierByCount {
+func (set *setInfoBonus) BonusByCount() SetBonusMultiplierByCount {
 	return set.bonuses
 }
 
-func (set *setInfoActive) ContainsItem(itemId items.ItemId) bool {
+func (set *setInfoBonus) ContainsItem(itemId items.ItemId) bool {
 	return slices.Contains(set.items, uint32(itemId))
 }
 
-func (set *setInfoActive) containsItem(item *SolvableItem) bool {
+func (set *setInfoBonus) containsItem(item *SolvableItem) bool {
 	if item != nil {
 		return slices.Contains(set.items, uint32(item.ItemId()))
 	}
 	return false
 }
 
-func (set *setInfoActive) containsItemFull(item *FullItem) bool {
+func (set *setInfoBonus) containsItemFull(item *FullItem) bool {
 	if item != nil {
 		return slices.Contains(set.items, uint32(item.ItemId()))
 	}
 	return false
 }
 
-func (set *setInfoActive) CountItems(equip *SolvableEquipMap) uint8 {
+func (set *setInfoBonus) CountItems(equip *SolvableEquipMap) uint8 {
 	var count uint8
 	if set.containsItem(equip[Equip_Head]) {
 		count++
@@ -493,7 +493,7 @@ func (set *setInfoActive) CountItems(equip *SolvableEquipMap) uint8 {
 	return count
 }
 
-func (set *setInfoActive) CountItemsFull(equip *FullEquipMap) uint8 {
+func (set *setInfoBonus) CountItemsFull(equip *FullEquipMap) uint8 {
 	var count uint8
 	if set.containsItemFull(equip[Equip_Head]) {
 		count++
@@ -607,11 +607,11 @@ func buildSets() []setInfoCommon {
 	return sets
 }
 
-func buildItemLookup(setData []setInfoCommon) map[ItemId]*setInfoActive {
-	lookup := make(map[ItemId]*setInfoActive, len(setData)*15)
+func buildItemLookup(setData []setInfoCommon) map[ItemId]*setInfoBonus {
+	lookup := make(map[ItemId]*setInfoBonus, len(setData)*15)
 	for _, info := range setData {
 		for _, itemId := range info.items {
-			active := activeSetMake(info, info.variants[0])
+			active := bonusSetMake(info, info.variants[0])
 			lookup[ItemId(itemId)] = &active
 		}
 	}
@@ -631,7 +631,7 @@ func (sets *SetBonus) AllSetItemIds() iter.Seq[ItemId] {
 	}
 }
 
-func (sets *SetBonus) ActiveSetIndexForItem(itemId ItemId) (index int, hasSet bool) {
+func (sets *SetBonus) BonusSetIndexForItem(itemId ItemId) (index int, hasSet bool) {
 	setEntry := sets.itemToSet[itemId]
 	if setEntry == 0 {
 		return -1, false
@@ -640,8 +640,8 @@ func (sets *SetBonus) ActiveSetIndexForItem(itemId ItemId) (index int, hasSet bo
 	return int(setEntry - 1), true
 }
 
-func (sets *SetBonus) ActiveSets() []ActiveSet {
-	return util_collection.MapSliceAsNew(sets.activeSets, func(s *setInfoActive) ActiveSet { return s })
+func (sets *SetBonus) BonusSets() []BonusSet {
+	return util_collection.MapSliceAsNew(sets.activeSets, func(s *setInfoBonus) BonusSet { return s })
 }
 
 func SetBonus_IsAnyKnownItem(itemId ItemId) bool {
