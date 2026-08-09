@@ -8,6 +8,7 @@ import (
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
+	"reflect"
 	"strconv"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -68,7 +69,6 @@ func (process *SolverHighsMultiProcess) RunInterruptable(printer *util.PrintReco
 	solveFuture := process.build.RunHighsFuture(nil)
 	return util_async.FutureCancellable_MapValue(solveFuture, func(linearResult util_highs.LinearResult) (HighsMultiResult, bool) {
 		solution := linearResult.GetSolution2AndSaveLog(printer)
-
 		debugPrintAll(solution, process, printer)
 
 		if solution.HasSolution() {
@@ -221,6 +221,7 @@ func (process *SolverHighsMultiProcess) runVariant(build *util_highs.LinearBuild
 
 	return util_async.FutureCancellable_MapValue(future, func(linearResult util_highs.LinearResult) (HighsMultiResult, bool) {
 		solution := linearResult.GetSolution2AndSaveLog(printer)
+		debugPrintAll(solution, process, printer)
 
 		if doneFunc != nil {
 			doneFunc()
@@ -296,7 +297,7 @@ func (process *SolverHighsMultiProcess) extractCommonChoices(solution *util_high
 }
 
 func (process *SolverHighsMultiProcess) solutionToResult(solution util_highs.ISolution, printer *util.PrintRecorder, interim bool) HighsMultiResult {
-	printer.Printf("Permute = %s\n", process.permuteLabel)
+	printer.Printf("Make Solution Permute = %s\n", process.permuteLabel)
 
 	resultMap := make(map[string]HighsMultiResultEntry)
 	for partIndex := range process.parts {
@@ -304,6 +305,8 @@ func (process *SolverHighsMultiProcess) solutionToResult(solution util_highs.ISo
 		solvedSet := part.singleGearSet.buildResultSet(solution)
 		validateNewSet(solvedSet, &part.solveOptions, part.SolverModel.CheckSet)
 		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &part.ItemOptions)
+
+		printer.Printf("Inner solver type = %s\n", reflect.TypeOf(part.singleGearSet).Elem().Name())
 
 		outputId := uuid.NewString()
 		if interim {
@@ -313,6 +316,7 @@ func (process *SolverHighsMultiProcess) solutionToResult(solution util_highs.ISo
 
 		resultMap[part.Label] = HighsMultiResultEntry{fullItemSet, outputId}
 	}
+	printer.Println0()
 
 	return HighsMultiResult{resultMap, process.permuteLabel, interim}
 }

@@ -125,9 +125,11 @@ func (job *MultiSetJob) generalMultiReport(gotResult bool, proposalList []multi_
 	if gotResult {
 		simMultiResults := job.linkSimResults(proposalList, simResultList)
 		job.reportSimResults(simMultiResults)
-		job.reportAsCsv(simMultiResults)
 
-		job.suggestResultFromRankings(simMultiResults)
+		best, rankedData := job.rankAllResults(simMultiResults)
+		job.reportAsCsv(rankedData)
+
+		job.handleBestRankedResult(best)
 	} else {
 		job.printer.Println("cancelled without result")
 	}

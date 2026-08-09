@@ -37,7 +37,7 @@ func (job *MultiSetJob) prepareWorking() {
 }
 
 func (work *specWorking) runBaseline(printer *util.PrintRecorder) {
-	printer.Printf("BASELINE for %s\n", work.itemPrep.label)
+	printer.Printf("BASELINE for %s %d\n", work.itemPrep.label, work.weightType)
 	work.baselineResult = solver.Solver(solver.SolveInput{
 		ItemOptions: &work.itemPrep.itemOptions,
 		Model:       &work.itemPrep.model,
@@ -74,7 +74,7 @@ func (work *specWorking) prepareRatingMultiplier(requestRatingPercent float64, p
 	multiplyRatingsBy := targetForThis / baselineRating
 	work.ratingMultiply = multiplyRatingsBy
 
-	printer.Printf("MULTIPLIERS %s base=%x mult=%x value=%x percent=%.2f\n",
+	printer.Printf("MULTIPLIERS %s base=%e mult=%e value=%e percent=%.2f\n",
 		work.itemPrep.label, work.baselineResult.ResultRating, work.ratingMultiply,
 		baselineRating*work.ratingMultiply,
 		baselineRating*work.ratingMultiply/targetCombined*100,

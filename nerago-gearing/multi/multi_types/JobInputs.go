@@ -177,8 +177,8 @@ func (ji *JobInputs) RemoveAnyExtraDuplicates() {
 	}
 }
 
-func (ji *JobInputs) SetWriteBestToGearFiles() {
-	ji.WriteBestToGearFiles = true
+func (ji *JobInputs) SetWriteBestToGearFiles(writeBestToGearFiles bool) {
+	ji.WriteBestToGearFiles = writeBestToGearFiles
 }
 
 func (ji *JobInputs) ActivateAlternateGemsEnableAsPermute() {
@@ -189,6 +189,6 @@ func (ji *JobInputs) SetWeightTypes(weightTypeList ...weight_types.WeightType) {
 	ji.WeightTypeList = weightTypeList
 }
 
-func (ji *JobInputs) SetReforgingAllowNonCommon() {
-	ji.ItemInput.ReforgingAllowNonCommon = true
+func (ji *JobInputs) SetReforgingAllowNonCommon(reforgingAllowNonCommon bool) {
+	ji.ItemInput.ReforgingAllowNonCommon = reforgingAllowNonCommon
 }

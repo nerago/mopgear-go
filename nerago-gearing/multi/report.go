@@ -1,6 +1,7 @@
 package multi
 
 import (
+	"cmp"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/setup"
@@ -22,10 +23,12 @@ func (job *MultiSetJob) reportSimResults(multiResultList []simulateMultiResult) 
 
 func (job *MultiSetJob) reportSimResults_One(result *simulateMultiResult) {
 	job.printer.Printf("&&&&&&&&&&&&& %s\n", result.proposed.Id)
+	job.printer.Printf("Weight Type %d\n", result.proposed.WeightType)
+
 	if result.proposed.PermuteLabel != "" {
 		job.printer.Println(result.proposed.PermuteLabel)
 	}
-	result.proposed.Combo.Print(job.printer)
+	//result.proposed.Combo.Print(job.printer)
 
 	for label, simData := range result.simMap {
 		prep := job.itemPrep[label]
@@ -94,7 +97,7 @@ func (job *MultiSetJob) findVariantItem(result *simulateMultiResult, itemId item
 	_, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &prep.model, job.printer)
 	return example
 }
-func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
+func (job *MultiSetJob) reportAsCsv(simResultList []*simMultiRankable) {
 	job.printer.Println("@@@@@@@@@@@@@@@@ SPREADSHEET COPY @@@@@@@@@@@@@@@@")
 
 	outputTypesByParam, rowCount, needPermuteLine := csvPrepareCollections(simResultList, job.itemPrep)
@@ -103,23 +106,28 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 	csv := csvStartHeader(labelOrder, outputTypesByParam, rowCount, needPermuteLine)
 
 	for _, simResult := range simResultList {
-		csv.AddString(simResult.proposed.Id)
+		proposed := &simResult.result.proposed
+		simMap := simResult.result.simMap
 
-		if len(simResult.simMap) != len(job.itemPrep) {
+		csv.AddString(proposed.Id)
+
+		if len(simMap) != len(job.itemPrep) {
 			panic("unexpected result size")
 		}
 
-		for label, resultStat := range simResult.simMap {
+		for _, label := range labelOrder {
+			simData := simMap[label]
 			simTypes := outputTypesByParam[label]
-			for _, resultType := range simTypes {
-				value := resultStat.Get(resultType)
+			for _, simType := range simTypes {
+				value := simData.Get(simType)
 				csv.AddFloat64(value, -1)
 			}
 		}
 
-		csv.AddInt(countReGem(&simResult.proposed))
+		csv.AddInt(int(proposed.WeightType))
+		csv.AddInt(countReGem(proposed))
 		if needPermuteLine {
-			csv.AddString("\"" + simResult.proposed.PermuteLabel + "\"")
+			csv.AddString("\"" + proposed.PermuteLabel + "\"")
 		}
 
 		csv.FinishColumn()
@@ -130,7 +138,7 @@ func (job *MultiSetJob) reportAsCsv(simResultList []simulateMultiResult) {
 
 func csvStartHeader(labelOrder []string, outputTypesByParam map[string][]stats.SimType, rowCount int, needPermuteLine bool) util.CSVOutputByColumn {
 	csv := util.CSVOutputByColumn{}
-	csv.InitRows(rowCount + 2)
+	csv.InitRows(rowCount + 3)
 	csv.AddString("id")
 	for _, label := range labelOrder {
 		simTypes := outputTypesByParam[label]
@@ -143,6 +151,7 @@ func csvStartHeader(labelOrder []string, outputTypesByParam map[string][]stats.S
 			})
 		}
 	}
+	csv.AddString("weight")
 	csv.AddString("regem")
 	if needPermuteLine {
 		csv.AddString("permute")
@@ -151,7 +160,7 @@ func csvStartHeader(labelOrder []string, outputTypesByParam map[string][]stats.S
 	return csv
 }
 
-func csvPrepareCollections(simResultList []simulateMultiResult, itemPrepMap map[string]*specItemPrep) (map[string][]stats.SimType, int, bool) {
+func csvPrepareCollections(simResultList []*simMultiRankable, itemPrepMap map[string]*specItemPrep) (map[string][]stats.SimType, int, bool) {
 	rowCount := 0
 	outputTypesByParam := make(map[string][]stats.SimType, len(itemPrepMap))
 	for label, prep := range itemPrepMap {
@@ -162,7 +171,7 @@ func csvPrepareCollections(simResultList []simulateMultiResult, itemPrepMap map[
 
 	needPermuteLine := false
 	for _, simResult := range simResultList {
-		if simResult.proposed.PermuteLabel != "" {
+		if simResult.result.proposed.PermuteLabel != "" {
 			needPermuteLine = true
 		}
 	}
@@ -200,7 +209,17 @@ func listReGem(multiProposed multi_types.MultiProposedOutput) []*items.FullItem 
 	return allItems
 }
 
-func (job *MultiSetJob) suggestResultFromRankings(resultList []simulateMultiResult) {
+func (job *MultiSetJob) handleBestRankedResult(best util_rank.BestCollector1[simulateMultiResult]) {
+	job.printer.Println("Best ranked result")
+	bestMultiResult := best.GetBestPointerOrPanic()
+	job.reportSimResults_One(bestMultiResult)
+
+	if job.input.WriteBestToGearFiles {
+		job.writeToGearFiles(bestMultiResult)
+	}
+}
+
+func (job *MultiSetJob) rankAllResults(resultList []simulateMultiResult) (util_rank.BestCollector1[simulateMultiResult], []*simMultiRankable) {
 	// build nicely sortable set of pointer based slices
 	multiRankSlice := util_collection.MapSliceAsNew(resultList, func(result *simulateMultiResult) *simMultiRankable {
 		return &simMultiRankable{
@@ -229,21 +248,21 @@ func (job *MultiSetJob) suggestResultFromRankings(resultList []simulateMultiResu
 			ratingPercent := prep.inputs.RequestRatingPercent
 			sumOfRanks += float64(singleRank.rank) * ratingPercent
 		}
+		multiRank.sumOfRanks = sumOfRanks
 		best.Offer(multiRank.result, sumOfRanks)
 	}
 
-	job.printer.Println("Best ranked result")
-	bestMultiResult := best.GetBestPointerOrPanic()
-	job.reportSimResults_One(bestMultiResult)
+	slices.SortFunc(multiRankSlice, func(a, b *simMultiRankable) int {
+		return cmp.Compare(b.sumOfRanks, a.sumOfRanks)
+	})
 
-	if job.input.WriteBestToGearFiles {
-		job.writeToGearFiles(bestMultiResult)
-	}
+	return best, multiRankSlice
 }
 
 type simMultiRankable struct {
-	result  *simulateMultiResult
-	singles map[string]*simSingleRankable
+	result     *simulateMultiResult
+	singles    map[string]*simSingleRankable
+	sumOfRanks float64
 }
 
 type simSingleRankable struct {

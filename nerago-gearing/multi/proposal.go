@@ -216,7 +216,14 @@ func (job *MultiSetJob) makeProposalFromHighs(multiResult solve_highs.HighsMulti
 
 	if checkNoConflicts(outputs, job.printer) {
 		combo := multi_types.CommonCombo_FromProposed(outputs)
-		proposed := multi_types.MultiProposedOutput{Id: proposalId, TotalRatingSum: totalRatingSum, Parts: outputs, Combo: combo, PermuteLabel: multiResult.PermuteLabel}
+		proposed := multi_types.MultiProposedOutput{
+			Id:             proposalId,
+			TotalRatingSum: totalRatingSum,
+			Parts:          outputs,
+			Combo:          combo,
+			PermuteLabel:   multiResult.PermuteLabel,
+			WeightType:     weightType,
+		}
 		return proposed
 	} else {
 		panic("conflicted items")
@@ -226,6 +233,7 @@ func (job *MultiSetJob) makeProposalFromHighs(multiResult solve_highs.HighsMulti
 func (job *MultiSetJob) listInitialOutputs(bestOutputs <-chan multi_types.MultiProposedOutput) <-chan multi_types.MultiProposedOutput {
 	return util_async.PeekChannel(bestOutputs, func(prop *multi_types.MultiProposedOutput) {
 		job.printer.Printf("::::::::: PROPOSED %.0f :::::::: %s ::::::::\n", prop.TotalRatingSum, prop.Id)
+		job.printer.Printf("Weight Type %d\n", prop.WeightType)
 		for label, out := range prop.Parts {
 			prep := job.itemPrep[label]
 			job.printer.Println(label)
@@ -235,7 +243,12 @@ func (job *MultiSetJob) listInitialOutputs(bestOutputs <-chan multi_types.MultiP
 }
 
 func (job *MultiSetJob) existingGearAsProposal(weightType weight_types.WeightType) multi_types.MultiProposedOutput {
-	proposal := multi_types.MultiProposedOutput{Id: "Existing-Gear"}
+	proposal := multi_types.MultiProposedOutput{
+		Id:           fmt.Sprintf("Existing-Gear-%d", weightType),
+		Parts:        make(map[string]multi_types.SingleProposedOutput),
+		PermuteLabel: "",
+		WeightType:   weightType,
+	}
 	for label, work := range job.working.SeqKey1ValueWithKey2(weightType) {
 		set := items.FullItemSet_FromMap(work.itemPrep.exactEquippedGear)
 

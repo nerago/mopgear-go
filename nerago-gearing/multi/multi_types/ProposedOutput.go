@@ -7,6 +7,7 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/weightfind/weight_types"
 )
 
 type MultiProposedOutput struct {
@@ -15,6 +16,7 @@ type MultiProposedOutput struct {
 	Parts          map[string]SingleProposedOutput
 	Combo          CommonCombo
 	PermuteLabel   string
+	WeightType     weight_types.WeightType
 }
 
 func (proposed *MultiProposedOutput) FindItemById(itemId items.ItemId) *items.FullItem {

@@ -250,7 +250,7 @@ type FutureChannelMixer[T any] struct {
 }
 
 func FutureChannelMixerMake[T any]() *FutureChannelMixer[T] {
-	return &FutureChannelMixer[T]{outputChannel: make(chan T)}
+	return &FutureChannelMixer[T]{outputChannel: make(chan T, 64)}
 }
 
 func (fc *FutureChannelMixer[T]) AddFuture(future IFutureWithResult[T]) {

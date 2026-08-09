@@ -149,14 +149,14 @@ var legendCloaks = []items.ItemId{legendTankCloak, legendMeleeCloak}
 func PaladinMultiRun() {
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "multi-set")
 
-	//simSize := simulate.RunSize_Largish
-	simSize := simulate.RunSize_Common
+	simSize := simulate.RunSize_Largish
+	//simSize := simulate.RunSize_Common
 	//simSize := simulate.RunSize_QuickDirty
 
 	job := multi_types.JobInputs{}
-	job.SetWeightTypes(2)
+	job.SetWeightTypes(1, 2)
 	job.SetSimSize(simSize)
-	job.SetReforgingAllowNonCommon()
+	job.SetReforgingAllowNonCommon(false)
 	//job.SetWriteBestToGearFiles()
 
 	var generalUpgrade items.UpgradeLevel = 0
@@ -425,7 +425,7 @@ func PaladinMultiRun() {
 	run := multi.JobCreate(printer, job)
 
 	//job.RunNoPermutations_AllCommonAlternates(true, true)
-	run.RunNoPermutations_BestOnly(false, false)
+	run.RunNoPermutations_BestOnly(true, true)
 	//job.RunForSolutionsPerPermute(12, true)
 
 	//job.CullingReport()
