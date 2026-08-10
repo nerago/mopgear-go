@@ -35,11 +35,11 @@ func (ss *SingleSegmented2) SupplyData(inputData []util_weight.FittingSample) {
 }
 
 func (ss *SingleSegmented2) Run() *util_async.FutureCancellable[InitialResultSet] {
-	ss.PrepareSegments()
+	ss.PrepareSegments(true)
 	for _, sample := range ss.InputData {
 		ss.addSample(sample)
 	}
-	ss.FinishSegments()
+	ss.FinishSegments(true)
 	return ss.RunSolve()
 }
 

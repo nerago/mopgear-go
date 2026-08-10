@@ -84,7 +84,7 @@ func core(printer *util.PrintRecorder) {
 	//relativeRatingsCompromise(printer)
 	//trinketSimsBoth(printer)
 	//currentSimGear(printer)
-	determineSetBonusValueBySim()
+	//determineSetBonusValueBySim()
 	//determineBestUseOfGearSets()
 	//
 	//statWeightsBasic(printer)
@@ -95,6 +95,7 @@ func core(printer *util.PrintRecorder) {
 	//statWeightsFitting2(printer)
 	//statWeightsFitting2eachProper(printer)
 	//statWeightsFitting2each(printer)
+	//statWeightsFitting3eachProper(printer)
 	//statWeightsFormula(printer)
 	//statWeightsRanking(printer)
 	//statWeightsRanking3b(printer)
@@ -103,7 +104,7 @@ func core(printer *util.PrintRecorder) {
 
 	//statWeights_CompareAlgorithms()
 
-	//statWeights_updateAll()
+	statWeights_updateAll()
 
 	//PaladinMultiRun()
 

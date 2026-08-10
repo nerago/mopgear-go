@@ -9,6 +9,10 @@ import (
 
 type StringBuild2 []byte
 
+func (sb *StringBuild2) Clone() StringBuild2 {
+	return slices.Clone(*sb)
+}
+
 func (sb *StringBuild2) Reset() {
 	*sb = nil
 }

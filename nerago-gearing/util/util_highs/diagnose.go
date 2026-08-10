@@ -86,7 +86,7 @@ func diagnoseInfeasibleOneByOne(build *LinearBuilder, printer *util.PrintRecorde
 		if solution.Status == highs.ModelStatusOptimal {
 			printer.AppendOther(innerPrint)
 			debugPrintRow(build, rowIndex, printer)
-			debugPrintSolutionValuesWithRowContext(solution, build, rowIndex, printer)
+			//debugPrintSolutionValuesWithRowContext(solution, build, rowIndex, printer)
 			// drillDownColumn(solution, input,
 		}
 	}

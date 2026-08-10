@@ -28,6 +28,10 @@ func (lst *List[E]) Get(index int) E {
 	return lst.inner[index]
 }
 
+func (lst *List[E]) GetLast() E {
+	return lst.inner[len(lst.inner)-1]
+}
+
 func (lst *List[E]) ContainsFunc(predicate func(*E) bool) bool {
 	for i := range lst.inner {
 		if predicate(&lst.inner[i]) {
@@ -88,6 +92,29 @@ func (lst *List[E]) Put(index int, value E) {
 
 func (lst *List[E]) Append(value E) {
 	lst.inner = append(lst.inner, value)
+}
+
+func (lst *List[E]) InsertFirst(value E) {
+	n := len(lst.inner)
+	if n == 0 {
+		lst.Append(value)
+		return
+	}
+	lst.inner = append(lst.inner, lst.inner[n-1])
+	copy(lst.inner[1:n], lst.inner[0:n-1])
+	lst.inner[0] = value
+}
+
+func (lst *List[E]) RemoveFirstAndReturn() E {
+	value := lst.inner[0]
+	lst.inner = lst.inner[1:]
+	return value
+}
+
+func (lst *List[E]) RemoveLastAndReturn() E {
+	value := lst.inner[len(lst.inner)-1]
+	lst.inner = lst.inner[0 : len(lst.inner)-1]
+	return value
 }
 
 func (lst *List[E]) DeleteIndex(index int) {

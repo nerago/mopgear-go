@@ -26,6 +26,7 @@ import (
 	"paladin_gearing_go/weightfind/weight_highs/fitting1"
 	"paladin_gearing_go/weightfind/weight_highs/fitting2"
 	"paladin_gearing_go/weightfind/weight_highs/fitting3"
+	"paladin_gearing_go/weightfind/weight_highs/fitting4"
 	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 	"strconv"
@@ -709,25 +710,59 @@ func statWeightsFitting3eachProper(printer *util.PrintRecorder) {
 	statTypes := model_factory.StatsForWeighting_strengthTank
 	targetRatio := model_factory.SimPriority_generalMiti
 
-	fitting := fitting3.FittingEachStatWeightProcess3{}
-	fitting.Init(3, printer, 1000)
-	fitting.SetRequiredStats(statTypes, simTypes)
-	fitting.SetTargetRatios(targetRatio)
-	fitting.SupplyData(weightInputs)
-	weightResult := fitting.Run(util_async.CancelSignal_Make())
-	weight3 := weightResult.Weight.(*weight_types.Weight3ExtendedRanged)
+	notes := make([]string, 0)
 
-	tools.WriteWeightString(weight3, printer)
-	printer.Printf("weight3 isempty = %v\n", weight3.IsEmpty())
-	printer.Printf("weight2 isempty = %v\n", weight3.ConvertToWeight2().IsEmpty())
-	printer.Printf("weight1 isempty = %v\n", weight3.ConvertToWeight2().ConvertToWeight1().IsEmpty())
+	for segmentCount := 2; segmentCount <= 10; segmentCount++ {
+		//fitting := fitting3.FittingEachStatWeightProcess3{}
+		fitting := fitting4.FittingEachStatWeightProcess4{}
+		fitting.Init(segmentCount, printer, 1000)
+		fitting.SetRequiredStats(statTypes, simTypes)
+		fitting.SetTargetRatios(targetRatio)
+		fitting.SupplyData(weightInputs)
+		weightResult := fitting.Run(util_async.CancelSignal_Make())
+		weight3 := weightResult.Weight.(*weight_types.Weight3ExtendedRanged)
 
-	acc3 := weightfind.EvaluateAccuracy(weight3, simTypes, &targetRatio, weightInputs)
-	acc2 := weightfind.EvaluateAccuracy(weight3.ConvertToWeight2(), simTypes, &targetRatio, weightInputs)
-	acc1 := weightfind.EvaluateAccuracy(weight3.ConvertToWeight2().ConvertToWeight1(), simTypes, &targetRatio, weightInputs)
-	printer.Printf("weight3 acc = %v\n", acc3)
-	printer.Printf("weight2 acc = %v\n", acc2)
-	printer.Printf("weight1 acc = %v\n", acc1)
+		tools.WriteWeightString(weight3, printer)
+		printer.Printf("weight3 isempty = %v\n", weight3.IsEmpty())
+		printer.Printf("weight2 isempty = %v\n", weight3.ConvertToWeight2().IsEmpty())
+		printer.Printf("weight1 isempty = %v\n", weight3.ConvertToWeight2().ConvertToWeight1().IsEmpty())
+
+		acc3 := weightfind.EvaluateAccuracy(weight3, simTypes, &targetRatio, weightInputs)
+		acc2 := weightfind.EvaluateAccuracy(weight3.ConvertToWeight2(), simTypes, &targetRatio, weightInputs)
+		acc1 := weightfind.EvaluateAccuracy(weight3.ConvertToWeight2().ConvertToWeight1(), simTypes, &targetRatio, weightInputs)
+		printer.Printf("weight3 acc = %v\n", acc3)
+		printer.Printf("weight2 acc = %v\n", acc2)
+		printer.Printf("weight1 acc = %v\n", acc1)
+
+		note := fmt.Sprintf("fit segments %d acc3=%f acc1=%f", segmentCount, acc3, acc1)
+		notes = append(notes, note)
+	}
+
+	for _, note := range notes {
+		printer.Println(note)
+	}
+
+	// STAT SPLIT
+	//fit segments 2 acc3=84.740787 acc1=83.895873
+	//fit segments 3 acc3=86.428130 acc1=85.875156
+	//fit segments 4 acc3=83.264534 acc1=80.220693
+	//fit segments 5 acc3=83.770047 acc1=78.272867
+	//fit segments 6 acc3=75.410591 acc1=77.115319
+	//fit segments 7 acc3=81.844019 acc1=84.167117
+	//fit segments 8 acc3=80.955232 acc1=76.562621
+	//fit segments 9 acc3=74.724893 acc1=76.934029
+	//fit segments 10 acc3=79.255472 acc1=66.088123
+
+	// DATA SPLIT
+	//fit segments 2 acc3=86.641152 acc1=86.757321
+	//fit segments 3 acc3=84.574122 acc1=86.507599
+	//fit segments 4 acc3=85.427313 acc1=82.234468
+	//fit segments 5 acc3=81.302359 acc1=82.638161
+	//fit segments 6 acc3=81.527522 acc1=85.675103
+	//fit segments 7 acc3=80.728965 acc1=81.849814
+	//fit segments 8 acc3=81.356442 acc1=85.007064
+	//fit segments 9 acc3=77.016810 acc1=86.579066
+	//fit segments 10 acc3=77.603448 acc1=85.311144
 
 }
 

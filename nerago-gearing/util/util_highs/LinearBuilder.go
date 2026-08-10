@@ -194,6 +194,9 @@ func (build *LinearBuilder) postHighsRun(solver *highs.Solver, logFilename strin
 	} else {
 		verifyNoError(solver.InterruptSupportDisable())
 	}
+	verifyNoError(solver.ClearLinearObjectives())
+	verifyNoError(solver.ClearModel())
+	verifyNoError(solver.ClearSolver())
 	verifyNoError(solver.Clear())
 }
 

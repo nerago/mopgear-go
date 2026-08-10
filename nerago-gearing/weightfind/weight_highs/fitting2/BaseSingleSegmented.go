@@ -20,7 +20,7 @@ type BaseSingleSegmented[S any] struct {
 	unequalStatDelta float64
 	InputData        []S
 
-	targetSegmentCount int
+	TargetSegmentCount int
 	Segments           []*SegmentVars
 }
 
@@ -50,7 +50,7 @@ type InitialSegment struct {
 }
 
 func (bss *BaseSingleSegmented[S]) Init(targetSegmentCount int, scaleStat float64, printer *util.PrintRecorder, timeout int) {
-	bss.targetSegmentCount = targetSegmentCount
+	bss.TargetSegmentCount = targetSegmentCount
 	if targetSegmentCount <= 1 {
 		panic("don't use this for 1 segment")
 	}
@@ -65,21 +65,21 @@ func (bss *BaseSingleSegmented[S]) Init(targetSegmentCount int, scaleStat float6
 	bss.Build.TimeLimitSeconds = timeout
 }
 
-func (bss *BaseSingleSegmented[S]) PrepareSegments() {
-	for i := range bss.targetSegmentCount {
+func (bss *BaseSingleSegmented[S]) PrepareSegments(enforceMinimumStatRange bool) {
+	for i := range bss.TargetSegmentCount {
 		if i == 0 {
-			bss.addSegment(true, false, nil)
-		} else if i == bss.targetSegmentCount-1 {
-			bss.addSegment(false, true, bss.Segments[i-1])
+			bss.addSegment(true, false, nil, enforceMinimumStatRange)
+		} else if i == bss.TargetSegmentCount-1 {
+			bss.addSegment(false, true, bss.Segments[i-1], enforceMinimumStatRange)
 		} else {
-			bss.addSegment(false, false, bss.Segments[i-1])
+			bss.addSegment(false, false, bss.Segments[i-1], enforceMinimumStatRange)
 		}
 	}
 }
 
-func (bss *BaseSingleSegmented[S]) FinishSegments() {
+func (bss *BaseSingleSegmented[S]) FinishSegments(enforceMinimumIncludeCount bool) {
 	for i := range len(bss.Segments) {
-		bss.finishSegment(bss.Segments[i], i == len(bss.Segments)-1)
+		bss.finishSegment(bss.Segments[i], i == len(bss.Segments)-1, enforceMinimumIncludeCount)
 	}
 }
 
@@ -96,7 +96,7 @@ func (bss *BaseSingleSegmented[S]) RunSolve() *util_async.FutureCancellable[Init
 	})
 }
 
-func (bss *BaseSingleSegmented[S]) addSegment(first, last bool, prev *SegmentVars) {
+func (bss *BaseSingleSegmented[S]) addSegment(first, last bool, prev *SegmentVars, enforceMinimumStatRange bool) {
 	fs := &SegmentVars{isFirst: first, isLast: last}
 	fs.LineSlope = bss.Build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "slope"})
 	fs.LineOffset = bss.Build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "offset"})
@@ -111,23 +111,27 @@ func (bss *BaseSingleSegmented[S]) addSegment(first, last bool, prev *SegmentVar
 		fs.minimumThreshold = prev.maximumThreshold
 		fs.maximumThreshold = bss.Build.CreateColumnGeneral(highs.Continuous, 0, c_fitting2_statScaledMaxValue, util_highs.DebugString{Text: "maximum"})
 
-		segmentSizeRow := util_highs.ConstraintRow{Debug: "segmentSizeRow"}
-		segmentSizeRow.Add(fs.minimumThreshold, -1)
-		segmentSizeRow.Add(fs.maximumThreshold, 1)
-		segmentSizeRow.Build(bss.Build, c_fitting2_segmentSizeMinimumStats*bss.scaleStat, util_highs.InfPos())
+		if enforceMinimumStatRange {
+			segmentSizeRow := util_highs.ConstraintRow{Debug: "segmentSizeRow"}
+			segmentSizeRow.Add(fs.minimumThreshold, -1)
+			segmentSizeRow.Add(fs.maximumThreshold, 1)
+			segmentSizeRow.Build(bss.Build, c_fitting2_segmentSizeMinimumStats*bss.scaleStat, util_highs.InfPos())
+		}
 	}
 
 	bss.Segments = append(bss.Segments, fs)
 }
 
-func (bss *BaseSingleSegmented[S]) finishSegment(segment *SegmentVars, isLast bool) {
+func (bss *BaseSingleSegmented[S]) finishSegment(segment *SegmentVars, isLast bool, enforceMinimumIncludeCount bool) {
 	if !isLast {
 		// in theory only have one overlap, but needs to be freer due to duplicates
 		segment.includeThresholdRow.Build(bss.Build, 1, util_highs.InfPos())
 	}
 
-	minimumColumnCount := c_fitting2_segmentSizeMinimumCount * float64(len(bss.InputData))
-	segment.includeColumnRow.Build(bss.Build, math.Round(minimumColumnCount), util_highs.InfPos())
+	if enforceMinimumIncludeCount {
+		minimumColumnCount := c_fitting2_segmentSizeMinimumCount * float64(len(bss.InputData))
+		segment.includeColumnRow.Build(bss.Build, math.Round(minimumColumnCount), util_highs.InfPos())
+	}
 }
 
 func (bss *BaseSingleSegmented[S]) SampleIncludeToggleColumn(statValue float64, segment *SegmentVars) util_highs.ColumnIndex {
