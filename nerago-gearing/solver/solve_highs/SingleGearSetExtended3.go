@@ -15,9 +15,6 @@ import (
 const c_gearExtended3StatHigh = 100000
 const c_gearExtended3ScoreHigh = 10
 
-// TODO set multipliers per sim would be better
-// TODO make process to generate better multipliers
-
 // CALCULATION:
 // itemColumns * statTotalRows -> statTotalColumns
 // statTotalColumns * rangeWeight -> simStatOptionColumn[]

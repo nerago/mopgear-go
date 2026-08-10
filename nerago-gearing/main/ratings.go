@@ -702,6 +702,35 @@ func statWeightsFitting2eachProper(printer *util.PrintRecorder) {
 
 }
 
+func statWeightsFitting3eachProper(printer *util.PrintRecorder) {
+	weightInputs := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
+	//weightInputs = weightInputs[0:30]
+	simTypes := model_factory.SimPriority_heal.SimTypes()
+	statTypes := model_factory.StatsForWeighting_strengthTank
+	targetRatio := model_factory.SimPriority_generalMiti
+
+	fitting := fitting3.FittingEachStatWeightProcess3{}
+	fitting.Init(3, printer, 1000)
+	fitting.SetRequiredStats(statTypes, simTypes)
+	fitting.SetTargetRatios(targetRatio)
+	fitting.SupplyData(weightInputs)
+	weightResult := fitting.Run(util_async.CancelSignal_Make())
+	weight3 := weightResult.Weight.(*weight_types.Weight3ExtendedRanged)
+
+	tools.WriteWeightString(weight3, printer)
+	printer.Printf("weight3 isempty = %v\n", weight3.IsEmpty())
+	printer.Printf("weight2 isempty = %v\n", weight3.ConvertToWeight2().IsEmpty())
+	printer.Printf("weight1 isempty = %v\n", weight3.ConvertToWeight2().ConvertToWeight1().IsEmpty())
+
+	acc3 := weightfind.EvaluateAccuracy(weight3, simTypes, &targetRatio, weightInputs)
+	acc2 := weightfind.EvaluateAccuracy(weight3.ConvertToWeight2(), simTypes, &targetRatio, weightInputs)
+	acc1 := weightfind.EvaluateAccuracy(weight3.ConvertToWeight2().ConvertToWeight1(), simTypes, &targetRatio, weightInputs)
+	printer.Printf("weight3 acc = %v\n", acc3)
+	printer.Printf("weight2 acc = %v\n", acc2)
+	printer.Printf("weight1 acc = %v\n", acc1)
+
+}
+
 func statWeightsFitting1eachProper(printer *util.PrintRecorder) {
 	//bytes, err := os.ReadFile("")
 	//weightInputs := readWeightInputFile("sim-stats-compare-rand.json")
@@ -781,14 +810,8 @@ func statWeightsFitting3(printer *util.PrintRecorder) {
 
 	sampleData := util_collection.MapSliceAsNew(weightInputs, func(input *weight_types.WeightInput) util_weight.FittingSample3 {
 		detail := input.SimResult.GetDetailed2(checkSimType)
-		sim := util_weight.FittingSimDetail{
-			Average:   scaleSim.Apply(input.SimResult.Get(checkSimType)),
-			Min:       scaleSim.Apply(detail.Min),
-			Max:       scaleSim.Apply(detail.Max),
-			StdDev:    scaleSim.Scale * detail.StdDev,
-			HasDetail: true,
-		}
-		sim.FlipMinMaxAsNeeded()
+		avg := input.SimResult.Get(checkSimType)
+		sim := util_weight.MakeFittingDetail(avg, detail, scaleSim)
 		return util_weight.FittingSample3{
 			StatValue: input.TotalStat.GetFloat(stats.Stat_Dodge),
 			SimResult: sim,
