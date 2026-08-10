@@ -135,6 +135,17 @@ func (em *EnumMap[E, V]) Put(key E, value V) {
 	em.content[key] = value
 }
 
+func (em *EnumMap[E, V]) Compute(key E, apply func(V) V) {
+	em.initInternal()
+	if em.isSet.SetReturningOld(uint32(key)) {
+		em.content[key] = apply(em.content[key])
+	} else {
+		var nilValue V
+		em.content[key] = apply(nilValue)
+		em.len++
+	}
+}
+
 func (em *EnumMap[E, V]) Delete(key E) {
 	if em.isSet != nil && em.isSet.ClearReturningOld(uint32(key)) {
 		var nilValue V

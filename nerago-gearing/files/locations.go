@@ -30,8 +30,9 @@ const (
 	SimProtJuggernaut = `nerago-gearing/files/cli/example-prot-juggernaut.json`
 	SimRet            = `nerago-gearing/files/cli/example-ret.json`
 
-	PaladinProtRotation = `wowsim-external/ui/paladin/protection/apls/iron_juggernaut.apl.json`
-	PaladinRetRotation  = `wowsim-external/ui/paladin/retribution/apls/default.apl.json`
+	PaladinProtRotation    = `wowsim-external/ui/paladin/protection/apls/iron_juggernaut.apl.json`
+	PaladinProtRotationT15 = `nerago-gearing/files/rotation/mixT16withWordGlory.apl`
+	PaladinRetRotation     = `wowsim-external/ui/paladin/retribution/apls/default.apl.json`
 )
 
 func SimFileFor(spec stats.SpecType, fight stats.WowSim_Fight) string {

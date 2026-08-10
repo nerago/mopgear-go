@@ -56,38 +56,3 @@ func (pb *PreparedBonus) BonusByCount() BonusByCountFlat {
 func (pb *PreparedBonus) BonusByCountBySim() BonusByCountBySim {
 	return pb.simBonus
 }
-
-//
-//func (set *preparedBonus) EqualsTyped(other *preparedBonus) bool {
-//	return set.bonuses == other.bonuses && slices.Equal(set.items, other.items) && set.name == other.name
-//}
-
-//func (set *preparedBonus) Equals(other *preparedBonus) bool {
-//	if otherSet, isType := other.(*preparedBonus); isType {
-//		return set.EqualsTyped(otherSet)
-//	} else {
-//		return false
-//	}
-//}
-
-//
-//func (set *setInfoBonus) BonusForCount(count uint8) float64 {
-//	return set.bonuses[count]
-//}
-//
-//
-
-//func BonusSet_Named(name string) BonusSet {
-//	for _, common := range g_setData {
-//		for _, variant := range common.variants {
-//			if variant.name == name {
-//				activeSet := &BonusLookup{
-//					common.items,
-//					variant.name,
-//				}
-//				return activeSet
-//			}
-//		}
-//	}
-//	panic("set not found " + name)
-//}

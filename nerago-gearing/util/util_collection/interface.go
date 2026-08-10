@@ -74,6 +74,7 @@ type IMap[K comparable, V any] interface {
 	GetOrDefault(key K, defaultValue V) V
 	GetOrPanic(key K) V
 	Put(key K, value V)
+	Compute(key K, apply func(V) V)
 	Delete(key K)
 	Foreach(apply func(key K, value V))
 	SeqKeyValue() iter.Seq2[K, V]

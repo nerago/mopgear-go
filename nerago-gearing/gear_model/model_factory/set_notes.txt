@@ -6,16 +6,110 @@ Prot-Mitigation-NoSet	ignore[!!]	nil         prot16=2        p16[2]
 Prot-Mitigation-WithSet	prot&prot   2&2         nil             p15[2],p16[2]
 Prot-Heal               prot16      4           nil             p16[4]
 
-Teir 16 Prot, regular fight and spec
-BONUS 2 DPS 0.999999
-BONUS 2 TPS 0.999999
-BONUS 2 DTPS 0.999331
-BONUS 2 HPS 1.051782
-BONUS 2 TMI 0.999996
-BONUS 2 DEATH 0.935771
-BONUS 4 DPS 1.000000
-BONUS 4 TPS 1.000000
-BONUS 4 DTPS 0.997911
-BONUS 4 HPS 0.999736
-BONUS 4 TMI 0.997948
-BONUS 4 DEATH 0.992226
+
+Better question is what's the best use of each set.
+Old 4pc is holy power during divine protection, situational and rarely used as it was.
+p[0,0]
+p[2,0]
+p[2,2]
+p[0,2]
+p[0,4]
+Five set bonus combos.
+Test them out with zero reforging at least on the set items? Then could keep the weights constant and get just the set item contribution.
+Also fun to try them out with full reforging and different weight sets. Eternal flame on healy one?
+
+No eternal flame, only medium run
+BONUS	2	DPS	    0.999999
+BONUS	2	TPS	    0.999999
+BONUS	2	DTPS	0.999331
+BONUS	2	HPS	    1.051782	1.051782
+BONUS	2	TMI	    0.999996
+BONUS	2	DEATH	0.935771	1.068638
+BONUS	4	DPS	    1
+BONUS	4	TPS	    1
+BONUS	4	DTPS	0.997911	1.002093
+BONUS	4	HPS	    0.999736
+BONUS	4	TMI	    0.997948	1.002056
+BONUS	4	DEATH	0.992226	1.007835
+
+No eternal flame bigger run
+BONUS	2	DPS	    1.000015
+BONUS	2	TPS	    1.000015
+BONUS	2	DTPS	1.000809
+BONUS	2	HPS	    1.083982	1.083982
+BONUS	2	TMI	    1.002159
+BONUS	2	DEATH	0.892122	1.120923
+BONUS	4	DPS	    1
+BONUS	4	TPS	    1
+BONUS	4	DTPS	0.998041
+BONUS	4	HPS	    0.999761
+BONUS	4	TMI	    0.998108
+BONUS	4	DEATH	0.992707	1.007347
+
+
+Using Eternal flame for all
+BONUS	2	DPS	    1.000009
+BONUS	2	TPS	    1.000009
+BONUS	2	DTPS	1.000329
+BONUS	2	HPS	    1.048623	1.048623
+BONUS	2	TMI	    1.000987
+BONUS	2	DEATH	0.935361	1.069106
+BONUS	4	DPS	    1.025409	1.025409
+BONUS	4	TPS	    1.025402	1.025402
+BONUS	4	DTPS	0.97369	    1.027021
+BONUS	4	HPS	    1.096515	1.096515
+BONUS	4	TMI	    0.950091	1.052531
+BONUS	4	DEATH	0.723406	1.382350
+
+
+Change to eternal flame for 4pc
+BONUS	2	DPS	    1.000015
+BONUS	2	TPS	    1.000015
+BONUS	2	DTPS	1.000809
+BONUS	2	HPS	    1.083982	1.083982
+BONUS	2	TMI	    1.002159
+BONUS	2	DEATH	0.892123	1.120922
+BONUS	4	DPS	    0.982178	0.982178
+BONUS	4	TPS	    0.982148	0.982148
+BONUS	4	DTPS	1.768178	0.565554
+BONUS	4	HPS	    2.825658	2.825658
+BONUS	4	TMI	    1.446031	0.691548
+BONUS	4	DEATH	0.724102	1.381021
+
+tier 15 set, using T16 rotation
+BONUS 2 DPS 0.999998
+BONUS 2 TPS 0.999998
+BONUS 2 DTPS 1.003885
+BONUS 2 HPS 1.000000
+BONUS 2 TMI 1.003863
+BONUS 2 DEATH 1.014079
+BONUS 4 DPS 1.024254
+BONUS 4 TPS 1.024247
+BONUS 4 DTPS 0.965653
+BONUS 4 HPS 1.029180
+BONUS 4 TMI 0.952534
+BONUS 4 DEATH 0.792880
+
+tier 15 set, T15 rotation
+BONUS	2	DPS	    1.000025
+BONUS	2	TPS	    1.000027
+BONUS	2	DTPS	1.008617
+BONUS	2	HPS	    0.999998
+BONUS	2	TMI	    1.009285
+BONUS	2	DEATH	1.06713	    0.937093
+
+tier 15 set, modified APL with word of glory
+BONUS	2	DPS	    1.004204
+BONUS	2	TPS	    1.004672
+BONUS	2	DTPS	0.887679	1.126533
+BONUS	2	HPS	    1.000045
+BONUS	2	TMI	    0.894332	1.118153
+BONUS	2	DEATH	0.756912	1.321158
+
+
+spreadsheet
+Zero	        DPS/COMP
+Prot15_2pcOnly	TAKEN
+Prot16_2pcOnly	DEATH
+Prot16_4pc	    HEAL
+Prot_2pcEach

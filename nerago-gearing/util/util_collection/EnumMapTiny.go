@@ -88,6 +88,16 @@ func (em *EnumMapTiny[E, V, A]) Put(key E, value V) {
 	em.content[key] = value
 }
 
+func (em *EnumMapTiny[E, V, A]) Compute(key E, apply func(V) V) {
+	if (em.isSet & (1 << key)) != 0 {
+		em.content[key] = apply(em.content[key])
+	} else {
+		var nilValue V
+		em.content[key] = apply(nilValue)
+		em.len++
+	}
+}
+
 func (em *EnumMapTiny[E, V, A]) Delete(key E) {
 	if (em.isSet & (1 << key)) != 0 {
 		var nilValue V

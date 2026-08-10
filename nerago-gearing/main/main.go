@@ -85,6 +85,7 @@ func core(printer *util.PrintRecorder) {
 	//trinketSimsBoth(printer)
 	//currentSimGear(printer)
 	determineSetBonusValueBySim()
+	//determineBestUseOfGearSets()
 	//
 	//statWeightsBasic(printer)
 	//statWeightsGrid1Orig(printer)

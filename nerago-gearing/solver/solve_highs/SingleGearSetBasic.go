@@ -60,7 +60,7 @@ func makeGearSetBasic(build *util_highs.LinearBuilder, model *SolverModel, itemO
 
 	setup.addMainOutputVariable(scaleOutputRating)
 	setup.multiplyRatingsByActiveSetCombo(setup.baseRatingSumVar, c_single_basic_ratings_high_range)
-	setup.addSetNeededCounts(model.SetBonusRequiredCounts)
+	setup.addSetNeededCounts(model.SetBonusRequiredCounts, model.SetBonusAvoidNextStep)
 
 	return &setup
 }

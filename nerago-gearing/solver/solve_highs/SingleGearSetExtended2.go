@@ -68,7 +68,7 @@ func makeGearSetExtended2(build *util_highs.LinearBuilder, model *SolverModel, i
 	setup.calcCombinedSimRating(model.Weights2)
 	setup.addMainOutputVariable(scaleOutputRating)
 	setup.multiplyRatingsByActiveSetCombo(setup.combinedRatingVar, c_gearExtended2ScoreHigh)
-	setup.addSetNeededCounts(model.SetBonusRequiredCounts)
+	setup.addSetNeededCounts(model.SetBonusRequiredCounts, model.SetBonusAvoidNextStep)
 
 	return &setup
 }

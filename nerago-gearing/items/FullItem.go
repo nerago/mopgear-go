@@ -99,6 +99,10 @@ func (item *FullItem) changeDerivedStatFields() {
 	stats.StatBlock_Add_Into(&item.statBase, &item.statEnchant, &item.total)
 }
 
+func (item *FullItem) IsEmpty() bool {
+	return item.itemId == 0
+}
+
 func (item *FullItem) Total() *stats.StatBlock {
 	return &item.total
 }

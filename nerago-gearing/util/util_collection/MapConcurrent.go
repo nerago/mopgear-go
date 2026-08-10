@@ -108,6 +108,13 @@ func (mc *MapConcurrent[K, V]) Put(key K, value V) {
 	data[key] = value
 }
 
+func (mc *MapConcurrent[K, V]) Compute(key K, apply func(V) V) {
+	mc.mutex.Lock()
+	defer mc.mutex.Unlock()
+
+	mc.data[key] = apply(mc.data[key])
+}
+
 func (mc *MapConcurrent[K, V]) Delete(key K) {
 	mc.mutex.Lock()
 	defer mc.mutex.Unlock()

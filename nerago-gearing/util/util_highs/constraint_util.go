@@ -600,6 +600,34 @@ func (build *LinearBuilder) ColumnIsNotBetweenConstantsVerify(checkColumn Column
 	or.Build(build, 1, 1)
 }
 
+// inclusive ranges
+func (build *LinearBuilder) ColumnIsBetweenConstants(checkColumn ColumnIndex, lo, hi float64, rangeHigh float64, equalDelta float64) ColumnIndex {
+	if lo > hi {
+		panic("backwards range")
+	}
+
+	isUnderMin := build.CreateColumnBool(DebugString{Text: "isUnderMin"})
+	isOverMax := build.CreateColumnBool(DebugString{Text: "isOverMax"})
+
+	underMin := ConstraintRow{Debug: "setIfOverMin"}
+	underMin.Add(checkColumn, 1)
+	underMin.Add(isUnderMin, rangeHigh)
+	underMin.Build(build, lo, lo+rangeHigh-equalDelta)
+
+	overMax := ConstraintRow{Debug: "setIfUnderMax"}
+	overMax.Add(checkColumn, 1)
+	overMax.Add(isOverMax, -rangeHigh)
+	overMax.Build(build, hi-rangeHigh+equalDelta, hi)
+
+	isBetween := build.CreateColumnBool(nil)
+	check := ConstraintRow{}
+	check.Add(isUnderMin, 1)
+	check.Add(isOverMax, 1)
+	check.Add(isBetween, 1)
+	check.Build(build, 1, 1)
+	return isBetween
+}
+
 // logic: leftSideCol < rightSideCol
 func (build *LinearBuilder) ColumnIsLessThanColumnEqualityFree(leftSideCol, rightSideCol, boolIsLess ColumnIndex, rangeHigh float64) {
 	// -range <= check - thresh - x*range <= 0

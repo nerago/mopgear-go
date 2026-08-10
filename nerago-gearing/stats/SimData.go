@@ -151,7 +151,9 @@ func (sim *SimData) CompactStringGeneralBuilder(build *util.StringBuild2) {
 	build.WriteString(" tmi=")
 	build.WriteFloat64_RightPadded(sim.TMI(), 2, 6)
 	build.WriteString(" death=")
-	build.WriteFloat64(sim.DEATH()*100, 2)
+	build.WriteFloat64_RightPadded(sim.DEATH()*100, 2, 6)
+	build.WriteString(" hps=")
+	build.WriteFloat64(sim.HPS(), 0)
 }
 
 func (sim *SimData) IsEmpty() bool {

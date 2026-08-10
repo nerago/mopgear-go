@@ -41,7 +41,7 @@ var extrasSetSpecific = []items.ItemId{
 }
 
 var substituteItemsCommon = slices.Concat(
-	//extrasSetSpecific,
+	extrasSetSpecific,
 	legendCloaks, miscOtherP3,
 	retT15,
 	retT16,
@@ -49,15 +49,11 @@ var substituteItemsCommon = slices.Concat(
 	protT16,
 	//timeless,
 	celestial, celestialRaden,
-	//orgRaidDrops,
+	orgRaidDrops,
 )
 var substituteItemsRet = slices.Concat(substituteItemsCommon)
 
-var substituteItemsProt = slices.Concat(substituteItemsCommon, phase3OneHandAndShield)
-
-//orgOneHandAndShield,
-
-//var substituteItemsProt = make([]items.ItemId, 0)
+var substituteItemsProt = slices.Concat(substituteItemsCommon, phase3OneHandAndShield, orgOneHandAndShield)
 
 var ignoredItems = []items.ItemId{
 	63207, // org port cloak

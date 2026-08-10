@@ -72,7 +72,7 @@ func makeGearSetExtended3(build *util_highs.LinearBuilder, model *SolverModel, i
 	setup.calcCombinedSimRating(model.Weights3)
 	setup.addMainOutputVariable(scaleOutputRating)
 	setup.multiplyRatingsByActiveSetCombo(setup.combinedRatingVar, c_gearExtended3ScoreHigh)
-	setup.addSetNeededCounts(model.SetBonusRequiredCounts)
+	setup.addSetNeededCounts(model.SetBonusRequiredCounts, model.SetBonusAvoidNextStep)
 
 	return &setup
 }
@@ -235,13 +235,7 @@ func (setup *singleGearSetExtended3) calcCombinedSimRating(weight *weight_types.
 }
 
 func (setup *singleGearSetExtended3) statIsBetween(statTotalColumn *columnInfo, statRange weight_types.StatRange) util_highs.ColumnIndex {
-	isOverMinimum := setup.build.ColumnIsGreaterOrEqualThanConstant(statTotalColumn.columnIndex, float64(statRange.Minimum), c_gearExtended3StatHigh, 1.0)
-	isUnderMaximum := setup.build.ColumnIsLessOrEqualThanConstant(statTotalColumn.columnIndex, float64(statRange.Maximum), c_gearExtended3StatHigh, 1.0)
-	isBetween := setup.build.CreateColumnBool(nil)
-	and := util_highs.ConstraintAndBuilder{}
-	and.AddInput(isOverMinimum)
-	and.AddInput(isUnderMaximum)
-	and.SetOutput(isBetween)
-	and.Build(setup.build)
-	return isBetween
+	minimum := float64(statRange.Minimum)
+	maximum := float64(statRange.Maximum)
+	return setup.build.ColumnIsBetweenConstants(statTotalColumn.columnIndex, minimum, maximum, c_gearExtended3StatHigh, 1.0)
 }

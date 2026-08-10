@@ -41,80 +41,63 @@ func (sets *SpecSetsEnable) BonusSetIndexForItem(itemId items.ItemId) (int, bool
 }
 
 func (sets *SpecSetsEnable) CalcBonusSolveFlat(equipMap *items.SolvableEquipMap, ratio weight_types.SimPriorityBasic) float64 {
-	return 0 // TODO
-}
-
-func (sets *SpecSetsEnable) CalcBonusSolveBySim(equipMap *items.SolvableEquipMap) *stats.SimTypeMap[float64] {
-	return &stats.SimTypeMap[float64]{} // TODO
+	counts := [16]uint8{}
+	setCountsGeneric(&counts, &sets.itemToSet, equipMap)
+	return sets.countsToFlat(&counts)
 }
 
 func (sets *SpecSetsEnable) CalcBonusFullFlat(equipMap *items.FullEquipMap, ratio weight_types.SimPriorityBasic) float64 {
-	return 0 // TODO
+	counts := [16]uint8{}
+	setCountsGeneric(&counts, &sets.itemToSet, equipMap)
+	return sets.countsToFlat(&counts)
 }
 
-func (sets *SpecSetsEnable) CalcBonusFullBySim(equipMap *items.FullEquipMap) *stats.SimTypeMap[float64] {
-	return &stats.SimTypeMap[float64]{} // TODO
+func (sets *SpecSetsEnable) CalcBonusSolveBySim(equipMap *items.SolvableEquipMap, output *stats.SimTypeMap[float64]) {
+	counts := [16]uint8{}
+	setCountsGeneric(&counts, &sets.itemToSet, equipMap)
+	sets.countsToSims(&counts, output)
 }
 
-// // ########################### CalcBonus ###########################
-//
-//	func (sets *SetBonus) CalcBonusFull(equip *FullEquipMap) float64 {
-//		numSets := len(sets.activeSets)
-//		switch numSets {
-//		case 0:
-//			return 1
-//		case 1:
-//			var count uint8
-//			incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Head])
-//			incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Shoulder])
-//			incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Chest])
-//			incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Hand])
-//			incrementWithSetValue(&count, sets.itemToSet, equip[Equip_Leg])
-//			return sets.activeSets[0].bonuses[count]
-//		default:
-//			var counts [10]uint8
-//			addToSpecificSet(&counts, sets.itemToSet, equip[Equip_Head])
-//			addToSpecificSet(&counts, sets.itemToSet, equip[Equip_Shoulder])
-//			addToSpecificSet(&counts, sets.itemToSet, equip[Equip_Chest])
-//			addToSpecificSet(&counts, sets.itemToSet, equip[Equip_Hand])
-//			addToSpecificSet(&counts, sets.itemToSet, equip[Equip_Leg])
-//			var value float64 = 1.0
-//			for index := range sets.activeSets {
-//				value *= sets.activeSets[index].bonuses[counts[index+1]]
-//			}
-//			return value
-//		}
-//	}
-//
-//	func (sets *SetBonus) CalcBonusSolve(equip *SolvableEquipMap) float64 {
-//		numSets := len(sets.activeSets)
-//		switch numSets {
-//		case 0:
-//			return 1
-//		case 1:
-//			var count uint8
-//			incrementWithSetValueSolve(&count, sets.itemToSet, equip[Equip_Head])
-//			incrementWithSetValueSolve(&count, sets.itemToSet, equip[Equip_Shoulder])
-//			incrementWithSetValueSolve(&count, sets.itemToSet, equip[Equip_Chest])
-//			incrementWithSetValueSolve(&count, sets.itemToSet, equip[Equip_Hand])
-//			incrementWithSetValueSolve(&count, sets.itemToSet, equip[Equip_Leg])
-//			return sets.activeSets[0].bonuses[count]
-//		default:
-//			var counts [10]uint8
-//			addToSpecificSetSolve(&counts, sets.itemToSet, equip[Equip_Head])
-//			addToSpecificSetSolve(&counts, sets.itemToSet, equip[Equip_Shoulder])
-//			addToSpecificSetSolve(&counts, sets.itemToSet, equip[Equip_Chest])
-//			addToSpecificSetSolve(&counts, sets.itemToSet, equip[Equip_Hand])
-//			addToSpecificSetSolve(&counts, sets.itemToSet, equip[Equip_Leg])
-//			var value float64 = 1.0
-//			for index := range sets.activeSets {
-//				value *= sets.activeSets[index].bonuses[counts[index+1]]
-//			}
-//			return value
-//		}
-//	}
-//
-// ########################### CountInAnySet ###########################
+func (sets *SpecSetsEnable) CalcBonusFullBySim(equipMap *items.FullEquipMap, output *stats.SimTypeMap[float64]) {
+	counts := [16]uint8{}
+	setCountsGeneric(&counts, &sets.itemToSet, equipMap)
+	sets.countsToSims(&counts, output)
+}
+
+func setCountsGeneric[T items.IEquipMap[M], M items.IItem](counts *[16]uint8, itemToSet *[c_maxItemId]uint8, equip T) {
+	addToSpecificSet(counts, itemToSet, equip.Get(items.Equip_Head))
+	addToSpecificSet(counts, itemToSet, equip.Get(items.Equip_Shoulder))
+	addToSpecificSet(counts, itemToSet, equip.Get(items.Equip_Chest))
+	addToSpecificSet(counts, itemToSet, equip.Get(items.Equip_Hand))
+	addToSpecificSet(counts, itemToSet, equip.Get(items.Equip_Leg))
+}
+
+func (sets *SpecSetsEnable) countsToFlat(counts *[16]uint8) float64 {
+	value := 1.0
+	for index := range sets.EnabledSets {
+		value *= sets.EnabledSets[index].flatBonus[counts[index]]
+	}
+	return value
+}
+
+func (sets *SpecSetsEnable) countsToSims(counts *[16]uint8, output *stats.SimTypeMap[float64]) {
+	for _, simType := range stats.SimTypeList {
+		output.Put(simType, 1)
+	}
+	for index := range sets.EnabledSets {
+		entry := sets.EnabledSets[index].simBonus[counts[index]]
+		if entry != nil {
+			multiplyInto(output, entry)
+		}
+	}
+}
+
+func multiplyInto(dest *stats.SimTypeMap[float64], src *stats.SimTypeMap[float64]) {
+	for key, value := range src.SeqKeyValue() {
+		dest.Compute(key, func(oldValue float64) float64 { return oldValue * value })
+	}
+}
+
 func (sets *SpecSetsEnable) CountInAnySet(itemSet *items.FullEquipMap) uint8 {
 	size := len(sets.EnabledSets)
 	if size == 0 {
@@ -130,23 +113,7 @@ func (sets *SpecSetsEnable) CountInAnySet(itemSet *items.FullEquipMap) uint8 {
 	return count
 }
 
-//	func (sets *SetBonus) CountInAnySetSolve(itemSet *SolvableEquipMap) uint8 {
-//		size := len(sets.activeSets)
-//		if size == 0 {
-//			return 0
-//		}
-//
-//		var count uint8 = 0
-//		incrementIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Head])
-//		incrementIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Shoulder])
-//		incrementIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Chest])
-//		incrementIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Hand])
-//		incrementIfInAnySetSolve(&count, sets.itemToSet, itemSet[Equip_Leg])
-//		return count
-//	}
-//
-// // ########################### incrementIfInAnySet ###########################
-func incrementIfInAnySet(count *uint8, itemToSet *[c_maxItemId]uint8, item *items.FullItem) {
+func incrementIfInAnySet[M items.IItem](count *uint8, itemToSet *[c_maxItemId]uint8, item M) {
 	if item != nil {
 		entry := itemToSet[item.ItemId()]
 		if entry != 0 {
@@ -155,26 +122,14 @@ func incrementIfInAnySet(count *uint8, itemToSet *[c_maxItemId]uint8, item *item
 	}
 }
 
-//
-//func incrementIfInAnySetSolve(count *uint8, itemToSet []uint8, item *SolvableItem) {
-//	if item != nil {
-//		entry := itemToSet[item.ItemId()]
-//		if entry != 0 {
-//			*count++
-//		}
-//	}
-//}
-//
-//func incrementWithSetValue(count *uint8, itemToSet []uint8, item *FullItem) {
-//	if item != nil {
-//		*count += itemToSet[item.ItemId()]
-//	}
-//}
-//func incrementWithSetValueSolve(count *uint8, itemToSet []uint8, item *SolvableItem) {
-//	if item != nil {
-//		*count += itemToSet[item.ItemId()]
-//	}
-//}
+func addToSpecificSet[M items.IItem](counts *[16]uint8, itemToSet *[c_maxItemId]uint8, item M) {
+	if item != nil {
+		entry := itemToSet[item.ItemId()]
+		if entry != 0 {
+			counts[entry-1]++
+		}
+	}
+}
 
 func SpecSetsEnableNone() *SpecSetsEnable {
 	sets := &SpecSetsEnable{}

@@ -14,6 +14,13 @@ var BonusItems_ZeroAll = bonus_set.ItemCountsRequiredMake(
 	"Battlegear of Winged Triumph", 0,
 )
 
+var BonusItems_Prot15_2pcOnly = bonus_set.ItemCountsRequiredMake(
+	"Plate of Winged Triumph", 0,
+	"Plate of the Lightning Emperor", 2,
+	"Battlegear of the Lightning Emperor", 0,
+	"Battlegear of Winged Triumph", 0,
+)
+
 var BonusItems_Prot16_2pcOnly = bonus_set.ItemCountsRequiredMake(
 	"Plate of Winged Triumph", 2,
 	"Plate of the Lightning Emperor", 0,

@@ -82,7 +82,7 @@ func inputRequestFromTemplate(infile string, equipMap *items.FullEquipMap, profe
 
 	updateGear(&input, equipMap, profession)
 	updateBonus(&input, bonusStats)
-	updateRotation(&input, spec)
+	updateRotation(&input, spec, fight)
 	updateFight(&input, fight, spec)
 	updateTalents(&input, spec, fight, goal)
 	input.SimOptions.Iterations = int32(runSize)
@@ -164,11 +164,15 @@ func updateTalents(input *wowsim_proto.RaidSimRequest, spec stats.SpecType, figh
 	}
 }
 
-func updateRotation(input *wowsim_proto.RaidSimRequest, spec stats.SpecType) {
+func updateRotation(input *wowsim_proto.RaidSimRequest, spec stats.SpecType, fight stats.WowSim_Fight) {
 	var rotation wowsim_proto.APLRotation
 	switch spec {
 	case stats.Spec_PaladinProt:
-		loadAnyProtoFile(&rotation, files.PaladinProtRotation)
+		if fight == stats.Fight_Horridon_HighHeal || fight == stats.Fight_Horridon_LowHeal {
+			loadAnyProtoFile(&rotation, files.PaladinProtRotationT15)
+		} else {
+			loadAnyProtoFile(&rotation, files.PaladinProtRotation)
+		}
 	case stats.Spec_PaladinRet:
 		loadAnyProtoFile(&rotation, files.PaladinRetRotation)
 	default:

@@ -2,32 +2,73 @@ package bonus_set
 
 import "paladin_gearing_go/stats"
 
-//"Plate of Winged Triumph"
-//BONUS 2 DPS 1.003530
-//BONUS 2 TPS 1.003529
-//BONUS 2 DTPS 0.999100
-//BONUS 2 HPS 1.051780
-//BONUS 2 TMI 0.995287
-//BONUS 2 DEATH 0.926306
-
-//BONUS 4 DPS 1.021051
-//BONUS 4 TPS 1.021045
-//BONUS 4 DTPS 0.977900
-//BONUS 4 HPS 1.083034
-//BONUS 4 TMI 0.958943
-//BONUS 4 DEATH 0.798846
-
 var g_extendedData = map[string][2]map[stats.SimType]float64{
+	// regular sacred shield
 	"Plate of Winged Triumph": {
 		map[stats.SimType]float64{
-			stats.Sim_HPS:   1.051780,
-			stats.Sim_DEATH: 1.0 / 0.926306,
+			stats.Sim_HPS:   1.083982,
+			stats.Sim_DEATH: 1.120922,
 		},
 		map[stats.SimType]float64{
-			stats.Sim_DPS:   1.021051,
-			stats.Sim_DTPS:  1.0 / 0.977900,
-			stats.Sim_HPS:   1.083034,
-			stats.Sim_DEATH: 1.0 / 0.798846,
+			stats.Sim_DTPS:  1.001963,
+			stats.Sim_TMI:   1.001896,
+			stats.Sim_DEATH: 1.007347,
+		},
+	},
+
+	"Plate of Winged Triumph - Eternal Flame Full Time": {
+		map[stats.SimType]float64{
+			stats.Sim_HPS:   1.048623,
+			stats.Sim_DEATH: 1.069106,
+		},
+		map[stats.SimType]float64{
+			stats.Sim_DPS:   1.025409,
+			stats.Sim_DTPS:  1.027021,
+			stats.Sim_HPS:   1.096515,
+			stats.Sim_TMI:   1.052531,
+			stats.Sim_DEATH: 1.382350,
+		},
+	},
+
+	"Plate of Winged Triumph - Switch to Eternal Flame on 4pc": {
+		map[stats.SimType]float64{
+			stats.Sim_HPS:   1.083982,
+			stats.Sim_DEATH: 1.120922,
+		},
+		map[stats.SimType]float64{
+			stats.Sim_DPS:   0.982178,
+			stats.Sim_DTPS:  0.565554,
+			stats.Sim_HPS:   2.825658,
+			stats.Sim_TMI:   0.691548,
+			stats.Sim_DEATH: 1.381021,
+		},
+	},
+
+	"Plate of the Lightning Emperor": {
+		map[stats.SimType]float64{
+			// default sim doesn't use word of glory since questionable benefit, thus no stat change
+		},
+		map[stats.SimType]float64{
+			stats.Sim_DPS:   1.024254,
+			stats.Sim_DTPS:  1.035569,
+			stats.Sim_TMI:   1.049831,
+			stats.Sim_DEATH: 1.261225,
+		},
+	},
+
+	"Plate of the Lightning Emperor - Word of Glory": {
+		map[stats.SimType]float64{
+			// these are based on Horridon sim with non-standard word of glory and benefit in that scenario
+			stats.Sim_DTPS:  1.126533,
+			stats.Sim_TMI:   1.118153,
+			stats.Sim_DEATH: 1.321158,
+		},
+		map[stats.SimType]float64{
+			// these are from basic T16 sim rotation but still seem a bit high
+			stats.Sim_DPS:   1.024254,
+			stats.Sim_DTPS:  1.035569,
+			stats.Sim_TMI:   1.049831,
+			stats.Sim_DEATH: 1.261225,
 		},
 	},
 }

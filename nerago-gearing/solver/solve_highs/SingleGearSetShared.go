@@ -181,7 +181,7 @@ func (setup *singleGearSetShared) addMainOutputVariable(scaleOutputRating float6
 	setup.allColumns = append(setup.allColumns, &entry)
 }
 
-func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []setBonusRequiredCounts) {
+func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []setBonusRequiredCounts, avoidNextStep bool) {
 	if len(setBonusRequired) > 0 {
 		if len(setup.bonusData) == 0 {
 			panic("no bonusData to use for addSetNeededCounts")
@@ -191,7 +191,11 @@ func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []setBonus
 
 			rowSetCountRequired := util_highs.ConstraintRow{Debug: "rowSetCountRequired"}
 			rowSetCountRequired.Add(setCountCol.columnIndex, 1)
-			rowSetCountRequired.Build(setup.build, float64(needCount), util_highs.InfPos())
+			if avoidNextStep {
+				rowSetCountRequired.Build(setup.build, float64(needCount), float64(needCount+1))
+			} else {
+				rowSetCountRequired.Build(setup.build, float64(needCount), util_highs.InfPos())
+			}
 		} else {
 			oneOfTheseOptions := util_highs.ConstraintRow{}
 
@@ -202,7 +206,12 @@ func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []setBonus
 					setInfo := setup.bonusData[setIndex]
 					setCountCol := setInfo.setTotalCountVar
 
-					inRange := setup.build.ColumnIsGreaterOrEqualThanConstant(setCountCol.columnIndex, float64(needCount), 10, 1.0)
+					var inRange util_highs.ColumnIndex
+					if avoidNextStep {
+						inRange = setup.build.ColumnIsBetweenConstants(setCountCol.columnIndex, float64(needCount), float64(needCount+1), 10, 1.0)
+					} else {
+						inRange = setup.build.ColumnIsGreaterOrEqualThanConstant(setCountCol.columnIndex, float64(needCount), 10, 1.0)
+					}
 					optionParts.AddInput(inRange)
 				}
 

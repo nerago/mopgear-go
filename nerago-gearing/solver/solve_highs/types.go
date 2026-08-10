@@ -118,6 +118,7 @@ type SolverModel struct {
 
 	StatRequirements stats.StatTypeMap[weight_types.StatRangeFloat]
 
+	SetBonusAvoidNextStep    bool
 	SetBonusRequiredCounts   []setBonusRequiredCounts
 	SetBonusTotalCount       int
 	SetBonusIndexForItem     func(id items.ItemId) (int, bool)
@@ -130,6 +131,7 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.Weigh
 	solveModel := &SolverModel{
 		CheckSet:               model.CheckSetForSolver,
 		StatRequirements:       toEnumMap(model.StatRequirements.AsMap()),
+		SetBonusAvoidNextStep:  model.BonusAvoidNextStep,
 		SetBonusRequiredCounts: convertBonusRequired(model.BonusRequiredSolve, model.BonusEnabled.EnabledSets),
 		SetBonusTotalCount:     len(model.BonusEnabled.EnabledSets),
 		SetBonusIndexForItem:   model.BonusEnabled.BonusSetIndexForItem,

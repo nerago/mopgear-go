@@ -1103,6 +1103,90 @@ func TestColumnIsNotBetweenConstantsVerify(test *testing.T) {
 	testValues(50, 49, 49, -1)
 }
 
+func TestColumnIsBetweenConstants(test *testing.T) {
+	maxValue := 100.0
+	rangeHigh := 200.0
+	equalDelta := 1.0
+
+	testValues := func(loValue, checkValue, hiValue float64, setBool *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: lo=%f check=%f hi=%f", loValue, checkValue, hiValue)
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		checkColumn := build.CreateColumnGeneral(highs.Continuous, 0, maxValue, nil)
+		setColumnToConstant(build, checkColumn, checkValue)
+
+		boolColumn := build.ColumnIsBetweenConstants(checkColumn, loValue, hiValue, rangeHigh, equalDelta)
+
+		if setBool != nil {
+			setColumnToConstant(build, boolColumn, *setBool)
+		}
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[boolColumn]
+		test.Logf("%s %f\n", solution.Status.String(), boolOutput)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqual(*expectOutputValue, boolOutput, test)
+		}
+	}
+
+	zero := new(0.0)
+	one := new(1.0)
+
+	// standard accept, within range
+	testValues(49, 50, 51, nil, highs.ModelStatusOptimal, one)
+	testValues(40, 50, 60, nil, highs.ModelStatusOptimal, one)
+
+	// equal to high or low = ok
+	testValues(49, 49, 51, nil, highs.ModelStatusOptimal, one)
+	testValues(49, 51, 51, nil, highs.ModelStatusOptimal, one)
+	testValues(51, 51, 51, nil, highs.ModelStatusOptimal, one)
+
+	// outside range normal
+	testValues(49, 47, 51, nil, highs.ModelStatusOptimal, zero)
+	testValues(49, 48, 51, nil, highs.ModelStatusOptimal, zero)
+	testValues(49, 52, 51, nil, highs.ModelStatusOptimal, zero)
+	testValues(49, 53, 51, nil, highs.ModelStatusOptimal, zero)
+
+	// outside equal pair
+	testValues(50, 48, 50, nil, highs.ModelStatusOptimal, zero)
+	testValues(50, 49, 50, nil, highs.ModelStatusOptimal, zero)
+	testValues(50, 51, 50, nil, highs.ModelStatusOptimal, zero)
+	testValues(50, 52, 50, nil, highs.ModelStatusOptimal, zero)
+
+	// all the above as forces
+	testValues(49, 50, 51, one, highs.ModelStatusOptimal, one)
+	testValues(40, 50, 60, one, highs.ModelStatusOptimal, one)
+	testValues(49, 49, 51, one, highs.ModelStatusOptimal, one)
+	testValues(49, 51, 51, one, highs.ModelStatusOptimal, one)
+	testValues(51, 51, 51, one, highs.ModelStatusOptimal, one)
+	testValues(49, 47, 51, zero, highs.ModelStatusOptimal, zero)
+	testValues(49, 48, 51, zero, highs.ModelStatusOptimal, zero)
+	testValues(49, 52, 51, zero, highs.ModelStatusOptimal, zero)
+	testValues(49, 53, 51, zero, highs.ModelStatusOptimal, zero)
+	testValues(50, 48, 50, zero, highs.ModelStatusOptimal, zero)
+	testValues(50, 49, 50, zero, highs.ModelStatusOptimal, zero)
+	testValues(50, 51, 50, zero, highs.ModelStatusOptimal, zero)
+	testValues(50, 52, 50, zero, highs.ModelStatusOptimal, zero)
+
+	// all the above as opposite forces
+	testValues(49, 50, 51, zero, highs.ModelStatusInfeasible, nil)
+	testValues(40, 50, 60, zero, highs.ModelStatusInfeasible, nil)
+	testValues(49, 49, 51, zero, highs.ModelStatusInfeasible, nil)
+	testValues(49, 51, 51, zero, highs.ModelStatusInfeasible, nil)
+	testValues(51, 51, 51, zero, highs.ModelStatusInfeasible, nil)
+	testValues(49, 47, 51, one, highs.ModelStatusInfeasible, nil)
+	testValues(49, 48, 51, one, highs.ModelStatusInfeasible, nil)
+	testValues(49, 52, 51, one, highs.ModelStatusInfeasible, nil)
+	testValues(49, 53, 51, one, highs.ModelStatusInfeasible, nil)
+	testValues(50, 48, 50, one, highs.ModelStatusInfeasible, nil)
+	testValues(50, 49, 50, one, highs.ModelStatusInfeasible, nil)
+	testValues(50, 51, 50, one, highs.ModelStatusInfeasible, nil)
+	testValues(50, 52, 50, one, highs.ModelStatusInfeasible, nil)
+}
+
 func TestColumnIsGreaterOrEqualColumn(test *testing.T) {
 	maxValue := 100.0
 	rangeHigh := 200.0

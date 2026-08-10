@@ -47,8 +47,10 @@ var retT16 = []items.ItemId{
 	99139, // ret t16 legs normal
 }
 var protT15 = []items.ItemId{
+	95291, // prot tier15 hand normal
 	96664, // prot tier15 chest heroic
 	96666, // prot tier15 head heroic
+	96667, // prot tier15 leg heroic
 	96668, // prot tier15 shoulder heroic
 }
 var protT16 = []items.ItemId{

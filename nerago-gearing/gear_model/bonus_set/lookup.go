@@ -42,42 +42,41 @@ func (lk *BonusLookup) ContainsItemFull(item *items.FullItem) bool {
 }
 
 func (lk *BonusLookup) CountItemsSolve(equip *items.SolvableEquipMap) uint8 {
-	var count uint8
-	if lk.ContainsItemSolve(equip[items.Equip_Head]) {
-		count++
-	}
-	if lk.ContainsItemSolve(equip[items.Equip_Shoulder]) {
-		count++
-	}
-	if lk.ContainsItemSolve(equip[items.Equip_Chest]) {
-		count++
-	}
-	if lk.ContainsItemSolve(equip[items.Equip_Hand]) {
-		count++
-	}
-	if lk.ContainsItemSolve(equip[items.Equip_Leg]) {
-		count++
-	}
-	return count
+	return countItemsGeneric(equip, lk.items)
 }
 
 func (lk *BonusLookup) CountItemsFull(equip *items.FullEquipMap) uint8 {
-	var count uint8
-	if lk.ContainsItemFull(equip[items.Equip_Head]) {
+	return countItemsGeneric(equip, lk.items)
+}
+
+func countItemsGeneric[T items.IEquipMap[M], M items.IItem](equip T, lookupItems []items.ItemId) uint8 {
+	count := uint8(0)
+
+	item := equip.Get(items.Equip_Head)
+	if item != nil && slices.Contains(lookupItems, item.ItemId()) {
 		count++
 	}
-	if lk.ContainsItemFull(equip[items.Equip_Shoulder]) {
+
+	item = equip.Get(items.Equip_Shoulder)
+	if item != nil && slices.Contains(lookupItems, item.ItemId()) {
 		count++
 	}
-	if lk.ContainsItemFull(equip[items.Equip_Chest]) {
+
+	item = equip.Get(items.Equip_Chest)
+	if item != nil && slices.Contains(lookupItems, item.ItemId()) {
 		count++
 	}
-	if lk.ContainsItemFull(equip[items.Equip_Hand]) {
+
+	item = equip.Get(items.Equip_Hand)
+	if item != nil && slices.Contains(lookupItems, item.ItemId()) {
 		count++
 	}
-	if lk.ContainsItemFull(equip[items.Equip_Leg]) {
+
+	item = equip.Get(items.Equip_Leg)
+	if item != nil && slices.Contains(lookupItems, item.ItemId()) {
 		count++
 	}
+
 	return count
 }
 

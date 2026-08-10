@@ -23,6 +23,7 @@ type SpecModel struct {
 	BonusEnabled             *bonus_set.SpecSetsEnable
 	BonusRequiredSolve       bonus_set.ItemCountsRequiredOptions
 	BonusRequiredWeight      *bonus_set.ItemCountsRequired
+	BonusAvoidNextStep       bool
 	Professions              ProfessionInfo
 	SimPriority              weight_types.SimPriorityBasic
 	StatsForWeighting        []StatType
@@ -50,25 +51,26 @@ func (model *SpecModel) Equals(other *SpecModel) bool {
 		model.ReferenceGearFile == other.ReferenceGearFile
 }
 
-func (model *SpecModel) CloneShallow(other *SpecModel) *SpecModel {
+func (model *SpecModel) CloneShallow() *SpecModel {
 	return &SpecModel{
-		StatRequirements:         other.StatRequirements,
-		StatWeights:              other.StatWeights,
-		Spec:                     other.Spec,
-		Goal:                     other.Goal,
-		SimulateAs:               other.SimulateAs,
-		SimSpeedUp:               other.SimSpeedUp,
-		ReforgeRules:             other.ReforgeRules,
-		EnchantChoice:            other.EnchantChoice,
-		GemChoice:                other.GemChoice,
-		BonusEnabled:             other.BonusEnabled,
-		BonusRequiredSolve:       other.BonusRequiredSolve,
-		BonusRequiredWeight:      other.BonusRequiredWeight,
-		Professions:              other.Professions,
-		SimPriority:              other.SimPriority,
-		StatsForWeighting:        other.StatsForWeighting,
-		SpecificIncompatibleList: other.SpecificIncompatibleList,
-		ReferenceGearFile:        other.ReferenceGearFile,
+		StatRequirements:         model.StatRequirements,
+		StatWeights:              model.StatWeights,
+		Spec:                     model.Spec,
+		Goal:                     model.Goal,
+		SimulateAs:               model.SimulateAs,
+		SimSpeedUp:               model.SimSpeedUp,
+		ReforgeRules:             model.ReforgeRules,
+		EnchantChoice:            model.EnchantChoice,
+		GemChoice:                model.GemChoice,
+		BonusEnabled:             model.BonusEnabled,
+		BonusRequiredSolve:       model.BonusRequiredSolve,
+		BonusRequiredWeight:      model.BonusRequiredWeight,
+		BonusAvoidNextStep:       model.BonusAvoidNextStep,
+		Professions:              model.Professions,
+		SimPriority:              model.SimPriority,
+		StatsForWeighting:        model.StatsForWeighting,
+		SpecificIncompatibleList: model.SpecificIncompatibleList,
+		ReferenceGearFile:        model.ReferenceGearFile,
 	}
 }
 
@@ -112,8 +114,9 @@ func (model *SpecModel) CalcRatingSolve(itemSet *SolvableItemSet, weightType wei
 		setRating := model.BonusEnabled.CalcBonusSolveFlat(itemSet.Items(), model.SimPriority)
 		return baseRating * setRating
 	} else {
-		bonusMap := model.BonusEnabled.CalcBonusSolveBySim(itemSet.Items())
-		return weight.CalcStatScoreWithBonus(itemSet.Total(), bonusMap)
+		bonusMap := SimTypeMap[float64]{}
+		model.BonusEnabled.CalcBonusSolveBySim(itemSet.Items(), &bonusMap)
+		return weight.CalcStatScoreWithBonus(itemSet.Total(), &bonusMap)
 	}
 }
 
@@ -124,8 +127,9 @@ func (model *SpecModel) CalcRatingFull(itemSet *FullItemSet, weightType weight_t
 		setRating := model.BonusEnabled.CalcBonusFullFlat(itemSet.Items(), model.SimPriority)
 		return baseRating * setRating
 	} else {
-		bonusMap := model.BonusEnabled.CalcBonusFullBySim(itemSet.Items())
-		return weight.CalcStatScoreWithBonus(itemSet.Total(), bonusMap)
+		bonusMap := SimTypeMap[float64]{}
+		model.BonusEnabled.CalcBonusFullBySim(itemSet.Items(), &bonusMap)
+		return weight.CalcStatScoreWithBonus(itemSet.Total(), &bonusMap)
 	}
 }
 
