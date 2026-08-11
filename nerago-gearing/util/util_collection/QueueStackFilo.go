@@ -62,7 +62,7 @@ func (stack *QueueStackFilo[T]) Pop() (T, bool) {
 	}
 }
 
-func (stack *QueueStackFilo[T]) ValueSeq() iter.Seq[T] {
+func (stack *QueueStackFilo[T]) SeqValues() iter.Seq[T] {
 	return func(yield func(T) bool) {
 		for i := range stack.top {
 			if !yield(stack.array[i]) {

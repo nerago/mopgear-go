@@ -96,11 +96,11 @@ func (process *RankingStatWeightProcess5) SetTargetRatios(targetRatios weight_ty
 	process.requiredSims = targetRatios.SimTypes()
 }
 
-func (process *RankingStatWeightProcess5) Run(timeout int) *util_async.FutureCancellable[weight_types.WeightResult] {
+func (process *RankingStatWeightProcess5) Run(timeout int, sampleSize int) *util_async.FutureCancellable[weight_types.WeightResult] {
 	process.printer.Printf("RankingStatWeightProcess5 RunOptimistic\n")
 	run := rankInternalRun5_create(process)
 	run.build.TimeLimitSeconds = timeout
-	run.supplyData(takeDataSample_Random(process.dataAll, c_rank5_sample))
+	run.supplyData(util_collection.SliceSampleRandom(process.dataAll, sampleSize))
 	// run.supplyData(takeDataSample_Start(process.dataAll, c_rank5_sample))
 	// run.supplyData(process.dataAll)
 	run.prepareRankings()

@@ -10,7 +10,6 @@ import (
 	"paladin_gearing_go/weightfind/simrank"
 	"paladin_gearing_go/weightfind/util_weight"
 	"paladin_gearing_go/weightfind/weight_types"
-	"slices"
 	"strconv"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -105,24 +104,6 @@ func (process *RankingStatWeightProcess4) RunUsingExternalStart(initialWeight we
 	run2.makeDataListPairRules()
 	run2.setupInitialSolutionFromExternal2(initialWeight)
 	return run2.runFuture()
-}
-
-func takeDataSample_Start[T any](slice []T, size int) []T {
-	if len(slice) < size {
-		return slice
-	} else {
-		return slice[0:size]
-	}
-}
-
-func takeDataSample_Random[T any](slice []T, size int) []T {
-	if len(slice) < size {
-		return slice
-	} else {
-		copy := slices.Clone(slice)
-		util_collection.Shuffle(copy)
-		return copy[0:size]
-	}
 }
 
 func rankInternalRun4_create(process *RankingStatWeightProcess4) *rankInternalRun4 {

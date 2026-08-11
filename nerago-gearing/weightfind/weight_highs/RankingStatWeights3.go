@@ -114,7 +114,7 @@ func (ranker *RankingStatWeightProcess3) makeBuilder() {
 
 func (ranker *RankingStatWeightProcess3) Run() *util_async.FutureCancellable[weight_types.WeightResult] {
 	// FIRST ROUND: minimal data, no initial values
-	ranker.dataSample = takeDataSample_Start(ranker.dataAllOriginal, c_rank3_initial_data_sample)
+	ranker.dataSample = util_collection.SliceSampleFromStart(ranker.dataAllOriginal, c_rank3_initial_data_sample)
 	ranker.prepare()
 	ranker.setupDumbInitialSolution()
 

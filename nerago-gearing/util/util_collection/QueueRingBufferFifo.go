@@ -1,5 +1,7 @@
 package util_collection
 
+import "iter"
+
 type QueueRingBufferFifo[T any] struct {
 	array      []T
 	readIndex  int
@@ -57,5 +59,17 @@ func (ring *QueueRingBufferFifo[T]) Size() int {
 		return ring.writeIndex - ring.readIndex
 	} else {
 		return ring.writeIndex - ring.readIndex + len(ring.array)
+	}
+}
+
+func (ring *QueueRingBufferFifo[T]) SeqValues() iter.Seq[T] {
+	return func(yield func(T) bool) {
+		if ring.readIndex != ring.writeIndex {
+			for read := ring.readIndex; read != ring.writeIndex; read = (read + 1) % len(ring.array) {
+				if !yield(ring.array[read]) {
+					return
+				}
+			}
+		}
 	}
 }

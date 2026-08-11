@@ -62,12 +62,12 @@ func statWeights_CompareAlgorithms() {
 	mixedInputDataFull := slices.Concat(inputDataGrid, inputDataRandom)
 
 	//sampleSize := 50
-	//inputDataGrid = takeDataSample_Random(inputDataGrid, sampleSize)
-	//inputDataRandom = takeDataSample_Random(inputDataRandom, sampleSize)
-	//mixedInputData := takeDataSample_Random(mixedInputDataFull, sampleSize)
-	//inputDataGrid = takeDataSample_Random_Seed(inputDataGrid, sampleSize, 1234)
-	//inputDataRandom = takeDataSample_Random_Seed(inputDataRandom, sampleSize, 1234)
-	//mixedInputData := takeDataSample_Random_Seed(mixedInputDataFull, sampleSize, 1234)
+	//inputDataGrid = util_collection.SliceSampleRandom(inputDataGrid, sampleSize)
+	//inputDataRandom = util_collection.SliceSampleRandom(inputDataRandom, sampleSize)
+	//mixedInputData := util_collection.SliceSampleRandom(mixedInputDataFull, sampleSize)
+	//inputDataGrid = util_collection.SliceSampleRandom(inputDataGrid, sampleSize, 1234)
+	//inputDataRandom = util_collection.SliceSampleRandom(inputDataRandom, sampleSize, 1234)
+	//mixedInputData := util_collection.SliceSampleRandom(mixedInputDataFull, sampleSize, 1234)
 	mixedInputData := mixedInputDataFull
 
 	// weight value 87.7342

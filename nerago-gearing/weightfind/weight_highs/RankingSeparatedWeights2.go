@@ -71,7 +71,6 @@ func (ranker *RankingSeparatedWeights2) Init(printer *util.PrintRecorder, timeou
 }
 
 func (ranker *RankingSeparatedWeights2) SupplyData(inputData []weight_types.WeightInput) {
-	//inputData = takeDataSample_Random(inputData, 100)
 	ranker.dataEntries = util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntrySeparated2 {
 		return &rankEntrySeparated2{
 			data:  input,

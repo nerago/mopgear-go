@@ -92,7 +92,7 @@ func (ranker *RankingStatWeightProcess3b) newBuilder() {
 func (ranker *RankingStatWeightProcess3b) RunMultiRound() *util_async.FutureCancellable[weight_types.WeightResult] {
 
 	// FIRST ROUND: minimal data, no initial values
-	ranker.dataSample = takeDataSample_Start(ranker.dataAllOriginal, 64)
+	ranker.dataSample = util_collection.SliceSampleFromStart(ranker.dataAllOriginal, 64)
 	ranker.newBuilder()
 	ranker.prepareRankings()
 	ranker.createWeightColumns()

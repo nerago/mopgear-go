@@ -7,7 +7,6 @@ import (
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
-	"slices"
 	"sync"
 	"sync/atomic"
 
@@ -120,7 +119,7 @@ func (process *OptionsCulling) chooseRandomToRemove() []items.ItemId {
 		toRemove += rand.IntN(maxRemove - minRemove + 1)
 	}
 
-	return randomSampleSlice(process.allItemIds, toRemove)
+	return util_collection.SliceSampleRandom(process.allItemIds, toRemove)
 }
 
 func (process *OptionsCulling) makeRestrictedItemOptions(blockedItems []items.ItemId) (items.SolvableOptionsMap, bool) {
@@ -156,14 +155,4 @@ func distinctItemIdsAll(itemOptions *items.SolvableOptionsMap) []items.ItemId {
 		distinct[item.ItemId()] = true
 	}
 	return util_collection.KeysToSlice(distinct)
-}
-
-func randomSampleSlice(sharedSlice []items.ItemId, sampleCount int) []items.ItemId {
-	if len(sharedSlice) <= sampleCount {
-		return sharedSlice
-	}
-
-	copiedSlice := slices.Clone(sharedSlice)
-	util_collection.Shuffle(copiedSlice)
-	return copiedSlice[0:sampleCount]
 }

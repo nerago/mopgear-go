@@ -78,7 +78,7 @@ func (ss *FittingSingleSegmented4) splitStatRangeEvenlyBetweenSegments() {
 	for _, sample := range ss.InputData {
 		floatyIndex := (sample.StatValue - minValue) / valueInterval
 		index := util.Clamp(int(math.Floor(floatyIndex)), 0, len(dataBySegment)-1)
-		dataBySegment[index].Append(sample)
+		dataBySegment[index].AppendLast(sample)
 	}
 
 	minimumSampleCount := int(math.Floor(c_fitting4_segmentSizeMinimumTarget * float64(len(ss.InputData))))
@@ -94,7 +94,7 @@ func (ss *FittingSingleSegmented4) splitStatRangeEvenlyBetweenSegments() {
 		}
 
 		if segmentNum < ss.TargetSegmentCount-1 {
-			lastSample := data.GetLast()
+			lastSample, _ := data.GetLast()
 			ss.prepareAsThreshold(ss.Segments[segmentNum], ss.Segments[segmentNum+1], lastSample)
 		}
 	}
@@ -103,13 +103,19 @@ func (ss *FittingSingleSegmented4) splitStatRangeEvenlyBetweenSegments() {
 func balanceBlocks(first *util_collection.List[util_weight.FittingSample3], second *util_collection.List[util_weight.FittingSample3], targetMinCount int) {
 	if first.Size() < targetMinCount && first.Size() < second.Size() {
 		for first.Size() < targetMinCount && first.Size() < second.Size() {
-			sample := second.RemoveFirstAndReturn()
-			first.Append(sample)
+			if sample, hasFirst := second.RemoveFirstAndReturn(); hasFirst {
+				first.AppendLast(sample)
+			} else {
+				break
+			}
 		}
 	} else if second.Size() < targetMinCount {
 		for second.Size() < targetMinCount && second.Size() < first.Size() {
-			sample := first.RemoveLastAndReturn()
-			second.InsertFirst(sample)
+			if sample, hasLast := first.RemoveLastAndReturn(); hasLast {
+				second.InsertFirst(sample)
+			} else {
+				break
+			}
 		}
 	}
 }

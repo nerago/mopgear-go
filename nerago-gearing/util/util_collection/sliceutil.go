@@ -333,6 +333,33 @@ change_part:
 	*slice = (*slice)[:writeIndex]
 }
 
+func FilterSliceInPlace_NoPointer[T any](slice *[]T, filter func(x T) bool) {
+	if slice == nil || *slice == nil {
+		return
+	}
+
+	readIndex := 0
+	for readIndex < len(*slice) {
+		if !filter((*slice)[readIndex]) {
+			goto change_part
+		}
+		readIndex++
+	}
+	return
+
+change_part:
+	writeIndex := readIndex
+	readIndex++
+	for readIndex < len(*slice) {
+		if filter((*slice)[readIndex]) {
+			(*slice)[writeIndex] = (*slice)[readIndex]
+			writeIndex++
+		}
+		readIndex++
+	}
+	*slice = (*slice)[:writeIndex]
+}
+
 func ContainsFunc_Pointer[T any](slice []T, predicate func(*T) bool) bool {
 	for i := range slice {
 		if predicate(&slice[i]) {
@@ -550,5 +577,35 @@ func CalculateRanking[T any](highGood bool, inputData []T, toScore func(*T) floa
 				return
 			}
 		}
+	}
+}
+
+func SliceSampleFromStart[T any](slice []T, size int) []T {
+	if len(slice) < size {
+		return slice
+	} else {
+		return slice[0:size]
+	}
+}
+
+func SliceSampleRandom[T any](slice []T, size int) []T {
+	if len(slice) < size {
+		return slice
+	} else {
+		sample := slices.Clone(slice)
+		Shuffle(sample)
+		return sample[0:size]
+	}
+}
+
+func SliceSampleRandom_Seed[T any](slice []T, size int, seed int64) []T {
+	if len(slice) < size {
+		return slice
+	} else {
+		rng := rand.New(rand.NewSource(seed))
+
+		sample := slices.Clone(slice)
+		rng.Shuffle(len(sample), func(a, b int) { sample[a], sample[b] = sample[b], sample[a] })
+		return sample[0:size]
 	}
 }

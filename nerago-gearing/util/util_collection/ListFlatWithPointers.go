@@ -43,6 +43,22 @@ func (sl *ListFlatWithPointers[T]) Get(idx int) *T {
 	return &sl.data[sl.index[idx]]
 }
 
+func (sl *ListFlatWithPointers[T]) GetFirst() (*T, bool) {
+	if len(sl.index) > 0 {
+		return &sl.data[sl.index[0]], true
+	} else {
+		return nil, false
+	}
+}
+
+func (sl *ListFlatWithPointers[T]) GetLast() (*T, bool) {
+	if len(sl.index) > 0 {
+		return &sl.data[sl.index[len(sl.index)-1]], true
+	} else {
+		return nil, false
+	}
+}
+
 func (sl *ListFlatWithPointers[T]) ContainsFuncNoPointer(predicate func(*T) bool) bool {
 	for i := range sl.data {
 		if predicate(&sl.data[i]) {

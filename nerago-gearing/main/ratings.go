@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"maps"
 	"math"
-	"math/rand"
 	"os"
 	"paladin_gearing_go/files"
 	"paladin_gearing_go/gear_model"
@@ -372,8 +371,6 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 		weights1.Put(stats.Stat_Dodge, 2.3181400067)
 		weights1.Put(stats.Stat_Parry, 3.2064183845)
 	}
-
-	//mixedInputData = takeDataSample_Random_Seed(mixedInputData, 20, 1234)
 
 	ranking := weight_highs.RankingStatWeightProcess3b{}
 	// 0 is all combinations, 1 is just adjacent
@@ -988,7 +985,7 @@ func statWeightsGrid1Orig(printer *util.PrintRecorder) {
 
 	inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Mitigation-NoSet.json")
 	inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
-	//inputData := takeDataSample_Random(inputDataFull, 30)
+	//inputData := SliceSampleRandom(inputDataFull, 30)
 	inputData := inputDataGrid
 
 	targetRatio := model_factory.SimPriority_generalMiti
@@ -1075,7 +1072,7 @@ func statWeightsGrid2(printer *util.PrintRecorder) {
 
 	inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Mitigation-NoSet.json")
 	inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
-	//inputData := takeDataSample_Random(inputDataFull, 30)
+	//inputData := SliceSampleRandom(inputDataFull, 30)
 	inputData := inputDataGrid
 
 	//targetRatio := gear_model.SimRatio_generalMiti
@@ -1134,7 +1131,7 @@ func statWeightsGrid1b(printer *util.PrintRecorder) {
 
 	inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Mitigation-NoSet.json")
 	inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
-	//inputData := takeDataSample_Random(inputDataFull, 30)
+	//inputData := SliceSampleRandom(inputDataFull, 30)
 	inputData := inputDataGrid
 
 	targetRatio := model_factory.SimPriority_generalMiti
@@ -1238,34 +1235,4 @@ func readWeightBasicInputsFile(filename string) ([]basicStatInput, stats.SimData
 		panic(err)
 	}
 	return weightInputs.InputDataBasic, weightInputs.BasicSimBase
-}
-
-func takeDataSample_Start(slice []weight_types.WeightInput, size int) []weight_types.WeightInput {
-	if len(slice) < size {
-		return slice
-	} else {
-		return slice[0:size]
-	}
-}
-
-func takeDataSample_Random(slice []weight_types.WeightInput, size int) []weight_types.WeightInput {
-	if len(slice) < size {
-		return slice
-	} else {
-		copy := slices.Clone(slice)
-		rand.Shuffle(len(copy), func(a, b int) { copy[a], copy[b] = copy[b], copy[a] })
-		return copy[0:size]
-	}
-}
-
-func takeDataSample_Random_Seed(slice []weight_types.WeightInput, size int, seed int64) []weight_types.WeightInput {
-	if len(slice) < size {
-		return slice
-	} else {
-		rng := rand.New(rand.NewSource(seed))
-
-		copy := slices.Clone(slice)
-		rng.Shuffle(len(copy), func(a, b int) { copy[a], copy[b] = copy[b], copy[a] })
-		return copy[0:size]
-	}
 }

@@ -147,6 +147,42 @@ func (lst *List[E]) RemoveDuplicatesFunc(equals func(a *E, b *E) bool) {
 	RemoveDuplicatesFunc_InPlace(&lst.inner, equals)
 }
 
+func (lst *List[E]) FilterFunc(predicate func(*E) bool) {
+	FilterSliceInPlace(&lst.inner, predicate)
+}
+
+func (lst *List[E]) FilterFuncNoPointer(predicate func(E) bool) {
+	FilterSliceInPlace_NoPointer(&lst.inner, predicate)
+}
+
+type listTraversalEntry[E any] struct {
+	value E
+	index int
+	lst   *List[E]
+}
+
+func (te listTraversalEntry[E]) Value() E {
+	return te.value
+}
+
+func (te listTraversalEntry[E]) Index() int {
+	return te.index
+}
+
+func (te listTraversalEntry[E]) Delete() {
+	te.lst.DeleteIndex(te.index)
+}
+
+func (lst *List[E]) SeqListTraversalEntry() iter.Seq[ListTraversalEntry[E]] {
+	return func(yield func(ListTraversalEntry[E]) bool) {
+		for i := range lst.inner {
+			if !yield(listTraversalEntry[E]{lst.inner[i], i, lst}) {
+				return
+			}
+		}
+	}
+}
+
 func (lst *List[E]) SubList(firstIndex, lastIndex int) IListRead[E] {
 	return &List[E]{lst.inner[firstIndex : lastIndex+1]}
 }
