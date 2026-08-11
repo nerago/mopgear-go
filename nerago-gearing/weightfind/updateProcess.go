@@ -28,7 +28,7 @@ import (
 	"time"
 )
 
-const c_timeoutSolvers = 2000
+const c_timeoutSolvers = 3000
 const c_timeoutSolversFit = 6000
 const c_simDataAgeMax = 48 * time.Hour
 const c_updateThreadCount = 3

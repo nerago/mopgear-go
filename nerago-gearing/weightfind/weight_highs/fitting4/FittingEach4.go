@@ -23,6 +23,7 @@ const (
 
 type FittingEachStatWeightProcess4 struct {
 	fitting2.BaseEachStatProcess[*fitting4EachFields]
+	SegmentOnData bool
 }
 
 type fitting4EachFields struct {
@@ -94,6 +95,7 @@ func (fe *FittingEachStatWeightProcess4) launchEachNested() {
 			fields := fitting4EachFields{statType: statType, simType: simType}
 			scaleStat := fe.ScaleStats.GetOrPanic(statType)
 			fields.process.Init(fe.TargetSegmentCount, scaleStat, printer, fe.Timeout)
+			fields.process.segmentOnData = fe.SegmentOnData
 			fields.process.SupplyData(fe.prepareSamples(statType, simType))
 			fe.Each.Put(statType, simType, &fields)
 		}

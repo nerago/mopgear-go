@@ -25,6 +25,7 @@ type LinearBuilder struct {
 	CallbackTypes        []highs.CallbackType
 	FloatOptions         map[string]float64
 	StringOptions        map[string]string
+	IntOptions           map[string]int
 }
 
 func (build *LinearBuilder) Clone() *LinearBuilder {
@@ -52,6 +53,13 @@ func (build *LinearBuilder) AddOptionString(name string, value string) {
 		build.StringOptions = make(map[string]string)
 	}
 	build.StringOptions[name] = value
+}
+
+func (build *LinearBuilder) AddOptionInt(name string, value int) {
+	if build.IntOptions == nil {
+		build.IntOptions = make(map[string]int)
+	}
+	build.IntOptions[name] = value
 }
 
 func (build *LinearBuilder) SetEachTolerance(value float64) {
@@ -246,6 +254,9 @@ func (build *LinearBuilder) configureHighsUtil(solver *highs.Solver, logfile str
 	}
 	for name, value := range build.StringOptions {
 		verifyNoError(solver.SetStringOption(name, value))
+	}
+	for name, value := range build.IntOptions {
+		verifyNoError(solver.SetIntOption(name, value))
 	}
 
 	if build.TimeLimitSeconds != 0 {

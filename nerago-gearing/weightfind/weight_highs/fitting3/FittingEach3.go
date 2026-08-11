@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	c_fitting3_each_threadCount = 8
+	c_fitting3_each_threadCount = 3
 
 	//c_fitting3_minimum_stat_coverage       = 100
 	//c_fitting3_permitted_overlap_fix       = 50
@@ -44,10 +44,10 @@ func (f fitting3EachFields) Results() iter.Seq[util_weight.FittingInterimResult2
 	return slices.Values(f.resultSlice)
 }
 
-func (fe *FittingEachStatWeightProcess3) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
+func (fe *FittingEachStatWeightProcess3) Run(cancel util_async.CancelSignal, tracker *util.TrackProgress) weight_types.WeightResult {
 	util_async.ChainCancel(cancel, &fe.CancelInternal)
 	fe.ChooseScaling()
-	fe.launchEachNested()
+	fe.launchEachNested(tracker)
 	stopwatch := fe.CalcMetrics()
 	if !fe.Failed {
 		weights := fe.BuildResult()
@@ -87,7 +87,7 @@ func (fe *FittingEachStatWeightProcess3) prepareSamples(statType stats.StatType,
 	return samples
 }
 
-func (fe *FittingEachStatWeightProcess3) launchEachNested() {
+func (fe *FittingEachStatWeightProcess3) launchEachNested(tracker *util.TrackProgress) {
 	for _, statType := range fe.RequiredStats {
 		for _, simType := range fe.RequiredSims {
 			printer := util.PrintRecorder_HoldAll()
@@ -99,6 +99,7 @@ func (fe *FittingEachStatWeightProcess3) launchEachNested() {
 		}
 	}
 
+	tracker.RunOuterTracking(fe.Each.Size())
 	channelEach := util_async.SeqToChannel_Cancellable(fe.Each.SeqValues(), &fe.CancelInternal)
 	util_async.ForEach_Channel(c_fitting3_each_threadCount, channelEach, func(fields *fitting3EachFields) {
 		initialResultFuture := fields.process.Run()
@@ -111,6 +112,7 @@ func (fe *FittingEachStatWeightProcess3) launchEachNested() {
 			fe.Failed = true
 			fe.CancelInternal.Cancel()
 		}
+		tracker.NewChild().SetDone()
 	})
 }
 

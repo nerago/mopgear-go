@@ -506,7 +506,7 @@ func statWeights_CompareAlgorithms() {
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(inputDataRandom))
-			futureWeight := ranking.Run(standardTimeout)
+			futureWeight := ranking.Run(standardTimeout, 60) // note restricted data sample
 			return futureWeight.WaitForResultOrNilValue()
 		})
 		addTask("ranking5-1", func() weight_types.WeightResult {
@@ -516,7 +516,7 @@ func statWeights_CompareAlgorithms() {
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(inputDataRandom))
-			futureWeight := ranking.Run(standardTimeout)
+			futureWeight := ranking.Run(standardTimeout, 60) // note restricted data sample
 			return futureWeight.WaitForResultOrNilValue()
 		})
 	}

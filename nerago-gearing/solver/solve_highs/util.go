@@ -1,10 +1,10 @@
 package solve_highs
 
 import (
+	"fmt"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_highs"
-	"strconv"
 )
 
 func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOptionsMap, checkSet func(itemSet *items.SolvableItemSet) (bool, string)) {
@@ -23,6 +23,6 @@ func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOp
 func checkSetRatingIsObjective(solution *util_highs.Solution2, itemSet *items.SolvableItemSet, calcRating func(item *items.SolvableItemSet) float64, ratingScale float64) {
 	checkRating := calcRating(itemSet)
 	if !util.FloatsApproxEquals(solution.Objective()*ratingScale, checkRating) {
-		panic("rating inconsistent " + strconv.FormatFloat(solution.Objective(), 'f', 0, 64) + " " + strconv.FormatFloat(checkRating, 'f', 0, 32))
+		panic(fmt.Sprintf("rating inconsistent %e %e ", solution.Objective(), checkRating))
 	}
 }

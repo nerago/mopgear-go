@@ -30,6 +30,7 @@ const (
 
 type FittingSingleSegmented4 struct {
 	fitting2.BaseSingleSegmented[util_weight.FittingSample3]
+	segmentOnData bool
 }
 
 func (ss *FittingSingleSegmented4) SupplyData(inputData []util_weight.FittingSample3) {
@@ -43,8 +44,11 @@ func (ss *FittingSingleSegmented4) SupplyData(inputData []util_weight.FittingSam
 func (ss *FittingSingleSegmented4) Run() *util_async.FutureCancellable[fitting2.InitialResultSet] {
 	ss.PrepareSegments(false)
 
-	ss.splitInputDataEvenlyBetweenSegments()
-	//ss.splitStatRangeEvenlyBetweenSegments()
+	if ss.segmentOnData {
+		ss.splitInputDataEvenlyBetweenSegments()
+	} else {
+		ss.splitStatRangeEvenlyBetweenSegments()
+	}
 
 	ss.FinishSegments(false)
 	return ss.RunSolve()
@@ -136,18 +140,9 @@ func (ss *FittingSingleSegmented4) validateSample(sample util_weight.FittingSamp
 
 func (ss *FittingSingleSegmented4) prepareAsThreshold(seg1, seg2 *fitting2.SegmentVars, sample util_weight.FittingSample3) {
 	isThreshold := ss.PrepareThresholdColumn(seg1, sample.StatValue)
-	//forceTrue := util_highs.ConstraintRow{}
-	//forceTrue.Add(isThreshold, 1)
-	//forceTrue.Build(ss.Build, 1, 1)
 
 	difference := ss.Build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), c_fitting4_output_thresholdGap, util_highs.DebugString{Text: "difference"})
-	//ss.Build.AbsoluteValueFromSumSeveral_WithToggle(
-	//	[]util_highs.ColumnIndex{seg1.LineSlope, seg1.LineOffset, seg2.LineSlope, seg2.LineOffset},
-	//	[]float64{sample.StatValue, 1, -sample.StatValue, -1},
-	//	0,
-	//	difference,
-	//	"",
-	//)
+
 	ss.Build.AbsoluteValueFromSumSeveral_WithToggle(
 		[]util_highs.ColumnIndex{seg1.LineSlope, seg1.LineOffset, seg2.LineSlope, seg2.LineOffset},
 		[]float64{sample.StatValue, 1, -sample.StatValue, -1},

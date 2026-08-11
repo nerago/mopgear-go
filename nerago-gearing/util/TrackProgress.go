@@ -211,7 +211,7 @@ func (root *trackProgressRoot) printProgress(percent float64) {
 			estimateRemain := root.estimateRemain(now, percent)
 			root.ringBuffer.Write(progressSnapshot{now, percent})
 
-			fmt.Printf("%5.2f%% %s\n", percent*100, estimateRemain)
+			fmt.Printf("Progress %5.2f%% %s\n", percent*100, estimateRemain)
 			root.lastPercent = percent
 		}
 	}
