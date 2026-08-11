@@ -4,6 +4,7 @@ import (
 	"iter"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/multi/multi_types"
+	"paladin_gearing_go/solver/solve_highs_types"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
@@ -21,7 +22,7 @@ type SolverHighsMultiParam struct {
 	Label          string
 	ItemOptions    items.FullOptionsMap
 	RatingMultiply float64
-	SolverModel    SolverModel
+	SolverModel    solve_highs_types.SolverModel
 	singleGearSet  ISingleGearSet
 	solveOptions   items.SolvableOptionsMap
 }

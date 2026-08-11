@@ -4,6 +4,7 @@ import (
 	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/solver/solve_highs"
+	"paladin_gearing_go/solver/solve_highs_types"
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
@@ -22,7 +23,7 @@ type SolveInput struct {
 
 func Solver(input SolveInput) SolveOutput {
 	printer, solveOptions := prepareSolve(input)
-	solveModel := solve_highs.SolverModelBuild(input.Model, input.WeightType)
+	solveModel := solve_highs_types.SolverModelBuild(input.Model, input.WeightType, nil)
 
 	futureSolvedSet := launchSolve(solveOptions, solveModel, printer, input.WeightType)
 	solvedResult := futureSolvedSet.WaitForResultAsOptional()
@@ -30,7 +31,7 @@ func Solver(input SolveInput) SolveOutput {
 	return finaliseSolve(solvedResult, solveOptions, input, printer)
 }
 
-func launchSolve(solveOptions items.SolvableOptionsMap, solveModel *solve_highs.SolverModel, printer *util.PrintRecorder, weightType weight_types.WeightType) *util_async.FutureCancellable[items.SolvableItemSet] {
+func launchSolve(solveOptions items.SolvableOptionsMap, solveModel *solve_highs_types.SolverModel, printer *util.PrintRecorder, weightType weight_types.WeightType) *util_async.FutureCancellable[items.SolvableItemSet] {
 	switch weightType {
 	case 1:
 		return solve_highs.SingleGearSetMain(&solveOptions, solveModel, printer)

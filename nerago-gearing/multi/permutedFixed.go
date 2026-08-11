@@ -2,9 +2,11 @@ package multi
 
 import (
 	"paladin_gearing_go/db"
+	"paladin_gearing_go/gear_model/bonus_set"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/solver/solve_highs"
+	"paladin_gearing_go/solver/solve_highs_types"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_collection"
 	"slices"
@@ -31,11 +33,17 @@ type permuteEntryGems struct {
 	allowAlternates bool
 }
 
+type permuteEntryBonusItems struct {
+	specLabel string
+	bonus     *solve_highs_types.OverrideBonusCounts
+}
+
 type permuteEntry struct {
 	fixed   *permuteEntryFixedForce
 	group   *permuteEntryAllowGroup
 	upgrade *permuteEntryUpgrade
 	gems    *permuteEntryGems
+	bonus   *permuteEntryBonusItems
 }
 
 type permuteOptions struct {
@@ -66,6 +74,11 @@ func (job *MultiSetJob) estimateFixedPermutations() int {
 	}
 	if job.input.ItemInput.AlternateGemsEnableAsPermute {
 		count *= 2
+	}
+	if job.input.ItemInput.PermuteOnItemCountOptions {
+		for _, prep := range job.itemPrep {
+			count *= len(prep.model.BonusRequiredSolve.Options)
+		}
 	}
 	return count
 }
@@ -117,6 +130,20 @@ func (job *MultiSetJob) buildPermutations() <-chan permuteSet {
 		optionEntriesList = append(optionEntriesList, permuteOptions{options: entriesList})
 	}
 
+	if job.input.ItemInput.PermuteOnItemCountOptions {
+		for _, prep := range job.itemPrep {
+			if len(prep.model.BonusRequiredSolve.Options) > 1 {
+				entriesList := util_collection.MapSliceAsNew(prep.model.BonusRequiredSolve.Options, func(cr *bonus_set.ItemCountsRequired) permuteEntry {
+					return permuteEntry{bonus: &permuteEntryBonusItems{
+						specLabel: prep.label,
+						bonus:     &solve_highs_types.OverrideBonusCounts{Specific: *cr},
+					}}
+				})
+				optionEntriesList = append(optionEntriesList, permuteOptions{options: entriesList})
+			}
+		}
+	}
+
 	return permuteAsChannel(optionEntriesList)
 }
 
@@ -155,7 +182,7 @@ func permuteStep(inChannel <-chan permuteSet, options permuteOptions) <-chan per
 }
 
 func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, printer *util.PrintRecorder) []*solve_highs.SolverHighsMultiProcess {
-	itemOptionsEach, permuteLabel := job.processSetupItemOptionsForPermute(permuteSet, printer)
+	itemOptionsEach, overrideBonuses, permuteLabel := job.processSetupItemOptionsForPermute(permuteSet, printer)
 	printer.Printf("PERMUTE SET:\n%s\n", permuteLabel)
 
 	commonOptions := job.determineCommon(itemOptionsEach, job.input.ItemInput.ReforgingAllowNonCommon)
@@ -170,7 +197,7 @@ func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, printe
 			highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
 				Label:          label,
 				ItemOptions:    *itemOptionsEach[label],
-				SolverModel:    *solve_highs.SolverModelBuild(&work.itemPrep.model, weightType),
+				SolverModel:    *solve_highs_types.SolverModelBuild(&work.itemPrep.model, weightType, overrideBonuses[label]),
 				RatingMultiply: work.ratingMultiply,
 			})
 		}
@@ -180,7 +207,9 @@ func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, printe
 	return process
 }
 
-func (job *MultiSetJob) processSetupItemOptionsForPermute(permuteSet permuteSet, printer *util.PrintRecorder) (map[string]*items.FullOptionsMap, string) {
+func (job *MultiSetJob) processSetupItemOptionsForPermute(permuteSet permuteSet, printer *util.PrintRecorder) (map[string]*items.FullOptionsMap, map[string]*solve_highs_types.OverrideBonusCounts, string) {
+	overrideBonusMap := make(map[string]*solve_highs_types.OverrideBonusCounts)
+
 	itemOptionsEach := make(map[string]*items.FullOptionsMap)
 	for _, prep := range job.itemPrep {
 		itemOptionsEach[prep.label] = new(prep.itemOptions.Clone())
@@ -199,6 +228,9 @@ func (job *MultiSetJob) processSetupItemOptionsForPermute(permuteSet permuteSet,
 			job.applyPermuteItemUpgrade(itemId, itemOptionsEach, printer, &strBuild)
 		} else if entry.gems != nil {
 			job.applyPermuteGems(entry.gems, itemOptionsEach, &strBuild)
+		} else if entry.bonus != nil {
+			overrideBonusMap[entry.bonus.specLabel] = entry.bonus.bonus
+			job.logPermuteBonus(entry.bonus, &strBuild)
 		} else {
 			panic("empty entry")
 		}
@@ -208,7 +240,7 @@ func (job *MultiSetJob) processSetupItemOptionsForPermute(permuteSet permuteSet,
 		strBuild.Rewind(3)
 	}
 
-	return itemOptionsEach, strBuild.String()
+	return itemOptionsEach, overrideBonusMap, strBuild.String()
 }
 
 func (job *MultiSetJob) applyPermuteFixed(fixed *permuteEntryFixedForce, itemOptionsEach map[string]*items.FullOptionsMap, strBuild *util.StringBuild2) {
@@ -285,5 +317,12 @@ func (job *MultiSetJob) applyPermuteGems(gems *permuteEntryGems, itemOptionsEach
 	} else {
 		strBuild.WriteString("Original Gems")
 	}
+	strBuild.WriteString(" | ")
+}
+
+func (job *MultiSetJob) logPermuteBonus(bonus *permuteEntryBonusItems, strBuild *util.StringBuild2) {
+	strBuild.WriteString(bonus.specLabel)
+	strBuild.WriteString(": ")
+	bonus.bonus.Specific.AppendString(strBuild)
 	strBuild.WriteString(" | ")
 }

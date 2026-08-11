@@ -4,6 +4,7 @@ import (
 	"iter"
 	"paladin_gearing_go/gear_model/bonus_set"
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/solver/solve_highs_types"
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"strconv"
@@ -93,13 +94,13 @@ func (setup *singleGearSetShared) finishItemsCommon(itemOptions *items.SolvableO
 	}
 }
 
-func (setup *singleGearSetShared) prepareActiveSetCombos(model *SolverModel) {
+func (setup *singleGearSetShared) prepareActiveSetCombos(model *solve_highs_types.SolverModel) {
 	// constrain: exact item count in each active set
 	if model.SetBonusTotalCount > 0 {
 		setup.bonusData = make([]bonusInfo, model.SetBonusTotalCount)
 		for setIndex := range model.SetBonusTotalCount {
 			info := bonusInfo{
-				setIndex:       setBonusIndex(setIndex),
+				setIndex:       solve_highs_types.SetBonusIndex(setIndex),
 				setCountItems:  model.SetBonusCountItems[setIndex],
 				setMultipliers: model.SetBonusMultipliersFlat[setIndex],
 			}
@@ -182,7 +183,7 @@ func (setup *singleGearSetShared) addMainOutputVariable(scaleOutputRating float6
 	setup.allColumns = append(setup.allColumns, &entry)
 }
 
-func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []setBonusRequiredCounts, countMode bonus_set.ItemCountsRequiredMode) {
+func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []solve_highs_types.SetBonusRequiredCounts, countMode bonus_set.ItemCountsRequiredMode) {
 	if len(setBonusRequired) > 0 {
 		if len(setup.bonusData) == 0 {
 			panic("no bonusData to use for addSetNeededCounts")

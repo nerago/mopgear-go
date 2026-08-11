@@ -87,6 +87,18 @@ func (cr ItemCountsRequired) itemsMatchRuleSolveWithMessage(items *items.Solvabl
 	return true
 }
 
+func (cr ItemCountsRequired) AppendString(sb *util.StringBuild2) {
+	sb.WriteRune('(')
+	for set, count := range cr.Pairs() {
+		sb.WriteString(set.name)
+		sb.WriteRune('=')
+		sb.WriteUint8(count)
+		sb.WriteRune(' ')
+	}
+	sb.Rewind(1)
+	sb.WriteRune(')')
+}
+
 func itemCountCorrect(mode ItemCountsRequiredMode, haveCount uint8, needCount uint8) bool {
 	switch mode {
 	case CountMode_Exact:
@@ -126,13 +138,25 @@ func ItemCountsRequiredOptionsForFactory(options ...ItemCountsRequired) ItemCoun
 	}
 }
 
+func ItemCountsRequiredOptionsMake(mode ItemCountsRequiredMode, options ...ItemCountsRequired) ItemCountsRequiredOptions {
+	return ItemCountsRequiredOptions{
+		Mode:    mode,
+		Options: options,
+	}
+}
+
 func (cro ItemCountsRequiredOptions) ItemsMatchAnyRuleSolve(items *items.SolvableEquipMap) (bool, string) {
+	if len(cro.Options) == 0 {
+		return true, ""
+	}
+
 	strBuild := util.StringBuild2{}
 	for _, option := range cro.Options {
 		if option.itemsMatchRuleSolveWithMessage(items, &strBuild, cro.Mode) {
 			return true, ""
 		}
 	}
+
 	return false, strBuild.String()
 }
 

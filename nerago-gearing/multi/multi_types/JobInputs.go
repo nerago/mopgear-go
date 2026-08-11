@@ -26,6 +26,7 @@ type ItemInputShared struct {
 	MinimumExtraItemLevel        uint16
 	AlternateGemsEnableAsPermute bool
 	ReforgingAllowNonCommon      bool
+	PermuteOnItemCountOptions    bool
 }
 
 type DistinctUsageGroups struct {
@@ -191,4 +192,8 @@ func (ji *JobInputs) SetWeightTypes(weightTypeList ...weight_types.WeightType) {
 
 func (ji *JobInputs) SetReforgingAllowNonCommon(reforgingAllowNonCommon bool) {
 	ji.ItemInput.ReforgingAllowNonCommon = reforgingAllowNonCommon
+}
+
+func (ji *JobInputs) EnablePermuteOnItemCountOptions() {
+	ji.ItemInput.PermuteOnItemCountOptions = true
 }

@@ -3,6 +3,7 @@ package solve_highs
 import (
 	"iter"
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/solver/solve_highs_types"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
@@ -24,7 +25,7 @@ const c_gearExtended2ScoreHigh = 10
 // entry_combo_output_weighted(column) * combo.multiply -> mainOutputRow
 // mainOutputRow -> mainOutputVar
 
-func SingleGearSetExtended2Main(itemOptions *items.SolvableOptionsMap, model *SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
+func SingleGearSetExtended2Main(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
 	build := util_highs.LinearBuilder{}
 	build.Solver = util_highs.Solver_MIP_Interior
 
@@ -48,7 +49,7 @@ func SingleGearSetExtended2Main(itemOptions *items.SolvableOptionsMap, model *So
 	})
 }
 
-func makeGearSetExtended2(build *util_highs.LinearBuilder, model *SolverModel, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetExtended2 {
+func makeGearSetExtended2(build *util_highs.LinearBuilder, model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetExtended2 {
 	setup := singleGearSetExtended2{
 		singleGearSetShared: singleGearSetShared{build: build},
 	}

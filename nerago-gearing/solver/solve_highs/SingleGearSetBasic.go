@@ -2,6 +2,7 @@ package solve_highs
 
 import (
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/solver/solve_highs_types"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
@@ -18,7 +19,7 @@ const (
 	c_single_basic_ratings_high_range = 10000000000.0 / c_single_basic_scaled_ratings
 )
 
-func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, model *SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
+func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
 	build := util_highs.LinearBuilder{}
 	build.Solver = util_highs.Solver_MIP_Interior
 
@@ -43,7 +44,7 @@ func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, model *SolverModel
 	})
 }
 
-func makeGearSetBasic(build *util_highs.LinearBuilder, model *SolverModel, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetBasic {
+func makeGearSetBasic(build *util_highs.LinearBuilder, model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetBasic {
 	setup := singleGearSetBasic{singleGearSetShared: singleGearSetShared{build: build}}
 
 	setup.prepareRatingSum()

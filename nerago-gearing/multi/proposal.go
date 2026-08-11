@@ -6,6 +6,7 @@ import (
 	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/setup"
 	"paladin_gearing_go/solver/solve_highs"
+	"paladin_gearing_go/solver/solve_highs_types"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
@@ -117,6 +118,8 @@ func (job *MultiSetJob) checkNoPermutations() {
 		panic("alternate gems always applied, may lead to confusing results")
 	}
 
+	// EnablePermuteOnItemCountOptions don't care, will be checked as normal
+
 	for paramIndex := range job.input.Param {
 		param := &job.input.Param[paramIndex]
 		for _, itemArray := range param.ItemInputs.SemiFixedSlots {
@@ -142,7 +145,7 @@ func (job *MultiSetJob) highProcessSetup(weightType weight_types.WeightType) *so
 		highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
 			Label:          label,
 			ItemOptions:    work.itemPrep.itemOptions,
-			SolverModel:    *solve_highs.SolverModelBuild(&work.itemPrep.model, work.weightType),
+			SolverModel:    *solve_highs_types.SolverModelBuild(&work.itemPrep.model, work.weightType, nil),
 			RatingMultiply: work.ratingMultiply,
 		})
 	}
@@ -172,7 +175,7 @@ func (job *MultiSetJob) highProcessSetupRestrictedOnBaseline(baselineWork *specW
 		highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
 			Label:          label,
 			ItemOptions:    *itemOptionsEach[label],
-			SolverModel:    *solve_highs.SolverModelBuild(&work.itemPrep.model, work.weightType),
+			SolverModel:    *solve_highs_types.SolverModelBuild(&work.itemPrep.model, work.weightType, nil),
 			RatingMultiply: work.ratingMultiply,
 		})
 	}
@@ -232,7 +235,7 @@ func (job *MultiSetJob) makeProposalFromHighs(multiResult solve_highs.HighsMulti
 
 func (job *MultiSetJob) listInitialOutputs(bestOutputs <-chan multi_types.MultiProposedOutput) <-chan multi_types.MultiProposedOutput {
 	return util_async.PeekChannel(bestOutputs, func(prop *multi_types.MultiProposedOutput) {
-		job.printer.Printf("::::::::: PROPOSED %.0f :::::::: %s ::::::::\n", prop.TotalRatingSum, prop.Id)
+		job.printer.Printf("::::::::: PROPOSED %f :::::::: %s ::::::::\n", prop.TotalRatingSum, prop.Id)
 		job.printer.Printf("Weight Type %d\n", prop.WeightType)
 		for label, out := range prop.Parts {
 			prep := job.itemPrep[label]

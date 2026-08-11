@@ -3,6 +3,7 @@ package multi
 import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/solver/solve_highs"
+	"paladin_gearing_go/solver/solve_highs_types"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"sync"
@@ -16,7 +17,7 @@ func (work *specWorking) runCullingProcess(targetNum int64, waitGroup *sync.Wait
 	waitGroup.Go(func() {
 		highCull := solve_highs.OptionsCulling{}
 		solveOptions := items.SolvableOptionsMap_of(&work.itemPrep.itemOptions)
-		solverModel := solve_highs.SolverModelBuild(&work.itemPrep.model, work.weightType)
+		solverModel := solve_highs_types.SolverModelBuild(&work.itemPrep.model, work.weightType, nil)
 		highCull.Init(work.itemPrep.label, targetNum, solveOptions, solverModel, printer)
 
 		resultChannel := highCull.Run(cancel)
