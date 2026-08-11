@@ -28,8 +28,22 @@ func (lst *List[E]) Get(index int) E {
 	return lst.inner[index]
 }
 
-func (lst *List[E]) GetLast() E {
-	return lst.inner[len(lst.inner)-1]
+func (lst *List[E]) GetLast() (E, bool) {
+	if len(lst.inner) > 0 {
+		return lst.inner[len(lst.inner)-1], true
+	} else {
+		var nilValue E
+		return nilValue, false
+	}
+}
+
+func (lst *List[E]) GetFirst() (E, bool) {
+	if len(lst.inner) > 0 {
+		return lst.inner[0], true
+	} else {
+		var nilValue E
+		return nilValue, false
+	}
 }
 
 func (lst *List[E]) ContainsFunc(predicate func(*E) bool) bool {
@@ -90,14 +104,14 @@ func (lst *List[E]) Put(index int, value E) {
 	lst.inner[index] = value
 }
 
-func (lst *List[E]) Append(value E) {
+func (lst *List[E]) AppendLast(value E) {
 	lst.inner = append(lst.inner, value)
 }
 
 func (lst *List[E]) InsertFirst(value E) {
 	n := len(lst.inner)
 	if n == 0 {
-		lst.Append(value)
+		lst.AppendLast(value)
 		return
 	}
 	lst.inner = append(lst.inner, lst.inner[n-1])
@@ -105,16 +119,24 @@ func (lst *List[E]) InsertFirst(value E) {
 	lst.inner[0] = value
 }
 
-func (lst *List[E]) RemoveFirstAndReturn() E {
+func (lst *List[E]) RemoveFirstAndReturn() (E, bool) {
+	if len(lst.inner) == 0 {
+		var nilValue E
+		return nilValue, false
+	}
 	value := lst.inner[0]
 	lst.inner = lst.inner[1:]
-	return value
+	return value, true
 }
 
-func (lst *List[E]) RemoveLastAndReturn() E {
+func (lst *List[E]) RemoveLastAndReturn() (E, bool) {
+	if len(lst.inner) == 0 {
+		var nilValue E
+		return nilValue, false
+	}
 	value := lst.inner[len(lst.inner)-1]
 	lst.inner = lst.inner[0 : len(lst.inner)-1]
-	return value
+	return value, true
 }
 
 func (lst *List[E]) DeleteIndex(index int) {

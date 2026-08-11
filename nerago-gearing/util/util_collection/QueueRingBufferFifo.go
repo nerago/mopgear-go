@@ -6,7 +6,7 @@ type QueueRingBufferFifo[T any] struct {
 	writeIndex int
 }
 
-func QueueRingBufferFifo_Create[T any](allocateSize int) IQueue[T] {
+func QueueRingBufferFifo_Create[T any](allocateSize int) IQueueLite[T] {
 	array := make([]T, allocateSize)
 	return &QueueRingBufferFifo[T]{array: array, readIndex: 0, writeIndex: 0}
 }

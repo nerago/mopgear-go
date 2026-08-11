@@ -34,11 +34,11 @@ func (set *EnumSet[E]) Has(value E) bool {
 	return set.bits.IsSet(uint32(value))
 }
 
-func (set *EnumSet[E]) Add(value E) (wasMember bool) {
+func (set *EnumSet[E]) AddIfMissing(value E) (wasMember bool) {
 	return set.bits.SetReturningOld(uint32(value))
 }
 
-func (set *EnumSet[E]) Delete(value E) {
+func (set *EnumSet[E]) DeleteValue(value E) {
 	set.bits.Clear(uint32(value))
 }
 

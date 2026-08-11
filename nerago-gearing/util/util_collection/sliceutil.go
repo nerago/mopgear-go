@@ -30,6 +30,7 @@ changed:
 	result := make([]T, 0, len(slice)-1)
 	result = append(result, slice[0:a]...)
 outerLoop:
+	// TODO would prefer first instance
 	for a = a + 1; a < len(slice); a++ {
 		for b = a + 1; b < len(slice); b++ {
 			if equals(&slice[a], &slice[b]) {
@@ -184,6 +185,10 @@ func Shuffle[T any](slice []T) {
 }
 
 func DeleteIndexInPlace[T any](slice *[]T, index int) {
+	if index < 0 || index >= len(*slice) {
+		panic("invalid index")
+	}
+
 	var nilValue T
 	if index == 0 {
 		(*slice)[0] = nilValue

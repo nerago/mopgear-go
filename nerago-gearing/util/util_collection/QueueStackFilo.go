@@ -10,7 +10,7 @@ type QueueStackFilo[T any] struct {
 	top   int
 }
 
-func QueueStackFilo_Create[T any](allocateSize int) IQueue[T] {
+func QueueStackFilo_Create[T any](allocateSize int) IQueueLite[T] {
 	array := make([]T, allocateSize)
 	return &QueueStackFilo[T]{array: array, top: 0}
 }

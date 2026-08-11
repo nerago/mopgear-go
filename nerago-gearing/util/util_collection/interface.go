@@ -12,49 +12,85 @@ type IEquatableByElement[T IEquatableByElement[T, E], E any] interface {
 	Equals(other *T, valueEquals func(*E, *E) bool) bool
 }
 
+type ListTraversalEntry[E any] interface {
+	Value() E
+	Index() int
+	Delete()
+}
+
 type ICollection[E any] interface {
 	Clear()
 	Size() int
 	IsEmpty() bool
-}
-
-type ISet[E any] interface {
-	ICollection[E]
-	Has(value E) bool
-	Add(value E) (wasMember bool)
-	Delete(value E)
 	SeqValues() iter.Seq[E]
 }
 
-type IQueue[E any] interface {
+type IQueueLite[E any] interface {
 	ICollection[E]
 	Push(E)
 	Pop() (E, bool)
 }
 
-type IListRead[E any] interface {
+type ICollectionFlatRead[E any] interface {
 	ICollection[E]
-	Get(index int) E
 	ContainsFunc(predicate func(*E) bool) bool
 	ContainsFuncNoPointer(predicate func(E) bool) bool
+}
+
+type ICollectionFlatReadWrite[E any] interface {
+	ICollectionFlatRead[E]
+	FilterFunc(predicate func(*E) bool)
+	FilterFuncNoPointer(predicate func(E) bool)
+	RemoveDuplicatesFunc(equals func(a, b *E) bool)
+}
+
+type ISet[E comparable] interface {
+	ICollectionFlatReadWrite[E]
+	AddIfMissing(value E) (hadValue bool)
+	HasValue(value E) bool
+	DeleteValue(value E) (hadValue bool)
+}
+
+type ICollectionOrderedRead[E any] interface {
+	ICollectionFlatRead[E]
+	GetFirst() (E, bool)
+	GetLast() (E, bool)
+}
+
+type ICollectionOrderedReadWrite[E any] interface {
+	ICollectionOrderedRead[E]
+	ICollectionFlatReadWrite[E]
+	InsertFirst(value E)
+	AppendLast(E)
+	RemoveFirstAndReturn() (E, bool)
+	RemoveLastAndReturn() (E, bool)
+	SeqListTraversalEntry() iter.Seq[ListTraversalEntry[E]]
+}
+
+type IDeque[E any] interface {
+	ICollectionOrderedReadWrite[E]
+	IListRead[E]
+}
+
+type IListRead[E any] interface {
+	ICollectionOrderedRead[E]
+	Get(index int) E
 	SeqIndexAndValues() iter.Seq2[int, E]
-	SeqValues() iter.Seq[E]
 }
 
 type IListSort[E any] interface {
-	ICollection[E]
+	ICollectionFlatReadWrite[E]
 	SortFunc(compare func(*E, *E) int)
 	Shuffle()
 	Swap(indexA, indexB int)
 }
 
 type IListReadWrite[E any] interface {
-	ICollection[E]
+	ICollectionOrderedReadWrite[E]
+	IListRead[E]
 	IListSort[E]
 	Put(index int, value E)
-	Append(E)
 	DeleteIndex(index int)
-	RemoveDuplicatesFunc(equals func(a, b *E) bool)
 }
 
 type IList[E any] interface {
@@ -78,7 +114,6 @@ type IMap[K comparable, V any] interface {
 	Delete(key K)
 	Foreach(apply func(key K, value V))
 	SeqKeyValue() iter.Seq2[K, V]
-	SeqValues() iter.Seq[V]
 	SeqKey() iter.Seq[K]
 	KeySlice() []K
 	ValueSlice() []V
