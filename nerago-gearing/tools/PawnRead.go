@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"paladin_gearing_go/files"
 	"paladin_gearing_go/gear_model/ratings"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/weightfind/weight_types"
@@ -28,15 +29,17 @@ func pawnWeightToBlock(filename string) stats.StatBlockFloat {
 
 func StatRatingsWeightsExtended_ReadFile(filename string) ratings.StatRatingsWeightsExtended {
 	weight1 := weight_types.Weight1Basic_FromBlock(pawnWeightToBlock(filename))
-	weight2, ok2 := ReadWeight2File(filename + ".v2")
+	weight2, _ := ReadWeight2File(files.ToWeight2(filename))
+	weight3, _ := ReadWeight3File(files.ToWeight3(filename))
 
-	if !ok2 || weight1.IsEmpty() || weight2.IsEmpty() {
+	if weight1.IsEmpty() || weight2 == nil || weight2.IsEmpty() {
 		panic("missing weight")
 	}
 
 	return ratings.StatRatingsWeightsExtended{
 		Weight1: weight1,
-		Weight2: *weight2,
+		Weight2: weight2,
+		Weight3: weight3,
 	}
 }
 

@@ -143,11 +143,11 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.Weigh
 		solveModel.Weights1 = &weightExt.Weight1
 		solveModel.WeightsGeneric = &weightExt.Weight1
 	case 2:
-		solveModel.Weights2 = &weightExt.Weight2
-		solveModel.WeightsGeneric = &weightExt.Weight2
+		solveModel.Weights2 = weightExt.Weight2
+		solveModel.WeightsGeneric = weightExt.Weight2
 	case 3:
-		solveModel.Weights3 = &weightExt.Weight3
-		solveModel.WeightsGeneric = &weightExt.Weight3
+		solveModel.Weights3 = weightExt.Weight3
+		solveModel.WeightsGeneric = weightExt.Weight3
 	default:
 		panic("invalid weight number")
 	}

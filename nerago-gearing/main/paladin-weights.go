@@ -26,7 +26,7 @@ func statWeights_updateAll() {
 	process.Init(simSpeed, forceSkipSim, printer)
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Mitigation-NoSet",
-		WeightFileOut:   files.WeightMitiNoSetFile,
+		WeightFile1:     files.WeightMitiNoSetFile,
 		GearFile:        files.GearFileProtMitigationNoSet,
 		Model:           model_factory.Model_PallyProtMitigation_NoSet(),
 		SubstituteItems: substituteItemsProt,
@@ -34,7 +34,7 @@ func statWeights_updateAll() {
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Mitigation-WithSet",
-		WeightFileOut:   files.WeightMitiWithSetFile,
+		WeightFile1:     files.WeightMitiWithSetFile,
 		GearFile:        files.GearFileProtMitigationWithSet,
 		Model:           model_factory.Model_PallyProtMitigation_WithSet(),
 		SubstituteItems: substituteItemsProt,
@@ -42,7 +42,7 @@ func statWeights_updateAll() {
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Damage",
-		WeightFileOut:   files.WeightDpsFile,
+		WeightFile1:     files.WeightDpsFile,
 		GearFile:        files.GearFileProtDps,
 		Model:           model_factory.Model_PallyProtDps(),
 		SubstituteItems: substituteItemsProt,
@@ -50,7 +50,7 @@ func statWeights_updateAll() {
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Compromise",
-		WeightFileOut:   files.WeightCompromiseFile,
+		WeightFile1:     files.WeightCompromiseFile,
 		GearFile:        files.GearFileProtCompromise,
 		Model:           model_factory.Model_PallyProtCompromise(),
 		SubstituteItems: substituteItemsProt,
@@ -58,7 +58,7 @@ func statWeights_updateAll() {
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Heal",
-		WeightFileOut:   files.WeightHealFile,
+		WeightFile1:     files.WeightHealFile,
 		GearFile:        files.GearFileProtHeal,
 		Model:           model_factory.Model_PallyProtHeal(),
 		SubstituteItems: substituteItemsProt,
@@ -66,7 +66,7 @@ func statWeights_updateAll() {
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Ret",
-		WeightFileOut:   files.WeightRetFile,
+		WeightFile1:     files.WeightRetFile,
 		GearFile:        files.GearFileRet,
 		Model:           model_factory.Model_PallyRet(),
 		SubstituteItems: substituteItemsRet,

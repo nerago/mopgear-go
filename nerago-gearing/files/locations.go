@@ -10,21 +10,23 @@ const (
 	ProfileDir    = `profile/`
 	TempPath      = `tempdata/`
 
-	WeightMitiNoSetFile   = `nerago-gearing/files/weight/PaladinProtMitigationNoSet.txt`
-	WeightMitiWithSetFile = `nerago-gearing/files/weight/PaladinProtMitigationWithSet.txt`
-	WeightCompromiseFile  = `nerago-gearing/files/weight/PaladinProtCompromise.txt`
-	WeightDpsFile         = `nerago-gearing/files/weight/PaladinProtDps.txt`
-	WeightHealFile        = `nerago-gearing/files/weight/PaladinProtHeal.txt`
-	WeightRetFile         = `nerago-gearing/files/weight/PaladinRet.txt`
+	WeightPath            = `../paladin_gearing_weights/paladin-weight/`
+	WeightMitiNoSetFile   = WeightPath + `PaladinProtMitigationNoSet.txt`
+	WeightMitiWithSetFile = WeightPath + `PaladinProtMitigationWithSet.txt`
+	WeightCompromiseFile  = WeightPath + `PaladinProtCompromise.txt`
+	WeightDpsFile         = WeightPath + `PaladinProtDps.txt`
+	WeightHealFile        = WeightPath + `PaladinProtHeal.txt`
+	WeightRetFile         = WeightPath + `PaladinRet.txt`
 
-	BagsFilename = `nerago-gearing/files/gear/bags-gear.json`
+	GearPath     = `../paladin_gearing_weights/paladin-gear/`
+	BagsFilename = GearPath + `bags-gear.json`
 
-	GearFileProtMitigationWithSet = `nerago-gearing/files/gear/gear-prot-miti-set.json`
-	GearFileProtMitigationNoSet   = `nerago-gearing/files/gear/gear-prot-miti-noset.json`
-	GearFileProtCompromise        = `nerago-gearing/files/gear/gear-prot-compromise.json`
-	GearFileProtDps               = `nerago-gearing/files/gear/gear-prot-dps.json`
-	GearFileProtHeal              = `nerago-gearing/files/gear/gear-prot-heal.json`
-	GearFileRet                   = `nerago-gearing/files/gear/gear-ret.json`
+	GearFileProtMitigationWithSet = GearPath + `gear-prot-miti-set.json`
+	GearFileProtMitigationNoSet   = GearPath + `gear-prot-miti-noset.json`
+	GearFileProtCompromise        = GearPath + `gear-prot-compromise.json`
+	GearFileProtDps               = GearPath + `gear-prot-dps.json`
+	GearFileProtHeal              = GearPath + `gear-prot-heal.json`
+	GearFileRet                   = GearPath + `gear-ret.json`
 
 	SimProtHorridon   = `nerago-gearing/files/cli/example-prot-horridon.json`
 	SimProtJuggernaut = `nerago-gearing/files/cli/example-prot-juggernaut.json`
@@ -51,4 +53,11 @@ func SimFileFor(spec stats.SpecType, fight stats.WowSim_Fight) string {
 	default:
 		panic("spec not supported")
 	}
+}
+
+func ToWeight2(base string) string {
+	return base + ".v2"
+}
+func ToWeight3(base string) string {
+	return base + ".v3"
 }
