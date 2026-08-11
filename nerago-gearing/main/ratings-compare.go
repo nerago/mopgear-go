@@ -25,7 +25,7 @@ import (
 func statWeights_CompareAlgorithms() {
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "statWeights_CompareAlgorithms")
 
-	targetRatio := model_factory.SimPriority_withSet
+	targetRatio := model_factory.SimPriority_survival
 	//targetRatio := model_factory.SimPriority_generalMiti
 	//targetRatio := gear_model.SimPriority_heal
 	requiredStats := model_factory.StatsForWeighting_strengthTank

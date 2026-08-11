@@ -12,25 +12,26 @@ const setNameT16Prot = "Plate of Winged Triumph"
 const setNameT15Ret = "Battlegear of the Lightning Emperor"
 const setNameT16Ret = "Battlegear of Winged Triumph"
 
-var BonusItems_ZeroAll = bonus_set.ItemCountsRequiredMake(
+//var BonusItems_ZeroAll = bonus_set.ItemCountsRequiredMake(
+//	setNameT16Prot, 0,
+//	setNameT15Prot, 0,
+//	setNameT15Ret, 0,
+//	setNameT16Ret, 0,
+//)
+
+var BonusItems_ProtZero = bonus_set.ItemCountsRequiredMake(
 	setNameT16Prot, 0,
 	setNameT15Prot, 0,
-	setNameT15Ret, 0,
-	setNameT16Ret, 0,
 )
 
 var BonusItems_Prot15_2pcOnly = bonus_set.ItemCountsRequiredMake(
 	setNameT16Prot, 0,
 	setNameT15Prot, 2,
-	setNameT15Ret, 0,
-	setNameT16Ret, 0,
 )
 
 var BonusItems_Prot16_2pcOnly = bonus_set.ItemCountsRequiredMake(
 	setNameT16Prot, 2,
 	setNameT15Prot, 0,
-	setNameT15Ret, 0,
-	setNameT16Ret, 0,
 )
 
 var BonusItems_Prot16_4pc = bonus_set.ItemCountsRequiredMake(
@@ -48,7 +49,7 @@ var BonusItems_Ret15_Ret16_2pcEach = bonus_set.ItemCountsRequiredMake(
 )
 
 // for noset - juggernaut, shamans, siegecrafter
-var SimPriority_generalMiti = weight_types.SimPriorityBasic_Make(
+var SimPriority_mitigation = weight_types.SimPriorityBasic_Make(
 	stats.Sim_DPS, 0.2,
 	stats.Sim_DEATH, 0.1,
 	stats.Sim_TMI, 0.3,
@@ -56,7 +57,7 @@ var SimPriority_generalMiti = weight_types.SimPriorityBasic_Make(
 )
 
 // for withset - malkrok, thok, nazgrim
-var SimPriority_withSet = weight_types.SimPriorityBasic_Make(
+var SimPriority_survival = weight_types.SimPriorityBasic_Make(
 	stats.Sim_DPS, 0.01,
 	stats.Sim_DEATH, 0.35,
 	stats.Sim_TMI, 0.09,
@@ -64,7 +65,7 @@ var SimPriority_withSet = weight_types.SimPriorityBasic_Make(
 )
 
 // for compromise set - spoils, galakras, paragons, etc
-var SimPriority_compromise = weight_types.SimPriorityBasic_Make(
+var SimPriority_balanced = weight_types.SimPriorityBasic_Make(
 	stats.Sim_DPS, 0.40,
 	stats.Sim_DEATH, 0.15,
 	stats.Sim_TMI, 0.30,

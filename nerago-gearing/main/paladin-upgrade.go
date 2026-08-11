@@ -63,8 +63,8 @@ var ignoredItems = []items.ItemId{
 func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
 	simRunSize := simulate.RunSize_QuickDirty
 	goal := stats.OptimiseGoal_Dps
-	model := model_factory.Model_PallyProtDps()
-	gearFile := files.GearFileProtDps
+	model := model_factory.Model_PallyProtDamage()
+	gearFile := files.GearFileProtDamage
 	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
 	upgradeItems := loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic)
 	input := upgrades.FindUpgrades_SimInputs{
@@ -82,8 +82,8 @@ func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
 func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 	simRunSize := simulate.RunSize_QuickDirty
 	goal := stats.OptimiseGoal_Mitigation
-	model := model_factory.Model_PallyProtMitigation_WithSet()
-	gearFile := files.GearFileProtMitigationWithSet
+	model := model_factory.Model_PallyProtSurvival()
+	gearFile := files.GearFileProtSurvival
 	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
 	// upgradeItems := loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic)
 	upgradeItems := []loaders.ItemFoundRef{{ItemId: 96436, UpgradeLevel: 2}} // tortos shell heroic
@@ -102,8 +102,8 @@ func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 	simRunSize := simulate.RunSize_QuickDirty
 	goal := stats.OptimiseGoal_Mitigation
-	model := model_factory.Model_PallyProtMitigation_WithSet()
-	gearFile := files.GearFileProtMitigationWithSet
+	model := model_factory.Model_PallyProtSurvival()
+	gearFile := files.GearFileProtSurvival
 	upgradeItems := loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Normal)
 	// upgradeItems := loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic)
 	input := upgrades.FindUpgrades_SimInputs{
@@ -194,32 +194,32 @@ func findUpgrades_Paladin() {
 		Specs: []upgrades.FindUpgrades_Spec{
 			{
 				Label:                   "dps",
-				Model:                   model_factory.Model_PallyProtDps(),
-				GearFile:                files.GearFileProtDps,
+				Model:                   model_factory.Model_PallyProtDamage(),
+				GearFile:                files.GearFileProtDamage,
 				ItemFinder:              finder,
 				SubstituteItems:         substituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
 				Label:                   "compromise",
-				Model:                   model_factory.Model_PallyProtCompromise(),
-				GearFile:                files.GearFileProtCompromise,
+				Model:                   model_factory.Model_PallyProtBalanced(),
+				GearFile:                files.GearFileProtBalanced,
 				ItemFinder:              finder,
 				SubstituteItems:         substituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
 				Label:                   "mit_noset",
-				Model:                   model_factory.Model_PallyProtMitigation_NoSet(),
-				GearFile:                files.GearFileProtMitigationNoSet,
+				Model:                   model_factory.Model_PallyProtMitigation(),
+				GearFile:                files.GearFileProtMitigation,
 				ItemFinder:              finder,
 				SubstituteItems:         substituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
 				Label:                   "mit_set",
-				Model:                   model_factory.Model_PallyProtMitigation_WithSet(),
-				GearFile:                files.GearFileProtMitigationWithSet,
+				Model:                   model_factory.Model_PallyProtSurvival(),
+				GearFile:                files.GearFileProtSurvival,
 				ItemFinder:              finder,
 				SubstituteItems:         substituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,

@@ -25,8 +25,8 @@ import (
 )
 
 func basicReforge(printer *util.PrintRecorder) {
-	model2 := model_factory.Model_PallyProtMitigation_WithSet()
-	itemOptions, model := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationWithSet, &model2, setup.MissingEnchant_Panic, printer), model2
+	model2 := model_factory.Model_PallyProtSurvival()
+	itemOptions, model := setup.OptionsSetup_FromGearFile(files.GearFileProtSurvival, &model2, setup.MissingEnchant_Panic, printer), model2
 
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions: &itemOptions,
@@ -36,9 +36,9 @@ func basicReforge(printer *util.PrintRecorder) {
 }
 
 func findBestSubjectToCommon(printer *util.PrintRecorder) {
-	model := model_factory.Model_PallyProtMitigation_WithSet()
+	model := model_factory.Model_PallyProtSurvival()
 
-	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationWithSet, &model, setup.MissingEnchant_Panic, printer)
+	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtSurvival, &model, setup.MissingEnchant_Panic, printer)
 
 	for _, itemId := range substituteItemsProt {
 		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
@@ -47,9 +47,9 @@ func findBestSubjectToCommon(printer *util.PrintRecorder) {
 
 	common := commonComboCurrent()
 	addGearFileToCommon(common, files.GearFileRet, &model, printer)
-	addGearFileToCommon(common, files.GearFileProtCompromise, &model, printer)
-	addGearFileToCommon(common, files.GearFileProtDps, &model, printer)
-	addGearFileToCommon(common, files.GearFileProtMitigationNoSet, &model, printer)
+	addGearFileToCommon(common, files.GearFileProtBalanced, &model, printer)
+	addGearFileToCommon(common, files.GearFileProtDamage, &model, printer)
+	addGearFileToCommon(common, files.GearFileProtMitigation, &model, printer)
 	restrictOptionsToCommon(common, &itemOptions)
 
 	restrictSlotToId(&itemOptions, items.Equip_Ring1, 96481)
@@ -69,8 +69,8 @@ func testSim(printer *util.PrintRecorder) {
 }
 
 func testSimA(printer *util.PrintRecorder) {
-	model := model_factory.Model_PallyProtDps()
-	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtDps, &model, setup.MissingEnchant_Panic, printer)
+	model := model_factory.Model_PallyProtDamage()
+	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtDamage, &model, setup.MissingEnchant_Panic, printer)
 	// itemOptionsMit := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigation, &model, setup.MissingEnchant_Panic, printer)
 	// itemOptions[items.Equip_Trinket2] = itemOptionsMit[items.Equip_Trinket2]
 	output := solver.Solver(solver.SolveInput{
@@ -82,8 +82,8 @@ func testSimA(printer *util.PrintRecorder) {
 	resultStats.Print(printer)
 }
 func testSimB(printer *util.PrintRecorder) {
-	model := model_factory.Model_PallyProtMitigation_WithSet()
-	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigationWithSet, &model, setup.MissingEnchant_Panic, printer)
+	model := model_factory.Model_PallyProtSurvival()
+	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtSurvival, &model, setup.MissingEnchant_Panic, printer)
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions: &itemOptions,
 		Model:       &model,
@@ -93,7 +93,7 @@ func testSimB(printer *util.PrintRecorder) {
 	resultStats.Print(printer)
 }
 func testSimEach(printer *util.PrintRecorder) {
-	modelList := []gear_model.SpecModel{model_factory.Model_PallyProtDps(), model_factory.Model_PallyProtCompromise(), model_factory.Model_PallyProtMitigation_NoSet(), model_factory.Model_PallyProtMitigation_WithSet(), model_factory.Model_PallyProtHeal()}
+	modelList := []gear_model.SpecModel{model_factory.Model_PallyProtDamage(), model_factory.Model_PallyProtBalanced(), model_factory.Model_PallyProtMitigation(), model_factory.Model_PallyProtSurvival(), model_factory.Model_PallyProtHeal()}
 	for model := range util_collection.ForPointer(modelList) {
 		equipped := loaders.GearFileReader_Read(model.ReferenceGearFile)
 		equipSet := setup.OptionsSetup_ExactEquippedOnly(equipped, model, setup.MissingEnchant_Fix, util.PrintRecorder_Nop())
@@ -111,8 +111,8 @@ func testSimEach(printer *util.PrintRecorder) {
 }
 
 func findSimpleUpgrade(printer *util.PrintRecorder) {
-	model := model_factory.Model_PallyProtMitigation_NoSet()
-	gearFile := files.GearFileProtMitigationNoSet
+	model := model_factory.Model_PallyProtMitigation()
+	gearFile := files.GearFileProtMitigation
 	//model := model.Model_PallyProtCompromise()
 	//gearFile := files.GearFileProtCompromise
 
@@ -126,10 +126,10 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 
 	common := commonComboCurrent()
 	addGearFileToCommon(common, files.GearFileRet, &model, printer)
-	addGearFileToCommon(common, files.GearFileProtDps, &model, printer)
-	addGearFileToCommon(common, files.GearFileProtCompromise, &model, printer)
-	addGearFileToCommon(common, files.GearFileProtMitigationWithSet, &model, printer)
-	addGearFileToCommon(common, files.GearFileProtMitigationNoSet, &model, printer)
+	addGearFileToCommon(common, files.GearFileProtDamage, &model, printer)
+	addGearFileToCommon(common, files.GearFileProtBalanced, &model, printer)
+	addGearFileToCommon(common, files.GearFileProtSurvival, &model, printer)
+	addGearFileToCommon(common, files.GearFileProtMitigation, &model, printer)
 	//restrictOptionsToCommon(common, &itemOptions)
 
 	addItems := []items.ItemId{95038, 95003, 95022, 95002, 95023}
@@ -162,8 +162,8 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 	simSize := simulate.RunSize_QuickDirty
 
 	// model := model.Model_PallyProtMitigation_NoSet()
-	model := model_factory.Model_PallyProtMitigation_WithSet()
-	startGear := files.GearFileProtMitigationWithSet
+	model := model_factory.Model_PallyProtSurvival()
+	startGear := files.GearFileProtSurvival
 
 	printer.Println("READ existing")
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &model, setup.MissingEnchant_Panic, printer)
@@ -180,9 +180,9 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 	printer.Println("RESTRICT ret")
 	addGearFileToCommon(common, files.GearFileRet, &model, printer)
 	printer.Println("RESTRICT dps")
-	addGearFileToCommon(common, files.GearFileProtDps, &model, printer)
+	addGearFileToCommon(common, files.GearFileProtDamage, &model, printer)
 	printer.Println("RESTRICT mitset")
-	addGearFileToCommon(common, files.GearFileProtMitigationNoSet, &model, printer)
+	addGearFileToCommon(common, files.GearFileProtMitigation, &model, printer)
 	restrictOptionsToCommon(common, &itemOptionsShared)
 
 	restrictSlotToId(&itemOptionsShared, items.Equip_Ring1, 96481)
@@ -276,24 +276,24 @@ func trinketSims(printer *util.PrintRecorder) {
 	groups := []group{
 		{
 			"with_set",
-			model_factory.Model_PallyProtMitigation_WithSet(),
-			files.GearFileProtMitigationWithSet,
+			model_factory.Model_PallyProtSurvival(),
+			files.GearFileProtSurvival,
 		}, {
 			"no_set",
-			model_factory.Model_PallyProtMitigation_NoSet(),
-			files.GearFileProtMitigationNoSet,
+			model_factory.Model_PallyProtMitigation(),
+			files.GearFileProtMitigation,
 		}, {
 			"compromise",
-			model_factory.Model_PallyProtCompromise(),
-			files.GearFileProtCompromise,
+			model_factory.Model_PallyProtBalanced(),
+			files.GearFileProtBalanced,
 		}, {
 			"dps",
-			model_factory.Model_PallyProtDps(),
-			files.GearFileProtDps,
+			model_factory.Model_PallyProtDamage(),
+			files.GearFileProtDamage,
 		}, {
 			"ret",
-			model_factory.Model_PallyProtDps(),
-			files.GearFileProtDps,
+			model_factory.Model_PallyProtDamage(),
+			files.GearFileProtDamage,
 		},
 	}
 
@@ -399,21 +399,21 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		},
 		{
 			"with_set",
-			model_factory.Model_PallyProtMitigation_WithSet(),
-			files.GearFileProtMitigationWithSet,
+			model_factory.Model_PallyProtSurvival(),
+			files.GearFileProtSurvival,
 		}, {
 			"no_set",
-			model_factory.Model_PallyProtMitigation_NoSet(),
-			files.GearFileProtMitigationNoSet,
+			model_factory.Model_PallyProtMitigation(),
+			files.GearFileProtMitigation,
 		},
 		{
 			"compromise",
-			model_factory.Model_PallyProtCompromise(),
-			files.GearFileProtCompromise,
+			model_factory.Model_PallyProtBalanced(),
+			files.GearFileProtBalanced,
 		}, {
 			"dps",
-			model_factory.Model_PallyProtDps(),
-			files.GearFileProtDps,
+			model_factory.Model_PallyProtDamage(),
+			files.GearFileProtDamage,
 		},
 		{
 			"ret",
@@ -510,21 +510,21 @@ func currentSimGear(printer *util.PrintRecorder) {
 		},
 		{
 			"with_set",
-			model_factory.Model_PallyProtMitigation_WithSet(),
-			files.GearFileProtMitigationWithSet,
+			model_factory.Model_PallyProtSurvival(),
+			files.GearFileProtSurvival,
 		}, {
 			"no_set",
-			model_factory.Model_PallyProtMitigation_NoSet(),
-			files.GearFileProtMitigationNoSet,
+			model_factory.Model_PallyProtMitigation(),
+			files.GearFileProtMitigation,
 		},
 		{
 			"compromise",
-			model_factory.Model_PallyProtCompromise(),
-			files.GearFileProtCompromise,
+			model_factory.Model_PallyProtBalanced(),
+			files.GearFileProtBalanced,
 		}, {
 			"dps",
-			model_factory.Model_PallyProtDps(),
-			files.GearFileProtDps,
+			model_factory.Model_PallyProtDamage(),
+			files.GearFileProtDamage,
 		},
 		//{
 		//	"ret",
@@ -597,21 +597,21 @@ func basicListRatingEach(printer *util.PrintRecorder) {
 			files.GearFileRet,
 		}, {
 			"dps",
-			model_factory.Model_PallyProtDps(),
-			files.GearFileProtDps,
+			model_factory.Model_PallyProtDamage(),
+			files.GearFileProtDamage,
 		}, {
 			"compromise",
-			model_factory.Model_PallyProtCompromise(),
-			files.GearFileProtCompromise,
+			model_factory.Model_PallyProtBalanced(),
+			files.GearFileProtBalanced,
 		}, {
 			"no_set",
-			model_factory.Model_PallyProtMitigation_NoSet(),
-			files.GearFileProtMitigationNoSet,
+			model_factory.Model_PallyProtMitigation(),
+			files.GearFileProtMitigation,
 		},
 		{
 			"with_set",
-			model_factory.Model_PallyProtMitigation_WithSet(),
-			files.GearFileProtMitigationWithSet,
+			model_factory.Model_PallyProtSurvival(),
+			files.GearFileProtSurvival,
 		},
 	}
 
@@ -649,21 +649,21 @@ func solveForRatings(printer *util.PrintRecorder) {
 			files.GearFileRet,
 		}, {
 			"dps",
-			model_factory.Model_PallyProtDps(),
-			files.GearFileProtDps,
+			model_factory.Model_PallyProtDamage(),
+			files.GearFileProtDamage,
 		}, {
 			"compromise",
-			model_factory.Model_PallyProtCompromise(),
-			files.GearFileProtCompromise,
+			model_factory.Model_PallyProtBalanced(),
+			files.GearFileProtBalanced,
 		}, {
 			"no_set",
-			model_factory.Model_PallyProtMitigation_NoSet(),
-			files.GearFileProtMitigationNoSet,
+			model_factory.Model_PallyProtMitigation(),
+			files.GearFileProtMitigation,
 		},
 		{
 			"with_set",
-			model_factory.Model_PallyProtMitigation_WithSet(),
-			files.GearFileProtMitigationWithSet,
+			model_factory.Model_PallyProtSurvival(),
+			files.GearFileProtSurvival,
 		},
 	}
 
@@ -694,8 +694,8 @@ func determineSetBonusValueBySim() {
 	//runSize := simulate.RunSize_QuickDirty
 	//optionCount := 10
 	runSize := simulate.RunSize_Largish
-	optionCount := 128
-	//optionCount := 50
+	//optionCount := 128
+	optionCount := 64
 
 	//goal02 := stats.OptimiseGoal_Mitigation
 	goal02 := stats.OptimiseGoal_Dps
@@ -718,14 +718,14 @@ func determineSetBonusValueBySim() {
 
 	gearFile := files.GearFileRet
 	model := model_factory.Model_PallyRet()
-	model.BonusEnabled = bonus_set.SpecSetsEnableNamed("Battlegear of Winged Triumph", "Battlegear of the Lightning Emperor")
+	model.BonusEnabled = bonus_set.SpecSetsEnableNamed(&model.SimPriority, "Battlegear of Winged Triumph", "Battlegear of the Lightning Emperor")
 	model.BonusRequiredSolve = bonus_set.ItemCountsRequiredOptions{
 		Mode:    bonus_set.CountMode_Exact,
-		Options: []bonus_set.ItemCountsRequired{model_factory.BonusItems_ZeroAll},
+		Options: []bonus_set.ItemCountsRequired{model_factory.BonusItems_ProtZero},
 	}
 	model.BonusRequiredWeight = nil
 
-	initialSets, _ := weightfind.GenerateRandomSets(gearFile, substituteItemsRet, &model, optionCount, printer, "", false)
+	initialSets, itemOptions := weightfind.GenerateRandomSets(gearFile, substituteItemsRet, &model, optionCount, printer, "", false)
 	//initialSets, itemOptions := weightfind.GenerateRandomSets(gearFile, substituteItemsProt, &model, optionCount, printer, "")
 
 	//T16 prot
@@ -743,20 +743,20 @@ func determineSetBonusValueBySim() {
 	//	itemOptions.FindItemIdFirst(96667), // prot tier15 leg heroic, had removed in multi
 	//}
 	//T15 ret
-	setItems := []*items.FullItem{
-		// not sure which heroics owned apart from this first
-		setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults_NoForges(96658, 2, items.NO_RANDOM_SUFFIX, &model, printer),
-		setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults_NoForges(96654, 2, items.NO_RANDOM_SUFFIX, &model, printer),
-		setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults_NoForges(96655, 2, items.NO_RANDOM_SUFFIX, &model, printer),
-		setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults_NoForges(96656, 2, items.NO_RANDOM_SUFFIX, &model, printer),
-	}
-	//T16 ret
 	//setItems := []*items.FullItem{
-	//	itemOptions.FindItemIdFirst(99052),
-	//	itemOptions.FindItemIdFirst(99002),
-	//	itemOptions.FindItemIdFirst(98986),
-	//	itemOptions.FindItemIdFirst(98987),
+	//	// not sure which heroics owned apart from this first
+	//	setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults_NoForges(96658, 2, items.NO_RANDOM_SUFFIX, &model, printer),
+	//	setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults_NoForges(96654, 2, items.NO_RANDOM_SUFFIX, &model, printer),
+	//	setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults_NoForges(96655, 2, items.NO_RANDOM_SUFFIX, &model, printer),
+	//	setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults_NoForges(96656, 2, items.NO_RANDOM_SUFFIX, &model, printer),
 	//}
+	//T16 ret
+	setItems := []*items.FullItem{
+		itemOptions.FindItemIdFirst(99052),
+		itemOptions.FindItemIdFirst(99002),
+		itemOptions.FindItemIdFirst(98986),
+		itemOptions.FindItemIdFirst(98987),
+	}
 	preparedSetGroups := util_collection.MapSliceAsNew(initialSets, func(itemSet *items.FullItemSet) standardisedItemSetGroup {
 		if model.BonusEnabled.CountInAnySet(itemSet.Items()) != 0 {
 			panic("not zero")
@@ -865,13 +865,13 @@ func determineBestUseOfGearSets() {
 	profession := gear_model.ProfessionInfo{IsBlacksmith: true, IsEngineer: true}
 	substitutes := substituteItemsProt
 
-	gearFile := files.GearFileProtMitigationNoSet
-	model := model_factory.Model_PallyProtMitigation_NoSet()
-	model.BonusEnabled = bonus_set.SpecSetsEnableNamed("Plate of the Lightning Emperor", "Plate of Winged Triumph", "Battlegear of the Lightning Emperor", "Battlegear of Winged Triumph")
+	gearFile := files.GearFileProtMitigation
+	model := model_factory.Model_PallyProtMitigation()
+	model.BonusEnabled = bonus_set.SpecSetsEnableNamed(&model.SimPriority, "Plate of the Lightning Emperor", "Plate of Winged Triumph", "Battlegear of the Lightning Emperor", "Battlegear of Winged Triumph")
 	model.StatWeights = tools.StatRatingsWeights_ReadFile(files.WeightHealFile)
 
 	bonusCombos := []bonus_set.ItemCountsRequired{
-		model_factory.BonusItems_ZeroAll,
+		model_factory.BonusItems_ProtZero,
 		model_factory.BonusItems_Prot15_2pcOnly,
 		model_factory.BonusItems_Prot16_2pcOnly,
 		model_factory.BonusItems_Prot16_4pc,

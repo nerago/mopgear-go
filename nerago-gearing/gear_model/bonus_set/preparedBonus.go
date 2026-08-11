@@ -2,6 +2,7 @@ package bonus_set
 
 import (
 	"paladin_gearing_go/stats"
+	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 )
 
@@ -55,4 +56,27 @@ func (pb *PreparedBonus) BonusByCount() BonusByCountFlat {
 
 func (pb *PreparedBonus) BonusByCountBySim() BonusByCountBySim {
 	return pb.simBonus
+}
+
+func (pb *PreparedBonus) deriveUpgradedFlatBonus(priority *weight_types.SimPriorityBasic) {
+	for i := range pb.simBonus {
+		bonusMap := pb.simBonus[i]
+		if bonusMap != nil {
+			sum := pb.deriveUpgradedFlatBonusSingle(pb.simBonus[i], priority)
+			if sum != 0 {
+				pb.flatBonus[i] = sum
+			}
+		}
+	}
+}
+
+func (pb *PreparedBonus) deriveUpgradedFlatBonusSingle(bonusMap *stats.SimTypeMap[float64], priority *weight_types.SimPriorityBasic) float64 {
+	sum := 0.0
+	for simType, bonus := range bonusMap.SeqKeyValue() {
+		ratio, hasRatio := priority.Get(simType)
+		if hasRatio {
+			sum += ratio * bonus
+		}
+	}
+	return sum
 }

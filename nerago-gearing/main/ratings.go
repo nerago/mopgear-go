@@ -53,8 +53,8 @@ func testBasicStatsGeneral(printer *util.PrintRecorder) {
 
 	fight := stats.Fight_Horridon_LowHeal
 	spec := stats.Spec_PaladinProt
-	startGear := files.GearFileProtMitigationWithSet
-	modelEquipOnly := model_factory.Model_PallyProtMitigation_WithSet()
+	startGear := files.GearFileProtSurvival
+	modelEquipOnly := model_factory.Model_PallyProtSurvival()
 	targetRatio := modelEquipOnly.SimPriority
 	goal := stats.OptimiseGoal_Mitigation
 
@@ -152,7 +152,7 @@ func statWeightsFormula(printer *util.PrintRecorder) {
 
 	comp.Init(printer)
 	comp.SetRequiredStats(model_factory.StatsForWeighting_strengthTank)
-	comp.SetTargetRatios(model_factory.SimPriority_generalMiti)
+	comp.SetTargetRatios(model_factory.SimPriority_mitigation)
 	comp.SetMinimumIncludeRate(1.0)
 	comp.SupplyData(filteredInput)
 	weightResult := comp.Run(3000).WaitForResultOrPanic()
@@ -215,7 +215,7 @@ func statWeightsRanking3b(printer *util.PrintRecorder) {
 
 	statList := model_factory.StatsForWeighting_strengthTank
 	//ratio := model_factory.SimPriority_heal
-	ratio := model_factory.SimPriority_generalMiti
+	ratio := model_factory.SimPriority_mitigation
 
 	ranking := weight_highs.RankingStatWeightProcess3c{}
 	//ranking := weight_highs.RankingStatWeightProcess3b{}
@@ -241,7 +241,7 @@ func statWeightsRanking3b(printer *util.PrintRecorder) {
 
 func statWeightsCustom(printer *util.PrintRecorder) {
 	// weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
-	targetRatio := model_factory.SimPriority_generalMiti
+	targetRatio := model_factory.SimPriority_mitigation
 	weightStats := model_factory.StatsForWeighting_strengthTank
 
 	//inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
@@ -330,7 +330,7 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 }
 
 func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
-	targetRatio := model_factory.SimPriority_generalMiti
+	targetRatio := model_factory.SimPriority_mitigation
 	requiredStats := model_factory.StatsForWeighting_strengthTank
 	simTypes := targetRatio.SimTypes()
 
@@ -705,7 +705,7 @@ func statWeightsFitting3eachProper(printer *util.PrintRecorder) {
 	//weightInputs = weightInputs[0:30]
 	simTypes := model_factory.SimPriority_heal.SimTypes()
 	statTypes := model_factory.StatsForWeighting_strengthTank
-	targetRatio := model_factory.SimPriority_generalMiti
+	targetRatio := model_factory.SimPriority_mitigation
 
 	notes := make([]string, 0)
 
@@ -770,7 +770,7 @@ func statWeightsFitting1eachProper(printer *util.PrintRecorder) {
 	weightInputs := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Mitigation-WithSet.json")
 	//weightInputs = weightInputs[0:10]
 	statTypes := model_factory.StatsForWeighting_strengthTank
-	targetRatio := model_factory.SimPriority_withSet
+	targetRatio := model_factory.SimPriority_survival
 	simTypes := targetRatio.SimTypes()
 
 	fitting := fitting1.FittingEachStatWeightProcess{}
@@ -988,7 +988,7 @@ func statWeightsGrid1Orig(printer *util.PrintRecorder) {
 	//inputData := SliceSampleRandom(inputDataFull, 30)
 	inputData := inputDataGrid
 
-	targetRatio := model_factory.SimPriority_generalMiti
+	targetRatio := model_factory.SimPriority_mitigation
 	//targetRatio := model_factory.SimPriority_dps
 	requiredStats := model_factory.StatsForWeighting_strengthTank
 	simTypes := targetRatio.SimTypes()
@@ -1134,7 +1134,7 @@ func statWeightsGrid1b(printer *util.PrintRecorder) {
 	//inputData := SliceSampleRandom(inputDataFull, 30)
 	inputData := inputDataGrid
 
-	targetRatio := model_factory.SimPriority_generalMiti
+	targetRatio := model_factory.SimPriority_mitigation
 	//targetRatio := model_factory.SimPriority_dps
 	requiredStats := model_factory.StatsForWeighting_strengthTank
 	simTypes := targetRatio.SimTypes()

@@ -10,23 +10,23 @@ const (
 	ProfileDir    = `profile/`
 	TempPath      = `tempdata/`
 
-	WeightPath            = `../paladin_gearing_weights/paladin-weight/`
-	WeightMitiNoSetFile   = WeightPath + `PaladinProtMitigationNoSet.txt`
-	WeightMitiWithSetFile = WeightPath + `PaladinProtMitigationWithSet.txt`
-	WeightCompromiseFile  = WeightPath + `PaladinProtCompromise.txt`
-	WeightDpsFile         = WeightPath + `PaladinProtDps.txt`
-	WeightHealFile        = WeightPath + `PaladinProtHeal.txt`
-	WeightRetFile         = WeightPath + `PaladinRet.txt`
+	WeightPath           = `../paladin_gearing_weights/paladin-weight/`
+	WeightMitigationFile = WeightPath + `PaladinProtMitigationNoSet.txt`
+	WeightSurvivalFile   = WeightPath + `PaladinProtMitigationWithSet.txt`
+	WeightBalancedFile   = WeightPath + `PaladinProtCompromise.txt`
+	WeightDamageFile     = WeightPath + `PaladinProtDps.txt`
+	WeightHealFile       = WeightPath + `PaladinProtHeal.txt`
+	WeightRetFile        = WeightPath + `PaladinRet.txt`
 
 	GearPath     = `../paladin_gearing_weights/paladin-gear/`
 	BagsFilename = GearPath + `bags-gear.json`
 
-	GearFileProtMitigationWithSet = GearPath + `gear-prot-miti-set.json`
-	GearFileProtMitigationNoSet   = GearPath + `gear-prot-miti-noset.json`
-	GearFileProtCompromise        = GearPath + `gear-prot-compromise.json`
-	GearFileProtDps               = GearPath + `gear-prot-dps.json`
-	GearFileProtHeal              = GearPath + `gear-prot-heal.json`
-	GearFileRet                   = GearPath + `gear-ret.json`
+	GearFileProtSurvival   = GearPath + `gear-prot-miti-set.json`
+	GearFileProtMitigation = GearPath + `gear-prot-miti-noset.json`
+	GearFileProtBalanced   = GearPath + `gear-prot-compromise.json`
+	GearFileProtDamage     = GearPath + `gear-prot-dps.json`
+	GearFileProtHeal       = GearPath + `gear-prot-heal.json`
+	GearFileRet            = GearPath + `gear-ret.json`
 
 	SimProtHorridon   = `nerago-gearing/files/cli/example-prot-horridon.json`
 	SimProtJuggernaut = `nerago-gearing/files/cli/example-prot-juggernaut.json`
@@ -43,7 +43,7 @@ func SimFileFor(spec stats.SpecType, fight stats.WowSim_Fight) string {
 		switch fight {
 		case stats.Fight_Horridon_HighHeal, stats.Fight_Horridon_LowHeal, stats.Fight_Animus:
 			return SimProtHorridon
-		case stats.Fight_Juggernaut_HighHeal, stats.Fight_Juggernaut_NoExternalHeal, stats.Fight_Juggernaut_OffHealer:
+		case stats.Fight_Juggernaut_HighHeal, stats.Fight_Juggernaut_NoExternalHeal, stats.Fight_Juggernaut_SelfWordGlory, stats.Fight_Juggernaut_OffHealer:
 			return SimProtJuggernaut
 		default:
 			panic("unknown spec/fight")

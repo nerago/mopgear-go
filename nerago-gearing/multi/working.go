@@ -55,14 +55,17 @@ func (job *MultiSetJob) prepareRatingMultipliersGroup(nested iter.Seq2[string, *
 	var totalPercent float64
 	for _, work := range nested {
 		param := work.itemPrep.inputs
-		requestRatingPercent := param.RequestRatingPercent
-		totalPercent += requestRatingPercent
-
-		work.prepareRatingMultiplier(requestRatingPercent, printer)
+		totalPercent += param.RequestRatingPercent
 	}
 
-	if totalPercent < 0.99 || totalPercent > 1.01 {
-		panic("percents don't add to one")
+	if util.FloatEqualsZero(totalPercent) {
+		panic("percent total is zero")
+	}
+
+	for _, work := range nested {
+		param := work.itemPrep.inputs
+		actualRequest := param.RequestRatingPercent / totalPercent
+		work.prepareRatingMultiplier(actualRequest, printer)
 	}
 }
 

@@ -16,7 +16,7 @@ var g_extendedData = map[string][2]map[stats.SimType]float64{
 		},
 	},
 
-	"Plate of Winged Triumph - Eternal Flame Full Time": {
+	"Plate of Winged Triumph - Eternal Flame Full": {
 		map[stats.SimType]float64{
 			stats.Sim_HPS:   1.048623,
 			stats.Sim_DEATH: 1.069106,
@@ -30,7 +30,7 @@ var g_extendedData = map[string][2]map[stats.SimType]float64{
 		},
 	},
 
-	"Plate of Winged Triumph - Switch to Eternal Flame on 4pc": {
+	"Plate of Winged Triumph - Eternal Flame on 4pc": {
 		map[stats.SimType]float64{
 			stats.Sim_HPS:   1.083982,
 			stats.Sim_DEATH: 1.120922,
@@ -46,7 +46,9 @@ var g_extendedData = map[string][2]map[stats.SimType]float64{
 
 	"Plate of the Lightning Emperor": {
 		map[stats.SimType]float64{
-			// default sim doesn't use word of glory since questionable benefit, thus no stat change
+			// default sim doesn't use word of glory since questionable benefit
+			// copied over from old flat bonus
+			stats.Sim_DEATH: 1.013,
 		},
 		map[stats.SimType]float64{
 			stats.Sim_DPS:   1.024254,
@@ -69,6 +71,24 @@ var g_extendedData = map[string][2]map[stats.SimType]float64{
 			stats.Sim_DTPS:  1.035569,
 			stats.Sim_TMI:   1.049831,
 			stats.Sim_DEATH: 1.261225,
+		},
+	},
+
+	"Battlegear of the Lightning Emperor": {
+		map[stats.SimType]float64{
+			stats.Sim_DPS: 1.005492,
+		},
+		map[stats.SimType]float64{
+			stats.Sim_DPS: 1.049967,
+		},
+	},
+
+	"Battlegear of Winged Triumph": {
+		map[stats.SimType]float64{
+			stats.Sim_DPS: 1.016472,
+		},
+		map[stats.SimType]float64{
+			stats.Sim_DPS: 1.044447,
 		},
 	},
 }

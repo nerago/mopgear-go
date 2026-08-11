@@ -156,9 +156,10 @@ func PaladinMultiRun() {
 	//simSize := simulate.RunSize_QuickDirty
 
 	job := multi_types.JobInputs{}
-	job.SetWeightTypes(1, 2)
+	job.SetWeightTypes(1, 2, 3)
+	//job.SetWeightTypes(1, 2)
 	job.SetSimSize(simSize)
-	job.SetReforgingAllowNonCommon(false)
+	job.SetReforgingAllowNonCommon(true)
 	//job.SetWriteBestToGearFiles()
 
 	var generalUpgrade items.UpgradeLevel = 0
@@ -177,42 +178,42 @@ func PaladinMultiRun() {
 	}
 	protDps := multi_types.SpecParam{
 		Label: "Prot-Damage",
-		Model: model_factory.Model_PallyProtDps(),
+		Model: model_factory.Model_PallyProtDamage(),
 		ItemInputs: multi_types.ItemInputs{
-			GearFile:                  files.GearFileProtDps,
+			GearFile:                  files.GearFileProtDamage,
 			RequestRatingPercent:      0.01,
 			ExtraUpgradeLevel:         generalUpgrade,
 			ForceUpgradeExistingItems: forceUpgrade,
 			MissingEnchant:            setup.MissingEnchant_Panic,
 		},
 	}
-	protCompromise := multi_types.SpecParam{
-		Label: "Prot-Compromise",
-		Model: model_factory.Model_PallyProtCompromise(),
+	protBalanced := multi_types.SpecParam{
+		Label: "Prot-Balanced",
+		Model: model_factory.Model_PallyProtBalanced(),
 		ItemInputs: multi_types.ItemInputs{
-			GearFile:                  files.GearFileProtCompromise,
+			GearFile:                  files.GearFileProtBalanced,
 			RequestRatingPercent:      0.25,
 			ExtraUpgradeLevel:         generalUpgrade,
 			ForceUpgradeExistingItems: forceUpgrade,
 			MissingEnchant:            setup.MissingEnchant_Panic,
 		},
 	}
-	protMitigationNoSet := multi_types.SpecParam{
-		Label: "Prot-Mitigation-NoSet",
-		Model: model_factory.Model_PallyProtMitigation_NoSet(),
+	protMitigation := multi_types.SpecParam{
+		Label: "Prot-Mitigation",
+		Model: model_factory.Model_PallyProtMitigation(),
 		ItemInputs: multi_types.ItemInputs{
-			GearFile:                  files.GearFileProtMitigationNoSet,
+			GearFile:                  files.GearFileProtMitigation,
 			RequestRatingPercent:      0.35,
 			ExtraUpgradeLevel:         generalUpgrade,
 			ForceUpgradeExistingItems: forceUpgrade,
 			MissingEnchant:            setup.MissingEnchant_Panic,
 		},
 	}
-	protMitigationWithSet := multi_types.SpecParam{
-		Label: "Prot-Mitigation-WithSet",
-		Model: model_factory.Model_PallyProtMitigation_WithSet(),
+	protSurvival := multi_types.SpecParam{
+		Label: "Prot-Survival",
+		Model: model_factory.Model_PallyProtSurvival(),
 		ItemInputs: multi_types.ItemInputs{
-			GearFile:                  files.GearFileProtMitigationWithSet,
+			GearFile:                  files.GearFileProtSurvival,
 			RequestRatingPercent:      0.30,
 			ExtraUpgradeLevel:         generalUpgrade,
 			ForceUpgradeExistingItems: forceUpgrade,
@@ -223,7 +224,7 @@ func PaladinMultiRun() {
 		Label: "Prot-Heal",
 		Model: model_factory.Model_PallyProtHeal(),
 		ItemInputs: multi_types.ItemInputs{
-			GearFile:                  files.GearFileProtMitigationWithSet,
+			GearFile:                  files.GearFileProtHeal,
 			RequestRatingPercent:      0.05,
 			ExtraUpgradeLevel:         generalUpgrade,
 			ForceUpgradeExistingItems: forceUpgrade,
@@ -232,26 +233,26 @@ func PaladinMultiRun() {
 	}
 
 	ret.AddExtraItem(legendMeleeCloak) // TODO need a better solution, common reforge apply to baseline?
-	addExtrasToEach(legendCloaks, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
+	addExtrasToEach(legendCloaks, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
-	addExtrasToEach(retT15, &ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
-	addExtrasToEach(retT16, &ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
+	addExtrasToEach(retT15, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
+	addExtrasToEach(retT16, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
-	addExtrasToEach(protT15, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
+	addExtrasToEach(protT15, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 	addExtrasToEach(protT16, &ret, &protDps) // just ilevel temporary
-	addExtrasToEach(protT16, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
+	addExtrasToEach(protT16, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
 	addExtrasToEach(trinketsDpsP3, &ret, &protDps)
-	addExtrasToEach(trinketsDpsP3, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
-	addExtrasToEach(trinketsTankP3, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
+	addExtrasToEach(trinketsDpsP3, &protBalanced, &protMitigation, &protSurvival, &protHeal)
+	addExtrasToEach(trinketsTankP3, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
-	addExtrasToEach(phase3OneHandAndShield, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
-	addExtrasToEach(miscOtherP3, &ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
+	addExtrasToEach(phase3OneHandAndShield, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
+	addExtrasToEach(miscOtherP3, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
 	newStuffP5 := slices.Concat(timeless, celestial, celestialRaden, orgRaidDrops, newTrinketsDamage)
-	addExtrasToEach(newStuffP5, &ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
-	addExtrasToEach(newTrinketsTank, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
-	addExtrasToEach(orgOneHandAndShield, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
+	addExtrasToEach(newStuffP5, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
+	addExtrasToEach(newTrinketsTank, &protBalanced, &protMitigation, &protSurvival, &protHeal)
+	addExtrasToEach(orgOneHandAndShield, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
 	ret.AddExtraItems([]items.ItemId{
 		95281,  // ret tier15 gloves normal
@@ -283,7 +284,7 @@ func PaladinMultiRun() {
 		95153,  // Tyrant King Battleplate
 	})
 
-	protCompromise.AddExtraItems([]items.ItemId{
+	protBalanced.AddExtraItems([]items.ItemId{
 		96478,  // treads of the blind heroic
 		94773,  // centripetal shoulders normal
 		95535,  // normal lightning legs
@@ -297,24 +298,21 @@ func PaladinMultiRun() {
 		105033, // Wolf-Rider Spurs
 	})
 
-	protMitigationNoSet.AddExtraItems([]items.ItemId{
+	protMitigation.AddExtraItems([]items.ItemId{
 		96478,  // treads of the blind heroic
 		95535,  // normal lightning legs
 		96533,  // rein-binders fists heroic
 		96550,  // doomed crown heroic
 		96394,  // frozen warlord bracer heroic
 		103791, // gauntlet of discarded
-		96667,  // prot tier15 leg heroic
 		96447,  // Rot-Proof Greatplate
 		105090, // Ominous Mogu Greatboots
 		86955,  // Waistplate of Overwhelming Assault
 		105033, // Wolf-Rider Spurs
 	})
 
-	protMitigationWithSet.AddExtraItems([]items.ItemId{
+	protSurvival.AddExtraItems([]items.ItemId{
 		96478,  // treads of the blind heroic
-		96667,  // prot tier15 leg heroic
-		95291,  // prot tier15 Lightning Emperor's Handguards
 		96447,  // Rot-Proof Greatplate
 		105090, // Ominous Mogu Greatboots
 		103791, // gauntlet of discarded
@@ -334,20 +332,20 @@ func PaladinMultiRun() {
 	protDps.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
 	protDps.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
 	protDps.ForceSingleSlot(items.Equip_Trinket2, trinketSkeerBloodCelestial)
-	protCompromise.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
-	protCompromise.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	protCompromise.ForceSingleSlot(items.Equip_Trinket2, trinketSkeerBloodCelestial)
-	protCompromise.AddReportVariant(items.Equip_Trinket2, trinketVialCorruptNormal)
-	protMitigationNoSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
-	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	protMitigationNoSet.ForceSingleSlot(items.Equip_Trinket2, trinketZandSpark)
-	protMitigationNoSet.AddReportVariant(items.Equip_Trinket1, trinketThokTailCelestial)
-	protMitigationNoSet.AddReportVariant(items.Equip_Trinket2, trinketSkeerBloodCelestial)
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Back, legendTankCloak)
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	protMitigationWithSet.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
-	protMitigationWithSet.AddReportVariant(items.Equip_Trinket1, trinketSkeerBloodCelestial)
-	protMitigationWithSet.AddReportVariant(items.Equip_Trinket2, trinketThokTailCelestial)
+	protBalanced.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
+	protBalanced.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
+	protBalanced.ForceSingleSlot(items.Equip_Trinket2, trinketSkeerBloodCelestial)
+	protBalanced.AddReportVariant(items.Equip_Trinket2, trinketVialCorruptNormal)
+	protMitigation.ForceSingleSlot(items.Equip_Back, legendTankCloak)
+	protMitigation.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
+	protMitigation.ForceSingleSlot(items.Equip_Trinket2, trinketZandSpark)
+	protMitigation.AddReportVariant(items.Equip_Trinket1, trinketThokTailCelestial)
+	protMitigation.AddReportVariant(items.Equip_Trinket2, trinketSkeerBloodCelestial)
+	protSurvival.ForceSingleSlot(items.Equip_Back, legendTankCloak)
+	protSurvival.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
+	protSurvival.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
+	protSurvival.AddReportVariant(items.Equip_Trinket1, trinketSkeerBloodCelestial)
+	protSurvival.AddReportVariant(items.Equip_Trinket2, trinketThokTailCelestial)
 	protHeal.ForceSingleSlot(items.Equip_Back, legendTankCloak)
 	protHeal.ForceSingleSlot(items.Equip_Trinket1, trinketSkeerBloodCelestial)
 	protHeal.ForceSingleSlot(items.Equip_Trinket2, trinketZandSpark)
@@ -361,9 +359,9 @@ func PaladinMultiRun() {
 	// TODO bake this into process
 	blockHelmetsWithoutCapacitance(&ret)
 	blockHelmetsWithoutCapacitance(&protDps)
-	blockHelmetsWithoutCapacitance(&protCompromise)
-	blockHelmetsWithoutIndomitable(&protMitigationNoSet)
-	blockHelmetsWithoutIndomitable(&protMitigationWithSet)
+	blockHelmetsWithoutCapacitance(&protBalanced)
+	blockHelmetsWithoutIndomitable(&protMitigation)
+	blockHelmetsWithoutIndomitable(&protSurvival)
 	blockHelmetsWithoutIndomitable(&protHeal)
 
 	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
@@ -389,9 +387,9 @@ func PaladinMultiRun() {
 
 	job.AddSetParam(ret)
 	job.AddSetParam(protDps)
-	job.AddSetParam(protCompromise)
-	job.AddSetParam(protMitigationNoSet)
-	job.AddSetParam(protMitigationWithSet)
+	job.AddSetParam(protBalanced)
+	job.AddSetParam(protMitigation)
+	job.AddSetParam(protSurvival)
 	job.AddSetParam(protHeal)
 
 	// as part of BIS calcs try each meta as needed
@@ -420,6 +418,8 @@ func PaladinMultiRun() {
 	//	trinketFusionCoreCelestial, // str/crit
 	//)
 	//job.AddAlternateUpgradeChoices(trinketSkeerBloodCelestial)
+
+	job.EnablePermuteOnItemCountOptions()
 
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()

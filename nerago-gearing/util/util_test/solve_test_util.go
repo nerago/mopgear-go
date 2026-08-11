@@ -39,7 +39,7 @@ func Model_Testing() gear_model.SpecModel {
 			IsBlacksmith: true,
 			IsEngineer:   true,
 		},
-		ReferenceGearFile: files.GearFileProtDps,
+		ReferenceGearFile: files.GearFileProtDamage,
 	}
 }
 

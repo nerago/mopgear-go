@@ -17,8 +17,19 @@ const (
 	plate_lightning_bonus_2_miti = 1.013 // 1.3% bonus applies to death chance only, from sim, but other one is close anyway
 	// plate_lightning_bonus_4_miti = 1040 // compromise number, it's situational after all. breakpoint where it makes up for stat weights is 1.028
 	plate_lightning_bonus_4_miti = 1.030 // TODO think that might have been separate from bonus2?
+	plate_lightning_bonus_4_dps  = 1.010 // sim result for horridon h10 was 1.027 but higher than i believe in
 
-	plate_lightning_bonus_4_dps = 1.010 // sim result for horridon h10 was 1.027 but higher than i believe in
+	plate_lightning_bonus_2_word = 1.1300463175
+	plate_lightning_bonus_4_word = 1.0699618725
+
+	lightning_battlegear_2 = 1.005492
+	lightning_battlegear_4 = 1.049967
+	winged_battlegear_2    = 1.016472
+	winged_battlegear_4    = 1.044447
+	winged_plate_2         = 1.02116135 // based on average death ratio and extended sim
+	winged_plate_4         = 1.00244455 // similarly calculated, kinda situational
+	winged_plate_2_heal    = 1.03596    // assuming using eternal flame throughout
+	winged_plate_4_heal    = 1.19753375
 )
 
 var g_setData = buildSets()
@@ -76,14 +87,22 @@ func buildSets() []dataEntry {
 		[]dataEntryVariant{
 			{Spec_PaladinProt, OptimiseGoal_Mitigation, "Plate of the Lightning Emperor", plate_lightning_bonus_2_miti, plate_lightning_bonus_4_miti},
 			{Spec_PaladinProt, OptimiseGoal_Dps, "Plate of the Lightning Emperor Prot Damage", zeroBonus, plate_lightning_bonus_4_dps},
+			{Spec_PaladinProt, OptimiseGoal_Mitigation, "Plate of the Lightning Emperor - Word of Glory", plate_lightning_bonus_2_word, plate_lightning_bonus_4_word},
 		},
 		[]uint32{95290, 95291, 95292, 95293, 95294, 95920, 95921, 95922, 95923, 95924, 96664, 96665, 96666, 96667, 96668}))
 
 	sets = append(sets, dataEntryMake(Spec_PaladinProt, "White Tiger Plate", defaultBonus, defaultBonus, []uint32{85319, 85320, 85321, 85322, 85323, 86659, 86660, 86661, 86662, 86663, 87109, 87110, 87111, 87112, 87113}))
-	sets = append(sets, dataEntryMake(Spec_PaladinProt, "Plate of Winged Triumph", defaultBonus, defaultBonus, []uint32{99026, 99027, 99028, 99029, 99031, 99126, 99127, 99128, 99129, 99130, 99364, 99368, 99369, 99370, 99371, 99593, 99594, 99595, 99596, 99598}))
 
-	sets = append(sets, dataEntryMake(Spec_PaladinRet, "Battlegear of the Lightning Emperor", defaultBonus, defaultBonus, []uint32{95280, 95281, 95282, 95283, 95284, 95910, 95911, 95912, 95913, 95914, 96654, 96655, 96656, 96657, 96658}))
-	sets = append(sets, dataEntryMake(Spec_PaladinRet, "Battlegear of Winged Triumph", defaultBonus, 1.04, []uint32{98985, 98986, 98987, 99002, 99052, 99132, 99136, 99137, 99138, 99139, 99372, 99373, 99379, 99380, 99387, 99566, 99625, 99651, 99661, 99662}))
+	sets = append(sets, setInfoMakeSpecial(
+		[]dataEntryVariant{
+			{Spec_PaladinProt, OptimiseGoal_Mitigation, "Plate of Winged Triumph", winged_plate_2, winged_plate_4},
+			{Spec_PaladinProt, OptimiseGoal_HalfMitiHeal, "Plate of Winged Triumph - Eternal Flame Full", winged_plate_2, winged_plate_4},
+		},
+		[]uint32{99026, 99027, 99028, 99029, 99031, 99126, 99127, 99128, 99129, 99130, 99364, 99368, 99369, 99370, 99371, 99593, 99594, 99595, 99596, 99598},
+	))
+
+	sets = append(sets, dataEntryMake(Spec_PaladinRet, "Battlegear of the Lightning Emperor", lightning_battlegear_2, lightning_battlegear_4, []uint32{95280, 95281, 95282, 95283, 95284, 95910, 95911, 95912, 95913, 95914, 96654, 96655, 96656, 96657, 96658}))
+	sets = append(sets, dataEntryMake(Spec_PaladinRet, "Battlegear of Winged Triumph", winged_battlegear_2, winged_battlegear_4, []uint32{98985, 98986, 98987, 99002, 99052, 99132, 99136, 99137, 99138, 99139, 99372, 99373, 99379, 99380, 99387, 99566, 99625, 99651, 99661, 99662}))
 	sets = append(sets, dataEntryMake(Spec_PaladinHoly, "White Tiger Vestments", defaultBonus, defaultBonus, []uint32{85344, 85345, 85346, 85347, 85348, 86684, 86685, 86686, 86687, 86688, 87104, 87105, 87106, 87107, 87108}))
 	sets = append(sets, dataEntryMake(Spec_PaladinHoly, "Vestments of the Lightning Emperor", defaultBonus, defaultBonus, []uint32{95285, 95286, 95287, 95288, 95289, 95915, 95916, 95917, 95918, 95919, 96659, 96660, 96661, 96662, 96663}))
 	sets = append(sets, dataEntryMake(Spec_PaladinHoly, "Vestments of Winged Triumph", defaultBonus, defaultBonus, []uint32{98979, 98980, 98982, 99003, 99076, 99124, 99125, 99133, 99134, 99135, 99374, 99375, 99376, 99377, 99378, 99626, 99648, 99656, 99665, 99666}))

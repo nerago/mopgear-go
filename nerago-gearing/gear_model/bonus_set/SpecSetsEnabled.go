@@ -133,11 +133,11 @@ func addToSpecificSet[M items.IItem](counts *[16]uint8, itemToSet *[c_maxItemId]
 
 func SpecSetsEnableNone() *SpecSetsEnable {
 	sets := &SpecSetsEnable{}
-	sets.initMap()
+	sets.initMap(nil)
 	return sets
 }
 
-func SpecSetsEnableNamed(names ...string) *SpecSetsEnable {
+func SpecSetsEnableNamed(priority *weight_types.SimPriorityBasic, names ...string) *SpecSetsEnable {
 	sets := &SpecSetsEnable{}
 	for _, name := range names {
 		found := false
@@ -153,18 +153,18 @@ func SpecSetsEnableNamed(names ...string) *SpecSetsEnable {
 			panic("set not found " + name)
 		}
 	}
-	sets.initMap()
+	sets.initMap(priority)
 	return sets
 }
 
-func SpecSetsEnableForSpec(spec stats.SpecType, goal stats.OptimiseGoal) *SpecSetsEnable {
+func SpecSetsEnableForSpec(spec stats.SpecType, goal stats.OptimiseGoal, priority *weight_types.SimPriorityBasic) *SpecSetsEnable {
 	if goal == stats.OptimiseGoal_Unknown {
 		panic("please specific goal")
 	}
-	return SpecSetsEnableForSpec_AllowFallback(spec, goal, false)
+	return SpecSetsEnableForSpec_AllowFallback(spec, goal, false, priority)
 }
 
-func SpecSetsEnableForSpec_AllowFallback(spec stats.SpecType, goal stats.OptimiseGoal, fallback bool) *SpecSetsEnable {
+func SpecSetsEnableForSpec_AllowFallback(spec stats.SpecType, goal stats.OptimiseGoal, fallback bool, priority *weight_types.SimPriorityBasic) *SpecSetsEnable {
 	sets := &SpecSetsEnable{}
 
 mainEntry:
@@ -206,17 +206,23 @@ mainEntry:
 	if len(sets.EnabledSets) == 0 {
 		panic("didn't find any sets")
 	}
-	sets.initMap()
+	sets.initMap(priority)
 	return sets
 }
 
-func (sets *SpecSetsEnable) initMap() {
+func (sets *SpecSetsEnable) initMap(priority *weight_types.SimPriorityBasic) {
 	for index, info := range sets.EnabledSets {
 		for _, itemId := range info.items {
 			if sets.itemToSet[itemId] != 0 {
 				panic("overlapping sets")
 			}
 			sets.itemToSet[itemId] = uint8(index + 1)
+		}
+	}
+
+	if priority != nil {
+		for bonus := range util_collection.ForPointer(sets.EnabledSets) {
+			bonus.deriveUpgradedFlatBonus(priority)
 		}
 	}
 }

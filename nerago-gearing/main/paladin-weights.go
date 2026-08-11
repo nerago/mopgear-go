@@ -26,33 +26,33 @@ func statWeights_updateAll() {
 	process.Init(simSpeed, forceSkipSim, printer)
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Mitigation-NoSet",
-		WeightFile1:     files.WeightMitiNoSetFile,
-		GearFile:        files.GearFileProtMitigationNoSet,
-		Model:           model_factory.Model_PallyProtMitigation_NoSet(),
+		WeightFile1:     files.WeightMitigationFile,
+		GearFile:        files.GearFileProtMitigation,
+		Model:           model_factory.Model_PallyProtMitigation(),
 		SubstituteItems: substituteItemsProt,
 		FixStatsMode:    fixStats,
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Mitigation-WithSet",
-		WeightFile1:     files.WeightMitiWithSetFile,
-		GearFile:        files.GearFileProtMitigationWithSet,
-		Model:           model_factory.Model_PallyProtMitigation_WithSet(),
+		WeightFile1:     files.WeightSurvivalFile,
+		GearFile:        files.GearFileProtSurvival,
+		Model:           model_factory.Model_PallyProtSurvival(),
 		SubstituteItems: substituteItemsProt,
 		FixStatsMode:    fixStats,
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Damage",
-		WeightFile1:     files.WeightDpsFile,
-		GearFile:        files.GearFileProtDps,
-		Model:           model_factory.Model_PallyProtDps(),
+		WeightFile1:     files.WeightDamageFile,
+		GearFile:        files.GearFileProtDamage,
+		Model:           model_factory.Model_PallyProtDamage(),
 		SubstituteItems: substituteItemsProt,
 		FixStatsMode:    fixStats,
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Compromise",
-		WeightFile1:     files.WeightCompromiseFile,
-		GearFile:        files.GearFileProtCompromise,
-		Model:           model_factory.Model_PallyProtCompromise(),
+		WeightFile1:     files.WeightBalancedFile,
+		GearFile:        files.GearFileProtBalanced,
+		Model:           model_factory.Model_PallyProtBalanced(),
 		SubstituteItems: substituteItemsProt,
 		FixStatsMode:    fixStats,
 	})

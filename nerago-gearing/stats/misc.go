@@ -188,6 +188,7 @@ const (
 	Fight_Animus                    WowSim_Fight = iota
 	Fight_Juggernaut_HighHeal       WowSim_Fight = iota
 	Fight_Juggernaut_NoExternalHeal WowSim_Fight = iota
+	Fight_Juggernaut_SelfWordGlory  WowSim_Fight = iota
 	Fight_Juggernaut_OffHealer      WowSim_Fight = iota
 )
 

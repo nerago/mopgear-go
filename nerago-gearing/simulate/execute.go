@@ -113,16 +113,18 @@ func updateFight(input *wowsim_proto.RaidSimRequest, fight stats.WowSim_Fight, s
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 600000
 
 	case stats.Fight_Juggernaut_NoExternalHeal:
-		if spec == stats.Spec_PaladinProt && input.Raid.Parties[0].Players[0].TalentsString != "113213" {
-			panic("unexpected talent setup")
-		}
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 0
 		for _, target := range input.Encounter.Targets {
 			target.MinBaseDamage *= 2.5
 		}
 
-	case stats.Fight_Juggernaut_OffHealer:
+	case stats.Fight_Juggernaut_SelfWordGlory:
+		input.Raid.Parties[0].Players[0].HealingModel.Hps = 0
+		for _, target := range input.Encounter.Targets {
+			target.MinBaseDamage *= 4
+		}
 
+	case stats.Fight_Juggernaut_OffHealer:
 		input.Raid.Parties[0].Players[0].HealingModel.Hps = 0
 		for _, target := range input.Encounter.Targets {
 			target.MinBaseDamage *= 2

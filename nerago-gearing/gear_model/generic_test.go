@@ -11,7 +11,7 @@ import (
 var resultFloat float64
 
 func BenchmarkCalcSetSpecific(test *testing.B) {
-	model := model_factory.Model_PallyProtMitigation_WithSet()
+	model := model_factory.Model_PallyProtSurvival()
 	set := makeSet()
 	var v float64
 	for test.Loop() {
