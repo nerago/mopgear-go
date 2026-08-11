@@ -694,28 +694,39 @@ func determineSetBonusValueBySim() {
 	//runSize := simulate.RunSize_QuickDirty
 	//optionCount := 10
 	runSize := simulate.RunSize_Largish
-	//optionCount := 128
-	optionCount := 50
+	optionCount := 128
+	//optionCount := 50
 
-	goal02 := stats.OptimiseGoal_Mitigation
-	//goal4 := stats.OptimiseGoal_Mitigation
+	//goal02 := stats.OptimiseGoal_Mitigation
+	goal02 := stats.OptimiseGoal_Dps
+	goal4 := stats.OptimiseGoal_Dps
 	//goal4 := stats.OptimiseGoal_HalfMitiHeal
-	fight := stats.Fight_Horridon_LowHeal
-	spec := stats.Spec_PaladinProt
+	//fight := stats.Fight_Horridon_LowHeal
+	fight := stats.Fight_Horridon_HighHeal
+	//spec := stats.Spec_PaladinProt
+	spec := stats.Spec_PaladinRet
 	profession := gear_model.ProfessionInfo{IsBlacksmith: true, IsEngineer: true}
 
 	//startGear := files.GearFileProtMitigationWithSet
 	//modelEquipOnly := model_factory.Model_PallyProtMitigation_WithSet()
 	//targetRatio := modelEquipOnly.SimPriority
 
-	gearFile := files.GearFileProtMitigationNoSet
-	model := model_factory.Model_PallyProtMitigation_NoSet()
-	//model.BonusEnabled = bonus_set.SpecSetsEnableNamed("Plate of Winged Triumph")
-	model.BonusEnabled = bonus_set.SpecSetsEnableNamed("Plate of the Lightning Emperor")
-	model.BonusRequiredSolve = bonus_set.ItemCountsRequiredOptions{model_factory.BonusItems_ZeroAll}
+	//gearFile := files.GearFileProtMitigationNoSet
+	//model := model_factory.Model_PallyProtMitigation_NoSet()
+	////model.BonusEnabled = bonus_set.SpecSetsEnableNamed("Plate of Winged Triumph")
+	//model.BonusEnabled = bonus_set.SpecSetsEnableNamed("Plate of the Lightning Emperor")
+
+	gearFile := files.GearFileRet
+	model := model_factory.Model_PallyRet()
+	model.BonusEnabled = bonus_set.SpecSetsEnableNamed("Battlegear of Winged Triumph", "Battlegear of the Lightning Emperor")
+	model.BonusRequiredSolve = bonus_set.ItemCountsRequiredOptions{
+		Mode:    bonus_set.CountMode_Exact,
+		Options: []bonus_set.ItemCountsRequired{model_factory.BonusItems_ZeroAll},
+	}
 	model.BonusRequiredWeight = nil
 
-	initialSets, itemOptions := weightfind.GenerateRandomSets(gearFile, substituteItemsProt, &model, optionCount, printer, "")
+	initialSets, _ := weightfind.GenerateRandomSets(gearFile, substituteItemsRet, &model, optionCount, printer, "", false)
+	//initialSets, itemOptions := weightfind.GenerateRandomSets(gearFile, substituteItemsProt, &model, optionCount, printer, "")
 
 	//T16 prot
 	//setItems := []*items.FullItem{
@@ -725,12 +736,27 @@ func determineSetBonusValueBySim() {
 	//	itemOptions.FindItemIdFirst(99130),
 	//}
 	//T15 prot
+	//setItems := []*items.FullItem{
+	//	itemOptions.FindItemIdFirst(96668), // prot tier15 shoulder heroic
+	//	itemOptions.FindItemIdFirst(96664), // prot tier15 chest heroic
+	//	itemOptions.FindItemIdFirst(96666), // prot tier15 head heroic
+	//	itemOptions.FindItemIdFirst(96667), // prot tier15 leg heroic, had removed in multi
+	//}
+	//T15 ret
 	setItems := []*items.FullItem{
-		itemOptions.FindItemIdFirst(96668), // prot tier15 shoulder heroic
-		itemOptions.FindItemIdFirst(96664), // prot tier15 chest heroic
-		itemOptions.FindItemIdFirst(96666), // prot tier15 head heroic
-		itemOptions.FindItemIdFirst(96667), // prot tier15 leg heroic, had removed in multi
+		// not sure which heroics owned apart from this first
+		setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults_NoForges(96658, 2, items.NO_RANDOM_SUFFIX, &model, printer),
+		setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults_NoForges(96654, 2, items.NO_RANDOM_SUFFIX, &model, printer),
+		setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults_NoForges(96655, 2, items.NO_RANDOM_SUFFIX, &model, printer),
+		setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults_NoForges(96656, 2, items.NO_RANDOM_SUFFIX, &model, printer),
 	}
+	//T16 ret
+	//setItems := []*items.FullItem{
+	//	itemOptions.FindItemIdFirst(99052),
+	//	itemOptions.FindItemIdFirst(99002),
+	//	itemOptions.FindItemIdFirst(98986),
+	//	itemOptions.FindItemIdFirst(98987),
+	//}
 	preparedSetGroups := util_collection.MapSliceAsNew(initialSets, func(itemSet *items.FullItemSet) standardisedItemSetGroup {
 		if model.BonusEnabled.CountInAnySet(itemSet.Items()) != 0 {
 			panic("not zero")
@@ -759,17 +785,17 @@ func determineSetBonusValueBySim() {
 		dataTwo := simulate.WowSim_Execute_SpecifyAll(runSize, 0, spec, goal02, fight, profession,
 			group.two.itemSet.Items(), &group.two.bonusStats,
 			tracker.NewChild())
-		//dataFour := simulate.WowSim_Execute_SpecifyAll(runSize, 0, spec, goal4, fight, profession,
-		//	group.four.itemSet.Items(), &group.four.bonusStats,
-		//	tracker.NewChild())
+		dataFour := simulate.WowSim_Execute_SpecifyAll(runSize, 0, spec, goal4, fight, profession,
+			group.four.itemSet.Items(), &group.four.bonusStats,
+			tracker.NewChild())
 
 		printer.Printf("%s %s\n", dataZero.CompactStringGeneral(), dataTwo.CompactStringGeneral())
 
 		return bonuses{
-			simZero: dataZero,
-			simTwo:  dataTwo,
-			twoDiff: makeBonusDiff(dataZero, dataTwo),
-			//fourPiece: makeBonusDiff(dataTwo, dataFour),
+			simZero:  dataZero,
+			simTwo:   dataTwo,
+			twoDiff:  makeBonusDiff(dataZero, dataTwo),
+			fourDiff: makeBonusDiff(dataTwo, dataFour),
 		}
 	})
 
@@ -779,12 +805,12 @@ func determineSetBonusValueBySim() {
 		})
 		printer.Printf("BONUS 2 %s %f\n", simType.Name(), average2)
 	}
-	//for simType := range stats.SimTypeEnum.ValueSeq() {
-	//	average4 := util_collection.FindAverageFunc(bonusData, func(x bonuses) float64 {
-	//		return x.fourPiece.GetOrPanic(simType)
-	//	})
-	//	printer.Printf("BONUS 4 %s %f\n", simType.Name(), average4)
-	//}
+	for simType := range stats.SimTypeEnum.ValueSeq() {
+		average4 := util_collection.FindAverageFunc(bonusData, func(x bonuses) float64 {
+			return x.fourDiff.GetOrPanic(simType)
+		})
+		printer.Printf("BONUS 4 %s %f\n", simType.Name(), average4)
+	}
 }
 
 func makeBonusDiff(lo stats.SimData, hi stats.SimData) util_collection.EnumMap[stats.SimType, float64] {
@@ -842,9 +868,6 @@ func determineBestUseOfGearSets() {
 	gearFile := files.GearFileProtMitigationNoSet
 	model := model_factory.Model_PallyProtMitigation_NoSet()
 	model.BonusEnabled = bonus_set.SpecSetsEnableNamed("Plate of the Lightning Emperor", "Plate of Winged Triumph", "Battlegear of the Lightning Emperor", "Battlegear of Winged Triumph")
-	model.BonusRequiredSolve = bonus_set.ItemCountsRequiredOptions{model_factory.BonusItems_ZeroAll}
-	model.BonusRequiredWeight = nil
-	model.BonusAvoidNextStep = true
 	model.StatWeights = tools.StatRatingsWeights_ReadFile(files.WeightHealFile)
 
 	bonusCombos := []bonus_set.ItemCountsRequired{
@@ -875,7 +898,10 @@ func determineBestUseOfGearSets() {
 	noteList := make([]string, 0)
 	for n, comboSet := range bonusCombos {
 		comboModel := model.CloneShallow()
-		comboModel.BonusRequiredSolve = bonus_set.ItemCountsRequiredOptions{comboSet}
+		comboModel.BonusRequiredSolve = bonus_set.ItemCountsRequiredOptions{
+			Mode:    bonus_set.CountMode_AllowPlusOne,
+			Options: []bonus_set.ItemCountsRequired{comboSet},
+		}
 		solveOutput := solver.Solver(solver.SolveInput{
 			ItemOptions: &itemOptions,
 			Model:       comboModel,

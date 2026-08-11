@@ -1,10 +1,14 @@
 package util_test
 
 import (
+	"paladin_gearing_go/files"
 	"paladin_gearing_go/gear_model"
+	"paladin_gearing_go/gear_model/bonus_set"
 	"paladin_gearing_go/gear_model/model_factory"
+	"paladin_gearing_go/gear_model/requirements"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
+	"paladin_gearing_go/tools"
 	"sync"
 	"testing"
 )
@@ -17,13 +21,35 @@ const (
 	// TargetCountStandard = 8 // ends up with skip of 5, doesn't cycle shoulders properly since that matches a options size
 )
 
+func Model_Testing() gear_model.SpecModel {
+	spec := stats.Spec_PaladinProt
+	goal := stats.OptimiseGoal_Dps
+	return gear_model.SpecModel{
+		Spec:              spec,
+		Goal:              goal,
+		SimulateAs:        stats.Fight_Horridon_HighHeal,
+		StatWeights:       tools.StatRatingsWeights_Testing(),
+		StatRequirements:  requirements.StatRequirementsHitExpertise_None(),
+		StatsForWeighting: model_factory.StatsForWeighting_strengthTank,
+		ReforgeRules:      gear_model.ReforgeRules_tank,
+		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
+		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
+		BonusEnabled:      bonus_set.SpecSetsEnableNone(),
+		Professions: gear_model.ProfessionInfo{
+			IsBlacksmith: true,
+			IsEngineer:   true,
+		},
+		ReferenceGearFile: files.GearFileProtDps,
+	}
+}
+
 func MakeTestOptions() (*items.SolvableOptionsMap, *gear_model.SpecModel) {
 	options := items.SolvableOptionsMap{}
 	options.Set(items.Equip_Head, []items.SolvableItem{testItem(100, 11)})
 	options.Set(items.Equip_Neck, []items.SolvableItem{testItem(200, 22), testItem(201, 23)})
 	options.Set(items.Equip_Shoulder, []items.SolvableItem{testItem(300, 31), testItem(301, 32), testItem(302, 33), testItem(303, 32), testItem(304, 31)})
 	options.Set(items.Equip_Back, []items.SolvableItem{testItem(400, 44), testItem(401, 43), testItem(402, 42), testItem(403, 41)})
-	model := model_factory.Model_Testing()
+	model := Model_Testing()
 	return &options, &model
 }
 

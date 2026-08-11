@@ -5,6 +5,9 @@ import "math"
 type Number interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64
 }
+type NumberInt interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64
+}
 
 func MaxIgnoreNaN(a, b float64) float64 {
 	if math.IsNaN(a) {
@@ -88,6 +91,10 @@ func FloatsBetween(lo, val, hi float64) bool {
 
 func FloatApproxLessThanOrEqual(lower float64, higher float64) bool {
 	return lower <= higher+c_float_equal_delta
+}
+
+func IntBetweenInclusive[N NumberInt](lo, val, hi N) bool {
+	return lo <= val && val <= hi
 }
 
 func RoundToInt64(value float64) int64 {

@@ -53,6 +53,12 @@ func OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId items.ItemId, upgradeLe
 	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
 }
 
+func OptionsSetup_Single_FromIdOnlyUseAllDefaults_NoForges(itemId items.ItemId, upgradeLevel items.UpgradeLevel, randomSuffix items.RandomSuffix, model *gear_model.SpecModel, printer *util.PrintRecorder) *items.FullItem {
+	item := *db.WowSimDB_LoadItemById_AllowFallback(itemId, int32(upgradeLevel), printer)
+	item = addDetailUsingDefaults(item, randomSuffix, model)
+	return &item
+}
+
 func OptionsSetup_ExactEquippedOnly(equipped []loaders.EquippedItem, model *gear_model.SpecModel, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) items.FullEquipMap {
 	resultMap := items.FullEquipMap{}
 	for _, equipItem := range equipped {

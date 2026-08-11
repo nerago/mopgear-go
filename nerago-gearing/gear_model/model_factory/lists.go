@@ -7,39 +7,44 @@ import (
 	"paladin_gearing_go/weightfind/weight_types"
 )
 
+const setNameT15Prot = "Plate of the Lightning Emperor"
+const setNameT16Prot = "Plate of Winged Triumph"
+const setNameT15Ret = "Battlegear of the Lightning Emperor"
+const setNameT16Ret = "Battlegear of Winged Triumph"
+
 var BonusItems_ZeroAll = bonus_set.ItemCountsRequiredMake(
-	"Plate of Winged Triumph", 0,
-	"Plate of the Lightning Emperor", 0,
-	"Battlegear of the Lightning Emperor", 0,
-	"Battlegear of Winged Triumph", 0,
+	setNameT16Prot, 0,
+	setNameT15Prot, 0,
+	setNameT15Ret, 0,
+	setNameT16Ret, 0,
 )
 
 var BonusItems_Prot15_2pcOnly = bonus_set.ItemCountsRequiredMake(
-	"Plate of Winged Triumph", 0,
-	"Plate of the Lightning Emperor", 2,
-	"Battlegear of the Lightning Emperor", 0,
-	"Battlegear of Winged Triumph", 0,
+	setNameT16Prot, 0,
+	setNameT15Prot, 2,
+	setNameT15Ret, 0,
+	setNameT16Ret, 0,
 )
 
 var BonusItems_Prot16_2pcOnly = bonus_set.ItemCountsRequiredMake(
-	"Plate of Winged Triumph", 2,
-	"Plate of the Lightning Emperor", 0,
-	"Battlegear of the Lightning Emperor", 0,
-	"Battlegear of Winged Triumph", 0,
+	setNameT16Prot, 2,
+	setNameT15Prot, 0,
+	setNameT15Ret, 0,
+	setNameT16Ret, 0,
 )
 
 var BonusItems_Prot16_4pc = bonus_set.ItemCountsRequiredMake(
-	"Plate of Winged Triumph", 4,
+	setNameT16Prot, 4,
 )
 
 var BonusItems_Prot15_Prot16_2pcEach = bonus_set.ItemCountsRequiredMake(
-	"Plate of the Lightning Emperor", 2,
-	"Plate of Winged Triumph", 2,
+	setNameT15Prot, 2,
+	setNameT16Prot, 2,
 )
 
 var BonusItems_Ret15_Ret16_2pcEach = bonus_set.ItemCountsRequiredMake(
-	"Battlegear of the Lightning Emperor", 2,
-	"Battlegear of Winged Triumph", 2,
+	setNameT15Ret, 2,
+	setNameT16Ret, 2,
 )
 
 // for noset - juggernaut, shamans, siegecrafter

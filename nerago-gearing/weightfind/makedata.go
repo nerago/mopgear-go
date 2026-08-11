@@ -16,9 +16,8 @@ import (
 )
 
 const (
-	grid_sim_max_run_count = 600
-	grid_sim_max_steps     = 6
-	grid_sim_step          = 500
+	grid_sim_max_steps = 6
+	grid_sim_step      = 500
 )
 
 type incrementStat struct {
@@ -79,7 +78,7 @@ func makePermutationsForGridSim2(statList []stats.StatType, incrementStep int32,
 	allCombos = append(allCombos, makeWithAllSameValue(statList, incrementLo))
 
 	var incrementHi int32 = incrementStep
-	for len(allCombos) < grid_sim_max_run_count && incrementHi <= incrementMax {
+	for len(allCombos) < c_eachSimTargetSampleDataCount && incrementHi <= incrementMax {
 		// add the high version first so make sure it's more likely to make it when we cut off the list
 		allCombos = append(allCombos, makeWithAllSameValue(statList, incrementHi))
 
@@ -91,8 +90,8 @@ func makePermutationsForGridSim2(statList []stats.StatType, incrementStep int32,
 		incrementHi += incrementStep
 	}
 
-	if len(allCombos) > grid_sim_max_run_count {
-		allCombos = allCombos[0:grid_sim_max_run_count]
+	if len(allCombos) > c_eachSimTargetSampleDataCount {
+		allCombos = allCombos[0:c_eachSimTargetSampleDataCount]
 	}
 
 	return allCombos
@@ -130,7 +129,7 @@ func makeWithAllSameValue(statList []stats.StatType, value int32) incrementStatC
 	return combo
 }
 
-func GenerateRandomSets(gearFile string, substituteItems []items.ItemId, model *gear_model.SpecModel, makeSetCount int, printer *util.PrintRecorder, label string) ([]items.FullItemSet, items.FullOptionsMap) {
+func GenerateRandomSets(gearFile string, substituteItems []items.ItemId, model *gear_model.SpecModel, makeSetCount int, printer *util.PrintRecorder, label string, includeBestWorst bool) ([]items.FullItemSet, items.FullOptionsMap) {
 	itemOptions := setup.OptionsSetup_FromGearFile(gearFile, model, setup.MissingEnchant_Panic, printer)
 	for _, itemId := range substituteItems {
 		// TODO support for random suffix items
@@ -144,12 +143,14 @@ func GenerateRandomSets(gearFile string, substituteItems []items.ItemId, model *
 	itemOptions.RemoveDuplicates()
 
 	setList := solve_build.SolverBuildRandom_MakeN_FullAndValidate(&itemOptions, model, makeSetCount, label)
-	setList = append(setList, solve_build.SolverBuildBestWorst(&itemOptions, model)...)
+	if includeBestWorst {
+		setList = append(setList, solve_build.SolverBuildBestWorst(&itemOptions, model)...)
+	}
 	return setList, itemOptions
 }
 
 func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, model *gear_model.SpecModel, makeSetCount int, simSize simulate.WowSim_RunSize, fixStatsMode weight_types.FixStatsRangeMode, printer *util.PrintRecorder, track *util.TrackProgress, label string, cancel util_async.CancelSignal) []weight_types.WeightInput {
-	setList, _ := GenerateRandomSets(gearFile, substituteItems, model, makeSetCount, printer, label)
+	setList, _ := GenerateRandomSets(gearFile, substituteItems, model, makeSetCount, printer, label, true)
 
 	track.RunOuterTracking(len(setList))
 	defer track.SetDone()

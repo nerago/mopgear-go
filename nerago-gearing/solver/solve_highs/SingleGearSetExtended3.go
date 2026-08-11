@@ -69,7 +69,7 @@ func makeGearSetExtended3(build *util_highs.LinearBuilder, model *SolverModel, i
 	setup.calcCombinedSimRating(model.Weights3)
 	setup.addMainOutputVariable(scaleOutputRating)
 	setup.multiplyRatingsByActiveSetCombo(setup.combinedRatingVar, c_gearExtended3ScoreHigh)
-	setup.addSetNeededCounts(model.SetBonusRequiredCounts, model.SetBonusAvoidNextStep)
+	setup.addSetNeededCounts(model.SetBonusRequiredCounts, model.SetBonusCountMode)
 
 	return &setup
 }

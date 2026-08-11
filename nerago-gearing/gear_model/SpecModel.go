@@ -23,7 +23,6 @@ type SpecModel struct {
 	BonusEnabled             *bonus_set.SpecSetsEnable
 	BonusRequiredSolve       bonus_set.ItemCountsRequiredOptions
 	BonusRequiredWeight      *bonus_set.ItemCountsRequired
-	BonusAvoidNextStep       bool
 	Professions              ProfessionInfo
 	SimPriority              weight_types.SimPriorityBasic
 	StatsForWeighting        []StatType
@@ -42,7 +41,7 @@ func (model *SpecModel) Equals(other *SpecModel) bool {
 		model.EnchantChoice.Equals(other.EnchantChoice) &&
 		model.GemChoice.Equals(other.GemChoice) &&
 		model.BonusEnabled.Equals(other.BonusEnabled) &&
-		slices.EqualFunc(model.BonusRequiredSolve, other.BonusRequiredSolve, bonus_set.ItemCountsRequired.Equals) &&
+		model.BonusRequiredSolve.Equals(other.BonusRequiredSolve) &&
 		util.NilSafeEqual(model.BonusRequiredWeight, other.BonusRequiredWeight, bonus_set.ItemCountsRequired.Equals) &&
 		model.Professions == other.Professions &&
 		model.SimPriority.Equals(&other.SimPriority) &&
@@ -65,7 +64,6 @@ func (model *SpecModel) CloneShallow() *SpecModel {
 		BonusEnabled:             model.BonusEnabled,
 		BonusRequiredSolve:       model.BonusRequiredSolve,
 		BonusRequiredWeight:      model.BonusRequiredWeight,
-		BonusAvoidNextStep:       model.BonusAvoidNextStep,
 		Professions:              model.Professions,
 		SimPriority:              model.SimPriority,
 		StatsForWeighting:        model.StatsForWeighting,
@@ -93,8 +91,8 @@ func (model *SpecModel) CheckSetFull_ForWeightProcess(itemSet *FullItemSet) bool
 		return false
 	}
 	if model.BonusRequiredWeight != nil {
-		return model.BonusRequiredWeight.ItemsMatchRuleFull(itemSet.Items())
-	} else if len(model.BonusRequiredSolve) > 0 {
+		return model.BonusRequiredWeight.ItemsMatchRuleFull(itemSet.Items(), bonus_set.CountMode_Exact)
+	} else if !model.BonusRequiredSolve.IsEmpty() {
 		return model.BonusRequiredSolve.ItemsMatchAnyRuleFull(itemSet.Items())
 	}
 	return true

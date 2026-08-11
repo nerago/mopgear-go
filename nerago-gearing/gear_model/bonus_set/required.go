@@ -50,30 +50,30 @@ func (cr ItemCountsRequired) Count() int {
 	return len(cr.sets)
 }
 
-func (cr ItemCountsRequired) ItemsMatchRuleFull(items *items.FullEquipMap) bool {
+func (cr ItemCountsRequired) ItemsMatchRuleFull(items *items.FullEquipMap, mode ItemCountsRequiredMode) bool {
 	for set, needCount := range cr.Pairs() {
 		haveCount := set.CountItemsFull(items)
-		if haveCount < needCount || haveCount > needCount+1 {
+		if !itemCountCorrect(mode, haveCount, needCount) {
 			return false
 		}
 	}
 	return true
 }
 
-func (cr ItemCountsRequired) ItemsMatchRuleSolve(items *items.SolvableEquipMap) bool {
+func (cr ItemCountsRequired) ItemsMatchRuleSolve(items *items.SolvableEquipMap, mode ItemCountsRequiredMode) bool {
 	for set, needCount := range cr.Pairs() {
 		haveCount := set.CountItemsSolve(items)
-		if haveCount < needCount || haveCount > needCount+1 {
+		if !itemCountCorrect(mode, haveCount, needCount) {
 			return false
 		}
 	}
 	return true
 }
 
-func (cr ItemCountsRequired) itemsMatchRuleSolveWithMessage(items *items.SolvableEquipMap, strBuild *util.StringBuild2) bool {
+func (cr ItemCountsRequired) itemsMatchRuleSolveWithMessage(items *items.SolvableEquipMap, strBuild *util.StringBuild2, mode ItemCountsRequiredMode) bool {
 	for set, needCount := range cr.Pairs() {
 		haveCount := set.CountItemsSolve(items)
-		if haveCount < needCount || haveCount > needCount+1 {
+		if !itemCountCorrect(mode, haveCount, needCount) {
 			strBuild.WriteString("For '")
 			strBuild.WriteString(set.Name())
 			strBuild.WriteString(" have=")
@@ -87,12 +87,49 @@ func (cr ItemCountsRequired) itemsMatchRuleSolveWithMessage(items *items.Solvabl
 	return true
 }
 
-type ItemCountsRequiredOptions []ItemCountsRequired
+func itemCountCorrect(mode ItemCountsRequiredMode, haveCount uint8, needCount uint8) bool {
+	switch mode {
+	case CountMode_Exact:
+		return haveCount == needCount
+	case CountMode_Minimum:
+		return haveCount >= needCount
+	case CountMode_AllowPlusOne:
+		return util.IntBetweenInclusive(needCount, haveCount, needCount+1)
+	default:
+		panic("unknown type")
+	}
+}
+
+type ItemCountsRequiredMode uint8
+
+const (
+	CountMode_Exact        ItemCountsRequiredMode = iota
+	CountMode_Minimum      ItemCountsRequiredMode = iota
+	CountMode_AllowPlusOne ItemCountsRequiredMode = iota
+)
+
+type ItemCountsRequiredOptions struct {
+	Mode    ItemCountsRequiredMode
+	Options []ItemCountsRequired
+}
+
+func ItemCountsRequiredOptionsAny() ItemCountsRequiredOptions {
+	return ItemCountsRequiredOptions{
+		Mode: CountMode_Minimum,
+	}
+}
+
+func ItemCountsRequiredOptionsForFactory(options ...ItemCountsRequired) ItemCountsRequiredOptions {
+	return ItemCountsRequiredOptions{
+		Mode:    CountMode_AllowPlusOne,
+		Options: options,
+	}
+}
 
 func (cro ItemCountsRequiredOptions) ItemsMatchAnyRuleSolve(items *items.SolvableEquipMap) (bool, string) {
 	strBuild := util.StringBuild2{}
-	for _, option := range cro {
-		if option.itemsMatchRuleSolveWithMessage(items, &strBuild) {
+	for _, option := range cro.Options {
+		if option.itemsMatchRuleSolveWithMessage(items, &strBuild, cro.Mode) {
 			return true, ""
 		}
 	}
@@ -100,10 +137,19 @@ func (cro ItemCountsRequiredOptions) ItemsMatchAnyRuleSolve(items *items.Solvabl
 }
 
 func (cro ItemCountsRequiredOptions) ItemsMatchAnyRuleFull(items *items.FullEquipMap) bool {
-	for _, option := range cro {
-		if option.ItemsMatchRuleFull(items) {
+	for _, option := range cro.Options {
+		if option.ItemsMatchRuleFull(items, cro.Mode) {
 			return true
 		}
 	}
 	return false
+}
+
+func (cro ItemCountsRequiredOptions) Equals(other ItemCountsRequiredOptions) bool {
+	return cro.Mode == other.Mode &&
+		slices.EqualFunc(cro.Options, other.Options, ItemCountsRequired.Equals)
+}
+
+func (cro ItemCountsRequiredOptions) IsEmpty() bool {
+	return len(cro.Options) == 0
 }

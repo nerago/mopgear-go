@@ -26,8 +26,8 @@ func Model_PallyProtMitigation_WithSet() gear_model.SpecModel {
 		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
 		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
 
-		BonusEnabled:        bonus_set.SpecSetsEnableNamed("Plate of the Lightning Emperor", "Plate of Winged Triumph"),
-		BonusRequiredSolve:  bonus_set.ItemCountsRequiredOptions{BonusItems_Prot15_Prot16_2pcEach},
+		BonusEnabled:        bonus_set.SpecSetsEnableNamed(setNameT15Prot, setNameT16Prot),
+		BonusRequiredSolve:  bonus_set.ItemCountsRequiredOptionsForFactory(BonusItems_Prot15_Prot16_2pcEach),
 		BonusRequiredWeight: nil,
 
 		Professions: gear_model.ProfessionInfo{
@@ -55,8 +55,8 @@ func Model_PallyProtHeal() gear_model.SpecModel {
 		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
 		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
 
-		BonusEnabled:        bonus_set.SpecSetsEnableNamed("Plate of Winged Triumph"),
-		BonusRequiredSolve:  bonus_set.ItemCountsRequiredOptions{BonusItems_Prot16_4pc},
+		BonusEnabled:        bonus_set.SpecSetsEnableNamed(setNameT16Prot),
+		BonusRequiredSolve:  bonus_set.ItemCountsRequiredOptionsForFactory(BonusItems_Prot16_4pc),
 		BonusRequiredWeight: nil,
 
 		Professions: gear_model.ProfessionInfo{
@@ -85,7 +85,7 @@ func Model_PallyProtMitigation_NoSet() gear_model.SpecModel {
 		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
 
 		BonusEnabled:        bonus_set.SpecSetsEnableNone(),
-		BonusRequiredSolve:  nil,
+		BonusRequiredSolve:  bonus_set.ItemCountsRequiredOptionsAny(),
 		BonusRequiredWeight: &BonusItems_Prot16_2pcOnly,
 
 		Professions: gear_model.ProfessionInfo{
@@ -114,7 +114,7 @@ func Model_PallyProtCompromise() gear_model.SpecModel {
 		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
 
 		BonusEnabled:        bonus_set.SpecSetsEnableNone(),
-		BonusRequiredSolve:  nil,
+		BonusRequiredSolve:  bonus_set.ItemCountsRequiredOptionsAny(),
 		BonusRequiredWeight: &BonusItems_Prot16_2pcOnly,
 
 		Professions: gear_model.ProfessionInfo{
@@ -144,7 +144,7 @@ func Model_PallyProtDps() gear_model.SpecModel {
 		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
 
 		BonusEnabled:        bonus_set.SpecSetsEnableNone(),
-		BonusRequiredSolve:  nil,
+		BonusRequiredSolve:  bonus_set.ItemCountsRequiredOptionsAny(),
 		BonusRequiredWeight: &BonusItems_ZeroAll,
 
 		Professions: gear_model.ProfessionInfo{
@@ -174,8 +174,8 @@ func Model_PallyRet() gear_model.SpecModel {
 		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
 		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
 
-		BonusEnabled:        bonus_set.SpecSetsEnableNamed("Battlegear of the Lightning Emperor", "Battlegear of Winged Triumph"),
-		BonusRequiredSolve:  nil,
+		BonusEnabled:        bonus_set.SpecSetsEnableNamed(setNameT15Ret, setNameT16Ret),
+		BonusRequiredSolve:  bonus_set.ItemCountsRequiredOptionsAny(),
 		BonusRequiredWeight: &BonusItems_Ret15_Ret16_2pcEach,
 
 		Professions: gear_model.ProfessionInfo{
@@ -184,27 +184,5 @@ func Model_PallyRet() gear_model.SpecModel {
 		},
 		ReferenceGearFile:        files.GearFileRet,
 		SpecificIncompatibleList: trinketsStrengthTankOnly,
-	}
-}
-
-func Model_Testing() gear_model.SpecModel {
-	spec := stats.Spec_PaladinProt
-	goal := stats.OptimiseGoal_Dps
-	return gear_model.SpecModel{
-		Spec:              spec,
-		Goal:              goal,
-		SimulateAs:        stats.Fight_Horridon_HighHeal,
-		StatWeights:       tools.StatRatingsWeights_Testing(),
-		StatRequirements:  requirements.StatRequirementsHitExpertise_None(),
-		StatsForWeighting: StatsForWeighting_strengthTank,
-		ReforgeRules:      gear_model.ReforgeRules_tank,
-		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
-		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
-		BonusEnabled:      bonus_set.SpecSetsEnableNone(),
-		Professions: gear_model.ProfessionInfo{
-			IsBlacksmith: true,
-			IsEngineer:   true,
-		},
-		ReferenceGearFile: files.GearFileProtDps,
 	}
 }

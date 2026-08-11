@@ -70,7 +70,7 @@ func (optionsMap *FullOptionsMap) FindItemIdFirst(itemId ItemId) *FullItem {
 			}
 		}
 	}
-	panic("no such item")
+	panic("item not in map " + itemId.String())
 }
 
 func (optionsMap *FullOptionsMap) FindItemIdFirstOptional(itemId ItemId) (*FullItem, bool) {

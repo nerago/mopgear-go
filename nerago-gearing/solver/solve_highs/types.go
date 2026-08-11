@@ -118,7 +118,7 @@ type SolverModel struct {
 
 	StatRequirements stats.StatTypeMap[weight_types.StatRangeFloat]
 
-	SetBonusAvoidNextStep    bool
+	SetBonusCountMode        bonus_set.ItemCountsRequiredMode
 	SetBonusRequiredCounts   []setBonusRequiredCounts
 	SetBonusTotalCount       int
 	SetBonusIndexForItem     func(id items.ItemId) (int, bool)
@@ -131,7 +131,7 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.Weigh
 	solveModel := &SolverModel{
 		CheckSet:               model.CheckSetForSolver,
 		StatRequirements:       toEnumMap(model.StatRequirements.AsMap()),
-		SetBonusAvoidNextStep:  model.BonusAvoidNextStep,
+		SetBonusCountMode:      model.BonusRequiredSolve.Mode,
 		SetBonusRequiredCounts: convertBonusRequired(model.BonusRequiredSolve, model.BonusEnabled.EnabledSets),
 		SetBonusTotalCount:     len(model.BonusEnabled.EnabledSets),
 		SetBonusIndexForItem:   model.BonusEnabled.BonusSetIndexForItem,
@@ -174,7 +174,7 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.Weigh
 }
 
 func convertBonusRequired(required bonus_set.ItemCountsRequiredOptions, enabledSets []bonus_set.PreparedBonus) []setBonusRequiredCounts {
-	return util_collection.MapSliceAsNew(required, func(setCounts *bonus_set.ItemCountsRequired) setBonusRequiredCounts {
+	return util_collection.MapSliceAsNew(required.Options, func(setCounts *bonus_set.ItemCountsRequired) setBonusRequiredCounts {
 		countsAsSlice := make(setBonusRequiredCounts, len(enabledSets))
 		for set, count := range setCounts.Pairs() {
 			setIndex := slices.IndexFunc(enabledSets, func(bonus bonus_set.PreparedBonus) bool {

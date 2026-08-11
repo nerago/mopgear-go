@@ -2,6 +2,7 @@ package solve_highs
 
 import (
 	"iter"
+	"paladin_gearing_go/gear_model/bonus_set"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
@@ -181,7 +182,7 @@ func (setup *singleGearSetShared) addMainOutputVariable(scaleOutputRating float6
 	setup.allColumns = append(setup.allColumns, &entry)
 }
 
-func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []setBonusRequiredCounts, avoidNextStep bool) {
+func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []setBonusRequiredCounts, countMode bonus_set.ItemCountsRequiredMode) {
 	if len(setBonusRequired) > 0 {
 		if len(setup.bonusData) == 0 {
 			panic("no bonusData to use for addSetNeededCounts")
@@ -191,10 +192,15 @@ func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []setBonus
 
 			rowSetCountRequired := util_highs.ConstraintRow{Debug: "rowSetCountRequired"}
 			rowSetCountRequired.Add(setCountCol.columnIndex, 1)
-			if avoidNextStep {
-				rowSetCountRequired.Build(setup.build, float64(needCount), float64(needCount+1))
-			} else {
+			switch countMode {
+			case bonus_set.CountMode_Exact:
+				rowSetCountRequired.Build(setup.build, float64(needCount), float64(needCount))
+			case bonus_set.CountMode_Minimum:
 				rowSetCountRequired.Build(setup.build, float64(needCount), util_highs.InfPos())
+			case bonus_set.CountMode_AllowPlusOne:
+				rowSetCountRequired.Build(setup.build, float64(needCount), float64(needCount+1))
+			default:
+				panic("unknown type")
 			}
 		} else {
 			oneOfTheseOptions := util_highs.ConstraintRow{}
@@ -207,10 +213,16 @@ func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []setBonus
 					setCountCol := setInfo.setTotalCountVar
 
 					var inRange util_highs.ColumnIndex
-					if avoidNextStep {
-						inRange = setup.build.ColumnIsBetweenConstants(setCountCol.columnIndex, float64(needCount), float64(needCount+1), 10, 1.0)
-					} else {
+					switch countMode {
+					case bonus_set.CountMode_Exact:
+						inRange = setup.build.CreateColumnBool(nil)
+						setup.build.ColumnIsEqualConstant(setCountCol.columnIndex, inRange, float64(needCount), 10, 1.0)
+					case bonus_set.CountMode_Minimum:
 						inRange = setup.build.ColumnIsGreaterOrEqualThanConstant(setCountCol.columnIndex, float64(needCount), 10, 1.0)
+					case bonus_set.CountMode_AllowPlusOne:
+						inRange = setup.build.ColumnIsBetweenConstants(setCountCol.columnIndex, float64(needCount), float64(needCount+1), 10, 1.0)
+					default:
+						panic("unknown type")
 					}
 					optionParts.AddInput(inRange)
 				}
