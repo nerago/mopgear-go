@@ -28,20 +28,35 @@ func preparedBonusMake(common dataEntry, variant dataEntryVariant) PreparedBonus
 		},
 	}
 	if extendedData, hasExtended := g_extendedData[variant.name]; hasExtended {
+		bonus0 := defaultMap()
+		pb.simBonus[0] = bonus0
+		pb.simBonus[1] = bonus0
 		bonus2 := convertToSimMap(extendedData[0])
-		bonus4 := convertToSimMap(extendedData[1])
 		pb.simBonus[2] = bonus2
 		pb.simBonus[3] = bonus2
+		bonus4 := convertToSimMap(extendedData[1])
 		pb.simBonus[4] = bonus4
 		pb.simBonus[5] = bonus4
 	}
 	return pb
 }
 
+func defaultMap() *stats.SimTypeMap[float64] {
+	simMap := &stats.SimTypeMap[float64]{}
+	for _, simType := range stats.SimTypeList {
+		simMap.Put(simType, 1)
+	}
+	return simMap
+}
+
 func convertToSimMap(ex map[stats.SimType]float64) *stats.SimTypeMap[float64] {
 	simMap := &stats.SimTypeMap[float64]{}
-	for simType, value := range ex {
-		simMap.Put(simType, value)
+	for _, simType := range stats.SimTypeList {
+		if value, hasValue := ex[simType]; hasValue {
+			simMap.Put(simType, value)
+		} else {
+			simMap.Put(simType, 1)
+		}
 	}
 	return simMap
 }

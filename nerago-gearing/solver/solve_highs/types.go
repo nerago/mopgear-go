@@ -26,12 +26,11 @@ type ISingleGearSet interface {
 type entryType int8
 
 const (
-	entry_item            entryType = iota
-	entry_set_total_count entryType = iota
-	entry_set_exact_count entryType = iota
-	entry_sum_rating      entryType = iota
-	entry_combo_active    entryType = iota
-	//entry_combo_output_weighted entryType = iota
+	entry_item                  entryType = iota
+	entry_set_total_count       entryType = iota
+	entry_set_exact_count       entryType = iota
+	entry_sum_rating            entryType = iota
+	entry_combo_active          entryType = iota
 	entry_main_output           entryType = iota
 	entry_multi_enable_forge    entryType = iota
 	entry_multi_output          entryType = iota
@@ -39,6 +38,7 @@ const (
 	entry_sim_value             entryType = iota
 	entry_sim_stat_value        entryType = iota
 	entry_sim_stat_value_option entryType = iota
+	entry_sim_value_combo       entryType = iota
 )
 
 type columnInfo struct {
@@ -69,9 +69,10 @@ func (colEntry columnInfo) ItemId() items.ItemId {
 }
 
 type bonusInfo struct {
-	setCountItems  func(*items.SolvableEquipMap) uint8
-	setMultipliers bonus_set.BonusByCountFlat
-	setIndex       solve_highs_types.SetBonusIndex
+	setCountItems       func(*items.SolvableEquipMap) uint8
+	setMultipliers      bonus_set.BonusByCountFlat
+	setMultipliersBySim bonus_set.BonusByCountBySim
+	setIndex            solve_highs_types.SetBonusIndex
 
 	countSetItemsRow  util_highs.ConstraintRow      // use to count items used from this set, has 1 or 0 flags
 	setTotalCountVar  *columnInfo                   // total count of items used
@@ -97,4 +98,23 @@ func (combo bonusCombo) debugStr() string {
 		build.WriteRune(' ')
 	}
 	return build.String()
+}
+
+func (combo bonusCombo) totalFlatMultiplier() float64 {
+	bonusMultiplier := 1.0
+	for _, setAndCount := range combo.condition {
+		bonusForCount := setAndCount.setInfo.setMultipliers[setAndCount.count]
+		bonusMultiplier *= bonusForCount
+	}
+	return bonusMultiplier
+}
+
+func (combo bonusCombo) totalMultiplierForSim(simType stats.SimType) float64 {
+	bonusMultiplier := 1.0
+	for _, setAndCount := range combo.condition {
+		simMap := setAndCount.setInfo.setMultipliersBySim[setAndCount.count]
+		bonusForCount := simMap.GetOrDefault(simType, 1)
+		bonusMultiplier *= bonusForCount
+	}
+	return bonusMultiplier
 }

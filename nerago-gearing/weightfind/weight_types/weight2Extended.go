@@ -13,25 +13,6 @@ import (
 // statA*weight2A + statB*weight2B + statC*weight2C = sim2
 // sim1*scale1+offset = 0-100 (better is higher)
 
-// statA*weight1A + statB*weight1B + statC*weight1C = simValue
-// (statA*weight1A + statB*weight1B + statC*weight1C)*scale + offset = simValue
-// (statA*weight1A + statB*weight1B + statC*weight1C)*scale - simValue = -offset
-// statA*weight1A + statB*weight1B + statC*weight1C - simValue/scale = -offset/scale
-
-// CALCULATION:
-// itemColumns * statTotalRows -> statTotalColumns
-// statTotalColumns * detailedWeights -> simValueTotalColumns
-// simValueTotalColumns * simRatioWeighting ->
-// combinedRatingVar * entry_permutation_active(column) -> entry_permutation_output_weighted(column)
-// entry_permutation_output_weighted(column) * permutation.weight -> mainOutputRow
-
-// another alternative is ignoring this complexity and going back closer to standard
-// weights*stats = simValue
-// that that only works for the positive model
-// the better starting point is: death = 100% - weightA*scaledStatA - weightB*scaledStatB
-// in more generic form:         simValue = sharedOffset + weightA*scaledStatA + weightB*scaledStatB  (allowing stats weights to go negative as much as they need)
-// advantage is this form can be used for everything
-
 // Weight2Extended
 type Weight2Extended struct {
 	DetailedWeights util_collection.MapMap[stats.StatType, stats.SimType, float64]

@@ -34,6 +34,7 @@ type SolverModel struct {
 	SetBonusCountItems       []func(*items.SolvableEquipMap) uint8
 	SetBonusMultipliersFlat  []bonus_set.BonusByCountFlat
 	SetBonusMultipliersBySim []bonus_set.BonusByCountBySim
+	SetBonusExtendedUseSim   bool
 }
 
 type OverrideBonusCounts struct {
@@ -62,9 +63,11 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.Weigh
 	case 2:
 		solveModel.Weights2 = weightExt.Weight2
 		solveModel.WeightsGeneric = weightExt.Weight2
+		solveModel.SetBonusExtendedUseSim = true
 	case 3:
 		solveModel.Weights3 = weightExt.Weight3
 		solveModel.WeightsGeneric = weightExt.Weight3
+		solveModel.SetBonusExtendedUseSim = true
 	default:
 		panic("invalid weight number")
 	}

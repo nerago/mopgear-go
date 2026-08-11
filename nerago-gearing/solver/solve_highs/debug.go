@@ -109,6 +109,9 @@ func debugPrintColumnEntry(colEntry *columnInfo, columnIndex util_highs.ColumnIn
 		printer.Printf("%d %f %s %s %s\n", columnIndex, outputValue, "sim stat value", colEntry.simType.Name(), colEntry.statType.Name())
 	case entry_sim_stat_value_option:
 		printer.Printf("%d %f %s %s %s %d %d\n", columnIndex, outputValue, "sim stat option", colEntry.simType.Name(), colEntry.statType.Name(), colEntry.statRange.Minimum, colEntry.statRange.Maximum)
+	case entry_sim_value_combo:
+		printer.Printf("%d %f %s %s\n", columnIndex, outputValue, "sim value for combo", colEntry.simType.Name())
+
 	default:
 		panic("unknown column")
 	}

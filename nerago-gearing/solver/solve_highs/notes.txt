@@ -1,0 +1,34 @@
+
+CALCULATION with weight 1:
+itemColumns * itemRatingPrecalc -> baseRatingSumRow
+baseRatingSumRow -> baseRatingSumVar
+baseRatingSumVar * entry_combo_active(column) -> entry_combo_output_weighted(column)
+entry_combo_output_weighted(column) * combo.multiply -> mainOutputRow
+mainOutputRow -> mainOutputVar
+
+CALCULATION with weight 2:
+itemColumns * statTotalRows -> statTotalColumns
+statTotalColumns * detailedWeights[sim][stat] -> simValueTotalColumns
+simValueTotalColumns -> combinedRatingVar
+combinedRatingVar * entry_combo_active(column) -> entry_combo_output_weighted(column)
+entry_combo_output_weighted(column) * combo.multiply -> mainOutputRow
+mainOutputRow -> mainOutputVar
+
+CALCULATION with weight 3:
+itemColumns * statTotalRows -> statTotalColumns
+statTotalColumns * rangeWeight -> simStatOptionColumn[]
+simStatOptionColumn[] -> simStatValueColumn
+simStatValueColumn -> simValueColumn
+simValueColumn * simRatioWeighting -> combinedRatingVar
+combinedRatingVar * entry_combo_active(column) -> entry_combo_output_weighted(column)
+entry_combo_output_weighted(column) * combo.multiply -> mainOutputRow
+mainOutputRow -> mainOutputVar
+
+
+
+CALCULATION with weight 2 + extended bonus data:
+itemColumns * statTotalRows -> statTotalColumns
+statTotalColumns * detailedWeights[sim][stat] -> simValueTotalColumns
+simValueTotalColumns * entry_combo_active(column) -> entry_sim_value_combo(column)
+entry_sim_value_combo(column) * combo.multiply -> mainOutputRow
+mainOutputRow -> mainOutputVar

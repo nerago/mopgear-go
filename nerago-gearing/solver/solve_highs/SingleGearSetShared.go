@@ -5,6 +5,8 @@ import (
 	"paladin_gearing_go/gear_model/bonus_set"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/solver/solve_highs_types"
+	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 	"strconv"
@@ -30,6 +32,26 @@ type singleGearSetShared struct {
 	allColumns  []*columnInfo
 }
 
+func (setup *singleGearSetShared) runForFutureResult(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder, scaleObjective float64) *util_async.FutureCancellable[items.SolvableItemSet] {
+	solutionFuture := setup.build.RunHighsFuture(nil)
+
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(result util_highs.LinearResult) (items.SolvableItemSet, bool) {
+		solution := result.GetSolution2AndSaveLog(printer)
+
+		printer.Printf("SOLUTION STATUS = %s\n", solution.Status().String())
+		debugPrint(solution, setup.build, setup.allColumns, printer)
+
+		if solution.HasSolution() {
+			itemSet := setup.buildResultSet(solution)
+			validateNewSet(itemSet, itemOptions, model.CheckSet)
+			checkSetRatingIsObjective(solution, &itemSet, model.CalcRatingSet, scaleObjective)
+			return itemSet, true
+		} else {
+			return items.SolvableItemSet{}, false
+		}
+	})
+}
+
 func (setup *singleGearSetShared) ColumnsForItemId(itemId items.ItemId) iter.Seq[*columnInfo] {
 	return setup.itemColumns.ValuesForKeyAsSeq(itemId)
 }
@@ -40,6 +62,14 @@ func (setup *singleGearSetShared) AllColumns() []*columnInfo {
 
 func (setup *singleGearSetShared) MainOutputVar() *columnInfo {
 	return setup.mainOutputVar
+}
+
+func (setup *singleGearSetShared) prepareCommon(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) {
+	setup.prepareEnabledSets(model)
+	setup.prepareSetCombos()
+	setup.prepareUniqueEquipped(itemOptions)
+	setup.addSetNeededCounts(model.SetBonusRequiredCounts, model.SetBonusCountMode)
+	setup.addMainOutputVariable(scaleOutputRating)
 }
 
 func (setup *singleGearSetShared) addItemCommon(itemSlot items.SlotEquip, item *items.SolvableItem, activeSet func(id items.ItemId) (int, bool)) util_highs.ColumnIndex {
@@ -94,15 +124,16 @@ func (setup *singleGearSetShared) finishItemsCommon(itemOptions *items.SolvableO
 	}
 }
 
-func (setup *singleGearSetShared) prepareActiveSetCombos(model *solve_highs_types.SolverModel) {
+func (setup *singleGearSetShared) prepareEnabledSets(model *solve_highs_types.SolverModel) {
 	// constrain: exact item count in each active set
 	if model.SetBonusTotalCount > 0 {
 		setup.bonusData = make([]bonusInfo, model.SetBonusTotalCount)
 		for setIndex := range model.SetBonusTotalCount {
 			info := bonusInfo{
-				setIndex:       solve_highs_types.SetBonusIndex(setIndex),
-				setCountItems:  model.SetBonusCountItems[setIndex],
-				setMultipliers: model.SetBonusMultipliersFlat[setIndex],
+				setIndex:            solve_highs_types.SetBonusIndex(setIndex),
+				setCountItems:       model.SetBonusCountItems[setIndex],
+				setMultipliers:      model.SetBonusMultipliersFlat[setIndex],
+				setMultipliersBySim: model.SetBonusMultipliersBySim[setIndex],
 			}
 			info.countSetItemsRow.Debug = "countSetItemsRow" + strconv.Itoa(setIndex)
 			setup.addSetItemCountVariable(&info)
@@ -112,23 +143,32 @@ func (setup *singleGearSetShared) prepareActiveSetCombos(model *solve_highs_type
 	}
 }
 
-func (setup *singleGearSetShared) multiplyRatingsByActiveSetCombo(combinedRatingVar *columnInfo, rangeHigh float64) {
+func (setup *singleGearSetShared) multiplyByActiveCombo(combinedRatingVar *columnInfo, outputVar *columnInfo, rangeHigh float64, getMultiplier func(*bonusCombo) float64) {
 	if len(setup.bonusData) > 0 {
-		setup.makeSetCombos()
-
-		checkSingleCombo := util_highs.ConstraintRow{}
-		for i := range setup.bonusCombos {
-			comboActiveVar := setup.buildSetMultipliedOutput(&setup.bonusCombos[i], combinedRatingVar, rangeHigh)
-			checkSingleCombo.Add(comboActiveVar.columnIndex, 1)
+		for combo := range util_collection.ForPointer(setup.bonusCombos) {
+			setup.buildSetMultipliedOutput(combo, combinedRatingVar, outputVar, rangeHigh, getMultiplier)
 		}
-		checkSingleCombo.Build(setup.build, 1, 1)
 	} else {
-		setup.buildSimpleNoSetsOutput(combinedRatingVar)
+		setup.buildSimpleNoSetsOutput(combinedRatingVar, outputVar)
 	}
 }
 
-func (setup *singleGearSetShared) makeSetCombos() {
+func (setup *singleGearSetShared) prepareSetCombos() {
+	if len(setup.bonusData) == 0 {
+		return
+	}
+
 	setup.makeSetCombosRecur(setup.bonusData, nil, 0)
+
+	for combo := range util_collection.ForPointer(setup.bonusCombos) {
+		setup.buildCombinationActivatingVar(combo)
+	}
+
+	checkSingleCombo := util_highs.ConstraintRow{}
+	for combo := range util_collection.ForPointer(setup.bonusCombos) {
+		checkSingleCombo.Add(combo.activatingVar.columnIndex, 1)
+	}
+	checkSingleCombo.Build(setup.build, 1, 1)
 }
 
 func (setup *singleGearSetShared) makeSetCombosRecur(setData []bonusInfo, built []bonusWithCount, builtComboItemCount int) {
@@ -144,32 +184,25 @@ func (setup *singleGearSetShared) makeSetCombosRecur(setData []bonusInfo, built 
 	}
 }
 
-func (setup *singleGearSetShared) buildSimpleNoSetsOutput(combinedRatingVar *columnInfo) {
+func (setup *singleGearSetShared) buildSimpleNoSetsOutput(inputVar *columnInfo, outputVar *columnInfo) {
 	// just copy initial rating sum into final if no sets
 	setup.build.ConstraintCopy(
-		combinedRatingVar.columnIndex, 1,
-		setup.mainOutputVar.columnIndex,
+		inputVar.columnIndex, 1,
+		outputVar.columnIndex,
 		"nullComboCopy",
 	)
 }
 
-func (setup *singleGearSetShared) buildSetMultipliedOutput(combo *bonusCombo, combinedRatingVar *columnInfo, rangeHigh float64) *columnInfo {
-	activatingVar := setup.buildCombinationActivatingVar(combo)
-
-	bonusMultiplier := 1.0
-	for _, setAndCount := range combo.condition {
-		bonusForCount := setAndCount.setInfo.setMultipliers[setAndCount.count]
-		bonusMultiplier *= bonusForCount
-	}
+func (setup *singleGearSetShared) buildSetMultipliedOutput(combo *bonusCombo, inputVar *columnInfo, outputVar *columnInfo, rangeHigh float64, getMultiplier func(*bonusCombo) float64) {
+	activatingVar := combo.activatingVar
+	bonusMultiplier := getMultiplier(combo)
 
 	setup.build.ConstraintCopyIfBool(
 		activatingVar.columnIndex,
-		combinedRatingVar.columnIndex, bonusMultiplier,
-		setup.mainOutputVar.columnIndex,
+		inputVar.columnIndex, bonusMultiplier,
+		outputVar.columnIndex,
 		rangeHigh,
 	)
-
-	return activatingVar
 }
 
 func (setup *singleGearSetShared) addMainOutputVariable(scaleOutputRating float64) {
@@ -241,7 +274,7 @@ func (setup *singleGearSetShared) addSetNeededCounts(setBonusRequired []solve_hi
 }
 
 // logical AND between exact count vars
-func (setup *singleGearSetShared) buildCombinationActivatingVar(combo *bonusCombo) *columnInfo {
+func (setup *singleGearSetShared) buildCombinationActivatingVar(combo *bonusCombo) {
 	comboActiveBool := &columnInfo{entryType: entry_combo_active, combo: combo}
 	comboActiveBool.columnIndex = setup.build.CreateColumnBool(comboActiveBool)
 	combo.activatingVar = comboActiveBool
@@ -256,8 +289,6 @@ func (setup *singleGearSetShared) buildCombinationActivatingVar(combo *bonusComb
 		buildAnd.AddInput(specificExactBool.columnIndex)
 	}
 	buildAnd.Build(setup.build)
-
-	return comboActiveBool
 }
 
 func (setup *singleGearSetShared) addSetItemCountVariable(info *bonusInfo) {
