@@ -28,13 +28,20 @@ import (
 	"time"
 )
 
-const c_timeoutSolvers = 3000
-const c_timeoutSolversFit = 6000
-const c_simDataAgeMax = 48 * time.Hour
-const c_updateThreadCount = 3
+const (
+	c_timeoutSolvers    = 2000
+	c_timeoutSolversFit = 2000
+	c_simDataAgeMax     = 48 * time.Hour
+	c_updateThreadCount = 2
 
-const c_eachSimTargetSampleDataCount = 600
-const c_fitDataSample = 400
+	c_eachSimTargetGenerateDataCount = 600
+
+	c_dataSampleFitRank = 400
+	c_dataSampleGrid    = 256
+	c_userSamplingFit   = true
+	c_useSamplingRank   = true
+	c_useSamplingGrid   = true
+)
 
 type WeightUpdateProcess struct {
 	simSpeed     simulate.WowSim_RunSize
@@ -257,7 +264,7 @@ func (spec *WeightSpec) prepareSimData(tracker *util.TrackProgress, cancel util_
 		tracker.NewChild().SetDone()
 	}
 	if inputDataReal == nil {
-		inputDataReal = SimulateRealRandomSets(spec.GearFile, spec.SubstituteItems, &spec.Model, c_eachSimTargetSampleDataCount,
+		inputDataReal = SimulateRealRandomSets(spec.GearFile, spec.SubstituteItems, &spec.Model, c_eachSimTargetGenerateDataCount,
 			spec.process.simSpeed, spec.FixStatsMode, spec.process.printer, tracker.NewChild(), spec.Label, cancel)
 		writeWeightInputsToFile(inputDataReal, tempPathReal)
 	} else {
@@ -307,6 +314,11 @@ func (spec *WeightSpec) loadOldWeights() {
 }
 
 func (spec *WeightSpec) solveGridWeights(gridOutlierSetting int, cancel util_async.CancelSignal) {
+	gridData := spec.dataGrid
+	if c_useSamplingGrid {
+		gridData = util_collection.SliceSampleRandom(gridData, c_dataSampleGrid)
+	}
+
 	grid := weight_highs.GridStatWeightProcess1B{}
 	grid.OUTLIER = gridOutlierSetting
 	grid.SCALEMODE = 1
@@ -315,7 +327,7 @@ func (spec *WeightSpec) solveGridWeights(gridOutlierSetting int, cancel util_asy
 	grid.Init(spec.process.printer, c_timeoutSolvers)
 	grid.SetTargetRatios(spec.targetRatio)
 	grid.SetRequiredStats(spec.statTypes)
-	grid.SupplyData(spec.dataGrid)
+	grid.SupplyData(gridData)
 	weightsFuture := grid.Run()
 	util_async.ChainCancel(cancel, weightsFuture)
 
@@ -402,12 +414,17 @@ func (spec *WeightSpec) bestWeightChoiceExtended() (util_collection.Optional[wei
 }
 
 func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.CancelSignal) {
+	rankData := spec.dataAll
+	if c_useSamplingRank {
+		rankData = util_collection.SliceSampleRandom(rankData, c_dataSampleFitRank)
+	}
+
 	if rankMode == 0 {
 		ranking := weight_highs.RankingStatWeightProcess3c{}
 		ranking.Init(spec.process.printer, c_timeoutSolvers)
 		ranking.SetRequiredStats(spec.statTypes)
 		ranking.SetTargetRatios(spec.targetRatio)
-		ranking.SupplyData(spec.dataAll)
+		ranking.SupplyData(rankData)
 		weightsFuture := ranking.RunMultiRound()
 		util_async.ChainCancel(cancel, weightsFuture)
 		spec.evaluateWeightFuture("RANK3C", weightsFuture)
@@ -418,7 +435,7 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		ranking.Init(spec.process.printer, c_timeoutSolvers)
 		ranking.SetRequiredStats(spec.statTypes)
 		ranking.SetTargetRatios(spec.targetRatio)
-		ranking.SupplyData(spec.dataAll)
+		ranking.SupplyData(rankData)
 		var weightsFuture *util_async.FutureCancellable[weight_types.WeightResult]
 		//if bestWeightsSoFar, hasBest := spec.bestWeightChoice(); hasBest {
 		//	weightsFuture = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
@@ -434,7 +451,7 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		ranking.Init(spec.process.printer, c_timeoutSolvers)
 		ranking.SetRequiredStats(spec.statTypes)
 		ranking.SetTargetRatios(spec.targetRatio)
-		ranking.SupplyData(spec.dataAll)
+		ranking.SupplyData(rankData)
 		var weightsFuture *util_async.FutureCancellable[weight_types.WeightResult]
 		//if bestWeightsSoFar, hasBest := spec.bestWeightChoice(); hasBest {
 		//	weightsFuture = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
@@ -450,7 +467,7 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		ranking.Init(spec.process.printer)
 		ranking.SetRequiredStats(spec.statTypes)
 		ranking.SetTargetRatios(spec.targetRatio)
-		ranking.SupplyData(spec.dataAll)
+		ranking.SupplyData(rankData)
 		weightsFuture := ranking.Run(c_timeoutSolvers)
 		util_async.ChainCancel(cancel, weightsFuture)
 		spec.evaluateWeightFuture("RANK1-0", weightsFuture)
@@ -461,7 +478,7 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		ranking.Init(spec.process.printer)
 		ranking.SetRequiredStats(spec.statTypes)
 		ranking.SetTargetRatios(spec.targetRatio)
-		ranking.SupplyData(spec.dataAll)
+		ranking.SupplyData(rankData)
 		weightsFuture := ranking.Run(c_timeoutSolvers)
 		util_async.ChainCancel(cancel, weightsFuture)
 		spec.evaluateWeightFuture("RANK1-1", weightsFuture)
@@ -481,13 +498,15 @@ func (spec *WeightSpec) solveFormulaWeight(cancel util_async.CancelSignal) {
 }
 
 func (spec *WeightSpec) solveFittingWeight(cancel util_async.CancelSignal, tracker *util.TrackProgress) {
-	sampleData := util_collection.SliceSampleRandom(spec.dataAll, c_fitDataSample)
-
 	comp := fitting3.FittingEachStatWeightProcess3{}
 	comp.Init(3, spec.process.printer, c_timeoutSolversFit)
 	comp.SetRequiredStats(spec.statTypes, spec.simTypes)
 	comp.SetTargetRatios(spec.targetRatio)
-	comp.SupplyData(sampleData)
+	if c_userSamplingFit {
+		comp.SupplyData(util_collection.SliceSampleRandom(spec.dataAll, c_dataSampleFitRank))
+	} else {
+		comp.SupplyData(spec.dataAll)
+	}
 	weights3 := comp.Run(cancel, tracker)
 	spec.evaluateWeight("FITTING3", weights3.AsWeight1(), weights3.Weight, &weights3)
 }

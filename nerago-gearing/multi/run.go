@@ -16,14 +16,14 @@ func (job *MultiSetJob) RunNoPermutations_BestOnly(alsoExistingEquipped bool, al
 	cancelGenerate := util_async.CancelSignal_Make()
 	util_async.CancelOnKeyPress(cancelGenerate)
 
-	proposalMix := util_async.FutureChannelMixerMake[multi_types.MultiProposedOutput]()
+	proposalMix := util_async.FutureChannelMixer[multi_types.MultiProposedOutput]{}
 	expectedCount := 0
 
 	for _, weightType := range job.input.WeightTypeList {
 		proposalFuture := job.proposalSingleBest(weightType)
 		util_async.ChainCancel(cancelGenerate, proposalFuture)
 
-		proposalMix.AddFuture(proposalFuture)
+		proposalMix.AddFutureCancellable(proposalFuture)
 		expectedCount++
 	}
 

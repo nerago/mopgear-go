@@ -179,6 +179,7 @@ func (process *SolverHighsMultiProcess) generateWithDifferentVariants(blockPlans
 		} else {
 			futureResult = process.runVariant(build, innerPrint, nil)
 		}
+		util_async.ChainCancel(cancel, futureResult)
 
 		if result, hasResult := futureResult.WaitForResult(); hasResult {
 			resultChannel <- result

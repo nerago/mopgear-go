@@ -188,12 +188,12 @@ func findUpgrades_Paladin() {
 			},
 			SimSizeBaseline:              simSizeBaseline,
 			SimSizeItemInitial:           simSizePerItem,
-			ExtraSimForTopResultsCount:   4,
+			ExtraSimForTopResultsCount:   2,
 			ExtraSimForTopResultsSimSize: simSizeTopN,
 		},
 		Specs: []upgrades.FindUpgrades_Spec{
 			{
-				Label:                   "dps",
+				Label:                   "damage",
 				Model:                   model_factory.Model_PallyProtDamage(),
 				GearFile:                files.GearFileProtDamage,
 				ItemFinder:              finder,
@@ -201,7 +201,7 @@ func findUpgrades_Paladin() {
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
-				Label:                   "compromise",
+				Label:                   "balance",
 				Model:                   model_factory.Model_PallyProtBalanced(),
 				GearFile:                files.GearFileProtBalanced,
 				ItemFinder:              finder,
@@ -209,7 +209,7 @@ func findUpgrades_Paladin() {
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
-				Label:                   "mit_noset",
+				Label:                   "miti",
 				Model:                   model_factory.Model_PallyProtMitigation(),
 				GearFile:                files.GearFileProtMitigation,
 				ItemFinder:              finder,
@@ -217,7 +217,7 @@ func findUpgrades_Paladin() {
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
-				Label:                   "mit_set",
+				Label:                   "survival",
 				Model:                   model_factory.Model_PallyProtSurvival(),
 				GearFile:                files.GearFileProtSurvival,
 				ItemFinder:              finder,

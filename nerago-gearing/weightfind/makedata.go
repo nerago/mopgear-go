@@ -78,7 +78,7 @@ func makePermutationsForGridSim2(statList []stats.StatType, incrementStep int32,
 	allCombos = append(allCombos, makeWithAllSameValue(statList, incrementLo))
 
 	var incrementHi int32 = incrementStep
-	for len(allCombos) < c_eachSimTargetSampleDataCount && incrementHi <= incrementMax {
+	for len(allCombos) < c_eachSimTargetGenerateDataCount && incrementHi <= incrementMax {
 		// add the high version first so make sure it's more likely to make it when we cut off the list
 		allCombos = append(allCombos, makeWithAllSameValue(statList, incrementHi))
 
@@ -90,8 +90,8 @@ func makePermutationsForGridSim2(statList []stats.StatType, incrementStep int32,
 		incrementHi += incrementStep
 	}
 
-	if len(allCombos) > c_eachSimTargetSampleDataCount {
-		allCombos = allCombos[0:c_eachSimTargetSampleDataCount]
+	if len(allCombos) > c_eachSimTargetGenerateDataCount {
+		allCombos = allCombos[0:c_eachSimTargetGenerateDataCount]
 	}
 
 	return allCombos

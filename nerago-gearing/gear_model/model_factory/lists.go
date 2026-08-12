@@ -51,25 +51,25 @@ var BonusItems_Ret15_Ret16_2pcEach = bonus_set.ItemCountsRequiredMake(
 // for noset - juggernaut, shamans, siegecrafter
 var SimPriority_mitigation = weight_types.SimPriorityBasic_Make(
 	stats.Sim_DPS, 0.2,
-	stats.Sim_DEATH, 0.1,
-	stats.Sim_TMI, 0.3,
+	stats.Sim_DEATH, 0.2,
+	stats.Sim_TMI, 0.2,
 	stats.Sim_DTPS, 0.4,
 )
 
 // for withset - malkrok, thok, nazgrim
 var SimPriority_survival = weight_types.SimPriorityBasic_Make(
 	stats.Sim_DPS, 0.01,
-	stats.Sim_DEATH, 0.35,
-	stats.Sim_TMI, 0.09,
-	stats.Sim_DTPS, 0.55,
+	stats.Sim_DEATH, 0.32,
+	stats.Sim_TMI, 0.17,
+	stats.Sim_DTPS, 0.50,
 )
 
 // for compromise set - spoils, galakras, paragons, etc
 var SimPriority_balanced = weight_types.SimPriorityBasic_Make(
 	stats.Sim_DPS, 0.40,
 	stats.Sim_DEATH, 0.15,
-	stats.Sim_TMI, 0.30,
-	stats.Sim_DTPS, 0.15,
+	stats.Sim_TMI, 0.25,
+	stats.Sim_DTPS, 0.20,
 )
 
 // for dps set
@@ -82,11 +82,11 @@ var SimPriority_dps = weight_types.SimPriorityBasic_Make(
 
 // for heal set, garrosh, immerseus
 var SimPriority_heal = weight_types.SimPriorityBasic_Make(
-	stats.Sim_DPS, 0.10,
+	stats.Sim_DPS, 0.15,
 	stats.Sim_HPS, 0.20,
 	stats.Sim_DEATH, 0.10,
 	stats.Sim_TMI, 0.15,
-	stats.Sim_DTPS, 0.45,
+	stats.Sim_DTPS, 0.40,
 )
 
 // for ret set

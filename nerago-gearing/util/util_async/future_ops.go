@@ -191,6 +191,10 @@ func (fa *FutureValueAdder[T]) ReadyUpAndPrepareChannel() <-chan T {
 	fa.mutex.Lock()
 	defer fa.mutex.Unlock()
 
+	if fa.ready {
+		panic("already called ready")
+	}
+
 	fa.ready = true
 	if fa.waitingFutures > 0 {
 		return fa.channel
@@ -212,7 +216,7 @@ func (fa *FutureValueAdder[T]) processValue(value T) {
 	}
 
 	fa.waitingFutures--
-	if fa.waitingFutures <= 0 && fa.ready {
+	if fa.waitingFutures <= 0 && fa.ready && fa.channel != nil {
 		close(fa.channel)
 		fa.channel = nil
 	}
@@ -223,7 +227,7 @@ func (fa *FutureValueAdder[T]) processFail() {
 	defer fa.mutex.Unlock()
 
 	fa.waitingFutures--
-	if fa.waitingFutures <= 0 && fa.ready {
+	if fa.waitingFutures <= 0 && fa.ready && fa.channel != nil {
 		close(fa.channel)
 		fa.channel = nil
 	}
@@ -243,95 +247,6 @@ func (fa *FutureValueAdderInt) AddValueImmediate(value int) {
 }
 
 type FutureChannelMixer[T any] struct {
-	mutex         sync.Mutex
-	activeSources int
-	outputChannel chan T
-	ready         bool
-}
-
-func FutureChannelMixerMake[T any]() *FutureChannelMixer[T] {
-	return &FutureChannelMixer[T]{outputChannel: make(chan T, 64)}
-}
-
-func (fc *FutureChannelMixer[T]) AddFuture(future IFutureWithResult[T]) {
-	fc.mutex.Lock()
-	fc.activeSources++
-	fc.mutex.Unlock()
-
-	future.ForwardResultToRelevantCallback(fc.processValue, fc.processFail)
-}
-
-func (fc *FutureChannelMixer[T]) AddChannel(inputChannel <-chan T) {
-	fc.mutex.Lock()
-	fc.activeSources++
-	fc.mutex.Unlock()
-
-	go func() {
-		for value := range inputChannel {
-			fc.outputChannel <- value
-		}
-
-		fc.mutex.Lock()
-		fc.sourceFinished()
-		fc.mutex.Unlock()
-	}()
-}
-
-// adding directly to channel with a big buffer might be fairly reliable, but run inside a goroutine to ensure no block
-func (fc *FutureChannelMixer[T]) AddValue(value T) {
-	fc.mutex.Lock()
-	fc.activeSources++
-	fc.mutex.Unlock()
-
-	go func() {
-		fc.processValue(value)
-	}()
-}
-
-// confirm most of the expected futures have been added
-// more can be added safely but may not be processed
-func (fc *FutureChannelMixer[T]) ReadyUpAndPrepareChannel() <-chan T {
-	fc.mutex.Lock()
-	defer fc.mutex.Unlock()
-
-	fc.ready = true
-	if fc.activeSources > 0 {
-		return fc.outputChannel
-	} else {
-		channelResult := fc.outputChannel
-		close(fc.outputChannel)
-		fc.outputChannel = nil
-		return channelResult
-	}
-}
-
-func (fc *FutureChannelMixer[T]) processValue(value T) {
-	fc.mutex.Lock()
-	defer fc.mutex.Unlock()
-
-	if fc.outputChannel != nil {
-		fc.outputChannel <- value
-	}
-
-	fc.sourceFinished()
-}
-
-func (fc *FutureChannelMixer[T]) processFail() {
-	fc.mutex.Lock()
-	defer fc.mutex.Unlock()
-
-	fc.sourceFinished()
-}
-
-func (fc *FutureChannelMixer[T]) sourceFinished() {
-	fc.activeSources--
-	if fc.activeSources <= 0 && fc.ready {
-		close(fc.outputChannel)
-		fc.outputChannel = nil
-	}
-}
-
-type FutureChannelMixer2[T any] struct {
 	mutex               sync.Mutex
 	activeSources       int
 	outputChannel       chan T
@@ -342,48 +257,58 @@ type FutureChannelMixer2[T any] struct {
 	sourceValues        []T
 }
 
-func (fc *FutureChannelMixer2[T]) AddFuture(future *Future[T]) {
+func (fc *FutureChannelMixer[T]) AddFuture(future *Future[T]) {
+	fc.mutex.Lock()
+	defer fc.mutex.Unlock()
 	if fc.ready {
 		panic("can't add source after ready")
 	}
-	fc.mutex.Lock()
+
+	future.verifyCanWait()
 	fc.sourceFutures = append(fc.sourceFutures, future)
-	fc.mutex.Unlock()
 }
 
-func (fc *FutureChannelMixer2[T]) AddFutureCancellable(future *FutureCancellable[T]) {
+func (fc *FutureChannelMixer[T]) AddFutureCancellable(future *FutureCancellable[T]) {
+	fc.mutex.Lock()
+	defer fc.mutex.Unlock()
 	if fc.ready {
 		panic("can't add source after ready")
 	}
-	fc.mutex.Lock()
+
+	future.verifyCanWait()
 	fc.sourceFuturesCancel = append(fc.sourceFuturesCancel, future)
-	fc.mutex.Unlock()
 }
 
-func (fc *FutureChannelMixer2[T]) AddChannel(inputChannel <-chan T) {
+func (fc *FutureChannelMixer[T]) AddChannel(inputChannel <-chan T) {
+	fc.mutex.Lock()
+	defer fc.mutex.Unlock()
 	if fc.ready {
 		panic("can't add source after ready")
 	}
-	fc.mutex.Lock()
+
 	fc.sourceChannels = append(fc.sourceChannels, inputChannel)
-	fc.mutex.Unlock()
 }
 
 // adding directly to channel with a big buffer might be fairly reliable, but run inside a goroutine to ensure no block
-func (fc *FutureChannelMixer2[T]) AddValue(value T) {
+func (fc *FutureChannelMixer[T]) AddValue(value T) {
+	fc.mutex.Lock()
+	defer fc.mutex.Unlock()
 	if fc.ready {
 		panic("can't add source after ready")
 	}
-	fc.mutex.Lock()
+
 	fc.sourceValues = append(fc.sourceValues, value)
-	fc.mutex.Unlock()
 }
 
 // confirm most of the expected futures have been added
 // more can be added safely but may not be processed
-func (fc *FutureChannelMixer2[T]) ReadyUpAndPrepareChannel() <-chan T {
+func (fc *FutureChannelMixer[T]) ReadyUpAndPrepareChannel() <-chan T {
 	fc.mutex.Lock()
 	defer fc.mutex.Unlock()
+
+	if fc.ready {
+		panic("already called ready")
+	}
 
 	fc.ready = true
 	if len(fc.sourceChannels) == 0 && len(fc.sourceFutures) == 0 && len(fc.sourceFuturesCancel) == 0 {
@@ -402,14 +327,14 @@ func (fc *FutureChannelMixer2[T]) ReadyUpAndPrepareChannel() <-chan T {
 	return fc.outputChannel
 }
 
-func (fc *FutureChannelMixer2[T]) drainValues() {
+func (fc *FutureChannelMixer[T]) drainValues() {
 	for _, value := range fc.sourceValues {
 		fc.outputChannel <- value
 	}
 	fc.sourceValues = nil
 }
 
-func (fc *FutureChannelMixer2[T]) selectLoop() {
+func (fc *FutureChannelMixer[T]) selectLoop() {
 	count := len(fc.sourceChannels) + len(fc.sourceFutures) + len(fc.sourceFuturesCancel)
 	cases := make([]reflect.SelectCase, 0, count)
 	for _, channel := range fc.sourceChannels {

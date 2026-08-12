@@ -26,7 +26,7 @@ func (job *MultiSetJob) proposalSingleBest(weightType weight_types.WeightType) *
 }
 
 func (job *MultiSetJob) proposalsAllCommonAlternates(cancelGenerate util_async.CancelSignal, extendedAlternates bool, includeInterimResults bool) (*util_async.FutureChannelMixer[multi_types.MultiProposedOutput], *util_async.FutureValueAdder[int]) {
-	proposalMix := util_async.FutureChannelMixerMake[multi_types.MultiProposedOutput]()
+	proposalMix := &util_async.FutureChannelMixer[multi_types.MultiProposedOutput]{}
 	futureAdder := util_async.FutureValueAdderMake(0, func(a int, b int) int { return a + b })
 
 	for _, weightType := range job.input.WeightTypeList {
@@ -183,15 +183,21 @@ func (job *MultiSetJob) highProcessSetupRestrictedOnBaseline(baselineWork *specW
 }
 
 func (job *MultiSetJob) restrictOptionsToVersionsInSet(itemOptions *items.FullOptionsMap, baselineSet *items.FullItemSet) {
-	itemOptions.FilterAllItems(func(check *items.FullItem) bool {
-		// NOTE assumes unique equipped
-		baseItem := baselineSet.Items().FindItemId(check.ItemId())
-		if baseItem != nil {
-			return baseItem.Equals(check)
-		} else {
-			return true
+	for slot := range itemOptions {
+		if len(itemOptions[slot]) > 0 {
+			itemOptions[slot] = util_collection.FilterSliceAsNew(itemOptions[slot], func(check *items.FullItem) bool {
+				baseItem := baselineSet.Items().FindItemId(check.ItemId())
+				if baseItem != nil {
+					return baseItem.Equals(check)
+				} else {
+					return true
+				}
+			})
+			if len(itemOptions[slot]) == 0 {
+				itemOptions[slot] = []items.FullItem{*baselineSet.Items()[slot]}
+			}
 		}
-	})
+	}
 }
 
 func (job *MultiSetJob) makeProposalFromHighs(multiResult solve_highs.HighsMultiResult, printer *util.PrintRecorder, proposalId string, weightType weight_types.WeightType) multi_types.MultiProposedOutput {

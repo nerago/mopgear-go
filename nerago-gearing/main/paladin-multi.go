@@ -156,10 +156,10 @@ func PaladinMultiRun() {
 	//simSize := simulate.RunSize_QuickDirty
 
 	job := multi_types.JobInputs{}
-	job.SetWeightTypes(1, 2, 3)
-	//job.SetWeightTypes(1, 2)
+	//job.SetWeightTypes(1, 2, 3)
+	job.SetWeightTypes(1, 2)
 	job.SetSimSize(simSize)
-	job.SetReforgingAllowNonCommon(true)
+	job.SetReforgingAllowNonCommon(false)
 	//job.SetWriteBestToGearFiles()
 
 	var generalUpgrade items.UpgradeLevel = 0
@@ -405,21 +405,20 @@ func PaladinMultiRun() {
 	//ret.ForceTryAllSlot(items.Equip_Weapon, []items.ItemId{104981, 86386})
 	//job.AddAlternateUpgradeChoices(
 	//	99028,  // Handguards of Winged Triumph celestial
-	//	105090, // Ominous Mogu Greatboots
+	//	105090, // Ominous Mogu Greatboots celestial
 	//	105122, // Asgorathian Blood Seal
 	//	105033, // Wolf-Rider Spurs
 	//	//103972,                     // kilruk sword
-	//	101947,                     // Elder Tortoiseshell Seal
-	//	99026,                      // Legguards of Winged Triumph celestial
-	//	103915,                     // Icy Blood Chestplate
-	//	104938,                     // Sorrowpath Signet celestial
-	//	98986,                      // Legplates of Winged Triumph celestial
-	//	trinketSkeerBloodCelestial, // trinketSkeerBloodCelestial - str/crit
-	//	trinketFusionCoreCelestial, // str/crit
+	//	101947, // Elder Tortoiseshell Seal
+	//	103915, // Icy Blood Chestplate
+	//	104938, // Sorrowpath Signet celestial
+	//	103798, // bloodclaw band
+	//	103737, // breastplate shaman mirror
 	//)
-	//job.AddAlternateUpgradeChoices(trinketSkeerBloodCelestial)
+	//job.AddAlternateUpgradeChoices(105033) // Wolf-Rider Spurs
+	//job.AddAlternateUpgradeChoices(103798) // Bloodclaw Band
 
-	job.EnablePermuteOnItemCountOptions()
+	//job.EnablePermuteOnItemCountOptions()
 
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()
@@ -428,7 +427,7 @@ func PaladinMultiRun() {
 
 	//job.RunNoPermutations_AllCommonAlternates(true, true)
 	run.RunNoPermutations_BestOnly(true, true)
-	//job.RunForSolutionsPerPermute(12, true)
+	//run.RunForSolutionsPerPermute(1, false)
 
 	//job.CullingReport()
 	//job.RunCullingSets(500, time.Minute*30)

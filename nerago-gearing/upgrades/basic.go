@@ -11,6 +11,7 @@ import (
 	"paladin_gearing_go/tools"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_collection"
+	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 )
 
@@ -118,7 +119,7 @@ func findBase(baseItems *items.FullOptionsMap, model *gear_model.SpecModel, inpu
 	return output.ResultRating, &output.FullSet
 }
 
-func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *gear_model.SpecModel, parentPrinter *util.PrintRecorder, forceIncludeMost bool, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) upgradeItemResult {
+func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *gear_model.SpecModel, parentPrinter *util.PrintRecorder, forceIncludeMost bool, substituteEmptySlotOnly map[items.SlotItem]items.ItemId, weightType weight_types.WeightType) upgradeItemResult {
 	slot := extraTask.slot
 	incompleteItem := extraTask.item // this "item" is from ItemFinder and not a full item
 	itemId := incompleteItem.ItemId
@@ -147,6 +148,7 @@ func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptions
 	output := solver.Solver(solver.SolveInput{
 		ItemOptions: &jobItems,
 		Model:       model,
+		WeightType:  weightType,
 		Printer:     printer,
 	})
 
