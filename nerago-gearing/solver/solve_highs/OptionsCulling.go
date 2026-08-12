@@ -83,7 +83,9 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 	linearBuild.Solver = util_highs.Solver_MIP_Interior
 	linearBuild.NoOutput = true
 
-	setup := makeGearSetBasic(&linearBuild, process.solveModel, &itemOptions, 1)
+	single := makeGearSetBasic(&linearBuild)
+	outputVar := single.createOutputVariableForSeparateRun()
+	single.setup(process.solveModel, &itemOptions, outputVar)
 
 	solutionFuture := linearBuild.RunHighsFuture(nil)
 	util_async.ChainCancel(cancel, solutionFuture)
@@ -99,9 +101,9 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 		}
 
 		if solution.HasSolution() {
-			result := setup.buildResultSet(solution)
+			result := single.buildResultSet(solution)
 			validateNewSet(result, &itemOptions, process.solveModel.CheckSet)
-			checkSetRatingIsObjective(solution, &result, process.solveModel.CalcRatingSet, c_single_basic_scaled_ratings)
+			single.checkSetRatingIsObjective(solution, &result, process.solveModel.CalcRatingSet)
 			resultChannel <- result
 			process.tasksCompleted.Add(1)
 		}

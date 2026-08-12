@@ -17,7 +17,7 @@ import (
 )
 
 func (job *MultiSetJob) proposalSingleBest(weightType weight_types.WeightType) *util_async.FutureCancellable[multi_types.MultiProposedOutput] {
-	highProcess := job.highProcessSetup(weightType)
+	highProcess := job.highProcessSetup_SingleOrInitial(weightType)
 	futureResult := highProcess.RunInterruptable(job.printer)
 
 	return util_async.FutureCancellable_MapValue(futureResult, func(result solve_highs.HighsMultiResult) (multi_types.MultiProposedOutput, bool) {
@@ -30,7 +30,7 @@ func (job *MultiSetJob) proposalsAllCommonAlternates(cancelGenerate util_async.C
 	futureAdder := util_async.FutureValueAdderMake(0, func(a int, b int) int { return a + b })
 
 	for _, weightType := range job.input.WeightTypeList {
-		highProcess := job.highProcessSetup(weightType)
+		highProcess := job.highProcessSetup_SingleOrInitial(weightType)
 
 		multiSolveChannel, expectedCountFuture := highProcess.RunForSeveral_CommonDifferent(job.printer, util_collection.Optional_Empty[int](), cancelGenerate, extendedAlternates, includeInterimResults)
 
@@ -130,7 +130,7 @@ func (job *MultiSetJob) checkNoPermutations() {
 	}
 }
 
-func (job *MultiSetJob) highProcessSetup(weightType weight_types.WeightType) *solve_highs.SolverHighsMultiProcess {
+func (job *MultiSetJob) highProcessSetup_SingleOrInitial(weightType weight_types.WeightType) *solve_highs.SolverHighsMultiProcess {
 	highProcess := new(solve_highs.SolverHighsMultiProcess)
 
 	itemOptionsEach := make(map[string]*items.FullOptionsMap)
@@ -144,7 +144,7 @@ func (job *MultiSetJob) highProcessSetup(weightType weight_types.WeightType) *so
 	for label, work := range job.working.SeqKey1ValueWithKey2(weightType) {
 		highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
 			Label:          label,
-			ItemOptions:    work.itemPrep.itemOptions,
+			ItemOptions:    *itemOptionsEach[label],
 			SolverModel:    *solve_highs_types.SolverModelBuild(&work.itemPrep.model, work.weightType, nil),
 			RatingMultiply: work.ratingMultiply,
 		})

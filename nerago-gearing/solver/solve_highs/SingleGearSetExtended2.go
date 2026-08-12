@@ -19,36 +19,41 @@ func SingleGearSetExtended2Main(itemOptions *items.SolvableOptionsMap, model *so
 	build := util_highs.LinearBuilder{}
 	build.Solver = util_highs.Solver_MIP_Interior
 
-	setup := makeGearSetExtended2(&build, model, itemOptions, 1)
+	se2 := makeGearSetExtended2(&build)
+	outputVar := se2.createOutputVariableForSeparateRun()
+	se2.setup(model, itemOptions, outputVar)
 
-	return setup.runForFutureResult(itemOptions, model, printer, 1)
+	return se2.runForFutureResult(itemOptions, model, printer)
 }
 
-func makeGearSetExtended2(build *util_highs.LinearBuilder, model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetExtended2 {
-	setup := singleGearSetExtended2{
+func makeGearSetExtended2(build *util_highs.LinearBuilder) *singleGearSetExtended2 {
+	return &singleGearSetExtended2{
 		singleGearSetExtended: singleGearSetExtended{
-			singleGearSetShared: singleGearSetShared{build: build},
+			singleGearSetShared: singleGearSetShared{
+				build:          build,
+				ratingPreScale: 1,
+			},
 		},
 	}
+}
 
-	setup.prepareCommon(model, itemOptions, scaleOutputRating)
-	setup.prepareStatTotals()
-	setup.prepareRequireEx(&model.StatRequirements)
+func (se2 *singleGearSetExtended2) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, outputVar *columnInfo) {
+	se2.prepareCommon(model, itemOptions)
+	se2.prepareStatTotals()
+	se2.prepareRequireEx(&model.StatRequirements)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
-		setup.addItem(slot, item, &model.StatRequirements, model.SetBonusIndexForItem)
+		se2.addItem(slot, item, &model.StatRequirements, model.SetBonusIndexForItem)
 	}
 
-	setup.finishItemsCommon(itemOptions)
-	setup.finishRequireEx(&model.StatRequirements)
-	setup.finishStatTotals()
+	se2.finishItemsCommon(itemOptions)
+	se2.finishRequireEx(&model.StatRequirements)
+	se2.finishStatTotals()
 
 	// statTotalColumns[statType] -> simValueTotalColumns[simType]
-	setup.calcSimValues(model.Weights2)
+	se2.calcSimValues(model.Weights2)
 	// simValueTotalColumns * activeCombo -> simValueComboColumns -> mainOutputVar
-	setup.calcFromSimValueToOutput(model, &model.Weights2.SimPriority)
-
-	return &setup
+	se2.calcFromSimValueToOutput(model, &model.Weights2.SimPriority, outputVar)
 }
 
 type singleGearSetExtended2 struct {
@@ -65,29 +70,29 @@ type singleGearSetExtended2 struct {
 // (statA*weight1A + statB*weight1B + statC*weight1C)+offset = simValue/scales
 // statA*weight1A + statB*weight1B + statC*weight1C = simValue/scales - offset
 // statA*weight1A + statB*weight1B + statC*weight1C - simValue/scales = -offset
-func (setup *singleGearSetExtended2) calcSimValues(weight2 *weight_types.Weight2Extended) {
+func (se2 *singleGearSetExtended2) calcSimValues(weight2 *weight_types.Weight2Extended) {
 	// calculate each sim value from stats
-	setup.simValueTotalColumns = make(map[stats.SimType]*columnInfo)
+	se2.simValueTotalColumns = make(map[stats.SimType]*columnInfo)
 	for simType, nestedWeights := range weight2.SeqBySimNestedPairs() {
 		simEntry := weight2.GetSimPriority().GetOrPanic(simType)
-		setup.calcSimValue(simType, nestedWeights, simEntry)
+		se2.calcSimValue(simType, nestedWeights, simEntry)
 	}
 }
 
-func (setup *singleGearSetExtended2) calcSimValue(simType stats.SimType, nestedWeights iter.Seq2[stats.StatType, float64], simEntry weight_types.SimPriorityEntry) {
+func (se2 *singleGearSetExtended2) calcSimValue(simType stats.SimType, nestedWeights iter.Seq2[stats.StatType, float64], simEntry weight_types.SimPriorityEntry) {
 	simValueColumn := &columnInfo{entryType: entry_sim_value, simType: simType}
-	simValueColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), simValueColumn)
-	setup.simValueTotalColumns[simType] = simValueColumn
-	setup.allColumns = append(setup.allColumns, simValueColumn)
+	simValueColumn.columnIndex = se2.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), simValueColumn)
+	se2.simValueTotalColumns[simType] = simValueColumn
+	se2.allColumns = append(se2.allColumns, simValueColumn)
 
 	simValueFromStatRow := util_highs.ConstraintRow{}
 	for statType, weightValue := range nestedWeights {
-		statColumn := setup.statTotalColumns[statType]
+		statColumn := se2.statTotalColumns[statType]
 		simValueFromStatRow.Add(statColumn.columnIndex, weightValue)
 	}
 
 	offset := -simEntry.RangingOffset
 	valueScale := -1.0 / simEntry.RangingScale
 	simValueFromStatRow.Add(simValueColumn.columnIndex, valueScale)
-	simValueFromStatRow.Build(setup.build, offset, offset)
+	simValueFromStatRow.Build(se2.build, offset, offset)
 }

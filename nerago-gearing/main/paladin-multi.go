@@ -157,7 +157,7 @@ func PaladinMultiRun() {
 
 	job := multi_types.JobInputs{}
 	//job.SetWeightTypes(1, 2, 3)
-	job.SetWeightTypes(1, 2)
+	job.SetWeightTypes(1)
 	job.SetSimSize(simSize)
 	job.SetReforgingAllowNonCommon(false)
 	//job.SetWriteBestToGearFiles()
@@ -385,12 +385,12 @@ func PaladinMultiRun() {
 	//addExtrasFromFinder(loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic),
 	//	&ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
 
-	job.AddSetParam(ret)
-	job.AddSetParam(protDps)
-	job.AddSetParam(protBalanced)
-	job.AddSetParam(protMitigation)
+	//job.AddSetParam(ret)
+	//job.AddSetParam(protDps)
+	//job.AddSetParam(protBalanced)
+	//job.AddSetParam(protMitigation)
 	job.AddSetParam(protSurvival)
-	job.AddSetParam(protHeal)
+	//job.AddSetParam(protHeal)
 
 	// as part of BIS calcs try each meta as needed
 	//capacitanceSets := []multi_types.MultiSetParam{ret, protDps, protCompromise}
@@ -426,7 +426,7 @@ func PaladinMultiRun() {
 	run := multi.JobCreate(printer, job)
 
 	//job.RunNoPermutations_AllCommonAlternates(true, true)
-	run.RunNoPermutations_BestOnly(true, true)
+	run.RunNoPermutations_BestOnly(false, false)
 	//run.RunForSolutionsPerPermute(1, false)
 
 	//job.CullingReport()

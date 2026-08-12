@@ -13,41 +13,46 @@ import (
 )
 
 const (
-	c_single_basic_scaled_ratings = 10000000.0 // try to make highs happier
-	// example rating                           178237915
-	//                                          187513497
-	c_single_basic_ratings_high_range = 10000000000.0 / c_single_basic_scaled_ratings
+	c_single_basic_scaled_ratings = 1.0e-8 // try to make highs happier
+	// example rating 138082172 1.38e8
+	c_single_basic_ratings_high_range = 1.0e10 * c_single_basic_scaled_ratings
 )
 
 func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
 	build := util_highs.LinearBuilder{}
 	build.Solver = util_highs.Solver_MIP_Interior
 
-	setup := makeGearSetBasic(&build, model, itemOptions, 1)
-
-	return setup.runForFutureResult(itemOptions, model, printer, c_single_basic_scaled_ratings)
+	sb := makeGearSetBasic(&build)
+	outputVar := sb.createOutputVariableForSeparateRun()
+	sb.setup(model, itemOptions, outputVar)
+	return sb.runForFutureResult(itemOptions, model, printer)
 }
 
-func makeGearSetBasic(build *util_highs.LinearBuilder, model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, scaleOutputRating float64) *singleGearSetBasic {
-	setup := singleGearSetBasic{singleGearSetShared: singleGearSetShared{build: build}}
+func makeGearSetBasic(build *util_highs.LinearBuilder) *singleGearSetBasic {
+	return &singleGearSetBasic{
+		singleGearSetShared: singleGearSetShared{
+			build:          build,
+			ratingPreScale: c_single_basic_scaled_ratings,
+		},
+	}
+}
 
-	setup.prepareCommon(model, itemOptions, scaleOutputRating)
-	setup.prepareRequire1(&model.StatRequirements)
+func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, outputVar *columnInfo) {
+	sb.prepareCommon(model, itemOptions)
+	sb.prepareRequire1(&model.StatRequirements)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
-		setup.addItem(slot, item, model.SetBonusIndexForItem, model.CalcRatingItem)
+		sb.addItem(slot, item, model.SetBonusIndexForItem, model.CalcRatingItem)
 	}
 
-	setup.finishItemsCommon(itemOptions)
-	setup.finishRequire1(&model.StatRequirements)
-	setup.calcRatingSum()
+	sb.finishItemsCommon(itemOptions)
+	sb.finishRequire1(&model.StatRequirements)
+	sb.calcRatingSum()
 
-	setup.multiplyByActiveCombo(setup.baseRatingSumVar, setup.mainOutputVar, c_single_basic_ratings_high_range,
+	sb.multiplyByActiveCombo(sb.baseRatingSumVar, outputVar, c_single_basic_ratings_high_range,
 		func(combo *bonusCombo) float64 {
 			return combo.totalFlatMultiplier()
 		})
-
-	return &setup
 }
 
 type singleGearSetBasic struct {
@@ -62,49 +67,49 @@ type singleGearSetBasic struct {
 	baseRatingSumVar *columnInfo              // sum of values for the ratings of selected items
 }
 
-func (setup *singleGearSetBasic) calcRatingSum() {
+func (sb *singleGearSetBasic) calcRatingSum() {
 	entry := columnInfo{entryType: entry_sum_rating}
 
 	// sum of individual selected item ratings
 	// doesen't go directly into output rating
-	entry.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), &entry)
+	entry.columnIndex = sb.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), &entry)
 
-	// main action of this variable: derive value to match rest of rest of row sum
-	setup.baseRatingSumRow.Debug = "baseRatingSumRow"
-	setup.baseRatingSumRow.Add(entry.columnIndex, -1)
-	setup.baseRatingSumRow.Build(setup.build, 0, 0)
+	// main action of this variable: derive value to match rest of row sum
+	sb.baseRatingSumRow.Debug = "baseRatingSumRow"
+	sb.baseRatingSumRow.Add(entry.columnIndex, -1)
+	sb.baseRatingSumRow.Build(sb.build, 0, 0)
 
 	// save reference
-	setup.baseRatingSumVar = &entry
-	setup.allColumns = append(setup.allColumns, &entry)
+	sb.baseRatingSumVar = &entry
+	sb.allColumns = append(sb.allColumns, &entry)
 }
 
-func (setup *singleGearSetBasic) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, activeSet func(id items.ItemId) (int, bool), calcRating func(item *items.SolvableItem) float64) util_highs.ColumnIndex {
-	columnIndex := setup.addItemCommon(itemSlot, item, activeSet)
+func (sb *singleGearSetBasic) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, activeSet func(id items.ItemId) (int, bool), calcRating func(item *items.SolvableItem) float64) util_highs.ColumnIndex {
+	columnIndex := sb.addItemCommon(itemSlot, item, activeSet)
 
 	// add rating via a summation condition
 	// scale down ratings to keep numbers small for solver stability
-	rating := calcRating(item) / c_single_basic_scaled_ratings
-	setup.baseRatingSumRow.Add(columnIndex, rating)
+	rating := calcRating(item) * c_single_basic_scaled_ratings
+	sb.baseRatingSumRow.Add(columnIndex, rating)
 
 	// specific hit/expertise values for hi/lo limits
-	setup.hitValueRow.Add(columnIndex, item.Total().GetFloat(stats.Stat_Hit))
-	setup.expertValueRow.Add(columnIndex, item.Total().GetFloat(stats.Stat_Expertise))
+	sb.hitValueRow.Add(columnIndex, item.Total().GetFloat(stats.Stat_Hit))
+	sb.expertValueRow.Add(columnIndex, item.Total().GetFloat(stats.Stat_Expertise))
 
 	// additional minimum value (e.g. haste)
-	if setup.minimumValueType != stats.Stat_Invalid {
-		setup.minimumValueRow.Add(columnIndex, item.Total().GetFloat(setup.minimumValueType))
+	if sb.minimumValueType != stats.Stat_Invalid {
+		sb.minimumValueRow.Add(columnIndex, item.Total().GetFloat(sb.minimumValueType))
 	}
 
 	return columnIndex
 }
 
-func (setup *singleGearSetBasic) prepareRequire1(statRequirements *stats.StatTypeMap[weight_types.StatRangeFloat]) {
-	setup.minimumValueType = stats.Stat_Invalid
+func (sb *singleGearSetBasic) prepareRequire1(statRequirements *stats.StatTypeMap[weight_types.StatRangeFloat]) {
+	sb.minimumValueType = stats.Stat_Invalid
 	for statType := range statRequirements.SeqKey() {
 		if statType != stats.Stat_Hit && statType != stats.Stat_Expertise {
-			if setup.minimumValueType == stats.Stat_Invalid {
-				setup.minimumValueType = statType
+			if sb.minimumValueType == stats.Stat_Invalid {
+				sb.minimumValueType = statType
 			} else {
 				panic("multiple additional required stats not supported in basic weights mode")
 			}
@@ -112,21 +117,21 @@ func (setup *singleGearSetBasic) prepareRequire1(statRequirements *stats.StatTyp
 	}
 }
 
-func (setup *singleGearSetBasic) finishRequire1(require *stats.StatTypeMap[weight_types.StatRangeFloat]) {
+func (sb *singleGearSetBasic) finishRequire1(require *stats.StatTypeMap[weight_types.StatRangeFloat]) {
 	// constrain: total sum of hit/exp are within requested limits
 	if hitRange, hasHit := require.Get(stats.Stat_Hit); hasHit {
-		setup.hitValueRow.Debug = "hitValueRow"
-		setup.hitValueRow.Build(setup.build, hitRange.Minimum, hitRange.Maximum)
+		sb.hitValueRow.Debug = "hitValueRow"
+		sb.hitValueRow.Build(sb.build, hitRange.Minimum, hitRange.Maximum)
 	}
 
 	if expertRange, hasExpert := require.Get(stats.Stat_Expertise); hasExpert {
-		setup.expertValueRow.Debug = "expertValueRow"
-		setup.expertValueRow.Build(setup.build, expertRange.Minimum, expertRange.Maximum)
+		sb.expertValueRow.Debug = "expertValueRow"
+		sb.expertValueRow.Build(sb.build, expertRange.Minimum, expertRange.Maximum)
 	}
 
 	// constrain: additional minimum value if specified has required minimum
-	if setup.minimumValueType != stats.Stat_Invalid {
-		otherRange := require.GetOrPanic(setup.minimumValueType)
-		setup.minimumValueRow.Build(setup.build, otherRange.Minimum, otherRange.Maximum)
+	if sb.minimumValueType != stats.Stat_Invalid {
+		otherRange := require.GetOrPanic(sb.minimumValueType)
+		sb.minimumValueRow.Build(sb.build, otherRange.Minimum, otherRange.Maximum)
 	}
 }

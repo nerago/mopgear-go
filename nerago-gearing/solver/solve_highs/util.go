@@ -1,10 +1,7 @@
 package solve_highs
 
 import (
-	"fmt"
 	"paladin_gearing_go/items"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_highs"
 )
 
 func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOptionsMap, checkSet func(itemSet *items.SolvableItemSet) (bool, string)) {
@@ -17,12 +14,5 @@ func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOp
 
 	if isOk, message := checkSet(&itemSet); !isOk {
 		panic("set fails CheckSet " + message)
-	}
-}
-
-func checkSetRatingIsObjective(solution *util_highs.Solution2, itemSet *items.SolvableItemSet, calcRating func(item *items.SolvableItemSet) float64, ratingScale float64) {
-	checkRating := calcRating(itemSet)
-	if !util.FloatsApproxEquals(solution.Objective()*ratingScale, checkRating) {
-		panic(fmt.Sprintf("rating inconsistent %e %e ", solution.Objective(), checkRating))
 	}
 }

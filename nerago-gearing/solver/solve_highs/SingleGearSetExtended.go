@@ -21,118 +21,118 @@ type singleGearSetExtended struct {
 	combinedRatingVar    *columnInfo // sum of values for the ratings of selected items
 }
 
-func (setup *singleGearSetExtended) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, require *stats.StatTypeMap[weight_types.StatRangeFloat], activeSet func(id items.ItemId) (int, bool)) util_highs.ColumnIndex {
-	columnIndex := setup.addItemCommon(itemSlot, item, activeSet)
+func (se *singleGearSetExtended) addItem(itemSlot items.SlotEquip, item *items.SolvableItem, require *stats.StatTypeMap[weight_types.StatRangeFloat], activeSet func(id items.ItemId) (int, bool)) util_highs.ColumnIndex {
+	columnIndex := se.addItemCommon(itemSlot, item, activeSet)
 
 	// add to stats via a summation condition
 	for statType, value := range item.Total().SeqPairInt() {
 		if value != 0 {
-			setup.statTotalRows[statType].Add(columnIndex, float64(value))
+			se.statTotalRows[statType].Add(columnIndex, float64(value))
 		}
 	}
 
 	// specific hit/expertise/etc values for hi/lo limits
 	for statType := range require.SeqKey() {
-		setup.requireRows[statType].Add(columnIndex, item.Total().GetFloat(statType))
+		se.requireRows[statType].Add(columnIndex, item.Total().GetFloat(statType))
 	}
 
 	return columnIndex
 }
 
-func (setup *singleGearSetExtended) prepareRequireEx(require *stats.StatTypeMap[weight_types.StatRangeFloat]) {
-	setup.requireRows = make(map[stats.StatType]*util_highs.ConstraintRow, require.Size())
+func (se *singleGearSetExtended) prepareRequireEx(require *stats.StatTypeMap[weight_types.StatRangeFloat]) {
+	se.requireRows = make(map[stats.StatType]*util_highs.ConstraintRow, require.Size())
 	for statType := range require.SeqKey() {
-		setup.requireRows[statType] = &util_highs.ConstraintRow{Debug: "require " + statType.Name()}
+		se.requireRows[statType] = &util_highs.ConstraintRow{Debug: "require " + statType.Name()}
 	}
 }
 
-func (setup *singleGearSetExtended) finishRequireEx(require *stats.StatTypeMap[weight_types.StatRangeFloat]) {
+func (se *singleGearSetExtended) finishRequireEx(require *stats.StatTypeMap[weight_types.StatRangeFloat]) {
 	// constrain: total sum of hit/exp/etc are within requested limits
 	for statType, hilo := range require.SeqKeyValue() {
-		row := setup.requireRows[statType]
-		row.Build(setup.build, hilo.Minimum, hilo.Maximum)
+		row := se.requireRows[statType]
+		row.Build(se.build, hilo.Minimum, hilo.Maximum)
 	}
 }
 
-func (setup *singleGearSetExtended) prepareStatTotals() {
-	setup.statTotalRows = make(map[stats.StatType]*util_highs.ConstraintRow)
-	setup.statTotalColumns = make(map[stats.StatType]*columnInfo)
+func (se *singleGearSetExtended) prepareStatTotals() {
+	se.statTotalRows = make(map[stats.StatType]*util_highs.ConstraintRow)
+	se.statTotalColumns = make(map[stats.StatType]*columnInfo)
 	for _, statType := range stats.StatType_List {
 		entry := columnInfo{entryType: entry_stat_total, statType: statType}
-		entry.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), util_highs.DebugText("statTotal "+statType.Name()))
-		setup.statTotalColumns[statType] = &entry
-		setup.allColumns = append(setup.allColumns, &entry)
+		entry.columnIndex = se.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), util_highs.DebugText("statTotal "+statType.Name()))
+		se.statTotalColumns[statType] = &entry
+		se.allColumns = append(se.allColumns, &entry)
 
-		setup.statTotalRows[statType] = &util_highs.ConstraintRow{Debug: "statTotal " + statType.Name()}
+		se.statTotalRows[statType] = &util_highs.ConstraintRow{Debug: "statTotal " + statType.Name()}
 	}
 }
 
-func (setup *singleGearSetExtended) finishStatTotals() {
+func (se *singleGearSetExtended) finishStatTotals() {
 	// constrain: total sum of each stat for input to weights
-	for statType, column := range setup.statTotalColumns {
-		row := setup.statTotalRows[statType]
+	for statType, column := range se.statTotalColumns {
+		row := se.statTotalRows[statType]
 		row.Add(column.columnIndex, -1)
-		row.Build(setup.build, 0, 0)
+		row.Build(se.build, 0, 0)
 	}
 }
 
-func (setup *singleGearSetExtended) calcFromSimValueToOutput(model *solve_highs_types.SolverModel, priority *weight_types.SimPriorityExtended) {
+func (se *singleGearSetExtended) calcFromSimValueToOutput(model *solve_highs_types.SolverModel, priority *weight_types.SimPriorityExtended, outputVar *columnInfo) {
 	if model.SetBonusExtendedUseSim {
 		// simValueTotalColumns[simType] * activeCombo.simMultiplier -> simValueComboColumns[simType]
-		setup.multiplySimValuesByCombo()
+		se.multiplySimValuesByCombo()
 		// simValueComboColumns[simType] -> mainOutputVar
-		setup.calcOutputValueFromValueComboCols(priority, setup.mainOutputVar)
+		se.calcOutputValueFromValueComboCols(priority, outputVar)
 	} else {
 		// simValueTotalColumns[simType] * simPriority -> combinedRatingVar[single]
-		setup.calcCombinedRatingFromValueTotalCols(priority)
+		se.calcCombinedRatingFromValueTotalCols(priority)
 		// combinedRatingVar * activeCombo.flatMultiplier -> mainOutputVar
-		setup.multiplyByActiveCombo(setup.combinedRatingVar, setup.mainOutputVar, c_gearExtended2ScoreHigh,
+		se.multiplyByActiveCombo(se.combinedRatingVar, outputVar, c_gearExtended2ScoreHigh,
 			func(combo *bonusCombo) float64 { return combo.totalFlatMultiplier() },
 		)
 	}
 }
 
-func (setup *singleGearSetExtended) calcCombinedRatingFromValueTotalCols(priority *weight_types.SimPriorityExtended) {
+func (se *singleGearSetExtended) calcCombinedRatingFromValueTotalCols(priority *weight_types.SimPriorityExtended) {
 	// weighted sum of each sim value
 	combinedRatingColumn := columnInfo{entryType: entry_sum_rating}
-	combinedRatingColumn.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), &combinedRatingColumn)
-	setup.combinedRatingVar = &combinedRatingColumn
-	setup.allColumns = append(setup.allColumns, &combinedRatingColumn)
+	combinedRatingColumn.columnIndex = se.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), &combinedRatingColumn)
+	se.combinedRatingVar = &combinedRatingColumn
+	se.allColumns = append(se.allColumns, &combinedRatingColumn)
 
 	// add up the sim values, multiplying corresponding ratio
 	combinedRatingRow := util_highs.ConstraintRow{}
-	for simType, simValueColumn := range setup.simValueTotalColumns {
+	for simType, simValueColumn := range se.simValueTotalColumns {
 		simEntry := priority.GetOrPanic(simType)
 		combinedRatingRow.Add(simValueColumn.columnIndex, simEntry.RatioScale)
 	}
 	combinedRatingRow.Add(combinedRatingColumn.columnIndex, -1)
-	combinedRatingRow.Build(setup.build, 0, 0)
+	combinedRatingRow.Build(se.build, 0, 0)
 }
 
-func (setup *singleGearSetExtended) multiplySimValuesByCombo() {
-	setup.simValueComboColumns = make(map[stats.SimType]*columnInfo)
-	for simType, simValueTotal := range setup.simValueTotalColumns {
-		simComboCol := setup.makeSimValueForComboVariable(simType)
-		setup.multiplyByActiveCombo(simValueTotal, simComboCol, c_gearExtended2ScoreHigh,
+func (se *singleGearSetExtended) multiplySimValuesByCombo() {
+	se.simValueComboColumns = make(map[stats.SimType]*columnInfo)
+	for simType, simValueTotal := range se.simValueTotalColumns {
+		simComboCol := se.makeSimValueForComboVariable(simType)
+		se.multiplyByActiveCombo(simValueTotal, simComboCol, c_gearExtended2ScoreHigh,
 			func(combo *bonusCombo) float64 { return combo.totalMultiplierForSim(simType) },
 		)
 	}
 }
 
-func (setup *singleGearSetExtended) makeSimValueForComboVariable(simType stats.SimType) *columnInfo {
+func (se *singleGearSetExtended) makeSimValueForComboVariable(simType stats.SimType) *columnInfo {
 	entry := columnInfo{entryType: entry_sim_value_combo, simType: simType}
-	entry.columnIndex = setup.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), &entry)
-	setup.allColumns = append(setup.allColumns, &entry)
-	setup.simValueComboColumns[simType] = &entry
+	entry.columnIndex = se.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), &entry)
+	se.allColumns = append(se.allColumns, &entry)
+	se.simValueComboColumns[simType] = &entry
 	return &entry
 }
 
-func (setup *singleGearSetExtended) calcOutputValueFromValueComboCols(priority *weight_types.SimPriorityExtended, outputVar *columnInfo) {
+func (se *singleGearSetExtended) calcOutputValueFromValueComboCols(priority *weight_types.SimPriorityExtended, outputVar *columnInfo) {
 	sumRow := util_highs.ConstraintRow{}
-	for simType, simComboCol := range setup.simValueComboColumns {
+	for simType, simComboCol := range se.simValueComboColumns {
 		simEntry := priority.GetOrPanic(simType)
 		sumRow.Add(simComboCol.columnIndex, simEntry.RatioScale)
 	}
 	sumRow.Add(outputVar.columnIndex, -1)
-	sumRow.Build(setup.build, 0, 0)
+	sumRow.Build(se.build, 0, 0)
 }

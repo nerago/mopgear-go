@@ -1,0 +1,18 @@
+why so slow
+
+weights 1/2/3
+bonus sets alternate,
+bonus extended multipliers
+allowing T15 in general
+revived old T15 set items to support
+bugs
+SetReforgingAllowNonCommon
+
+
+
+INITIAL
+cancelled after 900s
+just protMitigation, W1, even with all the trimmings: 4s
+just protSurvival, 5s
+set scale = 0, 7.8s
+protMitigation+protSurvival = 26s

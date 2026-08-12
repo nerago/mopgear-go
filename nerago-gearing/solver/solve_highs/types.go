@@ -17,10 +17,11 @@ const (
 )
 
 type ISingleGearSet interface {
+	setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, outputVar *columnInfo)
 	ColumnsForItemId(id items.ItemId) iter.Seq[*columnInfo]
 	AllColumns() []*columnInfo
 	buildResultSet(solution util_highs.ISolution) items.SolvableItemSet
-	MainOutputVar() *columnInfo
+	RatingPreScale() float64
 }
 
 type entryType int8
