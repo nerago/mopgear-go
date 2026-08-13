@@ -24,14 +24,18 @@ import (
 	"strconv"
 )
 
+const c_miscDefaultTimeout = 1000
+
 func basicReforge(printer *util.PrintRecorder) {
 	model2 := model_factory.Model_PallyProtSurvival()
 	itemOptions, model := setup.OptionsSetup_FromGearFile(files.GearFileProtSurvival, &model2, setup.MissingEnchant_Panic, printer), model2
 
-	output := solver.Solver(solver.SolveInput{
-		ItemOptions: &itemOptions,
-		Model:       &model,
-		Printer:     nil})
+	output := solver.Solver(
+		&itemOptions,
+		&model,
+		printer,
+		1,
+		c_miscDefaultTimeout)
 	output.Report(printer)
 }
 
@@ -54,10 +58,12 @@ func findBestSubjectToCommon(printer *util.PrintRecorder) {
 
 	restrictSlotToId(&itemOptions, items.Equip_Ring1, 96481)
 
-	output := solver.Solver(solver.SolveInput{
-		ItemOptions: &itemOptions,
-		Model:       &model,
-		Printer:     printer})
+	output := solver.Solver(
+		&itemOptions,
+		&model,
+		printer,
+		1,
+		c_miscDefaultTimeout)
 
 	output.Report(printer)
 }
@@ -73,10 +79,12 @@ func testSimA(printer *util.PrintRecorder) {
 	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtDamage, &model, setup.MissingEnchant_Panic, printer)
 	// itemOptionsMit := setup.OptionsSetup_FromGearFile(files.GearFileProtMitigation, &model, setup.MissingEnchant_Panic, printer)
 	// itemOptions[items.Equip_Trinket2] = itemOptionsMit[items.Equip_Trinket2]
-	output := solver.Solver(solver.SolveInput{
-		ItemOptions: &itemOptions,
-		Model:       &model,
-		Printer:     printer})
+	output := solver.Solver(
+		&itemOptions,
+		&model,
+		printer,
+		1,
+		c_miscDefaultTimeout)
 	printer.Println("Running sim")
 	resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_QuickDirty, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
@@ -84,10 +92,12 @@ func testSimA(printer *util.PrintRecorder) {
 func testSimB(printer *util.PrintRecorder) {
 	model := model_factory.Model_PallyProtSurvival()
 	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtSurvival, &model, setup.MissingEnchant_Panic, printer)
-	output := solver.Solver(solver.SolveInput{
-		ItemOptions: &itemOptions,
-		Model:       &model,
-		Printer:     printer})
+	output := solver.Solver(
+		&itemOptions,
+		&model,
+		printer,
+		1,
+		c_miscDefaultTimeout)
 	printer.Println("Running sim")
 	resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_Common, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
@@ -138,10 +148,12 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 		itemOptions.AddSeveralOptions(example.SlotItem(), opts)
 	}
 
-	output := solver.Solver(solver.SolveInput{
-		ItemOptions: &itemOptions,
-		Model:       &model,
-		Printer:     printer})
+	output := solver.Solver(
+		&itemOptions,
+		&model,
+		printer,
+		1,
+		c_miscDefaultTimeout)
 
 	output.Report(printer)
 
@@ -213,10 +225,12 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 			itemOptionsSpecific := itemOptionsShared.Clone()
 			restrictSlotToId(&itemOptionsSpecific, slotEquip, itemId)
 
-			output := solver.Solver(solver.SolveInput{
-				ItemOptions: &itemOptionsSpecific,
-				Model:       &model,
-				Printer:     printer})
+			output := solver.Solver(
+				&itemOptionsSpecific,
+				&model,
+				printer,
+				1,
+				c_miscDefaultTimeout)
 			output.Report(printer)
 
 			resultStats := simulate.WowSim_Execute_UseModel(simSize, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
@@ -372,6 +386,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		trinketVialCorruptNormal,   // 567 (up 2)
 		trinketRookUnluckyNormal,
 		trinketSkeerBloodCelestial,
+		105016, //jugg focusing crystal (self heal)
 	}
 
 	upLevel := func(id items.ItemId) int32 {
@@ -909,12 +924,13 @@ func determineBestUseOfGearSets() {
 			Mode:    bonus_set.CountMode_AllowPlusOne,
 			Options: []bonus_set.ItemCountsRequired{comboSet},
 		}
-		solveOutput := solver.Solver(solver.SolveInput{
-			ItemOptions: &itemOptions,
-			Model:       comboModel,
-			WeightType:  1,
-			Printer:     printer,
-		})
+		solveOutput := solver.Solver(
+			&itemOptions,
+			comboModel,
+			printer,
+			1,
+			c_miscDefaultTimeout,
+		)
 		if !solveOutput.Success {
 			panic("no set")
 		}

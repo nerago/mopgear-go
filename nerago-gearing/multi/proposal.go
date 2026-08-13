@@ -136,7 +136,7 @@ func (job *MultiSetJob) highProcessSetup_SingleOrInitial(weightType weight_types
 
 	itemOptionsEach := make(map[string]*items.FullOptionsMap)
 	for _, work := range job.working.SeqKey1ValueWithKey2(weightType) {
-		itemOptionsEach[work.label()] = work.itemOptions()
+		itemOptionsEach[work.Label()] = work.ItemOptions()
 	}
 
 	commonOptions := job.determineCommon(itemOptionsEach, job.input.ItemInput.ReforgingAllowNonCommon)
@@ -146,7 +146,7 @@ func (job *MultiSetJob) highProcessSetup_SingleOrInitial(weightType weight_types
 		highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
 			Label:          label,
 			ItemOptions:    *itemOptionsEach[label],
-			SolverModel:    *solve_highs_types.SolverModelBuild(work.model(), work.weightType, nil),
+			SolverModel:    *solve_highs_types.SolverModelBuild(work.Model(), work.weightType, nil),
 			RatingMultiply: work.ratingMultiply,
 		})
 	}
@@ -159,11 +159,11 @@ func (job *MultiSetJob) highProcessSetupRestrictedOnBaseline(baselineWork *specW
 
 	itemOptionsEach := make(map[string]*items.FullOptionsMap)
 	for _, work := range job.working.SeqKey1ValueWithKey2(baselineWork.weightType) {
-		label := work.label()
-		if label == baselineWork.label() {
+		label := work.Label()
+		if label == baselineWork.Label() {
 			itemOptionsEach[label] = new(setup.OptionsSetup_FromItemSet(&baselineWork.baselineResult.FullSet))
 		} else {
-			itemOptions := new(work.itemOptions().Clone())
+			itemOptions := new(work.ItemOptions().Clone())
 			job.restrictOptionsToVersionsInSet(itemOptions, &baselineWork.baselineResult.FullSet)
 			itemOptionsEach[label] = itemOptions
 		}
@@ -176,7 +176,7 @@ func (job *MultiSetJob) highProcessSetupRestrictedOnBaseline(baselineWork *specW
 		highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
 			Label:          label,
 			ItemOptions:    *itemOptionsEach[label],
-			SolverModel:    *solve_highs_types.SolverModelBuild(work.model(), work.weightType, nil),
+			SolverModel:    *solve_highs_types.SolverModelBuild(work.Model(), work.weightType, nil),
 			RatingMultiply: work.ratingMultiply,
 		})
 	}
@@ -208,16 +208,16 @@ func (job *MultiSetJob) makeProposalFromHighs(multiResult solve_highs.HighsMulti
 	for label, work := range job.working.SeqKey1ValueWithKey2(weightType) {
 		resultEntry := multiResult.Entries[label]
 
-		rating := work.model().CalcRatingFull(&resultEntry.ItemSet, weightType)
+		rating := work.Model().CalcRatingFull(&resultEntry.ItemSet, weightType)
 		totalRatingSum += rating * work.ratingMultiply
 
-		single := multi_types.SingleProposed_FromItemSet(resultEntry.ItemSet, resultEntry.OutputId, work.model().Spec, label, rating)
+		single := multi_types.SingleProposed_FromItemSet(resultEntry.ItemSet, resultEntry.OutputId, work.Model().Spec, label, rating)
 		outputs[label] = single
 
-		work.addSeen(resultEntry.ItemSet.Items())
+		work.AddSeen(resultEntry.ItemSet.Items())
 
 		printer.Printf("LABEL %s\n", label)
-		single.Report(work.model(), printer)
+		single.Report(work.Model(), printer)
 	}
 
 	if multiResult.InterimResult {
@@ -263,10 +263,10 @@ func (job *MultiSetJob) existingGearAsProposal(weightType weight_types.WeightTyp
 		prep := job.itemPrep[label]
 		set := items.FullItemSet_FromMap(prep.exactEquippedGear)
 
-		rating := work.model().CalcRatingFull(&set, weightType)
+		rating := work.Model().CalcRatingFull(&set, weightType)
 		proposal.TotalRatingSum += rating
 
-		single := multi_types.SingleProposed_FromItemSet(set, uuid.NewString(), work.model().Spec, label, rating)
+		single := multi_types.SingleProposed_FromItemSet(set, uuid.NewString(), work.Model().Spec, label, rating)
 		proposal.Parts[label] = single
 	}
 	proposal.Combo = multi_types.CommonCombo_FromProposed(proposal.Parts)
@@ -285,7 +285,7 @@ func (job *MultiSetJob) additionalProposalsFromSpecOptimalBaseline(cancel util_a
 		result, hasResult := future.WaitForResult()
 
 		if hasResult {
-			proposalId := fmt.Sprintf("With-Best-%d-%s-%s", work.weightType, work.label(), time.Now().Format("2006-01-02-15-04-05"))
+			proposalId := fmt.Sprintf("With-Best-%d-%s-%s", work.weightType, work.Label(), time.Now().Format("2006-01-02-15-04-05"))
 			downstream <- job.makeProposalFromHighs(result, printer, proposalId, work.weightType)
 		}
 

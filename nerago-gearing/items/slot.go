@@ -234,6 +234,7 @@ func (slot SlotItem) ForEachEquip(apply func(equip SlotEquip)) {
 	}
 }
 
+var BonusSetSlotList = []SlotEquip{Equip_Head, Equip_Shoulder, Equip_Chest, Equip_Hand, Equip_Leg}
 var PairedSlotList = []SlotEquip{Equip_Ring1, Equip_Ring2, Equip_Trinket1, Equip_Trinket2}
 
 func (slot SlotEquip) PairedSlot() SlotEquip {

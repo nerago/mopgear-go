@@ -11,43 +11,43 @@ import (
 )
 
 type specWorking struct {
-	__itemPrep       *specItemPrep // todo break link
-	_label           string
-	_model           gear_model.SpecModel
-	_itemOptionsWork items.FullOptionsMap
-	weightType       weight_types.WeightType
-	baselineResult   solver.SolveOutput
-	ratingMultiply   float64
+	// copied from specItemPrep
+	label           string
+	model           gear_model.SpecModel
+	seenInSolutions *seenMap
+
+	// actual working vars
+	itemOptionsWork items.FullOptionsMap
+	weightType      weight_types.WeightType
+	baselineResult  solver.SolveOutput
+	ratingMultiply  float64
 }
 
-func (work *specWorking) label() string {
-	return work._label
+func (work *specWorking) Label() string {
+	return work.label
 }
-func (work *specWorking) model() *gear_model.SpecModel {
-	return &work._model
+func (work *specWorking) Model() *gear_model.SpecModel {
+	return &work.model
 }
-func (work *specWorking) itemOptions() *items.FullOptionsMap {
-	return &work._itemOptionsWork
+func (work *specWorking) ItemOptions() *items.FullOptionsMap {
+	return &work.itemOptionsWork
 }
-func (work *specWorking) requestRatingPercent() float64 {
-	return work.__itemPrep.inputs.RequestRatingPercent
+func (work *specWorking) AddSeen(equipMap *items.FullEquipMap) {
+	work.seenInSolutions.Add(equipMap)
 }
-func (work *specWorking) addSeen(equipMap *items.FullEquipMap) {
-	work.__itemPrep.seenInSolutions.Add(equipMap)
-}
-func (work *specWorking) addSeenScaled(equipMap *items.FullEquipMap, scale uint32) {
-	work.__itemPrep.seenInSolutions.AddScaled(equipMap, scale)
+func (work *specWorking) AddSeenScaled(equipMap *items.FullEquipMap, scale uint32) {
+	work.seenInSolutions.AddScaled(equipMap, scale)
 }
 
 func (job *MultiSetJob) prepareWorking() {
 	for label, prep := range job.itemPrep {
 		for _, weightType := range job.input.WeightTypeList {
 			job.working.Put(label, weightType, &specWorking{
-				__itemPrep:       prep,
-				_label:           prep.label,
-				_model:           prep.model,
-				_itemOptionsWork: prep.itemOptions.Clone(),
-				weightType:       weightType,
+				label:           prep.label,
+				model:           prep.model,
+				seenInSolutions: prep.seenInSolutions,
+				itemOptionsWork: prep.itemOptions.Clone(),
+				weightType:      weightType,
 			})
 		}
 	}
@@ -63,34 +63,39 @@ func (job *MultiSetJob) prepareWorking() {
 }
 
 func (work *specWorking) runBaseline(printer *util.PrintRecorder, timeout int) {
-	printer.Printf("BASELINE for %s %d\n", work.label, work.weightType)
+	printer.Printf("BASELINE for %s %d\n", work.Label, work.weightType)
 	work.baselineResult = solver.Solver(
-		work.itemOptions(),
-		work.model(),
+		work.ItemOptions(),
+		work.Model(),
 		printer,
 		work.weightType,
 		timeout,
 	)
 
 	if !work.baselineResult.Success {
-		panic("failed to find baseline for " + work.label())
+		panic("failed to find baseline for " + work.Label())
 	}
 	work.baselineResult.Report(printer)
-	work.addSeen(work.baselineResult.FullSet.Items())
+	work.AddSeen(work.baselineResult.FullSet.Items())
 }
 
 func (job *MultiSetJob) prepareRatingMultipliersGroup(nested iter.Seq2[string, *specWorking], printer *util.PrintRecorder) {
 	var totalPercent float64
-	for _, work := range nested {
-		totalPercent += work.requestRatingPercent()
+	for _, param := range job.input.Param {
+		totalPercent += param.ItemInputs.RequestRatingPercent
 	}
 
 	if util.FloatEqualsZero(totalPercent) {
 		panic("percent total is zero")
 	}
 
-	for _, work := range nested {
-		actualRequest := work.requestRatingPercent() / totalPercent
+	for label, work := range nested {
+		param := job.input.GetSetParam(label)
+		if param == nil {
+			panic("param " + label + " missing")
+		}
+
+		actualRequest := param.ItemInputs.RequestRatingPercent / totalPercent
 		work.prepareRatingMultiplier(actualRequest, printer)
 	}
 }
@@ -104,7 +109,7 @@ func (work *specWorking) prepareRatingMultiplier(requestRatingPercent float64, p
 	work.ratingMultiply = multiplyRatingsBy
 
 	printer.Printf("MULTIPLIERS %s base=%e mult=%e value=%e percent=%.2f\n",
-		work.label(), work.baselineResult.ResultRating, work.ratingMultiply,
+		work.Label(), work.baselineResult.ResultRating, work.ratingMultiply,
 		baselineRating*work.ratingMultiply,
 		baselineRating*work.ratingMultiply/targetCombined*100,
 	)

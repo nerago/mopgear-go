@@ -80,6 +80,15 @@ func (em *EnumMapTiny[E, V, A]) GetOrDefault(key E, defaultValue V) V {
 	}
 }
 
+func (em *EnumMapTiny[E, V, A]) GetOrUseFactory(key E, factory func() V) V {
+	if (em.isSet & (1 << key)) == 0 {
+		em.content[key] = factory()
+		em.isSet |= 1 << key
+		em.len++
+	}
+	return em.content[key]
+}
+
 func (em *EnumMapTiny[E, V, A]) Put(key E, value V) {
 	if (em.isSet & (1 << key)) == 0 {
 		em.isSet |= 1 << key

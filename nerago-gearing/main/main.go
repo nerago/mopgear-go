@@ -106,8 +106,8 @@ func core(printer *util.PrintRecorder) {
 
 	//statWeights_updateAll()
 
-	PaladinMultiRun()
-	//PaladinMultiRunLite()
+	//PaladinMultiRun()
+	PaladinMultiRunLite()
 
 	//findUpgrades_Paladin()
 }

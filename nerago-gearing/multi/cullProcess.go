@@ -22,15 +22,15 @@ func (work *specWorking) runCullingProcess(targetNum int64, waitGroup *sync.Wait
 
 	waitGroup.Go(func() {
 		highCull := solve_highs.OptionsCulling{}
-		solveOptions := items.SolvableOptionsMap_of(work.itemOptions())
-		solverModel := solve_highs_types.SolverModelBuild(work.model(), work.weightType, nil)
-		highCull.Init(work.label(), targetNum, solveOptions, solverModel, printer)
+		solveOptions := items.SolvableOptionsMap_of(work.ItemOptions())
+		solverModel := solve_highs_types.SolverModelBuild(work.Model(), work.weightType, nil)
+		highCull.Init(work.Label(), targetNum, solveOptions, solverModel, printer)
 
 		resultChannel := highCull.Run(cancel)
 
 		for solvedSet := range resultChannel {
-			fullSet := items.FullItemSet_FromSolved(solvedSet, work.itemOptions())
-			work.addSeenScaled(fullSet.Items(), addScale)
+			fullSet := items.FullItemSet_FromSolved(solvedSet, work.ItemOptions())
+			work.AddSeenScaled(fullSet.Items(), addScale)
 			currentNum.Add(1)
 		}
 

@@ -11,6 +11,7 @@ import (
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/util"
 	"slices"
+	"time"
 )
 
 const (
@@ -94,8 +95,6 @@ var timeless = []items.ItemId{
 }
 var celestial = []items.ItemId{
 	105011, // Demolisher's Reinforced Belt
-	104938, // Sorrowpath Signet celestial
-	105090, // Ominous Mogu Greatboots
 }
 var celestialRaden = []items.ItemId{
 	95011, // lighting clawfeet
@@ -111,13 +110,11 @@ var orgRaidDrops = []items.ItemId{
 	104461, // rage-blind greathelm
 	104415, // bubble bracer heroic
 	103892, // tharnok helm
-	103915, // icy blood chest
 	105767, // hoodrych chest ordos
 	104417, // corruption-rotted gauntlets
 	104416, // chest congealed corruption heroic
 	103796, // seal kings norm
 	103798, // bloodclaw band
-	103737, // breastplate shaman mirror
 }
 var orgOneHandAndShield = []items.ItemId{
 	103826, // xifeng weapon
@@ -354,18 +351,10 @@ func PaladinMultiRun() {
 
 	job.AddAlternateUpgradeChoices(
 		99028,  // Handguards of Winged Triumph celestial
-		105090, // Ominous Mogu Greatboots celestial - cull candidate otherwise
-		101947, // Elder Tortoiseshell Seal - cull candidate otherwise
-		103915, // Icy Blood Chestplate - cull candidate otherwise
-		103737, // breastplate shaman mirror - keep for now
-		105033, // Wolf-Rider Spurs - keep for now
-
-		105122, // Asgorathian Blood Seal
-		103972, // kilruk sword
-		104938, // Sorrowpath Signet celestial
+		103972, // kilruk sword - still passable option #4 for most sets, upgrade rank #3 of remaining
+		105122, // Asgorathian Blood Seal - option #5, upgrade rank #4
 	)
 	//job.AddAlternateUpgradeChoices(105033) // Wolf-Rider Spurs
-	//job.AddAlternateUpgradeChoices(103737) // breastplate shaman mirror
 
 	//job.EnablePermuteOnItemCountOptions()
 
@@ -376,10 +365,10 @@ func PaladinMultiRun() {
 
 	//job.RunNoPermutations_AllCommonAlternates(true, true)
 	//run.RunNoPermutations_BestOnly(true, true)
-	run.RunForSolutionsPerPermute(1, true)
+	//run.RunForSolutionsPerPermute(1, true)
 
 	//job.CullingReport()
-	//run.RunCullingSets(400, time.Minute*45)
+	run.RunCullingSets(400, time.Minute*45)
 }
 
 func addExtrasToEach(itemIdList []items.ItemId, params ...*multi_types.SpecParam) {

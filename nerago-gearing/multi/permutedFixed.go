@@ -197,7 +197,7 @@ func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, printe
 			highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
 				Label:          label,
 				ItemOptions:    *itemOptionsEach[label],
-				SolverModel:    *solve_highs_types.SolverModelBuild(work.model(), weightType, overrideBonuses[label]),
+				SolverModel:    *solve_highs_types.SolverModelBuild(work.Model(), weightType, overrideBonuses[label]),
 				RatingMultiply: work.ratingMultiply,
 			})
 		}

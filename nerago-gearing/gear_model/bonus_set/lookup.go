@@ -27,6 +27,10 @@ func (lk *BonusLookup) ItemIdSeq() iter.Seq[items.ItemId] {
 	return slices.Values(lk.items)
 }
 
+func (lk *BonusLookup) IncludesItem(itemId items.ItemId) bool {
+	return slices.Contains(lk.items, itemId)
+}
+
 func (lk *BonusLookup) ContainsItemSolve(item *items.SolvableItem) bool {
 	if item != nil {
 		return slices.Contains(lk.items, item.ItemId())
