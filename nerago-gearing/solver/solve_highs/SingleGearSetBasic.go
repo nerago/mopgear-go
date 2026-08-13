@@ -18,9 +18,10 @@ const (
 	c_single_basic_ratings_high_range = 1.0e10 * c_single_basic_scaled_ratings
 )
 
-func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
+func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int) *util_async.FutureCancellable[items.SolvableItemSet] {
 	build := util_highs.LinearBuilder{}
 	build.Solver = util_highs.Solver_MIP_Interior
+	build.TimeLimitSeconds = timeout
 
 	sb := makeGearSetBasic(&build)
 	outputVar := sb.createOutputVariableForSeparateRun()

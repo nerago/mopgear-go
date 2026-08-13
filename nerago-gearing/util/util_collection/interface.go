@@ -44,7 +44,7 @@ type ICollectionFlatReadWrite[E any] interface {
 	RemoveDuplicatesFunc(equals func(a, b *E) bool)
 }
 
-type ISet[E comparable] interface {
+type ISet[E any] interface {
 	ICollectionFlatReadWrite[E]
 	AddIfMissing(value E) (hadValue bool)
 	HasValue(value E) bool

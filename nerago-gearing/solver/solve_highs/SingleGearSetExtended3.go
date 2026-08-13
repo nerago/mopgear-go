@@ -16,9 +16,10 @@ import (
 const c_gearExtended3StatHigh = 100000
 const c_gearExtended3ScoreHigh = 10
 
-func SingleGearSetExtended3Main(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
+func SingleGearSetExtended3Main(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int) *util_async.FutureCancellable[items.SolvableItemSet] {
 	build := util_highs.LinearBuilder{}
 	build.Solver = util_highs.Solver_MIP_Interior
+	build.TimeLimitSeconds = timeout
 
 	se3 := makeGearSetExtended3(&build)
 	outputVar := se3.createOutputVariableForSeparateRun()

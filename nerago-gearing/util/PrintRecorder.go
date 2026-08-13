@@ -239,6 +239,8 @@ func (print *PrintRecorder) AppendOther(other *PrintRecorder) {
 	} else {
 		print.outputBytes(other.builder)
 	}
+
+	other.builder.Free()
 }
 
 func (print *PrintRecorder) Close() {

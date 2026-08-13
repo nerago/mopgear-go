@@ -15,9 +15,10 @@ import (
 
 const c_gearExtended2ScoreHigh = 10
 
-func SingleGearSetExtended2Main(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
+func SingleGearSetExtended2Main(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int) *util_async.FutureCancellable[items.SolvableItemSet] {
 	build := util_highs.LinearBuilder{}
 	build.Solver = util_highs.Solver_MIP_Interior
+	build.TimeLimitSeconds = timeout
 
 	se2 := makeGearSetExtended2(&build)
 	outputVar := se2.createOutputVariableForSeparateRun()

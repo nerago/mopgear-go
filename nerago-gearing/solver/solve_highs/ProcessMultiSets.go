@@ -16,8 +16,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const c_timeLimit = 4000 // seconds
-
 type SolverHighsMultiParam struct {
 	Label          string
 	ItemOptions    items.FullOptionsMap
@@ -64,8 +62,8 @@ func (process *SolverHighsMultiProcess) SetPermuteLabel(permuteLabel string) {
 	process.permuteLabel = permuteLabel
 }
 
-func (process *SolverHighsMultiProcess) RunInterruptable(printer *util.PrintRecorder) *util_async.FutureCancellable[HighsMultiResult] {
-	process.makeFullModel()
+func (process *SolverHighsMultiProcess) RunInterruptable(timeLimit int, printer *util.PrintRecorder) *util_async.FutureCancellable[HighsMultiResult] {
+	process.makeFullModel(timeLimit)
 
 	solveFuture := process.build.RunHighsFuture(nil)
 	return util_async.FutureCancellable_MapValue(solveFuture, func(linearResult util_highs.LinearResult) (HighsMultiResult, bool) {
@@ -81,11 +79,11 @@ func (process *SolverHighsMultiProcess) RunInterruptable(printer *util.PrintReco
 	})
 }
 
-func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(printer *util.PrintRecorder, outputTarget util_collection.Optional[int], cancel util_async.CancelSignal, alsoDoFullItemBlocks bool, includeInterimResults bool) (resultChannelRead <-chan HighsMultiResult, expectedCount *util_async.Future[int]) {
+func (process *SolverHighsMultiProcess) RunForSeveral_CommonDifferent(timeLimit int, printer *util.PrintRecorder, outputTarget util_collection.Optional[int], cancel util_async.CancelSignal, alsoDoFullItemBlocks bool, includeInterimResults bool) (resultChannelRead <-chan HighsMultiResult, expectedCount *util_async.Future[int]) {
 	resultChannel := make(chan HighsMultiResult, 8)
 	expectedCount = util_async.Future_Make[int]()
 
-	initialChannel, bestCommonChoicesFuture := process.generateInitialMulti(printer, includeInterimResults)
+	initialChannel, bestCommonChoicesFuture := process.generateInitialMulti(timeLimit, printer, includeInterimResults)
 	util_async.ChainCancel(cancel, bestCommonChoicesFuture)
 	util_async.ChannelCopy(initialChannel, resultChannel, false)
 
@@ -126,11 +124,11 @@ type blockPlan struct {
 	changeColumn  *columnInfo
 }
 
-func (process *SolverHighsMultiProcess) generateInitialMulti(printer *util.PrintRecorder, includeInterimResults bool) (<-chan HighsMultiResult, *util_async.FutureCancellable[[]*columnInfo]) {
+func (process *SolverHighsMultiProcess) generateInitialMulti(timeLimit int, printer *util.PrintRecorder, includeInterimResults bool) (<-chan HighsMultiResult, *util_async.FutureCancellable[[]*columnInfo]) {
 	initialChannel := make(chan HighsMultiResult)
 	printer.Printf("INITIAL MULTI run\n")
 
-	process.makeFullModel()
+	process.makeFullModel(timeLimit)
 
 	var doneFunc func()
 	if includeInterimResults {
@@ -323,9 +321,9 @@ func (process *SolverHighsMultiProcess) solutionToResult(solution util_highs.ISo
 	return HighsMultiResult{resultMap, process.permuteLabel, interim}
 }
 
-func (process *SolverHighsMultiProcess) makeFullModel() {
+func (process *SolverHighsMultiProcess) makeFullModel(timeLimit int) {
 	process.build = &util_highs.LinearBuilder{}
-	process.build.TimeLimitSeconds = c_timeLimit
+	process.build.TimeLimitSeconds = timeLimit
 	process.build.Solver = util_highs.Solver_MIP_Interior // TODO check if actually best
 
 	entry := columnInfo{entryType: entry_multi_output}

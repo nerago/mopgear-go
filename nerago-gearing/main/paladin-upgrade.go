@@ -13,6 +13,8 @@ import (
 	"slices"
 )
 
+const c_upgradeDefaultTimeout = 2000
+
 var extrasSetSpecific = []items.ItemId{
 	86979,
 	95142,
@@ -73,6 +75,7 @@ func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
 			IncludeHeroic:      true,
 			IgnoredItems:       ignoredItems,
 			TargetUpgradeLevel: 0,
+			SolverTimeout:      c_upgradeDefaultTimeout,
 		},
 		SimSizeBaseline:    simRunSize,
 		SimSizeItemInitial: simRunSize}
@@ -93,6 +96,7 @@ func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 			IncludeHeroic:      true,
 			IgnoredItems:       ignoredItems,
 			TargetUpgradeLevel: 0,
+			SolverTimeout:      c_upgradeDefaultTimeout,
 		},
 		SimSizeBaseline:    simRunSize,
 		SimSizeItemInitial: simRunSize}
@@ -112,6 +116,7 @@ func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 			IncludeHeroic:      true,
 			IgnoredItems:       ignoredItems,
 			TargetUpgradeLevel: 0,
+			SolverTimeout:      c_upgradeDefaultTimeout,
 		},
 		SimSizeBaseline:    simRunSize,
 		SimSizeItemInitial: simRunSize}
@@ -185,6 +190,7 @@ func findUpgrades_Paladin() {
 				IgnoredItems:       ignoredItems,
 				TargetUpgradeLevel: 2,
 				WeightType:         1,
+				SolverTimeout:      c_upgradeDefaultTimeout,
 			},
 			SimSizeBaseline:              simSizeBaseline,
 			SimSizeItemInitial:           simSizePerItem,

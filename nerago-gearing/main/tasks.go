@@ -494,6 +494,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 
 func currentSimGear(printer *util.PrintRecorder) {
 	fight := stats.Fight_Juggernaut_NoExternalHeal
+	goal := stats.OptimiseGoal_Mitigation
 	simRun := simulate.RunSize_Largish
 
 	type group struct {
@@ -503,22 +504,23 @@ func currentSimGear(printer *util.PrintRecorder) {
 	}
 
 	groups := []group{
+
+		{
+			"survival",
+			model_factory.Model_PallyProtSurvival(),
+			files.GearFileProtSurvival,
+		}, {
+			"mitigation",
+			model_factory.Model_PallyProtMitigation(),
+			files.GearFileProtMitigation,
+		},
 		{
 			"heal",
 			model_factory.Model_PallyProtHeal(),
 			files.GearFileProtHeal,
 		},
 		{
-			"with_set",
-			model_factory.Model_PallyProtSurvival(),
-			files.GearFileProtSurvival,
-		}, {
-			"no_set",
-			model_factory.Model_PallyProtMitigation(),
-			files.GearFileProtMitigation,
-		},
-		{
-			"compromise",
+			"balance",
 			model_factory.Model_PallyProtBalanced(),
 			files.GearFileProtBalanced,
 		}, {
@@ -549,7 +551,7 @@ func currentSimGear(printer *util.PrintRecorder) {
 		equipped := loaders.GearFileReader_Read(file)
 		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 
-		resultStats := simulate.WowSim_Execute_SpecifyAll(simRun, model.SimSpeedUp, model.Spec, model.Goal, fight, model.Professions, &equipMap, nil, util.TrackProgress_Nop())
+		resultStats := simulate.WowSim_Execute_SpecifyAll(simRun, model.SimSpeedUp, model.Spec, goal, fight, model.Professions, &equipMap, nil, util.TrackProgress_Nop())
 		resultStats.Print(printer)
 		for _, statType := range stats.SimTypeList {
 			csv.AddFloat64(resultStats.GetFriendly(statType), 2)

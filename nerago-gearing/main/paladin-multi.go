@@ -88,8 +88,9 @@ var miscOtherP3 = []items.ItemId{
 // ORGRIMMAR
 var timeless = []items.ItemId{
 	101882, // cliffbreaker helm exp/mastery
-	101887, // timeless ring haste/mastery. Cliffbreaker Seal of the Faultline. 549/535
-	101947, // CULL UNLESS UPGRADED timeless ring exp/mastery. Elder Tortoiseshell Seal of the Mountainbed. 535
+	101887, // timeless ring haste/mastery. Cliffbreaker Seal of the Faultline. 549 (is upgraded)
+	// Cliffbreaker Seal of the Landslide. hit/expertise. 535 (not upgraded)
+	101947, // CULL UNLESS UPGRADED timeless ring exp/mastery. Elder Tortoiseshell Seal of the Mountainbed. 535 (not upgraded)
 }
 var celestial = []items.ItemId{
 	105011, // Demolisher's Reinforced Belt
@@ -125,6 +126,7 @@ var orgOneHandAndShield = []items.ItemId{
 	104485, // shield of mockery
 	103972, // kilruk sword
 	104464, // xifeng heroic
+	104560, // bulwurk of fallen general heroic
 }
 
 var legendCloaks = []items.ItemId{legendTankCloak, legendMeleeCloak}
@@ -138,10 +140,12 @@ func PaladinMultiRun() {
 
 	job := multi_types.JobInputs{}
 	job.SetMinimumExtraItemLevel(463)
+	job.SetTimeLimitEachSolver(4000)
 	job.SetSimSize(simSize)
 	job.SetReforgingAllowNonCommon(false)
 	//job.SetWriteBestToGearFiles()
-	job.SetWeightTypes(1, 2, 3)
+	//job.SetWeightTypes(1)
+	job.SetWeightTypes(1, 2)
 	//job.SetWeightTypes(1)
 
 	var generalUpgrade items.UpgradeLevel = 0
@@ -214,7 +218,7 @@ func PaladinMultiRun() {
 		},
 	}
 
-	ret.AddExtraItem(legendMeleeCloak) // TODO need a better solution, common reforge apply to baseline?
+	ret.AddExtraItem(legendMeleeCloak)
 	addExtrasToEach(legendCloaks, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
 	addExtrasToEach(retT15, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
@@ -348,21 +352,20 @@ func PaladinMultiRun() {
 	job.AddSetParam(protSurvival)
 	job.AddSetParam(protHeal)
 
-	//job.AddAlternateUpgradeChoices(
-	//	99028,  // Handguards of Winged Triumph celestial
-	//	105090, // Ominous Mogu Greatboots celestial - cull candidate otherwise
-	//	101947, // Elder Tortoiseshell Seal - cull candidate otherwise
-	//	103915, // Icy Blood Chestplate - cull candidate otherwise
-	//	103737, // breastplate shaman mirror - keep for now
-	//	105033, // Wolf-Rider Spurs - keep for now
+	job.AddAlternateUpgradeChoices(
+		99028,  // Handguards of Winged Triumph celestial
+		105090, // Ominous Mogu Greatboots celestial - cull candidate otherwise
+		101947, // Elder Tortoiseshell Seal - cull candidate otherwise
+		103915, // Icy Blood Chestplate - cull candidate otherwise
+		103737, // breastplate shaman mirror - keep for now
+		105033, // Wolf-Rider Spurs - keep for now
 
-	//	105122, // Asgorathian Blood Seal
-	//	103972, // kilruk sword
-	//	104938, // Sorrowpath Signet celestial
-	//	103798, // bloodclaw band
-	//)
+		105122, // Asgorathian Blood Seal
+		103972, // kilruk sword
+		104938, // Sorrowpath Signet celestial
+	)
 	//job.AddAlternateUpgradeChoices(105033) // Wolf-Rider Spurs
-	//job.AddAlternateUpgradeChoices(103798) // Bloodclaw Band
+	//job.AddAlternateUpgradeChoices(103737) // breastplate shaman mirror
 
 	//job.EnablePermuteOnItemCountOptions()
 
@@ -372,8 +375,8 @@ func PaladinMultiRun() {
 	run := multi.JobCreate(printer, job)
 
 	//job.RunNoPermutations_AllCommonAlternates(true, true)
-	run.RunNoPermutations_BestOnly(true, true)
-	//run.RunForSolutionsPerPermute(1, false)
+	//run.RunNoPermutations_BestOnly(true, true)
+	run.RunForSolutionsPerPermute(1, true)
 
 	//job.CullingReport()
 	//run.RunCullingSets(400, time.Minute*45)

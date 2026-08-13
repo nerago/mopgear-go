@@ -18,6 +18,9 @@ type MultiSetJob struct {
 }
 
 func JobCreate(printer *util.PrintRecorder, input multi_types.JobInputs) MultiSetJob {
+	if input.TimeLimitEachSolve == 0 {
+		input.TimeLimitEachSolve = c_defaultTimeoutSeconds
+	}
 	return MultiSetJob{
 		printer: printer,
 		input:   input,

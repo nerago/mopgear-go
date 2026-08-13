@@ -18,7 +18,7 @@ import (
 
 func (job *MultiSetJob) proposalSingleBest(weightType weight_types.WeightType) *util_async.FutureCancellable[multi_types.MultiProposedOutput] {
 	highProcess := job.highProcessSetup_SingleOrInitial(weightType)
-	futureResult := highProcess.RunInterruptable(job.printer)
+	futureResult := highProcess.RunInterruptable(job.input.TimeLimitEachSolve, job.printer)
 
 	return util_async.FutureCancellable_MapValue(futureResult, func(result solve_highs.HighsMultiResult) (multi_types.MultiProposedOutput, bool) {
 		return job.makeProposalFromHighs(result, job.printer, uuid.NewString(), weightType), true
@@ -32,7 +32,7 @@ func (job *MultiSetJob) proposalsAllCommonAlternates(cancelGenerate util_async.C
 	for _, weightType := range job.input.WeightTypeList {
 		highProcess := job.highProcessSetup_SingleOrInitial(weightType)
 
-		multiSolveChannel, expectedCountFuture := highProcess.RunForSeveral_CommonDifferent(job.printer, util_collection.Optional_Empty[int](), cancelGenerate, extendedAlternates, includeInterimResults)
+		multiSolveChannel, expectedCountFuture := highProcess.RunForSeveral_CommonDifferent(job.input.TimeLimitEachSolve, job.printer, util_collection.Optional_Empty[int](), cancelGenerate, extendedAlternates, includeInterimResults)
 
 		nextChannel := util_async.Map_ChannelToChannel(1, multiSolveChannel, func(setResult solve_highs.HighsMultiResult) multi_types.MultiProposedOutput {
 			return job.makeProposalFromHighs(setResult, job.printer, uuid.NewString(), weightType)
@@ -82,7 +82,7 @@ func (job *MultiSetJob) runPermute(permuteSet permuteSet, weightType weight_type
 
 	if solutionsPerPermute == 1 && !includeInterimResults {
 		for _, highProcess := range highProcessList {
-			future := highProcess.RunInterruptable(printer)
+			future := highProcess.RunInterruptable(job.input.TimeLimitEachSolve, printer)
 			util_async.ChainCancel(cancel, future)
 			result, hasResult := future.WaitForResult()
 			if hasResult {
@@ -92,7 +92,8 @@ func (job *MultiSetJob) runPermute(permuteSet permuteSet, weightType weight_type
 		expectedCount.AddValueImmediate(len(highProcessList))
 	} else {
 		for _, highProcess := range highProcessList {
-			nextChan, expectedSubCount := highProcess.RunForSeveral_CommonDifferent(printer,
+			nextChan, expectedSubCount := highProcess.RunForSeveral_CommonDifferent(
+				job.input.TimeLimitEachSolve, printer,
 				util_collection.Optional_OfValue(solutionsPerPermute), cancel,
 				false, includeInterimResults)
 			expectedCount.AddFuture(expectedSubCount)
@@ -135,7 +136,7 @@ func (job *MultiSetJob) highProcessSetup_SingleOrInitial(weightType weight_types
 
 	itemOptionsEach := make(map[string]*items.FullOptionsMap)
 	for _, work := range job.working.SeqKey1ValueWithKey2(weightType) {
-		itemOptionsEach[work.itemPrep.label] = &work.itemPrep.itemOptions
+		itemOptionsEach[work.label()] = work.itemOptions()
 	}
 
 	commonOptions := job.determineCommon(itemOptionsEach, job.input.ItemInput.ReforgingAllowNonCommon)
@@ -145,7 +146,7 @@ func (job *MultiSetJob) highProcessSetup_SingleOrInitial(weightType weight_types
 		highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
 			Label:          label,
 			ItemOptions:    *itemOptionsEach[label],
-			SolverModel:    *solve_highs_types.SolverModelBuild(&work.itemPrep.model, work.weightType, nil),
+			SolverModel:    *solve_highs_types.SolverModelBuild(work.model(), work.weightType, nil),
 			RatingMultiply: work.ratingMultiply,
 		})
 	}
@@ -158,11 +159,11 @@ func (job *MultiSetJob) highProcessSetupRestrictedOnBaseline(baselineWork *specW
 
 	itemOptionsEach := make(map[string]*items.FullOptionsMap)
 	for _, work := range job.working.SeqKey1ValueWithKey2(baselineWork.weightType) {
-		label := work.itemPrep.label
-		if label == baselineWork.itemPrep.label {
+		label := work.label()
+		if label == baselineWork.label() {
 			itemOptionsEach[label] = new(setup.OptionsSetup_FromItemSet(&baselineWork.baselineResult.FullSet))
 		} else {
-			itemOptions := new(work.itemPrep.itemOptions.Clone())
+			itemOptions := new(work.itemOptions().Clone())
 			job.restrictOptionsToVersionsInSet(itemOptions, &baselineWork.baselineResult.FullSet)
 			itemOptionsEach[label] = itemOptions
 		}
@@ -175,7 +176,7 @@ func (job *MultiSetJob) highProcessSetupRestrictedOnBaseline(baselineWork *specW
 		highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
 			Label:          label,
 			ItemOptions:    *itemOptionsEach[label],
-			SolverModel:    *solve_highs_types.SolverModelBuild(&work.itemPrep.model, work.weightType, nil),
+			SolverModel:    *solve_highs_types.SolverModelBuild(work.model(), work.weightType, nil),
 			RatingMultiply: work.ratingMultiply,
 		})
 	}
@@ -207,16 +208,16 @@ func (job *MultiSetJob) makeProposalFromHighs(multiResult solve_highs.HighsMulti
 	for label, work := range job.working.SeqKey1ValueWithKey2(weightType) {
 		resultEntry := multiResult.Entries[label]
 
-		rating := work.itemPrep.model.CalcRatingFull(&resultEntry.ItemSet, weightType)
+		rating := work.model().CalcRatingFull(&resultEntry.ItemSet, weightType)
 		totalRatingSum += rating * work.ratingMultiply
 
-		single := multi_types.SingleProposed_FromItemSet(resultEntry.ItemSet, resultEntry.OutputId, work.itemPrep.model.Spec, label, rating)
+		single := multi_types.SingleProposed_FromItemSet(resultEntry.ItemSet, resultEntry.OutputId, work.model().Spec, label, rating)
 		outputs[label] = single
 
-		work.itemPrep.seenInSolutions.Add(resultEntry.ItemSet.Items())
+		work.addSeen(resultEntry.ItemSet.Items())
 
 		printer.Printf("LABEL %s\n", label)
-		single.Report(&work.itemPrep.model, printer)
+		single.Report(work.model(), printer)
 	}
 
 	if multiResult.InterimResult {
@@ -259,12 +260,13 @@ func (job *MultiSetJob) existingGearAsProposal(weightType weight_types.WeightTyp
 		WeightType:   weightType,
 	}
 	for label, work := range job.working.SeqKey1ValueWithKey2(weightType) {
-		set := items.FullItemSet_FromMap(work.itemPrep.exactEquippedGear)
+		prep := job.itemPrep[label]
+		set := items.FullItemSet_FromMap(prep.exactEquippedGear)
 
-		rating := work.itemPrep.model.CalcRatingFull(&set, weightType)
+		rating := work.model().CalcRatingFull(&set, weightType)
 		proposal.TotalRatingSum += rating
 
-		single := multi_types.SingleProposed_FromItemSet(set, uuid.NewString(), work.itemPrep.model.Spec, label, rating)
+		single := multi_types.SingleProposed_FromItemSet(set, uuid.NewString(), work.model().Spec, label, rating)
 		proposal.Parts[label] = single
 	}
 	proposal.Combo = multi_types.CommonCombo_FromProposed(proposal.Parts)
@@ -278,12 +280,12 @@ func (job *MultiSetJob) additionalProposalsFromSpecOptimalBaseline(cancel util_a
 
 		highProcess := job.highProcessSetupRestrictedOnBaseline(work)
 
-		future := highProcess.RunInterruptable(printer)
+		future := highProcess.RunInterruptable(job.input.TimeLimitEachSolve, printer)
 		util_async.ChainCancel(cancel, future)
 		result, hasResult := future.WaitForResult()
 
 		if hasResult {
-			proposalId := fmt.Sprintf("With-Best-%d-%s-%s", work.weightType, work.itemPrep.label, time.Now().Format("2006-01-02-15-04-05"))
+			proposalId := fmt.Sprintf("With-Best-%d-%s-%s", work.weightType, work.label(), time.Now().Format("2006-01-02-15-04-05"))
 			downstream <- job.makeProposalFromHighs(result, printer, proposalId, work.weightType)
 		}
 

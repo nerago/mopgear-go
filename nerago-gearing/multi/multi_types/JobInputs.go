@@ -15,6 +15,8 @@ type JobInputs struct {
 	SimRunSize           simulate.WowSim_RunSize
 	WriteBestToGearFiles bool
 	ItemInput            ItemInputShared
+	// TODO consider a TimeLimitTotal
+	TimeLimitEachSolve int
 }
 
 type ItemInputShared struct {
@@ -37,6 +39,10 @@ type DistinctUsageGroups struct {
 
 func (ji *JobInputs) SetSimSize(simSize simulate.WowSim_RunSize) {
 	ji.SimRunSize = simSize
+}
+
+func (ji *JobInputs) SetTimeLimitEachSolver(timeLimitSeconds int) {
+	ji.TimeLimitEachSolve = timeLimitSeconds
 }
 
 func (ji *JobInputs) AddSetParam(param SpecParam) {

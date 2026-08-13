@@ -14,52 +14,39 @@ import (
 	"github.com/google/uuid"
 )
 
-type SolveInput struct {
-	ItemOptions *items.FullOptionsMap
-	Model       *gear_model.SpecModel
-	WeightType  weight_types.WeightType
-	Printer     *util.PrintRecorder
-}
+func Solver(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, printer *util.PrintRecorder, weightType weight_types.WeightType, timeout int) SolveOutput {
+	if itemOptions == nil || model == nil || printer == nil || weightType == 0 {
+		panic("missing option")
+	}
 
-func Solver(input SolveInput) SolveOutput {
-	printer, solveOptions := prepareSolve(input)
-	solveModel := solve_highs_types.SolverModelBuild(input.Model, input.WeightType, nil)
+	solveOptions := items.SolvableOptionsMap_of(itemOptions)
+	solveModel := solve_highs_types.SolverModelBuild(model, weightType, nil)
 
-	futureSolvedSet := LaunchSolve(&solveOptions, solveModel, printer, input.WeightType)
+	futureSolvedSet := LaunchSolve(&solveOptions, solveModel, printer, weightType, timeout)
 	solvedResult := futureSolvedSet.WaitForResultAsOptional()
 
-	return finaliseSolve(solvedResult, solveOptions, input, printer)
+	return finaliseSolve(solvedResult, solveOptions, itemOptions, model, printer, weightType)
 }
 
-func LaunchSolve(solveOptions *items.SolvableOptionsMap, solveModel *solve_highs_types.SolverModel, printer *util.PrintRecorder, weightType weight_types.WeightType) *util_async.FutureCancellable[items.SolvableItemSet] {
+func LaunchSolve(solveOptions *items.SolvableOptionsMap, solveModel *solve_highs_types.SolverModel, printer *util.PrintRecorder, weightType weight_types.WeightType, timeout int) *util_async.FutureCancellable[items.SolvableItemSet] {
 	switch weightType {
 	case 1:
-		return solve_highs.SingleGearSetMain(solveOptions, solveModel, printer)
+		return solve_highs.SingleGearSetMain(solveOptions, solveModel, printer, timeout)
 	case 2:
-		return solve_highs.SingleGearSetExtended2Main(solveOptions, solveModel, printer)
+		return solve_highs.SingleGearSetExtended2Main(solveOptions, solveModel, printer, timeout)
 	case 3:
-		return solve_highs.SingleGearSetExtended3Main(solveOptions, solveModel, printer)
+		return solve_highs.SingleGearSetExtended3Main(solveOptions, solveModel, printer, timeout)
 	default:
 		panic("invalid weight type")
 	}
 }
 
-func prepareSolve(input SolveInput) (*util.PrintRecorder, items.SolvableOptionsMap) {
-	printer := input.Printer
-	if printer == nil {
-		printer = util.PrintRecorder_HoldAll()
-	}
-
-	solveOptions := items.SolvableOptionsMap_of(input.ItemOptions)
-	return printer, solveOptions
-}
-
-func finaliseSolve(solvedResult util_collection.Optional[items.SolvableItemSet], solveOptions items.SolvableOptionsMap, input SolveInput, printer *util.PrintRecorder) SolveOutput {
+func finaliseSolve(solvedResult util_collection.Optional[items.SolvableItemSet], solveOptions items.SolvableOptionsMap, itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, printer *util.PrintRecorder, weightType weight_types.WeightType) SolveOutput {
 	var solvedSet items.SolvableItemSet
 	if solvedResult.IsEmpty() {
-		fallbackSet, failureSummary := diagnoseFailure(&solveOptions, input.Model)
+		fallbackSet, failureSummary := diagnoseFailure(&solveOptions, model)
 		if fallbackSet.IsEmpty() {
-			return SolveOutput{Success: false, OutputId: uuid.NewString(), Input: &input, ResultRating: 0, FailureSummary: failureSummary, Printer: printer}
+			return SolveOutput{Success: false, OutputId: uuid.NewString(), Model: model, ResultRating: 0, FailureSummary: failureSummary, Printer: printer}
 		} else {
 			printer.Println("USING FALLBACK CAPPED SET!!")
 			solvedSet = fallbackSet.GetOrPanic()
@@ -73,15 +60,15 @@ func finaliseSolve(solvedResult util_collection.Optional[items.SolvableItemSet],
 	// solvedSet = tools.Tweaker_Run(&solvedSet, &solveOptions, input.Model)
 	// solvedSet.DebugValidate()
 
-	fullItem := items.FullItemSet_FromSolved(solvedSet, input.ItemOptions)
-	input.Model.ValidateSet(&fullItem)
+	fullItem := items.FullItemSet_FromSolved(solvedSet, itemOptions)
+	model.ValidateSet(&fullItem)
 
-	rating := input.Model.CalcRatingSolve(&solvedSet, input.WeightType)
+	rating := model.CalcRatingSolve(&solvedSet, weightType)
 
 	return SolveOutput{
 		Success:      true,
 		OutputId:     uuid.NewString(),
-		Input:        &input,
+		Model:        model,
 		SolvedSet:    solvedSet,
 		FullSet:      fullItem,
 		ResultRating: rating,
@@ -91,11 +78,11 @@ func finaliseSolve(solvedResult util_collection.Optional[items.SolvableItemSet],
 type SolveOutput struct {
 	Success        bool
 	OutputId       string
-	Input          *SolveInput
 	SolvedSet      items.SolvableItemSet
 	FullSet        items.FullItemSet
 	ResultRating   float64
 	FailureSummary string
+	Model          *gear_model.SpecModel
 	Printer        *util.PrintRecorder
 }
 
@@ -111,7 +98,7 @@ func (output *SolveOutput) Report(printer *util.PrintRecorder) {
 
 	if output.Success {
 		reportPrint.Println(output.OutputId)
-		tools.ReportSet(output.Input.Model, &output.FullSet, reportPrint)
+		tools.ReportSet(output.Model, &output.FullSet, reportPrint)
 	} else {
 		reportPrint.Printf("SET SOLVE FAILED\n")
 	}

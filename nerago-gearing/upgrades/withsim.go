@@ -53,7 +53,7 @@ func runEachUpgradeTaskAndSim(printer *util.PrintRecorder, extraTasks []upgradeI
 	printer.Println("TRYING ITEMS")
 	simResults := util_async.Map_SliceToSlice(c_upgradeEachThreads+c_simThreads, extraTasks, func(task *upgradeItemTask) upgradeItemResultWithSim {
 		itemName := db.LookupItemNameByItemId(task.item.ItemId)
-		initial := performUpgradeTask(task, baseItems, baseRating, model, printer, true, substituteEmptySlotOnly, input.WeightType)
+		initial := performUpgradeTask(task, baseItems, baseRating, model, printer, true, substituteEmptySlotOnly, input.WeightType, input.SolverTimeout)
 		if initial.success {
 			simResult := simulate.WowSim_Execute_SpecifyAll(input.SimSizeItemInitial, model.SimSpeedUp, model.Spec, goal, model.SimulateAs, model.Professions, initial.itemSet.Items(), nil, tracker.NewChild())
 

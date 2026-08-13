@@ -6,6 +6,7 @@ import (
 )
 
 const (
+	c_defaultTimeoutSeconds          = 600
 	c_prepThreadCount                = 8
 	c_simThreadCount                 = 4
 	c_highsThreadCount               = 10

@@ -17,6 +17,7 @@ type FindUpgrades_BasicInputs struct {
 	WeightType          weight_types.WeightType
 	TargetUpgradeLevel  items.UpgradeLevel
 	IgnoredItems        []items.ItemId
+	SolverTimeout       int
 }
 
 type FindUpgrades_SimInputs struct {

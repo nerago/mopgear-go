@@ -104,12 +104,13 @@ func canPerformSpecifiedUpgrade(input *FindUpgrades_BasicInputs, extra *items.Fu
 }
 
 func findBase(baseItems *items.FullOptionsMap, model *gear_model.SpecModel, input *FindUpgrades_SimInputs, printer *util.PrintRecorder) (float64, *items.FullItemSet) {
-	output := solver.Solver(solver.SolveInput{
-		ItemOptions: baseItems,
-		Model:       model,
-		WeightType:  input.WeightType,
-		Printer:     printer,
-	})
+	output := solver.Solver(
+		baseItems,
+		model,
+		printer,
+		input.WeightType,
+		input.SolverTimeout,
+	)
 
 	if !output.Success {
 		panic("couldn't find valid baseline set")
@@ -119,7 +120,7 @@ func findBase(baseItems *items.FullOptionsMap, model *gear_model.SpecModel, inpu
 	return output.ResultRating, &output.FullSet
 }
 
-func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *gear_model.SpecModel, parentPrinter *util.PrintRecorder, forceIncludeMost bool, substituteEmptySlotOnly map[items.SlotItem]items.ItemId, weightType weight_types.WeightType) upgradeItemResult {
+func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *gear_model.SpecModel, parentPrinter *util.PrintRecorder, forceIncludeMost bool, substituteEmptySlotOnly map[items.SlotItem]items.ItemId, weightType weight_types.WeightType, timeout int) upgradeItemResult {
 	slot := extraTask.slot
 	incompleteItem := extraTask.item // this "item" is from ItemFinder and not a full item
 	itemId := incompleteItem.ItemId
@@ -145,12 +146,13 @@ func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptions
 		removePairedSimilar(&jobItems, slot, exampleItem, substituteEmptySlotOnly, model, printer)
 	}
 
-	output := solver.Solver(solver.SolveInput{
-		ItemOptions: &jobItems,
-		Model:       model,
-		WeightType:  weightType,
-		Printer:     printer,
-	})
+	output := solver.Solver(
+		&jobItems,
+		model,
+		printer,
+		weightType,
+		timeout,
+	)
 
 	var result upgradeItemResult
 	if output.Success {

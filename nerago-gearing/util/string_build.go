@@ -14,6 +14,10 @@ func (sb *StringBuild2) Clone() StringBuild2 {
 }
 
 func (sb *StringBuild2) Reset() {
+	*sb = (*sb)[:0]
+}
+
+func (sb *StringBuild2) Free() {
 	*sb = nil
 }
 
