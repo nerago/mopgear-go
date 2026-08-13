@@ -5,12 +5,14 @@ import (
 	"paladin_gearing_go/db"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/util"
+	"paladin_gearing_go/util/util_collection"
 	"slices"
 )
 
 func (job *MultiSetJob) CullingReport() {
 	for _, prep := range job.itemPrep {
 		prep.cullingReportSeen(job.printer)
+		prep.cullingReportSeenBySlot(job.printer)
 		prep.cullingReportBags(job.printer)
 		prep.cullingReportOrphan(job.printer)
 		job.printer.Println0()
@@ -20,33 +22,35 @@ func (job *MultiSetJob) CullingReport() {
 	job.cullReportAll()
 }
 
-func (prep *specItemPrep) cullingReportSeen(printer *util.PrintRecorder) {
-	type extraInfoStruct struct {
-		itemId items.ItemId
-		count  uint32
-	}
+type extraInfoStructCullingReportSeen struct {
+	itemId items.ItemId
+	count  uint32
+}
 
-	added := make(map[items.ItemId]bool)
+func (prep *specItemPrep) cullingReportSeenPrepList() []extraInfoStructCullingReportSeen {
+	extraInfo := make([]extraInfoStructCullingReportSeen, 0, len(prep.inputs.ExtraItems))
 
-	extraInfo := make([]extraInfoStruct, 0, len(prep.inputs.ExtraItems))
 	for _, itemId := range prep.inputs.ExtraItems {
 		seenCount := prep.seenInSolutions.content[itemId]
-		info := extraInfoStruct{itemId: itemId, count: seenCount}
+		info := extraInfoStructCullingReportSeen{itemId: itemId, count: seenCount}
 		extraInfo = append(extraInfo, info)
-		added[itemId] = true
 	}
 
 	for item := range prep.exactEquippedGear.AllItemSeq() {
 		itemId := item.ItemId()
-		if !added[itemId] {
-			seenCount := prep.seenInSolutions.content[itemId]
-			info := extraInfoStruct{itemId: itemId, count: seenCount}
-			extraInfo = append(extraInfo, info)
-			added[itemId] = true
-		}
+		seenCount := prep.seenInSolutions.content[itemId]
+		info := extraInfoStructCullingReportSeen{itemId: itemId, count: seenCount}
+		extraInfo = append(extraInfo, info)
 	}
 
-	slices.SortFunc(extraInfo, func(a, b extraInfoStruct) int {
+	util_collection.RemoveDuplicatesComparable_InPlace(&extraInfo)
+	return extraInfo
+}
+
+func (prep *specItemPrep) cullingReportSeen(printer *util.PrintRecorder) {
+	extraInfo := prep.cullingReportSeenPrepList()
+
+	slices.SortFunc(extraInfo, func(a, b extraInfoStructCullingReportSeen) int {
 		return cmp.Or(cmp.Compare(a.count, b.count), cmp.Compare(a.itemId, b.itemId))
 	})
 
@@ -65,6 +69,32 @@ func (prep *specItemPrep) cullingReportSeen(printer *util.PrintRecorder) {
 		} else {
 			itemName := db.LookupItemNameByItemId(info.itemId)
 			printer.Printf("%5d %d MISSING IN OPTIONS // %s\n", info.itemId, info.count, itemName)
+		}
+	}
+}
+
+func (prep *specItemPrep) cullingReportSeenBySlot(printer *util.PrintRecorder) {
+	extraInfo := prep.cullingReportSeenPrepList()
+	slices.SortFunc(extraInfo, func(a, b extraInfoStructCullingReportSeen) int {
+		return cmp.Or(cmp.Compare(a.count, b.count), cmp.Compare(a.itemId, b.itemId))
+	})
+
+	slotMap := util_collection.MapSlice[items.SlotItem, extraInfoStructCullingReportSeen]{}
+	for _, info := range extraInfo {
+		itemId := info.itemId
+		item := db.WowSimDB_LoadItemById(itemId, 0)
+		slot := item.SlotItem()
+		slotMap.Add(slot, info)
+	}
+
+	for slot, nested := range slotMap.SeqGroupsNestedKeyValue() {
+		printer.Printf("SLOT %s\n", slot.Name())
+		for info := range nested {
+			if slices.Contains(prep.inputs.BlockedItems, info.itemId) {
+				continue
+			}
+			itemName := db.LookupItemNameByItemId(info.itemId)
+			printer.Printf("  %5d %6d // %s\n", info.itemId, info.count, itemName)
 		}
 	}
 }
@@ -88,7 +118,7 @@ func (prep *specItemPrep) cullingReportOrphan(printer *util.PrintRecorder) {
 		if seenCount > 0 {
 			if !slices.Contains(prep.inputs.ExtraItems, itemId) && !slices.Contains(prep.addedFromBags, itemId) {
 				name := db.LookupItemNameByItemId(itemId)
-				printer.Printf("ORPHAN ITEM USED %d %d // %s\n", itemId, seenCount, name)
+				printer.Printf("OTHER ITEM USED %d %d // %s\n", itemId, seenCount, name)
 			}
 		}
 	}

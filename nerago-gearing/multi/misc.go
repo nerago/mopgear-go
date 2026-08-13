@@ -18,12 +18,21 @@ type seenMap struct {
 	mutex   sync.Mutex
 }
 
-func (seen *seenMap) Add(itemSet *items.FullItemSet) {
+func (seen *seenMap) Add(equipMap *items.FullEquipMap) {
 	seen.mutex.Lock()
 	defer seen.mutex.Unlock()
 
-	for item := range itemSet.Items().AllItemSeq() {
+	for item := range equipMap.AllItemSeq() {
 		seen.content[item.ItemId()]++
+	}
+}
+
+func (seen *seenMap) AddScaled(equipMap *items.FullEquipMap, scale uint32) {
+	seen.mutex.Lock()
+	defer seen.mutex.Unlock()
+
+	for item := range equipMap.AllItemSeq() {
+		seen.content[item.ItemId()] += scale
 	}
 }
 

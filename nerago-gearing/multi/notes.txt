@@ -13,6 +13,22 @@ SetReforgingAllowNonCommon
 INITIAL
 cancelled after 900s
 just protMitigation, W1, even with all the trimmings: 4s
-just protSurvival, 5s
-set scale = 0, 7.8s
-protMitigation+protSurvival = 26s
+just protSurvival,
+	(ret)               1.73    two enabled, any
+	(protDps)           0.05    none enabled, any
+	(protBalanced)      3.14    two enabled, any
+	(protMitigation)    1.82    two enabled, 5 opts
+	(protSurvival)      2.95    two enabled, 5 opts
+	(protHeal)          0.72    two enabled, 2 opts. doesn't actually use the second
+protMitigation+protSurvival = 16.82
+protSurvival protHeal 5.64
+protMitigation protSurvival protHeal 70.73
+ret+dps     2.22
+
+protMitigation protSurvival protHeal:::
+base 70.73
+heal, lose the second option (2pc): 20.70
+heal, lose the second option and make exact: 22.47
+heal, lose the second option, and lose 2nd set: 18.40
+heal, just minimum 2pc: 41.74 (still ends up choosing 4pc)
+heal, any: 48.59 (still ends up choosing 4pc)

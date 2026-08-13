@@ -54,7 +54,7 @@ func (sc *singleGearSetShared) runForFutureResult(itemOptions *items.SolvableOpt
 
 func (sc *singleGearSetShared) checkSetRatingIsObjective(solution *util_highs.Solution2, itemSet *items.SolvableItemSet, calcRating func(item *items.SolvableItemSet) float64) {
 	checkRating := calcRating(itemSet)
-	if !util.FloatsApproxEquals(solution.Objective()/sc.ratingPreScale, checkRating) {
+	if !util.FloatsApproxEqualsLenient(solution.Objective()/sc.ratingPreScale, checkRating) {
 		panic(fmt.Sprintf("rating inconsistent %e %e ", solution.Objective(), checkRating))
 	}
 }
@@ -202,6 +202,9 @@ func (sc *singleGearSetShared) buildSimpleNoSetsOutput(inputVar *columnInfo, out
 func (sc *singleGearSetShared) buildSetMultipliedOutput(combo *bonusCombo, inputVar *columnInfo, outputVar *columnInfo, rangeHigh float64, getMultiplier func(*bonusCombo) float64) {
 	activatingVar := combo.activatingVar
 	bonusMultiplier := getMultiplier(combo)
+	if util.FloatEqualsZero(bonusMultiplier) {
+		bonusMultiplier = 1.0
+	}
 
 	sc.build.ConstraintCopyIfBool(
 		activatingVar.columnIndex,

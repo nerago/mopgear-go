@@ -74,6 +74,29 @@ func (colEntry columnInfo) DebugText() string {
 		colEntry.itemFull.Total().AppendString(&strBuild)
 	case entry_multi_output:
 		strBuild.WriteString("multi output ")
+	case entry_stat_total:
+		strBuild.WriteString("stat total ")
+		strBuild.WriteString(colEntry.statType.Name())
+	case entry_sim_value:
+		strBuild.WriteString("sim value ")
+		strBuild.WriteString(colEntry.simType.Name())
+	case entry_sim_stat_value:
+		strBuild.WriteString("sim stat value ")
+		strBuild.WriteString(colEntry.simType.Name())
+		strBuild.WriteString(" ")
+		strBuild.WriteString(colEntry.statType.Name())
+	case entry_sim_stat_value_option:
+		strBuild.WriteString("sim stat value option")
+		strBuild.WriteString(colEntry.simType.Name())
+		strBuild.WriteString(" ")
+		strBuild.WriteString(colEntry.statType.Name())
+		strBuild.WriteString(" ")
+		strBuild.WriteUint32(colEntry.statRange.Minimum)
+		strBuild.WriteString(" ")
+		strBuild.WriteUint32(colEntry.statRange.Maximum)
+	case entry_sim_value_combo:
+		strBuild.WriteString("sim value for combo ")
+		strBuild.WriteString(colEntry.simType.Name())
 	default:
 		panic("unknown column")
 	}

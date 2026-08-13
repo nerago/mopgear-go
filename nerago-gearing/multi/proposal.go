@@ -213,7 +213,7 @@ func (job *MultiSetJob) makeProposalFromHighs(multiResult solve_highs.HighsMulti
 		single := multi_types.SingleProposed_FromItemSet(resultEntry.ItemSet, resultEntry.OutputId, work.itemPrep.model.Spec, label, rating)
 		outputs[label] = single
 
-		work.itemPrep.seenInSolutions.Add(&resultEntry.ItemSet)
+		work.itemPrep.seenInSolutions.Add(resultEntry.ItemSet.Items())
 
 		printer.Printf("LABEL %s\n", label)
 		single.Report(&work.itemPrep.model, printer)

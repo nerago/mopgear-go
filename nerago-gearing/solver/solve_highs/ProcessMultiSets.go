@@ -347,23 +347,26 @@ func (process *SolverHighsMultiProcess) makeFullModel() {
 func (param *SolverHighsMultiParam) makeSingleGearSet(build *util_highs.LinearBuilder, job *SolverHighsMultiProcess) {
 	param.solveOptions = items.SolvableOptionsMap_of(&param.ItemOptions)
 
-	if param.SolverModel.Weights3 != nil {
-		param.singleGearSet = makeGearSetExtended3(build)
-	} else if param.SolverModel.Weights2 != nil {
-		param.singleGearSet = makeGearSetExtended2(build)
-	} else if param.SolverModel.Weights1 != nil {
-		param.singleGearSet = makeGearSetBasic(build)
-	} else {
-		panic("missing weight")
-	}
-
 	setOutput := &columnInfo{entryType: entry_main_output}
 	setOutput.columnIndex = build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), setOutput)
 	job.allColumns = append(job.allColumns, setOutput)
 
+	param.singleGearSet = makeGearSetForWeight(build, &param.SolverModel)
 	param.singleGearSet.setup(&param.SolverModel, &param.solveOptions, setOutput)
 
 	job.outputRow.Add(setOutput.columnIndex, param.RatingMultiply/param.singleGearSet.RatingPreScale())
+}
+
+func makeGearSetForWeight(build *util_highs.LinearBuilder, model *solve_highs_types.SolverModel) ISingleGearSet {
+	if model.Weights3 != nil {
+		return makeGearSetExtended3(build)
+	} else if model.Weights2 != nil {
+		return makeGearSetExtended2(build)
+	} else if model.Weights1 != nil {
+		return makeGearSetBasic(build)
+	} else {
+		panic("missing weight")
+	}
 }
 
 func (process *SolverHighsMultiProcess) addCommonConstraints(build *util_highs.LinearBuilder) {

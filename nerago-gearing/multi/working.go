@@ -48,7 +48,7 @@ func (work *specWorking) runBaseline(printer *util.PrintRecorder) {
 		panic("failed to find baseline for " + work.itemPrep.label)
 	}
 	work.baselineResult.Report(printer)
-	work.itemPrep.seenInSolutions.Add(&work.baselineResult.FullSet)
+	work.itemPrep.seenInSolutions.Add(work.baselineResult.FullSet.Items())
 }
 
 func (job *MultiSetJob) prepareRatingMultipliersGroup(nested iter.Seq2[string, *specWorking], printer *util.PrintRecorder) {

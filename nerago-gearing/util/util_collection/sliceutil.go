@@ -598,6 +598,16 @@ func SliceSampleRandom[T any](slice []T, size int) []T {
 	}
 }
 
+func SliceSampleRandom_Rand[T any](slice []T, size int, rng *rand.Rand) []T {
+	if len(slice) < size {
+		return slice
+	} else {
+		sample := slices.Clone(slice)
+		rng.Shuffle(len(sample), func(a, b int) { sample[a], sample[b] = sample[b], sample[a] })
+		return sample[0:size]
+	}
+}
+
 func SliceSampleRandom_Seed[T any](slice []T, size int, seed int64) []T {
 	if len(slice) < size {
 		return slice

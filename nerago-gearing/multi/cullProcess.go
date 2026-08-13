@@ -11,6 +11,12 @@ import (
 )
 
 func (work *specWorking) runCullingProcess(targetNum int64, waitGroup *sync.WaitGroup, cancel util_async.CancelSignal, tracker *util.TrackProgress, printer *util.PrintRecorder) {
+	addScale := uint32(1)
+	if work.weightType == 3 {
+		targetNum /= 10
+		addScale = 10
+	}
+
 	currentNum := atomic.Uint64{}
 	tracker.RunFromAtomicInt(&currentNum, uint64(targetNum))
 
@@ -24,7 +30,7 @@ func (work *specWorking) runCullingProcess(targetNum int64, waitGroup *sync.Wait
 
 		for solvedSet := range resultChannel {
 			fullSet := items.FullItemSet_FromSolved(solvedSet, &work.itemPrep.itemOptions)
-			work.itemPrep.seenInSolutions.Add(new(fullSet))
+			work.itemPrep.seenInSolutions.AddScaled(fullSet.Items(), addScale)
 			currentNum.Add(1)
 		}
 

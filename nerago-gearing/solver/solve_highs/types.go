@@ -22,6 +22,8 @@ type ISingleGearSet interface {
 	AllColumns() []*columnInfo
 	buildResultSet(solution util_highs.ISolution) items.SolvableItemSet
 	RatingPreScale() float64
+	createOutputVariableForSeparateRun() *columnInfo
+	checkSetRatingIsObjective(solution *util_highs.Solution2, itemSet *items.SolvableItemSet, calcRating func(item *items.SolvableItemSet) float64)
 }
 
 type entryType int8

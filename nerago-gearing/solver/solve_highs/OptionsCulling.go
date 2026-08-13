@@ -1,7 +1,7 @@
 package solve_highs
 
 import (
-	"math/rand/v2"
+	"math/rand"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/solver/solve_highs_types"
 	"paladin_gearing_go/util"
@@ -50,10 +50,11 @@ func (process *OptionsCulling) Run(cancel util_async.CancelSignal) <-chan items.
 	resultChannel := make(chan items.SolvableItemSet, 8)
 
 	waitGroup := sync.WaitGroup{}
-	for range c_cullThreadCount {
+	for threadNum := range c_cullThreadCount {
 		waitGroup.Go(func() {
+			rng := rand.New(rand.NewSource(int64(threadNum)))
 			for process.tasksCompleted.Load() < process.targetResultCount-c_cullThreadCount && cancel.ShouldContinue() {
-				process.runTask(resultChannel, cancel)
+				process.runTask(resultChannel, cancel, rng)
 			}
 			process.printer.Println("exit thread")
 		})
@@ -72,8 +73,8 @@ func (process *OptionsCulling) reportHowManyTried() {
 	process.printer.Printf("CULLING NUMS %s options=%d didRemove=%d\n", process.label, len(itemIdOptions), len(process.didRemove))
 }
 
-func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSet, cancel util_async.CancelSignal) {
-	blockedItems := process.chooseRandomToRemove()
+func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSet, cancel util_async.CancelSignal, rng *rand.Rand) {
+	blockedItems := process.chooseRandomToRemove(rng)
 	itemOptions, isUnusable := process.makeRestrictedItemOptions(blockedItems)
 	if isUnusable {
 		return
@@ -83,7 +84,7 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 	linearBuild.Solver = util_highs.Solver_MIP_Interior
 	linearBuild.NoOutput = true
 
-	single := makeGearSetBasic(&linearBuild)
+	single := makeGearSetForWeight(&linearBuild, process.solveModel)
 	outputVar := single.createOutputVariableForSeparateRun()
 	single.setup(process.solveModel, &itemOptions, outputVar)
 
@@ -92,6 +93,7 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 	linearResult, hasResult := solutionFuture.WaitForResult()
 	if hasResult {
 		solution := linearResult.GetSolution2AndSaveLog(process.printer)
+		solution.DebugPrint(process.printer)
 
 		if solution.Status() == highs.ModelStatusOptimal {
 			percent := float64(process.tasksCompleted.Load()) / float64(process.targetResultCount) * 100
@@ -100,7 +102,8 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 			process.printer.Printf("TASK status = %s\n", solution.Status().String())
 		}
 
-		if solution.HasSolution() {
+		if solution.Status() == highs.ModelStatusOptimal {
+			//if solution.HasSolution() {
 			result := single.buildResultSet(solution)
 			validateNewSet(result, &itemOptions, process.solveModel.CheckSet)
 			single.checkSetRatingIsObjective(solution, &result, process.solveModel.CalcRatingSet)
@@ -113,16 +116,16 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 }
 
 // bit inefficient since not slot aware could frequently empty out slots
-func (process *OptionsCulling) chooseRandomToRemove() []items.ItemId {
+func (process *OptionsCulling) chooseRandomToRemove(rng *rand.Rand) []items.ItemId {
 	minRemove := 3
 	maxRemove := len(process.allItemIds) - items.ITEM_SLOT_COUNT - 3
 
 	toRemove := minRemove
 	if maxRemove > minRemove {
-		toRemove += rand.IntN(maxRemove - minRemove + 1)
+		toRemove += rng.Intn(maxRemove - minRemove + 1)
 	}
 
-	return util_collection.SliceSampleRandom(process.allItemIds, toRemove)
+	return util_collection.SliceSampleRandom_Rand(process.allItemIds, toRemove, rng)
 }
 
 func (process *OptionsCulling) makeRestrictedItemOptions(blockedItems []items.ItemId) (items.SolvableOptionsMap, bool) {

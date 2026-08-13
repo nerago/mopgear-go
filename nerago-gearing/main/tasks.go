@@ -721,7 +721,7 @@ func determineSetBonusValueBySim() {
 	model.BonusEnabled = bonus_set.SpecSetsEnableNamed(&model.SimPriority, "Battlegear of Winged Triumph", "Battlegear of the Lightning Emperor")
 	model.BonusRequiredSolve = bonus_set.ItemCountsRequiredOptions{
 		Mode:    bonus_set.CountMode_Exact,
-		Options: []bonus_set.ItemCountsRequired{model_factory.BonusItems_ProtZero},
+		Options: []bonus_set.ItemCountsRequired{bonus_set.ItemCountsRequiredMake("Battlegear of Winged Triumph", 0, "Battlegear of the Lightning Emperor", 0)},
 	}
 	model.BonusRequiredWeight = nil
 
@@ -867,15 +867,20 @@ func determineBestUseOfGearSets() {
 
 	gearFile := files.GearFileProtMitigation
 	model := model_factory.Model_PallyProtMitigation()
-	model.BonusEnabled = bonus_set.SpecSetsEnableNamed(&model.SimPriority, "Plate of the Lightning Emperor", "Plate of Winged Triumph", "Battlegear of the Lightning Emperor", "Battlegear of Winged Triumph")
+
+	setNameT15Prot := "Plate of the Lightning Emperor"
+	setNameT16Prot := "Plate of Winged Triumph"
+	setNameT15Ret := "Battlegear of the Lightning Emperor"
+	setNameT16Ret := "Battlegear of Winged Triumph"
+	model.BonusEnabled = bonus_set.SpecSetsEnableNamed(&model.SimPriority, setNameT15Prot, setNameT16Prot, setNameT15Ret, setNameT16Ret)
 	model.StatWeights = tools.StatRatingsWeights_ReadFile(files.WeightHealFile)
 
 	bonusCombos := []bonus_set.ItemCountsRequired{
-		model_factory.BonusItems_ProtZero,
-		model_factory.BonusItems_Prot15_2pcOnly,
-		model_factory.BonusItems_Prot16_2pcOnly,
-		model_factory.BonusItems_Prot16_4pc,
-		model_factory.BonusItems_Prot15_Prot16_2pcEach,
+		bonus_set.ItemCountsRequiredMake(setNameT16Prot, 0, setNameT15Prot, 0),
+		bonus_set.ItemCountsRequiredMake(setNameT16Prot, 0, setNameT15Prot, 2),
+		bonus_set.ItemCountsRequiredMake(setNameT16Prot, 2, setNameT15Prot, 0),
+		bonus_set.ItemCountsRequiredMake(setNameT16Prot, 4),
+		bonus_set.ItemCountsRequiredMake(setNameT15Prot, 2, setNameT16Prot, 2),
 	}
 	comboNames := []string{
 		"Zero",

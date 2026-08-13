@@ -1,51 +1,9 @@
 package model_factory
 
 import (
-	"paladin_gearing_go/gear_model/bonus_set"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/weightfind/weight_types"
-)
-
-const setNameT15Prot = "Plate of the Lightning Emperor"
-const setNameT16Prot = "Plate of Winged Triumph"
-const setNameT15Ret = "Battlegear of the Lightning Emperor"
-const setNameT16Ret = "Battlegear of Winged Triumph"
-
-//var BonusItems_ZeroAll = bonus_set.ItemCountsRequiredMake(
-//	setNameT16Prot, 0,
-//	setNameT15Prot, 0,
-//	setNameT15Ret, 0,
-//	setNameT16Ret, 0,
-//)
-
-var BonusItems_ProtZero = bonus_set.ItemCountsRequiredMake(
-	setNameT16Prot, 0,
-	setNameT15Prot, 0,
-)
-
-var BonusItems_Prot15_2pcOnly = bonus_set.ItemCountsRequiredMake(
-	setNameT16Prot, 0,
-	setNameT15Prot, 2,
-)
-
-var BonusItems_Prot16_2pcOnly = bonus_set.ItemCountsRequiredMake(
-	setNameT16Prot, 2,
-	setNameT15Prot, 0,
-)
-
-var BonusItems_Prot16_4pc = bonus_set.ItemCountsRequiredMake(
-	setNameT16Prot, 4,
-)
-
-var BonusItems_Prot15_Prot16_2pcEach = bonus_set.ItemCountsRequiredMake(
-	setNameT15Prot, 2,
-	setNameT16Prot, 2,
-)
-
-var BonusItems_Ret15_Ret16_2pcEach = bonus_set.ItemCountsRequiredMake(
-	setNameT15Ret, 2,
-	setNameT16Ret, 2,
 )
 
 // for noset - juggernaut, shamans, siegecrafter
