@@ -2,6 +2,7 @@ package multi
 
 import (
 	"iter"
+	"paladin_gearing_go/items"
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
@@ -9,11 +10,11 @@ import (
 )
 
 type specWorking struct {
-	//job             *MultiSetJob
-	itemPrep       *specItemPrep
-	weightType     weight_types.WeightType
-	baselineResult solver.SolveOutput
-	ratingMultiply float64
+	itemPrep        *specItemPrep // todo break link
+	itemOptionsWork items.FullOptionsMap
+	weightType      weight_types.WeightType
+	baselineResult  solver.SolveOutput
+	ratingMultiply  float64
 }
 
 func (job *MultiSetJob) prepareWorking() {

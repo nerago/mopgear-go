@@ -64,13 +64,13 @@ func makeExtraTasks(input *FindUpgrades_BasicInputs, extraItems []loaders.ItemFo
 	for _, extra := range extraItems {
 		boss := db.BossItemData_BossForItemId(extra.ItemId)
 		tempItem := db.WowSimDB_LoadItemById(extra.ItemId, 0)
-		for _, slot := range tempItem.SlotItem().ToSlotEquipOptions() {
+		tempItem.SlotItem().ForEachEquip(func(slot items.SlotEquip) {
 			canUpgrade := canPerformSpecifiedUpgrade(input, tempItem, slot, baseItems, bagsFile, printer, model)
 			switch canUpgrade {
 			case items.CanUpgrade_Yes, items.CanUpgrade_Equipped, items.CanUpgrade_Equipped_Similar, items.CanUpgrade_AvailableInBags:
 				taskList = append(taskList, upgradeItemTask{item: extra, slot: slot, goal: goal, boss: boss, canUpgrade: canUpgrade})
 			}
-		}
+		})
 	}
 	return taskList
 }

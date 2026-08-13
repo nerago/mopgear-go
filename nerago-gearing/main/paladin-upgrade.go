@@ -53,7 +53,7 @@ var substituteItemsCommon = slices.Concat(
 )
 var substituteItemsRet = slices.Concat(substituteItemsCommon)
 
-var substituteItemsProt = slices.Concat(substituteItemsCommon, phase3OneHandAndShield, orgOneHandAndShield)
+var substituteItemsProt = slices.Concat(substituteItemsCommon, orgOneHandAndShield)
 
 var ignoredItems = []items.ItemId{
 	63207, // org port cloak

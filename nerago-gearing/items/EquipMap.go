@@ -144,6 +144,16 @@ func (equipMap *SolvableEquipMap) GetAsId(slot SlotEquip) ItemId {
 	}
 }
 
+func (equipMap *SolvableEquipMap) CountNonEmptySlots() int {
+	count := 0
+	for i := range *equipMap {
+		if equipMap[i] != nil {
+			count++
+		}
+	}
+	return count
+}
+
 func (equipMap *SolvableEquipMap) AllItemSeq() iter.Seq[*SolvableItem] {
 	return func(yield func(*SolvableItem) bool) {
 		for _, item := range equipMap {

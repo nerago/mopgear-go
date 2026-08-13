@@ -25,20 +25,20 @@ func Solver(input SolveInput) SolveOutput {
 	printer, solveOptions := prepareSolve(input)
 	solveModel := solve_highs_types.SolverModelBuild(input.Model, input.WeightType, nil)
 
-	futureSolvedSet := launchSolve(solveOptions, solveModel, printer, input.WeightType)
+	futureSolvedSet := LaunchSolve(&solveOptions, solveModel, printer, input.WeightType)
 	solvedResult := futureSolvedSet.WaitForResultAsOptional()
 
 	return finaliseSolve(solvedResult, solveOptions, input, printer)
 }
 
-func launchSolve(solveOptions items.SolvableOptionsMap, solveModel *solve_highs_types.SolverModel, printer *util.PrintRecorder, weightType weight_types.WeightType) *util_async.FutureCancellable[items.SolvableItemSet] {
+func LaunchSolve(solveOptions *items.SolvableOptionsMap, solveModel *solve_highs_types.SolverModel, printer *util.PrintRecorder, weightType weight_types.WeightType) *util_async.FutureCancellable[items.SolvableItemSet] {
 	switch weightType {
 	case 1:
-		return solve_highs.SingleGearSetMain(&solveOptions, solveModel, printer)
+		return solve_highs.SingleGearSetMain(solveOptions, solveModel, printer)
 	case 2:
-		return solve_highs.SingleGearSetExtended2Main(&solveOptions, solveModel, printer)
+		return solve_highs.SingleGearSetExtended2Main(solveOptions, solveModel, printer)
 	case 3:
-		return solve_highs.SingleGearSetExtended3Main(&solveOptions, solveModel, printer)
+		return solve_highs.SingleGearSetExtended3Main(solveOptions, solveModel, printer)
 	default:
 		panic("invalid weight type")
 	}

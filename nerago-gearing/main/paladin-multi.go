@@ -11,7 +11,6 @@ import (
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/util"
 	"slices"
-	"time"
 )
 
 const (
@@ -145,11 +144,12 @@ func PaladinMultiRun() {
 	//simSize := simulate.RunSize_QuickDirty
 
 	job := multi_types.JobInputs{}
-	//job.SetWeightTypes(1, 2, 3)
-	job.SetWeightTypes(1)
+	job.SetMinimumExtraItemLevel(463)
 	job.SetSimSize(simSize)
 	job.SetReforgingAllowNonCommon(false)
 	//job.SetWriteBestToGearFiles()
+	job.SetWeightTypes(1, 2, 3)
+	//job.SetWeightTypes(1)
 
 	var generalUpgrade items.UpgradeLevel = 0
 	var forceUpgrade items.UpgradeLevel = 0
@@ -227,7 +227,7 @@ func PaladinMultiRun() {
 	addExtrasToEach(retT15, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 	addExtrasToEach(retT16, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
-	addExtrasToEach(protT15, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
+	addExtrasToEach(protT15, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 	addExtrasToEach(protT16, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
 	addExtrasToEach(trinketsDpsP3, &ret, &protDps)
@@ -261,6 +261,7 @@ func PaladinMultiRun() {
 		105122, // Asgorathian Blood Seal
 		94776,  // primal turtle amulet
 		96395,  // bloodsoaked legplates
+		96668,  // prot tier15 shoulder heroic
 	})
 
 	protBalanced.AddExtraItems([]items.ItemId{
@@ -341,7 +342,6 @@ func PaladinMultiRun() {
 
 	//job.MakeRandomVariants(101887, 0, -365, -352)
 
-	job.SetMinimumExtraItemLevel(463)
 	//ret.AddBagsExtra()
 	//protDps.AddBagsExtra()
 	//protCompromise.AddBagsExtra()
@@ -361,12 +361,12 @@ func PaladinMultiRun() {
 
 	//job.AddAlternateUpgradeChoices(
 	//	99028,  // Handguards of Winged Triumph celestial
-	//	105090, // Ominous Mogu Greatboots celestial
+	//	105090, // Ominous Mogu Greatboots celestial - cull candidate otherwise
+	//	101947, // Elder Tortoiseshell Seal - cull candidate otherwise
 	//	105122, // Asgorathian Blood Seal
 	//	105033, // Wolf-Rider Spurs
 	//	103972, // kilruk sword
-	//	101947, // Elder Tortoiseshell Seal
-	//	103915, // Icy Blood Chestplate
+	//	103915, // Icy Blood Chestplate - cull candidate otherwise
 	//	104938, // Sorrowpath Signet celestial
 	//	103798, // bloodclaw band
 	//	103737, // breastplate shaman mirror
@@ -382,11 +382,11 @@ func PaladinMultiRun() {
 	run := multi.JobCreate(printer, job)
 
 	//job.RunNoPermutations_AllCommonAlternates(true, true)
-	//run.RunNoPermutations_BestOnly(false, false)
+	run.RunNoPermutations_BestOnly(true, true)
 	//run.RunForSolutionsPerPermute(1, false)
 
 	//job.CullingReport()
-	run.RunCullingSets(400, time.Minute*45)
+	//run.RunCullingSets(400, time.Minute*45)
 }
 
 func addExtrasToEach(itemIdList []items.ItemId, params ...*multi_types.SpecParam) {

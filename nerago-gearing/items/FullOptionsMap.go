@@ -140,15 +140,15 @@ func (optionsMap *FullOptionsMap) AllItemsWithSlot() iter.Seq2[SlotEquip, *FullI
 }
 
 func (optionsMap *FullOptionsMap) AddOneOption(item FullItem) {
-	for _, slotEquip := range item.slot.ToSlotEquipOptions() {
+	item.slot.ForEachEquip(func(slotEquip SlotEquip) {
 		optionsMap[slotEquip] = append(optionsMap[slotEquip], item)
-	}
+	})
 }
 
 func (optionsMap *FullOptionsMap) AddSeveralOptions(slot SlotItem, options []FullItem) {
-	for _, slotEquip := range slot.ToSlotEquipOptions() {
+	slot.ForEachEquip(func(slotEquip SlotEquip) {
 		optionsMap[slotEquip] = append(optionsMap[slotEquip], options...)
-	}
+	})
 }
 
 func (optionsMap *FullOptionsMap) AddSeveralOptionsSpecific(slotEquip SlotEquip, options []FullItem) {

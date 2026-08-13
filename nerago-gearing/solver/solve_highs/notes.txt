@@ -32,3 +32,11 @@ statTotalColumns * detailedWeights[sim][stat] -> simValueTotalColumns
 simValueTotalColumns * entry_combo_active(column) -> entry_sim_value_combo(column)
 entry_sim_value_combo(column) * combo.multiply -> mainOutputRow
 mainOutputRow -> mainOutputVar
+
+
+
+
+Could make a new culling process that can be at the start of regular multi.
+Targetting each slot one at a time, eliminating the first+second choices to get top 3.
+Also force include set items.
+

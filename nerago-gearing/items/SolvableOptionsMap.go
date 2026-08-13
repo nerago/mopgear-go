@@ -33,7 +33,8 @@ func (optionsMap *SolvableOptionsMap) Set(slot SlotEquip, options []SolvableItem
 }
 
 func (optionsMap *SolvableOptionsMap) Clone() SolvableOptionsMap {
-	// send existing uniqueEquipped as-is, no need to manipulate
+	// send existing uniqueEquipped as-is, assuming we're cutting options after Clone
+	// don't need to manipulate some will just become non-applicable
 	clone := SolvableOptionsMap{uniqueEquippedSets: optionsMap.uniqueEquippedSets}
 
 	// do copy the item slices

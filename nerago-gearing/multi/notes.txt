@@ -32,3 +32,5 @@ heal, lose the second option and make exact: 22.47
 heal, lose the second option, and lose 2nd set: 18.40
 heal, just minimum 2pc: 41.74 (still ends up choosing 4pc)
 heal, any: 48.59 (still ends up choosing 4pc)
+
+bags gear has reverted to no ilevel

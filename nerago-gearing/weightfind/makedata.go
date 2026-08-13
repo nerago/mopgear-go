@@ -134,11 +134,11 @@ func GenerateRandomSets(gearFile string, substituteItems []items.ItemId, model *
 	for _, itemId := range substituteItems {
 		// TODO support for random suffix items
 		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, model, printer)
-		for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
+		example.SlotItem().ForEachEquip(func(slotEquip items.SlotEquip) {
 			if itemOptions.Has(slotEquip) {
 				itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)
 			}
-		}
+		})
 	}
 	itemOptions.RemoveDuplicates()
 

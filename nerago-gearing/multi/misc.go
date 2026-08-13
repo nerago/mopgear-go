@@ -10,6 +10,7 @@ const (
 	c_simThreadCount                 = 4
 	c_highsThreadCount               = 10
 	c_permuteThreadCount             = 4
+	c_decimateThreadCount            = 12
 	c_additionalProposal_threadCount = 4
 )
 

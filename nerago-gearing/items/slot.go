@@ -167,6 +167,10 @@ func (slot SlotEquip) EnumNumValues() uint8 {
 	return SlotEquip_Count
 }
 
+type SlotEquipMap[V any] struct {
+	util_collection.EnumMapTiny[SlotEquip, V, [SlotEquip_Count]V]
+}
+
 var equipOptionsMap [20][]SlotEquip = makeToSlotEquipOptions()
 
 func makeToSlotEquipOptions() [20][]SlotEquip {
@@ -191,6 +195,43 @@ func makeToSlotEquipOptions() [20][]SlotEquip {
 
 func (slot SlotItem) ToSlotEquipOptions() []SlotEquip {
 	return equipOptionsMap[slot]
+}
+
+func (slot SlotItem) ForEachEquip(apply func(equip SlotEquip)) {
+	switch slot {
+	case Item_Head:
+		apply(Equip_Head)
+	case Item_Neck:
+		apply(Equip_Neck)
+	case Item_Shoulder:
+		apply(Equip_Shoulder)
+	case Item_Back:
+		apply(Equip_Back)
+	case Item_Chest:
+		apply(Equip_Chest)
+	case Item_Wrist:
+		apply(Equip_Wrist)
+	case Item_Hand:
+		apply(Equip_Hand)
+	case Item_Belt:
+		apply(Equip_Belt)
+	case Item_Leg:
+		apply(Equip_Leg)
+	case Item_Foot:
+		apply(Equip_Foot)
+	case Item_Ring:
+		apply(Equip_Ring1)
+		apply(Equip_Ring2)
+	case Item_Trinket:
+		apply(Equip_Trinket1)
+		apply(Equip_Trinket2)
+	case Item_Weapon2H:
+		apply(Equip_Weapon)
+	case Item_Weapon1H:
+		apply(Equip_Weapon)
+	case Item_Offhand:
+		apply(Equip_Offhand)
+	}
 }
 
 var PairedSlotList = []SlotEquip{Equip_Ring1, Equip_Ring2, Equip_Trinket1, Equip_Trinket2}

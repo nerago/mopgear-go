@@ -34,6 +34,11 @@ func (ms *MapSlice[K, V]) RemoveAllForKey(key K) {
 	delete(ms.data, key)
 }
 
+func (ms *MapSlice[K, V]) CountForKey(key K) int {
+	inner := ms.data[key]
+	return len(inner)
+}
+
 func (ms *MapSlice[K, V]) ValuesForKeyAsSeq(key K) iter.Seq[V] {
 	inner := ms.data[key]
 	return slices.Values(inner)

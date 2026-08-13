@@ -225,13 +225,13 @@ func (prep *specItemPrep) tryAddExtraFromBags(equipped *loaders.EquippedItem, in
 	options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &prep.model, setup.MissingEnchant_Fix, printer)
 
 	added := false
-	for _, slot := range example.SlotItem().ToSlotEquipOptions() {
+	example.SlotItem().ForEachEquip(func(slot items.SlotEquip) {
 		if prep.itemOptions.CouldAddUpgrade_EquipSlot(slot, example, printer, prep.model.SpecificIncompatibleList) == items.CanUpgrade_Yes {
 			printer.Printf("ADDITIONAL EXTRA OPTION from bags %s\n", example.CreateString())
 			prep.addItemOptionsSpecificWithValidate(slot, options)
 			added = true
 		}
-	}
+	})
 
 	if added {
 		prep.addedFromBags = append(prep.addedFromBags, equipped.ItemId)
