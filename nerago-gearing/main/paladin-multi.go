@@ -28,8 +28,6 @@ const (
 
 	legendMeleeCloak = 102249
 	legendTankCloak  = 102250
-
-	ringScaledTyrant = 96500
 )
 
 // TIER
@@ -80,12 +78,7 @@ var newTrinketsTank = []items.ItemId{
 }
 
 // REMAINING P3
-var phase3OneHandAndShield = []items.ItemId{
-	96376, // worldbreaker weapon
-	96534, // qon's scimitar
-}
 var miscOtherP3 = []items.ItemId{
-	95205, // terra-cotta neck
 	96420, // talisman of angry spirits
 	96373, // cloudbreaker belt heroic
 	96542, // tidal force treads
@@ -95,8 +88,8 @@ var miscOtherP3 = []items.ItemId{
 // ORGRIMMAR
 var timeless = []items.ItemId{
 	101882, // cliffbreaker helm exp/mastery
-	101887, // timeless ring haste/mastery
-	101947, // timeless ring exp/mastery
+	101887, // timeless ring haste/mastery. Cliffbreaker Seal of the Faultline. 549/535
+	101947, // CULL UNLESS UPGRADED timeless ring exp/mastery. Elder Tortoiseshell Seal of the Mountainbed. 535
 }
 var celestial = []items.ItemId{
 	105011, // Demolisher's Reinforced Belt
@@ -234,7 +227,6 @@ func PaladinMultiRun() {
 	addExtrasToEach(trinketsDpsP3, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 	addExtrasToEach(trinketsTankP3, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
-	addExtrasToEach(phase3OneHandAndShield, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 	addExtrasToEach(miscOtherP3, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
 	newStuffP5 := slices.Concat(timeless, celestial, celestialRaden, orgRaidDrops, newTrinketsDamage)
@@ -247,55 +239,52 @@ func PaladinMultiRun() {
 		96657,  // ret tier15 legs heroic
 		95535,  // normal lightning legs
 		104993, // Evil Eye of Galakras trinket celestial
-		94773,  // centripetal shoulders normal
 		105033, // Wolf-Rider Spurs
 		103968, // britomart pike
 		105122, // Asgorathian Blood Seal
 	})
 
 	protDps.AddExtraItems([]items.ItemId{
-		94773,  // centripetal shoulders normal
-		95535,  // normal lightning legs
 		96657,  // ret tier15 legs heroic
 		105033, // Wolf-Rider Spurs
-		105122, // Asgorathian Blood Seal
 		94776,  // primal turtle amulet
 		96395,  // bloodsoaked legplates
 		96668,  // prot tier15 shoulder heroic
+		96376,  // worldbreaker weapon
 	})
 
 	protBalanced.AddExtraItems([]items.ItemId{
 		96478,  // treads of the blind heroic
-		95535,  // normal lightning legs
 		105033, // Wolf-Rider Spurs
 		105122, // Asgorathian Blood Seal
-		95020,  // ra-den contemplative loop
 		94776,  // primal turtle amulet
 		96395,  // bloodsoaked legplates
+		96534,  // qon's scimitar
 	})
 
 	protMitigation.AddExtraItems([]items.ItemId{
 		96478,  // treads of the blind heroic
-		95535,  // normal lightning legs
 		105033, // Wolf-Rider Spurs
 		96481,  // durumu tentacle heroic
 		95020,  // ra-den contemplative loop
+		96534,  // qon's scimitar
+		95205,  // terra-cotta neck
 	})
 
 	protSurvival.AddExtraItems([]items.ItemId{
 		96478,  // treads of the blind heroic
-		96447,  // Rot-Proof Greatplate
 		105033, // Wolf-Rider Spurs
-		96481,  // durumu tentacle heroic
 		95020,  // ra-den contemplative loop
+		96534,  // qon's scimitar
+		95205,  // terra-cotta neck
 	})
 
 	protHeal.AddExtraItems([]items.ItemId{
 		96478,  // treads of the blind heroic
-		95142,  // Striker's Battletags
 		105033, // Wolf-Rider Spurs
-		96481,  // durumu tentacle heroic
 		105122, // Asgorathian Blood Seal
+		96534,  // qon's scimitar
+		95205,  // terra-cotta neck
 	})
 
 	// predetermined choices
@@ -363,13 +352,14 @@ func PaladinMultiRun() {
 	//	99028,  // Handguards of Winged Triumph celestial
 	//	105090, // Ominous Mogu Greatboots celestial - cull candidate otherwise
 	//	101947, // Elder Tortoiseshell Seal - cull candidate otherwise
-	//	105122, // Asgorathian Blood Seal
-	//	105033, // Wolf-Rider Spurs
-	//	103972, // kilruk sword
 	//	103915, // Icy Blood Chestplate - cull candidate otherwise
+	//	103737, // breastplate shaman mirror - keep for now
+	//	105033, // Wolf-Rider Spurs - keep for now
+
+	//	105122, // Asgorathian Blood Seal
+	//	103972, // kilruk sword
 	//	104938, // Sorrowpath Signet celestial
 	//	103798, // bloodclaw band
-	//	103737, // breastplate shaman mirror
 	//)
 	//job.AddAlternateUpgradeChoices(105033) // Wolf-Rider Spurs
 	//job.AddAlternateUpgradeChoices(103798) // Bloodclaw Band
