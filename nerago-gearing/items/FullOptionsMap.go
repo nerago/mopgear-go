@@ -104,6 +104,15 @@ func (optionsMap *FullOptionsMap) FindItemIdSlotUnique(itemId ItemId) SlotEquip 
 	return slotFound
 }
 
+func (optionsMap *FullOptionsMap) CountSlotUniqueItemIds(slotEquip SlotEquip) int {
+	idMap := make(map[ItemId]bool)
+	for i := range optionsMap[slotEquip] {
+		id := optionsMap[slotEquip][i].itemId
+		idMap[id] = true
+	}
+	return len(idMap)
+}
+
 func (optionsMap *FullOptionsMap) SlotItemSeq(slotEquip SlotEquip) iter.Seq[*FullItem] {
 	return func(yield func(*FullItem) bool) {
 		for i := range optionsMap[slotEquip] {

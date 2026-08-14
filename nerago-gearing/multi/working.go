@@ -12,9 +12,10 @@ import (
 
 type specWorking struct {
 	// copied from specItemPrep
-	label           string
-	model           gear_model.SpecModel
-	seenInSolutions *seenMap
+	label                        string
+	model                        gear_model.SpecModel
+	expectAllBonusItemsAvailable bool
+	seenInSolutions              *seenMap
 
 	// actual working vars
 	itemOptionsWork items.FullOptionsMap
@@ -43,11 +44,12 @@ func (job *MultiSetJob) prepareWorking() {
 	for label, prep := range job.itemPrep {
 		for _, weightType := range job.input.WeightTypeList {
 			job.working.Put(label, weightType, &specWorking{
-				label:           prep.label,
-				model:           prep.model,
-				seenInSolutions: prep.seenInSolutions,
-				itemOptionsWork: prep.itemOptions.Clone(),
-				weightType:      weightType,
+				label:                        prep.label,
+				model:                        prep.model,
+				seenInSolutions:              prep.seenInSolutions,
+				itemOptionsWork:              prep.itemOptions.Clone(),
+				expectAllBonusItemsAvailable: prep.inputs.ExpectAllBonusItemsAvailable,
+				weightType:                   weightType,
 			})
 		}
 	}

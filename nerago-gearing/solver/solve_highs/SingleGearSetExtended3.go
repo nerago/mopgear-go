@@ -45,7 +45,7 @@ func (se3 *singleGearSetExtended3) setup(model *solve_highs_types.SolverModel, i
 	se3.prepareRequireEx(&model.StatRequirements)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
-		se3.addItem(slot, item, &model.StatRequirements, model.SetBonusIndexForItem)
+		se3.addItem(slot, item, &model.StatRequirements, model.SetBonus.IndexForItem)
 	}
 
 	se3.finishItemsCommon(itemOptions)

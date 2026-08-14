@@ -77,7 +77,7 @@ func (se *singleGearSetExtended) finishStatTotals() {
 }
 
 func (se *singleGearSetExtended) calcFromSimValueToOutput(model *solve_highs_types.SolverModel, priority *weight_types.SimPriorityExtended, outputVar *columnInfo) {
-	if model.SetBonusExtendedUseSim {
+	if model.SetBonus.ExtendedUseSim {
 		// simValueTotalColumns[simType] * activeCombo.simMultiplier -> simValueComboColumns[simType]
 		se.multiplySimValuesByCombo()
 		// simValueComboColumns[simType] -> mainOutputVar

@@ -75,7 +75,7 @@ func (sc *singleGearSetShared) prepareCommon(model *solve_highs_types.SolverMode
 	sc.prepareEnabledSets(model)
 	sc.prepareSetCombos()
 	sc.prepareUniqueEquipped(itemOptions)
-	sc.addSetNeededCounts(model.SetBonusRequiredCounts, model.SetBonusCountMode)
+	sc.addSetNeededCounts(model.SetBonus.RequiredCounts, model.SetBonus.CountMode)
 }
 
 func (sc *singleGearSetShared) addItemCommon(itemSlot items.SlotEquip, item *items.SolvableItem, activeSet func(id items.ItemId) (int, bool)) util_highs.ColumnIndex {
@@ -132,14 +132,14 @@ func (sc *singleGearSetShared) finishItemsCommon(itemOptions *items.SolvableOpti
 
 func (sc *singleGearSetShared) prepareEnabledSets(model *solve_highs_types.SolverModel) {
 	// constrain: exact item count in each active set
-	if model.SetBonusTotalCount > 0 {
-		sc.bonusData = make([]bonusInfo, model.SetBonusTotalCount)
-		for setIndex := range model.SetBonusTotalCount {
+	if model.SetBonus.TotalCount > 0 {
+		sc.bonusData = make([]bonusInfo, model.SetBonus.TotalCount)
+		for setIndex := range model.SetBonus.TotalCount {
 			info := bonusInfo{
 				setIndex:            solve_highs_types.SetBonusIndex(setIndex),
-				setCountItems:       model.SetBonusCountItems[setIndex],
-				setMultipliers:      model.SetBonusMultipliersFlat[setIndex],
-				setMultipliersBySim: model.SetBonusMultipliersBySim[setIndex],
+				setCountItems:       model.SetBonus.CountItems[setIndex],
+				setMultipliers:      model.SetBonus.MultipliersFlat[setIndex],
+				setMultipliersBySim: model.SetBonus.MultipliersBySim[setIndex],
 			}
 			info.countSetItemsRow.Debug = "countSetItemsRow" + strconv.Itoa(setIndex)
 			sc.addSetItemCountVariable(&info)

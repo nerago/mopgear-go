@@ -152,66 +152,72 @@ func PaladinMultiRun() {
 		Label: "Ret",
 		Model: model_factory.Model_PallyRet(),
 		ItemInputs: multi_types.ItemInputs{
-			GearFile:                  files.GearFileRet,
-			RequestRatingPercent:      0.04,
-			ExtraUpgradeLevel:         generalUpgrade,
-			ForceUpgradeExistingItems: 0,
-			MissingEnchant:            setup.MissingEnchant_Panic,
+			GearFile:                     files.GearFileRet,
+			RequestRatingPercent:         0.04,
+			ExtraUpgradeLevel:            generalUpgrade,
+			ForceUpgradeExistingItems:    0,
+			MissingEnchant:               setup.MissingEnchant_Panic,
+			ExpectAllBonusItemsAvailable: true,
 		},
 	}
 	protDps := multi_types.SpecParam{
 		Label: "Prot-Damage",
 		Model: model_factory.Model_PallyProtDamage(),
 		ItemInputs: multi_types.ItemInputs{
-			GearFile:                  files.GearFileProtDamage,
-			RequestRatingPercent:      0.01,
-			ExtraUpgradeLevel:         generalUpgrade,
-			ForceUpgradeExistingItems: forceUpgrade,
-			MissingEnchant:            setup.MissingEnchant_Panic,
+			GearFile:                     files.GearFileProtDamage,
+			RequestRatingPercent:         0.01,
+			ExtraUpgradeLevel:            generalUpgrade,
+			ForceUpgradeExistingItems:    forceUpgrade,
+			MissingEnchant:               setup.MissingEnchant_Panic,
+			ExpectAllBonusItemsAvailable: false,
 		},
 	}
 	protBalanced := multi_types.SpecParam{
 		Label: "Prot-Balanced",
 		Model: model_factory.Model_PallyProtBalanced(),
 		ItemInputs: multi_types.ItemInputs{
-			GearFile:                  files.GearFileProtBalanced,
-			RequestRatingPercent:      0.25,
-			ExtraUpgradeLevel:         generalUpgrade,
-			ForceUpgradeExistingItems: forceUpgrade,
-			MissingEnchant:            setup.MissingEnchant_Panic,
+			GearFile:                     files.GearFileProtBalanced,
+			RequestRatingPercent:         0.25,
+			ExtraUpgradeLevel:            generalUpgrade,
+			ForceUpgradeExistingItems:    forceUpgrade,
+			MissingEnchant:               setup.MissingEnchant_Panic,
+			ExpectAllBonusItemsAvailable: false,
 		},
 	}
 	protMitigation := multi_types.SpecParam{
 		Label: "Prot-Mitigation",
 		Model: model_factory.Model_PallyProtMitigation(),
 		ItemInputs: multi_types.ItemInputs{
-			GearFile:                  files.GearFileProtMitigation,
-			RequestRatingPercent:      0.35,
-			ExtraUpgradeLevel:         generalUpgrade,
-			ForceUpgradeExistingItems: forceUpgrade,
-			MissingEnchant:            setup.MissingEnchant_Panic,
+			GearFile:                     files.GearFileProtMitigation,
+			RequestRatingPercent:         0.35,
+			ExtraUpgradeLevel:            generalUpgrade,
+			ForceUpgradeExistingItems:    forceUpgrade,
+			MissingEnchant:               setup.MissingEnchant_Panic,
+			ExpectAllBonusItemsAvailable: true,
 		},
 	}
 	protSurvival := multi_types.SpecParam{
 		Label: "Prot-Survival",
 		Model: model_factory.Model_PallyProtSurvival(),
 		ItemInputs: multi_types.ItemInputs{
-			GearFile:                  files.GearFileProtSurvival,
-			RequestRatingPercent:      0.30,
-			ExtraUpgradeLevel:         generalUpgrade,
-			ForceUpgradeExistingItems: forceUpgrade,
-			MissingEnchant:            setup.MissingEnchant_Panic,
+			GearFile:                     files.GearFileProtSurvival,
+			RequestRatingPercent:         0.30,
+			ExtraUpgradeLevel:            generalUpgrade,
+			ForceUpgradeExistingItems:    forceUpgrade,
+			MissingEnchant:               setup.MissingEnchant_Panic,
+			ExpectAllBonusItemsAvailable: true,
 		},
 	}
 	protHeal := multi_types.SpecParam{
 		Label: "Prot-Heal",
 		Model: model_factory.Model_PallyProtHeal(),
 		ItemInputs: multi_types.ItemInputs{
-			GearFile:                  files.GearFileProtHeal,
-			RequestRatingPercent:      0.05,
-			ExtraUpgradeLevel:         generalUpgrade,
-			ForceUpgradeExistingItems: forceUpgrade,
-			MissingEnchant:            setup.MissingEnchant_Panic,
+			GearFile:                     files.GearFileProtHeal,
+			RequestRatingPercent:         0.05,
+			ExtraUpgradeLevel:            generalUpgrade,
+			ForceUpgradeExistingItems:    forceUpgrade,
+			MissingEnchant:               setup.MissingEnchant_Panic,
+			ExpectAllBonusItemsAvailable: true,
 		},
 	}
 
@@ -241,6 +247,7 @@ func PaladinMultiRun() {
 		95535,  // normal lightning legs
 		104993, // Evil Eye of Galakras trinket celestial
 		105033, // Wolf-Rider Spurs
+
 		103968, // britomart pike
 		105122, // Asgorathian Blood Seal
 	})

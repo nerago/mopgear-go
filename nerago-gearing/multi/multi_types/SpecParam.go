@@ -14,16 +14,17 @@ type SpecParam struct {
 }
 
 type ItemInputs struct {
-	GearFile                  string
-	RequestRatingPercent      float64
-	ExtraUpgradeLevel         items.UpgradeLevel
-	ForceUpgradeExistingItems items.UpgradeLevel
-	MissingEnchant            setup.MissingEnchantMode
-	ExtraItems                []items.ItemId
-	ExtraFromBags             bool
-	BlockedItems              []items.ItemId
-	SemiFixedSlots            map[items.SlotEquip][]items.ItemId
-	ReportVariant             map[items.SlotEquip]items.ItemId
+	GearFile                     string
+	RequestRatingPercent         float64
+	ExtraUpgradeLevel            items.UpgradeLevel
+	ForceUpgradeExistingItems    items.UpgradeLevel
+	MissingEnchant               setup.MissingEnchantMode
+	ExtraItems                   []items.ItemId
+	ExtraFromBags                bool
+	BlockedItems                 []items.ItemId
+	SemiFixedSlots               map[items.SlotEquip][]items.ItemId
+	ReportVariant                map[items.SlotEquip]items.ItemId
+	ExpectAllBonusItemsAvailable bool
 }
 
 func (param *SpecParam) AddExtraItems(extraItemIds []items.ItemId) {

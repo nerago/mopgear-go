@@ -43,7 +43,7 @@ func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOp
 	sb.prepareRequire1(&model.StatRequirements)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
-		sb.addItem(slot, item, model.SetBonusIndexForItem, model.CalcRatingItem)
+		sb.addItem(slot, item, model.SetBonus.IndexForItem, model.CalcRatingItem)
 	}
 
 	sb.finishItemsCommon(itemOptions)

@@ -27,14 +27,18 @@ type SolverModel struct {
 
 	StatRequirements stats.StatTypeMap[weight_types.StatRangeFloat]
 
-	SetBonusCountMode        bonus_set.ItemCountsRequiredMode
-	SetBonusRequiredCounts   []SetBonusRequiredCounts
-	SetBonusTotalCount       int
-	SetBonusIndexForItem     func(id items.ItemId) (int, bool)
-	SetBonusCountItems       []func(*items.SolvableEquipMap) uint8
-	SetBonusMultipliersFlat  []bonus_set.BonusByCountFlat
-	SetBonusMultipliersBySim []bonus_set.BonusByCountBySim
-	SetBonusExtendedUseSim   bool
+	SetBonus SolverModelSetBonus
+}
+
+type SolverModelSetBonus struct {
+	CountMode        bonus_set.ItemCountsRequiredMode
+	RequiredCounts   []SetBonusRequiredCounts
+	TotalCount       int
+	IndexForItem     func(id items.ItemId) (int, bool)
+	CountItems       []func(*items.SolvableEquipMap) uint8
+	MultipliersFlat  []bonus_set.BonusByCountFlat
+	MultipliersBySim []bonus_set.BonusByCountBySim
+	ExtendedUseSim   bool
 }
 
 type OverrideBonusCounts struct {
@@ -43,16 +47,18 @@ type OverrideBonusCounts struct {
 
 func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.WeightType, bonusCount *OverrideBonusCounts) *SolverModel {
 	solveModel := &SolverModel{
-		CheckSet:               model.CheckSetForSolver,
-		StatRequirements:       toEnumMap(model.StatRequirements.AsMap()),
-		SetBonusCountMode:      model.BonusRequiredSolve.Mode,
-		SetBonusRequiredCounts: convertBonusRequired(model.BonusRequiredSolve, model.BonusEnabled.EnabledSets),
-		SetBonusTotalCount:     len(model.BonusEnabled.EnabledSets),
-		SetBonusIndexForItem:   model.BonusEnabled.BonusSetIndexForItem,
+		CheckSet:         model.CheckSetForSolver,
+		StatRequirements: toEnumMap(model.StatRequirements.AsMap()),
+		SetBonus: SolverModelSetBonus{
+			CountMode:      model.BonusRequiredSolve.Mode,
+			RequiredCounts: convertBonusRequired(model.BonusRequiredSolve, model.BonusEnabled.EnabledSets),
+			TotalCount:     len(model.BonusEnabled.EnabledSets),
+			IndexForItem:   model.BonusEnabled.BonusSetIndexForItem,
+		},
 	}
 
 	if bonusCount != nil {
-		solveModel.SetBonusRequiredCounts = []SetBonusRequiredCounts{convertBonusRequiredSingle(&bonusCount.Specific, model.BonusEnabled.EnabledSets)}
+		solveModel.SetBonus.RequiredCounts = []SetBonusRequiredCounts{convertBonusRequiredSingle(&bonusCount.Specific, model.BonusEnabled.EnabledSets)}
 	}
 
 	weightExt := model.StatWeights
@@ -63,11 +69,11 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.Weigh
 	case 2:
 		solveModel.Weights2 = weightExt.Weight2
 		solveModel.WeightsGeneric = weightExt.Weight2
-		solveModel.SetBonusExtendedUseSim = true
+		solveModel.SetBonus.ExtendedUseSim = true
 	case 3:
 		solveModel.Weights3 = weightExt.Weight3
 		solveModel.WeightsGeneric = weightExt.Weight3
-		solveModel.SetBonusExtendedUseSim = true
+		solveModel.SetBonus.ExtendedUseSim = true
 	default:
 		panic("invalid weight number")
 	}
@@ -85,9 +91,9 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.Weigh
 	}
 
 	for _, prepBonus := range model.BonusEnabled.EnabledSets {
-		solveModel.SetBonusCountItems = append(solveModel.SetBonusCountItems, prepBonus.CountItemsSolve)
-		solveModel.SetBonusMultipliersFlat = append(solveModel.SetBonusMultipliersFlat, prepBonus.BonusByCount())
-		solveModel.SetBonusMultipliersBySim = append(solveModel.SetBonusMultipliersBySim, prepBonus.BonusByCountBySim())
+		solveModel.SetBonus.CountItems = append(solveModel.SetBonus.CountItems, prepBonus.CountItemsSolve)
+		solveModel.SetBonus.MultipliersFlat = append(solveModel.SetBonus.MultipliersFlat, prepBonus.BonusByCount())
+		solveModel.SetBonus.MultipliersBySim = append(solveModel.SetBonus.MultipliersBySim, prepBonus.BonusByCountBySim())
 	}
 
 	return solveModel
