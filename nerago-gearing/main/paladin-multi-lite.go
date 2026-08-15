@@ -99,8 +99,8 @@ func PaladinMultiRunLite() {
 	job.SetSimSize(simSize)
 	job.SetReforgingAllowNonCommon(false)
 	//job.SetWriteBestToGearFiles()
-	//job.SetWeightTypes(1)
-	job.SetWeightTypes(1, 2, 3)
+	job.SetWeightTypes(3)
+	//job.SetWeightTypes(1, 2, 3)
 	//job.SetWeightTypes(1)
 
 	var generalUpgrade items.UpgradeLevel = 0

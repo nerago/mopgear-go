@@ -113,3 +113,8 @@ Prot15_2pcOnly	TAKEN
 Prot16_2pcOnly	DEATH
 Prot16_4pc	    HEAL
 Prot_2pcEach
+
+
+example timing decimate
+weight 1: 15.6768099s
+weight 2: 30.1988601s

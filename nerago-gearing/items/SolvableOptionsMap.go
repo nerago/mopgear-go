@@ -2,6 +2,7 @@ package items
 
 import (
 	"iter"
+	"maps"
 	"paladin_gearing_go/util/util_collection"
 	"slices"
 )
@@ -78,6 +79,24 @@ func (optionsMap *SolvableOptionsMap) AllItemSlotSeq() iter.Seq2[SlotEquip, *Sol
 			}
 		}
 	}
+}
+
+func (optionsMap *SolvableOptionsMap) CountSlotUniqueItemIds(slotEquip SlotEquip) int {
+	idMap := make(map[ItemId]bool)
+	for i := range optionsMap.array[slotEquip] {
+		id := optionsMap.array[slotEquip][i].itemId
+		idMap[id] = true
+	}
+	return len(idMap)
+}
+
+func (optionsMap *SolvableOptionsMap) SeqSlotUniqueItemIds(slotEquip SlotEquip) iter.Seq[ItemId] {
+	idMap := make(map[ItemId]bool)
+	for i := range optionsMap.array[slotEquip] {
+		id := optionsMap.array[slotEquip][i].itemId
+		idMap[id] = true
+	}
+	return maps.Keys(idMap)
 }
 
 func (optionsMap *SolvableOptionsMap) SlotItemSeq(slotEquip SlotEquip) iter.Seq[*SolvableItem] {

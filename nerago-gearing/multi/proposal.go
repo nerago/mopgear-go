@@ -67,7 +67,7 @@ func (group *workingGroup) proposalsUnderPermutation(solutionsPerPermute int, in
 	mixer.AddValue(existingProposal)
 	futureCount.AddValueImmediate(1)
 
-	return mixer
+	return &mixer
 }
 
 func (group *workingGroup) runPermute(permuteSet permuteSet, solutionsPerPermute int, expectedCount *util_async.FutureValueAdderInt, resultChannel chan<- multi_types.MultiProposedOutput, cancel util_async.CancelSignal, includeInterimResults bool) {

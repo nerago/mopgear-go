@@ -90,7 +90,7 @@ func (group *workingGroup) prepareWorkers(input *multi_types.JobInputs, printer 
 }
 
 func (work *specWorker) runBaseline(printer *util.PrintRecorder, timeout int) {
-	printer.Printf("BASELINE for %s %d\n", work.Label, work.weightType)
+	printer.Printf("BASELINE for %s %d\n", work.Label(), work.weightType)
 	work.baselineResult = solver.Solver(
 		work.ItemOptions(),
 		work.Model(),

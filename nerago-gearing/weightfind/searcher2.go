@@ -430,12 +430,12 @@ func checkRangeIsSubrangeOf(outer, inner *weightSearch2Bound) bool {
 }
 
 func printRange(rangeMin []float64, rangeMax []float64, label string, printer *util.PrintRecorder) {
-	printer.Printf(label)
+	printer.Printf("%s", label)
 	for i := range rangeMin {
 		printer.Printf("%7.4f ", rangeMin[i])
 	}
 	printer.Println0()
-	printer.Printf(label)
+	printer.Printf("%s", label)
 	for i := range rangeMax {
 		printer.Printf("%7.4f ", rangeMax[i])
 	}

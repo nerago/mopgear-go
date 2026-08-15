@@ -20,6 +20,8 @@ func SingleGearSetExtended3Main(itemOptions *items.SolvableOptionsMap, model *so
 	build := util_highs.LinearBuilder{}
 	build.Solver = util_highs.Solver_MIP_Interior
 	build.TimeLimitSeconds = timeout
+	build.AddOptionString()
+	build.AddOptionString("presolve_rule_logging", true)
 
 	se3 := makeGearSetExtended3(&build)
 	outputVar := se3.createOutputVariableForSeparateRun()

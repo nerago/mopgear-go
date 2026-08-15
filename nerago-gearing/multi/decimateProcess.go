@@ -74,7 +74,13 @@ func (work *specWorker) decimateForBaseSet(tracker *util.TrackProgress, printer 
 		if item != nil {
 			slotEquip := items.SlotEquip(i)
 
-			work.decimateFindSlotBestN(&bestBySlot, slotEquip, &solveOptions, solverModel, printer, timeout)
+			if solveOptions.CountSlotUniqueItemIds(slotEquip) > c_decimateTargetItemsPerSlot {
+				work.decimateFindSlotBestN(&bestBySlot, slotEquip, &solveOptions, solverModel, printer, timeout)
+			} else {
+				for itemId := range solveOptions.SeqSlotUniqueItemIds(slotEquip) {
+					bestBySlot.GetOrPanic(slotEquip).AddIfMissing(itemId)
+				}
+			}
 
 			tracker.NewChild().SetDone()
 			*currentStep++
@@ -162,15 +168,28 @@ func (work *specWorker) decimateRestoreSpecificSetBonusInSlot(bestBySlot *items.
 
 func (work *specWorker) decimateApply(bestBySlot *items.SlotEquipMap[*util_collection.SetComparable[items.ItemId]], printer *util.PrintRecorder) {
 	for slot, idSet := range bestBySlot.SeqKeyValue() {
-		oldSize := len(work.ItemOptions().Get(slot))
-		oldItems := work.ItemOptions().CountSlotUniqueItemIds(slot)
+		oldTotalCount := len(work.ItemOptions().Get(slot))
+		oldItems := itemsInSlot(work.ItemOptions(), slot)
 
 		work.ItemOptions().FilterSlot(slot, func(item *items.FullItem) bool {
 			return idSet.HasValue(item.ItemId())
 		})
 
-		newSize := len(work.ItemOptions().Get(slot))
-		newItems := work.ItemOptions().CountSlotUniqueItemIds(slot)
-		printer.Printf("DECIMATE %s %d %s: Options (%d -> %d) Items (%d -> %d)\n", work.label, work.weightType, slot.Name(), oldSize, newSize, oldItems, newItems)
+		newTotalCount := len(work.ItemOptions().Get(slot))
+		newItems := itemsInSlot(work.ItemOptions(), slot)
+		printer.Printf("DECIMATE %s %d %s: Options (%d -> %d) Items (%d -> %d)\n", work.label, work.weightType, slot.Name(), oldTotalCount, newTotalCount, len(oldItems), len(newItems))
+		for itemId := range oldItems {
+			if !newItems[itemId] {
+				printer.Printf(" > removed %d\n", itemId)
+			}
+		}
 	}
+}
+
+func itemsInSlot(options *items.FullOptionsMap, slot items.SlotEquip) map[items.ItemId]bool {
+	itemSeen := make(map[items.ItemId]bool)
+	for item := range options.SlotItemSeq(slot) {
+		itemSeen[item.ItemId()] = true
+	}
+	return itemSeen
 }
