@@ -3,6 +3,7 @@ package multi
 import (
 	"cmp"
 	"fmt"
+	"maps"
 	"paladin_gearing_go/gear_model/bonus_set"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/solver"
@@ -19,22 +20,24 @@ const c_decimateTargetItemsPairedSlot = 4
 // normally decimate done as part of regular jobs
 func (job *MultiSetJob) TestDecimate() {
 	job.prepareItems()
-	job.prepareWorking()
-	job.runDecimate()
+	groupChannel := job.prepareWorkingGroups()
+	groupChannel = job.runDecimate(groupChannel)
+
+	util_async.ForEach_Channel(1, groupChannel, func(group *workingGroup) {})
 }
 
-func (job *MultiSetJob) runDecimate() {
-	tracker := util.TrackProgress_Start()
-	tracker.RunOuterTracking(job.working.Size())
-	defer tracker.SetDone()
-
-	workChannel := util_async.SeqToChannel(job.working.SeqValues())
-	util_async.ForEach_Channel(c_decimateThreadCount, workChannel, func(work *specWorking) {
-		work.runDecimateWork(tracker.NewChild(), job.printer, job.input.TimeLimitEachSolve)
+func (job *MultiSetJob) runDecimate(channel <-chan *workingGroup) <-chan *workingGroup {
+	return util_async.Map_ChannelToChannel(c_decimateThreadCount, channel, func(group *workingGroup) *workingGroup {
+		workChannel := util_async.SeqToChannel(maps.Values(group.workers))
+		util_async.ForEach_Channel(c_decimateThreadCount, workChannel, func(work *specWorker) {
+			tracker := util.TrackProgress_Nop()
+			work.runDecimateWork(tracker, job.printer, job.input.TimeLimitEachSolve)
+		})
+		return group
 	})
 }
 
-func (work *specWorking) runDecimateWork(tracker *util.TrackProgress, printer *util.PrintRecorder, timeout int) {
+func (work *specWorker) runDecimateWork(tracker *util.TrackProgress, printer *util.PrintRecorder, timeout int) {
 	solveOptions := items.SolvableOptionsMap_of(work.ItemOptions())
 	solverModel := solve_highs_types.SolverModelBuild(work.Model(), work.weightType, nil)
 	//futureBaseItemSet := solver.LaunchSolve(new(solveOptions), solverModel, printer, work.weightType, timeout)
@@ -51,7 +54,7 @@ func (work *specWorking) runDecimateWork(tracker *util.TrackProgress, printer *u
 	tracker.SetDone()
 }
 
-func (work *specWorking) decimateForBaseSet(tracker *util.TrackProgress, printer *util.PrintRecorder, timeout int, baseItemSet items.SolvableItemSet, solveOptions items.SolvableOptionsMap, solverModel *solve_highs_types.SolverModel) {
+func (work *specWorker) decimateForBaseSet(tracker *util.TrackProgress, printer *util.PrintRecorder, timeout int, baseItemSet items.SolvableItemSet, solveOptions items.SolvableOptionsMap, solverModel *solve_highs_types.SolverModel) {
 	estimateSteps := uint64(baseItemSet.Items().CountNonEmptySlots())
 	currentStep := new(uint64)
 	tracker.RunFromInt(currentStep, estimateSteps)
@@ -83,7 +86,7 @@ func (work *specWorking) decimateForBaseSet(tracker *util.TrackProgress, printer
 	work.decimateApply(&bestBySlot, printer)
 }
 
-func (work *specWorking) decimateFindSlotBestN(bestBySlot *items.SlotEquipMap[*util_collection.SetComparable[items.ItemId]], slotEquip items.SlotEquip, solveOptionsBase *items.SolvableOptionsMap, solverModel *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int) {
+func (work *specWorker) decimateFindSlotBestN(bestBySlot *items.SlotEquipMap[*util_collection.SetComparable[items.ItemId]], slotEquip items.SlotEquip, solveOptionsBase *items.SolvableOptionsMap, solverModel *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int) {
 	targetItemCount := c_decimateTargetItemsPerSlot
 	if slotEquip == items.Equip_Ring1 || slotEquip == items.Equip_Ring2 || slotEquip == items.Equip_Trinket1 || slotEquip == items.Equip_Trinket2 {
 		targetItemCount = c_decimateTargetItemsPairedSlot
@@ -109,7 +112,7 @@ func (work *specWorking) decimateFindSlotBestN(bestBySlot *items.SlotEquipMap[*u
 	}
 }
 
-func (work *specWorking) decimatePrepareItemOptions(bestBySlot *items.SlotEquipMap[*util_collection.SetComparable[items.ItemId]], slotEquip items.SlotEquip, solveOptionsBase *items.SolvableOptionsMap) (items.SolvableOptionsMap, bool) {
+func (work *specWorker) decimatePrepareItemOptions(bestBySlot *items.SlotEquipMap[*util_collection.SetComparable[items.ItemId]], slotEquip items.SlotEquip, solveOptionsBase *items.SolvableOptionsMap) (items.SolvableOptionsMap, bool) {
 	restrictedOptions := solveOptionsBase.Clone()
 	for removeId := range bestBySlot.GetOrNilValue(slotEquip).SeqValues() {
 		if restrictedOptions.RemoveItemIdFromAll(removeId) {
@@ -120,7 +123,7 @@ func (work *specWorking) decimatePrepareItemOptions(bestBySlot *items.SlotEquipM
 	return restrictedOptions, true
 }
 
-func (work *specWorking) decimateRestoreSetBonusItems(bestBySlot *items.SlotEquipMap[*util_collection.SetComparable[items.ItemId]], optionsMap *items.FullOptionsMap, expectAllBonusItems bool) {
+func (work *specWorker) decimateRestoreSetBonusItems(bestBySlot *items.SlotEquipMap[*util_collection.SetComparable[items.ItemId]], optionsMap *items.FullOptionsMap, expectAllBonusItems bool) {
 	for _, bonusSet := range work.model.BonusEnabled.EnabledSets {
 		for _, slot := range items.BonusSetSlotList {
 			work.decimateRestoreSpecificSetBonusInSlot(bestBySlot, optionsMap, slot, bonusSet, expectAllBonusItems)
@@ -128,7 +131,7 @@ func (work *specWorking) decimateRestoreSetBonusItems(bestBySlot *items.SlotEqui
 	}
 }
 
-func (work *specWorking) decimateRestoreSpecificSetBonusInSlot(bestBySlot *items.SlotEquipMap[*util_collection.SetComparable[items.ItemId]], optionsMap *items.FullOptionsMap, slot items.SlotEquip, bonusSet bonus_set.PreparedBonus, expectAllBonusItems bool) {
+func (work *specWorker) decimateRestoreSpecificSetBonusInSlot(bestBySlot *items.SlotEquipMap[*util_collection.SetComparable[items.ItemId]], optionsMap *items.FullOptionsMap, slot items.SlotEquip, bonusSet bonus_set.PreparedBonus, expectAllBonusItems bool) {
 	// check if we kept the item already
 	for itemId := range bestBySlot.GetOrNilValue(slot).SeqValues() {
 		if bonusSet.IncludesItem(itemId) {
@@ -157,7 +160,7 @@ func (work *specWorking) decimateRestoreSpecificSetBonusInSlot(bestBySlot *items
 	}
 }
 
-func (work *specWorking) decimateApply(bestBySlot *items.SlotEquipMap[*util_collection.SetComparable[items.ItemId]], printer *util.PrintRecorder) {
+func (work *specWorker) decimateApply(bestBySlot *items.SlotEquipMap[*util_collection.SetComparable[items.ItemId]], printer *util.PrintRecorder) {
 	for slot, idSet := range bestBySlot.SeqKeyValue() {
 		oldSize := len(work.ItemOptions().Get(slot))
 		oldItems := work.ItemOptions().CountSlotUniqueItemIds(slot)

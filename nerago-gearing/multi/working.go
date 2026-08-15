@@ -1,16 +1,23 @@
 package multi
 
 import (
-	"iter"
+	"maps"
 	"paladin_gearing_go/gear_model"
 	"paladin_gearing_go/items"
+	"paladin_gearing_go/multi/multi_types"
 	"paladin_gearing_go/solver"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/weightfind/weight_types"
 )
 
-type specWorking struct {
+type workingGroup struct {
+	job        *MultiSetJob
+	workers    map[string]*specWorker
+	weightType weight_types.WeightType
+}
+
+type specWorker struct {
 	// copied from specItemPrep
 	label                        string
 	model                        gear_model.SpecModel
@@ -24,47 +31,65 @@ type specWorking struct {
 	ratingMultiply  float64
 }
 
-func (work *specWorking) Label() string {
+func (work *specWorker) Label() string {
 	return work.label
 }
-func (work *specWorking) Model() *gear_model.SpecModel {
+func (work *specWorker) Model() *gear_model.SpecModel {
 	return &work.model
 }
-func (work *specWorking) ItemOptions() *items.FullOptionsMap {
+func (work *specWorker) ItemOptions() *items.FullOptionsMap {
 	return &work.itemOptionsWork
 }
-func (work *specWorking) AddSeen(equipMap *items.FullEquipMap) {
+func (work *specWorker) AddSeen(equipMap *items.FullEquipMap) {
 	work.seenInSolutions.Add(equipMap)
 }
-func (work *specWorking) AddSeenScaled(equipMap *items.FullEquipMap, scale uint32) {
+func (work *specWorker) AddSeenScaled(equipMap *items.FullEquipMap, scale uint32) {
 	work.seenInSolutions.AddScaled(equipMap, scale)
 }
 
-func (job *MultiSetJob) prepareWorking() {
-	for label, prep := range job.itemPrep {
-		for _, weightType := range job.input.WeightTypeList {
-			job.working.Put(label, weightType, &specWorking{
+func (job *MultiSetJob) prepareWorkingGroups() <-chan *workingGroup {
+	job.workGroups = make(map[weight_types.WeightType]*workingGroup)
+	for _, weightType := range job.input.WeightTypeList {
+		group := &workingGroup{
+			workers:    make(map[string]*specWorker),
+			weightType: weightType,
+		}
+
+		for label, prep := range job.itemPrep {
+			group.workers[label] = &specWorker{
 				label:                        prep.label,
 				model:                        prep.model,
 				seenInSolutions:              prep.seenInSolutions,
 				itemOptionsWork:              prep.itemOptions.Clone(),
 				expectAllBonusItemsAvailable: prep.inputs.ExpectAllBonusItemsAvailable,
 				weightType:                   weightType,
-			})
+			}
 		}
+		job.workGroups[weightType] = group
 	}
 
-	workingChannel := util_async.SeqToChannel(job.working.SeqValues())
-	util_async.ForEach_Channel(c_prepThreadCount, workingChannel, func(work *specWorking) {
-		work.runBaseline(job.printer, job.input.TimeLimitEachSolve)
+	groupChannel := util_async.SeqToChannel(maps.Values(job.workGroups))
+	preparedChannel := util_async.Map_ChannelToChannel(c_prepThreadCount, groupChannel, func(group *workingGroup) *workingGroup {
+		group.prepareWorkers(&job.input, job.printer)
+		return group
 	})
 
-	for _, nested := range job.working.SeqKey2NestedKey1Value() {
-		job.prepareRatingMultipliersGroup(nested, job.printer)
+	if job.input.RunDecimate {
+		return job.runDecimate(preparedChannel)
+	} else {
+		return preparedChannel
 	}
 }
 
-func (work *specWorking) runBaseline(printer *util.PrintRecorder, timeout int) {
+func (group *workingGroup) prepareWorkers(input *multi_types.JobInputs, printer *util.PrintRecorder) {
+	workChannel := util_async.SeqToChannel(maps.Values(group.workers))
+	util_async.ForEach_Channel(c_prepThreadCount, workChannel, func(work *specWorker) {
+		work.runBaseline(printer, input.TimeLimitEachSolve)
+	})
+	group.prepareRatingMultipliersGroup(input, printer)
+}
+
+func (work *specWorker) runBaseline(printer *util.PrintRecorder, timeout int) {
 	printer.Printf("BASELINE for %s %d\n", work.Label, work.weightType)
 	work.baselineResult = solver.Solver(
 		work.ItemOptions(),
@@ -81,18 +106,17 @@ func (work *specWorking) runBaseline(printer *util.PrintRecorder, timeout int) {
 	work.AddSeen(work.baselineResult.FullSet.Items())
 }
 
-func (job *MultiSetJob) prepareRatingMultipliersGroup(nested iter.Seq2[string, *specWorking], printer *util.PrintRecorder) {
+func (group *workingGroup) prepareRatingMultipliersGroup(input *multi_types.JobInputs, printer *util.PrintRecorder) {
 	var totalPercent float64
-	for _, param := range job.input.Param {
+	for _, param := range input.Param {
 		totalPercent += param.ItemInputs.RequestRatingPercent
 	}
-
 	if util.FloatEqualsZero(totalPercent) {
 		panic("percent total is zero")
 	}
 
-	for label, work := range nested {
-		param := job.input.GetSetParam(label)
+	for label, work := range group.workers {
+		param := input.GetSetParam(label)
 		if param == nil {
 			panic("param " + label + " missing")
 		}
@@ -102,7 +126,7 @@ func (job *MultiSetJob) prepareRatingMultipliersGroup(nested iter.Seq2[string, *
 	}
 }
 
-func (work *specWorking) prepareRatingMultiplier(requestRatingPercent float64, printer *util.PrintRecorder) {
+func (work *specWorker) prepareRatingMultiplier(requestRatingPercent float64, printer *util.PrintRecorder) {
 	const targetCombined float64 = 10.0
 	baselineRating := work.baselineResult.ResultRating
 

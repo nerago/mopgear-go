@@ -181,37 +181,33 @@ func permuteStep(inChannel <-chan permuteSet, options permuteOptions) <-chan per
 	return outputChannel
 }
 
-func (job *MultiSetJob) highProcessSetupForPermute(permuteSet permuteSet, printer *util.PrintRecorder) []*solve_highs.SolverHighsMultiProcess {
-	itemOptionsEach, overrideBonuses, permuteLabel := job.processSetupItemOptionsForPermute(permuteSet, printer)
+func (group *workingGroup) highProcessSetupForPermute(permuteSet permuteSet, printer *util.PrintRecorder) *solve_highs.SolverHighsMultiProcess {
+	itemOptionsEach, overrideBonuses, permuteLabel := group.processSetupItemOptionsForPermute(permuteSet, printer)
 	printer.Printf("PERMUTE SET:\n%s\n", permuteLabel)
 
-	commonOptions := job.determineCommon(itemOptionsEach, job.input.ItemInput.ReforgingAllowNonCommon)
+	commonOptions := group.determineCommon(itemOptionsEach)
 
-	process := make([]*solve_highs.SolverHighsMultiProcess, 0, len(job.input.WeightTypeList))
-	for _, weightType := range job.input.WeightTypeList {
-		highProcess := new(solve_highs.SolverHighsMultiProcess)
-		highProcess.SetPermuteLabel(permuteLabel)
-		highProcess.SetCommon(commonOptions)
+	highProcess := new(solve_highs.SolverHighsMultiProcess)
+	highProcess.SetPermuteLabel(permuteLabel)
+	highProcess.SetCommon(commonOptions)
 
-		for label, work := range job.working.SeqKey1ValueWithKey2(weightType) {
-			highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
-				Label:          label,
-				ItemOptions:    *itemOptionsEach[label],
-				SolverModel:    *solve_highs_types.SolverModelBuild(work.Model(), weightType, overrideBonuses[label]),
-				RatingMultiply: work.ratingMultiply,
-			})
-		}
-
-		process = append(process, highProcess)
+	for label, work := range group.workers {
+		highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
+			Label:          label,
+			ItemOptions:    *itemOptionsEach[label],
+			SolverModel:    *solve_highs_types.SolverModelBuild(work.Model(), group.weightType, overrideBonuses[label]),
+			RatingMultiply: work.ratingMultiply,
+		})
 	}
-	return process
+
+	return highProcess
 }
 
-func (job *MultiSetJob) processSetupItemOptionsForPermute(permuteSet permuteSet, printer *util.PrintRecorder) (map[string]*items.FullOptionsMap, map[string]*solve_highs_types.OverrideBonusCounts, string) {
+func (group *workingGroup) processSetupItemOptionsForPermute(permuteSet permuteSet, printer *util.PrintRecorder) (map[string]*items.FullOptionsMap, map[string]*solve_highs_types.OverrideBonusCounts, string) {
 	overrideBonusMap := make(map[string]*solve_highs_types.OverrideBonusCounts)
 
 	itemOptionsEach := make(map[string]*items.FullOptionsMap)
-	for _, prep := range job.itemPrep {
+	for _, prep := range group.job.itemPrep {
 		itemOptionsEach[prep.label] = new(prep.itemOptions.Clone())
 	}
 
@@ -219,18 +215,18 @@ func (job *MultiSetJob) processSetupItemOptionsForPermute(permuteSet permuteSet,
 	for _, entry := range permuteSet.choices {
 		if entry.fixed != nil {
 			fixed := entry.fixed
-			job.applyPermuteFixed(fixed, itemOptionsEach, &strBuild)
+			group.applyPermuteFixed(fixed, itemOptionsEach, &strBuild)
 		} else if entry.group != nil {
-			group := entry.group
-			job.applyPermuteGroup(group, itemOptionsEach, &strBuild)
+			permuteGroup := entry.group
+			group.applyPermuteGroup(permuteGroup, itemOptionsEach, &strBuild)
 		} else if entry.upgrade != nil {
 			itemId := entry.upgrade.itemId
-			job.applyPermuteItemUpgrade(itemId, itemOptionsEach, printer, &strBuild)
+			group.applyPermuteItemUpgrade(itemId, itemOptionsEach, printer, &strBuild)
 		} else if entry.gems != nil {
-			job.applyPermuteGems(entry.gems, itemOptionsEach, &strBuild)
+			group.applyPermuteGems(entry.gems, itemOptionsEach, &strBuild)
 		} else if entry.bonus != nil {
 			overrideBonusMap[entry.bonus.specLabel] = entry.bonus.bonus
-			job.logPermuteBonus(entry.bonus, &strBuild)
+			group.logPermuteBonus(entry.bonus, &strBuild)
 		} else {
 			panic("empty entry")
 		}
@@ -243,7 +239,7 @@ func (job *MultiSetJob) processSetupItemOptionsForPermute(permuteSet permuteSet,
 	return itemOptionsEach, overrideBonusMap, strBuild.String()
 }
 
-func (job *MultiSetJob) applyPermuteFixed(fixed *permuteEntryFixedForce, itemOptionsEach map[string]*items.FullOptionsMap, strBuild *util.StringBuild2) {
+func (group *workingGroup) applyPermuteFixed(fixed *permuteEntryFixedForce, itemOptionsEach map[string]*items.FullOptionsMap, strBuild *util.StringBuild2) {
 	itemOptionsEach[fixed.specLabel].ForceSlotOnlySpecifiedItemId(fixed.slot, fixed.itemId)
 	if !fixed.isSingle {
 		strBuild.WriteString(fixed.specLabel)
@@ -255,31 +251,31 @@ func (job *MultiSetJob) applyPermuteFixed(fixed *permuteEntryFixedForce, itemOpt
 	}
 }
 
-func (job *MultiSetJob) applyPermuteGroup(group *permuteEntryAllowGroup, itemOptionsEach map[string]*items.FullOptionsMap, strBuild *util.StringBuild2) {
-	for label := range job.itemPrep {
-		if group.forceSpec == label {
-			slot := itemOptionsEach[label].FindItemIdSlotUnique(group.itemId)
-			itemOptionsEach[label].ForceSlotOnlySpecifiedItemId(slot, group.itemId)
+func (group *workingGroup) applyPermuteGroup(permuteGroup *permuteEntryAllowGroup, itemOptionsEach map[string]*items.FullOptionsMap, strBuild *util.StringBuild2) {
+	for label := range group.job.itemPrep {
+		if permuteGroup.forceSpec == label {
+			slot := itemOptionsEach[label].FindItemIdSlotUnique(permuteGroup.itemId)
+			itemOptionsEach[label].ForceSlotOnlySpecifiedItemId(slot, permuteGroup.itemId)
 			strBuild.WriteString(label)
 			strBuild.WriteString("(Forced) ")
-		} else if slices.Contains(group.allowSpecList, label) {
+		} else if slices.Contains(permuteGroup.allowSpecList, label) {
 			strBuild.WriteString(label)
 			strBuild.WriteString("(Allowed) ")
 		} else {
-			itemOptionsEach[label].RemoveItemIdFromAll(group.itemId)
+			itemOptionsEach[label].RemoveItemIdFromAll(permuteGroup.itemId)
 		}
 	}
 
-	itemName := db.LookupItemNameByItemId(group.itemId)
+	itemName := db.LookupItemNameByItemId(permuteGroup.itemId)
 	strBuild.WriteString(": ")
 	strBuild.WriteString(itemName)
 	strBuild.WriteString(" | ")
 }
 
-func (job *MultiSetJob) applyPermuteItemUpgrade(itemId items.ItemId, itemOptionsEach map[string]*items.FullOptionsMap, printer *util.PrintRecorder, strBuild *util.StringBuild2) {
+func (group *workingGroup) applyPermuteItemUpgrade(itemId items.ItemId, itemOptionsEach map[string]*items.FullOptionsMap, printer *util.PrintRecorder, strBuild *util.StringBuild2) {
 	foundAny := false
 	for label, itemOpts := range itemOptionsEach {
-		profession := job.itemPrep[label].model.Professions
+		profession := group.job.itemPrep[label].model.Professions
 		if itemOpts.IncludesItemId(itemId) {
 			itemOpts.MapEachItem(func(item *items.FullItem) items.FullItem {
 				if item.ItemId() == itemId {
@@ -294,7 +290,7 @@ func (job *MultiSetJob) applyPermuteItemUpgrade(itemId items.ItemId, itemOptions
 
 	if !foundAny {
 		//panic("requested upgrade of item that isn't an option " + itemId.String())
-		job.printer.Println("requested upgrade of item that isn't an option " + itemId.String())
+		group.job.printer.Println("requested upgrade of item that isn't an option " + itemId.String())
 	}
 
 	itemName := db.LookupItemNameByItemId(itemId)
@@ -303,7 +299,7 @@ func (job *MultiSetJob) applyPermuteItemUpgrade(itemId items.ItemId, itemOptions
 	strBuild.WriteString(" | ")
 }
 
-func (job *MultiSetJob) applyPermuteGems(gems *permuteEntryGems, itemOptionsEach map[string]*items.FullOptionsMap, strBuild *util.StringBuild2) {
+func (group *workingGroup) applyPermuteGems(gems *permuteEntryGems, itemOptionsEach map[string]*items.FullOptionsMap, strBuild *util.StringBuild2) {
 	if !gems.allowAlternates {
 		for _, itemOpts := range itemOptionsEach {
 			itemOpts.FilterAllItems(func(item *items.FullItem) bool {
@@ -320,7 +316,7 @@ func (job *MultiSetJob) applyPermuteGems(gems *permuteEntryGems, itemOptionsEach
 	strBuild.WriteString(" | ")
 }
 
-func (job *MultiSetJob) logPermuteBonus(bonus *permuteEntryBonusItems, strBuild *util.StringBuild2) {
+func (group *workingGroup) logPermuteBonus(bonus *permuteEntryBonusItems, strBuild *util.StringBuild2) {
 	strBuild.WriteString(bonus.specLabel)
 	strBuild.WriteString(": ")
 	bonus.bonus.Specific.AppendString(strBuild)

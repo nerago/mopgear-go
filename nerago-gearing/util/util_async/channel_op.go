@@ -54,6 +54,14 @@ func MapMulti_ChannelToChannel_Cancellable[T any, R any](threadCount int, inputC
 	return outputChannel
 }
 
+func MapToChannel_ChannelToChannel_Cancellable[T any, R any](threadCount int, inputChannel <-chan T, cancel CancelSignal, mapper func(T) <-chan R) <-chan R {
+	outputChannel := makeOutputChannel[R]()
+	waitGroup := new(sync.WaitGroup)
+	makeThreadsMapToChannelToChannelCancellable(threadCount, inputChannel, cancel, mapper, waitGroup, outputChannel)
+	closeChannelOnGroupFinished(waitGroup, outputChannel)
+	return outputChannel
+}
+
 func MapMulti_SliceToChannel_Cancellable[T any, R any](threadCount int, inputSlice []T, cancel CancelSignal, mapper func(*T, chan<- R)) <-chan R {
 	indexChannel := makeIndexChannelCancellable(inputSlice, cancel)
 	outputChannel := makeOutputChannel[R]()
@@ -443,7 +451,7 @@ func channelToSlice[R any](tempChannel chan R) []R {
 	return outputSlice
 }
 
-func channelToSliceKnownSize[R any](tempChannel chan R, size int) []R {
+func channelToSliceKnownSize[R any](tempChannel <-chan R, size int) []R {
 	outputSlice := make([]R, 0, size)
 	for item := range tempChannel {
 		outputSlice = append(outputSlice, item)
@@ -523,6 +531,27 @@ func makeThreadsMapMultiChannelToChannel[T any, R any](threadCount int, inputCha
 		})
 	}
 	return waitGroup
+}
+
+func makeThreadsMapToChannelToChannelCancellable[T any, R any](threadCount int, inputChannel <-chan T, cancel CancelSignal, mapper func(T) <-chan R, waitGroup *sync.WaitGroup, outputChannel chan R) {
+	for range threadCount {
+		waitGroup.Go(func() {
+			for value := range inputChannel {
+				if cancel.ShouldFinish() {
+					break
+				}
+
+				nextChannel := mapper(value)
+				for innerValue := range nextChannel {
+					outputChannel <- innerValue
+				}
+
+				if cancel.ShouldFinish() {
+					break
+				}
+			}
+		})
+	}
 }
 
 func makeThreadsMapMultiChannelToChannelCancellable[T any, R any](threadCount int, inputChannel <-chan T, cancel CancelSignal, mapper func(T, chan<- R), waitGroup *sync.WaitGroup, outputChannel chan R) {

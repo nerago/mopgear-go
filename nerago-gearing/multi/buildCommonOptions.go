@@ -12,12 +12,13 @@ import (
 	"strings"
 )
 
-func (job *MultiSetJob) determineCommon(optionsInputMap map[string]*items.FullOptionsMap, reforgingAllowNonCommon bool) multi_types.CommonOptions {
+func (group *workingGroup) determineCommon(optionsInputMap map[string]*items.FullOptionsMap) multi_types.CommonOptions {
+	reforgingAllowNonCommon := group.job.input.ItemInput.ReforgingAllowNonCommon
 	commonOptions, seenIn := searchItemOptions(optionsInputMap, reforgingAllowNonCommon)
 
-	applyFixedForges(job.input.ItemInput.FixedForge, &commonOptions, job.printer)
+	applyFixedForges(group.job.input.ItemInput.FixedForge, &commonOptions, group.job.printer)
 
-	removeSingleSetItems(seenIn, &commonOptions, job.input.ItemInput.FixedForge)
+	removeSingleSetItems(seenIn, &commonOptions, group.job.input.ItemInput.FixedForge)
 
 	restrictItemOptionsToCommon(optionsInputMap, commonOptions)
 

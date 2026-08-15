@@ -17,6 +17,7 @@ type JobInputs struct {
 	ItemInput            ItemInputShared
 	// TODO consider a TimeLimitTotal
 	TimeLimitEachSolve int
+	RunDecimate        bool
 }
 
 type ItemInputShared struct {

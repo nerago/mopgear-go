@@ -31,7 +31,7 @@ type simulateMultiResult struct {
 	simMap   map[string]stats.SimData
 }
 
-func (job *MultiSetJob) proposalsToSimResult(proposalChannel <-chan multi_types.MultiProposedOutput, tracker *util.TrackProgress, expectedCount <-chan int) (*util_async.FutureCancellable[[]simulateJobResult], *util_async.Future[[]multi_types.MultiProposedOutput]) {
+func (job *MultiSetJob) runSimsForProposalChannel(proposalChannel <-chan multi_types.MultiProposedOutput, tracker *util.TrackProgress, expectedCount <-chan int) (*util_async.FutureCancellable[[]simulateJobResult], *util_async.Future[[]multi_types.MultiProposedOutput]) {
 	proposalChannel = util_async.Channel_RemoveDuplicatesFuncNotify(proposalChannel, func(a, b *multi_types.MultiProposedOutput) bool {
 		return a.Equals(b)
 	}, func(x *multi_types.MultiProposedOutput) {

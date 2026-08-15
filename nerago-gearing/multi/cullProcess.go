@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 )
 
-func (work *specWorking) runCullingProcess(targetNum int64, waitGroup *sync.WaitGroup, cancel util_async.CancelSignal, tracker *util.TrackProgress, printer *util.PrintRecorder) {
+func (work *specWorker) runCullingProcess(targetNum int64, waitGroup *sync.WaitGroup, cancel util_async.CancelSignal, tracker *util.TrackProgress, printer *util.PrintRecorder) {
 	addScale := uint32(1)
 	if work.weightType == 3 {
 		targetNum /= 10
