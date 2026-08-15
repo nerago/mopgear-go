@@ -16,7 +16,6 @@ const (
 	setNameT16Prot      = "Plate of Winged Triumph"
 	setNameT15Ret       = "Battlegear of the Lightning Emperor"
 	setNameT16Ret       = "Battlegear of Winged Triumph"
-	wordOfGlory15Prot   = "Plate of the Lightning Emperor - Word of Glory"
 	eternalFlameT16Prot = "Plate of Winged Triumph - Eternal Flame Full"
 )
 
@@ -37,15 +36,12 @@ func Model_PallyProtSurvival() gear_model.SpecModel {
 		StatsForWeighting: StatsForWeighting_strengthTank,
 		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
 		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
-		BonusEnabled:      bonus_set.SpecSetsEnableNamed(&priority, wordOfGlory15Prot, setNameT16Prot),
+		BonusEnabled:      bonus_set.SpecSetsEnableNamed(&priority, setNameT16Prot),
 		BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
-			bonus_set.CountMode_AllowPlusOne,
-			bonusMake(wordOfGlory15Prot, 2, setNameT16Prot, 0),
-			bonusMake(wordOfGlory15Prot, 2, setNameT16Prot, 2),
-			bonusMake(wordOfGlory15Prot, 0, setNameT16Prot, 2),
-			bonusMake(wordOfGlory15Prot, 0, setNameT16Prot, 4),
+			bonus_set.CountMode_AllowPlusOne, // no real justification for any restriction
+			bonusMake(setNameT16Prot, 2),
 		),
-		BonusRequiredWeight: new(bonusMake(wordOfGlory15Prot, 0, setNameT16Prot, 2)),
+		BonusRequiredWeight: new(bonusMake(setNameT15Prot, 0, setNameT16Prot, 2)),
 		Professions: gear_model.ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,
@@ -74,7 +70,6 @@ func Model_PallyProtHeal() gear_model.SpecModel {
 		BonusEnabled:      bonus_set.SpecSetsEnableNamed(&priority, eternalFlameT16Prot),
 		BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
 			bonus_set.CountMode_AllowPlusOne,
-			bonusMake(eternalFlameT16Prot, 2),
 			bonusMake(eternalFlameT16Prot, 4),
 		),
 		BonusRequiredWeight: new(bonusMake(eternalFlameT16Prot, 4)),
@@ -103,12 +98,10 @@ func Model_PallyProtMitigation() gear_model.SpecModel {
 		StatsForWeighting: StatsForWeighting_strengthTank,
 		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
 		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
-		BonusEnabled:      bonus_set.SpecSetsEnableNamed(&priority, setNameT15Prot, setNameT16Prot),
+		BonusEnabled:      bonus_set.SpecSetsEnableNamed(&priority, setNameT16Prot),
 		BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
-			bonus_set.CountMode_AllowPlusOne,
-			bonusMake(setNameT16Prot, 2, setNameT15Prot, 0),
-			bonusMake(setNameT16Prot, 2, setNameT15Prot, 2),
-			bonusMake(setNameT16Prot, 4, setNameT15Prot, 0),
+			bonus_set.CountMode_AllowPlusOne, // no real justification for any restriction
+			bonusMake(setNameT16Prot, 2),
 		),
 		BonusRequiredWeight: new(bonusMake(setNameT16Prot, 2, setNameT15Prot, 0)),
 		Professions: gear_model.ProfessionInfo{
@@ -140,8 +133,7 @@ func Model_PallyProtBalanced() gear_model.SpecModel {
 		BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
 			bonus_set.CountMode_AllowPlusOne,
 			bonusMake(setNameT16Prot, 0),
-			bonusMake(setNameT16Prot, 2),
-			bonusMake(setNameT16Prot, 4)),
+			bonusMake(setNameT16Prot, 2)),
 		BonusRequiredWeight: new(bonusMake(setNameT16Prot, 0)),
 		Professions: gear_model.ProfessionInfo{
 			IsBlacksmith: true,
@@ -196,16 +188,12 @@ func Model_PallyRet() gear_model.SpecModel {
 		ReforgeRules:      gear_model.ReforgeRules_melee,
 		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
 		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
-		BonusEnabled:      bonus_set.SpecSetsEnableNamed(&priority, setNameT15Ret, setNameT16Ret),
+		BonusEnabled:      bonus_set.SpecSetsEnableNamed(&priority, setNameT16Ret),
 		BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
-			bonus_set.CountMode_Exact,
-			bonusMake(setNameT15Ret, 0, setNameT16Ret, 0),
-			bonusMake(setNameT15Ret, 2, setNameT16Ret, 0),
-			bonusMake(setNameT15Ret, 2, setNameT16Ret, 2),
-			bonusMake(setNameT15Ret, 0, setNameT16Ret, 2),
-			bonusMake(setNameT15Ret, 0, setNameT16Ret, 4),
+			bonus_set.CountMode_Minimum,
+			bonusMake(setNameT16Ret, 2),
 		),
-		BonusRequiredWeight: new(bonusMake(setNameT15Ret, 0, setNameT16Ret, 4)),
+		BonusRequiredWeight: new(bonusMake(setNameT15Ret, 0, setNameT16Ret, 2)),
 		Professions: gear_model.ProfessionInfo{
 			IsBlacksmith: true,
 			IsEngineer:   true,
