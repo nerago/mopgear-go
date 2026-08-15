@@ -41,16 +41,16 @@ func preparedBonusMake(common dataEntry, variant dataEntryVariant) PreparedBonus
 	return pb
 }
 
-func defaultMap() *stats.SimTypeMap[float64] {
-	simMap := &stats.SimTypeMap[float64]{}
+func defaultMap() *BonusBySim {
+	simMap := &BonusBySim{}
 	for _, simType := range stats.SimTypeList {
 		simMap.Put(simType, 1)
 	}
 	return simMap
 }
 
-func convertToSimMap(ex map[stats.SimType]float64) *stats.SimTypeMap[float64] {
-	simMap := &stats.SimTypeMap[float64]{}
+func convertToSimMap(ex map[stats.SimType]float64) *BonusBySim {
+	simMap := &BonusBySim{}
 	for _, simType := range stats.SimTypeList {
 		if value, hasValue := ex[simType]; hasValue {
 			simMap.Put(simType, value)
@@ -85,7 +85,7 @@ func (pb *PreparedBonus) deriveUpgradedFlatBonus(priority *weight_types.SimPrior
 	}
 }
 
-func (pb *PreparedBonus) deriveUpgradedFlatBonusSingle(bonusMap *stats.SimTypeMap[float64], priority *weight_types.SimPriorityBasic) float64 {
+func (pb *PreparedBonus) deriveUpgradedFlatBonusSingle(bonusMap *BonusBySim, priority *weight_types.SimPriorityBasic) float64 {
 	sum := 0.0
 	for simType, bonus := range bonusMap.SeqKeyValue() {
 		ratio, hasRatio := priority.Get(simType)

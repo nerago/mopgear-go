@@ -118,3 +118,4 @@ Prot_2pcEach
 example timing decimate
 weight 1: 15.6768099s
 weight 2: 30.1988601s
+weight 3: 1h9m33.563415s

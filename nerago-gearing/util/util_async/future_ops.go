@@ -209,14 +209,16 @@ func (fa *FutureValueAdder[T]) AddFuture(future IFutureWithResult[T]) {
 }
 
 func (fa *FutureValueAdder[T]) AddValueImmediate(apply func(T) T) {
-	fa.mutex.Lock()
-	defer fa.mutex.Unlock()
+	go func() {
+		fa.mutex.Lock()
+		defer fa.mutex.Unlock()
 
-	if fa.ready {
-		panic("AddValueImmediate should only be called before ready")
-	}
+		fa.total = apply(fa.total)
 
-	fa.total = apply(fa.total)
+		if fa.channel != nil {
+			fa.channel <- fa.total
+		}
+	}()
 }
 
 // confirm most of the expected futures have been added

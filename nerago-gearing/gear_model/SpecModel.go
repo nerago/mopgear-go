@@ -109,12 +109,12 @@ func (model *SpecModel) CalcRatingSolve(itemSet *SolvableItemSet, weightType wei
 	weight := model.StatWeights.GetByWeightType(weightType)
 	if weightType == 1 {
 		baseRating := weight.CalcStatScore(itemSet.Total())
-		setRating := model.BonusEnabled.CalcBonusSolveFlat(itemSet.Items(), model.SimPriority)
+		setRating := model.BonusEnabled.CalcBonusSolveFlat(itemSet.Items())
 		return baseRating * setRating
 	} else {
-		bonusMap := SimTypeMap[float64]{}
+		bonusMap := bonus_set.BonusBySim{}
 		model.BonusEnabled.CalcBonusSolveBySim(itemSet.Items(), &bonusMap)
-		return weight.CalcStatScoreWithBonus(itemSet.Total(), &bonusMap)
+		return weight.CalcStatScoreWithBonus(itemSet.Total(), (*SimTypeMap[float64])(&bonusMap))
 	}
 }
 
@@ -122,12 +122,12 @@ func (model *SpecModel) CalcRatingFull(itemSet *FullItemSet, weightType weight_t
 	weight := model.StatWeights.GetByWeightType(weightType)
 	if weightType == 1 {
 		baseRating := weight.CalcStatScore(itemSet.Total())
-		setRating := model.BonusEnabled.CalcBonusFullFlat(itemSet.Items(), model.SimPriority)
+		setRating := model.BonusEnabled.CalcBonusFullFlat(itemSet.Items())
 		return baseRating * setRating
 	} else {
-		bonusMap := SimTypeMap[float64]{}
+		bonusMap := bonus_set.BonusBySim{}
 		model.BonusEnabled.CalcBonusFullBySim(itemSet.Items(), &bonusMap)
-		return weight.CalcStatScoreWithBonus(itemSet.Total(), &bonusMap)
+		return weight.CalcStatScoreWithBonus(itemSet.Total(), (*SimTypeMap[float64])(&bonusMap))
 	}
 }
 

@@ -51,6 +51,7 @@ func (job *MultiSetJob) prepareWorkingGroups() <-chan *workingGroup {
 	job.workGroups = make(map[weight_types.WeightType]*workingGroup)
 	for _, weightType := range job.input.WeightTypeList {
 		group := &workingGroup{
+			job:        job,
 			workers:    make(map[string]*specWorker),
 			weightType: weightType,
 		}

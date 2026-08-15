@@ -16,7 +16,7 @@ func ReportSetFewerParams(model *gear_model.SpecModel, fullSet *items.FullItemSe
 func ReportSet(model_obj *gear_model.SpecModel, fullSet *items.FullItemSet, printer *util.PrintRecorder) {
 	//printer.Printf("SET rating %.0f\n", rating)
 	printer.Printf("BONUS counts %s\n", bonus_set.AllBonusesText(fullSet.Items()))
-	printer.Printf("BONUS multiply %f\n", model_obj.BonusEnabled.CalcBonusFullFlat(fullSet.Items(), model_obj.SimPriority))
+	printer.Printf("BONUS multiply %f\n", model_obj.BonusEnabled.CalcBonusFullFlat(fullSet.Items()))
 	fullSet.PrintStats(printer)
 	printEquipMap(fullSet.Items(), printer)
 

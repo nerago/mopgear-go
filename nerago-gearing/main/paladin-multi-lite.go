@@ -97,11 +97,12 @@ func PaladinMultiRunLite() {
 	job.SetMinimumExtraItemLevel(463)
 	job.SetTimeLimitEachSolver(6000)
 	job.SetSimSize(simSize)
-	job.SetReforgingAllowNonCommon(false)
+	job.SetReforgingAllowNonCommon(true)
 	//job.SetWriteBestToGearFiles()
-	job.SetWeightTypes(3)
+	//job.SetWeightTypes(3)
 	//job.SetWeightTypes(1, 2, 3)
-	//job.SetWeightTypes(1)
+	job.SetWeightTypes(1, 2)
+	job.RunDecimate = true
 
 	var generalUpgrade items.UpgradeLevel = 0
 	var forceUpgrade items.UpgradeLevel = 0
@@ -326,7 +327,7 @@ func PaladinMultiRunLite() {
 	//)
 	//job.AddAlternateUpgradeChoices(105033) // Wolf-Rider Spurs
 
-	//job.EnablePermuteOnItemCountOptions()
+	job.EnablePermuteOnItemCountOptions()
 
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()
@@ -335,9 +336,9 @@ func PaladinMultiRunLite() {
 
 	//job.RunNoPermutations_AllCommonAlternates(true, true)
 	//run.RunNoPermutations_BestOnly(true, true)
-	//run.RunForSolutionsPerPermute(1, true)
+	run.RunForSolutionsPerPermute(1, false)
 
 	//job.CullingReport()
-	run.TestDecimate()
+	//run.TestDecimate()
 	//run.RunCullingSets(200, time.Minute*15)
 }

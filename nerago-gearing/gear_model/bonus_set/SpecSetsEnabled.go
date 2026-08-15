@@ -40,25 +40,25 @@ func (sets *SpecSetsEnable) BonusSetIndexForItem(itemId items.ItemId) (int, bool
 	}
 }
 
-func (sets *SpecSetsEnable) CalcBonusSolveFlat(equipMap *items.SolvableEquipMap, ratio weight_types.SimPriorityBasic) float64 {
+func (sets *SpecSetsEnable) CalcBonusSolveFlat(equipMap *items.SolvableEquipMap) float64 {
 	counts := [16]uint8{}
 	setCountsGeneric(&counts, &sets.itemToSet, equipMap)
 	return sets.countsToFlat(&counts)
 }
 
-func (sets *SpecSetsEnable) CalcBonusFullFlat(equipMap *items.FullEquipMap, ratio weight_types.SimPriorityBasic) float64 {
+func (sets *SpecSetsEnable) CalcBonusFullFlat(equipMap *items.FullEquipMap) float64 {
 	counts := [16]uint8{}
 	setCountsGeneric(&counts, &sets.itemToSet, equipMap)
 	return sets.countsToFlat(&counts)
 }
 
-func (sets *SpecSetsEnable) CalcBonusSolveBySim(equipMap *items.SolvableEquipMap, output *stats.SimTypeMap[float64]) {
+func (sets *SpecSetsEnable) CalcBonusSolveBySim(equipMap *items.SolvableEquipMap, output *BonusBySim) {
 	counts := [16]uint8{}
 	setCountsGeneric(&counts, &sets.itemToSet, equipMap)
 	sets.countsToSims(&counts, output)
 }
 
-func (sets *SpecSetsEnable) CalcBonusFullBySim(equipMap *items.FullEquipMap, output *stats.SimTypeMap[float64]) {
+func (sets *SpecSetsEnable) CalcBonusFullBySim(equipMap *items.FullEquipMap, output *BonusBySim) {
 	counts := [16]uint8{}
 	setCountsGeneric(&counts, &sets.itemToSet, equipMap)
 	sets.countsToSims(&counts, output)
@@ -80,7 +80,7 @@ func (sets *SpecSetsEnable) countsToFlat(counts *[16]uint8) float64 {
 	return value
 }
 
-func (sets *SpecSetsEnable) countsToSims(counts *[16]uint8, output *stats.SimTypeMap[float64]) {
+func (sets *SpecSetsEnable) countsToSims(counts *[16]uint8, output *BonusBySim) {
 	for _, simType := range stats.SimTypeList {
 		output.Put(simType, 1)
 	}
@@ -92,7 +92,7 @@ func (sets *SpecSetsEnable) countsToSims(counts *[16]uint8, output *stats.SimTyp
 	}
 }
 
-func multiplyInto(dest *stats.SimTypeMap[float64], src *stats.SimTypeMap[float64]) {
+func multiplyInto(dest *BonusBySim, src *BonusBySim) {
 	for key, value := range src.SeqKeyValue() {
 		dest.Compute(key, func(oldValue float64) float64 { return oldValue * value })
 	}
@@ -225,4 +225,7 @@ func (sets *SpecSetsEnable) initMap(priority *weight_types.SimPriorityBasic) {
 			bonus.deriveUpgradedFlatBonus(priority)
 		}
 	}
+	//else {
+	//	panic("can we have priority everywhere?")
+	//}
 }
