@@ -41,14 +41,16 @@ func makeGearSetExtended3(build *util_highs.LinearBuilder) *singleGearSetExtende
 }
 
 func (se3 *singleGearSetExtended3) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, outputVar *columnInfo) {
-	se3.prepareCommon(model, itemOptions)
-	se3.prepareStatTotals()
-	se3.prepareRequireEx(&model.StatRequirements)
+	se3.itemSetupCommon.prepare(model, itemOptions, nil)
+	se3.itemSetupEx.prepareStatTotals()
+	se3.itemSetupEx.prepareRequireEx(&model.StatRequirements)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
-		se3.addItem(slot, item, &model.StatRequirements, model.SetBonus.IndexForItem)
+		columnIndex := se3.itemSetupCommon.addItemCommon(slot, item)
+		se3.itemSetupEx.addItem(item, &model.StatRequirements, columnIndex)
 	}
 
+	se3.prepareRejected(model)
 	se3.finishItemsCommon(itemOptions)
 	se3.finishRequireEx(&model.StatRequirements)
 	se3.finishStatTotals()

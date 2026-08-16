@@ -1,7 +1,9 @@
 package util_highs
 
 import (
+	"iter"
 	"paladin_gearing_go/util"
+	"slices"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
@@ -43,4 +45,12 @@ func (build *LinearBuilder) debugPrintColumnsForce(solution *highs.Solution, pri
 
 func (build *LinearBuilder) DebugTextFor(columnIndex ColumnIndex) string {
 	return debugText(build.vars.debug[columnIndex])
+}
+
+func (build *LinearBuilder) DebugContextFor(columnIndex ColumnIndex) DebugContext {
+	return build.vars.debug[columnIndex]
+}
+
+func (build *LinearBuilder) DebugColumnsSeq() iter.Seq[DebugContext] {
+	return slices.Values(build.vars.debug)
 }

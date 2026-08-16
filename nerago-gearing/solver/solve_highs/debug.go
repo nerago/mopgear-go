@@ -5,7 +5,7 @@ import (
 	"paladin_gearing_go/util/util_highs"
 )
 
-func debugPrint(solution *util_highs.Solution2, build *util_highs.LinearBuilder, allColumns []*columnInfo, printer *util.PrintRecorder) {
+func debugPrint(solution *util_highs.Solution2, build *util_highs.LinearBuilder, printer *util.PrintRecorder) {
 	if !util_highs.C_DebugHighs {
 		return
 	}
@@ -16,30 +16,15 @@ func debugPrint(solution *util_highs.Solution2, build *util_highs.LinearBuilder,
 	activeBonusWeight := 0.0
 
 	for colIndex, outputValue := range solution.ColValuesSeq() {
-		if !debugPrintColumn(allColumns, colIndex, outputValue, &activeBonus, &activeBonusWeight, printer) {
+		if colInfo, isInfo := build.DebugContextFor(colIndex).(*columnInfo); isInfo {
+			debugPrintColumnEntry(colInfo, colIndex, outputValue, &activeBonus, &activeBonusWeight, printer)
+		} else {
 			text := build.DebugTextFor(colIndex)
 			printer.Printf("%d %f %s\n", colIndex, outputValue, text)
 		}
 	}
 
 	printer.Printf("ACTIVE highs Bonus = %s %f\n", activeBonus, activeBonusWeight)
-}
-
-func debugPrintColumn(allColumns []*columnInfo, columnIndex util_highs.ColumnIndex, outputValue float64, activeBonus *string, activeBonusWeight *float64, printer *util.PrintRecorder) bool {
-	var colEntry *columnInfo
-	found := false
-	for _, col := range allColumns {
-		if col.columnIndex == columnIndex {
-			colEntry = col
-			found = true
-			break
-		}
-	}
-
-	if found {
-		debugPrintColumnEntry(colEntry, columnIndex, outputValue, activeBonus, activeBonusWeight, printer)
-	}
-	return found
 }
 
 func (colEntry columnInfo) DebugText() string {

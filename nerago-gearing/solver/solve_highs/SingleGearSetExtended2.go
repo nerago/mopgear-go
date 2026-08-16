@@ -39,17 +39,19 @@ func makeGearSetExtended2(build *util_highs.LinearBuilder) *singleGearSetExtende
 }
 
 func (se2 *singleGearSetExtended2) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, outputVar *columnInfo) {
-	se2.prepareCommon(model, itemOptions)
-	se2.prepareStatTotals()
-	se2.prepareRequireEx(&model.StatRequirements)
+	se2.itemSetupCommon.prepare(model, itemOptions, se2.createItemColumn)
+	se2.itemSetupEx.prepareStatTotals()
+	se2.itemSetupEx.prepareRequireEx(&model.StatRequirements)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
-		se2.addItem(slot, item, &model.StatRequirements, model.SetBonus.IndexForItem)
+		columnIndex := se2.itemSetupCommon.addItemCommon(slot, item)
+		se2.itemSetupEx.addItem(item, &model.StatRequirements, columnIndex)
 	}
 
-	se2.finishItemsCommon(itemOptions)
-	se2.finishRequireEx(&model.StatRequirements)
-	se2.finishStatTotals()
+	se2.itemSetupCommon.finishItemsEquipped(itemOptions, se2.build)
+	se2.itemSetupEx.finishRequireEx(&model.StatRequirements, se2.build)
+	countSetItemsCol := se2.itemSetupCommon.finishSetCounts(se2.build)
+	statTotalCols := se2.itemSetupEx.finishStatTotals(se2.build)
 
 	// statTotalColumns[statType] -> simValueTotalColumns[simType]
 	se2.calcSimValues(model.Weights2)
@@ -84,11 +86,10 @@ func (se2 *singleGearSetExtended2) calcSimValue(simType stats.SimType, nestedWei
 	simValueColumn := &columnInfo{entryType: entry_sim_value, simType: simType}
 	simValueColumn.columnIndex = se2.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), simValueColumn)
 	se2.simValueTotalColumns[simType] = simValueColumn
-	se2.allColumns = append(se2.allColumns, simValueColumn)
 
 	simValueFromStatRow := util_highs.ConstraintRow{}
 	for statType, weightValue := range nestedWeights {
-		statColumn := se2.statTotalColumns[statType]
+		statColumn := se2.statTotalColumns.GetOrPanic(statType)
 		simValueFromStatRow.Add(statColumn.columnIndex, weightValue)
 	}
 

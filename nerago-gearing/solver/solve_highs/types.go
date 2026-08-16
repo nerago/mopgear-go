@@ -19,7 +19,6 @@ const (
 type ISingleGearSet interface {
 	setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, outputVar *columnInfo)
 	ColumnsForItemId(id items.ItemId) iter.Seq[*columnInfo]
-	AllColumns() []*columnInfo
 	buildResultSet(solution util_highs.ISolution) items.SolvableItemSet
 	RatingPreScale() float64
 	createOutputVariableForSeparateRun() *columnInfo
@@ -77,8 +76,7 @@ type bonusInfo struct {
 	setMultipliersBySim bonus_set.BonusByCountBySim
 	setIndex            solve_highs_types.SetBonusIndex
 
-	countSetItemsRow  util_highs.ConstraintRow      // use to count items used from this set, has 1 or 0 flags
-	setTotalCountVar  *columnInfo                   // total count of items used
+	//setTotalCountVar  *columnInfo                   // total count of items used
 	setExactCountVars [c_setItemsCounts]*columnInfo // specific bools for different counts
 }
 

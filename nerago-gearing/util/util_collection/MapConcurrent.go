@@ -112,20 +112,6 @@ func (mc *MapConcurrent[K, V]) Compute(key K, apply func(V) V) {
 	mc.mutex.Lock()
 	defer mc.mutex.Unlock()
 
-	mc.data[key] = apply(mc.data[key])
-}
-
-func (mc *MapConcurrent[K, V]) Delete(key K) {
-	mc.mutex.Lock()
-	defer mc.mutex.Unlock()
-
-	delete(mc.data, key)
-}
-
-func (mc *MapConcurrent[K, V]) Apply(key K, apply func(oldValue V) V) {
-	mc.mutex.Lock()
-	defer mc.mutex.Unlock()
-
 	data := mc.data
 	if data == nil {
 		data = make(map[K]V)
@@ -140,6 +126,13 @@ func (mc *MapConcurrent[K, V]) Apply(key K, apply func(oldValue V) V) {
 		value = apply(nilValue)
 	}
 	data[key] = value
+}
+
+func (mc *MapConcurrent[K, V]) Delete(key K) {
+	mc.mutex.Lock()
+	defer mc.mutex.Unlock()
+
+	delete(mc.data, key)
 }
 
 func (mc *MapConcurrent[K, V]) FirstKey() K {

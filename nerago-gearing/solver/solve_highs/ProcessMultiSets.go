@@ -34,8 +34,6 @@ type SolverHighsMultiProcess struct {
 	outputColumn util_highs.ColumnIndex
 	outputRow    util_highs.ConstraintRow
 
-	allColumns []*columnInfo
-
 	permuteLabel string
 }
 
@@ -68,7 +66,7 @@ func (process *SolverHighsMultiProcess) RunInterruptable(timeLimit int, printer 
 	solveFuture := process.build.RunHighsFuture(nil)
 	return util_async.FutureCancellable_MapValue(solveFuture, func(linearResult util_highs.LinearResult) (HighsMultiResult, bool) {
 		solution := linearResult.GetSolution2AndSaveLog(printer)
-		debugPrintAll(solution, process, printer)
+		debugPrintAll(solution, process.build, printer)
 
 		if solution.HasSolution() {
 			multiResult := process.solutionToResult(solution, printer, false)
@@ -138,7 +136,7 @@ func (process *SolverHighsMultiProcess) generateInitialMulti(timeLimit int, prin
 	futureSolution := process.build.RunHighsFuture(nil)
 	futureCommonChoices := util_async.FutureCancellable_MapValue(futureSolution, func(result util_highs.LinearResult) ([]*columnInfo, bool) {
 		solution := result.GetSolution2AndSaveLog(printer)
-		debugPrintAll(solution, process, printer)
+		debugPrintAll(solution, process.build, printer)
 
 		if solution.HasSolution() {
 			initialChannel <- process.solutionToResult(solution, printer, false)
@@ -221,7 +219,7 @@ func (process *SolverHighsMultiProcess) runVariant(build *util_highs.LinearBuild
 
 	return util_async.FutureCancellable_MapValue(future, func(linearResult util_highs.LinearResult) (HighsMultiResult, bool) {
 		solution := linearResult.GetSolution2AndSaveLog(printer)
-		debugPrintAll(solution, process, printer)
+		debugPrintAll(solution, process.build, printer)
 
 		if doneFunc != nil {
 			doneFunc()
@@ -260,7 +258,7 @@ func (process *SolverHighsMultiProcess) forwardInterimResultsToChannel(build *ut
 	return func() { close(interimChannel) }
 }
 
-func debugPrintAll(solution *util_highs.Solution2, job *SolverHighsMultiProcess, printer *util.PrintRecorder) {
+func debugPrintAll(solution *util_highs.Solution2, build *util_highs.LinearBuilder, printer *util.PrintRecorder) {
 	if !util_highs.C_DebugHighs {
 		return
 	}
@@ -268,29 +266,25 @@ func debugPrintAll(solution *util_highs.Solution2, job *SolverHighsMultiProcess,
 	printer.Println("SOLUTION STATUS = " + solution.Status().String())
 	printer.Printf("OBJECTIVE VALUE %f \n", solution.Objective())
 
-columnLoop:
 	for columnIndex, outputValue := range solution.ColValuesSeq() {
-		if debugPrintColumn(job.allColumns, columnIndex, outputValue, nil, nil, printer) {
-			continue columnLoop
+		context := build.DebugContextFor(columnIndex)
+		if colInfo, isInfo := context.(*columnInfo); isInfo {
+			debugPrintColumnEntry(colInfo, columnIndex, outputValue, nil, nil, printer)
+		} else {
+			text := build.DebugTextFor(columnIndex)
+			printer.Printf("%d %f %s\n", columnIndex, outputValue, text)
 		}
-
-		for _, part := range job.parts {
-			if debugPrintColumn(part.singleGearSet.AllColumns(), columnIndex, outputValue, nil, nil, printer) {
-				continue columnLoop
-			}
-		}
-
-		text := job.build.DebugTextFor(columnIndex)
-		printer.Printf("%d %f %s\n", columnIndex, outputValue, text)
 	}
 }
 
 func (process *SolverHighsMultiProcess) extractCommonChoices(solution *util_highs.Solution2) []*columnInfo {
 	commonChosenColumns := make([]*columnInfo, 0, process.common.Size())
-	for _, jobColumn := range process.allColumns {
-		colValue := solution.GetValue(jobColumn.columnIndex)
-		if jobColumn.entryType == entry_multi_enable_forge && util.FloatEqualsOne(colValue) {
-			commonChosenColumns = append(commonChosenColumns, jobColumn)
+	for columnIndex, colValue := range solution.ColValuesSeq() {
+		context := process.build.DebugContextFor(columnIndex)
+		if colInfo, isInfo := context.(*columnInfo); isInfo {
+			if colInfo.entryType == entry_multi_enable_forge && util.FloatEqualsOne(colValue) {
+				commonChosenColumns = append(commonChosenColumns, colInfo)
+			}
 		}
 	}
 	return commonChosenColumns
@@ -328,7 +322,6 @@ func (process *SolverHighsMultiProcess) makeFullModel(timeLimit int) {
 
 	entry := columnInfo{entryType: entry_multi_output}
 	entry.columnIndex = process.build.CreateColumnWithOutput(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), 1, &entry)
-	process.allColumns = append(process.allColumns, &entry)
 
 	process.outputColumn = entry.columnIndex
 	process.outputRow.Add(process.outputColumn, -1)
@@ -347,7 +340,6 @@ func (param *SolverHighsMultiParam) makeSingleGearSet(build *util_highs.LinearBu
 
 	setOutput := &columnInfo{entryType: entry_main_output}
 	setOutput.columnIndex = build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), setOutput)
-	job.allColumns = append(job.allColumns, setOutput)
 
 	param.singleGearSet = makeGearSetForWeight(build, &param.SolverModel)
 	param.singleGearSet.setup(&param.SolverModel, &param.solveOptions, setOutput)
@@ -379,7 +371,6 @@ func (process *SolverHighsMultiProcess) addCommonConstraintsForItemRef(build *ut
 	for _, item := range array {
 		entryEnableReforge := columnInfo{entryType: entry_multi_enable_forge, itemFull: &item}
 		entryEnableReforge.columnIndex = build.CreateColumnBool(&entryEnableReforge)
-		process.allColumns = append(process.allColumns, &entryEnableReforge)
 
 		onlyOneReforge.Add(entryEnableReforge.columnIndex, 1)
 
