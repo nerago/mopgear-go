@@ -81,10 +81,12 @@ func (sit *gearItemSetupShared) finishItemsEquipped(itemOptions *items.SolvableO
 	for slot, row := range sit.slotsOneEachRow {
 		slotEquip := items.SlotEquip(slot)
 		row.Debug = "slotsOneEachRow_" + slotEquip.Name()
-		if itemOptions.Has(slotEquip) {
+		if itemOptions.Has(slotEquip) && !row.IsEmpty() {
 			row.Build(build, 1, 1)
-		} else {
+		} else if !row.IsEmpty() {
 			row.Build(build, 0, 0)
+		} else if itemOptions.Has(slotEquip) {
+			panic("lose some item options")
 		}
 	}
 

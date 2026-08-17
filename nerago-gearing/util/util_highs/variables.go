@@ -1,6 +1,7 @@
 package util_highs
 
 import (
+	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_collection"
 	"slices"
 
@@ -96,4 +97,18 @@ func (vars *variableArrayBuilder) clone() variableArrayBuilder {
 
 func (vars *variableArrayBuilder) changeColumnCost(columnIndex ColumnIndex, cost float64) {
 	vars.colCosts[columnIndex] = cost
+}
+
+func (vars *variableArrayBuilder) validate() {
+	if C_DebugHighs {
+		nonZeroCosts := 0
+		for _, value := range vars.colCosts {
+			if util.FloatNonZero(value) {
+				nonZeroCosts++
+			}
+		}
+		if nonZeroCosts == 0 {
+			panic("all costs zero")
+		}
+	}
 }

@@ -24,7 +24,10 @@ func (site *gearItemSetupEx) addItem(item *items.SolvableItem, require *stats.St
 
 	// specific hit/expertise/etc values for hi/lo limits
 	for statType := range require.SeqKey() {
-		site.requireRows.GetOrPanic(statType).Add(columnIndex, item.Total().GetFloat(statType))
+		value := item.Total().GetFloat(statType)
+		if value != 0 {
+			site.requireRows.GetOrPanic(statType).Add(columnIndex, value)
+		}
 	}
 }
 

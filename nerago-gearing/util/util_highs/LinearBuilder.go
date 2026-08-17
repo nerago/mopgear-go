@@ -162,6 +162,8 @@ func (build *LinearBuilder) GetInitialSolutionValue(columnNumber ColumnIndex) fl
 }
 
 func (build *LinearBuilder) RunHighsFuture(stopwatch *util.Stopwatch) *util_async.FutureCancellable[LinearResult] {
+	build.vars.validate()
+
 	solver, logFilename, requireGpu, optionalGpu := build.prepareHighsRun(true)
 
 	future := util_async.FutureCancellable_Make[LinearResult]()

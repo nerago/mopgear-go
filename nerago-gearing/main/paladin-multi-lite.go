@@ -100,8 +100,9 @@ func PaladinMultiRunLite() {
 	job.SetReforgingAllowNonCommon(true)
 	//job.SetWriteBestToGearFiles()
 	//job.SetWeightTypes(3)
-	job.SetWeightTypes(1, 2, 3)
-	//job.SetWeightTypes(1, 2)
+	//job.SetWeightTypes(1, 2, 3)
+	job.SetWeightTypes(2)
+	//job.SetWeightTypes(1)
 	job.RunDecimate = true
 
 	var generalUpgrade items.UpgradeLevel = 0

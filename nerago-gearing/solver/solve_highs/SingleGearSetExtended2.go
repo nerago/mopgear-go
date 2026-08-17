@@ -17,6 +17,7 @@ type singleGearSetExtended2 struct {
 func SingleGearSetExtended2Main(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int) *util_async.FutureCancellable[items.SolvableItemSet] {
 	build := util_highs.LinearBuilder{}
 	build.Solver = util_highs.Solver_MIP_Interior
+	build.Minimise = false
 	build.TimeLimitSeconds = timeout
 
 	se2 := makeGearSetExtended2(&build)
