@@ -2,7 +2,6 @@ package solve_highs
 
 import (
 	"iter"
-	"paladin_gearing_go/gear_model/bonus_set"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/solver/solve_highs_types"
 	"paladin_gearing_go/stats"
@@ -69,40 +68,32 @@ func (colEntry columnInfo) ItemId() items.ItemId {
 	}
 }
 
-type bonusInfo struct {
-	//setCountItems       func(*items.SolvableEquipMap) uint8
-	setTotalCountVar  *columnInfo
-	setIndex          solve_highs_types.SetBonusIndex
-	setMultipliers    bonus_set.BonusByCountFlat
-	setExactCountVars [c_setItemsCounts]*columnInfo // specific bools for different counts
-}
+//type bonusInfo struct {
+//	//setTotalCountVar  *columnInfo
+//	setIndex          solve_highs_types.SetBonusIndex
+//	setExactCountVars [c_setItemsCounts]*columnInfo // specific bools for different counts
+//}
 
-type bonusWithCount struct {
-	setInfo *bonusInfo
-	count   int
+type bonusColsByCount [c_setItemsCounts]*columnInfo
+
+type comboEntry struct {
+	bonusSetIndex    solve_highs_types.SetBonusIndex
+	count            uint32
+	exactSetCountVar *columnInfo
 }
 
 type bonusCombo struct {
-	condition     []bonusWithCount
+	condition     []comboEntry
 	activatingVar *columnInfo
 }
 
 func (combo bonusCombo) debugStr() string {
 	build := util.StringBuild2{}
 	for _, set := range combo.condition {
-		build.WriteInt32(int32(set.setInfo.setIndex))
+		build.WriteInt32(int32(set.bonusSetIndex))
 		build.WriteRune('=')
 		build.WriteInt64(int64(set.count))
 		build.WriteRune(' ')
 	}
 	return build.String()
-}
-
-func (combo bonusCombo) totalMultiplier() float64 {
-	bonusMultiplier := 1.0
-	for _, setAndCount := range combo.condition {
-		bonusForCount := setAndCount.setInfo.setMultipliers[setAndCount.count]
-		bonusMultiplier *= bonusForCount
-	}
-	return bonusMultiplier
 }

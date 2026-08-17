@@ -23,6 +23,10 @@ func (hilo HiLoUInt32) Between(check uint32) bool {
 	return hilo.Lo <= check && check <= hilo.Hi
 }
 
+func (hilo HiLoUInt32) Size() uint32 {
+	return hilo.Hi - hilo.Lo + 1
+}
+
 type HiLoInt struct {
 	Lo int
 	Hi int
