@@ -94,6 +94,6 @@ func (vars *variableArrayBuilder) clone() variableArrayBuilder {
 	}
 }
 
-func (vars *variableArrayBuilder) changeColumnCost(columnIndex int, cost float64) {
+func (vars *variableArrayBuilder) changeColumnCost(columnIndex ColumnIndex, cost float64) {
 	vars.colCosts[columnIndex] = cost
 }

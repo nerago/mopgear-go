@@ -4,57 +4,84 @@ import (
 	"paladin_gearing_go/gear_model/bonus_set"
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/solver/solve_highs_types"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
+
+	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 type gearBonusComboHandler struct {
-	build *util_highs.LinearBuilder
-	//bonusCombos []bonusCombo
-	//bonusData   []bonusInfo
+	build               *util_highs.LinearBuilder
+	_remove_bonusCombos *util_collection.List[bonusCombo]
+	_remove_bonusData   []bonusInfo
 }
 
-func (bon *gearBonusComboHandler) prepareEnabledSets(model *solve_highs_types.SolverModel, build *util_highs.LinearBuilder, itemSetup *gearItemSetupShared) {
+func (bon *gearBonusComboHandler) ProcessBonus(combinedRatingVar *columnInfo, simType util_collection.Optional[stats.SimType], rangeHigh float64, model *solve_highs_types.SolverModel, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo) *columnInfo {
+	bonusData := bon.makeBonusData(model, countSetItemsCol, simType)
+	if len(bonusData) > 0 {
+		bonusCombos := bon.makeCombos(bonusData)
+
+		outputVar := bon.makeOutputForComboVariable(simType)
+
+		for combo := range bonusCombos.SeqValuePointers() {
+			bon.forComboCopyToOutput(combo, combinedRatingVar, outputVar, rangeHigh)
+		}
+
+		bon._remove_bonusData = bonusData
+		bon._remove_bonusCombos = bonusCombos
+
+		return outputVar
+
+		// TODO could sometimes return without processing but need to check multiplier
+	} else {
+		return combinedRatingVar
+	}
+}
+
+func (bon *gearBonusComboHandler) makeOutputForComboVariable(simTypeOptional util_collection.Optional[stats.SimType]) *columnInfo {
+	if simType, hasType := simTypeOptional.GetWithFlag(); hasType {
+		entry := columnInfo{entryType: entry_sim_value_combo, simType: simType}
+		entry.columnIndex = bon.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), &entry)
+		return &entry
+	} else {
+		entry := &columnInfo{entryType: entry_main_output}
+		entry.columnIndex = bon.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), entry)
+		return entry
+	}
+}
+
+func (bon *gearBonusComboHandler) makeBonusData(model *solve_highs_types.SolverModel, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo, simTypeOptional util_collection.Optional[stats.SimType]) (bonusData []bonusInfo) {
 	// constrain: exact item count in each active set
 	if model.SetBonus.TotalCount > 0 {
-		bon.bonusData = make([]bonusInfo, model.SetBonus.TotalCount)
-		for setIndex := range model.SetBonus.TotalCount {
+		bonusData = make([]bonusInfo, model.SetBonus.TotalCount)
+		for i := range model.SetBonus.TotalCount {
+			setIndex := solve_highs_types.SetBonusIndex(i)
 			info := bonusInfo{
-				setIndex:            solve_highs_types.SetBonusIndex(setIndex),
-				setCountItems:       model.SetBonus.CountItems[setIndex],
-				setMultipliers:      model.SetBonus.MultipliersFlat[setIndex],
-				setMultipliersBySim: model.SetBonus.MultipliersBySim[setIndex],
+				setIndex:          setIndex,
+				setTotalCountVar:  countSetItemsCol[setIndex],
+				setExactCountVars: bon.addSetItemsCountExactVariables(setIndex, countSetItemsCol[setIndex]),
 			}
-			bon.addSetItemCountVariable(&info, build, itemSetup)
-			bon.addSetItemsCountExactVariables(&info, build) // might not need
-			bon.bonusData[setIndex] = info
+
+			if simType, hasType := simTypeOptional.GetWithFlag(); hasType {
+				bySim := model.SetBonus.MultipliersBySim[setIndex]
+				for c := range bySim {
+					info.setMultipliers[c] = bySim[c].GetOrDefault(simType, 1)
+				}
+			} else {
+				info.setMultipliers = model.SetBonus.MultipliersFlat[setIndex]
+			}
+
+			bonusData[setIndex] = info
 		}
 	}
+	return bonusData
 }
 
-func (bon *gearBonusComboHandler) multiplyByActiveCombo(combinedRatingVar *columnInfo, outputVar *columnInfo, rangeHigh float64, getMultiplier func(*bonusCombo) float64) {
-	if len(bon.bonusData) > 0 {
-		for combo := range util_collection.ForPointer(bon.bonusCombos) {
-			bon.buildSetMultipliedOutput(combo, combinedRatingVar, outputVar, rangeHigh, getMultiplier)
-		}
-	} else {
-		bon.buildSimpleNoSetsOutput(combinedRatingVar, outputVar)
-	}
-}
-
-func (bon *gearBonusComboHandler) buildSimpleNoSetsOutput(inputVar *columnInfo, outputVar *columnInfo) {
-	// just copy initial rating sum into final if no sets
-	bon.build.ConstraintCopy(
-		inputVar.columnIndex, 1,
-		outputVar.columnIndex,
-		"nullComboCopy",
-	)
-}
-
-func (bon *gearBonusComboHandler) buildSetMultipliedOutput(combo *bonusCombo, inputVar *columnInfo, outputVar *columnInfo, rangeHigh float64, getMultiplier func(*bonusCombo) float64) {
+func (bon *gearBonusComboHandler) forComboCopyToOutput(combo *bonusCombo, inputVar *columnInfo, outputVar *columnInfo, rangeHigh float64) {
 	activatingVar := combo.activatingVar
-	bonusMultiplier := getMultiplier(combo)
+	bonusMultiplier := combo.totalMultiplier()
 	if util.FloatEqualsZero(bonusMultiplier) {
 		bonusMultiplier = 1.0
 	}
@@ -67,43 +94,103 @@ func (bon *gearBonusComboHandler) buildSetMultipliedOutput(combo *bonusCombo, in
 	)
 }
 
-func (bon *gearBonusComboHandler) prepareSetCombos() {
-	if len(bon.bonusData) == 0 {
-		return
-	}
+func (bon *gearBonusComboHandler) makeCombos(bonusData []bonusInfo) (bonusCombos *util_collection.List[bonusCombo]) {
+	bonusCombos = &util_collection.List[bonusCombo]{}
+	bon.makeCombosRecur(bonusData, nil, 0, bonusCombos)
 
-	bon.makeSetCombosRecur(bon.bonusData, nil, 0)
-
-	for combo := range util_collection.ForPointer(bon.bonusCombos) {
-		bon.buildCombinationActivatingVar(combo, build)
+	for combo := range bonusCombos.SeqValuePointers() {
+		bon.buildComboActivatingVar(combo)
 	}
 
 	checkSingleCombo := util_highs.ConstraintRow{}
-	for combo := range util_collection.ForPointer(bon.bonusCombos) {
+	for combo := range bonusCombos.SeqValuePointers() {
 		checkSingleCombo.Add(combo.activatingVar.columnIndex, 1)
 	}
 	checkSingleCombo.Build(bon.build, 1, 1)
+
+	return bonusCombos
 }
 
-func (bon *gearBonusComboHandler) makeSetCombosRecur(setData []bonusInfo, built []bonusWithCount, builtComboItemCount int) {
+func (bon *gearBonusComboHandler) makeCombosRecur(setData []bonusInfo, built []bonusWithCount, builtComboItemCount int, bonusCombos *util_collection.List[bonusCombo]) {
 	if len(setData) == 0 || builtComboItemCount == c_maxSetItems {
-		bon.bonusCombos = append(bon.bonusCombos, bonusCombo{condition: built})
+		bonusCombos.AppendLast(bonusCombo{condition: built})
 	} else {
 		addSet := &setData[0]
 		for itemCount := 0; itemCount <= c_maxSetItems-builtComboItemCount; itemCount++ {
 			next := bonusWithCount{addSet, itemCount}
 			progress := util_collection.CopyAndAppend(built, next)
-			bon.makeSetCombosRecur(setData[1:], progress, builtComboItemCount+itemCount)
+			bon.makeCombosRecur(setData[1:], progress, builtComboItemCount+itemCount, bonusCombos)
 		}
 	}
 }
 
+// logical AND between exact count vars
+func (bon *gearBonusComboHandler) buildComboActivatingVar(combo *bonusCombo) {
+	// TODO combining with required lookup could simplify
+
+	if len(combo.condition) > 1 {
+		comboActiveBool := &columnInfo{entryType: entry_combo_active, combo: combo}
+		comboActiveBool.columnIndex = bon.build.CreateColumnBool(comboActiveBool)
+		combo.activatingVar = comboActiveBool
+
+		buildAnd := util_highs.ConstraintAndBuilder{}
+		buildAnd.SetOutput(comboActiveBool.columnIndex)
+		for _, setAndCount := range combo.condition {
+			setInfo := setAndCount.setInfo
+			count := setAndCount.count
+			specificExactBool := setInfo.setExactCountVars[count]
+			buildAnd.AddInput(specificExactBool.columnIndex)
+		}
+		buildAnd.Build(bon.build)
+	} else if len(combo.condition) == 1 {
+		setAndCount := combo.condition[0]
+		setInfo := setAndCount.setInfo
+		count := setAndCount.count
+		specificExactBool := setInfo.setExactCountVars[count]
+		combo.activatingVar = specificExactBool
+	} else {
+		panic("empty condition doesn't make sense")
+	}
+}
+
+func (bon *gearBonusComboHandler) addSetItemsCountExactVariables(setIndex solve_highs_types.SetBonusIndex, countSetItems *columnInfo) [c_setItemsCounts]*columnInfo {
+	exactCountVars := [c_setItemsCounts]*columnInfo{}
+
+	// compare total number of items previous computed into this constraint
+	compareRow := util_highs.ConstraintRow{Debug: "setItemsCompareRow"}
+	compareRow.Add(countSetItems.columnIndex, -1)
+
+	// constraint so only one of these flags gets set
+	singleFlagOnly := util_highs.ConstraintRow{Debug: "setItemsSingleFlagOnly"}
+
+	// make a bool for each possible count in range 0..5
+	for itemCount := 0; itemCount <= c_maxSetItems; itemCount++ {
+		boolColumn := &columnInfo{entryType: entry_set_exact_count, setIndex: setIndex, itemCount: itemCount}
+		boolColumn.columnIndex = bon.build.CreateColumnBool(boolColumn)
+
+		// should activate this flag which will match the total count
+		compareRow.Add(boolColumn.columnIndex, float64(itemCount))
+
+		// but only one flag at a time
+		singleFlagOnly.Add(boolColumn.columnIndex, 1)
+
+		exactCountVars[itemCount] = boolColumn
+	}
+
+	compareRow.Build(bon.build, 0, 0)     // equal
+	singleFlagOnly.Build(bon.build, 1, 1) // sum of flags should be just one, should pull the zero flag up if no other set
+
+	return exactCountVars
+}
+
 func (bon *gearBonusComboHandler) addSetNeededCounts(setBonusRequired []solve_highs_types.SetBonusRequiredCounts, countMode bonus_set.ItemCountsRequiredMode) {
+	bonusData := bon._remove_bonusData
+
 	if len(setBonusRequired) > 0 {
-		if len(bon.bonusData) == 0 {
+		if len(bonusData) == 0 {
 			panic("no bonusData to use for addSetNeededCounts")
-		} else if len(bon.bonusData) == 1 && len(setBonusRequired) == 1 && len(setBonusRequired[0]) == 1 {
-			setCountCol := bon.bonusData[0].setTotalCountVar
+		} else if len(bonusData) == 1 && len(setBonusRequired) == 1 && len(setBonusRequired[0]) == 1 {
+			setCountCol := bonusData[0].setTotalCountVar
 			needCount := setBonusRequired[0][0]
 
 			rowSetCountRequired := util_highs.ConstraintRow{Debug: "rowSetCountRequired"}
@@ -125,7 +212,7 @@ func (bon *gearBonusComboHandler) addSetNeededCounts(setBonusRequired []solve_hi
 				optionParts := util_highs.ConstraintAndBuilder{}
 
 				for setIndex, needCount := range option {
-					setInfo := bon.bonusData[setIndex]
+					setInfo := bonusData[setIndex]
 					setCountCol := setInfo.setTotalCountVar
 
 					var inRange util_highs.ColumnIndex
@@ -155,57 +242,16 @@ func (bon *gearBonusComboHandler) addSetNeededCounts(setBonusRequired []solve_hi
 	}
 }
 
-// logical AND between exact count vars
-func (bon *gearBonusComboHandler) buildCombinationActivatingVar(combo *bonusCombo) {
-	comboActiveBool := &columnInfo{entryType: entry_combo_active, combo: combo}
-	comboActiveBool.columnIndex = bon.build.CreateColumnBool(comboActiveBool)
-	combo.activatingVar = comboActiveBool
+func (bon *gearBonusComboHandler) checkActiveCombo(solution util_highs.ISolution, solvableItemSet *items.SolvableItemSet, model *solve_highs_types.SolverModel) {
+	bonusCombos := bon._remove_bonusCombos
 
-	buildAnd := util_highs.ConstraintAndBuilder{}
-	buildAnd.SetOutput(comboActiveBool.columnIndex)
-	for _, setAndCount := range combo.condition {
-		setInfo := setAndCount.setInfo
-		count := setAndCount.count
-		specificExactBool := setInfo.setExactCountVars[count]
-		buildAnd.AddInput(specificExactBool.columnIndex)
-	}
-	buildAnd.Build(bon.build)
-}
-
-func (bon *gearBonusComboHandler) addSetItemsCountExactVariables(info *bonusInfo) {
-	// compare total number of items previous computed into this constraint
-	compareRow := util_highs.ConstraintRow{Debug: "setItemsCompareRow"}
-	compareRow.Add(info.setTotalCountVar.columnIndex, -1)
-
-	// constraint so only one of these flags gets set
-	singleFlagOnly := util_highs.ConstraintRow{Debug: "setItemsSingleFlagOnly"}
-
-	// make a bool for each possible count in range 0..5
-	for itemCount := 0; itemCount <= c_maxSetItems; itemCount++ {
-		boolColumn := columnInfo{entryType: entry_set_exact_count, setIndex: info.setIndex, itemCount: itemCount}
-		boolColumn.columnIndex = bon.build.CreateColumnBool(&boolColumn)
-
-		// should activate this flag which will match the total count
-		compareRow.Add(boolColumn.columnIndex, float64(itemCount))
-
-		// but only one flag at a time
-		singleFlagOnly.Add(boolColumn.columnIndex, 1)
-
-		info.setExactCountVars[itemCount] = &boolColumn
-	}
-
-	compareRow.Build(bon.build, 0, 0)     // equal
-	singleFlagOnly.Build(bon.build, 1, 1) // sum of flags should be just one, should pull the zero flag up if no other set
-}
-
-func (bon *gearBonusComboHandler) checkActiveCombo(solution util_highs.ISolution, solvableItemSet *items.SolvableItemSet) {
-	if len(bon.bonusCombos) > 0 {
+	if bonusCombos.Size() > 0 {
 		var activeCombo *bonusCombo
 
-		for _, combo := range bon.bonusCombos {
+		for combo := range bonusCombos.SeqValuePointers() {
 			if solution.ValueIsOne(combo.activatingVar.columnIndex) {
 				if activeCombo == nil {
-					activeCombo = &combo
+					activeCombo = combo
 				} else {
 					panic("multiple combos active")
 				}
@@ -214,7 +260,8 @@ func (bon *gearBonusComboHandler) checkActiveCombo(solution util_highs.ISolution
 
 		if activeCombo != nil {
 			for _, entry := range activeCombo.condition {
-				actualCount := entry.setInfo.setCountItems(solvableItemSet.Items())
+				countItems := model.SetBonus.CountItems[entry.setInfo.setIndex]
+				actualCount := countItems(solvableItemSet.Items())
 				if actualCount != uint8(entry.count) {
 					panic("number of items not what solver returned")
 				}

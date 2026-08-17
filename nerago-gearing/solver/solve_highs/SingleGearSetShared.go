@@ -8,8 +8,6 @@ import (
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_highs"
-
-	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 type singleGearSetShared struct {
@@ -31,7 +29,7 @@ func (sc *singleGearSetShared) runForFutureResult(itemOptions *items.SolvableOpt
 		debugPrint(solution, sc.build, printer)
 
 		if solution.HasSolution() {
-			itemSet := sc.buildResultSet(solution)
+			itemSet := sc.buildResultSet(solution, model)
 			validateNewSet(itemSet, itemOptions, model.CheckSet)
 			sc.checkSetRatingIsObjective(solution, &itemSet, model.CalcRatingSet)
 			return itemSet, true
@@ -60,16 +58,7 @@ func (sc *singleGearSetShared) createItemColumn(entry *columnInfo) {
 	entry.columnIndex = sc.build.CreateColumnBool(entry)
 }
 
-func (sc *singleGearSetShared) createOutputVariableForSeparateRun() *columnInfo {
-	entry := &columnInfo{entryType: entry_main_output}
-
-	// goes directly into overall rating
-	entry.columnIndex = sc.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, entry)
-
-	return entry
-}
-
-func (sc *singleGearSetShared) buildResultSet(solution util_highs.ISolution) items.SolvableItemSet {
+func (sc *singleGearSetShared) buildResultSet(solution util_highs.ISolution, model *solve_highs_types.SolverModel) items.SolvableItemSet {
 	itemSet := items.SolvableItemSet{}
 	for columnEntry := range sc.itemSetupCommon.itemColumns.SeqValues() {
 		isTrue := solution.ValueIsOne(columnEntry.columnIndex)
@@ -79,6 +68,6 @@ func (sc *singleGearSetShared) buildResultSet(solution util_highs.ISolution) ite
 	}
 	items.SolvableItemSet_RecalculateTotal(&itemSet)
 
-	sc.bonusHandler.checkActiveCombo(solution, &itemSet)
+	sc.bonusComboHandler.checkActiveCombo(solution, &itemSet, model)
 	return itemSet
 }

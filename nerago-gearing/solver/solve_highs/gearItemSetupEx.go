@@ -5,6 +5,8 @@ import (
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/weight_types"
+
+	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 type gearItemSetupEx struct {
@@ -44,4 +46,18 @@ func (site *gearItemSetupEx) finishRequireEx(require *stats.StatTypeMap[weight_t
 		row := site.requireRows.GetOrPanic(statType)
 		row.Build(build, hilo.Minimum, hilo.Maximum)
 	}
+}
+
+func (site *gearItemSetupEx) finishStatTotals(build *util_highs.LinearBuilder) (statTotalColumns *stats.StatTypeMap[*columnInfo]) {
+	statTotalColumns = new(stats.StatTypeMap[*columnInfo])
+	// constrain: total sum of each stat for input to weights
+	for _, statType := range stats.StatType_List {
+		entry := columnInfo{entryType: entry_stat_total, statType: statType}
+		entry.columnIndex = build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), util_highs.DebugText("statTotal "+statType.Name()))
+		statTotalColumns.Put(statType, &entry)
+
+		row := site.statTotalRows.GetOrPanic(statType)
+		row.Add(entry.columnIndex, -1)
+	}
+	return statTotalColumns
 }

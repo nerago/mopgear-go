@@ -22,8 +22,8 @@ func SingleGearSetExtended3Main(itemOptions *items.SolvableOptionsMap, model *so
 	build.AddOptionBool("presolve_rule_logging", true)
 
 	se3 := makeGearSetExtended3(&build)
-	outputVar := se3.createOutputVariableForSeparateRun()
-	se3.setup(model, itemOptions, outputVar)
+	outputVar := se3.setup(model, itemOptions)
+	build.ChangeColumnOutputWeight(outputVar.columnIndex, 1)
 
 	return se3.runForFutureResult(itemOptions, model, printer)
 }
@@ -34,13 +34,13 @@ func makeGearSetExtended3(build *util_highs.LinearBuilder) *singleGearSetExtende
 			singleGearSetShared: singleGearSetShared{
 				build:             build,
 				ratingPreScale:    1,
-				bonusComboHandler: gearBonusComboHandler{build},
+				bonusComboHandler: gearBonusComboHandler{build: build},
 			},
 		},
 	}
 }
 
-func (se3 *singleGearSetExtended3) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, outputVar *columnInfo) {
+func (se3 *singleGearSetExtended3) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) *columnInfo {
 	se3.itemSetupCommon.prepare(model, itemOptions, nil)
 	se3.itemSetupEx.prepareStatTotals()
 	se3.itemSetupEx.prepareRequireEx(&model.StatRequirements)
@@ -55,9 +55,11 @@ func (se3 *singleGearSetExtended3) setup(model *solve_highs_types.SolverModel, i
 	countSetItemsCol := se3.itemSetupCommon.finishSetCounts(se3.build)
 	statTotalCols := se3.itemSetupEx.finishStatTotals(se3.build)
 
+	se3.bonusComboHandler.addSetNeededCounts(model.SetBonus.RequiredCounts, model.SetBonus.CountMode)
+
 	weightCalc := gearWeight3Calc{build: se3.build}
 	simValueTotalColumns := weightCalc.calc(statTotalCols, model.Weights3)
 
 	// simValueTotalColumns * activeCombo -> simValueComboColumns -> mainOutputVar
-	se3.calcFromSimValueToOutput(model, &model.Weights3.SimPriority, outputVar)
+	return se3.calcFromSimValueToOutput(simValueTotalColumns, countSetItemsCol, model, &model.Weights3.SimPriority)
 }

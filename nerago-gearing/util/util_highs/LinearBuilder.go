@@ -129,6 +129,10 @@ func (build *LinearBuilder) CreateColumnWithObjective(varType highs.VariableType
 	return build.vars.createForLinear(varType, lower, upper, cost, objectiveIndex, debug)
 }
 
+func (build *LinearBuilder) ChangeColumnOutputWeight(columnIndex ColumnIndex, cost float64) {
+	build.vars.changeColumnCost(columnIndex, cost)
+}
+
 func (build *LinearBuilder) ClearInitialSolutionValue() {
 	clear(build.vars.partialSolution)
 }

@@ -296,7 +296,7 @@ func (process *SolverHighsMultiProcess) solutionToResult(solution util_highs.ISo
 	resultMap := make(map[string]HighsMultiResultEntry)
 	for partIndex := range process.parts {
 		part := process.parts[partIndex]
-		solvedSet := part.singleGearSet.buildResultSet(solution)
+		solvedSet := part.singleGearSet.buildResultSet(solution, &part.SolverModel)
 		validateNewSet(solvedSet, &part.solveOptions, part.SolverModel.CheckSet)
 		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &part.ItemOptions)
 
@@ -338,11 +338,8 @@ func (process *SolverHighsMultiProcess) makeFullModel(timeLimit int) {
 func (param *SolverHighsMultiParam) makeSingleGearSet(build *util_highs.LinearBuilder, job *SolverHighsMultiProcess) {
 	param.solveOptions = items.SolvableOptionsMap_of(&param.ItemOptions)
 
-	setOutput := &columnInfo{entryType: entry_main_output}
-	setOutput.columnIndex = build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), setOutput)
-
 	param.singleGearSet = makeGearSetForWeight(build, &param.SolverModel)
-	param.singleGearSet.setup(&param.SolverModel, &param.solveOptions, setOutput)
+	setOutput := param.singleGearSet.setup(&param.SolverModel, &param.solveOptions)
 
 	job.outputRow.Add(setOutput.columnIndex, param.RatingMultiply/param.singleGearSet.RatingPreScale())
 }

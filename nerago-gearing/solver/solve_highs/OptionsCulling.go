@@ -85,8 +85,8 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 	linearBuild.NoOutput = true
 
 	single := makeGearSetForWeight(&linearBuild, process.solveModel)
-	outputVar := single.createOutputVariableForSeparateRun()
-	single.setup(process.solveModel, &itemOptions, outputVar)
+	outputVar := single.setup(process.solveModel, &itemOptions)
+	linearBuild.ChangeColumnOutputWeight(outputVar.columnIndex, 1)
 
 	solutionFuture := linearBuild.RunHighsFuture(nil)
 	util_async.ChainCancel(cancel, solutionFuture)
@@ -104,7 +104,7 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 
 		if solution.Status() == highs.ModelStatusOptimal {
 			//if solution.HasSolution() {
-			result := single.buildResultSet(solution)
+			result := single.buildResultSet(solution, process.solveModel)
 			validateNewSet(result, &itemOptions, process.solveModel.CheckSet)
 			single.checkSetRatingIsObjective(solution, &result, process.solveModel.CalcRatingSet)
 			resultChannel <- result

@@ -84,6 +84,16 @@ func (lst *List[E]) SeqValues() iter.Seq[E] {
 	}
 }
 
+func (lst *List[E]) SeqValuePointers() iter.Seq[*E] {
+	return func(yield func(*E) bool) {
+		for i := range lst.inner {
+			if !yield(&lst.inner[i]) {
+				return
+			}
+		}
+	}
+}
+
 func (lst *List[E]) SortFunc(compare func(*E, *E) int) {
 	slices.SortFunc(lst.inner, func(a, b E) int {
 		return compare(&a, &b)

@@ -3,8 +3,10 @@ package solve_highs
 import (
 	"paladin_gearing_go/items"
 	"paladin_gearing_go/solver/solve_highs_types"
+	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util"
 	"paladin_gearing_go/util/util_async"
+	"paladin_gearing_go/util/util_collection"
 	"paladin_gearing_go/util/util_highs"
 )
 
@@ -25,8 +27,8 @@ func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, model *solve_highs
 	build.TimeLimitSeconds = timeout
 
 	sb := makeGearSetBasic(&build)
-	outputVar := sb.createOutputVariableForSeparateRun()
-	sb.setup(model, itemOptions, outputVar)
+	outputVar := sb.setup(model, itemOptions)
+	build.ChangeColumnOutputWeight(outputVar.columnIndex, 1)
 	return sb.runForFutureResult(itemOptions, model, printer)
 }
 
@@ -35,12 +37,12 @@ func makeGearSetBasic(build *util_highs.LinearBuilder) *singleGearSetBasic {
 		singleGearSetShared: singleGearSetShared{
 			build:             build,
 			ratingPreScale:    c_single_basic_scaled_ratings,
-			bonusComboHandler: gearBonusComboHandler{build},
+			bonusComboHandler: gearBonusComboHandler{build: build},
 		},
 	}
 }
 
-func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, outputVar *columnInfo) {
+func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) *columnInfo {
 	sb.itemSetupCommon.prepare(model, itemOptions, nil)
 	sb.itemSetupBasic.prepareRequire(&model.StatRequirements)
 
@@ -54,7 +56,12 @@ func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOp
 	countSetItemsCol := sb.itemSetupCommon.finishSetCounts(sb.build)
 	baseRatingSumVar := sb.itemSetupBasic.finishRatingSum(sb.build)
 
-	sb.bonusComboHandler.multiplyByActiveCombo(baseRatingSumVar, outputVar, c_single_basic_ratings_high_range, func(combo *bonusCombo) float64 {
-		return combo.totalFlatMultiplier()
-	})
+	sb.bonusComboHandler.addSetNeededCounts(model.SetBonus.RequiredCounts, model.SetBonus.CountMode)
+
+	return sb.bonusComboHandler.ProcessBonus(
+		baseRatingSumVar,
+		util_collection.Optional_Empty[stats.SimType](),
+		c_single_basic_ratings_high_range,
+		model,
+		countSetItemsCol)
 }

@@ -99,8 +99,8 @@ func PaladinMultiRunLite() {
 	job.SetSimSize(simSize)
 	job.SetReforgingAllowNonCommon(true)
 	//job.SetWriteBestToGearFiles()
-	job.SetWeightTypes(3)
-	//job.SetWeightTypes(1, 2, 3)
+	//job.SetWeightTypes(3)
+	job.SetWeightTypes(1, 2, 3)
 	//job.SetWeightTypes(1, 2)
 	job.RunDecimate = true
 

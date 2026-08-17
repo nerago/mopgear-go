@@ -17,11 +17,10 @@ const (
 )
 
 type ISingleGearSet interface {
-	setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, outputVar *columnInfo)
+	setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) *columnInfo
 	ColumnsForItemId(id items.ItemId) iter.Seq[*columnInfo]
-	buildResultSet(solution util_highs.ISolution) items.SolvableItemSet
+	buildResultSet(solution util_highs.ISolution, model *solve_highs_types.SolverModel) items.SolvableItemSet
 	RatingPreScale() float64
-	createOutputVariableForSeparateRun() *columnInfo
 	checkSetRatingIsObjective(solution *util_highs.Solution2, itemSet *items.SolvableItemSet, calcRating func(item *items.SolvableItemSet) float64)
 }
 
@@ -71,12 +70,10 @@ func (colEntry columnInfo) ItemId() items.ItemId {
 }
 
 type bonusInfo struct {
-	setCountItems       func(*items.SolvableEquipMap) uint8
-	setMultipliers      bonus_set.BonusByCountFlat
-	setMultipliersBySim bonus_set.BonusByCountBySim
-	setIndex            solve_highs_types.SetBonusIndex
-
-	//setTotalCountVar  *columnInfo                   // total count of items used
+	//setCountItems       func(*items.SolvableEquipMap) uint8
+	setTotalCountVar  *columnInfo
+	setIndex          solve_highs_types.SetBonusIndex
+	setMultipliers    bonus_set.BonusByCountFlat
 	setExactCountVars [c_setItemsCounts]*columnInfo // specific bools for different counts
 }
 
@@ -101,20 +98,10 @@ func (combo bonusCombo) debugStr() string {
 	return build.String()
 }
 
-func (combo bonusCombo) totalFlatMultiplier() float64 {
+func (combo bonusCombo) totalMultiplier() float64 {
 	bonusMultiplier := 1.0
 	for _, setAndCount := range combo.condition {
 		bonusForCount := setAndCount.setInfo.setMultipliers[setAndCount.count]
-		bonusMultiplier *= bonusForCount
-	}
-	return bonusMultiplier
-}
-
-func (combo bonusCombo) totalMultiplierForSim(simType stats.SimType) float64 {
-	bonusMultiplier := 1.0
-	for _, setAndCount := range combo.condition {
-		simMap := setAndCount.setInfo.setMultipliersBySim[setAndCount.count]
-		bonusForCount := simMap.GetOrDefault(simType, 1)
 		bonusMultiplier *= bonusForCount
 	}
 	return bonusMultiplier
