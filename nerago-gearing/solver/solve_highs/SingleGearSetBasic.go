@@ -33,8 +33,9 @@ func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, model *solve_highs
 func makeGearSetBasic(build *util_highs.LinearBuilder) *singleGearSetBasic {
 	return &singleGearSetBasic{
 		singleGearSetShared: singleGearSetShared{
-			build:          build,
-			ratingPreScale: c_single_basic_scaled_ratings,
+			build:             build,
+			ratingPreScale:    c_single_basic_scaled_ratings,
+			bonusComboHandler: gearBonusComboHandler{build},
 		},
 	}
 }
@@ -53,8 +54,7 @@ func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOp
 	countSetItemsCol := sb.itemSetupCommon.finishSetCounts(sb.build)
 	baseRatingSumVar := sb.itemSetupBasic.finishRatingSum(sb.build)
 
-	sb.bonusHandler.multiplyByActiveCombo(sb.baseRatingSumVar, outputVar, c_single_basic_ratings_high_range,
-		func(combo *bonusCombo) float64 {
-			return combo.totalFlatMultiplier()
-		})
+	sb.bonusComboHandler.multiplyByActiveCombo(baseRatingSumVar, outputVar, c_single_basic_ratings_high_range, func(combo *bonusCombo) float64 {
+		return combo.totalFlatMultiplier()
+	})
 }

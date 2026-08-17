@@ -9,12 +9,13 @@ import (
 	"paladin_gearing_go/util/util_highs"
 )
 
-type gearSharedBonusHandler struct {
+type gearBonusComboHandler struct {
+	build *util_highs.LinearBuilder
 	//bonusCombos []bonusCombo
 	//bonusData   []bonusInfo
 }
 
-func (bon *gearSharedBonusHandler) prepareEnabledSets(model *solve_highs_types.SolverModel, build *util_highs.LinearBuilder, itemSetup *gearItemSetupShared) {
+func (bon *gearBonusComboHandler) prepareEnabledSets(model *solve_highs_types.SolverModel, build *util_highs.LinearBuilder, itemSetup *gearItemSetupShared) {
 	// constrain: exact item count in each active set
 	if model.SetBonus.TotalCount > 0 {
 		bon.bonusData = make([]bonusInfo, model.SetBonus.TotalCount)
@@ -32,33 +33,33 @@ func (bon *gearSharedBonusHandler) prepareEnabledSets(model *solve_highs_types.S
 	}
 }
 
-func (bon *gearSharedBonusHandler) multiplyByActiveCombo(combinedRatingVar *columnInfo, outputVar *columnInfo, rangeHigh float64, getMultiplier func(*bonusCombo) float64, build *util_highs.LinearBuilder) {
+func (bon *gearBonusComboHandler) multiplyByActiveCombo(combinedRatingVar *columnInfo, outputVar *columnInfo, rangeHigh float64, getMultiplier func(*bonusCombo) float64) {
 	if len(bon.bonusData) > 0 {
 		for combo := range util_collection.ForPointer(bon.bonusCombos) {
-			bon.buildSetMultipliedOutput(combo, combinedRatingVar, outputVar, rangeHigh, getMultiplier, build)
+			bon.buildSetMultipliedOutput(combo, combinedRatingVar, outputVar, rangeHigh, getMultiplier)
 		}
 	} else {
-		bon.buildSimpleNoSetsOutput(combinedRatingVar, outputVar, build)
+		bon.buildSimpleNoSetsOutput(combinedRatingVar, outputVar)
 	}
 }
 
-func (bon *gearSharedBonusHandler) buildSimpleNoSetsOutput(inputVar *columnInfo, outputVar *columnInfo, build *util_highs.LinearBuilder) {
+func (bon *gearBonusComboHandler) buildSimpleNoSetsOutput(inputVar *columnInfo, outputVar *columnInfo) {
 	// just copy initial rating sum into final if no sets
-	build.ConstraintCopy(
+	bon.build.ConstraintCopy(
 		inputVar.columnIndex, 1,
 		outputVar.columnIndex,
 		"nullComboCopy",
 	)
 }
 
-func (bon *gearSharedBonusHandler) buildSetMultipliedOutput(combo *bonusCombo, inputVar *columnInfo, outputVar *columnInfo, rangeHigh float64, getMultiplier func(*bonusCombo) float64, build *util_highs.LinearBuilder) {
+func (bon *gearBonusComboHandler) buildSetMultipliedOutput(combo *bonusCombo, inputVar *columnInfo, outputVar *columnInfo, rangeHigh float64, getMultiplier func(*bonusCombo) float64) {
 	activatingVar := combo.activatingVar
 	bonusMultiplier := getMultiplier(combo)
 	if util.FloatEqualsZero(bonusMultiplier) {
 		bonusMultiplier = 1.0
 	}
 
-	build.ConstraintCopyIfBool(
+	bon.build.ConstraintCopyIfBool(
 		activatingVar.columnIndex,
 		inputVar.columnIndex, bonusMultiplier,
 		outputVar.columnIndex,
@@ -66,7 +67,7 @@ func (bon *gearSharedBonusHandler) buildSetMultipliedOutput(combo *bonusCombo, i
 	)
 }
 
-func (bon *gearSharedBonusHandler) prepareSetCombos(build *util_highs.LinearBuilder) {
+func (bon *gearBonusComboHandler) prepareSetCombos() {
 	if len(bon.bonusData) == 0 {
 		return
 	}
@@ -81,10 +82,10 @@ func (bon *gearSharedBonusHandler) prepareSetCombos(build *util_highs.LinearBuil
 	for combo := range util_collection.ForPointer(bon.bonusCombos) {
 		checkSingleCombo.Add(combo.activatingVar.columnIndex, 1)
 	}
-	checkSingleCombo.Build(build, 1, 1)
+	checkSingleCombo.Build(bon.build, 1, 1)
 }
 
-func (bon *gearSharedBonusHandler) makeSetCombosRecur(setData []bonusInfo, built []bonusWithCount, builtComboItemCount int) {
+func (bon *gearBonusComboHandler) makeSetCombosRecur(setData []bonusInfo, built []bonusWithCount, builtComboItemCount int) {
 	if len(setData) == 0 || builtComboItemCount == c_maxSetItems {
 		bon.bonusCombos = append(bon.bonusCombos, bonusCombo{condition: built})
 	} else {
@@ -97,7 +98,7 @@ func (bon *gearSharedBonusHandler) makeSetCombosRecur(setData []bonusInfo, built
 	}
 }
 
-func (bon *gearSharedBonusHandler) addSetNeededCounts(setBonusRequired []solve_highs_types.SetBonusRequiredCounts, countMode bonus_set.ItemCountsRequiredMode, build *util_highs.LinearBuilder) {
+func (bon *gearBonusComboHandler) addSetNeededCounts(setBonusRequired []solve_highs_types.SetBonusRequiredCounts, countMode bonus_set.ItemCountsRequiredMode) {
 	if len(setBonusRequired) > 0 {
 		if len(bon.bonusData) == 0 {
 			panic("no bonusData to use for addSetNeededCounts")
@@ -109,11 +110,11 @@ func (bon *gearSharedBonusHandler) addSetNeededCounts(setBonusRequired []solve_h
 			rowSetCountRequired.Add(setCountCol.columnIndex, 1)
 			switch countMode {
 			case bonus_set.CountMode_Exact:
-				rowSetCountRequired.Build(build, float64(needCount), float64(needCount))
+				rowSetCountRequired.Build(bon.build, float64(needCount), float64(needCount))
 			case bonus_set.CountMode_Minimum:
-				rowSetCountRequired.Build(build, float64(needCount), util_highs.InfPos())
+				rowSetCountRequired.Build(bon.build, float64(needCount), util_highs.InfPos())
 			case bonus_set.CountMode_AllowPlusOne:
-				rowSetCountRequired.Build(build, float64(needCount), float64(needCount+1))
+				rowSetCountRequired.Build(bon.build, float64(needCount), float64(needCount+1))
 			default:
 				panic("unknown type")
 			}
@@ -130,34 +131,34 @@ func (bon *gearSharedBonusHandler) addSetNeededCounts(setBonusRequired []solve_h
 					var inRange util_highs.ColumnIndex
 					switch countMode {
 					case bonus_set.CountMode_Exact:
-						inRange = build.CreateColumnBool(nil)
-						build.ColumnIsEqualConstant(setCountCol.columnIndex, inRange, float64(needCount), 10, 1.0)
+						inRange = bon.build.CreateColumnBool(nil)
+						bon.build.ColumnIsEqualConstant(setCountCol.columnIndex, inRange, float64(needCount), 10, 1.0)
 					case bonus_set.CountMode_Minimum:
-						inRange = build.ColumnIsGreaterOrEqualThanConstant(setCountCol.columnIndex, float64(needCount), 10, 1.0)
+						inRange = bon.build.ColumnIsGreaterOrEqualThanConstant(setCountCol.columnIndex, float64(needCount), 10, 1.0)
 					case bonus_set.CountMode_AllowPlusOne:
-						inRange = build.ColumnIsBetweenConstants(setCountCol.columnIndex, float64(needCount), float64(needCount+1), 10, 1.0)
+						inRange = bon.build.ColumnIsBetweenConstants(setCountCol.columnIndex, float64(needCount), float64(needCount+1), 10, 1.0)
 					default:
 						panic("unknown type")
 					}
 					optionParts.AddInput(inRange)
 				}
 
-				optionActive := build.CreateColumnBool(util_highs.DebugText("SetBonusRequired option"))
+				optionActive := bon.build.CreateColumnBool(util_highs.DebugText("SetBonusRequired option"))
 				optionParts.SetOutput(optionActive)
-				optionParts.Build(build)
+				optionParts.Build(bon.build)
 
 				oneOfTheseOptions.Add(optionActive, 1)
 			}
 
-			oneOfTheseOptions.Build(build, 1, util_highs.InfPos())
+			oneOfTheseOptions.Build(bon.build, 1, util_highs.InfPos())
 		}
 	}
 }
 
 // logical AND between exact count vars
-func (bon *gearSharedBonusHandler) buildCombinationActivatingVar(combo *bonusCombo, build *util_highs.LinearBuilder) {
+func (bon *gearBonusComboHandler) buildCombinationActivatingVar(combo *bonusCombo) {
 	comboActiveBool := &columnInfo{entryType: entry_combo_active, combo: combo}
-	comboActiveBool.columnIndex = build.CreateColumnBool(comboActiveBool)
+	comboActiveBool.columnIndex = bon.build.CreateColumnBool(comboActiveBool)
 	combo.activatingVar = comboActiveBool
 
 	buildAnd := util_highs.ConstraintAndBuilder{}
@@ -168,10 +169,10 @@ func (bon *gearSharedBonusHandler) buildCombinationActivatingVar(combo *bonusCom
 		specificExactBool := setInfo.setExactCountVars[count]
 		buildAnd.AddInput(specificExactBool.columnIndex)
 	}
-	buildAnd.Build(build)
+	buildAnd.Build(bon.build)
 }
 
-func (bon *gearSharedBonusHandler) addSetItemsCountExactVariables(info *bonusInfo, build *util_highs.LinearBuilder) {
+func (bon *gearBonusComboHandler) addSetItemsCountExactVariables(info *bonusInfo) {
 	// compare total number of items previous computed into this constraint
 	compareRow := util_highs.ConstraintRow{Debug: "setItemsCompareRow"}
 	compareRow.Add(info.setTotalCountVar.columnIndex, -1)
@@ -182,7 +183,7 @@ func (bon *gearSharedBonusHandler) addSetItemsCountExactVariables(info *bonusInf
 	// make a bool for each possible count in range 0..5
 	for itemCount := 0; itemCount <= c_maxSetItems; itemCount++ {
 		boolColumn := columnInfo{entryType: entry_set_exact_count, setIndex: info.setIndex, itemCount: itemCount}
-		boolColumn.columnIndex = build.CreateColumnBool(&boolColumn)
+		boolColumn.columnIndex = bon.build.CreateColumnBool(&boolColumn)
 
 		// should activate this flag which will match the total count
 		compareRow.Add(boolColumn.columnIndex, float64(itemCount))
@@ -193,11 +194,11 @@ func (bon *gearSharedBonusHandler) addSetItemsCountExactVariables(info *bonusInf
 		info.setExactCountVars[itemCount] = &boolColumn
 	}
 
-	compareRow.Build(build, 0, 0)     // equal
-	singleFlagOnly.Build(build, 1, 1) // sum of flags should be just one, should pull the zero flag up if no other set
+	compareRow.Build(bon.build, 0, 0)     // equal
+	singleFlagOnly.Build(bon.build, 1, 1) // sum of flags should be just one, should pull the zero flag up if no other set
 }
 
-func (bon *gearSharedBonusHandler) checkActiveCombo(solution util_highs.ISolution, solvableItemSet *items.SolvableItemSet) {
+func (bon *gearBonusComboHandler) checkActiveCombo(solution util_highs.ISolution, solvableItemSet *items.SolvableItemSet) {
 	if len(bon.bonusCombos) > 0 {
 		var activeCombo *bonusCombo
 

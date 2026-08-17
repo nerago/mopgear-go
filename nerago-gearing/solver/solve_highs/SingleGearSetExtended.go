@@ -1,7 +1,6 @@
 package solve_highs
 
 import (
-	"paladin_gearing_go/solver/solve_highs_types"
 	"paladin_gearing_go/stats"
 	"paladin_gearing_go/util/util_highs"
 	"paladin_gearing_go/weightfind/weight_types"
@@ -33,61 +32,30 @@ func (site *gearItemSetupEx) finishStatTotals(build *util_highs.LinearBuilder) (
 	return statTotalColumns
 }
 
-func (se *singleGearSetExtended) calcFromSimValueToOutput(model *solve_highs_types.SolverModel, priority *weight_types.SimPriorityExtended, outputVar *columnInfo) {
-	if model.SetBonus.ExtendedUseSim {
-		// simValueTotalColumns[simType] * activeCombo.simMultiplier -> simValueComboColumns[simType]
-		se.multiplySimValuesByCombo()
-		// simValueComboColumns[simType] -> mainOutputVar
-		se.calcOutputValueFromValueComboCols(priority, outputVar)
-	} else {
-		// simValueTotalColumns[simType] * simPriority -> combinedRatingVar[single]
-		se.calcCombinedRatingFromValueTotalCols(priority)
-		// combinedRatingVar * activeCombo.flatMultiplier -> mainOutputVar
-		se.multiplyByActiveCombo(se.combinedRatingVar, outputVar, c_gearExtended2ScoreHigh,
-			func(combo *bonusCombo) float64 { return combo.totalFlatMultiplier() },
-		)
-	}
+func (se *singleGearSetExtended) calcFromSimValueToOutput(simValueTotalColumns map[stats.SimType]*columnInfo, priority *weight_types.SimPriorityExtended, outputVar *columnInfo) {
+	// simValueTotalColumns[simType] * activeCombo.simMultiplier -> simValueComboColumns[simType] -> mainOutputVar
+	se.multiplySimValuesByCombo(simValueTotalColumns, priority, outputVar)
 }
 
-func (se *singleGearSetExtended) calcCombinedRatingFromValueTotalCols(priority *weight_types.SimPriorityExtended) {
-	// weighted sum of each sim value
-	combinedRatingColumn := columnInfo{entryType: entry_sum_rating}
-	combinedRatingColumn.columnIndex = se.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), &combinedRatingColumn)
-	se.combinedRatingVar = &combinedRatingColumn
+func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns map[stats.SimType]*columnInfo, priority *weight_types.SimPriorityExtended, outputVar *columnInfo) {
+	sumRow := util_highs.ConstraintRow{}
 
-	// add up the sim values, multiplying corresponding ratio
-	combinedRatingRow := util_highs.ConstraintRow{}
-	for simType, simValueColumn := range se.simValueTotalColumns {
-		simEntry := priority.GetOrPanic(simType)
-		combinedRatingRow.Add(simValueColumn.columnIndex, simEntry.RatioScale)
-	}
-	combinedRatingRow.Add(combinedRatingColumn.columnIndex, -1)
-	combinedRatingRow.Build(se.build, 0, 0)
-}
-
-func (se *singleGearSetExtended) multiplySimValuesByCombo() {
-	se.simValueComboColumns = make(map[stats.SimType]*columnInfo)
-	for simType, simValueTotal := range se.simValueTotalColumns {
+	for simType, simValueTotal := range simValueTotalColumns {
 		simComboCol := se.makeSimValueForComboVariable(simType)
-		se.multiplyByActiveCombo(simValueTotal, simComboCol, c_gearExtended2ScoreHigh,
+		se.bonusComboHandler.multiplyByActiveCombo(simValueTotal, simComboCol, c_gearExtended2ScoreHigh,
 			func(combo *bonusCombo) float64 { return combo.totalMultiplierForSim(simType) },
 		)
+
+		simEntry := priority.GetOrPanic(simType)
+		sumRow.Add(simComboCol.columnIndex, simEntry.RatioScale)
 	}
+
+	sumRow.Add(outputVar.columnIndex, -1)
+	sumRow.Build(se.build, 0, 0)
 }
 
 func (se *singleGearSetExtended) makeSimValueForComboVariable(simType stats.SimType) *columnInfo {
 	entry := columnInfo{entryType: entry_sim_value_combo, simType: simType}
 	entry.columnIndex = se.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), &entry)
-	se.simValueComboColumns[simType] = &entry
 	return &entry
-}
-
-func (se *singleGearSetExtended) calcOutputValueFromValueComboCols(priority *weight_types.SimPriorityExtended, outputVar *columnInfo) {
-	sumRow := util_highs.ConstraintRow{}
-	for simType, simComboCol := range se.simValueComboColumns {
-		simEntry := priority.GetOrPanic(simType)
-		sumRow.Add(simComboCol.columnIndex, simEntry.RatioScale)
-	}
-	sumRow.Add(outputVar.columnIndex, -1)
-	sumRow.Build(se.build, 0, 0)
 }

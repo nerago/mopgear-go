@@ -17,8 +17,8 @@ type singleGearSetShared struct {
 
 	ratingPreScale float64
 
-	itemSetupCommon gearItemSetupShared
-	bonusHandler    gearSharedBonusHandler
+	itemSetupCommon   gearItemSetupShared
+	bonusComboHandler gearBonusComboHandler
 }
 
 func (sc *singleGearSetShared) runForFutureResult(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
