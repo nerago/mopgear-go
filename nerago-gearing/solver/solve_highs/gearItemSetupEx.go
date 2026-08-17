@@ -55,12 +55,13 @@ func (site *gearItemSetupEx) finishStatTotals(build *util_highs.LinearBuilder) (
 	statTotalColumns = new(stats.StatTypeMap[*columnInfo])
 	// constrain: total sum of each stat for input to weights
 	for _, statType := range stats.StatType_List {
-		entry := columnInfo{entryType: entry_stat_total, statType: statType}
-		entry.columnIndex = build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), util_highs.DebugText("statTotal "+statType.Name()))
-		statTotalColumns.Put(statType, &entry)
+		entry := &columnInfo{entryType: entry_stat_total, statType: statType}
+		entry.columnIndex = build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), entry)
+		statTotalColumns.Put(statType, entry)
 
 		row := site.statTotalRows.GetOrPanic(statType)
 		row.Add(entry.columnIndex, -1)
+		row.Build(build, 0, 0)
 	}
 	return statTotalColumns
 }
