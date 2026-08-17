@@ -53,8 +53,6 @@ func (se2 *singleGearSetExtended2) setup(model *solve_highs_types.SolverModel, i
 	countSetItemsCol := se2.itemSetupCommon.finishSetCounts(se2.build)
 	statTotalCols := se2.itemSetupEx.finishStatTotals(se2.build)
 
-	se2.bonusComboHandler.addSetNeededCounts(model.SetBonus.RequiredCounts, model.SetBonus.CountMode)
-
 	weightCalc := gearWeight2Calc{build: se2.build}
 	simValueTotalColumns := weightCalc.calc(statTotalCols, model.Weights2)
 

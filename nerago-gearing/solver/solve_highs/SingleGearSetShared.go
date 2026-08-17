@@ -68,6 +68,6 @@ func (sc *singleGearSetShared) buildResultSet(solution util_highs.ISolution, mod
 	}
 	items.SolvableItemSet_RecalculateTotal(&itemSet)
 
-	sc.bonusComboHandler.checkActiveCombo(solution, &itemSet, model)
+	sc.bonusComboHandler.CheckActiveCombo(solution, &itemSet, model)
 	return itemSet
 }

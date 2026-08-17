@@ -41,7 +41,7 @@ func makeGearSetExtended3(build *util_highs.LinearBuilder) *singleGearSetExtende
 }
 
 func (se3 *singleGearSetExtended3) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) *columnInfo {
-	se3.itemSetupCommon.prepare(model, itemOptions, nil)
+	se3.itemSetupCommon.prepare(model, itemOptions, se3.createItemColumn)
 	se3.itemSetupEx.prepareStatTotals()
 	se3.itemSetupEx.prepareRequireEx(&model.StatRequirements)
 
@@ -54,8 +54,6 @@ func (se3 *singleGearSetExtended3) setup(model *solve_highs_types.SolverModel, i
 	se3.itemSetupEx.finishRequireEx(&model.StatRequirements, se3.build)
 	countSetItemsCol := se3.itemSetupCommon.finishSetCounts(se3.build)
 	statTotalCols := se3.itemSetupEx.finishStatTotals(se3.build)
-
-	se3.bonusComboHandler.addSetNeededCounts(model.SetBonus.RequiredCounts, model.SetBonus.CountMode)
 
 	weightCalc := gearWeight3Calc{build: se3.build}
 	simValueTotalColumns := weightCalc.calc(statTotalCols, model.Weights3)

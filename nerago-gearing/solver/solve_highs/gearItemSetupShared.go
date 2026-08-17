@@ -51,12 +51,12 @@ func (sit *gearItemSetupShared) prepareUniqueEquipped(itemOptions *items.Solvabl
 }
 
 func (sit *gearItemSetupShared) addItemCommon(itemSlot items.SlotEquip, item *items.SolvableItem) util_highs.ColumnIndex {
-	entry := columnInfo{entryType: entry_item, itemSlot: itemSlot, item: item}
+	entry := &columnInfo{entryType: entry_item, itemSlot: itemSlot, item: item}
 
 	// boolean value to flag use of specific item, in exact reforge/gem state
-	sit.createItemColumn(&entry)
+	sit.createItemColumn(entry)
 	columnIndex := entry.columnIndex
-	sit.itemColumns.Add(item.ItemId(), &entry)
+	sit.itemColumns.Add(item.ItemId(), entry)
 
 	// 1 for that slot that matches the item, so we can tell solver only one item per slot
 	sit.slotsOneEachRow[itemSlot].Add(columnIndex, 1.0)

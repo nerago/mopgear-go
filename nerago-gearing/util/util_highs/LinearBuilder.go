@@ -133,6 +133,11 @@ func (build *LinearBuilder) ChangeColumnOutputWeight(columnIndex ColumnIndex, co
 	build.vars.changeColumnCost(columnIndex, cost)
 }
 
+func (build *LinearBuilder) ChangeColumnMinMax(columnIndex ColumnIndex, lower, upper float64) {
+	build.vars.colLower[columnIndex] = lower
+	build.vars.colUpper[columnIndex] = upper
+}
+
 func (build *LinearBuilder) ClearInitialSolutionValue() {
 	clear(build.vars.partialSolution)
 }

@@ -13,7 +13,7 @@ import (
 )
 
 type SetBonusIndex int8
-type SetBonusRequiredCounts []uint8
+type SetBonusRequiredCounts map[SetBonusIndex]uint8
 
 type SolverModel struct {
 	WeightsGeneric weight_types.IWeight
@@ -111,7 +111,7 @@ func convertBonusRequiredSingle(setCounts *bonus_set.ItemCountsRequired, enabled
 		if setIndex == -1 {
 			panic("set not found")
 		}
-		countsAsSlice[setIndex] = count
+		countsAsSlice[SetBonusIndex(setIndex)] = count
 	}
 	return countsAsSlice
 }

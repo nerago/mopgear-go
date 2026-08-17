@@ -43,7 +43,7 @@ func makeGearSetBasic(build *util_highs.LinearBuilder) *singleGearSetBasic {
 }
 
 func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) *columnInfo {
-	sb.itemSetupCommon.prepare(model, itemOptions, nil)
+	sb.itemSetupCommon.prepare(model, itemOptions, sb.createItemColumn)
 	sb.itemSetupBasic.prepareRequire(&model.StatRequirements)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
@@ -55,8 +55,6 @@ func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOp
 	sb.itemSetupBasic.finishRequire1(&model.StatRequirements, sb.build)
 	countSetItemsCol := sb.itemSetupCommon.finishSetCounts(sb.build)
 	baseRatingSumVar := sb.itemSetupBasic.finishRatingSum(sb.build)
-
-	sb.bonusComboHandler.addSetNeededCounts(model.SetBonus.RequiredCounts, model.SetBonus.CountMode)
 
 	return sb.bonusComboHandler.ProcessBonus(
 		baseRatingSumVar,
