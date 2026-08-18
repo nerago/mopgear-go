@@ -27,7 +27,7 @@ const (
 	c_searchExtended1_probeMiddle = 0.5
 	c_searchExtended1_probeB      = 0.75
 
-	c_searchExtended1_maxNodeDepth = 50
+	c_searchExtended1_maxNodeDepth = 250
 	c_searchExtended1_maxCombos    = 8 * 5
 )
 
@@ -50,7 +50,7 @@ type searchEx1Bound struct {
 	rangeMin   searchEx1Point
 	rangeMax   searchEx1Point
 	divideAxis int8
-	nodeDepth  int8
+	nodeDepth  int16
 }
 
 type searchEx1Probe struct {

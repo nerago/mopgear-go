@@ -95,6 +95,26 @@ func (result upgradeItemResultWithSim) ItemLevel() uint16 {
 	}
 }
 
+func (result upgradeItemResultWithSim) ItemStatSummary() string {
+	fullItem := result.fullItem
+	if fullItem == nil {
+		fullItem = db.WowSimDB_LoadItemById(result.item.ItemId, 0)
+	}
+	sb := util.StringBuild2{}
+	if fullItem != nil {
+		for statType, value := range fullItem.Total().SeqPairInt() {
+			if value != 0 && statType.IsSecondary() {
+				sb.WriteString(statType.Name())
+				sb.WriteRune(' ')
+			}
+		}
+		if sb.Len() > 0 {
+			sb.Rewind(1)
+		}
+	}
+	return sb.String()
+}
+
 func (result upgradeItemResult) increaseWeightsRaw() float64 {
 	if result.factor.IsEmpty() {
 		return c_nullIncrease
@@ -199,11 +219,12 @@ type upgradeGroupResult struct {
 // ################## reportForItemWithSim ##################
 
 type reportForItemWithSim struct {
-	itemName  string
-	itemLevel uint16
-	boss      string
-	slot      items.SlotEquip
-	grouped   map[string]upgradeItemResultWithSim
+	itemName    string
+	itemLevel   uint16
+	boss        string
+	statSummary string
+	slot        items.SlotEquip
+	grouped     map[string]upgradeItemResultWithSim
 }
 
 func (report *reportForItemWithSim) Add(group reportGroup, result upgradeItemResultWithSim) {

@@ -19,7 +19,7 @@ func statWeights_updateAll() {
 	//simSpeed := simulate.RunSize_QuickDirty
 	//simSpeed := simulate.RunSize_Common
 	simSpeed := simulate.RunSize_Largish
-	forceSkipSim := false
+	forceSkipSim := true
 	fixStats := weight_types.FixStatsRangeMode_ExpertiseAlways | weight_types.FixStatsRangeMode_HasteGridOnly | weight_types.FixStatsRangeMode_HasteHigherOnly
 
 	process := weightfind.WeightUpdateProcess{}

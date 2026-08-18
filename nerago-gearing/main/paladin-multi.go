@@ -90,7 +90,7 @@ var timeless = []items.ItemId{
 	101882, // cliffbreaker helm exp/mastery
 	101887, // timeless ring haste/mastery. Cliffbreaker Seal of the Faultline. 549 (is upgraded)
 	// Cliffbreaker Seal of the Landslide. hit/expertise. 535 (not upgraded)
-	101947, // CULL UNLESS UPGRADED timeless ring exp/mastery. Elder Tortoiseshell Seal of the Mountainbed. 535 (not upgraded)
+	101947, //  Elder Tortoiseshell Seal of the Mountainbed. 549 (is upgraded)
 }
 var celestial = []items.ItemId{
 	105011, // Demolisher's Reinforced Belt
@@ -114,6 +114,7 @@ var orgRaidDrops = []items.ItemId{
 	104416, // chest congealed corruption heroic
 	103796, // seal kings norm
 	103798, // bloodclaw band
+	105761, // Partik's Purified Legplates
 }
 var orgOneHandAndShield = []items.ItemId{
 	103826, // xifeng weapon
@@ -138,11 +139,11 @@ func PaladinMultiRun() {
 	job.SetMinimumExtraItemLevel(463)
 	job.SetTimeLimitEachSolver(8000)
 	job.SetSimSize(simSize)
-	job.SetReforgingAllowNonCommon(false)
+	job.SetReforgingAllowNonCommon(true)
 	//job.SetWriteBestToGearFiles()
 	//job.SetWeightTypes(1)
-	job.SetWeightTypes(1, 2, 3)
-	//job.SetWeightTypes(1)
+	//job.SetWeightTypes(1, 2, 3)
+	job.SetWeightTypes(1, 2)
 
 	var generalUpgrade items.UpgradeLevel = 0
 	var forceUpgrade items.UpgradeLevel = 0
@@ -188,7 +189,7 @@ func PaladinMultiRun() {
 		Model: model_factory.Model_PallyProtMitigation(),
 		ItemInputs: multi_types.ItemInputs{
 			GearFile:                     files.GearFileProtMitigation,
-			RequestRatingPercent:         0.35,
+			RequestRatingPercent:         0.40,
 			ExtraUpgradeLevel:            generalUpgrade,
 			ForceUpgradeExistingItems:    forceUpgrade,
 			MissingEnchant:               setup.MissingEnchant_Panic,
@@ -200,7 +201,7 @@ func PaladinMultiRun() {
 		Model: model_factory.Model_PallyProtSurvival(),
 		ItemInputs: multi_types.ItemInputs{
 			GearFile:                     files.GearFileProtSurvival,
-			RequestRatingPercent:         0.30,
+			RequestRatingPercent:         0.25,
 			ExtraUpgradeLevel:            generalUpgrade,
 			ForceUpgradeExistingItems:    forceUpgrade,
 			MissingEnchant:               setup.MissingEnchant_Panic,
@@ -369,9 +370,9 @@ func PaladinMultiRun() {
 
 	run := multi.JobCreate(printer, job)
 
-	//job.RunNoPermutations_AllCommonAlternates(true, true)
-	run.RunNoPermutations_BestOnly(true, true)
-	//run.RunForSolutionsPerPermute(1, true)
+	run.RunNoPermutations_AllCommonAlternates(true, true)
+	//run.RunNoPermutations_BestOnly(true, true)
+	//run.RunForSolutionsPerPermute(5, true)
 
 	//job.CullingReport()
 	//run.RunCullingSets(400, time.Minute*45)

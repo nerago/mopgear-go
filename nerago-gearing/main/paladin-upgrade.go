@@ -126,10 +126,10 @@ func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 func findUpgrades_Paladin() {
 	//simSizeBaseline := simulate.RunSize_VerySlow
 	//simSizeTopN := simulate.RunSize_VerySlow
-	//simSizeBaseline := simulate.RunSize_Largish
-	//simSizeTopN := simulate.RunSize_Largish
-	simSizeBaseline := simulate.RunSize_Common
-	simSizeTopN := simulate.RunSize_Common
+	simSizeBaseline := simulate.RunSize_Largish
+	simSizeTopN := simulate.RunSize_Largish
+	//simSizeBaseline := simulate.RunSize_Common
+	//simSizeTopN := simulate.RunSize_Common
 
 	simSizePerItem := simulate.RunSize_QuickDirty
 	//simSizePerItem := simulate.RunSize_Common
@@ -178,7 +178,7 @@ func findUpgrades_Paladin() {
 	//finder := loaders.ItemFinder_NormalHeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, normalBossesConsider, heroicBossesConsider)
 
 	//finder := loaders.ItemFinder_SiegeStrengthPlateTank
-	//finder := loaders.ItemFinder_Ordos
+	finder := loaders.ItemFinder_Ordos
 	//finder := loaders.ItemFinder_TimelessPlate
 	//finder := loaders.ItemFinder_BagsUpgraded
 	//finder := loaders.SiegeClassGearSetMultiple(stats.Spec_PaladinProt, stats.Spec_PaladinRet)
@@ -189,19 +189,19 @@ func findUpgrades_Paladin() {
 	//}
 
 	// upgraded trash drops
-	finder := func(_ stats.Difficulty) []loaders.ItemFoundRef {
-		return []loaders.ItemFoundRef{{ItemId: 105851}, {ItemId: 105850}}
-	}
+	//finder := func(_ stats.Difficulty) []loaders.ItemFoundRef {
+	//	return []loaders.ItemFoundRef{{ItemId: 105851}, {ItemId: 105850}}
+	//}
 
 	input := upgrades.FindUpgrades_MultiSpec_Sim{
 		FindUpgrades_SimInputs: upgrades.FindUpgrades_SimInputs{
 			FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
 				IncludeCelestial:   false,
 				IncludeNormal:      true,
-				IncludeHeroic:      true,
+				IncludeHeroic:      false,
 				IgnoredItems:       ignoredItems,
 				TargetUpgradeLevel: 2,
-				WeightType:         1,
+				WeightType:         2,
 				SolverTimeout:      c_upgradeDefaultTimeout,
 			},
 			SimSizeBaseline:              simSizeBaseline,

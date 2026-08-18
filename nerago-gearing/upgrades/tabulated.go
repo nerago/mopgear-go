@@ -84,6 +84,7 @@ func groupByBossAndItem(outputMap []upgradeGroupResult) map[string]map[reportIte
 					result.ItemName(),
 					result.ItemLevel(),
 					result.boss,
+					result.ItemStatSummary(),
 					result.slot,
 					make(map[string]upgradeItemResultWithSim),
 				}
@@ -108,6 +109,7 @@ func groupByItem(outputMap []upgradeGroupResult) map[reportItemRef]*reportForIte
 					result.ItemName(),
 					result.ItemLevel(),
 					result.boss,
+					result.ItemStatSummary(),
 					result.slot,
 					make(map[string]upgradeItemResultWithSim),
 				}
@@ -163,6 +165,7 @@ func reportTabledSimResultItemMap(itemMap map[reportItemRef]*reportForItemWithSi
 	}
 	tab.AddColumnHeader("best_sim", true)
 	tab.AddColumnHeader("sim_detailed", false)
+	tab.AddColumnHeader("secondary", true)
 
 	for _, report := range reportList {
 		row := make([]string, 0, tab.ColumnCount())
@@ -180,7 +183,11 @@ func reportTabledSimResultItemMap(itemMap map[reportItemRef]*reportForItemWithSi
 		if !bestSimIncrease.IsEmpty() {
 			row = append(row, bestGroup)
 			row = append(row, bestSimIncrease.CompactStringSignedPercent())
+		} else {
+			row = append(row, "", "")
 		}
+
+		row = append(row, report.statSummary)
 
 		tab.AddRow(row)
 	}
@@ -211,6 +218,7 @@ func reportTabledSimResultItemMap_NoWeight(itemMap map[reportItemRef]*reportForI
 	}
 	tab.AddColumnHeader("best_sim", true)
 	tab.AddColumnHeader("sim_detailed", false)
+	tab.AddColumnHeader("secondary", true)
 
 	for _, report := range reportList {
 		row := make([]string, 0, tab.ColumnCount())
@@ -228,7 +236,11 @@ func reportTabledSimResultItemMap_NoWeight(itemMap map[reportItemRef]*reportForI
 		if !bestSimIncrease.IsEmpty() {
 			row = append(row, bestGroup)
 			row = append(row, bestSimIncrease.CompactStringSignedPercent())
+		} else {
+			row = append(row, "", "")
 		}
+
+		row = append(row, report.statSummary)
 
 		tab.AddRow(row)
 	}

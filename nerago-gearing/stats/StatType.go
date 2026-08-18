@@ -86,6 +86,37 @@ func (stat StatType) EnumName() string {
 	}
 }
 
+func (stat StatType) IsSecondary() bool {
+	switch stat {
+	case Stat_Strength:
+		return false
+	case Stat_Agility:
+		return false
+	case Stat_Stamina:
+		return false
+	case Stat_Intellect:
+		return false
+	case Stat_Spirit:
+		return true
+	case Stat_Hit:
+		return true
+	case Stat_Crit:
+		return true
+	case Stat_Haste:
+		return true
+	case Stat_Expertise:
+		return true
+	case Stat_Dodge:
+		return true
+	case Stat_Parry:
+		return true
+	case Stat_Mastery:
+		return true
+	default:
+		panic("unknown stat")
+	}
+}
+
 var StatType_List = []StatType{
 	Stat_Strength, Stat_Agility, Stat_Stamina, Stat_Intellect,
 	Stat_Spirit, Stat_Hit, Stat_Crit, Stat_Haste,

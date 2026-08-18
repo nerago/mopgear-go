@@ -78,6 +78,7 @@ func PaladinMultiRunLite() {
 		104416, // chest congealed corruption heroic
 		103796, // seal kings norm
 		103798, // bloodclaw band
+		105761, // Partik's Purified Legplates
 	}
 	var orgOneHandAndShield = []items.ItemId{
 		104485, // shield of mockery
@@ -97,13 +98,13 @@ func PaladinMultiRunLite() {
 	job.SetMinimumExtraItemLevel(463)
 	job.SetTimeLimitEachSolver(12000)
 	job.SetSimSize(simSize)
-	job.SetReforgingAllowNonCommon(true)
+	job.SetReforgingAllowNonCommon(false)
 	//job.SetWriteBestToGearFiles()
 	job.SetWeightTypes(3)
 	//job.SetWeightTypes(1, 2, 3)
 	//job.SetWeightTypes(2)
 	//job.SetWeightTypes(1)
-	job.RunDecimate = false
+	job.RunDecimate = true
 
 	var generalUpgrade items.UpgradeLevel = 0
 	var forceUpgrade items.UpgradeLevel = 0
@@ -336,7 +337,7 @@ func PaladinMultiRunLite() {
 	run := multi.JobCreate(printer, job)
 
 	//job.RunNoPermutations_AllCommonAlternates(true, true)
-	run.RunNoPermutations_BestOnly(false, false)
+	run.RunNoPermutations_BestOnly(false, true)
 	//run.RunForSolutionsPerPermute(1, false)
 
 	//job.CullingReport()
