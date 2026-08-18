@@ -1,0 +1,270 @@
+package weight_highs
+
+import (
+	"iter"
+	"strconv"
+
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_async"
+	"github.com/nerago/mopgear-go/util/util_collection"
+	"github.com/nerago/mopgear-go/util/util_highs"
+	"github.com/nerago/mopgear-go/weightfind/weight_types"
+
+	"github.com/bartolsthoorn/gohighs/highs"
+)
+
+type GridStatWeightProcess struct {
+	printer *util.PrintRecorder
+
+	CHECKRANGE int
+
+	targetRatios  weight_types.SimPriorityBasic
+	inputData     []weight_types.WeightInput
+	requiredStats []stats.StatType
+	simTypes      []stats.SimType
+
+	build           util_highs.LinearBuilder
+	unitStatValues  util_collection.MapMapSlice[stats.StatType, stats.SimType, gridDataSample]
+	detailedWeights util_collection.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
+	finalWeights    map[stats.StatType]util_highs.ColumnIndex
+}
+
+type gridDataSample struct {
+	value float64
+}
+
+func (grid *GridStatWeightProcess) Init(printer *util.PrintRecorder, timeout int) {
+	grid.printer = printer
+	grid.build.Minimise = true
+	grid.build.Solver = util_highs.Solver_LP_USE_GPU
+	grid.build.TimeLimitSeconds = timeout
+	// -3 is very quickly resolved (~5s in main)
+	// -5 takes about a minute, 8 significant figures, unknown status due to relative issues
+	// -7 takes about 3 minutes, 10 significant figures, still unknown status, weight accuracy no better
+	grid.build.SetEachTolerance(1e-6)
+	grid.finalWeights = make(map[stats.StatType]util_highs.ColumnIndex)
+}
+
+func (grid *GridStatWeightProcess) SupplyData(inputData []weight_types.WeightInput) {
+	grid.inputData = inputData
+}
+
+func (grid *GridStatWeightProcess) SetRequiredStats(requiredStats []stats.StatType) {
+	grid.requiredStats = requiredStats
+}
+
+func (grid *GridStatWeightProcess) SetTargetRatios(targetRatios weight_types.SimPriorityBasic) {
+	targetRatios.ValidateRatioAddsToOne()
+	grid.simTypes = targetRatios.SimTypes()
+	grid.targetRatios = targetRatios
+}
+
+func (grid *GridStatWeightProcess) Run() *util_async.FutureCancellable[weight_types.WeightResult] {
+	grid.setupWeightVars()
+
+	grid.dataSamplesFromPairs()
+	grid.checkSampleRange()
+	grid.unitValuesToCalcDetailedRatings()
+	grid.calcTotalRatings()
+
+	stopwatch := util.StopwatchMakeStopped()
+	solutionFuture := grid.build.RunHighsFuture(stopwatch)
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
+		solution := linearResult.GetSolutionAndSaveLog(grid.printer)
+
+		grid.printer.Println(solution.Status.String())
+		grid.build.DebugPrintColumns(solution, grid.printer)
+
+		weight := grid.reportOutputWeightsGrid(solution, grid.finalWeights, grid.printer)
+		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution.Status}, true
+	})
+}
+
+func (grid *GridStatWeightProcess) setupWeightVars() {
+	for _, statType := range grid.requiredStats {
+		colFinalWeight := grid.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "FINAL WEIGHT: " + statType.Name()})
+		// colFinalWeight := basic.input.CreateColumnGeneral(highs.Continuous, -c_finalWeightLimit, c_finalWeightLimit)
+		grid.finalWeights[statType] = colFinalWeight
+	}
+
+	for _, statType := range grid.requiredStats {
+		for _, simType := range grid.simTypes {
+			colDetailWeight := grid.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "WEIGHT: " + statType.Name() + " " + simType.Name()})
+			grid.detailedWeights.Put(statType, simType, colDetailWeight)
+		}
+	}
+
+	// TODO assumes base stat is positive
+	baseStat := grid.requiredStats[0]
+	for _, simType := range grid.simTypes {
+		value := grid.targetRatios.GetOrPanic(simType)
+		colDetailWeight := grid.detailedWeights.GetOrPanic(baseStat, simType)
+		strengthSetToRatio := util_highs.ConstraintRow{}
+		strengthSetToRatio.Add(colDetailWeight, 1)
+		strengthSetToRatio.Build(&grid.build, value, value)
+	}
+}
+
+// lazy func, could avoid double processing and put in order, very N**2
+func (grid *GridStatWeightProcess) dataSamplesFromPairs() {
+	for a := range grid.inputData {
+		for b := range grid.inputData {
+			statType, isGood := grid.isGoodPair(&grid.inputData[a].TotalStat, &grid.inputData[b].TotalStat)
+			if isGood {
+				grid.prepareSample(statType, &grid.inputData[a], &grid.inputData[b])
+			}
+		}
+	}
+}
+
+func (grid *GridStatWeightProcess) isGoodPair(blockHigh, blockLow *stats.StatBlock) (stats.StatType, bool) {
+	var changedStat stats.StatType
+	foundChange := false
+	for stat := range blockHigh {
+		if blockHigh[stat] < blockLow[stat] {
+			// any inequality with high side lower is fail
+			return changedStat, false
+		} else if blockHigh[stat] > blockLow[stat] {
+			if !foundChange {
+				// first inequality is high good
+				foundChange = true
+				changedStat = stats.StatType(stat)
+			} else {
+				// another inequality is fail, we want just one difference (for now!)
+				return changedStat, false
+			}
+		}
+	}
+	return changedStat, foundChange
+}
+
+func (grid *GridStatWeightProcess) prepareSample(statType stats.StatType, high, low *weight_types.WeightInput) {
+	// basic approach (spreadsheet "build ratings miti_2")
+	// unit_dps_haste = (this_dps[haste] - base_dps) / this_haste_value
+	// detailweight_dps_haste = unit_dps_haste / unit_dps_str * detailweight_str
+
+	statDiff := high.TotalStat.GetFloat(statType) - low.TotalStat.GetFloat(statType)
+
+	for _, simType := range grid.simTypes {
+		var simValueDiff float64
+		if simType.IsHighGood() {
+			simValueDiff = high.SimResult.GetFriendly(simType) - low.SimResult.GetFriendly(simType)
+		} else {
+			simValueDiff = low.SimResult.GetFriendly(simType) - high.SimResult.GetFriendly(simType)
+		}
+		unitStatValue := simValueDiff / statDiff
+
+		// if (unitStatValue > 0 && unitStatValue <= 1e-9) || (unitStatValue < 0 && unitStatValue >= -1e-9) {
+		// 	panic("small values, highs won't like it")
+		// }
+
+		dataSample := gridDataSample{unitStatValue}
+		grid.unitStatValues.Add(statType, simType, dataSample)
+	}
+}
+
+func (grid *GridStatWeightProcess) checkSampleRange() {
+	good, bad := 0, 0
+	for entry := range grid.unitStatValues.SeqValues() {
+		if isGoodValueRange(entry.value) {
+			good++
+		} else {
+			bad++
+		}
+	}
+	grid.printer.Printf("checkSampleRange good=%d bad=%d\n", good, bad)
+	if bad > (good+bad)/5 {
+		// panic("many values have inconvenient range")
+		grid.printer.Println("many values have inconvenient range")
+	}
+}
+
+func (grid *GridStatWeightProcess) unitValuesToCalcDetailedRatings() {
+	// FORMULA:
+	// detailweight_dps_haste = unit_dps_haste / unit_dps_str * detailweight_dps_str
+	// detailweight_dps_haste * unit_dps_str = unit_dps_haste * detailweight_dps_str
+	// detailweight_dps_haste * unit_dps_str = detailweight_dps_str * unit_dps_haste
+	// detailweight_dps_haste * unit_dps_str - detailweight_dps_str * unit_dps_haste = 0
+	// detailweight_dps_haste * unit_dps_str - detailweight_dps_str * unit_dps_haste + offset = 0  (allow small offset to optimise on)
+
+	baseStat := grid.requiredStats[0]
+
+	for _, simType := range grid.simTypes {
+		unitValueBaseSeq := grid.unitStatValues.GetAsSeq(baseStat, simType)
+		detailWeightBase := grid.detailedWeights.GetOrPanic(baseStat, simType)
+		for _, thisStatType := range grid.requiredStats {
+			if thisStatType != baseStat {
+				thisUnitValueSeq := grid.unitStatValues.GetAsSeq(thisStatType, simType)
+				grid.unitValuesCalcForGroup(simType, thisStatType, unitValueBaseSeq, thisUnitValueSeq, detailWeightBase)
+			}
+		}
+	}
+}
+
+func (grid *GridStatWeightProcess) unitValuesCalcForGroup(simType stats.SimType, thisStatType stats.StatType, baseUnitValueSeq iter.Seq[gridDataSample], thisUnitValueSeq iter.Seq[gridDataSample], baseDetailWeightCol util_highs.ColumnIndex) {
+	debugText := simType.Name() + " " + thisStatType.Name()
+	thisDetailWeightCol := grid.detailedWeights.GetOrPanic(thisStatType, simType)
+
+	// look at multiple input values of each unitstat value
+	index := 0
+	for baseUnitSample := range baseUnitValueSeq {
+		for thisUnitSample := range thisUnitValueSeq {
+			if grid.CHECKRANGE == 0 {
+				if isGoodValueRange(baseUnitSample.value) && isGoodValueRange(thisUnitSample.value) { // losing this check with no other changes is worse!
+					grid.unitValueCombinationAddToModel(baseUnitSample, baseDetailWeightCol, thisUnitSample, thisDetailWeightCol, debugText+" "+strconv.Itoa(index))
+					index++
+				}
+			} else {
+				grid.unitValueCombinationAddToModel(baseUnitSample, baseDetailWeightCol, thisUnitSample, thisDetailWeightCol, debugText+" "+strconv.Itoa(index))
+				index++
+			}
+		}
+	}
+}
+
+func (grid *GridStatWeightProcess) unitValueCombinationAddToModel(baseUnitSample gridDataSample, baseDetailWeightCol util_highs.ColumnIndex,
+	thisUnitSample gridDataSample, thisDetailWeightCol util_highs.ColumnIndex, debugText string) {
+
+	// detailweight_dps_haste * unit_dps_base - detailweight_dps_base * unit_dps_haste + offset = 0
+	// detailweight_dps_haste / unit_dps_haste  - detailweight_dps_base   / unit_dps_base + offset / unit_dps_base / unit_dps_haste = 0
+	// offsetSigned := grid.input.CreateColumnGeneral(highs.Continuous, utilhighs.C_MinusInf(), utilhighs.C_PlusInf(), utilhighs.DebugString{Text: "OFFSET SIGNED " + debugText})
+	// weightRow := utilhighs.ConstraintRowBuild{}
+	// weightRow.Add(thisDetailWeight, baseUnitSample.value)  // OLD
+	// weightRow.Add(detailWeightBase, -thisUnitSample.value) // OLD
+	// // weightRow.Add(thisDetailWeight, 1/thisUnitSample.value) // NEW BUT TOO BIG
+	// // weightRow.Add(detailWeightBase, -1/baseUnitSample.value) // NEW BUT TOO BIG
+	// weightRow.Add(offsetSigned, 1)
+	// weightRow.Finish(&grid.input, 0, 0)
+
+	// take absolute value, output for objective function
+	offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
+	// utilhighs.AbsoluteValueFromDiff(&grid.input, offsetSigned, offsetAbs)
+
+	grid.build.AbsoluteValueFromDiffTwoVars(thisDetailWeightCol, baseUnitSample.value, baseDetailWeightCol, thisUnitSample.value, offsetAbs, "OFFSET ABS "+debugText)
+}
+
+func (grid *GridStatWeightProcess) calcTotalRatings() {
+	for _, statType := range grid.requiredStats {
+		statFinalRow := util_highs.ConstraintRow{}
+		for _, detailColumn := range grid.detailedWeights.SeqKey2ValueWithKey1(statType) {
+			statFinalRow.Add(detailColumn, 1)
+		}
+
+		finalWeightColumn := grid.finalWeights[statType]
+		statFinalRow.Add(finalWeightColumn, -1)
+		statFinalRow.Build(&grid.build, 0, 0)
+	}
+}
+
+func (grid *GridStatWeightProcess) reportOutputWeightsGrid(solution *highs.Solution, weightColumns map[stats.StatType]util_highs.ColumnIndex, printer *util.PrintRecorder) weight_types.Weight1Basic {
+	result := weight_types.Weight1Basic_Make()
+	printer.Println("FINAL WEIGHTS:")
+	for _, statType := range grid.requiredStats {
+		columnIndex := weightColumns[statType]
+		value := solution.ColValues[columnIndex]
+		printer.Printf("%10s %f\n", statType.Name(), value)
+		result.Put(statType, value)
+	}
+	return result
+}

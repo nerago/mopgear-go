@@ -1,5 +1,5 @@
-nerago-gearing/main/*.exe
-nerago-gearing/main/_*
+mopgear-go/main/*.exe
+mopgear-go/main/_*
 profile/main-new.pgo
 main.exe~
 main.exe
