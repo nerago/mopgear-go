@@ -88,6 +88,9 @@ type SimTypeMap[V any] struct {
 func (m *SimTypeMap[V]) Clone() *SimTypeMap[V] {
 	return &SimTypeMap[V]{m.EnumMapTiny.Clone()}
 }
+func (m *SimTypeMap[V]) Equals(other *SimTypeMap[V], equal func(*V, *V) bool) bool {
+	return m.EnumMapTiny.Equals(&other.EnumMapTiny, equal)
+}
 
 func (types SimType) EnumNumValues() uint8 {
 	return Sim_Count

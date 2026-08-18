@@ -979,6 +979,7 @@ func statWeightsFitting1a(printer *util.PrintRecorder) {
 	}
 }
 
+//goland:noinspection ALL
 func statWeightsGrid1Orig(printer *util.PrintRecorder) {
 	// inputData, targetRatio := generateRatingsInputFromArtificalStatOverrides(printer)
 	// writeWeightInputsToFile(inputData, "sim-stats-input-grid.json" )
@@ -993,12 +994,19 @@ func statWeightsGrid1Orig(printer *util.PrintRecorder) {
 	requiredStats := model_factory.StatsForWeighting_strengthTank
 	simTypes := targetRatio.SimTypes()
 
-	runOne := func(inc1 int, label string) {
-		process := weight_highs.GridStatWeightProcess{}
-		process.CHECKRANGE = inc1
+	runOne := func(a int, b int, c int, d int, e int, label string) {
+		//process := weight_highs.GridStatWeightProcess{}
+		//process.CHECKRANGE = inc1
+
+		process := weight_highs.GridStatWeightProcess1B{}
+		process.OUTLIER = a
+		process.SCALEMODE = b
+		process.ROUNDMODE = c
+		process.CALCMODE = d
+		process.RATIO = e
 
 		//process.Init(printer, 2000)
-		process.Init(util.PrintRecorder_Nop(), 1500)
+		process.Init(util.PrintRecorder_Nop(), 90)
 		process.SetRequiredStats(requiredStats)
 		process.SetTargetRatios(targetRatio)
 		process.SupplyData(inputData)
@@ -1016,17 +1024,33 @@ func statWeightsGrid1Orig(printer *util.PrintRecorder) {
 	//runOne(true, true, true, 1, 3, "select")
 
 	type optParam struct {
-		inc1  int
+		a     int
+		b     int
+		c     int
+		d     int
+		e     int
 		label string
 	}
 	optList := make([]optParam, 0)
-	for a := range 2 {
-		label := fmt.Sprintf("GRID1 %d", a)
-		optList = append(optList, optParam{a, label})
+	for a := range 5 {
+		for b := range 4 {
+			for c := range 3 {
+				for d := range 4 {
+					for e := range 4 {
+						label := fmt.Sprintf("GRID1 %d %d %d %d %d", a, b, c, d, e)
+						optList = append(optList, optParam{a, b, c, d, e, label})
+					}
+				}
+			}
+		}
 	}
+	//for a := range 2 {
+	//	label := fmt.Sprintf("GRID1 %d", a)
+	//	optList = append(optList, optParam{a, label})
+	//}
 
 	util_async.ForEach_Slice(5, optList, func(o *optParam) {
-		runOne(o.inc1, o.label)
+		runOne(o.a, o.b, o.c, o.d, o.e, o.label)
 		printer.Println(o.label)
 	})
 

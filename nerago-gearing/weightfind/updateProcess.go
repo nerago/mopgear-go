@@ -29,8 +29,6 @@ import (
 )
 
 const (
-	c_timeoutSolvers    = 2000
-	c_timeoutSolversFit = 2000
 	c_simDataAgeMax     = 48 * time.Hour
 	c_updateThreadCount = 2
 
@@ -46,6 +44,7 @@ const (
 type WeightUpdateProcess struct {
 	simSpeed     simulate.WowSim_RunSize
 	forceSkipSim bool
+	timeoutEach  int
 	printer      *util.PrintRecorder
 	specs        []*WeightSpec
 }
@@ -87,9 +86,10 @@ type weightChoice struct {
 	weightOrig    weight_types.IWeight
 }
 
-func (wup *WeightUpdateProcess) Init(simSpeed simulate.WowSim_RunSize, forceSkipSim bool, printer *util.PrintRecorder) {
+func (wup *WeightUpdateProcess) Init(simSpeed simulate.WowSim_RunSize, forceSkipSim bool, timeoutEach int, printer *util.PrintRecorder) {
 	wup.simSpeed = simSpeed
 	wup.forceSkipSim = forceSkipSim
+	wup.timeoutEach = timeoutEach
 	wup.printer = printer
 }
 
@@ -324,7 +324,7 @@ func (spec *WeightSpec) solveGridWeights(gridOutlierSetting int, cancel util_asy
 	grid.SCALEMODE = 1
 	grid.ROUNDMODE = 2
 	grid.CALCMODE = 2
-	grid.Init(spec.process.printer, c_timeoutSolvers)
+	grid.Init(spec.process.printer, spec.process.timeoutEach)
 	grid.SetTargetRatios(spec.targetRatio)
 	grid.SetRequiredStats(spec.statTypes)
 	grid.SupplyData(gridData)
@@ -421,7 +421,7 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 
 	if rankMode == 0 {
 		ranking := weight_highs.RankingStatWeightProcess3c{}
-		ranking.Init(spec.process.printer, c_timeoutSolvers)
+		ranking.Init(spec.process.printer, spec.process.timeoutEach)
 		ranking.SetRequiredStats(spec.statTypes)
 		ranking.SetTargetRatios(spec.targetRatio)
 		ranking.SupplyData(rankData)
@@ -432,7 +432,7 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		ranking := weight_highs.RankingStatWeightProcess3b{}
 		ranking.TOTALWEIGHT = 2
 		ranking.ALGO = 0
-		ranking.Init(spec.process.printer, c_timeoutSolvers)
+		ranking.Init(spec.process.printer, spec.process.timeoutEach)
 		ranking.SetRequiredStats(spec.statTypes)
 		ranking.SetTargetRatios(spec.targetRatio)
 		ranking.SupplyData(rankData)
@@ -448,7 +448,7 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		ranking := weight_highs.RankingStatWeightProcess3b{}
 		ranking.TOTALWEIGHT = 2
 		ranking.ALGO = 1
-		ranking.Init(spec.process.printer, c_timeoutSolvers)
+		ranking.Init(spec.process.printer, spec.process.timeoutEach)
 		ranking.SetRequiredStats(spec.statTypes)
 		ranking.SetTargetRatios(spec.targetRatio)
 		ranking.SupplyData(rankData)
@@ -468,7 +468,7 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		ranking.SetRequiredStats(spec.statTypes)
 		ranking.SetTargetRatios(spec.targetRatio)
 		ranking.SupplyData(rankData)
-		weightsFuture := ranking.Run(c_timeoutSolvers)
+		weightsFuture := ranking.Run(spec.process.timeoutEach)
 		util_async.ChainCancel(cancel, weightsFuture)
 		spec.evaluateWeightFuture("RANK1-0", weightsFuture)
 	} else {
@@ -479,7 +479,7 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		ranking.SetRequiredStats(spec.statTypes)
 		ranking.SetTargetRatios(spec.targetRatio)
 		ranking.SupplyData(rankData)
-		weightsFuture := ranking.Run(c_timeoutSolvers)
+		weightsFuture := ranking.Run(spec.process.timeoutEach)
 		util_async.ChainCancel(cancel, weightsFuture)
 		spec.evaluateWeightFuture("RANK1-1", weightsFuture)
 	}
@@ -492,14 +492,14 @@ func (spec *WeightSpec) solveFormulaWeight(cancel util_async.CancelSignal) {
 	comp.SetTargetRatios(spec.targetRatio)
 	comp.SetMinimumIncludeRate(1.0) // TODO can we experiment
 	comp.SupplyData(spec.dataAll)
-	weights2Future := comp.Run(c_timeoutSolvers)
+	weights2Future := comp.Run(spec.process.timeoutEach)
 	util_async.ChainCancel(cancel, weights2Future)
 	spec.evaluateWeightFuture("FORM2", weights2Future)
 }
 
 func (spec *WeightSpec) solveFittingWeight(cancel util_async.CancelSignal, tracker *util.TrackProgress) {
 	comp := fitting3.FittingEachStatWeightProcess3{}
-	comp.Init(3, spec.process.printer, c_timeoutSolversFit)
+	comp.Init(3, spec.process.printer, spec.process.timeoutEach)
 	comp.SetRequiredStats(spec.statTypes, spec.simTypes)
 	comp.SetTargetRatios(spec.targetRatio)
 	if c_userSamplingFit {
@@ -512,28 +512,32 @@ func (spec *WeightSpec) solveFittingWeight(cancel util_async.CancelSignal, track
 }
 
 func (spec *WeightSpec) solveFittingFast(cancel util_async.CancelSignal) {
-	fit4data := fitting4.FittingEachStatWeightProcess4{}
-	fit4data.SegmentOnData = true
-	fit4data.Init(4, spec.process.printer, c_timeoutSolversFit)
-	fit4data.SetRequiredStats(spec.statTypes, spec.simTypes)
-	fit4data.SetTargetRatios(spec.targetRatio)
-	fit4data.SupplyData(spec.dataAll)
-	weights3data := fit4data.Run(cancel)
-	spec.evaluateWeight("FITTING4-data", weights3data.AsWeight1(), weights3data.Weight, &weights3data)
+	for segments := 2; segments <= 4; segments++ {
+		fit4data := fitting4.FittingEachStatWeightProcess4{}
+		fit4data.SegmentOnData = true
+		fit4data.Init(segments, spec.process.printer, spec.process.timeoutEach)
+		fit4data.SetRequiredStats(spec.statTypes, spec.simTypes)
+		fit4data.SetTargetRatios(spec.targetRatio)
+		fit4data.SupplyData(spec.dataAll)
+		weights3data := fit4data.Run(cancel)
+		label := fmt.Sprintf("FITTING4-data-%d", segments)
+		spec.evaluateWeight(label, weights3data.AsWeight1(), weights3data.Weight, &weights3data)
 
-	fit4stat := fitting4.FittingEachStatWeightProcess4{}
-	fit4stat.SegmentOnData = true
-	fit4stat.Init(4, spec.process.printer, c_timeoutSolversFit)
-	fit4stat.SetRequiredStats(spec.statTypes, spec.simTypes)
-	fit4stat.SetTargetRatios(spec.targetRatio)
-	fit4stat.SupplyData(spec.dataAll)
-	weights3stat := fit4data.Run(cancel)
-	spec.evaluateWeight("FITTING4-stat", weights3stat.AsWeight1(), weights3stat.Weight, &weights3stat)
+		fit4stat := fitting4.FittingEachStatWeightProcess4{}
+		fit4stat.SegmentOnData = true
+		fit4stat.Init(segments, spec.process.printer, spec.process.timeoutEach)
+		fit4stat.SetRequiredStats(spec.statTypes, spec.simTypes)
+		fit4stat.SetTargetRatios(spec.targetRatio)
+		fit4stat.SupplyData(spec.dataAll)
+		weights3stat := fit4stat.Run(cancel)
+		label = fmt.Sprintf("FITTING4-stat-%d", segments)
+		spec.evaluateWeight(label, weights3stat.AsWeight1(), weights3stat.Weight, &weights3stat)
+	}
 }
 
 func (spec *WeightSpec) solveSearchWeights(searchMode int, cancel util_async.CancelSignal) {
 	innerCancel := util_async.CancelSignal_Make()
-	timer := util_async.CancelAfterTimeout(innerCancel, time.Second*c_timeoutSolvers, spec.process.printer)
+	timer := util_async.CancelAfterTimeout(innerCancel, time.Second*time.Duration(spec.process.timeoutEach), spec.process.printer)
 	util_async.ChainCancel(cancel, innerCancel)
 	defer timer.Stop()
 

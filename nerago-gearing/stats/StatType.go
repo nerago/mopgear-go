@@ -100,6 +100,9 @@ type StatTypeMap[V any] struct {
 func (m *StatTypeMap[V]) Clone() *StatTypeMap[V] {
 	return &StatTypeMap[V]{m.EnumMapTiny.Clone()}
 }
+func (m *StatTypeMap[V]) Equals(other *StatTypeMap[V], equal func(*V, *V) bool) bool {
+	return m.EnumMapTiny.Equals(&other.EnumMapTiny, equal)
+}
 
 func (stat StatType) EnumNumValues() uint8 {
 	return Stat_Count

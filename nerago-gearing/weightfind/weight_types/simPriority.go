@@ -96,7 +96,7 @@ func (sr *SimPriorityBasic) ValidateRatioAddsToOne() {
 // statA*weight2A + statB*weight2B + statC*weight2C = sim2
 // (sim1+offset1)*scale1 = 0-1.0 (better is higher)
 type SimPriorityExtended struct {
-	entries util_collection.EnumMap[stats.SimType, SimPriorityEntry]
+	entries stats.SimTypeMap[SimPriorityEntry]
 }
 type SimPriorityEntry struct {
 	RangingScale  float64 // calculates values so that range is consistent (e.g. 0-1.0)
@@ -115,7 +115,7 @@ func (se *SimPriorityEntry) Apply(subtotal float64) float64 {
 }
 
 func SimPriorityExtended_Make() SimPriorityExtended {
-	return SimPriorityExtended{util_collection.EnumMapMake[stats.SimType, SimPriorityEntry](stats.SimTypeEnum)}
+	return SimPriorityExtended{}
 }
 
 func (sre *SimPriorityExtended) IsEmpty() bool {

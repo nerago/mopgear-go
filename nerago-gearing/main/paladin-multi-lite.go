@@ -95,15 +95,15 @@ func PaladinMultiRunLite() {
 
 	job := multi_types.JobInputs{}
 	job.SetMinimumExtraItemLevel(463)
-	job.SetTimeLimitEachSolver(6000)
+	job.SetTimeLimitEachSolver(12000)
 	job.SetSimSize(simSize)
 	job.SetReforgingAllowNonCommon(true)
 	//job.SetWriteBestToGearFiles()
-	//job.SetWeightTypes(3)
+	job.SetWeightTypes(3)
 	//job.SetWeightTypes(1, 2, 3)
-	job.SetWeightTypes(2)
+	//job.SetWeightTypes(2)
 	//job.SetWeightTypes(1)
-	job.RunDecimate = true
+	job.RunDecimate = false
 
 	var generalUpgrade items.UpgradeLevel = 0
 	var forceUpgrade items.UpgradeLevel = 0

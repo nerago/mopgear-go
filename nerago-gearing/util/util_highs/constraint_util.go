@@ -218,110 +218,6 @@ func (build *LinearBuilder) AbsoluteValueNonFree_NeedMIP(inputVar, outputVar Col
 	copyPositiveLow.Build(build, InfNeg(), 0)
 }
 
-func (build *LinearBuilder) AbsoluteValueNonFree_Impossible(inputVar, outputVar ColumnIndex) {
-	nonZeroIfNegative := build.CreateColumnGeneral(highs.Continuous, 0, InfPos(), DebugText("nonZeroIfNegative"))
-	setIsNegative := ConstraintRow{}
-	setIsNegative.Add(inputVar, 1)
-	setIsNegative.Add(nonZeroIfNegative, 1)
-	setIsNegative.Build(build, 0, InfPos())
-
-	nonZeroIfPositive := build.CreateColumnGeneral(highs.Continuous, 0, InfPos(), DebugText("nonZeroIfPositive"))
-	setIsPositive := ConstraintRow{}
-	setIsPositive.Add(inputVar, 1)
-	setIsPositive.Add(nonZeroIfPositive, -1)
-	setIsPositive.Build(build, InfNeg(), 0)
-
-	setOutputSum := ConstraintRow{}
-	setOutputSum.Add(outputVar, -1)
-	setOutputSum.Add(nonZeroIfNegative, 1)
-	setOutputSum.Add(nonZeroIfPositive, 1)
-	setOutputSum.Build(build, 0, 0)
-
-	setOutputDiff1 := ConstraintRow{}
-	setOutputDiff1.Add(nonZeroIfNegative, 1)
-	setOutputDiff1.Add(nonZeroIfPositive, -1)
-	setOutputDiff1.Add(outputVar, 1)
-	setOutputDiff1.Build(build, 0, InfPos())
-
-	setOutputDiff2 := ConstraintRow{}
-	setOutputDiff2.Add(nonZeroIfNegative, 1)
-	setOutputDiff2.Add(nonZeroIfPositive, -1)
-	setOutputDiff2.Add(outputVar, -1)
-	setOutputDiff2.Build(build, InfNeg(), 0)
-
-	highRange := 200.0
-	somethingM := ConstraintRow{}
-	somethingM.Add(inputVar, 1)
-	somethingM.Add(nonZeroIfNegative, highRange+1)
-	somethingM.Add(nonZeroIfPositive, highRange+1)
-	somethingM.Build(build, highRange, highRange*highRange)
-
-	//setInputDiff1 := ConstraintRow{}
-	//setInputDiff1.Add(nonZeroIfNegative, -1)
-	//setInputDiff1.Add(nonZeroIfPositive, 1)
-	//setInputDiff1.Add(inputVar, 1)
-	//setInputDiff1.Build(build, InfNeg(), 0)
-
-	//setInputDiff2 := ConstraintRow{}
-	//setInputDiff2.Add(nonZeroIfNegative, -1)
-	//setInputDiff2.Add(nonZeroIfPositive, 1)
-	//setInputDiff2.Add(inputVar, -1)
-	//setInputDiff2.Build(build, 0, InfPos())
-
-	//negative := ConstraintRow{Debug: debug + " AbsoluteValueNegative"}
-	//negative.Add(inputOneVar, inputOneCoefficient)
-	//negative.Add(inputTwoVar, -inputTwoCoefficient)
-	//negative.Add(outputVar, 1)
-	//negative.Build(build, 0, InfPos())
-	//
-	//// one - two - out <= 0
-	//// so if one - two > 0, out needed to pull it down
-	//positive := ConstraintRow{Debug: debug + " AbsoluteValuePositive"}
-	//positive.Add(inputOneVar, inputOneCoefficient)
-	//positive.Add(inputTwoVar, -inputTwoCoefficient)
-	//positive.Add(outputVar, -1)
-	//positive.Build(build, InfNeg(), 0)
-}
-
-func (build *LinearBuilder) AbsoluteValueNonFree(inputVar, outputVar ColumnIndex) {
-	// usual case input = -1, output = 1
-	// blocked case input = 2, output = 1
-	// wrongly allowed case input = 1, output = 2
-
-	// usual case input = -1, output = 1, needs to set output to match
-	// usual case input = 1, output = 1, whatever
-
-	negative := ConstraintRow{Debug: "AbsoluteValueNegative"}
-	negative.Add(inputVar, 1)
-	negative.Add(outputVar, 1)
-	negative.Build(build, 0, InfPos())
-
-	// usual case input = -1, output = 1, whatever
-	// usual case input = 1, output = 1, needs to set output
-	positive := ConstraintRow{Debug: "AbsoluteValuePositive"}
-	positive.Add(inputVar, 1)
-	positive.Add(outputVar, -1)
-	positive.Build(build, InfNeg(), 0)
-
-	// case input = -1, output = 1  = 2
-	// case input = 1, output = 1   = 0
-	// case input = -1, output = 2  = 3
-	// case input = 1, output = 2   = -1
-	third := ConstraintRow{Debug: "AbsoluteValuePositive"}
-	third.Add(inputVar, -1)
-	third.Add(outputVar, 1)
-	third.Build(build, 0, InfPos())
-
-	//                                         +  -    -
-	// usual case input = -1, output = 1       0   -2  2
-	// usual case input = 1, output = 1        2   0   0
-	// blocked case input = 1, output = 2      3   -1  1
-	// blocked case input = -1, output = 2     1   -3  3
-	// whatever case input = 2, output = 1     3   1   -1
-
-	//
-}
-
 func (build *LinearBuilder) AbsoluteValueFromDiffTwoVars(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, outputVar ColumnIndex, debug string) {
 	// one - two + out >= 0
 	// so if one - two < 0, out neeeds to pull it up
@@ -429,6 +325,7 @@ func (build *LinearBuilder) AbsoluteValueFromDiffTwoVarsNonFree(inputOneVar Colu
 	copyPositiveLow.Build(build, InfNeg(), 0)
 }
 
+// out = abs(input-const)
 func (build *LinearBuilder) AbsoluteValueFromDiffOneToConst(inputOneVar ColumnIndex, inputOneCoefficient float64, constCompare float64, outputVar ColumnIndex, debug string) {
 	negative := ConstraintRow{Debug: debug + " AbsoluteValueNegative"}
 	negative.Add(inputOneVar, inputOneCoefficient)
@@ -439,6 +336,62 @@ func (build *LinearBuilder) AbsoluteValueFromDiffOneToConst(inputOneVar ColumnIn
 	positive.Add(inputOneVar, inputOneCoefficient)
 	positive.Add(outputVar, -1)
 	positive.Build(build, InfNeg(), constCompare)
+}
+
+// out = abs(abs(inputVar)-const)
+func (build *LinearBuilder) AbsoluteValueBeforeDiffOneToConst(inputVar ColumnIndex, inputCoefficient float64, constCompare float64, outputVar ColumnIndex, debug string) {
+	//firstAbs := build.CreateColumnGeneral(highs.Continuous, 0, InfPos(), DebugText(debug+" abs"))
+
+	// out = abs(abs(inputVar)-const)
+	// cases inputVar>=0 inputVar>=const out=inputVar-const      inputVar-out=const
+	// cases inputVar>=0 inputVar<const  out=const-inputVar      out+inputVar=const
+	// cases inputVar<0 -inputVar>const  out=-inputVar-const     out+inputVar=-const
+	// cases inputVar<0 -inputVar<const  out=const+inputVar      out-inputVar=const
+
+	a := ConstraintRow{}
+	a.Add(inputVar, inputCoefficient)
+	a.Add(outputVar, -1)
+	a.Build(build, InfNeg(), constCompare)
+
+	//b := ConstraintRow{}
+	//b.Add(inputVar, inputCoefficient)
+	//b.Add(outputVar, 1)
+	//b.Build(build, -constCompare, constCompare)
+
+	c := ConstraintRow{}
+	c.Add(inputVar, inputCoefficient)
+	c.Add(outputVar, 1)
+	c.Build(build, constCompare, InfPos())
+
+	//d := ConstraintRow{}
+	//d.Add(inputVar, -inputCoefficient)
+	//d.Add(outputVar, 1)
+	//d.Build(build, constCompare, InfPos())
+
+	//b := ConstraintRow{}
+	//b.Add(inputVar, inputCoefficient)
+	//b.Add(outputVar, 1)
+	//b.Build(build, -constCompare, constCompare)
+
+	//negative := ConstraintRow{}
+	//negative.Add(inputVar, inputCoefficient)
+	//negative.Add(firstAbs, 1)
+	//negative.Build(build, 0, InfPos())
+	//
+	//positive := ConstraintRow{}
+	//positive.Add(inputVar, inputCoefficient)
+	//positive.Add(firstAbs, -1)
+	//positive.Build(build, InfNeg(), 0)
+	//
+	//negative2 := ConstraintRow{}
+	//negative2.Add(firstAbs, 1)
+	//negative2.Add(outputVar, 1)
+	//negative2.Build(build, constCompare, InfPos())
+	//
+	//positive2 := ConstraintRow{}
+	//positive2.Add(firstAbs, 1)
+	//positive2.Add(outputVar, -1)
+	//positive2.Build(build, InfNeg(), constCompare)
 }
 
 func (build *LinearBuilder) AbsoluteValueFromSumTwoThenDiffToConst(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, constCompare float64, outputVar ColumnIndex, debug string) {

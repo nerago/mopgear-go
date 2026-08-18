@@ -9,7 +9,7 @@ import (
 
 const (
 	C_HighsToConsole     = true
-	C_DebugHighs         = true
+	C_DebugHighs         = false
 	C_DiagnoseInfeasible = false
 )
 

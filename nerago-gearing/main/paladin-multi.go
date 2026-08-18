@@ -11,7 +11,6 @@ import (
 	"paladin_gearing_go/simulate"
 	"paladin_gearing_go/util"
 	"slices"
-	"time"
 )
 
 const (
@@ -137,12 +136,12 @@ func PaladinMultiRun() {
 
 	job := multi_types.JobInputs{}
 	job.SetMinimumExtraItemLevel(463)
-	job.SetTimeLimitEachSolver(4000)
+	job.SetTimeLimitEachSolver(8000)
 	job.SetSimSize(simSize)
 	job.SetReforgingAllowNonCommon(false)
 	//job.SetWriteBestToGearFiles()
 	//job.SetWeightTypes(1)
-	job.SetWeightTypes(1, 2)
+	job.SetWeightTypes(1, 2, 3)
 	//job.SetWeightTypes(1)
 
 	var generalUpgrade items.UpgradeLevel = 0
@@ -356,11 +355,11 @@ func PaladinMultiRun() {
 	job.AddSetParam(protSurvival)
 	job.AddSetParam(protHeal)
 
-	job.AddAlternateUpgradeChoices(
-		99028,  // Handguards of Winged Triumph celestial
-		103972, // kilruk sword - still passable option #4 for most sets, upgrade rank #3 of remaining
-		105122, // Asgorathian Blood Seal - option #5, upgrade rank #4
-	)
+	//job.AddAlternateUpgradeChoices(
+	//	99028,  // Handguards of Winged Triumph celestial
+	//	103972, // kilruk sword - still passable option #4 for most sets, upgrade rank #3 of remaining
+	//	105122, // Asgorathian Blood Seal - option #5, upgrade rank #4
+	//)
 	//job.AddAlternateUpgradeChoices(105033) // Wolf-Rider Spurs
 
 	//job.EnablePermuteOnItemCountOptions()
@@ -371,11 +370,11 @@ func PaladinMultiRun() {
 	run := multi.JobCreate(printer, job)
 
 	//job.RunNoPermutations_AllCommonAlternates(true, true)
-	//run.RunNoPermutations_BestOnly(true, true)
+	run.RunNoPermutations_BestOnly(true, true)
 	//run.RunForSolutionsPerPermute(1, true)
 
 	//job.CullingReport()
-	run.RunCullingSets(400, time.Minute*45)
+	//run.RunCullingSets(400, time.Minute*45)
 }
 
 func addExtrasToEach(itemIdList []items.ItemId, params ...*multi_types.SpecParam) {

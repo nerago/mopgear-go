@@ -17,6 +17,8 @@ import (
 )
 
 const c_grid1b_scaleTarget = 10.0
+const c_grid1b_minWeightSum = 0.01
+const c_grid1b_targetWeightSum = 0.5
 
 type GridStatWeightProcess1B struct {
 	printer *util.PrintRecorder
@@ -29,6 +31,7 @@ type GridStatWeightProcess1B struct {
 	ROUNDMODE     int
 	OUTLIER       int
 	CALCMODE      int
+	RATIO         int
 
 	build           util_highs.LinearBuilder
 	unitStatValues  util_collection.MapMapSlice[stats.StatType, stats.SimType, float64]
@@ -40,9 +43,12 @@ type GridStatWeightProcess1B struct {
 func (grid *GridStatWeightProcess1B) Init(printer *util.PrintRecorder, timeoutSeconds int) {
 	grid.printer = printer
 	grid.build.Minimise = true
-	grid.build.Solver = util_highs.Solver_LP_GPU_IF_FREE
+	//grid.build.Solver = util_highs.Solver_Force_IPX
+	//grid.build.Solver = util_highs.Solver_Force_Simplex
+	grid.build.Solver = util_highs.Solver_LP_USE_GPU
+
 	grid.build.TimeLimitSeconds = timeoutSeconds
-	//grid.build.AddOptionFloat("small_matrix_value", 1e-12)
+	grid.build.AddOptionFloat("small_matrix_value", 1e-8)
 	grid.finalWeights = make(map[stats.StatType]util_highs.ColumnIndex)
 }
 
@@ -98,14 +104,43 @@ func (grid *GridStatWeightProcess1B) setupWeightVars() {
 		}
 	}
 
-	// TODO assumes base stat is positive
-	baseStat := grid.requiredStats[0]
-	for _, simType := range grid.simTypes {
-		value := grid.targetRatios.GetOrPanic(simType)
-		colDetailWeight := grid.detailedWeights.GetOrPanic(baseStat, simType)
-		strengthSetToRatio := util_highs.ConstraintRow{}
-		strengthSetToRatio.Add(colDetailWeight, 1)
-		strengthSetToRatio.Build(&grid.build, value, value)
+	if grid.RATIO == 0 {
+		baseStat := grid.requiredStats[0]
+		for _, simType := range grid.simTypes {
+			value := grid.targetRatios.GetOrPanic(simType)
+			colDetailWeight := grid.detailedWeights.GetOrPanic(baseStat, simType)
+			strengthSetToRatio := util_highs.ConstraintRow{}
+			strengthSetToRatio.Add(colDetailWeight, 1)
+			strengthSetToRatio.Build(&grid.build, value, value)
+		}
+	} else if grid.RATIO == 1 {
+		for _, simType := range grid.simTypes {
+			weightSum := grid.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), nil)
+			weightSumOut := grid.build.CreateColumnWithOutput(highs.Continuous, c_grid1b_minWeightSum, util_highs.InfPos(), 1, nil)
+
+			sumSimWeights := util_highs.ConstraintRow{}
+			for _, detailColumn := range grid.detailedWeights.SeqKey1ValueWithKey2(simType) {
+				sumSimWeights.Add(detailColumn, 1)
+			}
+			sumSimWeights.Add(weightSum, -1)
+			sumSimWeights.Build(&grid.build, 0, 0)
+
+			grid.build.AbsoluteValue(weightSum, weightSumOut)
+		}
+	} else {
+		for _, simType := range grid.simTypes {
+			weightSum := grid.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), nil)
+			weightSumOut := grid.build.CreateColumnWithOutput(highs.Continuous, c_grid1b_targetWeightSum, c_grid1b_targetWeightSum, 1, nil)
+
+			sumSimWeights := util_highs.ConstraintRow{}
+			for _, detailColumn := range grid.detailedWeights.SeqKey1ValueWithKey2(simType) {
+				sumSimWeights.Add(detailColumn, 1)
+			}
+			sumSimWeights.Add(weightSum, -1)
+			sumSimWeights.Build(&grid.build, 0, 0)
+
+			grid.build.AbsoluteValue(weightSum, weightSumOut)
+		}
 	}
 }
 
@@ -115,7 +150,15 @@ func (grid *GridStatWeightProcess1B) finalWeightVars() {
 		for simType, detailColumn := range grid.detailedWeights.SeqKey2ValueWithKey1(statType) {
 			_ = simType
 			// scale := grid.scales.GetOrPanic(statType, simType)
-			statFinalRow.Add(detailColumn, 1) // 1/scale[100] is too small, =scale[100] is too big. but all harmless when fixed like that
+			if grid.RATIO == 3 {
+				if simType.IsHighGood() {
+					statFinalRow.Add(detailColumn, 1)
+				} else {
+					statFinalRow.Add(detailColumn, -1)
+				}
+			} else {
+				statFinalRow.Add(detailColumn, 1)
+			}
 		}
 
 		finalWeightColumn := grid.finalWeights[statType]
@@ -371,6 +414,7 @@ func (grid *GridStatWeightProcess1B) unitValuesCalcForGroup(simType stats.SimTyp
 
 	baseScale := grid.scales.GetOrPanic(baseStat, simType)
 	thisScale := grid.scales.GetOrPanic(thisStatType, simType)
+	outputScale := 1 / baseScale
 
 	index := 0
 	for baseUnitSample := range baseUnitValueSeq {
@@ -384,22 +428,22 @@ func (grid *GridStatWeightProcess1B) unitValuesCalcForGroup(simType stats.SimTyp
 			if grid.CALCMODE == 0 {
 				var debugText string = debugText + " " + strconv.Itoa(index)
 				offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
-				grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, baseUnitSample*thisScale, baseDetailWeightCol, thisUnitSample*baseScale, offsetAbs, 1/baseScale, "OFFSET ABS "+debugText)
+				grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, baseUnitSample*thisScale, baseDetailWeightCol, thisUnitSample*baseScale, offsetAbs, outputScale, "OFFSET ABS "+debugText)
 				index++
 			} else if grid.CALCMODE == 1 {
 				var debugText string = debugText + " " + strconv.Itoa(index)
 				offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
-				grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, thisUnitSample*thisScale, baseDetailWeightCol, baseUnitSample*baseScale, offsetAbs, 1/baseScale, "OFFSET ABS "+debugText)
+				grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, thisUnitSample*thisScale, baseDetailWeightCol, baseUnitSample*baseScale, offsetAbs, outputScale, "OFFSET ABS "+debugText)
 				index++
 			} else if grid.CALCMODE == 2 {
 				var debugText string = debugText + " " + strconv.Itoa(index)
 				offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
-				grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, baseUnitSample*baseScale, baseDetailWeightCol, thisUnitSample*thisScale, offsetAbs, 1/baseScale, "OFFSET ABS "+debugText)
+				grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, baseUnitSample*baseScale, baseDetailWeightCol, thisUnitSample*thisScale, offsetAbs, outputScale, "OFFSET ABS "+debugText)
 				index++
 			} else {
 				var debugText string = debugText + " " + strconv.Itoa(index)
 				offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
-				grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, thisUnitSample*baseScale, baseDetailWeightCol, baseUnitSample*thisScale, offsetAbs, 1/baseScale, "OFFSET ABS "+debugText)
+				grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, thisUnitSample*baseScale, baseDetailWeightCol, baseUnitSample*thisScale, offsetAbs, outputScale, "OFFSET ABS "+debugText)
 				index++
 			}
 

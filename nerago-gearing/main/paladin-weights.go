@@ -17,13 +17,13 @@ func statWeights_updateAll() {
 	//simSpeed := simulate.RunSize_TestOnly
 	// simSpeed := simulate.RunSize_QuickDirty/10
 	//simSpeed := simulate.RunSize_QuickDirty
-	simSpeed := simulate.RunSize_Common
-	//simSpeed := simulate.RunSize_Largish
-	forceSkipSim := true
+	//simSpeed := simulate.RunSize_Common
+	simSpeed := simulate.RunSize_Largish
+	forceSkipSim := false
 	fixStats := weight_types.FixStatsRangeMode_ExpertiseAlways | weight_types.FixStatsRangeMode_HasteGridOnly | weight_types.FixStatsRangeMode_HasteHigherOnly
 
 	process := weightfind.WeightUpdateProcess{}
-	process.Init(simSpeed, forceSkipSim, printer)
+	process.Init(simSpeed, forceSkipSim, 500, printer)
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Ret",
 		WeightFile1:     files.WeightRetFile,

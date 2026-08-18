@@ -20,8 +20,8 @@ const (
 	c_searchExtended1_goalAccuracyGap          = 0.001
 	c_searchExtended1_marginalWeightGap        = 0.001
 
-	c_searchExtended1_minRunEarlySizeCut = 4
-	c_searchExtended1_minRunLateSizeCut  = 2
+	c_searchExtended1_minRunEarlySizeCut = 6
+	c_searchExtended1_minRunLateSizeCut  = 3
 
 	c_searchExtended1_probeA      = 0.25
 	c_searchExtended1_probeMiddle = 0.5

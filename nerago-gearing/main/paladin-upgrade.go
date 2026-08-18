@@ -165,10 +165,15 @@ func findUpgrades_Paladin() {
 	//	"SoO ShaofPride",
 	//	"SoO Galakras",
 	//	"SoO IronJuggernaut",
+	//	"SoO DarkShaman",
 	//	"SoO Nazgrim",
 	//	"SoO Malkorok",
 	//	"SoO Spoils",
-	//}
+	//	"SoO Thok",
+	//	"SoO Blackfuse",
+	//	"SoO Paragons",
+	//	"SoO Garrosh"
+	//	}
 	//finder := loaders.ItemFinder_HeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, heroicBossesConsider)
 	//finder := loaders.ItemFinder_NormalHeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, normalBossesConsider, heroicBossesConsider)
 
