@@ -42,34 +42,34 @@ func TestConstraintIfBoolCopyValueElseZero(test *testing.T) {
 	}
 
 	// basic copy with toggle enabled
-	testValues(0, 1, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(5, 1, nil, highs.ModelStatusOptimal, ptr(5))
-	testValues(-5.5, 1, nil, highs.ModelStatusOptimal, ptr(-5.5))
+	testValues(0, 1, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(5, 1, nil, highs.ModelStatusOptimal, new(5.0))
+	testValues(-5.5, 1, nil, highs.ModelStatusOptimal, new(-5.5))
 
 	// confirm lock-in with toggle enabled
-	testValues(0, 1, ptr(-0.1), highs.ModelStatusInfeasible, nil)
-	testValues(0, 1, ptr(0.1), highs.ModelStatusInfeasible, nil)
-	testValues(5, 1, ptr(4.9), highs.ModelStatusInfeasible, nil)
-	testValues(5, 1, ptr(-5), highs.ModelStatusInfeasible, nil)
-	testValues(5, 1, ptr(5.1), highs.ModelStatusInfeasible, nil)
-	testValues(-5.5, 1, ptr(-5.4), highs.ModelStatusInfeasible, nil)
-	testValues(-5.5, 1, ptr(5.5), highs.ModelStatusInfeasible, nil)
-	testValues(-5.5, 1, ptr(-5.6), highs.ModelStatusInfeasible, nil)
+	testValues(0, 1, new(-0.1), highs.ModelStatusInfeasible, nil)
+	testValues(0, 1, new(0.1), highs.ModelStatusInfeasible, nil)
+	testValues(5, 1, new(4.9), highs.ModelStatusInfeasible, nil)
+	testValues(5, 1, new(-5.0), highs.ModelStatusInfeasible, nil)
+	testValues(5, 1, new(5.1), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 1, new(-5.4), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 1, new(5.5), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 1, new(-5.6), highs.ModelStatusInfeasible, nil)
 
 	// copy zero with toggle disabled
-	testValues(0, 0, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(5, 0, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(-5.5, 0, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(0, 0, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(5, 0, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(-5.5, 0, nil, highs.ModelStatusOptimal, new(0.0))
 
 	// confirm still lock-in with toggle disabled
-	testValues(0, 0, ptr(-0.1), highs.ModelStatusInfeasible, nil)
-	testValues(0, 0, ptr(0.1), highs.ModelStatusInfeasible, nil)
-	testValues(5, 0, ptr(4.9), highs.ModelStatusInfeasible, nil)
-	testValues(5, 0, ptr(-5), highs.ModelStatusInfeasible, nil)
-	testValues(5, 0, ptr(5.1), highs.ModelStatusInfeasible, nil)
-	testValues(-5.5, 0, ptr(-5.4), highs.ModelStatusInfeasible, nil)
-	testValues(-5.5, 0, ptr(5.5), highs.ModelStatusInfeasible, nil)
-	testValues(-5.5, 0, ptr(-5.6), highs.ModelStatusInfeasible, nil)
+	testValues(0, 0, new(-0.1), highs.ModelStatusInfeasible, nil)
+	testValues(0, 0, new(0.1), highs.ModelStatusInfeasible, nil)
+	testValues(5, 0, new(4.9), highs.ModelStatusInfeasible, nil)
+	testValues(5, 0, new(-5.0), highs.ModelStatusInfeasible, nil)
+	testValues(5, 0, new(5.1), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 0, new(-5.4), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 0, new(5.5), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 0, new(-5.6), highs.ModelStatusInfeasible, nil)
 }
 
 func TestConstraintIfBoolCopy(test *testing.T) {
@@ -106,26 +106,26 @@ func TestConstraintIfBoolCopy(test *testing.T) {
 	}
 
 	// basic copy with toggle enabled
-	testValues(0, 1, 1, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(5, 1, 1, nil, highs.ModelStatusOptimal, ptr(5))
-	testValues(-5.5, 1, 1, nil, highs.ModelStatusOptimal, ptr(-5.5))
-	testValues(5, 0.5, 1, nil, highs.ModelStatusOptimal, ptr(2.5))
-	testValues(5, 0, 1, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(0, 1, 1, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(5, 1, 1, nil, highs.ModelStatusOptimal, new(5.0))
+	testValues(-5.5, 1, 1, nil, highs.ModelStatusOptimal, new(-5.5))
+	testValues(5, 0.5, 1, nil, highs.ModelStatusOptimal, new(2.5))
+	testValues(5, 0, 1, nil, highs.ModelStatusOptimal, new(0.0))
 
 	// confirm lock-in with toggle enabled
-	testValues(0, 1, 1, ptr(-0.1), highs.ModelStatusInfeasible, nil)
-	testValues(0, 1, 1, ptr(0.1), highs.ModelStatusInfeasible, nil)
-	testValues(5, 1, 1, ptr(4.9), highs.ModelStatusInfeasible, nil)
-	testValues(5, 1, 1, ptr(-5), highs.ModelStatusInfeasible, nil)
-	testValues(5, 1, 1, ptr(5.1), highs.ModelStatusInfeasible, nil)
-	testValues(-5.5, 1, 1, ptr(-5.4), highs.ModelStatusInfeasible, nil)
-	testValues(-5.5, 1, 1, ptr(5.5), highs.ModelStatusInfeasible, nil)
-	testValues(-5.5, 1, 1, ptr(-5.6), highs.ModelStatusInfeasible, nil)
-	testValues(5, 0.5, 1, ptr(2.4), highs.ModelStatusInfeasible, nil)
-	testValues(5, 0.5, 1, ptr(-2.5), highs.ModelStatusInfeasible, nil)
-	testValues(5, 0.5, 1, ptr(2.6), highs.ModelStatusInfeasible, nil)
-	testValues(5, 0, 1, ptr(-0.1), highs.ModelStatusInfeasible, nil)
-	testValues(5, 0, 1, ptr(0.1), highs.ModelStatusInfeasible, nil)
+	testValues(0, 1, 1, new(-0.1), highs.ModelStatusInfeasible, nil)
+	testValues(0, 1, 1, new(0.1), highs.ModelStatusInfeasible, nil)
+	testValues(5, 1, 1, new(4.9), highs.ModelStatusInfeasible, nil)
+	testValues(5, 1, 1, new(-5.0), highs.ModelStatusInfeasible, nil)
+	testValues(5, 1, 1, new(5.1), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 1, 1, new(-5.4), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 1, 1, new(5.5), highs.ModelStatusInfeasible, nil)
+	testValues(-5.5, 1, 1, new(-5.6), highs.ModelStatusInfeasible, nil)
+	testValues(5, 0.5, 1, new(2.4), highs.ModelStatusInfeasible, nil)
+	testValues(5, 0.5, 1, new(-2.5), highs.ModelStatusInfeasible, nil)
+	testValues(5, 0.5, 1, new(2.6), highs.ModelStatusInfeasible, nil)
+	testValues(5, 0, 1, new(-0.1), highs.ModelStatusInfeasible, nil)
+	testValues(5, 0, 1, new(0.1), highs.ModelStatusInfeasible, nil)
 
 	// free copy with toggle disabled. doesn't really have a true default as this would imply
 	// defaultValue := -rangeHigh
@@ -141,19 +141,19 @@ func TestConstraintIfBoolCopy(test *testing.T) {
 	testValues(5, 0, 0, nil, highs.ModelStatusOptimal, nil)
 
 	// confirm free with toggle disabled
-	testValues(0, 1, 0, ptr(-0.1), highs.ModelStatusOptimal, ptr(-0.1))
-	testValues(0, 1, 0, ptr(0.1), highs.ModelStatusOptimal, ptr(0.1))
-	testValues(5, 1, 0, ptr(4.9), highs.ModelStatusOptimal, ptr(4.9))
-	testValues(5, 1, 0, ptr(-5), highs.ModelStatusOptimal, ptr(-5))
-	testValues(5, 1, 0, ptr(5.1), highs.ModelStatusOptimal, ptr(5.1))
-	testValues(-5.5, 1, 0, ptr(-5.4), highs.ModelStatusOptimal, ptr(-5.4))
-	testValues(-5.5, 1, 0, ptr(5.5), highs.ModelStatusOptimal, ptr(5.5))
-	testValues(-5.5, 1, 0, ptr(-5.6), highs.ModelStatusOptimal, ptr(-5.6))
-	testValues(5, 0.5, 0, ptr(2.4), highs.ModelStatusOptimal, ptr(2.4))
-	testValues(5, 0.5, 0, ptr(-2.5), highs.ModelStatusOptimal, ptr(-2.5))
-	testValues(5, 0.5, 0, ptr(2.6), highs.ModelStatusOptimal, ptr(2.6))
-	testValues(5, 0, 0, ptr(-0.1), highs.ModelStatusOptimal, ptr(-0.1))
-	testValues(5, 0, 0, ptr(0.1), highs.ModelStatusOptimal, ptr(0.1))
+	testValues(0, 1, 0, new(-0.1), highs.ModelStatusOptimal, new(-0.1))
+	testValues(0, 1, 0, new(0.1), highs.ModelStatusOptimal, new(0.1))
+	testValues(5, 1, 0, new(4.9), highs.ModelStatusOptimal, new(4.9))
+	testValues(5, 1, 0, new(-5.0), highs.ModelStatusOptimal, new(-5.0))
+	testValues(5, 1, 0, new(5.1), highs.ModelStatusOptimal, new(5.1))
+	testValues(-5.5, 1, 0, new(-5.4), highs.ModelStatusOptimal, new(-5.4))
+	testValues(-5.5, 1, 0, new(5.5), highs.ModelStatusOptimal, new(5.5))
+	testValues(-5.5, 1, 0, new(-5.6), highs.ModelStatusOptimal, new(-5.6))
+	testValues(5, 0.5, 0, new(2.4), highs.ModelStatusOptimal, new(2.4))
+	testValues(5, 0.5, 0, new(-2.5), highs.ModelStatusOptimal, new(-2.5))
+	testValues(5, 0.5, 0, new(2.6), highs.ModelStatusOptimal, new(2.6))
+	testValues(5, 0, 0, new(-0.1), highs.ModelStatusOptimal, new(-0.1))
+	testValues(5, 0, 0, new(0.1), highs.ModelStatusOptimal, new(0.1))
 }
 
 func TestConstraintAndBuilder(test *testing.T) {
@@ -193,53 +193,53 @@ func TestConstraintAndBuilder(test *testing.T) {
 		}
 	}
 
-	testValues(makeSlice(), nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(0), nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(1), nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(0, 0), nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(0, 1), nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(1, 0), nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(1, 1), nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(0, 0, 0), nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(0, 0, 1), nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(0, 1, 0), nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(0, 1, 1), nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(1, 0, 0), nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(1, 0, 1), nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(1, 1, 0), nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(1, 1, 1), nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(), nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(0), nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(1), nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(0, 0), nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(0, 1), nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(1, 0), nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(1, 1), nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(0, 0, 0), nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(0, 0, 1), nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(0, 1, 0), nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(0, 1, 1), nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(1, 0, 0), nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(1, 0, 1), nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(1, 1, 0), nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(1, 1, 1), nil, highs.ModelStatusOptimal, new(1.0))
 
-	testValues(makeSlice(), ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(0), ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(1), ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(0, 0), ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(0, 1), ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(1, 0), ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(1, 1), ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(0, 0, 0), ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(0, 0, 1), ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(0, 1, 0), ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(0, 1, 1), ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(1, 0, 0), ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(1, 0, 1), ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(1, 1, 0), ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(1, 1, 1), ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(), new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(0), new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(1), new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(0, 0), new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(0, 1), new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(1, 0), new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(1, 1), new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(0, 0, 0), new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(0, 0, 1), new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(0, 1, 0), new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(0, 1, 1), new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(1, 0, 0), new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(1, 0, 1), new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(1, 1, 0), new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(1, 1, 1), new(1.0), highs.ModelStatusOptimal, new(1.0))
 
-	testValues(makeSlice(), ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(0), ptr(1), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(1), ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(0, 0), ptr(1), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(0, 1), ptr(1), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(1, 0), ptr(1), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(1, 1), ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(0, 0, 0), ptr(1), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(0, 0, 1), ptr(1), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(0, 1, 0), ptr(1), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(0, 1, 1), ptr(1), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(1, 0, 0), ptr(1), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(1, 0, 1), ptr(1), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(1, 1, 0), ptr(1), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(1, 1, 1), ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(), new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0), new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1), new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 0), new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 1), new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 0), new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 1), new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 0, 0), new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 0, 1), new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 1, 0), new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 1, 1), new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 0, 0), new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 0, 1), new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 1, 0), new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 1, 1), new(0.0), highs.ModelStatusInfeasible, nil)
 }
 
 func TestConstraintOrBuilder(test *testing.T) {
@@ -279,53 +279,53 @@ func TestConstraintOrBuilder(test *testing.T) {
 		}
 	}
 
-	testValues(makeSlice(), nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(0), nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(1), nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(0, 0), nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(0, 1), nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(1, 0), nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(1, 1), nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(0, 0, 0), nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(0, 0, 1), nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(0, 1, 0), nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(0, 1, 1), nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(1, 0, 0), nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(1, 0, 1), nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(1, 1, 0), nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(1, 1, 1), nil, highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(), nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(0), nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(1), nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(0, 0), nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(0, 1), nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(1, 0), nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(1, 1), nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(0, 0, 0), nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(0, 0, 1), nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(0, 1, 0), nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(0, 1, 1), nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(1, 0, 0), nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(1, 0, 1), nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(1, 1, 0), nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(1, 1, 1), nil, highs.ModelStatusOptimal, new(1.0))
 
-	testValues(makeSlice(), ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(0), ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(1), ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(0, 0), ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(0, 1), ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(1, 0), ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(1, 1), ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(0, 0, 0), ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(makeSlice(0, 0, 1), ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(0, 1, 0), ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(0, 1, 1), ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(1, 0, 0), ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(1, 0, 1), ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(1, 1, 0), ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(makeSlice(1, 1, 1), ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(makeSlice(), new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(0), new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(1), new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(0, 0), new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(0, 1), new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(1, 0), new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(1, 1), new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(0, 0, 0), new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(makeSlice(0, 0, 1), new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(0, 1, 0), new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(0, 1, 1), new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(1, 0, 0), new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(1, 0, 1), new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(1, 1, 0), new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(makeSlice(1, 1, 1), new(1.0), highs.ModelStatusOptimal, new(1.0))
 
-	testValues(makeSlice(), ptr(1), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(0), ptr(1), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(1), ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(0, 0), ptr(1), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(0, 1), ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(1, 0), ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(1, 1), ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(0, 0, 0), ptr(1), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(0, 0, 1), ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(0, 1, 0), ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(0, 1, 1), ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(1, 0, 0), ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(1, 0, 1), ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(1, 1, 0), ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(makeSlice(1, 1, 1), ptr(0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(), new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0), new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1), new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 0), new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 1), new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 0), new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 1), new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 0, 0), new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 0, 1), new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 1, 0), new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(0, 1, 1), new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 0, 0), new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 0, 1), new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 1, 0), new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(makeSlice(1, 1, 1), new(0.0), highs.ModelStatusInfeasible, nil)
 }
 
 func makeSlice(vals ...float64) []float64 {
@@ -361,13 +361,13 @@ func TestConstraintNot(test *testing.T) {
 		}
 	}
 
-	testValues(0, nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(0, ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(0, ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(0, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(0, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(0, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
-	testValues(1, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(1, ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(1, ptr(1), highs.ModelStatusInfeasible, nil)
+	testValues(1, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(1, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(1, new(1.0), highs.ModelStatusInfeasible, nil)
 }
 
 func TestNotAsColumn(test *testing.T) {
@@ -398,13 +398,13 @@ func TestNotAsColumn(test *testing.T) {
 		}
 	}
 
-	testValues(0, nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(0, ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(0, ptr(1), highs.ModelStatusOptimal, ptr(1))
+	testValues(0, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(0, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(0, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
-	testValues(1, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(1, ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(1, ptr(1), highs.ModelStatusInfeasible, nil)
+	testValues(1, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(1, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(1, new(1.0), highs.ModelStatusInfeasible, nil)
 }
 
 func TestAbsoluteValue(test *testing.T) {
@@ -439,18 +439,126 @@ func TestAbsoluteValue(test *testing.T) {
 	}
 
 	// standard positive differences
-	testValues(0, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(1, nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(-1, nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(13.1, nil, highs.ModelStatusOptimal, ptr(13.1))
-	testValues(-13.1, nil, highs.ModelStatusOptimal, ptr(13.1))
+	testValues(0, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(1, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(-1, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(13.1, nil, highs.ModelStatusOptimal, new(13.1))
+	testValues(-13.1, nil, highs.ModelStatusOptimal, new(13.1))
 
 	// confirm forced minimum, goes equals, then free when higher
-	testValues(1, ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(1, ptr(0.9), highs.ModelStatusInfeasible, nil)
-	testValues(1, ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(1, ptr(1.1), highs.ModelStatusOptimal, ptr(1.1))
-	testValues(1, ptr(77), highs.ModelStatusOptimal, ptr(77))
+	testValues(1, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(1, new(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(1, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(1, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	testValues(1, new(77.0), highs.ModelStatusOptimal, new(77.0))
+	testValues(-1, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(-1, new(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(-1, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(-1, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	testValues(-1, new(77.0), highs.ModelStatusOptimal, new(77.0))
+}
+
+func TestAbsoluteValueNonFree(test *testing.T) {
+	maxValue := 100.0
+
+	testValues := func(oneValue float64, outValueSet *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: one=%f", oneValue)
+		if outValueSet != nil {
+			test.Logf("out=%f", *outValueSet)
+		}
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		oneColumn := build.CreateColumnGeneral(highs.Continuous, -maxValue, maxValue, nil)
+		outColumn := build.CreateColumnGeneral(highs.Continuous, -maxValue, maxValue, nil)
+		setColumnToConstant(build, oneColumn, oneValue)
+
+		build.AbsoluteValueNonFree(oneColumn, outColumn)
+
+		if outValueSet != nil {
+			setColumnToConstant(build, outColumn, *outValueSet)
+		}
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[outColumn]
+		test.Logf("%s %f\n", solution.Status.String(), boolOutput)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqualFloat(*expectOutputValue, boolOutput, test)
+		}
+	}
+
+	// standard positive differences
+	//testValues(0, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(1, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(-1, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(13.1, nil, highs.ModelStatusOptimal, new(13.1))
+	testValues(-13.1, nil, highs.ModelStatusOptimal, new(13.1))
+
+	// confirm forced minimum and maximum
+	//testValues(1, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(1, new(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(1, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(1, new(1.1), highs.ModelStatusInfeasible, nil)
+	//testValues(1, new(77.0), highs.ModelStatusInfeasible, nil)
+	//testValues(-1, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(-1, new(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(-1, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(-1, new(1.1), highs.ModelStatusInfeasible, nil)
+	//testValues(-1, new(77.0), highs.ModelStatusInfeasible, nil)
+}
+
+func TestAbsoluteValueNonFree_NeedMIP(test *testing.T) {
+	maxValue := 100.0
+	highRange := 200.0
+
+	testValues := func(oneValue float64, outValueSet *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: one=%f", oneValue)
+		if outValueSet != nil {
+			test.Logf("out=%f", *outValueSet)
+		}
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		oneColumn := build.CreateColumnGeneral(highs.Continuous, -maxValue, maxValue, nil)
+		outColumn := build.CreateColumnGeneral(highs.Continuous, -maxValue, maxValue, nil)
+		setColumnToConstant(build, oneColumn, oneValue)
+
+		build.AbsoluteValueNonFree_NeedMIP(oneColumn, outColumn, highRange, "")
+
+		if outValueSet != nil {
+			setColumnToConstant(build, outColumn, *outValueSet)
+		}
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[outColumn]
+		test.Logf("%s %f\n", solution.Status.String(), boolOutput)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqualFloat(*expectOutputValue, boolOutput, test)
+		}
+	}
+
+	// standard positive differences
+	testValues(0, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(1, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(-1, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(13.1, nil, highs.ModelStatusOptimal, new(13.1))
+	testValues(-13.1, nil, highs.ModelStatusOptimal, new(13.1))
+
+	// confirm forced minimum and maximum
+	testValues(1, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(1, new(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(1, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(1, new(1.1), highs.ModelStatusInfeasible, nil)
+	testValues(1, new(77.0), highs.ModelStatusInfeasible, nil)
+	testValues(-1, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(-1, new(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(-1, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(-1, new(1.1), highs.ModelStatusInfeasible, nil)
+	testValues(-1, new(77.0), highs.ModelStatusInfeasible, nil)
 }
 
 func TestAbsoluteValueFromDiffTwoVars(test *testing.T) {
@@ -487,36 +595,36 @@ func TestAbsoluteValueFromDiffTwoVars(test *testing.T) {
 	}
 
 	// standard positive differences
-	testValues(3, 1, 3, 1, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(3, 1, 4, 1, nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(4, 1, 3, 1, nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(25.4, 1, 12.3, 1, nil, highs.ModelStatusOptimal, ptr(13.1))
-	testValues(12.3, 1, 25.4, 1, nil, highs.ModelStatusOptimal, ptr(13.1))
+	testValues(3, 1, 3, 1, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(3, 1, 4, 1, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(4, 1, 3, 1, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(25.4, 1, 12.3, 1, nil, highs.ModelStatusOptimal, new(13.1))
+	testValues(12.3, 1, 25.4, 1, nil, highs.ModelStatusOptimal, new(13.1))
 
 	// negatives
-	testValues(-55, 1, -44, 1, nil, highs.ModelStatusOptimal, ptr(11))
-	testValues(-44, 1, -55, 1, nil, highs.ModelStatusOptimal, ptr(11))
-	testValues(-44, 1, 10, 1, nil, highs.ModelStatusOptimal, ptr(54))
-	testValues(10, 1, -44, 1, nil, highs.ModelStatusOptimal, ptr(54))
+	testValues(-55, 1, -44, 1, nil, highs.ModelStatusOptimal, new(11.0))
+	testValues(-44, 1, -55, 1, nil, highs.ModelStatusOptimal, new(11.0))
+	testValues(-44, 1, 10, 1, nil, highs.ModelStatusOptimal, new(54.0))
+	testValues(10, 1, -44, 1, nil, highs.ModelStatusOptimal, new(54.0))
 
 	// zeros
-	testValues(0, 1, -44, 1, nil, highs.ModelStatusOptimal, ptr(44))
-	testValues(-44, 1, 0, 1, nil, highs.ModelStatusOptimal, ptr(44))
-	testValues(44, 1, 0, 1, nil, highs.ModelStatusOptimal, ptr(44))
-	testValues(0, 1, 44, 1, nil, highs.ModelStatusOptimal, ptr(44))
+	testValues(0, 1, -44, 1, nil, highs.ModelStatusOptimal, new(44.0))
+	testValues(-44, 1, 0, 1, nil, highs.ModelStatusOptimal, new(44.0))
+	testValues(44, 1, 0, 1, nil, highs.ModelStatusOptimal, new(44.0))
+	testValues(0, 1, 44, 1, nil, highs.ModelStatusOptimal, new(44.0))
 
 	// coefficients
-	testValues(5, 2, 9, 1, nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(5, 2, 9, -1, nil, highs.ModelStatusOptimal, ptr(19))
-	testValues(5, 0.5, 9, 1, nil, highs.ModelStatusOptimal, ptr(6.5))
-	testValues(3, 0.1, 4, 0.1, nil, highs.ModelStatusOptimal, ptr(0.1))
+	testValues(5, 2, 9, 1, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(5, 2, 9, -1, nil, highs.ModelStatusOptimal, new(19.0))
+	testValues(5, 0.5, 9, 1, nil, highs.ModelStatusOptimal, new(6.5))
+	testValues(3, 0.1, 4, 0.1, nil, highs.ModelStatusOptimal, new(0.1))
 
 	// confirm forced minimum, goes equals, then free when higher
-	testValues(3, 1, 4, 1, ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(3, 1, 4, 1, ptr(0.9), highs.ModelStatusInfeasible, nil)
-	testValues(3, 1, 4, 1, ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(3, 1, 4, 1, ptr(1.1), highs.ModelStatusOptimal, ptr(1.1))
-	testValues(3, 1, 4, 1, ptr(77), highs.ModelStatusOptimal, ptr(77))
+	testValues(3, 1, 4, 1, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(3, 1, 4, 1, new(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(3, 1, 4, 1, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(3, 1, 4, 1, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	testValues(3, 1, 4, 1, new(77.0), highs.ModelStatusOptimal, new(77.0))
 }
 
 func TestAbsoluteValueFromDiffTwoVarsNonFree(test *testing.T) {
@@ -554,54 +662,54 @@ func TestAbsoluteValueFromDiffTwoVarsNonFree(test *testing.T) {
 	}
 
 	// standard positive differences
-	testValues(3, 1, 3, 1, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(3, 1, 4, 1, nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(4, 1, 3, 1, nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(25.4, 1, 12.3, 1, nil, highs.ModelStatusOptimal, ptr(13.1))
-	testValues(12.3, 1, 25.4, 1, nil, highs.ModelStatusOptimal, ptr(13.1))
+	testValues(3, 1, 3, 1, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(3, 1, 4, 1, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(4, 1, 3, 1, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(25.4, 1, 12.3, 1, nil, highs.ModelStatusOptimal, new(13.1))
+	testValues(12.3, 1, 25.4, 1, nil, highs.ModelStatusOptimal, new(13.1))
 
 	// negatives
-	testValues(-55, 1, -44, 1, nil, highs.ModelStatusOptimal, ptr(11))
-	testValues(-44, 1, -55, 1, nil, highs.ModelStatusOptimal, ptr(11))
-	testValues(-44, 1, 10, 1, nil, highs.ModelStatusOptimal, ptr(54))
-	testValues(10, 1, -44, 1, nil, highs.ModelStatusOptimal, ptr(54))
+	testValues(-55, 1, -44, 1, nil, highs.ModelStatusOptimal, new(11.0))
+	testValues(-44, 1, -55, 1, nil, highs.ModelStatusOptimal, new(11.0))
+	testValues(-44, 1, 10, 1, nil, highs.ModelStatusOptimal, new(54.0))
+	testValues(10, 1, -44, 1, nil, highs.ModelStatusOptimal, new(54.0))
 
 	// zeros
-	testValues(0, 1, -44, 1, nil, highs.ModelStatusOptimal, ptr(44))
-	testValues(-44, 1, 0, 1, nil, highs.ModelStatusOptimal, ptr(44))
-	testValues(44, 1, 0, 1, nil, highs.ModelStatusOptimal, ptr(44))
-	testValues(0, 1, 44, 1, nil, highs.ModelStatusOptimal, ptr(44))
+	testValues(0, 1, -44, 1, nil, highs.ModelStatusOptimal, new(44.0))
+	testValues(-44, 1, 0, 1, nil, highs.ModelStatusOptimal, new(44.0))
+	testValues(44, 1, 0, 1, nil, highs.ModelStatusOptimal, new(44.0))
+	testValues(0, 1, 44, 1, nil, highs.ModelStatusOptimal, new(44.0))
 
 	// coefficients
-	testValues(5, 2, 9, 1, nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(5, 2, 9, -1, nil, highs.ModelStatusOptimal, ptr(19))
-	testValues(5, 0.5, 9, 1, nil, highs.ModelStatusOptimal, ptr(6.5))
-	testValues(3, 0.1, 4, 0.1, nil, highs.ModelStatusOptimal, ptr(0.1))
+	testValues(5, 2, 9, 1, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(5, 2, 9, -1, nil, highs.ModelStatusOptimal, new(19.0))
+	testValues(5, 0.5, 9, 1, nil, highs.ModelStatusOptimal, new(6.5))
+	testValues(3, 0.1, 4, 0.1, nil, highs.ModelStatusOptimal, new(0.1))
 
 	// confirm forced minimum, goes equals, then infeasible when higher too
-	testValues(3, 1, 4, 1, ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(3, 1, 4, 1, ptr(0.9), highs.ModelStatusInfeasible, nil)
-	testValues(3, 1, 4, 1, ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(3, 1, 4, 1, ptr(1.1), highs.ModelStatusInfeasible, nil)
-	testValues(3, 1, 4, 1, ptr(77), highs.ModelStatusInfeasible, nil)
+	testValues(3, 1, 4, 1, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(3, 1, 4, 1, new(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(3, 1, 4, 1, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(3, 1, 4, 1, new(1.1), highs.ModelStatusInfeasible, nil)
+	testValues(3, 1, 4, 1, new(77.0), highs.ModelStatusInfeasible, nil)
 
 	// same with values flipped
-	testValues(4, 1, 3, 1, ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(4, 1, 3, 1, ptr(0.9), highs.ModelStatusInfeasible, nil)
-	testValues(4, 1, 3, 1, ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(4, 1, 3, 1, ptr(1.1), highs.ModelStatusInfeasible, nil)
-	testValues(4, 1, 3, 1, ptr(77), highs.ModelStatusInfeasible, nil)
+	testValues(4, 1, 3, 1, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(4, 1, 3, 1, new(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(4, 1, 3, 1, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(4, 1, 3, 1, new(1.1), highs.ModelStatusInfeasible, nil)
+	testValues(4, 1, 3, 1, new(77.0), highs.ModelStatusInfeasible, nil)
 
 	// and with a zero
-	testValues(4, 1, 4, 1, ptr(-1), highs.ModelStatusInfeasible, nil)
-	testValues(4, 1, 4, 1, ptr(-0.1), highs.ModelStatusInfeasible, nil)
-	testValues(4, 1, 4, 1, ptr(0), highs.ModelStatusOptimal, ptr(0))
-	testValues(4, 1, 4, 1, ptr(0.1), highs.ModelStatusInfeasible, nil)
-	testValues(4, 1, 4, 1, ptr(77), highs.ModelStatusInfeasible, nil)
+	testValues(4, 1, 4, 1, new(-1.0), highs.ModelStatusInfeasible, nil)
+	testValues(4, 1, 4, 1, new(-0.1), highs.ModelStatusInfeasible, nil)
+	testValues(4, 1, 4, 1, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(4, 1, 4, 1, new(0.1), highs.ModelStatusInfeasible, nil)
+	testValues(4, 1, 4, 1, new(77.0), highs.ModelStatusInfeasible, nil)
 
 	// flipped sign was buggy
-	testValues(3, 1, 4, 1, ptr(-1), highs.ModelStatusInfeasible, nil)
-	testValues(4, 1, 3, 1, ptr(-1), highs.ModelStatusInfeasible, nil)
+	testValues(3, 1, 4, 1, new(-1.0), highs.ModelStatusInfeasible, nil)
+	testValues(4, 1, 3, 1, new(-1.0), highs.ModelStatusInfeasible, nil)
 }
 
 func TestAbsoluteValueFromDiffOneToConst(test *testing.T) {
@@ -636,30 +744,30 @@ func TestAbsoluteValueFromDiffOneToConst(test *testing.T) {
 	}
 
 	// standard positive differences
-	testValues(3, 1, 3, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(3, 1, 4, nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(4, 1, 3, nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(25.4, 1, 12.3, nil, highs.ModelStatusOptimal, ptr(13.1))
-	testValues(12.3, 1, 25.4, nil, highs.ModelStatusOptimal, ptr(13.1))
+	testValues(3, 1, 3, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(3, 1, 4, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(4, 1, 3, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(25.4, 1, 12.3, nil, highs.ModelStatusOptimal, new(13.1))
+	testValues(12.3, 1, 25.4, nil, highs.ModelStatusOptimal, new(13.1))
 
 	// negatives
-	testValues(-55, 1, -44, nil, highs.ModelStatusOptimal, ptr(11))
-	testValues(-44, 1, -55, nil, highs.ModelStatusOptimal, ptr(11))
-	testValues(-44, 1, 10, nil, highs.ModelStatusOptimal, ptr(54))
-	testValues(10, 1, -44, nil, highs.ModelStatusOptimal, ptr(54))
+	testValues(-55, 1, -44, nil, highs.ModelStatusOptimal, new(11.0))
+	testValues(-44, 1, -55, nil, highs.ModelStatusOptimal, new(11.0))
+	testValues(-44, 1, 10, nil, highs.ModelStatusOptimal, new(54.0))
+	testValues(10, 1, -44, nil, highs.ModelStatusOptimal, new(54.0))
 
 	// zeros
-	testValues(0, 1, -44, nil, highs.ModelStatusOptimal, ptr(44))
-	testValues(-44, 1, 0, nil, highs.ModelStatusOptimal, ptr(44))
-	testValues(44, 1, 0, nil, highs.ModelStatusOptimal, ptr(44))
-	testValues(0, 1, 44, nil, highs.ModelStatusOptimal, ptr(44))
+	testValues(0, 1, -44, nil, highs.ModelStatusOptimal, new(44.0))
+	testValues(-44, 1, 0, nil, highs.ModelStatusOptimal, new(44.0))
+	testValues(44, 1, 0, nil, highs.ModelStatusOptimal, new(44.0))
+	testValues(0, 1, 44, nil, highs.ModelStatusOptimal, new(44.0))
 
 	// confirm forced minimum, goes equals, then free when higher
-	testValues(3, 1, 4, ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(3, 1, 4, ptr(0.9), highs.ModelStatusInfeasible, nil)
-	testValues(3, 1, 4, ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(3, 1, 4, ptr(1.1), highs.ModelStatusOptimal, ptr(1.1))
-	testValues(3, 1, 4, ptr(77), highs.ModelStatusOptimal, ptr(77))
+	testValues(3, 1, 4, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(3, 1, 4, new(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(3, 1, 4, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(3, 1, 4, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	testValues(3, 1, 4, new(77.0), highs.ModelStatusOptimal, new(77.0))
 }
 
 func TestAbsoluteValueDiffTwoVarsThenDiffConst(test *testing.T) {
@@ -696,37 +804,37 @@ func TestAbsoluteValueDiffTwoVarsThenDiffConst(test *testing.T) {
 	}
 
 	// standard positive differences
-	testValues(3, 1, 3, 1, 0, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(3, 1, 4, 1, 1, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(4, 1, 3, 1, 3, nil, highs.ModelStatusOptimal, ptr(2))
-	testValues(25.4, 1, 12.3, 1, -2, nil, highs.ModelStatusOptimal, ptr(15.1))
-	testValues(12.3, 1, 25.4, 1, 11, nil, highs.ModelStatusOptimal, ptr(2.1))
+	testValues(3, 1, 3, 1, 0, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(3, 1, 4, 1, 1, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(4, 1, 3, 1, 3, nil, highs.ModelStatusOptimal, new(2.0))
+	testValues(25.4, 1, 12.3, 1, -2, nil, highs.ModelStatusOptimal, new(15.1))
+	testValues(12.3, 1, 25.4, 1, 11, nil, highs.ModelStatusOptimal, new(2.1))
 
 	// negatives
-	testValues(-55, 1, -44, 1, 0, nil, highs.ModelStatusOptimal, ptr(11))
-	testValues(-44, 1, -55, 1, 1, nil, highs.ModelStatusOptimal, ptr(10))
-	testValues(-44, 1, 10, 1, -1, nil, highs.ModelStatusOptimal, ptr(55))
-	testValues(10, 1, -44, 1, 5, nil, highs.ModelStatusOptimal, ptr(49))
-	testValues(3, 1, 4, 1, -10, nil, highs.ModelStatusOptimal, ptr(11))
+	testValues(-55, 1, -44, 1, 0, nil, highs.ModelStatusOptimal, new(11.0))
+	testValues(-44, 1, -55, 1, 1, nil, highs.ModelStatusOptimal, new(10.0))
+	testValues(-44, 1, 10, 1, -1, nil, highs.ModelStatusOptimal, new(55.0))
+	testValues(10, 1, -44, 1, 5, nil, highs.ModelStatusOptimal, new(49.0))
+	testValues(3, 1, 4, 1, -10, nil, highs.ModelStatusOptimal, new(11.0))
 
 	// zeros
-	testValues(0, 1, -44, 1, 0, nil, highs.ModelStatusOptimal, ptr(44))
-	testValues(-44, 1, 0, 1, 1, nil, highs.ModelStatusOptimal, ptr(43))
-	testValues(44, 1, 0, 1, 7, nil, highs.ModelStatusOptimal, ptr(37))
-	testValues(0, 1, 44, 1, -2.5, nil, highs.ModelStatusOptimal, ptr(46.5))
+	testValues(0, 1, -44, 1, 0, nil, highs.ModelStatusOptimal, new(44.0))
+	testValues(-44, 1, 0, 1, 1, nil, highs.ModelStatusOptimal, new(43.0))
+	testValues(44, 1, 0, 1, 7, nil, highs.ModelStatusOptimal, new(37.0))
+	testValues(0, 1, 44, 1, -2.5, nil, highs.ModelStatusOptimal, new(46.5))
 
 	// coefficients
-	testValues(5, 2, 9, 1, 1, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(5, 2, 9, -1, 1, nil, highs.ModelStatusOptimal, ptr(18))
-	testValues(5, 0.5, 9, 1, 1, nil, highs.ModelStatusOptimal, ptr(5.5))
-	testValues(3, 0.1, 4, 0.1, 1, nil, highs.ModelStatusOptimal, ptr(0.9))
+	testValues(5, 2, 9, 1, 1, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(5, 2, 9, -1, 1, nil, highs.ModelStatusOptimal, new(18.0))
+	testValues(5, 0.5, 9, 1, 1, nil, highs.ModelStatusOptimal, new(5.5))
+	testValues(3, 0.1, 4, 0.1, 1, nil, highs.ModelStatusOptimal, new(0.9))
 
 	// confirm forced minimum, goes equals, then free when higher
-	testValues(3, 1, 5, 1, 1, ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(3, 1, 5, 1, 1, ptr(0.9), highs.ModelStatusInfeasible, nil)
-	testValues(3, 1, 5, 1, 1, ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(3, 1, 5, 1, 1, ptr(1.1), highs.ModelStatusOptimal, ptr(1.1))
-	testValues(3, 1, 5, 1, 1, ptr(77), highs.ModelStatusOptimal, ptr(77))
+	testValues(3, 1, 5, 1, 1, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(3, 1, 5, 1, 1, new(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(3, 1, 5, 1, 1, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(3, 1, 5, 1, 1, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	testValues(3, 1, 5, 1, 1, new(77.0), highs.ModelStatusOptimal, new(77.0))
 }
 
 func TestAbsoluteValue_WithToggle(test *testing.T) {
@@ -763,42 +871,42 @@ func TestAbsoluteValue_WithToggle(test *testing.T) {
 	}
 
 	// standard positive differences (checking toggle=ON works like normal AbsolueValue)
-	testValues(0, 1, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(1, 1, nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(-1, 1, nil, highs.ModelStatusOptimal, ptr(1))
-	testValues(13.1, 1, nil, highs.ModelStatusOptimal, ptr(13.1))
-	testValues(-13.1, 1, nil, highs.ModelStatusOptimal, ptr(13.1))
+	testValues(0, 1, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(1, 1, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(-1, 1, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(13.1, 1, nil, highs.ModelStatusOptimal, new(13.1))
+	testValues(-13.1, 1, nil, highs.ModelStatusOptimal, new(13.1))
 
 	// confirm forced minimum, goes equals, then free when higher (checking toggle=ON works like normal AbsolueValue)
-	testValues(1, 1, ptr(0), highs.ModelStatusInfeasible, nil)
-	testValues(1, 1, ptr(0.9), highs.ModelStatusInfeasible, nil)
-	testValues(1, 1, ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(1, 1, ptr(1.1), highs.ModelStatusOptimal, ptr(1.1))
-	testValues(1, 1, ptr(77), highs.ModelStatusOptimal, ptr(77))
+	testValues(1, 1, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(1, 1, new(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(1, 1, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(1, 1, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	testValues(1, 1, new(77.0), highs.ModelStatusOptimal, new(77.0))
 
 	// standard positive differences toggle=OFF defaults to zero
-	testValues(0, 0, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(1, 0, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(-1, 0, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(13.1, 0, nil, highs.ModelStatusOptimal, ptr(0))
-	testValues(-13.1, 0, nil, highs.ModelStatusOptimal, ptr(0))
+	testValues(0, 0, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(1, 0, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(-1, 0, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(13.1, 0, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(-13.1, 0, nil, highs.ModelStatusOptimal, new(0.0))
 
 	// confirm toggle off lets anything go
-	testValues(1, 0, ptr(0), highs.ModelStatusOptimal, nil)
-	testValues(1, 0, ptr(0.9), highs.ModelStatusOptimal, nil)
-	testValues(1, 0, ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(1, 0, ptr(1.1), highs.ModelStatusOptimal, ptr(1.1))
-	testValues(1, 0, ptr(77), highs.ModelStatusOptimal, ptr(77))
-	testValues(-1, 0, ptr(0), highs.ModelStatusOptimal, nil)
-	testValues(-1, 0, ptr(0.9), highs.ModelStatusOptimal, nil)
-	testValues(-1, 0, ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(-1, 0, ptr(1.1), highs.ModelStatusOptimal, ptr(1.1))
-	testValues(-1, 0, ptr(77), highs.ModelStatusOptimal, ptr(77))
-	testValues(0, 0, ptr(0), highs.ModelStatusOptimal, nil)
-	testValues(0, 0, ptr(0.9), highs.ModelStatusOptimal, nil)
-	testValues(0, 0, ptr(1), highs.ModelStatusOptimal, ptr(1))
-	testValues(0, 0, ptr(1.1), highs.ModelStatusOptimal, ptr(1.1))
-	testValues(0, 0, ptr(77), highs.ModelStatusOptimal, ptr(77))
+	testValues(1, 0, new(0.0), highs.ModelStatusOptimal, nil)
+	testValues(1, 0, new(0.9), highs.ModelStatusOptimal, nil)
+	testValues(1, 0, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(1, 0, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	testValues(1, 0, new(77.0), highs.ModelStatusOptimal, new(77.0))
+	testValues(-1, 0, new(0.0), highs.ModelStatusOptimal, nil)
+	testValues(-1, 0, new(0.9), highs.ModelStatusOptimal, nil)
+	testValues(-1, 0, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(-1, 0, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	testValues(-1, 0, new(77.0), highs.ModelStatusOptimal, new(77.0))
+	testValues(0, 0, new(0.0), highs.ModelStatusOptimal, nil)
+	testValues(0, 0, new(0.9), highs.ModelStatusOptimal, nil)
+	testValues(0, 0, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(0, 0, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	testValues(0, 0, new(77.0), highs.ModelStatusOptimal, new(77.0))
 }
 
 func TestIsXor(test *testing.T) {
@@ -832,26 +940,23 @@ func TestIsXor(test *testing.T) {
 		}
 	}
 
-	zero := ptr(0.0)
-	one := ptr(1.0)
-
 	// for condition not met output is free
-	testValues(0, 0, nil, highs.ModelStatusOptimal, zero)
-	testValues(0, 0, zero, highs.ModelStatusOptimal, zero)
-	testValues(0, 0, one, highs.ModelStatusOptimal, one)
+	testValues(0, 0, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(0, 0, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(0, 0, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
 	// condition met, output forced 1.0
-	testValues(0, 1, nil, highs.ModelStatusOptimal, one)
-	testValues(0, 1, zero, highs.ModelStatusInfeasible, nil)
-	testValues(0, 1, one, highs.ModelStatusOptimal, one)
-	testValues(1, 0, nil, highs.ModelStatusOptimal, one)
-	testValues(1, 0, zero, highs.ModelStatusInfeasible, nil)
-	testValues(1, 0, one, highs.ModelStatusOptimal, one)
+	testValues(0, 1, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(0, 1, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(0, 1, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(1, 0, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(1, 0, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(1, 0, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
 	// for condition not met output is free
-	testValues(1, 1, nil, highs.ModelStatusOptimal, zero)
-	testValues(1, 1, zero, highs.ModelStatusOptimal, zero)
-	testValues(1, 1, one, highs.ModelStatusOptimal, one)
+	testValues(1, 1, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(1, 1, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(1, 1, new(1.0), highs.ModelStatusOptimal, new(1.0))
 }
 
 func TestColumnIsGreaterOrEqualThanConstant(test *testing.T) {
@@ -889,18 +994,15 @@ func TestColumnIsGreaterOrEqualThanConstant(test *testing.T) {
 		}
 	}
 
-	zero := ptr(0.0)
-	one := ptr(1.0)
-
-	testValues(49, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(49, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(49, 50, one, highs.ModelStatusInfeasible, nil)
-	testValues(50, 50, nil, highs.ModelStatusOptimal, one)
-	testValues(50, 50, zero, highs.ModelStatusInfeasible, nil)
-	testValues(50, 50, one, highs.ModelStatusOptimal, one)
-	testValues(51, 50, nil, highs.ModelStatusOptimal, one)
-	testValues(51, 50, zero, highs.ModelStatusInfeasible, nil)
-	testValues(51, 50, one, highs.ModelStatusOptimal, one)
+	testValues(49, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 50, new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(50, 50, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(50, 50, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(50, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(51, 50, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(51, 50, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(51, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 }
 
 func TestColumnIsLessOrEqualThanConstant(test *testing.T) {
@@ -938,20 +1040,17 @@ func TestColumnIsLessOrEqualThanConstant(test *testing.T) {
 		}
 	}
 
-	zero := ptr(0.0)
-	one := ptr(1.0)
+	testValues(49, 50, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(49, 50, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(49, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
-	testValues(49, 50, nil, highs.ModelStatusOptimal, one)
-	testValues(49, 50, zero, highs.ModelStatusInfeasible, nil)
-	testValues(49, 50, one, highs.ModelStatusOptimal, one)
+	testValues(50, 50, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(50, 50, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(50, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
-	testValues(50, 50, nil, highs.ModelStatusOptimal, one)
-	testValues(50, 50, zero, highs.ModelStatusInfeasible, nil)
-	testValues(50, 50, one, highs.ModelStatusOptimal, one)
-
-	testValues(51, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(51, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(51, 50, one, highs.ModelStatusInfeasible, nil)
+	testValues(51, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(51, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(51, 50, new(1.0), highs.ModelStatusInfeasible, nil)
 }
 
 func TestConstantIsBetweenColumns(test *testing.T) {
@@ -989,53 +1088,50 @@ func TestConstantIsBetweenColumns(test *testing.T) {
 		}
 	}
 
-	zero := ptr(0.0)
-	one := ptr(1.0)
-
 	// logic lo <= const <= hi
-	testValues(49, 49, 51, nil, highs.ModelStatusOptimal, one)
-	testValues(49, 49, 51, zero, highs.ModelStatusInfeasible, nil)
-	testValues(49, 49, 51, one, highs.ModelStatusOptimal, one)
-	testValues(49, 50, 51, nil, highs.ModelStatusOptimal, one)
-	testValues(49, 50, 51, zero, highs.ModelStatusInfeasible, nil)
-	testValues(49, 50, 51, one, highs.ModelStatusOptimal, one)
-	testValues(49, 51, 51, nil, highs.ModelStatusOptimal, one)
-	testValues(49, 51, 51, zero, highs.ModelStatusInfeasible, nil)
-	testValues(49, 51, 51, one, highs.ModelStatusOptimal, one)
-	testValues(50, 50, 50, nil, highs.ModelStatusOptimal, one)
-	testValues(50, 50, 50, zero, highs.ModelStatusInfeasible, nil)
-	testValues(50, 50, 50, one, highs.ModelStatusOptimal, one)
+	testValues(49, 49, 51, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(49, 49, 51, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(49, 49, 51, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(49, 50, 51, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(49, 50, 51, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(49, 50, 51, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(49, 51, 51, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(49, 51, 51, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(49, 51, 51, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(50, 50, 50, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(50, 50, 50, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(50, 50, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
-	testValues(49, 48, 51, nil, highs.ModelStatusOptimal, zero)
-	testValues(49, 48, 51, zero, highs.ModelStatusOptimal, zero)
-	testValues(49, 48, 51, one, highs.ModelStatusInfeasible, nil)
-	testValues(49, 52, 51, nil, highs.ModelStatusOptimal, zero)
-	testValues(49, 52, 51, zero, highs.ModelStatusOptimal, zero)
-	testValues(49, 52, 51, one, highs.ModelStatusInfeasible, nil)
+	testValues(49, 48, 51, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 48, 51, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 48, 51, new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(49, 52, 51, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 52, 51, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 52, 51, new(1.0), highs.ModelStatusInfeasible, nil)
 
-	testValues(50, 48, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(50, 48, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(50, 48, 50, one, highs.ModelStatusInfeasible, nil)
-	testValues(50, 52, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(50, 52, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(50, 52, 50, one, highs.ModelStatusInfeasible, nil)
+	testValues(50, 48, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 48, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 48, 50, new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(50, 52, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 52, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 52, 50, new(1.0), highs.ModelStatusInfeasible, nil)
 
-	testValues(50, 49, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(50, 49, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(50, 49, 50, one, highs.ModelStatusInfeasible, nil)
-	testValues(50, 51, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(50, 51, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(50, 51, 50, one, highs.ModelStatusInfeasible, nil)
+	testValues(50, 49, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 49, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 49, 50, new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(50, 51, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 51, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 51, 50, new(1.0), highs.ModelStatusInfeasible, nil)
 
 	testValues(51, 50, 49, nil, highs.ModelStatusInfeasible, nil)
-	testValues(51, 50, 49, zero, highs.ModelStatusInfeasible, nil)
-	testValues(51, 50, 49, one, highs.ModelStatusInfeasible, nil)
+	testValues(51, 50, 49, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(51, 50, 49, new(1.0), highs.ModelStatusInfeasible, nil)
 	testValues(50, 50, 49, nil, highs.ModelStatusInfeasible, nil)
-	testValues(50, 50, 49, zero, highs.ModelStatusInfeasible, nil)
-	testValues(50, 50, 49, one, highs.ModelStatusInfeasible, nil)
+	testValues(50, 50, 49, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(50, 50, 49, new(1.0), highs.ModelStatusInfeasible, nil)
 	testValues(50, 49, 49, nil, highs.ModelStatusInfeasible, nil)
-	testValues(50, 49, 49, zero, highs.ModelStatusInfeasible, nil)
-	testValues(50, 49, 49, one, highs.ModelStatusInfeasible, nil)
+	testValues(50, 49, 49, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(50, 49, 49, new(1.0), highs.ModelStatusInfeasible, nil)
 }
 
 func TestColumnIsNotBetweenConstantsVerify(test *testing.T) {
@@ -1132,59 +1228,56 @@ func TestColumnIsBetweenConstants(test *testing.T) {
 		}
 	}
 
-	zero := new(0.0)
-	one := new(1.0)
-
 	// standard accept, within range
-	testValues(49, 50, 51, nil, highs.ModelStatusOptimal, one)
-	testValues(40, 50, 60, nil, highs.ModelStatusOptimal, one)
+	testValues(49, 50, 51, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(40, 50, 60, nil, highs.ModelStatusOptimal, new(1.0))
 
 	// equal to high or low = ok
-	testValues(49, 49, 51, nil, highs.ModelStatusOptimal, one)
-	testValues(49, 51, 51, nil, highs.ModelStatusOptimal, one)
-	testValues(51, 51, 51, nil, highs.ModelStatusOptimal, one)
+	testValues(49, 49, 51, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(49, 51, 51, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(51, 51, 51, nil, highs.ModelStatusOptimal, new(1.0))
 
 	// outside range normal
-	testValues(49, 47, 51, nil, highs.ModelStatusOptimal, zero)
-	testValues(49, 48, 51, nil, highs.ModelStatusOptimal, zero)
-	testValues(49, 52, 51, nil, highs.ModelStatusOptimal, zero)
-	testValues(49, 53, 51, nil, highs.ModelStatusOptimal, zero)
+	testValues(49, 47, 51, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 48, 51, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 52, 51, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 53, 51, nil, highs.ModelStatusOptimal, new(0.0))
 
 	// outside equal pair
-	testValues(50, 48, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(50, 49, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(50, 51, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(50, 52, 50, nil, highs.ModelStatusOptimal, zero)
+	testValues(50, 48, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 49, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 51, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 52, 50, nil, highs.ModelStatusOptimal, new(0.0))
 
 	// all the above as forces
-	testValues(49, 50, 51, one, highs.ModelStatusOptimal, one)
-	testValues(40, 50, 60, one, highs.ModelStatusOptimal, one)
-	testValues(49, 49, 51, one, highs.ModelStatusOptimal, one)
-	testValues(49, 51, 51, one, highs.ModelStatusOptimal, one)
-	testValues(51, 51, 51, one, highs.ModelStatusOptimal, one)
-	testValues(49, 47, 51, zero, highs.ModelStatusOptimal, zero)
-	testValues(49, 48, 51, zero, highs.ModelStatusOptimal, zero)
-	testValues(49, 52, 51, zero, highs.ModelStatusOptimal, zero)
-	testValues(49, 53, 51, zero, highs.ModelStatusOptimal, zero)
-	testValues(50, 48, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(50, 49, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(50, 51, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(50, 52, 50, zero, highs.ModelStatusOptimal, zero)
+	testValues(49, 50, 51, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(40, 50, 60, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(49, 49, 51, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(49, 51, 51, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(51, 51, 51, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(49, 47, 51, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 48, 51, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 52, 51, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 53, 51, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 48, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 49, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 51, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 52, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
 
 	// all the above as opposite forces
-	testValues(49, 50, 51, zero, highs.ModelStatusInfeasible, nil)
-	testValues(40, 50, 60, zero, highs.ModelStatusInfeasible, nil)
-	testValues(49, 49, 51, zero, highs.ModelStatusInfeasible, nil)
-	testValues(49, 51, 51, zero, highs.ModelStatusInfeasible, nil)
-	testValues(51, 51, 51, zero, highs.ModelStatusInfeasible, nil)
-	testValues(49, 47, 51, one, highs.ModelStatusInfeasible, nil)
-	testValues(49, 48, 51, one, highs.ModelStatusInfeasible, nil)
-	testValues(49, 52, 51, one, highs.ModelStatusInfeasible, nil)
-	testValues(49, 53, 51, one, highs.ModelStatusInfeasible, nil)
-	testValues(50, 48, 50, one, highs.ModelStatusInfeasible, nil)
-	testValues(50, 49, 50, one, highs.ModelStatusInfeasible, nil)
-	testValues(50, 51, 50, one, highs.ModelStatusInfeasible, nil)
-	testValues(50, 52, 50, one, highs.ModelStatusInfeasible, nil)
+	testValues(49, 50, 51, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(40, 50, 60, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(49, 49, 51, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(49, 51, 51, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(51, 51, 51, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(49, 47, 51, new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(49, 48, 51, new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(49, 52, 51, new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(49, 53, 51, new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(50, 48, 50, new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(50, 49, 50, new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(50, 51, 50, new(1.0), highs.ModelStatusInfeasible, nil)
+	testValues(50, 52, 50, new(1.0), highs.ModelStatusInfeasible, nil)
 }
 
 func TestColumnIsGreaterOrEqualColumn(test *testing.T) {
@@ -1225,21 +1318,18 @@ func TestColumnIsGreaterOrEqualColumn(test *testing.T) {
 		}
 	}
 
-	zero := ptr(0.0)
-	one := ptr(1.0)
-
 	// logic one >= two
-	testValues(49, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(49, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(49, 50, one, highs.ModelStatusInfeasible, nil)
+	testValues(49, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 50, new(1.0), highs.ModelStatusInfeasible, nil)
 
-	testValues(50, 50, nil, highs.ModelStatusOptimal, one)
-	testValues(50, 50, zero, highs.ModelStatusInfeasible, nil)
-	testValues(50, 50, one, highs.ModelStatusOptimal, one)
+	testValues(50, 50, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(50, 50, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(50, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
-	testValues(51, 50, nil, highs.ModelStatusOptimal, one)
-	testValues(51, 50, zero, highs.ModelStatusInfeasible, nil)
-	testValues(51, 50, one, highs.ModelStatusOptimal, one)
+	testValues(51, 50, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(51, 50, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(51, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 }
 
 func TestColumnIsLessOrEqualColumn(test *testing.T) {
@@ -1280,21 +1370,18 @@ func TestColumnIsLessOrEqualColumn(test *testing.T) {
 		}
 	}
 
-	zero := ptr(0.0)
-	one := ptr(1.0)
-
 	// logic one <= two
-	testValues(49, 50, nil, highs.ModelStatusOptimal, one)
-	testValues(49, 50, zero, highs.ModelStatusInfeasible, nil)
-	testValues(49, 50, one, highs.ModelStatusOptimal, one)
+	testValues(49, 50, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(49, 50, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(49, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
-	testValues(50, 50, nil, highs.ModelStatusOptimal, one)
-	testValues(50, 50, zero, highs.ModelStatusInfeasible, nil)
-	testValues(50, 50, one, highs.ModelStatusOptimal, one)
+	testValues(50, 50, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(50, 50, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(50, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
-	testValues(51, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(51, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(51, 50, one, highs.ModelStatusInfeasible, nil)
+	testValues(51, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(51, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(51, 50, new(1.0), highs.ModelStatusInfeasible, nil)
 }
 
 func TestColumnIsGreaterThanColumnEqualityFree(test *testing.T) {
@@ -1331,21 +1418,18 @@ func TestColumnIsGreaterThanColumnEqualityFree(test *testing.T) {
 		}
 	}
 
-	zero := ptr(0.0)
-	one := ptr(1.0)
-
 	// logic one > two
-	testValues(49, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(49, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(49, 50, one, highs.ModelStatusInfeasible, nil)
+	testValues(49, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 50, new(1.0), highs.ModelStatusInfeasible, nil)
 
 	testValues(50, 50, nil, highs.ModelStatusOptimal, nil)
-	testValues(50, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(50, 50, one, highs.ModelStatusOptimal, one)
+	testValues(50, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
-	testValues(51, 50, nil, highs.ModelStatusOptimal, one)
-	testValues(51, 50, zero, highs.ModelStatusInfeasible, nil)
-	testValues(51, 50, one, highs.ModelStatusOptimal, one)
+	testValues(51, 50, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(51, 50, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(51, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 }
 
 func TestColumnIsLessThanColumnEqualityFree(test *testing.T) {
@@ -1382,21 +1466,18 @@ func TestColumnIsLessThanColumnEqualityFree(test *testing.T) {
 		}
 	}
 
-	zero := ptr(0.0)
-	one := ptr(1.0)
-
 	// logic one < two
-	testValues(49, 50, nil, highs.ModelStatusOptimal, one)
-	testValues(49, 50, zero, highs.ModelStatusInfeasible, nil)
-	testValues(49, 50, one, highs.ModelStatusOptimal, one)
+	testValues(49, 50, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(49, 50, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(49, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
 	testValues(50, 50, nil, highs.ModelStatusOptimal, nil)
-	testValues(50, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(50, 50, one, highs.ModelStatusOptimal, one)
+	testValues(50, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
-	testValues(51, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(51, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(51, 50, one, highs.ModelStatusInfeasible, nil)
+	testValues(51, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(51, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(51, 50, new(1.0), highs.ModelStatusInfeasible, nil)
 }
 
 func TestColumnIsEqualConstant(test *testing.T) {
@@ -1435,20 +1516,17 @@ func TestColumnIsEqualConstant(test *testing.T) {
 		}
 	}
 
-	zero := ptr(0.0)
-	one := ptr(1.0)
+	testValues(49, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 50, new(1.0), highs.ModelStatusInfeasible, nil)
 
-	testValues(49, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(49, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(49, 50, one, highs.ModelStatusInfeasible, nil)
+	testValues(50, 50, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(50, 50, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(50, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
-	testValues(50, 50, nil, highs.ModelStatusOptimal, one)
-	testValues(50, 50, zero, highs.ModelStatusInfeasible, nil)
-	testValues(50, 50, one, highs.ModelStatusOptimal, one)
-
-	testValues(51, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(51, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(51, 50, one, highs.ModelStatusInfeasible, nil)
+	testValues(51, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(51, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(51, 50, new(1.0), highs.ModelStatusInfeasible, nil)
 }
 
 func TestColumnIsEqualConstant_OneWayEnforceNotSet(test *testing.T) {
@@ -1486,21 +1564,18 @@ func TestColumnIsEqualConstant_OneWayEnforceNotSet(test *testing.T) {
 		}
 	}
 
-	zero := ptr(0.0)
-	one := ptr(1.0)
-
-	testValues(49, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(49, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(49, 50, one, highs.ModelStatusInfeasible, nil)
+	testValues(49, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(49, 50, new(1.0), highs.ModelStatusInfeasible, nil)
 
 	// lazy behaviour check
-	testValues(50, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(50, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(50, 50, one, highs.ModelStatusOptimal, one)
+	testValues(50, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
-	testValues(51, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(51, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(51, 50, one, highs.ModelStatusInfeasible, nil)
+	testValues(51, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(51, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(51, 50, new(1.0), highs.ModelStatusInfeasible, nil)
 }
 
 func TestColumnIsNotEqualConstant(test *testing.T) {
@@ -1539,20 +1614,17 @@ func TestColumnIsNotEqualConstant(test *testing.T) {
 		}
 	}
 
-	zero := ptr(0.0)
-	one := ptr(1.0)
+	testValues(49, 50, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(49, 50, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(49, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
-	testValues(49, 50, nil, highs.ModelStatusOptimal, one)
-	testValues(49, 50, zero, highs.ModelStatusInfeasible, nil)
-	testValues(49, 50, one, highs.ModelStatusOptimal, one)
+	testValues(50, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 50, new(1.0), highs.ModelStatusInfeasible, nil)
 
-	testValues(50, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(50, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(50, 50, one, highs.ModelStatusInfeasible, nil)
-
-	testValues(51, 50, nil, highs.ModelStatusOptimal, one)
-	testValues(51, 50, zero, highs.ModelStatusInfeasible, nil)
-	testValues(51, 50, one, highs.ModelStatusOptimal, one)
+	testValues(51, 50, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(51, 50, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(51, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 }
 
 func TestColumnIsNotEqualConstant_OneWayEnforceNotSet(test *testing.T) {
@@ -1587,31 +1659,24 @@ func TestColumnIsNotEqualConstant_OneWayEnforceNotSet(test *testing.T) {
 		}
 	}
 
-	zero := ptr(0.0)
-	one := ptr(1.0)
-
-	testValues(49, 50, nil, highs.ModelStatusOptimal, one)
-	testValues(49, 50, zero, highs.ModelStatusInfeasible, nil)
-	testValues(49, 50, one, highs.ModelStatusOptimal, one)
+	testValues(49, 50, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(49, 50, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(49, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
 	// lazy check
-	testValues(50, 50, nil, highs.ModelStatusOptimal, zero)
-	testValues(50, 50, zero, highs.ModelStatusOptimal, zero)
-	testValues(50, 50, one, highs.ModelStatusOptimal, one)
+	testValues(50, 50, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 50, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(50, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 
-	testValues(51, 50, nil, highs.ModelStatusOptimal, one)
-	testValues(51, 50, zero, highs.ModelStatusInfeasible, nil)
-	testValues(51, 50, one, highs.ModelStatusOptimal, one)
+	testValues(51, 50, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(51, 50, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(51, 50, new(1.0), highs.ModelStatusOptimal, new(1.0))
 }
 
 func setColumnToConstant(build *LinearBuilder, column ColumnIndex, value float64) {
 	row := ConstraintRow{}
 	row.Add(column, 1)
 	row.Build(build, value, value)
-}
-
-func ptr(value float64) *float64 {
-	return &value
 }
 
 func assertEqual[T comparable](expect, actual T, test *testing.T) {
