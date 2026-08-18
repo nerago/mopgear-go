@@ -1,4 +1,4 @@
-module paladin_gearing_go
+module github.com/nerago/mopgear-go
 
 go 1.26
 

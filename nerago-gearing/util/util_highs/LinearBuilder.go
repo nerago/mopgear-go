@@ -2,10 +2,10 @@ package util_highs
 
 import (
 	"fmt"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_async"
+	"github.com/nerago/mopgear-go/util/util_collection"
 	"math"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_async"
-	"paladin_gearing_go/util/util_collection"
 	"slices"
 	"strconv"
 

@@ -1,9 +1,9 @@
 package requirements
 
 import (
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util/util_collection"
 	"math"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util/util_collection"
 )
 
 type StatRequirementsGeneral struct {

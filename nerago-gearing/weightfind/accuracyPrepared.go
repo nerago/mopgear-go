@@ -2,10 +2,10 @@ package weightfind
 
 import (
 	"cmp"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_collection"
-	"paladin_gearing_go/weightfind/simrank"
-	"paladin_gearing_go/weightfind/weight_types"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_collection"
+	"github.com/nerago/mopgear-go/weightfind/simrank"
+	"github.com/nerago/mopgear-go/weightfind/weight_types"
 	"slices"
 )
 

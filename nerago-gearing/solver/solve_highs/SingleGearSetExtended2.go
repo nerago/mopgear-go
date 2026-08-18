@@ -1,11 +1,11 @@
 package solve_highs
 
 import (
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/solver/solve_highs_types"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_async"
-	"paladin_gearing_go/util/util_highs"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/solver/solve_highs_types"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_async"
+	"github.com/nerago/mopgear-go/util/util_highs"
 )
 
 const c_gearExtended2ScoreHigh = 10

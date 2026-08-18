@@ -1,8 +1,8 @@
 package util_highs
 
 import (
+	"github.com/nerago/mopgear-go/util"
 	"math"
-	"paladin_gearing_go/util"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )

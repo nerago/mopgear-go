@@ -1,7 +1,7 @@
 package extern_stats
 
 import (
-	gear_stat "paladin_gearing_go/stats"
+	gear_stat "github.com/nerago/mopgear-go/stats"
 	"strconv"
 
 	wowsim_proto "github.com/wowsims/mop/sim/core/proto"

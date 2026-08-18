@@ -1,7 +1,7 @@
 package solve_highs
 
 import (
-	"paladin_gearing_go/items"
+	"github.com/nerago/mopgear-go/items"
 )
 
 func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOptionsMap, checkSet func(itemSet *items.SolvableItemSet) (bool, string)) {

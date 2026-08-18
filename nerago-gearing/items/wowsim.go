@@ -1,8 +1,8 @@
 package items
 
 import (
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/stats/extern_stats"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/stats/extern_stats"
 
 	"github.com/wowsims/mop/sim/core"
 	"github.com/wowsims/mop/sim/core/proto"

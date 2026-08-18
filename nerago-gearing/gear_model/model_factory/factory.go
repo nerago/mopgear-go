@@ -1,12 +1,12 @@
 package model_factory
 
 import (
-	"paladin_gearing_go/files"
-	"paladin_gearing_go/gear_model"
-	"paladin_gearing_go/gear_model/bonus_set"
-	"paladin_gearing_go/gear_model/requirements"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/tools"
+	"github.com/nerago/mopgear-go/files"
+	"github.com/nerago/mopgear-go/gear_model"
+	"github.com/nerago/mopgear-go/gear_model/bonus_set"
+	"github.com/nerago/mopgear-go/gear_model/requirements"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/tools"
 )
 
 var bonusMake = bonus_set.ItemCountsRequiredMake

@@ -2,8 +2,8 @@ package multi_types
 
 import (
 	"iter"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/util/util_collection"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/util/util_collection"
 )
 
 type CommonOptions struct {

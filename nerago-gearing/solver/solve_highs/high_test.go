@@ -1,10 +1,10 @@
 package solve_highs
 
 import (
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_test"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_test"
 	"testing"
 )
 

@@ -1,13 +1,13 @@
 package upgrades
 
 import (
+	"github.com/nerago/mopgear-go/db"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/loaders"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_collection"
 	"math"
-	"paladin_gearing_go/db"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/loaders"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_collection"
 	"strconv"
 )
 

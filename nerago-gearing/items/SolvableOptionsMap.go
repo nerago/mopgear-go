@@ -1,9 +1,9 @@
 package items
 
 import (
+	"github.com/nerago/mopgear-go/util/util_collection"
 	"iter"
 	"maps"
-	"paladin_gearing_go/util/util_collection"
 	"slices"
 )
 

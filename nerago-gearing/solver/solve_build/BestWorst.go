@@ -1,9 +1,9 @@
 package solve_build
 
 import (
-	"paladin_gearing_go/gear_model"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/util/util_rank"
+	"github.com/nerago/mopgear-go/gear_model"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/util/util_rank"
 	"slices"
 )
 

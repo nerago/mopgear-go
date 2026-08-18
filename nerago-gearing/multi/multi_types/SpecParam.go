@@ -1,9 +1,9 @@
 package multi_types
 
 import (
-	"paladin_gearing_go/gear_model"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/setup"
+	"github.com/nerago/mopgear-go/gear_model"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/setup"
 )
 
 type SpecParam struct {

@@ -1,6 +1,6 @@
 package items
 
-import "paladin_gearing_go/util/util_collection"
+import "github.com/nerago/mopgear-go/util/util_collection"
 
 type SlotItem int8
 

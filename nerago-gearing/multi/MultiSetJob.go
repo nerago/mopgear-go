@@ -1,10 +1,10 @@
 package multi
 
 import (
-	"paladin_gearing_go/loaders"
-	"paladin_gearing_go/multi/multi_types"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/weightfind/weight_types"
+	"github.com/nerago/mopgear-go/loaders"
+	"github.com/nerago/mopgear-go/multi/multi_types"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
 type MultiSetJob struct {

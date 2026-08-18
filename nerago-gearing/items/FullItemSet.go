@@ -1,8 +1,8 @@
 package items
 
 import (
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
 )
 
 // /////////////////////////////////////////////////////////////

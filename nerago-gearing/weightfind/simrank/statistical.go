@@ -2,9 +2,9 @@ package simrank
 
 import (
 	"cmp"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
 	"math"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
 )
 
 // const c_accuracy_statistical_critical_value = 1.6449 // 1.6449 corresponds to 10% false equals cases

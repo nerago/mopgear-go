@@ -1,8 +1,8 @@
 package multi_types
 
 import (
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/util"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/util"
 )
 
 type CommonCombo map[items.ItemRef]*items.FullItem

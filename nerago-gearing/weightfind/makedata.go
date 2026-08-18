@@ -1,18 +1,18 @@
 package weightfind
 
 import (
+	"github.com/nerago/mopgear-go/gear_model"
+	"github.com/nerago/mopgear-go/gear_model/requirements"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/setup"
+	"github.com/nerago/mopgear-go/simulate"
+	"github.com/nerago/mopgear-go/solver/solve_build"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_async"
+	"github.com/nerago/mopgear-go/util/util_collection"
+	"github.com/nerago/mopgear-go/weightfind/weight_types"
 	"math"
-	"paladin_gearing_go/gear_model"
-	"paladin_gearing_go/gear_model/requirements"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/setup"
-	"paladin_gearing_go/simulate"
-	"paladin_gearing_go/solver/solve_build"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_async"
-	"paladin_gearing_go/util/util_collection"
-	"paladin_gearing_go/weightfind/weight_types"
 )
 
 const (

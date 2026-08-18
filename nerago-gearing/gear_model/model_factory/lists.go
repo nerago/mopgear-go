@@ -1,9 +1,9 @@
 package model_factory
 
 import (
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/weightfind/weight_types"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
 // for noset - juggernaut, shamans, siegecrafter

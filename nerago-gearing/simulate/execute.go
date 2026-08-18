@@ -1,15 +1,15 @@
 package simulate
 
 import (
+	"github.com/nerago/mopgear-go/db"
+	"github.com/nerago/mopgear-go/files"
+	"github.com/nerago/mopgear-go/gear_model"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/stats/extern_stats"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_async"
 	"os"
-	"paladin_gearing_go/db"
-	"paladin_gearing_go/files"
-	"paladin_gearing_go/gear_model"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/stats/extern_stats"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_async"
 
 	"github.com/google/uuid"
 	wowsim_core "github.com/wowsims/mop/sim/core"

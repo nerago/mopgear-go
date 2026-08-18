@@ -1,9 +1,9 @@
 package tools
 
 import (
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/weightfind/weight_types"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
 func WritePawnString(weights weight_types.Weight1Basic, printer *util.PrintRecorder) string {

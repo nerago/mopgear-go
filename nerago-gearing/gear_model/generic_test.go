@@ -1,10 +1,10 @@
 package gear_model
 
 import (
+	"github.com/nerago/mopgear-go/gear_model/model_factory"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/stats"
 	"math/rand/v2"
-	"paladin_gearing_go/gear_model/model_factory"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/stats"
 	"testing"
 )
 

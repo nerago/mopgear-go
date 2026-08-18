@@ -1,7 +1,7 @@
 package weight_types
 
 import (
-	"paladin_gearing_go/stats"
+	"github.com/nerago/mopgear-go/stats"
 )
 
 type WeightType int

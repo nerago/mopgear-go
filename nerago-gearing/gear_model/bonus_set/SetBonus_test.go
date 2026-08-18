@@ -2,10 +2,10 @@ package bonus_set
 
 import (
 	"fmt"
+	"github.com/nerago/mopgear-go/gear_model"
+	. "github.com/nerago/mopgear-go/items"
+	. "github.com/nerago/mopgear-go/stats"
 	"math/rand/v2"
-	"paladin_gearing_go/gear_model"
-	. "paladin_gearing_go/items"
-	. "paladin_gearing_go/stats"
 	"testing"
 )
 

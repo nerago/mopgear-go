@@ -1,9 +1,9 @@
 package bonus_set
 
 import (
+	"github.com/nerago/mopgear-go/gear_model"
+	"github.com/nerago/mopgear-go/items"
 	"math/rand/v2"
-	"paladin_gearing_go/gear_model"
-	"paladin_gearing_go/items"
 )
 
 // func BenchmarkCalcBonusFull(test *testing.B) {

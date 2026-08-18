@@ -1,8 +1,8 @@
 package stats
 
 import (
+	"github.com/nerago/mopgear-go/util"
 	"iter"
-	"paladin_gearing_go/util"
 )
 
 type StatBlock [12]uint32

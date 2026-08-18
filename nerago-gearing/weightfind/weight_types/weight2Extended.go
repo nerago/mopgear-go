@@ -1,10 +1,10 @@
 package weight_types
 
 import (
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_collection"
 	"iter"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_collection"
 	"slices"
 )
 

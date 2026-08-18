@@ -1,7 +1,7 @@
 package gear_model
 
 import (
-	. "paladin_gearing_go/stats"
+	. "github.com/nerago/mopgear-go/stats"
 	"slices"
 )
 

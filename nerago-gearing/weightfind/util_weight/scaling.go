@@ -3,10 +3,10 @@ package util_weight
 import (
 	"iter"
 	"math"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_collection"
-	"paladin_gearing_go/weightfind/weight_types"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_collection"
+	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
 func ChooseSimUnfriendlyScalingBasic(inputData []weight_types.WeightInput, scaleTarget float64, keepUnderTarget bool, printer *util.PrintRecorder) stats.SimTypeMap[float64] {

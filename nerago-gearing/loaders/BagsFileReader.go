@@ -2,10 +2,10 @@ package loaders
 
 import (
 	"encoding/json"
+	"github.com/nerago/mopgear-go/files"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/util/util_collection"
 	"os"
-	"paladin_gearing_go/files"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/util/util_collection"
 )
 
 func BagsFileReader_Read() EquippedArray {

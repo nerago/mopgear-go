@@ -1,10 +1,10 @@
 package gear_model
 
 import (
+	. "github.com/nerago/mopgear-go/db"
+	. "github.com/nerago/mopgear-go/items"
+	. "github.com/nerago/mopgear-go/stats"
 	"maps"
-	. "paladin_gearing_go/db"
-	. "paladin_gearing_go/items"
-	. "paladin_gearing_go/stats"
 )
 
 type EnchantChoice map[SlotItem]GemInfo

@@ -1,9 +1,9 @@
 package db
 
 import (
+	"github.com/nerago/mopgear-go/files"
+	"github.com/nerago/mopgear-go/items"
 	"os"
-	"paladin_gearing_go/files"
-	"paladin_gearing_go/items"
 	"strings"
 )
 

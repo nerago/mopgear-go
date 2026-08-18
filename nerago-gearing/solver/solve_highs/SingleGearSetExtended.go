@@ -1,11 +1,11 @@
 package solve_highs
 
 import (
-	"paladin_gearing_go/solver/solve_highs_types"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util/util_collection"
-	"paladin_gearing_go/util/util_highs"
-	"paladin_gearing_go/weightfind/weight_types"
+	"github.com/nerago/mopgear-go/solver/solve_highs_types"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util/util_collection"
+	"github.com/nerago/mopgear-go/util/util_highs"
+	"github.com/nerago/mopgear-go/weightfind/weight_types"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )

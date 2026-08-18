@@ -2,10 +2,10 @@ package solve_build
 
 import (
 	"fmt"
+	"github.com/nerago/mopgear-go/gear_model"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/util/util_collection"
 	"math/rand"
-	"paladin_gearing_go/gear_model"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/util/util_collection"
 )
 
 func SolverBuildRandom_MakeN_FullAndValidate(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, targetCount int, label string) []items.FullItemSet {

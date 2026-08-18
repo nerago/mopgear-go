@@ -1,6 +1,6 @@
 package bonus_set
 
-import "paladin_gearing_go/stats"
+import "github.com/nerago/mopgear-go/stats"
 
 var g_extendedData = map[string][2]map[stats.SimType]float64{
 	// regular sacred shield

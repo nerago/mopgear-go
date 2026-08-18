@@ -2,10 +2,10 @@ package weight_types
 
 import (
 	"encoding/json"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
 	"iter"
 	"math"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
 )
 
 type Weight1Basic struct {

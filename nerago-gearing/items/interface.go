@@ -1,8 +1,8 @@
 package items
 
 import (
+	"github.com/nerago/mopgear-go/stats"
 	"iter"
-	"paladin_gearing_go/stats"
 )
 
 type IItem interface {

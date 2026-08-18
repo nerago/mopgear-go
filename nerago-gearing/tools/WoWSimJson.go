@@ -2,11 +2,11 @@ package tools
 
 import (
 	"encoding/json"
+	"github.com/nerago/mopgear-go/db"
+	"github.com/nerago/mopgear-go/gear_model"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/util"
 	"os"
-	"paladin_gearing_go/db"
-	"paladin_gearing_go/gear_model"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/util"
 )
 
 func WowSimJson_Write(equip *items.FullEquipMap, model *gear_model.SpecModel, printer *util.PrintRecorder) string {

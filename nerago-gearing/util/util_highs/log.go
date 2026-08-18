@@ -1,8 +1,8 @@
 package util_highs
 
 import (
+	"github.com/nerago/mopgear-go/util"
 	"os"
-	"paladin_gearing_go/util"
 )
 
 func makeTempFilename() string {

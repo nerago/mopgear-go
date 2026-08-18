@@ -1,12 +1,12 @@
 package gear_model
 
 import (
-	"paladin_gearing_go/gear_model/bonus_set"
-	"paladin_gearing_go/gear_model/ratings"
-	. "paladin_gearing_go/items"
-	. "paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/weightfind/weight_types"
+	"github.com/nerago/mopgear-go/gear_model/bonus_set"
+	"github.com/nerago/mopgear-go/gear_model/ratings"
+	. "github.com/nerago/mopgear-go/items"
+	. "github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/weightfind/weight_types"
 	"slices"
 )
 

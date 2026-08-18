@@ -2,9 +2,9 @@ package simrank
 
 import (
 	"cmp"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_collection"
 	"iter"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_collection"
 	"slices"
 )
 

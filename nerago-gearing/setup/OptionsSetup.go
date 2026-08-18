@@ -1,14 +1,14 @@
 package setup
 
 import (
-	"paladin_gearing_go/db"
-	"paladin_gearing_go/gear_model"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/loaders"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/tools"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_collection"
+	"github.com/nerago/mopgear-go/db"
+	"github.com/nerago/mopgear-go/gear_model"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/loaders"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/tools"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_collection"
 )
 
 type MissingEnchantMode int8

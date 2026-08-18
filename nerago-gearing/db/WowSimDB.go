@@ -2,13 +2,13 @@ package db
 
 import (
 	"encoding/json"
+	"github.com/nerago/mopgear-go/files"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/stats/extern_stats"
+	"github.com/nerago/mopgear-go/util"
 	"iter"
 	"os"
-	"paladin_gearing_go/files"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/stats/extern_stats"
-	"paladin_gearing_go/util"
 )
 
 var loaded = false

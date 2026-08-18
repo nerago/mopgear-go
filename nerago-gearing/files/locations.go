@@ -1,6 +1,6 @@
 package files
 
-import "paladin_gearing_go/stats"
+import "github.com/nerago/mopgear-go/stats"
 
 const (
 	WowSimDB   = `wowsim-external/assets/database/db.json`

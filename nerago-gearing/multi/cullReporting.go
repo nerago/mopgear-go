@@ -2,10 +2,10 @@ package multi
 
 import (
 	"cmp"
-	"paladin_gearing_go/db"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_collection"
+	"github.com/nerago/mopgear-go/db"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_collection"
 	"slices"
 )
 

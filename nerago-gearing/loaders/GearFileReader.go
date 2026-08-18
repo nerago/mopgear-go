@@ -2,8 +2,8 @@ package loaders
 
 import (
 	"encoding/json"
+	"github.com/nerago/mopgear-go/items"
 	"os"
-	"paladin_gearing_go/items"
 )
 
 func GearFileReader_Read(filename string) []EquippedItem {

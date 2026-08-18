@@ -2,12 +2,12 @@ package tools
 
 import (
 	"errors"
+	"github.com/nerago/mopgear-go/gearproto"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/weightfind/weight_types"
 	"io/fs"
 	"os"
-	"paladin_gearing_go/gearproto"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 
 	"google.golang.org/protobuf/encoding/protojson"

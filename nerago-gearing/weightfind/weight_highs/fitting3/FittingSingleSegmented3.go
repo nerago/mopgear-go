@@ -3,10 +3,10 @@ package fitting3
 import (
 	"cmp"
 	"fmt"
-	"paladin_gearing_go/util/util_async"
-	"paladin_gearing_go/util/util_highs"
-	"paladin_gearing_go/weightfind/util_weight"
-	"paladin_gearing_go/weightfind/weight_highs/fitting2"
+	"github.com/nerago/mopgear-go/util/util_async"
+	"github.com/nerago/mopgear-go/util/util_highs"
+	"github.com/nerago/mopgear-go/weightfind/util_weight"
+	"github.com/nerago/mopgear-go/weightfind/weight_highs/fitting2"
 	"slices"
 
 	"github.com/bartolsthoorn/gohighs/highs"

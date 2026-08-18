@@ -1,14 +1,14 @@
 package solve_highs_types
 
 import (
+	"github.com/nerago/mopgear-go/gear_model"
+	"github.com/nerago/mopgear-go/gear_model/bonus_set"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util/util_collection"
+	"github.com/nerago/mopgear-go/util/util_highs"
+	"github.com/nerago/mopgear-go/weightfind/weight_types"
 	"math"
-	"paladin_gearing_go/gear_model"
-	"paladin_gearing_go/gear_model/bonus_set"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util/util_collection"
-	"paladin_gearing_go/util/util_highs"
-	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 )
 

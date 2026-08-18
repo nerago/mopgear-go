@@ -1,13 +1,13 @@
 package fitting3
 
 import (
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_async"
+	"github.com/nerago/mopgear-go/weightfind/util_weight"
+	"github.com/nerago/mopgear-go/weightfind/weight_highs/fitting2"
+	"github.com/nerago/mopgear-go/weightfind/weight_types"
 	"iter"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_async"
-	"paladin_gearing_go/weightfind/util_weight"
-	"paladin_gearing_go/weightfind/weight_highs/fitting2"
-	"paladin_gearing_go/weightfind/weight_types"
 	"slices"
 
 	"github.com/bartolsthoorn/gohighs/highs"

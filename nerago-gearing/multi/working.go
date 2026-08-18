@@ -1,14 +1,14 @@
 package multi
 
 import (
+	"github.com/nerago/mopgear-go/gear_model"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/multi/multi_types"
+	"github.com/nerago/mopgear-go/solver"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_async"
+	"github.com/nerago/mopgear-go/weightfind/weight_types"
 	"maps"
-	"paladin_gearing_go/gear_model"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/multi/multi_types"
-	"paladin_gearing_go/solver"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_async"
-	"paladin_gearing_go/weightfind/weight_types"
 )
 
 type workingGroup struct {

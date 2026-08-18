@@ -1,9 +1,9 @@
 package bonus_set
 
 import (
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/util"
 	"iter"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/util"
 	"slices"
 )
 

@@ -1,12 +1,12 @@
 package multi
 
 import (
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/multi/multi_types"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_collection"
 	"iter"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/multi/multi_types"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_collection"
 	"slices"
 	"strconv"
 	"strings"

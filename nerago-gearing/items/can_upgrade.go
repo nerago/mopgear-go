@@ -1,7 +1,7 @@
 package items
 
 import (
-	"paladin_gearing_go/util"
+	"github.com/nerago/mopgear-go/util"
 	"slices"
 )
 

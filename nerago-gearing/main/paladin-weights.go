@@ -1,13 +1,13 @@
 package main
 
 import (
-	"paladin_gearing_go/files"
-	"paladin_gearing_go/gear_model/model_factory"
-	"paladin_gearing_go/simulate"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_async"
-	"paladin_gearing_go/weightfind"
-	"paladin_gearing_go/weightfind/weight_types"
+	"github.com/nerago/mopgear-go/files"
+	"github.com/nerago/mopgear-go/gear_model/model_factory"
+	"github.com/nerago/mopgear-go/simulate"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_async"
+	"github.com/nerago/mopgear-go/weightfind"
+	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
 //goland:noinspection GoBoolExpressions

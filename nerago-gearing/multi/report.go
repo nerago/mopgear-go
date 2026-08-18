@@ -2,15 +2,15 @@ package multi
 
 import (
 	"cmp"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/multi/multi_types"
-	"paladin_gearing_go/setup"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/tools"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_collection"
-	"paladin_gearing_go/util/util_rank"
-	"paladin_gearing_go/weightfind/simrank"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/multi/multi_types"
+	"github.com/nerago/mopgear-go/setup"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/tools"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_collection"
+	"github.com/nerago/mopgear-go/util/util_rank"
+	"github.com/nerago/mopgear-go/weightfind/simrank"
 	"slices"
 )
 

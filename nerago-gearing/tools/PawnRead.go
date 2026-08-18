@@ -2,12 +2,12 @@ package tools
 
 import (
 	"errors"
+	"github.com/nerago/mopgear-go/files"
+	"github.com/nerago/mopgear-go/gear_model/ratings"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/weightfind/weight_types"
 	"io/fs"
 	"os"
-	"paladin_gearing_go/files"
-	"paladin_gearing_go/gear_model/ratings"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/weightfind/weight_types"
 	"strconv"
 	"strings"
 )

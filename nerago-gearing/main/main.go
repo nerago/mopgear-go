@@ -1,12 +1,12 @@
 package main
 
 import (
+	"github.com/nerago/mopgear-go/db"
+	"github.com/nerago/mopgear-go/files"
+	"github.com/nerago/mopgear-go/util"
 	"io"
 	"log"
 	"os"
-	"paladin_gearing_go/db"
-	"paladin_gearing_go/files"
-	"paladin_gearing_go/util"
 	"runtime/pprof"
 	"time"
 
@@ -104,7 +104,7 @@ func core(printer *util.PrintRecorder) {
 
 	//statWeights_CompareAlgorithms()
 
-	//statWeights_updateAll()
+	statWeights_updateAll()
 
 	//PaladinMultiRun()
 	PaladinMultiRunLite()

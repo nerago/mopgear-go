@@ -1,15 +1,15 @@
 package main
 
 import (
-	"paladin_gearing_go/files"
-	"paladin_gearing_go/gear_model/model_factory"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/loaders"
-	"paladin_gearing_go/multi"
-	"paladin_gearing_go/multi/multi_types"
-	"paladin_gearing_go/setup"
-	"paladin_gearing_go/simulate"
-	"paladin_gearing_go/util"
+	"github.com/nerago/mopgear-go/files"
+	"github.com/nerago/mopgear-go/gear_model/model_factory"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/loaders"
+	"github.com/nerago/mopgear-go/multi"
+	"github.com/nerago/mopgear-go/multi/multi_types"
+	"github.com/nerago/mopgear-go/setup"
+	"github.com/nerago/mopgear-go/simulate"
+	"github.com/nerago/mopgear-go/util"
 	"slices"
 )
 

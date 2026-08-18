@@ -1,9 +1,9 @@
 package multi
 
 import (
-	"paladin_gearing_go/multi/multi_types"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_async"
+	"github.com/nerago/mopgear-go/multi/multi_types"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_async"
 	"sync"
 	"time"
 )

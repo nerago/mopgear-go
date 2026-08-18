@@ -2,13 +2,13 @@ package upgrades
 
 import (
 	"cmp"
-	"paladin_gearing_go/db"
-	"paladin_gearing_go/files"
-	"paladin_gearing_go/setup"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_async"
-	"paladin_gearing_go/util/util_collection"
+	"github.com/nerago/mopgear-go/db"
+	"github.com/nerago/mopgear-go/files"
+	"github.com/nerago/mopgear-go/setup"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_async"
+	"github.com/nerago/mopgear-go/util/util_collection"
 	"slices"
 	"strconv"
 )

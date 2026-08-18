@@ -3,7 +3,7 @@
 
 package items
 
-import "paladin_gearing_go/stats"
+import "github.com/nerago/mopgear-go/stats"
 
 func SolvableItemSet_RecalculateTotal(set *SolvableItemSet) {
 	set.total = stats.StatBlock{}

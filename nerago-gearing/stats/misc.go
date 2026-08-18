@@ -1,6 +1,6 @@
 package stats
 
-import "paladin_gearing_go/util"
+import "github.com/nerago/mopgear-go/util"
 
 type GemInfo struct {
 	Id    uint32

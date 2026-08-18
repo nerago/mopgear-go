@@ -1,8 +1,8 @@
 package main
 
 import (
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/stats"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/stats"
 )
 
 func commonComboCurrent() map[items.ItemId]stats.ReforgeRecipe {

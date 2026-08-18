@@ -1,9 +1,9 @@
 package stats
 
 import (
+	"github.com/nerago/mopgear-go/util"
 	"iter"
 	"math"
-	"paladin_gearing_go/util"
 )
 
 type StatBlockFloat [12]float64

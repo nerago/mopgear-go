@@ -1,10 +1,10 @@
 package gear_model
 
 import (
-	"paladin_gearing_go/gear_model/ratings"
-	"paladin_gearing_go/gear_model/requirements"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util/util_collection"
+	"github.com/nerago/mopgear-go/gear_model/ratings"
+	"github.com/nerago/mopgear-go/gear_model/requirements"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util/util_collection"
 )
 
 type StatRequirements interface {

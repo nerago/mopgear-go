@@ -2,8 +2,8 @@ package util_async
 
 import (
 	"context"
+	"github.com/nerago/mopgear-go/util"
 	"os"
-	"paladin_gearing_go/util"
 	"sync"
 	"time"
 )

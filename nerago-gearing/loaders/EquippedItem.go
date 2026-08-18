@@ -1,10 +1,10 @@
 package loaders
 
 import (
-	"paladin_gearing_go/db"
-	"paladin_gearing_go/items"
-	"paladin_gearing_go/stats"
-	"paladin_gearing_go/util/util_collection"
+	"github.com/nerago/mopgear-go/db"
+	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util/util_collection"
 	"slices"
 )
 

@@ -1,10 +1,10 @@
 package stats
 
 import (
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_collection"
 	"iter"
 	"math"
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_collection"
 )
 
 type SimType uint8

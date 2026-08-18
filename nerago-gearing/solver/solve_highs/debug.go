@@ -1,8 +1,8 @@
 package solve_highs
 
 import (
-	"paladin_gearing_go/util"
-	"paladin_gearing_go/util/util_highs"
+	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_highs"
 )
 
 func debugPrint(solution *util_highs.Solution2, build *util_highs.LinearBuilder, printer *util.PrintRecorder) {

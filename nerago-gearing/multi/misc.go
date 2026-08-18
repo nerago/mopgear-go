@@ -1,7 +1,7 @@
 package multi
 
 import (
-	"paladin_gearing_go/items"
+	"github.com/nerago/mopgear-go/items"
 	"sync"
 )
 

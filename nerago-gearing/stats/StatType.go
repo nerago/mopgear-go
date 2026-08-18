@@ -1,7 +1,7 @@
 package stats
 
 import (
-	"paladin_gearing_go/util/util_collection"
+	"github.com/nerago/mopgear-go/util/util_collection"
 )
 
 type StatType uint8
