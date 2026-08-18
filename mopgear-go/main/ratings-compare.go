@@ -47,19 +47,19 @@ func statWeights_CompareAlgorithms() {
 	//inputDataRandom := slices.Concat(inputDataRandomUnsafe, inputDataRandomSafe)
 	//trackProcess.SetDone()
 	//
-	//writeWeightInputsToFile(inputDataGrid, "sim-stats-compare-grid.json")
-	//writeWeightInputsToFile(inputDataRandomUnsafe, "sim-stats-compare-rand-unsafe.json")
-	//writeWeightInputsToFile(inputDataRandomSafe, "sim-stats-compare-rand-safe.json")
-	//writeWeightInputsToFile(inputDataRandom, "sim-stats-compare-rand.json")
-	//writeWeightBasicInputsToFile(inputDataBasic, basicSimBase, "sim-stats-compare-basic.json")
+	//writeWeightInputsToFile(inputDataGrid, "tempdata/sim-stats-compare-grid.json")
+	//writeWeightInputsToFile(inputDataRandomUnsafe, "tempdata/sim-stats-compare-rand-unsafe.json")
+	//writeWeightInputsToFile(inputDataRandomSafe, "tempdata/sim-stats-compare-rand-safe.json")
+	//writeWeightInputsToFile(inputDataRandom, "tempdata/sim-stats-compare-rand.json")
+	//writeWeightBasicInputsToFile(inputDataBasic, basicSimBase, "tempdata/sim-stats-compare-basic.json")
 
-	inputDataBasic, basicSimBase := readWeightBasicInputsFile("sim-stats-compare-basic.json")
+	inputDataBasic, basicSimBase := readWeightBasicInputsFile("tempdata/sim-stats-compare-basic.json")
 	//inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Mitigation-NoSet.json")
 	//inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
 	inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Mitigation-WithSet.json")
 	inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Mitigation-WithSet.json")
-	//inputDataGrid := readWeightInputFile("sim-stats-compare-grid.json")
-	//inputDataRandom := readWeightInputFile("sim-stats-compare-rand.json")
+	//inputDataGrid := readWeightInputFile("tempdata/sim-stats-compare-grid.json")
+	//inputDataRandom := readWeightInputFile("tempdata/sim-stats-compare-rand.json")
 	mixedInputDataFull := slices.Concat(inputDataGrid, inputDataRandom)
 
 	//sampleSize := 50
