@@ -12,6 +12,7 @@ import (
 	"paladin_gearing_go/util/util_async"
 	"paladin_gearing_go/util/util_collection"
 	"slices"
+	"sync/atomic"
 )
 
 const c_decimateTargetItemsPerSlot = 3
@@ -56,8 +57,9 @@ func (work *specWorker) runDecimateWork(tracker *util.TrackProgress, printer *ut
 
 func (work *specWorker) decimateForBaseSet(tracker *util.TrackProgress, printer *util.PrintRecorder, timeout int, baseItemSet items.SolvableItemSet, solveOptions items.SolvableOptionsMap, solverModel *solve_highs_types.SolverModel) {
 	estimateSteps := uint64(baseItemSet.Items().CountNonEmptySlots())
-	currentStep := new(uint64)
-	tracker.RunFromInt(currentStep, estimateSteps)
+	currentStep := new(atomic.Uint64)
+	tracker.RunFromAtomicInt(currentStep, estimateSteps)
+	defer tracker.SetDone()
 
 	bestBySlot := items.SlotEquipMap[*util_collection.SetComparable[items.ItemId]]{}
 
@@ -70,36 +72,34 @@ func (work *specWorker) decimateForBaseSet(tracker *util.TrackProgress, printer 
 		}
 	}
 
-	for i, item := range baseItemSet.Items() {
-		if item != nil {
-			slotEquip := items.SlotEquip(i)
-
+	util_async.ForEach_Slice(c_decimateThreadCount, items.SlotEquip_List, func(slotEquipPtr *items.SlotEquip) {
+		slotEquip := *slotEquipPtr
+		if baseItemSet.Items().Has(slotEquip) {
 			if solveOptions.CountSlotUniqueItemIds(slotEquip) > c_decimateTargetItemsPerSlot {
-				work.decimateFindSlotBestN(&bestBySlot, slotEquip, &solveOptions, solverModel, printer, timeout)
+				bestSlotSet := bestBySlot.GetOrPanic(slotEquip)
+				work.decimateFindSlotBestN(bestSlotSet, slotEquip, &solveOptions, solverModel, printer, timeout)
 			} else {
 				for itemId := range solveOptions.SeqSlotUniqueItemIds(slotEquip) {
 					bestBySlot.GetOrPanic(slotEquip).AddIfMissing(itemId)
 				}
 			}
-
-			tracker.NewChild().SetDone()
-			*currentStep++
+			currentStep.Add(1)
 		}
-	}
+	})
 
 	work.decimateRestoreSetBonusItems(&bestBySlot, work.ItemOptions(), work.expectAllBonusItemsAvailable)
 
 	work.decimateApply(&bestBySlot, printer)
 }
 
-func (work *specWorker) decimateFindSlotBestN(bestBySlot *items.SlotEquipMap[*util_collection.SetComparable[items.ItemId]], slotEquip items.SlotEquip, solveOptionsBase *items.SolvableOptionsMap, solverModel *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int) {
+func (work *specWorker) decimateFindSlotBestN(bestForSlot *util_collection.SetComparable[items.ItemId], slotEquip items.SlotEquip, solveOptionsBase *items.SolvableOptionsMap, solverModel *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int) {
 	targetItemCount := c_decimateTargetItemsPerSlot
 	if slotEquip == items.Equip_Ring1 || slotEquip == items.Equip_Ring2 || slotEquip == items.Equip_Trinket1 || slotEquip == items.Equip_Trinket2 {
 		targetItemCount = c_decimateTargetItemsPairedSlot
 	}
 
-	for bestBySlot.GetOrPanic(slotEquip).Size() < targetItemCount {
-		restrictedOptions, isValid := work.decimatePrepareItemOptions(bestBySlot, slotEquip, solveOptionsBase)
+	for bestForSlot.Size() < targetItemCount {
+		restrictedOptions, isValid := work.decimatePrepareItemOptions(bestForSlot, solveOptionsBase)
 		if !isValid {
 			return
 		}
@@ -111,16 +111,16 @@ func (work *specWorker) decimateFindSlotBestN(bestBySlot *items.SlotEquipMap[*ut
 			if nextBestItem == nil {
 				return
 			}
-			bestBySlot.GetOrPanic(slotEquip).AddIfMissing(nextBestItem.ItemId())
+			bestForSlot.AddIfMissing(nextBestItem.ItemId())
 		} else {
 			return // set was probably infeasible without removed items, bail out
 		}
 	}
 }
 
-func (work *specWorker) decimatePrepareItemOptions(bestBySlot *items.SlotEquipMap[*util_collection.SetComparable[items.ItemId]], slotEquip items.SlotEquip, solveOptionsBase *items.SolvableOptionsMap) (items.SolvableOptionsMap, bool) {
+func (work *specWorker) decimatePrepareItemOptions(bestForSlot *util_collection.SetComparable[items.ItemId], solveOptionsBase *items.SolvableOptionsMap) (items.SolvableOptionsMap, bool) {
 	restrictedOptions := solveOptionsBase.Clone()
-	for removeId := range bestBySlot.GetOrNilValue(slotEquip).SeqValues() {
+	for removeId := range bestForSlot.SeqValues() {
 		if restrictedOptions.RemoveItemIdFromAll(removeId) {
 			//slot got emptied (either this or paired), bail out
 			return items.SolvableOptionsMap{}, false
