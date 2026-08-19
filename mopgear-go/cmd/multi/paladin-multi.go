@@ -3,6 +3,7 @@ package main
 import (
 	"slices"
 
+	"github.com/nerago/mopgear-go/cmd/mygear"
 	"github.com/nerago/mopgear-go/files"
 	"github.com/nerago/mopgear-go/gear_model/model_factory"
 	"github.com/nerago/mopgear-go/items"
@@ -13,121 +14,6 @@ import (
 	"github.com/nerago/mopgear-go/simulate"
 	"github.com/nerago/mopgear-go/util"
 )
-
-const (
-	trinketZandSpark = 96398
-	trinketFortZand  = 96793
-	trinketPrimRage  = 94519
-	trinketTwinsGaze = 94529
-
-	trinketFusionCoreCelestial  = 104961
-	trinketThokTailCelestial    = 105111
-	trinketVialCorruptNormal    = 102306
-	trinketRookUnluckyNormal    = 102296
-	trinketEyeGalakrasCelestial = 104993
-	trinketSkeerBloodCelestial  = 105134
-
-	legendMeleeCloak = 102249
-	legendTankCloak  = 102250
-)
-
-// TIER
-var retT15 = []items.ItemId{
-	95282, // ret tier15 normal head
-	96658, // ret tier15 shoulder heroic
-}
-var retT16 = []items.ItemId{
-	99052, // ret t16 chest celestial
-	99002, // ret t16 hand celestial
-	98985, // ret t16 head celestial
-	98986, // ret t16 legs celestial
-	98987, // ret t16 shoulder celestial
-	99139, // ret t16 legs normal
-}
-var protT15 = []items.ItemId{
-	95291, // prot tier15 hand normal
-	96664, // prot tier15 chest heroic
-	96666, // prot tier15 head heroic
-	96667, // prot tier15 leg heroic
-	96668, // prot tier15 shoulder heroic
-}
-var protT16 = []items.ItemId{
-	99126, // prot t16 chest normal
-	99128, // prot t16 head normal
-	99129, // prot t16 legs normal
-	99130, // prot t16 shoulder normal
-	99026, // prot t16 legs celestial
-	99027, // prot t16 shoulder celestial
-	99028, // prot t16 hand celestial
-}
-
-// TRINKET
-var trinketsDpsP3 = []items.ItemId{
-	trinketZandSpark,
-}
-var trinketsTankP3 = []items.ItemId{
-	trinketFortZand,
-}
-var newTrinketsDamage = []items.ItemId{
-	trinketThokTailCelestial,
-	trinketFusionCoreCelestial,
-	trinketSkeerBloodCelestial,
-}
-var newTrinketsTank = []items.ItemId{
-	trinketVialCorruptNormal,
-	trinketRookUnluckyNormal,
-}
-
-// REMAINING P3
-var miscOtherP3 = []items.ItemId{
-	96420, // talisman of angry spirits
-	96373, // cloudbreaker belt heroic
-	96542, // tidal force treads
-	96500, // scaled tyrant heroic
-}
-
-// ORGRIMMAR
-var timeless = []items.ItemId{
-	101882, // cliffbreaker helm exp/mastery
-	101887, // timeless ring haste/mastery. Cliffbreaker Seal of the Faultline. 549 (is upgraded)
-	// Cliffbreaker Seal of the Landslide. hit/expertise. 535 (not upgraded)
-	101947, //  Elder Tortoiseshell Seal of the Mountainbed. 549 (is upgraded)
-}
-var celestial = []items.ItemId{
-	105011, // Demolisher's Reinforced Belt
-}
-var celestialRaden = []items.ItemId{
-	95011, // lighting clawfeet
-	95022, // Ra-den's Ruinous Ring
-}
-var orgRaidDrops = []items.ItemId{
-	103787, // poisonbinder girth
-	103738, // bubble bracers
-	105785, // vanguard burly bracer
-	103734, // zoid gauntlets
-	103735, // tar-coated gauntlets
-	103916, // jugg ignition keys
-	104461, // rage-blind greathelm
-	104415, // bubble bracer heroic
-	103892, // tharnok helm
-	105767, // hoodrych chest ordos
-	104417, // corruption-rotted gauntlets
-	104416, // chest congealed corruption heroic
-	103796, // seal kings norm
-	103798, // bloodclaw band
-	105761, // Partik's Purified Legplates
-}
-var orgOneHandAndShield = []items.ItemId{
-	103826, // xifeng weapon
-	103872, // bulwurk of fallen general
-	103871, // tower shield
-	104485, // shield of mockery
-	103972, // kilruk sword
-	104464, // xifeng heroic
-	104560, // bulwurk of fallen general heroic
-}
-
-var legendCloaks = []items.ItemId{legendTankCloak, legendMeleeCloak}
 
 func PaladinMultiRun(printer *util.PrintRecorder) {
 
@@ -221,25 +107,25 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		},
 	}
 
-	ret.AddExtraItem(legendMeleeCloak)
-	addExtrasToEach(legendCloaks, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
+	ret.AddExtraItem(mygear.LegendMeleeCloak)
+	addExtrasToEach(mygear.LegendCloaks, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
-	addExtrasToEach(retT15, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
-	addExtrasToEach(retT16, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
+	addExtrasToEach(mygear.RetT15, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
+	addExtrasToEach(mygear.RetT16, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
-	addExtrasToEach(protT15, &protBalanced, &protMitigation, &protSurvival, &protHeal)
-	addExtrasToEach(protT16, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
+	addExtrasToEach(mygear.ProtT15, &protBalanced, &protMitigation, &protSurvival, &protHeal)
+	addExtrasToEach(mygear.ProtT16, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
-	addExtrasToEach(trinketsDpsP3, &ret, &protDps)
-	addExtrasToEach(trinketsDpsP3, &protBalanced, &protMitigation, &protSurvival, &protHeal)
-	addExtrasToEach(trinketsTankP3, &protBalanced, &protMitigation, &protSurvival, &protHeal)
+	addExtrasToEach(mygear.TrinketsDpsP3, &ret, &protDps)
+	addExtrasToEach(mygear.TrinketsDpsP3, &protBalanced, &protMitigation, &protSurvival, &protHeal)
+	addExtrasToEach(mygear.TrinketsTankP3, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
-	addExtrasToEach(miscOtherP3, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
+	addExtrasToEach(mygear.MiscOtherP3, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
-	newStuffP5 := slices.Concat(timeless, celestial, celestialRaden, orgRaidDrops, newTrinketsDamage)
+	newStuffP5 := slices.Concat(mygear.Timeless, mygear.Celestial, mygear.CelestialRaden, mygear.OrgRaidDrops, mygear.NewTrinketsDamage)
 	addExtrasToEach(newStuffP5, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
-	addExtrasToEach(newTrinketsTank, &protBalanced, &protMitigation, &protSurvival, &protHeal)
-	addExtrasToEach(orgOneHandAndShield, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
+	addExtrasToEach(mygear.NewTrinketsTank, &protBalanced, &protMitigation, &protSurvival, &protHeal)
+	addExtrasToEach(mygear.OrgOneHandAndShield, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
 	ret.AddExtraItems([]items.ItemId{
 		95281,  // ret tier15 gloves normal
@@ -297,29 +183,29 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	// predetermined choices
 	ret.ForceSingleSlot(items.Equip_Weapon, 103968) // britomark
-	ret.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
-	ret.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	ret.ForceSingleSlot(items.Equip_Trinket2, trinketEyeGalakrasCelestial)
-	protDps.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
-	protDps.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	protDps.ForceSingleSlot(items.Equip_Trinket2, trinketSkeerBloodCelestial)
-	protBalanced.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
-	protBalanced.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	protBalanced.ForceSingleSlot(items.Equip_Trinket2, trinketSkeerBloodCelestial)
-	protBalanced.AddReportVariant(items.Equip_Trinket2, trinketVialCorruptNormal)
-	protMitigation.ForceSingleSlot(items.Equip_Back, legendTankCloak)
-	protMitigation.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	protMitigation.ForceSingleSlot(items.Equip_Trinket2, trinketZandSpark)
-	protMitigation.AddReportVariant(items.Equip_Trinket1, trinketThokTailCelestial)
-	protMitigation.AddReportVariant(items.Equip_Trinket2, trinketSkeerBloodCelestial)
-	protSurvival.ForceSingleSlot(items.Equip_Back, legendTankCloak)
-	protSurvival.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	protSurvival.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
-	protSurvival.AddReportVariant(items.Equip_Trinket1, trinketSkeerBloodCelestial)
-	protSurvival.AddReportVariant(items.Equip_Trinket2, trinketThokTailCelestial)
-	protHeal.ForceSingleSlot(items.Equip_Back, legendTankCloak)
-	protHeal.ForceSingleSlot(items.Equip_Trinket1, trinketSkeerBloodCelestial)
-	protHeal.ForceSingleSlot(items.Equip_Trinket2, trinketZandSpark)
+	ret.ForceSingleSlot(items.Equip_Back, mygear.LegendMeleeCloak)
+	ret.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
+	ret.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketEyeGalakrasCelestial)
+	protDps.ForceSingleSlot(items.Equip_Back, mygear.LegendMeleeCloak)
+	protDps.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
+	protDps.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketSkeerBloodCelestial)
+	protBalanced.ForceSingleSlot(items.Equip_Back, mygear.LegendMeleeCloak)
+	protBalanced.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
+	protBalanced.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketSkeerBloodCelestial)
+	protBalanced.AddReportVariant(items.Equip_Trinket2, mygear.TrinketVialCorruptNormal)
+	protMitigation.ForceSingleSlot(items.Equip_Back, mygear.LegendTankCloak)
+	protMitigation.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
+	protMitigation.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketZandSpark)
+	protMitigation.AddReportVariant(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
+	protMitigation.AddReportVariant(items.Equip_Trinket2, mygear.TrinketSkeerBloodCelestial)
+	protSurvival.ForceSingleSlot(items.Equip_Back, mygear.LegendTankCloak)
+	protSurvival.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
+	protSurvival.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketFortZand)
+	protSurvival.AddReportVariant(items.Equip_Trinket1, mygear.TrinketSkeerBloodCelestial)
+	protSurvival.AddReportVariant(items.Equip_Trinket2, mygear.TrinketThokTailCelestial)
+	protHeal.ForceSingleSlot(items.Equip_Back, mygear.LegendTankCloak)
+	protHeal.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketSkeerBloodCelestial)
+	protHeal.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketZandSpark)
 
 	// HELMET
 	blockHelmetsWithoutCapacitance(&ret)

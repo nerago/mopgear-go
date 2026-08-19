@@ -6,8 +6,7 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/nerago/mopgear-go/cmd/multi"
-	"github.com/nerago/mopgear-go/cmd/upgrade"
+	"github.com/nerago/mopgear-go/cmd/mygear"
 	"github.com/nerago/mopgear-go/db"
 	"github.com/nerago/mopgear-go/files"
 	"github.com/nerago/mopgear-go/gear_model"
@@ -15,7 +14,6 @@ import (
 	"github.com/nerago/mopgear-go/gear_model/model_factory"
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/loaders"
-	"github.com/nerago/mopgear-go/main"
 	"github.com/nerago/mopgear-go/setup"
 	"github.com/nerago/mopgear-go/simulate"
 	"github.com/nerago/mopgear-go/solver"
@@ -48,7 +46,7 @@ func findBestSubjectToCommon(printer *util.PrintRecorder) {
 
 	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtSurvival, &model, setup.MissingEnchant_Panic, printer)
 
-	for _, itemId := range upgrade.substituteItemsProt {
+	for _, itemId := range mygear.SubstituteItemsProt {
 		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 		itemOptions.AddSeveralOptions(example.SlotItem(), opts)
 	}
@@ -133,7 +131,7 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), &model, setup.MissingEnchant_Panic, printer)
 
 	itemOptions := setup.OptionsSetup_FromGearFile(gearFile, &model, setup.MissingEnchant_Panic, printer)
-	for _, itemId := range upgrade.substituteItemsProt {
+	for _, itemId := range mygear.SubstituteItemsProt {
 		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 		itemOptions.AddSeveralOptions(example.SlotItem(), opts)
 	}
@@ -187,7 +185,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 
 	printer.Println("SETUP options")
 	itemOptionsShared := setup.OptionsSetup_FromGearFile(startGear, &model, setup.MissingEnchant_Panic, printer)
-	for _, itemId := range upgrade.substituteItemsProt {
+	for _, itemId := range mygear.SubstituteItemsProt {
 		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 		itemOptionsShared.AddSeveralOptions(example.SlotItem(), opts)
 	}
@@ -265,21 +263,21 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 
 func trinketSims(printer *util.PrintRecorder) {
 	itemIds := []items.ItemId{
-		94519,                          // crit prim rage
-		945190,                         // crit->master prim rage
-		96793,                          // none fort zand
-		96555,                          // none soul barrier
-		94529,                          // none gaze twins
-		94527,                          // ji-kun
-		945270,                         // exp->crit ji-kun
-		94507,                          // valor
-		94508,                          // valor
-		103989,                         // timeless alacrity of xuen
-		103990,                         // timeless resolve of niuzao
-		103678,                         // time lost artifict
-		multi.trinketThokTailCelestial, // thok trinket
-		multi.trinketFusionCoreCelestial,
-		multi.trinketVialCorruptNormal,
+		94519,                           // crit prim rage
+		945190,                          // crit->master prim rage
+		96793,                           // none fort zand
+		96555,                           // none soul barrier
+		94529,                           // none gaze twins
+		94527,                           // ji-kun
+		945270,                          // exp->crit ji-kun
+		94507,                           // valor
+		94508,                           // valor
+		103989,                          // timeless alacrity of xuen
+		103990,                          // timeless resolve of niuzao
+		103678,                          // time lost artifict
+		mygear.TrinketThokTailCelestial, // thok trinket
+		mygear.TrinketFusionCoreCelestial,
+		mygear.TrinketVialCorruptNormal,
 	}
 
 	// fight := stats.Fight_Animus
@@ -384,18 +382,18 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		96793,  // none fort zand
 		94529,  // none gaze twins
 		103678, // time lost artifact
-		multi.trinketZandSpark,
-		multi.trinketThokTailCelestial,   // up 2
-		multi.trinketFusionCoreCelestial, // 528
-		multi.trinketVialCorruptNormal,   // 567 (up 2)
-		multi.trinketRookUnluckyNormal,
-		multi.trinketSkeerBloodCelestial,
+		mygear.TrinketZandSpark,
+		mygear.TrinketThokTailCelestial,   // up 2
+		mygear.TrinketFusionCoreCelestial, // 528
+		mygear.TrinketVialCorruptNormal,   // 567 (up 2)
+		mygear.TrinketRookUnluckyNormal,
+		mygear.TrinketSkeerBloodCelestial,
 		105016, //jugg focusing crystal (self heal)
 	}
 
 	upLevel := func(id items.ItemId) int32 {
 		var upgrade int32 = 0
-		if id < 100000 || id == multi.trinketVialCorruptNormal || id == multi.trinketThokTailCelestial || id == multi.trinketRookUnluckyNormal {
+		if id < 100000 || id == mygear.TrinketVialCorruptNormal || id == mygear.TrinketThokTailCelestial || id == mygear.TrinketRookUnluckyNormal {
 			upgrade = 2
 		}
 		return upgrade
@@ -470,8 +468,8 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		processItemIds := itemIds
 		if group.label == "ret" {
 			processItemIds = util_collection.MapSliceAsNew_NoPointer(processItemIds, func(x items.ItemId) items.ItemId {
-				if x == multi.trinketVialCorruptNormal {
-					x = multi.trinketEyeGalakrasCelestial
+				if x == mygear.TrinketVialCorruptNormal {
+					x = mygear.TrinketEyeGalakrasCelestial
 				}
 				return x
 			})
@@ -711,7 +709,7 @@ type standardisedItemSetGroup struct {
 	zero, two, four standardisedItemSet
 }
 
-func determineSetBonusValueBySim() {
+func determineSetBonusValueBySim(printer *util.PrintRecorder) {
 	//runSize := simulate.RunSize_QuickDirty
 	//optionCount := 10
 	runSize := simulate.RunSize_Largish
@@ -746,7 +744,7 @@ func determineSetBonusValueBySim() {
 	}
 	model.BonusRequiredWeight = nil
 
-	initialSets, itemOptions := weightfind.GenerateRandomSets(gearFile, upgrade.substituteItemsRet, &model, optionCount, main.printer, "", false)
+	initialSets, itemOptions := weightfind.GenerateRandomSets(gearFile, mygear.SubstituteItemsRet, &model, optionCount, printer, "", false)
 	//initialSets, itemOptions := weightfind.GenerateRandomSets(gearFile, substituteItemsProt, &model, optionCount, printer, "")
 
 	//T16 prot
@@ -810,7 +808,7 @@ func determineSetBonusValueBySim() {
 			group.four.itemSet.Items(), &group.four.bonusStats,
 			tracker.NewChild())
 
-		main.printer.Printf("%s %s\n", dataZero.CompactStringGeneral(), dataTwo.CompactStringGeneral())
+		printer.Printf("%s %s\n", dataZero.CompactStringGeneral(), dataTwo.CompactStringGeneral())
 
 		return bonuses{
 			simZero:  dataZero,
@@ -824,13 +822,13 @@ func determineSetBonusValueBySim() {
 		average2 := util_collection.FindAverageFunc(bonusData, func(x bonuses) float64 {
 			return x.twoDiff.GetOrPanic(simType)
 		})
-		main.printer.Printf("BONUS 2 %s %f\n", simType.Name(), average2)
+		printer.Printf("BONUS 2 %s %f\n", simType.Name(), average2)
 	}
 	for simType := range stats.SimTypeEnum.ValueSeq() {
 		average4 := util_collection.FindAverageFunc(bonusData, func(x bonuses) float64 {
 			return x.fourDiff.GetOrPanic(simType)
 		})
-		main.printer.Printf("BONUS 4 %s %f\n", simType.Name(), average4)
+		printer.Printf("BONUS 4 %s %f\n", simType.Name(), average4)
 	}
 }
 
@@ -871,7 +869,7 @@ func replaceWithEquivalentSetItems(baseSet *items.FullItemSet, bonusItems []*ite
 	return standardisedItemSet{substitutedSet, bonusStats}
 }
 
-func determineBestUseOfGearSets() {
+func determineBestUseOfGearSets(printer *util.PrintRecorder) {
 	//runSize := simulate.RunSize_QuickDirty
 	//optionCount := 10
 	//runSize := simulate.RunSize_QuickDirty
@@ -884,7 +882,7 @@ func determineBestUseOfGearSets() {
 	fight := stats.Fight_Juggernaut_NoExternalHeal
 	spec := stats.Spec_PaladinProt
 	profession := gear_model.ProfessionInfo{IsBlacksmith: true, IsEngineer: true}
-	substitutes := upgrade.substituteItemsProt
+	substitutes := mygear.SubstituteItemsProt
 
 	gearFile := files.GearFileProtMitigation
 	model := model_factory.Model_PallyProtMitigation()
@@ -911,9 +909,9 @@ func determineBestUseOfGearSets() {
 		"Prot_2pcEach",
 	}
 
-	itemOptions := setup.OptionsSetup_FromGearFile(gearFile, &model, setup.MissingEnchant_Panic, main.printer)
+	itemOptions := setup.OptionsSetup_FromGearFile(gearFile, &model, setup.MissingEnchant_Panic, printer)
 	for _, itemId := range substitutes {
-		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, main.printer)
+		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 		itemOptions.AddSeveralOptions(example.SlotItem(), opts)
 	}
 	itemOptions.RemoveDuplicates()
@@ -931,7 +929,7 @@ func determineBestUseOfGearSets() {
 		solveOutput := solver.Solver(
 			&itemOptions,
 			comboModel,
-			main.printer,
+			printer,
 			1,
 			c_miscDefaultTimeout,
 		)
@@ -946,11 +944,11 @@ func determineBestUseOfGearSets() {
 
 		note := fmt.Sprintf("COMBO=%s %s %s", comboNames[n], simData.CompactStringGeneral(), bonusText)
 		noteList = append(noteList, note)
-		main.printer.Println0()
+		printer.Println0()
 	}
-	main.printer.Println0()
-	main.printer.Println0()
+	printer.Println0()
+	printer.Println0()
 	for _, note := range noteList {
-		main.printer.Println(note)
+		printer.Println(note)
 	}
 }

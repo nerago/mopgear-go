@@ -3,6 +3,7 @@ package main
 import (
 	"slices"
 
+	"github.com/nerago/mopgear-go/cmd/mygear"
 	"github.com/nerago/mopgear-go/files"
 	"github.com/nerago/mopgear-go/gear_model/model_factory"
 	"github.com/nerago/mopgear-go/items"
@@ -35,19 +36,19 @@ func PaladinMultiRunLite(printer *util.PrintRecorder) {
 
 	// TRINKET
 	var trinketsDpsP3 = []items.ItemId{
-		trinketZandSpark,
+		mygear.TrinketZandSpark,
 	}
 	var trinketsTankP3 = []items.ItemId{
-		trinketFortZand,
+		mygear.TrinketFortZand,
 	}
 	var newTrinketsDamage = []items.ItemId{
-		trinketThokTailCelestial,
-		trinketFusionCoreCelestial,
-		trinketSkeerBloodCelestial,
+		mygear.TrinketThokTailCelestial,
+		mygear.TrinketFusionCoreCelestial,
+		mygear.TrinketSkeerBloodCelestial,
 	}
 	var newTrinketsTank = []items.ItemId{
-		trinketVialCorruptNormal,
-		trinketRookUnluckyNormal,
+		mygear.TrinketVialCorruptNormal,
+		mygear.TrinketRookUnluckyNormal,
 	}
 
 	// REMAINING P3
@@ -87,7 +88,7 @@ func PaladinMultiRunLite(printer *util.PrintRecorder) {
 		104560, // bulwurk of fallen general heroic
 	}
 
-	var legendCloaks = []items.ItemId{legendTankCloak, legendMeleeCloak}
+	var legendCloaks = []items.ItemId{mygear.LegendTankCloak, mygear.LegendMeleeCloak}
 
 	simSize := simulate.RunSize_Largish
 	//simSize := simulate.RunSize_Common
@@ -181,7 +182,7 @@ func PaladinMultiRunLite(printer *util.PrintRecorder) {
 		},
 	}
 
-	ret.AddExtraItem(legendMeleeCloak)
+	ret.AddExtraItem(mygear.LegendMeleeCloak)
 	addExtrasToEach(legendCloaks, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
 	addExtrasToEach(retT16, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
@@ -263,29 +264,29 @@ func PaladinMultiRunLite(printer *util.PrintRecorder) {
 
 	// predetermined choices
 	ret.ForceSingleSlot(items.Equip_Weapon, 103968) // britomark
-	ret.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
-	ret.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	ret.ForceSingleSlot(items.Equip_Trinket2, trinketEyeGalakrasCelestial)
-	protDps.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
-	protDps.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	protDps.ForceSingleSlot(items.Equip_Trinket2, trinketSkeerBloodCelestial)
-	protBalanced.ForceSingleSlot(items.Equip_Back, legendMeleeCloak)
-	protBalanced.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	protBalanced.ForceSingleSlot(items.Equip_Trinket2, trinketSkeerBloodCelestial)
-	protBalanced.AddReportVariant(items.Equip_Trinket2, trinketVialCorruptNormal)
-	protMitigation.ForceSingleSlot(items.Equip_Back, legendTankCloak)
-	protMitigation.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	protMitigation.ForceSingleSlot(items.Equip_Trinket2, trinketZandSpark)
-	protMitigation.AddReportVariant(items.Equip_Trinket1, trinketThokTailCelestial)
-	protMitigation.AddReportVariant(items.Equip_Trinket2, trinketSkeerBloodCelestial)
-	protSurvival.ForceSingleSlot(items.Equip_Back, legendTankCloak)
-	protSurvival.ForceSingleSlot(items.Equip_Trinket1, trinketThokTailCelestial)
-	protSurvival.ForceSingleSlot(items.Equip_Trinket2, trinketFortZand)
-	protSurvival.AddReportVariant(items.Equip_Trinket1, trinketSkeerBloodCelestial)
-	protSurvival.AddReportVariant(items.Equip_Trinket2, trinketThokTailCelestial)
-	protHeal.ForceSingleSlot(items.Equip_Back, legendTankCloak)
-	protHeal.ForceSingleSlot(items.Equip_Trinket1, trinketSkeerBloodCelestial)
-	protHeal.ForceSingleSlot(items.Equip_Trinket2, trinketZandSpark)
+	ret.ForceSingleSlot(items.Equip_Back, mygear.LegendMeleeCloak)
+	ret.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
+	ret.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketEyeGalakrasCelestial)
+	protDps.ForceSingleSlot(items.Equip_Back, mygear.LegendMeleeCloak)
+	protDps.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
+	protDps.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketSkeerBloodCelestial)
+	protBalanced.ForceSingleSlot(items.Equip_Back, mygear.LegendMeleeCloak)
+	protBalanced.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
+	protBalanced.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketSkeerBloodCelestial)
+	protBalanced.AddReportVariant(items.Equip_Trinket2, mygear.TrinketVialCorruptNormal)
+	protMitigation.ForceSingleSlot(items.Equip_Back, mygear.LegendTankCloak)
+	protMitigation.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
+	protMitigation.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketZandSpark)
+	protMitigation.AddReportVariant(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
+	protMitigation.AddReportVariant(items.Equip_Trinket2, mygear.TrinketSkeerBloodCelestial)
+	protSurvival.ForceSingleSlot(items.Equip_Back, mygear.LegendTankCloak)
+	protSurvival.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
+	protSurvival.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketFortZand)
+	protSurvival.AddReportVariant(items.Equip_Trinket1, mygear.TrinketSkeerBloodCelestial)
+	protSurvival.AddReportVariant(items.Equip_Trinket2, mygear.TrinketThokTailCelestial)
+	protHeal.ForceSingleSlot(items.Equip_Back, mygear.LegendTankCloak)
+	protHeal.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketSkeerBloodCelestial)
+	protHeal.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketZandSpark)
 
 	// HELMET
 	blockHelmetsWithoutCapacitance(&ret)

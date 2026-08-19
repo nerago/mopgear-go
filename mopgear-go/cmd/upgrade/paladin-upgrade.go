@@ -1,8 +1,7 @@
 package main
 
 import (
-	"slices"
-
+	"github.com/nerago/mopgear-go/cmd/mygear"
 	"github.com/nerago/mopgear-go/files"
 	"github.com/nerago/mopgear-go/gear_model/model_factory"
 	"github.com/nerago/mopgear-go/items"
@@ -13,53 +12,6 @@ import (
 )
 
 const c_upgradeDefaultTimeout = 2000
-
-var extrasSetSpecific = []items.ItemId{
-	86979,
-	95142,
-	95153,
-	95281,
-	95291,
-	96375,
-	96550,
-	100644,
-	104993,
-	86955,
-	96657,
-	96667,
-	104938,
-	105090,
-	94773,
-	95140,
-	96394,
-	96447,
-	96468,
-	103791,
-	95535,
-	96478,
-	96533,
-	105033,
-}
-
-var substituteItemsCommon = slices.Concat(
-	extrasSetSpecific,
-	multi.legendCloaks, multi.miscOtherP3,
-	multi.retT15,
-	multi.retT16,
-	multi.protT15,
-	multi.protT16,
-	//timeless,
-	multi.celestial, multi.celestialRaden,
-	multi.orgRaidDrops,
-)
-var substituteItemsRet = slices.Concat(substituteItemsCommon)
-
-var substituteItemsProt = slices.Concat(substituteItemsCommon, multi.orgOneHandAndShield)
-
-var ignoredItems = []items.ItemId{
-	63207, // org port cloak
-	84661, // fishing pole
-	90042} // straw hat
 
 func findUpgrades_Paladin() {
 	//simSizeBaseline := simulate.RunSize_VerySlow
@@ -137,7 +89,7 @@ func findUpgrades_Paladin() {
 				IncludeCelestial:   false,
 				IncludeNormal:      true,
 				IncludeHeroic:      false,
-				IgnoredItems:       ignoredItems,
+				IgnoredItems:       mygear.IgnoredItems,
 				TargetUpgradeLevel: 2,
 				WeightType:         2,
 				SolverTimeout:      c_upgradeDefaultTimeout,
@@ -153,7 +105,7 @@ func findUpgrades_Paladin() {
 				Model:                   model_factory.Model_PallyProtDamage(),
 				GearFile:                files.GearFileProtDamage,
 				ItemFinder:              finder,
-				SubstituteItems:         substituteItemsProt,
+				SubstituteItems:         mygear.SubstituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
@@ -161,7 +113,7 @@ func findUpgrades_Paladin() {
 				Model:                   model_factory.Model_PallyProtBalanced(),
 				GearFile:                files.GearFileProtBalanced,
 				ItemFinder:              finder,
-				SubstituteItems:         substituteItemsProt,
+				SubstituteItems:         mygear.SubstituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
@@ -169,7 +121,7 @@ func findUpgrades_Paladin() {
 				Model:                   model_factory.Model_PallyProtMitigation(),
 				GearFile:                files.GearFileProtMitigation,
 				ItemFinder:              finder,
-				SubstituteItems:         substituteItemsProt,
+				SubstituteItems:         mygear.SubstituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
@@ -177,7 +129,7 @@ func findUpgrades_Paladin() {
 				Model:                   model_factory.Model_PallyProtSurvival(),
 				GearFile:                files.GearFileProtSurvival,
 				ItemFinder:              finder,
-				SubstituteItems:         substituteItemsProt,
+				SubstituteItems:         mygear.SubstituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 			{
@@ -185,7 +137,7 @@ func findUpgrades_Paladin() {
 				Model:                   model_factory.Model_PallyProtHeal(),
 				GearFile:                files.GearFileProtHeal,
 				ItemFinder:              finder,
-				SubstituteItems:         substituteItemsProt,
+				SubstituteItems:         mygear.SubstituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
 			},
 		},

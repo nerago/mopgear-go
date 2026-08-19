@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/nerago/mopgear-go/cmd/mygear"
 	"github.com/nerago/mopgear-go/files"
 	"github.com/nerago/mopgear-go/gear_model/model_factory"
 	"github.com/nerago/mopgear-go/loaders"
@@ -22,13 +23,13 @@ func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
 			IncludeNormal:      true,
 			IncludeHeroic:      true,
-			IgnoredItems:       ignoredItems,
+			IgnoredItems:       mygear.IgnoredItems,
 			TargetUpgradeLevel: 0,
 			SolverTimeout:      c_upgradeDefaultTimeout,
 		},
 		SimSizeBaseline:    simRunSize,
 		SimSizeItemInitial: simRunSize}
-	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsProt, printer)
+	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, mygear.SubstituteItemsProt, printer)
 }
 
 func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
@@ -42,13 +43,13 @@ func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
 		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
 			IncludeNormal:      true,
 			IncludeHeroic:      true,
-			IgnoredItems:       ignoredItems,
+			IgnoredItems:       mygear.IgnoredItems,
 			TargetUpgradeLevel: 0,
 			SolverTimeout:      c_upgradeDefaultTimeout,
 		},
 		SimSizeBaseline:    simRunSize,
 		SimSizeItemInitial: simRunSize}
-	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsProt, printer)
+	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, mygear.SubstituteItemsProt, printer)
 }
 
 func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
@@ -62,11 +63,11 @@ func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
 		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
 			IncludeNormal:      true,
 			IncludeHeroic:      true,
-			IgnoredItems:       ignoredItems,
+			IgnoredItems:       mygear.IgnoredItems,
 			TargetUpgradeLevel: 0,
 			SolverTimeout:      c_upgradeDefaultTimeout,
 		},
 		SimSizeBaseline:    simRunSize,
 		SimSizeItemInitial: simRunSize}
-	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsProt, printer)
+	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, mygear.SubstituteItemsProt, printer)
 }
