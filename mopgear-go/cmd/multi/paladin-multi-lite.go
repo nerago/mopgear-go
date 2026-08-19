@@ -13,7 +13,7 @@ import (
 	"github.com/nerago/mopgear-go/util"
 )
 
-func PaladinMultiRunLite() {
+func PaladinMultiRunLite(printer *util.PrintRecorder) {
 	// TIER
 	var retT16 = []items.ItemId{
 		99139, // ret t16 legs normal
@@ -88,8 +88,6 @@ func PaladinMultiRunLite() {
 	}
 
 	var legendCloaks = []items.ItemId{legendTankCloak, legendMeleeCloak}
-
-	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "multi-set")
 
 	simSize := simulate.RunSize_Largish
 	//simSize := simulate.RunSize_Common

@@ -45,3 +45,23 @@ func (sw *Stopwatch) Elapsed() time.Duration {
 func (sw *Stopwatch) AddElapsedFrom(other *Stopwatch) {
 	sw.accumulated += other.Elapsed()
 }
+
+type StopwatchNoisy struct {
+	Stopwatch
+	printer *PrintRecorder
+}
+
+func StopwatchNoisyStart(printer *PrintRecorder) *StopwatchNoisy {
+	sw := &StopwatchNoisy{
+		*StopwatchMakeStarted(),
+		printer,
+	}
+	printer.Println("Started at " + sw.startTime.Format(time.DateTime))
+	return sw
+}
+
+func (sw *StopwatchNoisy) Stop() {
+	sw.Stopwatch.Stop()
+	sw.printer.Println("Duration = " + sw.Elapsed().String())
+	sw.printer.Println("Finished at " + time.Now().Format(time.DateTime))
+}

@@ -1,68 +1,24 @@
 package main
 
 import (
-	"io"
-	"log"
-	"os"
-	"runtime/pprof"
-	"time"
-
-	"github.com/nerago/mopgear-go/db"
+	"github.com/nerago/mopgear-go/cmd"
 	"github.com/nerago/mopgear-go/files"
 	"github.com/nerago/mopgear-go/util"
-
-	"github.com/wowsims/mop/sim"
 )
-
-const (
-	enableProfiling = true
-)
-
-var printer *util.PrintRecorder
 
 func main() {
-	util.CurrentProcessLowerPriority()
+	cmd.CommandSetupCommon()
 
-	printer = util.PrintRecorder_CreateLogFile(files.LogOutputPath)
+	printer := util.PrintRecorder_CreateLogFile(files.LogOutputPath)
 	defer printer.Close()
 
-	db.WowSimDB_Read()
-	sim.RegisterAll()
+	prof := util.CmdProfilingStart("misc")
+	defer prof.Finish()
 
-	log.SetOutput(io.Discard) // ignore wowsim's internal progress logs
-
-	if enableProfiling {
-		f, err := os.CreateTemp("", "main-new.pgo")
-		if err != nil {
-			panic(err)
-		}
-		err = pprof.StartCPUProfile(f)
-		if err != nil {
-			panic(err)
-		}
-		defer func() {
-			pprof.StopCPUProfile()
-			err := f.Close()
-			if err != nil {
-				panic(err)
-			}
-			//if simulate.WowSimRanDuringCurrentProcess {
-			err = os.Rename(f.Name(), files.ProfileDir+"main.pgo")
-			if err != nil {
-				panic(err)
-			}
-			//}
-		}()
-	}
-
-	startTime := time.Now()
-	printer.Println("Started at " + startTime.Format(time.DateTime))
+	sw := util.StopwatchNoisyStart(printer)
+	defer sw.Stop()
 
 	core(printer)
-
-	timeTaken := time.Since(startTime)
-	printer.Println("Duration = " + timeTaken.String())
-	printer.Println("Finished at " + time.Now().Format(time.DateTime))
 }
 
 func core(printer *util.PrintRecorder) {
@@ -93,7 +49,7 @@ func core(printer *util.PrintRecorder) {
 	//statWeightsGrid1b(printer)
 	//statWeightsFitting(printer)
 	//statWeightsFitting1eachProper(printer)
-	//statWeightsFitting2(printer)
+	statWeightsFitting2(printer)
 	//statWeightsFitting2eachProper(printer)
 	//statWeightsFitting2each(printer)
 	//statWeightsFitting3eachProper(printer)
@@ -102,13 +58,4 @@ func core(printer *util.PrintRecorder) {
 	//statWeightsRanking3b(printer)
 	//statWeightsGridIntoRanking(printer)
 	//statWeightsCustom(printer)
-
-	//statWeights_CompareAlgorithms()
-
-	statWeights_updateAll()
-
-	//PaladinMultiRun()
-	PaladinMultiRunLite()
-
-	//findUpgrades_Paladin()
 }

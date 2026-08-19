@@ -2,12 +2,13 @@ package main
 
 import (
 	"cmp"
+	"encoding/json/v2"
 	"fmt"
 	"maps"
+	"os"
 	"slices"
 	"strconv"
 
-	"github.com/nerago/mopgear-go/files"
 	"github.com/nerago/mopgear-go/gear_model/model_factory"
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/util"
@@ -23,9 +24,7 @@ import (
 )
 
 //goland:noinspection GoBoolExpressions
-func statWeights_CompareAlgorithms() {
-	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "statWeights_CompareAlgorithms")
-
+func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	targetRatio := model_factory.SimPriority_survival
 	//targetRatio := model_factory.SimPriority_generalMiti
 	//targetRatio := gear_model.SimPriority_heal
@@ -47,17 +46,17 @@ func statWeights_CompareAlgorithms() {
 	//inputDataRandom := slices.Concat(inputDataRandomUnsafe, inputDataRandomSafe)
 	//trackProcess.SetDone()
 	//
-	//writeWeightInputsToFile(inputDataGrid, "tempdata/sim-stats-compare-grid.json")
-	//writeWeightInputsToFile(inputDataRandomUnsafe, "tempdata/sim-stats-compare-rand-unsafe.json")
-	//writeWeightInputsToFile(inputDataRandomSafe, "tempdata/sim-stats-compare-rand-safe.json")
-	//writeWeightInputsToFile(inputDataRandom, "tempdata/sim-stats-compare-rand.json")
+	//weight_types.WeightInputWriteFile(inputDataGrid, "tempdata/sim-stats-compare-grid.json")
+	//weight_types.WeightInputWriteFile(inputDataRandomUnsafe, "tempdata/sim-stats-compare-rand-unsafe.json")
+	//weight_types.WeightInputWriteFile(inputDataRandomSafe, "tempdata/sim-stats-compare-rand-safe.json")
+	//weight_types.WeightInputWriteFile(inputDataRandom, "tempdata/sim-stats-compare-rand.json")
 	//writeWeightBasicInputsToFile(inputDataBasic, basicSimBase, "tempdata/sim-stats-compare-basic.json")
 
 	inputDataBasic, basicSimBase := readWeightBasicInputsFile("tempdata/sim-stats-compare-basic.json")
 	//inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Mitigation-NoSet.json")
 	//inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
-	inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Mitigation-WithSet.json")
-	inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Mitigation-WithSet.json")
+	inputDataGrid := weight_types.WeightInputReadFile("tempdata/weightfind-sim-grid-Prot-Mitigation-WithSet.json")
+	inputDataRandom := weight_types.WeightInputReadFile("tempdata/weightfind-sim-real-Prot-Mitigation-WithSet.json")
 	//inputDataGrid := readWeightInputFile("tempdata/sim-stats-compare-grid.json")
 	//inputDataRandom := readWeightInputFile("tempdata/sim-stats-compare-rand.json")
 	mixedInputDataFull := slices.Concat(inputDataGrid, inputDataRandom)
@@ -712,4 +711,39 @@ func compareReport(requiredStats []stats.StatType, resultOrder []string, reportB
 		//}
 	}
 	tab.Write(printer)
+}
+
+type basicStatInput struct {
+	IncrementStat  stats.StatType
+	IncrementValue int32
+	SimResult      stats.SimData
+}
+
+type basicWeightsTestDataFormat struct {
+	InputDataBasic []basicStatInput
+	BasicSimBase   stats.SimData
+}
+
+func writeWeightBasicInputsToFile(inputDataBasic []basicStatInput, basicSimBase stats.SimData, filename string) {
+	bytes, err := json.Marshal(&basicWeightsTestDataFormat{inputDataBasic, basicSimBase})
+	if err != nil {
+		panic(err)
+	}
+	err = os.WriteFile(filename, bytes, 0666)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func readWeightBasicInputsFile(filename string) ([]basicStatInput, stats.SimData) {
+	bytes, err := os.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+	var weightInputs basicWeightsTestDataFormat
+	err = json.Unmarshal(bytes, &weightInputs)
+	if err != nil {
+		panic(err)
+	}
+	return weightInputs.InputDataBasic, weightInputs.BasicSimBase
 }

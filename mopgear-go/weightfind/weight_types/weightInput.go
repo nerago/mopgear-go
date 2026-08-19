@@ -1,6 +1,8 @@
 package weight_types
 
 import (
+	"encoding/json/v2"
+	"os"
 	"time"
 
 	"github.com/nerago/mopgear-go/stats"
@@ -12,6 +14,30 @@ import (
 type WeightInput struct {
 	TotalStat stats.StatBlock
 	SimResult stats.SimData
+}
+
+func WeightInputReadFile(filename string) []WeightInput {
+	bytes, err := os.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+	var weightInputs []WeightInput
+	err = json.Unmarshal(bytes, &weightInputs)
+	if err != nil {
+		panic(err)
+	}
+	return weightInputs
+}
+
+func WeightInputWriteFile(weightInputs []WeightInput, filename string) {
+	bytes, err := json.Marshal(weightInputs)
+	if err != nil {
+		panic(err)
+	}
+	err = os.WriteFile(filename, bytes, 0666)
+	if err != nil {
+		panic(err)
+	}
 }
 
 type WeightResult struct {

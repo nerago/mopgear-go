@@ -260,14 +260,14 @@ func (spec *WeightSpec) prepareSimData(tracker *util.TrackProgress, cancel util_
 		inputDataGrid = SimulateSteppedStatChangesForGrid(currentItemSet, spec.process.printer, spec.process.simSpeed,
 			spec.Model.SimSpeedUp, spec.Model.StatsForWeighting, spec.Model.Spec, spec.Model.Goal, spec.Model.SimulateAs,
 			spec.Model.Professions, tracker.NewChild(), spec.Label, cancel, spec.FixStatsMode)
-		writeWeightInputsToFile(inputDataGrid, tempPathGrid)
+		weight_types.WeightInputWriteFile(inputDataGrid, tempPathGrid)
 	} else {
 		tracker.NewChild().SetDone()
 	}
 	if inputDataReal == nil {
 		inputDataReal = SimulateRealRandomSets(spec.GearFile, spec.SubstituteItems, &spec.Model, c_eachSimTargetGenerateDataCount,
 			spec.process.simSpeed, spec.FixStatsMode, spec.process.printer, tracker.NewChild(), spec.Label, cancel)
-		writeWeightInputsToFile(inputDataReal, tempPathReal)
+		weight_types.WeightInputWriteFile(inputDataReal, tempPathReal)
 	} else {
 		tracker.NewChild().SetDone()
 	}
@@ -612,17 +612,6 @@ func (spec *WeightSpec) writeExtendedWeights() {
 	logText.WriteString(time.Now().Format(time.DateTime))
 
 	util.WriteStringToFile(spec.WeightFile1+"-extended-accuracy.log", logText.String())
-}
-
-func writeWeightInputsToFile(weightInputs []weight_types.WeightInput, filename string) {
-	bytes, err := json.Marshal(weightInputs)
-	if err != nil {
-		panic(err)
-	}
-	err = os.WriteFile(filename, bytes, 0666)
-	if err != nil {
-		panic(err)
-	}
 }
 
 func readWeightInputFile(filename string) ([]weight_types.WeightInput, time.Duration) {

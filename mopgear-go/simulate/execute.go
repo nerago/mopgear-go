@@ -67,7 +67,7 @@ func prepareSim(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal s
 		runSize /= WowSim_RunSize(speedUp)
 	}
 
-	infile := files.SimFileFor(spec, fight)
+	infile := simFileFor(spec, fight)
 	input := inputRequestFromTemplate(infile, equipMap, profession, bonusStats, spec, fight, runSize, goal)
 
 	reporter := make(chan *wowsim_proto.ProgressMetrics, 10)
@@ -75,6 +75,24 @@ func prepareSim(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal s
 	id := uuid.NewString()
 	input.RequestId = id
 	return input, reporter, id
+}
+
+func simFileFor(spec stats.SpecType, fight stats.WowSim_Fight) string {
+	switch spec {
+	case stats.Spec_PaladinProt:
+		switch fight {
+		case stats.Fight_Horridon_HighHeal, stats.Fight_Horridon_LowHeal, stats.Fight_Animus:
+			return files.SimProtHorridon
+		case stats.Fight_Juggernaut_HighHeal, stats.Fight_Juggernaut_NoExternalHeal, stats.Fight_Juggernaut_SelfWordGlory, stats.Fight_Juggernaut_OffHealer:
+			return files.SimProtJuggernaut
+		default:
+			panic("unknown spec/fight")
+		}
+	case stats.Spec_PaladinRet:
+		return files.SimRet
+	default:
+		panic("spec not supported")
+	}
 }
 
 func inputRequestFromTemplate(infile string, equipMap *items.FullEquipMap, profession gear_model.ProfessionInfo, bonusStats *stats.StatTypeMap[int32], spec stats.SpecType, fight stats.WowSim_Fight, runSize WowSim_RunSize, goal stats.OptimiseGoal) *wowsim_proto.RaidSimRequest {

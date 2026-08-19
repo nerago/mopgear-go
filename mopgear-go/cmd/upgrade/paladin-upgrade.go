@@ -8,9 +8,7 @@ import (
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/loaders"
 	"github.com/nerago/mopgear-go/simulate"
-	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/upgrades"
-	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_async"
 )
 
@@ -45,84 +43,23 @@ var extrasSetSpecific = []items.ItemId{
 
 var substituteItemsCommon = slices.Concat(
 	extrasSetSpecific,
-	legendCloaks, miscOtherP3,
-	retT15,
-	retT16,
-	protT15,
-	protT16,
+	multi.legendCloaks, multi.miscOtherP3,
+	multi.retT15,
+	multi.retT16,
+	multi.protT15,
+	multi.protT16,
 	//timeless,
-	celestial, celestialRaden,
-	orgRaidDrops,
+	multi.celestial, multi.celestialRaden,
+	multi.orgRaidDrops,
 )
 var substituteItemsRet = slices.Concat(substituteItemsCommon)
 
-var substituteItemsProt = slices.Concat(substituteItemsCommon, orgOneHandAndShield)
+var substituteItemsProt = slices.Concat(substituteItemsCommon, multi.orgOneHandAndShield)
 
 var ignoredItems = []items.ItemId{
 	63207, // org port cloak
 	84661, // fishing pole
 	90042} // straw hat
-
-func findUpgrades_Sim_PaladinDps_Run(printer *util.PrintRecorder) {
-	simRunSize := simulate.RunSize_QuickDirty
-	goal := stats.OptimiseGoal_Dps
-	model := model_factory.Model_PallyProtDamage()
-	gearFile := files.GearFileProtDamage
-	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
-	upgradeItems := loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic)
-	input := upgrades.FindUpgrades_SimInputs{
-		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
-			IncludeNormal:      true,
-			IncludeHeroic:      true,
-			IgnoredItems:       ignoredItems,
-			TargetUpgradeLevel: 0,
-			SolverTimeout:      c_upgradeDefaultTimeout,
-		},
-		SimSizeBaseline:    simRunSize,
-		SimSizeItemInitial: simRunSize}
-	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsProt, printer)
-}
-
-func findUpgrades_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
-	simRunSize := simulate.RunSize_QuickDirty
-	goal := stats.OptimiseGoal_Mitigation
-	model := model_factory.Model_PallyProtSurvival()
-	gearFile := files.GearFileProtSurvival
-	// upgradeItems := loaders.ItemFinder_ThroneProtMinusRaden(stats.Difficulty_Normal)
-	// upgradeItems := loaders.ItemFinder_ThroneStrengthPlateTank(stats.Difficulty_Heroic)
-	upgradeItems := []loaders.ItemFoundRef{{ItemId: 96436, UpgradeLevel: 2}} // tortos shell heroic
-	input := upgrades.FindUpgrades_SimInputs{
-		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
-			IncludeNormal:      true,
-			IncludeHeroic:      true,
-			IgnoredItems:       ignoredItems,
-			TargetUpgradeLevel: 0,
-			SolverTimeout:      c_upgradeDefaultTimeout,
-		},
-		SimSizeBaseline:    simRunSize,
-		SimSizeItemInitial: simRunSize}
-	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsProt, printer)
-}
-
-func findUpgrades_T5_Sim_PaladinMiti_Run(printer *util.PrintRecorder) {
-	simRunSize := simulate.RunSize_QuickDirty
-	goal := stats.OptimiseGoal_Mitigation
-	model := model_factory.Model_PallyProtSurvival()
-	gearFile := files.GearFileProtSurvival
-	upgradeItems := loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Normal)
-	// upgradeItems := loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic)
-	input := upgrades.FindUpgrades_SimInputs{
-		FindUpgrades_BasicInputs: upgrades.FindUpgrades_BasicInputs{
-			IncludeNormal:      true,
-			IncludeHeroic:      true,
-			IgnoredItems:       ignoredItems,
-			TargetUpgradeLevel: 0,
-			SolverTimeout:      c_upgradeDefaultTimeout,
-		},
-		SimSizeBaseline:    simRunSize,
-		SimSizeItemInitial: simRunSize}
-	upgrades.FindUpgrades_Sim_Run(&input, goal, &model, gearFile, upgradeItems, substituteItemsProt, printer)
-}
 
 func findUpgrades_Paladin() {
 	//simSizeBaseline := simulate.RunSize_VerySlow

@@ -11,8 +11,7 @@ import (
 )
 
 //goland:noinspection GoBoolExpressions
-func statWeights_updateAll() {
-	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "statWeights_updateAll")
+func statWeights_updateAll(printer *util.PrintRecorder) {
 
 	//simSpeed := simulate.RunSize_TestOnly
 	// simSpeed := simulate.RunSize_QuickDirty/10
@@ -29,7 +28,7 @@ func statWeights_updateAll() {
 		WeightFile1:     files.WeightRetFile,
 		GearFile:        files.GearFileRet,
 		Model:           model_factory.Model_PallyRet(),
-		SubstituteItems: substituteItemsRet,
+		SubstituteItems: upgrade.substituteItemsRet,
 		FixStatsMode:    weight_types.FixStatsRangeMode_None,
 	})
 	process.AddSpec(&weightfind.WeightSpec{
@@ -37,7 +36,7 @@ func statWeights_updateAll() {
 		WeightFile1:     files.WeightDamageFile,
 		GearFile:        files.GearFileProtDamage,
 		Model:           model_factory.Model_PallyProtDamage(),
-		SubstituteItems: substituteItemsProt,
+		SubstituteItems: upgrade.substituteItemsProt,
 		FixStatsMode:    fixStats,
 	})
 	process.AddSpec(&weightfind.WeightSpec{
@@ -45,7 +44,7 @@ func statWeights_updateAll() {
 		WeightFile1:     files.WeightBalancedFile,
 		GearFile:        files.GearFileProtBalanced,
 		Model:           model_factory.Model_PallyProtBalanced(),
-		SubstituteItems: substituteItemsProt,
+		SubstituteItems: upgrade.substituteItemsProt,
 		FixStatsMode:    fixStats,
 	})
 	process.AddSpec(&weightfind.WeightSpec{
@@ -53,7 +52,7 @@ func statWeights_updateAll() {
 		WeightFile1:     files.WeightMitigationFile,
 		GearFile:        files.GearFileProtMitigation,
 		Model:           model_factory.Model_PallyProtMitigation(),
-		SubstituteItems: substituteItemsProt,
+		SubstituteItems: upgrade.substituteItemsProt,
 		FixStatsMode:    fixStats,
 	})
 	process.AddSpec(&weightfind.WeightSpec{
@@ -61,7 +60,7 @@ func statWeights_updateAll() {
 		WeightFile1:     files.WeightSurvivalFile,
 		GearFile:        files.GearFileProtSurvival,
 		Model:           model_factory.Model_PallyProtSurvival(),
-		SubstituteItems: substituteItemsProt,
+		SubstituteItems: upgrade.substituteItemsProt,
 		FixStatsMode:    fixStats,
 	})
 	process.AddSpec(&weightfind.WeightSpec{
@@ -69,7 +68,7 @@ func statWeights_updateAll() {
 		WeightFile1:     files.WeightHealFile,
 		GearFile:        files.GearFileProtHeal,
 		Model:           model_factory.Model_PallyProtHeal(),
-		SubstituteItems: substituteItemsProt,
+		SubstituteItems: upgrade.substituteItemsProt,
 		FixStatsMode:    fixStats,
 	})
 	cancel := util_async.CancelSignal_Make()

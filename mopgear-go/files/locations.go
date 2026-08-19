@@ -1,7 +1,5 @@
 package files
 
-import "github.com/nerago/mopgear-go/stats"
-
 const (
 	WowSimDB   = `wowsim-external/assets/database/db.json`
 	BossLookup = `mopgear-go/files/bosslookup.tsv`
@@ -36,24 +34,6 @@ const (
 	PaladinProtRotationT15 = `mopgear-go/files/rotation/mixT16withWordGlory.apl`
 	PaladinRetRotation     = `wowsim-external/ui/paladin/retribution/apls/default.apl.json`
 )
-
-func SimFileFor(spec stats.SpecType, fight stats.WowSim_Fight) string {
-	switch spec {
-	case stats.Spec_PaladinProt:
-		switch fight {
-		case stats.Fight_Horridon_HighHeal, stats.Fight_Horridon_LowHeal, stats.Fight_Animus:
-			return SimProtHorridon
-		case stats.Fight_Juggernaut_HighHeal, stats.Fight_Juggernaut_NoExternalHeal, stats.Fight_Juggernaut_SelfWordGlory, stats.Fight_Juggernaut_OffHealer:
-			return SimProtJuggernaut
-		default:
-			panic("unknown spec/fight")
-		}
-	case stats.Spec_PaladinRet:
-		return SimRet
-	default:
-		panic("spec not supported")
-	}
-}
 
 func ToWeight2(base string) string {
 	return base + ".v2"

@@ -129,8 +129,7 @@ var orgOneHandAndShield = []items.ItemId{
 
 var legendCloaks = []items.ItemId{legendTankCloak, legendMeleeCloak}
 
-func PaladinMultiRun() {
-	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "multi-set")
+func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	simSize := simulate.RunSize_Largish
 	//simSize := simulate.RunSize_Common
