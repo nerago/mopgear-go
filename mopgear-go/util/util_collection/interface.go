@@ -25,10 +25,26 @@ type ICollection[E any] interface {
 	SeqValues() iter.Seq[E]
 }
 
-type IQueueLite[E any] interface {
-	ICollection[E]
+type IQueueCore[E any] interface {
 	Push(E)
 	Pop() (E, bool)
+}
+
+type IQueueLite[E any] interface {
+	ICollection[E]
+	IQueueCore[E]
+}
+
+type IQueueLiteInspectable[E any] interface {
+	IQueueLite[E]
+	UpdateContents(apply func([]E) []E)
+	ExamineContents(apply func([]E))
+}
+
+type IQueueThreadLocal[E any] interface {
+	IQueueCore[E]
+	CountLocal() int
+	ExamineContents(apply func([]E))
 }
 
 type ICollectionFlatRead[E any] interface {
