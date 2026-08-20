@@ -110,6 +110,23 @@ func Map_SliceToChannel[T any, R any](threadCount int, inputSlice []T, mapper fu
 	return outputChannel
 }
 
+func Map_SliceToChannel_NoPointer[T any, R any](threadCount int, inputSlice []T, mapper func(T) R) <-chan R {
+	outputChannel := makeOutputChannel[R]()
+	if threadCount > 1 {
+		indexChannel := makeIndexChannel(inputSlice)
+		waitGroup := makeThreadsMapSliceToChannelNoPointer(threadCount, inputSlice, mapper, indexChannel, outputChannel)
+		closeChannelOnGroupFinished(waitGroup, outputChannel)
+	} else {
+		go func() {
+			for i := range inputSlice {
+				outputChannel <- mapper(inputSlice[i])
+			}
+			close(outputChannel)
+		}()
+	}
+	return outputChannel
+}
+
 func MapOptional_SliceToChannel[T any, R any](threadCount int, inputSlice []T, mapper func(*T) (R, bool)) <-chan R {
 	outputChannel := makeOutputChannel[R]()
 	indexChannel := makeIndexChannel(inputSlice)
@@ -579,6 +596,18 @@ func makeThreadsMapSliceToChannel[T any, R any](threadCount int, inputSlice []T,
 		waitGroup.Go(func() {
 			for index := range indexChannel {
 				outputChannel <- mapper(&inputSlice[index])
+			}
+		})
+	}
+	return waitGroup
+}
+
+func makeThreadsMapSliceToChannelNoPointer[T any, R any](threadCount int, inputSlice []T, mapper func(T) R, indexChannel chan int, outputChannel chan R) *sync.WaitGroup {
+	waitGroup := new(sync.WaitGroup)
+	for range threadCount {
+		waitGroup.Go(func() {
+			for index := range indexChannel {
+				outputChannel <- mapper(inputSlice[index])
 			}
 		})
 	}

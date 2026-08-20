@@ -9,11 +9,13 @@ import (
 	"github.com/nerago/mopgear-go/solver"
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_async"
+	"github.com/nerago/mopgear-go/util/util_collection"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
 type workingGroup struct {
 	job        *MultiSetJob
+	task       *multi_types.JobInputTask
 	workers    map[string]*specWorker
 	weightType weight_types.WeightType
 }
@@ -21,7 +23,8 @@ type workingGroup struct {
 type specWorker struct {
 	// copied from specItemPrep
 	label                        string
-	model                        gear_model.SpecModel
+	model                        *gear_model.SpecModel
+	task                         *multi_types.JobInputTask
 	expectAllBonusItemsAvailable bool
 	seenInSolutions              *seenMap
 
@@ -36,7 +39,7 @@ func (work *specWorker) Label() string {
 	return work.label
 }
 func (work *specWorker) Model() *gear_model.SpecModel {
-	return &work.model
+	return work.model
 }
 func (work *specWorker) ItemOptions() *items.FullOptionsMap {
 	return &work.itemOptionsWork
@@ -48,50 +51,56 @@ func (work *specWorker) AddSeenScaled(equipMap *items.FullEquipMap, scale uint32
 	work.seenInSolutions.AddScaled(equipMap, scale)
 }
 
-func (job *MultiSetJob) prepareWorkingGroups() <-chan *workingGroup {
-	job.workGroups = make(map[weight_types.WeightType]*workingGroup)
-	for _, weightType := range job.input.WeightTypeList {
-		group := &workingGroup{
-			job:        job,
-			workers:    make(map[string]*specWorker),
-			weightType: weightType,
-		}
-
-		for label, prep := range job.itemPrep {
-			group.workers[label] = &specWorker{
-				label:                        prep.label,
-				model:                        prep.model,
-				seenInSolutions:              prep.seenInSolutions,
-				itemOptionsWork:              prep.itemOptions.Clone(),
-				expectAllBonusItemsAvailable: prep.inputs.ExpectAllBonusItemsAvailable,
-				weightType:                   weightType,
-			}
-		}
-		job.workGroups[weightType] = group
-	}
-
-	groupChannel := util_async.SeqToChannel(maps.Values(job.workGroups))
-	preparedChannel := util_async.Map_ChannelToChannel(c_prepThreadCount, groupChannel, func(group *workingGroup) *workingGroup {
-		group.prepareWorkers(&job.input, job.printer)
-		return group
-	})
-
-	if job.input.RunDecimate {
-		return job.runDecimate(preparedChannel)
-	} else {
-		return preparedChannel
-	}
+func (work *specWorker) init(printer *util.PrintRecorder) {
+	work.setupAlternateGems(work.task.AlternateGemList, printer)
 }
 
-func (group *workingGroup) prepareWorkers(input *multi_types.JobInputs, printer *util.PrintRecorder) {
+func (job *MultiSetJob) prepareWorkingGroups(cancel util_async.CancelSignal) <-chan *workingGroup {
+	job.workGroups = make([]*workingGroup, 0)
+	for task := range util_collection.ForPointer(job.tasks) {
+		for _, weightType := range task.WeightTypeList {
+			group := &workingGroup{
+				job:        job,
+				task:       task,
+				weightType: weightType,
+				workers:    make(map[string]*specWorker),
+			}
+
+			for label, prep := range job.itemPrep {
+				work := &specWorker{
+					label:                        prep.label,
+					model:                        prep.model,
+					seenInSolutions:              prep.seenInSolutions,
+					itemOptionsWork:              prep.itemOptions.Clone(),
+					expectAllBonusItemsAvailable: prep.inputs.ExpectAllBonusItemsAvailable,
+					weightType:                   weightType,
+					task:                         task,
+				}
+				work.init(job.printer)
+				group.workers[label] = work
+			}
+			job.workGroups = append(job.workGroups, group)
+		}
+	}
+
+	return util_async.Map_SliceToChannel_NoPointer(c_prepThreadCount, job.workGroups, func(group *workingGroup) *workingGroup {
+		group.prepareWorkersBaseline(&job.input, job.printer)
+		if group.task.RunDecimate {
+			group.runDecimate(cancel)
+		}
+		return group
+	})
+}
+
+func (group *workingGroup) prepareWorkersBaseline(input *multi_types.JobInputs, printer *util.PrintRecorder) {
 	workChannel := util_async.SeqToChannel(maps.Values(group.workers))
 	util_async.ForEach_Channel(c_prepThreadCount, workChannel, func(work *specWorker) {
-		work.runBaseline(printer, input.TimeLimitEachSolve)
+		work.runBaseline(printer, input.TimeLimitEachSolve, nil)
 	})
 	group.prepareRatingMultipliersGroup(input, printer)
 }
 
-func (work *specWorker) runBaseline(printer *util.PrintRecorder, timeout int) {
+func (work *specWorker) runBaseline(printer *util.PrintRecorder, timeout int, cancel util_async.CancelSignal) {
 	printer.Printf("BASELINE for %s %d\n", work.Label(), work.weightType)
 	work.baselineResult = solver.Solver(
 		work.ItemOptions(),
@@ -99,6 +108,7 @@ func (work *specWorker) runBaseline(printer *util.PrintRecorder, timeout int) {
 		printer,
 		work.weightType,
 		timeout,
+		cancel,
 	)
 
 	if !work.baselineResult.Success {

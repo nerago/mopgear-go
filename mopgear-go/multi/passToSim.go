@@ -142,7 +142,7 @@ func (job *MultiSetJob) linkSimResult(proposal multi_types.MultiProposedOutput, 
 func (job *MultiSetJob) writeToGearFiles(result *simulateMultiResult) {
 	for label, prep := range job.itemPrep {
 		itemSet := result.proposed.Parts[label].FullSet
-		gearJson := tools.WowSimJson_Write(itemSet.Items(), &prep.model, util.PrintRecorder_Nop())
+		gearJson := tools.WowSimJson_Write(itemSet.Items(), prep.model, util.PrintRecorder_Nop())
 
 		gearFile := prep.inputs.GearFile
 		util.WriteStringToFile(gearFile, gearJson)

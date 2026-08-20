@@ -14,12 +14,12 @@ import (
 )
 
 func (group *workingGroup) determineCommon(optionsInputMap map[string]*items.FullOptionsMap) multi_types.CommonOptions {
-	reforgingAllowNonCommon := group.job.input.ItemInput.ReforgingAllowNonCommon
+	reforgingAllowNonCommon := group.task.ReforgingAllowNonCommon
 	commonOptions, seenIn := searchItemOptions(optionsInputMap, reforgingAllowNonCommon)
 
-	applyFixedForges(group.job.input.ItemInput.FixedForge, &commonOptions, group.job.printer)
+	applyFixedForges(group.job.input.Shared.FixedForge, &commonOptions, group.job.printer)
 
-	removeSingleSetItems(seenIn, &commonOptions, group.job.input.ItemInput.FixedForge)
+	removeSingleSetItems(seenIn, &commonOptions, group.job.input.Shared.FixedForge)
 
 	restrictItemOptionsToCommon(optionsInputMap, commonOptions)
 

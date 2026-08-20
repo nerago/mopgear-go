@@ -11,25 +11,45 @@ import (
 
 type JobInputs struct {
 	Param                []SpecParam
-	WeightTypeList       []weight_types.WeightType
 	SimRunSize           simulate.WowSim_RunSize
 	WriteBestToGearFiles bool
-	ItemInput            ItemInputShared
-	// TODO consider a TimeLimitTotal
-	TimeLimitEachSolve int
-	RunDecimate        bool
+	Shared               ItemShared
+	TimeLimitEachSolve   int
 }
 
-type ItemInputShared struct {
-	FixedForge                   map[items.ItemId]stats.ReforgeRecipe
-	DistinctUsageGroups          map[items.ItemId]DistinctUsageGroups
+type AlternateMode uint8
+
+const (
+	AlternateModeNone                 AlternateMode = iota
+	AlternateModeReforgeBlocks        AlternateMode = iota
+	AlternateModeItemAndReforgeBlocks AlternateMode = iota
+)
+
+type JobInputTask struct {
+	WeightTypeList       []weight_types.WeightType
+	AlsoExistingEquipped bool
+	AlsoSpecOptimums     bool
+
+	Alternates              AlternateMode
+	AlternatesLimit         util_collection.Optional[int]
+	IncludeInterimResults   bool
+	RunDecimate             bool
+	ReforgingAllowNonCommon bool
+	AlternateGemList        []stats.GemInfo
+	Permute                 InputPermute
+}
+
+type ItemShared struct {
+	FixedForge            map[items.ItemId]stats.ReforgeRecipe
+	RandomVariantItems    []RandomVariantItem
+	MinimumExtraItemLevel uint16
+}
+
+type InputPermute struct {
+	DistinctUsageGroups          map[items.ItemId]*DistinctUsageGroups
 	AlternateUpgradeChoices      [][]items.ItemId
-	AlternateGemming             []stats.GemInfo
-	RandomVariantItems           []RandomVariantItem
-	MinimumExtraItemLevel        uint16
-	AlternateGemsEnableAsPermute bool
-	ReforgingAllowNonCommon      bool
 	PermuteOnItemCountOptions    bool
+	AlternateGemsEnableAsPermute bool
 }
 
 type DistinctUsageGroups struct {
@@ -65,87 +85,10 @@ func (ji *JobInputs) GetSetParam(label string) *SpecParam {
 }
 
 func (ji *JobInputs) AddFixedForge(itemId items.ItemId, reforge stats.ReforgeRecipe) {
-	if ji.ItemInput.FixedForge == nil {
-		ji.ItemInput.FixedForge = make(map[items.ItemId]stats.ReforgeRecipe)
+	if ji.Shared.FixedForge == nil {
+		ji.Shared.FixedForge = make(map[items.ItemId]stats.ReforgeRecipe)
 	}
-	ji.ItemInput.FixedForge[itemId] = reforge
-}
-
-func (ji *JobInputs) AddItemDistinctUsageGroups(itemId items.ItemId, forceTryInEachParam bool, groupA []SpecParam, groupB []SpecParam) {
-	usageGroups := DistinctUsageGroups{ForceTryInEachParam: forceTryInEachParam}
-	for param := range util_collection.ForPointer(ji.Param) {
-		inA := findLabelInParams(param.Label, groupA)
-		inB := findLabelInParams(param.Label, groupB)
-		if inA && inB {
-			panic("in duplicate groups")
-		} else if inA {
-			usageGroups.GroupALabels = append(usageGroups.GroupALabels, param.Label)
-		} else if inB {
-			usageGroups.GroupBLabels = append(usageGroups.GroupBLabels, param.Label)
-		} else {
-			panic("in no groups")
-		}
-	}
-
-	if ji.ItemInput.DistinctUsageGroups == nil {
-		ji.ItemInput.DistinctUsageGroups = make(map[items.ItemId]DistinctUsageGroups)
-	}
-	ji.validateAddUsageGroups(itemId, usageGroups)
-	ji.ItemInput.DistinctUsageGroups[itemId] = usageGroups
-}
-
-func (ji *JobInputs) validateAddUsageGroups(addItemId items.ItemId, addGroup DistinctUsageGroups) {
-	if !addGroup.ForceTryInEachParam {
-		// only have trouble with duplicate forces
-		return
-	}
-
-	addItem := db.WowSimDB_LoadItemById(addItemId, 0)
-	for otherItemId, otherGroup := range ji.ItemInput.DistinctUsageGroups {
-		if otherGroup.ForceTryInEachParam {
-			otherItem := db.WowSimDB_LoadItemById(otherItemId, 0)
-			if addItem.SlotItem() == otherItem.SlotItem() {
-				if anyInCommon(addGroup.GroupALabels, otherGroup.GroupALabels, otherGroup.GroupBLabels) ||
-					anyInCommon(addGroup.GroupBLabels, otherGroup.GroupALabels, otherGroup.GroupBLabels) {
-					panic("same slot forced in multiple items/groups, try forceTryInEachParam=false")
-				}
-			}
-		}
-	}
-}
-
-func anyInCommon(checkSlice []string, otherASlice []string, otherBSlice []string) bool {
-	for _, check := range checkSlice {
-		for _, a := range otherASlice {
-			if check == a {
-				return true
-			}
-		}
-		for _, b := range otherBSlice {
-			if check == b {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func (ji *JobInputs) AddAlternateUpgradeChoices(itemIdList ...items.ItemId) {
-	ji.ItemInput.AlternateUpgradeChoices = append(ji.ItemInput.AlternateUpgradeChoices, itemIdList)
-}
-
-func findLabelInParams(label string, group []SpecParam) bool {
-	for _, p := range group {
-		if p.Label == label {
-			return true
-		}
-	}
-	return false
-}
-
-func (ji *JobInputs) AddAlternateGemming(block stats.StatBlock) {
-	gem := db.GemData_ByStat(&block)
-	ji.ItemInput.AlternateGemming = append(ji.ItemInput.AlternateGemming, gem)
+	ji.Shared.FixedForge[itemId] = reforge
 }
 
 type RandomVariantItem struct {
@@ -157,13 +100,13 @@ type RandomVariantItem struct {
 // so initial processing is based on itemId only and we might have multiple versions of a rolled item
 // force duplicate the item late in itemOptions build
 func (ji *JobInputs) MakeRandomVariants(itemId items.ItemId, upgradeLevel items.UpgradeLevel, randomSuffix ...items.RandomSuffix) {
-	ji.ItemInput.RandomVariantItems = append(ji.ItemInput.RandomVariantItems,
+	ji.Shared.RandomVariantItems = append(ji.Shared.RandomVariantItems,
 		RandomVariantItem{itemId, upgradeLevel, randomSuffix},
 	)
 }
 
 func (ji *JobInputs) SetMinimumExtraItemLevel(itemLevel uint16) {
-	ji.ItemInput.MinimumExtraItemLevel = itemLevel
+	ji.Shared.MinimumExtraItemLevel = itemLevel
 }
 
 func (ji *JobInputs) VerifyNoExtraDuplicates() {
@@ -189,18 +132,38 @@ func (ji *JobInputs) SetWriteBestToGearFiles(writeBestToGearFiles bool) {
 	ji.WriteBestToGearFiles = writeBestToGearFiles
 }
 
-func (ji *JobInputs) ActivateAlternateGemsEnableAsPermute() {
-	ji.ItemInput.AlternateGemsEnableAsPermute = true
+func (task *JobInputTask) AddItemDistinctUsageGroups(itemId items.ItemId, forceTryInEachParam bool, groupA []SpecParam, groupB []SpecParam) {
+	usageGroups := &DistinctUsageGroups{ForceTryInEachParam: forceTryInEachParam}
+	usageGroups.GroupALabels = util_collection.MapSliceAsNew(groupA, func(x *SpecParam) string { return x.Label })
+	usageGroups.GroupBLabels = util_collection.MapSliceAsNew(groupB, func(x *SpecParam) string { return x.Label })
+
+	if task.Permute.DistinctUsageGroups == nil {
+		task.Permute.DistinctUsageGroups = make(map[items.ItemId]*DistinctUsageGroups)
+	}
+	task.Permute.DistinctUsageGroups[itemId] = usageGroups
 }
 
-func (ji *JobInputs) SetWeightTypes(weightTypeList ...weight_types.WeightType) {
-	ji.WeightTypeList = weightTypeList
+func (task *JobInputTask) AddAlternateUpgradeChoices(itemIdList ...items.ItemId) {
+	task.Permute.AlternateUpgradeChoices = append(task.Permute.AlternateUpgradeChoices, itemIdList)
 }
 
-func (ji *JobInputs) SetReforgingAllowNonCommon(reforgingAllowNonCommon bool) {
-	ji.ItemInput.ReforgingAllowNonCommon = reforgingAllowNonCommon
+func (task *JobInputTask) AddAlternateGem(block stats.StatBlock) {
+	gem := db.GemData_ByStat(&block)
+	task.AlternateGemList = append(task.AlternateGemList, gem)
 }
 
-func (ji *JobInputs) EnablePermuteOnItemCountOptions() {
-	ji.ItemInput.PermuteOnItemCountOptions = true
+func (task *JobInputTask) ActivateAlternateGemsEnableAsPermute() {
+	task.Permute.AlternateGemsEnableAsPermute = true
+}
+
+func (task *JobInputTask) SetWeightTypes(weightTypeList ...weight_types.WeightType) {
+	task.WeightTypeList = weightTypeList
+}
+
+func (task *JobInputTask) SetReforgingAllowNonCommon(reforgingAllowNonCommon bool) {
+	task.ReforgingAllowNonCommon = reforgingAllowNonCommon
+}
+
+func (task *JobInputTask) EnablePermuteOnItemCountOptions() {
+	task.Permute.PermuteOnItemCountOptions = true
 }

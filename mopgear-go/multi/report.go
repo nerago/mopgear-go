@@ -38,7 +38,7 @@ func (job *MultiSetJob) reportSimResults_One(result *simulateMultiResult) {
 		input := prep.inputs
 
 		job.printer.Printf("\n---------------- %s ----------------\n", label)
-		output.Report(&prep.model, job.printer)
+		output.Report(prep.model, job.printer)
 		job.printer.Println(simData.CompactStringGeneral())
 
 		if len(input.ReportVariant) > 0 {
@@ -55,7 +55,7 @@ func (job *MultiSetJob) reportSimResults_One(result *simulateMultiResult) {
 			}
 			stringBuild.WriteString(" ----------------")
 			job.printer.PrintlnFromBuild(stringBuild)
-			tools.WowSimJson_Write(&variantEquip, &prep.model, job.printer)
+			tools.WowSimJson_Write(&variantEquip, prep.model, job.printer)
 			job.printer.Println0()
 		}
 	}
@@ -96,7 +96,7 @@ func (job *MultiSetJob) findVariantItem(result *simulateMultiResult, itemId item
 		}
 	}
 
-	_, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &prep.model, job.printer)
+	_, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, prep.model, job.printer)
 	return example
 }
 func (job *MultiSetJob) reportAsCsv(simResultList []*simMultiRankable) {

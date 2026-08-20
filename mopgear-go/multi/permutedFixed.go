@@ -6,10 +6,12 @@ import (
 	"github.com/nerago/mopgear-go/db"
 	"github.com/nerago/mopgear-go/gear_model/bonus_set"
 	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/multi/multi_types"
 	"github.com/nerago/mopgear-go/setup"
 	"github.com/nerago/mopgear-go/solver/solve_highs"
 	"github.com/nerago/mopgear-go/solver/solve_highs_types"
 	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_async"
 	"github.com/nerago/mopgear-go/util/util_collection"
 )
 
@@ -55,7 +57,7 @@ type permuteSet struct {
 	choices []permuteEntry
 }
 
-func (job *MultiSetJob) estimateFixedPermutations() int {
+func (job *MultiSetJob) estimateFixedPermutations(inputPermute *multi_types.InputPermute) int {
 	var count = 1
 	for _, prep := range job.itemPrep {
 		semiFixed := prep.inputs.SemiFixedSlots
@@ -63,20 +65,21 @@ func (job *MultiSetJob) estimateFixedPermutations() int {
 			count *= len(itemIdList)
 		}
 	}
-	for _, group := range job.input.ItemInput.DistinctUsageGroups {
+	for itemId, group := range inputPermute.DistinctUsageGroups {
+		job.validateUsageGroup(itemId, group, inputPermute)
 		if group.ForceTryInEachParam {
 			count *= len(group.GroupALabels) + len(group.GroupBLabels) + 2
 		} else {
 			count *= 2
 		}
 	}
-	for _, group := range job.input.ItemInput.AlternateUpgradeChoices {
+	for _, group := range inputPermute.AlternateUpgradeChoices {
 		count *= len(group)
 	}
-	if job.input.ItemInput.AlternateGemsEnableAsPermute {
+	if inputPermute.AlternateGemsEnableAsPermute {
 		count *= 2
 	}
-	if job.input.ItemInput.PermuteOnItemCountOptions {
+	if inputPermute.PermuteOnItemCountOptions {
 		for _, prep := range job.itemPrep {
 			count *= len(prep.model.BonusRequiredSolve.Options)
 		}
@@ -84,7 +87,61 @@ func (job *MultiSetJob) estimateFixedPermutations() int {
 	return count
 }
 
-func (job *MultiSetJob) buildPermutations() <-chan permuteSet {
+func (job *MultiSetJob) validateUsageGroup(itemId items.ItemId, group *multi_types.DistinctUsageGroups, permute *multi_types.InputPermute) {
+	for _, label := range group.GroupALabels {
+		if job.input.GetSetParam(label) == nil {
+			panic("invalid param " + label)
+		}
+	}
+	for _, label := range group.GroupBLabels {
+		if job.input.GetSetParam(label) == nil {
+			panic("invalid param " + label)
+		}
+	}
+
+	for param := range util_collection.ForPointer(job.input.Param) {
+		inA := slices.Contains(group.GroupALabels, param.Label)
+		inB := slices.Contains(group.GroupBLabels, param.Label)
+		if inA && inB {
+			panic("in duplicate groups")
+		} else if !inA && !inB {
+			panic("in no groups")
+		}
+	}
+
+	if group.ForceTryInEachParam {
+		addItem := db.WowSimDB_LoadItemById(itemId, 0)
+		for otherItemId, otherGroup := range permute.DistinctUsageGroups {
+			if group != otherGroup && otherGroup.ForceTryInEachParam {
+				otherItem := db.WowSimDB_LoadItemById(otherItemId, 0)
+				if addItem.SlotItem() == otherItem.SlotItem() {
+					if anyInCommon(group.GroupALabels, otherGroup.GroupALabels, otherGroup.GroupBLabels) ||
+						anyInCommon(group.GroupBLabels, otherGroup.GroupALabels, otherGroup.GroupBLabels) {
+						panic("same slot forced in multiple items/groups, try forceTryInEachParam=false")
+					}
+				}
+			}
+		}
+	}
+}
+
+func anyInCommon(checkSlice []string, otherASlice []string, otherBSlice []string) bool {
+	for _, check := range checkSlice {
+		for _, a := range otherASlice {
+			if check == a {
+				return true
+			}
+		}
+		for _, b := range otherBSlice {
+			if check == b {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (job *MultiSetJob) buildPermutationOptions(inputPermute *multi_types.InputPermute) []permuteOptions {
 	optionEntriesList := make([]permuteOptions, 0)
 
 	for _, prep := range job.itemPrep {
@@ -98,7 +155,7 @@ func (job *MultiSetJob) buildPermutations() <-chan permuteSet {
 		}
 	}
 
-	for itemId, group := range job.input.ItemInput.DistinctUsageGroups {
+	for itemId, group := range inputPermute.DistinctUsageGroups {
 		entriesList := make([]permuteEntry, 0)
 
 		entriesList = append(entriesList, permuteEntry{group: &permuteEntryAllowGroup{group.GroupALabels, "", itemId}})
@@ -116,14 +173,14 @@ func (job *MultiSetJob) buildPermutations() <-chan permuteSet {
 		optionEntriesList = append(optionEntriesList, permuteOptions{options: entriesList})
 	}
 
-	for _, group := range job.input.ItemInput.AlternateUpgradeChoices {
+	for _, group := range inputPermute.AlternateUpgradeChoices {
 		entriesList := util_collection.MapSliceAsNew(group, func(itemId *items.ItemId) permuteEntry {
 			return permuteEntry{upgrade: &permuteEntryUpgrade{*itemId}}
 		})
 		optionEntriesList = append(optionEntriesList, permuteOptions{options: entriesList})
 	}
 
-	if job.input.ItemInput.AlternateGemsEnableAsPermute {
+	if inputPermute.AlternateGemsEnableAsPermute {
 		entriesList := []permuteEntry{
 			{gems: &permuteEntryGems{true}},
 			{gems: &permuteEntryGems{false}},
@@ -131,7 +188,7 @@ func (job *MultiSetJob) buildPermutations() <-chan permuteSet {
 		optionEntriesList = append(optionEntriesList, permuteOptions{options: entriesList})
 	}
 
-	if job.input.ItemInput.PermuteOnItemCountOptions {
+	if inputPermute.PermuteOnItemCountOptions {
 		for _, prep := range job.itemPrep {
 			if len(prep.model.BonusRequiredSolve.Options) > 1 {
 				entriesList := util_collection.MapSliceAsNew(prep.model.BonusRequiredSolve.Options, func(cr *bonus_set.ItemCountsRequired) permuteEntry {
@@ -144,24 +201,26 @@ func (job *MultiSetJob) buildPermutations() <-chan permuteSet {
 			}
 		}
 	}
-
-	return permuteAsChannel(optionEntriesList)
+	return optionEntriesList
 }
 
-func permuteAsChannel(listsOfOptions []permuteOptions) <-chan permuteSet {
-	stepChannel := permuteInit(listsOfOptions[0])
+func permuteAsChannel(listsOfOptions []permuteOptions, cancel util_async.CancelSignal) <-chan permuteSet {
+	stepChannel := permuteInit(listsOfOptions[0], cancel)
 
 	for i := 1; i < len(listsOfOptions); i++ {
-		stepChannel = permuteStep(stepChannel, listsOfOptions[i])
+		stepChannel = permuteStep(stepChannel, listsOfOptions[i], cancel)
 	}
 
 	return stepChannel
 }
 
-func permuteInit(options permuteOptions) <-chan permuteSet {
-	stepChannel := make(chan permuteSet, 8)
+func permuteInit(options permuteOptions, cancel util_async.CancelSignal) <-chan permuteSet {
+	stepChannel := make(chan permuteSet)
 	go func() {
 		for _, value := range options.options {
+			if cancel.ShouldFinish() {
+				break
+			}
 			stepChannel <- permuteSet{choices: []permuteEntry{value}}
 		}
 		close(stepChannel)
@@ -169,11 +228,14 @@ func permuteInit(options permuteOptions) <-chan permuteSet {
 	return stepChannel
 }
 
-func permuteStep(inChannel <-chan permuteSet, options permuteOptions) <-chan permuteSet {
-	outputChannel := make(chan permuteSet, 8)
+func permuteStep(inChannel <-chan permuteSet, options permuteOptions, cancel util_async.CancelSignal) <-chan permuteSet {
+	outputChannel := make(chan permuteSet)
 	go func() {
 		for currSet := range inChannel {
 			for _, value := range options.options {
+				if cancel.ShouldFinish() {
+					break
+				}
 				outputChannel <- permuteSet{choices: util_collection.CopyAndAppend(currSet.choices, value)}
 			}
 		}
@@ -182,7 +244,7 @@ func permuteStep(inChannel <-chan permuteSet, options permuteOptions) <-chan per
 	return outputChannel
 }
 
-func (group *workingGroup) highProcessSetupForPermute(permuteSet permuteSet, printer *util.PrintRecorder) *solve_highs.SolverHighsMultiProcess {
+func (group *workingGroup) highProcessSetupForPermute(permuteSet *permuteSet, printer *util.PrintRecorder) *solve_highs.SolverHighsMultiProcess {
 	itemOptionsEach, overrideBonuses, permuteLabel := group.processSetupItemOptionsForPermute(permuteSet, printer)
 	printer.Printf("PERMUTE SET:\n%s\n", permuteLabel)
 
@@ -204,7 +266,7 @@ func (group *workingGroup) highProcessSetupForPermute(permuteSet permuteSet, pri
 	return highProcess
 }
 
-func (group *workingGroup) processSetupItemOptionsForPermute(permuteSet permuteSet, printer *util.PrintRecorder) (map[string]*items.FullOptionsMap, map[string]*solve_highs_types.OverrideBonusCounts, string) {
+func (group *workingGroup) processSetupItemOptionsForPermute(permuteSet *permuteSet, printer *util.PrintRecorder) (map[string]*items.FullOptionsMap, map[string]*solve_highs_types.OverrideBonusCounts, string) {
 	overrideBonusMap := make(map[string]*solve_highs_types.OverrideBonusCounts)
 
 	itemOptionsEach := make(map[string]*items.FullOptionsMap)

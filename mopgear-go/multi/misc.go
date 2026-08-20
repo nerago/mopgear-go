@@ -11,7 +11,7 @@ const (
 	c_prepThreadCount                = 8
 	c_simThreadCount                 = 4
 	c_highsThreadCount               = 10
-	c_permuteThreadCount             = 4
+	c_permuteThreadCount             = 8
 	c_decimateThreadCount            = 12
 	c_mainProposal_threadCount       = 4
 	c_additionalProposal_threadCount = 4

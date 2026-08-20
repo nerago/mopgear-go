@@ -429,7 +429,7 @@ type FutureChannelMixerContinuing[T any] struct {
 	state channelMixerContinuingState
 
 	initialChannels       []reflect.Value
-	internalNotifyChannel chan reflect.Value
+	internalNotifyChannel chan *reflect.Value
 
 	outputChannel chan T
 }
@@ -469,12 +469,23 @@ func (fc *FutureChannelMixerContinuing[T]) AddChannel(inputChannel <-chan T) {
 	fc.newSourceAdded(reflect.ValueOf(inputChannel))
 }
 
+func (fc *FutureChannelMixerContinuing[T]) AddValue(value T) {
+	fc.mutex.Lock()
+	defer fc.mutex.Unlock()
+
+	singleValueChannel := make(chan T, 1)
+	singleValueChannel <- value
+	close(singleValueChannel)
+
+	fc.newSourceAdded(reflect.ValueOf(singleValueChannel))
+}
+
 func (fc *FutureChannelMixerContinuing[T]) newSourceAdded(newChannel reflect.Value) {
 	switch fc.state {
 	case channelMixerContinuingInit:
 		fc.initialChannels = append(fc.initialChannels, newChannel)
 	case channelMixerContinuingRunning:
-		fc.internalNotifyChannel <- newChannel
+		fc.internalNotifyChannel <- new(newChannel)
 	default:
 		panic("can't add new source after stopping")
 	}
@@ -496,7 +507,7 @@ func (fc *FutureChannelMixerContinuing[T]) ReadyUpAndPrepareChannel() <-chan T {
 	}
 
 	fc.outputChannel = make(chan T)
-	fc.internalNotifyChannel = make(chan reflect.Value)
+	fc.internalNotifyChannel = make(chan *reflect.Value)
 	fc.state = channelMixerContinuingRunning
 
 	go func() {
@@ -509,7 +520,7 @@ func (fc *FutureChannelMixerContinuing[T]) ReadyUpAndPrepareChannel() <-chan T {
 }
 
 // does thing mean
-func (fc *FutureChannelMixerContinuing[T]) StopWhenSourcesFinish() {
+func (fc *FutureChannelMixerContinuing[T]) ShutdownAsync() {
 	fc.mutex.Lock()
 	defer fc.mutex.Unlock()
 
@@ -522,7 +533,7 @@ func (fc *FutureChannelMixerContinuing[T]) StopWhenSourcesFinish() {
 		}
 	case channelMixerContinuingRunning:
 		fc.state = channelMixerContinuingStopping
-		fc.internalNotifyChannel <- reflect.ValueOf(nil)
+		fc.internalNotifyChannel <- nil
 	default:
 		panic("already stopped")
 	}
@@ -549,9 +560,10 @@ func (fc *FutureChannelMixerContinuing[T]) selectLoop() {
 			if reflectValue.IsNil() { // stop command
 				continuing = false
 			} else { // new channel
+				derefPointer := reflect.Indirect(reflectValue)
 				cases = append(cases, reflect.SelectCase{
 					Dir:  reflect.SelectRecv,
-					Chan: reflectValue,
+					Chan: derefPointer,
 				})
 			}
 		} else if hasValue {

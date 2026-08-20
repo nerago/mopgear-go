@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func Solver(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, printer *util.PrintRecorder, weightType weight_types.WeightType, timeout int) SolveOutput {
+func Solver(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, printer *util.PrintRecorder, weightType weight_types.WeightType, timeout int, cancel util_async.CancelSignal) SolveOutput {
 	if itemOptions == nil || model == nil || printer == nil || weightType == 0 {
 		panic("missing option")
 	}
@@ -23,6 +23,9 @@ func Solver(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, prin
 	solveModel := solve_highs_types.SolverModelBuild(model, weightType, nil)
 
 	futureSolvedSet := LaunchSolve(&solveOptions, solveModel, printer, weightType, timeout)
+	if cancel != nil {
+		util_async.ChainCancel(cancel, futureSolvedSet)
+	}
 	solvedResult := futureSolvedSet.WaitForResultAsOptional()
 
 	return finaliseSolve(solvedResult, solveOptions, itemOptions, model, printer, weightType)

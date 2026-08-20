@@ -16,7 +16,7 @@ import (
 
 type specItemPrep struct {
 	label             string
-	model             gear_model.SpecModel
+	model             *gear_model.SpecModel
 	exactEquippedGear items.FullEquipMap
 	itemOptions       items.FullOptionsMap
 	addedFromBags     []items.ItemId
@@ -33,7 +33,7 @@ func (job *MultiSetJob) prepareItems() {
 	itemPrepSlice := util_collection.MapSliceAsNew(params, func(param *multi_types.SpecParam) specItemPrep {
 		prep := specItemPrep{
 			label:           param.Label,
-			model:           param.Model,
+			model:           &param.Model,
 			inputs:          &param.ItemInputs,
 			seenInSolutions: &seenMap{content: make(map[items.ItemId]uint32)},
 		}
@@ -47,8 +47,9 @@ func (job *MultiSetJob) prepareItems() {
 
 	refs := &extraRefs{
 		bagsGear:   &job.bagsGear,
-		shared:     &job.input.ItemInput,
+		shared:     &job.input.Shared,
 		otherPreps: job.itemPrep,
+		tasks:      job.tasks,
 	}
 
 	job.printer.Println("PREPARING EXTRA ITEMS")
@@ -62,8 +63,7 @@ func (job *MultiSetJob) prepareItems() {
 		input := &params[i].ItemInputs
 		prep.removeBlocked(input, job.printer)
 		prep.restrictFixed(input, job.printer)
-		prep.makeRandomVariantItems(job.input.ItemInput.RandomVariantItems, input, job.printer)
-		prep.setupAlternateGems(job.input.ItemInput.AlternateGemming, job.printer)
+		prep.makeRandomVariantItems(job.input.Shared.RandomVariantItems, input, job.printer)
 	}
 }
 
@@ -75,8 +75,18 @@ func (job *MultiSetJob) paramOrderSlice() []string {
 
 type extraRefs struct {
 	bagsGear   *loaders.EquippedArray
-	shared     *multi_types.ItemInputShared
+	shared     *multi_types.ItemShared
 	otherPreps map[string]*specItemPrep
+	tasks      []multi_types.JobInputTask
+}
+
+func (ref extraRefs) findDistinctUsageGroupsForItem(itemId items.ItemId) *multi_types.DistinctUsageGroups {
+	for _, task := range ref.tasks {
+		if group, hasGroup := task.Permute.DistinctUsageGroups[itemId]; hasGroup {
+			return group
+		}
+	}
+	return nil
 }
 
 func (prep *specItemPrep) prepareStartingGear(input *multi_types.ItemInputs, model *gear_model.SpecModel, printer *util.PrintRecorder) {
@@ -148,10 +158,10 @@ func (prep *specItemPrep) includeExtra(itemId items.ItemId, input *multi_types.I
 }
 
 func (prep *specItemPrep) copyExtraFromOtherSpec(itemId items.ItemId, refs *extraRefs, printer *util.PrintRecorder) bool {
-	usageGroups, hasUsageGroups := refs.shared.DistinctUsageGroups[itemId]
+	usageGroups := refs.findDistinctUsageGroupsForItem(itemId)
 
 	options := make([]items.FullItem, 0)
-	if !hasUsageGroups {
+	if usageGroups == nil {
 		for _, other := range refs.otherPreps {
 			more := other.itemOptions.FindItemId(itemId)
 			options = slices.AppendSeq(options, more)
@@ -163,7 +173,7 @@ func (prep *specItemPrep) copyExtraFromOtherSpec(itemId items.ItemId, refs *extr
 				more := otherPrep.itemOptions.FindItemId(itemId)
 				options = slices.AppendSeq(options, more)
 			}
-		} else if slices.Contains(usageGroups.GroupALabels, prep.label) {
+		} else if slices.Contains(usageGroups.GroupBLabels, prep.label) {
 			for _, otherLabel := range usageGroups.GroupBLabels {
 				otherPrep := refs.otherPreps[otherLabel]
 				more := otherPrep.itemOptions.FindItemId(itemId)
@@ -190,7 +200,7 @@ func (prep *specItemPrep) copyExtraFromOtherSpec(itemId items.ItemId, refs *extr
 func (prep *specItemPrep) copyExtraFromBags(itemId items.ItemId, refs *extraRefs, printer *util.PrintRecorder) bool {
 	equipped := refs.bagsGear.GetWithItemId(itemId)
 	if equipped != nil {
-		options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &prep.model, setup.MissingEnchant_Fix, printer)
+		options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, prep.model, setup.MissingEnchant_Fix, printer)
 		prep.addItemOptionsWithValidate(example.SlotItem(), options)
 		printer.Printf("OPTION from bags %s\n", example.CreateString())
 		return true
@@ -223,7 +233,7 @@ func (prep *specItemPrep) tryAddExtraFromBags(equipped *loaders.EquippedItem, in
 		return
 	}
 
-	options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, &prep.model, setup.MissingEnchant_Fix, printer)
+	options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, prep.model, setup.MissingEnchant_Fix, printer)
 
 	added := false
 	example.SlotItem().ForEachEquip(func(slot items.SlotEquip) {
@@ -240,7 +250,7 @@ func (prep *specItemPrep) tryAddExtraFromBags(equipped *loaders.EquippedItem, in
 }
 
 func (prep *specItemPrep) extraLoadAndGenerate(itemId items.ItemId, randomSuffix items.RandomSuffix, input *multi_types.ItemInputs, printer *util.PrintRecorder) {
-	options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, input.ExtraUpgradeLevel, randomSuffix, &prep.model, printer)
+	options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, input.ExtraUpgradeLevel, randomSuffix, prep.model, printer)
 	prep.addItemOptionsWithValidate(example.SlotItem(), options)
 	printer.Printf("OPTION %s\n", example.CreateString())
 }
@@ -277,25 +287,25 @@ func (prep *specItemPrep) removeBlocked(input *multi_types.ItemInputs, printer *
 	}
 }
 
-func (prep *specItemPrep) setupAlternateGems(alternateGemList []stats.GemInfo, printer *util.PrintRecorder) {
+func (work *specWorker) setupAlternateGems(alternateGemList []stats.GemInfo, printer *util.PrintRecorder) {
 	if len(alternateGemList) > 0 {
 		for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
-			existing := prep.itemOptions.Get(slot)
+			existing := work.itemOptionsWork.Get(slot)
 			for _, item := range existing {
 				for _, alternateGem := range alternateGemList {
-					alternateItem := prep.reGemAlternate(item, alternateGem, printer)
-					prep.addItemOptionsWithValidate_WhereNotExist(slot, []items.FullItem{alternateItem})
+					alternateItem := work.reGemAlternate(item, alternateGem, printer)
+					work.addItemOptionsWithValidate_WhereNotExist(slot, []items.FullItem{alternateItem})
 				}
 
-				defaultItem := prep.reGemDefault(item, printer)
-				prep.addItemOptionsWithValidate_WhereNotExist(slot, []items.FullItem{defaultItem})
+				defaultItem := work.reGemDefault(item, printer)
+				work.addItemOptionsWithValidate_WhereNotExist(slot, []items.FullItem{defaultItem})
 			}
 		}
-		prep.itemOptions.RemoveDuplicates()
+		work.itemOptionsWork.RemoveDuplicates()
 	}
 }
 
-func (prep *specItemPrep) reGemAlternate(item items.FullItem, alternateGem stats.GemInfo, printer *util.PrintRecorder) items.FullItem {
+func (work *specWorker) reGemAlternate(item items.FullItem, alternateGem stats.GemInfo, printer *util.PrintRecorder) items.FullItem {
 	alternateEquipItem := loaders.EquippedItem_FromFull(&item)
 	for i := range alternateEquipItem.GemChoice {
 		socket := item.SocketSlots()[i]
@@ -303,16 +313,16 @@ func (prep *specItemPrep) reGemAlternate(item items.FullItem, alternateGem stats
 			alternateEquipItem.GemChoice[i] = alternateGem.Id
 		}
 	}
-	alternateItem := setup.OptionsSetup_ExactEquippedOnly_Item(alternateEquipItem, setup.MissingEnchant_Panic, &prep.model, printer)
+	alternateItem := setup.OptionsSetup_ExactEquippedOnly_Item(alternateEquipItem, setup.MissingEnchant_Panic, work.model, printer)
 
 	alternateItem.SetNameTag(items.ReGem_GemAlternate)
 	return alternateItem
 }
 
-func (prep *specItemPrep) reGemDefault(item items.FullItem, printer *util.PrintRecorder) items.FullItem {
+func (work *specWorker) reGemDefault(item items.FullItem, printer *util.PrintRecorder) items.FullItem {
 	defaultEquipItem := loaders.EquippedItem_FromFull(&item)
 	defaultEquipItem.GemChoice = nil
-	defaultItem := setup.OptionsSetup_ExactEquippedOnly_Item(defaultEquipItem, setup.MissingEnchant_Fix, &prep.model, printer)
+	defaultItem := setup.OptionsSetup_ExactEquippedOnly_Item(defaultEquipItem, setup.MissingEnchant_Fix, work.model, printer)
 	defaultItem.SetNameTag(items.ReGem_GemDefault)
 	return defaultItem
 }
@@ -346,7 +356,7 @@ func (prep *specItemPrep) makeRandomVariantItem(variantItem *multi_types.RandomV
 	if hasAny {
 		for index, randomSuffix := range variantItem.RandomSuffixList {
 			if !hasVersion[index] {
-				options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(variantItem.ItemId, input.ExtraUpgradeLevel, randomSuffix, &prep.model, printer)
+				options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(variantItem.ItemId, input.ExtraUpgradeLevel, randomSuffix, prep.model, printer)
 				printer.Println("RANDOM_VARIANT adding " + example.CreateString())
 				slotOptions = append(slotOptions, options...)
 			}
@@ -361,24 +371,24 @@ func (prep *specItemPrep) makeRandomVariantItem(variantItem *multi_types.RandomV
 }
 
 func (prep *specItemPrep) addItemOptionsWithValidate(slot items.SlotItem, options []items.FullItem) {
-	prep.validateAddOptions(slot.ToSlotEquipOptions()[0], options)
+	validateAddOptions(slot.ToSlotEquipOptions()[0], options, prep.model)
 	prep.itemOptions.AddSeveralOptions(slot, options)
 }
 
 func (prep *specItemPrep) addItemOptionsSpecificWithValidate(slot items.SlotEquip, options []items.FullItem) {
-	prep.validateAddOptions(slot, options)
+	validateAddOptions(slot, options, prep.model)
 	prep.itemOptions.AddSeveralOptionsSpecific(slot, options)
 }
 
-func (prep *specItemPrep) addItemOptionsWithValidate_WhereNotExist(slot items.SlotEquip, options []items.FullItem) {
-	prep.validateAddOptions(slot, options)
-	prep.itemOptions.AddSeveralOptionsSpecific_WhereNotExist(slot, options)
+func (work *specWorker) addItemOptionsWithValidate_WhereNotExist(slot items.SlotEquip, options []items.FullItem) {
+	validateAddOptions(slot, options, work.model)
+	work.itemOptionsWork.AddSeveralOptionsSpecific_WhereNotExist(slot, options)
 }
 
-func (prep *specItemPrep) validateAddOptions(slot items.SlotEquip, options []items.FullItem) {
+func validateAddOptions(slot items.SlotEquip, options []items.FullItem, model *gear_model.SpecModel) {
 	if slot == items.Equip_Head {
 		for item := range util_collection.ForPointer(options) {
-			prep.model.GemChoice.ValidateMetaGemInItem(item)
+			model.GemChoice.ValidateMetaGemInItem(item)
 		}
 	}
 }

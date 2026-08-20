@@ -22,41 +22,31 @@ const c_decimateTargetItemsPairedSlot = 4
 // normally decimate done as part of regular jobs
 func (job *MultiSetJob) TestDecimate() {
 	job.prepareItems()
-	groupChannel := job.prepareWorkingGroups()
-	groupChannel = job.runDecimate(groupChannel)
 
-	util_async.ForEach_Channel(1, groupChannel, func(group *workingGroup) {})
-}
+	cancel := util_async.CancelSignal_Make()
 
-func (job *MultiSetJob) runDecimate(channel <-chan *workingGroup) <-chan *workingGroup {
-	return util_async.Map_ChannelToChannel(c_decimateThreadCount, channel, func(group *workingGroup) *workingGroup {
-		workChannel := util_async.SeqToChannel(maps.Values(group.workers))
-		util_async.ForEach_Channel(c_decimateThreadCount, workChannel, func(work *specWorker) {
-			tracker := util.TrackProgress_Nop()
-			work.runDecimateWork(tracker, job.printer, job.input.TimeLimitEachSolve)
-		})
-		return group
+	groupChannel := job.prepareWorkingGroups(cancel)
+
+	util_async.ForEach_Channel(1, groupChannel, func(group *workingGroup) {
+		group.runDecimate(cancel)
 	})
 }
 
-func (work *specWorker) runDecimateWork(tracker *util.TrackProgress, printer *util.PrintRecorder, timeout int) {
-	solveOptions := items.SolvableOptionsMap_of(work.ItemOptions())
-	solverModel := solve_highs_types.SolverModelBuild(work.Model(), work.weightType, nil)
-	//futureBaseItemSet := solver.LaunchSolve(new(solveOptions), solverModel, printer, work.weightType, timeout)
-	//
-	//// isn't this just the same as baseline?
-	//
-	//if baseItemSet, gotBase := futureBaseItemSet.WaitForResult(); gotBase {
-	//	work.decimateForBaseSet(tracker, printer, timeout, baseItemSet, solveOptions, solverModel)
-	//} else {
-	//	printer.Println("Decimate initial set failed " + work.Label())
-	//}
-
-	work.decimateForBaseSet(tracker, printer, timeout, work.baselineResult.SolvedSet, solveOptions, solverModel)
-	tracker.SetDone()
+func (group *workingGroup) runDecimate(cancel util_async.CancelSignal) {
+	workChannel := util_async.SeqToChannel_Cancellable(maps.Values(group.workers), cancel)
+	util_async.ForEach_Channel(c_decimateThreadCount, workChannel, func(work *specWorker) {
+		tracker := util.TrackProgress_Nop()
+		work.runDecimateWork(tracker, group.job.printer, group.job.input.TimeLimitEachSolve, cancel)
+	})
 }
 
-func (work *specWorker) decimateForBaseSet(tracker *util.TrackProgress, printer *util.PrintRecorder, timeout int, baseItemSet items.SolvableItemSet, solveOptions items.SolvableOptionsMap, solverModel *solve_highs_types.SolverModel) {
+func (work *specWorker) runDecimateWork(tracker *util.TrackProgress, printer *util.PrintRecorder, timeout int, cancel util_async.CancelSignal) {
+	solveOptions := items.SolvableOptionsMap_of(work.ItemOptions())
+	solverModel := solve_highs_types.SolverModelBuild(work.Model(), work.weightType, nil)
+	work.decimateForBaseSet(tracker, printer, timeout, work.baselineResult.SolvedSet, solveOptions, solverModel, cancel)
+}
+
+func (work *specWorker) decimateForBaseSet(tracker *util.TrackProgress, printer *util.PrintRecorder, timeout int, baseItemSet items.SolvableItemSet, solveOptions items.SolvableOptionsMap, solverModel *solve_highs_types.SolverModel, cancel util_async.CancelSignal) {
 	estimateSteps := uint64(baseItemSet.Items().CountNonEmptySlots())
 	currentStep := new(atomic.Uint64)
 	tracker.RunFromAtomicInt(currentStep, estimateSteps)
@@ -73,12 +63,12 @@ func (work *specWorker) decimateForBaseSet(tracker *util.TrackProgress, printer 
 		}
 	}
 
-	util_async.ForEach_Slice(c_decimateThreadCount, items.SlotEquip_List, func(slotEquipPtr *items.SlotEquip) {
+	util_async.ForEach_Slice_Cancellable(c_decimateThreadCount, items.SlotEquip_List, cancel, func(slotEquipPtr *items.SlotEquip) {
 		slotEquip := *slotEquipPtr
 		if baseItemSet.Items().Has(slotEquip) {
 			if solveOptions.CountSlotUniqueItemIds(slotEquip) > c_decimateTargetItemsPerSlot {
 				bestSlotSet := bestBySlot.GetOrPanic(slotEquip)
-				work.decimateFindSlotBestN(bestSlotSet, slotEquip, &solveOptions, solverModel, printer, timeout)
+				work.decimateFindSlotBestN(bestSlotSet, slotEquip, &solveOptions, solverModel, printer, timeout, cancel)
 			} else {
 				for itemId := range solveOptions.SeqSlotUniqueItemIds(slotEquip) {
 					bestBySlot.GetOrPanic(slotEquip).AddIfMissing(itemId)
@@ -93,19 +83,20 @@ func (work *specWorker) decimateForBaseSet(tracker *util.TrackProgress, printer 
 	work.decimateApply(&bestBySlot, printer)
 }
 
-func (work *specWorker) decimateFindSlotBestN(bestForSlot *util_collection.SetComparable[items.ItemId], slotEquip items.SlotEquip, solveOptionsBase *items.SolvableOptionsMap, solverModel *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int) {
+func (work *specWorker) decimateFindSlotBestN(bestForSlot *util_collection.SetComparable[items.ItemId], slotEquip items.SlotEquip, solveOptionsBase *items.SolvableOptionsMap, solverModel *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int, cancel util_async.CancelSignal) {
 	targetItemCount := c_decimateTargetItemsPerSlot
 	if slotEquip == items.Equip_Ring1 || slotEquip == items.Equip_Ring2 || slotEquip == items.Equip_Trinket1 || slotEquip == items.Equip_Trinket2 {
 		targetItemCount = c_decimateTargetItemsPairedSlot
 	}
 
-	for bestForSlot.Size() < targetItemCount {
+	for bestForSlot.Size() < targetItemCount && cancel.ShouldContinue() {
 		restrictedOptions, isValid := work.decimatePrepareItemOptions(bestForSlot, solveOptionsBase)
 		if !isValid {
 			return
 		}
 
 		futureCheckSet := solver.LaunchSolve(&restrictedOptions, solverModel, printer, work.weightType, timeout)
+		util_async.ChainCancel(cancel, futureCheckSet)
 
 		if checkSet, gotCheck := futureCheckSet.WaitForResult(); gotCheck {
 			nextBestItem := checkSet.Items().Get(slotEquip)

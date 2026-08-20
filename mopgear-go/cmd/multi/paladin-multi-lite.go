@@ -12,6 +12,8 @@ import (
 	"github.com/nerago/mopgear-go/setup"
 	"github.com/nerago/mopgear-go/simulate"
 	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_collection"
+	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
 func PaladinMultiRunLite(printer *util.PrintRecorder) {
@@ -98,13 +100,6 @@ func PaladinMultiRunLite(printer *util.PrintRecorder) {
 	job.SetMinimumExtraItemLevel(463)
 	job.SetTimeLimitEachSolver(2500)
 	job.SetSimSize(simSize)
-	job.SetReforgingAllowNonCommon(false)
-	//job.SetWriteBestToGearFiles()
-	job.SetWeightTypes(3)
-	//job.SetWeightTypes(1, 2, 3)
-	//job.SetWeightTypes(2)
-	//job.SetWeightTypes(1)
-	job.RunDecimate = true
 
 	var generalUpgrade items.UpgradeLevel = 0
 	var forceUpgrade items.UpgradeLevel = 0
@@ -296,26 +291,6 @@ func PaladinMultiRunLite(printer *util.PrintRecorder) {
 	blockHelmetsWithoutIndomitable(&protSurvival)
 	blockHelmetsWithoutIndomitable(&protHeal)
 
-	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Haste, 320))
-	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Stamina, 120))
-	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
-	//job.AddAlternateGemming(stats.StatBlock_of(stats.Stat_Strength, 160))
-	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
-	//job.AddAlternateGemming(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
-	//job.ActivateAlternateGemmingAsPermute()
-
-	//job.MakeRandomVariants(101887, 0, -365, -352)
-
-	//ret.AddBagsExtra()
-	//protDps.AddBagsExtra()
-	//protCompromise.AddBagsExtra()
-	//protMitigationNoSet.AddBagsExtra()
-	//protMitigationWithSet.AddBagsExtra()
-	//protHeal.AddBagsExtra()
-
-	//addExtrasFromFinder(loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic),
-	//	&ret, &protDps, &protCompromise, &protMitigationNoSet, &protMitigationWithSet, &protHeal)
-
 	job.AddSetParam(ret)
 	job.AddSetParam(protDps)
 	job.AddSetParam(protBalanced)
@@ -323,22 +298,25 @@ func PaladinMultiRunLite(printer *util.PrintRecorder) {
 	job.AddSetParam(protSurvival)
 	job.AddSetParam(protHeal)
 
-	//job.AddAlternateUpgradeChoices(
-	//	99028,  // Handguards of Winged Triumph celestial
-	//	105122, // Asgorathian Blood Seal - option #5, upgrade rank #4
-	//)
 	//job.AddAlternateUpgradeChoices(105033) // Wolf-Rider Spurs
-
-	//job.EnablePermuteOnItemCountOptions()
 
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()
 
-	run := multi.JobCreate(printer, job)
+	task := multi_types.JobInputTask{
+		WeightTypeList:          []weight_types.WeightType{3},
+		AlsoExistingEquipped:    false,
+		AlsoSpecOptimums:        false,
+		Alternates:              multi_types.AlternateModeNone,
+		AlternatesLimit:         util_collection.Optional[int]{},
+		IncludeInterimResults:   false,
+		RunDecimate:             true,
+		ReforgingAllowNonCommon: false,
+	}
 
-	//job.RunNoPermutations_AllCommonAlternates(true, true)
-	run.RunNoPermutations_BestOnly(false, true)
-	//run.RunForSolutionsPerPermute(1, false)
+	run := multi.JobCreate(printer, job, task)
+
+	run.Run()
 
 	//job.CullingReport()
 	//run.TestDecimate()
