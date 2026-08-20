@@ -70,7 +70,7 @@ func prepareSim(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal s
 	infile := simFileFor(spec, fight)
 	input := inputRequestFromTemplate(infile, equipMap, profession, bonusStats, spec, fight, runSize, goal)
 
-	reporter := make(chan *wowsim_proto.ProgressMetrics, 10)
+	reporter := make(chan *wowsim_proto.ProgressMetrics)
 
 	id := uuid.NewString()
 	input.RequestId = id

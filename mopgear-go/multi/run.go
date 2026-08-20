@@ -17,26 +17,41 @@ func (job *MultiSetJob) Run() {
 
 	groupChannel := job.prepareWorkingGroups(cancelGenerate)
 
+	proposalChannel, expectedCountChannel := job.makeProposalChannel(groupChannel, cancelGenerate)
+
+	proposalChannel, futureProposalList := util_async.TeeChannelToSlice(proposalChannel)
+
+	tracker := util.TrackProgress_Start()
+	defer tracker.SetDone()
+
+	futureSimResultList := job.runSimsForProposalChannel(proposalChannel, tracker, expectedCountChannel)
+
+	proposalList, gotResult2 := futureProposalList.WaitForResult()
+	simResultList, gotResult1 := futureSimResultList.WaitForResult()
+	job.generalMultiReport(gotResult1 && gotResult2, proposalList, simResultList)
+}
+
+func (job *MultiSetJob) makeProposalChannel(groupChannel <-chan *workingGroup, cancelGenerate *util_async.CancelSignalBasic) (<-chan multi_types.MultiProposedOutput, <-chan int) {
 	futureCount := util_async.FutureValueAdderIntMake(0)
 	proposalMixer := util_async.FutureChannelMixerContinuing[multi_types.MultiProposedOutput]{}
 
-	util_async.ForEach_Channel(c_mainProposal_threadCount, groupChannel, func(group *workingGroup) {
+	util_async.ForEach_Channel_NonBlocking(c_mainProposal_threadCount, groupChannel, func(group *workingGroup) {
 		group.groupProposals(&proposalMixer, futureCount, cancelGenerate)
+	}, func() {
+		proposalMixer.ShutdownAsync()
 	})
 
 	expectedCountChannel := futureCount.ReadyUpAndPrepareChannel()
 	proposalChannel := proposalMixer.ReadyUpAndPrepareChannel()
 
-	tracker := util.TrackProgress_Start()
-	defer tracker.SetDone()
+	proposalChannel = util_async.Channel_RemoveDuplicatesFuncNotify(proposalChannel, func(a, b *multi_types.MultiProposedOutput) bool {
+		return a.Equals(b)
+	}, func(x *multi_types.MultiProposedOutput) {
+		job.printer.Printf("Remove Duplicate %s\n", x.Id)
+	})
 
-	futureSimResultList, futureProposalList := job.runSimsForProposalChannel(proposalChannel, tracker, expectedCountChannel)
-
-	proposalMixer.ShutdownAsync()
-
-	proposalList, gotResult2 := futureProposalList.WaitForResult()
-	simResultList, gotResult1 := futureSimResultList.WaitForResult()
-	job.generalMultiReport(gotResult1 && gotResult2, proposalList, simResultList)
+	proposalChannel = job.listInitialOutputs(proposalChannel)
+	return proposalChannel, expectedCountChannel
 }
 
 func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time.Duration) {

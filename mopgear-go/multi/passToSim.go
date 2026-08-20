@@ -31,22 +31,14 @@ type simulateMultiResult struct {
 	simMap   map[string]stats.SimData
 }
 
-func (job *MultiSetJob) runSimsForProposalChannel(proposalChannel <-chan multi_types.MultiProposedOutput, tracker *util.TrackProgress, expectedCount <-chan int) (*util_async.FutureCancellable[[]simulateJobResult], *util_async.Future[[]multi_types.MultiProposedOutput]) {
-	proposalChannel = util_async.Channel_RemoveDuplicatesFuncNotify(proposalChannel, func(a, b *multi_types.MultiProposedOutput) bool {
-		return a.Equals(b)
-	}, func(x *multi_types.MultiProposedOutput) {
-		job.printer.Printf("Remove Duplicate %s\n", x.Id)
-	})
-
-	proposalChannel = job.listInitialOutputs(proposalChannel)
-	proposalChannel, futureProposalList := util_async.TeeChannelToSlice(proposalChannel)
+func (job *MultiSetJob) runSimsForProposalChannel(proposalChannel <-chan multi_types.MultiProposedOutput, tracker *util.TrackProgress, expectedCount <-chan int) *util_async.FutureCancellable[[]simulateJobResult] {
 	simChannel := job.prepareSimList(proposalChannel)
 
 	simsPerProposal := len(job.itemPrep)
 	expectedCount = util_async.Map_ChannelToChannel(1, expectedCount, func(x int) int { return x * simsPerProposal })
 
 	futureSimResultList := job.runSims(simChannel, tracker, expectedCount)
-	return futureSimResultList, futureProposalList
+	return futureSimResultList
 }
 
 func checkNoConflicts(outputSet map[string]multi_types.SingleProposedOutput, printer *util.PrintRecorder) bool {

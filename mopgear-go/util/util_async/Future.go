@@ -25,7 +25,7 @@ type IFutureWithResult[T any] interface {
 	ForwardResultToRelevantCallback(onSuccess func(T), onFail func())
 	ForwardResultToOtherFuture(other IFutureWithResult[T])
 	ForwardSuccessfulResultToChannel(resultChannel chan<- T)
-	ForwardAnyResultToChannel(resultChannel chan<- FutureResult[T])
+	ForwardAnyResultToChannel(resultChannel chan<- futureResult[T])
 	//MapSameType(mapper func(T) (T, bool)) *Future[T]
 }
 
@@ -40,7 +40,7 @@ type IFutureWithResultAndCancel[T any] interface {
 	WaitForResultOrKeyPress() (T, bool)
 }
 
-type FutureResult[T any] struct {
+type futureResult[T any] struct {
 	Value    T
 	HasValue bool
 }
@@ -111,7 +111,7 @@ type futureCommon[T any] struct {
 	isComplete    bool
 	lock          sync.Mutex
 	hasWaiter     bool
-	resultChannel chan FutureResult[T]
+	resultChannel chan futureResult[T]
 	onComplete    []func()
 }
 
@@ -208,7 +208,7 @@ func (future *futureCommon[T]) ForwardSuccessfulResultToChannel(resultChannel ch
 	}()
 }
 
-func (future *futureCommon[T]) ForwardAnyResultToChannel(resultChannel chan<- FutureResult[T]) {
+func (future *futureCommon[T]) ForwardAnyResultToChannel(resultChannel chan<- futureResult[T]) {
 	future.verifyCanWait()
 	go func() {
 		result, channelOk := <-future.resultChannel
@@ -253,7 +253,7 @@ var _ IFutureWithResult[int] = &Future[int]{}
 func Future_Make[T any]() *Future[T] {
 	return &Future[T]{
 		futureCommon: futureCommon[T]{
-			resultChannel: make(chan FutureResult[T], 1),
+			resultChannel: make(chan futureResult[T], 1),
 		},
 	}
 }
@@ -262,7 +262,7 @@ func (future *Future[T]) SetResult(value T) {
 	future.lock.Lock()
 	if !future.isComplete {
 		future.performComplete()
-		future.resultChannel <- FutureResult[T]{Value: value, HasValue: true}
+		future.resultChannel <- futureResult[T]{Value: value, HasValue: true}
 	}
 	future.lock.Unlock()
 }
@@ -271,7 +271,7 @@ func (future *Future[T]) SetResultEmpty() {
 	future.lock.Lock()
 	if !future.isComplete {
 		future.performComplete()
-		future.resultChannel <- FutureResult[T]{HasValue: false}
+		future.resultChannel <- futureResult[T]{HasValue: false}
 	}
 	future.lock.Unlock()
 }
@@ -294,7 +294,7 @@ var _ IFutureWithResultAndCancel[int] = &FutureCancellable[int]{}
 func FutureCancellable_Make[T any]() *FutureCancellable[T] {
 	return &FutureCancellable[T]{
 		futureCommon: futureCommon[T]{
-			resultChannel: make(chan FutureResult[T], 1),
+			resultChannel: make(chan futureResult[T], 1),
 		},
 		cancelSignalChannel: make(chan struct{}),
 	}
@@ -305,7 +305,7 @@ func (future *FutureCancellable[T]) SetResult(value T) {
 	if !future.isComplete {
 		future.performComplete()
 		future.onCancel = nil
-		future.resultChannel <- FutureResult[T]{Value: value, HasValue: true}
+		future.resultChannel <- futureResult[T]{Value: value, HasValue: true}
 	}
 	future.lock.Unlock()
 }
@@ -315,7 +315,7 @@ func (future *FutureCancellable[T]) SetResultEmpty() {
 	if !future.isComplete {
 		future.performComplete()
 		future.onCancel = nil
-		future.resultChannel <- FutureResult[T]{HasValue: false}
+		future.resultChannel <- futureResult[T]{HasValue: false}
 	}
 	future.lock.Unlock()
 }
@@ -334,7 +334,7 @@ func (future *FutureCancellable[T]) Cancel() {
 	future.lock.Lock()
 	if !future.isComplete {
 		future.performCancelAndComplete()
-		future.resultChannel <- FutureResult[T]{HasValue: false}
+		future.resultChannel <- futureResult[T]{HasValue: false}
 	}
 	future.lock.Unlock()
 }

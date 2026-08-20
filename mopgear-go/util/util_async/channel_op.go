@@ -9,7 +9,7 @@ import (
 )
 
 func makeOutputChannel[R any]() chan R {
-	return make(chan R, 12)
+	return make(chan R)
 }
 func makeOutputChannelUnbuffered[R any]() chan R {
 	return make(chan R)
@@ -184,6 +184,14 @@ func ForEach_Slice_Cancellable[T any](threadCount int, inputSlice []T, cancel Ca
 func ForEach_Channel[T any](threadCount int, inputChannel <-chan T, process func(T)) {
 	waitGroup := makeThreadsForEachChannel(threadCount, inputChannel, process)
 	waitGroup.Wait()
+}
+
+func ForEach_Channel_NonBlocking[T any](threadCount int, inputChannel <-chan T, process func(T), onComplete func()) {
+	waitGroup := makeThreadsForEachChannel(threadCount, inputChannel, process)
+	go func() {
+		waitGroup.Wait()
+		onComplete()
+	}()
 }
 
 type GroupChannelEntry[T any, G comparable] struct {

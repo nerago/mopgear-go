@@ -68,7 +68,7 @@ func MapFuture_SliceToSlice_FutureCancellable_Throttled[T any, R any](threadCoun
 
 	go func() {
 		launchIndex := 0
-		itemResultChannel := make(chan FutureResult[R], threadCount)
+		itemResultChannel := make(chan futureResult[R], threadCount)
 		outputSlice := make([]R, 0)
 		activeFutureCount := 0
 
@@ -98,19 +98,19 @@ func MapFuture_SliceToSlice_FutureCancellable_Throttled[T any, R any](threadCoun
 	return primaryFuture
 }
 
-func mapAndLaunchAsFuture[T any, R any](entry *T, mapper func(*T) *FutureCancellable[R], primaryFuture *FutureCancellable[[]R], itemResultChannel chan FutureResult[R]) {
+func mapAndLaunchAsFuture[T any, R any](entry *T, mapper func(*T) *FutureCancellable[R], primaryFuture *FutureCancellable[[]R], itemResultChannel chan futureResult[R]) {
 	go func() {
 		itemFuture := mapper(entry)
 		if itemFuture != nil {
 			ChainCancel(primaryFuture, itemFuture)
 			itemFuture.ForwardAnyResultToChannel(itemResultChannel)
 		} else {
-			itemResultChannel <- FutureResult[R]{HasValue: false}
+			itemResultChannel <- futureResult[R]{HasValue: false}
 		}
 	}()
 }
 
-func waitForRoutineCompletionOrCancel[R any](itemResultChannel chan FutureResult[R], loopCancelChannel <-chan struct{}, outputSlice *[]R, activeFutureCount *int) bool {
+func waitForRoutineCompletionOrCancel[R any](itemResultChannel chan futureResult[R], loopCancelChannel <-chan struct{}, outputSlice *[]R, activeFutureCount *int) bool {
 	select {
 	case itemResult := <-itemResultChannel:
 		if itemResult.HasValue {
@@ -123,7 +123,7 @@ func waitForRoutineCompletionOrCancel[R any](itemResultChannel chan FutureResult
 	}
 }
 
-func drainCompletedFutures[R any](itemResultChannel chan FutureResult[R], outputSlice *[]R, activeFutureCount *int) {
+func drainCompletedFutures[R any](itemResultChannel chan futureResult[R], outputSlice *[]R, activeFutureCount *int) {
 	for {
 		select {
 		case itemResult := <-itemResultChannel:
@@ -137,7 +137,7 @@ func drainCompletedFutures[R any](itemResultChannel chan FutureResult[R], output
 	}
 }
 
-func waitForRemainingCompletionAndSetResult[R any](itemResultChannel chan FutureResult[R], outputSlice *[]R, activeFutureCount *int, primaryFuture *FutureCancellable[[]R]) {
+func waitForRemainingCompletionAndSetResult[R any](itemResultChannel chan futureResult[R], outputSlice *[]R, activeFutureCount *int, primaryFuture *FutureCancellable[[]R]) {
 	for *activeFutureCount > 0 {
 		itemResult := <-itemResultChannel
 		if itemResult.HasValue {
@@ -400,7 +400,7 @@ func (fc *FutureChannelMixerStatic[T]) selectLoop() {
 		chosen, reflectValue, hasValue := reflect.Select(cases)
 		if hasValue {
 			switch value := reflectValue.Interface().(type) {
-			case FutureResult[T]:
+			case futureResult[T]:
 				if value.HasValue {
 					fc.outputChannel <- value.Value
 				}
@@ -428,10 +428,26 @@ type FutureChannelMixerContinuing[T any] struct {
 	mutex sync.Mutex
 	state channelMixerContinuingState
 
-	initialChannels       []reflect.Value
-	internalNotifyChannel chan *reflect.Value
+	initialChannels       []mixerInternalMessage[T]
+	internalNotifyChannel chan mixerInternalMessage[T]
 
 	outputChannel chan T
+}
+
+type mixerInternalMessage[T any] struct {
+	futureChannel  <-chan futureResult[T]
+	regularChannel <-chan T
+	stop           bool
+}
+
+func (msg mixerInternalMessage[T]) channelValue() reflect.Value {
+	if msg.futureChannel != nil {
+		return reflect.ValueOf(msg.futureChannel)
+	} else if msg.regularChannel != nil {
+		return reflect.ValueOf(msg.regularChannel)
+	} else {
+		panic("missing channel")
+	}
 }
 
 func (fc *FutureChannelMixerContinuing[T]) AddFuture(future *Future[T]) {
@@ -443,7 +459,7 @@ func (fc *FutureChannelMixerContinuing[T]) AddFuture(future *Future[T]) {
 	defer fc.mutex.Unlock()
 
 	future.verifyCanWait()
-	fc.newSourceAdded(reflect.ValueOf(future.resultChannel))
+	fc.newSourceAdded(mixerInternalMessage[T]{futureChannel: future.resultChannel})
 }
 
 func (fc *FutureChannelMixerContinuing[T]) AddFutureCancellable(future *FutureCancellable[T]) {
@@ -455,7 +471,7 @@ func (fc *FutureChannelMixerContinuing[T]) AddFutureCancellable(future *FutureCa
 	defer fc.mutex.Unlock()
 
 	future.verifyCanWait()
-	fc.newSourceAdded(reflect.ValueOf(future.resultChannel))
+	fc.newSourceAdded(mixerInternalMessage[T]{futureChannel: future.resultChannel})
 }
 
 func (fc *FutureChannelMixerContinuing[T]) AddChannel(inputChannel <-chan T) {
@@ -466,7 +482,7 @@ func (fc *FutureChannelMixerContinuing[T]) AddChannel(inputChannel <-chan T) {
 	fc.mutex.Lock()
 	defer fc.mutex.Unlock()
 
-	fc.newSourceAdded(reflect.ValueOf(inputChannel))
+	fc.newSourceAdded(mixerInternalMessage[T]{regularChannel: inputChannel})
 }
 
 func (fc *FutureChannelMixerContinuing[T]) AddValue(value T) {
@@ -477,15 +493,15 @@ func (fc *FutureChannelMixerContinuing[T]) AddValue(value T) {
 	singleValueChannel <- value
 	close(singleValueChannel)
 
-	fc.newSourceAdded(reflect.ValueOf(singleValueChannel))
+	fc.newSourceAdded(mixerInternalMessage[T]{regularChannel: singleValueChannel})
 }
 
-func (fc *FutureChannelMixerContinuing[T]) newSourceAdded(newChannel reflect.Value) {
+func (fc *FutureChannelMixerContinuing[T]) newSourceAdded(message mixerInternalMessage[T]) {
 	switch fc.state {
 	case channelMixerContinuingInit:
-		fc.initialChannels = append(fc.initialChannels, newChannel)
+		fc.initialChannels = append(fc.initialChannels, message)
 	case channelMixerContinuingRunning:
-		fc.internalNotifyChannel <- new(newChannel)
+		fc.internalNotifyChannel <- message
 	default:
 		panic("can't add new source after stopping")
 	}
@@ -507,7 +523,7 @@ func (fc *FutureChannelMixerContinuing[T]) ReadyUpAndPrepareChannel() <-chan T {
 	}
 
 	fc.outputChannel = make(chan T)
-	fc.internalNotifyChannel = make(chan *reflect.Value)
+	fc.internalNotifyChannel = make(chan mixerInternalMessage[T])
 	fc.state = channelMixerContinuingRunning
 
 	go func() {
@@ -533,7 +549,7 @@ func (fc *FutureChannelMixerContinuing[T]) ShutdownAsync() {
 		}
 	case channelMixerContinuingRunning:
 		fc.state = channelMixerContinuingStopping
-		fc.internalNotifyChannel <- nil
+		fc.internalNotifyChannel <- mixerInternalMessage[T]{stop: true}
 	default:
 		panic("already stopped")
 	}
@@ -545,10 +561,10 @@ func (fc *FutureChannelMixerContinuing[T]) selectLoop() {
 		Dir:  reflect.SelectRecv,
 		Chan: reflect.ValueOf(fc.internalNotifyChannel),
 	})
-	for _, value := range fc.initialChannels {
+	for _, message := range fc.initialChannels {
 		cases = append(cases, reflect.SelectCase{
 			Dir:  reflect.SelectRecv,
-			Chan: value,
+			Chan: message.channelValue(),
 		})
 	}
 	fc.initialChannels = nil
@@ -557,18 +573,18 @@ func (fc *FutureChannelMixerContinuing[T]) selectLoop() {
 	for continuing || len(cases) > 1 {
 		chosen, reflectValue, hasValue := reflect.Select(cases)
 		if chosen == 0 {
-			if reflectValue.IsNil() { // stop command
+			message := reflectValue.Interface().(mixerInternalMessage[T])
+			if message.stop { // stop command
 				continuing = false
 			} else { // new channel
-				derefPointer := reflect.Indirect(reflectValue)
 				cases = append(cases, reflect.SelectCase{
 					Dir:  reflect.SelectRecv,
-					Chan: derefPointer,
+					Chan: message.channelValue(),
 				})
 			}
 		} else if hasValue {
 			switch value := reflectValue.Interface().(type) {
-			case FutureResult[T]: // technically could misfire if someone makes a channel passing FutureResult values
+			case futureResult[T]:
 				if value.HasValue {
 					fc.outputChannel <- value.Value
 				}

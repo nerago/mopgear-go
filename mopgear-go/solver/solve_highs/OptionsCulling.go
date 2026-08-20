@@ -48,7 +48,7 @@ func (process *OptionsCulling) Init(label string, targetResultCount int64, itemO
 func (process *OptionsCulling) Run(cancel util_async.CancelSignal) <-chan items.SolvableItemSet {
 	process.printer.Printf("Running culling\n")
 
-	resultChannel := make(chan items.SolvableItemSet, 8)
+	resultChannel := make(chan items.SolvableItemSet)
 
 	waitGroup := sync.WaitGroup{}
 	for threadNum := range c_cullThreadCount {

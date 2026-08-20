@@ -53,7 +53,7 @@ func SingleProposed_FromItemSet(itemSet items.FullItemSet, outputId string, spec
 }
 
 func (single *SingleProposedOutput) Equals(b *SingleProposedOutput) bool {
-	return single.Exists == b.Exists && single.Spec == b.Spec && single.ResultRating == b.ResultRating && single.FullSet.Equals(&b.FullSet)
+	return single.Exists == b.Exists && single.Spec == b.Spec && single.FullSet.Equals(&b.FullSet)
 }
 
 func (single *SingleProposedOutput) Report(model *gear_model.SpecModel, printer *util.PrintRecorder) {
