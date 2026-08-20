@@ -240,15 +240,15 @@ func statWeightsRanking3b(printer *util.PrintRecorder) {
 	}
 }
 
-func statWeightsCustom(printer *util.PrintRecorder) {
+func statWeightsSearch(printer *util.PrintRecorder) {
 	// weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
 	targetRatio := model_factory.SimPriority_mitigation
 	weightStats := model_factory.StatsForWeighting_strengthTank
 
 	//inputDataGrid := readWeightInputFile("tempdata/sim-stats-compare-grid.json")
 	//inputDataRandom := readWeightInputFile("tempdata/sim-stats-compare-rand.json")
-	inputDataGrid := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Mitigation-NoSet.json")
-	inputDataRandom := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Mitigation-NoSet.json")
+	inputDataGrid := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
+	inputDataRandom := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
 	// mixedInputData := slices.Concat(inputDataGrid, inputDataRandom)
 	mixedInputData := slices.Concat(inputDataRandom, inputDataGrid)
 
@@ -260,10 +260,12 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 	//search.Init(weightStats, targetRatio, printer)
 	//search.SupplyData(mixedInputData)
 
-	search := weightfind.WeightSearcher2{}
+	//search := weightfind.WeightSearcher2{}
+	search := weightfind.WeightSearcher3{}
+	search.AccuracyStatistical = true
 	//search.Init(weightStats, targetRatio, printer)
-	search.Init(weightStats, targetRatio, nil)
-	search.SupplyData(inputDataGrid)
+	search.Init(weightStats, targetRatio)
+	search.SupplyData(mixedInputData)
 	search.SetRanges(-1.0, 10.0)
 
 	weightResult := search.Run(util_async.CancelSignal_Make())
@@ -271,6 +273,7 @@ func statWeightsCustom(printer *util.PrintRecorder) {
 	weight := *weightResult.AsWeight1()
 	tools.WritePawnString(weight, printer)
 	printer.Printf("accuracy = %f\n", weightfind.EvaluateAccuracy(&weight, targetRatio.SimTypes(), &targetRatio, mixedInputData))
+	printer.Printf("accuracy stat = %f\n", weightfind.EvaluateAccuracyStatistical(&weight, targetRatio.SimTypes(), &targetRatio, mixedInputData))
 
 	//( Pawn: v1: "Gearing Weights": Class=Paladin,Strength=1.0000000000,Stamina=1.6065881006,CritRating=0.6369231133,HasteRating=1.5962452471,ExpertiseRating=-0.0001959652,MasteryRating=1.6330798479,DodgeRating=0.9962463273,ParryRating=0.6430861217, )
 	//accuracy = 92.632887 92.633057(updated)

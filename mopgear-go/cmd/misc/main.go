@@ -49,7 +49,7 @@ func core(printer *util.PrintRecorder) {
 	//statWeightsGrid1b(printer)
 	//statWeightsFitting(printer)
 	//statWeightsFitting1eachProper(printer)
-	statWeightsFitting2(printer)
+	//statWeightsFitting2(printer)
 	//statWeightsFitting2eachProper(printer)
 	//statWeightsFitting2each(printer)
 	//statWeightsFitting3eachProper(printer)
@@ -57,5 +57,5 @@ func core(printer *util.PrintRecorder) {
 	//statWeightsRanking(printer)
 	//statWeightsRanking3b(printer)
 	//statWeightsGridIntoRanking(printer)
-	//statWeightsCustom(printer)
+	//statWeightsSearch(printer)
 }
