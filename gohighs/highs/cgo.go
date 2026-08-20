@@ -65,6 +65,7 @@ package highs
 import "C"
 import (
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"unsafe"
 )
@@ -356,6 +357,8 @@ func newErrorMsg(op, msg string) error {
 var solverReferenceArray = [C.GoHighsMaxSolverReference]*Solver{}
 var referenceNumberGenerator = atomic.Int32{}
 
+var closeMutex = sync.RWMutex{}
+
 // Solver provides low-level access to the HiGHS solver.
 // It wraps the native HiGHS instance and provides methods for
 // building and solving optimization models programmatically.
@@ -377,6 +380,9 @@ type Solver struct {
 // The solver cannot be closed in a thread safe manner.
 // Callers should pool and reuse instances as needed.
 func NewSolver() (*Solver, error) {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	ptr := C.Highs_create()
 	if ptr == nil {
 		return nil, newErrorMsg("NewSolver", "failed to create HiGHS instance")
@@ -392,9 +398,22 @@ func NewSolver() (*Solver, error) {
 	return s, nil
 }
 
+func (s *Solver) CloseEventually() {
+	go func() {
+		closeMutex.Lock()
+		defer closeMutex.Unlock()
+
+		C.Highs_destroy(s.ptr)
+		solverReferenceArray[s.refNum] = nil
+	}()
+}
+
 // Clear resets the solver to its initial state, clearing
 // the model and resetting options to defaults.
 func (s *Solver) Clear() error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	s.callback = nil
 	s.Interrupted = false
 	status := Status(C.Highs_clear(s.ptr))
@@ -403,38 +422,59 @@ func (s *Solver) Clear() error {
 
 // ClearModel removes all variables and constraints but keeps options.
 func (s *Solver) ClearModel() error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	status := Status(C.Highs_clearModel(s.ptr))
 	return newError("ClearModel", status)
 }
 
 // ClearSolver clears solution data but keeps the model.
 func (s *Solver) ClearSolver() error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	status := Status(C.Highs_clearSolver(s.ptr))
 	return newError("ClearSolver", status)
 }
 
 // Infinity returns the value used by HiGHS to represent infinity.
 func (s *Solver) Infinity() float64 {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	return float64(C.Highs_getInfinity(s.ptr))
 }
 
 // NumCol returns the number of columns (variables) in the model.
 func (s *Solver) NumCol() int {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	return int(C.Highs_getNumCol(s.ptr))
 }
 
 // NumRow returns the number of rows (constraints) in the model.
 func (s *Solver) NumRow() int {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	return int(C.Highs_getNumRow(s.ptr))
 }
 
 // NumNonzero returns the number of non-zero entries in the constraint matrix.
 func (s *Solver) NumNonzero() int {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	return int(C.Highs_getNumNz(s.ptr))
 }
 
 // SetBoolOption sets a boolean option.
 func (s *Solver) SetBoolOption(name string, value bool) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -448,6 +488,9 @@ func (s *Solver) SetBoolOption(name string, value bool) error {
 
 // SetIntOption sets an integer option.
 func (s *Solver) SetIntOption(name string, value int) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -457,6 +500,9 @@ func (s *Solver) SetIntOption(name string, value int) error {
 
 // SetFloatOption sets a floating-point option.
 func (s *Solver) SetFloatOption(name string, value float64) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -466,6 +512,9 @@ func (s *Solver) SetFloatOption(name string, value float64) error {
 
 // SetStringOption sets a string option.
 func (s *Solver) SetStringOption(name, value string) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 	cVal := C.CString(value)
@@ -477,6 +526,9 @@ func (s *Solver) SetStringOption(name, value string) error {
 
 // GetBoolOption returns the value of a boolean option.
 func (s *Solver) GetBoolOption(name string) (bool, error) {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -490,6 +542,9 @@ func (s *Solver) GetBoolOption(name string) (bool, error) {
 
 // GetIntOption returns the value of an integer option.
 func (s *Solver) GetIntOption(name string) (int, error) {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -503,6 +558,9 @@ func (s *Solver) GetIntOption(name string) (int, error) {
 
 // GetFloatOption returns the value of a floating-point option.
 func (s *Solver) GetFloatOption(name string) (float64, error) {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -516,6 +574,9 @@ func (s *Solver) GetFloatOption(name string) (float64, error) {
 
 // SetMaximize sets whether to maximize (true) or minimize (false).
 func (s *Solver) SetMaximize(maximize bool) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	sense := C.kHighsObjSenseMinimize
 	if maximize {
 		sense = C.kHighsObjSenseMaximize
@@ -526,18 +587,27 @@ func (s *Solver) SetMaximize(maximize bool) error {
 
 // SetObjectiveOffset sets a constant offset for the objective function.
 func (s *Solver) SetObjectiveOffset(offset float64) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	status := Status(C.Highs_changeObjectiveOffset(s.ptr, C.double(offset)))
 	return newError("SetObjectiveOffset", status)
 }
 
 // AddVar adds a single variable with the given bounds.
 func (s *Solver) AddVar(lower, upper float64) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	status := Status(C.Highs_addVar(s.ptr, C.double(lower), C.double(upper)))
 	return newError("AddVar", status)
 }
 
 // AddVars adds multiple variables with the given bounds.
 func (s *Solver) AddVars(lower, upper []float64) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	if len(lower) != len(upper) {
 		return newErrorMsg("AddVars", "lower and upper bounds must have same length")
 	}
@@ -555,6 +625,9 @@ func (s *Solver) AddVars(lower, upper []float64) error {
 // AddRow adds a constraint with the given bounds and coefficients.
 // The index and value slices define the sparse row coefficients.
 func (s *Solver) AddRow(lower, upper float64, index []int, value []float64) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	if len(index) != len(value) {
 		return newErrorMsg("AddRow", "index and value must have same length")
 	}
@@ -578,6 +651,9 @@ func (s *Solver) AddRow(lower, upper float64, index []int, value []float64) erro
 
 // AddRows adds multiple constraints in compressed sparse row format.
 func (s *Solver) AddRows(lower, upper []float64, starts, index []int, value []float64) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	if len(lower) != len(upper) {
 		return newErrorMsg("AddRows", "lower and upper bounds must have same length")
 	}
@@ -614,12 +690,18 @@ func (s *Solver) AddRows(lower, upper []float64, starts, index []int, value []fl
 
 // SetColCost sets the objective coefficient for a column.
 func (s *Solver) SetColCost(col int, cost float64) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	status := Status(C.Highs_changeColCost(s.ptr, C.HighsInt(col), C.double(cost)))
 	return newError("SetColCost", status)
 }
 
 // SetColCosts sets the objective coefficients for a range of columns.
 func (s *Solver) SetColCosts(costs []float64) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	if len(costs) == 0 {
 		return nil
 	}
@@ -631,6 +713,9 @@ func (s *Solver) SetColCosts(costs []float64) error {
 
 // AddLinearObjective adds an additional linear objective entry, overriding regular ColCosts.
 func (s *Solver) AddLinearObjective(weight float64, offset float64, coefficients []float64, abs_tolerance float64, rel_tolerance float64, priority int) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	var pCoefficients *C.double
 	if len(coefficients) > 0 {
 		pCoefficients = (*C.double)(&coefficients[0])
@@ -642,17 +727,26 @@ func (s *Solver) AddLinearObjective(weight float64, offset float64, coefficients
 
 // ClearLinearObjectives removes any additional linear objective entries.
 func (s *Solver) ClearLinearObjectives() error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	status := Status(C.Highs_clearLinearObjectives(s.ptr))
 	return newError("ClearLinearObjectives", status)
 }
 
 // SetColBounds sets the bounds for a column.
 func (s *Solver) SetColBounds(col int, lower, upper float64) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	status := Status(C.Highs_changeColBounds(s.ptr,
 		C.HighsInt(col), C.double(lower), C.double(upper)))
 	return newError("SetColBounds", status)
 }
 func (s *Solver) SetColBounds2(col int32, lower, upper float64) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	status := Status(C.Highs_changeColBounds(s.ptr,
 		C.HighsInt(col), C.double(lower), C.double(upper)))
 	return newError("SetColBounds", status)
@@ -660,6 +754,9 @@ func (s *Solver) SetColBounds2(col int32, lower, upper float64) error {
 
 // SetColIntegrality sets the variable type for a column.
 func (s *Solver) SetColIntegrality(col int, varType VariableType) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	status := Status(C.Highs_changeColIntegrality(s.ptr,
 		C.HighsInt(col), varType.toC()))
 	return newError("SetColIntegrality", status)
@@ -667,6 +764,9 @@ func (s *Solver) SetColIntegrality(col int, varType VariableType) error {
 
 // SetIntegrality sets the variable types for a range of columns.
 func (s *Solver) SetIntegrality(varTypes []VariableType) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	if len(varTypes) == 0 {
 		return nil
 	}
@@ -692,6 +792,9 @@ func (s *Solver) PassModel(
 	maximize bool,
 	offset float64,
 ) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	// Convert to C types
 	sense := C.kHighsObjSenseMinimize
 	if maximize {
@@ -766,6 +869,9 @@ func (s *Solver) PassModel(
 // PassHessian sets the Hessian matrix for quadratic programming.
 // The Hessian must be provided in upper-triangular compressed sparse column format.
 func (s *Solver) PassHessian(dim int, start, index []int, value []float64) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	if len(index) != len(value) {
 		return newErrorMsg("PassHessian", "index and value must have same length")
 	}
@@ -800,6 +906,9 @@ func (s *Solver) PassHessian(dim int, start, index []int, value []float64) error
 
 // Run solves the model and returns the solution.
 func (s *Solver) Run() (*Solution, error) {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	status := Status(C.Highs_run(s.ptr))
 	if status == StatusError {
 		return nil, newError("Run", status)
@@ -864,6 +973,9 @@ func (s *Solver) Run() (*Solution, error) {
 }
 
 func (s *Solver) SetSparseSolution(aIndex []int32, aValue []float64) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	// HighsInt Highs_postsolve(void* highs, const double* col_value,
 	//                      const double* col_dual, const double* row_dual);
 
@@ -894,6 +1006,9 @@ func (s *Solver) SetSparseSolution(aIndex []int32, aValue []float64) error {
 
 // GetIntInfo returns an integer info value.
 func (s *Solver) GetIntInfo(name string) (int, error) {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -907,6 +1022,9 @@ func (s *Solver) GetIntInfo(name string) (int, error) {
 
 // GetInt64Info returns a 64-bit integer info value.
 func (s *Solver) GetInt64Info(name string) (int64, error) {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -920,6 +1038,9 @@ func (s *Solver) GetInt64Info(name string) (int64, error) {
 
 // GetFloatInfo returns a floating-point info value.
 func (s *Solver) GetFloatInfo(name string) (float64, error) {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
 
@@ -933,6 +1054,9 @@ func (s *Solver) GetFloatInfo(name string) (float64, error) {
 
 // ReadModel reads a model from a file (LP, MPS, or other supported format).
 func (s *Solver) ReadModel(filename string) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	cFilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cFilename))
 
@@ -942,6 +1066,9 @@ func (s *Solver) ReadModel(filename string) error {
 
 // WriteModel writes the model to a file.
 func (s *Solver) WriteModel(filename string) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	cFilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cFilename))
 
@@ -951,6 +1078,9 @@ func (s *Solver) WriteModel(filename string) error {
 
 // WriteSolution writes the solution to a file.
 func (s *Solver) WriteSolution(filename string, pretty bool) error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	cFilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cFilename))
 
@@ -965,6 +1095,9 @@ func (s *Solver) WriteSolution(filename string, pretty bool) error {
 
 // Presolve explicitly runs the presolve step, normally included as part of Run.
 func (s *Solver) Presolve() error {
+	closeMutex.RLock()
+	defer closeMutex.RUnlock()
+
 	status := C.Highs_presolve(s.ptr)
 	return newError("Presolve", Status(status))
 }
