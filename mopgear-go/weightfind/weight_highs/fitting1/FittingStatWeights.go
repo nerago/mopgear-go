@@ -120,7 +120,7 @@ func (fw *FittingSingleStatWeightProcess) Run() *util_async.FutureCancellable[Fi
 	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (FittingSingleStatResult, bool) {
 		solution := linearResult.GetSolution2AndSaveLog(fw.printer)
 		solution.DebugPrint(fw.printer)
-		if solution.HasSolution() {
+		if solution.Status() == highs.ModelStatusOptimal {
 			return fw.buildResult(solution), true
 		} else {
 			return FittingSingleStatResult{}, false

@@ -44,7 +44,10 @@ func (fg *FittingSingleStatSegmentsProcess) SupplyData(inputData []util_weight2.
 // initial range is a stronger requirement of at least 35%, assume remaining actually 60% (20% each)
 // next ones we want to give them some slack but hoping for 15-30%
 func (fg *FittingSingleStatSegmentsProcess) Run(cancel util_async.CancelSignal) map[weight_types.StatRangeFloat]FittingSingleStatResult {
-	fg.runInitial(cancel)
+	if !fg.runInitial(cancel) {
+		return nil
+	}
+
 	if fg.onlyComputeSingleSegment {
 		return fg.foundSegments
 	}
@@ -120,7 +123,7 @@ func (fg *FittingSingleStatSegmentsProcess) mergeAnyPossibleRemainingSamples() {
 	}
 }
 
-func (fg *FittingSingleStatSegmentsProcess) runInitial(cancel util_async.CancelSignal) {
+func (fg *FittingSingleStatSegmentsProcess) runInitial(cancel util_async.CancelSignal) bool {
 	fit := FittingSingleStatWeightProcess{}
 	fit.Init(fg.printer, fg.timeout)
 	fit.SetMinimumIncludeRate(c_fitting_initial_range_required)
@@ -137,8 +140,10 @@ func (fg *FittingSingleStatSegmentsProcess) runInitial(cancel util_async.CancelS
 
 		totalRange := weight_types.StatRangeFloat{Minimum: 0, Maximum: c_fitting_statScaledRangeHigh}
 		fg.addToRemainingData(fg.samplesOriginal, totalRange, statRange)
+		return true
 	} else {
-		panic("failed to get any useful stat fit")
+		fg.printer.Println("ERROR failed to get any useful stat fit")
+		return false
 	}
 }
 

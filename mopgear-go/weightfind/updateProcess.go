@@ -36,9 +36,9 @@ const (
 	c_eachSimTargetGenerateDataCount = 600
 
 	c_dataSampleFitRank = 400
-	c_dataSampleGrid    = 256
-	c_userSamplingFit   = true
-	c_useSamplingRank   = true
+	c_dataSampleGrid    = 128
+	c_useSamplingFit    = true
+	c_useSamplingRank   = false
 	c_useSamplingGrid   = true
 )
 
@@ -212,7 +212,7 @@ func (spec *WeightSpec) runSolvers(tracker *util.TrackProgress, cancel util_asyn
 	}
 
 	// RANKING WEIGHTS - simplex*2, IPX*2
-	for rankMode := range 5 {
+	for rankMode := range 6 {
 		spec.solveRankingWeight(rankMode, cancel)
 	}
 }
@@ -317,7 +317,7 @@ func (spec *WeightSpec) loadOldWeights() {
 func (spec *WeightSpec) solveGridWeights(gridOutlierSetting int, cancel util_async.CancelSignal) {
 	gridData := spec.dataGrid
 	if c_useSamplingGrid {
-		gridData = util_collection.SliceSampleRandom(gridData, c_dataSampleGrid)
+		gridData = util_collection.SliceSampleFromStart(gridData, c_dataSampleGrid)
 	}
 
 	grid := weight_highs.GridStatWeightProcess1B{}
@@ -438,11 +438,11 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		ranking.SetTargetRatios(spec.targetRatio)
 		ranking.SupplyData(rankData)
 		var weightsFuture *util_async.FutureCancellable[weight_types.WeightResult]
-		//if bestWeightsSoFar, hasBest := spec.bestWeightChoice(); hasBest {
-		//	weightsFuture = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
-		//} else {
-		weightsFuture = ranking.RunMultiRound()
-		//}
+		if bestWeightsSoFar, hasBest := spec.bestWeightChoice1(); hasBest {
+			weightsFuture = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
+		} else {
+			weightsFuture = ranking.RunMultiRound()
+		}
 		util_async.ChainCancel(cancel, weightsFuture)
 		spec.evaluateWeightFuture("RANK3-2-0", weightsFuture)
 	} else if rankMode == 2 {
@@ -454,11 +454,11 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		ranking.SetTargetRatios(spec.targetRatio)
 		ranking.SupplyData(rankData)
 		var weightsFuture *util_async.FutureCancellable[weight_types.WeightResult]
-		//if bestWeightsSoFar, hasBest := spec.bestWeightChoice(); hasBest {
-		//	weightsFuture = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
-		//} else {
-		weightsFuture = ranking.RunMultiRound()
-		//}
+		if bestWeightsSoFar, hasBest := spec.bestWeightChoice1(); hasBest {
+			weightsFuture = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
+		} else {
+			weightsFuture = ranking.RunMultiRound()
+		}
 		util_async.ChainCancel(cancel, weightsFuture)
 		spec.evaluateWeightFuture("RANK3-2-1", weightsFuture)
 	} else if rankMode == 3 {
@@ -472,7 +472,7 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		weightsFuture := ranking.Run(spec.process.timeoutEach)
 		util_async.ChainCancel(cancel, weightsFuture)
 		spec.evaluateWeightFuture("RANK1-0", weightsFuture)
-	} else {
+	} else if rankMode == 4 {
 		ranking := weight_highs.RankingStatWeightProcess{}
 		ranking.RANKMODE = 0
 		ranking.WEIGHTSUM = 1
@@ -483,6 +483,19 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		weightsFuture := ranking.Run(spec.process.timeoutEach)
 		util_async.ChainCancel(cancel, weightsFuture)
 		spec.evaluateWeightFuture("RANK1-1", weightsFuture)
+	} else {
+		ranking := weight_highs.RankingStatWeightProcess4{}
+		ranking.MULTIPLY = 0
+		ranking.Init(spec.process.printer)
+		ranking.SetRequiredStats(spec.statTypes)
+		ranking.SetTargetRatios(spec.targetRatio)
+		ranking.SupplyData(rankData)
+		if bestWeightSoFar, hasBest := spec.bestWeightChoice1(); hasBest {
+			existing1 := bestWeightSoFar.weight
+			weightFuture := ranking.RunUsingExternalStart(existing1, spec.process.timeoutEach)
+			util_async.ChainCancel(cancel, weightFuture)
+			spec.evaluateWeightFuture("RANK4", weightFuture)
+		}
 	}
 }
 
@@ -503,7 +516,7 @@ func (spec *WeightSpec) solveFittingWeight(cancel util_async.CancelSignal, track
 	comp.Init(3, spec.process.printer, spec.process.timeoutEach)
 	comp.SetRequiredStats(spec.statTypes, spec.simTypes)
 	comp.SetTargetRatios(spec.targetRatio)
-	if c_userSamplingFit {
+	if c_useSamplingFit {
 		comp.SupplyData(util_collection.SliceSampleRandom(spec.dataAll, c_dataSampleFitRank))
 	} else {
 		comp.SupplyData(spec.dataAll)
@@ -514,25 +527,29 @@ func (spec *WeightSpec) solveFittingWeight(cancel util_async.CancelSignal, track
 
 func (spec *WeightSpec) solveFittingFast(cancel util_async.CancelSignal) {
 	for segments := 2; segments <= 4; segments++ {
-		fit4data := fitting4.FittingEachStatWeightProcess4{}
-		fit4data.SegmentOnData = true
-		fit4data.Init(segments, spec.process.printer, spec.process.timeoutEach)
-		fit4data.SetRequiredStats(spec.statTypes, spec.simTypes)
-		fit4data.SetTargetRatios(spec.targetRatio)
-		fit4data.SupplyData(spec.dataAll)
-		weights3data := fit4data.Run(cancel)
-		label := fmt.Sprintf("FITTING4-data-%d", segments)
-		spec.evaluateWeight(label, weights3data.AsWeight1(), weights3data.Weight, &weights3data)
+		{
+			fit4data := fitting4.FittingEachStatWeightProcess4{}
+			fit4data.SegmentOnData = true
+			fit4data.Init(segments, spec.process.printer, spec.process.timeoutEach)
+			fit4data.SetRequiredStats(spec.statTypes, spec.simTypes)
+			fit4data.SetTargetRatios(spec.targetRatio)
+			fit4data.SupplyData(spec.dataAll)
+			weights3data := fit4data.Run(cancel)
+			label := fmt.Sprintf("FITTING4-data-%d", segments)
+			spec.evaluateWeight(label, weights3data.AsWeight1(), weights3data.Weight, &weights3data)
+		}
 
-		fit4stat := fitting4.FittingEachStatWeightProcess4{}
-		fit4stat.SegmentOnData = true
-		fit4stat.Init(segments, spec.process.printer, spec.process.timeoutEach)
-		fit4stat.SetRequiredStats(spec.statTypes, spec.simTypes)
-		fit4stat.SetTargetRatios(spec.targetRatio)
-		fit4stat.SupplyData(spec.dataAll)
-		weights3stat := fit4stat.Run(cancel)
-		label = fmt.Sprintf("FITTING4-stat-%d", segments)
-		spec.evaluateWeight(label, weights3stat.AsWeight1(), weights3stat.Weight, &weights3stat)
+		{
+			fit4stat := fitting4.FittingEachStatWeightProcess4{}
+			fit4stat.SegmentOnData = false
+			fit4stat.Init(segments, spec.process.printer, spec.process.timeoutEach)
+			fit4stat.SetRequiredStats(spec.statTypes, spec.simTypes)
+			fit4stat.SetTargetRatios(spec.targetRatio)
+			fit4stat.SupplyData(spec.dataAll)
+			weights3stat := fit4stat.Run(cancel)
+			label := fmt.Sprintf("FITTING4-stat-%d", segments)
+			spec.evaluateWeight(label, weights3stat.AsWeight1(), weights3stat.Weight, &weights3stat)
+		}
 	}
 }
 
@@ -542,23 +559,33 @@ func (spec *WeightSpec) solveSearchWeights(searchMode int, cancel util_async.Can
 	util_async.ChainCancel(cancel, innerCancel)
 	defer timer.Stop()
 
-	var weightResult weight_types.WeightResult
 	if searchMode == 0 {
 		search := WeightSearcher2{}
 		search.AccuracyStatistical = false
 		search.Init(spec.statTypes, spec.targetRatio, spec.process.printer)
 		search.SupplyData(spec.dataAll)
 		search.SetRanges(-1.0, 10.0)
-		weightResult = search.Run(innerCancel)
+		weightResult := search.Run(innerCancel)
 		spec.evaluateWeight("SEARCH2", weightResult.AsWeight1(), weightResult.Weight, &weightResult)
 	} else {
-		search := WeightSearcher3{}
-		search.AccuracyStatistical = true
-		search.Init(spec.statTypes, spec.targetRatio)
-		search.SupplyData(spec.dataAll)
-		search.SetRanges(-1.0, 10.0)
-		weightResult = search.Run(innerCancel)
-		spec.evaluateWeight("SEARCH3", weightResult.AsWeight1(), weightResult.Weight, &weightResult)
+		// TODO this version is currently acting non-deterministic so give it a few tries
+		best := util_rank.BestCollector1[weight_types.WeightResult]{}
+		for range 10 {
+			if innerCancel.ShouldFinish() {
+				break
+			}
+
+			search := WeightSearcher3{}
+			search.AccuracyStatistical = true
+			search.Init(spec.statTypes, spec.targetRatio)
+			search.SupplyData(spec.dataAll)
+			search.SetRanges(-1.0, 10.0)
+			weightResult := search.Run(innerCancel)
+			acc := EvaluateAccuracyStatistical(weightResult.AsWeight1(), spec.simTypes, &spec.targetRatio, spec.dataAll)
+			best.Offer(&weightResult, acc)
+		}
+		bestWeightResult := best.GetBestOrNilValue()
+		spec.evaluateWeight("SEARCH3", bestWeightResult.AsWeight1(), bestWeightResult.Weight, &bestWeightResult)
 	}
 }
 

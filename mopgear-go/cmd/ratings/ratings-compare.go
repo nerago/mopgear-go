@@ -8,6 +8,7 @@ import (
 	"os"
 	"slices"
 	"strconv"
+	"time"
 
 	"github.com/nerago/mopgear-go/gear_model/model_factory"
 	"github.com/nerago/mopgear-go/stats"
@@ -25,8 +26,8 @@ import (
 
 //goland:noinspection GoBoolExpressions
 func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
-	targetRatio := model_factory.SimPriority_survival
-	//targetRatio := model_factory.SimPriority_generalMiti
+	//targetRatio := model_factory.SimPriority_survival
+	targetRatio := model_factory.SimPriority_mitigation
 	//targetRatio := gear_model.SimPriority_heal
 	requiredStats := model_factory.StatsForWeighting_strengthTank
 	requiredSims := targetRatio.SimTypes()
@@ -55,8 +56,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	inputDataBasic, basicSimBase := readWeightBasicInputsFile("tempdata/sim-stats-compare-basic.json")
 	//inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Mitigation-NoSet.json")
 	//inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
-	inputDataGrid := weight_types.WeightInputReadFile("tempdata/weightfind-sim-grid-Prot-Mitigation-WithSet.json")
-	inputDataRandom := weight_types.WeightInputReadFile("tempdata/weightfind-sim-real-Prot-Mitigation-WithSet.json")
+	inputDataGrid := weight_types.WeightInputReadFile("tempdata/weightfind-sim-grid-Prot-Mitigation.json")
+	inputDataRandom := weight_types.WeightInputReadFile("tempdata/weightfind-sim-real-Prot-Mitigation.json")
 	//inputDataGrid := readWeightInputFile("tempdata/sim-stats-compare-grid.json")
 	//inputDataRandom := readWeightInputFile("tempdata/sim-stats-compare-rand.json")
 	mixedInputDataFull := slices.Concat(inputDataGrid, inputDataRandom)
@@ -93,16 +94,16 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	}
 
 	reportOnTweakedVersions := false
-	standardTimeout := 3000
-	shortTimeout := 1000
+	standardTimeout := 600
+	shortTimeout := 400
 
 	runBasic := true
-	runFormulaVariants := true // best is about 87%, moderate time
-	runFitting1 := true        // slow, low 90%
-	runFitting2 := true
+	runFormulaVariants := false // best is about 87%, moderate time
+	runFitting1 := false        // slow, low 90%
+	runFitting2 := false
 
 	runGrid1Original := true
-	runGrid1Variants := true
+	runGrid1Variants := false // todo return
 	runGrid1VariantsFewer := false
 	runGrid1C := true
 	runGrid2 := true
@@ -110,17 +111,43 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	runRankingOlder := true
 	runRanking3aPreferred := false // broken
 	runRanking3aVariants := false  // broken
-	runRanking3bVariants := true
+	runRanking3bVariants := false
 	runRanking3bPreferred := true
 	runRanking3c := true
 	runRanking4 := true  // still a little slow, midrange 94% etc
 	runRanking5 := false // excellent but slow
 
-	runSearches := true
-	runSearch0 := true
+	runSearches := false
+	runSearch0 := false
 
 	runRankingSep := true
 	runFormula2 := true
+
+	//runBasic := true
+	//runFormulaVariants := true // best is about 87%, moderate time
+	//runFitting1 := true        // slow, low 90%
+	//runFitting2 := true
+	//
+	//runGrid1Original := true
+	//runGrid1Variants := false // todo return
+	//runGrid1VariantsFewer := false
+	//runGrid1C := true
+	//runGrid2 := true
+	//
+	//runRankingOlder := true
+	//runRanking3aPreferred := false // broken
+	//runRanking3aVariants := false  // broken
+	//runRanking3bVariants := true
+	//runRanking3bPreferred := true
+	//runRanking3c := true
+	//runRanking4 := true  // still a little slow, midrange 94% etc
+	//runRanking5 := false // excellent but slow
+	//
+	//runSearches := true
+	//runSearch0 := true
+	//
+	//runRankingSep := true
+	//runFormula2 := true
 
 	addTask("itemLevel", func() weight_types.WeightResult {
 		weight := weight_types.Weight1Basic_Make()
@@ -242,21 +269,24 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			for ROUNDMODE := range 3 {
 				for OUTLIER := range 5 {
 					for CALCMODE := range 4 {
-						label := fmt.Sprintf("grid1b-outlier%d-scale%d-round%d-calc%d", OUTLIER, SCALEMODE, ROUNDMODE, CALCMODE)
-						addTask(label, func() weight_types.WeightResult {
-							grid1 := weight_highs.GridStatWeightProcess1B{}
-							grid1.SCALEMODE = SCALEMODE
-							grid1.ROUNDMODE = ROUNDMODE
-							grid1.OUTLIER = OUTLIER
-							grid1.CALCMODE = CALCMODE
-							grid1.Init(printer, shortTimeout)
-							grid1.SetRequiredStats(requiredStats)
-							grid1.SetTargetRatios(targetRatio)
-							grid1.SupplyData(slices.Clone(inputDataGrid))
-							weightFuture := grid1.Run()
-							util_async.ChainCancel(cancel, weightFuture)
-							return weightFuture.WaitForResultOrNilValue()
-						})
+						for RATIO := range 4 {
+							label := fmt.Sprintf("grid1b-outlier%d-scale%d-round%d-calc%d-rat%d", OUTLIER, SCALEMODE, ROUNDMODE, CALCMODE, RATIO)
+							addTask(label, func() weight_types.WeightResult {
+								grid1 := weight_highs.GridStatWeightProcess1B{}
+								grid1.SCALEMODE = SCALEMODE
+								grid1.ROUNDMODE = ROUNDMODE
+								grid1.OUTLIER = OUTLIER
+								grid1.CALCMODE = CALCMODE
+								grid1.RATIO = RATIO
+								grid1.Init(printer, shortTimeout)
+								grid1.SetRequiredStats(requiredStats)
+								grid1.SetTargetRatios(targetRatio)
+								grid1.SupplyData(slices.Clone(inputDataGrid))
+								weightFuture := grid1.Run()
+								util_async.ChainCancel(cancel, weightFuture)
+								return weightFuture.WaitForResultOrNilValue()
+							})
+						}
 					}
 				}
 			}
@@ -546,12 +576,15 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			return search.Run(cancel)
 		})
 		addTask("search2-accF", func() weight_types.WeightResult {
+			innerCancel := util_async.CancelSignal_Make()
+			util_async.CancelAfterTimeout(innerCancel, time.Duration(shortTimeout)*time.Second, printer)
+			util_async.ChainCancel(cancel, innerCancel)
 			search := weightfind.WeightSearcher2{}
 			search.AccuracyStatistical = false
 			search.Init(requiredStats, targetRatio, printer)
 			search.SupplyData(mixedInputData)
 			search.SetRanges(-1.0, 10.0)
-			return search.Run(cancel)
+			return search.Run(innerCancel)
 		})
 		addTask("search3-accF", func() weight_types.WeightResult {
 			search := weightfind.WeightSearcher3{}
@@ -570,12 +603,15 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			return search.Run(cancel)
 		})
 		addTask("search2-accT", func() weight_types.WeightResult {
+			innerCancel := util_async.CancelSignal_Make()
+			util_async.CancelAfterTimeout(innerCancel, time.Duration(shortTimeout)*time.Second, printer)
+			util_async.ChainCancel(cancel, innerCancel)
 			search := weightfind.WeightSearcher2{}
 			search.AccuracyStatistical = true
 			search.Init(requiredStats, targetRatio, printer)
 			search.SupplyData(mixedInputData)
 			search.SetRanges(-1.0, 10.0)
-			return search.Run(cancel)
+			return search.Run(innerCancel)
 		})
 		addTask("search3-accT", func() weight_types.WeightResult {
 			search := weightfind.WeightSearcher3{}
@@ -679,12 +715,22 @@ func compareReport(requiredStats []stats.StatType, resultOrder []string, reportB
 		report := reportByAlgorithm[label]
 		row := make([]string, 0, tab.ColumnCount())
 		row = append(row, label)
-		for _, stat := range requiredStats {
-			value := report.weight1.Get(stat)
-			row = append(row, strconv.FormatFloat(value, 'f', 4, 64))
+
+		accuracy := 0.0
+		accuracyStat := 0.0
+		if report.weight1 != nil {
+			for _, stat := range requiredStats {
+				value := report.weight1.Get(stat)
+				row = append(row, strconv.FormatFloat(value, 'f', 4, 64))
+			}
+			accuracy = weightfind.EvaluateAccuracy(report.weight1, requiredSims, &targetRatio, mixedInputDataFull)
+			accuracyStat = weightfind.EvaluateAccuracyStatistical(report.weight1, requiredSims, &targetRatio, mixedInputDataFull)
+		} else {
+			for range requiredStats {
+				row = append(row, "")
+			}
 		}
-		accuracy := weightfind.EvaluateAccuracy(report.weight1, requiredSims, &targetRatio, mixedInputDataFull)
-		accuracyStat := weightfind.EvaluateAccuracyStatistical(report.weight1, requiredSims, &targetRatio, mixedInputDataFull)
+
 		row = append(row, strconv.FormatFloat(report.initialAccuracy, 'f', 4, 64))
 		row = append(row, strconv.FormatFloat(report.statAccuracy, 'f', 4, 64))
 		row = append(row, strconv.FormatFloat(accuracy, 'f', 4, 64))

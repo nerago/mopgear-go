@@ -21,16 +21,16 @@ const (
 	c_search2_largeAccuracyGap         = 0.5
 	c_search2_equalAccuracyGap         = 0.01
 	c_search2_goalAccuracyGap          = 0.001
-	c_search2_marginalWeightGap        = 0.001
+	c_search2_marginalWeightGap        = 0.0001
 
 	c_search2_minRunEarlySizeCut = 4
 	c_search2_minRunLateSizeCut  = 2
 
-	c_search2_probeA      = 0.25
+	c_search2_probeA      = 0.1
 	c_search2_probeMiddle = 0.5
-	c_search2_probeB      = 0.75
+	c_search2_probeB      = 0.9
 
-	c_search2_maxNodeDepth = 20
+	c_search2_maxNodeDepth = 30
 	c_search2_useFinalOp   = false
 	c_search2_debug        = false
 )
@@ -196,7 +196,7 @@ func (ws *WeightSearcher2) opSearch2(bound *weightSearch2Bound) {
 	gapFirstProbeToLast := probes[0].accuracy - probes[len(probes)-1].accuracy
 	if gapFirstProbeToLast <= c_search2_goalAccuracyGap {
 		if c_search2_debug {
-			ws.printer.Println("  -> MARGINAL GAP STOP")
+			ws.printer.Printf("  -> MARGINAL GAP STOP %f %f\n", probes[0].accuracy, probes[len(probes)-1].accuracy)
 		}
 		return
 	}
@@ -452,6 +452,13 @@ func (ws *WeightSearcher2) addSearchPlan(rangeMin []float64, rangeMax []float64,
 				rangeMax:  rangeMax,
 				nodeDepth: bound.nodeDepth + 1,
 			})
+		}
+		if c_search2_debug {
+			if bound.nodeDepth >= c_search2_maxNodeDepth {
+				ws.printer.Printf("DEPTH STOP %d\n", bound.nodeDepth)
+			} else {
+				ws.printer.Printf("MARGINAL RANGE STOP\n")
+			}
 		}
 	} else {
 		add := &weightSearch2Bound{

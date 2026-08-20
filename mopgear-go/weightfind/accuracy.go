@@ -2,6 +2,7 @@ package weightfind
 
 import (
 	"cmp"
+	"reflect"
 	"slices"
 
 	"github.com/nerago/mopgear-go/stats"
@@ -11,8 +12,13 @@ import (
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
+func isNil(a interface{}) bool {
+	defer func() { recover() }()
+	return a == nil || reflect.ValueOf(a).IsNil()
+}
+
 func EvaluateAccuracy[W weight_types.IWeight](statWeights W, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
-	if statWeights.IsEmpty() {
+	if isNil(statWeights) || statWeights.IsEmpty() {
 		return 0
 	}
 	data := evaluateStatScoreAndCreateStructure(statWeights, inputData)
@@ -22,7 +28,7 @@ func EvaluateAccuracy[W weight_types.IWeight](statWeights W, requiredSims []stat
 }
 
 func EvaluateAccuracyStatistical[W weight_types.IWeight](statWeights W, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
-	if statWeights.IsEmpty() {
+	if isNil(statWeights) || statWeights.IsEmpty() {
 		return 0
 	}
 	data := evaluateStatScoreAndCreateStructure(statWeights, inputData)

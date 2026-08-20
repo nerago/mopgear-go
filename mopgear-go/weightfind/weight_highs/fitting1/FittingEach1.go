@@ -27,7 +27,8 @@ type FittingEachStatWeightProcess struct {
 	scaleSims  util_collection.EnumMap[stats.SimType, util_weight2.ScaleAndOffset]
 	scaleStats stats.StatTypeMap[float64]
 
-	each util_collection.MapMap[stats.StatType, stats.SimType, *fittingEachFields]
+	each     util_collection.MapMap[stats.StatType, stats.SimType, *fittingEachFields]
+	hasError bool
 }
 
 type fittingEachFields struct {
@@ -59,9 +60,14 @@ func (fe *FittingEachStatWeightProcess) SupplyData(inputData []weight_types.Weig
 func (fe *FittingEachStatWeightProcess) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
 	fe.chooseScaling()
 	fe.launchEachNested(cancel)
-	weight := fe.buildResult()
-	stopwatch := fe.calcMetrics()
-	return weight_types.WeightResult{Weight: weight, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusUnknown}
+	if !fe.hasError {
+		weight := fe.buildResult()
+		stopwatch := fe.calcMetrics()
+		return weight_types.WeightResult{Weight: weight, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusUnknown}
+	} else {
+		stopwatch := fe.calcMetrics()
+		return weight_types.WeightResult{SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusModelError}
+	}
 }
 
 func (fe *FittingEachStatWeightProcess) calcMetrics() *util.Stopwatch {
@@ -140,8 +146,12 @@ func (fe *FittingEachStatWeightProcess) prepareSamples(statType stats.StatType, 
 //
 //	lineSlopeUsable = lineSlopeInternal * scaleStat
 func (fe *FittingEachStatWeightProcess) rescaleAndCleanup(initialMap map[weight_types.StatRangeFloat]FittingSingleStatResult, fields *fittingEachFields) {
-	fields.resultSlice = fe.convertAndScaleResult(initialMap, fields.statType)
-	fields.resultSlice = fe.cleanupRanges(fields.resultSlice)
+	if initialMap != nil {
+		fields.resultSlice = fe.convertAndScaleResult(initialMap, fields.statType)
+		fields.resultSlice = fe.cleanupRanges(fields.resultSlice)
+	} else {
+		fe.hasError = true
+	}
 }
 
 func (fe *FittingEachStatWeightProcess) convertAndScaleResult(initialMap map[weight_types.StatRangeFloat]FittingSingleStatResult, statType stats.StatType) []util_weight2.FittingInterimResult {

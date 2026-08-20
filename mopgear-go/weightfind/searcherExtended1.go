@@ -88,7 +88,7 @@ func (ws *WeightSearcherExtended1) SetRanges(weightMin, weightMax float64) {
 
 func (ws *WeightSearcherExtended1) Run(cancel util_async.CancelSignal) weight_types.Weight2Extended {
 	threadCount := 8
-	queue := util_collection.QueueStackFiloPoolParent[*searchEx1Bound]{}
+	queue := util_collection.QueueStackStealingPool[*searchEx1Bound]{}
 
 	mainThreadQueue := queue.MakeChild()
 	mainThreadProbesReused := ws.newProbeSlice()
@@ -113,7 +113,7 @@ func (ws *WeightSearcherExtended1) Run(cancel util_async.CancelSignal) weight_ty
 	return bestWeight
 }
 
-func (ws *WeightSearcherExtended1) initialSplits(localQueue *util_collection.QueueStackFiloPoolChild[*searchEx1Bound], probesReused []*searchEx1Probe, targetCount int) bool {
+func (ws *WeightSearcherExtended1) initialSplits(localQueue *util_collection.QueueStackPoolChild[*searchEx1Bound], probesReused []*searchEx1Probe, targetCount int) bool {
 	localQueue.Push(ws.initialBound)
 	for localQueue.CountLocal() < targetCount {
 		if !ws.threadStep(localQueue, probesReused) {
@@ -123,7 +123,7 @@ func (ws *WeightSearcherExtended1) initialSplits(localQueue *util_collection.Que
 	return true
 }
 
-func (ws *WeightSearcherExtended1) threadLoop(cancel util_async.CancelSignal, localQueue *util_collection.QueueStackFiloPoolChild[*searchEx1Bound], probesReused []*searchEx1Probe) {
+func (ws *WeightSearcherExtended1) threadLoop(cancel util_async.CancelSignal, localQueue *util_collection.QueueStackPoolChild[*searchEx1Bound], probesReused []*searchEx1Probe) {
 	for cancel.ShouldContinue() {
 		if !ws.threadStep(localQueue, probesReused) {
 			break
@@ -131,7 +131,7 @@ func (ws *WeightSearcherExtended1) threadLoop(cancel util_async.CancelSignal, lo
 	}
 }
 
-func (ws *WeightSearcherExtended1) threadStep(localQueue *util_collection.QueueStackFiloPoolChild[*searchEx1Bound], probesReused []*searchEx1Probe) bool {
+func (ws *WeightSearcherExtended1) threadStep(localQueue *util_collection.QueueStackPoolChild[*searchEx1Bound], probesReused []*searchEx1Probe) bool {
 	entry, hasEntry := localQueue.Pop()
 	if !hasEntry {
 		return false
@@ -172,7 +172,7 @@ func (ws *WeightSearcherExtended1) evaluateScore(weightArray *searchEx1Point) fl
 }
 
 // dumb division in halves
-func (ws *WeightSearcherExtended1) opDivide(bound *searchEx1Bound, localQueue *util_collection.QueueStackFiloPoolChild[*searchEx1Bound]) {
+func (ws *WeightSearcherExtended1) opDivide(bound *searchEx1Bound, localQueue *util_collection.QueueStackPoolChild[*searchEx1Bound]) {
 	axis := bound.divideAxis
 	mid := valueInterpolate(bound.rangeMin[axis], bound.rangeMax[axis], c_searchExtended1_probeMiddle)
 
@@ -200,7 +200,7 @@ func (ws *WeightSearcherExtended1) opDivide(bound *searchEx1Bound, localQueue *u
 	localQueue.Push(loBound)
 }
 
-func (ws *WeightSearcherExtended1) opSearch(bound *searchEx1Bound, probes []*searchEx1Probe, localQueue *util_collection.QueueStackFiloPoolChild[*searchEx1Bound]) {
+func (ws *WeightSearcherExtended1) opSearch(bound *searchEx1Bound, probes []*searchEx1Probe, localQueue *util_collection.QueueStackPoolChild[*searchEx1Bound]) {
 	probes = ws.createAndSetProbes(bound, probes)
 
 	if bound.nodeDepth >= c_searchExtended1_maxNodeDepth {
@@ -277,7 +277,7 @@ func (ws *WeightSearcherExtended1) chooseCut(probes []*searchEx1Probe) int {
 	return len(probes) / 4
 }
 
-func (ws *WeightSearcherExtended1) chooseSplitMode(probes []*searchEx1Probe, bound *searchEx1Bound, localQueue *util_collection.QueueStackFiloPoolChild[*searchEx1Bound]) {
+func (ws *WeightSearcherExtended1) chooseSplitMode(probes []*searchEx1Probe, bound *searchEx1Bound, localQueue *util_collection.QueueStackPoolChild[*searchEx1Bound]) {
 	includeMiddle := false
 	hiSlice := make([]*searchEx1Probe, 0, len(probes))
 	loSlice := make([]*searchEx1Probe, 0, len(probes))
@@ -322,7 +322,7 @@ func (ws *WeightSearcherExtended1) chooseSplitMode(probes []*searchEx1Probe, bou
 	}
 }
 
-func (ws *WeightSearcherExtended1) search2MakeFollowupShrink(bound *searchEx1Bound, localQueue *util_collection.QueueStackFiloPoolChild[*searchEx1Bound]) {
+func (ws *WeightSearcherExtended1) search2MakeFollowupShrink(bound *searchEx1Bound, localQueue *util_collection.QueueStackPoolChild[*searchEx1Bound]) {
 	add := ws.poolQueue.Get()
 	add.divideAxis = -1
 	add.nodeDepth = bound.nodeDepth + 1
@@ -337,7 +337,7 @@ func (ws *WeightSearcherExtended1) search2MakeFollowupShrink(bound *searchEx1Bou
 	}
 }
 
-func (ws *WeightSearcherExtended1) search2MakeFollowupShrinkExceptAxis(bound *searchEx1Bound, axis int8, localQueue *util_collection.QueueStackFiloPoolChild[*searchEx1Bound]) {
+func (ws *WeightSearcherExtended1) search2MakeFollowupShrinkExceptAxis(bound *searchEx1Bound, axis int8, localQueue *util_collection.QueueStackPoolChild[*searchEx1Bound]) {
 	add := ws.poolQueue.Get()
 	add.divideAxis = -1
 	add.nodeDepth = bound.nodeDepth + 1
@@ -354,7 +354,7 @@ func (ws *WeightSearcherExtended1) search2MakeFollowupShrinkExceptAxis(bound *se
 	}
 }
 
-func (ws *WeightSearcherExtended1) search2MakeFollowupCommon2(probes []*searchEx1Probe, bound *searchEx1Bound, localQueue *util_collection.QueueStackFiloPoolChild[*searchEx1Bound]) {
+func (ws *WeightSearcherExtended1) search2MakeFollowupCommon2(probes []*searchEx1Probe, bound *searchEx1Bound, localQueue *util_collection.QueueStackPoolChild[*searchEx1Bound]) {
 	add := ws.poolQueue.Get()
 	add.divideAxis = -1
 	add.nodeDepth = bound.nodeDepth + 1
@@ -424,7 +424,7 @@ func (ws *WeightSearcherExtended1) sliceInterpolate(rangeMin *searchEx1Point, ra
 	}
 }
 
-func (ws *WeightSearcherExtended1) containedByAnotherQueueEntry(add *searchEx1Bound, localQueue *util_collection.QueueStackFiloPoolChild[*searchEx1Bound]) bool {
+func (ws *WeightSearcherExtended1) containedByAnotherQueueEntry(add *searchEx1Bound, localQueue *util_collection.QueueStackPoolChild[*searchEx1Bound]) bool {
 	foundContainingRange := false
 	localQueue.ExamineContents(func(content []*searchEx1Bound) {
 		for i := range content {
