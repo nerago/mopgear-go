@@ -23,7 +23,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	job := multi_types.JobInputs{}
 	job.SetMinimumExtraItemLevel(463)
-	job.SetTimeLimitEachSolver(8000)
+	job.SetTimeLimitEachSolver(1000)
 	job.SetSimSize(simSize)
 	job.SetReforgingAllowNonCommon(true)
 	//job.SetWriteBestToGearFiles()
@@ -247,7 +247,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	//	103972, // kilruk sword - still passable option #4 for most sets, upgrade rank #3 of remaining
 	//	105122, // Asgorathian Blood Seal - option #5, upgrade rank #4
 	//)
-	//job.AddAlternateUpgradeChoices(105033) // Wolf-Rider Spurs
+	job.AddAlternateUpgradeChoices(105033) // Wolf-Rider Spurs
 
 	//job.EnablePermuteOnItemCountOptions()
 
@@ -256,9 +256,9 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 
 	run := multi.JobCreate(printer, job)
 
-	run.RunNoPermutations_AllCommonAlternates(true, true)
+	//run.RunNoPermutations_AllCommonAlternates(false, false)
 	//run.RunNoPermutations_BestOnly(true, true)
-	//run.RunForSolutionsPerPermute(5, true)
+	run.RunForSolutionsPerPermute(16, true)
 
 	//job.CullingReport()
 	//run.RunCullingSets(400, time.Minute*45)

@@ -104,6 +104,7 @@ var OrgRaidDrops = []items.ItemId{
 	103796, // seal kings norm
 	103798, // bloodclaw band
 	105761, // Partik's Purified Legplates
+	104494, // krugruk shoulderplates
 }
 var OrgOneHandAndShield = []items.ItemId{
 	103826, // xifeng weapon

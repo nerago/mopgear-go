@@ -96,7 +96,7 @@ func PaladinMultiRunLite(printer *util.PrintRecorder) {
 
 	job := multi_types.JobInputs{}
 	job.SetMinimumExtraItemLevel(463)
-	job.SetTimeLimitEachSolver(12000)
+	job.SetTimeLimitEachSolver(2500)
 	job.SetSimSize(simSize)
 	job.SetReforgingAllowNonCommon(false)
 	//job.SetWriteBestToGearFiles()
