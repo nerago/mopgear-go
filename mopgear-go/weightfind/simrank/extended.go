@@ -2,7 +2,6 @@ package simrank
 
 import (
 	"github.com/nerago/mopgear-go/stats"
-	"github.com/nerago/mopgear-go/util/util_collection"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
@@ -16,14 +15,6 @@ func RankSimsForRankingSeparated[T weight_types.IRankEntryExtendedSingle](requir
 func RankSimsForRangedRankSeparated[T weight_types.IRankEntryExtendedRange](requiredSims []stats.SimType, inputData []T) {
 	for _, simType := range requiredSims {
 		sortGenericWithDeviation(simType, inputData)
-		arrayRankToSetRangeStatisticalComplicated(inputData,
-			func(entry T) averageAndStdDev {
-				return averageAndStdDev{
-					average: entry.GetSimData().Get(simType),
-					stdDev:  entry.GetSimData().GetStdDevOrZero(simType),
-				}
-			}, func(entry T, hiLo *util_collection.HiLoInt) {
-				entry.SetSimRankRangeByType(simType, hiLo)
-			})
+		arrayRankToSetRangeStatisticalComplicated(simType, inputData)
 	}
 }

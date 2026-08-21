@@ -333,6 +333,81 @@ func statWeightsSearch(printer *util.PrintRecorder) {
 
 }
 
+func statWeightsSearchExtended(printer *util.PrintRecorder) {
+	// weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
+	targetRatio := model_factory.SimPriority_mitigation
+	weightStats := model_factory.StatsForWeighting_strengthTank
+
+	//inputDataGrid := readWeightInputFile("tempdata/sim-stats-compare-grid.json")
+	//inputDataRandom := readWeightInputFile("tempdata/sim-stats-compare-rand.json")
+	inputDataGrid := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
+	inputDataRandom := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
+	// mixedInputData := slices.Concat(inputDataGrid, inputDataRandom)
+	mixedInputData := slices.Concat(inputDataRandom, inputDataGrid)
+
+	filteredInput := mixedInputData
+	printer.Printf("mixedInputData size %d\n", len(filteredInput))
+
+	//search := weightfind.WeightSearcher0{}
+	//search.Init(weightStats, targetRatio, util.PrintRecorder_Nop())
+	//search.Init(weightStats, targetRatio, printer)
+	//search.SupplyData(mixedInputData)
+
+	//search := weightfind.WeightSearcher2{}
+
+	cancel := util_async.CancelSignal_Make()
+	util_async.CancelOnKeyPress(cancel)
+
+	search := weightfind.WeightSearcherExtended1{}
+	search.Init(weightStats, targetRatio)
+	search.SupplyData(mixedInputData)
+	search.SetRanges(-1.0, 1.0)
+
+	weight2 := search.Run(cancel)
+	//printer.Printf("time = %s\n", weightResult.SolveTime)
+	weight1 := weight2.ConvertToWeight1()
+	tools.WritePawnString(*weight1, printer)
+	printer.Println(tools.FormatWeight2String(&weight2))
+	printer.Printf("accuracy1 = %f\n", weightfind.EvaluateAccuracy(weight1, targetRatio.SimTypes(), &targetRatio, mixedInputData))
+	printer.Printf("accuracy1 stat = %f\n", weightfind.EvaluateAccuracyStatistical(weight1, targetRatio.SimTypes(), &targetRatio, mixedInputData))
+	printer.Printf("accuracy2 = %f\n", weightfind.EvaluateAccuracy(&weight2, targetRatio.SimTypes(), &targetRatio, mixedInputData))
+	printer.Printf("accuracy2 stat = %f\n", weightfind.EvaluateAccuracyStatistical(&weight2, targetRatio.SimTypes(), &targetRatio, mixedInputData))
+
+	prep := weightfind.EvaluateAccuracyPrepared{}
+	prep.Init(mixedInputData, &targetRatio, true)
+	printer.Printf("prep accuracy1 stat = %f\n", prep.EvaluateWeight1(weight1))
+	printer.Printf("prep accuracy2 stat = %f\n", prep.EvaluateWeight2(&weight2))
+
+}
+
+func compareAccuracy(printer *util.PrintRecorder) {
+	targetRatio := model_factory.SimPriority_mitigation
+	//weightStats := model_factory.StatsForWeighting_strengthTank
+
+	inputDataGrid := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
+	inputDataRandom := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
+	testData := slices.Concat(inputDataRandom, inputDataGrid)
+	testData = testData[0:5]
+
+	weight1 := weight_types.Weight1Basic_Make()
+	weight1.Put(stats.Stat_Strength, 1.0000)
+	weight1.Put(stats.Stat_Stamina, 1.2309)
+	weight1.Put(stats.Stat_Crit, 0.1167)
+	weight1.Put(stats.Stat_Haste, 0.3614)
+	weight1.Put(stats.Stat_Expertise, 0.0054)
+	weight1.Put(stats.Stat_Mastery, 0.5866)
+	weight1.Put(stats.Stat_Dodge, 0.0824)
+	weight1.Put(stats.Stat_Parry, 0.0532)
+
+	//printer.Printf("accuracy1 = %f\n", weightfind.EvaluateAccuracy(&weight1, targetRatio.SimTypes(), &targetRatio, testData))
+	printer.Printf("accuracy1 stat = %f\n", weightfind.EvaluateAccuracyStatistical(&weight1, targetRatio.SimTypes(), &targetRatio, testData))
+
+	prep := weightfind.EvaluateAccuracyPrepared{}
+	prep.Init(testData, &targetRatio, true)
+	printer.Printf("prep accuracy1 stat = %f\n", prep.EvaluateWeight1(&weight1))
+
+}
+
 func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 	targetRatio := model_factory.SimPriority_mitigation
 	requiredStats := model_factory.StatsForWeighting_strengthTank

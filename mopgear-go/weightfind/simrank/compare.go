@@ -60,86 +60,31 @@ func sortAccuracyPrepareFast(inputData []*weight_types.AccuracyInfoPrePrepare, s
 	slices.SortFunc(inputData, simSortSimSingledCompares[simType])
 }
 
-func sortAccuracyWithDeviation(simType stats.SimType, inputData []*weight_types.AccuracyInfo) {
+func sortGenericWithDeviation[A interface{ GetSimData() *stats.SimData }](simType stats.SimType, inputData []A) {
 	switch simType {
 	case stats.Sim_DPS:
-		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfo) int {
-			return compareSimsStatisticalByType(a.DataSim, b.DataSim, stats.Sim_DPS)
-		})
-	case stats.Sim_TPS:
-		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfo) int {
-			return compareSimsStatisticalByType(a.DataSim, b.DataSim, stats.Sim_TPS)
-		})
-	case stats.Sim_DTPS:
-		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfo) int {
-			return compareSimsStatisticalByType(b.DataSim, a.DataSim, stats.Sim_DTPS)
-		})
-	case stats.Sim_HPS:
-		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfo) int {
-			return compareSimsStatisticalByType(a.DataSim, b.DataSim, stats.Sim_HPS)
-		})
-	case stats.Sim_TMI:
-		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfo) int {
-			return compareSimsStatisticalByType(b.DataSim, a.DataSim, stats.Sim_TMI)
-		})
-	case stats.Sim_DEATH:
-		// death data never has detail
-		slices.SortFunc(inputData, simSortRangedCompares[stats.Sim_DEATH])
-	}
-}
-
-func sortAccuracyPrepareWithDeviation(simType stats.SimType, inputData []*weight_types.AccuracyInfoPrePrepare) {
-	switch simType {
-	case stats.Sim_DPS:
-		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoPrePrepare) int {
-			return compareSimsStatisticalByType(a.DataSim, b.DataSim, stats.Sim_DPS)
-		})
-	case stats.Sim_TPS:
-		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoPrePrepare) int {
-			return compareSimsStatisticalByType(a.DataSim, b.DataSim, stats.Sim_TPS)
-		})
-	case stats.Sim_DTPS:
-		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoPrePrepare) int {
-			return compareSimsStatisticalByType(b.DataSim, a.DataSim, stats.Sim_DTPS)
-		})
-	case stats.Sim_HPS:
-		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoPrePrepare) int {
-			return compareSimsStatisticalByType(a.DataSim, b.DataSim, stats.Sim_HPS)
-		})
-	case stats.Sim_TMI:
-		slices.SortFunc(inputData, func(a, b *weight_types.AccuracyInfoPrePrepare) int {
-			return compareSimsStatisticalByType(b.DataSim, a.DataSim, stats.Sim_TMI)
-		})
-	case stats.Sim_DEATH:
-		// death data never has detail
-		slices.SortFunc(inputData, simSortSimSingledCompares[stats.Sim_DEATH])
-	}
-}
-
-func sortGenericWithDeviation[T weight_types.IRankEntry](simType stats.SimType, inputData []T) {
-	switch simType {
-	case stats.Sim_DPS:
-		slices.SortFunc(inputData, func(a, b T) int {
+		slices.SortFunc(inputData, func(a, b A) int {
 			return compareSimsStatisticalByType(a.GetSimData(), b.GetSimData(), stats.Sim_DPS)
 		})
 	case stats.Sim_TPS:
-		slices.SortFunc(inputData, func(a, b T) int {
+		slices.SortFunc(inputData, func(a, b A) int {
 			return compareSimsStatisticalByType(a.GetSimData(), b.GetSimData(), stats.Sim_TPS)
 		})
 	case stats.Sim_DTPS:
-		slices.SortFunc(inputData, func(a, b T) int {
+		slices.SortFunc(inputData, func(a, b A) int {
 			return compareSimsStatisticalByType(b.GetSimData(), a.GetSimData(), stats.Sim_DTPS)
 		})
 	case stats.Sim_HPS:
-		slices.SortFunc(inputData, func(a, b T) int {
+		slices.SortFunc(inputData, func(a, b A) int {
 			return compareSimsStatisticalByType(a.GetSimData(), b.GetSimData(), stats.Sim_HPS)
 		})
 	case stats.Sim_TMI:
-		slices.SortFunc(inputData, func(a, b T) int {
+		slices.SortFunc(inputData, func(a, b A) int {
 			return compareSimsStatisticalByType(b.GetSimData(), a.GetSimData(), stats.Sim_TMI)
 		})
 	case stats.Sim_DEATH:
-		slices.SortFunc(inputData, func(a, b T) int {
+		// death data never has detail
+		slices.SortFunc(inputData, func(a, b A) int {
 			return cmp.Compare(b.GetSimData().Get(stats.Sim_DEATH), a.GetSimData().Get(stats.Sim_DEATH))
 		})
 	}

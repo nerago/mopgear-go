@@ -50,6 +50,13 @@ type IRankEntryExtendedRange interface {
 	SetSimRankRangeByType(simType stats.SimType, targetRank *util_collection.HiLoInt)
 }
 
+type IRankBothRange interface {
+	GetSimRankRange() *util_collection.HiLoInt
+	GetStatRankRange() *util_collection.HiLoInt
+	GetStatScore() float64
+	GetSimScore() float64
+}
+
 type RankStatWeightsCommon struct {
 	Data       *WeightInput
 	SimScore   float64

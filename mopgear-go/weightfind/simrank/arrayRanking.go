@@ -45,10 +45,10 @@ func arrayRankToSetSimSpecificRankRange[T weight_types.IRankEntryExtendedRange](
 	}
 }
 
-func arrayRankToSetRangeStatisticalComplicated[T weight_types.IRankEntry](data []T, getSimScore func(T) averageAndStdDev, setSimRankRange func(T, *util_collection.HiLoInt)) {
+func arrayRankToSetRangeStatisticalComplicated[T weight_types.IRankEntryExtendedRange](simType stats.SimType, data []T) {
 	for runStart := 0; runStart < len(data); {
-		countChainedRun, countEqualFirstRun := arrayFindChainFromFunc(data, runStart, getSimScore)
-		runStart = arrayApplyChainFunc(data, runStart, countChainedRun, countEqualFirstRun, setSimRankRange)
+		countChainedRun, countEqualFirstRun := arrayFindChainFromFunc(data, runStart, simType)
+		runStart = arrayApplyChainFunc(data, runStart, countChainedRun, countEqualFirstRun, simType)
 	}
 }
 
@@ -57,15 +57,22 @@ type averageAndStdDev struct {
 	stdDev  float64
 }
 
-func arrayFindChainFromFunc[T weight_types.IRankEntry](data []T, runStart int, getSimScore func(T) averageAndStdDev) (int, int) {
+func averageAndStdDevMake[T weight_types.IRankEntry](entry T, simType stats.SimType) averageAndStdDev {
+	return averageAndStdDev{
+		average: entry.GetSimData().Get(simType),
+		stdDev:  entry.GetSimData().GetStdDevOrZero(simType),
+	}
+}
+
+func arrayFindChainFromFunc[T weight_types.IRankEntry](data []T, runStart int, simType stats.SimType) (int, int) {
 	countChainedRun := 1
 	countEqualFirstRun := 1
 
-	firstScore := getSimScore(data[runStart])
+	firstScore := averageAndStdDevMake(data[runStart], simType)
 	prevScore := firstScore
 
 	for check := runStart + 1; check < len(data); check++ {
-		currScore := getSimScore(data[check])
+		currScore := averageAndStdDevMake(data[check], simType)
 		if equalSimsDetailStatistical(currScore.average, currScore.stdDev, firstScore.average, firstScore.stdDev) {
 			countEqualFirstRun++
 			countChainedRun++
@@ -80,9 +87,9 @@ func arrayFindChainFromFunc[T weight_types.IRankEntry](data []T, runStart int, g
 	return countChainedRun, countEqualFirstRun
 }
 
-func arrayApplyChainFunc[T weight_types.IRankEntry](data []T, runStart int, countChainedRun int, countEqualFirstRun int, setSimRankRange func(T, *util_collection.HiLoInt)) int {
+func arrayApplyChainFunc[T weight_types.IRankEntryExtendedRange](data []T, runStart int, countChainedRun int, countEqualFirstRun int, simType stats.SimType) int {
 	if countChainedRun == 1 {
-		setSimRankRange(data[runStart], &util_collection.HiLoInt{Lo: runStart, Hi: runStart})
+		data[runStart].SetSimRankRangeByType(simType, &util_collection.HiLoInt{Lo: runStart, Hi: runStart})
 		return runStart + 1
 	} else {
 		var end int
@@ -94,7 +101,7 @@ func arrayApplyChainFunc[T weight_types.IRankEntry](data []T, runStart int, coun
 
 		hilo := &util_collection.HiLoInt{Lo: runStart, Hi: end}
 		for i := runStart; i <= end; i++ {
-			setSimRankRange(data[i], hilo)
+			data[i].SetSimRankRangeByType(simType, hilo)
 		}
 
 		return end + 1
@@ -109,15 +116,16 @@ func AccuracyPrepareCalcHiLo(inputData []*weight_types.AccuracyInfoPrePrepare) [
 	prepare[0] = &weight_types.AccuracyInfoPrepared{
 		SimRankRange: &util_collection.HiLoInt{Lo: 0, Hi: 0},
 		Stats:        inputData[0].DataStat,
+		Prep:         inputData[0],
 	}
 	for i := 1; i < len(inputData); i++ {
 		if util.FloatsApproxEquals(inputData[i].SimScore, inputData[i-1].SimScore) {
 			prevRange := prepare[i-1].SimRankRange
 			prevRange.Hi = i
-			prepare[i] = &weight_types.AccuracyInfoPrepared{SimRankRange: prevRange, Stats: inputData[i].DataStat}
+			prepare[i] = &weight_types.AccuracyInfoPrepared{SimRankRange: prevRange, Stats: inputData[i].DataStat, Prep: inputData[i]}
 		} else {
 			newRange := &util_collection.HiLoInt{Lo: i, Hi: i}
-			prepare[i] = &weight_types.AccuracyInfoPrepared{SimRankRange: newRange, Stats: inputData[i].DataStat}
+			prepare[i] = &weight_types.AccuracyInfoPrepared{SimRankRange: newRange, Stats: inputData[i].DataStat, Prep: inputData[i]}
 		}
 	}
 
