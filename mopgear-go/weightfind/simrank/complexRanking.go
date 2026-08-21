@@ -9,6 +9,18 @@ import (
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
+type averageAndStdDev struct {
+	average float64
+	stdDev  float64
+}
+
+func averageAndStdDevMake[T weight_types.IRankEntry](entry T, simType stats.SimType) averageAndStdDev {
+	return averageAndStdDev{
+		average: entry.GetSimData().Get(simType),
+		stdDev:  entry.GetSimData().GetStdDevOrZero(simType),
+	}
+}
+
 func arrayFindChainFromFunc[T weight_types.IRankEntry](data []T, runStart int, simType stats.SimType) (int, int) {
 	countChainedRun := 1
 	countEqualFirstRun := 1

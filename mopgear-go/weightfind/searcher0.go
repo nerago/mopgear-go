@@ -34,7 +34,7 @@ func (ws *WeightSearcher0) Init(weightStats []stats.StatType, targetRatio weight
 }
 
 func (ws *WeightSearcher0) SupplyData(inputData []weight_types.WeightInput) {
-	ws.evaluateAccuracy.Init(inputData, &ws.targetRatio, ws.AccuracyStatistical)
+	ws.evaluateAccuracy.Init(inputData, &ws.targetRatio, ws.AccuracyStatistical, false)
 }
 
 func (ws *WeightSearcher0) Run(cancel util_async.CancelSignal) weight_types.WeightResult {

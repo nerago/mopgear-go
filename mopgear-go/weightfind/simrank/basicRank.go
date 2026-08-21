@@ -2,7 +2,6 @@ package simrank
 
 import (
 	"cmp"
-	"fmt"
 	"slices"
 
 	"github.com/nerago/mopgear-go/stats"
@@ -40,7 +39,7 @@ func simScoringStatisticalComplicated[T weight_types.IRankEntryExtendedRangeInt]
 func arrayRankToIncrementSimScore[T weight_types.IRankEntryFlat](simType stats.SimType, priority *weight_types.SimPriorityBasic, inputData []T) {
 	ratio := priority.GetOrPanic(simType)
 	for rank := range inputData {
-		fmt.Printf("%s rank %d %f %f\n", simType.Name(), rank, inputData[rank].GetSimData().Get(simType), ratio)
+		//fmt.Printf("%s rank %d %f %f\n", simType.Name(), rank, inputData[rank].GetSimData().Get(simType), ratio)
 		increment := float64(rank) * ratio
 		inputData[rank].IncrementSimScore(increment)
 	}

@@ -13,25 +13,36 @@ type EvaluateAccuracyPrepared struct {
 }
 
 func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, simRatios *weight_types.SimPriorityBasic, simStatistical bool, simStatisticalExtended bool) {
-	data := util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.AccuracyInfoPrePrepare {
-		return &weight_types.AccuracyInfoPrePrepare{
-			DataSim:  &input.SimResult,
-			DataStat: &input.TotalStat,
-			SimScore: 0,
-		}
-	})
-
 	requiredSims := simRatios.SimTypes()
+
 	if simStatisticalExtended {
-		ea.prepared = simrank.AccuracyPrepareRankSimsStatistical(requiredSims, simRatios, data)
-	} else if simStatistical {
-		ea.prepared = simrank.AccuracyPrepareRankSimsStatistical(requiredSims, simRatios, data)
+		data := util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.AccuracyInfoPrePrepareExtended {
+			return &weight_types.AccuracyInfoPrePrepareExtended{
+				AccuracyInfoPrePrepare: weight_types.AccuracyInfoPrePrepare{
+					DataSim:  &input.SimResult,
+					DataStat: &input.TotalStat,
+					SimScore: 0,
+				},
+			}
+		})
+		ea.prepared = simrank.AccuracyPrepareRankSimsStatisticalExtended(requiredSims, simRatios, data)
 	} else {
-		ea.prepared = simrank.AccuracyPrepareRankSimsBasic(requiredSims, simRatios, data)
+		data := util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.AccuracyInfoPrePrepare {
+			return &weight_types.AccuracyInfoPrePrepare{
+				DataSim:  &input.SimResult,
+				DataStat: &input.TotalStat,
+				SimScore: 0,
+			}
+		})
+		if simStatistical {
+			ea.prepared = simrank.AccuracyPrepareRankSimsStatistical(requiredSims, simRatios, data)
+		} else {
+			ea.prepared = simrank.AccuracyPrepareRankSimsBasic(requiredSims, simRatios, data)
+		}
 	}
 
-	ea.statRankRanges = make([]*util_collection.HiLoInt, len(data))
-	ea.hiLoPool = make([]util_collection.HiLoInt, len(data))
+	ea.statRankRanges = make([]*util_collection.HiLoInt, len(ea.prepared))
+	ea.hiLoPool = make([]util_collection.HiLoInt, len(ea.prepared))
 }
 
 func (ea *EvaluateAccuracyPrepared) Clone() *EvaluateAccuracyPrepared {

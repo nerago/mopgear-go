@@ -43,6 +43,7 @@ type WeightSearcher3 struct {
 	initialEvaluateAccuracy EvaluateAccuracyPrepared
 	initialBound            *weightSearch2FastBound
 	AccuracyStatistical     bool
+	AccuracyStatisticalEx   bool
 
 	bestResult util_rank.BestCollector1Concurrent[weight_types.Weight1Basic]
 
@@ -76,7 +77,7 @@ func (ws *WeightSearcher3) Init(statTypes []stats.StatType, targetRatio weight_t
 }
 
 func (ws *WeightSearcher3) SupplyData(inputData []weight_types.WeightInput) {
-	ws.initialEvaluateAccuracy.Init(inputData, &ws.targetRatio, ws.AccuracyStatistical)
+	ws.initialEvaluateAccuracy.Init(inputData, &ws.targetRatio, ws.AccuracyStatistical, ws.AccuracyStatisticalEx)
 }
 
 func (ws *WeightSearcher3) SetRanges(weightMin, weightMax float64) {

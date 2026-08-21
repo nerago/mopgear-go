@@ -77,7 +77,7 @@ func (ws *WeightSearcherExtended1) Init(statTypes []stats.StatType, targetRatio 
 }
 
 func (ws *WeightSearcherExtended1) SupplyData(inputData []weight_types.WeightInput) {
-	ws.initialEvaluateAccuracy.Init(inputData, &ws.targetRatio, true)
+	ws.initialEvaluateAccuracy.Init(inputData, &ws.targetRatio, true, true)
 }
 
 func (ws *WeightSearcherExtended1) SetRanges(weightMin, weightMax float64) {

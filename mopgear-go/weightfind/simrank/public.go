@@ -35,21 +35,21 @@ func AccuracyPrepareRankSimsStatisticalExtended(simList []stats.SimType, priorit
 	simScoringStatisticalComplicated(simList, data)
 	multiplyFloatRangesByRatio(data, priority)
 	sortSimScores(data)
-	return accuracyPrepareCalcHiLo(data)
+	return accuracyPrepareCalcRangeComplicated(data)
 }
 
 // just used on accuracyPrepare init
 func AccuracyPrepareRankSimsStatistical(simList []stats.SimType, priority *weight_types.SimPriorityBasic, data []*weight_types.AccuracyInfoPrePrepare) []*weight_types.AccuracyInfoPrepared {
 	simScoringStatistical(simList, priority, data)
 	sortSimScores(data)
-	return accuracyPrepareCalcHiLo(data)
+	return accuracyPrepareCalcRangeRegular(data)
 }
 
 // just used on accuracyPrepare init
 func AccuracyPrepareRankSimsBasic(simList []stats.SimType, priority *weight_types.SimPriorityBasic, data []*weight_types.AccuracyInfoPrePrepare) []*weight_types.AccuracyInfoPrepared {
 	simScoringBasic(simList, priority, data)
 	sortSimScores(data)
-	return accuracyPrepareCalcHiLo(data)
+	return accuracyPrepareCalcRangeRegular(data)
 }
 
 func RankSimsForRankingSeparated[T weight_types.IRankEntryExtendedSingle](simList []stats.SimType, data []T) {

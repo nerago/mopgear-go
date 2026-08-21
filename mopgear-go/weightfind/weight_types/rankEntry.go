@@ -75,7 +75,7 @@ type IRankStatFlatRange interface {
 }
 
 type IRankDoubleFlatRange interface {
-	IRankEntryFlatRead
+	//IRankEntryFlatRead
 	IRankStatFlatRange
 	GetSimRankRange() *util_collection.HiLoInt
 }
