@@ -65,6 +65,21 @@ func (stack *QueueStackFilo[T]) Pop() (T, bool) {
 	}
 }
 
+func (stack *QueueStackFilo[T]) PopBottom() (T, bool) {
+	var nilValue T
+	if stack.size > 0 {
+		value := stack.array[0]
+		for i := 1; i < stack.size; i++ {
+			stack.array[i-1] = stack.array[i]
+		}
+		stack.array[stack.size-1] = nilValue
+		stack.size--
+		return value, true
+	} else {
+		return nilValue, false
+	}
+}
+
 func (stack *QueueStackFilo[T]) SeqValues() iter.Seq[T] {
 	return func(yield func(T) bool) {
 		for i := range stack.size {

@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/bartolsthoorn/gohighs/highs"
 	"github.com/nerago/mopgear-go/files"
 	"github.com/nerago/mopgear-go/gear_model"
 	"github.com/nerago/mopgear-go/items"
@@ -207,7 +208,7 @@ func (spec *WeightSpec) runSolvers(tracker *util.TrackProgress, cancel util_asyn
 	}
 
 	// SEARCH weights - Non-Highs
-	for searchMode := range 2 {
+	for searchMode := range 3 {
 		spec.solveSearchWeights(searchMode, cancel)
 	}
 
@@ -567,7 +568,7 @@ func (spec *WeightSpec) solveSearchWeights(searchMode int, cancel util_async.Can
 		search.SetRanges(-1.0, 10.0)
 		weightResult := search.Run(innerCancel)
 		spec.evaluateWeight("SEARCH2", weightResult.AsWeight1(), weightResult.Weight, &weightResult)
-	} else {
+	} else if searchMode == 1 {
 		// TODO this version is currently acting non-deterministic so give it a few tries
 		best := util_rank.BestCollector1[weight_types.WeightResult]{}
 		for range 10 {
@@ -586,6 +587,18 @@ func (spec *WeightSpec) solveSearchWeights(searchMode int, cancel util_async.Can
 		}
 		bestWeightResult := best.GetBestOrNilValue()
 		spec.evaluateWeight("SEARCH3", bestWeightResult.AsWeight1(), bestWeightResult.Weight, &bestWeightResult)
+	} else {
+		sw := util.StopwatchMakeStarted()
+		search := WeightSearcherExtended1{}
+		search.Init(spec.statTypes, spec.targetRatio)
+		search.SupplyData(spec.dataAll)
+		search.SetRanges(-1.0, 5.0)
+		weight2 := new(search.Run(innerCancel))
+
+		weightResult := weight_types.WeightResult{Weight: weight2, SolveTime: sw.Elapsed(), Status: highs.ModelStatusOptimal}
+		weight1 := weight2.ConvertToWeight1()
+
+		spec.evaluateWeight("SEARCH-EX1", weight1, weight2, &weightResult)
 	}
 }
 

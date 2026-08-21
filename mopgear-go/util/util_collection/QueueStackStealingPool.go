@@ -53,7 +53,7 @@ func (child *QueueStackPoolChild[T]) Pop() (T, bool) {
 	for _, other := range child.parent.children {
 		if other != child {
 			other.childMutex.Lock()
-			value, hasValue = other.inner.Pop()
+			value, hasValue = other.inner.PopBottom()
 			other.childMutex.Unlock()
 
 			if hasValue {

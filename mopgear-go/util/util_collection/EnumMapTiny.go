@@ -203,7 +203,7 @@ func (em *EnumMapTiny[E, V, A]) SeqKey() iter.Seq[E] {
 }
 
 func (em *EnumMapTiny[E, V, A]) KeySlice() []E {
-	slice := make([]E, em.len)
+	slice := make([]E, 0, em.len)
 	bits := em.isSet
 	index := 0
 	for bits != 0 {
@@ -217,7 +217,7 @@ func (em *EnumMapTiny[E, V, A]) KeySlice() []E {
 }
 
 func (em *EnumMapTiny[E, V, A]) ValueSlice() []V {
-	slice := make([]V, em.len)
+	slice := make([]V, 0, em.len)
 	bits := em.isSet
 	index := 0
 	for bits != 0 {

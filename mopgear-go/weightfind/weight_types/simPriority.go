@@ -3,7 +3,6 @@ package weight_types
 import (
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/util"
-	"github.com/nerago/mopgear-go/util/util_collection"
 )
 
 //type WeightAlternateSimPriority struct {
@@ -15,18 +14,14 @@ import (
 //}
 
 type SimPriorityBasic struct {
-	content util_collection.EnumMap[stats.SimType, float64]
+	content stats.SimTypeMap[float64]
 }
 
 func SimPriorityBasic_MakeEmpty(parts ...any) SimPriorityBasic {
-	return SimPriorityBasic{
-		content: util_collection.EnumMapMake[stats.SimType, float64](stats.SimTypeEnum),
-	}
+	return SimPriorityBasic{}
 }
 func SimPriorityBasic_Make(parts ...any) SimPriorityBasic {
-	sim := SimPriorityBasic{
-		content: util_collection.EnumMapMake[stats.SimType, float64](stats.SimTypeEnum),
-	}
+	sim := SimPriorityBasic{}
 	for i := 0; i < len(parts); i += 2 {
 		simType := parts[i].(stats.SimType)
 
