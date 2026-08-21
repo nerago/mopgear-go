@@ -7,7 +7,7 @@ import (
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
-func arrayRankToSetSimBasicSimRank[T weight_types.IRankEntryFlatSingle](inputData []T) {
+func arrayRankToSetSimRankFlat[T weight_types.IRankEntryFlatSingle](inputData []T) {
 	for rank := range inputData {
 		inputData[rank].SetSimRank(rank)
 	}
@@ -110,7 +110,7 @@ func arrayApplyChainFunc[T weight_types.IRankEntryExtendedRange](data []T, runSt
 
 // make ranked entries for later, calculating the sim rank as we go
 // this uses the input array to make a new one, generic form would be a mapping operation
-func AccuracyPrepareCalcHiLo(inputData []*weight_types.AccuracyInfoPrePrepare) []*weight_types.AccuracyInfoPrepared {
+func accuracyPrepareCalcHiLo(inputData []*weight_types.AccuracyInfoPrePrepare) []*weight_types.AccuracyInfoPrepared {
 	prepare := make([]*weight_types.AccuracyInfoPrepared, len(inputData))
 
 	prepare[0] = &weight_types.AccuracyInfoPrepared{

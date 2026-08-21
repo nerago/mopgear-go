@@ -157,6 +157,7 @@ func (ranker *RankingStatWeightProcess3c) createWeightColumns() {
 }
 
 func (ranker *RankingStatWeightProcess3c) prepareRankings() {
+	simrank.ResetSimScores(ranker.dataSample)
 	simrank.RankSimsStatisticalForRanged(ranker.requiredSims, ranker.dataSample, &ranker.targetRatios)
 }
 

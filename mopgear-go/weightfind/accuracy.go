@@ -23,7 +23,7 @@ func EvaluateAccuracy[W weight_types.IWeight](statWeights W, requiredSims []stat
 	}
 	data := evaluateStatScoreAndCreateStructure(statWeights, inputData)
 	deriveStatRanks(data)
-	simrank.RankSimsRegularForAccuracyRanged(requiredSims, data, simRatios)
+	simrank.RankSimsBasicForRanged(requiredSims, data, simRatios)
 	return calcAverageDifference(data)
 }
 
@@ -33,7 +33,7 @@ func EvaluateAccuracyStatistical[W weight_types.IWeight](statWeights W, required
 	}
 	data := evaluateStatScoreAndCreateStructure(statWeights, inputData)
 	deriveStatRanks(data)
-	simrank.RankSimsStatisticalForAccuracyRanged(requiredSims, data, simRatios)
+	simrank.RankSimsStatisticalForRanged(requiredSims, data, simRatios)
 	return calcAverageDifference(data)
 }
 

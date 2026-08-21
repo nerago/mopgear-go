@@ -29,7 +29,7 @@ func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, s
 	if !simStatistical {
 		ea.prepared = simrank.AccuracyPrepareRankSimsBasic(requiredSims, simRatios, data)
 	} else {
-		ea.prepared = simrank.RankSimsStatisticalForAccuracyPrepare(requiredSims, simRatios, data)
+		ea.prepared = simrank.AccuracyPrepareRankSimsStatistical(requiredSims, simRatios, data)
 	}
 
 	ea.statRankRanges = make([]*util_collection.HiLoInt, len(data))
@@ -69,37 +69,44 @@ func evaluateWeightGeneral[W weight_types.IWeight](ea *EvaluateAccuracyPrepared,
 	for i := range size {
 		prepared[i].StatScore = statWeights.CalcStatScore(prepared[i].Stats)
 	}
+	//slices.SortFunc(prepared, func(a, b *weight_types.AccuracyInfoPrepared) int {
+	//	return cmp.Compare(a.StatScore, b.StatScore)
+	//})
+
+	// rank stats scores
+	//statRankRanges := ea.statRankRanges
+	//statRankRanges[0] = &ea.hiLoPool[0]
+	//statRankRanges[0].Lo = 0
+	//statRankRanges[0].Hi = 0
+	//hiLoAlloc := 1
+	//
+	//for rank := 1; rank < size; rank++ {
+	//	if util.FloatsApproxEquals(prepared[rank].StatScore, prepared[rank-1].StatScore) {
+	//		prevRange := statRankRanges[rank-1]
+	//		statRankRanges[rank] = prevRange
+	//		prevRange.Hi = rank
+	//	} else {
+	//		newRange := &ea.hiLoPool[hiLoAlloc]
+	//		newRange.Lo = rank
+	//		newRange.Hi = rank
+	//		statRankRanges[rank] = newRange
+	//		hiLoAlloc++
+	//	}
+	//}
+
 	slices.SortFunc(prepared, func(a, b *weight_types.AccuracyInfoPrepared) int {
 		return cmp.Compare(a.StatScore, b.StatScore)
 	})
-
-	// rank stats scores
-	statRankRanges := ea.statRankRanges
-	statRankRanges[0] = &ea.hiLoPool[0]
-	statRankRanges[0].Lo = 0
-	statRankRanges[0].Hi = 0
-	hiLoAlloc := 1
-
-	for rank := 1; rank < size; rank++ {
-		if util.FloatsApproxEquals(prepared[rank].StatScore, prepared[rank-1].StatScore) {
-			prevRange := statRankRanges[rank-1]
-			statRankRanges[rank] = prevRange
-			prevRange.Hi = rank
+	prepared[0].StatRankRange = &util_collection.HiLoInt{Lo: 0, Hi: 0}
+	for i := 1; i < len(prepared); i++ {
+		if util.FloatsApproxEquals(prepared[i].StatScore, prepared[i-1].StatScore) {
+			prevRange := prepared[i-1].StatRankRange
+			prepared[i].StatRankRange = prevRange
+			prevRange.Hi = i
 		} else {
-			newRange := &ea.hiLoPool[hiLoAlloc]
-			newRange.Lo = rank
-			newRange.Hi = rank
-			statRankRanges[rank] = newRange
-			hiLoAlloc++
+			prepared[i].StatRankRange = &util_collection.HiLoInt{Lo: i, Hi: i}
 		}
 	}
 
-	// compute average difference between stat rank and sim rank.
-	sumRatioScores := 0.0
-	for i := range size {
-		ratioScore := rangesToAccuracyRatio(*prepared[i].SimRankRange, *statRankRanges[i], size)
-		sumRatioScores += ratioScore
-	}
-	averagePercent := 100.0 * sumRatioScores / float64(size)
-	return checkValue(averagePercent)
+	return calcAverageDifference(prepared)
 }
