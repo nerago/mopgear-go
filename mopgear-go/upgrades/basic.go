@@ -110,7 +110,7 @@ func findBase(baseItems *items.FullOptionsMap, model *gear_model.SpecModel, inpu
 		model,
 		printer,
 		input.WeightType,
-		input.SolverTimeout,
+		input.SolverTimeout, nil,
 	)
 
 	if !output.Success {
@@ -152,7 +152,7 @@ func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptions
 		model,
 		printer,
 		weightType,
-		timeout,
+		timeout, nil,
 	)
 
 	var result upgradeItemResult

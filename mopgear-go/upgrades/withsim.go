@@ -35,7 +35,9 @@ func findUpgradeAndSim(input *FindUpgrades_SimInputs, baseItems *items.FullOptio
 
 	simResults := runEachUpgradeTaskAndSim(printer, extraTasks, baseItems, baseRating, model, tracker, substituteEmptySlotOnly, input, goal, baseSim)
 
-	runMoreDetailedSimForBestN(simResults, input.ExtraSimForTopResultsCount, input.ExtraSimForTopResultsSimSize, model, goal, tracker)
+	if input.ExtraSimForTopResultsCount > 0 {
+		runMoreDetailedSimForBestN(simResults, input.ExtraSimForTopResultsCount, input.ExtraSimForTopResultsSimSize, model, goal, tracker)
+	}
 
 	reportBasicResultsSim(simResults, printer, input.PositiveResultsOnly)
 	return simResults

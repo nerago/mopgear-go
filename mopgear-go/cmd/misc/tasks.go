@@ -37,7 +37,8 @@ func basicReforge(printer *util.PrintRecorder) {
 		&model,
 		printer,
 		1,
-		c_miscDefaultTimeout)
+		c_miscDefaultTimeout,
+		nil)
 	output.Report(printer)
 }
 
@@ -65,7 +66,8 @@ func findBestSubjectToCommon(printer *util.PrintRecorder) {
 		&model,
 		printer,
 		1,
-		c_miscDefaultTimeout)
+		c_miscDefaultTimeout,
+		nil)
 
 	output.Report(printer)
 }
@@ -86,7 +88,8 @@ func testSimA(printer *util.PrintRecorder) {
 		&model,
 		printer,
 		1,
-		c_miscDefaultTimeout)
+		c_miscDefaultTimeout,
+		nil)
 	printer.Println("Running sim")
 	resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_QuickDirty, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
@@ -99,7 +102,8 @@ func testSimB(printer *util.PrintRecorder) {
 		&model,
 		printer,
 		1,
-		c_miscDefaultTimeout)
+		c_miscDefaultTimeout,
+		nil)
 	printer.Println("Running sim")
 	resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_Common, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
@@ -155,7 +159,8 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 		&model,
 		printer,
 		1,
-		c_miscDefaultTimeout)
+		c_miscDefaultTimeout,
+		nil)
 
 	output.Report(printer)
 
@@ -232,7 +237,8 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 				&model,
 				printer,
 				1,
-				c_miscDefaultTimeout)
+				c_miscDefaultTimeout,
+				nil)
 			output.Report(printer)
 
 			resultStats := simulate.WowSim_Execute_UseModel(simSize, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
@@ -512,7 +518,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 func currentSimGear(printer *util.PrintRecorder) {
 	fight := stats.Fight_Juggernaut_NoExternalHeal
 	goal := stats.OptimiseGoal_Mitigation
-	simRun := simulate.RunSize_Largish
+	simRun := simulate.RunSize_VerySlow
 
 	type group struct {
 		label string
@@ -932,6 +938,7 @@ func determineBestUseOfGearSets(printer *util.PrintRecorder) {
 			printer,
 			1,
 			c_miscDefaultTimeout,
+			nil,
 		)
 		if !solveOutput.Success {
 			panic("no set")
