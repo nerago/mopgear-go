@@ -1,6 +1,8 @@
 package weight_types
 
 import (
+	"iter"
+
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/util/util_collection"
 )
@@ -11,6 +13,11 @@ type AccuracyInfo struct {
 	StatRankRange *util_collection.HiLoInt
 	SimRankRange  *util_collection.HiLoInt
 	DataSim       *stats.SimData
+}
+
+type AccuracyInfoExtended struct {
+	AccuracyInfo
+	SimRankByType stats.SimTypeMap[util_collection.HiLoFloat]
 }
 
 func (a *AccuracyInfo) GetSimData() *stats.SimData {
@@ -49,6 +56,30 @@ func (a *AccuracyInfo) GetStatRankRange() *util_collection.HiLoInt {
 	return a.StatRankRange
 }
 
+//func (a *AccuracyInfoExtended) GetSimRankRangeByType(simType stats.SimType) *util_collection.HiLoInt {
+//	return a.SimRankByType.GetOrNilValue(simType)
+//}
+//
+//func (a *AccuracyInfoExtended) SetSimRankRangeByType(simType stats.SimType, targetRank *util_collection.HiLoInt) {
+//	a.SimRankByType.Put(simType, targetRank)
+//}
+
+func (a *AccuracyInfoExtended) GetSimRankRangeFloatByType(simType stats.SimType) util_collection.HiLoFloat {
+	return a.SimRankByType.GetOrNilValue(simType)
+}
+
+func (a *AccuracyInfoExtended) SeqSimRankRangeFloatByType() iter.Seq2[stats.SimType, util_collection.HiLoFloat] {
+	return a.SimRankByType.SeqKeyValue()
+}
+
+func (a *AccuracyInfoExtended) SetSimRankRangeByType(simType stats.SimType, lo int, hi int) {
+	a.SimRankByType.Put(simType, util_collection.HiLoFloat{Lo: float64(lo), Hi: float64(hi)})
+}
+
+func (a *AccuracyInfoExtended) SetSimRankRangeFloatByType(simType stats.SimType, lo float64, hi float64) {
+	a.SimRankByType.Put(simType, util_collection.HiLoFloat{Lo: lo, Hi: hi})
+}
+
 type AccuracyInfoPrePrepare struct {
 	SimScore float64
 	DataSim  *stats.SimData
@@ -85,6 +116,10 @@ func (a *AccuracyInfoPrepared) GetStatScore() float64 {
 
 func (a *AccuracyInfoPrepared) GetSimScore() float64 {
 	return a.Prep.SimScore
+}
+
+func (a *AccuracyInfoPrepared) GetSimData() *stats.SimData {
+	return a.Prep.DataSim
 }
 
 func (a *AccuracyInfoPrepared) GetSimRankRange() *util_collection.HiLoInt {

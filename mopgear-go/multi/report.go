@@ -238,7 +238,7 @@ func (job *MultiSetJob) rankAllResults(resultList []simulateMultiResult) (util_r
 			return mr.singles[label]
 		})
 
-		simrank.RankSimsStatisticalFlat(prep.model.SimPriority.SimTypes(), entries, &prep.model.SimPriority)
+		simrank.RankSimsStatisticalFlatSingle(prep.model.SimPriority.SimTypes(), entries, &prep.model.SimPriority)
 	}
 
 	// highest combined rank across specs

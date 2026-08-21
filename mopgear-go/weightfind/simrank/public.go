@@ -23,6 +23,21 @@ func RankSimsStatisticalForRanged[T weight_types.IRankEntryFlatRange](requiredSi
 	arrayRankToSetSimRankRange(data)
 }
 
+func RankSimsStatisticalForExtendedRanged[T weight_types.IRankEntryExtendedRangeAndSummary](requiredSims []stats.SimType, data []T, simRatios *weight_types.SimPriorityBasic) {
+	for _, simType := range requiredSims {
+		sortGenericWithDeviation(simType, data)
+		arrayRankToSetRangeStatisticalComplicated(simType, data)
+	}
+	complexSimRankRangesToSummaryRange(data, simRatios)
+}
+
+// just used on accuracyPrepare init
+func AccuracyPrepareRankSimsStatisticalExtended(simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []*weight_types.AccuracyInfoPrePrepare) []*weight_types.AccuracyInfoPrepared {
+	simScoringStatistical(simList, priority, inputData)
+	sortSimScores(inputData)
+	return accuracyPrepareCalcHiLo(inputData)
+}
+
 // just used on accuracyPrepare init
 func AccuracyPrepareRankSimsStatistical(simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []*weight_types.AccuracyInfoPrePrepare) []*weight_types.AccuracyInfoPrepared {
 	simScoringStatistical(simList, priority, inputData)
@@ -44,7 +59,7 @@ func RankSimsForRankingSeparated[T weight_types.IRankEntryExtendedSingle](requir
 	}
 }
 
-func RankSimsForRangedRankSeparated[T weight_types.IRankEntryExtendedRange](requiredSims []stats.SimType, inputData []T) {
+func RankSimsForRangedRankSeparated[T weight_types.IRankEntryExtendedRangeInt](requiredSims []stats.SimType, inputData []T) {
 	for _, simType := range requiredSims {
 		sortGenericWithDeviation(simType, inputData)
 		arrayRankToSetRangeStatisticalComplicated(simType, inputData)

@@ -50,19 +50,19 @@ func (r *rankEntrySeparated2) GetSimData() *stats.SimData {
 	return &r.data.SimResult
 }
 
-func (r *rankEntrySeparated2) GetSimRankRangeByType(simType stats.SimType) *util_collection.HiLoInt {
+func (r *rankEntrySeparated2) GetSimRankRangeByType(simType stats.SimType) util_collection.HiLoInt {
 	return r.bySim.GetOrPanic(simType).targetRankRange
 }
 
-func (r *rankEntrySeparated2) SetSimRankRangeByType(simType stats.SimType, targetRankRange *util_collection.HiLoInt) {
+func (r *rankEntrySeparated2) SetSimRankRangeByType(simType stats.SimType, lo int, hi int) {
 	r.bySim.Put(simType, rankDetailSeparated2{
-		targetRankRange: targetRankRange,
+		targetRankRange: util_collection.HiLoInt{Lo: lo, Hi: hi},
 		scoreColumn:     -1,
 	})
 }
 
 type rankDetailSeparated2 struct {
-	targetRankRange *util_collection.HiLoInt
+	targetRankRange util_collection.HiLoInt
 	scoreColumn     util_highs.ColumnIndex
 }
 

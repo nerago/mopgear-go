@@ -32,20 +32,20 @@ func arrayRankToSetSimRankRange[T weight_types.IRankEntryFlatRange](data []T) {
 	}
 }
 
-func arrayRankToSetSimSpecificRankRange[T weight_types.IRankEntryExtendedRange](simType stats.SimType, data []T) {
-	data[0].SetSimRankRangeByType(simType, &util_collection.HiLoInt{Lo: 0, Hi: 0})
-	for rank := 1; rank < len(data); rank++ {
-		if util.FloatsApproxEquals(data[rank].GetSimData().Get(simType), data[rank-1].GetSimData().Get(simType)) {
-			prevRange := data[rank-1].GetSimRankRangeByType(simType)
-			data[rank].SetSimRankRangeByType(simType, prevRange)
-			prevRange.Hi = rank
-		} else {
-			data[rank].SetSimRankRangeByType(simType, &util_collection.HiLoInt{Lo: rank, Hi: rank})
-		}
-	}
-}
+//func arrayRankToSetSimSpecificRankRange[T weight_types.IRankEntryExtendedRange](simType stats.SimType, data []T) {
+//	data[0].SetSimRankRangeByType(simType, &util_collection.HiLoInt{Lo: 0, Hi: 0})
+//	for rank := 1; rank < len(data); rank++ {
+//		if util.FloatsApproxEquals(data[rank].GetSimData().Get(simType), data[rank-1].GetSimData().Get(simType)) {
+//			prevRange := data[rank-1].GetSimRankRangeByType(simType)
+//			data[rank].SetSimRankRangeByType(simType, prevRange)
+//			prevRange.Hi = rank
+//		} else {
+//			data[rank].SetSimRankRangeByType(simType, &util_collection.HiLoInt{Lo: rank, Hi: rank})
+//		}
+//	}
+//}
 
-func arrayRankToSetRangeStatisticalComplicated[T weight_types.IRankEntryExtendedRange](simType stats.SimType, data []T) {
+func arrayRankToSetRangeStatisticalComplicated[T weight_types.IRankEntryExtendedRangeInt](simType stats.SimType, data []T) {
 	for runStart := 0; runStart < len(data); {
 		countChainedRun, countEqualFirstRun := arrayFindChainFromFunc(data, runStart, simType)
 		runStart = arrayApplyChainFunc(data, runStart, countChainedRun, countEqualFirstRun, simType)
@@ -61,50 +61,6 @@ func averageAndStdDevMake[T weight_types.IRankEntry](entry T, simType stats.SimT
 	return averageAndStdDev{
 		average: entry.GetSimData().Get(simType),
 		stdDev:  entry.GetSimData().GetStdDevOrZero(simType),
-	}
-}
-
-func arrayFindChainFromFunc[T weight_types.IRankEntry](data []T, runStart int, simType stats.SimType) (int, int) {
-	countChainedRun := 1
-	countEqualFirstRun := 1
-
-	firstScore := averageAndStdDevMake(data[runStart], simType)
-	prevScore := firstScore
-
-	for check := runStart + 1; check < len(data); check++ {
-		currScore := averageAndStdDevMake(data[check], simType)
-		if equalSimsDetailStatistical(currScore.average, currScore.stdDev, firstScore.average, firstScore.stdDev) {
-			countEqualFirstRun++
-			countChainedRun++
-		} else if equalSimsDetailStatistical(currScore.average, currScore.stdDev, prevScore.average, prevScore.stdDev) {
-			countChainedRun++
-		} else {
-			break
-		}
-		prevScore = currScore
-	}
-
-	return countChainedRun, countEqualFirstRun
-}
-
-func arrayApplyChainFunc[T weight_types.IRankEntryExtendedRange](data []T, runStart int, countChainedRun int, countEqualFirstRun int, simType stats.SimType) int {
-	if countChainedRun == 1 {
-		data[runStart].SetSimRankRangeByType(simType, &util_collection.HiLoInt{Lo: runStart, Hi: runStart})
-		return runStart + 1
-	} else {
-		var end int
-		if countChainedRun == countEqualFirstRun || countChainedRun <= 4 || countEqualFirstRun >= countChainedRun*3/4 {
-			end = runStart + countChainedRun - 1
-		} else {
-			end = runStart + countEqualFirstRun - 1
-		}
-
-		hilo := &util_collection.HiLoInt{Lo: runStart, Hi: end}
-		for i := runStart; i <= end; i++ {
-			data[i].SetSimRankRangeByType(simType, hilo)
-		}
-
-		return end + 1
 	}
 }
 

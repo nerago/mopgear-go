@@ -1,10 +1,6 @@
 package weightfind
 
 import (
-	"cmp"
-	"slices"
-
-	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_collection"
 	"github.com/nerago/mopgear-go/weightfind/simrank"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
@@ -16,7 +12,7 @@ type EvaluateAccuracyPrepared struct {
 	hiLoPool       []util_collection.HiLoInt
 }
 
-func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, simRatios *weight_types.SimPriorityBasic, simStatistical bool) {
+func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, simRatios *weight_types.SimPriorityBasic, simStatistical bool, simStatisticalExtended bool) {
 	data := util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.AccuracyInfoPrePrepare {
 		return &weight_types.AccuracyInfoPrePrepare{
 			DataSim:  &input.SimResult,
@@ -26,10 +22,12 @@ func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, s
 	})
 
 	requiredSims := simRatios.SimTypes()
-	if !simStatistical {
-		ea.prepared = simrank.AccuracyPrepareRankSimsBasic(requiredSims, simRatios, data)
-	} else {
+	if simStatisticalExtended {
 		ea.prepared = simrank.AccuracyPrepareRankSimsStatistical(requiredSims, simRatios, data)
+	} else if simStatistical {
+		ea.prepared = simrank.AccuracyPrepareRankSimsStatistical(requiredSims, simRatios, data)
+	} else {
+		ea.prepared = simrank.AccuracyPrepareRankSimsBasic(requiredSims, simRatios, data)
 	}
 
 	ea.statRankRanges = make([]*util_collection.HiLoInt, len(data))
@@ -94,19 +92,6 @@ func evaluateWeightGeneral[W weight_types.IWeight](ea *EvaluateAccuracyPrepared,
 	//	}
 	//}
 
-	slices.SortFunc(prepared, func(a, b *weight_types.AccuracyInfoPrepared) int {
-		return cmp.Compare(a.StatScore, b.StatScore)
-	})
-	prepared[0].StatRankRange = &util_collection.HiLoInt{Lo: 0, Hi: 0}
-	for i := 1; i < len(prepared); i++ {
-		if util.FloatsApproxEquals(prepared[i].StatScore, prepared[i-1].StatScore) {
-			prevRange := prepared[i-1].StatRankRange
-			prepared[i].StatRankRange = prevRange
-			prevRange.Hi = i
-		} else {
-			prepared[i].StatRankRange = &util_collection.HiLoInt{Lo: i, Hi: i}
-		}
-	}
-
+	deriveStatRanks(prepared)
 	return calcAverageDifference(prepared)
 }

@@ -400,7 +400,7 @@ func compareAccuracy(printer *util.PrintRecorder) {
 	weight1.Put(stats.Stat_Parry, 0.0532)
 
 	//printer.Printf("accuracy1 = %f\n", weightfind.EvaluateAccuracy(&weight1, targetRatio.SimTypes(), &targetRatio, testData))
-	printer.Printf("accuracy1 stat = %f\n", weightfind.EvaluateAccuracyStatistical(&weight1, targetRatio.SimTypes(), &targetRatio, testData))
+	printer.Printf("accuracy1 stat = %f\n", weightfind.EvaluateAccuracyStatisticalExtended(&weight1, targetRatio.SimTypes(), &targetRatio, testData))
 
 	prep := weightfind.EvaluateAccuracyPrepared{}
 	prep.Init(testData, &targetRatio, true)

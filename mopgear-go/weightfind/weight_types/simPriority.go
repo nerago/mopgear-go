@@ -1,6 +1,8 @@
 package weight_types
 
 import (
+	"iter"
+
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/util"
 )
@@ -50,6 +52,10 @@ func (sr *SimPriorityBasic) GetOrPanic(simType stats.SimType) float64 {
 
 func (sr *SimPriorityBasic) SimTypes() []stats.SimType {
 	return sr.content.KeySlice()
+}
+
+func (sr *SimPriorityBasic) SeqTypeValue() iter.Seq2[stats.SimType, float64] {
+	return sr.content.SeqKeyValue()
 }
 
 func (sr *SimPriorityBasic) Equals(other *SimPriorityBasic) bool {

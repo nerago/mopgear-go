@@ -1,6 +1,8 @@
 package weight_types
 
 import (
+	"iter"
+
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/util/util_collection"
 )
@@ -9,9 +11,13 @@ type IRankEntry interface {
 	GetSimData() *stats.SimData
 }
 
-type IRankEntryFlat interface {
+type IRankEntryFlatRead interface {
 	IRankEntry
 	GetSimScore() float64
+}
+
+type IRankEntryFlat interface {
+	IRankEntryFlatRead
 	ResetSimScore()
 	IncrementSimScore(add float64)
 }
@@ -44,17 +50,34 @@ type IRankEntryExtendedSingle interface {
 	SetSimRankByType(simType stats.SimType, targetRank int)
 }
 
-type IRankEntryExtendedRange interface {
+type IRankEntryExtendedRangeInt interface {
 	IRankEntry
-	GetSimRankRangeByType(simType stats.SimType) *util_collection.HiLoInt
-	SetSimRankRangeByType(simType stats.SimType, targetRank *util_collection.HiLoInt)
+	SetSimRankRangeByType(simType stats.SimType, lo int, hi int)
 }
 
-type IRankBothRange interface {
-	GetSimRankRange() *util_collection.HiLoInt
-	GetStatRankRange() *util_collection.HiLoInt
+type IRankEntryExtendedRangeFloat interface {
+	IRankEntry
+	GetSimRankRangeFloatByType(simType stats.SimType) util_collection.HiLoFloat
+	SeqSimRankRangeFloatByType() iter.Seq2[stats.SimType, util_collection.HiLoFloat]
+	SetSimRankRangeFloatByType(simType stats.SimType, lo float64, hi float64)
+}
+
+type IRankEntryExtendedRangeAndSummary interface {
+	IRankEntryRange
+	IRankEntryExtendedRangeInt
+	IRankEntryExtendedRangeFloat
+}
+
+type IRankStatFlatRange interface {
 	GetStatScore() float64
-	GetSimScore() float64
+	SetStatRankRange(targetRange *util_collection.HiLoInt)
+	GetStatRankRange() *util_collection.HiLoInt
+}
+
+type IRankDoubleFlatRange interface {
+	IRankEntryFlatRead
+	IRankStatFlatRange
+	GetSimRankRange() *util_collection.HiLoInt
 }
 
 type RankStatWeightsCommon struct {
@@ -62,6 +85,8 @@ type RankStatWeightsCommon struct {
 	SimScore   float64
 	TargetRank int
 }
+
+var _ IRankEntryFlatSingle = &RankStatWeightsCommon{}
 
 func (rc *RankStatWeightsCommon) GetSimData() *stats.SimData {
 	return &rc.Data.SimResult
