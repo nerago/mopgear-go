@@ -52,10 +52,8 @@ func arrayApplyChainFunc[T weight_types.IRankEntryExtendedRangeInt](data []T, ru
 	}
 }
 
-func complexSimRankRangesToSummaryRange[T weight_types.IRankEntryExtendedRangeAndSummary](dataSlice []T, ratios *weight_types.SimPriorityBasic) {
-	multiplyFloatRangesByRatio(dataSlice, ratios)
+func sortSimRankComplex[T weight_types.IRankEntryExtendedRangeFloat](dataSlice []T) {
 	slices.SortFunc(dataSlice, compareForComplexSummary)
-	arrayRankToSetSimRankRangeComplexCompare(dataSlice)
 }
 
 func multiplyFloatRangesByRatio[T weight_types.IRankEntryExtendedRangeFloat](dataSlice []T, ratios *weight_types.SimPriorityBasic) {
@@ -98,36 +96,14 @@ func diffSignToCmp(totalDiff float64) int {
 
 func arrayRankToSetSimRankRangeComplexCompare[T weight_types.IRankEntryExtendedRangeAndSummary](data []T) {
 	data[0].SetSimRankRange(&util_collection.HiLoInt{Lo: 0, Hi: 0})
-	for rank := 1; rank < len(data); rank++ {
-		diff := complexSummaryDiff(data[rank], data[rank-1])
+	for i := 1; i < len(data); i++ {
+		diff := complexSummaryDiff(data[i], data[i-1])
 		if util.FloatEqualsZero(diff) {
-			prevRange := data[rank-1].GetSimRankRange()
-			data[rank].SetSimRankRange(prevRange)
-			prevRange.Hi = rank
+			prevRange := data[i-1].GetSimRankRange()
+			data[i].SetSimRankRange(prevRange)
+			prevRange.Hi = i
 		} else {
-			data[rank].SetSimRankRange(&util_collection.HiLoInt{Lo: rank, Hi: rank})
+			data[i].SetSimRankRange(&util_collection.HiLoInt{Lo: i, Hi: i})
 		}
 	}
 }
-
-//type rangeAndPointer[T weight_types.IRankEntryExtendedRangeAndSummary] struct {
-//	hilo util_collection.HiLoFloat
-//	data T
-//}
-//func groupSimRanksToSummary[T weight_types.IRankEntryExtendedRangeAndSummary](dataSlice []T, requiredSims []stats.SimType, ratios *weight_types.SimPriorityBasic) {
-//	//ranksBySim := stats.SimTypeMap[[]rangeAndPointer[T]]{}
-//	for _, simType := range requiredSims {
-//		ratio := ratios.GetOrPanic(simType)
-//		itemsForType := util_collection.MapSliceAsNew_NoPointer(dataSlice, func(data T) rangeAndPointer[T] {
-//			currRange := data.GetSimRankRangeFloatByType(simType)
-//			return rangeAndPointer[T]{
-//				data: data,
-//				hilo: util_collection.HiLoFloat{
-//					Lo: float64(intRange.Lo) * ratio,
-//					Hi: float64(intRange.Hi) * ratio,
-//				},
-//			}
-//		})
-//		ranksBySim.Put(simType, itemsForType)
-//	}
-//}

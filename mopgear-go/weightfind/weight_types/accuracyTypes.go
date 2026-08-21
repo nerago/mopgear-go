@@ -17,6 +17,10 @@ type AccuracyInfo struct {
 
 type AccuracyInfoExtended struct {
 	AccuracyInfo
+	AccuracyExtension
+}
+
+type AccuracyExtension struct {
 	SimRankByType stats.SimTypeMap[util_collection.HiLoFloat]
 }
 
@@ -56,27 +60,19 @@ func (a *AccuracyInfo) GetStatRankRange() *util_collection.HiLoInt {
 	return a.StatRankRange
 }
 
-//func (a *AccuracyInfoExtended) GetSimRankRangeByType(simType stats.SimType) *util_collection.HiLoInt {
-//	return a.SimRankByType.GetOrNilValue(simType)
-//}
-//
-//func (a *AccuracyInfoExtended) SetSimRankRangeByType(simType stats.SimType, targetRank *util_collection.HiLoInt) {
-//	a.SimRankByType.Put(simType, targetRank)
-//}
-
-func (a *AccuracyInfoExtended) GetSimRankRangeFloatByType(simType stats.SimType) util_collection.HiLoFloat {
+func (a *AccuracyExtension) GetSimRankRangeFloatByType(simType stats.SimType) util_collection.HiLoFloat {
 	return a.SimRankByType.GetOrNilValue(simType)
 }
 
-func (a *AccuracyInfoExtended) SeqSimRankRangeFloatByType() iter.Seq2[stats.SimType, util_collection.HiLoFloat] {
+func (a *AccuracyExtension) SeqSimRankRangeFloatByType() iter.Seq2[stats.SimType, util_collection.HiLoFloat] {
 	return a.SimRankByType.SeqKeyValue()
 }
 
-func (a *AccuracyInfoExtended) SetSimRankRangeByType(simType stats.SimType, lo int, hi int) {
+func (a *AccuracyExtension) SetSimRankRangeByType(simType stats.SimType, lo int, hi int) {
 	a.SimRankByType.Put(simType, util_collection.HiLoFloat{Lo: float64(lo), Hi: float64(hi)})
 }
 
-func (a *AccuracyInfoExtended) SetSimRankRangeFloatByType(simType stats.SimType, lo float64, hi float64) {
+func (a *AccuracyExtension) SetSimRankRangeFloatByType(simType stats.SimType, lo float64, hi float64) {
 	a.SimRankByType.Put(simType, util_collection.HiLoFloat{Lo: lo, Hi: hi})
 }
 
@@ -84,6 +80,15 @@ type AccuracyInfoPrePrepare struct {
 	SimScore float64
 	DataSim  *stats.SimData
 	DataStat *stats.StatBlock
+}
+
+type AccuracyInfoPrePrepareExtended struct {
+	AccuracyInfoPrePrepare
+	AccuracyExtension
+}
+
+func (a *AccuracyInfoPrePrepare) GetStatData() *stats.StatBlock {
+	return a.DataStat
 }
 
 func (a *AccuracyInfoPrePrepare) GetSimData() *stats.SimData {
@@ -107,20 +112,20 @@ type AccuracyInfoPrepared struct {
 	Stats         *stats.StatBlock
 	SimRankRange  *util_collection.HiLoInt
 	StatRankRange *util_collection.HiLoInt
-	Prep          *AccuracyInfoPrePrepare
+	//Prep          *AccuracyInfoPrePrepare
 }
 
 func (a *AccuracyInfoPrepared) GetStatScore() float64 {
 	return a.StatScore
 }
 
-func (a *AccuracyInfoPrepared) GetSimScore() float64 {
-	return a.Prep.SimScore
-}
-
-func (a *AccuracyInfoPrepared) GetSimData() *stats.SimData {
-	return a.Prep.DataSim
-}
+//func (a *AccuracyInfoPrepared) GetSimScore() float64 {
+//	return a.Prep.SimScore
+//}
+//
+//func (a *AccuracyInfoPrepared) GetSimData() *stats.SimData {
+//	return a.Prep.DataSim
+//}
 
 func (a *AccuracyInfoPrepared) GetSimRankRange() *util_collection.HiLoInt {
 	return a.SimRankRange

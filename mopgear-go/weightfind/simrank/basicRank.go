@@ -16,10 +16,24 @@ func simScoringBasic[T weight_types.IRankEntryFlat](simList []stats.SimType, pri
 	}
 }
 
+func simScoringSeparated[T weight_types.IRankEntryExtendedSingle](simList []stats.SimType, inputData []T) {
+	for _, simType := range simList {
+		sortGenericBasic(simType, inputData)
+		arrayRankToSetSimSpecificSimRank(simType, inputData)
+	}
+}
+
 func simScoringStatistical[T weight_types.IRankEntryFlat](simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []T) {
 	for _, simType := range simList {
 		sortGenericWithDeviation(simType, inputData)
 		arrayRankToIncrementSimScore(simType, priority, inputData)
+	}
+}
+
+func simScoringStatisticalComplicated[T weight_types.IRankEntryExtendedRangeInt](simList []stats.SimType, data []T) {
+	for _, simType := range simList {
+		sortGenericWithDeviation(simType, data)
+		arrayRankToSetRangeStatisticalComplicated(simType, data)
 	}
 }
 
