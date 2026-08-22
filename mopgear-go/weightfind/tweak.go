@@ -15,6 +15,7 @@ const (
 
 func WeightTweakerWithLogging(startWeight weight_types.Weight1Basic, weightStats []stats.StatType, targetRatio *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput, printer *util.PrintRecorder) (weight_types.Weight1Basic, float64) {
 	updatedWeight, updatedAccuracy := weightTweakerInternalLogged(startWeight, c_tweak_start, weightStats, targetRatio, inputData, printer)
+	updatedWeight.NormalizeForBase(weightStats)
 	return updatedWeight, updatedAccuracy
 }
 

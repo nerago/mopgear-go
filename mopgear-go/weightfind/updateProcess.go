@@ -46,6 +46,7 @@ const (
 type WeightUpdateProcess struct {
 	simSpeed     simulate.WowSim_RunSize
 	forceSkipSim bool
+	skipSolve    bool
 	timeoutEach  int
 	printer      *util.PrintRecorder
 	specs        []*WeightSpec
@@ -88,9 +89,10 @@ type weightChoice struct {
 	weightOrig    weight_types.IWeight
 }
 
-func (wup *WeightUpdateProcess) Init(simSpeed simulate.WowSim_RunSize, forceSkipSim bool, timeoutEach int, printer *util.PrintRecorder) {
+func (wup *WeightUpdateProcess) Init(simSpeed simulate.WowSim_RunSize, forceSkipSim bool, skipSolve bool, timeoutEach int, printer *util.PrintRecorder) {
 	wup.simSpeed = simSpeed
 	wup.forceSkipSim = forceSkipSim
+	wup.skipSolve = skipSolve
 	wup.timeoutEach = timeoutEach
 	wup.printer = printer
 }
@@ -175,13 +177,12 @@ func (spec *WeightSpec) updateSpec(tracker *util.TrackProgress, cancel util_asyn
 	spec.summary.WriteString(spec.Label)
 	spec.summary.WriteString(" ::::: ")
 
-	// LOAD OLD WEIGHT VALUES
 	spec.loadOldWeights()
 
-	spec.runSolvers(tracker, cancel)
-
-	// TWEAK EACH
-	spec.tweakEachWeight()
+	if !spec.process.skipSolve {
+		spec.runSolvers(tracker, cancel)
+		spec.tweakEachWeight()
+	}
 
 	spec.reportAndWriteWeights()
 
@@ -370,6 +371,7 @@ func (spec *WeightSpec) evaluateWeight(choiceName string, weight1 *weight_types.
 	spec.process.printer.Println(weightOrig.String())
 	tools.WriteWeightString(weightOrig, spec.process.printer)
 
+	// TODO also check for the 1 0 0 0
 	if weight1.IsEmpty() || weightOrig.IsEmpty() {
 		spec.process.printer.Printf("Weights accuracy %s %s EMPTY a1=%f a1s=%f aX=%f aXs=%f\n", spec.Label, choiceName, accuracy1, accuracy1Stat, accuracyX, accuracyXStat)
 		spec.addChoice(weightChoice{choiceName: choiceName, weight: *weight1, pawnString: pawnString, weightResult: weightResult})
