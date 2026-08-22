@@ -8,7 +8,7 @@ import (
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
-func sortGenericWithDeviation[T weight_types.IRankEntry](simType stats.SimType, inputData []T) {
+func sortGenericSimStatistical[T weight_types.IRankEntry](simType stats.SimType, inputData []T) {
 	switch simType {
 	case stats.Sim_DPS:
 		slices.SortFunc(inputData, func(a, b T) int {
@@ -35,10 +35,12 @@ func sortGenericWithDeviation[T weight_types.IRankEntry](simType stats.SimType, 
 		slices.SortFunc(inputData, func(a, b T) int {
 			return cmp.Compare(b.GetSimData().Get(stats.Sim_DEATH), a.GetSimData().Get(stats.Sim_DEATH))
 		})
+	default:
+		panic("unknown type")
 	}
 }
 
-func sortGenericBasic[T weight_types.IRankEntry](simType stats.SimType, inputData []T) {
+func sortGenericSimAverages[T weight_types.IRankEntry](simType stats.SimType, inputData []T) {
 	switch simType {
 	case stats.Sim_DPS:
 		slices.SortFunc(inputData, func(a, b T) int {
@@ -64,5 +66,7 @@ func sortGenericBasic[T weight_types.IRankEntry](simType stats.SimType, inputDat
 		slices.SortFunc(inputData, func(a, b T) int {
 			return cmp.Compare(b.GetSimData().Get(stats.Sim_DEATH), a.GetSimData().Get(stats.Sim_DEATH))
 		})
+	default:
+		panic("unknown type")
 	}
 }

@@ -30,13 +30,16 @@ const c_accuracy_statistical_critical_value = 1.4
 
 // values are more sensible and as expected without the iterations division which may be redundant anyway since we usually have the same sample size
 func compareSimsStatisticalByType(a *stats.SimData, b *stats.SimData, simType stats.SimType) int {
-	averageA, _, _, stdDevA, hasDetailA := a.GetDetailed(simType)
-	averageB, _, _, stdDevB, hasDetailB := b.GetDetailed(simType)
-	//iterationsA, iterationsB := float64(a.SimIterations), float64(b.SimIterations)
-
-	if !hasDetailA || !hasDetailB {
+	detailA := a.GetDetailed2(simType)
+	detailB := b.GetDetailed2(simType)
+	if detailA == nil || detailB == nil {
 		panic("missing sim detail")
 	}
+
+	averageA := a.Get(simType)
+	averageB := b.Get(simType)
+	stdDevA := detailA.StdDev
+	stdDevB := detailB.StdDev
 
 	if equalSimsDetailStatistical(averageA, stdDevA, averageB, stdDevB) {
 		return 0
@@ -44,6 +47,22 @@ func compareSimsStatisticalByType(a *stats.SimData, b *stats.SimData, simType st
 		return cmp.Compare(averageA, averageB)
 	}
 }
+
+//func compareSimsStatisticalByTypeOrig(a *stats.SimData, b *stats.SimData, simType stats.SimType) int {
+//	averageA, _, _, stdDevA, hasDetailA := a.GetDetailed(simType)
+//	averageB, _, _, stdDevB, hasDetailB := b.GetDetailed(simType)
+//	//iterationsA, iterationsB := float64(a.SimIterations), float64(b.SimIterations)
+//
+//	if !hasDetailA || !hasDetailB {
+//		panic("missing sim detail")
+//	}
+//
+//	if equalSimsDetailStatistical(averageA, stdDevA, averageB, stdDevB) {
+//		return 0
+//	} else {
+//		return cmp.Compare(averageA, averageB)
+//	}
+//}
 
 func equalSimsDetailStatistical(averageA, stdDevA, averageB, stdDevB float64) bool {
 	if stdDevA == 0 || stdDevB == 0 {

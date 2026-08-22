@@ -2,7 +2,6 @@ package weightfind
 
 import (
 	"cmp"
-	"fmt"
 	"reflect"
 	"slices"
 
@@ -92,21 +91,9 @@ func deriveStatRanks[A weight_types.IRankStatFlatRange](data []A) {
 }
 
 func calcAverageDifference[A weight_types.IRankDoubleFlatRange](data []A) float64 {
-	return calcAverageDifferenceDebug(data)
+	return calcAverageDifferenceNormal2(data)
 }
 
-func calcAverageDifferenceNormal[A weight_types.IRankDoubleFlatRange](data []A) float64 {
-	// compute average difference between stat rank and sim rank
-	dataLength := float64(len(data))
-	sumRatioScores := 0.0
-	for i := range len(data) {
-		entry := data[i]
-		diff := entry.GetSimRankRange().Gap(*entry.GetStatRankRange())
-		ratioScore := (dataLength - float64(diff)) / dataLength
-		sumRatioScores += ratioScore
-	}
-	return checkValue(100.0 * sumRatioScores / dataLength)
-}
 func calcAverageDifferenceNormal2[A weight_types.IRankDoubleFlatRange](data []A) float64 {
 	// compute average difference between stat rank and sim rank
 	dataLength := float64(len(data))
@@ -121,29 +108,29 @@ func calcAverageDifferenceNormal2[A weight_types.IRankDoubleFlatRange](data []A)
 	return 100.0 * (1.0 - relative)
 }
 
-func calcAverageDifferenceDebug[A weight_types.IRankDoubleFlatRange](data []A) float64 {
-	// compute average difference between stat rank and sim rank
-	sumRatioScores := 0.0
-	for i := range len(data) {
-		entry := data[i]
-		var fullLength int = len(data)
-		diff := (*entry.GetSimRankRange()).Gap(*entry.GetStatRankRange())
-		ratioScore := float64(fullLength-diff) / float64(fullLength)
-
-		fmt.Printf("%d: %f %d-%d %f %d-%d %f\n", i,
-			entry.GetSimScore(),
-			entry.GetSimRankRange().Lo, entry.GetSimRankRange().Hi,
-			entry.GetStatScore(),
-			entry.GetStatRankRange().Lo, entry.GetStatRankRange().Hi,
-			ratioScore,
-		)
-		sumRatioScores += ratioScore
-	}
-	fmt.Printf("cad %f %d %f\n", sumRatioScores, len(data),
-		100.0*sumRatioScores/float64(len(data)),
-	)
-	return checkValue(100.0 * sumRatioScores / float64(len(data)))
-}
+//func calcAverageDifferenceDebug[A weight_types.IRankDoubleFlatRange](data []A) float64 {
+//	// compute average difference between stat rank and sim rank
+//	sumRatioScores := 0.0
+//	for i := range len(data) {
+//		entry := data[i]
+//		var fullLength int = len(data)
+//		diff := (*entry.GetSimRankRange()).Gap(*entry.GetStatRankRange())
+//		ratioScore := float64(fullLength-diff) / float64(fullLength)
+//
+//		fmt.Printf("%d:  %d-%d %f %d-%d %f\n", i,
+//			//entry.GetSimScore(),
+//			entry.GetSimRankRange().Lo, entry.GetSimRankRange().Hi,
+//			entry.GetStatScore(),
+//			entry.GetStatRankRange().Lo, entry.GetStatRankRange().Hi,
+//			ratioScore,
+//		)
+//		sumRatioScores += ratioScore
+//	}
+//	fmt.Printf("cad %f %d %f\n", sumRatioScores, len(data),
+//		100.0*sumRatioScores/float64(len(data)),
+//	)
+//	return checkValue(100.0 * sumRatioScores / float64(len(data)))
+//}
 
 func checkValue(value float64) float64 {
 	if value < 0 || value >= 100.0 {

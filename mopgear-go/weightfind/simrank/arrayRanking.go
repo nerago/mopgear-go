@@ -35,6 +35,7 @@ func arrayRankToSetSimRankRange[T weight_types.IRankEntryFlatRange](data []T) {
 func arrayRankToSetRangeStatisticalComplicated[T weight_types.IRankEntryExtendedRangeInt](simType stats.SimType, data []T) {
 	for runStart := 0; runStart < len(data); {
 		countChainedRun, countEqualFirstRun := arrayFindChainFromFunc(data, runStart, simType)
+		//fmt.Printf("chain %s %d %d %d\n", simType.Name(), runStart, countChainedRun, countEqualFirstRun)
 		runStart = arrayApplyChainFunc(data, runStart, countChainedRun, countEqualFirstRun, simType)
 	}
 }

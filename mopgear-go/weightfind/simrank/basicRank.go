@@ -10,28 +10,34 @@ import (
 
 func simScoringBasic[T weight_types.IRankEntryFlat](simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []T) {
 	for _, simType := range simList {
-		sortGenericBasic(simType, inputData)
+		sortGenericSimAverages(simType, inputData)
 		arrayRankToIncrementSimScore(simType, priority, inputData)
 	}
 }
 
 func simScoringSeparated[T weight_types.IRankEntryExtendedSingle](simList []stats.SimType, inputData []T) {
 	for _, simType := range simList {
-		sortGenericBasic(simType, inputData)
+		sortGenericSimAverages(simType, inputData)
 		arrayRankToSetSimSpecificSimRank(simType, inputData)
 	}
 }
 
 func simScoringStatistical[T weight_types.IRankEntryFlat](simList []stats.SimType, priority *weight_types.SimPriorityBasic, inputData []T) {
 	for _, simType := range simList {
-		sortGenericWithDeviation(simType, inputData)
+		sortGenericSimStatistical(simType, inputData)
 		arrayRankToIncrementSimScore(simType, priority, inputData)
 	}
 }
 
 func simScoringStatisticalComplicated[T weight_types.IRankEntryExtendedRangeInt](simList []stats.SimType, data []T) {
 	for _, simType := range simList {
-		sortGenericWithDeviation(simType, data)
+		sortGenericSimAverages(simType, data)
+		// sortGenericSimStatistical can mean averages out of order, and chains only work consistently when they are
+
+		//for i, dat := range data {
+		//	fmt.Printf("order %s %d %f %f\n", simType.Name(), i, dat.GetSimData().Get(simType), dat.GetSimData().GetStdDevOrZero(simType))
+		//}
+
 		arrayRankToSetRangeStatisticalComplicated(simType, data)
 	}
 }

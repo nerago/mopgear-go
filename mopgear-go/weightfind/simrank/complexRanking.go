@@ -97,7 +97,9 @@ func complexSummaryDiff[T weight_types.IRankEntryExtendedRangeFloat](one T, two 
 }
 
 func diffSignToCmp(totalDiff float64) int {
-	if totalDiff < 0 {
+	if util.FloatEqualsZero(totalDiff) {
+		return 0
+	} else if totalDiff < 0 {
 		return -1
 	} else if totalDiff > 0 {
 		return 1

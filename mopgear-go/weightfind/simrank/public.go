@@ -34,7 +34,7 @@ func RankSimsStatisticalForExtendedRanged[T weight_types.IRankEntryExtendedRange
 func AccuracyPrepareRankSimsStatisticalExtended(simList []stats.SimType, priority *weight_types.SimPriorityBasic, data []*weight_types.AccuracyInfoPrePrepareExtended) []*weight_types.AccuracyInfoPrepared {
 	simScoringStatisticalComplicated(simList, data)
 	multiplyFloatRangesByRatio(data, priority)
-	sortSimScores(data)
+	sortSimRankComplex(data)
 	return accuracyPrepareCalcRangeComplicated(data)
 }
 
