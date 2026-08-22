@@ -3,8 +3,8 @@ package bonus_set
 import (
 	"math/rand/v2"
 
-	"github.com/nerago/mopgear-go/gear_model"
 	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/stats"
 )
 
 // func BenchmarkCalcBonusFull(test *testing.B) {
@@ -39,6 +39,14 @@ import (
 // 	resultFloat = v
 // }
 
+var g_setBonusSlots = []items.SlotEquip{
+	items.Equip_Head,
+	items.Equip_Chest,
+	items.Equip_Hand,
+	items.Equip_Leg,
+	items.Equip_Shoulder,
+}
+
 func makeEquipFullForBonus() *items.FullEquipMap {
 	equip := items.FullEquipMap{}
 	for slot := range equip {
@@ -57,11 +65,19 @@ func makeEquipFullForBonus() *items.FullEquipMap {
 
 func makeItemFull() *items.FullItem {
 	id := rand.Uint32N(10000)
-	item := items.FullItem_ForTest(items.ItemId(id), items.Item_Head, gear_model.randStatBlock())
+	item := items.FullItem_ForTest(items.ItemId(id), items.Item_Head, randStatBlock())
 	return &item
 }
 
 func makeItemForFullBonus(id uint32) *items.FullItem {
-	item := items.FullItem_ForTest(items.ItemId(id), items.Item_Head, gear_model.randStatBlock())
+	item := items.FullItem_ForTest(items.ItemId(id), items.Item_Head, randStatBlock())
 	return &item
+}
+
+func randStatBlock() stats.StatBlock {
+	block := stats.StatBlock{}
+	for i := range block {
+		block[i] = rand.Uint32()
+	}
+	return block
 }

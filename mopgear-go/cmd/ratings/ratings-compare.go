@@ -665,7 +665,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	reportByAlgorithm := make(map[string]algorithmReport)
 	for label, weightResult := range outputByAlgorithm.SeqWithKeys_ThreadSafeCopy() {
 		accuracy := weightfind.EvaluateAccuracy(weightResult.Weight, requiredSims, &targetRatio, mixedInputDataFull)
-		accuracyStat := weightfind.EvaluateAccuracyStatistical(weightResult.Weight, requiredSims, &targetRatio, mixedInputDataFull)
+		accuracyStat := weightfind.EvaluateAccuracyStatisticalExtended(weightResult.Weight, requiredSims, &targetRatio, mixedInputDataFull)
 		weight1 := weightResult.AsWeight1()
 		reportByAlgorithm[label] = algorithmReport{
 			weight1,
@@ -724,7 +724,7 @@ func compareReport(requiredStats []stats.StatType, resultOrder []string, reportB
 				row = append(row, strconv.FormatFloat(value, 'f', 4, 64))
 			}
 			accuracy = weightfind.EvaluateAccuracy(report.weight1, requiredSims, &targetRatio, mixedInputDataFull)
-			accuracyStat = weightfind.EvaluateAccuracyStatistical(report.weight1, requiredSims, &targetRatio, mixedInputDataFull)
+			accuracyStat = weightfind.EvaluateAccuracyStatisticalExtended(report.weight1, requiredSims, &targetRatio, mixedInputDataFull)
 		} else {
 			for range requiredStats {
 				row = append(row, "")

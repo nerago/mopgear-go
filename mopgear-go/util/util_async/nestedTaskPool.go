@@ -157,7 +157,7 @@ func (child *NestedTaskPoolChild) Go(run func()) {
 	defer child.mutex.Unlock()
 
 	task := &internalTask{child, run}
-	child.queue = append(child.queue)
+	child.queue = append(child.queue, task)
 	child.pool.taskAdded(task)
 }
 

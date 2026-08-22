@@ -5,9 +5,9 @@ import (
 	"math/rand/v2"
 	"testing"
 
-	"github.com/nerago/mopgear-go/gear_model"
 	. "github.com/nerago/mopgear-go/items"
 	. "github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
 type loopedFetch struct {
@@ -33,10 +33,10 @@ func makeEquipFetch() loopedFetch {
 	return fetch
 }
 
-func makeEquipFetch2(a, b *SetBonus) loopedFetch {
-	allInfo := []BonusLookup{}
-	allInfo = append(allInfo, a.activeSets...)
-	allInfo = append(allInfo, b.activeSets...)
+func makeEquipFetch2(a, b *SpecSetsEnable) loopedFetch {
+	var allInfo []PreparedBonus
+	allInfo = append(allInfo, a.EnabledSets...)
+	allInfo = append(allInfo, b.EnabledSets...)
 
 	fetch := loopedFetch{}
 	for index1 := range allInfo {
@@ -51,27 +51,38 @@ func makeEquipFetch2(a, b *SetBonus) loopedFetch {
 	return fetch
 }
 
-func makeSetBonuses() (SetBonus, SetBonus, SetBonus) {
-	return SetBonus_Empty(), SetBonus_Named("White Tiger Plate"), SetBonus_ForSpec(Spec_PaladinRet, OptimiseGoal_Dps)
+var priority = weight_types.SimPriorityBasic_Make(
+	Sim_DPS, 0.01,
+	Sim_DEATH, 0.32,
+	Sim_TMI, 0.17,
+	Sim_DTPS, 0.50,
+)
+
+func makeSpecSetsEnables() (*SpecSetsEnable, *SpecSetsEnable, *SpecSetsEnable) {
+	return SpecSetsEnableNone(),
+		SpecSetsEnableNamed(new(priority), "White Tiger Plate"),
+		SpecSetsEnableForSpec_AllowFallback(Spec_PaladinRet, OptimiseGoal_Dps, true, new(priority))
 }
 
+var resultFloat float64
+
 func BenchmarkCalcBonusSolve(test *testing.B) {
-	a, b, c := makeSetBonuses()
+	a, b, c := makeSpecSetsEnables()
 	var v float64
 
 	equipFetch := makeEquipFetch()
 
 	for test.Loop() {
 		equip := equipFetch.next()
-		v += a.CalcBonusSolve(equip)
-		v += b.CalcBonusSolve(equip)
-		v += c.CalcBonusSolve(equip)
+		v += a.CalcBonusSolveFlat(equip)
+		v += b.CalcBonusSolveFlat(equip)
+		v += c.CalcBonusSolveFlat(equip)
 	}
-	gear_model.resultFloat = float64(v)
+	resultFloat = v
 }
 
 // func BenchmarkCalcBonusSolveC(test *testing.B) {
-// 	a, b, c := makeSetBonuses()
+// 	a, b, c := makeSpecSetsEnablees()
 // 	var v float32
 
 // 	equipFetch := makeEquipFetch()
@@ -85,7 +96,7 @@ func BenchmarkCalcBonusSolve(test *testing.B) {
 // 	resultFloat = v
 // }
 // func BenchmarkCalcBonusSolveC0(test *testing.B) {
-// 	a, b, c := makeSetBonuses()
+// 	a, b, c := makeSpecSetsEnablees()
 // 	var v float32
 
 // 	equipFetch := makeEquipFetch()
@@ -100,7 +111,7 @@ func BenchmarkCalcBonusSolve(test *testing.B) {
 // }
 
 // func BenchmarkCalcBonusGeneric(test *testing.B) {
-// 	a, b, c := makeSetBonuses()
+// 	a, b, c := makeSpecSetsEnablees()
 // 	var v float32
 
 // 	equipFetch := makeEquipFetch()
@@ -115,7 +126,7 @@ func BenchmarkCalcBonusSolve(test *testing.B) {
 // }
 
 // func BenchmarkCalcBonusSolveUseAssem(test *testing.B) {
-// 	a, b, c := makeSetBonuses()
+// 	a, b, c := makeSpecSetsEnablees()
 // 	var v float32
 
 // 	equipFetch := makeEquipFetch()
@@ -129,7 +140,7 @@ func BenchmarkCalcBonusSolve(test *testing.B) {
 // 	resultFloat = v
 // }
 // func BenchmarkCalcBonusSolveAssemAssumeNonNull(test *testing.B) {
-// 	a, b, c := makeSetBonuses()
+// 	a, b, c := makeSpecSetsEnablees()
 // 	var v float32
 
 // 	equipFetch := makeEquipFetch()
@@ -144,7 +155,7 @@ func BenchmarkCalcBonusSolve(test *testing.B) {
 // }
 
 // func BenchmarkCalcBonusSolveAssemAssumeNonNullWithCases(test *testing.B) {
-// 	a, b, c := makeSetBonuses()
+// 	a, b, c := makeSpecSetsEnablees()
 // 	var v float32
 
 // 	equipFetch := makeEquipFetch()
@@ -159,18 +170,18 @@ func BenchmarkCalcBonusSolve(test *testing.B) {
 // }
 
 func TestCalcBonusCompared(test *testing.T) {
-	a, b, c := makeSetBonuses()
+	a, b, c := makeSpecSetsEnables()
 
-	equipFetch := makeEquipFetch2(&b, &c)
+	equipFetch := makeEquipFetch2(b, c)
 
-	sets := []*SetBonus{&a, &b, &c}
+	sets := []*SpecSetsEnable{a, b, c}
 
-	impls := []func(*SetBonus, *SolvableEquipMap) float64{
-		(*SetBonus).CalcBonusSolve,
-		// (*SetBonus).CalcBonusSolveUseAssem,
-		// (*SetBonus).CalcBonusSolveAssemAssumeNonNull,
-		// (*SetBonus).CalcBonusSolveAssemAssumeNonNullWithCases,
-		// func(s *SetBonus, e *SolvableEquipMap) float32 { return s.CalcBonusGeneric(e) },
+	impls := []func(*SpecSetsEnable, *SolvableEquipMap) float64{
+		(*SpecSetsEnable).CalcBonusSolveFlat,
+		// (*SpecSetsEnable).CalcBonusSolveUseAssem,
+		// (*SpecSetsEnable).CalcBonusSolveAssemAssumeNonNull,
+		// (*SpecSetsEnable).CalcBonusSolveAssemAssumeNonNullWithCases,
+		// func(s *SpecSetsEnable, e *SolvableEquipMap) float32 { return s.CalcBonusGeneric(e) },
 	}
 
 	for range 1000 {
@@ -193,30 +204,30 @@ func TestCalcBonusCompared(test *testing.T) {
 	}
 }
 
-var g_setBonusSlots = [5]SlotEquip{Equip_Head, Equip_Shoulder, Equip_Chest, Equip_Hand, Equip_Leg}
+var g_SpecSetsEnableSlots = [5]SlotEquip{Equip_Head, Equip_Shoulder, Equip_Chest, Equip_Hand, Equip_Leg}
 
 func makeEquipForBonus(numInSet int) *SolvableEquipMap {
 	equip := SolvableEquipMap{}
 	for slot := range equip {
-		equip[slot] = gear_model.makeItem()
+		equip[slot] = makeItem()
 	}
 
-	setItems := []uint32{86659, 86660, 86661, 86662, 86663}
+	setItems := []ItemId{86659, 86660, 86661, 86662, 86663}
 	for i := range numInSet {
-		slot := g_setBonusSlots[i]
+		slot := g_SpecSetsEnableSlots[i]
 		equip[slot] = makeItemForBonus(setItems[i])
 	}
 
 	return &equip
 }
 
-func makeEquipForBonus2(a, b *BonusLookup, x, y int) *SolvableEquipMap {
+func makeEquipForBonus2(a, b *PreparedBonus, x, y int) *SolvableEquipMap {
 	equip := SolvableEquipMap{}
 	for slot := range equip {
-		equip[slot] = gear_model.makeItem()
+		equip[slot] = makeItem()
 	}
 
-	for _, slot := range g_setBonusSlots {
+	for _, slot := range g_SpecSetsEnableSlots {
 		if x > 0 {
 			id := randChoice(a.items)
 			equip[slot] = makeItemForBonus(id)
@@ -231,11 +242,17 @@ func makeEquipForBonus2(a, b *BonusLookup, x, y int) *SolvableEquipMap {
 	return &equip
 }
 
-func randChoice(slice []uint32) uint32 {
+func randChoice(slice []ItemId) ItemId {
 	return slice[rand.IntN(len(slice))]
 }
 
-func makeItemForBonus(id uint32) *SolvableItem {
-	item := SolvableItem_ForTest(ItemId(id), gear_model.randStatBlock())
+func makeItemForBonus(id ItemId) *SolvableItem {
+	item := SolvableItem_ForTest(id, randStatBlock())
+	return &item
+}
+
+func makeItem() *SolvableItem {
+	id := rand.Uint32N(10000)
+	item := SolvableItem_ForTest(ItemId(id), randStatBlock())
 	return &item
 }

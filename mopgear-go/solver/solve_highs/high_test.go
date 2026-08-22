@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nerago/mopgear-go/items"
+	"github.com/nerago/mopgear-go/solver/solve_highs_types"
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_test"
@@ -12,8 +13,9 @@ import (
 func TestSolverBasicRun(t *testing.T) {
 	const targetCount = util_test.TargetCountStandard
 	options, model := util_test.MakeTestOptions()
+	solveModel := solve_highs_types.SolverModelBuild(model, 1, nil)
 
-	resultFuture := SingleGearSetMain(options, model, util.PrintRecorder_Testing(t))
+	resultFuture := SingleGearSetMain(options, solveModel, util.PrintRecorder_Testing(t), 60)
 	result := resultFuture.WaitForResultAsOptional()
 
 	expectEquip := util_test.MakeTestExpectedBest()

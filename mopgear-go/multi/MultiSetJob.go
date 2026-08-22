@@ -16,11 +16,11 @@ type MultiSetJob struct {
 	bagsGear   loaders.EquippedArray
 }
 
-func JobCreate(printer *util.PrintRecorder, input multi_types.JobInputs, tasks ...multi_types.JobInputTask) MultiSetJob {
+func JobCreate(printer *util.PrintRecorder, input multi_types.JobInputs, tasks ...multi_types.JobInputTask) *MultiSetJob {
 	if input.TimeLimitEachSolve == 0 {
 		input.TimeLimitEachSolve = c_defaultTimeoutSeconds
 	}
-	return MultiSetJob{
+	return &MultiSetJob{
 		printer: printer,
 		input:   input,
 		tasks:   tasks,
