@@ -112,20 +112,11 @@ type AccuracyInfoPrepared struct {
 	Stats         *stats.StatBlock
 	SimRankRange  *util_collection.HiLoInt
 	StatRankRange *util_collection.HiLoInt
-	//Prep          *AccuracyInfoPrePrepare
 }
 
 func (a *AccuracyInfoPrepared) GetStatScore() float64 {
 	return a.StatScore
 }
-
-//func (a *AccuracyInfoPrepared) GetSimScore() float64 {
-//	return a.Prep.SimScore
-//}
-//
-//func (a *AccuracyInfoPrepared) GetSimData() *stats.SimData {
-//	return a.Prep.DataSim
-//}
 
 func (a *AccuracyInfoPrepared) GetSimRankRange() *util_collection.HiLoInt {
 	return a.SimRankRange

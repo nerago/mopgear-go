@@ -360,11 +360,11 @@ func (spec *WeightSpec) evaluateWeight(choiceName string, weight1 *weight_types.
 		hadExtended = false
 	} else {
 		accuracyX = EvaluateAccuracy(weightOrig, spec.simTypes, &spec.targetRatio, spec.dataAll)
-		accuracyXStat = EvaluateAccuracyStatistical(weightOrig, spec.simTypes, &spec.targetRatio, spec.dataAll)
+		accuracyXStat = EvaluateAccuracyStatisticalExtended(weightOrig, spec.simTypes, &spec.targetRatio, spec.dataAll)
 		hadExtended = true
 	}
 	accuracy1 := EvaluateAccuracy(weight1, spec.simTypes, &spec.targetRatio, spec.dataAll)
-	accuracy1Stat := EvaluateAccuracyStatistical(weight1, spec.simTypes, &spec.targetRatio, spec.dataAll)
+	accuracy1Stat := EvaluateAccuracyStatisticalExtended(weight1, spec.simTypes, &spec.targetRatio, spec.dataAll)
 
 	pawnString := tools.WritePawnString(*weight1, spec.process.printer)
 	spec.process.printer.Println(weightOrig.String())
@@ -398,17 +398,17 @@ func (spec *WeightSpec) bestWeightChoiceExtended() (util_collection.Optional[wei
 		switch weightCast := weightOrig.(type) {
 		case *weight_types.Weight2Extended:
 			choice.weight2 = weightCast
-			acc2 := EvaluateAccuracyStatistical(weightCast, spec.simTypes, &spec.targetRatio, spec.dataAll)
+			acc2 := EvaluateAccuracyStatisticalExtended(weightCast, spec.simTypes, &spec.targetRatio, spec.dataAll)
 			best2.Offer(&choice, acc2)
 		case *weight_types.Weight3ExtendedRanged:
 			choice.weight3 = weightCast
 			weightConvert2 := weightCast.ConvertToWeight2()
 			choice.weight2 = weightConvert2
 
-			acc3 := EvaluateAccuracyStatistical(weightCast, spec.simTypes, &spec.targetRatio, spec.dataAll)
+			acc3 := EvaluateAccuracyStatisticalExtended(weightCast, spec.simTypes, &spec.targetRatio, spec.dataAll)
 			best3.Offer(&choice, acc3)
 
-			acc2 := EvaluateAccuracyStatistical(weightConvert2, spec.simTypes, &spec.targetRatio, spec.dataAll)
+			acc2 := EvaluateAccuracyStatisticalExtended(weightConvert2, spec.simTypes, &spec.targetRatio, spec.dataAll)
 			best2.Offer(&choice, acc2)
 		}
 	}
@@ -582,7 +582,7 @@ func (spec *WeightSpec) solveSearchWeights(searchMode int, cancel util_async.Can
 			search.SupplyData(spec.dataAll)
 			search.SetRanges(-1.0, 10.0)
 			weightResult := search.Run(innerCancel)
-			acc := EvaluateAccuracyStatistical(weightResult.AsWeight1(), spec.simTypes, &spec.targetRatio, spec.dataAll)
+			acc := EvaluateAccuracyStatisticalExtended(weightResult.AsWeight1(), spec.simTypes, &spec.targetRatio, spec.dataAll)
 			best.Offer(&weightResult, acc)
 		}
 		bestWeightResult := best.GetBestOrNilValue()

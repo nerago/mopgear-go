@@ -22,29 +22,38 @@ func EvaluateAccuracy[W weight_types.IWeight](statWeights W, requiredSims []stat
 		return 0
 	}
 	data := evaluateStatScoreAndCreateStructure(statWeights, inputData)
-	deriveStatRanks(data)
+	sortStatScores(data)
+	deriveStatRanksFromArrayOrder(data)
 	simrank.RankSimsBasicForRanged(requiredSims, data, simRatios)
 	return calcAverageDifference(data)
 }
 
-func EvaluateAccuracyStatistical[W weight_types.IWeight](statWeights W, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
-	if isNil(statWeights) || statWeights.IsEmpty() {
-		return 0
-	}
-	data := evaluateStatScoreAndCreateStructure(statWeights, inputData)
-	deriveStatRanks(data)
-	simrank.RankSimsStatisticalForRanged(requiredSims, data, simRatios)
-	return calcAverageDifference(data)
-}
+//func EvaluateAccuracyStatistical[W weight_types.IWeight](statWeights W, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
+//	if isNil(statWeights) || statWeights.IsEmpty() {
+//		return 0
+//	}
+//	data := evaluateStatScoreAndCreateStructure(statWeights, inputData)
+//	sortStatScores(data)
+//	deriveStatRanksFromArrayOrder(data)
+//	simrank.RankSimsStatisticalForRanged(requiredSims, data, simRatios)
+//	return calcAverageDifference(data)
+//}
 
 func EvaluateAccuracyStatisticalExtended[W weight_types.IWeight](statWeights W, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
 	if isNil(statWeights) || statWeights.IsEmpty() {
 		return 0
 	}
 	data := evaluateStatScoreAndCreateStructureExtended(statWeights, inputData)
-	deriveStatRanks(data)
+	sortStatScores(data)
+	deriveStatRanksFromArrayOrder(data)
 	simrank.RankSimsStatisticalForExtendedRanged(requiredSims, data, simRatios)
 	return calcAverageDifference(data)
+}
+
+func sortStatScores[A weight_types.IRankStatFlatRange](data []A) {
+	slices.SortFunc(data, func(a, b A) int {
+		return cmp.Compare(a.GetStatScore(), b.GetStatScore())
+	})
 }
 
 func evaluateStatScoreAndCreateStructure[W weight_types.IWeight](statWeights W, inputData []weight_types.WeightInput) []*weight_types.AccuracyInfo {
@@ -73,11 +82,7 @@ func evaluateStatScoreAndCreateStructureExtended[W weight_types.IWeight](statWei
 	})
 }
 
-func deriveStatRanks[A weight_types.IRankStatFlatRange](data []A) {
-	// rank stats scores
-	slices.SortFunc(data, func(a, b A) int {
-		return cmp.Compare(a.GetStatScore(), b.GetStatScore())
-	})
+func deriveStatRanksFromArrayOrder[A weight_types.IRankStatFlatRange](data []A) {
 	data[0].SetStatRankRange(&util_collection.HiLoInt{Lo: 0, Hi: 0})
 	for i := 1; i < len(data); i++ {
 		if util.FloatsApproxEquals(data[i].GetStatScore(), data[i-1].GetStatScore()) {

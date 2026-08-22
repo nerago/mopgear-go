@@ -1,21 +1,21 @@
 package weightfind
 
 import (
+	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_collection"
 	"github.com/nerago/mopgear-go/weightfind/simrank"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
 type EvaluateAccuracyPrepared struct {
-	prepared       []*weight_types.AccuracyInfoPrepared
-	statRankRanges []*util_collection.HiLoInt
-	hiLoPool       []util_collection.HiLoInt
+	prepared []*weight_types.AccuracyInfoPrepared
+	hiLoPool []util_collection.HiLoInt
 }
 
 func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, simRatios *weight_types.SimPriorityBasic, simStatistical bool, simStatisticalExtended bool) {
 	requiredSims := simRatios.SimTypes()
 
-	if simStatisticalExtended {
+	if simStatisticalExtended || simStatistical {
 		data := util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *weight_types.AccuracyInfoPrePrepareExtended {
 			return &weight_types.AccuracyInfoPrePrepareExtended{
 				AccuracyInfoPrePrepare: weight_types.AccuracyInfoPrePrepare{
@@ -34,14 +34,13 @@ func (ea *EvaluateAccuracyPrepared) Init(inputData []weight_types.WeightInput, s
 				SimScore: 0,
 			}
 		})
-		if simStatistical {
-			ea.prepared = simrank.AccuracyPrepareRankSimsStatistical(requiredSims, simRatios, data)
-		} else {
-			ea.prepared = simrank.AccuracyPrepareRankSimsBasic(requiredSims, simRatios, data)
-		}
+		//if simStatistical {
+		//	ea.prepared = simrank.AccuracyPrepareRankSimsStatistical(requiredSims, simRatios, data)
+		//} else {
+		ea.prepared = simrank.AccuracyPrepareRankSimsBasic(requiredSims, simRatios, data)
+		//}
 	}
 
-	ea.statRankRanges = make([]*util_collection.HiLoInt, len(ea.prepared))
 	ea.hiLoPool = make([]util_collection.HiLoInt, len(ea.prepared))
 }
 
@@ -50,8 +49,7 @@ func (ea *EvaluateAccuracyPrepared) Clone() *EvaluateAccuracyPrepared {
 		prepared: util_collection.MapSliceAsNew_NoPointer(ea.prepared, func(x *weight_types.AccuracyInfoPrepared) *weight_types.AccuracyInfoPrepared {
 			return &weight_types.AccuracyInfoPrepared{SimRankRange: x.SimRankRange, Stats: x.Stats}
 		}),
-		statRankRanges: make([]*util_collection.HiLoInt, len(ea.statRankRanges)),
-		hiLoPool:       make([]util_collection.HiLoInt, len(ea.hiLoPool)),
+		hiLoPool: make([]util_collection.HiLoInt, len(ea.hiLoPool)),
 	}
 }
 
@@ -78,31 +76,31 @@ func evaluateWeightGeneral[W weight_types.IWeight](ea *EvaluateAccuracyPrepared,
 	for i := range size {
 		prepared[i].StatScore = statWeights.CalcStatScore(prepared[i].Stats)
 	}
-	//slices.SortFunc(prepared, func(a, b *weight_types.AccuracyInfoPrepared) int {
-	//	return cmp.Compare(a.StatScore, b.StatScore)
-	//})
 
-	// rank stats scores
-	//statRankRanges := ea.statRankRanges
-	//statRankRanges[0] = &ea.hiLoPool[0]
-	//statRankRanges[0].Lo = 0
-	//statRankRanges[0].Hi = 0
-	//hiLoAlloc := 1
-	//
-	//for rank := 1; rank < size; rank++ {
-	//	if util.FloatsApproxEquals(prepared[rank].StatScore, prepared[rank-1].StatScore) {
-	//		prevRange := statRankRanges[rank-1]
-	//		statRankRanges[rank] = prevRange
-	//		prevRange.Hi = rank
-	//	} else {
-	//		newRange := &ea.hiLoPool[hiLoAlloc]
-	//		newRange.Lo = rank
-	//		newRange.Hi = rank
-	//		statRankRanges[rank] = newRange
-	//		hiLoAlloc++
-	//	}
-	//}
+	sortStatScores(prepared)
 
-	deriveStatRanks(prepared)
+	deriveStatRanksPreAllocatedHiLos(prepared, size, ea.hiLoPool)
+
 	return calcAverageDifference(prepared)
+}
+
+func deriveStatRanksPreAllocatedHiLos(prepared []*weight_types.AccuracyInfoPrepared, size int, hiLoPool []util_collection.HiLoInt) {
+	hiLoPool[0].Lo = 0
+	hiLoPool[0].Hi = 0
+	prepared[0].StatRankRange = &hiLoPool[0]
+	hiLoAlloc := 1
+
+	for rank := 1; rank < size; rank++ {
+		if util.FloatsApproxEquals(prepared[rank].StatScore, prepared[rank-1].StatScore) {
+			prevRange := prepared[rank-1].StatRankRange
+			prepared[rank].StatRankRange = prevRange
+			prevRange.Hi = rank
+		} else {
+			newRange := &hiLoPool[hiLoAlloc]
+			newRange.Lo = rank
+			newRange.Hi = rank
+			prepared[rank].StatRankRange = newRange
+			hiLoAlloc++
+		}
+	}
 }
