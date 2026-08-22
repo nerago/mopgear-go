@@ -23,7 +23,7 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	fixStats := weight_types.FixStatsRangeMode_ExpertiseAlways | weight_types.FixStatsRangeMode_HasteGridOnly | weight_types.FixStatsRangeMode_HasteHigherOnly
 
 	process := weightfind.WeightUpdateProcess{}
-	process.Init(simSpeed, forceSkipSim, 5000, printer)
+	process.Init(simSpeed, forceSkipSim, 900, printer)
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Ret",
 		WeightFile1:     files.WeightRetFile,

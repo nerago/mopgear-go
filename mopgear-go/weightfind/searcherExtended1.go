@@ -19,20 +19,20 @@ const (
 	c_searchExtended1_threads = 32
 
 	c_searchExtended1_perfect                  = 99.999
-	c_searchExtended1_abandonBranchAccuracyGap = 0.2
-	c_searchExtended1_largeAccuracyGap         = 0.4
+	c_searchExtended1_abandonBranchAccuracyGap = 0.4
+	c_searchExtended1_largeAccuracyGap         = 0.2
 	c_searchExtended1_equalAccuracyGap         = 0.01
 	c_searchExtended1_goalAccuracyGap          = 0.01
-	c_searchExtended1_marginalWeightGap        = 0.05
+	c_searchExtended1_marginalWeightGap        = 0.1
 
 	c_searchExtended1_minRunEarlySizeCut = 8
 	c_searchExtended1_minRunLateSizeCut  = 5
 
-	c_searchExtended1_probeA      = 0.25
+	c_searchExtended1_probeA      = 0.2
 	c_searchExtended1_probeMiddle = 0.5
-	c_searchExtended1_probeB      = 0.75
+	c_searchExtended1_probeB      = 0.8
 
-	c_searchExtended1_maxNodeDepth = 150
+	c_searchExtended1_maxNodeDepth = 100
 	c_searchExtended1_maxCombos    = 8 * 5
 )
 

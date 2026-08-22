@@ -375,10 +375,15 @@ func statWeightsSearchExtended(printer *util.PrintRecorder) {
 	//printer.Printf("accuracy2 stat = %f\n", weightfind.EvaluateAccuracyStatistical(&weight2, targetRatio.SimTypes(), &targetRatio, mixedInputData))
 	printer.Printf("accuracy2 stat ex = %f\n", weightfind.EvaluateAccuracyStatisticalExtended(&weight2, targetRatio.SimTypes(), &targetRatio, mixedInputData))
 
-	prep := weightfind.EvaluateAccuracyPrepared{}
-	prep.Init(mixedInputData, &targetRatio, true, false)
-	printer.Printf("prep accuracy1 stat = %f\n", prep.EvaluateWeight1(weight1))
-	printer.Printf("prep accuracy2 stat = %f\n", prep.EvaluateWeight2(&weight2))
+	prep0 := weightfind.EvaluateAccuracyPrepared{}
+	prep0.Init(mixedInputData, &targetRatio, false, false)
+	printer.Printf("prep accuracy1 stat = %f\n", prep0.EvaluateWeight1(weight1))
+	printer.Printf("prep accuracy2 stat = %f\n", prep0.EvaluateWeight2(&weight2))
+
+	//prep1 := weightfind.EvaluateAccuracyPrepared{}
+	//prep1.Init(mixedInputData, &targetRatio, true, false)
+	//printer.Printf("prep accuracy1 stat = %f\n", prep1.EvaluateWeight1(weight1))
+	//printer.Printf("prep accuracy2 stat = %f\n", prep1.EvaluateWeight2(&weight2))
 
 	prep2 := weightfind.EvaluateAccuracyPrepared{}
 	prep2.Init(mixedInputData, &targetRatio, true, true)

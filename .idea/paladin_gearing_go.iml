@@ -16,6 +16,7 @@
       </option>
     </buildTags>
   </component>
+  <component name="GoModuleSettings" enabled="true" />
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/output" />

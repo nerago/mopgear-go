@@ -36,7 +36,7 @@ const (
 
 	c_eachSimTargetGenerateDataCount = 600
 
-	c_dataSampleFitRank = 400
+	c_dataSampleFitRank = 200
 	c_dataSampleGrid    = 128
 	c_useSamplingFit    = true
 	c_useSamplingRank   = false
