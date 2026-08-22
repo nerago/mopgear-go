@@ -20,13 +20,14 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	//simSpeed := simulate.RunSize_Common
 	simSpeed := simulate.RunSize_Largish
 	forceSkipSim := true
+	skipSolve := true
 	fixStats := weight_types.FixStatsRangeMode_ExpertiseAlways | weight_types.FixStatsRangeMode_HasteGridOnly | weight_types.FixStatsRangeMode_HasteHigherOnly
 
 	process := weightfind.WeightUpdateProcess{}
-	process.Init(simSpeed, forceSkipSim, 900, printer)
+	process.Init(simSpeed, forceSkipSim, skipSolve, 900, printer)
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Ret",
-		WeightFile1:     files.WeightRetFile,
+		WeightFile1:     files.WeightRet,
 		GearFile:        files.GearFileRet,
 		Model:           model_factory.Model_PallyRet(),
 		SubstituteItems: mygear.SubstituteItemsRet,
@@ -34,7 +35,7 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Damage",
-		WeightFile1:     files.WeightDamageFile,
+		WeightFile1:     files.WeightProtDamage,
 		GearFile:        files.GearFileProtDamage,
 		Model:           model_factory.Model_PallyProtDamage(),
 		SubstituteItems: mygear.SubstituteItemsProt,
@@ -42,7 +43,7 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Balanced",
-		WeightFile1:     files.WeightBalancedFile,
+		WeightFile1:     files.WeightProtBalanced,
 		GearFile:        files.GearFileProtBalanced,
 		Model:           model_factory.Model_PallyProtBalanced(),
 		SubstituteItems: mygear.SubstituteItemsProt,
@@ -50,7 +51,7 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Mitigation",
-		WeightFile1:     files.WeightMitigationFile,
+		WeightFile1:     files.WeightProtMitigation,
 		GearFile:        files.GearFileProtMitigation,
 		Model:           model_factory.Model_PallyProtMitigation(),
 		SubstituteItems: mygear.SubstituteItemsProt,
@@ -58,7 +59,7 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Survival",
-		WeightFile1:     files.WeightSurvivalFile,
+		WeightFile1:     files.WeightProtSurvival,
 		GearFile:        files.GearFileProtSurvival,
 		Model:           model_factory.Model_PallyProtSurvival(),
 		SubstituteItems: mygear.SubstituteItemsProt,
@@ -66,7 +67,7 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Heal",
-		WeightFile1:     files.WeightHealFile,
+		WeightFile1:     files.WeightProtHeal,
 		GearFile:        files.GearFileProtHeal,
 		Model:           model_factory.Model_PallyProtHeal(),
 		SubstituteItems: mygear.SubstituteItemsProt,

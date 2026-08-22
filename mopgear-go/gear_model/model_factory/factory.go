@@ -1,6 +1,7 @@
 package model_factory
 
 import (
+	"github.com/nerago/mopgear-go/cmd/mygear"
 	"github.com/nerago/mopgear-go/files"
 	"github.com/nerago/mopgear-go/gear_model"
 	"github.com/nerago/mopgear-go/gear_model/bonus_set"
@@ -23,7 +24,7 @@ const (
 func Model_PallyProtSurvival() gear_model.SpecModel {
 	spec := stats.Spec_PaladinProt
 	goal := stats.OptimiseGoal_Mitigation
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightSurvivalFile)
+	weight := tools.StatRatingsWeights_ReadFile(files.WeightProtSurvival)
 	priority := SimPriority_survival
 	return gear_model.SpecModel{
 		Spec:              spec,
@@ -47,14 +48,14 @@ func Model_PallyProtSurvival() gear_model.SpecModel {
 			IsEngineer:   true,
 		},
 		ReferenceGearFile:        files.GearFileProtSurvival,
-		SpecificIncompatibleList: trinketsStrengthMeleeOnly,
+		SpecificIncompatibleList: mygear.TrinketsStrengthMeleeOnly,
 	}
 }
 
 func Model_PallyProtHeal() gear_model.SpecModel {
 	spec := stats.Spec_PaladinProt
 	goal := stats.OptimiseGoal_HalfMitiHeal
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightHealFile)
+	weight := tools.StatRatingsWeights_ReadFile(files.WeightProtHeal)
 	priority := SimPriority_heal
 	return gear_model.SpecModel{
 		Spec:              spec,
@@ -78,14 +79,14 @@ func Model_PallyProtHeal() gear_model.SpecModel {
 			IsEngineer:   true,
 		},
 		ReferenceGearFile:        files.GearFileProtHeal,
-		SpecificIncompatibleList: trinketsStrengthMeleeOnly,
+		SpecificIncompatibleList: mygear.TrinketsStrengthMeleeOnly,
 	}
 }
 
 func Model_PallyProtMitigation() gear_model.SpecModel {
 	spec := stats.Spec_PaladinProt
 	goal := stats.OptimiseGoal_Mitigation
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightMitigationFile)
+	weight := tools.StatRatingsWeights_ReadFile(files.WeightProtMitigation)
 	priority := SimPriority_mitigation
 	return gear_model.SpecModel{
 		Spec:              spec,
@@ -109,14 +110,14 @@ func Model_PallyProtMitigation() gear_model.SpecModel {
 			IsEngineer:   true,
 		},
 		ReferenceGearFile:        files.GearFileProtMitigation,
-		SpecificIncompatibleList: trinketsStrengthMeleeOnly,
+		SpecificIncompatibleList: mygear.TrinketsStrengthMeleeOnly,
 	}
 }
 
 func Model_PallyProtBalanced() gear_model.SpecModel {
 	spec := stats.Spec_PaladinProt
 	goal := stats.OptimiseGoal_HalfMitiDps
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightBalancedFile)
+	weight := tools.StatRatingsWeights_ReadFile(files.WeightProtBalanced)
 	priority := SimPriority_balanced
 	return gear_model.SpecModel{
 		Spec:              spec,
@@ -140,14 +141,14 @@ func Model_PallyProtBalanced() gear_model.SpecModel {
 			IsEngineer:   true,
 		},
 		ReferenceGearFile:        files.GearFileProtBalanced,
-		SpecificIncompatibleList: trinketsStrengthMeleeOnly,
+		SpecificIncompatibleList: mygear.TrinketsStrengthMeleeOnly,
 	}
 }
 
 func Model_PallyProtDamage() gear_model.SpecModel {
 	spec := stats.Spec_PaladinProt
 	goal := stats.OptimiseGoal_Dps
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightDamageFile)
+	weight := tools.StatRatingsWeights_ReadFile(files.WeightProtDamage)
 	return gear_model.SpecModel{
 		Spec:                spec,
 		Goal:                goal,
@@ -167,14 +168,14 @@ func Model_PallyProtDamage() gear_model.SpecModel {
 			IsEngineer:   true,
 		},
 		ReferenceGearFile:        files.GearFileProtDamage,
-		SpecificIncompatibleList: trinketsStrengthMeleeOnly,
+		SpecificIncompatibleList: mygear.TrinketsStrengthMeleeOnly,
 	}
 }
 
 func Model_PallyRet() gear_model.SpecModel {
 	spec := stats.Spec_PaladinRet
 	goal := stats.OptimiseGoal_Dps
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightRetFile)
+	weight := tools.StatRatingsWeights_ReadFile(files.WeightRet)
 	priority := SimPriority_ret
 	return gear_model.SpecModel{
 		Spec:              spec,
@@ -199,6 +200,6 @@ func Model_PallyRet() gear_model.SpecModel {
 			IsEngineer:   true,
 		},
 		ReferenceGearFile:        files.GearFileRet,
-		SpecificIncompatibleList: trinketsStrengthTankOnly,
+		SpecificIncompatibleList: mygear.TrinketsStrengthTankOnly,
 	}
 }

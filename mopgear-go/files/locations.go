@@ -9,20 +9,20 @@ const (
 	TempPath      = `tempdata/`
 
 	WeightPath           = `../paladin_gearing_weights/paladin-weight/`
-	WeightMitigationFile = WeightPath + `PaladinProtMitigationNoSet.txt`
-	WeightSurvivalFile   = WeightPath + `PaladinProtMitigationWithSet.txt`
-	WeightBalancedFile   = WeightPath + `PaladinProtCompromise.txt`
-	WeightDamageFile     = WeightPath + `PaladinProtDps.txt`
-	WeightHealFile       = WeightPath + `PaladinProtHeal.txt`
-	WeightRetFile        = WeightPath + `PaladinRet.txt`
+	WeightProtMitigation = WeightPath + `PaladinProtMitigation.txt`
+	WeightProtSurvival   = WeightPath + `PaladinProtSurvival.txt`
+	WeightProtBalanced   = WeightPath + `PaladinProtBalanced.txt`
+	WeightProtDamage     = WeightPath + `PaladinProtDamage.txt`
+	WeightProtHeal       = WeightPath + `PaladinProtHeal.txt`
+	WeightRet            = WeightPath + `PaladinRet.txt`
 
 	GearPath     = `../paladin_gearing_weights/paladin-gear/`
 	BagsFilename = GearPath + `bags-gear.json`
 
-	GearFileProtSurvival   = GearPath + `gear-prot-miti-set.json`
-	GearFileProtMitigation = GearPath + `gear-prot-miti-noset.json`
-	GearFileProtBalanced   = GearPath + `gear-prot-compromise.json`
-	GearFileProtDamage     = GearPath + `gear-prot-dps.json`
+	GearFileProtSurvival   = GearPath + `gear-prot-survival.json`
+	GearFileProtMitigation = GearPath + `gear-prot-mitigation.json`
+	GearFileProtBalanced   = GearPath + `gear-prot-balanced.json`
+	GearFileProtDamage     = GearPath + `gear-prot-damage.json`
 	GearFileProtHeal       = GearPath + `gear-prot-heal.json`
 	GearFileRet            = GearPath + `gear-ret.json`
 

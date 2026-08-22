@@ -1,7 +1,6 @@
 package model_factory
 
 import (
-	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
@@ -69,12 +68,4 @@ var StatsForWeighting_strengthMelee = []stats.StatType{
 	stats.Stat_Mastery,
 	stats.Stat_Crit,
 	stats.Stat_Expertise,
-}
-
-var trinketsStrengthTankOnly = []items.ItemId{
-	104572, 105568, 105070, 102306, 105319, 104821, // Vial of Living Corruption
-}
-
-var trinketsStrengthMeleeOnly = []items.ItemId{
-	102298, 104993, 104495, 105491, 104744, 105242, // Evil Eye of Galakras
 }

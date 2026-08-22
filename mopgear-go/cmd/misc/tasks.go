@@ -898,7 +898,7 @@ func determineBestUseOfGearSets(printer *util.PrintRecorder) {
 	setNameT15Ret := "Battlegear of the Lightning Emperor"
 	setNameT16Ret := "Battlegear of Winged Triumph"
 	model.BonusEnabled = bonus_set.SpecSetsEnableNamed(&model.SimPriority, setNameT15Prot, setNameT16Prot, setNameT15Ret, setNameT16Ret)
-	model.StatWeights = tools.StatRatingsWeights_ReadFile(files.WeightHealFile)
+	model.StatWeights = tools.StatRatingsWeights_ReadFile(files.WeightProtHeal)
 
 	bonusCombos := []bonus_set.ItemCountsRequired{
 		bonus_set.ItemCountsRequiredMake(setNameT16Prot, 0, setNameT15Prot, 0),

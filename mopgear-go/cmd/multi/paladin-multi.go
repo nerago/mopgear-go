@@ -234,70 +234,72 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()
 
-	//taskQuick := multi_types.JobInputTask{
-	//	AlsoExistingEquipped:    true,
-	//	AlsoSpecOptimums:        true,
-	//	Alternates:              multi_types.AlternateModeNone,
-	//	AlternatesLimit:         util_collection.Optional_Empty[int](),
-	//	IncludeInterimResults:   false,
-	//	WeightTypeList:          []weight_types.WeightType{1},
-	//	RunDecimate:             false,
-	//	ReforgingAllowNonCommon: false,
-	//}
-	//multi.JobCreate(printer, job, taskQuick).Run()
+	if true {
+		taskQuick := multi_types.JobInputTask{
+			AlsoExistingEquipped:    true,
+			AlsoSpecOptimums:        true,
+			Alternates:              multi_types.AlternateModeNone,
+			AlternatesLimit:         util_collection.Optional_Empty[int](),
+			IncludeInterimResults:   false,
+			WeightTypeList:          []weight_types.WeightType{1},
+			RunDecimate:             false,
+			ReforgingAllowNonCommon: false,
+		}
+		multi.JobCreate(printer, job, taskQuick).Run()
+	} else {
+		task1 := multi_types.JobInputTask{
+			AlsoExistingEquipped:    true,
+			AlsoSpecOptimums:        true,
+			Alternates:              multi_types.AlternateModeItemAndReforgeBlocks,
+			AlternatesLimit:         util_collection.Optional_Empty[int](),
+			IncludeInterimResults:   false,
+			WeightTypeList:          []weight_types.WeightType{1, 2},
+			RunDecimate:             false,
+			ReforgingAllowNonCommon: false,
+		}
+		task1.AddAlternateGem(stats.StatBlock_of(stats.Stat_Haste, 320))
 
-	task1 := multi_types.JobInputTask{
-		AlsoExistingEquipped:    true,
-		AlsoSpecOptimums:        true,
-		Alternates:              multi_types.AlternateModeItemAndReforgeBlocks,
-		AlternatesLimit:         util_collection.Optional_Empty[int](),
-		IncludeInterimResults:   false,
-		WeightTypeList:          []weight_types.WeightType{1, 2},
-		RunDecimate:             false,
-		ReforgingAllowNonCommon: false,
+		task2 := multi_types.JobInputTask{
+			AlsoExistingEquipped:    false,
+			AlsoSpecOptimums:        false,
+			Alternates:              multi_types.AlternateModeNone,
+			AlternatesLimit:         util_collection.Optional_Empty[int](),
+			IncludeInterimResults:   true,
+			WeightTypeList:          []weight_types.WeightType{1, 2},
+			RunDecimate:             true,
+			ReforgingAllowNonCommon: true,
+		}
+
+		task3 := multi_types.JobInputTask{
+			AlsoExistingEquipped:    false,
+			AlsoSpecOptimums:        true,
+			Alternates:              multi_types.AlternateModeNone,
+			AlternatesLimit:         util_collection.Optional_Empty[int](),
+			IncludeInterimResults:   false,
+			WeightTypeList:          []weight_types.WeightType{3},
+			RunDecimate:             true,
+			ReforgingAllowNonCommon: false,
+		}
+
+		//task1.AddAlternateGem(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Stamina, 120))
+		//task1.AddAlternateGem(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
+		//task1.AddAlternateGem(stats.StatBlock_of(stats.Stat_Strength, 160))
+		//task1.AddAlternateGem(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
+		//task1.AddAlternateGem(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
+		//task1.Permute.AlternateGemsEnableAsPermute = true
+
+		//task1.AddAlternateUpgradeChoices(
+		//	99028,  // Handguards of Winged Triumph celestial
+		//	103972, // kilruk sword - still passable option #4 for most sets, upgrade rank #3 of remaining
+		//	105122, // Asgorathian Blood Seal - option #5, upgrade rank #4
+		//)
+		//task1.AddAlternateUpgradeChoices(104494) // krugruk shoulderplates
+
+		//task1.EnablePermuteOnItemCountOptions()
+
+		run := multi.JobCreate(printer, job, task1, task2, task3)
+		run.Run()
 	}
-	task1.AddAlternateGem(stats.StatBlock_of(stats.Stat_Haste, 320))
-
-	task2 := multi_types.JobInputTask{
-		AlsoExistingEquipped:    false,
-		AlsoSpecOptimums:        false,
-		Alternates:              multi_types.AlternateModeNone,
-		AlternatesLimit:         util_collection.Optional_Empty[int](),
-		IncludeInterimResults:   true,
-		WeightTypeList:          []weight_types.WeightType{1, 2},
-		RunDecimate:             true,
-		ReforgingAllowNonCommon: true,
-	}
-
-	task3 := multi_types.JobInputTask{
-		AlsoExistingEquipped:    false,
-		AlsoSpecOptimums:        true,
-		Alternates:              multi_types.AlternateModeNone,
-		AlternatesLimit:         util_collection.Optional_Empty[int](),
-		IncludeInterimResults:   false,
-		WeightTypeList:          []weight_types.WeightType{3},
-		RunDecimate:             true,
-		ReforgingAllowNonCommon: false,
-	}
-
-	//task1.AddAlternateGem(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Stamina, 120))
-	//task1.AddAlternateGem(stats.StatBlock_of2(stats.Stat_Strength, 80, stats.Stat_Haste, 160))
-	//task1.AddAlternateGem(stats.StatBlock_of(stats.Stat_Strength, 160))
-	//task1.AddAlternateGem(stats.StatBlock_of2(stats.Stat_Expertise, 160, stats.Stat_Hit, 160))
-	//task1.AddAlternateGem(stats.StatBlock_of2(stats.Stat_Haste, 160, stats.Stat_Hit, 160))
-	//task1.Permute.AlternateGemsEnableAsPermute = true
-
-	//task1.AddAlternateUpgradeChoices(
-	//	99028,  // Handguards of Winged Triumph celestial
-	//	103972, // kilruk sword - still passable option #4 for most sets, upgrade rank #3 of remaining
-	//	105122, // Asgorathian Blood Seal - option #5, upgrade rank #4
-	//)
-	//task1.AddAlternateUpgradeChoices(104494) // krugruk shoulderplates
-
-	//task1.EnablePermuteOnItemCountOptions()
-
-	run := multi.JobCreate(printer, job, task1, task2, task3)
-	run.Run()
 
 	//job.CullingReport()
 	//run.RunCullingSets(400, time.Minute*45)
