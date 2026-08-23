@@ -10,7 +10,7 @@ import (
 	"github.com/nerago/mopgear-go/util/util_collection"
 )
 
-func (job *MultiSetJob) CullingReport() {
+func (job *MainJob) CullingReport() {
 	for _, prep := range job.itemPrep {
 		prep.cullingReportSeen(job.printer)
 		prep.cullingReportSeenBySlot(job.printer)
@@ -125,7 +125,7 @@ func (prep *specItemPrep) cullingReportOrphan(printer *util.PrintRecorder) {
 	}
 }
 
-func (job *MultiSetJob) cullReportAll() {
+func (job *MainJob) cullReportAll() {
 	// highest count per label
 	maxCountForParam := make(map[string]uint32)
 	for _, prep := range job.itemPrep {

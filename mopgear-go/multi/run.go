@@ -9,7 +9,7 @@ import (
 	"github.com/nerago/mopgear-go/util/util_async"
 )
 
-func (job *MultiSetJob) Run() {
+func (job *MainJob) Run() {
 	job.prepareItems()
 
 	cancelGenerate := util_async.CancelSignal_Make()
@@ -27,7 +27,7 @@ func (job *MultiSetJob) Run() {
 	job.generalMultiReport(resultPendingChan, simsDone)
 }
 
-func (job *MultiSetJob) mergeDuplicateJobs(simJobChannel1 <-chan *simulateJobPending) <-chan *simulateJobPending {
+func (job *MainJob) mergeDuplicateJobs(simJobChannel1 <-chan *simulateJobPending) <-chan *simulateJobPending {
 	return util_async.Channel_RemoveDuplicatesFuncNotify(
 		simJobChannel1,
 		func(a, b *simulateJobPending) bool {
@@ -39,14 +39,16 @@ func (job *MultiSetJob) mergeDuplicateJobs(simJobChannel1 <-chan *simulateJobPen
 	)
 }
 
-func (job *MultiSetJob) makeProposalChannel(groupChannel <-chan *workingGroup, cancelGenerate *util_async.CancelSignalBasic) (<-chan *multi_types.MultiProposedOutput, <-chan int) {
+func (job *MainJob) makeProposalChannel(groupChannel <-chan *workingGroup, cancelGenerate *util_async.CancelSignalBasic) (<-chan *multi_types.MultiProposedOutput, <-chan int) {
 	futureCount := util_async.FutureValueAdderIntMake(0)
 	proposalMixer := util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput]{}
 
 	util_async.ForEach_Channel_NonBlocking(c_mainProposal_threadCount, groupChannel, func(group *workingGroup) {
 		group.groupProposals(&proposalMixer, futureCount, cancelGenerate)
 	}, func() {
-		proposalMixer.ShutdownAsync()
+		proposalMixer.ShutdownAsync(func() {
+			job.printer.Println("<<< PROPOSALS ALL SUBMITTED >>>")
+		})
 	})
 
 	expectedCountChannel := futureCount.ReadyUpAndPrepareChannel()
@@ -62,7 +64,7 @@ func (job *MultiSetJob) makeProposalChannel(groupChannel <-chan *workingGroup, c
 	return proposalChannel, expectedCountChannel
 }
 
-func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time.Duration) {
+func (job *MainJob) RunCullingSets(targetSolutionCount int64, timeLimit time.Duration) {
 	job.prepareItems()
 
 	tracker := util.TrackProgress_Start()
@@ -87,7 +89,7 @@ func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time
 	job.CullingReport()
 }
 
-func (job *MultiSetJob) generalMultiReport(pendingResultChannel <-chan *simulateMultiResultPending, simsDone *util_async.FutureVoid) {
+func (job *MainJob) generalMultiReport(pendingResultChannel <-chan *simulateMultiResultPending, simsDone *util_async.FutureVoid) {
 	simMultiResults := job.incrementalReporting(pendingResultChannel, simsDone)
 
 	if len(simMultiResults) > 0 {

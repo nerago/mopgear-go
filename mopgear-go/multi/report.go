@@ -2,6 +2,7 @@ package multi
 
 import (
 	"cmp"
+	"os"
 	"slices"
 	"time"
 
@@ -17,14 +18,14 @@ import (
 	"github.com/nerago/mopgear-go/weightfind/simrank"
 )
 
-func (job *MultiSetJob) reportSimResults(multiResultList []simulateMultiResult) {
+func (job *MainJob) reportSimResults(multiResultList []simulateMultiResult) {
 	job.printer.Println("@@@@@@@@@@@@@@@@ RESULTS @@@@@@@@@@@@@@@@")
 	for result := range util_collection.ForPointer(multiResultList) {
 		job.reportSimResults_One(result)
 	}
 }
 
-func (job *MultiSetJob) reportSimResults_One(result *simulateMultiResult) {
+func (job *MainJob) reportSimResults_One(result *simulateMultiResult) {
 	job.printer.Printf("&&&&&&&&&&&&& %s\n", result.proposed.Id)
 	job.printer.Printf("Weight Type %d\n", result.proposed.WeightType)
 
@@ -82,7 +83,7 @@ func (job *MultiSetJob) reportSimResults_One(result *simulateMultiResult) {
 	job.printer.Println0()
 }
 
-func (job *MultiSetJob) findVariantItem(result *simulateMultiResult, itemId items.ItemId, prep *specItemPrep) *items.FullItem {
+func (job *MainJob) findVariantItem(result *simulateMultiResult, itemId items.ItemId, prep *specItemPrep) *items.FullItem {
 	variantItem := result.proposed.FindItemById(itemId)
 	if variantItem != nil {
 		return variantItem
@@ -101,14 +102,41 @@ func (job *MultiSetJob) findVariantItem(result *simulateMultiResult, itemId item
 	_, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, prep.model, job.printer)
 	return example
 }
-func (job *MultiSetJob) reportAsCsv(simResultList []*simMultiRankable) {
-	job.printer.Println("@@@@@@@@@@@@@@@@ SPREADSHEET COPY @@@@@@@@@@@@@@@@")
+func (job *MainJob) reportAsCsv(simResultList []*simMultiRankable) {
 
 	outputTypesByParam, rowCount, needPermuteLine := csvPrepareCollections(simResultList, job.itemPrep)
 	labelOrder := job.paramOrderSlice()
 
 	csv := csvStartHeader(labelOrder, outputTypesByParam, rowCount, needPermuteLine)
+	job.csvBuildLines(simResultList, &csv, labelOrder, outputTypesByParam, needPermuteLine)
 
+	if job.csvFilename != "" {
+		job.writeToCsvFile(csv)
+		job.printer.Println("@@ CSV output written to other file")
+	} else {
+		job.printer.Println("@@@@@@@@@@@@@@@@ SPREADSHEET COPY @@@@@@@@@@@@@@@@")
+		csv.WritePrinter(job.printer)
+		job.printer.Println0()
+		job.printer.Println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+	}
+
+}
+
+func (job *MainJob) writeToCsvFile(csv util.CSVOutputByColumn) {
+	file, err := os.Create(job.csvFilename)
+	if err != nil {
+		panic(err)
+	}
+
+	csv.WriteWriter(file)
+
+	err = file.Close()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (job *MainJob) csvBuildLines(simResultList []*simMultiRankable, csv *util.CSVOutputByColumn, labelOrder []string, outputTypesByParam map[string][]stats.SimType, needPermuteLine bool) {
 	for index, simResult := range simResultList {
 		proposed := simResult.result.proposed
 		simMap := simResult.result.simMap
@@ -137,16 +165,11 @@ func (job *MultiSetJob) reportAsCsv(simResultList []*simMultiRankable) {
 
 		csv.FinishColumn()
 	}
-
-	csv.Write(job.printer)
-
-	job.printer.Println0()
-	job.printer.Println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 }
 
 func csvStartHeader(labelOrder []string, outputTypesByParam map[string][]stats.SimType, rowCount int, needPermuteLine bool) util.CSVOutputByColumn {
 	csv := util.CSVOutputByColumn{}
-	csv.InitRows(rowCount + 3)
+	csv.InitRows(rowCount + 4)
 	csv.AddString("id")
 	for _, label := range labelOrder {
 		simTypes := outputTypesByParam[label]
@@ -218,7 +241,7 @@ func listReGem(multiProposed *multi_types.MultiProposedOutput) []*items.FullItem
 	return allItems
 }
 
-func (job *MultiSetJob) handleBestRankedResult(best util_rank.BestCollector1[simulateMultiResult]) {
+func (job *MainJob) handleBestRankedResult(best util_rank.BestCollector1[simulateMultiResult]) {
 	job.printer.Println("Best ranked result")
 	bestMultiResult := best.GetBestPointerOrPanic()
 	job.reportSimResults_One(bestMultiResult)
@@ -228,7 +251,7 @@ func (job *MultiSetJob) handleBestRankedResult(best util_rank.BestCollector1[sim
 	}
 }
 
-func (job *MultiSetJob) incrementalReporting(channel <-chan *simulateMultiResultPending, done *util_async.FutureVoid) []simulateMultiResult {
+func (job *MainJob) incrementalReporting(channel <-chan *simulateMultiResultPending, done *util_async.FutureVoid) []simulateMultiResult {
 	updateLoopTime := time.Second * 30
 	incrementalSlice := util_async.CollectChannelToSliceIncremental(channel)
 	for done.WaitForLimitedDuration(updateLoopTime) {
@@ -241,7 +264,7 @@ func (job *MultiSetJob) incrementalReporting(channel <-chan *simulateMultiResult
 	return job.pendingToCompletedResults(tempSlice)
 }
 
-func (job *MultiSetJob) pendingToCompletedResults(pendingSlice []*simulateMultiResultPending) []simulateMultiResult {
+func (job *MainJob) pendingToCompletedResults(pendingSlice []*simulateMultiResultPending) []simulateMultiResult {
 	completed := make([]simulateMultiResult, 0)
 	for _, pending := range pendingSlice {
 		if pending.ready {
@@ -260,7 +283,7 @@ func (job *MultiSetJob) pendingToCompletedResults(pendingSlice []*simulateMultiR
 	return completed
 }
 
-func (job *MultiSetJob) rankAllResults(resultList []simulateMultiResult) (util_rank.BestCollector1[simulateMultiResult], []*simMultiRankable) {
+func (job *MainJob) rankAllResults(resultList []simulateMultiResult) (util_rank.BestCollector1[simulateMultiResult], []*simMultiRankable) {
 	// build nicely sortable set of pointer based slices
 	multiRankSlice := util_collection.MapSliceAsNew(resultList, func(result *simulateMultiResult) *simMultiRankable {
 		return &simMultiRankable{

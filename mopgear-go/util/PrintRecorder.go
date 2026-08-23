@@ -243,16 +243,30 @@ func (print *PrintRecorder) AppendOther(other *PrintRecorder) {
 	other.builder.Free()
 }
 
+func (print *PrintRecorder) GetFileName() string {
+	print.mutex.Lock()
+	defer print.mutex.Unlock()
+
+	if print.file != nil {
+		return print.file.Name()
+	} else {
+		return ""
+	}
+}
+
 func (print *PrintRecorder) Close() {
 	print.mutex.Lock()
 	defer print.mutex.Unlock()
 
-	err := print.file.Close()
-	if err != nil {
-		panic(err)
-	}
+	if print.file != nil {
+		err := print.file.Close()
+		if err != nil {
+			panic(err)
+		}
 
-	deleteIfEmpty(print.file.Name())
+		deleteIfEmpty(print.file.Name())
+		print.file = nil
+	}
 }
 
 func deleteIfEmpty(logName string) {

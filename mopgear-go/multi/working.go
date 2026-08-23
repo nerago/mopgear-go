@@ -14,7 +14,7 @@ import (
 )
 
 type workingGroup struct {
-	job        *MultiSetJob
+	job        *MainJob
 	task       *multi_types.JobInputTask
 	workers    map[string]*specWorker
 	weightType weight_types.WeightType
@@ -55,7 +55,7 @@ func (work *specWorker) init(printer *util.PrintRecorder) {
 	work.setupAlternateGems(work.task.AlternateGemList, printer)
 }
 
-func (job *MultiSetJob) prepareWorkingGroups(cancel util_async.CancelSignal) <-chan *workingGroup {
+func (job *MainJob) prepareWorkingGroups(cancel util_async.CancelSignal) <-chan *workingGroup {
 	job.workGroups = make([]*workingGroup, 0)
 	for task := range util_collection.ForPointer(job.tasks) {
 		for _, weightType := range task.WeightTypeList {

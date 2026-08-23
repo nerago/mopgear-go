@@ -375,7 +375,7 @@ func trinketSims(printer *util.PrintRecorder) {
 		}
 	}
 
-	csv.Write(printer)
+	csv.WritePrinter(printer)
 }
 
 func trinketSimsBoth(printer *util.PrintRecorder) {
@@ -512,7 +512,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		}
 	}
 
-	csv.Write(printer)
+	csv.WritePrinter(printer)
 }
 
 func currentSimGear(printer *util.PrintRecorder) {
@@ -583,7 +583,7 @@ func currentSimGear(printer *util.PrintRecorder) {
 		csv.FinishColumn()
 	}
 
-	csv.Write(printer)
+	csv.WritePrinter(printer)
 }
 
 func addGearFileToCommon(common map[items.ItemId]stats.ReforgeRecipe, gearFile string, model *gear_model.SpecModel, printer *util.PrintRecorder) {

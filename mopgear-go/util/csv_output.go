@@ -1,5 +1,7 @@
 package util
 
+import "io"
+
 type CSVOutputByColumn struct {
 	builds  []StringBuild2
 	currRow int
@@ -61,8 +63,21 @@ func (csv *CSVOutputByColumn) AddInt(value int) {
 	csv.currRow++
 }
 
-func (csv *CSVOutputByColumn) Write(printer *PrintRecorder) {
+func (csv *CSVOutputByColumn) WritePrinter(printer *PrintRecorder) {
 	for index := range csv.builds {
 		printer.PrintlnFromBuild(csv.builds[index])
+	}
+}
+
+func (csv *CSVOutputByColumn) WriteWriter(writer io.Writer) {
+	for index := range csv.builds {
+		_, err := writer.Write(csv.builds[index])
+		if err != nil {
+			panic(err)
+		}
+		_, err = writer.Write([]byte{'\n'})
+		if err != nil {
+			panic(err)
+		}
 	}
 }

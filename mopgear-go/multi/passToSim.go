@@ -103,8 +103,8 @@ type simulateMultiResult struct {
 
 func (r simulateMultiResult) Equals(b *simulateMultiResult) bool {
 	return r.proposed.Equals(b.proposed) &&
-		maps.EqualFunc(r.simMap, b.simMap, func(x stats.SimData, y stats.SimData) bool {
-			return x.Equals(&y)
+		maps.EqualFunc(r.simMap, b.simMap, func(x *stats.SimData, y *stats.SimData) bool {
+			return x.Equals(y)
 		})
 }
 
@@ -141,7 +141,7 @@ func (simJob *simulateJob) Equals(other *simulateJob) bool {
 		simJob.equip.Equals(&other.equip)
 }
 
-func (job *MultiSetJob) prepareSimList(proposalList <-chan *multi_types.MultiProposedOutput) (<-chan *simulateJobPending, <-chan *simulateMultiResultPending) {
+func (job *MainJob) prepareSimList(proposalList <-chan *multi_types.MultiProposedOutput) (<-chan *simulateJobPending, <-chan *simulateMultiResultPending) {
 	simJobChan := make(chan *simulateJobPending)
 	resultPendingChan := make(chan *simulateMultiResultPending)
 	util_async.ForEach_Channel_NonBlocking(1, proposalList, func(proposal *multi_types.MultiProposedOutput) {
@@ -163,7 +163,7 @@ func (job *MultiSetJob) prepareSimList(proposalList <-chan *multi_types.MultiPro
 	return simJobChan, resultPendingChan
 }
 
-func (job *MultiSetJob) createPendingJob(label string, single multi_types.SingleProposedOutput, proposalPending *simulateMultiResultPending) *simulateJobPending {
+func (job *MainJob) createPendingJob(label string, single multi_types.SingleProposedOutput, proposalPending *simulateMultiResultPending) *simulateJobPending {
 	prep := job.itemPrep[label]
 	simJob := &simulateJobPending{
 		simJob: job.createSimJob(single, prep),
@@ -173,7 +173,7 @@ func (job *MultiSetJob) createPendingJob(label string, single multi_types.Single
 	return simJob
 }
 
-func (job *MultiSetJob) createSimJob(single multi_types.SingleProposedOutput, prep *specItemPrep) simulateJob {
+func (job *MainJob) createSimJob(single multi_types.SingleProposedOutput, prep *specItemPrep) simulateJob {
 	return simulateJob{
 		spec:        single.Spec,
 		goal:        prep.model.Goal,
@@ -184,7 +184,7 @@ func (job *MultiSetJob) createSimJob(single multi_types.SingleProposedOutput, pr
 	}
 }
 
-func (job *MultiSetJob) runSims(jobChan <-chan *simulateJobPending, expectedCount <-chan int) *util_async.FutureVoid {
+func (job *MainJob) runSims(jobChan <-chan *simulateJobPending, expectedCount <-chan int) *util_async.FutureVoid {
 	simFinished := util_async.FutureVoid_Make()
 
 	simsPerProposal := len(job.itemPrep)
@@ -205,12 +205,13 @@ func (job *MultiSetJob) runSims(jobChan <-chan *simulateJobPending, expectedCoun
 	}, func() {
 		tracker.SetDone()
 		simFinished.SetResultEmpty()
+		job.printer.Println("<<< SIMS ALL COMPLETE >>>")
 	})
 
 	return simFinished
 }
 
-func (job *MultiSetJob) writeToGearFiles(result *simulateMultiResult) {
+func (job *MainJob) writeToGearFiles(result *simulateMultiResult) {
 	for label, prep := range job.itemPrep {
 		itemSet := result.proposed.Parts[label].FullSet
 		gearJson := tools.WowSimJson_Write(itemSet.Items(), prep.model, util.PrintRecorder_Nop())

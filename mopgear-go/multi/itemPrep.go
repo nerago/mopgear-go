@@ -24,7 +24,7 @@ type specItemPrep struct {
 	seenInSolutions   *seenMap
 }
 
-func (job *MultiSetJob) prepareItems() {
+func (job *MainJob) prepareItems() {
 	job.printer.Println("LOADING BAGS")
 	job.bagsGear = loaders.BagsFileReader_Read()
 
@@ -67,7 +67,7 @@ func (job *MultiSetJob) prepareItems() {
 	}
 }
 
-func (job *MultiSetJob) paramOrderSlice() []string {
+func (job *MainJob) paramOrderSlice() []string {
 	return util_collection.MapSliceAsNew(job.input.Param, func(param *multi_types.SpecParam) string {
 		return param.Label
 	})

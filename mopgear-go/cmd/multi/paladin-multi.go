@@ -19,10 +19,9 @@ import (
 )
 
 func PaladinMultiRun(printer *util.PrintRecorder) {
-
 	job := multi_types.JobInputs{}
 	job.SetMinimumExtraItemLevel(463)
-	job.SetTimeLimitEachSolver(1000)
+	job.SetTimeLimitEachSolver(100)
 	job.SetSimSize(simulate.RunSize_Largish)
 	//simSize := simulate.RunSize_Common
 	//simSize := simulate.RunSize_QuickDirty

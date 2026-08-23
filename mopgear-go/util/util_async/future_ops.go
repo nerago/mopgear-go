@@ -432,6 +432,7 @@ type FutureChannelMixerContinuing[T any] struct {
 	internalNotifyChannel chan mixerInternalMessage[T]
 
 	outputChannel chan T
+	onShutdown    func()
 }
 
 type mixerInternalMessage[T any] struct {
@@ -530,15 +531,20 @@ func (fc *FutureChannelMixerContinuing[T]) ReadyUpAndPrepareChannel() <-chan T {
 		fc.selectLoop()
 		fc.state = channelMixerContinuingStopped
 		close(fc.outputChannel)
+
+		if fc.onShutdown != nil {
+			fc.onShutdown()
+		}
 	}()
 
 	return fc.outputChannel
 }
 
-// does thing mean
-func (fc *FutureChannelMixerContinuing[T]) ShutdownAsync() {
+func (fc *FutureChannelMixerContinuing[T]) ShutdownAsync(onShutdown func()) {
 	fc.mutex.Lock()
 	defer fc.mutex.Unlock()
+
+	fc.onShutdown = onShutdown
 
 	switch fc.state {
 	case channelMixerContinuingInit:

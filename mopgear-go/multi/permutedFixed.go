@@ -57,7 +57,7 @@ type permuteSet struct {
 	choices []permuteEntry
 }
 
-func (job *MultiSetJob) estimateFixedPermutations(inputPermute *multi_types.InputPermute) int {
+func (job *MainJob) estimateFixedPermutations(inputPermute *multi_types.InputPermute) int {
 	var count = 1
 	for _, prep := range job.itemPrep {
 		semiFixed := prep.inputs.SemiFixedSlots
@@ -87,7 +87,7 @@ func (job *MultiSetJob) estimateFixedPermutations(inputPermute *multi_types.Inpu
 	return count
 }
 
-func (job *MultiSetJob) validateUsageGroup(itemId items.ItemId, group *multi_types.DistinctUsageGroups, permute *multi_types.InputPermute) {
+func (job *MainJob) validateUsageGroup(itemId items.ItemId, group *multi_types.DistinctUsageGroups, permute *multi_types.InputPermute) {
 	for _, label := range group.GroupALabels {
 		if job.input.GetSetParam(label) == nil {
 			panic("invalid param " + label)
@@ -141,7 +141,7 @@ func anyInCommon(checkSlice []string, otherASlice []string, otherBSlice []string
 	return false
 }
 
-func (job *MultiSetJob) buildPermutationOptions(inputPermute *multi_types.InputPermute) []permuteOptions {
+func (job *MainJob) buildPermutationOptions(inputPermute *multi_types.InputPermute) []permuteOptions {
 	optionEntriesList := make([]permuteOptions, 0)
 
 	for _, prep := range job.itemPrep {

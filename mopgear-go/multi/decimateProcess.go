@@ -20,7 +20,7 @@ const c_decimateTargetItemsPerSlot = 3
 const c_decimateTargetItemsPairedSlot = 4
 
 // normally decimate done as part of regular jobs
-func (job *MultiSetJob) TestDecimate() {
+func (job *MainJob) TestDecimate() {
 	job.prepareItems()
 
 	cancel := util_async.CancelSignal_Make()
