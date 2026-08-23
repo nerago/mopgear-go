@@ -3,6 +3,7 @@ package util_async
 import (
 	"iter"
 	"reflect"
+	"slices"
 	"sync"
 
 	"github.com/nerago/mopgear-go/util/util_collection"
@@ -292,6 +293,20 @@ func PeekChannel[T any](inputChannel <-chan T, apply func(*T)) <-chan T {
 	return outputChannel
 }
 
+func PeekChannel_NoPointer[T any](inputChannel <-chan T, apply func(T)) <-chan T {
+	outputChannel := makeOutputChannel[T]()
+
+	go func() {
+		for value := range inputChannel {
+			apply(value)
+			outputChannel <- value
+		}
+		close(outputChannel)
+	}()
+
+	return outputChannel
+}
+
 func TeeChannelToSlice[T any](inputChannel <-chan T) (<-chan T, *Future[[]T]) {
 	future := Future_Make[[]T]()
 	outputChannel := makeOutputChannel[T]()
@@ -309,6 +324,35 @@ func TeeChannelToSlice[T any](inputChannel <-chan T) (<-chan T, *Future[[]T]) {
 	}()
 
 	return outputChannel, future
+}
+
+type IncrementalSliceResult[T any] struct {
+	slice  []T
+	mutex  sync.Mutex
+	isDone bool
+}
+
+func (ir *IncrementalSliceResult[T]) IsDone() bool {
+	return ir.isDone
+}
+
+func (ir *IncrementalSliceResult[T]) SliceTemp() []T {
+	ir.mutex.Lock()
+	defer ir.mutex.Unlock()
+	return slices.Clone(ir.slice)
+}
+
+func CollectChannelToSliceIncremental[T any](inputChannel <-chan T) *IncrementalSliceResult[T] {
+	incResult := &IncrementalSliceResult[T]{}
+	go func() {
+		for value := range inputChannel {
+			incResult.mutex.Lock()
+			incResult.slice = append(incResult.slice, value)
+			incResult.mutex.Unlock()
+		}
+		incResult.isDone = true
+	}()
+	return incResult
 }
 
 func Channel_RemoveDuplicatesComparable[T comparable](inputChannel <-chan T) <-chan T {
@@ -353,29 +397,28 @@ func Channel_RemoveDuplicatesFunc[T any](inputChannel <-chan T, equals func(a, b
 	return outputChannel
 }
 
-func Channel_RemoveDuplicatesFuncNotify[T any](inputChannel <-chan T, equals func(a, b *T) bool, removedNotify func(x *T)) <-chan T {
+func Channel_RemoveDuplicatesFuncNotify[X any, T *X](inputChannel <-chan T, equals func(a, b T) bool, removedNotify func(keep, drop T)) <-chan T {
 	lock := sync.Mutex{}
 	seen := make([]T, 0)
 
-	return MapMulti_ChannelToChannel(4, inputChannel, func(next T, outputChannel chan<- T) {
+	return MapMulti_ChannelToChannel(2, inputChannel, func(next T, outputChannel chan<- T) {
 		lock.Lock()
 
-		found := false
+		var found T
 		for checkIndex := range seen {
-			if equals(&next, &seen[checkIndex]) {
-				found = true
+			if equals(next, seen[checkIndex]) {
+				found = seen[checkIndex]
 				break
 			}
 		}
 
-		if !found {
+		if found == nil {
 			seen = append(seen, next)
 			outputChannel <- next
 			lock.Unlock()
 		} else {
 			lock.Unlock() // release lock early so notifies can take longer
-
-			removedNotify(&next)
+			removedNotify(found, next)
 		}
 	})
 }

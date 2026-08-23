@@ -19,21 +19,29 @@ func (job *MultiSetJob) Run() {
 
 	proposalChannel, expectedCountChannel := job.makeProposalChannel(groupChannel, cancelGenerate)
 
-	proposalChannel, futureProposalList := util_async.TeeChannelToSlice(proposalChannel)
+	simJobChannel1, resultPendingChan := job.prepareSimList(proposalChannel)
+	simJobChannel2 := job.mergeDuplicateJobs(simJobChannel1)
 
-	tracker := util.TrackProgress_Start()
-	defer tracker.SetDone()
+	simsDone := job.runSims(simJobChannel2, expectedCountChannel)
 
-	futureSimResultList := job.runSimsForProposalChannel(proposalChannel, tracker, expectedCountChannel)
-
-	proposalList, gotResult2 := futureProposalList.WaitForResult()
-	simResultList, gotResult1 := futureSimResultList.WaitForResult()
-	job.generalMultiReport(gotResult1 && gotResult2, proposalList, simResultList)
+	job.generalMultiReport(resultPendingChan, simsDone)
 }
 
-func (job *MultiSetJob) makeProposalChannel(groupChannel <-chan *workingGroup, cancelGenerate *util_async.CancelSignalBasic) (<-chan multi_types.MultiProposedOutput, <-chan int) {
+func (job *MultiSetJob) mergeDuplicateJobs(simJobChannel1 <-chan *simulateJobPending) <-chan *simulateJobPending {
+	return util_async.Channel_RemoveDuplicatesFuncNotify(
+		simJobChannel1,
+		func(a, b *simulateJobPending) bool {
+			return (*a).simJob.Equals(&(*b).simJob)
+		},
+		func(keep, drop *simulateJobPending) {
+			keep.MergePendingFrom(drop)
+		},
+	)
+}
+
+func (job *MultiSetJob) makeProposalChannel(groupChannel <-chan *workingGroup, cancelGenerate *util_async.CancelSignalBasic) (<-chan *multi_types.MultiProposedOutput, <-chan int) {
 	futureCount := util_async.FutureValueAdderIntMake(0)
-	proposalMixer := util_async.FutureChannelMixerContinuing[multi_types.MultiProposedOutput]{}
+	proposalMixer := util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput]{}
 
 	util_async.ForEach_Channel_NonBlocking(c_mainProposal_threadCount, groupChannel, func(group *workingGroup) {
 		group.groupProposals(&proposalMixer, futureCount, cancelGenerate)
@@ -46,8 +54,8 @@ func (job *MultiSetJob) makeProposalChannel(groupChannel <-chan *workingGroup, c
 
 	proposalChannel = util_async.Channel_RemoveDuplicatesFuncNotify(proposalChannel, func(a, b *multi_types.MultiProposedOutput) bool {
 		return a.Equals(b)
-	}, func(x *multi_types.MultiProposedOutput) {
-		job.printer.Printf("Remove Duplicate %s\n", x.Id)
+	}, func(keep, drop *multi_types.MultiProposedOutput) {
+		job.printer.Printf("Remove Duplicate %s for %s\n", drop.Id, keep.Id)
 	})
 
 	proposalChannel = job.listInitialOutputs(proposalChannel)
@@ -79,9 +87,10 @@ func (job *MultiSetJob) RunCullingSets(targetSolutionCount int64, timeLimit time
 	job.CullingReport()
 }
 
-func (job *MultiSetJob) generalMultiReport(gotResult bool, proposalList []multi_types.MultiProposedOutput, simResultList []simulateJobResult) {
-	if gotResult {
-		simMultiResults := job.linkSimResults(proposalList, simResultList)
+func (job *MultiSetJob) generalMultiReport(pendingResultChannel <-chan *simulateMultiResultPending, simsDone *util_async.FutureVoid) {
+	simMultiResults := job.incrementalReporting(pendingResultChannel, simsDone)
+
+	if len(simMultiResults) > 0 {
 		job.reportSimResults(simMultiResults)
 
 		best, rankedData := job.rankAllResults(simMultiResults)

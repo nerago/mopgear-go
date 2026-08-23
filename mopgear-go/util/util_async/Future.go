@@ -3,6 +3,7 @@ package util_async
 import (
 	"os"
 	"sync"
+	"time"
 
 	"github.com/nerago/mopgear-go/util/util_collection"
 )
@@ -57,7 +58,7 @@ type FutureVoid struct {
 
 var _ IFuture = &FutureVoid{}
 
-func FutureVoid_Make[T any]() *FutureVoid {
+func FutureVoid_Make() *FutureVoid {
 	return &FutureVoid{
 		signalChannel: make(chan any, 1),
 	}
@@ -75,16 +76,48 @@ func (fv *FutureVoid) SetResultEmpty() {
 func (fv *FutureVoid) WaitForComplete() {
 	if fv == nil || fv.signalChannel == nil {
 		panic("invalid FutureVoid")
-	} else if fv.hasWaiter {
+	}
+
+	fv.lock.Lock()
+	if fv.hasWaiter {
 		panic("duplicate waiter")
 	}
 	fv.hasWaiter = true
+	fv.lock.Unlock()
 
 	_, channelOk := <-fv.signalChannel
 	if !channelOk {
 		panic("signal channel closed")
 	}
 	close(fv.signalChannel)
+}
+
+func (fv *FutureVoid) WaitForLimitedDuration(duration time.Duration) (timeout bool) {
+	if fv == nil || fv.signalChannel == nil {
+		panic("invalid FutureVoid")
+	}
+
+	fv.lock.Lock()
+	if fv.hasWaiter {
+		panic("duplicate waiter")
+	}
+	fv.hasWaiter = true
+	fv.lock.Unlock()
+
+	select {
+	case _, channelOk := <-fv.signalChannel:
+		if !channelOk {
+			panic("signal channel closed")
+		}
+		close(fv.signalChannel)
+		return false
+
+	case <-time.After(duration):
+		fv.lock.Lock()
+		fv.hasWaiter = false
+		fv.lock.Unlock()
+		return true
+	}
 }
 
 func (fv *FutureVoid) AddCompletedHandler(onComplete func()) {
@@ -252,9 +285,7 @@ var _ IFutureWithResult[int] = &Future[int]{}
 
 func Future_Make[T any]() *Future[T] {
 	return &Future[T]{
-		futureCommon: futureCommon[T]{
-			resultChannel: make(chan futureResult[T], 1),
-		},
+		resultChannel: make(chan futureResult[T], 1),
 	}
 }
 
@@ -293,9 +324,7 @@ var _ IFutureWithResultAndCancel[int] = &FutureCancellable[int]{}
 
 func FutureCancellable_Make[T any]() *FutureCancellable[T] {
 	return &FutureCancellable[T]{
-		futureCommon: futureCommon[T]{
-			resultChannel: make(chan futureResult[T], 1),
-		},
+		resultChannel:       make(chan futureResult[T], 1),
 		cancelSignalChannel: make(chan struct{}),
 	}
 }

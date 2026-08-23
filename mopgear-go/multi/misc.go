@@ -9,7 +9,7 @@ import (
 const (
 	c_defaultTimeoutSeconds          = 600
 	c_prepThreadCount                = 8
-	c_simThreadCount                 = 4
+	c_simThreadCount                 = 2
 	c_highsThreadCount               = 10
 	c_permuteThreadCount             = 8
 	c_decimateThreadCount            = 12

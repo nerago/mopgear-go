@@ -1,6 +1,9 @@
 package multi
 
 import (
+	"maps"
+	"sync"
+
 	"github.com/nerago/mopgear-go/gear_model"
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/multi/multi_types"
@@ -9,7 +12,6 @@ import (
 	"github.com/nerago/mopgear-go/tools"
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_async"
-	"github.com/nerago/mopgear-go/util/util_collection"
 )
 
 type simulateJob struct {
@@ -21,24 +23,89 @@ type simulateJob struct {
 	professions gear_model.ProfessionInfo
 }
 
-type simulateJobResult struct {
-	job    simulateJob
-	result stats.SimData
+type simulateJobPending struct {
+	simJob        simulateJob
+	resultPending *stats.SimData
+	multiPending  []*simulateMultiResultPending
+	mutex         sync.Mutex
+	merged        bool
+}
+
+func (sjp *simulateJobPending) SetResult(result *stats.SimData) {
+	sjp.mutex.Lock()
+	defer sjp.mutex.Unlock()
+
+	if sjp.merged {
+		panic("don't expect result for on merged result")
+	}
+
+	sjp.resultPending = result
+	for _, r := range sjp.multiPending {
+		r.notifyOnResult()
+	}
+	sjp.multiPending = nil
+}
+
+func (sjp *simulateJobPending) MergePendingFrom(other *simulateJobPending) {
+	other.mutex.Lock()
+	defer other.mutex.Unlock()
+	sjp.mutex.Lock()
+	defer sjp.mutex.Unlock()
+
+	for _, om := range other.multiPending {
+		om.mutex.Lock()
+		for k, oj := range om.simPending {
+			if oj == other {
+				om.simPending[k] = sjp
+			}
+		}
+		om.mutex.Unlock()
+	}
+
+	if sjp.resultPending != nil {
+		for _, r := range other.multiPending {
+			r.notifyOnResult()
+		}
+	} else {
+		sjp.multiPending = append(sjp.multiPending, other.multiPending...)
+	}
+
+	other.multiPending = nil
+	other.merged = true
+}
+
+type simulateMultiResultPending struct {
+	proposed   *multi_types.MultiProposedOutput
+	simPending map[string]*simulateJobPending
+	mutex      sync.Mutex
+	ready      bool
+}
+
+func (m *simulateMultiResultPending) notifyOnResult() {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	allReady := true
+	for _, p := range m.simPending {
+		if p.resultPending == nil {
+			allReady = false
+		}
+	}
+	if allReady {
+		m.ready = true
+	}
 }
 
 type simulateMultiResult struct {
-	proposed multi_types.MultiProposedOutput
-	simMap   map[string]stats.SimData
+	proposed *multi_types.MultiProposedOutput
+	simMap   map[string]*stats.SimData
 }
 
-func (job *MultiSetJob) runSimsForProposalChannel(proposalChannel <-chan multi_types.MultiProposedOutput, tracker *util.TrackProgress, expectedCount <-chan int) *util_async.FutureCancellable[[]simulateJobResult] {
-	simChannel := job.prepareSimList(proposalChannel)
-
-	simsPerProposal := len(job.itemPrep)
-	expectedCount = util_async.Map_ChannelToChannel(1, expectedCount, func(x int) int { return x * simsPerProposal })
-
-	futureSimResultList := job.runSims(simChannel, tracker, expectedCount)
-	return futureSimResultList
+func (r simulateMultiResult) Equals(b *simulateMultiResult) bool {
+	return r.proposed.Equals(b.proposed) &&
+		maps.EqualFunc(r.simMap, b.simMap, func(x stats.SimData, y stats.SimData) bool {
+			return x.Equals(&y)
+		})
 }
 
 func checkNoConflicts(outputSet map[string]multi_types.SingleProposedOutput, printer *util.PrintRecorder) bool {
@@ -74,61 +141,73 @@ func (simJob *simulateJob) Equals(other *simulateJob) bool {
 		simJob.equip.Equals(&other.equip)
 }
 
-func (job *MultiSetJob) prepareSimList(proposalList <-chan multi_types.MultiProposedOutput) <-chan simulateJob {
-	jobChannel := util_async.MapMulti_ChannelToChannel(1, proposalList, func(proposal multi_types.MultiProposedOutput, nextChan chan<- simulateJob) {
-		for _, single := range proposal.Parts {
-			label := single.SpecLabel
-			prep := job.itemPrep[label]
-			nextChan <- simulateJob{
-				spec:        single.Spec,
-				goal:        prep.model.Goal,
-				fight:       prep.model.SimulateAs,
-				simSpeedUp:  prep.model.SimSpeedUp,
-				professions: prep.model.Professions,
-				equip:       *single.FullSet.Items()}
+func (job *MultiSetJob) prepareSimList(proposalList <-chan *multi_types.MultiProposedOutput) (<-chan *simulateJobPending, <-chan *simulateMultiResultPending) {
+	simJobChan := make(chan *simulateJobPending)
+	resultPendingChan := make(chan *simulateMultiResultPending)
+	util_async.ForEach_Channel_NonBlocking(1, proposalList, func(proposal *multi_types.MultiProposedOutput) {
+		proposalPending := &simulateMultiResultPending{
+			proposed:   proposal,
+			simPending: make(map[string]*simulateJobPending),
 		}
-	})
 
-	return util_async.Channel_RemoveDuplicatesFunc(jobChannel, (*simulateJob).Equals)
+		for label, single := range proposal.Parts {
+			simJob := job.createPendingJob(label, single, proposalPending)
+			simJobChan <- simJob
+		}
+
+		resultPendingChan <- proposalPending
+	}, func() {
+		close(simJobChan)
+		close(resultPendingChan)
+	})
+	return simJobChan, resultPendingChan
 }
 
-func (job *MultiSetJob) runSims(jobChan <-chan simulateJob, trackProgress *util.TrackProgress, expectedCount <-chan int) *util_async.FutureCancellable[[]simulateJobResult] {
-	trackProgress.RunOuterTracking(0)
+func (job *MultiSetJob) createPendingJob(label string, single multi_types.SingleProposedOutput, proposalPending *simulateMultiResultPending) *simulateJobPending {
+	prep := job.itemPrep[label]
+	simJob := &simulateJobPending{
+		simJob: job.createSimJob(single, prep),
+	}
+	proposalPending.simPending[label] = simJob
+	simJob.multiPending = append(simJob.multiPending, proposalPending)
+	return simJob
+}
 
+func (job *MultiSetJob) createSimJob(single multi_types.SingleProposedOutput, prep *specItemPrep) simulateJob {
+	return simulateJob{
+		spec:        single.Spec,
+		goal:        prep.model.Goal,
+		fight:       prep.model.SimulateAs,
+		simSpeedUp:  prep.model.SimSpeedUp,
+		professions: prep.model.Professions,
+		equip:       *single.FullSet.Items(),
+	}
+}
+
+func (job *MultiSetJob) runSims(jobChan <-chan *simulateJobPending, expectedCount <-chan int) *util_async.FutureVoid {
+	simFinished := util_async.FutureVoid_Make()
+
+	simsPerProposal := len(job.itemPrep)
+	tracker := util.TrackProgress_Start()
+	tracker.RunOuterTracking(0)
 	go func() {
 		for newCount := range expectedCount {
-			trackProgress.UpdateExpectedChildCount(newCount)
+			tracker.UpdateExpectedChildCount(newCount * simsPerProposal)
 		}
 	}()
 
-	return util_async.Map_ChannelToSlice_FutureCancellable(c_simThreadCount, jobChan, trackProgress.SetDone, func(sim simulateJob) simulateJobResult {
-		result := simulate.WowSim_Execute_SpecifyAll(job.input.SimRunSize, sim.simSpeedUp, sim.spec, sim.goal, sim.fight, sim.professions, &sim.equip, nil, trackProgress.NewChild())
-		job.printer.Printf("sim %22s fight=%d %s\n", sim.spec.Name(), sim.fight, result.CompactStringGeneral())
-		return simulateJobResult{sim, result}
+	util_async.ForEach_Channel_NonBlocking(c_simThreadCount, jobChan, func(pending *simulateJobPending) {
+		sim := pending.simJob
+		result := simulate.WowSim_Execute_SpecifyAll(job.input.SimRunSize, sim.simSpeedUp, sim.spec, sim.goal, sim.fight,
+			sim.professions, &sim.equip, nil, tracker.NewChild())
+		job.printer.Printf("sim %s fight=%d %s\n", sim.spec.Name(), sim.fight, result.CompactStringGeneral())
+		pending.SetResult(new(result))
+	}, func() {
+		tracker.SetDone()
+		simFinished.SetResultEmpty()
 	})
-}
 
-func (job *MultiSetJob) linkSimResults(proposalList []multi_types.MultiProposedOutput, jobList []simulateJobResult) []simulateMultiResult {
-	resultList := make([]simulateMultiResult, 0, len(proposalList))
-	for _, proposal := range proposalList {
-		result := job.linkSimResult(proposal, jobList)
-		resultList = append(resultList, result)
-	}
-	return resultList
-}
-
-func (job *MultiSetJob) linkSimResult(proposal multi_types.MultiProposedOutput, resultList []simulateJobResult) simulateMultiResult {
-	multiResult := simulateMultiResult{proposal, make(map[string]stats.SimData, len(proposal.Parts))}
-	for label, part := range proposal.Parts {
-		prep := job.itemPrep[label]
-		for simResult := range util_collection.ForPointer(resultList) {
-			if simResult.job.equalForLink(&part, prep) {
-				multiResult.simMap[label] = simResult.result
-				break
-			}
-		}
-	}
-	return multiResult
+	return simFinished
 }
 
 func (job *MultiSetJob) writeToGearFiles(result *simulateMultiResult) {

@@ -17,7 +17,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (group *workingGroup) groupProposals(proposalMix *util_async.FutureChannelMixerContinuing[multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, cancel *util_async.CancelSignalBasic) {
+func (group *workingGroup) groupProposals(proposalMix *util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, cancel *util_async.CancelSignalBasic) {
 	if group.hasPermutes() {
 		group.proposalsUnderPermutation(&group.task.Permute, proposalMix, expectedCountAdder, cancel)
 	} else {
@@ -32,7 +32,7 @@ func (group *workingGroup) groupProposals(proposalMix *util_async.FutureChannelM
 	}
 }
 
-func (group *workingGroup) proposalsUnderPermutation(inputPermute *multi_types.InputPermute, proposalMix *util_async.FutureChannelMixerContinuing[multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, cancel util_async.CancelSignal) {
+func (group *workingGroup) proposalsUnderPermutation(inputPermute *multi_types.InputPermute, proposalMix *util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, cancel util_async.CancelSignal) {
 	estimate := group.job.estimateFixedPermutations(inputPermute)
 	group.job.printer.Printf("PERMUTE SET COUNT %d\n", estimate)
 
@@ -46,7 +46,7 @@ func (group *workingGroup) proposalsUnderPermutation(inputPermute *multi_types.I
 	)
 }
 
-func (group *workingGroup) proposalsGeneral(permuteSet *permuteSet, proposalMix *util_async.FutureChannelMixerContinuing[multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, cancel util_async.CancelSignal) {
+func (group *workingGroup) proposalsGeneral(permuteSet *permuteSet, proposalMix *util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, cancel util_async.CancelSignal) {
 	includeInterimResults := group.task.IncludeInterimResults
 
 	var highProcess *solve_highs.SolverHighsMultiProcess
@@ -61,7 +61,7 @@ func (group *workingGroup) proposalsGeneral(permuteSet *permuteSet, proposalMix 
 		group.task.Alternates, group.task.AlternatesLimit,
 		cancel, includeInterimResults)
 
-	nextChannel := util_async.Map_ChannelToChannel(1, multiSolveChannel, func(setResult solve_highs.HighsMultiResult) multi_types.MultiProposedOutput {
+	nextChannel := util_async.Map_ChannelToChannel(1, multiSolveChannel, func(setResult solve_highs.HighsMultiResult) *multi_types.MultiProposedOutput {
 		return group.makeProposalFromHighs(setResult, group.job.printer, uuid.NewString())
 	})
 
@@ -169,7 +169,7 @@ func (group *workingGroup) restrictOptionsToVersionsInSet(itemOptions *items.Ful
 	}
 }
 
-func (group *workingGroup) makeProposalFromHighs(multiResult solve_highs.HighsMultiResult, printer *util.PrintRecorder, proposalId string) multi_types.MultiProposedOutput {
+func (group *workingGroup) makeProposalFromHighs(multiResult solve_highs.HighsMultiResult, printer *util.PrintRecorder, proposalId string) *multi_types.MultiProposedOutput {
 	totalRatingSum := 0.0
 	outputs := make(map[string]multi_types.SingleProposedOutput, len(multiResult.Entries))
 
@@ -194,7 +194,7 @@ func (group *workingGroup) makeProposalFromHighs(multiResult solve_highs.HighsMu
 
 	if checkNoConflicts(outputs, group.job.printer) {
 		combo := multi_types.CommonCombo_FromProposed(outputs)
-		proposed := multi_types.MultiProposedOutput{
+		proposed := &multi_types.MultiProposedOutput{
 			Id:             proposalId,
 			TotalRatingSum: totalRatingSum,
 			Parts:          outputs,
@@ -208,8 +208,8 @@ func (group *workingGroup) makeProposalFromHighs(multiResult solve_highs.HighsMu
 	}
 }
 
-func (job *MultiSetJob) listInitialOutputs(bestOutputs <-chan multi_types.MultiProposedOutput) <-chan multi_types.MultiProposedOutput {
-	return util_async.PeekChannel(bestOutputs, func(prop *multi_types.MultiProposedOutput) {
+func (job *MultiSetJob) listInitialOutputs(bestOutputs <-chan *multi_types.MultiProposedOutput) <-chan *multi_types.MultiProposedOutput {
+	return util_async.PeekChannel_NoPointer(bestOutputs, func(prop *multi_types.MultiProposedOutput) {
 		job.printer.Printf("::::::::: PROPOSED %f :::::::: %s ::::::::\n", prop.TotalRatingSum, prop.Id)
 		job.printer.Printf("Weight Type %d\n", prop.WeightType)
 		for label, out := range prop.Parts {
@@ -220,8 +220,8 @@ func (job *MultiSetJob) listInitialOutputs(bestOutputs <-chan multi_types.MultiP
 	})
 }
 
-func (group *workingGroup) existingGearAsProposal() multi_types.MultiProposedOutput {
-	proposal := multi_types.MultiProposedOutput{
+func (group *workingGroup) existingGearAsProposal() *multi_types.MultiProposedOutput {
+	proposal := &multi_types.MultiProposedOutput{
 		Id:           fmt.Sprintf("Existing-Gear-%d", group.weightType),
 		Parts:        make(map[string]multi_types.SingleProposedOutput),
 		PermuteLabel: "",
@@ -241,9 +241,9 @@ func (group *workingGroup) existingGearAsProposal() multi_types.MultiProposedOut
 	return proposal
 }
 
-func (group *workingGroup) additionalProposalsFromSpecOptimalBaseline(cancel util_async.CancelSignal) <-chan multi_types.MultiProposedOutput {
+func (group *workingGroup) additionalProposalsFromSpecOptimalBaseline(cancel util_async.CancelSignal) <-chan *multi_types.MultiProposedOutput {
 	allWorking := util_async.SeqToChannel(maps.Values(group.workers))
-	return util_async.MapMulti_ChannelToChannel_Cancellable(c_additionalProposal_threadCount, allWorking, cancel, func(work *specWorker, downstream chan<- multi_types.MultiProposedOutput) {
+	return util_async.MapMulti_ChannelToChannel_Cancellable(c_additionalProposal_threadCount, allWorking, cancel, func(work *specWorker, downstream chan<- *multi_types.MultiProposedOutput) {
 		printer := util.PrintRecorder_HoldAll()
 
 		highProcess := group.highProcessSetupRestrictedOnBaseline(work)

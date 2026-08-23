@@ -3,6 +3,7 @@ package multi
 import (
 	"cmp"
 	"slices"
+	"time"
 
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/multi/multi_types"
@@ -10,6 +11,7 @@ import (
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/tools"
 	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_async"
 	"github.com/nerago/mopgear-go/util/util_collection"
 	"github.com/nerago/mopgear-go/util/util_rank"
 	"github.com/nerago/mopgear-go/weightfind/simrank"
@@ -107,8 +109,8 @@ func (job *MultiSetJob) reportAsCsv(simResultList []*simMultiRankable) {
 
 	csv := csvStartHeader(labelOrder, outputTypesByParam, rowCount, needPermuteLine)
 
-	for _, simResult := range simResultList {
-		proposed := &simResult.result.proposed
+	for index, simResult := range simResultList {
+		proposed := simResult.result.proposed
 		simMap := simResult.result.simMap
 
 		csv.AddString(proposed.Id)
@@ -127,6 +129,7 @@ func (job *MultiSetJob) reportAsCsv(simResultList []*simMultiRankable) {
 		}
 
 		csv.AddInt(int(proposed.WeightType))
+		csv.AddInt(index + 1)
 		csv.AddInt(countReGem(proposed))
 		if needPermuteLine {
 			csv.AddString("\"" + proposed.PermuteLabel + "\"")
@@ -136,6 +139,9 @@ func (job *MultiSetJob) reportAsCsv(simResultList []*simMultiRankable) {
 	}
 
 	csv.Write(job.printer)
+
+	job.printer.Println0()
+	job.printer.Println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 }
 
 func csvStartHeader(labelOrder []string, outputTypesByParam map[string][]stats.SimType, rowCount int, needPermuteLine bool) util.CSVOutputByColumn {
@@ -154,6 +160,7 @@ func csvStartHeader(labelOrder []string, outputTypesByParam map[string][]stats.S
 		}
 	}
 	csv.AddString("weight")
+	csv.AddString("rank")
 	csv.AddString("regem")
 	if needPermuteLine {
 		csv.AddString("permute")
@@ -199,7 +206,7 @@ func countReGem(multiProposed *multi_types.MultiProposedOutput) int {
 	return countReGemItems
 }
 
-func listReGem(multiProposed multi_types.MultiProposedOutput) []*items.FullItem {
+func listReGem(multiProposed *multi_types.MultiProposedOutput) []*items.FullItem {
 	allItems := make([]*items.FullItem, 0)
 	for _, part := range multiProposed.Parts {
 		allItems = slices.AppendSeq(allItems, part.FullSet.Items().AllItemSeq())
@@ -221,12 +228,44 @@ func (job *MultiSetJob) handleBestRankedResult(best util_rank.BestCollector1[sim
 	}
 }
 
+func (job *MultiSetJob) incrementalReporting(channel <-chan *simulateMultiResultPending, done *util_async.FutureVoid) []simulateMultiResult {
+	updateLoopTime := time.Second * 30
+	incrementalSlice := util_async.CollectChannelToSliceIncremental(channel)
+	for done.WaitForLimitedDuration(updateLoopTime) {
+		tempSlice := incrementalSlice.SliceTemp()
+		completedResults := job.pendingToCompletedResults(tempSlice)
+		_, rankedData := job.rankAllResults(completedResults)
+		job.reportAsCsv(rankedData)
+	}
+	tempSlice := incrementalSlice.SliceTemp()
+	return job.pendingToCompletedResults(tempSlice)
+}
+
+func (job *MultiSetJob) pendingToCompletedResults(pendingSlice []*simulateMultiResultPending) []simulateMultiResult {
+	completed := make([]simulateMultiResult, 0)
+	for _, pending := range pendingSlice {
+		if pending.ready {
+			mr := simulateMultiResult{
+				proposed: pending.proposed,
+				simMap: util_collection.MapBasicMap(pending.simPending, func(v *simulateJobPending) *stats.SimData {
+					if v == nil || v.resultPending == nil {
+						panic("unexpected nil")
+					}
+					return v.resultPending
+				}),
+			}
+			completed = append(completed, mr)
+		}
+	}
+	return completed
+}
+
 func (job *MultiSetJob) rankAllResults(resultList []simulateMultiResult) (util_rank.BestCollector1[simulateMultiResult], []*simMultiRankable) {
 	// build nicely sortable set of pointer based slices
 	multiRankSlice := util_collection.MapSliceAsNew(resultList, func(result *simulateMultiResult) *simMultiRankable {
 		return &simMultiRankable{
 			result: result,
-			singles: util_collection.MapBasicMap(result.simMap, func(sim stats.SimData) *simSingleRankable {
+			singles: util_collection.MapBasicMap(result.simMap, func(sim *stats.SimData) *simSingleRankable {
 				return &simSingleRankable{simData: sim}
 			}),
 		}
@@ -268,13 +307,13 @@ type simMultiRankable struct {
 }
 
 type simSingleRankable struct {
-	simData stats.SimData
+	simData *stats.SimData
 	score   float64
 	rank    int
 }
 
 func (s *simSingleRankable) GetSimData() *stats.SimData {
-	return &s.simData
+	return s.simData
 }
 
 func (s *simSingleRankable) GetSimScore() float64 {
