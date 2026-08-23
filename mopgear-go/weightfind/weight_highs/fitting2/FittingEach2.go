@@ -26,18 +26,21 @@ type FittingEachStatWeightProcess2 struct {
 }
 
 type fitting2EachFields struct {
-	statType    stats.StatType
-	simType     stats.SimType
-	process     SingleSegmented2
+	statType stats.StatType
+	simType  stats.SimType
+
+	innerPrinter *util.PrintRecorder
+	stopwatch    util.Stopwatch
+
 	resultSlice []util_weight.FittingInterimResult2
 }
 
 func (f fitting2EachFields) InnerPrinter() *util.PrintRecorder {
-	return f.process.Printer
+	return f.innerPrinter
 }
 
 func (f fitting2EachFields) Stopwatch() *util.Stopwatch {
-	return &f.process.Stopwatch
+	return &f.stopwatch
 }
 
 func (f fitting2EachFields) Results() iter.Seq[util_weight.FittingInterimResult2] {
@@ -82,19 +85,23 @@ func (fe *FittingEachStatWeightProcess2) launchEachNested() {
 	for _, statType := range fe.RequiredStats {
 		for _, simType := range fe.RequiredSims {
 			innerPrinter := util.PrintRecorder_HoldAll()
-			fields := fitting2EachFields{statType: statType, simType: simType}
-			scaleStat := fe.ScaleStats.GetOrPanic(statType)
-			fields.process.Init(fe.TargetSegmentCount, scaleStat, innerPrinter, fe.Timeout)
-			fields.process.SupplyData(fe.prepareSamples(statType, simType))
+			fields := fitting2EachFields{statType: statType, simType: simType, innerPrinter: innerPrinter}
 			fe.Each.Put(statType, simType, &fields)
 		}
 	}
 
 	channelEach := util_async.SeqToChannel_Cancellable(fe.Each.SeqValues(), &fe.CancelInternal)
 	util_async.ForEach_Channel(c_fitting2_each_threadCount, channelEach, func(fields *fitting2EachFields) {
-		initialResultFuture := fields.process.Run()
+		scaleStat := fe.ScaleStats.GetOrPanic(fields.statType)
+
+		process := SingleSegmented2{}
+		process.Init(fe.TargetSegmentCount, scaleStat, fields.innerPrinter, fe.Timeout)
+		process.SupplyData(fe.prepareSamples(fields.statType, fields.simType))
+		initialResultFuture := process.Run()
 		util_async.ChainCancel(&fe.CancelInternal, initialResultFuture)
 		initialResult, hasResult := initialResultFuture.WaitForResult()
+		fields.stopwatch = process.Stopwatch
+
 		if hasResult && len(initialResult.Segments) > 0 {
 			fe.rescaleAndCleanup(initialResult, fields)
 		} else {

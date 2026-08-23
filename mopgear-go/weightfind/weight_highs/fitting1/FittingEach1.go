@@ -34,7 +34,6 @@ type FittingEachStatWeightProcess struct {
 type fittingEachFields struct {
 	statType    stats.StatType
 	simType     stats.SimType
-	process     FittingSingleStatSegmentsProcess
 	resultSlice []util_weight2.FittingInterimResult
 }
 
@@ -98,19 +97,23 @@ func (fe *FittingEachStatWeightProcess) buildResult() *weight_types.Weight3Exten
 func (fe *FittingEachStatWeightProcess) launchEachNested(cancel util_async.CancelSignal) {
 	for _, statType := range fe.requiredStats {
 		for _, simType := range fe.requiredSims {
-			printer := util.PrintRecorder_HoldAll()
 			fields := fittingEachFields{statType: statType, simType: simType}
-			fields.process.Init(printer, fe.timeout)
-			fields.process.SetOnlyComputeSingleSegment(fe.onlyComputeSingleSegmentEach)
-			fields.process.SupplyData(fe.prepareSamples(statType, simType))
 			fe.each.Put(statType, simType, &fields)
 		}
 	}
 
 	channelEach := util_async.SeqToChannel_Cancellable(fe.each.SeqValues(), cancel)
 	util_async.ForEach_Channel(c_fitting_each_threadCount, channelEach, func(fields *fittingEachFields) {
-		initialResult := fields.process.Run(cancel)
+		printer := util.PrintRecorder_HoldAll()
+
+		process := FittingSingleStatSegmentsProcess{}
+		process.Init(printer, fe.timeout)
+		process.SetOnlyComputeSingleSegment(fe.onlyComputeSingleSegmentEach)
+		process.SupplyData(fe.prepareSamples(fields.statType, fields.simType))
+		initialResult := process.Run(cancel)
+
 		fe.rescaleAndCleanup(initialResult, fields)
+		fe.printer.AppendOther(printer)
 	})
 }
 
