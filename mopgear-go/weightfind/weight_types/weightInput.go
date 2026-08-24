@@ -64,6 +64,10 @@ type StatRange struct {
 	Maximum uint32
 }
 
+func (rn StatRange) Equals(other StatRange) bool {
+	return rn.Maximum == other.Maximum && rn.Minimum == other.Minimum
+}
+
 func (rn StatRange) Overlap(other StatRange) bool {
 	if rn.Minimum > other.Maximum {
 		return false

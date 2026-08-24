@@ -34,6 +34,22 @@ func (wr *Weight1Basic) IsEmpty() bool {
 	return wr.content.IsEmpty()
 }
 
+func (wr *Weight1Basic) IsOverlySimple() bool {
+	zero, one, interesting := 0, 0, 0
+	for value := range wr.content.SeqValues() {
+		if stats.IsValidWeightNumber(value) {
+			if util.FloatEqualsZero(value) {
+				zero++
+			} else if util.FloatEqualsOne(value) {
+				one++
+			} else {
+				interesting++
+			}
+		}
+	}
+	return interesting <= 1 || (interesting+one) <= 2
+}
+
 func (wr *Weight1Basic) Get(statType stats.StatType) float64 {
 	return wr.content.GetFloat(statType)
 }

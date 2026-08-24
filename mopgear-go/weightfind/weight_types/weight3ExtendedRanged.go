@@ -91,6 +91,17 @@ func (wer *Weight3ExtendedRanged) FinishAndValidate() {
 			}
 		}
 	}
+	wer.StatWeights.Foreach(func(simType stats.SimType, statType stats.StatType, entry Weight3ExtendedStatEntry) {
+		if !slices.Contains(wer.StatList, statType) {
+			panic("unexpected weight for " + statType.Name())
+		}
+		if !slices.Contains(wer.SimList, simType) {
+			panic("unexpected weight for " + simType.Name())
+		}
+		if entry.StatRange.RangeSize() <= 1 {
+			panic("empty range")
+		}
+	})
 
 	for simType := range wer.SimPriority.entries.SeqKey() {
 		if !slices.Contains(wer.SimList, simType) {
@@ -165,10 +176,10 @@ func (wer *Weight3ExtendedRanged) Equals(other *Weight3ExtendedRanged) bool {
 }
 
 func (wer *Weight3ExtendedRanged) ConvertToWeight2() *Weight2Extended {
-	weight2 := Weight2Extended_Make(wer.StatList, wer.SimList)
+	weight2 := Weight2Extended_Make(wer.SimList, wer.StatList)
 	for entry := range wer.StatWeights.SeqKey1Key2ValueSeqEntries() {
 		bestValue := chooseBest(entry.ValueSeq)
-		weight2.PutWeight(entry.Key2, entry.Key1, bestValue)
+		weight2.PutWeight(entry.Key1, entry.Key2, bestValue)
 	}
 	weight2.SimPriority = wer.SimPriority.Clone()
 	weight2.FinishAndValidate()

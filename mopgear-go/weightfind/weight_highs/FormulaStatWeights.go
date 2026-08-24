@@ -236,7 +236,7 @@ func (form *FormulaStatWeightProcess) extractAndReportSolution(solution *highs.S
 
 func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solution) weight_types.Weight2Extended {
 	// extract and report on detail weights
-	weightExtended := weight_types.Weight2Extended_Make(form.requiredStats, form.requiredSims)
+	weightExtended := weight_types.Weight2Extended_Make(form.requiredSims, form.requiredStats)
 	for entry := range form.detailedWeightColumns.SeqKey1Key2ValueEntries() {
 		statType := entry.Key1
 		simType := entry.Key2
@@ -262,7 +262,7 @@ func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solut
 		scaleFix := form.scaleSims.GetOrPanic(simType) / form.scaleStats.GetOrPanic(statType)
 		usableWeight := modelWeight / scaleFix
 
-		weightExtended.PutWeight(statType, simType, usableWeight)
+		weightExtended.PutWeight(simType, statType, usableWeight)
 
 		form.printer.Printf("%10s %10s %11.8f (%5.2e) %11.8f (%5.2e)\n", statType.Name(), simType.Name(), modelWeight, modelWeight, usableWeight, usableWeight)
 	}
@@ -292,7 +292,7 @@ func (form *FormulaStatWeightProcess) reportExamples(weightExtended *weight_type
 			form.printer.Printf(" %10s", simType.Name())
 			for _, statType := range form.requiredStats {
 				statValue := data.TotalStat.GetFloat(statType)
-				weight := weightExtended.GetWeightOrPanic(statType, simType)
+				weight := weightExtended.GetWeightOrPanic(simType, statType)
 				form.printer.Printf(" {%s %.2f * %.4e = %.4f}", statType.Name(), statValue, weight, statValue*weight)
 				statSum += statValue * weight
 			}

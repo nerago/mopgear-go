@@ -33,7 +33,7 @@ type FormulaStatWeightProcess2 struct {
 	objectiveEquationDiff util_highs.ObjectiveIndex
 	objectiveInclude      util_highs.ObjectiveIndex
 
-	scaleSims             util_collection.EnumMap[stats.SimType, util_weight.ScaleAndOffset]
+	scaleSims             stats.SimTypeMap[util_weight.ScaleAndOffset]
 	scaleStats            stats.StatTypeMap[float64]
 	detailedWeightColumns util_collection.MapMap[stats.StatType, stats.SimType, util_highs.ColumnIndex]
 	offsetColumns         map[stats.SimType]util_highs.ColumnIndex
@@ -243,7 +243,7 @@ func (form *FormulaStatWeightProcess2) extractAndReportSolution(solution *highs.
 
 func (form *FormulaStatWeightProcess2) extractDetailWeights(solution *highs.Solution) weight_types.Weight2Extended {
 	// extract and report on detail weights
-	weightExtended := weight_types.Weight2Extended_Make(form.requiredStats, form.requiredSims)
+	weightExtended := weight_types.Weight2Extended_Make(form.requiredSims, form.requiredStats)
 	for entry := range form.detailedWeightColumns.SeqKey1Key2ValueEntries() {
 		statType := entry.Key1
 		simType := entry.Key2
@@ -254,7 +254,7 @@ func (form *FormulaStatWeightProcess2) extractDetailWeights(solution *highs.Solu
 		scaleStat := form.scaleStats.GetOrPanic(statType)
 		usableWeight := modelWeight * scaleStat
 
-		weightExtended.PutWeight(statType, simType, usableWeight)
+		weightExtended.PutWeight(simType, statType, usableWeight)
 
 		form.printer.Printf("%10s %10s %11.8f (%5.2e) %11.8f (%5.2e)\n", statType.Name(), simType.Name(), modelWeight, modelWeight, usableWeight, usableWeight)
 	}
@@ -287,7 +287,7 @@ func (form *FormulaStatWeightProcess2) reportExamples(weightExtended *weight_typ
 			form.printer.Printf(" %10s", simType.Name())
 			for _, statType := range form.requiredStats {
 				statValue := data.TotalStat.GetFloat(statType)
-				weight := weightExtended.GetWeightOrPanic(statType, simType)
+				weight := weightExtended.GetWeightOrPanic(simType, statType)
 				form.printer.Printf(" {%s %.0f * %.2e = %.4f}", statType.Name(), statValue, weight, statValue*weight)
 				rowSum += statValue * weight
 			}

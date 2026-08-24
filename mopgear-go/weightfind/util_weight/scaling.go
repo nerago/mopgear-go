@@ -109,8 +109,8 @@ func (so ScaleAndOffset) Apply(value float64) float64 {
 	return (value + so.Offset) * so.Scale
 }
 
-func ChooseSimUnfriendlyUnitScaleAndOffset(inputData []weight_types.WeightInput, simTypeList []stats.SimType) util_collection.EnumMap[stats.SimType, ScaleAndOffset] {
-	scaleMap := util_collection.EnumMapMake[stats.SimType, ScaleAndOffset](stats.SimTypeEnum)
+func ChooseSimUnfriendlyUnitScaleAndOffset(inputData []weight_types.WeightInput, simTypeList []stats.SimType) stats.SimTypeMap[ScaleAndOffset] {
+	scaleMap := stats.SimTypeMap[ScaleAndOffset]{}
 	for _, simType := range simTypeList {
 		valueSeq := util_collection.MapSliceAsSeq(inputData, func(x *weight_types.WeightInput) float64 {
 			return x.SimResult.Get(simType)
@@ -122,8 +122,8 @@ func ChooseSimUnfriendlyUnitScaleAndOffset(inputData []weight_types.WeightInput,
 	return scaleMap
 }
 
-func ChooseSimDetailUnitScaleAndOffset(inputData []weight_types.WeightInput, simTypeList []stats.SimType) util_collection.EnumMap[stats.SimType, ScaleAndOffset] {
-	scaleMap := util_collection.EnumMapMake[stats.SimType, ScaleAndOffset](stats.SimTypeEnum)
+func ChooseSimDetailUnitScaleAndOffset(inputData []weight_types.WeightInput, simTypeList []stats.SimType) stats.SimTypeMap[ScaleAndOffset] {
+	scaleMap := stats.SimTypeMap[ScaleAndOffset]{}
 	for _, simType := range simTypeList {
 		var valueSeq iter.Seq[float64]
 

@@ -106,7 +106,7 @@ func convertWeight2Details(weight2 *weight_types.Weight2Extended) []*gearproto.W
 	weights := make([]*gearproto.Weight2Entry, 0)
 	for _, simType := range weight2.SimList {
 		for _, statType := range weight2.StatList {
-			weightEntry, hasEntry := weight2.DetailedWeights.Get(statType, simType)
+			weightEntry, hasEntry := weight2.DetailedWeights.Get(simType, statType)
 			if hasEntry {
 				protoEntry := gearproto.Weight2Entry{}
 				protoEntry.SimType = convertSimType(simType)
@@ -122,17 +122,13 @@ func convertWeight2Details(weight2 *weight_types.Weight2Extended) []*gearproto.W
 func buildGearWeight2(protoWeight *gearproto.Weight2Extended) *weight_types.Weight2Extended {
 	weight2 := &weight_types.Weight2Extended{}
 	for _, ent := range protoWeight.GetWeights() {
-		weight2.PutWeight(
-			convertStatTypeReverse(ent.StatType),
-			convertSimTypeReverse(ent.SimType),
-			ent.RatingWeight,
-		)
+		weight2.PutWeight(convertSimTypeReverse(ent.SimType), convertStatTypeReverse(ent.StatType), ent.RatingWeight)
 	}
 	for _, pri := range protoWeight.GetPriority() {
 		weight2.SetSimScale(convertSimTypeReverse(pri.SimType), pri.RangingScale, pri.RangingOffset, pri.RatioScale)
 	}
-	weight2.StatList = slices.Collect(weight2.DetailedWeights.SeqKey1())
-	weight2.SimList = slices.Collect(weight2.DetailedWeights.SeqKey2())
+	weight2.SimList = slices.Collect(weight2.DetailedWeights.SeqKey1())
+	weight2.StatList = slices.Collect(weight2.DetailedWeights.SeqKey2())
 	weight2.FinishAndValidate()
 	return weight2
 }

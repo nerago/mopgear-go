@@ -37,6 +37,15 @@ func SimPriorityBasic_Make(parts ...any) SimPriorityBasic {
 	return sim
 }
 
+func (sr *SimPriorityBasic) IsEmpty() bool {
+	for value := range sr.content.SeqValues() {
+		if stats.IsUsefulWeightNumber(value) {
+			return false
+		}
+	}
+	return true
+}
+
 func (sr *SimPriorityBasic) Set(simType stats.SimType, value float64) {
 	sr.content.Put(simType, value)
 }

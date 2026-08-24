@@ -244,11 +244,11 @@ func (ranker *RankingSeparatedWeights) makeEntryRankExact(targetScore float64, d
 func (ranker *RankingSeparatedWeights) extractAndReportSolution(solution *highs.Solution) weight_types.Weight2Extended {
 	ranker.build.DebugPrintColumns(solution, ranker.printer)
 
-	weight := weight_types.Weight2Extended_Make(ranker.requiredStats, ranker.requiredSims)
+	weight := weight_types.Weight2Extended_Make(ranker.requiredSims, ranker.requiredStats)
 	for entry := range ranker.detailedWeightColumns.SeqKey1Key2ValueEntries() {
 		weightColumn := entry.Value
 		weightValue := solution.ColValues[weightColumn]
-		weight.PutWeight(entry.Key1, entry.Key2, weightValue)
+		weight.PutWeight(entry.Key2, entry.Key1, weightValue)
 	}
 	for simType, offsetCol := range ranker.offsetColumns {
 		offsetValue := solution.ColValues[offsetCol]
@@ -283,7 +283,7 @@ func (ranker *RankingSeparatedWeights) reportExamples(weightExtended *weight_typ
 			ranker.printer.Printf(" %10s", simType.Name())
 			for _, statType := range ranker.requiredStats {
 				statValue := data.data.TotalStat.GetFloat(statType)
-				weight := weightExtended.GetWeightOrPanic(statType, simType)
+				weight := weightExtended.GetWeightOrPanic(simType, statType)
 				ranker.printer.Printf(" {%s %.0f * %.2e = %.4e}", statType.Name(), statValue, weight, statValue*weight)
 				rowScore += statValue * weight
 			}
@@ -314,7 +314,7 @@ func (ranker *RankingSeparatedWeights) reportCompleteRanges(weightExtended *weig
 			rowScore := 0.0
 			for _, statType := range ranker.requiredStats {
 				statValue := data.data.TotalStat.GetFloat(statType)
-				weight := weightExtended.GetWeightOrPanic(statType, simType)
+				weight := weightExtended.GetWeightOrPanic(simType, statType)
 				rowScore += statValue * weight
 			}
 			priorityEntry := weightExtended.GetSimPriority().GetOrPanic(simType)

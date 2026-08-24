@@ -169,12 +169,12 @@ func (ws *WeightSearcherExtended1) newProbeSlice() []*searchEx1Probe {
 }
 
 func (ws *WeightSearcherExtended1) evaluateScore(weightArray *searchEx1Point, evaluateAccuracy *EvaluateAccuracyPrepared) float64 {
-	weights := weight_types.Weight2Extended_Make(ws.statTypes, ws.simTypes)
+	weights := weight_types.Weight2Extended_Make(ws.simTypes, ws.statTypes)
 
 	index := 0
 	for _, statType := range ws.statTypes {
 		for _, simType := range ws.simTypes {
-			weights.PutWeight(statType, simType, weightArray[index])
+			weights.PutWeight(simType, statType, weightArray[index])
 			index++
 		}
 	}

@@ -16,13 +16,13 @@ import (
 
 // Weight2Extended
 type Weight2Extended struct {
-	DetailedWeights util_collection.MapMap[stats.StatType, stats.SimType, float64]
-	StatList        []stats.StatType
+	DetailedWeights util_collection.MapMap[stats.SimType, stats.StatType, float64]
 	SimList         []stats.SimType
+	StatList        []stats.StatType
 	SimPriority     SimPriorityExtended
 }
 
-func Weight2Extended_Make(statList []stats.StatType, simList []stats.SimType) *Weight2Extended {
+func Weight2Extended_Make(simList []stats.SimType, statList []stats.StatType) *Weight2Extended {
 	return &Weight2Extended{StatList: statList, SimList: simList, SimPriority: SimPriorityExtended_Make()}
 }
 
@@ -35,20 +35,20 @@ func (we *Weight2Extended) IsEmpty() bool {
 	return true
 }
 
-func (we *Weight2Extended) PutWeight(statType stats.StatType, simType stats.SimType, weight float64) {
-	we.DetailedWeights.Put(statType, simType, weight)
+func (we *Weight2Extended) PutWeight(simType stats.SimType, statType stats.StatType, weight float64) {
+	we.DetailedWeights.Put(simType, statType, weight)
 }
 
-func (we *Weight2Extended) GetWeightOrPanic(statType stats.StatType, simType stats.SimType) float64 {
-	return we.DetailedWeights.GetOrPanic(statType, simType)
+func (we *Weight2Extended) GetWeightOrPanic(simType stats.SimType, statType stats.StatType) float64 {
+	return we.DetailedWeights.GetOrPanic(simType, statType)
 }
 
-func (we *Weight2Extended) SeqBySimThenStat() iter.Seq[util_collection.MapMapEntry[stats.StatType, stats.SimType, float64]] {
+func (we *Weight2Extended) SeqBySimThenStat() iter.Seq[util_collection.MapMapEntry[stats.SimType, stats.StatType, float64]] {
 	return we.DetailedWeights.SeqKey2Key1ValueEntries()
 }
 
 func (we *Weight2Extended) SeqBySimNestedPairs() iter.Seq2[stats.SimType, iter.Seq2[stats.StatType, float64]] {
-	return we.DetailedWeights.SeqKey2NestedKey1Value()
+	return we.DetailedWeights.SeqKey1NestedKey2Value()
 }
 
 func (we *Weight2Extended) GetSimPriority() *SimPriorityExtended {
@@ -70,7 +70,7 @@ func (we *Weight2Extended) CalcStatScoreForInput(input *WeightInput) float64 {
 
 func (we *Weight2Extended) CalcStatScore(statBlock *stats.StatBlock) float64 {
 	totalSum := 0.0
-	for simType, nested := range we.DetailedWeights.SeqKey2NestedKey1Value() {
+	for simType, nested := range we.DetailedWeights.SeqKey1NestedKey2Value() {
 		subTotal := scoreForSim2(nested, statBlock)
 
 		priorityEntry := we.SimPriority.GetOrPanic(simType)
@@ -83,7 +83,7 @@ func (we *Weight2Extended) CalcStatScore(statBlock *stats.StatBlock) float64 {
 
 func (we *Weight2Extended) CalcStatScoreWithBonus(statBlock *stats.StatBlock, simBonus *stats.SimTypeMap[float64]) float64 {
 	totalSum := 0.0
-	for simType, nested := range we.DetailedWeights.SeqKey2NestedKey1Value() {
+	for simType, nested := range we.DetailedWeights.SeqKey1NestedKey2Value() {
 		subTotal := scoreForSim2(nested, statBlock)
 
 		priorityEntry := we.SimPriority.GetOrPanic(simType)
@@ -106,18 +106,26 @@ func scoreForSim2(nested iter.Seq2[stats.StatType, float64], statBlock *stats.St
 }
 
 func (we *Weight2Extended) validate() {
-	for statType := range we.DetailedWeights.SeqKey1() {
+	for statType := range we.DetailedWeights.SeqKey2() {
 		if !slices.Contains(we.StatList, statType) {
 			panic("weight given for unlisted stat")
 		}
 	}
 	for _, simType := range we.SimList {
 		for _, statType := range we.StatList {
-			if !we.DetailedWeights.Has(statType, simType) {
+			if !we.DetailedWeights.Has(simType, statType) {
 				panic("missing weight for " + statType.Name() + " " + simType.Name())
 			}
 		}
 	}
+	we.DetailedWeights.Foreach(func(simType stats.SimType, statType stats.StatType, value float64) {
+		if !slices.Contains(we.StatList, statType) {
+			panic("unexpected weight for " + statType.Name())
+		}
+		if !slices.Contains(we.SimList, simType) {
+			panic("unexpected weight for " + simType.Name())
+		}
+	})
 
 	for simType := range we.SimPriority.entries.SeqKey() {
 		if !slices.Contains(we.SimList, simType) {
@@ -145,7 +153,7 @@ func (we *Weight2Extended) ConvertToWeight1() *Weight1Basic {
 
 	for _, statType := range we.StatList {
 		sumForStat := 0.0
-		for simType, detailWeight := range we.DetailedWeights.SeqKey2ValueWithKey1(statType) {
+		for simType, detailWeight := range we.DetailedWeights.SeqKey1ValueWithKey2(statType) {
 			simEntry := we.SimPriority.GetOrPanic(simType)
 			componentValue := detailWeight * simEntry.RangingScale * simEntry.RatioScale
 			sumForStat += componentValue
@@ -181,9 +189,9 @@ func (we *Weight2Extended) AppendString(sb *util.StringBuild2) {
 		sb.WriteString(",offset=")
 		sb.WriteFloatScientific64(priority.RangingOffset)
 		sb.WriteRune(',')
-		for statType, value := range we.DetailedWeights.SeqKey1ValueWithKey2(simType) {
+		for statType, value := range we.DetailedWeights.SeqKey2ValueWithKey1(simType) {
 			sb.WriteString(statType.Name())
-			sb.WriteRune('=')
+			sb.WriteRune(',')
 			sb.WriteFloatScientific64(value)
 			sb.WriteRune(',')
 		}

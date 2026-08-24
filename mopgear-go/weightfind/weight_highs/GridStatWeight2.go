@@ -242,7 +242,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleThreeDifferenceStats(one *weig
 }
 
 func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Solution) weight_types.Weight2Extended {
-	result := weight_types.Weight2Extended_Make(grid2.statTypes, grid2.simTypes)
+	result := weight_types.Weight2Extended_Make(grid2.simTypes, grid2.statTypes)
 	grid2.printer.Println("FINAL WEIGHTS:")
 
 	// weight * (statOne - statTwo) * statScale[type] = (simOne - simTwo) * simScale[type]
@@ -258,7 +258,7 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 			weight := solution.ColValues[detailWeightCol]
 			usableWeight := weight / grid2.scaleSims[simType]
 
-			result.PutWeight(statType, simType, usableWeight)
+			result.PutWeight(simType, statType, usableWeight)
 
 			grid2.printer.Printf("         %5s > %f %f\n", simType.Name(), weight, usableWeight)
 		}
