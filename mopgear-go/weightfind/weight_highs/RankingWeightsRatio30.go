@@ -2,6 +2,7 @@ package weight_highs
 
 import (
 	"fmt"
+	"math/rand"
 	"strconv"
 
 	"github.com/nerago/mopgear-go/stats"
@@ -21,9 +22,14 @@ const (
 	c_rank30_targetTotalRatio  = 1.0
 	c_rank30_maxWeight         = 1.0
 	c_rank30_maxRatio          = 1.0
-	c_rank30_maxRatioChange    = 0.05
-	c_rank30_ratioOutputScale  = 2.0
+	c_rank30_maxRatioChange    = 0.1
+	c_rank30_ratioOutputScale  = 5.0
 	c_rank30_diffOutputScale   = 1.0
+
+	c_rank30_simScoreBigM        = 100.0
+	c_rank30_simScoreDeltaEqual  = 0.0001
+	c_rank30_statScoreBigM       = 100.0
+	c_rank30_statScoreDeltaEqual = 0.0001
 )
 
 // RankingWeightsRatio30: based on RankingStatWeightProcess3b
@@ -37,6 +43,9 @@ type RankingWeightsRatio30 struct {
 	simScale      stats.SimTypeMap[util_weight.ScaleAndOffset]
 	dataSample    []rankEntry30
 	AllPairs      bool
+	RandPairs     bool
+	RandPairCount int
+	UseMipCompare bool
 
 	build *util_highs.LinearBuilder
 
@@ -86,8 +95,13 @@ func (ranker *RankingWeightsRatio30) newBuilder() {
 	ranker.build = new(util_highs.LinearBuilder)
 	ranker.build.Minimise = true
 	ranker.build.TimeLimitSeconds = ranker.timeoutSeconds
-	ranker.build.Solver = util_highs.Solver_Force_Simplex
-	// others can be faster but often fails, then eventually end up in simplex anyway
+	//ranker.build.Solver = util_highs.Solver_Force_Simplex
+	//ranker.build.Solver = util_highs.Solver_Force_IPX
+	if ranker.UseMipCompare {
+		ranker.build.Solver = util_highs.Solver_MIP_Interior
+	} else {
+		ranker.build.Solver = util_highs.Solver_Force_HIPO
+	}
 }
 
 func (ranker *RankingWeightsRatio30) RunSinglePassRaw() *util_async.FutureCancellable[weight_types.WeightResult] {
@@ -96,7 +110,8 @@ func (ranker *RankingWeightsRatio30) RunSinglePassRaw() *util_async.FutureCancel
 	ranker.createWeightColumns()
 	ranker.createRatioColumns()
 	ranker.makeRatioOutputSlacks()
-	ranker.doAlgos()
+	ranker.makeDataListEntryColumns()
+	ranker.makeAllPairs()
 
 	stopwatch := util.StopwatchMakeStopped()
 	solutionFuture := ranker.build.RunHighsFuture(stopwatch)
@@ -112,14 +127,18 @@ func (ranker *RankingWeightsRatio30) createWeightColumns() {
 	lo := -c_rank30_maxWeight
 	hi := c_rank30_maxWeight
 
-	//sumWeights := util_highs.ConstraintRow{Debug: "sumWeights"}
+	sumWeights := util_highs.ConstraintRow{Debug: "sumWeights"}
 	for _, statType := range ranker.requiredStats {
 		colWeight := ranker.build.CreateColumnGeneral(highs.Continuous, lo, hi, util_highs.DebugString{Text: "WEIGHT " + statType.Name()})
 		ranker.weightColumns.Put(statType, colWeight)
-		//sumWeights.Add(colWeight, 1)
+		sumWeights.Add(colWeight, 1)
 	}
 
-	//sumWeights.Build(ranker.build, c_rank30_targetTotalWeight, c_rank30_targetTotalWeight)
+	//sumWeights.Build(ranker.build, c_rank30_targetTotalWeight/1000000, util_highs.InfPos())
+	totalWeight := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), -1, nil)
+	sumWeights.Add(totalWeight, -1)
+	sumWeights.Build(ranker.build, 0, 0)
+
 }
 
 func (ranker *RankingWeightsRatio30) createRatioColumns() {
@@ -152,19 +171,38 @@ func (ranker *RankingWeightsRatio30) makeRatioOutputSlacks() {
 	}
 }
 
-func (ranker *RankingWeightsRatio30) doAlgos() {
+func (ranker *RankingWeightsRatio30) makeAllPairs() {
 	if ranker.AllPairs {
-		ranker.makeDataListEntryColumns()
 		for baseIndex := range ranker.dataSample {
 			for compareTo := baseIndex + 1; compareTo < len(ranker.dataSample); compareTo++ {
-				ranker.makeEntryPairCheckScoreOrderMatchesTargetOrderWithSlackVar(&ranker.dataSample[baseIndex], &ranker.dataSample[compareTo], baseIndex, compareTo)
+				ranker.makeEntryPair(baseIndex, compareTo)
+			}
+		}
+	} else if ranker.RandPairs {
+		for baseIndex := 0; baseIndex < len(ranker.dataSample)-1; baseIndex++ {
+			goodLinks := 0
+			for goodLinks < ranker.RandPairCount {
+				otherIndex := rand.Intn(len(ranker.dataSample))
+				if baseIndex != otherIndex {
+					if !ranker.pairLinks.Has(baseIndex, otherIndex) {
+						ranker.makeEntryPair(baseIndex, otherIndex)
+						goodLinks++
+					}
+				}
 			}
 		}
 	} else {
-		ranker.makeDataListEntryColumns()
 		for baseIndex := 0; baseIndex < len(ranker.dataSample)-1; baseIndex++ {
-			ranker.makeEntryPairCheckScoreOrderMatchesTargetOrderWithSlackVar(&ranker.dataSample[baseIndex], &ranker.dataSample[baseIndex+1], baseIndex, baseIndex+1)
+			ranker.makeEntryPair(baseIndex, baseIndex+1)
 		}
+	}
+}
+
+func (ranker *RankingWeightsRatio30) makeEntryPair(a int, b int) {
+	if ranker.UseMipCompare {
+		ranker.makeEntryPairScoreDiffsMIP(&ranker.dataSample[a], &ranker.dataSample[b], a, b)
+	} else {
+		ranker.makeEntryPairScoreDiffsFormulaSlack(&ranker.dataSample[a], &ranker.dataSample[b], a, b)
 	}
 }
 
@@ -205,7 +243,7 @@ func (ranker *RankingWeightsRatio30) makeSimScoreColumn(simResult *stats.SimData
 	return simScoreColumn
 }
 
-func (ranker *RankingWeightsRatio30) makeEntryPairCheckScoreOrderMatchesTargetOrderWithSlackVar(one *rankEntry30, two *rankEntry30, indexOne, indexTwo int) {
+func (ranker *RankingWeightsRatio30) makeEntryPairScoreDiffsFormulaSlack(one *rankEntry30, two *rankEntry30, indexOne, indexTwo int) {
 	debug := fmt.Sprintf(" %d %d", indexOne, indexTwo)
 	slack := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), c_rank30_diffOutputScale, util_highs.DebugText("slack"+debug))
 
@@ -218,6 +256,35 @@ func (ranker *RankingWeightsRatio30) makeEntryPairCheckScoreOrderMatchesTargetOr
 		[]float64{1, -1, -1, 1},
 		0,
 		slack, "diff scores "+debug)
+
+	ranker.pairLinks.Put(indexOne, indexTwo, rankPair30{
+		indexOne:         indexOne,
+		indexTwo:         indexTwo,
+		scoreSlackColumn: slack,
+	})
+}
+
+func (ranker *RankingWeightsRatio30) makeEntryPairScoreDiffsMIP(one *rankEntry30, two *rankEntry30, indexOne, indexTwo int) {
+	debug := fmt.Sprintf(" %d %d", indexOne, indexTwo)
+
+	simOneGreater := ranker.build.CreateColumnBool(util_highs.DebugText("simOneGreater" + debug))
+	ranker.build.ColumnIsGreaterOrEqualColumn(
+		one.simScoreColumn, two.simScoreColumn,
+		simOneGreater,
+		c_rank30_simScoreBigM,
+		c_rank30_simScoreDeltaEqual,
+	)
+
+	statOneGreater := ranker.build.CreateColumnBool(util_highs.DebugText("statOneGreater" + debug))
+	ranker.build.ColumnIsGreaterOrEqualColumn(
+		one.statScoreColumn, two.statScoreColumn,
+		statOneGreater,
+		c_rank30_statScoreBigM,
+		c_rank30_statScoreDeltaEqual,
+	)
+
+	slack := ranker.build.CreateColumnBoolWithOutput(c_rank30_diffOutputScale, util_highs.DebugText("slack"+debug))
+	ranker.build.IsXor(simOneGreater, statOneGreater, slack)
 
 	ranker.pairLinks.Put(indexOne, indexTwo, rankPair30{
 		indexOne:         indexOne,

@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"slices"
 	"strconv"
 	"unicode/utf8"
@@ -27,6 +28,10 @@ func (sb *StringBuild2) String() string {
 	} else {
 		return ""
 	}
+}
+
+func (sb *StringBuild2) Printf(format string, args ...any) {
+	*sb = fmt.Appendf(*sb, format, args...)
 }
 
 func (sb *StringBuild2) Len() int {

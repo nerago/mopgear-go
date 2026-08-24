@@ -73,7 +73,13 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 		SubstituteItems: mygear.SubstituteItemsProt,
 		FixStatsMode:    fixStats,
 	})
+
 	cancel := util_async.CancelSignal_Make()
-	util_async.CancelOnKeyPress(cancel)
-	process.Run(cancel)
+	//util_async.CancelOnKeyPress(cancel)
+	//process.Run(cancel)
+
+	ratioUpdate := weightfind.WeightRatioProcess{}
+	ratioUpdate.Init(3000, printer)
+	ratioUpdate.AddSpecsFrom(&process)
+	ratioUpdate.Run(cancel)
 }

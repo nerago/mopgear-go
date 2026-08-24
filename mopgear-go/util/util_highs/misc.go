@@ -30,6 +30,7 @@ const (
 	Solver_LP_GPU_IF_FREE SolverMode = iota
 	Solver_MIP_Interior   SolverMode = iota
 	Solver_MIP_Vertex     SolverMode = iota
+	Solver_Force_HIPO     SolverMode = iota
 	Solver_Force_Simplex  SolverMode = iota
 	Solver_Force_IPX      SolverMode = iota
 	Solver_Flexible       SolverMode = iota

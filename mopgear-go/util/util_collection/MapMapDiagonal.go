@@ -73,8 +73,13 @@ func (mmd *MapMapDiagonal[K, V]) Put(key1 K, key2 K, value V) {
 	if hasInner1 && hasInner2 {
 		_, hasValue1 := inner1[key2]
 		_, hasValue2 := inner2[key1]
+
 		if hasValue1 && hasValue2 {
-			panic("duplicate")
+			if key1 == key2 {
+				inner1[key2] = value
+			} else {
+				panic("duplicate storage")
+			}
 		} else if hasValue1 {
 			inner1[key2] = value
 		} else {

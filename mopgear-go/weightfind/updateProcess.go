@@ -33,6 +33,7 @@ import (
 const (
 	c_simDataAgeMax     = 48 * time.Hour
 	c_updateThreadCount = 2
+	c_ratioThreadCount  = 12
 
 	c_eachSimTargetGenerateDataCount = 600
 
@@ -98,8 +99,11 @@ func (wup *WeightUpdateProcess) Init(simSpeed simulate.WowSim_RunSize, forceSkip
 }
 
 func (wup *WeightUpdateProcess) AddSpec(spec *WeightSpec) {
-	wup.specs = append(wup.specs, spec)
 	spec.process = wup
+	spec.statTypes = spec.Model.StatsForWeighting
+	spec.simTypes = spec.Model.SimPriority.SimTypes()
+	spec.targetRatio = spec.Model.SimPriority
+	wup.specs = append(wup.specs, spec)
 }
 
 func (wup *WeightUpdateProcess) Run(cancel util_async.CancelSignal) {
@@ -180,10 +184,6 @@ func (spec *WeightSpec) updateSpec(tracker *util.TrackProgress, cancel util_asyn
 	// each simulator process is considered 1/4, fitting is 1/4, then remaining solving is remaining.
 	tracker.RunOuterTracking(4)
 	defer tracker.SetDone()
-
-	spec.statTypes = spec.Model.StatsForWeighting
-	spec.simTypes = spec.Model.SimPriority.SimTypes()
-	spec.targetRatio = spec.Model.SimPriority
 
 	// READ OLD DATA AND/OR RUN SIM
 	spec.prepareSimData(tracker, cancel)

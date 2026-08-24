@@ -263,12 +263,19 @@ func statWeightsRanking30(printer *util.PrintRecorder) {
 	weightInputs1 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
 	weightInputs2 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
 	weightInputs := slices.Concat(weightInputs1, weightInputs2)
+	//weightInputs = util_collection.SliceSampleRandom(weightInputs, 256)
+	//weightInputs = util_collection.SliceSampleRandom(weightInputs, 32)
+	weightInputs = util_collection.SliceSampleRandom(weightInputs, 64)
 
 	statList := model_factory.StatsForWeighting_strengthTank
 	ratio := model_factory.SimPriority_mitigation
 
 	ranking := weight_highs.RankingWeightsRatio30{}
-	ranking.AllPairs = false
+	//ranking.AllPairs = true
+	ranking.RandPairs = true
+	ranking.RandPairCount = 3
+	//ranking.UseMipCompare = false
+	ranking.UseMipCompare = true
 	ranking.Init(printer, 1000)
 	ranking.SetRequiredStats(statList)
 	ranking.SetTargetRatios(ratio)

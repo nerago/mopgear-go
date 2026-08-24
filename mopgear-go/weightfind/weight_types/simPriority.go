@@ -101,6 +101,22 @@ func (sr *SimPriorityBasic) ValidateRatioAddsToOne() {
 	}
 }
 
+func (sr *SimPriorityBasic) String() string {
+	sb := util.StringBuild2{}
+	sr.AppendString(&sb)
+	return sb.String()
+}
+
+func (sr *SimPriorityBasic) AppendString(sb *util.StringBuild2) {
+	for typ, value := range sr.content.SeqKeyValue() {
+		sb.WriteString(typ.Name())
+		sb.WriteRune('=')
+		sb.WriteFloat64(value, 4)
+		sb.WriteRune(' ')
+	}
+	sb.Rewind(1)
+}
+
 // for extended stats planned calculation is:
 // statA*weight1A + statB*weight1B + statC*weight1C = sim1
 // statA*weight2A + statB*weight2B + statC*weight2C = sim2
