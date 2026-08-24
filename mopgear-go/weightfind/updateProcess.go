@@ -116,11 +116,27 @@ func (wup *WeightUpdateProcess) Run(cancel util_async.CancelSignal) {
 	}
 
 	for _, spec := range wup.specs {
-		spec.tabularReport()
+		spec.tabularReport(spec.process.printer)
 	}
 }
 
-func (spec *WeightSpec) tabularReport() {
+func (spec *WeightSpec) tabularReportWriteFile(filename string) {
+	file, err := os.Create(filename)
+	if err != nil {
+		panic(err)
+	}
+
+	printer := util.FilePrintableMake(file)
+	printer.Printf("Weight detail output at %s\n", time.Now().Format(time.DateTime))
+	spec.tabularReport(printer)
+
+	err = file.Close()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (spec *WeightSpec) tabularReport(print util.Printable) {
 	tab := util.TabulateOutput{}
 	tab.SetColumnSpacing(2)
 	tab.AddColumnHeader("algo", false)
@@ -156,8 +172,8 @@ func (spec *WeightSpec) tabularReport() {
 		tab.AddRow(row)
 	}
 
-	spec.process.printer.Printf("TABLE %s\n", spec.Label)
-	tab.Write(spec.process.printer)
+	print.Printf("TABLE %s\n", spec.Label)
+	tab.Write(print)
 }
 
 func (spec *WeightSpec) updateSpec(tracker *util.TrackProgress, cancel util_async.CancelSignal) string {
@@ -190,8 +206,6 @@ func (spec *WeightSpec) updateSpec(tracker *util.TrackProgress, cancel util_asyn
 	spec.dataRand = nil
 	spec.dataAll = nil
 
-	// FINISH SUMMARY REPORT
-	spec.process.printer.PrintlnFromBuild(spec.summary)
 	return spec.summary.String()
 }
 
@@ -223,21 +237,49 @@ func (spec *WeightSpec) reportAndWriteWeights() {
 	// OVERWRITE WEIGHT FILE
 	if bestChoice, hasBest := spec.bestWeightChoice1(); hasBest {
 		spec.summary.WriteString(" ::::: ")
+		spec.summary.WriteString(" W1(")
 		spec.summary.WriteString(bestChoice.choiceName)
-		spec.summary.WriteRune(' ')
+		spec.summary.WriteString(" ")
 		spec.summary.WriteFloat64(bestChoice.accuracy1, 4)
-		spec.summary.WriteString(" (")
+		spec.summary.WriteString(" ")
 		spec.summary.WriteFloat64(bestChoice.accuracy1Stat, 4)
 		spec.summary.WriteString(") ")
-		spec.summary.WriteFloat64(bestChoice.accuracyX, 4)
-		spec.summary.WriteString(" (")
-		spec.summary.WriteFloat64(bestChoice.accuracyXStat, 4)
-		spec.summary.WriteString(") ")
 
-		spec.writeBasicWeights(bestChoice, spec.summary)
+		util.WriteStringToFile(spec.WeightFile1, bestChoice.pawnString)
 	}
 
-	spec.writeExtendedWeights()
+	weight2Opt, weight3Opt := spec.bestWeightChoiceExtended()
+
+	if weight2Choice, hasWeight2 := weight2Opt.GetWithFlag(); hasWeight2 {
+		str := tools.FormatWeight2String(weight2Choice.weight2)
+		util.WriteStringToFile(spec.WeightFile2, str)
+
+		spec.summary.WriteString("W2(")
+		spec.summary.WriteString(weight2Choice.choiceName)
+		spec.summary.WriteRune(' ')
+		spec.summary.WriteFloat64(weight2Choice.accuracyXStat, 4)
+		spec.summary.WriteString(") ")
+	}
+
+	if weight3Choice, hasWeight3 := weight3Opt.GetWithFlag(); hasWeight3 {
+		str := tools.FormatWeight3String(weight3Choice.weight3)
+		util.WriteStringToFile(spec.WeightFile3, str)
+
+		spec.summary.WriteString("W3(")
+		spec.summary.WriteString(weight3Choice.choiceName)
+		spec.summary.WriteRune(' ')
+		spec.summary.WriteFloat64(weight3Choice.accuracyXStat, 4)
+		spec.summary.WriteString(") ")
+	}
+
+	spec.process.printer.PrintlnFromBuild(spec.summary)
+
+	logText := spec.summary.Clone()
+	logText.WriteRune('\n')
+	logText.WriteString(time.Now().Format(time.DateTime))
+	util.WriteStringToFile(spec.WeightFile1+"-accuracy.log", logText.String())
+
+	spec.tabularReportWriteFile(spec.WeightFile1 + "-detail.log")
 }
 
 func (spec *WeightSpec) prepareSimData(tracker *util.TrackProgress, cancel util_async.CancelSignal) {
@@ -613,47 +655,6 @@ func (spec *WeightSpec) tweakEachWeight() {
 			spec.evaluateWeight(choice.choiceName+"_TWEAK", &weightsTweaked, &weightsTweaked, nil)
 		}
 	}
-}
-
-func (spec *WeightSpec) writeBasicWeights(bestChoice weightChoice, summary util.StringBuild2) {
-	util.WriteStringToFile(spec.WeightFile1, bestChoice.pawnString)
-
-	logText := summary.Clone()
-	logText.WriteRune('\n')
-	logText.WriteString(time.Now().Format(time.DateTime))
-	util.WriteStringToFile(spec.WeightFile1+"-accuracy.log", logText.String())
-}
-
-func (spec *WeightSpec) writeExtendedWeights() {
-	weight2Opt, weight3Opt := spec.bestWeightChoiceExtended()
-
-	if weight2Choice, hasWeight2 := weight2Opt.GetWithFlag(); hasWeight2 {
-		str := tools.FormatWeight2String(weight2Choice.weight2)
-		util.WriteStringToFile(spec.WeightFile2, str)
-
-		spec.summary.WriteString("W2(")
-		spec.summary.WriteString(weight2Choice.choiceName)
-		spec.summary.WriteRune(' ')
-		spec.summary.WriteFloat64(weight2Choice.accuracyXStat, 4)
-		spec.summary.WriteString(") ")
-	}
-
-	if weight3Choice, hasWeight3 := weight3Opt.GetWithFlag(); hasWeight3 {
-		str := tools.FormatWeight3String(weight3Choice.weight3)
-		util.WriteStringToFile(spec.WeightFile3, str)
-
-		spec.summary.WriteString("W3(")
-		spec.summary.WriteString(weight3Choice.choiceName)
-		spec.summary.WriteRune(' ')
-		spec.summary.WriteFloat64(weight3Choice.accuracyXStat, 4)
-		spec.summary.WriteString(") ")
-	}
-
-	logText := spec.summary.Clone()
-	logText.WriteRune('\n')
-	logText.WriteString(time.Now().Format(time.DateTime))
-
-	util.WriteStringToFile(spec.WeightFile1+"-extended-accuracy.log", logText.String())
 }
 
 func readWeightInputFile(filename string) ([]weight_types.WeightInput, time.Duration) {

@@ -115,7 +115,7 @@ func (job *MainJob) reportAsCsv(simResultList []*simMultiRankable) {
 		job.printer.Println("@@ CSV output written to other file")
 	} else {
 		job.printer.Println("@@@@@@@@@@@@@@@@ SPREADSHEET COPY @@@@@@@@@@@@@@@@")
-		csv.WritePrinter(job.printer)
+		csv.WriteTo(job.printer)
 		job.printer.Println0()
 		job.printer.Println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 	}
@@ -128,7 +128,7 @@ func (job *MainJob) writeToCsvFile(csv util.CSVOutputByColumn) {
 		panic(err)
 	}
 
-	csv.WriteWriter(file)
+	csv.WriteTo(util.FilePrintableMake(file))
 
 	err = file.Close()
 	if err != nil {

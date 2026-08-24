@@ -180,6 +180,7 @@ func (print *PrintRecorder) PrintlnFromBuild(strBuild StringBuild2) {
 
 	if print.debugConsole {
 		_, _ = os.Stdout.WriteString(strBuild.String())
+		_, _ = os.Stdout.Write([]byte{'\n'})
 	}
 }
 

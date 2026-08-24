@@ -55,7 +55,7 @@ func (tab *TabulateOutput) columnSizes() []int {
 	return sizes
 }
 
-func (tab *TabulateOutput) Write(printer *PrintRecorder) {
+func (tab *TabulateOutput) Write(printer Printable) {
 	sizes := tab.columnSizes()
 	var builder StringBuild2
 	for _, line := range tab.data {
@@ -65,7 +65,7 @@ func (tab *TabulateOutput) Write(printer *PrintRecorder) {
 			writeSpaces(&builder, tab.spacing)
 			writeStringAligned(line[col], size, isRight, &builder)
 		}
-		printer.Println(builder.String())
+		printer.PrintlnFromBuild(builder)
 		builder.Reset()
 	}
 }

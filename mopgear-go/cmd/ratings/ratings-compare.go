@@ -94,60 +94,34 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	}
 
 	reportOnTweakedVersions := false
-	standardTimeout := 600
-	shortTimeout := 400
+	standardTimeout := 2000
+	shortTimeout := 600
 
 	runBasic := true
 	runFormulaVariants := false // best is about 87%, moderate time
-	runFitting1 := false        // slow, low 90%
-	runFitting2 := false
+	runFitting1 := true         // slow, low 90%
+	runFitting2 := true
 
 	runGrid1Original := true
-	runGrid1Variants := false // todo return
-	runGrid1VariantsFewer := false
+	runGrid1Variants := false
+	runGrid1VariantsFewer := true
 	runGrid1C := true
 	runGrid2 := true
 
 	runRankingOlder := true
-	runRanking3aPreferred := false // broken
-	runRanking3aVariants := false  // broken
+	runRanking3aPreferred := true // broken
+	runRanking3aVariants := false // broken
 	runRanking3bVariants := false
 	runRanking3bPreferred := true
 	runRanking3c := true
 	runRanking4 := true  // still a little slow, midrange 94% etc
 	runRanking5 := false // excellent but slow
 
-	runSearches := false
-	runSearch0 := false
+	runSearches := true
+	runSearch0 := true
 
 	runRankingSep := true
 	runFormula2 := true
-
-	//runBasic := true
-	//runFormulaVariants := true // best is about 87%, moderate time
-	//runFitting1 := true        // slow, low 90%
-	//runFitting2 := true
-	//
-	//runGrid1Original := true
-	//runGrid1Variants := false // todo return
-	//runGrid1VariantsFewer := false
-	//runGrid1C := true
-	//runGrid2 := true
-	//
-	//runRankingOlder := true
-	//runRanking3aPreferred := false // broken
-	//runRanking3aVariants := false  // broken
-	//runRanking3bVariants := true
-	//runRanking3bPreferred := true
-	//runRanking3c := true
-	//runRanking4 := true  // still a little slow, midrange 94% etc
-	//runRanking5 := false // excellent but slow
-	//
-	//runSearches := true
-	//runSearch0 := true
-	//
-	//runRankingSep := true
-	//runFormula2 := true
 
 	addTask("itemLevel", func() weight_types.WeightResult {
 		weight := weight_types.Weight1Basic_Make()
@@ -529,9 +503,10 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	}
 
 	if runRanking5 {
-		addTask("ranking5-0", func() weight_types.WeightResult {
+		addTask("ranking5-0-1", func() weight_types.WeightResult {
 			ranking := weight_highs.RankingStatWeightProcess5{}
 			ranking.WEIGHTSUM = 0
+			ranking.SIMRANK = 1
 			ranking.Init(printer)
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)
@@ -539,9 +514,32 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			futureWeight := ranking.Run(standardTimeout, 60) // note restricted data sample
 			return futureWeight.WaitForResultOrNilValue()
 		})
-		addTask("ranking5-1", func() weight_types.WeightResult {
+		addTask("ranking5-1-1", func() weight_types.WeightResult {
 			ranking := weight_highs.RankingStatWeightProcess5{}
 			ranking.WEIGHTSUM = 1
+			ranking.SIMRANK = 1
+			ranking.Init(printer)
+			ranking.SetRequiredStats(requiredStats)
+			ranking.SetTargetRatios(targetRatio)
+			ranking.SupplyData(slices.Clone(inputDataRandom))
+			futureWeight := ranking.Run(standardTimeout, 60) // note restricted data sample
+			return futureWeight.WaitForResultOrNilValue()
+		})
+		addTask("ranking5-0-2", func() weight_types.WeightResult {
+			ranking := weight_highs.RankingStatWeightProcess5{}
+			ranking.WEIGHTSUM = 0
+			ranking.SIMRANK = 2
+			ranking.Init(printer)
+			ranking.SetRequiredStats(requiredStats)
+			ranking.SetTargetRatios(targetRatio)
+			ranking.SupplyData(slices.Clone(inputDataRandom))
+			futureWeight := ranking.Run(standardTimeout, 60) // note restricted data sample
+			return futureWeight.WaitForResultOrNilValue()
+		})
+		addTask("ranking5-1-2", func() weight_types.WeightResult {
+			ranking := weight_highs.RankingStatWeightProcess5{}
+			ranking.WEIGHTSUM = 1
+			ranking.SIMRANK = 2
 			ranking.Init(printer)
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)
