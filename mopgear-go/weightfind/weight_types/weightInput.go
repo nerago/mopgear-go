@@ -44,6 +44,7 @@ type WeightResult struct {
 	Weight    IWeight
 	SolveTime time.Duration
 	Status    highs.ModelStatus
+	NewRatio  *SimPriorityBasic
 }
 
 func (wr *WeightResult) AsWeight1() *Weight1Basic {

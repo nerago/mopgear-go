@@ -21,9 +21,9 @@ const (
 	c_rank30_targetTotalRatio  = 1.0
 	c_rank30_maxWeight         = 1.0
 	c_rank30_maxRatio          = 1.0
-	c_rank30_maxRatioChange    = 0.15
-	c_rank30_ratioOutputScale  = 100.0
-	c_rank30_rankOutputScale   = 1.0
+	c_rank30_maxRatioChange    = 0.05
+	c_rank30_ratioOutputScale  = 2.0
+	c_rank30_diffOutputScale   = 1.0
 )
 
 // RankingWeightsRatio30: based on RankingStatWeightProcess3b
@@ -103,8 +103,8 @@ func (ranker *RankingWeightsRatio30) RunSinglePassRaw() *util_async.FutureCancel
 
 	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult2 util_highs.LinearResult) (weight_types.WeightResult, bool) {
 		solution := linearResult2.GetSolutionAndSaveLog(ranker.printer)
-		weight := ranker.extractAndReportSolution(solution)
-		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution.Status}, true
+		weight, newRatio := ranker.extractAndReportSolution(solution)
+		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution.Status, NewRatio: new(newRatio)}, true
 	})
 }
 
@@ -141,8 +141,8 @@ func (ranker *RankingWeightsRatio30) makeRatioOutputSlacks() {
 		colRatio := ranker.ratioColumns.GetOrPanic(simType)
 		targetRatio := ranker.targetRatios.GetOrPanic(simType)
 		ratioSlack := ranker.build.CreateColumnWithOutput(highs.Continuous,
-			//0, c_rank30_maxRatioChange,
-			0, util_highs.InfPos(),
+			0, c_rank30_maxRatioChange,
+			//0, util_highs.InfPos(),
 			c_rank30_ratioOutputScale,
 			util_highs.DebugString{Text: "RATIO SLACK " + simType.Name()})
 		ranker.build.AbsoluteValueFromDiffOneToConst(
@@ -172,52 +172,42 @@ func (ranker *RankingWeightsRatio30) makeDataListEntryColumns() {
 	for index := range ranker.dataSample {
 		entry := &ranker.dataSample[index]
 		debugStr := strconv.FormatInt(int64(index), 10)
-		ranker.makeStatScoreColumn(entry, debugStr)
-		ranker.makeSimScoreColumn(entry, debugStr)
+		entry.statScoreColumn = ranker.makeStatScoreColumn(&entry.data.TotalStat, debugStr)
+		entry.simScoreColumn = ranker.makeSimScoreColumn(&entry.data.SimResult, debugStr)
 	}
 }
 
-func (ranker *RankingWeightsRatio30) makeStatScoreColumn(entry *rankEntry30, debugStr string) {
-	entry.statScoreColumn = ranker.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), util_highs.DebugText("statScore-"+debugStr))
+func (ranker *RankingWeightsRatio30) makeStatScoreColumn(totalStat *stats.StatBlock, debugStr string) util_highs.ColumnIndex {
+	statScoreColumn := ranker.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), util_highs.DebugText("statScore-"+debugStr))
 	scoreRow := util_highs.ConstraintRow{Debug: "scoreRow-" + debugStr}
 	for _, statType := range ranker.requiredStats {
 		weightColumn := ranker.weightColumns.GetOrPanic(statType)
-		statValue := entry.data.TotalStat.GetFloat(statType)
+		statValue := totalStat.GetFloat(statType)
 		scoreRow.Add(weightColumn, statValue)
 	}
-	scoreRow.Add(entry.statScoreColumn, -1)
+	scoreRow.Add(statScoreColumn, -1)
 	scoreRow.Build(ranker.build, 0, 0)
+	return statScoreColumn
 }
 
-func (ranker *RankingWeightsRatio30) makeSimScoreColumn(entry *rankEntry30, debugStr string) {
-	// score each sim
-	//for _, simType := range ranker.requiredSims {
-	//	for entry, simDetailRank := range util_collection.CalculateRanking(simType.IsHighGood(), ranker.dataSample, func(x *rankEntry30) float64 { return x.data.SimResult.Get(simType) }) {
-	//		entry.simScore += float64(simDetailRank) * ranker.targetRatios.GetOrPanic(simType)
-	//	}
-	//}
-	//
-	//// rank combined sims
-	//for entry, simRank := range util_collection.CalculateRanking(true, ranker.dataSample, func(x *rankEntry30) float64 { return x.simScore }) {
-	//	entry.targetRank = simRank
-	//}
-
-	entry.simScoreColumn = ranker.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), util_highs.DebugText("simScore-"+debugStr))
+func (ranker *RankingWeightsRatio30) makeSimScoreColumn(simResult *stats.SimData, debugStr string) util_highs.ColumnIndex {
+	simScoreColumn := ranker.build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), util_highs.DebugText("simScore-"+debugStr))
 	simRow := util_highs.ConstraintRow{Debug: "simRow-" + debugStr}
 	for _, simType := range ranker.requiredSims {
 		ratioColumn := ranker.ratioColumns.GetOrPanic(simType)
-		simValue := entry.data.SimResult.Get(simType)
+		simValue := simResult.Get(simType)
 		scale := ranker.simScale.GetOrPanic(simType)
 		scaledSimValue := scale.Apply(simValue)
 		simRow.Add(ratioColumn, scaledSimValue)
 	}
-	simRow.Add(entry.statScoreColumn, -1)
+	simRow.Add(simScoreColumn, -1)
 	simRow.Build(ranker.build, 0, 0)
+	return simScoreColumn
 }
 
 func (ranker *RankingWeightsRatio30) makeEntryPairCheckScoreOrderMatchesTargetOrderWithSlackVar(one *rankEntry30, two *rankEntry30, indexOne, indexTwo int) {
 	debug := fmt.Sprintf(" %d %d", indexOne, indexTwo)
-	slack := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), c_rank30_rankOutputScale, util_highs.DebugText("slack"+debug))
+	slack := ranker.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), c_rank30_diffOutputScale, util_highs.DebugText("slack"+debug))
 
 	// opposite signs on the two differences, going for:
 	// simDiff=(simOne-simTwo), statDiff=(statOne-statTwo)
@@ -236,7 +226,7 @@ func (ranker *RankingWeightsRatio30) makeEntryPairCheckScoreOrderMatchesTargetOr
 	})
 }
 
-func (ranker *RankingWeightsRatio30) extractAndReportSolution(solution *highs.Solution) weight_types.Weight1Basic {
+func (ranker *RankingWeightsRatio30) extractAndReportSolution(solution *highs.Solution) (weight_types.Weight1Basic, weight_types.SimPriorityBasic) {
 	ranker.build.DebugPrintColumns(solution, ranker.printer)
 
 	ranker.printer.Println("WEIGHTS")
@@ -250,11 +240,13 @@ func (ranker *RankingWeightsRatio30) extractAndReportSolution(solution *highs.So
 	tools.WriteWeightString(&weight, ranker.printer)
 
 	ranker.printer.Println("RATIOS")
+	ratio := weight_types.SimPriorityBasic_MakeEmpty()
 	for _, simType := range ranker.requiredSims {
 		ratioColumn := ranker.ratioColumns.GetOrPanic(simType)
 		modelRatio := solution.ColValues[ratioColumn]
 		ranker.printer.Printf(" %s = %.8f\n", simType.Name(), modelRatio)
+		ratio.Set(simType, modelRatio)
 	}
 
-	return weight
+	return weight, ratio
 }

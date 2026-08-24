@@ -19,7 +19,7 @@ type SimPriorityBasic struct {
 	content stats.SimTypeMap[float64]
 }
 
-func SimPriorityBasic_MakeEmpty(parts ...any) SimPriorityBasic {
+func SimPriorityBasic_MakeEmpty() SimPriorityBasic {
 	return SimPriorityBasic{}
 }
 func SimPriorityBasic_Make(parts ...any) SimPriorityBasic {

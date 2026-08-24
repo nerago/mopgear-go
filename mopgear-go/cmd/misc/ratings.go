@@ -276,12 +276,18 @@ func statWeightsRanking30(printer *util.PrintRecorder) {
 	weightsFuture := ranking.RunSinglePassRaw()
 	weightResult := weightsFuture.WaitForResultOrPanic()
 	weights1 := weightResult.AsWeight1()
+	newRatio := weightResult.NewRatio
 	if weights1 != nil {
 		tools.WritePawnString(*weights1, printer)
 		acc := weightfind.EvaluateAccuracy(weights1, ratio.SimTypes(), &ratio, weightInputs)
 		printer.Printf("acc %f\n", acc)
 		accSt := weightfind.EvaluateAccuracyStatisticalExtended(weights1, ratio.SimTypes(), &ratio, weightInputs)
 		printer.Printf("acc st %f\n", accSt)
+
+		newAcc := weightfind.EvaluateAccuracy(weights1, newRatio.SimTypes(), newRatio, weightInputs)
+		printer.Printf("new acc %f\n", newAcc)
+		newAccSt := weightfind.EvaluateAccuracyStatisticalExtended(weights1, newRatio.SimTypes(), newRatio, weightInputs)
+		printer.Printf("new acc st %f\n", newAccSt)
 	} else {
 		printer.Println("MISSING WEIGHT")
 	}
