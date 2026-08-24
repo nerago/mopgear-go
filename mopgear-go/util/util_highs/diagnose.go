@@ -9,10 +9,12 @@ import (
 )
 
 func diagnoseInfeasible(build *LinearBuilder, printer *util.PrintRecorder) {
-	printer.Println("INFEASIBLE MODEL TRYING TO FIND PROBLEM ROW")
-	// diagnoseSearchRange(input, printer)
-	printer.DebugEnableConsole()
-	diagnoseInfeasibleOneByOne(build, printer)
+	if !build.SkipDiagnose {
+		printer.Println("INFEASIBLE MODEL TRYING TO FIND PROBLEM ROW")
+		// diagnoseSearchRange(input, printer)
+		printer.DebugEnableConsole()
+		diagnoseInfeasibleOneByOne(build, printer)
+	}
 }
 
 func diagnoseSearchRange(build *LinearBuilder, printer *util.PrintRecorder) {
@@ -79,6 +81,7 @@ func diagnoseInfeasibleOneByOne(build *LinearBuilder, printer *util.PrintRecorde
 	for rowIndex := range build.mat.lowerBound {
 		clone := build.Clone()
 		clone.NoOutput = true
+		clone.SkipDiagnose = true // only if we don't want recurse - may need to take off if multiple conditions need disable
 		clone.mat.deleteRow(rowIndex)
 		innerPrint := util.PrintRecorder_HoldAll()
 		result := clone.RunHighsFuture(nil).WaitForResultOrPanic()
@@ -94,10 +97,10 @@ func diagnoseInfeasibleOneByOne(build *LinearBuilder, printer *util.PrintRecorde
 }
 
 func debugPrintRow(build *LinearBuilder, rowIndex int, printer *util.PrintRecorder) {
-	debugText := build.mat.debug[rowIndex]
-	printer.Printf("ROW %d %f-%f %s\n", rowIndex, build.mat.lowerBound[rowIndex], build.mat.upperBound[rowIndex], debugText)
+	debugRow := build.mat.debug[rowIndex]
+	printer.Printf("ROW %d %f-%f %s\n", rowIndex, build.mat.lowerBound[rowIndex], build.mat.upperBound[rowIndex], debugRow)
 	for _, entry := range build.mat.entries[rowIndex] {
-		printer.Printf("  $ %d %f\n", entry.columnNumber, entry.value)
+		printer.Printf("  $ %d %f     %s\n", entry.columnNumber, entry.value, debugText(build.vars.debug[entry.columnNumber]))
 	}
 }
 

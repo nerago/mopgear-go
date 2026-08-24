@@ -106,7 +106,12 @@ type ScaleAndOffset struct {
 }
 
 func (so ScaleAndOffset) Apply(value float64) float64 {
-	return (value + so.Offset) * so.Scale
+	initial := (value + so.Offset) * so.Scale
+	if math.Abs(initial) <= 1e-9 {
+		return 0
+	} else {
+		return initial
+	}
 }
 
 func ChooseSimUnfriendlyUnitScaleAndOffset(inputData []weight_types.WeightInput, simTypeList []stats.SimType) stats.SimTypeMap[ScaleAndOffset] {

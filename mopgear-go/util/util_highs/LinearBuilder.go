@@ -17,6 +17,7 @@ type LinearBuilder struct {
 	vars                 variableArrayBuilder
 	mat                  constraintMatrixBuilder
 	NoOutput             bool
+	SkipDiagnose         bool
 	Minimise             bool
 	BlendMultiObjectives bool
 	Solver               SolverMode
@@ -189,9 +190,9 @@ func (build *LinearBuilder) RunHighsFuture(stopwatch *util.Stopwatch) *util_asyn
 		build.postHighsRun(solver, logFilename, log)
 		future.SetResult(LinearResult{solution, build, log})
 
-		if solution.Status != highs.ModelStatusTimeLimit { // worried that some part of state doesn't reset
-			G_HighsPool.Put(solver)
-		}
+		//if solution.Status != highs.ModelStatusTimeLimit { // worried that some part of state doesn't reset
+		G_HighsPool.Put(solver)
+		//}
 	}()
 
 	return future

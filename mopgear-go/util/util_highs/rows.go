@@ -29,6 +29,13 @@ func (row *ConstraintRow) Add(columnIndex ColumnIndex, value float64) {
 	if value != 0.0 {
 		row.entries = append(row.entries, indexAndValue{columnIndex, value})
 	}
+	if C_DebugHighs {
+		if math.Abs(value) >= 1e+15 {
+			panic("matrix entry very large")
+		} else if math.Abs(value) <= 1e-12 && value != 0 {
+			panic("matrix entry very small")
+		}
+	}
 }
 
 func (row *ConstraintRow) Change(columnIndex ColumnIndex, value float64) {
@@ -60,8 +67,14 @@ func (row *ConstraintRow) Build(build *LinearBuilder, lowerBound float64, upperB
 		}
 		for i := range row.entries {
 			value := row.entries[i].value
-			if value >= 1e+15 {
+			if math.Abs(value) >= 1e+15 {
 				panic("matrix entry very large")
+			}
+		}
+		for i := range row.entries {
+			value := row.entries[i].value
+			if math.Abs(value) <= 1e-12 {
+				panic("matrix entry very small")
 			}
 		}
 	}

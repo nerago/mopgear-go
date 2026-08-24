@@ -85,8 +85,7 @@ func (ranker *RankingStatWeightProcess3b) newBuilder() {
 	ranker.build = new(util_highs.LinearBuilder)
 	ranker.build.Minimise = true
 	ranker.build.TimeLimitSeconds = ranker.timeoutSeconds
-	//ranker.build.Solver = util_highs.Solver_Force_Simplex
-	ranker.build.Solver = util_highs.Solver_LP_USE_GPU
+	ranker.build.Solver = util_highs.Solver_Force_Simplex
 	// others can be faster but often fails, then eventually end up in simplex anyway
 }
 
@@ -203,9 +202,6 @@ func (ranker *RankingStatWeightProcess3b) prepareRankings() {
 			entry.simScore += float64(simDetailRank) * ranker.targetRatios.GetOrPanic(simType)
 		}
 	}
-
-	// TODO ranking ranges
-	// TODO alternately deny duplicates, either on simScore, or full detail
 
 	// rank combined sims
 	for entry, simRank := range util_collection.CalculateRanking(true, ranker.dataSample, func(x *rankEntry3b) float64 { return x.simScore }) {

@@ -210,24 +210,43 @@ func statWeightsRanking3b(printer *util.PrintRecorder) {
 	//weightInputs := readWeightInputFile("tempdata/sim-stats-compare-rand.json")
 	//weightInputs1 := readWeightInputFile("tempdata\\weightfind-sim-real-Prot-Heal.json")
 	//weightInputs2 := readWeightInputFile("tempdata\\weightfind-sim-grid-Prot-Heal.json")
-	weightInputs1 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Mitigation-NoSet.json")
-	weightInputs2 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Mitigation-NoSet.json")
+	weightInputs1 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
+	weightInputs2 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
 	weightInputs := slices.Concat(weightInputs1, weightInputs2)
 
 	statList := model_factory.StatsForWeighting_strengthTank
 	//ratio := model_factory.SimPriority_heal
 	ratio := model_factory.SimPriority_mitigation
 
-	ranking := weight_highs.RankingStatWeightProcess3c{}
-	//ranking := weight_highs.RankingStatWeightProcess3b{}
-	//ranking.TOTALWEIGHT = 2
-	//ranking.ALGO = 0
+	weightsMidRange := weight_types.Weight1Basic_Make()
+	weightsMidRange.Put(stats.Stat_Strength, 1.0000)
+	weightsMidRange.Put(stats.Stat_Stamina, 1.2309)
+	weightsMidRange.Put(stats.Stat_Crit, 0.1167)
+	weightsMidRange.Put(stats.Stat_Haste, 0.3614)
+	weightsMidRange.Put(stats.Stat_Expertise, 0.0054)
+	weightsMidRange.Put(stats.Stat_Mastery, 0.5866)
+	weightsMidRange.Put(stats.Stat_Dodge, 0.0824)
+	weightsMidRange.Put(stats.Stat_Parry, 0.0532)
+
+	//ranking := weight_highs.RankingStatWeightProcess3c{}
+	ranking := weight_highs.RankingStatWeightProcess3b{}
+	ranking.TOTALWEIGHT = 2
+	// 0 49.3953ms
+	// 1 80.5979ms
+	// 2 46.1839ms
+	ranking.ALGO = 0
+	// 1^
+	// 0
+	// simplex; 31177     9.2792909882e+08 Pr: 0(0) 379.7s; acc 90.397887; Duration = 6m20.218095s
+	// hipo; 138   9.27929099e+08   9.27929099e+08   1.05e-05   1.84e-05  1.88e-14   658.9;acc 90.397887;Duration = 11m1.8882727s
+	// ipx: 16m40.5983198s timeout
 	ranking.Init(printer, 1000)
 	ranking.SetRequiredStats(statList)
 	ranking.SetTargetRatios(ratio)
 	ranking.SupplyData(weightInputs)
 	//weightsFuture = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
 	weightsFuture := ranking.RunMultiRound()
+	//weightsFuture := ranking.RunSinglePassFromExternal(weightsMidRange)
 	//weightsFuture := ranking.RunSinglePassRaw() // 8m35.3713307s Objective value 2.4803613132e+08
 	weightResult := weightsFuture.WaitForResultOrPanic()
 	weights1 := weightResult.AsWeight1()
@@ -235,6 +254,34 @@ func statWeightsRanking3b(printer *util.PrintRecorder) {
 		tools.WritePawnString(*weights1, printer)
 		acc := weightfind.EvaluateAccuracy(weights1, ratio.SimTypes(), &ratio, weightInputs)
 		printer.Printf("acc %f\n", acc)
+	} else {
+		printer.Println("MISSING WEIGHT")
+	}
+}
+
+func statWeightsRanking30(printer *util.PrintRecorder) {
+	weightInputs1 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
+	weightInputs2 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
+	weightInputs := slices.Concat(weightInputs1, weightInputs2)
+
+	statList := model_factory.StatsForWeighting_strengthTank
+	ratio := model_factory.SimPriority_mitigation
+
+	ranking := weight_highs.RankingWeightsRatio30{}
+	ranking.AllPairs = false
+	ranking.Init(printer, 1000)
+	ranking.SetRequiredStats(statList)
+	ranking.SetTargetRatios(ratio)
+	ranking.SupplyData(weightInputs)
+	weightsFuture := ranking.RunSinglePassRaw()
+	weightResult := weightsFuture.WaitForResultOrPanic()
+	weights1 := weightResult.AsWeight1()
+	if weights1 != nil {
+		tools.WritePawnString(*weights1, printer)
+		acc := weightfind.EvaluateAccuracy(weights1, ratio.SimTypes(), &ratio, weightInputs)
+		printer.Printf("acc %f\n", acc)
+		accSt := weightfind.EvaluateAccuracyStatisticalExtended(weights1, ratio.SimTypes(), &ratio, weightInputs)
+		printer.Printf("acc st %f\n", accSt)
 	} else {
 		printer.Println("MISSING WEIGHT")
 	}
