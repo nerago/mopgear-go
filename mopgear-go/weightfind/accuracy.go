@@ -17,7 +17,15 @@ func isNil(a interface{}) bool {
 	return a == nil || reflect.ValueOf(a).IsNil()
 }
 
-func EvaluateAccuracy[W weight_types.IWeight](statWeights W, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
+func EvaluateAccuracySwitch[W weight_types.IWeight](useStat bool, statWeights W, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
+	if useStat {
+		return EvaluateAccuracyStatisticalExtended(statWeights, requiredSims, simRatios, inputData)
+	} else {
+		return EvaluateAccuracyBasic(statWeights, requiredSims, simRatios, inputData)
+	}
+}
+
+func EvaluateAccuracyBasic[W weight_types.IWeight](statWeights W, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
 	if isNil(statWeights) || statWeights.IsEmpty() {
 		return 0
 	}

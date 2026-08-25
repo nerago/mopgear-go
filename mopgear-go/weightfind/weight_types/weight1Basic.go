@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"iter"
 	"math"
+	"slices"
 
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/util"
@@ -47,7 +48,17 @@ func (wr *Weight1Basic) IsOverlySimple() bool {
 			}
 		}
 	}
-	return interesting <= 1 || (interesting+one) <= 2
+	if interesting <= 1 || (interesting+one) <= 2 {
+		return true
+	}
+
+	distinct := make([]float64, 0, 4)
+	for value := range wr.content.SeqValues() {
+		if !slices.Contains(distinct, value) {
+			distinct = append(distinct, value)
+		}
+	}
+	return len(distinct) <= 2
 }
 
 func (wr *Weight1Basic) Get(statType stats.StatType) float64 {

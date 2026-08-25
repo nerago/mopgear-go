@@ -25,7 +25,7 @@ func weightTweakerInternalLogged(startWeight weight_types.Weight1Basic, tweakSta
 	factor := 1 + increment
 
 	if startWeight.IsEmpty() {
-		return startWeight, EvaluateAccuracy(&startWeight, requiredSims, targetRatio, inputData)
+		return startWeight, EvaluateAccuracyBasic(&startWeight, requiredSims, targetRatio, inputData)
 	}
 
 	type weightAndAccuracy struct {
@@ -34,7 +34,7 @@ func weightTweakerInternalLogged(startWeight weight_types.Weight1Basic, tweakSta
 	}
 	bestEntry := &weightAndAccuracy{
 		startWeight.Clone(),
-		EvaluateAccuracy(&startWeight, requiredSims, targetRatio, inputData),
+		EvaluateAccuracyBasic(&startWeight, requiredSims, targetRatio, inputData),
 	}
 	printer.Printf("START %s accuracy=%f\n", bestEntry.weight.String(), bestEntry.accuracy)
 
@@ -48,23 +48,23 @@ func weightTweakerInternalLogged(startWeight weight_types.Weight1Basic, tweakSta
 			if !bestEntry.weight.IsZero(stat) {
 				mul := bestEntry.weight.Clone()
 				mul.MultiplyEquals(stat, factor)
-				accuracyMul := EvaluateAccuracy(&mul, requiredSims, targetRatio, inputData)
+				accuracyMul := EvaluateAccuracyBasic(&mul, requiredSims, targetRatio, inputData)
 				best.Offer(&weightAndAccuracy{mul, accuracyMul}, accuracyMul)
 
 				div := bestEntry.weight.Clone()
 				div.DivideEquals(stat, factor)
-				accuracyDiv := EvaluateAccuracy(&div, requiredSims, targetRatio, inputData)
+				accuracyDiv := EvaluateAccuracyBasic(&div, requiredSims, targetRatio, inputData)
 				best.Offer(&weightAndAccuracy{div, accuracyDiv}, accuracyDiv)
 			}
 
 			add := bestEntry.weight.Clone()
 			add.PlusEquals(stat, increment)
-			accuracyAdd := EvaluateAccuracy(&add, requiredSims, targetRatio, inputData)
+			accuracyAdd := EvaluateAccuracyBasic(&add, requiredSims, targetRatio, inputData)
 			best.Offer(&weightAndAccuracy{add, accuracyAdd}, accuracyAdd)
 
 			sub := bestEntry.weight.Clone()
 			sub.MinusEquals(stat, increment)
-			accuracySub := EvaluateAccuracy(&sub, requiredSims, targetRatio, inputData)
+			accuracySub := EvaluateAccuracyBasic(&sub, requiredSims, targetRatio, inputData)
 			best.Offer(&weightAndAccuracy{sub, accuracySub}, accuracySub)
 		}
 

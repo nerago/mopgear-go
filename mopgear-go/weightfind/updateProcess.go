@@ -37,8 +37,8 @@ const (
 
 	c_eachSimTargetGenerateDataCount = 600
 
-	c_dataSampleFitRank = 200
-	c_dataSampleGrid    = 128
+	c_dataSampleFitRank = 300
+	c_dataSampleGrid    = 96
 	c_useSamplingFit    = true
 	c_useSamplingRank   = false
 	c_useSamplingGrid   = true
@@ -153,7 +153,7 @@ func (spec *WeightSpec) tabularReport(print util.Printable) {
 	tab.AddColumnHeader("pawn", false)
 
 	slices.SortFunc(spec.choices, func(a, b weightChoice) int {
-		return cmp.Compare(a.accuracy1Stat, b.accuracy1Stat)
+		return cmp.Compare(max(a.accuracy1, a.accuracy1Stat), max(b.accuracy1, b.accuracy1Stat))
 	})
 	for choice := range util_collection.ForPointer(spec.choices) {
 		row := make([]string, 0, tab.ColumnCount())
@@ -402,11 +402,11 @@ func (spec *WeightSpec) evaluateWeight(choiceName string, weight1 *weight_types.
 	if _, isOne := weightOrig.(*weight_types.Weight1Basic); isOne {
 		hadExtended = false
 	} else {
-		accuracyX = EvaluateAccuracy(weightOrig, spec.simTypes, &spec.targetRatio, spec.dataAll)
+		accuracyX = EvaluateAccuracyBasic(weightOrig, spec.simTypes, &spec.targetRatio, spec.dataAll)
 		accuracyXStat = EvaluateAccuracyStatisticalExtended(weightOrig, spec.simTypes, &spec.targetRatio, spec.dataAll)
 		hadExtended = true
 	}
-	accuracy1 := EvaluateAccuracy(weight1, spec.simTypes, &spec.targetRatio, spec.dataAll)
+	accuracy1 := EvaluateAccuracyBasic(weight1, spec.simTypes, &spec.targetRatio, spec.dataAll)
 	accuracy1Stat := EvaluateAccuracyStatisticalExtended(weight1, spec.simTypes, &spec.targetRatio, spec.dataAll)
 
 	pawnString := tools.WritePawnString(*weight1, spec.process.printer)
@@ -430,6 +430,7 @@ func (spec *WeightSpec) bestWeightChoice1() (weightChoice, bool) {
 	best := util_rank.BestCollector1[weightChoice]{}
 	for _, choice := range spec.choices {
 		best.Offer(&choice, choice.accuracy1Stat)
+		best.Offer(&choice, choice.accuracy1)
 	}
 	return best.GetBestOptional().GetWithFlag()
 }
@@ -442,18 +443,24 @@ func (spec *WeightSpec) bestWeightChoiceExtended() (util_collection.Optional[wei
 		switch weightCast := weightOrig.(type) {
 		case *weight_types.Weight2Extended:
 			choice.weight2 = weightCast
-			acc2 := EvaluateAccuracyStatisticalExtended(weightCast, spec.simTypes, &spec.targetRatio, spec.dataAll)
+			acc2 := EvaluateAccuracyBasic(weightCast, spec.simTypes, &spec.targetRatio, spec.dataAll)
+			acc2St := EvaluateAccuracyStatisticalExtended(weightCast, spec.simTypes, &spec.targetRatio, spec.dataAll)
 			best2.Offer(&choice, acc2)
+			best2.Offer(&choice, acc2St)
 		case *weight_types.Weight3ExtendedRanged:
 			choice.weight3 = weightCast
 			weightConvert2 := weightCast.ConvertToWeight2()
 			choice.weight2 = weightConvert2
 
-			acc3 := EvaluateAccuracyStatisticalExtended(weightCast, spec.simTypes, &spec.targetRatio, spec.dataAll)
+			acc3 := EvaluateAccuracyBasic(weightCast, spec.simTypes, &spec.targetRatio, spec.dataAll)
+			acc3St := EvaluateAccuracyStatisticalExtended(weightCast, spec.simTypes, &spec.targetRatio, spec.dataAll)
 			best3.Offer(&choice, acc3)
+			best3.Offer(&choice, acc3St)
 
-			acc2 := EvaluateAccuracyStatisticalExtended(weightConvert2, spec.simTypes, &spec.targetRatio, spec.dataAll)
+			acc2 := EvaluateAccuracyBasic(weightConvert2, spec.simTypes, &spec.targetRatio, spec.dataAll)
+			acc2St := EvaluateAccuracyStatisticalExtended(weightConvert2, spec.simTypes, &spec.targetRatio, spec.dataAll)
 			best2.Offer(&choice, acc2)
+			best2.Offer(&choice, acc2St)
 		}
 	}
 	return best2.GetBestOptional(), best3.GetBestOptional()
@@ -613,24 +620,13 @@ func (spec *WeightSpec) solveSearchWeights(searchMode int, cancel util_async.Can
 		weightResult := search.Run(innerCancel)
 		spec.evaluateWeight("SEARCH2", weightResult.AsWeight1(), weightResult.Weight, &weightResult)
 	} else if searchMode == 1 {
-		// TODO this version is currently acting non-deterministic so give it a few tries
-		best := util_rank.BestCollector1[weight_types.WeightResult]{}
-		for range 10 {
-			if innerCancel.ShouldFinish() {
-				break
-			}
-
-			search := WeightSearcher3{}
-			search.AccuracyStatistical = true
-			search.Init(spec.statTypes, spec.targetRatio)
-			search.SupplyData(spec.dataAll)
-			search.SetRanges(-1.0, 10.0)
-			weightResult := search.Run(innerCancel)
-			acc := EvaluateAccuracyStatisticalExtended(weightResult.AsWeight1(), spec.simTypes, &spec.targetRatio, spec.dataAll)
-			best.Offer(&weightResult, acc)
-		}
-		bestWeightResult := best.GetBestOrNilValue()
-		spec.evaluateWeight("SEARCH3", bestWeightResult.AsWeight1(), bestWeightResult.Weight, &bestWeightResult)
+		search := WeightSearcher3{}
+		search.AccuracyStatistical = true
+		search.Init(spec.statTypes, spec.targetRatio)
+		search.SupplyData(spec.dataAll)
+		search.SetRanges(-1.0, 10.0)
+		weightResult := search.Run(innerCancel)
+		spec.evaluateWeight("SEARCH3", weightResult.AsWeight1(), weightResult.Weight, &weightResult)
 	} else {
 		sw := util.StopwatchMakeStarted()
 		search := WeightSearcherExtended1{}

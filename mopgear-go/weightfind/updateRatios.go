@@ -59,16 +59,16 @@ func (wrp *WeightRatioProcess) updateSpecRatio(spec *WeightSpec, tracker *util.T
 		return wrp.runRanking(spec, 32, true, false, true, 5)
 	})
 	taskList = append(taskList, func() *weight_types.WeightResult {
-		return wrp.runRanking(spec, 64, true, false, true, 3)
+		return wrp.runRanking(spec, 128, true, false, true, 3)
 	})
 	taskList = append(taskList, func() *weight_types.WeightResult {
-		return wrp.runRanking(spec, 256, false, true, false, 0)
+		return wrp.runRanking(spec, 400, false, true, false, 0)
 	})
+	//taskList = append(taskList, func() *weight_types.WeightResult {
+	//	return wrp.runRanking(spec, 1000, false, true, false, 0)
+	//})
 	taskList = append(taskList, func() *weight_types.WeightResult {
-		return wrp.runRanking(spec, 1000, false, true, false, 0)
-	})
-	taskList = append(taskList, func() *weight_types.WeightResult {
-		return wrp.runRanking(spec, 1000, false, false, false, 0)
+		return wrp.runRanking(spec, 2000, false, false, false, 0)
 	})
 
 	resultList := util_async.Map_SliceToSlice(c_ratioThreadCount, taskList, func(f *func() *weight_types.WeightResult) *weight_types.WeightResult {
@@ -93,7 +93,7 @@ func (wrp *WeightRatioProcess) addReport(spec *WeightSpec, weightResult *weight_
 }
 
 func (wrp *WeightRatioProcess) appendAccuracy(spec *WeightSpec, weight *weight_types.Weight1Basic, ratio *weight_types.SimPriorityBasic, sb *util.StringBuild2) {
-	newAcc := EvaluateAccuracy(weight, ratio.SimTypes(), ratio, spec.dataAll)
+	newAcc := EvaluateAccuracyBasic(weight, ratio.SimTypes(), ratio, spec.dataAll)
 	newAccSt := EvaluateAccuracyStatisticalExtended(weight, ratio.SimTypes(), ratio, spec.dataAll)
 	sb.Printf("Accuracy: %f %f\n\n", newAcc, newAccSt)
 }

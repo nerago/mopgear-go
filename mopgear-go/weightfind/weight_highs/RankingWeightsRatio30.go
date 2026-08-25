@@ -307,7 +307,7 @@ func (ranker *RankingWeightsRatio30) extractAndReportSolution(solution *highs.So
 	tools.WriteWeightString(&weight, ranker.printer)
 
 	ranker.printer.Println("RATIOS")
-	ratio := weight_types.SimPriorityBasic_MakeEmpty()
+	ratio := weight_types.SimPriorityBasic{}
 	for _, simType := range ranker.requiredSims {
 		ratioColumn := ranker.ratioColumns.GetOrPanic(simType)
 		modelRatio := solution.ColValues[ratioColumn]

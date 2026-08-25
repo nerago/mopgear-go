@@ -56,7 +56,7 @@ func core(printer *util.PrintRecorder) {
 	//statWeightsFormula(printer)
 	//statWeightsRanking(printer)
 	//statWeightsRanking3b(printer)
-	statWeightsRanking30(printer)
+	statWeightsSearchRatio(printer)
 	//statWeightsGridIntoRanking(printer)
 	//statWeightsSearch(printer)
 	//statWeightsSearchExtended(printer)

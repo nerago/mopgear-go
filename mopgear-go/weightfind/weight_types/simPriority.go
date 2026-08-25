@@ -19,9 +19,6 @@ type SimPriorityBasic struct {
 	content stats.SimTypeMap[float64]
 }
 
-func SimPriorityBasic_MakeEmpty() SimPriorityBasic {
-	return SimPriorityBasic{}
-}
 func SimPriorityBasic_Make(parts ...any) SimPriorityBasic {
 	sim := SimPriorityBasic{}
 	for i := 0; i < len(parts); i += 2 {
@@ -78,7 +75,7 @@ func (sr *SimPriorityBasic) ScaleForTotalSum(targetTotal float64) *SimPriorityBa
 	}
 	scale := targetTotal / currentTotal
 
-	result := SimPriorityBasic_MakeEmpty()
+	result := SimPriorityBasic{}
 	for simType := range sr.content.SeqKey() {
 		value, hasValue := sr.content.Get(simType)
 		if hasValue {
@@ -186,7 +183,7 @@ func (sre *SimPriorityExtended) Validate() {
 }
 
 func (sre *SimPriorityExtended) ConvertToBasic() SimPriorityBasic {
-	simRatio := SimPriorityBasic_MakeEmpty()
+	simRatio := SimPriorityBasic{}
 	for simType, entry := range sre.entries.SeqKeyValue() {
 		simRatio.Set(simType, entry.RatioScale)
 	}

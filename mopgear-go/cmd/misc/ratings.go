@@ -199,7 +199,7 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 	weights1 := weightResult.AsWeight1()
 	if weights1 != nil {
 		tools.WritePawnString(*weights1, printer)
-		acc := weightfind.EvaluateAccuracy(weights1, ratio.SimTypes(), &ratio, weightInputs)
+		acc := weightfind.EvaluateAccuracyBasic(weights1, ratio.SimTypes(), &ratio, weightInputs)
 		printer.Printf("acc %f\n", acc)
 	} else {
 		printer.Println("MISSING WEIGHT")
@@ -252,7 +252,7 @@ func statWeightsRanking3b(printer *util.PrintRecorder) {
 	weights1 := weightResult.AsWeight1()
 	if weights1 != nil {
 		tools.WritePawnString(*weights1, printer)
-		acc := weightfind.EvaluateAccuracy(weights1, ratio.SimTypes(), &ratio, weightInputs)
+		acc := weightfind.EvaluateAccuracyBasic(weights1, ratio.SimTypes(), &ratio, weightInputs)
 		printer.Printf("acc %f\n", acc)
 	} else {
 		printer.Println("MISSING WEIGHT")
@@ -286,12 +286,57 @@ func statWeightsRanking30(printer *util.PrintRecorder) {
 	newRatio := weightResult.NewRatio
 	if weights1 != nil {
 		tools.WritePawnString(*weights1, printer)
-		acc := weightfind.EvaluateAccuracy(weights1, ratio.SimTypes(), &ratio, weightInputs)
+		acc := weightfind.EvaluateAccuracyBasic(weights1, ratio.SimTypes(), &ratio, weightInputs)
 		printer.Printf("acc %f\n", acc)
 		accSt := weightfind.EvaluateAccuracyStatisticalExtended(weights1, ratio.SimTypes(), &ratio, weightInputs)
 		printer.Printf("acc st %f\n", accSt)
 
-		newAcc := weightfind.EvaluateAccuracy(weights1, newRatio.SimTypes(), newRatio, weightInputs)
+		newAcc := weightfind.EvaluateAccuracyBasic(weights1, newRatio.SimTypes(), newRatio, weightInputs)
+		printer.Printf("new acc %f\n", newAcc)
+		newAccSt := weightfind.EvaluateAccuracyStatisticalExtended(weights1, newRatio.SimTypes(), newRatio, weightInputs)
+		printer.Printf("new acc st %f\n", newAccSt)
+	} else {
+		printer.Println("MISSING WEIGHT")
+	}
+}
+
+func statWeightsSearchRatio(printer *util.PrintRecorder) {
+	weightInputs1 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Survival.json")
+	weightInputs2 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Survival.json")
+	weightInputs := slices.Concat(weightInputs1, weightInputs2)
+	//weightInputs = util_collection.SliceSampleRandom(weightInputs, 64)
+
+	statList := model_factory.StatsForWeighting_strengthTank
+	ratio := model_factory.SimPriority_survival
+
+	cancel := util_async.CancelSignal_Make()
+	util_async.CancelOnKeyPress(cancel)
+
+	statRange := weight_types.StatRangeFloat{Minimum: -1.0, Maximum: 1.0}
+
+	simRangeMap := stats.SimTypeMap[weight_types.StatRangeFloat]{}
+	simRangeMap.Put(stats.Sim_DPS, weight_types.StatRangeFloat{Minimum: 0.00, Maximum: 0.15})
+	simRangeMap.Put(stats.Sim_DEATH, weight_types.StatRangeFloat{Minimum: 0.20, Maximum: 0.60})
+	simRangeMap.Put(stats.Sim_TMI, weight_types.StatRangeFloat{Minimum: 0.00, Maximum: 0.25})
+	simRangeMap.Put(stats.Sim_DTPS, weight_types.StatRangeFloat{Minimum: 0.20, Maximum: 0.50})
+
+	ranking := weightfind.WeightSearcherRatio1{}
+	ranking.AccuracyStatistical = true
+	ranking.Init(statList, ratio.SimTypes())
+	ranking.SupplyData(weightInputs)
+	ranking.SetStatSimRanges(statRange, simRangeMap)
+	weightResult := ranking.Run(cancel)
+	weights1 := weightResult.AsWeight1()
+	newRatio := weightResult.NewRatio
+	if weights1 != nil {
+		tools.WritePawnString(*weights1, printer)
+		acc := weightfind.EvaluateAccuracyBasic(weights1, ratio.SimTypes(), &ratio, weightInputs)
+		printer.Printf("acc %f\n", acc)
+		accSt := weightfind.EvaluateAccuracyStatisticalExtended(weights1, ratio.SimTypes(), &ratio, weightInputs)
+		printer.Printf("acc st %f\n", accSt)
+
+		printer.Println(newRatio.String())
+		newAcc := weightfind.EvaluateAccuracyBasic(weights1, newRatio.SimTypes(), newRatio, weightInputs)
 		printer.Printf("new acc %f\n", newAcc)
 		newAccSt := weightfind.EvaluateAccuracyStatisticalExtended(weights1, newRatio.SimTypes(), newRatio, weightInputs)
 		printer.Printf("new acc st %f\n", newAccSt)
@@ -332,7 +377,7 @@ func statWeightsSearch(printer *util.PrintRecorder) {
 	printer.Printf("time = %s\n", weightResult.SolveTime)
 	weight := *weightResult.AsWeight1()
 	tools.WritePawnString(weight, printer)
-	printer.Printf("accuracy = %f\n", weightfind.EvaluateAccuracy(&weight, targetRatio.SimTypes(), &targetRatio, mixedInputData))
+	printer.Printf("accuracy = %f\n", weightfind.EvaluateAccuracyBasic(&weight, targetRatio.SimTypes(), &targetRatio, mixedInputData))
 	printer.Printf("accuracy stat = %f\n", weightfind.EvaluateAccuracyStatisticalExtended(&weight, targetRatio.SimTypes(), &targetRatio, mixedInputData))
 
 	//( Pawn: v1: "Gearing Weights": Class=Paladin,Strength=1.0000000000,Stamina=1.6065881006,CritRating=0.6369231133,HasteRating=1.5962452471,ExpertiseRating=-0.0001959652,MasteryRating=1.6330798479,DodgeRating=0.9962463273,ParryRating=0.6430861217, )
@@ -428,10 +473,10 @@ func statWeightsSearchExtended(printer *util.PrintRecorder) {
 	weight1 := weight2.ConvertToWeight1()
 	tools.WritePawnString(*weight1, printer)
 	printer.Println(tools.FormatWeight2String(&weight2))
-	printer.Printf("accuracy1 = %f\n", weightfind.EvaluateAccuracy(weight1, targetRatio.SimTypes(), &targetRatio, mixedInputData))
+	printer.Printf("accuracy1 = %f\n", weightfind.EvaluateAccuracyBasic(weight1, targetRatio.SimTypes(), &targetRatio, mixedInputData))
 	//printer.Printf("accuracy1 stat = %f\n", weightfind.EvaluateAccuracyStatistical(weight1, targetRatio.SimTypes(), &targetRatio, mixedInputData))
 	printer.Printf("accuracy1 stat ex = %f\n", weightfind.EvaluateAccuracyStatisticalExtended(weight1, targetRatio.SimTypes(), &targetRatio, mixedInputData))
-	printer.Printf("accuracy2 = %f\n", weightfind.EvaluateAccuracy(&weight2, targetRatio.SimTypes(), &targetRatio, mixedInputData))
+	printer.Printf("accuracy2 = %f\n", weightfind.EvaluateAccuracyBasic(&weight2, targetRatio.SimTypes(), &targetRatio, mixedInputData))
 	//printer.Printf("accuracy2 stat = %f\n", weightfind.EvaluateAccuracyStatistical(&weight2, targetRatio.SimTypes(), &targetRatio, mixedInputData))
 	printer.Printf("accuracy2 stat ex = %f\n", weightfind.EvaluateAccuracyStatisticalExtended(&weight2, targetRatio.SimTypes(), &targetRatio, mixedInputData))
 
@@ -544,15 +589,15 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 	weights2 := *weightsResult2.AsWeight1()
 
 	tools.WritePawnString(weights1, printer)
-	printer.Printf("accuracy_initial = %f\n", weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, mixedInputData))
+	printer.Printf("accuracy_initial = %f\n", weightfind.EvaluateAccuracyBasic(&weights1, simTypes, &targetRatio, mixedInputData))
 
 	tools.WritePawnString(weights2, printer)
-	printer.Printf("accuracy_algo = %f\n", weightfind.EvaluateAccuracy(&weights2, simTypes, &targetRatio, mixedInputData))
+	printer.Printf("accuracy_algo = %f\n", weightfind.EvaluateAccuracyBasic(&weights2, simTypes, &targetRatio, mixedInputData))
 
 	weights3, _ := weightfind.WeightTweakerWithLogging(weights2, requiredStats, &targetRatio, mixedInputData, util.PrintRecorder_Nop())
 
 	tools.WritePawnString(weights3, printer)
-	printer.Printf("accuracy_tweak = %f\n", weightfind.EvaluateAccuracy(&weights3, simTypes, &targetRatio, mixedInputData))
+	printer.Printf("accuracy_tweak = %f\n", weightfind.EvaluateAccuracyBasic(&weights3, simTypes, &targetRatio, mixedInputData))
 
 	// ( Pawn: v1: "Protection WoWSims Weights": Class=Paladin,Strength=1.0000000000,Stamina=0.4805050000,CritRating=0.6462260000,HasteRating=0.8598560000,ExpertiseRating=0.6679750000,MasteryRating=1.9405810000,DodgeRating=0.6518220000,ParryRating=0.6243300000, )
 	// accuracy1 = 92.635522
@@ -850,9 +895,9 @@ func statWeightsFitting2eachProper(printer *util.PrintRecorder) {
 	printer.Printf("weight2 isempty = %v\n", weight3.ConvertToWeight2().IsEmpty())
 	printer.Printf("weight1 isempty = %v\n", weight3.ConvertToWeight2().ConvertToWeight1().IsEmpty())
 
-	acc3 := weightfind.EvaluateAccuracy(weight3, simTypes, &targetRatio, weightInputs)
-	acc2 := weightfind.EvaluateAccuracy(weight3.ConvertToWeight2(), simTypes, &targetRatio, weightInputs)
-	acc1 := weightfind.EvaluateAccuracy(weight3.ConvertToWeight2().ConvertToWeight1(), simTypes, &targetRatio, weightInputs)
+	acc3 := weightfind.EvaluateAccuracyBasic(weight3, simTypes, &targetRatio, weightInputs)
+	acc2 := weightfind.EvaluateAccuracyBasic(weight3.ConvertToWeight2(), simTypes, &targetRatio, weightInputs)
+	acc1 := weightfind.EvaluateAccuracyBasic(weight3.ConvertToWeight2().ConvertToWeight1(), simTypes, &targetRatio, weightInputs)
 	printer.Printf("weight3 acc = %v\n", acc3)
 	printer.Printf("weight2 acc = %v\n", acc2)
 	printer.Printf("weight1 acc = %v\n", acc1)
@@ -883,9 +928,9 @@ func statWeightsFitting3eachProper(printer *util.PrintRecorder) {
 		printer.Printf("weight2 isempty = %v\n", weight3.ConvertToWeight2().IsEmpty())
 		printer.Printf("weight1 isempty = %v\n", weight3.ConvertToWeight2().ConvertToWeight1().IsEmpty())
 
-		acc3 := weightfind.EvaluateAccuracy(weight3, simTypes, &targetRatio, weightInputs)
-		acc2 := weightfind.EvaluateAccuracy(weight3.ConvertToWeight2(), simTypes, &targetRatio, weightInputs)
-		acc1 := weightfind.EvaluateAccuracy(weight3.ConvertToWeight2().ConvertToWeight1(), simTypes, &targetRatio, weightInputs)
+		acc3 := weightfind.EvaluateAccuracyBasic(weight3, simTypes, &targetRatio, weightInputs)
+		acc2 := weightfind.EvaluateAccuracyBasic(weight3.ConvertToWeight2(), simTypes, &targetRatio, weightInputs)
+		acc1 := weightfind.EvaluateAccuracyBasic(weight3.ConvertToWeight2().ConvertToWeight1(), simTypes, &targetRatio, weightInputs)
 		printer.Printf("weight3 acc = %v\n", acc3)
 		printer.Printf("weight2 acc = %v\n", acc2)
 		printer.Printf("weight1 acc = %v\n", acc1)
@@ -945,9 +990,9 @@ func statWeightsFitting1eachProper(printer *util.PrintRecorder) {
 	printer.Printf("weight2 isempty = %v\n", weight3.ConvertToWeight2().IsEmpty())
 	printer.Printf("weight1 isempty = %v\n", weight3.ConvertToWeight2().ConvertToWeight1().IsEmpty())
 
-	acc3 := weightfind.EvaluateAccuracy(weight3, simTypes, &targetRatio, weightInputs)
-	acc2 := weightfind.EvaluateAccuracy(weight3.ConvertToWeight2(), simTypes, &targetRatio, weightInputs)
-	acc1 := weightfind.EvaluateAccuracy(weight3.ConvertToWeight2().ConvertToWeight1(), simTypes, &targetRatio, weightInputs)
+	acc3 := weightfind.EvaluateAccuracyBasic(weight3, simTypes, &targetRatio, weightInputs)
+	acc2 := weightfind.EvaluateAccuracyBasic(weight3.ConvertToWeight2(), simTypes, &targetRatio, weightInputs)
+	acc1 := weightfind.EvaluateAccuracyBasic(weight3.ConvertToWeight2().ConvertToWeight1(), simTypes, &targetRatio, weightInputs)
 	printer.Printf("weight3 acc = %v\n", acc3)
 	printer.Printf("weight2 acc = %v\n", acc2)
 	printer.Printf("weight1 acc = %v\n", acc1)
@@ -1173,9 +1218,9 @@ func statWeightsGrid1Orig(printer *util.PrintRecorder) {
 		weights1 := *weightsResult.AsWeight1()
 		tools.WritePawnString(weights1, printer)
 
-		acc := weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, inputDataGrid)
-		acc2 := weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, inputDataRandom)
-		acc3 := weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, slices.Concat(inputDataGrid, inputDataRandom))
+		acc := weightfind.EvaluateAccuracyBasic(&weights1, simTypes, &targetRatio, inputDataGrid)
+		acc2 := weightfind.EvaluateAccuracyBasic(&weights1, simTypes, &targetRatio, inputDataRandom)
+		acc3 := weightfind.EvaluateAccuracyBasic(&weights1, simTypes, &targetRatio, slices.Concat(inputDataGrid, inputDataRandom))
 		acc4 := weightfind.EvaluateAccuracyStatisticalExtended(&weights1, simTypes, &targetRatio, slices.Concat(inputDataGrid, inputDataRandom))
 		printer.Printf("accuracy %s: grid data = %f, rand data = %f, data mix = %f, stat mix = %f\n", label, acc, acc2, acc3, acc4)
 	}
@@ -1278,9 +1323,9 @@ func statWeightsGrid2(printer *util.PrintRecorder) {
 		weights1 := *weightsResult.AsWeight1()
 		tools.WritePawnString(weights1, printer)
 
-		acc := weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, inputDataGrid)
-		acc2 := weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, inputDataRandom)
-		acc3 := weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, slices.Concat(inputDataGrid, inputDataRandom))
+		acc := weightfind.EvaluateAccuracyBasic(&weights1, simTypes, &targetRatio, inputDataGrid)
+		acc2 := weightfind.EvaluateAccuracyBasic(&weights1, simTypes, &targetRatio, inputDataRandom)
+		acc3 := weightfind.EvaluateAccuracyBasic(&weights1, simTypes, &targetRatio, slices.Concat(inputDataGrid, inputDataRandom))
 		acc4 := weightfind.EvaluateAccuracyStatisticalExtended(&weights1, simTypes, &targetRatio, slices.Concat(inputDataGrid, inputDataRandom))
 		printer.Printf("accuracy %s: grid data = %f, rand data = %f, data mix = %f, stat mix = %f\n", label, acc, acc2, acc3, acc4)
 	}
@@ -1336,9 +1381,9 @@ func statWeightsGrid1b(printer *util.PrintRecorder) {
 		weightResult := weightsFuture.WaitForResultOrPanic()
 		weights1 := *weightResult.AsWeight1()
 
-		acc := weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, inputDataGrid)
-		acc2 := weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, inputDataRandom)
-		acc3 := weightfind.EvaluateAccuracy(&weights1, simTypes, &targetRatio, slices.Concat(inputDataGrid, inputDataRandom))
+		acc := weightfind.EvaluateAccuracyBasic(&weights1, simTypes, &targetRatio, inputDataGrid)
+		acc2 := weightfind.EvaluateAccuracyBasic(&weights1, simTypes, &targetRatio, inputDataRandom)
+		acc3 := weightfind.EvaluateAccuracyBasic(&weights1, simTypes, &targetRatio, slices.Concat(inputDataGrid, inputDataRandom))
 		acc4 := weightfind.EvaluateAccuracyStatisticalExtended(&weights1, simTypes, &targetRatio, slices.Concat(inputDataGrid, inputDataRandom))
 		printer.Printf("accuracy %s: grid data = %f, rand data = %f, data mix = %f, stat mix = %f\n", label, acc, acc2, acc3, acc4)
 	}
