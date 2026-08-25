@@ -52,6 +52,33 @@ func (stack *QueueStackFilo[T]) Push(value T) {
 	}
 }
 
+func (stack *QueueStackFilo[T]) PushSeveral(valueSlice []T) {
+	oldSize := stack.size
+	newSize := oldSize + len(valueSlice)
+	if newSize < len(stack.array) {
+		for i := range valueSlice {
+			stack.array[oldSize+i] = valueSlice[i]
+		}
+		stack.size = newSize
+	} else if len(stack.array) > 0 && oldSize > 0 {
+		newArray := make([]T, max(len(stack.array)*2, newSize))
+		for i := range oldSize {
+			newArray[i] = stack.array[i]
+		}
+		for i := range valueSlice {
+			newArray[oldSize+i] = valueSlice[i]
+		}
+		clear(stack.array)
+		stack.size = newSize
+		stack.array = newArray
+	} else {
+		clear(stack.array)
+		stack.size = newSize
+		stack.array = make([]T, newSize*2)
+		copy(stack.array, valueSlice)
+	}
+}
+
 func (stack *QueueStackFilo[T]) Pop() (T, bool) {
 	var nilValue T
 	readIndex := stack.size - 1
@@ -62,6 +89,33 @@ func (stack *QueueStackFilo[T]) Pop() (T, bool) {
 		return value, true
 	} else {
 		return nilValue, false
+	}
+}
+
+func (stack *QueueStackFilo[T]) PopSeveral(buffer []T) []T {
+	if buffer == nil {
+		panic("buffer nil")
+	}
+
+	if stack.size == 0 {
+		return buffer[:0]
+	} else if stack.size < len(buffer) {
+		resultCount := stack.size
+		for i := range resultCount {
+			buffer[i] = stack.array[i]
+			stack.array[i] = makeNilValue[T]()
+		}
+		stack.size = 0
+		return buffer[:resultCount]
+	} else {
+		requestCount := len(buffer)
+		for i, o := stack.size-requestCount, 0; i <= stack.size-1; i++ {
+			buffer[o] = stack.array[i]
+			stack.array[i] = makeNilValue[T]()
+			o++
+		}
+		stack.size -= requestCount
+		return buffer
 	}
 }
 

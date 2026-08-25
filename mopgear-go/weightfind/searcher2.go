@@ -129,6 +129,12 @@ func (ws *WeightSearcher2) Run(cancel util_async.CancelSignal) weight_types.Weig
 
 func (ws *WeightSearcher2) evaluateScore(weightArray []float64) float64 {
 	weights := weight_types.Weight1Basic_Of(weightArray, ws.statTypes)
+
+	weights.NormalizeForBase(ws.statTypes)
+	if weights.IsOverlySimple() {
+		return 0
+	}
+
 	accuracy := ws.evaluateAccuracy.EvaluateWeight1(&weights)
 	ws.bestResult.Offer(&weights, accuracy)
 	return accuracy

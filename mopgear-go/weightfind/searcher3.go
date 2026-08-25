@@ -163,6 +163,12 @@ func (ws *WeightSearcher3) evaluateScore(weightArray *weightSearch2FastPoint, ev
 	for i, statType := range ws.statTypes {
 		weights.Put(statType, weightArray[i])
 	}
+
+	weights.NormalizeForBase(ws.statTypes)
+	if weights.IsOverlySimple() {
+		return 0
+	}
+
 	accuracy := evaluateAccuracy.EvaluateWeight1(&weights)
 	ws.bestResult.Offer(&weights, accuracy)
 	return accuracy

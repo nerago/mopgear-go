@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	c_searchRatio1_abandonBranchAccuracyGap = 0.2
+	c_searchRatio1_abandonBranchAccuracyGap = 0.10
 	c_searchRatio1_largeAccuracyGap         = 0.1
 	c_searchRatio1_equalAccuracyGap         = 0.01
 
@@ -54,10 +54,11 @@ type WeightSearcherRatio1 struct {
 type weightSearchRatio1Point [c_searchRatio1_maxPoint]float64
 
 type weightSearchRatio1Bound struct {
-	rangeMin   weightSearchRatio1Point
-	rangeMax   weightSearchRatio1Point
-	divideAxis int
-	nodeDepth  int
+	rangeMin     weightSearchRatio1Point
+	rangeMax     weightSearchRatio1Point
+	divideAxis   int
+	nodeDepth    int
+	bestAccuracy float64
 }
 
 type weightSearchRatio1Probe struct {
@@ -89,6 +90,7 @@ func (ws *WeightSearcherRatio1) SetStatSimRanges(statRange weight_types.StatRang
 	bound := ws.poolQueue.Get()
 	bound.divideAxis = 0
 	bound.nodeDepth = 0
+	bound.bestAccuracy = 0 // don't really need proper value
 
 	index := 0
 	for range ws.statTypes {
@@ -109,19 +111,18 @@ func (ws *WeightSearcherRatio1) SetStatSimRanges(statRange weight_types.StatRang
 func (ws *WeightSearcherRatio1) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
 	stopwatch := util.StopwatchMakeStarted()
 	threadCount := 12
-	queue := util_collection.QueueStackStealingPool[*weightSearchRatio1Bound]{}
+	queue := &util_collection.QueueStackFiloConcurrent[*weightSearchRatio1Bound]{}
 
-	startingQueue := queue.MakeChild()
 	startingProbesReused := ws.newProbeSlice()
-	if ws.initialSplits(startingQueue, startingProbesReused, threadCount) {
+	if ws.initialSplits(queue, startingProbesReused, threadCount) {
 		waitGroup := sync.WaitGroup{}
 		for range threadCount - 1 {
 			waitGroup.Go(func() {
-				ws.threadLoop(cancel, queue.MakeChild(), ws.newProbeSlice())
+				ws.threadLoop(cancel, queue, ws.newProbeSlice(), false)
 			})
 		}
 
-		ws.threadLoop(cancel, startingQueue, startingProbesReused)
+		ws.threadLoop(cancel, queue, startingProbesReused, true)
 		waitGroup.Wait()
 	}
 
@@ -135,9 +136,13 @@ func (ws *WeightSearcherRatio1) Run(cancel util_async.CancelSignal) weight_types
 	}
 }
 
-func (ws *WeightSearcherRatio1) initialSplits(localQueue *util_collection.QueueStackPoolChild[*weightSearchRatio1Bound], probesReused []*weightSearchRatio1Probe, targetCount int) bool {
-	localQueue.Push(ws.initialBound)
-	for localQueue.CountLocal() < targetCount {
+func (ws *WeightSearcherRatio1) initialSplits(queue *util_collection.QueueStackFiloConcurrent[*weightSearchRatio1Bound], probesReused []*weightSearchRatio1Probe, targetCount int) bool {
+	queue.Push(ws.initialBound)
+
+	localQueue := util_collection.QueueStackFiloConcurrentCachedMake(queue)
+	defer localQueue.Flush()
+
+	for queue.Size() < targetCount {
 		if !ws.threadStep(localQueue, probesReused) {
 			return false
 		}
@@ -145,8 +150,11 @@ func (ws *WeightSearcherRatio1) initialSplits(localQueue *util_collection.QueueS
 	return true
 }
 
-func (ws *WeightSearcherRatio1) threadLoop(cancel util_async.CancelSignal, localQueue *util_collection.QueueStackPoolChild[*weightSearchRatio1Bound], probesReused []*weightSearchRatio1Probe) {
+func (ws *WeightSearcherRatio1) threadLoop(cancel util_async.CancelSignal, queue *util_collection.QueueStackFiloConcurrent[*weightSearchRatio1Bound], probesReused []*weightSearchRatio1Probe, maintainer bool) {
 	iterCount := 0
+
+	localQueue := util_collection.QueueStackFiloConcurrentCachedMake(queue)
+	defer localQueue.Flush()
 
 	for cancel.ShouldContinue() {
 		if !ws.threadStep(localQueue, probesReused) {
@@ -154,13 +162,16 @@ func (ws *WeightSearcherRatio1) threadLoop(cancel util_async.CancelSignal, local
 		}
 
 		if iterCount%1000 == 0 {
-			fmt.Printf("search-ratio i=%d q=%d b=%f\n", iterCount, localQueue.CountLocal(), ws.bestResult.GetBestValue())
+			fmt.Printf("search-ratio i=%d q=%d b=%f\n", iterCount, localQueue.SizeVolatile(), ws.bestResult.GetBestValue())
+			if maintainer {
+				ws.maintainQueue(queue, iterCount%2000 == 0)
+			}
 		}
 		iterCount++
 	}
 }
 
-func (ws *WeightSearcherRatio1) threadStep(localQueue *util_collection.QueueStackPoolChild[*weightSearchRatio1Bound], probesReused []*weightSearchRatio1Probe) bool {
+func (ws *WeightSearcherRatio1) threadStep(localQueue *util_collection.QueueStackFiloConcurrentCached[*weightSearchRatio1Bound], probesReused []*weightSearchRatio1Probe) bool {
 	entry, hasEntry := localQueue.Pop()
 	if !hasEntry {
 		return false
@@ -213,7 +224,7 @@ func (ws *WeightSearcherRatio1) evaluateScore(weightArray *weightSearchRatio1Poi
 }
 
 // dumb division in halves
-func (ws *WeightSearcherRatio1) opDivide(bound *weightSearchRatio1Bound, localQueue *util_collection.QueueStackPoolChild[*weightSearchRatio1Bound]) {
+func (ws *WeightSearcherRatio1) opDivide(bound *weightSearchRatio1Bound, localQueue *util_collection.QueueStackFiloConcurrentCached[*weightSearchRatio1Bound]) {
 	axis := bound.divideAxis
 	mid := valueInterpolate(bound.rangeMin[axis], bound.rangeMax[axis], c_searchRatio1_probeMiddle)
 
@@ -230,6 +241,7 @@ func (ws *WeightSearcherRatio1) opDivide(bound *weightSearchRatio1Bound, localQu
 	hiBound.rangeMin = bound.rangeMin
 	hiBound.rangeMax = bound.rangeMax
 	hiBound.rangeMax[axis] = mid
+	hiBound.bestAccuracy = max(ws.evaluateScore(&hiBound.rangeMin), ws.evaluateScore(&hiBound.rangeMax))
 	localQueue.Push(hiBound)
 
 	loBound := ws.poolQueue.Get()
@@ -238,10 +250,11 @@ func (ws *WeightSearcherRatio1) opDivide(bound *weightSearchRatio1Bound, localQu
 	loBound.rangeMin = bound.rangeMin
 	loBound.rangeMin[axis] = mid
 	loBound.rangeMax = bound.rangeMax
+	loBound.bestAccuracy = max(ws.evaluateScore(&loBound.rangeMin), ws.evaluateScore(&loBound.rangeMax))
 	localQueue.Push(loBound)
 }
 
-func (ws *WeightSearcherRatio1) opSearch(bound *weightSearchRatio1Bound, probes []*weightSearchRatio1Probe, localQueue *util_collection.QueueStackPoolChild[*weightSearchRatio1Bound]) {
+func (ws *WeightSearcherRatio1) opSearch(bound *weightSearchRatio1Bound, probes []*weightSearchRatio1Probe, localQueue *util_collection.QueueStackFiloConcurrentCached[*weightSearchRatio1Bound]) {
 	probes = ws.createAndSetProbes(bound, probes)
 
 	if bound.nodeDepth >= c_searchRatio1_maxNodeDepth {
@@ -318,7 +331,9 @@ func (ws *WeightSearcherRatio1) chooseCut(probes []*weightSearchRatio1Probe) int
 	return len(probes) / 4
 }
 
-func (ws *WeightSearcherRatio1) chooseSplitMode(probes []*weightSearchRatio1Probe, bound *weightSearchRatio1Bound, localQueue *util_collection.QueueStackPoolChild[*weightSearchRatio1Bound]) {
+func (ws *WeightSearcherRatio1) chooseSplitMode(probes []*weightSearchRatio1Probe, bound *weightSearchRatio1Bound, localQueue *util_collection.QueueStackFiloConcurrentCached[*weightSearchRatio1Bound]) {
+	bestAccuracy := probes[0].accuracy
+
 	includeMiddle := false
 	hiSlice := make([]*weightSearchRatio1Probe, 0, len(probes))
 	loSlice := make([]*weightSearchRatio1Probe, 0, len(probes))
@@ -336,14 +351,14 @@ func (ws *WeightSearcherRatio1) chooseSplitMode(probes []*weightSearchRatio1Prob
 
 	if hi == 0 && lo == 0 {
 		// no hi or lo, probably just middle, will just apply basic narrowing
-		ws.search2MakeFollowupShrink(bound, localQueue)
+		ws.search2MakeFollowupShrink(bound, localQueue, bestAccuracy)
 	} else if hi == 0 || lo == 0 {
 		// everything on once side, with or without the middle
 		ws.search2MakeFollowupCommon2(probes, bound, localQueue)
 	} else if hi == 1 && lo == 1 && hiSlice[0].axis == loSlice[0].axis {
 		// basically just know its around middle
 		// go for general shrinking but keep that full range since we know its of interest
-		ws.search2MakeFollowupShrinkExceptAxis(bound, hiSlice[0].axis, localQueue)
+		ws.search2MakeFollowupShrinkExceptAxis(bound, hiSlice[0].axis, localQueue, bestAccuracy)
 	} else if hi == 1 && lo == 1 {
 		// go ahead and extend a bit in hi and low directions on different axes
 		ws.search2MakeFollowupCommon2(probes, bound, localQueue)
@@ -359,14 +374,15 @@ func (ws *WeightSearcherRatio1) chooseSplitMode(probes []*weightSearchRatio1Prob
 		// these will have a fair bit of overlap, but so be it
 		ws.search2MakeFollowupCommon2(loSlice, bound, localQueue)
 		ws.search2MakeFollowupCommon2(hiSlice, bound, localQueue)
-		ws.search2MakeFollowupShrink(bound, localQueue)
+		ws.search2MakeFollowupShrink(bound, localQueue, bestAccuracy)
 	}
 }
 
-func (ws *WeightSearcherRatio1) search2MakeFollowupShrink(bound *weightSearchRatio1Bound, localQueue *util_collection.QueueStackPoolChild[*weightSearchRatio1Bound]) {
+func (ws *WeightSearcherRatio1) search2MakeFollowupShrink(bound *weightSearchRatio1Bound, localQueue *util_collection.QueueStackFiloConcurrentCached[*weightSearchRatio1Bound], accuracy float64) {
 	add := ws.poolQueue.Get()
 	add.divideAxis = -1
 	add.nodeDepth = bound.nodeDepth + 1
+	add.bestAccuracy = accuracy
 
 	ws.sliceInterpolate(&bound.rangeMin, &bound.rangeMax, c_searchRatio1_probeA, &add.rangeMin)
 	ws.sliceInterpolate(&bound.rangeMin, &bound.rangeMax, c_searchRatio1_probeB, &add.rangeMax)
@@ -378,10 +394,11 @@ func (ws *WeightSearcherRatio1) search2MakeFollowupShrink(bound *weightSearchRat
 	}
 }
 
-func (ws *WeightSearcherRatio1) search2MakeFollowupShrinkExceptAxis(bound *weightSearchRatio1Bound, axis int, localQueue *util_collection.QueueStackPoolChild[*weightSearchRatio1Bound]) {
+func (ws *WeightSearcherRatio1) search2MakeFollowupShrinkExceptAxis(bound *weightSearchRatio1Bound, axis int, localQueue *util_collection.QueueStackFiloConcurrentCached[*weightSearchRatio1Bound], accuracy float64) {
 	add := ws.poolQueue.Get()
 	add.divideAxis = -1
 	add.nodeDepth = bound.nodeDepth + 1
+	add.bestAccuracy = accuracy
 
 	ws.sliceInterpolate(&bound.rangeMin, &bound.rangeMax, c_searchRatio1_probeA, &add.rangeMin)
 	add.rangeMin[axis] = bound.rangeMin[axis]
@@ -395,12 +412,13 @@ func (ws *WeightSearcherRatio1) search2MakeFollowupShrinkExceptAxis(bound *weigh
 	}
 }
 
-func (ws *WeightSearcherRatio1) search2MakeFollowupCommon2(probes []*weightSearchRatio1Probe, bound *weightSearchRatio1Bound, localQueue *util_collection.QueueStackPoolChild[*weightSearchRatio1Bound]) {
+func (ws *WeightSearcherRatio1) search2MakeFollowupCommon2(probes []*weightSearchRatio1Probe, bound *weightSearchRatio1Bound, localQueue *util_collection.QueueStackFiloConcurrentCached[*weightSearchRatio1Bound]) {
 	add := ws.poolQueue.Get()
 	add.divideAxis = -1
 	add.nodeDepth = bound.nodeDepth + 1
 	add.rangeMin = probes[0].point
 	add.rangeMax = probes[0].point
+	add.bestAccuracy = probes[0].accuracy
 
 	rangeMin := &add.rangeMin
 	rangeMax := &add.rangeMax
@@ -464,7 +482,7 @@ func (ws *WeightSearcherRatio1) sliceInterpolate(rangeMin *weightSearchRatio1Poi
 	}
 }
 
-func (ws *WeightSearcherRatio1) containedByAnotherQueueEntry(add *weightSearchRatio1Bound, localQueue *util_collection.QueueStackPoolChild[*weightSearchRatio1Bound]) bool {
+func (ws *WeightSearcherRatio1) containedByAnotherQueueEntry(add *weightSearchRatio1Bound, localQueue *util_collection.QueueStackFiloConcurrentCached[*weightSearchRatio1Bound]) bool {
 	foundContainingRange := false
 	localQueue.ExamineContents(func(content []*weightSearchRatio1Bound) {
 		for i := range content {
@@ -474,4 +492,22 @@ func (ws *WeightSearcherRatio1) containedByAnotherQueueEntry(add *weightSearchRa
 		}
 	})
 	return foundContainingRange
+}
+
+func (ws *WeightSearcherRatio1) maintainQueue(queue *util_collection.QueueStackFiloConcurrent[*weightSearchRatio1Bound], direction bool) {
+	if direction {
+		queue.UpdateContents(func(bounds []*weightSearchRatio1Bound) []*weightSearchRatio1Bound {
+			slices.SortFunc(bounds, func(a, b *weightSearchRatio1Bound) int {
+				return cmp.Compare(b.bestAccuracy, a.bestAccuracy)
+			})
+			return bounds
+		})
+	} else {
+		queue.UpdateContents(func(bounds []*weightSearchRatio1Bound) []*weightSearchRatio1Bound {
+			slices.SortFunc(bounds, func(a, b *weightSearchRatio1Bound) int {
+				return cmp.Compare(a.bestAccuracy, b.bestAccuracy)
+			})
+			return bounds
+		})
+	}
 }

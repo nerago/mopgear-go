@@ -39,7 +39,7 @@ func Model_PallyProtSurvival() gear_model.SpecModel {
 		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
 		BonusEnabled:      bonus_set.SpecSetsEnableNamed(&priority, setNameT16Prot),
 		BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
-			bonus_set.CountMode_AllowPlusOne, // no real justification for any restriction
+			bonus_set.CountMode_Minimum,
 			bonusMake(setNameT16Prot, 2),
 		),
 		BonusRequiredWeight: new(bonusMake(setNameT15Prot, 0, setNameT16Prot, 2)),
@@ -102,6 +102,7 @@ func Model_PallyProtMitigation() gear_model.SpecModel {
 		BonusEnabled:      bonus_set.SpecSetsEnableNamed(&priority, setNameT16Prot),
 		BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
 			bonus_set.CountMode_AllowPlusOne, // no real justification for any restriction
+			bonusMake(setNameT16Prot, 0),
 			bonusMake(setNameT16Prot, 2),
 		),
 		BonusRequiredWeight: new(bonusMake(setNameT16Prot, 2, setNameT15Prot, 0)),
@@ -132,7 +133,7 @@ func Model_PallyProtBalanced() gear_model.SpecModel {
 		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
 		BonusEnabled:      bonus_set.SpecSetsEnableNamed(&priority, setNameT16Prot),
 		BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
-			bonus_set.CountMode_AllowPlusOne,
+			bonus_set.CountMode_Exact,
 			bonusMake(setNameT16Prot, 0),
 			bonusMake(setNameT16Prot, 2)),
 		BonusRequiredWeight: new(bonusMake(setNameT16Prot, 0)),
