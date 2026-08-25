@@ -180,7 +180,7 @@ func (build *LinearBuilder) RunHighsFuture(stopwatch *util.Stopwatch) *util_asyn
 	go func() {
 		log := util.PrintRecorder_HoldAll()
 
-		solution, err := G_HighsPool.RunSolverUnderMutex(solver, requireGpu, optionalGpu, stopwatch)
+		solution, err := build.runInner(solver, requireGpu, optionalGpu, stopwatch)
 		verifyNoError(err)
 
 		if C_DebugHighs && C_DiagnoseInfeasible && solution.Status == highs.ModelStatusInfeasible {

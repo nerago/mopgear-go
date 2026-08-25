@@ -271,8 +271,8 @@ func buildCutPoolMatrix(num_cut C.HighsInt, num_nz C.HighsInt, start_ptr *C.High
 }
 
 func (s *Solver) InterruptSupportEnable() error {
-	closeMutex.RLock()
-	defer closeMutex.RUnlock()
+	closeMutex.LockStandard()
+	defer closeMutex.UnlockStandard()
 
 	s.callback = nil
 	s.Interrupted = false
@@ -281,8 +281,8 @@ func (s *Solver) InterruptSupportEnable() error {
 }
 
 func (s *Solver) InterruptSupportDisable() error {
-	closeMutex.RLock()
-	defer closeMutex.RUnlock()
+	closeMutex.LockStandard()
+	defer closeMutex.UnlockStandard()
 
 	s.callback = nil
 	s.Interrupted = false
@@ -291,8 +291,8 @@ func (s *Solver) InterruptSupportDisable() error {
 }
 
 func (s *Solver) InterruptSetFlag(value bool) error {
-	closeMutex.RLock()
-	defer closeMutex.RUnlock()
+	closeMutex.LockStandard()
+	defer closeMutex.UnlockStandard()
 
 	s.Interrupted = value
 	var cValue C.HighsInt = 0
@@ -304,8 +304,8 @@ func (s *Solver) InterruptSetFlag(value bool) error {
 }
 
 func (s *Solver) SetCallback(callback Callback, callbackTypes []CallbackType) error {
-	closeMutex.RLock()
-	defer closeMutex.RUnlock()
+	closeMutex.LockStandard()
+	defer closeMutex.UnlockStandard()
 
 	s.callback = callback
 	s.Interrupted = false
@@ -326,8 +326,8 @@ func (s *Solver) SetCallback(callback Callback, callbackTypes []CallbackType) er
 }
 
 func (s *Solver) ClearCallback() error {
-	closeMutex.RLock()
-	defer closeMutex.RUnlock()
+	closeMutex.LockStandard()
+	defer closeMutex.UnlockStandard()
 
 	s.callback = nil
 	s.Interrupted = false
