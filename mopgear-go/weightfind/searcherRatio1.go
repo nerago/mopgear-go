@@ -108,7 +108,7 @@ func (ws *WeightSearcherRatio1) SetStatSimRanges(statRange weight_types.StatRang
 	ws.initialBound = bound
 }
 
-func (ws *WeightSearcherRatio1) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
+func (ws *WeightSearcherRatio1) Run(cancel util_async.CancelSignal) *weight_types.WeightResult {
 	stopwatch := util.StopwatchMakeStarted()
 	threadCount := 12
 	queue := &util_collection.QueueStackFiloConcurrent[*weightSearchRatio1Bound]{}
@@ -128,7 +128,7 @@ func (ws *WeightSearcherRatio1) Run(cancel util_async.CancelSignal) weight_types
 
 	bestItems := ws.bestResult.GetBestOrNilValue()
 	bestWeight := bestItems.weight
-	return weight_types.WeightResult{
+	return &weight_types.WeightResult{
 		Weight:    &bestWeight,
 		SolveTime: stopwatch.Elapsed(),
 		Status:    highs.ModelStatusOptimal,

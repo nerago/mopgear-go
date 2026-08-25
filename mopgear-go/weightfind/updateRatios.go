@@ -1,6 +1,9 @@
 package weightfind
 
 import (
+	"time"
+
+	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_async"
 	"github.com/nerago/mopgear-go/util/util_collection"
@@ -56,19 +59,22 @@ func (wrp *WeightRatioProcess) updateSpecRatio(spec *WeightSpec, tracker *util.T
 	taskList := make([]func() *weight_types.WeightResult, 0)
 
 	taskList = append(taskList, func() *weight_types.WeightResult {
-		return wrp.runRanking(spec, 32, true, false, true, 5)
+		return wrp.runRanking(spec, 32, true, false, true, 5, cancel)
 	})
 	taskList = append(taskList, func() *weight_types.WeightResult {
-		return wrp.runRanking(spec, 128, true, false, true, 3)
+		return wrp.runRanking(spec, 128, true, false, true, 3, cancel)
 	})
 	taskList = append(taskList, func() *weight_types.WeightResult {
-		return wrp.runRanking(spec, 400, false, true, false, 0)
+		return wrp.runRanking(spec, 400, false, true, false, 0, cancel)
 	})
 	//taskList = append(taskList, func() *weight_types.WeightResult {
-	//	return wrp.runRanking(spec, 1000, false, true, false, 0)
+	//	return wrp.runRanking(spec, 1000, false, true, false, 0, cancel)
 	//})
 	taskList = append(taskList, func() *weight_types.WeightResult {
-		return wrp.runRanking(spec, 2000, false, false, false, 0)
+		return wrp.runRanking(spec, 2000, false, false, false, 0, cancel)
+	})
+	taskList = append(taskList, func() *weight_types.WeightResult {
+		return wrp.runSearch(spec, cancel)
 	})
 
 	resultList := util_async.Map_SliceToSlice(c_ratioThreadCount, taskList, func(f *func() *weight_types.WeightResult) *weight_types.WeightResult {
@@ -98,7 +104,7 @@ func (wrp *WeightRatioProcess) appendAccuracy(spec *WeightSpec, weight *weight_t
 	sb.Printf("Accuracy: %f %f\n\n", newAcc, newAccSt)
 }
 
-func (wrp *WeightRatioProcess) runRanking(spec *WeightSpec, sampleCount int, mip, allPairs, randPairs bool, randPairCount int) *weight_types.WeightResult {
+func (wrp *WeightRatioProcess) runRanking(spec *WeightSpec, sampleCount int, mip, allPairs, randPairs bool, randPairCount int, cancel util_async.CancelSignal) *weight_types.WeightResult {
 	data := util_collection.SliceSampleRandom(spec.dataAll, sampleCount)
 
 	ranking := weight_highs.RankingWeightsRatio30{}
@@ -111,6 +117,32 @@ func (wrp *WeightRatioProcess) runRanking(spec *WeightSpec, sampleCount int, mip
 	ranking.SetTargetRatios(spec.targetRatio)
 	ranking.SupplyData(data)
 	weightsFuture := ranking.RunSinglePassRaw()
-	weightResult := weightsFuture.WaitForResultOrPanic()
+	util_async.ChainCancel(cancel, weightsFuture)
+	weightResult := weightsFuture.WaitForResultOrNilValue()
 	return new(weightResult)
+}
+
+func (wrp *WeightRatioProcess) runSearch(spec *WeightSpec, outerCancel util_async.CancelSignal) *weight_types.WeightResult {
+	const c_maxRatioChange = 0.1
+
+	statRange := weight_types.StatRangeFloat{Minimum: -1.0, Maximum: 1.0}
+
+	simRangeMap := stats.SimTypeMap[weight_types.StatRangeFloat]{}
+	for statType, existingValue := range spec.targetRatio.SeqTypeValue() {
+		simRangeMap.Put(statType, weight_types.StatRangeFloat{
+			Minimum: max(existingValue-c_maxRatioChange, 0.0),
+			Maximum: min(existingValue+c_maxRatioChange, 1.0),
+		})
+	}
+
+	innerCancel := util_async.CancelSignal_Make()
+	util_async.ChainCancel(outerCancel, innerCancel)
+	util_async.CancelAfterTimeout(innerCancel, time.Duration(wrp.timeoutEach)*time.Second, wrp.printer)
+
+	ranking := WeightSearcherRatio1{}
+	ranking.AccuracyStatistical = true
+	ranking.Init(spec.statTypes, spec.simTypes)
+	ranking.SupplyData(spec.dataAll)
+	ranking.SetStatSimRanges(statRange, simRangeMap)
+	return ranking.Run(innerCancel)
 }
