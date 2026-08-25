@@ -103,7 +103,7 @@ func (result upgradeItemResultWithSim) ItemStatSummary() string {
 	}
 	sb := util.StringBuild2{}
 	if fullItem != nil {
-		for statType, value := range fullItem.Total().SeqPairInt() {
+		for statType, value := range fullItem.StatBase().SeqPairInt() {
 			if value != 0 && statType.IsSecondary() {
 				sb.WriteString(statType.Name())
 				sb.WriteRune(' ')

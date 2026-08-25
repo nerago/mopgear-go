@@ -90,12 +90,16 @@ func (wrp *WeightRatioProcess) updateSpecRatio(spec *WeightSpec, tracker *util.T
 
 func (wrp *WeightRatioProcess) addReport(spec *WeightSpec, weightResult *weight_types.WeightResult, sb *util.StringBuild2) {
 	newRatio := weightResult.NewRatio
-	sb.WriteString("Ratio: ")
-	newRatio.AppendString(sb)
-	sb.WriteString("\n")
+	if newRatio != nil {
+		sb.WriteString("Ratio: ")
+		newRatio.AppendString(sb)
+		sb.WriteString("\n")
 
-	weights1 := weightResult.AsWeight1()
-	wrp.appendAccuracy(spec, weights1, newRatio, sb)
+		weights1 := weightResult.AsWeight1()
+		wrp.appendAccuracy(spec, weights1, newRatio, sb)
+	} else {
+		sb.WriteString("Ratio missing\n")
+	}
 }
 
 func (wrp *WeightRatioProcess) appendAccuracy(spec *WeightSpec, weight *weight_types.Weight1Basic, ratio *weight_types.SimPriorityBasic, sb *util.StringBuild2) {

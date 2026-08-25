@@ -16,13 +16,13 @@ import (
 
 // possible entry point
 func FindUpgrades_Sim_AllRaid_Run(input *FindUpgrades_MultiSpec_Sim, cancel util_async.CancelSignal) {
-	outputMap := findUpgrades_AllRaid(&input.FindUpgrades_SimInputs, input.Specs, cancel)
-
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "upgrade-report")
 	defer printer.Close()
 
 	sw := util.StopwatchNoisyStart(printer)
 	defer sw.Stop()
+
+	outputMap := findUpgrades_AllRaid(&input.FindUpgrades_SimInputs, input.Specs, cancel)
 
 	reportTabulatedSimResults_All(outputMap, input.Specs, printer, input.PositiveResultsOnly)
 	reportTabulatedSimResults_Boss(outputMap, input.Specs, printer, input.PositiveResultsOnly)

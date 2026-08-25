@@ -16,11 +16,11 @@ var SimPriority_mitigation = weight_types.SimPriorityBasic_Make(
 
 // for withset - malkrok, thok, nazgrim
 var SimPriority_survival = weight_types.SimPriorityBasic_Make(
-	stats.Sim_DPS, 0.0284,
-	stats.Sim_DEATH, 0.4980,
-	stats.Sim_TMI, 0.0473,
-	stats.Sim_DTPS, 0.4263,
-	// DPS=0.0284 DTPS=0.4263 TMI=0.0473 DEATH=0.4980
+	stats.Sim_DPS, 0.0388,
+	stats.Sim_DEATH, 0.4132,
+	stats.Sim_TMI, 0.1098,
+	stats.Sim_DTPS, 0.4383,
+	// DPS=0.0388 DTPS=0.4383 TMI=0.1098 DEATH=0.4132
 )
 
 // for compromise set - spoils, galakras, paragons, etc

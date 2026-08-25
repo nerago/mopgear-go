@@ -20,7 +20,7 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	//simSpeed := simulate.RunSize_Common
 	simSpeed := simulate.RunSize_Largish
 	forceSkipSim := true
-	skipSolve := true
+	skipSolve := false
 	fixStats := weight_types.FixStatsRangeMode_ExpertiseAlways | weight_types.FixStatsRangeMode_HasteGridOnly | weight_types.FixStatsRangeMode_HasteHigherOnly
 
 	process := weightfind.WeightUpdateProcess{}
@@ -80,10 +80,10 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	// survival still 91.5697  91.5677
 	// mitigation still 91.4300  87.1177
 
-	//process.Run(cancel)
+	process.Run(cancel)
 
-	ratioUpdate := weightfind.WeightRatioProcess{}
-	ratioUpdate.Init(300, printer)
-	ratioUpdate.AddSpecsFrom(&process)
-	ratioUpdate.Run(cancel)
+	//ratioUpdate := weightfind.WeightRatioProcess{}
+	//ratioUpdate.Init(300, printer)
+	//ratioUpdate.AddSpecsFrom(&process)
+	//ratioUpdate.Run(cancel)
 }
