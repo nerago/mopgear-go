@@ -28,7 +28,8 @@ type Sortable[K Sortable[K]] interface {
 }
 
 // ----------------------------------------- //
-type ITreeNode[K Sortable[K], N ITreeNode[K, N]] interface {
+type ITreeNode[K Sortable[K], N ITreeNode[K, N, P], P any] interface {
+	*P
 	comparable
 	GetKey() K
 	GetParent() N
@@ -42,97 +43,199 @@ type ITreeNode[K Sortable[K], N ITreeNode[K, N]] interface {
 }
 
 // ----------------------------------------- //
-type treeBase[K Sortable[K], N ITreeNode[K, N]] struct {
+type treeBase[K Sortable[K], N ITreeNode[K, N, P], P any] struct {
 	root N
 }
 
-//func (tb *treeBase[K, N]) findNode(key K) (N, bool) {
-//	curr := tb.root
-//	for curr != nil {
-//		x := key.CompareTo(curr.GetKey())
-//		if x < 0 {
-//			curr = curr.GetLeft()
-//		} else if x > 0 {
-//			curr = curr.GetRight()
-//		} else {
-//			return curr, true
-//		}
-//	}
-//	return makeNilValue[N](), false
-//}
-//
-//func (tb *treeBase[K, N]) insertSearch(add N) {
-//	key := add.GetKey()
-//	curr := tb.root
-//
-//	if curr == nil {
-//		tb.root = add
-//		return
-//	}
-//
-//	for curr != nil {
-//		x := key.CompareTo(curr.GetKey())
-//		if x < 0 {
-//			if curr.GetLeft() == nil {
-//				curr.SetLeft(add)
-//				tb.finishInsert(add, curr)
-//			} else {
-//				curr = curr.GetLeft()
-//			}
-//		} else if x > 0 {
-//			if curr.GetRight() == nil {
-//				curr.SetRight(add)
-//				tb.finishInsert(add, curr)
-//			} else {
-//				curr = curr.GetRight()
-//			}
-//		} else {
-//			panic("duplicate")
-//		}
-//	}
-//}
-//
-//func (tb *treeBase[K, N]) directionIsRight(node N) bool {
-//	return node == node.GetParent().GetRight()
-//}
-//
-//func (tb *treeBase[K, N]) nodeChildByDirection(node N, directionIsRight bool) N {
-//	if directionIsRight {
-//		return node.GetRight()
-//	} else {
-//		return node.GetLeft()
-//	}
-//}
-//
-////https://en.wikipedia.org/wiki/Red%E2%80%93black_tree
-//func (tb *treeBase[K, N]) finishInsert(add N, parent N) {
-//	add.SetParent(parent)
-//
-//	for {
-//		if parent.IsBlack() {
-//			return
-//		}
-//
-//		grandParent := parent.GetParent()
-//		if grandParent == nil {
-//			parent.SetBlack(true)
-//			return
-//		}
-//
-//		parentIsRight := tb.directionIsRight(parent)
-//		uncle := tb.nodeChildByDirection(grandParent, !parentIsRight)
-//		if uncle == nil || uncle.IsBlack() {
-//			if add == tb.nodeChildByDirection(parent, !parentIsRight) {
-//
-//			}
-//
-//		}
-//	}
-//}
+func (tb *treeBase[K, N, P]) findNode(key K) (N, bool) {
+	curr := tb.root
+	for curr != nil {
+		x := key.CompareTo(curr.GetKey())
+		if x < 0 {
+			curr = curr.GetLeft()
+		} else if x > 0 {
+			curr = curr.GetRight()
+		} else {
+			return curr, true
+		}
+	}
+	return makeNilValue[N](), false
+}
+
+func (tb *treeBase[K, N, P]) insertSearch(add N) {
+	key := add.GetKey()
+	curr := tb.root
+
+	if curr == nil {
+		tb.root = add
+		return
+	}
+
+	for curr != nil {
+		x := key.CompareTo(curr.GetKey())
+		if x < 0 {
+			if curr.GetLeft() == nil {
+				curr.SetLeft(add)
+				tb.finishInsert(add, curr)
+			} else {
+				curr = curr.GetLeft()
+			}
+		} else if x > 0 {
+			if curr.GetRight() == nil {
+				curr.SetRight(add)
+				tb.finishInsert(add, curr)
+			} else {
+				curr = curr.GetRight()
+			}
+		} else {
+			panic("duplicate")
+		}
+	}
+}
+
+func isRightChild[N ITreeNode[K, N, P], K Sortable[K], P any](node N) bool {
+	return node == node.GetParent().GetRight()
+}
+
+func getNodeChild[N ITreeNode[K, N, P], K Sortable[K], P any](node N, directionIsRight bool) N {
+	if directionIsRight {
+		return node.GetRight()
+	} else {
+		return node.GetLeft()
+	}
+}
+
+func setNodeChild[N ITreeNode[K, N, P], K Sortable[K], P any](node N, directionIsRight bool, child N) {
+	if directionIsRight {
+		node.SetRight(child)
+	} else {
+		node.SetLeft(child)
+	}
+}
+
+// https://en.wikipedia.org/wiki/Red%E2%80%93black_tree
+func (tb *treeBase[K, N, P]) finishInsert(node N, parent N) {
+	node.SetParent(parent)
+
+	for {
+		if parent.IsBlack() {
+			return
+		}
+
+		grandParent := parent.GetParent()
+		if grandParent == nil {
+			parent.SetBlack(true)
+			return
+		}
+
+		dir := isRightChild[N, K, P](parent)
+		uncle := getNodeChild[N, K, P](grandParent, !dir)
+		if uncle == nil || uncle.IsBlack() {
+			if node == getNodeChild[N, K, P](parent, !dir) {
+				tb.rotateSubtree(parent, dir)
+				node = parent
+				parent = getNodeChild[N, K, P](grandParent, dir)
+			}
+
+			tb.rotateSubtree(grandParent, !dir)
+			parent.SetBlack(true)
+			grandParent.SetBlack(false)
+			return
+		}
+
+		parent.SetBlack(true)
+		uncle.SetBlack(true)
+		grandParent.SetBlack(false)
+		node = grandParent
+		parent = node.GetParent()
+		if parent == nil {
+			return
+		}
+	}
+}
+
+func (tb *treeBase[K, N, P]) finishInsert2(node N, parent N) {
+	node.SetParent(parent)
+
+	for {
+		if parent.IsBlack() {
+			return
+		}
+
+		grandParent := parent.GetParent()
+		if grandParent == nil {
+			parent.SetBlack(true)
+			return
+		}
+
+		var uncle N
+		if parent == parent.GetParent().GetRight() {
+			uncle = grandParent.GetLeft()
+			if uncle == nil || uncle.IsBlack() {
+				if node == parent.GetLeft() {
+					tb.rotateSubtree(parent, true)
+					node = parent
+					parent = grandParent.GetRight()
+				}
+				tb.rotateSubtree(grandParent, false)
+				parent.SetBlack(true)
+				grandParent.SetBlack(false)
+				return
+			}
+		} else {
+			uncle = grandParent.GetRight()
+			if uncle == nil || uncle.IsBlack() {
+				if node == parent.GetRight() {
+					tb.rotateSubtree(parent, false)
+					node = parent
+					parent = grandParent.GetLeft()
+				}
+				tb.rotateSubtree(grandParent, true)
+				parent.SetBlack(true)
+				grandParent.SetBlack(false)
+				return
+			}
+		}
+
+		parent.SetBlack(true)
+		uncle.SetBlack(true)
+		grandParent.SetBlack(false)
+		node = grandParent
+		parent = node.GetParent()
+		if parent == nil {
+			return
+		}
+	}
+}
+
+func (tb *treeBase[K, N, P]) rotateSubtree(sub N, dir bool) N {
+	subParent := sub.GetParent()
+	newRoot := getNodeChild[N, K, P](sub, !dir)
+	newChild := getNodeChild[N, K, P](newRoot, dir)
+
+	setNodeChild[N, K, P](sub, !dir, newChild)
+
+	if newChild != nil {
+		newChild.SetParent(sub)
+	}
+
+	setNodeChild[N, K, P](newRoot, dir, sub)
+
+	newRoot.SetParent(subParent)
+	sub.SetParent(newRoot)
+	if subParent != nil {
+		subIsRight := isRightChild[N, K, P](sub)
+		setNodeChild[N, K, P](subParent, subIsRight, newRoot)
+	} else {
+		tb.root = newRoot
+	}
+
+	return newRoot
+}
 
 // ----------------------------------------- //
 type TreeMap[K Sortable[K], V any] struct {
-	treeBase[K, *treeMapNode[K, V]]
+	treeBase[K, *treeMapNode[K, V], treeMapNode[K, V]]
 }
 
 type treeMapNode[K Sortable[K], V any] struct {
