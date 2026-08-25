@@ -112,7 +112,7 @@ func generateRatingsInputFromArtificialStatOverrides_ForBasic(currentItemSet ite
 		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), bonusStat, tracker.NewChild())
 
 		str.WriteString("   --> ")
-		simResult.CompactStringGeneralBuilder(&str)
+		simResult.CompactStringGeneralAppend(&str)
 		innerPrint.PrintlnFromBuild(str)
 
 		printer.AppendOther(innerPrint)

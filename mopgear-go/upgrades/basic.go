@@ -9,25 +9,24 @@ import (
 	"github.com/nerago/mopgear-go/loaders"
 	"github.com/nerago/mopgear-go/setup"
 	"github.com/nerago/mopgear-go/solver"
-	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/tools"
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_collection"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
-func prepareUpgradeInfo(extraItems []loaders.ItemFoundRef, upgradeLevel items.UpgradeLevel, printer *util.PrintRecorder, input *FindUpgrades_BasicInputs, baseItems *items.FullOptionsMap, goal stats.OptimiseGoal, substituteItems []items.ItemId, model *gear_model.SpecModel) []upgradeItemTask {
-	extraItems = changeUpgradeLevels(extraItems, upgradeLevel)
+func prepareUpgradeTasks(extraItems []loaders.ItemFoundRef, baseItems *items.FullOptionsMap, spec *SpecInput, settings *InputSettings, printer *util.PrintRecorder) []upgradeItemTask {
+	extraItems = changeUpgradeLevels(extraItems, settings.TargetUpgradeLevel)
 	checkDuplicates(extraItems)
-	extraTasks := makeExtraTasks(input, extraItems, baseItems, printer, goal, model)
-	addSubstituteItems(baseItems, substituteItems, model, printer)
+	extraTasks := makeExtraTasks(settings, extraItems, baseItems, printer, &spec.Model)
+	addSubstituteItems(baseItems, spec.SubstituteItems, &spec.Model, printer)
 	return extraTasks
 }
 
-func findBaseLine(printer *util.PrintRecorder, baseItems *items.FullOptionsMap, model *gear_model.SpecModel, input *FindUpgrades_SimInputs) (float64, *items.FullItemSet) {
+func solveBaseLine(printer *util.PrintRecorder, baseItems *items.FullOptionsMap, spec *SpecInput, input *InputSettings) (float64, *items.FullItemSet) {
 	printer.Println("FINDING BASELINE")
-	baseRating, baseSet := findBase(baseItems, model, input, printer)
-	tools.ReportSetFewerParams(model, baseSet, printer)
+	baseRating, baseSet := findBase(baseItems, &spec.Model, spec.Label, input, printer)
+	tools.ReportSet(&spec.Model, baseSet, printer)
 	return baseRating, baseSet
 }
 
@@ -58,7 +57,7 @@ func checkDuplicates(extraItems []loaders.ItemFoundRef) {
 	//}
 }
 
-func makeExtraTasks(input *FindUpgrades_BasicInputs, extraItems []loaders.ItemFoundRef, baseItems *items.FullOptionsMap, printer *util.PrintRecorder, goal stats.OptimiseGoal, model *gear_model.SpecModel) []upgradeItemTask {
+func makeExtraTasks(input *InputSettings, extraItems []loaders.ItemFoundRef, baseItems *items.FullOptionsMap, printer *util.PrintRecorder, model *gear_model.SpecModel) []upgradeItemTask {
 	bagsFile := loaders.BagsFile_PlusPaladinGear_Read()
 
 	taskList := make([]upgradeItemTask, 0, len(extraItems))
@@ -69,7 +68,9 @@ func makeExtraTasks(input *FindUpgrades_BasicInputs, extraItems []loaders.ItemFo
 			canUpgrade := canPerformSpecifiedUpgrade(input, tempItem, slot, baseItems, bagsFile, printer, model)
 			switch canUpgrade {
 			case items.CanUpgrade_Yes, items.CanUpgrade_Equipped, items.CanUpgrade_Equipped_Similar, items.CanUpgrade_AvailableInBags:
-				taskList = append(taskList, upgradeItemTask{item: extra, slot: slot, goal: goal, boss: boss, canUpgrade: canUpgrade})
+				taskList = append(taskList, upgradeItemTask{itemRef: extra, slot: slot, goal: model.Goal, boss: boss, canUpgrade: canUpgrade})
+			case items.CanUpgrade_InvalidAlways:
+				// ignore
 			}
 		})
 	}
@@ -87,8 +88,8 @@ func addSubstituteItems(optionsMap *items.FullOptionsMap, substituteItems []item
 	}
 }
 
-func canPerformSpecifiedUpgrade(input *FindUpgrades_BasicInputs, extra *items.FullItem, slot items.SlotEquip, baseItems *items.FullOptionsMap, bagsFile loaders.EquippedArray, printer *util.PrintRecorder, model *gear_model.SpecModel) items.CanUpgradeResult {
-	if slices.Contains(input.IgnoredItems, extra.ItemId()) {
+func canPerformSpecifiedUpgrade(settings *InputSettings, extra *items.FullItem, slot items.SlotEquip, baseItems *items.FullOptionsMap, bagsFile loaders.EquippedArray, printer *util.PrintRecorder, model *gear_model.SpecModel) items.CanUpgradeResult {
+	if slices.Contains(settings.IgnoredItems, extra.ItemId()) {
 		return items.CanUpgrade_InvalidAlways
 	}
 
@@ -104,75 +105,68 @@ func canPerformSpecifiedUpgrade(input *FindUpgrades_BasicInputs, extra *items.Fu
 	return items.CanUpgrade_Yes
 }
 
-func findBase(baseItems *items.FullOptionsMap, model *gear_model.SpecModel, input *FindUpgrades_SimInputs, printer *util.PrintRecorder) (float64, *items.FullItemSet) {
+func findBase(baseItems *items.FullOptionsMap, model *gear_model.SpecModel, label string, input *InputSettings, printer *util.PrintRecorder) (float64, *items.FullItemSet) {
 	output := solver.Solver(
 		baseItems,
 		model,
 		printer,
 		input.WeightType,
-		input.SolverTimeout, nil,
+		input.SolverTimeout,
+		nil,
 	)
 
 	if !output.Success {
-		panic("couldn't find valid baseline set")
+		panic("couldn't find valid baseline set for " + label)
 	}
 
 	printer.Printf("\n%s\nBASE RATING    = %.0f\n\n", output.SolvedSet.Total().CreateString(), output.ResultRating)
 	return output.ResultRating, &output.FullSet
 }
 
-func performUpgradeTask(extraTask *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *gear_model.SpecModel, parentPrinter *util.PrintRecorder, forceIncludeMost bool, substituteEmptySlotOnly map[items.SlotItem]items.ItemId, weightType weight_types.WeightType, timeout int) upgradeItemResult {
-	slot := extraTask.slot
-	incompleteItem := extraTask.item // this "item" is from ItemFinder and not a full item
-	itemId := incompleteItem.ItemId
-	upgradeLevel := incompleteItem.UpgradeLevel
-	randomSuffix := incompleteItem.RandomSuffix
-
-	if !extraTask.actuallyAttemptUpgrade(forceIncludeMost) {
-		itemName := db.LookupItemNameByItemId(itemId)
+func performUpgradeTask(task *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *gear_model.SpecModel, parentPrinter *util.PrintRecorder, substituteEmptySlotOnly map[items.SlotItem]items.ItemId, weightType weight_types.WeightType, timeout int) upgradeItemResult {
+	if task.canUpgrade == items.CanUpgrade_InvalidAlways {
+		itemName := db.LookupItemNameByItemId(task.itemRef.ItemId)
 		parentPrinter.Println("SKIPPING " + itemName)
-		return upgradeItemResult_OfFailure(extraTask, nil)
+		return upgradeItemResult_OfFailure(task, nil)
 	}
 
-	printer := util.PrintRecorder_HoldAll()
+	innerPrint := util.PrintRecorder_HoldAll()
 
-	newOptions, exampleItem := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, upgradeLevel, randomSuffix, model, printer)
+	itemRef := task.itemRef
+	newOptions, exampleItem := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemRef.ItemId, itemRef.UpgradeLevel, itemRef.RandomSuffix, model, innerPrint)
 	jobItems := baseItems.Clone()
-	jobItems[slot] = newOptions
+	jobItems[task.slot] = newOptions
 
-	printer.Println("OFFER " + newOptions[0].CreateString())
-	printer.Println("REPLACING " + baseItems.Get(slot)[0].CreateString())
+	innerPrint.Println("OFFER " + exampleItem.CreateString())
+	innerPrint.Println("REPLACING " + baseItems.Get(task.slot)[0].CreateString())
 
-	if extraTask.canUpgrade == items.CanUpgrade_Equipped || extraTask.canUpgrade == items.CanUpgrade_Equipped_Similar {
-		removePairedSimilar(&jobItems, slot, exampleItem, substituteEmptySlotOnly, model, printer)
+	if task.canUpgrade == items.CanUpgrade_Equipped || task.canUpgrade == items.CanUpgrade_Equipped_Similar {
+		removePairedSimilar(&jobItems, task.slot, exampleItem, substituteEmptySlotOnly, model, innerPrint)
 	}
 
 	output := solver.Solver(
-		&jobItems,
-		model,
-		printer,
-		weightType,
-		timeout, nil,
+		&jobItems, model, innerPrint,
+		weightType, timeout, nil,
 	)
 
 	var result upgradeItemResult
 	if output.Success {
-		printer.Printf("SET STATS %s\n", output.SolvedSet.Total().CreateString())
-		output.Report(printer) // verbose
+		innerPrint.Printf("SET STATS %s\n", output.SolvedSet.Total().CreateString())
+		output.Report(innerPrint) // verbose
 
 		factor := output.ResultRating / baseRating
-		printer.Printf("UPGRADE RATING = %.0f FACTOR = %1.3f\n", output.ResultRating, factor)
+		innerPrint.Printf("UPGRADE RATING = %.0f FACTOR = %1.3f\n", output.ResultRating, factor)
 
 		setBonus := model.BonusEnabled.CountInAnySet(output.FullSet.Items())
 
-		result = upgradeItemResult{upgradeItemTask: *extraTask, success: true, itemSet: &output.FullSet, fullItem: exampleItem, factor: util_collection.Optional_OfValue(factor), setBonus: setBonus}
+		result = upgradeItemResult{upgradeItemTask: *task, success: true, itemSet: &output.FullSet, fullItem: exampleItem, factor: util_collection.Optional_OfValue(factor), setBonus: setBonus}
 	} else {
-		printer.Println("UPGRADE SET NOT FOUND")
-		return upgradeItemResult_OfFailure(extraTask, exampleItem)
+		innerPrint.Println("UPGRADE SET NOT FOUND")
+		return upgradeItemResult_OfFailure(task, exampleItem)
 	}
 
-	printer.Println0()
-	parentPrinter.AppendOther(printer)
+	innerPrint.Println0()
+	parentPrinter.AppendOther(innerPrint)
 
 	return result
 }

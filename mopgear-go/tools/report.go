@@ -9,10 +9,6 @@ import (
 
 // reporting
 
-func ReportSetFewerParams(model *gear_model.SpecModel, fullSet *items.FullItemSet, printer *util.PrintRecorder) {
-	ReportSet(model, fullSet, printer)
-}
-
 func ReportSet(model_obj *gear_model.SpecModel, fullSet *items.FullItemSet, printer *util.PrintRecorder) {
 	//printer.Printf("SET rating %.0f\n", rating)
 	printer.Printf("BONUS counts %s\n", bonus_set.AllBonusesText(fullSet.Items()))

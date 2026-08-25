@@ -9,36 +9,27 @@ import (
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
-type FindUpgrades_BasicInputs struct {
-	IncludeCelestial    bool
-	IncludeNormal       bool
-	IncludeHeroic       bool
-	PositiveResultsOnly bool
-	WeightType          weight_types.WeightType
-	TargetUpgradeLevel  items.UpgradeLevel
-	IgnoredItems        []items.ItemId
-	SolverTimeout       int
-}
-
-type FindUpgrades_SimInputs struct {
-	FindUpgrades_BasicInputs
+type InputSettings struct {
+	IncludeCelestial             bool
+	IncludeNormal                bool
+	IncludeHeroic                bool
+	PositiveResultsOnly          bool
+	WeightType                   weight_types.WeightType
+	TargetUpgradeLevel           items.UpgradeLevel
+	IgnoredItems                 []items.ItemId
+	SolverTimeout                int
 	SimSizeBaseline              simulate.WowSim_RunSize
 	SimSizeItemInitial           simulate.WowSim_RunSize
 	ExtraSimForTopResultsCount   int
 	ExtraSimForTopResultsSimSize simulate.WowSim_RunSize
 }
 
-type FindUpgrades_MultiSpec struct {
-	FindUpgrades_BasicInputs
-	Specs []FindUpgrades_Spec
+type FindUpgradesMultiSpec struct {
+	Settings InputSettings
+	Specs    []SpecInput
 }
 
-type FindUpgrades_MultiSpec_Sim struct {
-	FindUpgrades_SimInputs
-	Specs []FindUpgrades_Spec
-}
-
-type FindUpgrades_Spec struct {
+type SpecInput struct {
 	Label                   string
 	Model                   gear_model.SpecModel
 	GearFile                string

@@ -4,7 +4,6 @@ import (
 	"github.com/nerago/mopgear-go/db"
 	"github.com/nerago/mopgear-go/gear_model"
 	"github.com/nerago/mopgear-go/items"
-	"github.com/nerago/mopgear-go/loaders"
 	"github.com/nerago/mopgear-go/setup"
 	"github.com/nerago/mopgear-go/simulate"
 	"github.com/nerago/mopgear-go/stats"
@@ -14,76 +13,77 @@ import (
 	"github.com/nerago/mopgear-go/util/util_rank"
 )
 
-// possible entry point
-func FindUpgrades_Sim_Run(input *FindUpgrades_SimInputs, goal stats.OptimiseGoal, model *gear_model.SpecModel, gearFile string, upgradeItems []loaders.ItemFoundRef, substituteItems []items.ItemId, printer *util.PrintRecorder) {
-	optionsMap := setup.OptionsSetup_FromGearFile(gearFile, model, setup.MissingEnchant_Panic, printer)
+func processSpecUpgrade(settings *InputSettings, spec *SpecInput, difficulty stats.Difficulty, tracker *util.TrackProgress, printer *util.PrintRecorder) []upgradeItemResult {
+	itemOptions := setup.OptionsSetup_FromGearFile(spec.GearFile, &spec.Model, setup.MissingEnchant_Panic, printer)
 
-	tracker := util.TrackProgress_Start()
+	upgradeItems := spec.ItemFinder(difficulty)
+	upgradeItems = util_collection.RemoveDuplicatesComparable_NewIfChanged(upgradeItems)
 
-	findUpgradeAndSim(input, &optionsMap, upgradeItems, model, printer, tracker, goal, substituteItems, nil)
-}
+	extraTasks := prepareUpgradeTasks(upgradeItems, &itemOptions, spec, settings, printer)
 
-func findUpgradeAndSim(input *FindUpgrades_SimInputs, baseItems *items.FullOptionsMap, extraItems []loaders.ItemFoundRef, model *gear_model.SpecModel, printer *util.PrintRecorder, tracker *util.TrackProgress,
-	goal stats.OptimiseGoal, substituteItems []items.ItemId, substituteEmptySlotOnly map[items.SlotItem]items.ItemId) []upgradeItemResultWithSim {
-
-	extraTasks := prepareUpgradeInfo(extraItems, input.TargetUpgradeLevel, printer, &input.FindUpgrades_BasicInputs, baseItems, goal, substituteItems, model)
-
-	tracker.RunOuterTracking(1 + len(extraTasks) + input.ExtraSimForTopResultsCount)
+	tracker.RunOuterTracking(1 + len(extraTasks) + settings.ExtraSimForTopResultsCount)
 	defer tracker.SetDone()
 
-	baseSim, baseRating := runBaselineAndSim(printer, baseItems, model, tracker.NewChild(), input, goal)
+	baseSim, baseRating := runBaseline(spec, settings, &itemOptions, tracker.NewChild(), printer)
 
-	simResults := runEachUpgradeTaskAndSim(printer, extraTasks, baseItems, baseRating, model, tracker, substituteEmptySlotOnly, input, goal, baseSim)
+	simResults := runEachUpgradeTaskAndSim(extraTasks, &itemOptions, baseRating, baseSim, spec, settings, tracker, printer)
 
-	if input.ExtraSimForTopResultsCount > 0 {
-		runMoreDetailedSimForBestN(simResults, input.ExtraSimForTopResultsCount, input.ExtraSimForTopResultsSimSize, model, goal, tracker)
+	if settings.ExtraSimForTopResultsCount > 0 {
+		runMoreDetailedSimForBestN(simResults, settings.ExtraSimForTopResultsCount, settings.ExtraSimForTopResultsSimSize, &spec.Model, tracker)
 	}
 
-	reportBasicResultsSim(simResults, printer, input.PositiveResultsOnly)
+	reportBasicResultsSim(simResults, printer, settings.PositiveResultsOnly)
 	return simResults
 }
 
-func runBaselineAndSim(printer *util.PrintRecorder, baseItems *items.FullOptionsMap, model *gear_model.SpecModel, tracker *util.TrackProgress, input *FindUpgrades_SimInputs, goal stats.OptimiseGoal) (stats.SimData, float64) {
-	baseRating, baseSet := findBaseLine(printer, baseItems, model, input)
-	baseSim := simulate.WowSim_Execute_SpecifyAll(input.SimSizeBaseline, model.SimSpeedUp, model.Spec, goal, model.SimulateAs, model.Professions, baseSet.Items(), nil, tracker)
-	printer.Println("SIM *BASELINE*")
-	baseSim.Print(printer)
+func runBaseline(spec *SpecInput, input *InputSettings, baseItems *items.FullOptionsMap, tracker *util.TrackProgress, printer *util.PrintRecorder) (stats.SimData, float64) {
+	baseRating, baseSet := solveBaseLine(printer, baseItems, spec, input)
+
+	model := &spec.Model
+	baseSim := simulate.WowSim_Execute_SpecifyAll(input.SimSizeBaseline, model.SimSpeedUp, model.Spec, model.Goal,
+		model.SimulateAs, model.Professions, baseSet.Items(), nil, tracker)
+
 	return baseSim, baseRating
 }
 
-func runEachUpgradeTaskAndSim(printer *util.PrintRecorder, extraTasks []upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *gear_model.SpecModel, tracker *util.TrackProgress, substituteEmptySlotOnly map[items.SlotItem]items.ItemId, input *FindUpgrades_SimInputs, goal stats.OptimiseGoal, baseSim stats.SimData) []upgradeItemResultWithSim {
+func runEachUpgradeTaskAndSim(extraTasks []upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, baseSim stats.SimData, spec *SpecInput, settings *InputSettings, tracker *util.TrackProgress, printer *util.PrintRecorder) []upgradeItemResult {
 	printer.Println("TRYING ITEMS")
-	simResults := util_async.Map_SliceToSlice(c_upgradeEachThreads+c_simThreads, extraTasks, func(task *upgradeItemTask) upgradeItemResultWithSim {
-		itemName := db.LookupItemNameByItemId(task.item.ItemId)
-		initial := performUpgradeTask(task, baseItems, baseRating, model, printer, true, substituteEmptySlotOnly, input.WeightType, input.SolverTimeout)
-		if initial.success {
-			simResult := simulate.WowSim_Execute_SpecifyAll(input.SimSizeItemInitial, model.SimSpeedUp, model.Spec, goal, model.SimulateAs, model.Professions, initial.itemSet.Items(), nil, tracker.NewChild())
+	simResults := util_async.Map_SliceToSlice(c_upgradeEachThreads, extraTasks, func(task *upgradeItemTask) upgradeItemResult {
+		upgradeResult := performUpgradeTask(task, baseItems, baseRating, &spec.Model, printer, spec.SubstituteEmptySlotOnly,
+			settings.WeightType, settings.SolverTimeout)
 
+		if upgradeResult.success {
+			simResult := simulate.WowSim_Execute_SpecifyAll(settings.SimSizeItemInitial, spec.Model.SimSpeedUp, spec.Model.Spec, spec.Model.Goal,
+				spec.Model.SimulateAs, spec.Model.Professions, upgradeResult.itemSet.Items(), nil, tracker.NewChild())
+
+			itemName := db.LookupItemNameByItemId(task.itemRef.ItemId)
 			printer.Println("SIM " + itemName)
 			simResult.Print(printer)
-			return upgradeItemResultWithSim{initial, baseSim, simResult}
-		} else {
-			return upgradeItemResultWithSim{upgradeItemResult: initial}
+
+			upgradeResult.baseSim = baseSim
+			upgradeResult.simResult = simResult
 		}
+
+		return upgradeResult
 	})
 	return simResults
 }
 
-func runMoreDetailedSimForBestN(resultList []upgradeItemResultWithSim, topResultsCount int, extraSimSize simulate.WowSim_RunSize, model *gear_model.SpecModel, goal stats.OptimiseGoal, tracker *util.TrackProgress) {
-	topN := util_rank.HighestCollector_ForN[*upgradeItemResultWithSim](
+func runMoreDetailedSimForBestN(resultList []upgradeItemResult, topResultsCount int, extraSimSize simulate.WowSim_RunSize, model *gear_model.SpecModel, tracker *util.TrackProgress) {
+	topN := util_rank.HighestCollector_ForN[*upgradeItemResult](
 		uint64(topResultsCount),
-		func(a, b **upgradeItemResultWithSim) bool { return (*a).Equals(**b) },
+		func(a, b **upgradeItemResult) bool { return (*a).Equals(**b) },
 	)
 	for result := range util_collection.ForPointer(resultList) {
 		topN.Offer(&result, result.increaseSim())
 	}
 
 	for result := range topN.ResultsSeq() {
-		runMoreDetailedSimFor(*result, extraSimSize, model, goal, tracker.NewChild())
+		runMoreDetailedSimFor(*result, extraSimSize, model, model.Goal, tracker.NewChild())
 	}
 }
 
-func runMoreDetailedSimFor(result *upgradeItemResultWithSim, extraSimSize simulate.WowSim_RunSize, model *gear_model.SpecModel, goal stats.OptimiseGoal, tracker *util.TrackProgress) {
+func runMoreDetailedSimFor(result *upgradeItemResult, extraSimSize simulate.WowSim_RunSize, model *gear_model.SpecModel, goal stats.OptimiseGoal, tracker *util.TrackProgress) {
 	updatedSimResult := simulate.WowSim_Execute_SpecifyAll(extraSimSize, model.SimSpeedUp, model.Spec, goal, model.SimulateAs, model.Professions, result.itemSet.Items(), nil, tracker)
-	result.sim = updatedSimResult
+	result.simResult = updatedSimResult
 }

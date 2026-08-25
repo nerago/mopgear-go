@@ -143,21 +143,25 @@ func appendFloatSignedPercent(value float64, build *util.StringBuild2) {
 
 func (sim *SimData) CompactStringGeneral() string {
 	var build util.StringBuild2
-	sim.CompactStringGeneralBuilder(&build)
+	sim.CompactStringGeneralAppend(&build)
 	return build.String()
 }
 
-func (sim *SimData) CompactStringGeneralBuilder(build *util.StringBuild2) {
-	build.WriteString("dps=")
-	build.WriteFloat64_RightPadded(sim.DPS(), 0, 6)
-	build.WriteString(" dtps=")
-	build.WriteFloat64_RightPadded(sim.DTPS(), 0, 6)
-	build.WriteString(" tmi=")
-	build.WriteFloat64_RightPadded(sim.TMI(), 2, 6)
-	build.WriteString(" death=")
-	build.WriteFloat64_RightPadded(sim.DEATH()*100, 2, 6)
-	build.WriteString(" hps=")
-	build.WriteFloat64(sim.HPS(), 0)
+func (sim *SimData) CompactStringGeneralAppend(build *util.StringBuild2) {
+	for simType, value := range sim.Seq() {
+		build.WriteString(simType.Name())
+		build.WriteRune('=')
+		switch simType {
+		case Sim_TMI:
+			build.WriteFloat64(value, 2)
+		case Sim_DEATH:
+			build.WriteFloat64(value*100, 2)
+		default:
+			build.WriteFloat64(value, 0)
+		}
+		build.WriteRune(' ')
+	}
+	build.Rewind(1)
 }
 
 func (sim *SimData) IsEmpty() bool {

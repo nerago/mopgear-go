@@ -13,9 +13,7 @@ import (
 )
 
 const (
-	c_upgradeEachThreads = 4
-	c_simThreads         = 4
-	c_baseSolveScale     = 4
+	c_upgradeEachThreads = 8
 	c_nullIncrease       = -100.0
 )
 
@@ -35,23 +33,15 @@ func formatIncreaseGeneric(percent float64) string {
 // ################## upgradeItemTask ##################
 
 type upgradeItemTask struct {
-	item       loaders.ItemFoundRef
+	itemRef    loaders.ItemFoundRef
 	slot       items.SlotEquip
 	goal       stats.OptimiseGoal
 	boss       string
 	canUpgrade items.CanUpgradeResult
 }
 
-func (task upgradeItemTask) actuallyAttemptUpgrade(forceIncludeMost bool) bool {
-	if forceIncludeMost {
-		return task.canUpgrade != items.CanUpgrade_InvalidAlways
-	} else {
-		return task.canUpgrade == items.CanUpgrade_Yes || task.canUpgrade == items.CanUpgrade_AvailableInBags
-	}
-}
-
 func (task upgradeItemTask) Equals(other upgradeItemTask) bool {
-	return task.item.Equals(other.item) &&
+	return task.itemRef.Equals(other.itemRef) &&
 		task.slot == other.slot &&
 		task.goal == other.goal &&
 		task.boss == other.boss
@@ -61,11 +51,13 @@ func (task upgradeItemTask) Equals(other upgradeItemTask) bool {
 
 type upgradeItemResult struct {
 	upgradeItemTask
-	success  bool
-	fullItem *items.FullItem
-	itemSet  *items.FullItemSet
-	setBonus uint8
-	factor   util_collection.Optional[float64]
+	success   bool
+	fullItem  *items.FullItem
+	itemSet   *items.FullItemSet
+	setBonus  uint8
+	factor    util_collection.Optional[float64]
+	baseSim   stats.SimData
+	simResult stats.SimData
 }
 
 func upgradeItemResult_OfFailure(task *upgradeItemTask, fullItem *items.FullItem) upgradeItemResult {
@@ -77,18 +69,19 @@ func (result upgradeItemResult) Equals(other upgradeItemResult) bool {
 		result.success == other.success &&
 		util.NilSafeEqualPointers(result.itemSet, other.itemSet, (*items.FullItemSet).Equals) &&
 		result.setBonus == other.setBonus &&
-		result.factor == other.factor
+		result.factor == other.factor &&
+		result.baseSim.Equals(&other.baseSim) && result.simResult.Equals(&other.simResult)
 }
 
-func (result upgradeItemResultWithSim) ItemName() string {
+func (result upgradeItemResult) ItemName() string {
 	if result.fullItem != nil {
 		return result.fullItem.BaseName()
 	} else {
-		return db.LookupItemNameByItemId(result.item.ItemId)
+		return db.LookupItemNameByItemId(result.itemRef.ItemId)
 	}
 }
 
-func (result upgradeItemResultWithSim) ItemLevel() uint16 {
+func (result upgradeItemResult) ItemLevel() uint16 {
 	if result.fullItem != nil {
 		return result.fullItem.ItemLevel()
 	} else {
@@ -96,10 +89,10 @@ func (result upgradeItemResultWithSim) ItemLevel() uint16 {
 	}
 }
 
-func (result upgradeItemResultWithSim) ItemStatSummary() string {
+func (result upgradeItemResult) ItemStatSummary() string {
 	fullItem := result.fullItem
 	if fullItem == nil {
-		fullItem = db.WowSimDB_LoadItemById(result.item.ItemId, 0)
+		fullItem = db.WowSimDB_LoadItemById(result.itemRef.ItemId, 0)
 	}
 	sb := util.StringBuild2{}
 	if fullItem != nil {
@@ -148,42 +141,29 @@ func (result upgradeItemResult) makeNoteAbbrev() string {
 	return result.canUpgrade.TextAbbrev()
 }
 
-// ################## upgradeItemResultWithSim ##################
-
-type upgradeItemResultWithSim struct {
-	upgradeItemResult
-	baseSim stats.SimData
-	sim     stats.SimData
-}
-
-func (result upgradeItemResultWithSim) Equals(other upgradeItemResultWithSim) bool {
-	return result.upgradeItemResult.Equals(other.upgradeItemResult) &&
-		result.baseSim == other.baseSim && result.sim == other.sim
-}
-
-func (result upgradeItemResultWithSim) increaseSim() float64 {
-	if result.sim.IsEmpty() {
+func (result upgradeItemResult) increaseSim() float64 {
+	if result.simResult.IsEmpty() {
 		return c_nullIncrease
 	}
 
 	switch result.goal {
 	case stats.OptimiseGoal_Dps:
-		return result.sim.QueryIncreaseOf(&result.baseSim, stats.Sim_DPS)
+		return result.simResult.QueryIncreaseOf(&result.baseSim, stats.Sim_DPS)
 	case stats.OptimiseGoal_Healing:
-		return result.sim.QueryIncreaseOf(&result.baseSim, stats.Sim_HPS)
+		return result.simResult.QueryIncreaseOf(&result.baseSim, stats.Sim_HPS)
 	case stats.OptimiseGoal_Mitigation:
-		return result.sim.QueryIncreaseMitigation(&result.baseSim)
+		return result.simResult.QueryIncreaseMitigation(&result.baseSim)
 	case stats.OptimiseGoal_HalfMitiDps:
-		return (result.sim.QueryIncreaseMitigation(&result.baseSim) + result.sim.QueryIncreaseOf(&result.baseSim, stats.Sim_DPS)) / 2.0
+		return (result.simResult.QueryIncreaseMitigation(&result.baseSim) + result.simResult.QueryIncreaseOf(&result.baseSim, stats.Sim_DPS)) / 2.0
 	case stats.OptimiseGoal_HalfMitiHeal:
-		return (result.sim.QueryIncreaseMitigation(&result.baseSim) + result.sim.QueryIncreaseOf(&result.baseSim, stats.Sim_HPS)) / 2.0
+		return (result.simResult.QueryIncreaseMitigation(&result.baseSim) + result.simResult.QueryIncreaseOf(&result.baseSim, stats.Sim_HPS)) / 2.0
 	default:
 		panic("unknown goal")
 	}
 }
 
-func (result upgradeItemResultWithSim) increaseSimStr(prefixNote bool) string {
-	if result.sim.IsEmpty() {
+func (result upgradeItemResult) increaseSimStr(prefixNote bool) string {
+	if result.simResult.IsEmpty() {
 		if result.canUpgrade != items.CanUpgrade_Yes {
 			return result.canUpgrade.TextLong()
 		}
@@ -197,8 +177,8 @@ func (result upgradeItemResultWithSim) increaseSimStr(prefixNote bool) string {
 	return str
 }
 
-func (result upgradeItemResultWithSim) increaseSimBreakdown() *stats.SimData {
-	return result.sim.QueryIncreaseOfEach(&result.baseSim)
+func (result upgradeItemResult) increaseSimBreakdown() *stats.SimData {
+	return result.simResult.QueryIncreaseOfEach(&result.baseSim)
 }
 
 // ################## reportGroup ##################
@@ -208,27 +188,27 @@ type reportGroup struct {
 	difficulty stats.Difficulty
 }
 type upgradeGroupTask struct {
-	spec       *FindUpgrades_Spec
+	spec       *SpecInput
 	difficulty stats.Difficulty
 }
 type upgradeGroupResult struct {
 	task       upgradeGroupTask
 	group      reportGroup
-	resultList []upgradeItemResultWithSim
+	resultList []upgradeItemResult
 }
 
 // ################## reportForItemWithSim ##################
 
-type reportForItemWithSim struct {
+type reportForItem struct {
 	itemName    string
 	itemLevel   uint16
 	boss        string
 	statSummary string
 	slot        items.SlotEquip
-	grouped     map[string]upgradeItemResultWithSim
+	grouped     map[string]upgradeItemResult
 }
 
-func (report *reportForItemWithSim) Add(group reportGroup, result upgradeItemResultWithSim) {
+func (report *reportForItem) Add(group reportGroup, result upgradeItemResult) {
 	old, exists := report.grouped[group.specLabel]
 	if exists && !old.Equals(result) {
 		if result.increaseSim() < old.increaseSim() {
@@ -239,7 +219,7 @@ func (report *reportForItemWithSim) Add(group reportGroup, result upgradeItemRes
 	report.grouped[group.specLabel] = result
 }
 
-func (report *reportForItemWithSim) BestRating() float64 {
+func (report *reportForItem) BestRating() float64 {
 	var best float64 = c_nullIncrease
 	for _, item := range report.grouped {
 		best = util.MaxIgnoreNaN3(best, item.increaseSim(), item.increaseWeightsRaw())
@@ -247,7 +227,7 @@ func (report *reportForItemWithSim) BestRating() float64 {
 	return best
 }
 
-func (report *reportForItemWithSim) BestRating_NoWeight() float64 {
+func (report *reportForItem) BestRating_NoWeight() float64 {
 	var best float64 = c_nullIncrease
 	for _, item := range report.grouped {
 		best = util.MaxIgnoreNaN(best, item.increaseSim())

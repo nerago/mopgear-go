@@ -7,37 +7,35 @@ import (
 
 	"github.com/nerago/mopgear-go/db"
 	"github.com/nerago/mopgear-go/files"
-	"github.com/nerago/mopgear-go/setup"
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_async"
-	"github.com/nerago/mopgear-go/util/util_collection"
 )
 
 // possible entry point
-func FindUpgrades_Sim_AllRaid_Run(input *FindUpgrades_MultiSpec_Sim, cancel util_async.CancelSignal) {
+func FindUpgrades_Run(input *FindUpgradesMultiSpec, cancel util_async.CancelSignal) {
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "upgrade-report")
 	defer printer.Close()
 
 	sw := util.StopwatchNoisyStart(printer)
 	defer sw.Stop()
 
-	outputMap := findUpgrades_AllRaid(&input.FindUpgrades_SimInputs, input.Specs, cancel)
+	outputMap := findUpgrades_AllRaid(input, cancel)
 
-	reportTabulatedSimResults_All(outputMap, input.Specs, printer, input.PositiveResultsOnly)
-	reportTabulatedSimResults_Boss(outputMap, input.Specs, printer, input.PositiveResultsOnly)
+	reportTabulatedSimResults_All(outputMap, input.Specs, printer, input.Settings.PositiveResultsOnly)
+	reportTabulatedSimResults_Boss(outputMap, input.Specs, printer, input.Settings.PositiveResultsOnly)
 }
 
-func findUpgrades_AllRaid(input *FindUpgrades_SimInputs, specs []FindUpgrades_Spec, cancel util_async.CancelSignal) []upgradeGroupResult {
+func findUpgrades_AllRaid(input *FindUpgradesMultiSpec, cancel util_async.CancelSignal) []upgradeGroupResult {
 	groupTasks := make([]upgradeGroupTask, 0)
-	for _, spec := range specs {
-		if input.IncludeCelestial {
+	for _, spec := range input.Specs {
+		if input.Settings.IncludeCelestial {
 			groupTasks = append(groupTasks, upgradeGroupTask{&spec, stats.Difficulty_Celestial})
 		}
-		if input.IncludeNormal {
+		if input.Settings.IncludeNormal {
 			groupTasks = append(groupTasks, upgradeGroupTask{&spec, stats.Difficulty_Normal})
 		}
-		if input.IncludeHeroic {
+		if input.Settings.IncludeHeroic {
 			groupTasks = append(groupTasks, upgradeGroupTask{&spec, stats.Difficulty_Heroic})
 		}
 	}
@@ -47,7 +45,7 @@ func findUpgrades_AllRaid(input *FindUpgrades_SimInputs, specs []FindUpgrades_Sp
 	defer tracker.SetDone()
 
 	return util_async.Map_SliceToSlice_Cancellable(4, groupTasks, cancel, func(task *upgradeGroupTask) upgradeGroupResult {
-		resultList := processSpecUpgradeGroupTask(input, task.spec, task.difficulty, tracker.NewChild())
+		resultList := processSpecUpgradeGroupTask(&input.Settings, task.spec, task.difficulty, tracker.NewChild())
 		return upgradeGroupResult{
 			task: *task,
 			group: reportGroup{
@@ -59,40 +57,35 @@ func findUpgrades_AllRaid(input *FindUpgrades_SimInputs, specs []FindUpgrades_Sp
 	})
 }
 
-func processSpecUpgradeGroupTask(input *FindUpgrades_SimInputs, spec *FindUpgrades_Spec, difficulty stats.Difficulty, tracker *util.TrackProgress) []upgradeItemResultWithSim {
+func processSpecUpgradeGroupTask(input *InputSettings, spec *SpecInput, difficulty stats.Difficulty, tracker *util.TrackProgress) []upgradeItemResult {
 	printer := util.PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "upgrade-"+spec.Label+"-"+difficulty.Name())
 	printer.Println("[[[[[[[[[[[[[[[[[[[[ " + spec.Label + " " + difficulty.Name() + " UPGRADES ]]]]]]]]]]]]]]]]]]]]")
 	defer printer.Close()
 
-	options := setup.OptionsSetup_FromGearFile(spec.GearFile, &spec.Model, setup.MissingEnchant_Panic, printer)
-
-	upgradeItems := spec.ItemFinder(difficulty)
-	upgradeItems = util_collection.RemoveDuplicatesComparable_NewIfChanged(upgradeItems)
-
-	return findUpgradeAndSim(input, &options, upgradeItems, &spec.Model, printer, tracker, spec.Model.Goal, spec.SubstituteItems, spec.SubstituteEmptySlotOnly)
+	return processSpecUpgrade(input, spec, difficulty, tracker, printer)
 }
 
-func groupByBossAndItem(outputMap []upgradeGroupResult) map[string]map[reportItemRef]*reportForItemWithSim {
-	byBossThenItem := make(map[string]map[reportItemRef]*reportForItemWithSim)
+func groupByBossAndItem(outputMap []upgradeGroupResult) map[string]map[reportItemRef]*reportForItem {
+	byBossThenItem := make(map[string]map[reportItemRef]*reportForItem)
 	for _, groupResultEntry := range outputMap {
 		group := groupResultEntry.group
 		for _, result := range groupResultEntry.resultList {
 			itemMap := byBossThenItem[result.boss]
 			if itemMap == nil {
-				itemMap = make(map[reportItemRef]*reportForItemWithSim)
+				itemMap = make(map[reportItemRef]*reportForItem)
 				byBossThenItem[result.boss] = itemMap
 			}
 
-			ref := reportItemRef{result.item.ItemId, result.slot}
+			ref := reportItemRef{result.itemRef.ItemId, result.slot}
 			report, exists := itemMap[ref]
 			if !exists {
-				report = &reportForItemWithSim{
+				report = &reportForItem{
 					result.ItemName(),
 					result.ItemLevel(),
 					result.boss,
 					result.ItemStatSummary(),
 					result.slot,
-					make(map[string]upgradeItemResultWithSim),
+					make(map[string]upgradeItemResult),
 				}
 				itemMap[ref] = report
 			}
@@ -103,21 +96,21 @@ func groupByBossAndItem(outputMap []upgradeGroupResult) map[string]map[reportIte
 	return byBossThenItem
 }
 
-func groupByItem(outputMap []upgradeGroupResult) map[reportItemRef]*reportForItemWithSim {
-	byItem := make(map[reportItemRef]*reportForItemWithSim)
+func groupByItem(outputMap []upgradeGroupResult) map[reportItemRef]*reportForItem {
+	byItem := make(map[reportItemRef]*reportForItem)
 	for _, groupResultEntry := range outputMap {
 		group := groupResultEntry.group
 		for _, result := range groupResultEntry.resultList {
-			ref := reportItemRef{result.item.ItemId, result.slot}
+			ref := reportItemRef{result.itemRef.ItemId, result.slot}
 			report, exists := byItem[ref]
 			if !exists {
-				report = &reportForItemWithSim{
+				report = &reportForItem{
 					result.ItemName(),
 					result.ItemLevel(),
 					result.boss,
 					result.ItemStatSummary(),
 					result.slot,
-					make(map[string]upgradeItemResultWithSim),
+					make(map[string]upgradeItemResult),
 				}
 				byItem[ref] = report
 			}
@@ -128,7 +121,7 @@ func groupByItem(outputMap []upgradeGroupResult) map[reportItemRef]*reportForIte
 	return byItem
 }
 
-func reportTabulatedSimResults_All(outputMap []upgradeGroupResult, specs []FindUpgrades_Spec, printer *util.PrintRecorder, positiveResultsOnly bool) {
+func reportTabulatedSimResults_All(outputMap []upgradeGroupResult, specs []SpecInput, printer *util.PrintRecorder, positiveResultsOnly bool) {
 	itemMap := groupByItem(outputMap)
 	printer.Println("MULTISPEC RANKING ALL")
 	reportTabledSimResultItemMap(itemMap, positiveResultsOnly, specs, printer)
@@ -136,7 +129,7 @@ func reportTabulatedSimResults_All(outputMap []upgradeGroupResult, specs []FindU
 	reportTabledSimResultItemMap_NoWeight(itemMap, positiveResultsOnly, specs, printer)
 }
 
-func reportTabulatedSimResults_Boss(outputMap []upgradeGroupResult, specs []FindUpgrades_Spec, printer *util.PrintRecorder, positiveResultsOnly bool) {
+func reportTabulatedSimResults_Boss(outputMap []upgradeGroupResult, specs []SpecInput, printer *util.PrintRecorder, positiveResultsOnly bool) {
 	byBossThenItem := groupByBossAndItem(outputMap)
 
 	printer.Println("MULTISPEC RANKING BY BOSS")
@@ -149,14 +142,14 @@ func reportTabulatedSimResults_Boss(outputMap []upgradeGroupResult, specs []Find
 	}
 }
 
-func reportTabledSimResultItemMap(itemMap map[reportItemRef]*reportForItemWithSim, positiveResultsOnly bool, specs []FindUpgrades_Spec, printer *util.PrintRecorder) {
-	reportList := make([]*reportForItemWithSim, 0, len(itemMap))
+func reportTabledSimResultItemMap(itemMap map[reportItemRef]*reportForItem, positiveResultsOnly bool, specs []SpecInput, printer *util.PrintRecorder) {
+	reportList := make([]*reportForItem, 0, len(itemMap))
 	for _, report := range itemMap {
 		if !positiveResultsOnly || report.BestRating() > 0 {
 			reportList = append(reportList, report)
 		}
 	}
-	slices.SortFunc(reportList, func(a, b *reportForItemWithSim) int {
+	slices.SortFunc(reportList, func(a, b *reportForItem) int {
 		return cmp.Compare(a.BestRating(), b.BestRating())
 	})
 
@@ -202,14 +195,14 @@ func reportTabledSimResultItemMap(itemMap map[reportItemRef]*reportForItemWithSi
 	printer.Println0()
 }
 
-func reportTabledSimResultItemMap_NoWeight(itemMap map[reportItemRef]*reportForItemWithSim, positiveResultsOnly bool, specs []FindUpgrades_Spec, printer *util.PrintRecorder) {
-	reportList := make([]*reportForItemWithSim, 0, len(itemMap))
+func reportTabledSimResultItemMap_NoWeight(itemMap map[reportItemRef]*reportForItem, positiveResultsOnly bool, specs []SpecInput, printer *util.PrintRecorder) {
+	reportList := make([]*reportForItem, 0, len(itemMap))
 	for _, report := range itemMap {
 		if !positiveResultsOnly || report.BestRating() > 0 {
 			reportList = append(reportList, report)
 		}
 	}
-	slices.SortFunc(reportList, func(a, b *reportForItemWithSim) int {
+	slices.SortFunc(reportList, func(a, b *reportForItem) int {
 		return cmp.Compare(a.BestRating_NoWeight(), b.BestRating_NoWeight())
 	})
 
@@ -255,7 +248,7 @@ func reportTabledSimResultItemMap_NoWeight(itemMap map[reportItemRef]*reportForI
 	printer.Println0()
 }
 
-func bestSimOf(report *reportForItemWithSim) (stats.SimData, string) {
+func bestSimOf(report *reportForItem) (stats.SimData, string) {
 	var bestIncrease stats.SimData
 	var bestLabel string
 	best := c_nullIncrease

@@ -9,7 +9,7 @@ import (
 	"github.com/nerago/mopgear-go/util/util_rank"
 )
 
-func reportBasicResultsSim(resultList []upgradeItemResultWithSim, printer *util.PrintRecorder, positiveResultsOnly bool) {
+func reportBasicResultsSim(resultList []upgradeItemResult, printer *util.PrintRecorder, positiveResultsOnly bool) {
 	if positiveResultsOnly {
 		resultList = filterPositiveSim(resultList)
 	}
@@ -23,7 +23,7 @@ func reportBasicResultsSim(resultList []upgradeItemResultWithSim, printer *util.
 	printer.Println0()
 }
 
-func reportBasicByBossSim(resultList []upgradeItemResultWithSim, printer *util.PrintRecorder) {
+func reportBasicByBossSim(resultList []upgradeItemResult, printer *util.PrintRecorder) {
 	rankedByBoss := groupByBoss(resultList)
 
 	printer.Println("RANKING UPGRADE BY BOSS")
@@ -44,7 +44,7 @@ func reportBasicByBossSim(resultList []upgradeItemResultWithSim, printer *util.P
 			tab.AddColumnHeader("note", false)
 
 			for result := range rank.OrderedResult() {
-				if result.sim.IsEmpty() {
+				if result.simResult.IsEmpty() {
 					tab.AddRow([]string{
 						result.slot.Name(),
 						strconv.FormatUint(uint64(result.ItemLevel()), 10),
@@ -75,7 +75,7 @@ func reportBasicByBossSim(resultList []upgradeItemResultWithSim, printer *util.P
 	}
 }
 
-func reportBasicBySlotSim(resultList []upgradeItemResultWithSim, printer *util.PrintRecorder) {
+func reportBasicBySlotSim(resultList []upgradeItemResult, printer *util.PrintRecorder) {
 	rankedBySlot := groupBySlot(resultList)
 
 	printer.Println("RANKING UPGRADE BY SLOT")
@@ -96,7 +96,7 @@ func reportBasicBySlotSim(resultList []upgradeItemResultWithSim, printer *util.P
 			tab.AddColumnHeader("note", false)
 
 			for result := range rank.OrderedResult() {
-				if result.sim.IsEmpty() {
+				if result.simResult.IsEmpty() {
 					tab.AddRow([]string{
 						strconv.FormatUint(uint64(result.ItemLevel()), 10),
 						result.ItemName(),
@@ -127,8 +127,8 @@ func reportBasicBySlotSim(resultList []upgradeItemResultWithSim, printer *util.P
 	}
 }
 
-func reportBasicOverallRankSim(resultList []upgradeItemResultWithSim, printer *util.PrintRecorder) {
-	ranked := util_rank.RankedCollection[upgradeItemResultWithSim]{}
+func reportBasicOverallRankSim(resultList []upgradeItemResult, printer *util.PrintRecorder) {
+	ranked := util_rank.RankedCollection[upgradeItemResult]{}
 	for _, result := range resultList {
 		ranked.Add(result, result.increaseSim())
 	}
@@ -148,7 +148,7 @@ func reportBasicOverallRankSim(resultList []upgradeItemResultWithSim, printer *u
 	tab.AddColumnHeader("note", false)
 
 	for result := range ranked.OrderedResult() {
-		if result.sim.IsEmpty() {
+		if result.simResult.IsEmpty() {
 			tab.AddRow([]string{
 				result.slot.Name(),
 				strconv.FormatUint(uint64(result.ItemLevel()), 10),
@@ -178,12 +178,12 @@ func reportBasicOverallRankSim(resultList []upgradeItemResultWithSim, printer *u
 	tab.Write(printer)
 }
 
-func groupByBoss(resultList []upgradeItemResultWithSim) map[string]*util_rank.RankedCollection[upgradeItemResultWithSim] {
-	rankedByBoss := make(map[string]*util_rank.RankedCollection[upgradeItemResultWithSim])
+func groupByBoss(resultList []upgradeItemResult) map[string]*util_rank.RankedCollection[upgradeItemResult] {
+	rankedByBoss := make(map[string]*util_rank.RankedCollection[upgradeItemResult])
 	for _, result := range resultList {
 		rank := rankedByBoss[result.boss]
 		if rank == nil {
-			rank = new(util_rank.RankedCollection[upgradeItemResultWithSim])
+			rank = new(util_rank.RankedCollection[upgradeItemResult])
 			rankedByBoss[result.boss] = rank
 		}
 		rank.Add(result, result.increaseSim())
@@ -191,12 +191,12 @@ func groupByBoss(resultList []upgradeItemResultWithSim) map[string]*util_rank.Ra
 	return rankedByBoss
 }
 
-func groupBySlot(resultList []upgradeItemResultWithSim) map[items.SlotEquip]*util_rank.RankedCollection[upgradeItemResultWithSim] {
-	rankedBySlot := make(map[items.SlotEquip]*util_rank.RankedCollection[upgradeItemResultWithSim])
+func groupBySlot(resultList []upgradeItemResult) map[items.SlotEquip]*util_rank.RankedCollection[upgradeItemResult] {
+	rankedBySlot := make(map[items.SlotEquip]*util_rank.RankedCollection[upgradeItemResult])
 	for _, result := range resultList {
 		rank := rankedBySlot[result.slot]
 		if rank == nil {
-			rank = new(util_rank.RankedCollection[upgradeItemResultWithSim])
+			rank = new(util_rank.RankedCollection[upgradeItemResult])
 			rankedBySlot[result.slot] = rank
 		}
 		rank.Add(result, result.increaseSim())
@@ -204,8 +204,8 @@ func groupBySlot(resultList []upgradeItemResultWithSim) map[items.SlotEquip]*uti
 	return rankedBySlot
 }
 
-func filterPositiveSim(input []upgradeItemResultWithSim) []upgradeItemResultWithSim {
-	output := make([]upgradeItemResultWithSim, 0, len(input))
+func filterPositiveSim(input []upgradeItemResult) []upgradeItemResult {
+	output := make([]upgradeItemResult, 0, len(input))
 	for _, item := range input {
 		if item.increaseWeightsRaw() > 0.0 || item.increaseSim() > 0.0 {
 			output = append(output, item)

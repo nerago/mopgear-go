@@ -60,7 +60,7 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), bonusStat, tracker.NewChild())
 
 		str.WriteString("--> ")
-		simResult.CompactStringGeneralBuilder(&str)
+		simResult.CompactStringGeneralAppend(&str)
 		printer.PrintlnFromBuild(str)
 
 		return weight_types.WeightInput{
@@ -175,7 +175,7 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 		str.WriteRune(' ')
 		total.AppendString(&str)
 		str.WriteString(" --> ")
-		simResult.CompactStringGeneralBuilder(&str)
+		simResult.CompactStringGeneralAppend(&str)
 		printer.PrintlnFromBuild(str)
 
 		return weight_types.WeightInput{TotalStat: total, SimResult: simResult}
