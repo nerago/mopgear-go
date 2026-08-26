@@ -93,7 +93,7 @@ func (job *MainJob) generalMultiReport(pendingResultChannel <-chan *simulateMult
 	simMultiResults := job.incrementalReporting(pendingResultChannel, simsDone)
 
 	if len(simMultiResults) > 0 {
-		job.reportSimResults(simMultiResults)
+		job.reportSimResults(simMultiResults, true)
 
 		best, rankedData := job.rankAllResults(simMultiResults)
 		job.reportAsCsv(rankedData)

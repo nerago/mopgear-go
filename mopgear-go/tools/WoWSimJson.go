@@ -10,7 +10,13 @@ import (
 	"github.com/nerago/mopgear-go/util"
 )
 
-func WowSimJson_Write(equip *items.FullEquipMap, model *gear_model.SpecModel, printer *util.PrintRecorder) string {
+func WowSimJsonWrite(equip *items.FullEquipMap, model *gear_model.SpecModel, printer util.Printable) string {
+	asText := WowSimJsonFormat(equip, model)
+	printer.Println(asText)
+	return asText
+}
+
+func WowSimJsonFormat(equip *items.FullEquipMap, model *gear_model.SpecModel) string {
 	inputFile := model.ReferenceGearFile
 	allBytes, err := os.ReadFile(inputFile)
 	if err != nil {
@@ -45,7 +51,6 @@ func WowSimJson_Write(equip *items.FullEquipMap, model *gear_model.SpecModel, pr
 	}
 
 	asText := string(allBytes)
-	printer.Println(asText)
 	return asText
 }
 

@@ -69,7 +69,7 @@ func (single *SingleProposedOutput) Equals(b *SingleProposedOutput) bool {
 	return single.Exists == b.Exists && single.Spec == b.Spec && single.FullSet.Equals(&b.FullSet)
 }
 
-func (single *SingleProposedOutput) Report(model *gear_model.SpecModel, printer *util.PrintRecorder) {
+func (single *SingleProposedOutput) Report(model *gear_model.SpecModel, printer util.Printable) {
 	if single.OutputId != "" {
 		printer.Println(single.OutputId)
 	}

@@ -22,6 +22,7 @@ func readLogfile(tempFilename string, printer *util.PrintRecorder) {
 		_, err = file.WriteTo(printer)
 		verifyNoError(err)
 		verifyNoError(file.Close())
+		_ = os.Remove(tempFilename)
 	} else if tempFilename != "" {
 		_ = os.Remove(tempFilename)
 	}

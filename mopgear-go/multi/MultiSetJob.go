@@ -12,6 +12,7 @@ type MainJob struct {
 	printer     *util.PrintRecorder
 	input       multi_types.JobInputs
 	csvFilename string
+	setFilename string
 
 	tasks      []multi_types.JobInputTask
 	itemPrep   map[string]*specItemPrep
@@ -28,6 +29,7 @@ func JobCreate(printer *util.PrintRecorder, input multi_types.JobInputs, tasks .
 		input:       input,
 		tasks:       tasks,
 		csvFilename: replaceSuffix(printer.GetFileName(), ".csv"),
+		setFilename: replaceSuffix(printer.GetFileName(), ".set"),
 	}
 }
 

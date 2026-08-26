@@ -42,7 +42,7 @@ func findMatch(fullItem []FullItem, solveItem *SolvableItem) *FullItem {
 	panic("match not found")
 }
 
-func (itemSet *FullItemSet) PrintStats(printer *util.PrintRecorder) {
+func (itemSet *FullItemSet) PrintStats(printer util.Printable) {
 	printer.Printf("STATS %s\n", itemSet.total.CreateString())
 }
 

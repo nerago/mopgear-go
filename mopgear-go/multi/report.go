@@ -19,19 +19,33 @@ import (
 	"github.com/nerago/mopgear-go/weightfind/simrank"
 )
 
-func (job *MainJob) reportSimResults(multiResultList []simulateMultiResult) {
-	job.printer.Println("@@@@@@@@@@@@@@@@ RESULTS @@@@@@@@@@@@@@@@")
-	for result := range util_collection.ForPointer(multiResultList) {
-		job.reportSimResults_One(result)
+func (job *MainJob) reportSimResults(multiResultList []simulateMultiResult, includeConsole bool) {
+	if includeConsole {
+		job.printer.Println("@@@@@@@@@@@@@@@@ RESULTS @@@@@@@@@@@@@@@@")
+		for result := range util_collection.ForPointer(multiResultList) {
+			job.reportSimResults_One(result, job.printer)
+		}
+	}
+
+	if job.setFilename != "" {
+		err := util.WriteFuncToFileWithTemp(job.setFilename, func(file *os.File) {
+			filePrint := util.FilePrintableMake(file)
+			for result := range util_collection.ForPointer(multiResultList) {
+				job.reportSimResults_One(result, filePrint)
+			}
+		})
+		if err != nil {
+			job.printer.Println(err.Error())
+		}
 	}
 }
 
-func (job *MainJob) reportSimResults_One(result *simulateMultiResult) {
-	job.printer.Printf("&&&&&&&&&&&&& %s\n", result.proposed.Id)
-	job.printer.Printf("Weight Type %d\n", result.proposed.WeightType)
+func (job *MainJob) reportSimResults_One(result *simulateMultiResult, printer util.Printable) {
+	printer.Printf("&&&&&&&&&&&&& %s\n", result.proposed.Id)
+	printer.Printf("Weight Type %d\n", result.proposed.WeightType)
 
 	if result.proposed.PermuteLabel != "" {
-		job.printer.Println(result.proposed.PermuteLabel)
+		printer.Println(result.proposed.PermuteLabel)
 	}
 	//result.proposed.Combo.Print(job.printer)
 
@@ -41,9 +55,9 @@ func (job *MainJob) reportSimResults_One(result *simulateMultiResult) {
 		output := result.proposed.Parts[label]
 		input := prep.inputs
 
-		job.printer.Printf("\n---------------- %s ----------------\n", label)
-		output.Report(prep.model, job.printer)
-		job.printer.Println(simData.CompactStringGeneral())
+		printer.Printf("\n---------------- %s ----------------\n", label)
+		output.Report(prep.model, printer)
+		printer.Println(simData.CompactStringGeneral())
 
 		if len(input.ReportVariant) > 0 {
 			variantEquip := *output.FullSet.Items()
@@ -58,9 +72,9 @@ func (job *MainJob) reportSimResults_One(result *simulateMultiResult) {
 				stringBuild.WriteRune(' ')
 			}
 			stringBuild.WriteString(" ----------------")
-			job.printer.PrintlnFromBuild(stringBuild)
-			tools.WowSimJson_Write(&variantEquip, prep.model, job.printer)
-			job.printer.Println0()
+			printer.PrintlnFromBuild(stringBuild)
+			tools.WowSimJsonWrite(&variantEquip, prep.model, printer)
+			printer.Println0()
 		}
 	}
 
@@ -77,7 +91,7 @@ func (job *MainJob) reportSimResults_One(result *simulateMultiResult) {
 			stringBuild.WriteRune('\n')
 		}
 
-		job.printer.PrintlnFromBuild(stringBuild)
+		printer.PrintlnFromBuild(stringBuild)
 	}
 
 	upgradeItems := job.listUpgradeItems(result.proposed)
@@ -89,11 +103,11 @@ func (job *MainJob) reportSimResults_One(result *simulateMultiResult) {
 			stringBuild.WriteRune('\n')
 		}
 
-		job.printer.PrintlnFromBuild(stringBuild)
+		printer.PrintlnFromBuild(stringBuild)
 	}
 
-	job.printer.Println0()
-	job.printer.Println0()
+	printer.Println0()
+	printer.Println0()
 }
 
 func (job *MainJob) findVariantItem(result *simulateMultiResult, itemId items.ItemId, prep *specItemPrep) *items.FullItem {
@@ -116,7 +130,6 @@ func (job *MainJob) findVariantItem(result *simulateMultiResult, itemId items.It
 	return example
 }
 func (job *MainJob) reportAsCsv(simResultList []*simMultiRankable) {
-
 	outputTypesByParam, rowCount, needPermuteLine := csvPrepareCollections(simResultList, job.itemPrep)
 	labelOrder := job.paramOrderSlice()
 
@@ -132,20 +145,14 @@ func (job *MainJob) reportAsCsv(simResultList []*simMultiRankable) {
 		job.printer.Println0()
 		job.printer.Println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 	}
-
 }
 
 func (job *MainJob) writeToCsvFile(csv util.CSVOutputByColumn) {
-	file, err := os.Create(job.csvFilename)
+	err := util.WriteFuncToFileWithTemp(job.csvFilename, func(file *os.File) {
+		csv.WriteTo(util.FilePrintableMake(file))
+	})
 	if err != nil {
-		panic(err)
-	}
-
-	csv.WriteTo(util.FilePrintableMake(file))
-
-	err = file.Close()
-	if err != nil {
-		panic(err)
+		job.printer.Println(err.Error())
 	}
 }
 
@@ -281,7 +288,7 @@ func (job *MainJob) listUpgradeItems(proposed *multi_types.MultiProposedOutput) 
 func (job *MainJob) handleBestRankedResult(best util_rank.BestCollector1[simulateMultiResult]) {
 	job.printer.Println("Best ranked result")
 	bestMultiResult := best.GetBestPointerOrPanic()
-	job.reportSimResults_One(bestMultiResult)
+	job.reportSimResults_One(bestMultiResult, job.printer)
 
 	if job.input.WriteBestToGearFiles {
 		job.writeToGearFiles(bestMultiResult)
@@ -293,27 +300,37 @@ func (job *MainJob) incrementalReporting(channel <-chan *simulateMultiResultPend
 	incrementalSlice := util_async.CollectChannelToSliceIncremental(channel)
 	for done.WaitForLimitedDuration(updateLoopTime) {
 		tempSlice := incrementalSlice.SliceTemp()
-		completedResults := job.pendingToCompletedResults(tempSlice)
+		completedResults := job.pendingToCompletedResults(tempSlice, false)
 		_, rankedData := job.rankAllResults(completedResults)
 		job.reportAsCsv(rankedData)
+		job.reportSimResults(completedResults, false)
 	}
 	tempSlice := incrementalSlice.SliceTemp()
-	return job.pendingToCompletedResults(tempSlice)
+	return job.pendingToCompletedResults(tempSlice, true)
 }
 
-func (job *MainJob) pendingToCompletedResults(pendingSlice []*simulateMultiResultPending) []simulateMultiResult {
+func (job *MainJob) pendingToCompletedResults(pendingSlice []*simulateMultiResultPending, isFinal bool) []simulateMultiResult {
 	completed := make([]simulateMultiResult, 0)
 pendingLoop:
 	for _, pending := range pendingSlice {
 		if pending.ready {
-			simMap := make(map[string]*stats.SimData, len(pending.simPending))
-			for k, v := range pending.simPending {
+			simPending := pending.getPendingList()
+			simMap := make(map[string]*stats.SimData, len(simPending))
+			for k, v := range simPending {
 				if v == nil {
-					job.printer.Println("ERROR: unexpected nil pending")
-					continue pendingLoop
+					if isFinal {
+						panic("ERROR: unexpected nil pending")
+					} else {
+						job.printer.Println("ERROR: unexpected nil pending")
+						continue pendingLoop
+					}
 				} else if v.resultPending == nil {
-					job.printer.Println("ERROR: unexpected nil simData")
-					continue pendingLoop
+					if isFinal {
+						panic("ERROR: unexpected nil simData")
+					} else {
+						job.printer.Println("ERROR: unexpected nil simData")
+						continue pendingLoop
+					}
 				}
 				simMap[k] = v.resultPending
 			}

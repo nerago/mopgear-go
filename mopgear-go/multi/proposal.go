@@ -210,7 +210,7 @@ func (group *workingGroup) makeProposalFromHighs(multiResult solve_highs.HighsMu
 
 func (job *MainJob) listInitialOutputs(bestOutputs <-chan *multi_types.MultiProposedOutput) <-chan *multi_types.MultiProposedOutput {
 	return util_async.PeekChannel_NoPointer(bestOutputs, func(prop *multi_types.MultiProposedOutput) {
-		job.printer.Printf("::::::::: PROPOSED %f :::::::: %s ::::::::\n", prop.TotalRatingSum, prop.Id)
+		job.printer.Printf("~~~~~~~~~ PROPOSED %f %s\n", prop.TotalRatingSum, prop.Id)
 		job.printer.Printf("Weight Type %d\n", prop.WeightType)
 		for label, out := range prop.Parts {
 			prep := job.itemPrep[label]
