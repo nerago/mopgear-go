@@ -129,7 +129,7 @@ func buildGearWeight2(protoWeight *gearproto.Weight2Extended) *weight_types.Weig
 	}
 	weight2.SimList = slices.Collect(weight2.DetailedWeights.SeqKey1())
 	weight2.StatList = slices.Collect(weight2.DetailedWeights.SeqKey2())
-	weight2.FinishAndValidate()
+	weight2.FinishAndValidateNoVerify()
 	return weight2
 }
 

@@ -28,10 +28,11 @@ type RankingSeparatedWeights struct {
 	printer        *util.PrintRecorder
 	timeoutSeconds int
 
-	targetRatios  weight_types.SimPriorityBasic
-	requiredStats []stats.StatType
-	requiredSims  []stats.SimType
-	dataEntries   []*rankEntrySeparated
+	targetRatios      weight_types.SimPriorityBasic
+	requiredStats     []stats.StatType
+	requiredSims      []stats.SimType
+	dataEntries       []*rankEntrySeparated
+	inputDataOriginal []weight_types.WeightInput
 
 	build *util_highs.LinearBuilder
 
@@ -72,6 +73,7 @@ func (ranker *RankingSeparatedWeights) Init(printer *util.PrintRecorder, timeout
 }
 
 func (ranker *RankingSeparatedWeights) SupplyData(inputData []weight_types.WeightInput) {
+	ranker.inputDataOriginal = inputData
 	ranker.dataEntries = util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntrySeparated {
 		return &rankEntrySeparated{
 			data:  input,
@@ -103,7 +105,7 @@ func (ranker *RankingSeparatedWeights) newBuilder() {
 	ranker.build.SetEachTolerance(1e-2)
 }
 
-func (ranker *RankingSeparatedWeights) Run() *util_async.FutureCancellable[weight_types.WeightResult] {
+func (ranker *RankingSeparatedWeights) Run() *util_async.FutureCancellable[weight_types.WeightResult2] {
 	ranker.newBuilder()
 	ranker.prepareRankings()
 	ranker.createWeightColumns()
@@ -112,10 +114,10 @@ func (ranker *RankingSeparatedWeights) Run() *util_async.FutureCancellable[weigh
 	stopwatch := util.StopwatchMakeStopped()
 	solutionFuture := ranker.build.RunHighsFuture(stopwatch)
 
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult2, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(ranker.printer)
 		weight := ranker.extractAndReportSolution(solution)
-		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution.Status}, true
+		return weight_types.WeightResult2Make(&weight, stopwatch.Elapsed(), solution.Status), true
 	})
 }
 
@@ -255,7 +257,7 @@ func (ranker *RankingSeparatedWeights) extractAndReportSolution(solution *highs.
 		ratio := ranker.targetRatios.GetOrPanic(simType)
 		weight.SetSimScale(simType, 1, offsetValue, ratio)
 	}
-	weight.FinishAndValidate()
+	weight.FinishAndValidate(ranker.inputDataOriginal)
 
 	weight.Print(ranker.printer)
 	ranker.reportExamples(weight)

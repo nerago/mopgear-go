@@ -137,6 +137,10 @@ func (se *SimPriorityEntry) Apply(subtotal float64) float64 {
 	return (subtotal + se.RangingOffset) * se.RangingScale * se.RatioScale
 }
 
+func (se *SimPriorityEntry) ApplyRanging(subtotal float64) float64 {
+	return (subtotal + se.RangingOffset) * se.RangingScale
+}
+
 func SimPriorityExtended_Make() SimPriorityExtended {
 	return SimPriorityExtended{}
 }
@@ -193,4 +197,8 @@ func (sre *SimPriorityExtended) ConvertToBasic() SimPriorityBasic {
 
 func (sre *SimPriorityExtended) Equals(other *SimPriorityExtended) bool {
 	return sre.entries.Equals(&other.entries, (*SimPriorityEntry).Equals)
+}
+
+func (sre *SimPriorityExtended) Delete(simType stats.SimType) {
+	sre.entries.Delete(simType)
 }

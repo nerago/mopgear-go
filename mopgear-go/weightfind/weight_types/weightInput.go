@@ -40,24 +40,81 @@ func WeightInputWriteFile(weightInputs []WeightInput, filename string) {
 	}
 }
 
-type WeightResult struct {
-	Weight    IWeight
-	SolveTime time.Duration
-	Status    highs.ModelStatus
-	NewRatio  *SimPriorityBasic
+type IWeightResult interface {
+	GetWeight() IWeight
+	GetSolveTime() time.Duration
+	GetStatus() highs.ModelStatus
+	GetNewRatio() *SimPriorityBasic
+	AsWeight1(verificationInputs []WeightInput) *Weight1Basic
 }
 
-func (wr *WeightResult) AsWeight1() *Weight1Basic {
-	switch cast := wr.Weight.(type) {
+type WeightResultCommon struct {
+	WeightInterface IWeight
+	SolveTime       time.Duration
+	Status          highs.ModelStatus
+	NewRatio        *SimPriorityBasic
+}
+
+func (w WeightResultCommon) GetWeight() IWeight {
+	return w.WeightInterface
+}
+
+func (w WeightResultCommon) GetSolveTime() time.Duration {
+	return w.SolveTime
+}
+
+func (w WeightResultCommon) GetStatus() highs.ModelStatus {
+	return w.Status
+}
+
+func (w WeightResultCommon) GetNewRatio() *SimPriorityBasic {
+	return w.NewRatio
+}
+
+type WeightResultGeneric[W IWeight] struct {
+	WeightResultCommon
+	Weight W
+}
+
+type WeightResult1 WeightResultGeneric[*Weight1Basic]
+
+type WeightResult2 WeightResultGeneric[*Weight2Extended]
+
+type WeightResult3 WeightResultGeneric[*Weight3ExtendedRanged]
+
+func WeightResult1Make(weight *Weight1Basic, solveTime time.Duration, status highs.ModelStatus) WeightResult1 {
+	return WeightResult1{WeightResultCommon{weight, solveTime, status, nil}, weight}
+}
+func WeightResult1MakeWithRatio(weight *Weight1Basic, solveTime time.Duration, status highs.ModelStatus, ratio *SimPriorityBasic) WeightResult1 {
+	return WeightResult1{WeightResultCommon{weight, solveTime, status, ratio}, weight}
+}
+func WeightResult2Make(weight *Weight2Extended, solveTime time.Duration, status highs.ModelStatus) WeightResult2 {
+	return WeightResult2{WeightResultCommon{weight, solveTime, status, nil}, weight}
+}
+func WeightResult3Make(weight *Weight3ExtendedRanged, solveTime time.Duration, status highs.ModelStatus) WeightResult3 {
+	return WeightResult3{WeightResultCommon{weight, solveTime, status, nil}, weight}
+}
+
+func (wr *WeightResultGeneric[W]) AsWeight1(verificationInputs []WeightInput) *Weight1Basic {
+	switch cast := wr.WeightInterface.(type) {
 	case *Weight1Basic:
 		return cast
 	case *Weight2Extended:
 		return cast.ConvertToWeight1()
 	case *Weight3ExtendedRanged:
-		return cast.ConvertToWeight2().ConvertToWeight1()
+		return cast.ConvertToWeight2(verificationInputs).ConvertToWeight1()
 	default:
 		return nil
 	}
+}
+func (wr *WeightResult1) AsWeight1(verificationInputs []WeightInput) *Weight1Basic {
+	return wr.Weight
+}
+func (wr *WeightResult2) AsWeight1(verificationInputs []WeightInput) *Weight1Basic {
+	return wr.Weight.ConvertToWeight1()
+}
+func (wr *WeightResult3) AsWeight1(verificationInputs []WeightInput) *Weight1Basic {
+	return wr.Weight.ConvertToWeight2(verificationInputs).ConvertToWeight1()
 }
 
 type StatRange struct {

@@ -47,16 +47,16 @@ func (f fitting2EachFields) Results() iter.Seq[util_weight.FittingInterimResult2
 	return slices.Values(f.resultSlice)
 }
 
-func (fe *FittingEachStatWeightProcess2) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
+func (fe *FittingEachStatWeightProcess2) Run(cancel util_async.CancelSignal) weight_types.WeightResult3 {
 	util_async.ChainCancel(cancel, &fe.CancelInternal)
 	fe.ChooseScaling()
 	fe.launchEachNested()
 	stopwatch := fe.CalcMetrics()
 	if !fe.Failed {
 		weights := fe.BuildResult()
-		return weight_types.WeightResult{Weight: weights, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusOptimal}
+		return weight_types.WeightResult3Make(weights, stopwatch.Elapsed(), highs.ModelStatusOptimal)
 	} else {
-		return weight_types.WeightResult{SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusModelError}
+		return weight_types.WeightResult3Make(nil, stopwatch.Elapsed(), highs.ModelStatusModelError)
 	}
 }
 

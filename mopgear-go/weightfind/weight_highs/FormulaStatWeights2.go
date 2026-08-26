@@ -64,7 +64,7 @@ func (form *FormulaStatWeightProcess2) SetMinimumIncludeRate(percent float64) {
 	form.minimumIncludeRate = percent
 }
 
-func (form *FormulaStatWeightProcess2) Run(timeout int) *util_async.FutureCancellable[weight_types.WeightResult] {
+func (form *FormulaStatWeightProcess2) Run(timeout int) *util_async.FutureCancellable[weight_types.WeightResult2] {
 	form.build = new(util_highs.LinearBuilder)
 	form.build.Minimise = true
 	form.build.Solver = util_highs.Solver_MIP_Interior
@@ -111,10 +111,10 @@ func (form *FormulaStatWeightProcess2) Run(timeout int) *util_async.FutureCancel
 
 	stopwatch := util.StopwatchMakeStopped()
 	solutionFuture := form.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult2, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(form.printer)
 		weight := form.extractAndReportSolution(solution)
-		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution.Status}, true
+		return weight_types.WeightResult2Make(&weight, stopwatch.Elapsed(), solution.Status), true
 	})
 }
 
@@ -273,7 +273,8 @@ func (form *FormulaStatWeightProcess2) extractDetailWeights(solution *highs.Solu
 	}
 	form.printer.Println0()
 
-	weightExtended.FinishAndValidate()
+	weightExtended.UpdateScaling(form.inputData) // NOTE: process does get close to the mark, but was a bit off, like 0.11 - 0.98 rather than 0.0 - 1.0
+	weightExtended.FinishAndValidate(form.inputData)
 	return *weightExtended
 }
 

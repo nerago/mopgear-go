@@ -91,7 +91,7 @@ func (ws *WeightSearcher3) SetRanges(weightMin, weightMax float64) {
 	ws.initialBound = bound
 }
 
-func (ws *WeightSearcher3) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
+func (ws *WeightSearcher3) Run(cancel util_async.CancelSignal) weight_types.WeightResult1 {
 	stopwatch := util.StopwatchMakeStarted()
 	threadCount := 4
 	queue := util_collection.QueueStackStealingPool[*weightSearch2FastBound]{}
@@ -113,7 +113,7 @@ func (ws *WeightSearcher3) Run(cancel util_async.CancelSignal) weight_types.Weig
 
 	bestWeight := ws.bestResult.GetBestOrNilValue()
 	bestWeight.NormalizeForBase(ws.statTypes)
-	return weight_types.WeightResult{Weight: &bestWeight, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusOptimal}
+	return weight_types.WeightResult1Make(&bestWeight, stopwatch.Elapsed(), highs.ModelStatusOptimal)
 }
 
 func (ws *WeightSearcher3) initialSplits(localQueue *util_collection.QueueStackPoolChild[*weightSearch2FastBound], probesReused []*weightSearch2FastProbe, targetCount int, evaluateAccuracy *EvaluateAccuracyPrepared) bool {

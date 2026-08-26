@@ -33,7 +33,7 @@ func StatRatingsWeightsExtended_ReadFile(filename string) ratings.StatRatingsWei
 	weight2, _ := ReadWeight2File(files.ToWeight2(filename))
 	weight3, _ := ReadWeight3File(files.ToWeight3(filename))
 
-	if weight1.IsEmpty() || weight2 == nil || weight2.IsEmpty() {
+	if weight1.IsEmpty() && (weight2 == nil || weight2.IsEmpty()) {
 		panic("missing weight")
 	}
 

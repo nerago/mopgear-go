@@ -37,7 +37,7 @@ func (ws *WeightSearcher0) SupplyData(inputData []weight_types.WeightInput) {
 	ws.evaluateAccuracy.Init(inputData, &ws.targetRatio, ws.AccuracyStatistical, false)
 }
 
-func (ws *WeightSearcher0) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
+func (ws *WeightSearcher0) Run(cancel util_async.CancelSignal) weight_types.WeightResult1 {
 	stopwatch := util.StopwatchMakeStarted()
 	best := util_rank.BestCollector1[weight_types.Weight1Basic]{}
 	progress := 0
@@ -55,7 +55,7 @@ func (ws *WeightSearcher0) Run(cancel util_async.CancelSignal) weight_types.Weig
 	}
 	bestWeight := best.GetBestOrNilValue()
 	bestWeight.NormalizeForBase(ws.weightStats)
-	return weight_types.WeightResult{Weight: &bestWeight, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusOptimal}
+	return weight_types.WeightResult1Make(&bestWeight, stopwatch.Elapsed(), highs.ModelStatusOptimal)
 }
 
 func (ws *WeightSearcher0) makeRandomWeights(count int) iter.Seq[weight_types.Weight1Basic] {

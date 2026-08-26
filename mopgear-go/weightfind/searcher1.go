@@ -40,7 +40,7 @@ func (ws *WeightSearcher1) SupplyData(inputData []weight_types.WeightInput) {
 	ws.evaluateAccuracy.Init(inputData, &ws.targetRatio, ws.AccuracyStatistical, false)
 }
 
-func (ws *WeightSearcher1) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
+func (ws *WeightSearcher1) Run(cancel util_async.CancelSignal) weight_types.WeightResult1 {
 	progress := 0
 	stopwatch := util.StopwatchMakeStarted()
 
@@ -74,7 +74,7 @@ func (ws *WeightSearcher1) Run(cancel util_async.CancelSignal) weight_types.Weig
 
 	bestWeight := bestResult.GetBestOrNilValue()
 	bestWeight.NormalizeForBase(ws.weightStats)
-	return weight_types.WeightResult{Weight: &bestWeight, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusOptimal}
+	return weight_types.WeightResult1Make(&bestWeight, stopwatch.Elapsed(), highs.ModelStatusOptimal)
 }
 
 func (ws *WeightSearcher1) makeSpacedWeights() iter.Seq[weight_types.Weight1Basic] {

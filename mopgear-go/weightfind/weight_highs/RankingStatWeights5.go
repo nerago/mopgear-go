@@ -97,7 +97,7 @@ func (process *RankingStatWeightProcess5) SetTargetRatios(targetRatios weight_ty
 	process.requiredSims = targetRatios.SimTypes()
 }
 
-func (process *RankingStatWeightProcess5) Run(timeout int, sampleSize int) *util_async.FutureCancellable[weight_types.WeightResult] {
+func (process *RankingStatWeightProcess5) Run(timeout int, sampleSize int) *util_async.FutureCancellable[weight_types.WeightResult1] {
 	process.printer.Printf("RankingStatWeightProcess5 RunOptimistic\n")
 	run := rankInternalRun5_create(process)
 	run.build.TimeLimitSeconds = timeout
@@ -127,16 +127,16 @@ func rankInternalRun5_create(process *RankingStatWeightProcess5) *rankInternalRu
 	return run
 }
 
-func (run *rankInternalRun5) run() *util_async.FutureCancellable[weight_types.WeightResult] {
+func (run *rankInternalRun5) run() *util_async.FutureCancellable[weight_types.WeightResult1] {
 	stopwatch := util.StopwatchMakeStopped()
 	futureSolution := run.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(futureSolution, func(linResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
+	return util_async.FutureCancellable_MapValue(futureSolution, func(linResult util_highs.LinearResult) (weight_types.WeightResult1, bool) {
 		solution := linResult.GetSolutionAndSaveLog(run.process.printer)
 		if solution.HasSolution() {
 			weight := run.extractAndReportSolution(solution)
-			return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution.Status}, true
+			return weight_types.WeightResult1Make(&weight, stopwatch.Elapsed(), solution.Status), true
 		} else {
-			return weight_types.WeightResult{SolveTime: stopwatch.Elapsed(), Status: solution.Status}, true
+			return weight_types.WeightResult1Make(nil, stopwatch.Elapsed(), solution.Status), true
 		}
 	})
 }

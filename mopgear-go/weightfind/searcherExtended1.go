@@ -37,10 +37,12 @@ const (
 )
 
 type WeightSearcherExtended1 struct {
-	comboCount              int8
-	statTypes               []stats.StatType
-	simTypes                []stats.SimType
-	targetRatio             weight_types.SimPriorityBasic
+	comboCount        int8
+	statTypes         []stats.StatType
+	simTypes          []stats.SimType
+	targetRatio       weight_types.SimPriorityBasic
+	inputDataOriginal []weight_types.WeightInput
+
 	initialEvaluateAccuracy EvaluateAccuracyPrepared
 	initialBound            *searchEx1Bound
 
@@ -77,6 +79,7 @@ func (ws *WeightSearcherExtended1) Init(statTypes []stats.StatType, targetRatio 
 }
 
 func (ws *WeightSearcherExtended1) SupplyData(inputData []weight_types.WeightInput) {
+	ws.inputDataOriginal = inputData
 	ws.initialEvaluateAccuracy.Init(inputData, &ws.targetRatio, true, true)
 }
 
@@ -111,11 +114,8 @@ func (ws *WeightSearcherExtended1) Run(cancel util_async.CancelSignal) weight_ty
 	}
 
 	bestWeight := ws.bestResult.GetBestOrNilValue()
-	//for _, simType := range ws.simTypes {
-	//	// TODO useful scaling?
-	//	bestWeight.SetSimScale(simType, 1, 0, ws.targetRatio.GetOrPanic(simType))
-	//}
-	bestWeight.FinishAndValidate()
+	bestWeight.UpdateScaling(ws.inputDataOriginal)
+	bestWeight.FinishAndValidate(ws.inputDataOriginal)
 	return bestWeight
 }
 

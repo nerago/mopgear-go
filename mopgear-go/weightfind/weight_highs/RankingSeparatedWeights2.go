@@ -28,10 +28,11 @@ type RankingSeparatedWeights2 struct {
 	printer        *util.PrintRecorder
 	timeoutSeconds int
 
-	targetRatios  weight_types.SimPriorityBasic
-	requiredStats []stats.StatType
-	requiredSims  []stats.SimType
-	dataEntries   []*rankEntrySeparated2
+	targetRatios      weight_types.SimPriorityBasic
+	requiredStats     []stats.StatType
+	requiredSims      []stats.SimType
+	dataEntries       []*rankEntrySeparated2
+	inputDataOriginal []weight_types.WeightInput
 
 	build *util_highs.LinearBuilder
 
@@ -72,6 +73,7 @@ func (ranker *RankingSeparatedWeights2) Init(printer *util.PrintRecorder, timeou
 }
 
 func (ranker *RankingSeparatedWeights2) SupplyData(inputData []weight_types.WeightInput) {
+	ranker.inputDataOriginal = inputData
 	ranker.dataEntries = util_collection.MapSliceAsNew(inputData, func(input *weight_types.WeightInput) *rankEntrySeparated2 {
 		return &rankEntrySeparated2{
 			data:  input,
@@ -257,7 +259,7 @@ func (ranker *RankingSeparatedWeights2) extractAndReportSolution(solution *highs
 		ratio := ranker.targetRatios.GetOrPanic(simType)
 		weight.SetSimScale(simType, 1, offsetValue, ratio)
 	}
-	weight.FinishAndValidate()
+	weight.FinishAndValidate(ranker.inputDataOriginal)
 
 	weight.Print(ranker.printer)
 	ranker.reportExamples(weight)

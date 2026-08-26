@@ -87,7 +87,7 @@ func (ws *WeightSearcher2) SetRanges(weightMin, weightMax float64) {
 	})
 }
 
-func (ws *WeightSearcher2) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
+func (ws *WeightSearcher2) Run(cancel util_async.CancelSignal) weight_types.WeightResult1 {
 	stopwatch := util.StopwatchMakeStarted()
 	iterCount := 0
 	for cancel.ShouldContinue() {
@@ -124,7 +124,7 @@ func (ws *WeightSearcher2) Run(cancel util_async.CancelSignal) weight_types.Weig
 
 	bestWeight := ws.bestResult.GetBestOrNilValue()
 	bestWeight.NormalizeForBase(ws.statTypes)
-	return weight_types.WeightResult{Weight: &bestWeight, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusOptimal}
+	return weight_types.WeightResult1Make(&bestWeight, stopwatch.Elapsed(), highs.ModelStatusOptimal)
 }
 
 func (ws *WeightSearcher2) evaluateScore(weightArray []float64) float64 {

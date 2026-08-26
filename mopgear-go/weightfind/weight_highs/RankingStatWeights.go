@@ -74,7 +74,7 @@ func (ranker *RankingStatWeightProcess) SetTargetRatios(targetRatios weight_type
 	ranker.requiredSims = targetRatios.SimTypes()
 }
 
-func (ranker *RankingStatWeightProcess) Run(timeout int) *util_async.FutureCancellable[weight_types.WeightResult] {
+func (ranker *RankingStatWeightProcess) Run(timeout int) *util_async.FutureCancellable[weight_types.WeightResult1] {
 	ranker.build = new(util_highs.LinearBuilder)
 	ranker.build.Minimise = true
 	//ranker.build.Solver = util_highs.Solver_Force_IPX
@@ -88,10 +88,10 @@ func (ranker *RankingStatWeightProcess) Run(timeout int) *util_async.FutureCance
 
 	stopwatch := util.StopwatchMakeStopped()
 	solutionFuture := ranker.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult1, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(ranker.printer)
 		weight := ranker.extractAndReportSolution(solution)
-		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution.Status}, true
+		return weight_types.WeightResult1Make(&weight, stopwatch.Elapsed(), solution.Status), true
 	})
 }
 

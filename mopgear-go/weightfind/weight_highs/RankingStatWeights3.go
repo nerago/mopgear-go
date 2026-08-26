@@ -113,7 +113,7 @@ func (ranker *RankingStatWeightProcess3) makeBuilder() {
 	}
 }
 
-func (ranker *RankingStatWeightProcess3) Run() *util_async.FutureCancellable[weight_types.WeightResult] {
+func (ranker *RankingStatWeightProcess3) Run() *util_async.FutureCancellable[weight_types.WeightResult1] {
 	// FIRST ROUND: minimal data, no initial values
 	ranker.dataSample = util_collection.SliceSampleFromStart(ranker.dataAllOriginal, c_rank3_initial_data_sample)
 	ranker.prepare()
@@ -135,24 +135,24 @@ func (ranker *RankingStatWeightProcess3) Run() *util_async.FutureCancellable[wei
 		return ranker.build.RunHighsFuture(stopwatch)
 	})
 
-	return util_async.FutureCancellable_MapValue(solution2Future, func(linearResult2 util_highs.LinearResult) (weight_types.WeightResult, bool) {
+	return util_async.FutureCancellable_MapValue(solution2Future, func(linearResult2 util_highs.LinearResult) (weight_types.WeightResult1, bool) {
 		solution2 := linearResult2.GetSolutionAndSaveLog(ranker.printer)
 		weight := ranker.extractAndReportSolution(solution2)
-		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution2.Status}, true
+		return weight_types.WeightResult1Make(&weight, stopwatch.Elapsed(), solution2.Status), true
 	})
 }
 
-func (ranker *RankingStatWeightProcess3) RunUsingExternalStart(initialWeight weight_types.Weight1Basic) *util_async.FutureCancellable[weight_types.WeightResult] {
+func (ranker *RankingStatWeightProcess3) RunUsingExternalStart(initialWeight weight_types.Weight1Basic) *util_async.FutureCancellable[weight_types.WeightResult1] {
 	ranker.dataSample = ranker.dataAllOriginal
 	ranker.prepare()
 	ranker.setupInitialSolutionFromExternal2(initialWeight)
 
 	stopwatch := util.StopwatchMakeStopped()
 	solutionFuture := ranker.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult1, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(ranker.printer)
 		weight := ranker.extractAndReportSolution(solution)
-		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution.Status}, true
+		return weight_types.WeightResult1Make(&weight, stopwatch.Elapsed(), solution.Status), true
 	})
 }
 

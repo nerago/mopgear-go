@@ -102,7 +102,7 @@ func (ranker *RankingStatWeightProcess3c) newBuilder() {
 	ranker.build.Solver = util_highs.Solver_Force_IPX
 }
 
-func (ranker *RankingStatWeightProcess3c) RunMultiRound() *util_async.FutureCancellable[weight_types.WeightResult] {
+func (ranker *RankingStatWeightProcess3c) RunMultiRound() *util_async.FutureCancellable[weight_types.WeightResult1] {
 
 	// FIRST ROUND: minimal data, no initial values
 	ranker.dataSample = util_collection.SliceSampleFromStart(ranker.dataAllOriginal, 64)
@@ -134,10 +134,10 @@ func (ranker *RankingStatWeightProcess3c) RunMultiRound() *util_async.FutureCanc
 		return ranker.build.RunHighsFuture(stopwatch)
 	})
 
-	return util_async.FutureCancellable_MapValue(solution2Future, func(linearResult2 util_highs.LinearResult) (weight_types.WeightResult, bool) {
+	return util_async.FutureCancellable_MapValue(solution2Future, func(linearResult2 util_highs.LinearResult) (weight_types.WeightResult1, bool) {
 		solution2 := linearResult2.GetSolutionAndSaveLog(ranker.printer)
 		weight := ranker.extractAndReportSolution(solution2)
-		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution2.Status}, true
+		return weight_types.WeightResult1Make(&weight, stopwatch.Elapsed(), solution2.Status), true
 	})
 }
 

@@ -104,7 +104,7 @@ func (ranker *RankingWeightsRatio30) newBuilder() {
 	}
 }
 
-func (ranker *RankingWeightsRatio30) RunSinglePassRaw() *util_async.FutureCancellable[weight_types.WeightResult] {
+func (ranker *RankingWeightsRatio30) RunSinglePassRaw() *util_async.FutureCancellable[weight_types.WeightResult1] {
 	// FULL RUN
 	ranker.newBuilder()
 	ranker.createWeightColumns()
@@ -116,10 +116,10 @@ func (ranker *RankingWeightsRatio30) RunSinglePassRaw() *util_async.FutureCancel
 	stopwatch := util.StopwatchMakeStopped()
 	solutionFuture := ranker.build.RunHighsFuture(stopwatch)
 
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult2 util_highs.LinearResult) (weight_types.WeightResult, bool) {
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult2 util_highs.LinearResult) (weight_types.WeightResult1, bool) {
 		solution := linearResult2.GetSolutionAndSaveLog(ranker.printer)
 		weight, newRatio := ranker.extractAndReportSolution(solution)
-		return weight_types.WeightResult{Weight: &weight, SolveTime: stopwatch.Elapsed(), Status: solution.Status, NewRatio: new(newRatio)}, true
+		return weight_types.WeightResult1MakeWithRatio(&weight, stopwatch.Elapsed(), solution.Status, new(newRatio)), true
 	})
 }
 
