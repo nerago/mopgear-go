@@ -8,46 +8,46 @@ import (
 // for noset - juggernaut, shamans, siegecrafter
 var SimPriority_mitigation = weight_types.SimPriorityBasic_Make(
 	stats.Sim_DPS, 0.2489,
-	stats.Sim_DEATH, 0.1981,
-	stats.Sim_TMI, 0.1530,
 	stats.Sim_DTPS, 0.4000,
+	stats.Sim_TMI, 0.1530,
+	stats.Sim_DEATH, 0.1981,
 	// DPS=0.2489 DTPS=0.4000 TMI=0.1530 DEATH=0.1981
 )
 
 // for withset - malkrok, thok, nazgrim
 var SimPriority_survival = weight_types.SimPriorityBasic_Make(
 	stats.Sim_DPS, 0.0388,
-	stats.Sim_DEATH, 0.4132,
-	stats.Sim_TMI, 0.1098,
 	stats.Sim_DTPS, 0.4383,
+	stats.Sim_TMI, 0.1098,
+	stats.Sim_DEATH, 0.4132,
 	// DPS=0.0388 DTPS=0.4383 TMI=0.1098 DEATH=0.4132
 )
 
 // for compromise set - spoils, galakras, paragons, etc
 var SimPriority_balanced = weight_types.SimPriorityBasic_Make(
 	stats.Sim_DPS, 0.5000,
-	stats.Sim_DEATH, 0.2022,
-	stats.Sim_TMI, 0.1978,
 	stats.Sim_DTPS, 0.1000,
+	stats.Sim_TMI, 0.1978,
+	stats.Sim_DEATH, 0.2022,
 	// DPS=0.5000 DTPS=0.1000 TMI=0.1978 DEATH=0.2022
 )
 
 // for dps set
 var SimPriority_dps = weight_types.SimPriorityBasic_Make(
 	stats.Sim_DPS, 0.8500,
-	stats.Sim_DEATH, 0.1000,
-	stats.Sim_TMI, 0.0400,
 	stats.Sim_DTPS, 0.0100,
+	stats.Sim_TMI, 0.0400,
+	stats.Sim_DEATH, 0.1000,
 	// DPS=0.8500 DTPS=0.0000 TMI=0.0400 DEATH=0.1100
 )
 
 // for heal set, garrosh, immerseus
 var SimPriority_heal = weight_types.SimPriorityBasic_Make(
 	stats.Sim_DPS, 0.0900,
-	stats.Sim_HPS, 0.3000,
-	stats.Sim_DEATH, 0.0100,
-	stats.Sim_TMI, 0.2500,
 	stats.Sim_DTPS, 0.3500,
+	stats.Sim_HPS, 0.3000,
+	stats.Sim_TMI, 0.2500,
+	stats.Sim_DEATH, 0.0100,
 	//DPS=0.0989 DTPS=0.3509 HPS=0.3000 TMI=0.2500 DEATH=0.0003
 )
 
