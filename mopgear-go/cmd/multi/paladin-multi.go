@@ -21,14 +21,14 @@ import (
 func PaladinMultiRun(printer *util.PrintRecorder) {
 	job := multi_types.JobInputs{}
 	job.SetMinimumExtraItemLevel(463)
-	job.SetTimeLimitEachSolver(6000)
+	job.SetTimeLimitEachSolver(200)
 	job.SetSimSize(simulate.RunSize_Largish)
 	//simSize := simulate.RunSize_Common
 	//simSize := simulate.RunSize_QuickDirty
-	job.SetWriteBestToGearFiles(false)
+	job.SetWriteBestToGearFiles(true)
 
 	var extraUpgrade items.UpgradeLevel = 2
-	var forceUpgrade items.UpgradeLevel = 2
+	var forceUpgrade items.UpgradeLevel = 0
 
 	ret := multi_types.SpecParam{
 		Label: "Ret",
@@ -247,6 +247,43 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 		}
 		multi.JobCreate(printer, job, taskQuick).Run()
 	} else if true {
+		weightTypes := []weight_types.WeightType{2}
+
+		// all standard and alternates. plus optional regem
+		task1 := multi_types.JobInputTask{
+			AlsoExistingEquipped:    false,
+			AlsoSpecOptimums:        true,
+			Alternates:              multi_types.AlternateModeReforgeBlocks,
+			AlternatesLimit:         util_collection.Optional_OfValue(5),
+			IncludeInterimResults:   false,
+			WeightTypeList:          weightTypes,
+			RunDecimate:             false,
+			ReforgingAllowNonCommon: false,
+		}
+		//task1.AddAlternateGem(stats.StatBlock_of(stats.Stat_Haste, 320))
+		//task1.Permute.AlternateGemsEnableAsPermute = true
+		//task1.Permute.PermuteOnItemCountOptions = true
+
+		// interim results for main solve only
+		task2 := multi_types.JobInputTask{
+			AlsoExistingEquipped:    false,
+			AlsoSpecOptimums:        false,
+			Alternates:              multi_types.AlternateModeNone,
+			AlternatesLimit:         util_collection.Optional_Empty[int](),
+			IncludeInterimResults:   true,
+			WeightTypeList:          weightTypes,
+			RunDecimate:             false,
+			ReforgingAllowNonCommon: false,
+		}
+
+		_ = task1
+		_ = task2
+
+		run := multi.JobCreate(printer, job, task1, task2)
+		run.Run()
+	} else if true {
+		weightTypes := []weight_types.WeightType{1}
+
 		// all standard and alternates. plus optional regem
 		task1 := multi_types.JobInputTask{
 			AlsoExistingEquipped:    true,
@@ -254,7 +291,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 			Alternates:              multi_types.AlternateModeItemAndReforgeBlocks,
 			AlternatesLimit:         util_collection.Optional_Empty[int](),
 			IncludeInterimResults:   false,
-			WeightTypeList:          []weight_types.WeightType{1},
+			WeightTypeList:          weightTypes,
 			RunDecimate:             false,
 			ReforgingAllowNonCommon: true,
 		}
@@ -269,7 +306,7 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 			Alternates:              multi_types.AlternateModeNone,
 			AlternatesLimit:         util_collection.Optional_Empty[int](),
 			IncludeInterimResults:   true,
-			WeightTypeList:          []weight_types.WeightType{1},
+			WeightTypeList:          weightTypes,
 			RunDecimate:             false,
 			ReforgingAllowNonCommon: true,
 		}
@@ -286,7 +323,13 @@ func PaladinMultiRun(printer *util.PrintRecorder) {
 			ReforgingAllowNonCommon: false,
 		}
 
-		run := multi.JobCreate(printer, job, task1, task2, task3)
+		_ = task1
+		_ = task2
+		_ = task3
+
+		//run := multi.JobCreate(printer, job, task1, task2)
+		run := multi.JobCreate(printer, job, task3)
+		//run := multi.JobCreate(printer, job, task1, task2, task3)
 		run.Run()
 	} else {
 		task1 := multi_types.JobInputTask{

@@ -11,7 +11,7 @@ import (
 	"github.com/nerago/mopgear-go/util/util_async"
 )
 
-const c_upgradeDefaultTimeout = 2000
+const c_upgradeDefaultTimeout = 200
 
 func findUpgrades_Paladin() {
 	//simSizeBaseline := simulate.RunSize_VerySlow
@@ -34,44 +34,44 @@ func findUpgrades_Paladin() {
 	substituteEmptySlotOnly[items.Item_Trinket] = 94529 // gaze
 	substituteEmptySlotOnly[items.Item_Ring] = 86957    // heroic bladed tempest ring
 
-	//normalBossesConsider := []string{
-	//	//"SoO Immerseus",
-	//	//"SoO FallenProtectors",
-	//	//"SoO Norushen",
-	//	//"SoO ShaofPride",
-	//	//"SoO Galakras",
-	//	//"SoO IronJuggernaut",
-	//	"SoO DarkShaman",
-	//	//"SoO Nazgrim",
-	//	"SoO Malkorok",
-	//	"SoO Spoils",
-	//	"SoO Thok",
-	//	"SoO Blackfuse",
-	//	"SoO Paragons",
-	//	"SoO Garrosh"}
-	//heroicBossesConsider := []string{
-	//	//"SoO Immerseus",
-	//	//"SoO FallenProtectors",
-	//	//"SoO Norushen",
-	//	//"SoO ShaofPride",
-	//	//"SoO Galakras",
-	//	//"SoO IronJuggernaut",
-	//	"SoO DarkShaman",
-	//	"SoO Nazgrim",
-	//	"SoO Malkorok",
-	//	"SoO Spoils",
-	//	"SoO Thok",
-	//	//"SoO Blackfuse",
-	//	//"SoO Paragons",
-	//	//"SoO Garrosh"
-	//}
+	normalBossesConsider := []string{
+		//"SoO Immerseus",
+		//"SoO FallenProtectors",
+		//"SoO Norushen",
+		//"SoO ShaofPride",
+		//"SoO Galakras",
+		//"SoO IronJuggernaut",
+		"SoO DarkShaman",
+		//"SoO Nazgrim",
+		"SoO Malkorok",
+		"SoO Spoils",
+		"SoO Thok",
+		"SoO Blackfuse",
+		"SoO Paragons",
+		"SoO Garrosh"}
+	heroicBossesConsider := []string{
+		"SoO Immerseus",
+		"SoO FallenProtectors",
+		"SoO Norushen",
+		"SoO ShaofPride",
+		"SoO Galakras",
+		"SoO IronJuggernaut",
+		"SoO DarkShaman",
+		"SoO Nazgrim",
+		"SoO Malkorok",
+		"SoO Spoils",
+		"SoO Thok",
+		//"SoO Blackfuse",
+		//"SoO Paragons",
+		//"SoO Garrosh"
+	}
 	////finder := loaders.ItemFinder_HeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, heroicBossesConsider)
-	//finder := loaders.ItemFinder_NormalHeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, normalBossesConsider, heroicBossesConsider)
+	finder := loaders.ItemFinder_NormalHeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, normalBossesConsider, heroicBossesConsider)
 
 	//finder := loaders.ItemFinder_SiegeStrengthPlateTank
 	//finder := loaders.ItemFinder_Ordos
 	//finder := loaders.ItemFinder_TimelessPlate
-	finder := loaders.ItemFinder_BagsUpgraded
+	//finder := loaders.ItemFinder_BagsUpgraded
 	//finder := loaders.SiegeClassGearSetMultiple(stats.Spec_PaladinProt, stats.Spec_PaladinRet)
 
 	// celestial world
@@ -83,10 +83,10 @@ func findUpgrades_Paladin() {
 		Settings: upgrades.InputSettings{
 			IncludeCelestial:             false,
 			IncludeNormal:                true,
-			IncludeHeroic:                false,
+			IncludeHeroic:                true,
 			IgnoredItems:                 mygear.IgnoredItems,
 			TargetUpgradeLevel:           2,
-			WeightType:                   2,
+			WeightType:                   1,
 			SolverTimeout:                c_upgradeDefaultTimeout,
 			SimSizeBaseline:              simSizeBaseline,
 			SimSizeItemInitial:           simSizePerItem,
@@ -94,14 +94,14 @@ func findUpgrades_Paladin() {
 			ExtraSimForTopResultsSimSize: simSizeTopN,
 		},
 		Specs: []upgrades.SpecInput{
-			{
-				Label:                   "damage",
-				Model:                   model_factory.Model_PallyProtDamage(),
-				GearFile:                files.GearFileProtDamage,
-				ItemFinder:              finder,
-				SubstituteItems:         mygear.SubstituteItemsProt,
-				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
-			},
+			//{
+			//	Label:                   "damage",
+			//	Model:                   model_factory.Model_PallyProtDamage(),
+			//	GearFile:                files.GearFileProtDamage,
+			//	ItemFinder:              finder,
+			//	SubstituteItems:         mygear.SubstituteItemsProt,
+			//	SubstituteEmptySlotOnly: substituteEmptySlotOnly,
+			//},
 			{
 				Label:                   "balance",
 				Model:                   model_factory.Model_PallyProtBalanced(),

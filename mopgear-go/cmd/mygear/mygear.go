@@ -8,7 +8,7 @@ const (
 	TrinketPrimRage  = 94519
 	TrinketTwinsGaze = 94529
 
-	TrinketFusionCoreCelestial  = 104961
+	TrinketFusionCoreHeroic     = 104463
 	TrinketThokTailCelestial    = 105111
 	TrinketVialCorruptNormal    = 102306
 	TrinketRookUnluckyNormal    = 102296
@@ -56,9 +56,10 @@ var TrinketsDpsP3 = []items.ItemId{
 var TrinketsTankP3 = []items.ItemId{
 	TrinketFortZand,
 }
+
 var NewTrinketsDamage = []items.ItemId{
 	TrinketThokTailCelestial,
-	TrinketFusionCoreCelestial,
+	TrinketFusionCoreHeroic,
 	TrinketSkeerBloodCelestial,
 }
 var NewTrinketsTank = []items.ItemId{
@@ -105,6 +106,8 @@ var OrgRaidDrops = []items.ItemId{
 	103798, // bloodclaw band
 	105761, // Partik's Purified Legplates
 	104494, // krugruk shoulderplates
+	104515, // tar-coated gauntlets heroic
+	104440, // sorrowpath signet
 }
 var OrgOneHandAndShield = []items.ItemId{
 	103826, // xifeng weapon

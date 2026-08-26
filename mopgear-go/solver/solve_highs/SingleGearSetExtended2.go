@@ -9,7 +9,7 @@ import (
 )
 
 // TODO avoid getting these weights or scale them in here
-const c_gearExtended2ScoreHigh = 100000
+const c_gearExtended2ScoreHigh = 1000000
 
 type singleGearSetExtended2 struct {
 	singleGearSetExtended

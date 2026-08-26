@@ -35,6 +35,10 @@ func (fp *filePrintable) Println(str string) {
 	if err != nil {
 		panic(err)
 	}
+	_, err = fp.write.Write([]byte{'\n'})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (fp *filePrintable) PrintlnFromBuild(strBuild StringBuild2) {

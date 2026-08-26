@@ -32,7 +32,7 @@ func core(printer *util.PrintRecorder) {
 	//solveForRatings(printer)
 	//findBestSubjectToCommon(printer)
 	//checkHighs(printer)
-	debugBadWeight(printer)
+	//debugBadWeight(printer)
 	//
 	//testSim(printer)
 	//findUpgrades_Sim_PaladinMiti_Run(printer)
@@ -41,7 +41,7 @@ func core(printer *util.PrintRecorder) {
 	//findSimpleUpgrade_ForceEach(printer)
 	//relativeRatingsCompromise(printer)
 	//trinketSimsBoth(printer)
-	//currentSimGear(printer)
+	currentSimGear(printer)
 	//determineSetBonusValueBySim()
 	//determineBestUseOfGearSets()
 	//
