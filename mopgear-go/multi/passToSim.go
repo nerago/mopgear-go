@@ -53,13 +53,7 @@ func (sjp *simulateJobPending) MergePendingFrom(other *simulateJobPending) {
 	defer sjp.mutex.Unlock()
 
 	for _, om := range other.multiPending {
-		om.mutex.Lock()
-		for k, oj := range om.simPending {
-			if oj == other {
-				om.simPending[k] = sjp
-			}
-		}
-		om.mutex.Unlock()
+		om.replaceReference(other, sjp)
 	}
 
 	if sjp.resultPending != nil {
@@ -75,10 +69,10 @@ func (sjp *simulateJobPending) MergePendingFrom(other *simulateJobPending) {
 }
 
 type simulateMultiResultPending struct {
-	proposed   *multi_types.MultiProposedOutput
-	simPending map[string]*simulateJobPending
-	mutex      sync.Mutex
-	ready      bool
+	proposed    *multi_types.MultiProposedOutput
+	simPendingZ map[string]*simulateJobPending
+	mutex       sync.Mutex
+	ready       bool
 }
 
 func (m *simulateMultiResultPending) notifyOnResult() {
@@ -86,7 +80,7 @@ func (m *simulateMultiResultPending) notifyOnResult() {
 	defer m.mutex.Unlock()
 
 	allReady := true
-	for _, p := range m.simPending {
+	for _, p := range m.simPendingZ {
 		if p.resultPending == nil {
 			allReady = false
 		}
@@ -94,6 +88,31 @@ func (m *simulateMultiResultPending) notifyOnResult() {
 	if allReady {
 		m.ready = true
 	}
+}
+
+func (m *simulateMultiResultPending) replaceReference(old *simulateJobPending, replace *simulateJobPending) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	for key, x := range m.simPendingZ {
+		if x == old {
+			m.simPendingZ[key] = replace
+		}
+	}
+}
+
+func (m *simulateMultiResultPending) setJob(label string, simJob *simulateJobPending) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	m.simPendingZ[label] = simJob
+}
+
+func (m *simulateMultiResultPending) getPendingList() map[string]*simulateJobPending {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	return maps.Clone(m.simPendingZ)
 }
 
 type simulateMultiResult struct {
@@ -146,8 +165,8 @@ func (job *MainJob) prepareSimList(proposalList <-chan *multi_types.MultiPropose
 	resultPendingChan := make(chan *simulateMultiResultPending)
 	util_async.ForEach_Channel_NonBlocking(1, proposalList, func(proposal *multi_types.MultiProposedOutput) {
 		proposalPending := &simulateMultiResultPending{
-			proposed:   proposal,
-			simPending: make(map[string]*simulateJobPending),
+			proposed:    proposal,
+			simPendingZ: make(map[string]*simulateJobPending),
 		}
 
 		for label, single := range proposal.Parts {
@@ -166,10 +185,10 @@ func (job *MainJob) prepareSimList(proposalList <-chan *multi_types.MultiPropose
 func (job *MainJob) createPendingJob(label string, single multi_types.SingleProposedOutput, proposalPending *simulateMultiResultPending) *simulateJobPending {
 	prep := job.itemPrep[label]
 	simJob := &simulateJobPending{
-		simJob: job.createSimJob(single, prep),
+		simJob:       job.createSimJob(single, prep),
+		multiPending: []*simulateMultiResultPending{proposalPending},
 	}
-	proposalPending.simPending[label] = simJob
-	simJob.multiPending = append(simJob.multiPending, proposalPending)
+	proposalPending.setJob(label, simJob)
 	return simJob
 }
 
@@ -214,7 +233,7 @@ func (job *MainJob) runSims(jobChan <-chan *simulateJobPending, expectedCount <-
 func (job *MainJob) writeToGearFiles(result *simulateMultiResult) {
 	for label, prep := range job.itemPrep {
 		itemSet := result.proposed.Parts[label].FullSet
-		gearJson := tools.WowSimJson_Write(itemSet.Items(), prep.model, util.PrintRecorder_Nop())
+		gearJson := tools.WowSimJsonFormat(itemSet.Items(), prep.model)
 
 		gearFile := prep.inputs.GearFile
 		util.WriteStringToFile(gearFile, gearJson)

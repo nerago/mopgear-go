@@ -8,19 +8,19 @@ import (
 	"github.com/nerago/mopgear-go/util/util_highs"
 )
 
-const c_gearExtended2ScoreHigh = 10
+// TODO avoid getting these weights or scale them in here
+const c_gearExtended2ScoreHigh = 100000
 
 type singleGearSetExtended2 struct {
 	singleGearSetExtended
 }
 
 func SingleGearSetExtended2Main(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int) *util_async.FutureCancellable[items.SolvableItemSet] {
-	build := util_highs.LinearBuilder{}
+	build := new(util_highs.LinearBuilder)
 	build.Solver = util_highs.Solver_MIP_Interior
-	build.Minimise = false
 	build.TimeLimitSeconds = timeout
 
-	se2 := makeGearSetExtended2(&build)
+	se2 := makeGearSetExtended2(build)
 	outputVar := se2.setup(model, itemOptions)
 	build.ChangeColumnOutputWeight(outputVar.columnIndex, 1)
 
@@ -58,5 +58,5 @@ func (se2 *singleGearSetExtended2) setup(model *solve_highs_types.SolverModel, i
 	simValueTotalColumns := weightCalc.calc(statTotalCols, model.Weights2)
 
 	// multiply combos
-	return se2.calcFromSimValueToOutput(simValueTotalColumns, countSetItemsCol, model, &model.Weights2.SimPriority)
+	return se2.calcFromSimValueToOutput(simValueTotalColumns, countSetItemsCol, model, &model.Weights2.SimPriority, c_gearExtended2ScoreHigh)
 }

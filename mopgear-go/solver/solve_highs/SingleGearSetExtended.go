@@ -20,12 +20,12 @@ type singleGearSetExtended struct {
 	//combinedRatingVar    *columnInfo // sum of values for the ratings of selected items
 }
 
-func (se *singleGearSetExtended) calcFromSimValueToOutput(simValueTotalColumns map[stats.SimType]*columnInfo, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo, model *solve_highs_types.SolverModel, priority *weight_types.SimPriorityExtended) *columnInfo {
+func (se *singleGearSetExtended) calcFromSimValueToOutput(simValueTotalColumns map[stats.SimType]*columnInfo, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo, model *solve_highs_types.SolverModel, priority *weight_types.SimPriorityExtended, scoreHigh float64) *columnInfo {
 	// simValueTotalColumns[simType] * activeCombo.simMultiplier -> simValueComboColumns[simType] -> mainOutputVar
-	return se.multiplySimValuesByCombo(simValueTotalColumns, model, priority, countSetItemsCol)
+	return se.multiplySimValuesByCombo(simValueTotalColumns, model, priority, countSetItemsCol, scoreHigh)
 }
 
-func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns map[stats.SimType]*columnInfo, model *solve_highs_types.SolverModel, priority *weight_types.SimPriorityExtended, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo) *columnInfo {
+func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns map[stats.SimType]*columnInfo, model *solve_highs_types.SolverModel, priority *weight_types.SimPriorityExtended, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo, scoreHigh float64) *columnInfo {
 	if len(simValueTotalColumns) > 1 {
 		sumRow := util_highs.ConstraintRow{Debug: "multiplySimValuesByCombo"}
 
@@ -33,7 +33,7 @@ func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns m
 			simComboCol := se.bonusComboHandler.ProcessBonus(
 				simValueTotal,
 				util_collection.Optional_OfValue(simType),
-				c_gearExtended2ScoreHigh,
+				scoreHigh,
 				model,
 				countSetItemsCol,
 			)
@@ -48,15 +48,24 @@ func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns m
 		return outputVar
 	} else if len(simValueTotalColumns) == 1 {
 		simType, simValueTotal := util_collection.MapFirstEntry(simValueTotalColumns)
+		simEntry := priority.GetOrPanic(simType)
 		simComboCol := se.bonusComboHandler.ProcessBonus(
 			simValueTotal,
 			util_collection.Optional_OfValue(simType),
-			c_gearExtended2ScoreHigh,
+			scoreHigh,
 			model,
 			countSetItemsCol,
 		)
-		// TODO is it okay we ignore RatioScale
-		return simComboCol
+		if simEntry.RatioScale == 1.0 {
+			return simComboCol
+		} else {
+			sumRow := util_highs.ConstraintRow{Debug: "multiplySimValuesByComboOne"}
+			outputVar := se.makeOutputVariable()
+			sumRow.Add(simComboCol.columnIndex, simEntry.RatioScale)
+			sumRow.Add(outputVar.columnIndex, -1)
+			sumRow.Build(se.build, 0, 0)
+			return outputVar
+		}
 	} else {
 		panic("empty sim types")
 	}

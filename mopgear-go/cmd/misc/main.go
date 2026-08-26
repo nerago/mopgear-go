@@ -23,7 +23,7 @@ func main() {
 
 func core(printer *util.PrintRecorder) {
 	//slotRating(printer)
-	basicReforge(printer)
+	//basicReforge(printer)
 	//findT5BIS(printer)
 	//findT5TrinketPermutations(printer)
 	//findT5WeightPermutations(printer)
@@ -32,6 +32,7 @@ func core(printer *util.PrintRecorder) {
 	//solveForRatings(printer)
 	//findBestSubjectToCommon(printer)
 	//checkHighs(printer)
+	debugBadWeight(printer)
 	//
 	//testSim(printer)
 	//findUpgrades_Sim_PaladinMiti_Run(printer)

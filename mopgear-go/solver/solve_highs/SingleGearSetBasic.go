@@ -22,13 +22,14 @@ type singleGearSetBasic struct {
 }
 
 func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int) *util_async.FutureCancellable[items.SolvableItemSet] {
-	build := util_highs.LinearBuilder{}
+	build := new(util_highs.LinearBuilder)
 	build.Solver = util_highs.Solver_MIP_Interior
 	build.TimeLimitSeconds = timeout
 
-	sb := makeGearSetBasic(&build)
+	sb := makeGearSetBasic(build)
 	outputVar := sb.setup(model, itemOptions)
 	build.ChangeColumnOutputWeight(outputVar.columnIndex, 1)
+
 	return sb.runForFutureResult(itemOptions, model, printer)
 }
 

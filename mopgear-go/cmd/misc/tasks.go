@@ -29,14 +29,56 @@ import (
 const c_miscDefaultTimeout = 1000
 
 func basicReforge(printer *util.PrintRecorder) {
-	model2 := model_factory.Model_PallyProtSurvival()
-	itemOptions, model := setup.OptionsSetup_FromGearFile(files.GearFileProtSurvival, &model2, setup.MissingEnchant_Panic, printer), model2
+	model := model_factory.Model_PallyProtSurvival()
+	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtSurvival, &model, setup.MissingEnchant_Panic, printer)
 
 	output := solver.Solver(
 		&itemOptions,
 		&model,
 		printer,
-		1,
+		2,
+		c_miscDefaultTimeout,
+		nil)
+	output.Report(printer)
+}
+
+func debugBadWeight(printer *util.PrintRecorder) {
+	model := model_factory.Model_PallyProtSurvival()
+	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtSurvival, &model, setup.MissingEnchant_Panic, printer)
+
+	//Removed row   35 (simValueFromStat DTPS) []= 9 --> Infeasible
+	//Removed row   36 (simValueFromStat TMI) []= 9 --> Infeasible
+	//Removed row   37 (simValueFromStat DEATH) []= 9 --> Infeasible
+	//Removed row   38 (simValueFromStat DPS) []= 9 --> UnboundedOrInfeasible
+
+	//simType := stats.Sim_DPS
+	//w2 := model.StatWeights.Weight2
+	//
+	//w2.SimList = slices.DeleteFunc(w2.SimList, func(simType stats.SimType) bool {
+	//	return simType == simType
+	//})
+	//w2.SimPriority.Delete(simType)
+	//w2.DetailedWeights.DeleteAllForKey1(simType)
+	//
+	//simType = stats.Sim_DTPS
+	//w2.SimList = slices.DeleteFunc(w2.SimList, func(simType stats.SimType) bool {
+	//	return simType == simType
+	//})
+	//w2.SimPriority.Delete(simType)
+	//w2.DetailedWeights.DeleteAllForKey1(simType)
+
+	//simType = stats.Sim_TMI
+	//w2.SimList = slices.DeleteFunc(w2.SimList, func(simType stats.SimType) bool {
+	//	return simType == simType
+	//})
+	//w2.SimPriority.Delete(simType)
+	//w2.DetailedWeights.DeleteAllForKey1(simType)
+
+	output := solver.Solver(
+		&itemOptions,
+		&model,
+		printer,
+		2,
 		c_miscDefaultTimeout,
 		nil)
 	output.Report(printer)
