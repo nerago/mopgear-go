@@ -1,6 +1,7 @@
 package util_highs
 
 import (
+	"math"
 	"strconv"
 
 	"github.com/nerago/mopgear-go/util"
@@ -13,7 +14,8 @@ func diagnoseInfeasible(build *LinearBuilder, printer *util.PrintRecorder) {
 		printer.Println("INFEASIBLE MODEL TRYING TO FIND PROBLEM ROW")
 		// diagnoseSearchRange(input, printer)
 		printer.DebugEnableConsole()
-		diagnoseInfeasibleOneByOne(build, printer)
+		diagnoseInfeasibleRowOneByOne(build, printer)
+		diagnoseInfeasibleColumnBounds(build, printer)
 	}
 }
 
@@ -77,7 +79,7 @@ func diagnoseTryHalves(build *LinearBuilder, min, pivot, max int, printer *util.
 	}
 }
 
-func diagnoseInfeasibleOneByOne(build *LinearBuilder, printer *util.PrintRecorder) {
+func diagnoseInfeasibleRowOneByOne(build *LinearBuilder, printer *util.PrintRecorder) {
 	for rowIndex := range build.mat.lowerBound {
 		clone := build.Clone()
 		clone.NoOutput = true
@@ -92,6 +94,37 @@ func diagnoseInfeasibleOneByOne(build *LinearBuilder, printer *util.PrintRecorde
 			debugPrintRow(build, rowIndex, printer)
 			//debugPrintSolutionValuesWithRowContext(solution, build, rowIndex, printer)
 			// drillDownColumn(solution, input,
+		}
+	}
+}
+
+func diagnoseInfeasibleColumnBounds(build *LinearBuilder, printer *util.PrintRecorder) {
+	for colIndex := range build.vars.colLower {
+		if !math.IsInf(build.vars.colLower[colIndex], -1) {
+			clone := build.Clone()
+			clone.NoOutput = true
+			clone.SkipDiagnose = true
+			clone.vars.colLower[colIndex] = InfNeg()
+			innerPrint := util.PrintRecorder_HoldAll()
+			result := clone.RunHighsFuture(nil).WaitForResultOrPanic()
+			solution := result.GetSolutionAndSaveLog(innerPrint)
+			printer.Printf("Changed col bound %4d (%s) %e->inf --> %s\n", colIndex, debugText(build.vars.debug[colIndex]), build.vars.colLower[colIndex], solution.Status.String())
+			if solution.Status == highs.ModelStatusOptimal {
+				printer.AppendOther(innerPrint)
+			}
+		}
+		if !math.IsInf(build.vars.colUpper[colIndex], 1) {
+			clone := build.Clone()
+			clone.NoOutput = true
+			clone.SkipDiagnose = true
+			clone.vars.colUpper[colIndex] = InfPos()
+			innerPrint := util.PrintRecorder_HoldAll()
+			result := clone.RunHighsFuture(nil).WaitForResultOrPanic()
+			solution := result.GetSolutionAndSaveLog(innerPrint)
+			printer.Printf("Changed col bound %4d (%s) %e->inf --> %s\n", colIndex, debugText(build.vars.debug[colIndex]), clone.vars.colUpper[colIndex], solution.Status.String())
+			if solution.Status == highs.ModelStatusOptimal {
+				printer.AppendOther(innerPrint)
+			}
 		}
 	}
 }

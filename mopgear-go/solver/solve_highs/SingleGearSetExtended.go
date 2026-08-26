@@ -27,7 +27,7 @@ func (se *singleGearSetExtended) calcFromSimValueToOutput(simValueTotalColumns m
 
 func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns map[stats.SimType]*columnInfo, model *solve_highs_types.SolverModel, priority *weight_types.SimPriorityExtended, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo) *columnInfo {
 	if len(simValueTotalColumns) > 1 {
-		sumRow := util_highs.ConstraintRow{}
+		sumRow := util_highs.ConstraintRow{Debug: "multiplySimValuesByCombo"}
 
 		for simType, simValueTotal := range simValueTotalColumns {
 			simComboCol := se.bonusComboHandler.ProcessBonus(

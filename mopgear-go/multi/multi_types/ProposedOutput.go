@@ -1,6 +1,7 @@
 package multi_types
 
 import (
+	"iter"
 	"maps"
 
 	"github.com/nerago/mopgear-go/gear_model"
@@ -28,6 +29,18 @@ func (proposed *MultiProposedOutput) FindItemById(itemId items.ItemId) *items.Fu
 		}
 	}
 	return nil
+}
+
+func (proposed *MultiProposedOutput) SeqItem() iter.Seq[*items.FullItem] {
+	return func(yield func(*items.FullItem) bool) {
+		for _, part := range proposed.Parts {
+			for item := range part.FullSet.Items().AllItemSeq() {
+				if !yield(item) {
+					return
+				}
+			}
+		}
+	}
 }
 
 func (proposed *MultiProposedOutput) Equals(other *MultiProposedOutput) bool {

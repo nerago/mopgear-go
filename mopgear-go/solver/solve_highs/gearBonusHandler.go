@@ -114,7 +114,7 @@ func (bon *gearBonusComboHandler) finishComboRules(bonusCombos *util_collection.
 		bon._buildComboActivatingVar(combo)
 	}
 
-	checkSingleCombo := util_highs.ConstraintRow{}
+	checkSingleCombo := util_highs.ConstraintRow{Debug: "checkSingleCombo"}
 	for combo := range bonusCombos.SeqValuePointers() {
 		checkSingleCombo.Add(combo.activatingVar.columnIndex, 1)
 	}
@@ -283,7 +283,7 @@ func (bon *gearBonusComboHandler) _addSetNeededCounts(countSetItemsCol map[solve
 			lo, hi := needCountToHiLo(countMode, needCount)
 			bon.build.ChangeColumnMinMax(setCountCol.columnIndex, lo, hi)
 		} else {
-			oneOfTheseOptions := util_highs.ConstraintRow{}
+			oneOfTheseOptions := util_highs.ConstraintRow{Debug: "oneOfTheseOptions"}
 			for _, option := range setBonusRequired {
 				optionActive := bon.addOption(option, countMode, countSetItemsCol)
 				oneOfTheseOptions.Add(optionActive, 1)

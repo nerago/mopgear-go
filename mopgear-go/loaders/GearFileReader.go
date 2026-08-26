@@ -16,7 +16,10 @@ func GearFileReader_Read(filename string) []EquippedItem {
 	}
 
 	var inputObject map[string]any
-	json.Unmarshal(allBytes, &inputObject)
+	err = json.Unmarshal(allBytes, &inputObject)
+	if err != nil {
+		panic(err)
+	}
 
 	gearObject := inputObject["gear"].(map[string]any)
 	itemArray := gearObject["items"].([]any)

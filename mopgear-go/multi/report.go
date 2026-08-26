@@ -6,6 +6,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/nerago/mopgear-go/db"
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/multi/multi_types"
 	"github.com/nerago/mopgear-go/setup"
@@ -73,6 +74,18 @@ func (job *MainJob) reportSimResults_One(result *simulateMultiResult) {
 			for _, gem := range item.GemChoice() {
 				gem.AppendString(&stringBuild)
 			}
+			stringBuild.WriteRune('\n')
+		}
+
+		job.printer.PrintlnFromBuild(stringBuild)
+	}
+
+	upgradeItems := job.listUpgradeItems(result.proposed)
+	if len(upgradeItems) > 0 {
+		stringBuild := util.StringBuild2{}
+		stringBuild.WriteString("....... UPGRADE .......")
+		for _, item := range upgradeItems {
+			item.AppendFullName(&stringBuild)
 			stringBuild.WriteRune('\n')
 		}
 
@@ -241,6 +254,30 @@ func listReGem(multiProposed *multi_types.MultiProposedOutput) []*items.FullItem
 	return allItems
 }
 
+func (job *MainJob) listUpgradeItems(proposed *multi_types.MultiProposedOutput) []*items.FullItem {
+	upgradeItems := make([]*items.FullItem, 0)
+	for proposedItem := range proposed.SeqItem() {
+		equipped := job.bagsGear.GetWithItemId(proposedItem.ItemId())
+		if equipped != nil {
+			bagItem := db.WowSimDB_LoadItemById(equipped.ItemId, equipped.UpgradeStepOrItemLevel)
+			if proposedItem.UpgradeLevel() > bagItem.UpgradeLevel() {
+				upgradeItems = append(upgradeItems, proposedItem)
+			}
+		} else {
+			for _, prep := range job.itemPrep {
+				equipItem := prep.exactEquippedGear.FindItemId(proposedItem.ItemId())
+				if equipItem != nil && proposedItem.UpgradeLevel() > equipItem.UpgradeLevel() {
+					upgradeItems = append(upgradeItems, proposedItem)
+				}
+			}
+		}
+	}
+	util_collection.RemoveDuplicatesFunc_InPlace(&upgradeItems, func(a, b **items.FullItem) bool {
+		return (*a).Equals(*b)
+	})
+	return upgradeItems
+}
+
 func (job *MainJob) handleBestRankedResult(best util_rank.BestCollector1[simulateMultiResult]) {
 	job.printer.Println("Best ranked result")
 	bestMultiResult := best.GetBestPointerOrPanic()
@@ -266,16 +303,24 @@ func (job *MainJob) incrementalReporting(channel <-chan *simulateMultiResultPend
 
 func (job *MainJob) pendingToCompletedResults(pendingSlice []*simulateMultiResultPending) []simulateMultiResult {
 	completed := make([]simulateMultiResult, 0)
+pendingLoop:
 	for _, pending := range pendingSlice {
 		if pending.ready {
+			simMap := make(map[string]*stats.SimData, len(pending.simPending))
+			for k, v := range pending.simPending {
+				if v == nil {
+					job.printer.Println("ERROR: unexpected nil pending")
+					continue pendingLoop
+				} else if v.resultPending == nil {
+					job.printer.Println("ERROR: unexpected nil simData")
+					continue pendingLoop
+				}
+				simMap[k] = v.resultPending
+			}
+
 			mr := simulateMultiResult{
 				proposed: pending.proposed,
-				simMap: util_collection.MapBasicMap(pending.simPending, func(v *simulateJobPending) *stats.SimData {
-					if v == nil || v.resultPending == nil {
-						panic("unexpected nil")
-					}
-					return v.resultPending
-				}),
+				simMap:   simMap,
 			}
 			completed = append(completed, mr)
 		}

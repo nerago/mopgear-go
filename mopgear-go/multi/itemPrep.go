@@ -150,7 +150,7 @@ func (prep *specItemPrep) includeExtra(itemId items.ItemId, input *multi_types.I
 		return
 	}
 
-	if prep.copyExtraFromBags(itemId, refs, printer) {
+	if prep.copyExtraFromBags(itemId, refs, input.ExtraUpgradeLevel, printer) {
 		return
 	}
 
@@ -197,9 +197,12 @@ func (prep *specItemPrep) copyExtraFromOtherSpec(itemId items.ItemId, refs *extr
 	}
 }
 
-func (prep *specItemPrep) copyExtraFromBags(itemId items.ItemId, refs *extraRefs, printer *util.PrintRecorder) bool {
+func (prep *specItemPrep) copyExtraFromBags(itemId items.ItemId, refs *extraRefs, requestedUpgrade items.UpgradeLevel, printer *util.PrintRecorder) bool {
 	equipped := refs.bagsGear.GetWithItemId(itemId)
 	if equipped != nil {
+		if requestedUpgrade > 0 {
+			equipped.UpgradeStepOrItemLevel = int32(requestedUpgrade)
+		}
 		options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, prep.model, setup.MissingEnchant_Fix, printer)
 		prep.addItemOptionsWithValidate(example.SlotItem(), options)
 		printer.Printf("OPTION from bags %s\n", example.CreateString())

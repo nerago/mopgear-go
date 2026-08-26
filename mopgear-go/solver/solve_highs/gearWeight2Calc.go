@@ -38,7 +38,7 @@ func (se2 *gearWeight2Calc) calcSim(simType stats.SimType, nestedWeights iter.Se
 	simValueColumn = &columnInfo{entryType: entry_sim_value, simType: simType}
 	simValueColumn.columnIndex = se2.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), simValueColumn)
 
-	simValueFromStatRow := util_highs.ConstraintRow{}
+	simValueFromStatRow := util_highs.ConstraintRow{Debug: "simValueFromStat " + simType.Name()}
 	for statType, weightValue := range nestedWeights {
 		statColumn := statTotalColumns.GetOrPanic(statType)
 		simValueFromStatRow.Add(statColumn.columnIndex, weightValue)
