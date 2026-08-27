@@ -327,8 +327,8 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		_ = task2
 		_ = task3
 
-		//run := multi.JobCreate(printer, job, task1)
-		run := multi.JobCreate(printer, job, task2)
+		run := multi.JobCreate(printer, job, task1)
+		//run := multi.JobCreate(printer, job, task2)
 		//run := multi.JobCreate(printer, job, task3)
 		//run := multi.JobCreate(printer, job, task1, task2, task3)
 		run.Run()

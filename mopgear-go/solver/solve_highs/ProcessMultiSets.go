@@ -1,6 +1,7 @@
 package solve_highs
 
 import (
+	"errors"
 	"iter"
 	"reflect"
 	"strconv"
@@ -134,7 +135,11 @@ func (process *SolverHighsMultiProcess) generateInitialMulti(timeLimit int, prin
 		debugPrintAll(solution, process.build, printer)
 
 		if solution.HasSolution() {
-			resultChannel <- process.solutionToResult(solution, printer, false)
+			if multiResult, err := process.solutionToResult(solution, printer, false); err != nil {
+				return nil, false
+			} else {
+				resultChannel <- *multiResult
+			}
 
 			bestCommonChoices := process.extractCommonChoices(solution)
 			return bestCommonChoices, true
@@ -146,33 +151,42 @@ func (process *SolverHighsMultiProcess) generateInitialMulti(timeLimit int, prin
 	return futureCommonChoices
 }
 
-func (process *SolverHighsMultiProcess) generateWithDifferentVariants(blockPlans []blockPlan, printer *util.PrintRecorder, cancel util_async.CancelSignal, includeInterimResults bool, resultChannel chan<- HighsMultiResult) {
-	util_async.ForEach_Slice_Cancellable(10, blockPlans, cancel, func(block *blockPlan) {
-		innerPrint := util.PrintRecorder_HoldAll()
-
-		var build *util_highs.LinearBuilder
-		if block.changeColumn != nil {
-			build = process.prepareWithDifferentCommonVariant_One(printer, block.changeColumn)
-		} else if block.forbiddenItem != nil {
-			build = process.prepareVariantWithBlockedItem_One(printer, *block.forbiddenItem)
-		} else {
-			panic("missing block")
-		}
-
-		var futureResult *util_async.FutureCancellable[HighsMultiResult]
-		if includeInterimResults {
-			futureResult = process.runVariant(build, innerPrint, resultChannel)
-		} else {
-			futureResult = process.runVariant(build, innerPrint, nil)
-		}
-		util_async.ChainCancel(cancel, futureResult)
-
-		if result, hasResult := futureResult.WaitForResult(); hasResult {
-			resultChannel <- result
-		}
-
-		printer.AppendOther(innerPrint)
+func (process *SolverHighsMultiProcess) generateWithDifferentVariants(blockPlans []blockPlan, printer *util.PrintRecorder, cancel util_async.CancelSignal, includeInterimResults bool, resultChannel chan<- HighsMultiResult) error {
+	return util_async.ForEach_Slice_Cancellable_PassError(10, blockPlans, cancel, func(block *blockPlan) error {
+		return process.generateOneVariant(block, printer, includeInterimResults, resultChannel, cancel)
 	})
+}
+
+func (process *SolverHighsMultiProcess) generateOneVariant(block *blockPlan, printer *util.PrintRecorder, includeInterimResults bool, resultChannel chan<- HighsMultiResult, cancel util_async.CancelSignal) error {
+	innerPrint := util.PrintRecorder_HoldAll()
+
+	var build *util_highs.LinearBuilder
+	if block.changeColumn != nil {
+		build = process.prepareWithDifferentCommonVariant_One(printer, block.changeColumn)
+	} else if block.forbiddenItem != nil {
+		build = process.prepareVariantWithBlockedItem_One(printer, *block.forbiddenItem)
+	} else {
+		return errors.New("missing block")
+	}
+
+	var futureResult *util_async.FutureCancellableWithError[*HighsMultiResult]
+	if includeInterimResults {
+		futureResult = process.runVariant(build, innerPrint, resultChannel)
+	} else {
+		futureResult = process.runVariant(build, innerPrint, nil)
+	}
+	util_async.ChainCancel(cancel, futureResult)
+
+	if result, hasResult := futureResult.WaitForResult(); hasResult {
+		if result.Error != nil {
+			return result.Error
+		}
+		resultChannel <- *result.Value
+	}
+
+	printer.AppendOther(innerPrint)
+
+	return nil
 }
 
 func (process *SolverHighsMultiProcess) prepareVariantWithBlockedItem_One(printer *util.PrintRecorder, forbiddenId items.ItemId) *util_highs.LinearBuilder {
@@ -181,7 +195,7 @@ func (process *SolverHighsMultiProcess) prepareVariantWithBlockedItem_One(printe
 	build := process.build.Clone()
 	rowLimitCommon := util_highs.ConstraintRow{Debug: "rowLimitAll"}
 	for _, part := range process.parts {
-		for column := range part.singleGearSet.ColumnsForItemId(forbiddenId) {
+		for column := range part.singleGearSet.columnsForItemId(forbiddenId) {
 			rowLimitCommon.Add(column.columnIndex, 1)
 		}
 	}
@@ -199,23 +213,23 @@ func (process *SolverHighsMultiProcess) prepareWithDifferentCommonVariant_One(pr
 	return build
 }
 
-func (process *SolverHighsMultiProcess) runVariant(build *util_highs.LinearBuilder, printer *util.PrintRecorder, interimChannel chan<- HighsMultiResult) *util_async.FutureCancellable[HighsMultiResult] {
+func (process *SolverHighsMultiProcess) runVariant(build *util_highs.LinearBuilder, printer *util.PrintRecorder, interimChannel chan<- HighsMultiResult) *util_async.FutureCancellableWithError[*HighsMultiResult] {
 	if interimChannel != nil {
 		process.forwardInterimResultsToChannel(build, interimChannel, printer)
 	}
 
 	future := build.RunHighsFuture(nil)
 
-	return util_async.FutureCancellable_MapValue(future, func(linearResult util_highs.LinearResult) (HighsMultiResult, bool) {
+	return util_async.FutureCancellable_MapValueError(future, func(linearResult util_highs.LinearResult) (*HighsMultiResult, error) {
 		solution := linearResult.GetSolution2AndSaveLog(printer)
 		debugPrintAll(solution, process.build, printer)
 
 		printer.Println("############################################################################")
 
 		if solution.HasSolution() {
-			return process.solutionToResult(solution, printer, false), true
+			return process.solutionToResult(solution, printer, false)
 		} else {
-			return HighsMultiResult{}, false
+			return nil, errors.New("highs status " + solution.Status().String())
 		}
 	})
 }
@@ -225,7 +239,12 @@ func (process *SolverHighsMultiProcess) forwardInterimResultsToChannel(build *ut
 		func(callbackType highs.CallbackType, str string, out highs.CallbackData) highs.CallbackResult {
 			if callbackType == highs.CallbackTypeMipImprovingSolution {
 				interim := util_highs.InterimSolutionFromCallback(out)
-				resultChannel <- process.solutionToResult(interim, printer, true)
+				result, err := process.solutionToResult(interim, printer, true)
+				if err != nil {
+					// TODO better error handling
+					printer.Println(err.Error())
+				}
+				resultChannel <- *result
 			}
 			return highs.CallbackResult{}
 		},
@@ -264,14 +283,19 @@ func (process *SolverHighsMultiProcess) extractCommonChoices(solution *util_high
 	return commonChosenColumns
 }
 
-func (process *SolverHighsMultiProcess) solutionToResult(solution util_highs.ISolution, printer *util.PrintRecorder, interim bool) HighsMultiResult {
+func (process *SolverHighsMultiProcess) solutionToResult(solution util_highs.ISolution, printer *util.PrintRecorder, interim bool) (*HighsMultiResult, error) {
 	printer.Printf("Make Solution Permute = %s\n", process.permuteLabel)
 
 	resultMap := make(map[string]HighsMultiResultEntry)
 	for partIndex := range process.parts {
 		part := process.parts[partIndex]
-		solvedSet := part.singleGearSet.buildResultSet(solution, &part.SolverModel)
-		validateNewSet(solvedSet, &part.solveOptions, part.SolverModel.CheckSet)
+		solvedSet, err := part.singleGearSet.buildResultSet(solution, &part.SolverModel)
+		if err != nil {
+			return nil, err
+		}
+		if err = validateNewSet(solvedSet, &part.solveOptions, part.SolverModel.CheckSet); err != nil {
+			return nil, err
+		}
 		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &part.ItemOptions)
 
 		printer.Printf("Inner solver type = %s\n", reflect.TypeOf(part.singleGearSet).Elem().Name())
@@ -286,7 +310,7 @@ func (process *SolverHighsMultiProcess) solutionToResult(solution util_highs.ISo
 	}
 	printer.Println0()
 
-	return HighsMultiResult{resultMap, process.permuteLabel, interim}
+	return &HighsMultiResult{resultMap, process.permuteLabel, interim}, nil
 }
 
 func (process *SolverHighsMultiProcess) makeFullModel(timeLimit int) {
@@ -309,24 +333,33 @@ func (process *SolverHighsMultiProcess) makeFullModel(timeLimit int) {
 	process.outputRow.Build(process.build, 0, 0)
 }
 
-func (param *SolverHighsMultiParam) makeSingleGearSet(build *util_highs.LinearBuilder, job *SolverHighsMultiProcess) {
+func (param *SolverHighsMultiParam) makeSingleGearSet(build *util_highs.LinearBuilder, job *SolverHighsMultiProcess) error {
 	param.solveOptions = items.SolvableOptionsMap_of(&param.ItemOptions)
 
-	param.singleGearSet = makeGearSetForWeight(build, &param.SolverModel)
-	setOutput := param.singleGearSet.setup(&param.SolverModel, &param.solveOptions)
+	singleGearSet, err := makeGearSetForWeight(build, &param.SolverModel)
+	if err != nil {
+		return err
+	}
+	param.singleGearSet = singleGearSet
 
-	job.outputRow.Add(setOutput.columnIndex, param.RatingMultiply/param.singleGearSet.RatingPreScale())
+	setOutput, err := param.singleGearSet.setup(&param.SolverModel, &param.solveOptions)
+	if err != nil {
+		return err
+	}
+
+	job.outputRow.Add(setOutput.columnIndex, param.RatingMultiply/param.singleGearSet.getRatingPreScale())
+	return nil
 }
 
-func makeGearSetForWeight(build *util_highs.LinearBuilder, model *solve_highs_types.SolverModel) ISingleGearSet {
+func makeGearSetForWeight(build *util_highs.LinearBuilder, model *solve_highs_types.SolverModel) (ISingleGearSet, error) {
 	if model.Weights3 != nil {
-		return makeGearSetExtended3(build)
+		return makeGearSetExtended3(build), nil
 	} else if model.Weights2 != nil {
-		return makeGearSetExtended2(build)
+		return makeGearSetExtended2(build), nil
 	} else if model.Weights1 != nil {
-		return makeGearSetBasic(build)
+		return makeGearSetBasic(build), nil
 	} else {
-		panic("missing weight")
+		return nil, errors.New("missing weight")
 	}
 }
 

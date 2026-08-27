@@ -219,6 +219,21 @@ func (future *futureCommon[T]) WaitForResultAsOptional() util_collection.Optiona
 	}
 }
 
+func (future *futureCommon[T]) GetResultNoWait() (T, bool) {
+	future.verifyCanWait()
+	select {
+	case result, channelOk := <-future.resultChannel:
+		if !channelOk {
+			panic("signal channel closed")
+		}
+		close(future.resultChannel)
+		return result.Value, result.HasValue
+	default:
+		var nilValue T
+		return nilValue, false
+	}
+}
+
 func (future *futureCommon[T]) ForwardResultToOtherFuture(other IFutureWithResult[T]) {
 	future.verifyCanWait()
 	go func() {
@@ -487,4 +502,34 @@ func FutureCancellable_MapToFuture[T any, R any](innerFuture *FutureCancellable[
 	}()
 
 	return outerFuture
+}
+
+type ValueOrError[T any] struct {
+	Value T
+	Error error
+}
+
+type FutureCancellableWithError[T any] struct {
+	*FutureCancellable[ValueOrError[T]]
+}
+
+func FutureCancellable_MapValueError[T any, R any](innerFuture *FutureCancellable[T], mapper func(T) (R, error)) *FutureCancellableWithError[R] {
+	outerFuture := FutureCancellable_Make[ValueOrError[R]]()
+	ChainCancel(outerFuture, innerFuture)
+
+	go func() {
+		value, hasValue := innerFuture.WaitForResult()
+		if hasValue {
+			newValue, err := mapper(value)
+			if err == nil {
+				outerFuture.SetResult(ValueOrError[R]{Value: newValue})
+			} else {
+				outerFuture.SetResult(ValueOrError[R]{Error: err})
+			}
+		} else {
+			outerFuture.SetResultEmpty()
+		}
+	}()
+
+	return &FutureCancellableWithError[R]{outerFuture}
 }

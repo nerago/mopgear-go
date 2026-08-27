@@ -17,11 +17,11 @@ const (
 )
 
 type ISingleGearSet interface {
-	setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) *columnInfo
-	ColumnsForItemId(id items.ItemId) iter.Seq[*columnInfo]
-	buildResultSet(solution util_highs.ISolution, model *solve_highs_types.SolverModel) items.SolvableItemSet
-	RatingPreScale() float64
-	checkSetRatingIsObjective(solution *util_highs.Solution2, itemSet *items.SolvableItemSet, calcRating func(item *items.SolvableItemSet) float64)
+	setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) (*columnInfo, error)
+	columnsForItemId(id items.ItemId) iter.Seq[*columnInfo]
+	buildResultSet(solution util_highs.ISolution, model *solve_highs_types.SolverModel) (items.SolvableItemSet, error)
+	checkSetRatingIsObjective(solution *util_highs.Solution2, itemSet *items.SolvableItemSet, calcRating func(item *items.SolvableItemSet) float64) error
+	getRatingPreScale() float64
 }
 
 type entryType int8

@@ -1,6 +1,7 @@
 package solve_highs
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/nerago/mopgear-go/items"
@@ -31,7 +32,7 @@ func (sit *gearItemSetupShared) prepare(model *solve_highs_types.SolverModel, it
 	sit.createItemColumn = createItemColumn
 }
 
-func (sit *gearItemSetupShared) prepareUniqueEquipped(itemOptions *items.SolvableOptionsMap) {
+func (sit *gearItemSetupShared) prepareUniqueEquipped(itemOptions *items.SolvableOptionsMap) error {
 	sit.uniqueEquipRowsAll = make([]*util_highs.ConstraintRow, 0)
 	seen := make(map[items.ItemId]bool)
 
@@ -43,12 +44,14 @@ func (sit *gearItemSetupShared) prepareUniqueEquipped(itemOptions *items.Solvabl
 
 		for _, itemId := range set {
 			if seen[itemId] {
-				panic("unique equipped data has duplicate")
+				return errors.New("unique equipped data has duplicate")
 			}
 			sit.uniqueEquipRowsById.Put(itemId, row)
 			seen[itemId] = true
 		}
 	}
+
+	return nil
 }
 
 func (sit *gearItemSetupShared) addItemCommon(itemSlot items.SlotEquip, item *items.SolvableItem) util_highs.ColumnIndex {
@@ -77,7 +80,7 @@ func (sit *gearItemSetupShared) addItemCommon(itemSlot items.SlotEquip, item *it
 	return columnIndex
 }
 
-func (sit *gearItemSetupShared) finishItemsEquipped(itemOptions *items.SolvableOptionsMap, build *util_highs.LinearBuilder) {
+func (sit *gearItemSetupShared) finishItemsEquipped(itemOptions *items.SolvableOptionsMap, build *util_highs.LinearBuilder) error {
 	// constrain: exactly one item for each slot
 	for slot, row := range sit.slotsOneEachRow {
 		slotEquip := items.SlotEquip(slot)
@@ -87,7 +90,7 @@ func (sit *gearItemSetupShared) finishItemsEquipped(itemOptions *items.SolvableO
 		} else if !row.IsEmpty() {
 			row.Build(build, 0, 0)
 		} else if itemOptions.Has(slotEquip) {
-			panic("lose some item options")
+			return errors.New("lost some item options for " + slotEquip.Name())
 		}
 	}
 
@@ -97,6 +100,8 @@ func (sit *gearItemSetupShared) finishItemsEquipped(itemOptions *items.SolvableO
 			row.Build(build, 0, 1)
 		}
 	}
+
+	return nil
 }
 
 func (sit *gearItemSetupShared) finishSetCounts(build *util_highs.LinearBuilder) map[solve_highs_types.SetBonusIndex]*columnInfo {

@@ -55,7 +55,10 @@ func (process *OptionsCulling) Run(cancel util_async.CancelSignal) <-chan items.
 		waitGroup.Go(func() {
 			rng := rand.New(rand.NewSource(int64(threadNum)))
 			for process.tasksCompleted.Load() < process.targetResultCount-c_cullThreadCount && cancel.ShouldContinue() {
-				process.runTask(resultChannel, cancel, rng)
+				err := process.runTask(resultChannel, cancel, rng)
+				if err != nil {
+					panic(err)
+				}
 			}
 			process.printer.Println("exit thread")
 		})
@@ -74,46 +77,61 @@ func (process *OptionsCulling) reportHowManyTried() {
 	process.printer.Printf("CULLING NUMS %s options=%d didRemove=%d\n", process.label, len(itemIdOptions), len(process.didRemove))
 }
 
-func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSet, cancel util_async.CancelSignal, rng *rand.Rand) {
+func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSet, cancel util_async.CancelSignal, rng *rand.Rand) error {
 	blockedItems := process.chooseRandomToRemove(rng)
 	itemOptions, isUnusable := process.makeRestrictedItemOptions(blockedItems)
 	if isUnusable {
-		return
+		return nil // not really an error, expect some combos to fail
 	}
 
 	linearBuild := util_highs.LinearBuilder{}
 	linearBuild.Solver = util_highs.Solver_MIP_Interior
 	linearBuild.NoOutput = true
 
-	single := makeGearSetForWeight(&linearBuild, process.solveModel)
-	outputVar := single.setup(process.solveModel, &itemOptions)
-	linearBuild.ChangeColumnOutputWeight(outputVar.columnIndex, 1)
+	single, err := makeGearSetForWeight(&linearBuild, process.solveModel)
+	if err != nil {
+		return err
+	}
+
+	if outputVar, err := single.setup(process.solveModel, &itemOptions); err == nil {
+		linearBuild.ChangeColumnOutputWeight(outputVar.columnIndex, 1)
+	} else {
+		return err
+	}
 
 	solutionFuture := linearBuild.RunHighsFuture(nil)
 	util_async.ChainCancel(cancel, solutionFuture)
 	linearResult, hasResult := solutionFuture.WaitForResult()
-	if hasResult {
-		solution := linearResult.GetSolution2AndSaveLog(process.printer)
-		solution.DebugPrint(process.printer)
-
-		if solution.Status() == highs.ModelStatusOptimal {
-			percent := float64(process.tasksCompleted.Load()) / float64(process.targetResultCount) * 100
-			process.printer.Printf("TASK OK %s %.0f\n", process.label, percent)
-		} else {
-			process.printer.Printf("TASK status = %s\n", solution.Status().String())
-		}
-
-		if solution.Status() == highs.ModelStatusOptimal {
-			//if solution.HasSolution() {
-			result := single.buildResultSet(solution, process.solveModel)
-			validateNewSet(result, &itemOptions, process.solveModel.CheckSet)
-			single.checkSetRatingIsObjective(solution, &result, process.solveModel.CalcRatingSet)
-			resultChannel <- result
-			process.tasksCompleted.Add(1)
-		}
-	} else {
-		process.printer.Printf("TASK failed\n")
+	if !hasResult {
+		return nil // not really an error, expect some combos to fail
 	}
+
+	solution := linearResult.GetSolution2AndSaveLog(process.printer)
+	solution.DebugPrint(process.printer)
+
+	if solution.Status() == highs.ModelStatusOptimal {
+		percent := float64(process.tasksCompleted.Load()) / float64(process.targetResultCount) * 100
+		process.printer.Printf("TASK OK %s %.0f\n", process.label, percent)
+	} else {
+		process.printer.Printf("TASK status = %s\n", solution.Status().String())
+	}
+
+	if solution.Status() == highs.ModelStatusOptimal {
+		result, err := single.buildResultSet(solution, process.solveModel)
+		if err != nil {
+			return err
+		}
+		if err := validateNewSet(result, &itemOptions, process.solveModel.CheckSet); err != nil {
+			return err
+		}
+		if err := single.checkSetRatingIsObjective(solution, &result, process.solveModel.CalcRatingSet); err != nil {
+			return err
+		}
+
+		resultChannel <- result
+		process.tasksCompleted.Add(1)
+	}
+	return nil
 }
 
 // bit inefficient since not slot aware could frequently empty out slots

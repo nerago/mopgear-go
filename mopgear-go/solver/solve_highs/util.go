@@ -1,18 +1,20 @@
 package solve_highs
 
 import (
+	"errors"
+
 	"github.com/nerago/mopgear-go/items"
 )
 
-func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOptionsMap, checkSet func(itemSet *items.SolvableItemSet) (bool, string)) {
+func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOptionsMap, checkSet func(itemSet *items.SolvableItemSet) (bool, string)) error {
 	itemSet.DebugValidate()
 	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
 		if itemOptions.Has(slot) != itemSet.Items().Has(slot) {
-			panic("expected slots not filled")
+			return errors.New("expected slots not filled")
 		}
 	}
 
 	if isOk, message := checkSet(&itemSet); !isOk {
-		panic("set fails CheckSet " + message)
+		return errors.New("set fails CheckSet " + message)
 	}
 }

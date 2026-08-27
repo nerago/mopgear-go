@@ -1,6 +1,8 @@
 package solve_highs
 
 import (
+	"errors"
+
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_highs"
 )
@@ -83,12 +85,12 @@ func (colEntry columnInfo) DebugText() string {
 		strBuild.WriteString("sim value for combo ")
 		strBuild.WriteString(colEntry.simType.Name())
 	default:
-		panic("unknown column")
+		strBuild.WriteString("unknown column")
 	}
 	return strBuild.String()
 }
 
-func debugPrintColumnEntry(colEntry *columnInfo, columnIndex util_highs.ColumnIndex, outputValue float64, activeBonus *string, activeBonusWeight *float64, printer *util.PrintRecorder) {
+func debugPrintColumnEntry(colEntry *columnInfo, columnIndex util_highs.ColumnIndex, outputValue float64, activeBonus *string, activeBonusWeight *float64, printer *util.PrintRecorder) error {
 	switch colEntry.entryType {
 	case entry_item:
 		printer.Printf("%d %f %s %s %d\n", columnIndex, outputValue, "item", colEntry.itemSlot.Name(), colEntry.item.ItemId())
@@ -119,8 +121,8 @@ func debugPrintColumnEntry(colEntry *columnInfo, columnIndex util_highs.ColumnIn
 		printer.Printf("%d %f %s %s %s %d %d\n", columnIndex, outputValue, "sim stat option", colEntry.simType.Name(), colEntry.statType.Name(), colEntry.statRange.Minimum, colEntry.statRange.Maximum)
 	case entry_sim_value_combo:
 		printer.Printf("%d %f %s %s\n", columnIndex, outputValue, "sim value for combo", colEntry.simType.Name())
-
 	default:
-		panic("unknown column")
+		return errors.New("unknown column")
 	}
+	return nil
 }

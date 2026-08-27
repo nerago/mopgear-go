@@ -2,6 +2,7 @@ package solve_highs
 
 import (
 	"cmp"
+	"errors"
 	"slices"
 
 	"github.com/nerago/mopgear-go/stats"
@@ -23,8 +24,8 @@ func (calc3 *gearWeight3Calc) calc(statTotalColumns *stats.StatTypeMap[*columnIn
 	return simValueTotalColumns
 }
 
-func (calc3 *gearWeight3Calc) calcSim(simType stats.SimType, weight *weight_types.Weight3ExtendedRanged, statTotalColumns *stats.StatTypeMap[*columnInfo]) (simValueColumn *columnInfo) {
-	simValueColumn = calc3.makeSimValueColumn(simType)
+func (calc3 *gearWeight3Calc) calcSim(simType stats.SimType, weight *weight_types.Weight3ExtendedRanged, statTotalColumns *stats.StatTypeMap[*columnInfo]) (*columnInfo, error) {
+	simValueColumn := calc3.makeSimValueColumn(simType)
 	simValueFromStatRow := util_highs.ConstraintRow{}
 
 	for _, statType := range weight.StatList {
@@ -32,17 +33,23 @@ func (calc3 *gearWeight3Calc) calcSim(simType stats.SimType, weight *weight_type
 		simValueFromStatRow.Add(chosenSimStatContribution.columnIndex, 1)
 	}
 
-	simEntry := weight.SimPriority.GetOrPanic(simType)
-	offset := -simEntry.RangingOffset
-	valueScale := -1.0 / simEntry.RangingScale
-	simValueFromStatRow.Add(simValueColumn.columnIndex, valueScale)
-	simValueFromStatRow.Build(calc3.build, offset, offset)
+	if simEntry, hasEntry := weight.SimPriority.Get(simType); hasEntry {
+		offset := -simEntry.RangingOffset
+		valueScale := -1.0 / simEntry.RangingScale
+		simValueFromStatRow.Add(simValueColumn.columnIndex, valueScale)
+		simValueFromStatRow.Build(calc3.build, offset, offset)
+	} else {
+		return nil, errors.New("missing priority for " + simType.Name())
+	}
 
-	return simValueColumn
+	return simValueColumn, nil
 }
 
-func (calc3 *gearWeight3Calc) calcSimAndStat(simType stats.SimType, statType stats.StatType, weight *weight_types.Weight3ExtendedRanged, statTotalColumns *stats.StatTypeMap[*columnInfo]) *columnInfo {
-	statTotalColumn := statTotalColumns.GetOrPanic(statType)
+func (calc3 *gearWeight3Calc) calcSimAndStat(simType stats.SimType, statType stats.StatType, weight *weight_types.Weight3ExtendedRanged, statTotalColumns *stats.StatTypeMap[*columnInfo]) (*columnInfo, error) {
+	statTotalColumn, hasStatTotalColumn := statTotalColumns.Get(statType)
+	if !hasStatTotalColumn {
+		return nil, errors.New("missing statTotalColumn for " + statType.Name())
+	}
 
 	entries := slices.Collect(weight.StatWeights.GetAsSeq(simType, statType))
 	slices.SortFunc(entries, func(a, b weight_types.Weight3ExtendedStatEntry) int {
@@ -50,11 +57,11 @@ func (calc3 *gearWeight3Calc) calcSimAndStat(simType stats.SimType, statType sta
 	})
 
 	if len(entries) == 0 {
-		panic("missing weight entry")
+		return nil, errors.New("missing weight entry")
 	} else if len(entries) == 1 {
 		entry := entries[0]
 		optionValueCol := calc3.prepareStatOption(simType, statType, entry, statTotalColumn)
-		return optionValueCol
+		return optionValueCol, nil
 	}
 
 	chosenSimStatContribution := calc3.makeSimStatValueColumn3(simType, statType)
@@ -99,7 +106,7 @@ func (calc3 *gearWeight3Calc) calcSimAndStat(simType stats.SimType, statType sta
 	}
 	//checkSingleRangeActive.Build(calc3.build, 1, 1) // TODO see if this helps
 
-	return chosenSimStatContribution
+	return chosenSimStatContribution, nil
 }
 
 func (calc3 *gearWeight3Calc) prepareStatOption(simType stats.SimType, statType stats.StatType, entry weight_types.Weight3ExtendedStatEntry, statTotalColumn *columnInfo) *columnInfo {

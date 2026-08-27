@@ -1,0 +1,8 @@
+presolve
+sleep
+solve
+is it timeout?
+
+
+
+other: ranker model allowed to modify priority a bit

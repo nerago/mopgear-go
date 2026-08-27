@@ -1,6 +1,8 @@
 package solve_highs
 
 import (
+	"errors"
+
 	"github.com/nerago/mopgear-go/gear_model/bonus_set"
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/solver/solve_highs_types"
@@ -21,7 +23,7 @@ type gearBonusComboHandler struct {
 	_bonusData   map[solve_highs_types.SetBonusIndex]bonusColsByCount
 }
 
-func (bon *gearBonusComboHandler) ProcessBonus(combinedRatingVar *columnInfo, simType util_collection.Optional[stats.SimType], ratingRangeHigh float64, model *solve_highs_types.SolverModel, countSetItemsColumns map[solve_highs_types.SetBonusIndex]*columnInfo) *columnInfo {
+func (bon *gearBonusComboHandler) processBonus(combinedRatingVar *columnInfo, simType util_collection.Optional[stats.SimType], ratingRangeHigh float64, model *solve_highs_types.SolverModel, countSetItemsColumns map[solve_highs_types.SetBonusIndex]*columnInfo) (*columnInfo, error) {
 	bonusData, bonusCombos := bon.init(model, countSetItemsColumns)
 
 	if len(bonusData) > 0 {
@@ -33,11 +35,14 @@ func (bon *gearBonusComboHandler) ProcessBonus(combinedRatingVar *columnInfo, si
 			bon._forComboCopyToOutput(combo, combinedRatingVar, outputVar, bonusMultiplier, ratingRangeHigh)
 		}
 
-		bon._addSetNeededCounts(countSetItemsColumns, model.SetBonus.RequiredCounts, model.SetBonus.CountMode)
+		err := bon._addSetNeededCounts(countSetItemsColumns, model.SetBonus.RequiredCounts, model.SetBonus.CountMode)
+		if err != nil {
+			return nil, err
+		}
 
-		return outputVar
+		return outputVar, nil
 	} else {
-		return combinedRatingVar
+		return combinedRatingVar, nil
 	}
 }
 
@@ -251,7 +256,7 @@ func (bon *gearBonusComboHandler) _makeCombosRecur(bonusColumns []bonusColsByCou
 }
 
 // logical AND between exact count vars
-func (bon *gearBonusComboHandler) _buildComboActivatingVar(combo *bonusCombo) {
+func (bon *gearBonusComboHandler) _buildComboActivatingVar(combo *bonusCombo) error {
 	if len(combo.condition) > 1 {
 		comboActiveBool := &columnInfo{entryType: entry_combo_active, combo: combo}
 		comboActiveBool.columnIndex = bon.build.CreateColumnBool(comboActiveBool)
@@ -268,14 +273,15 @@ func (bon *gearBonusComboHandler) _buildComboActivatingVar(combo *bonusCombo) {
 		entry := combo.condition[0]
 		combo.activatingVar = entry.exactSetCountVar
 	} else {
-		panic("empty condition doesn't make sense")
+		return errors.New("empty condition doesn't make sense")
 	}
+	return nil
 }
 
-func (bon *gearBonusComboHandler) _addSetNeededCounts(countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo, setBonusRequired []solve_highs_types.SetBonusRequiredCounts, countMode bonus_set.ItemCountsRequiredMode) {
+func (bon *gearBonusComboHandler) _addSetNeededCounts(countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo, setBonusRequired []solve_highs_types.SetBonusRequiredCounts, countMode bonus_set.ItemCountsRequiredMode) error {
 	if len(setBonusRequired) > 0 {
 		if len(countSetItemsCol) == 0 {
-			panic("no countSetItemsCol to use for addSetNeededCounts")
+			return errors.New("no countSetItemsCol to use for addSetNeededCounts")
 		} else if len(setBonusRequired) == 1 && len(setBonusRequired[0]) == 1 {
 			setIndex, needCount := util_collection.MapFirstEntry(setBonusRequired[0])
 			setCountCol := countSetItemsCol[setIndex]
@@ -291,9 +297,10 @@ func (bon *gearBonusComboHandler) _addSetNeededCounts(countSetItemsCol map[solve
 			oneOfTheseOptions.Build(bon.build, 1, util_highs.InfPos())
 		}
 	}
+	return nil
 }
 
-func needCountToHiLo(countMode bonus_set.ItemCountsRequiredMode, needCount uint8) (float64, float64) {
+func needCountToHiLo(countMode bonus_set.ItemCountsRequiredMode, needCount uint8) (float64, float64, error) {
 	lo := float64(0)
 	hi := float64(c_maxSetItems)
 	switch countMode {
@@ -306,33 +313,36 @@ func needCountToHiLo(countMode bonus_set.ItemCountsRequiredMode, needCount uint8
 		lo = float64(needCount)
 		hi = float64(needCount + 1)
 	default:
-		panic("unknown type")
+		return 0, 0, errors.New("unknown type")
 	}
-	return lo, hi
+	return lo, hi, nil
 }
 
-func (bon *gearBonusComboHandler) addOption(option solve_highs_types.SetBonusRequiredCounts, countMode bonus_set.ItemCountsRequiredMode, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo) util_highs.ColumnIndex {
+func (bon *gearBonusComboHandler) addOption(option solve_highs_types.SetBonusRequiredCounts, countMode bonus_set.ItemCountsRequiredMode, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo) (util_highs.ColumnIndex, error) {
 	if len(option) > 1 {
 		optionParts := util_highs.ConstraintAndBuilder{}
 
 		for setIndex, needCount := range option {
-			inRange := bon.addOptionPart(setIndex, needCount, countSetItemsCol, countMode)
+			inRange, err := bon.addOptionPart(setIndex, needCount, countSetItemsCol, countMode)
+			if err != nil {
+				return 0, err
+			}
 			optionParts.AddInput(inRange)
 		}
 
 		optionActive := bon.build.CreateColumnBool(util_highs.DebugText("SetBonusRequired option"))
 		optionParts.SetOutput(optionActive)
 		optionParts.Build(bon.build)
-		return optionActive
+		return optionActive, nil
 	} else if len(option) == 1 {
 		setIndex, needCount := util_collection.MapFirstEntry(option)
 		return bon.addOptionPart(setIndex, needCount, countSetItemsCol, countMode)
 	} else {
-		panic("empty option")
+		return 0, errors.New("empty option")
 	}
 }
 
-func (bon *gearBonusComboHandler) addOptionPart(setIndex solve_highs_types.SetBonusIndex, needCount uint8, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo, countMode bonus_set.ItemCountsRequiredMode) util_highs.ColumnIndex {
+func (bon *gearBonusComboHandler) addOptionPart(setIndex solve_highs_types.SetBonusIndex, needCount uint8, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo, countMode bonus_set.ItemCountsRequiredMode) (util_highs.ColumnIndex, error) {
 	setCountCol := countSetItemsCol[setIndex]
 
 	var inRange util_highs.ColumnIndex
@@ -345,13 +355,13 @@ func (bon *gearBonusComboHandler) addOptionPart(setIndex solve_highs_types.SetBo
 	case bonus_set.CountMode_AllowPlusOne:
 		inRange = bon.build.ColumnIsBetweenConstants(setCountCol.columnIndex, float64(needCount), float64(needCount+1), c_bonusItemCountRangeHigh, c_bonusItemCountEqualDelta)
 	default:
-		panic("unknown type")
+		return 0, errors.New("unknown type")
 	}
 
-	return inRange
+	return inRange, nil
 }
 
-func (bon *gearBonusComboHandler) checkActiveCombo(solution util_highs.ISolution, solvableItemSet *items.SolvableItemSet, model *solve_highs_types.SolverModel) {
+func (bon *gearBonusComboHandler) checkActiveCombo(solution util_highs.ISolution, solvableItemSet *items.SolvableItemSet, model *solve_highs_types.SolverModel) error {
 	bonusCombos := bon._bonusCombos
 
 	if bonusCombos != nil && bonusCombos.Size() > 0 {
@@ -362,7 +372,7 @@ func (bon *gearBonusComboHandler) checkActiveCombo(solution util_highs.ISolution
 				if activeCombo == nil {
 					activeCombo = combo
 				} else {
-					panic("multiple combos active")
+					return errors.New("multiple combos active")
 				}
 			}
 		}
@@ -372,11 +382,11 @@ func (bon *gearBonusComboHandler) checkActiveCombo(solution util_highs.ISolution
 				countItems := model.SetBonus.CountItems[entry.bonusSetIndex]
 				actualCount := countItems(solvableItemSet.Items())
 				if actualCount != uint8(entry.count) {
-					panic("number of items not what solver returned")
+					return errors.New("number of items not what solver returned")
 				}
 			}
 		} else {
-			panic("no combos active")
+			return errors.New("no combos active")
 		}
 	}
 }

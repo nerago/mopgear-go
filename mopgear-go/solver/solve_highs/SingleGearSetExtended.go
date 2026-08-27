@@ -1,6 +1,8 @@
 package solve_highs
 
 import (
+	"errors"
+
 	"github.com/nerago/mopgear-go/solver/solve_highs_types"
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/util/util_collection"
@@ -20,17 +22,17 @@ type singleGearSetExtended struct {
 	//combinedRatingVar    *columnInfo // sum of values for the ratings of selected items
 }
 
-func (se *singleGearSetExtended) calcFromSimValueToOutput(simValueTotalColumns map[stats.SimType]*columnInfo, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo, model *solve_highs_types.SolverModel, priority *weight_types.SimPriorityExtended, scoreHigh float64) *columnInfo {
+func (se *singleGearSetExtended) calcFromSimValueToOutput(simValueTotalColumns map[stats.SimType]*columnInfo, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo, model *solve_highs_types.SolverModel, priority *weight_types.SimPriorityExtended, scoreHigh float64) (*columnInfo, error) {
 	// simValueTotalColumns[simType] * activeCombo.simMultiplier -> simValueComboColumns[simType] -> mainOutputVar
 	return se.multiplySimValuesByCombo(simValueTotalColumns, model, priority, countSetItemsCol, scoreHigh)
 }
 
-func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns map[stats.SimType]*columnInfo, model *solve_highs_types.SolverModel, priority *weight_types.SimPriorityExtended, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo, scoreHigh float64) *columnInfo {
+func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns map[stats.SimType]*columnInfo, model *solve_highs_types.SolverModel, priority *weight_types.SimPriorityExtended, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo, scoreHigh float64) (*columnInfo, error) {
 	if len(simValueTotalColumns) > 1 {
 		sumRow := util_highs.ConstraintRow{Debug: "multiplySimValuesByCombo"}
 
 		for simType, simValueTotal := range simValueTotalColumns {
-			simComboCol := se.bonusComboHandler.ProcessBonus(
+			simComboCol := se.bonusComboHandler.processBonus(
 				simValueTotal,
 				util_collection.Optional_OfValue(simType),
 				scoreHigh,
@@ -38,18 +40,25 @@ func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns m
 				countSetItemsCol,
 			)
 
-			simEntry := priority.GetOrPanic(simType)
-			sumRow.Add(simComboCol.columnIndex, simEntry.RatioScale)
+			if simEntry, hasEntry := priority.Get(simType); hasEntry {
+				sumRow.Add(simComboCol.columnIndex, simEntry.RatioScale)
+			} else {
+				return nil, errors.New("missing ratio for " + simType.Name())
+			}
 		}
 
 		outputVar := se.makeOutputVariable()
 		sumRow.Add(outputVar.columnIndex, -1)
 		sumRow.Build(se.build, 0, 0)
-		return outputVar
+		return outputVar, nil
 	} else if len(simValueTotalColumns) == 1 {
 		simType, simValueTotal := util_collection.MapFirstEntry(simValueTotalColumns)
-		simEntry := priority.GetOrPanic(simType)
-		simComboCol := se.bonusComboHandler.ProcessBonus(
+		simEntry, hasEntry := priority.Get(simType)
+		if !hasEntry {
+			return nil, errors.New("missing priority for " + simType.Name())
+		}
+
+		simComboCol := se.bonusComboHandler.processBonus(
 			simValueTotal,
 			util_collection.Optional_OfValue(simType),
 			scoreHigh,
@@ -57,17 +66,17 @@ func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns m
 			countSetItemsCol,
 		)
 		if simEntry.RatioScale == 1.0 {
-			return simComboCol
+			return simComboCol, nil
 		} else {
 			sumRow := util_highs.ConstraintRow{Debug: "multiplySimValuesByComboOne"}
 			outputVar := se.makeOutputVariable()
 			sumRow.Add(simComboCol.columnIndex, simEntry.RatioScale)
 			sumRow.Add(outputVar.columnIndex, -1)
 			sumRow.Build(se.build, 0, 0)
-			return outputVar
+			return outputVar, nil
 		}
 	} else {
-		panic("empty sim types")
+		return nil, errors.New("empty sim types")
 	}
 }
 

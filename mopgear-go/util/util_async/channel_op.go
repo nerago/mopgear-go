@@ -182,6 +182,14 @@ func ForEach_Slice_Cancellable[T any](threadCount int, inputSlice []T, cancel Ca
 	waitGroup.Wait()
 }
 
+func ForEach_Slice_Cancellable_PassError[T any](threadCount int, inputSlice []T, cancel CancelSignal, process func(*T) error) error {
+	indexChannel := makeIndexChannelCancellable(inputSlice, cancel)
+	waitGroup, futureError := makeThreadsForEachSliceError(threadCount, inputSlice, process, indexChannel)
+	waitGroup.Wait()
+	err, _ := futureError.GetResultNoWait()
+	return err
+}
+
 func ForEach_Channel[T any](threadCount int, inputChannel <-chan T, process func(T)) {
 	waitGroup := makeThreadsForEachChannel(threadCount, inputChannel, process)
 	waitGroup.Wait()
@@ -735,6 +743,26 @@ func makeThreadsForEachSlice[T any](threadCount int, inputSlice []T, process fun
 		})
 	}
 	return waitGroup
+}
+
+func makeThreadsForEachSliceError[T any](threadCount int, inputSlice []T, process func(*T) error, indexChannel chan int) (*sync.WaitGroup, *Future[error]) {
+	waitGroup := new(sync.WaitGroup)
+	futureError := Future_Make[error]()
+	shouldContinue := true
+	for range threadCount {
+		waitGroup.Go(func() {
+			for index := range indexChannel {
+				if shouldContinue {
+					err := process(&inputSlice[index])
+					if err != nil {
+						futureError.SetResult(err)
+						shouldContinue = false
+					}
+				}
+			}
+		})
+	}
+	return waitGroup, futureError
 }
 
 func makeThreadsForEachChannel[T any](threadCount int, inputChannel <-chan T, process func(T)) *sync.WaitGroup {

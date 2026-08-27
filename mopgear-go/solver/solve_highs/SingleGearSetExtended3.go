@@ -15,7 +15,7 @@ type singleGearSetExtended3 struct {
 	singleGearSetExtended
 }
 
-func SingleGearSetExtended3Main(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int) *util_async.FutureCancellable[items.SolvableItemSet] {
+func SingleGearSetExtended3Main(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int) *util_async.FutureCancellableWithError[*items.SolvableItemSet] {
 	build := new(util_highs.LinearBuilder)
 	build.Solver = util_highs.Solver_MIP_Interior
 	build.TimeLimitSeconds = timeout
@@ -40,20 +40,31 @@ func makeGearSetExtended3(build *util_highs.LinearBuilder) *singleGearSetExtende
 	}
 }
 
-func (se3 *singleGearSetExtended3) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) *columnInfo {
+func (se3 *singleGearSetExtended3) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) (*columnInfo, error) {
 	se3.itemSetupCommon.prepare(model, itemOptions, se3.createItemColumn)
 	se3.itemSetupEx.prepareStatTotals()
 	se3.itemSetupEx.prepareRequireEx(&model.StatRequirements)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
 		columnIndex := se3.itemSetupCommon.addItemCommon(slot, item)
-		se3.itemSetupEx.addItem(item, &model.StatRequirements, columnIndex)
+		err := se3.itemSetupEx.addItem(item, &model.StatRequirements, columnIndex)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	se3.itemSetupCommon.finishItemsEquipped(itemOptions, se3.build)
-	se3.itemSetupEx.finishRequireEx(&model.StatRequirements, se3.build)
+	if err := se3.itemSetupCommon.finishItemsEquipped(itemOptions, se3.build); err != nil {
+		return nil, err
+	}
+
+	if err := se3.itemSetupEx.finishRequireEx(&model.StatRequirements, se3.build); err != nil {
+		return nil, err
+	}
 	countSetItemsCol := se3.itemSetupCommon.finishSetCounts(se3.build)
-	statTotalCols := se3.itemSetupEx.finishStatTotals(se3.build)
+	statTotalCols, err := se3.itemSetupEx.finishStatTotals(se3.build)
+	if err != nil {
+		return nil, err
+	}
 
 	weightCalc := gearWeight3Calc{build: se3.build}
 	simValueTotalColumns := weightCalc.calc(statTotalCols, model.Weights3)

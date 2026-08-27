@@ -1,6 +1,8 @@
 package items
 
 import (
+	"errors"
+
 	"github.com/nerago/mopgear-go/stats"
 )
 
@@ -47,11 +49,12 @@ func (set *SolvableItemSet) AddItem_DeferCalc(slot SlotEquip, item *SolvableItem
 	set.items[slot] = item
 }
 
-func (set *SolvableItemSet) AddItem_DeferCalc_ExpectEmpty(slot SlotEquip, item *SolvableItem) {
+func (set *SolvableItemSet) AddItem_DeferCalc_ExpectEmpty(slot SlotEquip, item *SolvableItem) error {
 	if set.items[slot] != nil {
-		panic("slot not empty")
+		return errors.New("slot not empty")
 	}
 	set.items[slot] = item
+	return nil
 }
 
 func (set *SolvableItemSet) RecalculateTotal() {

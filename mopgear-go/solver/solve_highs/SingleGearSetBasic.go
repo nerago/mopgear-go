@@ -43,7 +43,7 @@ func makeGearSetBasic(build *util_highs.LinearBuilder) *singleGearSetBasic {
 	}
 }
 
-func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) *columnInfo {
+func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) (*columnInfo, error) {
 	sb.itemSetupCommon.prepare(model, itemOptions, sb.createItemColumn)
 	sb.itemSetupBasic.prepareRequire(&model.StatRequirements)
 
@@ -57,7 +57,7 @@ func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOp
 	countSetItemsCol := sb.itemSetupCommon.finishSetCounts(sb.build)
 	baseRatingSumVar := sb.itemSetupBasic.finishRatingSum(sb.build)
 
-	return sb.bonusComboHandler.ProcessBonus(
+	return sb.bonusComboHandler.processBonus(
 		baseRatingSumVar,
 		util_collection.Optional_Empty[stats.SimType](),
 		c_single_basic_ratings_high_range,

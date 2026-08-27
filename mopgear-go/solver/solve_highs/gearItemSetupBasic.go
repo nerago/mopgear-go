@@ -1,6 +1,8 @@
 package solve_highs
 
 import (
+	"errors"
+
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/util/util_highs"
@@ -35,20 +37,21 @@ func (sbb *gearItemSetupBasic) addItem(item *items.SolvableItem, calcRating func
 	}
 }
 
-func (sbb *gearItemSetupBasic) prepareRequire(statRequirements *stats.StatTypeMap[weight_types.StatRangeFloat]) {
+func (sbb *gearItemSetupBasic) prepareRequire(statRequirements *stats.StatTypeMap[weight_types.StatRangeFloat]) error {
 	sbb.minimumValueType = stats.Stat_Invalid
 	for statType := range statRequirements.SeqKey() {
 		if statType != stats.Stat_Hit && statType != stats.Stat_Expertise {
 			if sbb.minimumValueType == stats.Stat_Invalid {
 				sbb.minimumValueType = statType
 			} else {
-				panic("multiple additional required stats not supported in basic weights mode")
+				return errors.New("multiple additional required stats not supported in basic weights mode")
 			}
 		}
 	}
+	return nil
 }
 
-func (sbb *gearItemSetupBasic) finishRequire1(require *stats.StatTypeMap[weight_types.StatRangeFloat], build *util_highs.LinearBuilder) {
+func (sbb *gearItemSetupBasic) finishRequire1(require *stats.StatTypeMap[weight_types.StatRangeFloat], build *util_highs.LinearBuilder) error {
 	// constrain: total sum of hit/exp are within requested limits
 	if hitRange, hasHit := require.Get(stats.Stat_Hit); hasHit {
 		sbb.hitValueRow.Debug = "hitValueRow"
@@ -62,8 +65,11 @@ func (sbb *gearItemSetupBasic) finishRequire1(require *stats.StatTypeMap[weight_
 
 	// constrain: additional minimum value if specified has required minimum
 	if sbb.minimumValueType != stats.Stat_Invalid {
-		otherRange := require.GetOrPanic(sbb.minimumValueType)
-		sbb.minimumValueRow.Build(build, otherRange.Minimum, otherRange.Maximum)
+		if otherRange, hasRange := require.Get(sbb.minimumValueType); hasRange {
+			sbb.minimumValueRow.Build(build, otherRange.Minimum, otherRange.Maximum)
+		} else {
+			return errors.New("missing require value")
+		}
 	}
 }
 

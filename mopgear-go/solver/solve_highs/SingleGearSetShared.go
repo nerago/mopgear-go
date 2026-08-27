@@ -1,6 +1,7 @@
 package solve_highs
 
 import (
+	"errors"
 	"fmt"
 	"iter"
 
@@ -20,31 +21,46 @@ type singleGearSetShared struct {
 	bonusComboHandler gearBonusComboHandler
 }
 
-func (sc *singleGearSetShared) runForFutureResult(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellable[items.SolvableItemSet] {
+func (sc *singleGearSetShared) runForFutureResult(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellableWithError[*items.SolvableItemSet] {
 	solutionFuture := sc.build.RunHighsFuture(nil)
 
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(result util_highs.LinearResult) (items.SolvableItemSet, bool) {
+	return util_async.FutureCancellable_MapValueError(solutionFuture, func(result util_highs.LinearResult) (*items.SolvableItemSet, error) {
 		solution := result.GetSolution2AndSaveLog(printer)
 
 		printer.Printf("SOLUTION STATUS = %s\n", solution.Status().String())
 		debugPrint(solution, sc.build, printer)
 
 		if solution.HasSolution() {
-			itemSet := sc.buildResultSet(solution, model)
-			validateNewSet(itemSet, itemOptions, model.CheckSet)
-			sc.checkSetRatingIsObjective(solution, &itemSet, model.CalcRatingSet)
-			return itemSet, true
+			itemSet, err := sc.buildResultSet(solution, model)
+			if err != nil {
+				return nil, err
+			}
+
+			if err = validateNewSet(itemSet, itemOptions, model.CheckSet); err != nil {
+				return nil, err
+			}
+
+			if err = sc.checkSetRatingIsObjective(solution, &itemSet, model.CalcRatingSet); err != nil {
+				return nil, err
+			}
+
+			return new(itemSet), nil
 		} else {
-			return items.SolvableItemSet{}, false
+			return nil, errors.New("highs solve status " + solution.Status().String())
 		}
 	})
 }
 
-func (sc *singleGearSetShared) checkSetRatingIsObjective(solution *util_highs.Solution2, itemSet *items.SolvableItemSet, calcRating func(item *items.SolvableItemSet) float64) {
+func (sc *singleGearSetShared) checkSetRatingIsObjective(solution *util_highs.Solution2, itemSet *items.SolvableItemSet, calcRating func(item *items.SolvableItemSet) float64) error {
 	checkRating := calcRating(itemSet)
 	if !util.FloatsApproxEqualsLenient(solution.Objective()/sc.ratingPreScale, checkRating) {
-		panic(fmt.Sprintf("rating inconsistent %e %e ", solution.Objective(), checkRating))
+		return errors.New(fmt.Sprintf("rating inconsistent %e %e ", solution.Objective(), checkRating))
 	}
+	return nil
+}
+
+func (sc *singleGearSetShared) getRatingPreScale() float64 {
+	return sc.ratingPreScale
 }
 
 func (sc *singleGearSetShared) columnsForItemId(itemId items.ItemId) iter.Seq[*columnInfo] {
@@ -55,16 +71,19 @@ func (sc *singleGearSetShared) createItemColumn(entry *columnInfo) {
 	entry.columnIndex = sc.build.CreateColumnBool(entry)
 }
 
-func (sc *singleGearSetShared) buildResultSet(solution util_highs.ISolution, model *solve_highs_types.SolverModel) items.SolvableItemSet {
+func (sc *singleGearSetShared) buildResultSet(solution util_highs.ISolution, model *solve_highs_types.SolverModel) (items.SolvableItemSet, error) {
 	itemSet := items.SolvableItemSet{}
 	for columnEntry := range sc.itemSetupCommon.itemColumns.SeqValues() {
 		isTrue := solution.ValueIsOne(columnEntry.columnIndex)
 		if columnEntry.entryType == entry_item && isTrue {
-			itemSet.AddItem_DeferCalc_ExpectEmpty(columnEntry.itemSlot, columnEntry.item)
+			err := itemSet.AddItem_DeferCalc_ExpectEmpty(columnEntry.itemSlot, columnEntry.item)
+			if err != nil {
+				return items.SolvableItemSet{}, err
+			}
 		}
 	}
 	items.SolvableItemSet_RecalculateTotal(&itemSet)
 
-	sc.bonusComboHandler.checkActiveCombo(solution, &itemSet, model)
-	return itemSet
+	err := sc.bonusComboHandler.checkActiveCombo(solution, &itemSet, model)
+	return itemSet, err
 }
