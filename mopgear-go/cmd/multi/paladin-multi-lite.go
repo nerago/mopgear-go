@@ -50,7 +50,7 @@ func paladinMultiRunLite(printer *util.PrintRecorder) {
 	}
 	var newTrinketsTank = []items.ItemId{
 		mygear.TrinketVialCorruptNormal,
-		mygear.TrinketRookUnluckyNormal,
+		mygear.TrinketRookUnluckyHeroic,
 	}
 
 	// REMAINING P3

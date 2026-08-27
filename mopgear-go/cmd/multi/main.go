@@ -18,5 +18,5 @@ func main() {
 	sw := util.StopwatchNoisyStart(printer)
 	defer sw.Stop()
 
-	PaladinMultiRun(printer)
+	paladinMultiRun(printer)
 }

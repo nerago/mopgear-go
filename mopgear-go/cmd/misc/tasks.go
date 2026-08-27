@@ -324,7 +324,7 @@ func trinketSims(printer *util.PrintRecorder) {
 		103990,                          // timeless resolve of niuzao
 		103678,                          // time lost artifict
 		mygear.TrinketThokTailCelestial, // thok trinket
-		mygear.TrinketFusionCoreCelestial,
+		mygear.TrinketFusionCoreHeroic,
 		mygear.TrinketVialCorruptNormal,
 	}
 
@@ -426,37 +426,42 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 	// 94527,  // ji-kun
 
 	itemIds := []items.ItemId{
-		94519,  // crit prim rage
-		96793,  // none fort zand
-		94529,  // none gaze twins
-		103678, // time lost artifact
-		mygear.TrinketZandSpark,
-		mygear.TrinketThokTailCelestial,   // up 2
-		mygear.TrinketFusionCoreCelestial, // 528
-		mygear.TrinketVialCorruptNormal,   // 567 (up 2)
-		mygear.TrinketRookUnluckyNormal,
-		mygear.TrinketSkeerBloodCelestial,
-		105016, //jugg focusing crystal (self heal)
+		94519,                             // prim rage normal 2/2
+		96793,                             // none fort zand
+		94529,                             // none gaze twins normal 2/2
+		103678,                            // time lost artifact 0/0
+		mygear.TrinketZandSpark,           // heroic 2/2
+		mygear.TrinketThokTailCelestial,   // 2/2
+		mygear.TrinketFusionCoreHeroic,    // 0/2
+		mygear.TrinketVialCorruptNormal,   // 2/2
+		mygear.TrinketRookUnluckyHeroic,   // 2/2
+		mygear.TrinketSkeerBloodCelestial, // 2/2
+		// evil eye 0/2
+		105016, //jugg focusing crystal (self heal) celestial, 0/2
 	}
 
 	upLevel := func(id items.ItemId) int32 {
 		var upgrade int32 = 0
-		if id < 100000 || id == mygear.TrinketVialCorruptNormal || id == mygear.TrinketThokTailCelestial || id == mygear.TrinketRookUnluckyNormal {
+		if id < 100000 || id == mygear.TrinketVialCorruptNormal ||
+			id == mygear.TrinketThokTailCelestial ||
+			id == mygear.TrinketRookUnluckyHeroic ||
+			id == mygear.TrinketSkeerBloodCelestial ||
+			id == mygear.TrinketFusionCoreHeroic {
 			upgrade = 2
 		}
 		return upgrade
 	}
 
 	fight := stats.Fight_Juggernaut_NoExternalHeal
-	simRun := simulate.RunSize_Common
+	simRun := simulate.RunSize_Largish
 
-	type group struct {
+	type groupStruct struct {
 		label string
 		model gear_model.SpecModel
 		file  string
 	}
 
-	groups := []group{
+	groups := []groupStruct{
 		{
 			"heal",
 			model_factory.Model_PallyProtHeal(),
@@ -466,7 +471,8 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 			"with_set",
 			model_factory.Model_PallyProtSurvival(),
 			files.GearFileProtSurvival,
-		}, {
+		},
+		{
 			"no_set",
 			model_factory.Model_PallyProtMitigation(),
 			files.GearFileProtMitigation,
@@ -475,7 +481,8 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 			"compromise",
 			model_factory.Model_PallyProtBalanced(),
 			files.GearFileProtBalanced,
-		}, {
+		},
+		{
 			"dps",
 			model_factory.Model_PallyProtDamage(),
 			files.GearFileProtDamage,

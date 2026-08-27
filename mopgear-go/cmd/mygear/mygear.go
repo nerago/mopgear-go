@@ -11,7 +11,7 @@ const (
 	TrinketFusionCoreHeroic     = 104463
 	TrinketThokTailCelestial    = 105111
 	TrinketVialCorruptNormal    = 102306
-	TrinketRookUnluckyNormal    = 102296
+	TrinketRookUnluckyHeroic    = 104442
 	TrinketEyeGalakrasCelestial = 104993
 	TrinketSkeerBloodCelestial  = 105134
 
@@ -64,7 +64,7 @@ var NewTrinketsDamage = []items.ItemId{
 }
 var NewTrinketsTank = []items.ItemId{
 	TrinketVialCorruptNormal,
-	TrinketRookUnluckyNormal,
+	TrinketRookUnluckyHeroic,
 }
 
 // REMAINING P3

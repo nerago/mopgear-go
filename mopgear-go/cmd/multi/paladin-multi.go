@@ -21,11 +21,11 @@ import (
 func paladinMultiRun(printer *util.PrintRecorder) {
 	job := multi_types.JobInputs{}
 	job.SetMinimumExtraItemLevel(463)
-	job.SetTimeLimitEachSolver(200)
+	job.SetTimeLimitEachSolver(2000)
 	job.SetSimSize(simulate.RunSize_Largish)
 	//simSize := simulate.RunSize_Common
 	//simSize := simulate.RunSize_QuickDirty
-	job.SetWriteBestToGearFiles(true)
+	job.SetWriteBestToGearFiles(false)
 
 	var extraUpgrade items.UpgradeLevel = 2
 	var forceUpgrade items.UpgradeLevel = 0
@@ -246,7 +246,7 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 			ReforgingAllowNonCommon: false,
 		}
 		multi.JobCreate(printer, job, taskQuick).Run()
-	} else if true {
+	} else if false {
 		weightTypes := []weight_types.WeightType{2}
 
 		// all standard and alternates. plus optional regem
@@ -282,7 +282,7 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		run := multi.JobCreate(printer, job, task1, task2)
 		run.Run()
 	} else if true {
-		weightTypes := []weight_types.WeightType{1}
+		weightTypes := []weight_types.WeightType{1, 2}
 
 		// all standard and alternates. plus optional regem
 		task1 := multi_types.JobInputTask{
@@ -327,8 +327,9 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		_ = task2
 		_ = task3
 
-		//run := multi.JobCreate(printer, job, task1, task2)
-		run := multi.JobCreate(printer, job, task3)
+		//run := multi.JobCreate(printer, job, task1)
+		run := multi.JobCreate(printer, job, task2)
+		//run := multi.JobCreate(printer, job, task3)
 		//run := multi.JobCreate(printer, job, task1, task2, task3)
 		run.Run()
 	} else {

@@ -47,12 +47,8 @@ func (sc *singleGearSetShared) checkSetRatingIsObjective(solution *util_highs.So
 	}
 }
 
-func (sc *singleGearSetShared) ColumnsForItemId(itemId items.ItemId) iter.Seq[*columnInfo] {
+func (sc *singleGearSetShared) columnsForItemId(itemId items.ItemId) iter.Seq[*columnInfo] {
 	return sc.itemSetupCommon.itemColumns.ValuesForKeyAsSeq(itemId)
-}
-
-func (sc *singleGearSetShared) RatingPreScale() float64 {
-	return sc.ratingPreScale
 }
 
 func (sc *singleGearSetShared) createItemColumn(entry *columnInfo) {
@@ -69,6 +65,6 @@ func (sc *singleGearSetShared) buildResultSet(solution util_highs.ISolution, mod
 	}
 	items.SolvableItemSet_RecalculateTotal(&itemSet)
 
-	sc.bonusComboHandler.CheckActiveCombo(solution, &itemSet, model)
+	sc.bonusComboHandler.checkActiveCombo(solution, &itemSet, model)
 	return itemSet
 }

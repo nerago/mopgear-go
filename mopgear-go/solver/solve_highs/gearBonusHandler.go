@@ -351,7 +351,7 @@ func (bon *gearBonusComboHandler) addOptionPart(setIndex solve_highs_types.SetBo
 	return inRange
 }
 
-func (bon *gearBonusComboHandler) CheckActiveCombo(solution util_highs.ISolution, solvableItemSet *items.SolvableItemSet, model *solve_highs_types.SolverModel) {
+func (bon *gearBonusComboHandler) checkActiveCombo(solution util_highs.ISolution, solvableItemSet *items.SolvableItemSet, model *solve_highs_types.SolverModel) {
 	bonusCombos := bon._bonusCombos
 
 	if bonusCombos != nil && bonusCombos.Size() > 0 {
