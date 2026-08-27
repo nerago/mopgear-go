@@ -9,7 +9,7 @@ import (
 )
 
 const c_gearExtended3StatHigh = 100000
-const c_gearExtended3ScoreHigh = 10
+const c_gearExtended3ScoreHigh = 100
 
 type singleGearSetExtended3 struct {
 	singleGearSetExtended

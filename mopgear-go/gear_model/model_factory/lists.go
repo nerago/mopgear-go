@@ -16,7 +16,7 @@ var SimPriority_mitigation = weight_types.SimPriorityBasic_Make(
 
 // for withset - malkrok, thok, nazgrim
 var SimPriority_survival = weight_types.SimPriorityBasic_Make(
-	stats.Sim_DPS, 0.0388,
+	stats.Sim_DPS, 0.0387,
 	stats.Sim_DTPS, 0.4383,
 	stats.Sim_TMI, 0.1098,
 	stats.Sim_DEATH, 0.4132,

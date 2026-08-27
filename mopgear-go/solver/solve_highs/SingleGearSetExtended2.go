@@ -8,8 +8,7 @@ import (
 	"github.com/nerago/mopgear-go/util/util_highs"
 )
 
-// TODO avoid getting these weights or scale them in here
-const c_gearExtended2ScoreHigh = 1000000
+const c_gearExtended2ScoreHigh = 100
 
 type singleGearSetExtended2 struct {
 	singleGearSetExtended

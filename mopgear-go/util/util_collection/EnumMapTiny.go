@@ -103,6 +103,7 @@ func (em *EnumMapTiny[E, V, A]) Compute(key E, apply func(V) V) {
 	} else {
 		var nilValue V
 		em.content[key] = apply(nilValue)
+		em.isSet |= 1 << key
 		em.len++
 	}
 }
