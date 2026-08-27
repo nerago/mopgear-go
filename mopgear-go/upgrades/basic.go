@@ -1,6 +1,7 @@
 package upgrades
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/nerago/mopgear-go/db"
@@ -23,11 +24,22 @@ func prepareUpgradeTasks(extraItems []loaders.ItemFoundRef, baseItems *items.Ful
 	return extraTasks
 }
 
-func solveBaseLine(printer *util.PrintRecorder, baseItems *items.FullOptionsMap, spec *SpecInput, input *InputSettings) (float64, *items.FullItemSet) {
+func solveBaseLine(printer *util.PrintRecorder, baseItems *items.FullOptionsMap, spec *SpecInput, input *InputSettings) (float64, *items.FullItemSet, error) {
 	printer.Println("FINDING BASELINE")
-	baseRating, baseSet := findBase(baseItems, &spec.Model, spec.Label, input, printer)
-	tools.ReportSet(&spec.Model, baseSet, printer)
-	return baseRating, baseSet
+
+	output := solver.Solver(
+		baseItems, &spec.Model, printer,
+		input.WeightType, input.SolverTimeout, nil,
+	)
+
+	if !output.Success {
+		return 0, nil, fmt.Errorf("couldn't find valid baseline set for %s: %w", spec.Label, output.Error)
+	}
+
+	printer.Printf("\nBASE RATING %s   = %.0f\n\n", output.SolvedSet.Total().CreateString(), output.ResultRating)
+
+	tools.ReportSet(&spec.Model, &output.FullSet, printer)
+	return output.ResultRating, &output.FullSet, nil
 }
 
 func changeUpgradeLevels(extraItems []loaders.ItemFoundRef, upgradeLevel items.UpgradeLevel) []loaders.ItemFoundRef {
@@ -103,24 +115,6 @@ func canPerformSpecifiedUpgrade(settings *InputSettings, extra *items.FullItem, 
 	}
 
 	return items.CanUpgrade_Yes
-}
-
-func findBase(baseItems *items.FullOptionsMap, model *gear_model.SpecModel, label string, input *InputSettings, printer *util.PrintRecorder) (float64, *items.FullItemSet) {
-	output := solver.Solver(
-		baseItems,
-		model,
-		printer,
-		input.WeightType,
-		input.SolverTimeout,
-		nil,
-	)
-
-	if !output.Success {
-		panic("couldn't find valid baseline set for " + label)
-	}
-
-	printer.Printf("\n%s\nBASE RATING    = %.0f\n\n", output.SolvedSet.Total().CreateString(), output.ResultRating)
-	return output.ResultRating, &output.FullSet
 }
 
 func performUpgradeTask(task *upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, model *gear_model.SpecModel, parentPrinter *util.PrintRecorder, substituteEmptySlotOnly map[items.SlotItem]items.ItemId, weightType weight_types.WeightType, timeout int) upgradeItemResult {

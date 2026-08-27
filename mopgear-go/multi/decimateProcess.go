@@ -95,11 +95,17 @@ func (work *specWorker) decimateFindSlotBestN(bestForSlot *util_collection.SetCo
 			return
 		}
 
-		futureCheckSet := solver.LaunchSolve(&restrictedOptions, solverModel, printer, work.weightType, timeout)
+		futureCheckSet, err := solver.LaunchSolve(&restrictedOptions, solverModel, printer, work.weightType, timeout)
+		if err != nil {
+			return
+		}
 		util_async.ChainCancel(cancel, futureCheckSet)
 
 		if checkSet, gotCheck := futureCheckSet.WaitForResult(); gotCheck {
-			nextBestItem := checkSet.Items().Get(slotEquip)
+			if checkSet.Error != nil || checkSet.Value == nil {
+				return
+			}
+			nextBestItem := checkSet.Value.Items().Get(slotEquip)
 			if nextBestItem == nil {
 				return
 			}

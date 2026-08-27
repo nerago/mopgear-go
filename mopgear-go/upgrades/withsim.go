@@ -13,7 +13,7 @@ import (
 	"github.com/nerago/mopgear-go/util/util_rank"
 )
 
-func processSpecUpgrade(settings *InputSettings, spec *SpecInput, difficulty stats.Difficulty, tracker *util.TrackProgress, printer *util.PrintRecorder) []upgradeItemResult {
+func processSpecUpgrade(settings *InputSettings, spec *SpecInput, difficulty stats.Difficulty, tracker *util.TrackProgress, printer *util.PrintRecorder) ([]upgradeItemResult, error) {
 	itemOptions := setup.OptionsSetup_FromGearFile(spec.GearFile, &spec.Model, setup.MissingEnchant_Panic, printer)
 
 	upgradeItems := spec.ItemFinder(difficulty)
@@ -24,7 +24,10 @@ func processSpecUpgrade(settings *InputSettings, spec *SpecInput, difficulty sta
 	tracker.RunOuterTracking(1 + len(extraTasks) + settings.ExtraSimForTopResultsCount)
 	defer tracker.SetDone()
 
-	baseSim, baseRating := runBaseline(spec, settings, &itemOptions, tracker.NewChild(), printer)
+	baseSim, baseRating, err := runBaseline(spec, settings, &itemOptions, tracker.NewChild(), printer)
+	if err != nil {
+		return nil, err
+	}
 
 	simResults := runEachUpgradeTaskAndSim(extraTasks, &itemOptions, baseRating, baseSim, spec, settings, tracker, printer)
 
@@ -33,17 +36,18 @@ func processSpecUpgrade(settings *InputSettings, spec *SpecInput, difficulty sta
 	}
 
 	reportBasicResultsSim(simResults, printer, settings.PositiveResultsOnly)
-	return simResults
+	return simResults, nil
 }
 
-func runBaseline(spec *SpecInput, input *InputSettings, baseItems *items.FullOptionsMap, tracker *util.TrackProgress, printer *util.PrintRecorder) (stats.SimData, float64) {
-	baseRating, baseSet := solveBaseLine(printer, baseItems, spec, input)
+func runBaseline(spec *SpecInput, input *InputSettings, baseItems *items.FullOptionsMap, tracker *util.TrackProgress, printer *util.PrintRecorder) (stats.SimData, float64, error) {
+	baseRating, baseSet, err := solveBaseLine(printer, baseItems, spec, input)
+	if err != nil {
+		return stats.SimData{}, 0, err
+	}
 
-	model := &spec.Model
-	baseSim := simulate.ExecuteSpecifyAll(input.SimSizeBaseline, model.SimSpeedUp, model.Spec, model.Goal,
-		model.SimulateAs, model.Professions, baseSet.Items(), nil, tracker)
+	baseSim := simulate.ExecuteUseModel(input.SimSizeBaseline, &spec.Model, baseSet.Items(), nil, tracker)
 
-	return baseSim, baseRating
+	return baseSim, baseRating, nil
 }
 
 func runEachUpgradeTaskAndSim(extraTasks []upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, baseSim stats.SimData, spec *SpecInput, settings *InputSettings, tracker *util.TrackProgress, printer *util.PrintRecorder) []upgradeItemResult {

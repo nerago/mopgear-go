@@ -17,4 +17,6 @@ func validateNewSet(itemSet items.SolvableItemSet, itemOptions *items.SolvableOp
 	if isOk, message := checkSet(&itemSet); !isOk {
 		return errors.New("set fails CheckSet " + message)
 	}
+
+	return nil
 }

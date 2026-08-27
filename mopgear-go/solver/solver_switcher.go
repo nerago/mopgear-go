@@ -1,6 +1,8 @@
 package solver
 
 import (
+	"errors"
+
 	"github.com/nerago/mopgear-go/gear_model"
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/solver/solve_highs"
@@ -8,30 +10,31 @@ import (
 	"github.com/nerago/mopgear-go/tools"
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_async"
-	"github.com/nerago/mopgear-go/util/util_collection"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
-
-	"github.com/google/uuid"
 )
 
 func Solver(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, printer *util.PrintRecorder, weightType weight_types.WeightType, timeout int, cancel util_async.CancelSignal) SolveOutput {
 	if itemOptions == nil || model == nil || printer == nil || weightType == 0 {
-		panic("missing option")
+		return SolveOutput{Success: false, Error: errors.New("solver: missing parameter")}
 	}
 
 	solveOptions := items.SolvableOptionsMap_of(itemOptions)
 	solveModel := solve_highs_types.SolverModelBuild(model, weightType, nil)
 
-	futureSolvedSet := LaunchSolve(&solveOptions, solveModel, printer, weightType, timeout)
+	futureSolvedSet, err := LaunchSolve(&solveOptions, solveModel, printer, weightType, timeout)
+	if err != nil {
+		return SolveOutput{Success: false, Error: err}
+	}
+
 	if cancel != nil {
 		util_async.ChainCancel(cancel, futureSolvedSet)
 	}
-	solvedResult := futureSolvedSet.WaitForResultAsOptional()
 
-	return finaliseSolve(solvedResult, solveOptions, itemOptions, model, printer, weightType)
+	solvedResult := futureSolvedSet.WaitForResultOrNilValue()
+	return finaliseSolve(solvedResult, itemOptions, model, weightType)
 }
 
-func LaunchSolve(solveOptions *items.SolvableOptionsMap, solveModel *solve_highs_types.SolverModel, printer *util.PrintRecorder, weightType weight_types.WeightType, timeout int) *util_async.FutureCancellable[items.SolvableItemSet] {
+func LaunchSolve(solveOptions *items.SolvableOptionsMap, solveModel *solve_highs_types.SolverModel, printer *util.PrintRecorder, weightType weight_types.WeightType, timeout int) (*util_async.FutureCancellableWithError[*items.SolvableItemSet], error) {
 	switch weightType {
 	case 1:
 		return solve_highs.SingleGearSetMain(solveOptions, solveModel, printer, timeout)
@@ -40,53 +43,35 @@ func LaunchSolve(solveOptions *items.SolvableOptionsMap, solveModel *solve_highs
 	case 3:
 		return solve_highs.SingleGearSetExtended3Main(solveOptions, solveModel, printer, timeout)
 	default:
-		panic("invalid weight type")
+		return nil, errors.New("invalid weight type")
 	}
 }
 
-func finaliseSolve(solvedResult util_collection.Optional[items.SolvableItemSet], solveOptions items.SolvableOptionsMap, itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, printer *util.PrintRecorder, weightType weight_types.WeightType) SolveOutput {
-	var solvedSet items.SolvableItemSet
-	if solvedResult.IsEmpty() {
-		fallbackSet, failureSummary := diagnoseFailure(&solveOptions, model)
-		if fallbackSet.IsEmpty() {
-			return SolveOutput{Success: false, OutputId: uuid.NewString(), Model: model, ResultRating: 0, FailureSummary: failureSummary, Printer: printer}
-		} else {
-			printer.Println("USING FALLBACK CAPPED SET!!")
-			solvedSet = fallbackSet.GetOrPanic()
-		}
+func finaliseSolve(solvedResult util_async.ValueOrError[*items.SolvableItemSet], itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, weightType weight_types.WeightType) SolveOutput {
+	if solvedResult.Error != nil {
+		return SolveOutput{Success: false, Error: solvedResult.Error}
+	} else if solvedResult.Value == nil {
+		return SolveOutput{Success: false, Error: errors.New("failed to find valid set: unknown error")}
 	} else {
-		solvedSet = solvedResult.GetOrPanic()
+		solvedSet := *solvedResult.Value
+		solvedSet.DebugValidate()
+
+		fullSet := items.FullItemSet_FromSolved(solvedSet, itemOptions)
+		model.ValidateSet(&fullSet)
+
+		rating := model.CalcRatingFull(&fullSet, weightType)
+
+		return SolveOutput{Success: true, SolvedSet: solvedSet, FullSet: fullSet, Model: model, ResultRating: rating}
 	}
-
-	solvedSet.DebugValidate()
-
-	// solvedSet = tools.Tweaker_Run(&solvedSet, &solveOptions, input.Model)
-	// solvedSet.DebugValidate()
-
-	fullItem := items.FullItemSet_FromSolved(solvedSet, itemOptions)
-	model.ValidateSet(&fullItem)
-
-	rating := model.CalcRatingSolve(&solvedSet, weightType)
-
-	return SolveOutput{
-		Success:      true,
-		OutputId:     uuid.NewString(),
-		Model:        model,
-		SolvedSet:    solvedSet,
-		FullSet:      fullItem,
-		ResultRating: rating,
-		Printer:      printer}
 }
 
 type SolveOutput struct {
-	Success        bool
-	OutputId       string
-	SolvedSet      items.SolvableItemSet
-	FullSet        items.FullItemSet
-	ResultRating   float64
-	FailureSummary string
-	Model          *gear_model.SpecModel
-	Printer        *util.PrintRecorder
+	Success      bool
+	Error        error
+	SolvedSet    items.SolvableItemSet
+	FullSet      items.FullItemSet
+	Model        *gear_model.SpecModel
+	ResultRating float64
 }
 
 func (output *SolveOutput) Equals(b *SolveOutput) bool {
@@ -95,15 +80,11 @@ func (output *SolveOutput) Equals(b *SolveOutput) bool {
 
 func (output *SolveOutput) Report(printer *util.PrintRecorder) {
 	reportPrint := util.PrintRecorder_HoldAll()
-	if printer != output.Printer {
-		reportPrint.AppendOther(output.Printer)
-	}
 
 	if output.Success {
-		reportPrint.Println(output.OutputId)
 		tools.ReportSet(output.Model, &output.FullSet, reportPrint)
 	} else {
-		reportPrint.Printf("SET SOLVE FAILED\n")
+		reportPrint.Printf("SET SOLVE FAILED: %s\n", output.Error.Error())
 	}
 
 	printer.AppendOther(reportPrint)

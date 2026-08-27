@@ -30,7 +30,11 @@ func (calc2 *gearWeight2Calc) calc(statTotalColumns *stats.StatTypeMap[*columnIn
 	simValueTotalColumns := make(map[stats.SimType]*columnInfo)
 	for simType, nestedWeights := range weight2.SeqBySimNestedPairs() {
 		if simEntry, hasEntry := weight2.GetSimPriority().Get(simType); hasEntry {
-			simValueTotalColumns[simType] = calc2.calcSim(simType, nestedWeights, simEntry, statTotalColumns)
+			simValueCol, err := calc2.calcSim(simType, nestedWeights, simEntry, statTotalColumns)
+			if err != nil {
+				return nil, err
+			}
+			simValueTotalColumns[simType] = simValueCol
 		} else {
 			return nil, errors.New("missing priority for " + simType.Name())
 		}

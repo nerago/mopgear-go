@@ -32,13 +32,16 @@ func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns m
 		sumRow := util_highs.ConstraintRow{Debug: "multiplySimValuesByCombo"}
 
 		for simType, simValueTotal := range simValueTotalColumns {
-			simComboCol := se.bonusComboHandler.processBonus(
+			simComboCol, err := se.bonusComboHandler.processBonus(
 				simValueTotal,
 				util_collection.Optional_OfValue(simType),
 				scoreHigh,
 				model,
 				countSetItemsCol,
 			)
+			if err != nil {
+				return nil, err
+			}
 
 			if simEntry, hasEntry := priority.Get(simType); hasEntry {
 				sumRow.Add(simComboCol.columnIndex, simEntry.RatioScale)
@@ -58,13 +61,17 @@ func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns m
 			return nil, errors.New("missing priority for " + simType.Name())
 		}
 
-		simComboCol := se.bonusComboHandler.processBonus(
+		simComboCol, err := se.bonusComboHandler.processBonus(
 			simValueTotal,
 			util_collection.Optional_OfValue(simType),
 			scoreHigh,
 			model,
 			countSetItemsCol,
 		)
+		if err != nil {
+			return nil, err
+		}
+
 		if simEntry.RatioScale == 1.0 {
 			return simComboCol, nil
 		} else {

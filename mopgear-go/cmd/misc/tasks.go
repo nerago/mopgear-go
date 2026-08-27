@@ -990,7 +990,7 @@ func determineBestUseOfGearSets(printer *util.PrintRecorder) {
 			nil,
 		)
 		if !solveOutput.Success {
-			panic("no set")
+			panic(solveOutput.Error)
 		}
 		gear := solveOutput.FullSet.Items()
 		bonusText := bonus_set.AllBonusesText(gear)

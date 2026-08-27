@@ -286,13 +286,20 @@ func (bon *gearBonusComboHandler) _addSetNeededCounts(countSetItemsCol map[solve
 			setIndex, needCount := util_collection.MapFirstEntry(setBonusRequired[0])
 			setCountCol := countSetItemsCol[setIndex]
 
-			lo, hi := needCountToHiLo(countMode, needCount)
+			lo, hi, err := needCountToHiLo(countMode, needCount)
+			if err != nil {
+				return err
+			}
+
 			bon.build.ChangeColumnMinMax(setCountCol.columnIndex, lo, hi)
 		} else {
 			oneOfTheseOptions := util_highs.ConstraintRow{Debug: "oneOfTheseOptions"}
 			for _, option := range setBonusRequired {
-				optionActive := bon.addOption(option, countMode, countSetItemsCol)
-				oneOfTheseOptions.Add(optionActive, 1)
+				if optionActive, err := bon.addOption(option, countMode, countSetItemsCol); err == nil {
+					oneOfTheseOptions.Add(optionActive, 1)
+				} else {
+					return nil
+				}
 			}
 			oneOfTheseOptions.Build(bon.build, 1, util_highs.InfPos())
 		}
@@ -389,4 +396,6 @@ func (bon *gearBonusComboHandler) checkActiveCombo(solution util_highs.ISolution
 			return errors.New("no combos active")
 		}
 	}
+
+	return nil
 }

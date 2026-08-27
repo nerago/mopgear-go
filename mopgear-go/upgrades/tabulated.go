@@ -62,7 +62,13 @@ func processSpecUpgradeGroupTask(input *InputSettings, spec *SpecInput, difficul
 	printer.Println("[[[[[[[[[[[[[[[[[[[[ " + spec.Label + " " + difficulty.Name() + " UPGRADES ]]]]]]]]]]]]]]]]]]]]")
 	defer printer.Close()
 
-	return processSpecUpgrade(input, spec, difficulty, tracker, printer)
+	upgradeResults, err := processSpecUpgrade(input, spec, difficulty, tracker, printer)
+
+	if err != nil {
+		printer.Println("ERROR: " + err.Error())
+	}
+
+	return upgradeResults
 }
 
 func groupByBossAndItem(outputMap []upgradeGroupResult) map[string]map[reportItemRef]*reportForItem {

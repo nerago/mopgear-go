@@ -15,17 +15,21 @@ type singleGearSetExtended3 struct {
 	singleGearSetExtended
 }
 
-func SingleGearSetExtended3Main(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int) *util_async.FutureCancellableWithError[*items.SolvableItemSet] {
+func SingleGearSetExtended3Main(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int) (*util_async.FutureCancellableWithError[*items.SolvableItemSet], error) {
 	build := new(util_highs.LinearBuilder)
 	build.Solver = util_highs.Solver_MIP_Interior
 	build.TimeLimitSeconds = timeout
 	//build.AddOptionBool("presolve_rule_logging", true)
 
 	se3 := makeGearSetExtended3(build)
-	outputVar := se3.setup(model, itemOptions)
+	outputVar, err := se3.setup(model, itemOptions)
+	if err != nil {
+		return nil, err
+	}
+
 	build.ChangeColumnOutputWeight(outputVar.columnIndex, 1)
 
-	return se3.runForFutureResult(itemOptions, model, printer)
+	return se3.runForFutureResult(itemOptions, model, printer), nil
 }
 
 func makeGearSetExtended3(build *util_highs.LinearBuilder) *singleGearSetExtended3 {
@@ -67,7 +71,10 @@ func (se3 *singleGearSetExtended3) setup(model *solve_highs_types.SolverModel, i
 	}
 
 	weightCalc := gearWeight3Calc{build: se3.build}
-	simValueTotalColumns := weightCalc.calc(statTotalCols, model.Weights3)
+	simValueTotalColumns, err := weightCalc.calc(statTotalCols, model.Weights3)
+	if err != nil {
+		return nil, err
+	}
 
 	// simValueTotalColumns * activeCombo -> simValueComboColumns -> mainOutputVar
 	return se3.calcFromSimValueToOutput(simValueTotalColumns, countSetItemsCol, model, &model.Weights3.SimPriority, c_gearExtended3ScoreHigh)

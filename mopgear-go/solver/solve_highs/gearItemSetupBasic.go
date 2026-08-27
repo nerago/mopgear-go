@@ -71,6 +71,8 @@ func (sbb *gearItemSetupBasic) finishRequire1(require *stats.StatTypeMap[weight_
 			return errors.New("missing require value")
 		}
 	}
+
+	return nil
 }
 
 func (sbb *gearItemSetupBasic) finishRatingSum(build *util_highs.LinearBuilder) (baseRatingSumVar *columnInfo) {

@@ -394,7 +394,7 @@ func (process *SolverHighsMultiProcess) addCommonConstraintsForItemRef(build *ut
 func (process *SolverHighsMultiProcess) findMatchingItemColumnsForCommon(item *items.FullItem) iter.Seq[util_highs.ColumnIndex] {
 	return func(yield func(util_highs.ColumnIndex) bool) {
 		for _, part := range process.parts {
-			for column := range part.singleGearSet.ColumnsForItemId(item.ItemId()) {
+			for column := range part.singleGearSet.columnsForItemId(item.ItemId()) {
 				// doesn't technically compare on RandomSuffix, but stats compare should be fine
 				if column.item.EqualsFull(item) {
 					if !yield(column.columnIndex) {
