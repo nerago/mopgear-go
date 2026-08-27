@@ -2,18 +2,14 @@ package weight_types
 
 import (
 	"iter"
+	"math"
 
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/util"
+	"github.com/nerago/mopgear-go/util/util_rank"
 )
 
-//type WeightAlternateSimPriority struct {
-//	orderedList []AlternateSimPriority
-//}
-//type AlternateSimPriority struct {
-//	SimType                    stats.SimType
-//	CompromisePermittedPercent float64
-//}
+const c_priorityRounding = 4
 
 type SimPriorityBasic struct {
 	content stats.SimTypeMap[float64]
@@ -68,24 +64,50 @@ func (sr *SimPriorityBasic) Equals(other *SimPriorityBasic) bool {
 	return sr.content.Equals(&other.content, func(a *float64, b *float64) bool { return *a == *b })
 }
 
-func (sr *SimPriorityBasic) ScaleForTotalSum(targetTotal float64) *SimPriorityBasic {
-	currentTotal := 0.0
-	for value := range sr.content.SeqValues() {
-		currentTotal += value
+func (sr *SimPriorityBasic) ScaleForTotalSum(targetTotal float64) {
+	currentTotal := sr.currentTotal()
+	if currentTotal == 0 {
+		panic("can't scale empty ratio")
+	} else if !util.FloatEqualsOne(currentTotal) {
+		sr.scaleForMathSum(currentTotal, targetTotal)
+		sr.fixSumWithRounding(targetTotal)
 	}
+}
+
+func (sr *SimPriorityBasic) fixSumWithRounding(targetTotal float64) {
+	tensMultiplier := math.Pow10(c_priorityRounding)
+	biggestPart := util_rank.BestCollector1Lite[stats.SimType]{}
+
+	roundedTotal := 0.0
+	for simType, value := range sr.content.SeqKeyValue() {
+		roundedTotal += math.Round(value*tensMultiplier) / tensMultiplier
+		biggestPart.Offer(simType, value)
+	}
+
+	adjust := targetTotal - roundedTotal
+	biggestSimValue := biggestPart.GetBestOrPanic()
+	sr.content.Compute(biggestSimValue, func(v float64) float64 { return v + adjust })
+}
+
+func (sr *SimPriorityBasic) scaleForMathSum(currentTotal, targetTotal float64) {
 	scale := targetTotal / currentTotal
 
-	result := SimPriorityBasic{}
 	for simType := range sr.content.SeqKey() {
 		value, hasValue := sr.content.Get(simType)
 		if hasValue {
-			result.content.Put(simType, value*scale)
+			sr.content.Put(simType, value*scale)
 		}
 	}
-	return &result
 }
 
 func (sr *SimPriorityBasic) ValidateRatioAddsToOne() {
+	currentTotal := sr.currentTotal()
+	if !util.FloatEqualsOne(currentTotal) {
+		panic("ratios don't add to one")
+	}
+}
+
+func (sr *SimPriorityBasic) currentTotal() float64 {
 	currentTotal := 0.0
 	for value := range sr.content.SeqValues() {
 		if value < 0 {
@@ -93,9 +115,7 @@ func (sr *SimPriorityBasic) ValidateRatioAddsToOne() {
 		}
 		currentTotal += value
 	}
-	if !util.FloatEqualsOne(currentTotal) {
-		panic("ratios don't add to one")
-	}
+	return currentTotal
 }
 
 func (sr *SimPriorityBasic) String() string {
@@ -108,7 +128,7 @@ func (sr *SimPriorityBasic) AppendString(sb *util.StringBuild2) {
 	for typ, value := range sr.content.SeqKeyValue() {
 		sb.WriteString(typ.Name())
 		sb.WriteRune('=')
-		sb.WriteFloat64(value, 4)
+		sb.WriteFloat64(value, c_priorityRounding)
 		sb.WriteRune(' ')
 	}
 	sb.Rewind(1)
@@ -191,7 +211,7 @@ func (sre *SimPriorityExtended) ConvertToBasic() SimPriorityBasic {
 	for simType, entry := range sre.entries.SeqKeyValue() {
 		simRatio.Set(simType, entry.RatioScale)
 	}
-	simRatio = *simRatio.ScaleForTotalSum(1.0)
+	simRatio.ScaleForTotalSum(1.0)
 	return simRatio
 }
 
