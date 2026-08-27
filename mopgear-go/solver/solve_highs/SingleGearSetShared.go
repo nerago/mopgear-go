@@ -21,7 +21,7 @@ type singleGearSetShared struct {
 	bonusComboHandler gearBonusComboHandler
 }
 
-func (sc *singleGearSetShared) runForFutureResult(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellableWithError[*items.SolvableItemSet] {
+func (sc *singleGearSetShared) runForFutureResult(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellableWithError[items.SolvableItemSet] {
 	solutionFuture := sc.build.RunHighsFuture(nil)
 
 	return util_async.FutureCancellable_MapValueError(solutionFuture, func(result util_highs.LinearResult) (*items.SolvableItemSet, error) {

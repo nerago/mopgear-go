@@ -276,7 +276,9 @@ type FutureValueAdderInt struct {
 
 func FutureValueAdderIntMake(initialValue int) *FutureValueAdderInt {
 	return &FutureValueAdderInt{
-		FutureValueAdder: FutureValueAdder[int]{total: initialValue, combiner: func(a int, b int) int { return a + b }, channel: make(chan int)}}
+		total:    initialValue,
+		combiner: func(a int, b int) int { return a + b },
+		channel:  make(chan int)}
 }
 
 func (fa *FutureValueAdderInt) AddValueImmediate(value int) {

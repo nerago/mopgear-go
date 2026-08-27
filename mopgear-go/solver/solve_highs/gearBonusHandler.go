@@ -114,9 +114,12 @@ func (bon *gearBonusComboHandler) combosMakeInitial(bonusColumns map[solve_highs
 	return bonusCombos
 }
 
-func (bon *gearBonusComboHandler) finishComboRules(bonusCombos *util_collection.List[bonusCombo]) {
+func (bon *gearBonusComboHandler) finishComboRules(bonusCombos *util_collection.List[bonusCombo]) error {
 	for combo := range bonusCombos.SeqValuePointers() {
-		bon._buildComboActivatingVar(combo)
+		err := bon._buildComboActivatingVar(combo)
+		if err != nil {
+			return err
+		}
 	}
 
 	checkSingleCombo := util_highs.ConstraintRow{Debug: "checkSingleCombo"}
@@ -127,6 +130,8 @@ func (bon *gearBonusComboHandler) finishComboRules(bonusCombos *util_collection.
 	// don't allow overlapping ranges
 	// TODO validate these conditions elsewhere for better errors
 	checkSingleCombo.Build(bon.build, 1, 1)
+
+	return nil
 }
 
 func (bon *gearBonusComboHandler) _makeOutputForComboVariable(simTypeOptional util_collection.Optional[stats.SimType]) *columnInfo {

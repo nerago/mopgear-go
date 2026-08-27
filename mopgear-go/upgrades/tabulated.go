@@ -86,12 +86,12 @@ func groupByBossAndItem(outputMap []upgradeGroupResult) map[string]map[reportIte
 			report, exists := itemMap[ref]
 			if !exists {
 				report = &reportForItem{
-					result.ItemName(),
-					result.ItemLevel(),
-					result.boss,
-					result.ItemStatSummary(),
-					result.slot,
-					make(map[string]upgradeItemResult),
+					itemName:    result.ItemName(),
+					itemLevel:   result.ItemLevel(),
+					boss:        result.boss,
+					statSummary: result.ItemStatSummary(),
+					slot:        result.slot,
+					grouped:     make(map[string]upgradeItemResult),
 				}
 				itemMap[ref] = report
 			}
@@ -111,12 +111,12 @@ func groupByItem(outputMap []upgradeGroupResult) map[reportItemRef]*reportForIte
 			report, exists := byItem[ref]
 			if !exists {
 				report = &reportForItem{
-					result.ItemName(),
-					result.ItemLevel(),
-					result.boss,
-					result.ItemStatSummary(),
-					result.slot,
-					make(map[string]upgradeItemResult),
+					itemName:    result.ItemName(),
+					itemLevel:   result.ItemLevel(),
+					boss:        result.boss,
+					statSummary: result.ItemStatSummary(),
+					slot:        result.slot,
+					grouped:     make(map[string]upgradeItemResult),
 				}
 				byItem[ref] = report
 			}

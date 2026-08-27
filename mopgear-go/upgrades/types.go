@@ -33,10 +33,10 @@ func formatIncreaseGeneric(percent float64) string {
 // ################## upgradeItemTask ##################
 
 type upgradeItemTask struct {
+	boss       string
 	itemRef    loaders.ItemFoundRef
 	slot       items.SlotEquip
 	goal       stats.OptimiseGoal
-	boss       string
 	canUpgrade items.CanUpgradeResult
 }
 
@@ -200,12 +200,12 @@ type upgradeGroupResult struct {
 // ################## reportForItemWithSim ##################
 
 type reportForItem struct {
+	grouped     map[string]upgradeItemResult
 	itemName    string
-	itemLevel   uint16
 	boss        string
 	statSummary string
+	itemLevel   uint16
 	slot        items.SlotEquip
-	grouped     map[string]upgradeItemResult
 }
 
 func (report *reportForItem) Add(group reportGroup, result upgradeItemResult) {

@@ -505,7 +505,7 @@ func FutureCancellable_MapToFuture[T any, R any](innerFuture *FutureCancellable[
 }
 
 type ValueOrError[T any] struct {
-	Value T
+	Value *T
 	Error error
 }
 
@@ -513,7 +513,7 @@ type FutureCancellableWithError[T any] struct {
 	*FutureCancellable[ValueOrError[T]]
 }
 
-func FutureCancellable_MapValueError[T any, R any](innerFuture *FutureCancellable[T], mapper func(T) (R, error)) *FutureCancellableWithError[R] {
+func FutureCancellable_MapValueError[T any, R any](innerFuture *FutureCancellable[T], mapper func(T) (*R, error)) *FutureCancellableWithError[R] {
 	outerFuture := FutureCancellable_Make[ValueOrError[R]]()
 	ChainCancel(outerFuture, innerFuture)
 
@@ -532,4 +532,16 @@ func FutureCancellable_MapValueError[T any, R any](innerFuture *FutureCancellabl
 	}()
 
 	return &FutureCancellableWithError[R]{outerFuture}
+}
+
+func (future *FutureCancellableWithError[T]) ForwardResultToRelevantCallback(onSuccess func(*T), onFail func(error)) {
+	future.verifyCanWait()
+	go func() {
+		value, hasValue := future.resultFromChannel()
+		if hasValue && value.Error == nil && value.Value != nil {
+			onSuccess(value.Value)
+		} else {
+			onFail(value.Error)
+		}
+	}()
 }

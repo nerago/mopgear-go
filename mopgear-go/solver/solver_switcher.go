@@ -34,7 +34,7 @@ func Solver(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, prin
 	return finaliseSolve(solvedResult, itemOptions, model, weightType)
 }
 
-func LaunchSolve(solveOptions *items.SolvableOptionsMap, solveModel *solve_highs_types.SolverModel, printer *util.PrintRecorder, weightType weight_types.WeightType, timeout int) (*util_async.FutureCancellableWithError[*items.SolvableItemSet], error) {
+func LaunchSolve(solveOptions *items.SolvableOptionsMap, solveModel *solve_highs_types.SolverModel, printer *util.PrintRecorder, weightType weight_types.WeightType, timeout int) (*util_async.FutureCancellableWithError[items.SolvableItemSet], error) {
 	switch weightType {
 	case 1:
 		return solve_highs.SingleGearSetMain(solveOptions, solveModel, printer, timeout)
@@ -47,7 +47,7 @@ func LaunchSolve(solveOptions *items.SolvableOptionsMap, solveModel *solve_highs
 	}
 }
 
-func finaliseSolve(solvedResult util_async.ValueOrError[*items.SolvableItemSet], itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, weightType weight_types.WeightType) SolveOutput {
+func finaliseSolve(solvedResult util_async.ValueOrError[items.SolvableItemSet], itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, weightType weight_types.WeightType) SolveOutput {
 	if solvedResult.Error != nil {
 		return SolveOutput{Success: false, Error: solvedResult.Error}
 	} else if solvedResult.Value == nil {

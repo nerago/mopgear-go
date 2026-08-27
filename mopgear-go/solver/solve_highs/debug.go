@@ -7,9 +7,9 @@ import (
 	"github.com/nerago/mopgear-go/util/util_highs"
 )
 
-func debugPrint(solution *util_highs.Solution2, build *util_highs.LinearBuilder, printer *util.PrintRecorder) {
+func debugPrint(solution *util_highs.Solution2, build *util_highs.LinearBuilder, printer *util.PrintRecorder) error {
 	if !util_highs.C_DebugHighs {
-		return
+		return nil
 	}
 
 	printer.Printf("OBJECTIVE VALUE = %f\n", solution.Objective())
@@ -19,7 +19,10 @@ func debugPrint(solution *util_highs.Solution2, build *util_highs.LinearBuilder,
 
 	for colIndex, outputValue := range solution.ColValuesSeq() {
 		if colInfo, isInfo := build.DebugContextFor(colIndex).(*columnInfo); isInfo {
-			debugPrintColumnEntry(colInfo, colIndex, outputValue, &activeBonus, &activeBonusWeight, printer)
+			err := debugPrintColumnEntry(colInfo, colIndex, outputValue, &activeBonus, printer)
+			if err != nil {
+				return err
+			}
 		} else {
 			text := build.DebugTextFor(colIndex)
 			printer.Printf("%d %f %s\n", colIndex, outputValue, text)
@@ -27,6 +30,7 @@ func debugPrint(solution *util_highs.Solution2, build *util_highs.LinearBuilder,
 	}
 
 	printer.Printf("ACTIVE highs Bonus = %s %f\n", activeBonus, activeBonusWeight)
+	return nil
 }
 
 func (colEntry columnInfo) DebugText() string {
@@ -90,7 +94,7 @@ func (colEntry columnInfo) DebugText() string {
 	return strBuild.String()
 }
 
-func debugPrintColumnEntry(colEntry *columnInfo, columnIndex util_highs.ColumnIndex, outputValue float64, activeBonus *string, activeBonusWeight *float64, printer *util.PrintRecorder) error {
+func debugPrintColumnEntry(colEntry *columnInfo, columnIndex util_highs.ColumnIndex, outputValue float64, activeBonus *string, printer *util.PrintRecorder) error {
 	switch colEntry.entryType {
 	case entry_item:
 		printer.Printf("%d %f %s %s %d\n", columnIndex, outputValue, "item", colEntry.itemSlot.Name(), colEntry.item.ItemId())

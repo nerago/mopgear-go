@@ -25,11 +25,15 @@ type gearItemSetupShared struct {
 	activeSetIndex   func(id items.ItemId) (int, bool)
 }
 
-func (sit *gearItemSetupShared) prepare(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, createItemColumn func(*columnInfo)) {
-	sit.prepareUniqueEquipped(itemOptions)
+func (sit *gearItemSetupShared) prepare(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, createItemColumn func(*columnInfo)) error {
+	err := sit.prepareUniqueEquipped(itemOptions)
+	if err != nil {
+		return err
+	}
 	sit.countSetItemsRow = make([]util_highs.ConstraintRow, model.SetBonus.TotalCount)
 	sit.activeSetIndex = model.SetBonus.IndexForItem
 	sit.createItemColumn = createItemColumn
+	return nil
 }
 
 func (sit *gearItemSetupShared) prepareUniqueEquipped(itemOptions *items.SolvableOptionsMap) error {

@@ -212,7 +212,7 @@ func (ws *WeightSearcher2) opSearch2(bound *weightSearch2Bound) {
 
 	cutPoint := ws.search2ChooseCut(probes)
 	probes = probes[0 : cutPoint+1]
-	ws.search2ChooseSplitMode(probes, bound, middle)
+	ws.search2ChooseSplitMode(probes, bound)
 }
 
 func (ws *WeightSearcher2) search2DoProbes(bound *weightSearch2Bound, middle []float64) []probeAndAccuracy {
@@ -275,7 +275,7 @@ func (ws *WeightSearcher2) search2ChooseCut(probes []probeAndAccuracy) int {
 
 // we could alternately rule that if both the high+low for an axis are well ranked then keep full range there
 
-func (ws *WeightSearcher2) search2ChooseSplitMode(probes []probeAndAccuracy, bound *weightSearch2Bound, middle []float64) {
+func (ws *WeightSearcher2) search2ChooseSplitMode(probes []probeAndAccuracy, bound *weightSearch2Bound) {
 	includeMiddle := false
 	hiSlice := make([]probeAndAccuracy, 0, len(probes))
 	loSlice := make([]probeAndAccuracy, 0, len(probes))

@@ -331,14 +331,15 @@ func MapMap_FromExistingMapMap_WithApply[J comparable, K comparable, V any, R an
 }
 
 func MapMap_FromExistingMapMap_WithApplyPlusKeys[J comparable, K comparable, V any, R any](mm *MapMap[J, K, V], apply func(J, K, V) R) *MapMap[J, K, R] {
-	resultMap := MapMap[J, K, R]{}
+	resultMap := MapMap[J, K, R]{
+		dataBy1: make(map[J]map[K]R, len(mm.dataBy1)),
+		dataBy2: make(map[K]map[J]R, len(mm.dataBy2)),
+	}
 
-	resultMap.dataBy2 = make(map[K]map[J]R, len(mm.dataBy2))
 	for key2, inner := range mm.dataBy2 {
 		resultMap.dataBy2[key2] = make(map[J]R, len(inner))
 	}
 
-	resultMap.dataBy1 = make(map[J]map[K]R, len(mm.dataBy1))
 	for key1, inner := range mm.dataBy1 {
 		newInner := make(map[K]R, len(inner))
 		for key2, value := range inner {

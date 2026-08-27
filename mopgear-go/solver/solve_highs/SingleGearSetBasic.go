@@ -21,7 +21,7 @@ type singleGearSetBasic struct {
 	itemSetupBasic gearItemSetupBasic
 }
 
-func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int) (*util_async.FutureCancellableWithError[*items.SolvableItemSet], error) {
+func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int) (*util_async.FutureCancellableWithError[items.SolvableItemSet], error) {
 	build := new(util_highs.LinearBuilder)
 	build.Solver = util_highs.Solver_MIP_Interior
 	build.TimeLimitSeconds = timeout
@@ -47,16 +47,24 @@ func makeGearSetBasic(build *util_highs.LinearBuilder) *singleGearSetBasic {
 }
 
 func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) (*columnInfo, error) {
-	sb.itemSetupCommon.prepare(model, itemOptions, sb.createItemColumn)
-	sb.itemSetupBasic.prepareRequire(&model.StatRequirements)
+	if err := sb.itemSetupCommon.prepare(model, itemOptions, sb.createItemColumn); err != nil {
+		return nil, err
+	}
+	if err := sb.itemSetupBasic.prepareRequire(&model.StatRequirements); err != nil {
+		return nil, err
+	}
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
 		columnIndex := sb.itemSetupCommon.addItemCommon(slot, item)
 		sb.itemSetupBasic.addItem(item, model.CalcRatingItem, columnIndex)
 	}
 
-	sb.itemSetupCommon.finishItemsEquipped(itemOptions, sb.build)
-	sb.itemSetupBasic.finishRequire1(&model.StatRequirements, sb.build)
+	if err := sb.itemSetupCommon.finishItemsEquipped(itemOptions, sb.build); err != nil {
+		return nil, err
+	}
+	if err := sb.itemSetupBasic.finishRequire1(&model.StatRequirements, sb.build); err != nil {
+		return nil, err
+	}
 	countSetItemsCol := sb.itemSetupCommon.finishSetCounts(sb.build)
 	baseRatingSumVar := sb.itemSetupBasic.finishRatingSum(sb.build)
 
