@@ -16,8 +16,8 @@ import (
 const (
 	c_fitting3_std_deviation_accept = 1.0
 
-	c_fitting3_simScaledHighM     = 2.0
-	c_fitting3_statScaledHighM    = 2.0
+	c_fitting3_simScaledHighM = 2.0
+	//c_fitting3_statScaledHighM    = 2.0
 	c_fitting3_statScaledMaxValue = 1.0
 
 	c_fitting3_output_lineFit      = 1

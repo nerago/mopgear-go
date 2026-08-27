@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	c_formulaHighWeight       = 50.0
+	//c_formulaHighWeight       = 50.0
 	c_formulaHighDiff         = 1000.0
 	c_formulaOutputPerInclude = -0.1
 )

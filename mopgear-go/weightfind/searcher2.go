@@ -115,7 +115,7 @@ func (ws *WeightSearcher2) Run(cancel util_async.CancelSignal) weight_types.Weig
 
 		iterCount++
 		if (c_search2_debug || iterCount%1000 == 0) && ws.printer != nil {
-			ws.printer.Printf("search i=%d q=%d b=%f\n", iterCount, ws.queue.Size(), ws.bestResult.BestValue)
+			ws.printer.Printf("search i=%d q=%d b=%f\n", iterCount, ws.queue.Size(), ws.bestResult.GetBestScore())
 		}
 		if iterCount%10 == 0 {
 			ws.queueMaintenance()
@@ -191,13 +191,13 @@ func (ws *WeightSearcher2) opSearch2(bound *weightSearch2Bound) {
 	middle := sliceInterpolate(bound.rangeMin, bound.rangeMax, c_search2_probeMiddle)
 	probes := ws.search2DoProbes(bound, middle)
 
-	if probes[0].accuracy < ws.bestResult.BestValue-c_search2_abandonBranchAccuracyGap {
+	if probes[0].accuracy < ws.bestResult.GetBestScore()-c_search2_abandonBranchAccuracyGap {
 		if c_search2_debug {
 			ws.printer.Println("  -> ABANDON BRANCH")
 		}
 		return
 	} else if c_search2_debug {
-		ws.printer.Printf(" BRANCH %f %f %f\n", probes[0].accuracy, ws.bestResult.BestValue, ws.bestResult.BestValue-c_search2_abandonBranchAccuracyGap)
+		ws.printer.Printf(" BRANCH %f %f %f\n", probes[0].accuracy, ws.bestResult.GetBestScore(), ws.bestResult.GetBestScore()-c_search2_abandonBranchAccuracyGap)
 	}
 
 	gapFirstProbeToLast := probes[0].accuracy - probes[len(probes)-1].accuracy
@@ -298,26 +298,26 @@ func (ws *WeightSearcher2) search2ChooseSplitMode(probes []probeAndAccuracy, bou
 		ws.search2MakeFollowupShrink(bound)
 	} else if hi == 0 || lo == 0 {
 		// everything on once side, with or without the middle
-		ws.search2MakeFollowupCommon(probes, bound, includeMiddle, middle)
+		ws.search2MakeFollowupCommon(probes, bound)
 	} else if hi == 1 && lo == 1 && hiSlice[0].axis == loSlice[0].axis {
 		// basically just know its around middle
 		// go for general shrinking but keep that full range since we know its of interest
 		ws.search2MakeFollowupShrinkExceptAxis(bound, hiSlice[0].axis)
 	} else if hi == 1 && lo == 1 {
 		// go ahead and extend a bit in hi and low directions on different axes
-		ws.search2MakeFollowupCommon(probes, bound, includeMiddle, middle)
+		ws.search2MakeFollowupCommon(probes, bound)
 	} else if (hi == 1 && lo > 1) || (lo == 1 && hi > 1) {
 		// almost all on one side except for one
 		// could have an axis repeated, but common should be happy enough with one good value
-		ws.search2MakeFollowupCommon(probes, bound, includeMiddle, middle)
+		ws.search2MakeFollowupCommon(probes, bound)
 	} else if !includeMiddle {
 		// make 2 regions on either side of middle
-		ws.search2MakeFollowupCommon(loSlice, bound, false, middle)
-		ws.search2MakeFollowupCommon(hiSlice, bound, false, middle)
+		ws.search2MakeFollowupCommon(loSlice, bound)
+		ws.search2MakeFollowupCommon(hiSlice, bound)
 	} else {
 		// these will have a fair bit of overlap, but so be it
-		ws.search2MakeFollowupCommon(loSlice, bound, false, middle)
-		ws.search2MakeFollowupCommon(hiSlice, bound, false, middle)
+		ws.search2MakeFollowupCommon(loSlice, bound)
+		ws.search2MakeFollowupCommon(hiSlice, bound)
 		ws.search2MakeFollowupShrink(bound)
 	}
 }
@@ -336,47 +336,7 @@ func (ws *WeightSearcher2) search2MakeFollowupShrinkExceptAxis(bound *weightSear
 	ws.addSearchPlan(rangeMin, rangeMax, bound)
 }
 
-func (ws *WeightSearcher2) search2MakeFollowupCommon(probes []probeAndAccuracy, bound *weightSearch2Bound, includeMiddle bool, middle []float64) {
-	ws.search2MakeFollowupCommon2(probes, bound, includeMiddle, middle)
-}
-
-func (ws *WeightSearcher2) search2MakeFollowupCommon1(probes []probeAndAccuracy, bound *weightSearch2Bound, includeMiddle bool, middle []float64) {
-	madeChangeOfSignificance := false
-	rangeMin := slices.Clone(bound.rangeMin)
-	rangeMax := slices.Clone(bound.rangeMax)
-	for axis := range ws.typeCount {
-		hasHi, hasLo := includesAxisEntry(probes, axis)
-		if hasHi && !hasLo {
-			if includeMiddle {
-				rangeMin[axis] = valueInterpolate(bound.rangeMin[axis], bound.rangeMax[axis], c_search2_probeA)
-			} else {
-				rangeMin[axis] = middle[axis]
-			}
-			madeChangeOfSignificance = true
-		} else if !hasHi && hasLo {
-			if includeMiddle {
-				rangeMax[axis] = valueInterpolate(bound.rangeMin[axis], bound.rangeMax[axis], c_search2_probeB)
-			} else {
-				rangeMax[axis] = middle[axis]
-			}
-			madeChangeOfSignificance = true
-		} else if !hasHi /* && !hasLo */ {
-			// NOTE considering that hi&&lo means keep full range, but !hi&&!lo could narrow
-			//rangeMin[axis] = valueInterpolate(bound.rangeMin[axis], bound.rangeMax[axis], c_search2_probeA)
-			//rangeMax[axis] = valueInterpolate(bound.rangeMin[axis], bound.rangeMax[axis], c_search2_probeB)
-		}
-	}
-
-	// NOTE don't like that we skip out on range of other var
-
-	if !madeChangeOfSignificance {
-		panic("logic fail, no significant change found")
-	}
-
-	ws.addSearchPlan(rangeMin, rangeMax, bound)
-}
-
-func (ws *WeightSearcher2) search2MakeFollowupCommon2(probes []probeAndAccuracy, bound *weightSearch2Bound, includeMiddle bool, middle []float64) {
+func (ws *WeightSearcher2) search2MakeFollowupCommon(probes []probeAndAccuracy, bound *weightSearch2Bound) {
 	rangeMin := slices.Clone(probes[0].point)
 	rangeMax := slices.Clone(probes[0].point)
 	for i := 1; i < len(probes); i++ {
@@ -409,21 +369,6 @@ func (ws *WeightSearcher2) search2MakeFollowupCommon2(probes []probeAndAccuracy,
 		//	nodeDepth: bound.nodeDepth+1,
 		//})
 	}
-}
-
-func includesAxisEntry(probes []probeAndAccuracy, axis int) (bool, bool) {
-	hasHi, hasLo := false, false
-	for i := range probes {
-		entry := &probes[i]
-		if entry.axis == axis {
-			if entry.isHigh {
-				hasHi = true
-			} else {
-				hasLo = true
-			}
-		}
-	}
-	return hasHi, hasLo
 }
 
 func checkRangeIsSubrangeOf(outer, inner *weightSearch2Bound) bool {

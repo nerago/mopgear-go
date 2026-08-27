@@ -1,6 +1,7 @@
 package weightfind
 
 import (
+	"sync/atomic"
 	"time"
 
 	"github.com/nerago/mopgear-go/stats"
@@ -77,8 +78,14 @@ func (wrp *WeightRatioProcess) updateSpecRatio(spec *WeightSpec, tracker *util.T
 		return wrp.runSearch(spec, cancel)
 	})
 
+	countDone := atomic.Uint64{}
+	tracker.RunFromAtomicInt(&countDone, uint64(len(taskList)))
+	defer tracker.SetDone()
+
 	resultList := util_async.Map_SliceToSlice(c_ratioThreadCount, taskList, func(apply *func() weight_types.IWeightResult) weight_types.IWeightResult {
-		return (*apply)()
+		result := (*apply)()
+		countDone.Add(1)
+		return result
 	})
 
 	for _, result := range resultList {
@@ -92,6 +99,7 @@ func (wrp *WeightRatioProcess) addReport(spec *WeightSpec, weightResult weight_t
 	newRatio := weightResult.GetNewRatio()
 	if newRatio != nil {
 		sb.WriteString("Ratio: ")
+		newRatio.ScaleForTotalSum(1.0)
 		newRatio.AppendString(sb)
 		sb.WriteString("\n")
 

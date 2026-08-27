@@ -21,11 +21,6 @@ const (
 	grid_sim_step      = 500
 )
 
-type incrementStat struct {
-	stat  stats.StatType
-	value int32
-}
-
 type incrementStatCombo map[stats.StatType]int32
 
 func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, requiredStats []stats.StatType, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, tracker *util.TrackProgress, label string, cancel util_async.CancelSignal, fixStatsMode weight_types.FixStatsRangeMode) []weight_types.WeightInput {
@@ -37,7 +32,7 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 
 	initialBaseStats := InitialBonusStatMap_fixRanges(printer, currentItemSet, incrementMax, fixStatsMode, true)
 
-	incrementPermutations := makePermutationsForGridSim2(requiredStats, incrementStep, incrementMax, printer)
+	incrementPermutations := makePermutationsForGridSim2(requiredStats, incrementStep, incrementMax)
 	tracker.RunOuterTracking(len(incrementPermutations))
 	defer tracker.SetDone()
 
@@ -49,15 +44,14 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 		str.WriteString(label)
 		str.WriteRune(' ')
 		for statType, valueIncrease := range *increments {
-			bonusStat.Put(statType, bonusStat.GetOrNilValue(statType)+valueIncrease)
-
+			bonusStat.Compute(statType, func(v int32) int32 { return v + valueIncrease })
 			str.WriteString(statType.Name())
 			str.WriteRune('=')
 			str.WriteInt32(bonusStat.GetOrNilValue(statType))
 			str.WriteRune(' ')
 		}
 
-		simResult := simulate.WowSim_Execute_SpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), bonusStat, tracker.NewChild())
+		simResult := simulate.ExecuteSpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), bonusStat, tracker.NewChild())
 
 		str.WriteString("--> ")
 		simResult.CompactStringGeneralAppend(&str)
@@ -72,7 +66,7 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 	return inputList
 }
 
-func makePermutationsForGridSim2(statList []stats.StatType, incrementStep int32, incrementMax int32, printer *util.PrintRecorder) []incrementStatCombo {
+func makePermutationsForGridSim2(statList []stats.StatType, incrementStep int32, incrementMax int32) []incrementStatCombo {
 	allCombos := make([]incrementStatCombo, 0)
 
 	var incrementLo int32 = 0
@@ -167,7 +161,7 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 			total = *itemSet.Total()
 		}
 
-		simResult := simulate.WowSim_Execute_UseModel(simSize, model, itemSet.Items(), bonusStats, track.NewChild())
+		simResult := simulate.ExecuteUseModel(simSize, model, itemSet.Items(), bonusStats, track.NewChild())
 
 		str := util.StringBuild2{}
 		str.WriteString("SIM ")
@@ -264,19 +258,6 @@ func fixBadExpertRange(printer *util.PrintRecorder, currentExpert uint32, planne
 		printer.Printf("Current gear expertise %d, planned simulation %d-%d, corrected %d-%d\n", currentExpert, minValue, maxValue, minValue+fix, maxValue+fix)
 	}
 	return fix
-}
-
-func InitialBonusStatMap(printer *util.PrintRecorder, currentItemSet items.FullItemSet, incrementBaseHaste int32, decrementBaseExpertise int32, incrementMax int32) map[stats.StatType]int32 {
-	if checkBadHasteRange(printer, currentItemSet.Total().GetUInt(stats.Stat_Haste), incrementBaseHaste, incrementMax) {
-		panic("haste in discontinuity range")
-	}
-	if checkBadExpertRange(printer, currentItemSet.Total().Expertise(), decrementBaseExpertise, incrementMax) {
-		panic("simulate will overcap expertise")
-	}
-	initialBaseStats := make(map[stats.StatType]int32)
-	initialBaseStats[stats.Stat_Haste] += incrementBaseHaste
-	initialBaseStats[stats.Stat_Expertise] -= decrementBaseExpertise
-	return initialBaseStats
 }
 
 func InitialBonusStatMap_fixRanges(printer *util.PrintRecorder, currentItemSet items.FullItemSet, plannedIncrementTestRange int32, fixMode weight_types.FixStatsRangeMode, isForGrid bool) *stats.StatTypeMap[int32] {

@@ -214,7 +214,7 @@ func (ws *WeightSearcherRatio1) evaluateScore(weightArray *weightSearchRatio1Poi
 		ratio.Set(simType, weightArray[index])
 		index++
 	}
-	ratio = ratio.ScaleForTotalSum(1.0)
+	ratio.ScaleForTotalSum(1.0)
 
 	accuracy := EvaluateAccuracySwitch(ws.AccuracyStatistical, &weights, ws.simTypes, ratio, ws.inputData)
 	ws.bestResult.Offer(&weightSearchRatio1Best{

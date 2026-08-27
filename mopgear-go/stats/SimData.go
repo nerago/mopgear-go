@@ -20,8 +20,6 @@ const (
 	Sim_Count         = 6
 )
 
-const c_nullIncrease = -100.0
-
 func (types SimType) IsHighGood() bool {
 	switch types {
 	case Sim_DPS:

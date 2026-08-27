@@ -38,7 +38,7 @@ type ReforgeRecipe struct {
 	From, To StatType
 }
 
-var ReforgeRecipe_empty ReforgeRecipe = ReforgeRecipe{}
+var ReforgeRecipe_empty = ReforgeRecipe{}
 
 func ReforgeRecipe_of(from, to StatType) ReforgeRecipe {
 	return ReforgeRecipe{hasValue: true, From: from, To: to}

@@ -60,7 +60,7 @@ func (sc *SetComparable[E]) FilterFuncNoPointer(predicate func(E) bool) {
 	}
 }
 
-func (sc *SetComparable[E]) RemoveDuplicatesFunc(equals func(a *E, b *E) bool) {
+func (sc *SetComparable[E]) RemoveDuplicatesFunc(_ func(a *E, b *E) bool) {
 	// nop for set
 }
 
@@ -142,7 +142,7 @@ func (sg *SetGeneral[E]) FilterFuncNoPointer(predicate func(E) bool) {
 	FilterSliceInPlace_NoPointer(&sg.slice, predicate)
 }
 
-func (sg *SetGeneral[E]) RemoveDuplicatesFunc(equals func(a *E, b *E) bool) {
+func (sg *SetGeneral[E]) RemoveDuplicatesFunc(_ func(a *E, b *E) bool) {
 	// nop for set
 }
 

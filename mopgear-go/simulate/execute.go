@@ -32,19 +32,19 @@ const (
 
 var WowSimRanDuringCurrentProcess = false
 
-func WowSim_Execute_UseModel(runSize WowSim_RunSize, model *gear_model.SpecModel, equipMap *items.FullEquipMap, bonusStats *stats.StatTypeMap[int32], tracker *util.TrackProgress) stats.SimData {
-	return WowSim_Execute_SpecifyAll(runSize, model.SimSpeedUp, model.Spec, model.Goal, model.SimulateAs, model.Professions, equipMap, bonusStats, tracker)
+func ExecuteUseModel(runSize WowSim_RunSize, model *gear_model.SpecModel, equipMap *items.FullEquipMap, bonusStats *stats.StatTypeMap[int32], tracker *util.TrackProgress) stats.SimData {
+	return ExecuteSpecifyAll(runSize, model.SimSpeedUp, model.Spec, model.Goal, model.SimulateAs, model.Professions, equipMap, bonusStats, tracker)
 }
 
-func WowSim_Execute_SpecifyAll(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *stats.StatTypeMap[int32], tracker *util.TrackProgress) stats.SimData {
+func ExecuteSpecifyAll(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *stats.StatTypeMap[int32], tracker *util.TrackProgress) stats.SimData {
 	input, reporter, id := prepareSim(runSize, speedUp, spec, goal, fight, profession, equipMap, bonusStats)
 	wowsim_core.RunRaidSimConcurrentAsync(input, reporter, id)
 
-	finalResult, completedIterations := waitForResult(reporter, tracker)
-	return convertResult(finalResult, completedIterations)
+	finalResult := waitForResult(reporter, tracker)
+	return convertResult(finalResult)
 }
 
-func WowSim_Execute_SpecifyAll_Future(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *stats.StatTypeMap[int32], tracker *util.TrackProgress) *util_async.FutureCancellable[stats.SimData] {
+func ExecuteSpecifyAllFuture(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *stats.StatTypeMap[int32], tracker *util.TrackProgress) *util_async.FutureCancellable[stats.SimData] {
 	input, reporter, id := prepareSim(runSize, speedUp, spec, goal, fight, profession, equipMap, bonusStats)
 	wowsim_core.RunRaidSimConcurrentAsync(input, reporter, id)
 
@@ -54,8 +54,8 @@ func WowSim_Execute_SpecifyAll_Future(runSize WowSim_RunSize, speedUp int, spec 
 	})
 
 	go func() {
-		finalResult, completedIterations := waitForResult(reporter, tracker)
-		converted := convertResult(finalResult, completedIterations)
+		finalResult := waitForResult(reporter, tracker)
+		converted := convertResult(finalResult)
 		future.SetResult(converted)
 	}()
 
@@ -249,13 +249,13 @@ func updateBonus(input *wowsim_proto.RaidSimRequest, bonusStats *stats.StatTypeM
 	input.Raid.Parties[0].Players[0].BonusStats = unitStats
 }
 
-func waitForResult(reporter chan *wowsim_proto.ProgressMetrics, tracker *util.TrackProgress) (*wowsim_proto.RaidSimResult, int32) {
+func waitForResult(reporter chan *wowsim_proto.ProgressMetrics, tracker *util.TrackProgress) *wowsim_proto.RaidSimResult {
 	if tracker != nil {
 		push := tracker.PrepareForPush()
 		for v := range reporter {
 			if v.FinalRaidResult != nil {
 				tracker.SetDone()
-				return v.FinalRaidResult, v.CompletedIterations
+				return v.FinalRaidResult
 			}
 			progress := float64(v.CompletedIterations) / float64(v.TotalIterations)
 			push(progress)
@@ -263,17 +263,17 @@ func waitForResult(reporter chan *wowsim_proto.ProgressMetrics, tracker *util.Tr
 	} else {
 		for v := range reporter {
 			if v.FinalRaidResult != nil {
-				return v.FinalRaidResult, v.CompletedIterations
+				return v.FinalRaidResult
 			}
 		}
 	}
 	panic("no final result")
 }
 
-func convertResult(finalResult *wowsim_proto.RaidSimResult, completedIterations int32) stats.SimData {
+func convertResult(finalResult *wowsim_proto.RaidSimResult) stats.SimData {
 	if finalResult.Error != nil {
 		panic("sim fail = " + finalResult.Error.Message)
-	} else if finalResult != nil && finalResult.RaidMetrics != nil && finalResult.RaidMetrics.Parties != nil && finalResult.RaidMetrics.Parties[0] != nil && finalResult.RaidMetrics.Parties[0].Players != nil && finalResult.RaidMetrics.Parties[0].Players[0] != nil {
+	} else if finalResult.RaidMetrics != nil && finalResult.RaidMetrics.Parties != nil && finalResult.RaidMetrics.Parties[0] != nil && finalResult.RaidMetrics.Parties[0].Players != nil && finalResult.RaidMetrics.Parties[0].Players[0] != nil {
 		WowSimRanDuringCurrentProcess = true
 		playerMetrics := finalResult.RaidMetrics.Parties[0].Players[0]
 

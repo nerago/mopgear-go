@@ -10,12 +10,14 @@ import (
 
 func (item *FullItem) getAsWowSimItem() (simBaseItem *core.Item, simScale *proto.ScalingItemProperties) {
 	simBaseItem = core.GetItemByID(int32(item.itemId))
-	for _, scale := range simBaseItem.ScalingOptions {
-		if scale.Ilvl == int32(item.itemLevel) {
-			return simBaseItem, scale
+	if simBaseItem != nil {
+		for _, scale := range simBaseItem.ScalingOptions {
+			if scale.Ilvl == int32(item.itemLevel) {
+				return simBaseItem, scale
+			}
 		}
 	}
-	panic("level scale not found")
+	panic("wow sim level scale not found for " + item.itemId.String())
 }
 
 func (item *FullItem) randomStatsFromWowSim(randomSuffix RandomSuffix) (stats.StatBlock, string) {

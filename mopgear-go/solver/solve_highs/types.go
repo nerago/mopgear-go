@@ -59,7 +59,7 @@ type columnInfo struct {
 	statRange  weight_types.StatRange
 }
 
-func (colEntry columnInfo) ItemId() items.ItemId {
+func (colEntry columnInfo) itemId() items.ItemId {
 	if colEntry.item != nil {
 		return colEntry.item.ItemId()
 	} else if colEntry.itemFull != nil {

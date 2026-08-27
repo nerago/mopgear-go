@@ -50,7 +50,7 @@ func (f fitting3EachFields) Results() iter.Seq[util_weight.FittingInterimResult2
 
 func (fe *FittingEachStatWeightProcess3) Run(cancel util_async.CancelSignal, tracker *util.TrackProgress) weight_types.WeightResult3 {
 	util_async.ChainCancel(cancel, &fe.CancelInternal)
-	fe.ChooseScaling()
+	fe.chooseScaling()
 	fe.launchEachNested(tracker)
 	stopwatch := fe.CalcMetrics()
 	if !fe.Failed {
@@ -61,7 +61,7 @@ func (fe *FittingEachStatWeightProcess3) Run(cancel util_async.CancelSignal, tra
 	}
 }
 
-func (fe *FittingEachStatWeightProcess3) ChooseScaling() {
+func (fe *FittingEachStatWeightProcess3) chooseScaling() {
 	fe.ScaleStats = util_weight.ChooseStatScalingBasic(fe.InputData, c_fitting3_statScaledMaxValue, true, fe.Printer)
 	fe.ScaleSims = util_weight.ChooseSimUnfriendlyUnitScaleAndOffset(fe.InputData, fe.RequiredSims)
 }

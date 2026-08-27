@@ -20,15 +20,15 @@ func diagnoseInfeasible(build *LinearBuilder, printer *util.PrintRecorder) {
 }
 
 func diagnoseSearchRange(build *LinearBuilder, printer *util.PrintRecorder) {
-	min, max := 0, len(build.mat.lowerBound)-1
+	minIndex, maxIndex := 0, len(build.mat.lowerBound)-1
 
-	for max-min > 2 {
-		pivot := (min + max) / 2
-		cmp := diagnoseTryHalves(build, min, pivot, max, printer)
+	for maxIndex-minIndex > 2 {
+		pivot := (minIndex + maxIndex) / 2
+		cmp := diagnoseTryHalves(build, minIndex, pivot, maxIndex, printer)
 		if cmp < 0 {
-			max = pivot - 1
+			maxIndex = pivot - 1
 		} else if cmp > 0 {
-			min = pivot
+			minIndex = pivot
 		} else {
 			return
 		}

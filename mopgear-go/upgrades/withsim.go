@@ -40,7 +40,7 @@ func runBaseline(spec *SpecInput, input *InputSettings, baseItems *items.FullOpt
 	baseRating, baseSet := solveBaseLine(printer, baseItems, spec, input)
 
 	model := &spec.Model
-	baseSim := simulate.WowSim_Execute_SpecifyAll(input.SimSizeBaseline, model.SimSpeedUp, model.Spec, model.Goal,
+	baseSim := simulate.ExecuteSpecifyAll(input.SimSizeBaseline, model.SimSpeedUp, model.Spec, model.Goal,
 		model.SimulateAs, model.Professions, baseSet.Items(), nil, tracker)
 
 	return baseSim, baseRating
@@ -53,7 +53,7 @@ func runEachUpgradeTaskAndSim(extraTasks []upgradeItemTask, baseItems *items.Ful
 			settings.WeightType, settings.SolverTimeout)
 
 		if upgradeResult.success {
-			simResult := simulate.WowSim_Execute_SpecifyAll(settings.SimSizeItemInitial, spec.Model.SimSpeedUp, spec.Model.Spec, spec.Model.Goal,
+			simResult := simulate.ExecuteSpecifyAll(settings.SimSizeItemInitial, spec.Model.SimSpeedUp, spec.Model.Spec, spec.Model.Goal,
 				spec.Model.SimulateAs, spec.Model.Professions, upgradeResult.itemSet.Items(), nil, tracker.NewChild())
 
 			itemName := db.LookupItemNameByItemId(task.itemRef.ItemId)
@@ -84,6 +84,6 @@ func runMoreDetailedSimForBestN(resultList []upgradeItemResult, topResultsCount 
 }
 
 func runMoreDetailedSimFor(result *upgradeItemResult, extraSimSize simulate.WowSim_RunSize, model *gear_model.SpecModel, goal stats.OptimiseGoal, tracker *util.TrackProgress) {
-	updatedSimResult := simulate.WowSim_Execute_SpecifyAll(extraSimSize, model.SimSpeedUp, model.Spec, goal, model.SimulateAs, model.Professions, result.itemSet.Items(), nil, tracker)
+	updatedSimResult := simulate.ExecuteSpecifyAll(extraSimSize, model.SimSpeedUp, model.Spec, goal, model.SimulateAs, model.Professions, result.itemSet.Items(), nil, tracker)
 	result.simResult = updatedSimResult
 }

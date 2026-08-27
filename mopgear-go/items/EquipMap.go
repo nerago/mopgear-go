@@ -108,21 +108,13 @@ func withConsistentOrder(a, b *FullItem, yield func(*FullItem) bool) bool {
 // //////////////////////////////////////////////////////
 type SolvableEquipMap [ITEM_SLOT_COUNT]*SolvableItem
 
-func (equipMap *SolvableEquipMap) WithAdditional(slot SlotEquip, item *SolvableItem) SolvableEquipMap {
-	var result SolvableEquipMap = *equipMap
+func (equipMap *SolvableEquipMap) withAdditional(slot SlotEquip, item *SolvableItem) SolvableEquipMap {
+	var result = *equipMap
 	result[slot] = item
 	return result
 }
 
-func (equipMap *SolvableEquipMap) ReplaceItem_Into(slot SlotEquip, item *SolvableItem, dest *SolvableEquipMap) {
-	// for i := Equip_Iter_First; i < slot; i++ {
-	// 	dest[i] = equipMap[i]
-	// }
-	// dest[slot] = item
-	// for i := slot + 1; i <= Equip_Iter_Last; i++ {
-	// 	dest[i] = equipMap[i]
-	// }
-
+func (equipMap *SolvableEquipMap) replaceItem_Into(slot SlotEquip, item *SolvableItem, dest *SolvableEquipMap) {
 	*dest = *equipMap
 	dest[slot] = item
 }

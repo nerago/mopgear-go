@@ -6,21 +6,20 @@ import (
 )
 
 type EnumMapMap[J EnumBaseType, K EnumBaseType, V any] struct {
+	enumType1 EnumType[J]
+	enumType2 EnumType[K]
 	content   []V
 	isSet     BitSet
 	len       int
-	enumType1 EnumType[J]
-	enumType2 EnumType[K]
 }
 
 func EnumMapMapMake[J EnumBaseType, K EnumBaseType, V any](enumType1 EnumType[J], enumType2 EnumType[K]) EnumMapMap[J, K, V] {
 	arraySize := uint32(enumType1.NumValues()) * uint32(enumType2.NumValues())
 	return EnumMapMap[J, K, V]{
-		make([]V, arraySize),
-		BitSetMake(arraySize - 1),
-		0,
-		enumType1,
-		enumType2,
+		content:   make([]V, arraySize),
+		isSet:     BitSetMake(arraySize - 1),
+		enumType1: enumType1,
+		enumType2: enumType2,
 	}
 }
 
@@ -41,11 +40,11 @@ func (em *EnumMapMap[J, K, V]) IsUninitialized() bool {
 
 func (em *EnumMapMap[J, K, V]) Clone() *EnumMapMap[J, K, V] {
 	return &EnumMapMap[J, K, V]{
-		slices.Clone(em.content),
-		slices.Clone(em.isSet),
-		em.len,
-		em.enumType1,
-		em.enumType2,
+		content:   slices.Clone(em.content),
+		isSet:     slices.Clone(em.isSet),
+		len:       em.len,
+		enumType1: em.enumType1,
+		enumType2: em.enumType2,
 	}
 }
 

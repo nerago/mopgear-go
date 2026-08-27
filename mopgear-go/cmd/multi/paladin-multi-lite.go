@@ -16,7 +16,7 @@ import (
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
-func PaladinMultiRunLite(printer *util.PrintRecorder) {
+func paladinMultiRunLite(printer *util.PrintRecorder) {
 	// TIER
 	var retT16 = []items.ItemId{
 		99139, // ret t16 legs normal
@@ -45,7 +45,7 @@ func PaladinMultiRunLite(printer *util.PrintRecorder) {
 	}
 	var newTrinketsDamage = []items.ItemId{
 		mygear.TrinketThokTailCelestial,
-		mygear.TrinketFusionCoreCelestial,
+		mygear.TrinketFusionCoreHeroic,
 		mygear.TrinketSkeerBloodCelestial,
 	}
 	var newTrinketsTank = []items.ItemId{
@@ -66,7 +66,6 @@ func PaladinMultiRunLite(printer *util.PrintRecorder) {
 		101887, // timeless ring haste/mastery. Cliffbreaker Seal of the Faultline. 549 (is upgraded)
 		// Cliffbreaker Seal of the Landslide. hit/expertise. 535 (not upgraded)
 	}
-	var celestial = []items.ItemId{}
 	var celestialRaden = []items.ItemId{
 		95011, // lighting clawfeet
 		95022, // Ra-den's Ruinous Ring
@@ -191,7 +190,7 @@ func PaladinMultiRunLite(printer *util.PrintRecorder) {
 
 	addExtrasToEach(miscOtherP3, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
-	newStuffP5 := slices.Concat(timeless, celestial, celestialRaden, orgRaidDrops, newTrinketsDamage)
+	newStuffP5 := slices.Concat(timeless, celestialRaden, orgRaidDrops, newTrinketsDamage)
 	addExtrasToEach(newStuffP5, &ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 	addExtrasToEach(newTrinketsTank, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 	addExtrasToEach(orgOneHandAndShield, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)

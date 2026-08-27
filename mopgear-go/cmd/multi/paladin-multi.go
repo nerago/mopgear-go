@@ -18,7 +18,7 @@ import (
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
-func PaladinMultiRun(printer *util.PrintRecorder) {
+func paladinMultiRun(printer *util.PrintRecorder) {
 	job := multi_types.JobInputs{}
 	job.SetMinimumExtraItemLevel(463)
 	job.SetTimeLimitEachSolver(200)

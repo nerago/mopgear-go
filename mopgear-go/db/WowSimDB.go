@@ -13,9 +13,9 @@ import (
 )
 
 var loaded = false
-var itemsById map[items.ItemId][]items.FullItem = make(map[items.ItemId][]items.FullItem)
-var reforgeById map[uint16]stats.ReforgeRecipe = make(map[uint16]stats.ReforgeRecipe)
-var reforgeByObj map[stats.ReforgeRecipe]uint16 = make(map[stats.ReforgeRecipe]uint16)
+var itemsById = make(map[items.ItemId][]items.FullItem)
+var reforgeById = make(map[uint16]stats.ReforgeRecipe)
+var reforgeByObj = make(map[stats.ReforgeRecipe]uint16)
 
 func WowSimDB_Read() {
 	filename := files.WowSimDB
@@ -25,7 +25,10 @@ func WowSimDB_Read() {
 	}
 
 	var inputObject map[string]any
-	json.Unmarshal(allBytes, &inputObject)
+	err = json.Unmarshal(allBytes, &inputObject)
+	if err != nil {
+		panic(err)
+	}
 
 	convertItems(inputObject["items"].([]any))
 	convertReforge(inputObject["reforgeStats"].([]any))
@@ -155,7 +158,7 @@ func addItem(itemObj map[string]any) {
 			upgradeLevel = items.CalcUpgradeLevel(itemLevel, baseItemLevel)
 		}
 
-		item := items.FullItem_FromWowSim(itemId, itemLevel, baseItemLevel, upgradeLevel, slot, name, scaleStats, armorType, socketSlots, socketBonus, phase)
+		item := items.FullItem_FromWowSim(itemId, itemLevel, upgradeLevel, slot, name, scaleStats, armorType, socketSlots, socketBonus, phase)
 		itemsById[itemId] = append(itemsById[itemId], item)
 	}
 }

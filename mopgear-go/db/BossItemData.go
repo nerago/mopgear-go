@@ -77,14 +77,6 @@ func load() {
 	g_itemNameToBoss = itemNameToBoss
 }
 
-func BossItemData_BossForItem(item *items.FullItem) string {
-	if g_itemNameToBoss == nil {
-		load()
-	}
-
-	return g_itemNameToBoss[item.BaseName()]
-}
-
 func BossItemData_BossForItemId(itemId items.ItemId) string {
 	if g_itemNameToBoss == nil {
 		load()

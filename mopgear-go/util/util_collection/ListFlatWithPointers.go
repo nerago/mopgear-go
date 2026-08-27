@@ -13,7 +13,7 @@ type ListFlatWithPointers[T any] struct {
 
 var _ IListRead[*int] = &ListFlatWithPointers[int]{}
 
-func SliceFlatExposePointersMake[T any](fixedSize uint16) ListFlatWithPointers[T] {
+func ListFlatWithPointersMake[T any](fixedSize uint16) ListFlatWithPointers[T] {
 	sl := ListFlatWithPointers[T]{
 		make([]T, fixedSize),
 		make([]uint16, fixedSize),

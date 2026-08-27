@@ -85,12 +85,30 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	cancel := util_async.CancelSignal_Make()
 	util_async.CancelOnKeyPress(cancel)
 
-	taskMap := make(map[string]func() weight_types.WeightResult)
-	addTask := func(label string, run func() weight_types.WeightResult) {
+	taskMap := make(map[string]func() weight_types.IWeightResult)
+	addTask1 := func(label string, run func() weight_types.WeightResult1) {
 		if taskMap[label] != nil {
 			panic("duplicate")
 		}
-		taskMap[label] = run
+		taskMap[label] = func() weight_types.IWeightResult {
+			return new(run())
+		}
+	}
+	addTask2 := func(label string, run func() weight_types.WeightResult2) {
+		if taskMap[label] != nil {
+			panic("duplicate")
+		}
+		taskMap[label] = func() weight_types.IWeightResult {
+			return new(run())
+		}
+	}
+	addTask3 := func(label string, run func() weight_types.WeightResult3) {
+		if taskMap[label] != nil {
+			panic("duplicate")
+		}
+		taskMap[label] = func() weight_types.IWeightResult {
+			return new(run())
+		}
 	}
 
 	reportOnTweakedVersions := false
@@ -123,18 +141,18 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	runRankingSep := true
 	runFormula2 := true
 
-	addTask("itemLevel", func() weight_types.WeightResult {
+	addTask1("itemLevel", func() weight_types.WeightResult1 {
 		weight := weight_types.Weight1Basic_Make()
 		weight.Put(requiredStats[0], 1)
-		return weight_types.WeightResult{
-			Weight:    &weight,
-			SolveTime: 0,
-			Status:    highs.ModelStatusOptimal,
-		}
+		return weight_types.WeightResult1Make(
+			&weight,
+			0,
+			highs.ModelStatusOptimal,
+		)
 	})
 
 	if runBasic {
-		addTask("basic", func() weight_types.WeightResult {
+		addTask1("basic", func() weight_types.WeightResult1 {
 			basic := weight_highs.BasicStatWeightProcess{}
 			basic.Init(printer)
 			basic.SetRequiredStats(requiredStats)
@@ -148,7 +166,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			return weightFuture.WaitForResultOrNilValue()
 		})
 
-		addTask("form", func() weight_types.WeightResult {
+		addTask2("form", func() weight_types.WeightResult2 {
 			comp := weight_highs.FormulaStatWeightProcess{}
 			comp.Init(printer)
 			comp.SetRequiredStats(requiredStats)
@@ -164,7 +182,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	if runFormulaVariants {
 		for BLEND := range 6 {
 			label := fmt.Sprintf("form-blend%d-inc70", BLEND)
-			addTask(label, func() weight_types.WeightResult {
+			addTask2(label, func() weight_types.WeightResult2 {
 				comp := weight_highs.FormulaStatWeightProcess{}
 				comp.BLEND = BLEND
 				comp.Init(printer)
@@ -177,7 +195,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 				return futureResult.WaitForResultOrNilValue()
 			})
 			label = fmt.Sprintf("form-blend%d-inc100", BLEND)
-			addTask(label, func() weight_types.WeightResult {
+			addTask2(label, func() weight_types.WeightResult2 {
 				comp := weight_highs.FormulaStatWeightProcess{}
 				comp.BLEND = BLEND
 				comp.Init(printer)
@@ -193,7 +211,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	}
 
 	if runFitting1 {
-		addTask("fitting", func() weight_types.WeightResult {
+		addTask3("fitting", func() weight_types.WeightResult3 {
 			fitting := fitting1.FittingEachStatWeightProcess{}
 			fitting.Init(printer, shortTimeout)
 			fitting.SetRequiredStats(requiredStats, requiredSims)
@@ -203,7 +221,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		})
 	}
 	if runFitting2 {
-		addTask("fitting2", func() weight_types.WeightResult {
+		addTask3("fitting2", func() weight_types.WeightResult3 {
 			fitting := fitting2.FittingEachStatWeightProcess2{}
 			fitting.Init(3, printer, shortTimeout)
 			fitting.SetRequiredStats(requiredStats, requiredSims)
@@ -214,7 +232,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	}
 
 	if runGrid1Original {
-		addTask("grid1", func() weight_types.WeightResult {
+		addTask1("grid1", func() weight_types.WeightResult1 {
 			grid1 := weight_highs.GridStatWeightProcess{}
 			grid1.Init(printer, standardTimeout)
 			grid1.SetRequiredStats(requiredStats)
@@ -227,7 +245,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	}
 
 	if runGrid1Variants {
-		addTask("grid1-1", func() weight_types.WeightResult {
+		addTask1("grid1-1", func() weight_types.WeightResult1 {
 			grid1 := weight_highs.GridStatWeightProcess{}
 			grid1.CHECKRANGE = 1
 			grid1.Init(printer, standardTimeout)
@@ -245,7 +263,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 					for CALCMODE := range 4 {
 						for RATIO := range 4 {
 							label := fmt.Sprintf("grid1b-outlier%d-scale%d-round%d-calc%d-rat%d", OUTLIER, SCALEMODE, ROUNDMODE, CALCMODE, RATIO)
-							addTask(label, func() weight_types.WeightResult {
+							addTask1(label, func() weight_types.WeightResult1 {
 								grid1 := weight_highs.GridStatWeightProcess1B{}
 								grid1.SCALEMODE = SCALEMODE
 								grid1.ROUNDMODE = ROUNDMODE
@@ -269,7 +287,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	if runGrid1VariantsFewer {
 		for OUTLIER := range 5 {
 			label := fmt.Sprintf("grid1b-outlier%d-scale1-round2-calc2", OUTLIER)
-			addTask(label, func() weight_types.WeightResult {
+			addTask1(label, func() weight_types.WeightResult1 {
 				grid1 := weight_highs.GridStatWeightProcess1B{}
 				grid1.OUTLIER = OUTLIER
 				grid1.SCALEMODE = 1
@@ -290,7 +308,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		for RESCALE := range 3 {
 			for ROUNDMODE := range 3 {
 				label := fmt.Sprintf("grid1c-round%d-rescale%d", ROUNDMODE, RESCALE)
-				addTask(label, func() weight_types.WeightResult {
+				addTask1(label, func() weight_types.WeightResult1 {
 					grid1 := weight_highs.GridStatWeightProcess1C{}
 					grid1.ROUNDMODE = ROUNDMODE
 					grid1.RESCALE = RESCALE
@@ -307,7 +325,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	}
 
 	if runGrid2 {
-		addTask("grid2-1", func() weight_types.WeightResult {
+		addTask2("grid2-1", func() weight_types.WeightResult2 {
 			grid2 := weight_highs.GridStatWeightProcess2{}
 			grid2.IncludeDiffs1 = true
 			grid2.Init(printer, shortTimeout)
@@ -318,7 +336,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			util_async.ChainCancel(cancel, weightFuture)
 			return weightFuture.WaitForResultOrNilValue()
 		})
-		addTask("grid2-2", func() weight_types.WeightResult {
+		addTask2("grid2-2", func() weight_types.WeightResult2 {
 			grid2 := weight_highs.GridStatWeightProcess2{}
 			grid2.IncludeDiffs2 = true
 			grid2.Init(printer, shortTimeout)
@@ -329,7 +347,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			util_async.ChainCancel(cancel, weightFuture)
 			return weightFuture.WaitForResultOrNilValue()
 		})
-		addTask("grid2-12", func() weight_types.WeightResult {
+		addTask2("grid2-12", func() weight_types.WeightResult2 {
 			grid2 := weight_highs.GridStatWeightProcess2{}
 			grid2.IncludeDiffs1 = true
 			grid2.IncludeDiffs2 = true
@@ -341,7 +359,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			util_async.ChainCancel(cancel, weightFuture)
 			return weightFuture.WaitForResultOrNilValue()
 		})
-		addTask("grid2-123", func() weight_types.WeightResult {
+		addTask2("grid2-123", func() weight_types.WeightResult2 {
 			grid2 := weight_highs.GridStatWeightProcess2{}
 			grid2.IncludeDiffs1 = true
 			grid2.IncludeDiffs2 = true
@@ -360,7 +378,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		for RANKMODE := range 3 {
 			for WEIGHTSUM := range 3 {
 				label := fmt.Sprintf("rankorig-%d-%d", RANKMODE, WEIGHTSUM)
-				addTask(label, func() weight_types.WeightResult {
+				addTask1(label, func() weight_types.WeightResult1 {
 					ranking := weight_highs.RankingStatWeightProcess{}
 					ranking.RANKMODE = RANKMODE
 					ranking.WEIGHTSUM = WEIGHTSUM
@@ -380,7 +398,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	if runRanking3aVariants {
 		for ALGO := range 2 {
 			label := fmt.Sprintf("ranking3a-scale_stat-algo%d", ALGO)
-			addTask(label, func() weight_types.WeightResult {
+			addTask1(label, func() weight_types.WeightResult1 {
 				ranking := weight_highs.RankingStatWeightProcess3{}
 				ranking.ALGO = ALGO
 				ranking.SCALE1 = false
@@ -393,7 +411,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 				return weightFuture.WaitForResultOrNilValue()
 			})
 			label = fmt.Sprintf("ranking3a-scale1-algo%d", ALGO)
-			addTask(label, func() weight_types.WeightResult {
+			addTask1(label, func() weight_types.WeightResult1 {
 				ranking := weight_highs.RankingStatWeightProcess3{}
 				ranking.ALGO = ALGO
 				ranking.SCALE1 = true
@@ -410,7 +428,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 
 	if runRanking3aPreferred {
 		label := fmt.Sprintf("ranking3a-false-1")
-		addTask(label, func() weight_types.WeightResult {
+		addTask1(label, func() weight_types.WeightResult1 {
 			ranking := weight_highs.RankingStatWeightProcess3{}
 			ranking.ALGO = 1
 			ranking.SCALE1 = false
@@ -423,7 +441,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			return weightFuture.WaitForResultOrNilValue()
 		})
 		label = fmt.Sprintf("ranking3a-true-1")
-		addTask(label, func() weight_types.WeightResult {
+		addTask1(label, func() weight_types.WeightResult1 {
 			ranking := weight_highs.RankingStatWeightProcess3{}
 			ranking.ALGO = 1
 			ranking.SCALE1 = true
@@ -441,7 +459,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		for TOTALWEIGHT := range 3 {
 			for ALGO := range 2 {
 				label := fmt.Sprintf("ranking3b-%d-%d", TOTALWEIGHT, ALGO)
-				addTask(label, func() weight_types.WeightResult {
+				addTask1(label, func() weight_types.WeightResult1 {
 					ranking := weight_highs.RankingStatWeightProcess3b{}
 					ranking.TOTALWEIGHT = TOTALWEIGHT
 					ranking.ALGO = ALGO
@@ -458,7 +476,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	}
 	if runRanking3bPreferred {
 		label := fmt.Sprintf("ranking3b-pref")
-		addTask(label, func() weight_types.WeightResult {
+		addTask1(label, func() weight_types.WeightResult1 {
 			ranking := weight_highs.RankingStatWeightProcess3b{}
 			ranking.TOTALWEIGHT = 0
 			ranking.ALGO = 1
@@ -473,7 +491,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	}
 
 	if runRanking3c {
-		addTask("ranking3c", func() weight_types.WeightResult {
+		addTask1("ranking3c", func() weight_types.WeightResult1 {
 			ranking := weight_highs.RankingStatWeightProcess3c{}
 			ranking.Init(printer, shortTimeout)
 			ranking.SetRequiredStats(requiredStats)
@@ -488,7 +506,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	if runRanking4 {
 		for MULTIPLY := range 3 {
 			label := fmt.Sprintf("ranking4-%d", MULTIPLY)
-			addTask(label, func() weight_types.WeightResult {
+			addTask1(label, func() weight_types.WeightResult1 {
 				ranking := weight_highs.RankingStatWeightProcess4{}
 				ranking.MULTIPLY = MULTIPLY
 				ranking.Init(printer)
@@ -503,7 +521,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	}
 
 	if runRanking5 {
-		addTask("ranking5-0-1", func() weight_types.WeightResult {
+		addTask1("ranking5-0-1", func() weight_types.WeightResult1 {
 			ranking := weight_highs.RankingStatWeightProcess5{}
 			ranking.WEIGHTSUM = 0
 			ranking.SIMRANK = 1
@@ -514,7 +532,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			futureWeight := ranking.Run(standardTimeout, 60) // note restricted data sample
 			return futureWeight.WaitForResultOrNilValue()
 		})
-		addTask("ranking5-1-1", func() weight_types.WeightResult {
+		addTask1("ranking5-1-1", func() weight_types.WeightResult1 {
 			ranking := weight_highs.RankingStatWeightProcess5{}
 			ranking.WEIGHTSUM = 1
 			ranking.SIMRANK = 1
@@ -525,7 +543,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			futureWeight := ranking.Run(standardTimeout, 60) // note restricted data sample
 			return futureWeight.WaitForResultOrNilValue()
 		})
-		addTask("ranking5-0-2", func() weight_types.WeightResult {
+		addTask1("ranking5-0-2", func() weight_types.WeightResult1 {
 			ranking := weight_highs.RankingStatWeightProcess5{}
 			ranking.WEIGHTSUM = 0
 			ranking.SIMRANK = 2
@@ -536,7 +554,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			futureWeight := ranking.Run(standardTimeout, 60) // note restricted data sample
 			return futureWeight.WaitForResultOrNilValue()
 		})
-		addTask("ranking5-1-2", func() weight_types.WeightResult {
+		addTask1("ranking5-1-2", func() weight_types.WeightResult1 {
 			ranking := weight_highs.RankingStatWeightProcess5{}
 			ranking.WEIGHTSUM = 1
 			ranking.SIMRANK = 2
@@ -550,14 +568,14 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	}
 
 	if runSearch0 {
-		addTask("search0-accF", func() weight_types.WeightResult {
+		addTask1("search0-accF", func() weight_types.WeightResult1 {
 			search := weightfind.WeightSearcher0{}
 			search.AccuracyStatistical = false
 			search.Init(requiredStats, targetRatio, printer)
 			search.SupplyData(mixedInputData)
 			return search.Run(cancel)
 		})
-		addTask("search0-accT", func() weight_types.WeightResult {
+		addTask1("search0-accT", func() weight_types.WeightResult1 {
 			search := weightfind.WeightSearcher0{}
 			search.AccuracyStatistical = true
 			search.Init(requiredStats, targetRatio, printer)
@@ -566,14 +584,14 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		})
 	}
 	if runSearches {
-		addTask("search1-accF", func() weight_types.WeightResult {
+		addTask1("search1-accF", func() weight_types.WeightResult1 {
 			search := weightfind.WeightSearcher1{}
 			search.AccuracyStatistical = false
 			search.Init(requiredStats, targetRatio, printer)
 			search.SupplyData(mixedInputData)
 			return search.Run(cancel)
 		})
-		addTask("search2-accF", func() weight_types.WeightResult {
+		addTask1("search2-accF", func() weight_types.WeightResult1 {
 			innerCancel := util_async.CancelSignal_Make()
 			util_async.CancelAfterTimeout(innerCancel, time.Duration(shortTimeout)*time.Second, printer)
 			util_async.ChainCancel(cancel, innerCancel)
@@ -584,7 +602,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			search.SetRanges(-1.0, 10.0)
 			return search.Run(innerCancel)
 		})
-		addTask("search3-accF", func() weight_types.WeightResult {
+		addTask1("search3-accF", func() weight_types.WeightResult1 {
 			search := weightfind.WeightSearcher3{}
 			search.AccuracyStatistical = false
 			search.Init(requiredStats, targetRatio)
@@ -593,14 +611,14 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			return search.Run(cancel)
 		})
 
-		addTask("search1-accT", func() weight_types.WeightResult {
+		addTask1("search1-accT", func() weight_types.WeightResult1 {
 			search := weightfind.WeightSearcher1{}
 			search.AccuracyStatistical = true
 			search.Init(requiredStats, targetRatio, printer)
 			search.SupplyData(mixedInputData)
 			return search.Run(cancel)
 		})
-		addTask("search2-accT", func() weight_types.WeightResult {
+		addTask1("search2-accT", func() weight_types.WeightResult1 {
 			innerCancel := util_async.CancelSignal_Make()
 			util_async.CancelAfterTimeout(innerCancel, time.Duration(shortTimeout)*time.Second, printer)
 			util_async.ChainCancel(cancel, innerCancel)
@@ -611,7 +629,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			search.SetRanges(-1.0, 10.0)
 			return search.Run(innerCancel)
 		})
-		addTask("search3-accT", func() weight_types.WeightResult {
+		addTask1("search3-accT", func() weight_types.WeightResult1 {
 			search := weightfind.WeightSearcher3{}
 			search.AccuracyStatistical = true
 			search.Init(requiredStats, targetRatio)
@@ -623,7 +641,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 
 	if runRankingSep {
 		label := "ranking-sep"
-		addTask(label, func() weight_types.WeightResult {
+		addTask2(label, func() weight_types.WeightResult2 {
 			comp := weight_highs.RankingSeparatedWeights{}
 			comp.Init(printer, standardTimeout)
 			comp.SetRequiredStats(requiredStats, requiredSims)
@@ -634,7 +652,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	}
 	if runFormula2 {
 		label := "formula2"
-		addTask(label, func() weight_types.WeightResult {
+		addTask2(label, func() weight_types.WeightResult2 {
 			comp := weight_highs.FormulaStatWeightProcess2{}
 			// comp.BLEND if SetMinimumIncludeRate < 1.0
 			comp.Init(printer)
@@ -649,7 +667,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	taskKeys := slices.Collect(maps.Keys(taskMap))
 	util_collection.Shuffle(taskKeys)
 
-	outputByAlgorithm := util_collection.MapConcurrent[string, weight_types.WeightResult]{}
+	outputByAlgorithm := util_collection.MapConcurrent[string, weight_types.IWeightResult]{}
 	util_async.ForEach_Slice_Cancellable(5, taskKeys, cancel, func(taskLabel *string) {
 		task := taskMap[*taskLabel]
 
@@ -662,9 +680,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 
 	reportByAlgorithm := make(map[string]algorithmReport)
 	for label, weightResult := range outputByAlgorithm.SeqWithKeys_ThreadSafeCopy() {
-		accuracy := weightfind.EvaluateAccuracyBasic(weightResult.Weight, requiredSims, &targetRatio, mixedInputDataFull)
-		accuracyStat := weightfind.EvaluateAccuracyStatisticalExtended(weightResult.Weight, requiredSims, &targetRatio, mixedInputDataFull)
-		weight1 := weightResult.AsWeight1()
+		accuracy := weightfind.EvaluateAccuracyBasic(weightResult.GetWeight(), requiredSims, &targetRatio, mixedInputDataFull)
+		accuracyStat := weightfind.EvaluateAccuracyStatisticalExtended(weightResult.GetWeight(), requiredSims, &targetRatio, mixedInputDataFull)
+		weight1 := weightResult.AsWeight1(mixedInputData)
 		reportByAlgorithm[label] = algorithmReport{
 			weight1,
 			accuracy,
@@ -692,7 +710,7 @@ type algorithmReport struct {
 	weight1         *weight_types.Weight1Basic
 	initialAccuracy float64
 	statAccuracy    float64
-	weightResult    weight_types.WeightResult
+	weightResult    weight_types.IWeightResult
 }
 
 func compareReport(requiredStats []stats.StatType, resultOrder []string, reportByAlgorithm map[string]algorithmReport, requiredSims []stats.SimType, targetRatio weight_types.SimPriorityBasic, mixedInputDataFull []weight_types.WeightInput, reportOnTweakedVersions bool, printer *util.PrintRecorder) {
@@ -733,8 +751,8 @@ func compareReport(requiredStats []stats.StatType, resultOrder []string, reportB
 		row = append(row, strconv.FormatFloat(report.statAccuracy, 'f', 4, 64))
 		row = append(row, strconv.FormatFloat(accuracy, 'f', 4, 64))
 		row = append(row, strconv.FormatFloat(accuracyStat, 'f', 4, 64))
-		row = append(row, report.weightResult.SolveTime.String())
-		row = append(row, report.weightResult.Status.String())
+		row = append(row, report.weightResult.GetSolveTime().String())
+		row = append(row, report.weightResult.GetStatus().String())
 		tab.AddRow(row)
 
 		//if reportOnTweakedVersions {

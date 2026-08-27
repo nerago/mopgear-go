@@ -98,7 +98,7 @@ func (process *SolverHighsMultiProcess) chooseVariantsToRun(bestCommonChoices []
 	for _, commonColumn := range bestCommonChoices {
 		blockPlanList = append(blockPlanList, blockPlan{changeColumn: commonColumn})
 		if alsoDoFullItemBlocks {
-			blockPlanList = append(blockPlanList, blockPlan{forbiddenItem: new(commonColumn.ItemId())})
+			blockPlanList = append(blockPlanList, blockPlan{forbiddenItem: new(commonColumn.itemId())})
 		}
 	}
 
@@ -190,7 +190,7 @@ func (process *SolverHighsMultiProcess) prepareVariantWithBlockedItem_One(printe
 }
 
 func (process *SolverHighsMultiProcess) prepareWithDifferentCommonVariant_One(printer *util.PrintRecorder, changeColumn *columnInfo) *util_highs.LinearBuilder {
-	printer.Printf("VARIANT COMMON blocking reforge %d\n", changeColumn.ItemId())
+	printer.Printf("VARIANT COMMON blocking reforge %d\n", changeColumn.itemId())
 
 	build := process.build.Clone()
 	rowLimitCommon := util_highs.ConstraintRow{Debug: "rowLimitCommon"}

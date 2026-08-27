@@ -56,16 +56,16 @@ func (fe *FittingEachStatWeightProcess) SupplyData(inputData []weight_types.Weig
 	fe.inputData = inputData
 }
 
-func (fe *FittingEachStatWeightProcess) Run(cancel util_async.CancelSignal) weight_types.WeightResult {
+func (fe *FittingEachStatWeightProcess) Run(cancel util_async.CancelSignal) weight_types.WeightResult3 {
 	fe.chooseScaling()
 	fe.launchEachNested(cancel)
 	if !fe.hasError {
 		weight := fe.buildResult()
 		stopwatch := fe.calcMetrics()
-		return weight_types.WeightResult{Weight: weight, SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusUnknown}
+		return weight_types.WeightResult3Make(weight, stopwatch.Elapsed(), highs.ModelStatusUnknown)
 	} else {
 		stopwatch := fe.calcMetrics()
-		return weight_types.WeightResult{SolveTime: stopwatch.Elapsed(), Status: highs.ModelStatusModelError}
+		return weight_types.WeightResult3Make(nil, stopwatch.Elapsed(), highs.ModelStatusModelError)
 	}
 }
 

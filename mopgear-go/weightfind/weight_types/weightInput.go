@@ -107,10 +107,10 @@ func (wr *WeightResultGeneric[W]) AsWeight1(verificationInputs []WeightInput) *W
 		return nil
 	}
 }
-func (wr *WeightResult1) AsWeight1(verificationInputs []WeightInput) *Weight1Basic {
+func (wr *WeightResult1) AsWeight1(_ []WeightInput) *Weight1Basic {
 	return wr.Weight
 }
-func (wr *WeightResult2) AsWeight1(verificationInputs []WeightInput) *Weight1Basic {
+func (wr *WeightResult2) AsWeight1(_ []WeightInput) *Weight1Basic {
 	return wr.Weight.ConvertToWeight1()
 }
 func (wr *WeightResult3) AsWeight1(verificationInputs []WeightInput) *Weight1Basic {

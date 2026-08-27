@@ -32,7 +32,7 @@ import (
 
 const (
 	c_simDataAgeMax     = 48 * time.Hour
-	c_updateThreadCount = 2
+	c_updateThreadCount = 6
 	c_ratioThreadCount  = 12
 
 	c_eachSimTargetGenerateDataCount = 600
@@ -41,7 +41,7 @@ const (
 	c_dataSampleGrid    = 96
 	c_useSamplingFit    = true
 	c_useSamplingRank   = false
-	c_useSamplingGrid   = true
+	c_useSamplingGrid   = false
 )
 
 type WeightUpdateProcess struct {

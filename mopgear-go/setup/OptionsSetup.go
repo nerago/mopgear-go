@@ -141,6 +141,7 @@ func addDetailFromEquip(item items.FullItem, equipItem loaders.EquippedItem, mod
 			gemChoice = addDefaultGems(&statEnchant, socketSlots, item.SocketBonus(), model)
 		case MissingEnchant_Panic:
 			panic("missing gems on " + item.CreateString())
+		case MissingEnchant_Ignore:
 		}
 	} else {
 		panic("mismatch in gem array lengths on " + item.CreateString())

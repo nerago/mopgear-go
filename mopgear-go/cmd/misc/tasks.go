@@ -133,7 +133,7 @@ func testSimA(printer *util.PrintRecorder) {
 		c_miscDefaultTimeout,
 		nil)
 	printer.Println("Running sim")
-	resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_QuickDirty, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
+	resultStats := simulate.ExecuteUseModel(simulate.RunSize_QuickDirty, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
 }
 func testSimB(printer *util.PrintRecorder) {
@@ -147,7 +147,7 @@ func testSimB(printer *util.PrintRecorder) {
 		c_miscDefaultTimeout,
 		nil)
 	printer.Println("Running sim")
-	resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_Common, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
+	resultStats := simulate.ExecuteUseModel(simulate.RunSize_Common, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
 	resultStats.Print(printer)
 }
 func testSimEach(printer *util.PrintRecorder) {
@@ -163,7 +163,7 @@ func testSimEach(printer *util.PrintRecorder) {
 		// 	Printer:             printer})
 		// printer.Printf("Running sim\n")
 		// equipSet := output.FullSet.Items()
-		resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_QuickDirty, model, &equipSet, nil, util.TrackProgress_Start())
+		resultStats := simulate.ExecuteUseModel(simulate.RunSize_QuickDirty, model, &equipSet, nil, util.TrackProgress_Start())
 		resultStats.Print(printer)
 	}
 }
@@ -206,8 +206,8 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 
 	output.Report(printer)
 
-	currentStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_VerySlow, &model, &currentEquip, nil, util.TrackProgress_Start())
-	resultStats := simulate.WowSim_Execute_UseModel(simulate.RunSize_VerySlow, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
+	currentStats := simulate.ExecuteUseModel(simulate.RunSize_VerySlow, &model, &currentEquip, nil, util.TrackProgress_Start())
+	resultStats := simulate.ExecuteUseModel(simulate.RunSize_VerySlow, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
 
 	printer.Println("CURRENT STATS")
 	currentStats.Print(printer)
@@ -228,7 +228,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 
 	printer.Println("READ existing")
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &model, setup.MissingEnchant_Panic, printer)
-	currentStats := simulate.WowSim_Execute_UseModel(simSize, &model, &currentEquip, nil, util.TrackProgress_Start())
+	currentStats := simulate.ExecuteUseModel(simSize, &model, &currentEquip, nil, util.TrackProgress_Start())
 
 	printer.Println("SETUP options")
 	itemOptionsShared := setup.OptionsSetup_FromGearFile(startGear, &model, setup.MissingEnchant_Panic, printer)
@@ -254,7 +254,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 		name string
 	}
 
-	resultPairs := []pair{}
+	resultPairs := make([]pair, 0)
 
 	checkItems := []items.ItemId{95141}
 	for _, itemId := range checkItems {
@@ -283,7 +283,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 				nil)
 			output.Report(printer)
 
-			resultStats := simulate.WowSim_Execute_UseModel(simSize, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
+			resultStats := simulate.ExecuteUseModel(simSize, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
 
 			printer.Println("CURRENT STATS")
 			currentStats.Print(printer)
@@ -403,11 +403,11 @@ func trinketSims(printer *util.PrintRecorder) {
 			printer.Println(group.label + " " + item.CreateFullName())
 			csv.AddStringMany(group.label, item.CreateFullName())
 
-			var newEquip items.FullEquipMap = equipMap
+			newEquip := equipMap
 			newEquip[items.Equip_Trinket2] = item
 			// fullSet := items.FullItemSet_FromMap(newEquip)
 
-			resultStats := simulate.WowSim_Execute_SpecifyAll(simulate.RunSize_Largish, model.SimSpeedUp, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
+			resultStats := simulate.ExecuteSpecifyAll(simulate.RunSize_Largish, model.SimSpeedUp, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
 			resultStats.Print(printer)
 			for _, statType := range stats.SimTypeList {
 				csv.AddFloat64(resultStats.GetFriendly(statType), 2)
@@ -539,11 +539,11 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 				printer.Println(group.label + " " + nameOne + " " + nameTwo)
 				csv.AddStringMany(group.label, nameOne, nameTwo)
 
-				var newEquip items.FullEquipMap = equipMap
+				newEquip := equipMap
 				newEquip[items.Equip_Trinket1] = itemOne
 				newEquip[items.Equip_Trinket2] = itemTwo
 
-				resultStats := simulate.WowSim_Execute_SpecifyAll(simRun, model.SimSpeedUp, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
+				resultStats := simulate.ExecuteSpecifyAll(simRun, model.SimSpeedUp, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
 				resultStats.Print(printer)
 				for _, statType := range stats.SimTypeList {
 					csv.AddFloat64(resultStats.GetFriendly(statType), 2)
@@ -616,7 +616,7 @@ func currentSimGear(printer *util.PrintRecorder) {
 		equipped := loaders.GearFileReader_Read(file)
 		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 
-		resultStats := simulate.WowSim_Execute_SpecifyAll(simRun, model.SimSpeedUp, model.Spec, goal, fight, model.Professions, &equipMap, nil, util.TrackProgress_Nop())
+		resultStats := simulate.ExecuteSpecifyAll(simRun, model.SimSpeedUp, model.Spec, goal, fight, model.Professions, &equipMap, nil, util.TrackProgress_Nop())
 		resultStats.Print(printer)
 		for _, statType := range stats.SimTypeList {
 			csv.AddFloat64(resultStats.GetFriendly(statType), 2)
@@ -707,7 +707,7 @@ func solveForRatings(printer *util.PrintRecorder) {
 		file  string
 	}
 
-	var prescaleTarget float64 = 100000000.0
+	var prescaleTarget = 100000000.0
 
 	groups := []group{
 		{
@@ -846,13 +846,13 @@ func determineSetBonusValueBySim(printer *util.PrintRecorder) {
 			panic("not two")
 		}
 
-		dataZero := simulate.WowSim_Execute_SpecifyAll(runSize, 0, spec, goal02, fight, profession,
+		dataZero := simulate.ExecuteSpecifyAll(runSize, 0, spec, goal02, fight, profession,
 			group.zero.itemSet.Items(), nil,
 			tracker.NewChild())
-		dataTwo := simulate.WowSim_Execute_SpecifyAll(runSize, 0, spec, goal02, fight, profession,
+		dataTwo := simulate.ExecuteSpecifyAll(runSize, 0, spec, goal02, fight, profession,
 			group.two.itemSet.Items(), &group.two.bonusStats,
 			tracker.NewChild())
-		dataFour := simulate.WowSim_Execute_SpecifyAll(runSize, 0, spec, goal4, fight, profession,
+		dataFour := simulate.ExecuteSpecifyAll(runSize, 0, spec, goal4, fight, profession,
 			group.four.itemSet.Items(), &group.four.bonusStats,
 			tracker.NewChild())
 
@@ -896,7 +896,7 @@ type bonuses struct {
 }
 
 func replaceWithEquivalentSetItems(baseSet *items.FullItemSet, bonusItems []*items.FullItem, bonusCount int) standardisedItemSet {
-	var substitutedEquip items.FullEquipMap = *baseSet.Items()
+	substitutedEquip := *baseSet.Items()
 	for i := range bonusCount {
 		item := bonusItems[i]
 		slot := item.SlotItem().ToSlotEquipOptions()[0]
@@ -987,7 +987,7 @@ func determineBestUseOfGearSets(printer *util.PrintRecorder) {
 		}
 		gear := solveOutput.FullSet.Items()
 		bonusText := bonus_set.AllBonusesText(gear)
-		simData := simulate.WowSim_Execute_SpecifyAll(runSize, 0, spec, goal, fight, profession,
+		simData := simulate.ExecuteSpecifyAll(runSize, 0, spec, goal, fight, profession,
 			gear, nil,
 			tracker.NewChild())
 

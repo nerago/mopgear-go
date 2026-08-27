@@ -9,94 +9,127 @@ import (
 
 // /////////////////////////////////////////////////////////////
 type FullItem struct {
-	// generally fixed from imports
-	itemId       ItemId
-	itemLevel    uint16
-	upgradeLevel UpgradeLevel
-	slot         SlotItem
-	baseName     string
-	tagName      string
-	armorType    stats.ArmorType
-	primaryStat  stats.PrimaryStatType
-	socketSlots  []stats.SocketType
-	socketBonus  stats.StatBlock
-	phase        int8
+	fullItemStatic
+	fullItemInstance
+	statBase    stats.StatBlock // constant stats post reforge
+	statEnchant stats.StatBlock // stats added from gems, enchant, or trinket model
+	total       stats.StatBlock // constant total stats as they contribute to caps
+}
 
-	// specific item instance choices
+type fullItemStatic struct {
+	itemId      ItemId
+	slot        SlotItem
+	armorType   stats.ArmorType
+	primaryStat stats.PrimaryStatType
+	phase       int8
+	baseName    string
+	socketSlots []stats.SocketType
+	socketBonus stats.StatBlock
+}
+
+type fullItemInstance struct {
+	itemLevel     uint16
+	upgradeLevel  UpgradeLevel
 	reforge       stats.ReforgeRecipe
 	gemChoice     []stats.GemInfo
 	enchantChoice uint32
 	randomSuffix  RandomSuffix
-
-	// stats for different purposes
-	statBase    stats.StatBlock // constant stats post reforge
-	statEnchant stats.StatBlock // stats added from gems, enchant, or trinket model
-
-	total stats.StatBlock // constant total stats as they contribute to caps
+	tagName       string
 }
 
-func FullItem_FromWowSim(itemId ItemId, itemLevel uint16, itemLevelBase uint16, upgradeLevel UpgradeLevel, slot SlotItem, baseName string, statBase stats.StatBlock, armorType stats.ArmorType, socketSlots []stats.SocketType, socketBonus stats.StatBlock, phase int8) FullItem {
+//goland:noinspection GoFixEmbedLit
+func FullItem_FromWowSim(itemId ItemId, itemLevel uint16, upgradeLevel UpgradeLevel, slot SlotItem, baseName string, statBase stats.StatBlock, armorType stats.ArmorType, socketSlots []stats.SocketType, socketBonus stats.StatBlock, phase int8) FullItem {
 	return FullItem{
-		itemId, itemLevel, upgradeLevel, slot, baseName, "", armorType, statBase.PrimaryStat(),
-		socketSlots, socketBonus, phase,
-		stats.ReforgeRecipe_empty, nil, 0, 0,
-		statBase, stats.StatBlock_empty,
-		statBase}
+		fullItemStatic: fullItemStatic{
+			itemId, slot, armorType, statBase.PrimaryStat(),
+			phase, baseName, socketSlots, socketBonus},
+		fullItemInstance: fullItemInstance{
+			itemLevel: itemLevel, upgradeLevel: upgradeLevel,
+		},
+		statBase: statBase,
+		total:    statBase,
+	}
 }
 
 func FullItem_ForTest(itemId ItemId, slot SlotItem, statBase stats.StatBlock) FullItem {
 	return FullItem{
-		itemId, 400, 1,
-		slot, slot.Name(), "", stats.Armor_None, statBase.PrimaryStat(),
-		nil, stats.StatBlock_empty, 0,
-		stats.ReforgeRecipe_empty, nil, 0, 0,
-		statBase, stats.StatBlock_empty,
-		statBase}
+		itemId: itemId, itemLevel: 600, upgradeLevel: 1,
+		slot: slot, baseName: slot.Name(), armorType: stats.Armor_None,
+		primaryStat: statBase.PrimaryStat(),
+		statBase:    statBase, total: statBase}
 }
 
 func (item *FullItem) NewWithChangedStatsReforge(changeStats stats.StatBlock, changeReforge stats.ReforgeRecipe) *FullItem {
-	var newItem FullItem = *item
-	newItem.reforge = changeReforge
-	newItem.statBase = changeStats
-	newItem.changeDerivedStatFields()
-	return &newItem
+	newItem := &FullItem{
+		fullItemStatic:   item.fullItemStatic,
+		fullItemInstance: item.fullItemInstance,
+		statBase:         changeStats,
+		statEnchant:      item.statEnchant,
+	}
+	newItem.fullItemInstance.reforge = changeReforge
+	newItem.updateDerivedStatTotal()
+	return newItem
 }
 
-func (item *FullItem) NewWithChangedStatsSuffix(changeStats stats.StatBlock, randomSuffix RandomSuffix) *FullItem {
-	var newItem FullItem = *item
-	newItem.randomSuffix = randomSuffix
-	newItem.statBase = changeStats
-	newItem.changeDerivedStatFields()
-	return &newItem
+func (item *FullItem) newWithChangedStatsSuffix(changeStats stats.StatBlock, randomSuffix RandomSuffix) *FullItem {
+	newItem := &FullItem{
+		fullItemStatic:   item.fullItemStatic,
+		fullItemInstance: item.fullItemInstance,
+		statBase:         changeStats,
+		statEnchant:      item.statEnchant,
+	}
+	newItem.fullItemInstance.randomSuffix = randomSuffix
+	newItem.updateDerivedStatTotal()
+	return newItem
 }
 
 func (item *FullItem) NewWithEnchantDetails(socketSlots []stats.SocketType, gemChoice []stats.GemInfo, enchantChoice uint32, statEnchant stats.StatBlock) *FullItem {
-	var newItem FullItem = *item
-	newItem.socketSlots = socketSlots
-	newItem.gemChoice = gemChoice
-	newItem.enchantChoice = enchantChoice
-	newItem.statEnchant = statEnchant
-	newItem.changeDerivedStatFields()
-	return &newItem
+	instance := fullItemInstance{
+		item.itemLevel,
+		item.upgradeLevel,
+		item.reforge,
+		gemChoice,
+		enchantChoice,
+		item.randomSuffix,
+		item.tagName,
+	}
+	newItem := &FullItem{
+		fullItemStatic:   item.fullItemStatic,
+		fullItemInstance: instance,
+		statBase:         item.statBase,
+		statEnchant:      statEnchant,
+	}
+	newItem.fullItemStatic.socketSlots = socketSlots
+	newItem.updateDerivedStatTotal()
+	return newItem
 }
 
 func (item *FullItem) NewWithInstanceDetails(socketSlots []stats.SocketType, reforge stats.ReforgeRecipe, gemChoice []stats.GemInfo, enchantChoice uint32, randomSuffix RandomSuffix, statEnchant stats.StatBlock) *FullItem {
-	var newItem FullItem = *item
-	newItem.socketSlots = socketSlots
-	newItem.reforge = reforge
-	newItem.gemChoice = gemChoice
-	newItem.enchantChoice = enchantChoice
-	newItem.randomSuffix = randomSuffix
-	newItem.statEnchant = statEnchant
-	newItem.changeDerivedStatFields()
-	return &newItem
+	instance := fullItemInstance{
+		item.itemLevel,
+		item.upgradeLevel,
+		reforge,
+		gemChoice,
+		enchantChoice,
+		randomSuffix,
+		"",
+	}
+	newItem := &FullItem{
+		fullItemStatic:   item.fullItemStatic,
+		fullItemInstance: instance,
+		statBase:         item.statBase,
+		statEnchant:      statEnchant,
+	}
+	newItem.fullItemStatic.socketSlots = socketSlots
+	newItem.updateDerivedStatTotal()
+	return newItem
 }
 
 func (item *FullItem) SetNameTag(add string) {
 	item.tagName += add
 }
 
-func (item *FullItem) changeDerivedStatFields() {
+func (item *FullItem) updateDerivedStatTotal() {
 	stats.StatBlock_Add_Into(&item.statBase, &item.statEnchant, &item.total)
 }
 
@@ -242,7 +275,7 @@ func (item *FullItem) MakeItemWithRandomSuffix(randomSuffix RandomSuffix) *FullI
 		newStats := stats.StatBlock{}
 		newStats.SetFromAddOthers(item.StatBase(), &wowSimStats)
 
-		result := item.NewWithChangedStatsSuffix(newStats, randomSuffix)
+		result := item.newWithChangedStatsSuffix(newStats, randomSuffix)
 		result.baseName += " " + suffix
 		return result
 	}

@@ -220,7 +220,7 @@ func (report *reportForItem) Add(group reportGroup, result upgradeItemResult) {
 }
 
 func (report *reportForItem) BestRating() float64 {
-	var best float64 = c_nullIncrease
+	best := c_nullIncrease
 	for _, item := range report.grouped {
 		best = util.MaxIgnoreNaN3(best, item.increaseSim(), item.increaseWeightsRaw())
 	}
@@ -228,7 +228,7 @@ func (report *reportForItem) BestRating() float64 {
 }
 
 func (report *reportForItem) BestRating_NoWeight() float64 {
-	var best float64 = c_nullIncrease
+	best := c_nullIncrease
 	for _, item := range report.grouped {
 		best = util.MaxIgnoreNaN(best, item.increaseSim())
 	}

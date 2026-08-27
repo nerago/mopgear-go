@@ -239,7 +239,7 @@ func (grid *GridStatWeightProcess1C) unitValuesCalcForGroup(simType stats.SimTyp
 	index := 0
 	for baseUnitSample := range baseUnitValueSeq {
 		for thisUnitSample := range thisUnitValueSeq {
-			var debugText string = debugText + " " + strconv.Itoa(index)
+			debugText := debugText + " " + strconv.Itoa(index)
 			offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
 
 			grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, baseUnitSample*scale, baseDetailWeightCol, thisUnitSample*scale, offsetAbs, 1/scale, "OFFSET ABS "+debugText)

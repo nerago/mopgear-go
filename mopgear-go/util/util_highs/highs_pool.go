@@ -6,7 +6,7 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
-var G_HighsPool = highsPoolType{}
+var g_HighsPool = highsPoolType{}
 
 type highsPoolType struct {
 	instances      []*highs.Solver

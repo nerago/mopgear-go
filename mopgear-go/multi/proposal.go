@@ -261,32 +261,3 @@ func (group *workingGroup) additionalProposalsFromSpecOptimalBaseline(cancel uti
 		group.job.printer.AppendOther(printer)
 	})
 }
-
-func fakeIdNumber(index int) string {
-	build := util.StringBuild2{}
-	if index >= 0 && index <= 9 {
-		for range 8 {
-			build.WriteInt(index)
-		}
-		build.WriteRune('-')
-		for range 4 {
-			build.WriteInt(index)
-		}
-		build.WriteRune('-')
-		for range 4 {
-			build.WriteInt(index)
-		}
-		build.WriteRune('-')
-		for range 4 {
-			build.WriteInt(index)
-		}
-		build.WriteRune('-')
-		for range 12 {
-			build.WriteInt(index)
-		}
-	} else {
-		build.WriteString("PROPOSAL-ID-")
-		build.WriteInt(index)
-	}
-	return build.String()
-}

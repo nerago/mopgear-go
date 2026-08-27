@@ -27,7 +27,7 @@ func MapFuture_SliceToChannel_Cancellable_StartAll[T any, R any](inputSlice []T,
 	return mixer.ReadyUpAndPrepareChannel()
 }
 
-func MapFuture_SliceToSlice_FutureCancellable_StartAll[T any, R any](threadCount int, inputSlice []T, mapper func(*T) *FutureCancellable[R]) *FutureCancellable[[]R] {
+func MapFuture_SliceToSlice_FutureCancellable_StartAll[T any, R any](inputSlice []T, mapper func(*T) *FutureCancellable[R]) *FutureCancellable[[]R] {
 	mixer := FutureChannelMixerStatic[R]{}
 	cancel := CancelSignal_Make()
 

@@ -71,10 +71,6 @@ func (we *Weight2Extended) FinishAndValidateNoVerify() {
 	we.validateTypes()
 }
 
-func (we *Weight2Extended) CalcStatScoreForInput(input *WeightInput) float64 {
-	return we.CalcStatScore(&input.TotalStat)
-}
-
 func (we *Weight2Extended) CalcStatScore(statBlock *stats.StatBlock) float64 {
 	totalSum := 0.0
 	for simType, nested := range we.DetailedWeights.SeqKey1NestedKey2Value() {
@@ -202,9 +198,9 @@ func (we *Weight2Extended) actualOutputValueRangeForInputs(verificationInputs []
 		hi.Offer(&score, scoreWithRange)
 	}
 
-	loValue := lo.BestValue
+	loValue := lo.GetBestScore()
 	loValueRaw := lo.GetBestOrNilValue()
-	hiValue := hi.BestValue
+	hiValue := hi.GetBestScore()
 	hiValueRaw := hi.GetBestOrNilValue()
 	return loValue, hiValue, loValueRaw, hiValueRaw
 }

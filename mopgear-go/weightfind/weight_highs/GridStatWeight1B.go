@@ -427,22 +427,22 @@ func (grid *GridStatWeightProcess1B) unitValuesCalcForGroup(simType stats.SimTyp
 			}
 
 			if grid.CALCMODE == 0 {
-				var debugText string = debugText + " " + strconv.Itoa(index)
+				debugText := debugText + " " + strconv.Itoa(index)
 				offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
 				grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, baseUnitSample*thisScale, baseDetailWeightCol, thisUnitSample*baseScale, offsetAbs, outputScale, "OFFSET ABS "+debugText)
 				index++
 			} else if grid.CALCMODE == 1 {
-				var debugText string = debugText + " " + strconv.Itoa(index)
+				debugText := debugText + " " + strconv.Itoa(index)
 				offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
 				grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, thisUnitSample*thisScale, baseDetailWeightCol, baseUnitSample*baseScale, offsetAbs, outputScale, "OFFSET ABS "+debugText)
 				index++
 			} else if grid.CALCMODE == 2 {
-				var debugText string = debugText + " " + strconv.Itoa(index)
+				debugText := debugText + " " + strconv.Itoa(index)
 				offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
 				grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, baseUnitSample*baseScale, baseDetailWeightCol, thisUnitSample*thisScale, offsetAbs, outputScale, "OFFSET ABS "+debugText)
 				index++
 			} else {
-				var debugText string = debugText + " " + strconv.Itoa(index)
+				debugText := debugText + " " + strconv.Itoa(index)
 				offsetAbs := grid.build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), 1, util_highs.DebugString{Text: "OFFSET ABS " + debugText})
 				grid.build.AbsoluteValueFromDiffTwoVars_ScaleOutput(thisDetailWeightCol, thisUnitSample*baseScale, baseDetailWeightCol, baseUnitSample*thisScale, offsetAbs, outputScale, "OFFSET ABS "+debugText)
 				index++

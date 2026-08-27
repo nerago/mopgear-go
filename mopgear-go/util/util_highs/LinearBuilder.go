@@ -191,7 +191,7 @@ func (build *LinearBuilder) RunHighsFuture(stopwatch *util.Stopwatch) *util_asyn
 		future.SetResult(LinearResult{solution, build, log})
 
 		//if solution.Status != highs.ModelStatusTimeLimit { // worried that some part of state doesn't reset
-		G_HighsPool.Put(solver)
+		g_HighsPool.Put(solver)
 		//}
 	}()
 
@@ -199,7 +199,7 @@ func (build *LinearBuilder) RunHighsFuture(stopwatch *util.Stopwatch) *util_asyn
 }
 
 func (build *LinearBuilder) prepareHighsRun(needLog bool) (*highs.Solver, string, bool, bool) {
-	solver := G_HighsPool.Get()
+	solver := g_HighsPool.Get()
 
 	build.configureHighsMatrix(solver)
 

@@ -1,16 +1,16 @@
 package util
 
 func PrimesSmall(requestCount int64) []int64 {
-	var max int64 = 10000
+	var maxCheck int64 = 10000
 	var prime int64 = 2
 
-	sieve := make([]bool, max)
-	for prime*prime < max {
-		for i := prime * prime; i < max; i += prime {
+	sieve := make([]bool, maxCheck)
+	for prime*prime < maxCheck {
+		for i := prime * prime; i < maxCheck; i += prime {
 			sieve[i] = true
 		}
 
-		for i := prime + 1; i < max; i++ {
+		for i := prime + 1; i < maxCheck; i++ {
 			if !sieve[i] {
 				prime = i
 				break
@@ -19,7 +19,7 @@ func PrimesSmall(requestCount int64) []int64 {
 	}
 
 	primeList := make([]int64, 0, requestCount)
-	for prime = 2; prime < max && int64(len(primeList)) < requestCount; prime++ {
+	for prime = 2; prime < maxCheck && int64(len(primeList)) < requestCount; prime++ {
 		if !sieve[prime] {
 			primeList = append(primeList, prime)
 		}

@@ -17,8 +17,8 @@ import (
 
 type permuteEntryFixedForce struct {
 	specLabel string
-	slot      items.SlotEquip
 	itemId    items.ItemId
+	slot      items.SlotEquip
 	isSingle  bool
 }
 
@@ -149,7 +149,7 @@ func (job *MainJob) buildPermutationOptions(inputPermute *multi_types.InputPermu
 		for slot, itemIdList := range semiFixed {
 			isSingle := len(itemIdList) == 1
 			entriesList := util_collection.MapSliceAsNew(itemIdList, func(itemId *items.ItemId) permuteEntry {
-				return permuteEntry{fixed: &permuteEntryFixedForce{prep.label, slot, *itemId, isSingle}}
+				return permuteEntry{fixed: &permuteEntryFixedForce{prep.label, *itemId, slot, isSingle}}
 			})
 			optionEntriesList = append(optionEntriesList, permuteOptions{options: entriesList})
 		}

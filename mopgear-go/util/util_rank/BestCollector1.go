@@ -6,10 +6,10 @@ import (
 	"github.com/nerago/mopgear-go/util/util_collection"
 )
 
-// /////////////////////////////////////////////////////////
+// ######################## BestCollector1 ########################
 type BestCollector1[T any] struct {
-	BestObject *T
-	BestValue  float64
+	bestObject *T
+	bestScore  float64
 	Minimise   bool
 	hasBest    bool
 }
@@ -24,14 +24,18 @@ func (collect *BestCollector1[T]) HasBest() bool {
 	return collect.hasBest
 }
 
+func (collect *BestCollector1[T]) GetBestScore() float64 {
+	return collect.bestScore
+}
+
 func (collect *BestCollector1[T]) GetBestOrPanic() T {
 	collect.CheckValidOrPanic()
-	return *collect.BestObject
+	return *collect.bestObject
 }
 
 func (collect *BestCollector1[T]) GetBestOrDefault(defaultValue T) T {
 	if collect.hasBest {
-		return *collect.BestObject
+		return *collect.bestObject
 	} else {
 		return defaultValue
 	}
@@ -39,12 +43,12 @@ func (collect *BestCollector1[T]) GetBestOrDefault(defaultValue T) T {
 
 func (collect *BestCollector1[T]) GetBestPointerOrPanic() *T {
 	collect.CheckValidOrPanic()
-	return collect.BestObject
+	return collect.bestObject
 }
 
 func (collect *BestCollector1[T]) GetBestOptional() util_collection.Optional[T] {
 	if collect.hasBest {
-		return util_collection.Optional_OfPointer(collect.BestObject)
+		return util_collection.Optional_OfPointer(collect.bestObject)
 	} else {
 		return util_collection.Optional_Empty[T]()
 	}
@@ -52,7 +56,7 @@ func (collect *BestCollector1[T]) GetBestOptional() util_collection.Optional[T] 
 
 func (collect *BestCollector1[T]) GetBestOrNilValue() T {
 	if collect.hasBest {
-		return *collect.BestObject
+		return *collect.bestObject
 	} else {
 		var nilValue T
 		return nilValue
@@ -61,16 +65,16 @@ func (collect *BestCollector1[T]) GetBestOrNilValue() T {
 
 func (collect *BestCollector1[T]) Offer(object *T, value float64) {
 	if collect.isBetter(value) || !collect.hasBest {
-		collect.BestObject = object
-		collect.BestValue = value
+		collect.bestObject = object
+		collect.bestScore = value
 		collect.hasBest = true
 	}
 }
 
 func (collect *BestCollector1[T]) OfferAndIsBetter(object *T, value float64) bool {
 	if collect.isBetter(value) || !collect.hasBest {
-		collect.BestObject = object
-		collect.BestValue = value
+		collect.bestObject = object
+		collect.bestScore = value
 		collect.hasBest = true
 		return true
 	} else {
@@ -80,9 +84,9 @@ func (collect *BestCollector1[T]) OfferAndIsBetter(object *T, value float64) boo
 
 func (collect *BestCollector1[T]) OfferAndSwap(pointer **T, value float64) {
 	if collect.isBetter(value) || !collect.hasBest {
-		var prev *T = collect.BestObject
-		collect.BestObject = *pointer
-		collect.BestValue = value
+		prev := collect.bestObject
+		collect.bestObject = *pointer
+		collect.bestScore = value
 		collect.hasBest = true
 		*pointer = prev
 	}
@@ -90,12 +94,60 @@ func (collect *BestCollector1[T]) OfferAndSwap(pointer **T, value float64) {
 
 func (collect *BestCollector1[T]) isBetter(value float64) bool {
 	if collect.Minimise {
-		return value < collect.BestValue
+		return value < collect.bestScore
 	} else {
-		return value > collect.BestValue
+		return value > collect.bestScore
 	}
 }
 
+// ######################## BestCollector1Lite ########################
+type BestCollector1Lite[T any] struct {
+	bestValue T
+	bestScore float64
+	hasBest   bool
+}
+
+func (collect *BestCollector1Lite[T]) CheckValidOrPanic() {
+	if !collect.hasBest {
+		panic("no best found")
+	}
+}
+
+func (collect *BestCollector1Lite[T]) HasBest() bool {
+	return collect.hasBest
+}
+
+func (collect *BestCollector1Lite[T]) GetBestOrPanic() T {
+	collect.CheckValidOrPanic()
+	return collect.bestValue
+}
+
+func (collect *BestCollector1Lite[T]) GetBestOrDefault(defaultValue T) T {
+	if collect.hasBest {
+		return collect.bestValue
+	} else {
+		return defaultValue
+	}
+}
+
+func (collect *BestCollector1Lite[T]) GetBestOrNilValue() T {
+	if collect.hasBest {
+		return collect.bestValue
+	} else {
+		var nilValue T
+		return nilValue
+	}
+}
+
+func (collect *BestCollector1Lite[T]) Offer(value T, score float64) {
+	if score > collect.bestScore || !collect.hasBest {
+		collect.bestValue = value
+		collect.bestScore = score
+		collect.hasBest = true
+	}
+}
+
+// ######################## BestCollector1Concurrent ########################
 type BestCollector1Concurrent[T any] struct {
 	inner BestCollector1[T]
 	mutex sync.RWMutex
@@ -105,7 +157,7 @@ func (bc *BestCollector1Concurrent[T]) GetBestValue() float64 {
 	bc.mutex.RLock()
 	defer bc.mutex.RUnlock()
 
-	return bc.inner.BestValue
+	return bc.inner.bestScore
 }
 
 func (bc *BestCollector1Concurrent[T]) Offer(object *T, value float64) {
@@ -119,4 +171,52 @@ func (bc *BestCollector1Concurrent[T]) GetBestOrNilValue() T {
 	defer bc.mutex.RUnlock()
 
 	return bc.inner.GetBestOrNilValue()
+}
+
+// foo
+
+type BestCollector1LiteInt struct {
+	bestValue int
+	bestScore float64
+	hasBest   bool
+}
+
+func (collect *BestCollector1LiteInt) CheckValidOrPanic() {
+	if !collect.hasBest {
+		panic("no best found")
+	}
+}
+
+func (collect *BestCollector1LiteInt) HasBest() bool {
+	return collect.hasBest
+}
+
+func (collect *BestCollector1LiteInt) GetBestOrPanic() int {
+	collect.CheckValidOrPanic()
+	return collect.bestValue
+}
+
+func (collect *BestCollector1LiteInt) GetBestOrDefault(defaultValue int) int {
+	if collect.hasBest {
+		return collect.bestValue
+	} else {
+		return defaultValue
+	}
+}
+
+func (collect *BestCollector1LiteInt) GetBestOrNilValue() int {
+	if collect.hasBest {
+		return collect.bestValue
+	} else {
+		var nilValue int
+		return nilValue
+	}
+}
+
+func (collect *BestCollector1LiteInt) Offer(value int, score float64) {
+	if score > collect.bestScore || !collect.hasBest {
+		collect.bestValue = value
+		collect.bestScore = score
+		collect.hasBest = true
+	}
 }

@@ -217,7 +217,7 @@ func (job *MainJob) runSims(jobChan <-chan *simulateJobPending, expectedCount <-
 
 	util_async.ForEach_Channel_NonBlocking(c_simThreadCount, jobChan, func(pending *simulateJobPending) {
 		sim := pending.simJob
-		result := simulate.WowSim_Execute_SpecifyAll(job.input.SimRunSize, sim.simSpeedUp, sim.spec, sim.goal, sim.fight,
+		result := simulate.ExecuteSpecifyAll(job.input.SimRunSize, sim.simSpeedUp, sim.spec, sim.goal, sim.fight,
 			sim.professions, &sim.equip, nil, tracker.NewChild())
 		job.printer.Printf("sim %s fight=%d %s\n", sim.spec.Name(), sim.fight, result.CompactStringGeneral())
 		pending.SetResult(new(result))

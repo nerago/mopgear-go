@@ -49,11 +49,11 @@ type futureResult[T any] struct {
 // ########### FutureVoid ###########
 
 type FutureVoid struct {
-	isComplete    bool
-	lock          sync.Mutex
 	signalChannel chan any
-	hasWaiter     bool
 	onComplete    []func()
+	lock          sync.Mutex
+	isComplete    bool
+	hasWaiter     bool
 }
 
 var _ IFuture = &FutureVoid{}

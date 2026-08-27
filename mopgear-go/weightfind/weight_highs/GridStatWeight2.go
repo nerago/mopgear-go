@@ -19,9 +19,9 @@ const (
 	c_grid2_minBaseWeight = 0.01
 	c_grid2_maxWeight     = 100.0
 
-	c_grid2_simDiffTempCalcHighRange = 1000.0
-	c_grid2_simDiffScaleMax          = 100.0
-	c_grid2_simDiffMinimumUseful     = 0.1
+	//c_grid2_simDiffTempCalcHighRange = 1000.0
+	c_grid2_simDiffScaleMax      = 100.0
+	c_grid2_simDiffMinimumUseful = 0.1
 )
 
 type GridStatWeightProcess2 struct {

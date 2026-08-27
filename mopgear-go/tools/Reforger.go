@@ -56,7 +56,7 @@ func Reforger_SinglePreset(baseItem *FullItem, recipe *ReforgeRecipe) *FullItem 
 }
 
 func makeModified(baseItem *FullItem, source, target StatType, reforgeQuantity, remainQuantity uint32) *FullItem {
-	var newStats StatBlock = *baseItem.StatBase()
+	newStats := *baseItem.StatBase()
 	newStats[source] = remainQuantity
 	newStats[target] = reforgeQuantity
 

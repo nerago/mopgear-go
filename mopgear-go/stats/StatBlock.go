@@ -144,7 +144,7 @@ func (block *StatBlock) AppendString(build *util.StringBuild2) {
 
 	for i, value := range block {
 		if value != 0 {
-			var stat StatType = StatType(i)
+			stat := StatType(i)
 			name := stat.Name()
 
 			if first {

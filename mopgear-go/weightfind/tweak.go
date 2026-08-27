@@ -104,15 +104,15 @@ func weightTweaker_internal_FastCached(startWeight weight_types.Weight1Basic, tw
 		for i := 1; i < len(weightStats); i++ {
 			stat := weightStats[i]
 
-			if !best.BestObject.IsZero(stat) {
-				mul := best.BestObject.Clone()
+			if !best.GetBestPointerOrPanic().IsZero(stat) {
+				mul := best.GetBestPointerOrPanic().Clone()
 				mul.MultiplyEquals(stat, factor)
 				accuracyMul := evaluate.EvaluateWeight1(&mul)
 				if best.OfferAndIsBetter(&mul, accuracyMul) {
 					foundImprovement = true
 				}
 
-				div := best.BestObject.Clone()
+				div := best.GetBestPointerOrPanic().Clone()
 				div.DivideEquals(stat, factor)
 				accuracyDiv := evaluate.EvaluateWeight1(&div)
 				if best.OfferAndIsBetter(&div, accuracyDiv) {
@@ -120,14 +120,14 @@ func weightTweaker_internal_FastCached(startWeight weight_types.Weight1Basic, tw
 				}
 			}
 
-			add := best.BestObject.Clone()
+			add := best.GetBestPointerOrPanic().Clone()
 			add.PlusEquals(stat, increment)
 			accuracyAdd := evaluate.EvaluateWeight1(&add)
 			if best.OfferAndIsBetter(&add, accuracyAdd) {
 				foundImprovement = true
 			}
 
-			sub := best.BestObject.Clone()
+			sub := best.GetBestPointerOrPanic().Clone()
 			sub.MinusEquals(stat, increment)
 			accuracySub := evaluate.EvaluateWeight1(&sub)
 			if best.OfferAndIsBetter(&sub, accuracySub) {
@@ -144,5 +144,5 @@ func weightTweaker_internal_FastCached(startWeight weight_types.Weight1Basic, tw
 		}
 	}
 
-	return best.GetBestOrPanic(), best.BestValue
+	return best.GetBestOrPanic(), best.GetBestScore()
 }

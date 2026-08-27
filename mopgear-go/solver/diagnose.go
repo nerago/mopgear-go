@@ -23,7 +23,7 @@ func diagnoseFailure(optionsMap *items.SolvableOptionsMap, model *gear_model.Spe
 }
 
 func setsAtLimits(optionsMap *items.SolvableOptionsMap) []items.SolvableItemSet {
-	setList := []items.SolvableItemSet{}
+	setList := make([]items.SolvableItemSet, 0)
 	for _, stat := range stats.StatType_List {
 		setList = setsAtLimitsOfStat(optionsMap, stat, setList)
 	}
@@ -35,9 +35,9 @@ func setsAtLimitsOfStat(optionsMap *items.SolvableOptionsMap, stat stats.StatTyp
 
 	for slot := items.Equip_Iter_First; slot <= items.Equip_Iter_Last; slot++ {
 		options := optionsMap.Get(slot)
-		min, max := findMinMaxWithStat(options, stat)
-		lowSet.AddItem_DeferCalc(slot, min)
-		highSet.AddItem_DeferCalc(slot, max)
+		minItem, maxItem := findMinMaxWithStat(options, stat)
+		lowSet.AddItem_DeferCalc(slot, minItem)
+		highSet.AddItem_DeferCalc(slot, maxItem)
 	}
 
 	items.SolvableItemSet_RecalculateTotal(&lowSet)
@@ -53,18 +53,18 @@ func findMinMaxWithStat(options []items.SolvableItem, stat stats.StatType) (*ite
 		return &options[0], &options[0]
 	}
 
-	min := &options[0]
-	max := &options[0]
+	minItem := &options[0]
+	maxItem := &options[0]
 	for i := 1; i < len(options); i++ {
 		item := &options[i]
-		if item.Total().GetUInt(stat) < min.Total().GetUInt(stat) {
-			min = item
+		if item.Total().GetUInt(stat) < minItem.Total().GetUInt(stat) {
+			minItem = item
 		}
-		if item.Total().GetUInt(stat) > max.Total().GetUInt(stat) {
-			max = item
+		if item.Total().GetUInt(stat) > maxItem.Total().GetUInt(stat) {
+			maxItem = item
 		}
 	}
-	return min, max
+	return minItem, maxItem
 }
 
 func findAcceptableSet(proposedList []items.SolvableItemSet, model *gear_model.SpecModel) util_collection.Optional[items.SolvableItemSet] {

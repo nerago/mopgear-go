@@ -60,7 +60,7 @@ func (set *SolvableItemSet) RecalculateTotal() {
 
 func (set *SolvableItemSet) ReplaceItem_Into(slot SlotEquip, item *SolvableItem, dest *SolvableItemSet) {
 	oldItem := set.items[slot]
-	set.items.ReplaceItem_Into(slot, item, &dest.items)
+	set.items.replaceItem_Into(slot, item, &dest.items)
 	stats.StatBlock_AddAndSubtract_Into(&set.total, &item.total, &oldItem.total, &dest.total)
 }
 

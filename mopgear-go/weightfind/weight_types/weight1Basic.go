@@ -3,7 +3,6 @@ package weight_types
 import (
 	"encoding/json"
 	"iter"
-	"math"
 	"slices"
 
 	"github.com/nerago/mopgear-go/stats"
@@ -107,23 +106,6 @@ func (wr *Weight1Basic) CalcStatScoreScaled(input *WeightInput, statScale stats.
 		total += input.TotalStat.GetFloat(statType) * wr.content.GetFloat(statType) * scale
 	}
 	return total
-}
-
-func (wr *Weight1Basic) ScaleBackToMax(weight float64) Weight1Basic {
-	biggest := 0.0
-	for value := range wr.content.SeqValues() {
-		biggest = max(biggest, math.Abs(value))
-	}
-
-	actualLimit := weight * 0.999999 // rounding worries
-	if biggest < actualLimit {
-		return *wr
-	}
-
-	factor := actualLimit / biggest
-	rescaled := wr.Clone()
-	wr.content.MultiplyScalar(factor, &rescaled.content)
-	return rescaled
 }
 
 func (wr *Weight1Basic) NormalizeForBase(requiredStats []stats.StatType) {

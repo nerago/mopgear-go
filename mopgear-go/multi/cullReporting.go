@@ -10,6 +10,7 @@ import (
 	"github.com/nerago/mopgear-go/util/util_collection"
 )
 
+//goland:noinspection GoUnnecessarilyExportedIdentifiers
 func (job *MainJob) CullingReport() {
 	for _, prep := range job.itemPrep {
 		prep.cullingReportSeen(job.printer)

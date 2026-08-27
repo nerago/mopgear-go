@@ -11,7 +11,7 @@ import (
 )
 
 func TestSolverBasicRun(t *testing.T) {
-	const targetCount = util_test.TargetCountStandard
+
 	options, model := util_test.MakeTestOptions()
 	solveModel := solve_highs_types.SolverModelBuild(model, 1, nil)
 

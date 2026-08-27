@@ -16,7 +16,15 @@
       </option>
     </buildTags>
   </component>
-  <component name="GoModuleSettings" enabled="true" />
+  <component name="GoModuleSettings" enabled="true">
+    <buildTags>
+      <option name="experiments">
+        <array>
+          <option value="simd" />
+        </array>
+      </option>
+    </buildTags>
+  </component>
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/output" />
