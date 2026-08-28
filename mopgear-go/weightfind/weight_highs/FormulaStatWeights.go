@@ -278,6 +278,7 @@ func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solut
 		weightExtended.SetSimScale(simType, 1, 0, form.targetRatios.GetOrPanic(simType))
 	}
 
+	weightExtended.UpdateScaling(form.inputData)
 	weightExtended.FinishAndValidate(form.inputData)
 	return *weightExtended
 }

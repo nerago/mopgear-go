@@ -268,6 +268,7 @@ func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Sol
 		result.SetSimScale(simType, 1, 0, grid2.targetRatios.GetOrPanic(simType))
 	}
 
+	result.UpdateScaling(grid2.inputData)
 	result.FinishAndValidate(grid2.inputData)
 	return *result
 }

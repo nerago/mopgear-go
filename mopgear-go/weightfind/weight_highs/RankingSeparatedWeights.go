@@ -257,6 +257,7 @@ func (ranker *RankingSeparatedWeights) extractAndReportSolution(solution *highs.
 		ratio := ranker.targetRatios.GetOrPanic(simType)
 		weight.SetSimScale(simType, 1, offsetValue, ratio)
 	}
+	weight.UpdateScaling(ranker.inputDataOriginal)
 	weight.FinishAndValidate(ranker.inputDataOriginal)
 
 	weight.Print(ranker.printer)

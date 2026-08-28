@@ -76,7 +76,7 @@ func (form *FormulaStatWeightProcess2) Run(timeout int) *util_async.FutureCancel
 	if form.minimumIncludeRate == 1.0 {
 		form.build.BlendMultiObjectives = true
 		form.objectiveEquationDiff = form.build.AddObjectiveBlended(1, 0)
-		form.objectiveInclude = form.build.AddObjectiveBlended(1, 0)
+		form.objectiveInclude = form.build.AddObjectiveBlended(0, 0)
 	} else if form.BLEND == 0 {
 		form.build.BlendMultiObjectives = false
 		form.objectiveEquationDiff = form.build.AddObjectivePrioritised(false, -1, 0.5, 2)

@@ -110,7 +110,11 @@ func (ranker *RankingSeparatedWeights2) Run(stopwatch *util.Stopwatch) *util_asy
 
 	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.Weight2Extended, bool) {
 		solution := linearResult.GetSolutionAndSaveLog(ranker.printer)
-		return ranker.extractAndReportSolution(solution), true
+		if solution.HasSolution() {
+			return ranker.extractAndReportSolution(solution), true
+		} else {
+			return weight_types.Weight2Extended{}, false
+		}
 	})
 }
 
@@ -259,6 +263,7 @@ func (ranker *RankingSeparatedWeights2) extractAndReportSolution(solution *highs
 		ratio := ranker.targetRatios.GetOrPanic(simType)
 		weight.SetSimScale(simType, 1, offsetValue, ratio)
 	}
+	weight.UpdateScaling(ranker.inputDataOriginal)
 	weight.FinishAndValidate(ranker.inputDataOriginal)
 
 	weight.Print(ranker.printer)
