@@ -2,6 +2,7 @@ package weight_highs
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"math"
 	"slices"
@@ -101,19 +102,23 @@ func (ranker *RankingSeparatedWeights2) newBuilder() {
 	ranker.build.SetEachTolerance(1e-2)
 }
 
-func (ranker *RankingSeparatedWeights2) Run(stopwatch *util.Stopwatch) *util_async.FutureCancellable[weight_types.Weight2Extended] {
+func (ranker *RankingSeparatedWeights2) Run(stopwatch *util.Stopwatch) (*util_async.FutureCancellable[weight_types.WeightResult2], error) {
 	ranker.newBuilder()
 	ranker.prepareRankings()
 	ranker.createWeightColumns()
 	ranker.processData()
 	solutionFuture := ranker.build.RunHighsFuture(stopwatch)
 
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.Weight2Extended, bool) {
-		solution := linearResult.GetSolutionAndSaveLog(ranker.printer)
-		if solution.HasSolution() {
-			return ranker.extractAndReportSolution(solution), true
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) weight_types.WeightResult2 {
+		if solution, err := linearResult.GetSolutionAndSaveLog(ranker.printer); err == nil {
+			if solution.HasSolution() {
+				weight := ranker.extractAndReportSolution(solution)
+				return weight_types.WeightResult2Make(&weight, stopwatch.Elapsed(), solution.Status)
+			} else {
+				return weight_types.WeightResult2MakeError(stopwatch.Elapsed(), errors.New("solution = "+solution.Status.String()))
+			}
 		} else {
-			return weight_types.Weight2Extended{}, false
+			return weight_types.WeightResult2MakeError(stopwatch.Elapsed(), err)
 		}
 	})
 }

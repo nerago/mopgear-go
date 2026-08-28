@@ -47,16 +47,16 @@ type LinearResult struct {
 	err      error
 }
 
-func (lr *LinearResult) GetSolutionAndDiscardLog() *highs.Solution {
-	return lr.solution
+func (lr *LinearResult) GetSolutionAndDiscardLog() (*highs.Solution, error) {
+	return lr.solution, lr.err
 }
 
-func (lr *LinearResult) GetSolutionAndSaveLog(printer *util.PrintRecorder) *highs.Solution {
+func (lr *LinearResult) GetSolutionAndSaveLog(printer *util.PrintRecorder) (*highs.Solution, error) {
 	printer.AppendOther(lr.log)
-	return lr.solution
+	return lr.solution, lr.err
 }
 
-func (lr *LinearResult) GetSolution2AndSaveLog(printer *util.PrintRecorder) *Solution2 {
+func (lr *LinearResult) GetSolution2AndSaveLog(printer *util.PrintRecorder) (*Solution2, error) {
 	printer.AppendOther(lr.log)
-	return &Solution2{lr.solution, lr.build}
+	return &Solution2{lr.solution, lr.build}, lr.err
 }

@@ -43,7 +43,7 @@ func WeightInputWriteFile(weightInputs []WeightInput, filename string) {
 type IWeightResult interface {
 	GetWeight() IWeight
 	GetSolveTime() time.Duration
-	GetStatus() highs.ModelStatus
+	GetStatus() string
 	GetNewRatio() *SimPriorityBasic
 	GetError() error
 	AsWeight1(verificationInputs []WeightInput) *Weight1Basic
@@ -54,7 +54,7 @@ type IWeightResult interface {
 type WeightResultCommon struct {
 	WeightInterface IWeight
 	SolveTime       time.Duration
-	Status          highs.ModelStatus
+	Status          string
 	NewRatio        *SimPriorityBasic
 	Error           error
 }
@@ -67,7 +67,7 @@ func (w WeightResultCommon) GetSolveTime() time.Duration {
 	return w.SolveTime
 }
 
-func (w WeightResultCommon) GetStatus() highs.ModelStatus {
+func (w WeightResultCommon) GetStatus() string {
 	return w.Status
 }
 
@@ -90,17 +90,26 @@ type WeightResult2 weightResultGeneric[*Weight2Extended]
 
 type WeightResult3 weightResultGeneric[*Weight3ExtendedRanged]
 
-func WeightResult1Make(weight *Weight1Basic, solveTime time.Duration, status highs.ModelStatus, err error) WeightResult1 {
-	return WeightResult1{WeightResultCommon{weight, solveTime, status, nil, err}, weight}
+func WeightResult1Make(weight *Weight1Basic, solveTime time.Duration, status highs.ModelStatus) WeightResult1 {
+	return WeightResult1{WeightResultCommon: WeightResultCommon{weight, solveTime, status.String(), nil, nil}, Weight: weight}
 }
-func WeightResult2Make(weight *Weight2Extended, solveTime time.Duration, status highs.ModelStatus, err error) WeightResult2 {
-	return WeightResult2{WeightResultCommon{weight, solveTime, status, nil, err}, weight}
+func WeightResult2Make(weight *Weight2Extended, solveTime time.Duration, status highs.ModelStatus) WeightResult2 {
+	return WeightResult2{WeightResultCommon: WeightResultCommon{weight, solveTime, status.String(), nil, nil}, Weight: weight}
 }
-func WeightResult3Make(weight *Weight3ExtendedRanged, solveTime time.Duration, status highs.ModelStatus, err error) WeightResult3 {
-	return WeightResult3{WeightResultCommon{weight, solveTime, status, nil, err}, weight}
+func WeightResult3Make(weight *Weight3ExtendedRanged, solveTime time.Duration, status highs.ModelStatus) WeightResult3 {
+	return WeightResult3{WeightResultCommon: WeightResultCommon{weight, solveTime, status.String(), nil, nil}, Weight: weight}
+}
+func WeightResult1MakeError(solveTime time.Duration, err error) WeightResult1 {
+	return WeightResult1{WeightResultCommon: WeightResultCommon{SolveTime: solveTime, Status: "ERROR", Error: err}}
+}
+func WeightResult2MakeError(solveTime time.Duration, err error) WeightResult2 {
+	return WeightResult2{WeightResultCommon: WeightResultCommon{SolveTime: solveTime, Status: "ERROR", Error: err}}
+}
+func WeightResult3MakeError(solveTime time.Duration, err error) WeightResult3 {
+	return WeightResult3{WeightResultCommon: WeightResultCommon{SolveTime: solveTime, Status: "ERROR", Error: err}}
 }
 func WeightResult1MakeWithRatio(weight *Weight1Basic, solveTime time.Duration, status highs.ModelStatus, ratio *SimPriorityBasic, err error) WeightResult1 {
-	return WeightResult1{WeightResultCommon{weight, solveTime, status, ratio, err}, weight}
+	return WeightResult1{WeightResultCommon{weight, solveTime, status.String(), ratio, err}, weight}
 }
 
 func (wr *WeightResult1) AsWeight1(_ []WeightInput) *Weight1Basic {

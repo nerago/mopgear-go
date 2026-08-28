@@ -60,7 +60,7 @@ func (basic *BasicStatWeightProcess) AddSimData(statType stats.StatType, statVal
 	basic.simData[statType] = basicDataEntry{statValue, sim}
 }
 
-func (basic *BasicStatWeightProcess) Run() *util_async.FutureCancellable[weight_types.WeightResult1] {
+func (basic *BasicStatWeightProcess) Run() (*util_async.FutureCancellable[weight_types.WeightResult1], error) {
 	for _, statType := range basic.requiredStats {
 		colName := "FINAL WEIGHT: " + statType.Name()
 		colFinalWeight := basic.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: colName})
@@ -95,15 +95,17 @@ func (basic *BasicStatWeightProcess) Run() *util_async.FutureCancellable[weight_
 	stopwatch := util.StopwatchMakeStopped()
 	solutionFuture := basic.build.RunHighsFuture(stopwatch)
 
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult1, bool) {
-		solution := linearResult.GetSolutionAndSaveLog(basic.printer)
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) weight_types.WeightResult1 {
+		if solution, err := linearResult.GetSolutionAndSaveLog(basic.printer); err == nil {
+			basic.printer.Println(solution.Status.String())
+			basic.build.DebugPrintColumns(solution, basic.printer)
 
-		basic.printer.Println(solution.Status.String())
-		basic.build.DebugPrintColumns(solution, basic.printer)
+			weight := basic.reportOutputWeights(solution)
 
-		weight := basic.reportOutputWeights(solution)
-
-		return weight_types.WeightResult1Make(&weight, stopwatch.Elapsed(), solution.Status), true
+			return weight_types.WeightResult1Make(&weight, stopwatch.Elapsed(), solution.Status)
+		} else {
+			return weight_types.WeightResult1MakeError(stopwatch.Elapsed(), err)
+		}
 	})
 }
 

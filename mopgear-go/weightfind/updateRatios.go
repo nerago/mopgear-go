@@ -44,7 +44,11 @@ func (wrp *WeightRatioProcess) Run(cancel util_async.CancelSignal) {
 }
 
 func (wrp *WeightRatioProcess) updateSpecRatio(spec *WeightSpec, tracker *util.TrackProgress, cancel util_async.CancelSignal) string {
-	spec.prepareSimData(util.TrackProgress_Nop(), cancel)
+	spec.process.forceSkipSim = true
+	err := spec.prepareSimData(util.TrackProgress_Nop(), cancel)
+	if err != nil {
+		util.GlobalErrorHandler(err)
+	}
 
 	sb := util.StringBuild2{}
 	sb.WriteString("UPDATE RATIOS FOR ")
@@ -57,24 +61,24 @@ func (wrp *WeightRatioProcess) updateSpecRatio(spec *WeightSpec, tracker *util.T
 	sb.WriteString("Baseline ")
 	wrp.appendAccuracy(spec, &spec.Model.StatWeights.Weight1, &spec.Model.SimPriority, &sb)
 
-	taskList := make([]func() weight_types.IWeightResult, 0)
+	taskList := make([]func() (weight_types.IWeightResult, error), 0)
 
-	taskList = append(taskList, func() weight_types.IWeightResult {
+	taskList = append(taskList, func() (weight_types.IWeightResult, error) {
 		return wrp.runRanking(spec, 32, true, false, true, 5, cancel)
 	})
-	taskList = append(taskList, func() weight_types.IWeightResult {
+	taskList = append(taskList, func() (weight_types.IWeightResult, error) {
 		return wrp.runRanking(spec, 128, true, false, true, 3, cancel)
 	})
-	taskList = append(taskList, func() weight_types.IWeightResult {
+	taskList = append(taskList, func() (weight_types.IWeightResult, error) {
 		return wrp.runRanking(spec, 400, false, true, false, 0, cancel)
 	})
-	//taskList = append(taskList, func() *weight_types.WeightResult {
+	//taskList = append(taskList, func() (weight_types.IWeightResult,error) {
 	//	return wrp.runRanking(spec, 1000, false, true, false, 0, cancel)
 	//})
-	taskList = append(taskList, func() weight_types.IWeightResult {
+	taskList = append(taskList, func() (weight_types.IWeightResult, error) {
 		return wrp.runRanking(spec, 2000, false, false, false, 0, cancel)
 	})
-	taskList = append(taskList, func() weight_types.IWeightResult {
+	taskList = append(taskList, func() (weight_types.IWeightResult, error) {
 		return wrp.runSearch(spec, cancel)
 	})
 
@@ -82,23 +86,35 @@ func (wrp *WeightRatioProcess) updateSpecRatio(spec *WeightSpec, tracker *util.T
 	tracker.RunFromAtomicInt(&countDone, uint64(len(taskList)))
 	defer tracker.SetDone()
 
-	resultList := util_async.Map_SliceToSlice(c_ratioThreadCount, taskList, func(apply *func() weight_types.IWeightResult) weight_types.IWeightResult {
-		result := (*apply)()
+	type weightAndError struct {
+		weight weight_types.IWeightResult
+		err    error
+	}
+
+	resultList := util_async.Map_SliceToSlice_Cancellable(c_ratioThreadCount, taskList, cancel, func(apply *func() (weight_types.IWeightResult, error)) weightAndError {
+		result, err3 := (*apply)()
 		countDone.Add(1)
-		return result
+		return weightAndError{result, err3}
 	})
 
 	for _, result := range resultList {
-		wrp.addReport(spec, result, &sb)
+		wrp.addReport(spec, result.weight, result.err, &sb)
 	}
 
 	return sb.String()
 }
 
-func (wrp *WeightRatioProcess) addReport(spec *WeightSpec, weightResult weight_types.IWeightResult, sb *util.StringBuild2) {
+func (wrp *WeightRatioProcess) addReport(spec *WeightSpec, weightResult weight_types.IWeightResult, err error, sb *util.StringBuild2) {
 	newRatio := weightResult.GetNewRatio()
-	if newRatio != nil {
-		sb.WriteString("Ratio: ")
+	if err != nil {
+		sb.WriteString("Ratio ")
+		sb.WriteString(spec.Label)
+		sb.WriteString(" ")
+		sb.WriteString(err.Error())
+		sb.WriteString("\n")
+	} else if newRatio != nil {
+		sb.WriteString("Ratio ")
+		sb.WriteString(spec.Label)
 		newRatio.ScaleForTotalSum(1.0)
 		newRatio.AppendString(sb)
 		sb.WriteString("\n")
@@ -106,7 +122,9 @@ func (wrp *WeightRatioProcess) addReport(spec *WeightSpec, weightResult weight_t
 		weights1 := weightResult.AsWeight1(spec.dataAll)
 		wrp.appendAccuracy(spec, weights1, newRatio, sb)
 	} else {
-		sb.WriteString("Ratio missing\n")
+		sb.WriteString("Ratio ")
+		sb.WriteString(spec.Label)
+		sb.WriteString(" MISSING\n")
 	}
 }
 
@@ -116,7 +134,7 @@ func (wrp *WeightRatioProcess) appendAccuracy(spec *WeightSpec, weight *weight_t
 	sb.Printf("Accuracy: %f %f\n\n", newAcc, newAccSt)
 }
 
-func (wrp *WeightRatioProcess) runRanking(spec *WeightSpec, sampleCount int, mip, allPairs, randPairs bool, randPairCount int, cancel util_async.CancelSignal) *weight_types.WeightResult1 {
+func (wrp *WeightRatioProcess) runRanking(spec *WeightSpec, sampleCount int, mip, allPairs, randPairs bool, randPairCount int, cancel util_async.CancelSignal) (*weight_types.WeightResult1, error) {
 	data := util_collection.SliceSampleRandom(spec.dataAll, sampleCount)
 
 	ranking := weight_highs.RankingWeightsRatio30{}
@@ -128,13 +146,19 @@ func (wrp *WeightRatioProcess) runRanking(spec *WeightSpec, sampleCount int, mip
 	ranking.SetRequiredStats(spec.statTypes)
 	ranking.SetTargetRatios(spec.targetRatio)
 	ranking.SupplyData(data)
-	weightsFuture := ranking.RunSinglePassRaw()
-	util_async.ChainCancel(cancel, weightsFuture)
+	weightsFuture, err := ranking.RunSinglePassRaw()
+	if err != nil {
+		return nil, err
+	}
+	err = util_async.ChainCancel(cancel, weightsFuture)
+	if err != nil {
+		return nil, err
+	}
 	weightResult := weightsFuture.WaitForResultOrNilValue()
-	return new(weightResult)
+	return new(weightResult), nil
 }
 
-func (wrp *WeightRatioProcess) runSearch(spec *WeightSpec, outerCancel util_async.CancelSignal) *weight_types.WeightResult1 {
+func (wrp *WeightRatioProcess) runSearch(spec *WeightSpec, outerCancel util_async.CancelSignal) (*weight_types.WeightResult1, error) {
 	const c_maxRatioChange = 0.1
 
 	statRange := weight_types.StatRangeFloat{Minimum: -1.0, Maximum: 1.0}
@@ -148,7 +172,10 @@ func (wrp *WeightRatioProcess) runSearch(spec *WeightSpec, outerCancel util_asyn
 	}
 
 	innerCancel := util_async.CancelSignal_Make()
-	util_async.ChainCancel(outerCancel, innerCancel)
+	err := util_async.ChainCancel(outerCancel, innerCancel)
+	if err != nil {
+		return nil, err
+	}
 	util_async.CancelAfterTimeout(innerCancel, time.Duration(wrp.timeoutEach)*time.Second, wrp.printer)
 
 	ranking := WeightSearcherRatio1{}
@@ -157,5 +184,5 @@ func (wrp *WeightRatioProcess) runSearch(spec *WeightSpec, outerCancel util_asyn
 	ranking.SupplyData(spec.dataAll)
 	ranking.SetStatSimRanges(statRange, simRangeMap)
 	weightResult := ranking.Run(innerCancel)
-	return new(weightResult)
+	return new(weightResult), nil
 }

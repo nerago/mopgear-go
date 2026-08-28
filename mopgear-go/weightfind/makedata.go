@@ -23,12 +23,14 @@ const (
 
 type incrementStatCombo map[stats.StatType]int32
 
-func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, requiredStats []stats.StatType, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, tracker *util.TrackProgress, label string, cancel util_async.CancelSignal, fixStatsMode weight_types.FixStatsRangeMode) []weight_types.WeightInput {
+func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, requiredStats []stats.StatType, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, tracker *util.TrackProgress, label string, cancel util_async.CancelSignal, fixStatsMode weight_types.FixStatsRangeMode) ([]weight_types.WeightInput, error) {
 	var incrementStep int32 = grid_sim_step
 	var incrementMax int32 = incrementStep * grid_sim_max_steps
 	if len(requiredStats) == 8 {
 		incrementMax = incrementStep * 2
 	}
+
+	// TODO add negative increments too
 
 	initialBaseStats := InitialBonusStatMap_fixRanges(printer, currentItemSet, incrementMax, fixStatsMode, true)
 
@@ -37,7 +39,7 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 	defer tracker.SetDone()
 
 	printer.Printf("Running %d sims (part 1) for %s\n", len(incrementPermutations), label)
-	inputList := util_async.Map_SliceToSlice_Cancellable(6, incrementPermutations, cancel, func(increments *incrementStatCombo) weight_types.WeightInput {
+	inputList, err := util_async.Map_SliceToSlice_Cancellable_PassError(6, incrementPermutations, cancel, func(increments *incrementStatCombo) (weight_types.WeightInput, error) {
 		bonusStat := initialBaseStats.Clone()
 		str := util.StringBuild2{}
 		str.WriteString("SIM ")
@@ -51,7 +53,10 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 			str.WriteRune(' ')
 		}
 
-		simResult := simulate.ExecuteSpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), bonusStat, tracker.NewChild())
+		simResult, err2 := simulate.ExecuteSpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), bonusStat, tracker.NewChild())
+		if err2 != nil {
+			return weight_types.WeightInput{}, err2
+		}
 
 		str.WriteString("--> ")
 		simResult.CompactStringGeneralAppend(&str)
@@ -60,10 +65,10 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 		return weight_types.WeightInput{
 			TotalStat: addBonusStats(currentItemSet.Total(), bonusStat),
 			SimResult: simResult,
-		}
+		}, nil
 	})
 	printer.Printf("Done sims (part 1) for %s\n", label)
-	return inputList
+	return inputList, err
 }
 
 func makePermutationsForGridSim2(statList []stats.StatType, incrementStep int32, incrementMax int32) []incrementStatCombo {
@@ -144,14 +149,14 @@ func GenerateRandomSets(gearFile string, substituteItems []items.ItemId, model *
 	return setList, itemOptions
 }
 
-func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, model *gear_model.SpecModel, makeSetCount int, simSize simulate.WowSim_RunSize, fixStatsMode weight_types.FixStatsRangeMode, printer *util.PrintRecorder, track *util.TrackProgress, label string, cancel util_async.CancelSignal) []weight_types.WeightInput {
+func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, model *gear_model.SpecModel, makeSetCount int, simSize simulate.WowSim_RunSize, fixStatsMode weight_types.FixStatsRangeMode, printer *util.PrintRecorder, track *util.TrackProgress, label string, cancel util_async.CancelSignal) ([]weight_types.WeightInput, error) {
 	setList, _ := GenerateRandomSets(gearFile, substituteItems, model, makeSetCount, printer, label, true)
 
 	track.RunOuterTracking(len(setList))
 	defer track.SetDone()
 
 	printer.Printf("Running %d sims (part 2) for %s\n", len(setList), label)
-	weightInputs := util_async.Map_SliceToSlice_Cancellable(6, setList, cancel, func(itemSet *items.FullItemSet) weight_types.WeightInput {
+	weightInputs, err := util_async.Map_SliceToSlice_Cancellable_PassError(6, setList, cancel, func(itemSet *items.FullItemSet) (weight_types.WeightInput, error) {
 		bonusStats := InitialBonusStatMap_fixRanges(printer, *itemSet, 0, fixStatsMode, false)
 
 		var total stats.StatBlock
@@ -161,7 +166,10 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 			total = *itemSet.Total()
 		}
 
-		simResult := simulate.ExecuteUseModel(simSize, model, itemSet.Items(), bonusStats, track.NewChild())
+		simResult, err2 := simulate.ExecuteUseModel(simSize, model, itemSet.Items(), bonusStats, track.NewChild())
+		if err2 != nil {
+			return weight_types.WeightInput{}, err2
+		}
 
 		str := util.StringBuild2{}
 		str.WriteString("SIM ")
@@ -172,11 +180,11 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 		simResult.CompactStringGeneralAppend(&str)
 		printer.PrintlnFromBuild(str)
 
-		return weight_types.WeightInput{TotalStat: total, SimResult: simResult}
+		return weight_types.WeightInput{TotalStat: total, SimResult: simResult}, nil
 	})
 
 	printer.Printf("Done sims (part 2) for %s\n", label)
-	return weightInputs
+	return weightInputs, err
 }
 
 func addBonusStats(base *stats.StatBlock, bonusStat *stats.StatTypeMap[int32]) stats.StatBlock {

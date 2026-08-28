@@ -1,6 +1,7 @@
 package fitting2
 
 import (
+	"errors"
 	"math"
 
 	"github.com/nerago/mopgear-go/util"
@@ -84,15 +85,18 @@ func (bss *BaseSingleSegmented[S]) FinishSegments(enforceMinimumIncludeCount boo
 	}
 }
 
-func (bss *BaseSingleSegmented[S]) RunSolve() (*util_async.FutureCancellable[InitialResultSet], error) {
+func (bss *BaseSingleSegmented[S]) RunSolve() *util_async.FutureCancellableWithError[InitialResultSet] {
 	future := bss.Build.RunHighsFuture(&bss.Stopwatch)
-	return util_async.FutureCancellable_MapValue(future, func(res util_highs.LinearResult) (InitialResultSet, bool) {
-		solution := res.GetSolution2AndSaveLog(bss.Printer)
-		solution.DebugPrint(bss.Printer)
-		if solution.HasSolution() {
-			return bss.prepareResult(solution), true
+	return util_async.FutureCancellable_MapValueError(future, func(res util_highs.LinearResult) (*InitialResultSet, error) {
+		if solution, err := res.GetSolution2AndSaveLog(bss.Printer); err == nil {
+			solution.DebugPrint(bss.Printer)
+			if solution.HasSolution() {
+				return bss.prepareResult(solution), nil
+			} else {
+				return nil, errors.New("no solution")
+			}
 		} else {
-			return InitialResultSet{}, false
+			return nil, err
 		}
 	})
 }
@@ -159,8 +163,8 @@ func (bss *BaseSingleSegmented[S]) PrepareThresholdColumn(seg1 *SegmentVars, sta
 	return isThreshold
 }
 
-func (bss *BaseSingleSegmented[S]) prepareResult(solution *util_highs.Solution2) InitialResultSet {
-	resultSet := InitialResultSet{}
+func (bss *BaseSingleSegmented[S]) prepareResult(solution *util_highs.Solution2) *InitialResultSet {
+	resultSet := &InitialResultSet{}
 
 	for _, segment := range bss.Segments {
 		var statRange weight_types.StatRangeFloat

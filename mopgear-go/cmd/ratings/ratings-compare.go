@@ -3,6 +3,7 @@ package main
 import (
 	"cmp"
 	"encoding/json/v2"
+	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -165,9 +166,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			for _, data := range inputDataBasic {
 				basic.AddSimData(data.IncrementStat, uint32(data.IncrementValue), data.SimResult)
 			}
-			weightFuture := basic.Run()
-			util_async.ChainCancel(cancel, weightFuture)
-			return weightFuture.WaitForResultOrNilValue()
+			weightFuture, err := basic.Run()
+			return makeTaskResultWithError1(weightFuture, err, cancel)
 		})
 
 		addTask2("form", func() weight_types.WeightResult2 {
@@ -177,9 +177,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			comp.SetTargetRatios(targetRatio)
 			comp.SetMinimumIncludeRate(1)
 			comp.SupplyData(slices.Clone(inputDataRandom))
-			weightFuture := comp.Run(standardTimeout)
-			util_async.ChainCancel(cancel, weightFuture)
-			return weightFuture.WaitForResultOrNilValue()
+			weightFuture, err := comp.Run(standardTimeout)
+			return makeTaskResultWithError2(weightFuture, err, cancel)
 		})
 	}
 
@@ -194,9 +193,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 				comp.SetTargetRatios(targetRatio)
 				comp.SetMinimumIncludeRate(0.7)
 				comp.SupplyData(slices.Clone(inputDataRandom))
-				futureResult := comp.Run(standardTimeout)
-				util_async.ChainCancel(cancel, futureResult)
-				return futureResult.WaitForResultOrNilValue()
+				weightFuture, err := comp.Run(standardTimeout)
+				return makeTaskResultWithError2(weightFuture, err, cancel)
 			})
 			label = fmt.Sprintf("form-blend%d-inc100", BLEND)
 			addTask2(label, func() weight_types.WeightResult2 {
@@ -207,9 +205,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 				comp.SetTargetRatios(targetRatio)
 				comp.SetMinimumIncludeRate(1)
 				comp.SupplyData(slices.Clone(inputDataRandom))
-				futureResult := comp.Run(standardTimeout)
-				util_async.ChainCancel(cancel, futureResult)
-				return futureResult.WaitForResultOrNilValue()
+				futureResult, err := comp.Run(standardTimeout)
+				return makeTaskResultWithError2(futureResult, err, cancel)
 			})
 		}
 	}
@@ -260,9 +257,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			grid1.SetRequiredStats(requiredStats)
 			grid1.SetTargetRatios(targetRatio)
 			grid1.SupplyData(slices.Clone(inputDataGrid))
-			weightFuture := grid1.Run()
-			util_async.ChainCancel(cancel, weightFuture)
-			return weightFuture.WaitForResultOrNilValue()
+			weightFuture, err := grid1.Run()
+			return makeTaskResultWithError1(weightFuture, err, cancel)
 		})
 	}
 
@@ -274,9 +270,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			grid1.SetRequiredStats(requiredStats)
 			grid1.SetTargetRatios(targetRatio)
 			grid1.SupplyData(slices.Clone(inputDataGrid))
-			weightFuture := grid1.Run()
-			util_async.ChainCancel(cancel, weightFuture)
-			return weightFuture.WaitForResultOrNilValue()
+			weightFuture, err := grid1.Run()
+			return makeTaskResultWithError1(weightFuture, err, cancel)
 		})
 
 		for SCALEMODE := range 5 {
@@ -296,9 +291,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 								grid1.SetRequiredStats(requiredStats)
 								grid1.SetTargetRatios(targetRatio)
 								grid1.SupplyData(slices.Clone(inputDataGrid))
-								weightFuture := grid1.Run()
-								util_async.ChainCancel(cancel, weightFuture)
-								return weightFuture.WaitForResultOrNilValue()
+								weightFuture, err := grid1.Run()
+								return makeTaskResultWithError1(weightFuture, err, cancel)
 							})
 						}
 					}
@@ -319,9 +313,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 				grid1.SetRequiredStats(requiredStats)
 				grid1.SetTargetRatios(targetRatio)
 				grid1.SupplyData(slices.Clone(inputDataGrid))
-				weightFuture := grid1.Run()
-				util_async.ChainCancel(cancel, weightFuture)
-				return weightFuture.WaitForResultOrNilValue()
+				weightFuture, err := grid1.Run()
+				return makeTaskResultWithError1(weightFuture, err, cancel)
 			})
 		}
 	}
@@ -338,9 +331,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 					grid1.SetRequiredStats(requiredStats)
 					grid1.SetTargetRatios(targetRatio)
 					grid1.SupplyData(slices.Clone(inputDataGrid))
-					weightFuture := grid1.Run()
-					util_async.ChainCancel(cancel, weightFuture)
-					return weightFuture.WaitForResultOrNilValue()
+					weightFuture, err := grid1.Run()
+					return makeTaskResultWithError1(weightFuture, err, cancel)
 				})
 			}
 		}
@@ -354,9 +346,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			grid2.SetRequiredStats(requiredStats)
 			grid2.SetTargetRatios(targetRatio)
 			grid2.SupplyData(slices.Clone(inputDataGrid))
-			weightFuture := grid2.Run()
-			util_async.ChainCancel(cancel, weightFuture)
-			return weightFuture.WaitForResultOrNilValue()
+			weightFuture, err := grid2.Run()
+			return makeTaskResultWithError2(weightFuture, err, cancel)
 		})
 		addTask2("grid2-2", func() weight_types.WeightResult2 {
 			grid2 := weight_highs.GridStatWeightProcess2{}
@@ -365,9 +356,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			grid2.SetRequiredStats(requiredStats)
 			grid2.SetTargetRatios(targetRatio)
 			grid2.SupplyData(slices.Clone(inputDataGrid))
-			weightFuture := grid2.Run()
-			util_async.ChainCancel(cancel, weightFuture)
-			return weightFuture.WaitForResultOrNilValue()
+			weightFuture, err := grid2.Run()
+			return makeTaskResultWithError2(weightFuture, err, cancel)
 		})
 		addTask2("grid2-12", func() weight_types.WeightResult2 {
 			grid2 := weight_highs.GridStatWeightProcess2{}
@@ -377,9 +367,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			grid2.SetRequiredStats(requiredStats)
 			grid2.SetTargetRatios(targetRatio)
 			grid2.SupplyData(slices.Clone(inputDataGrid))
-			weightFuture := grid2.Run()
-			util_async.ChainCancel(cancel, weightFuture)
-			return weightFuture.WaitForResultOrNilValue()
+			weightFuture, err := grid2.Run()
+			return makeTaskResultWithError2(weightFuture, err, cancel)
 		})
 		addTask2("grid2-123", func() weight_types.WeightResult2 {
 			grid2 := weight_highs.GridStatWeightProcess2{}
@@ -390,9 +379,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			grid2.SetRequiredStats(requiredStats)
 			grid2.SetTargetRatios(targetRatio)
 			grid2.SupplyData(slices.Clone(inputDataGrid))
-			weightFuture := grid2.Run()
-			util_async.ChainCancel(cancel, weightFuture)
-			return weightFuture.WaitForResultOrNilValue()
+			weightFuture, err := grid2.Run()
+			return makeTaskResultWithError2(weightFuture, err, cancel)
 		})
 	}
 
@@ -408,9 +396,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 					ranking.SetRequiredStats(requiredStats)
 					ranking.SetTargetRatios(targetRatio)
 					ranking.SupplyData(slices.Clone(mixedInputData))
-					weightFuture := ranking.Run(standardTimeout)
-					util_async.ChainCancel(cancel, weightFuture)
-					return weightFuture.WaitForResultOrNilValue()
+					weightFuture, err := ranking.Run(standardTimeout)
+					return makeTaskResultWithError1(weightFuture, err, cancel)
 				})
 			}
 		}
@@ -428,9 +415,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 				ranking.SetRequiredStats(requiredStats)
 				ranking.SetTargetRatios(targetRatio)
 				ranking.SupplyData(slices.Clone(mixedInputData))
-				weightFuture := ranking.Run()
-				util_async.ChainCancel(cancel, weightFuture)
-				return weightFuture.WaitForResultOrNilValue()
+				weightFuture, err := ranking.Run()
+				return makeTaskResultWithError1(weightFuture, err, cancel)
 			})
 			label = fmt.Sprintf("ranking3a-scale1-algo%d", ALGO)
 			addTask1(label, func() weight_types.WeightResult1 {
@@ -441,9 +427,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 				ranking.SetRequiredStats(requiredStats)
 				ranking.SetTargetRatios(targetRatio)
 				ranking.SupplyData(slices.Clone(mixedInputData))
-				weightFuture := ranking.Run()
-				util_async.ChainCancel(cancel, weightFuture)
-				return weightFuture.WaitForResultOrNilValue()
+				weightFuture, err := ranking.Run()
+				return makeTaskResultWithError1(weightFuture, err, cancel)
 			})
 		}
 	}
@@ -458,9 +443,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(mixedInputData))
-			weightFuture := ranking.RunUsingExternalStart(weightsExample)
-			util_async.ChainCancel(cancel, weightFuture)
-			return weightFuture.WaitForResultOrNilValue()
+			weightFuture, err := ranking.RunUsingExternalStart(weightsExample)
+			return makeTaskResultWithError1(weightFuture, err, cancel)
 		})
 		label = fmt.Sprintf("ranking3a-true-1")
 		addTask1(label, func() weight_types.WeightResult1 {
@@ -471,9 +455,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(mixedInputData))
-			weightFuture := ranking.RunUsingExternalStart(weightsExample)
-			util_async.ChainCancel(cancel, weightFuture)
-			return weightFuture.WaitForResultOrNilValue()
+			weightFuture, err := ranking.RunUsingExternalStart(weightsExample)
+			return makeTaskResultWithError1(weightFuture, err, cancel)
 		})
 	}
 
@@ -489,9 +472,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 					ranking.SetRequiredStats(requiredStats)
 					ranking.SetTargetRatios(targetRatio)
 					ranking.SupplyData(slices.Clone(mixedInputData))
-					weightFuture := ranking.RunSinglePassFromExternal(weightsExample)
-					util_async.ChainCancel(cancel, weightFuture)
-					return weightFuture.WaitForResultOrNilValue()
+					weightFuture, err := ranking.RunSinglePassFromExternal(weightsExample)
+					return makeTaskResultWithError1(weightFuture, err, cancel)
 				})
 			}
 		}
@@ -506,9 +488,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(mixedInputData))
-			weightFuture := ranking.RunSinglePassFromExternal(weightsExample)
-			util_async.ChainCancel(cancel, weightFuture)
-			return weightFuture.WaitForResultOrNilValue()
+			weightFuture, err := ranking.RunSinglePassFromExternal(weightsExample)
+			return makeTaskResultWithError1(weightFuture, err, cancel)
 		})
 	}
 
@@ -519,9 +500,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(mixedInputData))
-			weightFuture := ranking.RunMultiRound()
-			util_async.ChainCancel(cancel, weightFuture)
-			return weightFuture.WaitForResultOrNilValue()
+			weightFuture, err := ranking.RunMultiRound()
+			return makeTaskResultWithError1(weightFuture, err, cancel)
 		})
 	}
 
@@ -535,9 +515,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 				ranking.SetRequiredStats(requiredStats)
 				ranking.SetTargetRatios(targetRatio)
 				ranking.SupplyData(slices.Clone(inputDataRandom))
-				weightFuture := ranking.RunUsingExternalStart(weightsExample, standardTimeout)
-				util_async.ChainCancel(cancel, weightFuture)
-				return weightFuture.WaitForResultOrNilValue()
+				weightFuture, err := ranking.RunUsingExternalStart(weightsExample, standardTimeout)
+				return makeTaskResultWithError1(weightFuture, err, cancel)
 			})
 		}
 	}
@@ -551,8 +530,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(inputDataRandom))
-			futureWeight := ranking.Run(standardTimeout, 60) // note restricted data sample
-			return futureWeight.WaitForResultOrNilValue()
+			weightFuture, err := ranking.Run(standardTimeout, 60) // note restricted data sample
+			return makeTaskResultWithError1(weightFuture, err, cancel)
 		})
 		addTask1("ranking5-1-1", func() weight_types.WeightResult1 {
 			ranking := weight_highs.RankingStatWeightProcess5{}
@@ -562,8 +541,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(inputDataRandom))
-			futureWeight := ranking.Run(standardTimeout, 60) // note restricted data sample
-			return futureWeight.WaitForResultOrNilValue()
+			weightFuture, err := ranking.Run(standardTimeout, 60) // note restricted data sample
+			return makeTaskResultWithError1(weightFuture, err, cancel)
 		})
 		addTask1("ranking5-0-2", func() weight_types.WeightResult1 {
 			ranking := weight_highs.RankingStatWeightProcess5{}
@@ -573,8 +552,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(inputDataRandom))
-			futureWeight := ranking.Run(standardTimeout, 60) // note restricted data sample
-			return futureWeight.WaitForResultOrNilValue()
+			weightFuture, err := ranking.Run(standardTimeout, 60) // note restricted data sample
+			return makeTaskResultWithError1(weightFuture, err, cancel)
 		})
 		addTask1("ranking5-1-2", func() weight_types.WeightResult1 {
 			ranking := weight_highs.RankingStatWeightProcess5{}
@@ -584,8 +563,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			ranking.SetRequiredStats(requiredStats)
 			ranking.SetTargetRatios(targetRatio)
 			ranking.SupplyData(slices.Clone(inputDataRandom))
-			futureWeight := ranking.Run(standardTimeout, 60) // note restricted data sample
-			return futureWeight.WaitForResultOrNilValue()
+			weightFuture, err := ranking.Run(standardTimeout, 60) // note restricted data sample
+			return makeTaskResultWithError1(weightFuture, err, cancel)
 		})
 	}
 
@@ -611,7 +590,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			addTask1(fmt.Sprintf("search1-acc%d", accModeNum), func() weight_types.WeightResult1 {
 				innerCancel := util_async.CancelSignal_Make()
 				util_async.CancelAfterTimeout(innerCancel, time.Duration(shortTimeout)*time.Second, printer)
-				util_async.ChainCancel(cancel, innerCancel)
+				_ = util_async.ChainCancel(cancel, innerCancel)
 				search := weightfind.WeightSearcher1{}
 				search.AccuracyStatistical = accMode
 				search.Init(requiredStats, targetRatio, printer)
@@ -621,7 +600,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			addTask1(fmt.Sprintf("search2-acc%d", accModeNum), func() weight_types.WeightResult1 {
 				innerCancel := util_async.CancelSignal_Make()
 				util_async.CancelAfterTimeout(innerCancel, time.Duration(shortTimeout)*time.Second, printer)
-				util_async.ChainCancel(cancel, innerCancel)
+				_ = util_async.ChainCancel(cancel, innerCancel)
 				search := weightfind.WeightSearcher2{}
 				search.AccuracyStatistical = accMode
 				search.Init(requiredStats, targetRatio, printer)
@@ -632,7 +611,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			addTask1(fmt.Sprintf("search3-acc%d", accModeNum), func() weight_types.WeightResult1 {
 				innerCancel := util_async.CancelSignal_Make()
 				util_async.CancelAfterTimeout(innerCancel, time.Duration(shortTimeout)*time.Second, printer)
-				util_async.ChainCancel(cancel, innerCancel)
+				_ = util_async.ChainCancel(cancel, innerCancel)
 				search := weightfind.WeightSearcher3{}
 				search.AccuracyStatistical = accMode
 				search.Init(requiredStats, targetRatio)
@@ -650,7 +629,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			comp.SetRequiredStats(requiredStats, requiredSims)
 			comp.SetTargetRatios(targetRatio)
 			comp.SupplyData(mixedInputData)
-			return comp.Run().WaitForResultOrPanic()
+			weightFuture, err := comp.Run()
+			return makeTaskResultWithError2(weightFuture, err, cancel)
 		})
 		addTask2("ranking-sep2", func() weight_types.WeightResult2 {
 			comp := weight_highs.RankingSeparatedWeights2{}
@@ -659,8 +639,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			comp.SetTargetRatios(targetRatio)
 			comp.SupplyData(mixedInputData)
 			sw := util.StopwatchMakeStopped()
-			weight2 := comp.Run(sw).WaitForResultOrPanic()
-			return weight_types.WeightResult2Make(&weight2, sw.Elapsed(), highs.ModelStatusUnknown)
+			weightFuture, err := comp.Run(sw)
+			return makeTaskResultWithError2(weightFuture, err, cancel)
 		})
 	}
 	if runFormula2 {
@@ -672,7 +652,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			comp.SetTargetRatios(targetRatio)
 			comp.SetMinimumIncludeRate(1.0)
 			comp.SupplyData(mixedInputData)
-			return comp.Run(standardTimeout).WaitForResultOrPanic()
+			weightFuture, err := comp.Run(standardTimeout)
+			return makeTaskResultWithError2(weightFuture, err, cancel)
 		})
 		for BLEND := range 6 {
 			label := fmt.Sprintf("formula2-%d", BLEND)
@@ -684,7 +665,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 				comp.SetTargetRatios(targetRatio)
 				comp.SetMinimumIncludeRate(0.7)
 				comp.SupplyData(mixedInputData)
-				return comp.Run(standardTimeout).WaitForResultOrPanic()
+				weightFuture, err := comp.Run(standardTimeout)
+				return makeTaskResultWithError2(weightFuture, err, cancel)
 			})
 		}
 	}
@@ -795,7 +777,7 @@ func compareReport1(requiredStats []stats.StatType, resultOrder []string, report
 		row = append(row, strconv.FormatFloat(accuracy, 'f', 4, 64))
 		row = append(row, strconv.FormatFloat(accuracyStat, 'f', 4, 64))
 		row = append(row, report.weightResult.GetSolveTime().String())
-		row = append(row, report.weightResult.GetStatus().String())
+		row = append(row, report.weightResult.GetStatus())
 		tab.AddRow(row)
 
 		//if reportOnTweakedVersions {
@@ -872,7 +854,7 @@ func compareReport2(reportByAlgorithm map[string]algorithmReport2, reportOrder [
 		row = append(row, strconv.FormatFloat(report.basicAccuracy, 'f', 4, 64))
 		row = append(row, strconv.FormatFloat(report.statAccuracy, 'f', 4, 64))
 		row = append(row, report.weightResult.GetSolveTime().String())
-		row = append(row, report.weightResult.GetStatus().String())
+		row = append(row, report.weightResult.GetStatus())
 		tab.AddRow(row)
 	}
 	tab.Write(printer)
@@ -918,7 +900,7 @@ func compareReport3(reportByAlgorithm map[string]algorithmReport3, reportOrder [
 		row = append(row, strconv.FormatFloat(report.basicAccuracy, 'f', 4, 64))
 		row = append(row, strconv.FormatFloat(report.statAccuracy, 'f', 4, 64))
 		row = append(row, report.weightResult.GetSolveTime().String())
-		row = append(row, report.weightResult.GetStatus().String())
+		row = append(row, report.weightResult.GetStatus())
 		tab.AddRow(row)
 	}
 	tab.Write(printer)
@@ -957,4 +939,40 @@ func readWeightBasicInputsFile(filename string) ([]basicStatInput, stats.SimData
 		panic(err)
 	}
 	return weightInputs.InputDataBasic, weightInputs.BasicSimBase
+}
+
+func makeTaskResult1(weightFuture *util_async.FutureCancellable[weight_types.WeightResult1], cancel *util_async.CancelSignalBasic) weight_types.WeightResult1 {
+	err := util_async.ChainCancel(cancel, weightFuture)
+	if err != nil {
+		return weight_types.WeightResult1MakeError(0, err)
+	}
+	return weightFuture.WaitForResultOrNilValue()
+}
+
+func makeTaskResultWithError1(weightFuture *util_async.FutureCancellable[weight_types.WeightResult1], err error, cancel *util_async.CancelSignalBasic) weight_types.WeightResult1 {
+	if err != nil {
+		if weightFuture != nil {
+			err = errors.Join(err, weightFuture.Cancel())
+		}
+		return weight_types.WeightResult1MakeError(0, err)
+	}
+	err = util_async.ChainCancel(cancel, weightFuture)
+	if err != nil {
+		return weight_types.WeightResult1MakeError(0, err)
+	}
+	return weightFuture.WaitForResultOrNilValue()
+}
+
+func makeTaskResultWithError2(weightFuture *util_async.FutureCancellable[weight_types.WeightResult2], err error, cancel *util_async.CancelSignalBasic) weight_types.WeightResult2 {
+	if err != nil {
+		if weightFuture != nil {
+			err = errors.Join(err, weightFuture.Cancel())
+		}
+		return weight_types.WeightResult2MakeError(0, err)
+	}
+	err = util_async.ChainCancel(cancel, weightFuture)
+	if err != nil {
+		return weight_types.WeightResult2MakeError(0, err)
+	}
+	return weightFuture.WaitForResultOrNilValue()
 }

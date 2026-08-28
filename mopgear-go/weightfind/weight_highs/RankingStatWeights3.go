@@ -2,6 +2,7 @@ package weight_highs
 
 import (
 	"cmp"
+	"fmt"
 	"math"
 	"slices"
 	"strconv"
@@ -113,46 +114,57 @@ func (ranker *RankingStatWeightProcess3) makeBuilder() {
 	}
 }
 
-func (ranker *RankingStatWeightProcess3) Run() *util_async.FutureCancellable[weight_types.WeightResult1] {
+func (ranker *RankingStatWeightProcess3) Run() (*util_async.FutureCancellable[weight_types.WeightResult1], error) {
 	// FIRST ROUND: minimal data, no initial values
-	ranker.dataSample = util_collection.SliceSampleFromStart(ranker.dataAllOriginal, c_rank3_initial_data_sample)
+	ranker.dataSample = util_collection.SliceSampleRandom(ranker.dataAllOriginal, c_rank3_initial_data_sample)
 	ranker.prepare()
 	ranker.setupDumbInitialSolution()
 
 	stopwatch := util.StopwatchMakeStopped()
 	solution1Future := ranker.build.RunHighsFuture(stopwatch)
 
-	solution2Future := util_async.FutureCancellable_MapToFuture(solution1Future, func(linearResult1 util_highs.LinearResult) *util_async.FutureCancellable[util_highs.LinearResult] {
-		solution1 := linearResult1.GetSolutionAndSaveLog(ranker.printer)
-		_ = ranker.extractAndReportSolution(solution1)
+	return util_async.FutureCancellable_MapValue(solution1Future, func(linearResult1 util_highs.LinearResult) weight_types.WeightResult1 {
+		solution1, err1 := linearResult1.GetSolutionAndSaveLog(ranker.printer)
+		if err1 != nil {
+			return weight_types.WeightResult1MakeError(stopwatch.Elapsed(), err1)
+		}
+		if !solution1.HasSolution() {
+			return weight_types.WeightResult1MakeError(stopwatch.Elapsed(), fmt.Errorf("first stage solution %v", solution1.Status))
+		}
 
 		// FULL RUN
 		ranker.dataSample = ranker.dataAllOriginal
 		ranker.prepare()
-		if solution1.HasSolution() {
-			ranker.setupInitialSolutionFromPreviousWeightOnly(solution1)
-		}
-		return ranker.build.RunHighsFuture(stopwatch)
-	})
+		ranker.setupInitialSolutionFromPreviousWeightOnly(solution1)
 
-	return util_async.FutureCancellable_MapValue(solution2Future, func(linearResult2 util_highs.LinearResult) (weight_types.WeightResult1, bool) {
-		solution2 := linearResult2.GetSolutionAndSaveLog(ranker.printer)
-		weight := ranker.extractAndReportSolution(solution2)
-		return weight_types.WeightResult1Make(&weight, stopwatch.Elapsed(), solution2.Status), true
+		solution2Future := ranker.build.RunHighsFuture(stopwatch)
+		if linearResult2, hasResult2 := solution2Future.WaitForResult(); hasResult2 {
+			if solution2, err2 := linearResult2.GetSolutionAndSaveLog(ranker.printer); err2 == nil {
+				weight := ranker.extractAndReportSolution(solution2)
+				return weight_types.WeightResult1Make(&weight, stopwatch.Elapsed(), solution2.Status)
+			} else {
+				return weight_types.WeightResult1MakeError(stopwatch.Elapsed(), err2)
+			}
+		} else {
+			return weight_types.WeightResult1MakeError(stopwatch.Elapsed(), fmt.Errorf("no solution"))
+		}
 	})
 }
 
-func (ranker *RankingStatWeightProcess3) RunUsingExternalStart(initialWeight weight_types.Weight1Basic) *util_async.FutureCancellable[weight_types.WeightResult1] {
+func (ranker *RankingStatWeightProcess3) RunUsingExternalStart(initialWeight weight_types.Weight1Basic) (*util_async.FutureCancellable[weight_types.WeightResult1], error) {
 	ranker.dataSample = ranker.dataAllOriginal
 	ranker.prepare()
 	ranker.setupInitialSolutionFromExternal2(initialWeight)
 
 	stopwatch := util.StopwatchMakeStopped()
 	solutionFuture := ranker.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult1, bool) {
-		solution := linearResult.GetSolutionAndSaveLog(ranker.printer)
-		weight := ranker.extractAndReportSolution(solution)
-		return weight_types.WeightResult1Make(&weight, stopwatch.Elapsed(), solution.Status), true
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) weight_types.WeightResult1 {
+		if solution, err := linearResult.GetSolutionAndSaveLog(ranker.printer); err == nil {
+			weight := ranker.extractAndReportSolution(solution)
+			return weight_types.WeightResult1Make(&weight, stopwatch.Elapsed(), solution.Status)
+		} else {
+			return weight_types.WeightResult1MakeError(stopwatch.Elapsed(), err)
+		}
 	})
 }
 

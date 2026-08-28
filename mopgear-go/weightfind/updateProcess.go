@@ -168,7 +168,7 @@ func (spec *WeightSpec) tabularReport(print util.Printable) {
 		}
 		if choice.weightResult != nil {
 			row = append(row, choice.weightResult.SolveTime.String())
-			row = append(row, choice.weightResult.Status.String())
+			row = append(row, choice.weightResult.Status)
 		} else {
 			row = append(row, "", "")
 		}
@@ -282,7 +282,7 @@ func (spec *WeightSpec) reportAndWriteWeights() {
 	spec.tabularReportWriteFile(spec.WeightFile1 + "-detail.log")
 }
 
-func (spec *WeightSpec) prepareSimData(tracker *util.TrackProgress, cancel util_async.CancelSignal) {
+func (spec *WeightSpec) prepareSimData(tracker *util.TrackProgress, cancel util_async.CancelSignal) error {
 	// READ IN ANY RECENT DATA
 	tempPathGrid := files.TempData + "weightfind-sim-grid-" + spec.Label + ".json"
 	tempPathReal := files.TempData + "weightfind-sim-real-" + spec.Label + ".json"
@@ -301,16 +301,24 @@ func (spec *WeightSpec) prepareSimData(tracker *util.TrackProgress, cancel util_
 	if inputDataGrid == nil {
 		currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(spec.GearFile), &spec.Model, setup.MissingEnchant_Panic, spec.process.printer)
 		currentItemSet := items.FullItemSet_FromMap(currentEquip)
-		inputDataGrid = SimulateSteppedStatChangesForGrid(currentItemSet, spec.process.printer, spec.process.simSpeed,
+		data, err := SimulateSteppedStatChangesForGrid(currentItemSet, spec.process.printer, spec.process.simSpeed,
 			spec.Model.SimSpeedUp, spec.Model.StatsForWeighting, spec.Model.Spec, spec.Model.Goal, spec.Model.SimulateAs,
 			spec.Model.Professions, tracker.NewChild(), spec.Label, cancel, spec.FixStatsMode)
+		if err != nil {
+			return err
+		}
+		inputDataGrid = data
 		weight_types.WeightInputWriteFile(inputDataGrid, tempPathGrid)
 	} else {
 		tracker.NewChild().SetDone()
 	}
 	if inputDataReal == nil {
-		inputDataReal = SimulateRealRandomSets(spec.GearFile, spec.SubstituteItems, &spec.Model, c_eachSimTargetGenerateDataCount,
+		data, err := SimulateRealRandomSets(spec.GearFile, spec.SubstituteItems, &spec.Model, c_eachSimTargetGenerateDataCount,
 			spec.process.simSpeed, spec.FixStatsMode, spec.process.printer, tracker.NewChild(), spec.Label, cancel)
+		if err != nil {
+			return err
+		}
+		inputDataReal = data
 		weight_types.WeightInputWriteFile(inputDataReal, tempPathReal)
 	} else {
 		tracker.NewChild().SetDone()
@@ -319,6 +327,7 @@ func (spec *WeightSpec) prepareSimData(tracker *util.TrackProgress, cancel util_
 	spec.dataGrid = inputDataGrid
 	spec.dataRand = inputDataReal
 	spec.dataAll = slices.Concat(inputDataGrid, inputDataReal)
+	return nil
 }
 
 func (spec *WeightSpec) addChoice(choice weightChoice) {
@@ -363,6 +372,8 @@ func (spec *WeightSpec) solveGridWeights(gridOutlierSetting int, cancel util_asy
 		gridData = util_collection.SliceSampleFromStart(gridData, c_dataSampleGrid)
 	}
 
+	choiceName := fmt.Sprintf("GRID%d", gridOutlierSetting)
+
 	grid := weight_highs.GridStatWeightProcess1B{}
 	grid.OUTLIER = gridOutlierSetting
 	grid.SCALEMODE = 1
@@ -372,11 +383,8 @@ func (spec *WeightSpec) solveGridWeights(gridOutlierSetting int, cancel util_asy
 	grid.SetTargetRatios(spec.targetRatio)
 	grid.SetRequiredStats(spec.statTypes)
 	grid.SupplyData(gridData)
-	weightsFuture := grid.Run()
-	util_async.ChainCancel(cancel, weightsFuture)
-
-	choiceName := fmt.Sprintf("GRID%d", gridOutlierSetting)
-	spec.evaluateWeightResultFuture1(choiceName, weightsFuture)
+	weightsFuture, err := grid.Run()
+	spec.handleFuture1OrError(choiceName, weightsFuture, cancel, err)
 }
 
 func (spec *WeightSpec) bestWeightChoice1() (weightChoice, bool) {
@@ -431,9 +439,8 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		ranking.SetRequiredStats(spec.statTypes)
 		ranking.SetTargetRatios(spec.targetRatio)
 		ranking.SupplyData(rankData)
-		weightsFuture := ranking.RunMultiRound()
-		util_async.ChainCancel(cancel, weightsFuture)
-		spec.evaluateWeightResultFuture1("RANK3C", weightsFuture)
+		weightsFuture, err := ranking.RunMultiRound()
+		spec.handleFuture1OrError("RANK3C", weightsFuture, cancel, err)
 	} else if rankMode == 1 {
 		ranking := weight_highs.RankingStatWeightProcess3b{}
 		ranking.TOTALWEIGHT = 2
@@ -443,13 +450,13 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		ranking.SetTargetRatios(spec.targetRatio)
 		ranking.SupplyData(rankData)
 		var weightsFuture *util_async.FutureCancellable[weight_types.WeightResult1]
+		var err error
 		if bestWeightsSoFar, hasBest := spec.bestWeightChoice1(); hasBest {
-			weightsFuture = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
+			weightsFuture, err = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
 		} else {
-			weightsFuture = ranking.RunMultiRound()
+			weightsFuture, err = ranking.RunMultiRound()
 		}
-		util_async.ChainCancel(cancel, weightsFuture)
-		spec.evaluateWeightResultFuture1("RANK3-2-0", weightsFuture)
+		spec.handleFuture1OrError("RANK3-2-0", weightsFuture, cancel, err)
 	} else if rankMode == 2 {
 		ranking := weight_highs.RankingStatWeightProcess3b{}
 		ranking.TOTALWEIGHT = 2
@@ -459,13 +466,13 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		ranking.SetTargetRatios(spec.targetRatio)
 		ranking.SupplyData(rankData)
 		var weightsFuture *util_async.FutureCancellable[weight_types.WeightResult1]
+		var err error
 		if bestWeightsSoFar, hasBest := spec.bestWeightChoice1(); hasBest {
-			weightsFuture = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
+			weightsFuture, err = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
 		} else {
-			weightsFuture = ranking.RunMultiRound()
+			weightsFuture, err = ranking.RunMultiRound()
 		}
-		util_async.ChainCancel(cancel, weightsFuture)
-		spec.evaluateWeightResultFuture1("RANK3-2-1", weightsFuture)
+		spec.handleFuture1OrError("RANK3-2-1", weightsFuture, cancel, err)
 	} else if rankMode == 3 {
 		ranking := weight_highs.RankingStatWeightProcess{}
 		ranking.RANKMODE = 0
@@ -474,9 +481,8 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		ranking.SetRequiredStats(spec.statTypes)
 		ranking.SetTargetRatios(spec.targetRatio)
 		ranking.SupplyData(rankData)
-		weightsFuture := ranking.Run(spec.process.timeoutEach)
-		util_async.ChainCancel(cancel, weightsFuture)
-		spec.evaluateWeightResultFuture1("RANK1-0", weightsFuture)
+		weightsFuture, err := ranking.Run(spec.process.timeoutEach)
+		spec.handleFuture1OrError("RANK1-0", weightsFuture, cancel, err)
 	} else if rankMode == 4 {
 		ranking := weight_highs.RankingStatWeightProcess{}
 		ranking.RANKMODE = 0
@@ -485,9 +491,8 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		ranking.SetRequiredStats(spec.statTypes)
 		ranking.SetTargetRatios(spec.targetRatio)
 		ranking.SupplyData(rankData)
-		weightsFuture := ranking.Run(spec.process.timeoutEach)
-		util_async.ChainCancel(cancel, weightsFuture)
-		spec.evaluateWeightResultFuture1("RANK1-1", weightsFuture)
+		weightsFuture, err := ranking.Run(spec.process.timeoutEach)
+		spec.handleFuture1OrError("RANK1-1", weightsFuture, cancel, err)
 	} else {
 		ranking := weight_highs.RankingStatWeightProcess4{}
 		ranking.MULTIPLY = 0
@@ -497,9 +502,8 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		ranking.SupplyData(rankData)
 		if bestWeightSoFar, hasBest := spec.bestWeightChoice1(); hasBest {
 			existing1 := bestWeightSoFar.weight
-			weightFuture := ranking.RunUsingExternalStart(existing1, spec.process.timeoutEach)
-			util_async.ChainCancel(cancel, weightFuture)
-			spec.evaluateWeightResultFuture1("RANK4", weightFuture)
+			weightsFuture, err := ranking.RunUsingExternalStart(existing1, spec.process.timeoutEach)
+			spec.handleFuture1OrError("RANK4", weightsFuture, cancel, err)
 		}
 	}
 }
@@ -511,9 +515,8 @@ func (spec *WeightSpec) solveFormulaWeight(cancel util_async.CancelSignal) {
 	comp.SetTargetRatios(spec.targetRatio)
 	comp.SetMinimumIncludeRate(1.0)
 	comp.SupplyData(spec.dataAll)
-	weights2Future := comp.Run(spec.process.timeoutEach)
-	util_async.ChainCancel(cancel, weights2Future)
-	spec.evaluateWeightResultFuture2("FORM2", weights2Future)
+	weights2Future, err := comp.Run(spec.process.timeoutEach)
+	spec.handleFuture2OrError("FORM2", weights2Future, cancel, err)
 
 	compB := weight_highs.FormulaStatWeightProcess2{}
 	compB.BLEND = 3
@@ -522,9 +525,8 @@ func (spec *WeightSpec) solveFormulaWeight(cancel util_async.CancelSignal) {
 	compB.SetTargetRatios(spec.targetRatio)
 	compB.SetMinimumIncludeRate(0.7)
 	compB.SupplyData(spec.dataAll)
-	weights2FutureB := compB.Run(spec.process.timeoutEach)
-	util_async.ChainCancel(cancel, weights2FutureB)
-	spec.evaluateWeightResultFuture2("FORM2-70", weights2FutureB)
+	weights2FutureB, err := compB.Run(spec.process.timeoutEach)
+	spec.handleFuture2OrError("FORM2-70", weights2FutureB, cancel, err)
 }
 
 func (spec *WeightSpec) solveFittingWeight(cancel util_async.CancelSignal, tracker *util.TrackProgress) {
@@ -572,7 +574,7 @@ func (spec *WeightSpec) solveFittingFast(cancel util_async.CancelSignal) {
 func (spec *WeightSpec) solveSearchWeights(searchMode int, cancel util_async.CancelSignal) {
 	innerCancel := util_async.CancelSignal_Make()
 	timer := util_async.CancelAfterTimeout(innerCancel, time.Second*time.Duration(spec.process.timeoutEach), spec.process.printer)
-	util_async.ChainCancel(cancel, innerCancel)
+	_ = util_async.ChainCancel(cancel, innerCancel)
 	defer timer.Stop()
 
 	if searchMode == 0 {
@@ -640,6 +642,11 @@ func readWeightInputFile(filename string) ([]weight_types.WeightInput, time.Dura
 	}
 
 	return weightInputs, dataAge
+}
+
+func (spec *WeightSpec) handleWeightError(choiceName string, err error) {
+	spec.process.printer.Printf("Weights error %s %s NULL\n", spec.Label, err)
+	spec.addChoice(weightChoice{choiceName: choiceName})
 }
 
 func (spec *WeightSpec) evaluateWeight1(choiceName string, weight1 *weight_types.Weight1Basic) {
@@ -720,4 +727,34 @@ func (spec *WeightSpec) evaluateWeightGeneric(choiceName string, weight1 *weight
 			accuracyX, accuracyXStat,
 			pawnString, weightResult, weightOrig})
 	}
+}
+
+func (spec *WeightSpec) handleFuture1OrError(choiceName string, weightsFuture *util_async.FutureCancellable[weight_types.WeightResult1], cancel util_async.CancelSignal, err error) {
+	if err != nil {
+		spec.handleWeightError(choiceName, err)
+		return
+	}
+
+	err = util_async.ChainCancel(cancel, weightsFuture)
+	if err != nil {
+		spec.handleWeightError(choiceName, err)
+		return
+	}
+
+	spec.evaluateWeightResultFuture1(choiceName, weightsFuture)
+}
+
+func (spec *WeightSpec) handleFuture2OrError(choiceName string, weightsFuture *util_async.FutureCancellable[weight_types.WeightResult2], cancel util_async.CancelSignal, err error) {
+	if err != nil {
+		spec.handleWeightError(choiceName, err)
+		return
+	}
+
+	err = util_async.ChainCancel(cancel, weightsFuture)
+	if err != nil {
+		spec.handleWeightError(choiceName, err)
+		return
+	}
+
+	spec.evaluateWeightResultFuture2(choiceName, weightsFuture)
 }

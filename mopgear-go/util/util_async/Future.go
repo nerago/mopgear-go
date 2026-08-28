@@ -483,11 +483,30 @@ func (*FutureCancellable[T]) channelKeyPress() chan any {
 	return channelForKey
 }
 
-func (future *FutureCancellable[T]) MapSameType(mapper func(T) (T, bool)) (*FutureCancellable[T], error) {
+func (future *FutureCancellable[T]) MapSameType(mapper func(T) T) (*FutureCancellable[T], error) {
 	return FutureCancellable_MapValue(future, mapper)
 }
 
-func FutureCancellable_MapValue[T any, R any](innerFuture *FutureCancellable[T], mapper func(T) (R, bool)) (*FutureCancellable[R], error) {
+func FutureCancellable_MapValue[T any, R any](innerFuture *FutureCancellable[T], mapper func(T) R) (*FutureCancellable[R], error) {
+	outerFuture := FutureCancellable_Make[R]()
+	err1 := ChainCancel(outerFuture, innerFuture)
+
+	go func() {
+		value, hasValue := innerFuture.WaitForResult()
+		var err2 error
+		if hasValue {
+			newValue := mapper(value)
+			err2 = outerFuture.SetResult(newValue)
+		} else {
+			err2 = outerFuture.SetResultEmpty()
+		}
+		util.GlobalErrorHandler(err2)
+	}()
+
+	return outerFuture, err1
+}
+
+func FutureCancellable_MapValueOptional[T any, R any](innerFuture *FutureCancellable[T], mapper func(T) (R, bool)) (*FutureCancellable[R], error) {
 	outerFuture := FutureCancellable_Make[R]()
 	err1 := ChainCancel(outerFuture, innerFuture)
 
@@ -571,6 +590,18 @@ func (future *FutureCancellableWithError[T]) SetResultError(err error) error {
 		return future.performComplete()
 	}
 	return nil
+}
+
+func (future *FutureCancellableWithError[T]) WaitForResultOrError() (*T, error) {
+	future.verifyCanWait()
+	value, hasValue := future.resultFromChannel()
+	if hasValue && value.Error == nil && value.Value != nil {
+		return value.Value, nil
+	} else if value.Error != nil {
+		return nil, value.Error
+	} else {
+		return nil, errors.New("empty result")
+	}
 }
 
 func FutureCancellable_MapValueError[T any, R any](innerFuture *FutureCancellable[T], mapper func(T) (*R, error)) *FutureCancellableWithError[R] {

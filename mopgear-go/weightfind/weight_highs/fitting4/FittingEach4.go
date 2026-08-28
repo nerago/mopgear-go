@@ -1,6 +1,8 @@
 package fitting4
 
 import (
+	"errors"
+	"fmt"
 	"iter"
 	"slices"
 
@@ -50,15 +52,20 @@ func (f fitting4EachFields) Results() iter.Seq[util_weight.FittingInterimResult2
 }
 
 func (fe *FittingEachStatWeightProcess4) Run(cancel util_async.CancelSignal) weight_types.WeightResult3 {
-	util_async.ChainCancel(cancel, &fe.CancelInternal)
+	err := util_async.ChainCancel(cancel, &fe.CancelInternal)
+	if err != nil {
+		return weight_types.WeightResult3MakeError(0, err)
+	}
+
 	fe.chooseScaling()
-	fe.launchEachNested()
+	err = fe.launchEachNested()
 	stopwatch := fe.CalcMetrics()
-	if !fe.Failed {
-		weights := fe.BuildResult()
-		return weight_types.WeightResult3Make(weights, stopwatch.Elapsed(), highs.ModelStatusOptimal)
+
+	if err == nil {
+		weight := fe.BuildResult()
+		return weight_types.WeightResult3Make(weight, stopwatch.Elapsed(), highs.ModelStatusOptimal)
 	} else {
-		return weight_types.WeightResult3Make(nil, stopwatch.Elapsed(), highs.ModelStatusModelError)
+		return weight_types.WeightResult3MakeError(stopwatch.Elapsed(), err)
 	}
 }
 
@@ -92,7 +99,7 @@ func (fe *FittingEachStatWeightProcess4) prepareSamples(statType stats.StatType,
 	return samples
 }
 
-func (fe *FittingEachStatWeightProcess4) launchEachNested() {
+func (fe *FittingEachStatWeightProcess4) launchEachNested() error {
 	for _, statType := range fe.RequiredStats {
 		for _, simType := range fe.RequiredSims {
 			printer := util.PrintRecorder_HoldAll()
@@ -102,8 +109,7 @@ func (fe *FittingEachStatWeightProcess4) launchEachNested() {
 	}
 
 	channelEach := util_async.SeqToChannel_Cancellable(fe.Each.SeqValues(), &fe.CancelInternal)
-	util_async.ForEach_Channel(c_fitting4_each_threadCount, channelEach, func(fields *fitting4EachFields) {
-
+	return util_async.ForEach_Channel_PassError(c_fitting4_each_threadCount, channelEach, func(fields *fitting4EachFields) error {
 		process := FittingSingleSegmented4{}
 		scaleStat := fe.ScaleStats.GetOrPanic(fields.statType)
 		process.Init(fe.TargetSegmentCount, scaleStat, fields.innerPrinter, fe.Timeout)
@@ -111,21 +117,30 @@ func (fe *FittingEachStatWeightProcess4) launchEachNested() {
 		process.SupplyData(fe.prepareSamples(fields.statType, fields.simType))
 
 		initialResultFuture := process.Run()
-		util_async.ChainCancel(&fe.CancelInternal, initialResultFuture)
-		initialResult, hasResult := initialResultFuture.WaitForResult()
+
+		err1 := util_async.ChainCancel(&fe.CancelInternal, initialResultFuture)
+		if err1 != nil {
+			err1 = errors.Join(err1, fe.CancelInternal.Cancel(), initialResultFuture.Cancel())
+			fe.Printer.Printf("FAILED FITTING for %s %s: %v\n", fields.statType.Name(), fields.simType.Name(), err1)
+			return err1
+		}
+
+		initialResult, err2 := initialResultFuture.WaitForResultOrError()
 		fields.stopwatch = process.Stopwatch
 
-		if hasResult && len(initialResult.Segments) > 0 {
+		if err2 == nil && len(initialResult.Segments) > 0 {
 			fe.rescaleAndCleanup(initialResult, fields)
+			return nil
 		} else {
-			fe.Printer.Printf("FAILED FITTING for %s %s\n", fields.statType.Name(), fields.simType.Name())
-			fe.Failed = true
-			fe.CancelInternal.Cancel()
+			err2 = errors.Join(err2, fe.CancelInternal.Cancel())
+			errOut := fmt.Errorf("FAILED FITTING for %s %s: %w", fields.statType.Name(), fields.simType.Name(), err2)
+			fe.Printer.Println(errOut.Error())
+			return errOut
 		}
 	})
 }
 
-func (fe *FittingEachStatWeightProcess4) rescaleAndCleanup(initialSet fitting2.InitialResultSet, fields *fitting4EachFields) {
+func (fe *FittingEachStatWeightProcess4) rescaleAndCleanup(initialSet *fitting2.InitialResultSet, fields *fitting4EachFields) {
 	fields.resultSlice = fe.ConvertAndScaleResult(initialSet, fields.statType)
 	fields.resultSlice = fe.CleanupRanges(fields.resultSlice)
 }

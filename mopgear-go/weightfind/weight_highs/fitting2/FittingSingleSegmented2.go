@@ -35,7 +35,7 @@ func (ss *SingleSegmented2) SupplyData(inputData []util_weight.FittingSample) {
 	})
 }
 
-func (ss *SingleSegmented2) Run() (*util_async.FutureCancellable[InitialResultSet], error) {
+func (ss *SingleSegmented2) Run() *util_async.FutureCancellableWithError[InitialResultSet] {
 	ss.PrepareSegments(true)
 	for _, sample := range ss.InputData {
 		ss.addSample(sample)

@@ -51,13 +51,23 @@ func diagnoseTryHalves(build *LinearBuilder, min, pivot, max int, printer *util.
 	statusLower := highs.ModelStatusInfeasible
 	solutionLower, hasLowerResult := solutionLowerFuture.WaitForResult()
 	if hasLowerResult {
-		statusLower = solutionLower.GetSolutionAndDiscardLog().Status
+		solution, err := solutionLower.GetSolutionAndDiscardLog()
+		if err != nil {
+			statusLower = highs.ModelStatusModelError
+		} else {
+			statusLower = solution.Status
+		}
 	}
 
 	statusUpper := highs.ModelStatusInfeasible
 	solutionUpper, hasUpperResult := solutionUpperFuture.WaitForResult()
 	if hasUpperResult {
-		statusUpper = solutionUpper.GetSolutionAndDiscardLog().Status
+		solution, err := solutionUpper.GetSolutionAndDiscardLog()
+		if err != nil {
+			statusUpper = highs.ModelStatusModelError
+		} else {
+			statusUpper = solution.Status
+		}
 	}
 
 	printer.Printf("Half minus(%d..%d)=%s, minus(%d..%d)=%s\n", min, pivot-1, statusLower.String(), pivot, max, statusUpper.String())
@@ -87,13 +97,17 @@ func diagnoseInfeasibleRowOneByOne(build *LinearBuilder, printer *util.PrintReco
 		clone.mat.deleteRow(rowIndex)
 		innerPrint := util.PrintRecorder_HoldAll()
 		result := clone.RunHighsFuture(nil).WaitForResultOrPanic()
-		solution := result.GetSolutionAndSaveLog(innerPrint)
-		printer.Printf("Removed row %4d (%s) []=%2d --> %s\n", rowIndex, build.mat.debug[rowIndex], len(build.mat.entries[rowIndex]), solution.Status.String())
-		if solution.Status == highs.ModelStatusOptimal {
-			printer.AppendOther(innerPrint)
-			debugPrintRow(build, rowIndex, printer)
-			//debugPrintSolutionValuesWithRowContext(solution, build, rowIndex, printer)
-			// drillDownColumn(solution, input,
+		solution, err := result.GetSolutionAndSaveLog(innerPrint)
+		if err == nil {
+			printer.Printf("Removed row %4d (%s) []=%2d --> %s\n", rowIndex, build.mat.debug[rowIndex], len(build.mat.entries[rowIndex]), solution.Status.String())
+			if solution.Status == highs.ModelStatusOptimal {
+				printer.AppendOther(innerPrint)
+				debugPrintRow(build, rowIndex, printer)
+				//debugPrintSolutionValuesWithRowContext(solution, build, rowIndex, printer)
+				// drillDownColumn(solution, input,
+			}
+		} else {
+			printer.Printf("Removed row %4d (%s) []=%2d --> %v\n", rowIndex, build.mat.debug[rowIndex], len(build.mat.entries[rowIndex]), err)
 		}
 	}
 }
@@ -107,10 +121,14 @@ func diagnoseInfeasibleColumnBounds(build *LinearBuilder, printer *util.PrintRec
 			clone.vars.colLower[colIndex] = InfNeg()
 			innerPrint := util.PrintRecorder_HoldAll()
 			result := clone.RunHighsFuture(nil).WaitForResultOrPanic()
-			solution := result.GetSolutionAndSaveLog(innerPrint)
-			printer.Printf("Changed col bound %4d (%s) %e->inf --> %s\n", colIndex, debugText(build.vars.debug[colIndex]), build.vars.colLower[colIndex], solution.Status.String())
-			if solution.Status == highs.ModelStatusOptimal {
-				printer.AppendOther(innerPrint)
+			solution, err := result.GetSolutionAndSaveLog(innerPrint)
+			if err == nil {
+				printer.Printf("Changed col bound %4d (%s) %e->inf --> %s\n", colIndex, debugText(build.vars.debug[colIndex]), build.vars.colLower[colIndex], solution.Status.String())
+				if solution.Status == highs.ModelStatusOptimal {
+					printer.AppendOther(innerPrint)
+				}
+			} else {
+				printer.Printf("Changed col bound %4d (%s) %e->inf --> %v\n", colIndex, debugText(build.vars.debug[colIndex]), build.vars.colLower[colIndex], err)
 			}
 		}
 		if !math.IsInf(build.vars.colUpper[colIndex], 1) {
@@ -120,10 +138,14 @@ func diagnoseInfeasibleColumnBounds(build *LinearBuilder, printer *util.PrintRec
 			clone.vars.colUpper[colIndex] = InfPos()
 			innerPrint := util.PrintRecorder_HoldAll()
 			result := clone.RunHighsFuture(nil).WaitForResultOrPanic()
-			solution := result.GetSolutionAndSaveLog(innerPrint)
-			printer.Printf("Changed col bound %4d (%s) %e->inf --> %s\n", colIndex, debugText(build.vars.debug[colIndex]), clone.vars.colUpper[colIndex], solution.Status.String())
-			if solution.Status == highs.ModelStatusOptimal {
-				printer.AppendOther(innerPrint)
+			solution, err := result.GetSolutionAndSaveLog(innerPrint)
+			if err == nil {
+				printer.Printf("Changed col bound %4d (%s) %e->inf --> %s\n", colIndex, debugText(build.vars.debug[colIndex]), clone.vars.colUpper[colIndex], solution.Status.String())
+				if solution.Status == highs.ModelStatusOptimal {
+					printer.AppendOther(innerPrint)
+				}
+			} else {
+				printer.Printf("Changed col bound %4d (%s) %e->inf --> %v\n", colIndex, debugText(build.vars.debug[colIndex]), clone.vars.colUpper[colIndex], err)
 			}
 		}
 	}

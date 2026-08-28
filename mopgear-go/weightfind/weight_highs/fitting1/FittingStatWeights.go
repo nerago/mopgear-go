@@ -1,6 +1,8 @@
 package fitting1
 
 import (
+	"errors"
+
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_async"
 	"github.com/nerago/mopgear-go/util/util_highs"
@@ -107,7 +109,7 @@ func (fw *FittingSingleStatWeightProcess) SupplySamples(inputData []util_weight2
 	fw.inputData = inputData
 }
 
-func (fw *FittingSingleStatWeightProcess) Run() (*util_async.FutureCancellable[FittingSingleStatResult], error) {
+func (fw *FittingSingleStatWeightProcess) Run() *util_async.FutureCancellableWithError[FittingSingleStatResult] {
 	fw.setupLinearObjectives()
 
 	for _, sample := range fw.inputData {
@@ -117,13 +119,17 @@ func (fw *FittingSingleStatWeightProcess) Run() (*util_async.FutureCancellable[F
 	fw.includeCountRow.Build(fw.build, float64(len(fw.inputData))*fw.minimumIncludeRate, util_highs.InfPos())
 
 	solutionFuture := fw.build.RunHighsFuture(&fw.stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (FittingSingleStatResult, bool) {
-		solution := linearResult.GetSolution2AndSaveLog(fw.printer)
+	return util_async.FutureCancellable_MapValueError(solutionFuture, func(linearResult util_highs.LinearResult) (*FittingSingleStatResult, error) {
+		solution, err := linearResult.GetSolution2AndSaveLog(fw.printer)
+		if err != nil {
+			return nil, err
+		}
+
 		solution.DebugPrint(fw.printer)
 		if solution.Status() == highs.ModelStatusOptimal {
-			return fw.buildResult(solution), true
+			return fw.buildResult(solution), nil
 		} else {
-			return FittingSingleStatResult{}, false
+			return nil, errors.New("failed fitting")
 		}
 	})
 }
@@ -160,8 +166,8 @@ func (fw *FittingSingleStatWeightProcess) setupLinearObjectives() {
 	fw.objectiveInclude = fw.build.AddObjectivePrioritised(false, -1, -1, 1)
 }
 
-func (fw *FittingSingleStatWeightProcess) buildResult(solution *util_highs.Solution2) FittingSingleStatResult {
-	result := FittingSingleStatResult{}
+func (fw *FittingSingleStatWeightProcess) buildResult(solution *util_highs.Solution2) *FittingSingleStatResult {
+	result := &FittingSingleStatResult{}
 	result.LineSlope = solution.GetValue(fw.lineSlope)
 	result.LineOffset = solution.GetValue(fw.lineOffset)
 	result.Minimum = solution.GetValue(fw.minimumThreshold)

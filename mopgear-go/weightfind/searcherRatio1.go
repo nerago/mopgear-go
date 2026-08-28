@@ -133,6 +133,7 @@ func (ws *WeightSearcherRatio1) Run(cancel util_async.CancelSignal) weight_types
 		stopwatch.Elapsed(),
 		highs.ModelStatusOptimal,
 		new(bestItems.ratio),
+		nil,
 	)
 }
 

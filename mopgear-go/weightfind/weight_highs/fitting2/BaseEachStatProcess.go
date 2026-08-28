@@ -81,7 +81,7 @@ func (be *BaseEachStatProcess[F]) BuildResult() *weight_types.Weight3ExtendedRan
 	return weights
 }
 
-func (be *BaseEachStatProcess[F]) ConvertAndScaleResult(initialSet InitialResultSet, statType stats.StatType) []util_weight.FittingInterimResult2 {
+func (be *BaseEachStatProcess[F]) ConvertAndScaleResult(initialSet *InitialResultSet, statType stats.StatType) []util_weight.FittingInterimResult2 {
 	scaleStat := be.ScaleStats.GetOrPanic(statType)
 
 	resultSlice := make([]util_weight.FittingInterimResult2, 0, len(initialSet.Segments))

@@ -95,7 +95,7 @@ func (process *RankingStatWeightProcess4) SetTargetRatios(targetRatios weight_ty
 	process.requiredSims = targetRatios.SimTypes()
 }
 
-func (process *RankingStatWeightProcess4) RunUsingExternalStart(initialWeight weight_types.Weight1Basic, timeout int) *util_async.FutureCancellable[weight_types.WeightResult1] {
+func (process *RankingStatWeightProcess4) RunUsingExternalStart(initialWeight weight_types.Weight1Basic, timeout int) (*util_async.FutureCancellable[weight_types.WeightResult1], error) {
 	run2 := rankInternalRun4_create(process)
 	run2.build.TimeLimitSeconds = timeout
 	run2.supplyData(process.dataAll)
@@ -116,13 +116,16 @@ func rankInternalRun4_create(process *RankingStatWeightProcess4) *rankInternalRu
 	return run
 }
 
-func (run *rankInternalRun4) runFuture() *util_async.FutureCancellable[weight_types.WeightResult1] {
+func (run *rankInternalRun4) runFuture() (*util_async.FutureCancellable[weight_types.WeightResult1], error) {
 	stopwatch := util.StopwatchMakeStopped()
 	solutionFuture := run.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult1, bool) {
-		solution := linearResult.GetSolutionAndSaveLog(run.process.printer)
-		weight := run.extractAndReportSolution(solution)
-		return weight_types.WeightResult1Make(&weight, stopwatch.Elapsed(), solution.Status), true
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) weight_types.WeightResult1 {
+		if solution, err := linearResult.GetSolutionAndSaveLog(run.process.printer); err == nil {
+			weight := run.extractAndReportSolution(solution)
+			return weight_types.WeightResult1Make(&weight, stopwatch.Elapsed(), solution.Status)
+		} else {
+			return weight_types.WeightResult1MakeError(stopwatch.Elapsed(), err)
+		}
 	})
 }
 

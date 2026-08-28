@@ -166,6 +166,16 @@ func Map_SliceToSlice_Cancellable[T any, R any](threadCount int, inputSlice []T,
 	return channelToSliceKnownSize(tempChannel, len(inputSlice))
 }
 
+func Map_SliceToSlice_Cancellable_PassError[T any, R any](threadCount int, inputSlice []T, cancel CancelSignal, mapper func(*T) (R, error)) ([]R, error) {
+	indexChannel := makeIndexChannelCancellable(inputSlice, cancel)
+	tempChannel := make(chan R, threadCount)
+	waitGroup, futureError := makeThreadsSliceToChannelCancellableError(threadCount, inputSlice, cancel, mapper, indexChannel, tempChannel)
+	closeChannelOnGroupFinished(waitGroup, tempChannel)
+	slice := channelToSliceKnownSize(tempChannel, len(inputSlice))
+	err, _ := futureError.GetResultNoWait()
+	return slice, err
+}
+
 func ForEach_Slice[T any](threadCount int, inputSlice []T, process func(*T)) {
 	if threadCount > 1 {
 		indexChannel := makeIndexChannel(inputSlice)
@@ -768,6 +778,29 @@ func makeThreadsForEachSliceError[T any](threadCount int, inputSlice []T, proces
 							util.GlobalErrorHandler(errors.Join(err, err2))
 						}
 						shouldContinue = false
+					}
+				}
+			}
+		})
+	}
+	return waitGroup, futureError
+}
+
+func makeThreadsSliceToChannelCancellableError[T any, R any](threadCount int, inputSlice []T, cancel CancelSignal, mapper func(*T) (R, error), indexChannel chan int, tempChannel chan R) (*sync.WaitGroup, *Future[error]) {
+	waitGroup := new(sync.WaitGroup)
+	futureError := Future_Make[error]()
+	for range threadCount {
+		waitGroup.Go(func() {
+			for index := range indexChannel {
+				if cancel.ShouldContinue() {
+					value, err := mapper(&inputSlice[index])
+					if err == nil {
+						tempChannel <- value
+					} else {
+						err = errors.Join(err, cancel.Cancel())
+						if err2 := futureError.SetResult(err); err2 != nil {
+							util.GlobalErrorHandler(errors.Join(err, err2))
+						}
 					}
 				}
 			}

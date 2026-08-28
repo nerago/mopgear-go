@@ -35,7 +35,7 @@ func (ss *FittingSingleSegmented3) SupplyData(inputData []util_weight.FittingSam
 	})
 }
 
-func (ss *FittingSingleSegmented3) Run() *util_async.FutureCancellable[fitting2.InitialResultSet] {
+func (ss *FittingSingleSegmented3) Run() *util_async.FutureCancellableWithError[fitting2.InitialResultSet] {
 	// Disable presolve probing, very slow
 	ss.Build.AddOptionInt("presolve_rule_off", 32768)
 

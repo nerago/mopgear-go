@@ -111,10 +111,13 @@ func (form *FormulaStatWeightProcess2) Run(timeout int) (*util_async.FutureCance
 
 	stopwatch := util.StopwatchMakeStopped()
 	solutionFuture := form.build.RunHighsFuture(stopwatch)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) (weight_types.WeightResult2, bool) {
-		solution := linearResult.GetSolutionAndSaveLog(form.printer)
-		weight := form.extractAndReportSolution(solution)
-		return weight_types.WeightResult2Make(&weight, stopwatch.Elapsed(), solution.Status), true
+	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) weight_types.WeightResult2 {
+		if solution, err := linearResult.GetSolutionAndSaveLog(form.printer); err == nil {
+			weight := form.extractAndReportSolution(solution)
+			return weight_types.WeightResult2Make(&weight, stopwatch.Elapsed(), solution.Status)
+		} else {
+			return weight_types.WeightResult2MakeError(stopwatch.Elapsed(), err)
+		}
 	})
 }
 

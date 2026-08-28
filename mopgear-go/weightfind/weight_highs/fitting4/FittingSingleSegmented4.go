@@ -42,7 +42,7 @@ func (ss *FittingSingleSegmented4) SupplyData(inputData []util_weight.FittingSam
 }
 
 // Two alternates, segment based on stat ranges, segment based on sample indexes
-func (ss *FittingSingleSegmented4) Run() *util_async.FutureCancellable[fitting2.InitialResultSet] {
+func (ss *FittingSingleSegmented4) Run() *util_async.FutureCancellableWithError[fitting2.InitialResultSet] {
 	ss.PrepareSegments(false)
 
 	if ss.segmentOnData {

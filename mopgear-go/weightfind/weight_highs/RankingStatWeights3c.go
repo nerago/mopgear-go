@@ -102,7 +102,7 @@ func (ranker *RankingStatWeightProcess3c) newBuilder() {
 	ranker.build.Solver = util_highs.Solver_Force_IPX
 }
 
-func (ranker *RankingStatWeightProcess3c) RunMultiRound() *util_async.FutureCancellable[weight_types.WeightResult1] {
+func (ranker *RankingStatWeightProcess3c) RunMultiRound() (*util_async.FutureCancellable[weight_types.WeightResult1], error) {
 
 	// FIRST ROUND: minimal data, no initial values
 	ranker.dataSample = util_collection.SliceSampleFromStart(ranker.dataAllOriginal, 64)
@@ -115,9 +115,14 @@ func (ranker *RankingStatWeightProcess3c) RunMultiRound() *util_async.FutureCanc
 	stopwatch := util.StopwatchMakeStopped()
 	solution1Future := ranker.build.RunHighsFuture(stopwatch)
 
-	solution2Future := util_async.FutureCancellable_MapToFuture(solution1Future, func(linearResult1 util_highs.LinearResult) *util_async.FutureCancellable[util_highs.LinearResult] {
-		solution1 := linearResult1.GetSolutionAndSaveLog(ranker.printer)
-		_ = ranker.extractAndReportSolution(solution1)
+	return util_async.FutureCancellable_MapValue(solution1Future, func(linearResult1 util_highs.LinearResult) weight_types.WeightResult1 {
+		solution1, err1 := linearResult1.GetSolutionAndSaveLog(ranker.printer)
+		if err1 != nil {
+			return weight_types.WeightResult1MakeError(stopwatch.Elapsed(), err1)
+		}
+		if !solution1.HasSolution() {
+			return weight_types.WeightResult1MakeError(stopwatch.Elapsed(), fmt.Errorf("first stage solution %v", solution1.Status))
+		}
 
 		// FULL RUN
 		ranker.dataSample = ranker.dataAllOriginal
@@ -128,16 +133,22 @@ func (ranker *RankingStatWeightProcess3c) RunMultiRound() *util_async.FutureCanc
 		if solution1.IsOptimal() {
 			ranker.setupInitialSolutionFromPreviousSolutionWeights(solution1)
 		} else {
-			ranker.printer.Printf("Giving up on RunMultiRound with solution status %s\n", solution1.Status)
-			return nil
+			errStatus := fmt.Errorf("Giving up on RunMultiRound with solution status %s\n", solution1.Status)
+			ranker.printer.Println(errStatus.Error())
+			return weight_types.WeightResult1MakeError(stopwatch.Elapsed(), errStatus)
 		}
-		return ranker.build.RunHighsFuture(stopwatch)
-	})
 
-	return util_async.FutureCancellable_MapValue(solution2Future, func(linearResult2 util_highs.LinearResult) (weight_types.WeightResult1, bool) {
-		solution2 := linearResult2.GetSolutionAndSaveLog(ranker.printer)
-		weight := ranker.extractAndReportSolution(solution2)
-		return weight_types.WeightResult1Make(&weight, stopwatch.Elapsed(), solution2.Status), true
+		solution2Future := ranker.build.RunHighsFuture(stopwatch)
+		if linearResult2, hasResult2 := solution2Future.WaitForResult(); hasResult2 {
+			if solution2, err2 := linearResult2.GetSolutionAndSaveLog(ranker.printer); err2 == nil {
+				weight := ranker.extractAndReportSolution(solution2)
+				return weight_types.WeightResult1Make(&weight, stopwatch.Elapsed(), solution2.Status)
+			} else {
+				return weight_types.WeightResult1MakeError(stopwatch.Elapsed(), err2)
+			}
+		} else {
+			return weight_types.WeightResult1MakeError(stopwatch.Elapsed(), fmt.Errorf("no solution"))
+		}
 	})
 }
 

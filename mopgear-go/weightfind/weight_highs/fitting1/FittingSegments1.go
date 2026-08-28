@@ -134,26 +134,23 @@ func (fg *FittingSingleStatSegmentsProcess) runInitial(cancel util_async.CancelS
 	fit.SetMinimumIncludeRate(c_fitting_initial_range_required)
 	fit.SupplySamples(fg.samplesOriginal)
 
-	resultOptionalFuture, err := fit.Run()
+	resultFuture := fit.Run()
+
+	err := util_async.ChainCancel(cancel, resultFuture)
 	if err != nil {
-		return err
-	}
-	err = util_async.ChainCancel(cancel, resultOptionalFuture)
-	if err != nil {
-		return errors.Join(err, resultOptionalFuture.Cancel())
+		return errors.Join(err, resultFuture.Cancel())
 	}
 
-	resultOptional := resultOptionalFuture.WaitForResultAsOptional()
-	if segmentResult, hasResult := resultOptional.GetWithFlag(); hasResult {
+	if segmentResult, err2 := resultFuture.WaitForResultOrError(); err2 == nil {
 		statRange := weight_types.StatRangeFloat{Minimum: segmentResult.Minimum, Maximum: segmentResult.Maximum}
 		segmentResult.BuiltSequence = 0
-		fg.foundSegments[statRange] = segmentResult
+		fg.foundSegments[statRange] = *segmentResult
 
 		totalRange := weight_types.StatRangeFloat{Minimum: 0, Maximum: c_fitting_statScaledRangeHigh}
 		fg.addToRemainingData(fg.samplesOriginal, totalRange, statRange)
 		return nil
 	} else {
-		return errors.New("ERROR failed to get any useful stat fit")
+		return fmt.Errorf("ERROR failed to get any useful stat fit: %w", err)
 	}
 }
 
@@ -163,17 +160,14 @@ func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []util_weig
 	fit.SetMinimumIncludeRate(includeRate)
 	fit.SupplySamples(inputData)
 
-	resultOptionalFuture, err := fit.Run()
+	resultFuture := fit.Run()
+
+	err := util_async.ChainCancel(cancel, resultFuture)
 	if err != nil {
-		return err
-	}
-	err = util_async.ChainCancel(cancel, resultOptionalFuture)
-	if err != nil {
-		return errors.Join(err, resultOptionalFuture.Cancel())
+		return errors.Join(err, resultFuture.Cancel())
 	}
 
-	resultOptional := resultOptionalFuture.WaitForResultAsOptional()
-	if segmentResult, hasResult := resultOptional.GetWithFlag(); hasResult {
+	if segmentResult, err2 := resultFuture.WaitForResultOrError(); err2 == nil {
 		minimum := max(inputRange.Minimum, segmentResult.Minimum)
 		maximum := min(inputRange.Maximum, segmentResult.Maximum)
 
@@ -181,11 +175,13 @@ func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []util_weig
 		segmentResult.Minimum = minimum
 		segmentResult.Maximum = maximum
 		segmentResult.BuiltSequence = len(fg.foundSegments)
-		fg.foundSegments[statRange] = segmentResult
+		fg.foundSegments[statRange] = *segmentResult
 
 		fg.addToRemainingData(inputData, inputRange, statRange)
+		return nil
+	} else {
+		return err2 // TODO might stop process too soon if not a "useful" error
 	}
-	return nil
 }
 
 func (fg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData []util_weight2.FittingSample, inputRange weight_types.StatRangeFloat, removeRange weight_types.StatRangeFloat) {
