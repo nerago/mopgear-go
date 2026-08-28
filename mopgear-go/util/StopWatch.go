@@ -46,6 +46,10 @@ func (sw *Stopwatch) AddElapsedFrom(other *Stopwatch) {
 	sw.accumulated += other.Elapsed()
 }
 
+func (sw *Stopwatch) AddElapsedDuration(duration time.Duration) {
+	sw.accumulated += duration
+}
+
 type StopwatchNoisy struct {
 	Stopwatch
 	printer *PrintRecorder

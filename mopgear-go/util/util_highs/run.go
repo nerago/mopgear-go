@@ -17,12 +17,14 @@ func (build *LinearBuilder) runInner(solver *highs.Solver, requireGpu bool, opti
 		if g_gpuMutex.TryLock() {
 			defer g_gpuMutex.Unlock()
 		} else {
-			verifyNoError(solver.SetStringOption("solver", "choose"))
+			err := solver.SetStringOption("solver", "choose")
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
-	stopwatch.Start()
-	defer stopwatch.Stop()
-
-	return solver.Run()
+	solution, err := solver.Run()
+	stopwatch.AddElapsedDuration(solver.GetRunTime())
+	return solution, err
 }

@@ -65,8 +65,10 @@ package highs
 import "C"
 import (
 	"fmt"
+	"math"
 	"sync"
 	"sync/atomic"
+	"time"
 	"unsafe"
 )
 
@@ -468,6 +470,24 @@ func (s *Solver) ClearSolver() error {
 
 	status := Status(C.Highs_clearSolver(s.ptr))
 	return newError("ClearSolver", status)
+}
+
+// ClearClock clears internal clock in the solver instance used for timeouts.
+func (s *Solver) ClearClock() error {
+	closeMutex.LockStandard()
+	defer closeMutex.UnlockStandard()
+
+	status := Status(C.Highs_zeroAllClocks(s.ptr))
+	return newError("ClearClock", status)
+}
+
+// ClearClock returns cumulative time spent running Solver.
+func (s *Solver) GetRunTime() time.Duration {
+	closeMutex.LockStandard()
+	defer closeMutex.UnlockStandard()
+
+	runTime := C.Highs_getRunTime(s.ptr)
+	return time.Duration(math.Round(float64(runTime))) * time.Second
 }
 
 // Infinity returns the value used by HiGHS to represent infinity.
