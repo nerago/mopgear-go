@@ -24,6 +24,14 @@ func (collect *BestCollector1[T]) HasBest() bool {
 	return collect.hasBest
 }
 
+func (collect *BestCollector1[T]) GetBest() (T, bool) {
+	return *collect.bestObject, collect.hasBest
+}
+
+func (collect *BestCollector1[T]) GetBestPointer() (*T, bool) {
+	return collect.bestObject, collect.hasBest
+}
+
 func (collect *BestCollector1[T]) GetBestScore() float64 {
 	return collect.bestScore
 }
@@ -162,8 +170,16 @@ func (bc *BestCollector1Concurrent[T]) GetBestValue() float64 {
 
 func (bc *BestCollector1Concurrent[T]) Offer(object *T, value float64) {
 	bc.mutex.Lock()
+	defer bc.mutex.Unlock()
+
 	bc.inner.Offer(object, value)
-	bc.mutex.Unlock()
+}
+
+func (bc *BestCollector1Concurrent[T]) OfferAndIsBetter(object *T, value float64) bool {
+	bc.mutex.Lock()
+	defer bc.mutex.Unlock()
+
+	return bc.inner.OfferAndIsBetter(object, value)
 }
 
 func (bc *BestCollector1Concurrent[T]) GetBestOrNilValue() T {
@@ -173,7 +189,26 @@ func (bc *BestCollector1Concurrent[T]) GetBestOrNilValue() T {
 	return bc.inner.GetBestOrNilValue()
 }
 
-// foo
+func (bc *BestCollector1Concurrent[T]) GetBest() (T, bool) {
+	bc.mutex.RLock()
+	defer bc.mutex.RUnlock()
+
+	return bc.inner.GetBest()
+}
+
+func (bc *BestCollector1Concurrent[T]) GetBestPointer() (*T, bool) {
+	bc.mutex.RLock()
+	defer bc.mutex.RUnlock()
+
+	return bc.inner.GetBestPointer()
+}
+
+func (bc *BestCollector1Concurrent[T]) GetBestOptional() util_collection.Optional[T] {
+	bc.mutex.RLock()
+	defer bc.mutex.RUnlock()
+
+	return bc.inner.GetBestOptional()
+}
 
 type BestCollector1LiteInt struct {
 	bestValue int

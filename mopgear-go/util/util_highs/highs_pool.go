@@ -13,18 +13,16 @@ type highsPoolType struct {
 	instancesMutex sync.Mutex
 }
 
-func (pool *highsPoolType) Get() *highs.Solver {
+func (pool *highsPoolType) Get() (*highs.Solver, error) {
 	pool.instancesMutex.Lock()
 	defer pool.instancesMutex.Unlock()
 
 	if len(pool.instances) > 0 {
 		solver := pool.instances[len(pool.instances)-1]
 		pool.instances = pool.instances[:len(pool.instances)-1]
-		return solver
+		return solver, nil
 	} else {
-		solver, err := highs.NewSolver()
-		verifyNoError(err)
-		return solver
+		return highs.NewSolver()
 	}
 }
 

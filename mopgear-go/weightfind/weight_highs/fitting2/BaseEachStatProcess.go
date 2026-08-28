@@ -28,7 +28,6 @@ type BaseEachStatProcess[F IEachFields] struct {
 	ScaleStats stats.StatTypeMap[float64]
 
 	Each           util_collection.MapMap[stats.StatType, stats.SimType, F]
-	Failed         bool
 	CancelInternal util_async.CancelSignalBasic
 }
 

@@ -2,6 +2,7 @@ package fitting1
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -43,13 +44,14 @@ func (fg *FittingSingleStatSegmentsProcess) SupplyData(inputData []util_weight2.
 // each segment thus should cover on average 25%
 // initial range is a stronger requirement of at least 35%, assume remaining actually 60% (20% each)
 // next ones we want to give them some slack but hoping for 15-30%
-func (fg *FittingSingleStatSegmentsProcess) Run(cancel util_async.CancelSignal) map[weight_types.StatRangeFloat]FittingSingleStatResult {
-	if !fg.runInitial(cancel) {
-		return nil
+func (fg *FittingSingleStatSegmentsProcess) Run(cancel util_async.CancelSignal) (map[weight_types.StatRangeFloat]FittingSingleStatResult, error) {
+	err := fg.runInitial(cancel)
+	if err != nil {
+		return nil, err
 	}
 
 	if fg.onlyComputeSingleSegment {
-		return fg.foundSegments
+		return fg.foundSegments, nil
 	}
 
 	overallSize := len(fg.samplesOriginal)
@@ -80,10 +82,13 @@ func (fg *FittingSingleStatSegmentsProcess) Run(cancel util_async.CancelSignal) 
 			targetInclude = c_fitting_tiny_range_under_required
 		}
 
-		fg.runNextSegment(nextData, nextRange, targetInclude, cancel)
+		err = fg.runNextSegment(nextData, nextRange, targetInclude, cancel)
+		if err != nil {
+			return fg.foundSegments, err
+		}
 	}
 
-	return fg.foundSegments
+	return fg.foundSegments, nil
 }
 
 func (fg *FittingSingleStatSegmentsProcess) mergeAnyPossibleRemainingSamples() {
@@ -123,14 +128,20 @@ func (fg *FittingSingleStatSegmentsProcess) mergeAnyPossibleRemainingSamples() {
 	}
 }
 
-func (fg *FittingSingleStatSegmentsProcess) runInitial(cancel util_async.CancelSignal) bool {
+func (fg *FittingSingleStatSegmentsProcess) runInitial(cancel util_async.CancelSignal) error {
 	fit := FittingSingleStatWeightProcess{}
 	fit.Init(fg.printer, fg.timeout)
 	fit.SetMinimumIncludeRate(c_fitting_initial_range_required)
 	fit.SupplySamples(fg.samplesOriginal)
 
-	resultOptionalFuture := fit.Run()
-	util_async.ChainCancel(cancel, resultOptionalFuture)
+	resultOptionalFuture, err := fit.Run()
+	if err != nil {
+		return err
+	}
+	err = util_async.ChainCancel(cancel, resultOptionalFuture)
+	if err != nil {
+		return errors.Join(err, resultOptionalFuture.Cancel())
+	}
 
 	resultOptional := resultOptionalFuture.WaitForResultAsOptional()
 	if segmentResult, hasResult := resultOptional.GetWithFlag(); hasResult {
@@ -140,23 +151,28 @@ func (fg *FittingSingleStatSegmentsProcess) runInitial(cancel util_async.CancelS
 
 		totalRange := weight_types.StatRangeFloat{Minimum: 0, Maximum: c_fitting_statScaledRangeHigh}
 		fg.addToRemainingData(fg.samplesOriginal, totalRange, statRange)
-		return true
+		return nil
 	} else {
-		fg.printer.Println("ERROR failed to get any useful stat fit")
-		return false
+		return errors.New("ERROR failed to get any useful stat fit")
 	}
 }
 
-func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []util_weight2.FittingSample, inputRange weight_types.StatRangeFloat, includeRate float64, cancel util_async.CancelSignal) {
+func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []util_weight2.FittingSample, inputRange weight_types.StatRangeFloat, includeRate float64, cancel util_async.CancelSignal) error {
 	fit := FittingSingleStatWeightProcess{}
 	fit.Init(fg.printer, fg.timeout)
 	fit.SetMinimumIncludeRate(includeRate)
 	fit.SupplySamples(inputData)
 
-	resultOptionalFuture := fit.Run()
-	util_async.ChainCancel(cancel, resultOptionalFuture)
-	resultOptional := resultOptionalFuture.WaitForResultAsOptional()
+	resultOptionalFuture, err := fit.Run()
+	if err != nil {
+		return err
+	}
+	err = util_async.ChainCancel(cancel, resultOptionalFuture)
+	if err != nil {
+		return errors.Join(err, resultOptionalFuture.Cancel())
+	}
 
+	resultOptional := resultOptionalFuture.WaitForResultAsOptional()
 	if segmentResult, hasResult := resultOptional.GetWithFlag(); hasResult {
 		minimum := max(inputRange.Minimum, segmentResult.Minimum)
 		maximum := min(inputRange.Maximum, segmentResult.Maximum)
@@ -169,6 +185,7 @@ func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []util_weig
 
 		fg.addToRemainingData(inputData, inputRange, statRange)
 	}
+	return nil
 }
 
 func (fg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData []util_weight2.FittingSample, inputRange weight_types.StatRangeFloat, removeRange weight_types.StatRangeFloat) {

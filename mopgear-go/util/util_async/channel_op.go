@@ -1,11 +1,13 @@
 package util_async
 
 import (
+	"errors"
 	"iter"
 	"reflect"
 	"slices"
 	"sync"
 
+	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_collection"
 )
 
@@ -193,6 +195,13 @@ func ForEach_Slice_Cancellable_PassError[T any](threadCount int, inputSlice []T,
 func ForEach_Channel[T any](threadCount int, inputChannel <-chan T, process func(T)) {
 	waitGroup := makeThreadsForEachChannel(threadCount, inputChannel, process)
 	waitGroup.Wait()
+}
+
+func ForEach_Channel_PassError[T any](threadCount int, inputChannel <-chan T, process func(T) error) error {
+	waitGroup, futureError := makeThreadsForEachChannelError(threadCount, inputChannel, process)
+	waitGroup.Wait()
+	err, _ := futureError.GetResultNoWait()
+	return err
 }
 
 func ForEach_Channel_NonBlocking[T any](threadCount int, inputChannel <-chan T, process func(T), onComplete func()) {
@@ -755,7 +764,9 @@ func makeThreadsForEachSliceError[T any](threadCount int, inputSlice []T, proces
 				if shouldContinue {
 					err := process(&inputSlice[index])
 					if err != nil {
-						futureError.SetResult(err)
+						if err2 := futureError.SetResult(err); err2 != nil {
+							util.GlobalErrorHandler(errors.Join(err, err2))
+						}
 						shouldContinue = false
 					}
 				}
@@ -775,4 +786,26 @@ func makeThreadsForEachChannel[T any](threadCount int, inputChannel <-chan T, pr
 		})
 	}
 	return waitGroup
+}
+
+func makeThreadsForEachChannelError[T any](threadCount int, inputChannel <-chan T, process func(T) error) (*sync.WaitGroup, *Future[error]) {
+	waitGroup := new(sync.WaitGroup)
+	futureError := Future_Make[error]()
+	shouldContinue := true
+	for range threadCount {
+		waitGroup.Go(func() {
+			for value := range inputChannel {
+				if shouldContinue {
+					err := process(value)
+					if err != nil {
+						if err2 := futureError.SetResult(err); err2 != nil {
+							util.GlobalErrorHandler(errors.Join(err, err2))
+						}
+						shouldContinue = false
+					}
+				}
+			}
+		})
+	}
+	return waitGroup, futureError
 }

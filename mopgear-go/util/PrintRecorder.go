@@ -21,6 +21,8 @@ type PrintRecorder struct {
 	mutex         sync.Mutex
 }
 
+var g_mainLog *PrintRecorder
+
 func PrintRecorder_CreateLogFile(directory string) *PrintRecorder {
 	timeStr := strings.ReplaceAll(time.Now().Format(time.DateTime), ":", "-")
 	logName := directory + "output-" + timeStr + ".log"
@@ -28,7 +30,11 @@ func PrintRecorder_CreateLogFile(directory string) *PrintRecorder {
 	if err != nil {
 		panic(err)
 	}
-	return &PrintRecorder{false, true, false, nil, file, nil, nil, "", sync.Mutex{}}
+	printer := &PrintRecorder{false, true, false, nil, file, nil, nil, "", sync.Mutex{}}
+	if g_mainLog == nil {
+		g_mainLog = printer
+	}
+	return printer
 }
 
 func PrintRecorder_CreateLogFileNamed(directory string, tag string) *PrintRecorder {
@@ -274,5 +280,19 @@ func deleteIfEmpty(logName string) {
 	info, err := os.Stat(logName)
 	if err == nil && info.Size() <= 32 {
 		_ = os.Remove(logName)
+	}
+}
+
+func (print *PrintRecorder) writeErrorToFile(err error) bool {
+	print.mutex.Lock()
+	defer print.mutex.Unlock()
+
+	if print.file != nil {
+		print.outputString("ERROR: ")
+		print.outputString(err.Error())
+		print.outputNewline()
+		return true
+	} else {
+		return false
 	}
 }

@@ -1,6 +1,8 @@
 package simulate
 
 import (
+	"errors"
+	"fmt"
 	"os"
 
 	"github.com/nerago/mopgear-go/db"
@@ -32,84 +34,117 @@ const (
 
 var WowSimRanDuringCurrentProcess = false
 
-func ExecuteUseModel(runSize WowSim_RunSize, model *gear_model.SpecModel, equipMap *items.FullEquipMap, bonusStats *stats.StatTypeMap[int32], tracker *util.TrackProgress) stats.SimData {
+func ExecuteUseModel(runSize WowSim_RunSize, model *gear_model.SpecModel, equipMap *items.FullEquipMap, bonusStats *stats.StatTypeMap[int32], tracker *util.TrackProgress) (stats.SimData, error) {
 	return ExecuteSpecifyAll(runSize, model.SimSpeedUp, model.Spec, model.Goal, model.SimulateAs, model.Professions, equipMap, bonusStats, tracker)
 }
 
-func ExecuteSpecifyAll(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *stats.StatTypeMap[int32], tracker *util.TrackProgress) stats.SimData {
-	input, reporter, id := prepareSim(runSize, speedUp, spec, goal, fight, profession, equipMap, bonusStats)
+func ExecuteSpecifyAll(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *stats.StatTypeMap[int32], tracker *util.TrackProgress) (stats.SimData, error) {
+	input, reporter, id, err := prepareSim(runSize, speedUp, spec, goal, fight, profession, equipMap, bonusStats)
+	if err != nil {
+		return stats.SimData{}, err
+	}
+
 	wowsim_core.RunRaidSimConcurrentAsync(input, reporter, id)
 
 	finalResult := waitForResult(reporter, tracker)
 	return convertResult(finalResult)
 }
 
-func ExecuteSpecifyAllFuture(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *stats.StatTypeMap[int32], tracker *util.TrackProgress) *util_async.FutureCancellable[stats.SimData] {
-	input, reporter, id := prepareSim(runSize, speedUp, spec, goal, fight, profession, equipMap, bonusStats)
-	wowsim_core.RunRaidSimConcurrentAsync(input, reporter, id)
+func ExecuteSpecifyAllFuture(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *stats.StatTypeMap[int32], tracker *util.TrackProgress) *util_async.FutureCancellableWithError[stats.SimData] {
+	input, reporter, id, err := prepareSim(runSize, speedUp, spec, goal, fight, profession, equipMap, bonusStats)
 
-	future := util_async.FutureCancellable_Make[stats.SimData]()
-	future.AddCancelHandler(func() {
-		simsignals.AbortById(id)
-	})
+	future := util_async.FutureCancellableWithError_Make[stats.SimData]()
+	if err == nil {
+		wowsim_core.RunRaidSimConcurrentAsync(input, reporter, id)
+		err = future.AddCancelHandler(func() error {
+			simsignals.AbortById(id)
+			return nil
+		})
+	}
 
-	go func() {
-		finalResult := waitForResult(reporter, tracker)
-		converted := convertResult(finalResult)
-		future.SetResult(converted)
-	}()
+	if err != nil {
+		err2 := future.SetResultError(err)
+		if err2 != nil {
+			util.GlobalErrorHandler(errors.Join(err, err2))
+		}
+	} else {
+		go func() {
+			finalResult := waitForResult(reporter, tracker)
+			converted, errResult := convertResult(finalResult)
 
+			var errHandle error
+			if errResult != nil {
+				errHandle = future.SetResultError(errResult)
+			} else {
+				errHandle = future.SetResult(converted)
+			}
+			util.GlobalErrorHandler(errHandle)
+		}()
+	}
 	return future
 }
 
-func prepareSim(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *stats.StatTypeMap[int32]) (*wowsim_proto.RaidSimRequest, chan *wowsim_proto.ProgressMetrics, string) {
+func prepareSim(runSize WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, equipMap *items.FullEquipMap, bonusStats *stats.StatTypeMap[int32]) (*wowsim_proto.RaidSimRequest, chan *wowsim_proto.ProgressMetrics, string, error) {
 	if speedUp != 0 {
 		runSize /= WowSim_RunSize(speedUp)
 	}
 
-	infile := simFileFor(spec, fight)
-	input := inputRequestFromTemplate(infile, equipMap, profession, bonusStats, spec, fight, runSize, goal)
+	infile, err := simFileFor(spec, fight)
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	input, err := inputRequestFromTemplate(infile, equipMap, profession, bonusStats, spec, fight, runSize, goal)
+	if err != nil {
+		return nil, nil, "", err
+	}
 
 	reporter := make(chan *wowsim_proto.ProgressMetrics)
 
 	id := uuid.NewString()
 	input.RequestId = id
-	return input, reporter, id
+	return input, reporter, id, nil
 }
 
-func simFileFor(spec stats.SpecType, fight stats.WowSim_Fight) string {
+func simFileFor(spec stats.SpecType, fight stats.WowSim_Fight) (string, error) {
 	switch spec {
 	case stats.Spec_PaladinProt:
 		switch fight {
 		case stats.Fight_Horridon_HighHeal, stats.Fight_Horridon_LowHeal, stats.Fight_Animus:
-			return files.SimProtHorridon
+			return files.SimProtHorridon, nil
 		case stats.Fight_Juggernaut_HighHeal, stats.Fight_Juggernaut_NoExternalHeal, stats.Fight_Juggernaut_SelfWordGlory, stats.Fight_Juggernaut_OffHealer:
-			return files.SimProtJuggernaut
+			return files.SimProtJuggernaut, nil
 		default:
-			panic("unknown spec/fight")
+			return "", errors.New("unknown spec/fight")
 		}
 	case stats.Spec_PaladinRet:
-		return files.SimRet
+		return files.SimRet, nil
 	default:
-		panic("spec not supported")
+		return "", errors.New("spec not supported")
 	}
 }
 
-func inputRequestFromTemplate(infile string, equipMap *items.FullEquipMap, profession gear_model.ProfessionInfo, bonusStats *stats.StatTypeMap[int32], spec stats.SpecType, fight stats.WowSim_Fight, runSize WowSim_RunSize, goal stats.OptimiseGoal) *wowsim_proto.RaidSimRequest {
+func inputRequestFromTemplate(infile string, equipMap *items.FullEquipMap, profession gear_model.ProfessionInfo, bonusStats *stats.StatTypeMap[int32], spec stats.SpecType, fight stats.WowSim_Fight, runSize WowSim_RunSize, goal stats.OptimiseGoal) (*wowsim_proto.RaidSimRequest, error) {
 	var input wowsim_proto.RaidSimRequest
-	loadAnyProtoFile(&input, infile)
+	err := loadAnyProtoFile(&input, infile)
+	if err != nil {
+		return nil, err
+	}
 
 	updateGear(&input, equipMap, profession)
 	updateBonus(&input, bonusStats)
-	updateRotation(&input, spec, fight)
-	updateFight(&input, fight, spec)
-	updateTalents(&input, spec, fight, goal)
+	err = errors.Join(
+		updateRotation(&input, spec, fight),
+		updateFight(&input, fight, spec),
+		updateTalents(&input, spec, fight, goal),
+	)
+
 	input.SimOptions.Iterations = int32(runSize)
 	input.SimOptions.RandomSeed = 0
-	return &input
+	return &input, err
 }
 
-func updateFight(input *wowsim_proto.RaidSimRequest, fight stats.WowSim_Fight, spec stats.SpecType) {
+func updateFight(input *wowsim_proto.RaidSimRequest, fight stats.WowSim_Fight, spec stats.SpecType) error {
 
 	switch fight {
 	case stats.Fight_Horridon_HighHeal:
@@ -150,11 +185,13 @@ func updateFight(input *wowsim_proto.RaidSimRequest, fight stats.WowSim_Fight, s
 		}
 
 	default:
-		panic("unknown fight")
+		return errors.New("unknown fight")
 	}
+
+	return nil
 }
 
-func updateTalents(input *wowsim_proto.RaidSimRequest, spec stats.SpecType, fight stats.WowSim_Fight, goal stats.OptimiseGoal) {
+func updateTalents(input *wowsim_proto.RaidSimRequest, spec stats.SpecType, fight stats.WowSim_Fight, goal stats.OptimiseGoal) error {
 	switch spec {
 	case stats.Spec_PaladinProt:
 		if fight == stats.Fight_Juggernaut_OffHealer || goal == stats.OptimiseGoal_Healing || goal == stats.OptimiseGoal_HalfMitiHeal {
@@ -181,25 +218,28 @@ func updateTalents(input *wowsim_proto.RaidSimRequest, spec stats.SpecType, figh
 		// wowsim suggests minor glyph focused wrath, has no relevant effect in sims
 	case stats.Spec_PaladinRet:
 	default:
-		panic("don't know spec")
+		return errors.New("don't know spec")
 	}
+
+	return nil
 }
 
-func updateRotation(input *wowsim_proto.RaidSimRequest, spec stats.SpecType, fight stats.WowSim_Fight) {
+func updateRotation(input *wowsim_proto.RaidSimRequest, spec stats.SpecType, fight stats.WowSim_Fight) (err error) {
 	var rotation wowsim_proto.APLRotation
 	switch spec {
 	case stats.Spec_PaladinProt:
 		if fight == stats.Fight_Horridon_HighHeal || fight == stats.Fight_Horridon_LowHeal {
-			loadAnyProtoFile(&rotation, files.PaladinProtRotationT15)
+			err = loadAnyProtoFile(&rotation, files.PaladinProtRotationT15)
 		} else {
-			loadAnyProtoFile(&rotation, files.PaladinProtRotation)
+			err = loadAnyProtoFile(&rotation, files.PaladinProtRotation)
 		}
 	case stats.Spec_PaladinRet:
-		loadAnyProtoFile(&rotation, files.PaladinRetRotation)
+		err = loadAnyProtoFile(&rotation, files.PaladinRetRotation)
 	default:
-		panic("don't know rotation")
+		err = errors.New("don't know rotation")
 	}
 	input.Raid.Parties[0].Players[0].Rotation = &rotation
+	return err
 }
 
 func updateGear(input *wowsim_proto.RaidSimRequest, equipMap *items.FullEquipMap, professions gear_model.ProfessionInfo) {
@@ -267,12 +307,12 @@ func waitForResult(reporter chan *wowsim_proto.ProgressMetrics, tracker *util.Tr
 			}
 		}
 	}
-	panic("no final result")
+	return nil
 }
 
-func convertResult(finalResult *wowsim_proto.RaidSimResult) stats.SimData {
+func convertResult(finalResult *wowsim_proto.RaidSimResult) (stats.SimData, error) {
 	if finalResult.Error != nil {
-		panic("sim fail = " + finalResult.Error.Message)
+		return stats.SimData{}, fmt.Errorf("wowsim error: %v", finalResult.Error.String())
 	} else if finalResult.RaidMetrics != nil && finalResult.RaidMetrics.Parties != nil && finalResult.RaidMetrics.Parties[0] != nil && finalResult.RaidMetrics.Parties[0].Players != nil && finalResult.RaidMetrics.Parties[0].Players[0] != nil {
 		WowSimRanDuringCurrentProcess = true
 		playerMetrics := finalResult.RaidMetrics.Parties[0].Players[0]
@@ -285,20 +325,22 @@ func convertResult(finalResult *wowsim_proto.RaidSimResult) stats.SimData {
 		simData.SetDetailed(stats.Sim_HPS, playerMetrics.Hps.Avg, playerMetrics.Hps.Min, playerMetrics.Hps.Max, playerMetrics.Hps.Stdev)
 		simData.Set(stats.Sim_DEATH, playerMetrics.ChanceOfDeath)
 		simData.SimIterations = playerMetrics.Dps.AggregatorData.N
-		return simData
+		return simData, nil
 	} else {
-		panic("incomplete sim result")
+		return stats.SimData{}, fmt.Errorf("wowsim result missing")
 	}
 }
 
-func loadAnyProtoFile[T proto.Message](object T, filename string) {
+func loadAnyProtoFile[T proto.Message](object T, filename string) error {
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	err = wowsim_protojson.UnmarshalOptions{DiscardUnknown: true}.Unmarshal(data, object)
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }

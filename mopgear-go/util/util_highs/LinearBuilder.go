@@ -1,6 +1,7 @@
 package util_highs
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"slices"
@@ -22,7 +23,7 @@ type LinearBuilder struct {
 	BlendMultiObjectives bool
 	Solver               SolverMode
 	DisablePreSolve      bool
-	TimeLimitSeconds     int
+	TimeLimitSeconds     int // *TimeLimitToken
 	Callback             highs.Callback
 	CallbackTypes        []highs.CallbackType
 	FloatOptions         map[string]float64
@@ -166,72 +167,123 @@ func (build *LinearBuilder) GetInitialSolutionValue(columnNumber ColumnIndex) fl
 func (build *LinearBuilder) RunHighsFuture(stopwatch *util.Stopwatch) *util_async.FutureCancellable[LinearResult] {
 	build.vars.validate()
 
-	solver, logFilename, requireGpu, optionalGpu := build.prepareHighsRun(true)
+	solver, logFilename, requireGpu, optionalGpu, err := build.prepareHighsRun(true)
 
-	future := util_async.FutureCancellable_Make[LinearResult]()
-	future.AddCancelHandler(func() {
-		verifyNoError(solver.InterruptSetFlag(true))
-	})
+	future, exitNow := build.makeFuture(solver, logFilename, err)
+	if exitNow {
+		return future
+	}
 
 	if stopwatch == nil {
 		stopwatch = util.StopwatchMakeStopped()
 	}
 
-	go func() {
-		log := util.PrintRecorder_HoldAll()
-
-		solution, err := build.runInner(solver, requireGpu, optionalGpu, stopwatch)
-		verifyNoError(err)
-
-		if C_DebugHighs && C_DiagnoseInfeasible && solution.Status == highs.ModelStatusInfeasible {
-			diagnoseInfeasible(build, log)
-		}
-
-		build.postHighsRun(solver, logFilename, log)
-		future.SetResult(LinearResult{solution, build, log})
-
-		//if solution.Status != highs.ModelStatusTimeLimit { // worried that some part of state doesn't reset
-		g_HighsPool.Put(solver)
-		//}
-	}()
+	go build.runSolveThread(solver, requireGpu, optionalGpu, stopwatch, logFilename, future)
 
 	return future
 }
 
-func (build *LinearBuilder) prepareHighsRun(needLog bool) (*highs.Solver, string, bool, bool) {
-	solver := g_HighsPool.Get()
+//goland:noinspection GoBoolExpressions
+func (build *LinearBuilder) runSolveThread(solver *highs.Solver, requireGpu bool, optionalGpu bool, stopwatch *util.Stopwatch, logFilename string, future *util_async.FutureCancellable[LinearResult]) {
+	log := util.PrintRecorder_HoldAll()
 
-	build.configureHighsMatrix(solver)
+	solution, err := build.runInner(solver, requireGpu, optionalGpu, stopwatch)
+
+	if err == nil {
+		if C_DebugHighs && C_DiagnoseInfeasible && solution.Status == highs.ModelStatusInfeasible {
+			diagnoseInfeasible(build, log)
+		}
+
+		err2 := build.postHighsRun(solver, logFilename, log)
+		errHandling := future.SetResult(LinearResult{solution: solution, build: build, log: log, err: err2})
+		if errHandling != nil {
+			util.GlobalErrorHandler(errors.Join(err, err2))
+		}
+
+		g_HighsPool.Put(solver)
+	} else {
+		err = errors.Join(err, build.postHighsRun(solver, logFilename, log))
+		errHandling := future.SetResult(LinearResult{solution: solution, build: build, log: log, err: err})
+		if errHandling != nil {
+			util.GlobalErrorHandler(errors.Join(err, errHandling))
+		}
+
+		// don't return solver to pool since in unknown state after the errors
+	}
+}
+
+func (build *LinearBuilder) makeFuture(solver *highs.Solver, logFilename string, err error) (*util_async.FutureCancellable[LinearResult], bool) {
+	future := util_async.FutureCancellable_Make[LinearResult]()
+	err = errors.Join(err,
+		future.AddCancelHandler(func() error {
+			return solver.InterruptSetFlag(true)
+		}),
+	)
+
+	if err != nil {
+		err = errors.Join(err, build.postHighsRun(solver, logFilename, nil))
+		err2 := future.SetResult(LinearResult{build: build, err: err})
+		if err2 != nil {
+			util.GlobalErrorHandler(errors.Join(err, err2))
+		}
+		return future, true
+	}
+
+	return future, false
+}
+
+func (build *LinearBuilder) prepareHighsRun(needLog bool) (*highs.Solver, string, bool, bool, error) {
+	solver, err := g_HighsPool.Get()
+	if err != nil {
+		return nil, "", false, false, err
+	}
+
+	err = build.configureHighsMatrix(solver)
+	if err != nil {
+		return nil, "", false, false, err
+	}
 
 	logFilename := ""
 	if needLog {
-		logFilename = makeTempFilename()
+		logFilename, err = makeTempFilename()
+		if err != nil {
+			return nil, "", false, false, err
+		}
 	}
-	build.configureHighsUtil(solver, logFilename)
+	err = errors.Join(build.configureHighsUtil(solver, logFilename))
 
-	requireGpu, optionalGpu := build.configureHighsSolver(solver)
+	requireGpu, optionalGpu, err2 := build.configureHighsSolver(solver)
 
-	return solver, logFilename, requireGpu, optionalGpu
+	return solver, logFilename, requireGpu, optionalGpu, errors.Join(err, err2)
 }
 
-func (build *LinearBuilder) postHighsRun(solver *highs.Solver, logFilename string, printer *util.PrintRecorder) {
+func (build *LinearBuilder) postHighsRun(solver *highs.Solver, logFilename string, printer *util.PrintRecorder) error {
+	var err error
+
 	if logFilename != "" {
-		verifyNoError(solver.SetStringOption("log_file", "")) // flush log
-		readLogfile(logFilename, printer)
+		err = errors.Join(
+			solver.SetStringOption("log_file", ""), // flush log
+			readLogfile(logFilename, printer),
+		)
 	}
 
 	if build.Callback != nil {
-		verifyNoError(solver.ClearCallback())
+		err = errors.Join(err, solver.ClearCallback())
 	} else {
-		verifyNoError(solver.InterruptSupportDisable())
+		err = errors.Join(err, solver.InterruptSupportDisable())
 	}
-	verifyNoError(solver.ClearLinearObjectives())
-	verifyNoError(solver.ClearModel())
-	verifyNoError(solver.ClearSolver())
-	verifyNoError(solver.Clear())
+
+	return errors.Join(
+		err,
+		solver.ClearLinearObjectives(),
+		solver.ClearModel(),
+		solver.ClearSolver(),
+		solver.ClearClock(),
+		solver.Clear(),
+	)
 }
 
-func (build *LinearBuilder) configureHighsMatrix(solver *highs.Solver) {
+func (build *LinearBuilder) configureHighsMatrix(solver *highs.Solver) error {
 	numRows, lowerBound, upperBound, startArray, indexArray, valuesArray := build.mat.createSolverInputArrays()
 
 	var colTypes []highs.VariableType
@@ -239,24 +291,24 @@ func (build *LinearBuilder) configureHighsMatrix(solver *highs.Solver) {
 		colTypes = build.vars.colTypes
 	}
 
-	verifyNoError(solver.PassModel(
+	err := solver.PassModel(
 		len(build.vars.colCosts),
 		numRows,
 		build.vars.colCosts, build.vars.colLower, build.vars.colUpper,
 		lowerBound, upperBound,
 		startArray, indexArray, valuesArray,
-		colTypes, !build.Minimise, 0))
+		colTypes, !build.Minimise, 0)
 
-	verifyNoError(solver.ClearLinearObjectives())
+	err = errors.Join(err, solver.ClearLinearObjectives())
 	for linearObjectiveIndex := range build.vars.objectives {
 		objective := &build.vars.objectives[linearObjectiveIndex]
 		coefficientArray := make([]float64, len(build.vars.colTypes))
 		for _, entry := range objective.coefficientEntries {
 			coefficientArray[entry.columnNumber] = entry.value
 		}
-		verifyNoError(solver.AddLinearObjective(objective.weight, objective.offset, coefficientArray, objective.abs_tolerance, objective.rel_tolerance, objective.priority))
+		err = errors.Join(err, solver.AddLinearObjective(objective.weight, objective.offset, coefficientArray, objective.abs_tolerance, objective.rel_tolerance, objective.priority))
 	}
-	verifyNoError(solver.SetBoolOption("blend_multi_objectives", build.BlendMultiObjectives))
+	err = errors.Join(err, solver.SetBoolOption("blend_multi_objectives", build.BlendMultiObjectives))
 
 	if len(build.vars.partialSolution) > 0 {
 		indexArray := make([]int32, len(build.vars.partialSolution))
@@ -267,28 +319,30 @@ func (build *LinearBuilder) configureHighsMatrix(solver *highs.Solver) {
 			valueArray[index] = value
 			index++
 		}
-		verifyNoError(solver.SetSparseSolution(indexArray, valueArray))
+		err = errors.Join(err, solver.SetSparseSolution(indexArray, valueArray))
 	}
+
+	return err
 }
 
-func (build *LinearBuilder) configureHighsUtil(solver *highs.Solver, logfile string) {
+func (build *LinearBuilder) configureHighsUtil(solver *highs.Solver, logfile string) (err error) {
 	for name, value := range build.FloatOptions {
-		verifyNoError(solver.SetFloatOption(name, value))
+		err = errors.Join(err, solver.SetFloatOption(name, value))
 	}
 	for name, value := range build.StringOptions {
-		verifyNoError(solver.SetStringOption(name, value))
+		err = errors.Join(err, solver.SetStringOption(name, value))
 	}
 	for name, value := range build.IntOptions {
-		verifyNoError(solver.SetIntOption(name, value))
+		err = errors.Join(err, solver.SetIntOption(name, value))
 	}
 	for name, value := range build.BoolOptions {
-		verifyNoError(solver.SetBoolOption(name, value))
+		err = errors.Join(err, solver.SetBoolOption(name, value))
 	}
 
 	if build.TimeLimitSeconds != 0 {
-		verifyNoError(solver.SetFloatOption("time_limit", float64(build.TimeLimitSeconds)))
+		err = errors.Join(err, solver.SetFloatOption("time_limit", float64(build.TimeLimitSeconds)))
 	} else {
-		verifyNoError(solver.SetFloatOption("time_limit", InfPos()))
+		err = errors.Join(err, solver.SetFloatOption("time_limit", InfPos()))
 	}
 
 	if build.Callback != nil {
@@ -300,7 +354,7 @@ func (build *LinearBuilder) configureHighsUtil(solver *highs.Solver, logfile str
 		}
 		callbackTypes := slices.Concat(build.CallbackTypes, interruptTypes)
 		util_collection.RemoveDuplicatesComparable_InPlace(&callbackTypes)
-		verifyNoError(solver.SetCallback(func(callbackType highs.CallbackType, str string, out highs.CallbackData) highs.CallbackResult {
+		err = errors.Join(err, solver.SetCallback(func(callbackType highs.CallbackType, str string, out highs.CallbackData) highs.CallbackResult {
 			result := build.Callback(callbackType, str, out)
 			if slices.Contains(interruptTypes, callbackType) {
 				result.UserInterrupt = solver.Interrupted
@@ -308,78 +362,90 @@ func (build *LinearBuilder) configureHighsUtil(solver *highs.Solver, logfile str
 			return result
 		}, build.CallbackTypes))
 	} else {
-		verifyNoError(solver.InterruptSupportEnable())
+		err = errors.Join(err, solver.InterruptSupportEnable())
 	}
 
-	verifyNoError(solver.SetStringOption("log_file", logfile))
-	verifyNoError(solver.SetBoolOption("log_to_console", (C_DebugHighs || C_HighsToConsole) && !build.NoOutput))
+	err = errors.Join(err, solver.SetStringOption("log_file", logfile))
+	err = errors.Join(err, solver.SetBoolOption("log_to_console", (C_DebugHighs || C_HighsToConsole) && !build.NoOutput))
 	if C_DebugHighs {
-		verifyNoError(solver.SetIntOption("log_dev_level", 2))
+		err = errors.Join(err, solver.SetIntOption("log_dev_level", 2))
 	} else {
-		verifyNoError(solver.SetIntOption("log_dev_level", 0))
+		err = errors.Join(err, solver.SetIntOption("log_dev_level", 0))
 	}
 
 	if build.DisablePreSolve {
-		verifyNoError(solver.SetStringOption("presolve", "off"))
+		err = errors.Join(err, solver.SetStringOption("presolve", "off"))
 	} else {
-		verifyNoError(solver.SetStringOption("presolve", "on"))
+		err = errors.Join(err, solver.SetStringOption("presolve", "on"))
 	}
+
+	return err
 }
 
-func (build *LinearBuilder) configureHighsSolver(solver *highs.Solver) (bool, bool) {
-	requireGpu := false
-	optionalGpu := false
+func (build *LinearBuilder) configureHighsSolver(solver *highs.Solver) (requireGpu bool, optionalGpu bool, err error) {
 	expectMip := false
 
 	switch build.Solver {
 	case Solver_LP_USE_GPU:
-		verifyNoError(solver.SetStringOption("solver", "hipdlp"))
+		err = errors.Join(err, solver.SetStringOption("solver", "hipdlp"))
 		requireGpu = true
 	case Solver_LP_GPU_IF_FREE:
-		verifyNoError(solver.SetStringOption("solver", "hipdlp"))
+		err = errors.Join(err, solver.SetStringOption("solver", "hipdlp"))
 		optionalGpu = true
 	case Solver_LP_NO_GPU:
 		if build.isLargeModel() {
-			verifyNoError(solver.SetStringOption("solver", "hipo"))
+			err = errors.Join(err, solver.SetStringOption("solver", "hipo"))
 		} else {
-			verifyNoError(solver.SetStringOption("solver", "choose"))
+			err = errors.Join(err, solver.SetStringOption("solver", "choose"))
 		}
 	case Solver_Force_HIPO:
-		verifyNoError(solver.SetStringOption("solver", "hipo"))
+		err = errors.Join(err, solver.SetStringOption("solver", "hipo"))
 	case Solver_Force_Simplex:
-		verifyNoError(solver.SetStringOption("solver", "simplex"))
+		err = errors.Join(err, solver.SetStringOption("solver", "simplex"))
 	case Solver_Force_IPX:
-		verifyNoError(solver.SetStringOption("solver", "ipx"))
+		err = errors.Join(err, solver.SetStringOption("solver", "ipx"))
 	case Solver_MIP_Interior:
 		if build.isLargeModel() {
-			verifyNoError(solver.SetStringOption("solver", "choose"))
-			verifyNoError(solver.SetStringOption("mip_lp_solver", "hipo"))
-			verifyNoError(solver.SetStringOption("mip_ipm_solver", "hipo"))
+			err = errors.Join(
+				err,
+				solver.SetStringOption("solver", "choose"),
+				solver.SetStringOption("mip_lp_solver", "hipo"),
+				solver.SetStringOption("mip_ipm_solver", "hipo"),
+			)
 		} else {
-			verifyNoError(solver.SetStringOption("solver", "choose"))
-			verifyNoError(solver.SetStringOption("mip_lp_solver", "choose"))
-			verifyNoError(solver.SetStringOption("mip_ipm_solver", "choose"))
+			err = errors.Join(
+				err,
+				solver.SetStringOption("solver", "choose"),
+				solver.SetStringOption("mip_lp_solver", "choose"),
+				solver.SetStringOption("mip_ipm_solver", "choose"),
+			)
 		}
 		expectMip = true
 	case Solver_MIP_Vertex:
-		verifyNoError(solver.SetStringOption("solver", "choose"))
-		verifyNoError(solver.SetStringOption("mip_lp_solver", "choose"))
-		verifyNoError(solver.SetStringOption("mip_ipm_solver", "choose"))
+		err = errors.Join(
+			err,
+			solver.SetStringOption("solver", "choose"),
+			solver.SetStringOption("mip_lp_solver", "choose"),
+			solver.SetStringOption("mip_ipm_solver", "choose"),
+		)
 		expectMip = true
 	case Solver_Flexible:
-		verifyNoError(solver.SetStringOption("solver", "choose"))
-		verifyNoError(solver.SetStringOption("mip_lp_solver", "choose"))
-		verifyNoError(solver.SetStringOption("mip_ipm_solver", "choose"))
-		return false, false
+		err = errors.Join(
+			err,
+			solver.SetStringOption("solver", "choose"),
+			solver.SetStringOption("mip_lp_solver", "choose"),
+			solver.SetStringOption("mip_ipm_solver", "choose"),
+		)
+		return false, false, err
 	default:
-		panic("solver not specified")
+		err = errors.Join(err, errors.New("solver not specified"))
 	}
 
 	if expectMip != build.isMIP() {
-		panic("solver wrong for MIP/non-MIP model")
+		err = errors.Join(err, errors.New("solver wrong for MIP/non-MIP model"))
 	}
 
-	return requireGpu, optionalGpu
+	return requireGpu, optionalGpu, err
 }
 
 func (build *LinearBuilder) isLargeModel() bool {

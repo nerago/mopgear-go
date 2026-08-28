@@ -107,7 +107,7 @@ func (fw *FittingSingleStatWeightProcess) SupplySamples(inputData []util_weight2
 	fw.inputData = inputData
 }
 
-func (fw *FittingSingleStatWeightProcess) Run() *util_async.FutureCancellable[FittingSingleStatResult] {
+func (fw *FittingSingleStatWeightProcess) Run() (*util_async.FutureCancellable[FittingSingleStatResult], error) {
 	fw.setupLinearObjectives()
 
 	for _, sample := range fw.inputData {

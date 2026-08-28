@@ -2,6 +2,7 @@ package util_async
 
 import (
 	"context"
+	"errors"
 	"os"
 	"sync"
 	"time"
@@ -10,21 +11,21 @@ import (
 )
 
 type CancelSignal interface {
-	AddCancelHandler(func())
-	Cancel()
+	AddCancelHandler(func() error) error
+	Cancel() error
 	ShouldContinue() bool
 	ShouldFinish() bool
 	CancelSignalChannel() <-chan struct{}
 }
 
-func ChainCancel(outer, inner CancelSignal) {
-	outer.AddCancelHandler(inner.Cancel)
+func ChainCancel(outer, inner CancelSignal) error {
+	return outer.AddCancelHandler(inner.Cancel)
 }
 
 type CancelSignalBasic struct {
 	isCancelled   bool
 	lock          sync.Mutex
-	onCancel      []func()
+	onCancel      []func() error
 	signalChannel chan struct{}
 }
 
@@ -34,27 +35,32 @@ func CancelSignal_Make() *CancelSignalBasic {
 	}
 }
 
-func (cancel *CancelSignalBasic) AddCancelHandler(onCancel func()) {
+func (cancel *CancelSignalBasic) AddCancelHandler(onCancel func() error) error {
 	cancel.lock.Lock()
+	defer cancel.lock.Unlock()
 	if cancel.isCancelled {
-		onCancel()
+		return onCancel()
 	} else {
 		cancel.onCancel = append(cancel.onCancel, onCancel)
+		return nil
 	}
-	cancel.lock.Unlock()
 }
 
-func (cancel *CancelSignalBasic) Cancel() {
+func (cancel *CancelSignalBasic) Cancel() error {
 	cancel.lock.Lock()
+	defer cancel.lock.Unlock()
+
+	var resultError error
 	if !cancel.isCancelled {
 		cancel.isCancelled = true
 		for i := range cancel.onCancel {
-			cancel.onCancel[i]()
+			err := cancel.onCancel[i]()
+			resultError = errors.Join(resultError, err)
 		}
 		cancel.onCancel = nil
 		close(cancel.signalChannel)
 	}
-	cancel.lock.Unlock()
+	return resultError
 }
 
 func (cancel *CancelSignalBasic) ShouldContinue() bool {
@@ -72,7 +78,10 @@ func (cancel *CancelSignalBasic) CancelSignalChannel() <-chan struct{} {
 func CancelOnKeyPress(cancel CancelSignal) {
 	go func() {
 		waitForKeyPress()
-		cancel.Cancel()
+		err := cancel.Cancel()
+		if err != nil {
+			util.GlobalErrorHandler(err)
+		}
 	}()
 }
 
@@ -86,7 +95,8 @@ func waitForKeyPress() {
 func CancelAfterTimeout(cancel CancelSignal, timeout time.Duration, printer *util.PrintRecorder) *time.Timer {
 	return time.AfterFunc(timeout, func() {
 		printer.Println("###################### TIME LIMIT EXPIRED ######################")
-		cancel.Cancel()
+		err := cancel.Cancel()
+		util.GlobalErrorHandler(err)
 	})
 }
 

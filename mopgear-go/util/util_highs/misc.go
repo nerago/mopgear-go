@@ -44,6 +44,7 @@ type LinearResult struct {
 	solution *highs.Solution
 	build    *LinearBuilder
 	log      *util.PrintRecorder
+	err      error
 }
 
 func (lr *LinearResult) GetSolutionAndDiscardLog() *highs.Solution {
@@ -58,10 +59,4 @@ func (lr *LinearResult) GetSolutionAndSaveLog(printer *util.PrintRecorder) *high
 func (lr *LinearResult) GetSolution2AndSaveLog(printer *util.PrintRecorder) *Solution2 {
 	printer.AppendOther(lr.log)
 	return &Solution2{lr.solution, lr.build}
-}
-
-func verifyNoError(err error) {
-	if err != nil {
-		panic(err)
-	}
 }

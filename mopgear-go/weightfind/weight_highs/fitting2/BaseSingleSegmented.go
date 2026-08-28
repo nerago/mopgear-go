@@ -84,7 +84,7 @@ func (bss *BaseSingleSegmented[S]) FinishSegments(enforceMinimumIncludeCount boo
 	}
 }
 
-func (bss *BaseSingleSegmented[S]) RunSolve() *util_async.FutureCancellable[InitialResultSet] {
+func (bss *BaseSingleSegmented[S]) RunSolve() (*util_async.FutureCancellable[InitialResultSet], error) {
 	future := bss.Build.RunHighsFuture(&bss.Stopwatch)
 	return util_async.FutureCancellable_MapValue(future, func(res util_highs.LinearResult) (InitialResultSet, bool) {
 		solution := res.GetSolution2AndSaveLog(bss.Printer)

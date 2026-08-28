@@ -64,7 +64,7 @@ func (form *FormulaStatWeightProcess2) SetMinimumIncludeRate(percent float64) {
 	form.minimumIncludeRate = percent
 }
 
-func (form *FormulaStatWeightProcess2) Run(timeout int) *util_async.FutureCancellable[weight_types.WeightResult2] {
+func (form *FormulaStatWeightProcess2) Run(timeout int) (*util_async.FutureCancellable[weight_types.WeightResult2], error) {
 	form.build = new(util_highs.LinearBuilder)
 	form.build.Minimise = true
 	form.build.Solver = util_highs.Solver_MIP_Interior

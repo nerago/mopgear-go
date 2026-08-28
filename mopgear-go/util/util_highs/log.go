@@ -7,13 +7,13 @@ import (
 	"github.com/nerago/mopgear-go/util"
 )
 
-func makeTempFilename() string {
+func makeTempFilename() (string, error) {
 	tempFile, err := os.CreateTemp(files.TempLog, "highslog")
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	verifyNoError(tempFile.Close())
-	return tempFile.Name()
+	err = tempFile.Close()
+	return tempFile.Name(), err
 }
 
 func readLogfile(tempFilename string, printer *util.PrintRecorder) error {

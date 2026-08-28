@@ -2,6 +2,7 @@ package fitting1
 
 import (
 	"cmp"
+	"errors"
 	"math"
 	"slices"
 
@@ -27,8 +28,7 @@ type FittingEachStatWeightProcess struct {
 	scaleSims  stats.SimTypeMap[util_weight2.ScaleAndOffset]
 	scaleStats stats.StatTypeMap[float64]
 
-	each     util_collection.MapMap[stats.StatType, stats.SimType, *fittingEachFields]
-	hasError bool
+	each util_collection.MapMap[stats.StatType, stats.SimType, *fittingEachFields]
 }
 
 type fittingEachFields struct {
@@ -56,7 +56,7 @@ func (fe *FittingEachStatWeightProcess) SupplyData(inputData []weight_types.Weig
 	fe.inputData = inputData
 }
 
-func (fe *FittingEachStatWeightProcess) Run(cancel util_async.CancelSignal) weight_types.WeightResult3 {
+func (fe *FittingEachStatWeightProcess) Run(cancel util_async.CancelSignal) (weight_types.WeightResult3, error) {
 	fe.chooseScaling()
 	fe.launchEachNested(cancel)
 	if !fe.hasError {
@@ -94,7 +94,7 @@ func (fe *FittingEachStatWeightProcess) buildResult() *weight_types.Weight3Exten
 	return weights
 }
 
-func (fe *FittingEachStatWeightProcess) launchEachNested(cancel util_async.CancelSignal) {
+func (fe *FittingEachStatWeightProcess) launchEachNested(cancel util_async.CancelSignal) error {
 	for _, statType := range fe.requiredStats {
 		for _, simType := range fe.requiredSims {
 			fields := fittingEachFields{statType: statType, simType: simType}
@@ -103,17 +103,23 @@ func (fe *FittingEachStatWeightProcess) launchEachNested(cancel util_async.Cance
 	}
 
 	channelEach := util_async.SeqToChannel_Cancellable(fe.each.SeqValues(), cancel)
-	util_async.ForEach_Channel(c_fitting_each_threadCount, channelEach, func(fields *fittingEachFields) {
+	return util_async.ForEach_Channel_PassError(c_fitting_each_threadCount, channelEach, func(fields *fittingEachFields) error {
 		printer := util.PrintRecorder_HoldAll()
+		defer fe.printer.AppendOther(printer)
 
 		process := FittingSingleStatSegmentsProcess{}
 		process.Init(printer, fe.timeout)
 		process.SetOnlyComputeSingleSegment(fe.onlyComputeSingleSegmentEach)
 		process.SupplyData(fe.prepareSamples(fields.statType, fields.simType))
-		initialResult := process.Run(cancel)
+		initialResult, err := process.Run(cancel)
+		if err != nil {
+			return err
+		} else if initialResult == nil {
+			return errors.New("empty initial results")
+		}
 
 		fe.rescaleAndCleanup(initialResult, fields)
-		fe.printer.AppendOther(printer)
+		return nil
 	})
 }
 
@@ -149,12 +155,8 @@ func (fe *FittingEachStatWeightProcess) prepareSamples(statType stats.StatType, 
 //
 //	lineSlopeUsable = lineSlopeInternal * scaleStat
 func (fe *FittingEachStatWeightProcess) rescaleAndCleanup(initialMap map[weight_types.StatRangeFloat]FittingSingleStatResult, fields *fittingEachFields) {
-	if initialMap != nil {
-		fields.resultSlice = fe.convertAndScaleResult(initialMap, fields.statType)
-		fields.resultSlice = fe.cleanupRanges(fields.resultSlice)
-	} else {
-		fe.hasError = true
-	}
+	fields.resultSlice = fe.convertAndScaleResult(initialMap, fields.statType)
+	fields.resultSlice = fe.cleanupRanges(fields.resultSlice)
 }
 
 func (fe *FittingEachStatWeightProcess) convertAndScaleResult(initialMap map[weight_types.StatRangeFloat]FittingSingleStatResult, statType stats.StatType) []util_weight2.FittingInterimResult {
