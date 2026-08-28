@@ -1,10 +1,7 @@
-mopgear-go/main/*.exe
-mopgear-go/main/_*
-profile/main-new.pgo
+mopgear-go/cmd/misc/misc.exe*
 main.exe~
 main.exe
 output/*
-output\*
 *.lscache
-tempdata/
-mopgear-go/cmd/misc/misc.exe*
+tempdata/*
+templog/*

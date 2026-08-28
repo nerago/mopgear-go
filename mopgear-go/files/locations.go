@@ -6,7 +6,8 @@ const (
 
 	LogOutputPath = `output/`
 	ProfileDir    = `profile/`
-	TempPath      = `tempdata/`
+	TempData      = `tempdata/`
+	TempLog       = `templog/`
 
 	WeightPath           = `../paladin_gearing_weights/paladin-weight/`
 	WeightProtMitigation = WeightPath + `PaladinProtMitigation.txt`

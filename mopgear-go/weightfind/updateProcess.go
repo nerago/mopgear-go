@@ -284,8 +284,8 @@ func (spec *WeightSpec) reportAndWriteWeights() {
 
 func (spec *WeightSpec) prepareSimData(tracker *util.TrackProgress, cancel util_async.CancelSignal) {
 	// READ IN ANY RECENT DATA
-	tempPathGrid := files.TempPath + "weightfind-sim-grid-" + spec.Label + ".json"
-	tempPathReal := files.TempPath + "weightfind-sim-real-" + spec.Label + ".json"
+	tempPathGrid := files.TempData + "weightfind-sim-grid-" + spec.Label + ".json"
+	tempPathReal := files.TempData + "weightfind-sim-real-" + spec.Label + ".json"
 	inputDataGrid, dataAgeGrid := readWeightInputFile(tempPathGrid)
 	inputDataReal, dataAgeReal := readWeightInputFile(tempPathReal)
 

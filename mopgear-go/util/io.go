@@ -15,7 +15,7 @@ func WriteStringToFile(filename, content string) {
 }
 
 func WriteFuncToFileWithTemp(filename string, apply func(file *os.File)) error {
-	tempFile, err := os.CreateTemp(files.LogOutputPath, "temp")
+	tempFile, err := os.CreateTemp(files.TempLog, "temp")
 	if err != nil {
 		return err
 	}
