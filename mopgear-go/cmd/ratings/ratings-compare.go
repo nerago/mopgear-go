@@ -115,36 +115,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	}
 
 	reportOnTweakedVersions := false
-	//shortTimeout := 20
-	shortTimeout := 1800
-	standardTimeout := shortTimeout
-	//
-	//runBasic := true
-	//runFormulaVariants := true // best is about 87%, moderate time
-	//runFitting1 := true        // slow, low 90%
-	//runFitting2 := true
-	//runFitting34 := true
-	//
-	//runGrid1Original := true
-	//runGrid1Variants := false
-	//runGrid1VariantsFewer := false
-	//runGrid1C := false
-	//runGrid2 := true
-	//
-	//runRankingOlder := false
-	//runRanking3aPreferred := false // broken
-	//runRanking3aVariants := false  // broken
-	//runRanking3bVariants := false
-	//runRanking3bPreferred := true
-	//runRanking3c := false
-	//runRanking4 := false // still a little slow, midrange 94% etc
-	//runRanking5 := false // excellent but slow
-	//
-	//runSearches := false
-	//runSearch0 := false
-	//
-	//runRankingSep := true
-	//runFormula2 := true
+	standardTimeout := 1000
+	shortTimeout := standardTimeout / 10
 
 	runBasic := true
 	runFormulaVariants := false // best is about 87%, moderate time
@@ -634,59 +606,41 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 		})
 	}
 	if runSearches {
-		addTask1("search1-accF", func() weight_types.WeightResult1 {
-			search := weightfind.WeightSearcher1{}
-			search.AccuracyStatistical = false
-			search.Init(requiredStats, targetRatio, printer)
-			search.SupplyData(mixedInputData)
-			return search.Run(cancel)
-		})
-		addTask1("search2-accF", func() weight_types.WeightResult1 {
-			innerCancel := util_async.CancelSignal_Make()
-			util_async.CancelAfterTimeout(innerCancel, time.Duration(shortTimeout)*time.Second, printer)
-			util_async.ChainCancel(cancel, innerCancel)
-			search := weightfind.WeightSearcher2{}
-			search.AccuracyStatistical = false
-			search.Init(requiredStats, targetRatio, printer)
-			search.SupplyData(mixedInputData)
-			search.SetRanges(-1.0, 10.0)
-			return search.Run(innerCancel)
-		})
-		addTask1("search3-accF", func() weight_types.WeightResult1 {
-			search := weightfind.WeightSearcher3{}
-			search.AccuracyStatistical = false
-			search.Init(requiredStats, targetRatio)
-			search.SupplyData(mixedInputData)
-			search.SetRanges(-1.0, 10.0)
-			return search.Run(cancel)
-		})
-
-		addTask1("search1-accT", func() weight_types.WeightResult1 {
-			search := weightfind.WeightSearcher1{}
-			search.AccuracyStatistical = true
-			search.Init(requiredStats, targetRatio, printer)
-			search.SupplyData(mixedInputData)
-			return search.Run(cancel)
-		})
-		addTask1("search2-accT", func() weight_types.WeightResult1 {
-			innerCancel := util_async.CancelSignal_Make()
-			util_async.CancelAfterTimeout(innerCancel, time.Duration(shortTimeout)*time.Second, printer)
-			util_async.ChainCancel(cancel, innerCancel)
-			search := weightfind.WeightSearcher2{}
-			search.AccuracyStatistical = true
-			search.Init(requiredStats, targetRatio, printer)
-			search.SupplyData(mixedInputData)
-			search.SetRanges(-1.0, 10.0)
-			return search.Run(innerCancel)
-		})
-		addTask1("search3-accT", func() weight_types.WeightResult1 {
-			search := weightfind.WeightSearcher3{}
-			search.AccuracyStatistical = true
-			search.Init(requiredStats, targetRatio)
-			search.SupplyData(mixedInputData)
-			search.SetRanges(-1.0, 10.0)
-			return search.Run(cancel)
-		})
+		for accModeNum := range 2 {
+			accMode := accModeNum == 1
+			addTask1(fmt.Sprintf("search1-acc%d", accModeNum), func() weight_types.WeightResult1 {
+				innerCancel := util_async.CancelSignal_Make()
+				util_async.CancelAfterTimeout(innerCancel, time.Duration(shortTimeout)*time.Second, printer)
+				util_async.ChainCancel(cancel, innerCancel)
+				search := weightfind.WeightSearcher1{}
+				search.AccuracyStatistical = accMode
+				search.Init(requiredStats, targetRatio, printer)
+				search.SupplyData(mixedInputData)
+				return search.Run(innerCancel)
+			})
+			addTask1(fmt.Sprintf("search2-acc%d", accModeNum), func() weight_types.WeightResult1 {
+				innerCancel := util_async.CancelSignal_Make()
+				util_async.CancelAfterTimeout(innerCancel, time.Duration(shortTimeout)*time.Second, printer)
+				util_async.ChainCancel(cancel, innerCancel)
+				search := weightfind.WeightSearcher2{}
+				search.AccuracyStatistical = accMode
+				search.Init(requiredStats, targetRatio, printer)
+				search.SupplyData(mixedInputData)
+				search.SetRanges(-1.0, 10.0)
+				return search.Run(innerCancel)
+			})
+			addTask1(fmt.Sprintf("search3-acc%d", accModeNum), func() weight_types.WeightResult1 {
+				innerCancel := util_async.CancelSignal_Make()
+				util_async.CancelAfterTimeout(innerCancel, time.Duration(shortTimeout)*time.Second, printer)
+				util_async.ChainCancel(cancel, innerCancel)
+				search := weightfind.WeightSearcher3{}
+				search.AccuracyStatistical = accMode
+				search.Init(requiredStats, targetRatio)
+				search.SupplyData(mixedInputData)
+				search.SetRanges(-1.0, 10.0)
+				return search.Run(innerCancel)
+			})
+		}
 	}
 
 	if runRankingSep {
@@ -739,7 +693,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	util_collection.Shuffle(taskKeys)
 
 	outputByAlgorithm := util_collection.MapConcurrent[string, weight_types.IWeightResult]{}
-	util_async.ForEach_Slice_Cancellable(5, taskKeys, cancel, func(taskLabel *string) {
+	util_async.ForEach_Slice_Cancellable(8, taskKeys, cancel, func(taskLabel *string) {
 		defer func() {
 			if x := recover(); x != nil {
 				printer.Println("!!!!!!!!!!!!!!!! " + *taskLabel)
