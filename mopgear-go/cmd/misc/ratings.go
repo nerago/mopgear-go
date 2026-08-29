@@ -240,7 +240,7 @@ func statWeightsRanking3a(printer *util.PrintRecorder) {
 	ranking := weight_highs.RankingStatWeightProcess3{}
 	ranking.SCALE1 = false
 	ranking.ALGO = 1
-	ranking.Init(printer, 1000)
+	ranking.Init(printer, 100)
 	ranking.SetRequiredStats(statList)
 	ranking.SetTargetRatios(ratio)
 	ranking.SupplyData(weightInputs)

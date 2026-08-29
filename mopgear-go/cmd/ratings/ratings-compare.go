@@ -116,19 +116,21 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	}
 
 	reportOnTweakedVersions := false
-	standardTimeout := 2000
+	standardTimeout := 4000
 	shortTimeout := standardTimeout / 5
 
 	runBasic := true
 	runFormulaVariants := false // best is about 87%, moderate time
-	runFitting1 := true         // slow, low 90%
+
+	runFitting1 := true // slow, low 90%
 	runFitting2 := true
-	runFitting34 := true
+	runFitting3 := false // slow method in process
+	runFitting4 := true  // fast method in process
 
 	runGrid1Original := true
-	runGrid1Variants := false
-	runGrid1VariantsFewer := true
-	runGrid1C := true
+	runGrid1BVariants := false
+	runGrid1BFewer := true
+	runGrid1C := false // struggling
 	runGrid2 := true
 
 	runRankingOlder := true
@@ -231,7 +233,7 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			return fitting.Run(cancel)
 		})
 	}
-	if runFitting34 {
+	if runFitting3 {
 		addTask3("fitting3", func() weight_types.WeightResult3 {
 			fitting := fitting3.FittingEachStatWeightProcess3{}
 			fitting.Init(3, printer, shortTimeout)
@@ -240,14 +242,23 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			fitting.SupplyData(inputDataRandom)
 			return fitting.Run(cancel, util.TrackProgress_Nop())
 		})
-		addTask3("fitting4", func() weight_types.WeightResult3 {
-			fitting := fitting4.FittingEachStatWeightProcess4{}
-			fitting.Init(3, printer, shortTimeout)
-			fitting.SetRequiredStats(requiredStats, requiredSims)
-			fitting.SetTargetRatios(targetRatio)
-			fitting.SupplyData(inputDataRandom)
-			return fitting.Run(cancel)
-		})
+	}
+	if runFitting4 {
+		for SegmentOnData := range 2 {
+			for segments := 2; segments <= 5; segments++ {
+				addTask3(fmt.Sprintf("fitting4-dat%d-cnt%d", SegmentOnData, segments),
+					func() weight_types.WeightResult3 {
+						fitting := fitting4.FittingEachStatWeightProcess4{}
+						fitting.SegmentOnData = SegmentOnData == 1
+						fitting.Init(segments, printer, shortTimeout)
+						fitting.SetRequiredStats(requiredStats, requiredSims)
+						fitting.SetTargetRatios(targetRatio)
+						fitting.SupplyData(inputDataRandom)
+						return fitting.Run(cancel)
+					},
+				)
+			}
+		}
 	}
 
 	if runGrid1Original {
@@ -260,9 +271,6 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			weightFuture, err := grid1.Run()
 			return makeTaskResultWithError1(weightFuture, err, cancel)
 		})
-	}
-
-	if runGrid1Variants {
 		addTask1("grid1-1", func() weight_types.WeightResult1 {
 			grid1 := weight_highs.GridStatWeightProcess{}
 			grid1.CHECKRANGE = 1
@@ -273,7 +281,9 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			weightFuture, err := grid1.Run()
 			return makeTaskResultWithError1(weightFuture, err, cancel)
 		})
+	}
 
+	if runGrid1BVariants {
 		for SCALEMODE := range 5 {
 			for ROUNDMODE := range 3 {
 				for OUTLIER := range 5 {
@@ -300,15 +310,16 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 			}
 		}
 	}
-	if runGrid1VariantsFewer {
+	if runGrid1BFewer {
 		for OUTLIER := range 5 {
-			label := fmt.Sprintf("grid1b-outlier%d-scale1-round2-calc2", OUTLIER)
+			label := fmt.Sprintf("grid1b-outlier%d-scale1-round2-calc2-rat2", OUTLIER)
 			addTask1(label, func() weight_types.WeightResult1 {
 				grid1 := weight_highs.GridStatWeightProcess1B{}
 				grid1.OUTLIER = OUTLIER
 				grid1.SCALEMODE = 1
 				grid1.ROUNDMODE = 2
 				grid1.CALCMODE = 2
+				grid1.RATIO = 2
 				grid1.Init(printer, shortTimeout)
 				grid1.SetRequiredStats(requiredStats)
 				grid1.SetTargetRatios(targetRatio)

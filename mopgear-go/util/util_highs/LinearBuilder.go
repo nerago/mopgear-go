@@ -216,12 +216,17 @@ func (build *LinearBuilder) makeFuture(solver *highs.Solver, logFilename string,
 	future := util_async.FutureCancellable_Make[LinearResult]()
 	err = errors.Join(err,
 		future.AddCancelHandler(func() error {
-			return solver.InterruptSetFlag(true)
+			if solver != nil {
+				return solver.InterruptSetFlag(true)
+			}
+			return nil
 		}),
 	)
 
 	if err != nil {
-		err = errors.Join(err, build.postHighsRun(solver, logFilename, nil))
+		if solver != nil {
+			err = errors.Join(err, build.postHighsRun(solver, logFilename, nil))
+		}
 		err2 := future.SetResult(LinearResult{build: build, err: err})
 		if err2 != nil {
 			util.GlobalErrorHandler(errors.Join(err, err2))

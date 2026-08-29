@@ -566,6 +566,61 @@ func (build *LinearBuilder) AbsoluteValueFromSumSeveral_WithToggle(inputVars []C
 	positive.Build(build, InfNeg(), constCompare+rangeHigh)
 }
 
+func (build *LinearBuilder) AbsoluteValueFromSumTwoThenDiffToConst_ConstRange_WithToggle(inputOneVar ColumnIndex, inputOneCoefficient float64, inputTwoVar ColumnIndex, inputTwoCoefficient float64, constBoundLo, constBoundHi float64, toggleVar ColumnIndex, outputVar ColumnIndex, rangeHigh float64) {
+	if constBoundLo > constBoundHi {
+		panic("backwards range")
+	}
+
+	negative := ConstraintRow{}
+	negative.Add(inputOneVar, inputOneCoefficient)
+	negative.Add(inputTwoVar, inputTwoCoefficient)
+	negative.Add(outputVar, 1)
+	negative.Add(toggleVar, -rangeHigh)
+	negative.Build(build, constBoundLo-rangeHigh, InfPos())
+
+	positive := ConstraintRow{}
+	positive.Add(inputOneVar, inputOneCoefficient)
+	positive.Add(inputTwoVar, inputTwoCoefficient)
+	positive.Add(outputVar, -1)
+	positive.Add(toggleVar, rangeHigh)
+	positive.Build(build, InfNeg(), constBoundHi+rangeHigh)
+
+	// ideally should already set >=0 in column range
+	overZero := ConstraintRow{}
+	overZero.Add(outputVar, 1)
+	overZero.Build(build, 0, InfPos())
+}
+
+func (build *LinearBuilder) AbsoluteValueFromSumSeveral_ConstRange_WithToggle(inputVars []ColumnIndex, inputCoefficients []float64, constBoundLo, constBoundHi float64, toggleVar ColumnIndex, outputVar ColumnIndex, rangeHigh float64) {
+	if len(inputVars) != len(inputCoefficients) {
+		panic("length mismatch")
+	}
+	if constBoundLo > constBoundHi {
+		panic("backwards range")
+	}
+
+	negative := ConstraintRow{}
+	for i := range inputVars {
+		negative.Add(inputVars[i], inputCoefficients[i])
+	}
+	negative.Add(outputVar, 1)
+	negative.Add(toggleVar, -rangeHigh)
+	negative.Build(build, constBoundLo-rangeHigh, InfPos())
+
+	positive := ConstraintRow{}
+	for i := range inputVars {
+		positive.Add(inputVars[i], inputCoefficients[i])
+	}
+	positive.Add(outputVar, -1)
+	positive.Add(toggleVar, rangeHigh)
+	positive.Build(build, InfNeg(), constBoundHi+rangeHigh)
+
+	// ideally should already set >=0 in column range
+	overZero := ConstraintRow{}
+	overZero.Add(outputVar, 1)
+	overZero.Build(build, 0, InfPos())
+}
+
 // basic logic: output = one xor two
 // however output is free when condition not met, should ideally put output under minimise pressure
 // similar to absolute value, just intended for int vars
@@ -611,6 +666,14 @@ func (build *LinearBuilder) ColumnIsLessOrEqualThanConstant(compareColumn Column
 	isLessEqual := build.CreateColumnBool(DebugString{Text: "isLessEqual"})
 	build.ColumnIsLessOrEqualThanConstant_Supplied(isLessEqual, compareColumn, constValue, rangeHigh, equalDelta)
 	return isLessEqual
+}
+
+func (build *LinearBuilder) ConstantIsGreaterOrEqualColumn(compareColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) ColumnIndex {
+	return build.ColumnIsLessOrEqualThanConstant(compareColumn, constValue, rangeHigh, equalDelta)
+}
+
+func (build *LinearBuilder) ConstantIsLessOrEqualColumn(compareColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) ColumnIndex {
+	return build.ColumnIsGreaterOrEqualThanConstant(compareColumn, constValue, rangeHigh, equalDelta)
 }
 
 func (build *LinearBuilder) ColumnIsLessOrEqualThanConstant_Supplied(isLessEqual ColumnIndex, compareColumn ColumnIndex, constValue float64, rangeHigh float64, equalDelta float64) {

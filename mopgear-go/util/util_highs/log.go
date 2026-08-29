@@ -2,13 +2,18 @@ package util_highs
 
 import (
 	"os"
+	"testing"
 
 	"github.com/nerago/mopgear-go/files"
 	"github.com/nerago/mopgear-go/util"
 )
 
 func makeTempFilename() (string, error) {
-	tempFile, err := os.CreateTemp(files.TempLog, "highslog")
+	tempDir := files.TempLog
+	if testing.Testing() {
+		tempDir = ""
+	}
+	tempFile, err := os.CreateTemp(tempDir, "highslog")
 	if err != nil {
 		return "", err
 	}

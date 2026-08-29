@@ -2,6 +2,8 @@ package util_highs
 
 import (
 	"math"
+	"sync"
+	"time"
 
 	"github.com/nerago/mopgear-go/util"
 
@@ -59,4 +61,19 @@ func (lr *LinearResult) GetSolutionAndSaveLog(printer *util.PrintRecorder) (*hig
 func (lr *LinearResult) GetSolution2AndSaveLog(printer *util.PrintRecorder) (*Solution2, error) {
 	printer.AppendOther(lr.log)
 	return &Solution2{lr.solution, lr.build}, lr.err
+}
+
+type TimeLimitToken struct {
+	mutex            sync.Mutex
+	initialTimeGiven time.Duration
+	solverElapsed    time.Duration
+}
+
+func (t *TimeLimitToken) SetLinear(build *LinearBuilder) {
+	remain := t.initialTimeGiven - t.solverElapsed
+	build.TimeLimitSeconds = int(remain.Seconds())
+}
+
+func TimeLimitTokenMake(seconds time.Duration) *TimeLimitToken {
+	return &TimeLimitToken{initialTimeGiven: seconds}
 }

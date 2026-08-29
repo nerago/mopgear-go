@@ -928,6 +928,230 @@ func TestAbsoluteValue_WithToggle(test *testing.T) {
 	testValues(0, 0, new(77.0), highs.ModelStatusOptimal, new(77.0))
 }
 
+func TestAbsoluteValueFromSumTwoThenDiffToConst_WithToggle(test *testing.T) {
+	rangeHigh := 200.0
+
+	testValues := func(oneValue, twoValue, toggleValue, constCompare float64, outValueSet *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: one=%f two=%f toggle=%f const=%f", oneValue, twoValue, toggleValue, constCompare)
+		if outValueSet != nil {
+			test.Logf("out=%f", *outValueSet)
+		}
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		oneColumn := build.CreateColumnGeneral(highs.Continuous, InfNeg(), InfPos(), nil)
+		twoColumn := build.CreateColumnGeneral(highs.Continuous, InfNeg(), InfPos(), nil)
+		toggleColumn := build.CreateColumnBool(nil)
+		outColumn := build.CreateColumnGeneral(highs.Continuous, InfNeg(), InfPos(), nil)
+		setColumnToConstant(build, oneColumn, oneValue)
+		setColumnToConstant(build, twoColumn, twoValue)
+		setColumnToConstant(build, toggleColumn, toggleValue)
+
+		build.AbsoluteValueFromSumTwoThenDiffToConst_WithToggle(oneColumn, 1, twoColumn, 1, constCompare, toggleColumn, outColumn, rangeHigh)
+
+		if outValueSet != nil {
+			setColumnToConstant(build, outColumn, *outValueSet)
+		}
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[outColumn]
+		test.Logf("%s %f\n", solution.Status.String(), boolOutput)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqualFloat(*expectOutputValue, boolOutput, test)
+		}
+	}
+
+	// standard positive differences (checking toggle=ON works like normal AbsolueValue)
+	testValues(0, 0, 1, 0, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(1, 0, 1, 0, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(-1, 0, 1, 0, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(0, 13.1, 1, 0, nil, highs.ModelStatusOptimal, new(13.1))
+	testValues(0, -13.1, 1, 0, nil, highs.ModelStatusOptimal, new(13.1))
+
+	// consts should be distance from the values, abs after
+	testValues(0, 13.1, 1, 5.1, nil, highs.ModelStatusOptimal, new(8.0))
+	testValues(0, -13.1, 1, 5.1, nil, highs.ModelStatusOptimal, new(18.2))
+	testValues(1, 1, 1, 3, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(2, 2, 1, 3, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(-5, 1, 1, -3, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(-4, 1, 1, -3, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(-3, 1, 1, -3, nil, highs.ModelStatusOptimal, new(1.0))
+
+	// confirm forced minimum, goes equals, then free when higher (checking toggle=ON works like normal AbsolueValue)
+	testValues(1, 0, 1, 0, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(1, 0, 1, 0, new(0.9), highs.ModelStatusInfeasible, nil)
+	testValues(1, 0, 1, 0, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(1, 0, 1, 0, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	testValues(1, 0, 1, 0, new(77.0), highs.ModelStatusOptimal, new(77.0))
+
+	// NOTE toggle off tends to default to around -rangeHigh, depends on const/etc, not tested
+
+	// confirm toggle off lets anything go
+	testValues(1, 0, 0, 0, new(0.0), highs.ModelStatusOptimal, nil)
+	testValues(1, 0, 0, 0, new(0.9), highs.ModelStatusOptimal, nil)
+	testValues(1, 0, 0, 0, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(1, 0, 0, 0, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	testValues(1, 0, 0, 0, new(77.0), highs.ModelStatusOptimal, new(77.0))
+	testValues(-1, 0, 0, 0, new(0.0), highs.ModelStatusOptimal, nil)
+	testValues(-1, 0, 0, 0, new(0.9), highs.ModelStatusOptimal, nil)
+	testValues(-1, 0, 0, 0, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(-1, 0, 0, 0, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	testValues(-1, 0, 0, 0, new(77.0), highs.ModelStatusOptimal, new(77.0))
+	testValues(0, 0, 0, 0, new(0.0), highs.ModelStatusOptimal, nil)
+	testValues(0, 0, 0, 0, new(0.9), highs.ModelStatusOptimal, nil)
+	testValues(0, 0, 0, 0, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(0, 0, 0, 0, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	testValues(0, 0, 0, 0, new(77.0), highs.ModelStatusOptimal, new(77.0))
+	testValues(0, 13.1, 0, 5.1, new(8.0), highs.ModelStatusOptimal, new(8.0))
+	testValues(0, -13.1, 0, 5.1, new(18.2), highs.ModelStatusOptimal, new(18.2))
+	testValues(1, 1, 0, 3, new(3.0), highs.ModelStatusOptimal, new(3.0))
+	testValues(2, 2, 0, 3, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	testValues(-5, 1, 0, -3, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(-4, 1, 0, -3, new(7.0), highs.ModelStatusOptimal, new(7.0))
+	testValues(-3, 1, 0, -3, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(0, 13.1, 0, 5.1, new(6.0), highs.ModelStatusOptimal, new(6.0))
+	testValues(0, -13.1, 0, 5.1, new(-18.1), highs.ModelStatusOptimal, new(-18.1))
+	testValues(1, 1, 0, 3, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	testValues(2, 2, 0, 3, new(-1.0), highs.ModelStatusOptimal, new(-1.0))
+	testValues(-5, 1, 0, -3, new(-3.0), highs.ModelStatusOptimal, new(-3.0))
+	testValues(-4, 1, 0, -3, new(3.0), highs.ModelStatusOptimal, new(3.0))
+	testValues(-3, 1, 0, -3, new(3.0), highs.ModelStatusOptimal, new(3.0))
+}
+
+func TestAbsoluteValueFromSumTwoThenDiffToConst_ConstRange_WithToggle(test *testing.T) {
+	rangeHigh := 200.0
+
+	testValues := func(oneValue, twoValue, toggleValue, constCompareLo, constCompareHi float64, outValueSet *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
+		test.Logf("CASE: one=%f two=%f toggle=%f const=%f-%f", oneValue, twoValue, toggleValue, constCompareLo, constCompareHi)
+		if outValueSet != nil {
+			test.Logf("out=%f", *outValueSet)
+		}
+
+		build := new(LinearBuilder)
+		build.NoOutput = true
+		oneColumn := build.CreateColumnGeneral(highs.Continuous, InfNeg(), InfPos(), nil)
+		twoColumn := build.CreateColumnGeneral(highs.Continuous, InfNeg(), InfPos(), nil)
+		toggleColumn := build.CreateColumnBool(nil)
+		outColumn := build.CreateColumnGeneral(highs.Continuous, InfNeg(), InfPos(), nil)
+		setColumnToConstant(build, oneColumn, oneValue)
+		setColumnToConstant(build, twoColumn, twoValue)
+		setColumnToConstant(build, toggleColumn, toggleValue)
+
+		build.AbsoluteValueFromSumTwoThenDiffToConst_ConstRange_WithToggle(oneColumn, 1, twoColumn, 1, constCompareLo, constCompareHi, toggleColumn, outColumn, rangeHigh)
+
+		if outValueSet != nil {
+			setColumnToConstant(build, outColumn, *outValueSet)
+		}
+		solution := runHighs(build, util.PrintRecorder_Testing(test))
+		build.debugPrintColumnsForce(solution, util.PrintRecorder_Testing(test))
+
+		boolOutput := solution.ColValues[outColumn]
+		test.Logf("%s %f\n", solution.Status.String(), boolOutput)
+		assertEqual(expectStatus, solution.Status, test)
+		if expectOutputValue != nil {
+			assertEqualFloat(*expectOutputValue, boolOutput, test)
+		}
+	}
+
+	//// standard positive differences (checking toggle=ON works like normal AbsolueValue)
+	//// COPIED FROM TestAbsoluteValueFromSumTwoThenDiffToConst_WithToggle, no change
+	//testValues(0, 0, 1, 0, 0, nil, highs.ModelStatusOptimal, new(0.0))
+	//testValues(1, 0, 1, 0, 0, nil, highs.ModelStatusOptimal, new(1.0))
+	//testValues(-1, 0, 1, 0, 0, nil, highs.ModelStatusOptimal, new(1.0))
+	//testValues(0, 13.1, 1, 0, 0, nil, highs.ModelStatusOptimal, new(13.1))
+	//testValues(0, -13.1, 1, 0, 0, nil, highs.ModelStatusOptimal, new(13.1))
+	//
+	//// consts should be distance from the values, abs after
+	//// COPIED FROM TestAbsoluteValueFromSumTwoThenDiffToConst_WithToggle, no change
+	//testValues(0, 13.1, 1, 5.1, 5.1, nil, highs.ModelStatusOptimal, new(8.0))
+	//testValues(0, -13.1, 1, 5.1, 5.1, nil, highs.ModelStatusOptimal, new(18.2))
+	//testValues(1, 1, 1, 3, 3, nil, highs.ModelStatusOptimal, new(1.0))
+	//testValues(2, 2, 1, 3, 3, nil, highs.ModelStatusOptimal, new(1.0))
+	//testValues(-5, 1, 1, -3, -3, nil, highs.ModelStatusOptimal, new(1.0))
+	//testValues(-4, 1, 1, -3, -3, nil, highs.ModelStatusOptimal, new(0.0))
+	//testValues(-3, 1, 1, -3, -3, nil, highs.ModelStatusOptimal, new(1.0))
+	//
+	//// confirm forced minimum, goes equals, then free when higher (checking toggle=ON works like normal AbsolueValue)
+	//// COPIED FROM TestAbsoluteValueFromSumTwoThenDiffToConst_WithToggle, no change
+	//testValues(1, 0, 1, 0, 0, new(0.0), highs.ModelStatusInfeasible, nil)
+	//testValues(1, 0, 1, 0, 0, new(0.9), highs.ModelStatusInfeasible, nil)
+	//testValues(1, 0, 1, 0, 0, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	//testValues(1, 0, 1, 0, 0, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	//testValues(1, 0, 1, 0, 0, new(77.0), highs.ModelStatusOptimal, new(77.0))
+	//
+	//// confirm toggle off lets anything go
+	//// COPIED FROM TestAbsoluteValueFromSumTwoThenDiffToConst_WithToggle, no change
+	//testValues(1, 0, 0, 0, 0, new(0.0), highs.ModelStatusOptimal, nil)
+	//testValues(1, 0, 0, 0, 0, new(0.9), highs.ModelStatusOptimal, nil)
+	//testValues(1, 0, 0, 0, 0, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	//testValues(1, 0, 0, 0, 0, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	//testValues(1, 0, 0, 0, 0, new(77.0), highs.ModelStatusOptimal, new(77.0))
+	//testValues(-1, 0, 0, 0, 0, new(0.0), highs.ModelStatusOptimal, nil)
+	//testValues(-1, 0, 0, 0, 0, new(0.9), highs.ModelStatusOptimal, nil)
+	//testValues(-1, 0, 0, 0, 0, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	//testValues(-1, 0, 0, 0, 0, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	//testValues(-1, 0, 0, 0, 0, new(77.0), highs.ModelStatusOptimal, new(77.0))
+	//testValues(0, 0, 0, 0, 0, new(0.0), highs.ModelStatusOptimal, nil)
+	//testValues(0, 0, 0, 0, 0, new(0.9), highs.ModelStatusOptimal, nil)
+	//testValues(0, 0, 0, 0, 0, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	//testValues(0, 0, 0, 0, 0, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	//testValues(0, 0, 0, 0, 0, new(77.0), highs.ModelStatusOptimal, new(77.0))
+	//testValues(0, 13.1, 0, 5.1, 5.1, new(8.0), highs.ModelStatusOptimal, new(8.0))
+	//testValues(0, -13.1, 0, 5.1, 5.1, new(18.2), highs.ModelStatusOptimal, new(18.2))
+	//testValues(1, 1, 0, 3, 3, new(3.0), highs.ModelStatusOptimal, new(3.0))
+	//testValues(2, 2, 0, 3, 3, new(0.0), highs.ModelStatusOptimal, new(0.0))
+	//testValues(-5, 1, 0, -3, -3, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	//testValues(-4, 1, 0, -3, -3, new(7.0), highs.ModelStatusOptimal, new(7.0))
+	//testValues(-3, 1, 0, -3, -3, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	//testValues(0, 13.1, 0, 5.1, 5.1, new(6.0), highs.ModelStatusOptimal, new(6.0))
+	//testValues(0, -13.1, 0, 5.1, 5.1, new(-18.1), highs.ModelStatusOptimal, new(-18.1))
+	//testValues(1, 1, 0, 3, 3, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	//testValues(2, 2, 0, 3, 3, new(-1.0), highs.ModelStatusOptimal, new(-1.0))
+	//testValues(-5, 1, 0, -3, -3, new(-3.0), highs.ModelStatusOptimal, new(-3.0))
+	//testValues(-4, 1, 0, -3, -3, new(3.0), highs.ModelStatusOptimal, new(3.0))
+	//testValues(-3, 1, 0, -3, -3, new(3.0), highs.ModelStatusOptimal, new(3.0))
+
+	// basic range tests NEW
+	testValues(0, 0, 1, -1, 1, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(1, 0, 1, -1, 1, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(-1, 0, 1, -1, 1, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(0, 13.1, 1, -1, 1, nil, highs.ModelStatusOptimal, new(12.1))
+	testValues(0, -13.1, 1, -1, 1, nil, highs.ModelStatusOptimal, new(12.1))
+	testValues(-1, 0, 1, 2, 2.5, nil, highs.ModelStatusOptimal, new(3.0))
+	testValues(0, 0, 1, 2, 2.5, nil, highs.ModelStatusOptimal, new(2.0))
+	testValues(1, 0, 1, 2, 2.5, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(1.9, 0, 1, 2, 2.5, nil, highs.ModelStatusOptimal, new(0.1))
+	testValues(2.0, 0, 1, 2, 2.5, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(2.1, 0, 1, 2, 2.5, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(2.4, 0, 1, 2, 2.5, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(2.5, 0, 1, 2, 2.5, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(2.6, 0, 1, 2, 2.5, nil, highs.ModelStatusOptimal, new(0.1))
+
+	// consts should be distance from the values, abs after NEW
+	testValues(0, 13.1, 1, 5.1, 5.9, nil, highs.ModelStatusOptimal, new(7.2))
+	testValues(0, -13.1, 1, 5.1, 5.9, nil, highs.ModelStatusOptimal, new(18.2))
+	testValues(1, 1, 1, 3, 4, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(2, 3, 1, 3, 4, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(-6, 1, 1, -4, -3, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(-5, 1, 1, -4, -3, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(-4, 1, 1, -4, -3, nil, highs.ModelStatusOptimal, new(0.0))
+	testValues(-3, 1, 1, -4, -3, nil, highs.ModelStatusOptimal, new(1.0))
+	testValues(-2, 1, 1, -4, -3, nil, highs.ModelStatusOptimal, new(2.0))
+
+	// confirm forced minimum, goes equals, then free when higher (checking toggle=ON works like normal AbsolueValue)
+	// COPIED FROM TestAbsoluteValueFromSumTwoThenDiffToConst_WithToggle, no change
+	testValues(1, 0, 1, 0, 0.1, new(0.0), highs.ModelStatusInfeasible, nil)
+	testValues(1, 0, 1, 0, 0.1, new(0.8), highs.ModelStatusInfeasible, nil)
+	testValues(1, 0, 1, 0, 0.1, new(0.9), highs.ModelStatusOptimal, new(0.9))
+	testValues(1, 0, 1, 0, 0.1, new(1.0), highs.ModelStatusOptimal, new(1.0))
+	testValues(1, 0, 1, 0, 0.1, new(1.1), highs.ModelStatusOptimal, new(1.1))
+	testValues(1, 0, 1, 0, 0.1, new(1.2), highs.ModelStatusOptimal, new(1.2))
+	testValues(1, 0, 1, 0, 0.1, new(77.0), highs.ModelStatusOptimal, new(77.0))
+
+}
+
 func TestIsXor(test *testing.T) {
 	testValues := func(one, two float64, out *float64, expectStatus highs.ModelStatus, expectOutputValue *float64) {
 		test.Logf("CASE: one=%f two=%f", one, two)
@@ -1714,5 +1938,10 @@ func assertEqualFloat(expect, actual float64, test *testing.T) {
 
 func runHighs(build *LinearBuilder, printer *util.PrintRecorder) *highs.Solution {
 	build.Solver = Solver_Flexible
-	return build.RunHighsFuture(nil).WaitForResultOrPanic().solution
+	linearResult := build.RunHighsFuture(nil).WaitForResultOrPanic()
+	solution, err := linearResult.GetSolutionAndDiscardLog()
+	if err != nil {
+		panic(err)
+	}
+	return solution
 }
