@@ -144,7 +144,7 @@ func (fg *FittingSingleStatSegmentsProcess) runInitial(cancel util_async.CancelS
 	if segmentResult, err2 := resultFuture.WaitForResultOrError(); err2 == nil {
 		statRange := weight_types.StatRangeFloat{Minimum: segmentResult.Minimum, Maximum: segmentResult.Maximum}
 		segmentResult.BuiltSequence = 0
-		fg.foundSegments[statRange] = *segmentResult
+		fg.foundSegments[statRange] = segmentResult
 
 		totalRange := weight_types.StatRangeFloat{Minimum: 0, Maximum: c_fitting_statScaledRangeHigh}
 		fg.addToRemainingData(fg.samplesOriginal, totalRange, statRange)
@@ -175,7 +175,7 @@ func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []util_weig
 		segmentResult.Minimum = minimum
 		segmentResult.Maximum = maximum
 		segmentResult.BuiltSequence = len(fg.foundSegments)
-		fg.foundSegments[statRange] = *segmentResult
+		fg.foundSegments[statRange] = segmentResult
 
 		fg.addToRemainingData(inputData, inputRange, statRange)
 		return nil

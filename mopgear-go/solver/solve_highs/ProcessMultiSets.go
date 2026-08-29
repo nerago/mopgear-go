@@ -65,39 +65,61 @@ func (process *SolverHighsMultiProcess) SetPermuteLabel(permuteLabel string) {
 func (process *SolverHighsMultiProcess) Run(timeLimit int, printer *util.PrintRecorder, alternateMode multi_types.AlternateMode, alternateTarget util_collection.Optional[int], cancel util_async.CancelSignal, includeInterimResults bool) (<-chan HighsMultiResult, *util_async.Future[int], error) {
 	resultChannel := make(chan HighsMultiResult)
 	expectedCount := util_async.Future_Make[int]()
+	futureError := util_async.Future_Make[error]()
 
-	bestCommonChoicesFuture, err := process.generateInitialMulti(timeLimit, printer, includeInterimResults, resultChannel)
-	if err != nil {
-		return nil, nil, err
+	bestCommonChoicesFuture, errInit := process.generateInitialMulti(timeLimit, printer, includeInterimResults, resultChannel)
+	if errInit != nil {
+		return nil, nil, errInit
 	}
-	util_async.ChainCancel(cancel, bestCommonChoicesFuture)
+	errInit = util_async.ChainCancel(cancel, bestCommonChoicesFuture)
+	if errInit != nil {
+		return nil, nil, errInit
+	}
 
-	bestCommonChoicesFuture.ForwardResultToRelevantCallback(func(bestCommonChoices *[]*columnInfo) {
+	bestCommonChoicesFuture.ForwardResultOrErrorToCallback(func(bestCommonChoices []*columnInfo) {
+		var errGenerate error
 		if alternateMode != multi_types.AlternateModeNone {
 			blockPlanList := process.chooseVariantsToRun(
-				*bestCommonChoices,
-				alternateMode == multi_types.AlternateModeItemAndReforgeBlocks,
-				alternateTarget,
-				expectedCount,
+				bestCommonChoices,
+				alternateMode == multi_types.AlternateModeItemAndReforgeBlocks, alternateTarget,
 				printer)
-			process.generateWithDifferentVariants(blockPlanList,
-				printer,
-				cancel,
-				includeInterimResults,
-				resultChannel)
+
+			errGenerate = expectedCount.SetResult(len(blockPlanList) + 1)
+			if errGenerate == nil {
+				errGenerate = process.generateWithDifferentVariants(blockPlanList,
+					printer,
+					cancel,
+					includeInterimResults,
+					resultChannel)
+			}
 		} else {
-			expectedCount.SetResult(1)
+			errGenerate = expectedCount.SetResult(1)
 		}
+
 		close(resultChannel)
-	}, func(err2 error) {
-		expectedCount.SetResult(0)
+
+		if errGenerate != nil {
+			errHandling := futureError.SetResult(errGenerate)
+			if errHandling != nil {
+				util.GlobalErrorHandler(errors.Join(errGenerate, errHandling))
+			}
+		}
+	}, func(errUpstream error) {
+		errUpstream = errors.Join(expectedCount.SetResult(0))
 		close(resultChannel)
+
+		if errUpstream != nil {
+			errHandling := futureError.SetResult(errUpstream)
+			if errHandling != nil {
+				util.GlobalErrorHandler(errors.Join(errUpstream, errHandling))
+			}
+		}
 	})
 
 	return resultChannel, expectedCount, nil
 }
 
-func (process *SolverHighsMultiProcess) chooseVariantsToRun(bestCommonChoices []*columnInfo, alsoDoFullItemBlocks bool, outputTarget util_collection.Optional[int], expectedCount *util_async.Future[int], printer *util.PrintRecorder) []blockPlan {
+func (process *SolverHighsMultiProcess) chooseVariantsToRun(bestCommonChoices []*columnInfo, alsoDoFullItemBlocks bool, outputTarget util_collection.Optional[int], printer *util.PrintRecorder) []blockPlan {
 	blockPlanList := make([]blockPlan, 0)
 	for _, commonColumn := range bestCommonChoices {
 		blockPlanList = append(blockPlanList, blockPlan{changeColumn: commonColumn})
@@ -111,8 +133,6 @@ func (process *SolverHighsMultiProcess) chooseVariantsToRun(bestCommonChoices []
 		blockPlanList = blockPlanList[0 : target-1]
 	}
 
-	count := len(blockPlanList)
-	expectedCount.SetResult(count + 1)
 	printer.Printf("VARIANT COMMON count %d\n", len(blockPlanList))
 	return blockPlanList
 }
@@ -125,9 +145,9 @@ type blockPlan struct {
 func (process *SolverHighsMultiProcess) generateInitialMulti(timeLimit int, printer *util.PrintRecorder, includeInterimResults bool, resultChannel chan<- HighsMultiResult) (*util_async.FutureCancellableWithError[[]*columnInfo], error) {
 	printer.Printf("INITIAL MULTI run\n")
 
-	err := process.makeFullModel(timeLimit)
-	if err != nil {
-		return nil, err
+	err1 := process.makeFullModel(timeLimit)
+	if err1 != nil {
+		return nil, err1
 	}
 
 	if includeInterimResults {
@@ -137,9 +157,12 @@ func (process *SolverHighsMultiProcess) generateInitialMulti(timeLimit int, prin
 	futureSolution := process.build.RunHighsFuture(nil)
 
 	futureCommonChoices := util_async.FutureCancellable_MapValueError(futureSolution, func(result util_highs.LinearResult) (*[]*columnInfo, error) {
-		solution := result.GetSolution2AndSaveLog(printer)
+		solution, err := result.GetSolution2AndSaveLog(printer)
+		if err != nil {
+			return nil, err
+		}
 
-		err := debugPrintAll(solution, process.build, printer)
+		err = debugPrintAll(solution, process.build, printer)
 		if err != nil {
 			return nil, err
 		}
@@ -185,7 +208,10 @@ func (process *SolverHighsMultiProcess) generateOneVariant(block *blockPlan, pri
 	} else {
 		futureResult = process.runVariant(build, innerPrint, nil)
 	}
-	util_async.ChainCancel(cancel, futureResult)
+
+	if err := util_async.ChainCancel(cancel, futureResult); err != nil {
+		return err
+	}
 
 	if result, hasResult := futureResult.WaitForResult(); hasResult {
 		if result.Error != nil {
@@ -231,9 +257,12 @@ func (process *SolverHighsMultiProcess) runVariant(build *util_highs.LinearBuild
 	future := build.RunHighsFuture(nil)
 
 	return util_async.FutureCancellable_MapValueError(future, func(linearResult util_highs.LinearResult) (*HighsMultiResult, error) {
-		solution := linearResult.GetSolution2AndSaveLog(printer)
+		solution, err := linearResult.GetSolution2AndSaveLog(printer)
+		if err != nil {
+			return nil, err
+		}
 
-		err := debugPrintAll(solution, process.build, printer)
+		err = debugPrintAll(solution, process.build, printer)
 		if err != nil {
 			return nil, err
 		}

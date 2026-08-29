@@ -25,10 +25,15 @@ func (sc *singleGearSetShared) runForFutureResult(itemOptions *items.SolvableOpt
 	solutionFuture := sc.build.RunHighsFuture(nil)
 
 	return util_async.FutureCancellable_MapValueError(solutionFuture, func(result util_highs.LinearResult) (*items.SolvableItemSet, error) {
-		solution := result.GetSolution2AndSaveLog(printer)
+		solution, err := result.GetSolution2AndSaveLog(printer)
+		if err != nil {
+			return nil, err
+		}
 
 		printer.Printf("SOLUTION STATUS = %s\n", solution.Status().String())
-		debugPrint(solution, sc.build, printer)
+		if err = debugPrint(solution, sc.build, printer); err != nil {
+			return nil, err
+		}
 
 		if solution.HasSolution() {
 			itemSet, err := sc.buildResultSet(solution, model)

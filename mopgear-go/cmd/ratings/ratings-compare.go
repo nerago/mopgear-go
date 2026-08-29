@@ -116,8 +116,8 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	}
 
 	reportOnTweakedVersions := false
-	standardTimeout := 1000
-	shortTimeout := standardTimeout / 10
+	standardTimeout := 2000
+	shortTimeout := standardTimeout / 5
 
 	runBasic := true
 	runFormulaVariants := false // best is about 87%, moderate time
@@ -126,14 +126,14 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	runFitting34 := true
 
 	runGrid1Original := true
-	runGrid1Variants := true
-	runGrid1VariantsFewer := false
+	runGrid1Variants := false
+	runGrid1VariantsFewer := true
 	runGrid1C := true
 	runGrid2 := true
 
 	runRankingOlder := true
-	runRanking3aPreferred := true // broken
-	runRanking3aVariants := false // broken
+	runRanking3aPreferred := false // broken
+	runRanking3aVariants := false  // broken
 	runRanking3bVariants := true
 	runRanking3bPreferred := true
 	runRanking3c := true
@@ -675,7 +675,17 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	util_collection.Shuffle(taskKeys)
 
 	outputByAlgorithm := util_collection.MapConcurrent[string, weight_types.IWeightResult]{}
-	util_async.ForEach_Slice_Cancellable(8, taskKeys, cancel, func(taskLabel *string) {
+
+	go func() {
+		for {
+			time.Sleep(2 * time.Minute)
+			reportForWeight1(&outputByAlgorithm, mixedInputDataFull, targetRatio, requiredSims, requiredStats, reportOnTweakedVersions, printer)
+			reportForWeight2(&outputByAlgorithm, mixedInputDataFull, targetRatio, requiredSims, requiredStats, printer)
+			reportForWeight3(&outputByAlgorithm, mixedInputDataFull, targetRatio, requiredSims, requiredStats, printer)
+		}
+	}()
+
+	util_async.ForEach_Slice_Cancellable(5, taskKeys, cancel, func(taskLabel *string) {
 		defer func() {
 			if x := recover(); x != nil {
 				printer.Println("!!!!!!!!!!!!!!!! " + *taskLabel)

@@ -133,21 +133,10 @@ func testSimA(printer *util.PrintRecorder) {
 		c_miscDefaultTimeout,
 		nil)
 	printer.Println("Running sim")
-	resultStats := simulate.ExecuteUseModel(simulate.RunSize_QuickDirty, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
-	resultStats.Print(printer)
-}
-func testSimB(printer *util.PrintRecorder) {
-	model := model_factory.Model_PallyProtSurvival()
-	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtSurvival, &model, setup.MissingEnchant_Panic, printer)
-	output := solver.Solver(
-		&itemOptions,
-		&model,
-		printer,
-		1,
-		c_miscDefaultTimeout,
-		nil)
-	printer.Println("Running sim")
-	resultStats := simulate.ExecuteUseModel(simulate.RunSize_Common, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
+	resultStats, err := simulate.ExecuteUseModel(simulate.RunSize_QuickDirty, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
+	if err != nil {
+		panic(err)
+	}
 	resultStats.Print(printer)
 }
 func testSimEach(printer *util.PrintRecorder) {
@@ -163,7 +152,10 @@ func testSimEach(printer *util.PrintRecorder) {
 		// 	Printer:             printer})
 		// printer.Printf("Running sim\n")
 		// equipSet := output.FullSet.Items()
-		resultStats := simulate.ExecuteUseModel(simulate.RunSize_QuickDirty, model, &equipSet, nil, util.TrackProgress_Start())
+		resultStats, err := simulate.ExecuteUseModel(simulate.RunSize_QuickDirty, model, &equipSet, nil, util.TrackProgress_Start())
+		if err != nil {
+			panic(err)
+		}
 		resultStats.Print(printer)
 	}
 }
@@ -206,8 +198,14 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 
 	output.Report(printer)
 
-	currentStats := simulate.ExecuteUseModel(simulate.RunSize_VerySlow, &model, &currentEquip, nil, util.TrackProgress_Start())
-	resultStats := simulate.ExecuteUseModel(simulate.RunSize_VerySlow, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
+	currentStats, err := simulate.ExecuteUseModel(simulate.RunSize_VerySlow, &model, &currentEquip, nil, util.TrackProgress_Start())
+	if err != nil {
+		panic(err)
+	}
+	resultStats, err := simulate.ExecuteUseModel(simulate.RunSize_VerySlow, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
+	if err != nil {
+		panic(err)
+	}
 
 	printer.Println("CURRENT STATS")
 	currentStats.Print(printer)
@@ -228,7 +226,10 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 
 	printer.Println("READ existing")
 	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &model, setup.MissingEnchant_Panic, printer)
-	currentStats := simulate.ExecuteUseModel(simSize, &model, &currentEquip, nil, util.TrackProgress_Start())
+	currentStats, err := simulate.ExecuteUseModel(simSize, &model, &currentEquip, nil, util.TrackProgress_Start())
+	if err != nil {
+		panic(err)
+	}
 
 	printer.Println("SETUP options")
 	itemOptionsShared := setup.OptionsSetup_FromGearFile(startGear, &model, setup.MissingEnchant_Panic, printer)
@@ -283,7 +284,10 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 				nil)
 			output.Report(printer)
 
-			resultStats := simulate.ExecuteUseModel(simSize, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
+			resultStats, err := simulate.ExecuteUseModel(simSize, &model, output.FullSet.Items(), nil, util.TrackProgress_Start())
+			if err != nil {
+				panic(err)
+			}
 
 			printer.Println("CURRENT STATS")
 			currentStats.Print(printer)
@@ -407,7 +411,10 @@ func trinketSims(printer *util.PrintRecorder) {
 			newEquip[items.Equip_Trinket2] = item
 			// fullSet := items.FullItemSet_FromMap(newEquip)
 
-			resultStats := simulate.ExecuteSpecifyAll(simulate.RunSize_Largish, model.SimSpeedUp, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
+			resultStats, err := simulate.ExecuteSpecifyAll(simulate.RunSize_Largish, model.SimSpeedUp, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
+			if err != nil {
+				panic(err)
+			}
 			resultStats.Print(printer)
 			for _, statType := range stats.SimTypeList {
 				csv.AddFloat64(resultStats.GetFriendly(statType), 2)
@@ -550,7 +557,10 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 				newEquip[items.Equip_Trinket1] = itemOne
 				newEquip[items.Equip_Trinket2] = itemTwo
 
-				resultStats := simulate.ExecuteSpecifyAll(simRun, model.SimSpeedUp, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
+				resultStats, err := simulate.ExecuteSpecifyAll(simRun, model.SimSpeedUp, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
+				if err != nil {
+					panic(err)
+				}
 				resultStats.Print(printer)
 				for _, statType := range stats.SimTypeList {
 					csv.AddFloat64(resultStats.GetFriendly(statType), 2)
@@ -623,7 +633,10 @@ func currentSimGear(printer *util.PrintRecorder) {
 		equipped := loaders.GearFileReader_Read(file)
 		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 
-		resultStats := simulate.ExecuteSpecifyAll(simRun, model.SimSpeedUp, model.Spec, goal, fight, model.Professions, &equipMap, nil, util.TrackProgress_Nop())
+		resultStats, err := simulate.ExecuteSpecifyAll(simRun, model.SimSpeedUp, model.Spec, goal, fight, model.Professions, &equipMap, nil, util.TrackProgress_Nop())
+		if err != nil {
+			panic(err)
+		}
 		resultStats.Print(printer)
 		for _, statType := range stats.SimTypeList {
 			csv.AddFloat64(resultStats.GetFriendly(statType), 2)
@@ -853,15 +866,24 @@ func determineSetBonusValueBySim(printer *util.PrintRecorder) {
 			panic("not two")
 		}
 
-		dataZero := simulate.ExecuteSpecifyAll(runSize, 0, spec, goal02, fight, profession,
+		dataZero, err := simulate.ExecuteSpecifyAll(runSize, 0, spec, goal02, fight, profession,
 			group.zero.itemSet.Items(), nil,
 			tracker.NewChild())
-		dataTwo := simulate.ExecuteSpecifyAll(runSize, 0, spec, goal02, fight, profession,
+		if err != nil {
+			panic(err)
+		}
+		dataTwo, err := simulate.ExecuteSpecifyAll(runSize, 0, spec, goal02, fight, profession,
 			group.two.itemSet.Items(), &group.two.bonusStats,
 			tracker.NewChild())
-		dataFour := simulate.ExecuteSpecifyAll(runSize, 0, spec, goal4, fight, profession,
+		if err != nil {
+			panic(err)
+		}
+		dataFour, err := simulate.ExecuteSpecifyAll(runSize, 0, spec, goal4, fight, profession,
 			group.four.itemSet.Items(), &group.four.bonusStats,
 			tracker.NewChild())
+		if err != nil {
+			panic(err)
+		}
 
 		printer.Printf("%s %s\n", dataZero.CompactStringGeneral(), dataTwo.CompactStringGeneral())
 
@@ -994,9 +1016,12 @@ func determineBestUseOfGearSets(printer *util.PrintRecorder) {
 		}
 		gear := solveOutput.FullSet.Items()
 		bonusText := bonus_set.AllBonusesText(gear)
-		simData := simulate.ExecuteSpecifyAll(runSize, 0, spec, goal, fight, profession,
+		simData, err := simulate.ExecuteSpecifyAll(runSize, 0, spec, goal, fight, profession,
 			gear, nil,
 			tracker.NewChild())
+		if err != nil {
+			panic(err)
+		}
 
 		note := fmt.Sprintf("COMBO=%s %s %s", comboNames[n], simData.CompactStringGeneral(), bonusText)
 		noteList = append(noteList, note)

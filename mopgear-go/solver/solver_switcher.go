@@ -27,10 +27,17 @@ func Solver(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, prin
 	}
 
 	if cancel != nil {
-		util_async.ChainCancel(cancel, futureSolvedSet)
+		err = util_async.ChainCancel(cancel, futureSolvedSet)
+		if err != nil {
+			return SolveOutput{Success: false, Error: err}
+		}
 	}
 
-	solvedResult := futureSolvedSet.WaitForResultOrNilValue()
+	solvedResult, err := futureSolvedSet.WaitForResultOrError()
+	if err != nil {
+		return SolveOutput{Success: false, Error: err}
+	}
+
 	return finaliseSolve(solvedResult, itemOptions, model, weightType)
 }
 
@@ -47,22 +54,15 @@ func LaunchSolve(solveOptions *items.SolvableOptionsMap, solveModel *solve_highs
 	}
 }
 
-func finaliseSolve(solvedResult util_async.ValueOrError[items.SolvableItemSet], itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, weightType weight_types.WeightType) SolveOutput {
-	if solvedResult.Error != nil {
-		return SolveOutput{Success: false, Error: solvedResult.Error}
-	} else if solvedResult.Value == nil {
-		return SolveOutput{Success: false, Error: errors.New("failed to find valid set: unknown error")}
-	} else {
-		solvedSet := *solvedResult.Value
-		solvedSet.DebugValidate()
+func finaliseSolve(solvedSet items.SolvableItemSet, itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, weightType weight_types.WeightType) SolveOutput {
+	solvedSet.DebugValidate()
 
-		fullSet := items.FullItemSet_FromSolved(solvedSet, itemOptions)
-		model.ValidateSet(&fullSet)
+	fullSet := items.FullItemSet_FromSolved(solvedSet, itemOptions)
+	model.ValidateSet(&fullSet)
 
-		rating := model.CalcRatingFull(&fullSet, weightType)
+	rating := model.CalcRatingFull(&fullSet, weightType)
 
-		return SolveOutput{Success: true, SolvedSet: solvedSet, FullSet: fullSet, Model: model, ResultRating: rating}
-	}
+	return SolveOutput{Success: true, SolvedSet: solvedSet, FullSet: fullSet, Model: model, ResultRating: rating}
 }
 
 type SolveOutput struct {

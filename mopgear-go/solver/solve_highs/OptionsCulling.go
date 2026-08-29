@@ -1,6 +1,7 @@
 package solve_highs
 
 import (
+	"errors"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -100,13 +101,21 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 	}
 
 	solutionFuture := linearBuild.RunHighsFuture(nil)
-	util_async.ChainCancel(cancel, solutionFuture)
+	err = util_async.ChainCancel(cancel, solutionFuture)
+	if err != nil {
+		err = errors.Join(err, solutionFuture.Cancel())
+		return err
+	}
+
 	linearResult, hasResult := solutionFuture.WaitForResult()
 	if !hasResult {
 		return nil // not really an error, expect some combos to fail
 	}
 
-	solution := linearResult.GetSolution2AndSaveLog(process.printer)
+	solution, err := linearResult.GetSolution2AndSaveLog(process.printer)
+	if err != nil {
+		return err
+	}
 	solution.DebugPrint(process.printer)
 
 	if solution.Status() == highs.ModelStatusOptimal {

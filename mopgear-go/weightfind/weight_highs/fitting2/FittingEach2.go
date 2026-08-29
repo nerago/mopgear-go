@@ -118,7 +118,7 @@ func (fe *FittingEachStatWeightProcess2) launchEachNested() error {
 		fields.stopwatch = process.Stopwatch
 
 		if err2 == nil && len(initialResult.Segments) > 0 {
-			fe.rescaleAndCleanup(initialResult, fields)
+			fe.rescaleAndCleanup(&initialResult, fields)
 			return nil
 		} else {
 			err2 = errors.Join(err2, fe.CancelInternal.Cancel())

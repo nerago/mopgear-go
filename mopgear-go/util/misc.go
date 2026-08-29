@@ -1,6 +1,14 @@
 package util
 
-import "sync"
+import (
+	"reflect"
+	"sync"
+)
+
+func IsNil(a any) bool {
+	defer func() { recover() }()
+	return a == nil || reflect.ValueOf(a).IsNil()
+}
 
 func NilSafeEqual[T any](one *T, two *T, equals func(T, T) bool) bool {
 	if one != nil && two != nil {

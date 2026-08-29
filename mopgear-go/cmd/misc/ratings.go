@@ -95,7 +95,10 @@ func generateRatingsInputFromArtificialStatOverrides_ForBasic(currentItemSet ite
 	tracker.RunOuterTracking(len(requiredStats) + 1)
 	defer tracker.SetDone()
 
-	simBase := simulate.ExecuteSpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), nil, tracker.NewChild())
+	simBase, err := simulate.ExecuteSpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), nil, tracker.NewChild())
+	if err != nil {
+		panic(err)
+	}
 
 	inputList := util_async.Map_SliceToSlice(len(requiredStats), requiredStats, func(incStat *stats.StatType) basicStatInput {
 		innerPrint := util.PrintRecorder_HoldAll()
@@ -109,7 +112,10 @@ func generateRatingsInputFromArtificialStatOverrides_ForBasic(currentItemSet ite
 		str.WriteInt32(bonusStat.GetOrPanic(*incStat))
 		str.WriteRune(' ')
 
-		simResult := simulate.ExecuteSpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), bonusStat, tracker.NewChild())
+		simResult, err := simulate.ExecuteSpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), bonusStat, tracker.NewChild())
+		if err != nil {
+			panic(err)
+		}
 
 		str.WriteString("   --> ")
 		simResult.CompactStringGeneralAppend(&str)
@@ -156,8 +162,11 @@ func statWeightsFormula(printer *util.PrintRecorder) {
 	comp.SetTargetRatios(model_factory.SimPriority_mitigation)
 	comp.SetMinimumIncludeRate(1.0)
 	comp.SupplyData(filteredInput)
-	weightResult := comp.Run(3000).WaitForResultOrPanic()
-	//weights2 := weightResult.Weight
+	weightResultFuture, err := comp.Run(3000)
+	if err != nil {
+		panic(err)
+	}
+	weightResult := weightResultFuture.WaitForResultOrPanic()
 	weights1 := weightResult.AsWeight1(weightInputs)
 	if weights1 != nil {
 		tools.WritePawnString(*weights1, printer)
@@ -195,7 +204,51 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 	ranking.SetRequiredStats(statList)
 	ranking.SetTargetRatios(ratio)
 	ranking.SupplyData(weightInputs)
-	weightResult := ranking.Run(1000).WaitForResultOrPanic()
+	weightResultFuture, err := ranking.Run(1000)
+	if err != nil {
+		panic(err)
+	}
+	weightResult := weightResultFuture.WaitForResultOrPanic()
+	weights1 := weightResult.AsWeight1(weightInputs)
+	if weights1 != nil {
+		tools.WritePawnString(*weights1, printer)
+		acc := weightfind.EvaluateAccuracyBasic(weights1, ratio.SimTypes(), &ratio, weightInputs)
+		printer.Printf("acc %f\n", acc)
+	} else {
+		printer.Println("MISSING WEIGHT")
+	}
+}
+
+func statWeightsRanking3a(printer *util.PrintRecorder) {
+	weightInputs1 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
+	weightInputs2 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
+	weightInputs := slices.Concat(weightInputs1, weightInputs2)
+
+	statList := model_factory.StatsForWeighting_strengthTank
+	ratio := model_factory.SimPriority_mitigation
+
+	weightsMidRange := weight_types.Weight1Basic_Make()
+	weightsMidRange.Put(stats.Stat_Strength, 1.0000)
+	weightsMidRange.Put(stats.Stat_Stamina, 1.2309)
+	weightsMidRange.Put(stats.Stat_Crit, 0.1167)
+	weightsMidRange.Put(stats.Stat_Haste, 0.3614)
+	weightsMidRange.Put(stats.Stat_Expertise, 0.0054)
+	weightsMidRange.Put(stats.Stat_Mastery, 0.5866)
+	weightsMidRange.Put(stats.Stat_Dodge, 0.0824)
+	weightsMidRange.Put(stats.Stat_Parry, 0.0532)
+
+	ranking := weight_highs.RankingStatWeightProcess3{}
+	ranking.SCALE1 = false
+	ranking.ALGO = 1
+	ranking.Init(printer, 1000)
+	ranking.SetRequiredStats(statList)
+	ranking.SetTargetRatios(ratio)
+	ranking.SupplyData(weightInputs)
+	weightsFuture, err := ranking.RunUsingExternalStart(weightsMidRange)
+	if err != nil {
+		panic(err)
+	}
+	weightResult := weightsFuture.WaitForResultOrPanic()
 	weights1 := weightResult.AsWeight1(weightInputs)
 	if weights1 != nil {
 		tools.WritePawnString(*weights1, printer)
@@ -230,11 +283,12 @@ func statWeightsRanking3b(printer *util.PrintRecorder) {
 
 	//ranking := weight_highs.RankingStatWeightProcess3c{}
 	ranking := weight_highs.RankingStatWeightProcess3b{}
+	//ranking := weight_highs.RankingStatWeightProcess3{}
 	ranking.TOTALWEIGHT = 2
 	// 0 49.3953ms
 	// 1 80.5979ms
 	// 2 46.1839ms
-	ranking.ALGO = 0
+	//ranking.ALGO = 0
 	// 1^
 	// 0
 	// simplex; 31177     9.2792909882e+08 Pr: 0(0) 379.7s; acc 90.397887; Duration = 6m20.218095s
@@ -245,7 +299,10 @@ func statWeightsRanking3b(printer *util.PrintRecorder) {
 	ranking.SetTargetRatios(ratio)
 	ranking.SupplyData(weightInputs)
 	//weightsFuture = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
-	weightsFuture := ranking.RunMultiRound()
+	weightsFuture, err := ranking.RunMultiRound()
+	if err != nil {
+		panic(err)
+	}
 	//weightsFuture := ranking.RunSinglePassFromExternal(weightsMidRange)
 	//weightsFuture := ranking.RunSinglePassRaw() // 8m35.3713307s Objective value 2.4803613132e+08
 	weightResult := weightsFuture.WaitForResultOrPanic()
@@ -280,7 +337,10 @@ func statWeightsRanking30(printer *util.PrintRecorder) {
 	ranking.SetRequiredStats(statList)
 	ranking.SetTargetRatios(ratio)
 	ranking.SupplyData(weightInputs)
-	weightsFuture := ranking.RunSinglePassRaw()
+	weightsFuture, err := ranking.RunSinglePassRaw()
+	if err != nil {
+		panic(err)
+	}
 	weightResult := weightsFuture.WaitForResultOrPanic()
 	weights1 := weightResult.AsWeight1(weightInputs)
 	newRatio := weightResult.NewRatio
@@ -549,7 +609,11 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 		grid.SetRequiredStats(requiredStats)
 		grid.SetTargetRatios(targetRatio)
 		grid.SupplyData(inputDataGrid)
-		weightResult := grid.Run().WaitForResultOrPanic()
+		weightResultFuture, err := grid.Run()
+		if err != nil {
+			panic(err)
+		}
+		weightResult := weightResultFuture.WaitForResultOrPanic()
 		weights1 = *weightResult.AsWeight1(mixedInputData)
 		tools.WritePawnString(weights1, printer)
 	} else {
@@ -585,7 +649,11 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 	ranking.SetTargetRatios(targetRatio)
 	//ranking.SupplyData(mixedInputData)
 	ranking.SupplyData(mixedInputData)
-	weightsResult2 := ranking.RunSinglePassFromExternal(weights1).WaitForResultOrPanic()
+	weightsResult2Future, err := ranking.RunSinglePassFromExternal(weights1)
+	if err != nil {
+		panic(err)
+	}
+	weightsResult2 := weightsResult2Future.WaitForResultOrPanic()
 	weights2 := *weightsResult2.AsWeight1(mixedInputData)
 
 	tools.WritePawnString(weights1, printer)
@@ -658,7 +726,10 @@ func statWeightsFitting(printer *util.PrintRecorder) {
 	fitting.Init(printer, 3000)
 	fitting.SupplyData(sampleData)
 
-	weightMap := fitting.Run(util_async.CancelSignal_Make())
+	weightMap, err := fitting.Run(util_async.CancelSignal_Make())
+	if err != nil {
+		panic(err)
+	}
 	printer.Printf("weightMap size %d\n", len(weightMap))
 	weightList := slices.SortedFunc(maps.Values(weightMap), func(a, b fitting1.FittingSingleStatResult) int { return cmp.Compare(a.Minimum, b.Minimum) })
 
@@ -1214,7 +1285,11 @@ func statWeightsGrid1Orig(printer *util.PrintRecorder) {
 		process.SetRequiredStats(requiredStats)
 		process.SetTargetRatios(targetRatio)
 		process.SupplyData(inputData)
-		weightsResult := process.Run().WaitForResultOrNilValue()
+		weightsResultFuture, err := process.Run()
+		if err != nil {
+			panic(err)
+		}
+		weightsResult := weightsResultFuture.WaitForResultOrNilValue()
 		weights1 := *weightsResult.AsWeight1(inputData)
 		tools.WritePawnString(weights1, printer)
 
@@ -1319,7 +1394,11 @@ func statWeightsGrid2(printer *util.PrintRecorder) {
 		process.SetRequiredStats(requiredStats)
 		process.SetTargetRatios(targetRatio)
 		process.SupplyData(inputData)
-		weightsResult := process.Run().WaitForResultOrNilValue()
+		weightsResultFuture, err := process.Run()
+		if err != nil {
+			panic(err)
+		}
+		weightsResult := weightsResultFuture.WaitForResultOrNilValue()
 		weights1 := *weightsResult.AsWeight1(inputData)
 		tools.WritePawnString(weights1, printer)
 
@@ -1377,7 +1456,10 @@ func statWeightsGrid1b(printer *util.PrintRecorder) {
 		grid.SetTargetRatios(targetRatio)
 		grid.SetRequiredStats(requiredStats)
 		grid.SupplyData(inputData)
-		weightsFuture := grid.Run()
+		weightsFuture, err := grid.Run()
+		if err != nil {
+			panic(err)
+		}
 		weightResult := weightsFuture.WaitForResultOrPanic()
 		weights1 := *weightResult.AsWeight1(inputData)
 

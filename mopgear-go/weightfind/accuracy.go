@@ -2,7 +2,6 @@ package weightfind
 
 import (
 	"cmp"
-	"reflect"
 	"slices"
 
 	"github.com/nerago/mopgear-go/stats"
@@ -11,11 +10,6 @@ import (
 	"github.com/nerago/mopgear-go/weightfind/simrank"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
-
-func isNil(a interface{}) bool {
-	defer func() { recover() }()
-	return a == nil || reflect.ValueOf(a).IsNil()
-}
 
 func EvaluateAccuracySwitch[W weight_types.IWeight](useStat bool, statWeights W, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
 	if useStat {
@@ -26,7 +20,7 @@ func EvaluateAccuracySwitch[W weight_types.IWeight](useStat bool, statWeights W,
 }
 
 func EvaluateAccuracyBasic[W weight_types.IWeight](statWeights W, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
-	if isNil(statWeights) || statWeights.IsEmpty() {
+	if util.IsNil(statWeights) || statWeights.IsEmpty() {
 		return 0
 	}
 	data := evaluateStatScoreAndCreateStructure(statWeights, inputData)
@@ -48,7 +42,7 @@ func EvaluateAccuracyBasic[W weight_types.IWeight](statWeights W, requiredSims [
 //}
 
 func EvaluateAccuracyStatisticalExtended[W weight_types.IWeight](statWeights W, requiredSims []stats.SimType, simRatios *weight_types.SimPriorityBasic, inputData []weight_types.WeightInput) float64 {
-	if isNil(statWeights) || statWeights.IsEmpty() {
+	if util.IsNil(statWeights) || statWeights.IsEmpty() {
 		return 0
 	}
 	data := evaluateStatScoreAndCreateStructureExtended(statWeights, inputData)
