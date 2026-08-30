@@ -38,6 +38,9 @@ func (build *LinearBuilder) DebugPrintColumns(solution *highs.Solution, printer 
 		build.debugPrintColumnsForce(solution, printer)
 	}
 }
+func (build *LinearBuilder) DebugPrintColumns2(solution *Solution2, printer *util.PrintRecorder) {
+	build.DebugPrintColumns(solution.inner, printer)
+}
 func (build *LinearBuilder) debugPrintColumnsForce(solution *highs.Solution, printer *util.PrintRecorder) {
 	for i, x := range solution.ColValues {
 		printer.Printf("%6d %10.6f %12.4e %s\n", i, x, x, debugText(build.vars.debug[i]))

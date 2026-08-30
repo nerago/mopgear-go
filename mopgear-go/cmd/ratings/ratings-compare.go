@@ -117,10 +117,10 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 
 	reportOnTweakedVersions := false
 	standardTimeout := 4000
-	shortTimeout := standardTimeout / 5
+	shortTimeout := standardTimeout
 
 	runBasic := true
-	runFormulaVariants := false // best is about 87%, moderate time
+	runFormulaVariants := true // best is about 87%, moderate time
 
 	runFitting1 := true // slow, low 90%
 	runFitting2 := true

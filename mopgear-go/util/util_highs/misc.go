@@ -64,6 +64,10 @@ func (lr *LinearResult) GetSolution2AndSaveLog(printer *util.PrintRecorder) (*So
 	return &Solution2{lr.solution, lr.build}, lr.err
 }
 
+func (lr *LinearResult) Elapsed() time.Duration {
+	return lr.elapsed
+}
+
 type TimeLimitToken struct {
 	mutex            sync.Mutex
 	initialTimeGiven time.Duration

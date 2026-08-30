@@ -22,6 +22,7 @@ import (
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_async"
 	"github.com/nerago/mopgear-go/util/util_collection"
+	"github.com/nerago/mopgear-go/util/util_highs"
 	"github.com/nerago/mopgear-go/weightfind"
 	"github.com/nerago/mopgear-go/weightfind/util_weight"
 	"github.com/nerago/mopgear-go/weightfind/weight_highs"
@@ -29,6 +30,7 @@ import (
 	"github.com/nerago/mopgear-go/weightfind/weight_highs/fitting2"
 	"github.com/nerago/mopgear-go/weightfind/weight_highs/fitting3"
 	"github.com/nerago/mopgear-go/weightfind/weight_highs/fitting4"
+	"github.com/nerago/mopgear-go/weightfind/weight_highs/formula3"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
@@ -173,6 +175,38 @@ func statWeightsFormula(printer *util.PrintRecorder) {
 	} else {
 		printer.Println("MISSING WEIGHT")
 	}
+}
+
+func statWeightsFormula3(printer *util.PrintRecorder) {
+	//weightInputs := weight_types.WeightInputReadFile("tempdata/sim-stats-compare-rand.json")
+	inputDataGrid := weight_types.WeightInputReadFile("tempdata/weightfind-sim-grid-Prot-Mitigation.json")
+	inputDataRandom := weight_types.WeightInputReadFile("tempdata/weightfind-sim-real-Prot-Mitigation.json")
+	weightInputs := slices.Concat(inputDataGrid, inputDataRandom)
+
+	ratio := model_factory.SimPriority_mitigation
+
+	comp := formula3.FormulaSegmentedProcess{}
+
+	comp.Init(printer)
+	comp.SetRequiredStats(model_factory.StatsForWeighting_strengthTank)
+	comp.SetTargetRatios(ratio)
+	comp.SupplyData(weightInputs)
+	limit := util_highs.TimeLimitTokenMake(3000)
+	weightResultFuture, err := comp.Run(limit)
+	if err != nil {
+		panic(err)
+	}
+	weightResult := weightResultFuture.WaitForResultOrPanic()
+	weights1 := weightResult.AsWeight1(weightInputs)
+	if weights1 != nil {
+		tools.WritePawnString(*weights1, printer)
+	} else {
+		printer.Println("MISSING WEIGHT")
+	}
+	acc := weightfind.EvaluateAccuracyBasic(weights1, ratio.SimTypes(), &ratio, weightInputs)
+	printer.Printf("acc %f\n", acc)
+	accSt := weightfind.EvaluateAccuracyStatisticalExtended(weights1, ratio.SimTypes(), &ratio, weightInputs)
+	printer.Printf("acc st %f\n", accSt)
 }
 
 func statWeightsRanking(printer *util.PrintRecorder) {
