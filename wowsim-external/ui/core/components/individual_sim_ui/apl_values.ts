@@ -118,6 +118,8 @@ import {
 	APLValueDotTimeToNextTick,
 	APLValueSpellInFlight,
 	APLValueBossCurrentTarget,
+	APLValueBossSpellIsKnown,
+	APLValueBossSpellCastTimeRemaining,
 	APLValueSpellIsCasting,
 	APLValueRemainingCastTime,
 	APLValueActionGroupUsed,
@@ -526,7 +528,7 @@ export function valueListFieldConfig(field: string): AplHelpers.APLPickerBuilder
 				extraActions: [
 					AplHelpers.extractToVariableAction(
 						player,
-						(index) => (config.getValue(player) as Array<APLValue | undefined>)[index],
+						index => (config.getValue(player) as Array<APLValue | undefined>)[index],
 						(index, ref) => {
 							const values = config.getValue(player) as Array<APLValue | undefined>;
 							values[index] = ref;
@@ -703,6 +705,25 @@ const valueKindFactories: { [f in ValidAPLValueKind]: ValueKindConfig<APLValueIm
 		newValue: APLValueBossCurrentTarget.create,
 		includeIf: (_: Player<any>, isPrepull: boolean) => !isPrepull,
 		fields: [AplHelpers.unitFieldConfig('targetUnit', 'targets')],
+	}),
+	bossSpellIsKnown: inputBuilder({
+		label: i18n.t('rotation_tab.apl.values.boss_spell_known.label'),
+		submenu: ['boss'],
+		shortDescription: i18n.t('rotation_tab.apl.values.boss_spell_known.tooltip'),
+		newValue: APLValueBossSpellIsKnown.create,
+		includeIf: (_: Player<any>, isPrepull: boolean) => !isPrepull,
+		fields: [AplHelpers.unitFieldConfig('targetUnit', 'targets'), AplHelpers.actionIdFieldConfig('spellId', 'spells', 'targetUnit', 'currentTarget')],
+	}),
+	bossSpellCastTimeRemaining: inputBuilder({
+		label: i18n.t('rotation_tab.apl.values.boss_spell_cast_time_remaining.label'),
+		submenu: ['boss'],
+		shortDescription: i18n.t('rotation_tab.apl.values.boss_spell_cast_time_remaining.tooltip'),
+		newValue: APLValueBossSpellCastTimeRemaining.create,
+		includeIf: (_: Player<any>, isPrepull: boolean) => !isPrepull,
+		fields: [
+			AplHelpers.unitFieldConfig('targetUnit', 'targets'),
+			AplHelpers.actionIdFieldConfig('spellId', 'non_instant_spells', 'targetUnit', 'currentTarget'),
+		],
 	}),
 
 	// Unit

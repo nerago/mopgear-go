@@ -1,4 +1,6 @@
 OUT_DIR := dist/mop
+# Windows won't launch an extensionless binary -- air just pops a file-association prompt.
+BIN_EXT := $(shell go env GOEXE)
 TS_CORE_SRC := $(shell find ui/core -name '*.ts' -type f)
 ASSETS_INPUT := $(shell find assets/ -type f)
 ASSETS := $(patsubst assets/%,$(OUT_DIR)/assets/%,$(ASSETS_INPUT))
@@ -58,7 +60,7 @@ $(OUT_DIR)/bundle/.dirstamp: \
   tsconfig.json \
   ui/core/index.ts \
   ui/core/proto/api.ts
-	npx tsc --noEmit
+	node_modules/typescript/bin/tsc --noEmit
 	npx tsx vite.build-workers.mts
 	npx vite build
 	touch $@
@@ -73,7 +75,7 @@ ui/core/index.ts: $(TS_CORE_SRC)
 clean:
 	rm -rf ui/core/proto/*.ts \
 	  sim/core/proto/*.pb.go \
-	  wowsimmop \
+	  wowsimmop$(BIN_EXT) \
 	  wowsimmop-windows.exe \
 	  wowsimmop-amd64-darwin \
 	  wowsimmop-arm64-darwin \
@@ -175,7 +177,7 @@ wowsimmop: binary_dist devserver
 .PHONY: devserver
 devserver: sim/core/proto/api.pb.go sim/web/main.go binary_dist/dist.go
 	@echo "Starting server compile now..."
-	@if go build -o wowsimmop ./sim/web/main.go ; then \
+	@if go build -o wowsimmop$(BIN_EXT) ./sim/web/main.go ; then \
 		printf "\033[1;32mBuild Completed Successfully\033[0m\n"; \
 	else \
 		printf "\033[1;31mBUILD FAILED\033[0m\n"; \
@@ -194,9 +196,9 @@ endif
 rundevserver: air devserver
 ifeq ($(WATCH), 1)
 	npx tsx vite.build-workers.mts & npx vite build -m development --watch &
-	ulimit -n 10240 && air -tmp_dir "/tmp" -build.include_ext "go,proto" -build.args_bin "--usefs=true --launch=false" -build.bin "./wowsimmop" -build.cmd "make devserver" -build.exclude_dir "assets,dist,node_modules,ui,tools"
+	ulimit -n 10240 && air -tmp_dir "/tmp" -build.include_ext "go,proto" -build.args_bin "--usefs=true --launch=false" -build.bin "./wowsimmop$(BIN_EXT)" -build.cmd "make devserver" -build.exclude_dir "assets,dist,node_modules,ui,tools"
 else
-	./wowsimmop --usefs=true --launch=false --host=":3333"
+	./wowsimmop$(BIN_EXT) --usefs=true --launch=false --host=":3333"
 endif
 
 wowsimmop-windows.exe: wowsimmop
@@ -224,7 +226,20 @@ release: wowsimmop wowsimmop-windows.exe
 	zip wowsimcli-windows.exe.zip wowsimcli-windows.exe
 
 sim/core/proto/api.pb.go: proto/*.proto
-	protoc -I=./proto --go_out=./sim/core ./proto/*.proto
+	@if go version -m "$$(command -v protoc-gen-go)" 2>/dev/null | grep -qE '^[[:space:]]+mod[[:space:]]+github\.com/golang/protobuf[[:space:]]'; then \
+		echo "ERROR: your protoc-gen-go is the deprecated github.com/golang/protobuf plugin;"; \
+		echo "it generates code that no longer builds against this repo's protobuf version."; \
+		echo "Fix:  go install google.golang.org/protobuf/cmd/protoc-gen-go@latest"; \
+		echo "then: rm -f sim/core/proto/*.pb.go && retry"; \
+		exit 1; \
+	fi
+# Distro protoc packages (e.g. Ubuntu/WSL's protobuf-compiler) bundle a
+# descriptor.proto whose go_package still points at the deprecated
+# github.com/golang/protobuf path, which is no longer a dependency. Pin the
+# mapping so common.proto's MessageOptions extension resolves to descriptorpb.
+	protoc -I=./proto \
+		--go_opt=Mgoogle/protobuf/descriptor.proto=google.golang.org/protobuf/types/descriptorpb \
+		--go_out=./sim/core ./proto/*.proto
 
 # Only useful for building the lib on a host platform that matches the target platform
 .PHONY: locallib
@@ -248,19 +263,26 @@ CLIENTDATA_OUTPUT   := $(shell realpath ./tools/database/wowsims.db)
 
 .PHONY: db
 db:
-	@echo "Running DB2ToSqlite for clientdata"
-	cd tools/DB2ToSqlite && dotnet run -- -s $(CLIENTDATA_SETTINGS) --output $(CLIENTDATA_OUTPUT)
+	@echo "Extracting client data"
+	go run ./tools/db2tool -s $(CLIENTDATA_SETTINGS) --output $(CLIENTDATA_OUTPUT)
 	@echo "Running DBC generation tool"
 	go run tools/database/gen_db/*.go -outDir=./assets -gen=db
 
 .PHONY: ptrdb
 ptrdb:
-	@echo "Running DB2ToSqlite for clientdata"
-	cd tools/DB2ToSqlite && dotnet run -- -s $(CLIENTDATAPTR_SETTINGS) --output $(CLIENTDATA_OUTPUT)
+	@echo "Extracting client data"
+	go run ./tools/db2tool -s $(CLIENTDATAPTR_SETTINGS) --output $(CLIENTDATA_OUTPUT)
 	@echo "Running DBC generation tool"
 	go run tools/database/gen_db/*.go -outDir=./assets -gen=db
 
 sim/core/items/all_items.go: $(call rwildcard,tools/database,*.go) $(call rwildcard,sim/core/proto,*.go)
+	@test -f tools/database/wowsims.db || { \
+		echo "ERROR: tools/database/wowsims.db is missing (gitignored, produced by 'make db')."; \
+		echo "Run 'make db' to extract it from a local WoW install."; \
+		exit 1; }
+	@test -f tools/db2tool/listfile.csv || { \
+		echo "tools/db2tool/listfile.csv is missing, downloading it..."; \
+		curl -fL -o tools/db2tool/listfile.csv https://github.com/wowdev/wow-listfile/releases/latest/download/community-listfile.csv; }
 	go run tools/database/gen_db/*.go -outDir=./assets -gen=db
 
 .PHONY: test
@@ -279,10 +301,7 @@ fmt: tsfmt
 
 .PHONY: tsfmt
 tsfmt:
-	for dir in $$(find ./ui -maxdepth 1 -type d -not -path "./ui" -not -path "./ui/worker"); do \
-		echo $$dir; \
-		npx tsfmt -r --useTsfmt ./tsfmt.json --baseDir $$dir; \
-	done
+	npx oxfmt ui
 
 # one time setup to install pre-commit hook for gofmt and npm install needed packages
 setup:
@@ -301,12 +320,12 @@ else
 	npx http-server $(OUT_DIR)/..
 endif
 
-devmode: air devserver
+devmode: air devserver $(PAGE_INDECES)
 ifeq ($(WATCH), 1)
 	npx tsx vite.build-workers.mts & npx vite serve --host &
-	air -tmp_dir "/tmp" -build.include_ext "go,proto" -build.args_bin "--usefs=true --launch=false --wasm=false" -build.bin "./wowsimmop" -build.cmd "make devserver" -build.exclude_dir "assets,dist,node_modules,ui,tools"
+	air -tmp_dir "/tmp" -build.include_ext "go,proto" -build.args_bin "--usefs=true --launch=false --wasm=false" -build.bin "./wowsimmop$(BIN_EXT)" -build.cmd "make devserver" -build.exclude_dir "assets,dist,node_modules,ui,tools"
 else
-	./wowsimmop --usefs=true --launch=false --host=":3333"
+	./wowsimmop$(BIN_EXT) --usefs=true --launch=false --host=":3333"
 endif
 
 webworkers:
