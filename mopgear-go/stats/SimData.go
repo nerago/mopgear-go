@@ -77,6 +77,10 @@ func (types SimType) Name() string {
 	}
 }
 
+func (types SimType) String() string {
+	return types.Name()
+}
+
 var SimTypeList = []SimType{Sim_DPS, Sim_TPS, Sim_DTPS, Sim_HPS, Sim_TMI, Sim_DEATH}
 var SimTypeEnum = util_collection.EnumTypeMake[SimType](SimTypeList)
 

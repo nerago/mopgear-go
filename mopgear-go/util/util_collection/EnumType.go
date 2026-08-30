@@ -1,9 +1,13 @@
 package util_collection
 
-import "iter"
+import (
+	"fmt"
+	"iter"
+)
 
 type EnumBaseType interface {
 	~uint8
+	fmt.Stringer
 	Name() string
 	EnumNumValues() uint8
 }

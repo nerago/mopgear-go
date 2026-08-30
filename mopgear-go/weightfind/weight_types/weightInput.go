@@ -2,6 +2,7 @@ package weight_types
 
 import (
 	"encoding/json/v2"
+	"math"
 	"os"
 	"time"
 
@@ -204,6 +205,10 @@ func (rn StatRange) RangeSize() uint32 {
 
 func (rn StatRange) Contains(value uint32) bool {
 	return rn.Minimum <= value && value <= rn.Maximum
+}
+
+func (rn StatRange) IsFullRange() bool {
+	return rn.Minimum == 0 && rn.Maximum == math.MaxUint32
 }
 
 type StatRangeFloat struct {

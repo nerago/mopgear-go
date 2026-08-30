@@ -186,7 +186,7 @@ func statWeightsFormula3(printer *util.PrintRecorder) {
 
 	ratio := model_factory.SimPriority_mitigation
 
-	comp := formula3.FormulaSegmentedProcess{}
+	comp := formula3.FormulaSegmentedProcess3{}
 	comp.Init(printer)
 	comp.SetRequiredStats(model_factory.StatsForWeighting_strengthTank)
 	comp.SetTargetRatios(ratio)

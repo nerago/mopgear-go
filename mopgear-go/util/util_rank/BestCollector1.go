@@ -130,6 +130,10 @@ func (collect *BestCollector1Lite[T]) GetBestOrPanic() T {
 	return collect.bestValue
 }
 
+func (collect *BestCollector1Lite[T]) GetBest() (T, bool) {
+	return collect.bestValue, collect.hasBest
+}
+
 func (collect *BestCollector1Lite[T]) GetBestOrDefault(defaultValue T) T {
 	if collect.hasBest {
 		return collect.bestValue

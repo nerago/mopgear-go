@@ -86,6 +86,10 @@ func (stat StatType) EnumName() string {
 	}
 }
 
+func (stat StatType) String() string {
+	return stat.Name()
+}
+
 func (stat StatType) IsSecondary() bool {
 	switch stat {
 	case Stat_Strength:
