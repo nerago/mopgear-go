@@ -481,7 +481,7 @@ func (s *Solver) ClearClock() error {
 	return newError("ClearClock", status)
 }
 
-// ClearClock returns cumulative time spent running Solver.
+// GetRunTime returns cumulative time spent running Solver.
 func (s *Solver) GetRunTime() time.Duration {
 	closeMutex.LockStandard()
 	defer closeMutex.UnlockStandard()

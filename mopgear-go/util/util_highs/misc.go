@@ -46,6 +46,7 @@ type LinearResult struct {
 	solution *highs.Solution
 	build    *LinearBuilder
 	log      *util.PrintRecorder
+	elapsed  time.Duration
 	err      error
 }
 
@@ -69,9 +70,19 @@ type TimeLimitToken struct {
 	solverElapsed    time.Duration
 }
 
-func (t *TimeLimitToken) SetLinear(build *LinearBuilder) {
+func (t *TimeLimitToken) linearBuildSetTimeout(build *LinearBuilder) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+
 	remain := t.initialTimeGiven - t.solverElapsed
 	build.TimeLimitSeconds = int(remain.Seconds())
+}
+
+func (t *TimeLimitToken) addSolveRunTime(runTime time.Duration) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+
+	t.solverElapsed += runTime
 }
 
 func TimeLimitTokenMake(seconds time.Duration) *TimeLimitToken {
