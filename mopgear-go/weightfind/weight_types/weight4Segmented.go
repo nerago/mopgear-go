@@ -25,8 +25,8 @@ func Weight4Segmented_Make(statList []stats.StatType, simList []stats.SimType, p
 }
 
 type Weight4SimOffset struct {
-	RatingWeight float64
-	RatingOffset float64
+	Scale  float64
+	Offset float64
 }
 
 type Weight4SingleSegment struct {
@@ -77,6 +77,23 @@ func (wer *Weight4Segmented) IsEmpty() bool {
 
 func (wer *Weight4Segmented) AddSegment(segment Weight4SingleSegment) {
 	wer.Segments = append(wer.Segments, segment)
+}
+
+func (wer *Weight4Segmented) AddWeight2AsSegment(weight2 *Weight2Extended, bounds *stats.StatTypeMap[StatRange]) {
+	seg := Weight4SingleSegment{
+		Bound:   *bounds,
+		Weights: weight2.DetailedWeights,
+		Offsets: stats.SimTypeMap[Weight4SimOffset]{},
+	}
+	for simType, entry := range weight2.SimPriority.entries.SeqKeyValue() {
+		seg.Offsets.Put(simType,
+			Weight4SimOffset{
+				Scale:  entry.RangingScale,
+				Offset: entry.RangingOffset,
+			},
+		)
+	}
+	wer.AddSegment(seg)
 }
 
 func (wer *Weight4Segmented) FinishAndValidate() {
@@ -192,6 +209,23 @@ func (wer *Weight4Segmented) Equals(other *Weight4Segmented) bool {
 		util_collection.EqualFunc_IgnoreOrder_Pointer(wer.Segments, other.Segments, (*Weight4SingleSegment).Equals)
 }
 
+func (wer *Weight4Segmented) ConvertToWeight2() *Weight2Extended {
+	weight2 := Weight2Extended_Make(wer.SimList, wer.StatList)
+	seg := wer.chooseBest()
+	seg.Weights.Foreach(func(sim stats.SimType, stat stats.StatType, value float64) {
+		weight2.PutWeight(sim, stat, value)
+	})
+	for sim, value := range wer.SimPriority.SeqTypeValue() {
+		weight2.SetSimScale(sim, 1, 0, value)
+	}
+	weight2.FinishAndValidateNoVerify()
+	return weight2
+}
+
+func (wer *Weight4Segmented) chooseBest() *Weight4SingleSegment {
+	return &wer.Segments[0] // TODO something useful
+}
+
 //func (wer *Weight4Segmented) ConvertToWeight2() *Weight2Extended {
 //	weight2 := Weight2Extended_Make(wer.SimList, wer.StatList)
 //	for entry := range wer.StatWeights.SeqKey1Key2ValueSeqEntries() {
@@ -256,9 +290,9 @@ func (wer *Weight4Segmented) AppendString(sb *util.StringBuild2) {
 			sb.WriteRune('(')
 			sb.WriteString(simType.Name())
 			sb.WriteRune(',')
-			sb.WriteFloatScientific64(entry.RatingOffset)
+			sb.WriteFloatScientific64(entry.Scale)
 			sb.WriteRune(',')
-			sb.WriteFloatScientific64(entry.RatingWeight)
+			sb.WriteFloatScientific64(entry.Offset)
 			sb.WriteRune(')')
 		}
 		sb.WriteString("))")

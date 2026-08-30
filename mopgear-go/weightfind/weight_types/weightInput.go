@@ -90,6 +90,8 @@ type WeightResult2 weightResultGeneric[*Weight2Extended]
 
 type WeightResult3 weightResultGeneric[*Weight3ExtendedRanged]
 
+type WeightResult4 weightResultGeneric[*Weight4Segmented]
+
 func WeightResult1Make(weight *Weight1Basic, solveTime time.Duration, status highs.ModelStatus) WeightResult1 {
 	return WeightResult1{WeightResultCommon: WeightResultCommon{weight, solveTime, status.String(), nil, nil}, Weight: weight}
 }
@@ -99,6 +101,9 @@ func WeightResult2Make(weight *Weight2Extended, solveTime time.Duration, status 
 func WeightResult3Make(weight *Weight3ExtendedRanged, solveTime time.Duration, status highs.ModelStatus) WeightResult3 {
 	return WeightResult3{WeightResultCommon: WeightResultCommon{weight, solveTime, status.String(), nil, nil}, Weight: weight}
 }
+func WeightResult4Make(weight *Weight4Segmented, solveTime time.Duration, status highs.ModelStatus) WeightResult4 {
+	return WeightResult4{WeightResultCommon: WeightResultCommon{weight, solveTime, status.String(), nil, nil}, Weight: weight}
+}
 func WeightResult1MakeError(solveTime time.Duration, err error) WeightResult1 {
 	return WeightResult1{WeightResultCommon: WeightResultCommon{SolveTime: solveTime, Status: "ERROR", Error: err}}
 }
@@ -107,6 +112,9 @@ func WeightResult2MakeError(solveTime time.Duration, err error) WeightResult2 {
 }
 func WeightResult3MakeError(solveTime time.Duration, err error) WeightResult3 {
 	return WeightResult3{WeightResultCommon: WeightResultCommon{SolveTime: solveTime, Status: "ERROR", Error: err}}
+}
+func WeightResult4MakeError(solveTime time.Duration, err error) WeightResult4 {
+	return WeightResult4{WeightResultCommon: WeightResultCommon{SolveTime: solveTime, Status: "ERROR", Error: err}}
 }
 func WeightResult1MakeWithRatio(weight *Weight1Basic, solveTime time.Duration, status highs.ModelStatus, ratio *SimPriorityBasic, err error) WeightResult1 {
 	return WeightResult1{WeightResultCommon{weight, solveTime, status.String(), ratio, err}, weight}
@@ -129,6 +137,13 @@ func (wr *WeightResult3) AsWeight1(verificationInputs []WeightInput) *Weight1Bas
 		return nil
 	}
 }
+func (wr *WeightResult4) AsWeight1(verificationInputs []WeightInput) *Weight1Basic {
+	if wr.Weight != nil {
+		return wr.Weight.ConvertToWeight2().ConvertToWeight1()
+	} else {
+		return nil
+	}
+}
 
 func (wr *WeightResult1) AsWeight2(_ []WeightInput) *Weight2Extended {
 	return nil
@@ -143,6 +158,13 @@ func (wr *WeightResult3) AsWeight2(verificationInputs []WeightInput) *Weight2Ext
 		return nil
 	}
 }
+func (wr *WeightResult4) AsWeight2(_ []WeightInput) *Weight2Extended {
+	if wr.Weight != nil {
+		return wr.Weight.ConvertToWeight2()
+	} else {
+		return nil
+	}
+}
 
 func (wr *WeightResult1) AsWeight3(_ []WeightInput) *Weight3ExtendedRanged {
 	return nil
@@ -152,6 +174,9 @@ func (wr *WeightResult2) AsWeight3(_ []WeightInput) *Weight3ExtendedRanged {
 }
 func (wr *WeightResult3) AsWeight3(_ []WeightInput) *Weight3ExtendedRanged {
 	return wr.Weight
+}
+func (wr *WeightResult4) AsWeight3(_ []WeightInput) *Weight3ExtendedRanged {
+	return nil
 }
 
 type StatRange struct {

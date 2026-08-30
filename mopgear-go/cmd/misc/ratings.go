@@ -182,11 +182,11 @@ func statWeightsFormula3(printer *util.PrintRecorder) {
 	inputDataGrid := weight_types.WeightInputReadFile("tempdata/weightfind-sim-grid-Prot-Mitigation.json")
 	inputDataRandom := weight_types.WeightInputReadFile("tempdata/weightfind-sim-real-Prot-Mitigation.json")
 	weightInputs := slices.Concat(inputDataGrid, inputDataRandom)
+	weightInputs = util_collection.SliceSampleRandom(weightInputs, 150)
 
 	ratio := model_factory.SimPriority_mitigation
 
 	comp := formula3.FormulaSegmentedProcess{}
-
 	comp.Init(printer)
 	comp.SetRequiredStats(model_factory.StatsForWeighting_strengthTank)
 	comp.SetTargetRatios(ratio)

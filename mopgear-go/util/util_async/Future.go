@@ -637,6 +637,18 @@ func (future *FutureCancellableWithError[T]) WaitForResultOrError() (T, error) {
 	}
 }
 
+func (future *FutureCancellableWithError[T]) WaitForResultPointerOrError() (*T, error) {
+	future.verifyCanWait()
+	value, hasValue := future.resultFromChannel()
+	if hasValue && value.Error == nil && value.Value != nil {
+		return value.Value, nil
+	} else if value.Error != nil {
+		return nil, value.Error
+	} else {
+		return nil, errors.New("empty result")
+	}
+}
+
 func (future *FutureCancellableWithError[T]) WaitForResultOrPanic() T {
 	future.verifyCanWait()
 	value, hasValue := future.resultFromChannel()

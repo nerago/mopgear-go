@@ -110,9 +110,29 @@ func IntBetweenInclusive[N NumberInt](lo, val, hi N) bool {
 }
 
 func RoundToInt64(value float64) int64 {
-	return int64(math.Round(value))
+	rounded := math.Round(value)
+	if rounded < math.MinInt64 || rounded > math.MaxInt64 {
+		panic("value out of range")
+	}
+	return int64(rounded)
+}
+
+func RoundToInt32(value float64) int32 {
+	rounded := math.Round(value)
+	if rounded < math.MinInt32 || rounded > math.MaxInt32 {
+		panic("value out of range")
+	}
+	return int32(rounded)
 }
 
 func RoundToInt(value float64) int {
-	return int(math.Round(value))
+	return int(RoundToInt32(value))
+}
+
+func RoundToUInt32(value float64) uint32 {
+	rounded := math.Round(value)
+	if rounded < 0 || rounded > math.MaxUint32 {
+		panic("value out of range")
+	}
+	return uint32(rounded)
 }

@@ -2,8 +2,10 @@ package formula3
 
 import (
 	"math"
+	"time"
 
 	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_async"
 	"github.com/nerago/mopgear-go/util/util_collection"
 	"github.com/nerago/mopgear-go/util/util_highs"
@@ -49,15 +51,38 @@ type thresholdVars struct {
 
 }
 
+type statBounds stats.StatTypeMap[weight_types.StatRange]
+
+type sectionResult struct {
+	weights weight_types.Weight2Extended
+	bounds  statBounds
+	elapsed time.Duration
+	status  highs.ModelStatus
+}
+
 func (sect *formulaSection3) init() {
 
+}
+
+func (sect *formulaSection3) setAvoidBounds(bound stats.StatTypeMap[weight_types.StatRange]) {
+	// ideally we only need one bound, although maybe with multiple stats
+	// that would mean that each time we extrude one direction of the existing N-dimension "cube"
+
+	// otherwise we have a more complex shape of multi-cube exclusions,
+	// which mean includes could be more complex shapes, or included as many to ones
+
+	// we could offer the solve multiple options,
+	//  * stay within the shape of the current bounds, extending just one stat in one direction
+	//  * include all? remaining samples < or > one of the stat ranges, with the others going to full edges
+
+	// should maybe make sure we don't left with just a couple of outliers in some region
 }
 
 func (sect *formulaSection3) setMinimumIncludeRate(percent float64) {
 	sect.minimumIncludeRate = percent
 }
 
-func (sect *formulaSection3) run(timeout *util_highs.TimeLimitToken) (*util_async.FutureCancellable[weight_types.WeightResult2], error) {
+func (sect *formulaSection3) run(timeout *util_highs.TimeLimitToken) *util_async.FutureCancellableWithError[sectionResult] {
 	sect.build = new(util_highs.LinearBuilder)
 	sect.build.Minimise = true
 	sect.build.Solver = util_highs.Solver_MIP_Interior
@@ -75,14 +100,19 @@ func (sect *formulaSection3) run(timeout *util_highs.TimeLimitToken) (*util_asyn
 		float64(len(sect.process.inputData)))
 
 	solutionFuture := sect.build.RunHighsFuture2(timeout)
-	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) weight_types.WeightResult2 {
+	return util_async.FutureCancellable_MapValueError(solutionFuture, func(linearResult util_highs.LinearResult) (*sectionResult, error) {
 		solution, err := linearResult.GetSolution2AndSaveLog(sect.process.printer)
 		if err != nil {
-			return weight_types.WeightResult2MakeError(linearResult.Elapsed(), err)
+			return nil, err
 		}
 
-		weight := sect.extractAndReportSolution(solution)
-		return weight_types.WeightResult2Make(&weight, linearResult.Elapsed(), solution.Status())
+		weight, bounds := sect.extractAndReportSolution(solution)
+		return &sectionResult{
+			weights: *weight,
+			bounds:  *bounds,
+			elapsed: linearResult.Elapsed(),
+			status:  solution.Status(),
+		}, nil
 	})
 }
 
@@ -199,20 +229,20 @@ func (sect *formulaSection3) buildDataEquation(stats *stats.StatBlock, simValueA
 	}
 }
 
-func (sect *formulaSection3) extractAndReportSolution(solution *util_highs.Solution2) weight_types.Weight2Extended {
+func (sect *formulaSection3) extractAndReportSolution(solution *util_highs.Solution2) (*weight_types.Weight2Extended, *statBounds) {
 	sect.build.DebugPrintColumns2(solution, sect.process.printer)
 
 	sect.process.printer.Println("WEIGHTS")
-	weightExtended := sect.extractDetailWeights(solution)
+	weight2 := sect.extractDetailWeights(solution)
 
-	sect.reportInclude(solution)
+	bounds := sect.reportInclude(solution)
 
-	return weightExtended
+	return weight2, bounds
 }
 
-func (sect *formulaSection3) extractDetailWeights(solution *util_highs.Solution2) weight_types.Weight2Extended {
+func (sect *formulaSection3) extractDetailWeights(solution *util_highs.Solution2) *weight_types.Weight2Extended {
 	// extract and report on detail weights
-	weightExtended := weight_types.Weight2Extended_Make(sect.process.requiredSims, sect.process.requiredStats)
+	weight2 := weight_types.Weight2Extended_Make(sect.process.requiredSims, sect.process.requiredStats)
 	for entry := range sect.detailedWeightColumns.SeqKey1Key2ValueEntries() {
 		statType := entry.Key1
 		simType := entry.Key2
@@ -223,7 +253,7 @@ func (sect *formulaSection3) extractDetailWeights(solution *util_highs.Solution2
 		scaleStat := sect.process.scaleStats.GetOrPanic(statType)
 		usableWeight := modelWeight * scaleStat
 
-		weightExtended.PutWeight(simType, statType, usableWeight)
+		weight2.PutWeight(simType, statType, usableWeight)
 
 		sect.process.printer.Printf("%10s %10s %11.8f (%5.2e) %11.8f (%5.2e)\n", statType.Name(), simType.Name(), modelWeight, modelWeight, usableWeight, usableWeight)
 	}
@@ -232,21 +262,23 @@ func (sect *formulaSection3) extractDetailWeights(solution *util_highs.Solution2
 	for simType, offsetColumn := range sect.offsetColumns.SeqKeyValue() {
 		offsetValue := solution.GetValue(offsetColumn)
 		ratio := sect.process.targetRatios.GetOrPanic(simType)
-		weightExtended.SetSimScale(simType, 1, offsetValue, ratio)
+		weight2.SetSimScale(simType, 1, offsetValue, ratio)
 	}
 
-	for entry := range weightExtended.SeqBySimThenStat() {
+	for entry := range weight2.SeqBySimThenStat() {
 		usableWeight := entry.Value
 		sect.process.printer.Printf("%10s %10s %11.8f (%5.2e)\n", entry.Key1.Name(), entry.Key2.Name(), usableWeight, usableWeight)
 	}
 	sect.process.printer.Println0()
 
-	weightExtended.UpdateScaling(sect.process.inputData)
-	weightExtended.FinishAndValidate(sect.process.inputData)
-	return *weightExtended
+	weight2.UpdateScaling(sect.process.inputData)
+	weight2.FinishAndValidate(sect.process.inputData)
+	return weight2
 }
 
-func (sect *formulaSection3) reportInclude(solution *util_highs.Solution2) {
+func (sect *formulaSection3) reportInclude(solution *util_highs.Solution2) *statBounds {
+	printer := sect.process.printer
+
 	var includeCount uint32 = 0
 	for _, col := range sect.includeColumns {
 		if solution.ValueIsOne(col) {
@@ -254,5 +286,18 @@ func (sect *formulaSection3) reportInclude(solution *util_highs.Solution2) {
 		}
 	}
 	includePercent := float64(includeCount) / float64(len(sect.process.inputData))
-	sect.process.printer.Printf("Include %d %f\n", includeCount, includePercent)
+	printer.Printf("Include %d %f\n", includeCount, includePercent)
+
+	bounds := &statBounds{}
+	for statType, vars := range sect.thresholdCols.SeqKeyValue() {
+		statScale := sect.process.scaleStats.GetOrPanic(statType)
+		loValue := solution.GetValue(vars.loColumn) / statScale
+		hiValue := solution.GetValue(vars.hiColumn) / statScale
+		printer.Printf("Bound %s: %f - %f\n", statType.Name(), loValue, hiValue)
+		bounds.Put(statType, weight_types.StatRange{
+			Minimum: util.RoundToUInt32(loValue),
+			Maximum: util.RoundToUInt32(hiValue),
+		})
+	}
+	return bounds
 }
