@@ -74,7 +74,7 @@ func makeCombosForFittingSim(statList []stats.StatType) []incrementStatCombo {
 	return allCombos
 }
 
-func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, requiredStats []stats.StatType, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, tracker *util.TrackProgress, label string, cancel util_async.CancelSignal, fixStatsMode weight_types.FixStatsRangeMode) ([]weight_types.WeightInput, error) {
+func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, requiredStats []stats.StatType, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, tracker *util.TrackProgress, label string, cancel util_async.CancelSignal, fixStatsMode weight_types.FixStatsRangeMode, targetMaxGenerateCount int) ([]weight_types.WeightInput, error) {
 	var incrementStep int32 = grid_sim_step
 	var incrementMax int32 = incrementStep * grid_sim_max_steps
 	if len(requiredStats) == 8 {
@@ -83,7 +83,7 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 
 	initialBaseStats := InitialBonusStatMap_fixRanges(printer, currentItemSet, incrementMax, fixStatsMode, true)
 
-	incrementPermutations := makeCombosForGridSim2(requiredStats, incrementStep, incrementMax)
+	incrementPermutations := makeCombosForGridSim2(requiredStats, incrementStep, incrementMax, targetMaxGenerateCount)
 	tracker.RunOuterTracking(len(incrementPermutations))
 	defer tracker.SetDone()
 
@@ -130,7 +130,7 @@ func simForCombo(increments *incrementStatCombo, initialBaseStats *stats.StatTyp
 	return input, true, nil
 }
 
-func makeCombosForGridSim2(statList []stats.StatType, incrementStep int32, incrementMax int32) []incrementStatCombo {
+func makeCombosForGridSim2(statList []stats.StatType, incrementStep int32, incrementMax int32, targetMaxGenerateCount int) []incrementStatCombo {
 	allCombos := make([]incrementStatCombo, 0)
 
 	// TODO add negative increments too
@@ -138,7 +138,7 @@ func makeCombosForGridSim2(statList []stats.StatType, incrementStep int32, incre
 	allCombos = append(allCombos, makeWithAllSameValue(statList, incrementLo))
 
 	var incrementHi int32 = incrementStep
-	for len(allCombos) < c_eachSimTargetGenerateDataCount && incrementHi <= incrementMax {
+	for len(allCombos) < targetMaxGenerateCount && incrementHi <= incrementMax {
 		// add the high version first so make sure it's more likely to make it when we cut off the list
 		allCombos = append(allCombos, makeWithAllSameValue(statList, incrementHi))
 
@@ -154,8 +154,8 @@ func makeCombosForGridSim2(statList []stats.StatType, incrementStep int32, incre
 		incrementHi += incrementStep
 	}
 
-	if len(allCombos) > c_eachSimTargetGenerateDataCount {
-		allCombos = allCombos[0:c_eachSimTargetGenerateDataCount]
+	if len(allCombos) > targetMaxGenerateCount {
+		allCombos = allCombos[0:targetMaxGenerateCount]
 	}
 
 	return allCombos

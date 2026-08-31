@@ -7,7 +7,7 @@ import (
 	"github.com/nerago/mopgear-go/simulate"
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_async"
-	"github.com/nerago/mopgear-go/weightfind"
+	"github.com/nerago/mopgear-go/weightfind/updateProc"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
@@ -23,9 +23,9 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	skipSolve := false
 	fixStats := weight_types.FixStatsRangeMode_ExpertiseAlways | weight_types.FixStatsRangeMode_HasteGridOnly | weight_types.FixStatsRangeMode_HasteHigherOnly
 
-	process := weightfind.WeightUpdateProcess{}
-	process.Init(simSpeed, forceSkipSim, skipSolve, 2000, printer)
-	//process.AddSpec(&weightfind.WeightSpec{
+	process := updateProc.WeightUpdateProcess{}
+	process.Init(simSpeed, forceSkipSim, skipSolve, 1200, printer)
+	//process.AddSpec(updateProc.SpecParam{
 	//	Label:           "Ret",
 	//	WeightFile1:     files.WeightRet,
 	//	GearFile:        files.GearFileRet,
@@ -33,46 +33,48 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	//	SubstituteItems: mygear.SubstituteItemsRet,
 	//	FixStatsMode:    weight_types.FixStatsRangeMode_None,
 	//})
-	process.AddSpec(&weightfind.WeightSpec{
-		Label:           "Prot-Damage",
-		WeightFile1:     files.WeightProtDamage,
-		GearFile:        files.GearFileProtDamage,
-		Model:           model_factory.Model_PallyProtDamage(),
-		SubstituteItems: mygear.SubstituteItemsProt,
-		FixStatsMode:    fixStats,
-	})
-	process.AddSpec(&weightfind.WeightSpec{
-		Label:           "Prot-Balanced",
-		WeightFile1:     files.WeightProtBalanced,
-		GearFile:        files.GearFileProtBalanced,
-		Model:           model_factory.Model_PallyProtBalanced(),
-		SubstituteItems: mygear.SubstituteItemsProt,
-		FixStatsMode:    fixStats,
-	})
-	process.AddSpec(&weightfind.WeightSpec{
-		Label:           "Prot-Mitigation",
-		WeightFile1:     files.WeightProtMitigation,
-		GearFile:        files.GearFileProtMitigation,
-		Model:           model_factory.Model_PallyProtMitigation(),
-		SubstituteItems: mygear.SubstituteItemsProt,
-		FixStatsMode:    fixStats,
-	})
-	//process.AddSpec(&weightfind.WeightSpec{
-	//	Label:           "Prot-Survival",
-	//	WeightFile1:     files.WeightProtSurvival,
-	//	GearFile:        files.GearFileProtSurvival,
-	//	Model:           model_factory.Model_PallyProtSurvival(),
+
+	//process.AddSpec(updateProc.SpecParam{
+	//	Label:           "Prot-Damage",
+	//	WeightFile1:     files.WeightProtDamage,
+	//	GearFile:        files.GearFileProtDamage,
+	//	Model:           model_factory.Model_PallyProtDamage(),
 	//	SubstituteItems: mygear.SubstituteItemsProt,
 	//	FixStatsMode:    fixStats,
 	//})
-	//process.AddSpec(&weightfind.WeightSpec{
-	//	Label:           "Prot-Heal",
-	//	WeightFile1:     files.WeightProtHeal,
-	//	GearFile:        files.GearFileProtHeal,
-	//	Model:           model_factory.Model_PallyProtHeal(),
+	//process.AddSpec(updateProc.SpecParam{
+	//	Label:           "Prot-Balanced",
+	//	WeightFile1:     files.WeightProtBalanced,
+	//	GearFile:        files.GearFileProtBalanced,
+	//	Model:           model_factory.Model_PallyProtBalanced(),
 	//	SubstituteItems: mygear.SubstituteItemsProt,
 	//	FixStatsMode:    fixStats,
 	//})
+	//process.AddSpec(updateProc.SpecParam{
+	//	Label:           "Prot-Mitigation",
+	//	WeightFile1:     files.WeightProtMitigation,
+	//	GearFile:        files.GearFileProtMitigation,
+	//	Model:           model_factory.Model_PallyProtMitigation(),
+	//	SubstituteItems: mygear.SubstituteItemsProt,
+	//	FixStatsMode:    fixStats,
+	//})
+
+	process.AddSpecParam(updateProc.SpecParam{
+		Label:           "Prot-Survival",
+		WeightFile1:     files.WeightProtSurvival,
+		GearFile:        files.GearFileProtSurvival,
+		Model:           model_factory.Model_PallyProtSurvival(),
+		SubstituteItems: mygear.SubstituteItemsProt,
+		FixStatsMode:    fixStats,
+	})
+	process.AddSpecParam(updateProc.SpecParam{
+		Label:           "Prot-Heal",
+		WeightFile1:     files.WeightProtHeal,
+		GearFile:        files.GearFileProtHeal,
+		Model:           model_factory.Model_PallyProtHeal(),
+		SubstituteItems: mygear.SubstituteItemsProt,
+		FixStatsMode:    fixStats,
+	})
 
 	cancel := util_async.CancelSignal_Make()
 	util_async.CancelOnKeyPress(cancel)
