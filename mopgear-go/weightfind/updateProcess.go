@@ -37,11 +37,11 @@ const (
 
 	c_eachSimTargetGenerateDataCount = 600
 
-	c_dataSampleFitRank = 300
-	c_dataSampleGrid    = 96
-	c_useSamplingFit    = true
-	c_useSamplingRank4  = true
-	c_useSamplingGrid   = false
+	c_dataSampleFitRank  = 300
+	c_dataSampleGrid     = 96
+	c_useSamplingRank4   = true
+	c_useSamplingGrid1   = false
+	c_useSamplingFormMIP = true
 )
 
 type WeightUpdateProcess struct {
@@ -234,6 +234,9 @@ func (spec *WeightSpec) runSolvers(tracker *util.TrackProgress, cancel util_asyn
 	for gridMode := range 2 {
 		spec.solveGridWeights(gridMode, cancel)
 	}
+	for groups := range 4 {
+		spec.solveGrid2Weights(groups, cancel)
+	}
 
 	// SEARCH weights - Non-Highs
 	for searchMode := range 3 {
@@ -319,10 +322,12 @@ func (spec *WeightSpec) prepareDataGrid(tracker *util.TrackProgress, cancel util
 	// READ IN ANY RECENT DATA
 	tempPathGrid := files.TempData + "weightfind-sim-grid-" + spec.Label + ".json"
 	inputDataGrid, dataAgeGrid := readWeightInputFile(tempPathGrid)
+
 	// DO WE ACCEPT THE OLD DATA
 	if dataAgeGrid > c_simDataAgeMax && !spec.process.forceSkipSim {
 		inputDataGrid = nil
 	}
+
 	// SIMULATE STAT CHANGES, SAVE SIM DATA IN CASE WE NEED TO RESTART
 	if inputDataGrid == nil {
 		currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(spec.GearFile), &spec.Model, setup.MissingEnchant_Panic, spec.process.printer)
@@ -333,11 +338,16 @@ func (spec *WeightSpec) prepareDataGrid(tracker *util.TrackProgress, cancel util
 		if err != nil {
 			return nil, err
 		}
+
 		inputDataGrid = data
-		weight_types.WeightInputWriteFile(inputDataGrid, tempPathGrid)
+		err = weight_types.WeightInputWriteFile(inputDataGrid, tempPathGrid)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		tracker.NewChild().SetDone()
 	}
+
 	spec.dataGrid = inputDataGrid
 	return inputDataGrid, nil
 }
@@ -346,10 +356,12 @@ func (spec *WeightSpec) prepareDataRandom(tracker *util.TrackProgress, cancel ut
 	// READ IN ANY RECENT DATA
 	tempPathReal := files.TempData + "weightfind-sim-real-" + spec.Label + ".json"
 	inputDataReal, dataAgeReal := readWeightInputFile(tempPathReal)
+
 	// DO WE ACCEPT THE OLD DATA
 	if dataAgeReal > c_simDataAgeMax && !spec.process.forceSkipSim {
 		inputDataReal = nil
 	}
+
 	// SIMULATE STAT CHANGES, SAVE SIM DATA IN CASE WE NEED TO RESTART
 	if inputDataReal == nil {
 		data, err := SimulateRealRandomSets(spec.GearFile, spec.SubstituteItems, &spec.Model, c_eachSimTargetGenerateDataCount,
@@ -357,11 +369,16 @@ func (spec *WeightSpec) prepareDataRandom(tracker *util.TrackProgress, cancel ut
 		if err != nil {
 			return nil, err
 		}
+
 		inputDataReal = data
-		weight_types.WeightInputWriteFile(inputDataReal, tempPathReal)
+		err = weight_types.WeightInputWriteFile(inputDataReal, tempPathReal)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		tracker.NewChild().SetDone()
 	}
+
 	spec.dataRand = inputDataReal
 	return inputDataReal, nil
 }
@@ -384,8 +401,12 @@ func (spec *WeightSpec) prepareDataFit(tracker *util.TrackProgress, cancel util_
 		if err != nil {
 			return nil, err
 		}
+
 		inputDataFit = data
-		weight_types.WeightInputWriteFile(inputDataFit, tempPathFit)
+		err = weight_types.WeightInputWriteFile(inputDataFit, tempPathFit)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		tracker.NewChild().SetDone()
 	}
@@ -431,11 +452,11 @@ func (spec *WeightSpec) loadOldWeights() {
 
 func (spec *WeightSpec) solveGridWeights(gridOutlierSetting int, cancel util_async.CancelSignal) {
 	gridData := spec.dataGrid
-	if c_useSamplingGrid {
+	if c_useSamplingGrid1 {
 		gridData = util_collection.SliceSampleFromStart(gridData, c_dataSampleGrid)
 	}
 
-	choiceName := fmt.Sprintf("GRID%d", gridOutlierSetting)
+	choiceName := fmt.Sprintf("GRID1-%d", gridOutlierSetting)
 
 	grid := weight_highs.GridStatWeightProcess1B{}
 	grid.OUTLIER = gridOutlierSetting
@@ -448,6 +469,31 @@ func (spec *WeightSpec) solveGridWeights(gridOutlierSetting int, cancel util_asy
 	grid.SupplyData(gridData)
 	weightsFuture, err := grid.Run()
 	spec.handleFuture1OrError(choiceName, weightsFuture, cancel, err)
+}
+
+func (spec *WeightSpec) solveGrid2Weights(groups int, cancel util_async.CancelSignal) {
+	choiceName := fmt.Sprintf("GRID2-%d", groups)
+
+	grid2 := weight_highs.GridStatWeightProcess2{}
+	switch groups {
+	case 0:
+		grid2.IncludeDiffs1 = true
+	case 1:
+		grid2.IncludeDiffs2 = true
+	case 2:
+		grid2.IncludeDiffs1 = true
+		grid2.IncludeDiffs2 = true
+	default:
+		grid2.IncludeDiffs1 = true
+		grid2.IncludeDiffs2 = true
+		grid2.IncludeDiffs3 = true
+	}
+	grid2.Init(spec.process.printer, spec.process.timeoutEach)
+	grid2.SetRequiredStats(spec.statTypes)
+	grid2.SetTargetRatios(spec.targetRatio)
+	grid2.SupplyData(slices.Clone(spec.dataGrid))
+	weightsFuture, err := grid2.Run()
+	spec.handleFuture2OrError(choiceName, weightsFuture, cancel, err)
 }
 
 func (spec *WeightSpec) bestWeightChoice1() (weightChoice, bool) {
@@ -587,14 +633,20 @@ func (spec *WeightSpec) solveFormulaWeight(cancel util_async.CancelSignal) {
 	compB.SetRequiredStats(spec.statTypes)
 	compB.SetTargetRatios(spec.targetRatio)
 	compB.SetMinimumIncludeRate(0.7)
-	compB.SupplyData(spec.dataAll)
+	if c_useSamplingFormMIP {
+		compB.SupplyData(util_collection.SliceSampleRandom(spec.dataAll, c_dataSampleFitRank))
+	} else {
+		compB.SupplyData(spec.dataAll)
+	}
 	weights2FutureB, err := compB.Run(spec.process.timeoutEach)
 	spec.handleFuture2OrError("FORM2-70", weights2FutureB, cancel, err)
 }
 
 func (spec *WeightSpec) solveFittingWeight(cancel util_async.CancelSignal, tracker *util.TrackProgress) {
+	fitTimeout := spec.process.timeoutEach / 8
+
 	fit1 := fitting3.FittingEachStatWeightProcess3{}
-	fit1.Init(3, spec.process.printer, spec.process.timeoutEach/2)
+	fit1.Init(4, spec.process.printer, fitTimeout)
 	fit1.SetRequiredStats(spec.statTypes, spec.simTypes)
 	fit1.SetTargetRatios(spec.targetRatio)
 	fit1.SupplyData(spec.dataFit)
@@ -602,7 +654,7 @@ func (spec *WeightSpec) solveFittingWeight(cancel util_async.CancelSignal, track
 	spec.evaluateWeightResult3("FITTING3-dataFit", &res1)
 
 	fit2 := fitting3.FittingEachStatWeightProcess3{}
-	fit2.Init(3, spec.process.printer, spec.process.timeoutEach/4)
+	fit2.Init(3, spec.process.printer, fitTimeout)
 	fit2.SetRequiredStats(spec.statTypes, spec.simTypes)
 	fit2.SetTargetRatios(spec.targetRatio)
 	fit2.SupplyData(slices.Concat(spec.dataFit, spec.dataGrid))
@@ -610,7 +662,7 @@ func (spec *WeightSpec) solveFittingWeight(cancel util_async.CancelSignal, track
 	spec.evaluateWeightResult3("FITTING3-dataGridFit", &res2)
 
 	fit3 := fitting3.FittingEachStatWeightProcess3{}
-	fit3.Init(3, spec.process.printer, spec.process.timeoutEach/16)
+	fit3.Init(3, spec.process.printer, fitTimeout)
 	fit3.SetRequiredStats(spec.statTypes, spec.simTypes)
 	fit3.SetTargetRatios(spec.targetRatio)
 	fit3.SupplyData(spec.dataAll)

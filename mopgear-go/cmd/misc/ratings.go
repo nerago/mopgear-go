@@ -1009,7 +1009,11 @@ func statWeightsFitting2eachProper(printer *util.PrintRecorder) {
 }
 
 func statWeightsFitting3eachProper(printer *util.PrintRecorder) {
-	weightInputs := weight_types.WeightInputReadFileOrPanic("tempdata/weightfind-sim-fit-Prot-Survival.json")
+	weightInputs1 := weight_types.WeightInputReadFileOrPanic("tempdata/weightfind-sim-fit-Prot-Survival.json")
+	weightInputs2 := weight_types.WeightInputReadFileOrPanic("tempdata/weightfind-sim-grid-Prot-Survival.json")
+	//weightInputs3 := weight_types.WeightInputReadFileOrPanic("tempdata/weightfind-sim-real-Prot-Survival.json")
+	//weightInputs := slices.Concat(weightInputs1, weightInputs2, weightInputs3)
+	weightInputs := slices.Concat(weightInputs1, weightInputs2)
 	//weightInputs = weightInputs[0:30]
 	simTypes := model_factory.SimPriority_heal.SimTypes()
 	statTypes := model_factory.StatsForWeighting_strengthTank

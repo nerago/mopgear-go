@@ -128,10 +128,16 @@ func (ws *WeightSearcherRatio1) Run(cancel util_async.CancelSignal) weight_types
 
 	bestItems := ws.bestResult.GetBestOrNilValue()
 	bestWeight := bestItems.weight
+
+	status := highs.ModelStatusOptimal
+	if cancel.ShouldFinish() {
+		status = highs.ModelStatusTimeLimit
+	}
+
 	return weight_types.WeightResult1MakeWithRatio(
 		&bestWeight,
 		stopwatch.Elapsed(),
-		highs.ModelStatusOptimal,
+		status,
 		new(bestItems.ratio),
 		nil,
 	)
