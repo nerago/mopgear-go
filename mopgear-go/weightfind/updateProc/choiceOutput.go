@@ -14,17 +14,19 @@ import (
 )
 
 type choiceOutput struct {
-	mutex    sync.Mutex
-	label    string
+	label string
+
+	_mutex   sync.Mutex
 	_choices []weightChoice
 	_summary util.StringBuild2
-	input    *updateInputs
-	printer  *util.PrintRecorder
+
+	input   *updateInputs
+	printer *util.PrintRecorder
 }
 
 type weightChoice struct {
 	choiceName    string
-	weight        weight_types.Weight1Basic
+	weight1       weight_types.Weight1Basic
 	weight2       *weight_types.Weight2Extended
 	weight3       *weight_types.Weight3ExtendedRanged
 	hadExtended   bool
@@ -32,36 +34,43 @@ type weightChoice struct {
 	accuracy1Stat float64
 	accuracyX     float64
 	accuracyXStat float64
-	pawnString    string
 	weightResult  *weight_types.WeightResultCommon
 	weightOrig    weight_types.IWeight
 }
 
 func (wc *choiceOutput) startReport() {
+	wc._mutex.Lock()
+	defer wc._mutex.Unlock()
+
 	wc._summary.WriteString("Weights Accuracy Summary ::::: ")
 	wc._summary.WriteString(wc.label)
 	wc._summary.WriteString(" ::::: ")
 }
 
 func (wc *choiceOutput) addChoice(choice weightChoice) {
-	wc._choices = append(wc._choices, choice)
-	wc.addToSummary(choice)
-}
+	wc._mutex.Lock()
+	defer wc._mutex.Unlock()
 
-func (wc *choiceOutput) addToSummary(option weightChoice) {
-	wc._summary.WriteString(option.choiceName)
+	wc._choices = append(wc._choices, choice)
+
+	wc._summary.WriteString(choice.choiceName)
 	wc._summary.WriteString("=")
-	wc._summary.WriteFloat64(option.accuracy1, 4)
+	wc._summary.WriteFloat64(choice.accuracy1, 4)
 	wc._summary.WriteString(" (")
-	wc._summary.WriteFloat64(option.accuracy1Stat, 4)
+	wc._summary.WriteFloat64(choice.accuracy1Stat, 4)
 	wc._summary.WriteString(") ")
 }
 
 func (wc *choiceOutput) bestWeightChoice1() (weightChoice, bool) {
+	wc._mutex.Lock()
+	defer wc._mutex.Unlock()
+
 	best := util_rank.BestCollector1[weightChoice]{}
 	for _, choice := range wc._choices {
-		best.Offer(&choice, choice.accuracy1Stat)
-		best.Offer(&choice, choice.accuracy1)
+		if !choice.weight1.IsEmpty() {
+			best.Offer(&choice, choice.accuracy1Stat)
+			best.Offer(&choice, choice.accuracy1)
+		}
 	}
 	return best.GetBestOptional().GetWithFlag()
 }
@@ -70,7 +79,8 @@ func (wc *choiceOutput) bestWeightChoiceExtended() (util_collection.Optional[wei
 	input := wc.input
 	best2 := util_rank.BestCollector1[weightChoice]{}
 	best3 := util_rank.BestCollector1[weightChoice]{}
-	for _, choice := range wc._choices {
+
+	for _, choice := range wc.getChoicesSafeCopy() {
 		weightOrig := choice.weightOrig
 		switch weightCast := weightOrig.(type) {
 		case *weight_types.Weight2Extended:
@@ -147,63 +157,62 @@ func (wc *choiceOutput) evaluateWeightResultFuture2(choiceName string, futureRes
 
 func (wc *choiceOutput) evaluateWeightGeneric(choiceName string, weight1 *weight_types.Weight1Basic, weightOrig weight_types.IWeight, weightResult *weight_types.WeightResultCommon) {
 	if weight1 == nil || weightOrig == nil {
-		wc.printer.Printf("Weights accuracy %s %s NULL\n", wc.label, choiceName)
+		wc.printer.Printf("Weights accuracy %s %s NIL\n", wc.label, choiceName)
 		wc.addChoice(weightChoice{choiceName: choiceName, weightResult: weightResult})
 		return
 	}
 
-	input := wc.input
+	accuracy1, accuracy1Stat, accuracyX, accuracyXStat, hasExtended := wc.evaluateAccuracy(weightOrig, weight1)
+	wc.addChoice(weightChoice{choiceName, *weight1, nil, nil, hasExtended,
+		accuracy1, accuracy1Stat, accuracyX, accuracyXStat,
+		weightResult, weightOrig})
 
-	var accuracyX, accuracyXStat float64
-	var hadExtended bool
-	if _, isOne := weightOrig.(*weight_types.Weight1Basic); isOne {
-		hadExtended = false
-	} else {
-		accuracyX = weightfind.EvaluateAccuracyBasic(weightOrig, input.simTypes, &input.targetRatio, input.dataAll)
-		accuracyXStat = weightfind.EvaluateAccuracyStatisticalExtended(weightOrig, input.simTypes, &input.targetRatio, input.dataAll)
-		hadExtended = true
+	isGood := wc.logChoice(choiceName, weight1, weightOrig, accuracy1, accuracy1Stat, accuracyX, accuracyXStat)
+	if isGood {
+		wc.runFollowupTweaker(choiceName, weight1)
 	}
-	accuracy1 := weightfind.EvaluateAccuracyBasic(weight1, input.simTypes, &input.targetRatio, input.dataAll)
-	accuracy1Stat := weightfind.EvaluateAccuracyStatisticalExtended(weight1, input.simTypes, &input.targetRatio, input.dataAll)
+}
 
-	pawnString := tools.WritePawnString(*weight1, wc.printer)
+func (wc *choiceOutput) logChoice(choiceName string, weight1 *weight_types.Weight1Basic, weightOrig weight_types.IWeight, accuracy1 float64, accuracy1Stat float64, accuracyX float64, accuracyXStat float64) bool {
+	tools.WritePawnString(*weight1, wc.printer)
 	wc.printer.Println(weightOrig.String())
 	tools.WriteWeightString(weightOrig, wc.printer)
 
+	isGood := false
 	if weight1.IsEmpty() || weightOrig.IsEmpty() {
 		wc.printer.Printf("Weights accuracy %s %s EMPTY a1=%f a1s=%f aX=%f aXs=%f\n", wc.label, choiceName, accuracy1, accuracy1Stat, accuracyX, accuracyXStat)
-		wc.addChoice(weightChoice{choiceName: choiceName, weight: *weight1, pawnString: pawnString, weightResult: weightResult})
 	} else if weight1.IsOverlySimple() {
 		wc.printer.Printf("Weights accuracy %s %s OVERLY SIMPLE a1=%f a1s=%f aX=%f aXs=%f\n", wc.label, choiceName, accuracy1, accuracy1Stat, accuracyX, accuracyXStat)
-		wc.addChoice(weightChoice{choiceName: choiceName, weight: *weight1, pawnString: pawnString, weightResult: weightResult})
 	} else {
 		wc.printer.Printf("Weights accuracy %s %s a1=%f a1s=%f aX=%f aXs=%f\n", wc.label, choiceName, accuracy1, accuracy1Stat, accuracyX, accuracyXStat)
-		wc.addChoice(weightChoice{choiceName, *weight1, nil, nil, hadExtended,
-			accuracy1, accuracy1Stat,
-			accuracyX, accuracyXStat,
-			pawnString, weightResult, weightOrig})
+		isGood = true
 	}
+
+	return isGood
+}
+
+func (wc *choiceOutput) evaluateAccuracy(weightOrig weight_types.IWeight, weight1 *weight_types.Weight1Basic) (accuracy1, accuracy1Stat, accuracyX, accuracyXStat float64, hasExtended bool) {
+	input := wc.input
+	if _, isOne := weightOrig.(*weight_types.Weight1Basic); isOne {
+		hasExtended = false
+	} else {
+		accuracyX = weightfind.EvaluateAccuracyBasic(weightOrig, input.simTypes, &input.targetRatio, input.dataAll)
+		accuracyXStat = weightfind.EvaluateAccuracyStatisticalExtended(weightOrig, input.simTypes, &input.targetRatio, input.dataAll)
+		hasExtended = true
+	}
+	accuracy1 = weightfind.EvaluateAccuracyBasic(weight1, input.simTypes, &input.targetRatio, input.dataAll)
+	accuracy1Stat = weightfind.EvaluateAccuracyStatisticalExtended(weight1, input.simTypes, &input.targetRatio, input.dataAll)
+	return accuracy1, accuracy1Stat, accuracyX, accuracyXStat, hasExtended
 }
 
 func (wc *choiceOutput) getSummary() util.StringBuild2 {
-	wc.mutex.Lock()
-	defer wc.mutex.Unlock()
+	wc._mutex.Lock()
+	defer wc._mutex.Unlock()
 	return wc._summary.Clone()
 }
 
-func (wc *choiceOutput) getChoices() []weightChoice {
-	wc.mutex.Lock()
-	defer wc.mutex.Unlock()
+func (wc *choiceOutput) getChoicesSafeCopy() []weightChoice {
+	wc._mutex.Lock()
+	defer wc._mutex.Unlock()
 	return slices.Clone(wc._choices)
-}
-
-func (spec *weightSpecInternal) tweakEachWeight() {
-	currentChoiceSize := len(spec.choices)
-	for i := range currentChoiceSize {
-		choice := spec.choices[i]
-		if !choice.weight.IsEmpty() {
-			weightsTweaked, _ := weightfind.WeightTweakerWithLogging(choice.weight, spec.statTypes, &spec.targetRatio, spec.dataAll, spec.process.printer)
-			spec.evaluateWeight1(choice.choiceName+"_TWEAK", &weightsTweaked)
-		}
-	}
 }

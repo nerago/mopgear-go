@@ -18,7 +18,7 @@ import (
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
-func (spec *weightSpecInternal) prepareSimData(tracker *util.TrackProgress, cancel util_async.CancelSignal) error {
+func (spec *weightSpecInternal) prepareSimData(taskPoolSim *util_async.NestedTaskPoolChild, tracker *util.TrackProgress, cancel util_async.CancelSignal) error {
 	inputDataGrid, err := spec.prepareDataGrid(tracker, cancel)
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func readWeightInputFile(filename string) ([]weight_types.WeightInput, time.Dura
 	return weightInputs, dataAge
 }
 
-func (spec *weightSpecInternal) prepareDataGrid(tracker *util.TrackProgress, cancel util_async.CancelSignal) ([]weight_types.WeightInput, error) {
+func (spec *weightSpecInternal) prepareDataGrid(taskPool *util_async.NestedTaskPoolChild, tracker *util.TrackProgress, cancel util_async.CancelSignal) ([]weight_types.WeightInput, error) {
 	param := spec.param
 
 	// READ IN ANY RECENT DATA
@@ -79,22 +79,24 @@ func (spec *weightSpecInternal) prepareDataGrid(tracker *util.TrackProgress, can
 
 	// SIMULATE STAT CHANGES, SAVE SIM DATA IN CASE WE NEED TO RESTART
 	if inputDataGrid == nil {
-		currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(param.GearFile), &param.Model, setup.MissingEnchant_Panic, spec.process.printer)
-		currentItemSet := items.FullItemSet_FromMap(currentEquip)
-		data, err := weightfind.SimulateSteppedStatChangesForGrid(currentItemSet, spec.process.printer, spec.process.simSpeed,
-			param.Model.SimSpeedUp, param.Model.StatsForWeighting, param.Model.Spec, param.Model.Goal,
-			param.Model.SimulateAs,
-			param.Model.Professions, tracker.NewChild(), param.Label, cancel,
-			param.FixStatsMode, c_eachSimTargetGenerateDataCount)
-		if err != nil {
-			return nil, err
-		}
+		taskPool.Go(func() {
+			currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(param.GearFile), &param.Model, setup.MissingEnchant_Panic, spec.process.printer)
+			currentItemSet := items.FullItemSet_FromMap(currentEquip)
+			data, err := weightfind.SimulateSteppedStatChangesForGrid(currentItemSet, spec.process.printer, spec.process.simSpeed,
+				param.Model.SimSpeedUp, param.Model.StatsForWeighting, param.Model.Spec, param.Model.Goal,
+				param.Model.SimulateAs,
+				param.Model.Professions, tracker.NewChild(), param.Label, cancel,
+				param.FixStatsMode, c_eachSimTargetGenerateDataCount)
+			if err != nil {
+				return nil, err
+			}
 
-		inputDataGrid = data
-		err = weight_types.WeightInputWriteFile(inputDataGrid, tempPathGrid)
-		if err != nil {
-			return nil, err
-		}
+			inputDataGrid = data
+			err = weight_types.WeightInputWriteFile(inputDataGrid, tempPathGrid)
+			if err != nil {
+				return nil, err
+			}
+		})
 	} else {
 		tracker.NewChild().SetDone()
 	}
@@ -103,7 +105,7 @@ func (spec *weightSpecInternal) prepareDataGrid(tracker *util.TrackProgress, can
 	return inputDataGrid, nil
 }
 
-func (spec *weightSpecInternal) prepareDataRandom(tracker *util.TrackProgress, cancel util_async.CancelSignal) ([]weight_types.WeightInput, error) {
+func (spec *weightSpecInternal) prepareDataRandom(taskPool *util_async.NestedTaskPoolChild, tracker *util.TrackProgress, cancel util_async.CancelSignal) ([]weight_types.WeightInput, error) {
 	param := spec.param
 
 	// READ IN ANY RECENT DATA
@@ -136,7 +138,7 @@ func (spec *weightSpecInternal) prepareDataRandom(tracker *util.TrackProgress, c
 	return inputDataReal, nil
 }
 
-func (spec *weightSpecInternal) prepareDataFit(tracker *util.TrackProgress, cancel util_async.CancelSignal) ([]weight_types.WeightInput, error) {
+func (spec *weightSpecInternal) prepareDataFit(taskPool *util_async.NestedTaskPoolChild, tracker *util.TrackProgress, cancel util_async.CancelSignal) ([]weight_types.WeightInput, error) {
 	param := spec.param
 
 	// READ IN ANY RECENT DATA

@@ -77,7 +77,7 @@ func weightTweakerInternalLogged(startWeight weight_types.Weight1Basic, tweakSta
 				break
 			}
 		} else {
-			printer.Printf("NEXT %s accuracy=%f\n", proposedEntry.weight.String(), proposedEntry.accuracy)
+			printer.Printf("TWEAK %s accuracy=%f\n", proposedEntry.weight.String(), proposedEntry.accuracy)
 			bestEntry = proposedEntry
 		}
 	}

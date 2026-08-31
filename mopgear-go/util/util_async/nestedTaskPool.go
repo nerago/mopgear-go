@@ -144,11 +144,10 @@ type internalTask struct {
 }
 
 type NestedTaskPoolChild struct {
-	mutex   sync.Mutex
-	pool    *NestedTaskPoolParent
-	queue   []*internalTask
-	running []*internalTask
-	//finished    []*internalTask
+	mutex       sync.Mutex
+	pool        *NestedTaskPoolParent
+	queue       []*internalTask
+	running     []*internalTask
 	waitChannel chan bool
 }
 
@@ -174,15 +173,19 @@ func (child *NestedTaskPoolChild) notifyTaskComplete(task *internalTask) {
 	defer child.mutex.Unlock()
 
 	removeFromSlice(&child.running, task)
-	//child.finished = append(child.finished, task)
 
-	if len(child.queue) == 0 && len(child.running) == 0 {
+	if len(child.queue) == 0 && len(child.running) == 0 && child.waitChannel != nil {
 		close(child.waitChannel)
+		child.waitChannel = nil
 	}
 }
 
+// only clears wait if at least one child has been added and finished
 func (child *NestedTaskPoolChild) Wait() {
-	<-child.waitChannel
+	waitChan := child.waitChannel
+	if waitChan != nil {
+		<-waitChan
+	}
 }
 
 func removeFromSlice(slice *[]*internalTask, task *internalTask) {

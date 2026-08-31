@@ -23,16 +23,16 @@ type solves struct {
 	tracker     *util.TrackProgress
 	timeoutEach int
 	printer     *util.PrintRecorder
-	input       *updateInputs
-	output      *choiceOutput
+
+	input  *updateInputs
+	output *choiceOutput
+
+	taskPool *util_async.NestedTaskPoolChild
 }
 
-func (sol *solves) runSolvers() {
-	defer func() {
-		err := recover()
-		util.GlobalWarnHandler(err)
-	}()
+type solveTask func()
 
+func (sol *solves) startSolvers() {
 	// FORMULA2 WEIGHTS - MIP
 	sol.solveFormulaWeight()
 
@@ -41,12 +41,9 @@ func (sol *solves) runSolvers() {
 	sol.solveFittingFast()
 
 	// GRID WEIGHTS - GPU*2 - later for less contention
-	for gridMode := range 2 {
-		sol.solveGridWeights(gridMode)
-	}
-	for groups := range 4 {
-		sol.solveGrid2Weights(groups)
-	}
+	sol.solveGridWeights()
+
+	sol.solveGrid2Weights()
 
 	// SEARCH weights - Non-Highs
 	for searchMode := range 3 {
@@ -54,61 +51,77 @@ func (sol *solves) runSolvers() {
 	}
 
 	// RANKING WEIGHTS - simplex*2, IPX*2
-	for rankMode := range 6 {
-		sol.solveRankingWeight(rankMode)
+	sol.solveRankingWeight()
+}
+
+func (sol *solves) addTask(task solveTask) {
+	sol.taskPool.Go(func() {
+		defer func() {
+			err := recover()
+			util.GlobalWarnHandler(err)
+		}()
+		task()
+	})
+}
+
+func (sol *solves) solveGridWeights() {
+	for gridOutlierSetting := range 2 {
+		sol.addTask(func() {
+			gridData := sol.input.dataGrid
+			if c_useSamplingGrid1 {
+				gridData = util_collection.SliceSampleFromStart(gridData, c_dataSampleGrid)
+			}
+
+			choiceName := fmt.Sprintf("GRID1-%d", gridOutlierSetting)
+
+			grid := weight_highs.GridStatWeightProcess1B{}
+			grid.OUTLIER = gridOutlierSetting
+			grid.SCALEMODE = 1
+			grid.ROUNDMODE = 2
+			grid.CALCMODE = 2
+			grid.Init(sol.printer, sol.timeoutEach)
+			grid.SetTargetRatios(sol.input.targetRatio)
+			grid.SetRequiredStats(sol.input.statTypes)
+			grid.SupplyData(gridData)
+			weightsFuture, err := grid.Run()
+			sol.handleFuture1OrError(choiceName, weightsFuture, err)
+		})
 	}
 }
 
-func (sol *solves) solveGridWeights(gridOutlierSetting int) {
-	gridData := sol.input.dataGrid
-	if c_useSamplingGrid1 {
-		gridData = util_collection.SliceSampleFromStart(gridData, c_dataSampleGrid)
+func (sol *solves) solveGrid2Weights() {
+	for groups := range 4 {
+		sol.addTask(func() {
+			choiceName := fmt.Sprintf("GRID2-%d", groups)
+
+			grid2 := weight_highs.GridStatWeightProcess2{}
+			switch groups {
+			case 0:
+				grid2.IncludeDiffs1 = true
+			case 1:
+				grid2.IncludeDiffs2 = true
+			case 2:
+				grid2.IncludeDiffs1 = true
+				grid2.IncludeDiffs2 = true
+			default:
+				grid2.IncludeDiffs1 = true
+				grid2.IncludeDiffs2 = true
+				grid2.IncludeDiffs3 = true
+			}
+			grid2.Init(sol.printer, sol.timeoutEach)
+			grid2.SetRequiredStats(sol.input.statTypes)
+			grid2.SetTargetRatios(sol.input.targetRatio)
+			grid2.SupplyData(slices.Clone(sol.input.dataGrid))
+			weightsFuture, err := grid2.Run()
+			sol.handleFuture2OrError(choiceName, weightsFuture, err)
+		})
 	}
-
-	choiceName := fmt.Sprintf("GRID1-%d", gridOutlierSetting)
-
-	grid := weight_highs.GridStatWeightProcess1B{}
-	grid.OUTLIER = gridOutlierSetting
-	grid.SCALEMODE = 1
-	grid.ROUNDMODE = 2
-	grid.CALCMODE = 2
-	grid.Init(sol.printer, sol.timeoutEach)
-	grid.SetTargetRatios(sol.input.targetRatio)
-	grid.SetRequiredStats(sol.input.statTypes)
-	grid.SupplyData(gridData)
-	weightsFuture, err := grid.Run()
-	sol.handleFuture1OrError(choiceName, weightsFuture, err)
 }
 
-func (sol *solves) solveGrid2Weights(groups int) {
-	choiceName := fmt.Sprintf("GRID2-%d", groups)
-
-	grid2 := weight_highs.GridStatWeightProcess2{}
-	switch groups {
-	case 0:
-		grid2.IncludeDiffs1 = true
-	case 1:
-		grid2.IncludeDiffs2 = true
-	case 2:
-		grid2.IncludeDiffs1 = true
-		grid2.IncludeDiffs2 = true
-	default:
-		grid2.IncludeDiffs1 = true
-		grid2.IncludeDiffs2 = true
-		grid2.IncludeDiffs3 = true
-	}
-	grid2.Init(sol.printer, sol.timeoutEach)
-	grid2.SetRequiredStats(sol.input.statTypes)
-	grid2.SetTargetRatios(sol.input.targetRatio)
-	grid2.SupplyData(slices.Clone(sol.input.dataGrid))
-	weightsFuture, err := grid2.Run()
-	sol.handleFuture2OrError(choiceName, weightsFuture, err)
-}
-
-func (sol *solves) solveRankingWeight(rankMode int) {
+func (sol *solves) solveRankingWeight() {
 	rankData := sol.input.dataAll
 
-	if rankMode == 0 {
+	sol.addTask(func() {
 		ranking := weight_highs.RankingStatWeightProcess3c{}
 		ranking.Init(sol.printer, sol.timeoutEach)
 		ranking.SetRequiredStats(sol.input.statTypes)
@@ -116,7 +129,9 @@ func (sol *solves) solveRankingWeight(rankMode int) {
 		ranking.SupplyData(rankData)
 		weightsFuture, err := ranking.RunMultiRound()
 		sol.handleFuture1OrError("RANK3C", weightsFuture, err)
-	} else if rankMode == 1 {
+	})
+
+	sol.addTask(func() {
 		ranking := weight_highs.RankingStatWeightProcess3b{}
 		ranking.TOTALWEIGHT = 2
 		ranking.ALGO = 0
@@ -127,12 +142,14 @@ func (sol *solves) solveRankingWeight(rankMode int) {
 		var weightsFuture *util_async.FutureCancellable[weight_types.WeightResult1]
 		var err error
 		if bestWeightsSoFar, hasBest := sol.output.bestWeightChoice1(); hasBest {
-			weightsFuture, err = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
+			weightsFuture, err = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight1)
 		} else {
 			weightsFuture, err = ranking.RunMultiRound()
 		}
 		sol.handleFuture1OrError("RANK3-2-0", weightsFuture, err)
-	} else if rankMode == 2 {
+	})
+
+	sol.addTask(func() {
 		ranking := weight_highs.RankingStatWeightProcess3b{}
 		ranking.TOTALWEIGHT = 2
 		ranking.ALGO = 1
@@ -143,12 +160,14 @@ func (sol *solves) solveRankingWeight(rankMode int) {
 		var weightsFuture *util_async.FutureCancellable[weight_types.WeightResult1]
 		var err error
 		if bestWeightsSoFar, hasBest := sol.output.bestWeightChoice1(); hasBest {
-			weightsFuture, err = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight)
+			weightsFuture, err = ranking.RunSinglePassFromExternal(bestWeightsSoFar.weight1)
 		} else {
 			weightsFuture, err = ranking.RunMultiRound()
 		}
 		sol.handleFuture1OrError("RANK3-2-1", weightsFuture, err)
-	} else if rankMode == 3 {
+	})
+
+	sol.addTask(func() {
 		ranking := weight_highs.RankingStatWeightProcess{}
 		ranking.RANKMODE = 0
 		ranking.WEIGHTSUM = 0
@@ -158,7 +177,9 @@ func (sol *solves) solveRankingWeight(rankMode int) {
 		ranking.SupplyData(rankData)
 		weightsFuture, err := ranking.Run(sol.timeoutEach)
 		sol.handleFuture1OrError("RANK1-0", weightsFuture, err)
-	} else if rankMode == 4 {
+	})
+
+	sol.addTask(func() {
 		ranking := weight_highs.RankingStatWeightProcess{}
 		ranking.RANKMODE = 0
 		ranking.WEIGHTSUM = 1
@@ -168,7 +189,9 @@ func (sol *solves) solveRankingWeight(rankMode int) {
 		ranking.SupplyData(rankData)
 		weightsFuture, err := ranking.Run(sol.timeoutEach)
 		sol.handleFuture1OrError("RANK1-1", weightsFuture, err)
-	} else {
+	})
+
+	sol.addTask(func() {
 		if c_useSamplingRank4 {
 			rankData = util_collection.SliceSampleRandom(rankData, c_dataSampleFitRank)
 		}
@@ -179,69 +202,79 @@ func (sol *solves) solveRankingWeight(rankMode int) {
 		ranking.SetTargetRatios(sol.input.targetRatio)
 		ranking.SupplyData(rankData)
 		if bestWeightSoFar, hasBest := sol.output.bestWeightChoice1(); hasBest {
-			existing1 := bestWeightSoFar.weight
+			existing1 := bestWeightSoFar.weight1
 			weightsFuture, err := ranking.RunUsingExternalStart(existing1, sol.timeoutEach)
 			sol.handleFuture1OrError("RANK4", weightsFuture, err)
 		}
-	}
+	})
 }
 
 func (sol *solves) solveFormulaWeight() {
-	comp := weight_highs.FormulaStatWeightProcess2{}
-	comp.Init(sol.printer)
-	comp.SetRequiredStats(sol.input.statTypes)
-	comp.SetTargetRatios(sol.input.targetRatio)
-	comp.SetMinimumIncludeRate(1.0)
-	comp.SupplyData(sol.input.dataAll)
-	weights2Future, err := comp.Run(sol.timeoutEach)
-	sol.handleFuture2OrError("FORM2", weights2Future, err)
+	sol.addTask(func() {
+		comp := weight_highs.FormulaStatWeightProcess2{}
+		comp.Init(sol.printer)
+		comp.SetRequiredStats(sol.input.statTypes)
+		comp.SetTargetRatios(sol.input.targetRatio)
+		comp.SetMinimumIncludeRate(1.0)
+		comp.SupplyData(sol.input.dataAll)
+		weights2Future, err := comp.Run(sol.timeoutEach)
+		sol.handleFuture2OrError("FORM2", weights2Future, err)
+	})
 
-	compB := weight_highs.FormulaStatWeightProcess2{}
-	compB.BLEND = 3
-	compB.Init(sol.printer)
-	compB.SetRequiredStats(sol.input.statTypes)
-	compB.SetTargetRatios(sol.input.targetRatio)
-	compB.SetMinimumIncludeRate(0.7)
-	if c_useSamplingFormMIP {
-		compB.SupplyData(util_collection.SliceSampleRandom(sol.input.dataAll, c_dataSampleFitRank))
-	} else {
-		compB.SupplyData(sol.input.dataAll)
-	}
-	weights2FutureB, err := compB.Run(sol.timeoutEach)
-	sol.handleFuture2OrError("FORM2-70", weights2FutureB, err)
+	sol.addTask(func() {
+		compB := weight_highs.FormulaStatWeightProcess2{}
+		compB.BLEND = 3
+		compB.Init(sol.printer)
+		compB.SetRequiredStats(sol.input.statTypes)
+		compB.SetTargetRatios(sol.input.targetRatio)
+		compB.SetMinimumIncludeRate(0.7)
+		if c_useSamplingFormMIP {
+			compB.SupplyData(util_collection.SliceSampleRandom(sol.input.dataAll, c_dataSampleFitRank))
+		} else {
+			compB.SupplyData(sol.input.dataAll)
+		}
+		weights2FutureB, err := compB.Run(sol.timeoutEach)
+		sol.handleFuture2OrError("FORM2-70", weights2FutureB, err)
+	})
 }
 
 func (sol *solves) solveFittingWeight() {
 	fitTimeout := sol.timeoutEach / 8
 
-	fit1 := fitting3.FittingEachStatWeightProcess3{}
-	fit1.Init(4, sol.printer, fitTimeout)
-	fit1.SetRequiredStats(sol.input.statTypes, sol.input.simTypes)
-	fit1.SetTargetRatios(sol.input.targetRatio)
-	fit1.SupplyData(sol.input.dataFit)
-	res1 := fit1.Run(sol.cancel, sol.tracker)
-	sol.output.evaluateWeightResult3("FITTING3-dataFit", &res1)
+	sol.addTask(func() {
+		fit1 := fitting3.FittingEachStatWeightProcess3{}
+		fit1.Init(4, sol.printer, fitTimeout)
+		fit1.SetRequiredStats(sol.input.statTypes, sol.input.simTypes)
+		fit1.SetTargetRatios(sol.input.targetRatio)
+		fit1.SupplyData(sol.input.dataFit)
+		res1 := fit1.Run(sol.cancel, sol.tracker)
+		sol.output.evaluateWeightResult3("FITTING3-dataFit", &res1)
+	})
 
-	fit2 := fitting3.FittingEachStatWeightProcess3{}
-	fit2.Init(3, sol.printer, fitTimeout)
-	fit2.SetRequiredStats(sol.input.statTypes, sol.input.simTypes)
-	fit2.SetTargetRatios(sol.input.targetRatio)
-	fit2.SupplyData(slices.Concat(sol.input.dataFit, sol.input.dataGrid))
-	res2 := fit2.Run(sol.cancel, sol.tracker)
-	sol.output.evaluateWeightResult3("FITTING3-dataGridFit", &res2)
+	sol.addTask(func() {
+		fit2 := fitting3.FittingEachStatWeightProcess3{}
+		fit2.Init(3, sol.printer, fitTimeout)
+		fit2.SetRequiredStats(sol.input.statTypes, sol.input.simTypes)
+		fit2.SetTargetRatios(sol.input.targetRatio)
+		fit2.SupplyData(slices.Concat(sol.input.dataFit, sol.input.dataGrid))
+		res2 := fit2.Run(sol.cancel, sol.tracker)
+		sol.output.evaluateWeightResult3("FITTING3-dataGridFit", &res2)
+	})
 
-	fit3 := fitting3.FittingEachStatWeightProcess3{}
-	fit3.Init(3, sol.printer, fitTimeout)
-	fit3.SetRequiredStats(sol.input.statTypes, sol.input.simTypes)
-	fit3.SetTargetRatios(sol.input.targetRatio)
-	fit3.SupplyData(sol.input.dataAll)
-	res3 := fit3.Run(sol.cancel, sol.tracker)
-	sol.output.evaluateWeightResult3("FITTING3-dataAll", &res3)
+	sol.addTask(func() {
+		fit3 := fitting3.FittingEachStatWeightProcess3{}
+		fit3.Init(3, sol.printer, fitTimeout)
+		fit3.SetRequiredStats(sol.input.statTypes, sol.input.simTypes)
+		fit3.SetTargetRatios(sol.input.targetRatio)
+		fit3.SupplyData(sol.input.dataAll)
+		res3 := fit3.Run(sol.cancel, sol.tracker)
+		sol.output.evaluateWeightResult3("FITTING3-dataAll", &res3)
+	})
 }
 
 func (sol *solves) solveFittingFast() {
 	for segments := 2; segments <= 4; segments++ {
-		{
+		sol.addTask(func() {
 			fit4data := fitting4.FittingEachStatWeightProcess4{}
 			fit4data.SegmentOnData = true
 			fit4data.Init(segments, sol.printer, sol.timeoutEach)
@@ -251,9 +284,9 @@ func (sol *solves) solveFittingFast() {
 			weights3data := fit4data.Run(sol.cancel)
 			label := fmt.Sprintf("FITTING4-data-%d", segments)
 			sol.output.evaluateWeightResult3(label, &weights3data)
-		}
+		})
 
-		{
+		sol.addTask(func() {
 			fit4stat := fitting4.FittingEachStatWeightProcess4{}
 			fit4stat.SegmentOnData = false
 			fit4stat.Init(segments, sol.printer, sol.timeoutEach)
@@ -263,17 +296,22 @@ func (sol *solves) solveFittingFast() {
 			weights3stat := fit4stat.Run(sol.cancel)
 			label := fmt.Sprintf("FITTING4-stat-%d", segments)
 			sol.output.evaluateWeightResult3(label, &weights3stat)
-		}
+		})
 	}
 }
 
-func (sol *solves) solveSearchWeights(searchMode int) {
+func (sol *solves) makeCanceller() (*util_async.CancelSignalBasic, *time.Timer) {
 	innerCancel := util_async.CancelSignal_Make()
 	timer := util_async.CancelAfterTimeout(innerCancel, time.Second*time.Duration(sol.timeoutEach), sol.printer)
 	_ = util_async.ChainCancel(sol.cancel, innerCancel)
-	defer timer.Stop()
+	return innerCancel, timer
+}
 
-	if searchMode == 0 {
+func (sol *solves) solveSearchWeights(searchMode int) {
+	sol.addTask(func() {
+		innerCancel, timer := sol.makeCanceller()
+		defer timer.Stop()
+
 		search := weightfind.WeightSearcher2{}
 		search.AccuracyStatistical = false
 		search.Init(sol.input.statTypes, sol.input.targetRatio, sol.printer)
@@ -281,7 +319,12 @@ func (sol *solves) solveSearchWeights(searchMode int) {
 		search.SetRanges(-1.0, 10.0)
 		weightResult := search.Run(innerCancel)
 		sol.output.evaluateWeightResult1("SEARCH2", &weightResult)
-	} else if searchMode == 1 {
+	})
+
+	sol.addTask(func() {
+		innerCancel, timer := sol.makeCanceller()
+		defer timer.Stop()
+
 		search := weightfind.WeightSearcher3{}
 		search.AccuracyStatistical = true
 		search.Init(sol.input.statTypes, sol.input.targetRatio)
@@ -289,7 +332,12 @@ func (sol *solves) solveSearchWeights(searchMode int) {
 		search.SetRanges(-1.0, 10.0)
 		weightResult := search.Run(innerCancel)
 		sol.output.evaluateWeightResult1("SEARCH3", &weightResult)
-	} else {
+	})
+
+	sol.addTask(func() {
+		innerCancel, timer := sol.makeCanceller()
+		defer timer.Stop()
+
 		sw := util.StopwatchMakeStarted()
 		search := weightfind.WeightSearcherExtended1{}
 		search.Init(sol.input.statTypes, sol.input.targetRatio)
@@ -299,7 +347,7 @@ func (sol *solves) solveSearchWeights(searchMode int) {
 
 		weightResult := weight_types.WeightResult2Make(weight2, sw.Elapsed(), highs.ModelStatusOptimal)
 		sol.output.evaluateWeightResult2("SEARCH-EX1", &weightResult)
-	}
+	})
 }
 
 func (sol *solves) handleFuture1OrError(choiceName string, weightsFuture *util_async.FutureCancellable[weight_types.WeightResult1], err error) {
