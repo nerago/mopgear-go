@@ -218,6 +218,11 @@ func (spec *WeightSpec) updateSpec(tracker *util.TrackProgress, cancel util_asyn
 }
 
 func (spec *WeightSpec) runSolvers(tracker *util.TrackProgress, cancel util_async.CancelSignal) {
+	defer func() {
+		err := recover()
+		util.GlobalWarnHandler(err)
+	}()
+
 	// FORMULA2 WEIGHTS - MIP
 	spec.solveFormulaWeight(cancel)
 

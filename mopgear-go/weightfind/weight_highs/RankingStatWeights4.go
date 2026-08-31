@@ -20,8 +20,8 @@ const (
 	c_Rank4ScaleTarget    = 1.0
 	c_Rank4LargeWeight    = 50.0
 	c_Rank4WeightTotalSum = 10.0
-	c_Rank4LimitScore     = 200.0
-	c_Rank4LargeScore     = 500.0
+	c_Rank4LimitScore     = 500.0
+	c_Rank4LargeScore     = 2000.0
 )
 
 type RankingStatWeightProcess4 struct {
@@ -86,7 +86,7 @@ func (run *rankInternalRun4) supplyData(inputData []weight_types.WeightInput) {
 	})
 
 	primes := util.PrimesSmall(int64(len(run.runData)))
-	if len(primes)<len(run.runData) {
+	if len(primes) < len(run.runData) {
 		run.runData = run.runData[0:len(primes)]
 		run.process.printer.Println("RANK4 cutting data: out of primes; TODO do better!!!!!!")
 	}
@@ -294,7 +294,12 @@ func (run *rankInternalRun4) setupInitialSolutionFromExternal2(weights weight_ty
 
 	for _, entry := range run.runData {
 		entry.InitialStatScore = internalWeights.CalcStatScoreScaled(entry.Data, run.scaleStats)
-		run.build.SetInitialSolutionValue(entry.ScoreColumn, entry.InitialStatScore)
+		if entry.InitialStatScore > c_Rank4LimitScore || entry.InitialStatScore < -c_Rank4LimitScore {
+			// give it the extra range doubled but don't actually constrain, should give solver options
+			run.build.ChangeColumnMinMax(entry.ScoreColumn, -entry.InitialStatScore*2, entry.InitialStatScore*2)
+		} else {
+			run.build.SetInitialSolutionValue(entry.ScoreColumn, entry.InitialStatScore)
+		}
 	}
 
 	run.setupRemainingInitialSolution()
