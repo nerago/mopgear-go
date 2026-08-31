@@ -530,9 +530,9 @@ func (future *FutureCancellableWithError[T]) finalError(value valueOrError[T]) e
 	if value.Error != nil {
 		return value.Error
 	} else if future.isCancelled {
-		return errors.New("cancelled")
+		return util.ErrorTracedNew("cancelled")
 	} else {
-		return errors.New("empty result")
+		return util.ErrorTracedNew("empty result")
 	}
 }
 

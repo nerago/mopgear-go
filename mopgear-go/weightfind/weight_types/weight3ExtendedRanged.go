@@ -2,7 +2,6 @@ package weight_types
 
 import (
 	"cmp"
-	"errors"
 	"fmt"
 	"iter"
 	"math"
@@ -78,12 +77,12 @@ func (wer *Weight3ExtendedRanged) SetSimScale(simType stats.SimType, rangingScal
 func (wer *Weight3ExtendedRanged) FinishAndValidate() error {
 	for statType := range wer.StatWeights.SeqKey2() {
 		if !slices.Contains(wer.StatList, statType) {
-			return errors.New("weight given for unlisted stat")
+			return util.ErrorTracedNew("weight given for unlisted stat")
 		}
 	}
 	for simType := range wer.StatWeights.SeqKey1() {
 		if !slices.Contains(wer.SimList, simType) {
-			return errors.New("weight given for unlisted sim")
+			return util.ErrorTracedNew("weight given for unlisted sim")
 		}
 	}
 
@@ -99,25 +98,25 @@ func (wer *Weight3ExtendedRanged) FinishAndValidate() error {
 		statType := entry.Key2
 		value := entry.Value
 		if !slices.Contains(wer.StatList, statType) {
-			return errors.New("unexpected weight for " + statType.Name())
+			return util.ErrorTracedNew("unexpected weight for " + statType.Name())
 		}
 		if !slices.Contains(wer.SimList, simType) {
-			return errors.New("unexpected weight for " + simType.Name())
+			return util.ErrorTracedNew("unexpected weight for " + simType.Name())
 		}
 		if value.StatRange.RangeSize() <= 1 {
-			return errors.New("empty range")
+			return util.ErrorTracedNew("empty range for " + simType.Name() + " " + statType.Name())
 		}
 	}
 
 	for simType := range wer.SimPriority.entries.SeqKey() {
 		if !slices.Contains(wer.SimList, simType) {
-			return errors.New("priority given for unlisted sim")
+			return util.ErrorTracedNew("priority given for unlisted sim")
 		}
 	}
 	for _, simType := range wer.SimList {
 		_, hasValue := wer.SimPriority.Get(simType)
 		if !hasValue {
-			return errors.New("priority missing for " + simType.Name())
+			return util.ErrorTracedNew("priority missing for " + simType.Name())
 		}
 	}
 	return nil

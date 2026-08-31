@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"runtime/debug"
@@ -171,6 +172,30 @@ func (print *PrintRecorder) Println(str string) {
 
 	if print.debugConsole {
 		_, _ = os.Stdout.WriteString(str)
+		_, _ = os.Stdout.Write([]byte{'\n'})
+	}
+}
+
+func (print *PrintRecorder) PrintlnError(str string, err error) {
+	print.mutex.Lock()
+	defer print.mutex.Unlock()
+
+	if print.holdOutput {
+		print.builder.WriteString(str)
+		print.builder.WriteRune(' ')
+		print.builder.WriteString(err.Error())
+		print.builder.WriteRune('\n')
+		if errTrace, isTrace := errors.AsType[IErrorTraced](err); isTrace {
+			print.builder.WriteBytes(errTrace.Stack())
+		}
+	} else {
+		print.outputString(str)
+		print.outputString(" ")
+		print.outputString(err.Error())
+		print.outputNewline()
+		if errTrace, isTrace := errors.AsType[IErrorTraced](err); isTrace {
+			print.outputBytes(errTrace.Stack())
+		}
 	}
 }
 

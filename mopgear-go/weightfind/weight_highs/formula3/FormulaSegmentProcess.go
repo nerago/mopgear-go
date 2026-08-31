@@ -1,7 +1,6 @@
 package formula3
 
 import (
-	"errors"
 	"math"
 	"time"
 
@@ -102,7 +101,7 @@ func (proc *FormulaSegmentedProcess3) runInitialSection() {
 
 	sectResult, hasResult := sectionFuture.WaitForResult()
 	if !hasResult {
-		proc.sendErrorResult(errors.New("missing section result"))
+		proc.sendErrorResult(util.ErrorTracedNew("missing section result"))
 		return
 	} else if sectResult.err != nil {
 		proc.sendErrorResult(sectResult.err)
@@ -154,7 +153,7 @@ func (proc *FormulaSegmentedProcess3) processInitialResult(result *sectionResult
 		proc.primaryInfo = info
 		return nil
 	} else {
-		return errors.New("unexpected result: neither full range or smallestUndecided set")
+		return util.ErrorTracedNew("unexpected result: neither full range or smallestUndecided set")
 	}
 }
 
@@ -259,7 +258,7 @@ func (proc *FormulaSegmentedProcess3) startNextSection(bound *statBounds, forceL
 	} else if totalPercentAvailable > c_collapseRangePercent {
 		includeRate = 1.00
 	} else {
-		return nil, errors.New("small range should already be collapsed")
+		return nil, util.ErrorTracedNew("small range should already be collapsed")
 	}
 	sect.setMinimumIncludeRate(includeRate)
 

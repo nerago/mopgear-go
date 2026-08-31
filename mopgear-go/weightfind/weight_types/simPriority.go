@@ -1,7 +1,6 @@
 package weight_types
 
 import (
-	"errors"
 	"iter"
 	"math"
 
@@ -72,7 +71,7 @@ func (sr *SimPriorityBasic) ScaleForTotalSum(targetTotal float64) error {
 	}
 
 	if currentTotal == 0 {
-		return errors.New("can't scale empty ratio")
+		return util.ErrorTracedNew("can't scale empty ratio")
 	} else if !util.FloatEqualsOne(currentTotal) {
 		sr.scaleForMathSum(currentTotal, targetTotal)
 		sr.fixSumWithRounding(targetTotal)
@@ -113,7 +112,7 @@ func (sr *SimPriorityBasic) ValidateRatioAddsToOne() error {
 	}
 
 	if !util.FloatEqualsOne(currentTotal) {
-		return errors.New("ratios don't add to one")
+		return util.ErrorTracedNew("ratios don't add to one")
 	}
 	return nil
 }
@@ -122,7 +121,7 @@ func (sr *SimPriorityBasic) currentTotal() (float64, error) {
 	currentTotal := 0.0
 	for value := range sr.content.SeqValues() {
 		if value < 0 {
-			return 0, errors.New("negative sim ratio not supported")
+			return 0, util.ErrorTracedNew("negative sim ratio not supported")
 		}
 		currentTotal += value
 	}
@@ -205,7 +204,7 @@ func (sre *SimPriorityExtended) GetOrPanic(simType stats.SimType) SimPriorityEnt
 
 func (sre *SimPriorityExtended) SetSimScale(simType stats.SimType, rangingScale, rangingOffset, ratioScale float64) error {
 	if sre.entries.Has(simType) {
-		return errors.New("duplicate")
+		return util.ErrorTracedNew("duplicate")
 	}
 	sre.entries.Put(simType, SimPriorityEntry{
 		RangingScale:  rangingScale,

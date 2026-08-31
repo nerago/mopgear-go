@@ -1,7 +1,6 @@
 package solve_highs
 
 import (
-	"errors"
 	"fmt"
 	"iter"
 
@@ -51,7 +50,7 @@ func (sc *singleGearSetShared) runForFutureResult(itemOptions *items.SolvableOpt
 
 			return new(itemSet), nil
 		} else {
-			return nil, errors.New("highs solve status " + solution.Status().String())
+			return nil, util.ErrorTracedNew("highs solve status " + solution.Status().String())
 		}
 	})
 }
@@ -59,7 +58,7 @@ func (sc *singleGearSetShared) runForFutureResult(itemOptions *items.SolvableOpt
 func (sc *singleGearSetShared) checkSetRatingIsObjective(solution *util_highs.Solution2, itemSet *items.SolvableItemSet, calcRating func(item *items.SolvableItemSet) float64) error {
 	checkRating := calcRating(itemSet)
 	if !util.FloatsApproxEqualsLenient(solution.Objective()/sc.ratingPreScale, checkRating) {
-		return errors.New(fmt.Sprintf("rating inconsistent %e %e ", solution.Objective(), checkRating))
+		return util.ErrorTracedNew(fmt.Sprintf("rating inconsistent %e %e ", solution.Objective(), checkRating))
 	}
 	return nil
 }

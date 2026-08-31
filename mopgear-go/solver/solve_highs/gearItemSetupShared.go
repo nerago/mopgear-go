@@ -1,11 +1,11 @@
 package solve_highs
 
 import (
-	"errors"
 	"strconv"
 
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/solver/solve_highs_types"
+	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_collection"
 	"github.com/nerago/mopgear-go/util/util_highs"
 
@@ -48,7 +48,7 @@ func (sit *gearItemSetupShared) prepareUniqueEquipped(itemOptions *items.Solvabl
 
 		for _, itemId := range set {
 			if seen[itemId] {
-				return errors.New("unique equipped data has duplicate")
+				return util.ErrorTracedNew("unique equipped data has duplicate")
 			}
 			sit.uniqueEquipRowsById.Put(itemId, row)
 			seen[itemId] = true
@@ -94,7 +94,7 @@ func (sit *gearItemSetupShared) finishItemsEquipped(itemOptions *items.SolvableO
 		} else if !row.IsEmpty() {
 			row.Build(build, 0, 0)
 		} else if itemOptions.Has(slotEquip) {
-			return errors.New("lost some item options for " + slotEquip.Name())
+			return util.ErrorTracedNew("lost some item options for " + slotEquip.Name())
 		}
 	}
 

@@ -1,10 +1,9 @@
 package solve_highs
 
 import (
-	"errors"
-
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_highs"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 
@@ -23,7 +22,7 @@ func (site *gearItemSetupEx) addItem(item *items.SolvableItem, require *stats.St
 			if row, hasRow := site.statTotalRows.Get(statType); hasRow {
 				row.Add(columnIndex, float64(value))
 			} else {
-				return errors.New("missing stat row")
+				return util.ErrorTracedNew("missing stat row")
 			}
 		}
 	}
@@ -35,7 +34,7 @@ func (site *gearItemSetupEx) addItem(item *items.SolvableItem, require *stats.St
 			if row, hasRow := site.requireRows.Get(statType); hasRow {
 				row.Add(columnIndex, value)
 			} else {
-				return errors.New("missing require row")
+				return util.ErrorTracedNew("missing require row")
 			}
 		}
 	}
@@ -61,7 +60,7 @@ func (site *gearItemSetupEx) finishRequireEx(require *stats.StatTypeMap[weight_t
 		if row, hasRow := site.requireRows.Get(statType); hasRow {
 			row.Build(build, hilo.Minimum, hilo.Maximum)
 		} else {
-			return errors.New("missing requireRow")
+			return util.ErrorTracedNew("missing requireRow")
 		}
 	}
 	return nil
@@ -79,7 +78,7 @@ func (site *gearItemSetupEx) finishStatTotals(build *util_highs.LinearBuilder) (
 			row.Add(entry.columnIndex, -1)
 			row.Build(build, 0, 0)
 		} else {
-			return nil, errors.New("missing statTotalRow")
+			return nil, util.ErrorTracedNew("missing statTotalRow")
 		}
 	}
 	return statTotalColumns, nil

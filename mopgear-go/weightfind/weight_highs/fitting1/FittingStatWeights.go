@@ -1,8 +1,6 @@
 package fitting1
 
 import (
-	"errors"
-
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_async"
 	"github.com/nerago/mopgear-go/util/util_highs"
@@ -129,7 +127,7 @@ func (fw *FittingSingleStatWeightProcess) Run() *util_async.FutureCancellableWit
 		if solution.Status() == highs.ModelStatusOptimal {
 			return fw.buildResult(solution), nil
 		} else {
-			return nil, errors.New("failed fitting")
+			return nil, util.ErrorTracedNew("failed fitting")
 		}
 	})
 }

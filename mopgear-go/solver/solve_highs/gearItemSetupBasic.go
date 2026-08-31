@@ -1,10 +1,9 @@
 package solve_highs
 
 import (
-	"errors"
-
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_highs"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 
@@ -44,7 +43,7 @@ func (sbb *gearItemSetupBasic) prepareRequire(statRequirements *stats.StatTypeMa
 			if sbb.minimumValueType == stats.Stat_Invalid {
 				sbb.minimumValueType = statType
 			} else {
-				return errors.New("multiple additional required stats not supported in basic weights mode")
+				return util.ErrorTracedNew("multiple additional required stats not supported in basic weights mode")
 			}
 		}
 	}
@@ -68,7 +67,7 @@ func (sbb *gearItemSetupBasic) finishRequire1(require *stats.StatTypeMap[weight_
 		if otherRange, hasRange := require.Get(sbb.minimumValueType); hasRange {
 			sbb.minimumValueRow.Build(build, otherRange.Minimum, otherRange.Maximum)
 		} else {
-			return errors.New("missing require value")
+			return util.ErrorTracedNew("missing require value")
 		}
 	}
 

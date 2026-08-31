@@ -1,10 +1,10 @@
 package solve_highs
 
 import (
-	"errors"
 	"iter"
 
 	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_highs"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 
@@ -36,7 +36,7 @@ func (calc2 *gearWeight2Calc) calc(statTotalColumns *stats.StatTypeMap[*columnIn
 			}
 			simValueTotalColumns[simType] = simValueCol
 		} else {
-			return nil, errors.New("missing priority for " + simType.Name())
+			return nil, util.ErrorTracedNew("missing priority for " + simType.Name())
 		}
 	}
 	return simValueTotalColumns, nil
@@ -51,7 +51,7 @@ func (calc2 *gearWeight2Calc) calcSim(simType stats.SimType, nestedWeights iter.
 		if statColumn, hasColumn := statTotalColumns.Get(statType); hasColumn {
 			simValueFromStatRow.Add(statColumn.columnIndex, weightValue)
 		} else {
-			return nil, errors.New("missing statTotalColumn for " + statType.Name())
+			return nil, util.ErrorTracedNew("missing statTotalColumn for " + statType.Name())
 		}
 	}
 

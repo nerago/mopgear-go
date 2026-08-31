@@ -1,8 +1,8 @@
 package util
 
 import (
-	"errors"
 	"fmt"
+	"runtime/debug"
 
 	"github.com/nerago/mopgear-go/files"
 )
@@ -25,11 +25,11 @@ func toError(err any) error {
 	case error:
 		return cast
 	case string:
-		return errors.New(cast)
+		return ErrorTracedNew(cast)
 	case fmt.Stringer:
-		return errors.New(cast.String())
+		return ErrorTracedNew(cast.String())
 	default:
-		return errors.New("unknown error")
+		return ErrorTracedNew("unknown error")
 	}
 }
 
@@ -43,4 +43,53 @@ func writeError(err error) {
 	printer := PrintRecorder_CreateLogFileNamed(files.LogOutputPath, "error")
 	printer.writeErrorToFile(err)
 	printer.Close()
+}
+
+type IErrorTraced interface {
+	error
+	Stack() []byte
+}
+
+type ErrorTracedString struct {
+	str   string
+	stack []byte
+}
+
+func ErrorTracedNew(str string) IErrorTraced {
+	return &ErrorTracedString{
+		str:   str,
+		stack: debug.Stack(),
+	}
+}
+
+func (et *ErrorTracedString) Error() string {
+	return et.str
+}
+
+func (et *ErrorTracedString) Stack() []byte {
+	return et.stack
+}
+
+type ErrorTracedWrap struct {
+	wrapped error
+	stack   []byte
+}
+
+func ErrorTracedWrapNew(err error) IErrorTraced {
+	return &ErrorTracedWrap{
+		wrapped: err,
+		stack:   debug.Stack(),
+	}
+}
+
+func (et *ErrorTracedWrap) Error() string {
+	return et.wrapped.Error()
+}
+
+func (et *ErrorTracedWrap) Stack() []byte {
+	return et.stack
+}
+
+func (et *ErrorTracedWrap) Unwrap() error {
+	return et.wrapped
 }

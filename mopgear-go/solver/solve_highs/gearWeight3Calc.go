@@ -2,10 +2,10 @@ package solve_highs
 
 import (
 	"cmp"
-	"errors"
 	"slices"
 
 	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_highs"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 
@@ -46,7 +46,7 @@ func (calc3 *gearWeight3Calc) calcSim(simType stats.SimType, weight *weight_type
 		simValueFromStatRow.Add(simValueColumn.columnIndex, valueScale)
 		simValueFromStatRow.Build(calc3.build, offset, offset)
 	} else {
-		return nil, errors.New("missing priority for " + simType.Name())
+		return nil, util.ErrorTracedNew("missing priority for " + simType.Name())
 	}
 
 	return simValueColumn, nil
@@ -55,7 +55,7 @@ func (calc3 *gearWeight3Calc) calcSim(simType stats.SimType, weight *weight_type
 func (calc3 *gearWeight3Calc) calcSimAndStat(simType stats.SimType, statType stats.StatType, weight *weight_types.Weight3ExtendedRanged, statTotalColumns *stats.StatTypeMap[*columnInfo]) (*columnInfo, error) {
 	statTotalColumn, hasStatTotalColumn := statTotalColumns.Get(statType)
 	if !hasStatTotalColumn {
-		return nil, errors.New("missing statTotalColumn for " + statType.Name())
+		return nil, util.ErrorTracedNew("missing statTotalColumn for " + statType.Name())
 	}
 
 	entries := slices.Collect(weight.StatWeights.GetAsSeq(simType, statType))
@@ -64,7 +64,7 @@ func (calc3 *gearWeight3Calc) calcSimAndStat(simType stats.SimType, statType sta
 	})
 
 	if len(entries) == 0 {
-		return nil, errors.New("missing weight entry")
+		return nil, util.ErrorTracedNew("missing weight entry")
 	} else if len(entries) == 1 {
 		entry := entries[0]
 		optionValueCol := calc3.prepareStatOption(simType, statType, entry, statTotalColumn)

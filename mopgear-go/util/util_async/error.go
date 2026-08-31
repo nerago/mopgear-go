@@ -35,7 +35,7 @@ func (pf *PossibleFutureError) SetResultSuccess() {
 
 func (pf *PossibleFutureError) SetResultError(err error) {
 	util.GlobalWarnHandler(err)
-	
+
 	pf.lock.Lock()
 	defer pf.lock.Unlock()
 	if !pf.isComplete {
@@ -57,9 +57,9 @@ func (pf *PossibleFutureError) HasError() bool {
 
 func (pf *PossibleFutureError) verifyCanWaitNoLock() error {
 	if pf == nil || pf.signalChannel == nil {
-		return errors.New("invalid future")
+		return util.ErrorTracedNew("invalid future")
 	} else if pf.hasWaiter {
-		return errors.New("duplicate waiter")
+		return util.ErrorTracedNew("duplicate waiter")
 	}
 	pf.hasWaiter = true
 	return nil
@@ -95,7 +95,7 @@ func (pf *PossibleFutureError) WaitForResult() error {
 
 	result, channelOk := <-pf.signalChannel
 	if !channelOk {
-		return errors.New("signal channel closed")
+		return util.ErrorTracedNew("signal channel closed")
 	}
 	close(pf.signalChannel)
 
@@ -112,7 +112,7 @@ func (pf *PossibleFutureError) ForwardErrorToOtherFuture(other IFutureErrorMinim
 	go func() {
 		result, channelOk := <-pf.signalChannel
 		if !channelOk {
-			other.SetResultError(errors.New("signal channel closed"))
+			other.SetResultError(util.ErrorTracedNew("signal channel closed"))
 			return
 		}
 		close(pf.signalChannel)

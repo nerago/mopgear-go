@@ -1,7 +1,6 @@
 package weight_types
 
 import (
-	"errors"
 	"fmt"
 	"iter"
 	"math"
@@ -125,34 +124,34 @@ func (we *Weight2Extended) scoreForSim(nested iter.Seq2[stats.StatType, float64]
 func (we *Weight2Extended) validateTypes() error {
 	for statType := range we.DetailedWeights.SeqKey2() {
 		if !slices.Contains(we.StatList, statType) {
-			return errors.New("weight given for unlisted stat " + statType.Name())
+			return util.ErrorTracedNew("weight given for unlisted stat " + statType.Name())
 		}
 	}
 	for _, simType := range we.SimList {
 		for _, statType := range we.StatList {
 			if !we.DetailedWeights.Has(simType, statType) {
-				return errors.New("missing weight for " + statType.Name() + " " + simType.Name())
+				return util.ErrorTracedNew("missing weight for " + statType.Name() + " " + simType.Name())
 			}
 		}
 	}
 	for simType, statType := range we.DetailedWeights.SeqKeysAll() {
 		if !slices.Contains(we.StatList, statType) {
-			return errors.New("unexpected weight for " + statType.Name())
+			return util.ErrorTracedNew("unexpected weight for " + statType.Name())
 		}
 		if !slices.Contains(we.SimList, simType) {
-			return errors.New("unexpected weight for " + simType.Name())
+			return util.ErrorTracedNew("unexpected weight for " + simType.Name())
 		}
 	}
 
 	for simType := range we.SimPriority.entries.SeqKey() {
 		if !slices.Contains(we.SimList, simType) {
-			return errors.New("priority given for unlisted sim")
+			return util.ErrorTracedNew("priority given for unlisted sim")
 		}
 	}
 	for _, simType := range we.SimList {
 		_, hasValue := we.SimPriority.Get(simType)
 		if !hasValue {
-			return errors.New("priority missing for " + simType.Name())
+			return util.ErrorTracedNew("priority missing for " + simType.Name())
 		}
 	}
 	return nil
@@ -160,7 +159,7 @@ func (we *Weight2Extended) validateTypes() error {
 
 func (we *Weight2Extended) verifyGoodRange(verificationInputs []WeightInput) error {
 	if len(verificationInputs) == 0 {
-		return errors.New("no inputs for verification")
+		return util.ErrorTracedNew("no inputs for verification")
 	}
 
 	for _, simType := range we.SimList {
@@ -177,7 +176,7 @@ func (we *Weight2Extended) verifyGoodRange(verificationInputs []WeightInput) err
 
 func (we *Weight2Extended) UpdateScaling(inputData []WeightInput) error {
 	if len(inputData) == 0 {
-		return errors.New("no inputData for scaling")
+		return util.ErrorTracedNew("no inputData for scaling")
 	}
 
 	targetLoValue := 0.0

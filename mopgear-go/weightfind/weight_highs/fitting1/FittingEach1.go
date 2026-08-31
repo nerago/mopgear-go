@@ -2,7 +2,6 @@ package fitting1
 
 import (
 	"cmp"
-	"errors"
 	"math"
 	"slices"
 
@@ -116,7 +115,7 @@ func (fe *FittingEachStatWeightProcess) launchEachNested(cancel util_async.Cance
 		if err != nil {
 			return err
 		} else if initialResult == nil {
-			return errors.New("empty initial results")
+			return util.ErrorTracedNew("empty initial results")
 		}
 
 		fe.rescaleAndCleanup(initialResult, fields)

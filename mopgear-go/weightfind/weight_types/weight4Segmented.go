@@ -1,7 +1,6 @@
 package weight_types
 
 import (
-	"errors"
 	"math"
 	"slices"
 
@@ -102,14 +101,14 @@ func (wer *Weight4Segmented) FinishAndValidate() error {
 	for _, seg := range wer.Segments {
 		for statType := range seg.Weights.SeqKey2() {
 			if !slices.Contains(wer.StatList, statType) {
-				return errors.New("weight given for unlisted stat")
+				return util.ErrorTracedNew("weight given for unlisted stat")
 			}
 		}
 	}
 	for _, seg := range wer.Segments {
 		for simType := range seg.Weights.SeqKey1() {
 			if !slices.Contains(wer.SimList, simType) {
-				return errors.New("weight given for unlisted sim")
+				return util.ErrorTracedNew("weight given for unlisted sim")
 			}
 		}
 	}
@@ -118,7 +117,7 @@ func (wer *Weight4Segmented) FinishAndValidate() error {
 		for _, simType := range wer.SimList {
 			for _, statType := range wer.StatList {
 				if !seg.Weights.Has(simType, statType) {
-					return errors.New("missing weight for " + statType.Name() + " " + simType.Name())
+					return util.ErrorTracedNew("missing weight for " + statType.Name() + " " + simType.Name())
 				}
 			}
 		}
@@ -128,13 +127,13 @@ func (wer *Weight4Segmented) FinishAndValidate() error {
 			simType := entry.Key1
 			statType := entry.Key2
 			if !slices.Contains(wer.StatList, statType) {
-				return errors.New("unexpected weight for " + statType.Name())
+				return util.ErrorTracedNew("unexpected weight for " + statType.Name())
 			}
 			if !slices.Contains(wer.SimList, simType) {
-				return errors.New("unexpected weight for " + simType.Name())
+				return util.ErrorTracedNew("unexpected weight for " + simType.Name())
 			}
 			if seg.Bound.IsEmpty() {
-				return errors.New("empty bound")
+				return util.ErrorTracedNew("empty bound")
 			}
 		}
 	}
@@ -142,14 +141,14 @@ func (wer *Weight4Segmented) FinishAndValidate() error {
 	for simType, value := range wer.SimPriority.SeqTypeValue() {
 		if util.FloatNonZero(value) {
 			if !slices.Contains(wer.SimList, simType) {
-				return errors.New("priority given for unlisted sim")
+				return util.ErrorTracedNew("priority given for unlisted sim")
 			}
 		}
 	}
 	for _, simType := range wer.SimList {
 		value, hasValue := wer.SimPriority.Get(simType)
 		if !hasValue || util.FloatEqualsZero(value) {
-			return errors.New("priority missing for " + simType.Name())
+			return util.ErrorTracedNew("priority missing for " + simType.Name())
 		}
 	}
 

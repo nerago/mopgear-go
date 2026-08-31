@@ -1,8 +1,6 @@
 package solve_highs
 
 import (
-	"errors"
-
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_highs"
 )
@@ -126,7 +124,7 @@ func debugPrintColumnEntry(colEntry *columnInfo, columnIndex util_highs.ColumnIn
 	case entry_sim_value_combo:
 		printer.Printf("%d %f %s %s\n", columnIndex, outputValue, "sim value for combo", colEntry.simType.Name())
 	default:
-		return errors.New("unknown column")
+		return util.ErrorTracedNew("unknown column")
 	}
 	return nil
 }

@@ -2,7 +2,6 @@ package weight_highs
 
 import (
 	"cmp"
-	"errors"
 	"fmt"
 	"math"
 	"slices"
@@ -115,7 +114,7 @@ func (ranker *RankingSeparatedWeights2) Run(stopwatch *util.Stopwatch) (*util_as
 				weight := ranker.extractAndReportSolution(solution)
 				return weight_types.WeightResult2Make(&weight, stopwatch.Elapsed(), solution.Status)
 			} else {
-				return weight_types.WeightResult2MakeError(stopwatch.Elapsed(), errors.New("solution = "+solution.Status.String()))
+				return weight_types.WeightResult2MakeError(stopwatch.Elapsed(), util.ErrorTracedNew("solution = "+solution.Status.String()))
 			}
 		} else {
 			return weight_types.WeightResult2MakeError(stopwatch.Elapsed(), err)

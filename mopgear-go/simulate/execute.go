@@ -110,12 +110,12 @@ func simFileFor(spec stats.SpecType, fight stats.WowSim_Fight) (string, error) {
 		case stats.Fight_Juggernaut_HighHeal, stats.Fight_Juggernaut_NoExternalHeal, stats.Fight_Juggernaut_SelfWordGlory, stats.Fight_Juggernaut_OffHealer:
 			return files.SimProtJuggernaut, nil
 		default:
-			return "", errors.New("unknown spec/fight")
+			return "", util.ErrorTracedNew("unknown spec/fight")
 		}
 	case stats.Spec_PaladinRet:
 		return files.SimRet, nil
 	default:
-		return "", errors.New("spec not supported")
+		return "", util.ErrorTracedNew("spec not supported")
 	}
 }
 
@@ -180,7 +180,7 @@ func updateFight(input *wowsim_proto.RaidSimRequest, fight stats.WowSim_Fight, s
 		}
 
 	default:
-		return errors.New("unknown fight")
+		return util.ErrorTracedNew("unknown fight")
 	}
 
 	return nil
@@ -213,7 +213,7 @@ func updateTalents(input *wowsim_proto.RaidSimRequest, spec stats.SpecType, figh
 		// wowsim suggests minor glyph focused wrath, has no relevant effect in sims
 	case stats.Spec_PaladinRet:
 	default:
-		return errors.New("don't know spec")
+		return util.ErrorTracedNew("don't know spec")
 	}
 
 	return nil
@@ -231,7 +231,7 @@ func updateRotation(input *wowsim_proto.RaidSimRequest, spec stats.SpecType, fig
 	case stats.Spec_PaladinRet:
 		err = loadAnyProtoFile(&rotation, files.PaladinRetRotation)
 	default:
-		err = errors.New("don't know rotation")
+		err = util.ErrorTracedNew("don't know rotation")
 	}
 	input.Raid.Parties[0].Players[0].Rotation = &rotation
 	return err

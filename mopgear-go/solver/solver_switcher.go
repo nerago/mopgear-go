@@ -1,8 +1,6 @@
 package solver
 
 import (
-	"errors"
-
 	"github.com/nerago/mopgear-go/gear_model"
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/solver/solve_highs"
@@ -15,7 +13,7 @@ import (
 
 func Solver(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, printer *util.PrintRecorder, weightType weight_types.WeightType, timeout int, cancel util_async.CancelSignal) SolveOutput {
 	if itemOptions == nil || model == nil || printer == nil || weightType == 0 {
-		return SolveOutput{Success: false, Error: errors.New("solver: missing parameter")}
+		return SolveOutput{Success: false, Error: util.ErrorTracedNew("solver: missing parameter")}
 	}
 
 	solveOptions := items.SolvableOptionsMap_of(itemOptions)
@@ -50,7 +48,7 @@ func LaunchSolve(solveOptions *items.SolvableOptionsMap, solveModel *solve_highs
 	case 3:
 		return solve_highs.SingleGearSetExtended3Main(solveOptions, solveModel, printer, timeout)
 	default:
-		return nil, errors.New("invalid weight type")
+		return nil, util.ErrorTracedNew("invalid weight type")
 	}
 }
 

@@ -1,10 +1,9 @@
 package solve_highs
 
 import (
-	"errors"
-
 	"github.com/nerago/mopgear-go/solver/solve_highs_types"
 	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_collection"
 	"github.com/nerago/mopgear-go/util/util_highs"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
@@ -46,7 +45,7 @@ func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns m
 			if simEntry, hasEntry := priority.Get(simType); hasEntry {
 				sumRow.Add(simComboCol.columnIndex, simEntry.RatioScale)
 			} else {
-				return nil, errors.New("missing ratio for " + simType.Name())
+				return nil, util.ErrorTracedNew("missing ratio for " + simType.Name())
 			}
 		}
 
@@ -58,7 +57,7 @@ func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns m
 		simType, simValueTotal := util_collection.MapFirstEntry(simValueTotalColumns)
 		simEntry, hasEntry := priority.Get(simType)
 		if !hasEntry {
-			return nil, errors.New("missing priority for " + simType.Name())
+			return nil, util.ErrorTracedNew("missing priority for " + simType.Name())
 		}
 
 		simComboCol, err := se.bonusComboHandler.processBonus(
@@ -83,7 +82,7 @@ func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns m
 			return outputVar, nil
 		}
 	} else {
-		return nil, errors.New("empty sim types")
+		return nil, util.ErrorTracedNew("empty sim types")
 	}
 }
 

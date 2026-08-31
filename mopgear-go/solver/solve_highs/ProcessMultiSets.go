@@ -1,7 +1,6 @@
 package solve_highs
 
 import (
-	"errors"
 	"fmt"
 	"iter"
 	"reflect"
@@ -171,7 +170,7 @@ func (process *SolverHighsMultiProcess) generateInitialMulti(timeLimit int, prin
 			bestCommonChoices := process.extractCommonChoices(solution)
 			return &bestCommonChoices, nil
 		} else {
-			return nil, errors.New("highs solve " + solution.Status().String())
+			return nil, util.ErrorTracedNew("highs solve " + solution.Status().String())
 		}
 	})
 
@@ -193,7 +192,7 @@ func (process *SolverHighsMultiProcess) generateOneVariant(block *blockPlan, pri
 	} else if block.forbiddenItem != nil {
 		build = process.prepareVariantWithBlockedItem_One(printer, *block.forbiddenItem)
 	} else {
-		return errors.New("missing block")
+		return util.ErrorTracedNew("missing block")
 	}
 
 	var futureResult *util_async.FutureCancellableWithError[HighsMultiResult]
@@ -264,7 +263,7 @@ func (process *SolverHighsMultiProcess) runVariant(build *util_highs.LinearBuild
 		if solution.HasSolution() {
 			return process.solutionToResult(solution, printer, false)
 		} else {
-			return nil, errors.New("highs status " + solution.Status().String())
+			return nil, util.ErrorTracedNew("highs status " + solution.Status().String())
 		}
 	})
 }
@@ -405,7 +404,7 @@ func makeGearSetForWeight(build *util_highs.LinearBuilder, model *solve_highs_ty
 	} else if model.Weights1 != nil {
 		return makeGearSetBasic(build), nil
 	} else {
-		return nil, errors.New("missing weight")
+		return nil, util.ErrorTracedNew("missing weight")
 	}
 }
 

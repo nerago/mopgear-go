@@ -389,11 +389,11 @@ func (run *linearRun) configureHighsSolver() (err error) {
 		)
 		return err
 	default:
-		err = errors.Join(err, errors.New("solver not specified"))
+		err = errors.Join(err, util.ErrorTracedNew("solver not specified"))
 	}
 
 	if expectMip != run.build.isMIP() {
-		err = errors.Join(err, errors.New("solver wrong for MIP/non-MIP model"))
+		err = errors.Join(err, util.ErrorTracedNew("solver wrong for MIP/non-MIP model"))
 	}
 
 	return err

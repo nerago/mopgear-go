@@ -1,7 +1,6 @@
 package util_highs
 
 import (
-	"errors"
 	"math"
 	"sync"
 	"time"
@@ -53,7 +52,7 @@ type LinearResult struct {
 
 func (lr *LinearResult) GetSolutionAndDiscardLog() (*highs.Solution, error) {
 	if lr.solution == nil && lr.err == nil {
-		return nil, errors.New("missing solution")
+		return nil, util.ErrorTracedNew("missing solution")
 	}
 	return lr.solution, lr.err
 }
@@ -61,7 +60,7 @@ func (lr *LinearResult) GetSolutionAndDiscardLog() (*highs.Solution, error) {
 func (lr *LinearResult) GetSolutionAndSaveLog(printer *util.PrintRecorder) (*highs.Solution, error) {
 	printer.AppendOther(lr.log)
 	if lr.solution == nil && lr.err == nil {
-		return nil, errors.New("missing solution")
+		return nil, util.ErrorTracedNew("missing solution")
 	}
 	return lr.solution, lr.err
 }
@@ -69,7 +68,7 @@ func (lr *LinearResult) GetSolutionAndSaveLog(printer *util.PrintRecorder) (*hig
 func (lr *LinearResult) GetSolution2AndSaveLog(printer *util.PrintRecorder) (*Solution2, error) {
 	printer.AppendOther(lr.log)
 	if lr.solution == nil && lr.err == nil {
-		return nil, errors.New("missing solution")
+		return nil, util.ErrorTracedNew("missing solution")
 	}
 	return &Solution2{lr.solution, lr.build}, lr.err
 }
