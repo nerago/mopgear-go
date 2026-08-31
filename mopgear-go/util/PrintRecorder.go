@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"os"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"testing"
@@ -33,6 +34,7 @@ func PrintRecorder_CreateLogFile(directory string) *PrintRecorder {
 	printer := &PrintRecorder{false, true, false, nil, file, nil, nil, "", sync.Mutex{}}
 	if g_mainLog == nil {
 		g_mainLog = printer
+		_ = debug.SetCrashOutput(file, debug.CrashOptions{})
 	}
 	return printer
 }
@@ -291,6 +293,8 @@ func (print *PrintRecorder) writeErrorToFile(err error) bool {
 		print.outputString("ERROR: ")
 		print.outputString(err.Error())
 		print.outputNewline()
+		print.outputBytes(debug.Stack())
+		_ = print.file.Sync()
 		return true
 	} else {
 		return false

@@ -162,17 +162,13 @@ func (run *linearRun) onBadRun(solution *highs.Solution, errSolve error, runTime
 }
 
 func (run *linearRun) sendResult(solution *highs.Solution, runTime time.Duration, err error) {
-	errHandling := run.future.SetResult(LinearResult{
+	run.future.SetResult(LinearResult{
 		solution: solution,
 		build:    run.build,
 		log:      run.log,
 		elapsed:  runTime,
 		err:      err,
 	})
-
-	if errHandling != nil {
-		util.GlobalErrorHandler(errors.Join(err, errHandling))
-	}
 }
 
 func (run *linearRun) makeFuture() bool {
@@ -202,10 +198,7 @@ func (run *linearRun) sendEarlyError(err error, future *util_async.FutureCancell
 		g_HighsPool.Put(run.solver)
 	}
 
-	errInErrorHandling := future.SetResult(LinearResult{build: run.build, err: err})
-	if errInErrorHandling != nil {
-		util.GlobalErrorHandler(errors.Join(err, errInErrorHandling))
-	}
+	future.SetResult(LinearResult{build: run.build, err: err})
 }
 
 func (run *linearRun) postRunCleanup() error {

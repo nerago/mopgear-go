@@ -17,22 +17,23 @@ import (
 	"github.com/google/uuid"
 )
 
-func (group *workingGroup) groupProposals(proposalMix *util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, cancel *util_async.CancelSignalBasic) {
+func (group *workingGroup) groupProposals(proposalMix *util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, possibleError *util_async.PossibleFutureError, cancel *util_async.CancelSignalBasic) {
 	if group.hasPermutes() {
-		group.proposalsUnderPermutation(&group.task.Permute, proposalMix, expectedCountAdder, cancel)
+		group.proposalsUnderPermutation(&group.task.Permute, proposalMix, expectedCountAdder, possibleError, cancel)
 	} else {
-		group.proposalsGeneral(nil, proposalMix, expectedCountAdder, cancel)
+		group.proposalsGeneral(nil, proposalMix, expectedCountAdder, possibleError, cancel)
 	}
 
 	if group.task.AlsoExistingEquipped {
 		proposalMix.AddValue(group.existingGearAsProposal())
+		expectedCountAdder.AddValueImmediate(1)
 	}
 	if group.task.AlsoSpecOptimums {
-		proposalMix.AddChannel(group.additionalProposalsFromSpecOptimalBaseline(cancel))
+		proposalMix.AddChannel(group.additionalProposalsFromSpecOptimalBaseline(expectedCountAdder, possibleError, cancel))
 	}
 }
 
-func (group *workingGroup) proposalsUnderPermutation(inputPermute *multi_types.InputPermute, proposalMix *util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, cancel util_async.CancelSignal) {
+func (group *workingGroup) proposalsUnderPermutation(inputPermute *multi_types.InputPermute, proposalMix *util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, possibleError *util_async.PossibleFutureError, cancel util_async.CancelSignal) {
 	estimate := group.job.estimateFixedPermutations(inputPermute)
 	group.job.printer.Printf("PERMUTE SET COUNT %d\n", estimate)
 
@@ -41,14 +42,12 @@ func (group *workingGroup) proposalsUnderPermutation(inputPermute *multi_types.I
 
 	util_async.ForEach_Channel(c_permuteThreadCount, permuteChannel,
 		func(permuteSet permuteSet) {
-			group.proposalsGeneral(&permuteSet, proposalMix, expectedCountAdder, cancel)
+			group.proposalsGeneral(&permuteSet, proposalMix, expectedCountAdder, possibleError, cancel)
 		},
 	)
 }
 
-func (group *workingGroup) proposalsGeneral(permuteSet *permuteSet, proposalMix *util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, cancel util_async.CancelSignal) {
-	includeInterimResults := group.task.IncludeInterimResults
-
+func (group *workingGroup) proposalsGeneral(permuteSet *permuteSet, proposalMix *util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, possibleError *util_async.PossibleFutureError, cancel util_async.CancelSignal) {
 	var highProcess *solve_highs.SolverHighsMultiProcess
 	if permuteSet != nil {
 		highProcess = group.highProcessSetupForPermute(permuteSet, group.job.printer)
@@ -56,10 +55,17 @@ func (group *workingGroup) proposalsGeneral(permuteSet *permuteSet, proposalMix 
 		highProcess = group.highProcessSetupSingle()
 	}
 
-	multiSolveChannel, expectedCountFuture := highProcess.Run(
+	multiSolveChannel, expectedCountFuture, innerFutureError, errInit := highProcess.Run(
 		group.job.input.TimeLimitEachSolve, group.job.printer,
 		group.task.Alternates, group.task.AlternatesLimit,
-		cancel, includeInterimResults)
+		cancel, group.task.IncludeInterimResults)
+
+	if errInit != nil {
+		possibleError.SetResultError(errInit)
+		return
+	} else {
+		innerFutureError.ForwardErrorToOtherFuture(possibleError)
+	}
 
 	nextChannel := util_async.Map_ChannelToChannel(1, multiSolveChannel, func(setResult solve_highs.HighsMultiResult) *multi_types.MultiProposedOutput {
 		return group.makeProposalFromHighs(setResult, group.job.printer, uuid.NewString())
@@ -241,23 +247,31 @@ func (group *workingGroup) existingGearAsProposal() *multi_types.MultiProposedOu
 	return proposal
 }
 
-func (group *workingGroup) additionalProposalsFromSpecOptimalBaseline(cancel util_async.CancelSignal) <-chan *multi_types.MultiProposedOutput {
+func (group *workingGroup) additionalProposalsFromSpecOptimalBaseline(expectedCountAdder *util_async.FutureValueAdderInt, possibleError *util_async.PossibleFutureError, cancel util_async.CancelSignal) <-chan *multi_types.MultiProposedOutput {
 	allWorking := util_async.SeqToChannel(maps.Values(group.workers))
 	return util_async.MapMulti_ChannelToChannel_Cancellable(c_additionalProposal_threadCount, allWorking, cancel, func(work *specWorker, downstream chan<- *multi_types.MultiProposedOutput) {
 		printer := util.PrintRecorder_HoldAll()
+		defer group.job.printer.AppendOther(printer)
 
 		highProcess := group.highProcessSetupRestrictedOnBaseline(work)
 
-		resultChannel, _ := highProcess.Run(
+		resultChannel, expectedCountFuture, innerFutureError, errInit := highProcess.Run(
 			group.job.input.TimeLimitEachSolve, printer,
-			multi_types.AlternateModeNone, util_collection.Optional_Empty[int](),
-			cancel, false)
+			group.task.Alternates, group.task.AlternatesLimit,
+			cancel, group.task.IncludeInterimResults)
+
+		if errInit != nil {
+			possibleError.SetResultError(errInit)
+		} else {
+			innerFutureError.ForwardErrorToOtherFuture(possibleError)
+		}
+
+		expectedCountAdder.AddFuture(expectedCountFuture)
 
 		for result := range resultChannel {
 			proposalId := fmt.Sprintf("With-Best-%d-%s-%s", work.weightType, work.Label(), time.Now().Format("2006-01-02-15-04-05"))
 			downstream <- group.makeProposalFromHighs(result, printer, proposalId)
 		}
 
-		group.job.printer.AppendOther(printer)
 	})
 }

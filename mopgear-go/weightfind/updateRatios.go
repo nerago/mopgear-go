@@ -47,7 +47,7 @@ func (wrp *WeightRatioProcess) updateSpecRatio(spec *WeightSpec, tracker *util.T
 	spec.process.forceSkipSim = true
 	err := spec.prepareSimData(util.TrackProgress_Nop(), cancel)
 	if err != nil {
-		util.GlobalErrorHandler(err)
+		util.GlobalFatalErrorHandler(err)
 	}
 
 	sb := util.StringBuild2{}

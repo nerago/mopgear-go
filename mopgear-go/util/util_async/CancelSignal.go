@@ -13,6 +13,7 @@ import (
 type CancelSignal interface {
 	AddCancelHandler(func() error) error
 	Cancel() error
+	CancelOrPanic()
 	ShouldContinue() bool
 	ShouldFinish() bool
 	CancelSignalChannel() <-chan struct{}
@@ -28,6 +29,8 @@ type CancelSignalBasic struct {
 	onCancel      []func() error
 	signalChannel chan struct{}
 }
+
+var _ CancelSignal = &CancelSignalBasic{}
 
 func CancelSignal_Make() *CancelSignalBasic {
 	return &CancelSignalBasic{
@@ -63,6 +66,11 @@ func (cancel *CancelSignalBasic) Cancel() error {
 	return resultError
 }
 
+func (cancel *CancelSignalBasic) CancelOrPanic() {
+	err := cancel.Cancel()
+	util.GlobalFatalErrorHandler(err)
+}
+
 func (cancel *CancelSignalBasic) ShouldContinue() bool {
 	return !cancel.isCancelled
 }
@@ -78,17 +86,14 @@ func (cancel *CancelSignalBasic) CancelSignalChannel() <-chan struct{} {
 func CancelOnKeyPress(cancel CancelSignal) {
 	go func() {
 		waitForKeyPress()
-		err := cancel.Cancel()
-		if err != nil {
-			util.GlobalErrorHandler(err)
-		}
+		cancel.CancelOrPanic()
 	}()
 }
 
 func waitForKeyPress() {
 	_, err := os.Stdin.Read([]byte{0})
 	if err != nil {
-		panic(err)
+		util.GlobalFatalErrorHandler(err)
 	}
 }
 
@@ -96,7 +101,7 @@ func CancelAfterTimeout(cancel CancelSignal, timeout time.Duration, printer *uti
 	return time.AfterFunc(timeout, func() {
 		printer.Println("###################### TIME LIMIT EXPIRED ######################")
 		err := cancel.Cancel()
-		util.GlobalErrorHandler(err)
+		util.GlobalFatalErrorHandler(err)
 	})
 }
 

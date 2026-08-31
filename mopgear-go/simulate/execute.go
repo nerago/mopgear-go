@@ -63,22 +63,17 @@ func ExecuteSpecifyAllFuture(runSize WowSim_RunSize, speedUp int, spec stats.Spe
 	}
 
 	if err != nil {
-		err2 := future.SetResultError(err)
-		if err2 != nil {
-			util.GlobalErrorHandler(errors.Join(err, err2))
-		}
+		future.SetResultError(err)
 	} else {
 		go func() {
 			finalResult := waitForResult(reporter, tracker)
 			converted, errResult := convertResult(finalResult)
 
-			var errHandle error
 			if errResult != nil {
-				errHandle = future.SetResultError(errResult)
+				future.SetResultError(errResult)
 			} else {
-				errHandle = future.SetResult(converted)
+				future.SetResult(converted)
 			}
-			util.GlobalErrorHandler(errHandle)
 		}()
 	}
 	return future

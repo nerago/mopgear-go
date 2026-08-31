@@ -178,10 +178,10 @@ func Future_MapValue[T any, R any](innerFuture *Future[T], mapper func(T) (R, bo
 			if hasNew {
 				outerFuture.SetResult(newValue)
 			} else {
-				outerFuture.SetResultEmpty()
+				outerFuture.SetResultSuccess()
 			}
 		} else {
-			outerFuture.SetResultEmpty()
+			outerFuture.SetResultSuccess()
 		}
 	}()
 

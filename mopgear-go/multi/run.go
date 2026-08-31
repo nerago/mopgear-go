@@ -17,14 +17,15 @@ func (job *MainJob) Run() {
 
 	groupChannel := job.prepareWorkingGroups(cancelGenerate)
 
-	proposalChannel, expectedCountChannel := job.makeProposalChannel(groupChannel, cancelGenerate)
+	proposalChannel, expectedCountChannel, possibleProposalErrors := job.makeProposalChannel(groupChannel, cancelGenerate)
 
 	simJobChannel1, resultPendingChan := job.prepareSimList(proposalChannel)
 	simJobChannel2 := job.mergeDuplicateJobs(simJobChannel1)
 
 	simsDone := job.runSims(simJobChannel2, expectedCountChannel)
 
-	job.generalMultiReport(resultPendingChan, simsDone)
+	simMultiResults := job.incrementalReporting(resultPendingChan, simsDone)
+	job.finalMultiReport(simMultiResults, possibleProposalErrors)
 }
 
 func (job *MainJob) mergeDuplicateJobs(simJobChannel1 <-chan *simulateJobPending) <-chan *simulateJobPending {
@@ -39,12 +40,13 @@ func (job *MainJob) mergeDuplicateJobs(simJobChannel1 <-chan *simulateJobPending
 	)
 }
 
-func (job *MainJob) makeProposalChannel(groupChannel <-chan *workingGroup, cancelGenerate *util_async.CancelSignalBasic) (<-chan *multi_types.MultiProposedOutput, <-chan int) {
+func (job *MainJob) makeProposalChannel(groupChannel <-chan *workingGroup, cancelGenerate *util_async.CancelSignalBasic) (<-chan *multi_types.MultiProposedOutput, <-chan int, *util_async.PossibleFutureError) {
 	futureCount := util_async.FutureValueAdderIntMake(0)
 	proposalMixer := util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput]{}
+	possibleError := util_async.PossibleFutureErrorMake()
 
 	util_async.ForEach_Channel_NonBlocking(c_mainProposal_threadCount, groupChannel, func(group *workingGroup) {
-		group.groupProposals(&proposalMixer, futureCount, cancelGenerate)
+		group.groupProposals(&proposalMixer, futureCount, possibleError, cancelGenerate)
 	}, func() {
 		proposalMixer.ShutdownAsync(func() {
 			job.printer.Println("<<< PROPOSALS ALL SUBMITTED >>>")
@@ -61,7 +63,7 @@ func (job *MainJob) makeProposalChannel(groupChannel <-chan *workingGroup, cance
 	})
 
 	proposalChannel = job.listInitialOutputs(proposalChannel)
-	return proposalChannel, expectedCountChannel
+	return proposalChannel, expectedCountChannel, possibleError
 }
 
 func (job *MainJob) RunCullingSets(targetSolutionCount int64, timeLimit time.Duration) {
@@ -89,8 +91,14 @@ func (job *MainJob) RunCullingSets(targetSolutionCount int64, timeLimit time.Dur
 	job.CullingReport()
 }
 
-func (job *MainJob) generalMultiReport(pendingResultChannel <-chan *simulateMultiResultPending, simsDone *util_async.FutureVoid) {
-	simMultiResults := job.incrementalReporting(pendingResultChannel, simsDone)
+func (job *MainJob) finalMultiReport(simMultiResults []simulateMultiResult, possibleErrors *util_async.PossibleFutureError) {
+	if errors, hasErrors := possibleErrors.GetResultNoWait(); hasErrors {
+		job.printer.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+		job.printer.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+		job.printer.Println(errors.Error())
+		job.printer.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+		job.printer.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	}
 
 	if len(simMultiResults) > 0 {
 		job.reportSimResults(simMultiResults, true)

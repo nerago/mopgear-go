@@ -10,67 +10,21 @@ import (
 	"github.com/nerago/mopgear-go/util/util_collection"
 )
 
-type IFuture interface {
-	SetResultEmpty() error
-	AddCompletedHandler(onComplete func() error) error
-}
-
-type IFutureWithResult[T any] interface {
-	IFuture
-	SetResult(value T) error
-
-	WaitForResult() (T, bool)
-	WaitForResultOrPanic() T
-	WaitForResultOrNilValue() T
-	WaitForResultAsOptional() util_collection.Optional[T]
-
-	ForwardSuccessfulResultToCallback(apply func(T))
-	ForwardResultToRelevantCallback(onSuccess func(T), onFail func())
-	ForwardResultToOtherFuture(other IFutureWithResult[T])
-	ForwardSuccessfulResultToChannel(resultChannel chan<- T)
-	ForwardAnyResultToChannel(resultChannel chan<- futureResult[T])
-	//MapSameType(mapper func(T) (T, bool)) *Future[T]
-}
-
-type IFutureWithCancel interface {
-	IFuture
-	CancelSignal
-}
-
-type IFutureWithResultOrError[T any] interface {
-	IFuture
-	SetResult(value T) error
-	SetResultError(err error) error
-
-	WaitForResultOrError() (T, error)
-	WaitForResultOrPanic() T
-
-	ForwardResultOrErrorToCallback(onSuccess func(T), onFail func(error))
-	ForwardResultToOtherFuture(other IFutureWithResultOrError[T])
-}
-
-type IFutureWithResultAndCancel[T any] interface {
-	IFutureWithCancel
-	IFutureWithResult[T]
-	WaitForResultOrKeyPress() (T, bool, error)
-}
-
-type IFutureWithResultAndCancelAndError[T any] interface {
-	IFutureWithCancel
-	IFutureWithResultOrError[T]
-	WaitForResultOrKeyPress() (T, bool, error)
-}
-
 type futureResult[T any] struct {
 	Value    T
 	HasValue bool
+}
+
+type valueOrError[T any] struct {
+	Value *T
+	Error error
 }
 
 // ########### FutureVoid ###########
 
 type FutureVoid struct {
 	signalChannel chan any
-	onComplete    []func() error
+	onComplete    []func()
 	lock          sync.Mutex
 	isComplete    bool
 	hasWaiter     bool
@@ -84,14 +38,13 @@ func FutureVoid_Make() *FutureVoid {
 	}
 }
 
-func (fv *FutureVoid) SetResultEmpty() error {
+func (fv *FutureVoid) SetResultSuccess() {
 	fv.lock.Lock()
 	defer fv.lock.Unlock()
 	if !fv.isComplete {
 		fv.signalChannel <- true
-		return fv.performComplete()
+		fv.performComplete()
 	}
-	return nil
 }
 
 func (fv *FutureVoid) WaitForComplete() {
@@ -141,28 +94,13 @@ func (fv *FutureVoid) WaitForLimitedDuration(duration time.Duration) (timeout bo
 	}
 }
 
-func (fv *FutureVoid) AddCompletedHandler(onComplete func() error) error {
-	fv.lock.Lock()
-	defer fv.lock.Unlock()
-	if fv.isComplete {
-		return onComplete()
-	} else {
-		fv.onComplete = append(fv.onComplete, onComplete)
-		return nil
-	}
-}
-
-func (fv *FutureVoid) performComplete() error {
-	var resultError error
+func (fv *FutureVoid) performComplete() {
 	for i := range fv.onComplete {
-		err := fv.onComplete[i]()
-		resultError = errors.Join(resultError, err)
+		fv.onComplete[i]()
 	}
 
 	fv.isComplete = true
 	fv.onComplete = nil
-
-	return resultError
 }
 
 // ########### futureCommon ###########
@@ -172,31 +110,6 @@ type futureCommon[T any] struct {
 	lock          sync.Mutex
 	hasWaiter     bool
 	resultChannel chan futureResult[T]
-	onComplete    []func() error
-}
-
-func (future *futureCommon[T]) AddCompletedHandler(onComplete func() error) error {
-	future.lock.Lock()
-	defer future.lock.Unlock()
-	if future.isComplete {
-		return onComplete()
-	} else {
-		future.onComplete = append(future.onComplete, onComplete)
-		return nil
-	}
-}
-
-func (future *futureCommon[T]) performComplete() error {
-	future.isComplete = true
-
-	var resultError error
-	for i := range future.onComplete {
-		err := future.onComplete[i]()
-		resultError = errors.Join(resultError, err)
-	}
-	future.onComplete = nil
-
-	return resultError
 }
 
 func (future *futureCommon[T]) verifyCanWait() {
@@ -272,13 +185,11 @@ func (future *futureCommon[T]) ForwardResultToOtherFuture(other IFutureWithResul
 	go func() {
 		value, hasValue := future.resultFromChannel()
 
-		var err error
 		if hasValue {
-			err = other.SetResult(value)
+			other.SetResult(value)
 		} else {
-			err = other.SetResultEmpty()
+			other.SetResultSuccess()
 		}
-		util.GlobalErrorHandler(err)
 	}()
 }
 
@@ -340,24 +251,22 @@ func Future_Make[T any]() *Future[T] {
 	}
 }
 
-func (future *Future[T]) SetResult(value T) error {
+func (future *Future[T]) SetResult(value T) {
 	future.lock.Lock()
 	defer future.lock.Unlock()
 	if !future.isComplete {
 		future.resultChannel <- futureResult[T]{Value: value, HasValue: true}
-		return future.performComplete()
+		future.isComplete = true
 	}
-	return nil
 }
 
-func (future *Future[T]) SetResultEmpty() error {
+func (future *Future[T]) SetResultSuccess() {
 	future.lock.Lock()
 	defer future.lock.Unlock()
 	if !future.isComplete {
 		future.resultChannel <- futureResult[T]{HasValue: false}
-		return future.performComplete()
+		future.isComplete = true
 	}
-	return nil
 }
 
 func (future *Future[T]) MapSameType(mapper func(T) (T, bool)) *Future[T] {
@@ -393,26 +302,24 @@ func FutureCancellable_Make[T any]() *FutureCancellable[T] {
 	}
 }
 
-func (future *FutureCancellable[T]) SetResult(value T) error {
+func (future *FutureCancellable[T]) SetResult(value T) {
 	future.lock.Lock()
 	defer future.lock.Unlock()
 	if !future.isComplete {
 		future.onCancel = nil
 		future.resultChannel <- futureResult[T]{Value: value, HasValue: true}
-		return future.performComplete()
+		future.isComplete = true
 	}
-	return nil
 }
 
-func (future *FutureCancellable[T]) SetResultEmpty() error {
+func (future *FutureCancellable[T]) SetResultSuccess() {
 	future.lock.Lock()
 	defer future.lock.Unlock()
 	if !future.isComplete {
 		future.onCancel = nil
 		future.resultChannel <- futureResult[T]{HasValue: false}
-		return future.performComplete()
+		future.isComplete = true
 	}
-	return nil
 }
 
 func (future *FutureCancellable[T]) AddCancelHandler(onCancel func() error) error {
@@ -436,12 +343,18 @@ func (future *FutureCancellable[T]) Cancel() error {
 	return nil
 }
 
+func (future *FutureCancellable[T]) CancelOrPanic() {
+	err := future.Cancel()
+	util.GlobalFatalErrorHandler(err)
+}
+
 func (future *FutureCancellable[T]) performCancelAndComplete() error {
-	resultError := future.performComplete()
+	future.isComplete = true
 
 	future.isCancelled = true
 	close(future.cancelSignalChannel)
 
+	var resultError error
 	for i := range future.onCancel {
 		err := future.onCancel[i]()
 		resultError = errors.Join(resultError, err)
@@ -522,14 +435,12 @@ func FutureCancellable_MapValue[T any, R any](innerFuture *FutureCancellable[T],
 
 	go func() {
 		value, hasValue := innerFuture.WaitForResult()
-		var err2 error
 		if hasValue {
 			newValue := mapper(value)
-			err2 = outerFuture.SetResult(newValue)
+			outerFuture.SetResult(newValue)
 		} else {
-			err2 = outerFuture.SetResultEmpty()
+			outerFuture.SetResultSuccess()
 		}
-		util.GlobalErrorHandler(err2)
 	}()
 
 	return outerFuture, err1
@@ -541,18 +452,16 @@ func FutureCancellable_MapValueOptional[T any, R any](innerFuture *FutureCancell
 
 	go func() {
 		value, hasValue := innerFuture.WaitForResult()
-		var err2 error
 		if hasValue {
 			newValue, hasNew := mapper(value)
 			if hasNew {
-				err2 = outerFuture.SetResult(newValue)
+				outerFuture.SetResult(newValue)
 			} else {
-				err2 = outerFuture.SetResultEmpty()
+				outerFuture.SetResultSuccess()
 			}
 		} else {
-			err2 = outerFuture.SetResultEmpty()
+			outerFuture.SetResultSuccess()
 		}
-		util.GlobalErrorHandler(err2)
 	}()
 
 	return outerFuture, err1
@@ -571,19 +480,13 @@ func FutureCancellable_MapToFuture[T any, R any](innerFuture *FutureCancellable[
 				return
 			}
 		}
-		err := outerFuture.SetResultEmpty()
-		util.GlobalErrorHandler(err)
+		outerFuture.SetResultSuccess()
 	}()
 
 	return outerFuture, errMain
 }
 
 // ########### FutureCancellableWithError ###########
-
-type valueOrError[T any] struct {
-	Value *T
-	Error error
-}
 
 type FutureCancellableWithError[T any] struct {
 	*FutureCancellable[valueOrError[T]]
@@ -597,7 +500,7 @@ func FutureCancellableWithError_Make[T any]() *FutureCancellableWithError[T] {
 	}
 }
 
-func (future *FutureCancellableWithError[T]) SetResult(value T) error {
+func (future *FutureCancellableWithError[T]) SetResult(value T) {
 	future.lock.Lock()
 	defer future.lock.Unlock()
 	if !future.isComplete {
@@ -606,12 +509,11 @@ func (future *FutureCancellableWithError[T]) SetResult(value T) error {
 			Value:    valueOrError[T]{Value: new(value)},
 			HasValue: true,
 		}
-		return future.performComplete()
+		future.isComplete = true
 	}
-	return nil
 }
 
-func (future *FutureCancellableWithError[T]) SetResultError(err error) error {
+func (future *FutureCancellableWithError[T]) SetResultError(err error) {
 	future.lock.Lock()
 	defer future.lock.Unlock()
 	if !future.isComplete {
@@ -620,9 +522,8 @@ func (future *FutureCancellableWithError[T]) SetResultError(err error) error {
 			Value:    valueOrError[T]{Error: err},
 			HasValue: true,
 		}
-		return future.performComplete()
+		future.isComplete = true
 	}
-	return nil
 }
 
 func (future *FutureCancellableWithError[T]) WaitForResultOrError() (T, error) {
@@ -661,6 +562,7 @@ func (future *FutureCancellableWithError[T]) WaitForResultOrPanic() T {
 	}
 }
 
+//goland:noinspection GoDfaErrorMayBeNotNil
 func (future *FutureCancellableWithError[T]) WaitForResultOrKeyPress() (T, bool, error) {
 	value, hasValue, err := future.FutureCancellable.WaitForResultOrKeyPress()
 	if hasValue && err == nil && value.Error == nil && value.Value != nil {
@@ -677,41 +579,34 @@ func (future *FutureCancellableWithError[T]) ForwardResultToOtherFuture(other IF
 	go func() {
 		value, hasValue := future.resultFromChannel()
 
-		var err error
 		if hasValue && value.Error == nil && value.Value != nil {
-			err = other.SetResult(*value.Value)
+			other.SetResult(*value.Value)
 		} else if value.Error != nil {
-			err = other.SetResultError(value.Error)
+			other.SetResultError(value.Error)
 		} else {
-			err = other.SetResultEmpty()
+			other.SetResultSuccess()
 		}
-		util.GlobalErrorHandler(err)
 	}()
 }
 
 func FutureCancellable_MapValueError[T any, R any](innerFuture *FutureCancellable[T], mapper func(T) (*R, error)) *FutureCancellableWithError[R] {
 	outerFuture := FutureCancellableWithError_Make[R]()
 	if err1 := ChainCancel(outerFuture, innerFuture); err1 != nil {
-		err2 := outerFuture.SetResultError(err1)
-		if err2 != nil {
-			util.GlobalErrorHandler(errors.Join(err1, err2))
-		}
+		outerFuture.SetResultError(err1)
 	} else {
 		go func() {
 			value, hasValue := innerFuture.WaitForResult()
 
-			var errInner error
 			if hasValue {
 				newValue, errMapped := mapper(value)
 				if errMapped == nil {
-					errInner = outerFuture.SetResult(*newValue)
+					outerFuture.SetResult(*newValue)
 				} else {
-					errInner = outerFuture.SetResultError(errMapped)
+					outerFuture.SetResultError(errMapped)
 				}
 			} else {
-				errInner = outerFuture.SetResultEmpty()
+				outerFuture.SetResultSuccess()
 			}
-			util.GlobalErrorHandler(errInner)
 		}()
 	}
 

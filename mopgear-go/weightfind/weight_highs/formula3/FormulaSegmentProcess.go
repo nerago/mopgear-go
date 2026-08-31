@@ -126,14 +126,14 @@ func (proc *FormulaSegmentedProcess3) runInitialSection() {
 func (proc *FormulaSegmentedProcess3) sendSuccessResult(weight4 *weight_types.Weight4Segmented) {
 	errHandling := proc.processFuture.SetResult(weight_types.WeightResult4Make(weight4, proc.elapsed, highs.ModelStatusOptimal))
 	if errHandling != nil {
-		util.GlobalErrorHandler(errHandling)
+		util.GlobalFatalErrorHandler(errHandling)
 	}
 }
 
 func (proc *FormulaSegmentedProcess3) sendErrorResult(err error) {
 	errHandling := proc.processFuture.SetResult(weight_types.WeightResult4MakeError(proc.elapsed, err))
 	if errHandling != nil {
-		util.GlobalErrorHandler(errHandling)
+		util.GlobalFatalErrorHandler(errHandling)
 	}
 }
 
