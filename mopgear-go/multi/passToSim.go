@@ -227,7 +227,7 @@ func (job *MainJob) runSims(jobChan <-chan *simulateJobPending, expectedCount <-
 		pending.SetResult(new(result))
 	}, func() {
 		tracker.SetDone()
-		simFinished.SetResultSuccess()
+		simFinished.SetResultEmpty()
 		job.printer.Println("<<< SIMS ALL COMPLETE >>>")
 	})
 

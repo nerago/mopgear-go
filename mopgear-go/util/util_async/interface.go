@@ -3,7 +3,7 @@ package util_async
 import "github.com/nerago/mopgear-go/util/util_collection"
 
 type IFuture interface {
-	SetResultSuccess()
+	SetResultEmpty()
 }
 
 type IFutureWithResult[T any] interface {

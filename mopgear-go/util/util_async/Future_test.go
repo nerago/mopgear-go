@@ -89,7 +89,7 @@ func TestFlowSetEmpty(t *testing.T) {
 	})
 	waitGroup.Go(func() {
 		time.Sleep(2 * time.Second)
-		future.SetResultSuccess()
+		future.SetResultEmpty()
 	})
 	waitGroup.Wait()
 	if calledCancelHandler {
@@ -116,7 +116,7 @@ func TestFlowSetEmptyLateWaiter(t *testing.T) {
 	})
 	waitGroup.Go(func() {
 		time.Sleep(1 * time.Second)
-		future.SetResultSuccess()
+		future.SetResultEmpty()
 	})
 	waitGroup.Wait()
 	if calledCancelHandler {

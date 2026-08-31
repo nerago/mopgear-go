@@ -38,7 +38,7 @@ func FutureVoid_Make() *FutureVoid {
 	}
 }
 
-func (fv *FutureVoid) SetResultSuccess() {
+func (fv *FutureVoid) SetResultEmpty() {
 	fv.lock.Lock()
 	defer fv.lock.Unlock()
 	if !fv.isComplete {
@@ -188,7 +188,7 @@ func (future *futureCommon[T]) ForwardResultToOtherFuture(other IFutureWithResul
 		if hasValue {
 			other.SetResult(value)
 		} else {
-			other.SetResultSuccess()
+			other.SetResultEmpty()
 		}
 	}()
 }
@@ -260,7 +260,7 @@ func (future *Future[T]) SetResult(value T) {
 	}
 }
 
-func (future *Future[T]) SetResultSuccess() {
+func (future *Future[T]) SetResultEmpty() {
 	future.lock.Lock()
 	defer future.lock.Unlock()
 	if !future.isComplete {
@@ -312,7 +312,7 @@ func (future *FutureCancellable[T]) SetResult(value T) {
 	}
 }
 
-func (future *FutureCancellable[T]) SetResultSuccess() {
+func (future *FutureCancellable[T]) SetResultEmpty() {
 	future.lock.Lock()
 	defer future.lock.Unlock()
 	if !future.isComplete {
@@ -439,7 +439,7 @@ func FutureCancellable_MapValue[T any, R any](innerFuture *FutureCancellable[T],
 			newValue := mapper(value)
 			outerFuture.SetResult(newValue)
 		} else {
-			outerFuture.SetResultSuccess()
+			outerFuture.SetResultEmpty()
 		}
 	}()
 
@@ -457,10 +457,10 @@ func FutureCancellable_MapValueOptional[T any, R any](innerFuture *FutureCancell
 			if hasNew {
 				outerFuture.SetResult(newValue)
 			} else {
-				outerFuture.SetResultSuccess()
+				outerFuture.SetResultEmpty()
 			}
 		} else {
-			outerFuture.SetResultSuccess()
+			outerFuture.SetResultEmpty()
 		}
 	}()
 
@@ -480,7 +480,7 @@ func FutureCancellable_MapToFuture[T any, R any](innerFuture *FutureCancellable[
 				return
 			}
 		}
-		outerFuture.SetResultSuccess()
+		outerFuture.SetResultEmpty()
 	}()
 
 	return outerFuture, errMain
@@ -526,15 +526,23 @@ func (future *FutureCancellableWithError[T]) SetResultError(err error) {
 	}
 }
 
+func (future *FutureCancellableWithError[T]) finalError(value valueOrError[T]) error {
+	if value.Error != nil {
+		return value.Error
+	} else if future.isCancelled {
+		return errors.New("cancelled")
+	} else {
+		return errors.New("empty result")
+	}
+}
+
 func (future *FutureCancellableWithError[T]) WaitForResultOrError() (T, error) {
 	future.verifyCanWait()
 	value, hasValue := future.resultFromChannel()
 	if hasValue && value.Error == nil && value.Value != nil {
 		return *value.Value, nil
-	} else if value.Error != nil {
-		return makeNilValue[T](), value.Error
 	} else {
-		return makeNilValue[T](), errors.New("empty result")
+		return makeNilValue[T](), future.finalError(value)
 	}
 }
 
@@ -543,10 +551,8 @@ func (future *FutureCancellableWithError[T]) WaitForResultPointerOrError() (*T, 
 	value, hasValue := future.resultFromChannel()
 	if hasValue && value.Error == nil && value.Value != nil {
 		return value.Value, nil
-	} else if value.Error != nil {
-		return nil, value.Error
 	} else {
-		return nil, errors.New("empty result")
+		return nil, future.finalError(value)
 	}
 }
 
@@ -555,10 +561,8 @@ func (future *FutureCancellableWithError[T]) WaitForResultOrPanic() T {
 	value, hasValue := future.resultFromChannel()
 	if hasValue && value.Error == nil && value.Value != nil {
 		return *value.Value
-	} else if value.Error != nil {
-		panic(value.Error)
 	} else {
-		panic("empty result")
+		panic(future.finalError(value))
 	}
 }
 
@@ -584,7 +588,7 @@ func (future *FutureCancellableWithError[T]) ForwardResultToOtherFuture(other IF
 		} else if value.Error != nil {
 			other.SetResultError(value.Error)
 		} else {
-			other.SetResultSuccess()
+			other.SetResultEmpty()
 		}
 	}()
 }
@@ -605,7 +609,7 @@ func FutureCancellable_MapValueError[T any, R any](innerFuture *FutureCancellabl
 					outerFuture.SetResultError(errMapped)
 				}
 			} else {
-				outerFuture.SetResultSuccess()
+				outerFuture.SetResultEmpty()
 			}
 		}()
 	}
