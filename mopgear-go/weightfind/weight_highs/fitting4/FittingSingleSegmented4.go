@@ -19,8 +19,8 @@ import (
 const (
 	c_fitting4_std_deviation_accept = 1.0
 
-	c_fitting4_simScaledHighM = 2.0
-	//c_fitting4_statScaledHighM    = 2.0
+	c_fitting4_simScaledHighM     = 2.0
+	c_fitting4_statScaledHighM    = 2.0
 	c_fitting4_statScaledMaxValue = 1.0
 
 	c_fitting4_output_lineFit      = 1
@@ -43,7 +43,7 @@ func (ss *FittingSingleSegmented4) SupplyData(inputData []util_weight.FittingSam
 
 // Two alternates, segment based on stat ranges, segment based on sample indexes
 func (ss *FittingSingleSegmented4) Run() *util_async.FutureCancellableWithError[fitting2.InitialResultSet] {
-	ss.PrepareSegments(false)
+	ss.PrepareSegments(false, c_fitting4_statScaledMaxValue)
 
 	if ss.segmentOnData {
 		ss.splitInputDataEvenlyBetweenSegments()
@@ -51,7 +51,7 @@ func (ss *FittingSingleSegmented4) Run() *util_async.FutureCancellableWithError[
 		ss.splitStatRangeEvenlyBetweenSegments()
 	}
 
-	ss.FinishSegments(false)
+	ss.FinishSegments(0, 0)
 	return ss.RunSolve()
 }
 
@@ -128,7 +128,7 @@ func balanceBlocks(first *util_collection.List[util_weight.FittingSample3], seco
 func (ss *FittingSingleSegmented4) addSample(sample util_weight.FittingSample3, explicitSegment *fitting2.SegmentVars) {
 	ss.validateSample(sample)
 
-	includeColumn := ss.SampleIncludeToggleColumn(sample.StatValue, explicitSegment)
+	includeColumn := ss.SampleIncludeToggleColumn(sample.StatValue, explicitSegment, c_fitting4_statScaledHighM)
 	ss.sampleToFitLine(sample, explicitSegment, includeColumn)
 }
 
@@ -140,7 +140,7 @@ func (ss *FittingSingleSegmented4) validateSample(sample util_weight.FittingSamp
 }
 
 func (ss *FittingSingleSegmented4) prepareAsThreshold(seg1, seg2 *fitting2.SegmentVars, sample util_weight.FittingSample3) {
-	isThreshold := ss.PrepareThresholdColumn(seg1, sample.StatValue)
+	isThreshold := ss.PrepareThresholdColumn(seg1, sample.StatValue, c_fitting4_statScaledHighM)
 
 	difference := ss.Build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), c_fitting4_output_thresholdGap, util_highs.DebugString{Text: "difference"})
 

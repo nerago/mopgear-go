@@ -61,12 +61,16 @@ func (fe *FittingEachStatWeightProcess4) Run(cancel util_async.CancelSignal) wei
 	err = fe.launchEachNested()
 	stopwatch := fe.CalcMetrics()
 
-	if err == nil {
-		weight := fe.BuildResult()
-		return weight_types.WeightResult3Make(weight, stopwatch.Elapsed(), highs.ModelStatusOptimal)
-	} else {
+	if err != nil {
 		return weight_types.WeightResult3MakeError(stopwatch.Elapsed(), err)
 	}
+
+	weight, err := fe.BuildResult()
+	if err != nil {
+		return weight_types.WeightResult3MakeError(stopwatch.Elapsed(), err)
+	}
+
+	return weight_types.WeightResult3Make(weight, stopwatch.Elapsed(), highs.ModelStatusOptimal)
 }
 
 func (fe *FittingEachStatWeightProcess4) chooseScaling() {
@@ -110,6 +114,8 @@ func (fe *FittingEachStatWeightProcess4) launchEachNested() error {
 
 	channelEach := util_async.SeqToChannel_Cancellable(fe.Each.SeqValues(), &fe.CancelInternal)
 	return util_async.ForEach_Channel_PassError(c_fitting4_each_threadCount, channelEach, func(fields *fitting4EachFields) error {
+		fe.Printer.Printf("FIT4 running segment for %s %s\n", fields.statType.Name(), fields.simType.Name())
+
 		process := FittingSingleSegmented4{}
 		scaleStat := fe.ScaleStats.GetOrPanic(fields.statType)
 		process.Init(fe.TargetSegmentCount, scaleStat, fields.innerPrinter, fe.Timeout)

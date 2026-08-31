@@ -1,7 +1,7 @@
 package fitting2
 
 import (
-	"errors"
+	"fmt"
 	"math"
 
 	"github.com/nerago/mopgear-go/util"
@@ -67,21 +67,21 @@ func (bss *BaseSingleSegmented[S]) Init(targetSegmentCount int, scaleStat float6
 	bss.Build.TimeLimitSeconds = timeout
 }
 
-func (bss *BaseSingleSegmented[S]) PrepareSegments(enforceMinimumStatRange bool) {
+func (bss *BaseSingleSegmented[S]) PrepareSegments(enforceMinimumStatRange bool, statScaledMaxValue float64) {
 	for i := range bss.TargetSegmentCount {
 		if i == 0 {
-			bss.addSegment(true, false, nil, enforceMinimumStatRange)
+			bss.addSegment(true, false, nil, enforceMinimumStatRange, statScaledMaxValue)
 		} else if i == bss.TargetSegmentCount-1 {
-			bss.addSegment(false, true, bss.Segments[i-1], enforceMinimumStatRange)
+			bss.addSegment(false, true, bss.Segments[i-1], enforceMinimumStatRange, statScaledMaxValue)
 		} else {
-			bss.addSegment(false, false, bss.Segments[i-1], enforceMinimumStatRange)
+			bss.addSegment(false, false, bss.Segments[i-1], enforceMinimumStatRange, statScaledMaxValue)
 		}
 	}
 }
 
-func (bss *BaseSingleSegmented[S]) FinishSegments(enforceMinimumIncludeCount bool) {
+func (bss *BaseSingleSegmented[S]) FinishSegments(segmentMinimumColumnIncludePercent float64, costForMissingMinimums float64) {
 	for i := range len(bss.Segments) {
-		bss.finishSegment(bss.Segments[i], i == len(bss.Segments)-1, enforceMinimumIncludeCount)
+		bss.finishSegment(bss.Segments[i], i == len(bss.Segments)-1, segmentMinimumColumnIncludePercent, costForMissingMinimums)
 	}
 }
 
@@ -93,7 +93,7 @@ func (bss *BaseSingleSegmented[S]) RunSolve() *util_async.FutureCancellableWithE
 			if solution.HasSolution() {
 				return bss.prepareResult(solution), nil
 			} else {
-				return nil, errors.New("no solution")
+				return nil, fmt.Errorf("solution status %s", solution.Status())
 			}
 		} else {
 			return nil, err
@@ -101,20 +101,20 @@ func (bss *BaseSingleSegmented[S]) RunSolve() *util_async.FutureCancellableWithE
 	})
 }
 
-func (bss *BaseSingleSegmented[S]) addSegment(first, last bool, prev *SegmentVars, enforceMinimumStatRange bool) {
+func (bss *BaseSingleSegmented[S]) addSegment(first, last bool, prev *SegmentVars, enforceMinimumStatRange bool, statScaledMaxValue float64) {
 	fs := &SegmentVars{isFirst: first, isLast: last}
 	fs.LineSlope = bss.Build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "slope"})
 	fs.LineOffset = bss.Build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "offset"})
 
 	if first || prev == nil {
 		fs.minimumThreshold = -1
-		fs.maximumThreshold = bss.Build.CreateColumnGeneral(highs.Continuous, 0, c_fitting2_statScaledMaxValue, util_highs.DebugString{Text: "maximum"})
+		fs.maximumThreshold = bss.Build.CreateColumnGeneral(highs.Continuous, 0, statScaledMaxValue, util_highs.DebugString{Text: "maximum"})
 	} else if last {
 		fs.minimumThreshold = prev.maximumThreshold
 		fs.maximumThreshold = -1
 	} else {
 		fs.minimumThreshold = prev.maximumThreshold
-		fs.maximumThreshold = bss.Build.CreateColumnGeneral(highs.Continuous, 0, c_fitting2_statScaledMaxValue, util_highs.DebugString{Text: "maximum"})
+		fs.maximumThreshold = bss.Build.CreateColumnGeneral(highs.Continuous, 0, statScaledMaxValue, util_highs.DebugString{Text: "maximum"})
 
 		if enforceMinimumStatRange {
 			segmentSizeRow := util_highs.ConstraintRow{Debug: "segmentSizeRow"}
@@ -127,27 +127,32 @@ func (bss *BaseSingleSegmented[S]) addSegment(first, last bool, prev *SegmentVar
 	bss.Segments = append(bss.Segments, fs)
 }
 
-func (bss *BaseSingleSegmented[S]) finishSegment(segment *SegmentVars, isLast bool, enforceMinimumIncludeCount bool) {
+func (bss *BaseSingleSegmented[S]) finishSegment(segment *SegmentVars, isLast bool, segmentMinimumColumnIncludePercent float64, costForMissingMinimums float64) {
 	if !isLast {
 		// in theory only have one overlap, but needs to be freer due to duplicates
+		segment.includeThresholdRow.Debug = "includeThresholdRow"
 		segment.includeThresholdRow.Build(bss.Build, 1, util_highs.InfPos())
 	}
 
-	if enforceMinimumIncludeCount {
-		minimumColumnCount := c_fitting2_segmentSizeMinimumCount * float64(len(bss.InputData))
+	if segmentMinimumColumnIncludePercent > 0 {
+		slack := bss.Build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), costForMissingMinimums, util_highs.DebugText("includeColumnRow-slack"))
+		segment.includeColumnRow.Add(slack, 1)
+
+		minimumColumnCount := c_fitting2_segmentMinimumColumnIncludePercent * float64(len(bss.InputData))
+		segment.includeColumnRow.Debug = "includeColumnRow"
 		segment.includeColumnRow.Build(bss.Build, math.Round(minimumColumnCount), util_highs.InfPos())
 	}
 }
 
-func (bss *BaseSingleSegmented[S]) SampleIncludeToggleColumn(statValue float64, segment *SegmentVars) util_highs.ColumnIndex {
+func (bss *BaseSingleSegmented[S]) SampleIncludeToggleColumn(statValue float64, segment *SegmentVars, statScaledHighM float64) util_highs.ColumnIndex {
 	includeColumn := bss.Build.CreateColumnBool(util_highs.DebugString{Text: "include"})
 
 	if segment.isFirst {
-		bss.Build.ColumnIsGreaterOrEqualThanConstant_Supplied(includeColumn, segment.maximumThreshold, statValue, c_fitting2_statScaledHighM, bss.unequalStatDelta)
+		bss.Build.ColumnIsGreaterOrEqualThanConstant_Supplied(includeColumn, segment.maximumThreshold, statValue, statScaledHighM, bss.unequalStatDelta)
 	} else if segment.isLast {
-		bss.Build.ColumnIsLessOrEqualThanConstant_Supplied(includeColumn, segment.minimumThreshold, statValue, c_fitting2_statScaledHighM, bss.unequalStatDelta)
+		bss.Build.ColumnIsLessOrEqualThanConstant_Supplied(includeColumn, segment.minimumThreshold, statValue, statScaledHighM, bss.unequalStatDelta)
 	} else {
-		bss.Build.ConstantIsBetweenColumns_NoSequenceCheck(segment.minimumThreshold, segment.maximumThreshold, includeColumn, statValue, c_fitting2_statScaledHighM, bss.unequalStatDelta)
+		bss.Build.ConstantIsBetweenColumns_NoSequenceCheck(segment.minimumThreshold, segment.maximumThreshold, includeColumn, statValue, statScaledHighM, bss.unequalStatDelta)
 	}
 
 	segment.includeColumnRow.Add(includeColumn, 1)
@@ -155,9 +160,9 @@ func (bss *BaseSingleSegmented[S]) SampleIncludeToggleColumn(statValue float64, 
 	return includeColumn
 }
 
-func (bss *BaseSingleSegmented[S]) PrepareThresholdColumn(seg1 *SegmentVars, statValue float64) util_highs.ColumnIndex {
+func (bss *BaseSingleSegmented[S]) PrepareThresholdColumn(seg1 *SegmentVars, statValue float64, statScaledHighM float64) util_highs.ColumnIndex {
 	isThreshold := bss.Build.CreateColumnBool(util_highs.DebugText("isThreshold"))
-	bss.Build.ColumnIsEqualConstant(seg1.maximumThreshold, isThreshold, statValue, c_fitting2_statScaledHighM, bss.unequalStatDelta)
+	bss.Build.ColumnIsEqualConstant(seg1.maximumThreshold, isThreshold, statValue, statScaledHighM, bss.unequalStatDelta)
 	seg1.includeThresholdRow.Add(isThreshold, 1)
 	seg1.thresholdColumns = append(seg1.thresholdColumns, isThreshold)
 	return isThreshold

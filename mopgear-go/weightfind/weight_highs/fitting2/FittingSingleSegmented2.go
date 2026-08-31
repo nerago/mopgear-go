@@ -17,11 +17,12 @@ const (
 	c_fitting2_simScaledHighM     = 2.0
 	c_fitting2_statScaledHighM    = 2.0
 
-	c_fitting2_segmentSizeMinimumStats = 750
-	c_fitting2_segmentSizeMinimumCount = 0.10
+	c_fitting2_segmentSizeMinimumStats            = 750
+	c_fitting2_segmentMinimumColumnIncludePercent = 0.10
 
-	c_fitting2_output_lineFit      = 1
-	c_fitting2_output_thresholdGap = 50
+	c_fitting2_output_lineFit         = 1
+	c_fitting2_output_thresholdGap    = 50
+	c_fitting2_output_missingMinimums = 1000
 )
 
 type SingleSegmented2 struct {
@@ -36,11 +37,11 @@ func (ss *SingleSegmented2) SupplyData(inputData []util_weight.FittingSample) {
 }
 
 func (ss *SingleSegmented2) Run() *util_async.FutureCancellableWithError[InitialResultSet] {
-	ss.PrepareSegments(true)
+	ss.PrepareSegments(true, c_fitting2_statScaledMaxValue)
 	for _, sample := range ss.InputData {
 		ss.addSample(sample)
 	}
-	ss.FinishSegments(true)
+	ss.FinishSegments(c_fitting2_segmentMinimumColumnIncludePercent, c_fitting2_output_missingMinimums)
 	return ss.RunSolve()
 }
 
@@ -49,7 +50,7 @@ func (ss *SingleSegmented2) addSample(sample util_weight.FittingSample) {
 
 	rowIncludeInOne := util_highs.ConstraintRow{}
 	for _, segment := range ss.Segments {
-		includeColumn := ss.SampleIncludeToggleColumn(sample.StatValue, segment)
+		includeColumn := ss.SampleIncludeToggleColumn(sample.StatValue, segment, c_fitting2_statScaledHighM)
 		ss.sampleToFitLine(sample, segment, includeColumn)
 		rowIncludeInOne.Add(includeColumn, 1)
 	}
@@ -68,7 +69,7 @@ func (ss *SingleSegmented2) validateSample(sample util_weight.FittingSample) {
 }
 
 func (ss *SingleSegmented2) prepareAsPotentialThreshold(seg1, seg2 *SegmentVars, sample util_weight.FittingSample) {
-	isThreshold := ss.PrepareThresholdColumn(seg1, sample.StatValue)
+	isThreshold := ss.PrepareThresholdColumn(seg1, sample.StatValue, c_fitting2_statScaledHighM)
 
 	difference := ss.Build.CreateColumnWithOutput(highs.Continuous, 0, util_highs.InfPos(), c_fitting2_output_thresholdGap, util_highs.DebugString{Text: "difference"})
 

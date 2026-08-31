@@ -29,7 +29,6 @@ import (
 	"github.com/nerago/mopgear-go/weightfind/weight_highs/fitting1"
 	"github.com/nerago/mopgear-go/weightfind/weight_highs/fitting2"
 	"github.com/nerago/mopgear-go/weightfind/weight_highs/fitting3"
-	"github.com/nerago/mopgear-go/weightfind/weight_highs/fitting4"
 	"github.com/nerago/mopgear-go/weightfind/weight_highs/formula3"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
@@ -137,7 +136,7 @@ func generateRatingsInputFromArtificialStatOverrides_ForBasic(currentItemSet ite
 func statWeightsFormula(printer *util.PrintRecorder) {
 	// weightInputs, targetRatio := generateRatingsInputFromRealRandomSets(printer)
 
-	weightInputs := weight_types.WeightInputReadFile("tempdata/sim-stats-compare-rand.json")
+	weightInputs := weight_types.WeightInputReadFileOrPanic("tempdata/sim-stats-compare-rand.json")
 
 	// between := func(w *stathighs.WeightInput, stat stats.StatType, lo, hi uint32) bool {
 	// 	value := w.TotalStat.Get(stat)
@@ -178,9 +177,9 @@ func statWeightsFormula(printer *util.PrintRecorder) {
 }
 
 func statWeightsFormula3(printer *util.PrintRecorder) {
-	//weightInputs := weight_types.WeightInputReadFile("tempdata/sim-stats-compare-rand.json")
-	inputDataGrid := weight_types.WeightInputReadFile("tempdata/weightfind-sim-grid-Prot-Mitigation.json")
-	inputDataRandom := weight_types.WeightInputReadFile("tempdata/weightfind-sim-real-Prot-Mitigation.json")
+	//weightInputs := weight_types.WeightInputReadFileOrPanic("tempdata/sim-stats-compare-rand.json")
+	inputDataGrid := weight_types.WeightInputReadFileOrPanic("tempdata/weightfind-sim-grid-Prot-Mitigation.json")
+	inputDataRandom := weight_types.WeightInputReadFileOrPanic("tempdata/weightfind-sim-real-Prot-Mitigation.json")
 	weightInputs := slices.Concat(inputDataGrid, inputDataRandom)
 	weightInputs = util_collection.SliceSampleRandom(weightInputs, 150)
 
@@ -192,7 +191,7 @@ func statWeightsFormula3(printer *util.PrintRecorder) {
 	comp.SetTargetRatios(ratio)
 	comp.SupplyData(weightInputs)
 	limit := util_highs.TimeLimitTokenMake(3000)
-	weightResultFuture, err := comp.Run(limit)
+	weightResultFuture, err := comp.Run(limit, util_async.CancelSignal_Make())
 	if err != nil {
 		panic(err)
 	}
@@ -211,8 +210,8 @@ func statWeightsFormula3(printer *util.PrintRecorder) {
 
 func statWeightsRanking(printer *util.PrintRecorder) {
 	//weightInputs := readWeightInputFile("tempdata/sim-stats-compare-rand.json")
-	weightInputs1 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Heal.json")
-	weightInputs2 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Heal.json")
+	weightInputs1 := weight_types.WeightInputReadFileOrPanic("tempdata\\weightfind-sim-real-Prot-Heal.json")
+	weightInputs2 := weight_types.WeightInputReadFileOrPanic("tempdata\\weightfind-sim-grid-Prot-Heal.json")
 	weightInputs := slices.Concat(weightInputs1, weightInputs2)
 
 	statList := model_factory.StatsForWeighting_strengthTank
@@ -254,8 +253,8 @@ func statWeightsRanking(printer *util.PrintRecorder) {
 }
 
 func statWeightsRanking3a(printer *util.PrintRecorder) {
-	weightInputs1 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
-	weightInputs2 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
+	weightInputs1 := weight_types.WeightInputReadFileOrPanic("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
+	weightInputs2 := weight_types.WeightInputReadFileOrPanic("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
 	weightInputs := slices.Concat(weightInputs1, weightInputs2)
 
 	statList := model_factory.StatsForWeighting_strengthTank
@@ -297,8 +296,8 @@ func statWeightsRanking3b(printer *util.PrintRecorder) {
 	//weightInputs := readWeightInputFile("tempdata/sim-stats-compare-rand.json")
 	//weightInputs1 := readWeightInputFile("tempdata\\weightfind-sim-real-Prot-Heal.json")
 	//weightInputs2 := readWeightInputFile("tempdata\\weightfind-sim-grid-Prot-Heal.json")
-	weightInputs1 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
-	weightInputs2 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
+	weightInputs1 := weight_types.WeightInputReadFileOrPanic("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
+	weightInputs2 := weight_types.WeightInputReadFileOrPanic("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
 	weightInputs := slices.Concat(weightInputs1, weightInputs2)
 
 	statList := model_factory.StatsForWeighting_strengthTank
@@ -351,8 +350,8 @@ func statWeightsRanking3b(printer *util.PrintRecorder) {
 }
 
 func statWeightsRanking30(printer *util.PrintRecorder) {
-	weightInputs1 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
-	weightInputs2 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
+	weightInputs1 := weight_types.WeightInputReadFileOrPanic("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
+	weightInputs2 := weight_types.WeightInputReadFileOrPanic("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
 	weightInputs := slices.Concat(weightInputs1, weightInputs2)
 	//weightInputs = util_collection.SliceSampleRandom(weightInputs, 256)
 	//weightInputs = util_collection.SliceSampleRandom(weightInputs, 32)
@@ -395,8 +394,8 @@ func statWeightsRanking30(printer *util.PrintRecorder) {
 }
 
 func statWeightsSearchRatio(printer *util.PrintRecorder) {
-	weightInputs1 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Survival.json")
-	weightInputs2 := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Survival.json")
+	weightInputs1 := weight_types.WeightInputReadFileOrPanic("tempdata\\weightfind-sim-real-Prot-Survival.json")
+	weightInputs2 := weight_types.WeightInputReadFileOrPanic("tempdata\\weightfind-sim-grid-Prot-Survival.json")
 	weightInputs := slices.Concat(weightInputs1, weightInputs2)
 	//weightInputs = util_collection.SliceSampleRandom(weightInputs, 64)
 
@@ -446,8 +445,8 @@ func statWeightsSearch(printer *util.PrintRecorder) {
 
 	//inputDataGrid := readWeightInputFile("tempdata/sim-stats-compare-grid.json")
 	//inputDataRandom := readWeightInputFile("tempdata/sim-stats-compare-rand.json")
-	inputDataGrid := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
-	inputDataRandom := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
+	inputDataGrid := weight_types.WeightInputReadFileOrPanic("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
+	inputDataRandom := weight_types.WeightInputReadFileOrPanic("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
 	// mixedInputData := slices.Concat(inputDataGrid, inputDataRandom)
 	mixedInputData := slices.Concat(inputDataRandom, inputDataGrid)
 
@@ -539,8 +538,8 @@ func statWeightsSearchExtended(printer *util.PrintRecorder) {
 
 	//inputDataGrid := readWeightInputFile("tempdata/sim-stats-compare-grid.json")
 	//inputDataRandom := readWeightInputFile("tempdata/sim-stats-compare-rand.json")
-	inputDataGrid := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
-	inputDataRandom := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
+	inputDataGrid := weight_types.WeightInputReadFileOrPanic("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
+	inputDataRandom := weight_types.WeightInputReadFileOrPanic("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
 	// mixedInputData := slices.Concat(inputDataGrid, inputDataRandom)
 	mixedInputData := slices.Concat(inputDataRandom, inputDataGrid)
 
@@ -594,8 +593,8 @@ func compareAccuracy(printer *util.PrintRecorder) {
 	targetRatio := model_factory.SimPriority_mitigation
 	//weightStats := model_factory.StatsForWeighting_strengthTank
 
-	inputDataGrid := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
-	inputDataRandom := weight_types.WeightInputReadFile("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
+	inputDataGrid := weight_types.WeightInputReadFileOrPanic("tempdata\\weightfind-sim-grid-Prot-Mitigation.json")
+	inputDataRandom := weight_types.WeightInputReadFileOrPanic("tempdata\\weightfind-sim-real-Prot-Mitigation.json")
 	testData := slices.Concat(inputDataRandom, inputDataGrid)
 	//testData = testData[0:5]
 	//testData = testData[102:107]
@@ -632,8 +631,8 @@ func statWeightsGridIntoRanking(printer *util.PrintRecorder) {
 	requiredStats := model_factory.StatsForWeighting_strengthTank
 	simTypes := targetRatio.SimTypes()
 
-	inputDataGrid := weight_types.WeightInputReadFile("tempdata/sim-stats-compare-grid.json")
-	inputDataRandom := weight_types.WeightInputReadFile("tempdata/sim-stats-compare-rand.json")
+	inputDataGrid := weight_types.WeightInputReadFileOrPanic("tempdata/sim-stats-compare-grid.json")
+	inputDataRandom := weight_types.WeightInputReadFileOrPanic("tempdata/sim-stats-compare-rand.json")
 	mixedInputData := slices.Concat(inputDataRandom, inputDataGrid)
 
 	var weights1 weight_types.Weight1Basic
@@ -859,7 +858,7 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 	//bytes, err := os.ReadFile("tempdata/sim-stats-compare-rand.json")
 	// bytes, err := os.ReadFile("tempdata/sim-stats-input-data.json")
 	//weightInputs := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Heal.json")
-	weightInputs := weight_types.WeightInputReadFile("tempdata/sim-stats-compare-rand.json")
+	weightInputs := weight_types.WeightInputReadFileOrPanic("tempdata/sim-stats-compare-rand.json")
 
 	// for _, entry := range weightInputs {
 	// 	if hasteInDiscontinuityRange(entry.TotalStat.GetUInt(stats.Stat_Haste)) {
@@ -935,7 +934,7 @@ func statWeightsFitting2(printer *util.PrintRecorder) {
 }
 
 func statWeightsFitting2each(printer *util.PrintRecorder) {
-	weightInputs := weight_types.WeightInputReadFile("tempdata/weightfind-sim-real-Prot-Heal.json")
+	weightInputs := weight_types.WeightInputReadFileOrPanic("tempdata/weightfind-sim-real-Prot-Heal.json")
 
 	task := func(simType stats.SimType, statType stats.StatType) {
 		sampleDataPreScale := util_collection.MapSliceAsNew(weightInputs, func(input *weight_types.WeightInput) util_weight.FittingSample {
@@ -980,7 +979,7 @@ func statWeightsFitting2each(printer *util.PrintRecorder) {
 
 func statWeightsFitting2eachProper(printer *util.PrintRecorder) {
 	//bytes, err := os.ReadFile("")
-	weightInputs := weight_types.WeightInputReadFile("tempdata/sim-stats-compare-rand.json")
+	weightInputs := weight_types.WeightInputReadFileOrPanic("tempdata/sim-stats-compare-rand.json")
 	//weightInputs := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Heal.json")
 	weightInputs = weightInputs[0:10]
 	simTypes := model_factory.SimPriority_heal.SimTypes()
@@ -1010,22 +1009,27 @@ func statWeightsFitting2eachProper(printer *util.PrintRecorder) {
 }
 
 func statWeightsFitting3eachProper(printer *util.PrintRecorder) {
-	weightInputs := weight_types.WeightInputReadFile("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
+	weightInputs := weight_types.WeightInputReadFileOrPanic("tempdata/weightfind-sim-fit-Prot-Survival.json")
 	//weightInputs = weightInputs[0:30]
 	simTypes := model_factory.SimPriority_heal.SimTypes()
 	statTypes := model_factory.StatsForWeighting_strengthTank
-	targetRatio := model_factory.SimPriority_mitigation
+	targetRatio := model_factory.SimPriority_survival
 
 	notes := make([]string, 0)
 
 	for segmentCount := 2; segmentCount <= 10; segmentCount++ {
-		//fitting := fitting3.FittingEachStatWeightProcess3{}
-		fitting := fitting4.FittingEachStatWeightProcess4{}
-		fitting.Init(segmentCount, printer, 1000)
+		fitting := fitting3.FittingEachStatWeightProcess3{}
+		//fitting := fitting4.FittingEachStatWeightProcess4{}
+		fitting.Init(segmentCount, printer, 200)
 		fitting.SetRequiredStats(statTypes, simTypes)
+		//fitting.SetRequiredStats([]stats.StatType{stats.Stat_Strength}, []stats.SimType{stats.Sim_TMI})
 		fitting.SetTargetRatios(targetRatio)
 		fitting.SupplyData(weightInputs)
-		weightResult := fitting.Run(util_async.CancelSignal_Make())
+		weightResult := fitting.Run(util_async.CancelSignal_Make(), util.TrackProgress_Nop())
+		if weightResult.Error != nil {
+			printer.Println("FIT ERROR:" + weightResult.Error.Error())
+			return
+		}
 		weight3 := weightResult.Weight
 
 		tools.WriteWeightString(weight3, printer)
@@ -1076,7 +1080,7 @@ func statWeightsFitting1eachProper(printer *util.PrintRecorder) {
 	//bytes, err := os.ReadFile("")
 	//weightInputs := readWeightInputFile("tempdata/sim-stats-compare-rand.json")
 	//weightInputs := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Heal.json")
-	weightInputs := weight_types.WeightInputReadFile("tempdata/weightfind-sim-real-Prot-Mitigation-WithSet.json")
+	weightInputs := weight_types.WeightInputReadFileOrPanic("tempdata/weightfind-sim-real-Prot-Mitigation-WithSet.json")
 	//weightInputs = weightInputs[0:10]
 	statTypes := model_factory.StatsForWeighting_strengthTank
 	targetRatio := model_factory.SimPriority_survival
@@ -1136,7 +1140,7 @@ func fittingTableReport(printer *util.PrintRecorder, weightList []fitting2.Initi
 
 func statWeightsFitting3(printer *util.PrintRecorder) {
 	//weightInputs := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Heal.json")
-	weightInputs := weight_types.WeightInputReadFile("tempdata/sim-stats-compare-rand.json")
+	weightInputs := weight_types.WeightInputReadFileOrPanic("tempdata/sim-stats-compare-rand.json")
 	checkSimType := stats.Sim_TMI
 	checkStatType := stats.Stat_Dodge
 
@@ -1291,10 +1295,10 @@ func statWeightsFitting1a(printer *util.PrintRecorder) {
 //goland:noinspection ALL
 func statWeightsGrid1Orig(printer *util.PrintRecorder) {
 	// inputData, targetRatio := generateRatingsInputFromArtificalStatOverrides(printer)
-	// weight_types.WeightInputWriteFile(inputData, "tempdata/sim-stats-input-grid.json" )
+	// weight_types.WeightInputWriteFileOrPanic(inputData, "tempdata/sim-stats-input-grid.json" )
 
-	inputDataGrid := weight_types.WeightInputReadFile("tempdata/weightfind-sim-grid-Prot-Mitigation-NoSet.json")
-	inputDataRandom := weight_types.WeightInputReadFile("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
+	inputDataGrid := weight_types.WeightInputReadFileOrPanic("tempdata/weightfind-sim-grid-Prot-Mitigation-NoSet.json")
+	inputDataRandom := weight_types.WeightInputReadFileOrPanic("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
 	//inputData := SliceSampleRandom(inputDataFull, 30)
 	inputData := inputDataGrid
 
@@ -1405,10 +1409,10 @@ func statWeightsGrid1Orig(printer *util.PrintRecorder) {
 
 func statWeightsGrid2(printer *util.PrintRecorder) {
 	// inputData, targetRatio := generateRatingsInputFromArtificalStatOverrides(printer)
-	// weight_types.WeightInputWriteFile(inputData, "tempdata/sim-stats-input-grid.json" )
+	// weight_types.WeightInputWriteFileOrPanic(inputData, "tempdata/sim-stats-input-grid.json" )
 
-	inputDataGrid := weight_types.WeightInputReadFile("tempdata/weightfind-sim-grid-Prot-Mitigation-NoSet.json")
-	inputDataRandom := weight_types.WeightInputReadFile("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
+	inputDataGrid := weight_types.WeightInputReadFileOrPanic("tempdata/weightfind-sim-grid-Prot-Mitigation-NoSet.json")
+	inputDataRandom := weight_types.WeightInputReadFileOrPanic("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
 	//inputData := SliceSampleRandom(inputDataFull, 30)
 	inputData := inputDataGrid
 
@@ -1468,10 +1472,10 @@ func statWeightsGrid2(printer *util.PrintRecorder) {
 
 func statWeightsGrid1b(printer *util.PrintRecorder) {
 	// inputData, targetRatio := generateRatingsInputFromArtificalStatOverrides(printer)
-	// weight_types.WeightInputWriteFile(inputData, "tempdata/sim-stats-input-grid.json" )
+	// weight_types.WeightInputWriteFileOrPanic(inputData, "tempdata/sim-stats-input-grid.json" )
 
-	inputDataGrid := weight_types.WeightInputReadFile("tempdata/weightfind-sim-grid-Prot-Mitigation-NoSet.json")
-	inputDataRandom := weight_types.WeightInputReadFile("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
+	inputDataGrid := weight_types.WeightInputReadFileOrPanic("tempdata/weightfind-sim-grid-Prot-Mitigation-NoSet.json")
+	inputDataRandom := weight_types.WeightInputReadFileOrPanic("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
 	//inputData := SliceSampleRandom(inputDataFull, 30)
 	inputData := inputDataGrid
 

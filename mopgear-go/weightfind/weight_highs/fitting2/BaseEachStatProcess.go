@@ -66,7 +66,7 @@ func (be *BaseEachStatProcess[F]) CalcMetrics() *util.Stopwatch {
 	return stopwatch
 }
 
-func (be *BaseEachStatProcess[F]) BuildResult() *weight_types.Weight3ExtendedRanged {
+func (be *BaseEachStatProcess[F]) BuildResult() (*weight_types.Weight3ExtendedRanged, error) {
 	weights := weight_types.Weight3ExtendedRanged_Make(be.RequiredStats, be.RequiredSims)
 	be.Each.Foreach(func(statType stats.StatType, simType stats.SimType, value F) {
 		for detail := range value.Results() {
@@ -75,10 +75,16 @@ func (be *BaseEachStatProcess[F]) BuildResult() *weight_types.Weight3ExtendedRan
 	})
 	for _, simType := range be.RequiredSims {
 		ratio := be.targetRatios.GetOrPanic(simType)
-		weights.SetSimScale(simType, 1, 0, ratio)
+		err := weights.SetSimScale(simType, 1, 0, ratio)
+		if err != nil {
+			return nil, err
+		}
 	}
-	weights.FinishAndValidate()
-	return weights
+	err := weights.FinishAndValidate()
+	if err != nil {
+		return nil, err
+	}
+	return weights, nil
 }
 
 func (be *BaseEachStatProcess[F]) ConvertAndScaleResult(initialSet *InitialResultSet, statType stats.StatType) []util_weight.FittingInterimResult2 {

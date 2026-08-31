@@ -60,12 +60,16 @@ func (fe *FittingEachStatWeightProcess3) Run(cancel util_async.CancelSignal, tra
 	err = fe.launchEachNested(tracker)
 	stopwatch := fe.CalcMetrics()
 
-	if err == nil {
-		weight := fe.BuildResult()
-		return weight_types.WeightResult3Make(weight, stopwatch.Elapsed(), highs.ModelStatusOptimal)
-	} else {
+	if err != nil {
 		return weight_types.WeightResult3MakeError(stopwatch.Elapsed(), err)
 	}
+
+	weight, err := fe.BuildResult()
+	if err != nil {
+		return weight_types.WeightResult3MakeError(stopwatch.Elapsed(), err)
+	}
+
+	return weight_types.WeightResult3Make(weight, stopwatch.Elapsed(), highs.ModelStatusOptimal)
 }
 
 func (fe *FittingEachStatWeightProcess3) chooseScaling() {
@@ -111,6 +115,8 @@ func (fe *FittingEachStatWeightProcess3) launchEachNested(tracker *util.TrackPro
 	channelEach := util_async.SeqToChannel_Cancellable(fe.Each.SeqValues(), &fe.CancelInternal)
 	return util_async.ForEach_Channel_PassError(c_fitting3_each_threadCount, channelEach, func(fields *fitting3EachFields) error {
 		defer tracker.NewChild().SetDone()
+
+		fe.Printer.Printf("FIT3 running segment for %s %s\n", fields.statType.Name(), fields.simType.Name())
 
 		process := FittingSingleSegmented3{}
 		scaleStat := fe.ScaleStats.GetOrPanic(fields.statType)
