@@ -45,9 +45,9 @@ func runBaseline(spec *SpecInput, input *InputSettings, baseItems *items.FullOpt
 		return stats.SimData{}, 0, err
 	}
 
-	baseSim := simulate.ExecuteUseModel(input.SimSizeBaseline, &spec.Model, baseSet.Items(), nil, tracker)
+	baseSim, err2 := simulate.ExecuteUseModel(input.SimSizeBaseline, &spec.Model, baseSet.Items(), nil, tracker)
 
-	return baseSim, baseRating, nil
+	return baseSim, baseRating, err2
 }
 
 func runEachUpgradeTaskAndSim(extraTasks []upgradeItemTask, baseItems *items.FullOptionsMap, baseRating float64, baseSim stats.SimData, spec *SpecInput, settings *InputSettings, tracker *util.TrackProgress, printer *util.PrintRecorder) []upgradeItemResult {
@@ -57,15 +57,19 @@ func runEachUpgradeTaskAndSim(extraTasks []upgradeItemTask, baseItems *items.Ful
 			settings.WeightType, settings.SolverTimeout)
 
 		if upgradeResult.success {
-			simResult := simulate.ExecuteSpecifyAll(settings.SimSizeItemInitial, spec.Model.SimSpeedUp, spec.Model.Spec, spec.Model.Goal,
+			simResult, err := simulate.ExecuteSpecifyAll(settings.SimSizeItemInitial, spec.Model.SimSpeedUp, spec.Model.Spec, spec.Model.Goal,
 				spec.Model.SimulateAs, spec.Model.Professions, upgradeResult.itemSet.Items(), nil, tracker.NewChild())
 
-			itemName := db.LookupItemNameByItemId(task.itemRef.ItemId)
-			printer.Println("SIM " + itemName)
-			simResult.Print(printer)
+			if err == nil {
+				itemName := db.LookupItemNameByItemId(task.itemRef.ItemId)
+				printer.Println("SIM " + itemName)
+				simResult.Print(printer)
 
-			upgradeResult.baseSim = baseSim
-			upgradeResult.simResult = simResult
+				upgradeResult.baseSim = baseSim
+				upgradeResult.simResult = simResult
+			} else {
+				util.GlobalWarnHandler(err)
+			}
 		}
 
 		return upgradeResult
@@ -88,6 +92,10 @@ func runMoreDetailedSimForBestN(resultList []upgradeItemResult, topResultsCount 
 }
 
 func runMoreDetailedSimFor(result *upgradeItemResult, extraSimSize simulate.WowSim_RunSize, model *gear_model.SpecModel, goal stats.OptimiseGoal, tracker *util.TrackProgress) {
-	updatedSimResult := simulate.ExecuteSpecifyAll(extraSimSize, model.SimSpeedUp, model.Spec, goal, model.SimulateAs, model.Professions, result.itemSet.Items(), nil, tracker)
-	result.simResult = updatedSimResult
+	updatedSimResult, err := simulate.ExecuteSpecifyAll(extraSimSize, model.SimSpeedUp, model.Spec, goal, model.SimulateAs, model.Professions, result.itemSet.Items(), nil, tracker)
+	if err == nil {
+		result.simResult = updatedSimResult
+	} else {
+		util.GlobalWarnHandler(err)
+	}
 }

@@ -1,6 +1,7 @@
 package weight_types
 
 import (
+	"errors"
 	"fmt"
 	"iter"
 	"math"
@@ -58,17 +59,26 @@ func (we *Weight2Extended) GetSimPriority() *SimPriorityExtended {
 	return &we.SimPriority
 }
 
-func (we *Weight2Extended) SetSimScale(simType stats.SimType, rangingScale, rangingOffset, ratioScale float64) {
-	we.SimPriority.SetSimScale(simType, rangingScale, rangingOffset, ratioScale)
+func (we *Weight2Extended) SetSimScale(simType stats.SimType, rangingScale, rangingOffset, ratioScale float64) error {
+	return we.SimPriority.SetSimScale(simType, rangingScale, rangingOffset, ratioScale)
 }
 
-func (we *Weight2Extended) FinishAndValidate(verificationInputs []WeightInput) {
-	we.validateTypes()
-	we.verifyGoodRange(verificationInputs)
+func (we *Weight2Extended) FinishAndValidate(verificationInputs []WeightInput) error {
+	err := we.validateTypes()
+	if err != nil {
+		return err
+	}
+
+	err = we.verifyGoodRange(verificationInputs)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (we *Weight2Extended) FinishAndValidateNoVerify() {
-	we.validateTypes()
+func (we *Weight2Extended) FinishAndValidateNoVerify() error {
+	return we.validateTypes()
 }
 
 func (we *Weight2Extended) CalcStatScore(statBlock *stats.StatBlock) float64 {
@@ -112,44 +122,45 @@ func (we *Weight2Extended) scoreForSim(nested iter.Seq2[stats.StatType, float64]
 	return subTotal
 }
 
-func (we *Weight2Extended) validateTypes() {
+func (we *Weight2Extended) validateTypes() error {
 	for statType := range we.DetailedWeights.SeqKey2() {
 		if !slices.Contains(we.StatList, statType) {
-			panic("weight given for unlisted stat")
+			return errors.New("weight given for unlisted stat " + statType.Name())
 		}
 	}
 	for _, simType := range we.SimList {
 		for _, statType := range we.StatList {
 			if !we.DetailedWeights.Has(simType, statType) {
-				panic("missing weight for " + statType.Name() + " " + simType.Name())
+				return errors.New("missing weight for " + statType.Name() + " " + simType.Name())
 			}
 		}
 	}
-	we.DetailedWeights.Foreach(func(simType stats.SimType, statType stats.StatType, value float64) {
+	for simType, statType := range we.DetailedWeights.SeqKeysAll() {
 		if !slices.Contains(we.StatList, statType) {
-			panic("unexpected weight for " + statType.Name())
+			return errors.New("unexpected weight for " + statType.Name())
 		}
 		if !slices.Contains(we.SimList, simType) {
-			panic("unexpected weight for " + simType.Name())
+			return errors.New("unexpected weight for " + simType.Name())
 		}
-	})
+	}
 
 	for simType := range we.SimPriority.entries.SeqKey() {
 		if !slices.Contains(we.SimList, simType) {
-			panic("priority given for unlisted sim")
+			return errors.New("priority given for unlisted sim")
 		}
 	}
 	for _, simType := range we.SimList {
 		_, hasValue := we.SimPriority.Get(simType)
 		if !hasValue {
-			panic("priority missing for " + simType.Name())
+			return errors.New("priority missing for " + simType.Name())
 		}
 	}
+	return nil
 }
 
-func (we *Weight2Extended) verifyGoodRange(verificationInputs []WeightInput) {
+func (we *Weight2Extended) verifyGoodRange(verificationInputs []WeightInput) error {
 	if len(verificationInputs) == 0 {
-		panic("no inputs for verification")
+		return errors.New("no inputs for verification")
 	}
 
 	for _, simType := range we.SimList {
@@ -157,14 +168,16 @@ func (we *Weight2Extended) verifyGoodRange(verificationInputs []WeightInput) {
 
 		permittedSlack := 0.1
 		if math.Abs(loValue) > permittedSlack || math.Abs(hiValue-1) > permittedSlack {
-			panic(fmt.Sprintf("weights fail to produce expected value range, actual: %f - %f", loValue, hiValue))
+			return fmt.Errorf("weights fail to produce expected value range, actual: %f - %f", loValue, hiValue)
 		}
 	}
+
+	return nil
 }
 
-func (we *Weight2Extended) UpdateScaling(inputData []WeightInput) {
+func (we *Weight2Extended) UpdateScaling(inputData []WeightInput) error {
 	if len(inputData) == 0 {
-		panic("no inputData for scaling")
+		return errors.New("no inputData for scaling")
 	}
 
 	targetLoValue := 0.0
@@ -181,8 +194,12 @@ func (we *Weight2Extended) UpdateScaling(inputData []WeightInput) {
 		scale := targetHiValue / (hiValueRaw + offset)
 
 		we.SimPriority.Delete(simType)
-		we.SimPriority.SetSimScale(simType, scale, offset, oldPriorityEntry.RatioScale)
+		err := we.SimPriority.SetSimScale(simType, scale, offset, oldPriorityEntry.RatioScale)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (we *Weight2Extended) actualOutputValueRangeForInputs(verificationInputs []WeightInput, simType stats.SimType) (float64, float64, float64, float64) {

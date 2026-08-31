@@ -1,6 +1,7 @@
 package weight_types
 
 import (
+	"errors"
 	"iter"
 	"math"
 
@@ -64,14 +65,19 @@ func (sr *SimPriorityBasic) Equals(other *SimPriorityBasic) bool {
 	return sr.content.Equals(&other.content, func(a *float64, b *float64) bool { return *a == *b })
 }
 
-func (sr *SimPriorityBasic) ScaleForTotalSum(targetTotal float64) {
-	currentTotal := sr.currentTotal()
+func (sr *SimPriorityBasic) ScaleForTotalSum(targetTotal float64) error {
+	currentTotal, err := sr.currentTotal()
+	if err != nil {
+		return err
+	}
+
 	if currentTotal == 0 {
-		panic("can't scale empty ratio")
+		return errors.New("can't scale empty ratio")
 	} else if !util.FloatEqualsOne(currentTotal) {
 		sr.scaleForMathSum(currentTotal, targetTotal)
 		sr.fixSumWithRounding(targetTotal)
 	}
+	return nil
 }
 
 func (sr *SimPriorityBasic) fixSumWithRounding(targetTotal float64) {
@@ -100,22 +106,27 @@ func (sr *SimPriorityBasic) scaleForMathSum(currentTotal, targetTotal float64) {
 	}
 }
 
-func (sr *SimPriorityBasic) ValidateRatioAddsToOne() {
-	currentTotal := sr.currentTotal()
-	if !util.FloatEqualsOne(currentTotal) {
-		panic("ratios don't add to one")
+func (sr *SimPriorityBasic) ValidateRatioAddsToOne() error {
+	currentTotal, err := sr.currentTotal()
+	if err != nil {
+		return err
 	}
+
+	if !util.FloatEqualsOne(currentTotal) {
+		return errors.New("ratios don't add to one")
+	}
+	return nil
 }
 
-func (sr *SimPriorityBasic) currentTotal() float64 {
+func (sr *SimPriorityBasic) currentTotal() (float64, error) {
 	currentTotal := 0.0
 	for value := range sr.content.SeqValues() {
 		if value < 0 {
-			panic("negative sim ratio not supported")
+			return 0, errors.New("negative sim ratio not supported")
 		}
 		currentTotal += value
 	}
-	return currentTotal
+	return currentTotal, nil
 }
 
 func (sr *SimPriorityBasic) String() string {
@@ -192,27 +203,28 @@ func (sre *SimPriorityExtended) GetOrPanic(simType stats.SimType) SimPriorityEnt
 	return entry
 }
 
-func (sre *SimPriorityExtended) SetSimScale(simType stats.SimType, rangingScale, rangingOffset, ratioScale float64) {
+func (sre *SimPriorityExtended) SetSimScale(simType stats.SimType, rangingScale, rangingOffset, ratioScale float64) error {
 	if sre.entries.Has(simType) {
-		panic("duplicate")
+		return errors.New("duplicate")
 	}
 	sre.entries.Put(simType, SimPriorityEntry{
 		RangingScale:  rangingScale,
 		RangingOffset: rangingOffset,
 		RatioScale:    ratioScale,
 	})
+	return nil
 }
 
 func (sre *SimPriorityExtended) Validate() {
 }
 
-func (sre *SimPriorityExtended) ConvertToBasic() SimPriorityBasic {
+func (sre *SimPriorityExtended) ConvertToBasic() (SimPriorityBasic, error) {
 	simRatio := SimPriorityBasic{}
 	for simType, entry := range sre.entries.SeqKeyValue() {
 		simRatio.Set(simType, entry.RatioScale)
 	}
-	simRatio.ScaleForTotalSum(1.0)
-	return simRatio
+	err := simRatio.ScaleForTotalSum(1.0)
+	return simRatio, err
 }
 
 func (sre *SimPriorityExtended) Equals(other *SimPriorityExtended) bool {

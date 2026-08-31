@@ -293,6 +293,18 @@ func (mm *MapMap[J, K, V]) SeqKey1Key2() iter.Seq2[J, iter.Seq[K]] {
 	}
 }
 
+func (mm *MapMap[J, K, V]) SeqKeysAll() iter.Seq2[J, K] {
+	return func(yield func(J, K) bool) {
+		for key1, inner := range mm.dataBy1 {
+			for key2 := range inner {
+				if !yield(key1, key2) {
+					return
+				}
+			}
+		}
+	}
+}
+
 func (mm *MapMap[J, K, V]) SeqKey2Key1() iter.Seq2[K, iter.Seq[J]] {
 	return func(yield func(K, iter.Seq[J]) bool) {
 		for key2, inner := range mm.dataBy2 {

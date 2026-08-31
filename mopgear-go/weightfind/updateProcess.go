@@ -593,13 +593,29 @@ func (spec *WeightSpec) solveFormulaWeight(cancel util_async.CancelSignal) {
 }
 
 func (spec *WeightSpec) solveFittingWeight(cancel util_async.CancelSignal, tracker *util.TrackProgress) {
-	comp := fitting3.FittingEachStatWeightProcess3{}
-	comp.Init(3, spec.process.printer, spec.process.timeoutEach)
-	comp.SetRequiredStats(spec.statTypes, spec.simTypes)
-	comp.SetTargetRatios(spec.targetRatio)
-	comp.SupplyData(spec.dataFit)
-	weights3 := comp.Run(cancel, tracker)
-	spec.evaluateWeightResult3("FITTING3", &weights3)
+	fit1 := fitting3.FittingEachStatWeightProcess3{}
+	fit1.Init(3, spec.process.printer, spec.process.timeoutEach/2)
+	fit1.SetRequiredStats(spec.statTypes, spec.simTypes)
+	fit1.SetTargetRatios(spec.targetRatio)
+	fit1.SupplyData(spec.dataFit)
+	res1 := fit1.Run(cancel, tracker)
+	spec.evaluateWeightResult3("FITTING3-dataFit", &res1)
+
+	fit2 := fitting3.FittingEachStatWeightProcess3{}
+	fit2.Init(3, spec.process.printer, spec.process.timeoutEach/4)
+	fit2.SetRequiredStats(spec.statTypes, spec.simTypes)
+	fit2.SetTargetRatios(spec.targetRatio)
+	fit2.SupplyData(slices.Concat(spec.dataFit, spec.dataGrid))
+	res2 := fit2.Run(cancel, tracker)
+	spec.evaluateWeightResult3("FITTING3-dataGridFit", &res2)
+
+	fit3 := fitting3.FittingEachStatWeightProcess3{}
+	fit3.Init(3, spec.process.printer, spec.process.timeoutEach/16)
+	fit3.SetRequiredStats(spec.statTypes, spec.simTypes)
+	fit3.SetTargetRatios(spec.targetRatio)
+	fit3.SupplyData(spec.dataAll)
+	res3 := fit3.Run(cancel, tracker)
+	spec.evaluateWeightResult3("FITTING3-dataAll", &res3)
 }
 
 func (spec *WeightSpec) solveFittingFast(cancel util_async.CancelSignal) {

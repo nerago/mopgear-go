@@ -17,25 +17,41 @@ type WeightInput struct {
 	SimResult stats.SimData
 }
 
-func WeightInputReadFile(filename string) []WeightInput {
+func WeightInputReadFile(filename string) ([]WeightInput, error) {
 	bytes, err := os.ReadFile(filename)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	var weightInputs []WeightInput
 	err = json.Unmarshal(bytes, &weightInputs)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return weightInputs
+	return weightInputs, err
 }
 
-func WeightInputWriteFile(weightInputs []WeightInput, filename string) {
+func WeightInputWriteFile(weightInputs []WeightInput, filename string) error {
 	bytes, err := json.Marshal(weightInputs)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(filename, bytes, 0666)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func WeightInputReadFileOrPanic(filename string) []WeightInput {
+	data, err := WeightInputReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
-	err = os.WriteFile(filename, bytes, 0666)
+	return data
+}
+
+func WeightInputWriteFileOrPanic(weightInputs []WeightInput, filename string) {
+	err := WeightInputWriteFile(weightInputs, filename)
 	if err != nil {
 		panic(err)
 	}

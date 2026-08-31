@@ -2,7 +2,10 @@ package weight_types
 
 import (
 	"cmp"
+	"errors"
+	"fmt"
 	"iter"
+	"math"
 	"slices"
 
 	"github.com/nerago/mopgear-go/stats"
@@ -68,52 +71,56 @@ func (wer *Weight3ExtendedRanged) AddDetailWeight(simType stats.SimType, statTyp
 	})
 }
 
-func (wer *Weight3ExtendedRanged) SetSimScale(simType stats.SimType, rangingScale, rangingOffset, ratioScale float64) {
-	wer.SimPriority.SetSimScale(simType, rangingScale, rangingOffset, ratioScale)
+func (wer *Weight3ExtendedRanged) SetSimScale(simType stats.SimType, rangingScale, rangingOffset, ratioScale float64) error {
+	return wer.SimPriority.SetSimScale(simType, rangingScale, rangingOffset, ratioScale)
 }
 
-func (wer *Weight3ExtendedRanged) FinishAndValidate() {
+func (wer *Weight3ExtendedRanged) FinishAndValidate() error {
 	for statType := range wer.StatWeights.SeqKey2() {
 		if !slices.Contains(wer.StatList, statType) {
-			panic("weight given for unlisted stat")
+			return errors.New("weight given for unlisted stat")
 		}
 	}
 	for simType := range wer.StatWeights.SeqKey1() {
 		if !slices.Contains(wer.SimList, simType) {
-			panic("weight given for unlisted sim")
+			return errors.New("weight given for unlisted sim")
 		}
 	}
 
 	for _, simType := range wer.SimList {
 		for _, statType := range wer.StatList {
 			if !wer.StatWeights.Has(simType, statType) {
-				panic("missing weight for " + statType.Name() + " " + simType.Name())
+				return fmt.Errorf("missing weight for " + statType.Name() + " " + simType.Name())
 			}
 		}
 	}
-	wer.StatWeights.Foreach(func(simType stats.SimType, statType stats.StatType, entry Weight3ExtendedStatEntry) {
+	for entry := range wer.StatWeights.SeqKey1Key2ValueEntries() {
+		simType := entry.Key1
+		statType := entry.Key2
+		value := entry.Value
 		if !slices.Contains(wer.StatList, statType) {
-			panic("unexpected weight for " + statType.Name())
+			return errors.New("unexpected weight for " + statType.Name())
 		}
 		if !slices.Contains(wer.SimList, simType) {
-			panic("unexpected weight for " + simType.Name())
+			return errors.New("unexpected weight for " + simType.Name())
 		}
-		if entry.StatRange.RangeSize() <= 1 {
-			panic("empty range")
+		if value.StatRange.RangeSize() <= 1 {
+			return errors.New("empty range")
 		}
-	})
+	}
 
 	for simType := range wer.SimPriority.entries.SeqKey() {
 		if !slices.Contains(wer.SimList, simType) {
-			panic("priority given for unlisted sim")
+			return errors.New("priority given for unlisted sim")
 		}
 	}
 	for _, simType := range wer.SimList {
 		_, hasValue := wer.SimPriority.Get(simType)
 		if !hasValue {
-			panic("priority missing for " + simType.Name())
+			return errors.New("priority missing for " + simType.Name())
 		}
 	}
+	return nil
 }
 
 func (wer *Weight3ExtendedRanged) CalcStatScore(stats *stats.StatBlock) float64 {
@@ -158,7 +165,7 @@ func (wer *Weight3ExtendedRanged) calcSingleSimScoreUnscaled(stats *stats.StatBl
 			}
 		}
 		if entry == nil {
-			panic("no matching range")
+			return math.NaN() // ERROR, not matching range
 		}
 
 		calc := float64(statValue)*entry.RatingWeight + entry.RatingOffset

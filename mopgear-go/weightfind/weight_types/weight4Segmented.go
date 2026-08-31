@@ -1,6 +1,8 @@
 package weight_types
 
 import (
+	"errors"
+	"math"
 	"slices"
 
 	"github.com/nerago/mopgear-go/stats"
@@ -96,18 +98,18 @@ func (wer *Weight4Segmented) AddWeight2AsSegment(weight2 *Weight2Extended, bound
 	wer.AddSegment(seg)
 }
 
-func (wer *Weight4Segmented) FinishAndValidate() {
+func (wer *Weight4Segmented) FinishAndValidate() error {
 	for _, seg := range wer.Segments {
 		for statType := range seg.Weights.SeqKey2() {
 			if !slices.Contains(wer.StatList, statType) {
-				panic("weight given for unlisted stat")
+				return errors.New("weight given for unlisted stat")
 			}
 		}
 	}
 	for _, seg := range wer.Segments {
 		for simType := range seg.Weights.SeqKey1() {
 			if !slices.Contains(wer.SimList, simType) {
-				panic("weight given for unlisted sim")
+				return errors.New("weight given for unlisted sim")
 			}
 		}
 	}
@@ -116,45 +118,53 @@ func (wer *Weight4Segmented) FinishAndValidate() {
 		for _, simType := range wer.SimList {
 			for _, statType := range wer.StatList {
 				if !seg.Weights.Has(simType, statType) {
-					panic("missing weight for " + statType.Name() + " " + simType.Name())
+					return errors.New("missing weight for " + statType.Name() + " " + simType.Name())
 				}
 			}
 		}
 	}
 	for _, seg := range wer.Segments {
-		seg.Weights.Foreach(func(simType stats.SimType, statType stats.StatType, value float64) {
+		for entry := range seg.Weights.SeqKey1Key2ValueEntries() {
+			simType := entry.Key1
+			statType := entry.Key2
 			if !slices.Contains(wer.StatList, statType) {
-				panic("unexpected weight for " + statType.Name())
+				return errors.New("unexpected weight for " + statType.Name())
 			}
 			if !slices.Contains(wer.SimList, simType) {
-				panic("unexpected weight for " + simType.Name())
+				return errors.New("unexpected weight for " + simType.Name())
 			}
 			if seg.Bound.IsEmpty() {
-				panic("empty bound")
+				return errors.New("empty bound")
 			}
-		})
+		}
 	}
 
 	for simType, value := range wer.SimPriority.SeqTypeValue() {
 		if util.FloatNonZero(value) {
 			if !slices.Contains(wer.SimList, simType) {
-				panic("priority given for unlisted sim")
+				return errors.New("priority given for unlisted sim")
 			}
 		}
 	}
 	for _, simType := range wer.SimList {
 		value, hasValue := wer.SimPriority.Get(simType)
 		if !hasValue || util.FloatEqualsZero(value) {
-			panic("priority missing for " + simType.Name())
+			return errors.New("priority missing for " + simType.Name())
 		}
 	}
 
 	// TODO check overlap?
+
+	return nil
 }
 
 func (wer *Weight4Segmented) CalcStatScore(stats *stats.StatBlock) float64 {
-	totalSum := 0.0
 	seg := wer.selectSegment(stats)
+	if seg == nil {
+		return math.NaN()
+	}
+
+	totalSum := 0.0
 	for _, simType := range wer.SimList {
 		subTotal := seg.calcSingleSimScoreUnscaled(stats, simType)
 
@@ -167,8 +177,12 @@ func (wer *Weight4Segmented) CalcStatScore(stats *stats.StatBlock) float64 {
 }
 
 func (wer *Weight4Segmented) CalcStatScoreWithBonus(stats *stats.StatBlock, simBonus *stats.SimTypeMap[float64]) float64 {
-	totalSum := 0.0
 	seg := wer.selectSegment(stats)
+	if seg == nil {
+		return math.NaN()
+	}
+
+	totalSum := 0.0
 	for _, simType := range wer.SimList {
 		subTotal := seg.calcSingleSimScoreUnscaled(stats, simType)
 
@@ -188,7 +202,7 @@ func (wer *Weight4Segmented) selectSegment(stats *stats.StatBlock) *Weight4Singl
 		}
 	}
 	// TODO something better, find "nearest"
-	panic("no valid segment")
+	return nil // ERROR: no valid segment
 }
 
 func (seg *Weight4SingleSegment) calcSingleSimScoreUnscaled(statBlock *stats.StatBlock, simType stats.SimType) float64 {
