@@ -84,6 +84,12 @@ func (run *rankInternalRun4) supplyData(inputData []weight_types.WeightInput) {
 			RankColumn:  -1,
 		}
 	})
+
+	primes := util.PrimesSmall(int64(len(run.runData)))
+	if len(primes)<len(run.runData) {
+		run.runData = run.runData[0:len(primes)]
+		run.process.printer.Println("RANK4 cutting data: out of primes; TODO do better!!!!!!")
+	}
 }
 
 func (process *RankingStatWeightProcess4) SetRequiredStats(requiredStats []stats.StatType) {

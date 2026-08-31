@@ -31,16 +31,16 @@ import (
 )
 
 const (
-	c_simDataAgeMax     = 48 * time.Hour
-	c_updateThreadCount = 6
-	c_ratioThreadCount  = 12
+	c_simDataAgeMax = 48 * time.Hour
+	//c_updateThreadCount = 3
+	c_ratioThreadCount = 12
 
 	c_eachSimTargetGenerateDataCount = 600
 
 	c_dataSampleFitRank = 300
 	c_dataSampleGrid    = 96
 	c_useSamplingFit    = true
-	c_useSamplingRank   = false
+	c_useSamplingRank4  = true
 	c_useSamplingGrid   = false
 )
 
@@ -72,7 +72,7 @@ type WeightSpec struct {
 	choices []weightChoice
 	summary util.StringBuild2
 
-	dataGrid, dataRand, dataAll []weight_types.WeightInput
+	dataGrid, dataRand, dataFit, dataAll []weight_types.WeightInput
 }
 
 type weightChoice struct {
@@ -106,14 +106,18 @@ func (wup *WeightUpdateProcess) AddSpec(spec *WeightSpec) {
 	wup.specs = append(wup.specs, spec)
 }
 
-func (wup *WeightUpdateProcess) Run(cancel util_async.CancelSignal) {
+func (wup *WeightUpdateProcess) Run(cancel util_async.CancelSignal, outerThreads int) {
 	progress := util.TrackProgress_Start()
 	progress.RunOuterTracking(len(wup.specs))
 	defer progress.SetDone()
 
-	summaries := util_async.Map_SliceToSlice_Cancellable(c_updateThreadCount, wup.specs, cancel, func(spec **WeightSpec) string {
+	summaries, err := util_async.Map_SliceToSlice_Cancellable_PassError(outerThreads, wup.specs, cancel, func(spec **WeightSpec) (string, error) {
 		return (*spec).updateSpec(progress.NewChild(), cancel)
 	})
+
+	if err != nil {
+		panic(err)
+	}
 
 	for _, summary := range summaries {
 		wup.printer.Println(summary)
@@ -180,13 +184,16 @@ func (spec *WeightSpec) tabularReport(print util.Printable) {
 	tab.Write(print)
 }
 
-func (spec *WeightSpec) updateSpec(tracker *util.TrackProgress, cancel util_async.CancelSignal) string {
+func (spec *WeightSpec) updateSpec(tracker *util.TrackProgress, cancel util_async.CancelSignal) (string, error) {
 	// each simulator process is considered 1/4, fitting is 1/4, then remaining solving is remaining.
-	tracker.RunOuterTracking(4)
+	tracker.RunOuterTracking(5)
 	defer tracker.SetDone()
 
 	// READ OLD DATA AND/OR RUN SIM
-	spec.prepareSimData(tracker, cancel)
+	err := spec.prepareSimData(tracker, cancel)
+	if err != nil {
+		return "", err
+	}
 
 	// START BUILDING REPORT
 	spec.summary.WriteString("Weights Accuracy Summary ::::: ")
@@ -204,9 +211,10 @@ func (spec *WeightSpec) updateSpec(tracker *util.TrackProgress, cancel util_asyn
 
 	spec.dataGrid = nil
 	spec.dataRand = nil
+	spec.dataFit = nil
 	spec.dataAll = nil
 
-	return spec.summary.String()
+	return spec.summary.String(), nil
 }
 
 func (spec *WeightSpec) runSolvers(tracker *util.TrackProgress, cancel util_async.CancelSignal) {
@@ -283,20 +291,33 @@ func (spec *WeightSpec) reportAndWriteWeights() {
 }
 
 func (spec *WeightSpec) prepareSimData(tracker *util.TrackProgress, cancel util_async.CancelSignal) error {
+	inputDataGrid, err := spec.prepareDataGrid(tracker, cancel)
+	if err != nil {
+		return err
+	}
+
+	inputDataReal, err2 := spec.prepareDataRandom(tracker, cancel)
+	if err2 != nil {
+		return err2
+	}
+
+	inputDataFit, err3 := spec.prepareDataFit(tracker, cancel)
+	if err3 != nil {
+		return err3
+	}
+
+	spec.dataAll = slices.Concat(inputDataGrid, inputDataReal, inputDataFit)
+	return nil
+}
+
+func (spec *WeightSpec) prepareDataGrid(tracker *util.TrackProgress, cancel util_async.CancelSignal) ([]weight_types.WeightInput, error) {
 	// READ IN ANY RECENT DATA
 	tempPathGrid := files.TempData + "weightfind-sim-grid-" + spec.Label + ".json"
-	tempPathReal := files.TempData + "weightfind-sim-real-" + spec.Label + ".json"
 	inputDataGrid, dataAgeGrid := readWeightInputFile(tempPathGrid)
-	inputDataReal, dataAgeReal := readWeightInputFile(tempPathReal)
-
 	// DO WE ACCEPT THE OLD DATA
 	if dataAgeGrid > c_simDataAgeMax && !spec.process.forceSkipSim {
 		inputDataGrid = nil
 	}
-	if dataAgeReal > c_simDataAgeMax && !spec.process.forceSkipSim {
-		inputDataReal = nil
-	}
-
 	// SIMULATE STAT CHANGES, SAVE SIM DATA IN CASE WE NEED TO RESTART
 	if inputDataGrid == nil {
 		currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(spec.GearFile), &spec.Model, setup.MissingEnchant_Panic, spec.process.printer)
@@ -305,29 +326,66 @@ func (spec *WeightSpec) prepareSimData(tracker *util.TrackProgress, cancel util_
 			spec.Model.SimSpeedUp, spec.Model.StatsForWeighting, spec.Model.Spec, spec.Model.Goal, spec.Model.SimulateAs,
 			spec.Model.Professions, tracker.NewChild(), spec.Label, cancel, spec.FixStatsMode)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		inputDataGrid = data
 		weight_types.WeightInputWriteFile(inputDataGrid, tempPathGrid)
 	} else {
 		tracker.NewChild().SetDone()
 	}
+	spec.dataGrid = inputDataGrid
+	return inputDataGrid, nil
+}
+
+func (spec *WeightSpec) prepareDataRandom(tracker *util.TrackProgress, cancel util_async.CancelSignal) ([]weight_types.WeightInput, error) {
+	// READ IN ANY RECENT DATA
+	tempPathReal := files.TempData + "weightfind-sim-real-" + spec.Label + ".json"
+	inputDataReal, dataAgeReal := readWeightInputFile(tempPathReal)
+	// DO WE ACCEPT THE OLD DATA
+	if dataAgeReal > c_simDataAgeMax && !spec.process.forceSkipSim {
+		inputDataReal = nil
+	}
+	// SIMULATE STAT CHANGES, SAVE SIM DATA IN CASE WE NEED TO RESTART
 	if inputDataReal == nil {
 		data, err := SimulateRealRandomSets(spec.GearFile, spec.SubstituteItems, &spec.Model, c_eachSimTargetGenerateDataCount,
 			spec.process.simSpeed, spec.FixStatsMode, spec.process.printer, tracker.NewChild(), spec.Label, cancel)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		inputDataReal = data
 		weight_types.WeightInputWriteFile(inputDataReal, tempPathReal)
 	} else {
 		tracker.NewChild().SetDone()
 	}
-
-	spec.dataGrid = inputDataGrid
 	spec.dataRand = inputDataReal
-	spec.dataAll = slices.Concat(inputDataGrid, inputDataReal)
-	return nil
+	return inputDataReal, nil
+}
+
+func (spec *WeightSpec) prepareDataFit(tracker *util.TrackProgress, cancel util_async.CancelSignal) ([]weight_types.WeightInput, error) {
+	// READ IN ANY RECENT DATA
+	tempPathFit := files.TempData + "weightfind-sim-fit-" + spec.Label + ".json"
+	inputDataFit, dataAgeFit := readWeightInputFile(tempPathFit)
+	// DO WE ACCEPT THE OLD DATA
+	if dataAgeFit > c_simDataAgeMax && !spec.process.forceSkipSim {
+		inputDataFit = nil
+	}
+	// SIMULATE STAT CHANGES, SAVE SIM DATA IN CASE WE NEED TO RESTART
+	if inputDataFit == nil {
+		currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(spec.GearFile), &spec.Model, setup.MissingEnchant_Panic, spec.process.printer)
+		currentItemSet := items.FullItemSet_FromMap(currentEquip)
+		data, err := SimulateSteppedStatChangesForFitting(currentItemSet, spec.process.printer, spec.process.simSpeed,
+			spec.Model.SimSpeedUp, spec.Model.StatsForWeighting, spec.Model.Spec, spec.Model.Goal, spec.Model.SimulateAs,
+			spec.Model.Professions, tracker.NewChild(), spec.Label, cancel)
+		if err != nil {
+			return nil, err
+		}
+		inputDataFit = data
+		weight_types.WeightInputWriteFile(inputDataFit, tempPathFit)
+	} else {
+		tracker.NewChild().SetDone()
+	}
+	spec.dataFit = inputDataFit
+	return inputDataFit, nil
 }
 
 func (spec *WeightSpec) addChoice(choice weightChoice) {
@@ -429,9 +487,6 @@ func (spec *WeightSpec) bestWeightChoiceExtended() (util_collection.Optional[wei
 
 func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.CancelSignal) {
 	rankData := spec.dataAll
-	if c_useSamplingRank {
-		rankData = util_collection.SliceSampleRandom(rankData, c_dataSampleFitRank)
-	}
 
 	if rankMode == 0 {
 		ranking := weight_highs.RankingStatWeightProcess3c{}
@@ -494,6 +549,9 @@ func (spec *WeightSpec) solveRankingWeight(rankMode int, cancel util_async.Cance
 		weightsFuture, err := ranking.Run(spec.process.timeoutEach)
 		spec.handleFuture1OrError("RANK1-1", weightsFuture, cancel, err)
 	} else {
+		if c_useSamplingRank4 {
+			rankData = util_collection.SliceSampleRandom(rankData, c_dataSampleFitRank)
+		}
 		ranking := weight_highs.RankingStatWeightProcess4{}
 		ranking.MULTIPLY = 0
 		ranking.Init(spec.process.printer)
@@ -534,11 +592,7 @@ func (spec *WeightSpec) solveFittingWeight(cancel util_async.CancelSignal, track
 	comp.Init(3, spec.process.printer, spec.process.timeoutEach)
 	comp.SetRequiredStats(spec.statTypes, spec.simTypes)
 	comp.SetTargetRatios(spec.targetRatio)
-	if c_useSamplingFit {
-		comp.SupplyData(util_collection.SliceSampleRandom(spec.dataAll, c_dataSampleFitRank))
-	} else {
-		comp.SupplyData(spec.dataAll)
-	}
+	comp.SupplyData(spec.dataFit)
 	weights3 := comp.Run(cancel, tracker)
 	spec.evaluateWeightResult3("FITTING3", &weights3)
 }

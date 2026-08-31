@@ -19,7 +19,7 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	//simSpeed := simulate.RunSize_QuickDirty
 	//simSpeed := simulate.RunSize_Common
 	simSpeed := simulate.RunSize_Largish
-	forceSkipSim := true
+	forceSkipSim := false
 	skipSolve := false
 	fixStats := weight_types.FixStatsRangeMode_ExpertiseAlways | weight_types.FixStatsRangeMode_HasteGridOnly | weight_types.FixStatsRangeMode_HasteHigherOnly
 
@@ -33,22 +33,22 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	//	SubstituteItems: mygear.SubstituteItemsRet,
 	//	FixStatsMode:    weight_types.FixStatsRangeMode_None,
 	//})
-	//process.AddSpec(&weightfind.WeightSpec{
-	//	Label:           "Prot-Damage",
-	//	WeightFile1:     files.WeightProtDamage,
-	//	GearFile:        files.GearFileProtDamage,
-	//	Model:           model_factory.Model_PallyProtDamage(),
-	//	SubstituteItems: mygear.SubstituteItemsProt,
-	//	FixStatsMode:    fixStats,
-	//})
-	//process.AddSpec(&weightfind.WeightSpec{
-	//	Label:           "Prot-Balanced",
-	//	WeightFile1:     files.WeightProtBalanced,
-	//	GearFile:        files.GearFileProtBalanced,
-	//	Model:           model_factory.Model_PallyProtBalanced(),
-	//	SubstituteItems: mygear.SubstituteItemsProt,
-	//	FixStatsMode:    fixStats,
-	//})
+	process.AddSpec(&weightfind.WeightSpec{
+		Label:           "Prot-Damage",
+		WeightFile1:     files.WeightProtDamage,
+		GearFile:        files.GearFileProtDamage,
+		Model:           model_factory.Model_PallyProtDamage(),
+		SubstituteItems: mygear.SubstituteItemsProt,
+		FixStatsMode:    fixStats,
+	})
+	process.AddSpec(&weightfind.WeightSpec{
+		Label:           "Prot-Balanced",
+		WeightFile1:     files.WeightProtBalanced,
+		GearFile:        files.GearFileProtBalanced,
+		Model:           model_factory.Model_PallyProtBalanced(),
+		SubstituteItems: mygear.SubstituteItemsProt,
+		FixStatsMode:    fixStats,
+	})
 	process.AddSpec(&weightfind.WeightSpec{
 		Label:           "Prot-Mitigation",
 		WeightFile1:     files.WeightProtMitigation,
@@ -57,30 +57,27 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 		SubstituteItems: mygear.SubstituteItemsProt,
 		FixStatsMode:    fixStats,
 	})
-	process.AddSpec(&weightfind.WeightSpec{
-		Label:           "Prot-Survival",
-		WeightFile1:     files.WeightProtSurvival,
-		GearFile:        files.GearFileProtSurvival,
-		Model:           model_factory.Model_PallyProtSurvival(),
-		SubstituteItems: mygear.SubstituteItemsProt,
-		FixStatsMode:    fixStats,
-	})
-	process.AddSpec(&weightfind.WeightSpec{
-		Label:           "Prot-Heal",
-		WeightFile1:     files.WeightProtHeal,
-		GearFile:        files.GearFileProtHeal,
-		Model:           model_factory.Model_PallyProtHeal(),
-		SubstituteItems: mygear.SubstituteItemsProt,
-		FixStatsMode:    fixStats,
-	})
+	//process.AddSpec(&weightfind.WeightSpec{
+	//	Label:           "Prot-Survival",
+	//	WeightFile1:     files.WeightProtSurvival,
+	//	GearFile:        files.GearFileProtSurvival,
+	//	Model:           model_factory.Model_PallyProtSurvival(),
+	//	SubstituteItems: mygear.SubstituteItemsProt,
+	//	FixStatsMode:    fixStats,
+	//})
+	//process.AddSpec(&weightfind.WeightSpec{
+	//	Label:           "Prot-Heal",
+	//	WeightFile1:     files.WeightProtHeal,
+	//	GearFile:        files.GearFileProtHeal,
+	//	Model:           model_factory.Model_PallyProtHeal(),
+	//	SubstituteItems: mygear.SubstituteItemsProt,
+	//	FixStatsMode:    fixStats,
+	//})
 
 	cancel := util_async.CancelSignal_Make()
 	util_async.CancelOnKeyPress(cancel)
 
-	// survival still 91.5697  91.5677
-	// mitigation still 91.4300  87.1177
-
-	process.Run(cancel)
+	process.Run(cancel, 4)
 
 	//ratioUpdate := weightfind.WeightRatioProcess{}
 	//ratioUpdate.Init(300, printer)

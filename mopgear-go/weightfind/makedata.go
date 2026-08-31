@@ -19,9 +19,60 @@ import (
 const (
 	grid_sim_max_steps = 6
 	grid_sim_step      = 500
+
+	//lets say we do about another 200, about 25 per stat
+	//range of our current stats is about 5000-10000
+	//lets say can plausibly get them to 20000, +10000
+	//20205,0,34261,0,0,2634,3883,12048,4847,3233,3254,6947
+	fit_sim_step_down_count = 10
+	fit_sim_step_down_inc   = 500
+	fit_sim_step_up_count   = 10
+	fit_sim_step_up_inc     = 750
 )
 
-type incrementStatCombo map[stats.StatType]int32
+type incrementStatCombo stats.StatTypeMap[int32]
+
+func SimulateSteppedStatChangesForFitting(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, requiredStats []stats.StatType, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, tracker *util.TrackProgress, label string, cancel util_async.CancelSignal) ([]weight_types.WeightInput, error) {
+	initialBaseStats := stats.StatTypeMap[int32]{}
+	for _, statType := range requiredStats {
+		initialBaseStats.Put(statType, 0)
+	}
+
+	incrementCombos := makeCombosForFittingSim(requiredStats)
+	tracker.RunOuterTracking(len(incrementCombos))
+	defer tracker.SetDone()
+
+	printer.Printf("Running %d sims (part 3) for %s\n", len(incrementCombos), label)
+	inputList, err := util_async.MapOptional_SliceToSlice_Cancellable_PassError(6, incrementCombos, cancel, func(increments *incrementStatCombo) (weight_types.WeightInput, bool, error) {
+		return simForCombo(increments, &initialBaseStats, label, simSpeed, speedUp, spec, goal, fight, profession, currentItemSet, tracker, printer)
+	})
+	printer.Printf("Done sims (part 3) for %s\n", label)
+	return inputList, err
+}
+
+func makeCombosForFittingSim(statList []stats.StatType) []incrementStatCombo {
+	allCombos := make([]incrementStatCombo, 0)
+
+	for _, statType := range statList {
+		up := int32(fit_sim_step_up_inc)
+		for range fit_sim_step_up_count {
+			combo := incrementStatCombo{}
+			combo.Put(statType, up)
+			allCombos = append(allCombos, combo)
+			up += fit_sim_step_up_inc
+		}
+
+		down := int32(-fit_sim_step_down_inc)
+		for range fit_sim_step_down_count {
+			combo := incrementStatCombo{}
+			combo.Put(statType, down)
+			allCombos = append(allCombos, combo)
+			down -= fit_sim_step_down_inc
+		}
+	}
+
+	return allCombos
+}
 
 func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer *util.PrintRecorder, simSpeed simulate.WowSim_RunSize, speedUp int, requiredStats []stats.StatType, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, tracker *util.TrackProgress, label string, cancel util_async.CancelSignal, fixStatsMode weight_types.FixStatsRangeMode) ([]weight_types.WeightInput, error) {
 	var incrementStep int32 = grid_sim_step
@@ -30,50 +81,59 @@ func SimulateSteppedStatChangesForGrid(currentItemSet items.FullItemSet, printer
 		incrementMax = incrementStep * 2
 	}
 
-	// TODO add negative increments too
-
 	initialBaseStats := InitialBonusStatMap_fixRanges(printer, currentItemSet, incrementMax, fixStatsMode, true)
 
-	incrementPermutations := makePermutationsForGridSim2(requiredStats, incrementStep, incrementMax)
+	incrementPermutations := makeCombosForGridSim2(requiredStats, incrementStep, incrementMax)
 	tracker.RunOuterTracking(len(incrementPermutations))
 	defer tracker.SetDone()
 
 	printer.Printf("Running %d sims (part 1) for %s\n", len(incrementPermutations), label)
-	inputList, err := util_async.Map_SliceToSlice_Cancellable_PassError(6, incrementPermutations, cancel, func(increments *incrementStatCombo) (weight_types.WeightInput, error) {
-		bonusStat := initialBaseStats.Clone()
-		str := util.StringBuild2{}
-		str.WriteString("SIM ")
-		str.WriteString(label)
-		str.WriteRune(' ')
-		for statType, valueIncrease := range *increments {
-			bonusStat.Compute(statType, func(v int32) int32 { return v + valueIncrease })
-			str.WriteString(statType.Name())
-			str.WriteRune('=')
-			str.WriteInt32(bonusStat.GetOrNilValue(statType))
-			str.WriteRune(' ')
-		}
-
-		simResult, err2 := simulate.ExecuteSpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), bonusStat, tracker.NewChild())
-		if err2 != nil {
-			return weight_types.WeightInput{}, err2
-		}
-
-		str.WriteString("--> ")
-		simResult.CompactStringGeneralAppend(&str)
-		printer.PrintlnFromBuild(str)
-
-		return weight_types.WeightInput{
-			TotalStat: addBonusStats(currentItemSet.Total(), bonusStat),
-			SimResult: simResult,
-		}, nil
+	inputList, err := util_async.MapOptional_SliceToSlice_Cancellable_PassError(6, incrementPermutations, cancel, func(increments *incrementStatCombo) (weight_types.WeightInput, bool, error) {
+		return simForCombo(increments, initialBaseStats, label, simSpeed, speedUp, spec, goal, fight, profession, currentItemSet, tracker, printer)
 	})
 	printer.Printf("Done sims (part 1) for %s\n", label)
 	return inputList, err
 }
 
-func makePermutationsForGridSim2(statList []stats.StatType, incrementStep int32, incrementMax int32) []incrementStatCombo {
+func simForCombo(increments *incrementStatCombo, initialBaseStats *stats.StatTypeMap[int32], label string, simSpeed simulate.WowSim_RunSize, speedUp int, spec stats.SpecType, goal stats.OptimiseGoal, fight stats.WowSim_Fight, profession gear_model.ProfessionInfo, currentItemSet items.FullItemSet, tracker *util.TrackProgress, printer *util.PrintRecorder) (weight_types.WeightInput, bool, error) {
+	bonusStat := initialBaseStats.Clone()
+	str := util.StringBuild2{}
+	str.WriteString("SIM ")
+	str.WriteString(label)
+	str.WriteRune(' ')
+	for statType, valueIncrease := range increments.SeqKeyValue() {
+		bonusStat.Compute(statType, func(v int32) int32 { return v + valueIncrease })
+		str.WriteString(statType.Name())
+		str.WriteRune('=')
+		str.WriteInt32(bonusStat.GetOrNilValue(statType))
+		str.WriteRune(' ')
+	}
+
+	totalStats, isValid := addBonusStats(currentItemSet.Total(), bonusStat)
+	if !isValid {
+		return weight_types.WeightInput{}, false, nil
+	}
+
+	simResult, err2 := simulate.ExecuteSpecifyAll(simSpeed, speedUp, spec, goal, fight, profession, currentItemSet.Items(), bonusStat, tracker.NewChild())
+	if err2 != nil {
+		return weight_types.WeightInput{}, false, err2
+	}
+
+	str.WriteString("--> ")
+	simResult.CompactStringGeneralAppend(&str)
+	printer.PrintlnFromBuild(str)
+
+	input := weight_types.WeightInput{
+		TotalStat: totalStats,
+		SimResult: simResult,
+	}
+	return input, true, nil
+}
+
+func makeCombosForGridSim2(statList []stats.StatType, incrementStep int32, incrementMax int32) []incrementStatCombo {
 	allCombos := make([]incrementStatCombo, 0)
 
+	// TODO add negative increments too
 	var incrementLo int32 = 0
 	allCombos = append(allCombos, makeWithAllSameValue(statList, incrementLo))
 
@@ -84,6 +144,10 @@ func makePermutationsForGridSim2(statList []stats.StatType, incrementStep int32,
 
 		// add all exact mixes for the two levels
 		levelCombos := makeAllMixesOf(statList, incrementLo, incrementHi)
+		allCombos = append(allCombos, levelCombos...)
+
+		// add all mixes for negative versions of the increments
+		levelCombos = makeAllMixesOf(statList, -incrementLo, -incrementHi)
 		allCombos = append(allCombos, levelCombos...)
 
 		incrementLo += incrementStep
@@ -104,13 +168,13 @@ func makeAllMixesOf(statList []stats.StatType, valueOne int32, valueTwo int32) [
 
 	// don't include the 00000 or 11111 entries since we want to add them specially
 	for index := 1; index < itemCount-1; index++ {
-		combo := make(incrementStatCombo)
+		combo := incrementStatCombo{}
 		for statNum, statType := range statList {
 			bitMask := 1 << statNum
 			if (index & bitMask) == 0 {
-				combo[statType] = valueOne
+				combo.Put(statType, valueOne)
 			} else {
-				combo[statType] = valueTwo
+				combo.Put(statType, valueTwo)
 			}
 		}
 		levelCombos = append(levelCombos, combo)
@@ -122,9 +186,9 @@ func makeAllMixesOf(statList []stats.StatType, valueOne int32, valueTwo int32) [
 }
 
 func makeWithAllSameValue(statList []stats.StatType, value int32) incrementStatCombo {
-	combo := make(incrementStatCombo)
+	combo := incrementStatCombo{}
 	for _, stat := range statList {
-		combo[stat] = value
+		combo.Put(stat, value)
 	}
 	return combo
 }
@@ -156,19 +220,23 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 	defer track.SetDone()
 
 	printer.Printf("Running %d sims (part 2) for %s\n", len(setList), label)
-	weightInputs, err := util_async.Map_SliceToSlice_Cancellable_PassError(6, setList, cancel, func(itemSet *items.FullItemSet) (weight_types.WeightInput, error) {
+	weightInputs, err := util_async.MapOptional_SliceToSlice_Cancellable_PassError(6, setList, cancel, func(itemSet *items.FullItemSet) (weight_types.WeightInput, bool, error) {
 		bonusStats := InitialBonusStatMap_fixRanges(printer, *itemSet, 0, fixStatsMode, false)
 
 		var total stats.StatBlock
 		if bonusStats != nil {
-			total = addBonusStats(itemSet.Total(), bonusStats)
+			sum, isValid := addBonusStats(itemSet.Total(), bonusStats)
+			if !isValid {
+				return weight_types.WeightInput{}, false, nil
+			}
+			total = sum
 		} else {
 			total = *itemSet.Total()
 		}
 
 		simResult, err2 := simulate.ExecuteUseModel(simSize, model, itemSet.Items(), bonusStats, track.NewChild())
 		if err2 != nil {
-			return weight_types.WeightInput{}, err2
+			return weight_types.WeightInput{}, false, err2
 		}
 
 		str := util.StringBuild2{}
@@ -180,23 +248,23 @@ func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, mod
 		simResult.CompactStringGeneralAppend(&str)
 		printer.PrintlnFromBuild(str)
 
-		return weight_types.WeightInput{TotalStat: total, SimResult: simResult}, nil
+		return weight_types.WeightInput{TotalStat: total, SimResult: simResult}, true, nil
 	})
 
 	printer.Printf("Done sims (part 2) for %s\n", label)
 	return weightInputs, err
 }
 
-func addBonusStats(base *stats.StatBlock, bonusStat *stats.StatTypeMap[int32]) stats.StatBlock {
+func addBonusStats(base *stats.StatBlock, bonusStat *stats.StatTypeMap[int32]) (stats.StatBlock, bool) {
 	resultBlock := *base
 	for stat, add := range bonusStat.SeqKeyValue() {
 		value := int64(resultBlock[stat]) + int64(add)
 		if value < 0 || value > math.MaxUint32 {
-			panic("out of range")
+			return stats.StatBlock{}, false
 		}
 		resultBlock[stat] = uint32(value)
 	}
-	return resultBlock
+	return resultBlock, true
 }
 
 const c_hasteDiscontinuityStart = 10500

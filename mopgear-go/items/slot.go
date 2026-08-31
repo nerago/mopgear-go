@@ -154,6 +154,10 @@ func (slot SlotEquip) Name() string {
 	}
 }
 
+func (slot SlotEquip) String() string {
+	return slot.Name()
+}
+
 var SlotEquip_List = []SlotEquip{
 	Equip_Head, Equip_Neck, Equip_Shoulder, Equip_Back,
 	Equip_Chest, Equip_Wrist, Equip_Hand, Equip_Belt,
