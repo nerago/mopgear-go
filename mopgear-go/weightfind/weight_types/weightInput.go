@@ -216,7 +216,11 @@ func (rn StatRange) Overlap(other StatRange) bool {
 }
 
 func (rn StatRange) RangeSize() uint32 {
-	return rn.Maximum - rn.Minimum + 1
+	if rn.IsFullRange() {
+		return math.MaxUint32
+	} else {
+		return rn.Maximum - rn.Minimum + 1
+	}
 }
 
 func (rn StatRange) Contains(value uint32) bool {

@@ -1018,16 +1018,17 @@ func statWeightsFitting3eachProper(printer *util.PrintRecorder) {
 	notes := make([]string, 0)
 
 	for segmentCount := 2; segmentCount <= 10; segmentCount++ {
+		//for segmentCount := 2; segmentCount <= 2; segmentCount++ {
 		fitting := fitting3.FittingEachStatWeightProcess3{}
 		//fitting := fitting4.FittingEachStatWeightProcess4{}
 		fitting.Init(segmentCount, printer, 200)
 		fitting.SetRequiredStats(statTypes, simTypes)
-		//fitting.SetRequiredStats([]stats.StatType{stats.Stat_Strength}, []stats.SimType{stats.Sim_TMI})
+		//fitting.SetRequiredStats([]stats.StatType{stats.Stat_Crit}, []stats.SimType{stats.Sim_DTPS})
 		fitting.SetTargetRatios(targetRatio)
 		fitting.SupplyData(weightInputs)
 		weightResult := fitting.Run(util_async.CancelSignal_Make(), util.TrackProgress_Nop())
 		if weightResult.Error != nil {
-			printer.Println("FIT ERROR:" + weightResult.Error.Error())
+			printer.PrintlnError("FIT ERROR", weightResult.Error)
 			return
 		}
 		weight3 := weightResult.Weight
