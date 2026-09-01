@@ -35,8 +35,12 @@ func (wrp *WeightRatioProcess) Run(cancel util_async.CancelSignal) {
 	progress.RunOuterTracking(len(wrp.specs))
 	defer progress.SetDone()
 
+	taskPool := util_async.NestedTaskPoolParent{}
+	taskPool.Start(c_ratioThreadCount)
+	defer taskPool.Stop()
+
 	summaries := util_async.Map_SliceToSlice_Cancellable(c_ratioThreadCount, wrp.specs, cancel, func(spec **weightSpecInternal) string {
-		return wrp.updateSpecRatio(*spec, progress.NewChild(), cancel)
+		return wrp.updateSpecRatio(*spec, taskPool.NewChild(), progress.NewChild(), cancel)
 	})
 
 	for _, summary := range summaries {
@@ -44,9 +48,9 @@ func (wrp *WeightRatioProcess) Run(cancel util_async.CancelSignal) {
 	}
 }
 
-func (wrp *WeightRatioProcess) updateSpecRatio(spec *weightSpecInternal, tracker *util.TrackProgress, cancel util_async.CancelSignal) string {
+func (wrp *WeightRatioProcess) updateSpecRatio(spec *weightSpecInternal, taskPool *util_async.NestedTaskPoolChild, tracker *util.TrackProgress, cancel util_async.CancelSignal) string {
 	spec.process.forceSkipSim = true
-	err := spec.prepareSimData(util.TrackProgress_Nop(), cancel)
+	err := spec.prepareSimData(taskPool, util.TrackProgress_Nop(), cancel)
 	if err != nil {
 		util.GlobalFatalErrorHandler(err)
 	}

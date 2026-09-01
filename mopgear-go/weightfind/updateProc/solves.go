@@ -55,12 +55,15 @@ func (sol *solves) startSolvers() {
 }
 
 func (sol *solves) addTask(task solveTask) {
-	sol.taskPool.Go(func() {
+	sol.taskPool.Go(func() (err error) {
 		defer func() {
-			err := recover()
-			util.GlobalWarnHandler(err)
+			anyMessage := recover()
+			err = util.ErrorFromAny(anyMessage)
 		}()
+		sol.printer.Println("SOLVE TASK start")
 		task()
+		sol.printer.Println("SOLVE TASK end")
+		return nil
 	})
 }
 

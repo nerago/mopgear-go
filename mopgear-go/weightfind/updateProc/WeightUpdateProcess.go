@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	c_simDataAgeMax = 48 * time.Hour
-	//c_updateThreadCount = 3
-	c_ratioThreadCount = 12
+	c_simDataAgeMax     = 48 * time.Hour
+	c_updateThreadCount = 6
+	c_ratioThreadCount  = 12
 
 	c_eachSimTargetGenerateDataCount = 600
 
@@ -58,11 +58,12 @@ func (wup *WeightUpdateProcess) Run(cancel util_async.CancelSignal, outerThreads
 	defer progress.SetDone()
 
 	taskPool := util_async.NestedTaskPoolParent{}
+	taskPool.Start(c_updateThreadCount)
+	defer taskPool.Stop()
 
 	summaries, err := util_async.Map_SliceToSlice_Cancellable_PassError(outerThreads, wup.specs, cancel, func(spec **weightSpecInternal) (string, error) {
 		return (*spec).updateSpec(taskPool.NewChild(), taskPool.NewChild(), progress.NewChild(), cancel)
 	})
-
 	if err != nil {
 		panic(err)
 	}
@@ -82,8 +83,7 @@ func (spec *weightSpecInternal) updateSpec(taskPoolSim, taskPoolSolve *util_asyn
 	defer tracker.SetDone()
 
 	// READ OLD DATA AND/OR RUN SIM
-	err := spec.prepareSimData(taskPoolSim, tracker, cancel)
-	if err != nil {
+	if err := spec.prepareSimData(taskPoolSim, tracker, cancel); err != nil {
 		return "", err
 	}
 
@@ -111,7 +111,10 @@ func (spec *weightSpecInternal) updateSpec(taskPoolSim, taskPoolSolve *util_asyn
 		}
 		solve.startSolvers()
 	}
-	taskPoolSolve.Wait()
+
+	if err := taskPoolSolve.WaitAllComplete(); err != nil {
+		return "", err
+	}
 
 	// REPORTING
 	summary := spec.reportAndWriteWeights()

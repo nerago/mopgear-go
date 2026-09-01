@@ -19,31 +19,41 @@ import (
 )
 
 func (spec *weightSpecInternal) prepareSimData(taskPoolSim *util_async.NestedTaskPoolChild, tracker *util.TrackProgress, cancel util_async.CancelSignal) error {
-	inputDataGrid, err := spec.prepareDataGrid(tracker, cancel)
+	taskPoolSim.SetContinueOnError(false)
+
+	dataGridFuture, err := spec.prepareDataGrid(taskPoolSim, tracker, cancel)
 	if err != nil {
 		return err
 	}
 
-	inputDataReal, err2 := spec.prepareDataRandom(tracker, cancel)
+	dataRandFuture, err2 := spec.prepareDataRandom(taskPoolSim, tracker, cancel)
 	if err2 != nil {
 		return err2
 	}
 
-	inputDataFit, err3 := spec.prepareDataFit(tracker, cancel)
+	dataFitFuture, err3 := spec.prepareDataFit(taskPoolSim, tracker, cancel)
 	if err3 != nil {
 		return err3
 	}
 
-	spec.inputs.dataAll = slices.Concat(inputDataGrid, inputDataReal, inputDataFit)
+	err4 := taskPoolSim.WaitAllComplete()
+	if err4 != nil {
+		return err4
+	}
+
+	spec.inputs.dataGrid = dataGridFuture.WaitForResultOrNilValue()
+	spec.inputs.dataRand = dataRandFuture.WaitForResultOrNilValue()
+	spec.inputs.dataFit = dataFitFuture.WaitForResultOrNilValue()
+	spec.inputs.dataAll = slices.Concat(spec.inputs.dataGrid, spec.inputs.dataRand, spec.inputs.dataFit)
 	return nil
 }
 
-func readWeightInputFile(filename string) ([]weight_types.WeightInput, time.Duration) {
+func readWeightInputFile(filename string) ([]weight_types.WeightInput, time.Duration, error) {
 	statInfo, err := os.Stat(filename)
 	if errors.Is(err, fs.ErrNotExist) {
-		return nil, 0
+		return nil, 0, nil
 	} else if err != nil {
-		panic(err)
+		return nil, 0, err
 	}
 
 	// only use data from "today"
@@ -51,122 +61,109 @@ func readWeightInputFile(filename string) ([]weight_types.WeightInput, time.Dura
 
 	bytes, err := os.ReadFile(filename)
 	if errors.Is(err, fs.ErrNotExist) {
-		return nil, 0
+		return nil, 0, nil
 	} else if err != nil {
-		panic(err)
+		return nil, 0, err
 	}
 
 	var weightInputs []weight_types.WeightInput
 	err = json.Unmarshal(bytes, &weightInputs)
 	if err != nil {
-		panic(err)
+		return nil, 0, err
 	}
 
-	return weightInputs, dataAge
+	return weightInputs, dataAge, nil
 }
 
-func (spec *weightSpecInternal) prepareDataGrid(taskPool *util_async.NestedTaskPoolChild, tracker *util.TrackProgress, cancel util_async.CancelSignal) ([]weight_types.WeightInput, error) {
-	param := spec.param
+func (spec *weightSpecInternal) loadInputData(tracker *util.TrackProgress, tempPath string) (bool, *util_async.Future[[]weight_types.WeightInput], error) {
+	futureData := util_async.Future_Make[[]weight_types.WeightInput]()
 
 	// READ IN ANY RECENT DATA
-	tempPathGrid := files.TempData + "weightfind-sim-grid-" + param.Label + ".json"
-	inputDataGrid, dataAgeGrid := readWeightInputFile(tempPathGrid)
-
-	// DO WE ACCEPT THE OLD DATA
-	if dataAgeGrid > c_simDataAgeMax && !spec.process.forceSkipSim {
-		inputDataGrid = nil
+	inputData, dataAge, err := readWeightInputFile(tempPath)
+	if err != nil {
+		return true, nil, err
 	}
 
-	// SIMULATE STAT CHANGES, SAVE SIM DATA IN CASE WE NEED TO RESTART
-	if inputDataGrid == nil {
-		taskPool.Go(func() {
-			currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(param.GearFile), &param.Model, setup.MissingEnchant_Panic, spec.process.printer)
-			currentItemSet := items.FullItemSet_FromMap(currentEquip)
-			data, err := weightfind.SimulateSteppedStatChangesForGrid(currentItemSet, spec.process.printer, spec.process.simSpeed,
-				param.Model.SimSpeedUp, param.Model.StatsForWeighting, param.Model.Spec, param.Model.Goal,
-				param.Model.SimulateAs,
-				param.Model.Professions, tracker.NewChild(), param.Label, cancel,
-				param.FixStatsMode, c_eachSimTargetGenerateDataCount)
-			if err != nil {
-				return nil, err
-			}
-
-			inputDataGrid = data
-			err = weight_types.WeightInputWriteFile(inputDataGrid, tempPathGrid)
-			if err != nil {
-				return nil, err
-			}
-		})
-	} else {
+	// DO WE ACCEPT THE OLD DATA
+	if inputData != nil && (dataAge < c_simDataAgeMax || spec.process.forceSkipSim) {
+		futureData.SetResult(inputData)
 		tracker.NewChild().SetDone()
+		return true, futureData, nil
 	}
-
-	spec.inputs.dataGrid = inputDataGrid
-	return inputDataGrid, nil
+	return false, futureData, nil
 }
 
-func (spec *weightSpecInternal) prepareDataRandom(taskPool *util_async.NestedTaskPoolChild, tracker *util.TrackProgress, cancel util_async.CancelSignal) ([]weight_types.WeightInput, error) {
-	param := spec.param
+func (spec *weightSpecInternal) sendSimData(futureData *util_async.Future[[]weight_types.WeightInput], data []weight_types.WeightInput, tempPathGrid string, err2 error) error {
+	if err2 != nil {
+		return err2
+	}
 
-	// READ IN ANY RECENT DATA
-	tempPathReal := files.TempData + "weightfind-sim-real-" + param.Label + ".json"
-	inputDataReal, dataAgeReal := readWeightInputFile(tempPathReal)
+	err2 = weight_types.WeightInputWriteFile(data, tempPathGrid)
+	if err2 != nil {
+		return err2
+	}
 
-	// DO WE ACCEPT THE OLD DATA
-	if dataAgeReal > c_simDataAgeMax && !spec.process.forceSkipSim {
-		inputDataReal = nil
+	futureData.SetResult(data)
+	return nil
+}
+
+func (spec *weightSpecInternal) prepareDataGrid(taskPool *util_async.NestedTaskPoolChild, tracker *util.TrackProgress, cancel util_async.CancelSignal) (*util_async.Future[[]weight_types.WeightInput], error) {
+	tempPathGrid := files.TempData + "weightfind-sim-grid-" + spec.param.Label + ".json"
+	done, futureData, err := spec.loadInputData(tracker, tempPathGrid)
+	if done {
+		return futureData, err
 	}
 
 	// SIMULATE STAT CHANGES, SAVE SIM DATA IN CASE WE NEED TO RESTART
-	if inputDataReal == nil {
-		data, err := weightfind.SimulateRealRandomSets(param.GearFile, param.SubstituteItems, &param.Model, c_eachSimTargetGenerateDataCount,
+	taskPool.Go(func() error {
+		param := spec.param
+		currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(param.GearFile), &param.Model, setup.MissingEnchant_Panic, spec.process.printer)
+		currentItemSet := items.FullItemSet_FromMap(currentEquip)
+		data, err2 := weightfind.SimulateSteppedStatChangesForGrid(currentItemSet, spec.process.printer, spec.process.simSpeed,
+			param.Model.SimSpeedUp, param.Model.StatsForWeighting, param.Model.Spec, param.Model.Goal,
+			param.Model.SimulateAs,
+			param.Model.Professions, tracker.NewChild(), param.Label, cancel,
+			param.FixStatsMode, c_eachSimTargetGenerateDataCount)
+		return spec.sendSimData(futureData, data, tempPathGrid, err2)
+	})
+	return futureData, nil
+}
+
+func (spec *weightSpecInternal) prepareDataRandom(taskPool *util_async.NestedTaskPoolChild, tracker *util.TrackProgress, cancel util_async.CancelSignal) (*util_async.Future[[]weight_types.WeightInput], error) {
+	// READ IN ANY RECENT DATA
+	tempPathReal := files.TempData + "weightfind-sim-real-" + spec.param.Label + ".json"
+	done, futureData, err := spec.loadInputData(tracker, tempPathReal)
+	if done {
+		return futureData, err
+	}
+
+	// SIMULATE STAT CHANGES, SAVE SIM DATA IN CASE WE NEED TO RESTART
+	taskPool.Go(func() error {
+		param := spec.param
+		data, err2 := weightfind.SimulateRealRandomSets(param.GearFile, param.SubstituteItems, &param.Model, c_eachSimTargetGenerateDataCount,
 			spec.process.simSpeed, param.FixStatsMode, spec.process.printer, tracker.NewChild(), param.Label, cancel)
-		if err != nil {
-			return nil, err
-		}
-
-		inputDataReal = data
-		err = weight_types.WeightInputWriteFile(inputDataReal, tempPathReal)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		tracker.NewChild().SetDone()
-	}
-
-	spec.inputs.dataRand = inputDataReal
-	return inputDataReal, nil
+		return spec.sendSimData(futureData, data, tempPathReal, err2)
+	})
+	return futureData, nil
 }
 
-func (spec *weightSpecInternal) prepareDataFit(taskPool *util_async.NestedTaskPoolChild, tracker *util.TrackProgress, cancel util_async.CancelSignal) ([]weight_types.WeightInput, error) {
-	param := spec.param
-
+func (spec *weightSpecInternal) prepareDataFit(taskPool *util_async.NestedTaskPoolChild, tracker *util.TrackProgress, cancel util_async.CancelSignal) (*util_async.Future[[]weight_types.WeightInput], error) {
 	// READ IN ANY RECENT DATA
-	tempPathFit := files.TempData + "weightfind-sim-fit-" + param.Label + ".json"
-	inputDataFit, dataAgeFit := readWeightInputFile(tempPathFit)
-	// DO WE ACCEPT THE OLD DATA
-	if dataAgeFit > c_simDataAgeMax && !spec.process.forceSkipSim {
-		inputDataFit = nil
+	tempPathFit := files.TempData + "weightfind-sim-fit-" + spec.param.Label + ".json"
+	done, futureData, err := spec.loadInputData(tracker, tempPathFit)
+	if done {
+		return futureData, err
 	}
+
 	// SIMULATE STAT CHANGES, SAVE SIM DATA IN CASE WE NEED TO RESTART
-	if inputDataFit == nil {
+	taskPool.Go(func() error {
+		param := spec.param
 		currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(spec.param.GearFile), &spec.param.Model, setup.MissingEnchant_Panic, spec.process.printer)
 		currentItemSet := items.FullItemSet_FromMap(currentEquip)
-		data, err := weightfind.SimulateSteppedStatChangesForFitting(currentItemSet, spec.process.printer, spec.process.simSpeed,
+		data, err2 := weightfind.SimulateSteppedStatChangesForFitting(currentItemSet, spec.process.printer, spec.process.simSpeed,
 			param.Model.SimSpeedUp, param.Model.StatsForWeighting, param.Model.Spec, param.Model.Goal, param.Model.SimulateAs,
 			param.Model.Professions, tracker.NewChild(), param.Label, cancel)
-		if err != nil {
-			return nil, err
-		}
-
-		inputDataFit = data
-		err = weight_types.WeightInputWriteFile(inputDataFit, tempPathFit)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		tracker.NewChild().SetDone()
-	}
-	spec.inputs.dataFit = inputDataFit
-	return inputDataFit, nil
+		return spec.sendSimData(futureData, data, tempPathFit, err2)
+	})
+	return futureData, nil
 }

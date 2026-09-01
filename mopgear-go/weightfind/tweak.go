@@ -73,7 +73,7 @@ func weightTweakerInternalLogged(startWeight weight_types.Weight1Basic, tweakSta
 			increment /= 2
 			factor = 1 + increment
 			if increment <= c_tweak_limit {
-				printer.Printf("DONE\n")
+				printer.Printf("TWEAK DONE\n")
 				break
 			}
 		} else {

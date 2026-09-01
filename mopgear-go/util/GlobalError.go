@@ -16,14 +16,14 @@ func GlobalFatalErrorHandler(err error) {
 
 func GlobalWarnHandler(err any) {
 	if err != nil {
-		writeError(toError(err))
+		writeError(ErrorFromAny(err))
 	}
 }
 
-func toError(err any) error {
+func ErrorFromAny(err any) error {
 	switch cast := err.(type) {
 	case error:
-		return cast
+		return ErrorTracedWrapNew(cast)
 	case string:
 		return ErrorTracedNew(cast)
 	case fmt.Stringer:

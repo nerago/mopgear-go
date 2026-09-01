@@ -1,6 +1,7 @@
 package util_async
 
 import (
+	"errors"
 	"math/rand"
 	"slices"
 	"sync"
@@ -83,22 +84,51 @@ func (pool *NestedTaskPoolParent) countQueuedTasks() int {
 	return count
 }
 
+//func (pool *NestedTaskPoolParent) selectQueuedTask() *internalTask {
+//	pool.mutex.Lock()
+//	defer pool.mutex.Unlock()
+//
+//	taskList := make([]*internalTask, 0)
+//	for _, child := range pool.children {
+//		if child.mutex.TryLock() {
+//			// we deliberately are choosing to leave it to end of function, after we do the notifyStarting
+//			//goland:noinspection GoDeferInLoop
+//			defer child.mutex.Unlock()
+//			taskList = append(taskList, child.queue...)
+//		}
+//	}
+//
+//	if len(taskList) > 0 {
+//		task := taskList[rand.Intn(len(taskList))]
+//		task.owner.notifyStartingAlreadyLocked(task)
+//		return task
+//	} else {
+//		return nil
+//	}
+//}
+
 func (pool *NestedTaskPoolParent) selectQueuedTask() *internalTask {
-	pool.mutex.Lock()
-	defer pool.mutex.Unlock()
+	for {
+		pool.mutex.Lock()
+		childSliceClone := slices.Clone(pool.children)
+		pool.mutex.Unlock()
 
-	taskList := make([]*internalTask, 0)
-	for _, child := range pool.children {
-		child.mutex.Lock()
-		taskList = append(taskList, child.queue...)
-		child.mutex.Unlock()
-	}
+		taskList := make([]*internalTask, 0)
+		for _, child := range childSliceClone {
+			// this version we're released our parent lock so should be no possible deadlock
+			child.mutex.Lock()
+			taskList = append(taskList, child.queue...)
+			child.mutex.Unlock()
+		}
 
-	if len(taskList) > 0 {
+		if len(taskList) == 0 {
+			return nil
+		}
+
 		task := taskList[rand.Intn(len(taskList))]
-		return task
-	} else {
-		return nil
+		if task.owner.requestStartTaskNeedLock(task) {
+			return task
+		}
 	}
 }
 
@@ -118,6 +148,13 @@ func (pool *NestedTaskPoolParent) controlThread(maxThreads int) {
 			}
 		case <-pool.chanThreadExit:
 			currentThreads--
+
+			// possible with resource contention might have ended thread unnecessarily
+			countQueued := pool.countQueuedTasks()
+			for currentThreads < countQueued {
+				go pool.workerThread()
+				currentThreads++
+			}
 		case <-pool.chanPoolStop:
 			stopped = true
 		}
@@ -128,9 +165,8 @@ func (pool *NestedTaskPoolParent) workerThread() {
 	for !pool.stopped {
 		task := pool.selectQueuedTask()
 		if task != nil {
-			task.owner.notifyStarting(task)
-			task.run()
-			task.owner.notifyTaskComplete(task)
+			err := task.run()
+			task.owner.notifyTaskComplete(task, err)
 		} else {
 			break
 		}
@@ -140,39 +176,68 @@ func (pool *NestedTaskPoolParent) workerThread() {
 
 type internalTask struct {
 	owner *NestedTaskPoolChild
-	run   func()
+	run   func() error
 }
 
 type NestedTaskPoolChild struct {
-	mutex       sync.Mutex
-	pool        *NestedTaskPoolParent
-	queue       []*internalTask
-	running     []*internalTask
-	waitChannel chan bool
+	mutex           sync.Mutex
+	pool            *NestedTaskPoolParent
+	queue           []*internalTask
+	running         []*internalTask
+	waitChannel     chan bool
+	continueOnError bool
+	errors          []error
 }
 
-func (child *NestedTaskPoolChild) Go(run func()) {
+func (child *NestedTaskPoolChild) SetContinueOnError(continueOnError bool) {
 	child.mutex.Lock()
 	defer child.mutex.Unlock()
+	child.continueOnError = continueOnError
+}
+
+func (child *NestedTaskPoolChild) Go(run func() error) {
+	child.mutex.Lock()
+	defer child.mutex.Unlock()
+
+	if len(child.errors) > 0 && !child.continueOnError {
+		child.errors = append(child.errors, errors.New("attempted to enqueue another routine after error"))
+		return
+	}
 
 	task := &internalTask{child, run}
 	child.queue = append(child.queue, task)
 	child.pool.taskAdded(task)
 }
 
-func (child *NestedTaskPoolChild) notifyStarting(task *internalTask) {
+func (child *NestedTaskPoolChild) requestStartTaskNeedLock(task *internalTask) bool {
 	child.mutex.Lock()
 	defer child.mutex.Unlock()
-
-	removeFromSlice(&child.queue, task)
-	child.running = append(child.running, task)
+	if removeFromSliceIfExists(&child.queue, task) {
+		child.running = append(child.running, task)
+		return true
+	}
+	return false
 }
 
-func (child *NestedTaskPoolChild) notifyTaskComplete(task *internalTask) {
+func (child *NestedTaskPoolChild) notifyStartingAlreadyLocked(task *internalTask) error {
+	err := removeFromSlice(&child.queue, task)
+	child.running = append(child.running, task)
+	return err
+}
+
+func (child *NestedTaskPoolChild) notifyTaskComplete(task *internalTask, err error) {
 	child.mutex.Lock()
 	defer child.mutex.Unlock()
 
 	removeFromSlice(&child.running, task)
+
+	if err != nil {
+		child.errors = append(child.errors, err)
+	}
+
+	if err != nil && !child.continueOnError {
+		child.queue = nil
+	}
 
 	if len(child.queue) == 0 && len(child.running) == 0 && child.waitChannel != nil {
 		close(child.waitChannel)
@@ -181,17 +246,65 @@ func (child *NestedTaskPoolChild) notifyTaskComplete(task *internalTask) {
 }
 
 // only clears wait if at least one child has been added and finished
-func (child *NestedTaskPoolChild) Wait() {
+//func (child *NestedTaskPoolChild) WaitAllCompleteAtLeastOne() error {
+//	waitChan := child.waitChannel
+//	if waitChan != nil {
+//		<-waitChan
+//	}
+//
+//	child.mutex.Lock()
+//	defer child.mutex.Unlock()
+//	return child.makeErrorResult()
+//}
+
+// can complete immediately if nothing has been queued
+func (child *NestedTaskPoolChild) WaitAllComplete() error {
+	if initialEmpty, err := child.checkQueueEmptyAndMakeError(); initialEmpty {
+		return err
+	}
+
 	waitChan := child.waitChannel
 	if waitChan != nil {
 		<-waitChan
 	}
+
+	child.mutex.Lock()
+	defer child.mutex.Unlock()
+	return child.makeErrorResult()
 }
 
-func removeFromSlice(slice *[]*internalTask, task *internalTask) {
+func (child *NestedTaskPoolChild) checkQueueEmptyAndMakeError() (bool, error) {
+	child.mutex.Lock()
+	defer child.mutex.Unlock()
+	if len(child.queue) == 0 && len(child.running) == 0 {
+		return true, child.makeErrorResult()
+	} else {
+		return false, nil
+	}
+}
+
+func (child *NestedTaskPoolChild) makeErrorResult() error {
+	if len(child.errors) > 0 {
+		return errors.Join(child.errors...)
+	} else {
+		return nil
+	}
+}
+
+func removeFromSlice(slice *[]*internalTask, task *internalTask) error {
 	index := slices.Index(*slice, task)
 	if index == -1 {
-		panic("not in slice")
+		return errors.New("not in slice")
 	}
 	util_collection.DeleteIndexInPlace(slice, index)
+	return nil
+}
+
+func removeFromSliceIfExists(slice *[]*internalTask, task *internalTask) bool {
+	index := slices.Index(*slice, task)
+	if index == -1 {
+		return false
+	}
+	util_collection.DeleteIndexInPlace(slice, index)
+	return true
 }
