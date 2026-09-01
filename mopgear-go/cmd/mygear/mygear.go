@@ -14,6 +14,7 @@ const (
 	TrinketRookUnluckyHeroic    = 104442
 	TrinketEyeGalakrasCelestial = 104993
 	TrinketSkeerBloodCelestial  = 105134
+	TrinketJuggFocusCelestial   = 105016
 
 	LegendMeleeCloak = 102249
 	LegendTankCloak  = 102250

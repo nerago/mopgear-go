@@ -433,31 +433,34 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 	// 94527,  // ji-kun
 
 	itemIds := []items.ItemId{
-		94519,                             // prim rage normal 2/2
+		94519,                             // prim rage normal 2/2 536
 		96793,                             // none fort zand
 		94529,                             // none gaze twins normal 2/2
 		103678,                            // time lost artifact 0/0
 		mygear.TrinketZandSpark,           // heroic 2/2
 		mygear.TrinketThokTailCelestial,   // 2/2
-		mygear.TrinketFusionCoreHeroic,    // 0/2
+		mygear.TrinketFusionCoreHeroic,    // 2/2
 		mygear.TrinketVialCorruptNormal,   // 2/2
 		mygear.TrinketRookUnluckyHeroic,   // 2/2
 		mygear.TrinketSkeerBloodCelestial, // 2/2
+		mygear.TrinketJuggFocusCelestial,  //jugg focusing crystal (self heal) celestial, 0/2
 		// evil eye 0/2
-		105016, //jugg focusing crystal (self heal) celestial, 0/2
 	}
 
 	upLevel := func(id items.ItemId) int32 {
-		var upgrade int32 = 0
-		if id < 100000 || id == mygear.TrinketVialCorruptNormal ||
-			id == mygear.TrinketThokTailCelestial ||
-			id == mygear.TrinketRookUnluckyHeroic ||
-			id == mygear.TrinketSkeerBloodCelestial ||
-			id == mygear.TrinketFusionCoreHeroic {
-			upgrade = 2
-		}
-		return upgrade
+		return 2
 	}
+	//upLevel := func(id items.ItemId) int32 {
+	//	var upgrade int32 = 0
+	//	if id < 100000 || id == mygear.TrinketVialCorruptNormal ||
+	//		id == mygear.TrinketThokTailCelestial ||
+	//		id == mygear.TrinketRookUnluckyHeroic ||
+	//		id == mygear.TrinketSkeerBloodCelestial ||
+	//		id == mygear.TrinketFusionCoreHeroic {
+	//		upgrade = 2
+	//	}
+	//	return upgrade
+	//}
 
 	fight := stats.Fight_Juggernaut_NoExternalHeal
 	simRun := simulate.RunSize_Largish
@@ -475,17 +478,17 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 			files.GearFileProtHeal,
 		},
 		{
-			"with_set",
+			"survival",
 			model_factory.Model_PallyProtSurvival(),
 			files.GearFileProtSurvival,
 		},
 		{
-			"no_set",
+			"mitigation",
 			model_factory.Model_PallyProtMitigation(),
 			files.GearFileProtMitigation,
 		},
 		{
-			"compromise",
+			"balanced",
 			model_factory.Model_PallyProtBalanced(),
 			files.GearFileProtBalanced,
 		},
@@ -557,6 +560,8 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 				newEquip[items.Equip_Trinket1] = itemOne
 				newEquip[items.Equip_Trinket2] = itemTwo
 
+				checkNotLow(newEquip)
+
 				resultStats, err := simulate.ExecuteSpecifyAll(simRun, model.SimSpeedUp, model.Spec, model.Goal, fight, model.Professions, &newEquip, nil, util.TrackProgress_Nop())
 				if err != nil {
 					panic(err)
@@ -572,6 +577,17 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 	}
 
 	csv.WriteTo(printer)
+}
+
+func checkNotLow(equip items.FullEquipMap) {
+	for x := range equip.AllItemSeq() {
+		if x.ItemId() == 94519 {
+			if x.ItemLevel() != 536 {
+				panic("low")
+			}
+		}
+	}
+
 }
 
 func currentSimGear(printer *util.PrintRecorder) {

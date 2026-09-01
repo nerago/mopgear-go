@@ -18,6 +18,7 @@ import (
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
+//goland:noinspection DuplicatedCode
 func paladinMultiRun(printer *util.PrintRecorder) {
 	job := multi_types.JobInputs{}
 	job.SetMinimumExtraItemLevel(463)
@@ -28,7 +29,7 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 	job.SetWriteBestToGearFiles(false)
 
 	var extraUpgrade items.UpgradeLevel = 2
-	var forceUpgrade items.UpgradeLevel = 0
+	var forceUpgrade items.UpgradeLevel = 2
 
 	ret := multi_types.SpecParam{
 		Label: "Ret",
@@ -181,27 +182,32 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 	ret.ForceSingleSlot(items.Equip_Weapon, 103968) // britomark
 	ret.ForceSingleSlot(items.Equip_Back, mygear.LegendMeleeCloak)
 	ret.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
-	ret.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketEyeGalakrasCelestial)
+	ret.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketFusionCoreHeroic)
+
 	protDps.ForceSingleSlot(items.Equip_Back, mygear.LegendMeleeCloak)
 	protDps.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
 	protDps.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketSkeerBloodCelestial)
+
 	protBalanced.ForceSingleSlot(items.Equip_Back, mygear.LegendMeleeCloak)
 	protBalanced.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
 	protBalanced.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketSkeerBloodCelestial)
-	protBalanced.AddReportVariant(items.Equip_Trinket2, mygear.TrinketVialCorruptNormal)
+	protBalanced.AddReportVariant(items.Equip_Trinket2, mygear.TrinketFusionCoreHeroic)
+
 	protMitigation.ForceSingleSlot(items.Equip_Back, mygear.LegendTankCloak)
-	protMitigation.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
-	protMitigation.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketZandSpark)
+	protMitigation.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketFusionCoreHeroic)
+	protMitigation.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketFortZand)
 	protMitigation.AddReportVariant(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
 	protMitigation.AddReportVariant(items.Equip_Trinket2, mygear.TrinketSkeerBloodCelestial)
+
 	protSurvival.ForceSingleSlot(items.Equip_Back, mygear.LegendTankCloak)
 	protSurvival.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketThokTailCelestial)
-	protSurvival.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketFortZand)
+	protSurvival.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketJuggFocusCelestial)
 	protSurvival.AddReportVariant(items.Equip_Trinket1, mygear.TrinketSkeerBloodCelestial)
 	protSurvival.AddReportVariant(items.Equip_Trinket2, mygear.TrinketThokTailCelestial)
+
 	protHeal.ForceSingleSlot(items.Equip_Back, mygear.LegendTankCloak)
 	protHeal.ForceSingleSlot(items.Equip_Trinket1, mygear.TrinketSkeerBloodCelestial)
-	protHeal.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketZandSpark)
+	protHeal.ForceSingleSlot(items.Equip_Trinket2, mygear.TrinketThokTailCelestial)
 
 	// HELMET
 	blockHelmetsWithoutCapacitance(&ret)
@@ -233,7 +239,7 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()
 
-	if false {
+	if true {
 		taskQuick := multi_types.JobInputTask{
 			AlsoExistingEquipped:  true,
 			AlsoSpecOptimums:      true,
