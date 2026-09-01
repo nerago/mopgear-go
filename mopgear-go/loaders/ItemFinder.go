@@ -385,3 +385,14 @@ func ItemFinder_BagsUpgraded(_ stats.Difficulty) []ItemFoundRef {
 	util_collection.RemoveDuplicatesComparable_InPlace(&result)
 	return result
 }
+
+func ItemFinderConcat(argParams ...func(stats.Difficulty) []ItemFoundRef) func(stats.Difficulty) []ItemFoundRef {
+	return func(diff stats.Difficulty) []ItemFoundRef {
+		resultSlice := make([]ItemFoundRef, 0)
+		for _, arg := range argParams {
+			slice := arg(diff)
+			resultSlice = append(resultSlice, slice...)
+		}
+		return resultSlice
+	}
+}

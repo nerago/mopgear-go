@@ -281,6 +281,11 @@ func increaseForPart(sim, baseSim *SimData, part SimType) float64 {
 	newValue := sim.Get(part)
 	baseValue := baseSim.Get(part)
 
+	// non tank will have a bunch of zeros
+	if newValue == 0 || baseValue == 0 {
+		return 0
+	}
+
 	var result float64
 	if part == Sim_DEATH {
 		result = baseValue - newValue

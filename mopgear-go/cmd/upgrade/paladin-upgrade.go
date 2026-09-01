@@ -7,6 +7,7 @@ import (
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/loaders"
 	"github.com/nerago/mopgear-go/simulate"
+	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/upgrades"
 	"github.com/nerago/mopgear-go/util/util_async"
 )
@@ -65,25 +66,27 @@ func findUpgrades_Paladin() {
 		//"SoO Paragons",
 		//"SoO Garrosh"
 	}
-	////finder := loaders.ItemFinder_HeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, heroicBossesConsider)
-	finder := loaders.ItemFinder_NormalHeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, normalBossesConsider, heroicBossesConsider)
+	finderB := loaders.ItemFinder_NormalHeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, normalBossesConsider, heroicBossesConsider)
+	_ = finderB
 
 	//finder := loaders.ItemFinder_SiegeStrengthPlateTank
-	//finder := loaders.ItemFinder_Ordos
+	finderO := loaders.ItemFinder_Ordos
 	//finder := loaders.ItemFinder_TimelessPlate
 	//finder := loaders.ItemFinder_BagsUpgraded
 	//finder := loaders.SiegeClassGearSetMultiple(stats.Spec_PaladinProt, stats.Spec_PaladinRet)
 
 	// celestial world
-	//finder := func(_ stats.Difficulty) []loaders.ItemFoundRef {
-	//	return []loaders.ItemFoundRef{{ItemId: 99127}, {ItemId: 99137}}
-	//}
+	finderW := func(_ stats.Difficulty) []loaders.ItemFoundRef {
+		return []loaders.ItemFoundRef{{ItemId: 99127}, {ItemId: 99137}}
+	}
+
+	finder := loaders.ItemFinderConcat(finderO, finderW)
 
 	input := upgrades.FindUpgradesMultiSpec{
 		Settings: upgrades.InputSettings{
 			IncludeCelestial:             false,
 			IncludeNormal:                true,
-			IncludeHeroic:                true,
+			IncludeHeroic:                false,
 			IgnoredItems:                 mygear.IgnoredItems,
 			TargetUpgradeLevel:           2,
 			WeightType:                   1,
@@ -94,14 +97,22 @@ func findUpgrades_Paladin() {
 			ExtraSimForTopResultsSimSize: simSizeTopN,
 		},
 		Specs: []upgrades.SpecInput{
-			//{
-			//	Label:                   "damage",
-			//	Model:                   model_factory.Model_PallyProtDamage(),
-			//	GearFile:                files.GearFileProtDamage,
-			//	ItemFinder:              finder,
-			//	SubstituteItems:         mygear.SubstituteItemsProt,
-			//	SubstituteEmptySlotOnly: substituteEmptySlotOnly,
-			//},
+			{
+				Label:                   "ret",
+				Model:                   model_factory.Model_PallyRet(),
+				GearFile:                files.GearFileRet,
+				ItemFinder:              finder,
+				SubstituteItems:         mygear.SubstituteItemsRet,
+				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
+			},
+			{
+				Label:                   "damage",
+				Model:                   model_factory.Model_PallyProtDamage(),
+				GearFile:                files.GearFileProtDamage,
+				ItemFinder:              finder,
+				SubstituteItems:         mygear.SubstituteItemsProt,
+				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
+			},
 			{
 				Label:                   "balance",
 				Model:                   model_factory.Model_PallyProtBalanced(),
