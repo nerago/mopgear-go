@@ -42,7 +42,7 @@ func (ws *WeightSearcher0) Run(cancel util_async.CancelSignal) weight_types.Weig
 	best := util_rank.BestCollector1[weight_types.Weight1Basic]{}
 	progress := 0
 	for initialWeight := range ws.makeRandomWeights(5000) {
-		updatedWeight, updatedAccuracy := weightTweaker_internal_FastCached(initialWeight, c_search0_tweakStart, ws.weightStats, &ws.evaluateAccuracy)
+		updatedWeight, updatedAccuracy := WeightTweaker_FastCached(initialWeight, c_search0_tweakStart, ws.weightStats, &ws.evaluateAccuracy)
 		best.Offer(&updatedWeight, updatedAccuracy)
 		if progress%1000 == 0 {
 			ws.printer.Printf("%6d %6.3f %6.3f\n", progress, updatedAccuracy, best.GetBestScore())

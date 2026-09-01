@@ -1,6 +1,7 @@
 package updateProc
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/nerago/mopgear-go/simulate"
@@ -65,7 +66,7 @@ func (wup *WeightUpdateProcess) Run(cancel util_async.CancelSignal, outerThreads
 		return (*spec).updateSpec(taskPool.NewChild(), taskPool.NewChild(), progress.NewChild(), cancel)
 	})
 	if err != nil {
-		panic(err)
+		wup.printer.Println("UPDATE PROC ERROR: " + err.Error())
 	}
 
 	for _, summary := range summaries {
@@ -78,8 +79,14 @@ func (wup *WeightUpdateProcess) Run(cancel util_async.CancelSignal, outerThreads
 }
 
 func (spec *weightSpecInternal) updateSpec(taskPoolSim, taskPoolSolve *util_async.NestedTaskPoolChild, tracker *util.TrackProgress, cancel util_async.CancelSignal) (string, error) {
-	// each simulator process is considered 1/4, fitting is 1/4, then remaining solving is remaining.
-	tracker.RunOuterTracking(5)
+	expectedCount := 0
+	if !spec.process.forceSkipSim {
+		expectedCount += 3
+	}
+	if !spec.process.skipSolve {
+		expectedCount++
+	}
+	tracker.RunOuterTracking(expectedCount)
 	defer tracker.SetDone()
 
 	// READ OLD DATA AND/OR RUN SIM
@@ -94,6 +101,7 @@ func (spec *weightSpecInternal) updateSpec(taskPoolSim, taskPoolSolve *util_asyn
 		printer: spec.process.printer,
 	}
 	spec.out.startReport()
+	spec.out.initAccuracy()
 
 	// LOAD OLD WEIGHT FILES
 	loadOldWeights(&spec.param, &spec.out)
@@ -102,18 +110,17 @@ func (spec *weightSpecInternal) updateSpec(taskPoolSim, taskPoolSolve *util_asyn
 	if !spec.process.skipSolve {
 		solve := solves{
 			cancel:      cancel,
-			tracker:     tracker,
+			tracker:     tracker.NewChild(),
 			taskPool:    taskPoolSolve,
 			timeoutEach: spec.process.timeoutEach,
 			printer:     spec.process.printer,
 			input:       &spec.inputs,
 			output:      &spec.out,
 		}
-		solve.startSolvers()
-	}
-
-	if err := taskPoolSolve.WaitAllComplete(); err != nil {
-		return "", err
+		err := solve.startSolvers()
+		if err != nil {
+			util.GlobalWarnHandler(fmt.Errorf("ERROR IN SOLVERS: %w", err))
+		}
 	}
 
 	// REPORTING

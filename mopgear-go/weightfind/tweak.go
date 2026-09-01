@@ -85,7 +85,7 @@ func weightTweakerInternalLogged(startWeight weight_types.Weight1Basic, tweakSta
 	return bestEntry.weight, bestEntry.accuracy
 }
 
-func weightTweaker_internal_FastCached(startWeight weight_types.Weight1Basic, tweakStart float64, weightStats []stats.StatType, evaluate *EvaluateAccuracyPrepared) (weight_types.Weight1Basic, float64) {
+func WeightTweaker_FastCached(startWeight weight_types.Weight1Basic, tweakStart float64, weightStats []stats.StatType, evaluate *EvaluateAccuracyPrepared) (weight_types.Weight1Basic, float64) {
 	if startWeight.IsEmpty() {
 		return startWeight, evaluate.EvaluateWeight1(&startWeight)
 	}

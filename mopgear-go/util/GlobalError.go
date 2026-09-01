@@ -28,6 +28,8 @@ func ErrorFromAny(err any) error {
 		return ErrorTracedNew(cast)
 	case fmt.Stringer:
 		return ErrorTracedNew(cast.String())
+	case nil:
+		return nil
 	default:
 		return ErrorTracedNew("unknown error")
 	}

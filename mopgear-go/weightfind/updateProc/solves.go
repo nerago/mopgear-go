@@ -3,6 +3,7 @@ package updateProc
 import (
 	"fmt"
 	"slices"
+	"sync/atomic"
 	"time"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -27,41 +28,64 @@ type solves struct {
 	input  *updateInputs
 	output *choiceOutput
 
-	taskPool *util_async.NestedTaskPoolChild
+	taskPool       *util_async.NestedTaskPoolChild
+	taskTotalCount atomic.Uint32
 }
 
 type solveTask func()
+type solveTaskTracked func(*util.TrackProgress)
 
-func (sol *solves) startSolvers() {
-	// FORMULA2 WEIGHTS - MIP
+func (sol *solves) startSolvers() error {
+	sol.taskPool.SetContinueOnError(true)
+	sol.tracker.RunOuterTracking(0)
+
 	sol.solveFormulaWeight()
-
-	// FITTING - Slow MIP
 	sol.solveFittingWeight()
 	sol.solveFittingFast()
-
-	// GRID WEIGHTS - GPU*2 - later for less contention
 	sol.solveGridWeights()
-
 	sol.solveGrid2Weights()
-
-	// SEARCH weights - Non-Highs
-	for searchMode := range 3 {
-		sol.solveSearchWeights(searchMode)
-	}
-
-	// RANKING WEIGHTS - simplex*2, IPX*2
+	sol.solveSearchWeights()
 	sol.solveRankingWeight()
+
+	sol.tracker.UpdateExpectedChildCount(int(sol.taskTotalCount.Load()))
+	return sol.taskPool.WaitAllComplete()
 }
 
 func (sol *solves) addTask(task solveTask) {
+	sol.taskTotalCount.Add(1)
+
 	sol.taskPool.Go(func() (err error) {
 		defer func() {
 			anyMessage := recover()
-			err = util.ErrorFromAny(anyMessage)
+			if anyMessage != nil {
+				err = util.ErrorFromAny(anyMessage)
+			}
 		}()
+
 		sol.printer.Println("SOLVE TASK start")
+
 		task()
+
+		sol.tracker.NewChild().SetDone()
+		sol.printer.Println("SOLVE TASK end")
+		return nil
+	})
+}
+func (sol *solves) addTaskTracked(task solveTaskTracked) {
+	sol.taskTotalCount.Add(1)
+
+	sol.taskPool.Go(func() (err error) {
+		defer func() {
+			anyMessage := recover()
+			if anyMessage != nil {
+				err = util.ErrorFromAny(anyMessage)
+			}
+		}()
+
+		sol.printer.Println("SOLVE TASK start")
+
+		task(sol.tracker.NewChild())
+
 		sol.printer.Println("SOLVE TASK end")
 		return nil
 	})
@@ -239,38 +263,50 @@ func (sol *solves) solveFormulaWeight() {
 		weights2FutureB, err := compB.Run(sol.timeoutEach)
 		sol.handleFuture2OrError("FORM2-70", weights2FutureB, err)
 	})
+
+	sol.addTask(func() {
+		compB := weight_highs.FormulaStatWeightProcess2{}
+		compB.BLEND = 1 // multi-stage
+		compB.Init(sol.printer)
+		compB.SetRequiredStats(sol.input.statTypes)
+		compB.SetTargetRatios(sol.input.targetRatio)
+		compB.SetMinimumIncludeRate(0.5)
+		compB.SupplyData(sol.input.dataAll)
+		weights2FutureB, err := compB.Run(sol.timeoutEach)
+		sol.handleFuture2OrError("FORM2-50", weights2FutureB, err)
+	})
 }
 
 func (sol *solves) solveFittingWeight() {
-	fitTimeout := sol.timeoutEach / 8
+	fitTimeout := sol.timeoutEach / 4
 
-	sol.addTask(func() {
+	sol.addTaskTracked(func(track *util.TrackProgress) {
 		fit1 := fitting3.FittingEachStatWeightProcess3{}
 		fit1.Init(4, sol.printer, fitTimeout)
 		fit1.SetRequiredStats(sol.input.statTypes, sol.input.simTypes)
 		fit1.SetTargetRatios(sol.input.targetRatio)
 		fit1.SupplyData(sol.input.dataFit)
-		res1 := fit1.Run(sol.cancel, sol.tracker)
+		res1 := fit1.Run(sol.cancel, track)
 		sol.output.evaluateWeightResult3("FITTING3-dataFit", &res1)
 	})
 
-	sol.addTask(func() {
+	sol.addTaskTracked(func(track *util.TrackProgress) {
 		fit2 := fitting3.FittingEachStatWeightProcess3{}
 		fit2.Init(3, sol.printer, fitTimeout)
 		fit2.SetRequiredStats(sol.input.statTypes, sol.input.simTypes)
 		fit2.SetTargetRatios(sol.input.targetRatio)
 		fit2.SupplyData(slices.Concat(sol.input.dataFit, sol.input.dataGrid))
-		res2 := fit2.Run(sol.cancel, sol.tracker)
+		res2 := fit2.Run(sol.cancel, track)
 		sol.output.evaluateWeightResult3("FITTING3-dataGridFit", &res2)
 	})
 
-	sol.addTask(func() {
+	sol.addTaskTracked(func(track *util.TrackProgress) {
 		fit3 := fitting3.FittingEachStatWeightProcess3{}
 		fit3.Init(3, sol.printer, fitTimeout)
 		fit3.SetRequiredStats(sol.input.statTypes, sol.input.simTypes)
 		fit3.SetTargetRatios(sol.input.targetRatio)
 		fit3.SupplyData(sol.input.dataAll)
-		res3 := fit3.Run(sol.cancel, sol.tracker)
+		res3 := fit3.Run(sol.cancel, track)
 		sol.output.evaluateWeightResult3("FITTING3-dataAll", &res3)
 	})
 }
@@ -310,7 +346,7 @@ func (sol *solves) makeCanceller() (*util_async.CancelSignalBasic, *time.Timer) 
 	return innerCancel, timer
 }
 
-func (sol *solves) solveSearchWeights(searchMode int) {
+func (sol *solves) solveSearchWeights() {
 	sol.addTask(func() {
 		innerCancel, timer := sol.makeCanceller()
 		defer timer.Stop()

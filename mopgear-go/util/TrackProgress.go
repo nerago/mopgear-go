@@ -91,6 +91,13 @@ func (track *TrackProgress) RunFromAtomicInt(current *atomic.Uint64, targetCount
 	})
 }
 
+func (track *TrackProgress) RunFromAtomicIntAndCount(current *atomic.Uint64, targetCount *atomic.Uint64) {
+	track.run(func() float64 {
+		percent := float64(current.Load()) / float64(targetCount.Load())
+		return percent
+	})
+}
+
 func (track *TrackProgress) RunFromArray(array *[]uint64, targetCount uint64) {
 	track.run(func() float64 {
 		var current uint64
@@ -135,10 +142,7 @@ func (track *TrackProgress) sumNestedProgress() float64 {
 	track.mutex.RLock()
 	defer track.mutex.RUnlock()
 
-	currentCount := track.expectedChildCount
-	if currentCount == 0 {
-		currentCount = len(track.childList)
-	}
+	currentCount := max(track.expectedChildCount, len(track.childList))
 
 	var overallPercent float64 = 0
 	for _, nested := range track.childList {

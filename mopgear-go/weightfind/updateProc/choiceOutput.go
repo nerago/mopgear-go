@@ -22,6 +22,10 @@ type choiceOutput struct {
 
 	input   *updateInputs
 	printer *util.PrintRecorder
+
+	_accuracyMutex     sync.Mutex
+	_accuracyPrepBasic weightfind.EvaluateAccuracyPrepared
+	_accuracyPrepStat  weightfind.EvaluateAccuracyPrepared
 }
 
 type weightChoice struct {
@@ -45,6 +49,13 @@ func (wc *choiceOutput) startReport() {
 	wc._summary.WriteString("Weights Accuracy Summary ::::: ")
 	wc._summary.WriteString(wc.label)
 	wc._summary.WriteString(" ::::: ")
+}
+
+func (wc *choiceOutput) initAccuracy() {
+	wc._accuracyMutex.Lock()
+	defer wc._accuracyMutex.Unlock()
+	wc._accuracyPrepBasic.Init(wc.input.dataAll, &wc.input.targetRatio, false, false)
+	wc._accuracyPrepStat.Init(wc.input.dataAll, &wc.input.targetRatio, true, true)
 }
 
 func (wc *choiceOutput) addChoice(choice weightChoice) {
@@ -80,13 +91,16 @@ func (wc *choiceOutput) bestWeightChoiceExtended() (util_collection.Optional[wei
 	best2 := util_rank.BestCollector1[weightChoice]{}
 	best3 := util_rank.BestCollector1[weightChoice]{}
 
+	wc._accuracyMutex.Lock()
+	defer wc._accuracyMutex.Unlock()
+
 	for _, choice := range wc.getChoicesSafeCopy() {
 		weightOrig := choice.weightOrig
 		switch weightCast := weightOrig.(type) {
 		case *weight_types.Weight2Extended:
 			choice.weight2 = weightCast
-			acc2 := weightfind.EvaluateAccuracyBasic(weightCast, input.simTypes, &input.targetRatio, input.dataAll)
-			acc2St := weightfind.EvaluateAccuracyStatisticalExtended(weightCast, input.simTypes, &input.targetRatio, input.dataAll)
+			acc2 := wc._accuracyPrepBasic.EvaluateWeight2(weightCast)
+			acc2St := wc._accuracyPrepStat.EvaluateWeight2(weightCast)
 			best2.Offer(&choice, acc2)
 			best2.Offer(&choice, acc2St)
 		case *weight_types.Weight3ExtendedRanged:
@@ -94,13 +108,13 @@ func (wc *choiceOutput) bestWeightChoiceExtended() (util_collection.Optional[wei
 			weightConvert2 := weightCast.ConvertToWeight2(input.dataAll)
 			choice.weight2 = weightConvert2
 
-			acc3 := weightfind.EvaluateAccuracyBasic(weightCast, input.simTypes, &input.targetRatio, input.dataAll)
-			acc3St := weightfind.EvaluateAccuracyStatisticalExtended(weightCast, input.simTypes, &input.targetRatio, input.dataAll)
+			acc3 := wc._accuracyPrepBasic.EvaluateWeight3(weightCast)
+			acc3St := wc._accuracyPrepStat.EvaluateWeight3(weightCast)
 			best3.Offer(&choice, acc3)
 			best3.Offer(&choice, acc3St)
 
-			acc2 := weightfind.EvaluateAccuracyBasic(weightConvert2, input.simTypes, &input.targetRatio, input.dataAll)
-			acc2St := weightfind.EvaluateAccuracyStatisticalExtended(weightConvert2, input.simTypes, &input.targetRatio, input.dataAll)
+			acc2 := wc._accuracyPrepBasic.EvaluateWeight2(weightConvert2)
+			acc2St := wc._accuracyPrepStat.EvaluateWeight2(weightConvert2)
 			best2.Offer(&choice, acc2)
 			best2.Offer(&choice, acc2St)
 		}
@@ -192,16 +206,22 @@ func (wc *choiceOutput) logChoice(choiceName string, weight1 *weight_types.Weigh
 }
 
 func (wc *choiceOutput) evaluateAccuracy(weightOrig weight_types.IWeight, weight1 *weight_types.Weight1Basic) (accuracy1, accuracy1Stat, accuracyX, accuracyXStat float64, hasExtended bool) {
-	input := wc.input
+	wc._accuracyMutex.Lock()
+	defer wc._accuracyMutex.Unlock()
+
 	if _, isOne := weightOrig.(*weight_types.Weight1Basic); isOne {
 		hasExtended = false
-	} else {
-		accuracyX = weightfind.EvaluateAccuracyBasic(weightOrig, input.simTypes, &input.targetRatio, input.dataAll)
-		accuracyXStat = weightfind.EvaluateAccuracyStatisticalExtended(weightOrig, input.simTypes, &input.targetRatio, input.dataAll)
+	} else if two, isTwo := weightOrig.(*weight_types.Weight2Extended); isTwo {
+		accuracyX = wc._accuracyPrepBasic.EvaluateWeight2(two)
+		accuracyXStat = wc._accuracyPrepStat.EvaluateWeight2(two)
+		hasExtended = true
+	} else if three, isThree := weightOrig.(*weight_types.Weight3ExtendedRanged); isThree {
+		accuracyX = wc._accuracyPrepBasic.EvaluateWeight3(three)
+		accuracyXStat = wc._accuracyPrepStat.EvaluateWeight3(three)
 		hasExtended = true
 	}
-	accuracy1 = weightfind.EvaluateAccuracyBasic(weight1, input.simTypes, &input.targetRatio, input.dataAll)
-	accuracy1Stat = weightfind.EvaluateAccuracyStatisticalExtended(weight1, input.simTypes, &input.targetRatio, input.dataAll)
+	accuracy1 = wc._accuracyPrepBasic.EvaluateWeight1(weight1)
+	accuracy1Stat = wc._accuracyPrepStat.EvaluateWeight1(weight1)
 	return accuracy1, accuracy1Stat, accuracyX, accuracyXStat, hasExtended
 }
 

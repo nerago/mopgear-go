@@ -197,15 +197,17 @@ func (child *NestedTaskPoolChild) SetContinueOnError(continueOnError bool) {
 
 func (child *NestedTaskPoolChild) Go(run func() error) {
 	child.mutex.Lock()
-	defer child.mutex.Unlock()
 
 	if len(child.errors) > 0 && !child.continueOnError {
 		child.errors = append(child.errors, errors.New("attempted to enqueue another routine after error"))
+		child.mutex.Unlock()
 		return
 	}
 
 	task := &internalTask{child, run}
 	child.queue = append(child.queue, task)
+	child.mutex.Unlock()
+
 	child.pool.taskAdded(task)
 }
 

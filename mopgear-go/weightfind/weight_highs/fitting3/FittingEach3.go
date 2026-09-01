@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"iter"
 	"slices"
+	"sync/atomic"
 
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/util"
@@ -111,12 +112,14 @@ func (fe *FittingEachStatWeightProcess3) launchEachNested(tracker *util.TrackPro
 		}
 	}
 
-	tracker.RunOuterTracking(fe.Each.Size())
+	completedCount := atomic.Uint64{}
+	tracker.RunFromAtomicInt(&completedCount, uint64(fe.Each.Size()))
+	defer tracker.SetDone()
+
 	channelEach := util_async.SeqToChannel_Cancellable(fe.Each.SeqValues(), &fe.CancelInternal)
 	return util_async.ForEach_Channel_PassError(c_fitting3_each_threadCount, channelEach, func(fields *fitting3EachFields) error {
-		defer tracker.NewChild().SetDone()
-
 		fe.Printer.Printf("FIT3 running segment for %s %s\n", fields.statType.Name(), fields.simType.Name())
+		defer completedCount.Add(1)
 
 		process := FittingSingleSegmented3{}
 		scaleStat := fe.ScaleStats.GetOrPanic(fields.statType)

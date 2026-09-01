@@ -21,17 +21,17 @@ import (
 func (spec *weightSpecInternal) prepareSimData(taskPoolSim *util_async.NestedTaskPoolChild, tracker *util.TrackProgress, cancel util_async.CancelSignal) error {
 	taskPoolSim.SetContinueOnError(false)
 
-	dataGridFuture, err := spec.prepareDataGrid(taskPoolSim, tracker, cancel)
+	dataGridFuture, err := spec.prepareDataGrid(taskPoolSim, tracker.NewChild(), cancel)
 	if err != nil {
 		return err
 	}
 
-	dataRandFuture, err2 := spec.prepareDataRandom(taskPoolSim, tracker, cancel)
+	dataRandFuture, err2 := spec.prepareDataRandom(taskPoolSim, tracker.NewChild(), cancel)
 	if err2 != nil {
 		return err2
 	}
 
-	dataFitFuture, err3 := spec.prepareDataFit(taskPoolSim, tracker, cancel)
+	dataFitFuture, err3 := spec.prepareDataFit(taskPoolSim, tracker.NewChild(), cancel)
 	if err3 != nil {
 		return err3
 	}
@@ -75,7 +75,7 @@ func readWeightInputFile(filename string) ([]weight_types.WeightInput, time.Dura
 	return weightInputs, dataAge, nil
 }
 
-func (spec *weightSpecInternal) loadInputData(tracker *util.TrackProgress, tempPath string) (bool, *util_async.Future[[]weight_types.WeightInput], error) {
+func (spec *weightSpecInternal) loadInputData(tempPath string) (bool, *util_async.Future[[]weight_types.WeightInput], error) {
 	futureData := util_async.Future_Make[[]weight_types.WeightInput]()
 
 	// READ IN ANY RECENT DATA
@@ -87,7 +87,6 @@ func (spec *weightSpecInternal) loadInputData(tracker *util.TrackProgress, tempP
 	// DO WE ACCEPT THE OLD DATA
 	if inputData != nil && (dataAge < c_simDataAgeMax || spec.process.forceSkipSim) {
 		futureData.SetResult(inputData)
-		tracker.NewChild().SetDone()
 		return true, futureData, nil
 	}
 	return false, futureData, nil
@@ -109,8 +108,9 @@ func (spec *weightSpecInternal) sendSimData(futureData *util_async.Future[[]weig
 
 func (spec *weightSpecInternal) prepareDataGrid(taskPool *util_async.NestedTaskPoolChild, tracker *util.TrackProgress, cancel util_async.CancelSignal) (*util_async.Future[[]weight_types.WeightInput], error) {
 	tempPathGrid := files.TempData + "weightfind-sim-grid-" + spec.param.Label + ".json"
-	done, futureData, err := spec.loadInputData(tracker, tempPathGrid)
+	done, futureData, err := spec.loadInputData(tempPathGrid)
 	if done {
+		tracker.SetDone()
 		return futureData, err
 	}
 
@@ -122,7 +122,7 @@ func (spec *weightSpecInternal) prepareDataGrid(taskPool *util_async.NestedTaskP
 		data, err2 := weightfind.SimulateSteppedStatChangesForGrid(currentItemSet, spec.process.printer, spec.process.simSpeed,
 			param.Model.SimSpeedUp, param.Model.StatsForWeighting, param.Model.Spec, param.Model.Goal,
 			param.Model.SimulateAs,
-			param.Model.Professions, tracker.NewChild(), param.Label, cancel,
+			param.Model.Professions, tracker, param.Label, cancel,
 			param.FixStatsMode, c_eachSimTargetGenerateDataCount)
 		return spec.sendSimData(futureData, data, tempPathGrid, err2)
 	})
@@ -132,8 +132,9 @@ func (spec *weightSpecInternal) prepareDataGrid(taskPool *util_async.NestedTaskP
 func (spec *weightSpecInternal) prepareDataRandom(taskPool *util_async.NestedTaskPoolChild, tracker *util.TrackProgress, cancel util_async.CancelSignal) (*util_async.Future[[]weight_types.WeightInput], error) {
 	// READ IN ANY RECENT DATA
 	tempPathReal := files.TempData + "weightfind-sim-real-" + spec.param.Label + ".json"
-	done, futureData, err := spec.loadInputData(tracker, tempPathReal)
+	done, futureData, err := spec.loadInputData(tempPathReal)
 	if done {
+		tracker.SetDone()
 		return futureData, err
 	}
 
@@ -141,7 +142,7 @@ func (spec *weightSpecInternal) prepareDataRandom(taskPool *util_async.NestedTas
 	taskPool.Go(func() error {
 		param := spec.param
 		data, err2 := weightfind.SimulateRealRandomSets(param.GearFile, param.SubstituteItems, &param.Model, c_eachSimTargetGenerateDataCount,
-			spec.process.simSpeed, param.FixStatsMode, spec.process.printer, tracker.NewChild(), param.Label, cancel)
+			spec.process.simSpeed, param.FixStatsMode, spec.process.printer, tracker, param.Label, cancel)
 		return spec.sendSimData(futureData, data, tempPathReal, err2)
 	})
 	return futureData, nil
@@ -150,8 +151,9 @@ func (spec *weightSpecInternal) prepareDataRandom(taskPool *util_async.NestedTas
 func (spec *weightSpecInternal) prepareDataFit(taskPool *util_async.NestedTaskPoolChild, tracker *util.TrackProgress, cancel util_async.CancelSignal) (*util_async.Future[[]weight_types.WeightInput], error) {
 	// READ IN ANY RECENT DATA
 	tempPathFit := files.TempData + "weightfind-sim-fit-" + spec.param.Label + ".json"
-	done, futureData, err := spec.loadInputData(tracker, tempPathFit)
+	done, futureData, err := spec.loadInputData(tempPathFit)
 	if done {
+		tracker.SetDone()
 		return futureData, err
 	}
 
@@ -162,7 +164,7 @@ func (spec *weightSpecInternal) prepareDataFit(taskPool *util_async.NestedTaskPo
 		currentItemSet := items.FullItemSet_FromMap(currentEquip)
 		data, err2 := weightfind.SimulateSteppedStatChangesForFitting(currentItemSet, spec.process.printer, spec.process.simSpeed,
 			param.Model.SimSpeedUp, param.Model.StatsForWeighting, param.Model.Spec, param.Model.Goal, param.Model.SimulateAs,
-			param.Model.Professions, tracker.NewChild(), param.Label, cancel)
+			param.Model.Professions, tracker, param.Label, cancel)
 		return spec.sendSimData(futureData, data, tempPathFit, err2)
 	})
 	return futureData, nil

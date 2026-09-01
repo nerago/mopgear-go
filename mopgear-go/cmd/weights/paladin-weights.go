@@ -19,13 +19,15 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	//simSpeed := simulate.RunSize_QuickDirty
 	//simSpeed := simulate.RunSize_Common
 	simSpeed := simulate.RunSize_Largish
-	forceSkipSim := false
+	forceSkipSim := true
 	skipSolve := false
 	fixStats := weight_types.FixStatsRangeMode_ExpertiseAlways | weight_types.FixStatsRangeMode_HasteGridOnly | weight_types.FixStatsRangeMode_HasteHigherOnly
+	_ = fixStats
 
 	process := updateProc.WeightUpdateProcess{}
-	process.Init(simSpeed, forceSkipSim, skipSolve, 1200, printer)
-	//process.AddSpec(updateProc.SpecParam{
+	process.Init(simSpeed, forceSkipSim, skipSolve, 3600, printer)
+
+	//process.AddSpecParam(updateProc.SpecParam{
 	//	Label:           "Ret",
 	//	WeightFile1:     files.WeightRet,
 	//	GearFile:        files.GearFileRet,
@@ -33,8 +35,7 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	//	SubstituteItems: mygear.SubstituteItemsRet,
 	//	FixStatsMode:    weight_types.FixStatsRangeMode_None,
 	//})
-
-	//process.AddSpec(updateProc.SpecParam{
+	//process.AddSpecParam(updateProc.SpecParam{
 	//	Label:           "Prot-Damage",
 	//	WeightFile1:     files.WeightProtDamage,
 	//	GearFile:        files.GearFileProtDamage,
@@ -42,22 +43,23 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	//	SubstituteItems: mygear.SubstituteItemsProt,
 	//	FixStatsMode:    fixStats,
 	//})
-	//process.AddSpec(updateProc.SpecParam{
-	//	Label:           "Prot-Balanced",
-	//	WeightFile1:     files.WeightProtBalanced,
-	//	GearFile:        files.GearFileProtBalanced,
-	//	Model:           model_factory.Model_PallyProtBalanced(),
-	//	SubstituteItems: mygear.SubstituteItemsProt,
-	//	FixStatsMode:    fixStats,
-	//})
-	//process.AddSpec(updateProc.SpecParam{
-	//	Label:           "Prot-Mitigation",
-	//	WeightFile1:     files.WeightProtMitigation,
-	//	GearFile:        files.GearFileProtMitigation,
-	//	Model:           model_factory.Model_PallyProtMitigation(),
-	//	SubstituteItems: mygear.SubstituteItemsProt,
-	//	FixStatsMode:    fixStats,
-	//})
+
+	process.AddSpecParam(updateProc.SpecParam{
+		Label:           "Prot-Balanced",
+		WeightFile1:     files.WeightProtBalanced,
+		GearFile:        files.GearFileProtBalanced,
+		Model:           model_factory.Model_PallyProtBalanced(),
+		SubstituteItems: mygear.SubstituteItemsProt,
+		FixStatsMode:    fixStats,
+	})
+	process.AddSpecParam(updateProc.SpecParam{
+		Label:           "Prot-Mitigation",
+		WeightFile1:     files.WeightProtMitigation,
+		GearFile:        files.GearFileProtMitigation,
+		Model:           model_factory.Model_PallyProtMitigation(),
+		SubstituteItems: mygear.SubstituteItemsProt,
+		FixStatsMode:    fixStats,
+	})
 
 	process.AddSpecParam(updateProc.SpecParam{
 		Label:           "Prot-Survival",
