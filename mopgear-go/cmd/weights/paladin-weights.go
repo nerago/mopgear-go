@@ -27,22 +27,22 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	process := updateProc.WeightUpdateProcess{}
 	process.Init(simSpeed, forceSkipSim, skipSolve, 3600, printer)
 
-	//process.AddSpecParam(updateProc.SpecParam{
-	//	Label:           "Ret",
-	//	WeightFile1:     files.WeightRet,
-	//	GearFile:        files.GearFileRet,
-	//	Model:           model_factory.Model_PallyRet(),
-	//	SubstituteItems: mygear.SubstituteItemsRet,
-	//	FixStatsMode:    weight_types.FixStatsRangeMode_None,
-	//})
-	//process.AddSpecParam(updateProc.SpecParam{
-	//	Label:           "Prot-Damage",
-	//	WeightFile1:     files.WeightProtDamage,
-	//	GearFile:        files.GearFileProtDamage,
-	//	Model:           model_factory.Model_PallyProtDamage(),
-	//	SubstituteItems: mygear.SubstituteItemsProt,
-	//	FixStatsMode:    fixStats,
-	//})
+	process.AddSpecParam(updateProc.SpecParam{
+		Label:           "Ret",
+		WeightFile1:     files.WeightRet,
+		GearFile:        files.GearFileRet,
+		Model:           model_factory.Model_PallyRet(),
+		SubstituteItems: mygear.SubstituteItemsRet,
+		FixStatsMode:    weight_types.FixStatsRangeMode_None,
+	})
+	process.AddSpecParam(updateProc.SpecParam{
+		Label:           "Prot-Damage",
+		WeightFile1:     files.WeightProtDamage,
+		GearFile:        files.GearFileProtDamage,
+		Model:           model_factory.Model_PallyProtDamage(),
+		SubstituteItems: mygear.SubstituteItemsProt,
+		FixStatsMode:    fixStats,
+	})
 
 	process.AddSpecParam(updateProc.SpecParam{
 		Label:           "Prot-Balanced",
@@ -81,7 +81,7 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	cancel := util_async.CancelSignal_Make()
 	util_async.CancelOnKeyPress(cancel)
 
-	process.Run(cancel, 4)
+	process.Run(cancel, 6)
 
 	//ratioUpdate := weightfind.WeightRatioProcess{}
 	//ratioUpdate.Init(300, printer)

@@ -19,6 +19,15 @@ import (
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
+const (
+	c_dataSampleFitRank  = 300
+	c_dataSampleForm     = 400
+	c_dataSampleGrid     = 96
+	c_useSamplingRank4   = true
+	c_useSamplingGrid1   = false
+	c_useSamplingFormMIP = true
+)
+
 type solves struct {
 	cancel      util_async.CancelSignal
 	tracker     *util.TrackProgress
@@ -39,13 +48,19 @@ func (sol *solves) startSolvers() error {
 	sol.taskPool.SetContinueOnError(true)
 	sol.tracker.RunOuterTracking(0)
 
-	sol.solveFormulaWeight()
-	sol.solveFittingWeight()
-	sol.solveFittingFast()
-	sol.solveGridWeights()
+	// Weight 1
+	//sol.solveGridWeights()
+	//sol.solveRankingWeight()
+	//sol.solveSearchWeights()
+
+	// Weight 2
 	sol.solveGrid2Weights()
-	sol.solveSearchWeights()
-	sol.solveRankingWeight()
+	sol.solveFormulaWeight()
+	//sol.solveSearch2Weights()
+
+	// Weight 3
+	sol.solveFittingFast()
+	//sol.solveFittingWeight()
 
 	sol.tracker.UpdateExpectedChildCount(int(sol.taskTotalCount.Load()))
 	return sol.taskPool.WaitAllComplete()
@@ -97,6 +112,8 @@ func (sol *solves) solveGridWeights() {
 			gridData := sol.input.dataGrid
 			if c_useSamplingGrid1 {
 				gridData = util_collection.SliceSampleFromStart(gridData, c_dataSampleGrid)
+			} else {
+				gridData = slices.Clone(gridData)
 			}
 
 			choiceName := fmt.Sprintf("GRID1-%d", gridOutlierSetting)
@@ -146,14 +163,14 @@ func (sol *solves) solveGrid2Weights() {
 }
 
 func (sol *solves) solveRankingWeight() {
-	rankData := sol.input.dataAll
+	//rankData := sol.input.dataAll
 
 	sol.addTask(func() {
 		ranking := weight_highs.RankingStatWeightProcess3c{}
 		ranking.Init(sol.printer, sol.timeoutEach)
 		ranking.SetRequiredStats(sol.input.statTypes)
 		ranking.SetTargetRatios(sol.input.targetRatio)
-		ranking.SupplyData(rankData)
+		ranking.SupplyData(slices.Clone(sol.input.dataAll))
 		weightsFuture, err := ranking.RunMultiRound()
 		sol.handleFuture1OrError("RANK3C", weightsFuture, err)
 	})
@@ -165,7 +182,7 @@ func (sol *solves) solveRankingWeight() {
 		ranking.Init(sol.printer, sol.timeoutEach)
 		ranking.SetRequiredStats(sol.input.statTypes)
 		ranking.SetTargetRatios(sol.input.targetRatio)
-		ranking.SupplyData(rankData)
+		ranking.SupplyData(slices.Clone(sol.input.dataAll))
 		var weightsFuture *util_async.FutureCancellable[weight_types.WeightResult1]
 		var err error
 		if bestWeightsSoFar, hasBest := sol.output.bestWeightChoice1(); hasBest {
@@ -183,7 +200,7 @@ func (sol *solves) solveRankingWeight() {
 		ranking.Init(sol.printer, sol.timeoutEach)
 		ranking.SetRequiredStats(sol.input.statTypes)
 		ranking.SetTargetRatios(sol.input.targetRatio)
-		ranking.SupplyData(rankData)
+		ranking.SupplyData(slices.Clone(sol.input.dataAll))
 		var weightsFuture *util_async.FutureCancellable[weight_types.WeightResult1]
 		var err error
 		if bestWeightsSoFar, hasBest := sol.output.bestWeightChoice1(); hasBest {
@@ -201,7 +218,7 @@ func (sol *solves) solveRankingWeight() {
 		ranking.Init(sol.printer)
 		ranking.SetRequiredStats(sol.input.statTypes)
 		ranking.SetTargetRatios(sol.input.targetRatio)
-		ranking.SupplyData(rankData)
+		ranking.SupplyData(slices.Clone(sol.input.dataAll))
 		weightsFuture, err := ranking.Run(sol.timeoutEach)
 		sol.handleFuture1OrError("RANK1-0", weightsFuture, err)
 	})
@@ -213,14 +230,17 @@ func (sol *solves) solveRankingWeight() {
 		ranking.Init(sol.printer)
 		ranking.SetRequiredStats(sol.input.statTypes)
 		ranking.SetTargetRatios(sol.input.targetRatio)
-		ranking.SupplyData(rankData)
+		ranking.SupplyData(slices.Clone(sol.input.dataAll))
 		weightsFuture, err := ranking.Run(sol.timeoutEach)
 		sol.handleFuture1OrError("RANK1-1", weightsFuture, err)
 	})
 
 	sol.addTask(func() {
+		var rankData []weight_types.WeightInput
 		if c_useSamplingRank4 {
 			rankData = util_collection.SliceSampleRandom(rankData, c_dataSampleFitRank)
+		} else {
+			rankData = slices.Clone(sol.input.dataAll)
 		}
 		ranking := weight_highs.RankingStatWeightProcess4{}
 		ranking.MULTIPLY = 0
@@ -243,7 +263,7 @@ func (sol *solves) solveFormulaWeight() {
 		comp.SetRequiredStats(sol.input.statTypes)
 		comp.SetTargetRatios(sol.input.targetRatio)
 		comp.SetMinimumIncludeRate(1.0)
-		comp.SupplyData(sol.input.dataAll)
+		comp.SupplyData(slices.Clone(sol.input.dataAll))
 		weights2Future, err := comp.Run(sol.timeoutEach)
 		sol.handleFuture2OrError("FORM2", weights2Future, err)
 	})
@@ -256,9 +276,9 @@ func (sol *solves) solveFormulaWeight() {
 		compB.SetTargetRatios(sol.input.targetRatio)
 		compB.SetMinimumIncludeRate(0.7)
 		if c_useSamplingFormMIP {
-			compB.SupplyData(util_collection.SliceSampleRandom(sol.input.dataAll, c_dataSampleFitRank))
+			compB.SupplyData(util_collection.SliceSampleRandom(sol.input.dataAll, c_dataSampleForm))
 		} else {
-			compB.SupplyData(sol.input.dataAll)
+			compB.SupplyData(slices.Clone(sol.input.dataAll))
 		}
 		weights2FutureB, err := compB.Run(sol.timeoutEach)
 		sol.handleFuture2OrError("FORM2-70", weights2FutureB, err)
@@ -271,7 +291,11 @@ func (sol *solves) solveFormulaWeight() {
 		compB.SetRequiredStats(sol.input.statTypes)
 		compB.SetTargetRatios(sol.input.targetRatio)
 		compB.SetMinimumIncludeRate(0.5)
-		compB.SupplyData(sol.input.dataAll)
+		if c_useSamplingFormMIP {
+			compB.SupplyData(util_collection.SliceSampleRandom(sol.input.dataAll, c_dataSampleForm))
+		} else {
+			compB.SupplyData(slices.Clone(sol.input.dataAll))
+		}
 		weights2FutureB, err := compB.Run(sol.timeoutEach)
 		sol.handleFuture2OrError("FORM2-50", weights2FutureB, err)
 	})
@@ -285,7 +309,7 @@ func (sol *solves) solveFittingWeight() {
 		fit1.Init(4, sol.printer, fitTimeout)
 		fit1.SetRequiredStats(sol.input.statTypes, sol.input.simTypes)
 		fit1.SetTargetRatios(sol.input.targetRatio)
-		fit1.SupplyData(sol.input.dataFit)
+		fit1.SupplyData(slices.Clone(sol.input.dataFit))
 		res1 := fit1.Run(sol.cancel, track)
 		sol.output.evaluateWeightResult3("FITTING3-dataFit", &res1)
 	})
@@ -305,7 +329,7 @@ func (sol *solves) solveFittingWeight() {
 		fit3.Init(3, sol.printer, fitTimeout)
 		fit3.SetRequiredStats(sol.input.statTypes, sol.input.simTypes)
 		fit3.SetTargetRatios(sol.input.targetRatio)
-		fit3.SupplyData(sol.input.dataAll)
+		fit3.SupplyData(slices.Clone(sol.input.dataAll))
 		res3 := fit3.Run(sol.cancel, track)
 		sol.output.evaluateWeightResult3("FITTING3-dataAll", &res3)
 	})
@@ -319,7 +343,7 @@ func (sol *solves) solveFittingFast() {
 			fit4data.Init(segments, sol.printer, sol.timeoutEach)
 			fit4data.SetRequiredStats(sol.input.statTypes, sol.input.simTypes)
 			fit4data.SetTargetRatios(sol.input.targetRatio)
-			fit4data.SupplyData(sol.input.dataAll)
+			fit4data.SupplyData(slices.Clone(sol.input.dataAll))
 			weights3data := fit4data.Run(sol.cancel)
 			label := fmt.Sprintf("FITTING4-data-%d", segments)
 			sol.output.evaluateWeightResult3(label, &weights3data)
@@ -331,7 +355,7 @@ func (sol *solves) solveFittingFast() {
 			fit4stat.Init(segments, sol.printer, sol.timeoutEach)
 			fit4stat.SetRequiredStats(sol.input.statTypes, sol.input.simTypes)
 			fit4stat.SetTargetRatios(sol.input.targetRatio)
-			fit4stat.SupplyData(sol.input.dataAll)
+			fit4stat.SupplyData(slices.Clone(sol.input.dataAll))
 			weights3stat := fit4stat.Run(sol.cancel)
 			label := fmt.Sprintf("FITTING4-stat-%d", segments)
 			sol.output.evaluateWeightResult3(label, &weights3stat)
@@ -354,7 +378,7 @@ func (sol *solves) solveSearchWeights() {
 		search := weightfind.WeightSearcher2{}
 		search.AccuracyStatistical = false
 		search.Init(sol.input.statTypes, sol.input.targetRatio, sol.printer)
-		search.SupplyData(sol.input.dataAll)
+		search.SupplyData(slices.Clone(sol.input.dataAll))
 		search.SetRanges(-1.0, 10.0)
 		weightResult := search.Run(innerCancel)
 		sol.output.evaluateWeightResult1("SEARCH2", &weightResult)
@@ -367,12 +391,13 @@ func (sol *solves) solveSearchWeights() {
 		search := weightfind.WeightSearcher3{}
 		search.AccuracyStatistical = true
 		search.Init(sol.input.statTypes, sol.input.targetRatio)
-		search.SupplyData(sol.input.dataAll)
+		search.SupplyData(slices.Clone(sol.input.dataAll))
 		search.SetRanges(-1.0, 10.0)
 		weightResult := search.Run(innerCancel)
 		sol.output.evaluateWeightResult1("SEARCH3", &weightResult)
 	})
-
+}
+func (sol *solves) solveSearch2Weights() {
 	sol.addTask(func() {
 		innerCancel, timer := sol.makeCanceller()
 		defer timer.Stop()
@@ -380,7 +405,7 @@ func (sol *solves) solveSearchWeights() {
 		sw := util.StopwatchMakeStarted()
 		search := weightfind.WeightSearcherExtended1{}
 		search.Init(sol.input.statTypes, sol.input.targetRatio)
-		search.SupplyData(sol.input.dataAll)
+		search.SupplyData(slices.Clone(sol.input.dataAll))
 		search.SetRanges(-1.0, 5.0)
 		weight2 := new(search.Run(innerCancel))
 

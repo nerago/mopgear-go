@@ -15,12 +15,6 @@ const (
 	c_ratioThreadCount  = 12
 
 	c_eachSimTargetGenerateDataCount = 600
-
-	c_dataSampleFitRank  = 300
-	c_dataSampleGrid     = 96
-	c_useSamplingRank4   = true
-	c_useSamplingGrid1   = false
-	c_useSamplingFormMIP = true
 )
 
 type WeightUpdateProcess struct {

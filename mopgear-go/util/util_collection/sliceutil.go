@@ -602,15 +602,15 @@ func CalculateRanking[T any](highGood bool, inputData []T, toScore func(*T) floa
 
 func SliceSampleFromStart[T any](slice []T, size int) []T {
 	if len(slice) < size {
-		return slice
+		return slices.Clone(slice)
 	} else {
-		return slice[0:size]
+		return slices.Clone(slice[0:size])
 	}
 }
 
 func SliceSampleRandom[T any](slice []T, size int) []T {
 	if len(slice) < size {
-		return slice
+		return slices.Clone(slice)
 	} else {
 		sample := slices.Clone(slice)
 		Shuffle(sample)
@@ -620,7 +620,7 @@ func SliceSampleRandom[T any](slice []T, size int) []T {
 
 func SliceSampleRandom_Rand[T any](slice []T, size int, rng *rand.Rand) []T {
 	if len(slice) < size {
-		return slice
+		return slices.Clone(slice)
 	} else {
 		sample := slices.Clone(slice)
 		rng.Shuffle(len(sample), func(a, b int) { sample[a], sample[b] = sample[b], sample[a] })
@@ -630,7 +630,7 @@ func SliceSampleRandom_Rand[T any](slice []T, size int, rng *rand.Rand) []T {
 
 func SliceSampleRandom_Seed[T any](slice []T, size int, seed int64) []T {
 	if len(slice) < size {
-		return slice
+		return slices.Clone(slice)
 	} else {
 		rng := rand.New(rand.NewSource(seed))
 
