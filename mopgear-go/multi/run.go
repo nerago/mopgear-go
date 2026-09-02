@@ -80,7 +80,7 @@ func (job *MainJob) RunCullingSets(targetSolutionCount int64, timeLimit time.Dur
 	groupChannel := job.prepareWorkingGroups(cancel)
 
 	waitGroup := sync.WaitGroup{}
-	util_async.ForEach_Channel(2, groupChannel, func(group *workingGroup) {
+	util_async.ForEach_Channel(6, groupChannel, func(group *workingGroup) {
 		for _, work := range group.workers {
 			work.runCullingProcess(targetSolutionCount, &waitGroup, cancel, tracker.NewChild(), job.printer)
 		}

@@ -22,23 +22,22 @@ const (
 
 // TIER
 var RetT15 = []items.ItemId{
-	95282, // ret tier15 normal head
-	96658, // ret tier15 shoulder heroic
+	//95282, // ret tier15 normal head
+	//96658, // ret tier15 shoulder heroic
 }
 var RetT16 = []items.ItemId{
 	99052, // ret t16 chest celestial
 	99002, // ret t16 hand celestial
 	98985, // ret t16 head celestial
-	98986, // ret t16 legs celestial
 	98987, // ret t16 shoulder celestial
 	99139, // ret t16 legs normal
 }
 var ProtT15 = []items.ItemId{
-	95291, // prot tier15 hand normal
-	96664, // prot tier15 chest heroic
-	96666, // prot tier15 head heroic
-	96667, // prot tier15 leg heroic
-	96668, // prot tier15 shoulder heroic
+	//95291, // prot tier15 hand normal
+	//96664, // prot tier15 chest heroic
+	//96666,  // prot tier15 head heroic - ADDED TO INDIVIDUAL
+	//96667, // prot tier15 leg heroic
+	//96668, // prot tier15 shoulder heroic
 }
 var ProtT16 = []items.ItemId{
 	99126, // prot t16 chest normal
@@ -81,7 +80,7 @@ var Timeless = []items.ItemId{
 	101882, // cliffbreaker helm exp/mastery
 	101887, // timeless ring haste/mastery. Cliffbreaker Seal of the Faultline. 549 (is upgraded)
 	// Cliffbreaker Seal of the Landslide. hit/expertise. 535 (not upgraded)
-	101947, //  Elder Tortoiseshell Seal of the Mountainbed. 549 (is upgraded)
+	// 101947, //  Elder Tortoiseshell Seal of the Mountainbed. 549 (is upgraded)
 }
 var Celestial = []items.ItemId{
 	105011, // Demolisher's Reinforced Belt
@@ -113,7 +112,7 @@ var OrgRaidDrops = []items.ItemId{
 var OrgOneHandAndShield = []items.ItemId{
 	103826, // xifeng weapon
 	103872, // bulwurk of fallen general
-	103871, // tower shield
+
 	104485, // shield of mockery
 	103972, // kilruk sword
 	104464, // xifeng heroic

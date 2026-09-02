@@ -2,6 +2,7 @@ package main
 
 import (
 	"slices"
+	"time"
 
 	"github.com/nerago/mopgear-go/cmd/mygear"
 	"github.com/nerago/mopgear-go/files"
@@ -125,57 +126,48 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 	addExtrasToEach(mygear.OrgOneHandAndShield, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
 	ret.AddExtraItems([]items.ItemId{
-		95281,  // ret tier15 gloves normal
-		96657,  // ret tier15 legs heroic
-		95535,  // normal lightning legs
 		104993, // Evil Eye of Galakras trinket celestial
 		105033, // Wolf-Rider Spurs
-
 		103968, // britomart pike
-		105122, // Asgorathian Blood Seal
+		94776,  // Amulet of the Primal Turtle
 	})
 
 	protDps.AddExtraItems([]items.ItemId{
-		96657,  // ret tier15 legs heroic
 		105033, // Wolf-Rider Spurs
 		94776,  // primal turtle amulet
-		96395,  // bloodsoaked legplates
-		96668,  // prot tier15 shoulder heroic
 		96376,  // worldbreaker weapon
+		96534,  // Weapon1H; Qon's Flaming Scimitar
+		94773,  // Shoulderguards of Centripetal Destruction
+		105122, // Asgorathian Blood Seal
+		95535,  // Legplates of the Lightning Throne
 	})
 
 	protBalanced.AddExtraItems([]items.ItemId{
-		96478,  // treads of the blind heroic
 		105033, // Wolf-Rider Spurs
-		105122, // Asgorathian Blood Seal
 		94776,  // primal turtle amulet
-		96395,  // bloodsoaked legplates
-		96534,  // qon's scimitar
 	})
 
 	protMitigation.AddExtraItems([]items.ItemId{
-		96478,  // treads of the blind heroic
 		105033, // Wolf-Rider Spurs
-		96481,  // durumu tentacle heroic
-		95020,  // ra-den contemplative loop
 		96534,  // qon's scimitar
 		95205,  // terra-cotta neck
+		96666,  // prot tier15 head heroic
 	})
 
 	protSurvival.AddExtraItems([]items.ItemId{
 		96478,  // treads of the blind heroic
-		105033, // Wolf-Rider Spurs
-		95020,  // ra-den contemplative loop
 		96534,  // qon's scimitar
 		95205,  // terra-cotta neck
+		103742, // Blood Rage Bracers
+		96666,  // prot tier15 head heroic
+		103871, // tower shield
 	})
 
 	protHeal.AddExtraItems([]items.ItemId{
-		96478,  // treads of the blind heroic
 		105033, // Wolf-Rider Spurs
-		105122, // Asgorathian Blood Seal
 		96534,  // qon's scimitar
 		95205,  // terra-cotta neck
+		103871, // tower shield
 	})
 
 	// predetermined choices
@@ -219,12 +211,12 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 
 	//job.MakeRandomVariants(101887, 0, -365, -352)
 
-	//ret.AddBagsExtra()
-	//protDps.AddBagsExtra()
-	//protBalanced.AddBagsExtra()
-	//protMitigation.AddBagsExtra()
-	//protSurvival.AddBagsExtra()
-	//protHeal.AddBagsExtra()
+	ret.AddBagsExtra()
+	protDps.AddBagsExtra()
+	protBalanced.AddBagsExtra()
+	protMitigation.AddBagsExtra()
+	protSurvival.AddBagsExtra()
+	protHeal.AddBagsExtra()
 
 	//addExtrasFromFinder(loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic),
 	//	&ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
@@ -239,7 +231,7 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()
 
-	if true {
+	if false {
 		taskQuick := multi_types.JobInputTask{
 			AlsoExistingEquipped:  true,
 			AlsoSpecOptimums:      true,
@@ -287,7 +279,7 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 
 		run := multi.JobCreate(printer, job, task1, task2)
 		run.Run()
-	} else if true {
+	} else if false {
 		weightTypes := []weight_types.WeightType{1, 2}
 
 		// all standard and alternates. plus optional regem
@@ -338,7 +330,7 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		//run := multi.JobCreate(printer, job, task3)
 		//run := multi.JobCreate(printer, job, task1, task2, task3)
 		run.Run()
-	} else {
+	} else if false {
 		task1 := multi_types.JobInputTask{
 			AlsoExistingEquipped:    true,
 			AlsoSpecOptimums:        true,
@@ -391,10 +383,24 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 
 		run := multi.JobCreate(printer, job, task1, task2, task3)
 		run.Run()
+	} else {
+
+		taskBasic := multi_types.JobInputTask{
+			AlsoExistingEquipped:  true,
+			AlsoSpecOptimums:      true,
+			Alternates:            multi_types.AlternateModeNone,
+			AlternatesLimit:       util_collection.Optional_Empty[int](),
+			IncludeInterimResults: false,
+			WeightTypeList:        []weight_types.WeightType{1, 2},
+			//WeightTypeList:          []weight_types.WeightType{3},
+			RunDecimate:             false,
+			ReforgingAllowNonCommon: false,
+		}
+		run := multi.JobCreate(printer, job, taskBasic)
+		run.RunCullingSets(400, time.Minute*45)
 	}
 
 	//job.CullingReport()
-	//run.RunCullingSets(400, time.Minute*45)
 }
 
 func addExtrasToEach(itemIdList []items.ItemId, params ...*multi_types.SpecParam) {
@@ -430,6 +436,10 @@ func blockGeneral(param *multi_types.SpecParam) {
 	param.BlockItem(95513)  // normal ring
 	param.BlockItem(95778)  // golden golem celestial
 	param.BlockItem(101942) // Elder Tortoiseshell Helm (just blocking to gem bis runs done, don't have one)
+
+	param.BlockItem(98979) // holy set helmet
+	param.BlockItem(77539) // old helmet
+	param.BlockItem(81241) // old helmet
 }
 
 func addExtrasFromFinder(foundList []loaders.ItemFoundRef, params ...*multi_types.SpecParam) {
