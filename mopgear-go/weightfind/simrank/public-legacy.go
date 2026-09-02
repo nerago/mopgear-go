@@ -44,3 +44,10 @@ func RankingWeightsPrepareUsingMidRangeRemoveDuplicates[T weight_types.IRankEntr
 	rankOrderBasic(inputData)
 	return inputData
 }
+
+// just in Rank3c
+func RankSimsStatisticalForRanged[T weight_types.IRankEntryFlatRange](simList []stats.SimType, data []T, priority *weight_types.SimPriorityBasic) {
+	simScoringStatistical(simList, priority, data)
+	sortSimScores(data)
+	arrayRankToSetSimRankRange(data)
+}

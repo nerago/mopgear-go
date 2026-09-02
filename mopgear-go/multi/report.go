@@ -301,12 +301,14 @@ func (job *MainJob) incrementalReporting(channel <-chan *simulateMultiResultPend
 	for done.WaitForLimitedDuration(updateLoopTime) {
 		tempSlice := incrementalSlice.SliceTemp()
 		completedResults := job.pendingToCompletedResults(tempSlice, false)
-		_, rankedData := job.rankAllResults(completedResults)
-		job.reportAsCsv(rankedData)
-		job.reportSimResults(completedResults, false)
+		if len(completedResults) > 0 {
+			_, rankedData := job.rankAllResults(completedResults)
+			job.reportAsCsv(rankedData)
+			job.reportSimResults(completedResults, false)
+		}
 	}
-	tempSlice := incrementalSlice.SliceTemp()
-	return job.pendingToCompletedResults(tempSlice, true)
+	finalSlice := incrementalSlice.SliceTemp()
+	return job.pendingToCompletedResults(finalSlice, true)
 }
 
 func (job *MainJob) pendingToCompletedResults(pendingSlice []*simulateMultiResultPending, isFinal bool) []simulateMultiResult {

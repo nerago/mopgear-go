@@ -34,10 +34,6 @@ func simScoringStatisticalComplicated[T weight_types.IRankEntryExtendedRangeInt]
 		sortGenericSimAverages(simType, data)
 		// sortGenericSimStatistical can mean averages out of order, and chains only work consistently when they are
 
-		//for i, dat := range data {
-		//	fmt.Printf("order %s %d %f %f\n", simType.Name(), i, dat.GetSimData().Get(simType), dat.GetSimData().GetStdDevOrZero(simType))
-		//}
-
 		arrayRankToSetRangeStatisticalComplicated(simType, data)
 	}
 }
