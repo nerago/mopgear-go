@@ -11,7 +11,7 @@ import (
 
 type sectionResult struct {
 	weights        weight_types.Weight2Extended
-	bounds         statBounds
+	bounds         weight_types.Weight4SegmentBound
 	includePercent float64
 	elapsed        time.Duration
 	status         highs.ModelStatus
@@ -38,26 +38,14 @@ type statInfo struct {
 	//nested stuff?
 }
 
-type statBounds stats.StatTypeMap[weight_types.StatRange]
-
-func (bnd statBounds) BoundContains(data *weight_types.WeightInput) bool {
-	for statType, statRange := range bnd.SeqKeyValue() {
-		value := data.TotalStat.GetUInt(statType)
-		if !statRange.Contains(value) {
-			return false
-		}
-	}
-	return true
-}
-
-func boundsSingleLessThan(statType stats.StatType, maximum uint32) *statBounds {
-	bound := &statBounds{}
+func boundsSingleLessThan(statType stats.StatType, maximum uint32) *weight_types.Weight4SegmentBound {
+	bound := &weight_types.Weight4SegmentBound{}
 	bound.Put(statType, weight_types.StatRange{Minimum: 0, Maximum: maximum - 1})
 	return bound
 }
 
-func boundsSingleGreaterThan(statType stats.StatType, minimum uint32) *statBounds {
-	bound := &statBounds{}
+func boundsSingleGreaterThan(statType stats.StatType, minimum uint32) *weight_types.Weight4SegmentBound {
+	bound := &weight_types.Weight4SegmentBound{}
 	bound.Put(statType, weight_types.StatRange{Minimum: minimum + 1, Maximum: math.MaxUint32})
 	return bound
 }

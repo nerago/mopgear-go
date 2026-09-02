@@ -7,6 +7,7 @@ import (
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_collection"
+	"github.com/nerago/mopgear-go/util/util_rank"
 )
 
 // Weight4Segmented
@@ -30,14 +31,32 @@ type Weight4SimOffset struct {
 	Offset float64
 }
 
+type Weight4SegmentBound struct {
+	stats.StatTypeMap[StatRange]
+}
+
+func (bnd *Weight4SegmentBound) Equals(other *Weight4SegmentBound) bool {
+	return bnd.StatTypeMap.Equals(&other.StatTypeMap, func(a *StatRange, b *StatRange) bool { return a.Equals(*b) })
+}
+
+func (bnd *Weight4SegmentBound) BoundContains(block *stats.StatBlock) bool {
+	for statType, statRange := range bnd.SeqKeyValue() {
+		value := block.GetUInt(statType)
+		if !statRange.Contains(value) {
+			return false
+		}
+	}
+	return true
+}
+
 type Weight4SingleSegment struct {
-	Bound   stats.StatTypeMap[StatRange]
+	Bound   Weight4SegmentBound
 	Weights util_collection.MapMap[stats.SimType, stats.StatType, float64]
 	Offsets stats.SimTypeMap[Weight4SimOffset]
 }
 
 func (seg *Weight4SingleSegment) Equals(other *Weight4SingleSegment) bool {
-	return seg.Bound.Equals(&other.Bound, func(a *StatRange, b *StatRange) bool { return a.Equals(*b) }) &&
+	return seg.Bound.Equals(&other.Bound) &&
 		seg.Weights.Equals(&other.Weights, func(a *float64, b *float64) bool { return *a == *b }) &&
 		seg.Offsets.Equals(&other.Offsets, func(a, b *Weight4SimOffset) bool { return *a == *b })
 }
@@ -80,7 +99,7 @@ func (wer *Weight4Segmented) AddSegment(segment Weight4SingleSegment) {
 	wer.Segments = append(wer.Segments, segment)
 }
 
-func (wer *Weight4Segmented) AddWeight2AsSegment(weight2 *Weight2Extended, bounds *stats.StatTypeMap[StatRange]) {
+func (wer *Weight4Segmented) AddWeight2AsSegment(weight2 *Weight2Extended, bounds *Weight4SegmentBound) {
 	seg := Weight4SingleSegment{
 		Bound:   *bounds,
 		Weights: weight2.DetailedWeights,
@@ -222,43 +241,47 @@ func (wer *Weight4Segmented) Equals(other *Weight4Segmented) bool {
 		util_collection.EqualFunc_IgnoreOrder_Pointer(wer.Segments, other.Segments, (*Weight4SingleSegment).Equals)
 }
 
-func (wer *Weight4Segmented) ConvertToWeight2() *Weight2Extended {
+func (wer *Weight4Segmented) ConvertToWeight2(inputData []WeightInput) (*Weight2Extended, error) {
 	weight2 := Weight2Extended_Make(wer.SimList, wer.StatList)
-	seg := wer.chooseBest()
+	seg := wer.chooseBest(inputData)
+	if seg == nil {
+		return nil, util.ErrorTracedNew("no useful segment to convert")
+	}
+
 	seg.Weights.Foreach(func(sim stats.SimType, stat stats.StatType, value float64) {
 		weight2.PutWeight(sim, stat, value)
 	})
+
 	for sim, value := range wer.SimPriority.SeqTypeValue() {
-		weight2.SetSimScale(sim, 1, 0, value)
+		offset := seg.Offsets.GetOrPanic(sim)
+		if err := weight2.SetSimScale(sim, offset.Scale, offset.Offset, value); err != nil {
+			return nil, err
+		}
 	}
-	weight2.FinishAndValidateNoVerify()
-	return weight2
+
+	if err := weight2.UpdateScaling(inputData); err != nil {
+		return nil, err
+	}
+	if err := weight2.FinishAndValidate(inputData); err != nil {
+		return nil, err
+	}
+	return weight2, nil
 }
 
-func (wer *Weight4Segmented) chooseBest() *Weight4SingleSegment {
-	return &wer.Segments[0] // TODO something useful
+// best = most coverage of sample data
+func (wer *Weight4Segmented) chooseBest(dataInput []WeightInput) *Weight4SingleSegment {
+	best := util_rank.BestCollector1[Weight4SingleSegment]{}
+	for segment := range util_collection.ForPointer(wer.Segments) {
+		containedCount := 0
+		for input := range util_collection.ForPointer(dataInput) {
+			if segment.Bound.BoundContains(&input.TotalStat) {
+				containedCount++
+			}
+		}
+		best.Offer(segment, float64(containedCount))
+	}
+	return best.GetBestPointerOrNil()
 }
-
-//func (wer *Weight4Segmented) ConvertToWeight2() *Weight2Extended {
-//	weight2 := Weight2Extended_Make(wer.SimList, wer.StatList)
-//	for entry := range wer.StatWeights.SeqKey1Key2ValueSeqEntries() {
-//		bestValue := chooseBest(entry.ValueSeq)
-//		weight2.PutWeight(entry.Key2, entry.Key1, bestValue)
-//	}
-//	weight2.SimPriority = wer.SimPriority.Clone()
-//	weight2.FinishAndValidate()
-//	return weight2
-//}
-//
-//func chooseBest(statEntrySeq iter.Seq[Weight4Segmented]) float64 {
-//	best := util_rank.BestCollector1[Weight4Segmented]{}
-//	for statEntry := range statEntrySeq {
-//		best.Offer(&statEntry, statEntry.EstimationQuality)
-//	}
-//
-//	bestEntry := best.GetBestOrPanic()
-//	return bestEntry.RatingWeight
-//}
 
 func (wer *Weight4Segmented) String() string {
 	sb := util.StringBuild2{}

@@ -30,7 +30,7 @@ type formulaSection3 struct {
 	build *util_highs.LinearBuilder
 
 	minimumIncludeRate float64
-	filterBound        *statBounds
+	filterBound        *weight_types.Weight4SegmentBound
 	forceLoThreshold   bool
 	forceHiThreshold   bool
 
@@ -71,7 +71,7 @@ func (sect *formulaSection3) init() {
 
 // should maybe make sure we don't left with just a couple of outliers in some region
 
-func (sect *formulaSection3) setFilterBounds(bound *statBounds) {
+func (sect *formulaSection3) setFilterBounds(bound *weight_types.Weight4SegmentBound) {
 	sect.filterBound = bound
 }
 
@@ -105,22 +105,23 @@ func (sect *formulaSection3) runSection(timeout *util_highs.TimeLimitToken) (*ut
 	return util_async.FutureCancellable_MapValue(solutionFuture, func(linearResult util_highs.LinearResult) sectionResult {
 		solution, err := linearResult.GetSolution2AndSaveLog(sect.process.printer)
 		if err != nil {
-			return sectionResult{
-				elapsed: linearResult.Elapsed(),
-				status:  solution.Status(),
-				err:     err,
+			status := highs.ModelStatusSolveError
+			if solution != nil {
+				status = solution.Status()
 			}
+			return sectionResult{elapsed: linearResult.Elapsed(), status: status, err: err}
 		}
 
 		if solution.Status() != highs.ModelStatusOptimal {
-			return sectionResult{
-				elapsed: linearResult.Elapsed(),
-				status:  solution.Status(),
-				err:     fmt.Errorf("solution status %v", solution.Status()),
-			}
+			return sectionResult{elapsed: linearResult.Elapsed(), status: solution.Status(),
+				err: fmt.Errorf("solution status %v", solution.Status())}
 		}
 
-		weight, bounds, includePercent := sect.extractAndReportSolution(solution)
+		weight, bounds, includePercent, err := sect.extractAndReportSolution(solution)
+		if err != nil {
+			return sectionResult{elapsed: linearResult.Elapsed(), status: solution.Status(), err: err}
+		}
+
 		return sectionResult{
 			weights:        *weight,
 			bounds:         *bounds,
@@ -163,7 +164,7 @@ func (sect *formulaSection3) buildDataRows() {
 	} else {
 		actualDataCount := 0
 		for data := range util_collection.ForPointer(sect.process.inputData) {
-			if sect.filterBound.BoundContains(data) {
+			if sect.filterBound.BoundContains(&data.TotalStat) {
 				sect.buildConstraintsForInput(data)
 				actualDataCount++
 			}
@@ -256,18 +257,21 @@ func (sect *formulaSection3) buildDataEquation(stats *stats.StatBlock, simValueA
 	}
 }
 
-func (sect *formulaSection3) extractAndReportSolution(solution *util_highs.Solution2) (*weight_types.Weight2Extended, *statBounds, float64) {
+func (sect *formulaSection3) extractAndReportSolution(solution *util_highs.Solution2) (*weight_types.Weight2Extended, *weight_types.Weight4SegmentBound, float64, error) {
 	sect.build.DebugPrintColumns2(solution, sect.process.printer)
 
-	weight2 := sect.extractDetailWeights(solution)
+	weight2, err := sect.extractDetailWeights(solution)
+	if err != nil {
+		return nil, nil, 0, err
+	}
 
 	bounds := sect.computeBounds(solution)
 	includePercent := sect.computeInclude(solution)
 
-	return weight2, bounds, includePercent
+	return weight2, bounds, includePercent, nil
 }
 
-func (sect *formulaSection3) extractDetailWeights(solution *util_highs.Solution2) *weight_types.Weight2Extended {
+func (sect *formulaSection3) extractDetailWeights(solution *util_highs.Solution2) (*weight_types.Weight2Extended, error) {
 	// extract and report on detail weights
 	weight2 := weight_types.Weight2Extended_Make(sect.process.requiredSims, sect.process.requiredStats)
 	sect.detailedWeightColumns.Foreach(func(statType stats.StatType, simType stats.SimType, column util_highs.ColumnIndex) {
@@ -285,16 +289,22 @@ func (sect *formulaSection3) extractDetailWeights(solution *util_highs.Solution2
 	for simType, offsetColumn := range sect.offsetColumns.SeqKeyValue() {
 		offsetValue := solution.GetValue(offsetColumn)
 		ratio := sect.process.targetRatios.GetOrPanic(simType)
-		weight2.SetSimScale(simType, 1, offsetValue, ratio)
+		if err := weight2.SetSimScale(simType, 1, offsetValue, ratio); err != nil {
+			return nil, err
+		}
 	}
 
-	weight2.UpdateScaling(sect.process.inputData)
-	weight2.FinishAndValidate(sect.process.inputData)
-	return weight2
+	if err := weight2.UpdateScaling(sect.process.inputData); err != nil {
+		return nil, err
+	}
+	if err := weight2.FinishAndValidate(sect.process.inputData); err != nil {
+		return nil, err
+	}
+	return weight2, nil
 }
 
-func (sect *formulaSection3) computeBounds(solution *util_highs.Solution2) *statBounds {
-	bounds := &statBounds{}
+func (sect *formulaSection3) computeBounds(solution *util_highs.Solution2) *weight_types.Weight4SegmentBound {
+	bounds := &weight_types.Weight4SegmentBound{}
 	for statType, vars := range sect.thresholdCols.SeqKeyValue() {
 		statScale := sect.process.scaleStats.GetOrPanic(statType)
 		loValue := solution.GetValue(vars.loColumn) / statScale

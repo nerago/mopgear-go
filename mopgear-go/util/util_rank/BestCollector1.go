@@ -49,6 +49,14 @@ func (collect *BestCollector1[T]) GetBestOrDefault(defaultValue T) T {
 	}
 }
 
+func (collect *BestCollector1[T]) GetBestPointerOrNil() *T {
+	if collect.hasBest {
+		return collect.bestObject
+	} else {
+		return nil
+	}
+}
+
 func (collect *BestCollector1[T]) GetBestPointerOrPanic() *T {
 	collect.CheckValidOrPanic()
 	return collect.bestObject

@@ -18,6 +18,7 @@ import (
 const c_collapseRangePercent = 0.05
 const c_initialIncludePercent = 0.3
 const c_otherPrimaryIncludePercent = 0.1
+const c_otherPrimaryIncludePercentMax = 0.8
 
 type FormulaSegmentedProcess3 struct {
 	printer *util.PrintRecorder
@@ -74,52 +75,53 @@ func (proc *FormulaSegmentedProcess3) Run(timeout *util_highs.TimeLimitToken, ou
 
 	proc.processFuture = util_async.FutureCancellable_Make[weight_types.WeightResult4]()
 
-	go func() {
-		proc.runInitialSection()
-	}()
+	go proc.runThread()
 
 	return proc.processFuture, nil
 }
 
-func (proc *FormulaSegmentedProcess3) runInitialSection() {
-	sect := formulaSection3{process: proc}
-	sect.init()
-	sect.setMinimumIncludeRate(c_initialIncludePercent)
-
-	sectionFuture, err := sect.runSection(proc.timeoutToken)
-
-	if err != nil {
-		proc.sendErrorResult(err)
-		return
-	}
-
-	err = util_async.ChainCancel(proc.innerCancel, sectionFuture)
-	if err != nil {
-		proc.sendErrorResult(err)
-		return
-	}
-
-	sectResult, hasResult := sectionFuture.WaitForResult()
-	if !hasResult {
-		proc.sendErrorResult(util.ErrorTracedNew("missing section result"))
-		return
-	} else if sectResult.err != nil {
-		proc.sendErrorResult(sectResult.err)
-		return
-	}
-
-	err = proc.processInitialResult(&sectResult)
+func (proc *FormulaSegmentedProcess3) runThread() {
+	err := proc.runInitialSection()
 	if err != nil {
 		proc.sendErrorResult(err)
 		return
 	}
 
 	if proc.complete {
-		weight4 := proc.buildWeight4FromSingle(&sectResult)
+		weight4 := proc.buildWeight4FromSingle()
 		proc.sendSuccessResult(weight4)
 	} else {
-		proc.primaryCompletionLoop()
+		err = proc.primaryCompletionLoop()
+		if err != nil {
+			proc.sendErrorResult(err)
+			return
+		}
 	}
+}
+
+func (proc *FormulaSegmentedProcess3) runInitialSection() error {
+	sect := formulaSection3{process: proc}
+	sect.init()
+	sect.setMinimumIncludeRate(c_initialIncludePercent)
+
+	sectionFuture, err := sect.runSection(proc.timeoutToken)
+	if err != nil {
+		return err
+	}
+
+	if err := util_async.ChainCancel(proc.innerCancel, sectionFuture); err != nil {
+		return err
+	}
+
+	sectResult, hasResult := sectionFuture.WaitForResult()
+	if !hasResult {
+		return util.ErrorTracedNew("missing section result")
+	} else if sectResult.err != nil {
+		return sectResult.err
+	}
+
+	err = proc.processInitialResult(&sectResult)
+	return err
 }
 
 func (proc *FormulaSegmentedProcess3) sendSuccessResult(weight4 *weight_types.Weight4Segmented) {
@@ -220,9 +222,11 @@ func (proc *FormulaSegmentedProcess3) countDataInRange(statType stats.StatType, 
 	return lo, inc, hi
 }
 
-func (proc *FormulaSegmentedProcess3) buildWeight4FromSingle(result *sectionResult) *weight_types.Weight4Segmented {
+func (proc *FormulaSegmentedProcess3) buildWeight4FromSingle() *weight_types.Weight4Segmented {
 	weight4 := weight_types.Weight4Segmented_Make(proc.requiredStats, proc.requiredSims, proc.targetRatios)
-	weight4.AddWeight2AsSegment(&result.weights, (*stats.StatTypeMap[weight_types.StatRange])(&result.bounds))
+	for _, segment := range proc.allSegments {
+		weight4.AddWeight2AsSegment(&segment.weights, &segment.bounds)
+	}
 	return weight4
 }
 
@@ -230,10 +234,10 @@ func (proc *FormulaSegmentedProcess3) primaryCompletionLoop() error {
 	for !proc.complete {
 		tasks := make([]*util_async.FutureCancellable[sectionResult], 0, 10)
 
-		primaryInfo := proc.primaryInfo
-		if primaryInfo.hiPercent > 0 {
-			bound := boundsSingleGreaterThan(primaryInfo.statType, primaryInfo.usedRange.Maximum)
-			future, err := proc.startNextSection(bound, true, false, primaryInfo.hiPercent)
+		primary := proc.primaryInfo
+		if primary.hiPercent > 0 {
+			bound := boundsSingleGreaterThan(primary.statType, primary.usedRange.Maximum)
+			future, err := proc.startNextSection(bound, true, false, primary.hiPercent)
 			if err != nil {
 				return err
 			}
@@ -244,7 +248,7 @@ func (proc *FormulaSegmentedProcess3) primaryCompletionLoop() error {
 	return nil
 }
 
-func (proc *FormulaSegmentedProcess3) startNextSection(bound *statBounds, forceLo, forceHi bool, totalPercentAvailable float64) (*util_async.FutureCancellable[sectionResult], error) {
+func (proc *FormulaSegmentedProcess3) startNextSection(bound *weight_types.Weight4SegmentBound, forceLo, forceHi bool, totalPercentAvailable float64) (*util_async.FutureCancellable[sectionResult], error) {
 	sect := formulaSection3{process: proc}
 	sect.init()
 	sect.setFilterBounds(bound)
@@ -254,7 +258,7 @@ func (proc *FormulaSegmentedProcess3) startNextSection(bound *statBounds, forceL
 	if totalPercentAvailable > 0.60 {
 		includeRate = c_initialIncludePercent
 	} else if totalPercentAvailable > c_otherPrimaryIncludePercent {
-		includeRate = math.Max(c_otherPrimaryIncludePercent/totalPercentAvailable, 0.8)
+		includeRate = util.Clamp(c_otherPrimaryIncludePercent/totalPercentAvailable, c_otherPrimaryIncludePercent, c_otherPrimaryIncludePercentMax)
 	} else if totalPercentAvailable > c_collapseRangePercent {
 		includeRate = 1.00
 	} else {
