@@ -27,7 +27,7 @@ func OptionsSetup_FromGearFile(filename string, model *gear_model.SpecModel, mis
 func OptionsSetup_FromEquipped(equipped []loaders.EquippedItem, model *gear_model.SpecModel, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) items.FullOptionsMap {
 	optionMap := items.FullOptionsMap{}
 	for _, equipItem := range equipped {
-		optionList, baseItem := OptionsSetup_Single_FromEquipped(equipItem, model, missingEnchant, printer)
+		optionList, baseItem := OptionsSetup_OneItem_FromEquipped_AllForges(equipItem, model, missingEnchant, printer)
 		optionMap.FillSlot_ExpectedEmpty(baseItem.SlotItem(), optionList)
 	}
 	return optionMap
@@ -41,28 +41,10 @@ func OptionsSetup_FromItemSet(itemSet *items.FullItemSet) items.FullOptionsMap {
 	return optionMap
 }
 
-func OptionsSetup_Single_FromEquipped(equipItem loaders.EquippedItem, model *gear_model.SpecModel, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
-	item := *db.WowSimDB_LoadItemById_AllowFallback(equipItem.ItemId, equipItem.UpgradeStepOrItemLevel, printer)
-	item = addDetailFromEquip(item, equipItem, model, missingEnchant, printer)
-	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
-}
-
-func OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId items.ItemId, upgradeLevel items.UpgradeLevel, randomSuffix items.RandomSuffix, model *gear_model.SpecModel, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
-	item := *db.WowSimDB_LoadItemById_AllowFallback(itemId, int32(upgradeLevel), printer)
-	item = addDetailUsingDefaults(item, randomSuffix, model)
-	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
-}
-
-func OptionsSetup_Single_FromIdOnlyUseAllDefaults_NoForges(itemId items.ItemId, upgradeLevel items.UpgradeLevel, randomSuffix items.RandomSuffix, model *gear_model.SpecModel, printer *util.PrintRecorder) *items.FullItem {
-	item := *db.WowSimDB_LoadItemById_AllowFallback(itemId, int32(upgradeLevel), printer)
-	item = addDetailUsingDefaults(item, randomSuffix, model)
-	return &item
-}
-
-func OptionsSetup_ExactEquippedOnly(equipped []loaders.EquippedItem, model *gear_model.SpecModel, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) items.FullEquipMap {
+func OptionsSetup_FromEquipped_OriginalForgeOnly(equipped []loaders.EquippedItem, model *gear_model.SpecModel, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) items.FullEquipMap {
 	resultMap := items.FullEquipMap{}
 	for _, equipItem := range equipped {
-		item := OptionsSetup_ExactEquippedOnly_Item(equipItem, missingEnchant, model, printer)
+		item := OptionsSetup_OneItem_FromEquipped_OriginalForgeOnly(equipItem, missingEnchant, model, printer)
 
 		printer.Println(item.CreateString())
 		resultMap.FillSlot_ExpectedEmpty(item.SlotItem(), &item)
@@ -70,16 +52,34 @@ func OptionsSetup_ExactEquippedOnly(equipped []loaders.EquippedItem, model *gear
 	return resultMap
 }
 
-func OptionsSetup_ExactEquippedOnly_Item(equipItem loaders.EquippedItem, missingEnchant MissingEnchantMode, model *gear_model.SpecModel, printer *util.PrintRecorder) items.FullItem {
+func OptionsSetup_OneItem_FromEquipped_OriginalForgeOnly(equipItem loaders.EquippedItem, missingEnchant MissingEnchantMode, model *gear_model.SpecModel, printer *util.PrintRecorder) items.FullItem {
 	item := *db.WowSimDB_LoadItemById_AllowFallback(equipItem.ItemId, equipItem.UpgradeStepOrItemLevel, printer)
 	item = addDetailFromEquip(item, equipItem, model, missingEnchant, printer)
 
 	if equipItem.Reforging != 0 {
 		reforge := db.WowSimDB_ReforgeById(equipItem.Reforging)
-		item = *tools.Reforger_SinglePreset(&item, &reforge)
+		item = *tools.Reforger_SinglePreset(&item, reforge)
 	}
 
 	return item
+}
+
+func OptionsSetup_OneItem_FromEquipped_AllForges(equipItem loaders.EquippedItem, model *gear_model.SpecModel, missingEnchant MissingEnchantMode, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
+	item := *db.WowSimDB_LoadItemById_AllowFallback(equipItem.ItemId, equipItem.UpgradeStepOrItemLevel, printer)
+	item = addDetailFromEquip(item, equipItem, model, missingEnchant, printer)
+	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
+}
+
+func OptionsSetup_OneItem_FromItemId_AllForges(itemId items.ItemId, upgradeLevel items.UpgradeLevel, randomSuffix items.RandomSuffix, model *gear_model.SpecModel, printer *util.PrintRecorder) ([]items.FullItem, *items.FullItem) {
+	item := *db.WowSimDB_LoadItemById_AllowFallback(itemId, int32(upgradeLevel), printer)
+	item = addDetailUsingDefaults(item, randomSuffix, model)
+	return tools.Reforger_AllOptions(&item, &model.ReforgeRules), &item
+}
+
+func OptionsSetup_OneItem_FromItemId_NoForges(itemId items.ItemId, upgradeLevel items.UpgradeLevel, randomSuffix items.RandomSuffix, model *gear_model.SpecModel, printer *util.PrintRecorder) *items.FullItem {
+	item := *db.WowSimDB_LoadItemById_AllowFallback(itemId, int32(upgradeLevel), printer)
+	item = addDetailUsingDefaults(item, randomSuffix, model)
+	return &item
 }
 
 func addDetailUsingDefaults(item items.FullItem, randomSuffix items.RandomSuffix, model *gear_model.SpecModel) items.FullItem {

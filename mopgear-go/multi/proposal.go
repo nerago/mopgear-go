@@ -86,6 +86,10 @@ func (group *workingGroup) hasPermutes() bool {
 		return true
 	}
 
+	if len(task.Permute.AlternateAddItems) > 0 {
+		return true
+	}
+
 	if task.Permute.AlternateGemsEnableAsPermute {
 		return true
 	}

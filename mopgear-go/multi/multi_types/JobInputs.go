@@ -48,6 +48,7 @@ type ItemShared struct {
 type InputPermute struct {
 	DistinctUsageGroups          map[items.ItemId]*DistinctUsageGroups
 	AlternateUpgradeChoices      [][]items.ItemId
+	AlternateAddItems            [][]items.ItemId
 	PermuteOnItemCountOptions    bool
 	AlternateGemsEnableAsPermute bool
 }
@@ -145,6 +146,10 @@ func (task *JobInputTask) AddItemDistinctUsageGroups(itemId items.ItemId, forceT
 
 func (task *JobInputTask) AddAlternateUpgradeChoices(itemIdList ...items.ItemId) {
 	task.Permute.AlternateUpgradeChoices = append(task.Permute.AlternateUpgradeChoices, itemIdList)
+}
+
+func (task *JobInputTask) AddAlternateItemsChoices(itemId ...items.ItemId) {
+	task.Permute.AlternateAddItems = append(task.Permute.AlternateAddItems, itemId)
 }
 
 func (task *JobInputTask) AddAlternateGem(block stats.StatBlock) {

@@ -93,7 +93,7 @@ func addSubstituteItems(optionsMap *items.FullOptionsMap, substituteItems []item
 	for _, itemId := range substituteItems {
 		if !optionsMap.IncludesItemId(itemId) {
 			// TODO system for random suffixes
-			options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, model, printer)
+			options, example := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, model, printer)
 			optionsMap.AddSeveralOptions(example.SlotItem(), options)
 			printer.Println("SUBSTITUTE " + example.CreateString())
 		}
@@ -127,7 +127,7 @@ func performUpgradeTask(task *upgradeItemTask, baseItems *items.FullOptionsMap, 
 	innerPrint := util.PrintRecorder_HoldAll()
 
 	itemRef := task.itemRef
-	newOptions, exampleItem := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemRef.ItemId, itemRef.UpgradeLevel, itemRef.RandomSuffix, model, innerPrint)
+	newOptions, exampleItem := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemRef.ItemId, itemRef.UpgradeLevel, itemRef.RandomSuffix, model, innerPrint)
 	jobItems := baseItems.Clone()
 	jobItems[task.slot] = newOptions
 
@@ -177,7 +177,7 @@ func removePairedSimilar(jobItems *items.FullOptionsMap, testSlot items.SlotEqui
 		if len(jobItems[pairedSlot]) == 0 {
 			substituteId, hasSub := substituteEmptySlotOnly[testItem.SlotItem()]
 			if hasSub {
-				subOpts, _ := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(substituteId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, model, printer)
+				subOpts, _ := setup.OptionsSetup_OneItem_FromItemId_AllForges(substituteId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, model, printer)
 				jobItems[pairedSlot] = subOpts
 			} else {
 				panic("remove paired " + testItem.BaseName() + " left empty slot")

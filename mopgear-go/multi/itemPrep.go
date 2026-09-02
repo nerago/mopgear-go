@@ -93,7 +93,7 @@ func (prep *specItemPrep) prepareStartingGear(input *multi_types.ItemInputs, mod
 	printer.Println(prep.label)
 
 	equipped := loaders.GearFileReader_Read(input.GearFile)
-	prep.exactEquippedGear = setup.OptionsSetup_ExactEquippedOnly(equipped, model, input.MissingEnchant, printer)
+	prep.exactEquippedGear = setup.OptionsSetup_FromEquipped_OriginalForgeOnly(equipped, model, input.MissingEnchant, printer)
 	prep.itemOptions = setup.OptionsSetup_FromEquipped(equipped, model, input.MissingEnchant, printer)
 
 	setup.UpgradeAllOptionsToLevel2(&prep.itemOptions, input.ForceUpgradeExistingItems, model, printer)
@@ -203,7 +203,7 @@ func (prep *specItemPrep) copyExtraFromBags(itemId items.ItemId, refs *extraRefs
 		if requestedUpgrade > 0 {
 			equipped.UpgradeStepOrItemLevel = int32(requestedUpgrade)
 		}
-		options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, prep.model, setup.MissingEnchant_Fix, printer)
+		options, example := setup.OptionsSetup_OneItem_FromEquipped_AllForges(*equipped, prep.model, setup.MissingEnchant_Fix, printer)
 		prep.addItemOptionsWithValidate(example.SlotItem(), options)
 		printer.Printf("OPTION from bags %s\n", example.CreateString())
 		return true
@@ -236,7 +236,7 @@ func (prep *specItemPrep) tryAddExtraFromBags(equipped *loaders.EquippedItem, in
 		return
 	}
 
-	options, example := setup.OptionsSetup_Single_FromEquipped(*equipped, prep.model, setup.MissingEnchant_Fix, printer)
+	options, example := setup.OptionsSetup_OneItem_FromEquipped_AllForges(*equipped, prep.model, setup.MissingEnchant_Fix, printer)
 
 	added := false
 	example.SlotItem().ForEachEquip(func(slot items.SlotEquip) {
@@ -253,7 +253,7 @@ func (prep *specItemPrep) tryAddExtraFromBags(equipped *loaders.EquippedItem, in
 }
 
 func (prep *specItemPrep) extraLoadAndGenerate(itemId items.ItemId, randomSuffix items.RandomSuffix, input *multi_types.ItemInputs, printer *util.PrintRecorder) {
-	options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, input.ExtraUpgradeLevel, randomSuffix, prep.model, printer)
+	options, example := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemId, input.ExtraUpgradeLevel, randomSuffix, prep.model, printer)
 	prep.addItemOptionsWithValidate(example.SlotItem(), options)
 	printer.Printf("OPTION %s\n", example.CreateString())
 }
@@ -316,7 +316,7 @@ func (work *specWorker) reGemAlternate(item items.FullItem, alternateGem stats.G
 			alternateEquipItem.GemChoice[i] = alternateGem.Id
 		}
 	}
-	alternateItem := setup.OptionsSetup_ExactEquippedOnly_Item(alternateEquipItem, setup.MissingEnchant_Panic, work.model, printer)
+	alternateItem := setup.OptionsSetup_OneItem_FromEquipped_OriginalForgeOnly(alternateEquipItem, setup.MissingEnchant_Panic, work.model, printer)
 
 	alternateItem.SetNameTag(items.ReGem_GemAlternate)
 	return alternateItem
@@ -325,7 +325,7 @@ func (work *specWorker) reGemAlternate(item items.FullItem, alternateGem stats.G
 func (work *specWorker) reGemDefault(item items.FullItem, printer *util.PrintRecorder) items.FullItem {
 	defaultEquipItem := loaders.EquippedItem_FromFull(&item)
 	defaultEquipItem.GemChoice = nil
-	defaultItem := setup.OptionsSetup_ExactEquippedOnly_Item(defaultEquipItem, setup.MissingEnchant_Fix, work.model, printer)
+	defaultItem := setup.OptionsSetup_OneItem_FromEquipped_OriginalForgeOnly(defaultEquipItem, setup.MissingEnchant_Fix, work.model, printer)
 	defaultItem.SetNameTag(items.ReGem_GemDefault)
 	return defaultItem
 }
@@ -359,7 +359,7 @@ func (prep *specItemPrep) makeRandomVariantItem(variantItem *multi_types.RandomV
 	if hasAny {
 		for index, randomSuffix := range variantItem.RandomSuffixList {
 			if !hasVersion[index] {
-				options, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(variantItem.ItemId, input.ExtraUpgradeLevel, randomSuffix, prep.model, printer)
+				options, example := setup.OptionsSetup_OneItem_FromItemId_AllForges(variantItem.ItemId, input.ExtraUpgradeLevel, randomSuffix, prep.model, printer)
 				printer.Println("RANDOM_VARIANT adding " + example.CreateString())
 				slotOptions = append(slotOptions, options...)
 			}

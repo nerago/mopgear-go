@@ -117,7 +117,7 @@ func (spec *weightSpecInternal) prepareDataGrid(taskPool *util_async.NestedTaskP
 	// SIMULATE STAT CHANGES, SAVE SIM DATA IN CASE WE NEED TO RESTART
 	taskPool.Go(func() error {
 		param := spec.param
-		currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(param.GearFile), &param.Model, setup.MissingEnchant_Panic, spec.process.printer)
+		currentEquip := setup.OptionsSetup_FromEquipped_OriginalForgeOnly(loaders.GearFileReader_Read(param.GearFile), &param.Model, setup.MissingEnchant_Panic, spec.process.printer)
 		currentItemSet := items.FullItemSet_FromMap(currentEquip)
 		data, err2 := weightfind.SimulateSteppedStatChangesForGrid(currentItemSet, spec.process.printer, spec.process.simSpeed,
 			param.Model.SimSpeedUp, param.Model.StatsForWeighting, param.Model.Spec, param.Model.Goal,
@@ -160,7 +160,7 @@ func (spec *weightSpecInternal) prepareDataFit(taskPool *util_async.NestedTaskPo
 	// SIMULATE STAT CHANGES, SAVE SIM DATA IN CASE WE NEED TO RESTART
 	taskPool.Go(func() error {
 		param := spec.param
-		currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(spec.param.GearFile), &spec.param.Model, setup.MissingEnchant_Panic, spec.process.printer)
+		currentEquip := setup.OptionsSetup_FromEquipped_OriginalForgeOnly(loaders.GearFileReader_Read(spec.param.GearFile), &spec.param.Model, setup.MissingEnchant_Panic, spec.process.printer)
 		currentItemSet := items.FullItemSet_FromMap(currentEquip)
 		data, err2 := weightfind.SimulateSteppedStatChangesForFitting(currentItemSet, spec.process.printer, spec.process.simSpeed,
 			param.Model.SimSpeedUp, param.Model.StatsForWeighting, param.Model.Spec, param.Model.Goal, param.Model.SimulateAs,

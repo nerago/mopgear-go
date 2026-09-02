@@ -81,7 +81,7 @@ func (job *MainJob) reportSimResults_One(result *simulateMultiResult, printer ut
 	reGemItems := listReGem(result.proposed)
 	if len(reGemItems) > 0 {
 		stringBuild := util.StringBuild2{}
-		stringBuild.WriteString("....... REGEM .......")
+		stringBuild.WriteString("....... REGEM .......\n")
 		for _, item := range reGemItems {
 			item.AppendFullName(&stringBuild)
 			stringBuild.WriteString(" : ")
@@ -97,7 +97,7 @@ func (job *MainJob) reportSimResults_One(result *simulateMultiResult, printer ut
 	upgradeItems := job.listUpgradeItems(result.proposed)
 	if len(upgradeItems) > 0 {
 		stringBuild := util.StringBuild2{}
-		stringBuild.WriteString("....... UPGRADE .......")
+		stringBuild.WriteString("....... UPGRADE .......\n")
 		for _, item := range upgradeItems {
 			item.AppendFullName(&stringBuild)
 			stringBuild.WriteRune('\n')
@@ -126,7 +126,7 @@ func (job *MainJob) findVariantItem(result *simulateMultiResult, itemId items.It
 		}
 	}
 
-	_, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, prep.model, job.printer)
+	_, example := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, prep.model, job.printer)
 	return example
 }
 func (job *MainJob) reportAsCsv(simResultList []*simMultiRankable) {
@@ -362,7 +362,7 @@ func (job *MainJob) rankAllResults(resultList []simulateMultiResult) (util_rank.
 			return mr.singles[label]
 		})
 
-		simrank.RankSimsStatisticalFlatSingle(prep.model.SimPriority.SimTypes(), entries, &prep.model.SimPriority)
+		simrank.RankSimsStatisticalFlatSingleExtended_Experimental(prep.model.SimPriority.SimTypes(), entries, &prep.model.SimPriority)
 	}
 
 	// highest combined rank across specs

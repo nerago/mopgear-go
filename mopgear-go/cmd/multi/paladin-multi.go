@@ -23,7 +23,7 @@ import (
 func paladinMultiRun(printer *util.PrintRecorder) {
 	job := multi_types.JobInputs{}
 	job.SetMinimumExtraItemLevel(463)
-	job.SetTimeLimitEachSolver(2000)
+	job.SetTimeLimitEachSolver(1000)
 	job.SetSimSize(simulate.RunSize_Largish)
 	//simSize := simulate.RunSize_Common
 	//simSize := simulate.RunSize_QuickDirty
@@ -37,7 +37,7 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		Model: model_factory.Model_PallyRet(),
 		ItemInputs: multi_types.ItemInputs{
 			GearFile:                     files.GearFileRet,
-			RequestRatingPercent:         0.04,
+			RequestRatingPercent:         0.06,
 			ExtraUpgradeLevel:            extraUpgrade,
 			ForceUpgradeExistingItems:    0,
 			MissingEnchant:               setup.MissingEnchant_Panic,
@@ -61,7 +61,7 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		Model: model_factory.Model_PallyProtBalanced(),
 		ItemInputs: multi_types.ItemInputs{
 			GearFile:                     files.GearFileProtBalanced,
-			RequestRatingPercent:         0.25,
+			RequestRatingPercent:         0.30,
 			ExtraUpgradeLevel:            extraUpgrade,
 			ForceUpgradeExistingItems:    forceUpgrade,
 			MissingEnchant:               setup.MissingEnchant_Panic,
@@ -85,7 +85,7 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		Model: model_factory.Model_PallyProtSurvival(),
 		ItemInputs: multi_types.ItemInputs{
 			GearFile:                     files.GearFileProtSurvival,
-			RequestRatingPercent:         0.25,
+			RequestRatingPercent:         0.20,
 			ExtraUpgradeLevel:            extraUpgrade,
 			ForceUpgradeExistingItems:    forceUpgrade,
 			MissingEnchant:               setup.MissingEnchant_Panic,
@@ -97,13 +97,20 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		Model: model_factory.Model_PallyProtHeal(),
 		ItemInputs: multi_types.ItemInputs{
 			GearFile:                     files.GearFileProtHeal,
-			RequestRatingPercent:         0.05,
+			RequestRatingPercent:         0.03,
 			ExtraUpgradeLevel:            extraUpgrade,
 			ForceUpgradeExistingItems:    forceUpgrade,
 			MissingEnchant:               setup.MissingEnchant_Panic,
 			ExpectAllBonusItemsAvailable: true,
 		},
 	}
+
+	//ret.Model.StatWeights = tools.StatRatingsWeights_ReadFile(files.WeightRet + ".manual")
+	//protDps.Model.StatWeights = tools.StatRatingsWeights_ReadFile(files.WeightProtDamage + ".manual")
+	//protBalanced.Model.StatWeights = tools.StatRatingsWeights_ReadFile(files.WeightProtBalanced + ".manual")
+	//protMitigation.Model.StatWeights = tools.StatRatingsWeights_ReadFile(files.WeightProtMitigation + ".manual")
+	//protSurvival.Model.StatWeights = tools.StatRatingsWeights_ReadFile(files.WeightProtSurvival + ".manual")
+	//protHeal.Model.StatWeights = tools.StatRatingsWeights_ReadFile(files.WeightProtHeal + ".manual")
 
 	ret.AddExtraItem(mygear.LegendMeleeCloak)
 	addExtrasToEach(mygear.LegendCloaks, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
@@ -211,12 +218,12 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 
 	//job.MakeRandomVariants(101887, 0, -365, -352)
 
-	ret.AddBagsExtra()
-	protDps.AddBagsExtra()
-	protBalanced.AddBagsExtra()
-	protMitigation.AddBagsExtra()
-	protSurvival.AddBagsExtra()
-	protHeal.AddBagsExtra()
+	//ret.AddBagsExtra()
+	//protDps.AddBagsExtra()
+	//protBalanced.AddBagsExtra()
+	//protMitigation.AddBagsExtra()
+	//protSurvival.AddBagsExtra()
+	//protHeal.AddBagsExtra()
 
 	//addExtrasFromFinder(loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic),
 	//	&ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
@@ -245,41 +252,21 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		}
 		multi.JobCreate(printer, job, taskQuick).Run()
 	} else if false {
-		weightTypes := []weight_types.WeightType{2}
-
-		// all standard and alternates. plus optional regem
-		task1 := multi_types.JobInputTask{
-			AlsoExistingEquipped:    false,
-			AlsoSpecOptimums:        true,
-			Alternates:              multi_types.AlternateModeReforgeBlocks,
-			AlternatesLimit:         util_collection.Optional_OfValue(5),
-			IncludeInterimResults:   false,
-			WeightTypeList:          weightTypes,
+		taskChooseToken := multi_types.JobInputTask{
+			AlsoExistingEquipped:  true,
+			AlsoSpecOptimums:      false,
+			Alternates:            multi_types.AlternateModeItemAndReforgeBlocks,
+			AlternatesLimit:       util_collection.Optional_OfValue[int](12),
+			IncludeInterimResults: false,
+			WeightTypeList:        []weight_types.WeightType{1, 2},
+			//WeightTypeList:          []weight_types.WeightType{3},
 			RunDecimate:             false,
-			ReforgingAllowNonCommon: false,
+			ReforgingAllowNonCommon: true,
 		}
-		//task1.AddAlternateGem(stats.StatBlock_of(stats.Stat_Haste, 320))
-		//task1.Permute.AlternateGemsEnableAsPermute = true
-		//task1.Permute.PermuteOnItemCountOptions = true
-
-		// interim results for main solve only
-		task2 := multi_types.JobInputTask{
-			AlsoExistingEquipped:    false,
-			AlsoSpecOptimums:        false,
-			Alternates:              multi_types.AlternateModeNone,
-			AlternatesLimit:         util_collection.Optional_Empty[int](),
-			IncludeInterimResults:   true,
-			WeightTypeList:          weightTypes,
-			RunDecimate:             false,
-			ReforgingAllowNonCommon: false,
-		}
-
-		_ = task1
-		_ = task2
-
-		run := multi.JobCreate(printer, job, task1, task2)
-		run.Run()
-	} else if false {
+		taskChooseToken.AddAlternateItemsChoices(99368, 99387)
+		multi.JobCreate(printer, job, taskChooseToken).Run()
+	} else if true {
+		// OPTION standard weight 1 with all the toppings
 		weightTypes := []weight_types.WeightType{1, 2}
 
 		// all standard and alternates. plus optional regem
@@ -287,7 +274,6 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 			AlsoExistingEquipped:    true,
 			AlsoSpecOptimums:        true,
 			Alternates:              multi_types.AlternateModeItemAndReforgeBlocks,
-			AlternatesLimit:         util_collection.Optional_Empty[int](),
 			IncludeInterimResults:   false,
 			WeightTypeList:          weightTypes,
 			RunDecimate:             false,
@@ -297,12 +283,11 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		task1.Permute.AlternateGemsEnableAsPermute = true
 		task1.Permute.PermuteOnItemCountOptions = true
 
-		// interim results for main solve only
+		// interim results for main+spec solves
 		task2 := multi_types.JobInputTask{
 			AlsoExistingEquipped:    false,
-			AlsoSpecOptimums:        false,
+			AlsoSpecOptimums:        true,
 			Alternates:              multi_types.AlternateModeNone,
-			AlternatesLimit:         util_collection.Optional_Empty[int](),
 			IncludeInterimResults:   true,
 			WeightTypeList:          weightTypes,
 			RunDecimate:             false,
@@ -321,14 +306,38 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 			ReforgingAllowNonCommon: false,
 		}
 
-		_ = task1
-		_ = task2
-		_ = task3
-
-		run := multi.JobCreate(printer, job, task1)
+		//run := multi.JobCreate(printer, job, task1)
 		//run := multi.JobCreate(printer, job, task2)
-		//run := multi.JobCreate(printer, job, task3)
-		//run := multi.JobCreate(printer, job, task1, task2, task3)
+		//run := multi.JobCreate(printer, job, task1, task2)
+		run := multi.JobCreate(printer, job, task1, task2, task3)
+		run.Run()
+	} else if true {
+		// weight 2 with optimums, some alternates
+		task2 := multi_types.JobInputTask{
+			AlsoExistingEquipped:    false,
+			AlsoSpecOptimums:        true,
+			Alternates:              multi_types.AlternateModeItemAndReforgeBlocks,
+			AlternatesLimit:         util_collection.Optional_OfValue(12),
+			IncludeInterimResults:   true,
+			WeightTypeList:          []weight_types.WeightType{2},
+			RunDecimate:             false,
+			ReforgingAllowNonCommon: true,
+		}
+		run := multi.JobCreate(printer, job, task2)
+		run.Run()
+	} else if true {
+		// weight 3 with optimums
+		task3 := multi_types.JobInputTask{
+			AlsoExistingEquipped:    false,
+			AlsoSpecOptimums:        true,
+			Alternates:              multi_types.AlternateModeNone,
+			AlternatesLimit:         util_collection.Optional_Empty[int](),
+			IncludeInterimResults:   false,
+			WeightTypeList:          []weight_types.WeightType{3},
+			RunDecimate:             false,
+			ReforgingAllowNonCommon: false,
+		}
+		run := multi.JobCreate(printer, job, task3)
 		run.Run()
 	} else if false {
 		task1 := multi_types.JobInputTask{
@@ -384,7 +393,6 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		run := multi.JobCreate(printer, job, task1, task2, task3)
 		run.Run()
 	} else {
-
 		taskBasic := multi_types.JobInputTask{
 			AlsoExistingEquipped:  true,
 			AlsoSpecOptimums:      true,

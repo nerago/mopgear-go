@@ -90,7 +90,7 @@ func findBestSubjectToCommon(printer *util.PrintRecorder) {
 	itemOptions := setup.OptionsSetup_FromGearFile(files.GearFileProtSurvival, &model, setup.MissingEnchant_Panic, printer)
 
 	for _, itemId := range mygear.SubstituteItemsProt {
-		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
+		opts, example := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 		itemOptions.AddSeveralOptions(example.SlotItem(), opts)
 	}
 
@@ -143,7 +143,7 @@ func testSimEach(printer *util.PrintRecorder) {
 	modelList := []gear_model.SpecModel{model_factory.Model_PallyProtDamage(), model_factory.Model_PallyProtBalanced(), model_factory.Model_PallyProtMitigation(), model_factory.Model_PallyProtSurvival(), model_factory.Model_PallyProtHeal()}
 	for model := range util_collection.ForPointer(modelList) {
 		equipped := loaders.GearFileReader_Read(model.ReferenceGearFile)
-		equipSet := setup.OptionsSetup_ExactEquippedOnly(equipped, model, setup.MissingEnchant_Fix, util.PrintRecorder_Nop())
+		equipSet := setup.OptionsSetup_FromEquipped_OriginalForgeOnly(equipped, model, setup.MissingEnchant_Fix, util.PrintRecorder_Nop())
 		// itemOptions := setup.OptionsSetup_FromGearFile(model.ReferenceGearFile, model, setup.MissingEnchant_Panic, printer)
 		// output := solver.Solver(solver.SolveInput{
 		// 	ItemOptions:         &itemOptions,
@@ -166,11 +166,11 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 	//model := model.Model_PallyProtCompromise()
 	//gearFile := files.GearFileProtCompromise
 
-	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), &model, setup.MissingEnchant_Panic, printer)
+	currentEquip := setup.OptionsSetup_FromEquipped_OriginalForgeOnly(loaders.GearFileReader_Read(gearFile), &model, setup.MissingEnchant_Panic, printer)
 
 	itemOptions := setup.OptionsSetup_FromGearFile(gearFile, &model, setup.MissingEnchant_Panic, printer)
 	for _, itemId := range mygear.SubstituteItemsProt {
-		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
+		opts, example := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 		itemOptions.AddSeveralOptions(example.SlotItem(), opts)
 	}
 
@@ -184,7 +184,7 @@ func findSimpleUpgrade(printer *util.PrintRecorder) {
 
 	addItems := []items.ItemId{95038, 95003, 95022, 95002, 95023}
 	for _, itemId := range addItems {
-		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
+		opts, example := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 		itemOptions.AddSeveralOptions(example.SlotItem(), opts)
 	}
 
@@ -225,7 +225,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 	startGear := files.GearFileProtSurvival
 
 	printer.Println("READ existing")
-	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &model, setup.MissingEnchant_Panic, printer)
+	currentEquip := setup.OptionsSetup_FromEquipped_OriginalForgeOnly(loaders.GearFileReader_Read(startGear), &model, setup.MissingEnchant_Panic, printer)
 	currentStats, err := simulate.ExecuteUseModel(simSize, &model, &currentEquip, nil, util.TrackProgress_Start())
 	if err != nil {
 		panic(err)
@@ -234,7 +234,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 	printer.Println("SETUP options")
 	itemOptionsShared := setup.OptionsSetup_FromGearFile(startGear, &model, setup.MissingEnchant_Panic, printer)
 	for _, itemId := range mygear.SubstituteItemsProt {
-		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
+		opts, example := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 		itemOptionsShared.AddSeveralOptions(example.SlotItem(), opts)
 	}
 
@@ -263,7 +263,7 @@ func findSimpleUpgrade_ForceEach(printer *util.PrintRecorder) {
 			continue
 		}
 
-		_, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
+		_, example := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 
 		for _, slotEquip := range example.SlotItem().ToSlotEquipOptions() {
 			if slotEquip == items.Equip_Ring1 {
@@ -378,7 +378,7 @@ func trinketSims(printer *util.PrintRecorder) {
 		file := group.file
 
 		equipped := loaders.GearFileReader_Read(file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
+		equipMap := setup.OptionsSetup_FromEquipped_OriginalForgeOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 		printer.Println(group.label + " CURRENT")
 		printer.Println(equipMap[items.Equip_Trinket1].CreateString())
 		printer.Println(equipMap[items.Equip_Trinket2].CreateString())
@@ -389,7 +389,7 @@ func trinketSims(printer *util.PrintRecorder) {
 		file := group.file
 
 		equipped := loaders.GearFileReader_Read(file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
+		equipMap := setup.OptionsSetup_FromEquipped_OriginalForgeOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 
 		for _, itemId := range itemIds {
 			var item *items.FullItem
@@ -517,7 +517,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		file := group.file
 
 		equipped := loaders.GearFileReader_Read(file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
+		equipMap := setup.OptionsSetup_FromEquipped_OriginalForgeOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 		printer.Println(group.label + " CURRENT")
 		printer.Println(equipMap[items.Equip_Trinket1].CreateString())
 		printer.Println(equipMap[items.Equip_Trinket2].CreateString())
@@ -528,7 +528,7 @@ func trinketSimsBoth(printer *util.PrintRecorder) {
 		file := group.file
 
 		equipped := loaders.GearFileReader_Read(file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
+		equipMap := setup.OptionsSetup_FromEquipped_OriginalForgeOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 
 		processItemIds := itemIds
 		if group.label == "ret" {
@@ -647,7 +647,7 @@ func currentSimGear(printer *util.PrintRecorder) {
 		csv.AddString(group.label)
 
 		equipped := loaders.GearFileReader_Read(file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
+		equipMap := setup.OptionsSetup_FromEquipped_OriginalForgeOnly(equipped, &model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 
 		resultStats, err := simulate.ExecuteSpecifyAll(simRun, model.SimSpeedUp, model.Spec, goal, fight, model.Professions, &equipMap, nil, util.TrackProgress_Nop())
 		if err != nil {
@@ -665,7 +665,7 @@ func currentSimGear(printer *util.PrintRecorder) {
 }
 
 func addGearFileToCommon(common map[items.ItemId]stats.ReforgeRecipe, gearFile string, model *gear_model.SpecModel, printer *util.PrintRecorder) {
-	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(gearFile), model, setup.MissingEnchant_Panic, printer)
+	currentEquip := setup.OptionsSetup_FromEquipped_OriginalForgeOnly(loaders.GearFileReader_Read(gearFile), model, setup.MissingEnchant_Panic, printer)
 	for item := range currentEquip.AllItemSeq() {
 		common[item.ItemId()] = item.Reforge()
 	}
@@ -722,7 +722,7 @@ func basicListRatingEach(printer *util.PrintRecorder) {
 
 	for _, group := range groups {
 		equipItems := loaders.GearFileReader_Read(group.file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
+		equipMap := setup.OptionsSetup_FromEquipped_OriginalForgeOnly(equipItems, &group.model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 		itemSet := items.FullItemSet_FromMap(equipMap)
 		rating := group.model.CalcRatingFull(&itemSet, weightType)
 		tools.ReportSet(&group.model, &itemSet, printer)
@@ -774,7 +774,7 @@ func solveForRatings(printer *util.PrintRecorder) {
 
 	for _, group := range groups {
 		equipItems := loaders.GearFileReader_Read(group.file)
-		equipMap := setup.OptionsSetup_ExactEquippedOnly(equipItems, &group.model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
+		equipMap := setup.OptionsSetup_FromEquipped_OriginalForgeOnly(equipItems, &group.model, setup.MissingEnchant_Panic, util.PrintRecorder_Nop())
 		itemSet := items.FullItemSet_FromMap(equipMap)
 		rating := group.model.CalcRatingFull(&itemSet, weightType)
 		// solver.ReportSet(printer, itemSet, rating, &group.model)
@@ -1004,7 +1004,7 @@ func determineBestUseOfGearSets(printer *util.PrintRecorder) {
 
 	itemOptions := setup.OptionsSetup_FromGearFile(gearFile, &model, setup.MissingEnchant_Panic, printer)
 	for _, itemId := range substitutes {
-		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
+		opts, example := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, &model, printer)
 		itemOptions.AddSeveralOptions(example.SlotItem(), opts)
 	}
 	itemOptions.RemoveDuplicates()

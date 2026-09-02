@@ -197,7 +197,7 @@ func GenerateRandomSets(gearFile string, substituteItems []items.ItemId, model *
 	itemOptions := setup.OptionsSetup_FromGearFile(gearFile, model, setup.MissingEnchant_Panic, printer)
 	for _, itemId := range substituteItems {
 		// TODO support for random suffix items
-		opts, example := setup.OptionsSetup_Single_FromIdOnlyUseAllDefaults(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, model, printer)
+		opts, example := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, model, printer)
 		example.SlotItem().ForEachEquip(func(slotEquip items.SlotEquip) {
 			if itemOptions.Has(slotEquip) {
 				itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)

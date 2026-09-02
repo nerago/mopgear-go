@@ -66,7 +66,7 @@ func testBasicStatsGeneral(printer *util.PrintRecorder) {
 	// modelEquipOnly := model.Model_PallyProtDps()
 	// goal := stats.UpgradeGoal_Dps
 
-	currentEquip := setup.OptionsSetup_ExactEquippedOnly(loaders.GearFileReader_Read(startGear), &modelEquipOnly, setup.MissingEnchant_Panic, printer)
+	currentEquip := setup.OptionsSetup_FromEquipped_OriginalForgeOnly(loaders.GearFileReader_Read(startGear), &modelEquipOnly, setup.MissingEnchant_Panic, printer)
 	itemSet := items.FullItemSet_FromMap(currentEquip)
 
 	inputData, simBase := generateRatingsInputFromArtificialStatOverrides_ForBasic(itemSet, printer, simSpeed, modelEquipOnly.SimSpeedUp, modelEquipOnly.StatsForWeighting, spec, goal, fight, modelEquipOnly.Professions, util.TrackProgress_Start())

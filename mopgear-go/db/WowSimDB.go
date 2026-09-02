@@ -92,12 +92,12 @@ func WowSimDB_AllItems() iter.Seq[*items.FullItem] {
 	}
 }
 
-func WowSimDB_ReforgeById(reforgeId uint16) stats.ReforgeRecipe {
+func WowSimDB_ReforgeById(reforgeId uint16) *stats.ReforgeRecipe {
 	recipe, ok := reforgeById[reforgeId]
 	if !ok {
 		panic("reforge not found")
 	}
-	return recipe
+	return &recipe
 }
 
 func WowSimDB_ReforgeToId(recipe stats.ReforgeRecipe) uint16 {
