@@ -40,8 +40,8 @@ func core(printer *util.PrintRecorder) {
 	//findSimpleUpgrade(printer)
 	//findSimpleUpgrade_ForceEach(printer)
 	//relativeRatingsCompromise(printer)
-	trinketSimsBoth(printer)
-	//currentSimGear(printer)
+	//trinketSimsBoth(printer)
+	currentSimGear(printer)
 	//determineSetBonusValueBySim()
 	//determineBestUseOfGearSets()
 	//

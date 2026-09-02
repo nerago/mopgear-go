@@ -66,30 +66,34 @@ func findUpgrades_Paladin() {
 		//"SoO Paragons",
 		//"SoO Garrosh"
 	}
-	finderB := loaders.ItemFinder_NormalHeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, normalBossesConsider, heroicBossesConsider)
-	_ = finderB
+	finderBosses := loaders.ItemFinder_NormalHeroicBossFiltered(loaders.ItemFinder_SiegeStrengthPlateTank, normalBossesConsider, heroicBossesConsider)
 
 	//finder := loaders.ItemFinder_SiegeStrengthPlateTank
-	finderO := loaders.ItemFinder_Ordos
+	finderOrdos := loaders.ItemFinder_Ordos
 	//finder := loaders.ItemFinder_TimelessPlate
 	//finder := loaders.ItemFinder_BagsUpgraded
 	//finder := loaders.SiegeClassGearSetMultiple(stats.Spec_PaladinProt, stats.Spec_PaladinRet)
 
 	// celestial world
-	finderW := func(_ stats.Difficulty) []loaders.ItemFoundRef {
+	finderWorld := func(_ stats.Difficulty) []loaders.ItemFoundRef {
 		return []loaders.ItemFoundRef{{ItemId: 99127}, {ItemId: 99137}}
 	}
 
-	finder := loaders.ItemFinderConcat(finderO, finderW)
+	_ = finderOrdos
+	_ = finderWorld
+	_ = finderBosses
+
+	//finder := loaders.ItemFinderConcat(finderO, finderW)
+	finder := finderBosses
 
 	input := upgrades.FindUpgradesMultiSpec{
 		Settings: upgrades.InputSettings{
 			IncludeCelestial:             false,
 			IncludeNormal:                true,
-			IncludeHeroic:                false,
+			IncludeHeroic:                true,
 			IgnoredItems:                 mygear.IgnoredItems,
 			TargetUpgradeLevel:           2,
-			WeightType:                   1,
+			WeightType:                   2,
 			SolverTimeout:                c_upgradeDefaultTimeout,
 			SimSizeBaseline:              simSizeBaseline,
 			SimSizeItemInitial:           simSizePerItem,

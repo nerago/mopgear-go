@@ -47,6 +47,7 @@ var ProtT16 = []items.ItemId{
 	99026, // prot t16 legs celestial
 	99027, // prot t16 shoulder celestial
 	99028, // prot t16 hand celestial
+	99368, // prot t16 chest heroic
 }
 
 // TRINKET
@@ -108,6 +109,7 @@ var OrgRaidDrops = []items.ItemId{
 	104494, // krugruk shoulderplates
 	104515, // tar-coated gauntlets heroic
 	104440, // sorrowpath signet
+	104513, // demo belt heroic
 }
 var OrgOneHandAndShield = []items.ItemId{
 	103826, // xifeng weapon
