@@ -33,7 +33,7 @@ func (pf *PossibleFutureError) SetResultSuccess() {
 	}
 }
 
-func (pf *PossibleFutureError) SetResultError(err error) {
+func (pf *PossibleFutureError) AddResultError(err error) {
 	util.GlobalWarnHandler(err)
 
 	pf.lock.Lock()
@@ -105,20 +105,20 @@ func (pf *PossibleFutureError) WaitForResult() error {
 func (pf *PossibleFutureError) ForwardErrorToOtherFuture(other IFutureErrorMinimal) {
 	err := pf.verifyCanWaitLocked()
 	if err != nil {
-		other.SetResultError(err)
+		other.AddResultError(err)
 		return
 	}
 
 	go func() {
 		result, channelOk := <-pf.signalChannel
 		if !channelOk {
-			other.SetResultError(util.ErrorTracedNew("signal channel closed"))
+			other.AddResultError(util.ErrorTracedNew("signal channel closed"))
 			return
 		}
 		close(pf.signalChannel)
 
 		if result != nil {
-			other.SetResultError(result)
+			other.AddResultError(result)
 		}
 	}()
 }

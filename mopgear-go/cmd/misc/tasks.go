@@ -855,10 +855,10 @@ func determineSetBonusValueBySim(printer *util.PrintRecorder) {
 	//}
 	//T16 ret
 	setItems := []*items.FullItem{
-		itemOptions.FindItemIdFirst(99052),
-		itemOptions.FindItemIdFirst(99002),
-		itemOptions.FindItemIdFirst(98986),
-		itemOptions.FindItemIdFirst(98987),
+		itemOptions.FindItemIdFirstOrPanic(99052),
+		itemOptions.FindItemIdFirstOrPanic(99002),
+		itemOptions.FindItemIdFirstOrPanic(98986),
+		itemOptions.FindItemIdFirstOrPanic(98987),
 	}
 	preparedSetGroups := util_collection.MapSliceAsNew(initialSets, func(itemSet *items.FullItemSet) standardisedItemSetGroup {
 		if model.BonusEnabled.CountInAnySet(itemSet.Items()) != 0 {

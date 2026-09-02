@@ -64,6 +64,13 @@ func ErrorTracedNew(str string) IErrorTraced {
 	}
 }
 
+func ErrorTracedNewFormat(format string, args ...any) IErrorTraced {
+	return &ErrorTracedString{
+		str:   fmt.Sprintf(format, args...),
+		stack: debug.Stack(),
+	}
+}
+
 func (et *ErrorTracedString) Error() string {
 	return et.str
 }

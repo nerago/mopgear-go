@@ -2,9 +2,10 @@ package items
 
 import (
 	. "github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
 )
 
-func (set *SolvableItemSet) DebugValidate() {
+func (set *SolvableItemSet) DebugValidate() error {
 	equipMap := set.items
 	previousTotal := set.total
 
@@ -14,15 +15,17 @@ func (set *SolvableItemSet) DebugValidate() {
 	}
 
 	if !StatBlock_Equals(&recalcTotal, &previousTotal) {
-		panic("totals don't match\n" + recalcTotal.CreateString() + "\n" + previousTotal.CreateString())
+		return util.ErrorTracedNew("totals don't match\n" + recalcTotal.CreateString() + "\n" + previousTotal.CreateString())
 	}
 
 	if previousTotal.IsEmpty() {
-		panic("set has no stats")
+		return util.ErrorTracedNew("set has no stats")
 	}
+
+	return nil
 }
 
-func (itemSet *FullItemSet) DebugValidate() {
+func (itemSet *FullItemSet) DebugValidate() error {
 	equipMap := itemSet.items
 	previousTotal := itemSet.total
 
@@ -32,6 +35,8 @@ func (itemSet *FullItemSet) DebugValidate() {
 	}
 
 	if !StatBlock_Equals(&recalcTotal, &previousTotal) {
-		panic("totals don't match\n" + recalcTotal.CreateString() + "\n" + previousTotal.CreateString())
+		return util.ErrorTracedNew("totals don't match\n" + recalcTotal.CreateString() + "\n" + previousTotal.CreateString())
 	}
+
+	return nil
 }

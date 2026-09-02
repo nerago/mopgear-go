@@ -268,19 +268,22 @@ func (item *FullItem) AppendString(build *util.StringBuild2) {
 	build.WriteString(" }")
 }
 
-func (item *FullItem) MakeItemWithRandomSuffix(randomSuffix RandomSuffix) *FullItem {
+func (item *FullItem) MakeItemWithRandomSuffix(randomSuffix RandomSuffix) (*FullItem, error) {
 	if randomSuffix != 0 {
-		wowSimStats, suffix := item.randomStatsFromWowSim(randomSuffix)
+		wowSimStats, suffix, err := item.randomStatsFromWowSim(randomSuffix)
+		if err != nil {
+			return nil, err
+		}
 
 		newStats := stats.StatBlock{}
 		newStats.SetFromAddOthers(item.StatBase(), &wowSimStats)
 
 		result := item.newWithChangedStatsSuffix(newStats, randomSuffix)
 		result.baseName += " " + suffix
-		return result
+		return result, nil
 	}
 
-	return item
+	return item, nil
 }
 
 const ReGem_GemAlternate = "re-gem-alternate"

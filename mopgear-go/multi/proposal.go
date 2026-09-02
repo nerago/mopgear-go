@@ -50,7 +50,12 @@ func (group *workingGroup) proposalsUnderPermutation(inputPermute *multi_types.I
 func (group *workingGroup) proposalsGeneral(permuteSet *permuteSet, proposalMix *util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, possibleError *util_async.PossibleFutureError, cancel util_async.CancelSignal) {
 	var highProcess *solve_highs.SolverHighsMultiProcess
 	if permuteSet != nil {
-		highProcess = group.highProcessSetupForPermute(permuteSet, group.job.printer)
+		proc, err := group.highProcessSetupForPermute(permuteSet, group.job.printer)
+		if err != nil {
+			possibleError.AddResultError(err)
+			return
+		}
+		highProcess = proc
 	} else {
 		highProcess = group.highProcessSetupSingle()
 	}
@@ -61,7 +66,7 @@ func (group *workingGroup) proposalsGeneral(permuteSet *permuteSet, proposalMix 
 		cancel, group.task.IncludeInterimResults)
 
 	if errInit != nil {
-		possibleError.SetResultError(errInit)
+		possibleError.AddResultError(errInit)
 		return
 	} else {
 		innerFutureError.ForwardErrorToOtherFuture(possibleError)
@@ -265,7 +270,7 @@ func (group *workingGroup) additionalProposalsFromSpecOptimalBaseline(expectedCo
 			cancel, group.task.IncludeInterimResults)
 
 		if errInit != nil {
-			possibleError.SetResultError(errInit)
+			possibleError.AddResultError(errInit)
 		} else {
 			innerFutureError.ForwardErrorToOtherFuture(possibleError)
 		}

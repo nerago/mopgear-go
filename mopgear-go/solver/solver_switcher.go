@@ -53,9 +53,16 @@ func LaunchSolve(solveOptions *items.SolvableOptionsMap, solveModel *solve_highs
 }
 
 func finaliseSolve(solvedSet items.SolvableItemSet, itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, weightType weight_types.WeightType) SolveOutput {
-	solvedSet.DebugValidate()
+	err := solvedSet.DebugValidate()
+	if err != nil {
+		return SolveOutput{Success: false, Error: err}
+	}
 
-	fullSet := items.FullItemSet_FromSolved(solvedSet, itemOptions)
+	fullSet, err := items.FullItemSet_FromSolved(solvedSet, itemOptions)
+	if err != nil {
+		return SolveOutput{Success: false, Error: err}
+	}
+
 	model.ValidateSet(&fullSet)
 
 	rating := model.CalcRatingFull(&fullSet, weightType)

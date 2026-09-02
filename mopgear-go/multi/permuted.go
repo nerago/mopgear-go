@@ -259,8 +259,12 @@ func permuteStep(inChannel <-chan permuteSet, options permuteOptions, cancel uti
 	return outputChannel
 }
 
-func (group *workingGroup) highProcessSetupForPermute(permuteSet *permuteSet, printer *util.PrintRecorder) *solve_highs.SolverHighsMultiProcess {
-	itemOptionsEach, overrideBonuses, permuteLabel := group.processSetupItemOptionsForPermute(permuteSet, printer)
+func (group *workingGroup) highProcessSetupForPermute(permuteSet *permuteSet, printer *util.PrintRecorder) (*solve_highs.SolverHighsMultiProcess, error) {
+	itemOptionsEach, overrideBonuses, permuteLabel, err := group.processSetupItemOptionsForPermute(permuteSet, printer)
+	if err != nil {
+		printer.Printf("PERMUTE SET ERROR %v\n", err)
+		return nil, err
+	}
 	printer.Printf("PERMUTE SET:\n%s\n", permuteLabel)
 
 	commonOptions := group.determineCommon(itemOptionsEach)
@@ -278,10 +282,10 @@ func (group *workingGroup) highProcessSetupForPermute(permuteSet *permuteSet, pr
 		})
 	}
 
-	return highProcess
+	return highProcess, nil
 }
 
-func (group *workingGroup) processSetupItemOptionsForPermute(permuteSet *permuteSet, printer *util.PrintRecorder) (map[string]*items.FullOptionsMap, map[string]*solve_highs_types.OverrideBonusCounts, string) {
+func (group *workingGroup) processSetupItemOptionsForPermute(permuteSet *permuteSet, printer *util.PrintRecorder) (map[string]*items.FullOptionsMap, map[string]*solve_highs_types.OverrideBonusCounts, string, error) {
 	overrideBonusMap := make(map[string]*solve_highs_types.OverrideBonusCounts)
 
 	itemOptionsEach := make(map[string]*items.FullOptionsMap)
@@ -293,18 +297,28 @@ func (group *workingGroup) processSetupItemOptionsForPermute(permuteSet *permute
 	for _, entry := range permuteSet.choices {
 		if entry.fixed != nil {
 			fixed := entry.fixed
-			group.applyPermuteFixed(fixed, itemOptionsEach, &strBuild)
+			if err := group.applyPermuteFixed(fixed, itemOptionsEach, &strBuild); err != nil {
+				return nil, nil, "", err
+			}
 		} else if entry.group != nil {
 			permuteGroup := entry.group
-			group.applyPermuteGroup(permuteGroup, itemOptionsEach, &strBuild)
+			if err := group.applyPermuteGroup(permuteGroup, itemOptionsEach, &strBuild); err != nil {
+				return nil, nil, "", err
+			}
 		} else if entry.add != nil {
 			itemId := entry.add.itemId
-			group.applyPermuteItemAdd(itemId, itemOptionsEach, printer, &strBuild)
+			if err := group.applyPermuteItemAdd(itemId, itemOptionsEach, &strBuild); err != nil {
+				return nil, nil, "", err
+			}
 		} else if entry.upgrade != nil {
 			itemId := entry.upgrade.itemId
-			group.applyPermuteItemUpgrade(itemId, itemOptionsEach, printer, &strBuild)
+			if err := group.applyPermuteItemUpgrade(itemId, itemOptionsEach, printer, &strBuild); err != nil {
+				return nil, nil, "", err
+			}
 		} else if entry.gems != nil {
-			group.applyPermuteGems(entry.gems, itemOptionsEach, &strBuild)
+			if err := group.applyPermuteGems(entry.gems, itemOptionsEach, &strBuild); err != nil {
+				return nil, nil, "", err
+			}
 		} else if entry.bonus != nil {
 			overrideBonusMap[entry.bonus.specLabel] = entry.bonus.bonus
 			group.logPermuteBonus(entry.bonus, &strBuild)
@@ -317,11 +331,15 @@ func (group *workingGroup) processSetupItemOptionsForPermute(permuteSet *permute
 		strBuild.Rewind(3)
 	}
 
-	return itemOptionsEach, overrideBonusMap, strBuild.String()
+	return itemOptionsEach, overrideBonusMap, strBuild.String(), nil
 }
 
-func (group *workingGroup) applyPermuteFixed(fixed *permuteEntryFixedForce, itemOptionsEach map[string]*items.FullOptionsMap, strBuild *util.StringBuild2) {
-	itemOptionsEach[fixed.specLabel].ForceSlotOnlySpecifiedItemId(fixed.slot, fixed.itemId)
+func (group *workingGroup) applyPermuteFixed(fixed *permuteEntryFixedForce, itemOptionsEach map[string]*items.FullOptionsMap, strBuild *util.StringBuild2) error {
+	err := itemOptionsEach[fixed.specLabel].ForceSlotOnlySpecifiedItemId(fixed.slot, fixed.itemId)
+	if err != nil {
+		return err
+	}
+
 	if !fixed.isSingle {
 		strBuild.WriteString(fixed.specLabel)
 		strBuild.WriteString("(Forced) : ")
@@ -330,20 +348,26 @@ func (group *workingGroup) applyPermuteFixed(fixed *permuteEntryFixedForce, item
 		strBuild.WriteString(itemName)
 		strBuild.WriteString(" | ")
 	}
+
+	return nil
 }
 
-func (group *workingGroup) applyPermuteGroup(permuteGroup *permuteEntryAllowGroup, itemOptionsEach map[string]*items.FullOptionsMap, strBuild *util.StringBuild2) {
+func (group *workingGroup) applyPermuteGroup(permuteGroup *permuteEntryAllowGroup, itemOptionsEach map[string]*items.FullOptionsMap, strBuild *util.StringBuild2) error {
 	for label := range group.job.itemPrep {
 		if permuteGroup.forceSpec == label {
-			slot := itemOptionsEach[label].FindItemIdSlotUnique(permuteGroup.itemId)
-			itemOptionsEach[label].ForceSlotOnlySpecifiedItemId(slot, permuteGroup.itemId)
+			slot := itemOptionsEach[label].FindItemIdSlotUniqueOrPanic(permuteGroup.itemId)
+			if err := itemOptionsEach[label].ForceSlotOnlySpecifiedItemId(slot, permuteGroup.itemId); err != nil {
+				return err
+			}
 			strBuild.WriteString(label)
 			strBuild.WriteString("(Forced) ")
 		} else if slices.Contains(permuteGroup.allowSpecList, label) {
 			strBuild.WriteString(label)
 			strBuild.WriteString("(Allowed) ")
 		} else {
-			itemOptionsEach[label].RemoveItemIdFromAll(permuteGroup.itemId)
+			if err := itemOptionsEach[label].RemoveItemIdFromAll(permuteGroup.itemId); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -351,12 +375,17 @@ func (group *workingGroup) applyPermuteGroup(permuteGroup *permuteEntryAllowGrou
 	strBuild.WriteString(": ")
 	strBuild.WriteString(itemName)
 	strBuild.WriteString(" | ")
+
+	return nil
 }
 
-func (group *workingGroup) applyPermuteItemAdd(itemId items.ItemId, itemOptionsEach map[string]*items.FullOptionsMap, printer *util.PrintRecorder, strBuild *util.StringBuild2) {
+func (group *workingGroup) applyPermuteItemAdd(itemId items.ItemId, itemOptionsEach map[string]*items.FullOptionsMap, strBuild *util.StringBuild2) error {
 	for label, itemOpts := range itemOptionsEach {
 		prep := group.job.itemPrep[label]
-		extraOpts, example := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemId, prep.inputs.ExtraUpgradeLevel, items.NO_RANDOM_SUFFIX, prep.model, group.job.printer)
+		extraOpts, example, err := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemId, prep.inputs.ExtraUpgradeLevel, items.NO_RANDOM_SUFFIX, prep.model, group.job.printer)
+		if err != nil {
+			return err
+		}
 
 		couldAdd := itemOpts.CouldAddUpgrade_ItemSlot(example.SlotItem(), example, group.job.printer, prep.model.SpecificIncompatibleList)
 		if couldAdd != items.CanUpgrade_InvalidAlways {
@@ -368,41 +397,54 @@ func (group *workingGroup) applyPermuteItemAdd(itemId items.ItemId, itemOptionsE
 	strBuild.WriteString("ADD: ")
 	strBuild.WriteString(itemName)
 	strBuild.WriteString(" | ")
+
+	return nil
 }
 
-func (group *workingGroup) applyPermuteItemUpgrade(itemId items.ItemId, itemOptionsEach map[string]*items.FullOptionsMap, printer *util.PrintRecorder, strBuild *util.StringBuild2) {
+func (group *workingGroup) applyPermuteItemUpgrade(itemId items.ItemId, itemOptionsEach map[string]*items.FullOptionsMap, printer *util.PrintRecorder, strBuild *util.StringBuild2) error {
 	foundAny := false
 	for label, itemOpts := range itemOptionsEach {
 		profession := group.job.itemPrep[label].model.Professions
 		if itemOpts.IncludesItemId(itemId) {
-			itemOpts.MapEachItem(func(item *items.FullItem) items.FullItem {
+			err := itemOpts.MapEachItemPassError(func(item *items.FullItem) (items.FullItem, error) {
 				if item.ItemId() == itemId {
-					return *setup.UpgradeExistingItemToTargetLevel(item, items.MAX_UPGRADE_LEVEL, profession, printer)
+					upgraded, err := setup.UpgradeExistingItemToTargetLevel(item, items.MAX_UPGRADE_LEVEL, profession, printer)
+					if err != nil {
+						return items.FullItem{}, err
+					}
+					return *upgraded, nil
 				} else {
-					return *item
+					return *item, nil
 				}
 			})
+			if err != nil {
+				return err
+			}
 			foundAny = true
 		}
 	}
 
 	if !foundAny {
-		//panic("requested upgrade of item that isn't an option " + itemId.String())
-		group.job.printer.Println("requested upgrade of item that isn't an option " + itemId.String())
+		return util.ErrorTracedNew("requested upgrade of item that isn't an option " + itemId.String())
 	}
 
 	itemName := db.LookupItemNameByItemId(itemId)
 	strBuild.WriteString("UPGRADE: ")
 	strBuild.WriteString(itemName)
 	strBuild.WriteString(" | ")
+
+	return nil
 }
 
-func (group *workingGroup) applyPermuteGems(gems *permuteEntryGems, itemOptionsEach map[string]*items.FullOptionsMap, strBuild *util.StringBuild2) {
+func (group *workingGroup) applyPermuteGems(gems *permuteEntryGems, itemOptionsEach map[string]*items.FullOptionsMap, strBuild *util.StringBuild2) error {
 	if !gems.allowAlternates {
 		for _, itemOpts := range itemOptionsEach {
-			itemOpts.FilterAllItems(func(item *items.FullItem) bool {
+			err := itemOpts.FilterAllItems(func(item *items.FullItem) bool {
 				return !item.HasBeenRegemmed()
 			})
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -412,6 +454,8 @@ func (group *workingGroup) applyPermuteGems(gems *permuteEntryGems, itemOptionsE
 		strBuild.WriteString("Original Gems")
 	}
 	strBuild.WriteString(" | ")
+
+	return nil
 }
 
 func (group *workingGroup) logPermuteBonus(bonus *permuteEntryBonusItems, strBuild *util.StringBuild2) {

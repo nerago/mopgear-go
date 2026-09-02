@@ -6,6 +6,7 @@ import (
 	. "github.com/nerago/mopgear-go/db"
 	"github.com/nerago/mopgear-go/items"
 	. "github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
 )
 
 type GemChoice map[SocketType]GemInfo
@@ -23,36 +24,38 @@ func (gems GemChoice) GetChoice(socket SocketType) *GemInfo {
 	}
 }
 
-func (gems GemChoice) ValidateMetaGemInItemSet(itemSet *items.FullItemSet) {
+func (gems GemChoice) ValidateMetaGemInItemSet(itemSet *items.FullItemSet) error {
 	head := itemSet.Items().Get(items.Equip_Head)
-	gems.ValidateMetaGemInItem(head)
+	return gems.ValidateMetaGemInItem(head)
 }
 
-func (gems GemChoice) ValidateMetaGemInItem(head *items.FullItem) {
+func (gems GemChoice) ValidateMetaGemInItem(head *items.FullItem) error {
 	if head == nil {
-		panic("no item in head slot")
+		return util.ErrorTracedNew("no item in head slot")
 	}
 
 	if head.SlotItem() != items.Item_Head {
-		panic("not really a head item")
+		return util.ErrorTracedNew("not really a head item")
 	}
 
 	headGems := head.GemChoice()
 	if len(headGems) == 0 {
-		panic("head item with no gems " + head.CreateString())
+		return util.ErrorTracedNew("head item with no gems " + head.CreateString())
 	}
 
 	firstGem := headGems[0]
 	if !GemData_IsMeta(&firstGem) {
-		panic("first gem is not meta gem in " + head.CreateString())
+		return util.ErrorTracedNew("first gem is not meta gem in " + head.CreateString())
 	}
 
 	expected := gems.GetChoice(Socket_Meta)
 	if expected == nil {
-		panic("model doesn't specify meta gem")
+		return util.ErrorTracedNew("model doesn't specify meta gem")
 	} else if firstGem.Id != expected.Id {
-		panic("meta gem doesn't match spec requirement " + head.CreateString())
+		return util.ErrorTracedNew("meta gem doesn't match spec requirement " + head.CreateString())
 	}
+
+	return nil
 }
 
 func GemChoice_ForSpec(spec SpecType, goal OptimiseGoal) map[SocketType]GemInfo {

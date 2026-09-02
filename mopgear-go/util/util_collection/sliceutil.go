@@ -215,6 +215,22 @@ func MapSliceAsNew[T any, R any](slice []T, mapper func(x *T) R) []R {
 	return result
 }
 
+func MapSliceAsNew_PassError[T any, R any](slice []T, mapper func(x *T) (R, error)) ([]R, error) {
+	if slice == nil {
+		return nil, nil
+	}
+
+	result := make([]R, len(slice))
+	for i := range slice {
+		newValue, err := mapper(&slice[i])
+		if err != nil {
+			return nil, err
+		}
+		result[i] = newValue
+	}
+	return result, nil
+}
+
 func MapSliceAsNew_NoPointer[T any, R any](slice []T, mapper func(x T) R) []R {
 	if slice == nil {
 		return nil

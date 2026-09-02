@@ -10,7 +10,10 @@ import (
 )
 
 func (job *MainJob) Run() {
-	job.prepareItems()
+	err := job.prepareItems()
+	if err != nil {
+		util.GlobalFatalErrorHandler(err)
+	}
 
 	cancelGenerate := util_async.CancelSignal_Make()
 	util_async.CancelOnKeyPress(cancelGenerate)
@@ -67,7 +70,10 @@ func (job *MainJob) makeProposalChannel(groupChannel <-chan *workingGroup, cance
 }
 
 func (job *MainJob) RunCullingSets(targetSolutionCount int64, timeLimit time.Duration) {
-	job.prepareItems()
+	err := job.prepareItems()
+	if err != nil {
+		util.GlobalFatalErrorHandler(err)
+	}
 
 	tracker := util.TrackProgress_Start()
 	tracker.RunOuterTracking(len(job.workGroups) * len(job.itemPrep))

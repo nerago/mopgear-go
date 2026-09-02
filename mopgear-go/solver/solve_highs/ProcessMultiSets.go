@@ -92,7 +92,7 @@ func (process *SolverHighsMultiProcess) Run(timeLimit int, printer *util.PrintRe
 				resultChannel)
 
 			if errGenerate != nil {
-				futureError.SetResultError(errGenerate)
+				futureError.AddResultError(errGenerate)
 			}
 		} else {
 			expectedCount.SetResult(1)
@@ -105,7 +105,7 @@ func (process *SolverHighsMultiProcess) Run(timeLimit int, printer *util.PrintRe
 		close(resultChannel)
 
 		if errUpstream != nil {
-			futureError.SetResultError(errUpstream)
+			futureError.AddResultError(errUpstream)
 		}
 	})
 
@@ -336,7 +336,10 @@ func (process *SolverHighsMultiProcess) solutionToResult(solution util_highs.ISo
 		if err = validateNewSet(solvedSet, &part.solveOptions, part.SolverModel.CheckSet); err != nil {
 			return nil, err
 		}
-		fullItemSet := items.FullItemSet_FromSolved(solvedSet, &part.ItemOptions)
+		fullItemSet, err := items.FullItemSet_FromSolved(solvedSet, &part.ItemOptions)
+		if err != nil {
+			return nil, err
+		}
 
 		printer.Printf("Inner solver type = %s\n", reflect.TypeOf(part.singleGearSet).Elem().Name())
 

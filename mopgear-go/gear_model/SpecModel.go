@@ -99,10 +99,14 @@ func (model *SpecModel) CheckSetFull_ForWeightProcess(itemSet *FullItemSet) bool
 	return true
 }
 
-func (model *SpecModel) ValidateSet(itemSet *FullItemSet) {
-	itemSet.DebugValidate()
-	itemSet.ValidateItemRules()
-	model.GemChoice.ValidateMetaGemInItemSet(itemSet)
+func (model *SpecModel) ValidateSet(itemSet *FullItemSet) error {
+	if err := itemSet.DebugValidate(); err != nil {
+		return err
+	}
+	if err := itemSet.ValidateItemRules(); err != nil {
+		return err
+	}
+	return model.GemChoice.ValidateMetaGemInItemSet(itemSet)
 }
 
 // ////////// set ratings

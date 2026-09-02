@@ -783,7 +783,7 @@ func makeThreadsForEachSliceError[T any](threadCount int, inputSlice []T, proces
 				if shouldContinue {
 					err := process(&inputSlice[index])
 					if err != nil {
-						futureError.SetResultError(err)
+						futureError.AddResultError(err)
 						shouldContinue = false
 					}
 				}
@@ -805,7 +805,7 @@ func makeThreadsSliceToChannelCancellableError[T any, R any](threadCount int, in
 						tempChannel <- value
 					} else {
 						err = errors.Join(err, cancel.Cancel())
-						futureError.SetResultError(err)
+						futureError.AddResultError(err)
 					}
 				}
 			}
@@ -824,7 +824,7 @@ func makeThreadsSliceToChannelOptionalCancellableError[T any, R any](threadCount
 					value, hasValue, err := mapper(&inputSlice[index])
 					if err != nil {
 						err = errors.Join(err, cancel.Cancel())
-						futureError.SetResultError(err)
+						futureError.AddResultError(err)
 					} else if hasValue {
 						tempChannel <- value
 					}
@@ -857,7 +857,7 @@ func makeThreadsForEachChannelError[T any](threadCount int, inputChannel <-chan 
 				if shouldContinue {
 					err := process(value)
 					if err != nil {
-						futureError.SetResultError(err)
+						futureError.AddResultError(err)
 						shouldContinue = false
 					}
 				}

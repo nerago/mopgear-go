@@ -3,34 +3,38 @@ package items
 import (
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/stats/extern_stats"
+	"github.com/nerago/mopgear-go/util"
 
 	"github.com/wowsims/mop/sim/core"
 	"github.com/wowsims/mop/sim/core/proto"
 )
 
-func (item *FullItem) getAsWowSimItem() (simBaseItem *core.Item, simScale *proto.ScalingItemProperties) {
+func (item *FullItem) getAsWowSimItem() (simBaseItem *core.Item, simScale *proto.ScalingItemProperties, err error) {
 	simBaseItem = core.GetItemByID(int32(item.itemId))
 	if simBaseItem != nil {
 		for _, scale := range simBaseItem.ScalingOptions {
 			if scale.Ilvl == int32(item.itemLevel) {
-				return simBaseItem, scale
+				return simBaseItem, scale, nil
 			}
 		}
 	}
-	panic("wow sim level scale not found for " + item.itemId.String())
+	return nil, nil, util.ErrorTracedNew("wow sim level scale not found for " + item.itemId.String())
 }
 
-func (item *FullItem) randomStatsFromWowSim(randomSuffix RandomSuffix) (stats.StatBlock, string) {
-	_, simScale := item.getAsWowSimItem()
+func (item *FullItem) randomStatsFromWowSim(randomSuffix RandomSuffix) (stats.StatBlock, string, error) {
+	_, simScale, err := item.getAsWowSimItem()
+	if err != nil {
+		return stats.StatBlock{}, "", err
+	}
 
 	suffixObject, knownSuffix := core.RandomSuffixesByID[int32(randomSuffix)]
 	if !knownSuffix {
-		panic("unknown item suffix")
+		return stats.StatBlock{}, "", util.ErrorTracedNew("unknown item suffix")
 	}
 
 	simStats := suffixObject.Stats.Multiply(float64(simScale.RandPropPoints) / 10000.).Floor()
 	statBlock := extern_stats.SimStatsToGearStatBlock(simStats)
-	return statBlock, suffixObject.Name
+	return statBlock, suffixObject.Name, nil
 }
 
 func MapSlotToGear(itemType, handType int32) SlotItem {

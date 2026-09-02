@@ -66,10 +66,18 @@ func (job *MainJob) reportSimResults_One(result *simulateMultiResult, printer ut
 			stringBuild.WriteString(label)
 			stringBuild.WriteRune(' ')
 			for slot, itemId := range input.ReportVariant {
-				variantItem := job.findVariantItem(result, itemId, prep)
-				variantEquip[slot] = variantItem
-				stringBuild.WriteString(variantItem.BaseName())
-				stringBuild.WriteRune(' ')
+				variantItem, err := job.findVariantItem(result, itemId, prep)
+				if err == nil {
+					variantEquip[slot] = variantItem
+					stringBuild.WriteString(variantItem.BaseName())
+					stringBuild.WriteRune(' ')
+				} else {
+					stringBuild.WriteString("ERROR loading ")
+					stringBuild.WriteUint32(uint32(itemId))
+					stringBuild.WriteString(" (")
+					stringBuild.WriteString(err.Error())
+					stringBuild.WriteString(")")
+				}
 			}
 			stringBuild.WriteString(" ----------------")
 			printer.PrintlnFromBuild(stringBuild)
@@ -110,25 +118,26 @@ func (job *MainJob) reportSimResults_One(result *simulateMultiResult, printer ut
 	printer.Println0()
 }
 
-func (job *MainJob) findVariantItem(result *simulateMultiResult, itemId items.ItemId, prep *specItemPrep) *items.FullItem {
+func (job *MainJob) findVariantItem(result *simulateMultiResult, itemId items.ItemId, prep *specItemPrep) (*items.FullItem, error) {
 	variantItem := result.proposed.FindItemById(itemId)
 	if variantItem != nil {
-		return variantItem
+		return variantItem, nil
 	}
 
 	if item, found := prep.itemOptions.FindItemIdFirstOptional(itemId); found {
-		return item
+		return item, nil
 	}
 
 	for _, otherPrep := range job.itemPrep {
 		if item, found := otherPrep.itemOptions.FindItemIdFirstOptional(itemId); found {
-			return item
+			return item, nil
 		}
 	}
 
-	_, example := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, prep.model, job.printer)
-	return example
+	item, err := setup.OptionsSetup_OneItem_FromItemId_NoForges(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, prep.model, job.printer)
+	return item, err
 }
+
 func (job *MainJob) reportAsCsv(simResultList []*simMultiRankable) {
 	outputTypesByParam, rowCount, needPermuteLine := csvPrepareCollections(simResultList, job.itemPrep)
 	labelOrder := job.paramOrderSlice()

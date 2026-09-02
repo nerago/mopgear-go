@@ -30,8 +30,12 @@ func (work *specWorker) runCullingProcess(targetNum int64, waitGroup *sync.WaitG
 		resultChannel := highCull.Run(cancel)
 
 		for solvedSet := range resultChannel {
-			fullSet := items.FullItemSet_FromSolved(solvedSet, work.ItemOptions())
-			work.AddSeenScaled(fullSet.Items(), addScale)
+			fullSet, err := items.FullItemSet_FromSolved(solvedSet, work.ItemOptions())
+			if err == nil {
+				work.AddSeenScaled(fullSet.Items(), addScale)
+			} else {
+				util.GlobalWarnHandler(err)
+			}
 			currentNum.Add(1)
 		}
 

@@ -1,10 +1,10 @@
 package items
 
 import (
-	"fmt"
 	"iter"
 	"slices"
 
+	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_collection"
 )
 
@@ -62,7 +62,7 @@ func (optionsMap *FullOptionsMap) FindItemId(itemId ItemId) iter.Seq[FullItem] {
 	}
 }
 
-func (optionsMap *FullOptionsMap) FindItemIdFirst(itemId ItemId) *FullItem {
+func (optionsMap *FullOptionsMap) FindItemIdFirstOrPanic(itemId ItemId) *FullItem {
 	for slot := range optionsMap {
 		for i := range optionsMap[slot] {
 			item := &optionsMap[slot][i]
@@ -86,7 +86,7 @@ func (optionsMap *FullOptionsMap) FindItemIdFirstOptional(itemId ItemId) (*FullI
 	return nil, false
 }
 
-func (optionsMap *FullOptionsMap) FindItemIdSlotUnique(itemId ItemId) SlotEquip {
+func (optionsMap *FullOptionsMap) FindItemIdSlotUniqueOrPanic(itemId ItemId) SlotEquip {
 	var slotFound SlotEquip
 	found := false
 	for slot := range optionsMap {
@@ -289,24 +289,37 @@ func (optionsMap *FullOptionsMap) MapEachItem(mapper func(*FullItem) FullItem) {
 	}
 }
 
-func (optionsMap *FullOptionsMap) FilterAllItems(filter func(*FullItem) bool) {
+func (optionsMap *FullOptionsMap) MapEachItemPassError(mapper func(*FullItem) (FullItem, error)) error {
+	for i := range optionsMap {
+		newSlice, err := util_collection.MapSliceAsNew_PassError(optionsMap[i], mapper)
+		if err != nil {
+			return err
+		}
+		optionsMap[i] = newSlice
+	}
+	return nil
+}
+
+func (optionsMap *FullOptionsMap) FilterAllItems(filter func(*FullItem) bool) error {
 	for i := range optionsMap {
 		if len(optionsMap[i]) > 0 {
 			optionsMap[i] = util_collection.FilterSliceAsNew(optionsMap[i], filter)
 			if len(optionsMap[i]) == 0 {
-				panic(fmt.Sprintf("removing items leaves slot %s empty", SlotEquip(i).Name()))
+				return util.ErrorTracedNewFormat("removing items leaves slot %s empty", SlotEquip(i).Name())
 			}
 		}
 	}
+	return nil
 }
 
-func (optionsMap *FullOptionsMap) FilterSlot(slot SlotEquip, filter func(*FullItem) bool) {
+func (optionsMap *FullOptionsMap) FilterSlot(slot SlotEquip, filter func(*FullItem) bool) error {
 	if len(optionsMap[slot]) > 0 {
 		optionsMap[slot] = util_collection.FilterSliceAsNew(optionsMap[slot], filter)
 		if len(optionsMap[slot]) == 0 {
-			panic("removing items leaves slot empty " + slot.Name())
+			return util.ErrorTracedNew("removing items leaves slot empty " + slot.Name())
 		}
 	}
+	return nil
 }
 
 func (optionsMap *FullOptionsMap) FilterSlotNoValidate(slot SlotEquip, filter func(*FullItem) bool) {
@@ -315,33 +328,36 @@ func (optionsMap *FullOptionsMap) FilterSlotNoValidate(slot SlotEquip, filter fu
 	}
 }
 
-func (optionsMap *FullOptionsMap) RemoveItemIdFromAll(itemId ItemId) {
+func (optionsMap *FullOptionsMap) RemoveItemIdFromAll(itemId ItemId) error {
 	for slot := range optionsMap {
 		if len(optionsMap[slot]) > 0 {
 			optionsMap[slot] = util_collection.FilterSliceAsNew(optionsMap[slot], func(x *FullItem) bool { return x.ItemId() != itemId })
 			if len(optionsMap[slot]) == 0 {
-				panic("removing items leaves slot empty")
+				return util.ErrorTracedNew("removing items leaves slot empty")
 			}
 		}
 	}
+	return nil
 }
 
-func (optionsMap *FullOptionsMap) RemoveItemIdFromSlot(slot SlotEquip, itemId ItemId) {
+func (optionsMap *FullOptionsMap) RemoveItemIdFromSlot(slot SlotEquip, itemId ItemId) error {
 	if len(optionsMap[slot]) > 0 {
 		optionsMap[slot] = util_collection.FilterSliceAsNew(optionsMap[slot], func(x *FullItem) bool { return x.ItemId() != itemId })
 		if len(optionsMap[slot]) == 0 {
-			panic("removing items leaves slot empty " + slot.Name())
+			return util.ErrorTracedNew("removing items leaves slot empty " + slot.Name())
 		}
 	}
+	return nil
 }
 
-func (optionsMap *FullOptionsMap) ForceSlotOnlySpecifiedItemId(slot SlotEquip, itemId ItemId) {
+func (optionsMap *FullOptionsMap) ForceSlotOnlySpecifiedItemId(slot SlotEquip, itemId ItemId) error {
 	if len(optionsMap[slot]) > 0 {
 		optionsMap[slot] = util_collection.FilterSliceAsNew(optionsMap[slot], func(x *FullItem) bool { return x.ItemId() == itemId })
 		if len(optionsMap[slot]) == 0 {
-			panic("removing items leaves slot empty " + slot.Name())
+			return util.ErrorTracedNew("removing items leaves slot empty " + slot.Name())
 		}
 	}
+	return nil
 }
 
 func (optionsMap *FullOptionsMap) RemoveDuplicates() {
