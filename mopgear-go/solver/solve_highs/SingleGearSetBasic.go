@@ -11,9 +11,12 @@ import (
 )
 
 const (
-	c_single_basic_scaled_ratings = 1.0e-8 // try to make highs happier
-	// example rating 138082172 1.38e8
-	c_single_basic_ratings_high_range = 1.0e10 * c_single_basic_scaled_ratings
+	c_single_basic_default_scaled_ratings = 1.0e-9
+
+	// when called from multi solve ratings will get multiplied to range 0.1-10, this has nice margin
+	// less clear on single set calls, baseline highish example is 1.822136e+08, with our multiplier above that turns into 0.1822136, more than fine
+	// but depends on weights which aren't scaled consistently
+	c_single_basic_ratings_high_range = 1000
 )
 
 type singleGearSetBasic struct {
@@ -27,26 +30,25 @@ func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, model *solve_highs
 	build.TimeLimitSeconds = timeout
 
 	sb := makeGearSetBasic(build)
-	outputVar, err := sb.setup(model, itemOptions)
+	outputVar, err := sb.setup(model, itemOptions, c_single_basic_default_scaled_ratings)
 	if err != nil {
 		return nil, err
 	}
 	build.ChangeColumnOutputWeight(outputVar.columnIndex, 1)
 
-	return sb.runForFutureResult(itemOptions, model, printer), nil
+	return sb.runForFutureResult(itemOptions, model, printer, c_single_basic_default_scaled_ratings), nil
 }
 
 func makeGearSetBasic(build *util_highs.LinearBuilder) *singleGearSetBasic {
 	return &singleGearSetBasic{
 		singleGearSetShared: singleGearSetShared{
 			build:             build,
-			ratingPreScale:    c_single_basic_scaled_ratings,
 			bonusComboHandler: gearBonusComboHandler{build: build},
 		},
 	}
 }
 
-func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) (*columnInfo, error) {
+func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, ratingOutputScale float64) (*columnInfo, error) {
 	if err := sb.itemSetupCommon.prepare(model, itemOptions, sb.createItemColumn); err != nil {
 		return nil, err
 	}
@@ -56,7 +58,7 @@ func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOp
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
 		columnIndex := sb.itemSetupCommon.addItemCommon(slot, item)
-		sb.itemSetupBasic.addItem(item, model.CalcRatingItem, columnIndex)
+		sb.itemSetupBasic.addItem(item, model.CalcRatingItem, columnIndex, ratingOutputScale)
 	}
 
 	if err := sb.itemSetupCommon.finishItemsEquipped(itemOptions, sb.build); err != nil {

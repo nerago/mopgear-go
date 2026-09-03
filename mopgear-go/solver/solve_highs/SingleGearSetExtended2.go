@@ -20,13 +20,13 @@ func SingleGearSetExtended2Main(itemOptions *items.SolvableOptionsMap, model *so
 	build.TimeLimitSeconds = timeout
 
 	se2 := makeGearSetExtended2(build)
-	outputVar, err := se2.setup(model, itemOptions)
+	outputVar, err := se2.setup(model, itemOptions, 1)
 	if err != nil {
 		return nil, err
 	}
 	build.ChangeColumnOutputWeight(outputVar.columnIndex, 1)
 
-	return se2.runForFutureResult(itemOptions, model, printer), nil
+	return se2.runForFutureResult(itemOptions, model, printer, 1), nil
 }
 
 func makeGearSetExtended2(build *util_highs.LinearBuilder) *singleGearSetExtended2 {
@@ -34,22 +34,22 @@ func makeGearSetExtended2(build *util_highs.LinearBuilder) *singleGearSetExtende
 		singleGearSetExtended: singleGearSetExtended{
 			singleGearSetShared: singleGearSetShared{
 				build:             build,
-				ratingPreScale:    1,
 				bonusComboHandler: gearBonusComboHandler{build: build},
 			},
 		},
 	}
 }
 
-func (se2 *singleGearSetExtended2) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) (*columnInfo, error) {
-	se2.itemSetupCommon.prepare(model, itemOptions, se2.createItemColumn)
+func (se2 *singleGearSetExtended2) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, ratingOutputScale float64) (*columnInfo, error) {
+	if err := se2.itemSetupCommon.prepare(model, itemOptions, se2.createItemColumn); err != nil {
+		return nil, err
+	}
 	se2.itemSetupEx.prepareStatTotals()
 	se2.itemSetupEx.prepareRequireEx(&model.StatRequirements)
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
 		columnIndex := se2.itemSetupCommon.addItemCommon(slot, item)
-		err := se2.itemSetupEx.addItem(item, &model.StatRequirements, columnIndex)
-		if err != nil {
+		if err := se2.itemSetupEx.addItem(item, &model.StatRequirements, columnIndex); err != nil {
 			return nil, err
 		}
 	}
@@ -74,5 +74,6 @@ func (se2 *singleGearSetExtended2) setup(model *solve_highs_types.SolverModel, i
 	}
 
 	// multiply combos
-	return se2.calcFromSimValueToOutput(simValueTotalColumns, countSetItemsCol, model, &model.Weights2.SimPriority, c_gearExtended2ScoreHigh)
+	// simValueTotalColumns[simType] * activeCombo.simMultiplier -> simValueComboColumns[simType] -> mainOutputVar
+	return se2.multiplySimValuesByCombo(simValueTotalColumns, model, &model.Weights2.SimPriority, countSetItemsCol, c_gearExtended2ScoreHigh, ratingOutputScale)
 }

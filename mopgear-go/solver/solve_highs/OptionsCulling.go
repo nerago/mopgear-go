@@ -94,7 +94,8 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 		return err
 	}
 
-	if outputVar, err := single.setup(process.solveModel, &itemOptions); err == nil {
+	ratingScale := 1.0
+	if outputVar, err := single.setup(process.solveModel, &itemOptions, ratingScale); err == nil {
 		linearBuild.ChangeColumnOutputWeight(outputVar.columnIndex, 1)
 	} else {
 		return err

@@ -10,6 +10,7 @@ import (
 
 const c_gearExtended3StatHigh = 100000
 const c_gearExtended3ScoreHigh = 100
+const c_gearExtended3ScoreMax = 50
 
 type singleGearSetExtended3 struct {
 	singleGearSetExtended
@@ -22,14 +23,14 @@ func SingleGearSetExtended3Main(itemOptions *items.SolvableOptionsMap, model *so
 	//build.AddOptionBool("presolve_rule_logging", true)
 
 	se3 := makeGearSetExtended3(build)
-	outputVar, err := se3.setup(model, itemOptions)
+	outputVar, err := se3.setup(model, itemOptions, 1)
 	if err != nil {
 		return nil, err
 	}
 
 	build.ChangeColumnOutputWeight(outputVar.columnIndex, 1)
 
-	return se3.runForFutureResult(itemOptions, model, printer), nil
+	return se3.runForFutureResult(itemOptions, model, printer, 1), nil
 }
 
 func makeGearSetExtended3(build *util_highs.LinearBuilder) *singleGearSetExtended3 {
@@ -37,15 +38,16 @@ func makeGearSetExtended3(build *util_highs.LinearBuilder) *singleGearSetExtende
 		singleGearSetExtended: singleGearSetExtended{
 			singleGearSetShared: singleGearSetShared{
 				build:             build,
-				ratingPreScale:    1,
 				bonusComboHandler: gearBonusComboHandler{build: build},
 			},
 		},
 	}
 }
 
-func (se3 *singleGearSetExtended3) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) (*columnInfo, error) {
-	se3.itemSetupCommon.prepare(model, itemOptions, se3.createItemColumn)
+func (se3 *singleGearSetExtended3) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, ratingOutputScale float64) (*columnInfo, error) {
+	if err := se3.itemSetupCommon.prepare(model, itemOptions, se3.createItemColumn); err != nil {
+		return nil, err
+	}
 	se3.itemSetupEx.prepareStatTotals()
 	se3.itemSetupEx.prepareRequireEx(&model.StatRequirements)
 
@@ -77,5 +79,6 @@ func (se3 *singleGearSetExtended3) setup(model *solve_highs_types.SolverModel, i
 	}
 
 	// simValueTotalColumns * activeCombo -> simValueComboColumns -> mainOutputVar
-	return se3.calcFromSimValueToOutput(simValueTotalColumns, countSetItemsCol, model, &model.Weights3.SimPriority, c_gearExtended3ScoreHigh)
+	// simValueTotalColumns[simType] * activeCombo.simMultiplier -> simValueComboColumns[simType] -> mainOutputVar
+	return se3.multiplySimValuesByCombo(simValueTotalColumns, model, &model.Weights3.SimPriority, countSetItemsCol, c_gearExtended3ScoreHigh, ratingOutputScale)
 }

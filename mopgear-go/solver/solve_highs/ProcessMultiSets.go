@@ -263,7 +263,7 @@ func (process *SolverHighsMultiProcess) runVariant(build *util_highs.LinearBuild
 		if solution.HasSolution() {
 			return process.solutionToResult(solution, printer, false)
 		} else {
-			return nil, util.ErrorTracedNew("highs status " + solution.Status().String())
+			return nil, util.ErrorTracedNew("variant solve status " + solution.Status().String())
 		}
 	})
 }
@@ -390,12 +390,12 @@ func (param *SolverHighsMultiParam) makeSingleGearSet(build *util_highs.LinearBu
 	}
 	param.singleGearSet = singleGearSet
 
-	setOutput, err := param.singleGearSet.setup(&param.SolverModel, &param.solveOptions)
+	setOutput, err := param.singleGearSet.setup(&param.SolverModel, &param.solveOptions, param.RatingMultiply)
 	if err != nil {
 		return err
 	}
 
-	job.outputRow.Add(setOutput.columnIndex, param.RatingMultiply/param.singleGearSet.getRatingPreScale())
+	job.outputRow.Add(setOutput.columnIndex, 1)
 	return nil
 }
 
