@@ -154,11 +154,15 @@ func (wr *WeightResult3) AsWeight1(verificationInputs []WeightInput) *Weight1Bas
 		return nil
 	}
 }
-func (wr *WeightResult4) AsWeight1(verificationInputs []WeightInput) *Weight1Basic {
+func (wr *WeightResult4) AsWeight1(verificationInputs []WeightInput) (*Weight1Basic, error) {
 	if wr.Weight != nil {
-		return wr.Weight.ConvertToWeight2().ConvertToWeight1()
+		weight2, err := wr.Weight.ConvertToWeight2(verificationInputs)
+		if err != nil {
+			return nil, err
+		}
+		return weight2.ConvertToWeight1(), nil
 	} else {
-		return nil
+		return nil, nil
 	}
 }
 
@@ -175,11 +179,11 @@ func (wr *WeightResult3) AsWeight2(verificationInputs []WeightInput) *Weight2Ext
 		return nil
 	}
 }
-func (wr *WeightResult4) AsWeight2(_ []WeightInput) *Weight2Extended {
+func (wr *WeightResult4) AsWeight2(verificationInputs []WeightInput) (*Weight2Extended, error) {
 	if wr.Weight != nil {
-		return wr.Weight.ConvertToWeight2()
+		return wr.Weight.ConvertToWeight2(verificationInputs)
 	} else {
-		return nil
+		return nil, nil
 	}
 }
 

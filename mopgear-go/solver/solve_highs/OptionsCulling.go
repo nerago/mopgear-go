@@ -133,7 +133,7 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 		if err := validateNewSet(result, &itemOptions, process.solveModel.CheckSet); err != nil {
 			return err
 		}
-		if err := single.checkSetRatingIsObjective(solution, &result, process.solveModel.CalcRatingSet); err != nil {
+		if err := single.checkSetRatingIsObjective(solution, &result, process.solveModel.CalcRatingSet, ratingScale); err != nil {
 			return err
 		}
 

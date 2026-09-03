@@ -60,11 +60,18 @@ func statWeights_CompareAlgorithms(printer *util.PrintRecorder) {
 	inputDataBasic, basicSimBase := readWeightBasicInputsFile("tempdata/sim-stats-compare-basic.json")
 	//inputDataGrid := readWeightInputFile("tempdata/weightfind-sim-grid-Prot-Mitigation-NoSet.json")
 	//inputDataRandom := readWeightInputFile("tempdata/weightfind-sim-real-Prot-Mitigation-NoSet.json")
-	inputDataGrid := weight_types.WeightInputReadFile("tempdata/weightfind-sim-grid-Prot-Mitigation.json")
-	inputDataRandom := weight_types.WeightInputReadFile("tempdata/weightfind-sim-real-Prot-Mitigation.json")
+	inputDataGrid, errRead1 := weight_types.WeightInputReadFile("tempdata/weightfind-sim-grid-Prot-Mitigation.json")
+	inputDataRandom, errRead2 := weight_types.WeightInputReadFile("tempdata/weightfind-sim-real-Prot-Mitigation.json")
 	//inputDataGrid := readWeightInputFile("tempdata/sim-stats-compare-grid.json")
 	//inputDataRandom := readWeightInputFile("tempdata/sim-stats-compare-rand.json")
 	mixedInputDataFull := slices.Concat(inputDataGrid, inputDataRandom)
+
+	if errRead1 != nil {
+		panic(errRead1)
+	}
+	if errRead2 != nil {
+		panic(errRead2)
+	}
 
 	//sampleSize := 50
 	//inputDataGrid = util_collection.SliceSampleRandom(inputDataGrid, sampleSize)

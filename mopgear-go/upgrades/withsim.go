@@ -14,7 +14,10 @@ import (
 )
 
 func processSpecUpgrade(settings *InputSettings, spec *SpecInput, difficulty stats.Difficulty, tracker *util.TrackProgress, printer *util.PrintRecorder) ([]upgradeItemResult, error) {
-	itemOptions := setup.OptionsSetup_FromGearFile(spec.GearFile, &spec.Model, setup.MissingEnchant_Panic, printer)
+	itemOptions,err := setup.OptionsSetup_FromGearFile(spec.GearFile, &spec.Model, setup.MissingEnchant_Panic, printer)
+	if err != nil {
+		return nil, err
+	}
 
 	upgradeItems := spec.ItemFinder(difficulty)
 	upgradeItems = util_collection.RemoveDuplicatesComparable_NewIfChanged(upgradeItems)

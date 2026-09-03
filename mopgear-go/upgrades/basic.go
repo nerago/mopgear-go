@@ -93,9 +93,13 @@ func addSubstituteItems(optionsMap *items.FullOptionsMap, substituteItems []item
 	for _, itemId := range substituteItems {
 		if !optionsMap.IncludesItemId(itemId) {
 			// TODO system for random suffixes
-			options, example := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, model, printer)
-			optionsMap.AddSeveralOptions(example.SlotItem(), options)
-			printer.Println("SUBSTITUTE " + example.CreateString())
+			options, example, err := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, model, printer)
+			if err == nil {
+				optionsMap.AddSeveralOptions(example.SlotItem(), options)
+				printer.Println("SUBSTITUTE " + example.CreateString())
+			} else {
+				printer.Printf("SUBSTITUTE ERROR %d: %v", itemId, err)
+			}
 		}
 	}
 }
@@ -127,7 +131,11 @@ func performUpgradeTask(task *upgradeItemTask, baseItems *items.FullOptionsMap, 
 	innerPrint := util.PrintRecorder_HoldAll()
 
 	itemRef := task.itemRef
-	newOptions, exampleItem := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemRef.ItemId, itemRef.UpgradeLevel, itemRef.RandomSuffix, model, innerPrint)
+	newOptions, exampleItem, err := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemRef.ItemId, itemRef.UpgradeLevel, itemRef.RandomSuffix, model, innerPrint)
+	if err != nil {
+		return upgradeItemResult_OfError(task, err)
+	}
+
 	jobItems := baseItems.Clone()
 	jobItems[task.slot] = newOptions
 
@@ -135,7 +143,10 @@ func performUpgradeTask(task *upgradeItemTask, baseItems *items.FullOptionsMap, 
 	innerPrint.Println("REPLACING " + baseItems.Get(task.slot)[0].CreateString())
 
 	if task.canUpgrade == items.CanUpgrade_Equipped || task.canUpgrade == items.CanUpgrade_Equipped_Similar {
-		removePairedSimilar(&jobItems, task.slot, exampleItem, substituteEmptySlotOnly, model, innerPrint)
+		err := removePairedSimilar(&jobItems, task.slot, exampleItem, substituteEmptySlotOnly, model, innerPrint)
+		if err != nil {
+			return upgradeItemResult_OfError(task, err)
+		}
 	}
 
 	output := solver.Solver(
@@ -165,7 +176,7 @@ func performUpgradeTask(task *upgradeItemTask, baseItems *items.FullOptionsMap, 
 	return result
 }
 
-func removePairedSimilar(jobItems *items.FullOptionsMap, testSlot items.SlotEquip, testItem *items.FullItem, substituteEmptySlotOnly map[items.SlotItem]items.ItemId, model *gear_model.SpecModel, printer *util.PrintRecorder) {
+func removePairedSimilar(jobItems *items.FullOptionsMap, testSlot items.SlotEquip, testItem *items.FullItem, substituteEmptySlotOnly map[items.SlotItem]items.ItemId, model *gear_model.SpecModel, printer *util.PrintRecorder) error {
 	pairedSlot := testSlot.PairedSlot()
 	if pairedSlot != items.SlotEquip_Invalid {
 		printer.Println("removePairedSimilar")
@@ -177,11 +188,15 @@ func removePairedSimilar(jobItems *items.FullOptionsMap, testSlot items.SlotEqui
 		if len(jobItems[pairedSlot]) == 0 {
 			substituteId, hasSub := substituteEmptySlotOnly[testItem.SlotItem()]
 			if hasSub {
-				subOpts, _ := setup.OptionsSetup_OneItem_FromItemId_AllForges(substituteId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, model, printer)
+				subOpts, _, err := setup.OptionsSetup_OneItem_FromItemId_AllForges(substituteId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, model, printer)
+				if err != nil {
+					return fmt.Errorf("remove paired error: %w", err)
+				}
 				jobItems[pairedSlot] = subOpts
 			} else {
-				panic("remove paired " + testItem.BaseName() + " left empty slot")
+				return util.ErrorTracedNew("remove paired " + testItem.BaseName() + " left empty slot")
 			}
 		}
 	}
+	return nil
 }

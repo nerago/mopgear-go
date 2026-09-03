@@ -52,6 +52,7 @@ func (task upgradeItemTask) Equals(other upgradeItemTask) bool {
 type upgradeItemResult struct {
 	upgradeItemTask
 	success   bool
+	err       error
 	fullItem  *items.FullItem
 	itemSet   *items.FullItemSet
 	setBonus  uint8
@@ -62,6 +63,10 @@ type upgradeItemResult struct {
 
 func upgradeItemResult_OfFailure(task *upgradeItemTask, fullItem *items.FullItem) upgradeItemResult {
 	return upgradeItemResult{upgradeItemTask: *task, success: false, fullItem: fullItem, factor: util_collection.Optional_Empty[float64]()}
+}
+
+func upgradeItemResult_OfError(task *upgradeItemTask, err error) upgradeItemResult {
+	return upgradeItemResult{upgradeItemTask: *task, success: false, err: err}
 }
 
 func (result upgradeItemResult) Equals(other upgradeItemResult) bool {

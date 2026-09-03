@@ -193,11 +193,18 @@ func makeWithAllSameValue(statList []stats.StatType, value int32) incrementStatC
 	return combo
 }
 
-func GenerateRandomSets(gearFile string, substituteItems []items.ItemId, model *gear_model.SpecModel, makeSetCount int, printer *util.PrintRecorder, label string, includeBestWorst bool) ([]items.FullItemSet, items.FullOptionsMap) {
-	itemOptions := setup.OptionsSetup_FromGearFile(gearFile, model, setup.MissingEnchant_Panic, printer)
+func GenerateRandomSets(gearFile string, substituteItems []items.ItemId, model *gear_model.SpecModel, makeSetCount int, printer *util.PrintRecorder, label string, includeBestWorst bool) ([]items.FullItemSet, items.FullOptionsMap, error) {
+	itemOptions, err := setup.OptionsSetup_FromGearFile(gearFile, model, setup.MissingEnchant_Panic, printer)
+	if err != nil {
+		return nil, items.FullOptionsMap{}, err
+	}
+
 	for _, itemId := range substituteItems {
-		// TODO support for random suffix items
-		opts, example := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, model, printer)
+		opts, example, err := setup.OptionsSetup_OneItem_FromItemId_AllForges(itemId, items.MAX_UPGRADE_LEVEL, items.NO_RANDOM_SUFFIX, model, printer)
+		if err != nil {
+			return nil, items.FullOptionsMap{}, err
+		}
+
 		example.SlotItem().ForEachEquip(func(slotEquip items.SlotEquip) {
 			if itemOptions.Has(slotEquip) {
 				itemOptions.AddSeveralOptionsSpecific(slotEquip, opts)
@@ -210,11 +217,14 @@ func GenerateRandomSets(gearFile string, substituteItems []items.ItemId, model *
 	if includeBestWorst {
 		setList = append(setList, solve_build.SolverBuildBestWorst(&itemOptions, model)...)
 	}
-	return setList, itemOptions
+	return setList, itemOptions, nil
 }
 
 func SimulateRealRandomSets(gearFile string, substituteItems []items.ItemId, model *gear_model.SpecModel, makeSetCount int, simSize simulate.WowSim_RunSize, fixStatsMode weight_types.FixStatsRangeMode, printer *util.PrintRecorder, track *util.TrackProgress, label string, cancel util_async.CancelSignal) ([]weight_types.WeightInput, error) {
-	setList, _ := GenerateRandomSets(gearFile, substituteItems, model, makeSetCount, printer, label, true)
+	setList, _, err := GenerateRandomSets(gearFile, substituteItems, model, makeSetCount, printer, label, true)
+	if err != nil {
+		return nil, err
+	}
 
 	track.RunOuterTracking(len(setList))
 	defer track.SetDone()

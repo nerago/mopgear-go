@@ -66,7 +66,10 @@ func testBasicStatsGeneral(printer *util.PrintRecorder) {
 	// modelEquipOnly := model.Model_PallyProtDps()
 	// goal := stats.UpgradeGoal_Dps
 
-	currentEquip := setup.OptionsSetup_FromEquipped_OriginalForgeOnly(loaders.GearFileReader_Read(startGear), &modelEquipOnly, setup.MissingEnchant_Panic, printer)
+	currentEquip, err := setup.OptionsSetup_FromEquipped_OriginalForgeOnly(loaders.GearFileReader_Read(startGear), &modelEquipOnly, setup.MissingEnchant_Panic, printer)
+	if err != nil {
+		panic(err)
+	}
 	itemSet := items.FullItemSet_FromMap(currentEquip)
 
 	inputData, simBase := generateRatingsInputFromArtificialStatOverrides_ForBasic(itemSet, printer, simSpeed, modelEquipOnly.SimSpeedUp, modelEquipOnly.StatsForWeighting, spec, goal, fight, modelEquipOnly.Professions, util.TrackProgress_Start())
@@ -79,7 +82,12 @@ func testBasicStatsGeneral(printer *util.PrintRecorder) {
 	for _, data := range inputData {
 		process.AddSimData(data.IncrementStat, uint32(data.IncrementValue), data.SimResult)
 	}
-	process.Run()
+	weightFuture, err := process.Run()
+	if err != nil {
+		panic(err)
+	}
+	weight := weightFuture.WaitForResultOrPanic()
+	tools.WritePawnString(*weight.Weight, printer)
 }
 
 type basicStatInput struct {
@@ -196,7 +204,10 @@ func statWeightsFormula3(printer *util.PrintRecorder) {
 		panic(err)
 	}
 	weightResult := weightResultFuture.WaitForResultOrPanic()
-	weights1 := weightResult.AsWeight1(weightInputs)
+	weights1, err := weightResult.AsWeight1(weightInputs)
+	if err != nil {
+		panic(err)
+	}
 	if weights1 != nil {
 		tools.WritePawnString(*weights1, printer)
 	} else {
