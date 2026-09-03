@@ -23,7 +23,7 @@ import (
 func paladinMultiRun(printer *util.PrintRecorder) {
 	job := multi_types.JobInputs{}
 	job.SetMinimumExtraItemLevel(463)
-	job.SetTimeLimitEachSolver(1000)
+	job.SetTimeLimitEachSolver(6000)
 	job.SetSimSize(simulate.RunSize_Largish)
 	//simSize := simulate.RunSize_Common
 	//simSize := simulate.RunSize_QuickDirty
@@ -39,7 +39,7 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 			GearFile:                     files.GearFileRet,
 			RequestRatingPercent:         0.06,
 			ExtraUpgradeLevel:            extraUpgrade,
-			ForceUpgradeExistingItems:    0,
+			ForceUpgradeExistingItems:    forceUpgrade,
 			MissingEnchant:               setup.MissingEnchant_Panic,
 			ExpectAllBonusItemsAvailable: true,
 		},
@@ -238,34 +238,34 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()
 
-	if false {
+	if true {
 		taskQuick := multi_types.JobInputTask{
 			AlsoExistingEquipped:  true,
 			AlsoSpecOptimums:      true,
 			Alternates:            multi_types.AlternateModeNone,
 			AlternatesLimit:       util_collection.Optional_Empty[int](),
 			IncludeInterimResults: false,
-			WeightTypeList:        []weight_types.WeightType{1},
+			WeightTypeList:        []weight_types.WeightType{1, 2},
 			//WeightTypeList:          []weight_types.WeightType{3},
 			RunDecimate:             false,
 			ReforgingAllowNonCommon: false,
 		}
 		multi.JobCreate(printer, job, taskQuick).Run()
 	} else if false {
-		taskChooseToken := multi_types.JobInputTask{
+		taskMostlyBasic := multi_types.JobInputTask{
 			AlsoExistingEquipped:  true,
-			AlsoSpecOptimums:      false,
+			AlsoSpecOptimums:      true,
 			Alternates:            multi_types.AlternateModeItemAndReforgeBlocks,
-			AlternatesLimit:       util_collection.Optional_OfValue[int](12),
+			AlternatesLimit:       util_collection.Optional_OfValue[int](4),
 			IncludeInterimResults: false,
-			WeightTypeList:        []weight_types.WeightType{1, 2},
+			WeightTypeList:        []weight_types.WeightType{1},
 			//WeightTypeList:          []weight_types.WeightType{3},
 			RunDecimate:             false,
 			ReforgingAllowNonCommon: true,
 		}
-		taskChooseToken.AddAlternateItemsChoices(99368, 99387)
-		multi.JobCreate(printer, job, taskChooseToken).Run()
-	} else if true {
+		//taskChooseToken.AddAlternateItemsChoices(99368, 99387)
+		multi.JobCreate(printer, job, taskMostlyBasic).Run()
+	} else if false {
 		// OPTION standard weight 1 with all the toppings
 		weightTypes := []weight_types.WeightType{1, 2}
 
@@ -295,23 +295,22 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		}
 
 		// weight 3 with optimums
-		task3 := multi_types.JobInputTask{
-			AlsoExistingEquipped:    false,
-			AlsoSpecOptimums:        true,
-			Alternates:              multi_types.AlternateModeNone,
-			AlternatesLimit:         util_collection.Optional_Empty[int](),
-			IncludeInterimResults:   false,
-			WeightTypeList:          []weight_types.WeightType{3},
-			RunDecimate:             false,
-			ReforgingAllowNonCommon: false,
-		}
+		//task3 := multi_types.JobInputTask{
+		//	AlsoExistingEquipped:    false,
+		//	AlsoSpecOptimums:        true,
+		//	Alternates:              multi_types.AlternateModeNone,
+		//	IncludeInterimResults:   false,
+		//	WeightTypeList:          []weight_types.WeightType{3},
+		//	RunDecimate:             true,
+		//	ReforgingAllowNonCommon: false,
+		//}
 
 		//run := multi.JobCreate(printer, job, task1)
 		//run := multi.JobCreate(printer, job, task2)
-		//run := multi.JobCreate(printer, job, task1, task2)
-		run := multi.JobCreate(printer, job, task1, task2, task3)
+		run := multi.JobCreate(printer, job, task1, task2)
+		//run := multi.JobCreate(printer, job, task1, task2, task3)
 		run.Run()
-	} else if true {
+	} else if false {
 		// weight 2 with optimums, some alternates
 		task2 := multi_types.JobInputTask{
 			AlsoExistingEquipped:    false,
@@ -330,11 +329,11 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		task3 := multi_types.JobInputTask{
 			AlsoExistingEquipped:    false,
 			AlsoSpecOptimums:        true,
-			Alternates:              multi_types.AlternateModeNone,
-			AlternatesLimit:         util_collection.Optional_Empty[int](),
+			Alternates:              multi_types.AlternateModeItemAndReforgeBlocks,
+			AlternatesLimit:         util_collection.Optional_OfValue(3),
 			IncludeInterimResults:   false,
 			WeightTypeList:          []weight_types.WeightType{3},
-			RunDecimate:             false,
+			RunDecimate:             true,
 			ReforgingAllowNonCommon: false,
 		}
 		run := multi.JobCreate(printer, job, task3)

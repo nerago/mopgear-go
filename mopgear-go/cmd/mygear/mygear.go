@@ -110,6 +110,7 @@ var OrgRaidDrops = []items.ItemId{
 	104515, // tar-coated gauntlets heroic
 	104440, // sorrowpath signet
 	104513, // demo belt heroic
+	104535, // wolf boots heroic
 }
 var OrgOneHandAndShield = []items.ItemId{
 	103826, // xifeng weapon
