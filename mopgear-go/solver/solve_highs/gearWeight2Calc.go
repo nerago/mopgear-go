@@ -55,8 +55,8 @@ func (calc2 *gearWeight2Calc) calcSim(simType stats.SimType, nestedWeights iter.
 		}
 	}
 
-	offset := -simEntry.RangingOffset
-	valueScale := -1.0 / simEntry.RangingScale
+	offset := -simEntry.Ranging.Offset
+	valueScale := -1.0 / simEntry.Ranging.Scale
 	simValueFromStatRow.Add(simValueColumn.columnIndex, valueScale)
 	simValueFromStatRow.Build(calc2.build, offset, offset)
 

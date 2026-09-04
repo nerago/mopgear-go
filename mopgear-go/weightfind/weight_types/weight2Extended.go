@@ -1,15 +1,12 @@
 package weight_types
 
 import (
-	"fmt"
 	"iter"
-	"math"
 	"slices"
 
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_collection"
-	"github.com/nerago/mopgear-go/util/util_rank"
 )
 
 // for extended stats planned calculation is:
@@ -58,8 +55,8 @@ func (we *Weight2Extended) GetSimPriority() *SimPriorityExtended {
 	return &we.SimPriority
 }
 
-func (we *Weight2Extended) SetSimScale(simType stats.SimType, rangingScale, rangingOffset, ratioScale float64) error {
-	return we.SimPriority.SetSimScale(simType, rangingScale, rangingOffset, ratioScale)
+func (we *Weight2Extended) SetSimScale(simType stats.SimType, rangingScaleOffset ScaleAndOffset, ratioScale float64) error {
+	return we.SimPriority.SetSimScale(simType, rangingScaleOffset, ratioScale)
 }
 
 func (we *Weight2Extended) FinishAndValidate(verificationInputs []WeightInput) error {
@@ -82,9 +79,8 @@ func (we *Weight2Extended) FinishAndValidateNoVerify() error {
 
 func (we *Weight2Extended) CalcStatScore(statBlock *stats.StatBlock) float64 {
 	totalSum := 0.0
-	for simType, nested := range we.DetailedWeights.SeqKey1NestedKey2Value() {
-		subTotal := we.scoreForSimWeighted(statBlock, nested, simType)
-
+	for _, simType := range we.SimList {
+		subTotal := we.scoreForSimWeighted(statBlock, simType)
 		totalSum += subTotal
 	}
 	return totalSum
@@ -92,31 +88,25 @@ func (we *Weight2Extended) CalcStatScore(statBlock *stats.StatBlock) float64 {
 
 func (we *Weight2Extended) CalcStatScoreWithBonus(statBlock *stats.StatBlock, simBonus *stats.SimTypeMap[float64]) float64 {
 	totalSum := 0.0
-	for simType, nested := range we.DetailedWeights.SeqKey1NestedKey2Value() {
-		subTotal := we.scoreForSim(nested, statBlock)
-
-		priorityEntry := we.SimPriority.GetOrPanic(simType)
-		subTotal = priorityEntry.Apply(subTotal)
-
+	for _, simType := range we.SimList {
+		subTotal := we.scoreForSimWeighted(statBlock, simType)
 		subTotal *= simBonus.GetOrDefault(simType, 1)
-
 		totalSum += subTotal
 	}
 	return totalSum
 }
 
-func (we *Weight2Extended) scoreForSimWeighted(statBlock *stats.StatBlock, nested iter.Seq2[stats.StatType, float64], simType stats.SimType) float64 {
-	subTotal := we.scoreForSim(nested, statBlock)
+func (we *Weight2Extended) scoreForSimWeighted(statBlock *stats.StatBlock, simType stats.SimType) float64 {
+	subTotal := we.scoreForSimRaw(statBlock, simType)
 
 	priorityEntry := we.SimPriority.GetOrPanic(simType)
 	return priorityEntry.Apply(subTotal)
 }
 
-func (we *Weight2Extended) scoreForSim(nested iter.Seq2[stats.StatType, float64], statBlock *stats.StatBlock) float64 {
+func (we *Weight2Extended) scoreForSimRaw(statBlock *stats.StatBlock, simType stats.SimType) float64 {
 	subTotal := 0.0
-	for statType, detailWeight := range nested {
-		specificValue := detailWeight * statBlock.GetFloat(statType)
-		subTotal += specificValue
+	for statType, detailWeight := range we.DetailedWeights.SeqKey2ValueWithKey1(simType) {
+		subTotal += detailWeight * statBlock.GetFloat(statType)
 	}
 	return subTotal
 }
@@ -157,70 +147,6 @@ func (we *Weight2Extended) validateTypes() error {
 	return nil
 }
 
-func (we *Weight2Extended) verifyGoodRange(verificationInputs []WeightInput) error {
-	if len(verificationInputs) == 0 {
-		return util.ErrorTracedNew("no inputs for verification")
-	}
-
-	for _, simType := range we.SimList {
-		loValue, hiValue, _, _ := we.actualOutputValueRangeForInputs(verificationInputs, simType)
-
-		permittedSlack := 0.1
-		if math.Abs(loValue) > permittedSlack || math.Abs(hiValue-1) > permittedSlack {
-			return fmt.Errorf("weights fail to produce expected value range, actual: %f - %f", loValue, hiValue)
-		}
-	}
-
-	return nil
-}
-
-func (we *Weight2Extended) UpdateScaling(inputData []WeightInput) error {
-	if len(inputData) == 0 {
-		return util.ErrorTracedNew("no inputData for scaling")
-	}
-
-	targetLoValue := 0.0
-	targetHiValue := 1.0
-
-	for _, simType := range we.SimList {
-		_, _, loValueRaw, hiValueRaw := we.actualOutputValueRangeForInputs(inputData, simType)
-		oldPriorityEntry := we.SimPriority.GetOrPanic(simType)
-
-		// lo+offset = targetLo
-		offset := targetLoValue - loValueRaw
-		// (hi+offset)*scale=targetHi
-		// scale = targetHi / (hi+offset)
-		scale := targetHiValue / (hiValueRaw + offset)
-
-		we.SimPriority.Delete(simType)
-		err := we.SimPriority.SetSimScale(simType, scale, offset, oldPriorityEntry.RatioScale)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (we *Weight2Extended) actualOutputValueRangeForInputs(verificationInputs []WeightInput, simType stats.SimType) (float64, float64, float64, float64) {
-	lo := util_rank.BestCollector1[float64]{Minimise: true}
-	hi := util_rank.BestCollector1[float64]{Minimise: false}
-	priorityEntry := we.SimPriority.GetOrPanic(simType)
-
-	weightSeq := we.DetailedWeights.SeqKey2ValueWithKey1(simType)
-	for input := range util_collection.ForPointer(verificationInputs) {
-		score := we.scoreForSim(weightSeq, &input.TotalStat)
-		scoreWithRange := priorityEntry.ApplyRanging(score)
-		lo.Offer(&score, scoreWithRange)
-		hi.Offer(&score, scoreWithRange)
-	}
-
-	loValue := lo.GetBestScore()
-	loValueRaw := lo.GetBestOrNilValue()
-	hiValue := hi.GetBestScore()
-	hiValueRaw := hi.GetBestOrNilValue()
-	return loValue, hiValue, loValueRaw, hiValueRaw
-}
-
 func (we *Weight2Extended) Equals(other *Weight2Extended) bool {
 	return slices.Equal(we.StatList, other.StatList) &&
 		slices.Equal(we.SimList, other.SimList) &&
@@ -235,7 +161,7 @@ func (we *Weight2Extended) ConvertToWeight1() *Weight1Basic {
 		sumForStat := 0.0
 		for simType, detailWeight := range we.DetailedWeights.SeqKey1ValueWithKey2(statType) {
 			simEntry := we.SimPriority.GetOrPanic(simType)
-			componentValue := detailWeight * simEntry.RangingScale * simEntry.RatioScale
+			componentValue := detailWeight * simEntry.Ranging.Scale * simEntry.RatioScale
 			sumForStat += componentValue
 		}
 		weight1.Put(statType, sumForStat)
@@ -265,9 +191,9 @@ func (we *Weight2Extended) AppendString(sb *util.StringBuild2) {
 		sb.WriteString("(scale1=")
 		sb.WriteFloatScientific64(priority.RatioScale)
 		sb.WriteString(",scale2=")
-		sb.WriteFloatScientific64(priority.RangingScale)
+		sb.WriteFloatScientific64(priority.Ranging.Scale)
 		sb.WriteString(",offset=")
-		sb.WriteFloatScientific64(priority.RangingOffset)
+		sb.WriteFloatScientific64(priority.Ranging.Offset)
 		sb.WriteRune(',')
 		for statType, value := range we.DetailedWeights.SeqKey2ValueWithKey1(simType) {
 			sb.WriteString(statType.Name())

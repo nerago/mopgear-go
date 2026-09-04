@@ -100,22 +100,8 @@ func sequenceMetrics(seq iter.Seq[float64]) (minPosValue, maxPosValue, minNegVal
 	return minPosValue, maxPosValue, minNegValue, maxNegValue, hasNeg, hasPos, hasZero
 }
 
-type ScaleAndOffset struct {
-	Scale  float64
-	Offset float64
-}
-
-func (so ScaleAndOffset) Apply(value float64) float64 {
-	initial := (value + so.Offset) * so.Scale
-	if math.Abs(initial) <= 1e-9 {
-		return 0
-	} else {
-		return initial
-	}
-}
-
-func ChooseSimUnfriendlyUnitScaleAndOffset(inputData []weight_types.WeightInput, simTypeList []stats.SimType) stats.SimTypeMap[ScaleAndOffset] {
-	scaleMap := stats.SimTypeMap[ScaleAndOffset]{}
+func ChooseSimUnfriendlyUnitScaleAndOffset(inputData []weight_types.WeightInput, simTypeList []stats.SimType) stats.SimTypeMap[weight_types.ScaleAndOffset] {
+	scaleMap := stats.SimTypeMap[weight_types.ScaleAndOffset]{}
 	for _, simType := range simTypeList {
 		valueSeq := util_collection.MapSliceAsSeq(inputData, func(x *weight_types.WeightInput) float64 {
 			return x.SimResult.Get(simType)
@@ -127,8 +113,8 @@ func ChooseSimUnfriendlyUnitScaleAndOffset(inputData []weight_types.WeightInput,
 	return scaleMap
 }
 
-func ChooseSimDetailUnitScaleAndOffset(inputData []weight_types.WeightInput, simTypeList []stats.SimType) stats.SimTypeMap[ScaleAndOffset] {
-	scaleMap := stats.SimTypeMap[ScaleAndOffset]{}
+func ChooseSimDetailUnitScaleAndOffset(inputData []weight_types.WeightInput, simTypeList []stats.SimType) stats.SimTypeMap[weight_types.ScaleAndOffset] {
+	scaleMap := stats.SimTypeMap[weight_types.ScaleAndOffset]{}
 	for _, simType := range simTypeList {
 		var valueSeq iter.Seq[float64]
 
@@ -152,7 +138,7 @@ func ChooseSimDetailUnitScaleAndOffset(inputData []weight_types.WeightInput, sim
 	return scaleMap
 }
 
-func chooseUnitScaleAndOffset(seq iter.Seq[float64], isHighGood bool) ScaleAndOffset {
+func chooseUnitScaleAndOffset(seq iter.Seq[float64], isHighGood bool) weight_types.ScaleAndOffset {
 	minPosValue, maxPosValue, minNegValue, maxNegValue, hasNeg, hasPos, hasZero := sequenceMetrics(seq)
 
 	// TODO not sure if flipping negatives makes sense, rarely comes up though probably
@@ -178,40 +164,5 @@ func chooseUnitScaleAndOffset(seq iter.Seq[float64], isHighGood bool) ScaleAndOf
 		panic("can't determine value range for all zeros")
 	}
 
-	return CalcScaleOffsetForUnitRange(isHighGood, highestActual, lowestActual)
-}
-
-// scaleAndOffset logic: output = (input + so.offset) * so.scale
-// worstTarget = (worstActual + offset) * scale
-//
-//	-> worstTarget = worstActual*scale + offset*scale
-//	-> worstTarget - worstActual*scale = offset*scale
-//
-// bestTarget = (bestActual + offset) * scale
-//
-//	-> bestTarget = bestActual*scale + offset*scale
-//	-> bestTarget = bestActual*scale + (worstTarget - worstActual*scale)
-//	-> bestTarget - worstTarget = bestActual*scale - worstActual*scale
-//	-> bestTarget - worstTarget = (bestActual - worstActual) * scale
-//	-> (bestTarget - worstTarget) / (bestActual - worstActual) = scale
-//
-// bestTarget = (bestActual + offset) * scale
-//
-//	-> bestTarget / scale = bestActual + offset
-//	-> bestTarget / scale - bestActual = offset
-func CalcScaleOffsetForUnitRange(isHighGood bool, highestActual float64, lowestActual float64) ScaleAndOffset {
-	if !isHighGood {
-		// flip meaning so that best is closest to -inf
-		highestActual, lowestActual = lowestActual, highestActual
-	}
-
-	worstTarget := 0.0
-	bestTarget := 1.0
-
-	scale := (bestTarget - worstTarget) / (highestActual - lowestActual)
-	offset := (bestTarget / scale) - highestActual
-	return ScaleAndOffset{
-		Scale:  scale,
-		Offset: offset,
-	}
+	return weight_types.CalcScaleOffsetForUnitRange(isHighGood, highestActual, lowestActual)
 }

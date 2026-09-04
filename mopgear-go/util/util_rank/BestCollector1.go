@@ -3,6 +3,7 @@ package util_rank
 import (
 	"sync"
 
+	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_collection"
 )
 
@@ -117,7 +118,7 @@ func (collect *BestCollector1[T]) isBetter(value float64) bool {
 }
 
 // ######################## BestCollector1Lite ########################
-type BestCollector1Lite[T any] struct {
+type BestCollector1Lite[T util.Number] struct {
 	bestValue T
 	bestScore float64
 	hasBest   bool

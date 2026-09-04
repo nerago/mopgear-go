@@ -9,7 +9,7 @@ import (
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_async"
 	"github.com/nerago/mopgear-go/util/util_collection"
-	util_weight2 "github.com/nerago/mopgear-go/weightfind/util_weight"
+	"github.com/nerago/mopgear-go/weightfind/util_weight"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
@@ -19,8 +19,8 @@ type FittingSingleStatSegmentsProcess struct {
 	timeout                  int
 	onlyComputeSingleSegment bool
 
-	samplesOriginal       []util_weight2.FittingSample
-	samplesRemainingParts map[weight_types.StatRangeFloat][]util_weight2.FittingSample
+	samplesOriginal       []util_weight.FittingSample
+	samplesRemainingParts map[weight_types.StatRangeFloat][]util_weight.FittingSample
 
 	foundSegments map[weight_types.StatRangeFloat]FittingSingleStatResult
 }
@@ -29,14 +29,14 @@ func (fg *FittingSingleStatSegmentsProcess) Init(printer *util.PrintRecorder, ti
 	fg.printer = printer
 	fg.timeout = timeout
 	fg.foundSegments = make(map[weight_types.StatRangeFloat]FittingSingleStatResult)
-	fg.samplesRemainingParts = make(map[weight_types.StatRangeFloat][]util_weight2.FittingSample)
+	fg.samplesRemainingParts = make(map[weight_types.StatRangeFloat][]util_weight.FittingSample)
 }
 
 func (fg *FittingSingleStatSegmentsProcess) SetOnlyComputeSingleSegment(lazy bool) {
 	fg.onlyComputeSingleSegment = lazy
 }
 
-func (fg *FittingSingleStatSegmentsProcess) SupplyData(inputData []util_weight2.FittingSample) {
+func (fg *FittingSingleStatSegmentsProcess) SupplyData(inputData []util_weight.FittingSample) {
 	fg.samplesOriginal = slices.Clone(inputData)
 }
 
@@ -154,7 +154,7 @@ func (fg *FittingSingleStatSegmentsProcess) runInitial(cancel util_async.CancelS
 	}
 }
 
-func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []util_weight2.FittingSample, inputRange weight_types.StatRangeFloat, includeRate float64, cancel util_async.CancelSignal) error {
+func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []util_weight.FittingSample, inputRange weight_types.StatRangeFloat, includeRate float64, cancel util_async.CancelSignal) error {
 	fit := FittingSingleStatWeightProcess{}
 	fit.Init(fg.printer, fg.timeout)
 	fit.SetMinimumIncludeRate(includeRate)
@@ -184,7 +184,7 @@ func (fg *FittingSingleStatSegmentsProcess) runNextSegment(inputData []util_weig
 	}
 }
 
-func (fg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData []util_weight2.FittingSample, inputRange weight_types.StatRangeFloat, removeRange weight_types.StatRangeFloat) {
+func (fg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData []util_weight.FittingSample, inputRange weight_types.StatRangeFloat, removeRange weight_types.StatRangeFloat) {
 	if !inputRange.ContainsOtherRangeFloatAllowance(removeRange) {
 		panic(fmt.Sprintf("range isn't within bounds %e %e %e %e", removeRange.Minimum, inputRange.Minimum, removeRange.Maximum, inputRange.Maximum))
 	}
@@ -195,8 +195,8 @@ func (fg *FittingSingleStatSegmentsProcess) addToRemainingData(processedData []u
 		panic("invalid input range")
 	}
 
-	loData := make([]util_weight2.FittingSample, 0)
-	hiData := make([]util_weight2.FittingSample, 0)
+	loData := make([]util_weight.FittingSample, 0)
+	hiData := make([]util_weight.FittingSample, 0)
 	for _, input := range processedData {
 		stat := input.StatValue
 		if util.FloatsBetween(inputRange.Minimum, stat, removeRange.Minimum) {

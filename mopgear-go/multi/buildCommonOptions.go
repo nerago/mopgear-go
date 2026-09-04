@@ -153,9 +153,9 @@ func removeSingleSetItems(seenIn map[items.ItemRef][]string, commonOptions *mult
 	}
 }
 
-func restrictItemOptionsToCommon(optionsInputMap map[string]*items.FullOptionsMap, commonOptions multi_types.CommonOptions) {
+func restrictItemOptionsToCommon(optionsInputMap map[string]*items.FullOptionsMap, commonOptions multi_types.CommonOptions) error {
 	for _, itemOptions := range optionsInputMap {
-		itemOptions.FilterAllItems(func(item *items.FullItem) bool {
+		err := itemOptions.FilterAllItems(func(item *items.FullItem) bool {
 			ref := items.ItemRef_Of(item)
 			commonVersions, isCommon := commonOptions.Get(ref)
 			if isCommon {
@@ -164,7 +164,11 @@ func restrictItemOptionsToCommon(optionsInputMap map[string]*items.FullOptionsMa
 				return true
 			}
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func validateCommons(commonOptions multi_types.CommonOptions) {

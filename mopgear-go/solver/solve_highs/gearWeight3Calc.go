@@ -41,8 +41,8 @@ func (calc3 *gearWeight3Calc) calcSim(simType stats.SimType, weight *weight_type
 	}
 
 	if simEntry, hasEntry := weight.SimPriority.Get(simType); hasEntry {
-		offset := -simEntry.RangingOffset
-		valueScale := -1.0 / simEntry.RangingScale
+		offset := -simEntry.Ranging.Offset
+		valueScale := -1.0 / simEntry.Ranging.Scale
 		simValueFromStatRow.Add(simValueColumn.columnIndex, valueScale)
 		simValueFromStatRow.Build(calc3.build, offset, offset)
 	} else {

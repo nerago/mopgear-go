@@ -152,23 +152,21 @@ type SimPriorityExtended struct {
 	entries stats.SimTypeMap[SimPriorityEntry]
 }
 type SimPriorityEntry struct {
-	RangingScale  float64 // calculates values so that range is consistent (e.g. 0-1.0)
-	RangingOffset float64
-	RatioScale    float64 // relative factor to other sim entries to establish priority
+	Ranging    ScaleAndOffset // calculates values so that range is consistent (e.g. 0-1.0)
+	RatioScale float64        // relative factor to other sim entries to establish priority
 }
 
 func (se *SimPriorityEntry) Equals(other *SimPriorityEntry) bool {
-	return se.RangingScale == other.RangingScale &&
-		se.RangingOffset == other.RangingOffset &&
+	return se.Ranging == other.Ranging &&
 		se.RatioScale == other.RatioScale
 }
 
 func (se *SimPriorityEntry) Apply(subtotal float64) float64 {
-	return (subtotal + se.RangingOffset) * se.RangingScale * se.RatioScale
+	return se.Ranging.Apply(subtotal) * se.RatioScale
 }
 
-func (se *SimPriorityEntry) ApplyRanging(subtotal float64) float64 {
-	return (subtotal + se.RangingOffset) * se.RangingScale
+func (se *SimPriorityEntry) ApplyRangingOnly(subtotal float64) float64 {
+	return se.Ranging.Apply(subtotal)
 }
 
 func SimPriorityExtended_Make() SimPriorityExtended {
@@ -178,8 +176,8 @@ func SimPriorityExtended_Make() SimPriorityExtended {
 func (sre *SimPriorityExtended) IsEmpty() bool {
 	for entry := range sre.entries.SeqValues() {
 		if stats.IsUsefulWeightNumber(entry.RatioScale) &&
-			stats.IsUsefulWeightNumber(entry.RangingScale) &&
-			stats.IsValidWeightNumber(entry.RangingOffset) {
+			stats.IsUsefulWeightNumber(entry.Ranging.Scale) &&
+			stats.IsValidWeightNumber(entry.Ranging.Offset) {
 			return false
 		}
 	}
@@ -202,14 +200,13 @@ func (sre *SimPriorityExtended) GetOrPanic(simType stats.SimType) SimPriorityEnt
 	return entry
 }
 
-func (sre *SimPriorityExtended) SetSimScale(simType stats.SimType, rangingScale, rangingOffset, ratioScale float64) error {
+func (sre *SimPriorityExtended) SetSimScale(simType stats.SimType, rangingScaleOffset ScaleAndOffset, ratioScale float64) error {
 	if sre.entries.Has(simType) {
 		return util.ErrorTracedNew("duplicate")
 	}
 	sre.entries.Put(simType, SimPriorityEntry{
-		RangingScale:  rangingScale,
-		RangingOffset: rangingOffset,
-		RatioScale:    ratioScale,
+		Ranging:    rangingScaleOffset,
+		RatioScale: ratioScale,
 	})
 	return nil
 }

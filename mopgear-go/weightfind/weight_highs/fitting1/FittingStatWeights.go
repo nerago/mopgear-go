@@ -4,7 +4,7 @@ import (
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_async"
 	"github.com/nerago/mopgear-go/util/util_highs"
-	util_weight2 "github.com/nerago/mopgear-go/weightfind/util_weight"
+	"github.com/nerago/mopgear-go/weightfind/util_weight"
 
 	"github.com/bartolsthoorn/gohighs/highs"
 )
@@ -59,7 +59,7 @@ type FittingSingleStatWeightProcess struct {
 	build     *util_highs.LinearBuilder
 
 	minimumIncludeRate float64
-	inputData          []util_weight2.FittingSample
+	inputData          []util_weight.FittingSample
 
 	objectiveLineDiff util_highs.ObjectiveIndex
 	objectiveInclude  util_highs.ObjectiveIndex
@@ -103,7 +103,7 @@ func (fw *FittingSingleStatWeightProcess) SetMinimumIncludeRate(percent float64)
 	fw.minimumIncludeRate = percent
 }
 
-func (fw *FittingSingleStatWeightProcess) SupplySamples(inputData []util_weight2.FittingSample) {
+func (fw *FittingSingleStatWeightProcess) SupplySamples(inputData []util_weight.FittingSample) {
 	fw.inputData = inputData
 }
 
@@ -188,7 +188,7 @@ func (fw *FittingSingleStatWeightProcess) buildResult(solution *util_highs.Solut
 	return result
 }
 
-func (fw *FittingSingleStatWeightProcess) addSample(sample util_weight2.FittingSample) {
+func (fw *FittingSingleStatWeightProcess) addSample(sample util_weight.FittingSample) {
 	if sample.SimResult < 0 || sample.SimResult > 1 || sample.StatValue < 0 || sample.StatValue > 1 {
 		panic("sample out of range")
 	}
@@ -197,7 +197,7 @@ func (fw *FittingSingleStatWeightProcess) addSample(sample util_weight2.FittingS
 	fw.sampleToFitLine(sample, includeColumn)
 }
 
-func (fw *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample util_weight2.FittingSample) util_highs.ColumnIndex {
+func (fw *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample util_weight.FittingSample) util_highs.ColumnIndex {
 	includeColumn := fw.build.CreateColumnBoolWithObjective(c_fitting_outputFittingPerInclude, fw.objectiveInclude, util_highs.DebugString{Text: "include"})
 	fw.includeCountRow.Add(includeColumn, 1)
 	fw.includeColumns = append(fw.includeColumns, includeColumn)
@@ -215,7 +215,7 @@ func (fw *FittingSingleStatWeightProcess) sampleIncludeToggleColumn(sample util_
 //	sim/stat - lineOffset/stat = lineSlope
 //	                  sim/stat = lineSlope + lineOffset/stat
 //	                       sim = lineSlope*stat + lineOffset
-func (fw *FittingSingleStatWeightProcess) sampleToFitLine(sample util_weight2.FittingSample, toggle util_highs.ColumnIndex) {
+func (fw *FittingSingleStatWeightProcess) sampleToFitLine(sample util_weight.FittingSample, toggle util_highs.ColumnIndex) {
 	difference := fw.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), util_highs.DebugString{Text: "difference"})
 	differenceAbs := fw.build.CreateColumnWithObjective(highs.Continuous, 0, util_highs.InfPos(), c_fitting_outputDifference, fw.objectiveLineDiff, util_highs.DebugString{Text: "differenceAbs"})
 

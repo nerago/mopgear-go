@@ -47,8 +47,10 @@ func (basic *BasicStatWeightProcess) SetRequiredStats(requiredStats []stats.Stat
 	basic.requiredStats = requiredStats
 }
 
-func (basic *BasicStatWeightProcess) SetTargetRatios(targetRatios weight_types.SimPriorityBasic) {
-	targetRatios.ValidateRatioAddsToOne()
+func (basic *BasicStatWeightProcess) SetTargetRatios(targetRatios weight_types.SimPriorityBasic) error {
+	if err := targetRatios.ValidateRatioAddsToOne(); err != nil {
+		return err
+	}
 	basic.requiredSims = targetRatios.SimTypes()
 	basic.targetRatios = targetRatios
 }

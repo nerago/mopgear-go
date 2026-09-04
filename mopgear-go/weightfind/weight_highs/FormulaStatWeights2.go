@@ -7,7 +7,6 @@ import (
 	"github.com/nerago/mopgear-go/util/util_collection"
 	"github.com/nerago/mopgear-go/util/util_highs"
 	"github.com/nerago/mopgear-go/weightfind/util_weight"
-	util_weight2 "github.com/nerago/mopgear-go/weightfind/util_weight"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 
 	"github.com/bartolsthoorn/gohighs/highs"
@@ -123,8 +122,8 @@ func (form *FormulaStatWeightProcess2) Run(timeout int) (*util_async.FutureCance
 
 func (form *FormulaStatWeightProcess2) chooseScaling() {
 	target := c_formula2ScaleTarget
-	form.scaleStats = util_weight2.ChooseStatScalingBasic(form.inputData, target, true, form.printer)
-	form.scaleSims = util_weight2.ChooseSimUnfriendlyUnitScaleAndOffset(form.inputData, form.requiredSims)
+	form.scaleStats = util_weight.ChooseStatScalingBasic(form.inputData, target, true, form.printer)
+	form.scaleSims = util_weight.ChooseSimUnfriendlyUnitScaleAndOffset(form.inputData, form.requiredSims)
 }
 
 func (form *FormulaStatWeightProcess2) createWeightColumns() {

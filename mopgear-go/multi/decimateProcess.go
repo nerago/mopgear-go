@@ -21,7 +21,10 @@ const c_decimateTargetItemsPairedSlot = 4
 
 // normally decimate done as part of regular jobs
 func (job *MainJob) TestDecimate() {
-	job.prepareItems()
+	err := job.prepareItems()
+	if err != nil {
+		panic(err)
+	}
 
 	cancel := util_async.CancelSignal_Make()
 
@@ -89,6 +92,9 @@ func (work *specWorker) decimateFindSlotBestN(bestForSlot *util_collection.SetCo
 		targetItemCount = c_decimateTargetItemsPairedSlot
 	}
 
+	// errors at some point of this process are expected, although ideally just Infeasible status.
+	// currently just return/break once we don't get a clean run, could be a bit smarter
+	// some errors could indicate other bugs in the process
 	for bestForSlot.Size() < targetItemCount && cancel.ShouldContinue() {
 		restrictedOptions, isValid := work.decimatePrepareItemOptions(bestForSlot, solveOptionsBase)
 		if !isValid {
@@ -97,12 +103,17 @@ func (work *specWorker) decimateFindSlotBestN(bestForSlot *util_collection.SetCo
 
 		futureCheckSet, err := solver.LaunchSolve(&restrictedOptions, solverModel, printer, work.weightType, timeout)
 		if err != nil {
+			work.handleDecimateError(printer, err)
 			return
 		}
-		util_async.ChainCancel(cancel, futureCheckSet)
+		if err := util_async.ChainCancel(cancel, futureCheckSet); err != nil {
+			work.handleDecimateError(printer, err)
+			return
+		}
 
 		if checkSet, gotCheck := futureCheckSet.WaitForResult(); gotCheck {
 			if checkSet.Error != nil || checkSet.Value == nil {
+				work.handleDecimateError(printer, checkSet.Error)
 				return
 			}
 			nextBestItem := checkSet.Value.Items().Get(slotEquip)
@@ -114,6 +125,10 @@ func (work *specWorker) decimateFindSlotBestN(bestForSlot *util_collection.SetCo
 			return // set was probably infeasible without removed items, bail out
 		}
 	}
+}
+
+func (work *specWorker) handleDecimateError(printer *util.PrintRecorder, err error) {
+	printer.Printf("DECIMATE ERROR IGNORED: %v", err)
 }
 
 func (work *specWorker) decimatePrepareItemOptions(bestForSlot *util_collection.SetComparable[items.ItemId], solveOptionsBase *items.SolvableOptionsMap) (items.SolvableOptionsMap, bool) {
@@ -164,14 +179,17 @@ func (work *specWorker) decimateRestoreSpecificSetBonusInSlot(bestBySlot *items.
 	}
 }
 
-func (work *specWorker) decimateApply(bestBySlot *items.SlotEquipMap[*util_collection.SetComparable[items.ItemId]], printer *util.PrintRecorder) {
+func (work *specWorker) decimateApply(bestBySlot *items.SlotEquipMap[*util_collection.SetComparable[items.ItemId]], printer *util.PrintRecorder) error {
 	for slot, idSet := range bestBySlot.SeqKeyValue() {
 		oldTotalCount := len(work.ItemOptions().Get(slot))
 		oldItems := itemsInSlot(work.ItemOptions(), slot)
 
-		work.ItemOptions().FilterSlot(slot, func(item *items.FullItem) bool {
+		err := work.ItemOptions().FilterSlot(slot, func(item *items.FullItem) bool {
 			return idSet.HasValue(item.ItemId())
 		})
+		if err != nil {
+			return err
+		}
 
 		newTotalCount := len(work.ItemOptions().Get(slot))
 		newItems := itemsInSlot(work.ItemOptions(), slot)
@@ -182,6 +200,7 @@ func (work *specWorker) decimateApply(bestBySlot *items.SlotEquipMap[*util_colle
 			}
 		}
 	}
+	return nil
 }
 
 func itemsInSlot(options *items.FullOptionsMap, slot items.SlotEquip) map[items.ItemId]bool {

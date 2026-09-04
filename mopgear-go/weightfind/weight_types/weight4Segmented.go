@@ -27,8 +27,7 @@ func Weight4Segmented_Make(statList []stats.StatType, simList []stats.SimType, p
 }
 
 type Weight4SimOffset struct {
-	Scale  float64
-	Offset float64
+	ScaleAndOffset
 }
 
 type Weight4SegmentBound struct {
@@ -108,8 +107,8 @@ func (wer *Weight4Segmented) AddWeight2AsSegment(weight2 *Weight2Extended, bound
 	for simType, entry := range weight2.SimPriority.entries.SeqKeyValue() {
 		seg.Offsets.Put(simType,
 			Weight4SimOffset{
-				Scale:  entry.RangingScale,
-				Offset: entry.RangingOffset,
+				Scale:  entry.Ranging.Scale,
+				Offset: entry.Ranging.Offset,
 			},
 		)
 	}
@@ -254,7 +253,7 @@ func (wer *Weight4Segmented) ConvertToWeight2(inputData []WeightInput) (*Weight2
 
 	for sim, value := range wer.SimPriority.SeqTypeValue() {
 		offset := seg.Offsets.GetOrPanic(sim)
-		if err := weight2.SetSimScale(sim, offset.Scale, offset.Offset, value); err != nil {
+		if err := weight2.SetSimScale(sim, offset.ScaleAndOffset, value); err != nil {
 			return nil, err
 		}
 	}

@@ -34,6 +34,10 @@ func (ese *Weight3ExtendedStatEntry) Equals(other *Weight3ExtendedStatEntry) boo
 		ese.StatRange == other.StatRange
 }
 
+func (ese *Weight3ExtendedStatEntry) scoreForSim(statValue uint32) float64 {
+	return float64(statValue)*ese.RatingWeight + ese.RatingOffset
+}
+
 func Weight3ExtendedRanged_Make(statList []stats.StatType, simList []stats.SimType) *Weight3ExtendedRanged {
 	return &Weight3ExtendedRanged{
 		StatList:    statList,
@@ -70,11 +74,29 @@ func (wer *Weight3ExtendedRanged) AddDetailWeight(simType stats.SimType, statTyp
 	})
 }
 
-func (wer *Weight3ExtendedRanged) SetSimScale(simType stats.SimType, rangingScale, rangingOffset, ratioScale float64) error {
-	return wer.SimPriority.SetSimScale(simType, rangingScale, rangingOffset, ratioScale)
+func (wer *Weight3ExtendedRanged) SetSimScale(simType stats.SimType, rangingScaleOffset ScaleAndOffset, ratioScale float64) error {
+	return wer.SimPriority.SetSimScale(simType, rangingScaleOffset, ratioScale)
 }
 
-func (wer *Weight3ExtendedRanged) FinishAndValidate() error {
+func (wer *Weight3ExtendedRanged) FinishAndValidate(verificationInputs []WeightInput) error {
+	err := wer.validateTypes()
+	if err != nil {
+		return err
+	}
+
+	err = wer.verifyGoodRange(verificationInputs)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (wer *Weight3ExtendedRanged) FinishAndValidateNoVerify() error {
+	return wer.validateTypes()
+}
+
+func (wer *Weight3ExtendedRanged) validateTypes() error {
 	for statType := range wer.StatWeights.SeqKey2() {
 		if !slices.Contains(wer.StatList, statType) {
 			return util.ErrorTracedNew("weight given for unlisted stat")
@@ -125,11 +147,7 @@ func (wer *Weight3ExtendedRanged) FinishAndValidate() error {
 func (wer *Weight3ExtendedRanged) CalcStatScore(stats *stats.StatBlock) float64 {
 	totalSum := 0.0
 	for _, simType := range wer.SimList {
-		subTotal := wer.calcSingleSimScoreUnscaled(stats, simType)
-
-		priorityEntry := wer.SimPriority.GetOrPanic(simType)
-		subTotal = priorityEntry.Apply(subTotal)
-
+		subTotal := wer.scoreForSimWeighted(stats, simType)
 		totalSum += subTotal
 	}
 	return totalSum
@@ -138,7 +156,7 @@ func (wer *Weight3ExtendedRanged) CalcStatScore(stats *stats.StatBlock) float64 
 func (wer *Weight3ExtendedRanged) CalcStatScoreWithBonus(stats *stats.StatBlock, simBonus *stats.SimTypeMap[float64]) float64 {
 	totalSum := 0.0
 	for _, simType := range wer.SimList {
-		subTotal := wer.calcSingleSimScoreUnscaled(stats, simType)
+		subTotal := wer.scoreForSimRaw(stats, simType)
 
 		priorityEntry := wer.SimPriority.GetOrPanic(simType)
 		subTotal = priorityEntry.Apply(subTotal)
@@ -150,28 +168,38 @@ func (wer *Weight3ExtendedRanged) CalcStatScoreWithBonus(stats *stats.StatBlock,
 	return totalSum
 }
 
-func (wer *Weight3ExtendedRanged) calcSingleSimScoreUnscaled(stats *stats.StatBlock, simType stats.SimType) float64 {
+func (wer *Weight3ExtendedRanged) scoreForSimWeighted(stats *stats.StatBlock, simType stats.SimType) float64 {
+	subTotal := wer.scoreForSimRaw(stats, simType)
+
+	priorityEntry := wer.SimPriority.GetOrPanic(simType)
+	return priorityEntry.Apply(subTotal)
+}
+
+func (wer *Weight3ExtendedRanged) scoreForSimRaw(stats *stats.StatBlock, simType stats.SimType) float64 {
 	simSubTotal := 0.0
 
 	for statType, entrySeq := range wer.StatWeights.SeqKey2ValueSeqWithKey1(simType) {
 		statValue := stats.GetUInt(statType)
 
-		var entry *Weight3ExtendedStatEntry
-		for e := range entrySeq {
-			if e.StatRange.Contains(statValue) {
-				entry = &e
-				break
-			}
-		}
+		entry := wer.entryContainingStat(entrySeq, statValue)
 		if entry == nil {
 			return math.NaN() // ERROR, not matching range
 		}
 
-		calc := float64(statValue)*entry.RatingWeight + entry.RatingOffset
-		simSubTotal += calc
+		simValue := entry.scoreForSim(statValue)
+		simSubTotal += simValue
 	}
 
 	return simSubTotal
+}
+
+func (wer *Weight3ExtendedRanged) entryContainingStat(entrySeq iter.Seq[Weight3ExtendedStatEntry], statValue uint32) *Weight3ExtendedStatEntry {
+	for e := range entrySeq {
+		if e.StatRange.Contains(statValue) {
+			return &e
+		}
+	}
+	return nil
 }
 
 func (wer *Weight3ExtendedRanged) Equals(other *Weight3ExtendedRanged) bool {
@@ -217,9 +245,9 @@ func (wer *Weight3ExtendedRanged) AppendString(sb *util.StringBuild2) {
 		sb.WriteString("(scale1=")
 		sb.WriteFloatScientific64(priority.RatioScale)
 		sb.WriteString(",scale2=")
-		sb.WriteFloatScientific64(priority.RangingScale)
+		sb.WriteFloatScientific64(priority.Ranging.Scale)
 		sb.WriteString(",offset=")
-		sb.WriteFloatScientific64(priority.RangingOffset)
+		sb.WriteFloatScientific64(priority.Ranging.Offset)
 		sb.WriteRune(',')
 		for statType, valueSeq := range wer.StatWeights.SeqKey2ValueSeqWithKey1(simType) {
 			sb.WriteString(statType.Name())
