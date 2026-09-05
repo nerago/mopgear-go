@@ -21,19 +21,19 @@ type gearBonusComboHandler struct {
 	_bonusData   map[solve_highs_types.SetBonusIndex]bonusColsByCount
 }
 
-func (bon *gearBonusComboHandler) processBonus(combinedRatingVar *columnInfo, simType util_collection.Optional[stats.SimType], ratingRangeHigh float64, model *solve_highs_types.SolverModel, countSetItemsColumns map[solve_highs_types.SetBonusIndex]*columnInfo) (*columnInfo, error) {
+func (bon *gearBonusComboHandler) processBonus(combinedRatingVar *columnInfo, simType util_collection.Optional[stats.SimType], ratingBigM, ratingMax float64, model *solve_highs_types.SolverModel, countSetItemsColumns map[solve_highs_types.SetBonusIndex]*columnInfo) (*columnInfo, error) {
 	bonusData, bonusCombos, err := bon.init(model, countSetItemsColumns)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(bonusData) > 0 {
-		outputVar := bon._makeOutputForComboVariable(simType)
+		outputVar := bon._makeOutputForComboVariable(simType, ratingMax)
 
 		// TODO consider handling for single combo, would need multiplier
 		for combo := range bonusCombos.SeqValuePointers() {
 			bonusMultiplier := bon.totalComboMultiplier(combo, simType, &model.SetBonus)
-			bon._forComboCopyToOutput(combo, combinedRatingVar, outputVar, bonusMultiplier, ratingRangeHigh)
+			bon._forComboCopyToOutput(combo, combinedRatingVar, outputVar, bonusMultiplier, ratingBigM)
 		}
 
 		err := bon._addSetNeededCounts(countSetItemsColumns, model.SetBonus.RequiredCounts, model.SetBonus.CountMode)
@@ -137,14 +137,14 @@ func (bon *gearBonusComboHandler) finishComboRules(bonusCombos *util_collection.
 	return nil
 }
 
-func (bon *gearBonusComboHandler) _makeOutputForComboVariable(simTypeOptional util_collection.Optional[stats.SimType]) *columnInfo {
+func (bon *gearBonusComboHandler) _makeOutputForComboVariable(simTypeOptional util_collection.Optional[stats.SimType], ratingMax float64) *columnInfo {
 	if simType, hasType := simTypeOptional.GetWithFlag(); hasType {
 		entry := columnInfo{entryType: entry_sim_value_combo, simType: simType}
-		entry.columnIndex = bon.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), &entry)
+		entry.columnIndex = bon.build.CreateColumnGeneral(highs.Continuous, -ratingMax, ratingMax, &entry)
 		return &entry
 	} else {
 		entry := &columnInfo{entryType: entry_main_output}
-		entry.columnIndex = bon.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), entry)
+		entry.columnIndex = bon.build.CreateColumnGeneral(highs.Continuous, -ratingMax, ratingMax, entry)
 		return entry
 	}
 }
@@ -175,6 +175,8 @@ func (bon *gearBonusComboHandler) _addSetItemsCountExactVariables(setIndex solve
 	exactCountVars := bonusColsByCount{}
 
 	if countRange.Size() == 1 {
+		// TODO feeling a bit weird, never check its actually active.
+		// TODO if this is literally only condition then could change more
 		// only one possible count
 		itemCount := countRange.Lo
 		boolColumn := &columnInfo{entryType: entry_set_exact_count, setIndex: setIndex, itemCount: int(itemCount)}
@@ -188,7 +190,7 @@ func (bon *gearBonusComboHandler) _addSetItemsCountExactVariables(setIndex solve
 		// constraint so only one of these flags gets set
 		singleFlagOnly := util_highs.ConstraintRow{Debug: "setItemsSingleFlagOnly"}
 
-		// make a bool for each possible count in range 0..5
+		// make a bool for each possible count in range 0..5 (or less depending on other rules)
 		for itemCount := countRange.Lo; itemCount <= countRange.Hi; itemCount++ {
 			boolColumn := &columnInfo{entryType: entry_set_exact_count, setIndex: setIndex, itemCount: int(itemCount)}
 			boolColumn.columnIndex = bon.build.CreateColumnBool(boolColumn)
@@ -209,17 +211,21 @@ func (bon *gearBonusComboHandler) _addSetItemsCountExactVariables(setIndex solve
 	return exactCountVars
 }
 
-func (bon *gearBonusComboHandler) _forComboCopyToOutput(combo *bonusCombo, inputVar *columnInfo, outputVar *columnInfo, bonusMultiplier float64, ratingRangeHigh float64) {
+func (bon *gearBonusComboHandler) _forComboCopyToOutput(combo *bonusCombo, inputVar *columnInfo, outputVar *columnInfo, bonusMultiplier float64, ratingBigM float64) {
 	activatingVar := combo.activatingVar
 	if util.FloatEqualsZero(bonusMultiplier) {
 		bonusMultiplier = 1.0
 	}
 
+	assertColumnBoolOrLess(bon.build, activatingVar.columnIndex)
+	assertColumnRangeSmallerThanBigM(bon.build, inputVar.columnIndex, ratingBigM)
+	assertColumnRangeSmallerThanBigM(bon.build, outputVar.columnIndex, ratingBigM)
+
 	bon.build.ConstraintCopyIfBool(
 		activatingVar.columnIndex,
 		inputVar.columnIndex, bonusMultiplier,
 		outputVar.columnIndex,
-		ratingRangeHigh,
+		ratingBigM,
 	)
 }
 
@@ -359,6 +365,12 @@ func (bon *gearBonusComboHandler) addOption(option solve_highs_types.SetBonusReq
 
 func (bon *gearBonusComboHandler) addOptionPart(setIndex solve_highs_types.SetBonusIndex, needCount uint8, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo, countMode bonus_set.ItemCountsRequiredMode) (util_highs.ColumnIndex, error) {
 	setCountCol := countSetItemsCol[setIndex]
+
+	// in order for c_bonusItemCountRangeHigh to work efficiently make sure the column we're using has smaller ranges
+	columnMin, columnMax := bon.build.GetColumnMinMax(setCountCol.columnIndex)
+	if columnMin < 0 || columnMax > c_maxSetItems {
+		panic("setCountCol has excessive range")
+	}
 
 	var inRange util_highs.ColumnIndex
 	switch countMode {

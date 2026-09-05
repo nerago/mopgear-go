@@ -8,9 +8,13 @@ import (
 	"github.com/nerago/mopgear-go/util/util_highs"
 )
 
-const c_gearExtended3StatHigh = 100000
-const c_gearExtended3ScoreHigh = 100
-const c_gearExtended3ScoreMax = 50
+const (
+	c_gear3ScoreMax         = 50    // final or near final output scores
+	c_gear3ScoreBigM        = 10000 // final or near final output scores
+	c_gear3IntermediateMax  = 1000  // intermediate steps have less predicatable range, limit for efficiency
+	c_gear3IntermediateBigM = 5000  // intermediate steps have less predicatable range, limit for efficiency
+
+)
 
 type singleGearSetExtended3 struct {
 	singleGearSetExtended
@@ -80,5 +84,6 @@ func (se3 *singleGearSetExtended3) setup(model *solve_highs_types.SolverModel, i
 
 	// simValueTotalColumns * activeCombo -> simValueComboColumns -> mainOutputVar
 	// simValueTotalColumns[simType] * activeCombo.simMultiplier -> simValueComboColumns[simType] -> mainOutputVar
-	return se3.multiplySimValuesByCombo(simValueTotalColumns, model, &model.Weights3.SimPriority, countSetItemsCol, c_gearExtended3ScoreHigh)
+	return se3.multiplySimValuesByCombo(simValueTotalColumns, model, &model.Weights3.SimPriority, countSetItemsCol,
+		c_gear3ScoreBigM, c_gear3ScoreMax)
 }

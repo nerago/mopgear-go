@@ -131,6 +131,10 @@ func (build *LinearBuilder) ChangeColumnOutputWeight(columnIndex ColumnIndex, co
 	build.vars.changeColumnCost(columnIndex, cost)
 }
 
+func (build *LinearBuilder) GetColumnMinMax(columnIndex ColumnIndex) (lower, upper float64) {
+	return build.vars.colLower[columnIndex], build.vars.colUpper[columnIndex]
+}
+
 func (build *LinearBuilder) ChangeColumnMinMax(columnIndex ColumnIndex, lower, upper float64) {
 	build.vars.colLower[columnIndex] = lower
 	build.vars.colUpper[columnIndex] = upper

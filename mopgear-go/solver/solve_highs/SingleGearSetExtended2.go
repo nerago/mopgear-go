@@ -8,7 +8,8 @@ import (
 	"github.com/nerago/mopgear-go/util/util_highs"
 )
 
-const c_gearExtended2ScoreHigh = 100
+const c_gearExtended2ScoreMax = 50
+const c_gearExtended2ScoreBigM = 1000
 
 type singleGearSetExtended2 struct {
 	singleGearSetExtended
@@ -75,5 +76,6 @@ func (se2 *singleGearSetExtended2) setup(model *solve_highs_types.SolverModel, i
 
 	// multiply combos
 	// simValueTotalColumns[simType] * activeCombo.simMultiplier -> simValueComboColumns[simType] -> mainOutputVar
-	return se2.multiplySimValuesByCombo(simValueTotalColumns, model, &model.Weights2.SimPriority, countSetItemsCol, c_gearExtended2ScoreHigh)
+	return se2.multiplySimValuesByCombo(simValueTotalColumns, model, &model.Weights2.SimPriority, countSetItemsCol,
+		c_gearExtended2ScoreBigM, c_gearExtended2ScoreMax)
 }

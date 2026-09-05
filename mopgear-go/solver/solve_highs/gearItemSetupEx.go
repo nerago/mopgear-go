@@ -71,7 +71,7 @@ func (site *gearItemSetupEx) finishStatTotals(build *util_highs.LinearBuilder) (
 	// constrain: total sum of each stat for input to weights
 	for _, statType := range stats.StatType_List {
 		entry := &columnInfo{entryType: entry_stat_total, statType: statType}
-		entry.columnIndex = build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), entry)
+		entry.columnIndex = build.CreateColumnGeneral(highs.Continuous, 0, c_gearExtendedStatMax, entry)
 		statTotalColumns.Put(statType, entry)
 
 		if row, hasRow := site.statTotalRows.Get(statType); hasRow {

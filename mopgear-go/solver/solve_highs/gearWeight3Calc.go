@@ -71,7 +71,7 @@ func (calc3 *gearWeight3Calc) calcSimAndStat(simType stats.SimType, statType sta
 		return optionValueCol, nil
 	}
 
-	chosenSimStatContribution := calc3.makeSimStatValueColumn3(simType, statType)
+	chosenSimStatContribution := calc3.makeSimStatValueColumn(simType, statType)
 	checkSingleRangeActive := util_highs.ConstraintRow{}
 	var previousRangeMaxColumn util_highs.ColumnIndex
 
@@ -79,11 +79,14 @@ func (calc3 *gearWeight3Calc) calcSimAndStat(simType stats.SimType, statType sta
 	{
 		firstEntry := entries[0]
 
-		rangeCondition := calc3.build.ColumnIsLessOrEqualThanConstant(statTotalColumn.columnIndex, float64(firstEntry.StatRange.Maximum), c_gearExtended3StatHigh, 1.0)
+		rangeCondition := calc3.build.ColumnIsLessOrEqualThanConstant(statTotalColumn.columnIndex,
+			float64(firstEntry.StatRange.Maximum),
+			c_gearExtendedStatBigM, 1.0)
 		checkSingleRangeActive.Add(rangeCondition, 1)
 
 		optionValueCol := calc3.prepareStatOption(simType, statType, firstEntry, statTotalColumn)
-		calc3.build.ConstraintCopyIfBool(rangeCondition, optionValueCol.columnIndex, 1, chosenSimStatContribution.columnIndex, c_gearExtended3ScoreHigh)
+		calc3.build.ConstraintCopyIfBool(rangeCondition, optionValueCol.columnIndex, 1,
+			chosenSimStatContribution.columnIndex, c_gear3IntermediateBigM)
 
 		previousRangeMaxColumn = rangeCondition
 	}
@@ -91,12 +94,15 @@ func (calc3 *gearWeight3Calc) calcSimAndStat(simType stats.SimType, statType sta
 	for index := 1; index < len(entries)-1; index++ {
 		entry := entries[index]
 
-		nextMax := calc3.build.ColumnIsLessOrEqualThanConstant(statTotalColumn.columnIndex, float64(entry.StatRange.Maximum), c_gearExtended3StatHigh, 1.0)
-		rangeCondition := columnBoolNotAAndB(calc3.build, previousRangeMaxColumn, nextMax)
+		nextMax := calc3.build.ColumnIsLessOrEqualThanConstant(statTotalColumn.columnIndex,
+			float64(entry.StatRange.Maximum),
+			c_gearExtendedStatBigM, 1.0)
+		rangeCondition := columnBool_NotA_and_B(calc3.build, previousRangeMaxColumn, nextMax)
 		checkSingleRangeActive.Add(rangeCondition, 1)
 
 		optionValueCol := calc3.prepareStatOption(simType, statType, entry, statTotalColumn)
-		calc3.build.ConstraintCopyIfBool(rangeCondition, optionValueCol.columnIndex, 1, chosenSimStatContribution.columnIndex, c_gearExtended3ScoreHigh)
+		calc3.build.ConstraintCopyIfBool(rangeCondition, optionValueCol.columnIndex, 1,
+			chosenSimStatContribution.columnIndex, c_gear3IntermediateBigM)
 
 		previousRangeMaxColumn = nextMax
 	}
@@ -109,15 +115,16 @@ func (calc3 *gearWeight3Calc) calcSimAndStat(simType stats.SimType, statType sta
 		checkSingleRangeActive.Add(rangeCondition, 1)
 
 		optionValueCol := calc3.prepareStatOption(simType, statType, lastEntry, statTotalColumn)
-		calc3.build.ConstraintCopyIfBool(rangeCondition, optionValueCol.columnIndex, 1, chosenSimStatContribution.columnIndex, c_gearExtended3ScoreHigh)
+		calc3.build.ConstraintCopyIfBool(rangeCondition, optionValueCol.columnIndex, 1,
+			chosenSimStatContribution.columnIndex, c_gear3IntermediateBigM)
 	}
-	//checkSingleRangeActive.Build(calc3.build, 1, 1) // TODO see if this helps
+	checkSingleRangeActive.Build(calc3.build, 1, 1) // TODO see if this helps
 
 	return chosenSimStatContribution, nil
 }
 
 func (calc3 *gearWeight3Calc) prepareStatOption(simType stats.SimType, statType stats.StatType, entry weight_types.Weight3ExtendedStatEntry, statTotalColumn *columnInfo) *columnInfo {
-	optionValueCol := calc3.makeSimStatOptionColumn3(simType, statType, entry.StatRange)
+	optionValueCol := calc3.makeSimStatOptionColumn(simType, statType, entry.StatRange)
 
 	row := util_highs.ConstraintRow{}
 	row.Add(statTotalColumn.columnIndex, entry.RatingWeight)
@@ -127,43 +134,30 @@ func (calc3 *gearWeight3Calc) prepareStatOption(simType stats.SimType, statType 
 	return optionValueCol
 }
 
-//func (calc3 *gearWeight3Calc) entryInRange(entry weight_types.Weight3ExtendedStatEntry, statTotalColumn *columnInfo) util_highs.ColumnIndex {
-//	// check if stat total fits into this range
-//	var rangeCondition util_highs.ColumnIndex
-//	if entry.StatRange.Maximum < math.MaxUint32 {
-//		rangeCondition = calc3.statIsBetween(statTotalColumn, entry.StatRange)
-//	} else {
-//		rangeCondition = calc3.build.ColumnIsGreaterOrEqualThanConstant(statTotalColumn.columnIndex, float64(entry.StatRange.Minimum), c_gearExtended3StatHigh, 1.0)
-//	}
-//	return rangeCondition
-//}
-
+// this var is after final scaling applied, as such has more predictable range
+// goes over to bonus handler
 func (calc3 *gearWeight3Calc) makeSimValueColumn(simType stats.SimType) *columnInfo {
 	simValueColumn := &columnInfo{entryType: entry_sim_value, simType: simType}
-	simValueColumn.columnIndex = calc3.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), simValueColumn)
+	simValueColumn.columnIndex = calc3.build.CreateColumnGeneral(highs.Continuous, -c_gear3ScoreMax, c_gear3ScoreMax, simValueColumn)
 	return simValueColumn
 }
 
-func (calc3 *gearWeight3Calc) makeSimStatValueColumn3(simType stats.SimType, statType stats.StatType) *columnInfo {
+// contributes towards final values but doesn't have their scales
+func (calc3 *gearWeight3Calc) makeSimStatValueColumn(simType stats.SimType, statType stats.StatType) *columnInfo {
 	simStatValueColumn := &columnInfo{entryType: entry_sim_stat_value, simType: simType, statType: statType}
-	simStatValueColumn.columnIndex = calc3.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), simStatValueColumn)
+	simStatValueColumn.columnIndex = calc3.build.CreateColumnGeneral(highs.Continuous, -c_gear3IntermediateMax, c_gear3IntermediateMax, simStatValueColumn)
 	return simStatValueColumn
 }
 
-func (calc3 *gearWeight3Calc) makeSimStatOptionColumn3(simType stats.SimType, statType stats.StatType, statRange weight_types.StatRange) *columnInfo {
+// has some scaling from the detail weight but that doesn't guarantee much about actual range
+func (calc3 *gearWeight3Calc) makeSimStatOptionColumn(simType stats.SimType, statType stats.StatType, statRange weight_types.StatRange) *columnInfo {
 	valueOptionColumn := &columnInfo{entryType: entry_sim_stat_value_option, simType: simType, statType: statType, statRange: statRange}
-	valueOptionColumn.columnIndex = calc3.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), valueOptionColumn)
+	valueOptionColumn.columnIndex = calc3.build.CreateColumnGeneral(highs.Continuous, -c_gear3IntermediateMax, c_gear3IntermediateMax, valueOptionColumn)
 	return valueOptionColumn
 }
 
-//func (calc3 *gearWeight3Calc) statIsBetween(statTotalColumn *columnInfo, statRange weight_types.StatRange) util_highs.ColumnIndex {
-//	minimum := float64(statRange.Minimum)
-//	maximum := float64(statRange.Maximum)
-//	return calc3.build.ColumnIsBetweenConstants(statTotalColumn.columnIndex, minimum, maximum, c_gearExtended3StatHigh, 1.0)
-//}
-
 // (!A) && B == out
-func columnBoolNotAAndB(build *util_highs.LinearBuilder, a util_highs.ColumnIndex, b util_highs.ColumnIndex) util_highs.ColumnIndex {
+func columnBool_NotA_and_B(build *util_highs.LinearBuilder, a util_highs.ColumnIndex, b util_highs.ColumnIndex) util_highs.ColumnIndex {
 	out := build.CreateColumnBool(nil)
 	rowSet := util_highs.ConstraintRow{}
 	/*

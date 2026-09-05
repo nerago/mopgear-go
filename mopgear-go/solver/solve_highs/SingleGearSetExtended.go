@@ -11,17 +11,15 @@ import (
 	"github.com/bartolsthoorn/gohighs/highs"
 )
 
+const c_gearExtendedStatMax = 100000
+const c_gearExtendedStatBigM = 400000
+
 type singleGearSetExtended struct {
 	singleGearSetShared
-
 	itemSetupEx gearItemSetupEx
-
-	//simValueTotalColumns stats.SimTypeMap[*columnInfo]
-	//simValueComboColumns stats.SimTypeMap[*columnInfo]
-	//combinedRatingVar    *columnInfo // sum of values for the ratings of selected items
 }
 
-func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns map[stats.SimType]*columnInfo, model *solve_highs_types.SolverModel, priority *weight_types.SimPriorityExtended, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo, scoreHigh float64) (*columnInfo, error) {
+func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns map[stats.SimType]*columnInfo, model *solve_highs_types.SolverModel, priority *weight_types.SimPriorityExtended, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo, scoreBigM, scoreMax float64) (*columnInfo, error) {
 	if len(simValueTotalColumns) > 1 {
 		sumRow := util_highs.ConstraintRow{Debug: "multiplySimValuesByCombo"}
 
@@ -29,7 +27,7 @@ func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns m
 			simComboCol, err := se.bonusComboHandler.processBonus(
 				simValueTotal,
 				util_collection.Optional_OfValue(simType),
-				scoreHigh,
+				scoreBigM, scoreMax,
 				model,
 				countSetItemsCol,
 			)
@@ -44,7 +42,7 @@ func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns m
 			}
 		}
 
-		outputVar := se.makeOutputVariable()
+		outputVar := se.makeOutputVariable(scoreMax)
 		sumRow.Add(outputVar.columnIndex, -1)
 		sumRow.Build(se.build, 0, 0)
 		return outputVar, nil
@@ -58,7 +56,7 @@ func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns m
 		simComboCol, err := se.bonusComboHandler.processBonus(
 			simValueTotal,
 			util_collection.Optional_OfValue(simType),
-			scoreHigh,
+			scoreBigM, scoreMax,
 			model,
 			countSetItemsCol,
 		)
@@ -70,7 +68,7 @@ func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns m
 			return simComboCol, nil
 		} else {
 			sumRow := util_highs.ConstraintRow{Debug: "multiplySimValuesByComboOne"}
-			outputVar := se.makeOutputVariable()
+			outputVar := se.makeOutputVariable(scoreMax)
 			sumRow.Add(simComboCol.columnIndex, simEntry.RatioScale)
 			sumRow.Add(outputVar.columnIndex, -1)
 			sumRow.Build(se.build, 0, 0)
@@ -81,8 +79,8 @@ func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns m
 	}
 }
 
-func (se *singleGearSetExtended) makeOutputVariable() *columnInfo {
+func (se *singleGearSetExtended) makeOutputVariable(outputValueMax float64) *columnInfo {
 	entry := &columnInfo{entryType: entry_main_output}
-	entry.columnIndex = se.build.CreateColumnGeneral(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), entry)
+	entry.columnIndex = se.build.CreateColumnGeneral(highs.Continuous, -outputValueMax, outputValueMax, entry)
 	return entry
 }

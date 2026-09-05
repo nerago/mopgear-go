@@ -77,7 +77,7 @@ func (sbb *gearItemSetupBasic) finishRatingSum(build *util_highs.LinearBuilder, 
 	sumColumn := &columnInfo{entryType: entry_sum_rating}
 
 	// sum of individual selected item ratings
-	sumColumn.columnIndex = build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), sumColumn)
+	sumColumn.columnIndex = build.CreateColumnGeneral(highs.Continuous, 0, c_basic_ratingsMax, sumColumn)
 
 	// main action of this variable: derive value to match rest of row sum
 	// apply scale and offset factors given by the weights

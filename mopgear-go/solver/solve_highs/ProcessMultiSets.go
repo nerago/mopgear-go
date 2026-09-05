@@ -62,7 +62,7 @@ func (process *SolverHighsMultiProcess) SetPermuteLabel(permuteLabel string) {
 	process.permuteLabel = permuteLabel
 }
 
-func (process *SolverHighsMultiProcess) Run(timeLimit int, printer *util.PrintRecorder, alternateMode multi_types.AlternateMode, alternateTarget util_collection.Optional[int], cancel util_async.CancelSignal, includeInterimResults bool) (<-chan HighsMultiResult, *util_async.Future[int], *util_async.PossibleFutureError, error) {
+func (process *SolverHighsMultiProcess) Run(timeLimit int, printer *util.PrintRecorder, alternateMode multi_types.AlternateMode, alternateTarget util_collection.Optional[int], cancel util_async.CancelSignal, includeInterimResults bool) (<-chan HighsMultiResult, *util_async.Future[int], *util_async.PossibleFutureErrors, error) {
 	resultChannel := make(chan HighsMultiResult)
 	expectedCount := util_async.Future_Make[int]()
 	futureError := util_async.PossibleFutureErrorMake()
@@ -92,7 +92,7 @@ func (process *SolverHighsMultiProcess) Run(timeLimit int, printer *util.PrintRe
 				resultChannel)
 
 			if errGenerate != nil {
-				futureError.AddResultError(errGenerate)
+				futureError.AddError(errGenerate)
 			}
 		} else {
 			expectedCount.SetResult(1)
@@ -105,7 +105,7 @@ func (process *SolverHighsMultiProcess) Run(timeLimit int, printer *util.PrintRe
 		close(resultChannel)
 
 		if errUpstream != nil {
-			futureError.AddResultError(errUpstream)
+			futureError.AddError(errUpstream)
 		}
 	})
 
@@ -361,6 +361,7 @@ func (process *SolverHighsMultiProcess) makeFullModel(timeLimit int) error {
 	process.build.TimeLimitSeconds = timeLimit
 	process.build.Solver = util_highs.Solver_MIP_Interior // TODO check if actually best
 
+	// setting a range might be nice, but this is complex
 	entry := columnInfo{entryType: entry_multi_output}
 	entry.columnIndex = process.build.CreateColumnWithOutput(highs.Continuous, util_highs.InfNeg(), util_highs.InfPos(), 1, &entry)
 

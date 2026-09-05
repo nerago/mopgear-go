@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	c_single_basic_ratings_high_range = 100
+	c_basic_ratingsMax  = 50
+	c_basic_ratingsBigM = 1000
 )
 
 type singleGearSetBasic struct {
@@ -68,7 +69,7 @@ func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOp
 	return sb.bonusComboHandler.processBonus(
 		baseRatingSumVar,
 		util_collection.Optional_Empty[stats.SimType](),
-		c_single_basic_ratings_high_range,
+		c_basic_ratingsBigM, c_basic_ratingsMax,
 		model,
 		countSetItemsCol)
 }
