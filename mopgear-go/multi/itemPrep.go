@@ -104,7 +104,7 @@ func (ref extraRefs) findDistinctUsageGroupsForItem(itemId items.ItemId) *multi_
 func (prep *specItemPrep) prepareStartingGear(input *multi_types.ItemInputs, model *gear_model.SpecModel, printer *util.PrintRecorder) (err error) {
 	printer.Println(prep.label)
 
-	equipped := loaders.GearFileReader_Read(input.GearFile)
+	equipped := loaders.GearFileReader_Read(model.GearFile)
 	prep.exactEquippedGear, err = setup.OptionsSetup_FromEquipped_OriginalForgeOnly(equipped, model, input.MissingEnchant, printer)
 	if err != nil {
 		return err

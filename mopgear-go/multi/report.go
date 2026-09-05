@@ -300,7 +300,10 @@ func (job *MainJob) handleBestRankedResult(best util_rank.BestCollector1[simulat
 	job.reportSimResults_One(bestMultiResult, job.printer)
 
 	if job.input.WriteBestToGearFiles {
-		job.writeToGearFiles(bestMultiResult)
+		err := job.writeToGearFiles(bestMultiResult)
+		if err != nil {
+			util.GlobalFatalErrorHandler(err)
+		}
 	}
 }
 

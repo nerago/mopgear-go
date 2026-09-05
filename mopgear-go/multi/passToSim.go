@@ -234,12 +234,19 @@ func (job *MainJob) runSims(jobChan <-chan *simulateJobPending, expectedCount <-
 	return simFinished
 }
 
-func (job *MainJob) writeToGearFiles(result *simulateMultiResult) {
+func (job *MainJob) writeToGearFiles(result *simulateMultiResult) error {
 	for label, prep := range job.itemPrep {
 		itemSet := result.proposed.Parts[label].FullSet
-		gearJson := tools.WowSimJsonFormat(itemSet.Items(), prep.model)
+		gearJson, err := tools.WowSimJsonFormat(itemSet.Items(), prep.model)
+		if err != nil {
+			return err
+		}
 
-		gearFile := prep.inputs.GearFile
-		util.WriteStringToFile(gearFile, gearJson)
+		gearFile := prep.model.GearFile
+		err = util.WriteStringToFile(gearFile, gearJson)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
