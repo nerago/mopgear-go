@@ -7,7 +7,6 @@ import (
 	"github.com/nerago/mopgear-go/gear_model/bonus_set"
 	"github.com/nerago/mopgear-go/gear_model/requirements"
 	"github.com/nerago/mopgear-go/stats"
-	"github.com/nerago/mopgear-go/tools"
 )
 
 var bonusMake = bonus_set.ItemCountsRequiredMake
@@ -22,188 +21,181 @@ const (
 
 // ////////// standard model builders
 func Model_PallyProtSurvival() gear_model.SpecModel {
-	spec := stats.Spec_PaladinProt
-	goal := stats.OptimiseGoal_Mitigation
-	weight, err := tools.StatRatingsWeightsExtended_ReadFile(files.WeightProtSurvival)
-	if err != nil {
-		panic(err)
-	}
-	priority := SimPriority_survival
 	return gear_model.SpecModel{
-		Spec:              spec,
-		Goal:              goal,
-		SimulateAs:        stats.Fight_Juggernaut_SelfWordGlory,
-		SimPriority:       priority,
-		StatWeights:       weight,
-		StatRequirements:  requirements.StatRequirementsHitExpertise_ProtFlexibleParry(),
-		ReforgeRules:      gear_model.ReforgeRules_tank,
-		StatsForWeighting: StatsForWeighting_strengthTank,
-		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
-		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
-		BonusEnabled:      bonus_set.SpecSetsEnableNamed(&priority, setNameT16Prot),
-		BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
-			bonus_set.CountMode_Minimum,
-			bonusMake(setNameT16Prot, 2),
-		),
-		BonusRequiredWeight: new(bonusMake(setNameT15Prot, 0, setNameT16Prot, 2)),
-		Professions: gear_model.ProfessionInfo{
-			IsBlacksmith: true,
-			IsEngineer:   true,
+		Spec: stats.Spec_PaladinProt,
+		ModelItems: gear_model.ModelItems{
+			GearFile:           files.GearFileProtSurvival,
+			BlockSpecificItems: mygear.TrinketsStrengthMeleeOnly,
+			ReforgeRules:       gear_model.ReforgeRules_tank,
+			Professions:        gear_model.ProfessionInfo{IsBlacksmith: true, IsEngineer: true},
 		},
-		ReferenceGearFile:        files.GearFileProtSurvival,
-		SpecificIncompatibleList: mygear.TrinketsStrengthMeleeOnly,
+		ModelSolve: gear_model.ModelSolve{
+			WeightFile:        files.WeightProtSurvival,
+			SimPriority:       SimPriority_survival,
+			StatsForWeighting: StatsForWeighting_strengthTank,
+			StatRequirements:  requirements.StatRequirementsHitExpertise_ProtFlexibleParry(),
+		},
+		ModelSimulate: gear_model.ModelSimulate{
+			Goal:       stats.OptimiseGoal_Mitigation,
+			SimulateAs: stats.Fight_Juggernaut_SelfWordGlory,
+		},
+		ModelBonus: gear_model.ModelBonus{
+			BonusEnabled: bonus_set.SpecSetsEnableNamed(setNameT16Prot),
+			BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
+				bonus_set.CountMode_Minimum,
+				bonusMake(setNameT16Prot, 2),
+			),
+			BonusRequiredWeight: new(bonusMake(setNameT15Prot, 0, setNameT16Prot, 2)),
+		},
 	}
 }
 
 func Model_PallyProtHeal() gear_model.SpecModel {
-	spec := stats.Spec_PaladinProt
-	goal := stats.OptimiseGoal_HalfMitiHeal
-	weight := tools.StatRatingsWeightsExtended_ReadFile(files.WeightProtHeal)
-	priority := SimPriority_heal
 	return gear_model.SpecModel{
-		Spec:              spec,
-		Goal:              goal,
-		SimulateAs:        stats.Fight_Juggernaut_OffHealer,
-		SimPriority:       priority,
-		StatWeights:       weight,
-		StatRequirements:  requirements.StatRequirementsHitExpertise_ProtFlexibleParry(),
-		ReforgeRules:      gear_model.ReforgeRules_tank,
-		StatsForWeighting: StatsForWeighting_strengthTank,
-		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
-		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
-		BonusEnabled:      bonus_set.SpecSetsEnableNamed(&priority, eternalFlameT16Prot),
-		BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
-			bonus_set.CountMode_AllowPlusOne,
-			bonusMake(eternalFlameT16Prot, 4),
-		),
-		BonusRequiredWeight: new(bonusMake(eternalFlameT16Prot, 4)),
-		Professions: gear_model.ProfessionInfo{
-			IsBlacksmith: true,
-			IsEngineer:   true,
+		Spec: stats.Spec_PaladinProt,
+		ModelItems: gear_model.ModelItems{
+			GearFile:           files.GearFileProtHeal,
+			ReforgeRules:       gear_model.ReforgeRules_tank,
+			Professions:        gear_model.ProfessionInfo{IsBlacksmith: true, IsEngineer: true},
+			BlockSpecificItems: mygear.TrinketsStrengthMeleeOnly,
 		},
-		ReferenceGearFile:        files.GearFileProtHeal,
-		SpecificIncompatibleList: mygear.TrinketsStrengthMeleeOnly,
+		ModelSolve: gear_model.ModelSolve{
+			WeightFile:        files.WeightProtHeal,
+			SimPriority:       SimPriority_heal,
+			StatsForWeighting: StatsForWeighting_strengthTank,
+			StatRequirements:  requirements.StatRequirementsHitExpertise_ProtFlexibleParry(),
+		},
+		ModelSimulate: gear_model.ModelSimulate{
+			Goal:       stats.OptimiseGoal_HalfMitiHeal,
+			SimulateAs: stats.Fight_Juggernaut_OffHealer,
+		},
+		ModelBonus: gear_model.ModelBonus{
+			BonusEnabled: bonus_set.SpecSetsEnableNamed(eternalFlameT16Prot),
+			BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
+				bonus_set.CountMode_AllowPlusOne,
+				bonusMake(eternalFlameT16Prot, 4),
+			),
+			BonusRequiredWeight: new(bonusMake(eternalFlameT16Prot, 4)),
+		},
 	}
 }
 
 func Model_PallyProtMitigation() gear_model.SpecModel {
-	spec := stats.Spec_PaladinProt
-	goal := stats.OptimiseGoal_Mitigation
-	weight := tools.StatRatingsWeightsExtended_ReadFile(files.WeightProtMitigation)
-	priority := SimPriority_mitigation
 	return gear_model.SpecModel{
-		Spec:              spec,
-		Goal:              goal,
-		SimulateAs:        stats.Fight_Juggernaut_NoExternalHeal,
-		SimPriority:       priority,
-		StatWeights:       weight,
-		StatRequirements:  requirements.StatRequirementsHitExpertise_ProtFlexibleParry(),
-		ReforgeRules:      gear_model.ReforgeRules_tank,
-		StatsForWeighting: StatsForWeighting_strengthTank,
-		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
-		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
-		BonusEnabled:      bonus_set.SpecSetsEnableNamed(&priority, setNameT16Prot),
-		BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
-			bonus_set.CountMode_AllowPlusOne, // no real justification for any restriction
-			bonusMake(setNameT16Prot, 0),
-			bonusMake(setNameT16Prot, 2),
-		),
-		BonusRequiredWeight: new(bonusMake(setNameT16Prot, 2, setNameT15Prot, 0)),
-		Professions: gear_model.ProfessionInfo{
-			IsBlacksmith: true,
-			IsEngineer:   true,
+		Spec: stats.Spec_PaladinProt,
+		ModelItems: gear_model.ModelItems{
+			GearFile:           files.GearFileProtMitigation,
+			ReforgeRules:       gear_model.ReforgeRules_tank,
+			Professions:        gear_model.ProfessionInfo{IsBlacksmith: true, IsEngineer: true},
+			BlockSpecificItems: mygear.TrinketsStrengthMeleeOnly,
 		},
-		ReferenceGearFile:        files.GearFileProtMitigation,
-		SpecificIncompatibleList: mygear.TrinketsStrengthMeleeOnly,
+		ModelSolve: gear_model.ModelSolve{
+			WeightFile:        files.WeightProtMitigation,
+			SimPriority:       SimPriority_mitigation,
+			StatsForWeighting: StatsForWeighting_strengthTank,
+			StatRequirements:  requirements.StatRequirementsHitExpertise_ProtFlexibleParry(),
+		},
+		ModelSimulate: gear_model.ModelSimulate{
+			Goal:       stats.OptimiseGoal_Mitigation,
+			SimulateAs: stats.Fight_Juggernaut_NoExternalHeal,
+		},
+		ModelBonus: gear_model.ModelBonus{
+			BonusEnabled: bonus_set.SpecSetsEnableNamed(setNameT16Prot),
+			BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
+				bonus_set.CountMode_AllowPlusOne, // no real justification for any restriction
+				bonusMake(setNameT16Prot, 0),
+				bonusMake(setNameT16Prot, 2),
+			),
+			BonusRequiredWeight: new(bonusMake(setNameT16Prot, 2, setNameT15Prot, 0)),
+		},
 	}
 }
 
 func Model_PallyProtBalanced() gear_model.SpecModel {
-	spec := stats.Spec_PaladinProt
-	goal := stats.OptimiseGoal_HalfMitiDps
-	weight := tools.StatRatingsWeightsExtended_ReadFile(files.WeightProtBalanced)
-	priority := SimPriority_balanced
 	return gear_model.SpecModel{
-		Spec:              spec,
-		Goal:              goal,
-		SimulateAs:        stats.Fight_Juggernaut_HighHeal,
-		SimPriority:       priority,
-		StatWeights:       weight,
-		StatRequirements:  requirements.StatRequirementsHitExpertise_ProtFlexibleParry(),
-		ReforgeRules:      gear_model.ReforgeRules_tank,
-		StatsForWeighting: StatsForWeighting_strengthTank,
-		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
-		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
-		BonusEnabled:      bonus_set.SpecSetsEnableNamed(&priority, setNameT16Prot),
-		BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
-			bonus_set.CountMode_Exact,
-			bonusMake(setNameT16Prot, 0),
-			bonusMake(setNameT16Prot, 2)),
-		BonusRequiredWeight: new(bonusMake(setNameT16Prot, 0)),
-		Professions: gear_model.ProfessionInfo{
-			IsBlacksmith: true,
-			IsEngineer:   true,
+		Spec: stats.Spec_PaladinProt,
+		ModelItems: gear_model.ModelItems{
+			GearFile:           files.GearFileProtBalanced,
+			ReforgeRules:       gear_model.ReforgeRules_tank,
+			Professions:        gear_model.ProfessionInfo{IsBlacksmith: true, IsEngineer: true},
+			BlockSpecificItems: mygear.TrinketsStrengthMeleeOnly,
 		},
-		ReferenceGearFile:        files.GearFileProtBalanced,
-		SpecificIncompatibleList: mygear.TrinketsStrengthMeleeOnly,
+		ModelSolve: gear_model.ModelSolve{
+			WeightFile:        files.WeightProtBalanced,
+			SimPriority:       SimPriority_balanced,
+			StatsForWeighting: StatsForWeighting_strengthTank,
+			StatRequirements:  requirements.StatRequirementsHitExpertise_ProtFlexibleParry(),
+		},
+		ModelSimulate: gear_model.ModelSimulate{
+			Goal:       stats.OptimiseGoal_HalfMitiDps,
+			SimulateAs: stats.Fight_Juggernaut_HighHeal,
+		},
+		ModelBonus: gear_model.ModelBonus{
+			BonusEnabled: bonus_set.SpecSetsEnableNamed(setNameT16Prot),
+			BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
+				bonus_set.CountMode_Exact,
+				bonusMake(setNameT16Prot, 0),
+				bonusMake(setNameT16Prot, 2)),
+			BonusRequiredWeight: new(bonusMake(setNameT16Prot, 0)),
+		},
 	}
 }
 
 func Model_PallyProtDamage() gear_model.SpecModel {
-	spec := stats.Spec_PaladinProt
-	goal := stats.OptimiseGoal_Dps
-	weight := tools.StatRatingsWeightsExtended_ReadFile(files.WeightProtDamage)
 	return gear_model.SpecModel{
-		Spec:                spec,
-		Goal:                goal,
-		SimulateAs:          stats.Fight_Horridon_HighHeal,
-		SimPriority:         SimPriority_dps,
-		StatWeights:         weight,
-		StatRequirements:    requirements.StatRequirementsHitExpertise_ProtFlexibleParry(),
-		ReforgeRules:        gear_model.ReforgeRules_tank,
-		StatsForWeighting:   StatsForWeighting_strengthTank,
-		EnchantChoice:       gear_model.EnchantChoice_ForSpec(spec, goal),
-		GemChoice:           gear_model.GemChoice_ForSpec(spec, goal),
-		BonusEnabled:        bonus_set.SpecSetsEnableNone(),
-		BonusRequiredSolve:  bonus_set.ItemCountsRequiredOptionsAny(),
-		BonusRequiredWeight: nil,
-		Professions: gear_model.ProfessionInfo{
-			IsBlacksmith: true,
-			IsEngineer:   true,
+		Spec: stats.Spec_PaladinProt,
+		ModelItems: gear_model.ModelItems{
+			GearFile:           files.GearFileProtDamage,
+			ReforgeRules:       gear_model.ReforgeRules_tank,
+			Professions:        gear_model.ProfessionInfo{IsBlacksmith: true, IsEngineer: true},
+			BlockSpecificItems: mygear.TrinketsStrengthMeleeOnly,
 		},
-		ReferenceGearFile:        files.GearFileProtDamage,
-		SpecificIncompatibleList: mygear.TrinketsStrengthMeleeOnly,
+		ModelSolve: gear_model.ModelSolve{
+			WeightFile:        files.WeightProtDamage,
+			SimPriority:       SimPriority_dps,
+			StatsForWeighting: StatsForWeighting_strengthTank,
+			StatRequirements:  requirements.StatRequirementsHitExpertise_ProtFlexibleParry(),
+		},
+		ModelSimulate: gear_model.ModelSimulate{
+			Goal:       stats.OptimiseGoal_Dps,
+			SimulateAs: stats.Fight_Horridon_HighHeal,
+		},
+		ModelBonus: gear_model.ModelBonus{
+			BonusEnabled:        bonus_set.SpecSetsEnableNone(),
+			BonusRequiredSolve:  bonus_set.ItemCountsRequiredOptionsAny(),
+			BonusRequiredWeight: nil,
+		},
 	}
 }
 
 func Model_PallyRet() gear_model.SpecModel {
-	spec := stats.Spec_PaladinRet
-	goal := stats.OptimiseGoal_Dps
-	weight := tools.StatRatingsWeightsExtended_ReadFile(files.WeightRet)
 	priority := SimPriority_ret
 	return gear_model.SpecModel{
-		Spec:              spec,
-		Goal:              goal,
-		SimulateAs:        stats.Fight_Horridon_HighHeal,
-		SimPriority:       priority,
-		SimSpeedUp:        6,
-		StatWeights:       weight,
-		StatRequirements:  requirements.StatRequirementsHitExpertise_RetWideCap(),
-		StatsForWeighting: StatsForWeighting_strengthMelee,
-		ReforgeRules:      gear_model.ReforgeRules_melee,
-		EnchantChoice:     gear_model.EnchantChoice_ForSpec(spec, goal),
-		GemChoice:         gear_model.GemChoice_ForSpec(spec, goal),
-		BonusEnabled:      bonus_set.SpecSetsEnableNamed(&priority, setNameT16Ret),
-		BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
-			bonus_set.CountMode_Minimum,
-			bonusMake(setNameT16Ret, 2),
-		),
-		BonusRequiredWeight: new(bonusMake(setNameT15Ret, 0, setNameT16Ret, 2)),
-		Professions: gear_model.ProfessionInfo{
-			IsBlacksmith: true,
-			IsEngineer:   true,
+		Spec: stats.Spec_PaladinRet,
+		ModelItems: gear_model.ModelItems{
+			GearFile:           files.GearFileRet,
+			ReforgeRules:       gear_model.ReforgeRules_melee,
+			Professions:        gear_model.ProfessionInfo{IsBlacksmith: true, IsEngineer: true},
+			BlockSpecificItems: mygear.TrinketsStrengthTankOnly,
 		},
-		ReferenceGearFile:        files.GearFileRet,
-		SpecificIncompatibleList: mygear.TrinketsStrengthTankOnly,
+		ModelSolve: gear_model.ModelSolve{
+			WeightFile:        files.WeightRet,
+			SimPriority:       priority,
+			StatsForWeighting: StatsForWeighting_strengthMelee,
+			StatRequirements:  requirements.StatRequirementsHitExpertise_RetWideCap(),
+		},
+		ModelSimulate: gear_model.ModelSimulate{
+			Goal:       stats.OptimiseGoal_Dps,
+			SimulateAs: stats.Fight_Horridon_HighHeal,
+			SimSpeedUp: 4,
+		},
+		ModelBonus: gear_model.ModelBonus{
+			BonusEnabled: bonus_set.SpecSetsEnableNamed(setNameT16Ret),
+			BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
+				bonus_set.CountMode_Minimum,
+				bonusMake(setNameT16Ret, 2),
+			),
+			BonusRequiredWeight: new(bonusMake(setNameT15Ret, 0, setNameT16Ret, 2)),
+		},
 	}
 }

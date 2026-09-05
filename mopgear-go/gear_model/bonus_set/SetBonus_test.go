@@ -60,8 +60,8 @@ var priority = weight_types.SimPriorityBasic_Make(
 
 func makeSpecSetsEnables() (*SpecSetsEnable, *SpecSetsEnable, *SpecSetsEnable) {
 	return SpecSetsEnableNone(),
-		SpecSetsEnableNamed(new(priority), "White Tiger Plate"),
-		SpecSetsEnableForSpec_AllowFallback(Spec_PaladinRet, OptimiseGoal_Dps, true, new(priority))
+		SpecSetsEnableNamed("White Tiger Plate"),
+		SpecSetsEnableForSpec_AllowFallback(Spec_PaladinRet, OptimiseGoal_Dps, true)
 }
 
 var resultFloat float64

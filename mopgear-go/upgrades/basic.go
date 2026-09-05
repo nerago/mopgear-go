@@ -109,7 +109,7 @@ func canPerformSpecifiedUpgrade(settings *InputSettings, extra *items.FullItem, 
 		return items.CanUpgrade_InvalidAlways
 	}
 
-	if result := baseItems.CouldAddUpgrade_EquipSlot(slot, extra, printer, model.SpecificIncompatibleList); result != items.CanUpgrade_Yes {
+	if result := baseItems.CouldAddUpgrade_EquipSlot(slot, extra, printer, model.BlockSpecificItems); result != items.CanUpgrade_Yes {
 		return result
 	}
 

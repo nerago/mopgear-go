@@ -133,12 +133,10 @@ func addToSpecificSet[M items.IItem](counts *[16]uint8, itemToSet *[c_maxItemId]
 }
 
 func SpecSetsEnableNone() *SpecSetsEnable {
-	sets := &SpecSetsEnable{}
-	sets.initMap(nil)
-	return sets
+	return &SpecSetsEnable{}
 }
 
-func SpecSetsEnableNamed(priority *weight_types.SimPriorityBasic, names ...string) *SpecSetsEnable {
+func SpecSetsEnableNamed(names ...string) *SpecSetsEnable {
 	sets := &SpecSetsEnable{}
 	for _, name := range names {
 		found := false
@@ -154,18 +152,17 @@ func SpecSetsEnableNamed(priority *weight_types.SimPriorityBasic, names ...strin
 			panic("set not found " + name)
 		}
 	}
-	sets.initMap(priority)
 	return sets
 }
 
-func SpecSetsEnableForSpec(spec stats.SpecType, goal stats.OptimiseGoal, priority *weight_types.SimPriorityBasic) *SpecSetsEnable {
+func SpecSetsEnableForSpec(spec stats.SpecType, goal stats.OptimiseGoal) *SpecSetsEnable {
 	if goal == stats.OptimiseGoal_Unknown {
 		panic("please specific goal")
 	}
-	return SpecSetsEnableForSpec_AllowFallback(spec, goal, false, priority)
+	return SpecSetsEnableForSpec_AllowFallback(spec, goal, false)
 }
 
-func SpecSetsEnableForSpec_AllowFallback(spec stats.SpecType, goal stats.OptimiseGoal, fallback bool, priority *weight_types.SimPriorityBasic) *SpecSetsEnable {
+func SpecSetsEnableForSpec_AllowFallback(spec stats.SpecType, goal stats.OptimiseGoal, fallback bool) *SpecSetsEnable {
 	sets := &SpecSetsEnable{}
 
 mainEntry:
@@ -207,11 +204,10 @@ mainEntry:
 	if len(sets.EnabledSets) == 0 {
 		panic("didn't find any sets")
 	}
-	sets.initMap(priority)
 	return sets
 }
 
-func (sets *SpecSetsEnable) initMap(priority *weight_types.SimPriorityBasic) {
+func (sets *SpecSetsEnable) InitFromModel(priority *weight_types.SimPriorityBasic) {
 	for index, info := range sets.EnabledSets {
 		for _, itemId := range info.items {
 			if sets.itemToSet[itemId] != 0 {
@@ -225,8 +221,7 @@ func (sets *SpecSetsEnable) initMap(priority *weight_types.SimPriorityBasic) {
 		for bonus := range util_collection.ForPointer(sets.EnabledSets) {
 			bonus.deriveUpgradedFlatBonus(priority)
 		}
+	} else {
+		panic("missing priority")
 	}
-	//else {
-	//	panic("can we have priority everywhere?")
-	//}
 }

@@ -12,23 +12,47 @@ import (
 )
 
 type SpecModel struct {
-	StatRequirements         StatRequirements
-	StatWeights              ratings.StatRatingsWeightsExtended
-	Spec                     SpecType
-	Goal                     OptimiseGoal
-	SimulateAs               WowSim_Fight
-	SimSpeedUp               int
-	ReforgeRules             ReforgeRules
-	EnchantChoice            EnchantChoice
-	GemChoice                GemChoice
-	BonusEnabled             *bonus_set.SpecSetsEnable
-	BonusRequiredSolve       bonus_set.ItemCountsRequiredOptions
-	BonusRequiredWeight      *bonus_set.ItemCountsRequired
-	Professions              ProfessionInfo
-	SimPriority              weight_types.SimPriorityBasic
-	StatsForWeighting        []StatType
-	SpecificIncompatibleList []ItemId
-	ReferenceGearFile        string // should just be used by exporters etc
+	Spec SpecType
+	ModelItems
+	ModelSolve
+	ModelSimulate
+	ModelBonus
+	Initialized bool
+}
+
+func (model *SpecModel) Init() {
+	model.ModelItems.EnchantChoice = EnchantChoice_ForSpec(model.Spec, model.Goal)
+	model.ModelItems.GemChoice = GemChoice_ForSpec(model.Spec, model.Goal)
+	model.BonusEnabled.InitFromModel(&model.SimPriority)
+}
+
+type ModelItems struct {
+	GearFile           string
+	ReforgeRules       ReforgeRules
+	EnchantChoice      EnchantChoice
+	GemChoice          GemChoice
+	Professions        ProfessionInfo
+	BlockSpecificItems []ItemId
+}
+
+type ModelSolve struct {
+	WeightFile        string
+	StatWeights       ratings.StatRatingsWeightsExtended
+	StatRequirements  StatRequirements
+	SimPriority       weight_types.SimPriorityBasic
+	StatsForWeighting []StatType
+}
+
+type ModelSimulate struct {
+	Goal       OptimiseGoal
+	SimulateAs WowSim_Fight
+	SimSpeedUp int
+}
+
+type ModelBonus struct {
+	BonusEnabled        *bonus_set.SpecSetsEnable
+	BonusRequiredSolve  bonus_set.ItemCountsRequiredOptions
+	BonusRequiredWeight *bonus_set.ItemCountsRequired
 }
 
 func (model *SpecModel) Equals(other *SpecModel) bool {
@@ -47,29 +71,29 @@ func (model *SpecModel) Equals(other *SpecModel) bool {
 		model.Professions == other.Professions &&
 		model.SimPriority.Equals(&other.SimPriority) &&
 		slices.Equal(model.StatsForWeighting, other.StatsForWeighting) &&
-		slices.Equal(model.SpecificIncompatibleList, other.SpecificIncompatibleList) &&
-		model.ReferenceGearFile == other.ReferenceGearFile
+		slices.Equal(model.BlockSpecificItems, other.BlockSpecificItems) &&
+		model.GearFile == other.GearFile
 }
 
 func (model *SpecModel) CloneShallow() *SpecModel {
 	return &SpecModel{
-		StatRequirements:         model.StatRequirements,
-		StatWeights:              model.StatWeights,
-		Spec:                     model.Spec,
-		Goal:                     model.Goal,
-		SimulateAs:               model.SimulateAs,
-		SimSpeedUp:               model.SimSpeedUp,
-		ReforgeRules:             model.ReforgeRules,
-		EnchantChoice:            model.EnchantChoice,
-		GemChoice:                model.GemChoice,
-		BonusEnabled:             model.BonusEnabled,
-		BonusRequiredSolve:       model.BonusRequiredSolve,
-		BonusRequiredWeight:      model.BonusRequiredWeight,
-		Professions:              model.Professions,
-		SimPriority:              model.SimPriority,
-		StatsForWeighting:        model.StatsForWeighting,
-		SpecificIncompatibleList: model.SpecificIncompatibleList,
-		ReferenceGearFile:        model.ReferenceGearFile,
+		StatRequirements:    model.StatRequirements,
+		StatWeights:         model.StatWeights,
+		Spec:                model.Spec,
+		Goal:                model.Goal,
+		SimulateAs:          model.SimulateAs,
+		SimSpeedUp:          model.SimSpeedUp,
+		ReforgeRules:        model.ReforgeRules,
+		EnchantChoice:       model.EnchantChoice,
+		GemChoice:           model.GemChoice,
+		BonusEnabled:        model.BonusEnabled,
+		BonusRequiredSolve:  model.BonusRequiredSolve,
+		BonusRequiredWeight: model.BonusRequiredWeight,
+		Professions:         model.Professions,
+		SimPriority:         model.SimPriority,
+		StatsForWeighting:   model.StatsForWeighting,
+		BlockSpecificItems:  model.BlockSpecificItems,
+		GearFile:            model.GearFile,
 	}
 }
 

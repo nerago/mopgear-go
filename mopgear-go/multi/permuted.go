@@ -387,7 +387,7 @@ func (group *workingGroup) applyPermuteItemAdd(itemId items.ItemId, itemOptionsE
 			return err
 		}
 
-		couldAdd := itemOpts.CouldAddUpgrade_ItemSlot(example.SlotItem(), example, group.job.printer, prep.model.SpecificIncompatibleList)
+		couldAdd := itemOpts.CouldAddUpgrade_ItemSlot(example.SlotItem(), example, group.job.printer, prep.model.BlockSpecificItems)
 		if couldAdd != items.CanUpgrade_InvalidAlways {
 			itemOpts.AddSeveralOptions(example.SlotItem(), extraOpts)
 		}

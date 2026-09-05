@@ -194,7 +194,7 @@ func SiegeClassGearSetMultiple(specType ...stats.SpecType) func(stats.Difficulty
 
 func siegeClassGearSet(specType stats.SpecType, difficulty stats.Difficulty) []ItemFoundRef {
 	result := make([]ItemFoundRef, 0)
-	specBonus := bonus_set.SpecSetsEnableForSpec_AllowFallback(specType, stats.OptimiseGoal_Unknown, true, nil)
+	specBonus := bonus_set.SpecSetsEnableForSpec_AllowFallback(specType, stats.OptimiseGoal_Unknown, true)
 	targetLevel := difficulty.ExpectedItemLevelSiege()
 	for itemId := range specBonus.AllItemIds() {
 		item := db.WowSimDB_LoadItemById(itemId, 0)
@@ -210,7 +210,7 @@ func siegeClassGearSet(specType stats.SpecType, difficulty stats.Difficulty) []I
 
 func throneClassGearSet(specType stats.SpecType, difficulty stats.Difficulty) []ItemFoundRef {
 	result := make([]ItemFoundRef, 0)
-	specBonus := bonus_set.SpecSetsEnableForSpec_AllowFallback(specType, stats.OptimiseGoal_Unknown, true, nil)
+	specBonus := bonus_set.SpecSetsEnableForSpec_AllowFallback(specType, stats.OptimiseGoal_Unknown, true)
 	targetLevel := difficulty.ExpectedItemLevelThrone()
 	for itemId := range specBonus.AllItemIds() {
 		item := db.WowSimDB_LoadItemById(itemId, 0)

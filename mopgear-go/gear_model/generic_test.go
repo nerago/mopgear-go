@@ -84,7 +84,7 @@ func modelTest() SpecModel {
 		},
 		EnchantChoice: EnchantChoice_ForSpec(spec, goal),
 		GemChoice:     GemChoice_ForSpec(spec, goal),
-		BonusEnabled:  bonus_set.SpecSetsEnableNamed(&priority, "Plate of Winged Triumph"),
+		BonusEnabled:  bonus_set.SpecSetsEnableNamed("Plate of Winged Triumph"),
 		BonusRequiredSolve: bonus_set.ItemCountsRequiredOptionsMake(
 			bonus_set.CountMode_AllowPlusOne, // no real justification for any restriction
 			bonus_set.ItemCountsRequiredMake("Plate of Winged Triumph", 2),
@@ -93,7 +93,7 @@ func modelTest() SpecModel {
 			IsBlacksmith: true,
 			IsEngineer:   true,
 		},
-		ReferenceGearFile:        files.GearFileProtSurvival,
-		SpecificIncompatibleList: mygear.TrinketsStrengthMeleeOnly,
+		ReferenceGearFile:  files.GearFileProtSurvival,
+		BlockSpecificItems: mygear.TrinketsStrengthMeleeOnly,
 	}
 }

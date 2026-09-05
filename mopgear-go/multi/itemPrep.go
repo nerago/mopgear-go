@@ -159,7 +159,7 @@ func (prep *specItemPrep) includeExtra(itemId items.ItemId, input *multi_types.I
 	}
 
 	basicVersion := db.WowSimDB_LoadItemById(itemId, 0)
-	if prep.itemOptions.CouldAddUpgrade_ItemSlot(basicVersion.SlotItem(), basicVersion, printer, prep.model.SpecificIncompatibleList) == items.CanUpgrade_InvalidAlways {
+	if prep.itemOptions.CouldAddUpgrade_ItemSlot(basicVersion.SlotItem(), basicVersion, printer, prep.model.BlockSpecificItems) == items.CanUpgrade_InvalidAlways {
 		return
 	}
 
@@ -257,7 +257,7 @@ func (prep *specItemPrep) tryAddExtraFromBags(equipped *loaders.EquippedItem, in
 	if basicVersion.ItemLevel() < refs.shared.MinimumExtraItemLevel {
 		return
 	}
-	if prep.itemOptions.CouldAddUpgrade_ItemSlot(basicVersion.SlotItem(), basicVersion, printer, prep.model.SpecificIncompatibleList) != items.CanUpgrade_Yes {
+	if prep.itemOptions.CouldAddUpgrade_ItemSlot(basicVersion.SlotItem(), basicVersion, printer, prep.model.BlockSpecificItems) != items.CanUpgrade_Yes {
 		return
 	}
 
@@ -276,7 +276,7 @@ func (prep *specItemPrep) tryAddExtraFromBags(equipped *loaders.EquippedItem, in
 
 	added := false
 	example.SlotItem().ForEachEquip(func(slot items.SlotEquip) {
-		if prep.itemOptions.CouldAddUpgrade_EquipSlot(slot, example, printer, prep.model.SpecificIncompatibleList) == items.CanUpgrade_Yes {
+		if prep.itemOptions.CouldAddUpgrade_EquipSlot(slot, example, printer, prep.model.BlockSpecificItems) == items.CanUpgrade_Yes {
 			err := prep.addItemOptionsSpecificWithValidate(slot, options)
 			if err != nil {
 				printer.Printf("EXTRA add ERROR: %v\n", err)

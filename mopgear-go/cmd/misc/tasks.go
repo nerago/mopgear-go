@@ -886,7 +886,7 @@ func determineSetBonusValueBySim(printer *util.PrintRecorder) {
 
 	gearFile := files.GearFileRet
 	model := model_factory.Model_PallyRet()
-	model.BonusEnabled = bonus_set.SpecSetsEnableNamed(&model.SimPriority, "Battlegear of Winged Triumph", "Battlegear of the Lightning Emperor")
+	model.BonusEnabled = bonus_set.SpecSetsEnableNamed("Battlegear of Winged Triumph", "Battlegear of the Lightning Emperor")
 	model.BonusRequiredSolve = bonus_set.ItemCountsRequiredOptions{
 		Mode:    bonus_set.CountMode_Exact,
 		Options: []bonus_set.ItemCountsRequired{bonus_set.ItemCountsRequiredMake("Battlegear of Winged Triumph", 0, "Battlegear of the Lightning Emperor", 0)},
@@ -1052,7 +1052,7 @@ func determineBestUseOfGearSets(printer *util.PrintRecorder) {
 	setNameT16Prot := "Plate of Winged Triumph"
 	setNameT15Ret := "Battlegear of the Lightning Emperor"
 	setNameT16Ret := "Battlegear of Winged Triumph"
-	model.BonusEnabled = bonus_set.SpecSetsEnableNamed(&model.SimPriority, setNameT15Prot, setNameT16Prot, setNameT15Ret, setNameT16Ret)
+	model.BonusEnabled = bonus_set.SpecSetsEnableNamed(setNameT15Prot, setNameT16Prot, setNameT15Ret, setNameT16Ret)
 	model.StatWeights = tools.StatRatingsWeightsExtended_ReadFile(files.WeightProtHeal)
 
 	bonusCombos := []bonus_set.ItemCountsRequired{
