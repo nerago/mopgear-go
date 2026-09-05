@@ -73,17 +73,20 @@ func (sbb *gearItemSetupBasic) finishRequire1(require *stats.StatTypeMap[weight_
 	return nil
 }
 
-func (sbb *gearItemSetupBasic) finishRatingSum(build *util_highs.LinearBuilder) (baseRatingSumVar *columnInfo) {
-	entry := &columnInfo{entryType: entry_sum_rating}
+func (sbb *gearItemSetupBasic) finishRatingSum(build *util_highs.LinearBuilder, scaleOffset weight_types.ScaleAndOffset) (baseRatingSumVar *columnInfo) {
+	sumColumn := &columnInfo{entryType: entry_sum_rating}
 
 	// sum of individual selected item ratings
-	entry.columnIndex = build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), entry)
+	sumColumn.columnIndex = build.CreateColumnGeneral(highs.Continuous, 0, util_highs.InfPos(), sumColumn)
 
 	// main action of this variable: derive value to match rest of row sum
+	// apply scale and offset factors given by the weights
 	sbb.baseRatingSumRow.Debug = "baseRatingSumRow"
-	sbb.baseRatingSumRow.Add(entry.columnIndex, -1)
-	sbb.baseRatingSumRow.Build(build, 0, 0)
+	offset := -scaleOffset.Offset
+	ratingScale := -1.0 / scaleOffset.Scale
+	sbb.baseRatingSumRow.Add(sumColumn.columnIndex, ratingScale)
+	sbb.baseRatingSumRow.Build(build, offset, offset)
 
 	// save reference
-	return entry
+	return sumColumn
 }

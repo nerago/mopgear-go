@@ -11,5 +11,6 @@ type IWeight interface {
 	String() string
 	FinishAndValidate(sampleInputs []WeightInput) error
 	CalcStatScore(*stats.StatBlock) float64
+	CalcStatScoreRaw(*stats.StatBlock) float64
 	CalcStatScoreWithBonus(*stats.StatBlock, *stats.SimTypeMap[float64]) float64
 }

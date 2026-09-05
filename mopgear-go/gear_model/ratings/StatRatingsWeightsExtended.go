@@ -40,7 +40,7 @@ func (sw *StatRatingsWeightsExtended) GetByWeightTypeForSolve(weightType weight_
 		panic("invalid weight type")
 	}
 
-	if weight.IsEmpty() {
+	if weight == nil || weight.IsEmpty() {
 		panic("missing weight")
 	}
 

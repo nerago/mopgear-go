@@ -235,12 +235,14 @@ func (model *SpecModel) CalcRatingFull(itemSet *FullItemSet, weightType weight_t
 }
 
 // ////////// items ratings
-func (model *SpecModel) CalcRatingSolveItem(item *SolvableItem, weightType weight_types.WeightType) float64 {
-	return model.ModelSolve.GetStatWeights().GetByWeightTypeForSolve(weightType).CalcStatScore(item.Total())
+func (model *SpecModel) CalcRatingRawSolveItem(item *SolvableItem, weightType weight_types.WeightType) float64 {
+	weight := model.ModelSolve.GetStatWeights().GetByWeightTypeForSolve(weightType)
+	return weight.CalcStatScoreRaw(item.Total())
 }
 
-func (model *SpecModel) CalcRatingFullItem(item *FullItem, weightType weight_types.WeightType) float64 {
-	return model.ModelSolve.GetStatWeights().GetByWeightTypeForSolve(weightType).CalcStatScore(item.Total())
+func (model *SpecModel) CalcRatingRawFullItem(item *FullItem, weightType weight_types.WeightType) float64 {
+	weight := model.ModelSolve.GetStatWeights().GetByWeightTypeForSolve(weightType)
+	return weight.CalcStatScoreRaw(item.Total())
 }
 
 // ////////// ProfessionInfo

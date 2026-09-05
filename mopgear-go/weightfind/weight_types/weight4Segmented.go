@@ -193,6 +193,20 @@ func (wer *Weight4) CalcStatScore(stats *stats.StatBlock) float64 {
 	return totalSum
 }
 
+func (wer *Weight4) CalcStatScoreRaw(stats *stats.StatBlock) float64 {
+	seg := wer.selectSegment(stats)
+	if seg == nil {
+		return math.NaN()
+	}
+
+	totalSum := 0.0
+	for _, simType := range wer.SimList {
+		subTotal := seg.calcSingleSimScoreUnscaled(stats, simType)
+		totalSum += subTotal
+	}
+	return totalSum
+}
+
 func (wer *Weight4) CalcStatScoreWithBonus(stats *stats.StatBlock, simBonus *stats.SimTypeMap[float64]) float64 {
 	seg := wer.selectSegment(stats)
 	if seg == nil {

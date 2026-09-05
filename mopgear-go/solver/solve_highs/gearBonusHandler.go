@@ -22,7 +22,10 @@ type gearBonusComboHandler struct {
 }
 
 func (bon *gearBonusComboHandler) processBonus(combinedRatingVar *columnInfo, simType util_collection.Optional[stats.SimType], ratingRangeHigh float64, model *solve_highs_types.SolverModel, countSetItemsColumns map[solve_highs_types.SetBonusIndex]*columnInfo) (*columnInfo, error) {
-	bonusData, bonusCombos := bon.init(model, countSetItemsColumns)
+	bonusData, bonusCombos, err := bon.init(model, countSetItemsColumns)
+	if err != nil {
+		return nil, err
+	}
 
 	if len(bonusData) > 0 {
 		outputVar := bon._makeOutputForComboVariable(simType)
@@ -44,7 +47,7 @@ func (bon *gearBonusComboHandler) processBonus(combinedRatingVar *columnInfo, si
 	}
 }
 
-func (bon *gearBonusComboHandler) init(model *solve_highs_types.SolverModel, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo) (map[solve_highs_types.SetBonusIndex]bonusColsByCount, *util_collection.List[bonusCombo]) {
+func (bon *gearBonusComboHandler) init(model *solve_highs_types.SolverModel, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo) (map[solve_highs_types.SetBonusIndex]bonusColsByCount, *util_collection.List[bonusCombo], error) {
 	bonusData := bon._bonusData
 	bonusCombos := bon._bonusCombos
 	if bonusData == nil {
@@ -53,13 +56,15 @@ func (bon *gearBonusComboHandler) init(model *solve_highs_types.SolverModel, cou
 
 		if len(bonusData) > 0 {
 			bonusCombos = bon.combosMakeInitial(bonusData, allowedRanges)
-			bon.finishComboRules(bonusCombos)
+			if err := bon.finishComboRules(bonusCombos); err != nil {
+				return nil, nil, err
+			}
 			bon._bonusCombos = bonusCombos
 		}
 
 		bon._bonusData = bonusData
 	}
-	return bonusData, bonusCombos
+	return bonusData, bonusCombos, nil
 }
 
 func (bon *gearBonusComboHandler) determineAllowedBonusRanges(model *solve_highs_types.SolverModel) []util_collection.HiLoUInt32 {

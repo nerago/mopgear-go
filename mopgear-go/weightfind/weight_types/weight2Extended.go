@@ -86,6 +86,15 @@ func (we *Weight2) CalcStatScore(statBlock *stats.StatBlock) float64 {
 	return totalSum
 }
 
+func (we *Weight2) CalcStatScoreRaw(statBlock *stats.StatBlock) float64 {
+	totalSum := 0.0
+	for _, simType := range we.SimList {
+		subTotal := we.scoreForSimRaw(statBlock, simType)
+		totalSum += subTotal
+	}
+	return totalSum
+}
+
 func (we *Weight2) CalcStatScoreWithBonus(statBlock *stats.StatBlock, simBonus *stats.SimTypeMap[float64]) float64 {
 	totalSum := 0.0
 	for _, simType := range we.SimList {

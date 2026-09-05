@@ -23,9 +23,9 @@ type SolverModel struct {
 	Weights2       *weight_types.Weight2
 	Weights3       *weight_types.Weight3
 
-	CheckSet       func(itemSet *items.SolvableItemSet) (bool, string)
-	CalcRatingItem func(item *items.SolvableItem) float64
-	CalcRatingSet  func(item *items.SolvableItemSet) float64
+	CheckSet            func(itemSet *items.SolvableItemSet) (bool, string)
+	CalcRatingItem1Only func(item *items.SolvableItem) float64
+	CalcRatingSet       func(item *items.SolvableItemSet) float64
 
 	StatRequirements stats.StatTypeMap[weight_types.StatRangeFloat]
 
@@ -90,8 +90,13 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.Weigh
 		return model.CalcRatingSolve(itemSet, weightType)
 	}
 
-	solveModel.CalcRatingItem = func(item *items.SolvableItem) float64 {
-		return model.CalcRatingSolveItem(item, weightType)
+	if weightType == 1 {
+		solveModel.CalcRatingItem1Only = func(item *items.SolvableItem) float64 {
+			return solveModel.Weights1.CalcStatScoreRaw(item.Total())
+		}
+		//solveModel.CalcRatingItem = func(item *items.SolvableItem) float64 {
+		//	return model.CalcRatingRawSolveItem(item, weightType)
+		//}
 	}
 
 	for _, prepBonus := range model.BonusEnabled.EnabledSets {

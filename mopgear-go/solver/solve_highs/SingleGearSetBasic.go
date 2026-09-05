@@ -53,7 +53,7 @@ func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOp
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
 		columnIndex := sb.itemSetupCommon.addItemCommon(slot, item)
-		sb.itemSetupBasic.addItem(item, model.CalcRatingItem, columnIndex)
+		sb.itemSetupBasic.addItem(item, model.CalcRatingItem1Only, columnIndex)
 	}
 
 	if err := sb.itemSetupCommon.finishItemsEquipped(itemOptions, sb.build); err != nil {
@@ -63,7 +63,7 @@ func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOp
 		return nil, err
 	}
 	countSetItemsCol := sb.itemSetupCommon.finishSetCounts(sb.build)
-	baseRatingSumVar := sb.itemSetupBasic.finishRatingSum(sb.build)
+	baseRatingSumVar := sb.itemSetupBasic.finishRatingSum(sb.build, model.Weights1.GetScaleOffset())
 
 	return sb.bonusComboHandler.processBonus(
 		baseRatingSumVar,

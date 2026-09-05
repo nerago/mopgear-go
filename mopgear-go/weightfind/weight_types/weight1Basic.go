@@ -49,6 +49,10 @@ func (wbs *Weight1_ScaledSolvable) CalcStatScore(stats *stats.StatBlock) float64
 	return wbs.scaleAndOffset.Apply(rawValue)
 }
 
+func (wbs *Weight1_ScaledSolvable) CalcStatScoreRaw(stats *stats.StatBlock) float64 {
+	return wbs.calcStatScoreRaw(stats)
+}
+
 func (wbs *Weight1_ScaledSolvable) GetScaleOffset() ScaleAndOffset {
 	return wbs.scaleAndOffset
 }
