@@ -33,16 +33,10 @@ func WriteWeightString(weight weight_types.IWeight, printer *util.PrintRecorder)
 }
 
 func ReadWeight1File(filename string) (weight1 *weight_types.Weight1_ScaledSolvable, err error) {
-	bytes, err := os.ReadFile(filename)
-	if errors.Is(err, fs.ErrNotExist) {
-		return nil, nil
-	} else if err != nil {
-		return nil, err
-	}
-
 	protoWeight := gearproto.Weight1{}
-	err = protojson.UnmarshalOptions{}.Unmarshal(bytes, &protoWeight)
-	if err != nil {
+
+	goodRead, err := readWeightFileGeneral(filename, &protoWeight)
+	if err != nil || !goodRead {
 		return nil, err
 	}
 
@@ -51,16 +45,10 @@ func ReadWeight1File(filename string) (weight1 *weight_types.Weight1_ScaledSolva
 }
 
 func ReadWeight2File(filename string) (*weight_types.Weight2, error) {
-	bytes, err := os.ReadFile(filename)
-	if errors.Is(err, fs.ErrNotExist) {
-		return nil, nil
-	} else if err != nil {
-		return nil, err
-	}
-
 	protoWeight := gearproto.Weight2{}
-	err = protojson.UnmarshalOptions{}.Unmarshal(bytes, &protoWeight)
-	if err != nil {
+
+	goodRead, err := readWeightFileGeneral(filename, &protoWeight)
+	if err != nil || !goodRead {
 		return nil, err
 	}
 
@@ -72,16 +60,10 @@ func ReadWeight2File(filename string) (*weight_types.Weight2, error) {
 }
 
 func ReadWeight3File(filename string) (*weight_types.Weight3, error) {
-	bytes, err := os.ReadFile(filename)
-	if errors.Is(err, fs.ErrNotExist) {
-		return nil, nil
-	} else if err != nil {
-		return nil, err
-	}
-
 	protoWeight := gearproto.Weight3{}
-	err = protojson.UnmarshalOptions{}.Unmarshal(bytes, &protoWeight)
-	if err != nil {
+
+	goodRead, err := readWeightFileGeneral(filename, &protoWeight)
+	if err != nil || !goodRead {
 		return nil, err
 	}
 
@@ -92,7 +74,7 @@ func ReadWeight3File(filename string) (*weight_types.Weight3, error) {
 	return weight, nil
 }
 
-func ReadWeightFileGeneral[T proto.Message](filename string, outputPointer T) (bool, error) {
+func readWeightFileGeneral[T proto.Message](filename string, outputPointer T) (bool, error) {
 	bytes, err := os.ReadFile(filename)
 	if errors.Is(err, fs.ErrNotExist) {
 		return false, nil
@@ -104,7 +86,7 @@ func ReadWeightFileGeneral[T proto.Message](filename string, outputPointer T) (b
 	if err != nil {
 		return false, err
 	}
-	return false, nil
+	return true, nil
 }
 
 func FormatWeight1String(weight1 *weight_types.Weight1_ScaledSolvable) string {

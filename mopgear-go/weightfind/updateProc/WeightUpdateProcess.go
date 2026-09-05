@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/nerago/mopgear-go/gear_model/model_factory"
 	"github.com/nerago/mopgear-go/simulate"
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_async"
@@ -37,12 +38,16 @@ func (wup *WeightUpdateProcess) Init(simSpeed simulate.WowSim_RunSize, forceSkip
 func (wup *WeightUpdateProcess) AddSpecParam(param SpecParam) {
 	spec := &weightSpecInternal{
 		param: param,
+		label: param.Model.Label,
 		inputs: updateInputs{
 			simTypes:    param.Model.SimPriority.SimTypes(),
 			statTypes:   param.Model.StatsForWeighting,
 			targetRatio: param.Model.SimPriority,
 		},
 		process: wup,
+	}
+	if param.LabelOverride != "" {
+		spec.label = param.LabelOverride
 	}
 	wup.specs = append(wup.specs, spec)
 }
@@ -88,9 +93,14 @@ func (spec *weightSpecInternal) updateSpec(taskPoolSim, taskPoolSolve *util_asyn
 		return "", err
 	}
 
+	// INIT
+	if err := model_factory.SetupModelWeightsHaveSamples(&spec.param.Model, spec.inputs.dataAll); err != nil {
+		return "", err
+	}
+
 	// START BUILDING REPORT
 	spec.out = choiceOutput{
-		label:   spec.param.Label,
+		label:   spec.label,
 		input:   &spec.inputs,
 		printer: spec.process.printer,
 	}

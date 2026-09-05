@@ -124,6 +124,10 @@ func (block *StatBlockFloat) GetFloat(stat StatType) float64 {
 	return block[stat]
 }
 
+func (block *StatBlockFloat) Put(stat StatType, value float64) {
+	block[stat] = value
+}
+
 func (block *StatBlockFloat) PrimaryStat() PrimaryStatType {
 	str := !util.FloatEqualsZero(block[Stat_Strength])
 	agi := !util.FloatEqualsZero(block[Stat_Agility])

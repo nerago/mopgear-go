@@ -23,14 +23,14 @@ func SingleGearSetExtended3Main(itemOptions *items.SolvableOptionsMap, model *so
 	//build.AddOptionBool("presolve_rule_logging", true)
 
 	se3 := makeGearSetExtended3(build)
-	outputVar, err := se3.setup(model, itemOptions, 1)
+	outputVar, err := se3.setup(model, itemOptions)
 	if err != nil {
 		return nil, err
 	}
 
 	build.ChangeColumnOutputWeight(outputVar.columnIndex, 1)
 
-	return se3.runForFutureResult(itemOptions, model, printer, 1), nil
+	return se3.runForFutureResult(itemOptions, model, printer), nil
 }
 
 func makeGearSetExtended3(build *util_highs.LinearBuilder) *singleGearSetExtended3 {
@@ -44,7 +44,7 @@ func makeGearSetExtended3(build *util_highs.LinearBuilder) *singleGearSetExtende
 	}
 }
 
-func (se3 *singleGearSetExtended3) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, ratingOutputScale float64) (*columnInfo, error) {
+func (se3 *singleGearSetExtended3) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) (*columnInfo, error) {
 	if err := se3.itemSetupCommon.prepare(model, itemOptions, se3.createItemColumn); err != nil {
 		return nil, err
 	}
@@ -80,5 +80,5 @@ func (se3 *singleGearSetExtended3) setup(model *solve_highs_types.SolverModel, i
 
 	// simValueTotalColumns * activeCombo -> simValueComboColumns -> mainOutputVar
 	// simValueTotalColumns[simType] * activeCombo.simMultiplier -> simValueComboColumns[simType] -> mainOutputVar
-	return se3.multiplySimValuesByCombo(simValueTotalColumns, model, &model.Weights3.SimPriority, countSetItemsCol, c_gearExtended3ScoreHigh, ratingOutputScale)
+	return se3.multiplySimValuesByCombo(simValueTotalColumns, model, &model.Weights3.SimPriority, countSetItemsCol, c_gearExtended3ScoreHigh)
 }

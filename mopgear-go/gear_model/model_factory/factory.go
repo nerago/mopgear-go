@@ -22,9 +22,11 @@ const (
 // ////////// standard model builders
 func Model_PallyProtSurvival() gear_model.SpecModel {
 	return gear_model.SpecModel{
-		Spec: stats.Spec_PaladinProt,
+		Label: "Prot-Survival",
+		Spec:  stats.Spec_PaladinProt,
 		ModelItems: gear_model.ModelItems{
 			GearFile:           files.GearFileProtSurvival,
+			SampleDataFile:     files.TempData + "weightfind-sim-{}-Prot-Survival.json",
 			BlockSpecificItems: mygear.TrinketsStrengthMeleeOnly,
 			ReforgeRules:       gear_model.ReforgeRules_tank,
 			Professions:        gear_model.ProfessionInfo{IsBlacksmith: true, IsEngineer: true},
@@ -52,9 +54,11 @@ func Model_PallyProtSurvival() gear_model.SpecModel {
 
 func Model_PallyProtHeal() gear_model.SpecModel {
 	return gear_model.SpecModel{
-		Spec: stats.Spec_PaladinProt,
+		Label: "Prot-Heal",
+		Spec:  stats.Spec_PaladinProt,
 		ModelItems: gear_model.ModelItems{
 			GearFile:           files.GearFileProtHeal,
+			SampleDataFile:     files.TempData + "weightfind-sim-{}-Prot-Heal.json",
 			ReforgeRules:       gear_model.ReforgeRules_tank,
 			Professions:        gear_model.ProfessionInfo{IsBlacksmith: true, IsEngineer: true},
 			BlockSpecificItems: mygear.TrinketsStrengthMeleeOnly,
@@ -82,9 +86,11 @@ func Model_PallyProtHeal() gear_model.SpecModel {
 
 func Model_PallyProtMitigation() gear_model.SpecModel {
 	return gear_model.SpecModel{
-		Spec: stats.Spec_PaladinProt,
+		Label: "Prot-Mitigation",
+		Spec:  stats.Spec_PaladinProt,
 		ModelItems: gear_model.ModelItems{
 			GearFile:           files.GearFileProtMitigation,
+			SampleDataFile:     files.TempData + "weightfind-sim-{}-Prot-Mitigation.json",
 			ReforgeRules:       gear_model.ReforgeRules_tank,
 			Professions:        gear_model.ProfessionInfo{IsBlacksmith: true, IsEngineer: true},
 			BlockSpecificItems: mygear.TrinketsStrengthMeleeOnly,
@@ -113,9 +119,11 @@ func Model_PallyProtMitigation() gear_model.SpecModel {
 
 func Model_PallyProtBalanced() gear_model.SpecModel {
 	return gear_model.SpecModel{
-		Spec: stats.Spec_PaladinProt,
+		Label: "Prot-Balanced",
+		Spec:  stats.Spec_PaladinProt,
 		ModelItems: gear_model.ModelItems{
 			GearFile:           files.GearFileProtBalanced,
+			SampleDataFile:     files.TempData + "weightfind-sim-{}-Prot-Balanced.json",
 			ReforgeRules:       gear_model.ReforgeRules_tank,
 			Professions:        gear_model.ProfessionInfo{IsBlacksmith: true, IsEngineer: true},
 			BlockSpecificItems: mygear.TrinketsStrengthMeleeOnly,
@@ -143,9 +151,11 @@ func Model_PallyProtBalanced() gear_model.SpecModel {
 
 func Model_PallyProtDamage() gear_model.SpecModel {
 	return gear_model.SpecModel{
-		Spec: stats.Spec_PaladinProt,
+		Label: "Prot-Damage",
+		Spec:  stats.Spec_PaladinProt,
 		ModelItems: gear_model.ModelItems{
 			GearFile:           files.GearFileProtDamage,
+			SampleDataFile:     files.TempData + "weightfind-sim-{}-Prot-Damage.json",
 			ReforgeRules:       gear_model.ReforgeRules_tank,
 			Professions:        gear_model.ProfessionInfo{IsBlacksmith: true, IsEngineer: true},
 			BlockSpecificItems: mygear.TrinketsStrengthMeleeOnly,
@@ -169,18 +179,19 @@ func Model_PallyProtDamage() gear_model.SpecModel {
 }
 
 func Model_PallyRet() gear_model.SpecModel {
-	priority := SimPriority_ret
 	return gear_model.SpecModel{
-		Spec: stats.Spec_PaladinRet,
+		Label: "Ret",
+		Spec:  stats.Spec_PaladinRet,
 		ModelItems: gear_model.ModelItems{
 			GearFile:           files.GearFileRet,
+			SampleDataFile:     files.TempData + "weightfind-sim-{}-Ret.json",
 			ReforgeRules:       gear_model.ReforgeRules_melee,
 			Professions:        gear_model.ProfessionInfo{IsBlacksmith: true, IsEngineer: true},
 			BlockSpecificItems: mygear.TrinketsStrengthTankOnly,
 		},
 		ModelSolve: gear_model.ModelSolve{
 			WeightFile:        files.WeightRet,
-			SimPriority:       priority,
+			SimPriority:       SimPriority_ret,
 			StatsForWeighting: StatsForWeighting_strengthMelee,
 			StatRequirements:  requirements.StatRequirementsHitExpertise_RetWideCap(),
 		},

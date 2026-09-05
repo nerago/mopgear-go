@@ -5,6 +5,7 @@ import (
 
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_collection"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
@@ -14,6 +15,7 @@ const c_maxItemId = 300000
 type SpecSetsEnable struct {
 	EnabledSets []PreparedBonus
 	itemToSet   [c_maxItemId]uint8
+	initialized bool
 }
 
 func (sets *SpecSetsEnable) AllItemIds() iter.Seq[items.ItemId] {
@@ -207,11 +209,15 @@ mainEntry:
 	return sets
 }
 
-func (sets *SpecSetsEnable) InitFromModel(priority *weight_types.SimPriorityBasic) {
+func (sets *SpecSetsEnable) InitFromModel(priority *weight_types.SimPriorityBasic) error {
+	if sets.initialized {
+		return nil
+	}
+
 	for index, info := range sets.EnabledSets {
 		for _, itemId := range info.items {
 			if sets.itemToSet[itemId] != 0 {
-				panic("overlapping sets")
+				return util.ErrorTracedNew("overlapping sets")
 			}
 			sets.itemToSet[itemId] = uint8(index + 1)
 		}
@@ -222,6 +228,9 @@ func (sets *SpecSetsEnable) InitFromModel(priority *weight_types.SimPriorityBasi
 			bonus.deriveUpgradedFlatBonus(priority)
 		}
 	} else {
-		panic("missing priority")
+		return util.ErrorTracedNew("missing priority")
 	}
+
+	sets.initialized = true
+	return nil
 }

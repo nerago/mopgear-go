@@ -32,7 +32,6 @@ type FindUpgradesMultiSpec struct {
 type SpecInput struct {
 	Label                   string
 	Model                   gear_model.SpecModel
-	GearFile                string
 	ItemFinder              func(stats.Difficulty) []loaders.ItemFoundRef
 	SubstituteItems         []items.ItemId
 	SubstituteEmptySlotOnly map[items.SlotItem]items.ItemId

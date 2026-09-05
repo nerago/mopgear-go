@@ -57,8 +57,8 @@ func (wbs *Weight1_ScaledSolvable) SetScaleOffset(scaleOffset ScaleAndOffset) {
 	wbs.scaleAndOffset = scaleOffset
 }
 
-func (wbs *Weight1_ScaledSolvable) UpdateScaling(verificationInputs []WeightInput) error {
-	scaleOffset, err := updateScalingBasic1(verificationInputs, wbs.calcStatScoreRaw)
+func (wbs *Weight1_ScaledSolvable) UpdateScaling(sampleInputs []WeightInput) error {
+	scaleOffset, err := updateScalingBasic1(sampleInputs, wbs.calcStatScoreRaw)
 	if err != nil {
 		return err
 	} else {
@@ -67,13 +67,13 @@ func (wbs *Weight1_ScaledSolvable) UpdateScaling(verificationInputs []WeightInpu
 	}
 }
 
-func (wbs *Weight1_ScaledSolvable) FinishAndValidate(verificationInputs []WeightInput) error {
+func (wbs *Weight1_ScaledSolvable) FinishAndValidate(sampleInputs []WeightInput) error {
 	err := wbs.validateTypes()
 	if err != nil {
 		return err
 	}
 
-	err = wbs.verifyGoodRange(verificationInputs)
+	err = wbs.verifyGoodRange(sampleInputs)
 	if err != nil {
 		return err
 	}
@@ -101,12 +101,12 @@ func (wbx *Weight1_CompatibleExternal) Clone() Weight1_CompatibleExternal {
 	}
 }
 
-func (wbx *Weight1_CompatibleExternal) ConvertToSolvable(verificationInputs []WeightInput) (Weight1_ScaledSolvable, error) {
+func (wbx *Weight1_CompatibleExternal) ConvertToSolvable(sampleInputs []WeightInput) (Weight1_ScaledSolvable, error) {
 	weightSolve := Weight1_ScaledSolvable{
 		weight1Internal: wbx.weight1Internal,
 	}
 
-	err := weightSolve.UpdateScaling(verificationInputs)
+	err := weightSolve.UpdateScaling(sampleInputs)
 	if err != nil {
 		return Weight1_ScaledSolvable{}, err
 	}

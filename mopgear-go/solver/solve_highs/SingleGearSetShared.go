@@ -18,7 +18,7 @@ type singleGearSetShared struct {
 	bonusComboHandler gearBonusComboHandler
 }
 
-func (sc *singleGearSetShared) runForFutureResult(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder, ratingOutputScale float64) *util_async.FutureCancellableWithError[items.SolvableItemSet] {
+func (sc *singleGearSetShared) runForFutureResult(itemOptions *items.SolvableOptionsMap, model *solve_highs_types.SolverModel, printer *util.PrintRecorder) *util_async.FutureCancellableWithError[items.SolvableItemSet] {
 	solutionFuture := sc.build.RunHighsFuture(nil)
 
 	return util_async.FutureCancellable_MapValueError(solutionFuture, func(result util_highs.LinearResult) (*items.SolvableItemSet, error) {
@@ -42,7 +42,7 @@ func (sc *singleGearSetShared) runForFutureResult(itemOptions *items.SolvableOpt
 				return nil, err
 			}
 
-			if err = sc.checkSetRatingIsObjective(solution, &itemSet, model.CalcRatingSet, ratingOutputScale); err != nil {
+			if err = sc.checkSetRatingIsObjective(solution, &itemSet, model.CalcRatingSet); err != nil {
 				return nil, err
 			}
 
@@ -53,9 +53,9 @@ func (sc *singleGearSetShared) runForFutureResult(itemOptions *items.SolvableOpt
 	})
 }
 
-func (sc *singleGearSetShared) checkSetRatingIsObjective(solution *util_highs.Solution2, itemSet *items.SolvableItemSet, calcRating func(item *items.SolvableItemSet) float64, ratingOutputScale float64) error {
+func (sc *singleGearSetShared) checkSetRatingIsObjective(solution *util_highs.Solution2, itemSet *items.SolvableItemSet, calcRating func(item *items.SolvableItemSet) float64) error {
 	checkRating := calcRating(itemSet)
-	if !util.FloatsApproxEqualsLenient(solution.Objective()/ratingOutputScale, checkRating) {
+	if !util.FloatsApproxEqualsLenient(solution.Objective(), checkRating) {
 		return util.ErrorTracedNew(fmt.Sprintf("rating inconsistent %e %e ", solution.Objective(), checkRating))
 	}
 	return nil

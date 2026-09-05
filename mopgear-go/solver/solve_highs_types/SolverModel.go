@@ -8,6 +8,7 @@ import (
 	"github.com/nerago/mopgear-go/gear_model/bonus_set"
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/stats"
+	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/util/util_collection"
 	"github.com/nerago/mopgear-go/util/util_highs"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
@@ -45,7 +46,7 @@ type OverrideBonusCounts struct {
 	Specific bonus_set.ItemCountsRequired
 }
 
-func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.WeightType, bonusCount *OverrideBonusCounts) *SolverModel {
+func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.WeightType, bonusCount *OverrideBonusCounts) (*SolverModel, error) {
 	solveModel := &SolverModel{
 		CheckSet:         model.CheckSetForSolver,
 		StatRequirements: toEnumMap(model.StatRequirements.AsMap()),
@@ -61,23 +62,28 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.Weigh
 		solveModel.SetBonus.RequiredCounts = []SetBonusRequiredCounts{convertBonusRequiredSingle(&bonusCount.Specific, model.BonusEnabled.EnabledSets)}
 	}
 
-	weightExt := model.StatWeights
+	weightExt := model.GetStatWeights()
 	switch weightType {
 	case 1:
+		if weightExt.Weight1Scaled.IsEmpty() {
+			return nil, util.ErrorTracedNew("requested weight type missing")
+		}
 		solveModel.Weights1 = &weightExt.Weight1Scaled
 		solveModel.WeightsGeneric = &weightExt.Weight1Scaled
 	case 2:
+		if weightExt.Weight2 == nil || weightExt.Weight2.IsEmpty() {
+			return nil, util.ErrorTracedNew("requested weight type missing")
+		}
 		solveModel.Weights2 = weightExt.Weight2
 		solveModel.WeightsGeneric = weightExt.Weight2
 	case 3:
+		if weightExt.Weight3 == nil || weightExt.Weight3.IsEmpty() {
+			return nil, util.ErrorTracedNew("requested weight type missing")
+		}
 		solveModel.Weights3 = weightExt.Weight3
 		solveModel.WeightsGeneric = weightExt.Weight3
 	default:
 		panic("invalid weight number")
-	}
-
-	if solveModel.WeightsGeneric.IsEmpty() {
-		panic("requested weight missing")
 	}
 
 	solveModel.CalcRatingSet = func(itemSet *items.SolvableItemSet) float64 {
@@ -94,7 +100,7 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.Weigh
 		solveModel.SetBonus.MultipliersBySim = append(solveModel.SetBonus.MultipliersBySim, prepBonus.BonusByCountBySim())
 	}
 
-	return solveModel
+	return solveModel, nil
 }
 
 func convertBonusRequired(required bonus_set.ItemCountsRequiredOptions, enabledSets []bonus_set.PreparedBonus) []SetBonusRequiredCounts {

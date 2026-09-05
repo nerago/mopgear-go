@@ -7,6 +7,7 @@ import (
 )
 
 type weightSpecInternal struct {
+	label  string
 	param  SpecParam
 	inputs updateInputs
 	out    choiceOutput
@@ -15,11 +16,10 @@ type weightSpecInternal struct {
 }
 
 type SpecParam struct {
-	Label           string
+	LabelOverride   string
 	WeightFile1     string
 	WeightFile2     string
 	WeightFile3     string
-	GearFile        string
 	Model           gear_model.SpecModel
 	FixStatsMode    weight_types.FixStatsRangeMode
 	SubstituteItems []items.ItemId

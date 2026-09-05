@@ -59,13 +59,13 @@ func (we *Weight2) SetSimScale(simType stats.SimType, rangingScaleOffset ScaleAn
 	return we.SimPriority.SetSimScale(simType, rangingScaleOffset, ratioScale)
 }
 
-func (we *Weight2) FinishAndValidate(verificationInputs []WeightInput) error {
+func (we *Weight2) FinishAndValidate(sampleInputs []WeightInput) error {
 	err := we.validateTypes()
 	if err != nil {
 		return err
 	}
 
-	err = we.verifyGoodRange(verificationInputs)
+	err = we.verifyGoodRange(sampleInputs)
 	if err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func (we *Weight2) Equals(other *Weight2) bool {
 		we.DetailedWeights.Equals(&other.DetailedWeights, func(a *float64, b *float64) bool { return *a == *b })
 }
 
-func (we *Weight2) ConvertToWeight1(verificationInputs []WeightInput) *Weight1_ScaledSolvable {
+func (we *Weight2) ConvertToWeight1(sampleInputs []WeightInput) *Weight1_ScaledSolvable {
 	weight1 := Weight1_Make_ScaledSolvable()
 
 	for _, statType := range we.StatList {
@@ -167,7 +167,7 @@ func (we *Weight2) ConvertToWeight1(verificationInputs []WeightInput) *Weight1_S
 		weight1.Put(statType, sumForStat)
 	}
 
-	weight1.UpdateScaling(verificationInputs)
+	weight1.UpdateScaling(sampleInputs)
 	return weight1
 }
 

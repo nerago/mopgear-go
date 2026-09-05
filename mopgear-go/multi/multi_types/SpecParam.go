@@ -2,6 +2,7 @@ package multi_types
 
 import (
 	"github.com/nerago/mopgear-go/gear_model"
+	"github.com/nerago/mopgear-go/gear_model/model_factory"
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/setup"
 )
@@ -14,7 +15,6 @@ type SpecParam struct {
 }
 
 type ItemInputs struct {
-	GearFile                     string
 	RequestRatingPercent         float64
 	ExtraUpgradeLevel            items.UpgradeLevel
 	ForceUpgradeExistingItems    items.UpgradeLevel
@@ -25,6 +25,18 @@ type ItemInputs struct {
 	SemiFixedSlots               map[items.SlotEquip][]items.ItemId
 	ReportVariant                map[items.SlotEquip]items.ItemId
 	ExpectAllBonusItemsAvailable bool
+}
+
+func (param *SpecParam) Prepare() error {
+	if param.Label == "" {
+		param.Label = param.Model.Label
+	}
+
+	if err := model_factory.SetupModelWeights(&param.Model); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (param *SpecParam) AddExtraItems(extraItemIds []items.ItemId) {

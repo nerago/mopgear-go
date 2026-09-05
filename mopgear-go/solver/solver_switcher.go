@@ -17,7 +17,10 @@ func Solver(itemOptions *items.FullOptionsMap, model *gear_model.SpecModel, prin
 	}
 
 	solveOptions := items.SolvableOptionsMap_of(itemOptions)
-	solveModel := solve_highs_types.SolverModelBuild(model, weightType, nil)
+	solveModel, err := solve_highs_types.SolverModelBuild(model, weightType, nil)
+	if err != nil {
+		return SolveOutput{Success: false, Error: err}
+	}
 
 	futureSolvedSet, err := LaunchSolve(&solveOptions, solveModel, printer, weightType, timeout)
 	if err != nil {

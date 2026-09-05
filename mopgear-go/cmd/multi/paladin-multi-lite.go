@@ -290,12 +290,12 @@ func paladinMultiRunLite(printer *util.PrintRecorder) {
 	blockHelmetsWithoutIndomitable(&protSurvival)
 	blockHelmetsWithoutIndomitable(&protHeal)
 
-	job.AddSetParam(ret)
-	job.AddSetParam(protDps)
-	job.AddSetParam(protBalanced)
-	job.AddSetParam(protMitigation)
-	job.AddSetParam(protSurvival)
-	job.AddSetParam(protHeal)
+	job.AddSpecParam(ret)
+	job.AddSpecParam(protDps)
+	job.AddSpecParam(protBalanced)
+	job.AddSpecParam(protMitigation)
+	job.AddSpecParam(protSurvival)
+	job.AddSpecParam(protHeal)
 
 	//job.AddAlternateUpgradeChoices(105033) // Wolf-Rider Spurs
 

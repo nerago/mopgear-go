@@ -2,14 +2,14 @@ package weight_types
 
 import (
 	"encoding/json/v2"
-	"math"
+	"errors"
+	"fmt"
+	"io/fs"
 	"os"
 	"time"
 
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/util"
-
-	"github.com/bartolsthoorn/gohighs/highs"
 )
 
 type WeightInput struct {
@@ -17,17 +17,54 @@ type WeightInput struct {
 	SimResult stats.SimData
 }
 
-func WeightInputReadFile(filename string) ([]WeightInput, error) {
+func weightReadCommon(filename string) ([]WeightInput, bool, error) {
 	bytes, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, err
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, true, nil
+	} else if err != nil {
+		return nil, false, fmt.Errorf("file load error: %s: %w", filename, err)
 	}
+
 	var weightInputs []WeightInput
 	err = json.Unmarshal(bytes, &weightInputs)
 	if err != nil {
-		return nil, err
+		return nil, false, fmt.Errorf("file load error: %s: %w", filename, err)
 	}
-	return weightInputs, err
+	return weightInputs, false, nil
+}
+
+func WeightInputReadFile(filename string) ([]WeightInput, error) {
+	weightInputs, notFound, err := weightReadCommon(filename)
+	if notFound && err == nil {
+		return nil, util.ErrorTracedNewFormat("file not found: %s", filename)
+	} else {
+		return weightInputs, err
+	}
+}
+
+func WeightInputReadFileMultiple(filenameParams ...string) ([]WeightInput, error) {
+	fullResultSlice := make([]WeightInput, 0)
+	for _, filename := range filenameParams {
+		data, err := WeightInputReadFile(filename)
+		if err != nil {
+			return nil, err
+		}
+		fullResultSlice = append(fullResultSlice, data...)
+	}
+	return fullResultSlice, nil
+}
+
+func WeightInputReadFileAndCheckAge(filename string) ([]WeightInput, time.Duration, error) {
+	statInfo, err := os.Stat(filename)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, 0, nil
+	} else if err != nil {
+		return nil, 0, err
+	}
+	dataAge := time.Since(statInfo.ModTime())
+
+	weightInputs, _, err2 := weightReadCommon(filename)
+	return weightInputs, dataAge, err2
 }
 
 func WeightInputWriteFile(weightInputs []WeightInput, filename string) error {
@@ -55,196 +92,4 @@ func WeightInputWriteFileOrPanic(weightInputs []WeightInput, filename string) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-type IWeightResult interface {
-	GetWeight() IWeight
-	GetSolveTime() time.Duration
-	GetStatus() string
-	GetNewRatio() *SimPriorityBasic
-	GetError() error
-	AsWeight1(verificationInputs []WeightInput) *Weight1_ScaledSolvable
-	AsWeight2(verificationInputs []WeightInput) *Weight2
-	AsWeight3(verificationInputs []WeightInput) *Weight3
-}
-
-type WeightResultCommon struct {
-	WeightInterface IWeight
-	SolveTime       time.Duration
-	Status          string
-	NewRatio        *SimPriorityBasic
-	Error           error
-}
-
-func (w WeightResultCommon) GetWeight() IWeight {
-	return w.WeightInterface
-}
-
-func (w WeightResultCommon) GetSolveTime() time.Duration {
-	return w.SolveTime
-}
-
-func (w WeightResultCommon) GetStatus() string {
-	return w.Status
-}
-
-func (w WeightResultCommon) GetNewRatio() *SimPriorityBasic {
-	return w.NewRatio
-}
-
-func (w WeightResultCommon) GetError() error {
-	return w.Error
-}
-
-type weightResultGeneric[W IWeight] struct {
-	WeightResultCommon
-	Weight W
-}
-
-type WeightResult1 weightResultGeneric[*Weight1_ScaledSolvable]
-
-type WeightResult2 weightResultGeneric[*Weight2]
-
-type WeightResult3 weightResultGeneric[*Weight3]
-
-type WeightResult4 weightResultGeneric[*Weight4]
-
-func WeightResult1Make(weight *Weight1_ScaledSolvable, solveTime time.Duration, status highs.ModelStatus) WeightResult1 {
-	return WeightResult1{WeightResultCommon: WeightResultCommon{weight, solveTime, status.String(), nil, nil}, Weight: weight}
-}
-func WeightResult2Make(weight *Weight2, solveTime time.Duration, status highs.ModelStatus) WeightResult2 {
-	return WeightResult2{WeightResultCommon: WeightResultCommon{weight, solveTime, status.String(), nil, nil}, Weight: weight}
-}
-func WeightResult3Make(weight *Weight3, solveTime time.Duration, status highs.ModelStatus) WeightResult3 {
-	return WeightResult3{WeightResultCommon: WeightResultCommon{weight, solveTime, status.String(), nil, nil}, Weight: weight}
-}
-func WeightResult4Make(weight *Weight4, solveTime time.Duration, status highs.ModelStatus) WeightResult4 {
-	return WeightResult4{WeightResultCommon: WeightResultCommon{weight, solveTime, status.String(), nil, nil}, Weight: weight}
-}
-func WeightResult1MakeError(solveTime time.Duration, err error) WeightResult1 {
-	return WeightResult1{WeightResultCommon: WeightResultCommon{SolveTime: solveTime, Status: "ERROR", Error: err}}
-}
-func WeightResult2MakeError(solveTime time.Duration, err error) WeightResult2 {
-	return WeightResult2{WeightResultCommon: WeightResultCommon{SolveTime: solveTime, Status: "ERROR", Error: err}}
-}
-func WeightResult3MakeError(solveTime time.Duration, err error) WeightResult3 {
-	return WeightResult3{WeightResultCommon: WeightResultCommon{SolveTime: solveTime, Status: "ERROR", Error: err}}
-}
-func WeightResult4MakeError(solveTime time.Duration, err error) WeightResult4 {
-	return WeightResult4{WeightResultCommon: WeightResultCommon{SolveTime: solveTime, Status: "ERROR", Error: err}}
-}
-func WeightResult1MakeWithRatio(weight *Weight1_ScaledSolvable, solveTime time.Duration, status highs.ModelStatus, ratio *SimPriorityBasic, err error) WeightResult1 {
-	return WeightResult1{WeightResultCommon{weight, solveTime, status.String(), ratio, err}, weight}
-}
-
-func (wr *WeightResult1) AsWeight1(_ []WeightInput) *Weight1_ScaledSolvable {
-	return wr.Weight
-}
-func (wr *WeightResult2) AsWeight1(verificationInputs []WeightInput) *Weight1_ScaledSolvable {
-	if wr.Weight != nil {
-		return wr.Weight.ConvertToWeight1(verificationInputs)
-	} else {
-		return nil
-	}
-}
-func (wr *WeightResult3) AsWeight1(verificationInputs []WeightInput) *Weight1_ScaledSolvable {
-	if wr.Weight != nil {
-		return wr.Weight.ConvertToWeight2(verificationInputs).ConvertToWeight1(verificationInputs)
-	} else {
-		return nil
-	}
-}
-func (wr *WeightResult4) AsWeight1(verificationInputs []WeightInput) (*Weight1_ScaledSolvable, error) {
-	if wr.Weight != nil {
-		weight2, err := wr.Weight.ConvertToWeight2(verificationInputs)
-		if err != nil {
-			return nil, err
-		}
-		return weight2.ConvertToWeight1(verificationInputs), nil
-	} else {
-		return nil, nil
-	}
-}
-
-func (wr *WeightResult1) AsWeight2(_ []WeightInput) *Weight2 {
-	return nil
-}
-func (wr *WeightResult2) AsWeight2(_ []WeightInput) *Weight2 {
-	return wr.Weight
-}
-func (wr *WeightResult3) AsWeight2(verificationInputs []WeightInput) *Weight2 {
-	if wr.Weight != nil {
-		return wr.Weight.ConvertToWeight2(verificationInputs)
-	} else {
-		return nil
-	}
-}
-func (wr *WeightResult4) AsWeight2(verificationInputs []WeightInput) (*Weight2, error) {
-	if wr.Weight != nil {
-		return wr.Weight.ConvertToWeight2(verificationInputs)
-	} else {
-		return nil, nil
-	}
-}
-
-func (wr *WeightResult1) AsWeight3(_ []WeightInput) *Weight3 {
-	return nil
-}
-func (wr *WeightResult2) AsWeight3(_ []WeightInput) *Weight3 {
-	return nil
-}
-func (wr *WeightResult3) AsWeight3(_ []WeightInput) *Weight3 {
-	return wr.Weight
-}
-func (wr *WeightResult4) AsWeight3(_ []WeightInput) *Weight3 {
-	return nil
-}
-
-type StatRange struct {
-	Minimum uint32
-	Maximum uint32
-}
-
-func (rn StatRange) Equals(other StatRange) bool {
-	return rn.Maximum == other.Maximum && rn.Minimum == other.Minimum
-}
-
-func (rn StatRange) Overlap(other StatRange) bool {
-	if rn.Minimum > other.Maximum {
-		return false
-	} else if other.Minimum > rn.Maximum {
-		return false
-	} else {
-		return true
-	}
-}
-
-func (rn StatRange) RangeSize() uint32 {
-	if rn.IsFullRange() {
-		return math.MaxUint32
-	} else {
-		return rn.Maximum - rn.Minimum + 1
-	}
-}
-
-func (rn StatRange) Contains(value uint32) bool {
-	return rn.Minimum <= value && value <= rn.Maximum
-}
-
-func (rn StatRange) IsFullRange() bool {
-	return rn.Minimum == 0 && rn.Maximum == math.MaxUint32
-}
-
-type StatRangeFloat struct {
-	Minimum float64
-	Maximum float64
-}
-
-func (rf StatRangeFloat) IsValid() bool {
-	return rf.Minimum < rf.Maximum
-}
-
-func (rf StatRangeFloat) ContainsOtherRangeFloatAllowance(other StatRangeFloat) bool {
-	return util.FloatApproxLessThanOrEqual(rf.Minimum, other.Minimum) &&
-		util.FloatApproxLessThanOrEqual(other.Maximum, rf.Maximum)
 }

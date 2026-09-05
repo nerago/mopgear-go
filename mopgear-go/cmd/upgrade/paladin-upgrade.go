@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/nerago/mopgear-go/cmd/mygear"
-	"github.com/nerago/mopgear-go/files"
 	"github.com/nerago/mopgear-go/gear_model/model_factory"
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/loaders"
@@ -84,7 +83,7 @@ func findUpgrades_Paladin() {
 	_ = finderBosses
 
 	//finder := loaders.ItemFinderConcat(finderO, finderW)
-	finder := finderBosses
+	finder := finderWorld
 
 	input := upgrades.FindUpgradesMultiSpec{
 		Settings: upgrades.InputSettings{
@@ -93,7 +92,7 @@ func findUpgrades_Paladin() {
 			IncludeHeroic:                true,
 			IgnoredItems:                 mygear.IgnoredItems,
 			TargetUpgradeLevel:           2,
-			WeightType:                   2,
+			WeightType:                   1,
 			SolverTimeout:                c_upgradeDefaultTimeout,
 			SimSizeBaseline:              simSizeBaseline,
 			SimSizeItemInitial:           simSizePerItem,
@@ -104,7 +103,6 @@ func findUpgrades_Paladin() {
 			{
 				Label:                   "ret",
 				Model:                   model_factory.Model_PallyRet(),
-				GearFile:                files.GearFileRet,
 				ItemFinder:              finder,
 				SubstituteItems:         mygear.SubstituteItemsRet,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
@@ -112,7 +110,6 @@ func findUpgrades_Paladin() {
 			{
 				Label:                   "damage",
 				Model:                   model_factory.Model_PallyProtDamage(),
-				GearFile:                files.GearFileProtDamage,
 				ItemFinder:              finder,
 				SubstituteItems:         mygear.SubstituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
@@ -120,7 +117,6 @@ func findUpgrades_Paladin() {
 			{
 				Label:                   "balance",
 				Model:                   model_factory.Model_PallyProtBalanced(),
-				GearFile:                files.GearFileProtBalanced,
 				ItemFinder:              finder,
 				SubstituteItems:         mygear.SubstituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
@@ -128,7 +124,6 @@ func findUpgrades_Paladin() {
 			{
 				Label:                   "miti",
 				Model:                   model_factory.Model_PallyProtMitigation(),
-				GearFile:                files.GearFileProtMitigation,
 				ItemFinder:              finder,
 				SubstituteItems:         mygear.SubstituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
@@ -136,7 +131,6 @@ func findUpgrades_Paladin() {
 			{
 				Label:                   "survival",
 				Model:                   model_factory.Model_PallyProtSurvival(),
-				GearFile:                files.GearFileProtSurvival,
 				ItemFinder:              finder,
 				SubstituteItems:         mygear.SubstituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,
@@ -144,7 +138,6 @@ func findUpgrades_Paladin() {
 			{
 				Label:                   "heal",
 				Model:                   model_factory.Model_PallyProtHeal(),
-				GearFile:                files.GearFileProtHeal,
 				ItemFinder:              finder,
 				SubstituteItems:         mygear.SubstituteItemsProt,
 				SubstituteEmptySlotOnly: substituteEmptySlotOnly,

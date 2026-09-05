@@ -2,6 +2,7 @@ package gear_model
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/nerago/mopgear-go/gear_model/bonus_set"
 	"github.com/nerago/mopgear-go/gear_model/ratings"
@@ -12,22 +13,23 @@ import (
 )
 
 type SpecModel struct {
-	Spec SpecType
+	Label string
+	Spec  SpecType
 	ModelItems
 	ModelSolve
 	ModelSimulate
 	ModelBonus
-	Initialized bool
 }
 
-func (model *SpecModel) Init() {
+func (model *SpecModel) InitDerives() {
 	model.ModelItems.EnchantChoice = EnchantChoice_ForSpec(model.Spec, model.Goal)
 	model.ModelItems.GemChoice = GemChoice_ForSpec(model.Spec, model.Goal)
-	model.BonusEnabled.InitFromModel(&model.SimPriority)
+	model.ModelBonus.BonusEnabled.InitFromModel(&model.SimPriority)
 }
 
 type ModelItems struct {
 	GearFile           string
+	SampleDataFile     string
 	ReforgeRules       ReforgeRules
 	EnchantChoice      EnchantChoice
 	GemChoice          GemChoice
@@ -35,12 +37,77 @@ type ModelItems struct {
 	BlockSpecificItems []ItemId
 }
 
+func (mi *ModelItems) CloneShallow() ModelItems {
+	return ModelItems{
+		GearFile:           mi.GearFile,
+		ReforgeRules:       mi.ReforgeRules,
+		EnchantChoice:      mi.EnchantChoice,
+		GemChoice:          mi.GemChoice,
+		Professions:        mi.Professions,
+		BlockSpecificItems: mi.BlockSpecificItems,
+	}
+}
+
+func (mi *ModelItems) Equals(other *ModelItems) bool {
+	return mi.GearFile == other.GearFile &&
+		mi.ReforgeRules.Equals(&other.ReforgeRules) &&
+		mi.EnchantChoice.Equals(other.EnchantChoice) &&
+		mi.GemChoice.Equals(other.GemChoice) &&
+		mi.Professions == other.Professions &&
+		slices.Equal(mi.BlockSpecificItems, other.BlockSpecificItems)
+}
+
+func (mi *ModelItems) GetSampleFileGrid() string {
+	return strings.Replace(mi.SampleDataFile, "{}", "grid", -1)
+}
+func (mi *ModelItems) GetSampleFileFit() string {
+	return strings.Replace(mi.SampleDataFile, "{}", "fit", -1)
+}
+func (mi *ModelItems) GetSampleFileRand() string {
+	return strings.Replace(mi.SampleDataFile, "{}", "rand", -1)
+}
+
 type ModelSolve struct {
 	WeightFile        string
-	StatWeights       ratings.StatRatingsWeightsExtended
 	StatRequirements  StatRequirements
 	SimPriority       weight_types.SimPriorityBasic
 	StatsForWeighting []StatType
+
+	statWeights *ratings.StatRatingsWeightsExtended
+	initialized bool
+}
+
+func (ms *ModelSolve) CloneShallow() ModelSolve {
+	return ModelSolve{
+		WeightFile:        ms.WeightFile,
+		StatRequirements:  ms.StatRequirements,
+		SimPriority:       ms.SimPriority,
+		StatsForWeighting: ms.StatsForWeighting,
+		statWeights:       ms.statWeights,
+		initialized:       ms.initialized,
+	}
+}
+
+func (ms *ModelSolve) Equals(other *ModelSolve) bool {
+	return ms.WeightFile == other.WeightFile &&
+		ms.StatRequirements.Equals(other.StatRequirements) &&
+		ms.SimPriority.Equals(&other.SimPriority) &&
+		slices.Equal(ms.StatsForWeighting, other.StatsForWeighting) &&
+		util.NilSafeEqual(&ms.statWeights, &other.statWeights, (*ratings.StatRatingsWeightsExtended).Equals) &&
+		ms.initialized == other.initialized
+}
+
+func (ms *ModelSolve) GetStatWeights() *ratings.StatRatingsWeightsExtended {
+	if ms.initialized {
+		return ms.statWeights
+	} else {
+		panic("weights not initialized")
+	}
+}
+
+func (ms *ModelSolve) SetStatWeights(weights *ratings.StatRatingsWeightsExtended) {
+	ms.statWeights = weights
+	ms.initialized = true
 }
 
 type ModelSimulate struct {
@@ -49,51 +116,58 @@ type ModelSimulate struct {
 	SimSpeedUp int
 }
 
+func (mt *ModelSimulate) CloneShallow() ModelSimulate {
+	return ModelSimulate{
+		Goal:       mt.Goal,
+		SimulateAs: mt.SimulateAs,
+		SimSpeedUp: mt.SimSpeedUp,
+	}
+}
+
+func (mt *ModelSimulate) Equals(other *ModelSimulate) bool {
+	return mt.Goal == other.Goal &&
+		mt.SimulateAs == other.SimulateAs &&
+		mt.SimSpeedUp == other.SimSpeedUp
+}
+
 type ModelBonus struct {
 	BonusEnabled        *bonus_set.SpecSetsEnable
 	BonusRequiredSolve  bonus_set.ItemCountsRequiredOptions
 	BonusRequiredWeight *bonus_set.ItemCountsRequired
 }
 
+func (mb *ModelBonus) CloneShallow() ModelBonus {
+	return ModelBonus{
+		BonusEnabled:        mb.BonusEnabled,
+		BonusRequiredSolve:  mb.BonusRequiredSolve,
+		BonusRequiredWeight: mb.BonusRequiredWeight,
+	}
+}
+
+func (mb *ModelBonus) Equals(other *ModelBonus) bool {
+	return mb.BonusEnabled.Equals(other.BonusEnabled) &&
+		mb.BonusRequiredSolve.Equals(other.BonusRequiredSolve) &&
+		util.NilSafeEqual(mb.BonusRequiredWeight, other.BonusRequiredWeight, bonus_set.ItemCountsRequired.Equals)
+
+}
+
 func (model *SpecModel) Equals(other *SpecModel) bool {
-	return model.Spec == other.Spec &&
-		model.Goal == other.Goal &&
-		model.StatRequirements.Equals(other.StatRequirements) &&
-		model.StatWeights.Equals(&other.StatWeights) &&
-		model.SimulateAs == other.SimulateAs &&
-		model.SimSpeedUp == other.SimSpeedUp &&
-		model.ReforgeRules.Equals(&other.ReforgeRules) &&
-		model.EnchantChoice.Equals(other.EnchantChoice) &&
-		model.GemChoice.Equals(other.GemChoice) &&
-		model.BonusEnabled.Equals(other.BonusEnabled) &&
-		model.BonusRequiredSolve.Equals(other.BonusRequiredSolve) &&
-		util.NilSafeEqual(model.BonusRequiredWeight, other.BonusRequiredWeight, bonus_set.ItemCountsRequired.Equals) &&
-		model.Professions == other.Professions &&
-		model.SimPriority.Equals(&other.SimPriority) &&
-		slices.Equal(model.StatsForWeighting, other.StatsForWeighting) &&
-		slices.Equal(model.BlockSpecificItems, other.BlockSpecificItems) &&
-		model.GearFile == other.GearFile
+	return model.Label == other.Label &&
+		model.Spec == other.Spec &&
+		model.ModelItems.Equals(&other.ModelItems) &&
+		model.ModelSolve.Equals(&other.ModelSolve) &&
+		model.ModelSimulate.Equals(&other.ModelSimulate) &&
+		model.ModelBonus.Equals(&other.ModelBonus)
 }
 
 func (model *SpecModel) CloneShallow() *SpecModel {
 	return &SpecModel{
-		StatRequirements:    model.StatRequirements,
-		StatWeights:         model.StatWeights,
-		Spec:                model.Spec,
-		Goal:                model.Goal,
-		SimulateAs:          model.SimulateAs,
-		SimSpeedUp:          model.SimSpeedUp,
-		ReforgeRules:        model.ReforgeRules,
-		EnchantChoice:       model.EnchantChoice,
-		GemChoice:           model.GemChoice,
-		BonusEnabled:        model.BonusEnabled,
-		BonusRequiredSolve:  model.BonusRequiredSolve,
-		BonusRequiredWeight: model.BonusRequiredWeight,
-		Professions:         model.Professions,
-		SimPriority:         model.SimPriority,
-		StatsForWeighting:   model.StatsForWeighting,
-		BlockSpecificItems:  model.BlockSpecificItems,
-		GearFile:            model.GearFile,
+		Label:         model.Label,
+		Spec:          model.Spec,
+		ModelItems:    model.ModelItems.CloneShallow(),
+		ModelSolve:    model.ModelSolve.CloneShallow(),
+		ModelSimulate: model.ModelSimulate.CloneShallow(),
+		ModelBonus:    model.ModelBonus.CloneShallow(),
 	}
 }
 
@@ -135,7 +209,7 @@ func (model *SpecModel) ValidateSet(itemSet *FullItemSet) error {
 
 // ////////// set ratings
 func (model *SpecModel) CalcRatingSolve(itemSet *SolvableItemSet, weightType weight_types.WeightType) float64 {
-	weight := model.StatWeights.GetByWeightTypeForSolve(weightType)
+	weight := model.ModelSolve.GetStatWeights().GetByWeightTypeForSolve(weightType)
 	if weightType == 1 {
 		baseRating := weight.CalcStatScore(itemSet.Total())
 		setRating := model.BonusEnabled.CalcBonusSolveFlat(itemSet.Items())
@@ -148,7 +222,7 @@ func (model *SpecModel) CalcRatingSolve(itemSet *SolvableItemSet, weightType wei
 }
 
 func (model *SpecModel) CalcRatingFull(itemSet *FullItemSet, weightType weight_types.WeightType) float64 {
-	weight := model.StatWeights.GetByWeightTypeForSolve(weightType)
+	weight := model.ModelSolve.GetStatWeights().GetByWeightTypeForSolve(weightType)
 	if weightType == 1 {
 		baseRating := weight.CalcStatScore(itemSet.Total())
 		setRating := model.BonusEnabled.CalcBonusFullFlat(itemSet.Items())
@@ -162,11 +236,11 @@ func (model *SpecModel) CalcRatingFull(itemSet *FullItemSet, weightType weight_t
 
 // ////////// items ratings
 func (model *SpecModel) CalcRatingSolveItem(item *SolvableItem, weightType weight_types.WeightType) float64 {
-	return model.StatWeights.GetByWeightTypeForSolve(weightType).CalcStatScore(item.Total())
+	return model.ModelSolve.GetStatWeights().GetByWeightTypeForSolve(weightType).CalcStatScore(item.Total())
 }
 
 func (model *SpecModel) CalcRatingFullItem(item *FullItem, weightType weight_types.WeightType) float64 {
-	return model.StatWeights.GetByWeightTypeForSolve(weightType).CalcStatScore(item.Total())
+	return model.ModelSolve.GetStatWeights().GetByWeightTypeForSolve(weightType).CalcStatScore(item.Total())
 }
 
 // ////////// ProfessionInfo

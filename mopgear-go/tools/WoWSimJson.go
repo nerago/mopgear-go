@@ -20,7 +20,7 @@ func WowSimJsonWrite(equip *items.FullEquipMap, model *gear_model.SpecModel, pri
 }
 
 func WowSimJsonFormat(equip *items.FullEquipMap, model *gear_model.SpecModel) (string, error) {
-	inputFile := model.ReferenceGearFile
+	inputFile := model.GearFile
 	allBytes, err := os.ReadFile(inputFile)
 	if err != nil {
 		return "", err

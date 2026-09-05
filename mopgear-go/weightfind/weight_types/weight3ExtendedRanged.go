@@ -78,13 +78,13 @@ func (wer *Weight3) SetSimScale(simType stats.SimType, rangingScaleOffset ScaleA
 	return wer.SimPriority.SetSimScale(simType, rangingScaleOffset, ratioScale)
 }
 
-func (wer *Weight3) FinishAndValidate(verificationInputs []WeightInput) error {
+func (wer *Weight3) FinishAndValidate(sampleInputs []WeightInput) error {
 	err := wer.validateTypes()
 	if err != nil {
 		return err
 	}
 
-	err = wer.verifyGoodRange(verificationInputs)
+	err = wer.verifyGoodRange(sampleInputs)
 	if err != nil {
 		return err
 	}
@@ -209,15 +209,15 @@ func (wer *Weight3) Equals(other *Weight3) bool {
 		wer.StatWeights.Equals(&other.StatWeights, (*Weight3ExtendedStatEntry).Equals)
 }
 
-func (wer *Weight3) ConvertToWeight2(verificationInputs []WeightInput) *Weight2 {
+func (wer *Weight3) ConvertToWeight2(sampleInputs []WeightInput) *Weight2 {
 	weight2 := Weight2Extended_Make(wer.SimList, wer.StatList)
 	for entry := range wer.StatWeights.SeqKey1Key2ValueSeqEntries() {
 		bestValue := chooseBest(entry.ValueSeq)
 		weight2.PutWeight(entry.Key1, entry.Key2, bestValue)
 	}
 	weight2.SimPriority = wer.SimPriority.Clone()
-	weight2.UpdateScaling(verificationInputs)
-	weight2.FinishAndValidate(verificationInputs)
+	weight2.UpdateScaling(sampleInputs)
+	weight2.FinishAndValidate(sampleInputs)
 	return weight2
 }
 

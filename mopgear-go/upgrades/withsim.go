@@ -3,6 +3,7 @@ package upgrades
 import (
 	"github.com/nerago/mopgear-go/db"
 	"github.com/nerago/mopgear-go/gear_model"
+	"github.com/nerago/mopgear-go/gear_model/model_factory"
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/setup"
 	"github.com/nerago/mopgear-go/simulate"
@@ -14,7 +15,11 @@ import (
 )
 
 func processSpecUpgrade(settings *InputSettings, spec *SpecInput, difficulty stats.Difficulty, tracker *util.TrackProgress, printer *util.PrintRecorder) ([]upgradeItemResult, error) {
-	itemOptions,err := setup.OptionsSetup_FromGearFile(spec.GearFile, &spec.Model, setup.MissingEnchant_Panic, printer)
+	if err := model_factory.SetupModelWeights(&spec.Model); err != nil {
+		return nil, err
+	}
+
+	itemOptions, err := setup.OptionsSetup_FromGearFile(spec.Model.GearFile, &spec.Model, setup.MissingEnchant_Panic, printer)
 	if err != nil {
 		return nil, err
 	}

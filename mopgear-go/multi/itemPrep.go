@@ -31,6 +31,7 @@ func (job *MainJob) prepareItems() error {
 	job.printer.Println("PREPARING STARTING GEAR")
 	params := job.input.Param
 	itemPrepSlice, err := util_collection.MapSliceAsNew_PassError(params, func(param *multi_types.SpecParam) (specItemPrep, error) {
+		param.Prepare()
 		prep := specItemPrep{
 			label:           param.Label,
 			model:           &param.Model,

@@ -28,51 +28,39 @@ func statWeights_updateAll(printer *util.PrintRecorder) {
 	process.Init(simSpeed, forceSkipSim, skipSolve, 3600, printer)
 
 	process.AddSpecParam(updateProc.SpecParam{
-		Label:           "Ret",
 		WeightFile1:     files.WeightRet,
-		GearFile:        files.GearFileRet,
 		Model:           model_factory.Model_PallyRet(),
 		SubstituteItems: mygear.SubstituteItemsRet,
 		FixStatsMode:    weight_types.FixStatsRangeMode_None,
 	})
 	process.AddSpecParam(updateProc.SpecParam{
-		Label:           "Prot-Damage",
 		WeightFile1:     files.WeightProtDamage,
-		GearFile:        files.GearFileProtDamage,
 		Model:           model_factory.Model_PallyProtDamage(),
 		SubstituteItems: mygear.SubstituteItemsProt,
 		FixStatsMode:    fixStats,
 	})
 
 	process.AddSpecParam(updateProc.SpecParam{
-		Label:           "Prot-Balanced",
 		WeightFile1:     files.WeightProtBalanced,
-		GearFile:        files.GearFileProtBalanced,
 		Model:           model_factory.Model_PallyProtBalanced(),
 		SubstituteItems: mygear.SubstituteItemsProt,
 		FixStatsMode:    fixStats,
 	})
 	process.AddSpecParam(updateProc.SpecParam{
-		Label:           "Prot-Mitigation",
 		WeightFile1:     files.WeightProtMitigation,
-		GearFile:        files.GearFileProtMitigation,
 		Model:           model_factory.Model_PallyProtMitigation(),
 		SubstituteItems: mygear.SubstituteItemsProt,
 		FixStatsMode:    fixStats,
 	})
 
 	process.AddSpecParam(updateProc.SpecParam{
-		Label:           "Prot-Survival",
 		WeightFile1:     files.WeightProtSurvival,
-		GearFile:        files.GearFileProtSurvival,
 		Model:           model_factory.Model_PallyProtSurvival(),
 		SubstituteItems: mygear.SubstituteItemsProt,
 		FixStatsMode:    fixStats,
 	})
 	process.AddSpecParam(updateProc.SpecParam{
-		Label:           "Prot-Heal",
 		WeightFile1:     files.WeightProtHeal,
-		GearFile:        files.GearFileProtHeal,
 		Model:           model_factory.Model_PallyProtHeal(),
 		SubstituteItems: mygear.SubstituteItemsProt,
 		FixStatsMode:    fixStats,

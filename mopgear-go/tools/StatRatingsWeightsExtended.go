@@ -8,10 +8,10 @@ import (
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
-func StatRatingsWeightsExtended_ReadFile(filename string, verificationInputs []weight_types.WeightInput, requiredStats []stats.StatType) (ratings.StatRatingsWeightsExtended, error) {
-	weight1Compatible, weight1Solvable, err1 := readEitherWeight1Format(filename, verificationInputs, requiredStats)
+func StatRatingsWeightsExtended_ReadFile(filename string, requiredStats []stats.StatType, sampleInputs []weight_types.WeightInput) (*ratings.StatRatingsWeightsExtended, error) {
+	weight1Compatible, weight1Solvable, err1 := readEitherWeight1Format(filename, sampleInputs, requiredStats)
 	if err1 != nil {
-		return ratings.StatRatingsWeightsExtended{}, err1
+		return nil, err1
 	}
 
 	weight2, _ := ReadWeight2File(files.NameToWeight2(filename))
@@ -21,7 +21,7 @@ func StatRatingsWeightsExtended_ReadFile(filename string, verificationInputs []w
 		panic("missing weight")
 	}
 
-	return ratings.StatRatingsWeightsExtended{
+	return &ratings.StatRatingsWeightsExtended{
 		Weight1Compatible: *weight1Compatible,
 		Weight1Scaled:     *weight1Solvable,
 		Weight2:           weight2,
@@ -29,7 +29,7 @@ func StatRatingsWeightsExtended_ReadFile(filename string, verificationInputs []w
 	}, nil
 }
 
-func readEitherWeight1Format(filename string, verificationInputs []weight_types.WeightInput, requiredStats []stats.StatType) (*weight_types.Weight1_CompatibleExternal, *weight_types.Weight1_ScaledSolvable, error) {
+func readEitherWeight1Format(filename string, sampleInputs []weight_types.WeightInput, requiredStats []stats.StatType) (*weight_types.Weight1_CompatibleExternal, *weight_types.Weight1_ScaledSolvable, error) {
 	sniffType, err := util.ReadFileSniffTen(filename)
 	if err != nil {
 		return nil, nil, err
@@ -42,7 +42,7 @@ func readEitherWeight1Format(filename string, verificationInputs []weight_types.
 		}
 
 		weight1Compatible := weight_types.Weight1Basic_Make_CompatibleExternal_FromBlock(pawnBlock)
-		weight1Solvable, err := weight1Compatible.ConvertToSolvable(verificationInputs)
+		weight1Solvable, err := weight1Compatible.ConvertToSolvable(sampleInputs)
 		if err != nil {
 			return nil, nil, err
 		}

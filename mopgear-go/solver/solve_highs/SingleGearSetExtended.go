@@ -21,7 +21,7 @@ type singleGearSetExtended struct {
 	//combinedRatingVar    *columnInfo // sum of values for the ratings of selected items
 }
 
-func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns map[stats.SimType]*columnInfo, model *solve_highs_types.SolverModel, priority *weight_types.SimPriorityExtended, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo, scoreHigh float64, ratingOutputScale float64) (*columnInfo, error) {
+func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns map[stats.SimType]*columnInfo, model *solve_highs_types.SolverModel, priority *weight_types.SimPriorityExtended, countSetItemsCol map[solve_highs_types.SetBonusIndex]*columnInfo, scoreHigh float64) (*columnInfo, error) {
 	if len(simValueTotalColumns) > 1 {
 		sumRow := util_highs.ConstraintRow{Debug: "multiplySimValuesByCombo"}
 
@@ -45,7 +45,7 @@ func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns m
 		}
 
 		outputVar := se.makeOutputVariable()
-		sumRow.Add(outputVar.columnIndex, -1/ratingOutputScale)
+		sumRow.Add(outputVar.columnIndex, -1)
 		sumRow.Build(se.build, 0, 0)
 		return outputVar, nil
 	} else if len(simValueTotalColumns) == 1 {
@@ -66,13 +66,13 @@ func (se *singleGearSetExtended) multiplySimValuesByCombo(simValueTotalColumns m
 			return nil, err
 		}
 
-		if simEntry.RatioScale == 1.0 && ratingOutputScale == 1.0 {
+		if simEntry.RatioScale == 1.0 {
 			return simComboCol, nil
 		} else {
 			sumRow := util_highs.ConstraintRow{Debug: "multiplySimValuesByComboOne"}
 			outputVar := se.makeOutputVariable()
 			sumRow.Add(simComboCol.columnIndex, simEntry.RatioScale)
-			sumRow.Add(outputVar.columnIndex, -1/ratingOutputScale)
+			sumRow.Add(outputVar.columnIndex, -1)
 			sumRow.Build(se.build, 0, 0)
 			return outputVar, nil
 		}

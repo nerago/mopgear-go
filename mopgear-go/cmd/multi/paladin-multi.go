@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/nerago/mopgear-go/cmd/mygear"
-	"github.com/nerago/mopgear-go/files"
 	"github.com/nerago/mopgear-go/gear_model/model_factory"
 	"github.com/nerago/mopgear-go/items"
 	"github.com/nerago/mopgear-go/loaders"
@@ -33,10 +32,8 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 	var forceUpgrade items.UpgradeLevel = 2
 
 	ret := multi_types.SpecParam{
-		Label: "Ret",
 		Model: model_factory.Model_PallyRet(),
 		ItemInputs: multi_types.ItemInputs{
-			GearFile:                     files.GearFileRet,
 			RequestRatingPercent:         0.06,
 			ExtraUpgradeLevel:            extraUpgrade,
 			ForceUpgradeExistingItems:    forceUpgrade,
@@ -45,10 +42,8 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		},
 	}
 	protDps := multi_types.SpecParam{
-		Label: "Prot-Damage",
 		Model: model_factory.Model_PallyProtDamage(),
 		ItemInputs: multi_types.ItemInputs{
-			GearFile:                     files.GearFileProtDamage,
 			RequestRatingPercent:         0.01,
 			ExtraUpgradeLevel:            extraUpgrade,
 			ForceUpgradeExistingItems:    forceUpgrade,
@@ -57,10 +52,8 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		},
 	}
 	protBalanced := multi_types.SpecParam{
-		Label: "Prot-Balanced",
 		Model: model_factory.Model_PallyProtBalanced(),
 		ItemInputs: multi_types.ItemInputs{
-			GearFile:                     files.GearFileProtBalanced,
 			RequestRatingPercent:         0.30,
 			ExtraUpgradeLevel:            extraUpgrade,
 			ForceUpgradeExistingItems:    forceUpgrade,
@@ -69,10 +62,8 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		},
 	}
 	protMitigation := multi_types.SpecParam{
-		Label: "Prot-Mitigation",
 		Model: model_factory.Model_PallyProtMitigation(),
 		ItemInputs: multi_types.ItemInputs{
-			GearFile:                     files.GearFileProtMitigation,
 			RequestRatingPercent:         0.40,
 			ExtraUpgradeLevel:            extraUpgrade,
 			ForceUpgradeExistingItems:    forceUpgrade,
@@ -81,10 +72,8 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		},
 	}
 	protSurvival := multi_types.SpecParam{
-		Label: "Prot-Survival",
 		Model: model_factory.Model_PallyProtSurvival(),
 		ItemInputs: multi_types.ItemInputs{
-			GearFile:                     files.GearFileProtSurvival,
 			RequestRatingPercent:         0.20,
 			ExtraUpgradeLevel:            extraUpgrade,
 			ForceUpgradeExistingItems:    forceUpgrade,
@@ -93,10 +82,8 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 		},
 	}
 	protHeal := multi_types.SpecParam{
-		Label: "Prot-Heal",
 		Model: model_factory.Model_PallyProtHeal(),
 		ItemInputs: multi_types.ItemInputs{
-			GearFile:                     files.GearFileProtHeal,
 			RequestRatingPercent:         0.03,
 			ExtraUpgradeLevel:            extraUpgrade,
 			ForceUpgradeExistingItems:    forceUpgrade,
@@ -228,12 +215,12 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 	//addExtrasFromFinder(loaders.ItemFinder_SiegeStrengthPlateTank(stats.Difficulty_Heroic),
 	//	&ret, &protDps, &protBalanced, &protMitigation, &protSurvival, &protHeal)
 
-	job.AddSetParam(ret)
-	job.AddSetParam(protDps)
-	job.AddSetParam(protBalanced)
-	job.AddSetParam(protMitigation)
-	job.AddSetParam(protSurvival)
-	job.AddSetParam(protHeal)
+	job.AddSpecParam(ret)
+	job.AddSpecParam(protDps)
+	job.AddSpecParam(protBalanced)
+	job.AddSpecParam(protMitigation)
+	job.AddSpecParam(protSurvival)
+	job.AddSpecParam(protHeal)
 
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()

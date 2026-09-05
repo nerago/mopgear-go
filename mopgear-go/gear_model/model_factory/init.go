@@ -2,19 +2,27 @@ package model_factory
 
 import (
 	"github.com/nerago/mopgear-go/gear_model"
-	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/tools"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
-func SetupModel(model *gear_model.SpecModel, verificationInputs []weight_types.WeightInput, requiredStats []stats.StatType) *gear_model.SpecModel {
-	weight, err := tools.StatRatingsWeightsExtended_ReadFile(model.WeightFile, verificationInputs, requiredStats)
+func SetupModelWeights(model *gear_model.SpecModel) error {
+	sampleInputs, err := weight_types.WeightInputReadFileMultiple(
+		model.GetSampleFileRand(), model.GetSampleFileGrid(), model.GetSampleFileFit(),
+	)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	model.StatWeights = weight
+	return SetupModelWeightsHaveSamples(model, sampleInputs)
+}
 
-	model.ModelItems.Init()
+func SetupModelWeightsHaveSamples(model *gear_model.SpecModel, sampleInputs []weight_types.WeightInput) error {
+	model.InitDerives()
 
-	model.Initialized = true
+	weight, err := tools.StatRatingsWeightsExtended_ReadFile(model.WeightFile, model.StatsForWeighting, sampleInputs)
+	if err != nil {
+		return err
+	}
+	model.SetStatWeights(weight)
+	return nil
 }

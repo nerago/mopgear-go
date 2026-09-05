@@ -20,13 +20,13 @@ func SingleGearSetExtended2Main(itemOptions *items.SolvableOptionsMap, model *so
 	build.TimeLimitSeconds = timeout
 
 	se2 := makeGearSetExtended2(build)
-	outputVar, err := se2.setup(model, itemOptions, 1)
+	outputVar, err := se2.setup(model, itemOptions)
 	if err != nil {
 		return nil, err
 	}
 	build.ChangeColumnOutputWeight(outputVar.columnIndex, 1)
 
-	return se2.runForFutureResult(itemOptions, model, printer, 1), nil
+	return se2.runForFutureResult(itemOptions, model, printer), nil
 }
 
 func makeGearSetExtended2(build *util_highs.LinearBuilder) *singleGearSetExtended2 {
@@ -40,7 +40,7 @@ func makeGearSetExtended2(build *util_highs.LinearBuilder) *singleGearSetExtende
 	}
 }
 
-func (se2 *singleGearSetExtended2) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, ratingOutputScale float64) (*columnInfo, error) {
+func (se2 *singleGearSetExtended2) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) (*columnInfo, error) {
 	if err := se2.itemSetupCommon.prepare(model, itemOptions, se2.createItemColumn); err != nil {
 		return nil, err
 	}
@@ -75,5 +75,5 @@ func (se2 *singleGearSetExtended2) setup(model *solve_highs_types.SolverModel, i
 
 	// multiply combos
 	// simValueTotalColumns[simType] * activeCombo.simMultiplier -> simValueComboColumns[simType] -> mainOutputVar
-	return se2.multiplySimValuesByCombo(simValueTotalColumns, model, &model.Weights2.SimPriority, countSetItemsCol, c_gearExtended2ScoreHigh, ratingOutputScale)
+	return se2.multiplySimValuesByCombo(simValueTotalColumns, model, &model.Weights2.SimPriority, countSetItemsCol, c_gearExtended2ScoreHigh)
 }

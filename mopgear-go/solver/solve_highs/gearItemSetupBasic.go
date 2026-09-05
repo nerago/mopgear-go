@@ -20,10 +20,9 @@ type gearItemSetupBasic struct {
 	minimumValueRow  util_highs.ConstraintRow // when an extra minimum is specified
 }
 
-func (sbb *gearItemSetupBasic) addItem(item *items.SolvableItem, calcRating func(item *items.SolvableItem) float64, columnIndex util_highs.ColumnIndex, ratingScale float64) {
+func (sbb *gearItemSetupBasic) addItem(item *items.SolvableItem, calcRating func(item *items.SolvableItem) float64, columnIndex util_highs.ColumnIndex) {
 	// add rating via a summation condition
-	// scale down ratings to keep numbers small for solver stability
-	rating := calcRating(item) * ratingScale
+	rating := calcRating(item)
 	sbb.baseRatingSumRow.Add(columnIndex, rating)
 
 	// specific hit/expertise values for hi/lo limits

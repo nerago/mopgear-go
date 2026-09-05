@@ -11,12 +11,7 @@ import (
 )
 
 const (
-	c_single_basic_default_scaled_ratings = 1.0e-9
-
-	// when called from multi solve ratings will get multiplied to range 0.1-10, this has nice margin
-	// less clear on single set calls, baseline highish example is 1.822136e+08, with our multiplier above that turns into 0.1822136, more than fine
-	// but depends on weights which aren't scaled consistently
-	c_single_basic_ratings_high_range = 1000
+	c_single_basic_ratings_high_range = 100
 )
 
 type singleGearSetBasic struct {
@@ -30,13 +25,13 @@ func SingleGearSetMain(itemOptions *items.SolvableOptionsMap, model *solve_highs
 	build.TimeLimitSeconds = timeout
 
 	sb := makeGearSetBasic(build)
-	outputVar, err := sb.setup(model, itemOptions, c_single_basic_default_scaled_ratings)
+	outputVar, err := sb.setup(model, itemOptions)
 	if err != nil {
 		return nil, err
 	}
 	build.ChangeColumnOutputWeight(outputVar.columnIndex, 1)
 
-	return sb.runForFutureResult(itemOptions, model, printer, c_single_basic_default_scaled_ratings), nil
+	return sb.runForFutureResult(itemOptions, model, printer), nil
 }
 
 func makeGearSetBasic(build *util_highs.LinearBuilder) *singleGearSetBasic {
@@ -48,7 +43,7 @@ func makeGearSetBasic(build *util_highs.LinearBuilder) *singleGearSetBasic {
 	}
 }
 
-func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap, ratingOutputScale float64) (*columnInfo, error) {
+func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOptions *items.SolvableOptionsMap) (*columnInfo, error) {
 	if err := sb.itemSetupCommon.prepare(model, itemOptions, sb.createItemColumn); err != nil {
 		return nil, err
 	}
@@ -58,7 +53,7 @@ func (sb *singleGearSetBasic) setup(model *solve_highs_types.SolverModel, itemOp
 
 	for slot, item := range itemOptions.AllItemSlotSeq() {
 		columnIndex := sb.itemSetupCommon.addItemCommon(slot, item)
-		sb.itemSetupBasic.addItem(item, model.CalcRatingItem, columnIndex, ratingOutputScale)
+		sb.itemSetupBasic.addItem(item, model.CalcRatingItem, columnIndex)
 	}
 
 	if err := sb.itemSetupCommon.finishItemsEquipped(itemOptions, sb.build); err != nil {

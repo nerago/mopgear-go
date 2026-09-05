@@ -94,8 +94,7 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 		return err
 	}
 
-	ratingScale := 1.0
-	if outputVar, err := single.setup(process.solveModel, &itemOptions, ratingScale); err == nil {
+	if outputVar, err := single.setup(process.solveModel, &itemOptions); err == nil {
 		linearBuild.ChangeColumnOutputWeight(outputVar.columnIndex, 1)
 	} else {
 		return err
@@ -134,7 +133,7 @@ func (process *OptionsCulling) runTask(resultChannel chan<- items.SolvableItemSe
 		if err := validateNewSet(result, &itemOptions, process.solveModel.CheckSet); err != nil {
 			return err
 		}
-		if err := single.checkSetRatingIsObjective(solution, &result, process.solveModel.CalcRatingSet, ratingScale); err != nil {
+		if err := single.checkSetRatingIsObjective(solution, &result, process.solveModel.CalcRatingSet); err != nil {
 			return err
 		}
 
