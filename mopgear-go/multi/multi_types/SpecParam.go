@@ -28,10 +28,6 @@ type ItemInputs struct {
 }
 
 func (param *SpecParam) Prepare() error {
-	if param.Label == "" {
-		param.Label = param.Model.Label
-	}
-
 	if err := model_factory.SetupModelWeights(&param.Model); err != nil {
 		return err
 	}

@@ -7,12 +7,10 @@ import (
 	"github.com/nerago/mopgear-go/files"
 )
 
-func WriteStringToFile(filename, content string) {
+func WriteStringToFile(filename, content string) error {
 	bytes := []byte(content)
 	err := os.WriteFile(filename, bytes, 0666)
-	if err != nil {
-		panic(err)
-	}
+	return err
 }
 
 func WriteFuncToFileWithTemp(filename string, apply func(file *os.File)) error {

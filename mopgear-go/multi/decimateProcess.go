@@ -20,36 +20,40 @@ const c_decimateTargetItemsPerSlot = 3
 const c_decimateTargetItemsPairedSlot = 4
 
 // normally decimate done as part of regular jobs
-func (job *MainJob) TestDecimate() {
-	err := job.prepareItems()
+//func (job *MainJob) TestDecimate() {
+//	err := job.prepareItems()
+//	if err != nil {
+//		panic(err)
+//	}
+//
+//	cancel := util_async.CancelSignal_Make()
+//
+//	groupChannel := job.prepareWorkingGroups(cancel)
+//
+//	util_async.ForEach_Channel(1, groupChannel, func(group *workingGroup) {
+//		group.runDecimate(cancel)
+//	})
+//}
+
+func (group *workingGroup) runDecimate(cancel util_async.CancelSignal) error {
+	workChannel := util_async.SeqToChannel_Cancellable(maps.Values(group.workers), cancel)
+	return util_async.ForEach_Channel_PassError(c_decimateThreadCount, workChannel, func(work *specWorker) error {
+		tracker := util.TrackProgress_Nop()
+		return work.runDecimateWork(tracker, group.job.printer, group.job.input.TimeLimitEachSolve, cancel)
+	})
+}
+
+func (work *specWorker) runDecimateWork(tracker *util.TrackProgress, printer *util.PrintRecorder, timeout int, cancel util_async.CancelSignal) error {
+	solveOptions := items.SolvableOptionsMap_of(work.ItemOptions())
+	solverModel, err := solve_highs_types.SolverModelBuild(work.Model(), work.weightType, nil)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	cancel := util_async.CancelSignal_Make()
-
-	groupChannel := job.prepareWorkingGroups(cancel)
-
-	util_async.ForEach_Channel(1, groupChannel, func(group *workingGroup) {
-		group.runDecimate(cancel)
-	})
+	return work.decimateForBaseSet(tracker, printer, timeout, work.baselineResult.SolvedSet, solveOptions, solverModel, cancel)
 }
 
-func (group *workingGroup) runDecimate(cancel util_async.CancelSignal) {
-	workChannel := util_async.SeqToChannel_Cancellable(maps.Values(group.workers), cancel)
-	util_async.ForEach_Channel(c_decimateThreadCount, workChannel, func(work *specWorker) {
-		tracker := util.TrackProgress_Nop()
-		work.runDecimateWork(tracker, group.job.printer, group.job.input.TimeLimitEachSolve, cancel)
-	})
-}
-
-func (work *specWorker) runDecimateWork(tracker *util.TrackProgress, printer *util.PrintRecorder, timeout int, cancel util_async.CancelSignal) {
-	solveOptions := items.SolvableOptionsMap_of(work.ItemOptions())
-	solverModel := solve_highs_types.SolverModelBuild(work.Model(), work.weightType, nil)
-	work.decimateForBaseSet(tracker, printer, timeout, work.baselineResult.SolvedSet, solveOptions, solverModel, cancel)
-}
-
-func (work *specWorker) decimateForBaseSet(tracker *util.TrackProgress, printer *util.PrintRecorder, timeout int, baseItemSet items.SolvableItemSet, solveOptions items.SolvableOptionsMap, solverModel *solve_highs_types.SolverModel, cancel util_async.CancelSignal) {
+func (work *specWorker) decimateForBaseSet(tracker *util.TrackProgress, printer *util.PrintRecorder, timeout int, baseItemSet items.SolvableItemSet, solveOptions items.SolvableOptionsMap, solverModel *solve_highs_types.SolverModel, cancel util_async.CancelSignal) error {
 	estimateSteps := uint64(baseItemSet.Items().CountNonEmptySlots())
 	currentStep := new(atomic.Uint64)
 	tracker.RunFromAtomicInt(currentStep, estimateSteps)
@@ -83,7 +87,7 @@ func (work *specWorker) decimateForBaseSet(tracker *util.TrackProgress, printer 
 
 	work.decimateRestoreSetBonusItems(&bestBySlot, work.ItemOptions(), work.expectAllBonusItemsAvailable)
 
-	work.decimateApply(&bestBySlot, printer)
+	return work.decimateApply(&bestBySlot, printer)
 }
 
 func (work *specWorker) decimateFindSlotBestN(bestForSlot *util_collection.SetComparable[items.ItemId], slotEquip items.SlotEquip, solveOptionsBase *items.SolvableOptionsMap, solverModel *solve_highs_types.SolverModel, printer *util.PrintRecorder, timeout int, cancel util_async.CancelSignal) {

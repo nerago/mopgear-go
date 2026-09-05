@@ -225,7 +225,7 @@ func paladinMultiRun(printer *util.PrintRecorder) {
 	job.VerifyNoExtraDuplicates()
 	//job.RemoveAnyExtraDuplicates()
 
-	if true {
+	if false {
 		taskQuick := multi_types.JobInputTask{
 			AlsoExistingEquipped:  true,
 			AlsoSpecOptimums:      true,

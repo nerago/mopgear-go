@@ -8,117 +8,72 @@ import (
 	"github.com/nerago/mopgear-go/util"
 )
 
-type PossibleFutureError struct {
-	errorValue    error
-	signalChannel chan error
-	lock          sync.Mutex
-	isComplete    bool
-	hasWaiter     bool
+type PossibleFutureErrors struct {
+	lock              sync.Mutex
+	errorSlice        []error
+	forwardTo         IFutureErrorMinimal
+	hasReturnedResult bool
+	isForwarding      bool
 }
 
-var _ IFutureErrorMinimal = &PossibleFutureError{}
+var _ IFutureErrorMinimal = &PossibleFutureErrors{}
 
-func PossibleFutureErrorMake() *PossibleFutureError {
-	return &PossibleFutureError{
-		signalChannel: make(chan error, 1),
-	}
+func PossibleFutureErrorMake() *PossibleFutureErrors {
+	return &PossibleFutureErrors{}
 }
 
-func (pf *PossibleFutureError) SetResultSuccess() {
+func (pf *PossibleFutureErrors) AddError(err error) {
 	pf.lock.Lock()
 	defer pf.lock.Unlock()
-	if !pf.isComplete {
-		pf.signalChannel <- nil
-		pf.isComplete = true
-	}
-}
-
-func (pf *PossibleFutureError) AddResultError(err error) {
-	util.GlobalWarnHandler(err)
-
-	pf.lock.Lock()
-	defer pf.lock.Unlock()
-	if !pf.isComplete {
-		pf.errorValue = err
-		pf.signalChannel <- err
-		pf.isComplete = true
-	} else if !pf.hasWaiter {
-		pf.errorValue = errors.Join(pf.errorValue, err)
+	if err == nil {
+		// no error
+	} else if pf.hasReturnedResult {
+		util.GlobalWarnHandler(fmt.Errorf("PossibleFutureError additional error after GetResult; %w", err))
+	} else if pf.isForwarding {
+		pf.forwardTo.AddError(err)
 	} else {
-		util.GlobalFatalErrorHandler(fmt.Errorf("PossibleFutureError additional error after Wait; %w", err))
+		pf.errorSlice = append(pf.errorSlice, err)
 	}
 }
 
-func (pf *PossibleFutureError) HasError() bool {
+func (pf *PossibleFutureErrors) HasError() bool {
 	pf.lock.Lock()
 	defer pf.lock.Unlock()
-	return pf.isComplete && pf.errorValue != nil
+	return len(pf.errorSlice) > 0
 }
 
-func (pf *PossibleFutureError) verifyCanWaitNoLock() error {
-	if pf == nil || pf.signalChannel == nil {
-		return util.ErrorTracedNew("invalid future")
-	} else if pf.hasWaiter {
-		return util.ErrorTracedNew("duplicate waiter")
-	}
-	pf.hasWaiter = true
-	return nil
-}
-
-func (pf *PossibleFutureError) verifyCanWaitLocked() error {
-	pf.lock.Lock()
-	defer pf.lock.Unlock()
-	return pf.verifyCanWaitNoLock()
-}
-
-func (pf *PossibleFutureError) GetResultNoWait() (error, bool) {
+func (pf *PossibleFutureErrors) GetResultNoWait() (err error, hasErrors bool) {
 	pf.lock.Lock()
 	defer pf.lock.Unlock()
 
-	err := pf.verifyCanWaitNoLock()
-	if err != nil {
-		return err, true
+	if pf.forwardTo != nil {
+		panic("inconsistent result destination")
 	}
+	// flag return but don't actually block multiple returns; pretty harmless
+	pf.hasReturnedResult = true
 
-	if pf.isComplete {
-		return pf.errorValue, pf.errorValue != nil
-	} else {
-		return nil, false
-	}
-}
-
-func (pf *PossibleFutureError) WaitForResult() error {
-	err := pf.verifyCanWaitLocked()
-	if err != nil {
-		return err
-	}
-
-	result, channelOk := <-pf.signalChannel
-	if !channelOk {
-		return util.ErrorTracedNew("signal channel closed")
-	}
-	close(pf.signalChannel)
-
-	return result
-}
-
-func (pf *PossibleFutureError) ForwardErrorToOtherFuture(other IFutureErrorMinimal) {
-	err := pf.verifyCanWaitLocked()
-	if err != nil {
-		other.AddResultError(err)
-		return
-	}
-
-	go func() {
-		result, channelOk := <-pf.signalChannel
-		if !channelOk {
-			other.AddResultError(util.ErrorTracedNew("signal channel closed"))
-			return
+	if len(pf.errorSlice) > 0 {
+		err = errors.Join(pf.errorSlice...)
+		if err != nil {
+			return err, true
 		}
-		close(pf.signalChannel)
+	}
 
-		if result != nil {
-			other.AddResultError(result)
-		}
-	}()
+	return nil, false
+}
+
+func (pf *PossibleFutureErrors) ForwardErrorToOtherFuture(other IFutureErrorMinimal) {
+	pf.lock.Lock()
+	defer pf.lock.Unlock()
+
+	if pf.hasReturnedResult || pf.forwardTo != nil {
+		panic("inconsistent result destination")
+	}
+
+	for _, err := range pf.errorSlice {
+		other.AddError(err)
+	}
+	pf.errorSlice = nil
+
+	pf.forwardTo = other
 }

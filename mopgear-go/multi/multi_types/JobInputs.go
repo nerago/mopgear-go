@@ -68,11 +68,16 @@ func (ji *JobInputs) SetTimeLimitEachSolver(timeLimitSeconds int) {
 }
 
 func (ji *JobInputs) AddSpecParam(param SpecParam) {
+	if param.Label == "" {
+		param.Label = param.Model.Label
+	}
+
 	for _, other := range ji.Param {
 		if other.Label == param.Label {
 			panic("duplicate label")
 		}
 	}
+
 	param.Model.InitDerives()
 	ji.Param = append(ji.Param, param)
 }

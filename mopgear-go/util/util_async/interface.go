@@ -30,12 +30,10 @@ type IFutureWithCancel interface {
 }
 
 type IFutureErrorMinimal interface {
-	SetResultSuccess()
-	AddResultError(err error)
+	AddError(err error)
 
 	HasError() bool
 	GetResultNoWait() (error, bool)
-	WaitForResult() error
 
 	ForwardErrorToOtherFuture(other IFutureErrorMinimal)
 }

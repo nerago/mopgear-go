@@ -274,10 +274,14 @@ func (group *workingGroup) highProcessSetupForPermute(permuteSet *permuteSet, pr
 	highProcess.SetCommon(commonOptions)
 
 	for label, work := range group.workers {
+		solveModel, err := solve_highs_types.SolverModelBuild(work.Model(), group.weightType, overrideBonuses[label])
+		if err != nil {
+			return nil, err
+		}
 		highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
 			Label:          label,
 			ItemOptions:    *itemOptionsEach[label],
-			SolverModel:    *solve_highs_types.SolverModelBuild(work.Model(), group.weightType, overrideBonuses[label]),
+			SolverModel:    *solveModel,
 			RatingMultiply: work.ratingMultiply,
 		})
 	}

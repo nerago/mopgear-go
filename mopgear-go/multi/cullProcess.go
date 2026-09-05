@@ -22,9 +22,16 @@ func (work *specWorker) runCullingProcess(targetNum int64, waitGroup *sync.WaitG
 	tracker.RunFromAtomicInt(&currentNum, uint64(targetNum))
 
 	waitGroup.Go(func() {
-		highCull := solve_highs.OptionsCulling{}
+		defer tracker.SetDone()
+
 		solveOptions := items.SolvableOptionsMap_of(work.ItemOptions())
-		solverModel := solve_highs_types.SolverModelBuild(work.Model(), work.weightType, nil)
+		solverModel, err := solve_highs_types.SolverModelBuild(work.Model(), work.weightType, nil)
+		if err != nil {
+			util.GlobalWarnHandler(err)
+			return // bail out, don't really have any good error handling in here
+		}
+
+		highCull := solve_highs.OptionsCulling{}
 		highCull.Init(work.Label(), targetNum, solveOptions, solverModel, printer)
 
 		resultChannel := highCull.Run(cancel)
@@ -38,7 +45,5 @@ func (work *specWorker) runCullingProcess(targetNum int64, waitGroup *sync.WaitG
 			}
 			currentNum.Add(1)
 		}
-
-		tracker.SetDone()
 	})
 }

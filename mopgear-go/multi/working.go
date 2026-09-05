@@ -1,6 +1,7 @@
 package multi
 
 import (
+	"fmt"
 	"maps"
 
 	"github.com/nerago/mopgear-go/gear_model"
@@ -51,11 +52,11 @@ func (work *specWorker) AddSeenScaled(equipMap *items.FullEquipMap, scale uint32
 	work.seenInSolutions.AddScaled(equipMap, scale)
 }
 
-func (work *specWorker) init(printer *util.PrintRecorder) {
-	work.setupAlternateGems(work.task.AlternateGemList, printer)
+func (work *specWorker) init(printer *util.PrintRecorder) error {
+	return work.setupAlternateGems(work.task.AlternateGemList, printer)
 }
 
-func (job *MainJob) prepareWorkingGroups(cancel util_async.CancelSignal) <-chan *workingGroup {
+func (job *MainJob) prepareWorkingGroups(cancel util_async.CancelSignal) (<-chan *workingGroup, *util_async.PossibleFutureErrors, error) {
 	job.workGroups = make([]*workingGroup, 0)
 	for task := range util_collection.ForPointer(job.tasks) {
 		for _, weightType := range task.WeightTypeList {
@@ -76,31 +77,50 @@ func (job *MainJob) prepareWorkingGroups(cancel util_async.CancelSignal) <-chan 
 					weightType:                   weightType,
 					task:                         task,
 				}
-				work.init(job.printer)
+				if err := work.init(job.printer); err != nil {
+					return nil, nil, err
+				}
 				group.workers[label] = work
 			}
 			job.workGroups = append(job.workGroups, group)
 		}
 	}
 
-	return util_async.Map_SliceToChannel_NoPointer(c_prepThreadCount, job.workGroups, func(group *workingGroup) *workingGroup {
-		group.prepareWorkersBaseline(&job.input, job.printer)
-		if group.task.RunDecimate {
-			group.runDecimate(cancel)
+	prepErrors := util_async.PossibleFutureErrorMake()
+	groupChannel := util_async.MapOptional_SliceToChannel(c_prepThreadCount, job.workGroups, func(group **workingGroup) (*workingGroup, bool) {
+		if err := (*group).prepareWorkersBaseline(&job.input, job.printer); err != nil {
+			prepErrors.AddError(err)
+			return nil, false
 		}
-		return group
+
+		if (*group).task.RunDecimate {
+			err := (*group).runDecimate(cancel)
+			if err != nil {
+				prepErrors.AddError(err)
+				return nil, false
+			}
+		}
+		return *group, true
 	})
+	return groupChannel, prepErrors, nil
 }
 
-func (group *workingGroup) prepareWorkersBaseline(input *multi_types.JobInputs, printer *util.PrintRecorder) {
+func (group *workingGroup) prepareWorkersBaseline(input *multi_types.JobInputs, printer *util.PrintRecorder) error {
 	workChannel := util_async.SeqToChannel(maps.Values(group.workers))
-	util_async.ForEach_Channel(c_prepThreadCount, workChannel, func(work *specWorker) {
-		work.runBaseline(printer, input.TimeLimitEachSolve, nil)
+
+	err := util_async.ForEach_Channel_PassError(c_prepThreadCount, workChannel, func(work *specWorker) error {
+		return work.runBaseline(printer, input.TimeLimitEachSolve, nil)
 	})
+	if err != nil {
+		return err
+	}
+
 	group.prepareRatingMultipliersGroup(input, printer)
+
+	return nil
 }
 
-func (work *specWorker) runBaseline(printer *util.PrintRecorder, timeout int, cancel util_async.CancelSignal) {
+func (work *specWorker) runBaseline(printer *util.PrintRecorder, timeout int, cancel util_async.CancelSignal) error {
 	printer.Printf("BASELINE for %s %d\n", work.Label(), work.weightType)
 	work.baselineResult = solver.Solver(
 		work.ItemOptions(),
@@ -111,11 +131,15 @@ func (work *specWorker) runBaseline(printer *util.PrintRecorder, timeout int, ca
 		cancel,
 	)
 
-	if !work.baselineResult.Success {
-		panic("failed to find baseline for " + work.Label())
+	if work.baselineResult.Error != nil {
+		return fmt.Errorf("failed to find baseline for %s: %w", work.Label(), work.baselineResult.Error)
+	} else if !work.baselineResult.Success {
+		return fmt.Errorf("failed to find baseline for %s: unknown", work.Label())
 	}
+
 	work.baselineResult.Report(printer)
 	work.AddSeen(work.baselineResult.FullSet.Items())
+	return nil
 }
 
 func (group *workingGroup) prepareRatingMultipliersGroup(input *multi_types.JobInputs, printer *util.PrintRecorder) {

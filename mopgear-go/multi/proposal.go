@@ -17,7 +17,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (group *workingGroup) groupProposals(proposalMix *util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, possibleError *util_async.PossibleFutureError, cancel *util_async.CancelSignalBasic) {
+func (group *workingGroup) groupProposals(proposalMix *util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, possibleError *util_async.PossibleFutureErrors, cancel *util_async.CancelSignalBasic) {
 	if group.hasPermutes() {
 		group.proposalsUnderPermutation(&group.task.Permute, proposalMix, expectedCountAdder, possibleError, cancel)
 	} else {
@@ -33,7 +33,7 @@ func (group *workingGroup) groupProposals(proposalMix *util_async.FutureChannelM
 	}
 }
 
-func (group *workingGroup) proposalsUnderPermutation(inputPermute *multi_types.InputPermute, proposalMix *util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, possibleError *util_async.PossibleFutureError, cancel util_async.CancelSignal) {
+func (group *workingGroup) proposalsUnderPermutation(inputPermute *multi_types.InputPermute, proposalMix *util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, possibleError *util_async.PossibleFutureErrors, cancel util_async.CancelSignal) {
 	estimate := group.job.estimateFixedPermutations(inputPermute)
 	group.job.printer.Printf("PERMUTE SET COUNT %d\n", estimate)
 
@@ -47,17 +47,22 @@ func (group *workingGroup) proposalsUnderPermutation(inputPermute *multi_types.I
 	)
 }
 
-func (group *workingGroup) proposalsGeneral(permuteSet *permuteSet, proposalMix *util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, possibleError *util_async.PossibleFutureError, cancel util_async.CancelSignal) {
+func (group *workingGroup) proposalsGeneral(permuteSet *permuteSet, proposalMix *util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput], expectedCountAdder *util_async.FutureValueAdderInt, possibleError *util_async.PossibleFutureErrors, cancel util_async.CancelSignal) {
 	var highProcess *solve_highs.SolverHighsMultiProcess
 	if permuteSet != nil {
 		proc, err := group.highProcessSetupForPermute(permuteSet, group.job.printer)
 		if err != nil {
-			possibleError.AddResultError(err)
+			possibleError.AddError(err)
 			return
 		}
 		highProcess = proc
 	} else {
-		highProcess = group.highProcessSetupSingle()
+		proc, err := group.highProcessSetupSingle()
+		if err != nil {
+			possibleError.AddError(err)
+			return
+		}
+		highProcess = proc
 	}
 
 	multiSolveChannel, expectedCountFuture, innerFutureError, errInit := highProcess.Run(
@@ -66,7 +71,7 @@ func (group *workingGroup) proposalsGeneral(permuteSet *permuteSet, proposalMix 
 		cancel, group.task.IncludeInterimResults)
 
 	if errInit != nil {
-		possibleError.AddResultError(errInit)
+		possibleError.AddError(errInit)
 		return
 	} else {
 		innerFutureError.ForwardErrorToOtherFuture(possibleError)
@@ -114,7 +119,7 @@ func (group *workingGroup) hasPermutes() bool {
 	return false
 }
 
-func (group *workingGroup) highProcessSetupSingle() *solve_highs.SolverHighsMultiProcess {
+func (group *workingGroup) highProcessSetupSingle() (*solve_highs.SolverHighsMultiProcess, error) {
 	highProcess := new(solve_highs.SolverHighsMultiProcess)
 
 	itemOptionsEach := make(map[string]*items.FullOptionsMap)
@@ -126,18 +131,22 @@ func (group *workingGroup) highProcessSetupSingle() *solve_highs.SolverHighsMult
 	highProcess.SetCommon(commonOptions)
 
 	for label, work := range group.workers {
+		solveModel, err := solve_highs_types.SolverModelBuild(work.Model(), work.weightType, nil)
+		if err != nil {
+			return nil, err
+		}
 		highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
 			Label:          label,
 			ItemOptions:    *itemOptionsEach[label],
-			SolverModel:    *solve_highs_types.SolverModelBuild(work.Model(), work.weightType, nil),
+			SolverModel:    *solveModel,
 			RatingMultiply: work.ratingMultiply,
 		})
 	}
 
-	return highProcess
+	return highProcess, nil
 }
 
-func (group *workingGroup) highProcessSetupRestrictedOnBaseline(baselineWork *specWorker) *solve_highs.SolverHighsMultiProcess {
+func (group *workingGroup) highProcessSetupRestrictedOnBaseline(baselineWork *specWorker) (*solve_highs.SolverHighsMultiProcess, error) {
 	highProcess := new(solve_highs.SolverHighsMultiProcess)
 
 	itemOptionsEach := make(map[string]*items.FullOptionsMap)
@@ -156,14 +165,18 @@ func (group *workingGroup) highProcessSetupRestrictedOnBaseline(baselineWork *sp
 	highProcess.SetCommon(commonOptions)
 
 	for label, work := range group.workers {
+		solveModel, err := solve_highs_types.SolverModelBuild(work.Model(), work.weightType, nil)
+		if err != nil {
+			return nil, err
+		}
 		highProcess.AddSetParam(solve_highs.SolverHighsMultiParam{
 			Label:          label,
 			ItemOptions:    *itemOptionsEach[label],
-			SolverModel:    *solve_highs_types.SolverModelBuild(work.Model(), work.weightType, nil),
+			SolverModel:    *solveModel,
 			RatingMultiply: work.ratingMultiply,
 		})
 	}
-	return highProcess
+	return highProcess, nil
 }
 
 func (group *workingGroup) restrictOptionsToVersionsInSet(itemOptions *items.FullOptionsMap, baselineSet *items.FullItemSet) {
@@ -256,13 +269,17 @@ func (group *workingGroup) existingGearAsProposal() *multi_types.MultiProposedOu
 	return proposal
 }
 
-func (group *workingGroup) additionalProposalsFromSpecOptimalBaseline(expectedCountAdder *util_async.FutureValueAdderInt, possibleError *util_async.PossibleFutureError, cancel util_async.CancelSignal) <-chan *multi_types.MultiProposedOutput {
+func (group *workingGroup) additionalProposalsFromSpecOptimalBaseline(expectedCountAdder *util_async.FutureValueAdderInt, possibleError *util_async.PossibleFutureErrors, cancel util_async.CancelSignal) <-chan *multi_types.MultiProposedOutput {
 	allWorking := util_async.SeqToChannel(maps.Values(group.workers))
 	return util_async.MapMulti_ChannelToChannel_Cancellable(c_additionalProposal_threadCount, allWorking, cancel, func(work *specWorker, downstream chan<- *multi_types.MultiProposedOutput) {
 		printer := util.PrintRecorder_HoldAll()
 		defer group.job.printer.AppendOther(printer)
 
-		highProcess := group.highProcessSetupRestrictedOnBaseline(work)
+		highProcess, errSetup := group.highProcessSetupRestrictedOnBaseline(work)
+		if errSetup != nil {
+			possibleError.AddError(errSetup)
+			return
+		}
 
 		resultChannel, expectedCountFuture, innerFutureError, errInit := highProcess.Run(
 			group.job.input.TimeLimitEachSolve, printer,
@@ -270,7 +287,8 @@ func (group *workingGroup) additionalProposalsFromSpecOptimalBaseline(expectedCo
 			cancel, group.task.IncludeInterimResults)
 
 		if errInit != nil {
-			possibleError.AddResultError(errInit)
+			possibleError.AddError(errInit)
+			return
 		} else {
 			innerFutureError.ForwardErrorToOtherFuture(possibleError)
 		}

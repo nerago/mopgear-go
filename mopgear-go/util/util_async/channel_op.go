@@ -773,7 +773,7 @@ func makeThreadsForEachSlice[T any](threadCount int, inputSlice []T, process fun
 	return waitGroup
 }
 
-func makeThreadsForEachSliceError[T any](threadCount int, inputSlice []T, process func(*T) error, indexChannel chan int) (*sync.WaitGroup, *PossibleFutureError) {
+func makeThreadsForEachSliceError[T any](threadCount int, inputSlice []T, process func(*T) error, indexChannel chan int) (*sync.WaitGroup, *PossibleFutureErrors) {
 	waitGroup := new(sync.WaitGroup)
 	futureError := PossibleFutureErrorMake()
 	shouldContinue := true
@@ -783,7 +783,7 @@ func makeThreadsForEachSliceError[T any](threadCount int, inputSlice []T, proces
 				if shouldContinue {
 					err := process(&inputSlice[index])
 					if err != nil {
-						futureError.AddResultError(err)
+						futureError.AddError(err)
 						shouldContinue = false
 					}
 				}
@@ -793,7 +793,7 @@ func makeThreadsForEachSliceError[T any](threadCount int, inputSlice []T, proces
 	return waitGroup, futureError
 }
 
-func makeThreadsSliceToChannelCancellableError[T any, R any](threadCount int, inputSlice []T, cancel CancelSignal, mapper func(*T) (R, error), indexChannel chan int, tempChannel chan R) (*sync.WaitGroup, *PossibleFutureError) {
+func makeThreadsSliceToChannelCancellableError[T any, R any](threadCount int, inputSlice []T, cancel CancelSignal, mapper func(*T) (R, error), indexChannel chan int, tempChannel chan R) (*sync.WaitGroup, *PossibleFutureErrors) {
 	waitGroup := new(sync.WaitGroup)
 	futureError := PossibleFutureErrorMake()
 	for range threadCount {
@@ -805,7 +805,7 @@ func makeThreadsSliceToChannelCancellableError[T any, R any](threadCount int, in
 						tempChannel <- value
 					} else {
 						err = errors.Join(err, cancel.Cancel())
-						futureError.AddResultError(err)
+						futureError.AddError(err)
 					}
 				}
 			}
@@ -814,7 +814,7 @@ func makeThreadsSliceToChannelCancellableError[T any, R any](threadCount int, in
 	return waitGroup, futureError
 }
 
-func makeThreadsSliceToChannelOptionalCancellableError[T any, R any](threadCount int, inputSlice []T, cancel CancelSignal, mapper func(*T) (R, bool, error), indexChannel chan int, tempChannel chan R) (*sync.WaitGroup, *PossibleFutureError) {
+func makeThreadsSliceToChannelOptionalCancellableError[T any, R any](threadCount int, inputSlice []T, cancel CancelSignal, mapper func(*T) (R, bool, error), indexChannel chan int, tempChannel chan R) (*sync.WaitGroup, *PossibleFutureErrors) {
 	waitGroup := new(sync.WaitGroup)
 	futureError := PossibleFutureErrorMake()
 	for range threadCount {
@@ -824,7 +824,7 @@ func makeThreadsSliceToChannelOptionalCancellableError[T any, R any](threadCount
 					value, hasValue, err := mapper(&inputSlice[index])
 					if err != nil {
 						err = errors.Join(err, cancel.Cancel())
-						futureError.AddResultError(err)
+						futureError.AddError(err)
 					} else if hasValue {
 						tempChannel <- value
 					}
@@ -847,7 +847,7 @@ func makeThreadsForEachChannel[T any](threadCount int, inputChannel <-chan T, pr
 	return waitGroup
 }
 
-func makeThreadsForEachChannelError[T any](threadCount int, inputChannel <-chan T, process func(T) error) (*sync.WaitGroup, *PossibleFutureError) {
+func makeThreadsForEachChannelError[T any](threadCount int, inputChannel <-chan T, process func(T) error) (*sync.WaitGroup, *PossibleFutureErrors) {
 	waitGroup := new(sync.WaitGroup)
 	futureError := PossibleFutureErrorMake()
 	shouldContinue := true
@@ -857,7 +857,7 @@ func makeThreadsForEachChannelError[T any](threadCount int, inputChannel <-chan 
 				if shouldContinue {
 					err := process(value)
 					if err != nil {
-						futureError.AddResultError(err)
+						futureError.AddError(err)
 						shouldContinue = false
 					}
 				}

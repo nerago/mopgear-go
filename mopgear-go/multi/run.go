@@ -18,9 +18,13 @@ func (job *MainJob) Run() {
 	cancelGenerate := util_async.CancelSignal_Make()
 	util_async.CancelOnKeyPress(cancelGenerate)
 
-	groupChannel := job.prepareWorkingGroups(cancelGenerate)
+	groupChannel, possibleErrors, err := job.prepareWorkingGroups(cancelGenerate)
+	if err != nil {
+		util.GlobalFatalErrorHandler(err)
+	}
 
-	proposalChannel, expectedCountChannel, possibleProposalErrors := job.makeProposalChannel(groupChannel, cancelGenerate)
+	proposalChannel, expectedCountChannel, moreErrors := job.makeProposalChannel(groupChannel, cancelGenerate)
+	moreErrors.ForwardErrorToOtherFuture(possibleErrors)
 
 	simJobChannel1, resultPendingChan := job.prepareSimList(proposalChannel)
 	simJobChannel2 := job.mergeDuplicateJobs(simJobChannel1)
@@ -28,7 +32,7 @@ func (job *MainJob) Run() {
 	simsDone := job.runSims(simJobChannel2, expectedCountChannel)
 
 	simMultiResults := job.incrementalReporting(resultPendingChan, simsDone)
-	job.finalMultiReport(simMultiResults, possibleProposalErrors)
+	job.finalMultiReport(simMultiResults, possibleErrors)
 }
 
 func (job *MainJob) mergeDuplicateJobs(simJobChannel1 <-chan *simulateJobPending) <-chan *simulateJobPending {
@@ -43,7 +47,7 @@ func (job *MainJob) mergeDuplicateJobs(simJobChannel1 <-chan *simulateJobPending
 	)
 }
 
-func (job *MainJob) makeProposalChannel(groupChannel <-chan *workingGroup, cancelGenerate *util_async.CancelSignalBasic) (<-chan *multi_types.MultiProposedOutput, <-chan int, *util_async.PossibleFutureError) {
+func (job *MainJob) makeProposalChannel(groupChannel <-chan *workingGroup, cancelGenerate *util_async.CancelSignalBasic) (<-chan *multi_types.MultiProposedOutput, <-chan int, *util_async.PossibleFutureErrors) {
 	futureCount := util_async.FutureValueAdderIntMake(0)
 	proposalMixer := util_async.FutureChannelMixerContinuing[*multi_types.MultiProposedOutput]{}
 	possibleError := util_async.PossibleFutureErrorMake()
@@ -83,7 +87,10 @@ func (job *MainJob) RunCullingSets(targetSolutionCount int64, timeLimit time.Dur
 	timer := util_async.CancelAfterTimeout(cancel, timeLimit, job.printer)
 	defer timer.Stop()
 
-	groupChannel := job.prepareWorkingGroups(cancel)
+	groupChannel, possibleErrors, err := job.prepareWorkingGroups(cancel)
+	if err != nil {
+		panic(err)
+	}
 
 	waitGroup := sync.WaitGroup{}
 	util_async.ForEach_Channel(6, groupChannel, func(group *workingGroup) {
@@ -94,10 +101,14 @@ func (job *MainJob) RunCullingSets(targetSolutionCount int64, timeLimit time.Dur
 
 	waitGroup.Wait()
 
+	if err, hasError := possibleErrors.GetResultNoWait(); hasError {
+		panic(err)
+	}
+
 	job.CullingReport()
 }
 
-func (job *MainJob) finalMultiReport(simMultiResults []simulateMultiResult, possibleErrors *util_async.PossibleFutureError) {
+func (job *MainJob) finalMultiReport(simMultiResults []simulateMultiResult, possibleErrors *util_async.PossibleFutureErrors) {
 	if errors, hasErrors := possibleErrors.GetResultNoWait(); hasErrors {
 		job.printer.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 		job.printer.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
