@@ -66,7 +66,7 @@ func (be *BaseEachStatProcess[F]) CalcMetrics() *util.Stopwatch {
 	return stopwatch
 }
 
-func (be *BaseEachStatProcess[F]) BuildResult() (*weight_types.Weight3ExtendedRanged, error) {
+func (be *BaseEachStatProcess[F]) BuildResult() (*weight_types.Weight3, error) {
 	weights := weight_types.Weight3ExtendedRanged_Make(be.RequiredStats, be.RequiredSims)
 	be.Each.Foreach(func(statType stats.StatType, simType stats.SimType, value F) {
 		for detail := range value.Results() {

@@ -65,22 +65,42 @@ func (so ScaleAndOffset) Apply(value float64) float64 {
 	}
 }
 
+type scoreForBasicFunc func(statBlock *stats.StatBlock) float64
 type scoreForSimFunc func(statBlock *stats.StatBlock, simType stats.SimType) float64
 
-func (we *Weight2Extended) verifyGoodRange(verificationInputs []WeightInput) error {
+func (wbs *Weight1_ScaledSolvable) verifyGoodRange(verificationInputs []WeightInput) error {
+	return verifyGoodRangeBasic1(verificationInputs, wbs.calcStatScoreRaw)
+}
+
+func (we *Weight2) verifyGoodRange(verificationInputs []WeightInput) error {
 	return verifyGoodRangeGeneral(verificationInputs, we.SimList, &we.SimPriority, we.scoreForSimRaw)
 }
 
-func (wer *Weight3ExtendedRanged) verifyGoodRange(verificationInputs []WeightInput) error {
+func (wer *Weight3) verifyGoodRange(verificationInputs []WeightInput) error {
 	return verifyGoodRangeGeneral(verificationInputs, wer.SimList, &wer.SimPriority, wer.scoreForSimRaw)
 }
 
-func (we *Weight2Extended) UpdateScaling(inputData []WeightInput) error {
+func (we *Weight2) UpdateScaling(inputData []WeightInput) error {
 	return updateScalingGeneral(inputData, we.SimList, &we.SimPriority, we.scoreForSimRaw)
 }
 
-func (wer *Weight3ExtendedRanged) UpdateScaling(inputData []WeightInput) error {
+func (wer *Weight3) UpdateScaling(inputData []WeightInput) error {
 	return updateScalingGeneral(inputData, wer.SimList, &wer.SimPriority, wer.scoreForSimRaw)
+}
+
+func verifyGoodRangeBasic1(verificationInputs []WeightInput, statToValueFunc scoreForBasicFunc) error {
+	if len(verificationInputs) == 0 {
+		return util.ErrorTracedNew("no inputs for verification")
+	}
+
+	loValue, hiValue := calcBasicScoreRangeForInputsRaw(verificationInputs, statToValueFunc)
+
+	if util.AbsDiff(loValue, c_verify_targetLoValue) > c_verify_permittedSlack ||
+		util.AbsDiff(hiValue, c_verify_targetHiValue) > c_verify_permittedSlack {
+		return fmt.Errorf("weights fail to produce expected value range, actual: %f - %f", loValue, hiValue)
+	}
+
+	return nil
 }
 
 func verifyGoodRangeGeneral(verificationInputs []WeightInput, simList []stats.SimType, simPriority *SimPriorityExtended, statToSimValueFunc scoreForSimFunc) error {
@@ -97,6 +117,17 @@ func verifyGoodRangeGeneral(verificationInputs []WeightInput, simList []stats.Si
 	}
 
 	return nil
+}
+
+func updateScalingBasic1(verificationInputs []WeightInput, statToValueFunc scoreForBasicFunc) (ScaleAndOffset, error) {
+	if len(verificationInputs) == 0 {
+		return ScaleAndOffset{}, util.ErrorTracedNew("no inputData for scaling")
+	}
+
+	loValue, hiValue := calcBasicScoreRangeForInputsRaw(verificationInputs, statToValueFunc)
+
+	scaleOffset := CalcScaleOffsetForUnitRange(true, hiValue, loValue)
+	return scaleOffset, nil
 }
 
 func updateScalingGeneral(verificationInputs []WeightInput, simList []stats.SimType, simPriority *SimPriorityExtended, statToSimValueFunc scoreForSimFunc) error {
@@ -117,6 +148,20 @@ func updateScalingGeneral(verificationInputs []WeightInput, simList []stats.SimT
 		}
 	}
 	return nil
+}
+
+func calcBasicScoreRangeForInputsRaw(verificationInputs []WeightInput, statToValueFunc scoreForBasicFunc) (float64, float64) {
+	lo := util_rank.BestCollector1Lite[float64]{}
+	hi := util_rank.BestCollector1Lite[float64]{}
+
+	for input := range util_collection.ForPointer(verificationInputs) {
+		score := statToValueFunc(&input.TotalStat)
+		lo.Offer(score, -score)
+		hi.Offer(score, score)
+	}
+
+	loValue, hiValue := lo.GetBestOrNilValue(), hi.GetBestOrNilValue()
+	return loValue, hiValue
 }
 
 func calcSimScoreRangeForInputsRaw(verificationInputs []WeightInput, simType stats.SimType, statToSimValueFunc scoreForSimFunc) (float64, float64) {

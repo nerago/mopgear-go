@@ -10,7 +10,7 @@ import (
 )
 
 type sectionResult struct {
-	weights        weight_types.Weight2Extended
+	weights        weight_types.Weight2
 	bounds         weight_types.Weight4SegmentBound
 	includePercent float64
 	elapsed        time.Duration

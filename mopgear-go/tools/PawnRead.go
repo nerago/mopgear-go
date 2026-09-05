@@ -7,41 +7,16 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nerago/mopgear-go/files"
-	"github.com/nerago/mopgear-go/gear_model/ratings"
 	"github.com/nerago/mopgear-go/stats"
-	"github.com/nerago/mopgear-go/weightfind/weight_types"
+	"github.com/nerago/mopgear-go/util"
 )
 
-func StatRatingsWeights_ReadFile(filename string) ratings.StatRatingsWeightsExtended {
-	return StatRatingsWeightsExtended_ReadFile(filename)
-}
-
-func pawnWeightToBlock(filename string) stats.StatBlockFloat {
+func readPawnWeightAsBlock(filename string) (stats.StatBlockFloat, error) {
 	blockFloat, _, found := PawnWeightReadFile(filename)
 	if !found {
-		panic("missing weights file " + filename)
+		return stats.StatBlockFloat{}, util.ErrorTracedNew("missing weights file " + filename)
 	}
-
-	statRatings := stats.StatBlockFloat{}
-	blockFloat.MultiplyScalar(weight_types.C_weightMultiplierForRatings, &statRatings)
-	return statRatings
-}
-
-func StatRatingsWeightsExtended_ReadFile(filename string) ratings.StatRatingsWeightsExtended {
-	weight1 := weight_types.Weight1Basic_FromBlock(pawnWeightToBlock(filename))
-	weight2, _ := ReadWeight2File(files.ToWeight2(filename))
-	weight3, _ := ReadWeight3File(files.ToWeight3(filename))
-
-	if weight1.IsEmpty() && (weight2 == nil || weight2.IsEmpty()) {
-		panic("missing weight")
-	}
-
-	return ratings.StatRatingsWeightsExtended{
-		Weight1: weight1,
-		Weight2: weight2,
-		Weight3: weight3,
-	}
+	return blockFloat, nil
 }
 
 func PawnWeightReadFile(filename string) (stats.StatBlockFloat, string, bool) {
@@ -96,12 +71,12 @@ func addNum(blockFloat *stats.StatBlockFloat, stat stats.StatType, value string)
 	blockFloat[stat] = num
 }
 
-func StatRatingsWeights_Testing() ratings.StatRatingsWeightsExtended {
-	blockFloat := stats.StatBlockFloat{}
-	for i := range blockFloat {
-		blockFloat[i] = 1.0
-	}
-	return ratings.StatRatingsWeightsExtended{
-		Weight1: weight_types.Weight1Basic_FromBlock(blockFloat),
-	}
-}
+//func StatRatingsWeights_Testing() ratings.StatRatingsWeightsExtended {
+//	blockFloat := stats.StatBlockFloat{}
+//	for i := range blockFloat {
+//		blockFloat[i] = 1.0
+//	}
+//	return ratings.StatRatingsWeightsExtended{
+//		Weight1: weight_types.Weight1Basic_FromBlock(blockFloat),
+//	}
+//}

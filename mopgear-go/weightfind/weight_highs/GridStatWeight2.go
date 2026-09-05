@@ -243,7 +243,7 @@ func (grid2 *GridStatWeightProcess2) prepareSampleThreeDifferenceStats(one *weig
 	}
 }
 
-func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Solution) weight_types.Weight2Extended {
+func (grid2 *GridStatWeightProcess2) reportOutputWeightsGrid(solution *highs.Solution) weight_types.Weight2 {
 	result := weight_types.Weight2Extended_Make(grid2.simTypes, grid2.statTypes)
 	grid2.printer.Println("FINAL WEIGHTS:")
 

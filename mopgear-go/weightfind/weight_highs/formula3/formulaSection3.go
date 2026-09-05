@@ -257,7 +257,7 @@ func (sect *formulaSection3) buildDataEquation(stats *stats.StatBlock, simValueA
 	}
 }
 
-func (sect *formulaSection3) extractAndReportSolution(solution *util_highs.Solution2) (*weight_types.Weight2Extended, *weight_types.Weight4SegmentBound, float64, error) {
+func (sect *formulaSection3) extractAndReportSolution(solution *util_highs.Solution2) (*weight_types.Weight2, *weight_types.Weight4SegmentBound, float64, error) {
 	sect.build.DebugPrintColumns2(solution, sect.process.printer)
 
 	weight2, err := sect.extractDetailWeights(solution)
@@ -271,7 +271,7 @@ func (sect *formulaSection3) extractAndReportSolution(solution *util_highs.Solut
 	return weight2, bounds, includePercent, nil
 }
 
-func (sect *formulaSection3) extractDetailWeights(solution *util_highs.Solution2) (*weight_types.Weight2Extended, error) {
+func (sect *formulaSection3) extractDetailWeights(solution *util_highs.Solution2) (*weight_types.Weight2, error) {
 	// extract and report on detail weights
 	weight2 := weight_types.Weight2Extended_Make(sect.process.requiredSims, sect.process.requiredStats)
 	sect.detailedWeightColumns.Foreach(func(statType stats.StatType, simType stats.SimType, column util_highs.ColumnIndex) {

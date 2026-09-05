@@ -124,7 +124,7 @@ func (proc *FormulaSegmentedProcess3) runInitialSection() error {
 	return err
 }
 
-func (proc *FormulaSegmentedProcess3) sendSuccessResult(weight4 *weight_types.Weight4Segmented) {
+func (proc *FormulaSegmentedProcess3) sendSuccessResult(weight4 *weight_types.Weight4) {
 	proc.processFuture.SetResult(weight_types.WeightResult4Make(weight4, proc.elapsed, highs.ModelStatusOptimal))
 
 }
@@ -222,8 +222,8 @@ func (proc *FormulaSegmentedProcess3) countDataInRange(statType stats.StatType, 
 	return lo, inc, hi
 }
 
-func (proc *FormulaSegmentedProcess3) buildWeight4FromSingle() *weight_types.Weight4Segmented {
-	weight4 := weight_types.Weight4Segmented_Make(proc.requiredStats, proc.requiredSims, proc.targetRatios)
+func (proc *FormulaSegmentedProcess3) buildWeight4FromSingle() *weight_types.Weight4 {
+	weight4 := weight_types.Weight4_Make(proc.requiredStats, proc.requiredSims, proc.targetRatios)
 	for _, segment := range proc.allSegments {
 		weight4.AddWeight2AsSegment(&segment.weights, &segment.bounds)
 	}

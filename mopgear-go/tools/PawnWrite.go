@@ -6,30 +6,42 @@ import (
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
 )
 
-func WritePawnString(weights weight_types.Weight1Basic, printer *util.PrintRecorder) string {
-	str := FormatPawnString(weights)
+func WritePawnString(weights *weight_types.Weight1_CompatibleExternal, specType stats.SpecType, printer *util.PrintRecorder) string {
+	str := FormatPawnString(weights, specType)
 	printer.Println(str)
 	return str
 }
 
-func FormatPawnString(weights weight_types.Weight1Basic) string {
+var pawnKeys = map[stats.StatType]string{
+	stats.Stat_Strength:  "Strength",
+	stats.Stat_Agility:   "Agility",
+	stats.Stat_Stamina:   "Stamina",
+	stats.Stat_Intellect: "Intellect",
+	stats.Stat_Spirit:    "Spirit",
+	stats.Stat_Hit:       "HitRating",
+	stats.Stat_Crit:      "CritRating",
+	stats.Stat_Haste:     "HasteRating",
+	stats.Stat_Expertise: "ExpertiseRating",
+	stats.Stat_Dodge:     "DodgeRating",
+	stats.Stat_Parry:     "ParryRating",
+	stats.Stat_Mastery:   "MasteryRating",
+}
+
+func FormatPawnString(weights *weight_types.Weight1_CompatibleExternal, specType stats.SpecType) string {
 	str := util.StringBuild2{}
-	str.WriteString("( Pawn: v1: \"Gearing Weights\": Class=Paladin,Strength=")
-	str.WriteFloat64(weights.Get(stats.Stat_Strength), 10)
-	str.WriteString(",Stamina=")
-	str.WriteFloat64(weights.Get(stats.Stat_Stamina), 10)
-	str.WriteString(",CritRating=")
-	str.WriteFloat64(weights.Get(stats.Stat_Crit), 10)
-	str.WriteString(",HasteRating=")
-	str.WriteFloat64(weights.Get(stats.Stat_Haste), 10)
-	str.WriteString(",ExpertiseRating=")
-	str.WriteFloat64(weights.Get(stats.Stat_Expertise), 10)
-	str.WriteString(",MasteryRating=")
-	str.WriteFloat64(weights.Get(stats.Stat_Mastery), 10)
-	str.WriteString(",DodgeRating=")
-	str.WriteFloat64(weights.Get(stats.Stat_Dodge), 10)
-	str.WriteString(",ParryRating=")
-	str.WriteFloat64(weights.Get(stats.Stat_Parry), 10)
-	str.WriteString(", )")
+	str.WriteString("( Pawn: v1: \"Gearing Weights\": Class=")
+	str.WriteString(specType.ClassName())
+	str.WriteString(",")
+
+	for statType, value := range weights.SeqPair() {
+		if util.FloatNonZero(value) {
+			str.WriteString(pawnKeys[statType])
+			str.WriteString("=")
+			str.WriteFloat64(value, -1)
+			str.WriteString(",")
+		}
+	}
+	str.Rewind(1)
+	str.WriteString(" )")
 	return str.String()
 }

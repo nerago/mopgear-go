@@ -25,7 +25,7 @@ type gearWeight2Calc struct {
 // (statA*weight1A + statB*weight1B + statC*weight1C)+offset = simValue/scales
 // statA*weight1A + statB*weight1B + statC*weight1C = simValue/scales - offset
 // statA*weight1A + statB*weight1B + statC*weight1C - simValue/scales = -offset
-func (calc2 *gearWeight2Calc) calc(statTotalColumns *stats.StatTypeMap[*columnInfo], weight2 *weight_types.Weight2Extended) (map[stats.SimType]*columnInfo, error) {
+func (calc2 *gearWeight2Calc) calc(statTotalColumns *stats.StatTypeMap[*columnInfo], weight2 *weight_types.Weight2) (map[stats.SimType]*columnInfo, error) {
 	// calculate each sim value from stats
 	simValueTotalColumns := make(map[stats.SimType]*columnInfo)
 	for simType, nestedWeights := range weight2.SeqBySimNestedPairs() {

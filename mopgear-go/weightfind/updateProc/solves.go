@@ -452,14 +452,14 @@ func loadOldWeights(param *SpecParam, out *choiceOutput) {
 	}
 
 	if param.WeightFile2 == "" {
-		param.WeightFile2 = files.ToWeight2(param.WeightFile1)
+		param.WeightFile2 = files.NameToWeight2(param.WeightFile1)
 	}
 	if weight2, weight2Found := tools.ReadWeight2File(param.WeightFile2); weight2Found {
 		out.evaluateWeight2("OLD2", weight2)
 	}
 
 	if param.WeightFile3 == "" {
-		param.WeightFile3 = files.ToWeight3(param.WeightFile1)
+		param.WeightFile3 = files.NameToWeight3(param.WeightFile1)
 	}
 	if weight3, weight3Found := tools.ReadWeight3File(param.WeightFile3); weight3Found {
 		out.evaluateWeight3("OLD3", weight3)

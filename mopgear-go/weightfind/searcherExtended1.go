@@ -46,7 +46,7 @@ type WeightSearcherExtended1 struct {
 	initialEvaluateAccuracy EvaluateAccuracyPrepared
 	initialBound            *searchEx1Bound
 
-	bestResult util_rank.BestCollector1Concurrent[weight_types.Weight2Extended]
+	bestResult util_rank.BestCollector1Concurrent[weight_types.Weight2]
 	shutdown   bool
 
 	poolQueue util.TypedPool[searchEx1Bound]
@@ -94,7 +94,7 @@ func (ws *WeightSearcherExtended1) SetRanges(weightMin, weightMax float64) {
 	ws.initialBound = bound
 }
 
-func (ws *WeightSearcherExtended1) Run(cancel util_async.CancelSignal) weight_types.Weight2Extended {
+func (ws *WeightSearcherExtended1) Run(cancel util_async.CancelSignal) weight_types.Weight2 {
 	threadCount := c_searchExtended1_threads
 	queue := util_collection.QueueStackStealingPool[*searchEx1Bound]{}
 

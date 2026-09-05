@@ -390,12 +390,12 @@ func (param *SolverHighsMultiParam) makeSingleGearSet(build *util_highs.LinearBu
 	}
 	param.singleGearSet = singleGearSet
 
-	setOutput, err := param.singleGearSet.setup(&param.SolverModel, &param.solveOptions, param.RatingMultiply)
+	setOutput, err := param.singleGearSet.setup(&param.SolverModel, &param.solveOptions)
 	if err != nil {
 		return err
 	}
 
-	job.outputRow.Add(setOutput.columnIndex, 1)
+	job.outputRow.Add(setOutput.columnIndex, param.RatingMultiply)
 	return nil
 }
 

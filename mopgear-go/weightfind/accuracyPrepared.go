@@ -57,10 +57,10 @@ func (ea *EvaluateAccuracyPrepared) Clone() *EvaluateAccuracyPrepared {
 func (ea *EvaluateAccuracyPrepared) EvaluateWeight1(statWeights *weight_types.Weight1Basic) float64 {
 	return evaluateWeightGeneral(ea, statWeights)
 }
-func (ea *EvaluateAccuracyPrepared) EvaluateWeight2(statWeights *weight_types.Weight2Extended) float64 {
+func (ea *EvaluateAccuracyPrepared) EvaluateWeight2(statWeights *weight_types.Weight2) float64 {
 	return evaluateWeightGeneral(ea, statWeights)
 }
-func (ea *EvaluateAccuracyPrepared) EvaluateWeight3(statWeights *weight_types.Weight3ExtendedRanged) float64 {
+func (ea *EvaluateAccuracyPrepared) EvaluateWeight3(statWeights *weight_types.Weight3) float64 {
 	return evaluateWeightGeneral(ea, statWeights)
 }
 

@@ -9,6 +9,7 @@ type WeightType int
 type IWeight interface {
 	IsEmpty() bool
 	String() string
+	FinishAndValidate(verificationInputs []WeightInput) error
 	CalcStatScore(*stats.StatBlock) float64
 	CalcStatScoreWithBonus(*stats.StatBlock, *stats.SimTypeMap[float64]) float64
 }

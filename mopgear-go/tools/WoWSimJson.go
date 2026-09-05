@@ -10,23 +10,26 @@ import (
 	"github.com/nerago/mopgear-go/util"
 )
 
-func WowSimJsonWrite(equip *items.FullEquipMap, model *gear_model.SpecModel, printer util.Printable) string {
-	asText := WowSimJsonFormat(equip, model)
+func WowSimJsonWrite(equip *items.FullEquipMap, model *gear_model.SpecModel, printer util.Printable) (string, error) {
+	asText, err := WowSimJsonFormat(equip, model)
+	if err != nil {
+		return "", err
+	}
 	printer.Println(asText)
-	return asText
+	return asText, nil
 }
 
-func WowSimJsonFormat(equip *items.FullEquipMap, model *gear_model.SpecModel) string {
+func WowSimJsonFormat(equip *items.FullEquipMap, model *gear_model.SpecModel) (string, error) {
 	inputFile := model.ReferenceGearFile
 	allBytes, err := os.ReadFile(inputFile)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	var mainObject map[string]any
 	err = json.Unmarshal(allBytes, &mainObject)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	itemArray := make([]any, 0, items.ITEM_SLOT_COUNT)
@@ -47,11 +50,11 @@ func WowSimJsonFormat(equip *items.FullEquipMap, model *gear_model.SpecModel) st
 
 	allBytes, err = json.Marshal(mainObject)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	asText := string(allBytes)
-	return asText
+	return asText, nil
 }
 
 func makeItemObject(item *items.FullItem, profession gear_model.ProfessionInfo) map[string]any {

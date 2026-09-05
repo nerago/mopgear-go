@@ -16,7 +16,7 @@ type gearWeight3Calc struct {
 	build *util_highs.LinearBuilder
 }
 
-func (calc3 *gearWeight3Calc) calc(statTotalColumns *stats.StatTypeMap[*columnInfo], weight3 *weight_types.Weight3ExtendedRanged) (map[stats.SimType]*columnInfo, error) {
+func (calc3 *gearWeight3Calc) calc(statTotalColumns *stats.StatTypeMap[*columnInfo], weight3 *weight_types.Weight3) (map[stats.SimType]*columnInfo, error) {
 	simValueTotalColumns := make(map[stats.SimType]*columnInfo)
 	for _, simType := range weight3.SimList {
 		simValueCol, err := calc3.calcSim(simType, weight3, statTotalColumns)
@@ -28,7 +28,7 @@ func (calc3 *gearWeight3Calc) calc(statTotalColumns *stats.StatTypeMap[*columnIn
 	return simValueTotalColumns, nil
 }
 
-func (calc3 *gearWeight3Calc) calcSim(simType stats.SimType, weight *weight_types.Weight3ExtendedRanged, statTotalColumns *stats.StatTypeMap[*columnInfo]) (*columnInfo, error) {
+func (calc3 *gearWeight3Calc) calcSim(simType stats.SimType, weight *weight_types.Weight3, statTotalColumns *stats.StatTypeMap[*columnInfo]) (*columnInfo, error) {
 	simValueColumn := calc3.makeSimValueColumn(simType)
 	simValueFromStatRow := util_highs.ConstraintRow{}
 
@@ -52,7 +52,7 @@ func (calc3 *gearWeight3Calc) calcSim(simType stats.SimType, weight *weight_type
 	return simValueColumn, nil
 }
 
-func (calc3 *gearWeight3Calc) calcSimAndStat(simType stats.SimType, statType stats.StatType, weight *weight_types.Weight3ExtendedRanged, statTotalColumns *stats.StatTypeMap[*columnInfo]) (*columnInfo, error) {
+func (calc3 *gearWeight3Calc) calcSimAndStat(simType stats.SimType, statType stats.StatType, weight *weight_types.Weight3, statTotalColumns *stats.StatTypeMap[*columnInfo]) (*columnInfo, error) {
 	statTotalColumn, hasStatTotalColumn := statTotalColumns.Get(statType)
 	if !hasStatTotalColumn {
 		return nil, util.ErrorTracedNew("missing statTotalColumn for " + statType.Name())

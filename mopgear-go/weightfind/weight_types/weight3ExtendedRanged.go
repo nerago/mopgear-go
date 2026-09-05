@@ -13,8 +13,8 @@ import (
 	"github.com/nerago/mopgear-go/util/util_rank"
 )
 
-// Weight3ExtendedRanged
-type Weight3ExtendedRanged struct {
+// Weight3
+type Weight3 struct {
 	StatWeights util_collection.MapMapSlice[stats.SimType, stats.StatType, Weight3ExtendedStatEntry]
 	StatList    []stats.StatType
 	SimList     []stats.SimType
@@ -38,15 +38,15 @@ func (ese *Weight3ExtendedStatEntry) scoreForSim(statValue uint32) float64 {
 	return float64(statValue)*ese.RatingWeight + ese.RatingOffset
 }
 
-func Weight3ExtendedRanged_Make(statList []stats.StatType, simList []stats.SimType) *Weight3ExtendedRanged {
-	return &Weight3ExtendedRanged{
+func Weight3ExtendedRanged_Make(statList []stats.StatType, simList []stats.SimType) *Weight3 {
+	return &Weight3{
 		StatList:    statList,
 		SimList:     simList,
 		SimPriority: SimPriorityExtended_Make(),
 	}
 }
 
-func (wer *Weight3ExtendedRanged) IsEmpty() bool {
+func (wer *Weight3) IsEmpty() bool {
 	if wer.SimPriority.IsEmpty() {
 		return true
 	}
@@ -58,7 +58,7 @@ func (wer *Weight3ExtendedRanged) IsEmpty() bool {
 	return true
 }
 
-func (wer *Weight3ExtendedRanged) AddDetailWeight(simType stats.SimType, statType stats.StatType, statRange StatRange, ratingWeight, ratingOffset, estimationQuality float64) {
+func (wer *Weight3) AddDetailWeight(simType stats.SimType, statType stats.StatType, statRange StatRange, ratingWeight, ratingOffset, estimationQuality float64) {
 	wer.StatWeights.Add(simType, statType, Weight3ExtendedStatEntry{
 		StatRange:         statRange,
 		RatingWeight:      ratingWeight,
@@ -74,11 +74,11 @@ func (wer *Weight3ExtendedRanged) AddDetailWeight(simType stats.SimType, statTyp
 	})
 }
 
-func (wer *Weight3ExtendedRanged) SetSimScale(simType stats.SimType, rangingScaleOffset ScaleAndOffset, ratioScale float64) error {
+func (wer *Weight3) SetSimScale(simType stats.SimType, rangingScaleOffset ScaleAndOffset, ratioScale float64) error {
 	return wer.SimPriority.SetSimScale(simType, rangingScaleOffset, ratioScale)
 }
 
-func (wer *Weight3ExtendedRanged) FinishAndValidate(verificationInputs []WeightInput) error {
+func (wer *Weight3) FinishAndValidate(verificationInputs []WeightInput) error {
 	err := wer.validateTypes()
 	if err != nil {
 		return err
@@ -92,11 +92,11 @@ func (wer *Weight3ExtendedRanged) FinishAndValidate(verificationInputs []WeightI
 	return nil
 }
 
-func (wer *Weight3ExtendedRanged) FinishAndValidateNoVerify() error {
+func (wer *Weight3) FinishAndValidateNoVerify() error {
 	return wer.validateTypes()
 }
 
-func (wer *Weight3ExtendedRanged) validateTypes() error {
+func (wer *Weight3) validateTypes() error {
 	for statType := range wer.StatWeights.SeqKey2() {
 		if !slices.Contains(wer.StatList, statType) {
 			return util.ErrorTracedNew("weight given for unlisted stat")
@@ -144,7 +144,7 @@ func (wer *Weight3ExtendedRanged) validateTypes() error {
 	return nil
 }
 
-func (wer *Weight3ExtendedRanged) CalcStatScore(stats *stats.StatBlock) float64 {
+func (wer *Weight3) CalcStatScore(stats *stats.StatBlock) float64 {
 	totalSum := 0.0
 	for _, simType := range wer.SimList {
 		subTotal := wer.scoreForSimWeighted(stats, simType)
@@ -153,7 +153,7 @@ func (wer *Weight3ExtendedRanged) CalcStatScore(stats *stats.StatBlock) float64 
 	return totalSum
 }
 
-func (wer *Weight3ExtendedRanged) CalcStatScoreWithBonus(stats *stats.StatBlock, simBonus *stats.SimTypeMap[float64]) float64 {
+func (wer *Weight3) CalcStatScoreWithBonus(stats *stats.StatBlock, simBonus *stats.SimTypeMap[float64]) float64 {
 	totalSum := 0.0
 	for _, simType := range wer.SimList {
 		subTotal := wer.scoreForSimRaw(stats, simType)
@@ -168,14 +168,14 @@ func (wer *Weight3ExtendedRanged) CalcStatScoreWithBonus(stats *stats.StatBlock,
 	return totalSum
 }
 
-func (wer *Weight3ExtendedRanged) scoreForSimWeighted(stats *stats.StatBlock, simType stats.SimType) float64 {
+func (wer *Weight3) scoreForSimWeighted(stats *stats.StatBlock, simType stats.SimType) float64 {
 	subTotal := wer.scoreForSimRaw(stats, simType)
 
 	priorityEntry := wer.SimPriority.GetOrPanic(simType)
 	return priorityEntry.Apply(subTotal)
 }
 
-func (wer *Weight3ExtendedRanged) scoreForSimRaw(stats *stats.StatBlock, simType stats.SimType) float64 {
+func (wer *Weight3) scoreForSimRaw(stats *stats.StatBlock, simType stats.SimType) float64 {
 	simSubTotal := 0.0
 
 	for statType, entrySeq := range wer.StatWeights.SeqKey2ValueSeqWithKey1(simType) {
@@ -193,7 +193,7 @@ func (wer *Weight3ExtendedRanged) scoreForSimRaw(stats *stats.StatBlock, simType
 	return simSubTotal
 }
 
-func (wer *Weight3ExtendedRanged) entryContainingStat(entrySeq iter.Seq[Weight3ExtendedStatEntry], statValue uint32) *Weight3ExtendedStatEntry {
+func (wer *Weight3) entryContainingStat(entrySeq iter.Seq[Weight3ExtendedStatEntry], statValue uint32) *Weight3ExtendedStatEntry {
 	for e := range entrySeq {
 		if e.StatRange.Contains(statValue) {
 			return &e
@@ -202,14 +202,14 @@ func (wer *Weight3ExtendedRanged) entryContainingStat(entrySeq iter.Seq[Weight3E
 	return nil
 }
 
-func (wer *Weight3ExtendedRanged) Equals(other *Weight3ExtendedRanged) bool {
+func (wer *Weight3) Equals(other *Weight3) bool {
 	return slices.Equal(wer.StatList, other.StatList) &&
 		slices.Equal(wer.SimList, other.SimList) &&
 		wer.SimPriority.Equals(&other.SimPriority) &&
 		wer.StatWeights.Equals(&other.StatWeights, (*Weight3ExtendedStatEntry).Equals)
 }
 
-func (wer *Weight3ExtendedRanged) ConvertToWeight2(verificationInputs []WeightInput) *Weight2Extended {
+func (wer *Weight3) ConvertToWeight2(verificationInputs []WeightInput) *Weight2 {
 	weight2 := Weight2Extended_Make(wer.SimList, wer.StatList)
 	for entry := range wer.StatWeights.SeqKey1Key2ValueSeqEntries() {
 		bestValue := chooseBest(entry.ValueSeq)
@@ -231,13 +231,13 @@ func chooseBest(statEntrySeq iter.Seq[Weight3ExtendedStatEntry]) float64 {
 	return bestEntry.RatingWeight
 }
 
-func (wer *Weight3ExtendedRanged) String() string {
+func (wer *Weight3) String() string {
 	sb := util.StringBuild2{}
 	wer.AppendString(&sb)
 	return sb.String()
 }
 
-func (wer *Weight3ExtendedRanged) AppendString(sb *util.StringBuild2) {
+func (wer *Weight3) AppendString(sb *util.StringBuild2) {
 	sb.WriteString("(")
 	for _, simType := range wer.SimList {
 		priority := wer.SimPriority.GetOrPanic(simType)

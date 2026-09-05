@@ -36,9 +36,9 @@ const (
 	PaladinRetRotation     = `wowsim-external/ui/paladin/retribution/apls/default.apl.json`
 )
 
-func ToWeight2(base string) string {
+func NameToWeight2(base string) string {
 	return base + ".v2"
 }
-func ToWeight3(base string) string {
+func NameToWeight3(base string) string {
 	return base + ".v3"
 }

@@ -80,3 +80,56 @@ func (spec SpecType) Name() any {
 		return "unknown"
 	}
 }
+
+func (spec SpecType) ClassName() string {
+	switch spec {
+	case Spec_PaladinProt:
+		return "Paladin"
+	case Spec_PaladinRet:
+		return "Paladin"
+	case Spec_PaladinHoly:
+		return "Paladin"
+	case Spec_WarriorProt:
+		return "Warrior"
+	case Spec_WarriorArms:
+		return "Warrior"
+	case Spec_DruidBear:
+		return "Druid"
+	case Spec_DruidTree:
+		return "Druid"
+	case Spec_DruidBoom:
+		return "Druid"
+	case Spec_DruidFeral:
+		return "Druid"
+	case Spec_MageFrost:
+		return "Mage"
+	case Spec_PriestShadow:
+		return "Priest"
+	case Spec_PriestHoly:
+		return "Priest"
+	case Spec_Rogue:
+		return "Rogue"
+	case Spec_Warlock:
+		return "Warlock"
+	case Spec_ShamanRestoration:
+		return "Shaman"
+	case Spec_ShamanElemental:
+		return "Shaman"
+	case Spec_ShamanEnhance:
+		return "Shaman"
+	case Spec_Hunter:
+		return "Hunter"
+	case Spec_MonkBrewmaster:
+		return "Monk"
+	case Spec_MonkMistweaver:
+		return "Monk"
+	case Spec_MonkDps:
+		return "Monk"
+	case Spec_DeathKnightDps:
+		return "DeathKnight"
+	case Spec_DeathKnightBlood:
+		return "DeathKnight"
+	default:
+		return "unknown"
+	}
+}

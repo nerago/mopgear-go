@@ -24,7 +24,10 @@ const (
 func Model_PallyProtSurvival() gear_model.SpecModel {
 	spec := stats.Spec_PaladinProt
 	goal := stats.OptimiseGoal_Mitigation
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightProtSurvival)
+	weight, err := tools.StatRatingsWeightsExtended_ReadFile(files.WeightProtSurvival)
+	if err != nil {
+		panic(err)
+	}
 	priority := SimPriority_survival
 	return gear_model.SpecModel{
 		Spec:              spec,
@@ -55,7 +58,7 @@ func Model_PallyProtSurvival() gear_model.SpecModel {
 func Model_PallyProtHeal() gear_model.SpecModel {
 	spec := stats.Spec_PaladinProt
 	goal := stats.OptimiseGoal_HalfMitiHeal
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightProtHeal)
+	weight := tools.StatRatingsWeightsExtended_ReadFile(files.WeightProtHeal)
 	priority := SimPriority_heal
 	return gear_model.SpecModel{
 		Spec:              spec,
@@ -86,7 +89,7 @@ func Model_PallyProtHeal() gear_model.SpecModel {
 func Model_PallyProtMitigation() gear_model.SpecModel {
 	spec := stats.Spec_PaladinProt
 	goal := stats.OptimiseGoal_Mitigation
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightProtMitigation)
+	weight := tools.StatRatingsWeightsExtended_ReadFile(files.WeightProtMitigation)
 	priority := SimPriority_mitigation
 	return gear_model.SpecModel{
 		Spec:              spec,
@@ -118,7 +121,7 @@ func Model_PallyProtMitigation() gear_model.SpecModel {
 func Model_PallyProtBalanced() gear_model.SpecModel {
 	spec := stats.Spec_PaladinProt
 	goal := stats.OptimiseGoal_HalfMitiDps
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightProtBalanced)
+	weight := tools.StatRatingsWeightsExtended_ReadFile(files.WeightProtBalanced)
 	priority := SimPriority_balanced
 	return gear_model.SpecModel{
 		Spec:              spec,
@@ -149,7 +152,7 @@ func Model_PallyProtBalanced() gear_model.SpecModel {
 func Model_PallyProtDamage() gear_model.SpecModel {
 	spec := stats.Spec_PaladinProt
 	goal := stats.OptimiseGoal_Dps
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightProtDamage)
+	weight := tools.StatRatingsWeightsExtended_ReadFile(files.WeightProtDamage)
 	return gear_model.SpecModel{
 		Spec:                spec,
 		Goal:                goal,
@@ -176,7 +179,7 @@ func Model_PallyProtDamage() gear_model.SpecModel {
 func Model_PallyRet() gear_model.SpecModel {
 	spec := stats.Spec_PaladinRet
 	goal := stats.OptimiseGoal_Dps
-	weight := tools.StatRatingsWeights_ReadFile(files.WeightRet)
+	weight := tools.StatRatingsWeightsExtended_ReadFile(files.WeightRet)
 	priority := SimPriority_ret
 	return gear_model.SpecModel{
 		Spec:              spec,

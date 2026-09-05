@@ -14,19 +14,19 @@ import (
 // statA*weight2A + statB*weight2B + statC*weight2C = sim2
 // sim1*scale1+offset = 0-100 (better is higher)
 
-// Weight2Extended
-type Weight2Extended struct {
+// Weight2
+type Weight2 struct {
 	DetailedWeights util_collection.MapMap[stats.SimType, stats.StatType, float64]
 	SimList         []stats.SimType
 	StatList        []stats.StatType
 	SimPriority     SimPriorityExtended
 }
 
-func Weight2Extended_Make(simList []stats.SimType, statList []stats.StatType) *Weight2Extended {
-	return &Weight2Extended{StatList: statList, SimList: simList, SimPriority: SimPriorityExtended_Make()}
+func Weight2Extended_Make(simList []stats.SimType, statList []stats.StatType) *Weight2 {
+	return &Weight2{StatList: statList, SimList: simList, SimPriority: SimPriorityExtended_Make()}
 }
 
-func (we *Weight2Extended) IsEmpty() bool {
+func (we *Weight2) IsEmpty() bool {
 	for value := range we.DetailedWeights.SeqValues() {
 		if stats.IsUsefulWeightNumber(value) {
 			return false
@@ -35,31 +35,31 @@ func (we *Weight2Extended) IsEmpty() bool {
 	return true
 }
 
-func (we *Weight2Extended) PutWeight(simType stats.SimType, statType stats.StatType, weight float64) {
+func (we *Weight2) PutWeight(simType stats.SimType, statType stats.StatType, weight float64) {
 	we.DetailedWeights.Put(simType, statType, weight)
 }
 
-func (we *Weight2Extended) GetWeightOrPanic(simType stats.SimType, statType stats.StatType) float64 {
+func (we *Weight2) GetWeightOrPanic(simType stats.SimType, statType stats.StatType) float64 {
 	return we.DetailedWeights.GetOrPanic(simType, statType)
 }
 
-func (we *Weight2Extended) SeqBySimThenStat() iter.Seq[util_collection.MapMapEntry[stats.SimType, stats.StatType, float64]] {
+func (we *Weight2) SeqBySimThenStat() iter.Seq[util_collection.MapMapEntry[stats.SimType, stats.StatType, float64]] {
 	return we.DetailedWeights.SeqKey2Key1ValueEntries()
 }
 
-func (we *Weight2Extended) SeqBySimNestedPairs() iter.Seq2[stats.SimType, iter.Seq2[stats.StatType, float64]] {
+func (we *Weight2) SeqBySimNestedPairs() iter.Seq2[stats.SimType, iter.Seq2[stats.StatType, float64]] {
 	return we.DetailedWeights.SeqKey1NestedKey2Value()
 }
 
-func (we *Weight2Extended) GetSimPriority() *SimPriorityExtended {
+func (we *Weight2) GetSimPriority() *SimPriorityExtended {
 	return &we.SimPriority
 }
 
-func (we *Weight2Extended) SetSimScale(simType stats.SimType, rangingScaleOffset ScaleAndOffset, ratioScale float64) error {
+func (we *Weight2) SetSimScale(simType stats.SimType, rangingScaleOffset ScaleAndOffset, ratioScale float64) error {
 	return we.SimPriority.SetSimScale(simType, rangingScaleOffset, ratioScale)
 }
 
-func (we *Weight2Extended) FinishAndValidate(verificationInputs []WeightInput) error {
+func (we *Weight2) FinishAndValidate(verificationInputs []WeightInput) error {
 	err := we.validateTypes()
 	if err != nil {
 		return err
@@ -73,11 +73,11 @@ func (we *Weight2Extended) FinishAndValidate(verificationInputs []WeightInput) e
 	return nil
 }
 
-func (we *Weight2Extended) FinishAndValidateNoVerify() error {
+func (we *Weight2) FinishAndValidateNoVerify() error {
 	return we.validateTypes()
 }
 
-func (we *Weight2Extended) CalcStatScore(statBlock *stats.StatBlock) float64 {
+func (we *Weight2) CalcStatScore(statBlock *stats.StatBlock) float64 {
 	totalSum := 0.0
 	for _, simType := range we.SimList {
 		subTotal := we.scoreForSimWeighted(statBlock, simType)
@@ -86,7 +86,7 @@ func (we *Weight2Extended) CalcStatScore(statBlock *stats.StatBlock) float64 {
 	return totalSum
 }
 
-func (we *Weight2Extended) CalcStatScoreWithBonus(statBlock *stats.StatBlock, simBonus *stats.SimTypeMap[float64]) float64 {
+func (we *Weight2) CalcStatScoreWithBonus(statBlock *stats.StatBlock, simBonus *stats.SimTypeMap[float64]) float64 {
 	totalSum := 0.0
 	for _, simType := range we.SimList {
 		subTotal := we.scoreForSimWeighted(statBlock, simType)
@@ -96,14 +96,14 @@ func (we *Weight2Extended) CalcStatScoreWithBonus(statBlock *stats.StatBlock, si
 	return totalSum
 }
 
-func (we *Weight2Extended) scoreForSimWeighted(statBlock *stats.StatBlock, simType stats.SimType) float64 {
+func (we *Weight2) scoreForSimWeighted(statBlock *stats.StatBlock, simType stats.SimType) float64 {
 	subTotal := we.scoreForSimRaw(statBlock, simType)
 
 	priorityEntry := we.SimPriority.GetOrPanic(simType)
 	return priorityEntry.Apply(subTotal)
 }
 
-func (we *Weight2Extended) scoreForSimRaw(statBlock *stats.StatBlock, simType stats.SimType) float64 {
+func (we *Weight2) scoreForSimRaw(statBlock *stats.StatBlock, simType stats.SimType) float64 {
 	subTotal := 0.0
 	for statType, detailWeight := range we.DetailedWeights.SeqKey2ValueWithKey1(simType) {
 		subTotal += detailWeight * statBlock.GetFloat(statType)
@@ -111,7 +111,7 @@ func (we *Weight2Extended) scoreForSimRaw(statBlock *stats.StatBlock, simType st
 	return subTotal
 }
 
-func (we *Weight2Extended) validateTypes() error {
+func (we *Weight2) validateTypes() error {
 	for statType := range we.DetailedWeights.SeqKey2() {
 		if !slices.Contains(we.StatList, statType) {
 			return util.ErrorTracedNew("weight given for unlisted stat " + statType.Name())
@@ -147,15 +147,15 @@ func (we *Weight2Extended) validateTypes() error {
 	return nil
 }
 
-func (we *Weight2Extended) Equals(other *Weight2Extended) bool {
+func (we *Weight2) Equals(other *Weight2) bool {
 	return slices.Equal(we.StatList, other.StatList) &&
 		slices.Equal(we.SimList, other.SimList) &&
 		we.SimPriority.Equals(&other.SimPriority) &&
 		we.DetailedWeights.Equals(&other.DetailedWeights, func(a *float64, b *float64) bool { return *a == *b })
 }
 
-func (we *Weight2Extended) ConvertToWeight1() *Weight1Basic {
-	weight1 := Weight1Basic_Make()
+func (we *Weight2) ConvertToWeight1(verificationInputs []WeightInput) *Weight1_ScaledSolvable {
+	weight1 := Weight1_Make_ScaledSolvable()
 
 	for _, statType := range we.StatList {
 		sumForStat := 0.0
@@ -167,23 +167,23 @@ func (we *Weight2Extended) ConvertToWeight1() *Weight1Basic {
 		weight1.Put(statType, sumForStat)
 	}
 
-	weight1.NormalizeForBase(we.StatList)
-	return &weight1
+	weight1.UpdateScaling(verificationInputs)
+	return weight1
 }
 
-func (we *Weight2Extended) Print(printer *util.PrintRecorder) {
+func (we *Weight2) Print(printer *util.PrintRecorder) {
 	sb := util.StringBuild2{}
 	we.AppendString(&sb)
 	printer.PrintlnFromBuild(sb)
 }
 
-func (we *Weight2Extended) String() string {
+func (we *Weight2) String() string {
 	sb := util.StringBuild2{}
 	we.AppendString(&sb)
 	return sb.String()
 }
 
-func (we *Weight2Extended) AppendString(sb *util.StringBuild2) {
+func (we *Weight2) AppendString(sb *util.StringBuild2) {
 	sb.WriteString("(")
 	for _, simType := range we.SimList {
 		priority := we.SimPriority.GetOrPanic(simType)

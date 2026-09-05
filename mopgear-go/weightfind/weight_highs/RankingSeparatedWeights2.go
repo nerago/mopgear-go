@@ -253,7 +253,7 @@ func (ranker *RankingSeparatedWeights2) makeEntryRankExact(targetScore float64, 
 	return slackEnd
 }
 
-func (ranker *RankingSeparatedWeights2) extractAndReportSolution(solution *highs.Solution) weight_types.Weight2Extended {
+func (ranker *RankingSeparatedWeights2) extractAndReportSolution(solution *highs.Solution) weight_types.Weight2 {
 	ranker.build.DebugPrintColumns(solution, ranker.printer)
 
 	weight := weight_types.Weight2Extended_Make(ranker.requiredSims, ranker.requiredStats)
@@ -286,7 +286,7 @@ func (ranker *RankingSeparatedWeights2) extractAndReportSolution(solution *highs
 	return *weight
 }
 
-func (ranker *RankingSeparatedWeights2) reportExamples(weightExtended *weight_types.Weight2Extended) {
+func (ranker *RankingSeparatedWeights2) reportExamples(weightExtended *weight_types.Weight2) {
 	for i := range min(20, len(ranker.dataEntries)) {
 		data := ranker.dataEntries[i]
 		ranker.printer.Println("EXAMPLE")
@@ -314,7 +314,7 @@ func (ranker *RankingSeparatedWeights2) reportExamples(weightExtended *weight_ty
 	}
 }
 
-func (ranker *RankingSeparatedWeights2) reportCompleteRanges(weightExtended *weight_types.Weight2Extended) {
+func (ranker *RankingSeparatedWeights2) reportCompleteRanges(weightExtended *weight_types.Weight2) {
 	type simAndScore struct {
 		sim, score float64
 	}

@@ -60,7 +60,7 @@ func (fe *FittingEachStatWeightProcess) Run(cancel util_async.CancelSignal) weig
 	err := fe.launchEachNested(cancel)
 	stopwatch := fe.calcMetrics()
 
-	var weight *weight_types.Weight3ExtendedRanged
+	var weight *weight_types.Weight3
 	if err == nil {
 		weight = fe.buildResult()
 		return weight_types.WeightResult3Make(weight, stopwatch.Elapsed(), highs.ModelStatusUnknown)
@@ -79,7 +79,7 @@ func (fe *FittingEachStatWeightProcess) calcMetrics() *util.Stopwatch {
 	return stopwatch
 }
 
-func (fe *FittingEachStatWeightProcess) buildResult() *weight_types.Weight3ExtendedRanged {
+func (fe *FittingEachStatWeightProcess) buildResult() *weight_types.Weight3 {
 	weights := weight_types.Weight3ExtendedRanged_Make(fe.requiredStats, fe.requiredSims)
 	fe.each.Foreach(func(statType stats.StatType, simType stats.SimType, value *fittingEachFields) {
 		for _, detail := range value.resultSlice {

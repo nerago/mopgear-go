@@ -21,29 +21,31 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type Weight1Basic struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	WeightType    int32                  `protobuf:"varint,1,opt,name=weightType,proto3" json:"weightType,omitempty"`
-	Weight        []*Weight1Entry        `protobuf:"bytes,2,rep,name=weight,proto3" json:"weight,omitempty"`
-	Priority      []*Priority1Entry      `protobuf:"bytes,3,rep,name=priority,proto3" json:"priority,omitempty"`
+type Weight1 struct {
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	WeightType    int32                     `protobuf:"varint,1,opt,name=weightType,proto3" json:"weightType,omitempty"`
+	Weight        []*StatTypeAndFloatWeight `protobuf:"bytes,2,rep,name=weight,proto3" json:"weight,omitempty"`
+	Priority      []*SimTypeAndSimRatio     `protobuf:"bytes,3,rep,name=priority,proto3" json:"priority,omitempty"`
+	Scale         float64                   `protobuf:"fixed64,4,opt,name=scale,proto3" json:"scale,omitempty"`
+	Offset        float64                   `protobuf:"fixed64,5,opt,name=offset,proto3" json:"offset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Weight1Basic) Reset() {
-	*x = Weight1Basic{}
+func (x *Weight1) Reset() {
+	*x = Weight1{}
 	mi := &file_weights_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Weight1Basic) String() string {
+func (x *Weight1) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Weight1Basic) ProtoMessage() {}
+func (*Weight1) ProtoMessage() {}
 
-func (x *Weight1Basic) ProtoReflect() protoreflect.Message {
+func (x *Weight1) ProtoReflect() protoreflect.Message {
 	mi := &file_weights_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -55,55 +57,69 @@ func (x *Weight1Basic) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Weight1Basic.ProtoReflect.Descriptor instead.
-func (*Weight1Basic) Descriptor() ([]byte, []int) {
+// Deprecated: Use Weight1.ProtoReflect.Descriptor instead.
+func (*Weight1) Descriptor() ([]byte, []int) {
 	return file_weights_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Weight1Basic) GetWeightType() int32 {
+func (x *Weight1) GetWeightType() int32 {
 	if x != nil {
 		return x.WeightType
 	}
 	return 0
 }
 
-func (x *Weight1Basic) GetWeight() []*Weight1Entry {
+func (x *Weight1) GetWeight() []*StatTypeAndFloatWeight {
 	if x != nil {
 		return x.Weight
 	}
 	return nil
 }
 
-func (x *Weight1Basic) GetPriority() []*Priority1Entry {
+func (x *Weight1) GetPriority() []*SimTypeAndSimRatio {
 	if x != nil {
 		return x.Priority
 	}
 	return nil
 }
 
-type Weight2Extended struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	WeightType    int32                  `protobuf:"varint,1,opt,name=weightType,proto3" json:"weightType,omitempty"`
-	Weights       []*Weight2Entry        `protobuf:"bytes,2,rep,name=weights,proto3" json:"weights,omitempty"`
-	Priority      []*Priority2Entry      `protobuf:"bytes,3,rep,name=priority,proto3" json:"priority,omitempty"`
+func (x *Weight1) GetScale() float64 {
+	if x != nil {
+		return x.Scale
+	}
+	return 0
+}
+
+func (x *Weight1) GetOffset() float64 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+type Weight2 struct {
+	state         protoimpl.MessageState              `protogen:"open.v1"`
+	WeightType    int32                               `protobuf:"varint,1,opt,name=weightType,proto3" json:"weightType,omitempty"`
+	Weights       []*StatSimTypesAndFloatWeight       `protobuf:"bytes,2,rep,name=weights,proto3" json:"weights,omitempty"`
+	Priority      []*SimTypeAndScaleOffsetAndSimRatio `protobuf:"bytes,3,rep,name=priority,proto3" json:"priority,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Weight2Extended) Reset() {
-	*x = Weight2Extended{}
+func (x *Weight2) Reset() {
+	*x = Weight2{}
 	mi := &file_weights_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Weight2Extended) String() string {
+func (x *Weight2) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Weight2Extended) ProtoMessage() {}
+func (*Weight2) ProtoMessage() {}
 
-func (x *Weight2Extended) ProtoReflect() protoreflect.Message {
+func (x *Weight2) ProtoReflect() protoreflect.Message {
 	mi := &file_weights_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -115,55 +131,55 @@ func (x *Weight2Extended) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Weight2Extended.ProtoReflect.Descriptor instead.
-func (*Weight2Extended) Descriptor() ([]byte, []int) {
+// Deprecated: Use Weight2.ProtoReflect.Descriptor instead.
+func (*Weight2) Descriptor() ([]byte, []int) {
 	return file_weights_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *Weight2Extended) GetWeightType() int32 {
+func (x *Weight2) GetWeightType() int32 {
 	if x != nil {
 		return x.WeightType
 	}
 	return 0
 }
 
-func (x *Weight2Extended) GetWeights() []*Weight2Entry {
+func (x *Weight2) GetWeights() []*StatSimTypesAndFloatWeight {
 	if x != nil {
 		return x.Weights
 	}
 	return nil
 }
 
-func (x *Weight2Extended) GetPriority() []*Priority2Entry {
+func (x *Weight2) GetPriority() []*SimTypeAndScaleOffsetAndSimRatio {
 	if x != nil {
 		return x.Priority
 	}
 	return nil
 }
 
-type Weight3Extended struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	WeightType    int32                  `protobuf:"varint,1,opt,name=weightType,proto3" json:"weightType,omitempty"`
-	Weights       []*Weight3Group        `protobuf:"bytes,2,rep,name=weights,proto3" json:"weights,omitempty"`
-	Priority      []*Priority2Entry      `protobuf:"bytes,3,rep,name=priority,proto3" json:"priority,omitempty"`
+type Weight3 struct {
+	state         protoimpl.MessageState              `protogen:"open.v1"`
+	WeightType    int32                               `protobuf:"varint,1,opt,name=weightType,proto3" json:"weightType,omitempty"`
+	Weights       []*StatSimTypesAndNestedEntries     `protobuf:"bytes,2,rep,name=weights,proto3" json:"weights,omitempty"`
+	Priority      []*SimTypeAndScaleOffsetAndSimRatio `protobuf:"bytes,3,rep,name=priority,proto3" json:"priority,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Weight3Extended) Reset() {
-	*x = Weight3Extended{}
+func (x *Weight3) Reset() {
+	*x = Weight3{}
 	mi := &file_weights_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Weight3Extended) String() string {
+func (x *Weight3) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Weight3Extended) ProtoMessage() {}
+func (*Weight3) ProtoMessage() {}
 
-func (x *Weight3Extended) ProtoReflect() protoreflect.Message {
+func (x *Weight3) ProtoReflect() protoreflect.Message {
 	mi := &file_weights_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -175,54 +191,55 @@ func (x *Weight3Extended) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Weight3Extended.ProtoReflect.Descriptor instead.
-func (*Weight3Extended) Descriptor() ([]byte, []int) {
+// Deprecated: Use Weight3.ProtoReflect.Descriptor instead.
+func (*Weight3) Descriptor() ([]byte, []int) {
 	return file_weights_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *Weight3Extended) GetWeightType() int32 {
+func (x *Weight3) GetWeightType() int32 {
 	if x != nil {
 		return x.WeightType
 	}
 	return 0
 }
 
-func (x *Weight3Extended) GetWeights() []*Weight3Group {
+func (x *Weight3) GetWeights() []*StatSimTypesAndNestedEntries {
 	if x != nil {
 		return x.Weights
 	}
 	return nil
 }
 
-func (x *Weight3Extended) GetPriority() []*Priority2Entry {
+func (x *Weight3) GetPriority() []*SimTypeAndScaleOffsetAndSimRatio {
 	if x != nil {
 		return x.Priority
 	}
 	return nil
 }
 
-type Weight1Entry struct {
+type Weight4 struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StatType      StatType               `protobuf:"varint,1,opt,name=stat_type,json=statType,proto3,enum=gearproto.StatType" json:"stat_type,omitempty"`
-	RatingWeight  float64                `protobuf:"fixed64,2,opt,name=rating_weight,json=ratingWeight,proto3" json:"rating_weight,omitempty"`
+	WeightType    int32                  `protobuf:"varint,1,opt,name=weightType,proto3" json:"weightType,omitempty"`
+	Segments      []*Weight4Segment      `protobuf:"bytes,2,rep,name=segments,proto3" json:"segments,omitempty"`
+	Priority      []*SimTypeAndSimRatio  `protobuf:"bytes,3,rep,name=priority,proto3" json:"priority,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Weight1Entry) Reset() {
-	*x = Weight1Entry{}
+func (x *Weight4) Reset() {
+	*x = Weight4{}
 	mi := &file_weights_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Weight1Entry) String() string {
+func (x *Weight4) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Weight1Entry) ProtoMessage() {}
+func (*Weight4) ProtoMessage() {}
 
-func (x *Weight1Entry) ProtoReflect() protoreflect.Message {
+func (x *Weight4) ProtoReflect() protoreflect.Message {
 	mi := &file_weights_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -234,48 +251,55 @@ func (x *Weight1Entry) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Weight1Entry.ProtoReflect.Descriptor instead.
-func (*Weight1Entry) Descriptor() ([]byte, []int) {
+// Deprecated: Use Weight4.ProtoReflect.Descriptor instead.
+func (*Weight4) Descriptor() ([]byte, []int) {
 	return file_weights_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *Weight1Entry) GetStatType() StatType {
+func (x *Weight4) GetWeightType() int32 {
 	if x != nil {
-		return x.StatType
-	}
-	return StatType_StatType_Unknown
-}
-
-func (x *Weight1Entry) GetRatingWeight() float64 {
-	if x != nil {
-		return x.RatingWeight
+		return x.WeightType
 	}
 	return 0
 }
 
-type Weight2Entry struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	StatType      StatType               `protobuf:"varint,1,opt,name=stat_type,json=statType,proto3,enum=gearproto.StatType" json:"stat_type,omitempty"`
-	SimType       SimType                `protobuf:"varint,2,opt,name=sim_type,json=simType,proto3,enum=gearproto.SimType" json:"sim_type,omitempty"`
-	RatingWeight  float64                `protobuf:"fixed64,3,opt,name=rating_weight,json=ratingWeight,proto3" json:"rating_weight,omitempty"`
+func (x *Weight4) GetSegments() []*Weight4Segment {
+	if x != nil {
+		return x.Segments
+	}
+	return nil
+}
+
+func (x *Weight4) GetPriority() []*SimTypeAndSimRatio {
+	if x != nil {
+		return x.Priority
+	}
+	return nil
+}
+
+type Weight4Segment struct {
+	state         protoimpl.MessageState        `protogen:"open.v1"`
+	Bound         []*StatTypeAndStatRange       `protobuf:"bytes,1,rep,name=bound,proto3" json:"bound,omitempty"`
+	Weights       []*StatSimTypesAndFloatWeight `protobuf:"bytes,2,rep,name=weights,proto3" json:"weights,omitempty"`
+	Offsets       []*SimTypeAndScaleOffset      `protobuf:"bytes,3,rep,name=offsets,proto3" json:"offsets,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Weight2Entry) Reset() {
-	*x = Weight2Entry{}
+func (x *Weight4Segment) Reset() {
+	*x = Weight4Segment{}
 	mi := &file_weights_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Weight2Entry) String() string {
+func (x *Weight4Segment) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Weight2Entry) ProtoMessage() {}
+func (*Weight4Segment) ProtoMessage() {}
 
-func (x *Weight2Entry) ProtoReflect() protoreflect.Message {
+func (x *Weight4Segment) ProtoReflect() protoreflect.Message {
 	mi := &file_weights_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -287,55 +311,54 @@ func (x *Weight2Entry) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Weight2Entry.ProtoReflect.Descriptor instead.
-func (*Weight2Entry) Descriptor() ([]byte, []int) {
+// Deprecated: Use Weight4Segment.ProtoReflect.Descriptor instead.
+func (*Weight4Segment) Descriptor() ([]byte, []int) {
 	return file_weights_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *Weight2Entry) GetStatType() StatType {
+func (x *Weight4Segment) GetBound() []*StatTypeAndStatRange {
 	if x != nil {
-		return x.StatType
+		return x.Bound
 	}
-	return StatType_StatType_Unknown
+	return nil
 }
 
-func (x *Weight2Entry) GetSimType() SimType {
+func (x *Weight4Segment) GetWeights() []*StatSimTypesAndFloatWeight {
 	if x != nil {
-		return x.SimType
+		return x.Weights
 	}
-	return SimType_SimType_Unknown
+	return nil
 }
 
-func (x *Weight2Entry) GetRatingWeight() float64 {
+func (x *Weight4Segment) GetOffsets() []*SimTypeAndScaleOffset {
 	if x != nil {
-		return x.RatingWeight
+		return x.Offsets
 	}
-	return 0
+	return nil
 }
 
-type Weight3Group struct {
+type StatTypeAndFloatWeight struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	StatType      StatType               `protobuf:"varint,1,opt,name=stat_type,json=statType,proto3,enum=gearproto.StatType" json:"stat_type,omitempty"`
-	SimType       SimType                `protobuf:"varint,2,opt,name=sim_type,json=simType,proto3,enum=gearproto.SimType" json:"sim_type,omitempty"`
-	Entries       []*Weight3Entry        `protobuf:"bytes,3,rep,name=entries,proto3" json:"entries,omitempty"`
+	Weight        float64                `protobuf:"fixed64,2,opt,name=weight,proto3" json:"weight,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Weight3Group) Reset() {
-	*x = Weight3Group{}
+func (x *StatTypeAndFloatWeight) Reset() {
+	*x = StatTypeAndFloatWeight{}
 	mi := &file_weights_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Weight3Group) String() string {
+func (x *StatTypeAndFloatWeight) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Weight3Group) ProtoMessage() {}
+func (*StatTypeAndFloatWeight) ProtoMessage() {}
 
-func (x *Weight3Group) ProtoReflect() protoreflect.Message {
+func (x *StatTypeAndFloatWeight) ProtoReflect() protoreflect.Message {
 	mi := &file_weights_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -347,56 +370,170 @@ func (x *Weight3Group) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Weight3Group.ProtoReflect.Descriptor instead.
-func (*Weight3Group) Descriptor() ([]byte, []int) {
+// Deprecated: Use StatTypeAndFloatWeight.ProtoReflect.Descriptor instead.
+func (*StatTypeAndFloatWeight) Descriptor() ([]byte, []int) {
 	return file_weights_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *Weight3Group) GetStatType() StatType {
+func (x *StatTypeAndFloatWeight) GetStatType() StatType {
 	if x != nil {
 		return x.StatType
 	}
 	return StatType_StatType_Unknown
 }
 
-func (x *Weight3Group) GetSimType() SimType {
+func (x *StatTypeAndFloatWeight) GetWeight() float64 {
+	if x != nil {
+		return x.Weight
+	}
+	return 0
+}
+
+type StatSimTypesAndFloatWeight struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StatType      StatType               `protobuf:"varint,1,opt,name=stat_type,json=statType,proto3,enum=gearproto.StatType" json:"stat_type,omitempty"`
+	SimType       SimType                `protobuf:"varint,2,opt,name=sim_type,json=simType,proto3,enum=gearproto.SimType" json:"sim_type,omitempty"`
+	Weight        float64                `protobuf:"fixed64,3,opt,name=weight,proto3" json:"weight,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StatSimTypesAndFloatWeight) Reset() {
+	*x = StatSimTypesAndFloatWeight{}
+	mi := &file_weights_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StatSimTypesAndFloatWeight) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StatSimTypesAndFloatWeight) ProtoMessage() {}
+
+func (x *StatSimTypesAndFloatWeight) ProtoReflect() protoreflect.Message {
+	mi := &file_weights_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StatSimTypesAndFloatWeight.ProtoReflect.Descriptor instead.
+func (*StatSimTypesAndFloatWeight) Descriptor() ([]byte, []int) {
+	return file_weights_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *StatSimTypesAndFloatWeight) GetStatType() StatType {
+	if x != nil {
+		return x.StatType
+	}
+	return StatType_StatType_Unknown
+}
+
+func (x *StatSimTypesAndFloatWeight) GetSimType() SimType {
 	if x != nil {
 		return x.SimType
 	}
 	return SimType_SimType_Unknown
 }
 
-func (x *Weight3Group) GetEntries() []*Weight3Entry {
+func (x *StatSimTypesAndFloatWeight) GetWeight() float64 {
+	if x != nil {
+		return x.Weight
+	}
+	return 0
+}
+
+type StatSimTypesAndNestedEntries struct {
+	state         protoimpl.MessageState      `protogen:"open.v1"`
+	StatType      StatType                    `protobuf:"varint,1,opt,name=stat_type,json=statType,proto3,enum=gearproto.StatType" json:"stat_type,omitempty"`
+	SimType       SimType                     `protobuf:"varint,2,opt,name=sim_type,json=simType,proto3,enum=gearproto.SimType" json:"sim_type,omitempty"`
+	Entries       []*StatRangeAndWeightOffset `protobuf:"bytes,3,rep,name=entries,proto3" json:"entries,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StatSimTypesAndNestedEntries) Reset() {
+	*x = StatSimTypesAndNestedEntries{}
+	mi := &file_weights_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StatSimTypesAndNestedEntries) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StatSimTypesAndNestedEntries) ProtoMessage() {}
+
+func (x *StatSimTypesAndNestedEntries) ProtoReflect() protoreflect.Message {
+	mi := &file_weights_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StatSimTypesAndNestedEntries.ProtoReflect.Descriptor instead.
+func (*StatSimTypesAndNestedEntries) Descriptor() ([]byte, []int) {
+	return file_weights_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *StatSimTypesAndNestedEntries) GetStatType() StatType {
+	if x != nil {
+		return x.StatType
+	}
+	return StatType_StatType_Unknown
+}
+
+func (x *StatSimTypesAndNestedEntries) GetSimType() SimType {
+	if x != nil {
+		return x.SimType
+	}
+	return SimType_SimType_Unknown
+}
+
+func (x *StatSimTypesAndNestedEntries) GetEntries() []*StatRangeAndWeightOffset {
 	if x != nil {
 		return x.Entries
 	}
 	return nil
 }
 
-type Weight3Entry struct {
+type StatRangeAndWeightOffset struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StatRange     *StatRange             `protobuf:"bytes,1,opt,name=stat_range,json=statRange,proto3" json:"stat_range,omitempty"`
-	RatingWeight  float64                `protobuf:"fixed64,2,opt,name=rating_weight,json=ratingWeight,proto3" json:"rating_weight,omitempty"`
-	RatingOffset  float64                `protobuf:"fixed64,3,opt,name=rating_offset,json=ratingOffset,proto3" json:"rating_offset,omitempty"`
+	StatMinimum   uint32                 `protobuf:"varint,1,opt,name=stat_minimum,json=statMinimum,proto3" json:"stat_minimum,omitempty"`
+	StatMaximum   uint32                 `protobuf:"varint,2,opt,name=stat_maximum,json=statMaximum,proto3" json:"stat_maximum,omitempty"`
+	Weight        float64                `protobuf:"fixed64,3,opt,name=weight,proto3" json:"weight,omitempty"`
+	Offset        float64                `protobuf:"fixed64,4,opt,name=offset,proto3" json:"offset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Weight3Entry) Reset() {
-	*x = Weight3Entry{}
-	mi := &file_weights_proto_msgTypes[6]
+func (x *StatRangeAndWeightOffset) Reset() {
+	*x = StatRangeAndWeightOffset{}
+	mi := &file_weights_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Weight3Entry) String() string {
+func (x *StatRangeAndWeightOffset) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Weight3Entry) ProtoMessage() {}
+func (*StatRangeAndWeightOffset) ProtoMessage() {}
 
-func (x *Weight3Entry) ProtoReflect() protoreflect.Message {
-	mi := &file_weights_proto_msgTypes[6]
+func (x *StatRangeAndWeightOffset) ProtoReflect() protoreflect.Message {
+	mi := &file_weights_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -407,55 +544,63 @@ func (x *Weight3Entry) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Weight3Entry.ProtoReflect.Descriptor instead.
-func (*Weight3Entry) Descriptor() ([]byte, []int) {
-	return file_weights_proto_rawDescGZIP(), []int{6}
+// Deprecated: Use StatRangeAndWeightOffset.ProtoReflect.Descriptor instead.
+func (*StatRangeAndWeightOffset) Descriptor() ([]byte, []int) {
+	return file_weights_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *Weight3Entry) GetStatRange() *StatRange {
+func (x *StatRangeAndWeightOffset) GetStatMinimum() uint32 {
 	if x != nil {
-		return x.StatRange
-	}
-	return nil
-}
-
-func (x *Weight3Entry) GetRatingWeight() float64 {
-	if x != nil {
-		return x.RatingWeight
+		return x.StatMinimum
 	}
 	return 0
 }
 
-func (x *Weight3Entry) GetRatingOffset() float64 {
+func (x *StatRangeAndWeightOffset) GetStatMaximum() uint32 {
 	if x != nil {
-		return x.RatingOffset
+		return x.StatMaximum
 	}
 	return 0
 }
 
-type StatRange struct {
+func (x *StatRangeAndWeightOffset) GetWeight() float64 {
+	if x != nil {
+		return x.Weight
+	}
+	return 0
+}
+
+func (x *StatRangeAndWeightOffset) GetOffset() float64 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+type StatTypeAndStatRange struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Minimum       uint32                 `protobuf:"varint,1,opt,name=Minimum,proto3" json:"Minimum,omitempty"`
-	Maximum       uint32                 `protobuf:"varint,2,opt,name=Maximum,proto3" json:"Maximum,omitempty"`
+	StatType      StatType               `protobuf:"varint,1,opt,name=stat_type,json=statType,proto3,enum=gearproto.StatType" json:"stat_type,omitempty"`
+	StatMinimum   uint32                 `protobuf:"varint,2,opt,name=stat_minimum,json=statMinimum,proto3" json:"stat_minimum,omitempty"`
+	StatMaximum   uint32                 `protobuf:"varint,3,opt,name=stat_maximum,json=statMaximum,proto3" json:"stat_maximum,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *StatRange) Reset() {
-	*x = StatRange{}
-	mi := &file_weights_proto_msgTypes[7]
+func (x *StatTypeAndStatRange) Reset() {
+	*x = StatTypeAndStatRange{}
+	mi := &file_weights_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *StatRange) String() string {
+func (x *StatTypeAndStatRange) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StatRange) ProtoMessage() {}
+func (*StatTypeAndStatRange) ProtoMessage() {}
 
-func (x *StatRange) ProtoReflect() protoreflect.Message {
-	mi := &file_weights_proto_msgTypes[7]
+func (x *StatTypeAndStatRange) ProtoReflect() protoreflect.Message {
+	mi := &file_weights_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -466,26 +611,33 @@ func (x *StatRange) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StatRange.ProtoReflect.Descriptor instead.
-func (*StatRange) Descriptor() ([]byte, []int) {
-	return file_weights_proto_rawDescGZIP(), []int{7}
+// Deprecated: Use StatTypeAndStatRange.ProtoReflect.Descriptor instead.
+func (*StatTypeAndStatRange) Descriptor() ([]byte, []int) {
+	return file_weights_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *StatRange) GetMinimum() uint32 {
+func (x *StatTypeAndStatRange) GetStatType() StatType {
 	if x != nil {
-		return x.Minimum
+		return x.StatType
+	}
+	return StatType_StatType_Unknown
+}
+
+func (x *StatTypeAndStatRange) GetStatMinimum() uint32 {
+	if x != nil {
+		return x.StatMinimum
 	}
 	return 0
 }
 
-func (x *StatRange) GetMaximum() uint32 {
+func (x *StatTypeAndStatRange) GetStatMaximum() uint32 {
 	if x != nil {
-		return x.Maximum
+		return x.StatMaximum
 	}
 	return 0
 }
 
-type Priority1Entry struct {
+type SimTypeAndSimRatio struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SimType       SimType                `protobuf:"varint,1,opt,name=sim_type,json=simType,proto3,enum=gearproto.SimType" json:"sim_type,omitempty"`
 	RatioScale    uint32                 `protobuf:"varint,2,opt,name=ratio_scale,json=ratioScale,proto3" json:"ratio_scale,omitempty"`
@@ -493,21 +645,21 @@ type Priority1Entry struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Priority1Entry) Reset() {
-	*x = Priority1Entry{}
-	mi := &file_weights_proto_msgTypes[8]
+func (x *SimTypeAndSimRatio) Reset() {
+	*x = SimTypeAndSimRatio{}
+	mi := &file_weights_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Priority1Entry) String() string {
+func (x *SimTypeAndSimRatio) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Priority1Entry) ProtoMessage() {}
+func (*SimTypeAndSimRatio) ProtoMessage() {}
 
-func (x *Priority1Entry) ProtoReflect() protoreflect.Message {
-	mi := &file_weights_proto_msgTypes[8]
+func (x *SimTypeAndSimRatio) ProtoReflect() protoreflect.Message {
+	mi := &file_weights_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -518,26 +670,86 @@ func (x *Priority1Entry) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Priority1Entry.ProtoReflect.Descriptor instead.
-func (*Priority1Entry) Descriptor() ([]byte, []int) {
-	return file_weights_proto_rawDescGZIP(), []int{8}
+// Deprecated: Use SimTypeAndSimRatio.ProtoReflect.Descriptor instead.
+func (*SimTypeAndSimRatio) Descriptor() ([]byte, []int) {
+	return file_weights_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *Priority1Entry) GetSimType() SimType {
+func (x *SimTypeAndSimRatio) GetSimType() SimType {
 	if x != nil {
 		return x.SimType
 	}
 	return SimType_SimType_Unknown
 }
 
-func (x *Priority1Entry) GetRatioScale() uint32 {
+func (x *SimTypeAndSimRatio) GetRatioScale() uint32 {
 	if x != nil {
 		return x.RatioScale
 	}
 	return 0
 }
 
-type Priority2Entry struct {
+type SimTypeAndScaleOffset struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SimType       SimType                `protobuf:"varint,1,opt,name=sim_type,json=simType,proto3,enum=gearproto.SimType" json:"sim_type,omitempty"`
+	Scale         float64                `protobuf:"fixed64,2,opt,name=scale,proto3" json:"scale,omitempty"`
+	Offset        float64                `protobuf:"fixed64,3,opt,name=offset,proto3" json:"offset,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SimTypeAndScaleOffset) Reset() {
+	*x = SimTypeAndScaleOffset{}
+	mi := &file_weights_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SimTypeAndScaleOffset) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SimTypeAndScaleOffset) ProtoMessage() {}
+
+func (x *SimTypeAndScaleOffset) ProtoReflect() protoreflect.Message {
+	mi := &file_weights_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SimTypeAndScaleOffset.ProtoReflect.Descriptor instead.
+func (*SimTypeAndScaleOffset) Descriptor() ([]byte, []int) {
+	return file_weights_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *SimTypeAndScaleOffset) GetSimType() SimType {
+	if x != nil {
+		return x.SimType
+	}
+	return SimType_SimType_Unknown
+}
+
+func (x *SimTypeAndScaleOffset) GetScale() float64 {
+	if x != nil {
+		return x.Scale
+	}
+	return 0
+}
+
+func (x *SimTypeAndScaleOffset) GetOffset() float64 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+type SimTypeAndScaleOffsetAndSimRatio struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SimType       SimType                `protobuf:"varint,1,opt,name=sim_type,json=simType,proto3,enum=gearproto.SimType" json:"sim_type,omitempty"`
 	RangingScale  float64                `protobuf:"fixed64,2,opt,name=ranging_scale,json=rangingScale,proto3" json:"ranging_scale,omitempty"`
@@ -547,21 +759,21 @@ type Priority2Entry struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Priority2Entry) Reset() {
-	*x = Priority2Entry{}
-	mi := &file_weights_proto_msgTypes[9]
+func (x *SimTypeAndScaleOffsetAndSimRatio) Reset() {
+	*x = SimTypeAndScaleOffsetAndSimRatio{}
+	mi := &file_weights_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Priority2Entry) String() string {
+func (x *SimTypeAndScaleOffsetAndSimRatio) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Priority2Entry) ProtoMessage() {}
+func (*SimTypeAndScaleOffsetAndSimRatio) ProtoMessage() {}
 
-func (x *Priority2Entry) ProtoReflect() protoreflect.Message {
-	mi := &file_weights_proto_msgTypes[9]
+func (x *SimTypeAndScaleOffsetAndSimRatio) ProtoReflect() protoreflect.Message {
+	mi := &file_weights_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -572,33 +784,33 @@ func (x *Priority2Entry) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Priority2Entry.ProtoReflect.Descriptor instead.
-func (*Priority2Entry) Descriptor() ([]byte, []int) {
-	return file_weights_proto_rawDescGZIP(), []int{9}
+// Deprecated: Use SimTypeAndScaleOffsetAndSimRatio.ProtoReflect.Descriptor instead.
+func (*SimTypeAndScaleOffsetAndSimRatio) Descriptor() ([]byte, []int) {
+	return file_weights_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *Priority2Entry) GetSimType() SimType {
+func (x *SimTypeAndScaleOffsetAndSimRatio) GetSimType() SimType {
 	if x != nil {
 		return x.SimType
 	}
 	return SimType_SimType_Unknown
 }
 
-func (x *Priority2Entry) GetRangingScale() float64 {
+func (x *SimTypeAndScaleOffsetAndSimRatio) GetRangingScale() float64 {
 	if x != nil {
 		return x.RangingScale
 	}
 	return 0
 }
 
-func (x *Priority2Entry) GetRangingOffset() float64 {
+func (x *SimTypeAndScaleOffsetAndSimRatio) GetRangingOffset() float64 {
 	if x != nil {
 		return x.RangingOffset
 	}
 	return 0
 }
 
-func (x *Priority2Entry) GetRatioScale() float64 {
+func (x *SimTypeAndScaleOffsetAndSimRatio) GetRatioScale() float64 {
 	if x != nil {
 		return x.RatioScale
 	}
@@ -609,49 +821,66 @@ var File_weights_proto protoreflect.FileDescriptor
 
 const file_weights_proto_rawDesc = "" +
 	"\n" +
-	"\rweights.proto\x12\tgearproto\x1a\x11gear-common.proto\"\x96\x01\n" +
-	"\fWeight1Basic\x12\x1e\n" +
+	"\rweights.proto\x12\tgearproto\x1a\x11gear-common.proto\"\xcd\x01\n" +
+	"\aWeight1\x12\x1e\n" +
 	"\n" +
 	"weightType\x18\x01 \x01(\x05R\n" +
-	"weightType\x12/\n" +
-	"\x06weight\x18\x02 \x03(\v2\x17.gearproto.Weight1EntryR\x06weight\x125\n" +
-	"\bpriority\x18\x03 \x03(\v2\x19.gearproto.Priority1EntryR\bpriority\"\x9b\x01\n" +
-	"\x0fWeight2Extended\x12\x1e\n" +
+	"weightType\x129\n" +
+	"\x06weight\x18\x02 \x03(\v2!.gearproto.StatTypeAndFloatWeightR\x06weight\x129\n" +
+	"\bpriority\x18\x03 \x03(\v2\x1d.gearproto.SimTypeAndSimRatioR\bpriority\x12\x14\n" +
+	"\x05scale\x18\x04 \x01(\x01R\x05scale\x12\x16\n" +
+	"\x06offset\x18\x05 \x01(\x01R\x06offset\"\xb3\x01\n" +
+	"\aWeight2\x12\x1e\n" +
 	"\n" +
 	"weightType\x18\x01 \x01(\x05R\n" +
-	"weightType\x121\n" +
-	"\aweights\x18\x02 \x03(\v2\x17.gearproto.Weight2EntryR\aweights\x125\n" +
-	"\bpriority\x18\x03 \x03(\v2\x19.gearproto.Priority2EntryR\bpriority\"\x9b\x01\n" +
-	"\x0fWeight3Extended\x12\x1e\n" +
+	"weightType\x12?\n" +
+	"\aweights\x18\x02 \x03(\v2%.gearproto.StatSimTypesAndFloatWeightR\aweights\x12G\n" +
+	"\bpriority\x18\x03 \x03(\v2+.gearproto.SimTypeAndScaleOffsetAndSimRatioR\bpriority\"\xb5\x01\n" +
+	"\aWeight3\x12\x1e\n" +
 	"\n" +
 	"weightType\x18\x01 \x01(\x05R\n" +
-	"weightType\x121\n" +
-	"\aweights\x18\x02 \x03(\v2\x17.gearproto.Weight3GroupR\aweights\x125\n" +
-	"\bpriority\x18\x03 \x03(\v2\x19.gearproto.Priority2EntryR\bpriority\"e\n" +
-	"\fWeight1Entry\x120\n" +
-	"\tstat_type\x18\x01 \x01(\x0e2\x13.gearproto.StatTypeR\bstatType\x12#\n" +
-	"\rrating_weight\x18\x02 \x01(\x01R\fratingWeight\"\x94\x01\n" +
-	"\fWeight2Entry\x120\n" +
+	"weightType\x12A\n" +
+	"\aweights\x18\x02 \x03(\v2'.gearproto.StatSimTypesAndNestedEntriesR\aweights\x12G\n" +
+	"\bpriority\x18\x03 \x03(\v2+.gearproto.SimTypeAndScaleOffsetAndSimRatioR\bpriority\"\x9b\x01\n" +
+	"\aWeight4\x12\x1e\n" +
+	"\n" +
+	"weightType\x18\x01 \x01(\x05R\n" +
+	"weightType\x125\n" +
+	"\bsegments\x18\x02 \x03(\v2\x19.gearproto.Weight4SegmentR\bsegments\x129\n" +
+	"\bpriority\x18\x03 \x03(\v2\x1d.gearproto.SimTypeAndSimRatioR\bpriority\"\xc4\x01\n" +
+	"\x0eWeight4Segment\x125\n" +
+	"\x05bound\x18\x01 \x03(\v2\x1f.gearproto.StatTypeAndStatRangeR\x05bound\x12?\n" +
+	"\aweights\x18\x02 \x03(\v2%.gearproto.StatSimTypesAndFloatWeightR\aweights\x12:\n" +
+	"\aoffsets\x18\x03 \x03(\v2 .gearproto.SimTypeAndScaleOffsetR\aoffsets\"b\n" +
+	"\x16StatTypeAndFloatWeight\x120\n" +
+	"\tstat_type\x18\x01 \x01(\x0e2\x13.gearproto.StatTypeR\bstatType\x12\x16\n" +
+	"\x06weight\x18\x02 \x01(\x01R\x06weight\"\x95\x01\n" +
+	"\x1aStatSimTypesAndFloatWeight\x120\n" +
 	"\tstat_type\x18\x01 \x01(\x0e2\x13.gearproto.StatTypeR\bstatType\x12-\n" +
-	"\bsim_type\x18\x02 \x01(\x0e2\x12.gearproto.SimTypeR\asimType\x12#\n" +
-	"\rrating_weight\x18\x03 \x01(\x01R\fratingWeight\"\xa2\x01\n" +
-	"\fWeight3Group\x120\n" +
+	"\bsim_type\x18\x02 \x01(\x0e2\x12.gearproto.SimTypeR\asimType\x12\x16\n" +
+	"\x06weight\x18\x03 \x01(\x01R\x06weight\"\xbe\x01\n" +
+	"\x1cStatSimTypesAndNestedEntries\x120\n" +
 	"\tstat_type\x18\x01 \x01(\x0e2\x13.gearproto.StatTypeR\bstatType\x12-\n" +
-	"\bsim_type\x18\x02 \x01(\x0e2\x12.gearproto.SimTypeR\asimType\x121\n" +
-	"\aentries\x18\x03 \x03(\v2\x17.gearproto.Weight3EntryR\aentries\"\x8d\x01\n" +
-	"\fWeight3Entry\x123\n" +
-	"\n" +
-	"stat_range\x18\x01 \x01(\v2\x14.gearproto.StatRangeR\tstatRange\x12#\n" +
-	"\rrating_weight\x18\x02 \x01(\x01R\fratingWeight\x12#\n" +
-	"\rrating_offset\x18\x03 \x01(\x01R\fratingOffset\"?\n" +
-	"\tStatRange\x12\x18\n" +
-	"\aMinimum\x18\x01 \x01(\rR\aMinimum\x12\x18\n" +
-	"\aMaximum\x18\x02 \x01(\rR\aMaximum\"`\n" +
-	"\x0ePriority1Entry\x12-\n" +
+	"\bsim_type\x18\x02 \x01(\x0e2\x12.gearproto.SimTypeR\asimType\x12=\n" +
+	"\aentries\x18\x03 \x03(\v2#.gearproto.StatRangeAndWeightOffsetR\aentries\"\x90\x01\n" +
+	"\x18StatRangeAndWeightOffset\x12!\n" +
+	"\fstat_minimum\x18\x01 \x01(\rR\vstatMinimum\x12!\n" +
+	"\fstat_maximum\x18\x02 \x01(\rR\vstatMaximum\x12\x16\n" +
+	"\x06weight\x18\x03 \x01(\x01R\x06weight\x12\x16\n" +
+	"\x06offset\x18\x04 \x01(\x01R\x06offset\"\x8e\x01\n" +
+	"\x14StatTypeAndStatRange\x120\n" +
+	"\tstat_type\x18\x01 \x01(\x0e2\x13.gearproto.StatTypeR\bstatType\x12!\n" +
+	"\fstat_minimum\x18\x02 \x01(\rR\vstatMinimum\x12!\n" +
+	"\fstat_maximum\x18\x03 \x01(\rR\vstatMaximum\"d\n" +
+	"\x12SimTypeAndSimRatio\x12-\n" +
 	"\bsim_type\x18\x01 \x01(\x0e2\x12.gearproto.SimTypeR\asimType\x12\x1f\n" +
 	"\vratio_scale\x18\x02 \x01(\rR\n" +
-	"ratioScale\"\xac\x01\n" +
-	"\x0ePriority2Entry\x12-\n" +
+	"ratioScale\"t\n" +
+	"\x15SimTypeAndScaleOffset\x12-\n" +
+	"\bsim_type\x18\x01 \x01(\x0e2\x12.gearproto.SimTypeR\asimType\x12\x14\n" +
+	"\x05scale\x18\x02 \x01(\x01R\x05scale\x12\x16\n" +
+	"\x06offset\x18\x03 \x01(\x01R\x06offset\"\xbe\x01\n" +
+	" SimTypeAndScaleOffsetAndSimRatio\x12-\n" +
 	"\bsim_type\x18\x01 \x01(\x0e2\x12.gearproto.SimTypeR\asimType\x12#\n" +
 	"\rranging_scale\x18\x02 \x01(\x01R\frangingScale\x12%\n" +
 	"\x0eranging_offset\x18\x03 \x01(\x01R\rrangingOffset\x12\x1f\n" +
@@ -670,42 +899,51 @@ func file_weights_proto_rawDescGZIP() []byte {
 	return file_weights_proto_rawDescData
 }
 
-var file_weights_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_weights_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_weights_proto_goTypes = []any{
-	(*Weight1Basic)(nil),    // 0: gearproto.Weight1Basic
-	(*Weight2Extended)(nil), // 1: gearproto.Weight2Extended
-	(*Weight3Extended)(nil), // 2: gearproto.Weight3Extended
-	(*Weight1Entry)(nil),    // 3: gearproto.Weight1Entry
-	(*Weight2Entry)(nil),    // 4: gearproto.Weight2Entry
-	(*Weight3Group)(nil),    // 5: gearproto.Weight3Group
-	(*Weight3Entry)(nil),    // 6: gearproto.Weight3Entry
-	(*StatRange)(nil),       // 7: gearproto.StatRange
-	(*Priority1Entry)(nil),  // 8: gearproto.Priority1Entry
-	(*Priority2Entry)(nil),  // 9: gearproto.Priority2Entry
-	(StatType)(0),           // 10: gearproto.StatType
-	(SimType)(0),            // 11: gearproto.SimType
+	(*Weight1)(nil),                          // 0: gearproto.Weight1
+	(*Weight2)(nil),                          // 1: gearproto.Weight2
+	(*Weight3)(nil),                          // 2: gearproto.Weight3
+	(*Weight4)(nil),                          // 3: gearproto.Weight4
+	(*Weight4Segment)(nil),                   // 4: gearproto.Weight4Segment
+	(*StatTypeAndFloatWeight)(nil),           // 5: gearproto.StatTypeAndFloatWeight
+	(*StatSimTypesAndFloatWeight)(nil),       // 6: gearproto.StatSimTypesAndFloatWeight
+	(*StatSimTypesAndNestedEntries)(nil),     // 7: gearproto.StatSimTypesAndNestedEntries
+	(*StatRangeAndWeightOffset)(nil),         // 8: gearproto.StatRangeAndWeightOffset
+	(*StatTypeAndStatRange)(nil),             // 9: gearproto.StatTypeAndStatRange
+	(*SimTypeAndSimRatio)(nil),               // 10: gearproto.SimTypeAndSimRatio
+	(*SimTypeAndScaleOffset)(nil),            // 11: gearproto.SimTypeAndScaleOffset
+	(*SimTypeAndScaleOffsetAndSimRatio)(nil), // 12: gearproto.SimTypeAndScaleOffsetAndSimRatio
+	(StatType)(0),                            // 13: gearproto.StatType
+	(SimType)(0),                             // 14: gearproto.SimType
 }
 var file_weights_proto_depIdxs = []int32{
-	3,  // 0: gearproto.Weight1Basic.weight:type_name -> gearproto.Weight1Entry
-	8,  // 1: gearproto.Weight1Basic.priority:type_name -> gearproto.Priority1Entry
-	4,  // 2: gearproto.Weight2Extended.weights:type_name -> gearproto.Weight2Entry
-	9,  // 3: gearproto.Weight2Extended.priority:type_name -> gearproto.Priority2Entry
-	5,  // 4: gearproto.Weight3Extended.weights:type_name -> gearproto.Weight3Group
-	9,  // 5: gearproto.Weight3Extended.priority:type_name -> gearproto.Priority2Entry
-	10, // 6: gearproto.Weight1Entry.stat_type:type_name -> gearproto.StatType
-	10, // 7: gearproto.Weight2Entry.stat_type:type_name -> gearproto.StatType
-	11, // 8: gearproto.Weight2Entry.sim_type:type_name -> gearproto.SimType
-	10, // 9: gearproto.Weight3Group.stat_type:type_name -> gearproto.StatType
-	11, // 10: gearproto.Weight3Group.sim_type:type_name -> gearproto.SimType
-	6,  // 11: gearproto.Weight3Group.entries:type_name -> gearproto.Weight3Entry
-	7,  // 12: gearproto.Weight3Entry.stat_range:type_name -> gearproto.StatRange
-	11, // 13: gearproto.Priority1Entry.sim_type:type_name -> gearproto.SimType
-	11, // 14: gearproto.Priority2Entry.sim_type:type_name -> gearproto.SimType
-	15, // [15:15] is the sub-list for method output_type
-	15, // [15:15] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	5,  // 0: gearproto.Weight1.weight:type_name -> gearproto.StatTypeAndFloatWeight
+	10, // 1: gearproto.Weight1.priority:type_name -> gearproto.SimTypeAndSimRatio
+	6,  // 2: gearproto.Weight2.weights:type_name -> gearproto.StatSimTypesAndFloatWeight
+	12, // 3: gearproto.Weight2.priority:type_name -> gearproto.SimTypeAndScaleOffsetAndSimRatio
+	7,  // 4: gearproto.Weight3.weights:type_name -> gearproto.StatSimTypesAndNestedEntries
+	12, // 5: gearproto.Weight3.priority:type_name -> gearproto.SimTypeAndScaleOffsetAndSimRatio
+	4,  // 6: gearproto.Weight4.segments:type_name -> gearproto.Weight4Segment
+	10, // 7: gearproto.Weight4.priority:type_name -> gearproto.SimTypeAndSimRatio
+	9,  // 8: gearproto.Weight4Segment.bound:type_name -> gearproto.StatTypeAndStatRange
+	6,  // 9: gearproto.Weight4Segment.weights:type_name -> gearproto.StatSimTypesAndFloatWeight
+	11, // 10: gearproto.Weight4Segment.offsets:type_name -> gearproto.SimTypeAndScaleOffset
+	13, // 11: gearproto.StatTypeAndFloatWeight.stat_type:type_name -> gearproto.StatType
+	13, // 12: gearproto.StatSimTypesAndFloatWeight.stat_type:type_name -> gearproto.StatType
+	14, // 13: gearproto.StatSimTypesAndFloatWeight.sim_type:type_name -> gearproto.SimType
+	13, // 14: gearproto.StatSimTypesAndNestedEntries.stat_type:type_name -> gearproto.StatType
+	14, // 15: gearproto.StatSimTypesAndNestedEntries.sim_type:type_name -> gearproto.SimType
+	8,  // 16: gearproto.StatSimTypesAndNestedEntries.entries:type_name -> gearproto.StatRangeAndWeightOffset
+	13, // 17: gearproto.StatTypeAndStatRange.stat_type:type_name -> gearproto.StatType
+	14, // 18: gearproto.SimTypeAndSimRatio.sim_type:type_name -> gearproto.SimType
+	14, // 19: gearproto.SimTypeAndScaleOffset.sim_type:type_name -> gearproto.SimType
+	14, // 20: gearproto.SimTypeAndScaleOffsetAndSimRatio.sim_type:type_name -> gearproto.SimType
+	21, // [21:21] is the sub-list for method output_type
+	21, // [21:21] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_weights_proto_init() }
@@ -720,7 +958,7 @@ func file_weights_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_weights_proto_rawDesc), len(file_weights_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

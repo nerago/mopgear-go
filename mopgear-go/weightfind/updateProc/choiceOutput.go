@@ -31,8 +31,8 @@ type choiceOutput struct {
 type weightChoice struct {
 	choiceName    string
 	weight1       weight_types.Weight1Basic
-	weight2       *weight_types.Weight2Extended
-	weight3       *weight_types.Weight3ExtendedRanged
+	weight2       *weight_types.Weight2
+	weight3       *weight_types.Weight3
 	hadExtended   bool
 	accuracy1     float64
 	accuracy1Stat float64
@@ -97,13 +97,13 @@ func (wc *choiceOutput) bestWeightChoiceExtended() (util_collection.Optional[wei
 	for _, choice := range wc.getChoicesSafeCopy() {
 		weightOrig := choice.weightOrig
 		switch weightCast := weightOrig.(type) {
-		case *weight_types.Weight2Extended:
+		case *weight_types.Weight2:
 			choice.weight2 = weightCast
 			acc2 := wc._accuracyPrepBasic.EvaluateWeight2(weightCast)
 			acc2St := wc._accuracyPrepStat.EvaluateWeight2(weightCast)
 			best2.Offer(&choice, acc2)
 			best2.Offer(&choice, acc2St)
-		case *weight_types.Weight3ExtendedRanged:
+		case *weight_types.Weight3:
 			choice.weight3 = weightCast
 			weightConvert2 := weightCast.ConvertToWeight2(input.dataAll)
 			choice.weight2 = weightConvert2
@@ -131,11 +131,11 @@ func (wc *choiceOutput) evaluateWeight1(choiceName string, weight1 *weight_types
 	wc.evaluateWeightGeneric(choiceName, weight1, weight1, nil)
 }
 
-func (wc *choiceOutput) evaluateWeight2(choiceName string, weight2 *weight_types.Weight2Extended) {
+func (wc *choiceOutput) evaluateWeight2(choiceName string, weight2 *weight_types.Weight2) {
 	wc.evaluateWeightGeneric(choiceName, weight2.ConvertToWeight1(), weight2, nil)
 }
 
-func (wc *choiceOutput) evaluateWeight3(choiceName string, weight3 *weight_types.Weight3ExtendedRanged) {
+func (wc *choiceOutput) evaluateWeight3(choiceName string, weight3 *weight_types.Weight3) {
 	wc.evaluateWeightGeneric(choiceName, weight3.ConvertToWeight2(wc.input.dataAll).ConvertToWeight1(), weight3, nil)
 }
 
@@ -211,11 +211,11 @@ func (wc *choiceOutput) evaluateAccuracy(weightOrig weight_types.IWeight, weight
 
 	if _, isOne := weightOrig.(*weight_types.Weight1Basic); isOne {
 		hasExtended = false
-	} else if two, isTwo := weightOrig.(*weight_types.Weight2Extended); isTwo {
+	} else if two, isTwo := weightOrig.(*weight_types.Weight2); isTwo {
 		accuracyX = wc._accuracyPrepBasic.EvaluateWeight2(two)
 		accuracyXStat = wc._accuracyPrepStat.EvaluateWeight2(two)
 		hasExtended = true
-	} else if three, isThree := weightOrig.(*weight_types.Weight3ExtendedRanged); isThree {
+	} else if three, isThree := weightOrig.(*weight_types.Weight3); isThree {
 		accuracyX = wc._accuracyPrepBasic.EvaluateWeight3(three)
 		accuracyXStat = wc._accuracyPrepStat.EvaluateWeight3(three)
 		hasExtended = true

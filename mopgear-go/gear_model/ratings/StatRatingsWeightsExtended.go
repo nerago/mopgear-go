@@ -7,30 +7,31 @@ import (
 )
 
 type StatRatingsWeightsExtended struct {
-	Weight1 weight_types.Weight1Basic
-	Weight2 *weight_types.Weight2Extended
-	Weight3 *weight_types.Weight3ExtendedRanged
+	Weight1Scaled     weight_types.Weight1_ScaledSolvable
+	Weight1Compatible weight_types.Weight1_CompatibleExternal
+	Weight2           *weight_types.Weight2
+	Weight3           *weight_types.Weight3
 }
 
 func (sw *StatRatingsWeightsExtended) CalcRating(block *stats.StatBlock) float64 {
-	return sw.Weight1.CalcStatScore(block)
+	return sw.Weight1Scaled.CalcStatScore(block)
 }
 
 func (sw *StatRatingsWeightsExtended) CreateString() string {
-	return sw.Weight1.String()
+	return sw.Weight1Compatible.String()
 }
 
 func (sw *StatRatingsWeightsExtended) Equals(other *StatRatingsWeightsExtended) bool {
-	return sw.Weight1.Equals(&other.Weight1) &&
-		util.NilSafeEqualPointers(sw.Weight2, other.Weight2, (*weight_types.Weight2Extended).Equals) &&
-		util.NilSafeEqualPointers(sw.Weight3, other.Weight3, (*weight_types.Weight3ExtendedRanged).Equals)
+	return sw.Weight1Scaled.Equals(&other.Weight1Scaled) &&
+		util.NilSafeEqualPointers(sw.Weight2, other.Weight2, (*weight_types.Weight2).Equals) &&
+		util.NilSafeEqualPointers(sw.Weight3, other.Weight3, (*weight_types.Weight3).Equals)
 }
 
-func (sw *StatRatingsWeightsExtended) GetByWeightType(weightType weight_types.WeightType) weight_types.IWeight {
+func (sw *StatRatingsWeightsExtended) GetByWeightTypeForSolve(weightType weight_types.WeightType) weight_types.IWeight {
 	var weight weight_types.IWeight
 	switch weightType {
 	case 1:
-		weight = &sw.Weight1
+		weight = &sw.Weight1Scaled
 	case 2:
 		weight = sw.Weight2
 	case 3:

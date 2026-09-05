@@ -226,7 +226,7 @@ func (form *FormulaStatWeightProcess) buildDataEquationForSim(stats *stats.StatB
 	matchSimValue.Build(form.build, scaledSimValue, scaledSimValue)
 }
 
-func (form *FormulaStatWeightProcess) extractAndReportSolution(solution *highs.Solution) weight_types.Weight2Extended {
+func (form *FormulaStatWeightProcess) extractAndReportSolution(solution *highs.Solution) weight_types.Weight2 {
 	form.build.DebugPrintColumns(solution, form.printer)
 
 	form.printer.Println("WEIGHTS")
@@ -238,7 +238,7 @@ func (form *FormulaStatWeightProcess) extractAndReportSolution(solution *highs.S
 	return weightExtended
 }
 
-func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solution) weight_types.Weight2Extended {
+func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solution) weight_types.Weight2 {
 	// extract and report on detail weights
 	weightExtended := weight_types.Weight2Extended_Make(form.requiredSims, form.requiredStats)
 	for entry := range form.detailedWeightColumns.SeqKey1Key2ValueEntries() {
@@ -287,7 +287,7 @@ func (form *FormulaStatWeightProcess) extractDetailWeights(solution *highs.Solut
 	return *weightExtended
 }
 
-func (form *FormulaStatWeightProcess) reportExamples(weightExtended *weight_types.Weight2Extended) {
+func (form *FormulaStatWeightProcess) reportExamples(weightExtended *weight_types.Weight2) {
 	for i := range min(20, len(form.inputData)) {
 		data := form.inputData[i]
 		form.printer.Println("EXAMPLE")

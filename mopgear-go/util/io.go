@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"os"
 
 	"github.com/nerago/mopgear-go/files"
@@ -24,6 +25,7 @@ func WriteFuncToFileWithTemp(filename string, apply func(file *os.File)) error {
 
 	err = tempFile.Sync()
 	if err != nil {
+		_ = tempFile.Close()
 		return err
 	}
 	err = tempFile.Close()
@@ -37,4 +39,28 @@ func WriteFuncToFileWithTemp(filename string, apply func(file *os.File)) error {
 		return err
 	}
 	return nil
+}
+
+func ReadFileSniffTen(filename string) (rune, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return 'e', err
+	}
+
+	buff := [10]byte{}
+	num, errRead := file.Read(buff[:])
+	errClose := file.Close()
+	if errRead != nil || errClose != nil {
+		return 'e', errors.Join(errRead, errClose)
+	}
+
+	for _, c := range buff[:num] {
+		if c == '(' {
+			return 'P', nil
+		} else if c == '{' {
+			return 'J', nil
+		}
+	}
+
+	return 'e', ErrorTracedNew("unknown file type")
 }

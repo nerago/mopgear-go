@@ -5,58 +5,81 @@ option go_package = "./gearproto";
 
 import "gear-common.proto";
 
-message Weight1Basic {
+message Weight1 {
   int32 weightType = 1;
-  repeated Weight1Entry weight = 2;
-  repeated Priority1Entry priority = 3;
+  repeated StatTypeAndFloatWeight weight = 2;
+  repeated SimTypeAndSimRatio priority=3;
+  double scale = 4;
+  double offset = 5;
 }
 
-message Weight2Extended {
+message Weight2 {
   int32 weightType = 1;
-  repeated Weight2Entry weights = 2;
-  repeated Priority2Entry priority = 3;
+  repeated StatSimTypesAndFloatWeight weights = 2;
+  repeated SimTypeAndScaleOffsetAndSimRatio priority = 3;
 }
 
-message Weight3Extended {
+message Weight3 {
   int32 weightType = 1;
-  repeated Weight3Group weights = 2;
-  repeated Priority2Entry priority = 3;
+  repeated StatSimTypesAndNestedEntries weights = 2;
+  repeated SimTypeAndScaleOffsetAndSimRatio priority = 3;
 }
 
-message Weight1Entry {
+message Weight4 {
+  int32 weightType = 1;
+  repeated Weight4Segment segments = 2;
+  repeated SimTypeAndSimRatio priority = 3;
+}
+
+message Weight4Segment {
+  repeated StatTypeAndStatRange bound = 1;
+  repeated StatSimTypesAndFloatWeight weights = 2;
+  repeated SimTypeAndScaleOffset offsets = 3;
+}
+
+message StatTypeAndFloatWeight {
   StatType stat_type = 1;
-  double rating_weight = 2;
+  double weight = 2;
 }
 
-message Weight2Entry {
+
+message StatSimTypesAndFloatWeight {
   StatType stat_type = 1;
   SimType sim_type = 2;
-  double rating_weight = 3;
+  double weight = 3;
 }
 
-message Weight3Group {
+message StatSimTypesAndNestedEntries {
   StatType stat_type = 1;
   SimType sim_type = 2;
-  repeated Weight3Entry entries = 3;
+  repeated StatRangeAndWeightOffset entries = 3;
 }
 
-message Weight3Entry {
-  StatRange stat_range = 1;
-  double rating_weight = 2;
-  double rating_offset = 3;
+message StatRangeAndWeightOffset {
+  uint32 stat_minimum = 1;
+  uint32 stat_maximum = 2;
+  double weight = 3;
+  double offset = 4;
 }
 
-message StatRange {
-  uint32 Minimum = 1;
-  uint32 Maximum = 2;
+message StatTypeAndStatRange {
+  StatType stat_type = 1;
+  uint32 stat_minimum = 2;
+  uint32 stat_maximum = 3;
 }
 
-message Priority1Entry {
+message SimTypeAndSimRatio {
   SimType sim_type = 1;
   uint32 ratio_scale = 2;
 }
 
-message Priority2Entry {
+message SimTypeAndScaleOffset {
+  SimType sim_type = 1;
+  double scale = 2;
+  double offset = 3;
+}
+
+message SimTypeAndScaleOffsetAndSimRatio {
   SimType sim_type = 1;
   double ranging_scale = 2;
   double ranging_offset = 3;

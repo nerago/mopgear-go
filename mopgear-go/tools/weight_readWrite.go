@@ -10,116 +10,153 @@ import (
 	"github.com/nerago/mopgear-go/stats"
 	"github.com/nerago/mopgear-go/util"
 	"github.com/nerago/mopgear-go/weightfind/weight_types"
-
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
-func WriteWeightString(weight weight_types.IWeight, printer *util.PrintRecorder) string {
+func WriteWeightString(weight weight_types.IWeight, printer *util.PrintRecorder) error {
 	var str string
 
 	switch cast := weight.(type) {
-	case *weight_types.Weight1Basic:
+	case *weight_types.Weight1_ScaledSolvable:
 		str = FormatWeight1String(cast)
-	case *weight_types.Weight2Extended:
+	case *weight_types.Weight2:
 		str = FormatWeight2String(cast)
-	case *weight_types.Weight3ExtendedRanged:
+	case *weight_types.Weight3:
 		str = FormatWeight3String(cast)
 	default:
-		panic("unknown weight type")
+		return util.ErrorTracedNew("unknown weight type")
 	}
 
 	printer.Println(str)
-	return str
+	return nil
 }
 
-func ReadWeight2File(filename string) (*weight_types.Weight2Extended, bool) {
+func ReadWeight1File(filename string) (weight1 *weight_types.Weight1_ScaledSolvable, err error) {
 	bytes, err := os.ReadFile(filename)
 	if errors.Is(err, fs.ErrNotExist) {
-		return nil, false
+		return nil, nil
 	} else if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	protoWeight := gearproto.Weight2Extended{}
+	protoWeight := gearproto.Weight1{}
 	err = protojson.UnmarshalOptions{}.Unmarshal(bytes, &protoWeight)
 	if err != nil {
-		panic(err)
+		return nil, err
+	}
+
+	weight1 = buildGearWeight1(&protoWeight)
+	return weight1, nil
+}
+
+func ReadWeight2File(filename string) (*weight_types.Weight2, error) {
+	bytes, err := os.ReadFile(filename)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	protoWeight := gearproto.Weight2{}
+	err = protojson.UnmarshalOptions{}.Unmarshal(bytes, &protoWeight)
+	if err != nil {
+		return nil, err
 	}
 
 	weight2, err := buildGearWeight2(&protoWeight)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return weight2, true
+	return weight2, nil
 }
 
-func ReadWeight3File(filename string) (*weight_types.Weight3ExtendedRanged, bool) {
+func ReadWeight3File(filename string) (*weight_types.Weight3, error) {
 	bytes, err := os.ReadFile(filename)
 	if errors.Is(err, fs.ErrNotExist) {
-		return nil, false
+		return nil, nil
 	} else if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	protoWeight := gearproto.Weight3Extended{}
+	protoWeight := gearproto.Weight3{}
 	err = protojson.UnmarshalOptions{}.Unmarshal(bytes, &protoWeight)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	weight, err := buildGearWeight3(&protoWeight)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return weight, true
+	return weight, nil
 }
 
-func FormatWeight1String(weight1 *weight_types.Weight1Basic) string {
-	protoWeight := gearproto.Weight1Basic{WeightType: 1}
+func ReadWeightFileGeneral[T proto.Message](filename string, outputPointer T) (bool, error) {
+	bytes, err := os.ReadFile(filename)
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	err = protojson.UnmarshalOptions{}.Unmarshal(bytes, outputPointer)
+	if err != nil {
+		return false, err
+	}
+	return false, nil
+}
+
+func FormatWeight1String(weight1 *weight_types.Weight1_ScaledSolvable) string {
+	protoWeight := gearproto.Weight1{WeightType: 1}
 	protoWeight.Weight = convertWeight1Details(weight1)
+
+	scaleOffset := weight1.GetScaleOffset()
+	protoWeight.Scale = scaleOffset.Scale
+	protoWeight.Offset = scaleOffset.Offset
 
 	return protojson.MarshalOptions{}.Format(&protoWeight)
 }
 
-func FormatWeight2String(weight2 *weight_types.Weight2Extended) string {
-	protoWeight := gearproto.Weight2Extended{WeightType: 2}
+func FormatWeight2String(weight2 *weight_types.Weight2) string {
+	protoWeight := gearproto.Weight2{WeightType: 2}
 	protoWeight.Weights = convertWeight2Details(weight2)
 	protoWeight.Priority = convertPriority(&weight2.SimPriority, weight2.SimList)
 
 	return protojson.MarshalOptions{}.Format(&protoWeight)
 }
 
-func FormatWeight3String(weight3 *weight_types.Weight3ExtendedRanged) string {
-	protoWeight := gearproto.Weight3Extended{WeightType: 3}
+func FormatWeight3String(weight3 *weight_types.Weight3) string {
+	protoWeight := gearproto.Weight3{WeightType: 3}
 	protoWeight.Weights = convertWeight3Details(weight3)
 	protoWeight.Priority = convertPriority(&weight3.SimPriority, weight3.SimList)
 
 	return protojson.MarshalOptions{}.Format(&protoWeight)
 }
 
-func convertWeight1Details(weight1 *weight_types.Weight1Basic) []*gearproto.Weight1Entry {
-	weight := make([]*gearproto.Weight1Entry, 0)
+func convertWeight1Details(weight1 *weight_types.Weight1_ScaledSolvable) []*gearproto.StatTypeAndFloatWeight {
+	weight := make([]*gearproto.StatTypeAndFloatWeight, 0)
 	for statType, value := range weight1.SeqPair() {
 		if util.FloatNonZero(value) {
-			weight = append(weight, &gearproto.Weight1Entry{
-				StatType:     convertStatType(statType),
-				RatingWeight: value,
+			weight = append(weight, &gearproto.StatTypeAndFloatWeight{
+				StatType: convertStatType(statType),
+				Weight:   value,
 			})
 		}
 	}
 	return weight
 }
 
-func convertWeight2Details(weight2 *weight_types.Weight2Extended) []*gearproto.Weight2Entry {
-	weights := make([]*gearproto.Weight2Entry, 0)
+func convertWeight2Details(weight2 *weight_types.Weight2) []*gearproto.StatSimTypesAndFloatWeight {
+	weights := make([]*gearproto.StatSimTypesAndFloatWeight, 0)
 	for _, simType := range weight2.SimList {
 		for _, statType := range weight2.StatList {
 			weightEntry, hasEntry := weight2.DetailedWeights.Get(simType, statType)
 			if hasEntry {
-				protoEntry := gearproto.Weight2Entry{}
+				protoEntry := gearproto.StatSimTypesAndFloatWeight{}
 				protoEntry.SimType = convertSimType(simType)
 				protoEntry.StatType = convertStatType(statType)
-				protoEntry.RatingWeight = weightEntry
+				protoEntry.Weight = weightEntry
 				weights = append(weights, &protoEntry)
 			}
 		}
@@ -127,16 +164,26 @@ func convertWeight2Details(weight2 *weight_types.Weight2Extended) []*gearproto.W
 	return weights
 }
 
-func buildGearWeight2(protoWeight *gearproto.Weight2Extended) (*weight_types.Weight2Extended, error) {
-	weight2 := &weight_types.Weight2Extended{}
+func buildGearWeight1(protoWeight *gearproto.Weight1) *weight_types.Weight1_ScaledSolvable {
+	weight1 := &weight_types.Weight1_ScaledSolvable{}
+	for _, ent := range protoWeight.Weight {
+		weight1.Put(convertStatTypeReverse(ent.StatType), ent.Weight)
+	}
+	weight1.SetScaleOffset(weight_types.ScaleAndOffset{Scale: protoWeight.Scale, Offset: protoWeight.Offset})
+	return weight1
+}
+
+func buildGearWeight2(protoWeight *gearproto.Weight2) (*weight_types.Weight2, error) {
+	weight2 := &weight_types.Weight2{}
 	for _, ent := range protoWeight.GetWeights() {
-		weight2.PutWeight(convertSimTypeReverse(ent.SimType), convertStatTypeReverse(ent.StatType), ent.RatingWeight)
+		weight2.PutWeight(convertSimTypeReverse(ent.SimType), convertStatTypeReverse(ent.StatType), ent.Weight)
 	}
 	for _, pri := range protoWeight.GetPriority() {
 		if err := weight2.SetSimScale(convertSimTypeReverse(pri.SimType), weight_types.ScaleAndOffset{Scale: pri.RangingScale, Offset: pri.RangingOffset}, pri.RatioScale); err != nil {
 			return nil, err
 		}
 	}
+	// TODO retain order specified
 	weight2.SimList = slices.Collect(weight2.DetailedWeights.SeqKey1())
 	weight2.StatList = slices.Collect(weight2.DetailedWeights.SeqKey2())
 	if err := weight2.FinishAndValidateNoVerify(); err != nil {
@@ -145,24 +192,22 @@ func buildGearWeight2(protoWeight *gearproto.Weight2Extended) (*weight_types.Wei
 	return weight2, nil
 }
 
-func convertWeight3Details(weight3 *weight_types.Weight3ExtendedRanged) []*gearproto.Weight3Group {
-	weights := make([]*gearproto.Weight3Group, 0)
+func convertWeight3Details(weight3 *weight_types.Weight3) []*gearproto.StatSimTypesAndNestedEntries {
+	weights := make([]*gearproto.StatSimTypesAndNestedEntries, 0)
 	for _, simType := range weight3.SimList {
 		for _, statType := range weight3.StatList {
 			weightEntry, hasEntry := weight3.StatWeights.GetAsSliceClone(simType, statType)
 			if hasEntry {
-				group := gearproto.Weight3Group{}
+				group := gearproto.StatSimTypesAndNestedEntries{}
 				group.SimType = convertSimType(simType)
 				group.StatType = convertStatType(statType)
-				group.Entries = make([]*gearproto.Weight3Entry, 0)
+				group.Entries = make([]*gearproto.StatRangeAndWeightOffset, 0)
 				for _, entry := range weightEntry {
-					group.Entries = append(group.Entries, &gearproto.Weight3Entry{
-						StatRange: &gearproto.StatRange{
-							Minimum: entry.StatRange.Minimum,
-							Maximum: entry.StatRange.Maximum,
-						},
-						RatingWeight: entry.RatingWeight,
-						RatingOffset: entry.RatingOffset,
+					group.Entries = append(group.Entries, &gearproto.StatRangeAndWeightOffset{
+						StatMinimum: entry.StatRange.Minimum,
+						StatMaximum: entry.StatRange.Maximum,
+						Weight:      entry.RatingWeight,
+						Offset:      entry.RatingOffset,
 					})
 				}
 				weights = append(weights, &group)
@@ -172,16 +217,16 @@ func convertWeight3Details(weight3 *weight_types.Weight3ExtendedRanged) []*gearp
 	return weights
 }
 
-func buildGearWeight3(protoWeight *gearproto.Weight3Extended) (*weight_types.Weight3ExtendedRanged, error) {
-	weight3 := &weight_types.Weight3ExtendedRanged{}
+func buildGearWeight3(protoWeight *gearproto.Weight3) (*weight_types.Weight3, error) {
+	weight3 := &weight_types.Weight3{}
 	for _, group := range protoWeight.GetWeights() {
 		for _, ent := range group.Entries {
 			weight3.AddDetailWeight(
 				convertSimTypeReverse(group.SimType),
 				convertStatTypeReverse(group.StatType),
-				weight_types.StatRange{Minimum: ent.StatRange.Minimum, Maximum: ent.StatRange.Maximum},
-				ent.RatingWeight,
-				ent.RatingOffset,
+				weight_types.StatRange{Minimum: ent.StatMinimum, Maximum: ent.StatMaximum},
+				ent.Weight,
+				ent.Offset,
 				0,
 			)
 		}
@@ -199,11 +244,11 @@ func buildGearWeight3(protoWeight *gearproto.Weight3Extended) (*weight_types.Wei
 	return weight3, nil
 }
 
-func convertPriority(simPriority *weight_types.SimPriorityExtended, simList []stats.SimType) []*gearproto.Priority2Entry {
-	priority := make([]*gearproto.Priority2Entry, 0)
+func convertPriority(simPriority *weight_types.SimPriorityExtended, simList []stats.SimType) []*gearproto.SimTypeAndScaleOffsetAndSimRatio {
+	priority := make([]*gearproto.SimTypeAndScaleOffsetAndSimRatio, 0)
 	for _, simType := range simList {
 		prior := simPriority.GetOrPanic(simType)
-		priority = append(priority, &gearproto.Priority2Entry{
+		priority = append(priority, &gearproto.SimTypeAndScaleOffsetAndSimRatio{
 			SimType:       convertSimType(simType),
 			RangingScale:  prior.Ranging.Scale,
 			RangingOffset: prior.Ranging.Offset,

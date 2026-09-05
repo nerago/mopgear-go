@@ -829,13 +829,13 @@ func compareReport1(requiredStats []stats.StatType, resultOrder []string, report
 }
 
 type algorithmReport2 struct {
-	weight2       *weight_types.Weight2Extended
+	weight2       *weight_types.Weight2
 	basicAccuracy float64
 	statAccuracy  float64
 	weightResult  weight_types.IWeightResult
 }
 type algorithmReport3 struct {
-	weight3       *weight_types.Weight3ExtendedRanged
+	weight3       *weight_types.Weight3
 	basicAccuracy float64
 	statAccuracy  float64
 	weightResult  weight_types.IWeightResult

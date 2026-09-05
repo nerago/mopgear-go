@@ -18,9 +18,9 @@ type SetBonusRequiredCounts map[SetBonusIndex]uint8
 
 type SolverModel struct {
 	WeightsGeneric weight_types.IWeight
-	Weights1       *weight_types.Weight1Basic
-	Weights2       *weight_types.Weight2Extended
-	Weights3       *weight_types.Weight3ExtendedRanged
+	Weights1       *weight_types.Weight1_ScaledSolvable
+	Weights2       *weight_types.Weight2
+	Weights3       *weight_types.Weight3
 
 	CheckSet       func(itemSet *items.SolvableItemSet) (bool, string)
 	CalcRatingItem func(item *items.SolvableItem) float64
@@ -64,8 +64,8 @@ func SolverModelBuild(model *gear_model.SpecModel, weightType weight_types.Weigh
 	weightExt := model.StatWeights
 	switch weightType {
 	case 1:
-		solveModel.Weights1 = &weightExt.Weight1
-		solveModel.WeightsGeneric = &weightExt.Weight1
+		solveModel.Weights1 = &weightExt.Weight1Scaled
+		solveModel.WeightsGeneric = &weightExt.Weight1Scaled
 	case 2:
 		solveModel.Weights2 = weightExt.Weight2
 		solveModel.WeightsGeneric = weightExt.Weight2

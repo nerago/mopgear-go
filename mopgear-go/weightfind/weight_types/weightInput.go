@@ -63,9 +63,9 @@ type IWeightResult interface {
 	GetStatus() string
 	GetNewRatio() *SimPriorityBasic
 	GetError() error
-	AsWeight1(verificationInputs []WeightInput) *Weight1Basic
-	AsWeight2(verificationInputs []WeightInput) *Weight2Extended
-	AsWeight3(verificationInputs []WeightInput) *Weight3ExtendedRanged
+	AsWeight1(verificationInputs []WeightInput) *Weight1_ScaledSolvable
+	AsWeight2(verificationInputs []WeightInput) *Weight2
+	AsWeight3(verificationInputs []WeightInput) *Weight3
 }
 
 type WeightResultCommon struct {
@@ -101,24 +101,24 @@ type weightResultGeneric[W IWeight] struct {
 	Weight W
 }
 
-type WeightResult1 weightResultGeneric[*Weight1Basic]
+type WeightResult1 weightResultGeneric[*Weight1_ScaledSolvable]
 
-type WeightResult2 weightResultGeneric[*Weight2Extended]
+type WeightResult2 weightResultGeneric[*Weight2]
 
-type WeightResult3 weightResultGeneric[*Weight3ExtendedRanged]
+type WeightResult3 weightResultGeneric[*Weight3]
 
-type WeightResult4 weightResultGeneric[*Weight4Segmented]
+type WeightResult4 weightResultGeneric[*Weight4]
 
-func WeightResult1Make(weight *Weight1Basic, solveTime time.Duration, status highs.ModelStatus) WeightResult1 {
+func WeightResult1Make(weight *Weight1_ScaledSolvable, solveTime time.Duration, status highs.ModelStatus) WeightResult1 {
 	return WeightResult1{WeightResultCommon: WeightResultCommon{weight, solveTime, status.String(), nil, nil}, Weight: weight}
 }
-func WeightResult2Make(weight *Weight2Extended, solveTime time.Duration, status highs.ModelStatus) WeightResult2 {
+func WeightResult2Make(weight *Weight2, solveTime time.Duration, status highs.ModelStatus) WeightResult2 {
 	return WeightResult2{WeightResultCommon: WeightResultCommon{weight, solveTime, status.String(), nil, nil}, Weight: weight}
 }
-func WeightResult3Make(weight *Weight3ExtendedRanged, solveTime time.Duration, status highs.ModelStatus) WeightResult3 {
+func WeightResult3Make(weight *Weight3, solveTime time.Duration, status highs.ModelStatus) WeightResult3 {
 	return WeightResult3{WeightResultCommon: WeightResultCommon{weight, solveTime, status.String(), nil, nil}, Weight: weight}
 }
-func WeightResult4Make(weight *Weight4Segmented, solveTime time.Duration, status highs.ModelStatus) WeightResult4 {
+func WeightResult4Make(weight *Weight4, solveTime time.Duration, status highs.ModelStatus) WeightResult4 {
 	return WeightResult4{WeightResultCommon: WeightResultCommon{weight, solveTime, status.String(), nil, nil}, Weight: weight}
 }
 func WeightResult1MakeError(solveTime time.Duration, err error) WeightResult1 {
@@ -133,53 +133,53 @@ func WeightResult3MakeError(solveTime time.Duration, err error) WeightResult3 {
 func WeightResult4MakeError(solveTime time.Duration, err error) WeightResult4 {
 	return WeightResult4{WeightResultCommon: WeightResultCommon{SolveTime: solveTime, Status: "ERROR", Error: err}}
 }
-func WeightResult1MakeWithRatio(weight *Weight1Basic, solveTime time.Duration, status highs.ModelStatus, ratio *SimPriorityBasic, err error) WeightResult1 {
+func WeightResult1MakeWithRatio(weight *Weight1_ScaledSolvable, solveTime time.Duration, status highs.ModelStatus, ratio *SimPriorityBasic, err error) WeightResult1 {
 	return WeightResult1{WeightResultCommon{weight, solveTime, status.String(), ratio, err}, weight}
 }
 
-func (wr *WeightResult1) AsWeight1(_ []WeightInput) *Weight1Basic {
+func (wr *WeightResult1) AsWeight1(_ []WeightInput) *Weight1_ScaledSolvable {
 	return wr.Weight
 }
-func (wr *WeightResult2) AsWeight1(_ []WeightInput) *Weight1Basic {
+func (wr *WeightResult2) AsWeight1(verificationInputs []WeightInput) *Weight1_ScaledSolvable {
 	if wr.Weight != nil {
-		return wr.Weight.ConvertToWeight1()
+		return wr.Weight.ConvertToWeight1(verificationInputs)
 	} else {
 		return nil
 	}
 }
-func (wr *WeightResult3) AsWeight1(verificationInputs []WeightInput) *Weight1Basic {
+func (wr *WeightResult3) AsWeight1(verificationInputs []WeightInput) *Weight1_ScaledSolvable {
 	if wr.Weight != nil {
-		return wr.Weight.ConvertToWeight2(verificationInputs).ConvertToWeight1()
+		return wr.Weight.ConvertToWeight2(verificationInputs).ConvertToWeight1(verificationInputs)
 	} else {
 		return nil
 	}
 }
-func (wr *WeightResult4) AsWeight1(verificationInputs []WeightInput) (*Weight1Basic, error) {
+func (wr *WeightResult4) AsWeight1(verificationInputs []WeightInput) (*Weight1_ScaledSolvable, error) {
 	if wr.Weight != nil {
 		weight2, err := wr.Weight.ConvertToWeight2(verificationInputs)
 		if err != nil {
 			return nil, err
 		}
-		return weight2.ConvertToWeight1(), nil
+		return weight2.ConvertToWeight1(verificationInputs), nil
 	} else {
 		return nil, nil
 	}
 }
 
-func (wr *WeightResult1) AsWeight2(_ []WeightInput) *Weight2Extended {
+func (wr *WeightResult1) AsWeight2(_ []WeightInput) *Weight2 {
 	return nil
 }
-func (wr *WeightResult2) AsWeight2(_ []WeightInput) *Weight2Extended {
+func (wr *WeightResult2) AsWeight2(_ []WeightInput) *Weight2 {
 	return wr.Weight
 }
-func (wr *WeightResult3) AsWeight2(verificationInputs []WeightInput) *Weight2Extended {
+func (wr *WeightResult3) AsWeight2(verificationInputs []WeightInput) *Weight2 {
 	if wr.Weight != nil {
 		return wr.Weight.ConvertToWeight2(verificationInputs)
 	} else {
 		return nil
 	}
 }
-func (wr *WeightResult4) AsWeight2(verificationInputs []WeightInput) (*Weight2Extended, error) {
+func (wr *WeightResult4) AsWeight2(verificationInputs []WeightInput) (*Weight2, error) {
 	if wr.Weight != nil {
 		return wr.Weight.ConvertToWeight2(verificationInputs)
 	} else {
@@ -187,16 +187,16 @@ func (wr *WeightResult4) AsWeight2(verificationInputs []WeightInput) (*Weight2Ex
 	}
 }
 
-func (wr *WeightResult1) AsWeight3(_ []WeightInput) *Weight3ExtendedRanged {
+func (wr *WeightResult1) AsWeight3(_ []WeightInput) *Weight3 {
 	return nil
 }
-func (wr *WeightResult2) AsWeight3(_ []WeightInput) *Weight3ExtendedRanged {
+func (wr *WeightResult2) AsWeight3(_ []WeightInput) *Weight3 {
 	return nil
 }
-func (wr *WeightResult3) AsWeight3(_ []WeightInput) *Weight3ExtendedRanged {
+func (wr *WeightResult3) AsWeight3(_ []WeightInput) *Weight3 {
 	return wr.Weight
 }
-func (wr *WeightResult4) AsWeight3(_ []WeightInput) *Weight3ExtendedRanged {
+func (wr *WeightResult4) AsWeight3(_ []WeightInput) *Weight3 {
 	return nil
 }
 

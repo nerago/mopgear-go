@@ -111,7 +111,7 @@ func (model *SpecModel) ValidateSet(itemSet *FullItemSet) error {
 
 // ////////// set ratings
 func (model *SpecModel) CalcRatingSolve(itemSet *SolvableItemSet, weightType weight_types.WeightType) float64 {
-	weight := model.StatWeights.GetByWeightType(weightType)
+	weight := model.StatWeights.GetByWeightTypeForSolve(weightType)
 	if weightType == 1 {
 		baseRating := weight.CalcStatScore(itemSet.Total())
 		setRating := model.BonusEnabled.CalcBonusSolveFlat(itemSet.Items())
@@ -124,7 +124,7 @@ func (model *SpecModel) CalcRatingSolve(itemSet *SolvableItemSet, weightType wei
 }
 
 func (model *SpecModel) CalcRatingFull(itemSet *FullItemSet, weightType weight_types.WeightType) float64 {
-	weight := model.StatWeights.GetByWeightType(weightType)
+	weight := model.StatWeights.GetByWeightTypeForSolve(weightType)
 	if weightType == 1 {
 		baseRating := weight.CalcStatScore(itemSet.Total())
 		setRating := model.BonusEnabled.CalcBonusFullFlat(itemSet.Items())
@@ -138,11 +138,11 @@ func (model *SpecModel) CalcRatingFull(itemSet *FullItemSet, weightType weight_t
 
 // ////////// items ratings
 func (model *SpecModel) CalcRatingSolveItem(item *SolvableItem, weightType weight_types.WeightType) float64 {
-	return model.StatWeights.GetByWeightType(weightType).CalcStatScore(item.Total())
+	return model.StatWeights.GetByWeightTypeForSolve(weightType).CalcStatScore(item.Total())
 }
 
 func (model *SpecModel) CalcRatingFullItem(item *FullItem, weightType weight_types.WeightType) float64 {
-	return model.StatWeights.GetByWeightType(weightType).CalcStatScore(item.Total())
+	return model.StatWeights.GetByWeightTypeForSolve(weightType).CalcStatScore(item.Total())
 }
 
 // ////////// ProfessionInfo
